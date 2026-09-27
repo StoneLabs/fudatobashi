@@ -650,7 +650,7 @@ abstract final class ResultsLayout {
   static const double statBigUnitFont = 17;
   static const double statNoteFont = 12.5;
 
-  static const double toughHeight = 150;
+  static const double toughHeight = 180;
   static const EdgeInsets toughPadding = EdgeInsets.fromLTRB(14, 12, 12, 12);
   static const double toughHeadingFont = 30;
   static const double toughLabelFont = 13;

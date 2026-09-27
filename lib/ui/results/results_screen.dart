@@ -126,7 +126,7 @@ class _Splash extends StatelessWidget {
             child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
               _TimePanel(report: report),
               const SizedBox(height: Gaps.panel),
-              Row(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+              Row(children: [
                 Expanded(
                   child: _StatPanel(
                     label: s.avgPerCardLabel,
