@@ -73,8 +73,28 @@ class _PlayScreenState extends State<PlayScreen> {
   }
 
   void _onCommitted(Attempt a) {
-    _sfxKey.currentState?.pop(dontKnow: a.outcome == Outcome.dontKnow);
+    if (ProgressScope.read(context).settings.sfxEffects) {
+      final dontKnow = a.outcome == Outcome.dontKnow;
+      if (dontKnow || _isFastCard(a)) _sfxKey.currentState?.pop(dontKnow: dontKnow);
+    }
     if (a.isMiss) _requeueMiss(a);
+  }
+
+  /// A correct card only earns its SFX pop when it beats a speed baseline:
+  /// the card's own average once it has enough history, else this run's
+  /// average so far. Keeps the celebration for a snappy answer, not every one.
+  bool _isFastCard(Attempt a) {
+    final cardStats = ProgressScope.read(context).stats(ItemKey(a.card.poemId, a.card.inverted));
+    final baseline = cardStats.timed.length >= PlaySfxTuning.minCardSamplesForBaseline
+        ? cardStats.ewmaMs
+        : _sessionAverageMs();
+    return baseline != null && a.responseUs / 1000 <= baseline * PlaySfxTuning.fastRatio;
+  }
+
+  double? _sessionAverageMs() {
+    final prior = _session.attempts.take(_session.attempts.length - 1).where((x) => !x.isMiss && !x.tainted);
+    if (prior.isEmpty) return null;
+    return prior.map((x) => x.responseUs / 1000).reduce((a, b) => a + b) / prior.length;
   }
 
   void _toggleWrong() {

@@ -118,6 +118,14 @@ abstract final class PlaySfxTuning {
   static const double settleScale = 1.0;
   static const double endScale = 1.04;
   static const double endTranslateY = -6;
+
+  /// A correct card only pops its SFX when at or under this fraction of the
+  /// baseline response time (the card's own average, or else this run's).
+  static const double fastRatio = 0.85;
+
+  /// Timed attempts a card needs before its own average is trusted as the
+  /// baseline; fewer than this falls back to the run's average so far.
+  static const int minCardSamplesForBaseline = 3;
 }
 
 /// The spaced-repetition trainer: `TrainerConfig` defaults, the session
@@ -272,6 +280,7 @@ abstract final class DefaultSettings {
   static const bool showPoemNumber = true;
   static const bool haptics = true;
   static const bool leadIn = true;
+  static const bool sfxEffects = true;
   static const bool showRunningTimer = false;
   static const PlayConfig freePlay = PlayConfig(mode: PlayMode.free);
 

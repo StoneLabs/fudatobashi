@@ -13,6 +13,7 @@ class AppSettings {
     this.showPoemNumber = DefaultSettings.showPoemNumber,
     this.haptics = DefaultSettings.haptics,
     this.leadIn = DefaultSettings.leadIn,
+    this.sfxEffects = DefaultSettings.sfxEffects,
     this.showRunningTimer = DefaultSettings.showRunningTimer,
     this.freePlay = DefaultSettings.freePlay,
     this.nigateCount = DefaultSettings.nigateCount,
@@ -33,6 +34,9 @@ class AppSettings {
 
   /// Short "開始" lead-in before the first card.
   final bool leadIn;
+
+  /// Coloured SFX pop for a fast correct card (see [PlaySfxTuning]).
+  final bool sfxEffects;
   final bool showRunningTimer;
 
   /// Last free-play setup (表示する札を限定する).
@@ -59,6 +63,7 @@ class AppSettings {
         'showPoemNumber': showPoemNumber,
         'haptics': haptics,
         'leadIn': leadIn,
+        'sfxEffects': sfxEffects,
         'showRunningTimer': showRunningTimer,
         'freePlay': freePlay.toJson(),
         'nigateCount': nigateCount,
@@ -76,6 +81,7 @@ class AppSettings {
         showPoemNumber: j['showPoemNumber'] as bool? ?? DefaultSettings.showPoemNumber,
         haptics: j['haptics'] as bool? ?? DefaultSettings.haptics,
         leadIn: j['leadIn'] as bool? ?? DefaultSettings.leadIn,
+        sfxEffects: j['sfxEffects'] as bool? ?? DefaultSettings.sfxEffects,
         showRunningTimer: j['showRunningTimer'] as bool? ?? DefaultSettings.showRunningTimer,
         freePlay: j['freePlay'] is Map
             ? PlayConfig.fromJson((j['freePlay'] as Map).cast<String, dynamic>())
@@ -96,6 +102,7 @@ class AppSettings {
     bool? showPoemNumber,
     bool? haptics,
     bool? leadIn,
+    bool? sfxEffects,
     bool? showRunningTimer,
     PlayConfig? freePlay,
     int? nigateCount,
@@ -112,6 +119,7 @@ class AppSettings {
         showPoemNumber: showPoemNumber ?? this.showPoemNumber,
         haptics: haptics ?? this.haptics,
         leadIn: leadIn ?? this.leadIn,
+        sfxEffects: sfxEffects ?? this.sfxEffects,
         showRunningTimer: showRunningTimer ?? this.showRunningTimer,
         freePlay: freePlay ?? this.freePlay,
         nigateCount: nigateCount ?? this.nigateCount,
