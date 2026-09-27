@@ -1,5 +1,3 @@
-import 'dart:ui';
-
 import 'package:flutter/scheduler.dart';
 
 /// Collects recent frame timings for the debug page.
