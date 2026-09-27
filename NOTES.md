@@ -30,7 +30,11 @@ The plan lives in `~/.claude-revi/plans/we-are-going-to-async-llama.md`, and pro
   - `manga.html`: sports-manga panels, SFX.
   - `islands.html`: かな諸島 flat-colour archipelago.
   - The user will pick or give feedback in the browser. The build is code-led (no image generation).
-- **Font:** waiting on the font subagent and the user.
+- **Font (decided by research, choice pending with the user):**
+  - Real competition cards (Oishi Tengudo 標準) and the app use the same font: **Morisawa 正楷書CB1** at about 77.4 px/em. A photo of real card 57 matches the app's glyphs at 0.89, near the photo-noise ceiling.
+  - Exact fidelity therefore needs a legit CB1 licence.
+  - The best free option is Yuji Syuku, at 76.5 px/em and about 0.5 px thinner; the user dislikes it.
+  - Artifacts are in `research/fonts/` (`contact_real.png`, overlays).
 
 ### Next
 1. Show the mockups (`xdg-open research/design/*.html`) and get the user's pick.
