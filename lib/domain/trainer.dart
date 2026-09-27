@@ -173,11 +173,17 @@ class Trainer {
     return fsrs.Rating.hard;
   }
 
-  /// Feeds one attempt into FSRS. Returns the grade, or null when the attempt
-  /// carries no memory evidence (a redo or a corrected card).
+  /// Feeds one attempt into FSRS and returns its grade, or null when the attempt
+  /// carries no long-term memory evidence: a redo, a corrected card, or a
+  /// correct answer on a card that is not due yet. Players keep drilling after
+  /// their dues are done; those extra swipes train speed (see [CardStats]) but
+  /// would otherwise inflate FSRS stability with short-term recall. A miss
+  /// always counts, since failing a card is evidence of forgetting.
   fsrs.Rating? review(ItemKey key, AttemptRec a) {
     if (!a.clean && !a.miss) return null;
     final s = items[key]!;
+    final due = !s.reviewed || !s.card.due.isAfter(a.at.toUtc());
+    if (!due && !a.miss) return null;
     final g = gradeFor(a);
     s.card = scheduler.reviewCard(s.card, g, reviewDateTime: a.at.toUtc(), reviewDuration: a.us ~/ 1000).card;
     return g;
