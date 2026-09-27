@@ -8,33 +8,6 @@ import 'buttons.dart';
 import 'pressable.dart';
 import 'seeded_random.dart';
 
-/// The spiky outline of a shout balloon.
-@immutable
-class ShoutSpec {
-  const ShoutSpec({this.spikes = 28, this.outer = 8, this.inner = 3, this.roundness = 5, this.seed = 11});
-
-  final int spikes;
-
-  /// How far spikes reach out and notches cut in, px.
-  final double outer, inner;
-
-  /// Superellipse exponent: higher is boxier.
-  final double roundness;
-  final int seed;
-
-  @override
-  bool operator ==(Object other) =>
-      other is ShoutSpec &&
-      other.spikes == spikes &&
-      other.outer == outer &&
-      other.inner == inner &&
-      other.roundness == roundness &&
-      other.seed == seed;
-
-  @override
-  int get hashCode => Object.hash(spikes, outer, inner, roundness, seed);
-}
-
 /// Shout outlines, cached per spec and size.
 abstract final class ShoutPath {
   static final _cache = <(ShoutSpec, Size), Path>{};

@@ -106,3 +106,34 @@ class SfxText extends StatelessWidget {
     ..strokeJoin = StrokeJoin.round
     ..color = color;
 }
+
+/// A string template whose `{0}`, `{1}` … placeholders are filled with
+/// [values] and set in [numberStyle] (display type by default), the rest in
+/// the ambient or given [style].
+class NumberedText extends StatelessWidget {
+  const NumberedText(this.template, this.values, {super.key, this.style, this.numberStyle, this.textAlign});
+
+  final String template;
+  final List<Object> values;
+  final TextStyle? style;
+  final TextStyle? numberStyle;
+  final TextAlign? textAlign;
+
+  static final _slot = RegExp(r'\{(\d+)\}');
+
+  @override
+  Widget build(BuildContext context) {
+    final spans = <InlineSpan>[];
+    var at = 0;
+    for (final m in _slot.allMatches(template)) {
+      if (m.start > at) spans.add(TextSpan(text: template.substring(at, m.start)));
+      spans.add(TextSpan(
+        text: '${values[int.parse(m.group(1)!)]}',
+        style: numberStyle ?? const TextStyle(fontFamily: Fonts.display, fontWeight: Weights.regular),
+      ));
+      at = m.end;
+    }
+    if (at < template.length) spans.add(TextSpan(text: template.substring(at)));
+    return Text.rich(TextSpan(style: style, children: spans), textAlign: textAlign);
+  }
+}

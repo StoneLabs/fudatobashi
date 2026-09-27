@@ -11,9 +11,9 @@ class MangaIcon extends StatelessWidget {
   const MangaIcon(
     this.art, {
     super.key,
-    this.size = ButtonStyle.icon,
+    this.size = ButtonMetrics.icon,
     this.color = Palette.ink,
-    this.strokeWidth = ButtonStyle.iconStroke,
+    this.strokeWidth = ButtonMetrics.iconStroke,
   });
 
   final VectorArt art;
@@ -88,7 +88,7 @@ class InkIconButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => SizedBox.square(
-        dimension: ButtonStyle.iconButton,
+        dimension: ButtonMetrics.iconButton,
         child: InkButton(
           onTap: onTap,
           border: Strokes.control,
@@ -106,14 +106,14 @@ class GoButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Container(
-        width: ButtonStyle.goButton,
-        height: ButtonStyle.goButton,
+        width: ButtonMetrics.goButton,
+        height: ButtonMetrics.goButton,
         alignment: Alignment.center,
         decoration: BoxDecoration(
           color: color,
           shape: BoxShape.circle,
           border: Border.all(color: Palette.ink, width: Strokes.button),
         ),
-        child: const MangaIcon(IconArt.arrow, size: ButtonStyle.goIcon, strokeWidth: ButtonStyle.goIconStroke),
+        child: const MangaIcon(IconArt.arrow, size: ButtonMetrics.goIcon, strokeWidth: ButtonMetrics.goIconStroke),
       );
 }

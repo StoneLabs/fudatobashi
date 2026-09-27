@@ -2,11 +2,16 @@ import 'dart:io' show Platform;
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_displaymode/flutter_displaymode.dart';
 
 import 'data/fuda_sets.dart';
+import 'data/islands.dart';
 import 'data/poem.dart';
-import 'ui/play/play_screen.dart';
+import 'db/database.dart';
+import 'state/progress.dart';
+import 'ui/app.dart';
+import 'ui/debug/frame_stats.dart';
 import 'ui/torifuda/glyph_atlas.dart';
 
 Future<void> main() async {
@@ -17,22 +22,18 @@ Future<void> main() async {
       await FlutterDisplayMode.setHighRefreshRate();
     } catch (_) {}
   }
+  SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
+  SystemChrome.setSystemUIOverlayStyle(const SystemUiOverlayStyle(
+    statusBarColor: Colors.transparent,
+    statusBarIconBrightness: Brightness.dark,
+    systemNavigationBarColor: Colors.transparent,
+    systemNavigationBarIconBrightness: Brightness.dark,
+  ));
   poems = await Poems.load();
-  await GlyphAtlas.load();
   fudaSets = FudaSets(poems);
-  runApp(const FudatobashiApp());
-}
-
-class FudatobashiApp extends StatelessWidget {
-  const FudatobashiApp({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'Fudatobashi',
-      debugShowCheckedModeBanner: false,
-      theme: ThemeData(colorSchemeSeed: const Color(0xFF4B2A7B)),
-      home: PlayScreen(cards: PlayScreen.randomDeck(10)),
-    );
-  }
+  archipelago = await Archipelago.load();
+  final progress = await Progress.open(AppDatabase());
+  await GlyphAtlas.load();
+  FrameStats.instance.start();
+  runApp(FudatobashiApp(progress: progress));
 }

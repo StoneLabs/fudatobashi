@@ -145,7 +145,25 @@ class Progress extends ChangeNotifier {
 
   List<IslandProgress> get islands => trainer.islands(fudaSets, allStats);
 
-  RankBand get band => Rating.bandOf(rating ?? Rating.performance(projectedMs));
+  /// The displayed rating, or the current performance before the first run.
+  double get currentRating => rating ?? Rating.performance(projectedMs);
+
+  RankBand get band => Rating.bandOf(currentRating);
+
+  /// Unlocked items due for review now.
+  int dueCount([DateTime? now]) {
+    final at = now ?? DateTime.now();
+    return trainer.unlocked.where((s) => trainer.isDue(s.key, at)).length;
+  }
+
+  /// Unlocked items never played yet.
+  int get freshCount => trainer.unlocked.where((s) => !stats(s.key).seen).length;
+
+  /// Played items still slower than the current goal (misses count as slow).
+  int get slowCount => trainer.unlocked.where((s) {
+        final st = stats(s.key);
+        return st.seen && st.expectedMs() > trainer.goalMs;
+      }).length;
 
   /// Best completed total for runs with the same setup.
   Duration? bestFor(PlayConfig c) {

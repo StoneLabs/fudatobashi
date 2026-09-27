@@ -83,6 +83,14 @@ class ToneSpec {
   int get hashCode => Object.hash(dot, radius, spacing, background, phase);
 }
 
+/// Where an overlay (Tobi, a balloon) sits in its panel: two edges and a size.
+@immutable
+class Placement {
+  const Placement({this.left, this.top, this.right, this.bottom, required this.size});
+  final double? left, top, right, bottom;
+  final Size size;
+}
+
 abstract final class Tones {
   /// Anti-aliasing fringe added to each dot's radius (the CSS tones fade out
   /// over 0.6 px).
@@ -148,6 +156,8 @@ abstract final class Weights {
 }
 
 abstract final class TypeScale {
+  /// Line height of display-type titles.
+  static const double displayLineHeight = 1.05;
   static const double body = 14;
   static const double small = 12.5;
   static const double tiny = 12;
@@ -206,6 +216,17 @@ abstract final class Tide {
   static const double margin = 7;
 }
 
+abstract final class ToastStyle {
+  static const hold = Duration(milliseconds: 2600);
+  static const fade = Duration(milliseconds: 220);
+
+  /// Distance above the bottom inset, clearing the tab bar.
+  static const double bottom = 96;
+
+  /// Start offset of the drop-in, as a fraction of the toast's height.
+  static const double slide = 0.4;
+}
+
 abstract final class TabBarStyle {
   static const double height = 62;
   static const double gap = 8;
@@ -215,7 +236,7 @@ abstract final class TabBarStyle {
   static const double sub = 12;
 }
 
-abstract final class ButtonStyle {
+abstract final class ButtonMetrics {
   static const double iconButton = 44;
   static const double icon = 22;
   static const double iconStroke = 2.4;
@@ -274,6 +295,33 @@ abstract final class BalloonStyle {
   static const double tailLift = 1;
   static const double tailSkew = 8;
   static const double lineHeight = 1.15;
+}
+
+/// The spiky outline of a shout balloon.
+@immutable
+class ShoutSpec {
+  const ShoutSpec({this.spikes = 28, this.outer = 8, this.inner = 3, this.roundness = 5, this.seed = 11});
+
+  final int spikes;
+
+  /// How far spikes reach out and notches cut in, px.
+  final double outer, inner;
+
+  /// Superellipse exponent: higher is boxier.
+  final double roundness;
+  final int seed;
+
+  @override
+  bool operator ==(Object other) =>
+      other is ShoutSpec &&
+      other.spikes == spikes &&
+      other.outer == outer &&
+      other.inner == inner &&
+      other.roundness == roundness &&
+      other.seed == seed;
+
+  @override
+  int get hashCode => Object.hash(spikes, outer, inner, roundness, seed);
 }
 
 /// The START TRAINING shout.
@@ -338,6 +386,7 @@ abstract final class HeaderStyle {
   static const double logoTracking = 0.02;
   static const double sub = 12;
   static const double subTracking = 0.24;
+  static const double titleSub = 15;
   static const double subGap = 4;
   static const double actionGap = 10;
   static const double topGap = 4;
@@ -413,63 +462,97 @@ abstract final class MapStyle {
 /// The Home screens (spec phones 2 and 3).
 abstract final class HomeLayout {
   static const double mapHeight = 268;
-  static const double mapMinHeight = 150;
+  static const double mapCut = 12;
+  static const EdgeInsets mapLabelInsets = EdgeInsets.fromLTRB(12, 10, 12, 0);
+  static const double mapBannerFont = 14;
+  static const double mapCountTop = 44;
+  static const double mapCountFont = 13;
+  static const double mapCountNumber = 15;
+  static const EdgeInsets mapCountPadding = EdgeInsets.fromLTRB(9, 3, 9, 3);
+  static const double mapMistFont = 12.5;
+  static const EdgeInsets mapMistPadding = EdgeInsets.fromLTRB(8, 3, 8, 3);
+
   static const double progressHeight = 70;
+  static const EdgeInsets progressPadding = EdgeInsets.fromLTRB(12, 8, 12, 0);
+  static const double islandTitle = 20;
+  static const double nowFont = 12;
+  static const EdgeInsets nowPadding = EdgeInsets.fromLTRB(6, 1, 6, 1);
+  static const double learnedFont = 14;
+  static const double learnedNumber = 18;
   static const double pipWidth = 21;
   static const double pipHeight = 24;
   static const double pipGap = 6;
+  static const double pipTop = 8;
   static const double pipRadius = 3;
   static const double pipInset = 3;
-  static const double islandTitle = 20;
-  static const double learnedNumber = 18;
-  static const double learnedFont = 14;
-  static const double nowFont = 12;
 
   static const double journeyHeroHeight = 206;
   static const double journeyHeroCut = 8;
-  static const double journeyMapCut = 12;
   static const double journeyTitle = 52;
   static const double journeyTitleOutline = 11;
-  static const Offset journeyTitleAt = Offset(18, 12);
-  static const Offset journeyNarrationAt = Offset(18, 106);
+  static const EdgeInsets journeyHeroPadding = EdgeInsets.fromLTRB(18, 12, 18, 6);
+  static const double journeyNarrationGap = 0;
   static const double journeyShoutHeight = 58;
-  static const EdgeInsets journeyShoutInsets = EdgeInsets.fromLTRB(14, 0, 18, 6);
-  static const Rect journeyTobi = Rect.fromLTWH(254, -16, 96, 114);
-  static const Rect journeyBalloon = Rect.fromLTWH(156, 22, 100, 54);
+  static const double journeyShoutLeft = 14;
+  static const double journeyShoutRight = 18;
+  static const journeyShout = ShoutSpec(spikes: 28, outer: 7);
+  static const Placement journeyTobi = Placement(right: 8, top: -16, size: Size(96, 114));
+  static const Placement journeyBalloon = Placement(right: 102, top: 22, size: Size(100, 54));
   static const double journeyBalloonFont = 13.5;
   static const Alignment journeyBalloonTail = Alignment(0.84, 0.4);
   static const double journeyBalloonTailTurn = -30;
 
   static const double rankHeight = 92;
-  static const double rankSplit = 250;
+
+  /// Widths of the rating and streak panels on the spec's 358-wide row.
+  static const int rankFlex = 250;
+  static const int streakFlex = 108;
   static const double rankSlant = 10;
+  static const double rankGap = 12;
   static const double classFont = 32;
   static const double classSuffixFont = 18;
+  static const double ratingLabelFont = 12;
+  static const double ratingLabelTracking = 0.14;
   static const double ratingFont = 26;
   static const double ratingBarWidth = 112;
   static const double ratingBarHeight = 12;
-  static const double streakWidth = 70;
-  static const double streakHeight = 32;
+  static const double ratingBarGap = 4;
+  static const double ratingNoteFont = 12.5;
   static const double streakNumber = 15;
+  static const double streakFont = 12.5;
+  static const double streakGap = 4;
+  static const EdgeInsets streakLabelPadding = EdgeInsets.fromLTRB(4, 1, 4, 1);
 
   static const double heroMinHeight = 250;
+  static const double heroGap = 10;
   static const double heroCut = 22;
   static const double heroTitle = 68;
   static const double heroTitleOutline = 12;
-  static const Offset heroTitleAt = Offset(22, 14);
-  static const Offset heroNarrationAt = Offset(18, 138);
+  static const EdgeInsets heroPadding = EdgeInsets.fromLTRB(22, 14, 18, 32);
+  static const double heroNarrationIndent = -4;
+  static const double heroNarrationGap = 19;
   static const double heroShoutHeight = 74;
-  static const EdgeInsets heroShoutInsets = EdgeInsets.fromLTRB(14, 0, 14, 36);
-  static const Rect heroTobi = Rect.fromLTWH(228, -20, 118, 140);
-  static const Rect heroBalloon = Rect.fromLTWH(154, 38, 94, 50);
+  static const double heroShoutLeft = 14;
+  static const double heroShoutRight = 14;
+  static const heroShout = ShoutSpec(spikes: 30);
+  static const Placement heroTobi = Placement(right: 12, top: -20, size: Size(118, 140));
+  static const Placement heroBalloon = Placement(right: 110, top: 38, size: Size(94, 50));
   static const double heroBalloonFont = 14.5;
   static const Alignment heroBalloonTail = Alignment(0.88, 0.48);
   static const double heroBalloonTailTurn = -24;
 
   static const double modeHeight = 112;
   static const double modeSlant = 22;
+  static const double modeGutter = 10;
+
+  /// Where the free-play panel ends, as a fraction of the row width.
+  static const double modeSplit = 180 / 358;
+  static const double nigateTextLeft = 16;
+  static const double modeTitleGap = 1;
+  static const double modeNoteGap = 2;
   static const double modeTitle = 25;
   static const double modeSub = 15;
+  static const double modeNote = 12.5;
   static const Offset modeTextAt = Offset(14, 30);
   static const double modeIcon = 34;
   static const Offset modeIconAt = Offset(124, 28);
@@ -479,26 +562,37 @@ abstract final class HomeLayout {
   static const double guestIconCircle = 40;
   static const double guestIcon = 22;
   static const double guestChevron = 18;
+  static const double guestTitle = 15;
+  static const double guestNote = 12.5;
   static const double guestNoteLineHeight = 1.38;
+  static const double guestNoteGap = 3;
+
   static const double rowJpFont = 17;
+  static const double rowSubFont = 12;
+  static const double untrackedFont = 12;
+  static const double untrackedTracking = 0.08;
+  static const EdgeInsets untrackedPadding = EdgeInsets.fromLTRB(5, 1, 5, 2);
+  static const double untrackedGap = 4;
 }
 
 /// The first-launch screen (spec phone 1).
 abstract final class OnboardingLayout {
+  static const double topGap = 4;
   static const double skyHeight = 344;
-  static const double skyMinHeight = 280;
+  static const double skyMinHeight = 290;
   static const double skyCut = 26;
   static const double title = 50;
   static const double titleOutline = 12;
   static const Offset titleAt = Offset(18, 14);
+  static const double titleBannerGap = 4;
   static const double langInset = 10;
-
-  /// Tobi and the balloon are placed from the sky panel's bottom edge.
-  static const Rect tobi = Rect.fromLTWH(20, -226, 120, 143);
-  static const Rect balloon = Rect.fromLTWH(148, -214, 210, 122);
+  static const Placement tobi = Placement(left: 20, bottom: 83, size: Size(120, 143));
+  static const Placement balloon = Placement(right: 0, bottom: 92, size: Size(210, 122));
   static const double balloonPadding = 18;
   static const double balloonTitle = 18;
   static const double balloonBody = 14.5;
+  static const double balloonSmall = 12;
+  static const double balloonGap = 4;
   static const Alignment balloonTail = Alignment(-0.92, 0.24);
   static const double balloonTailTurn = 118;
   static const double seaHeight = 122;
@@ -507,13 +601,55 @@ abstract final class OnboardingLayout {
   static const double choiceCut = 10;
   static const double illustration = 108;
   static const Offset illustrationAt = Offset(10, 24);
-  static const double textLeft = 126;
-  static const double textTop = 20;
+  static const EdgeInsets textInsets = EdgeInsets.fromLTRB(126, 20, 12, 0);
   static const double choiceTitle = 26;
+  static const double choiceTitleGap = 7;
   static const double choiceSub = 15;
+  static const double choiceSubGap = 3;
+  static const double choiceNote = 12.5;
+  static const double choiceNoteGap = 5;
+  static const double choiceNoteLineHeight = 1.35;
   static const double choiceNoteRightRoom = 44;
+  static const double goInset = 12;
   static const double noteIcon = 24;
+  static const double noteFont = 14;
+  static const double noteLineHeight = 1.35;
   static const EdgeInsets notePadding = EdgeInsets.fromLTRB(12, 10, 12, 10);
+}
+
+/// The 正 tally of the streak: strokes of one 正 in writing order, in a
+/// 70 × 32 box holding two characters.
+abstract final class Tally {
+  static const Size box = Size(70, 32);
+  static const List<String> strokes = ['M3 4 H27', 'M15 4 V27', 'M15 15.5 H25', 'M7 13 V27', 'M2 27.5 H28'];
+  static const double glyphAdvance = 38;
+  static const double stroke = 3.2;
+  static const double latestStroke = 3.8;
+  static const double ghostStroke = 1.4;
+  static const List<double> ghostDash = [2, 3];
+  static const double ghostOpacity = 0.5;
+}
+
+/// The guest-mode confirmation sheet.
+abstract final class GuestSheetStyle {
+  static const double title = 22;
+  static const double body = 14;
+  static const double bodyLineHeight = 1.45;
+  static const double shoutHeight = 64;
+  static const double cancelHeight = 48;
+  static const EdgeInsets padding = EdgeInsets.fromLTRB(20, 22, 20, 20);
+  static const double cut = 14;
+  static const Placement tobi = Placement(right: 18, top: -64, size: Size(76, 90));
+  static const Color barrier = Color(0x8C141414);
+}
+
+/// The stand-in for screens still being built.
+abstract final class ComingSoonStyle {
+  static const Size box = Size(300, 220);
+  static const Placement tobi = Placement(left: 20, bottom: 0, size: Size(120, 143));
+  static const Placement balloon = Placement(right: 0, top: 0, size: Size(150, 80));
+  static const Alignment tail = Alignment(-0.7, 0.9);
+  static const double tailTurn = 100;
 }
 
 /// Sky and hero backgrounds: radial and linear gradients (CSS angles, degrees).

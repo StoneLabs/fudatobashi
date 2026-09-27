@@ -7,72 +7,72 @@ import '../state/settings.dart';
 
 /// UI strings, English and Japanese side by side. Karuta content (kimariji,
 /// poems, set names) is always Japanese and does not go through here.
+///
+/// Features add their own strings in an `extension FooStrings on S` using [t].
+/// Templates mark numbers as `{0}`, `{1}` … so `NumberedText` can set them in
+/// display type.
 class S {
   const S(this.ja);
 
   final bool ja;
 
-  static S of(BuildContext context) {
-    final lang = ProgressScope.of(context).settings.language;
-    return S(switch (lang) {
-      AppLanguage.ja => true,
-      AppLanguage.en => false,
-      AppLanguage.system => PlatformDispatcher.instance.locale.languageCode == 'ja',
-    });
-  }
+  static S of(BuildContext context) => S(isJapanese(ProgressScope.of(context).settings.language));
 
-  String _(String en, String jp) => ja ? jp : en;
+  static bool isJapanese(AppLanguage lang) => switch (lang) {
+        AppLanguage.ja => true,
+        AppLanguage.en => false,
+        AppLanguage.system => PlatformDispatcher.instance.locale.languageCode == 'ja',
+      };
+
+  /// The same strings in the other language (for bilingual sub-labels).
+  S get other => S(!ja);
+
+  String t(String en, String jp) => ja ? jp : en;
 
   // Modes
-  String get training => _('Training', '修行');
-  String get startTraining => _('Start training', '修行スタート');
-  String get freePlay => _('Free play', '札落とし');
-  String get weakCards => _('Weak cards', '苦手');
-  String get guest => _('Guest', 'ゲスト');
-  String get untracked => _('untracked', '記録なし');
-  String get guestNote => _(
+  String get training => t('Training', '修行');
+  String get startTraining => t('Start training', '修行スタート');
+  String get freePlay => t('Free play', '札落とし');
+  String get weakCards => t('Weak cards', '苦手');
+  String get guest => t('Guest', 'ゲスト');
+  String get untracked => t('untracked', '記録なし');
+  String get guestNote => t(
         'We recommend always using SRS mode. Only use guest mode when you let someone else use your phone.',
         'いつもは修行モード（SRS）をおすすめします。ゲストモードは他の人に端末を貸すときだけ使ってください。',
       );
 
   // Navigation
-  String get home => _('Home', 'ホーム');
-  String get history => _('History', '履歴');
-  String get stats => _('Stats', '成績');
-  String get help => _('Help', '解説');
-  String get settings => _('Settings', '設定');
-  String get rank => _('Rank', '級');
-  String get debug => _('Debug', 'デバッグ');
+  String get home => t('Home', 'ホーム');
+  String get history => t('History', '履歴');
+  String get stats => t('Stats', '成績');
+  String get help => t('Help', '解説');
+  String get settings => t('Settings', '設定');
+  String get rank => t('Rank', '級');
+  String get debug => t('Debug', 'デバッグ');
+  String get back => t('Back', '戻る');
+  String get cancel => t('Cancel', 'やめる');
+  String get comingSoon => t('Coming soon', '準備中');
 
   // Play
-  String get start => _('Start', '開始');
-  String get undo => _('Undo', 'ひとつ前');
-  String get end => _('End', '終了');
-  String get again => _('Again', 'もう一回');
-  String get done => _('Done', '完了');
-  String get dontKnow => _("Don't know", 'わからない');
-  String get tapToStart => _('Tap to start', 'タップで開始');
+  String get start => t('Start', '開始');
+  String get undo => t('Undo', 'ひとつ前');
+  String get end => t('End', '終了');
+  String get again => t('Again', 'もう一回');
+  String get done => t('Done', '完了');
+  String get dontKnow => t("Don't know", 'わからない');
+  String get tapToStart => t('Tap to start', 'タップで開始');
 
   // Results
-  String get totalTime => _('Total time', '合計タイム');
-  String get perCard => _('per card', '1枚あたり');
-  String get personalBest => _('Personal best!', '自己ベスト！');
-  String get previousBest => _('previous', '前回ベスト');
-  String get slowest => _('Toughest cards', '手強い札');
-  String get newCard => _('A new card appears!', '新しい札が現れた！');
-  String get newCards => _('New cards appear!', '新しい札が現れた！');
-  String get islandComplete => _('Island complete!', '島クリア！');
-  String get goalUp => _('New speed goal!', '目標タイム更新！');
-  String get rating => _('Rating', 'レーティング');
-
-  // Onboarding
-  String get welcome => _('Welcome to Fudatobashi!', '札飛ばしへようこそ！');
-  String get chooseStart => _('How well do you know the 100 cards?', '百人一首、どのくらい知ってる？');
-  String get journeyTitle => _("I'm new", 'はじめて');
-  String get journeyBody => _('Learn island by island, a few cards at a time.', '島をひとつずつ、少しずつ覚えよう。');
-  String get allKnownTitle => _('I know all 100', '100首ぜんぶ知ってる');
-  String get allKnownBody => _('Skip ahead: every card is in play right away.', 'すぐに100首すべてで練習。');
-  String get changeLater => _('You can change this later in Settings.', 'あとで設定から変更できます。');
+  String get totalTime => t('Total time', '合計タイム');
+  String get perCard => t('per card', '1枚あたり');
+  String get personalBest => t('Personal best!', '自己ベスト！');
+  String get previousBest => t('previous', '前回ベスト');
+  String get slowest => t('Toughest cards', '手強い札');
+  String get newCard => t('A new card appears!', '新しい札が現れた！');
+  String get newCards => t('New cards appear!', '新しい札が現れた！');
+  String get islandComplete => t('Island complete!', '島クリア！');
+  String get goalUp => t('New speed goal!', '目標タイム更新！');
+  String get rating => t('Rating', 'レーティング');
 
   // Misc
   String cardsCount(int n) => ja ? '$n枚' : '$n cards';

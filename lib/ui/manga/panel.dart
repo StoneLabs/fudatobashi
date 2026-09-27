@@ -76,9 +76,9 @@ class MangaPanel extends StatelessWidget {
       child: ClipPath(
         clipper: _InnerClipper(shape, border),
         child: Stack(
-          fit: StackFit.expand,
+          fit: StackFit.passthrough,
           children: [
-            if (art.isNotEmpty) StaticArt(art),
+            if (art.isNotEmpty) Positioned.fill(child: StaticArt(art)),
             Padding(padding: padding, child: child ?? const SizedBox.shrink()),
           ],
         ),

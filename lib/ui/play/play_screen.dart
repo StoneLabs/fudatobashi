@@ -17,10 +17,14 @@ String formatRunTime(Duration d) {
 }
 
 class PlayScreen extends StatefulWidget {
-  const PlayScreen({super.key, required this.cards, this.grading = true});
+  const PlayScreen({super.key, required this.cards, this.grading = true, this.onRunEnded});
 
   final List<CardRef> cards;
   final bool grading;
+
+  /// Called once per run that has at least one attempt: when it finishes,
+  /// is restarted or the screen closes.
+  final void Function(PlaySession run, DateTime startedAt)? onRunEnded;
 
   static List<CardRef> randomDeck(int n, {bool mixedOrientation = true}) {
     final rng = math.Random();
@@ -36,6 +40,8 @@ class PlayScreen extends StatefulWidget {
 
 class _PlayScreenState extends State<PlayScreen> {
   late PlaySession _session = PlaySession(widget.cards);
+  DateTime _startedAt = DateTime.now();
+  bool _reported = false;
   bool _live = false;
 
   @override
@@ -50,17 +56,30 @@ class _PlayScreenState extends State<PlayScreen> {
 
   @override
   void dispose() {
+    _report();
     _session.removeListener(_changed);
     super.dispose();
   }
 
-  void _changed() => setState(() {});
+  void _report() {
+    if (_reported || _session.attempts.isEmpty) return;
+    _reported = true;
+    widget.onRunEnded?.call(_session, _startedAt);
+  }
+
+  void _changed() {
+    if (_session.finished) _report();
+    setState(() {});
+  }
 
   void _restart() {
+    _report();
     _session.removeListener(_changed);
     setState(() {
-      _session = PlaySession(PlayScreen.randomDeck(widget.cards.length));
+      _session = PlaySession([...widget.cards]..shuffle());
       _session.addListener(_changed);
+      _startedAt = DateTime.now();
+      _reported = false;
     });
   }
 
