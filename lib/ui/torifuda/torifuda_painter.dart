@@ -3,10 +3,11 @@ import 'dart:ui' as ui;
 
 import 'package:flutter/widgets.dart';
 
+import '../../config/config.dart';
+import '../../config/torifuda_spec.dart';
 import '../../data/poem.dart';
 import '../../domain/card_mask.dart';
 import 'glyph_atlas.dart';
-import 'torifuda_spec.dart';
 
 /// A torifuda drawn from vectors at any size.
 class TorifudaCard extends StatelessWidget {
@@ -156,7 +157,7 @@ abstract final class TorifudaGlyphs {
     final rec = ui.PictureRecorder();
     final canvas = Canvas(rec);
     final cols = poem.columns;
-    final rng = math.Random(mask.seed * 131 + poem.id);
+    final rng = math.Random(mask.seed * MaskingTuning.scrambleSeedMix + poem.id);
     var i = 0;
     for (var c = 0; c < cols.length; c++) {
       for (var r = 0; r < cols[c].length; r++, i++) {
@@ -168,7 +169,7 @@ abstract final class TorifudaGlyphs {
             case MaskStyle.blank:
               break;
             case MaskStyle.scramble:
-            case MaskStyle.shape: // TODO(masking): ink-matched shapes.
+            case MaskStyle.shape:
               _drawScrambled(canvas, cols[c][r], center, s, rng);
           }
         }
@@ -219,7 +220,7 @@ abstract final class TorifudaGlyphs {
 
   /// Draws [ch] cut into a 3×3 grid of tiles, shuffled and rotated in place.
   static void _drawScrambled(Canvas canvas, String ch, Offset center, double s, math.Random rng) {
-    final box = (TorifudaSpec.fontSize * s * 1.1).ceilToDouble();
+    final box = (TorifudaSpec.fontSize * s * MaskingTuning.scrambleBoxPad).ceilToDouble();
     final rec = ui.PictureRecorder();
     _drawGlyph(Canvas(rec), ch, Offset(box / 2, box / 2), s);
     final img = rec.endRecording().toImageSync(box.toInt(), box.toInt());

@@ -1,5 +1,6 @@
 import 'package:flutter/foundation.dart';
 
+import '../config/config.dart';
 import 'card_mask.dart';
 
 enum Outcome { known, dontKnow }
@@ -122,8 +123,8 @@ class PlaySession extends ChangeNotifier {
   /// Schedules [card] again [gap] cards after the current one (training:
   /// a missed card and its 友札 come back soon). Returns false when the queue
   /// may not grow any further (at most +50% of the planned length).
-  bool requeue(CardRef card, {int gap = 4}) {
-    if (cards.length >= initialLength * 3 ~/ 2 + 1) return false;
+  bool requeue(CardRef card, {int gap = TrainingTuning.requeueGap}) {
+    if (cards.length >= (initialLength * TrainingTuning.requeueCapGrowth).truncate() + 1) return false;
     final at = (index + gap).clamp(index, cards.length);
     cards.insert(at, card);
     notifyListeners();

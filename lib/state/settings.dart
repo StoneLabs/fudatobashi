@@ -1,3 +1,4 @@
+import '../config/config.dart';
 import '../domain/card_mask.dart';
 import 'play_config.dart';
 
@@ -8,13 +9,13 @@ class AppSettings {
   const AppSettings({
     this.language = AppLanguage.system,
     this.downMeansDontKnow = true,
-    this.downToleranceDeg = 25,
+    this.downToleranceDeg = DefaultSettings.downToleranceDeg,
     this.showPoemNumber = true,
     this.haptics = true,
     this.leadIn = true,
     this.showRunningTimer = false,
     this.freePlay = const PlayConfig(mode: PlayMode.free),
-    this.nigateCount = 10,
+    this.nigateCount = DefaultSettings.nigateCount,
     this.maskStyle = MaskStyle.scramble,
     this.debugMode = false,
     this.onboarded = false,
@@ -61,7 +62,7 @@ class AppSettings {
   factory AppSettings.fromJson(Map<String, dynamic> j) => AppSettings(
         language: AppLanguage.values.asNameMap()[j['language']] ?? AppLanguage.system,
         downMeansDontKnow: j['downMeansDontKnow'] as bool? ?? true,
-        downToleranceDeg: (j['downToleranceDeg'] as num?)?.toDouble() ?? 25,
+        downToleranceDeg: (j['downToleranceDeg'] as num?)?.toDouble() ?? DefaultSettings.downToleranceDeg,
         showPoemNumber: j['showPoemNumber'] as bool? ?? true,
         haptics: j['haptics'] as bool? ?? true,
         leadIn: j['leadIn'] as bool? ?? true,
@@ -69,7 +70,7 @@ class AppSettings {
         freePlay: j['freePlay'] is Map
             ? PlayConfig.fromJson((j['freePlay'] as Map).cast<String, dynamic>())
             : const PlayConfig(mode: PlayMode.free),
-        nigateCount: j['nigateCount'] as int? ?? 10,
+        nigateCount: j['nigateCount'] as int? ?? DefaultSettings.nigateCount,
         maskStyle: MaskStyle.values.asNameMap()[j['maskStyle']] ?? MaskStyle.scramble,
         debugMode: j['debugMode'] as bool? ?? false,
         onboarded: j['onboarded'] as bool? ?? false,

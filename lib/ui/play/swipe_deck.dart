@@ -5,10 +5,11 @@ import 'package:flutter/scheduler.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
 
+import '../../config/config.dart';
+import '../../config/torifuda_spec.dart';
 import '../../data/poem.dart';
 import '../../domain/play_session.dart';
 import '../torifuda/torifuda_painter.dart';
-import '../torifuda/torifuda_spec.dart';
 
 /// The stack of cards the player flicks away.
 ///
@@ -24,7 +25,7 @@ class SwipeDeck extends StatefulWidget {
     required this.session,
     required this.live,
     this.grading = true,
-    this.downToleranceDeg = 25,
+    this.downToleranceDeg = DefaultSettings.downToleranceDeg,
     this.showNumber = true,
     this.onCommitted,
   });
@@ -69,7 +70,6 @@ class _Flying {
 }
 
 class _SwipeDeckState extends State<SwipeDeck> with SingleTickerProviderStateMixin {
-  static const _flyDuration = 0.26; // s
   late final Ticker _ticker = createTicker(_tick);
   Duration _now = Duration.zero;
   Duration _lastTick = Duration.zero;
@@ -85,7 +85,8 @@ class _SwipeDeckState extends State<SwipeDeck> with SingleTickerProviderStateMix
 
   PlaySession get _s => widget.session;
 
-  double get _commitDistance => math.max(40, _card.width * 0.16);
+  double get _commitDistance =>
+      math.max(SwipeTuning.commitDistanceMin, _card.width * SwipeTuning.commitDistanceWidthFraction);
 
   @override
   void initState() {
@@ -115,9 +116,9 @@ class _SwipeDeckState extends State<SwipeDeck> with SingleTickerProviderStateMix
     final dt = (elapsed - _lastTick).inMicroseconds / 1e6;
     _lastTick = elapsed;
     _now = elapsed;
-    _flying.removeWhere((f) => (_now - f.start).inMicroseconds / 1e6 > _flyDuration);
+    _flying.removeWhere((f) => (_now - f.start).inMicroseconds / 1e6 > SwipeTuning.flyDuration);
     if (_springing) {
-      _drag *= math.exp(-dt * 22);
+      _drag *= math.exp(-dt * SwipeTuning.springDecay);
       if (_drag.distance < 0.5) {
         _drag = Offset.zero;
         _springing = false;
@@ -168,7 +169,9 @@ class _SwipeDeckState extends State<SwipeDeck> with SingleTickerProviderStateMix
     p.tracker.addPosition(e.timeStamp, e.localPosition);
     if (p.consumed || !_s.currentRevealed) return;
     if (p.downBeforeReveal && p.moveAfterRevealTs == null) {
-      if ((p.pos - (p.posAtReveal ?? p.downPos)).distance > 3) p.moveAfterRevealTs = e.timeStamp;
+      if ((p.pos - (p.posAtReveal ?? p.downPos)).distance > SwipeTuning.revealMoveSlop) {
+        p.moveAfterRevealTs = e.timeStamp;
+      }
     }
     if (_dragger == null) {
       _dragger = p.id;
@@ -187,7 +190,8 @@ class _SwipeDeckState extends State<SwipeDeck> with SingleTickerProviderStateMix
     if (p == null) return;
     if (!p.consumed && _dragger == p.id && _s.currentRevealed) {
       final v = p.tracker.getVelocity().pixelsPerSecond;
-      final flick = _drag.distance >= _commitDistance * 0.35 && v.distance > 350;
+      final flick =
+          _drag.distance >= _commitDistance * SwipeTuning.flickDistanceRatio && v.distance > SwipeTuning.flickMinSpeed;
       if (flick) {
         _commit(p, e.timeStamp, v);
       } else {
@@ -227,7 +231,7 @@ class _SwipeDeckState extends State<SwipeDeck> with SingleTickerProviderStateMix
       card,
       _drag,
       dir,
-      math.max(velocity.distance, 2600),
+      math.max(velocity.distance, SwipeTuning.minFlySpeed),
       _ticker.isActive ? _now : Duration.zero,
       outcome,
       _tiltFor(_drag),
@@ -243,7 +247,7 @@ class _SwipeDeckState extends State<SwipeDeck> with SingleTickerProviderStateMix
     if (a != null) widget.onCommitted?.call(a);
   }
 
-  double _tiltFor(Offset d) => _card.width == 0 ? 0 : (d.dx / _card.width) * 0.35;
+  double _tiltFor(Offset d) => _card.width == 0 ? 0 : (d.dx / _card.width) * SwipeTuning.tiltFactor;
 
   // ---------------------------------------------------------------- build
 
@@ -251,7 +255,8 @@ class _SwipeDeckState extends State<SwipeDeck> with SingleTickerProviderStateMix
   Widget build(BuildContext context) {
     _scheduleRevealIfNeeded();
     return LayoutBuilder(builder: (context, c) {
-      final w = math.min(c.maxWidth * 0.82, c.maxHeight * 0.9 / TorifudaSpec.aspect);
+      final maxH = c.maxHeight * SwipeTuning.cardHeightFraction / TorifudaSpec.aspect;
+      final w = math.min(c.maxWidth * SwipeTuning.cardWidthFraction, maxH);
       _card = Size(w, w * TorifudaSpec.aspect);
       final center = Offset(c.maxWidth / 2, c.maxHeight / 2);
       final current = _s.current;
@@ -298,10 +303,14 @@ class _SwipeDeckState extends State<SwipeDeck> with SingleTickerProviderStateMix
           children: [
             // Depth: a blank card peeking out below the stack.
             if (next != null && _s.index + 2 < _s.cards.length)
-              place(cardFor(next, text: false), offset: const Offset(0, 10), scale: 0.93, opacity: 0.55),
+              place(cardFor(next, text: false),
+                  offset: const Offset(0, SwipeTuning.depthCardOffsetY),
+                  scale: SwipeTuning.depthCardScale,
+                  opacity: SwipeTuning.depthCardOpacity),
             if (next != null)
               place(cardFor(next, text: false),
-                  offset: Offset(0, 5 * (1 - progress)), scale: 0.965 + 0.035 * progress),
+                  offset: Offset(0, SwipeTuning.nextCardOffsetY * (1 - progress)),
+                  scale: SwipeTuning.nextCardScaleBase + SwipeTuning.nextCardScaleRange * progress),
             if (current != null)
               place(
                 cardFor(current, text: widget.live),
@@ -320,9 +329,9 @@ class _SwipeDeckState extends State<SwipeDeck> with SingleTickerProviderStateMix
     Widget Function(Widget, {Offset offset, double angle, double scale, double opacity}) place,
     Widget Function(CardRef, {required bool text}) cardFor,
   ) {
-    final t = ((_now - f.start).inMicroseconds / 1e6).clamp(0.0, _flyDuration);
-    final dist = f.speed * t + 1800 * t * t;
-    final spin = f.dir.dx.sign * t * 2.2;
+    final t = ((_now - f.start).inMicroseconds / 1e6).clamp(0.0, SwipeTuning.flyDuration);
+    final dist = f.speed * t + SwipeTuning.flyAcceleration * t * t;
+    final spin = f.dir.dx.sign * t * SwipeTuning.flySpin;
     Widget child = cardFor(f.card, text: true);
     if (f.outcome == Outcome.dontKnow) {
       child = Stack(fit: StackFit.expand, children: [child, const _DontKnowStamp()]);
@@ -331,7 +340,7 @@ class _SwipeDeckState extends State<SwipeDeck> with SingleTickerProviderStateMix
       child,
       offset: f.from + f.dir * dist,
       angle: f.tilt + spin,
-      opacity: 1 - t / _flyDuration,
+      opacity: 1 - t / SwipeTuning.flyDuration,
     );
   }
 }
@@ -343,7 +352,10 @@ class _Shadowed extends StatelessWidget {
   @override
   Widget build(BuildContext context) => DecoratedBox(
         decoration: const BoxDecoration(
-          boxShadow: [BoxShadow(color: Color(0x33000000), blurRadius: 14, offset: Offset(0, 6))],
+          boxShadow: [
+            BoxShadow(
+                color: SwipeTuning.shadowColor, blurRadius: SwipeTuning.shadowBlur, offset: SwipeTuning.shadowOffset)
+          ],
         ),
         child: child,
       );
@@ -355,16 +367,21 @@ class _DontKnowStamp extends StatelessWidget {
   @override
   Widget build(BuildContext context) => Center(
         child: Container(
-          width: 96,
-          height: 96,
+          width: SwipeTuning.dontKnowStampSize,
+          height: SwipeTuning.dontKnowStampSize,
           decoration: BoxDecoration(
             shape: BoxShape.circle,
-            color: const Color(0xCCE94B6A),
-            border: Border.all(color: const Color(0xFFFFFFFF), width: 4),
+            color: SwipeTuning.dontKnowStampColor,
+            border: Border.all(
+                color: SwipeTuning.dontKnowStampContrastColor, width: SwipeTuning.dontKnowStampBorderWidth),
           ),
           alignment: Alignment.center,
           child: const Text('?',
-              style: TextStyle(fontSize: 60, fontWeight: FontWeight.w900, color: Color(0xFFFFFFFF), height: 1)),
+              style: TextStyle(
+                  fontSize: SwipeTuning.dontKnowStampFontSize,
+                  fontWeight: FontWeight.w900,
+                  color: SwipeTuning.dontKnowStampContrastColor,
+                  height: 1)),
         ),
       );
 }

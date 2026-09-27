@@ -2,6 +2,7 @@ import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 
+import '../../config/config.dart';
 import '../../data/poem.dart';
 import '../../domain/play_session.dart';
 import 'swipe_deck.dart';
@@ -42,7 +43,7 @@ class _PlayScreenState extends State<PlayScreen> {
     super.initState();
     _session.addListener(_changed);
     // Let the route transition settle before the first reveal.
-    Future.delayed(const Duration(milliseconds: 450), () {
+    Future.delayed(SwipeTuning.leadIn, () {
       if (mounted) setState(() => _live = true);
     });
   }

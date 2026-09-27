@@ -7,12 +7,13 @@ import 'dart:ui' as ui;
 
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:fudatobashi/config/config.dart';
+import 'package:fudatobashi/config/torifuda_spec.dart';
 import 'package:fudatobashi/data/poem.dart';
 import 'package:fudatobashi/domain/card_mask.dart';
 import 'package:fudatobashi/domain/masking.dart';
 import 'package:fudatobashi/ui/torifuda/glyph_atlas.dart';
 import 'package:fudatobashi/ui/torifuda/torifuda_painter.dart';
-import 'package:fudatobashi/ui/torifuda/torifuda_spec.dart';
 
 Future<void> _loadFont(String family, String path) async {
   final loader = FontLoader(family)..addFont(Future.value(ByteData.sublistView(File(path).readAsBytesSync())));
@@ -44,7 +45,7 @@ void main() {
       }
       await _render(p[87], 'inverted_087', scale: 2, inverted: true);
       final rng = math.Random(3);
-      for (var level = 1; level <= Masking.maxLevel; level++) {
+      for (var level = 1; level <= MaskingTuning.maxLevel; level++) {
         for (final style in [MaskStyle.scramble, MaskStyle.blank]) {
           await _render(p[87], 'mask_087_l${level}_${style.name}',
               scale: 2, mask: Masking.maskFor(p, 87, level, rng, style: style));

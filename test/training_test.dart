@@ -31,8 +31,10 @@ void main() {
       // Both orientations practised for 50 cards: 50 × 2 s + 50 × 6 s.
       expect(Rating.projectedMs((k) => k.poemId <= 50 ? fast : CardStats.empty) / 1000, closeTo(400, 0.01));
       // Inverted never practised: its prior is upright × 1.25 → 50 × 2.25 + 300.
-      expect(Rating.projectedMs((k) => k.poemId <= 50 && !k.inverted ? fast : CardStats.empty) / 1000,
-          closeTo(412.5, 0.01));
+      expect(
+        Rating.projectedMs((k) => k.poemId <= 50 && !k.inverted ? fast : CardStats.empty) / 1000,
+        closeTo(412.5, 0.01),
+      );
     });
   });
 
@@ -85,7 +87,6 @@ void main() {
       }
       expect(unlockedPerDay.first, inInclusiveRange(3, 30));
       expect(unlockedPerDay.last, greaterThan(unlockedPerDay.first));
-      // Some FSRS reviews reached the Review state.
       expect(trainer.items.values.where((s) => s.card.state == fsrs.State.review), isNotEmpty);
       // ignore: avoid_print
       print('upright cards unlocked per day: $unlockedPerDay');

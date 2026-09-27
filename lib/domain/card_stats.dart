@@ -1,5 +1,7 @@
 import 'dart:math' as math;
 
+import '../config/config.dart';
+
 /// Identifies a training item: a card in one orientation.
 class ItemKey {
   const ItemKey(this.poemId, this.inverted);
@@ -60,11 +62,10 @@ class AttemptRec {
 class CardStats {
   CardStats(List<AttemptRec> attempts) : all = List.unmodifiable(attempts) {
     timed = [for (final a in all) if (a.timed) a.ms];
-    const alpha = 0.12944943670387588; // 1 - 2^(-1/5): half-life of 5 attempts
     double? e;
     for (final ms in timed) {
       final l = math.log(ms);
-      e = e == null ? l : e + alpha * (l - e);
+      e = e == null ? l : e + StatsTuning.ewmaAlpha * (l - e);
     }
     _ewmaLog = e;
   }
@@ -107,7 +108,7 @@ class CardStats {
   }
 
   /// Share of misses among the last [n] attempts.
-  double missRate([int n = 10]) {
+  double missRate([int n = StatsTuning.missWindowDefault]) {
     if (all.isEmpty) return 0;
     final w = all.length <= n ? all : all.sublist(all.length - n);
     return w.where((a) => a.miss).length / w.length;
@@ -126,19 +127,21 @@ class CardStats {
   }
 
   /// Expected time for this card in a run, counting misses as [unknownMs].
-  double expectedMs({double unknownMs = 6000}) {
+  double expectedMs({double unknownMs = StatsTuning.unknownMs}) {
     final e = ewmaMs;
     if (e == null) return unknownMs;
     final m = missRate();
     return (1 - m) * math.min(e, unknownMs) + m * unknownMs;
   }
 
-  /// Fast and reliable at [goalMs]: at least 3 timed attempts, the last five
-  /// attempts all correct, and their median time within the goal.
+  /// Fast and reliable at [goalMs]: at least [StatsTuning.solidMinTimed] timed
+  /// attempts, the last [StatsTuning.solidWindow] attempts all correct, and
+  /// their median time within the goal.
   bool solid(double goalMs) {
-    if (timed.length < 3 || all.isEmpty) return false;
-    final last = all.length <= 5 ? all : all.sublist(all.length - 5);
+    if (timed.length < StatsTuning.solidMinTimed || all.isEmpty) return false;
+    final window = StatsTuning.solidWindow;
+    final last = all.length <= window ? all : all.sublist(all.length - window);
     if (last.any((a) => a.miss)) return false;
-    return median(5)! <= goalMs;
+    return median(window)! <= goalMs;
   }
 }

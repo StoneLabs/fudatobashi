@@ -2,6 +2,7 @@ import 'dart:io';
 import 'dart:math' as math;
 
 import 'package:flutter_test/flutter_test.dart';
+import 'package:fudatobashi/config/config.dart';
 import 'package:fudatobashi/data/poem.dart';
 import 'package:fudatobashi/domain/masking.dart';
 
@@ -12,10 +13,10 @@ void main() {
     final rng = math.Random(42);
     final revealed = <int, int>{};
     for (final poem in p.all) {
-      for (var level = 1; level <= Masking.maxLevel; level++) {
+      for (var level = 1; level <= MaskingTuning.maxLevel; level++) {
         for (var seed = 0; seed < 5; seed++) {
           final m = Masking.maskFor(p, poem.id, level, rng);
-          expect(Masking.minVisibleDistance(p, poem.id, m.hidden), greaterThanOrEqualTo(Masking.minDistance),
+          expect(Masking.minVisibleDistance(p, poem.id, m.hidden), greaterThanOrEqualTo(MaskingTuning.minDistance),
               reason: '#${poem.id} level $level');
           expect(m.hidden.every((i) => i >= 0 && i < poem.torifuda.length), isTrue);
         }

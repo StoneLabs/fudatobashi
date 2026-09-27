@@ -1,0 +1,225 @@
+import 'dart:ui';
+
+/// The app's tuning constants and defaults, grouped by the system they drive.
+/// This is the one place to look for (and change) a magic number.
+
+/// Swipe-deck gesture and animation tuning (`lib/ui/play/swipe_deck.dart`),
+/// plus the temporary `PlayScreen`'s lead-in.
+abstract final class SwipeTuning {
+  /// How long a flicked-away card stays on screen, seconds.
+  static const double flyDuration = 0.26;
+
+  /// Minimum initial speed of a flicked card, px/s (so even a slow release
+  /// still reads as a deliberate flick).
+  static const double minFlySpeed = 2600;
+
+  /// Constant acceleration applied to a flying card, px/s².
+  static const double flyAcceleration = 1800;
+
+  /// Extra spin of a flying card, radians per second of flight.
+  static const double flySpin = 2.2;
+
+  /// Drag tilt, radians per unit of drag-distance / card-width.
+  static const double tiltFactor = 0.35;
+
+  /// Exponential decay rate of the spring-back drag, per second.
+  static const double springDecay = 22;
+
+  /// Minimum drag distance that commits a card, px.
+  static const double commitDistanceMin = 40;
+
+  /// Commit distance as a fraction of the card width; the larger of this and
+  /// [commitDistanceMin] applies.
+  static const double commitDistanceWidthFraction = 0.16;
+
+  /// A release counts as a flick once dragged this fraction of the commit
+  /// distance, provided it clears [flickMinSpeed].
+  static const double flickDistanceRatio = 0.35;
+
+  /// Minimum release speed counted as a flick, px/s.
+  static const double flickMinSpeed = 350;
+
+  /// Movement past the reveal, px, before a finger already down counts as the
+  /// response (filters out the hand settling).
+  static const double revealMoveSlop = 3;
+
+  /// Card width as a fraction of the available width.
+  static const double cardWidthFraction = 0.82;
+
+  /// Card height as a fraction of the available height.
+  static const double cardHeightFraction = 0.9;
+
+  /// Scale of the next card at the start of a drag, growing toward
+  /// [nextCardScaleBase] + [nextCardScaleRange] as the drag nears commit.
+  static const double nextCardScaleBase = 0.965;
+  static const double nextCardScaleRange = 0.035;
+
+  /// Vertical offset of the next card at the start of a drag, px.
+  static const double nextCardOffsetY = 5;
+
+  /// Vertical offset of the blank card peeking out below the stack, px.
+  static const double depthCardOffsetY = 10;
+  static const double depthCardScale = 0.93;
+  static const double depthCardOpacity = 0.55;
+
+  static const double shadowBlur = 14;
+  static const Offset shadowOffset = Offset(0, 6);
+  static const Color shadowColor = Color(0x33000000);
+
+  static const double dontKnowStampSize = 96;
+  static const double dontKnowStampBorderWidth = 4;
+  static const double dontKnowStampFontSize = 60;
+  static const Color dontKnowStampColor = Color(0xCCE94B6A);
+  static const Color dontKnowStampContrastColor = Color(0xFFFFFFFF);
+
+  /// Lead-in before the first card's reveal, letting the route transition
+  /// settle.
+  static const Duration leadIn = Duration(milliseconds: 450);
+}
+
+/// The spaced-repetition trainer: `TrainerConfig` defaults, the session
+/// planner's scoring weights, and `PlaySession`'s in-training requeue policy.
+abstract final class TrainingTuning {
+  static const int defaultBatchSize = 3;
+  static const int defaultSessionLength = 30;
+
+  /// Time / goal at or below which a correct answer is graded Easy.
+  static const double defaultEasyRatio = 0.75;
+
+  /// Time / goal at or below which a correct answer is graded Good (else Hard).
+  static const double defaultGoodRatio = 1.5;
+  static const double defaultDesiredRetention = 0.9;
+
+  /// FSRS stability (days) needed, together with being solid, to count as
+  /// mastered.
+  static const double defaultMasteryStabilityDays = 2;
+
+  /// Goal ladder: projected 100-card time (ms), loosest to tightest.
+  static const List<int> defaultGoalsMs = [3000, 2500, 2000, 1500, 1200, 1000, 800, 600];
+
+  /// Share of a session reserved for due reviews.
+  static const double dueShare = 0.6;
+
+  /// Scheduling weight of a never-seen card.
+  static const double freshWeight = 6;
+
+  /// Clamp on the ewma/goal "slowness" ratio used in the scheduling weight.
+  static const double slownessClampMin = 0.3;
+  static const double slownessClampMax = 4.0;
+
+  /// Extra scheduling weight per unit of recent miss rate.
+  static const double missWeightFactor = 3;
+
+  /// Days since last seen after which the recency boost stops growing.
+  static const double recencyCapDays = 2;
+
+  /// Extra scheduling weight for unlocked-but-not-yet-solid cards.
+  static const double unsolidWeightMultiplier = 2;
+
+  /// Scheduling weight for solid cards kept only for maintenance.
+  static const double maintenanceWeightMultiplier = 0.5;
+
+  /// How many of the most recent picks a card must clear before it may repeat.
+  static const int recentRepeatWindow = 3;
+
+  /// A session queue may grow at most this much beyond its planned length
+  /// (training's in-session requeue after a miss).
+  static const double requeueCapGrowth = 1.5;
+
+  /// Default gap, in cards, before a requeued card reappears.
+  static const int requeueGap = 4;
+}
+
+/// `CardStats`: how recent response times and misses are summarised.
+abstract final class StatsTuning {
+  /// Attempts at which the EWMA's weight on an old sample halves.
+  static const int ewmaHalfLifeAttempts = 5;
+
+  /// `1 - 2^(-1/ewmaHalfLifeAttempts)`, precomputed since `dart:math`'s `pow`
+  /// is not a const function.
+  static const double ewmaAlpha = 0.12944943670387588;
+
+  /// Minimum timed attempts before a card can be judged "solid".
+  static const int solidMinTimed = 3;
+
+  /// Attempts window "solid" is judged over: all correct, median within goal.
+  static const int solidWindow = 5;
+
+  /// Default window for `missRate`.
+  static const int missWindowDefault = 10;
+
+  /// Assumed time (ms) for a miss or an unseen card, in expected-time and
+  /// rating projections.
+  static const double unknownMs = 6000;
+}
+
+/// The Elo-style rating model (see `Rating`).
+abstract final class RatingModel {
+  /// Assumed slowdown for the inverted side of a card never practised
+  /// inverted, relative to its upright expected time.
+  static const double invertedPrior = 1.25;
+
+  /// Rating points per doubling of the projected 100-card time (log2 scale).
+  static const double pointsPerDoubling = 600;
+
+  /// Reference time (s): performance is 0 at this projected 100-card time.
+  static const double referenceSeconds = 1000;
+
+  /// Smoothing K while still building confidence (first [provisionalSessions]
+  /// sessions).
+  static const double provisionalK = 0.5;
+
+  /// Smoothing K once established.
+  static const double establishedK = 0.25;
+  static const int provisionalSessions = 10;
+
+  // Rank-band thresholds: projected 100-card time (s) at or below which a
+  // band is reached (see `Rating.bands`).
+  static const double fLowerMaxSeconds = 400;
+  static const double fUpperMaxSeconds = 245;
+  static const double eLowerMaxSeconds = 150;
+  static const double eUpperMaxSeconds = 116;
+  static const double dMaxSeconds = 90;
+  static const double cMaxSeconds = 60;
+  static const double bMaxSeconds = 52;
+  static const double aMaxSeconds = 48;
+}
+
+/// 隠し字 masking: the uniqueness search (`Masking`) and the scramble style's
+/// tile rendering (`TorifudaGlyphs`).
+abstract final class MaskingTuning {
+  /// Minimum visible-position distance every mask must keep from every other
+  /// card (see `Masking` for the full uniqueness rule).
+  static const int minDistance = 2;
+  static const int maxLevel = 7;
+
+  /// Resample attempts for a random mask before falling back to repair.
+  static const int resampleTries = 40;
+
+  /// A scramble tile is cut from the glyph rendered into a box this much
+  /// larger than the em box, so strokes near the edge aren't clipped.
+  static const double scrambleBoxPad = 1.1;
+
+  /// Multiplies the mask seed when mixing the scramble tile RNG seed, so it
+  /// doesn't correlate with the poem id.
+  static const int scrambleSeedMix = 131;
+}
+
+/// Glyph-atlas rendering (`tool/render_glyphs_test.dart`, loaded by
+/// `GlyphAtlas`).
+abstract final class AtlasTuning {
+  /// Pixels per em to render each glyph at.
+  static const double emPx = 256;
+
+  /// Image side / em (headroom so strokes aren't clipped at the edges).
+  static const double pad = 1.3;
+}
+
+/// Defaults of `AppSettings`.
+abstract final class DefaultSettings {
+  /// Degrees either side of straight down still counted as "don't know".
+  static const double downToleranceDeg = 25;
+
+  /// 苦手 deck size: how many of the slowest/shakiest cards it draws from.
+  static const int nigateCount = 10;
+}

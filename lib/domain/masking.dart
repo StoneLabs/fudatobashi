@@ -1,18 +1,17 @@
 import 'dart:math' as math;
 
+import '../config/config.dart';
 import '../data/poem.dart';
 import 'card_mask.dart';
 
 /// 隠し字: hides torifuda kana so players stop leaning on the first characters.
 ///
 /// Uniqueness guarantee: the kana that stay visible must still tell the card
-/// apart from every other card of the 100 in at least [minDistance] positions
-/// (positions compared cell by cell; a missing kana counts as different).
-/// Random masks are resampled; fixed masks reveal the fewest kana needed.
+/// apart from every other card of the 100 in at least [MaskingTuning.minDistance]
+/// positions (positions compared cell by cell; a missing kana counts as
+/// different). Random masks are resampled; fixed masks reveal the fewest kana
+/// needed.
 abstract final class Masking {
-  static const minDistance = 2;
-  static const maxLevel = 7;
-
   static const levelDescriptions = {
     0: 'Off',
     1: 'First kana',
@@ -31,7 +30,8 @@ abstract final class Masking {
     final random = level >= 5;
     Set<int> hidden = _candidate(len, level, rng);
     if (random) {
-      for (var i = 0; i < 40 && minVisibleDistance(p, poemId, hidden) < minDistance; i++) {
+      final tries = MaskingTuning.resampleTries;
+      for (var i = 0; i < tries && minVisibleDistance(p, poemId, hidden) < MaskingTuning.minDistance; i++) {
         hidden = _candidate(len, level, rng);
       }
     }
@@ -63,7 +63,7 @@ abstract final class Masking {
   /// Reveals hidden kana (latest positions first) until the card is unique.
   static Set<int> _repair(Poems p, int poemId, Set<int> hidden) {
     final h = {...hidden};
-    while (h.isNotEmpty && minVisibleDistance(p, poemId, h) < minDistance) {
+    while (h.isNotEmpty && minVisibleDistance(p, poemId, h) < MaskingTuning.minDistance) {
       int? best;
       var bestD = -1;
       for (final i in (h.toList()..sort((a, b) => b.compareTo(a)))) {

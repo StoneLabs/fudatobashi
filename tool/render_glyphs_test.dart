@@ -4,9 +4,10 @@
 //   FONT=/path/to/font.otf flutter test tool/render_glyphs_test.dart
 //
 // Without FONT it uses the bundled free font. Each PNG holds one kana drawn
-// with Flutter's own text engine at [emPx] per em, its em box centred in a
-// square canvas of emPx × [pad], exactly like TorifudaPainter places text, so
-// swapping text for images changes nothing but the source of the glyph.
+// with Flutter's own text engine at [AtlasTuning.emPx] per em, its em box
+// centred in a square canvas of emPx × [AtlasTuning.pad], exactly like
+// TorifudaPainter places text, so swapping text for images changes nothing
+// but the source of the glyph.
 import 'dart:convert';
 import 'dart:io';
 import 'dart:ui' as ui;
@@ -14,9 +15,8 @@ import 'dart:ui' as ui;
 import 'package:flutter/painting.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:fudatobashi/config/config.dart';
 
-const emPx = 256.0;
-const pad = 1.3;
 const outDir = 'assets/glyphs';
 
 void main() {
@@ -29,7 +29,7 @@ void main() {
 
       final poems = jsonDecode(File('assets/data/poems.json').readAsStringSync()) as List;
       final chars = ({for (final p in poems) ...(p['torifuda'] as String).split('')}.toList()..sort());
-      final box = (emPx * pad).round();
+      final box = (AtlasTuning.emPx * AtlasTuning.pad).round();
       Directory(outDir).createSync(recursive: true);
       for (final f in Directory(outDir).listSync()) {
         if (f.path.endsWith('.png')) f.deleteSync();
@@ -39,7 +39,8 @@ void main() {
         final tp = TextPainter(
           text: TextSpan(
             text: ch,
-            style: const TextStyle(fontFamily: 'GlyphSource', fontSize: emPx, height: 1.0, color: Color(0xFF000000)),
+            style: const TextStyle(
+                fontFamily: 'GlyphSource', fontSize: AtlasTuning.emPx, height: 1.0, color: Color(0xFF000000)),
           ),
           textDirection: TextDirection.ltr,
         )..layout();
@@ -51,8 +52,8 @@ void main() {
       }
       File('$outDir/meta.json').writeAsStringSync(const JsonEncoder.withIndent('  ').convert({
         'source': fontPath.split('/').last,
-        'emPx': emPx,
-        'pad': pad,
+        'emPx': AtlasTuning.emPx,
+        'pad': AtlasTuning.pad,
         'chars': chars.join(),
       }));
       // ignore: avoid_print
