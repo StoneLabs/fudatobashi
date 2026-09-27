@@ -350,7 +350,6 @@ abstract final class ShoutStyle {
   static const double iconStroke = 3.2;
   static const double stroke = 3;
   static const double strokePressed = 5;
-  static const double hoverStroke = 4;
 
   /// Superellipse samples used to place the spikes.
   static const int samples = 720;
@@ -478,7 +477,6 @@ abstract final class MapStyle {
 
 /// The Home screens (spec phones 2 and 3).
 abstract final class HomeLayout {
-  static const double mapHeight = 268;
   static const double mapCut = 12;
   static const EdgeInsets mapLabelInsets = EdgeInsets.fromLTRB(12, 10, 12, 0);
   static const double mapBannerFont = 14;
@@ -540,7 +538,6 @@ abstract final class HomeLayout {
   static const double streakGap = 4;
   static const EdgeInsets streakLabelPadding = EdgeInsets.fromLTRB(4, 1, 4, 1);
 
-  static const double heroMinHeight = 250;
   static const double heroGap = 10;
   static const double heroCut = 22;
   static const double heroTitle = 68;
@@ -599,7 +596,6 @@ abstract final class HomeLayout {
 abstract final class OnboardingLayout {
   static const double topGap = 4;
   static const double skyHeight = 344;
-  static const double skyMinHeight = 290;
   static const double skyCut = 26;
   static const double title = 50;
   static const double titleOutline = 12;
@@ -769,9 +765,6 @@ abstract final class Bursts {
 
 /// The Home journey map: how much of the archipelago is visible.
 abstract final class JourneyView {
-  /// Map units shown vertically when the panel has the spec's height.
-  static const double spanAtSpecHeight = 292;
-
   /// The current island sits this far down the visible span.
   static const double focus = 0.62;
 

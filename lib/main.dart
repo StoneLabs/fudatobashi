@@ -1,11 +1,10 @@
 import 'dart:io' show Platform;
 
 import 'package:flutter/foundation.dart';
-import 'package:flutter/material.dart';
+import 'package:flutter/widgets.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_displaymode/flutter_displaymode.dart';
 
-import 'config/design.dart';
 import 'data/fuda_sets.dart';
 import 'data/islands.dart';
 import 'data/poem.dart';
@@ -24,13 +23,6 @@ Future<void> main() async {
     } catch (_) {}
   }
   SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
-  SystemChrome.setSystemUIOverlayStyle(const SystemUiOverlayStyle(
-    statusBarColor: Colors.transparent,
-    statusBarIconBrightness: Brightness.dark,
-    systemNavigationBarColor: Palette.paper,
-    systemNavigationBarIconBrightness: Brightness.dark,
-    systemNavigationBarContrastEnforced: false,
-  ));
   poems = await Poems.load();
   fudaSets = FudaSets(poems);
   archipelago = await Archipelago.load();

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 import '../config/design.dart';
 import '../state/progress.dart';
@@ -16,11 +17,21 @@ class FudatobashiApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return ProgressScope(
       progress: progress,
-      child: MaterialApp(
-        title: 'Fudatobashi',
-        debugShowCheckedModeBanner: false,
-        theme: buildMangaTheme(),
-        home: const _FirstLaunchGate(),
+      child: AnnotatedRegion<SystemUiOverlayStyle>(
+        value: const SystemUiOverlayStyle(
+          statusBarColor: Colors.transparent,
+          statusBarIconBrightness: Brightness.dark,
+          statusBarBrightness: Brightness.light,
+          systemNavigationBarColor: Palette.paper,
+          systemNavigationBarIconBrightness: Brightness.dark,
+          systemNavigationBarContrastEnforced: false,
+        ),
+        child: MaterialApp(
+          title: 'Fudatobashi',
+          debugShowCheckedModeBanner: false,
+          theme: buildMangaTheme(),
+          home: const _FirstLaunchGate(),
+        ),
       ),
     );
   }
