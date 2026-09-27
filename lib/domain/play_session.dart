@@ -50,9 +50,14 @@ class Attempt {
 /// corrections. Timestamps are engine timestamps (same clock as pointer
 /// events and frame vsync times).
 class PlaySession extends ChangeNotifier {
-  PlaySession(this.cards) : assert(cards.isNotEmpty);
+  PlaySession(List<CardRef> cards)
+      : assert(cards.isNotEmpty),
+        cards = [...cards],
+        initialLength = cards.length;
 
+  /// The queue. Training may grow it with [requeue].
   final List<CardRef> cards;
+  final int initialLength;
 
   /// Index of the card currently on top.
   int index = 0;
@@ -112,6 +117,17 @@ class PlaySession extends ChangeNotifier {
     _currentTainted = false;
     if (finished) endTs = commitTs;
     notifyListeners();
+  }
+
+  /// Schedules [card] again [gap] cards after the current one (training:
+  /// a missed card and its 友札 come back soon). Returns false when the queue
+  /// may not grow any further (at most +50% of the planned length).
+  bool requeue(CardRef card, {int gap = 4}) {
+    if (cards.length >= initialLength * 3 ~/ 2 + 1) return false;
+    final at = (index + gap).clamp(index, cards.length);
+    cards.insert(at, card);
+    notifyListeners();
+    return true;
   }
 
   /// ひとつ前: bring the previous card back. Its attempt counts as a miss, and

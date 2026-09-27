@@ -10,6 +10,21 @@ import 'card_stats.dart';
 /// When the upside-down (逆さま) version of a card joins training.
 enum ReverseMode { afterMastery, mixed, uprightOnly }
 
+/// Beginner journey (learn island by island) or all 100 known from the start.
+enum LearningMode { journey, allKnown }
+
+/// Progress on one kana island (an initial-kana group).
+class IslandProgress {
+  const IslandProgress(this.index, this.name, this.poemIds, this.unlocked, this.solid, this.mastered);
+  final int index;
+  final String name;
+  final List<int> poemIds;
+  final int unlocked, solid, mastered;
+  int get total => poemIds.length;
+  bool get reached => unlocked > 0;
+  bool get complete => unlocked == total && solid == total;
+}
+
 /// Why the scheduler picked a card (shown on the debug page).
 enum PickReason { due, fresh, learning, weak, maintenance, repeat }
 
@@ -23,6 +38,7 @@ class TrainingPick {
 /// Tunable knobs of the training system (persisted; editable on the debug page).
 class TrainerConfig {
   const TrainerConfig({
+    this.learningMode = LearningMode.journey,
     this.batchSize = 3,
     this.reverseMode = ReverseMode.afterMastery,
     this.sessionLength = 30,
@@ -33,6 +49,7 @@ class TrainerConfig {
     this.goalsMs = const [3000, 2500, 2000, 1500, 1200, 1000, 800, 600],
   });
 
+  final LearningMode learningMode;
   final int batchSize;
   final ReverseMode reverseMode;
   final int sessionLength;
@@ -47,6 +64,7 @@ class TrainerConfig {
   final List<int> goalsMs;
 
   Map<String, Object> toJson() => {
+        'learningMode': learningMode.name,
         'batchSize': batchSize,
         'reverseMode': reverseMode.name,
         'sessionLength': sessionLength,
@@ -58,6 +76,7 @@ class TrainerConfig {
       };
 
   factory TrainerConfig.fromJson(Map<String, dynamic> j) => TrainerConfig(
+        learningMode: LearningMode.values.asNameMap()[j['learningMode']] ?? LearningMode.journey,
         batchSize: j['batchSize'] as int? ?? 3,
         reverseMode: ReverseMode.values.asNameMap()[j['reverseMode']] ?? ReverseMode.afterMastery,
         sessionLength: j['sessionLength'] as int? ?? 30,
@@ -69,6 +88,7 @@ class TrainerConfig {
       );
 
   TrainerConfig copyWith({
+    LearningMode? learningMode,
     int? batchSize,
     ReverseMode? reverseMode,
     int? sessionLength,
@@ -77,6 +97,7 @@ class TrainerConfig {
     double? desiredRetention,
   }) =>
       TrainerConfig(
+        learningMode: learningMode ?? this.learningMode,
         batchSize: batchSize ?? this.batchSize,
         reverseMode: reverseMode ?? this.reverseMode,
         sessionLength: sessionLength ?? this.sessionLength,
@@ -259,6 +280,13 @@ class Trainer {
         if (!s.key.inverted && mastered(s.key, stats[s.key] ?? CardStats.empty)) unlock(s.key.flipped);
       }
     }
+    if (config.learningMode == LearningMode.allKnown) {
+      for (var id = 1; id <= 100; id++) {
+        unlock(ItemKey(id, false));
+        if (config.reverseMode == ReverseMode.mixed) unlock(ItemKey(id, true));
+      }
+      return fresh;
+    }
     final nothingYet = unlocked.isEmpty;
     if (nothingYet || readyForMore(stats)) {
       for (final id in nextBatch(p, sets)) {
@@ -272,6 +300,28 @@ class Trainer {
   /// All cards unlocked and solid: the goal can tighten.
   bool readyForNextGoal(Poems p, FudaSets sets, Map<ItemKey, CardStats> stats) =>
       goalLevel < config.goalsMs.length - 1 && nextBatch(p, sets).isEmpty && readyForMore(stats);
+
+  // ------------------------------------------------------------ islands
+
+  /// Index of the kana island (initial-kana group) a card belongs to.
+  static int islandOf(Poem poem) => initialGroups.indexWhere((g) => g.contains(poem.kimariji[0]));
+
+  List<IslandProgress> islands(FudaSets sets, Map<ItemKey, CardStats> stats) => [
+        for (final (i, g) in initialGroups.indexed)
+          () {
+            final ids = sets['initial:$g'].poemIds;
+            var u = 0, so = 0, m = 0;
+            for (final id in ids) {
+              final k = ItemKey(id, false);
+              if (!items[k]!.unlocked) continue;
+              u++;
+              final st = stats[k] ?? CardStats.empty;
+              if (st.solid(goalMs)) so++;
+              if (mastered(k, st)) m++;
+            }
+            return IslandProgress(i, g, ids, u, so, m);
+          }(),
+      ];
 
   // ------------------------------------------------------------ sessions
 

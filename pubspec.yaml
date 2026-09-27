@@ -71,6 +71,7 @@ flutter:
 
   assets:
     - assets/data/poems.json
+    - assets/glyphs/
 
   fonts:
     # Provisional card font (closest free match; the original is the commercial

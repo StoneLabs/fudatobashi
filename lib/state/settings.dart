@@ -17,6 +17,7 @@ class AppSettings {
     this.nigateCount = 10,
     this.maskStyle = MaskStyle.scramble,
     this.debugMode = false,
+    this.onboarded = false,
   });
 
   final AppLanguage language;
@@ -39,6 +40,9 @@ class AppSettings {
   /// Shows the nerd pages (FSRS state, scheduler, timing diagnostics).
   final bool debugMode;
 
+  /// The first-launch journey / all-known choice has been made.
+  final bool onboarded;
+
   Map<String, Object> toJson() => {
         'language': language.name,
         'downMeansDontKnow': downMeansDontKnow,
@@ -51,6 +55,7 @@ class AppSettings {
         'nigateCount': nigateCount,
         'maskStyle': maskStyle.name,
         'debugMode': debugMode,
+        'onboarded': onboarded,
       };
 
   factory AppSettings.fromJson(Map<String, dynamic> j) => AppSettings(
@@ -67,6 +72,7 @@ class AppSettings {
         nigateCount: j['nigateCount'] as int? ?? 10,
         maskStyle: MaskStyle.values.asNameMap()[j['maskStyle']] ?? MaskStyle.scramble,
         debugMode: j['debugMode'] as bool? ?? false,
+        onboarded: j['onboarded'] as bool? ?? false,
       );
 
   AppSettings copyWith({
@@ -81,6 +87,7 @@ class AppSettings {
     int? nigateCount,
     MaskStyle? maskStyle,
     bool? debugMode,
+    bool? onboarded,
   }) =>
       AppSettings(
         language: language ?? this.language,
@@ -94,5 +101,6 @@ class AppSettings {
         nigateCount: nigateCount ?? this.nigateCount,
         maskStyle: maskStyle ?? this.maskStyle,
         debugMode: debugMode ?? this.debugMode,
+        onboarded: onboarded ?? this.onboarded,
       );
 }

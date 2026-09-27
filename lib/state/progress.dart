@@ -27,6 +27,8 @@ class SessionReport {
     required this.ratingAfter,
     required this.unlocked,
     required this.goalRaised,
+    this.islandsReached = const [],
+    this.islandsCompleted = const [],
   });
 
   final int? sessionId;
@@ -39,6 +41,12 @@ class SessionReport {
   final double? ratingAfter;
   final List<ItemKey> unlocked;
   final bool goalRaised;
+
+  /// Islands whose first card was unlocked by this run (journey mode).
+  final List<int> islandsReached;
+
+  /// Islands completed (all cards solid) for the first time by this run.
+  final List<int> islandsCompleted;
 
   bool get personalBest => total != null && (previousBest == null || total! < previousBest!);
 }
@@ -56,7 +64,8 @@ class PlannedRun {
 /// All persistent progress: attempts, training state, rating, history and
 /// settings. Loaded once at startup; the UI listens for changes.
 class Progress extends ChangeNotifier {
-  Progress._(this.db, this.trainer, this._log, this.sessions, this.ratingPoints, this._settings, this.rating);
+  Progress._(this.db, this.trainer, this._log, this.sessions, this.ratingPoints, this._settings, this.rating,
+      this._islandsCelebrated);
 
   final AppDatabase db;
   final Trainer trainer;
@@ -66,6 +75,7 @@ class Progress extends ChangeNotifier {
   AppSettings _settings;
   double? rating;
   final _statsCache = <ItemKey, CardStats>{};
+  final Set<int> _islandsCelebrated;
 
   /// The most recent run, kept in memory for the debug page's timing view.
   PlaySession? lastRun;
@@ -108,6 +118,7 @@ class Progress extends ChangeNotifier {
       points,
       AppSettings.fromJson(json('settings')),
       double.tryParse(kv['rating'] ?? ''),
+      {...((jsonDecode(kv['islandsCelebrated'] ?? '[]') as List).cast<int>())},
     );
   }
 
@@ -131,6 +142,8 @@ class Progress extends ChangeNotifier {
   List<AttemptRec> attemptsOf(ItemKey k) => _log[k] ?? const [];
 
   double get projectedMs => Rating.projectedMs(stats);
+
+  List<IslandProgress> get islands => trainer.islands(fudaSets, allStats);
 
   RankBand get band => Rating.bandOf(rating ?? Rating.performance(projectedMs));
 
@@ -231,6 +244,17 @@ class Progress extends ChangeNotifier {
     trainer.updateConfig(c);
     await _put('trainer', jsonEncode(c.toJson()));
     notifyListeners();
+  }
+
+  /// First-launch choice (and the Settings switch): journey or all known.
+  Future<void> setLearningMode(LearningMode mode) async {
+    await updateTrainerConfig(trainer.config.copyWith(
+      learningMode: mode,
+      reverseMode: mode == LearningMode.allKnown ? ReverseMode.mixed : trainer.config.reverseMode,
+    ));
+    final fresh = trainer.unlockEarned(poems, fudaSets, allStats, DateTime.now());
+    if (fresh.isNotEmpty) await _saveItems(fresh);
+    await updateSettings(settings.copyWith(onboarded: true));
   }
 
   Future<void> _put(String k, String v) =>
@@ -361,8 +385,19 @@ class Progress extends ChangeNotifier {
       sessionId: sessionId,
     ));
 
-    // Unlocks and goal ladder.
+    // Unlocks, islands and goal ladder.
+    final reachedBefore = {for (final i in islands) if (i.reached) i.index};
     final fresh = trainer.unlockEarned(poems, fudaSets, allStats, DateTime.now());
+    final after = islands;
+    final reached = [for (final i in after) if (i.reached && !reachedBefore.contains(i.index)) i.index];
+    final completed = [
+      for (final i in after)
+        if (i.complete && !_islandsCelebrated.contains(i.index)) i.index,
+    ];
+    if (completed.isNotEmpty) {
+      _islandsCelebrated.addAll(completed);
+      await _put('islandsCelebrated', jsonEncode(_islandsCelebrated.toList()..sort()));
+    }
     if (fresh.isNotEmpty) await _saveItems(fresh);
     var goalRaised = false;
     if (trainer.readyForNextGoal(poems, fudaSets, allStats)) {
@@ -381,6 +416,8 @@ class Progress extends ChangeNotifier {
       ratingAfter: rating,
       unlocked: fresh,
       goalRaised: goalRaised,
+      islandsReached: trainer.config.learningMode == LearningMode.journey ? reached : const [],
+      islandsCompleted: trainer.config.learningMode == LearningMode.journey ? completed : const [],
     );
   }
 
@@ -391,13 +428,14 @@ class Progress extends ChangeNotifier {
       await db.delete(db.sessions).go();
       await db.delete(db.items).go();
       await db.delete(db.ratingPoints).go();
-      await (db.delete(db.keyValues)..where((k) => k.key.isIn(['rating', 'goalLevel']))).go();
+      await (db.delete(db.keyValues)..where((k) => k.key.isIn(['rating', 'goalLevel', 'islandsCelebrated']))).go();
     });
     _log.clear();
     _statsCache.clear();
     sessions.clear();
     ratingPoints.clear();
     rating = null;
+    _islandsCelebrated.clear();
     trainer.items
       ..clear()
       ..addAll(Trainer.freshItems());

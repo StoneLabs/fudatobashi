@@ -5,6 +5,7 @@ import 'package:flutter/widgets.dart';
 
 import '../../data/poem.dart';
 import '../../domain/card_mask.dart';
+import 'glyph_atlas.dart';
 import 'torifuda_spec.dart';
 
 /// A torifuda drawn from vectors at any size.
@@ -193,13 +194,28 @@ abstract final class TorifudaGlyphs {
 
   static void _drawGlyph(Canvas canvas, String ch, Offset center, double s) {
     final fs = TorifudaSpec.fontSize * s;
+    final c = center + Offset(0, TorifudaSpec.glyphDy * fs);
+    final atlas = GlyphAtlas.instance;
+    final img = atlas?.images[ch];
+    if (img != null) {
+      // Pre-rendered glyph: its em box sits centred in the image.
+      final side = fs * atlas!.pad;
+      canvas.drawImageRect(
+        img,
+        Rect.fromLTWH(0, 0, img.width.toDouble(), img.height.toDouble()),
+        Rect.fromCenter(center: c, width: side, height: side),
+        _glyphPaint,
+      );
+      return;
+    }
     final tp = _layout(ch, fs, TorifudaSpec.fontFamily, TorifudaSpec.inkColor);
-    tp.paint(
-      canvas,
-      Offset(center.dx - tp.width / 2, center.dy - tp.height / 2 + TorifudaSpec.glyphDy * fs),
-    );
+    tp.paint(canvas, Offset(c.dx - tp.width / 2, c.dy - tp.height / 2));
     tp.dispose();
   }
+
+  static final _glyphPaint = Paint()
+    ..filterQuality = FilterQuality.high
+    ..colorFilter = const ColorFilter.mode(TorifudaSpec.inkColor, BlendMode.srcIn);
 
   /// Draws [ch] cut into a 3×3 grid of tiles, shuffled and rotated in place.
   static void _drawScrambled(Canvas canvas, String ch, Offset center, double s, math.Random rng) {

@@ -7,6 +7,7 @@ import 'package:flutter_displaymode/flutter_displaymode.dart';
 import 'data/fuda_sets.dart';
 import 'data/poem.dart';
 import 'ui/play/play_screen.dart';
+import 'ui/torifuda/glyph_atlas.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -17,6 +18,7 @@ Future<void> main() async {
     } catch (_) {}
   }
   poems = await Poems.load();
+  await GlyphAtlas.load();
   fudaSets = FudaSets(poems);
   runApp(const FudatobashiApp());
 }

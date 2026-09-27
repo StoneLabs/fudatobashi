@@ -24,7 +24,18 @@ The plan lives in `~/.claude-revi/plans/we-are-going-to-async-llama.md`, and pro
 - **Debug page:** `lib/ui/debug/debug_page.dart` (overview and knobs, items with FSRS S/D/R, scheduler preview, rating breakdown, timing). It is *not wired into navigation yet*.
 - `main.dart` currently launches a temporary PlayScreen (a random 10-card deck) for feel-testing on the phone.
 
-### In progress
+### Design decision (user, 2026-09-28)
+- The base is **Manga Match**: fun and game-like, the Training hero button, and the mascot **Tobi** (lean into it), with MORE colour than the proposal.
+- **Kana Islands** is used for:
+  - **Beginner "journey" mode:** learn island by island.
+  - **The Stats overview:** an archipelago; tap an island to open its cards large and readable.
+  - **The colourful card-detail chart.**
+- **All-known mode:** all 100 unlocked; islands only in Stats. First launch lets you choose; it can be changed in Settings.
+- The final combined mock is `research/design/final.html`, built by a subagent. Build the app from it.
+- The sumo proposal was rejected.
+- **Card font:** the user will render CB1 glyphs to images via `FONT=... flutter test tool/render_glyphs_test.dart`; `assets/glyphs/` is loaded by `GlyphAtlas`. Current glyphs come from Yuji Syuku.
+
+### In progress (earlier)
 - **Design direction:** three HTML mockups are being built by subagents. They land in scratchpad `design/`, copied to `research/design/` (gitignored):
   - `banzuke.html`: sumo banzuke, purple.
   - `manga.html`: sports-manga panels, SFX.
