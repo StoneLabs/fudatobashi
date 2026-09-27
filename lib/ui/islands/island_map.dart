@@ -340,7 +340,6 @@ class _LayerPainter extends CustomPainter {
   final double pixelRatio;
 
   static final _images = <Object, ui.Image>{};
-  static const _maxImages = 8;
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -349,7 +348,7 @@ class _LayerPainter extends CustomPainter {
     var image = _images.remove(key);
     image ??= _render(size);
     _images[key] = image;
-    while (_images.length > _maxImages) {
+    while (_images.length > CacheLimits.mapLayers) {
       _images.remove(_images.keys.first)?.dispose();
     }
     canvas.drawImageRect(

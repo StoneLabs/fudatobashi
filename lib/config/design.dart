@@ -92,6 +92,10 @@ class Placement {
 }
 
 abstract final class Tones {
+  /// Tiles are cached per pixel density rounded to 1 / this.
+  static const int densitySteps = 100;
+  static const int minTilePx = 2;
+  static const int maxTilePx = 4096;
   /// Anti-aliasing fringe added to each dot's radius (the CSS tones fade out
   /// over 0.6 px).
   static const double softEdge = 0.3;
@@ -125,6 +129,9 @@ abstract final class Strokes {
   static const double control = 2.5;
   static const double label = 2;
   static const double hairline = 1.5;
+
+  /// Default outline behind title lettering.
+  static const double outline = 10;
 
   /// Border thickening of a pressed button (inset shadow in the spec).
   static const double pressed = 3;
@@ -227,7 +234,14 @@ abstract final class ToastStyle {
   static const double slide = 0.4;
 }
 
+/// How many rendered bitmaps each cache keeps.
+abstract final class CacheLimits {
+  static const int staticArt = 12;
+  static const int mapLayers = 8;
+}
+
 abstract final class TabBarStyle {
+  static const double lineHeight = 1.15;
   static const double height = 62;
   static const double gap = 8;
   static const double icon = 21;
@@ -290,6 +304,9 @@ abstract final class NarrationStyle {
 
 abstract final class BalloonStyle {
   static const double tail = 14;
+
+  /// Tail rotation that points straight down, degrees.
+  static const double tailDown = 45;
 
   /// The CSS tail box sits this much higher than its root point.
   static const double tailLift = 1;
@@ -566,6 +583,7 @@ abstract final class HomeLayout {
   static const double guestNote = 12.5;
   static const double guestNoteLineHeight = 1.38;
   static const double guestNoteGap = 3;
+  static const int guestNoteLines = 3;
 
   static const double rowJpFont = 17;
   static const double rowLineHeight = 1.1;

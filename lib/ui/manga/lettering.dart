@@ -12,7 +12,7 @@ class OutlinedText extends StatelessWidget {
     super.key,
     required this.style,
     this.outline = Palette.paper,
-    this.outlineWidth = 10,
+    this.outlineWidth = Strokes.outline,
   });
 
   final String text;

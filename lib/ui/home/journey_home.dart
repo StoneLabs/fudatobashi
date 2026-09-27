@@ -2,6 +2,7 @@ import 'package:flutter/widgets.dart';
 
 import '../../config/design.dart';
 import '../../data/islands.dart';
+import '../../data/poem.dart';
 import '../../l10n/home_strings.dart';
 import '../../l10n/strings.dart';
 import '../../state/scope.dart';
@@ -159,7 +160,7 @@ class _JourneyMap extends StatelessWidget {
                     child: Row(mainAxisSize: MainAxisSize.min, children: [
                       NumberedText(s.islandOf, [journey.current + 1, journey.islands.length], numberStyle: count),
                       const Text(' · '),
-                      NumberedText(s.cardsOf, [journey.cardsUnlocked, 100], numberStyle: count),
+                      NumberedText(s.cardsOf, [journey.cardsUnlocked, poems.all.length], numberStyle: count),
                     ]),
                   ),
                 ),

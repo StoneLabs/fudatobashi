@@ -134,7 +134,7 @@ class _Welcome extends StatelessWidget {
                       const OutlinedText(
                         'ようこそ!',
                         outlineWidth: OnboardingLayout.titleOutline,
-                        style: TextStyle(fontFamily: Fonts.display, fontSize: OnboardingLayout.title, height: 1.05),
+                        style: TextStyle(fontFamily: Fonts.display, fontSize: OnboardingLayout.title, height: TypeScale.displayLineHeight),
                       ),
                       const SizedBox(height: OnboardingLayout.titleBannerGap),
                       InkBanner(s.welcomeBanner),
@@ -235,7 +235,7 @@ class _Choice extends StatelessWidget {
                         child: Text(
                           title,
                           style: const TextStyle(
-                              fontFamily: Fonts.display, fontSize: OnboardingLayout.choiceTitle, height: 1.05),
+                              fontFamily: Fonts.display, fontSize: OnboardingLayout.choiceTitle, height: TypeScale.displayLineHeight),
                         ),
                       ),
                       const SizedBox(height: OnboardingLayout.choiceSubGap),

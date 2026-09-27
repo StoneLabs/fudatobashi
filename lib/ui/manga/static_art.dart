@@ -161,7 +161,6 @@ class _StaticArtPainter extends CustomPainter {
   final double pixelRatio;
 
   static final _images = <_ArtKey, ui.Image>{};
-  static const _maxImages = 12;
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -170,7 +169,7 @@ class _StaticArtPainter extends CustomPainter {
     var image = _images.remove(key);
     image ??= _render(size);
     _images[key] = image;
-    while (_images.length > _maxImages) {
+    while (_images.length > CacheLimits.staticArt) {
       _images.remove(_images.keys.first)?.dispose();
     }
     canvas.drawImageRect(

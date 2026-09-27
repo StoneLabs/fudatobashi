@@ -288,7 +288,7 @@ class _ModePanel extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(title,
-                      style: const TextStyle(fontFamily: Fonts.display, fontSize: HomeLayout.modeTitle, height: 1.1)),
+                      style: const TextStyle(fontFamily: Fonts.display, fontSize: HomeLayout.modeTitle, height: HomeLayout.rowLineHeight)),
                   const SizedBox(height: HomeLayout.modeTitleGap),
                   Text(sub, style: const TextStyle(fontSize: HomeLayout.modeSub, fontWeight: Weights.black)),
                   const SizedBox(height: HomeLayout.modeNoteGap),
@@ -350,7 +350,7 @@ class _GuestPanel extends StatelessWidget {
                   const SizedBox(height: HomeLayout.guestNoteGap),
                   Text(
                     s.guestNote,
-                    maxLines: 3,
+                    maxLines: HomeLayout.guestNoteLines,
                     overflow: TextOverflow.ellipsis,
                     style: const TextStyle(
                       fontSize: HomeLayout.guestNote,

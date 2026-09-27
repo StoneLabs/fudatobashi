@@ -71,7 +71,7 @@ class _Tile extends StatelessWidget {
               Text(
                 tab.label,
                 maxLines: 1,
-                style: TextStyle(fontSize: TabBarStyle.label, fontWeight: Weights.black, color: fg, height: 1.15),
+                style: TextStyle(fontSize: TabBarStyle.label, fontWeight: Weights.black, color: fg, height: TabBarStyle.lineHeight),
               ),
               Text(
                 tab.sub,

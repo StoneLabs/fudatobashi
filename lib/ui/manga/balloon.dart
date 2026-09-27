@@ -12,7 +12,7 @@ class SpeechBalloon extends StatelessWidget {
     super.key,
     required this.child,
     this.tail = const Alignment(0, 1),
-    this.tailTurn = 45,
+    this.tailTurn = BalloonStyle.tailDown,
     this.padding = EdgeInsets.zero,
     this.color = Palette.paper,
     this.border = Strokes.control,

@@ -8,15 +8,14 @@ import '../../config/design.dart';
 /// tiny tile and repeated by an image shader, so a toned area costs one draw.
 abstract final class Screentone {
   static final _tiles = <(ToneSpec, int), ui.Image>{};
-  static const _densitySteps = 100;
 
   static ui.Image tile(ToneSpec spec, double pixelRatio) {
-    final density = (pixelRatio * _densitySteps).round();
-    return _tiles[(spec, density)] ??= _render(spec, density / _densitySteps);
+    final density = (pixelRatio * Tones.densitySteps).round();
+    return _tiles[(spec, density)] ??= _render(spec, density / Tones.densitySteps);
   }
 
   static ui.Image _render(ToneSpec spec, double pixelRatio) {
-    final n = (spec.spacing * pixelRatio).round().clamp(2, 1 << 12);
+    final n = (spec.spacing * pixelRatio).round().clamp(Tones.minTilePx, Tones.maxTilePx);
     final unit = n / spec.spacing;
     final rec = ui.PictureRecorder();
     final canvas = Canvas(rec);
