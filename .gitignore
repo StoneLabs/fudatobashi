@@ -61,3 +61,13 @@ app.*.map.json
 
 # Local research artifacts (original-app screenshots, font analysis, design mockups)
 /research/
+
+# Working files from Claude sessions (screenshots, analysis, mockup renders)
+/.scratchpad/
+
+# Build outputs of scripts/*.sh
+/dist/
+
+# Local planning notes
+/PRODUCT.md
+/NOTES.md
