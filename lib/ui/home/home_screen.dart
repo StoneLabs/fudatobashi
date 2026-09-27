@@ -82,24 +82,28 @@ class HomeRowButton extends StatelessWidget {
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Row(children: [
-                    Flexible(
-                      child: Text(
+                  FittedBox(
+                    fit: BoxFit.scaleDown,
+                    alignment: Alignment.centerLeft,
+                    child: Row(mainAxisSize: MainAxisSize.min, children: [
+                      Text(
                         title,
                         maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
                         style: displayTitle
-                            ? const TextStyle(fontFamily: Fonts.display, fontSize: HomeLayout.rowJpFont, height: 1.1)
-                            : const TextStyle(fontWeight: Weights.black, fontSize: TypeScale.button, height: 1.1),
+                            ? const TextStyle(
+                                fontFamily: Fonts.display, fontSize: HomeLayout.rowJpFont, height: HomeLayout.rowLineHeight)
+                            : const TextStyle(
+                                fontWeight: Weights.black, fontSize: TypeScale.button, height: HomeLayout.rowLineHeight),
                       ),
-                    ),
-                    if (badge != null) ...[const SizedBox(width: HomeLayout.untrackedGap), badge!],
-                  ]),
+                      if (badge != null) ...[const SizedBox(width: HomeLayout.untrackedGap), badge!],
+                    ]),
+                  ),
                   Text(
                     sub,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(fontWeight: Weights.bold, fontSize: HomeLayout.rowSubFont, height: 1.1),
+                    style: const TextStyle(
+                        fontWeight: Weights.bold, fontSize: HomeLayout.rowSubFont, height: HomeLayout.rowLineHeight),
                   ),
                 ],
               ),

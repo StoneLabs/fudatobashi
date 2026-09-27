@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_displaymode/flutter_displaymode.dart';
 
+import 'config/design.dart';
 import 'data/fuda_sets.dart';
 import 'data/islands.dart';
 import 'data/poem.dart';
@@ -26,8 +27,9 @@ Future<void> main() async {
   SystemChrome.setSystemUIOverlayStyle(const SystemUiOverlayStyle(
     statusBarColor: Colors.transparent,
     statusBarIconBrightness: Brightness.dark,
-    systemNavigationBarColor: Colors.transparent,
+    systemNavigationBarColor: Palette.paper,
     systemNavigationBarIconBrightness: Brightness.dark,
+    systemNavigationBarContrastEnforced: false,
   ));
   poems = await Poems.load();
   fudaSets = FudaSets(poems);

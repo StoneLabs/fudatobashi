@@ -48,7 +48,7 @@ class _Pip extends StatelessWidget {
               borderRadius: BorderRadius.circular(HomeLayout.pipRadius),
             ),
             child: const Padding(
-              padding: EdgeInsets.all(HomeLayout.pipInset - Strokes.control / 2),
+              padding: EdgeInsets.all(Strokes.control + HomeLayout.pipInset),
               child: ColoredBox(color: Palette.cardPaper),
             ),
           ),

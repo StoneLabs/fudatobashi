@@ -16,7 +16,7 @@ extension HomeStrings on S {
   String get reviewsAndNew => t('{0} reviews · {1} new cards', '復習 {0}枚 · 新しい札 {1}枚');
   String get reviewsDue => t('{0} reviews due', '復習 {0}枚');
   String get slowToBeat => t('{0} slow cards to beat', '遅い札 {0}枚');
-  String get caughtUp => t('All caught up, keep swiping to get faster', '復習はぜんぶクリア！スワイプでもっと速く');
+  String get caughtUp => t('All caught up, keep swiping to get faster', '復習クリア！スワイプでもっと速く');
   String finishIsland(String island) => ja ? '$islandを\nクリア!' : 'Finish\n$island!';
   String get letsGo => t("Let's go!", 'いくぞ！');
   String get keepGoing => t('Faster\nand faster!', 'もっと\n速く!');

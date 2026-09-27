@@ -568,6 +568,8 @@ abstract final class HomeLayout {
   static const double guestNoteGap = 3;
 
   static const double rowJpFont = 17;
+  static const double rowLineHeight = 1.1;
+  static const EdgeInsets balloonPadding = EdgeInsets.symmetric(horizontal: 12, vertical: 6);
   static const double rowSubFont = 12;
   static const double untrackedFont = 12;
   static const double untrackedTracking = 0.08;

@@ -90,7 +90,7 @@ class _RankRow extends StatelessWidget {
           flex: HomeLayout.rankFlex,
           child: MangaPanel(
             shape: const PanelShape(bottomRight: Offset(HomeLayout.rankSlant, 0)),
-            padding: const EdgeInsets.only(left: Gaps.inner),
+            padding: const EdgeInsets.only(left: Gaps.inner, right: HomeLayout.rankSlant + Gaps.small),
             child: Row(
               children: [
                 RankSticker(band),
@@ -141,22 +141,25 @@ class _RankRow extends StatelessWidget {
             shape: const PanelShape(topLeft: Offset(HomeLayout.rankSlant, 0)),
             color: Palette.seaSoft,
             tone: Tones.sea,
-            padding: const EdgeInsets.only(left: HomeLayout.rankSlant),
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 TallyMarks(progress.streak),
                 const SizedBox(height: HomeLayout.streakGap),
-                ColoredBox(
-                  color: Palette.paper,
-                  child: Padding(
-                    padding: HomeLayout.streakLabelPadding,
-                    child: NumberedText(
-                      s.streakDays,
-                      [progress.streak],
-                      style: const TextStyle(fontSize: HomeLayout.streakFont, fontWeight: Weights.black, height: 1.1),
-                      numberStyle: const TextStyle(
-                          fontFamily: Fonts.display, fontWeight: Weights.regular, fontSize: HomeLayout.streakNumber),
+                FittedBox(
+                  fit: BoxFit.scaleDown,
+                  child: ColoredBox(
+                    color: Palette.paper,
+                    child: Padding(
+                      padding: HomeLayout.streakLabelPadding,
+                      child: NumberedText(
+                        s.streakDays,
+                        [progress.streak],
+                        style: const TextStyle(
+                            fontSize: HomeLayout.streakFont, fontWeight: Weights.black, height: HomeLayout.rowLineHeight),
+                        numberStyle: const TextStyle(
+                            fontFamily: Fonts.display, fontWeight: Weights.regular, fontSize: HomeLayout.streakNumber),
+                      ),
                     ),
                   ),
                 ),

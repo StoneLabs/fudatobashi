@@ -195,11 +195,12 @@ class IslandMap extends StatefulWidget {
     return path;
   }
 
-  /// A point along the sailed route just before island [reached], where the
-  /// boat sits.
+  /// Where the boat floats: on the last sailed leg into island [reached],
+  /// or on the way out of the first island before any leg is sailed.
   static Offset boatPosition(List<IslandShape> islands, int reached) {
-    final to = islands[reached].center;
-    final from = reached == 0 ? islands.first.center + MapStyle.routeStart : islands[reached - 1].center;
+    final (from, to) = reached == 0
+        ? (islands[0].center, islands[math.min(1, islands.length - 1)].center)
+        : (islands[reached - 1].center, islands[reached].center);
     return Offset.lerp(from, to, MapStyle.boatAlong)!;
   }
 

@@ -47,22 +47,28 @@ class TrainingHero extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Padding(
-                  padding: EdgeInsets.only(left: padding.left),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      OutlinedText(
-                        '修行',
-                        outlineWidth: compact ? HomeLayout.journeyTitleOutline : HomeLayout.heroTitleOutline,
-                        style: TextStyle(
-                            fontFamily: Fonts.display, fontSize: titleSize, height: TypeScale.displayLineHeight),
+                // The title gives way (shrinks) when the panel is short.
+                Expanded(
+                  child: Padding(
+                    padding: EdgeInsets.only(left: padding.left),
+                    child: FittedBox(
+                      fit: BoxFit.scaleDown,
+                      alignment: Alignment.topLeft,
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          OutlinedText(
+                            '修行',
+                            outlineWidth: compact ? HomeLayout.journeyTitleOutline : HomeLayout.heroTitleOutline,
+                            style: TextStyle(
+                                fontFamily: Fonts.display, fontSize: titleSize, height: TypeScale.displayLineHeight),
+                          ),
+                          InkBanner(s.trainingBanner),
+                        ],
                       ),
-                      InkBanner(s.trainingBanner),
-                    ],
+                    ),
                   ),
                 ),
-                const Spacer(),
                 Padding(
                   padding: EdgeInsets.only(left: narrationLeft, right: padding.right),
                   child: NarrationBox(child: narration),
@@ -92,9 +98,13 @@ class TrainingHero extends StatelessWidget {
           child: SpeechBalloon(
             tail: compact ? HomeLayout.journeyBalloonTail : HomeLayout.heroBalloonTail,
             tailTurn: compact ? HomeLayout.journeyBalloonTailTurn : HomeLayout.heroBalloonTailTurn,
-            child: Text(
-              balloon,
-              style: TextStyle(fontSize: compact ? HomeLayout.journeyBalloonFont : HomeLayout.heroBalloonFont),
+            padding: HomeLayout.balloonPadding,
+            child: FittedBox(
+              fit: BoxFit.scaleDown,
+              child: Text(
+                balloon,
+                style: TextStyle(fontSize: compact ? HomeLayout.journeyBalloonFont : HomeLayout.heroBalloonFont),
+              ),
             ),
           ),
         ),

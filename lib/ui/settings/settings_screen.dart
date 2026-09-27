@@ -36,6 +36,7 @@ class SettingsScreen extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
+              const SizedBox(height: HeaderStyle.topGap),
               MangaHeader(
                 title: ScreenTitle(s.settings, sub: s.other.settings),
                 actions: [

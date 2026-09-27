@@ -92,7 +92,6 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                   ],
                 ),
               ),
-              const Spacer(),
             ],
           ),
         ),
@@ -167,12 +166,14 @@ class _Welcome extends StatelessWidget {
                 const SizedBox(height: OnboardingLayout.balloonGap),
                 Text(s.howWell, style: const TextStyle(fontSize: OnboardingLayout.balloonBody)),
                 const SizedBox(height: OnboardingLayout.balloonGap),
-                Text(
-                  s.other.howWell,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
-                      fontSize: OnboardingLayout.balloonSmall, fontWeight: Weights.bold, color: Palette.mute),
+                FittedBox(
+                  fit: BoxFit.scaleDown,
+                  child: Text(
+                    s.other.howWell,
+                    softWrap: false,
+                    style: const TextStyle(
+                        fontSize: OnboardingLayout.balloonSmall, fontWeight: Weights.bold, color: Palette.mute),
+                  ),
                 ),
               ],
             ),
