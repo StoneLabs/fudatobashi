@@ -15,7 +15,8 @@ void main() {
 
   group('rating', () {
     test('anchors map onto the original ranks', () {
-      expect(Rating.bandOf(Rating.fromSeconds(47)).label, 'A級');
+      expect(Rating.bandOf(Rating.fromSeconds(39)).label, 'A級');
+      expect(Rating.bandOf(Rating.fromSeconds(47)).label, 'B級');
       expect(Rating.bandOf(Rating.fromSeconds(51)).label, 'B級');
       expect(Rating.bandOf(Rating.fromSeconds(55)).label, 'C級');
       expect(Rating.bandOf(Rating.fromSeconds(59.9)).label, 'C級');

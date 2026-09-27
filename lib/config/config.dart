@@ -3,6 +3,7 @@ import 'package:flutter/painting.dart';
 import '../domain/card_mask.dart';
 import '../state/play_config.dart';
 import '../state/settings.dart';
+import 'design.dart';
 
 /// The app's tuning constants and defaults, grouped by the system they drive.
 /// This is the one place to look for (and change) a magic number.
@@ -79,6 +80,43 @@ abstract final class SwipeTuning {
   /// Lead-in before the first card's reveal, letting the route transition
   /// settle.
   static const Duration leadIn = Duration(milliseconds: 450);
+}
+
+/// Coloured SFX lettering that pops around the card on each flick
+/// (`lib/ui/play/sfx_overlay.dart`), never over it.
+abstract final class PlaySfxTuning {
+  static const List<String> knownWords = ['バシッ', 'シュッ', 'パシッ', 'スパッ', 'ビシッ', 'タンッ'];
+  static const String dontKnowWord = 'スカッ';
+  static const Color knownColor = Palette.pink;
+  static const Color dontKnowColor = Palette.sea;
+  static const double fontSize = 40;
+  static const Duration duration = Duration(milliseconds: 900);
+
+  /// Oldest pop is dropped once this many are on screen at once.
+  static const int maxConcurrent = 3;
+
+  /// Where a pop may land (fractions of the play area, [Align]-style):
+  /// all clear of the centred card's vertical extent, above or below it.
+  static const List<Alignment> anchors = [
+    Alignment(-0.55, -0.86),
+    Alignment(0.5, -0.82),
+    Alignment(0.0, -0.92),
+    Alignment(-0.5, 0.86),
+    Alignment(0.55, 0.82),
+    Alignment(0.0, 0.92),
+  ];
+  static const double maxRotationDeg = 10;
+
+  // Timeline fractions (of [duration]), matching the spec's sfxpop keyframes:
+  // pop in with overshoot, settle, hold, then fade while drifting up.
+  static const double popInEnd = 0.14;
+  static const double settleEnd = 0.26;
+  static const double holdEnd = 0.72;
+  static const double startScale = 0.35;
+  static const double popScale = 1.12;
+  static const double settleScale = 1.0;
+  static const double endScale = 1.04;
+  static const double endTranslateY = -6;
 }
 
 /// The spaced-repetition trainer: `TrainerConfig` defaults, the session
@@ -186,7 +224,7 @@ abstract final class RatingModel {
   static const double dMaxSeconds = 90;
   static const double cMaxSeconds = 60;
   static const double bMaxSeconds = 52;
-  static const double aMaxSeconds = 48;
+  static const double aMaxSeconds = 40;
 }
 
 /// 隠し字 masking: the uniqueness search (`Masking`) and the scramble style's
