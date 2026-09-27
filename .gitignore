@@ -58,3 +58,6 @@ app.*.map.json
 
 # Design tooling scratch (decision pages, review captures)
 /.impeccable/
+
+# Local research artifacts (original-app screenshots, font analysis, design mockups)
+/research/
