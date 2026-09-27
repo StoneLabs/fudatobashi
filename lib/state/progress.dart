@@ -67,6 +67,9 @@ class Progress extends ChangeNotifier {
   double? rating;
   final _statsCache = <ItemKey, CardStats>{};
 
+  /// The most recent run, kept in memory for the debug page's timing view.
+  PlaySession? lastRun;
+
   AppSettings get settings => _settings;
 
   static Future<Progress> open(AppDatabase db) async {
@@ -257,6 +260,7 @@ class Progress extends ChangeNotifier {
   /// Guest runs only produce a report.
   Future<SessionReport> recordRun(PlaySession run, PlayConfig config, DateTime startedAt) async {
     final previousBest = bestFor(config);
+    lastRun = run;
     if (!config.tracked || run.attempts.isEmpty) {
       return SessionReport(
         sessionId: null,
