@@ -19,6 +19,8 @@ class AppSettings {
     this.maskStyle = DefaultSettings.maskStyle,
     this.debugMode = DefaultSettings.debugMode,
     this.onboarded = DefaultSettings.onboarded,
+    this.playOverlay = DefaultSettings.playOverlay,
+    this.showPerformanceOverlay = DefaultSettings.showPerformanceOverlay,
   });
 
   final AppLanguage language;
@@ -44,6 +46,12 @@ class AppSettings {
   /// The first-launch journey / all-known choice has been made.
   final bool onboarded;
 
+  /// Dev-mode corner readout of the last attempt's timing during play.
+  final bool playOverlay;
+
+  /// Dev-mode `PerformanceOverlay`.
+  final bool showPerformanceOverlay;
+
   Map<String, Object> toJson() => {
         'language': language.name,
         'downMeansDontKnow': downMeansDontKnow,
@@ -57,6 +65,8 @@ class AppSettings {
         'maskStyle': maskStyle.name,
         'debugMode': debugMode,
         'onboarded': onboarded,
+        'playOverlay': playOverlay,
+        'showPerformanceOverlay': showPerformanceOverlay,
       };
 
   factory AppSettings.fromJson(Map<String, dynamic> j) => AppSettings(
@@ -74,6 +84,9 @@ class AppSettings {
         maskStyle: MaskStyle.values.asNameMap()[j['maskStyle']] ?? DefaultSettings.maskStyle,
         debugMode: j['debugMode'] as bool? ?? DefaultSettings.debugMode,
         onboarded: j['onboarded'] as bool? ?? DefaultSettings.onboarded,
+        playOverlay: j['playOverlay'] as bool? ?? DefaultSettings.playOverlay,
+        showPerformanceOverlay:
+            j['showPerformanceOverlay'] as bool? ?? DefaultSettings.showPerformanceOverlay,
       );
 
   AppSettings copyWith({
@@ -89,6 +102,8 @@ class AppSettings {
     MaskStyle? maskStyle,
     bool? debugMode,
     bool? onboarded,
+    bool? playOverlay,
+    bool? showPerformanceOverlay,
   }) =>
       AppSettings(
         language: language ?? this.language,
@@ -103,5 +118,7 @@ class AppSettings {
         maskStyle: maskStyle ?? this.maskStyle,
         debugMode: debugMode ?? this.debugMode,
         onboarded: onboarded ?? this.onboarded,
+        playOverlay: playOverlay ?? this.playOverlay,
+        showPerformanceOverlay: showPerformanceOverlay ?? this.showPerformanceOverlay,
       );
 }

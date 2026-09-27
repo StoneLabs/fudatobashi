@@ -8,15 +8,37 @@ import 'manga/manga.dart';
 import 'onboarding/onboarding_screen.dart';
 import 'shell/app_shell.dart';
 
-class FudatobashiApp extends StatelessWidget {
+class FudatobashiApp extends StatefulWidget {
   const FudatobashiApp({super.key, required this.progress});
 
   final Progress progress;
 
   @override
+  State<FudatobashiApp> createState() => _FudatobashiAppState();
+}
+
+class _FudatobashiAppState extends State<FudatobashiApp> {
+  @override
+  void initState() {
+    super.initState();
+    widget.progress.addListener(_onProgressChanged);
+  }
+
+  @override
+  void dispose() {
+    widget.progress.removeListener(_onProgressChanged);
+    super.dispose();
+  }
+
+  // The dev-mode PerformanceOverlay is a MaterialApp constructor argument, so
+  // toggling it needs this widget itself to rebuild (a descendant depending
+  // on ProgressScope would not re-run MaterialApp's own build).
+  void _onProgressChanged() => setState(() {});
+
+  @override
   Widget build(BuildContext context) {
     return ProgressScope(
-      progress: progress,
+      progress: widget.progress,
       child: AnnotatedRegion<SystemUiOverlayStyle>(
         value: const SystemUiOverlayStyle(
           statusBarColor: Colors.transparent,
@@ -29,6 +51,7 @@ class FudatobashiApp extends StatelessWidget {
         child: MaterialApp(
           title: 'Fudatobashi',
           debugShowCheckedModeBanner: false,
+          showPerformanceOverlay: widget.progress.settings.showPerformanceOverlay,
           theme: buildMangaTheme(),
           home: const _FirstLaunchGate(),
         ),

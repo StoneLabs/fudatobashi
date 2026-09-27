@@ -5,6 +5,8 @@ import 'package:flutter/material.dart';
 import '../../config/config.dart';
 import '../../data/poem.dart';
 import '../../domain/play_session.dart';
+import '../../state/scope.dart';
+import '../debug/play_overlay.dart';
 import 'swipe_deck.dart';
 
 /// Formats a duration like the original app: mm:ss.mmm
@@ -88,10 +90,12 @@ class _PlayScreenState extends State<PlayScreen> {
     final s = _session;
     final last = s.lastAttempt;
     final chip = last == null ? '開始' : poems[last.card.poemId].kimariji;
+    final debugSettings = ProgressScope.of(context).settings;
     return Scaffold(
       backgroundColor: const Color(0xFF2A1B45),
       body: SafeArea(
-        child: Column(
+        child: Stack(children: [
+          Column(
           children: [
             Padding(
               padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
@@ -159,7 +163,10 @@ class _PlayScreenState extends State<PlayScreen> {
               ]),
             ),
           ],
-        ),
+          ),
+          if (debugSettings.debugMode && debugSettings.playOverlay)
+            Positioned(bottom: 8, left: 8, child: PlayDebugOverlay(session: s)),
+        ]),
       ),
     );
   }

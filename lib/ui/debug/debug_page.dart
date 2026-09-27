@@ -3,6 +3,7 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:fsrs/fsrs.dart' as fsrs;
 
+import '../../config/design.dart';
 import '../../data/fuda_sets.dart';
 import '../../data/poem.dart';
 import '../../domain/card_stats.dart';
@@ -10,6 +11,7 @@ import '../../domain/rating.dart';
 import '../../domain/trainer.dart';
 import '../../state/scope.dart';
 import 'frame_stats.dart';
+import 'reset_actions.dart';
 
 const _mono = TextStyle(fontFamily: 'monospace', fontSize: 12, fontFeatures: [FontFeature.tabularFigures()]);
 
@@ -24,9 +26,12 @@ class DebugPage extends StatelessWidget {
     return DefaultTabController(
       length: 5,
       child: Scaffold(
+        backgroundColor: Palette.paper,
         appBar: AppBar(
-          title: const Text('Debug'),
-          bottom: const TabBar(isScrollable: true, tabs: [
+          backgroundColor: Palette.paper,
+          foregroundColor: Palette.ink,
+          title: const Text('Debug', style: TextStyle(fontFamily: Fonts.display, fontWeight: Weights.regular)),
+          bottom: const TabBar(isScrollable: true, indicatorColor: Palette.pink, tabs: [
             Tab(text: 'Overview'),
             Tab(text: 'Items'),
             Tab(text: 'Scheduler'),
@@ -106,23 +111,17 @@ class _Overview extends StatelessWidget {
         onSelectionChanged: (s) => p.updateTrainerConfig(c.copyWith(reverseMode: s.first)),
       ),
       const Divider(height: 32),
-      OutlinedButton(
-        onPressed: () async {
-          final ok = await showDialog<bool>(
-            context: context,
-            builder: (c) => AlertDialog(
-              title: const Text('Reset all progress?'),
-              content: const Text('Deletes every run, attempt, FSRS state and the rating. Settings stay.'),
-              actions: [
-                TextButton(onPressed: () => Navigator.pop(c, false), child: const Text('Cancel')),
-                FilledButton(onPressed: () => Navigator.pop(c, true), child: const Text('Reset')),
-              ],
-            ),
-          );
-          if (ok == true) await p.resetProgress();
-        },
-        child: const Text('Reset progress'),
-      ),
+      Row(children: [
+        OutlinedButton(
+          onPressed: () => confirmResetOnboarding(context),
+          child: const Text('Reset onboarding'),
+        ),
+        const SizedBox(width: 12),
+        OutlinedButton(
+          onPressed: () => confirmResetProgress(context),
+          child: const Text('Reset progress'),
+        ),
+      ]),
     ]);
   }
 }

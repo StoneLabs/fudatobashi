@@ -100,6 +100,11 @@ class PlaySession extends ChangeNotifier {
     required Duration responseTs,
     required Duration commitTs,
     required Outcome outcome,
+
+    /// Wall-clock time of this attempt, for history and FSRS scheduling.
+    /// Unrelated to the timing contract above; defaults to now (demo-data
+    /// seeding backdates it to spread synthetic history over past days).
+    DateTime? at,
   }) {
     if (finished || _revealTs == null) return;
     final us = (responseTs - _revealTs!).inMicroseconds;
@@ -108,7 +113,7 @@ class PlaySession extends ChangeNotifier {
       card: cards[index],
       responseUs: us < 0 ? 0 : us,
       outcome: outcome,
-      at: DateTime.now(),
+      at: at ?? DateTime.now(),
       deckSize: cards.length,
       tainted: _redo || _currentTainted,
     ));

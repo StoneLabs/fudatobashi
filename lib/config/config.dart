@@ -1,4 +1,4 @@
-import 'dart:ui';
+import 'package:flutter/painting.dart';
 
 import '../domain/card_mask.dart';
 import '../state/play_config.dart';
@@ -241,4 +241,50 @@ abstract final class DefaultSettings {
   static const MaskStyle maskStyle = MaskStyle.scramble;
   static const bool debugMode = false;
   static const bool onboarded = false;
+  static const bool playOverlay = false;
+  static const bool showPerformanceOverlay = false;
+}
+
+/// The dev-mode play overlay (`PlayDebugOverlay`).
+abstract final class DebugOverlayStyle {
+  static const Duration refresh = Duration(milliseconds: 400);
+  static const double fontSize = 11;
+  static const Color textColor = Color(0xFFB6FF9C);
+  static const double lineHeight = 1.4;
+  static const Color background = Color(0xB0000000);
+  static const double radius = 6;
+  static const EdgeInsets padding = EdgeInsets.symmetric(horizontal: 8, vertical: 6);
+}
+
+/// The hidden developer-mode unlock (tapping the About version).
+abstract final class DevModeTuning {
+  static const int tapsRequired = 10;
+
+  /// Below this many taps left, a countdown toast appears.
+  static const int countdownFrom = 3;
+}
+
+/// `Progress.recordRun`-backed synthetic history for development builds.
+abstract final class DemoDataTuning {
+  static const int days = 12;
+  static const int minSessionsPerDay = 1;
+  static const int maxSessionsPerDay = 2;
+
+  /// A free-play run happens every this many simulated days.
+  static const int freeRunEvery = 3;
+  static const int trainingCards = 24;
+  static const int freeCards = 16;
+
+  /// Response-time target (ms) on the first and last simulated day; sampled
+  /// attempts vary around the day's interpolated target.
+  static const double startTargetMs = 2200;
+  static const double endTargetMs = 550;
+  static const double sampleSpreadLow = 0.6;
+  static const double sampleSpreadHigh = 1.5;
+  static const double startMissRate = 0.22;
+  static const double endMissRate = 0.03;
+
+  /// Gap between two cards' wall-clock timestamps beyond the response time.
+  static const Duration cardGap = Duration(milliseconds: 250);
+  static const Duration betweenCommitAndNextReveal = Duration(milliseconds: 120);
 }
