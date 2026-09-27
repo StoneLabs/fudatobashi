@@ -7,7 +7,7 @@ import 'package:flutter/services.dart';
 /// the painter draws these images instead of live text, so the app can use
 /// glyphs of a font it does not ship.
 class GlyphAtlas {
-  GlyphAtlas._(this.images, this.emPx, this.pad, this.source);
+  GlyphAtlas._(this.images, this.emPx, this.source);
 
   static GlyphAtlas? instance;
 
@@ -15,9 +15,6 @@ class GlyphAtlas {
 
   /// Pixels per em in the images.
   final double emPx;
-
-  /// Image side / em.
-  final double pad;
   final String source;
 
   static Future<GlyphAtlas?> load() async {
@@ -32,7 +29,6 @@ class GlyphAtlas {
       return instance = GlyphAtlas._(
         images,
         (meta['emPx'] as num).toDouble(),
-        (meta['pad'] as num).toDouble(),
         meta['source'] as String,
       );
     } catch (_) {

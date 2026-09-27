@@ -7,18 +7,18 @@ enum AppLanguage { system, en, ja }
 /// User preferences (persisted as JSON).
 class AppSettings {
   const AppSettings({
-    this.language = AppLanguage.system,
-    this.downMeansDontKnow = true,
+    this.language = DefaultSettings.language,
+    this.downMeansDontKnow = DefaultSettings.downMeansDontKnow,
     this.downToleranceDeg = DefaultSettings.downToleranceDeg,
-    this.showPoemNumber = true,
-    this.haptics = true,
-    this.leadIn = true,
-    this.showRunningTimer = false,
-    this.freePlay = const PlayConfig(mode: PlayMode.free),
+    this.showPoemNumber = DefaultSettings.showPoemNumber,
+    this.haptics = DefaultSettings.haptics,
+    this.leadIn = DefaultSettings.leadIn,
+    this.showRunningTimer = DefaultSettings.showRunningTimer,
+    this.freePlay = DefaultSettings.freePlay,
     this.nigateCount = DefaultSettings.nigateCount,
-    this.maskStyle = MaskStyle.scramble,
-    this.debugMode = false,
-    this.onboarded = false,
+    this.maskStyle = DefaultSettings.maskStyle,
+    this.debugMode = DefaultSettings.debugMode,
+    this.onboarded = DefaultSettings.onboarded,
   });
 
   final AppLanguage language;
@@ -60,20 +60,20 @@ class AppSettings {
       };
 
   factory AppSettings.fromJson(Map<String, dynamic> j) => AppSettings(
-        language: AppLanguage.values.asNameMap()[j['language']] ?? AppLanguage.system,
-        downMeansDontKnow: j['downMeansDontKnow'] as bool? ?? true,
+        language: AppLanguage.values.asNameMap()[j['language']] ?? DefaultSettings.language,
+        downMeansDontKnow: j['downMeansDontKnow'] as bool? ?? DefaultSettings.downMeansDontKnow,
         downToleranceDeg: (j['downToleranceDeg'] as num?)?.toDouble() ?? DefaultSettings.downToleranceDeg,
-        showPoemNumber: j['showPoemNumber'] as bool? ?? true,
-        haptics: j['haptics'] as bool? ?? true,
-        leadIn: j['leadIn'] as bool? ?? true,
-        showRunningTimer: j['showRunningTimer'] as bool? ?? false,
+        showPoemNumber: j['showPoemNumber'] as bool? ?? DefaultSettings.showPoemNumber,
+        haptics: j['haptics'] as bool? ?? DefaultSettings.haptics,
+        leadIn: j['leadIn'] as bool? ?? DefaultSettings.leadIn,
+        showRunningTimer: j['showRunningTimer'] as bool? ?? DefaultSettings.showRunningTimer,
         freePlay: j['freePlay'] is Map
             ? PlayConfig.fromJson((j['freePlay'] as Map).cast<String, dynamic>())
-            : const PlayConfig(mode: PlayMode.free),
+            : DefaultSettings.freePlay,
         nigateCount: j['nigateCount'] as int? ?? DefaultSettings.nigateCount,
-        maskStyle: MaskStyle.values.asNameMap()[j['maskStyle']] ?? MaskStyle.scramble,
-        debugMode: j['debugMode'] as bool? ?? false,
-        onboarded: j['onboarded'] as bool? ?? false,
+        maskStyle: MaskStyle.values.asNameMap()[j['maskStyle']] ?? DefaultSettings.maskStyle,
+        debugMode: j['debugMode'] as bool? ?? DefaultSettings.debugMode,
+        onboarded: j['onboarded'] as bool? ?? DefaultSettings.onboarded,
       );
 
   AppSettings copyWith({

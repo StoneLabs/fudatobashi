@@ -1,5 +1,9 @@
 import 'dart:ui';
 
+import '../domain/card_mask.dart';
+import '../state/play_config.dart';
+import '../state/settings.dart';
+
 /// The app's tuning constants and defaults, grouped by the system they drive.
 /// This is the one place to look for (and change) a magic number.
 
@@ -212,14 +216,29 @@ abstract final class AtlasTuning {
   static const double emPx = 256;
 
   /// Image side / em (headroom so strokes aren't clipped at the edges).
-  static const double pad = 1.3;
+  static const double pad = 1.1;
+
+  /// Outline growth, in em, matching the original cards' slightly heavier
+  /// ink.
+  static const double inkSpreadEm = 0.0018;
 }
 
 /// Defaults of `AppSettings`.
 abstract final class DefaultSettings {
+  static const AppLanguage language = AppLanguage.system;
+  static const bool downMeansDontKnow = true;
+
   /// Degrees either side of straight down still counted as "don't know".
   static const double downToleranceDeg = 25;
+  static const bool showPoemNumber = true;
+  static const bool haptics = true;
+  static const bool leadIn = true;
+  static const bool showRunningTimer = false;
+  static const PlayConfig freePlay = PlayConfig(mode: PlayMode.free);
 
   /// 苦手 deck size: how many of the slowest/shakiest cards it draws from.
   static const int nigateCount = 10;
+  static const MaskStyle maskStyle = MaskStyle.scramble;
+  static const bool debugMode = false;
+  static const bool onboarded = false;
 }

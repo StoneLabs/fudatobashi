@@ -90,25 +90,25 @@ class TorifudaPainter extends CustomPainter {
   }
 
   static void _paintFrame(Canvas canvas) {
-    const spec = TorifudaSpec.paper;
+    const paper = TorifudaSpec.paper;
     canvas.drawRect(
       const Rect.fromLTWH(0, 0, TorifudaSpec.width, TorifudaSpec.height),
       Paint()..color = TorifudaSpec.frameColor,
     );
     canvas.drawRect(
-      spec.inflate(0.6),
+      paper.inflate(TorifudaSpec.frameShadeWidth / 2),
       Paint()
         ..color = TorifudaSpec.frameShade
         ..style = PaintingStyle.stroke
-        ..strokeWidth = 1.2,
+        ..strokeWidth = TorifudaSpec.frameShadeWidth,
     );
-    canvas.drawRect(spec, Paint()..color = TorifudaSpec.paperColor);
+    canvas.drawRect(paper, Paint()..color = TorifudaSpec.paperColor);
     canvas.drawRect(
-      spec.deflate(0.9),
+      paper.deflate(TorifudaSpec.paperHighlightInset + TorifudaSpec.paperHighlightWidth / 2),
       Paint()
         ..color = TorifudaSpec.paperHighlight
         ..style = PaintingStyle.stroke
-        ..strokeWidth = 1.0,
+        ..strokeWidth = TorifudaSpec.paperHighlightWidth,
     );
   }
 
@@ -137,12 +137,6 @@ abstract final class TorifudaGlyphs {
     throw RangeError.index(i, columns.join());
   }
 
-  /// Centre of cell ([col], [row]) in card units, for a column of [length] kana.
-  static Offset cellCenter(int col, int row, int length) => Offset(
-        TorifudaSpec.columnCenterX[col],
-        TorifudaSpec.rowCenterY(row, length),
-      );
-
   static ui.Picture picture(Poem poem, CardMask mask, double scale, bool showNumber) {
     final key = '${poem.id}|${mask.key}|${scale.toStringAsFixed(4)}|$showNumber';
     final hit = _cache.remove(key);
@@ -161,7 +155,7 @@ abstract final class TorifudaGlyphs {
     var i = 0;
     for (var c = 0; c < cols.length; c++) {
       for (var r = 0; r < cols[c].length; r++, i++) {
-        final center = cellCenter(c, r, cols[c].length) * s;
+        final center = TorifudaSpec.cellCenter(c, r, cols[c].length) * s;
         if (!mask.hidden.contains(i)) {
           _drawGlyph(canvas, cols[c][r], center, s);
         } else {
@@ -193,14 +187,18 @@ abstract final class TorifudaGlyphs {
         textDirection: TextDirection.ltr,
       )..layout();
 
+  static const GlyphFit _noFit = (dx: 0, dy: 0, scale: 1);
+
   static void _drawGlyph(Canvas canvas, String ch, Offset center, double s) {
-    final fs = TorifudaSpec.fontSize * s;
-    final c = center + Offset(0, TorifudaSpec.glyphDy * fs);
+    final fit = TorifudaSpec.glyphFit[ch] ?? _noFit;
+    final em = TorifudaSpec.fontSize * s;
+    final c = center + Offset(fit.dx, fit.dy) * em;
+    final fs = em * fit.scale;
     final atlas = GlyphAtlas.instance;
     final img = atlas?.images[ch];
     if (img != null) {
       // Pre-rendered glyph: its em box sits centred in the image.
-      final side = fs * atlas!.pad;
+      final side = fs * img.width / atlas!.emPx;
       canvas.drawImageRect(
         img,
         Rect.fromLTWH(0, 0, img.width.toDouble(), img.height.toDouble()),
@@ -251,13 +249,11 @@ abstract final class TorifudaGlyphs {
         ..style = PaintingStyle.stroke
         ..strokeWidth = TorifudaSpec.badgeStroke * s,
     );
-    final tp = _layout(
-      '$number',
-      TorifudaSpec.badgeFontSize * s,
-      TorifudaSpec.badgeFontFamily,
-      TorifudaSpec.badgeColor,
-    );
-    tp.paint(canvas, c - Offset(tp.width / 2, tp.height / 2));
+    final text = '$number';
+    final fs = (text.length > 2 ? TorifudaSpec.badgeFontSizeThreeDigits : TorifudaSpec.badgeFontSize) * s;
+    final tp = _layout(text, fs, TorifudaSpec.badgeFontFamily, TorifudaSpec.badgeNumeralColor);
+    final baseline = tp.computeDistanceToActualBaseline(TextBaseline.alphabetic);
+    tp.paint(canvas, c + Offset(-tp.width / 2, TorifudaSpec.badgeBaselineDy * fs - baseline));
     tp.dispose();
   }
 }
