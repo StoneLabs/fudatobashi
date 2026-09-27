@@ -27,6 +27,7 @@ class SwipeDeck extends StatefulWidget {
     this.grading = true,
     this.downToleranceDeg = DefaultSettings.downToleranceDeg,
     this.showNumber = true,
+    this.haptics = true,
     this.onCommitted,
   });
 
@@ -39,6 +40,9 @@ class SwipeDeck extends StatefulWidget {
   final bool grading;
   final double downToleranceDeg;
   final bool showNumber;
+
+  /// Follows `settings.haptics`; never affects the timing contract below.
+  final bool haptics;
   final ValueChanged<Attempt>? onCommitted;
 
   @override
@@ -242,7 +246,7 @@ class _SwipeDeckState extends State<SwipeDeck> with SingleTickerProviderStateMix
     _springing = false;
     _animate();
     _s.commit(responseTs: responseTs, commitTs: ts, outcome: outcome);
-    HapticFeedback.selectionClick();
+    if (widget.haptics) HapticFeedback.selectionClick();
     final a = _s.lastAttempt;
     if (a != null) widget.onCommitted?.call(a);
   }

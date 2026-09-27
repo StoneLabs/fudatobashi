@@ -112,6 +112,10 @@ abstract final class Tones {
   static const sun = ToneSpec(dot: Color(0xFFFFC400), radius: 1.6, spacing: 6, background: Palette.sunSoft);
   static const violet = ToneSpec(dot: Color(0xFFA77CC0), radius: 1.5, spacing: 6, background: Palette.violetSoft);
 
+  /// The sea dot pattern with no fill, for a faint wash over paper (Play's
+  /// bottom band).
+  static const seaFaint = ToneSpec(dot: Color(0xFF5FB6FF), radius: 1.5, spacing: 6);
+
   /// The ink stamp shown on a pressed button.
   static const stamp = ToneSpec(dot: Palette.ink, radius: 1.3, spacing: 5);
   static const double stampOpacity = 0.28;
@@ -590,6 +594,118 @@ abstract final class HomeLayout {
   static const double untrackedTracking = 0.08;
   static const EdgeInsets untrackedPadding = EdgeInsets.fromLTRB(5, 1, 5, 2);
   static const double untrackedGap = 4;
+}
+
+/// Play, mid-run (spec phone 4).
+abstract final class PlayLayout {
+  static const double toneBandHeight = 230;
+
+  static const double chipHeight = 48;
+  static const EdgeInsets chipPadding = EdgeInsets.fromLTRB(14, 0, 15, 0);
+  static const double chipRadius = 24;
+  static const double chipKanaFont = 23;
+  static const double chipBracketFont = 20;
+  static const double chipTimeFont = 15;
+  static const double chipTimeUnitFont = 12;
+  static const double chipGap = 6;
+  static const Size chipTail = Size(13, 13);
+  static const Offset chipTailAt = Offset(24, 6);
+  static const Duration chipBumpDuration = Duration(milliseconds: 260);
+  static const double chipBumpScale = 1.08;
+
+  static const double counterHeight = 48;
+  static const EdgeInsets counterPadding = EdgeInsets.symmetric(horizontal: 14);
+  static const double counterNumberFont = 28;
+  static const double counterSlashFont = 15;
+  static const double counterOutline = 1.2;
+  static const double counterGap = 6;
+
+  static const double buttonRowHeight = 62;
+  static const double buttonGap = 14;
+}
+
+/// Results (spec phone 5) and its celebration overlays.
+abstract final class ResultsLayout {
+  static const double topBarHeight = 44;
+  static const double splashHeight = 268;
+  static const double splashCut = 28;
+  static const splashBurst = BurstSpec(
+      box: Size(370, 268), center: Offset(185, 132), count: 170, innerMin: 94, innerMax: 128, width: 4, seed: 5);
+  static const double splashLabelFont = 13;
+  static const double splashLabelTracking = 0.2;
+  static const double splashTimeFont = 48;
+  static const double splashTimeOutline = 11;
+  static const double splashPartialFont = 28;
+  static const double splashPbFont = 14;
+  static const EdgeInsets splashPbPadding = EdgeInsets.fromLTRB(10, 4, 10, 5);
+  static const double splashPbNoteFont = 13;
+  static const double splashSumFont = 13;
+  static const EdgeInsets splashSumPadding = EdgeInsets.fromLTRB(9, 3, 9, 4);
+  static const Placement splashTobi = Placement(right: 8, bottom: -34, size: Size(66, 80));
+
+  static const double statPanelHeight = 100;
+  static const double statLabelFont = 12;
+  static const double statLabelTracking = 0.16;
+  static const double statBigFont = 32;
+  static const double statBigUnitFont = 17;
+  static const double statNoteFont = 12.5;
+
+  static const double toughHeight = 150;
+  static const EdgeInsets toughPadding = EdgeInsets.fromLTRB(14, 12, 12, 12);
+  static const double toughHeadingFont = 30;
+  static const double toughLabelFont = 13;
+  static const double toughNoteFont = 12;
+  static const double toughHeaderWidth = 90;
+  static const double toughCardWidth = 68;
+  static const double toughTimeFont = 14;
+  static const double toughTimeUnitFont = 11;
+  static const EdgeInsets toughTimePadding = EdgeInsets.fromLTRB(5, 2, 5, 3);
+  static const double toughKimarijiFont = 12.5;
+
+  static const double actionRowHeight = 58;
+  static const double guestNoteFont = 13;
+
+  static const double celebrationCloseHeight = 44;
+
+  static const double newCardWidth = 232;
+  static const double newCardGap = 22;
+  static const double newCardKimarijiFont = 30;
+  static const double newCardMetaFont = 13.5;
+  static const double newCardTipFont = 12.5;
+  static const Placement newCardTobi = Placement(right: 18, bottom: 4, size: Size(66, 80));
+
+  /// The confusable-siblings heads-up (a 決まり字 look-alike warning).
+  static const int confusableMaxSiblings = 2;
+  static const double confusableTitleFont = 26;
+  static const double confusableCardWidth = 96;
+  static const double confusableKimarijiFont = 15;
+  static const Placement confusableTobi = Placement(right: 18, bottom: 4, size: Size(70, 86));
+
+  static const double islandTitleFont = 72;
+  static const double islandTitleOutline = 14;
+  static const double islandBandFont = 18;
+  static const double islandSubFont = 14;
+  static const double islandMapSize = 220;
+  static const double islandLineFont = 13;
+  static const Placement islandTobi = Placement(right: 20, bottom: 4, size: Size(74, 92));
+
+  static const double rankTitleFont = 88;
+  static const double rankTitleOutline = 15;
+  static const double rankBandFont = 19;
+  static const double rankOldFont = 15;
+  static const double rankOldLabelFont = 12;
+  static const double rankNewFont = 40;
+  static const double rankNewLabelFont = 12;
+  static const double rankRateFont = 18;
+  static const double rankRateSmallFont = 12.5;
+  static const Placement rankTobi = Placement(right: 22, bottom: 4, size: Size(74, 92));
+
+  static const double goalTitleFont = 30;
+  static const double goalNoteFont = 14;
+  static const Placement goalTobi = Placement(right: 18, bottom: 4, size: Size(70, 86));
+
+  static const Duration overlayFade = Duration(milliseconds: 220);
+  static const Duration overlayStagger = Duration(milliseconds: 500);
 }
 
 /// The first-launch screen (spec phone 1).

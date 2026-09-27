@@ -1,6 +1,7 @@
 /// The manga design system: panels, balloons, lettering, tones, lines, Tobi.
 library;
 
+export 'action_row.dart';
 export 'balloon.dart';
 export 'buttons.dart';
 export 'header.dart';

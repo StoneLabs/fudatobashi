@@ -33,6 +33,9 @@ abstract final class IconArt {
   static const chevron = VectorArt(_box, [VPath('M9 5l7 7-7 7', _line)]);
   static const back = VectorArt(_box, [VPath('M15 5l-7 7 7 7', _line)]);
   static const close = VectorArt(_box, [VPath('M6 6l12 12M18 6 6 18', _line)]);
+  static const undo = VectorArt(_box, [VPath('M8 5 4 9l4 4M4 9h10a5.5 5.5 0 0 1 0 11h-4', _line)]);
+  static const end = VectorArt(_box, [VPath('M6 21V4M6 4h11l-2.4 4.2L17 12.5H6', _line)]);
+  static const refresh = VectorArt(_box, [VPath('M20 12a8 8 0 1 1-2.3-5.6M20 4v4.5h-4.5', _line)]);
   static const person = VectorArt(_box, [
     VEllipse.circle(Offset(12, 8), 3.6, _line),
     VPath('M4.5 20c.8-4 3.8-6 7.5-6s6.7 2 7.5 6', _line),

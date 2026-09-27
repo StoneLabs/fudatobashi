@@ -1,173 +1,220 @@
+import 'dart:async';
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 
 import '../../config/config.dart';
+import '../../config/design.dart';
+import '../../config/vector_art.dart';
+import '../../data/fuda_sets.dart';
 import '../../data/poem.dart';
+import '../../domain/card_stats.dart';
 import '../../domain/play_session.dart';
+import '../../l10n/strings.dart';
+import '../../state/play_config.dart';
 import '../../state/scope.dart';
 import '../debug/play_overlay.dart';
+import '../manga/manga.dart';
+import '../results/results_screen.dart';
+import 'kimariji_chip.dart';
+import 'sfx_overlay.dart';
 import 'swipe_deck.dart';
 
-/// Formats a duration like the original app: mm:ss.mmm
-String formatRunTime(Duration d) {
-  final ms = d.inMilliseconds;
-  final m = ms ~/ 60000;
-  final s = (ms ~/ 1000) % 60;
-  final r = ms % 1000;
-  return '${m.toString().padLeft(2, '0')}:${s.toString().padLeft(2, '0')}.${r.toString().padLeft(3, '0')}';
-}
-
+/// The play chrome (spec phone 4): a calm paper page, the previous card's
+/// kimariji as a speech chip, the n/N counter, coloured SFX around the card,
+/// and ひとつ前 / 終了. Ends into [ResultsScreen] once there is at least one
+/// attempt; 終了 with none goes straight back.
 class PlayScreen extends StatefulWidget {
-  const PlayScreen({super.key, required this.cards, this.grading = true, this.onRunEnded});
+  const PlayScreen({super.key, required this.cards, required this.config});
 
   final List<CardRef> cards;
-  final bool grading;
-
-  /// Called once per run that has at least one attempt: when it finishes,
-  /// is restarted or the screen closes.
-  final void Function(PlaySession run, DateTime startedAt)? onRunEnded;
-
-  static List<CardRef> randomDeck(int n, {bool mixedOrientation = true}) {
-    final rng = math.Random();
-    final ids = List<int>.generate(100, (i) => i + 1)..shuffle(rng);
-    return [
-      for (final id in ids.take(n)) CardRef(id, inverted: mixedOrientation && rng.nextBool()),
-    ];
-  }
+  final PlayConfig config;
 
   @override
   State<PlayScreen> createState() => _PlayScreenState();
 }
 
 class _PlayScreenState extends State<PlayScreen> {
-  late PlaySession _session = PlaySession(widget.cards);
-  DateTime _startedAt = DateTime.now();
-  bool _reported = false;
+  late final PlaySession _session = PlaySession(widget.cards);
+  final DateTime _startedAt = DateTime.now();
+  final _sfxKey = GlobalKey<SfxOverlayState>();
+  final Set<Attempt> _requeuedForTraining = {};
+  final _rng = math.Random();
   bool _live = false;
+  bool _ending = false;
 
   @override
   void initState() {
     super.initState();
-    _session.addListener(_changed);
-    // Let the route transition settle before the first reveal.
-    Future.delayed(SwipeTuning.leadIn, () {
-      if (mounted) setState(() => _live = true);
-    });
+    _session.addListener(_onSessionChanged);
+    if (ProgressScope.read(context).settings.leadIn) {
+      Future.delayed(SwipeTuning.leadIn, () {
+        if (mounted) setState(() => _live = true);
+      });
+    } else {
+      _live = true;
+    }
   }
 
   @override
   void dispose() {
-    _report();
-    _session.removeListener(_changed);
+    _session.removeListener(_onSessionChanged);
+    // Safety net for an unexpected pop (e.g. the system back gesture): still
+    // record a partial run, just without showing results for it.
+    if (!_ending && _session.attempts.isNotEmpty) {
+      unawaited(ProgressScope.read(context).recordRun(_session, widget.config, _startedAt));
+    }
     super.dispose();
   }
 
-  void _report() {
-    if (_reported || _session.attempts.isEmpty) return;
-    _reported = true;
-    widget.onRunEnded?.call(_session, _startedAt);
-  }
-
-  void _changed() {
-    if (_session.finished) _report();
+  void _onSessionChanged() {
+    if (_session.finished && !_ending) unawaited(_finish());
     setState(() {});
   }
 
-  void _restart() {
-    _report();
-    _session.removeListener(_changed);
-    setState(() {
-      _session = PlaySession([...widget.cards]..shuffle());
-      _session.addListener(_changed);
-      _startedAt = DateTime.now();
-      _reported = false;
-    });
+  void _onCommitted(Attempt a) {
+    _sfxKey.currentState?.pop(dontKnow: a.outcome == Outcome.dontKnow);
+    if (a.isMiss) _requeueMiss(a);
+  }
+
+  void _toggleWrong() {
+    _session.togglePreviousWrong();
+    final a = _session.lastAttempt;
+    if (a != null && a.wrong) _requeueMiss(a);
+  }
+
+  /// Training only: brings a missed card back soon, plus one unlocked 友札.
+  void _requeueMiss(Attempt a) {
+    if (widget.config.mode != PlayMode.training || !_requeuedForTraining.add(a)) return;
+    _session.requeue(a.card);
+    final progress = ProgressScope.read(context);
+    final twins = fudaSets
+        .tomofuda(a.card.poemId)
+        .where((id) => progress.trainer.items[ItemKey(id, false)]?.unlocked == true)
+        .toList();
+    if (twins.isNotEmpty) _session.requeue(CardRef(twins[_rng.nextInt(twins.length)]));
+  }
+
+  Future<void> _end() async {
+    if (_ending) return;
+    if (_session.attempts.isEmpty) {
+      Navigator.of(context).pop();
+      return;
+    }
+    await _finish();
+  }
+
+  Future<void> _finish() async {
+    if (_ending) return;
+    _ending = true;
+    final report = await ProgressScope.read(context).recordRun(_session, widget.config, _startedAt);
+    if (!mounted) return;
+    Navigator.of(context).pushReplacement(MangaRoute<void>(
+      builder: (_) => ResultsScreen(report: report, config: widget.config),
+    ));
   }
 
   @override
   Widget build(BuildContext context) {
-    final s = _session;
-    final last = s.lastAttempt;
-    final chip = last == null ? '開始' : poems[last.card.poemId].kimariji;
-    final debugSettings = ProgressScope.of(context).settings;
+    final s = S.of(context);
+    final settings = ProgressScope.of(context).settings;
+    final session = _session;
+    final last = session.lastAttempt;
+    final chipText = last == null ? s.start : poems[last.card.poemId].kimariji;
+    final buttonsBottom = PlayLayout.buttonRowHeight + Gaps.section * 2;
+
     return Scaffold(
-      backgroundColor: const Color(0xFF2A1B45),
+      backgroundColor: Palette.paper,
       body: SafeArea(
-        child: Stack(children: [
-          Column(
+        child: Stack(
           children: [
-            Padding(
-              padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
-              child: Row(
-                children: [
-                  GestureDetector(
-                    onTap: last == null ? null : s.togglePreviousWrong,
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
-                      decoration: BoxDecoration(
-                        color: last?.wrong == true ? const Color(0xFFE0352B) : const Color(0xFFFBF8F1),
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      child: Text(chip,
-                          style: TextStyle(
-                            fontSize: 28,
-                            fontWeight: FontWeight.w700,
-                            color: last?.wrong == true ? Colors.white : const Color(0xFF16121A),
-                          )),
-                    ),
-                  ),
-                  const Spacer(),
-                  if (last != null)
-                    Text('${(last.responseUs / 1000).toStringAsFixed(1)} ms  ',
-                        style: const TextStyle(color: Color(0xFFE7B22E), fontSize: 16)),
-                  Text('${math.min(s.index + 1, s.cards.length)} / ${s.cards.length}',
-                      style: const TextStyle(color: Colors.white, fontSize: 20)),
-                ],
+            Positioned(
+              left: 0,
+              right: 0,
+              bottom: 0,
+              height: PlayLayout.toneBandHeight,
+              child: const IgnorePointer(
+                child: StaticArt([ToneLayer(Tones.seaFaint, fadeAngle: 180, fadeStops: [0, 1])]),
               ),
             ),
-            Expanded(
-              child: s.finished
-                  ? Center(
-                      child: Column(mainAxisSize: MainAxisSize.min, children: [
-                        Text(formatRunTime(s.total ?? Duration.zero),
-                            style: const TextStyle(
-                                fontSize: 56,
-                                color: Colors.white,
-                                fontFeatures: [FontFeature.tabularFigures()])),
-                        const SizedBox(height: 12),
-                        Text(
-                          'avg ${(s.attempts.map((a) => a.responseUs).reduce((a, b) => a + b) / s.attempts.length / 1000).toStringAsFixed(0)} ms/card',
-                          style: const TextStyle(color: Color(0xFFE7B22E), fontSize: 18),
-                        ),
-                      ]),
-                    )
-                  : SwipeDeck(session: s, live: _live, grading: widget.grading),
+            Positioned.fill(
+              bottom: buttonsBottom,
+              child: SwipeDeck(
+                session: session,
+                live: _live,
+                grading: settings.downMeansDontKnow,
+                downToleranceDeg: settings.downToleranceDeg,
+                showNumber: settings.showPoemNumber,
+                haptics: settings.haptics,
+                onCommitted: _onCommitted,
+              ),
             ),
-            Padding(
-              padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-              child: Row(children: [
-                Expanded(
-                  child: FilledButton(
-                    onPressed: s.attempts.isEmpty ? null : s.undo,
-                    child: const Text('ひとつ前'),
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: FilledButton(
-                    onPressed: s.finished ? _restart : () => Navigator.maybePop(context),
-                    child: Text(s.finished ? 'もう一回' : '終了'),
-                  ),
-                ),
-              ]),
+            Positioned.fill(bottom: buttonsBottom, child: SfxOverlay(key: _sfxKey)),
+            Positioned(
+              left: Gaps.gutter,
+              top: Gaps.section,
+              child: KimarijiChip(
+                text: chipText,
+                timeMs: last == null ? null : last.responseUs / 1000,
+                wrong: last?.isMiss ?? false,
+                onTap: last == null ? null : _toggleWrong,
+              ),
             ),
+            Positioned(
+              right: Gaps.gutter,
+              top: Gaps.section,
+              child: _Counter(n: math.min(session.index + 1, session.cards.length), total: session.cards.length),
+            ),
+            Positioned(
+              left: Gaps.gutter,
+              right: Gaps.gutter,
+              bottom: Gaps.section,
+              child: SizedBox(
+                height: PlayLayout.buttonRowHeight,
+                child: Row(children: [
+                  Expanded(
+                    child: ActionRowButton(
+                      icon: IconArt.undo,
+                      label: s.undo,
+                      sub: 'UNDO',
+                      onTap: session.attempts.isEmpty ? null : session.undo,
+                    ),
+                  ),
+                  const SizedBox(width: PlayLayout.buttonGap),
+                  Expanded(
+                    child: ActionRowButton(icon: IconArt.end, label: s.end, sub: 'END', onTap: _ending ? null : _end),
+                  ),
+                ]),
+              ),
+            ),
+            if (settings.debugMode && settings.playOverlay)
+              Positioned(bottom: buttonsBottom + Gaps.section, left: Gaps.section, child: PlayDebugOverlay(session: session)),
           ],
-          ),
-          if (debugSettings.debugMode && debugSettings.playOverlay)
-            Positioned(bottom: 8, left: 8, child: PlayDebugOverlay(session: s)),
-        ]),
+        ),
       ),
     );
   }
+}
+
+class _Counter extends StatelessWidget {
+  const _Counter({required this.n, required this.total});
+  final int n, total;
+
+  @override
+  Widget build(BuildContext context) => Container(
+        height: PlayLayout.counterHeight,
+        padding: PlayLayout.counterPadding,
+        decoration: const BoxDecoration(color: Palette.paper, border: Border.fromBorderSide(BorderSide(color: Palette.ink, width: Strokes.control))),
+        alignment: Alignment.center,
+        child: Row(mainAxisSize: MainAxisSize.min, children: [
+          OutlinedText(
+            '$n',
+            style: const TextStyle(fontFamily: Fonts.display, fontSize: PlayLayout.counterNumberFont, color: Palette.pink, height: 1),
+            outline: Palette.ink,
+            outlineWidth: PlayLayout.counterOutline,
+          ),
+          const SizedBox(width: PlayLayout.counterGap),
+          Text('/ $total', style: const TextStyle(fontFamily: Fonts.display, fontSize: PlayLayout.counterSlashFont, height: 1)),
+        ]),
+      );
 }

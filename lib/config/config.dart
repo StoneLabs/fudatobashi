@@ -95,16 +95,17 @@ abstract final class PlaySfxTuning {
   /// Oldest pop is dropped once this many are on screen at once.
   static const int maxConcurrent = 3;
 
-  /// Where a pop may land (fractions of the play area, [Align]-style):
-  /// all clear of the centred card's vertical extent, above or below it.
-  static const List<Alignment> anchors = [
-    Alignment(-0.55, -0.86),
-    Alignment(0.5, -0.82),
-    Alignment(0.0, -0.92),
-    Alignment(-0.5, 0.86),
-    Alignment(0.55, 0.82),
-    Alignment(0.0, 0.92),
-  ];
+  /// Horizontal placement, as a fraction of the play area's width (kept off
+  /// the very edges). Vertical placement is computed from the card's own
+  /// geometry (see `SwipeTuning`), landing in the clear strip above or below
+  /// it, never over it.
+  static const double horizontalMin = 0.12;
+  static const double horizontalMax = 0.88;
+
+  /// How far into the clear strip above/below the card a pop sits, as a
+  /// fraction from the card's edge toward the play area's edge (kept low so
+  /// it doesn't reach the header chip/counter or the footer buttons).
+  static const double bandBias = 0.4;
   static const double maxRotationDeg = 10;
 
   // Timeline fractions (of [duration]), matching the spec's sfxpop keyframes:
@@ -304,14 +305,16 @@ abstract final class DevModeTuning {
 
 /// `Progress.recordRun`-backed synthetic history for development builds.
 abstract final class DemoDataTuning {
-  static const int days = 12;
+  // Each run persists its attempts one at a time (the same path a real game
+  // does), so these stay modest: on-device this still takes real seconds.
+  static const int days = 4;
   static const int minSessionsPerDay = 1;
-  static const int maxSessionsPerDay = 2;
+  static const int maxSessionsPerDay = 1;
 
   /// A free-play run happens every this many simulated days.
   static const int freeRunEvery = 3;
-  static const int trainingCards = 24;
-  static const int freeCards = 16;
+  static const int trainingCards = 10;
+  static const int freeCards = 8;
 
   /// Response-time target (ms) on the first and last simulated day; sampled
   /// attempts vary around the day's interpolated target.

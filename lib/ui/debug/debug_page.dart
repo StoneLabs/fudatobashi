@@ -39,13 +39,17 @@ class DebugPage extends StatelessWidget {
             Tab(text: 'Timing'),
           ]),
         ),
-        body: const TabBarView(children: [
-          _Overview(),
-          _Items(),
-          _Scheduler(),
-          _RatingTab(),
-          _Timing(),
-        ]),
+        // Edge-to-edge system UI means the bottom system bar/gesture strip
+        // would otherwise sit over the last row of every tab's list.
+        body: const SafeArea(
+          child: TabBarView(children: [
+            _Overview(),
+            _Items(),
+            _Scheduler(),
+            _RatingTab(),
+            _Timing(),
+          ]),
+        ),
       ),
     );
   }
