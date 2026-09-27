@@ -208,6 +208,7 @@ class _IslandProgress extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final s = S.of(context);
+    final progress = ProgressScope.of(context);
     final island = journey.island;
     final shape = archipelago.islands[journey.current];
     return MangaPanel(
@@ -257,6 +258,10 @@ class _IslandProgress extends StatelessWidget {
                       ? PipState.next
                       : PipState.locked,
           ]..sort((a, b) => a.index.compareTo(b.index))),
+          if (progress.knownCardSpeedMs != null) ...[
+            const SizedBox(height: HomeLayout.knownSpeedGap),
+            KnownSpeedTag(ms: progress.knownCardSpeedMs, weekAgoMs: progress.knownCardSpeedTrendAgo),
+          ],
         ],
       ),
     );

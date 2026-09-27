@@ -491,7 +491,7 @@ abstract final class HomeLayout {
   static const double mapMistFont = 12.5;
   static const EdgeInsets mapMistPadding = EdgeInsets.fromLTRB(8, 3, 8, 3);
 
-  static const double progressHeight = 70;
+  static const double progressHeight = 90;
   static const EdgeInsets progressPadding = EdgeInsets.fromLTRB(12, 8, 12, 0);
   static const double islandTitle = 20;
   static const double nowFont = 12;
@@ -504,6 +504,12 @@ abstract final class HomeLayout {
   static const double pipTop = 8;
   static const double pipRadius = 3;
   static const double pipInset = 3;
+
+  /// The known-card speed tag (`KnownSpeedTag`), on Home.
+  static const double knownSpeedFont = 12;
+  static const double knownSpeedNumber = 14;
+  static const double knownSpeedTrendIcon = 11;
+  static const double knownSpeedGap = 4;
 
   static const double journeyHeroHeight = 206;
   static const double journeyHeroCut = 8;
@@ -521,7 +527,7 @@ abstract final class HomeLayout {
   static const Alignment journeyBalloonTail = Alignment(0.84, 0.4);
   static const double journeyBalloonTailTurn = -30;
 
-  static const double rankHeight = 92;
+  static const double rankHeight = 110;
 
   /// Widths of the rating and streak panels on the spec's 358-wide row.
   static const int rankFlex = 250;
@@ -649,6 +655,11 @@ abstract final class ResultsLayout {
   static const double statBigFont = 32;
   static const double statBigUnitFont = 17;
   static const double statNoteFont = 12.5;
+
+  /// The known-card speed note (`_KnownSpeedNote`), under the splash header.
+  static const double knownSpeedNoteFont = 12.5;
+  static const double knownSpeedTrendIcon = 11;
+  static const double knownSpeedGap = 4;
 
   static const double toughHeight = 180;
   static const EdgeInsets toughPadding = EdgeInsets.fromLTRB(14, 12, 12, 12);

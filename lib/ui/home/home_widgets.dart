@@ -3,7 +3,10 @@ import 'dart:math' as math;
 import 'package:flutter/widgets.dart';
 
 import '../../config/design.dart';
+import '../../config/vector_art.dart';
 import '../../domain/rating.dart';
+import '../../l10n/home_strings.dart';
+import '../../l10n/strings.dart';
 import '../manga/geometry.dart';
 import '../manga/manga.dart';
 import '../manga/svg_path.dart';
@@ -181,4 +184,43 @@ class UntrackedLabel extends StatelessWidget {
         tracking: HomeLayout.untrackedTracking,
         padding: HomeLayout.untrackedPadding,
       );
+}
+
+/// The known-card speed (`Progress.knownCardSpeedMs`), with a small up/down
+/// arrow against a week ago (faster now points up). Renders nothing when
+/// [ms] is null (no unlocked cards timed yet).
+class KnownSpeedTag extends StatelessWidget {
+  const KnownSpeedTag({super.key, required this.ms, required this.weekAgoMs});
+
+  final double? ms;
+  final double? weekAgoMs;
+
+  @override
+  Widget build(BuildContext context) {
+    final ms = this.ms;
+    if (ms == null) return const SizedBox.shrink();
+    final s = S.of(context);
+    final weekAgo = weekAgoMs;
+    final faster = weekAgo != null && ms < weekAgo;
+    final slower = weekAgo != null && ms > weekAgo;
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.center,
+      children: [
+        NumberedText(
+          s.knownSpeedLabel,
+          [(ms / 1000).toStringAsFixed(2)],
+          style: const TextStyle(fontSize: HomeLayout.knownSpeedFont, fontWeight: Weights.bold),
+          numberStyle: const TextStyle(fontFamily: Fonts.display, fontSize: HomeLayout.knownSpeedNumber),
+        ),
+        if (faster || slower) ...[
+          const SizedBox(width: Gaps.tight),
+          Transform.rotate(
+            angle: (faster ? -90 : 90) * math.pi / 180,
+            child: const MangaIcon(IconArt.chevron, size: HomeLayout.knownSpeedTrendIcon),
+          ),
+        ],
+      ],
+    );
+  }
 }

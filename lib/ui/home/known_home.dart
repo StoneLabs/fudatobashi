@@ -128,6 +128,14 @@ class _RankRow extends StatelessWidget {
                                 numberStyle: bold,
                               ),
                       ),
+                      if (progress.knownCardSpeedMs != null) ...[
+                        const SizedBox(height: HomeLayout.knownSpeedGap),
+                        FittedBox(
+                          fit: BoxFit.scaleDown,
+                          alignment: Alignment.centerLeft,
+                          child: KnownSpeedTag(ms: progress.knownCardSpeedMs, weekAgoMs: progress.knownCardSpeedTrendAgo),
+                        ),
+                      ],
                     ],
                   ),
                 ),

@@ -55,6 +55,52 @@ void main() {
     await db.close();
   });
 
+  test('free play is stored for history but never feeds FSRS or rating; training does', () async {
+    final db = AppDatabase(NativeDatabase.memory());
+    final progress = await Progress.open(db);
+    final planned = await progress.planTraining();
+    final card = planned.cards.first;
+    final key = ItemKey(card.poemId, card.inverted);
+
+    final beforeDue = progress.trainer.items[key]!.card.due;
+    expect(progress.trainer.items[key]!.reviewed, isFalse);
+    expect(progress.rating, isNull);
+
+    final freeRun = play([card], [(900, Outcome.known)]);
+    final freeReport = await progress.recordRun(freeRun, const PlayConfig(mode: PlayMode.free), DateTime.now());
+
+    // Stored (and visible to the unfiltered, all-mode views)...
+    expect(freeReport.sessionId, isNotNull);
+    expect(progress.attemptsOf(key).length, 1);
+    expect(progress.displayStats(key).seen, isTrue);
+    // ...but FSRS, the training-only `stats()`, and the rating are untouched.
+    expect(progress.trainer.items[key]!.reviewed, isFalse);
+    expect(progress.trainer.items[key]!.card.due, beforeDue);
+    expect(progress.stats(key).seen, isFalse);
+    expect(progress.rating, isNull);
+    expect(freeReport.ratingBefore, isNull);
+    expect(freeReport.ratingAfter, isNull);
+
+    final trainingRun = play([card], [(900, Outcome.known)]);
+    final trainingReport =
+        await progress.recordRun(trainingRun, const PlayConfig(mode: PlayMode.training), DateTime.now());
+
+    // The very same card, now reviewed for real by a training run.
+    expect(trainingReport.sessionId, isNotNull);
+    expect(progress.trainer.items[key]!.reviewed, isTrue);
+    expect(progress.trainer.items[key]!.card.due, isNot(beforeDue));
+    expect(progress.stats(key).seen, isTrue);
+    expect(progress.rating, isNotNull);
+    expect(trainingReport.ratingAfter, isNotNull);
+
+    // Both attempts still show up for history/charts; only the training one
+    // counts toward the training-only stats FSRS/scheduling/rating use.
+    expect(progress.attemptsOf(key).length, 2);
+    expect(progress.displayStats(key).count, 2);
+    expect(progress.stats(key).count, 1);
+    await db.close();
+  });
+
   test('guest runs record nothing', () async {
     final db = AppDatabase(NativeDatabase.memory());
     final progress = await Progress.open(db);

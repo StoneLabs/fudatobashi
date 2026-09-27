@@ -23,6 +23,7 @@ extension HomeStrings on S {
   String get ratingLabel => t('RATING', 'レーティング');
   String get toNextBand => t('{0} to {band} ({1})', '{band}まであと{0}（{1}）');
   String get topBand => t('Top class!', '最高位！');
+  String get knownSpeedLabel => t('{0}s known speed', '既知の速さ {0}秒');
   String get streakDays => t('{0}-day streak', '{0}日連続');
   String get freePlaySub => t('Free play', 'フリー');
   String get freePlayNote => t('Pick any card set', '好きな札で');

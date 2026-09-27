@@ -202,6 +202,10 @@ abstract final class StatsTuning {
   /// Assumed time (ms) for a miss or an unseen card, in expected-time and
   /// rating projections.
   static const double unknownMs = 6000;
+
+  /// How far back `Progress.knownCardSpeedTrendAgo` looks, to compare against
+  /// `Progress.knownCardSpeedMs`.
+  static const int knownSpeedTrendDays = 7;
 }
 
 /// The Elo-style rating model (see `Rating`).

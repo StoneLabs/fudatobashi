@@ -14,6 +14,7 @@ extension ResultsStrings on S {
 
   String get avgPerCardLabel => t('AVG / CARD', '1枚あたり平均');
   String knownOf(int known, int total) => ja ? '$total枚中$known枚正解' : '$known / $total known';
+  String get knownSpeedNote => t('{0}s known speed', '既知の速さ {0}秒');
 
   String get kimarijiLabel => t('KIMARIJI', '決まり字');
   String get newCardBand => 'A NEW CARD APPEARS';

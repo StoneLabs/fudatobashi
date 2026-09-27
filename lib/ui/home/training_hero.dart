@@ -71,7 +71,16 @@ class TrainingHero extends StatelessWidget {
                 ),
                 Padding(
                   padding: EdgeInsets.only(left: narrationLeft, right: padding.right),
-                  child: NarrationBox(child: narration),
+                  child: NarrationBox(
+                    // The compact (journey) panel gives the narration a fixed
+                    // height with no room to wrap; clip it to one line rather
+                    // than let a long string overflow the panel. The full
+                    // panel sizes itself around the narration, so it's left
+                    // free to wrap (e.g. known_home's due + slow lines).
+                    child: compact
+                        ? DefaultTextStyle.merge(maxLines: 1, overflow: TextOverflow.ellipsis, child: narration)
+                        : narration,
+                  ),
                 ),
                 SizedBox(height: compact ? HomeLayout.journeyNarrationGap : HomeLayout.heroNarrationGap),
                 Padding(

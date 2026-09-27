@@ -1,6 +1,7 @@
 import 'dart:math' as math;
 
 import '../config/config.dart';
+import '../state/play_config.dart';
 
 /// Identifies a training item: a card in one orientation.
 class ItemKey {
@@ -27,6 +28,11 @@ class ItemKey {
 }
 
 /// The facts about one stored attempt that statistics need.
+///
+/// Built fresh in memory from a stored `AttemptRow` (or a run in progress);
+/// not itself persisted. Carries the session's [mode] so callers can tell
+/// whether an attempt is allowed to feed FSRS and the speed statistics that
+/// drive scheduling/unlocks/rating (see [countsForSrs]).
 class AttemptRec {
   const AttemptRec({
     required this.at,
@@ -34,6 +40,7 @@ class AttemptRec {
     required this.miss,
     required this.clean,
     required this.deckSize,
+    required this.mode,
     this.maskLevel = 0,
     this.grade,
     this.sessionId,
@@ -48,6 +55,9 @@ class AttemptRec {
   /// The time is a clean measurement (not a redo or a corrected card).
   final bool clean;
   final int deckSize;
+
+  /// The play mode of the session this attempt was recorded in.
+  final PlayMode mode;
   final int maskLevel;
   final int? grade;
   final int? sessionId;
@@ -56,6 +66,11 @@ class AttemptRec {
 
   /// Usable as a speed sample: clean and correct.
   bool get timed => clean && !miss;
+
+  /// Only 修行 (training) attempts feed FSRS and speed statistics; free play
+  /// and 苦手 runs are stored and shown to the player but never affect
+  /// scheduling, unlocks or rating.
+  bool get countsForSrs => mode == PlayMode.training;
 }
 
 /// Speed and accuracy statistics of one item, from its attempts in time order.

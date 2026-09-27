@@ -4,6 +4,7 @@ import 'dart:math' as math;
 import 'package:drift/drift.dart';
 import 'package:flutter/foundation.dart';
 
+import '../config/config.dart';
 import '../data/fuda_sets.dart';
 import '../data/poem.dart';
 import '../db/database.dart';
@@ -103,12 +104,14 @@ class Progress extends ChangeNotifier {
       goalLevel: int.tryParse(kv['goalLevel'] ?? '') ?? 0,
     );
 
+    final sessions = await (db.select(db.sessions)..orderBy([(s) => OrderingTerm.asc(s.startedAt)])).get();
+    final modeOf = {for (final s in sessions) s.id: PlayMode.values[s.mode]};
+
     final log = <ItemKey, List<AttemptRec>>{};
     final rows = await (db.select(db.attempts)..orderBy([(a) => OrderingTerm.asc(a.at), (a) => OrderingTerm.asc(a.id)])).get();
     for (final a in rows) {
-      (log[ItemKey(a.poemId, a.inverted)] ??= []).add(_rec(a));
+      (log[ItemKey(a.poemId, a.inverted)] ??= []).add(_rec(a, modeOf[a.sessionId] ?? PlayMode.free));
     }
-    final sessions = await (db.select(db.sessions)..orderBy([(s) => OrderingTerm.asc(s.startedAt)])).get();
     final points = await (db.select(db.ratingPoints)..orderBy([(r) => OrderingTerm.asc(r.at)])).get();
     return Progress._(
       db,
@@ -122,12 +125,13 @@ class Progress extends ChangeNotifier {
     );
   }
 
-  static AttemptRec _rec(AttemptRow a) => AttemptRec(
+  static AttemptRec _rec(AttemptRow a, PlayMode mode) => AttemptRec(
         at: a.at,
         us: a.responseUs,
         miss: a.outcome == Outcome.dontKnow.index || a.wrong || a.undone,
         clean: !a.tainted && !a.undone,
         deckSize: a.deckSize,
+        mode: mode,
         maskLevel: a.maskLevel,
         grade: a.grade,
         sessionId: a.sessionId,
@@ -135,11 +139,22 @@ class Progress extends ChangeNotifier {
 
   // ---------------------------------------------------------------- reads
 
-  CardStats stats(ItemKey k) => _statsCache[k] ??= CardStats(_log[k] ?? const []);
+  /// Training-only view of a card's statistics: the one the trainer's
+  /// scheduler, FSRS unlocking and the displayed rating are built from. Free
+  /// play and 苦手 attempts never affect it (see [AttemptRec.countsForSrs]).
+  CardStats stats(ItemKey k) =>
+      _statsCache[k] ??= CardStats([for (final a in _log[k] ?? const []) if (a.countsForSrs) a]);
 
   Map<ItemKey, CardStats> get allStats => {for (final k in trainer.items.keys) k: stats(k)};
 
+  /// Every attempt on a card, in every mode — for history and per-card charts
+  /// (unlike [stats], which only counts training attempts).
   List<AttemptRec> attemptsOf(ItemKey k) => _log[k] ?? const [];
+
+  /// Display-only statistics over every attempt on a card, in every mode
+  /// (unlike [stats], which only counts training attempts). Not cached: for
+  /// occasional UI use, not the training/rating hot path.
+  CardStats displayStats(ItemKey k) => CardStats(_log[k] ?? const []);
 
   double get projectedMs => Rating.projectedMs(stats);
 
@@ -164,6 +179,27 @@ class Progress extends ChangeNotifier {
         final st = stats(s.key);
         return st.seen && st.expectedMs() > trainer.goalMs;
       }).length;
+
+  /// Average (training-only) EWMA response time over unlocked upright items,
+  /// as of [asOf]. Early on, only a handful of cards are unlocked, so rank and
+  /// rating barely move even as the player gets much faster on what they do
+  /// know; this gives beginners something that visibly improves run to run.
+  double? knownCardSpeedAt(DateTime asOf) {
+    final samples = <double?>[
+      for (final s in trainer.unlocked)
+        if (!s.key.inverted)
+          CardStats([for (final a in _log[s.key] ?? const []) if (a.countsForSrs && !a.at.isAfter(asOf)) a]).ewmaMs
+    ].whereType<double>().toList();
+    return samples.isEmpty ? null : samples.reduce((a, b) => a + b) / samples.length;
+  }
+
+  /// The known-card speed right now.
+  double? get knownCardSpeedMs => knownCardSpeedAt(DateTime.now());
+
+  /// The known-card speed [StatsTuning.knownSpeedTrendDays] days ago, to
+  /// compare against [knownCardSpeedMs] for a trend indicator.
+  double? get knownCardSpeedTrendAgo =>
+      knownCardSpeedAt(DateTime.now().subtract(const Duration(days: StatsTuning.knownSpeedTrendDays)));
 
   /// Best completed total for runs with the same setup.
   Duration? bestFor(PlayConfig c) {
@@ -342,16 +378,19 @@ class Progress extends ChangeNotifier {
           miss: a.isMiss || undone,
           clean: !a.tainted && !undone,
           deckSize: a.deckSize,
+          mode: config.mode,
           maskLevel: a.card.mask.hidden.isEmpty ? 0 : config.maskLevel,
           sessionId: id,
         );
-        final grade = trainer.review(key, rec);
+        // Only 修行 (training) attempts feed FSRS; see `AttemptRec.countsForSrs`.
+        final grade = rec.countsForSrs ? trainer.review(key, rec) : null;
         final stored = AttemptRec(
           at: rec.at,
           us: rec.us,
           miss: rec.miss,
           clean: rec.clean,
           deckSize: rec.deckSize,
+          mode: rec.mode,
           maskLevel: rec.maskLevel,
           grade: grade?.value,
           sessionId: id,
@@ -381,27 +420,33 @@ class Progress extends ChangeNotifier {
 
     sessions.add((await (db.select(db.sessions)..where((s) => s.id.equals(sessionId))).getSingle()));
 
-    // Rating.
+    // Rating: only a 修行 (training) run moves it. `stats()` already leaves
+    // free play and 苦手 out, so the projected performance would be unchanged
+    // anyway — but re-running the smoothing update would still nudge `rating`
+    // another step toward that same performance, which is exactly the leak
+    // `countsForSrs` is meant to prevent.
     final before = rating;
-    final projected = projectedMs;
-    final perf = Rating.performance(projected);
-    rating = Rating.update(rating, perf, ratingPoints.length);
-    await _put('rating', rating!.toString());
-    await db.into(db.ratingPoints).insert(RatingPointsCompanion.insert(
-          at: DateTime.now(),
-          rating: rating!,
-          performance: perf,
-          projectedMs: projected.round(),
-          sessionId: Value(sessionId),
-        ));
-    ratingPoints.add(RatingPoint(
-      id: 0,
-      at: DateTime.now(),
-      rating: rating!,
-      performance: perf,
-      projectedMs: projected.round(),
-      sessionId: sessionId,
-    ));
+    if (config.mode == PlayMode.training) {
+      final projected = projectedMs;
+      final perf = Rating.performance(projected);
+      rating = Rating.update(rating, perf, ratingPoints.length);
+      await _put('rating', rating!.toString());
+      await db.into(db.ratingPoints).insert(RatingPointsCompanion.insert(
+            at: DateTime.now(),
+            rating: rating!,
+            performance: perf,
+            projectedMs: projected.round(),
+            sessionId: Value(sessionId),
+          ));
+      ratingPoints.add(RatingPoint(
+        id: 0,
+        at: DateTime.now(),
+        rating: rating!,
+        performance: perf,
+        projectedMs: projected.round(),
+        sessionId: sessionId,
+      ));
+    }
 
     // Unlocks, islands and goal ladder.
     final reachedBefore = {for (final i in islands) if (i.reached) i.index};

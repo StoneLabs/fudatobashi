@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 
@@ -99,6 +100,7 @@ class _Splash extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final s = S.of(context);
+    final progress = ProgressScope.of(context);
     final attempts = report.attempts;
     final known = attempts.where((a) => !a.isMiss).length;
     final avgMs = attempts.isEmpty ? 0.0 : attempts.map((a) => a.responseUs / 1000).reduce((a, b) => a + b) / attempts.length;
@@ -116,6 +118,10 @@ class _Splash extends StatelessWidget {
           const Spacer(),
           InkIconButton(icon: IconArt.close, semanticLabel: s.home, onTap: onHome),
         ]),
+        if (progress.knownCardSpeedMs != null) ...[
+          const SizedBox(height: ResultsLayout.knownSpeedGap),
+          _KnownSpeedNote(ms: progress.knownCardSpeedMs!, weekAgoMs: progress.knownCardSpeedTrendAgo),
+        ],
         const SizedBox(height: Gaps.section),
         if (!config.tracked) ...[
           DashedBox(padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8), child: Text(s.guestNotRecorded)),
@@ -173,6 +179,39 @@ class _Splash extends StatelessWidget {
         PlayMode.free => s.freePlay,
         PlayMode.guest => s.guest,
       };
+}
+
+/// A subtle line for `Progress.knownCardSpeedMs`, with a small up/down arrow
+/// against a week ago (faster now points up).
+class _KnownSpeedNote extends StatelessWidget {
+  const _KnownSpeedNote({required this.ms, required this.weekAgoMs});
+  final double ms;
+  final double? weekAgoMs;
+
+  @override
+  Widget build(BuildContext context) {
+    final s = S.of(context);
+    final weekAgo = weekAgoMs;
+    final faster = weekAgo != null && ms < weekAgo;
+    final slower = weekAgo != null && ms > weekAgo;
+    const noteStyle =
+        TextStyle(fontWeight: Weights.bold, fontSize: ResultsLayout.knownSpeedNoteFont, color: Palette.inkSoft);
+    return Row(mainAxisSize: MainAxisSize.min, children: [
+      NumberedText(
+        s.knownSpeedNote,
+        [(ms / 1000).toStringAsFixed(2)],
+        style: noteStyle,
+        numberStyle: noteStyle.copyWith(fontFamily: Fonts.display, fontWeight: Weights.regular),
+      ),
+      if (faster || slower) ...[
+        const SizedBox(width: ResultsLayout.knownSpeedGap),
+        Transform.rotate(
+          angle: (faster ? -90 : 90) * math.pi / 180,
+          child: const MangaIcon(IconArt.chevron, size: ResultsLayout.knownSpeedTrendIcon, color: Palette.inkSoft),
+        ),
+      ],
+    ]);
+  }
 }
 
 class _TimePanel extends StatelessWidget {
