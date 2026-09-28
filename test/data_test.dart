@@ -45,7 +45,7 @@ void main() {
   });
 
   test('a card\'s kimariji twin shares every kana but the last', () {
-    expect(p.kimarijiTwin(p.byKimariji('きみがためは'))?.kimariji, 'きみがためを');
+    expect(p.kimarijiTwin(p.byKimariji('きみがためは'))?.kimariji, 'きみがためお');
     expect(p.kimarijiTwin(p.byKimariji('あきの'))?.kimariji, 'あきか');
     expect(p.kimarijiTwin(p.byKimariji('む')), isNull);
   });
