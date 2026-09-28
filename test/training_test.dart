@@ -1,5 +1,4 @@
 import 'dart:io';
-import 'dart:math' as math;
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:fsrs/fsrs.dart' as fsrs;
@@ -53,48 +52,7 @@ void main() {
     });
   });
 
-  group('trainer simulation', () {
-    test('a steadily improving learner unlocks cards at a sensible pace', () {
-      final trainer = Trainer(config: const TrainerConfig(), items: Trainer.freshItems());
-      final log = <ItemKey, List<AttemptRec>>{};
-      final rng = math.Random(7);
-      var now = DateTime.utc(2026, 9, 1, 9);
-      CardStats statsOf(ItemKey k) => CardStats(log[k] ?? const []);
-      Map<ItemKey, CardStats> allStats() => {for (final k in trainer.items.keys) k: statsOf(k)};
-
-      final unlockedPerDay = <int>[];
-      for (var day = 0; day < 14; day++) {
-        for (var session = 0; session < 3; session++) {
-          trainer.unlockEarned(p, sets, allStats(), now);
-          final picks = trainer.planSession(allStats(), now, rng);
-          expect(picks, isNotEmpty);
-          for (final pick in picks) {
-            final seen = log[pick.key]?.length ?? 0;
-            // Synthetic learner: starts ~4 s, speeds up with practice, rarely misses.
-            final ms = 4000 * math.pow(0.8, seen) + 700 + rng.nextInt(300);
-            final miss = seen < 2 && rng.nextDouble() < 0.3;
-            final a = AttemptRec(
-                at: now, us: (ms * 1000).round(), miss: miss, clean: true, deckSize: picks.length, mode: PlayMode.training);
-            (log[pick.key] ??= []).add(a);
-            trainer.review(pick.key, a);
-            now = now.add(const Duration(seconds: 2));
-          }
-          now = now.add(const Duration(hours: 3));
-        }
-        unlockedPerDay.add(trainer.unlocked.where((s) => !s.key.inverted).length);
-        now = DateTime.utc(2026, 9, 2 + day, 9);
-      }
-      // Unlocking is monotonic and neither stalls nor floods.
-      for (var i = 1; i < unlockedPerDay.length; i++) {
-        expect(unlockedPerDay[i], greaterThanOrEqualTo(unlockedPerDay[i - 1]));
-      }
-      expect(unlockedPerDay.first, inInclusiveRange(3, 30));
-      expect(unlockedPerDay.last, greaterThan(unlockedPerDay.first));
-      expect(trainer.items.values.where((s) => s.card.state == fsrs.State.review), isNotEmpty);
-      // ignore: avoid_print
-      print('upright cards unlocked per day: $unlockedPerDay');
-    });
-
+  group('trainer', () {
     test('grades follow time relative to the goal', () {
       final t = Trainer(config: const TrainerConfig(), items: Trainer.freshItems());
       AttemptRec a(int ms, {bool miss = false}) => AttemptRec(

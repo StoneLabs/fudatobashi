@@ -1,6 +1,7 @@
 import 'package:flutter/painting.dart';
 
 import '../domain/card_mask.dart';
+import '../domain/learning_pace.dart';
 import '../state/play_config.dart';
 import '../state/settings.dart';
 import 'design.dart';
@@ -151,8 +152,16 @@ abstract final class TrainingTuning {
   /// Share of a session reserved for due reviews.
   static const double dueShare = 0.6;
 
-  /// Scheduling weight of a never-seen card.
+  /// Scheduling weight of a new card: never seen, or seen but with fewer than
+  /// [newCardMinTimed] timed attempts.
   static const double freshWeight = 6;
+
+  /// Timed attempts that end a card's "new" status. The next batch also waits
+  /// until every card of the latest batch has this many.
+  static const int newCardMinTimed = 3;
+
+  /// Share of a session that new cards' reserved slots may fill.
+  static const double newCardMaxShare = 0.5;
 
   /// Clamp on the ewma/goal "slowness" ratio used in the scheduling weight.
   static const double slownessClampMin = 0.3;
@@ -179,6 +188,37 @@ abstract final class TrainingTuning {
 
   /// Default gap, in cards, before a requeued card reappears.
   static const int requeueGap = 4;
+}
+
+/// One journey pace: how many days it targets for all 100 cards, and how many
+/// new cards it may auto-unlock in one day (catching up after days off).
+class PaceProfile {
+  const PaceProfile({required this.daysToAll, required this.dailyAutoCap});
+  final int daysToAll;
+  final int dailyAutoCap;
+}
+
+/// Journey pacing: when new cards arrive (`Trainer.unlockEarned`,
+/// `Trainer.paceStatus`).
+///
+/// A new batch auto-unlocks when the player is ready (most unlocked cards are
+/// solid and the latest batch has been practised) and the unlocked count is
+/// behind the pace curve. "Learn next cards" skips both checks.
+abstract final class PaceTuning {
+  static const LearningPace defaultPace = LearningPace.month;
+  static const PaceProfile month = PaceProfile(daysToAll: 28, dailyAutoCap: 10);
+  static const PaceProfile sprint = PaceProfile(daysToAll: 15, dailyAutoCap: 16);
+
+  /// The pace curve: (share of the pace's days elapsed, share of all cards
+  /// expected unlocked), linearly interpolated. Front-loaded, since the
+  /// one-kana island and the first islands are the easiest.
+  static const List<(double, double)> curve = [(0, 0.06), (0.25, 0.31), (0.5, 0.6), (1, 1)];
+
+  /// Share of unlocked upright cards that must be solid before more arrive.
+  static const double readySolidFraction = 0.8;
+
+  /// Journey days the debug page's pace table looks ahead of today.
+  static const int debugLookaheadDays = 3;
 }
 
 /// `CardStats`: how recent response times and misses are summarised.
@@ -336,6 +376,56 @@ abstract final class DevModeTuning {
 
   /// Below this many taps left, a countdown toast appears.
   static const int countdownFrom = 3;
+}
+
+/// The synthetic player (`SyntheticLearner`) behind the pacing simulations
+/// and dev-mode demo data.
+abstract final class SyntheticLearnerTuning {
+  /// First-sight response time, ms, plus this much per extra kimariji kana.
+  static const double firstMs = 3400;
+  static const double firstPerKanaMs = 350;
+
+  /// Practised-to-the-limit response time, ms, plus this much per extra kana.
+  static const double floorMs = 700;
+  static const double floorPerKanaMs = 90;
+
+  /// Upside-down cards are this much slower.
+  static const double invertedFactor = 1.2;
+
+  /// Repetitions over which the gap to the floor shrinks by a factor of e.
+  static const double learnReps = 5;
+
+  /// Response times vary by up to this factor either way.
+  static const double timeJitter = 1.25;
+
+  /// Miss chance on first sight, fading with repetitions (e-folding count),
+  /// on top of a constant slip rate.
+  static const double firstSightMissRate = 0.35;
+  static const double firstSightMissDecayReps = 1.5;
+  static const double slipRate = 0.015;
+
+  /// Memory strength (days) after the first day of practice; recall after a
+  /// gap of g days is exp(-g / strength). Each further day of practice
+  /// multiplies it by [strengthGrowth].
+  static const double initialStrengthDays = 5;
+  static const double strengthGrowth = 2;
+
+  /// Share of practice (repetitions) kept overnight, and after forgetting.
+  static const double overnightRepsKept = 0.85;
+  static const double forgottenRepsKept = 0.5;
+
+  /// Gap between two cards' wall-clock timestamps beyond the response time.
+  static const Duration cardGap = Duration(milliseconds: 250);
+
+  /// Swipe duration from the response (finger moving) to the commit.
+  static const Duration responseToCommit = Duration(milliseconds: 80);
+  static const Duration commitToNextReveal = Duration(milliseconds: 120);
+
+  /// A simulated day's rounds are spread between these local hours, each
+  /// starting up to [roundStartJitterMinutes] late.
+  static const int firstRoundHour = 8;
+  static const int lastRoundHour = 21;
+  static const int roundStartJitterMinutes = 40;
 }
 
 /// `Progress.recordRun`-backed synthetic history for development builds.

@@ -58,7 +58,7 @@ class PlannedRun {
   final List<CardRef> cards;
   final List<TrainingPick> picks;
 
-  /// Cards unlocked right before this run (celebrate first).
+  /// Cards unlocked right before this run; the run's report celebrates them.
   final List<ItemKey> unlockedBefore;
 }
 
@@ -76,6 +76,10 @@ class Progress extends ChangeNotifier {
   AppSettings _settings;
   double? rating;
   final _statsCache = <ItemKey, CardStats>{};
+
+  /// Unlocked while planning a run, not yet reported: the next tracked
+  /// training report celebrates them.
+  final _unreported = <ItemKey>[];
   final Set<int> _islandsCelebrated;
 
   /// The most recent run, kept in memory for the debug page's timing view.
@@ -259,12 +263,37 @@ class Progress extends ChangeNotifier {
     return [for (final k in keys) _ref(k.poemId, k.inverted, c.maskLevel, rng)];
   }
 
+  /// Readiness for new cards (journey mode).
+  Readiness get readiness => trainer.readiness(poems, fudaSets, allStats);
+
+  PaceStatus paceStatus([DateTime? now]) => trainer.paceStatus(poems, fudaSets, allStats, now ?? DateTime.now());
+
+  /// Journey mode with cards still locked: "Learn next cards" is on offer.
+  bool get canLearnMore =>
+      trainer.config.learningMode == LearningMode.journey && trainer.nextBatch(poems, fudaSets).isNotEmpty;
+
   /// 修行: unlock what was earned, then plan a session.
-  Future<PlannedRun> planTraining({math.Random? rng}) async {
-    rng ??= math.Random();
-    final now = DateTime.now();
+  Future<PlannedRun> planTraining({math.Random? rng, DateTime? now}) async {
+    now ??= DateTime.now();
     final fresh = trainer.unlockEarned(poems, fudaSets, allStats, now);
     if (fresh.isNotEmpty) await _saveItems(fresh);
+    return _plan(fresh, rng ?? math.Random(), now);
+  }
+
+  /// "Learn next cards": unlocks the next batch now, ignoring pace and
+  /// readiness, then plans a session that includes it.
+  Future<PlannedRun> learnNextCards({math.Random? rng, DateTime? now}) async {
+    now ??= DateTime.now();
+    final fresh = trainer.unlockNextBatch(poems, fudaSets, now);
+    if (fresh.isNotEmpty) {
+      await _saveItems(fresh);
+      notifyListeners();
+    }
+    return _plan(fresh, rng ?? math.Random(), now);
+  }
+
+  PlannedRun _plan(List<ItemKey> fresh, math.Random rng, DateTime now) {
+    _unreported.addAll(fresh);
     final picks = trainer.planSession(allStats, now, rng);
     final cards = [
       for (final p in picks) _ref(p.key.poemId, p.key.inverted, trainer.items[p.key]!.maskLevel, rng),
@@ -300,16 +329,20 @@ class Progress extends ChangeNotifier {
     notifyListeners();
   }
 
-  /// First-launch choice (and the Settings switch): journey or all known.
-  Future<void> setLearningMode(LearningMode mode) async {
+  /// First-launch choice (and the Settings switch): journey or all known,
+  /// and the journey's pace.
+  Future<void> setLearningMode(LearningMode mode, {LearningPace? pace}) async {
     await updateTrainerConfig(trainer.config.copyWith(
       learningMode: mode,
+      pace: pace,
       reverseMode: mode == LearningMode.allKnown ? ReverseMode.mixed : trainer.config.reverseMode,
     ));
     final fresh = trainer.unlockEarned(poems, fudaSets, allStats, DateTime.now());
     if (fresh.isNotEmpty) await _saveItems(fresh);
     await updateSettings(settings.copyWith(onboarded: true));
   }
+
+  Future<void> setLearningPace(LearningPace pace) => updateTrainerConfig(trainer.config.copyWith(pace: pace));
 
   Future<void> _put(String k, String v) =>
       db.into(db.keyValues).insertOnConflictUpdate(KeyValuesCompanion.insert(key: k, value: v));
@@ -336,7 +369,9 @@ class Progress extends ChangeNotifier {
 
   /// Stores a finished (or ended early) run and updates training and rating.
   /// Guest runs only produce a report.
-  Future<SessionReport> recordRun(PlaySession run, PlayConfig config, DateTime startedAt) async {
+  /// [now] is when the run ended (demo-data seeding backdates it).
+  Future<SessionReport> recordRun(PlaySession run, PlayConfig config, DateTime startedAt, {DateTime? now}) async {
+    now ??= DateTime.now();
     final previousBest = bestFor(config);
     lastRun = run;
     if (!config.tracked || run.attempts.isEmpty) {
@@ -432,7 +467,7 @@ class Progress extends ChangeNotifier {
       rating = Rating.update(rating, perf, ratingPoints.length);
       await _put('rating', rating!.toString());
       await db.into(db.ratingPoints).insert(RatingPointsCompanion.insert(
-            at: DateTime.now(),
+            at: now,
             rating: rating!,
             performance: perf,
             projectedMs: projected.round(),
@@ -440,7 +475,7 @@ class Progress extends ChangeNotifier {
           ));
       ratingPoints.add(RatingPoint(
         id: 0,
-        at: DateTime.now(),
+        at: now,
         rating: rating!,
         performance: perf,
         projectedMs: projected.round(),
@@ -449,8 +484,13 @@ class Progress extends ChangeNotifier {
     }
 
     // Unlocks, islands and goal ladder.
-    final reachedBefore = {for (final i in islands) if (i.reached) i.index};
-    final fresh = trainer.unlockEarned(poems, fudaSets, allStats, DateTime.now());
+    final reachedBefore = {
+      for (final s in trainer.unlocked)
+        if (!s.key.inverted && !_unreported.contains(s.key)) Trainer.islandOf(poems[s.key.poemId]),
+    };
+    final earned = trainer.unlockEarned(poems, fudaSets, allStats, now);
+    final fresh = config.mode == PlayMode.training ? [..._unreported, ...earned] : earned;
+    if (config.mode == PlayMode.training) _unreported.clear();
     final after = islands;
     final reached = [for (final i in after) if (i.reached && !reachedBefore.contains(i.index)) i.index];
     final completed = [
@@ -461,7 +501,7 @@ class Progress extends ChangeNotifier {
       _islandsCelebrated.addAll(completed);
       await _put('islandsCelebrated', jsonEncode(_islandsCelebrated.toList()..sort()));
     }
-    if (fresh.isNotEmpty) await _saveItems(fresh);
+    if (earned.isNotEmpty) await _saveItems(earned);
     var goalRaised = false;
     if (trainer.readyForNextGoal(poems, fudaSets, allStats)) {
       trainer.goalLevel++;
@@ -499,6 +539,7 @@ class Progress extends ChangeNotifier {
     ratingPoints.clear();
     rating = null;
     _islandsCelebrated.clear();
+    _unreported.clear();
     trainer.items
       ..clear()
       ..addAll(Trainer.freshItems());

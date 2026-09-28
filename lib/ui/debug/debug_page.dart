@@ -89,7 +89,7 @@ class _Overview extends StatelessWidget {
       _KV('goal ladder', c.goalsMs.join(' → ')),
       _KV('unlocked items', '${unlocked.length} (${unlocked.where((s) => s.key.inverted).length} inverted)'),
       _KV('solid at goal', '$solid / ${unlocked.length}'),
-      _KV('ready for more', '${t.readyForMore(stats)}'),
+      _KV('all solid', '${t.allSolid(stats)}'),
       _KV('next batch', next.map((id) => poems[id].kimariji).join(' ')),
       _KV('due now', '$due'),
       _KV('attempts stored', '${stats.values.fold<int>(0, (a, s) => a + s.count)}'),

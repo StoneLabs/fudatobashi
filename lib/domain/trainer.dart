@@ -7,6 +7,9 @@ import '../config/config.dart';
 import '../data/fuda_sets.dart';
 import '../data/poem.dart';
 import 'card_stats.dart';
+import 'learning_pace.dart';
+
+export 'learning_pace.dart';
 
 /// When the upside-down (逆さま) version of a card joins training.
 enum ReverseMode { afterMastery, mixed, uprightOnly }
@@ -36,10 +39,83 @@ class TrainingPick {
   final double weight;
 }
 
+/// How ready the player is for new cards: most unlocked upright cards solid,
+/// and every card of the latest batch practised a few times.
+class Readiness {
+  const Readiness({required this.unlocked, required this.solid, required this.latestBatch, required this.underPractised});
+
+  /// Unlocked upright cards.
+  final int unlocked;
+
+  /// Of those, the solid ones.
+  final int solid;
+
+  /// The most advanced batch with an unlocked card (poem ids).
+  final List<int> latestBatch;
+
+  /// Cards of [latestBatch] with fewer than [TrainingTuning.newCardMinTimed]
+  /// timed attempts.
+  final List<int> underPractised;
+
+  int get shaky => unlocked - solid;
+  double get solidFraction => unlocked == 0 ? 1 : solid / unlocked;
+  bool get ready => solidFraction >= PaceTuning.readySolidFraction && underPractised.isEmpty;
+}
+
+/// Why the journey is not auto-unlocking the next batch right now.
+enum UnlockHold { none, allUnlocked, notReady, aheadOfPace, dailyCap }
+
+/// Where the journey stands against its pace curve.
+class PaceStatus {
+  const PaceStatus({
+    required this.pace,
+    required this.day,
+    required this.unlocked,
+    required this.total,
+    required this.newToday,
+    required this.readiness,
+    required this.nextBatch,
+  });
+
+  final LearningPace pace;
+
+  /// Journey day (0 = the day of the first unlock).
+  final int day;
+  final int unlocked, total;
+
+  /// Upright cards unlocked today, manual pulls included.
+  final int newToday;
+  final Readiness readiness;
+  final List<int> nextBatch;
+
+  /// Cards expected unlocked by the end of today.
+  int get target => pace.targetUnlocked(day, total);
+
+  UnlockHold get hold {
+    if (nextBatch.isEmpty) return UnlockHold.allUnlocked;
+    if (unlocked >= target) return UnlockHold.aheadOfPace;
+    if (newToday >= pace.profile.dailyAutoCap) return UnlockHold.dailyCap;
+    if (!readiness.ready) return UnlockHold.notReady;
+    return UnlockHold.none;
+  }
+
+  /// First journey day whose target exceeds the unlocked count (when the curve
+  /// lets the next batch in), or null when every card is unlocked.
+  int? get nextPaceDay {
+    if (nextBatch.isEmpty) return null;
+    var d = day;
+    while (pace.targetUnlocked(d, total) <= unlocked) {
+      d++;
+    }
+    return d;
+  }
+}
+
 /// Tunable knobs of the training system (persisted; editable on the debug page).
 class TrainerConfig {
   const TrainerConfig({
     this.learningMode = LearningMode.journey,
+    this.pace = PaceTuning.defaultPace,
     this.batchSize = TrainingTuning.defaultBatchSize,
     this.reverseMode = ReverseMode.afterMastery,
     this.sessionLength = TrainingTuning.defaultSessionLength,
@@ -51,6 +127,7 @@ class TrainerConfig {
   });
 
   final LearningMode learningMode;
+  final LearningPace pace;
   final int batchSize;
   final ReverseMode reverseMode;
   final int sessionLength;
@@ -66,6 +143,7 @@ class TrainerConfig {
 
   Map<String, Object> toJson() => {
         'learningMode': learningMode.name,
+        'pace': pace.name,
         'batchSize': batchSize,
         'reverseMode': reverseMode.name,
         'sessionLength': sessionLength,
@@ -78,6 +156,7 @@ class TrainerConfig {
 
   factory TrainerConfig.fromJson(Map<String, dynamic> j) => TrainerConfig(
         learningMode: LearningMode.values.asNameMap()[j['learningMode']] ?? LearningMode.journey,
+        pace: LearningPace.values.asNameMap()[j['pace']] ?? PaceTuning.defaultPace,
         batchSize: j['batchSize'] as int? ?? TrainingTuning.defaultBatchSize,
         reverseMode: ReverseMode.values.asNameMap()[j['reverseMode']] ?? ReverseMode.afterMastery,
         sessionLength: j['sessionLength'] as int? ?? TrainingTuning.defaultSessionLength,
@@ -91,6 +170,7 @@ class TrainerConfig {
 
   TrainerConfig copyWith({
     LearningMode? learningMode,
+    LearningPace? pace,
     int? batchSize,
     ReverseMode? reverseMode,
     int? sessionLength,
@@ -100,6 +180,7 @@ class TrainerConfig {
   }) =>
       TrainerConfig(
         learningMode: learningMode ?? this.learningMode,
+        pace: pace ?? this.pace,
         batchSize: batchSize ?? this.batchSize,
         reverseMode: reverseMode ?? this.reverseMode,
         sessionLength: sessionLength ?? this.sessionLength,
@@ -266,48 +347,114 @@ class Trainer {
   }
 
   /// Every unlocked item is solid at the current goal.
-  bool readyForMore(Map<ItemKey, CardStats> stats) =>
+  bool allSolid(Map<ItemKey, CardStats> stats) =>
       unlocked.every((s) => (stats[s.key] ?? CardStats.empty).solid(goalMs));
+
+  Iterable<ItemState> get _uprightUnlocked => unlocked.where((s) => !s.key.inverted);
+
+  Readiness readiness(Poems p, FudaSets sets, Map<ItemKey, CardStats> stats) {
+    final up = _uprightUnlocked.toList();
+    final solid = up.where((s) => (stats[s.key] ?? CardStats.empty).solid(goalMs)).length;
+    final latest = learningBatches(p, sets, config.batchSize).lastWhere(
+      (b) => b.any((id) => items[ItemKey(id, false)]!.unlocked),
+      orElse: () => const [],
+    );
+    return Readiness(
+      unlocked: up.length,
+      solid: solid,
+      latestBatch: latest,
+      underPractised: [
+        for (final id in latest)
+          if (items[ItemKey(id, false)]!.unlocked &&
+              (stats[ItemKey(id, false)] ?? CardStats.empty).timed.length < TrainingTuning.newCardMinTimed)
+            id,
+      ],
+    );
+  }
+
+  /// When the journey began: the earliest upright unlock.
+  DateTime? get journeyStart {
+    DateTime? first;
+    for (final s in _uprightUnlocked) {
+      final at = s.unlockedAt;
+      if (at != null && (first == null || at.isBefore(first))) first = at;
+    }
+    return first;
+  }
+
+  /// Local calendar days from the journey's start to [now] (0 on its first day).
+  int journeyDay(DateTime now) {
+    final start = journeyStart;
+    return start == null ? 0 : math.max(0, _daysBetween(start, now));
+  }
+
+  static int _daysBetween(DateTime a, DateTime b) {
+    DateTime date(DateTime t) {
+      final l = t.toLocal();
+      return DateTime.utc(l.year, l.month, l.day);
+    }
+
+    return date(b).difference(date(a)).inDays;
+  }
+
+  PaceStatus paceStatus(Poems p, FudaSets sets, Map<ItemKey, CardStats> stats, DateTime now) {
+    final up = _uprightUnlocked.toList();
+    return PaceStatus(
+      pace: config.pace,
+      day: journeyDay(now),
+      unlocked: up.length,
+      total: items.length ~/ 2,
+      newToday: up.where((s) => s.unlockedAt != null && _daysBetween(s.unlockedAt!, now) == 0).length,
+      readiness: readiness(p, sets, stats),
+      nextBatch: nextBatch(p, sets),
+    );
+  }
+
+  List<ItemKey> _unlock(Iterable<ItemKey> keys, DateTime now) {
+    final fresh = [for (final k in keys) if (!items[k]!.unlocked) k];
+    for (final k in fresh) {
+      items[k]!
+        ..unlocked = true
+        ..unlockedAt = now;
+    }
+    return fresh;
+  }
+
+  List<ItemKey> _batchKeys(List<int> ids) => [
+        for (final id in ids) ...[
+          ItemKey(id, false),
+          if (config.reverseMode == ReverseMode.mixed) ItemKey(id, true),
+        ],
+      ];
+
+  /// Unlocks the next batch now, whatever the pace and readiness say (the
+  /// player's "Learn next cards"). Returns the newly unlocked items.
+  List<ItemKey> unlockNextBatch(Poems p, FudaSets sets, DateTime now) =>
+      _unlock(_batchKeys(nextBatch(p, sets)), now);
 
   /// Unlocks what the player has earned. Returns the newly unlocked items
   /// (celebrate these!).
   List<ItemKey> unlockEarned(Poems p, FudaSets sets, Map<ItemKey, CardStats> stats, DateTime now) {
     final fresh = <ItemKey>[];
-    void unlock(ItemKey k) {
-      final s = items[k]!;
-      if (s.unlocked) return;
-      s
-        ..unlocked = true
-        ..unlockedAt = now;
-      fresh.add(k);
-    }
-
     // Reverse items follow mastery of their upright card.
     if (config.reverseMode == ReverseMode.afterMastery) {
-      for (final s in unlocked.toList()) {
-        if (!s.key.inverted && mastered(s.key, stats[s.key] ?? CardStats.empty)) unlock(s.key.flipped);
-      }
+      fresh.addAll(_unlock([
+        for (final s in _uprightUnlocked.toList())
+          if (mastered(s.key, stats[s.key] ?? CardStats.empty)) s.key.flipped,
+      ], now));
     }
     if (config.learningMode == LearningMode.allKnown) {
-      for (var id = 1; id <= 100; id++) {
-        unlock(ItemKey(id, false));
-        if (config.reverseMode == ReverseMode.mixed) unlock(ItemKey(id, true));
-      }
-      return fresh;
+      return fresh..addAll(_unlock(_batchKeys([for (var id = 1; id <= items.length ~/ 2; id++) id]), now));
     }
-    final nothingYet = unlocked.isEmpty;
-    if (nothingYet || readyForMore(stats)) {
-      for (final id in nextBatch(p, sets)) {
-        unlock(ItemKey(id, false));
-        if (config.reverseMode == ReverseMode.mixed) unlock(ItemKey(id, true));
-      }
+    if (unlocked.isEmpty || paceStatus(p, sets, stats, now).hold == UnlockHold.none) {
+      fresh.addAll(unlockNextBatch(p, sets, now));
     }
     return fresh;
   }
 
   /// All cards unlocked and solid: the goal can tighten.
   bool readyForNextGoal(Poems p, FudaSets sets, Map<ItemKey, CardStats> stats) =>
-      goalLevel < config.goalsMs.length - 1 && nextBatch(p, sets).isEmpty && readyForMore(stats);
+      goalLevel < config.goalsMs.length - 1 && nextBatch(p, sets).isEmpty && allSolid(stats);
 
   // ------------------------------------------------------------ islands
 
@@ -347,9 +494,21 @@ class Trainer {
       picks.add(TrainingPick(s.key, PickReason.due, 1));
     }
 
+    // New cards get enough slots to reach their practice threshold this round.
+    final newCap = picks.length + (n * TrainingTuning.newCardMaxShare).round();
+    for (final s in pool) {
+      final st = stats[s.key] ?? CardStats.empty;
+      final reason = st.seen ? PickReason.learning : PickReason.fresh;
+      for (var i = st.timed.length; i < TrainingTuning.newCardMinTimed && picks.length < math.min(n, newCap); i++) {
+        picks.add(TrainingPick(s.key, reason, TrainingTuning.freshWeight));
+      }
+    }
+
     (PickReason, double) weigh(ItemState s) {
       final st = stats[s.key] ?? CardStats.empty;
-      if (st.timed.isEmpty) return (PickReason.fresh, TrainingTuning.freshWeight);
+      if (st.timed.length < TrainingTuning.newCardMinTimed) {
+        return (st.seen ? PickReason.learning : PickReason.fresh, TrainingTuning.freshWeight);
+      }
       final slow = (st.ewmaMs! / goalMs).clamp(TrainingTuning.slownessClampMin, TrainingTuning.slownessClampMax);
       final miss = st.missRate();
       final hours = now.difference(st.lastSeen!).inMinutes / 60;
