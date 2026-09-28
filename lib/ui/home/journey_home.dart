@@ -210,6 +210,8 @@ class _IslandProgress extends StatelessWidget {
   Widget build(BuildContext context) {
     final s = S.of(context);
     final progress = ProgressScope.of(context);
+    final now = DateTime.now();
+    final pace = progress.paceStatus(now);
     final island = journey.island;
     final shape = archipelago.islands[journey.current];
     // Its top and bottom edges run parallel to the map's slanted bottom and
@@ -274,24 +276,27 @@ class _IslandProgress extends StatelessWidget {
                       ? PipState.next
                       : PipState.locked,
           ]..sort((a, b) => a.index.compareTo(b.index))),
-          if (progress.knownCardSpeedMs != null || progress.canLearnMore) ...[
-            const SizedBox(height: HomeLayout.pipsSpeedGap),
-            Row(children: [
-              Expanded(
-                child: Align(
+          const SizedBox(height: HomeLayout.pipsSpeedGap),
+          Row(children: [
+            Expanded(
+              child: Align(
+                alignment: Alignment.centerLeft,
+                child: FittedBox(
+                  fit: BoxFit.scaleDown,
                   alignment: Alignment.centerLeft,
-                  child: FittedBox(
-                    fit: BoxFit.scaleDown,
-                    child: KnownSpeedTag(ms: progress.knownCardSpeedMs, weekAgoMs: progress.knownCardSpeedTrendAgo),
+                  child: TodaysPlanTag(
+                    newToday: pace.newToday,
+                    newQuota: pace.newCardsQuota,
+                    reviewsToday: progress.dueCount(DateTime(now.year, now.month, now.day + 1)),
                   ),
                 ),
               ),
-              if (progress.canLearnMore) ...[
-                const SizedBox(width: Gaps.panel),
-                const Flexible(child: LearnAheadButton()),
-              ],
-            ]),
-          ],
+            ),
+            if (progress.canLearnMore) ...[
+              const SizedBox(width: Gaps.panel),
+              const Flexible(child: LearnAheadButton()),
+            ],
+          ]),
         ],
       ),
     );

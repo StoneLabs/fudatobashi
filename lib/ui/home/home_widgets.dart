@@ -224,3 +224,30 @@ class KnownSpeedTag extends StatelessWidget {
     );
   }
 }
+
+/// Journey Home's today's-plan text, beside the "Learn ahead" button: new
+/// cards unlocked so far against the pace's quota for today, and cards due
+/// for review today.
+class TodaysPlanTag extends StatelessWidget {
+  const TodaysPlanTag({super.key, required this.newToday, required this.newQuota, required this.reviewsToday});
+
+  final int newToday;
+  final int newQuota;
+  final int reviewsToday;
+
+  @override
+  Widget build(BuildContext context) {
+    final s = S.of(context);
+    const label = TextStyle(fontSize: HomeLayout.knownSpeedFont, fontWeight: Weights.bold);
+    const number = TextStyle(fontFamily: Fonts.display, fontSize: HomeLayout.knownSpeedNumber);
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        NumberedText(s.newCardsTodayLabel, [newToday, newQuota], style: label, numberStyle: number),
+        const SizedBox(height: HomeLayout.knownSpeedGap),
+        NumberedText(s.reviewsTodayLabel, [reviewsToday], style: label, numberStyle: number),
+      ],
+    );
+  }
+}

@@ -24,6 +24,8 @@ extension HomeStrings on S {
   String get toNextBand => t('{0} to {band} ({1})', '{band}まであと{0}（{1}）');
   String get topBand => t('Top class!', '最高位！');
   String get knownSpeedLabel => t('{0}s known speed', '既知の速さ {0}秒');
+  String get newCardsTodayLabel => t('New cards today {0}/{1}', '今日の新しい札 {0}/{1}');
+  String get reviewsTodayLabel => t("Today's reviews: {0} cards", '今日の復習 {0}枚');
   String get streakDays => t('{0}-day streak', '{0}日連続');
   String get freePlaySub => t('Free play', 'フリー');
   String get freePlayNote => t('Pick any card set', '好きな札で');

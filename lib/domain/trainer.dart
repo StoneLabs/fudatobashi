@@ -91,6 +91,10 @@ class PaceStatus {
   /// Cards expected unlocked by the end of today.
   int get target => pace.targetUnlocked(day, total);
 
+  /// New cards the pace schedules for today in total, at least [newToday]
+  /// (a catch-up day is never shown as already past its own quota).
+  int get newCardsQuota => math.max(newToday, target - (unlocked - newToday));
+
   UnlockHold get hold {
     if (nextBatch.isEmpty) return UnlockHold.allUnlocked;
     if (unlocked >= target) return UnlockHold.aheadOfPace;
