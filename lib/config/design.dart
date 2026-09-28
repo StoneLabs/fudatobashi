@@ -877,8 +877,7 @@ abstract final class ResultsLayout {
   static const double toughHeaderWidth = 90;
   static const double toughCardWidth = 68;
   static const int toughCount = 3;
-  static const double toughTimeFont = 14;
-  static const double toughTimeUnitFont = 11;
+  static const double toughTimeFont = 12;
   static const EdgeInsets toughTimePadding = EdgeInsets.fromLTRB(5, 2, 5, 3);
   static const double toughKimarijiFont = 12.5;
 

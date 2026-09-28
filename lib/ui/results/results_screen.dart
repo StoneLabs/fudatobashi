@@ -548,10 +548,12 @@ class _ToughCard extends StatelessWidget {
           decoration: BoxDecoration(color: Palette.tiers[tier], border: Border.all(color: Palette.ink, width: Strokes.control)),
           child: Padding(
             padding: ResultsLayout.toughTimePadding,
-            child: Text.rich(TextSpan(children: [
-              TextSpan(text: (ms / 1000).toStringAsFixed(3), style: const TextStyle(fontFamily: Fonts.display)),
-              const TextSpan(text: 's', style: TextStyle(fontFamily: Fonts.display)),
-            ]), style: TextStyle(fontSize: ResultsLayout.toughTimeFont, color: Palette.tierText[tier], height: 1)),
+            child: _OneLine(Text(
+              '${(ms / 1000).toStringAsFixed(3)}s',
+              softWrap: false,
+              maxLines: 1,
+              style: TextStyle(fontFamily: Fonts.display, fontSize: ResultsLayout.toughTimeFont, color: Palette.tierText[tier], height: 1),
+            )),
           ),
         ),
         const SizedBox(height: Gaps.tight),

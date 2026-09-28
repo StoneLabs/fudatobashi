@@ -944,6 +944,61 @@ void main() {
     await tester.pumpWidget(const SizedBox());
   });
 
+  // Reproduces the toughest-card time badge's seconds overflowing its box and
+  // wrapping mid-number ("0.953s" as "0.95"/"3s") at scale 1.1 on a real
+  // phone (`_ToughCard` in `results_screen.dart`): the badge must stay one
+  // line, shrinking to fit, at any font scale and however long the number.
+  for (final scale in [1.1, 1.3]) {
+    for (final ja in [false, true]) {
+      testWidgets(
+          'results: toughest-card time badges stay one line at font scale $scale (${ja ? 'ja' : 'en'})',
+          (tester) async {
+        tester.platformDispatcher.textScaleFactorTestValue = scale;
+        addTearDown(tester.platformDispatcher.clearTextScaleFactorTestValue);
+        final p = await open(tester, mode: LearningMode.allKnown, ja: ja);
+        final report = SessionReport(
+          sessionId: null,
+          total: const Duration(seconds: 30),
+          attempts: [
+            Attempt(
+                index: 0, card: const CardRef(1), responseUs: 12345000, outcome: Outcome.known, at: DateTime(2026), deckSize: 3),
+            Attempt(
+                index: 1, card: const CardRef(2), responseUs: 1500000, outcome: Outcome.known, at: DateTime(2026), deckSize: 3),
+            Attempt(
+                index: 2, card: const CardRef(3), responseUs: 953000, outcome: Outcome.known, at: DateTime(2026), deckSize: 3),
+          ],
+          previousBest: const Duration(seconds: 10),
+          ratingBefore: null,
+          ratingAfter: null,
+          goalRaised: false,
+        );
+        await tester.binding.setSurfaceSize(_phone);
+        await tester.pumpWidget(RepaintBoundary(
+          key: const ValueKey('screen'),
+          child: ProgressScope(
+            progress: p,
+            child: MaterialApp(home: ResultsScreen(report: report, config: const PlayConfig(mode: PlayMode.training))),
+          ),
+        ));
+        await tester.pump(const Duration(milliseconds: 500));
+        expect(tester.takeException(), isNull);
+        for (final time in ['12.345s', '1.500s', '0.953s']) {
+          final finder = find.text(time);
+          expect(finder, findsOneWidget, reason: '$time badge');
+          final paragraph = tester.renderObject<RenderParagraph>(finder);
+          // The badge shrinks the whole number+unit to fit instead of
+          // wrapping, so its paragraph height must match a single,
+          // unbroken line laid out at the same style and scale.
+          final oneLine =
+              (TextPainter(text: paragraph.text, textDirection: TextDirection.ltr, textScaler: paragraph.textScaler)..layout())
+                  .height;
+          expect(paragraph.size.height, closeTo(oneLine, 0.5), reason: '$time wrapped onto more than one line');
+        }
+        await tester.pumpWidget(const SizedBox());
+      });
+    }
+  }
+
   testWidgets('results (journey): no Learn next button, it lives on Home', (tester) async {
     final p = await open(tester, mode: LearningMode.journey);
     const config = PlayConfig(mode: PlayMode.training);
