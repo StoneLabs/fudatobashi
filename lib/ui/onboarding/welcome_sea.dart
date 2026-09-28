@@ -100,7 +100,7 @@ class WelcomeSeaFront extends StatelessWidget {
                 turnDeg: WelcomeSeaLayout.boatTurnDeg,
                 lift: WelcomeSeaLayout.boatLift,
                 period: WelcomeSeaLayout.boatPeriod,
-                child: ArtImageBox(PrerenderedArt.boat, size: WelcomeSeaLayout.boat.size),
+                child: VectorArtBox(MapArt.boat, size: WelcomeSeaLayout.boat.size),
               ),
             ),
           ),

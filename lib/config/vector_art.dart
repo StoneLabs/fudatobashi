@@ -1,6 +1,5 @@
 import 'dart:ui';
 
-import '../ui/manga/art_image.dart';
 import '../ui/manga/vector.dart';
 import 'design.dart';
 
@@ -67,14 +66,4 @@ abstract final class SceneArt {
 
   /// "I know all 100": a fanned deck with a 100 badge.
   static late final VectorArt expert;
-}
-
-/// Art shown from pre-rendered images (see [ArtImage]): the map's boat and
-/// the onboarding scenes. Tobi stays live.
-abstract final class PrerenderedArt {
-  static late final ArtImage boat;
-  static late final ArtImage beginner;
-  static late final ArtImage expert;
-
-  static late final List<ArtImage> all;
 }

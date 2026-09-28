@@ -139,7 +139,7 @@ class ModeChoice extends StatelessWidget {
 
   final PanelShape shape;
   final Color color;
-  final ArtImage art;
+  final VectorArt art;
   final String tag, title, sub, note;
   final VoidCallback? onTap;
 
@@ -159,7 +159,7 @@ class ModeChoice extends StatelessWidget {
               left: OnboardingLayout.illustrationInset,
               top: 0,
               bottom: 0,
-              child: Center(child: ArtImageBox(art, size: const Size.square(OnboardingLayout.illustration))),
+              child: Center(child: VectorArtBox(art, size: const Size.square(OnboardingLayout.illustration))),
             ),
             ConstrainedBox(
               constraints: const BoxConstraints(minHeight: OnboardingLayout.choiceHeight),

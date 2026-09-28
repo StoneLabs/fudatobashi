@@ -79,7 +79,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
           child: ModeChoice(
             shape: const PanelShape(topLeft: Offset(0, OnboardingLayout.choiceCut)),
             color: Palette.landSoft,
-            art: PrerenderedArt.beginner,
+            art: SceneArt.beginner,
             tag: s.beginnerTag,
             title: s.beginnerTitle,
             sub: s.beginnerSub,
@@ -93,7 +93,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
           child: ModeChoice(
             shape: const PanelShape(bottomRight: Offset(0, OnboardingLayout.choiceCut)),
             color: Palette.sunSoft,
-            art: PrerenderedArt.expert,
+            art: SceneArt.expert,
             tag: s.expertTag,
             title: s.expertTitle,
             sub: s.expertSub,

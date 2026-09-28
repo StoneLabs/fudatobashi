@@ -1,6 +1,5 @@
 import 'package:flutter/services.dart' show rootBundle;
 
-import '../ui/manga/art_image.dart';
 import '../ui/manga/svg_art.dart';
 import '../ui/manga/vector.dart';
 import 'design.dart';
@@ -91,9 +90,4 @@ void installVectorArt(Map<String, String> svg) {
   TobiArt.relaxedBehind = parse('tobi/relaxed-behind').shapes;
 
   Tally.strokes = SvgArt.strokes(svg['tally']!, debugName: 'assets/svg/tally.svg');
-
-  PrerenderedArt.boat = ArtImage('boat', MapArt.boat);
-  PrerenderedArt.beginner = ArtImage('beginner', SceneArt.beginner);
-  PrerenderedArt.expert = ArtImage('expert', SceneArt.expert);
-  PrerenderedArt.all = [PrerenderedArt.boat, PrerenderedArt.beginner, PrerenderedArt.expert];
 }

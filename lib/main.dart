@@ -7,7 +7,6 @@ import 'package:flutter/services.dart';
 import 'package:flutter_displaymode/flutter_displaymode.dart';
 
 import 'config/licenses.dart';
-import 'config/vector_art.dart';
 import 'config/vector_art_assets.dart';
 import 'data/fuda_sets.dart';
 import 'data/islands.dart';
@@ -16,7 +15,6 @@ import 'db/database.dart';
 import 'state/progress.dart';
 import 'ui/app.dart';
 import 'ui/debug/frame_stats.dart';
-import 'ui/manga/art_image.dart';
 import 'ui/sound/sounds.dart';
 import 'ui/torifuda/glyph_atlas.dart';
 
@@ -48,7 +46,6 @@ Future<void> main() async {
   final progress = await Progress.open(AppDatabase());
   await GlyphAtlas.load();
   await loadVectorArt();
-  await ArtImages.load(PrerenderedArt.all);
   FrameStats.instance.start();
   runApp(FudatobashiApp(progress: progress));
   // Loaded in the background: the first celebration is at least a run away.
