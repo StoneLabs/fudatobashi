@@ -261,6 +261,12 @@ abstract final class LearnAheadTuning {
   static const double maxRecentMissRate = 0.2;
 }
 
+/// Settings' journey → all-known switch (`AllKnownWarningScreen`): it can't
+/// be undone, so confirming takes a deliberate hold instead of a tap.
+abstract final class AllKnownSwitchTuning {
+  static const Duration holdDuration = Duration(seconds: 15);
+}
+
 /// `CardStats`: how recent response times and misses are summarised.
 abstract final class StatsTuning {
   /// Attempts at which the EWMA's weight on an old sample halves.

@@ -14,6 +14,7 @@ import 'package:fudatobashi/domain/trainer.dart';
 import 'package:fudatobashi/state/play_config.dart';
 import 'package:fudatobashi/state/demo_data.dart';
 import 'package:fudatobashi/state/progress.dart';
+import 'package:fudatobashi/ui/home/journey_state.dart';
 
 void main() {
   poems = Poems.fromJsonString(File('assets/data/poems.json').readAsStringSync());
@@ -145,6 +146,34 @@ void main() {
     await progress.setLearningMode(LearningMode.allKnown);
     final stillPartial = IslandProgress(partial.index, partial.name, partial.poemIds, 1, 0, 0);
     expect(progress.isIslandPlayable(stillPartial), isTrue);
+    await db.close();
+  });
+
+  test('switching journey → all-known → journey unlocks everything for good, with nothing left to celebrate',
+      () async {
+    final db = AppDatabase(NativeDatabase.memory());
+    final progress = await Progress.open(db);
+
+    await progress.switchToAllKnown();
+    expect(progress.trainer.unlocked.where((s) => !s.key.inverted).length, 100);
+
+    await progress.setLearningMode(LearningMode.journey);
+    final journey = JourneyState.of(progress);
+    expect(journey.cardsUnlocked, 100);
+    expect(journey.finished, isTrue, reason: 'every island already marked, not stuck mid-consolidation');
+    expect(progress.islands.every((i) => progress.islandMarked(i.index)), isTrue);
+
+    // Drive one island's cards solid through real practice: since it was
+    // already marked complete by the switch, this earns no fresh celebration.
+    final island = progress.islands[0];
+    final cards = [for (final id in island.poemIds) CardRef(id)];
+    for (var round = 0; round < TrainingTuning.newCardMinTimed; round++) {
+      final run = play(cards, [for (final _ in cards) (400, Outcome.known)]);
+      final report = await progress.recordRun(run, const PlayConfig(mode: PlayMode.training), DateTime.now());
+      expect(report.islandsCompleted, isEmpty);
+      expect(report.islandsReached, isEmpty);
+    }
+    expect(progress.islands[0].complete, isTrue, reason: 'genuinely solid now, just never re-celebrated');
     await db.close();
   });
 

@@ -8,6 +8,7 @@ import '../../domain/trainer.dart';
 import '../../l10n/credits_strings.dart';
 import '../../l10n/settings_strings.dart';
 import '../../l10n/strings.dart';
+import '../../state/progress.dart';
 import '../../state/scope.dart';
 import '../../state/settings.dart';
 import '../debug/celebration_preview.dart';
@@ -16,6 +17,7 @@ import '../debug/reset_actions.dart';
 import '../debug/simulation_page.dart';
 import '../manga/manga.dart';
 import '../shell/header_actions.dart';
+import 'all_known_warning_screen.dart';
 import 'credits_screen.dart';
 
 /// Settings: language, learning mode, About (hides the 10-tap developer-mode
@@ -42,7 +44,7 @@ class SettingsScreen extends StatelessWidget {
           ),
         );
     Widget modeChoice(LearningMode m, String label) =>
-        choice(mode == m, label, () => progress.setLearningMode(m));
+        choice(mode == m, label, () => _chooseLearningMode(context, progress, mode, m));
     Widget paceChoice(LearningPace p, String label) => choice(pace == p, label, () => progress.setLearningPace(p));
     Widget label(String text) => Padding(
           padding: const EdgeInsets.only(bottom: Gaps.small),
@@ -124,6 +126,18 @@ class SettingsScreen extends StatelessWidget {
       ),
     );
   }
+}
+
+/// Journey → all-known goes behind a full-screen warning (it can't be
+/// undone); the other direction needs none, since journey then simply shows
+/// everything unlocked.
+Future<void> _chooseLearningMode(BuildContext context, Progress progress, LearningMode from, LearningMode to) async {
+  if (from != LearningMode.journey || to != LearningMode.allKnown) {
+    await progress.setLearningMode(to);
+    return;
+  }
+  final confirmed = await Navigator.of(context).push(MangaRoute<bool>(builder: (_) => const AllKnownWarningScreen()));
+  if (confirmed == true) await progress.switchToAllKnown();
 }
 
 /// The don't-know input; "off" is only offered in all-known mode.

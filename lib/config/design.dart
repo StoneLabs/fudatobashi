@@ -1822,3 +1822,23 @@ abstract final class CreditsLayout {
   static const double rowSubtitleGap = 2;
   static const double licenseTextLineHeight = 1.4;
 }
+
+/// A press-and-hold confirm button (`HoldToConfirmButton`): a ring fills
+/// around it as it is held, and releasing early resets it.
+abstract final class HoldConfirmStyle {
+  static const double ringSize = 120;
+  static const double ringStroke = 8;
+  static const double icon = 28;
+  static const Color track = Palette.desk;
+  static const Color fill = Palette.pink;
+}
+
+/// Settings' journey → all-known switch warning (`AllKnownWarningScreen`): a
+/// full-screen, hard-to-miss stop sign before an irreversible unlock.
+abstract final class AllKnownWarningStyle {
+  static const double titleFont = 30;
+  static const double tobiHeight = 160;
+  static const double bodyFont = TypeScale.body;
+  static const double bodyLineHeight = 1.4;
+  static const EdgeInsets padding = EdgeInsets.fromLTRB(Gaps.gutter, Gaps.section, Gaps.gutter, Gaps.section);
+}

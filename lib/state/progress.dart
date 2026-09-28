@@ -377,6 +377,23 @@ class Progress extends ChangeNotifier {
 
   Future<void> setLearningPace(LearningPace pace) => updateTrainerConfig(trainer.config.copyWith(pace: pace));
 
+  /// Settings' journey → all-known switch (behind its own warning): unlocks
+  /// every card for good, and silently marks every island as already
+  /// complete, so a later switch back to journey shows a finished map (not
+  /// one still stuck mid-consolidation) with nothing left to celebrate.
+  Future<void> switchToAllKnown() async {
+    await setLearningMode(LearningMode.allKnown);
+    _islandsCelebrated.addAll(islands.map((i) => i.index));
+    await _put('islandsCelebrated', jsonEncode(_islandsCelebrated.toList()..sort()));
+    _unreported.clear();
+    notifyListeners();
+  }
+
+  /// Whether island [index]'s completion has already been marked, by a real
+  /// completion or [switchToAllKnown]'s silent one: `JourneyState` treats it
+  /// as done even before its cards are individually solid.
+  bool islandMarked(int index) => _islandsCelebrated.contains(index);
+
   Future<void> _put(String k, String v) =>
       db.into(db.keyValues).insertOnConflictUpdate(KeyValuesCompanion.insert(key: k, value: v));
 
