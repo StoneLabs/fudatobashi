@@ -234,18 +234,29 @@ class _PlayScreenState extends State<PlayScreen> {
               Positioned.fill(bottom: buttonsBottom, child: SfxOverlay(key: _sfxKey)),
               Positioned(
                 left: Gaps.gutter,
-                top: Gaps.section,
-                child: KimarijiChip(
-                  text: chipText,
-                  timeMs: last == null ? null : last.responseUs / 1000,
-                  wrong: last?.isMiss ?? false,
-                  onTap: last == null ? null : _toggleWrong,
-                ),
-              ),
-              Positioned(
                 right: Gaps.gutter,
                 top: Gaps.section,
-                child: _Counter(n: math.min(session.index + 1, session.cards.length), total: session.cards.length),
+                child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                  // Shrinks rather than running into the counter at large
+                  // font scales.
+                  Flexible(
+                    child: FittedBox(
+                      fit: BoxFit.scaleDown,
+                      alignment: Alignment.centerLeft,
+                      child: KimarijiChip(
+                        text: chipText,
+                        timeMs: last == null ? null : last.responseUs / 1000,
+                        wrong: last?.isMiss ?? false,
+                        onTap: last == null ? null : _toggleWrong,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: Gaps.panel),
+                  _Counter(n: math.min(session.index + 1, session.cards.length), total: session.cards.length),
+                ]),
               ),
               Positioned(
                 left: Gaps.gutter,

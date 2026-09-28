@@ -357,9 +357,8 @@ class _Swatch extends StatelessWidget {
       ]);
 }
 
-/// Tobi's pick of the slowest island, with a shortcut to play it. Laid out
-/// with `Positioned` (not a `Column`) so the fixed [StatsLayout.focusHeight]
-/// can never overflow.
+/// Tobi's pick of the slowest island, with a shortcut to play it. Tobi and
+/// his balloon keep a column of their own, clear of the text.
 class _SlowestIslandPanel extends StatelessWidget {
   const _SlowestIslandPanel({required this.island});
   final _ArchipelagoIsland island;
@@ -367,74 +366,69 @@ class _SlowestIslandPanel extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final s = S.of(context);
-    return SizedBox(
-      height: StatsLayout.focusHeight,
-      child: Stack(
-        clipBehavior: Clip.none,
-        children: [
-          Positioned.fill(
-            child: MangaPanel(
-              shape: const PanelShape(bottomRight: Offset(0, StatsLayout.focusCut)),
-              color: Palette.sunSoft,
-              tone: Tones.sun,
-              padding: StatsLayout.focusPadding,
-              child: Stack(children: [
-                Positioned(left: 0, top: 0, child: InkTag(s.slowestIslandTag)),
-                Positioned(
-                  left: 0,
-                  top: StatsLayout.focusNameTop,
-                  child: Row(crossAxisAlignment: CrossAxisAlignment.end, children: [
-                    Text(island.name,
-                        style:
-                            const TextStyle(fontFamily: Fonts.display, fontSize: StatsLayout.focusNameFont, height: 1)),
-                    const SizedBox(width: Gaps.inner),
-                    Container(
-                      padding: StatsLayout.focusSpeedPadding,
-                      decoration: BoxDecoration(border: Border.all(color: Palette.ink, width: Strokes.control)),
-                      child: Text('${formatChipSeconds(island.medianMs!)}s',
-                          style: const TextStyle(fontFamily: Fonts.display, fontSize: StatsLayout.focusSpeedFont)),
-                    ),
-                  ]),
+    return MangaPanel(
+      shape: const PanelShape(bottomRight: Offset(0, StatsLayout.focusCut)),
+      color: Palette.sunSoft,
+      tone: Tones.sun,
+      padding: StatsLayout.focusPadding,
+      child: Row(crossAxisAlignment: CrossAxisAlignment.end, children: [
+        Expanded(
+          child: Column(crossAxisAlignment: CrossAxisAlignment.start, mainAxisSize: MainAxisSize.min, children: [
+            FittedBox(fit: BoxFit.scaleDown, alignment: Alignment.centerLeft, child: InkTag(s.slowestIslandTag)),
+            const SizedBox(height: StatsLayout.focusGap),
+            Row(crossAxisAlignment: CrossAxisAlignment.end, children: [
+              Flexible(
+                child: FittedBox(
+                  fit: BoxFit.scaleDown,
+                  alignment: Alignment.centerLeft,
+                  child: Text(island.name,
+                      style: const TextStyle(fontFamily: Fonts.display, fontSize: StatsLayout.focusNameFont, height: 1)),
                 ),
-                Positioned(
-                  left: 0,
-                  top: StatsLayout.focusLineTop,
-                  child: NumberedText(
-                    s.islandLineTemplate,
-                    [island.cardCount, island.dueCount],
-                    style: const TextStyle(fontWeight: Weights.bold, fontSize: StatsLayout.focusLineFont),
-                    numberStyle: const TextStyle(
-                        fontFamily: Fonts.display, fontWeight: Weights.black, fontSize: StatsLayout.focusLineFont),
-                  ),
-                ),
-                Positioned(
-                  left: 0,
-                  top: StatsLayout.focusButtonTop,
-                  child: SizedBox(
-                    height: StatsLayout.playButtonHeight,
-                    child: InkButton(
-                      color: Palette.pink,
-                      padding: StatsLayout.playButtonPadding,
-                      onTap: () =>
-                          startFreePlay(context, PlayConfig(mode: PlayMode.free, setIds: ['initial:${island.name}'])),
-                      child: Text(s.playThisIsland,
-                          style: const TextStyle(fontWeight: Weights.black, fontSize: StatsLayout.playButtonFont)),
-                    ),
-                  ),
-                ),
-              ]),
+              ),
+              const SizedBox(width: Gaps.small),
+              Container(
+                padding: StatsLayout.focusSpeedPadding,
+                decoration: BoxDecoration(border: Border.all(color: Palette.ink, width: Strokes.control)),
+                child: Text('${formatChipSeconds(island.medianMs!)}s',
+                    style: const TextStyle(fontFamily: Fonts.display, fontSize: StatsLayout.focusSpeedFont)),
+              ),
+            ]),
+            const SizedBox(height: StatsLayout.focusGap),
+            NumberedText(
+              s.islandLineTemplate,
+              [island.cardCount, island.dueCount],
+              style: const TextStyle(fontWeight: Weights.bold, fontSize: StatsLayout.focusLineFont),
+              numberStyle: const TextStyle(
+                  fontFamily: Fonts.display, fontWeight: Weights.black, fontSize: StatsLayout.focusLineFont),
             ),
-          ),
-          Placed(StatsLayout.focusTobi, child: const Tobi(pose: TobiPose.pointing)),
-          Placed(
-            StatsLayout.focusBalloon,
-            child: SpeechBalloon(
-              speaker: StatsLayout.focusBalloonSpeaker,
-              child: Text(s.tapAnIsland, style: const TextStyle(fontSize: StatsLayout.focusBalloonFont)),
+            const SizedBox(height: StatsLayout.focusButtonGap),
+            ConstrainedBox(
+              constraints: const BoxConstraints(minHeight: StatsLayout.playButtonHeight),
+              child: InkButton(
+                color: Palette.pink,
+                padding: StatsLayout.playButtonPadding,
+                onTap: () => startFreePlay(context, PlayConfig(mode: PlayMode.free, setIds: ['initial:${island.name}'])),
+                child: Text(s.playThisIsland,
+                    style: const TextStyle(fontWeight: Weights.black, fontSize: StatsLayout.playButtonFont)),
+              ),
             ),
-          ),
-        ],
-      ),
+          ]),
+        ),
+        const SizedBox(width: Gaps.small),
+        SizedBox(
+          width: StatsLayout.focusBalloon.width,
+          child: Column(mainAxisSize: MainAxisSize.min, children: [
+            SizedBox.fromSize(
+              size: StatsLayout.focusBalloon,
+              child: SpeechBalloon(
+                speaker: StatsLayout.focusBalloonSpeaker,
+                child: Text(s.tapAnIsland, style: const TextStyle(fontSize: StatsLayout.focusBalloonFont)),
+              ),
+            ),
+            SizedBox.fromSize(size: StatsLayout.focusTobi, child: const Tobi(pose: TobiPose.pointing)),
+          ]),
+        ),
+      ]),
     );
   }
 }

@@ -16,9 +16,9 @@ import '../results/celebrations.dart';
 
 /// The rank ladder (spec phone 9): nine class rungs, coloured from white
 /// 入門 up through pink, yellow, green, sea and violet to a solid-ink A級,
-/// with the player's own rung tagged YOU, the next threshold tagged NEXT
-/// (with a rank-up preview alongside it), and every class already passed
-/// stamped CLEAR.
+/// with the player's own rung tagged YOU (and scrolled into view), the next
+/// threshold tagged NEXT (with a rank-up preview alongside it), every class
+/// already passed stamped CLEAR and every one still ahead locked.
 class RankScreen extends StatelessWidget {
   const RankScreen({super.key});
 
@@ -42,11 +42,12 @@ class RankScreen extends StatelessWidget {
               _TopBar(rating: rating),
               const SizedBox(height: Gaps.section),
               Expanded(
-                child: ListView.separated(
-                  itemCount: ladder.length,
-                  separatorBuilder: (_, _) => const SizedBox(height: RankLayout.rungGap),
-                  itemBuilder: (context, i) {
+                child: _Ladder(
+                  length: ladder.length,
+                  focus: ladder.indexOf(band),
+                  rung: (i) {
                     final rungBand = ladder[i];
+                    final rungIndex = Rating.bands.indexOf(rungBand);
                     return _Rung(
                       band: rungBand,
                       currentBand: band,
@@ -54,7 +55,8 @@ class RankScreen extends StatelessWidget {
                       nextThreshold: next?.minRating,
                       isYou: rungBand == band,
                       isNext: next != null && rungBand == next,
-                      isCleared: Rating.bands.indexOf(rungBand) < bandIndex,
+                      isCleared: rungIndex < bandIndex,
+                      isLocked: rungIndex > bandIndex,
                       isTop: rungBand.id == 'A',
                     );
                   },
@@ -66,6 +68,47 @@ class RankScreen extends StatelessWidget {
       ),
     );
   }
+}
+
+/// The rungs in a scrolling list that opens with rung [focus] centred.
+class _Ladder extends StatefulWidget {
+  const _Ladder({required this.length, required this.focus, required this.rung});
+  final int length;
+  final int focus;
+  final Widget Function(int index) rung;
+
+  @override
+  State<_Ladder> createState() => _LadderState();
+}
+
+class _LadderState extends State<_Ladder> {
+  ScrollController? _scroll;
+
+  @override
+  void dispose() {
+    _scroll?.dispose();
+    super.dispose();
+  }
+
+  /// Rungs have a fixed height, so the offset centring [focus] is known
+  /// before the first layout.
+  double _offsetCentring(double viewport) {
+    const step = RankLayout.rungHeight + RankLayout.rungGap;
+    final content = widget.length * step - RankLayout.rungGap;
+    final centred = widget.focus * step - (viewport - RankLayout.rungHeight) / 2;
+    return centred.clamp(0.0, math.max(0.0, content - viewport));
+  }
+
+  @override
+  Widget build(BuildContext context) => LayoutBuilder(builder: (context, box) {
+        _scroll ??= ScrollController(initialScrollOffset: _offsetCentring(box.maxHeight));
+        return ListView.separated(
+          controller: _scroll,
+          itemCount: widget.length,
+          separatorBuilder: (_, _) => const SizedBox(height: RankLayout.rungGap),
+          itemBuilder: (context, i) => widget.rung(i),
+        );
+      });
 }
 
 class _TopBar extends StatelessWidget {
@@ -129,6 +172,7 @@ class _Rung extends StatelessWidget {
     required this.isYou,
     required this.isNext,
     required this.isCleared,
+    required this.isLocked,
     required this.isTop,
   });
 
@@ -136,7 +180,7 @@ class _Rung extends StatelessWidget {
   final RankBand currentBand;
   final double rating;
   final double? nextThreshold;
-  final bool isYou, isNext, isCleared, isTop;
+  final bool isYou, isNext, isCleared, isLocked, isTop;
 
   @override
   Widget build(BuildContext context) {
@@ -171,6 +215,10 @@ class _Rung extends StatelessWidget {
                 child: Row(
                   children: [
                     _ClassBadge(band, accent: isTop),
+                    if (isLocked) ...[
+                      const SizedBox(width: RankLayout.lockGap),
+                      MangaIcon(IconArt.lock, size: RankLayout.lockIcon, color: style.text),
+                    ],
                     const Spacer(),
                     if (markers.isNotEmpty)
                       // `FittedBox` guards the rare case of two markers

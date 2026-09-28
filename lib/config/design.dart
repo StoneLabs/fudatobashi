@@ -628,22 +628,19 @@ abstract final class StatsLayout {
   static const double legendSwatchBorder = 1.6;
   static const double legendItemGap = 4;
 
-  /// The slowest-island panel is laid out with [Positioned] (not a `Column`)
-  /// so its fixed [focusHeight] can never overflow: each element sits at its
-  /// own `top`, sized to its own content.
-  static const double focusHeight = 152;
+  /// The slowest-island panel: text on the left, Tobi under his balloon
+  /// (pointing down at him) in a column on the right.
   static const double focusCut = 6;
-  static const EdgeInsets focusPadding = EdgeInsets.fromLTRB(14, 12, 14, 12);
-  static const double focusNameTop = 26;
+  static const EdgeInsets focusPadding = EdgeInsets.fromLTRB(14, 12, 10, 12);
+  static const double focusGap = 4;
   static const double focusNameFont = 40;
   static const double focusSpeedFont = 17;
   static const EdgeInsets focusSpeedPadding = EdgeInsets.fromLTRB(7, 2, 7, 3);
-  static const double focusLineTop = 70;
   static const double focusLineFont = 13;
-  static const double focusButtonTop = 86;
-  static const Placement focusTobi = Placement(right: 6, top: 4, size: Size(70, 84));
-  static const Placement focusBalloon = Placement(right: 66, top: 10, size: Size(96, 52));
-  static const Alignment focusBalloonSpeaker = Alignment(1.5, 0.4);
+  static const double focusButtonGap = 10;
+  static const Size focusTobi = Size(62, 74);
+  static const Size focusBalloon = Size(92, 50);
+  static const Alignment focusBalloonSpeaker = Alignment(0.2, 2.2);
   static const double focusBalloonFont = 13;
 
   static const double playButtonHeight = 40;
@@ -760,6 +757,10 @@ abstract final class RankLayout {
 
   static const double rungHeight = 84;
   static const double rungGap = 8;
+
+  /// The lock beside the badge of a class still ahead.
+  static const double lockIcon = 20;
+  static const double lockGap = 10;
   static const EdgeInsets rungPadding = EdgeInsets.symmetric(horizontal: 14, vertical: 8);
 
   static const EdgeInsets badgePadding = EdgeInsets.fromLTRB(10, 5, 10, 6);

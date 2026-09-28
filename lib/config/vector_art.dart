@@ -37,6 +37,7 @@ abstract final class IconArt {
   static const end = VectorArt(_box, [VPath('M6 21V4M6 4h11l-2.4 4.2L17 12.5H6', _line)]);
   static const question = VectorArt(_box, [VPath('M8.5 8.8a3.5 3.5 0 1 1 5.1 3.1c-1 .5-1.6 1.3-1.6 2.4v.7M12 19v.1', _line)]);
   static const refresh = VectorArt(_box, [VPath('M20 12a8 8 0 1 1-2.3-5.6M20 4v4.5h-4.5', _line)]);
+  static const lock = VectorArt(_box, [VPath('M6 11h12v9H6ZM8.5 11V8a3.5 3.5 0 0 1 7 0v3M12 14.5v2', _line)]);
   static const person = VectorArt(_box, [
     VEllipse.circle(Offset(12, 8), 3.6, _line),
     VPath('M4.5 20c.8-4 3.8-6 7.5-6s6.7 2 7.5 6', _line),

@@ -12,6 +12,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:fudatobashi/config/config.dart';
 import 'package:fudatobashi/config/design.dart';
+import 'package:fudatobashi/config/vector_art.dart';
 import 'package:fudatobashi/data/fuda_sets.dart';
 import 'package:fudatobashi/data/islands.dart';
 import 'package:fudatobashi/data/poem.dart';
@@ -32,6 +33,7 @@ import 'package:fudatobashi/ui/app.dart';
 import 'package:fudatobashi/ui/home/training_hero.dart';
 import 'package:fudatobashi/ui/islands/island_map.dart';
 import 'package:fudatobashi/ui/manga/manga.dart';
+import 'package:fudatobashi/ui/play/kimariji_chip.dart';
 import 'package:fudatobashi/ui/play/play_screen.dart';
 import 'package:fudatobashi/ui/rank/rank_screen.dart';
 import 'package:fudatobashi/ui/results/celebration_overlays.dart';
@@ -608,6 +610,20 @@ void main() {
       expect(find.text(s.youTag), findsOneWidget);
     });
 
+    testWidgets('opens scrolled to your rung, with every class ahead locked', (tester) async {
+      final p = await open(tester);
+      await tester.binding.setSurfaceSize(_phone);
+      await tester.pumpWidget(pumped(p));
+      await tester.pump(const Duration(milliseconds: 500));
+      expect(tester.takeException(), isNull);
+      expect(tester.widget<ListView>(find.byType(ListView)).controller!.offset, greaterThan(0),
+          reason: '入門 is the bottom rung');
+      expect(tester.getRect(find.text(const S(false).youTag)).bottom, lessThan(_phone.height));
+      final locks = find.byWidgetPredicate((w) => w is MangaIcon && w.art == IconArt.lock);
+      expect(locks, findsWidgets);
+      await tester.pumpWidget(const SizedBox());
+    });
+
     testWidgets('fresh player: 入門-only ladder renders cleanly', (tester) async {
       final p = await open(tester);
       await tester.pumpWidget(pumped(p));
@@ -695,6 +711,36 @@ void main() {
       await tester.pump();
       await tester.pump();
     }
+
+    testWidgets('the kimariji chip stays clear of the counter at a large font scale', (tester) async {
+      tester.platformDispatcher.textScaleFactorTestValue = 1.3;
+      addTearDown(tester.platformDispatcher.clearTextScaleFactorTestValue);
+      final p = await open(tester, mode: LearningMode.allKnown);
+      await tester.runAsync(() => p.updateSettings(p.settings.copyWith(leadIn: false)));
+      await tester.binding.setSurfaceSize(_phone);
+      final long = poems.byKimariji('きみがためは').id;
+      await tester.pumpWidget(ProgressScope(
+        progress: p,
+        child: MaterialApp(
+          home: PlayScreen(
+              cards: [CardRef(long), const CardRef(2), const CardRef(3)], config: const PlayConfig(mode: PlayMode.free)),
+        ),
+      ));
+      await tester.pump();
+      await tester.pump();
+      final g = await tester.startGesture(const Offset(192, 360));
+      for (var i = 0; i < 4; i++) {
+        await g.moveBy(const Offset(40, 0));
+        await tester.pump(const Duration(milliseconds: 8));
+      }
+      await g.up();
+      await tester.pump(const Duration(milliseconds: 500));
+      expect(tester.takeException(), isNull);
+      final chip = tester.getRect(find.byType(KimarijiChip));
+      final counter = tester.getRect(find.text('/ 3'));
+      expect(chip.right, lessThan(counter.left));
+      await tester.pumpWidget(const SizedBox());
+    });
 
     for (final ja in [false, true]) {
       testWidgets('the don\'t-remember button fits at a large font scale (${ja ? 'ja' : 'en'})', (tester) async {
