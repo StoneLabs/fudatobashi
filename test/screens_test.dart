@@ -130,23 +130,48 @@ void main() {
       await tester.pumpWidget(const SizedBox());
     });
 
-    testWidgets('home, journey: Learn next warns while cards are shaky ($lang)', (tester) async {
+    testWidgets('results, journey: Learn next warns while cards are shaky ($lang)', (tester) async {
       final p = await open(tester, mode: LearningMode.journey, ja: ja);
       await tester.binding.setSurfaceSize(_phone);
-      await tester.pumpWidget(RepaintBoundary(key: const ValueKey('screen'), child: FudatobashiApp(progress: p)));
+      final report = SessionReport(
+        sessionId: null,
+        total: null,
+        attempts: const [],
+        previousBest: null,
+        ratingBefore: null,
+        ratingAfter: null,
+        unlocked: const [],
+        goalRaised: false,
+      );
+      await tester.pumpWidget(RepaintBoundary(
+        key: const ValueKey('screen'),
+        child: ProgressScope(
+          progress: p,
+          child: MaterialApp(home: ResultsScreen(report: report, config: const PlayConfig(mode: PlayMode.training))),
+        ),
+      ));
       await tester.pump(const Duration(milliseconds: 500));
-      await _capture(tester, 'journey_learn_next_$lang');
       await tester.tap(find.byType(LearnNextButton));
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 600));
-      expect(find.text(ja ? 'まだ3枚あやふやだよ。いいの？' : '3 cards are still shaky. Sure?'), findsOneWidget);
+      final warning = ja ? 'まだ3枚あやふやだよ。いいの？' : '3 cards are still shaky. Sure?';
+      expect(find.text(warning), findsOneWidget);
       expect(tester.takeException(), isNull);
       await _capture(tester, 'learn_next_shaky_$lang');
       await tester.tap(find.ancestor(of: find.text(ja ? '練習を続ける' : 'Keep practising'), matching: find.byType(ShoutButton)));
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 600));
-      expect(find.byType(ShoutButton), findsOneWidget, reason: 'only the Training hero is left');
+      expect(find.text(warning), findsNothing);
       expect(p.trainer.unlocked.length, 3);
+      await tester.pumpWidget(const SizedBox());
+    });
+
+    testWidgets('home, journey: no Learn next button ($lang)', (tester) async {
+      final p = await open(tester, mode: LearningMode.journey, ja: ja);
+      await tester.binding.setSurfaceSize(_phone);
+      await tester.pumpWidget(RepaintBoundary(key: const ValueKey('screen'), child: FudatobashiApp(progress: p)));
+      await tester.pump(const Duration(milliseconds: 500));
+      expect(find.byType(LearnNextButton), findsNothing);
       await tester.pumpWidget(const SizedBox());
     });
 

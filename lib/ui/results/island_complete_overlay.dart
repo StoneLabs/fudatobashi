@@ -195,24 +195,7 @@ class _Conquered extends StatelessWidget {
           Center(
             child: SizedBox.square(
               dimension: side,
-              child: Entrance(
-                IslandCompleteMotion.island,
-                child: IslandMap(
-                  styles: [
-                    for (final isl in archipelago.islands)
-                      if (isl.index == island.index)
-                        IslandStyle(
-                          pulse: true,
-                          sites: {for (final site in isl.sites) site.poemId: const SiteMark.flag()},
-                        )
-                      else
-                        const IslandStyle(look: IslandLook.hidden),
-                  ],
-                  viewport: island.bounds.inflate(IslandCompleteLayout.islandPad),
-                  fit: BoxFit.contain,
-                  sea: false,
-                ),
-              ),
+              child: Entrance(IslandCompleteMotion.island, child: _FlaggedIsland(island: island)),
             ),
           ),
           Positioned(
@@ -230,6 +213,43 @@ class _Conquered extends StatelessWidget {
           const Placed(
             IslandCompleteLayout.tobi,
             child: Entrance(IslandCompleteMotion.tobi, child: Tobi(pose: TobiPose.cheering)),
+          ),
+        ]);
+      });
+}
+
+/// [island] with a flag on every card, fitted to the box by its bounds
+/// grown by [IslandCompleteLayout.islandPad], its tide rings spilling past
+/// the box rather than being cut off by it.
+class _FlaggedIsland extends StatelessWidget {
+  const _FlaggedIsland({required this.island});
+  final IslandShape island;
+
+  @override
+  Widget build(BuildContext context) => LayoutBuilder(builder: (context, box) {
+        final fitted = island.bounds.inflate(IslandCompleteLayout.islandPad);
+        final scale = math.min(box.maxWidth / fitted.width, box.maxHeight / fitted.height);
+        final view = fitted.expandToInclude(IslandMap.tideReach(island));
+        final origin = Offset(box.maxWidth - fitted.width * scale, box.maxHeight - fitted.height * scale) / 2 +
+            (view.topLeft - fitted.topLeft) * scale;
+        return Stack(clipBehavior: Clip.none, children: [
+          Positioned(
+            left: origin.dx,
+            top: origin.dy,
+            width: view.width * scale,
+            height: view.height * scale,
+            child: IslandMap(
+              styles: [
+                for (final isl in archipelago.islands)
+                  if (isl.index == island.index)
+                    IslandStyle(pulse: true, sites: {for (final site in isl.sites) site.poemId: const SiteMark.flag()})
+                  else
+                    const IslandStyle(look: IslandLook.hidden),
+              ],
+              viewport: view,
+              fit: BoxFit.contain,
+              sea: false,
+            ),
           ),
         ]);
       });
@@ -259,7 +279,7 @@ class _NextIsland extends StatelessWidget {
                 for (final isl in archipelago.islands)
                   isl.index == island.index ? const IslandStyle(pulse: true) : const IslandStyle(look: IslandLook.hidden),
               ],
-              viewport: island.bounds.inflate(IslandCompleteLayout.nextPad),
+              viewport: IslandMap.tideReach(island),
               fit: BoxFit.contain,
               sea: false,
               tideColor: Palette.paper,

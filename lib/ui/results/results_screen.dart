@@ -158,7 +158,7 @@ class _Splash extends StatelessWidget {
         ),
         const SizedBox(height: Gaps.section),
         if (config.tracked && progress.canLearnMore) ...[
-          const LearnNextButton(replace: true, height: LearnNextStyle.resultsHeight),
+          const LearnNextButton(),
           const SizedBox(height: Gaps.panel),
         ],
         SizedBox(

@@ -7,25 +7,21 @@ import '../../l10n/strings.dart';
 import '../manga/manga.dart';
 import 'run_launcher.dart';
 
-/// "Learn next cards →": unlocks the next batch now and starts a training
-/// round with it (see [startLearnNext]). [replace]: from Results, swapping it
-/// for the round.
+/// Results' "Learn next cards →": unlocks the next batch now and swaps
+/// Results for a training round with it (see [startLearnNext]).
 class LearnNextButton extends StatelessWidget {
-  const LearnNextButton({super.key, this.replace = false, this.height = LearnNextStyle.height});
-
-  final bool replace;
-  final double height;
+  const LearnNextButton({super.key});
 
   @override
   Widget build(BuildContext context) {
     final s = S.of(context);
-    return SizedBox(
-      height: height,
+    return ConstrainedBox(
+      constraints: const BoxConstraints(minHeight: LearnNextStyle.height),
       child: InkButton(
         color: Palette.sun,
         padding: LearnNextStyle.padding,
         semanticLabel: s.learnNext,
-        onTap: () => startLearnNext(context, replace: replace),
+        onTap: () => startLearnNext(context),
         child: Row(mainAxisSize: MainAxisSize.min, children: [
           Flexible(
             child: Text(

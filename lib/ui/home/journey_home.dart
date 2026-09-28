@@ -8,7 +8,6 @@ import '../../l10n/strings.dart';
 import '../../state/scope.dart';
 import '../islands/island_map.dart';
 import '../manga/manga.dart';
-import '../run/learn_next_button.dart';
 import 'home_screen.dart';
 import 'home_widgets.dart';
 import 'journey_state.dart';
@@ -260,22 +259,9 @@ class _IslandProgress extends StatelessWidget {
                       ? PipState.next
                       : PipState.locked,
           ]..sort((a, b) => a.index.compareTo(b.index))),
-          if (progress.knownCardSpeedMs != null || progress.canLearnMore) ...[
+          if (progress.knownCardSpeedMs != null) ...[
             const SizedBox(height: HomeLayout.knownSpeedGap),
-            SizedBox(
-              width: double.infinity,
-              child: Wrap(
-                alignment: WrapAlignment.spaceBetween,
-                crossAxisAlignment: WrapCrossAlignment.center,
-                spacing: LearnNextStyle.spacing,
-                runSpacing: LearnNextStyle.spacing,
-                children: [
-                  if (progress.knownCardSpeedMs != null)
-                    KnownSpeedTag(ms: progress.knownCardSpeedMs, weekAgoMs: progress.knownCardSpeedTrendAgo),
-                  if (progress.canLearnMore) const LearnNextButton(),
-                ],
-              ),
-            ),
+            KnownSpeedTag(ms: progress.knownCardSpeedMs, weekAgoMs: progress.knownCardSpeedTrendAgo),
           ],
         ],
       ),

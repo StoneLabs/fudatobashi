@@ -1020,7 +1020,6 @@ abstract final class IslandCompleteLayout {
   static const Offset nextCut = Offset(0, 10);
   static const EdgeInsets nextPadding = EdgeInsets.fromLTRB(8, 14, 12, 10);
   static const Size nextArt = Size(104, 92);
-  static const double nextPad = 8;
   static const double nextGap = 12;
   static const double nextBoxBorder = 2;
   static const EdgeInsets nextBoxPadding = EdgeInsets.fromLTRB(9, 7, 9, 7);
@@ -1105,19 +1104,14 @@ abstract final class GuestSheetStyle {
   static const Color barrier = Color(0x8C141414);
 }
 
-/// "Learn next cards": the button (journey Home, Results) and its
+/// "Learn next cards": the button (Results) and its
 /// shaky-cards warning, which borrows [GuestSheetStyle]'s sheet.
 abstract final class LearnNextStyle {
-  static const double height = 38;
-  static const double resultsHeight = 44;
+  static const double height = 44;
   static const double font = 14;
   static const double icon = 18;
   static const EdgeInsets padding = EdgeInsets.symmetric(horizontal: 12);
   static const double iconGap = 6;
-
-  /// Room between the known-speed tag and the button on journey Home, and
-  /// between their lines when they wrap.
-  static const double spacing = 8;
 }
 
 /// The stand-in for screens still being built.
@@ -1184,6 +1178,17 @@ class BurstSpec {
   final double innerMin, innerMax, width;
   final int seed;
   final Color color;
+
+  /// The same burst drawn with other random lines.
+  BurstSpec reseeded(int offset) => BurstSpec(
+      box: box,
+      center: center,
+      count: count,
+      innerMin: innerMin,
+      innerMax: innerMax,
+      width: width,
+      seed: seed + offset,
+      color: color);
 
   @override
   bool operator ==(Object other) =>
@@ -1310,6 +1315,21 @@ abstract final class NewCardMotion {
   static const throbPeriod = Duration(milliseconds: 1600);
   static const double glowThrob = 0.07;
   static const double linesThrob = 0.025;
+
+  /// The focus lines boil: redrawn every [linesStep] from [linesFrames]
+  /// drawings.
+  static const int linesFrames = 3;
+  static const linesStep = Duration(milliseconds: 90);
+
+  /// ゴゴゴゴ / ドドドド rumble: a jolt of up to [rumbleReach] px every
+  /// [rumbleStep].
+  static const double rumbleReach = 2.2;
+  static const rumbleStep = Duration(milliseconds: 50);
+
+  /// The card sways by up to [swayDeg] and bobs by up to [swayLift] px.
+  static const double swayDeg = 1.2;
+  static const double swayLift = 3;
+  static const swayPeriod = Duration(milliseconds: 3200);
 
   /// The accept flick (the play loop's card flick): the card flies to
   /// [flickTo] (spec px) with [flickTurnDeg] of spin while the SFX pops and a

@@ -7,6 +7,7 @@ export 'buttons.dart';
 export 'confetti.dart';
 export 'entrance.dart';
 export 'header.dart';
+export 'idle_motion.dart';
 export 'labels.dart';
 export 'lang_toggle.dart';
 export 'lettering.dart';

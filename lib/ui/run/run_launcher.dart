@@ -20,24 +20,19 @@ Future<void> startTraining(BuildContext context) async {
   await _push(context, planned.cards, const PlayConfig(mode: PlayMode.training));
 }
 
-/// "Learn next cards" (journey): unlocks the next batch now and plays a
-/// training round with it, after Tobi's warning if cards are still shaky.
-/// [replace] swaps the current route (Results) for the round.
-Future<void> startLearnNext(BuildContext context, {bool replace = false}) async {
+/// Results' "Learn next cards" (journey): unlocks the next batch now and
+/// swaps Results for a training round with it, after Tobi's warning if cards
+/// are still shaky.
+Future<void> startLearnNext(BuildContext context) async {
   final progress = ProgressScope.read(context);
   final readiness = progress.readiness;
   if (!readiness.ready && !await confirmLearnWhileShaky(context, readiness.shaky)) return;
   final planned = await progress.learnNextCards();
   if (!context.mounted || planned.cards.isEmpty) return;
-  const config = PlayConfig(mode: PlayMode.training);
-  if (replace) {
-    await Navigator.of(context).pushReplacement(MangaRoute<void>(
-      transition: MangaTransition.zoom,
-      builder: (_) => PlayScreen(cards: planned.cards, config: config),
-    ));
-  } else {
-    await _push(context, planned.cards, config);
-  }
+  await Navigator.of(context).pushReplacement(MangaRoute<void>(
+    transition: MangaTransition.zoom,
+    builder: (_) => PlayScreen(cards: planned.cards, config: const PlayConfig(mode: PlayMode.training)),
+  ));
 }
 
 /// 始める: the cards of [config]'s sets, once each.

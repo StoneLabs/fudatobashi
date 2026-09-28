@@ -66,7 +66,8 @@ class _NewCardOverlayState extends State<NewCardOverlay> with SingleTickerProvid
             child: Throb(
               amount: NewCardMotion.linesThrob,
               period: NewCardMotion.throbPeriod,
-              child: StaticArt([BurstLayer(NewCardLayout.focus)]),
+              child: BoilingLines(NewCardLayout.focus,
+                  frames: NewCardMotion.linesFrames, step: NewCardMotion.linesStep),
             ),
           ),
           Entrance(
@@ -206,13 +207,18 @@ class _CardStage extends StatelessWidget {
               child: Center(
                 child: Entrance(
                   NewCardMotion.sfx,
-                  child: SfxText(text,
-                      size: NewCardLayout.rumbleFont,
-                      color: Palette.paper,
-                      halo: const Color(0x00000000),
-                      outline: NewCardLayout.rumbleOutline,
-                      seed: seed,
-                      vertical: true),
+                  child: Shake(
+                    reach: NewCardMotion.rumbleReach,
+                    step: NewCardMotion.rumbleStep,
+                    seed: seed,
+                    child: SfxText(text,
+                        size: NewCardLayout.rumbleFont,
+                        color: Palette.paper,
+                        halo: const Color(0x00000000),
+                        outline: NewCardLayout.rumbleOutline,
+                        seed: seed,
+                        vertical: true),
+                  ),
                 ),
               ),
             );
@@ -225,9 +231,14 @@ class _CardStage extends StatelessWidget {
               flick: flick,
               child: Entrance(
                 NewCardMotion.card,
-                child: DecoratedBox(
-                  decoration: const BoxDecoration(boxShadow: [NewCardLayout.cardShadow]),
-                  child: TorifudaCard(poem: poem),
+                child: Sway(
+                  turnDeg: NewCardMotion.swayDeg,
+                  lift: NewCardMotion.swayLift,
+                  period: NewCardMotion.swayPeriod,
+                  child: DecoratedBox(
+                    decoration: const BoxDecoration(boxShadow: [NewCardLayout.cardShadow]),
+                    child: TorifudaCard(poem: poem),
+                  ),
                 ),
               ),
             ),

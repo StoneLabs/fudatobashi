@@ -219,6 +219,10 @@ class IslandMap extends StatefulWidget {
     return Offset.lerp(from, to, MapStyle.boatAlong)!;
   }
 
+  /// The square the tide rings around [island] reach at their largest.
+  static Rect tideReach(IslandShape island) =>
+      Rect.fromCircle(center: island.center, radius: (_MapSpec.ringRadius(island) + Tide.stroke / 2) * Tide.scaleTo);
+
   @override
   State<IslandMap> createState() => _IslandMapState();
 }
