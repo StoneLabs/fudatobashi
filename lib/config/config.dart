@@ -465,3 +465,22 @@ abstract final class DemoDataTuning {
   /// feature's own test) reproduces the same journey.
   static const int seed = 1179;
 }
+
+/// Settings › Developer › "Preview celebrations": the spec mock's numbers.
+abstract final class CelebrationPreviewTuning {
+  /// The island completed (the mock's 3rd).
+  static const int island = 2;
+
+  /// The rank-up from `Rating.bands[rankFrom]` (F上級) to the next class,
+  /// gaining [rankGain] points across its threshold.
+  static const int rankFrom = 2;
+  static const double rankGain = 26;
+
+  /// The personal best: [cards] cards averaging [averageUs], spread evenly
+  /// [spreadUs] apart, [total] in all against a [previousBest].
+  static const int cards = 20;
+  static const int averageUs = 642000;
+  static const int spreadUs = 20000;
+  static const total = Duration(milliseconds: 14906);
+  static const previousBest = Duration(milliseconds: 15380);
+}

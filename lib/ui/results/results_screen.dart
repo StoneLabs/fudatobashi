@@ -43,7 +43,8 @@ class _ResultsScreenState extends State<ResultsScreen> {
   void initState() {
     super.initState();
     if (_celebrations.isNotEmpty) {
-      _timer = Timer(ResultsLayout.overlayStagger, () {
+      final personalBest = widget.report.personalBest && widget.report.total != null;
+      _timer = Timer(ResultsLayout.overlayStagger + (personalBest ? PersonalBestMotion.length : Duration.zero), () {
         if (mounted) setState(() => _celebrating = true);
       });
     }
@@ -216,6 +217,9 @@ class _KnownSpeedNote extends StatelessWidget {
   }
 }
 
+/// The run's total on a sunburst splash. A personal best plays out on it:
+/// the time ticks down from the previous best, the PERSONAL BEST sticker
+/// stamps on with ドン! and a jolt, and Tobi hops for joy.
 class _TimePanel extends StatelessWidget {
   const _TimePanel({required this.report});
   final SessionReport report;
@@ -224,41 +228,176 @@ class _TimePanel extends StatelessWidget {
   Widget build(BuildContext context) {
     final s = S.of(context);
     final total = report.total;
-    return MangaPanel(
+    final best = report.personalBest && total != null;
+    final panel = MangaPanel(
       shape: const PanelShape(bottomRight: Offset(0, ResultsLayout.splashCut)),
       art: const [
         RadialLayer(center: Backdrops.skyCenter, colors: Backdrops.skyColors, stops: Backdrops.skyStops),
         BurstLayer(ResultsLayout.splashBurst),
       ],
       padding: const EdgeInsets.symmetric(vertical: 18),
-      child: SizedBox(
-        height: ResultsLayout.splashHeight - 36,
-        child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
-          Text(total == null ? s.endedEarly : s.totalTime.toUpperCase(),
-              style: const TextStyle(
-                  fontWeight: Weights.black,
-                  fontSize: ResultsLayout.splashLabelFont,
-                  letterSpacing: ResultsLayout.splashLabelTracking * ResultsLayout.splashLabelFont)),
-          const SizedBox(height: Gaps.small),
-          if (total != null)
-            OutlinedText(formatRunTime(total),
-                style: const TextStyle(fontFamily: Fonts.display, fontSize: ResultsLayout.splashTimeFont, height: 1),
-                outlineWidth: ResultsLayout.splashTimeOutline),
-          if (report.personalBest && total != null) ...[
-            const SizedBox(height: Gaps.section),
-            Sticker(
-              child: Text(s.personalBest.toUpperCase(),
-                  style: const TextStyle(fontFamily: Fonts.display, fontSize: ResultsLayout.splashPbFont)),
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(minHeight: ResultsLayout.splashHeight - 36),
+        child: Center(
+          child: Column(mainAxisSize: MainAxisSize.min, children: [
+            Text(total == null ? s.endedEarly : s.totalTime.toUpperCase(),
+                style: const TextStyle(
+                    fontWeight: Weights.black,
+                    fontSize: ResultsLayout.splashLabelFont,
+                    letterSpacing: ResultsLayout.splashLabelTracking * ResultsLayout.splashLabelFont)),
+            const SizedBox(height: Gaps.small),
+            if (total != null)
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: Gaps.inner),
+                child: FittedBox(
+                  fit: BoxFit.scaleDown,
+                  child: best ? _TickingTime(from: report.previousBest, to: total) : _RunTime(total),
+                ),
+              ),
+            if (best) ...[
+              const SizedBox(height: PersonalBestLayout.stickerGap),
+              _BestSticker(s.personalBest.toUpperCase()),
+              const SizedBox(height: PersonalBestLayout.noteGap),
+              Entrance(PersonalBestMotion.note, child: _PreviousBest(previous: report.previousBest, now: total)),
+            ],
+          ]),
+        ),
+      ),
+    );
+    if (!best) return panel;
+    return EntranceStage(
+      length: PersonalBestMotion.length,
+      child: Jolt(
+        PersonalBestMotion.jolt,
+        reach: PersonalBestMotion.joltReach,
+        steps: PersonalBestMotion.joltSteps,
+        seed: PersonalBestMotion.joltSeed,
+        child: Stack(clipBehavior: Clip.none, children: [
+          panel,
+          Positioned(
+            left: PersonalBestLayout.sfxAt.dx,
+            top: PersonalBestLayout.sfxAt.dy,
+            child: Entrance(
+              PersonalBestMotion.sfx,
+              child: Transform.rotate(
+                angle: PersonalBestLayout.sfxTurnDeg * math.pi / 180,
+                child: const SfxText(PersonalBestLayout.sfx,
+                    size: PersonalBestLayout.sfxFont, seed: PersonalBestLayout.sfxSeed, outline: NewCardLayout.sfxOutline),
+              ),
             ),
-            const SizedBox(height: Gaps.tight),
-            Text(
-              report.previousBest == null ? s.firstRecordedRun : '${s.previousBest} ${formatRunTime(report.previousBest!)}',
-              style: const TextStyle(fontWeight: Weights.black, fontSize: ResultsLayout.splashPbNoteFont),
+          ),
+          const Placed(
+            PersonalBestLayout.tobi,
+            child: Entrance(
+              PersonalBestMotion.tobi,
+              child: Hop(
+                height: PersonalBestMotion.hopHeight,
+                period: PersonalBestMotion.hopPeriod,
+                airShare: PersonalBestMotion.hopAirShare,
+                child: Tobi(pose: TobiPose.cheering),
+              ),
             ),
-          ],
+          ),
         ]),
       ),
     );
+  }
+}
+
+class _RunTime extends StatelessWidget {
+  const _RunTime(this.time);
+  final Duration time;
+
+  @override
+  Widget build(BuildContext context) => OutlinedText(formatRunTime(time),
+      style: const TextStyle(fontFamily: Fonts.display, fontSize: ResultsLayout.splashTimeFont, height: 1),
+      outlineWidth: ResultsLayout.splashTimeOutline);
+}
+
+/// The new best ticking down from the previous one (straight in on a first
+/// run), in a box as wide as the wider of the two so it holds still.
+class _TickingTime extends StatelessWidget {
+  const _TickingTime({required this.from, required this.to});
+  final Duration? from;
+  final Duration to;
+
+  @override
+  Widget build(BuildContext context) {
+    final start = from ?? to;
+    return Stack(alignment: Alignment.center, children: [
+      Opacity(opacity: 0, child: _RunTime(start > to ? start : to)),
+      EntranceBuilder(
+        PersonalBestMotion.count,
+        builder: (context, t, _) => _RunTime(start - (start - to) * t),
+      ),
+    ]);
+  }
+}
+
+/// PERSONAL BEST stamped on over a burst of focus lines.
+class _BestSticker extends StatelessWidget {
+  const _BestSticker(this.label);
+  final String label;
+
+  @override
+  Widget build(BuildContext context) => Stack(clipBehavior: Clip.none, alignment: Alignment.center, children: [
+        const Positioned.fill(
+          child: ImpactBurst(
+            PersonalBestMotion.burst,
+            burst: PersonalBestLayout.impactBurst,
+            size: PersonalBestLayout.impactSize,
+            fromScale: PersonalBestLayout.impactFromScale,
+            toScale: PersonalBestLayout.impactToScale,
+          ),
+        ),
+        Entrance(
+          PersonalBestMotion.sticker,
+          child: Sticker(
+            color: Palette.pink,
+            tilt: PersonalBestLayout.stickerTilt,
+            padding: PersonalBestLayout.stickerPadding,
+            child: Text(label, style: const TextStyle(fontFamily: Fonts.display, fontSize: PersonalBestLayout.stickerFont)),
+          ),
+        ),
+      ]);
+}
+
+/// "previous 00:15.380" and the time saved, or the first recorded run.
+class _PreviousBest extends StatelessWidget {
+  const _PreviousBest({required this.previous, required this.now});
+  final Duration? previous;
+  final Duration now;
+
+  @override
+  Widget build(BuildContext context) {
+    final s = S.of(context);
+    const style = TextStyle(fontWeight: Weights.black, fontSize: PersonalBestLayout.noteFont);
+    final previous = this.previous;
+    return Column(mainAxisSize: MainAxisSize.min, children: [
+      ColoredBox(
+        color: Palette.paper,
+        child: Padding(
+          padding: PersonalBestLayout.notePadding,
+          child: Text(previous == null ? s.firstRecordedRun : '${s.previousBest} ${formatRunTime(previous)}', style: style),
+        ),
+      ),
+      if (previous != null) ...[
+        const SizedBox(height: PersonalBestLayout.gainGap),
+        Entrance(
+          PersonalBestMotion.gain,
+          child: DecoratedBox(
+            decoration: BoxDecoration(
+              color: Palette.sun,
+              border: Border.all(color: Palette.ink, width: PersonalBestLayout.gainBorder),
+            ),
+            child: Padding(
+              padding: PersonalBestLayout.gainPadding,
+              child: Text(s.timeSaved(((previous - now).inMicroseconds / 1e6).toStringAsFixed(3)), style: style),
+            ),
+          ),
+        ),
+      ],
+    ]);
   }
 }
 

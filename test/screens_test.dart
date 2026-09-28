@@ -23,6 +23,7 @@ import 'package:fudatobashi/domain/play_session.dart';
 import 'package:fudatobashi/domain/rating.dart';
 import 'package:fudatobashi/domain/trainer.dart';
 import 'package:fudatobashi/l10n/home_strings.dart';
+import 'package:fudatobashi/l10n/results_strings.dart';
 import 'package:fudatobashi/l10n/stats_strings.dart';
 import 'package:fudatobashi/l10n/strings.dart';
 import 'package:fudatobashi/state/play_config.dart';
@@ -36,6 +37,7 @@ import 'package:fudatobashi/ui/manga/manga.dart';
 import 'package:fudatobashi/ui/play/kimariji_chip.dart';
 import 'package:fudatobashi/ui/play/play_screen.dart';
 import 'package:fudatobashi/ui/rank/rank_screen.dart';
+import 'package:fudatobashi/ui/results/celebration_sequence.dart';
 import 'package:fudatobashi/ui/results/celebrations.dart';
 import 'package:fudatobashi/ui/results/island_complete_overlay.dart';
 import 'package:fudatobashi/ui/results/new_card_overlay.dart';
@@ -646,6 +648,57 @@ void main() {
     await _capture(tester, 'results_learn_next');
     await tester.pumpWidget(const SizedBox());
   });
+
+  // A personal best plays out on the Results splash before any celebration
+  // page covers it, and the panel (no longer a fixed height) holds the
+  // sticker, the previous best and the time saved at a large font scale.
+  for (final ja in [false, true]) {
+    testWidgets('results: a personal best stamps on before the celebrations, at a large font scale (${ja ? 'ja' : 'en'})',
+        (tester) async {
+      tester.platformDispatcher.textScaleFactorTestValue = 1.3;
+      addTearDown(tester.platformDispatcher.clearTextScaleFactorTestValue);
+      final p = await open(tester, mode: LearningMode.allKnown, ja: ja);
+      final report = SessionReport(
+        sessionId: null,
+        total: const Duration(milliseconds: 14906),
+        attempts: [
+          for (var i = 0; i < 5; i++)
+            Attempt(
+                index: i,
+                card: CardRef(i + 1),
+                responseUs: 600000 + i * 10000,
+                outcome: Outcome.known,
+                at: DateTime(2026),
+                deckSize: 5),
+        ],
+        previousBest: const Duration(milliseconds: 15380),
+        ratingBefore: null,
+        ratingAfter: null,
+        goalRaised: false,
+        islandsCompleted: const [2],
+      );
+      await tester.binding.setSurfaceSize(_phone);
+      await tester.pumpWidget(RepaintBoundary(
+        key: const ValueKey('screen'),
+        child: ProgressScope(
+          progress: p,
+          child: MaterialApp(home: ResultsScreen(report: report, config: const PlayConfig(mode: PlayMode.training))),
+        ),
+      ));
+      await tester.pump(PersonalBestMotion.length);
+      expect(tester.takeException(), isNull);
+      final s = S(ja);
+      expect(find.text(s.personalBest.toUpperCase()), findsOneWidget);
+      expect(find.text('00:14.906'), findsWidgets, reason: 'the time has ticked down to the new best');
+      expect(find.text(s.timeSaved('0.474')), findsOneWidget);
+      expect(find.byType(CelebrationSequence), findsNothing, reason: 'the island waits for the personal best');
+      await _capture(tester, 'results_pb_${ja ? 'ja' : 'en'}');
+      await tester.pump(ResultsLayout.overlayStagger);
+      await tester.pump();
+      expect(find.byType(CelebrationSequence), findsOneWidget);
+      await tester.pumpWidget(const SizedBox());
+    });
+  }
 
   group('Rank ladder edge cases', () {
     Widget pumped(Progress p) => ProgressScope(progress: p, child: const MaterialApp(home: RankScreen()));

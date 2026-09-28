@@ -270,9 +270,11 @@ void _openRankUpPreview(
   Navigator.push(
     context,
     MangaRoute<void>(
-      builder: (context) => RankUpOverlay(
-        data: RankUpCelebration(before, after, ratingBefore, after.minRating),
-        onNext: () => Navigator.of(context).pop(),
+      builder: (context) => Scaffold(
+        body: RankUpOverlay(
+          data: RankUpCelebration(before, after, ratingBefore, after.minRating),
+          onNext: () => Navigator.of(context).pop(),
+        ),
       ),
     ),
   );

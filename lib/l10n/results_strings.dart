@@ -6,6 +6,7 @@ extension ResultsStrings on S {
   String get keepGoingSub => 'NEXT';
   String get homeSub => 'HOME';
   String get endedEarly => t('Ended early', '途中終了');
+  String timeSaved(String seconds) => t('−$seconds s', '−$seconds秒');
   String get firstRecordedRun => t('First recorded run!', '初回記録!');
   String get guestNotRecorded => t('Guest run — not recorded', 'ゲストプレイ・記録なし');
 
