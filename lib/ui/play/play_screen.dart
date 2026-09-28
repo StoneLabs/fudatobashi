@@ -21,6 +21,7 @@ import '../manga/manga.dart';
 import '../results/celebration_sequence.dart';
 import '../results/celebrations.dart';
 import '../results/results_screen.dart';
+import '../sound/sounds.dart';
 import 'kimariji_chip.dart';
 import 'sfx_overlay.dart';
 import 'swipe_deck.dart';
@@ -126,6 +127,7 @@ class _PlayScreenState extends State<PlayScreen> {
   bool _knows(int poemId) => _introduced.contains(poemId) || _progress.knows(poemId);
 
   void _onCommitted(Attempt a) {
+    playSound(context, Sfx.cardFlick);
     if (ProgressScope.read(context).settings.sfxEffects) {
       final dontKnow = a.outcome == Outcome.dontKnow;
       if (dontKnow || _isFastCard(a)) _sfxKey.currentState?.pop(dontKnow: dontKnow);
