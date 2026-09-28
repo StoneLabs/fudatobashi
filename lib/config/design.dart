@@ -652,6 +652,101 @@ abstract final class StatsLayout {
   static const double runRowDateFont = 12.5;
 }
 
+/// Small charts shared by the island list (a per-card sparkline) and the card
+/// detail screen (the attempt scatter and the forgetting curve).
+abstract final class ChartStyle {
+  static const double sparklineWidth = 96;
+  static const double sparklineHeight = 24;
+  static const double dotRadius = 2.6;
+  static const double dotStroke = 1;
+  static const double missSize = 4.2;
+  static const double missStroke = 1.6;
+  static const double bestStarRadius = 7;
+  static const double bestStarStroke = 1.4;
+  static const double lineStroke = 1.8;
+  static const double bandOpacity = 0.55;
+  static const double axisPad = 0.08;
+
+  /// Opacity of a toggled-off series tile (spec's `aria-pressed=false`).
+  static const double dimOpacity = 0.45;
+}
+
+/// The island detail screen (spec phone 7): the zoomed mini-map, this
+/// island's stat summary, the sort chips and the scrollable card list.
+abstract final class IslandDetailLayout {
+  static const double topBarHeight = 48;
+  static const double titleFont = 26;
+  static const double subFont = 12.5;
+
+  static const double heroHeight = 150;
+  static const double heroCut = 8;
+  static const double heroMapMargin = 22;
+  static const double mapWidth = 150;
+  static const EdgeInsets summaryPadding = EdgeInsets.fromLTRB(12, 10, 12, 10);
+  static const double summaryLabelFont = 12;
+  static const double summaryAvgFont = 25;
+  static const double summaryAvgUnitFont = 14;
+  static const EdgeInsets summaryAvgPadding = EdgeInsets.fromLTRB(7, 2, 7, 3);
+
+  static const double distHeight = 14;
+  static const double distBorder = 1.5;
+  static const double dueLineFont = 13;
+
+  static const double sortButtonFont = 13;
+  static const EdgeInsets sortButtonPadding = EdgeInsets.fromLTRB(11, 4, 11, 5);
+
+  static const double rowHeight = 82;
+  static const double rowImageWidth = 42;
+  static const double rowKimarijiFont = 21;
+  static const double rowDueFont = 11.5;
+  static const EdgeInsets rowDuePadding = EdgeInsets.fromLTRB(6, 1, 6, 2);
+  static const double rowSpeedFont = 16;
+  static const double rowSpeedSmallFont = 11.5;
+  static const EdgeInsets rowSpeedPadding = EdgeInsets.fromLTRB(6, 2, 6, 3);
+}
+
+/// The card detail screen (spec phone 8): the card's own header, the mode
+/// filter, the attempt chart and its toggleable stat tiles, and the FSRS
+/// memory panel.
+abstract final class CardDetailLayout {
+  static const double topBarHeight = 40;
+  static const double crumbFont = 13.5;
+  static const double orientationFont = 12;
+  static const double orientationHeight = 30;
+  static const double orientationPadding = 10;
+
+  static const double cardImageWidth = 104;
+  static const double kimarijiFont = 44;
+  static const double kimarijiCaptionFont = 11.5;
+  static const double bestWidth = 92;
+  static const double bestLabelFont = 11.5;
+  static const double bestValueFont = 18;
+
+  static const double kamiFont = 13.5;
+  static const double authorFont = 12.5;
+
+  static const double modeFont = 13;
+
+  static const double chartHeight = 190;
+  static const EdgeInsets chartPadding = EdgeInsets.fromLTRB(8, 10, 8, 20);
+
+  static const double seriesTileValueFont = 15;
+  static const double seriesTileLabelFont = 11;
+  static const EdgeInsets seriesTilePadding = EdgeInsets.fromLTRB(8, 5, 8, 6);
+  static const double seriesSwatchHeight = 4;
+
+  static const double memPadding = 12;
+  static const double memHeadingFont = 12.5;
+  static const double memGridLabelFont = 11.5;
+  static const double memGridValueFont = 19;
+  static const EdgeInsets memGridPadding = EdgeInsets.fromLTRB(9, 4, 9, 5);
+  static const double curveHeight = 52;
+
+  static const double balloonFont = 13;
+  static const double tobiWidth = 60;
+  static const double tobiHeight = 72;
+}
+
 /// Play, mid-run (spec phone 4).
 abstract final class PlayLayout {
   static const double toneBandHeight = 230;

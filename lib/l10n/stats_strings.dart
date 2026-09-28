@@ -35,4 +35,49 @@ extension StatsStrings on S {
     final mm = local.minute.toString().padLeft(2, '0');
     return ja ? '${local.month}月${local.day}日 $hh:$mm' : '${_monthAbbr[local.month - 1]} ${local.day}, $hh:$mm';
   }
+
+  /// A short "Mon D" (EN) / "M月D日" (JA) date, no time (island/card detail's
+  /// due dates).
+  String shortDate(DateTime at) {
+    final local = at.toLocal();
+    return ja ? '${local.month}月${local.day}日' : '${_monthAbbr[local.month - 1]} ${local.day}';
+  }
+
+  // ---------------------------------------------------------- Island detail
+
+  String islandSubtitle(int number, int cardCount) =>
+      ja ? '第$number島 · $cardCount枚' : 'ISLAND $number · $cardCount CARDS';
+  String get islandMedianLabel => t('ISLAND MEDIAN', '島の中央値');
+
+  /// "{0} due today", the number set in display type by `NumberedText`.
+  String get dueTodayLine => t('{0} due today', '本日の復習 {0}枚');
+
+  String get sortLabel => t('Sort', '並び替え');
+  String get sortOrder => t('Learning order', '学習順');
+  String get sortSlow => t('Slowest', '遅い順');
+  String get sortDue => t('Due', '復習順');
+
+  String get notLearnedYet => t('not learned yet', 'まだ未学習');
+  String get neverReviewed => t('never reviewed', 'まだ復習なし');
+  String get dueTodayShort => t('due today', '本日復習');
+  String dueInDays(int n) => ja ? '$n日後' : 'in ${n}d';
+
+  // ------------------------------------------------------------ Card detail
+
+  String islandCrumb(String islandName) => ja ? '$islandNameの島' : '$islandName island';
+  String get kimarijiCaption => t('KIMARIJI · 決まり字', '決まり字');
+  String get bestLabel => t('BEST', 'ベスト');
+  String get uprightLabel => t('Upright', '正位置');
+  String get invertedLabel => t('Inverted', '逆さま');
+  String get allModes => t('All', 'すべて');
+
+  String get memoryTag => t('MEMORY · FSRS 記憶', 'FSRS 記憶');
+  String lastReviewedOn(String date) => t('last review $date', '前回 $date');
+  String get stabilityLabel => t('STABILITY', '安定度');
+  String get difficultyLabel => t('DIFFICULTY', '難易度');
+  String get retrievabilityLabel => t('RETRIEVABILITY', '想起確率');
+  String get nextDueLabel => t('NEXT DUE', '次回復習');
+  String get daysUnit => t(' d', '日');
+  String get notScheduled => t('not scheduled', '未定');
+  String seeYouOn(String date) => t('See you $date!', '$dateにまた！');
 }

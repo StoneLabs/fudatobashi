@@ -213,6 +213,23 @@ abstract final class StatsTuning {
   static const int mapHollowMinTries = 5;
 }
 
+/// The island detail and card detail screens (`lib/ui/stats/island_screen.dart`,
+/// `lib/ui/stats/card_detail_screen.dart`).
+abstract final class CardDetailTuning {
+  /// Attempts shown in the island row's per-card sparkline.
+  static const int sparklineTail = 12;
+
+  /// A card due within this many days shows "in Nd" instead of a full date.
+  static const int dueSoonDays = 6;
+
+  /// Points sampled along the FSRS forgetting curve.
+  static const int forgettingCurveSamples = 24;
+
+  /// Lookahead window (days) when a card has no due date past now to sample
+  /// up to (never reviewed, or overdue).
+  static const int forgettingCurveFallbackDays = 30;
+}
+
 /// The Elo-style rating model (see `Rating`).
 abstract final class RatingModel {
   /// Assumed slowdown for the inverted side of a card never practised

@@ -15,6 +15,7 @@ import '../islands/island_map.dart';
 import '../manga/manga.dart';
 import '../play/time_format.dart';
 import '../run/run_launcher.dart';
+import 'island_screen.dart';
 
 enum _Tab { islands, runs }
 
@@ -242,9 +243,8 @@ class _IslandsView extends StatelessWidget {
               styles: data.styles,
               viewport: Offset.zero & archipelago.size,
               fit: BoxFit.contain,
-              // Seam for the next task: replace this with real navigation to
-              // the tapped island's detail screen.
-              onIslandTap: (i) => MangaToast.show(context, s.comingSoon),
+              onIslandTap: (i) =>
+                  Navigator.push(context, MangaRoute<void>(builder: (_) => IslandScreen(islandIndex: i))),
             ),
           ),
         ),

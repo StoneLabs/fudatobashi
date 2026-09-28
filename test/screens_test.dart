@@ -27,6 +27,7 @@ import 'package:fudatobashi/state/scope.dart';
 import 'package:fudatobashi/state/settings.dart';
 import 'package:fudatobashi/ui/app.dart';
 import 'package:fudatobashi/ui/home/training_hero.dart';
+import 'package:fudatobashi/ui/islands/island_map.dart';
 import 'package:fudatobashi/ui/manga/manga.dart';
 
 const _phone = Size(384, 832);
@@ -209,6 +210,87 @@ void main() {
       await tester.pump(const Duration(milliseconds: 500));
       expect(tester.takeException(), isNull);
       await _capture(tester, 'stats_runs_$lang');
+
+      await tester.pumpWidget(const SizedBox());
+    });
+  }
+
+  for (final ja in [false, true]) {
+    final lang = ja ? 'ja' : 'en';
+
+    testWidgets('island and card detail: tap through, toggle orientation and mode filter ($lang)', (tester) async {
+      final p = await open(tester, mode: LearningMode.journey, ja: ja, journeyCards: 40);
+
+      // Every card of island 0 gets both training attempts (`makeSomeDue`)
+      // and free-play attempts, so whichever row the list renders first has
+      // real, multi-mode history for the mode filter and orientation toggle
+      // to actually have something to show.
+      final island0Ids = fudaSets['initial:${archipelago.islands[0].name}'].poemIds;
+      for (var i = 0; i < 6; i++) {
+        await makeSomeDue(tester, p, island0Ids);
+      }
+      await tester.runAsync(() async {
+        final freeCards = [for (final id in island0Ids) CardRef(id, inverted: false, mask: CardMask.none)];
+        final session = PlaySession(freeCards);
+        var t = const Duration(seconds: 900);
+        for (final _ in freeCards) {
+          session.revealed(t);
+          t += const Duration(milliseconds: 600);
+          session.commit(responseTs: t, commitTs: t + const Duration(milliseconds: 80), outcome: Outcome.known);
+          t += const Duration(milliseconds: 100);
+        }
+        await p.recordRun(session, const PlayConfig(mode: PlayMode.free, setIds: ['all']), DateTime.now());
+      });
+      for (final id in island0Ids) {
+        final modes = p.attemptsOf(ItemKey(id, false)).map((a) => a.mode).toSet();
+        expect(modes, containsAll(const [PlayMode.training, PlayMode.free]));
+      }
+
+      await tester.binding.setSurfaceSize(_phone);
+      await tester.pumpWidget(RepaintBoundary(key: const ValueKey('screen'), child: FudatobashiApp(progress: p)));
+      await tester.pump(const Duration(milliseconds: 500));
+      expect(tester.takeException(), isNull);
+
+      final s = S(ja);
+      await tester.tap(find.text(s.stats));
+      await tester.pump(const Duration(milliseconds: 500));
+      expect(tester.takeException(), isNull);
+
+      // Drive the map's real (wired) tap callback rather than guessing pixel
+      // coordinates on a custom-painted map: island 0 is fully trained above.
+      // A pushed route's page needs two pump cycles before it shows up in the
+      // tree (the first only flushes the navigator's history update).
+      final islandMap = tester.widget<IslandMap>(find.byType(IslandMap));
+      islandMap.onIslandTap!(0);
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 500));
+      expect(tester.takeException(), isNull);
+      await _capture(tester, 'island_$lang');
+
+      // Tap the first rendered card row (every row in this island has real,
+      // multi-mode history, so whichever one is first is a valid target).
+      await tester.tap(find.byWidgetPredicate((w) => '${w.runtimeType}' == '_CardTile').first);
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 500));
+      expect(tester.takeException(), isNull);
+      await _capture(tester, 'card_detail_$lang');
+
+      // Toggling to 逆さま before it was ever unlocked is an expected, common
+      // case (an empty chart, dashes instead of numbers) that must not crash.
+      await tester.tap(find.text(s.invertedLabel));
+      await tester.pump(const Duration(milliseconds: 300));
+      expect(tester.takeException(), isNull);
+      await _capture(tester, 'card_detail_inverted_$lang');
+
+      await tester.tap(find.text(s.uprightLabel));
+      await tester.pump(const Duration(milliseconds: 300));
+      expect(tester.takeException(), isNull);
+
+      for (final modeLabel in [s.training, s.freePlay, s.allModes]) {
+        await tester.tap(find.text(modeLabel));
+        await tester.pump(const Duration(milliseconds: 300));
+        expect(tester.takeException(), isNull);
+      }
 
       await tester.pumpWidget(const SizedBox());
     });
