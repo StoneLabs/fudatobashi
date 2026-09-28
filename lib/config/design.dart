@@ -1677,3 +1677,10 @@ abstract final class Confetti {
   /// Every this-many pieces is round.
   static const int roundEvery = 3;
 }
+
+/// The "Licenses & credits" screen, reached from Settings.
+abstract final class CreditsLayout {
+  static const double chevron = 16;
+  static const double rowSubtitleGap = 2;
+  static const double licenseTextLineHeight = 1.4;
+}

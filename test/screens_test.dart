@@ -23,6 +23,7 @@ import 'package:fudatobashi/domain/play_session.dart';
 import 'package:fudatobashi/domain/rating.dart';
 import 'package:fudatobashi/domain/synthetic_learner.dart';
 import 'package:fudatobashi/domain/trainer.dart';
+import 'package:fudatobashi/l10n/credits_strings.dart';
 import 'package:fudatobashi/l10n/home_strings.dart';
 import 'package:fudatobashi/l10n/results_strings.dart';
 import 'package:fudatobashi/l10n/settings_strings.dart';
@@ -47,6 +48,7 @@ import 'package:fudatobashi/ui/results/island_complete_overlay.dart';
 import 'package:fudatobashi/ui/results/new_card_overlay.dart';
 import 'package:fudatobashi/ui/results/rank_up_overlay.dart';
 import 'package:fudatobashi/ui/results/results_screen.dart';
+import 'package:fudatobashi/ui/settings/credits_screen.dart';
 import 'package:fudatobashi/ui/settings/settings_screen.dart';
 import 'package:fudatobashi/ui/sound/sounds.dart';
 import 'package:fudatobashi/ui/stats/card_list.dart';
@@ -778,6 +780,37 @@ void main() {
     await _capture(tester, 'debug_simulation');
     await tester.scrollUntilVisible(find.text('Seed demo data'), 300);
     expect(find.text('Seed demo data'), findsOneWidget);
+    await tester.pumpWidget(const SizedBox());
+  });
+
+  // The credits screen lists five fonts plus several other sections in a
+  // scrolling column, each row sized to its own content (no fixed heights),
+  // so it must hold at a larger system font scale without overflowing.
+  testWidgets('settings: Licenses & credits opens the credits screen and a license, at a larger font scale',
+      (tester) async {
+    tester.platformDispatcher.textScaleFactorTestValue = 1.15;
+    addTearDown(tester.platformDispatcher.clearTextScaleFactorTestValue);
+    PackageInfo.setMockInitialValues(
+        appName: 'Fudatobashi', packageName: 'dev.fudatobashi', version: '1.0.0', buildNumber: '1', buildSignature: '');
+    final p = await open(tester);
+    await tester.binding.setSurfaceSize(_phone);
+    await tester.pumpWidget(ProgressScope(progress: p, child: const MaterialApp(home: SettingsScreen())));
+    await tester.pump();
+    const s = S(false);
+    await tester.tap(find.text(s.credits));
+    await tester.pumpAndSettle();
+    expect(tester.takeException(), isNull);
+    expect(find.byType(CreditsScreen), findsOneWidget);
+    expect(find.text(s.creditsFonts), findsOneWidget);
+    expect(find.text('Dela Gothic One'), findsOneWidget);
+
+    // Opening a font's full license text exercises the asset-loading path
+    // (assets/fonts/*.txt must be declared in pubspec.yaml to be reachable).
+    await tester.tap(find.text('Dela Gothic One'));
+    await tester.pumpAndSettle();
+    expect(tester.takeException(), isNull);
+    expect(find.byType(LicenseTextScreen), findsOneWidget);
+    expect(find.textContaining('SIL OPEN FONT LICENSE'), findsOneWidget);
     await tester.pumpWidget(const SizedBox());
   });
 
