@@ -1506,10 +1506,10 @@ abstract final class Backdrops {
   static const freePlayStops = [0.52, 1.0];
   static const nigateStops = [0.7, 1.0];
 
-  /// White mist over the top of the journey map.
+  /// A half-white mist over the top of the journey map.
   static const double mapFogHeight = 74;
   static const mapFogStops = [0.0, 0.38, 1.0];
-  static const mapFogAlpha = [1.0, 0.93, 0.0];
+  static const mapFogAlpha = [0.5, 0.46, 0.0];
 }
 
 /// A focus-line burst: [count] wedges converging on [center] (a point in a
