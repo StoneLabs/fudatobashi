@@ -304,6 +304,62 @@ void main() {
     });
   }
 
+  // Reproduces the same class of overflow as the island page's card rows
+  // (`CardTile` in `card_list.dart`, shared by the island page and the Stats
+  // "All" tab): the on-device font scale (1.1) that the default test scale
+  // of 1.0 never exercises.
+  testWidgets('stats All tab: card rows hold at a larger font scale', (tester) async {
+    tester.platformDispatcher.textScaleFactorTestValue = 1.1;
+    addTearDown(tester.platformDispatcher.clearTextScaleFactorTestValue);
+    final p = await open(tester, mode: LearningMode.journey, journeyCards: 40);
+    await tester.binding.setSurfaceSize(_phone);
+    await tester.pumpWidget(RepaintBoundary(key: const ValueKey('screen'), child: FudatobashiApp(progress: p)));
+    await tester.pump(const Duration(milliseconds: 500));
+    const s = S(false);
+    await tester.tap(find.text(s.stats));
+    await tester.pump(const Duration(milliseconds: 500));
+    await tester.tap(find.text(s.allTab));
+    await tester.pump(const Duration(milliseconds: 500));
+    expect(tester.takeException(), isNull);
+    expect(find.byType(CardTile), findsWidgets);
+    await tester.pumpWidget(const SizedBox());
+  });
+
+  // The History tab (`history_screen.dart`): every run's mode, timestamp,
+  // card/miss count and total time, at the same on-device font scale.
+  testWidgets('history: run rows render clearly and hold at a larger font scale', (tester) async {
+    tester.platformDispatcher.textScaleFactorTestValue = 1.1;
+    addTearDown(tester.platformDispatcher.clearTextScaleFactorTestValue);
+    final p = await open(tester, mode: LearningMode.journey, journeyCards: 10);
+    final ids = [for (final isl in archipelago.islands) ...fudaSets['initial:${isl.name}'].poemIds];
+
+    await tester.runAsync(() async {
+      final freeCards = [for (final id in ids.take(5)) CardRef(id, inverted: false, mask: CardMask.none)];
+      final session = PlaySession(freeCards);
+      var t = const Duration(seconds: 200);
+      for (final _ in freeCards) {
+        session.revealed(t);
+        t += const Duration(milliseconds: 700);
+        session.commit(responseTs: t, commitTs: t + const Duration(milliseconds: 80), outcome: Outcome.known);
+        t += const Duration(milliseconds: 100);
+      }
+      await p.recordRun(session, const PlayConfig(mode: PlayMode.free, setIds: ['all']), DateTime.now());
+    });
+    expect(p.sessions, isNotEmpty);
+
+    await tester.binding.setSurfaceSize(_phone);
+    await tester.pumpWidget(RepaintBoundary(key: const ValueKey('screen'), child: FudatobashiApp(progress: p)));
+    await tester.pump(const Duration(milliseconds: 500));
+
+    const s = S(false);
+    await tester.tap(find.text(s.history));
+    await tester.pump(const Duration(milliseconds: 500));
+    expect(tester.takeException(), isNull);
+    expect(find.text(s.freePlay), findsWidgets);
+    await _capture(tester, 'history_scaled_en');
+    await tester.pumpWidget(const SizedBox());
+  });
+
   for (final ja in [false, true]) {
     final lang = ja ? 'ja' : 'en';
 
