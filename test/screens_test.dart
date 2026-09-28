@@ -40,6 +40,7 @@ import 'package:fudatobashi/ui/results/island_complete_overlay.dart';
 import 'package:fudatobashi/ui/results/new_card_overlay.dart';
 import 'package:fudatobashi/ui/results/results_screen.dart';
 import 'package:fudatobashi/ui/run/learn_next_button.dart';
+import 'package:fudatobashi/ui/stats/card_list.dart';
 
 const _phone = Size(384, 832);
 
@@ -263,7 +264,7 @@ void main() {
   for (final ja in [false, true]) {
     final lang = ja ? 'ja' : 'en';
 
-    testWidgets('stats: islands with real dots and medians, then runs ($lang)', (tester) async {
+    testWidgets('stats: islands with real dots and medians, then all cards ($lang)', (tester) async {
       final p = await open(tester, mode: LearningMode.journey, ja: ja, journeyCards: 40);
       final ids = [for (final isl in archipelago.islands) ...fudaSets['initial:${isl.name}'].poemIds];
 
@@ -280,21 +281,6 @@ void main() {
         expect(p.stats(ItemKey(id, false)).count, greaterThanOrEqualTo(5));
       }
 
-      // A free-play run too, so the Runs tab has something to list.
-      await tester.runAsync(() async {
-        final freeCards = [for (final id in ids.take(5)) CardRef(id, inverted: false, mask: CardMask.none)];
-        final session = PlaySession(freeCards);
-        var t = const Duration(seconds: 500);
-        for (final _ in freeCards) {
-          session.revealed(t);
-          t += const Duration(milliseconds: 700);
-          session.commit(responseTs: t, commitTs: t + const Duration(milliseconds: 80), outcome: Outcome.known);
-          t += const Duration(milliseconds: 100);
-        }
-        await p.recordRun(session, const PlayConfig(mode: PlayMode.free, setIds: ['all']), DateTime.now());
-      });
-      expect(p.sessions, isNotEmpty);
-
       await tester.binding.setSurfaceSize(_phone);
       await tester.pumpWidget(RepaintBoundary(key: const ValueKey('screen'), child: FudatobashiApp(progress: p)));
       await tester.pump(const Duration(milliseconds: 500));
@@ -306,10 +292,13 @@ void main() {
       expect(tester.takeException(), isNull);
       await _capture(tester, 'stats_islands_$lang');
 
-      await tester.tap(find.text(s.runsTab));
+      // The "All" tab lists every card of every island in one sortable list,
+      // the same rows as an island page.
+      await tester.tap(find.text(s.allTab));
       await tester.pump(const Duration(milliseconds: 500));
       expect(tester.takeException(), isNull);
-      await _capture(tester, 'stats_runs_$lang');
+      expect(find.byType(CardTile), findsWidgets);
+      await _capture(tester, 'stats_all_$lang');
 
       await tester.pumpWidget(const SizedBox());
     });
@@ -369,7 +358,7 @@ void main() {
 
       // Tap the first rendered card row (every row in this island has real,
       // multi-mode history, so whichever one is first is a valid target).
-      await tester.tap(find.byWidgetPredicate((w) => '${w.runtimeType}' == '_CardTile').first);
+      await tester.tap(find.byType(CardTile).first);
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 500));
       expect(tester.takeException(), isNull);

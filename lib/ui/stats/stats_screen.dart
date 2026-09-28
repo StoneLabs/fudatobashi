@@ -5,7 +5,6 @@ import '../../config/design.dart';
 import '../../config/vector_art.dart';
 import '../../data/islands.dart';
 import '../../data/poem.dart';
-import '../../db/database.dart' show Session;
 import '../../domain/card_stats.dart' show ItemKey;
 import '../../l10n/stats_strings.dart';
 import '../../l10n/strings.dart';
@@ -17,12 +16,13 @@ import '../manga/manga.dart';
 import '../play/time_format.dart';
 import '../rank/rank_screen.dart';
 import '../run/run_launcher.dart';
+import 'card_list.dart';
 import 'island_screen.dart';
 
-enum _Tab { islands, runs }
+enum _Tab { islands, all }
 
 /// The Stats tab (spec phone 6): the archipelago, every card a dot in its
-/// speed colour, or a simple list of past runs.
+/// speed colour, or every card in one sortable list.
 class StatsScreen extends StatefulWidget {
   const StatsScreen({super.key});
 
@@ -53,7 +53,7 @@ class _StatsScreenState extends State<StatsScreen> {
           _Summary(overallMedianMs: data.overallMedianMs, dueToday: progress.dueCount()),
           const SizedBox(height: Gaps.section),
           Expanded(
-            child: _tab == _Tab.islands ? _IslandsView(data: data) : _RunsView(progress: progress),
+            child: _tab == _Tab.islands ? _IslandsView(data: data) : _AllView(progress: progress),
           ),
         ],
       ),
@@ -61,7 +61,7 @@ class _StatsScreenState extends State<StatsScreen> {
   }
 }
 
-/// The "Islands | Runs" segmented switch (the same idea as `LanguageToggle`,
+/// The "Islands | All" segmented switch (the same idea as `LanguageToggle`,
 /// with square corners per the spec's `.seg`).
 class _TabToggle extends StatelessWidget {
   const _TabToggle({required this.tab, required this.onChanged});
@@ -77,7 +77,7 @@ class _TabToggle extends StatelessWidget {
       decoration: BoxDecoration(color: Palette.paper, border: Border.all(color: Palette.ink, width: Strokes.control)),
       child: Row(mainAxisSize: MainAxisSize.min, children: [
         _SegButton(s.islandsTab, selected: tab == _Tab.islands, onTap: () => onChanged(_Tab.islands)),
-        _SegButton(s.runsTab, selected: tab == _Tab.runs, onTap: () => onChanged(_Tab.runs)),
+        _SegButton(s.allTab, selected: tab == _Tab.all, onTap: () => onChanged(_Tab.all)),
       ]),
     );
   }
@@ -439,79 +439,15 @@ class _SlowestIslandPanel extends StatelessWidget {
   }
 }
 
-// ------------------------------------------------------------------ Runs
+// -------------------------------------------------------------------- All
 
-class _RunsView extends StatelessWidget {
-  const _RunsView({required this.progress});
+class _AllView extends StatelessWidget {
+  const _AllView({required this.progress});
   final Progress progress;
 
   @override
   Widget build(BuildContext context) {
     final s = S.of(context);
-    final sessions = progress.sessions.reversed.toList();
-    if (sessions.isEmpty) {
-      return Center(
-        child: DashedBox(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-          child: Text(s.noRunsYet, style: const TextStyle(fontWeight: Weights.bold, fontSize: TypeScale.body)),
-        ),
-      );
-    }
-    return ListView.separated(
-      itemCount: sessions.length,
-      separatorBuilder: (_, _) => const SizedBox(height: Gaps.panel),
-      itemBuilder: (context, i) => _RunRow(session: sessions[i]),
-    );
-  }
-}
-
-class _RunRow extends StatelessWidget {
-  const _RunRow({required this.session});
-  final Session session;
-
-  static String _modeLabel(S s, PlayMode mode) => switch (mode) {
-        PlayMode.training => s.training,
-        PlayMode.nigate => s.weakCards,
-        PlayMode.free => s.freePlay,
-        PlayMode.guest => s.guest,
-      };
-
-  @override
-  Widget build(BuildContext context) {
-    final s = S.of(context);
-    final mode = PlayMode.values[session.mode];
-    final total = session.completed && session.totalUs != null
-        ? formatRunTime(Duration(microseconds: session.totalUs!))
-        : s.runEndedEarly;
-    return MangaPanel(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-      child: Row(
-        children: [
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Row(mainAxisSize: MainAxisSize.min, children: [
-                  InkTag(_modeLabel(s, mode)),
-                  const SizedBox(width: Gaps.panel),
-                  Flexible(
-                    child: Text(s.sessionDate(session.startedAt),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(fontWeight: Weights.bold, fontSize: StatsLayout.runRowDateFont)),
-                  ),
-                ]),
-                const SizedBox(height: Gaps.tight),
-                Text(s.cardsCount(session.cardCount),
-                    style: const TextStyle(fontWeight: Weights.bold, fontSize: TypeScale.small)),
-              ],
-            ),
-          ),
-          const SizedBox(width: Gaps.panel),
-          Text(total, style: const TextStyle(fontFamily: Fonts.display, fontSize: StatsLayout.runRowSpeedFont, height: 1)),
-        ],
-      ),
-    );
+    return CardListView(rows: CardRowData.forAll(progress, s, DateTime.now()));
   }
 }

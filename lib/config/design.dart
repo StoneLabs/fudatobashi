@@ -606,8 +606,8 @@ abstract final class HomeLayout {
   static const double untrackedGap = 4;
 }
 
-/// The Stats screen (spec phone 6): the archipelago map, its legend, the
-/// slowest-island panel, and the Runs list.
+/// The Stats screen (spec phone 6): the archipelago map, its legend, and the
+/// slowest-island panel.
 abstract final class StatsLayout {
   static const double segHeight = 36;
   static const double segPadding = 12;
@@ -649,9 +649,16 @@ abstract final class StatsLayout {
   static const double playButtonHeight = 40;
   static const EdgeInsets playButtonPadding = EdgeInsets.symmetric(horizontal: 14);
   static const double playButtonFont = 14;
+}
 
-  static const double runRowSpeedFont = 18;
-  static const double runRowDateFont = 12.5;
+/// The History tab: each run's mode tag, timestamp, card/miss count and
+/// total time, laid out for high contrast — ink on paper, unlike the
+/// original app's dim grey-on-green history text.
+abstract final class HistoryLayout {
+  static const EdgeInsets rowPadding = EdgeInsets.symmetric(horizontal: 12, vertical: 10);
+  static const double rowDateFont = 12.5;
+  static const double rowTimeFont = 18;
+  static const EdgeInsets emptyPadding = EdgeInsets.symmetric(horizontal: 16, vertical: 12);
 }
 
 /// Small charts shared by the island list (a per-card sparkline) and the card
@@ -674,7 +681,9 @@ abstract final class ChartStyle {
 }
 
 /// The island detail screen (spec phone 7): the zoomed mini-map, this
-/// island's stat summary, the sort chips and the scrollable card list.
+/// island's stat summary, the sort chips and the scrollable card list. The
+/// sort chip and card row tokens are shared with the Stats "All" tab
+/// (`CardListView`, `CardTile` in `card_list.dart`).
 abstract final class IslandDetailLayout {
   static const double titleFont = 26;
   static const double subFont = 12.5;

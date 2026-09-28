@@ -76,6 +76,7 @@ class Progress extends ChangeNotifier {
   AppSettings _settings;
   double? rating;
   final _statsCache = <ItemKey, CardStats>{};
+  final _missesCache = <int, int>{};
 
   /// Unlocked while planning a run, not yet reported: the next tracked
   /// training report celebrates them.
@@ -159,6 +160,11 @@ class Progress extends ChangeNotifier {
   /// (unlike [stats], which only counts training attempts). Not cached: for
   /// occasional UI use, not the training/rating hot path.
   CardStats displayStats(ItemKey k) => CardStats(_log[k] ?? const []);
+
+  /// Misses (wrong, "don't know" or undone) recorded in one session — for
+  /// the History tab.
+  int missesIn(int sessionId) => _missesCache[sessionId] ??=
+      _log.values.expand((a) => a).where((a) => a.sessionId == sessionId && a.miss).length;
 
   double get projectedMs => Rating.projectedMs(stats);
 
