@@ -6,6 +6,7 @@ import 'package:flutter/widgets.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_displaymode/flutter_displaymode.dart';
 
+import 'config/licenses.dart';
 import 'config/vector_art.dart';
 import 'data/fuda_sets.dart';
 import 'data/islands.dart';
@@ -18,8 +19,21 @@ import 'ui/manga/art_image.dart';
 import 'ui/sound/sounds.dart';
 import 'ui/torifuda/glyph_atlas.dart';
 
+/// Bundled font and sound licenses, added so they show up in
+/// `showLicensePage` alongside every pub package (see the credits screen,
+/// `lib/ui/settings/credits_screen.dart`, for the same texts read on demand).
+void _registerBundledLicenses() {
+  LicenseRegistry.addLicense(() async* {
+    for (final font in fontCredits) {
+      yield LicenseEntryWithLineBreaks([font.name], await rootBundle.loadString(font.licenseAsset));
+    }
+    yield LicenseEntryWithLineBreaks(['Kenney sound effects'], await rootBundle.loadString(soundsLicenseAsset));
+  });
+}
+
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  _registerBundledLicenses();
   if (!kIsWeb && Platform.isAndroid) {
     // Samsung and others default Flutter apps to 60 Hz.
     try {

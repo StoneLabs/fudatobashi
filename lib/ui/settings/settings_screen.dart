@@ -5,6 +5,7 @@ import '../../config/config.dart';
 import '../../config/design.dart';
 import '../../config/vector_art.dart';
 import '../../domain/trainer.dart';
+import '../../l10n/credits_strings.dart';
 import '../../l10n/settings_strings.dart';
 import '../../l10n/strings.dart';
 import '../../state/scope.dart';
@@ -15,6 +16,7 @@ import '../debug/reset_actions.dart';
 import '../debug/seed_action.dart';
 import '../manga/manga.dart';
 import '../shell/header_actions.dart';
+import 'credits_screen.dart';
 
 /// Settings: language, learning mode, About (hides the 10-tap developer-mode
 /// unlock) and, once unlocked, the Developer section.
@@ -100,6 +102,11 @@ class SettingsScreen extends StatelessWidget {
                       ),
                       const SizedBox(height: Gaps.section),
                       const _AboutRow(),
+                      const SizedBox(height: Gaps.small),
+                      _ButtonRow(
+                        label: s.credits,
+                        onTap: () => Navigator.push(context, MangaRoute<void>(builder: (_) => const CreditsScreen())),
+                      ),
                       if (progress.settings.debugMode) ...[
                         const SizedBox(height: Gaps.section),
                         const _DeveloperSection(),
