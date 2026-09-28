@@ -41,8 +41,8 @@ extension HomeStrings on S {
   String get guestConfirm => t('START GUEST RUN', 'ゲストで始める');
   String get settingsLabel => t('Settings', '設定');
 
-  String get learnAhead => t('Learn ahead', '次の札を覚える');
-  String get learnAheadLocked => t('Learn ahead (locked)', '次の札を覚える(ロック中)');
+  String get learnAhead => t('Learn ahead', '先取りで覚える');
+  String get learnAheadLocked => t('Learn ahead (locked)', '先取りで覚える(ロック中)');
   String learnAheadShaky(int n) => ja
       ? 'まだ$n枚あやふや。\n先にしっかり覚えよう！'
       : '$n card${n == 1 ? ' is' : 's are'} still shaky. Get them solid first!';
