@@ -19,10 +19,10 @@ Future<void> startTraining(BuildContext context) async {
   await _push(context, planned.cards, const PlayConfig(mode: PlayMode.training), newPoems: planned.newPoems);
 }
 
-/// Home's "Learn next cards" (journey, once `Progress.learnAhead` is open):
+/// Home's "Learn ahead" (journey, once `Progress.learnAhead` is open):
 /// unlocks the next batch now and plays a training round with it.
-Future<void> startLearnNext(BuildContext context) async {
-  final planned = await ProgressScope.read(context).learnNextCards();
+Future<void> startLearnAhead(BuildContext context) async {
+  final planned = await ProgressScope.read(context).learnAheadCards();
   if (!context.mounted || planned.cards.isEmpty) return;
   await _push(context, planned.cards, const PlayConfig(mode: PlayMode.training), newPoems: planned.newPoems);
 }

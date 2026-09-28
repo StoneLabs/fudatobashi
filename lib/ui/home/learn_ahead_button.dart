@@ -9,7 +9,7 @@ import '../../state/scope.dart';
 import '../manga/manga.dart';
 import '../run/run_launcher.dart';
 
-/// Home's "Learn next cards" (journey): pulls the next batch in ahead of the
+/// Home's "Learn ahead" (journey): pulls the next batch in ahead of the
 /// pace, for players who learn faster than it. Locked until every card is
 /// well remembered and today's new cards are done (`Progress.learnAhead`);
 /// a locked tap pops a balloon saying what is left.
@@ -26,9 +26,9 @@ class LearnAheadButton extends StatelessWidget {
       child: InkButton(
         color: open ? Palette.sun : Palette.desk,
         padding: LearnAheadStyle.padding,
-        semanticLabel: open ? s.learnNext : s.learnNextLocked,
+        semanticLabel: open ? s.learnAhead : s.learnAheadLocked,
         onTap: () => open
-            ? startLearnNext(context)
+            ? startLearnAhead(context)
             : BalloonPop.show(context, _whyLocked(s, ahead),
                 size: LearnAheadStyle.balloon, life: LearnAheadStyle.balloonLife),
         child: FittedBox(
@@ -38,7 +38,7 @@ class LearnAheadButton extends StatelessWidget {
               MangaIcon(IconArt.lock, size: LearnAheadStyle.icon),
               const SizedBox(width: LearnAheadStyle.iconGap),
             ],
-            Text(s.learnNext, style: const TextStyle(fontWeight: Weights.black, fontSize: LearnAheadStyle.font)),
+            Text(s.learnAhead, style: const TextStyle(fontWeight: Weights.black, fontSize: LearnAheadStyle.font)),
             if (open) ...[
               const SizedBox(width: LearnAheadStyle.iconGap),
               MangaIcon(IconArt.arrow, size: LearnAheadStyle.icon),
@@ -50,7 +50,7 @@ class LearnAheadButton extends StatelessWidget {
   }
 
   static String _whyLocked(S s, LearnAhead ahead) => switch (ahead.lock) {
-        LearnAheadLock.newCardsPending => s.learnNextPending,
-        _ => s.learnNextShaky(ahead.shaky),
+        LearnAheadLock.newCardsPending => s.learnAheadPending,
+        _ => s.learnAheadShaky(ahead.shaky),
       };
 }

@@ -41,10 +41,10 @@ extension HomeStrings on S {
   String get guestConfirm => t('START GUEST RUN', 'ゲストで始める');
   String get settingsLabel => t('Settings', '設定');
 
-  String get learnNext => t('Learn next cards', '次の札を覚える');
-  String get learnNextLocked => t('Learn next cards (locked)', '次の札を覚える(ロック中)');
-  String learnNextShaky(int n) => ja
+  String get learnAhead => t('Learn ahead', '次の札を覚える');
+  String get learnAheadLocked => t('Learn ahead (locked)', '次の札を覚える(ロック中)');
+  String learnAheadShaky(int n) => ja
       ? 'まだ$n枚あやふや。\n先にしっかり覚えよう！'
       : '$n card${n == 1 ? ' is' : 's are'} still shaky. Get them solid first!';
-  String get learnNextPending => t("Today's new cards come first. Off to Training!", '今日の新しい札が先。\n修行へGO!');
+  String get learnAheadPending => t("Today's new cards come first. Off to Training!", '今日の新しい札が先。\n修行へGO!');
 }

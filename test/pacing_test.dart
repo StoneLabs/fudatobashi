@@ -147,7 +147,7 @@ void main() {
     }, timeout: const Timeout(Duration(minutes: 2)));
   });
 
-  group('learn next cards', () {
+  group('learn ahead cards', () {
     test('unlocks the next batch even when not ready, and the round drills it', () async {
       final progress = await open(LearningPace.month, 1);
       final day0 = DateTime(2026, 9, 1, 9);
@@ -155,7 +155,7 @@ void main() {
       expect(first.unlockedBefore.map((k) => poems[k.poemId].kimariji), ['む', 'す', 'め']);
       expect(progress.readiness.ready, isFalse);
 
-      final pulled = await progress.learnNextCards(rng: math.Random(2), now: day0);
+      final pulled = await progress.learnAheadCards(rng: math.Random(2), now: day0);
       expect(pulled.unlockedBefore.map((k) => poems[k.poemId].kimariji), ['ふ', 'さ', 'ほ']);
       for (final k in pulled.unlockedBefore) {
         expect(pulled.picks.where((p) => p.key == k).length, greaterThanOrEqualTo(TrainingTuning.newCardMinTimed));
@@ -172,7 +172,7 @@ void main() {
       final day0 = DateTime(2026, 9, 1, 9);
       await progress.planTraining(now: day0);
       while (uprightUnlocked(progress) < 20) {
-        await progress.learnNextCards(now: day0);
+        await progress.learnAheadCards(now: day0);
       }
       final status = progress.paceStatus(day0);
       expect(status.hold, UnlockHold.aheadOfPace);
@@ -208,7 +208,7 @@ void main() {
     expect(days.last.rating, isNotNull);
   }, timeout: const Timeout(Duration(minutes: 1)));
 
-  group("Home's Learn next (learn ahead)", () {
+  group("Home's Learn ahead", () {
     /// A training round at [at] answering each of [ids] [times] times,
     /// correctly and fast, or [miss]ing them all.
     Future<void> drill(Progress p, Iterable<int> ids, DateTime at,
@@ -250,7 +250,7 @@ void main() {
           reason: "tomorrow's new cards come first");
 
       final before = uprightUnlocked(progress);
-      final pulled = await progress.learnNextCards(now: day0);
+      final pulled = await progress.learnAheadCards(now: day0);
       expect(pulled.unlockedBefore, isNotEmpty);
       expect(uprightUnlocked(progress), before + pulled.unlockedBefore.length);
       expect(progress.learnAhead(day0).lock, LearnAheadLock.shaky, reason: 'the pulled batch is new');

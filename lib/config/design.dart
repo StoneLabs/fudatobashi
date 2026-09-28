@@ -648,7 +648,7 @@ abstract final class StatsLayout {
   static const double playButtonFont = 14;
 
   /// Locked (not fully uncovered): the lock icon beside the label, and the
-  /// balloon explaining why, sized like Home's "Learn next cards" lock.
+  /// balloon explaining why, sized like Home's "Learn ahead" lock.
   static const double playButtonIcon = 16;
   static const double playButtonIconGap = 5;
   static const Size playButtonBalloon = Size(270, 96);
@@ -1373,8 +1373,8 @@ abstract final class GuestSheetStyle {
   static const Color barrier = Color(0x8C141414);
 }
 
-/// Home's "Learn next cards" (`LearnAheadButton`) beside the known-card
-/// speed, and the balloon that says why it is locked.
+/// Home's "Learn ahead" (`LearnAheadButton`) beside today's plan, and the
+/// balloon that says why it is locked.
 abstract final class LearnAheadStyle {
   static const double minHeight = 36;
   static const double font = 13;

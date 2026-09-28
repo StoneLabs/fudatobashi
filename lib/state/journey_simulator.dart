@@ -58,11 +58,11 @@ class JourneySimulator {
     }
   }
 
-  /// One training round from [start] ([learnNext]: after "Learn next cards").
+  /// One training round from [start] ([learnAhead]: after "Learn ahead").
   /// Returns when it ended.
-  Future<DateTime> trainingRound(DateTime start, {bool learnNext = false, CardProgress? onCard}) async {
-    final plan = learnNext
-        ? await progress.learnNextCards(rng: rng, now: start)
+  Future<DateTime> trainingRound(DateTime start, {bool learnAhead = false, CardProgress? onCard}) async {
+    final plan = learnAhead
+        ? await progress.learnAheadCards(rng: rng, now: start)
         : await progress.planTraining(rng: rng, now: start);
     if (plan.cards.isEmpty) return start;
     return _play(plan.cards, const PlayConfig(mode: PlayMode.training), start, onCard: onCard);

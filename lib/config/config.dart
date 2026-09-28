@@ -232,7 +232,7 @@ class PaceProfile {
 /// solid and the latest batch has been practised) and the unlocked count is
 /// behind the pace curve. So the goal is flexible: a capable player on the
 /// pace's routine keeps up with the curve, while one who keeps forgetting is
-/// held back until the cards they have are solid. Home's "Learn next cards"
+/// held back until the cards they have are solid. Home's "Learn ahead"
 /// pulls cards in ahead of the curve (see [LearnAheadTuning]).
 abstract final class PaceTuning {
   static const LearningPace defaultPace = LearningPace.month;
@@ -251,7 +251,7 @@ abstract final class PaceTuning {
   static const int debugLookaheadDays = 3;
 }
 
-/// Home's "Learn next cards" (`Trainer.learnAhead`), for players who learn
+/// Home's "Learn ahead" (`Trainer.learnAhead`), for players who learn
 /// faster than their pace: it opens only once every unlocked card is well
 /// remembered and the pace has no new cards left for today.
 abstract final class LearnAheadTuning {

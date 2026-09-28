@@ -127,7 +127,7 @@ class _Overview extends StatelessWidget {
       _KV('next auto-unlock',
           status.nextPaceDay == null ? '—' : 'day ${status.nextPaceDay} (${status.nextPaceDay! - status.day}d away)'),
       _KV('new today', '${status.newToday}'),
-      _KV('Home Learn next', '${ahead.lock.name}, ${ahead.unlocked - ahead.shaky}/${ahead.unlocked} well remembered'),
+      _KV('Home Learn ahead', '${ahead.lock.name}, ${ahead.unlocked - ahead.shaky}/${ahead.unlocked} well remembered'),
       _KV('rounds / attempts today', '$roundsToday / $attemptsToday'),
       const SizedBox(height: 4),
       const Text('day  target', style: _mono),

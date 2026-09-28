@@ -115,7 +115,7 @@ class PaceStatus {
   }
 }
 
-/// Why Home's "Learn next cards" is locked. It pulls cards in ahead of the
+/// Why Home's "Learn ahead" is locked. It pulls cards in ahead of the
 /// pace, so it waits until the player has nothing left to consolidate.
 enum LearnAheadLock {
   /// Open: every card is well remembered and today's new cards are done.
@@ -491,7 +491,7 @@ class Trainer {
       ];
 
   /// Unlocks the next batch now, whatever the pace and readiness say (the
-  /// player's "Learn next cards"). Returns the newly unlocked items.
+  /// player's "Learn ahead"). Returns the newly unlocked items.
   List<ItemKey> unlockNextBatch(Poems p, FudaSets sets, DateTime now) =>
       _unlock(_batchKeys(nextBatch(p, sets)), now);
 

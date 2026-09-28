@@ -70,7 +70,7 @@ void main() {
       final report = await progress.recordRun(met, const PlayConfig(mode: PlayMode.training), DateTime.now());
       expect(report.newCards, firstBatch.toList(), reason: 'the round lists the cards it met first');
 
-      final nextBatch = {for (final k in (await progress.learnNextCards()).unlockedBefore) k.poemId};
+      final nextBatch = {for (final k in (await progress.learnAheadCards()).unlockedBefore) k.poemId};
       expect(nextBatch, isNotEmpty);
       for (var seed = 0; seed < 20; seed++) {
         final next = await progress.planTraining(rng: math.Random(seed));

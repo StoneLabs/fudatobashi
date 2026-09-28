@@ -315,7 +315,7 @@ void main() {
       });
     }
 
-    testWidgets('home, journey: Learn next is locked while cards are shaky, and a tap says why ($lang)', (tester) async {
+    testWidgets('home, journey: Learn ahead is locked while cards are shaky, and a tap says why ($lang)', (tester) async {
       tester.platformDispatcher.textScaleFactorTestValue = 1.2;
       addTearDown(tester.platformDispatcher.clearTextScaleFactorTestValue);
       final p = await open(tester, mode: LearningMode.journey, ja: ja, journeyCards: 3);
@@ -328,10 +328,10 @@ void main() {
       await tester.tap(find.byType(LearnAheadButton));
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 400));
-      final why = S(ja).learnNextShaky(ahead.shaky);
+      final why = S(ja).learnAheadShaky(ahead.shaky);
       expect(find.text(why), findsOneWidget);
       expect(tester.takeException(), isNull);
-      await _capture(tester, 'learn_next_locked_$lang');
+      await _capture(tester, 'learn_ahead_locked_$lang');
       expect(p.trainer.unlocked.length, unlocked, reason: 'a locked tap unlocks nothing');
       await tester.pump(LearnAheadStyle.balloonLife);
       expect(find.text(why), findsNothing);
@@ -351,7 +351,7 @@ void main() {
       await tester.pumpWidget(const SizedBox());
     });
 
-    testWidgets('home, journey: Learn next opens once every card is well remembered, and plays the next batch ($lang)',
+    testWidgets('home, journey: Learn ahead opens once every card is well remembered, and plays the next batch ($lang)',
         (tester) async {
       final p = await open(tester, mode: LearningMode.journey, ja: ja, journeyCards: 12);
       final ids = [for (final s in p.trainer.unlocked) s.key.poemId];
@@ -370,7 +370,7 @@ void main() {
       await tester.binding.setSurfaceSize(_phone);
       await tester.pumpWidget(RepaintBoundary(key: const ValueKey('screen'), child: FudatobashiApp(progress: p)));
       await tester.pump(const Duration(milliseconds: 500));
-      await _capture(tester, 'learn_next_open_$lang');
+      await _capture(tester, 'learn_ahead_open_$lang');
       final next = p.trainer.nextBatch(poems, fudaSets);
       await tester.runAsync(() async {
         await tester.tap(find.byType(LearnAheadButton));
@@ -993,7 +993,7 @@ void main() {
     }
   }
 
-  testWidgets('results (journey): no Learn next button, it lives on Home', (tester) async {
+  testWidgets('results (journey): no Learn ahead button, it lives on Home', (tester) async {
     final p = await open(tester, mode: LearningMode.journey);
     const config = PlayConfig(mode: PlayMode.training);
     late SessionReport report;
@@ -1015,7 +1015,7 @@ void main() {
       child: ProgressScope(progress: p, child: MaterialApp(home: ResultsScreen(report: report, config: config))),
     ));
     await tester.pump(const Duration(milliseconds: 500));
-    expect(find.text(const S(false).learnNext), findsNothing);
+    expect(find.text(const S(false).learnAhead), findsNothing);
     expect(tester.takeException(), isNull);
     await _capture(tester, 'results_journey');
     await tester.pumpWidget(const SizedBox());

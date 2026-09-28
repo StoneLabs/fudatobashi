@@ -287,10 +287,10 @@ class Progress extends ChangeNotifier {
 
   PaceStatus paceStatus([DateTime? now]) => trainer.paceStatus(poems, fudaSets, allStats, now ?? DateTime.now());
 
-  /// Whether Home's "Learn next cards" is open, and why not.
+  /// Whether Home's "Learn ahead" is open, and why not.
   LearnAhead learnAhead([DateTime? now]) => trainer.learnAhead(poems, fudaSets, allStats, now ?? DateTime.now());
 
-  /// Journey mode with cards still locked: "Learn next cards" is on offer.
+  /// Journey mode with cards still locked: "Learn ahead" is on offer.
   bool get canLearnMore =>
       trainer.config.learningMode == LearningMode.journey && trainer.nextBatch(poems, fudaSets).isNotEmpty;
 
@@ -302,9 +302,9 @@ class Progress extends ChangeNotifier {
     return _plan(fresh, rng ?? math.Random(), now);
   }
 
-  /// "Learn next cards": unlocks the next batch now, ignoring pace and
+  /// "Learn ahead": unlocks the next batch now, ignoring pace and
   /// readiness, then plans a session that includes it.
-  Future<PlannedRun> learnNextCards({math.Random? rng, DateTime? now}) async {
+  Future<PlannedRun> learnAheadCards({math.Random? rng, DateTime? now}) async {
     now ??= DateTime.now();
     final fresh = trainer.unlockNextBatch(poems, fudaSets, now);
     if (fresh.isNotEmpty) {
