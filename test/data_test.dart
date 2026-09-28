@@ -43,4 +43,10 @@ void main() {
   test('kimariji-length sets have the standard 7/42/37/6/2/6 distribution', () {
     expect([for (var n = 1; n <= 6; n++) sets['len:$n'].poemIds.length], [7, 42, 37, 6, 2, 6]);
   });
+
+  test('a card\'s kimariji twin shares every kana but the last', () {
+    expect(p.kimarijiTwin(p.byKimariji('きみがためは'))?.kimariji, 'きみがためを');
+    expect(p.kimarijiTwin(p.byKimariji('あきの'))?.kimariji, 'あきか');
+    expect(p.kimarijiTwin(p.byKimariji('む')), isNull);
+  });
 }

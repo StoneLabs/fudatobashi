@@ -6,7 +6,6 @@ import 'package:flutter/widgets.dart';
 import '../../config/config.dart';
 import '../../config/design.dart';
 import '../../config/torifuda_spec.dart';
-import '../../config/vector_art.dart';
 import '../../data/islands.dart';
 import '../../data/poem.dart';
 import '../../domain/trainer.dart';
@@ -91,7 +90,7 @@ class _NewCardOverlayState extends State<NewCardOverlay> with SingleTickerProvid
             _Header(shout: s.newCardShout, band: s.newCardBand),
             Expanded(child: _CardStage(poem: poem, flick: _flick)),
             Stack(clipBehavior: Clip.none, children: [
-              Entrance(NewCardMotion.info, child: _InfoPanel(poem: poem, twins: widget.data.twins)),
+              Entrance(NewCardMotion.info, child: _InfoPanel(poem: poem)),
               const Placed(
                 NewCardLayout.exclaim,
                 child: Entrance(
@@ -303,9 +302,8 @@ class _Flick extends StatelessWidget {
 }
 
 class _InfoPanel extends StatelessWidget {
-  const _InfoPanel({required this.poem, required this.twins});
+  const _InfoPanel({required this.poem});
   final Poem poem;
-  final List<int> twins;
 
   @override
   Widget build(BuildContext context) {
@@ -313,7 +311,7 @@ class _InfoPanel extends StatelessWidget {
     final island = archipelago.islands[Trainer.islandOf(poem)];
     final order = island.sites.indexWhere((site) => site.poemId == poem.id) + 1;
     final kimariji = poem.kimariji;
-    final tip = s.deciderTip(kimariji.length, twins.isEmpty ? null : poems[twins.first].kimariji).split('{0}');
+    final tip = s.deciderTip(kimariji.length, poems.kimarijiTwin(poem)?.kimariji).split('{0}');
     return MangaPanel(
       shape: const PanelShape(topLeft: NewCardLayout.infoCut),
       padding: NewCardLayout.infoPadding,
@@ -397,14 +395,9 @@ class _LearnButton extends StatelessWidget {
           builder: (context) => InkButton(
             onTap: () => ComingSoonBubble.show(context),
             padding: const EdgeInsets.symmetric(horizontal: Gaps.inner, vertical: Gaps.small),
-            child: Row(children: [
-              const MangaIcon(IconArt.help),
-              const SizedBox(width: Gaps.small),
-              Expanded(
-                child: Text(label,
-                    style: const TextStyle(fontWeight: Weights.black, fontSize: NewCardLayout.learnFont, height: 1.2)),
-              ),
-            ]),
+            child: Text(label,
+                textAlign: TextAlign.center,
+                style: const TextStyle(fontWeight: Weights.black, fontSize: NewCardLayout.learnFont, height: 1.2)),
           ),
         ),
       );

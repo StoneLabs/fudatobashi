@@ -870,7 +870,7 @@ abstract final class ResultsLayout {
   static const double confusableTitleFont = 26;
   static const double confusableCardWidth = 96;
   static const double confusableKimarijiFont = 15;
-  static const Placement confusableTobi = Placement(right: 18, bottom: 4, size: Size(70, 86));
+  static const Placement confusableTobi = Placement(right: 18, bottom: tobiAboveCta, size: Size(70, 86));
 
   static const double rankTitleFont = 88;
   static const double rankTitleOutline = 15;
@@ -881,11 +881,14 @@ abstract final class ResultsLayout {
   static const double rankNewLabelFont = 12;
   static const double rankRateFont = 18;
   static const double rankRateSmallFont = 12.5;
-  static const Placement rankTobi = Placement(right: 22, bottom: 4, size: Size(74, 92));
+  static const Placement rankTobi = Placement(right: 22, bottom: tobiAboveCta, size: Size(74, 92));
 
   static const double goalTitleFont = 30;
   static const double goalNoteFont = 14;
-  static const Placement goalTobi = Placement(right: 18, bottom: 4, size: Size(70, 86));
+  static const Placement goalTobi = Placement(right: 18, bottom: tobiAboveCta, size: Size(70, 86));
+
+  /// Tobi stands just above a celebration's pinned CTA.
+  static const double tobiAboveCta = PlayLayout.buttonRowHeight + Gaps.section * 2;
 
   static const Duration overlayFade = Duration(milliseconds: 220);
   static const Duration overlayStagger = Duration(milliseconds: 500);

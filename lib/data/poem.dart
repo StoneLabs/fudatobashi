@@ -91,6 +91,17 @@ class Poems {
 
   Poem operator [](int id) => all[id - 1];
 
+  /// The card this one's last kimariji kana tells it apart from: the one
+  /// sharing every kana before it (null for one-kana cards).
+  Poem? kimarijiTwin(Poem p) {
+    final prefix = p.kimariji.substring(0, p.kimariji.length - 1);
+    if (prefix.isEmpty) return null;
+    for (final q in all) {
+      if (q.id != p.id && q.kimariji.startsWith(prefix)) return q;
+    }
+    return null;
+  }
+
   Poem byKimariji(String k) {
     final p = _byKimariji[k];
     if (p == null) throw ArgumentError('Unknown kimariji: $k');
