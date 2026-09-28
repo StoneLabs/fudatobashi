@@ -1420,7 +1420,6 @@ abstract final class Entrances {
   static const flin = EntranceFrom(scale: 1.35);
   static const flash = EntranceFrom(scale: 0.4);
   static const slam = EntranceFrom(scale: 1.9, turnDeg: -7);
-  static const rise = EntranceFrom(offset: Offset(0, 70), scale: 0.82);
   static const slideL = EntranceFrom(offset: Offset(-60, 0));
   static const pop = EntranceFrom(scale: 0.4);
   static const up = EntranceFrom(offset: Offset(0, 22));
@@ -1447,14 +1446,31 @@ abstract final class NewCardMotion {
       duration: Duration(milliseconds: 700), delay: Duration(milliseconds: 120), curve: Curves.easeOut);
   static const shout = EntranceSpec(Entrances.slam,
       duration: Duration(milliseconds: 450), delay: Duration(milliseconds: 50), curve: Entrances.springy);
-  static const card = EntranceSpec(Entrances.rise,
-      duration: Duration(milliseconds: 650), delay: Duration(milliseconds: 220), curve: Entrances.lift);
+  /// The card flies in from off-screen at the lower left, along the path
+  /// the accept flick carries on (out at the upper right), with a speed
+  /// streak trailing it that fades as it lands at [landAt].
+  static const card = EntranceSpec(EntranceFrom(offset: Offset(-470, 620), turnDeg: -32, scale: 0.7, opaqueAt: 0.15),
+      duration: Duration(milliseconds: 600), delay: Duration(milliseconds: 200), curve: Entrances.lift);
+
+  /// The streak is fully drawn until the card is this share of the way in.
+  static const double flyStreakHold = 0.5;
+
+  /// When the card first reaches its spot (the lift curve arrives about
+  /// half-way through, then overshoots and settles).
+  static const landAt = Duration(milliseconds: 520);
+  static const jolt = EntranceSpec(Entrances.custom, duration: Duration(milliseconds: 260), delay: landAt, curve: Curves.linear);
+  static const double joltReach = 5;
+  static const int joltSteps = 7;
+  static const int joltSeed = 9;
   static const info = EntranceSpec(Entrances.slideL,
-      duration: Duration(milliseconds: 450), delay: Duration(milliseconds: 550), curve: Entrances.glide);
-  static const sfx = EntranceSpec(Entrances.pop,
-      duration: Duration(milliseconds: 400), delay: Duration(milliseconds: 400), curve: Entrances.bouncy);
-  static const tobi = EntranceSpec(Entrances.pop,
-      duration: Duration(milliseconds: 400), delay: Duration(milliseconds: 700), curve: Entrances.bouncy);
+      duration: Duration(milliseconds: 450), delay: Duration(milliseconds: 600), curve: Entrances.glide);
+  static const sfx = EntranceSpec(Entrances.pop, duration: Duration(milliseconds: 400), delay: landAt, curve: Entrances.bouncy);
+
+  /// Tobi leaps up in shock as the card lands, then keeps trembling.
+  static const tobi = EntranceSpec(EntranceFrom(offset: Offset(0, 30), scale: 0.5, turnDeg: 12),
+      duration: Duration(milliseconds: 420), delay: Duration(milliseconds: 560), curve: Entrances.bouncy);
+  static const double tobiTremble = 1.3;
+  static const tobiTrembleStep = Duration(milliseconds: 70);
   static const actions = EntranceSpec(Entrances.pop,
       duration: Duration(milliseconds: 400), delay: Duration(milliseconds: 800), curve: Entrances.springy);
 
@@ -1594,8 +1610,10 @@ abstract final class IslandCompleteMotion {
       EntranceSpec(Entrances.pop, duration: Duration(milliseconds: 350), delay: Duration(milliseconds: 550));
   static const island = EntranceSpec(Entrances.pop,
       duration: Duration(milliseconds: 600), delay: Duration(milliseconds: 100), curve: Entrances.swell);
-  static const sfx = NewCardMotion.sfx;
-  static const tobi = NewCardMotion.tobi;
+  static const sfx = EntranceSpec(Entrances.pop,
+      duration: Duration(milliseconds: 400), delay: Duration(milliseconds: 400), curve: Entrances.bouncy);
+  static const tobi = EntranceSpec(Entrances.pop,
+      duration: Duration(milliseconds: 400), delay: Duration(milliseconds: 700), curve: Entrances.bouncy);
   static const next = EntranceSpec(Entrances.up,
       duration: Duration(milliseconds: 450), delay: Duration(milliseconds: 800), curve: Entrances.glide);
   static const rising = EntranceSpec(Entrances.isrise,

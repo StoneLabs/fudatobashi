@@ -84,49 +84,63 @@ class _NewCardOverlayState extends State<NewCardOverlay> with SingleTickerProvid
             ),
           ),
         ],
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: Gaps.gutter),
-          child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-            const SizedBox(height: NewCardLayout.topGap),
-            _Header(shout: s.newCardShout, band: s.newCardBand),
-            Expanded(child: _CardStage(poem: poem, flick: _flick)),
-            Stack(clipBehavior: Clip.none, children: [
-              Entrance(NewCardMotion.info, child: _InfoPanel(poem: poem)),
-              const Placed(
-                NewCardLayout.exclaim,
-                child: Entrance(
-                  NewCardMotion.tobi,
-                  child: _Exclaim(),
+        child: Jolt(
+          NewCardMotion.jolt,
+          reach: NewCardMotion.joltReach,
+          steps: NewCardMotion.joltSteps,
+          seed: NewCardMotion.joltSeed,
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: Gaps.gutter),
+            child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+              const SizedBox(height: NewCardLayout.topGap),
+              _Header(shout: s.newCardShout, band: s.newCardBand),
+              Expanded(child: _CardStage(poem: poem, flick: _flick)),
+              Stack(clipBehavior: Clip.none, children: [
+                Entrance(NewCardMotion.info, child: _InfoPanel(poem: poem)),
+                const Placed(
+                  NewCardLayout.exclaim,
+                  child: Entrance(
+                    NewCardMotion.tobi,
+                    child: _Exclaim(),
+                  ),
                 ),
-              ),
-              const Placed(
-                NewCardLayout.tobi,
-                child: Entrance(NewCardMotion.tobi, child: Tobi(pose: TobiPose.shocked)),
-              ),
-            ]),
-            const SizedBox(height: NewCardLayout.actionsGap),
-            Entrance(
-              NewCardMotion.actions,
-              child: IntrinsicHeight(
-                child: Row(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-                  Expanded(flex: NewCardLayout.learnFlex, child: _LearnButton(label: s.learnAboutCard)),
-                  const SizedBox(width: NewCardLayout.actionsGap),
-                  Expanded(
-                    flex: NewCardLayout.acceptFlex,
-                    child: CelebrationCta(
-                      label: s.bringItOn,
-                      sub: s.other.bringItOn,
-                      onTap: _accept,
-                      height: NewCardLayout.actionHeight,
-                      fontSize: NewCardLayout.acceptFont,
-                      subFontSize: NewCardLayout.acceptSubFont,
+                const Placed(
+                  NewCardLayout.tobi,
+                  child: Entrance(
+                    NewCardMotion.tobi,
+                    child: Shake(
+                      reach: NewCardMotion.tobiTremble,
+                      step: NewCardMotion.tobiTrembleStep,
+                      seed: NewCardLayout.bangSeed,
+                      child: Tobi(pose: TobiPose.shocked),
                     ),
                   ),
-                ]),
+                ),
+              ]),
+              const SizedBox(height: NewCardLayout.actionsGap),
+              Entrance(
+                NewCardMotion.actions,
+                child: IntrinsicHeight(
+                  child: Row(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+                    Expanded(flex: NewCardLayout.learnFlex, child: _LearnButton(label: s.learnAboutCard)),
+                    const SizedBox(width: NewCardLayout.actionsGap),
+                    Expanded(
+                      flex: NewCardLayout.acceptFlex,
+                      child: CelebrationCta(
+                        label: s.bringItOn,
+                        sub: s.other.bringItOn,
+                        onTap: _accept,
+                        height: NewCardLayout.actionHeight,
+                        fontSize: NewCardLayout.acceptFont,
+                        subFontSize: NewCardLayout.acceptSubFont,
+                      ),
+                    ),
+                  ]),
+                ),
               ),
-            ),
-            const SizedBox(height: Gaps.section),
-          ]),
+              const SizedBox(height: Gaps.section),
+            ]),
+          ),
         ),
       ),
     );
@@ -231,15 +245,26 @@ class _CardStage extends StatelessWidget {
               flick: flick,
               child: Entrance(
                 NewCardMotion.card,
-                child: Sway(
-                  turnDeg: NewCardMotion.swayDeg,
-                  lift: NewCardMotion.swayLift,
-                  period: NewCardMotion.swayPeriod,
-                  child: DecoratedBox(
-                    decoration: const BoxDecoration(boxShadow: [NewCardLayout.cardShadow]),
-                    child: TorifudaCard(poem: poem),
+                child: Stack(clipBehavior: Clip.none, children: [
+                  Positioned.fill(
+                    child: EntranceBuilder(
+                      NewCardMotion.card,
+                      builder: (context, p, _) =>
+                          _Streak(opacity: ((1 - p) / (1 - NewCardMotion.flyStreakHold)).clamp(0.0, 1.0)),
+                    ),
                   ),
-                ),
+                  Positioned.fill(
+                    child: Sway(
+                      turnDeg: NewCardMotion.swayDeg,
+                      lift: NewCardMotion.swayLift,
+                      period: NewCardMotion.swayPeriod,
+                      child: DecoratedBox(
+                        decoration: const BoxDecoration(boxShadow: [NewCardLayout.cardShadow]),
+                        child: TorifudaCard(poem: poem),
+                      ),
+                    ),
+                  ),
+                ]),
               ),
             ),
           ),
@@ -268,28 +293,7 @@ class _Flick extends StatelessWidget {
               : 1 - (streak - NewCardMotion.streakPeak) / (1 - NewCardMotion.streakPeak);
           const to = NewCardMotion.flickTo;
           return Stack(clipBehavior: Clip.none, children: [
-            if (flick.value > 0 && streak < 1)
-              Positioned.fill(
-                child: OverflowBox(
-                  minWidth: NewCardMotion.streakBox.width,
-                  maxWidth: NewCardMotion.streakBox.width,
-                  minHeight: NewCardMotion.streakBox.height,
-                  maxHeight: NewCardMotion.streakBox.height,
-                  child: Opacity(
-                    opacity: streakOpacity.clamp(0.0, 1.0),
-                    child: Transform.rotate(
-                      angle: math.atan2(to.dy, to.dx),
-                      child: Transform.translate(
-                        offset: const Offset(-NewCardMotion.streakBack, 0),
-                        child: CustomPaint(
-                          size: NewCardMotion.streakBox,
-                          painter: const SpeedLinesPainter(NewCardMotion.streak),
-                        ),
-                      ),
-                    ),
-                  ),
-                ),
-              ),
+            if (flick.value > 0 && streak < 1) Positioned.fill(child: _Streak(opacity: streakOpacity.clamp(0.0, 1.0))),
             Transform.translate(
               offset: to * fly,
               child: Transform.rotate(angle: NewCardMotion.flickTurnDeg * fly * math.pi / 180, child: child),
@@ -312,6 +316,34 @@ class _Flick extends StatelessWidget {
           ]);
         },
       );
+}
+
+/// A speed streak trailing the card along its flight path (in from the
+/// lower left, out to the upper right).
+class _Streak extends StatelessWidget {
+  const _Streak({required this.opacity});
+  final double opacity;
+
+  @override
+  Widget build(BuildContext context) {
+    const to = NewCardMotion.flickTo;
+    return OverflowBox(
+      minWidth: NewCardMotion.streakBox.width,
+      maxWidth: NewCardMotion.streakBox.width,
+      minHeight: NewCardMotion.streakBox.height,
+      maxHeight: NewCardMotion.streakBox.height,
+      child: Opacity(
+        opacity: opacity,
+        child: Transform.rotate(
+          angle: math.atan2(to.dy, to.dx),
+          child: Transform.translate(
+            offset: const Offset(-NewCardMotion.streakBack, 0),
+            child: CustomPaint(size: NewCardMotion.streakBox, painter: const SpeedLinesPainter(NewCardMotion.streak)),
+          ),
+        ),
+      ),
+    );
+  }
 }
 
 class _InfoPanel extends StatelessWidget {
