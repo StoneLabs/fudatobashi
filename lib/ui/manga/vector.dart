@@ -87,13 +87,18 @@ class VText extends VShape {
 }
 
 class VGroup extends VShape {
-  const VGroup(this.children, {VStyle style = VStyle.none, this.rotate = 0, this.pivot = Offset.zero, VTag? tag})
+  const VGroup(this.children,
+      {VStyle style = VStyle.none, this.rotate = 0, this.pivot = Offset.zero, this.transform, VTag? tag})
       : super(style, tag);
   final List<VShape> children;
 
   /// Rotation in degrees about [pivot] (SVG `rotate(a cx cy)`).
   final double rotate;
   final Offset pivot;
+
+  /// A general affine transform applied about the origin, after [rotate]
+  /// (SVG `transform`), or null for none.
+  final Matrix4? transform;
 }
 
 /// Another piece of art fitted into [rect] (SVG `<use>` of a symbol).
@@ -150,6 +155,7 @@ abstract final class VectorPainter {
           canvas.rotate(shape.rotate * math.pi / 180);
           canvas.translate(-shape.pivot.dx, -shape.pivot.dy);
         }
+        if (shape.transform != null) canvas.transform(shape.transform!.storage);
         for (final child in shape.children) {
           _draw(canvas, child, style, ctx);
         }

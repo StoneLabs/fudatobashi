@@ -1,0 +1,13 @@
+<svg viewBox="0 0 40 40">
+  <g transform="translate(15 10)">
+    <g id="frame" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <rect id="card" x="-11" y="-4" width="20" height="14" rx="2" fill="#FFFFFF"/>
+      <circle id="dot" cx="15" cy="0" r="4" fill="#FFD83A"/>
+      <path id="tail" d="M-9 14 L-13 20 L-5 18 Z" fill="#FF3D7F" stroke="none"/>
+      <g id="eye-mark" opacity="0.8">
+        <ellipse cx="5" cy="20" rx="3" ry="2" fill="#141414" stroke="none"/>
+      </g>
+    </g>
+    <path id="dash" d="M-11 26 H21" stroke="#141414" stroke-width="1.5" stroke-dasharray="3,2" fill="none"/>
+  </g>
+</svg>
