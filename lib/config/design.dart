@@ -646,6 +646,13 @@ abstract final class StatsLayout {
   static const double playButtonHeight = 40;
   static const EdgeInsets playButtonPadding = EdgeInsets.symmetric(horizontal: 14);
   static const double playButtonFont = 14;
+
+  /// Locked (not fully uncovered): the lock icon beside the label, and the
+  /// balloon explaining why, sized like Home's "Learn next cards" lock.
+  static const double playButtonIcon = 16;
+  static const double playButtonIconGap = 5;
+  static const Size playButtonBalloon = Size(270, 96);
+  static const Duration playButtonBalloonLife = Duration(milliseconds: 2800);
 }
 
 /// The History tab: each run's mode tag, timestamp, card/miss count and

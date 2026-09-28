@@ -177,6 +177,12 @@ class Progress extends ChangeNotifier {
 
   List<IslandProgress> get islands => trainer.islands(fudaSets, allStats);
 
+  /// Whether a single-island run may start: journey mode gates it on every
+  /// card of the island being uncovered, all-known mode has nothing left to
+  /// unlock.
+  bool isIslandPlayable(IslandProgress island) =>
+      trainer.config.learningMode == LearningMode.allKnown || island.unlocked == island.total;
+
   /// The displayed rating, or the current performance before the first run.
   double get currentRating => rating ?? Rating.performance(projectedMs);
 

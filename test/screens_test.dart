@@ -665,6 +665,140 @@ void main() {
     });
   }
 
+  // Journey mode's "Play this island" (`_SlowestIslandPanel` in
+  // stats_screen.dart) must not start a run through cards the island hasn't
+  // uncovered yet: locked until every one of its cards is unlocked
+  // (`Progress.isIslandPlayable`), open right away in all-known mode.
+  for (final ja in [false, true]) {
+    final lang = ja ? 'ja' : 'en';
+
+    testWidgets('stats: play this island is locked on a partly uncovered island, and a tap says why ($lang)',
+        (tester) async {
+      final s = S(ja);
+      final p = await open(tester, mode: LearningMode.journey, ja: ja);
+      final island0Ids = fudaSets['initial:${archipelago.islands[0].name}'].poemIds;
+      // Trains every card of the island (whether or not the pace has
+      // unlocked it yet — free swiping ahead of the dues is the reported
+      // bug) so the trained ones clear `mapHollowMinTries` and get a real
+      // median, then re-locks the last few: a card can be well-practised and
+      // still not officially uncovered, and the button must stay locked.
+      for (var i = 0; i < 6; i++) {
+        await makeSomeDue(tester, p, island0Ids);
+      }
+      for (final id in island0Ids.skip(4)) {
+        p.trainer.items[ItemKey(id, false)]!.unlocked = false;
+      }
+      final island = p.islands[0];
+      expect(island.unlocked, 4);
+      expect(island.total, 7);
+      expect(p.isIslandPlayable(island), isFalse);
+
+      await tester.binding.setSurfaceSize(_phone);
+      await tester.pumpWidget(RepaintBoundary(key: const ValueKey('screen'), child: FudatobashiApp(progress: p)));
+      await tester.pump(const Duration(milliseconds: 500));
+      await tester.tap(find.text(s.stats));
+      await tester.pump(const Duration(milliseconds: 500));
+      expect(tester.takeException(), isNull);
+
+      await tester.tap(find.text(s.playThisIsland));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 400));
+      final why = s.uncoverIslandToPlay(island.unlocked, island.total);
+      expect(find.text(why), findsOneWidget);
+      expect(find.byType(PlayScreen), findsNothing, reason: 'a locked tap starts no run');
+      expect(tester.takeException(), isNull);
+      await _capture(tester, 'island_play_locked_$lang');
+      await tester.pump(StatsLayout.playButtonBalloonLife);
+      expect(find.text(why), findsNothing);
+      await tester.pumpWidget(const SizedBox());
+    });
+
+    testWidgets('stats: play this island plays once every card of it is uncovered ($lang)', (tester) async {
+      final s = S(ja);
+      final p = await open(tester, mode: LearningMode.journey, ja: ja, journeyCards: 40);
+      final island0Ids = fudaSets['initial:${archipelago.islands[0].name}'].poemIds;
+      for (var i = 0; i < 6; i++) {
+        await makeSomeDue(tester, p, island0Ids);
+      }
+      final island = p.islands[0];
+      expect(island.unlocked, island.total);
+      expect(p.isIslandPlayable(island), isTrue);
+
+      await tester.binding.setSurfaceSize(_phone);
+      await tester.pumpWidget(RepaintBoundary(key: const ValueKey('screen'), child: FudatobashiApp(progress: p)));
+      await tester.pump(const Duration(milliseconds: 500));
+      await tester.tap(find.text(s.stats));
+      await tester.pump(const Duration(milliseconds: 500));
+
+      await tester.runAsync(() async {
+        await tester.tap(find.text(s.playThisIsland));
+        await Future<void>.delayed(const Duration(milliseconds: 50));
+      });
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 500));
+      expect(find.byType(PlayScreen), findsOneWidget);
+      final played = tester.widget<PlayScreen>(find.byType(PlayScreen));
+      expect(played.config.setIds, ['initial:${archipelago.islands[0].name}']);
+      expect(played.cards.length, island.total);
+      await tester.pumpWidget(const SizedBox());
+    });
+
+    testWidgets('stats: play this island is always open in all-known mode ($lang)', (tester) async {
+      final s = S(ja);
+      final p = await open(tester, mode: LearningMode.allKnown, ja: ja);
+      final island0Ids = fudaSets['initial:${archipelago.islands[0].name}'].poemIds;
+      for (var i = 0; i < 6; i++) {
+        await makeSomeDue(tester, p, island0Ids);
+      }
+      expect(p.isIslandPlayable(p.islands[0]), isTrue);
+
+      await tester.binding.setSurfaceSize(_phone);
+      await tester.pumpWidget(RepaintBoundary(key: const ValueKey('screen'), child: FudatobashiApp(progress: p)));
+      await tester.pump(const Duration(milliseconds: 500));
+      await tester.tap(find.text(s.stats));
+      await tester.pump(const Duration(milliseconds: 500));
+
+      await tester.runAsync(() async {
+        await tester.tap(find.text(s.playThisIsland));
+        await Future<void>.delayed(const Duration(milliseconds: 50));
+      });
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 500));
+      expect(find.byType(PlayScreen), findsOneWidget);
+      await tester.pumpWidget(const SizedBox());
+    });
+
+    // Reproduces "A RenderFlex overflowed by 1.00 pixels on the bottom" on
+    // Home's own brand-title header (`BrandTitle` in `header.dart`, inside
+    // `MangaHeader`'s fixed-height bar): its two-line logo doesn't fit that
+    // guess at a 1.3 font scale, and any full-app render — not just this
+    // screen — pumps through Home first. The fix must size the header to its
+    // content instead of a fixed-height guess (`MangaHeader`), so every
+    // screen's header, including this one's, holds at any font scale.
+    testWidgets('stats: the locked play-this-island panel holds at font scale 1.3 ($lang)', (tester) async {
+      tester.platformDispatcher.textScaleFactorTestValue = 1.3;
+      addTearDown(tester.platformDispatcher.clearTextScaleFactorTestValue);
+      final s = S(ja);
+      final p = await open(tester, mode: LearningMode.journey, ja: ja);
+      final island0Ids = fudaSets['initial:${archipelago.islands[0].name}'].poemIds;
+      for (var i = 0; i < 6; i++) {
+        await makeSomeDue(tester, p, island0Ids);
+      }
+      for (final id in island0Ids.skip(4)) {
+        p.trainer.items[ItemKey(id, false)]!.unlocked = false;
+      }
+      expect(p.islands[0].unlocked, lessThan(p.islands[0].total));
+      await tester.binding.setSurfaceSize(_phone);
+      await tester.pumpWidget(RepaintBoundary(key: const ValueKey('screen'), child: FudatobashiApp(progress: p)));
+      await tester.pump(const Duration(milliseconds: 500));
+      await tester.tap(find.text(s.stats));
+      await tester.pump(const Duration(milliseconds: 500));
+      expect(tester.takeException(), isNull);
+      await _capture(tester, 'island_play_locked_scaled_$lang');
+      await tester.pumpWidget(const SizedBox());
+    });
+  }
+
   // Reproduces "BOTTOM OVERFLOWED BY 3.0 PIXELS" on the island page's top bar
   // (`_TopBar` in `island_screen.dart`): its two-line title+subtitle Column
   // was squeezed into another fixed-height guess, same root cause and same

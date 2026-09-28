@@ -21,6 +21,10 @@ extension StatsStrings on S {
   String get islandLineTemplate => t('{0} cards · {1} due today', '{0}枚 · 本日{1}件');
   String get tapAnIsland => t('Tap an\nisland!', '島を\nタップ！');
   String get playThisIsland => t('Play this island ›', 'この島で修行 ›');
+  String get playThisIslandLocked => t('Play this island (locked)', 'この島で修行（ロック中）');
+  String uncoverIslandToPlay(int unlocked, int total) => ja
+      ? 'この島の札を全部（$total枚）覚えたら遊べます（いま$unlocked/$total）'
+      : 'Uncover all $total cards of this island to play it ($unlocked/$total so far).';
   String get noIslandToPractise =>
       t('Play a few rounds to find your slowest island.', 'まずは何回か遊ぼう。もっとも遅い島がここに出ます。');
 

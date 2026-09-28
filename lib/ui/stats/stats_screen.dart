@@ -8,7 +8,6 @@ import '../../data/poem.dart';
 import '../../domain/card_stats.dart' show ItemKey;
 import '../../l10n/stats_strings.dart';
 import '../../l10n/strings.dart';
-import '../../state/play_config.dart';
 import '../../state/progress.dart';
 import '../../state/scope.dart';
 import '../islands/island_map.dart';
@@ -366,6 +365,9 @@ class _SlowestIslandPanel extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final s = S.of(context);
+    final progress = ProgressScope.of(context);
+    final islandProgress = progress.islands[island.index];
+    final playable = progress.isIslandPlayable(islandProgress);
     return MangaPanel(
       shape: const PanelShape(bottomRight: Offset(0, StatsLayout.focusCut)),
       color: Palette.sunSoft,
@@ -405,11 +407,24 @@ class _SlowestIslandPanel extends StatelessWidget {
             ConstrainedBox(
               constraints: const BoxConstraints(minHeight: StatsLayout.playButtonHeight),
               child: InkButton(
-                color: Palette.pink,
+                color: playable ? Palette.pink : Palette.desk,
                 padding: StatsLayout.playButtonPadding,
-                onTap: () => startFreePlay(context, PlayConfig(mode: PlayMode.free, setIds: ['initial:${island.name}'])),
-                child: Text(s.playThisIsland,
-                    style: const TextStyle(fontWeight: Weights.black, fontSize: StatsLayout.playButtonFont)),
+                semanticLabel: playable ? s.playThisIsland : s.playThisIslandLocked,
+                onTap: () => playable
+                    ? startIslandPlay(context, islandProgress.index)
+                    : BalloonPop.show(context, s.uncoverIslandToPlay(islandProgress.unlocked, islandProgress.total),
+                        size: StatsLayout.playButtonBalloon, life: StatsLayout.playButtonBalloonLife),
+                child: FittedBox(
+                  fit: BoxFit.scaleDown,
+                  child: Row(mainAxisSize: MainAxisSize.min, children: [
+                    if (!playable) ...[
+                      const MangaIcon(IconArt.lock, size: StatsLayout.playButtonIcon),
+                      const SizedBox(width: StatsLayout.playButtonIconGap),
+                    ],
+                    Text(s.playThisIsland,
+                        style: const TextStyle(fontWeight: Weights.black, fontSize: StatsLayout.playButtonFont)),
+                  ]),
+                ),
               ),
             ),
           ]),

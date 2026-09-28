@@ -10,6 +10,7 @@ import 'package:fudatobashi/data/poem.dart';
 import 'package:fudatobashi/db/database.dart';
 import 'package:fudatobashi/domain/card_stats.dart';
 import 'package:fudatobashi/domain/play_session.dart';
+import 'package:fudatobashi/domain/trainer.dart';
 import 'package:fudatobashi/state/play_config.dart';
 import 'package:fudatobashi/state/demo_data.dart';
 import 'package:fudatobashi/state/progress.dart';
@@ -120,6 +121,30 @@ void main() {
     expect(await db.select(db.attempts).get(), isEmpty);
     expect(await db.select(db.sessions).get(), isEmpty);
     expect(progress.rating, isNull);
+    await db.close();
+  });
+
+  test('isIslandPlayable: journey mode needs every card of the island unlocked; all-known never gates it', () async {
+    final db = AppDatabase(NativeDatabase.memory());
+    final progress = await Progress.open(db);
+
+    // A fresh journey seeds only the first few cards of island 0.
+    final partial = progress.islands[0];
+    expect(partial.unlocked, lessThan(partial.total));
+    expect(progress.isIslandPlayable(partial), isFalse);
+
+    for (final id in partial.poemIds) {
+      progress.trainer.items[ItemKey(id, false)]!.unlocked = true;
+    }
+    final full = progress.islands[0];
+    expect(full.unlocked, full.total);
+    expect(progress.isIslandPlayable(full), isTrue);
+
+    // All-known mode never gates a run, even on a (synthetic) partly
+    // uncovered island: nothing stays locked once every card is unlocked.
+    await progress.setLearningMode(LearningMode.allKnown);
+    final stillPartial = IslandProgress(partial.index, partial.name, partial.poemIds, 1, 0, 0);
+    expect(progress.isIslandPlayable(stillPartial), isTrue);
     await db.close();
   });
 

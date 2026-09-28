@@ -27,6 +27,18 @@ Future<void> startLearnNext(BuildContext context) async {
   await _push(context, planned.cards, const PlayConfig(mode: PlayMode.training), newPoems: planned.newPoems);
 }
 
+/// Stats' "Play this island" (journey, once every card of it is uncovered):
+/// a free-play round of exactly its cards. Reads the island's progress fresh
+/// off [context], so a partly uncovered island can never start a run here,
+/// whatever the tapped button believed.
+Future<void> startIslandPlay(BuildContext context, int islandIndex) async {
+  final progress = ProgressScope.read(context);
+  final island = progress.islands[islandIndex];
+  if (!progress.isIslandPlayable(island)) return;
+  final run = PlayConfig(mode: PlayMode.free, setIds: ['initial:${island.name}']);
+  await _push(context, progress.freeDeck(run), run);
+}
+
 /// 始める: the cards of [config]'s sets, once each.
 Future<void> startFreePlay(BuildContext context, PlayConfig config) {
   final run = config.copyWith(mode: PlayMode.free);

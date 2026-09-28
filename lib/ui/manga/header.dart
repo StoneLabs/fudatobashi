@@ -10,11 +10,12 @@ class MangaHeader extends StatelessWidget {
   final List<Widget> actions;
 
   @override
-  Widget build(BuildContext context) => SizedBox(
-        height: HeaderStyle.height,
+  Widget build(BuildContext context) => ConstrainedBox(
+        constraints: const BoxConstraints(minHeight: HeaderStyle.height),
         child: Row(
+          crossAxisAlignment: CrossAxisAlignment.center,
           children: [
-            Expanded(child: Align(alignment: Alignment.centerLeft, child: title)),
+            Expanded(child: title),
             for (final (i, a) in actions.indexed) ...[
               if (i > 0) const SizedBox(width: HeaderStyle.actionGap),
               a,
