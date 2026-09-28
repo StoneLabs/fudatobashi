@@ -439,4 +439,8 @@ abstract final class DemoDataTuning {
   /// A free-play run happens every this many simulated days.
   static const int freeRunEvery = 3;
   static const int freeCards = 10;
+
+  /// Fixed default seed, so seeding the same device twice (and this
+  /// feature's own test) reproduces the same journey.
+  static const int seed = 1179;
 }

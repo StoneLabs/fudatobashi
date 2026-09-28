@@ -13,13 +13,14 @@ typedef SeedProgress = void Function(int day, int totalDays, double fraction);
 /// Replaces all progress with a journey player's last [DemoDataTuning.days]
 /// days: training rounds through the real path (unlocks, islands, FSRS,
 /// rating) plus the odd free-play run, so celebrations, due cards and Stats
-/// have data during development.
-Future<void> seedDemoData(Progress progress, {SeedProgress? onProgress}) async {
+/// have data during development. [seed] defaults to a fixed value so a seeded
+/// device (and this file's own test) reliably reaches unlocks, due cards and
+/// a completed island, not just "most of the time".
+Future<void> seedDemoData(Progress progress, {SeedProgress? onProgress, int seed = DemoDataTuning.seed}) async {
   await progress.resetProgress();
   await progress.updateTrainerConfig(
     progress.trainer.config.copyWith(learningMode: LearningMode.journey, reverseMode: ReverseMode.afterMastery),
   );
-  final seed = DateTime.now().millisecondsSinceEpoch;
   final sim = JourneySimulator(progress, seed: seed);
   final rng = math.Random(seed);
   final today = DateTime.now();

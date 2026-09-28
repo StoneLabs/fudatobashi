@@ -3,12 +3,14 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:fsrs/fsrs.dart' as fsrs;
 
+import '../../config/config.dart';
 import '../../config/design.dart';
 import '../../data/fuda_sets.dart';
 import '../../data/poem.dart';
 import '../../domain/card_stats.dart';
 import '../../domain/rating.dart';
 import '../../domain/trainer.dart';
+import '../../state/progress.dart';
 import '../../state/scope.dart';
 import 'frame_stats.dart';
 import 'reset_actions.dart';
@@ -16,6 +18,18 @@ import 'reset_actions.dart';
 const _mono = TextStyle(fontFamily: 'monospace', fontSize: 12, fontFeatures: [FontFeature.tabularFigures()]);
 
 String _ms(double? v) => v == null ? '—' : v.toStringAsFixed(0);
+
+bool _sameLocalDay(DateTime a, DateTime b) => a.year == b.year && a.month == b.month && a.day == b.day;
+
+/// Training rounds started today, and attempts recorded across all of them.
+(int rounds, int attempts) _today(Progress p, DateTime now) {
+  final rounds = p.sessions.where((s) => _sameLocalDay(s.startedAt.toLocal(), now)).length;
+  var attempts = 0;
+  for (final k in p.trainer.items.keys) {
+    attempts += p.attemptsOf(k).where((a) => _sameLocalDay(a.at.toLocal(), now)).length;
+  }
+  return (rounds, attempts);
+}
 
 /// Everything the scheduler, FSRS and the timing code know. For nerds.
 class DebugPage extends StatelessWidget {
@@ -84,6 +98,9 @@ class _Overview extends StatelessWidget {
     final now = DateTime.now();
     final due = unlocked.where((s) => t.isDue(s.key, now)).length;
     final next = t.nextBatch(poems, fudaSets);
+    final status = p.paceStatus(now);
+    final readiness = status.readiness;
+    final (roundsToday, attemptsToday) = _today(p, now);
     return ListView(padding: const EdgeInsets.all(16), children: [
       _KV('goal level', '${t.goalLevel}  (${t.goalMs.toStringAsFixed(0)} ms)'),
       _KV('goal ladder', c.goalsMs.join(' → ')),
@@ -95,6 +112,28 @@ class _Overview extends StatelessWidget {
       _KV('attempts stored', '${stats.values.fold<int>(0, (a, s) => a + s.count)}'),
       _KV('sessions', '${p.sessions.length}'),
       _KV('streak', '${p.streak} days'),
+      const Divider(height: 32),
+      Text('Journey pace', style: Theme.of(context).textTheme.titleMedium),
+      _KV('learning mode / pace', '${c.learningMode.name} / ${c.pace.name}'
+          ' (${c.pace.profile.daysToAll}d, cap ${c.pace.profile.dailyAutoCap}/day)'),
+      _KV('journey day', '${status.day}'),
+      _KV('unlocked / target / total', '${status.unlocked} / ${status.target} / ${status.total}'),
+      _KV('readiness',
+          '${(readiness.solidFraction * 100).toStringAsFixed(0)}% solid (${readiness.solid}/${readiness.unlocked})'
+          ', ${readiness.underPractised.length} under-practised, ready=${readiness.ready}'),
+      _KV('hold', status.hold.name),
+      _KV('next auto-unlock',
+          status.nextPaceDay == null ? '—' : 'day ${status.nextPaceDay} (${status.nextPaceDay! - status.day}d away)'),
+      _KV('new today', '${status.newToday}'),
+      _KV('rounds / attempts today', '$roundsToday / $attemptsToday'),
+      const SizedBox(height: 4),
+      const Text('day  target', style: _mono),
+      for (var d = status.day; d <= status.day + PaceTuning.debugLookaheadDays; d++)
+        Text(
+          '${d.toString().padLeft(3)}  ${c.pace.targetUnlocked(d, status.total).toString().padLeft(3)}'
+          '${d == status.day ? '   (now: ${status.unlocked})' : ''}',
+          style: _mono,
+        ),
       const Divider(height: 32),
       Text('Knobs', style: Theme.of(context).textTheme.titleMedium),
       _Stepper('unlock batch size', c.batchSize, 1, 8, (v) => p.updateTrainerConfig(c.copyWith(batchSize: v))),
@@ -357,7 +396,10 @@ class _SchedulerState extends State<_Scheduler> {
   @override
   Widget build(BuildContext context) {
     final p = ProgressScope.of(context);
-    final picks = p.trainer.planSession(p.allStats, DateTime.now(), math.Random(_seed));
+    final now = DateTime.now();
+    final scheduler = p.trainer.scheduler;
+    final config = p.trainer.config;
+    final picks = p.trainer.planSession(p.allStats, now, math.Random(_seed));
     final counts = <PickReason, int>{};
     for (final x in picks) {
       counts[x.reason] = (counts[x.reason] ?? 0) + 1;
@@ -367,7 +409,7 @@ class _SchedulerState extends State<_Scheduler> {
         Expanded(child: Text('Preview of the next training session (dry run, seed $_seed)')),
         IconButton(onPressed: () => setState(() => _seed++), icon: const Icon(Icons.casino)),
       ]),
-      _KV('mix', counts.entries.map((e) => '${e.key.name}:${e.value}').join('  ')),
+      _KV('pick-reason mix', counts.entries.map((e) => '${e.key.name}:${e.value}').join('  ')),
       const SizedBox(height: 8),
       for (final (i, x) in picks.indexed)
         Text(
@@ -375,6 +417,27 @@ class _SchedulerState extends State<_Scheduler> {
           ' ${x.reason.name.padRight(11)} w=${x.weight.toStringAsFixed(2)}',
           style: _mono,
         ),
+      const Divider(height: 32),
+      Text('FSRS', style: Theme.of(context).textTheme.titleMedium),
+      _KV('desired retention', scheduler.desiredRetention.toStringAsFixed(2)),
+      _KV('parameters', scheduler.parameters.map((v) => v.toStringAsFixed(3)).join(', ')),
+      _KV('due now / +1d / +3d',
+          '${p.dueCount(now)} / ${p.dueCount(now.add(const Duration(days: 1)))} / ${p.dueCount(now.add(const Duration(days: 3)))}'),
+      const Divider(height: 32),
+      Text('TrainerConfig', style: Theme.of(context).textTheme.titleMedium),
+      for (final e in config.toJson().entries) _KV(e.key, '${e.value}'),
+      const Divider(height: 32),
+      Text('Scheduler tuning', style: Theme.of(context).textTheme.titleMedium),
+      _KV('dueShare / freshWeight', '${TrainingTuning.dueShare} / ${TrainingTuning.freshWeight}'),
+      _KV('newCardMinTimed / newCardMaxShare', '${TrainingTuning.newCardMinTimed} / ${TrainingTuning.newCardMaxShare}'),
+      _KV('slowness clamp', '${TrainingTuning.slownessClampMin}–${TrainingTuning.slownessClampMax}'),
+      _KV('missWeightFactor / recencyCapDays', '${TrainingTuning.missWeightFactor} / ${TrainingTuning.recencyCapDays}'),
+      _KV('unsolid× / maintenance×',
+          '${TrainingTuning.unsolidWeightMultiplier} / ${TrainingTuning.maintenanceWeightMultiplier}'),
+      _KV('recentRepeatWindow', '${TrainingTuning.recentRepeatWindow}'),
+      _KV('requeue gap / cap growth', '${TrainingTuning.requeueGap} / ${TrainingTuning.requeueCapGrowth}'),
+      _KV('pace readySolidFraction', '${PaceTuning.readySolidFraction}'),
+      _KV('pace curve', PaceTuning.curve.map((k) => '(${k.$1},${k.$2})').join(' ')),
     ]);
   }
 }
