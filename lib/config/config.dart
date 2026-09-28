@@ -313,13 +313,6 @@ abstract final class CardDetailTuning {
 
   /// A card due within this many days shows "in Nd" instead of a full date.
   static const int dueSoonDays = 6;
-
-  /// Points sampled along the FSRS forgetting curve.
-  static const int forgettingCurveSamples = 24;
-
-  /// Lookahead window (days) when a card has no due date past now to sample
-  /// up to (never reviewed, or overdue).
-  static const int forgettingCurveFallbackDays = 30;
 }
 
 /// Fixed ranges of the FSRS model, for display.

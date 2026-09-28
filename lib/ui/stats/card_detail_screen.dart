@@ -1,6 +1,5 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:fsrs/fsrs.dart' as fsrs;
 
 import '../../config/config.dart';
 import '../../config/design.dart';
@@ -476,15 +475,6 @@ class _MemoryPanel extends StatelessWidget {
   final ItemKey itemKey;
   final DateTime now;
 
-  static List<double> _curveSamples(Trainer trainer, ItemKey key, fsrs.Card card, DateTime now) {
-    final start = card.lastReview!;
-    final fallback = start.add(const Duration(days: CardDetailTuning.forgettingCurveFallbackDays));
-    final end = card.due.isAfter(start) ? card.due : fallback;
-    final span = end.difference(start);
-    const n = CardDetailTuning.forgettingCurveSamples;
-    return [for (var i = 0; i < n; i++) trainer.retrievability(key, start.add(span * (i / (n - 1))))];
-  }
-
   /// NEXT DUE: the date and how far off it is, or "Today" once it is due.
   _MemTile _dueTile(S s, DateTime due) {
     final days = Trainer.daysBetween(now, due);
@@ -539,15 +529,6 @@ class _MemoryPanel extends StatelessWidget {
                 value: reviewed ? '${(trainer.retrievability(itemKey, now) * 100).round()}' : '—',
                 suffix: reviewed ? s.retrievabilityNow : null),
             reviewed ? _dueTile(s, card.due) : _MemTile(label: s.nextDueLabel, value: s.notScheduled, highlight: true),
-          ),
-          const SizedBox(height: Gaps.section),
-          SizedBox(
-            height: CardDetailLayout.curveHeight,
-            width: double.infinity,
-            child: reviewed
-                ? ForgettingCurve(samples: _curveSamples(trainer, itemKey, card, now), retentionGoal: trainer.config.desiredRetention)
-                : Center(
-                    child: Text(s.neverReviewed, style: const TextStyle(fontWeight: Weights.bold, fontSize: TypeScale.small))),
           ),
         ],
       ),

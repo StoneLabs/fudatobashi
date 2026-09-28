@@ -423,57 +423,6 @@ class _AttemptChartPainter extends CustomPainter {
       !identical(old.data, data) || !setEquals(old.visible, visible) || old.text != text;
 }
 
-/// A small line sampling FSRS retrievability over time (the forgetting curve).
-class ForgettingCurve extends StatelessWidget {
-  const ForgettingCurve({super.key, required this.samples, required this.retentionGoal});
-
-  /// Retrievability (0..1) sampled at even time steps.
-  final List<double> samples;
-  final double retentionGoal;
-
-  @override
-  Widget build(BuildContext context) => CustomPaint(painter: _ForgettingCurvePainter(samples, retentionGoal));
-}
-
-class _ForgettingCurvePainter extends CustomPainter {
-  _ForgettingCurvePainter(this.samples, this.retentionGoal);
-  final List<double> samples;
-  final double retentionGoal;
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    if (samples.length < 2) return;
-    double x(int i) => size.width * i / (samples.length - 1);
-    double y(double v) => size.height * (1 - v.clamp(0, 1));
-
-    final goalY = y(retentionGoal);
-    canvas.drawLine(
-      Offset(0, goalY),
-      Offset(size.width, goalY),
-      Paint()
-        ..style = PaintingStyle.stroke
-        ..strokeWidth = 1
-        ..color = Palette.desk,
-    );
-
-    final path = Path()..moveTo(x(0), y(samples[0]));
-    for (var i = 1; i < samples.length; i++) {
-      path.lineTo(x(i), y(samples[i]));
-    }
-    canvas.drawPath(
-      path,
-      Paint()
-        ..style = PaintingStyle.stroke
-        ..strokeWidth = ChartStyle.lineStroke
-        ..color = Palette.seaDeep,
-    );
-  }
-
-  @override
-  bool shouldRepaint(_ForgettingCurvePainter old) =>
-      !listEquals(old.samples, samples) || old.retentionGoal != retentionGoal;
-}
-
 /// One series of a [DailyChart]: a value per day (NaN for none), drawn as a
 /// line, a dashed line or bars.
 class DailySeries {

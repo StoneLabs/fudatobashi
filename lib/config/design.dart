@@ -667,7 +667,7 @@ abstract final class HistoryLayout {
 }
 
 /// Small charts shared by the island list (a per-card sparkline) and the card
-/// detail screen (the attempt chart and the forgetting curve).
+/// detail screen (the attempt chart).
 abstract final class ChartStyle {
   static const double sparklineWidth = 96;
   static const double sparklineHeight = 24;
@@ -808,7 +808,6 @@ abstract final class CardDetailLayout {
   static const double memGridValueFont = 21;
   static const double memGridSuffixFont = 13;
   static const EdgeInsets memGridPadding = EdgeInsets.fromLTRB(9, 4, 9, 5);
-  static const double curveHeight = 52;
 
   static const double balloonFont = 13;
   static const Alignment balloonSpeaker = Alignment(1.3, -0.2);
