@@ -20,6 +20,7 @@ export 'phrases.dart';
 export 'placed.dart';
 export 'pressable.dart';
 export 'routes.dart';
+export 'ruby_text.dart';
 export 'screentone.dart';
 export 'shout.dart';
 export 'static_art.dart';

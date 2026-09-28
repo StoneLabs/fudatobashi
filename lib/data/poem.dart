@@ -56,6 +56,9 @@ class Poem {
   final String kamiRuby;
   final String shimoRuby;
 
+  /// The poet's name with its reading, in the same markup.
+  String get authorRuby => '[$author|$authorKana]';
+
   /// 五色百人一首 colour group (桃, 青, 黄, 緑, 橙).
   final String color;
 

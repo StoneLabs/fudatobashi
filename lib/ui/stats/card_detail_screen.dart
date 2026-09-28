@@ -234,14 +234,18 @@ class _Seg extends StatelessWidget {
       );
 }
 
-/// The card itself, in reading order: the torifuda beside its kimariji,
-/// poem and poet, then how fast the player takes it (TOP SPEED and the
-/// attempt count), then the cards it is easily confused with.
+/// The card itself, in reading order: the torifuda beside its kimariji and
+/// poet, how fast the player takes it (TOP SPEED and the attempt count), the
+/// whole poem with readings (上の句, then 下の句), then the cards it is easily
+/// confused with.
 class _Header extends StatelessWidget {
   const _Header({required this.poem, required this.inverted, required this.stats});
   final Poem poem;
   final bool inverted;
   final CardStats stats;
+
+  static const _verse = TextStyle(
+      fontWeight: Weights.bold, fontSize: CardDetailLayout.poemFont, height: CardDetailLayout.poemLineHeight);
 
   @override
   Widget build(BuildContext context) {
@@ -269,10 +273,7 @@ class _Header extends StatelessWidget {
                   ),
                   _Caption(s.kimarijiCaption),
                   const SizedBox(height: Gaps.small),
-                  Text.rich(Phrases.span(poem.kami.replaceAll('\u3000', '\u3000${Phrases.end}'),
-                      style: const TextStyle(fontWeight: Weights.black, fontSize: CardDetailLayout.kamiFont, height: 1.3))),
-                  const SizedBox(height: 2),
-                  Text(poem.author,
+                  RubyText(poem.authorRuby,
                       style: const TextStyle(fontWeight: Weights.bold, fontSize: CardDetailLayout.authorFont, color: Palette.mute)),
                   const SizedBox(height: Gaps.panel),
                   _SpeedLine(stats: stats),
@@ -281,6 +282,10 @@ class _Header extends StatelessWidget {
             ),
           ],
         ),
+        const SizedBox(height: Gaps.section),
+        RubyText(poem.kamiRuby, style: _verse),
+        const SizedBox(height: CardDetailLayout.verseGap),
+        RubyText(poem.shimoRuby, style: _verse),
         if (lookAlikes.isNotEmpty) ...[
           const SizedBox(height: Gaps.section),
           _Caption(s.lookAlikesLabel),

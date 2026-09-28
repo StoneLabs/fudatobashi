@@ -698,6 +698,16 @@ void main() {
         await _capture(tester, 'card_detail_history_${lang}_$fontScale');
 
         final detail = find.byType(CardDetailScreen);
+        // The whole poem and its poet, every kanji run with its reading.
+        final poem = poems[poemId];
+        for (final markup in [poem.kamiRuby, poem.shimoRuby, poem.authorRuby]) {
+          for (final run in Ruby.phrases(markup).expand((phrase) => phrase)) {
+            expect(find.descendant(of: detail, matching: find.text(run.base)), findsWidgets, reason: run.base);
+            if (run.reading != null) {
+              expect(find.descendant(of: detail, matching: find.text(run.reading!)), findsWidgets, reason: run.reading);
+            }
+          }
+        }
         final texts = find.descendant(of: detail, matching: find.byType(RichText));
         for (final paragraph in tester.renderObjectList<RenderParagraph>(texts)) {
           expect(paragraph.didExceedMaxLines, isFalse, reason: paragraph.text.toPlainText());

@@ -287,6 +287,14 @@ abstract final class TagStyle {
   static const EdgeInsets bannerPadding = EdgeInsets.fromLTRB(12, 5, 11, 6);
 }
 
+/// Furigana (`RubyText`): readings above their kanji.
+abstract final class RubyStyle {
+  /// Reading size as a fraction of the base text's.
+  static const double readingScale = 0.55;
+  static const double readingHeight = 1;
+  static const double readingGap = 1;
+}
+
 abstract final class PillStyle {
   static const EdgeInsets padding = EdgeInsets.fromLTRB(8, 2, 8, 3);
   static const double lineHeight = 1.2;
@@ -782,8 +790,12 @@ abstract final class CardDetailLayout {
   static const double topSpeedLabelFont = 11.5;
   static const double topSpeedValueFont = 18;
 
-  static const double kamiFont = 13.5;
-  static const double authorFont = 12.5;
+  static const double authorFont = 13;
+
+  /// The whole poem under the card, 上の句 then 下の句, with readings.
+  static const double poemFont = 16;
+  static const double poemLineHeight = 1.25;
+  static const double verseGap = 2;
   static const double countFont = 12.5;
 
   /// A look-alike (友札) chip: a miniature torifuda, its kimariji, a chevron.
