@@ -14,9 +14,13 @@ import 'package:fudatobashi/config/design.dart';
 import 'package:fudatobashi/config/vector_art.dart';
 import 'package:fudatobashi/ui/manga/vector.dart';
 
+import '../test/test_vector_art.dart';
+
 const outDir = 'assets/art';
 
 void main() {
+  loadTestVectorArt();
+
   testWidgets('render art', (tester) async {
     await tester.runAsync(() async {
       // The expert scene letters its 100 badge in the display font.

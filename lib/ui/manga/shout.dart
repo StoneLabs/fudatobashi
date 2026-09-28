@@ -140,7 +140,7 @@ class ShoutButton extends StatelessWidget {
               ),
               if (arrow) ...[
                 const SizedBox(width: ShoutStyle.gap),
-                const MangaIcon(IconArt.arrow, size: ShoutStyle.icon, strokeWidth: ShoutStyle.iconStroke),
+                MangaIcon(IconArt.arrow, size: ShoutStyle.icon, strokeWidth: ShoutStyle.iconStroke),
               ],
             ],
           ),

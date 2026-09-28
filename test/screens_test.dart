@@ -57,6 +57,8 @@ import 'package:fudatobashi/ui/sound/sounds.dart';
 import 'package:fudatobashi/ui/stats/card_list.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 
+import 'test_vector_art.dart';
+
 const _phone = Size(384, 832);
 
 Future<void> _loadFont(String family, List<String> files) async {
@@ -80,6 +82,7 @@ Future<void> _capture(WidgetTester tester, String name) async {
 }
 
 void main() {
+  loadTestVectorArt();
   poems = Poems.fromJsonString(File('assets/data/poems.json').readAsStringSync());
   fudaSets = FudaSets(poems);
   archipelago = Archipelago.fromJsonString(File('assets/data/islands.json').readAsStringSync());

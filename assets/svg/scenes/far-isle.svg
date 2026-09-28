@@ -1,0 +1,10 @@
+<svg viewBox="0 0 44 12">
+  <defs>
+    <pattern id="tone-land" width="6" height="6" patternUnits="userSpaceOnUse">
+      <rect width="6" height="6" fill="#E5F6D8"/>
+      <circle cx="3" cy="3" r="1.5" fill="#8CCB67"/>
+      <circle cx="6" cy="6" r="1.5" fill="#8CCB67"/>
+    </pattern>
+  </defs>
+  <path d="M1 12 C 4 8, 10 7, 14 7 C 18 2, 26 1, 30 5 C 34 5, 40 7, 43 12Z" fill="url(#tone-land)" stroke="#141414" stroke-width="1.6" stroke-linejoin="round" stroke-dasharray="4,3"/>
+</svg>

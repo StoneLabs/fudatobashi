@@ -149,7 +149,7 @@ class _TapRow extends StatelessWidget {
                 ),
               ),
               const SizedBox(width: Gaps.small),
-              const MangaIcon(IconArt.chevron, size: CreditsLayout.chevron, color: Palette.mute),
+              MangaIcon(IconArt.chevron, size: CreditsLayout.chevron, color: Palette.mute),
             ],
           ),
         ),

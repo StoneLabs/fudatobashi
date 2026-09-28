@@ -15,6 +15,8 @@ import 'package:fudatobashi/domain/masking.dart';
 import 'package:fudatobashi/ui/torifuda/glyph_atlas.dart';
 import 'package:fudatobashi/ui/torifuda/torifuda_painter.dart';
 
+import 'test_vector_art.dart';
+
 Future<void> _loadFont(String family, String path) async {
   final loader = FontLoader(family)..addFont(Future.value(ByteData.sublistView(File(path).readAsBytesSync())));
   await loader.load();
@@ -32,6 +34,7 @@ Future<void> _render(Poem poem, String name, {double scale = 1, bool inverted = 
 }
 
 void main() {
+  loadTestVectorArt();
   final p = Poems.fromJsonString(File('assets/data/poems.json').readAsStringSync());
 
   testWidgets('render cards', (tester) async {

@@ -212,7 +212,7 @@ class _KnownSpeedNote extends StatelessWidget {
         const SizedBox(width: ResultsLayout.knownSpeedGap),
         Transform.rotate(
           angle: (faster ? -90 : 90) * math.pi / 180,
-          child: const MangaIcon(IconArt.chevron, size: ResultsLayout.knownSpeedTrendIcon, color: Palette.inkSoft),
+          child: MangaIcon(IconArt.chevron, size: ResultsLayout.knownSpeedTrendIcon, color: Palette.inkSoft),
         ),
       ],
     ]);

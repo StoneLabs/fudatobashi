@@ -1,0 +1,8 @@
+<svg viewBox="0 0 84 100">
+  <path d="M29 53 Q32.5 48.5 36 53 M44 53 Q47.5 48.5 51 53" fill="none"/>
+  <path d="M35 61.5 Q40 66.5 45 61.5" fill="none" stroke-width="2.4"/>
+  <ellipse cx="26.5" cy="60" rx="3.8" ry="2.2" fill="#FF3D7F" stroke="none" opacity="0.8"/>
+  <ellipse cx="53.5" cy="60" rx="3.8" ry="2.2" fill="#FF3D7F" stroke="none" opacity="0.8"/>
+  <ellipse cx="6" cy="68" rx="3.4" ry="2.6" fill="#141414" stroke="none"/>
+  <path d="M9.2 68 V54 Q13.5 55.5 14 60.5" fill="none" stroke-width="2"/>
+</svg>

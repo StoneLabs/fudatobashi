@@ -126,7 +126,7 @@ class _RankButton extends StatelessWidget {
         child: Row(mainAxisSize: MainAxisSize.min, children: [
           Text(s.rank, style: const TextStyle(fontWeight: Weights.black, fontSize: StatsLayout.segFont)),
           const SizedBox(width: Gaps.tight),
-          const MangaIcon(IconArt.chevron, size: RankLayout.statsEntryIconSize),
+          MangaIcon(IconArt.chevron, size: RankLayout.statsEntryIconSize),
         ]),
       ),
     );
@@ -418,7 +418,7 @@ class _SlowestIslandPanel extends StatelessWidget {
                   fit: BoxFit.scaleDown,
                   child: Row(mainAxisSize: MainAxisSize.min, children: [
                     if (!playable) ...[
-                      const MangaIcon(IconArt.lock, size: StatsLayout.playButtonIcon),
+                      MangaIcon(IconArt.lock, size: StatsLayout.playButtonIcon),
                       const SizedBox(width: StatsLayout.playButtonIconGap),
                     ],
                     Text(s.playThisIsland,

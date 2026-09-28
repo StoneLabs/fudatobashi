@@ -1346,7 +1346,9 @@ abstract final class OnboardingMotion {
 /// 70 × 32 box holding two characters.
 abstract final class Tally {
   static const Size box = Size(70, 32);
-  static const List<String> strokes = ['M3 4 H27', 'M15 4 V27', 'M15 15.5 H25', 'M7 13 V27', 'M2 27.5 H28'];
+
+  /// Loaded from `assets/svg/tally.svg`, in writing order.
+  static late final List<String> strokes;
   static const double glyphAdvance = 38;
 
   /// 正 characters drawn: the tally stops growing at this many.

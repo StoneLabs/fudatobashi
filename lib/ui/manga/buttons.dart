@@ -114,6 +114,6 @@ class GoButton extends StatelessWidget {
           shape: BoxShape.circle,
           border: Border.all(color: Palette.ink, width: Strokes.button),
         ),
-        child: const MangaIcon(IconArt.arrow, size: ButtonMetrics.goIcon, strokeWidth: ButtonMetrics.goIconStroke),
+        child: MangaIcon(IconArt.arrow, size: ButtonMetrics.goIcon, strokeWidth: ButtonMetrics.goIconStroke),
       );
 }

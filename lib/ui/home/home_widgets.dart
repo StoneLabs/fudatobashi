@@ -217,7 +217,7 @@ class KnownSpeedTag extends StatelessWidget {
           const SizedBox(width: Gaps.tight),
           Transform.rotate(
             angle: (faster ? -90 : 90) * math.pi / 180,
-            child: const MangaIcon(IconArt.chevron, size: HomeLayout.knownSpeedTrendIcon),
+            child: MangaIcon(IconArt.chevron, size: HomeLayout.knownSpeedTrendIcon),
           ),
         ],
       ],

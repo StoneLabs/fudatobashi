@@ -8,6 +8,7 @@ import 'package:flutter_displaymode/flutter_displaymode.dart';
 
 import 'config/licenses.dart';
 import 'config/vector_art.dart';
+import 'config/vector_art_assets.dart';
 import 'data/fuda_sets.dart';
 import 'data/islands.dart';
 import 'data/poem.dart';
@@ -46,6 +47,7 @@ Future<void> main() async {
   archipelago = await Archipelago.load();
   final progress = await Progress.open(AppDatabase());
   await GlyphAtlas.load();
+  await loadVectorArt();
   await ArtImages.load(PrerenderedArt.all);
   FrameStats.instance.start();
   runApp(FudatobashiApp(progress: progress));

@@ -6,7 +6,10 @@ import 'package:fudatobashi/data/poem.dart';
 import 'package:fudatobashi/state/progress.dart';
 import 'package:fudatobashi/ui/results/celebrations.dart';
 
+import 'test_vector_art.dart';
+
 void main() {
+  loadTestVectorArt();
   poems = Poems.fromJsonString(File('assets/data/poems.json').readAsStringSync());
   fudaSets = FudaSets(poems);
 

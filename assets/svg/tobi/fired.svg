@@ -1,0 +1,15 @@
+<svg viewBox="0 0 84 100">
+  <path d="M18 50 L9 56 L15 64" fill="none"/>
+  <path d="M62 52 L71 42" fill="none"/>
+  <circle cx="73" cy="39" r="4.2" fill="#FFFFFF"/>
+  <path d="M27 44 L36 47.5 M53 44 L44 47.5" fill="none" stroke-width="3.4"/>
+  <g id="eye-left">
+    <ellipse cx="32.5" cy="53" rx="3.2" ry="4.2" fill="#141414" stroke="none"/>
+    <circle cx="33.6" cy="51.4" r="1.2" fill="#FFFFFF" stroke="none"/>
+  </g>
+  <g id="eye-right">
+    <ellipse cx="47.5" cy="53" rx="3.2" ry="4.2" fill="#141414" stroke="none"/>
+    <circle cx="48.6" cy="51.4" r="1.2" fill="#FFFFFF" stroke="none"/>
+  </g>
+  <path d="M33 62 Q40 70.5 47 62 Z" fill="#141414" stroke-width="2.4"/>
+</svg>

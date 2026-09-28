@@ -1,0 +1,17 @@
+<svg viewBox="0 0 84 100">
+  <path d="M18 53 L10 62 L16 68" fill="none"/>
+  <path d="M62 50 L76 44" fill="none"/>
+  <circle cx="79" cy="43" r="4.2" fill="#FFFFFF"/>
+  <path d="M86 35 L90 31 M88 44 L93 44" fill="none" stroke-width="2.4"/>
+  <g id="eye-left">
+    <ellipse cx="32.5" cy="52" rx="3.2" ry="4.3" fill="#141414" stroke="none"/>
+    <circle cx="33.7" cy="50.3" r="1.3" fill="#FFFFFF" stroke="none"/>
+  </g>
+  <g id="eye-right">
+    <ellipse cx="47.5" cy="52" rx="3.2" ry="4.3" fill="#141414" stroke="none"/>
+    <circle cx="48.7" cy="50.3" r="1.3" fill="#FFFFFF" stroke="none"/>
+  </g>
+  <path d="M33 61 Q40 70 47 61 Z" fill="#141414" stroke-width="2.4"/>
+  <ellipse cx="26.5" cy="60" rx="3.8" ry="2.2" fill="#FF3D7F" stroke="none" opacity="0.8"/>
+  <ellipse cx="53.5" cy="60" rx="3.8" ry="2.2" fill="#FF3D7F" stroke="none" opacity="0.8"/>
+</svg>

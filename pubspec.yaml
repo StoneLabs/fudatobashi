@@ -67,6 +67,11 @@ flutter:
     - assets/data/poems.json
     - assets/data/islands.json
     - assets/glyphs/
+    - assets/svg/tally.svg
+    - assets/svg/icons/
+    - assets/svg/map/
+    - assets/svg/scenes/
+    - assets/svg/tobi/
     - assets/art/
     - assets/sounds/
     - assets/fonts/OFL-delagothicone.txt

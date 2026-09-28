@@ -1,0 +1,16 @@
+<svg viewBox="0 0 108 108">
+  <g stroke="#141414" stroke-width="2.4" stroke-linejoin="round" transform="rotate(-16 54 70)">
+    <rect x="30" y="26" width="38" height="54" rx="3" fill="#6A9354"/>
+    <rect x="35" y="31" width="28" height="44" fill="#EAEAEA" stroke="none"/>
+  </g>
+  <g stroke="#141414" stroke-width="2.4" stroke-linejoin="round" transform="rotate(4 54 70)">
+    <rect x="36" y="22" width="38" height="54" rx="3" fill="#6A9354"/>
+    <rect x="41" y="27" width="28" height="44" fill="#EAEAEA" stroke="none"/>
+  </g>
+  <g stroke="#141414" stroke-width="2.4" stroke-linejoin="round" transform="rotate(20 54 70)">
+    <rect x="42" y="20" width="38" height="54" rx="3" fill="#6A9354"/>
+    <rect x="47" y="25" width="28" height="44" fill="#EAEAEA" stroke="none"/>
+  </g>
+  <path d="M12 16 L22 22 M8 32 L19 33 M22 6 L27 16" stroke="#141414" stroke-width="2.6" stroke-linecap="round"/>
+  <circle cx="30" cy="82" r="19" fill="#FF3D7F" stroke="#141414" stroke-width="2.6"/>
+</svg>

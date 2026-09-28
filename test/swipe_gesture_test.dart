@@ -10,7 +10,10 @@ import 'package:fudatobashi/state/settings.dart';
 import 'package:fudatobashi/ui/play/swipe_deck.dart';
 import 'package:fudatobashi/ui/play/swipe_gesture.dart';
 
+import 'test_vector_art.dart';
+
 void main() {
+  loadTestVectorArt();
   poems = Poems.fromJsonString(File('assets/data/poems.json').readAsStringSync());
 
   const commit = 60.0;

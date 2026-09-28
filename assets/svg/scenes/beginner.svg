@@ -1,0 +1,20 @@
+<svg viewBox="0 0 108 108">
+  <defs>
+    <pattern id="tone-mapSea" width="7" height="7" patternUnits="userSpaceOnUse">
+      <rect width="7" height="7" fill="#3FA5FF"/>
+      <circle cx="1.75" cy="1.75" r="1.1" fill="#2386E6"/>
+      <circle cx="5.25" cy="5.25" r="1.1" fill="#2386E6"/>
+    </pattern>
+    <pattern id="tone-mapLand" width="5" height="5" patternUnits="userSpaceOnUse">
+      <rect width="5" height="5" fill="#9BDB70"/>
+      <circle cx="1.25" cy="1.25" r="0.95" fill="#71BA4B"/>
+      <circle cx="3.75" cy="3.75" r="0.95" fill="#71BA4B"/>
+    </pattern>
+  </defs>
+  <circle cx="54" cy="56" r="50" fill="url(#tone-mapSea)" stroke="#141414" stroke-width="2.6"/>
+  <path d="M22 72 C 14 54, 28 34, 50 38 C 70 28, 92 46, 86 64 C 92 84, 62 92, 48 86 C 32 92, 18 84, 22 72Z" stroke="#FFFFFF" stroke-width="8" stroke-linejoin="round"/>
+  <path d="M22 72 C 14 54, 28 34, 50 38 C 70 28, 92 46, 86 64 C 92 84, 62 92, 48 86 C 32 92, 18 84, 22 72Z" fill="url(#tone-mapLand)" stroke="#141414" stroke-width="2.6"/>
+  <circle cx="40" cy="70" r="5" fill="#5E8C47" stroke="#141414" stroke-width="1.4"/>
+  <circle cx="56" cy="74" r="5" fill="#5E8C47" stroke="#141414" stroke-width="1.4"/>
+  <circle cx="70" cy="62" r="5" stroke="#141414" stroke-width="1.6" stroke-dasharray="3,2.4"/>
+</svg>

@@ -221,7 +221,7 @@ class _ModePanels extends StatelessWidget {
               sub: s.freePlaySub,
               note: s.freePlayNote,
               textLeft: HomeLayout.modeTextAt.dx,
-              corner: const MangaIcon(IconArt.cards, size: HomeLayout.modeIcon),
+              corner: MangaIcon(IconArt.cards, size: HomeLayout.modeIcon),
               cornerAt: HomeLayout.modeIconAt,
               onTap: () => startFreePlay(context, progress.settings.freePlay),
             ),
@@ -346,7 +346,7 @@ class _GuestPanel extends StatelessWidget {
           constraints: const BoxConstraints(minHeight: HomeLayout.guestHeight),
           child: Row(
             children: [
-              const MangaIcon(IconArt.person, size: HomeLayout.guestIcon),
+              MangaIcon(IconArt.person, size: HomeLayout.guestIcon),
               const SizedBox(width: Gaps.small),
               Text(s.guestMode, style: const TextStyle(fontSize: HomeLayout.guestTitle, fontWeight: Weights.black)),
               const SizedBox(width: Gaps.small),
@@ -360,7 +360,7 @@ class _GuestPanel extends StatelessWidget {
                   style: const TextStyle(fontSize: HomeLayout.guestSub, fontWeight: Weights.bold, color: Palette.inkSoft),
                 ),
               ),
-              const MangaIcon(IconArt.chevron, size: HomeLayout.guestChevron),
+              MangaIcon(IconArt.chevron, size: HomeLayout.guestChevron),
             ],
           ),
         ),

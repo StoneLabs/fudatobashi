@@ -35,13 +35,13 @@ class LearnAheadButton extends StatelessWidget {
           fit: BoxFit.scaleDown,
           child: Row(mainAxisSize: MainAxisSize.min, children: [
             if (!open) ...[
-              const MangaIcon(IconArt.lock, size: LearnAheadStyle.icon),
+              MangaIcon(IconArt.lock, size: LearnAheadStyle.icon),
               const SizedBox(width: LearnAheadStyle.iconGap),
             ],
             Text(s.learnNext, style: const TextStyle(fontWeight: Weights.black, fontSize: LearnAheadStyle.font)),
             if (open) ...[
               const SizedBox(width: LearnAheadStyle.iconGap),
-              const MangaIcon(IconArt.arrow, size: LearnAheadStyle.icon),
+              MangaIcon(IconArt.arrow, size: LearnAheadStyle.icon),
             ],
           ]),
         ),

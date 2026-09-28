@@ -218,7 +218,7 @@ class _ChangeLaterNote extends StatelessWidget {
       padding: OnboardingLayout.notePadding,
       child: Row(
         children: [
-          const MangaIcon(IconArt.settings, size: OnboardingLayout.noteIcon),
+          MangaIcon(IconArt.settings, size: OnboardingLayout.noteIcon),
           const SizedBox(width: Gaps.panelWide),
           Expanded(
             child: Text.rich(

@@ -1,0 +1,7 @@
+<svg viewBox="0 0 70 32">
+  <path d="M3 4 H27" stroke="#141414" stroke-width="3.2" stroke-linecap="round"/>
+  <path d="M15 4 V27" stroke="#141414" stroke-width="3.2" stroke-linecap="round"/>
+  <path d="M15 15.5 H25" stroke="#141414" stroke-width="3.2" stroke-linecap="round"/>
+  <path d="M7 13 V27" stroke="#141414" stroke-width="3.2" stroke-linecap="round"/>
+  <path d="M2 27.5 H28" stroke="#141414" stroke-width="3.2" stroke-linecap="round"/>
+</svg>
