@@ -139,6 +139,11 @@ void main() {
     expect(progress.ratingPoints, isNotEmpty);
     expect(progress.practiceDays.length, DemoDataTuning.days);
     expect(progress.dueCount(DateTime.now().add(const Duration(days: 1))), greaterThan(0));
+    // Free-play runs happened too: recorded for history, but never counted for SRS.
+    expect(progress.sessions.where((s) => s.mode == PlayMode.free.index), isNotEmpty);
+    final allAttempts = progress.trainer.items.keys.fold<int>(0, (n, k) => n + progress.attemptsOf(k).length);
+    final trainingAttempts = progress.trainer.items.keys.fold<int>(0, (n, k) => n + progress.stats(k).count);
+    expect(allAttempts, greaterThan(trainingAttempts));
     await db.close();
   }, timeout: const Timeout(Duration(minutes: 2)));
 }

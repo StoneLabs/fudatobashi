@@ -95,7 +95,8 @@ class JourneySimulator {
       engine = responseTs + SyntheticLearnerTuning.responseToCommit + SyntheticLearnerTuning.commitToNextReveal;
       onCard?.call(session.index, session.cards.length);
     }
-    onReport?.call(await progress.recordRun(session, config, start, now: wall));
+    final report = await progress.recordRun(session, config, start, now: wall);
+    onReport?.call(report);
     return wall;
   }
 }
