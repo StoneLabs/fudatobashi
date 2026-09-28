@@ -7,9 +7,10 @@ import 'celebrations.dart';
 import 'island_complete_overlay.dart';
 import 'new_card_overlay.dart';
 
-/// Celebration [pages] one after another, cross-fading between them. After
-/// the last one the sequence fades out and lets go of the screen, then calls
-/// [onDone] once it is fully gone (play resumes only then).
+/// Celebration [pages] one after another over an opaque backdrop: the
+/// sequence fades in, cross-fades between pages, and after the last one
+/// fades out and lets go of the screen, calling [onDone] once it is fully
+/// gone (play resumes only then).
 class CelebrationSequence extends StatefulWidget {
   const CelebrationSequence({super.key, required this.pages, required this.onDone});
 
@@ -21,9 +22,20 @@ class CelebrationSequence extends StatefulWidget {
 }
 
 class _CelebrationSequenceState extends State<CelebrationSequence> with SingleTickerProviderStateMixin {
-  late final _presence = AnimationController(vsync: this, duration: ResultsLayout.overlayFade, value: 1);
+  late final _presence = AnimationController(vsync: this, duration: ResultsLayout.overlayFade);
   int _shown = 0;
   bool _leaving = false;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (_leaving) return;
+    if (MediaQuery.disableAnimationsOf(context)) {
+      _presence.value = 1;
+    } else if (_presence.isDismissed) {
+      _presence.forward();
+    }
+  }
 
   @override
   void dispose() {
@@ -55,9 +67,12 @@ class _CelebrationSequenceState extends State<CelebrationSequence> with SingleTi
       ignoring: _leaving,
       child: FadeTransition(
         opacity: _presence,
-        child: AnimatedSwitcher(
-          duration: ResultsLayout.overlayFade,
-          child: KeyedSubtree(key: ValueKey(i), child: _page(widget.pages[i], () => _next(i))),
+        child: ColoredBox(
+          color: Palette.paper,
+          child: AnimatedSwitcher(
+            duration: ResultsLayout.overlayFade,
+            child: KeyedSubtree(key: ValueKey(i), child: _page(widget.pages[i], () => _next(i))),
+          ),
         ),
       ),
     );
