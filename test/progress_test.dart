@@ -48,6 +48,8 @@ void main() {
     final k0 = ItemKey(cards[0].poemId, cards[0].inverted);
     expect(progress.stats(k0).seen, isTrue);
     expect(progress.trainer.items[k0]!.reviewed, isTrue);
+    // One `Outcome.dontKnow` in the script above — the History tab's miss count.
+    expect(progress.missesIn(report.sessionId!), 1);
 
     // Reload from the same database.
     final again = await Progress.open(db);
@@ -55,6 +57,7 @@ void main() {
     expect(again.stats(k0).count, progress.stats(k0).count);
     expect(again.trainer.items[k0]!.card.stability, progress.trainer.items[k0]!.card.stability);
     expect(again.rating, progress.rating);
+    expect(again.missesIn(report.sessionId!), 1);
     await db.close();
   });
 
