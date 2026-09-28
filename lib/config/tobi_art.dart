@@ -121,7 +121,40 @@ abstract final class TobiArt {
     VPath('M10 14 L14 20 M4 26 L11 28 M40 2 L40 8', VStyle(fill: noInk, width: 2.4)),
   ];
 
-  static VectorArt compose(List<VShape> pose) => VectorArt(box, [
-        VGroup([...body, ...pose], style: _pen),
+  /// Both fists pumped, eyes squeezed shut, teeth gritted, sweating (the
+  /// sprint pace).
+  static const tryHard = [
+    VPath('M18 52 L7 61 L8.5 50.5', _open),
+    VEllipse.circle(Offset(8.5, 46.5), 4.6, _hand),
+    VPath('M62 52 L73 61 L71.5 50.5', _open),
+    VEllipse.circle(Offset(71.5, 46.5), 4.6, _hand),
+    VPath('M28 48.5 L35.5 52 L28 55.5 M52 48.5 L44.5 52 L52 55.5', _open),
+    VRect(Rect.fromLTWH(33, 60, 14, 7.5), radius: 2, style: VStyle(fill: _white, width: 2.4)),
+    VPath('M33 63.75 H47 M37.7 60 V67.5 M42.3 60 V67.5', VStyle(fill: noInk, width: 1.6)),
+    ..._cheeks,
+    VPath('M10 8 Q14.5 15 10 18 Q5.5 15 10 8 Z', VStyle(fill: _white, width: 2)),
+    VPath('M-2 40 Q-5 46.5 -2 53 M82 40 Q85 46.5 82 53', VStyle(fill: noInk, width: 2.2)),
+    VPath('M26 3 L28.5 9 M54 3 L51.5 9', VStyle(fill: noInk, width: 2.4)),
+  ];
+
+  /// Hands behind the head ([relaxedBehind]), eyes closed in contentment,
+  /// humming (the relaxed pace).
+  static const relaxed = [
+    VPath('M29 53 Q32.5 48.5 36 53 M44 53 Q47.5 48.5 51 53', _open),
+    VPath('M35 61.5 Q40 66.5 45 61.5', VStyle(fill: noInk, width: 2.4)),
+    ..._cheeks,
+    VEllipse(Offset(6, 68), 3.4, 2.6, _solid),
+    VPath('M9.2 68 V54 Q13.5 55.5 14 60.5', VStyle(fill: noInk, width: 2)),
+  ];
+  static const relaxedBehind = [
+    VPath('M22 46 L4 20 L20 14', _open),
+    VEllipse.circle(Offset(21.5, 13.5), 4, _hand),
+    VPath('M58 46 L77 19 L60 14', _open),
+    VEllipse.circle(Offset(58.5, 13.5), 4, _hand),
+  ];
+
+  /// Tobi in [pose]; [behind] goes under the body (limbs tucked behind it).
+  static VectorArt compose(List<VShape> pose, {List<VShape> behind = const []}) => VectorArt(box, [
+        VGroup([...behind, ...body, ...pose], style: _pen),
       ]);
 }

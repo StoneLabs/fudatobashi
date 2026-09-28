@@ -7,7 +7,7 @@ import '../../config/design.dart';
 import '../../config/tobi_art.dart';
 import 'vector.dart';
 
-enum TobiPose { standard, waving, fired, cheering, pointing, shocked }
+enum TobiPose { standard, waving, fired, cheering, pointing, shocked, tryHard, relaxed }
 
 /// Tobi, the mascot. Fills its box (aspect 84:100); arms may reach a little
 /// outside it. Idles with a gentle bob and a blink unless [animate] is false
@@ -27,6 +27,8 @@ class Tobi extends StatefulWidget {
     TobiPose.cheering: TobiArt.compose(TobiArt.cheering),
     TobiPose.pointing: TobiArt.compose(TobiArt.pointing),
     TobiPose.shocked: TobiArt.compose(TobiArt.shocked),
+    TobiPose.tryHard: TobiArt.compose(TobiArt.tryHard),
+    TobiPose.relaxed: TobiArt.compose(TobiArt.relaxed, behind: TobiArt.relaxedBehind),
   };
 
   @override
