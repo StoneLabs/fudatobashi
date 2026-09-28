@@ -404,6 +404,7 @@ class Progress extends ChangeNotifier {
             meta: Value(jsonEncode({'maskLevel': config.maskLevel, 'goalMs': trainer.goalMs})),
           ));
       final touched = <ItemKey>{};
+      final rows = <AttemptsCompanion>[];
       for (var i = 0; i < all.length; i++) {
         final (a, undone) = all[i];
         final key = ItemKey(a.card.poemId, a.card.inverted);
@@ -433,7 +434,7 @@ class Progress extends ChangeNotifier {
         (_log[key] ??= []).add(stored);
         _statsCache.remove(key);
         touched.add(key);
-        await db.into(db.attempts).insert(AttemptsCompanion.insert(
+        rows.add(AttemptsCompanion.insert(
               sessionId: id,
               seq: i,
               poemId: key.poemId,
@@ -449,6 +450,7 @@ class Progress extends ChangeNotifier {
               grade: Value(grade?.value),
             ));
       }
+      await db.batch((b) => b.insertAll(db.attempts, rows));
       await _saveItems(touched);
       return id;
     });

@@ -428,29 +428,15 @@ abstract final class SyntheticLearnerTuning {
   static const int roundStartJitterMinutes = 40;
 }
 
-/// `Progress.recordRun`-backed synthetic history for development builds.
+/// Dev-mode demo data (`seedDemoData`): a journey player's recent history,
+/// simulated day by day through the real training path.
 abstract final class DemoDataTuning {
-  // Each run persists its attempts one at a time (the same path a real game
-  // does), so these stay modest: on-device this still takes real seconds.
-  static const int days = 4;
-  static const int minSessionsPerDay = 1;
-  static const int maxSessionsPerDay = 1;
+  /// Days simulated, ending yesterday.
+  static const int days = 14;
+  static const int minRoundsPerDay = 2;
+  static const int maxRoundsPerDay = 4;
 
   /// A free-play run happens every this many simulated days.
   static const int freeRunEvery = 3;
-  static const int trainingCards = 10;
-  static const int freeCards = 8;
-
-  /// Response-time target (ms) on the first and last simulated day; sampled
-  /// attempts vary around the day's interpolated target.
-  static const double startTargetMs = 2200;
-  static const double endTargetMs = 550;
-  static const double sampleSpreadLow = 0.6;
-  static const double sampleSpreadHigh = 1.5;
-  static const double startMissRate = 0.22;
-  static const double endMissRate = 0.03;
-
-  /// Gap between two cards' wall-clock timestamps beyond the response time.
-  static const Duration cardGap = Duration(milliseconds: 250);
-  static const Duration betweenCommitAndNextReveal = Duration(milliseconds: 120);
+  static const int freeCards = 10;
 }

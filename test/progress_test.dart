@@ -3,12 +3,15 @@ import 'dart:io';
 import 'package:drift/drift.dart' show driftRuntimeOptions;
 import 'package:drift/native.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:fsrs/fsrs.dart' as fsrs;
+import 'package:fudatobashi/config/config.dart';
 import 'package:fudatobashi/data/fuda_sets.dart';
 import 'package:fudatobashi/data/poem.dart';
 import 'package:fudatobashi/db/database.dart';
 import 'package:fudatobashi/domain/card_stats.dart';
 import 'package:fudatobashi/domain/play_session.dart';
 import 'package:fudatobashi/state/play_config.dart';
+import 'package:fudatobashi/state/demo_data.dart';
 import 'package:fudatobashi/state/progress.dart';
 
 void main() {
@@ -116,4 +119,26 @@ void main() {
     expect(progress.rating, isNull);
     await db.close();
   });
+
+  test('demo data seeds two weeks of a journey through the real training path', () async {
+    final db = AppDatabase(NativeDatabase.memory());
+    final progress = await Progress.open(db);
+    final days = <int>{};
+    var lastFraction = 0.0;
+    await seedDemoData(progress, onProgress: (day, total, fraction) {
+      days.add(day);
+      lastFraction = fraction;
+    });
+    expect(days, {for (var d = 1; d <= DemoDataTuning.days; d++) d});
+    expect(lastFraction, 1);
+    final upright = progress.trainer.unlocked.where((s) => !s.key.inverted).length;
+    expect(upright, inInclusiveRange(30, 90));
+    expect(progress.islands.where((i) => i.reached).length, greaterThanOrEqualTo(3));
+    expect(progress.islands.where((i) => i.complete), isNotEmpty);
+    expect(progress.trainer.items.values.where((s) => s.card.state == fsrs.State.review), isNotEmpty);
+    expect(progress.ratingPoints, isNotEmpty);
+    expect(progress.practiceDays.length, DemoDataTuning.days);
+    expect(progress.dueCount(DateTime.now().add(const Duration(days: 1))), greaterThan(0));
+    await db.close();
+  }, timeout: const Timeout(Duration(minutes: 2)));
 }

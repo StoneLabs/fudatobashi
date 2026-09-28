@@ -13,7 +13,7 @@ Future<void> confirmSeedDemoData(BuildContext context) async {
     context: context,
     builder: (c) => AlertDialog(
       title: const Text('Seed demo data?'),
-      content: const Text('Replaces all progress with several days of synthetic training and free-play runs.'),
+      content: const Text('Replaces all progress with two weeks of a simulated journey player: training rounds, unlocks, islands and a few free-play runs.'),
       actions: [
         TextButton(onPressed: () => Navigator.pop(c, false), child: const Text('Cancel')),
         FilledButton(onPressed: () => Navigator.pop(c, true), child: const Text('Seed')),
