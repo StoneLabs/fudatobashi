@@ -34,6 +34,7 @@ import 'package:fudatobashi/ui/manga/manga.dart';
 import 'package:fudatobashi/ui/rank/rank_screen.dart';
 import 'package:fudatobashi/ui/results/celebration_overlays.dart';
 import 'package:fudatobashi/ui/results/results_screen.dart';
+import 'package:fudatobashi/ui/run/learn_next_button.dart';
 
 const _phone = Size(384, 832);
 
@@ -109,6 +110,39 @@ void main() {
 
     testWidgets('onboarding ($lang)', (tester) async {
       await show(tester, await open(tester, ja: ja), 'onboarding_$lang');
+    });
+
+    testWidgets('onboarding, pace step ($lang)', (tester) async {
+      final p = await open(tester, ja: ja);
+      await tester.binding.setSurfaceSize(_phone);
+      await tester.pumpWidget(RepaintBoundary(key: const ValueKey('screen'), child: FudatobashiApp(progress: p)));
+      await tester.pump(const Duration(milliseconds: 500));
+      await tester.tap(find.text(ja ? 'はじめて' : "I'm new"));
+      await tester.pump(const Duration(milliseconds: 500));
+      expect(find.text(ja ? '約15日' : 'About 15 days'), findsOneWidget);
+      expect(tester.takeException(), isNull);
+      await _capture(tester, 'onboarding_pace_$lang');
+      await tester.pumpWidget(const SizedBox());
+    });
+
+    testWidgets('home, journey: Learn next warns while cards are shaky ($lang)', (tester) async {
+      final p = await open(tester, mode: LearningMode.journey, ja: ja);
+      await tester.binding.setSurfaceSize(_phone);
+      await tester.pumpWidget(RepaintBoundary(key: const ValueKey('screen'), child: FudatobashiApp(progress: p)));
+      await tester.pump(const Duration(milliseconds: 500));
+      await _capture(tester, 'journey_learn_next_$lang');
+      await tester.tap(find.byType(LearnNextButton));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 600));
+      expect(find.text(ja ? 'まだ3枚あやふやだよ。いいの？' : '3 cards are still shaky. Sure?'), findsOneWidget);
+      expect(tester.takeException(), isNull);
+      await _capture(tester, 'learn_next_shaky_$lang');
+      await tester.tap(find.ancestor(of: find.text(ja ? '練習を続ける' : 'Keep practising'), matching: find.byType(ShoutButton)));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 600));
+      expect(find.byType(ShoutButton), findsOneWidget, reason: 'only the Training hero is left');
+      expect(p.trainer.unlocked.length, 3);
+      await tester.pumpWidget(const SizedBox());
     });
 
     testWidgets('home, journey ($lang)', (tester) async {
@@ -484,6 +518,34 @@ void main() {
     ));
     await tester.pump(const Duration(milliseconds: 500));
     expect(tester.takeException(), isNull);
+    await tester.pumpWidget(const SizedBox());
+  });
+
+  testWidgets('results (journey): Learn next cards sits above the action row', (tester) async {
+    final p = await open(tester, mode: LearningMode.journey);
+    const config = PlayConfig(mode: PlayMode.training);
+    late SessionReport report;
+    await tester.runAsync(() async {
+      final planned = await p.planTraining();
+      final session = PlaySession(planned.cards.take(4).toList());
+      var t = const Duration(seconds: 100);
+      for (var i = 0; i < 4; i++) {
+        session.revealed(t);
+        t += const Duration(milliseconds: 900);
+        session.commit(responseTs: t, commitTs: t + const Duration(milliseconds: 80), outcome: Outcome.known);
+        t += const Duration(milliseconds: 300);
+      }
+      report = await p.recordRun(session, config, DateTime.now());
+    });
+    await tester.binding.setSurfaceSize(_phone);
+    await tester.pumpWidget(RepaintBoundary(
+      key: const ValueKey('screen'),
+      child: ProgressScope(progress: p, child: MaterialApp(home: ResultsScreen(report: report, config: config))),
+    ));
+    await tester.pump(const Duration(milliseconds: 500));
+    expect(find.byType(LearnNextButton), findsOneWidget);
+    expect(tester.takeException(), isNull);
+    await _capture(tester, 'results_learn_next');
     await tester.pumpWidget(const SizedBox());
   });
 

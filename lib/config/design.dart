@@ -943,6 +943,9 @@ abstract final class OnboardingLayout {
   static const double noteFont = 14;
   static const double noteLineHeight = 1.35;
   static const EdgeInsets notePadding = EdgeInsets.fromLTRB(12, 10, 12, 10);
+
+  /// Tobi as the sprint choice's illustration (Tobi's 84:100 box).
+  static const Size sprintTobi = Size(88, 105);
 }
 
 /// The 正 tally of the streak: strokes of one 正 in writing order, in a
@@ -969,6 +972,21 @@ abstract final class GuestSheetStyle {
   static const double cut = 14;
   static const Placement tobi = Placement(right: 18, top: -64, size: Size(76, 90));
   static const Color barrier = Color(0x8C141414);
+}
+
+/// "Learn next cards": the button (journey Home, Results) and its
+/// shaky-cards warning, which borrows [GuestSheetStyle]'s sheet.
+abstract final class LearnNextStyle {
+  static const double height = 38;
+  static const double resultsHeight = 44;
+  static const double font = 14;
+  static const double icon = 18;
+  static const EdgeInsets padding = EdgeInsets.symmetric(horizontal: 12);
+  static const double iconGap = 6;
+
+  /// Room between the known-speed tag and the button on journey Home, and
+  /// between their lines when they wrap.
+  static const double spacing = 8;
 }
 
 /// The stand-in for screens still being built.

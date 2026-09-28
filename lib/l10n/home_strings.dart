@@ -38,4 +38,12 @@ extension HomeStrings on S {
   String get guestConfirmTitle => t('Hand the phone over?', '端末を貸す？');
   String get guestConfirm => t('START GUEST RUN', 'ゲストで始める');
   String get settingsLabel => t('Settings', '設定');
+
+  String get learnNext => t('Learn next cards', '次の札を覚える');
+  String shakyTitle(int n) => ja ? 'まだ$n枚あやふやだよ。いいの？' : '$n card${n == 1 ? ' is' : 's are'} still shaky. Sure?';
+  String get shakyNote => t(
+      'New cards will wait while you practise those. You can still learn more now if you like.',
+      '練習を続ければ、新しい札は自然にやってくるよ。今すぐ覚えてもOK。');
+  String get shakyConfirm => t('Learn them anyway', 'それでも覚える');
+  String get shakyCancel => t('Keep practising', '練習を続ける');
 }

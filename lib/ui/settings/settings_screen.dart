@@ -24,15 +24,25 @@ class SettingsScreen extends StatelessWidget {
     final s = S.of(context);
     final progress = ProgressScope.of(context);
     final mode = progress.trainer.config.learningMode;
-    Widget choice(LearningMode m, String label) => Expanded(
+    final pace = progress.trainer.config.pace;
+    Widget choice(bool selected, String label, VoidCallback onTap) => Expanded(
           child: SizedBox(
             height: ButtonMetrics.rowHeight,
             child: InkButton(
-              color: mode == m ? Palette.sun : Palette.paper,
-              onTap: mode == m ? null : () => progress.setLearningMode(m),
-              child: Text(label, style: const TextStyle(fontWeight: Weights.black, fontSize: TypeScale.button)),
+              color: selected ? Palette.sun : Palette.paper,
+              onTap: selected ? null : onTap,
+              child: Text(label,
+                  textAlign: TextAlign.center,
+                  style: const TextStyle(fontWeight: Weights.black, fontSize: TypeScale.button)),
             ),
           ),
+        );
+    Widget modeChoice(LearningMode m, String label) =>
+        choice(mode == m, label, () => progress.setLearningMode(m));
+    Widget paceChoice(LearningPace p, String label) => choice(pace == p, label, () => progress.setLearningPace(p));
+    Widget label(String text) => Padding(
+          padding: const EdgeInsets.only(bottom: Gaps.small),
+          child: Text(text, style: const TextStyle(fontWeight: Weights.black, fontSize: TypeScale.button)),
         );
     return Scaffold(
       body: SafeArea(
@@ -56,11 +66,21 @@ class SettingsScreen extends StatelessWidget {
                     children: [
                       const Align(alignment: Alignment.centerLeft, child: LanguageSwitch()),
                       const SizedBox(height: Gaps.section),
+                      label(s.learningMode),
                       Row(children: [
-                        choice(LearningMode.journey, s.learningJourney),
+                        modeChoice(LearningMode.journey, s.learningJourney),
                         const SizedBox(width: Gaps.panelWide),
-                        choice(LearningMode.allKnown, s.learningAllKnown),
+                        modeChoice(LearningMode.allKnown, s.learningAllKnown),
                       ]),
+                      if (mode == LearningMode.journey) ...[
+                        const SizedBox(height: Gaps.section),
+                        label(s.pace),
+                        Row(children: [
+                          paceChoice(LearningPace.month, s.paceMonth),
+                          const SizedBox(width: Gaps.panelWide),
+                          paceChoice(LearningPace.sprint, s.paceSprint),
+                        ]),
+                      ],
                       const SizedBox(height: Gaps.section),
                       _SwitchRow(
                         label: s.cardEffects,

@@ -11,7 +11,8 @@ import '../manga/manga.dart';
 import '../shell/header_actions.dart';
 
 /// First launch: Tobi asks how well the player knows the 100 cards, and the
-/// answer picks the learning mode (and so the Home screen).
+/// answer picks the learning mode (and so the Home screen). A beginner then
+/// picks the journey's pace.
 class OnboardingScreen extends StatefulWidget {
   const OnboardingScreen({super.key});
 
@@ -21,17 +22,17 @@ class OnboardingScreen extends StatefulWidget {
 
 class _OnboardingScreenState extends State<OnboardingScreen> {
   bool _busy = false;
+  bool _pickingPace = false;
 
-  Future<void> _choose(LearningMode mode) async {
+  Future<void> _choose(LearningMode mode, {LearningPace? pace}) async {
     if (_busy) return;
     setState(() => _busy = true);
-    await ProgressScope.read(context).setLearningMode(mode);
+    await ProgressScope.read(context).setLearningMode(mode, pace: pace);
   }
 
   @override
   Widget build(BuildContext context) {
     final s = S.of(context);
-    final first = fudaSets['initial:${initialGroups.first}'];
     return Scaffold(
       body: SafeArea(
         child: Padding(
@@ -43,54 +44,38 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
               Flexible(
                 child: ConstrainedBox(
                   constraints: const BoxConstraints(maxHeight: OnboardingLayout.skyHeight),
-                  child: const _Welcome(),
+                  child: _pickingPace
+                      ? _Welcome(
+                          title: 'ペース',
+                          banner: s.paceBanner,
+                          hello: s.tobiPace,
+                          question: s.howFast,
+                          other: s.other.howFast,
+                        )
+                      : _Welcome(
+                          title: 'ようこそ!',
+                          banner: s.welcomeBanner,
+                          hello: s.tobiHello,
+                          question: s.howWell,
+                          other: s.other.howWell,
+                        ),
                 ),
               ),
               const SizedBox(height: Gaps.panelWide),
-              _Choice(
-                shape: const PanelShape(topLeft: Offset(0, OnboardingLayout.choiceCut)),
-                color: Palette.landSoft,
-                art: SceneArt.beginner,
-                tag: s.beginnerTag,
-                title: s.beginnerTitle,
-                sub: s.beginnerSub,
-                note: s.firstStop(first.label, first.poemIds.length),
-                onTap: _busy ? null : () => _choose(LearningMode.journey),
-              ),
-              const SizedBox(height: Gaps.panel),
-              _Choice(
-                shape: const PanelShape(bottomRight: Offset(0, OnboardingLayout.choiceCut)),
-                color: Palette.sunSoft,
-                art: SceneArt.expert,
-                tag: s.expertTag,
-                title: s.expertTitle,
-                sub: s.expertSub,
-                note: s.expertNote,
-                onTap: _busy ? null : () => _choose(LearningMode.allKnown),
-              ),
+              ...(_pickingPace ? _paceChoices(s) : _modeChoices(s)),
               const SizedBox(height: Gaps.section),
-              DashedBox(
-                padding: OnboardingLayout.notePadding,
-                child: Row(
-                  children: [
-                    const MangaIcon(IconArt.settings, size: OnboardingLayout.noteIcon),
-                    const SizedBox(width: Gaps.panelWide),
-                    Expanded(
-                      child: Text.rich(
-                        TextSpan(children: [
-                          TextSpan(text: s.changeLaterBefore),
-                          TextSpan(text: s.changeLaterWhere, style: const TextStyle(fontWeight: Weights.black)),
-                          TextSpan(text: s.changeLaterAfter),
-                        ]),
-                        style: const TextStyle(
-                          fontSize: OnboardingLayout.noteFont,
-                          fontWeight: Weights.bold,
-                          height: OnboardingLayout.noteLineHeight,
-                        ),
-                      ),
+              Row(
+                children: [
+                  if (_pickingPace) ...[
+                    InkIconButton(
+                      icon: IconArt.back,
+                      semanticLabel: s.back,
+                      onTap: _busy ? null : () => setState(() => _pickingPace = false),
                     ),
+                    const SizedBox(width: Gaps.panelWide),
                   ],
-                ),
+                  Expanded(child: _ChangeLaterNote(where: _pickingPace ? s.paceLaterWhere : s.changeLaterWhere)),
+                ],
               ),
             ],
           ),
@@ -98,14 +83,124 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
       ),
     );
   }
+
+  List<Widget> _modeChoices(S s) {
+    final first = fudaSets['initial:${initialGroups.first}'];
+    return [
+      _Choice(
+        shape: const PanelShape(topLeft: Offset(0, OnboardingLayout.choiceCut)),
+        color: Palette.landSoft,
+        art: const _SceneArt(SceneArt.beginner),
+        tag: s.beginnerTag,
+        title: s.beginnerTitle,
+        sub: s.beginnerSub,
+        note: s.firstStop(first.label, first.poemIds.length),
+        onTap: _busy ? null : () => setState(() => _pickingPace = true),
+      ),
+      const SizedBox(height: Gaps.panel),
+      _Choice(
+        shape: const PanelShape(bottomRight: Offset(0, OnboardingLayout.choiceCut)),
+        color: Palette.sunSoft,
+        art: const _SceneArt(SceneArt.expert),
+        tag: s.expertTag,
+        title: s.expertTitle,
+        sub: s.expertSub,
+        note: s.expertNote,
+        onTap: _busy ? null : () => _choose(LearningMode.allKnown),
+      ),
+    ];
+  }
+
+  List<Widget> _paceChoices(S s) => [
+    _Choice(
+      shape: const PanelShape(topLeft: Offset(0, OnboardingLayout.choiceCut)),
+      color: Palette.landSoft,
+      art: const _SceneArt(SceneArt.beginner),
+      tag: s.relaxedTag,
+      title: s.relaxedTitle,
+      sub: s.relaxedSub,
+      note: s.relaxedNote,
+      onTap: _busy ? null : () => _choose(LearningMode.journey, pace: LearningPace.month),
+    ),
+    const SizedBox(height: Gaps.panel),
+    _Choice(
+      shape: const PanelShape(bottomRight: Offset(0, OnboardingLayout.choiceCut)),
+      color: Palette.sunSoft,
+      art: SizedBox.fromSize(
+        size: OnboardingLayout.sprintTobi,
+        child: const Tobi(pose: TobiPose.fired),
+      ),
+      tag: s.sprintTag,
+      title: s.sprintTitle,
+      sub: s.sprintSub,
+      note: s.sprintNote,
+      onTap: _busy ? null : () => _choose(LearningMode.journey, pace: LearningPace.sprint),
+    ),
+  ];
 }
 
-class _Welcome extends StatelessWidget {
-  const _Welcome();
+class _SceneArt extends StatelessWidget {
+  const _SceneArt(this.art);
+  final VectorArt art;
+
+  @override
+  Widget build(BuildContext context) => VectorArtBox(art, size: const Size.square(OnboardingLayout.illustration));
+}
+
+class _ChangeLaterNote extends StatelessWidget {
+  const _ChangeLaterNote({required this.where});
+  final String where;
 
   @override
   Widget build(BuildContext context) {
     final s = S.of(context);
+    return DashedBox(
+      padding: OnboardingLayout.notePadding,
+      child: Row(
+        children: [
+          const MangaIcon(IconArt.settings, size: OnboardingLayout.noteIcon),
+          const SizedBox(width: Gaps.panelWide),
+          Expanded(
+            child: Text.rich(
+              TextSpan(
+                children: [
+                  TextSpan(text: s.changeLaterBefore),
+                  TextSpan(
+                    text: where,
+                    style: const TextStyle(fontWeight: Weights.black),
+                  ),
+                  TextSpan(text: s.changeLaterAfter),
+                ],
+              ),
+              style: const TextStyle(
+                fontSize: OnboardingLayout.noteFont,
+                fontWeight: Weights.bold,
+                height: OnboardingLayout.noteLineHeight,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _Welcome extends StatelessWidget {
+  const _Welcome({
+    required this.title,
+    required this.banner,
+    required this.hello,
+    required this.question,
+    required this.other,
+  });
+
+  /// Big lettering (Japanese in both languages), the banner under it, and
+  /// Tobi's balloon: a greeting, a question and the question in the other
+  /// language.
+  final String title, banner, hello, question, other;
+
+  @override
+  Widget build(BuildContext context) {
     return Stack(
       clipBehavior: Clip.none,
       children: [
@@ -131,13 +226,17 @@ class _Welcome extends StatelessWidget {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const OutlinedText(
-                        'ようこそ!',
+                      OutlinedText(
+                        title,
                         outlineWidth: OnboardingLayout.titleOutline,
-                        style: TextStyle(fontFamily: Fonts.display, fontSize: OnboardingLayout.title, height: TypeScale.displayLineHeight),
+                        style: const TextStyle(
+                          fontFamily: Fonts.display,
+                          fontSize: OnboardingLayout.title,
+                          height: TypeScale.displayLineHeight,
+                        ),
                       ),
                       const SizedBox(height: OnboardingLayout.titleBannerGap),
-                      InkBanner(s.welcomeBanner),
+                      InkBanner(banner),
                     ],
                   ),
                 ),
@@ -145,11 +244,7 @@ class _Welcome extends StatelessWidget {
             ),
           ),
         ),
-        const Positioned(
-          top: OnboardingLayout.langInset,
-          right: OnboardingLayout.langInset,
-          child: LanguageSwitch(),
-        ),
+        const Positioned(top: OnboardingLayout.langInset, right: OnboardingLayout.langInset, child: LanguageSwitch()),
         const Placed(OnboardingLayout.tobi, child: Tobi(pose: TobiPose.waving)),
         Placed(
           OnboardingLayout.balloon,
@@ -160,19 +255,27 @@ class _Welcome extends StatelessWidget {
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Text(s.tobiHello,
-                    style: const TextStyle(
-                        fontFamily: Fonts.display, fontWeight: Weights.regular, fontSize: OnboardingLayout.balloonTitle)),
+                Text(
+                  hello,
+                  style: const TextStyle(
+                    fontFamily: Fonts.display,
+                    fontWeight: Weights.regular,
+                    fontSize: OnboardingLayout.balloonTitle,
+                  ),
+                ),
                 const SizedBox(height: OnboardingLayout.balloonGap),
-                Text(s.howWell, style: const TextStyle(fontSize: OnboardingLayout.balloonBody)),
+                Text(question, style: const TextStyle(fontSize: OnboardingLayout.balloonBody)),
                 const SizedBox(height: OnboardingLayout.balloonGap),
                 FittedBox(
                   fit: BoxFit.scaleDown,
                   child: Text(
-                    s.other.howWell,
+                    other,
                     softWrap: false,
                     style: const TextStyle(
-                        fontSize: OnboardingLayout.balloonSmall, fontWeight: Weights.bold, color: Palette.mute),
+                      fontSize: OnboardingLayout.balloonSmall,
+                      fontWeight: Weights.bold,
+                      color: Palette.mute,
+                    ),
                   ),
                 ),
               ],
@@ -198,7 +301,7 @@ class _Choice extends StatelessWidget {
 
   final PanelShape shape;
   final Color color;
-  final VectorArt art;
+  final Widget art;
   final String tag, title, sub, note;
   final VoidCallback? onTap;
 
@@ -216,11 +319,7 @@ class _Choice extends StatelessWidget {
           color: color,
           child: Stack(
             children: [
-              Positioned(
-                left: OnboardingLayout.illustrationAt.dx,
-                top: OnboardingLayout.illustrationAt.dy,
-                child: VectorArtBox(art, size: const Size.square(OnboardingLayout.illustration)),
-              ),
+              Positioned(left: OnboardingLayout.illustrationAt.dx, top: OnboardingLayout.illustrationAt.dy, child: art),
               Positioned.fill(
                 child: Padding(
                   padding: OnboardingLayout.textInsets,
@@ -235,12 +334,17 @@ class _Choice extends StatelessWidget {
                         child: Text(
                           title,
                           style: const TextStyle(
-                              fontFamily: Fonts.display, fontSize: OnboardingLayout.choiceTitle, height: TypeScale.displayLineHeight),
+                            fontFamily: Fonts.display,
+                            fontSize: OnboardingLayout.choiceTitle,
+                            height: TypeScale.displayLineHeight,
+                          ),
                         ),
                       ),
                       const SizedBox(height: OnboardingLayout.choiceSubGap),
-                      Text(sub,
-                          style: const TextStyle(fontSize: OnboardingLayout.choiceSub, fontWeight: Weights.black)),
+                      Text(
+                        sub,
+                        style: const TextStyle(fontSize: OnboardingLayout.choiceSub, fontWeight: Weights.black),
+                      ),
                       const SizedBox(height: OnboardingLayout.choiceNoteGap),
                       Padding(
                         padding: const EdgeInsets.only(right: OnboardingLayout.choiceNoteRightRoom),
@@ -258,11 +362,7 @@ class _Choice extends StatelessWidget {
                   ),
                 ),
               ),
-              const Positioned(
-                right: OnboardingLayout.goInset,
-                bottom: OnboardingLayout.goInset,
-                child: GoButton(),
-              ),
+              const Positioned(right: OnboardingLayout.goInset, bottom: OnboardingLayout.goInset, child: GoButton()),
             ],
           ),
         ),

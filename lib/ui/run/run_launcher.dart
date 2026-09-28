@@ -7,6 +7,7 @@ import '../../state/play_config.dart';
 import '../../state/scope.dart';
 import '../manga/manga.dart';
 import '../play/play_screen.dart';
+import 'shaky_sheet.dart';
 
 // Entry points for starting a run. Screens call only these; the play and
 // results screens behind them may change without touching the callers.
@@ -17,6 +18,26 @@ Future<void> startTraining(BuildContext context) async {
   final planned = await ProgressScope.read(context).planTraining();
   if (!context.mounted || planned.cards.isEmpty) return;
   await _push(context, planned.cards, const PlayConfig(mode: PlayMode.training));
+}
+
+/// "Learn next cards" (journey): unlocks the next batch now and plays a
+/// training round with it, after Tobi's warning if cards are still shaky.
+/// [replace] swaps the current route (Results) for the round.
+Future<void> startLearnNext(BuildContext context, {bool replace = false}) async {
+  final progress = ProgressScope.read(context);
+  final readiness = progress.readiness;
+  if (!readiness.ready && !await confirmLearnWhileShaky(context, readiness.shaky)) return;
+  final planned = await progress.learnNextCards();
+  if (!context.mounted || planned.cards.isEmpty) return;
+  const config = PlayConfig(mode: PlayMode.training);
+  if (replace) {
+    await Navigator.of(context).pushReplacement(MangaRoute<void>(
+      transition: MangaTransition.zoom,
+      builder: (_) => PlayScreen(cards: planned.cards, config: config),
+    ));
+  } else {
+    await _push(context, planned.cards, config);
+  }
 }
 
 /// 始める: the cards of [config]'s sets, once each.
