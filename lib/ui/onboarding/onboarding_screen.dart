@@ -224,12 +224,9 @@ class _ChangeLaterNote extends StatelessWidget {
             child: Text.rich(
               TextSpan(
                 children: [
-                  TextSpan(text: s.changeLaterBefore),
-                  TextSpan(
-                    text: where,
-                    style: const TextStyle(fontWeight: Weights.black),
-                  ),
-                  TextSpan(text: s.changeLaterAfter),
+                  Phrases.span(s.changeLaterBefore),
+                  Phrases.span(where, style: const TextStyle(fontWeight: Weights.black)),
+                  Phrases.span(s.changeLaterAfter),
                 ],
               ),
               style: const TextStyle(

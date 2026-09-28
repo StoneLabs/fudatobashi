@@ -265,6 +265,26 @@ void main() {
       await tester.pumpWidget(const SizedBox());
     });
 
+    testWidgets('onboarding: screen readers get the text without its line-break marks ($lang)', (tester) async {
+      final semantics = tester.ensureSemantics();
+      final p = await open(tester, ja: ja);
+      await onPhone(tester, p, fontScale: 1.1);
+      final marks = RegExp('[\u200B\u2060]');
+      final spoken = find.bySemanticsLabel(RegExp('.'));
+      void expectNoMarks() {
+        expect(spoken, findsWidgets);
+        for (var i = 0; i < spoken.evaluate().length; i++) {
+          expect(tester.getSemantics(spoken.at(i)).label, isNot(contains(marks)));
+        }
+      }
+
+      expectNoMarks();
+      await swapStep(tester, find.text(S(ja).beginnerTitle));
+      expectNoMarks();
+      await tester.pumpWidget(const SizedBox());
+      semantics.dispose();
+    });
+
     for (final pace in LearningPace.values) {
       testWidgets('onboarding: the ${pace.name} choice starts the journey at that pace ($lang)', (tester) async {
         final p = await open(tester, ja: ja);

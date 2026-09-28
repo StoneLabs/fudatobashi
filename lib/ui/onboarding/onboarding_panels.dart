@@ -316,11 +316,12 @@ class PaceChoice extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final clear = EdgeInsets.only(left: shape.bottomLeft.dx, right: shape.bottomRight.dx);
     return Pressable(
       onTap: onTap,
       scale: Press.panelScale,
       turn: 0,
-      semanticLabel: '${caption.title}: ${caption.sub}',
+      semanticLabel: '${caption.title}: ${Phrases.spoken(caption.sub)}',
       builder: (context, _) => MangaPanel(
         shape: shape,
         art: art,
@@ -380,9 +381,9 @@ class PaceChoice extends StatelessWidget {
                       maintainState: true,
                       maintainAnimation: true,
                       maintainSize: true,
-                      child: _Caption(beside),
+                      child: _Caption(beside, clear: clear),
                     ),
-                    _Caption(caption),
+                    _Caption(caption, clear: clear),
                   ],
                 ),
               ),
@@ -395,19 +396,23 @@ class PaceChoice extends StatelessWidget {
 }
 
 class _Caption extends StatelessWidget {
-  const _Caption(this.caption);
+  const _Caption(this.caption, {required this.clear});
   final PaceCaption caption;
+
+  /// Keeps the headline, which fills the width, off a slanted bottom corner.
+  final EdgeInsets clear;
 
   @override
   Widget build(BuildContext context) => Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          _Headline(caption.title),
+          Padding(padding: clear, child: _Headline(caption.title)),
           const SizedBox(height: OnboardingLayout.paceSubGap),
-          Text(caption.sub, style: const TextStyle(fontSize: OnboardingLayout.paceSub, fontWeight: Weights.black)),
+          Text.rich(Phrases.span(caption.sub),
+              style: const TextStyle(fontSize: OnboardingLayout.paceSub, fontWeight: Weights.black)),
           const SizedBox(height: OnboardingLayout.paceNoteGap),
-          Text(
-            caption.note,
+          Text.rich(
+            Phrases.span(caption.note),
             style: const TextStyle(
               fontSize: OnboardingLayout.paceNote,
               fontWeight: Weights.bold,

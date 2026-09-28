@@ -16,6 +16,7 @@ export 'lang_toggle.dart';
 export 'lettering.dart';
 export 'lines.dart';
 export 'panel.dart';
+export 'phrases.dart';
 export 'placed.dart';
 export 'pressable.dart';
 export 'routes.dart';
