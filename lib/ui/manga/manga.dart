@@ -4,6 +4,8 @@ library;
 export 'action_row.dart';
 export 'balloon.dart';
 export 'buttons.dart';
+export 'confetti.dart';
+export 'entrance.dart';
 export 'header.dart';
 export 'labels.dart';
 export 'lang_toggle.dart';

@@ -103,3 +103,50 @@ class EntranceFrame extends StatelessWidget {
     );
   }
 }
+
+/// [child] gently swelling and shrinking by up to [amount] of its size, once
+/// per [period], centred (a background that keeps breathing after the
+/// entrance). Still under reduced motion.
+class Throb extends StatefulWidget {
+  const Throb({super.key, required this.amount, required this.period, required this.child});
+
+  final double amount;
+  final Duration period;
+  final Widget child;
+
+  @override
+  State<Throb> createState() => _ThrobState();
+}
+
+class _ThrobState extends State<Throb> with SingleTickerProviderStateMixin {
+  late final _cycle = AnimationController(vsync: this, duration: widget.period);
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final still = MediaQuery.disableAnimationsOf(context);
+    if (still) {
+      _cycle
+        ..stop()
+        ..value = 0;
+    } else if (!_cycle.isAnimating) {
+      _cycle.repeat();
+    }
+  }
+
+  @override
+  void dispose() {
+    _cycle.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) => AnimatedBuilder(
+        animation: _cycle,
+        child: widget.child,
+        builder: (context, child) => Transform.scale(
+          scale: 1 + widget.amount * (1 - math.cos(2 * math.pi * _cycle.value)) / 2,
+          child: child,
+        ),
+      );
+}

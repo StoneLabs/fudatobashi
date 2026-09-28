@@ -865,29 +865,12 @@ abstract final class ResultsLayout {
   static const double actionRowHeight = 58;
   static const double guestNoteFont = 13;
 
-  static const double celebrationCloseHeight = 44;
-
-  static const double newCardWidth = 232;
-  static const double newCardGap = 22;
-  static const double newCardKimarijiFont = 30;
-  static const double newCardMetaFont = 13.5;
-  static const double newCardTipFont = 12.5;
-  static const Placement newCardTobi = Placement(right: 18, bottom: 4, size: Size(66, 80));
-
   /// The confusable-siblings heads-up (a 決まり字 look-alike warning).
   static const int confusableMaxSiblings = 2;
   static const double confusableTitleFont = 26;
   static const double confusableCardWidth = 96;
   static const double confusableKimarijiFont = 15;
   static const Placement confusableTobi = Placement(right: 18, bottom: 4, size: Size(70, 86));
-
-  static const double islandTitleFont = 72;
-  static const double islandTitleOutline = 14;
-  static const double islandBandFont = 18;
-  static const double islandSubFont = 14;
-  static const double islandMapSize = 220;
-  static const double islandLineFont = 13;
-  static const Placement islandTobi = Placement(right: 20, bottom: 4, size: Size(74, 92));
 
   static const double rankTitleFont = 88;
   static const double rankTitleOutline = 15;
@@ -906,6 +889,149 @@ abstract final class ResultsLayout {
 
   static const Duration overlayFade = Duration(milliseconds: 220);
   static const Duration overlayStagger = Duration(milliseconds: 500);
+}
+
+/// "A new card appears" (spec phone 5, `NewCardOverlay`).
+abstract final class NewCardLayout {
+  static const focus = BurstSpec(
+      box: Size(390, 844), center: Offset(195, 350), count: 220, innerMin: 190, innerMax: 250, width: 4.5, seed: 8,
+      color: Palette.paper);
+
+  /// The flash behind the card: a radial glow of [glowSize] at [focus]'s
+  /// centre.
+  static const Alignment glowAt = Alignment(0, -0.17);
+  static const double glowSize = 560;
+  static const List<Color> glowColors = [Color(0xFFFFF6C2), Color(0xE6FFD83A), Color(0x00FFD83A)];
+  static const List<double> glowStops = [0.3, 0.46, 1];
+
+  static const double topGap = 8;
+  static const double shoutHeight = 96;
+  static const shout = ShoutSpec(spikes: 26, outer: 12, inner: 5, roundness: 3, seed: 21);
+  static const double shoutFont = 25;
+  static const EdgeInsets shoutPadding = EdgeInsets.symmetric(horizontal: 34, vertical: 22);
+  static const double bandGap = 8;
+  static const double bandIndent = 8;
+  static const double bandFont = 13;
+  static const double bandTracking = 0.24;
+  static const EdgeInsets bandPadding = EdgeInsets.fromLTRB(10, 3, 10, 4);
+
+  /// ババーン!! over the shout's lower right, from the header's top right.
+  static const String bang = 'ババーン!!';
+  static const double bangTop = 80;
+  static const double bangRight = 0;
+  static const double bangFont = 33;
+  static const double bangTurnDeg = -7;
+  static const int bangSeed = 7;
+
+  /// The rumble lettering either side of the card, dropped this share of
+  /// the card's height below its top.
+  static const String rumbleLeft = 'ゴゴゴゴ';
+  static const String rumbleRight = 'ドドドド';
+  static const int rumbleLeftSeed = 2;
+  static const int rumbleRightSeed = 6;
+  static const double rumbleFont = 40;
+  static const double rumbleOutline = 7;
+  static const double rumbleLeftDrop = 0.13;
+  static const double rumbleRightDrop = 0.16;
+  static const double sfxOutline = 7;
+
+  /// The card takes up to this share of the width, less if the height runs
+  /// short, keeping [cardMargin] above and below.
+  static const double cardWidthShare = 0.66;
+  static const double cardMargin = 12;
+  static const BoxShadow cardShadow =
+      BoxShadow(color: Color(0x99000000), blurRadius: 30, spreadRadius: -14, offset: Offset(0, 18));
+
+  /// The info panel's top-left corner drops this much (a tilted top edge).
+  static const Offset infoCut = Offset(0, 12);
+  static const EdgeInsets infoPadding = EdgeInsets.fromLTRB(16, 16, 14, 12);
+  static const double kimarijiFont = 33;
+  static const double kimarijiOutline = 7;
+  static const double labelFont = 12;
+  static const double labelTracking = 0.12;
+  static const double labelGap = 10;
+  static const double metaGap = 8;
+  static const double metaFont = 14;
+  static const double tipGap = 7;
+  static const double tipFont = 13;
+  static const EdgeInsets tipKanaPadding = EdgeInsets.symmetric(horizontal: 3);
+  static const double tipKanaBorder = 1.5;
+
+  /// Tobi, shocked, and his !? peek over the info panel's top right.
+  static const Placement tobi = Placement(right: -17, top: -60, size: Size(66, 80));
+  static const Placement exclaim = Placement(right: 26, top: -82, size: Size(44, 40));
+  static const String exclaimText = '!?';
+  static const double exclaimFont = 28;
+  static const double exclaimTurnDeg = 10;
+
+  static const double actionsGap = 12;
+  static const double actionHeight = 62;
+  static const int learnFlex = 2;
+  static const int acceptFlex = 3;
+  static const double learnFont = 13.5;
+  static const double acceptFont = 19;
+  static const double acceptSubFont = 13;
+}
+
+/// "Island complete" (制覇!!, `IslandCompleteOverlay`).
+abstract final class IslandCompleteLayout {
+  static const Color sea = Color(0xFF3FA5FF);
+  static const int seaSeed = 21;
+  static const focus = BurstSpec(
+      box: Size(390, 844), center: Offset(195, 402), count: 200, innerMin: 150, innerMax: 210, width: 4, seed: 19,
+      color: Palette.paper);
+  static const double focusOpacity = 0.9;
+  static const Alignment glowAt = Alignment(0, -0.05);
+  static const double glowSize = 440;
+  static const List<Color> glowColors = [Color(0xFFFFF7CC), Color(0xF2FFD83A), Color(0x00FFD83A)];
+  static const List<double> glowStops = [0.2, 0.46, 1];
+
+  /// Confetti rains through the top of the page, down to this share of it.
+  static const double confettiShare = 0.66;
+
+  static const double topGap = 4;
+  static const String title = '制覇!!';
+  static const double titleFont = 96;
+  static const double titleOutline = 16;
+  static const double bandInset = 12;
+  static const double bandFont = 19;
+  static const double bandTracking = 0.14;
+  static const EdgeInsets bandPadding = EdgeInsets.fromLTRB(8, 7, 8, 8);
+  static const double bandTurnDeg = -2.5;
+  static const double subGap = 10;
+  static const double subFont = 15;
+  static const double subBorder = 2.5;
+  static const EdgeInsets subPadding = EdgeInsets.fromLTRB(12, 4, 12, 5);
+
+  /// The island takes up to this share of the width, in a view of its
+  /// bounds grown by [islandPad] map units.
+  static const double islandShare = 0.64;
+  static const double islandPad = 10;
+  static const String sfx = 'ドドーン!!';
+  static const double sfxFont = 34;
+  static const double sfxTurnDeg = -10;
+  static const int sfxSeed = 12;
+  static const Offset sfxAt = Offset(-2, 6);
+  static const Placement tobi = Placement(right: 6, top: 38, size: Size(82, 98));
+
+  static const Offset nextCut = Offset(0, 10);
+  static const EdgeInsets nextPadding = EdgeInsets.fromLTRB(8, 14, 12, 10);
+  static const Size nextArt = Size(104, 92);
+  static const double nextPad = 8;
+  static const double nextGap = 12;
+  static const double nextBoxBorder = 2;
+  static const EdgeInsets nextBoxPadding = EdgeInsets.fromLTRB(9, 7, 9, 7);
+  static const double nextTagFont = 12;
+  static const double nextNameFont = 30;
+  static const double nextNoteFont = 12.5;
+
+  static const double lineGap = 12;
+  static const double lineFont = 14;
+  static const double lineBorder = 2;
+  static const EdgeInsets linePadding = EdgeInsets.fromLTRB(10, 3, 10, 4);
+  static const double actionHeight = 62;
+  static const double ctaFont = 20;
+  static const double ctaSubFont = 13;
 }
 
 /// The first-launch screen (spec phone 1).
@@ -997,6 +1123,16 @@ abstract final class ComingSoonStyle {
   static const Placement tobi = Placement(left: 20, bottom: 0, size: Size(120, 143));
   static const Placement balloon = Placement(right: 0, top: 0, size: Size(150, 80));
   static const Alignment speaker = Alignment(-1.9, 2.7);
+
+  /// The balloon popping out of a control that is not built yet
+  /// (`ComingSoonBubble`): its size, the gap to the control (the tail
+  /// bridges it), how long it stays, and how it pops in and fades.
+  static const Size bubble = Size(150, 64);
+  static const double bubbleGap = 12;
+  static const Duration bubbleLife = Duration(milliseconds: 1600);
+  static const Duration bubbleFade = Duration(milliseconds: 260);
+  static const bubblePop =
+      EntranceSpec(Entrances.pop, duration: Duration(milliseconds: 320), curve: Entrances.springy);
 }
 
 /// Sky and hero backgrounds: radial and linear gradients (CSS angles, degrees).

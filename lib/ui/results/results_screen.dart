@@ -20,6 +20,8 @@ import '../torifuda/torifuda_painter.dart';
 import '../run/learn_next_button.dart';
 import 'celebration_overlays.dart';
 import 'celebrations.dart';
+import 'island_complete_overlay.dart';
+import 'new_card_overlay.dart';
 
 /// Results (spec phone 5): a splash of the run's numbers, then the earned
 /// celebrations in sequence, each tap-anywhere-to-skip.

@@ -97,22 +97,34 @@ class SfxOverlayState extends State<SfxOverlay> with SingleTickerProviderStateMi
       top: y,
       child: FractionalTranslation(
         translation: const Offset(-0.5, -0.5),
-        child: Opacity(
-          opacity: _opacityAt(t),
-          child: Transform.rotate(
-            angle: p.rotationDeg * math.pi / 180,
-            child: Transform.translate(
-              offset: Offset(0, _driftAt(t)),
-              child: Transform.scale(
-                scale: _scaleAt(t),
-                child: SfxText(p.word, size: PlaySfxTuning.fontSize, color: p.color, seed: p.seed),
-              ),
-            ),
+        child: Transform.rotate(
+          angle: p.rotationDeg * math.pi / 180,
+          child: SfxPop(
+            progress: t,
+            child: SfxText(p.word, size: PlaySfxTuning.fontSize, color: p.color, seed: p.seed),
           ),
         ),
       ),
     );
   }
+}
+
+/// One SFX pop at [progress] (0–1 over [PlaySfxTuning.duration]): pops in
+/// with an overshoot, settles, holds, then fades while drifting up.
+class SfxPop extends StatelessWidget {
+  const SfxPop({super.key, required this.progress, required this.child});
+
+  final double progress;
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) => Opacity(
+        opacity: _opacityAt(progress),
+        child: Transform.translate(
+          offset: Offset(0, _driftAt(progress)),
+          child: Transform.scale(scale: _scaleAt(progress), child: child),
+        ),
+      );
 
   static double _lerp(double a, double b, double t) => a + (b - a) * t;
 

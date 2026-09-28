@@ -9,6 +9,7 @@ import '../../l10n/settings_strings.dart';
 import '../../l10n/strings.dart';
 import '../../state/scope.dart';
 import '../../state/settings.dart';
+import '../debug/celebration_preview.dart';
 import '../debug/debug_page.dart';
 import '../debug/reset_actions.dart';
 import '../debug/seed_action.dart';
@@ -245,6 +246,8 @@ class _DeveloperSection extends StatelessWidget {
           value: settings.showPerformanceOverlay,
           onChanged: (v) => progress.updateSettings(settings.copyWith(showPerformanceOverlay: v)),
         ),
+        const SizedBox(height: Gaps.small),
+        _ButtonRow(label: 'Preview celebrations', onTap: () => previewCelebrations(context)),
         const SizedBox(height: Gaps.small),
         _ButtonRow(label: 'Seed demo data', onTap: () => confirmSeedDemoData(context)),
         const SizedBox(height: Gaps.small),

@@ -68,9 +68,6 @@ class S {
   String get personalBest => t('Personal best!', '自己ベスト！');
   String get previousBest => t('previous', '前回ベスト');
   String get slowest => t('Toughest cards', '手強い札');
-  String get newCard => t('A new card appears!', '新しい札が現れた！');
-  String get newCards => t('New cards appear!', '新しい札が現れた！');
-  String get islandComplete => t('Island complete!', '島クリア！');
   String get goalUp => t('New speed goal!', '目標タイム更新！');
   String get rating => t('Rating', 'レーティング');
 

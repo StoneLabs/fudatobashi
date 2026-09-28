@@ -10,6 +10,7 @@ import '../../data/islands.dart';
 import '../manga/geometry.dart';
 import '../manga/screentone.dart';
 import '../manga/seeded_random.dart';
+import '../manga/static_art.dart';
 import '../manga/svg_path.dart';
 import '../manga/vector.dart';
 
@@ -349,6 +350,45 @@ class _MapSpec {
   int get hashCode => Object.hash(Object.hashAll(styles), viewport, fit, route, boat, seaSeed);
 }
 
+/// The map's sea: [Tones.mapSea] with white wave squiggles.
+abstract final class Sea {
+  /// Tones [area] and scatters waves over [waves].
+  static void paint(Canvas canvas, Rect area, Rect waves, double pixelRatio, int seed) {
+    canvas.drawRect(area, Screentone.paint(Tones.mapSea, pixelRatio));
+    final r = SeededRandom(seed);
+    final n = (waves.width * waves.height / MapStyle.waveDensity).round();
+    final path = Path();
+    for (var k = 0; k < n; k++) {
+      final x = waves.left + r.next() * waves.width, y = waves.top + r.next() * waves.height;
+      path
+        ..moveTo(x, y)
+        ..quadraticBezierTo(x + MapStyle.waveHalf, y - MapStyle.waveHeight, x + MapStyle.waveHalf * 2, y)
+        ..quadraticBezierTo(x + MapStyle.waveHalf * 3, y + MapStyle.waveHeight, x + MapStyle.waveHalf * 4, y);
+    }
+    canvas.drawPath(
+      path,
+      Paint()
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = MapStyle.waveStroke
+        ..strokeCap = StrokeCap.round
+        ..color = Palette.paper.withValues(alpha: MapStyle.waveOpacity),
+    );
+  }
+}
+
+/// A full-bleed [Sea] as a [StaticArt] layer.
+class SeaLayer extends ArtLayer {
+  const SeaLayer(this.seed);
+  final int seed;
+
+  @override
+  List<Object?> get props => [seed];
+
+  @override
+  void paint(Canvas canvas, Size size, double pixelRatio) =>
+      Sea.paint(canvas, Offset.zero & size, Offset.zero & size, pixelRatio, seed);
+}
+
 enum _Layer { below, above }
 
 class _LayerPainter extends CustomPainter {
@@ -386,35 +426,15 @@ class _LayerPainter extends CustomPainter {
     final ratio = pixelRatio * xf.scale;
     switch (layer) {
       case _Layer.below:
-        if (spec.seaSeed != null) _paintSea(canvas, xf.toMap(Offset.zero) & (size / xf.scale), ratio);
+        if (spec.seaSeed != null) {
+          Sea.paint(canvas, xf.toMap(Offset.zero) & (size / xf.scale), Offset.zero & archipelago.size, ratio,
+              spec.seaSeed!);
+        }
         _paintRoute(canvas);
       case _Layer.above:
         _paintIslands(canvas, ratio);
     }
     return rec.endRecording().toImageSync((size.width * pixelRatio).ceil(), (size.height * pixelRatio).ceil());
-  }
-
-  void _paintSea(Canvas canvas, Rect visible, double ratio) {
-    canvas.drawRect(visible, Screentone.paint(Tones.mapSea, ratio));
-    final map = Offset.zero & archipelago.size;
-    final r = SeededRandom(spec.seaSeed!);
-    final n = (map.width * map.height / MapStyle.waveDensity).round();
-    final waves = Path();
-    for (var k = 0; k < n; k++) {
-      final x = r.next() * map.width, y = r.next() * map.height;
-      waves
-        ..moveTo(x, y)
-        ..quadraticBezierTo(x + MapStyle.waveHalf, y - MapStyle.waveHeight, x + MapStyle.waveHalf * 2, y)
-        ..quadraticBezierTo(x + MapStyle.waveHalf * 3, y + MapStyle.waveHeight, x + MapStyle.waveHalf * 4, y);
-    }
-    canvas.drawPath(
-      waves,
-      Paint()
-        ..style = PaintingStyle.stroke
-        ..strokeWidth = MapStyle.waveStroke
-        ..strokeCap = StrokeCap.round
-        ..color = Palette.paper.withValues(alpha: MapStyle.waveOpacity),
-    );
   }
 
   void _paintRoute(Canvas canvas) {

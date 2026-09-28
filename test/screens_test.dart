@@ -35,6 +35,9 @@ import 'package:fudatobashi/ui/manga/manga.dart';
 import 'package:fudatobashi/ui/play/play_screen.dart';
 import 'package:fudatobashi/ui/rank/rank_screen.dart';
 import 'package:fudatobashi/ui/results/celebration_overlays.dart';
+import 'package:fudatobashi/ui/results/celebrations.dart';
+import 'package:fudatobashi/ui/results/island_complete_overlay.dart';
+import 'package:fudatobashi/ui/results/new_card_overlay.dart';
 import 'package:fudatobashi/ui/results/results_screen.dart';
 import 'package:fudatobashi/ui/run/learn_next_button.dart';
 
@@ -687,5 +690,54 @@ void main() {
       await tester.pump(const Duration(milliseconds: 500));
       await tester.pumpWidget(const SizedBox());
     });
+  });
+
+  group('Celebration pages', () {
+    Future<void> pumpPage(WidgetTester tester, Progress p, Widget page, Duration settle) async {
+      await tester.binding.setSurfaceSize(_phone);
+      await tester.pumpWidget(RepaintBoundary(
+        key: const ValueKey('screen'),
+        child: ProgressScope(progress: p, child: MaterialApp(home: Scaffold(body: page))),
+      ));
+      await tester.pump(settle);
+      expect(tester.takeException(), isNull);
+    }
+
+    for (final ja in [false, true]) {
+      final lang = ja ? 'ja' : 'en';
+
+      testWidgets('a new card appears, at a large font scale ($lang)', (tester) async {
+        tester.platformDispatcher.textScaleFactorTestValue = 1.3;
+        addTearDown(tester.platformDispatcher.clearTextScaleFactorTestValue);
+        final p = await open(tester, ja: ja);
+        final card = poems.byKimariji('きみがためは').id;
+        var advanced = false;
+        await pumpPage(
+          tester,
+          p,
+          NewCardOverlay(data: NewCardCelebration(card, fudaSets.tomofuda(card)), onNext: () => advanced = true),
+          const Duration(milliseconds: 1300),
+        );
+        await _capture(tester, 'new_card_$lang');
+        await tester.tap(find.text(ja ? '受けて立つ' : 'BRING IT ON!'));
+        await tester.pump(const Duration(milliseconds: 300));
+        expect(advanced, isTrue, reason: 'the accept flick hands over to the next page');
+        await tester.pumpWidget(const SizedBox());
+      });
+
+      testWidgets('island complete, at a large font scale ($lang)', (tester) async {
+        tester.platformDispatcher.textScaleFactorTestValue = 1.3;
+        addTearDown(tester.platformDispatcher.clearTextScaleFactorTestValue);
+        final p = await open(tester, ja: ja);
+        await pumpPage(
+          tester,
+          p,
+          IslandCompleteOverlay(islandIndex: 2, islandsDone: 3, cardsUnlocked: 29, onNext: () {}),
+          const Duration(milliseconds: 2300),
+        );
+        await _capture(tester, 'island_complete_$lang');
+        await tester.pumpWidget(const SizedBox());
+      });
+    }
   });
 }
