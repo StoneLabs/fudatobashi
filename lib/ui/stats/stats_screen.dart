@@ -2,6 +2,7 @@ import 'package:flutter/widgets.dart';
 
 import '../../config/config.dart';
 import '../../config/design.dart';
+import '../../config/vector_art.dart';
 import '../../data/islands.dart';
 import '../../data/poem.dart';
 import '../../db/database.dart' show Session;
@@ -14,6 +15,7 @@ import '../../state/scope.dart';
 import '../islands/island_map.dart';
 import '../manga/manga.dart';
 import '../play/time_format.dart';
+import '../rank/rank_screen.dart';
 import '../run/run_launcher.dart';
 import 'island_screen.dart';
 
@@ -43,7 +45,10 @@ class _StatsScreenState extends State<StatsScreen> {
         children: [
           MangaHeader(
             title: ScreenTitle(s.stats, sub: s.other.stats),
-            actions: [_TabToggle(tab: _tab, onChanged: (t) => setState(() => _tab = t))],
+            actions: [
+              _TabToggle(tab: _tab, onChanged: (t) => setState(() => _tab = t)),
+              const _RankButton(),
+            ],
           ),
           _Summary(overallMedianMs: data.overallMedianMs, dueToday: progress.dueCount()),
           const SizedBox(height: Gaps.section),
@@ -104,6 +109,29 @@ class _SegButton extends StatelessWidget {
           ),
         ),
       );
+}
+
+/// The compact entry point to the rank ladder screen.
+class _RankButton extends StatelessWidget {
+  const _RankButton();
+
+  @override
+  Widget build(BuildContext context) {
+    final s = S.of(context);
+    return SizedBox(
+      height: StatsLayout.segHeight,
+      child: InkButton(
+        onTap: () => Navigator.push(context, MangaRoute<void>(builder: (_) => const RankScreen())),
+        padding: const EdgeInsets.symmetric(horizontal: StatsLayout.segPadding),
+        semanticLabel: s.rank,
+        child: Row(mainAxisSize: MainAxisSize.min, children: [
+          Text(s.rank, style: const TextStyle(fontWeight: Weights.black, fontSize: StatsLayout.segFont)),
+          const SizedBox(width: Gaps.tight),
+          const MangaIcon(IconArt.chevron, size: RankLayout.statsEntryIconSize),
+        ]),
+      ),
+    );
+  }
 }
 
 /// "100 cards · median X s · N due today".

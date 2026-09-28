@@ -18,7 +18,9 @@ import 'package:fudatobashi/db/database.dart';
 import 'package:fudatobashi/domain/card_mask.dart';
 import 'package:fudatobashi/domain/card_stats.dart';
 import 'package:fudatobashi/domain/play_session.dart';
+import 'package:fudatobashi/domain/rating.dart';
 import 'package:fudatobashi/domain/trainer.dart';
+import 'package:fudatobashi/l10n/home_strings.dart';
 import 'package:fudatobashi/l10n/stats_strings.dart';
 import 'package:fudatobashi/l10n/strings.dart';
 import 'package:fudatobashi/state/play_config.dart';
@@ -29,6 +31,8 @@ import 'package:fudatobashi/ui/app.dart';
 import 'package:fudatobashi/ui/home/training_hero.dart';
 import 'package:fudatobashi/ui/islands/island_map.dart';
 import 'package:fudatobashi/ui/manga/manga.dart';
+import 'package:fudatobashi/ui/rank/rank_screen.dart';
+import 'package:fudatobashi/ui/results/celebration_overlays.dart';
 
 const _phone = Size(384, 832);
 
@@ -295,6 +299,97 @@ void main() {
       await tester.pumpWidget(const SizedBox());
     });
   }
+
+  for (final ja in [false, true]) {
+    final lang = ja ? 'ja' : 'en';
+
+    testWidgets('rank ladder: open from Stats, a mid-ladder rating shows you/next/clear, preview rank-up ($lang)',
+        (tester) async {
+      final p = await open(tester, mode: LearningMode.allKnown, ja: ja);
+      // A little into D級 (index 5 of 9): a few classes cleared below it, C級
+      // as the next threshold, and B/A above with no marker — real coverage
+      // of every rung state in one shot.
+      p.rating = Rating.bands[5].minRating + 5;
+
+      await tester.binding.setSurfaceSize(_phone);
+      await tester.pumpWidget(RepaintBoundary(key: const ValueKey('screen'), child: FudatobashiApp(progress: p)));
+      await tester.pump(const Duration(milliseconds: 500));
+      expect(tester.takeException(), isNull);
+
+      final s = S(ja);
+      await tester.tap(find.text(s.stats));
+      await tester.pump(const Duration(milliseconds: 500));
+      expect(tester.takeException(), isNull);
+
+      // A pushed route's page needs two pump cycles before it shows up in
+      // the tree (the first only flushes the navigator's history update).
+      await tester.tap(find.text(s.rank));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 500));
+      expect(tester.takeException(), isNull);
+      expect(find.byType(RankScreen), findsOneWidget);
+      await _capture(tester, 'rank_ladder_$lang');
+
+      await tester.tap(find.text(s.previewRankUp));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 500));
+      expect(tester.takeException(), isNull);
+      expect(find.byType(RankUpOverlay), findsOneWidget);
+      await _capture(tester, 'rank_up_preview_$lang');
+
+      // Tap-anywhere-to-skip dismisses the preview cleanly.
+      await tester.tapAt(const Offset(40, 40));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 500));
+      expect(tester.takeException(), isNull);
+
+      await tester.pumpWidget(const SizedBox());
+    });
+  }
+
+  testWidgets('rank ladder: open from the Home rating panel', (tester) async {
+    final p = await open(tester, mode: LearningMode.allKnown);
+    await tester.binding.setSurfaceSize(_phone);
+    await tester.pumpWidget(RepaintBoundary(key: const ValueKey('screen'), child: FudatobashiApp(progress: p)));
+    await tester.pump(const Duration(milliseconds: 500));
+    expect(tester.takeException(), isNull);
+
+    final s = S(false);
+    await tester.tap(find.text(s.ratingLabel));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 500));
+    expect(tester.takeException(), isNull);
+    expect(find.byType(RankScreen), findsOneWidget);
+
+    await tester.pumpWidget(const SizedBox());
+  });
+
+  group('Rank ladder edge cases', () {
+    Widget pumped(Progress p) => ProgressScope(progress: p, child: const MaterialApp(home: RankScreen()));
+
+    testWidgets('already at A: no NEXT tag and no preview entry, TOP CLASS still shown', (tester) async {
+      final p = await open(tester);
+      p.rating = Rating.bands.last.minRating + 50;
+      await tester.pumpWidget(pumped(p));
+      await tester.pump(const Duration(milliseconds: 500));
+      expect(tester.takeException(), isNull);
+
+      const s = S(false);
+      expect(find.text(s.previewRankUp), findsNothing);
+      expect(find.text(s.nextChip), findsNothing);
+      expect(find.text(s.topClassNote), findsOneWidget);
+      expect(find.text(s.youTag), findsOneWidget);
+    });
+
+    testWidgets('fresh player: 入門-only ladder renders cleanly', (tester) async {
+      final p = await open(tester);
+      await tester.pumpWidget(pumped(p));
+      await tester.pump(const Duration(milliseconds: 500));
+      expect(tester.takeException(), isNull);
+      const s = S(false);
+      expect(find.text(s.youTag), findsOneWidget);
+    });
+  });
 
   // Reproduces "BOTTOM OVERFLOWED BY 13 PIXELS" on the Training banner
   // directly on `TrainingHero`: a long narration (however it got long — many

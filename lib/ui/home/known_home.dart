@@ -7,6 +7,7 @@ import '../../l10n/home_strings.dart';
 import '../../l10n/strings.dart';
 import '../../state/scope.dart';
 import '../manga/manga.dart';
+import '../rank/rank_screen.dart';
 import '../run/run_launcher.dart';
 import 'guest_sheet.dart';
 import 'home_widgets.dart';
@@ -88,58 +89,64 @@ class _RankRow extends StatelessWidget {
       children: [
         Expanded(
           flex: HomeLayout.rankFlex,
-          child: MangaPanel(
-            shape: const PanelShape(bottomRight: Offset(HomeLayout.rankSlant, 0)),
-            padding: const EdgeInsets.only(left: Gaps.inner, right: HomeLayout.rankSlant + Gaps.small),
-            child: Row(
-              children: [
-                RankSticker(band),
-                const SizedBox(width: HomeLayout.rankGap),
-                Expanded(
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        s.ratingLabel,
-                        style: const TextStyle(
-                          fontWeight: Weights.black,
-                          fontSize: HomeLayout.ratingLabelFont,
-                          letterSpacing: HomeLayout.ratingLabelTracking * HomeLayout.ratingLabelFont,
+          child: Pressable(
+            onTap: () => Navigator.of(context).push(MangaRoute<void>(builder: (_) => const RankScreen())),
+            scale: Press.panelScale,
+            turn: 0,
+            semanticLabel: s.rank,
+            builder: (context, _) => MangaPanel(
+              shape: const PanelShape(bottomRight: Offset(HomeLayout.rankSlant, 0)),
+              padding: const EdgeInsets.only(left: Gaps.inner, right: HomeLayout.rankSlant + Gaps.small),
+              child: Row(
+                children: [
+                  RankSticker(band),
+                  const SizedBox(width: HomeLayout.rankGap),
+                  Expanded(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          s.ratingLabel,
+                          style: const TextStyle(
+                            fontWeight: Weights.black,
+                            fontSize: HomeLayout.ratingLabelFont,
+                            letterSpacing: HomeLayout.ratingLabelTracking * HomeLayout.ratingLabelFont,
+                          ),
                         ),
-                      ),
-                      Text(
-                        rating.round().toString(),
-                        style: const TextStyle(
-                            fontFamily: Fonts.display, fontSize: HomeLayout.ratingFont, height: TypeScale.displayLineHeight),
-                      ),
-                      const SizedBox(height: HomeLayout.ratingBarGap),
-                      RatingBar(fraction),
-                      const SizedBox(height: HomeLayout.ratingBarGap),
-                      FittedBox(
-                        fit: BoxFit.scaleDown,
-                        alignment: Alignment.centerLeft,
-                        child: next == null
-                            ? Text(s.topBand, style: bold)
-                            : NumberedText(
-                                s.toNextBand.replaceAll('{band}', next.label),
-                                [(next.minRating - rating).ceil(), next.minRating.round()],
-                                style: const TextStyle(fontSize: HomeLayout.ratingNoteFont, fontWeight: Weights.bold),
-                                numberStyle: bold,
-                              ),
-                      ),
-                      if (progress.knownCardSpeedMs != null) ...[
-                        const SizedBox(height: HomeLayout.knownSpeedGap),
+                        Text(
+                          rating.round().toString(),
+                          style: const TextStyle(
+                              fontFamily: Fonts.display, fontSize: HomeLayout.ratingFont, height: TypeScale.displayLineHeight),
+                        ),
+                        const SizedBox(height: HomeLayout.ratingBarGap),
+                        RatingBar(fraction),
+                        const SizedBox(height: HomeLayout.ratingBarGap),
                         FittedBox(
                           fit: BoxFit.scaleDown,
                           alignment: Alignment.centerLeft,
-                          child: KnownSpeedTag(ms: progress.knownCardSpeedMs, weekAgoMs: progress.knownCardSpeedTrendAgo),
+                          child: next == null
+                              ? Text(s.topBand, style: bold)
+                              : NumberedText(
+                                  s.toNextBand.replaceAll('{band}', next.label),
+                                  [(next.minRating - rating).ceil(), next.minRating.round()],
+                                  style: const TextStyle(fontSize: HomeLayout.ratingNoteFont, fontWeight: Weights.bold),
+                                  numberStyle: bold,
+                                ),
                         ),
+                        if (progress.knownCardSpeedMs != null) ...[
+                          const SizedBox(height: HomeLayout.knownSpeedGap),
+                          FittedBox(
+                            fit: BoxFit.scaleDown,
+                            alignment: Alignment.centerLeft,
+                            child: KnownSpeedTag(ms: progress.knownCardSpeedMs, weekAgoMs: progress.knownCardSpeedTrendAgo),
+                          ),
+                        ],
                       ],
-                    ],
+                    ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
           ),
         ),

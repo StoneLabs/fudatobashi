@@ -80,4 +80,12 @@ extension StatsStrings on S {
   String get daysUnit => t(' d', '日');
   String get notScheduled => t('not scheduled', '未定');
   String seeYouOn(String date) => t('See you $date!', '$dateにまた！');
+
+  // ------------------------------------------------------------ Rank ladder
+
+  String get youTag => t('YOU', '現在');
+  String get topClassNote => t('TOP CLASS', '最高位');
+  String get clearStamp => t('CLEAR', '済');
+  String get toGoTemplate => t('{0} to go!', 'あと{0}！');
+  String get previewRankUp => t('Preview', 'プレビュー');
 }

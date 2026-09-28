@@ -747,6 +747,53 @@ abstract final class CardDetailLayout {
   static const double tobiHeight = 72;
 }
 
+/// The rank ladder screen (spec phone 9): nine class rungs running top to
+/// bottom from A級 down to 入門, each a step of the class's colour
+/// progression, with the player's own rung, the next threshold and every
+/// cleared class marked, plus a rank-up preview reachable from the next rung.
+abstract final class RankLayout {
+  static const double topBarHeight = 44;
+  static const double ratingLabelFont = 12;
+  static const double ratingLabelTracking = 0.14;
+  static const double ratingFont = 26;
+
+  static const double rungHeight = 84;
+  static const double rungGap = 8;
+  static const EdgeInsets rungPadding = EdgeInsets.symmetric(horizontal: 14, vertical: 8);
+
+  static const EdgeInsets badgePadding = EdgeInsets.fromLTRB(10, 5, 10, 6);
+  static const double badgeFont = 22;
+  static const double badgeSuffixFont = 13;
+
+  static const double tagLabelFont = 11;
+  static const double tagLabelTracking = 0.14;
+  static const double tagNumberFont = 17;
+  static const EdgeInsets tagPadding = EdgeInsets.fromLTRB(8, 3, 8, 4);
+
+  static const double topNoteFont = 12.5;
+  static const double topNoteTracking = 0.18;
+
+  static const double stampFont = 14;
+  static const EdgeInsets stampPadding = EdgeInsets.fromLTRB(8, 4, 8, 5);
+  static const double stampTurn = -11;
+  static const double stampRadius = 5;
+  static const double stampRight = 20;
+
+  static const Placement tobiPlacement = Placement(right: -4, top: -18, size: Size(58, 70));
+  static const Placement balloonPlacement = Placement(right: 50, top: -20, size: Size(96, 46));
+  static const double balloonFont = 12.5;
+  static const Alignment balloonTail = Alignment(0.86, 0.6);
+  static const double balloonTailTurn = -30;
+  static const EdgeInsets balloonPadding = EdgeInsets.symmetric(horizontal: 10, vertical: 6);
+
+  static const double previewGap = 8;
+  static const double previewFont = 12.5;
+  static const EdgeInsets previewPadding = EdgeInsets.fromLTRB(10, 4, 10, 5);
+
+  /// The small "Rank ›" entry point in the Stats header.
+  static const double statsEntryIconSize = 14;
+}
+
 /// Play, mid-run (spec phone 4).
 abstract final class PlayLayout {
   static const double toneBandHeight = 230;
