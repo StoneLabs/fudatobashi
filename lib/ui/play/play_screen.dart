@@ -12,7 +12,9 @@ import '../../domain/card_stats.dart';
 import '../../domain/play_session.dart';
 import '../../l10n/strings.dart';
 import '../../state/play_config.dart';
+import '../../state/progress.dart';
 import '../../state/scope.dart';
+import '../../state/settings.dart';
 import '../debug/play_overlay.dart';
 import '../manga/manga.dart';
 import '../results/results_screen.dart';
@@ -22,7 +24,8 @@ import 'swipe_deck.dart';
 
 /// The play chrome (spec phone 4): a calm paper page, the previous card's
 /// kimariji as a speech chip, the n/N counter, coloured SFX around the card,
-/// and ひとつ前 / 終了. Ends into [ResultsScreen] once there is at least one
+/// ひとつ前 / 終了, and a don't-remember button when that is the don't-know
+/// input. Ends into [ResultsScreen] once there is at least one
 /// attempt; 終了 with none goes straight back.
 class PlayScreen extends StatefulWidget {
   const PlayScreen({super.key, required this.cards, required this.config});
@@ -38,16 +41,22 @@ class _PlayScreenState extends State<PlayScreen> {
   late final PlaySession _session = PlaySession(widget.cards);
   final DateTime _startedAt = DateTime.now();
   final _sfxKey = GlobalKey<SfxOverlayState>();
+  final _deckKey = GlobalKey<SwipeDeckState>();
+  Duration? _dontKnowDownTs;
   final Set<Attempt> _requeuedForTraining = {};
   final _rng = math.Random();
   bool _live = false;
   bool _ending = false;
 
+  /// Kept for [dispose], where the scope can no longer be looked up.
+  late final Progress _progress;
+
   @override
   void initState() {
     super.initState();
+    _progress = ProgressScope.read(context);
     _session.addListener(_onSessionChanged);
-    if (ProgressScope.read(context).settings.leadIn) {
+    if (_progress.settings.leadIn) {
       Future.delayed(SwipeTuning.leadIn, () {
         if (mounted) setState(() => _live = true);
       });
@@ -62,7 +71,7 @@ class _PlayScreenState extends State<PlayScreen> {
     // Safety net for an unexpected pop (e.g. the system back gesture): still
     // record a partial run, just without showing results for it.
     if (!_ending && _session.attempts.isNotEmpty) {
-      unawaited(ProgressScope.read(context).recordRun(_session, widget.config, _startedAt));
+      unawaited(_progress.recordRun(_session, widget.config, _startedAt));
     }
     super.dispose();
   }
@@ -115,6 +124,11 @@ class _PlayScreenState extends State<PlayScreen> {
     if (twins.isNotEmpty) _session.requeue(CardRef(twins[_rng.nextInt(twins.length)]));
   }
 
+  void _markDontKnow() {
+    final ts = _dontKnowDownTs;
+    if (ts != null) _deckKey.currentState?.markDontKnow(ts);
+  }
+
   Future<void> _end() async {
     if (_ending) return;
     if (_session.attempts.isEmpty) {
@@ -137,11 +151,16 @@ class _PlayScreenState extends State<PlayScreen> {
   @override
   Widget build(BuildContext context) {
     final s = S.of(context);
-    final settings = ProgressScope.of(context).settings;
+    final progress = ProgressScope.of(context);
+    final settings = progress.settings;
+    final dontKnowInput = settings.dontKnowInputFor(progress.trainer.config.learningMode);
+    final dontKnowButton = dontKnowInput == DontKnowInput.button;
     final session = _session;
     final last = session.lastAttempt;
     final chipText = last == null ? s.start : poems[last.card.poemId].kimariji;
-    final buttonsBottom = PlayLayout.buttonRowHeight + Gaps.section * 2;
+    final buttonRows = dontKnowButton ? 2 : 1;
+    final buttonsBottom =
+        PlayLayout.buttonRowHeight * buttonRows + PlayLayout.buttonGap * (buttonRows - 1) + Gaps.section * 2;
 
     return Scaffold(
       backgroundColor: Palette.paper,
@@ -160,10 +179,10 @@ class _PlayScreenState extends State<PlayScreen> {
             Positioned.fill(
               bottom: buttonsBottom,
               child: SwipeDeck(
+                key: _deckKey,
                 session: session,
                 live: _live,
-                grading: settings.downMeansDontKnow,
-                downToleranceDeg: settings.downToleranceDeg,
+                dontKnowInput: dontKnowInput,
                 showNumber: settings.showPoemNumber,
                 haptics: settings.haptics,
                 onCommitted: _onCommitted,
@@ -189,23 +208,41 @@ class _PlayScreenState extends State<PlayScreen> {
               left: Gaps.gutter,
               right: Gaps.gutter,
               bottom: Gaps.section,
-              child: SizedBox(
-                height: PlayLayout.buttonRowHeight,
-                child: Row(children: [
-                  Expanded(
-                    child: ActionRowButton(
-                      icon: IconArt.undo,
-                      label: s.undo,
-                      sub: 'UNDO',
-                      onTap: session.attempts.isEmpty ? null : session.undo,
+              child: Column(children: [
+                if (dontKnowButton) ...[
+                  SizedBox(
+                    height: PlayLayout.buttonRowHeight,
+                    child: Listener(
+                      onPointerDown: (e) => _dontKnowDownTs = e.timeStamp,
+                      child: ActionRowButton(
+                        icon: IconArt.question,
+                        label: s.dontRemember,
+                        sub: "DON'T REMEMBER",
+                        color: Palette.pinkSoft,
+                        onTap: _live && !_ending ? _markDontKnow : null,
+                      ),
                     ),
                   ),
-                  const SizedBox(width: PlayLayout.buttonGap),
-                  Expanded(
-                    child: ActionRowButton(icon: IconArt.end, label: s.end, sub: 'END', onTap: _ending ? null : _end),
-                  ),
-                ]),
-              ),
+                  const SizedBox(height: PlayLayout.buttonGap),
+                ],
+                SizedBox(
+                  height: PlayLayout.buttonRowHeight,
+                  child: Row(children: [
+                    Expanded(
+                      child: ActionRowButton(
+                        icon: IconArt.undo,
+                        label: s.undo,
+                        sub: 'UNDO',
+                        onTap: session.attempts.isEmpty ? null : session.undo,
+                      ),
+                    ),
+                    const SizedBox(width: PlayLayout.buttonGap),
+                    Expanded(
+                      child: ActionRowButton(icon: IconArt.end, label: s.end, sub: 'END', onTap: _ending ? null : _end),
+                    ),
+                  ]),
+                ),
+              ]),
             ),
             if (settings.debugMode && settings.playOverlay)
               Positioned(bottom: buttonsBottom + Gaps.section, left: Gaps.section, child: PlayDebugOverlay(session: session)),

@@ -9,7 +9,9 @@ import '../../config/config.dart';
 import '../../config/torifuda_spec.dart';
 import '../../data/poem.dart';
 import '../../domain/play_session.dart';
+import '../../state/settings.dart';
 import '../torifuda/torifuda_painter.dart';
+import 'swipe_gesture.dart';
 
 /// The stack of cards the player flicks away.
 ///
@@ -19,13 +21,15 @@ import '../torifuda/torifuda_painter.dart';
 ///   read early.
 /// * response = pointer-down timestamp of the committing touch, or, if that
 ///   finger was already down before the reveal, its first movement after it.
+///
+/// Don't know is marked per [dontKnowInput] (see [SwipeGesture]), or from
+/// outside with [SwipeDeckState.markDontKnow].
 class SwipeDeck extends StatefulWidget {
   const SwipeDeck({
     super.key,
     required this.session,
     required this.live,
-    this.grading = true,
-    this.downToleranceDeg = DefaultSettings.downToleranceDeg,
+    this.dontKnowInput = DefaultSettings.dontKnowInput,
     this.showNumber = true,
     this.haptics = true,
     this.onCommitted,
@@ -36,9 +40,7 @@ class SwipeDeck extends StatefulWidget {
   /// False keeps the top card blank (before the start / countdown).
   final bool live;
 
-  /// Straight-down swipes mean "don't know".
-  final bool grading;
-  final double downToleranceDeg;
+  final DontKnowInput dontKnowInput;
   final bool showNumber;
 
   /// Follows `settings.haptics`; never affects the timing contract below.
@@ -46,7 +48,7 @@ class SwipeDeck extends StatefulWidget {
   final ValueChanged<Attempt>? onCommitted;
 
   @override
-  State<SwipeDeck> createState() => _SwipeDeckState();
+  State<SwipeDeck> createState() => SwipeDeckState();
 }
 
 class _Pointer {
@@ -73,7 +75,7 @@ class _Flying {
   final double tilt;
 }
 
-class _SwipeDeckState extends State<SwipeDeck> with SingleTickerProviderStateMixin {
+class SwipeDeckState extends State<SwipeDeck> with SingleTickerProviderStateMixin {
   late final Ticker _ticker = createTicker(_tick);
   Duration _now = Duration.zero;
   Duration _lastTick = Duration.zero;
@@ -87,10 +89,19 @@ class _SwipeDeckState extends State<SwipeDeck> with SingleTickerProviderStateMix
   bool _revealScheduled = false;
   Size _card = Size.zero;
 
+  /// While a drag is parked in the don't-know hold: when it began, in ticker
+  /// time (drives the feedback) and in pointer time (the commit timestamp).
+  Duration? _holdStart;
+  Duration? _holdStartTs;
+
   PlaySession get _s => widget.session;
 
   double get _commitDistance =>
       math.max(SwipeTuning.commitDistanceMin, _card.width * SwipeTuning.commitDistanceWidthFraction);
+
+  SwipeGesture get _gesture => SwipeGesture(input: widget.dontKnowInput, commitDistance: _commitDistance);
+
+  double get _holdProgress => _holdStart == null ? 0 : SwipeGesture.holdProgress(_now - _holdStart!);
 
   @override
   void initState() {
@@ -99,10 +110,10 @@ class _SwipeDeckState extends State<SwipeDeck> with SingleTickerProviderStateMix
   }
 
   @override
-  void didUpdateWidget(SwipeDeck old) {
-    super.didUpdateWidget(old);
-    if (old.session != widget.session) {
-      old.session.removeListener(_onSession);
+  void didUpdateWidget(SwipeDeck oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.session != widget.session) {
+      oldWidget.session.removeListener(_onSession);
       widget.session.addListener(_onSession);
     }
   }
@@ -121,6 +132,9 @@ class _SwipeDeckState extends State<SwipeDeck> with SingleTickerProviderStateMix
     _lastTick = elapsed;
     _now = elapsed;
     _flying.removeWhere((f) => (_now - f.start).inMicroseconds / 1e6 > SwipeTuning.flyDuration);
+    if (_holdStart != null && _gesture.onHold(_now - _holdStart!) == SwipeVerdict.dontKnow) {
+      _commitHeld();
+    }
     if (_springing) {
       _drag *= math.exp(-dt * SwipeTuning.springDecay);
       if (_drag.distance < 0.5) {
@@ -128,7 +142,7 @@ class _SwipeDeckState extends State<SwipeDeck> with SingleTickerProviderStateMix
         _springing = false;
       }
     }
-    if (_flying.isEmpty && !_springing) _ticker.stop();
+    if (_flying.isEmpty && !_springing && _holdStart == null) _ticker.stop();
     setState(() {});
   }
 
@@ -184,8 +198,13 @@ class _SwipeDeckState extends State<SwipeDeck> with SingleTickerProviderStateMix
     }
     if (_dragger != p.id) return;
     setState(() => _drag = _dragBase + (p.pos - p.downPos));
-    if (_drag.distance >= _commitDistance) {
-      _commit(p, e.timeStamp, p.tracker.getVelocity().pixelsPerSecond);
+    switch (_gesture.onMove(_drag, holding: _holdStart != null)) {
+      case SwipeVerdict.hold:
+        if (_holdStart == null) _startHold(e.timeStamp);
+      case SwipeVerdict.known:
+        _commitPointer(p, e.timeStamp, p.tracker.getVelocity().pixelsPerSecond, Outcome.known);
+      default:
+        _holdStart = null;
     }
   }
 
@@ -194,10 +213,8 @@ class _SwipeDeckState extends State<SwipeDeck> with SingleTickerProviderStateMix
     if (p == null) return;
     if (!p.consumed && _dragger == p.id && _s.currentRevealed) {
       final v = p.tracker.getVelocity().pixelsPerSecond;
-      final flick =
-          _drag.distance >= _commitDistance * SwipeTuning.flickDistanceRatio && v.distance > SwipeTuning.flickMinSpeed;
-      if (flick) {
-        _commit(p, e.timeStamp, v);
+      if (_gesture.onRelease(_drag, v) == SwipeVerdict.known) {
+        _commitPointer(p, e.timeStamp, v, Outcome.known);
       } else {
         _release();
       }
@@ -214,23 +231,44 @@ class _SwipeDeckState extends State<SwipeDeck> with SingleTickerProviderStateMix
   }
 
   void _release() {
+    _holdStart = null;
     _springing = true;
     _animate();
   }
 
-  bool _isDown(Offset d) {
-    if (d.dy <= 0) return false;
-    final angle = math.atan2(d.dx.abs(), d.dy) * 180 / math.pi;
-    return angle <= widget.downToleranceDeg;
+  void _startHold(Duration ts) {
+    _animate();
+    _holdStart = _now;
+    _holdStartTs = ts;
   }
 
-  void _commit(_Pointer p, Duration ts, Offset velocity) {
+  /// The held finger waited out the dwell: the card drops as don't know.
+  void _commitHeld() {
+    final p = _pointers[_dragger];
+    if (p == null) return;
+    _commitPointer(p, _holdStartTs! + SwipeTuning.dontKnowHoldDwell, Offset.zero, Outcome.dontKnow);
+  }
+
+  void _commitPointer(_Pointer p, Duration ts, Offset velocity, Outcome outcome) {
+    final responseTs = p.downBeforeReveal ? (p.moveAfterRevealTs ?? ts) : p.downTs;
+    p.consumed = true;
+    _commit(responseTs, ts, velocity, outcome);
+  }
+
+  /// Marks the card on top as don't know (the play screen's button), timed
+  /// from [responseTs], the button's pointer-down.
+  void markDontKnow(Duration responseTs) {
+    if (!_s.currentRevealed) return;
+    final p = _pointers[_dragger];
+    if (p != null) p.consumed = true;
+    _commit(responseTs, responseTs, const Offset(0, SwipeTuning.minFlySpeed), Outcome.dontKnow);
+  }
+
+  void _commit(Duration responseTs, Duration commitTs, Offset velocity, Outcome outcome) {
     final card = _s.current;
     if (card == null) return;
-    final responseTs = p.downBeforeReveal ? (p.moveAfterRevealTs ?? ts) : p.downTs;
     final dirVec = _drag.distance > 12 ? _drag : (velocity.distance > 0 ? velocity : _drag);
     final dir = dirVec.distance == 0 ? const Offset(1, 0) : dirVec / dirVec.distance;
-    final outcome = widget.grading && _isDown(dirVec) ? Outcome.dontKnow : Outcome.known;
     _flying.add(_Flying(
       card,
       _drag,
@@ -240,13 +278,15 @@ class _SwipeDeckState extends State<SwipeDeck> with SingleTickerProviderStateMix
       outcome,
       _tiltFor(_drag),
     ));
-    p.consumed = true;
     _dragger = null;
     _drag = Offset.zero;
     _springing = false;
+    _holdStart = null;
     _animate();
-    _s.commit(responseTs: responseTs, commitTs: ts, outcome: outcome);
-    if (widget.haptics) HapticFeedback.selectionClick();
+    _s.commit(responseTs: responseTs, commitTs: commitTs, outcome: outcome);
+    if (widget.haptics) {
+      outcome == Outcome.dontKnow ? HapticFeedback.heavyImpact() : HapticFeedback.selectionClick();
+    }
     final a = _s.lastAttempt;
     if (a != null) widget.onCommitted?.call(a);
   }
@@ -317,7 +357,12 @@ class _SwipeDeckState extends State<SwipeDeck> with SingleTickerProviderStateMix
                   scale: SwipeTuning.nextCardScaleBase + SwipeTuning.nextCardScaleRange * progress),
             if (current != null)
               place(
-                cardFor(current, text: widget.live),
+                // Always a Stack, so the card is never remounted when the
+                // hold mark comes and goes.
+                Stack(fit: StackFit.expand, children: [
+                  cardFor(current, text: widget.live),
+                  if (_holdStart != null) _DontKnowMark(progress: _holdProgress),
+                ]),
                 offset: _drag,
                 angle: _tiltFor(_drag),
               ),
@@ -338,7 +383,7 @@ class _SwipeDeckState extends State<SwipeDeck> with SingleTickerProviderStateMix
     final spin = f.dir.dx.sign * t * SwipeTuning.flySpin;
     Widget child = cardFor(f.card, text: true);
     if (f.outcome == Outcome.dontKnow) {
-      child = Stack(fit: StackFit.expand, children: [child, const _DontKnowStamp()]);
+      child = Stack(fit: StackFit.expand, children: [child, const _DontKnowMark(progress: 1)]);
     }
     return place(
       child,
@@ -365,27 +410,66 @@ class _Shadowed extends StatelessWidget {
       );
 }
 
-class _DontKnowStamp extends StatelessWidget {
-  const _DontKnowStamp();
+/// The don't-know mark over a card: a tint, and a ? stamp that grows while
+/// a ring around it fills with [progress] (the hold dwell); complete at 1.
+class _DontKnowMark extends StatelessWidget {
+  const _DontKnowMark({required this.progress});
+  final double progress;
 
   @override
-  Widget build(BuildContext context) => Center(
-        child: Container(
-          width: SwipeTuning.dontKnowStampSize,
-          height: SwipeTuning.dontKnowStampSize,
-          decoration: BoxDecoration(
-            shape: BoxShape.circle,
-            color: SwipeTuning.dontKnowStampColor,
-            border: Border.all(
-                color: SwipeTuning.dontKnowStampContrastColor, width: SwipeTuning.dontKnowStampBorderWidth),
+  Widget build(BuildContext context) {
+    const size = SwipeTuning.dontKnowStampSize;
+    const ring = size + 2 * (SwipeTuning.holdRingGap + SwipeTuning.holdRingWidth);
+    final scale = SwipeTuning.holdStampStartScale + (1 - SwipeTuning.holdStampStartScale) * progress;
+    return IgnorePointer(
+      child: Stack(fit: StackFit.expand, children: [
+        ColoredBox(color: SwipeTuning.dontKnowStampColor.withValues(alpha: SwipeTuning.holdTintOpacity * progress)),
+        if (progress < 1)
+          Center(child: CustomPaint(size: const Size.square(ring), painter: _HoldRingPainter(progress))),
+        Center(
+          child: Transform.scale(
+            scale: scale,
+            child: Container(
+              width: size,
+              height: size,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: SwipeTuning.dontKnowStampColor,
+                border: Border.all(
+                    color: SwipeTuning.dontKnowStampContrastColor, width: SwipeTuning.dontKnowStampBorderWidth),
+              ),
+              alignment: Alignment.center,
+              child: const Text('?',
+                  style: TextStyle(
+                      fontSize: SwipeTuning.dontKnowStampFontSize,
+                      fontWeight: FontWeight.w900,
+                      color: SwipeTuning.dontKnowStampContrastColor,
+                      height: 1)),
+            ),
           ),
-          alignment: Alignment.center,
-          child: const Text('?',
-              style: TextStyle(
-                  fontSize: SwipeTuning.dontKnowStampFontSize,
-                  fontWeight: FontWeight.w900,
-                  color: SwipeTuning.dontKnowStampContrastColor,
-                  height: 1)),
         ),
-      );
+      ]),
+    );
+  }
+}
+
+class _HoldRingPainter extends CustomPainter {
+  _HoldRingPainter(this.progress);
+  final double progress;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final rect = (Offset.zero & size).deflate(SwipeTuning.holdRingWidth / 2);
+    final paint = Paint()
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = SwipeTuning.holdRingWidth;
+    canvas.drawOval(rect, paint..color = SwipeTuning.holdRingTrackColor);
+    canvas.drawArc(rect, -math.pi / 2, 2 * math.pi * progress, false,
+        paint
+          ..color = SwipeTuning.holdRingColor
+          ..strokeCap = StrokeCap.round);
+  }
+
+  @override
+  bool shouldRepaint(_HoldRingPainter old) => old.progress != progress;
 }

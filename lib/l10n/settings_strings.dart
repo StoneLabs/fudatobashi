@@ -9,6 +9,13 @@ extension SettingsStrings on S {
   String get paceMonth => t('Relaxed · ~1 month', 'のんびり・約1か月');
   String get paceSprint => t('Sprint · ~15 days', '特訓・約15日');
   String get cardEffects => t('Card effects', '演出エフェクト');
+  String get dontKnowInput => t("Marking \"don't know\"", '「わからない」の付け方');
+  String get dontKnowHold => t('Swipe down and hold', '下にスワイプして長押し');
+  String get dontKnowHoldSub => t('A quick flick down still counts as known', '素早く下に払えば「覚えてる」のまま');
+  String get dontKnowButton => t('"Don\'t remember" button', '「覚えてない」ボタン');
+  String get dontKnowButtonSub => t('Every swipe counts as known', 'スワイプはすべて「覚えてる」');
+  String get dontKnowOff => t('Off', 'なし');
+  String get dontKnowOffSub => t('No don\'t-know marking at all', '「わからない」を付けない');
 
   String get about => t('About', 'このアプリについて');
   String get version => t('Version', 'バージョン');

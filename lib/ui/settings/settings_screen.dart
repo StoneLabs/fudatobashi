@@ -8,6 +8,7 @@ import '../../domain/trainer.dart';
 import '../../l10n/settings_strings.dart';
 import '../../l10n/strings.dart';
 import '../../state/scope.dart';
+import '../../state/settings.dart';
 import '../debug/debug_page.dart';
 import '../debug/reset_actions.dart';
 import '../debug/seed_action.dart';
@@ -82,6 +83,9 @@ class SettingsScreen extends StatelessWidget {
                         ]),
                       ],
                       const SizedBox(height: Gaps.section),
+                      label(s.dontKnowInput),
+                      _DontKnowInputChoice(mode: mode),
+                      const SizedBox(height: Gaps.section),
                       _SwitchRow(
                         label: s.cardEffects,
                         value: progress.settings.sfxEffects,
@@ -104,6 +108,49 @@ class SettingsScreen extends StatelessWidget {
           ),
         ),
       ),
+    );
+  }
+}
+
+/// The don't-know input; "off" is only offered in all-known mode.
+class _DontKnowInputChoice extends StatelessWidget {
+  const _DontKnowInputChoice({required this.mode});
+  final LearningMode mode;
+
+  @override
+  Widget build(BuildContext context) {
+    final s = S.of(context);
+    final progress = ProgressScope.of(context);
+    final current = progress.settings.dontKnowInputFor(mode);
+    Widget option(DontKnowInput input, String title, String sub) => Padding(
+          padding: const EdgeInsets.only(bottom: Gaps.small),
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(minHeight: ButtonMetrics.rowHeight),
+            child: InkButton(
+              color: current == input ? Palette.sun : Palette.paper,
+              onTap: current == input
+                  ? null
+                  : () => progress.updateSettings(progress.settings.copyWith(dontKnowInput: input)),
+              padding: const EdgeInsets.symmetric(horizontal: Gaps.inner, vertical: Gaps.small),
+              alignment: Alignment.centerLeft,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(title, style: const TextStyle(fontWeight: Weights.black, fontSize: TypeScale.button)),
+                  Text(sub, style: const TextStyle(fontWeight: Weights.bold, fontSize: TypeScale.small)),
+                ],
+              ),
+            ),
+          ),
+        );
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        option(DontKnowInput.hold, s.dontKnowHold, s.dontKnowHoldSub),
+        option(DontKnowInput.button, s.dontKnowButton, s.dontKnowButtonSub),
+        if (mode == LearningMode.allKnown) option(DontKnowInput.off, s.dontKnowOff, s.dontKnowOffSub),
+      ],
     );
   }
 }

@@ -10,6 +10,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:fudatobashi/config/config.dart';
 import 'package:fudatobashi/config/design.dart';
 import 'package:fudatobashi/data/fuda_sets.dart';
 import 'package:fudatobashi/data/islands.dart';
@@ -31,6 +32,7 @@ import 'package:fudatobashi/ui/app.dart';
 import 'package:fudatobashi/ui/home/training_hero.dart';
 import 'package:fudatobashi/ui/islands/island_map.dart';
 import 'package:fudatobashi/ui/manga/manga.dart';
+import 'package:fudatobashi/ui/play/play_screen.dart';
 import 'package:fudatobashi/ui/rank/rank_screen.dart';
 import 'package:fudatobashi/ui/results/celebration_overlays.dart';
 import 'package:fudatobashi/ui/results/results_screen.dart';
@@ -634,6 +636,56 @@ void main() {
       for (final e in textFinder.evaluate()) {
         expect((e.renderObject! as RenderParagraph).maxLines, isNull);
       }
+    });
+  });
+
+  group('Play chrome', () {
+    Future<void> pumpPlay(WidgetTester tester, Progress p) async {
+      await tester.runAsync(() => p.updateSettings(p.settings.copyWith(leadIn: false)));
+      await tester.binding.setSurfaceSize(_phone);
+      await tester.pumpWidget(RepaintBoundary(
+        key: const ValueKey('screen'),
+        child: ProgressScope(
+          progress: p,
+          child: const MaterialApp(
+            home: PlayScreen(cards: [CardRef(1), CardRef(2), CardRef(3)], config: PlayConfig(mode: PlayMode.free)),
+          ),
+        ),
+      ));
+      await tester.pump();
+      await tester.pump();
+    }
+
+    for (final ja in [false, true]) {
+      testWidgets('the don\'t-remember button fits at a large font scale (${ja ? 'ja' : 'en'})', (tester) async {
+        tester.platformDispatcher.textScaleFactorTestValue = 1.3;
+        addTearDown(tester.platformDispatcher.clearTextScaleFactorTestValue);
+        final p = await open(tester, mode: LearningMode.allKnown, ja: ja);
+        await tester.runAsync(() => p.updateSettings(p.settings.copyWith(dontKnowInput: DontKnowInput.button)));
+        await pumpPlay(tester, p);
+        await tester.tap(find.text(ja ? '覚えてない' : "Don't remember"));
+        await tester.pump(const Duration(milliseconds: 50));
+        expect(tester.takeException(), isNull);
+        await _capture(tester, 'play_button_${ja ? 'ja' : 'en'}');
+        await tester.pump(const Duration(milliseconds: 500));
+        await tester.pumpWidget(const SizedBox());
+      });
+    }
+
+    testWidgets('holding a swipe down shows the filling don\'t-know mark', (tester) async {
+      final p = await open(tester);
+      await pumpPlay(tester, p);
+      final g = await tester.startGesture(const Offset(192, 360));
+      for (var i = 0; i < 4; i++) {
+        await g.moveBy(const Offset(0, 25));
+        await tester.pump(const Duration(milliseconds: 8));
+      }
+      await tester.pump(SwipeTuning.dontKnowHoldDwell ~/ 2);
+      expect(tester.takeException(), isNull);
+      await _capture(tester, 'play_hold');
+      await g.up();
+      await tester.pump(const Duration(milliseconds: 500));
+      await tester.pumpWidget(const SizedBox());
     });
   });
 }

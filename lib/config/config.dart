@@ -72,11 +72,31 @@ abstract final class SwipeTuning {
   static const Offset shadowOffset = Offset(0, 6);
   static const Color shadowColor = Color(0x33000000);
 
+  /// Degrees either side of straight down that start a don't-know hold.
+  static const double downToleranceDeg = 25;
+
+  /// Once holding, the finger may wander this far from straight down before
+  /// the drag turns back into an ordinary known swipe.
+  static const double holdExitToleranceDeg = 40;
+
+  /// How long a drag must stay in the down position to mean "don't know"
+  /// (`DontKnowInput.hold`). Released sooner, it is a known flick.
+  static const Duration dontKnowHoldDwell = Duration(milliseconds: 420);
+
   static const double dontKnowStampSize = 96;
   static const double dontKnowStampBorderWidth = 4;
   static const double dontKnowStampFontSize = 60;
   static const Color dontKnowStampColor = Color(0xCCE94B6A);
   static const Color dontKnowStampContrastColor = Color(0xFFFFFFFF);
+
+  /// Hold feedback: the ? stamp grows from this scale, a ring around it fills
+  /// up, and the card takes on up to [holdTintOpacity] of [dontKnowStampColor].
+  static const double holdStampStartScale = 0.35;
+  static const double holdTintOpacity = 0.28;
+  static const double holdRingWidth = 7;
+  static const double holdRingGap = 6;
+  static const Color holdRingColor = Palette.ink;
+  static const Color holdRingTrackColor = Color(0xB3FFFFFF);
 
   /// Lead-in before the first card's reveal, letting the route transition
   /// settle.
@@ -339,10 +359,7 @@ abstract final class AtlasTuning {
 /// Defaults of `AppSettings`.
 abstract final class DefaultSettings {
   static const AppLanguage language = AppLanguage.system;
-  static const bool downMeansDontKnow = true;
-
-  /// Degrees either side of straight down still counted as "don't know".
-  static const double downToleranceDeg = 25;
+  static const DontKnowInput dontKnowInput = DontKnowInput.hold;
   static const bool showPoemNumber = true;
   static const bool haptics = true;
   static const bool leadIn = true;

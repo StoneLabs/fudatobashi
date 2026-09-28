@@ -59,7 +59,7 @@ class S {
   String get end => t('End', '終了');
   String get again => t('Again', 'もう一回');
   String get done => t('Done', '完了');
-  String get dontKnow => t("Don't know", 'わからない');
+  String get dontRemember => t("Don't remember", '覚えてない');
   String get tapToStart => t('Tap to start', 'タップで開始');
 
   // Results

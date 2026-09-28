@@ -1,15 +1,28 @@
 import '../config/config.dart';
 import '../domain/card_mask.dart';
+import '../domain/trainer.dart';
 import 'play_config.dart';
 
 enum AppLanguage { system, en, ja }
+
+/// How the player marks a card as "don't know" during play.
+enum DontKnowInput {
+  /// Swipe straight down and hold there (see `SwipeTuning.dontKnowHoldDwell`);
+  /// a quick down flick is an ordinary known swipe.
+  hold,
+
+  /// A "don't remember" button on the play screen; every swipe is known.
+  button,
+
+  /// No don't-know marking at all. Only offered in all-known mode.
+  off,
+}
 
 /// User preferences (persisted as JSON).
 class AppSettings {
   const AppSettings({
     this.language = DefaultSettings.language,
-    this.downMeansDontKnow = DefaultSettings.downMeansDontKnow,
-    this.downToleranceDeg = DefaultSettings.downToleranceDeg,
+    this.dontKnowInput = DefaultSettings.dontKnowInput,
     this.showPoemNumber = DefaultSettings.showPoemNumber,
     this.haptics = DefaultSettings.haptics,
     this.leadIn = DefaultSettings.leadIn,
@@ -26,9 +39,8 @@ class AppSettings {
 
   final AppLanguage language;
 
-  /// A swipe straight down means "don't know" (off: every swipe is "known").
-  final bool downMeansDontKnow;
-  final double downToleranceDeg;
+  /// The stored choice; read it through [dontKnowInputFor].
+  final DontKnowInput dontKnowInput;
   final bool showPoemNumber;
   final bool haptics;
 
@@ -56,10 +68,14 @@ class AppSettings {
   /// Dev-mode `PerformanceOverlay`.
   final bool showPerformanceOverlay;
 
+  /// The don't-know input in effect: journey mode has no "off" and falls
+  /// back to [DontKnowInput.hold].
+  DontKnowInput dontKnowInputFor(LearningMode mode) =>
+      mode == LearningMode.journey && dontKnowInput == DontKnowInput.off ? DontKnowInput.hold : dontKnowInput;
+
   Map<String, Object> toJson() => {
         'language': language.name,
-        'downMeansDontKnow': downMeansDontKnow,
-        'downToleranceDeg': downToleranceDeg,
+        'dontKnowInput': dontKnowInput.name,
         'showPoemNumber': showPoemNumber,
         'haptics': haptics,
         'leadIn': leadIn,
@@ -76,8 +92,7 @@ class AppSettings {
 
   factory AppSettings.fromJson(Map<String, dynamic> j) => AppSettings(
         language: AppLanguage.values.asNameMap()[j['language']] ?? DefaultSettings.language,
-        downMeansDontKnow: j['downMeansDontKnow'] as bool? ?? DefaultSettings.downMeansDontKnow,
-        downToleranceDeg: (j['downToleranceDeg'] as num?)?.toDouble() ?? DefaultSettings.downToleranceDeg,
+        dontKnowInput: DontKnowInput.values.asNameMap()[j['dontKnowInput']] ?? DefaultSettings.dontKnowInput,
         showPoemNumber: j['showPoemNumber'] as bool? ?? DefaultSettings.showPoemNumber,
         haptics: j['haptics'] as bool? ?? DefaultSettings.haptics,
         leadIn: j['leadIn'] as bool? ?? DefaultSettings.leadIn,
@@ -97,8 +112,7 @@ class AppSettings {
 
   AppSettings copyWith({
     AppLanguage? language,
-    bool? downMeansDontKnow,
-    double? downToleranceDeg,
+    DontKnowInput? dontKnowInput,
     bool? showPoemNumber,
     bool? haptics,
     bool? leadIn,
@@ -114,8 +128,7 @@ class AppSettings {
   }) =>
       AppSettings(
         language: language ?? this.language,
-        downMeansDontKnow: downMeansDontKnow ?? this.downMeansDontKnow,
-        downToleranceDeg: downToleranceDeg ?? this.downToleranceDeg,
+        dontKnowInput: dontKnowInput ?? this.dontKnowInput,
         showPoemNumber: showPoemNumber ?? this.showPoemNumber,
         haptics: haptics ?? this.haptics,
         leadIn: leadIn ?? this.leadIn,
