@@ -316,6 +316,31 @@ abstract final class CardDetailTuning {
   static const int forgettingCurveFallbackDays = 30;
 }
 
+/// The card detail's attempt chart (`AttemptChart` in
+/// `lib/ui/stats/stats_charts.dart`).
+abstract final class AttemptChartTuning {
+  /// The rolling averages (avg5, avg10, avg50): each line starts once its
+  /// window of timed attempts is full.
+  static const int shortAverage = 5;
+  static const int midAverage = 10;
+  static const int longAverage = 50;
+
+  /// The band: these percentiles of the last [bandWindow] timed attempts,
+  /// drawn from the [bandMinCount]th timed attempt on.
+  static const double bandLow = 5;
+  static const double bandHigh = 95;
+  static const int bandWindow = 20;
+  static const int bandMinCount = 10;
+
+  /// The ms axis: the dots' range widened by these margins, then rounded out
+  /// to the smallest of [axisSteps] that needs at most [maxGridLines]
+  /// gridlines (doubling the largest step if none does).
+  static const double axisPadBelowMs = 60;
+  static const double axisPadAboveMs = 40;
+  static const List<int> axisSteps = [50, 100, 200, 250, 500, 1000, 2000, 5000];
+  static const int maxGridLines = 5;
+}
+
 /// The Elo-style rating model (see `Rating`).
 abstract final class RatingModel {
   /// Assumed slowdown for the inverted side of a card never practised

@@ -27,13 +27,14 @@ abstract final class Palette {
   static const sunSoft = Color(0xFFFFF4BF);
   static const violet = Color(0xFF9A5BC2);
   static const violetSoft = Color(0xFFF1E6F7);
+  static const violetDeep = Color(0xFF6E2C8C);
 
   /// Torifuda colours as used in illustrations (Tobi, pips, fanned cards).
   static const cardFrame = Color(0xFF6A9354);
   static const cardPaper = Color(0xFFEAEAEA);
 
   /// Speed tiers, fastest first (see [SpeedTiers]).
-  static const tiers = [Color(0xFFFFD83A), Color(0xFFFF9A2E), Color(0xFFFF3D7F), Color(0xFF6E2C8C)];
+  static const tiers = [sun, Color(0xFFFF9A2E), pink, violetDeep];
   static const tierText = [ink, ink, ink, paper];
 }
 
@@ -666,22 +667,61 @@ abstract final class HistoryLayout {
 }
 
 /// Small charts shared by the island list (a per-card sparkline) and the card
-/// detail screen (the attempt scatter and the forgetting curve).
+/// detail screen (the attempt chart and the forgetting curve).
 abstract final class ChartStyle {
   static const double sparklineWidth = 96;
   static const double sparklineHeight = 24;
   static const double dotRadius = 2.6;
-  static const double dotStroke = 1;
-  static const double missSize = 4.2;
-  static const double missStroke = 1.6;
-  static const double bestStarRadius = 7;
-  static const double bestStarStroke = 1.4;
   static const double lineStroke = 1.8;
-  static const double bandOpacity = 0.55;
-  static const double axisPad = 0.08;
 
   /// Opacity of a toggled-off series tile (spec's `aria-pressed=false`).
   static const double dimOpacity = 0.45;
+
+  /// The attempt chart (spec phone 8). The plot keeps its height; the axis
+  /// labels add their own rows around it, so they grow with the font scale.
+  static const double plotHeight = 140;
+  static const double labelFont = 12;
+  static const double tickLabelGap = 6;
+  static const double plotTopGap = 5;
+  static const double xLabelGap = 6;
+  static const double plotRightPad = 12;
+  static const Color grid = Color(0xFFE0E0E0);
+
+  static const double attemptDotRadius = 2.9;
+  static const double attemptDotRim = 0.9;
+
+  /// A "don't know" marker: a ▽ in the top label row, above its attempt.
+  static const Size missMarker = Size(10, 8);
+  static const double missMarkerStroke = 1.4;
+
+  static const Color bandFill = Color(0xFFCFE6FF);
+  static const Color bandEdge = Color(0xFF7FB8F0);
+  static const double bandEdgeStroke = 1;
+
+  static const Color shortAverage = Palette.pink;
+  static const double shortAverageStroke = 1.8;
+  static const Color midAverage = Palette.ink;
+  static const double midAverageStroke = 2.2;
+  static const Color longAverage = Palette.violetDeep;
+  static const double longAverageStroke = 4.2;
+  static const double longAverageHalo = 7.5;
+
+  /// TOP SPEED: a dashed line across the plot, a star on the attempt nearest
+  /// to it, and its label beside the star (below the line, above it when the
+  /// plot has no room below).
+  static const Color topSpeedLine = Palette.landDeep;
+  static const Color topSpeedText = Color(0xFF3E6B2C);
+  static const double topSpeedStroke = 1.6;
+  static const double topSpeedDash = 4;
+  static const double starRadius = 9;
+  static const double starInnerRatio = 0.45;
+  static const double starStroke = 1.1;
+  static const double starLabelGap = 12;
+  static const double starLabelDrop = 3;
+
+  static const Color latestRing = Palette.pink;
+  static const double latestRingRadius = 6;
+  static const double latestRingStroke = 2.4;
 
   /// `DailyChart`: a bar's share of its day's width, the dash of a dashed
   /// line, and the grid's stroke.
@@ -747,8 +787,8 @@ abstract final class CardDetailLayout {
 
   static const double modeFont = 13;
 
-  static const double chartHeight = 190;
-  static const EdgeInsets chartPadding = EdgeInsets.fromLTRB(8, 10, 8, 20);
+  static const EdgeInsets chartPadding = EdgeInsets.fromLTRB(4, 6, 4, 4);
+  static const EdgeInsets chartEmptyPadding = EdgeInsets.symmetric(vertical: 40);
 
   static const double seriesTileValueFont = 15;
   static const double seriesTileLabelFont = 11;

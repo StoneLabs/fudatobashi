@@ -118,12 +118,15 @@ class CardStats {
 
   /// Linear-interpolated percentile of the last [n] timed attempts.
   double? percentile(int n, double p) {
-    final w = [..._window(n)]..sort();
-    if (w.isEmpty) return null;
-    final rank = (p / 100) * (w.length - 1);
+    final w = _window(n);
+    return w.isEmpty ? null : _percentileOf([...w]..sort(), p);
+  }
+
+  static double _percentileOf(List<double> sorted, double p) {
+    final rank = (p / 100) * (sorted.length - 1);
     final lo = rank.floor();
     final hi = rank.ceil();
-    return w[lo] + (w[hi] - w[lo]) * (rank - lo);
+    return sorted[lo] + (sorted[hi] - sorted[lo]) * (rank - lo);
   }
 
   /// Share of misses among the last [n] attempts.
@@ -144,6 +147,13 @@ class CardStats {
     }
     return out;
   }
+
+  /// Rolling [p]th percentile over the last [window] timed attempts, for
+  /// every timed attempt (like [rollingMean]).
+  List<double> rollingPercentile(int window, double p) => [
+        for (var i = 0; i < timed.length; i++)
+          _percentileOf(timed.sublist(math.max(0, i + 1 - window), i + 1)..sort(), p),
+      ];
 
   /// Expected time for this card in a run, counting misses as [unknownMs].
   double expectedMs({double unknownMs = StatsTuning.unknownMs}) {

@@ -59,6 +59,9 @@ extension StatsStrings on S {
   String islandCrumb(String islandName) => ja ? '$islandNameの島' : '$islandName island';
   String get kimarijiCaption => t('KIMARIJI · 決まり字', '決まり字');
   String get topSpeedLabel => t('TOP SPEED', '最速');
+  String get topSpeedChartLabel => t('top', '最速');
+  String get attemptsAxis => t('attempts', '回数');
+  String get noAttemptsYet => t('No attempts yet', 'まだ記録なし');
   String get uprightLabel => t('Upright', '正位置');
   String get invertedLabel => t('Inverted', '逆さま');
   String get allModes => t('All', 'すべて');

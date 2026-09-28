@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:fsrs/fsrs.dart' as fsrs;
 
@@ -38,7 +39,8 @@ class CardDetailScreen extends StatefulWidget {
 class _CardDetailScreenState extends State<CardDetailScreen> {
   late bool _inverted = widget.itemKey.inverted;
   _ModeFilter _mode = _ModeFilter.all;
-  Set<ChartSeries> _visible = {ChartSeries.avg5, ChartSeries.avg10, ChartSeries.avg50, ChartSeries.band};
+  Set<ChartSeries> _visible = {...ChartSeries.values};
+  AttemptChartData? _chart;
 
   ItemKey get _key => ItemKey(widget.itemKey.poemId, _inverted);
 
@@ -59,8 +61,9 @@ class _CardDetailScreenState extends State<CardDetailScreen> {
       _ModeFilter.free => [for (final a in all) if (a.mode != PlayMode.training) a],
       _ModeFilter.all => all,
     };
-    final stats = CardStats(filtered);
-    final chartData = AttemptChartData(filtered, stats);
+    var chart = _chart;
+    if (chart == null || !listEquals(chart.attempts, filtered)) chart = _chart = AttemptChartData(filtered);
+    final s = S.of(context);
     final islandName = archipelago.islands[Trainer.islandOf(poem)].name;
     final now = DateTime.now();
 
@@ -84,19 +87,27 @@ class _CardDetailScreenState extends State<CardDetailScreen> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
-                      _Header(poem: poem, inverted: _inverted, topSpeedMs: stats.topSpeedMs),
+                      _Header(poem: poem, inverted: _inverted, topSpeedMs: chart.stats.topSpeedMs),
                       const SizedBox(height: Gaps.section),
                       _ModeToggle(mode: _mode, onChanged: (m) => setState(() => _mode = m)),
                       const SizedBox(height: Gaps.panel),
-                      SizedBox(
-                        height: CardDetailLayout.chartHeight,
-                        child: MangaPanel(
-                          padding: CardDetailLayout.chartPadding,
-                          child: AttemptChart(data: chartData, visible: _visible),
-                        ),
+                      MangaPanel(
+                        padding: CardDetailLayout.chartPadding,
+                        child: chart.attempts.isEmpty
+                            ? Padding(
+                                padding: CardDetailLayout.chartEmptyPadding,
+                                child: Text(s.noAttemptsYet,
+                                    textAlign: TextAlign.center,
+                                    style: const TextStyle(fontWeight: Weights.bold, fontSize: TypeScale.small)),
+                              )
+                            : AttemptChart(
+                                data: chart,
+                                visible: _visible,
+                                attemptsLabel: s.attemptsAxis,
+                                topSpeedLabel: s.topSpeedChartLabel),
                       ),
                       const SizedBox(height: Gaps.panel),
-                      _SeriesRow(stats: stats, visible: _visible, onToggle: _toggleSeries),
+                      _SeriesRow(chart: chart, visible: _visible, onToggle: _toggleSeries),
                       const SizedBox(height: Gaps.section),
                       _MemoryPanel(state: state, trainer: progress.trainer, itemKey: key, now: now),
                       if (state.reviewed) ...[
@@ -298,25 +309,47 @@ class _TopSpeedBadge extends StatelessWidget {
   }
 }
 
-/// The combined "toggle a series / read its value" row: avg5, avg10, avg50
-/// and p95 are both stat tiles and the chart's series-visibility buttons.
+/// The combined "toggle a series / read its value" row: the three rolling
+/// averages and the band are both stat tiles (each series' latest value) and
+/// the chart's series-visibility buttons.
 class _SeriesRow extends StatelessWidget {
-  const _SeriesRow({required this.stats, required this.visible, required this.onToggle});
-  final CardStats stats;
+  const _SeriesRow({required this.chart, required this.visible, required this.onToggle});
+  final AttemptChartData chart;
   final Set<ChartSeries> visible;
   final ValueChanged<ChartSeries> onToggle;
 
-  Widget _tile(ChartSeries series, String label, double? value, Color swatch) {
+  static String _label(ChartSeries series) => switch (series) {
+        ChartSeries.band => 'p${AttemptChartTuning.bandHigh.round()}',
+        _ => 'avg${series.window}',
+      };
+
+  static Color _swatch(ChartSeries series) => switch (series) {
+        ChartSeries.shortAverage => ChartStyle.shortAverage,
+        ChartSeries.midAverage => ChartStyle.midAverage,
+        ChartSeries.longAverage => ChartStyle.longAverage,
+        ChartSeries.band => ChartStyle.bandEdge,
+      };
+
+  Widget _tile(ChartSeries series) {
     final on = visible.contains(series);
-    final valueText = value == null ? '—' : '${formatChipSeconds(value)}s';
+    final value = chart.latest(series);
     final content = Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       mainAxisSize: MainAxisSize.min,
       children: [
-        Container(height: CardDetailLayout.seriesSwatchHeight, color: swatch),
+        Container(height: CardDetailLayout.seriesSwatchHeight, color: _swatch(series)),
         const SizedBox(height: 3),
-        Text(label, style: const TextStyle(fontWeight: Weights.black, fontSize: CardDetailLayout.seriesTileLabelFont)),
-        Text(valueText, style: const TextStyle(fontFamily: Fonts.display, fontSize: CardDetailLayout.seriesTileValueFont)),
+        Text(_label(series),
+            maxLines: 1,
+            softWrap: false,
+            style: const TextStyle(fontWeight: Weights.black, fontSize: CardDetailLayout.seriesTileLabelFont)),
+        FittedBox(
+          fit: BoxFit.scaleDown,
+          alignment: Alignment.centerLeft,
+          child: Text(value == null ? '—' : '${formatChipSeconds(value)}s',
+              maxLines: 1,
+              style: const TextStyle(fontFamily: Fonts.display, fontSize: CardDetailLayout.seriesTileValueFont)),
+        ),
       ],
     );
     return Expanded(
@@ -339,18 +372,12 @@ class _SeriesRow extends StatelessWidget {
   }
 
   @override
-  Widget build(BuildContext context) {
-    final p95 = stats.timed.isEmpty ? null : stats.percentile(stats.timed.length, 95);
-    return Row(children: [
-      _tile(ChartSeries.avg5, 'avg5', stats.mean(5), Palette.seaDeep),
-      const SizedBox(width: Gaps.tight),
-      _tile(ChartSeries.avg10, 'avg10', stats.mean(10), Palette.pink),
-      const SizedBox(width: Gaps.tight),
-      _tile(ChartSeries.avg50, 'avg50', stats.mean(50), Palette.violet),
-      const SizedBox(width: Gaps.tight),
-      _tile(ChartSeries.band, 'p95', p95, Palette.desk),
-    ]);
-  }
+  Widget build(BuildContext context) => Row(children: [
+        for (final (i, series) in ChartSeries.values.indexed) ...[
+          if (i > 0) const SizedBox(width: Gaps.tight),
+          _tile(series),
+        ],
+      ]);
 }
 
 class _MemoryPanel extends StatelessWidget {

@@ -2,6 +2,7 @@
 // phone-sized surface and fails on any layout error. With RENDER_SCREENS=1 it
 // also writes PNGs to build/screens/ for visual checks.
 import 'dart:io';
+import 'dart:math' as math;
 import 'dart:ui' as ui;
 
 import 'package:drift/drift.dart' show driftRuntimeOptions;
@@ -54,6 +55,7 @@ import 'package:fudatobashi/ui/results/results_screen.dart';
 import 'package:fudatobashi/ui/settings/credits_screen.dart';
 import 'package:fudatobashi/ui/settings/settings_screen.dart';
 import 'package:fudatobashi/ui/sound/sounds.dart';
+import 'package:fudatobashi/ui/stats/card_detail_screen.dart';
 import 'package:fudatobashi/ui/stats/card_list.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 
@@ -657,6 +659,53 @@ void main() {
 
       await tester.pumpWidget(const SizedBox());
     });
+  }
+
+  // A card with a long, mixed history (a slow start, a few "don't know"s,
+  // an outlier) and look-alike cards: the chart's every mark, the memory
+  // panel and the header must lay out at the phone's font scales.
+  for (final ja in [false, true]) {
+    final lang = ja ? 'ja' : 'en';
+    for (final fontScale in [1.0, 1.3]) {
+      testWidgets('card detail: a long history renders cleanly ($lang, font scale $fontScale)', (tester) async {
+        final p = await open(tester, mode: LearningMode.journey, ja: ja, journeyCards: 40);
+        final poemId = poems.all.firstWhere((poem) => fudaSets.tomofuda(poem.id).length >= 2).id;
+        final card = CardRef(poemId, inverted: false, mask: CardMask.none);
+        final random = math.Random(3);
+        const attempts = 84;
+        await tester.runAsync(() async {
+          for (var i = 0; i < attempts; i++) {
+            final session = PlaySession([card]);
+            final ms = i == 30 ? 1320 : 1100 - 450 * math.min(1, i / 40) + random.nextInt(160) - 80;
+            session.revealed(const Duration(seconds: 1));
+            final response = Duration(seconds: 1, milliseconds: ms.round());
+            session.commit(
+                responseTs: response,
+                commitTs: response + const Duration(milliseconds: 80),
+                outcome: i % 29 == 11 ? Outcome.dontKnow : Outcome.known,
+                at: DateTime.now().subtract(Duration(hours: attempts - i)));
+            await p.recordRun(session, const PlayConfig(mode: PlayMode.training), DateTime.now());
+          }
+        });
+        expect(p.attemptsOf(ItemKey(poemId, false)), hasLength(attempts));
+
+        await onPhone(tester, p, fontScale: fontScale);
+        tester.state<NavigatorState>(find.byType(Navigator).first).push(
+            MangaRoute<void>(builder: (_) => CardDetailScreen(itemKey: ItemKey(poemId, false))));
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 500));
+        expect(tester.takeException(), isNull);
+        await _capture(tester, 'card_detail_history_${lang}_$fontScale');
+
+        final detail = find.byType(CardDetailScreen);
+        await tester.drag(find.descendant(of: detail, matching: find.byType(Scrollable)), const Offset(0, -600));
+        await tester.pump(const Duration(milliseconds: 500));
+        expect(tester.takeException(), isNull);
+        await _capture(tester, 'card_detail_history_memory_${lang}_$fontScale');
+
+        await tester.pumpWidget(const SizedBox());
+      });
+    }
   }
 
   // Journey mode's "Play this island" (`_SlowestIslandPanel` in
