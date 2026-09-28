@@ -1,9 +1,9 @@
 import 'package:flutter/widgets.dart';
 
 import '../../config/design.dart';
-import '../../config/vector_art.dart';
 import '../manga/manga.dart';
 import '../shell/header_actions.dart';
+import 'welcome_sea.dart';
 
 /// Display lettering that grows with the system text size only so far.
 class _Lettering extends StatelessWidget {
@@ -53,16 +53,11 @@ class WelcomePanel extends StatelessWidget {
             art: const [
               RadialLayer(center: Backdrops.skyCenter, colors: Backdrops.skyColors, stops: Backdrops.skyStops),
               BurstLayer(Bursts.onboarding),
+              WelcomeSeaLayer(),
             ],
             child: Stack(
               children: [
-                const Positioned(
-                  left: 0,
-                  right: 0,
-                  top: OnboardingLayout.skyHeight - OnboardingLayout.seaHeight,
-                  height: OnboardingLayout.seaHeight,
-                  child: ArtImageBox(PrerenderedArt.welcomeSea),
-                ),
+                const Positioned.fill(child: WelcomeSeaFront()),
                 Positioned(
                   left: OnboardingLayout.titleAt.dx,
                   top: OnboardingLayout.titleAt.dy,

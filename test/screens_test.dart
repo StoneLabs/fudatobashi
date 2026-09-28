@@ -41,6 +41,7 @@ import 'package:fudatobashi/ui/home/training_hero.dart';
 import 'package:fudatobashi/ui/islands/island_map.dart';
 import 'package:fudatobashi/ui/manga/manga.dart';
 import 'package:fudatobashi/ui/onboarding/onboarding_panels.dart';
+import 'package:fudatobashi/ui/onboarding/welcome_sea.dart';
 import 'package:fudatobashi/ui/play/kimariji_chip.dart';
 import 'package:fudatobashi/ui/play/play_screen.dart';
 import 'package:fudatobashi/ui/rank/rank_screen.dart';
@@ -193,6 +194,23 @@ void main() {
       }
     }
   }
+
+  testWidgets('onboarding: the surf drifts and the boat rocks, and both hold still under reduced motion', (tester) async {
+    addTearDown(tester.platformDispatcher.clearAccessibilityFeaturesTestValue);
+    for (final reduced in [false, true]) {
+      tester.platformDispatcher.accessibilityFeaturesTestValue = FakeAccessibilityFeatures(disableAnimations: reduced);
+      await onPhone(tester, await open(tester), fontScale: 1.0);
+      final surf = find.descendant(of: find.byType(WelcomeSeaFront), matching: find.byType(StaticArt));
+      final boat = find.descendant(of: find.byType(WelcomeSeaFront), matching: find.byType(ArtImageBox));
+      final before = [tester.getTopLeft(surf), tester.getTopLeft(boat)];
+      await tester.pump(const Duration(milliseconds: 300));
+      final after = [tester.getTopLeft(surf), tester.getTopLeft(boat)];
+      for (var i = 0; i < before.length; i++) {
+        expect(after[i] == before[i], reduced, reason: '${['surf', 'boat'][i]}, reduced motion: $reduced');
+      }
+      await tester.pumpWidget(const SizedBox());
+    }
+  });
 
   for (final ja in [false, true]) {
     final lang = ja ? 'ja' : 'en';

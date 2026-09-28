@@ -1201,7 +1201,6 @@ abstract final class OnboardingLayout {
   static const double balloonSmall = 12;
   static const double balloonGap = 4;
   static const Alignment balloonSpeaker = Alignment(-1.65, 0);
-  static const double seaHeight = 122;
 
   // The mode choices: at least [choiceHeight] tall, taller at large text.
   static const double choiceHeight = 150;
@@ -1268,6 +1267,53 @@ abstract final class OnboardingLayout {
   static const double paceNoteGap = 6;
   static const double paceNoteLineHeight = 1.35;
   static const Color sprintGo = Palette.sun;
+}
+
+/// The welcome panel's sea, in the panel's coordinates from its top (see
+/// [OnboardingLayout]): a pale far sea from the horizon behind Tobi, the
+/// map's sea from [swell] on, Tobi's island under his feet, a boat and the
+/// surf along the front. At [OnboardingLayout.skyMinHeight] only the far
+/// sea and the island show.
+abstract final class WelcomeSeaLayout {
+  static const double horizon = 222;
+  static const double horizonStroke = Strokes.label;
+  static const ToneSpec far = Tones.mapShoal;
+
+  /// Short flat ripples on the far sea, longer nearer the front: one per
+  /// [rippleDensity] square px.
+  static const int rippleSeed = 11;
+  static const double rippleDensity = 700;
+  static const double rippleMin = 5;
+  static const double rippleMax = 16;
+  static const double rippleStroke = 1.5;
+  static const double rippleInset = 4;
+
+  /// The top of the map's sea: a long low swell.
+  static const double swell = 262;
+  static const double swellHeight = 2.5;
+  static const double swellLength = 70;
+  static const int seaSeed = 5;
+
+  /// A far island standing on the horizon left of Tobi, clear of the balloon.
+  static const Rect farIsle = Rect.fromLTRB(0, horizon - 12, 44, horizon);
+
+  /// Tobi's island, its flat under his feet ([OnboardingLayout.tobi]).
+  static const Rect isle = Rect.fromLTWH(0, 214, 160, 68);
+
+  /// The boat rocks at anchor over its wake.
+  static const Placement boat = Placement(left: 176, top: 254, size: MapStyle.boat);
+  static const Rect boatWake = Rect.fromLTWH(170, 280, 48, 9);
+  static const double boatTurnDeg = 5;
+  static const double boatLift = 1.5;
+  static const Duration boatPeriod = Duration(milliseconds: 3800);
+
+  /// The surf's top sits [surfRise] above the panel's bottom, but no higher
+  /// than [surfTopMin] (over the island's shore, below Tobi's feet). Its
+  /// crests drift in a slow orbit, [surfOrbit] px across and up.
+  static const double surfRise = 58;
+  static const double surfTopMin = 264;
+  static const Offset surfOrbit = Offset(6, 1.5);
+  static const Duration surfPeriod = Duration(seconds: 8);
 }
 
 /// Onboarding's step change: the pieces of the step on show slide off one

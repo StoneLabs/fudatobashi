@@ -78,18 +78,61 @@ abstract final class MapArt {
 /// Onboarding illustrations.
 abstract final class SceneArt {
   static const _wave = VStyle(stroke: Palette.paper, width: 2, cap: StrokeCap.round, opacity: 0.85);
+  static const _foam = VStyle(fill: Palette.paper, stroke: _ink, width: 2, join: StrokeJoin.round);
+  static const _mapTree = VStyle(fill: MapStyle.tree, stroke: _ink, width: 1.6);
+  static const _mapTreeShine = VStyle(fill: MapStyle.treeHighlight);
+  static const _isleBank = 'M20 32 C 8 36, 8 46, 32 48 C 64 52, 116 52, 136 47 C 152 43, 156 33, 146 26Z';
 
-  /// The sea along the bottom of the welcome panel, with Tobi's island.
-  static const welcomeSea = VectorArt(Size(352, 120), [
-    VPath('M0 44 Q22 36 44 44 T88 44 T132 44 T176 44 T220 44 T264 44 T308 44 T352 44 V120 H0Z',
-        VStyle(tone: Tones.mapSea, stroke: _ink, width: 2.6)),
-    VPath('M18 40 C 24 22, 60 14, 92 17 C 124 14, 158 24, 162 40 C 150 50, 36 52, 18 40Z',
-        VStyle(fill: Palette.paper, opacity: 0.9)),
-    VPath('M24 38 C 30 24, 62 18, 92 21 C 122 18, 150 26, 155 38 C 140 46, 40 47, 24 38Z',
-        VStyle(tone: Tones.mapLand, stroke: _ink, width: 2.6)),
-    VPath('M232 60 q6 -6 12 0 t12 0 M286 82 q6 -6 12 0 t12 0 M196 92 q6 -6 12 0 t12 0 M300 56 q5 -5 10 0', _wave),
-    VPath('M238 34 C 244 24, 270 20, 290 24 C 306 24, 318 30, 318 38 C 300 44, 250 44, 238 34Z',
-        VStyle(tone: Tones.mapShoal, stroke: _ink, width: 1.8, dash: [4, 3])),
+  /// Tobi's island in the welcome panel, seen from the side: the map's land
+  /// with a wooded hill, on a sand bank in the map's white surf, and the
+  /// map's flag. Tobi stands on the flat at about (76, 30).
+  static const welcomeIsle = VectorArt(Size(160, 68), origin: Offset(0, -8), [
+    VPath('M4 50 C 20 60, 140 60, 156 50', _wave),
+    VPath(_isleBank, VStyle(stroke: Palette.paper, width: MapStyle.surf, join: StrokeJoin.round)),
+    VPath(_isleBank, VStyle(tone: Tones.sun, stroke: _ink, width: 2.6, join: StrokeJoin.round)),
+    VPath('M14 33 C 14 27, 32 22, 52 22 C 72 19, 94 19, 104 20 C 110 10, 124 5, 136 9 C 146 12, 152 22, 148 32 '
+        'C 146 39, 124 41, 100 40 C 76 42, 40 42, 26 39 C 18 38, 14 36, 14 33Z',
+        VStyle(tone: Tones.mapLand, stroke: _ink, width: 2.6, join: StrokeJoin.round)),
+    VPath('M121 8 V14 M140 11 V17', VStyle(stroke: _ink, width: 1.8, cap: StrokeCap.round)),
+    VEllipse.circle(Offset(131, 0), 5.5, _mapTree),
+    VEllipse.circle(Offset(129.2, -1.8), 1.6, _mapTreeShine),
+    VEllipse.circle(Offset(121, 2), 6.8, _mapTree),
+    VEllipse.circle(Offset(118.7, -0.3), 2.1, _mapTreeShine),
+    VEllipse.circle(Offset(140, 7), 4.2, _mapTree),
+    VEllipse.circle(Offset(138.6, 5.6), 1.3, _mapTreeShine),
+    VUse(MapArt.flag, Rect.fromLTWH(20, 5, 16, 22)),
+  ]);
+
+  /// A far island on the horizon, not reached yet (the map's unexplored
+  /// look); its base sits on the box's bottom edge.
+  static const farIsle = VectorArt(Size(44, 12), [
+    VPath('M1 12 C 4 8, 10 7, 14 7 C 18 2, 26 1, 30 5 C 34 5, 40 7, 43 12Z',
+        VStyle(tone: Tones.land, stroke: _ink, width: 1.6, dash: [4, 3], join: StrokeJoin.round)),
+  ]);
+
+  /// White water around a boat's hull, which sits on the box's middle.
+  static const boatWake = VectorArt(Size(48, 9), [
+    VPath('M0 4 q4 -3 8 0 M40 4 q4 -3 8 0 M8 6 C 16 9, 32 9, 40 6', _wave),
+  ]);
+
+  static const _surfTop = 'M0 30 C 18 30, 32 24, 44 14 C 54 5, 68 3, 76 9 C 82 14, 82 22, 78 26 '
+      'C 82 29, 90 32, 100 32 C 112 32, 122 28, 130 22 C 136 17, 146 16, 150 20 C 154 23, 153 28, 150 29 '
+      'C 156 31, 170 30, 180 30';
+
+  /// The welcome panel's front surf, tiled edge to edge: a big and a small
+  /// deep-sea crest curling over to the right under foam caps.
+  static const surf = VectorArt(Size(180, 64), [
+    VPath('$_surfTop V64 H0Z', VStyle(tone: Tones.seaDeep)),
+    VPath(_surfTop, VStyle(stroke: _ink, width: 2.6, cap: StrokeCap.round, join: StrokeJoin.round)),
+    VPath('M40 17 C 50 7, 66 3, 76 9 C 82 14, 82 22, 78 26 Q 74 22, 72 25 Q 70 18, 65 20 Q 62 13, 57 16 '
+        'Q 52 12, 47 17 Q 43 16, 40 17Z', _foam),
+    VPath('M127 24 C 135 18, 146 15, 150 20 C 154 23, 153 28, 150 29 Q 148 25, 146 27 Q 144 21, 140 23 '
+        'Q 136 19, 132 23 Q 130 22, 127 24Z', _foam),
+    VEllipse.circle(Offset(86, 5), 2.1, _foam),
+    VEllipse.circle(Offset(91.5, 9), 1.5, _foam),
+    VEllipse.circle(Offset(94, 14.5), 1, _foam),
+    VPath('M8 44 C 22 44, 34 40, 44 32 M52 50 C 64 50, 74 46, 82 40 M112 44 C 124 44, 132 40, 140 34 '
+        'M18 58 q6 -4 12 0 M146 54 q6 -4 12 0', _wave),
   ]);
 
   static const _islet = 'M22 72 C 14 54, 28 34, 50 38 C 70 28, 92 46, 86 64 C 92 84, 62 92, 48 86 C 32 92, 18 84, 22 72Z';
@@ -132,9 +175,8 @@ abstract final class SceneArt {
 /// the onboarding scenes. Tobi stays live.
 abstract final class PrerenderedArt {
   static const boat = ArtImage('boat', MapArt.boat);
-  static const welcomeSea = ArtImage('welcome_sea', SceneArt.welcomeSea);
   static const beginner = ArtImage('beginner', SceneArt.beginner);
   static const expert = ArtImage('expert', SceneArt.expert);
 
-  static const all = [boat, welcomeSea, beginner, expert];
+  static const all = [boat, beginner, expert];
 }
