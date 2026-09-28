@@ -707,6 +707,16 @@ void main() {
         expect(tester.takeException(), isNull);
         await _capture(tester, 'card_detail_history_memory_${lang}_$fontScale');
 
+        // A look-alike chip opens that card's own page.
+        final lookAlike = poems[fudaSets.tomofuda(poemId).first];
+        await tester.drag(find.descendant(of: detail, matching: find.byType(Scrollable)), const Offset(0, 600));
+        await tester.pump(const Duration(milliseconds: 500));
+        await tester.tap(find.text(lookAlike.kimariji));
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 500));
+        expect(tester.takeException(), isNull);
+        expect(find.byWidgetPredicate((w) => w is CardDetailScreen && w.itemKey.poemId == lookAlike.id), findsOneWidget);
+
         await tester.pumpWidget(const SizedBox());
       });
     }

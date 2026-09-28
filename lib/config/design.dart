@@ -777,13 +777,20 @@ abstract final class CardDetailLayout {
 
   static const double cardImageWidth = 104;
   static const double kimarijiFont = 44;
-  static const double kimarijiCaptionFont = 11.5;
+  static const double captionFont = 11.5;
   static const EdgeInsets topSpeedPadding = EdgeInsets.fromLTRB(10, 7, 10, 8);
   static const double topSpeedLabelFont = 11.5;
   static const double topSpeedValueFont = 18;
 
   static const double kamiFont = 13.5;
   static const double authorFont = 12.5;
+  static const double countFont = 12.5;
+
+  /// A look-alike (友札) chip: a miniature torifuda, its kimariji, a chevron.
+  static const EdgeInsets lookAlikePadding = EdgeInsets.fromLTRB(5, 5, 8, 5);
+  static const double lookAlikeCardWidth = 26;
+  static const double lookAlikeKimarijiFont = 17;
+  static const double lookAlikeChevron = 14;
 
   static const double modeFont = 13;
 

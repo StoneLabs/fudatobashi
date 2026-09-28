@@ -25,8 +25,9 @@ import 'stats_charts.dart';
 /// it has, however it was played.
 enum _ModeFilter { training, free, all }
 
-/// A card's own record (spec phone 8): the torifuda, its kimariji, the
-/// attempt chart with toggleable stat tiles, and its FSRS memory panel.
+/// A card's own record (spec phone 8): the torifuda, its kimariji, TOP SPEED
+/// and the cards it is easily confused with, the attempt chart with
+/// toggleable stat tiles, and its FSRS memory panel.
 class CardDetailScreen extends StatefulWidget {
   const CardDetailScreen({super.key, required this.itemKey});
 
@@ -87,7 +88,7 @@ class _CardDetailScreenState extends State<CardDetailScreen> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
-                      _Header(poem: poem, inverted: _inverted, topSpeedMs: chart.stats.topSpeedMs),
+                      _Header(poem: poem, inverted: _inverted, stats: chart.stats),
                       const SizedBox(height: Gaps.section),
                       _ModeToggle(mode: _mode, onChanged: (m) => setState(() => _mode = m)),
                       const SizedBox(height: Gaps.panel),
@@ -234,51 +235,139 @@ class _Seg extends StatelessWidget {
       );
 }
 
+/// The card itself, in reading order: the torifuda beside its kimariji,
+/// poem and poet, then how fast the player takes it (TOP SPEED and the
+/// attempt count), then the cards it is easily confused with.
 class _Header extends StatelessWidget {
-  const _Header({required this.poem, required this.inverted, required this.topSpeedMs});
+  const _Header({required this.poem, required this.inverted, required this.stats});
   final Poem poem;
   final bool inverted;
-  final double? topSpeedMs;
+  final CardStats stats;
 
   @override
   Widget build(BuildContext context) {
     final s = S.of(context);
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
+    final lookAlikes = fudaSets.tomofuda(poem.id);
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        SizedBox(width: CardDetailLayout.cardImageWidth, child: TorifudaCard(poem: poem, inverted: inverted)),
-        const SizedBox(width: Gaps.section),
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text(poem.kimariji, style: const TextStyle(fontFamily: Fonts.display, fontSize: CardDetailLayout.kimarijiFont, height: 1)),
-              Text(s.kimarijiCaption,
-                  style: const TextStyle(
-                      fontWeight: Weights.black,
-                      fontSize: CardDetailLayout.kimarijiCaptionFont,
-                      letterSpacing: TagStyle.tracking * CardDetailLayout.kimarijiCaptionFont)),
-              const SizedBox(height: Gaps.small),
-              Text(poem.kami, style: const TextStyle(fontWeight: Weights.black, fontSize: CardDetailLayout.kamiFont, height: 1.3)),
-              const SizedBox(height: 2),
-              Text(poem.author, style: const TextStyle(fontWeight: Weights.bold, fontSize: CardDetailLayout.authorFont, color: Palette.mute)),
-              if (fudaSets.tomofuda(poem.id).isNotEmpty) ...[
-                const SizedBox(height: Gaps.small),
-                Wrap(
-                  spacing: Gaps.tight,
-                  runSpacing: Gaps.tight,
-                  children: [for (final sib in fudaSets.tomofuda(poem.id)) Pill(poems[sib].kimariji)],
-                ),
-              ],
-            ],
-          ),
+        Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            SizedBox(width: CardDetailLayout.cardImageWidth, child: TorifudaCard(poem: poem, inverted: inverted)),
+            const SizedBox(width: Gaps.section),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  FittedBox(
+                    fit: BoxFit.scaleDown,
+                    alignment: Alignment.centerLeft,
+                    child: Text(poem.kimariji,
+                        maxLines: 1,
+                        style: const TextStyle(fontFamily: Fonts.display, fontSize: CardDetailLayout.kimarijiFont, height: 1)),
+                  ),
+                  _Caption(s.kimarijiCaption),
+                  const SizedBox(height: Gaps.small),
+                  Text.rich(Phrases.span(poem.kami.replaceAll('\u3000', '\u3000${Phrases.end}'),
+                      style: const TextStyle(fontWeight: Weights.black, fontSize: CardDetailLayout.kamiFont, height: 1.3))),
+                  const SizedBox(height: 2),
+                  Text(poem.author,
+                      style: const TextStyle(fontWeight: Weights.bold, fontSize: CardDetailLayout.authorFont, color: Palette.mute)),
+                  const SizedBox(height: Gaps.panel),
+                  _SpeedLine(stats: stats),
+                ],
+              ),
+            ),
+          ],
         ),
-        const SizedBox(width: Gaps.small),
-        _TopSpeedBadge(ms: topSpeedMs),
+        if (lookAlikes.isNotEmpty) ...[
+          const SizedBox(height: Gaps.section),
+          _Caption(s.lookAlikesLabel),
+          const SizedBox(height: Gaps.tight),
+          Wrap(
+            spacing: Gaps.tight,
+            runSpacing: Gaps.tight,
+            children: [for (final id in lookAlikes) _LookAlikeChip(poem: poems[id], inverted: inverted)],
+          ),
+        ],
       ],
     );
   }
+}
+
+/// A small spaced-capitals caption ("KIMARIJI · 決まり字").
+class _Caption extends StatelessWidget {
+  const _Caption(this.text);
+  final String text;
+
+  @override
+  Widget build(BuildContext context) => Text(text,
+      style: const TextStyle(
+          fontWeight: Weights.black,
+          fontSize: CardDetailLayout.captionFont,
+          letterSpacing: TagStyle.tracking * CardDetailLayout.captionFont));
+}
+
+/// TOP SPEED beside how many attempts it comes from.
+class _SpeedLine extends StatelessWidget {
+  const _SpeedLine({required this.stats});
+  final CardStats stats;
+
+  @override
+  Widget build(BuildContext context) {
+    final s = S.of(context);
+    final misses = stats.all.where((a) => a.miss).length;
+    const countStyle = TextStyle(fontWeight: Weights.bold, fontSize: CardDetailLayout.countFont, color: Palette.mute);
+    return Wrap(
+      spacing: Gaps.panel,
+      runSpacing: Gaps.tight,
+      crossAxisAlignment: WrapCrossAlignment.center,
+      children: [
+        _TopSpeedBadge(ms: stats.topSpeedMs),
+        Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(s.attemptCount(stats.count), style: countStyle),
+            if (misses > 0) Text(s.dontKnowCount(misses), style: countStyle),
+          ],
+        ),
+      ],
+    );
+  }
+}
+
+/// A card this one is easily confused with: its torifuda in miniature and its
+/// kimariji; a tap opens its own detail page.
+class _LookAlikeChip extends StatelessWidget {
+  const _LookAlikeChip({required this.poem, required this.inverted});
+  final Poem poem;
+  final bool inverted;
+
+  @override
+  Widget build(BuildContext context) => Pressable(
+        semanticLabel: poem.kimariji,
+        onTap: () => Navigator.push(
+          context,
+          MangaRoute<void>(builder: (_) => CardDetailScreen(itemKey: ItemKey(poem.id, inverted))),
+        ),
+        builder: (context, pressed) => Container(
+          padding: CardDetailLayout.lookAlikePadding,
+          decoration: BoxDecoration(
+              color: pressed ? Palette.sunSoft : Palette.paper,
+              border: Border.all(color: Palette.ink, width: Strokes.control)),
+          child: Row(mainAxisSize: MainAxisSize.min, children: [
+            SizedBox(width: CardDetailLayout.lookAlikeCardWidth, child: TorifudaCard(poem: poem, inverted: inverted)),
+            const SizedBox(width: Gaps.small),
+            Text(poem.kimariji,
+                style: const TextStyle(fontFamily: Fonts.display, fontSize: CardDetailLayout.lookAlikeKimarijiFont)),
+            const SizedBox(width: Gaps.tight),
+            MangaIcon(IconArt.chevron, size: CardDetailLayout.lookAlikeChevron),
+          ]),
+        ),
+      );
 }
 
 class _TopSpeedBadge extends StatelessWidget {
