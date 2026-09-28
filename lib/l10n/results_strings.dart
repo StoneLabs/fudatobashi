@@ -60,7 +60,7 @@ extension ResultsStrings on S {
   String get onward => t('ONWARD!', '次へ');
   String get nextClassBand => 'NEXT CLASS · 次の級';
   String get nextClassTarget => t('100 cards in {0} s', '100枚 {0}秒以内');
-  String get nextClassPace => t('Your pace {0} s · {1} to go', 'いまのペース {0}秒 · あと{1}');
+  String get nextClassPace => t('Your pace {0} s · {1} pts to go', 'いまのペース {0}秒 · あと{1}pt');
   String get topClassReached => t('Top of the ladder!', '頂点に到達!');
   String get topClassChase => t('From here on, race your own best', 'ここからは自分との勝負');
 

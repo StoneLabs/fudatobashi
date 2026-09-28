@@ -123,7 +123,7 @@ class _Splash extends StatelessWidget {
               _TimePanel(report: report),
               const SizedBox(height: Gaps.panel),
               IntrinsicHeight(
-                child: Row(children: [
+                child: Row(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
                   Expanded(
                     child: _StatPanel(
                       label: s.avgPerCardLabel,
@@ -427,11 +427,11 @@ class _StatPanel extends StatelessWidget {
                     fontWeight: Weights.black,
                     fontSize: ResultsLayout.statLabelFont,
                     letterSpacing: ResultsLayout.statLabelTracking * ResultsLayout.statLabelFont)),
-            Text.rich(TextSpan(children: [
+            _OneLine(Text.rich(TextSpan(children: [
               TextSpan(text: big, style: const TextStyle(fontFamily: Fonts.display, fontSize: ResultsLayout.statBigFont, height: 1.05)),
               TextSpan(text: ' $unit', style: const TextStyle(fontFamily: Fonts.display, fontSize: ResultsLayout.statBigUnitFont, height: 1)),
-            ])),
-            Text(note, style: const TextStyle(fontWeight: Weights.bold, fontSize: ResultsLayout.statNoteFont)),
+            ]))),
+            _OneLine(Text(note, style: const TextStyle(fontWeight: Weights.bold, fontSize: ResultsLayout.statNoteFont))),
           ],
         ),
       );
@@ -460,19 +460,27 @@ class _RatingPanel extends StatelessWidget {
                   fontWeight: Weights.black,
                   fontSize: ResultsLayout.statLabelFont,
                   letterSpacing: ResultsLayout.statLabelTracking * ResultsLayout.statLabelFont)),
-          OutlinedText(
+          _OneLine(Text(
             delta == null ? '—' : (delta >= 0 ? '+$delta' : '$delta'),
-            style: const TextStyle(fontFamily: Fonts.display, fontSize: ResultsLayout.statBigFont, color: Palette.pink, height: 1.05),
-            outline: Palette.ink,
-            outlineWidth: 1.4,
-          ),
+            style: const TextStyle(fontFamily: Fonts.display, fontSize: ResultsLayout.statBigFont, height: 1.05),
+          )),
           if (after != null && band != null)
-            Text('${before?.round() ?? s.newBadge} → ${after!.round()} · ${band.label}',
-                style: const TextStyle(fontWeight: Weights.bold, fontSize: ResultsLayout.statNoteFont)),
+            _OneLine(Text('${before?.round() ?? s.newBadge} → ${after!.round()} · ${band.label}',
+                style: const TextStyle(fontWeight: Weights.bold, fontSize: ResultsLayout.statNoteFont))),
         ],
       ),
     );
   }
+}
+
+/// A stat panel's line, scaled down to fit rather than wrapped, so a number
+/// never loses its unit to the next row.
+class _OneLine extends StatelessWidget {
+  const _OneLine(this.child);
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) => FittedBox(fit: BoxFit.scaleDown, alignment: Alignment.centerLeft, child: child);
 }
 
 /// A heading beside a shelf of small cards (the round's new cards, its

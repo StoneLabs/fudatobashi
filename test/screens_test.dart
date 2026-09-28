@@ -702,6 +702,11 @@ void main() {
       expect(find.text('00:14.906'), findsWidgets, reason: 'the time has ticked down to the new best');
       expect(find.text(s.timeSaved('0.474')), findsOneWidget);
       expect(find.byType(CelebrationSequence), findsNothing, reason: 'the island waits for the personal best');
+      Finder panelOf(String label) => find.ancestor(of: find.text(label), matching: find.byType(MangaPanel)).first;
+      expect(tester.getSize(panelOf(s.avgPerCardLabel)).height, tester.getSize(panelOf(s.rating.toUpperCase())).height,
+          reason: 'the side-by-side stat panels match in height');
+      expect(tester.getSize(find.text('0.620 s', findRichText: true)).height, lessThan(ResultsLayout.statBigFont * 1.3 * 1.5),
+          reason: 'the average keeps its unit on the same row');
       await _capture(tester, 'results_pb_${ja ? 'ja' : 'en'}');
       await tester.pump(ResultsLayout.overlayStagger);
       await tester.pump();
