@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 
 import '../../state/demo_data.dart';
@@ -18,23 +20,30 @@ Future<void> confirmSeedDemoData(BuildContext context) async {
       ],
     ),
   );
-  if (ok != true) return;
-  if (context.mounted) {
-    await showDialog<void>(
-      context: context,
-      barrierDismissible: false,
-      builder: (_) => const AlertDialog(
-        content: SizedBox(
-          height: 64,
-          child: Row(children: [
-            CircularProgressIndicator(),
-            SizedBox(width: 20),
-            Text('Seeding…'),
-          ]),
-        ),
+  if (ok != true || !context.mounted) return;
+
+  final status = ValueNotifier('Seeding…');
+  // Not awaited: this dialog is only dismissed by the `pop()` below, once
+  // seeding actually finishes. Awaiting it here would deadlock (nothing else
+  // would ever pop it), which is exactly what used to happen.
+  unawaited(showDialog<void>(
+    context: context,
+    barrierDismissible: false,
+    builder: (_) => AlertDialog(
+      content: SizedBox(
+        height: 64,
+        child: Row(children: [
+          const CircularProgressIndicator(),
+          const SizedBox(width: 20),
+          Expanded(child: ValueListenableBuilder(valueListenable: status, builder: (_, text, _) => Text(text))),
+        ]),
       ),
-    );
-  }
-  await seedDemoData(progress);
+    ),
+  ));
+  await seedDemoData(
+    progress,
+    onProgress: (day, totalDays, fraction) => status.value = 'Seeding…\nDay $day/$totalDays: ${(fraction * 100).round()}%',
+  );
+  status.dispose();
   if (context.mounted) Navigator.of(context).pop();
 }
