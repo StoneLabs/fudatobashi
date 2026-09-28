@@ -206,6 +206,11 @@ abstract final class StatsTuning {
   /// How far back `Progress.knownCardSpeedTrendAgo` looks, to compare against
   /// `Progress.knownCardSpeedMs`.
   static const int knownSpeedTrendDays = 7;
+
+  /// The archipelago map (Stats): fewer training attempts than this and a
+  /// card's dot is hollow ("too few attempts to judge") instead of coloured
+  /// by speed.
+  static const int mapHollowMinTries = 5;
 }
 
 /// The Elo-style rating model (see `Rating`).

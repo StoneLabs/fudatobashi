@@ -1,23 +1,489 @@
 import 'package:flutter/widgets.dart';
 
+import '../../config/config.dart';
 import '../../config/design.dart';
+import '../../data/islands.dart';
+import '../../data/poem.dart';
+import '../../db/database.dart' show Session;
+import '../../domain/card_stats.dart' show ItemKey;
+import '../../l10n/stats_strings.dart';
 import '../../l10n/strings.dart';
+import '../../state/play_config.dart';
+import '../../state/progress.dart';
+import '../../state/scope.dart';
+import '../islands/island_map.dart';
 import '../manga/manga.dart';
-import '../shell/coming_soon.dart';
+import '../play/time_format.dart';
+import '../run/run_launcher.dart';
 
-/// The Stats tab (placeholder).
-class StatsScreen extends StatelessWidget {
+enum _Tab { islands, runs }
+
+/// The Stats tab (spec phone 6): the archipelago, every card a dot in its
+/// speed colour, or a simple list of past runs.
+class StatsScreen extends StatefulWidget {
   const StatsScreen({super.key});
+
+  @override
+  State<StatsScreen> createState() => _StatsScreenState();
+}
+
+class _StatsScreenState extends State<StatsScreen> {
+  _Tab _tab = _Tab.islands;
 
   @override
   Widget build(BuildContext context) {
     final s = S.of(context);
+    final progress = ProgressScope.of(context);
+    final data = _ArchipelagoData.build(progress);
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: Gaps.gutter),
       child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          MangaHeader(title: ScreenTitle(s.stats, sub: s.other.stats)),
-          Expanded(child: ComingSoon(message: s.comingSoon)),
+          MangaHeader(
+            title: ScreenTitle(s.stats, sub: s.other.stats),
+            actions: [_TabToggle(tab: _tab, onChanged: (t) => setState(() => _tab = t))],
+          ),
+          _Summary(overallMedianMs: data.overallMedianMs, dueToday: progress.dueCount()),
+          const SizedBox(height: Gaps.section),
+          Expanded(
+            child: _tab == _Tab.islands ? _IslandsView(data: data) : _RunsView(progress: progress),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// The "Islands | Runs" segmented switch (the same idea as `LanguageToggle`,
+/// with square corners per the spec's `.seg`).
+class _TabToggle extends StatelessWidget {
+  const _TabToggle({required this.tab, required this.onChanged});
+  final _Tab tab;
+  final ValueChanged<_Tab> onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    final s = S.of(context);
+    return Container(
+      height: StatsLayout.segHeight,
+      clipBehavior: Clip.antiAlias,
+      decoration: BoxDecoration(color: Palette.paper, border: Border.all(color: Palette.ink, width: Strokes.control)),
+      child: Row(mainAxisSize: MainAxisSize.min, children: [
+        _SegButton(s.islandsTab, selected: tab == _Tab.islands, onTap: () => onChanged(_Tab.islands)),
+        _SegButton(s.runsTab, selected: tab == _Tab.runs, onTap: () => onChanged(_Tab.runs)),
+      ]),
+    );
+  }
+}
+
+class _SegButton extends StatelessWidget {
+  const _SegButton(this.label, {required this.selected, required this.onTap});
+  final String label;
+  final bool selected;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) => Semantics(
+        button: true,
+        selected: selected,
+        child: GestureDetector(
+          behavior: HitTestBehavior.opaque,
+          onTap: onTap,
+          child: AnimatedContainer(
+            duration: Motion.tab,
+            color: selected ? Palette.ink : Palette.paper,
+            padding: const EdgeInsets.symmetric(horizontal: StatsLayout.segPadding),
+            alignment: Alignment.center,
+            child: Text(label,
+                style: TextStyle(
+                    fontWeight: Weights.black,
+                    fontSize: StatsLayout.segFont,
+                    color: selected ? Palette.paper : Palette.ink)),
+          ),
+        ),
+      );
+}
+
+/// "100 cards · median X s · N due today".
+class _Summary extends StatelessWidget {
+  const _Summary({required this.overallMedianMs, required this.dueToday});
+  final double? overallMedianMs;
+  final int dueToday;
+
+  @override
+  Widget build(BuildContext context) {
+    final s = S.of(context);
+    final median = overallMedianMs == null ? '—' : formatChipSeconds(overallMedianMs!);
+    return NumberedText(
+      s.summaryLine,
+      [poems.all.length, median, dueToday],
+      style: const TextStyle(fontWeight: Weights.bold, fontSize: StatsLayout.summaryFont),
+      numberStyle: const TextStyle(
+          fontFamily: Fonts.display, fontWeight: Weights.regular, fontSize: StatsLayout.summaryNumberFont),
+    );
+  }
+}
+
+// --------------------------------------------------------------- Islands
+
+/// One island's computed stats, alongside the [IslandStyle] built for it.
+class _ArchipelagoIsland {
+  const _ArchipelagoIsland({
+    required this.index,
+    required this.name,
+    required this.medianMs,
+    required this.cardCount,
+    required this.dueCount,
+  });
+
+  final int index;
+  final String name;
+
+  /// Median of this island's judged cards' own medians, or null when none
+  /// yet qualify (see `StatsTuning.mapHollowMinTries`).
+  final double? medianMs;
+  final int cardCount;
+  final int dueCount;
+}
+
+class _ArchipelagoData {
+  const _ArchipelagoData({required this.styles, required this.islands, required this.overallMedianMs});
+
+  final List<IslandStyle> styles;
+  final List<_ArchipelagoIsland> islands;
+  final double? overallMedianMs;
+
+  /// The judged island with the worst (highest) median, if any.
+  _ArchipelagoIsland? get slowest {
+    _ArchipelagoIsland? worst;
+    for (final isl in islands) {
+      if (isl.medianMs == null) continue;
+      if (worst == null || isl.medianMs! > worst.medianMs!) worst = isl;
+    }
+    return worst;
+  }
+
+  static _ArchipelagoData build(Progress progress) {
+    final now = DateTime.now();
+    final trainer = progress.trainer;
+    final styles = <IslandStyle>[];
+    final islands = <_ArchipelagoIsland>[];
+    final allMedians = <double>[];
+
+    for (final isl in archipelago.islands) {
+      final sites = <int, SiteMark>{};
+      final medians = <double>[];
+      var due = 0;
+      for (final site in isl.sites) {
+        final key = ItemKey(site.poemId, false);
+        if (!trainer.items[key]!.unlocked) {
+          sites[site.poemId] = const SiteMark.dot(Palette.desk);
+          continue;
+        }
+        if (trainer.isDue(key, now)) due++;
+        final stats = progress.stats(key);
+        // A card can rack up attempts that are all misses, leaving no timed
+        // median even past the tries threshold; treat that the same as "too
+        // few attempts to judge" rather than crash on a null median.
+        final median = stats.count < StatsTuning.mapHollowMinTries ? null : stats.median(10);
+        if (median == null) {
+          sites[site.poemId] = const SiteMark.hollow();
+          continue;
+        }
+        medians.add(median);
+        allMedians.add(median);
+        sites[site.poemId] = SiteMark.dot(Palette.tiers[SpeedTiers.of(median)]);
+      }
+      final islandMedian = _median(medians);
+      styles.add(IslandStyle(
+        sites: sites,
+        plate: IslandPlate(
+          name: isl.name,
+          chip: islandMedian == null ? '—' : '${formatChipSeconds(islandMedian)}s',
+        ),
+      ));
+      islands.add(_ArchipelagoIsland(
+        index: isl.index,
+        name: isl.name,
+        medianMs: islandMedian,
+        cardCount: isl.sites.length,
+        dueCount: due,
+      ));
+    }
+
+    return _ArchipelagoData(styles: styles, islands: islands, overallMedianMs: _median(allMedians));
+  }
+
+  static double? _median(List<double> values) {
+    if (values.isEmpty) return null;
+    final sorted = [...values]..sort();
+    final mid = sorted.length ~/ 2;
+    return sorted.length.isOdd ? sorted[mid] : (sorted[mid - 1] + sorted[mid]) / 2;
+  }
+}
+
+class _IslandsView extends StatelessWidget {
+  const _IslandsView({required this.data});
+  final _ArchipelagoData data;
+
+  @override
+  Widget build(BuildContext context) {
+    final s = S.of(context);
+    final slowest = data.slowest;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Expanded(
+          child: MangaPanel(
+            shape:
+                const PanelShape(topLeft: Offset(0, StatsLayout.mapCut), bottomRight: Offset(0, StatsLayout.mapCut)),
+            child: IslandMap(
+              styles: data.styles,
+              viewport: Offset.zero & archipelago.size,
+              fit: BoxFit.contain,
+              // Seam for the next task: replace this with real navigation to
+              // the tapped island's detail screen.
+              onIslandTap: (i) => MangaToast.show(context, s.comingSoon),
+            ),
+          ),
+        ),
+        const SizedBox(height: Gaps.panel),
+        const _Legend(),
+        const SizedBox(height: Gaps.panel),
+        if (slowest != null)
+          _SlowestIslandPanel(island: slowest)
+        else
+          DashedBox(
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+            child: Text(s.noIslandToPractise,
+                style: const TextStyle(fontWeight: Weights.bold, fontSize: TypeScale.body)),
+          ),
+      ],
+    );
+  }
+}
+
+class _Legend extends StatelessWidget {
+  const _Legend();
+
+  @override
+  Widget build(BuildContext context) {
+    final s = S.of(context);
+    final t0 = (SpeedTiers.upperMs[0] / 1000).toStringAsFixed(2);
+    final t1 = (SpeedTiers.upperMs[1] / 1000).toStringAsFixed(2);
+    final t2 = (SpeedTiers.upperMs[2] / 1000).toStringAsFixed(2);
+    return SizedBox(
+      height: StatsLayout.legendHeight,
+      child: MangaPanel(
+        padding: StatsLayout.legendPadding,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(s.legendHeading,
+                style: const TextStyle(
+                    fontWeight: Weights.black,
+                    fontSize: StatsLayout.legendHeadingFont,
+                    letterSpacing: TagStyle.tracking * StatsLayout.legendHeadingFont)),
+            const SizedBox(height: StatsLayout.legendRowGap),
+            FittedBox(
+              fit: BoxFit.scaleDown,
+              alignment: Alignment.centerLeft,
+              child: Row(children: [
+                _Swatch(color: Palette.tiers[0], label: s.legendUnder(t0)),
+                const SizedBox(width: Gaps.section),
+                _Swatch(color: Palette.tiers[1], label: s.legendRange(t0, t1)),
+                const SizedBox(width: Gaps.section),
+                _Swatch(color: Palette.tiers[2], label: s.legendRange(t1, t2)),
+                const SizedBox(width: Gaps.section),
+                _Swatch(color: Palette.tiers[3], label: s.legendOver(t2)),
+                const SizedBox(width: Gaps.section),
+                _Swatch(color: Palette.paper, label: s.legendFewTries(StatsTuning.mapHollowMinTries)),
+              ]),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _Swatch extends StatelessWidget {
+  const _Swatch({required this.color, required this.label});
+  final Color color;
+  final String label;
+
+  @override
+  Widget build(BuildContext context) => Row(mainAxisSize: MainAxisSize.min, children: [
+        Container(
+          width: StatsLayout.legendSwatch,
+          height: StatsLayout.legendSwatch,
+          decoration: BoxDecoration(
+            color: color,
+            shape: BoxShape.circle,
+            border: Border.all(color: Palette.ink, width: StatsLayout.legendSwatchBorder),
+          ),
+        ),
+        const SizedBox(width: StatsLayout.legendItemGap),
+        Text(label, softWrap: false, style: const TextStyle(fontWeight: Weights.black, fontSize: StatsLayout.legendFont)),
+      ]);
+}
+
+/// Tobi's pick of the slowest island, with a shortcut to play it. Laid out
+/// with `Positioned` (not a `Column`) so the fixed [StatsLayout.focusHeight]
+/// can never overflow.
+class _SlowestIslandPanel extends StatelessWidget {
+  const _SlowestIslandPanel({required this.island});
+  final _ArchipelagoIsland island;
+
+  @override
+  Widget build(BuildContext context) {
+    final s = S.of(context);
+    return SizedBox(
+      height: StatsLayout.focusHeight,
+      child: Stack(
+        clipBehavior: Clip.none,
+        children: [
+          Positioned.fill(
+            child: MangaPanel(
+              shape: const PanelShape(bottomRight: Offset(0, StatsLayout.focusCut)),
+              color: Palette.sunSoft,
+              tone: Tones.sun,
+              padding: StatsLayout.focusPadding,
+              child: Stack(children: [
+                Positioned(left: 0, top: 0, child: InkTag(s.slowestIslandTag)),
+                Positioned(
+                  left: 0,
+                  top: StatsLayout.focusNameTop,
+                  child: Row(crossAxisAlignment: CrossAxisAlignment.end, children: [
+                    Text(island.name,
+                        style:
+                            const TextStyle(fontFamily: Fonts.display, fontSize: StatsLayout.focusNameFont, height: 1)),
+                    const SizedBox(width: Gaps.inner),
+                    Container(
+                      padding: StatsLayout.focusSpeedPadding,
+                      decoration: BoxDecoration(border: Border.all(color: Palette.ink, width: Strokes.control)),
+                      child: Text('${formatChipSeconds(island.medianMs!)}s',
+                          style: const TextStyle(fontFamily: Fonts.display, fontSize: StatsLayout.focusSpeedFont)),
+                    ),
+                  ]),
+                ),
+                Positioned(
+                  left: 0,
+                  top: StatsLayout.focusLineTop,
+                  child: NumberedText(
+                    s.islandLineTemplate,
+                    [island.cardCount, island.dueCount],
+                    style: const TextStyle(fontWeight: Weights.bold, fontSize: StatsLayout.focusLineFont),
+                    numberStyle: const TextStyle(
+                        fontFamily: Fonts.display, fontWeight: Weights.black, fontSize: StatsLayout.focusLineFont),
+                  ),
+                ),
+                Positioned(
+                  left: 0,
+                  top: StatsLayout.focusButtonTop,
+                  child: SizedBox(
+                    height: StatsLayout.playButtonHeight,
+                    child: InkButton(
+                      color: Palette.pink,
+                      padding: StatsLayout.playButtonPadding,
+                      onTap: () =>
+                          startFreePlay(context, PlayConfig(mode: PlayMode.free, setIds: ['initial:${island.name}'])),
+                      child: Text(s.playThisIsland,
+                          style: const TextStyle(fontWeight: Weights.black, fontSize: StatsLayout.playButtonFont)),
+                    ),
+                  ),
+                ),
+              ]),
+            ),
+          ),
+          Placed(StatsLayout.focusTobi, child: const Tobi(pose: TobiPose.pointing)),
+          Placed(
+            StatsLayout.focusBalloon,
+            child: SpeechBalloon(
+              tail: StatsLayout.focusBalloonTail,
+              tailTurn: StatsLayout.focusBalloonTailTurn,
+              padding: StatsLayout.focusBalloonPadding,
+              child: Text(s.tapAnIsland, style: const TextStyle(fontSize: StatsLayout.focusBalloonFont)),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// ------------------------------------------------------------------ Runs
+
+class _RunsView extends StatelessWidget {
+  const _RunsView({required this.progress});
+  final Progress progress;
+
+  @override
+  Widget build(BuildContext context) {
+    final s = S.of(context);
+    final sessions = progress.sessions.reversed.toList();
+    if (sessions.isEmpty) {
+      return Center(
+        child: DashedBox(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+          child: Text(s.noRunsYet, style: const TextStyle(fontWeight: Weights.bold, fontSize: TypeScale.body)),
+        ),
+      );
+    }
+    return ListView.separated(
+      itemCount: sessions.length,
+      separatorBuilder: (_, _) => const SizedBox(height: Gaps.panel),
+      itemBuilder: (context, i) => _RunRow(session: sessions[i]),
+    );
+  }
+}
+
+class _RunRow extends StatelessWidget {
+  const _RunRow({required this.session});
+  final Session session;
+
+  static String _modeLabel(S s, PlayMode mode) => switch (mode) {
+        PlayMode.training => s.training,
+        PlayMode.nigate => s.weakCards,
+        PlayMode.free => s.freePlay,
+        PlayMode.guest => s.guest,
+      };
+
+  @override
+  Widget build(BuildContext context) {
+    final s = S.of(context);
+    final mode = PlayMode.values[session.mode];
+    final total = session.completed && session.totalUs != null
+        ? formatRunTime(Duration(microseconds: session.totalUs!))
+        : s.runEndedEarly;
+    return MangaPanel(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+      child: Row(
+        children: [
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Row(mainAxisSize: MainAxisSize.min, children: [
+                  InkTag(_modeLabel(s, mode)),
+                  const SizedBox(width: Gaps.panel),
+                  Flexible(
+                    child: Text(s.sessionDate(session.startedAt),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(fontWeight: Weights.bold, fontSize: StatsLayout.runRowDateFont)),
+                  ),
+                ]),
+                const SizedBox(height: Gaps.tight),
+                Text(s.cardsCount(session.cardCount),
+                    style: const TextStyle(fontWeight: Weights.bold, fontSize: TypeScale.small)),
+              ],
+            ),
+          ),
+          const SizedBox(width: Gaps.panel),
+          Text(total, style: const TextStyle(fontFamily: Fonts.display, fontSize: StatsLayout.runRowSpeedFont, height: 1)),
         ],
       ),
     );

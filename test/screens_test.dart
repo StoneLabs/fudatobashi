@@ -19,6 +19,8 @@ import 'package:fudatobashi/domain/card_mask.dart';
 import 'package:fudatobashi/domain/card_stats.dart';
 import 'package:fudatobashi/domain/play_session.dart';
 import 'package:fudatobashi/domain/trainer.dart';
+import 'package:fudatobashi/l10n/stats_strings.dart';
+import 'package:fudatobashi/l10n/strings.dart';
 import 'package:fudatobashi/state/play_config.dart';
 import 'package:fudatobashi/state/progress.dart';
 import 'package:fudatobashi/state/scope.dart';
@@ -156,6 +158,61 @@ void main() {
     expect(p.knownCardSpeedMs, isNotNull);
     await show(tester, p, 'known_due_en');
   });
+
+  for (final ja in [false, true]) {
+    final lang = ja ? 'ja' : 'en';
+
+    testWidgets('stats: islands with real dots and medians, then runs ($lang)', (tester) async {
+      final p = await open(tester, mode: LearningMode.journey, ja: ja, journeyCards: 40);
+      final ids = [for (final isl in archipelago.islands) ...fudaSets['initial:${isl.name}'].poemIds];
+
+      // A handful of unlocked cards played enough times to clear
+      // `StatsTuning.mapHollowMinTries`, so some dots render in a real speed
+      // colour (not just hollow/locked) and the overall/island medians and
+      // the slowest-island panel have something to show.
+      final trained = ids.take(8).toList();
+      for (var i = 0; i < 6; i++) {
+        await makeSomeDue(tester, p, trained);
+      }
+      expect(p.dueCount(), greaterThan(0));
+      for (final id in trained) {
+        expect(p.stats(ItemKey(id, false)).count, greaterThanOrEqualTo(5));
+      }
+
+      // A free-play run too, so the Runs tab has something to list.
+      await tester.runAsync(() async {
+        final freeCards = [for (final id in ids.take(5)) CardRef(id, inverted: false, mask: CardMask.none)];
+        final session = PlaySession(freeCards);
+        var t = const Duration(seconds: 500);
+        for (final _ in freeCards) {
+          session.revealed(t);
+          t += const Duration(milliseconds: 700);
+          session.commit(responseTs: t, commitTs: t + const Duration(milliseconds: 80), outcome: Outcome.known);
+          t += const Duration(milliseconds: 100);
+        }
+        await p.recordRun(session, const PlayConfig(mode: PlayMode.free, setIds: ['all']), DateTime.now());
+      });
+      expect(p.sessions, isNotEmpty);
+
+      await tester.binding.setSurfaceSize(_phone);
+      await tester.pumpWidget(RepaintBoundary(key: const ValueKey('screen'), child: FudatobashiApp(progress: p)));
+      await tester.pump(const Duration(milliseconds: 500));
+      expect(tester.takeException(), isNull);
+
+      final s = S(ja);
+      await tester.tap(find.text(s.stats));
+      await tester.pump(const Duration(milliseconds: 500));
+      expect(tester.takeException(), isNull);
+      await _capture(tester, 'stats_islands_$lang');
+
+      await tester.tap(find.text(s.runsTab));
+      await tester.pump(const Duration(milliseconds: 500));
+      expect(tester.takeException(), isNull);
+      await _capture(tester, 'stats_runs_$lang');
+
+      await tester.pumpWidget(const SizedBox());
+    });
+  }
 
   // Reproduces "BOTTOM OVERFLOWED BY 13 PIXELS" on the Training banner
   // directly on `TrainingHero`: a long narration (however it got long — many
