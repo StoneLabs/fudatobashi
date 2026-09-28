@@ -1450,10 +1450,17 @@ abstract final class NewCardMotion {
   /// the accept flick carries on (out at the upper right), with a speed
   /// streak trailing it that fades as it lands at [landAt].
   static const card = EntranceSpec(EntranceFrom(offset: Offset(-470, 620), turnDeg: -32, scale: 0.7, opaqueAt: 0.15),
-      duration: Duration(milliseconds: 600), delay: Duration(milliseconds: 200), curve: Entrances.lift);
+      duration: _flyInLength, delay: _flyInDelay, curve: Entrances.lift);
+  static const _flyInLength = Duration(milliseconds: 600);
+  static const _flyInDelay = Duration(milliseconds: 200);
 
-  /// The streak is fully drawn until the card is this share of the way in.
+  /// The streak runs on the card's clock, fully drawn for the first
+  /// [flyStreakHold] of it, then fading out as the card settles. Sun, to
+  /// stand out from the white focus lines.
+  static const flyStreakFade =
+      EntranceSpec(Entrances.custom, duration: _flyInLength, delay: _flyInDelay, curve: Curves.linear);
   static const double flyStreakHold = 0.5;
+  static const flyStreak = SpeedLinesSpec(count: 26, seed: 8, color: Palette.sun);
 
   /// When the card first reaches its spot (the lift curve arrives about
   /// half-way through, then overshoots and settles).

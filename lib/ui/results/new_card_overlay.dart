@@ -248,9 +248,9 @@ class _CardStage extends StatelessWidget {
                 child: Stack(clipBehavior: Clip.none, children: [
                   Positioned.fill(
                     child: EntranceBuilder(
-                      NewCardMotion.card,
-                      builder: (context, p, _) =>
-                          _Streak(opacity: ((1 - p) / (1 - NewCardMotion.flyStreakHold)).clamp(0.0, 1.0)),
+                      NewCardMotion.flyStreakFade,
+                      builder: (context, t, _) => _Streak(NewCardMotion.flyStreak,
+                          opacity: ((1 - t) / (1 - NewCardMotion.flyStreakHold)).clamp(0.0, 1.0)),
                     ),
                   ),
                   Positioned.fill(
@@ -293,7 +293,7 @@ class _Flick extends StatelessWidget {
               : 1 - (streak - NewCardMotion.streakPeak) / (1 - NewCardMotion.streakPeak);
           const to = NewCardMotion.flickTo;
           return Stack(clipBehavior: Clip.none, children: [
-            if (flick.value > 0 && streak < 1) Positioned.fill(child: _Streak(opacity: streakOpacity.clamp(0.0, 1.0))),
+            if (flick.value > 0 && streak < 1) Positioned.fill(child: _Streak(NewCardMotion.streak, opacity: streakOpacity.clamp(0.0, 1.0))),
             Transform.translate(
               offset: to * fly,
               child: Transform.rotate(angle: NewCardMotion.flickTurnDeg * fly * math.pi / 180, child: child),
@@ -321,7 +321,8 @@ class _Flick extends StatelessWidget {
 /// A speed streak trailing the card along its flight path (in from the
 /// lower left, out to the upper right).
 class _Streak extends StatelessWidget {
-  const _Streak({required this.opacity});
+  const _Streak(this.spec, {required this.opacity});
+  final SpeedLinesSpec spec;
   final double opacity;
 
   @override
@@ -338,7 +339,7 @@ class _Streak extends StatelessWidget {
           angle: math.atan2(to.dy, to.dx),
           child: Transform.translate(
             offset: const Offset(-NewCardMotion.streakBack, 0),
-            child: CustomPaint(size: NewCardMotion.streakBox, painter: const SpeedLinesPainter(NewCardMotion.streak)),
+            child: CustomPaint(size: NewCardMotion.streakBox, painter: SpeedLinesPainter(spec)),
           ),
         ),
       ),
