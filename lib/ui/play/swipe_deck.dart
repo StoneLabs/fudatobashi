@@ -10,6 +10,7 @@ import '../../config/torifuda_spec.dart';
 import '../../data/poem.dart';
 import '../../domain/play_session.dart';
 import '../../state/settings.dart';
+import '../sound/sounds.dart';
 import '../torifuda/torifuda_painter.dart';
 import 'swipe_gesture.dart';
 
@@ -287,6 +288,7 @@ class SwipeDeckState extends State<SwipeDeck> with SingleTickerProviderStateMixi
     if (widget.haptics) {
       outcome == Outcome.dontKnow ? HapticFeedback.heavyImpact() : HapticFeedback.selectionClick();
     }
+    playSound(context, Sfx.cardFlick);
     final a = _s.lastAttempt;
     if (a != null) widget.onCommitted?.call(a);
   }

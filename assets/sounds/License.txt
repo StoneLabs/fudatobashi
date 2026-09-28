@@ -69,7 +69,9 @@
 	Follow on Twitter for updates:
 	http://twitter.com/KenneyNL
 
-Files in this folder, converted to mono 44.1 kHz WAV and peak-normalized:
+Files in this folder, converted to mono 44.1 kHz WAV and peak-normalized;
+card_flick_0..4 also trimmed of silent padding and compressor-boosted (their
+punch sat well under the other sounds' loudness at the same peak level):
 
   best.wav          Music Jingles / Hit jingles / jingles_HIT11.ogg
   card_appears.wav  Music Jingles / Hit jingles / jingles_HIT16.ogg

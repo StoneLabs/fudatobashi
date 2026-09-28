@@ -573,19 +573,33 @@ abstract final class CelebrationPreviewTuning {
   static const previousBest = Duration(milliseconds: 15380);
 }
 
-/// The celebration sounds (Kenney, CC0; provenance in
+/// Sound pooling (`lib/ui/sound/sounds.dart`): concurrent, identically
+/// loaded players kept per asset, so a sound that can retrigger faster than
+/// one play of it lasts (a card flick during a swiping streak) overlaps
+/// instead of cutting itself off.
+abstract final class SoundTuning {
+  static const int cardFlickPoolSize = 3;
+}
+
+/// The app's sound effects (Kenney, CC0; provenance in
 /// `assets/sounds/License.txt`): each one's assets under `assets/` and its
 /// playback volume, 0–1. A sound with several assets plays a random one of
-/// them each time. They play only on celebration pages and Results.
+/// them each time. Celebration pages and Results play their cues on a
+/// schedule; [cardFlick] also plays once for every card that leaves the
+/// deck during play.
 enum Sfx {
   cardAppears(['sounds/card_appears.wav'], 0.8),
-  cardFlick([
-    'sounds/card_flick_0.wav',
-    'sounds/card_flick_1.wav',
-    'sounds/card_flick_2.wav',
-    'sounds/card_flick_3.wav',
-    'sounds/card_flick_4.wav',
-  ], 0.7),
+  cardFlick(
+    [
+      'sounds/card_flick_0.wav',
+      'sounds/card_flick_1.wav',
+      'sounds/card_flick_2.wav',
+      'sounds/card_flick_3.wav',
+      'sounds/card_flick_4.wav',
+    ],
+    0.85,
+    poolSize: SoundTuning.cardFlickPoolSize,
+  ),
   lookAlike(['sounds/look_alike.wav'], 0.7),
   island(['sounds/island.wav'], 0.8),
   stamp(['sounds/stamp.wav'], 0.9),
@@ -594,7 +608,11 @@ enum Sfx {
   best(['sounds/best.wav'], 0.8),
   results(['sounds/results.wav'], 0.5);
 
-  const Sfx(this.assets, this.volume);
+  const Sfx(this.assets, this.volume, {this.poolSize = 1});
   final List<String> assets;
   final double volume;
+
+  /// Players preloaded per asset (see [SoundTuning]); 1 unless a sound needs
+  /// to overlap itself.
+  final int poolSize;
 }

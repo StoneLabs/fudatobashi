@@ -51,8 +51,8 @@ class AppSettings {
   /// Coloured SFX pop for a fast correct card (see [PlaySfxTuning]).
   final bool sfxEffects;
 
-  /// Celebration sounds (never during play); silent or vibrate mode still
-  /// mutes them.
+  /// Celebration sounds and the swipe footstep during play; silent or
+  /// vibrate mode still mutes them.
   final bool sounds;
   final bool showRunningTimer;
 

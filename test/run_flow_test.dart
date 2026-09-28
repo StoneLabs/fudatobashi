@@ -130,7 +130,8 @@ void main() {
       expect(find.byType(NewCardOverlay), findsNothing, reason: 'swipe ${i + 1}');
       await swipe();
     }
-    expect(heard.played, isEmpty, reason: 'swiping is silent');
+    expect(heard.played, List.filled(5, Sfx.cardFlick), reason: 'each committed swipe plays its own footstep');
+    heard.played.clear();
 
     expect(session.index, 5);
     expect(find.byType(NewCardOverlay), findsOneWidget);
@@ -151,17 +152,101 @@ void main() {
     expect(session.revealTs!, greaterThan(closedAt));
 
     expect(heard.played, [Sfx.cardAppears, Sfx.cardFlick], reason: 'the page lands and the card is flicked away');
+    heard.played.clear();
 
     await tester.pump(ms(400));
     await swipe();
     await swipe();
-    expect(heard.played, hasLength(2), reason: 'play is silent again after the page');
+    expect(heard.played, [Sfx.cardFlick, Sfx.cardFlick], reason: 'swipes after the page keep playing their footstep');
     expect(session.attempts[5].card.poemId, newCard);
     expect(session.attempts[5].responseUs, lessThan(ms(600).inMicroseconds),
         reason: 'the page time is not part of the card time');
     expect(find.byType(NewCardOverlay), findsNothing, reason: 'introduced once');
     await tester.pumpWidget(const SizedBox());
   });
+
+  testWidgets('a snap-back drag plays no footstep, a committed swipe plays exactly one', (tester) async {
+    final heard = _HeardSounds();
+    sounds = heard;
+    addTearDown(() => sounds = Sounds());
+    final session = await _openPlay(tester);
+
+    final before = session.index;
+    final g = await tester.startGesture(const Offset(192, 360));
+    await g.moveBy(const Offset(10, 0));
+    await tester.pump(ms(50));
+    await g.up();
+    await tester.pump(ms(16));
+    await tester.pump(ms(16));
+    expect(session.index, before, reason: 'too short a drag springs back instead of committing');
+    expect(heard.played, isEmpty, reason: 'a snap-back drag plays nothing');
+
+    await _swipe(tester, session);
+    expect(session.index, before + 1);
+    expect(heard.played, [Sfx.cardFlick], reason: 'a committed swipe plays exactly one footstep');
+    await tester.pumpWidget(const SizedBox());
+  });
+
+  testWidgets('a committed swipe stays silent with Sounds off', (tester) async {
+    final heard = _HeardSounds();
+    sounds = heard;
+    addTearDown(() => sounds = Sounds());
+    final session = await _openPlay(tester, soundsOn: false);
+
+    await _swipe(tester, session);
+    expect(session.index, 1);
+    expect(heard.played, isEmpty, reason: 'the Sounds setting mutes the footstep too');
+    await tester.pumpWidget(const SizedBox());
+  });
+
+  testWidgets('rapid consecutive swipes each play their own footstep', (tester) async {
+    final heard = _HeardSounds();
+    sounds = heard;
+    addTearDown(() => sounds = Sounds());
+    final session = await _openPlay(tester, cardCount: 6);
+
+    for (var i = 0; i < 6; i++) {
+      await _swipe(tester, session);
+    }
+    expect(session.index, 6);
+    expect(heard.played, List.filled(6, Sfx.cardFlick), reason: 'none are dropped or merged under a fast streak');
+    await tester.pumpWidget(const SizedBox());
+  });
+}
+
+/// Drags the top card past commit distance and releases: a known swipe.
+Future<void> _swipe(WidgetTester tester, PlaySession session) async {
+  expect(session.currentRevealed, isTrue);
+  final before = session.index;
+  final g = await tester.startGesture(const Offset(192, 360));
+  while (session.index == before) {
+    await g.moveBy(const Offset(25, 0));
+    await tester.pump(const Duration(milliseconds: 8));
+  }
+  await g.up();
+  await tester.pump(const Duration(milliseconds: 16));
+  await tester.pump(const Duration(milliseconds: 16));
+}
+
+/// A play screen with [cardCount] ordinary (already-met) cards, ready to
+/// swipe.
+Future<PlaySession> _openPlay(WidgetTester tester, {bool soundsOn = true, int cardCount = 5}) async {
+  late Progress p;
+  await tester.runAsync(() async {
+    p = await Progress.open(AppDatabase(NativeDatabase.memory()));
+    await p.updateSettings(p.settings.copyWith(leadIn: false, sounds: soundsOn));
+  });
+  final cards = [for (var id = 1; id <= cardCount; id++) CardRef(id)];
+  await tester.binding.setSurfaceSize(const Size(384, 832));
+  await tester.pumpWidget(ProgressScope(
+    progress: p,
+    child: MaterialApp(
+      home: PlayScreen(cards: cards, config: const PlayConfig(mode: PlayMode.free), newPoems: const {}),
+    ),
+  ));
+  await tester.pump();
+  await tester.pump();
+  return tester.widget<SwipeDeck>(find.byType(SwipeDeck)).session;
 }
 
 /// Records the sounds asked for instead of playing them.
