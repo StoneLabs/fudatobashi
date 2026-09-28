@@ -227,7 +227,8 @@ class KnownSpeedTag extends StatelessWidget {
 
 /// Journey Home's today's-plan text, beside the "Learn ahead" button: new
 /// cards unlocked so far against the pace's quota for today, and cards due
-/// for review today.
+/// for review today. Its two lines sit tight, no taller than the button, so
+/// the map above keeps its height.
 class TodaysPlanTag extends StatelessWidget {
   const TodaysPlanTag({super.key, required this.newToday, required this.newQuota, required this.reviewsToday});
 
@@ -238,14 +239,15 @@ class TodaysPlanTag extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final s = S.of(context);
-    const label = TextStyle(fontSize: HomeLayout.knownSpeedFont, fontWeight: Weights.bold);
-    const number = TextStyle(fontFamily: Fonts.display, fontSize: HomeLayout.knownSpeedNumber);
+    const label =
+        TextStyle(fontSize: HomeLayout.knownSpeedFont, fontWeight: Weights.bold, height: HomeLayout.planLineHeight);
+    const number =
+        TextStyle(fontFamily: Fonts.display, fontSize: HomeLayout.knownSpeedNumber, height: HomeLayout.planLineHeight);
     return Column(
       mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         NumberedText(s.newCardsTodayLabel, [newToday, newQuota], style: label, numberStyle: number),
-        const SizedBox(height: HomeLayout.knownSpeedGap),
         NumberedText(s.reviewsTodayLabel, [reviewsToday], style: label, numberStyle: number),
       ],
     );

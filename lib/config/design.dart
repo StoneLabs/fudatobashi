@@ -531,6 +531,9 @@ abstract final class HomeLayout {
   /// Above the known-card speed under the journey's card pips.
   static const double pipsSpeedGap = 8;
 
+  /// Today's plan beside Learn ahead: two tight lines.
+  static const double planLineHeight = 1.1;
+
   static const double journeyHeroHeight = 206;
   static const double journeyHeroCut = 8;
   static const double journeyTitle = 52;
