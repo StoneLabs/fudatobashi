@@ -368,6 +368,7 @@ abstract final class DefaultSettings {
   static const bool haptics = true;
   static const bool leadIn = true;
   static const bool sfxEffects = true;
+  static const bool sounds = true;
   static const bool showRunningTimer = false;
   static const PlayConfig freePlay = PlayConfig(mode: PlayMode.free);
 
@@ -483,4 +484,23 @@ abstract final class CelebrationPreviewTuning {
   static const int spreadUs = 20000;
   static const total = Duration(milliseconds: 14906);
   static const previousBest = Duration(milliseconds: 15380);
+}
+
+/// The celebration sounds (Kenney, CC0; provenance in
+/// `assets/sounds/License.txt`): each one's asset under `assets/` and its
+/// playback volume, 0–1. They play only on celebration pages and Results.
+enum Sfx {
+  cardAppears('sounds/card_appears.wav', 0.8),
+  cardFlick('sounds/card_flick.wav', 0.7),
+  lookAlike('sounds/look_alike.wav', 0.7),
+  island('sounds/island.wav', 0.8),
+  stamp('sounds/stamp.wav', 0.9),
+  rankUp('sounds/rank_up.wav', 0.8),
+  goalUp('sounds/goal_up.wav', 0.8),
+  best('sounds/best.wav', 0.8),
+  results('sounds/results.wav', 0.5);
+
+  const Sfx(this.asset, this.volume);
+  final String asset;
+  final double volume;
 }

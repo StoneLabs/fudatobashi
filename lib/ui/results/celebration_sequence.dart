@@ -1,7 +1,9 @@
 import 'package:flutter/widgets.dart';
 
+import '../../config/config.dart';
 import '../../config/design.dart';
 import '../../state/scope.dart';
+import '../sound/sounds.dart';
 import 'celebration_overlays.dart';
 import 'celebrations.dart';
 import 'island_complete_overlay.dart';
@@ -72,7 +74,11 @@ class _CelebrationSequenceState extends State<CelebrationSequence> with SingleTi
           color: Palette.paper,
           child: AnimatedSwitcher(
             duration: ResultsLayout.overlayFade,
-            child: KeyedSubtree(key: ValueKey(i), child: _page(widget.pages[i], () => _next(i))),
+            child: SoundCues(
+              key: ValueKey(i),
+              cues: _soundsOf(widget.pages[i]),
+              child: _page(widget.pages[i], () => _next(i)),
+            ),
           ),
         ),
       ),
@@ -95,3 +101,12 @@ class _CelebrationSequenceState extends State<CelebrationSequence> with SingleTi
     };
   }
 }
+
+/// Each page's sounds, in step with its entrance.
+List<(Sfx, Duration)> _soundsOf(Celebration c) => switch (c) {
+      NewCardCelebration() => const [(Sfx.cardAppears, NewCardMotion.landAt)],
+      ConfusableWarningCelebration() => const [(Sfx.lookAlike, Duration.zero)],
+      IslandCompleteCelebration() => [(Sfx.island, IslandCompleteMotion.title.delay)],
+      RankUpCelebration() => const [(Sfx.stamp, RankUpMotion.impactAt), (Sfx.rankUp, RankUpMotion.impactAt)],
+      GoalUpCelebration() => const [(Sfx.goalUp, Duration.zero)],
+    };

@@ -3,6 +3,7 @@ import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 
+import '../../config/config.dart';
 import '../../config/design.dart';
 import '../../config/vector_art.dart';
 import '../../data/poem.dart';
@@ -18,6 +19,7 @@ import '../play/time_format.dart';
 import '../run/run_launcher.dart';
 import '../torifuda/torifuda_painter.dart';
 import '../run/learn_next_button.dart';
+import '../sound/sounds.dart';
 import 'celebration_sequence.dart';
 import 'celebrations.dart';
 
@@ -36,6 +38,7 @@ class ResultsScreen extends StatefulWidget {
 
 class _ResultsScreenState extends State<ResultsScreen> {
   late final List<Celebration> _celebrations = celebrationsFor(widget.report);
+  late final bool _personalBest = widget.report.personalBest && widget.report.total != null;
   bool _celebrating = false;
   Timer? _timer;
 
@@ -43,8 +46,7 @@ class _ResultsScreenState extends State<ResultsScreen> {
   void initState() {
     super.initState();
     if (_celebrations.isNotEmpty) {
-      final personalBest = widget.report.personalBest && widget.report.total != null;
-      _timer = Timer(ResultsLayout.overlayStagger + (personalBest ? PersonalBestMotion.length : Duration.zero), () {
+      _timer = Timer(ResultsLayout.overlayStagger + (_personalBest ? PersonalBestMotion.length : Duration.zero), () {
         if (mounted) setState(() => _celebrating = true);
       });
     }
@@ -61,16 +63,21 @@ class _ResultsScreenState extends State<ResultsScreen> {
   @override
   Widget build(BuildContext context) => Scaffold(
         backgroundColor: Palette.paper,
-        body: Stack(children: [
-          SafeArea(child: _Splash(report: widget.report, config: widget.config, onHome: () => _home(context))),
-          if (_celebrating)
-            Positioned.fill(
-              child: CelebrationSequence(
-                pages: _celebrations,
-                onDone: () => setState(() => _celebrating = false),
+        body: SoundCues(
+          cues: _personalBest
+              ? const [(Sfx.stamp, PersonalBestMotion.impactAt), (Sfx.best, PersonalBestMotion.impactAt)]
+              : const [(Sfx.results, Duration.zero)],
+          child: Stack(children: [
+            SafeArea(child: _Splash(report: widget.report, config: widget.config, onHome: () => _home(context))),
+            if (_celebrating)
+              Positioned.fill(
+                child: CelebrationSequence(
+                  pages: _celebrations,
+                  onDone: () => setState(() => _celebrating = false),
+                ),
               ),
-            ),
-        ]),
+          ]),
+        ),
       );
 }
 

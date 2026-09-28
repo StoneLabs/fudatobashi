@@ -93,6 +93,12 @@ class SettingsScreen extends StatelessWidget {
                         onChanged: (v) => progress.updateSettings(progress.settings.copyWith(sfxEffects: v)),
                       ),
                       const SizedBox(height: Gaps.section),
+                      _SwitchRow(
+                        label: s.sounds,
+                        value: progress.settings.sounds,
+                        onChanged: (v) => progress.updateSettings(progress.settings.copyWith(sounds: v)),
+                      ),
+                      const SizedBox(height: Gaps.section),
                       const _AboutRow(),
                       if (progress.settings.debugMode) ...[
                         const SizedBox(height: Gaps.section),

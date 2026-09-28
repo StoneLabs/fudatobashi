@@ -27,6 +27,7 @@ class AppSettings {
     this.haptics = DefaultSettings.haptics,
     this.leadIn = DefaultSettings.leadIn,
     this.sfxEffects = DefaultSettings.sfxEffects,
+    this.sounds = DefaultSettings.sounds,
     this.showRunningTimer = DefaultSettings.showRunningTimer,
     this.freePlay = DefaultSettings.freePlay,
     this.nigateCount = DefaultSettings.nigateCount,
@@ -49,6 +50,10 @@ class AppSettings {
 
   /// Coloured SFX pop for a fast correct card (see [PlaySfxTuning]).
   final bool sfxEffects;
+
+  /// Celebration sounds (never during play); silent or vibrate mode still
+  /// mutes them.
+  final bool sounds;
   final bool showRunningTimer;
 
   /// Last free-play setup (表示する札を限定する).
@@ -80,6 +85,7 @@ class AppSettings {
         'haptics': haptics,
         'leadIn': leadIn,
         'sfxEffects': sfxEffects,
+        'sounds': sounds,
         'showRunningTimer': showRunningTimer,
         'freePlay': freePlay.toJson(),
         'nigateCount': nigateCount,
@@ -97,6 +103,7 @@ class AppSettings {
         haptics: j['haptics'] as bool? ?? DefaultSettings.haptics,
         leadIn: j['leadIn'] as bool? ?? DefaultSettings.leadIn,
         sfxEffects: j['sfxEffects'] as bool? ?? DefaultSettings.sfxEffects,
+        sounds: j['sounds'] as bool? ?? DefaultSettings.sounds,
         showRunningTimer: j['showRunningTimer'] as bool? ?? DefaultSettings.showRunningTimer,
         freePlay: j['freePlay'] is Map
             ? PlayConfig.fromJson((j['freePlay'] as Map).cast<String, dynamic>())
@@ -117,6 +124,7 @@ class AppSettings {
     bool? haptics,
     bool? leadIn,
     bool? sfxEffects,
+    bool? sounds,
     bool? showRunningTimer,
     PlayConfig? freePlay,
     int? nigateCount,
@@ -133,6 +141,7 @@ class AppSettings {
         haptics: haptics ?? this.haptics,
         leadIn: leadIn ?? this.leadIn,
         sfxEffects: sfxEffects ?? this.sfxEffects,
+        sounds: sounds ?? this.sounds,
         showRunningTimer: showRunningTimer ?? this.showRunningTimer,
         freePlay: freePlay ?? this.freePlay,
         nigateCount: nigateCount ?? this.nigateCount,

@@ -1,0 +1,82 @@
+	
+
+	Music Jingles
+
+	by  Kenney Vleugels (Kenney.nl)
+
+			------------------------------
+
+	License (Creative Commons Zero, CC0)
+	http://creativecommons.org/publicdomain/zero/1.0/
+
+	You may use these assets in personal and commercial projects.
+	Credit (Kenney or www.kenney.nl) would be nice but is not mandatory.
+
+			------------------------------
+
+	Donate:   http://support.kenney.nl
+	Request:  http://request.kenney.nl
+
+	Follow on Twitter for updates:
+	@KenneyNL
+
+	
+
+	Impact Sounds (1.0)
+
+	Created/distributed by Kenney (www.kenney.nl)
+	Creation date: 19-12-2019
+
+			------------------------------
+
+	License: (Creative Commons Zero, CC0)
+	http://creativecommons.org/publicdomain/zero/1.0/
+
+	This content is free to use in personal, educational and commercial projects.
+	Support us by crediting Kenney or www.kenney.nl (this is not mandatory)
+
+			------------------------------
+
+	Donate:   http://support.kenney.nl
+	Request:  http://request.kenney.nl
+	Patreon:  http://patreon.com/kenney/
+
+	Follow on Twitter for updates:
+	http://twitter.com/KenneyNL
+
+	
+
+	Interface Sounds (1.0)
+
+	Created/distributed by Kenney (www.kenney.nl)
+	Creation date: 11-02-2020
+
+			------------------------------
+
+	License: (Creative Commons Zero, CC0)
+	http://creativecommons.org/publicdomain/zero/1.0/
+
+	This content is free to use in personal, educational and commercial projects.
+	Support us by crediting Kenney or www.kenney.nl (this is not mandatory)
+
+			------------------------------
+
+	Donate:   http://support.kenney.nl
+	Patreon:  http://patreon.com/kenney/
+
+	Follow on Twitter for updates:
+	http://twitter.com/KenneyNL
+
+Files in this folder, converted to mono 44.1 kHz WAV and peak-normalized:
+
+  best.wav          Music Jingles / Hit jingles / jingles_HIT11.ogg
+  card_appears.wav  Music Jingles / Pizzicato jingles / jingles_PIZZI16.ogg
+  card_flick.wav    Impact Sounds / impactPunch_medium_000.ogg
+  goal_up.wav       Music Jingles / Pizzicato jingles / jingles_PIZZI10.ogg
+  island.wav        Music Jingles / Steel jingles / jingles_STEEL10.ogg
+  look_alike.wav    Interface Sounds / question_001.ogg
+  rank_up.wav       Music Jingles / Steel jingles / jingles_STEEL02.ogg
+  results.wav       Interface Sounds / confirmation_001.ogg
+  stamp.wav         Impact Sounds / impactPunch_heavy_000.ogg
+
+Source: https://kenney.nl/assets (Music Jingles, Impact Sounds, Interface Sounds)

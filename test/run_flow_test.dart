@@ -21,6 +21,7 @@ import 'package:fudatobashi/ui/play/play_screen.dart';
 import 'package:fudatobashi/ui/play/swipe_deck.dart';
 import 'package:fudatobashi/ui/results/celebration_sequence.dart';
 import 'package:fudatobashi/ui/results/new_card_overlay.dart';
+import 'package:fudatobashi/ui/sound/sounds.dart';
 
 /// New cards in a run: where they may first appear, their introduction
 /// pages, and the timing contract around them.
@@ -91,6 +92,9 @@ void main() {
   });
 
   testWidgets('a new card is introduced before its first appearance and revealed fresh after the page', (tester) async {
+    final heard = _HeardSounds();
+    sounds = heard;
+    addTearDown(() => sounds = Sounds());
     late Progress p;
     await tester.runAsync(() async {
       p = await Progress.open(AppDatabase(NativeDatabase.memory()));
@@ -126,6 +130,7 @@ void main() {
       expect(find.byType(NewCardOverlay), findsNothing, reason: 'swipe ${i + 1}');
       await swipe();
     }
+    expect(heard.played, isEmpty, reason: 'swiping is silent');
 
     expect(session.index, 5);
     expect(find.byType(NewCardOverlay), findsOneWidget);
@@ -145,12 +150,24 @@ void main() {
     expect(session.currentRevealed, isTrue);
     expect(session.revealTs!, greaterThan(closedAt));
 
+    expect(heard.played, [Sfx.cardAppears, Sfx.cardFlick], reason: 'the page lands and the card is flicked away');
+
     await tester.pump(ms(400));
     await swipe();
-    expect(session.attempts.last.card.poemId, newCard);
-    expect(session.attempts.last.responseUs, lessThan(ms(600).inMicroseconds),
+    await swipe();
+    expect(heard.played, hasLength(2), reason: 'play is silent again after the page');
+    expect(session.attempts[5].card.poemId, newCard);
+    expect(session.attempts[5].responseUs, lessThan(ms(600).inMicroseconds),
         reason: 'the page time is not part of the card time');
     expect(find.byType(NewCardOverlay), findsNothing, reason: 'introduced once');
     await tester.pumpWidget(const SizedBox());
   });
+}
+
+/// Records the sounds asked for instead of playing them.
+class _HeardSounds extends Sounds {
+  final played = <Sfx>[];
+
+  @override
+  Future<void> play(Sfx sfx) async => played.add(sfx);
 }

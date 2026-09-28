@@ -36,6 +36,7 @@ dependencies:
   flutter_displaymode: ^0.7.0
   fsrs: ^2.0.1
   package_info_plus: ^8.0.0
+  audioplayers: ^6.8.1
 
 dev_dependencies:
   flutter_test:
@@ -66,6 +67,7 @@ flutter:
     - assets/data/islands.json
     - assets/glyphs/
     - assets/art/
+    - assets/sounds/
 
   fonts:
     # Card kana come from assets/glyphs (pre-rendered, see tool/render_glyphs_test.dart);

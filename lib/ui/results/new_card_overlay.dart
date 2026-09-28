@@ -14,6 +14,7 @@ import '../../l10n/strings.dart';
 import '../manga/manga.dart';
 import '../play/sfx_overlay.dart';
 import '../shell/coming_soon.dart';
+import '../sound/sounds.dart';
 import '../torifuda/torifuda_painter.dart';
 import 'celebration_chrome.dart';
 import 'celebrations.dart';
@@ -48,6 +49,7 @@ class _NewCardOverlayState extends State<NewCardOverlay> with SingleTickerProvid
       return;
     }
     _flick.forward();
+    playSound(context, Sfx.cardFlick);
     _leave = Timer(NewCardMotion.flickLength, widget.onNext);
   }
 

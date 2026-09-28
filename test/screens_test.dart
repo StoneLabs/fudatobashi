@@ -24,6 +24,7 @@ import 'package:fudatobashi/domain/rating.dart';
 import 'package:fudatobashi/domain/trainer.dart';
 import 'package:fudatobashi/l10n/home_strings.dart';
 import 'package:fudatobashi/l10n/results_strings.dart';
+import 'package:fudatobashi/l10n/settings_strings.dart';
 import 'package:fudatobashi/l10n/stats_strings.dart';
 import 'package:fudatobashi/l10n/strings.dart';
 import 'package:fudatobashi/state/play_config.dart';
@@ -44,7 +45,10 @@ import 'package:fudatobashi/ui/results/new_card_overlay.dart';
 import 'package:fudatobashi/ui/results/rank_up_overlay.dart';
 import 'package:fudatobashi/ui/results/results_screen.dart';
 import 'package:fudatobashi/ui/run/learn_next_button.dart';
+import 'package:fudatobashi/ui/settings/settings_screen.dart';
+import 'package:fudatobashi/ui/sound/sounds.dart';
 import 'package:fudatobashi/ui/stats/card_list.dart';
+import 'package:package_info_plus/package_info_plus.dart';
 
 const _phone = Size(384, 832);
 
@@ -700,6 +704,26 @@ void main() {
     });
   }
 
+  testWidgets('settings: sounds are on by default, and the Sounds switch turns them off for good', (tester) async {
+    PackageInfo.setMockInitialValues(
+        appName: 'Fudatobashi', packageName: 'dev.fudatobashi', version: '1.0.0', buildNumber: '1', buildSignature: '');
+    final p = await open(tester);
+    expect(p.settings.sounds, isTrue);
+    await tester.binding.setSurfaceSize(_phone);
+    await tester.pumpWidget(ProgressScope(progress: p, child: const MaterialApp(home: SettingsScreen())));
+    await tester.pump();
+    const s = S(false);
+    final row = find.ancestor(of: find.text(s.sounds), matching: find.byType(Row));
+    await tester.runAsync(() async {
+      await tester.tap(find.descendant(of: row.first, matching: find.byType(Switch)));
+      await Future<void>.delayed(const Duration(milliseconds: 50));
+    });
+    await tester.pump();
+    expect(p.settings.sounds, isFalse);
+    expect(AppSettings.fromJson(p.settings.toJson()).sounds, isFalse);
+    await tester.pumpWidget(const SizedBox());
+  });
+
   group('Rank ladder edge cases', () {
     Widget pumped(Progress p) => ProgressScope(progress: p, child: const MaterialApp(home: RankScreen()));
 
@@ -929,6 +953,28 @@ void main() {
         await tester.pumpWidget(const SizedBox());
       });
 
+      testWidgets('the rank-up stamp sounds as it lands, and never with sounds off ($lang)', (tester) async {
+        final heard = _HeardSounds();
+        sounds = heard;
+        addTearDown(() => sounds = Sounds());
+        final p = await open(tester, ja: ja);
+        final page = CelebrationSequence(
+          pages: [RankUpCelebration(Rating.bands[2], Rating.bands[3], null, Rating.bands[3].minRating)],
+          onDone: () {},
+        );
+        await pumpPage(tester, p, page, RankUpMotion.impactAt - const Duration(milliseconds: 20));
+        expect(heard.played, isEmpty);
+        await tester.pump(const Duration(milliseconds: 40));
+        expect(heard.played, [Sfx.stamp, Sfx.rankUp]);
+
+        await tester.pumpWidget(const SizedBox());
+        heard.played.clear();
+        await tester.runAsync(() => p.updateSettings(p.settings.copyWith(sounds: false)));
+        await pumpPage(tester, p, page, RankUpMotion.length);
+        expect(heard.played, isEmpty);
+        await tester.pumpWidget(const SizedBox());
+      });
+
       // Every step of the ladder, at a large font scale: the spread's halves,
       // the counting rating and the next class's panel must fit, and the top
       // class shows the summit instead of a next target.
@@ -959,4 +1005,12 @@ void main() {
       }
     }
   });
+}
+
+/// Records the sounds asked for instead of playing them.
+class _HeardSounds extends Sounds {
+  final played = <Sfx>[];
+
+  @override
+  Future<void> play(Sfx sfx) async => played.add(sfx);
 }

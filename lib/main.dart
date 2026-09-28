@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io' show Platform;
 
 import 'package:flutter/foundation.dart';
@@ -14,6 +15,7 @@ import 'state/progress.dart';
 import 'ui/app.dart';
 import 'ui/debug/frame_stats.dart';
 import 'ui/manga/art_image.dart';
+import 'ui/sound/sounds.dart';
 import 'ui/torifuda/glyph_atlas.dart';
 
 Future<void> main() async {
@@ -33,4 +35,6 @@ Future<void> main() async {
   await ArtImages.load(PrerenderedArt.all);
   FrameStats.instance.start();
   runApp(FudatobashiApp(progress: progress));
+  // Loaded in the background: the first celebration is at least a run away.
+  unawaited(sounds.load());
 }
