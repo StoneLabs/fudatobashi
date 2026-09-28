@@ -1,0 +1,8 @@
+flutter_launcher_icons:
+  android: true
+  ios: true
+  image_path: "assets/icon/tobi_full.png"
+  adaptive_icon_background: "assets/icon/tobi_background.png"
+  adaptive_icon_foreground: "assets/icon/tobi_foreground.png"
+  adaptive_icon_monochrome: "assets/icon/tobi_monochrome.png"
+  remove_alpha_ios: true
