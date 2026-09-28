@@ -58,7 +58,13 @@ extension StatsStrings on S {
 
   String islandCrumb(String islandName) => ja ? '$islandNameの島' : '$islandName island';
   String get kimarijiCaption => t('KIMARIJI · 決まり字', '決まり字');
-  String get bestLabel => t('BEST', 'ベスト');
+  String get topSpeedLabel => t('TOP SPEED', '最速');
+  String attemptCount(int n) => ja ? '挑戦$n回' : (n == 1 ? '1 attempt' : '$n attempts');
+  String dontKnowCount(int n) => ja ? '「わからない」$n回' : "$n don't know";
+  String get lookAlikesLabel => t('EASILY CONFUSED WITH · 友札', '間違えやすい友札');
+  String get topSpeedChartLabel => t('top', '最速');
+  String get attemptsAxis => t('attempts', '回数');
+  String get noAttemptsYet => t('No attempts yet', 'まだ記録なし');
   String get uprightLabel => t('Upright', '正位置');
   String get invertedLabel => t('Inverted', '逆さま');
   String get allModes => t('All', 'すべて');
@@ -69,7 +75,12 @@ extension StatsStrings on S {
   String get difficultyLabel => t('DIFFICULTY', '難易度');
   String get retrievabilityLabel => t('RETRIEVABILITY', '想起確率');
   String get nextDueLabel => t('NEXT DUE', '次回復習');
-  String get daysUnit => t(' d', '日');
+  String get stabilityUnit => t('days', '日');
+  String outOf(int max) => '/ $max';
+  String get retrievabilityNow => t('% now', '% 今');
+  String get dueTodayValue => t('Today', '今日');
+  String get dueTomorrow => t('tomorrow', '明日');
+  String dueInDaysSuffix(int n) => ja ? 'あと$n日' : 'in $n d';
   String get notScheduled => t('not scheduled', '未定');
   String seeYouOn(String date) => t('See you $date!', '$dateにまた！');
 

@@ -297,6 +297,12 @@ abstract final class StatsTuning {
   /// card's dot is hollow ("too few attempts to judge") instead of coloured
   /// by speed.
   static const int mapHollowMinTries = 5;
+
+  /// TOP SPEED (card detail): the fast end of a card's recent times, this
+  /// percentile of its last [topSpeedWindow] timed attempts. Steadier than
+  /// the single best time, which one lucky swipe sets for good.
+  static const double topSpeedPercentile = 5;
+  static const int topSpeedWindow = 100;
 }
 
 /// The island detail and card detail screens (`lib/ui/stats/island_screen.dart`,
@@ -314,6 +320,37 @@ abstract final class CardDetailTuning {
   /// Lookahead window (days) when a card has no due date past now to sample
   /// up to (never reviewed, or overdue).
   static const int forgettingCurveFallbackDays = 30;
+}
+
+/// Fixed ranges of the FSRS model, for display.
+abstract final class FsrsScale {
+  /// FSRS difficulty runs from 1 to this.
+  static const int difficultyMax = 10;
+}
+
+/// The card detail's attempt chart (`AttemptChart` in
+/// `lib/ui/stats/stats_charts.dart`).
+abstract final class AttemptChartTuning {
+  /// The rolling averages (avg5, avg10, avg50): each line starts once its
+  /// window of timed attempts is full.
+  static const int shortAverage = 5;
+  static const int midAverage = 10;
+  static const int longAverage = 50;
+
+  /// The band: these percentiles of the last [bandWindow] timed attempts,
+  /// drawn from the [bandMinCount]th timed attempt on.
+  static const double bandLow = 5;
+  static const double bandHigh = 95;
+  static const int bandWindow = 20;
+  static const int bandMinCount = 10;
+
+  /// The ms axis: the dots' range widened by these margins, then rounded out
+  /// to the smallest of [axisSteps] that needs at most [maxGridLines]
+  /// gridlines (doubling the largest step if none does).
+  static const double axisPadBelowMs = 60;
+  static const double axisPadAboveMs = 40;
+  static const List<int> axisSteps = [50, 100, 200, 250, 500, 1000, 2000, 5000];
+  static const int maxGridLines = 5;
 }
 
 /// The Elo-style rating model (see `Rating`).

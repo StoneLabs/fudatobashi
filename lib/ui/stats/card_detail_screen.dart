@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:fsrs/fsrs.dart' as fsrs;
 
@@ -18,14 +19,15 @@ import '../play/time_format.dart';
 import '../torifuda/torifuda_painter.dart';
 import 'stats_charts.dart';
 
-/// Which attempts feed the chart, the stat tiles and the "BEST" badge:
+/// Which attempts feed the chart, the stat tiles and the TOP SPEED badge:
 /// 修行 only, free play + 苦手 combined (guest attempts are never stored), or
 /// every attempt. Defaults to "All" so a freshly tapped card shows everything
 /// it has, however it was played.
 enum _ModeFilter { training, free, all }
 
-/// A card's own record (spec phone 8): the torifuda, its kimariji, the
-/// attempt chart with toggleable stat tiles, and its FSRS memory panel.
+/// A card's own record (spec phone 8): the torifuda, its kimariji, TOP SPEED
+/// and the cards it is easily confused with, the attempt chart with
+/// toggleable stat tiles, and its FSRS memory panel.
 class CardDetailScreen extends StatefulWidget {
   const CardDetailScreen({super.key, required this.itemKey});
 
@@ -38,7 +40,8 @@ class CardDetailScreen extends StatefulWidget {
 class _CardDetailScreenState extends State<CardDetailScreen> {
   late bool _inverted = widget.itemKey.inverted;
   _ModeFilter _mode = _ModeFilter.all;
-  Set<ChartSeries> _visible = {ChartSeries.avg5, ChartSeries.avg10, ChartSeries.avg50, ChartSeries.band};
+  Set<ChartSeries> _visible = {...ChartSeries.values};
+  AttemptChartData? _chart;
 
   ItemKey get _key => ItemKey(widget.itemKey.poemId, _inverted);
 
@@ -59,8 +62,9 @@ class _CardDetailScreenState extends State<CardDetailScreen> {
       _ModeFilter.free => [for (final a in all) if (a.mode != PlayMode.training) a],
       _ModeFilter.all => all,
     };
-    final stats = CardStats(filtered);
-    final chartData = AttemptChartData(filtered, stats);
+    var chart = _chart;
+    if (chart == null || !listEquals(chart.attempts, filtered)) chart = _chart = AttemptChartData(filtered);
+    final s = S.of(context);
     final islandName = archipelago.islands[Trainer.islandOf(poem)].name;
     final now = DateTime.now();
 
@@ -84,19 +88,27 @@ class _CardDetailScreenState extends State<CardDetailScreen> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
-                      _Header(poem: poem, inverted: _inverted, bestMs: stats.bestMs),
+                      _Header(poem: poem, inverted: _inverted, stats: chart.stats),
                       const SizedBox(height: Gaps.section),
                       _ModeToggle(mode: _mode, onChanged: (m) => setState(() => _mode = m)),
                       const SizedBox(height: Gaps.panel),
-                      SizedBox(
-                        height: CardDetailLayout.chartHeight,
-                        child: MangaPanel(
-                          padding: CardDetailLayout.chartPadding,
-                          child: AttemptChart(data: chartData, visible: _visible),
-                        ),
+                      MangaPanel(
+                        padding: CardDetailLayout.chartPadding,
+                        child: chart.attempts.isEmpty
+                            ? Padding(
+                                padding: CardDetailLayout.chartEmptyPadding,
+                                child: Text(s.noAttemptsYet,
+                                    textAlign: TextAlign.center,
+                                    style: const TextStyle(fontWeight: Weights.bold, fontSize: TypeScale.small)),
+                              )
+                            : AttemptChart(
+                                data: chart,
+                                visible: _visible,
+                                attemptsLabel: s.attemptsAxis,
+                                topSpeedLabel: s.topSpeedChartLabel),
                       ),
                       const SizedBox(height: Gaps.panel),
-                      _SeriesRow(stats: stats, visible: _visible, onToggle: _toggleSeries),
+                      _SeriesRow(chart: chart, visible: _visible, onToggle: _toggleSeries),
                       const SizedBox(height: Gaps.section),
                       _MemoryPanel(state: state, trainer: progress.trainer, itemKey: key, now: now),
                       if (state.reviewed) ...[
@@ -223,98 +235,210 @@ class _Seg extends StatelessWidget {
       );
 }
 
+/// The card itself, in reading order: the torifuda beside its kimariji,
+/// poem and poet, then how fast the player takes it (TOP SPEED and the
+/// attempt count), then the cards it is easily confused with.
 class _Header extends StatelessWidget {
-  const _Header({required this.poem, required this.inverted, required this.bestMs});
+  const _Header({required this.poem, required this.inverted, required this.stats});
   final Poem poem;
   final bool inverted;
-  final double? bestMs;
+  final CardStats stats;
 
   @override
   Widget build(BuildContext context) {
     final s = S.of(context);
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
+    final lookAlikes = fudaSets.tomofuda(poem.id);
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        SizedBox(width: CardDetailLayout.cardImageWidth, child: TorifudaCard(poem: poem, inverted: inverted)),
-        const SizedBox(width: Gaps.section),
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text(poem.kimariji, style: const TextStyle(fontFamily: Fonts.display, fontSize: CardDetailLayout.kimarijiFont, height: 1)),
-              Text(s.kimarijiCaption,
-                  style: const TextStyle(
-                      fontWeight: Weights.black,
-                      fontSize: CardDetailLayout.kimarijiCaptionFont,
-                      letterSpacing: TagStyle.tracking * CardDetailLayout.kimarijiCaptionFont)),
-              const SizedBox(height: Gaps.small),
-              Text(poem.kami, style: const TextStyle(fontWeight: Weights.black, fontSize: CardDetailLayout.kamiFont, height: 1.3)),
-              const SizedBox(height: 2),
-              Text(poem.author, style: const TextStyle(fontWeight: Weights.bold, fontSize: CardDetailLayout.authorFont, color: Palette.mute)),
-              if (fudaSets.tomofuda(poem.id).isNotEmpty) ...[
-                const SizedBox(height: Gaps.small),
-                Wrap(
-                  spacing: Gaps.tight,
-                  runSpacing: Gaps.tight,
-                  children: [for (final sib in fudaSets.tomofuda(poem.id)) Pill(poems[sib].kimariji)],
-                ),
-              ],
-            ],
-          ),
+        Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            SizedBox(width: CardDetailLayout.cardImageWidth, child: TorifudaCard(poem: poem, inverted: inverted)),
+            const SizedBox(width: Gaps.section),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  FittedBox(
+                    fit: BoxFit.scaleDown,
+                    alignment: Alignment.centerLeft,
+                    child: Text(poem.kimariji,
+                        maxLines: 1,
+                        style: const TextStyle(fontFamily: Fonts.display, fontSize: CardDetailLayout.kimarijiFont, height: 1)),
+                  ),
+                  _Caption(s.kimarijiCaption),
+                  const SizedBox(height: Gaps.small),
+                  Text.rich(Phrases.span(poem.kami.replaceAll('\u3000', '\u3000${Phrases.end}'),
+                      style: const TextStyle(fontWeight: Weights.black, fontSize: CardDetailLayout.kamiFont, height: 1.3))),
+                  const SizedBox(height: 2),
+                  Text(poem.author,
+                      style: const TextStyle(fontWeight: Weights.bold, fontSize: CardDetailLayout.authorFont, color: Palette.mute)),
+                  const SizedBox(height: Gaps.panel),
+                  _SpeedLine(stats: stats),
+                ],
+              ),
+            ),
+          ],
         ),
-        const SizedBox(width: Gaps.small),
-        _BestBadge(bestMs: bestMs),
+        if (lookAlikes.isNotEmpty) ...[
+          const SizedBox(height: Gaps.section),
+          _Caption(s.lookAlikesLabel),
+          const SizedBox(height: Gaps.tight),
+          Wrap(
+            spacing: Gaps.tight,
+            runSpacing: Gaps.tight,
+            children: [for (final id in lookAlikes) _LookAlikeChip(poem: poems[id], inverted: inverted)],
+          ),
+        ],
       ],
     );
   }
 }
 
-class _BestBadge extends StatelessWidget {
-  const _BestBadge({required this.bestMs});
-  final double? bestMs;
+/// A small spaced-capitals caption ("KIMARIJI · 決まり字").
+class _Caption extends StatelessWidget {
+  const _Caption(this.text);
+  final String text;
+
+  @override
+  Widget build(BuildContext context) => Text(text,
+      style: const TextStyle(
+          fontWeight: Weights.black,
+          fontSize: CardDetailLayout.captionFont,
+          letterSpacing: TagStyle.tracking * CardDetailLayout.captionFont));
+}
+
+/// TOP SPEED beside how many attempts it comes from.
+class _SpeedLine extends StatelessWidget {
+  const _SpeedLine({required this.stats});
+  final CardStats stats;
+
+  @override
+  Widget build(BuildContext context) {
+    final s = S.of(context);
+    final misses = stats.all.where((a) => a.miss).length;
+    const countStyle = TextStyle(fontWeight: Weights.bold, fontSize: CardDetailLayout.countFont, color: Palette.mute);
+    return Wrap(
+      spacing: Gaps.panel,
+      runSpacing: Gaps.tight,
+      crossAxisAlignment: WrapCrossAlignment.center,
+      children: [
+        _TopSpeedBadge(ms: stats.topSpeedMs),
+        Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(s.attemptCount(stats.count), style: countStyle),
+            if (misses > 0) Text(s.dontKnowCount(misses), style: countStyle),
+          ],
+        ),
+      ],
+    );
+  }
+}
+
+/// A card this one is easily confused with: its torifuda in miniature and its
+/// kimariji; a tap opens its own detail page.
+class _LookAlikeChip extends StatelessWidget {
+  const _LookAlikeChip({required this.poem, required this.inverted});
+  final Poem poem;
+  final bool inverted;
+
+  @override
+  Widget build(BuildContext context) => Pressable(
+        semanticLabel: poem.kimariji,
+        onTap: () => Navigator.push(
+          context,
+          MangaRoute<void>(builder: (_) => CardDetailScreen(itemKey: ItemKey(poem.id, inverted))),
+        ),
+        builder: (context, pressed) => Container(
+          padding: CardDetailLayout.lookAlikePadding,
+          decoration: BoxDecoration(
+              color: pressed ? Palette.sunSoft : Palette.paper,
+              border: Border.all(color: Palette.ink, width: Strokes.control)),
+          child: Row(mainAxisSize: MainAxisSize.min, children: [
+            SizedBox(width: CardDetailLayout.lookAlikeCardWidth, child: TorifudaCard(poem: poem, inverted: inverted)),
+            const SizedBox(width: Gaps.small),
+            Text(poem.kimariji,
+                style: const TextStyle(fontFamily: Fonts.display, fontSize: CardDetailLayout.lookAlikeKimarijiFont)),
+            const SizedBox(width: Gaps.tight),
+            MangaIcon(IconArt.chevron, size: CardDetailLayout.lookAlikeChevron),
+          ]),
+        ),
+      );
+}
+
+class _TopSpeedBadge extends StatelessWidget {
+  const _TopSpeedBadge({required this.ms});
+  final double? ms;
 
   @override
   Widget build(BuildContext context) {
     final s = S.of(context);
     return Container(
-      width: CardDetailLayout.bestWidth,
-      padding: const EdgeInsets.symmetric(vertical: 8),
-      alignment: Alignment.center,
+      padding: CardDetailLayout.topSpeedPadding,
       decoration: BoxDecoration(color: Palette.sun, border: Border.all(color: Palette.ink, width: Strokes.control)),
       child: Column(mainAxisSize: MainAxisSize.min, children: [
-        Text(s.bestLabel,
+        Text(s.topSpeedLabel,
+            maxLines: 1,
+            softWrap: false,
             style: const TextStyle(
                 fontWeight: Weights.black,
-                fontSize: CardDetailLayout.bestLabelFont,
-                letterSpacing: TagStyle.tracking * CardDetailLayout.bestLabelFont)),
+                fontSize: CardDetailLayout.topSpeedLabelFont,
+                letterSpacing: TagStyle.tracking * CardDetailLayout.topSpeedLabelFont)),
         const SizedBox(height: 2),
-        Text(bestMs == null ? '—' : '${formatChipSeconds(bestMs!)} s',
-            style: const TextStyle(fontFamily: Fonts.display, fontSize: CardDetailLayout.bestValueFont)),
+        Text(ms == null ? '—' : '${formatChipSeconds(ms!)} s',
+            maxLines: 1,
+            softWrap: false,
+            style: const TextStyle(fontFamily: Fonts.display, fontSize: CardDetailLayout.topSpeedValueFont)),
       ]),
     );
   }
 }
 
-/// The combined "toggle a series / read its value" row: avg5, avg10, avg50
-/// and p95 are both stat tiles and the chart's series-visibility buttons.
+/// The combined "toggle a series / read its value" row: the three rolling
+/// averages and the band are both stat tiles (each series' latest value) and
+/// the chart's series-visibility buttons.
 class _SeriesRow extends StatelessWidget {
-  const _SeriesRow({required this.stats, required this.visible, required this.onToggle});
-  final CardStats stats;
+  const _SeriesRow({required this.chart, required this.visible, required this.onToggle});
+  final AttemptChartData chart;
   final Set<ChartSeries> visible;
   final ValueChanged<ChartSeries> onToggle;
 
-  Widget _tile(ChartSeries series, String label, double? value, Color swatch) {
+  static String _label(ChartSeries series) => switch (series) {
+        ChartSeries.band => 'p${AttemptChartTuning.bandHigh.round()}',
+        _ => 'avg${series.window}',
+      };
+
+  static Color _swatch(ChartSeries series) => switch (series) {
+        ChartSeries.shortAverage => ChartStyle.shortAverage,
+        ChartSeries.midAverage => ChartStyle.midAverage,
+        ChartSeries.longAverage => ChartStyle.longAverage,
+        ChartSeries.band => ChartStyle.bandEdge,
+      };
+
+  Widget _tile(ChartSeries series) {
     final on = visible.contains(series);
-    final valueText = value == null ? '—' : '${formatChipSeconds(value)}s';
+    final value = chart.latest(series);
     final content = Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       mainAxisSize: MainAxisSize.min,
       children: [
-        Container(height: CardDetailLayout.seriesSwatchHeight, color: swatch),
+        Container(height: CardDetailLayout.seriesSwatchHeight, color: _swatch(series)),
         const SizedBox(height: 3),
-        Text(label, style: const TextStyle(fontWeight: Weights.black, fontSize: CardDetailLayout.seriesTileLabelFont)),
-        Text(valueText, style: const TextStyle(fontFamily: Fonts.display, fontSize: CardDetailLayout.seriesTileValueFont)),
+        Text(_label(series),
+            maxLines: 1,
+            softWrap: false,
+            style: const TextStyle(fontWeight: Weights.black, fontSize: CardDetailLayout.seriesTileLabelFont)),
+        FittedBox(
+          fit: BoxFit.scaleDown,
+          alignment: Alignment.centerLeft,
+          child: Text(value == null ? '—' : '${formatChipSeconds(value)}s',
+              maxLines: 1,
+              style: const TextStyle(fontFamily: Fonts.display, fontSize: CardDetailLayout.seriesTileValueFont)),
+        ),
       ],
     );
     return Expanded(
@@ -337,18 +461,12 @@ class _SeriesRow extends StatelessWidget {
   }
 
   @override
-  Widget build(BuildContext context) {
-    final p95 = stats.timed.isEmpty ? null : stats.percentile(stats.timed.length, 95);
-    return Row(children: [
-      _tile(ChartSeries.avg5, 'avg5', stats.mean(5), Palette.seaDeep),
-      const SizedBox(width: Gaps.tight),
-      _tile(ChartSeries.avg10, 'avg10', stats.mean(10), Palette.pink),
-      const SizedBox(width: Gaps.tight),
-      _tile(ChartSeries.avg50, 'avg50', stats.mean(50), Palette.violet),
-      const SizedBox(width: Gaps.tight),
-      _tile(ChartSeries.band, 'p95', p95, Palette.desk),
-    ]);
-  }
+  Widget build(BuildContext context) => Row(children: [
+        for (final (i, series) in ChartSeries.values.indexed) ...[
+          if (i > 0) const SizedBox(width: Gaps.tight),
+          _tile(series),
+        ],
+      ]);
 }
 
 class _MemoryPanel extends StatelessWidget {
@@ -367,6 +485,17 @@ class _MemoryPanel extends StatelessWidget {
     return [for (var i = 0; i < n; i++) trainer.retrievability(key, start.add(span * (i / (n - 1))))];
   }
 
+  /// NEXT DUE: the date and how far off it is, or "Today" once it is due.
+  _MemTile _dueTile(S s, DateTime due) {
+    final days = Trainer.daysBetween(now, due);
+    if (days <= 0) return _MemTile(label: s.nextDueLabel, value: s.dueTodayValue, highlight: true);
+    return _MemTile(
+        label: s.nextDueLabel,
+        value: s.shortDate(due),
+        suffix: days == 1 ? s.dueTomorrow : s.dueInDaysSuffix(days),
+        highlight: true);
+  }
+
   @override
   Widget build(BuildContext context) {
     final s = S.of(context);
@@ -378,39 +507,39 @@ class _MemoryPanel extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         mainAxisSize: MainAxisSize.min,
         children: [
-          Row(children: [
-            InkTag(s.memoryTag),
-            const SizedBox(width: Gaps.small),
-            Expanded(
-              child: Text(reviewed ? s.lastReviewedOn(s.shortDate(card.lastReview!)) : s.neverReviewed,
-                  textAlign: TextAlign.right,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(fontWeight: Weights.black, fontSize: CardDetailLayout.memHeadingFont)),
+          SizedBox(
+            width: double.infinity,
+            child: Wrap(
+              alignment: WrapAlignment.spaceBetween,
+              crossAxisAlignment: WrapCrossAlignment.center,
+              spacing: Gaps.small,
+              runSpacing: Gaps.tight,
+              children: [
+                InkTag(s.memoryTag),
+                Text(reviewed ? s.lastReviewedOn(s.shortDate(card.lastReview!)) : s.neverReviewed,
+                    style: const TextStyle(fontWeight: Weights.black, fontSize: CardDetailLayout.memHeadingFont)),
+              ],
             ),
-          ]),
+          ),
           const SizedBox(height: Gaps.panel),
-          Row(children: [
-            Expanded(
-              child: _MemTile(
-                  label: s.stabilityLabel, value: card.stability == null ? '—' : '${card.stability!.toStringAsFixed(1)}${s.daysUnit}'),
-            ),
-            const SizedBox(width: Gaps.tight),
-            Expanded(child: _MemTile(label: s.difficultyLabel, value: card.difficulty?.toStringAsFixed(1) ?? '—')),
-          ]),
+          _MemRow(
+            _MemTile(
+                label: s.stabilityLabel,
+                value: card.stability?.toStringAsFixed(1) ?? '—',
+                suffix: card.stability == null ? null : s.stabilityUnit),
+            _MemTile(
+                label: s.difficultyLabel,
+                value: card.difficulty?.toStringAsFixed(1) ?? '—',
+                suffix: card.difficulty == null ? null : s.outOf(FsrsScale.difficultyMax)),
+          ),
           const SizedBox(height: Gaps.tight),
-          Row(children: [
-            Expanded(
-              child: _MemTile(
-                  label: s.retrievabilityLabel,
-                  value: reviewed ? '${(trainer.retrievability(itemKey, now) * 100).round()}%' : '—'),
-            ),
-            const SizedBox(width: Gaps.tight),
-            Expanded(
-              child: _MemTile(
-                  label: s.nextDueLabel, value: reviewed ? s.shortDate(card.due) : s.notScheduled, highlight: true),
-            ),
-          ]),
+          _MemRow(
+            _MemTile(
+                label: s.retrievabilityLabel,
+                value: reviewed ? '${(trainer.retrievability(itemKey, now) * 100).round()}' : '—',
+                suffix: reviewed ? s.retrievabilityNow : null),
+            reviewed ? _dueTile(s, card.due) : _MemTile(label: s.nextDueLabel, value: s.notScheduled, highlight: true),
+          ),
           const SizedBox(height: Gaps.section),
           SizedBox(
             height: CardDetailLayout.curveHeight,
@@ -426,32 +555,60 @@ class _MemoryPanel extends StatelessWidget {
   }
 }
 
+/// Two memory tiles side by side, as tall as the taller one.
+class _MemRow extends StatelessWidget {
+  const _MemRow(this.left, this.right);
+  final _MemTile left;
+  final _MemTile right;
+
+  @override
+  Widget build(BuildContext context) => IntrinsicHeight(
+        child: Row(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+          Expanded(child: left),
+          const SizedBox(width: Gaps.tight),
+          Expanded(child: right),
+        ]),
+      );
+}
+
+/// A memory figure: its label, then the number in display type with a small
+/// unit after it ("11.2 days", "6.2 / 10"). The unit wraps under the number
+/// when both don't fit.
 class _MemTile extends StatelessWidget {
-  const _MemTile({required this.label, required this.value, this.highlight = false});
+  const _MemTile({required this.label, required this.value, this.suffix, this.highlight = false});
   final String label;
   final String value;
+  final String? suffix;
   final bool highlight;
+
+  static const _nbsp = '\u00A0';
 
   @override
   Widget build(BuildContext context) => Container(
         padding: CardDetailLayout.memGridPadding,
         decoration: BoxDecoration(
-            color: highlight ? Palette.pinkSoft : Palette.paper, border: Border.all(color: Palette.ink, width: Strokes.control)),
+            color: highlight ? Palette.pink : Palette.paper, border: Border.all(color: Palette.ink, width: Strokes.control)),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           mainAxisSize: MainAxisSize.min,
           children: [
-            Text(label,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: const TextStyle(
-                    fontWeight: Weights.black,
-                    fontSize: CardDetailLayout.memGridLabelFont,
-                    letterSpacing: TagStyle.tracking * CardDetailLayout.memGridLabelFont)),
-            Text(value,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: const TextStyle(fontFamily: Fonts.display, fontSize: CardDetailLayout.memGridValueFont)),
+            FittedBox(
+              fit: BoxFit.scaleDown,
+              alignment: Alignment.centerLeft,
+              child: Text(label,
+                  maxLines: 1,
+                  style: const TextStyle(
+                      fontWeight: Weights.black,
+                      fontSize: CardDetailLayout.memGridLabelFont,
+                      letterSpacing: TagStyle.tracking * CardDetailLayout.memGridLabelFont)),
+            ),
+            Text.rich(TextSpan(children: [
+              Phrases.span(value.replaceAll(' ', _nbsp),
+                  style: const TextStyle(fontFamily: Fonts.display, fontSize: CardDetailLayout.memGridValueFont)),
+              if (suffix != null)
+                Phrases.span(' ${suffix!.replaceAll(' ', _nbsp)}',
+                    style: const TextStyle(fontWeight: Weights.bold, fontSize: CardDetailLayout.memGridSuffixFont)),
+            ])),
           ],
         ),
       );
