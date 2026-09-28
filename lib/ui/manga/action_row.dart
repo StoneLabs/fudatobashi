@@ -30,22 +30,28 @@ class ActionRowButton extends StatelessWidget {
         color: color,
         padding: const EdgeInsets.symmetric(horizontal: ButtonMetrics.rowPadding),
         child: Row(
-          mainAxisSize: MainAxisSize.min,
           children: [
             MangaIcon(icon, size: ButtonMetrics.rowIcon, color: textColor),
             const SizedBox(width: ButtonMetrics.rowGap),
-            Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(label, style: TextStyle(fontWeight: Weights.black, fontSize: TypeScale.button, color: textColor)),
-                Text(sub,
-                    style: TextStyle(
-                        fontWeight: Weights.black,
-                        fontSize: TypeScale.tiny,
-                        letterSpacing: TagStyle.tracking * TypeScale.tiny,
-                        color: textColor)),
-              ],
+            Expanded(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(label,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(fontWeight: Weights.black, fontSize: TypeScale.button, color: textColor)),
+                  Text(sub,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                          fontWeight: Weights.black,
+                          fontSize: TypeScale.tiny,
+                          letterSpacing: TagStyle.tracking * TypeScale.tiny,
+                          color: textColor)),
+                ],
+              ),
             ),
           ],
         ),

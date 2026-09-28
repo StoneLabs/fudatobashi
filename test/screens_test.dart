@@ -33,6 +33,7 @@ import 'package:fudatobashi/ui/islands/island_map.dart';
 import 'package:fudatobashi/ui/manga/manga.dart';
 import 'package:fudatobashi/ui/rank/rank_screen.dart';
 import 'package:fudatobashi/ui/results/celebration_overlays.dart';
+import 'package:fudatobashi/ui/results/results_screen.dart';
 
 const _phone = Size(384, 832);
 
@@ -155,6 +156,22 @@ void main() {
     await show(tester, p, 'journey_due_en');
   });
 
+  // Reproduces "BOTTOM OVERFLOWED BY 4.0 PIXELS" on the journey island
+  // progress panel (`_IslandProgress` in `journey_home.dart`): the on-device
+  // repro used a system font scale of 1.1 (a common, not even large,
+  // accessibility setting), which the default test scale of 1.0 never
+  // exercises. The fix must size the panel to its own content instead of a
+  // fixed-height guess, so it holds at any font scale.
+  testWidgets('home, journey (en): island progress panel holds at a larger font scale', (tester) async {
+    tester.platformDispatcher.textScaleFactorTestValue = 1.1;
+    addTearDown(tester.platformDispatcher.clearTextScaleFactorTestValue);
+    final p = await open(tester, mode: LearningMode.journey, journeyCards: 27);
+    final ids = [for (final isl in archipelago.islands) ...fudaSets['initial:${isl.name}'].poemIds];
+    await makeSomeDue(tester, p, ids.take(10).toList());
+    expect(p.knownCardSpeedMs, isNotNull);
+    await show(tester, p, 'journey_due_scaled_en');
+  });
+
   testWidgets('home, all known (en): due reviews and known speed render cleanly', (tester) async {
     final p = await open(tester, mode: LearningMode.allKnown);
     final ids = [for (final isl in archipelago.islands) ...fudaSets['initial:${isl.name}'].poemIds];
@@ -162,6 +179,21 @@ void main() {
     expect(p.dueCount(), greaterThan(0));
     expect(p.knownCardSpeedMs, isNotNull);
     await show(tester, p, 'known_due_en');
+  });
+
+  // Reproduces "BOTTOM OVERFLOWED BY 3.8 PIXELS" on the Home rating panel
+  // (`_RankRow` in `known_home.dart`), found on the same device and for the
+  // same reason as the journey progress panel above: a fixed-height guess
+  // sized before the known-speed row existed, too short once the system font
+  // scale is bumped.
+  testWidgets('home, all known (en): rating panel holds at a larger font scale', (tester) async {
+    tester.platformDispatcher.textScaleFactorTestValue = 1.1;
+    addTearDown(tester.platformDispatcher.clearTextScaleFactorTestValue);
+    final p = await open(tester, mode: LearningMode.allKnown);
+    final ids = [for (final isl in archipelago.islands) ...fudaSets['initial:${isl.name}'].poemIds];
+    await makeSomeDue(tester, p, ids.take(10).toList());
+    expect(p.knownCardSpeedMs, isNotNull);
+    await show(tester, p, 'known_due_scaled_en');
   });
 
   for (final ja in [false, true]) {
@@ -279,6 +311,16 @@ void main() {
       expect(tester.takeException(), isNull);
       await _capture(tester, 'card_detail_$lang');
 
+      // The memory panel's "last review" text (`_MemoryPanel` in
+      // `card_detail_screen.dart`) shared its row's flexible space evenly
+      // with a `Spacer`, so it ellipsized even with room to spare; must
+      // render in full now.
+      final memoryPanel = find.byWidgetPredicate((w) => '${w.runtimeType}' == '_MemoryPanel');
+      for (final paragraph
+          in tester.renderObjectList<RenderParagraph>(find.descendant(of: memoryPanel, matching: find.byType(Text)))) {
+        expect(paragraph.didExceedMaxLines, isFalse);
+      }
+
       // Toggling to 逆さま before it was ever unlocked is an expected, common
       // case (an empty chart, dashes instead of numbers) that must not crash.
       await tester.tap(find.text(s.invertedLabel));
@@ -299,6 +341,28 @@ void main() {
       await tester.pumpWidget(const SizedBox());
     });
   }
+
+  // Reproduces "BOTTOM OVERFLOWED BY 3.0 PIXELS" on the island page's top bar
+  // (`_TopBar` in `island_screen.dart`): its two-line title+subtitle Column
+  // was squeezed into another fixed-height guess, same root cause and same
+  // on-device font scale (1.1) as the Home overflows above.
+  testWidgets('island page: top bar holds at a larger font scale', (tester) async {
+    tester.platformDispatcher.textScaleFactorTestValue = 1.1;
+    addTearDown(tester.platformDispatcher.clearTextScaleFactorTestValue);
+    final p = await open(tester, mode: LearningMode.journey, journeyCards: 40);
+    await tester.binding.setSurfaceSize(_phone);
+    await tester.pumpWidget(RepaintBoundary(key: const ValueKey('screen'), child: FudatobashiApp(progress: p)));
+    await tester.pump(const Duration(milliseconds: 500));
+    const s = S(false);
+    await tester.tap(find.text(s.stats));
+    await tester.pump(const Duration(milliseconds: 500));
+    final islandMap = tester.widget<IslandMap>(find.byType(IslandMap));
+    islandMap.onIslandTap!(0);
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 500));
+    expect(tester.takeException(), isNull);
+    await tester.pumpWidget(const SizedBox());
+  });
 
   for (final ja in [false, true]) {
     final lang = ja ? 'ja' : 'en';
@@ -335,6 +399,11 @@ void main() {
       await tester.pump(const Duration(milliseconds: 500));
       expect(tester.takeException(), isNull);
       expect(find.byType(RankUpOverlay), findsOneWidget);
+      // A mangled-encoding regression: the rating line ("1234 → 1235") once
+      // read "1234 β†’ 1235" (mojibake for the arrow), silently wrong on every
+      // device regardless of font scale.
+      expect(find.textContaining('→'), findsWidgets);
+      expect(find.textContaining('β†'), findsNothing);
       await _capture(tester, 'rank_up_preview_$lang');
 
       // Tap-anywhere-to-skip dismisses the preview cleanly.
@@ -346,6 +415,28 @@ void main() {
       await tester.pumpWidget(const SizedBox());
     });
   }
+
+  // Reproduces the same class of overflow as the island page's top bar
+  // above, this time on the rank ladder's `_TopBar` (`rank_screen.dart`):
+  // its two-line rating-number Column, squeezed into a fixed-height guess.
+  testWidgets('rank ladder: top bar holds at a larger font scale', (tester) async {
+    tester.platformDispatcher.textScaleFactorTestValue = 1.1;
+    addTearDown(tester.platformDispatcher.clearTextScaleFactorTestValue);
+    final p = await open(tester, mode: LearningMode.allKnown);
+    p.rating = Rating.bands[5].minRating + 5;
+    await tester.binding.setSurfaceSize(_phone);
+    await tester.pumpWidget(RepaintBoundary(key: const ValueKey('screen'), child: FudatobashiApp(progress: p)));
+    await tester.pump(const Duration(milliseconds: 500));
+    const s = S(false);
+    await tester.tap(find.text(s.stats));
+    await tester.pump(const Duration(milliseconds: 500));
+    await tester.tap(find.text(s.rank));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 500));
+    expect(tester.takeException(), isNull);
+    expect(find.byType(RankScreen), findsOneWidget);
+    await tester.pumpWidget(const SizedBox());
+  });
 
   testWidgets('rank ladder: open from the Home rating panel', (tester) async {
     final p = await open(tester, mode: LearningMode.allKnown);
@@ -361,6 +452,38 @@ void main() {
     expect(tester.takeException(), isNull);
     expect(find.byType(RankScreen), findsOneWidget);
 
+    await tester.pumpWidget(const SizedBox());
+  });
+
+  // Reproduces "BOTTOM OVERFLOWED" on the Results splash's stat/rating/
+  // toughest-cards panels (`_StatPanel`/`_RatingPanel`/`_ToughestPanel` in
+  // `results_screen.dart`): each squeezed into a fixed height, although their
+  // shared parent is a `SingleChildScrollView` with no reason to cap any of
+  // them at all — on-device this overflowed even at the default font scale.
+  testWidgets('results: stat, rating and toughest-cards panels render cleanly', (tester) async {
+    final p = await open(tester, mode: LearningMode.allKnown);
+    final ids = [for (final isl in archipelago.islands) ...fudaSets['initial:${isl.name}'].poemIds];
+    const config = PlayConfig(mode: PlayMode.training);
+    late SessionReport report;
+    await tester.runAsync(() async {
+      final cards = [for (final id in ids.take(5)) CardRef(id, inverted: false, mask: CardMask.none)];
+      final session = PlaySession(cards);
+      var t = const Duration(seconds: 100);
+      for (final _ in cards) {
+        session.revealed(t);
+        t += const Duration(milliseconds: 500);
+        session.commit(responseTs: t, commitTs: t + const Duration(milliseconds: 80), outcome: Outcome.known);
+        t += const Duration(milliseconds: 700);
+      }
+      report = await p.recordRun(session, config, DateTime.now());
+    });
+    await tester.binding.setSurfaceSize(_phone);
+    await tester.pumpWidget(ProgressScope(
+      progress: p,
+      child: MaterialApp(home: ResultsScreen(report: report, config: config)),
+    ));
+    await tester.pump(const Duration(milliseconds: 500));
+    expect(tester.takeException(), isNull);
     await tester.pumpWidget(const SizedBox());
   });
 

@@ -114,7 +114,7 @@ class _Splash extends StatelessWidget {
       child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
         const SizedBox(height: HeaderStyle.topGap),
         Row(children: [
-          InkTag('${_modeLabel(s, config.mode)} Β· ${s.cardsCount(attempts.length)}'),
+          InkTag('${_modeLabel(s, config.mode)} · ${s.cardsCount(attempts.length)}'),
           const Spacer(),
           InkIconButton(icon: IconArt.close, semanticLabel: s.home, onTap: onHome),
         ]),
@@ -132,18 +132,20 @@ class _Splash extends StatelessWidget {
             child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
               _TimePanel(report: report),
               const SizedBox(height: Gaps.panel),
-              Row(children: [
-                Expanded(
-                  child: _StatPanel(
-                    label: s.avgPerCardLabel,
-                    big: (avgMs / 1000).toStringAsFixed(3),
-                    unit: 's',
-                    note: s.knownOf(known, attempts.length),
+              IntrinsicHeight(
+                child: Row(children: [
+                  Expanded(
+                    child: _StatPanel(
+                      label: s.avgPerCardLabel,
+                      big: (avgMs / 1000).toStringAsFixed(3),
+                      unit: 's',
+                      note: s.knownOf(known, attempts.length),
+                    ),
                   ),
-                ),
-                const SizedBox(width: Gaps.panel),
-                Expanded(child: _RatingPanel(before: report.ratingBefore, after: report.ratingAfter)),
-              ]),
+                  const SizedBox(width: Gaps.panel),
+                  Expanded(child: _RatingPanel(before: report.ratingBefore, after: report.ratingAfter)),
+                ]),
+              ),
               if (toughest.isNotEmpty) ...[
                 const SizedBox(height: Gaps.panel),
                 _ToughestPanel(attempts: toughest.take(3).toList()),
@@ -269,9 +271,11 @@ class _StatPanel extends StatelessWidget {
         color: Palette.seaSoft,
         tone: Tones.sea,
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-        child: SizedBox(
-          height: ResultsLayout.statPanelHeight,
-          child: Column(crossAxisAlignment: CrossAxisAlignment.start, mainAxisAlignment: MainAxisAlignment.center, children: [
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
             Text(label,
                 style: const TextStyle(
                     fontWeight: Weights.black,
@@ -282,7 +286,7 @@ class _StatPanel extends StatelessWidget {
               TextSpan(text: ' $unit', style: const TextStyle(fontFamily: Fonts.display, fontSize: ResultsLayout.statBigUnitFont, height: 1)),
             ])),
             Text(note, style: const TextStyle(fontWeight: Weights.bold, fontSize: ResultsLayout.statNoteFont)),
-          ]),
+          ],
         ),
       );
 }
@@ -300,9 +304,11 @@ class _RatingPanel extends StatelessWidget {
       color: Palette.pinkSoft,
       tone: Tones.pink,
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-      child: SizedBox(
-        height: ResultsLayout.statPanelHeight,
-        child: Column(crossAxisAlignment: CrossAxisAlignment.start, mainAxisAlignment: MainAxisAlignment.center, children: [
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
           Text(s.rating.toUpperCase(),
               style: const TextStyle(
                   fontWeight: Weights.black,
@@ -315,9 +321,9 @@ class _RatingPanel extends StatelessWidget {
             outlineWidth: 1.4,
           ),
           if (after != null && band != null)
-            Text('${before?.round() ?? s.newBadge} β†’ ${after!.round()} Β· ${band.label}',
+            Text('${before?.round() ?? s.newBadge} → ${after!.round()} · ${band.label}',
                 style: const TextStyle(fontWeight: Weights.bold, fontSize: ResultsLayout.statNoteFont)),
-        ]),
+        ],
       ),
     );
   }
@@ -332,28 +338,25 @@ class _ToughestPanel extends StatelessWidget {
     final s = S.of(context);
     return MangaPanel(
       padding: ResultsLayout.toughPadding,
-      child: SizedBox(
-        height: ResultsLayout.toughHeight - 24,
-        child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          SizedBox(
-            width: ResultsLayout.toughHeaderWidth,
-            child: Column(crossAxisAlignment: CrossAxisAlignment.start, mainAxisSize: MainAxisSize.min, children: [
-              Text(s.toughestHeading, style: const TextStyle(fontFamily: Fonts.display, fontSize: ResultsLayout.toughHeadingFont, height: 1)),
-              const SizedBox(height: Gaps.tight),
-              Text(s.slowest, style: const TextStyle(fontWeight: Weights.black, fontSize: ResultsLayout.toughLabelFont)),
-              const SizedBox(height: Gaps.tight),
-              Text(s.toughestNote, style: const TextStyle(fontWeight: Weights.bold, fontSize: ResultsLayout.toughNoteFont, color: Palette.inkSoft)),
-            ]),
+      child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        SizedBox(
+          width: ResultsLayout.toughHeaderWidth,
+          child: Column(crossAxisAlignment: CrossAxisAlignment.start, mainAxisSize: MainAxisSize.min, children: [
+            Text(s.toughestHeading, style: const TextStyle(fontFamily: Fonts.display, fontSize: ResultsLayout.toughHeadingFont, height: 1)),
+            const SizedBox(height: Gaps.tight),
+            Text(s.slowest, style: const TextStyle(fontWeight: Weights.black, fontSize: ResultsLayout.toughLabelFont)),
+            const SizedBox(height: Gaps.tight),
+            Text(s.toughestNote, style: const TextStyle(fontWeight: Weights.bold, fontSize: ResultsLayout.toughNoteFont, color: Palette.inkSoft)),
+          ]),
+        ),
+        const SizedBox(width: Gaps.section),
+        Expanded(
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+            children: [for (final a in attempts) _ToughCard(a)],
           ),
-          const SizedBox(width: Gaps.section),
-          Expanded(
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-              children: [for (final a in attempts) _ToughCard(a)],
-            ),
-          ),
-        ]),
-      ),
+        ),
+      ]),
     );
   }
 }

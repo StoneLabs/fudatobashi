@@ -146,8 +146,7 @@ class _TopBar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final s = S.of(context);
-    return SizedBox(
-      height: IslandDetailLayout.topBarHeight,
+    return IntrinsicHeight(
       child: Row(
         children: [
           InkIconButton(icon: IconArt.back, semanticLabel: s.back, onTap: () => Navigator.maybePop(context)),

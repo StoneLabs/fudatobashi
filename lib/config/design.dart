@@ -491,7 +491,6 @@ abstract final class HomeLayout {
   static const double mapMistFont = 12.5;
   static const EdgeInsets mapMistPadding = EdgeInsets.fromLTRB(8, 3, 8, 3);
 
-  static const double progressHeight = 90;
   static const EdgeInsets progressPadding = EdgeInsets.fromLTRB(12, 8, 12, 0);
   static const double islandTitle = 20;
   static const double nowFont = 12;
@@ -526,8 +525,6 @@ abstract final class HomeLayout {
   static const double journeyBalloonFont = 13.5;
   static const Alignment journeyBalloonTail = Alignment(0.84, 0.4);
   static const double journeyBalloonTailTurn = -30;
-
-  static const double rankHeight = 110;
 
   /// Widths of the rating and streak panels on the spec's 358-wide row.
   static const int rankFlex = 250;
@@ -674,7 +671,6 @@ abstract final class ChartStyle {
 /// The island detail screen (spec phone 7): the zoomed mini-map, this
 /// island's stat summary, the sort chips and the scrollable card list.
 abstract final class IslandDetailLayout {
-  static const double topBarHeight = 48;
   static const double titleFont = 26;
   static const double subFont = 12.5;
 
@@ -752,7 +748,6 @@ abstract final class CardDetailLayout {
 /// progression, with the player's own rung, the next threshold and every
 /// cleared class marked, plus a rank-up preview reachable from the next rung.
 abstract final class RankLayout {
-  static const double topBarHeight = 44;
   static const double ratingLabelFont = 12;
   static const double ratingLabelTracking = 0.14;
   static const double ratingFont = 26;
@@ -841,7 +836,6 @@ abstract final class ResultsLayout {
   static const EdgeInsets splashSumPadding = EdgeInsets.fromLTRB(9, 3, 9, 4);
   static const Placement splashTobi = Placement(right: 8, bottom: -34, size: Size(66, 80));
 
-  static const double statPanelHeight = 100;
   static const double statLabelFont = 12;
   static const double statLabelTracking = 0.16;
   static const double statBigFont = 32;
@@ -853,7 +847,6 @@ abstract final class ResultsLayout {
   static const double knownSpeedTrendIcon = 11;
   static const double knownSpeedGap = 4;
 
-  static const double toughHeight = 180;
   static const EdgeInsets toughPadding = EdgeInsets.fromLTRB(14, 12, 12, 12);
   static const double toughHeadingFont = 30;
   static const double toughLabelFont = 13;

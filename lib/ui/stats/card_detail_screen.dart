@@ -380,9 +380,10 @@ class _MemoryPanel extends StatelessWidget {
         children: [
           Row(children: [
             InkTag(s.memoryTag),
-            const Spacer(),
-            Flexible(
+            const SizedBox(width: Gaps.small),
+            Expanded(
               child: Text(reviewed ? s.lastReviewedOn(s.shortDate(card.lastReview!)) : s.neverReviewed,
+                  textAlign: TextAlign.right,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: const TextStyle(fontWeight: Weights.black, fontSize: CardDetailLayout.memHeadingFont)),

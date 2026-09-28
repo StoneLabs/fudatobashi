@@ -36,7 +36,7 @@ class JourneyHome extends StatelessWidget {
       children: [
         Expanded(child: _JourneyMap(journey)),
         const SizedBox(height: Gaps.panel),
-        SizedBox(height: HomeLayout.progressHeight, child: _IslandProgress(journey)),
+        _IslandProgress(journey),
         const SizedBox(height: Gaps.panel),
         SizedBox(
           height: HomeLayout.journeyHeroHeight,
@@ -214,6 +214,7 @@ class _IslandProgress extends StatelessWidget {
     return MangaPanel(
       padding: HomeLayout.progressPadding,
       child: Column(
+        mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(

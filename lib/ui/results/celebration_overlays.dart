@@ -110,7 +110,7 @@ class NewCardOverlay extends StatelessWidget {
                 Text(s.kimarijiLabel, style: const TextStyle(fontWeight: Weights.black, fontSize: TypeScale.tiny)),
               ]),
               const SizedBox(height: Gaps.tight),
-              Text('#${poem.id} Β· ${poem.author}',
+              Text('#${poem.id} · ${poem.author}',
                   style: const TextStyle(fontWeight: Weights.black, fontSize: ResultsLayout.newCardMetaFont)),
               if (data.twins.isNotEmpty) ...[
                 const SizedBox(height: Gaps.tight),
@@ -229,7 +229,7 @@ class IslandCompleteOverlay extends StatelessWidget {
             decoration: const BoxDecoration(color: Palette.paper),
             child: Padding(
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-              child: Text('${island.name} Β· ${island.sites.length} / ${island.sites.length}',
+              child: Text('${island.name} · ${island.sites.length} / ${island.sites.length}',
                   style: const TextStyle(fontWeight: Weights.black, fontSize: ResultsLayout.islandSubFont)),
             ),
           ),
@@ -285,7 +285,7 @@ class IslandCompleteOverlay extends StatelessWidget {
                   style: const TextStyle(fontWeight: Weights.bold, fontSize: ResultsLayout.islandLineFont),
                   child: Row(mainAxisSize: MainAxisSize.min, children: [
                     Text(s.islandsDoneOf(islandsDone, archipelago.islands.length)),
-                    const Text(' Β· '),
+                    const Text(' · '),
                     NumberedText(s.cardsOf, [cardsUnlocked, 100]),
                   ]),
                 ),
@@ -400,7 +400,7 @@ class RankUpOverlay extends StatelessWidget {
             ),
             child: Padding(
               padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
-              child: Text('${data.ratingBefore.round()} β†’ ${data.ratingAfter.round()}',
+              child: Text('${data.ratingBefore.round()} → ${data.ratingAfter.round()}',
                   style: const TextStyle(fontFamily: Fonts.display, fontSize: ResultsLayout.rankRateFont)),
             ),
           ),
