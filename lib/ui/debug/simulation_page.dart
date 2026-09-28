@@ -30,6 +30,11 @@ class _SimulationPageState extends State<SimulationPage> {
   var _running = false;
   Object? _error;
 
+  /// The learner, pace and days behind [_result], for "Seed demo data" to
+  /// reproduce exactly (not whatever is currently selected, if it has since
+  /// changed without being re-run).
+  ({LearnerKind learner, LearningPace pace, int days})? _lastRun;
+
   Future<void> _simulate(LearningPace pace) async {
     setState(() {
       _running = true;
@@ -45,10 +50,20 @@ class _SimulationPageState extends State<SimulationPage> {
           if (mounted) setState(() => _result = [..._result, d]);
         },
       );
+      _lastRun = (learner: _learner, pace: pace, days: _days);
     } catch (e) {
       _error = e;
     }
     if (mounted) setState(() => _running = false);
+  }
+
+  /// Seeds real progress with the run shown above (running one first, with
+  /// the current choices, if none has happened yet).
+  Future<void> _seedDemoData(LearningPace pace) async {
+    if (_lastRun == null) await _simulate(pace);
+    final run = _lastRun;
+    if (run == null || !mounted) return;
+    await confirmSeedDemoData(context, learner: run.learner, pace: run.pace, days: run.days);
   }
 
   @override
@@ -117,12 +132,12 @@ class _SimulationPageState extends State<SimulationPage> {
           const Divider(height: 32),
           Text('Demo data', style: title),
           const Text(
-            "Replaces your progress with two weeks of an average learner's journey (for celebrations, due cards and Stats).",
+            'Seeds your progress with the run above (runs one first if none yet): for celebrations, due cards and Stats.',
             style: _mono,
           ),
           const SizedBox(height: 8),
           OutlinedButton(
-            onPressed: _running ? null : () => confirmSeedDemoData(context),
+            onPressed: _running ? null : () => _seedDemoData(pace),
             child: const Text('Seed demo data'),
           ),
         ]),

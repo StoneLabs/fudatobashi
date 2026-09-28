@@ -542,8 +542,6 @@ abstract final class SimulationTuning {
 abstract final class DemoDataTuning {
   /// Days simulated, ending yesterday.
   static const int days = 14;
-  static const int minRoundsPerDay = 2;
-  static const int maxRoundsPerDay = 4;
 
   /// A free-play run happens every this many simulated days.
   static const int freeRunEvery = 3;

@@ -2,18 +2,26 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 
+import '../../domain/learning_pace.dart';
+import '../../domain/synthetic_learner.dart';
 import '../../state/demo_data.dart';
 import '../../state/scope.dart';
 
-/// Confirms, then replaces all progress with synthetic history (several days
-/// of training and free-play runs) through the real recording path.
-Future<void> confirmSeedDemoData(BuildContext context) async {
+/// Confirms, then replaces all progress with synthetic history (the
+/// Simulation page's last run, through the real recording path).
+Future<void> confirmSeedDemoData(
+  BuildContext context, {
+  required LearnerKind learner,
+  required LearningPace pace,
+  required int days,
+}) async {
   final progress = ProgressScope.read(context);
   final ok = await showDialog<bool>(
     context: context,
     builder: (c) => AlertDialog(
       title: const Text('Seed demo data?'),
-      content: const Text('Replaces all progress with two weeks of a simulated journey player: training rounds, unlocks, islands and a few free-play runs.'),
+      content: Text('Replaces all progress with the $days-day journey shown above (${learner.name} learner, '
+          '${pace.name} pace): training rounds, unlocks, islands and a few free-play runs.'),
       actions: [
         TextButton(onPressed: () => Navigator.pop(c, false), child: const Text('Cancel')),
         FilledButton(onPressed: () => Navigator.pop(c, true), child: const Text('Seed')),
@@ -42,6 +50,9 @@ Future<void> confirmSeedDemoData(BuildContext context) async {
   ));
   await seedDemoData(
     progress,
+    learner: learner,
+    pace: pace,
+    days: days,
     onProgress: (day, totalDays, fraction) => status.value = 'Seeding…\nDay $day/$totalDays: ${(fraction * 100).round()}%',
   );
   status.dispose();
