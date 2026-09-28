@@ -712,6 +712,18 @@ void main() {
         for (final paragraph in tester.renderObjectList<RenderParagraph>(texts)) {
           expect(paragraph.didExceedMaxLines, isFalse, reason: paragraph.text.toPlainText());
         }
+
+        // The speed strip sits on the grid of the stat tiles under the chart:
+        // TOP SPEED over avg5 + avg10, attempts over avg50, don't know over p95.
+        final s = S(ja);
+        Rect strip(String label) => tester.getRect(find.ancestor(of: find.text(label), matching: find.byType(SizedBox)).first);
+        Rect tile(String label) =>
+            tester.getRect(find.ancestor(of: find.text(label), matching: find.byType(GestureDetector)).first);
+        expect(strip(s.topSpeedLabel).left, moreOrLessEquals(tile('avg5').left, epsilon: 0.01));
+        expect(strip(s.topSpeedLabel).right, moreOrLessEquals(tile('avg10').right, epsilon: 0.01));
+        expect(strip(s.attemptsLabel).right, moreOrLessEquals(tile('avg50').right, epsilon: 0.01));
+        expect(strip(s.dontKnowLabel).right, moreOrLessEquals(tile('p95').right, epsilon: 0.01));
+
         await tester.drag(find.descendant(of: detail, matching: find.byType(Scrollable)), const Offset(0, -600));
         await tester.pump(const Duration(milliseconds: 500));
         expect(tester.takeException(), isNull);

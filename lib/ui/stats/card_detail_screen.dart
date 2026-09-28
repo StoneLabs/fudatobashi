@@ -18,15 +18,15 @@ import '../play/time_format.dart';
 import '../torifuda/torifuda_painter.dart';
 import 'stats_charts.dart';
 
-/// Which attempts feed the chart, the stat tiles and the TOP SPEED badge:
+/// Which attempts feed the speed strip, the chart and its stat tiles:
 /// 修行 only, free play + 苦手 combined (guest attempts are never stored), or
 /// every attempt. Defaults to "All" so a freshly tapped card shows everything
 /// it has, however it was played.
 enum _ModeFilter { training, free, all }
 
-/// A card's own record (spec phone 8): the torifuda, its kimariji, TOP SPEED
-/// and the cards it is easily confused with, the attempt chart with
-/// toggleable stat tiles, and its FSRS memory panel.
+/// A card's own record (spec phone 8): the torifuda with its kimariji, poet
+/// and whole poem, the cards it is easily confused with, TOP SPEED and the
+/// attempt chart with toggleable stat tiles, and its FSRS memory panel.
 class CardDetailScreen extends StatefulWidget {
   const CardDetailScreen({super.key, required this.itemKey});
 
@@ -87,9 +87,11 @@ class _CardDetailScreenState extends State<CardDetailScreen> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
-                      _Header(poem: poem, inverted: _inverted, stats: chart.stats),
+                      _Header(poem: poem, inverted: _inverted),
                       const SizedBox(height: Gaps.section),
                       _ModeToggle(mode: _mode, onChanged: (m) => setState(() => _mode = m)),
+                      const SizedBox(height: Gaps.panel),
+                      _SpeedStrip(stats: chart.stats),
                       const SizedBox(height: Gaps.panel),
                       MangaPanel(
                         padding: CardDetailLayout.chartPadding,
@@ -234,15 +236,13 @@ class _Seg extends StatelessWidget {
       );
 }
 
-/// The card itself, in reading order: the torifuda beside its kimariji and
-/// poet, how fast the player takes it (TOP SPEED and the attempt count), the
-/// whole poem with readings (上の句, then 下の句), then the cards it is easily
-/// confused with.
+/// The card itself: the torifuda, with its kimariji level with the card's top
+/// and its poet level with the bottom; the whole poem with readings under it
+/// (上の句, then 下の句); then the cards it is easily confused with.
 class _Header extends StatelessWidget {
-  const _Header({required this.poem, required this.inverted, required this.stats});
+  const _Header({required this.poem, required this.inverted});
   final Poem poem;
   final bool inverted;
-  final CardStats stats;
 
   static const _verse = TextStyle(
       fontWeight: Weights.bold, fontSize: CardDetailLayout.poemFont, height: CardDetailLayout.poemLineHeight);
@@ -254,33 +254,41 @@ class _Header extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            SizedBox(width: CardDetailLayout.cardImageWidth, child: TorifudaCard(poem: poem, inverted: inverted)),
-            const SizedBox(width: Gaps.section),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  FittedBox(
-                    fit: BoxFit.scaleDown,
-                    alignment: Alignment.centerLeft,
-                    child: Text(poem.kimariji,
-                        maxLines: 1,
-                        style: const TextStyle(fontFamily: Fonts.display, fontSize: CardDetailLayout.kimarijiFont, height: 1)),
-                  ),
-                  _Caption(s.kimarijiCaption),
-                  const SizedBox(height: Gaps.small),
-                  RubyText(poem.authorRuby,
-                      style: const TextStyle(fontWeight: Weights.bold, fontSize: CardDetailLayout.authorFont, color: Palette.mute)),
-                  const SizedBox(height: Gaps.panel),
-                  _SpeedLine(stats: stats),
-                ],
+        IntrinsicHeight(
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              SizedBox(width: CardDetailLayout.cardImageWidth, child: TorifudaCard(poem: poem, inverted: inverted)),
+              const SizedBox(width: Gaps.section),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        FittedBox(
+                          fit: BoxFit.scaleDown,
+                          alignment: Alignment.centerLeft,
+                          child: Text(poem.kimariji,
+                              maxLines: 1,
+                              style: const TextStyle(
+                                  fontFamily: Fonts.display, fontSize: CardDetailLayout.kimarijiFont, height: 1)),
+                        ),
+                        _Caption(s.kimarijiCaption),
+                      ],
+                    ),
+                    const SizedBox(height: Gaps.small),
+                    RubyText(poem.authorRuby,
+                        style: const TextStyle(
+                            fontWeight: Weights.bold, fontSize: CardDetailLayout.authorFont, color: Palette.mute)),
+                  ],
+                ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
         const SizedBox(height: Gaps.section),
         RubyText(poem.kamiRuby, style: _verse),
@@ -314,35 +322,6 @@ class _Caption extends StatelessWidget {
           letterSpacing: TagStyle.tracking * CardDetailLayout.captionFont));
 }
 
-/// TOP SPEED beside how many attempts it comes from.
-class _SpeedLine extends StatelessWidget {
-  const _SpeedLine({required this.stats});
-  final CardStats stats;
-
-  @override
-  Widget build(BuildContext context) {
-    final s = S.of(context);
-    final misses = stats.all.where((a) => a.miss).length;
-    const countStyle = TextStyle(fontWeight: Weights.bold, fontSize: CardDetailLayout.countFont, color: Palette.mute);
-    return Wrap(
-      spacing: Gaps.panel,
-      runSpacing: Gaps.tight,
-      crossAxisAlignment: WrapCrossAlignment.center,
-      children: [
-        _TopSpeedBadge(ms: stats.topSpeedMs),
-        Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text(s.attemptCount(stats.count), style: countStyle),
-            if (misses > 0) Text(s.dontKnowCount(misses), style: countStyle),
-          ],
-        ),
-      ],
-    );
-  }
-}
-
 /// A card this one is easily confused with: its torifuda in miniature and its
 /// kimariji; a tap opens its own detail page.
 class _LookAlikeChip extends StatelessWidget {
@@ -374,31 +353,37 @@ class _LookAlikeChip extends StatelessWidget {
       );
 }
 
-class _TopSpeedBadge extends StatelessWidget {
-  const _TopSpeedBadge({required this.ms});
-  final double? ms;
+/// TOP SPEED, the attempts and the "don't know"s, on the grid of the stat
+/// tiles under the chart: TOP SPEED spans two of their four columns.
+class _SpeedStrip extends StatelessWidget {
+  const _SpeedStrip({required this.stats});
+  final CardStats stats;
 
   @override
   Widget build(BuildContext context) {
     final s = S.of(context);
-    return Container(
-      padding: CardDetailLayout.topSpeedPadding,
-      decoration: BoxDecoration(color: Palette.sun, border: Border.all(color: Palette.ink, width: Strokes.control)),
-      child: Column(mainAxisSize: MainAxisSize.min, children: [
-        Text(s.topSpeedLabel,
-            maxLines: 1,
-            softWrap: false,
-            style: const TextStyle(
-                fontWeight: Weights.black,
-                fontSize: CardDetailLayout.topSpeedLabelFont,
-                letterSpacing: TagStyle.tracking * CardDetailLayout.topSpeedLabelFont)),
-        const SizedBox(height: 2),
-        Text(ms == null ? '—' : '${formatChipSeconds(ms!)} s',
-            maxLines: 1,
-            softWrap: false,
-            style: const TextStyle(fontFamily: Fonts.display, fontSize: CardDetailLayout.topSpeedValueFont)),
-      ]),
-    );
+    final top = stats.topSpeedMs;
+    final misses = stats.all.where((a) => a.miss).length;
+    return LayoutBuilder(builder: (context, constraints) {
+      final column = (constraints.maxWidth - 3 * Gaps.tight) / 4;
+      return IntrinsicHeight(
+        child: Row(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+          SizedBox(
+            width: 2 * column + Gaps.tight,
+            child: _StatTile(
+                label: s.topSpeedLabel,
+                value: top == null ? '—' : formatChipSeconds(top),
+                suffix: top == null ? null : 's',
+                fill: Palette.sun),
+          ),
+          const SizedBox(width: Gaps.tight),
+          SizedBox(
+              width: column, child: _StatTile(label: s.attemptsLabel, value: '${stats.count}', suffix: s.timesSuffix)),
+          const SizedBox(width: Gaps.tight),
+          SizedBox(width: column, child: _StatTile(label: s.dontKnowLabel, value: '$misses', suffix: s.timesSuffix)),
+        ]),
+      );
+    });
   }
 }
 
@@ -481,14 +466,14 @@ class _MemoryPanel extends StatelessWidget {
   final DateTime now;
 
   /// NEXT DUE: the date and how far off it is, or "Today" once it is due.
-  _MemTile _dueTile(S s, DateTime due) {
+  _StatTile _dueTile(S s, DateTime due) {
     final days = Trainer.daysBetween(now, due);
-    if (days <= 0) return _MemTile(label: s.nextDueLabel, value: s.dueTodayValue, highlight: true);
-    return _MemTile(
+    if (days <= 0) return _StatTile(label: s.nextDueLabel, value: s.dueTodayValue, fill: Palette.pink);
+    return _StatTile(
         label: s.nextDueLabel,
         value: s.shortDate(due),
         suffix: days == 1 ? s.dueTomorrow : s.dueInDaysSuffix(days),
-        highlight: true);
+        fill: Palette.pink);
   }
 
   @override
@@ -518,22 +503,22 @@ class _MemoryPanel extends StatelessWidget {
           ),
           const SizedBox(height: Gaps.panel),
           _MemRow(
-            _MemTile(
+            _StatTile(
                 label: s.stabilityLabel,
                 value: card.stability?.toStringAsFixed(1) ?? '—',
                 suffix: card.stability == null ? null : s.stabilityUnit),
-            _MemTile(
+            _StatTile(
                 label: s.difficultyLabel,
                 value: card.difficulty?.toStringAsFixed(1) ?? '—',
                 suffix: card.difficulty == null ? null : s.outOf(FsrsScale.difficultyMax)),
           ),
           const SizedBox(height: Gaps.tight),
           _MemRow(
-            _MemTile(
+            _StatTile(
                 label: s.retrievabilityLabel,
                 value: reviewed ? '${(trainer.retrievability(itemKey, now) * 100).round()}' : '—',
                 suffix: reviewed ? s.retrievabilityNow : null),
-            reviewed ? _dueTile(s, card.due) : _MemTile(label: s.nextDueLabel, value: s.notScheduled, highlight: true),
+            reviewed ? _dueTile(s, card.due) : _StatTile(label: s.nextDueLabel, value: s.notScheduled, fill: Palette.pink),
           ),
         ],
       ),
@@ -544,8 +529,8 @@ class _MemoryPanel extends StatelessWidget {
 /// Two memory tiles side by side, as tall as the taller one.
 class _MemRow extends StatelessWidget {
   const _MemRow(this.left, this.right);
-  final _MemTile left;
-  final _MemTile right;
+  final _StatTile left;
+  final _StatTile right;
 
   @override
   Widget build(BuildContext context) => IntrinsicHeight(
@@ -557,23 +542,23 @@ class _MemRow extends StatelessWidget {
       );
 }
 
-/// A memory figure: its label, then the number in display type with a small
-/// unit after it ("11.2 days", "6.2 / 10"). The unit wraps under the number
-/// when both don't fit.
-class _MemTile extends StatelessWidget {
-  const _MemTile({required this.label, required this.value, this.suffix, this.highlight = false});
+/// A figure of the speed strip or the memory panel: its label, then the
+/// number in display type with a small unit after it ("11.2 days",
+/// "6.2 / 10"). The unit wraps under the number when both don't fit.
+class _StatTile extends StatelessWidget {
+  const _StatTile({required this.label, required this.value, this.suffix, this.fill = Palette.paper});
   final String label;
   final String value;
   final String? suffix;
-  final bool highlight;
+  final Color fill;
 
   static const _nbsp = '\u00A0';
 
   @override
   Widget build(BuildContext context) => Container(
-        padding: CardDetailLayout.memGridPadding,
+        padding: CardDetailLayout.statPadding,
         decoration: BoxDecoration(
-            color: highlight ? Palette.pink : Palette.paper, border: Border.all(color: Palette.ink, width: Strokes.control)),
+            color: fill, border: Border.all(color: Palette.ink, width: Strokes.control)),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           mainAxisSize: MainAxisSize.min,
@@ -585,15 +570,15 @@ class _MemTile extends StatelessWidget {
                   maxLines: 1,
                   style: const TextStyle(
                       fontWeight: Weights.black,
-                      fontSize: CardDetailLayout.memGridLabelFont,
-                      letterSpacing: TagStyle.tracking * CardDetailLayout.memGridLabelFont)),
+                      fontSize: CardDetailLayout.statLabelFont,
+                      letterSpacing: TagStyle.tracking * CardDetailLayout.statLabelFont)),
             ),
             Text.rich(TextSpan(children: [
               Phrases.span(value.replaceAll(' ', _nbsp),
-                  style: const TextStyle(fontFamily: Fonts.display, fontSize: CardDetailLayout.memGridValueFont)),
+                  style: const TextStyle(fontFamily: Fonts.display, fontSize: CardDetailLayout.statValueFont)),
               if (suffix != null)
                 Phrases.span(' ${suffix!.replaceAll(' ', _nbsp)}',
-                    style: const TextStyle(fontWeight: Weights.bold, fontSize: CardDetailLayout.memGridSuffixFont)),
+                    style: const TextStyle(fontWeight: Weights.bold, fontSize: CardDetailLayout.statSuffixFont)),
             ])),
           ],
         ),

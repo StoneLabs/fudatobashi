@@ -59,8 +59,11 @@ extension StatsStrings on S {
   String islandCrumb(String islandName) => ja ? '$islandNameの島' : '$islandName island';
   String get kimarijiCaption => t('KIMARIJI · 決まり字', '決まり字');
   String get topSpeedLabel => t('TOP SPEED', '最速');
-  String attemptCount(int n) => ja ? '挑戦$n回' : (n == 1 ? '1 attempt' : '$n attempts');
-  String dontKnowCount(int n) => ja ? '「わからない」$n回' : "$n don't know";
+  String get attemptsLabel => t('ATTEMPTS', '挑戦');
+  String get dontKnowLabel => t("DON'T KNOW", 'わからない');
+
+  /// After a count of attempts ("57 回"); English needs none.
+  String? get timesSuffix => ja ? '回' : null;
   String get lookAlikesLabel => t('EASILY CONFUSED WITH · 友札', '間違えやすい友札');
   String get topSpeedChartLabel => t('top', '最速');
   String get attemptsAxis => t('attempts', '回数');

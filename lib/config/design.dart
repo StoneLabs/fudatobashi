@@ -786,17 +786,13 @@ abstract final class CardDetailLayout {
   static const double cardImageWidth = 104;
   static const double kimarijiFont = 44;
   static const double captionFont = 11.5;
-  static const EdgeInsets topSpeedPadding = EdgeInsets.fromLTRB(10, 7, 10, 8);
-  static const double topSpeedLabelFont = 11.5;
-  static const double topSpeedValueFont = 18;
 
-  static const double authorFont = 13;
+  static const double authorFont = 14;
 
   /// The whole poem under the card, 上の句 then 下の句, with readings.
   static const double poemFont = 16;
   static const double poemLineHeight = 1.25;
   static const double verseGap = 2;
-  static const double countFont = 12.5;
 
   /// A look-alike (友札) chip: a miniature torifuda, its kimariji, a chevron.
   static const EdgeInsets lookAlikePadding = EdgeInsets.fromLTRB(5, 5, 8, 5);
@@ -816,10 +812,12 @@ abstract final class CardDetailLayout {
 
   static const double memPadding = 12;
   static const double memHeadingFont = 12.5;
-  static const double memGridLabelFont = 11.5;
-  static const double memGridValueFont = 21;
-  static const double memGridSuffixFont = 13;
-  static const EdgeInsets memGridPadding = EdgeInsets.fromLTRB(9, 4, 9, 5);
+
+  /// The figures of the speed strip and the memory panel.
+  static const double statLabelFont = 11.5;
+  static const double statValueFont = 21;
+  static const double statSuffixFont = 13;
+  static const EdgeInsets statPadding = EdgeInsets.fromLTRB(9, 4, 9, 5);
 
   static const double balloonFont = 13;
   static const Alignment balloonSpeaker = Alignment(1.3, -0.2);
