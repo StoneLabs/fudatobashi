@@ -249,9 +249,7 @@ class _Welcome extends StatelessWidget {
         Placed(
           OnboardingLayout.balloon,
           child: SpeechBalloon(
-            tail: OnboardingLayout.balloonTail,
-            tailTurn: OnboardingLayout.balloonTailTurn,
-            padding: const EdgeInsets.symmetric(horizontal: OnboardingLayout.balloonPadding),
+            speaker: OnboardingLayout.balloonSpeaker,
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [

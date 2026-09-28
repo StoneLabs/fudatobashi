@@ -469,9 +469,7 @@ class _SeeYouBanner extends StatelessWidget {
       children: [
         Expanded(
           child: SpeechBalloon(
-            tail: const Alignment(0.82, 0.6),
-            tailTurn: -40,
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+            speaker: CardDetailLayout.balloonSpeaker,
             child: Text(s.seeYouOn(s.shortDate(due)), style: const TextStyle(fontSize: CardDetailLayout.balloonFont)),
           ),
         ),

@@ -307,14 +307,18 @@ abstract final class NarrationStyle {
 }
 
 abstract final class BalloonStyle {
-  static const double tail = 14;
+  /// The text area: this share of the oval's width and height, centred
+  /// (0.78² + 0.62² < 1, so its corners stay inside the oval).
+  static const double textWidth = 0.78;
+  static const double textHeight = 0.62;
 
-  /// Tail rotation that points straight down, degrees.
-  static const double tailDown = 45;
-
-  /// The CSS tail box sits this much higher than its root point.
-  static const double tailLift = 1;
-  static const double tailSkew = 8;
+  /// The tail: how far it reaches past the oval, its width where it leaves
+  /// the oval, how much it curls (share of its length) and how deep its root
+  /// sinks into the oval so the two merge cleanly.
+  static const double tailLength = 16;
+  static const double tailBase = 16;
+  static const double tailBend = 0.18;
+  static const double tailInset = 4;
   static const double lineHeight = 1.15;
 }
 
@@ -455,6 +459,12 @@ abstract final class MapStyle {
   static const Offset routeStart = Offset(-46, 56);
   static const Size flag = Size(19, 26);
   static const Offset flagOffset = Offset(10, -14);
+
+  /// A flag planted on a card site (`SiteMark.flag`), map units, and where
+  /// its pole's foot sits in that box (the art's 16 × 22 box has it at
+  /// 2.5, 21).
+  static const Size siteFlag = Size(6.3, 8.6);
+  static const Offset siteFlagFoot = Offset(1, 8.2);
   static const Size boat = Size(36, 33);
 
   /// Boat anchor above the route point, as a fraction of its height.
@@ -523,8 +533,7 @@ abstract final class HomeLayout {
   static const Placement journeyTobi = Placement(right: 8, top: -16, size: Size(96, 114));
   static const Placement journeyBalloon = Placement(right: 102, top: 22, size: Size(100, 54));
   static const double journeyBalloonFont = 13.5;
-  static const Alignment journeyBalloonTail = Alignment(0.84, 0.4);
-  static const double journeyBalloonTailTurn = -30;
+  static const Alignment journeyBalloonSpeaker = Alignment(1.9, -0.3);
 
   /// Widths of the rating and streak panels on the spec's 358-wide row.
   static const int rankFlex = 250;
@@ -559,8 +568,7 @@ abstract final class HomeLayout {
   static const Placement heroTobi = Placement(right: 12, top: -20, size: Size(118, 140));
   static const Placement heroBalloon = Placement(right: 110, top: 38, size: Size(94, 50));
   static const double heroBalloonFont = 14.5;
-  static const Alignment heroBalloonTail = Alignment(0.88, 0.48);
-  static const double heroBalloonTailTurn = -24;
+  static const Alignment heroBalloonSpeaker = Alignment(1.8, -0.5);
 
   static const double modeHeight = 112;
   static const double modeSlant = 22;
@@ -591,7 +599,6 @@ abstract final class HomeLayout {
 
   static const double rowJpFont = 17;
   static const double rowLineHeight = 1.1;
-  static const EdgeInsets balloonPadding = EdgeInsets.symmetric(horizontal: 12, vertical: 6);
   static const double rowSubFont = 12;
   static const double untrackedFont = 12;
   static const double untrackedTracking = 0.08;
@@ -636,10 +643,8 @@ abstract final class StatsLayout {
   static const double focusButtonTop = 86;
   static const Placement focusTobi = Placement(right: 6, top: 4, size: Size(70, 84));
   static const Placement focusBalloon = Placement(right: 66, top: 10, size: Size(96, 52));
-  static const Alignment focusBalloonTail = Alignment(0.85, 0.5);
-  static const double focusBalloonTailTurn = -50;
+  static const Alignment focusBalloonSpeaker = Alignment(1.5, 0.4);
   static const double focusBalloonFont = 13;
-  static const EdgeInsets focusBalloonPadding = EdgeInsets.symmetric(horizontal: 10, vertical: 6);
 
   static const double playButtonHeight = 40;
   static const EdgeInsets playButtonPadding = EdgeInsets.symmetric(horizontal: 14);
@@ -739,6 +744,7 @@ abstract final class CardDetailLayout {
   static const double curveHeight = 52;
 
   static const double balloonFont = 13;
+  static const Alignment balloonSpeaker = Alignment(1.3, -0.2);
   static const double tobiWidth = 60;
   static const double tobiHeight = 72;
 }
@@ -777,9 +783,7 @@ abstract final class RankLayout {
   static const Placement tobiPlacement = Placement(right: -4, top: -18, size: Size(58, 70));
   static const Placement balloonPlacement = Placement(right: 50, top: -20, size: Size(96, 46));
   static const double balloonFont = 12.5;
-  static const Alignment balloonTail = Alignment(0.86, 0.6);
-  static const double balloonTailTurn = -30;
-  static const EdgeInsets balloonPadding = EdgeInsets.symmetric(horizontal: 10, vertical: 6);
+  static const Alignment balloonSpeaker = Alignment(1.5, 0.6);
 
   static const double previewGap = 8;
   static const double previewFont = 12.5;
@@ -916,13 +920,11 @@ abstract final class OnboardingLayout {
   static const double langInset = 10;
   static const Placement tobi = Placement(left: 20, bottom: 83, size: Size(120, 143));
   static const Placement balloon = Placement(right: 0, bottom: 92, size: Size(210, 122));
-  static const double balloonPadding = 18;
   static const double balloonTitle = 18;
   static const double balloonBody = 14.5;
   static const double balloonSmall = 12;
   static const double balloonGap = 4;
-  static const Alignment balloonTail = Alignment(-0.92, 0.24);
-  static const double balloonTailTurn = 118;
+  static const Alignment balloonSpeaker = Alignment(-1.65, 0);
   static const double seaHeight = 122;
 
   static const double choiceHeight = 150;
@@ -994,8 +996,7 @@ abstract final class ComingSoonStyle {
   static const Size box = Size(300, 220);
   static const Placement tobi = Placement(left: 20, bottom: 0, size: Size(120, 143));
   static const Placement balloon = Placement(right: 0, top: 0, size: Size(150, 80));
-  static const Alignment tail = Alignment(-0.7, 0.9);
-  static const double tailTurn = 100;
+  static const Alignment speaker = Alignment(-1.9, 2.7);
 }
 
 /// Sky and hero backgrounds: radial and linear gradients (CSS angles, degrees).
@@ -1103,4 +1104,142 @@ abstract final class JourneyView {
 
   /// Upcoming islands that get a (dashed) name plate.
   static const int platesAhead = 3;
+}
+
+/// A CSS-style `from` keyframe: the state an element enters from before
+/// settling at rest. Opacity reaches 1 at [opaqueAt] of the eased progress.
+@immutable
+class EntranceFrom {
+  const EntranceFrom({this.opacity = 0, this.scale = 1, this.turnDeg = 0, this.offset = Offset.zero, this.opaqueAt = 1});
+  final double opacity, scale, turnDeg;
+  final Offset offset;
+  final double opaqueAt;
+}
+
+/// One element's entrance on a celebration's timeline: [from] to rest over
+/// [duration], starting [delay] after the page appears.
+@immutable
+class EntranceSpec {
+  const EntranceSpec(this.from, {required this.duration, this.delay = Duration.zero, this.curve = Curves.ease});
+  final EntranceFrom from;
+  final Duration duration, delay;
+  final Curve curve;
+
+  Duration get end => delay + duration;
+}
+
+/// The spec's entrance keyframes and easing curves (`@keyframes` in
+/// final.html).
+abstract final class Entrances {
+  static const flin = EntranceFrom(scale: 1.35);
+  static const flash = EntranceFrom(scale: 0.4);
+  static const slam = EntranceFrom(scale: 1.9, turnDeg: -7);
+  static const rise = EntranceFrom(offset: Offset(0, 70), scale: 0.82);
+  static const slideL = EntranceFrom(offset: Offset(-60, 0));
+  static const pop = EntranceFrom(scale: 0.4);
+  static const up = EntranceFrom(offset: Offset(0, 22));
+  static const isrise = EntranceFrom(scale: 0.15, opaqueAt: 0.3);
+
+  static const settle = Cubic(0.2, 0.8, 0.2, 1);
+  static const springy = Cubic(0.2, 1.5, 0.4, 1);
+  static const bouncy = Cubic(0.2, 1.6, 0.4, 1);
+  static const lift = Cubic(0.15, 0.9, 0.25, 1.12);
+  static const glide = Cubic(0.2, 0.9, 0.3, 1);
+  static const swell = Cubic(0.2, 1.4, 0.4, 1);
+}
+
+/// "A new card appears" (spec phone 5): entrance timeline and the flick that
+/// sends the card off when the player accepts it.
+abstract final class NewCardMotion {
+  static const lines = EntranceSpec(Entrances.flin, duration: Duration(milliseconds: 550), curve: Entrances.settle);
+  static const flash = EntranceSpec(Entrances.flash,
+      duration: Duration(milliseconds: 700), delay: Duration(milliseconds: 120), curve: Curves.easeOut);
+  static const shout = EntranceSpec(Entrances.slam,
+      duration: Duration(milliseconds: 450), delay: Duration(milliseconds: 50), curve: Entrances.springy);
+  static const card = EntranceSpec(Entrances.rise,
+      duration: Duration(milliseconds: 650), delay: Duration(milliseconds: 220), curve: Entrances.lift);
+  static const info = EntranceSpec(Entrances.slideL,
+      duration: Duration(milliseconds: 450), delay: Duration(milliseconds: 550), curve: Entrances.glide);
+  static const sfx = EntranceSpec(Entrances.pop,
+      duration: Duration(milliseconds: 400), delay: Duration(milliseconds: 400), curve: Entrances.bouncy);
+  static const tobi = EntranceSpec(Entrances.pop,
+      duration: Duration(milliseconds: 400), delay: Duration(milliseconds: 700), curve: Entrances.bouncy);
+  static const actions = EntranceSpec(Entrances.pop,
+      duration: Duration(milliseconds: 400), delay: Duration(milliseconds: 800), curve: Entrances.springy);
+
+  /// Background once the entrance is over: the glow and focus lines throb.
+  static const throbPeriod = Duration(milliseconds: 1600);
+  static const double glowThrob = 0.07;
+  static const double linesThrob = 0.025;
+
+  /// The accept flick (the play loop's card flick): the card flies to
+  /// [flickTo] (spec px) with [flickTurnDeg] of spin while the SFX pops and a
+  /// speed streak flashes behind it; the next page follows at [flickLength].
+  static const flickLength = Duration(milliseconds: 250);
+  static const flyLength = Duration(milliseconds: 230);
+  static const flyCurve = Cubic(0.3, 0.55, 0.35, 1);
+  static const Offset flickTo = Offset(470, -620);
+  static const double flickTurnDeg = 30;
+  static const streakLength = Duration(milliseconds: 420);
+
+  /// The streak peaks at this fraction of [streakLength], then fades.
+  static const double streakPeak = 0.18;
+  static const streak = SpeedLinesSpec(count: 26, seed: 5, color: Palette.paper);
+  static const Size streakBox = Size(640, 230);
+  static const double streakBack = 150;
+  static const String flickWord = 'バシッ!';
+  static const double flickWordFont = 54;
+  static const double flickWordTurnDeg = -9;
+}
+
+/// "Island complete" (制覇!!): entrance timeline and the next island rising.
+abstract final class IslandCompleteMotion {
+  static const lines = NewCardMotion.lines;
+  static const title = EntranceSpec(Entrances.slam,
+      duration: Duration(milliseconds: 500), delay: Duration(milliseconds: 150), curve: Entrances.springy);
+  static const band =
+      EntranceSpec(Entrances.pop, duration: Duration(milliseconds: 350), delay: Duration(milliseconds: 450));
+  static const sub =
+      EntranceSpec(Entrances.pop, duration: Duration(milliseconds: 350), delay: Duration(milliseconds: 550));
+  static const island = EntranceSpec(Entrances.pop,
+      duration: Duration(milliseconds: 600), delay: Duration(milliseconds: 100), curve: Entrances.swell);
+  static const sfx = NewCardMotion.sfx;
+  static const tobi = NewCardMotion.tobi;
+  static const next = EntranceSpec(Entrances.up,
+      duration: Duration(milliseconds: 450), delay: Duration(milliseconds: 800), curve: Entrances.glide);
+  static const rising = EntranceSpec(Entrances.isrise,
+      duration: Duration(milliseconds: 1100), delay: Duration(milliseconds: 1000), curve: Entrances.swell);
+  static const actions = EntranceSpec(Entrances.pop,
+      duration: Duration(milliseconds: 400), delay: Duration(milliseconds: 1100), curve: Entrances.springy);
+}
+
+/// The confetti rain on the island-complete page (`ConfettiRain`), in the
+/// spec's px.
+abstract final class Confetti {
+  static const int count = 30;
+  static const int seed = 77;
+  static const List<Color> colors = [
+    Palette.pink,
+    Palette.sun,
+    Palette.land,
+    Palette.paper,
+    Palette.sea,
+    Color(0xFFFF9A2E),
+  ];
+
+  /// Pieces are scattered across this width and scaled to the actual one.
+  static const double specWidth = 390;
+  static const double fall = 600;
+  static const double drift = 90;
+  static const double stroke = 2;
+
+  /// Seconds.
+  static const double minDuration = 2.2, durationRange = 1.8;
+  static const double maxDelay = 2.4;
+  static const double minTurns = 1, turnsRange = 1.5;
+  static const Size minSize = Size(9, 12);
+  static const Size sizeRange = Size(7, 8);
+
+  /// Every this-many pieces is round.
+  static const int roundEvery = 3;
 }

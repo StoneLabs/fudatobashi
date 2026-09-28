@@ -20,8 +20,7 @@ class ComingSoon extends StatelessWidget {
               Placed(
                 ComingSoonStyle.balloon,
                 child: SpeechBalloon(
-                  tail: ComingSoonStyle.tail,
-                  tailTurn: ComingSoonStyle.tailTurn,
+                  speaker: ComingSoonStyle.speaker,
                   child: Text(message, style: const TextStyle(fontSize: TypeScale.button)),
                 ),
               ),

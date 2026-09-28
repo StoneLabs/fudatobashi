@@ -210,9 +210,7 @@ class _Rung extends StatelessWidget {
               Placed(
                 RankLayout.balloonPlacement,
                 child: SpeechBalloon(
-                  tail: RankLayout.balloonTail,
-                  tailTurn: RankLayout.balloonTailTurn,
-                  padding: RankLayout.balloonPadding,
+                  speaker: RankLayout.balloonSpeaker,
                   child: NumberedText(
                     s.toGoTemplate,
                     [(nextThreshold! - rating).ceil()],

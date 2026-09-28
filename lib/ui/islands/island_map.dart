@@ -19,9 +19,12 @@ enum IslandLook {
 
   /// A pale, dashed outline: not reached yet.
   shoal,
+
+  /// Not drawn at all (a page spotlighting one island).
+  hidden,
 }
 
-enum SiteKind { tree, dot, pending, hollow }
+enum SiteKind { tree, dot, pending, hollow, flag }
 
 /// How one card is marked on its island.
 @immutable
@@ -40,6 +43,11 @@ class SiteMark {
   /// An empty circle (too few attempts to judge).
   const SiteMark.hollow()
       : kind = SiteKind.hollow,
+        color = null;
+
+  /// A flag planted on a conquered card (island complete).
+  const SiteMark.flag()
+      : kind = SiteKind.flag,
         color = null;
 
   final SiteKind kind;
@@ -158,6 +166,8 @@ class IslandMap extends StatefulWidget {
     this.route,
     this.boat,
     this.seaSeed = 1,
+    this.sea = true,
+    this.tideColor = Palette.pink,
     this.onIslandTap,
   });
 
@@ -170,6 +180,10 @@ class IslandMap extends StatefulWidget {
   /// Where the boat floats, in map units.
   final Offset? boat;
   final int seaSeed;
+
+  /// False leaves the sea transparent, for an island floating over art.
+  final bool sea;
+  final Color tideColor;
   final ValueChanged<int>? onIslandTap;
 
   /// The route's path through [islands] up to [end] (inclusive), starting at
@@ -240,7 +254,8 @@ class _IslandMapState extends State<IslandMap> with SingleTickerProviderStateMix
   @override
   Widget build(BuildContext context) {
     final dpr = MediaQuery.devicePixelRatioOf(context);
-    final spec = _MapSpec(widget.styles, widget.viewport, widget.fit, widget.route, widget.boat, widget.seaSeed);
+    final spec = _MapSpec(widget.styles, widget.viewport, widget.fit, widget.route, widget.boat,
+        widget.sea ? widget.seaSeed : null);
     return LayoutBuilder(builder: (context, box) {
       final size = box.biggest;
       final xf = spec.transform(size);
@@ -257,7 +272,8 @@ class _IslandMapState extends State<IslandMap> with SingleTickerProviderStateMix
           children: [
             RepaintBoundary(child: CustomPaint(painter: _LayerPainter(spec, _Layer.below, dpr))),
             if (_pulsing)
-              RepaintBoundary(child: CustomPaint(painter: _TidePainter(spec, _tide, !_tide.isAnimating))),
+              RepaintBoundary(
+                  child: CustomPaint(painter: _TidePainter(spec, _tide, !_tide.isAnimating, widget.tideColor))),
             RepaintBoundary(child: CustomPaint(painter: _LayerPainter(spec, _Layer.above, dpr))),
           ],
         ),
@@ -287,7 +303,9 @@ class _MapSpec {
   final BoxFit fit;
   final IslandRoute? route;
   final Offset? boat;
-  final int seaSeed;
+
+  /// Null: no sea.
+  final int? seaSeed;
 
   List<IslandShape> get islands => archipelago.islands;
 
@@ -368,7 +386,7 @@ class _LayerPainter extends CustomPainter {
     final ratio = pixelRatio * xf.scale;
     switch (layer) {
       case _Layer.below:
-        _paintSea(canvas, xf.toMap(Offset.zero) & (size / xf.scale), ratio);
+        if (spec.seaSeed != null) _paintSea(canvas, xf.toMap(Offset.zero) & (size / xf.scale), ratio);
         _paintRoute(canvas);
       case _Layer.above:
         _paintIslands(canvas, ratio);
@@ -379,7 +397,7 @@ class _LayerPainter extends CustomPainter {
   void _paintSea(Canvas canvas, Rect visible, double ratio) {
     canvas.drawRect(visible, Screentone.paint(Tones.mapSea, ratio));
     final map = Offset.zero & archipelago.size;
-    final r = SeededRandom(spec.seaSeed);
+    final r = SeededRandom(spec.seaSeed!);
     final n = (map.width * map.height / MapStyle.waveDensity).round();
     final waves = Path();
     for (var k = 0; k < n; k++) {
@@ -418,6 +436,7 @@ class _LayerPainter extends CustomPainter {
     final islands = spec.islands;
     for (final isl in islands) {
       final style = spec.styles[isl.index];
+      if (style.look == IslandLook.hidden) continue;
       final coast = SvgPath.parse(isl.pathData)..fillType = PathFillType.evenOdd;
       if (style.look == IslandLook.land) {
         canvas.drawPath(
@@ -441,7 +460,7 @@ class _LayerPainter extends CustomPainter {
       );
       for (final site in isl.sites) {
         final mark = style.sites[site.poemId];
-        if (mark != null) _paintSite(canvas, mark, site.at, isl.dotRadius);
+        if (mark != null) _paintSite(canvas, mark, site.at, isl.dotRadius, ratio);
       }
     }
     for (final isl in islands) {
@@ -462,7 +481,7 @@ class _LayerPainter extends CustomPainter {
     }
   }
 
-  void _paintSite(Canvas canvas, SiteMark mark, Offset at, double dotRadius) {
+  void _paintSite(Canvas canvas, SiteMark mark, Offset at, double dotRadius, double ratio) {
     final treeR = math.min(MapStyle.treeMaxRadius, dotRadius - MapStyle.treeInset);
     Paint ink(double w) => Paint()
       ..style = PaintingStyle.stroke
@@ -489,6 +508,9 @@ class _LayerPainter extends CustomPainter {
         final r = dotRadius - MapStyle.hollowInset;
         canvas.drawCircle(at, r, Paint()..color = Palette.paper);
         canvas.drawCircle(at, r, ink(MapStyle.hollowStroke));
+      case SiteKind.flag:
+        const f = MapStyle.siteFlag;
+        VectorPainter.paint(canvas, MapArt.flag, (at - MapStyle.siteFlagFoot) & f, pixelRatio: ratio);
     }
   }
 
@@ -567,9 +589,10 @@ class _PlateGeometry {
 }
 
 class _TidePainter extends CustomPainter {
-  _TidePainter(this.spec, this.tide, this.still) : super(repaint: tide);
+  _TidePainter(this.spec, this.tide, this.still, this.color) : super(repaint: tide);
   final _MapSpec spec;
   final Animation<double> tide;
+  final Color color;
 
   /// Draw one resting ring instead of animating (reduced motion).
   final bool still;
@@ -601,10 +624,10 @@ class _TidePainter extends CustomPainter {
       Paint()
         ..style = PaintingStyle.stroke
         ..strokeWidth = Tide.stroke * scale
-        ..color = Palette.pink.withValues(alpha: opacity),
+        ..color = color.withValues(alpha: opacity),
     );
   }
 
   @override
-  bool shouldRepaint(_TidePainter old) => old.spec != spec || old.still != still;
+  bool shouldRepaint(_TidePainter old) => old.spec != spec || old.still != still || old.color != color;
 }

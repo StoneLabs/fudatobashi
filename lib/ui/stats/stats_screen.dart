@@ -429,9 +429,7 @@ class _SlowestIslandPanel extends StatelessWidget {
           Placed(
             StatsLayout.focusBalloon,
             child: SpeechBalloon(
-              tail: StatsLayout.focusBalloonTail,
-              tailTurn: StatsLayout.focusBalloonTailTurn,
-              padding: StatsLayout.focusBalloonPadding,
+              speaker: StatsLayout.focusBalloonSpeaker,
               child: Text(s.tapAnIsland, style: const TextStyle(fontSize: StatsLayout.focusBalloonFont)),
             ),
           ),

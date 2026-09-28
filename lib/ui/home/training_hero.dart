@@ -105,15 +105,10 @@ class TrainingHero extends StatelessWidget {
         Placed(
           compact ? HomeLayout.journeyBalloon : HomeLayout.heroBalloon,
           child: SpeechBalloon(
-            tail: compact ? HomeLayout.journeyBalloonTail : HomeLayout.heroBalloonTail,
-            tailTurn: compact ? HomeLayout.journeyBalloonTailTurn : HomeLayout.heroBalloonTailTurn,
-            padding: HomeLayout.balloonPadding,
-            child: FittedBox(
-              fit: BoxFit.scaleDown,
-              child: Text(
-                balloon,
-                style: TextStyle(fontSize: compact ? HomeLayout.journeyBalloonFont : HomeLayout.heroBalloonFont),
-              ),
+            speaker: compact ? HomeLayout.journeyBalloonSpeaker : HomeLayout.heroBalloonSpeaker,
+            child: Text(
+              balloon,
+              style: TextStyle(fontSize: compact ? HomeLayout.journeyBalloonFont : HomeLayout.heroBalloonFont),
             ),
           ),
         ),
