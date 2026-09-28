@@ -281,6 +281,9 @@ class Progress extends ChangeNotifier {
 
   PaceStatus paceStatus([DateTime? now]) => trainer.paceStatus(poems, fudaSets, allStats, now ?? DateTime.now());
 
+  /// Whether Home's "Learn next cards" is open, and why not.
+  LearnAhead learnAhead([DateTime? now]) => trainer.learnAhead(poems, fudaSets, allStats, now ?? DateTime.now());
+
   /// Journey mode with cards still locked: "Learn next cards" is on offer.
   bool get canLearnMore =>
       trainer.config.learningMode == LearningMode.journey && trainer.nextBatch(poems, fudaSets).isNotEmpty;

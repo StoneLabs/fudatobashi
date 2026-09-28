@@ -18,7 +18,6 @@ import '../manga/manga.dart';
 import '../play/time_format.dart';
 import '../run/run_launcher.dart';
 import '../torifuda/torifuda_painter.dart';
-import '../run/learn_next_button.dart';
 import '../sound/sounds.dart';
 import 'celebration_sequence.dart';
 import 'celebrations.dart';
@@ -158,10 +157,6 @@ class _Splash extends StatelessWidget {
           ),
         ),
         const SizedBox(height: Gaps.section),
-        if (config.tracked && progress.canLearnMore) ...[
-          const LearnNextButton(),
-          const SizedBox(height: Gaps.panel),
-        ],
         SizedBox(
           height: ResultsLayout.actionRowHeight,
           child: Row(children: [

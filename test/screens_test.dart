@@ -32,6 +32,7 @@ import 'package:fudatobashi/state/progress.dart';
 import 'package:fudatobashi/state/scope.dart';
 import 'package:fudatobashi/state/settings.dart';
 import 'package:fudatobashi/ui/app.dart';
+import 'package:fudatobashi/ui/home/learn_ahead_button.dart';
 import 'package:fudatobashi/ui/home/training_hero.dart';
 import 'package:fudatobashi/ui/islands/island_map.dart';
 import 'package:fudatobashi/ui/manga/manga.dart';
@@ -44,7 +45,6 @@ import 'package:fudatobashi/ui/results/island_complete_overlay.dart';
 import 'package:fudatobashi/ui/results/new_card_overlay.dart';
 import 'package:fudatobashi/ui/results/rank_up_overlay.dart';
 import 'package:fudatobashi/ui/results/results_screen.dart';
-import 'package:fudatobashi/ui/run/learn_next_button.dart';
 import 'package:fudatobashi/ui/settings/settings_screen.dart';
 import 'package:fudatobashi/ui/sound/sounds.dart';
 import 'package:fudatobashi/ui/stats/card_list.dart';
@@ -154,38 +154,26 @@ void main() {
       await tester.pumpWidget(const SizedBox());
     });
 
-    testWidgets('results, journey: Learn next warns while cards are shaky ($lang)', (tester) async {
-      final p = await open(tester, mode: LearningMode.journey, ja: ja);
+    testWidgets('home, journey: Learn next is locked while cards are shaky, and a tap says why ($lang)', (tester) async {
+      tester.platformDispatcher.textScaleFactorTestValue = 1.2;
+      addTearDown(tester.platformDispatcher.clearTextScaleFactorTestValue);
+      final p = await open(tester, mode: LearningMode.journey, ja: ja, journeyCards: 3);
       await tester.binding.setSurfaceSize(_phone);
-      final report = SessionReport(
-        sessionId: null,
-        total: null,
-        attempts: const [],
-        previousBest: null,
-        ratingBefore: null,
-        ratingAfter: null,
-        goalRaised: false,
-      );
-      await tester.pumpWidget(RepaintBoundary(
-        key: const ValueKey('screen'),
-        child: ProgressScope(
-          progress: p,
-          child: MaterialApp(home: ResultsScreen(report: report, config: const PlayConfig(mode: PlayMode.training))),
-        ),
-      ));
+      await tester.pumpWidget(RepaintBoundary(key: const ValueKey('screen'), child: FudatobashiApp(progress: p)));
       await tester.pump(const Duration(milliseconds: 500));
-      await tester.tap(find.byType(LearnNextButton));
+      final ahead = p.learnAhead();
+      final unlocked = p.trainer.unlocked.length;
+      expect(ahead.lock, LearnAheadLock.shaky);
+      await tester.tap(find.byType(LearnAheadButton));
       await tester.pump();
-      await tester.pump(const Duration(milliseconds: 600));
-      final warning = ja ? 'まだ3枚あやふやだよ。いいの？' : '3 cards are still shaky. Sure?';
-      expect(find.text(warning), findsOneWidget);
+      await tester.pump(const Duration(milliseconds: 400));
+      final why = S(ja).learnNextShaky(ahead.shaky);
+      expect(find.text(why), findsOneWidget);
       expect(tester.takeException(), isNull);
-      await _capture(tester, 'learn_next_shaky_$lang');
-      await tester.tap(find.ancestor(of: find.text(ja ? '練習を続ける' : 'Keep practising'), matching: find.byType(ShoutButton)));
-      await tester.pump();
-      await tester.pump(const Duration(milliseconds: 600));
-      expect(find.text(warning), findsNothing);
-      expect(p.trainer.unlocked.length, 3);
+      await _capture(tester, 'learn_next_locked_$lang');
+      expect(p.trainer.unlocked.length, unlocked, reason: 'a locked tap unlocks nothing');
+      await tester.pump(LearnAheadStyle.balloonLife);
+      expect(find.text(why), findsNothing);
       await tester.pumpWidget(const SizedBox());
     });
 
@@ -202,12 +190,36 @@ void main() {
       await tester.pumpWidget(const SizedBox());
     });
 
-    testWidgets('home, journey: no Learn next button ($lang)', (tester) async {
-      final p = await open(tester, mode: LearningMode.journey, ja: ja);
+    testWidgets('home, journey: Learn next opens once every card is well remembered, and plays the next batch ($lang)',
+        (tester) async {
+      final p = await open(tester, mode: LearningMode.journey, ja: ja, journeyCards: 12);
+      final ids = [for (final s in p.trainer.unlocked) s.key.poemId];
+      await tester.runAsync(() async {
+        final session = PlaySession([for (var i = 0; i < StatsTuning.solidMinTimed; i++) ...ids.map(CardRef.new)]);
+        var t = const Duration(seconds: 100);
+        while (!session.finished) {
+          session.revealed(t);
+          t += const Duration(milliseconds: 700);
+          session.commit(responseTs: t, commitTs: t + const Duration(milliseconds: 80), outcome: Outcome.known);
+          t += const Duration(milliseconds: 100);
+        }
+        await p.recordRun(session, const PlayConfig(mode: PlayMode.training), DateTime.now());
+      });
+      expect(p.learnAhead().lock, LearnAheadLock.none, reason: 'all 12 well remembered, ahead of day 0\'s pace');
       await tester.binding.setSurfaceSize(_phone);
       await tester.pumpWidget(RepaintBoundary(key: const ValueKey('screen'), child: FudatobashiApp(progress: p)));
       await tester.pump(const Duration(milliseconds: 500));
-      expect(find.byType(LearnNextButton), findsNothing);
+      await _capture(tester, 'learn_next_open_$lang');
+      final next = p.trainer.nextBatch(poems, fudaSets);
+      await tester.runAsync(() async {
+        await tester.tap(find.byType(LearnAheadButton));
+        await Future<void>.delayed(const Duration(milliseconds: 50));
+      });
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 500));
+      expect(find.byType(PlayScreen), findsOneWidget);
+      expect(p.trainer.unlocked.where((s) => !s.key.inverted).length, 12 + next.length);
+      expect(p.learnAhead().lock, LearnAheadLock.shaky, reason: 'the new batch still has to be learned');
       await tester.pumpWidget(const SizedBox());
     });
 
@@ -631,7 +643,7 @@ void main() {
     await tester.pumpWidget(const SizedBox());
   });
 
-  testWidgets('results (journey): Learn next cards sits above the action row', (tester) async {
+  testWidgets('results (journey): no Learn next button, it lives on Home', (tester) async {
     final p = await open(tester, mode: LearningMode.journey);
     const config = PlayConfig(mode: PlayMode.training);
     late SessionReport report;
@@ -653,9 +665,9 @@ void main() {
       child: ProgressScope(progress: p, child: MaterialApp(home: ResultsScreen(report: report, config: config))),
     ));
     await tester.pump(const Duration(milliseconds: 500));
-    expect(find.byType(LearnNextButton), findsOneWidget);
+    expect(find.text(const S(false).learnNext), findsNothing);
     expect(tester.takeException(), isNull);
-    await _capture(tester, 'results_learn_next');
+    await _capture(tester, 'results_journey');
     await tester.pumpWidget(const SizedBox());
   });
 

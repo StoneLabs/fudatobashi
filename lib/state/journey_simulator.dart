@@ -16,9 +16,9 @@ typedef CardProgress = void Function(int done, int total);
 /// a [PlaySession] answered by a [SyntheticLearner] → [Progress.recordRun].
 /// Drives the pacing tests and the dev-mode demo data.
 class JourneySimulator {
-  JourneySimulator(this.progress, {required int seed, this.onReport})
+  JourneySimulator(this.progress, {required int seed, LearnerKind learner = LearnerKind.average, this.onReport})
     : rng = math.Random(seed),
-      learner = SyntheticLearner(math.Random(seed + 1));
+      learner = SyntheticLearner(math.Random(seed + 1), kind: learner);
 
   final Progress progress;
   final math.Random rng;

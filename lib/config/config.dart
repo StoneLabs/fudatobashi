@@ -214,12 +214,15 @@ abstract final class TrainingTuning {
   static const int requeueGap = 4;
 }
 
-/// One journey pace: how many days it targets for all 100 cards, and how many
-/// new cards it may auto-unlock in one day (catching up after days off).
+/// One journey pace: how many days it targets for all 100 cards, how many
+/// new cards it may auto-unlock in one day (catching up after days off), and
+/// the daily practice it is built for: [dailyRounds] training rounds, which a
+/// capable player needs to keep up (the pacing simulations' routine).
 class PaceProfile {
-  const PaceProfile({required this.daysToAll, required this.dailyAutoCap});
+  const PaceProfile({required this.daysToAll, required this.dailyAutoCap, required this.dailyRounds});
   final int daysToAll;
   final int dailyAutoCap;
+  final int dailyRounds;
 }
 
 /// Journey pacing: when new cards arrive (`Trainer.unlockEarned`,
@@ -227,11 +230,14 @@ class PaceProfile {
 ///
 /// A new batch auto-unlocks when the player is ready (most unlocked cards are
 /// solid and the latest batch has been practised) and the unlocked count is
-/// behind the pace curve. "Learn next cards" skips both checks.
+/// behind the pace curve. So the goal is flexible: a capable player on the
+/// pace's routine keeps up with the curve, while one who keeps forgetting is
+/// held back until the cards they have are solid. Home's "Learn next cards"
+/// pulls cards in ahead of the curve (see [LearnAheadTuning]).
 abstract final class PaceTuning {
   static const LearningPace defaultPace = LearningPace.month;
-  static const PaceProfile month = PaceProfile(daysToAll: 28, dailyAutoCap: 10);
-  static const PaceProfile sprint = PaceProfile(daysToAll: 15, dailyAutoCap: 16);
+  static const PaceProfile month = PaceProfile(daysToAll: 28, dailyAutoCap: 10, dailyRounds: 3);
+  static const PaceProfile sprint = PaceProfile(daysToAll: 15, dailyAutoCap: 16, dailyRounds: 6);
 
   /// The pace curve: (share of the pace's days elapsed, share of all cards
   /// expected unlocked), linearly interpolated. Front-loaded, since the
@@ -243,6 +249,16 @@ abstract final class PaceTuning {
 
   /// Journey days the debug page's pace table looks ahead of today.
   static const int debugLookaheadDays = 3;
+}
+
+/// Home's "Learn next cards" (`Trainer.learnAhead`), for players who learn
+/// faster than their pace: it opens only once every unlocked card is well
+/// remembered and the pace has no new cards left for today.
+abstract final class LearnAheadTuning {
+  /// Latest attempts a well-remembered card is judged over: at most this share
+  /// of them missed, and their median time within the goal.
+  static const int recentWindow = 5;
+  static const double maxRecentMissRate = 0.2;
 }
 
 /// `CardStats`: how recent response times and misses are summarised.
@@ -400,37 +416,96 @@ abstract final class DevModeTuning {
   static const int countdownFrom = 3;
 }
 
-/// The synthetic player (`SyntheticLearner`) behind the pacing simulations
-/// and dev-mode demo data.
-abstract final class SyntheticLearnerTuning {
+/// How one kind of simulated player (`SyntheticLearner`) learns: response
+/// times, first-sight misses and how long memories last.
+class LearnerProfile {
+  const LearnerProfile({
+    required this.firstMs,
+    required this.firstPerKanaMs,
+    required this.floorMs,
+    required this.floorPerKanaMs,
+    required this.learnReps,
+    required this.firstSightMissRate,
+    required this.firstSightMissDecayReps,
+    required this.slipRate,
+    required this.initialStrengthDays,
+    required this.strengthGrowth,
+  });
+
   /// First-sight response time, ms, plus this much per extra kimariji kana.
-  static const double firstMs = 3400;
-  static const double firstPerKanaMs = 350;
+  final double firstMs;
+  final double firstPerKanaMs;
 
   /// Practised-to-the-limit response time, ms, plus this much per extra kana.
-  static const double floorMs = 700;
-  static const double floorPerKanaMs = 90;
-
-  /// Upside-down cards are this much slower.
-  static const double invertedFactor = 1.2;
+  final double floorMs;
+  final double floorPerKanaMs;
 
   /// Repetitions over which the gap to the floor shrinks by a factor of e.
-  static const double learnReps = 5;
-
-  /// Response times vary by up to this factor either way.
-  static const double timeJitter = 1.25;
+  final double learnReps;
 
   /// Miss chance on first sight, fading with repetitions (e-folding count),
   /// on top of a constant slip rate.
-  static const double firstSightMissRate = 0.35;
-  static const double firstSightMissDecayReps = 1.5;
-  static const double slipRate = 0.015;
+  final double firstSightMissRate;
+  final double firstSightMissDecayReps;
+  final double slipRate;
 
   /// Memory strength (days) after the first day of practice; recall after a
   /// gap of g days is exp(-g / strength). Each further day of practice
   /// multiplies it by [strengthGrowth].
-  static const double initialStrengthDays = 5;
-  static const double strengthGrowth = 2;
+  final double initialStrengthDays;
+  final double strengthGrowth;
+}
+
+/// The synthetic player (`SyntheticLearner`) behind the pacing simulations,
+/// the debug page's Simulation and dev-mode demo data.
+abstract final class SyntheticLearnerTuning {
+  /// Picks up cards fast and rarely forgets them.
+  static const LearnerProfile quick = LearnerProfile(
+    firstMs: 3000,
+    firstPerKanaMs: 300,
+    floorMs: 600,
+    floorPerKanaMs: 80,
+    learnReps: 3.5,
+    firstSightMissRate: 0.25,
+    firstSightMissDecayReps: 1.2,
+    slipRate: 0.01,
+    initialStrengthDays: 8,
+    strengthGrowth: 2.5,
+  );
+
+  /// The player the pace curve is tuned for (and the demo data's).
+  static const LearnerProfile average = LearnerProfile(
+    firstMs: 3400,
+    firstPerKanaMs: 350,
+    floorMs: 700,
+    floorPerKanaMs: 90,
+    learnReps: 5,
+    firstSightMissRate: 0.35,
+    firstSightMissDecayReps: 1.5,
+    slipRate: 0.015,
+    initialStrengthDays: 5,
+    strengthGrowth: 2,
+  );
+
+  /// Slow to get quick and forgetful: the pace must stretch for them.
+  static const LearnerProfile slow = LearnerProfile(
+    firstMs: 4200,
+    firstPerKanaMs: 450,
+    floorMs: 1000,
+    floorPerKanaMs: 120,
+    learnReps: 8,
+    firstSightMissRate: 0.5,
+    firstSightMissDecayReps: 2.5,
+    slipRate: 0.03,
+    initialStrengthDays: 1.5,
+    strengthGrowth: 1.5,
+  );
+
+  /// Upside-down cards are this much slower.
+  static const double invertedFactor = 1.2;
+
+  /// Response times vary by up to this factor either way.
+  static const double timeJitter = 1.25;
 
   /// Share of practice (repetitions) kept overnight, and after forgetting.
   static const double overnightRepsKept = 0.85;

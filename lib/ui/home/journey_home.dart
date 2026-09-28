@@ -11,6 +11,7 @@ import '../manga/manga.dart';
 import 'home_screen.dart';
 import 'home_widgets.dart';
 import 'journey_state.dart';
+import 'learn_ahead_button.dart';
 import 'training_hero.dart';
 
 /// Home in journey mode (spec phone 2): the archipelago map as the progress
@@ -246,13 +247,21 @@ class _IslandProgress extends StatelessWidget {
                   ),
                 ),
               ),
-              const Spacer(),
-              NumberedText(
-                s.learnedOf,
-                [island.unlocked, island.total],
-                style: const TextStyle(fontSize: HomeLayout.learnedFont, fontWeight: Weights.black),
-                numberStyle: const TextStyle(
-                    fontFamily: Fonts.display, fontWeight: Weights.regular, fontSize: HomeLayout.learnedNumber),
+              const SizedBox(width: Gaps.panel),
+              Expanded(
+                child: Align(
+                  alignment: Alignment.centerRight,
+                  child: FittedBox(
+                    fit: BoxFit.scaleDown,
+                    child: NumberedText(
+                      s.learnedOf,
+                      [island.unlocked, island.total],
+                      style: const TextStyle(fontSize: HomeLayout.learnedFont, fontWeight: Weights.black),
+                      numberStyle: const TextStyle(
+                          fontFamily: Fonts.display, fontWeight: Weights.regular, fontSize: HomeLayout.learnedNumber),
+                    ),
+                  ),
+                ),
               ),
             ],
           ),
@@ -265,9 +274,23 @@ class _IslandProgress extends StatelessWidget {
                       ? PipState.next
                       : PipState.locked,
           ]..sort((a, b) => a.index.compareTo(b.index))),
-          if (progress.knownCardSpeedMs != null) ...[
+          if (progress.knownCardSpeedMs != null || progress.canLearnMore) ...[
             const SizedBox(height: HomeLayout.pipsSpeedGap),
-            KnownSpeedTag(ms: progress.knownCardSpeedMs, weekAgoMs: progress.knownCardSpeedTrendAgo),
+            Row(children: [
+              Expanded(
+                child: Align(
+                  alignment: Alignment.centerLeft,
+                  child: FittedBox(
+                    fit: BoxFit.scaleDown,
+                    child: KnownSpeedTag(ms: progress.knownCardSpeedMs, weekAgoMs: progress.knownCardSpeedTrendAgo),
+                  ),
+                ),
+              ),
+              if (progress.canLearnMore) ...[
+                const SizedBox(width: Gaps.panel),
+                const Flexible(child: LearnAheadButton()),
+              ],
+            ]),
           ],
         ],
       ),

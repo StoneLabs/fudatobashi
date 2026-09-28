@@ -53,6 +53,9 @@ class _FudatobashiAppState extends State<FudatobashiApp> {
           debugShowCheckedModeBanner: false,
           showPerformanceOverlay: widget.progress.settings.showPerformanceOverlay,
           theme: buildMangaTheme(),
+          // Text outside a Scaffold (balloons and toasts in the overlay) gets
+          // the UI font, not Material's red "no Material" fallback.
+          builder: (context, child) => DefaultTextStyle(style: Theme.of(context).textTheme.bodyMedium!, child: child!),
           home: const _FirstLaunchGate(),
         ),
       ),

@@ -100,6 +100,7 @@ class _Overview extends StatelessWidget {
     final next = t.nextBatch(poems, fudaSets);
     final status = p.paceStatus(now);
     final readiness = status.readiness;
+    final ahead = p.learnAhead(now);
     final (roundsToday, attemptsToday) = _today(p, now);
     return ListView(padding: const EdgeInsets.all(16), children: [
       _KV('goal level', '${t.goalLevel}  (${t.goalMs.toStringAsFixed(0)} ms)'),
@@ -115,7 +116,8 @@ class _Overview extends StatelessWidget {
       const Divider(height: 32),
       Text('Journey pace', style: Theme.of(context).textTheme.titleMedium),
       _KV('learning mode / pace', '${c.learningMode.name} / ${c.pace.name}'
-          ' (${c.pace.profile.daysToAll}d, cap ${c.pace.profile.dailyAutoCap}/day)'),
+          ' (${c.pace.profile.daysToAll}d, cap ${c.pace.profile.dailyAutoCap}/day,'
+          ' routine ${c.pace.profile.dailyRounds} rounds/day)'),
       _KV('journey day', '${status.day}'),
       _KV('unlocked / target / total', '${status.unlocked} / ${status.target} / ${status.total}'),
       _KV('readiness',
@@ -125,6 +127,7 @@ class _Overview extends StatelessWidget {
       _KV('next auto-unlock',
           status.nextPaceDay == null ? '—' : 'day ${status.nextPaceDay} (${status.nextPaceDay! - status.day}d away)'),
       _KV('new today', '${status.newToday}'),
+      _KV('Home Learn next', '${ahead.lock.name}, ${ahead.unlocked - ahead.shaky}/${ahead.unlocked} well remembered'),
       _KV('rounds / attempts today', '$roundsToday / $attemptsToday'),
       const SizedBox(height: 4),
       const Text('day  target', style: _mono),

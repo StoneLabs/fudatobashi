@@ -62,5 +62,27 @@ void main() {
       expect(t.gradeFor(a(5000)), fsrs.Rating.hard);
       expect(t.gradeFor(a(900, miss: true)), fsrs.Rating.again);
     });
+
+    test('well remembered forgives one old slip, not a fresh miss, two slips, slowness or a due review', () {
+      final t = Trainer(config: const TrainerConfig(), items: Trainer.freshItems());
+      const key = ItemKey(1, false);
+      final now = DateTime.utc(2026, 9, 1, 12);
+      AttemptRec a(int ms, {bool miss = false}) =>
+          AttemptRec(at: now, us: ms * 1000, miss: miss, clean: true, deckSize: 10, mode: PlayMode.training);
+      bool well(List<AttemptRec> attempts, [DateTime? at]) => t.wellRemembered(key, CardStats(attempts), at ?? now);
+      final slipped = [a(900), a(900, miss: true), a(900), a(900), a(900)];
+
+      expect(well([a(900), a(900), a(900)]), isTrue);
+      expect(well([a(900), a(900)]), isFalse, reason: 'too few timed attempts');
+      expect(well(slipped), isTrue, reason: 'one slip among the last five');
+      expect(CardStats(slipped).solid(t.goalMs), isFalse, reason: 'solid is stricter');
+      expect(well([a(900), a(900), a(900), a(900, miss: true)]), isFalse, reason: 'the latest answer missed');
+      expect(well([a(900), a(900, miss: true), a(900), a(900, miss: true), a(900)]), isFalse, reason: 'two slips');
+      expect(well([a(3500), a(3500), a(3500)]), isFalse, reason: 'slower than the goal');
+
+      t.review(key, a(900));
+      expect(well(slipped), isTrue, reason: 'reviewed, not due yet');
+      expect(well(slipped, now.add(const Duration(days: 60))), isFalse, reason: 'its review is due');
+    });
   });
 }

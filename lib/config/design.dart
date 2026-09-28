@@ -1240,14 +1240,16 @@ abstract final class GuestSheetStyle {
   static const Color barrier = Color(0x8C141414);
 }
 
-/// "Learn next cards": the button (Results) and its
-/// shaky-cards warning, which borrows [GuestSheetStyle]'s sheet.
-abstract final class LearnNextStyle {
-  static const double height = 44;
-  static const double font = 14;
-  static const double icon = 18;
-  static const EdgeInsets padding = EdgeInsets.symmetric(horizontal: 12);
-  static const double iconGap = 6;
+/// Home's "Learn next cards" (`LearnAheadButton`) beside the known-card
+/// speed, and the balloon that says why it is locked.
+abstract final class LearnAheadStyle {
+  static const double minHeight = 36;
+  static const double font = 13;
+  static const double icon = 16;
+  static const EdgeInsets padding = EdgeInsets.symmetric(horizontal: 10, vertical: 6);
+  static const double iconGap = 5;
+  static const Size balloon = Size(230, 92);
+  static const Duration balloonLife = Duration(milliseconds: 2800);
 }
 
 /// The stand-in for screens still being built.
@@ -1256,16 +1258,17 @@ abstract final class ComingSoonStyle {
   static const Placement tobi = Placement(left: 20, bottom: 0, size: Size(120, 143));
   static const Placement balloon = Placement(right: 0, top: 0, size: Size(150, 80));
   static const Alignment speaker = Alignment(-1.9, 2.7);
+}
 
-  /// The balloon popping out of a control that is not built yet
-  /// (`ComingSoonBubble`): its size, the gap to the control (the tail
-  /// bridges it), how long it stays, and how it pops in and fades.
-  static const Size bubble = Size(150, 64);
-  static const double bubbleGap = 12;
-  static const Duration bubbleLife = Duration(milliseconds: 1600);
-  static const Duration bubbleFade = Duration(milliseconds: 260);
-  static const bubblePop =
-      EntranceSpec(Entrances.pop, duration: Duration(milliseconds: 320), curve: Entrances.springy);
+/// A balloon popping out of a tapped control (`BalloonPop`, e.g. "coming
+/// soon"): its default size, the gap to the control (the tail bridges it),
+/// how long it stays by default, and how it pops in and fades.
+abstract final class BalloonPopStyle {
+  static const Size size = Size(150, 64);
+  static const double gap = 12;
+  static const Duration life = Duration(milliseconds: 1600);
+  static const Duration fade = Duration(milliseconds: 260);
+  static const pop = EntranceSpec(Entrances.pop, duration: Duration(milliseconds: 320), curve: Entrances.springy);
 }
 
 /// Sky and hero backgrounds: radial and linear gradients (CSS angles, degrees).
