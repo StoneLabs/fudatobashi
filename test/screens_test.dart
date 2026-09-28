@@ -698,6 +698,10 @@ void main() {
         await _capture(tester, 'card_detail_history_${lang}_$fontScale');
 
         final detail = find.byType(CardDetailScreen);
+        final texts = find.descendant(of: detail, matching: find.byType(RichText));
+        for (final paragraph in tester.renderObjectList<RenderParagraph>(texts)) {
+          expect(paragraph.didExceedMaxLines, isFalse, reason: paragraph.text.toPlainText());
+        }
         await tester.drag(find.descendant(of: detail, matching: find.byType(Scrollable)), const Offset(0, -600));
         await tester.pump(const Duration(milliseconds: 500));
         expect(tester.takeException(), isNull);

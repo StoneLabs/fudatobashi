@@ -316,6 +316,12 @@ abstract final class CardDetailTuning {
   static const int forgettingCurveFallbackDays = 30;
 }
 
+/// Fixed ranges of the FSRS model, for display.
+abstract final class FsrsScale {
+  /// FSRS difficulty runs from 1 to this.
+  static const int difficultyMax = 10;
+}
+
 /// The card detail's attempt chart (`AttemptChart` in
 /// `lib/ui/stats/stats_charts.dart`).
 abstract final class AttemptChartTuning {

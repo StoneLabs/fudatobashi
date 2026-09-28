@@ -798,7 +798,8 @@ abstract final class CardDetailLayout {
   static const double memPadding = 12;
   static const double memHeadingFont = 12.5;
   static const double memGridLabelFont = 11.5;
-  static const double memGridValueFont = 19;
+  static const double memGridValueFont = 21;
+  static const double memGridSuffixFont = 13;
   static const EdgeInsets memGridPadding = EdgeInsets.fromLTRB(9, 4, 9, 5);
   static const double curveHeight = 52;
 

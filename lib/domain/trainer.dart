@@ -417,10 +417,12 @@ class Trainer {
   /// Local calendar days from the journey's start to [now] (0 on its first day).
   int journeyDay(DateTime now) {
     final start = journeyStart;
-    return start == null ? 0 : math.max(0, _daysBetween(start, now));
+    return start == null ? 0 : math.max(0, daysBetween(start, now));
   }
 
-  static int _daysBetween(DateTime a, DateTime b) {
+  /// Calendar days (local time) from [a] to [b]: 0 on the same day,
+  /// negative when [b] is earlier.
+  static int daysBetween(DateTime a, DateTime b) {
     DateTime date(DateTime t) {
       final l = t.toLocal();
       return DateTime.utc(l.year, l.month, l.day);
@@ -436,7 +438,7 @@ class Trainer {
       day: journeyDay(now),
       unlocked: up.length,
       total: items.length ~/ 2,
-      newToday: up.where((s) => s.unlockedAt != null && _daysBetween(s.unlockedAt!, now) == 0).length,
+      newToday: up.where((s) => s.unlockedAt != null && daysBetween(s.unlockedAt!, now) == 0).length,
       readiness: readiness(p, sets, stats),
       nextBatch: nextBatch(p, sets),
     );

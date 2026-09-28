@@ -396,6 +396,17 @@ class _MemoryPanel extends StatelessWidget {
     return [for (var i = 0; i < n; i++) trainer.retrievability(key, start.add(span * (i / (n - 1))))];
   }
 
+  /// NEXT DUE: the date and how far off it is, or "Today" once it is due.
+  _MemTile _dueTile(S s, DateTime due) {
+    final days = Trainer.daysBetween(now, due);
+    if (days <= 0) return _MemTile(label: s.nextDueLabel, value: s.dueTodayValue, highlight: true);
+    return _MemTile(
+        label: s.nextDueLabel,
+        value: s.shortDate(due),
+        suffix: days == 1 ? s.dueTomorrow : s.dueInDaysSuffix(days),
+        highlight: true);
+  }
+
   @override
   Widget build(BuildContext context) {
     final s = S.of(context);
@@ -407,39 +418,39 @@ class _MemoryPanel extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         mainAxisSize: MainAxisSize.min,
         children: [
-          Row(children: [
-            InkTag(s.memoryTag),
-            const SizedBox(width: Gaps.small),
-            Expanded(
-              child: Text(reviewed ? s.lastReviewedOn(s.shortDate(card.lastReview!)) : s.neverReviewed,
-                  textAlign: TextAlign.right,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(fontWeight: Weights.black, fontSize: CardDetailLayout.memHeadingFont)),
+          SizedBox(
+            width: double.infinity,
+            child: Wrap(
+              alignment: WrapAlignment.spaceBetween,
+              crossAxisAlignment: WrapCrossAlignment.center,
+              spacing: Gaps.small,
+              runSpacing: Gaps.tight,
+              children: [
+                InkTag(s.memoryTag),
+                Text(reviewed ? s.lastReviewedOn(s.shortDate(card.lastReview!)) : s.neverReviewed,
+                    style: const TextStyle(fontWeight: Weights.black, fontSize: CardDetailLayout.memHeadingFont)),
+              ],
             ),
-          ]),
+          ),
           const SizedBox(height: Gaps.panel),
-          Row(children: [
-            Expanded(
-              child: _MemTile(
-                  label: s.stabilityLabel, value: card.stability == null ? '—' : '${card.stability!.toStringAsFixed(1)}${s.daysUnit}'),
-            ),
-            const SizedBox(width: Gaps.tight),
-            Expanded(child: _MemTile(label: s.difficultyLabel, value: card.difficulty?.toStringAsFixed(1) ?? '—')),
-          ]),
+          _MemRow(
+            _MemTile(
+                label: s.stabilityLabel,
+                value: card.stability?.toStringAsFixed(1) ?? '—',
+                suffix: card.stability == null ? null : s.stabilityUnit),
+            _MemTile(
+                label: s.difficultyLabel,
+                value: card.difficulty?.toStringAsFixed(1) ?? '—',
+                suffix: card.difficulty == null ? null : s.outOf(FsrsScale.difficultyMax)),
+          ),
           const SizedBox(height: Gaps.tight),
-          Row(children: [
-            Expanded(
-              child: _MemTile(
-                  label: s.retrievabilityLabel,
-                  value: reviewed ? '${(trainer.retrievability(itemKey, now) * 100).round()}%' : '—'),
-            ),
-            const SizedBox(width: Gaps.tight),
-            Expanded(
-              child: _MemTile(
-                  label: s.nextDueLabel, value: reviewed ? s.shortDate(card.due) : s.notScheduled, highlight: true),
-            ),
-          ]),
+          _MemRow(
+            _MemTile(
+                label: s.retrievabilityLabel,
+                value: reviewed ? '${(trainer.retrievability(itemKey, now) * 100).round()}' : '—',
+                suffix: reviewed ? s.retrievabilityNow : null),
+            reviewed ? _dueTile(s, card.due) : _MemTile(label: s.nextDueLabel, value: s.notScheduled, highlight: true),
+          ),
           const SizedBox(height: Gaps.section),
           SizedBox(
             height: CardDetailLayout.curveHeight,
@@ -455,32 +466,60 @@ class _MemoryPanel extends StatelessWidget {
   }
 }
 
+/// Two memory tiles side by side, as tall as the taller one.
+class _MemRow extends StatelessWidget {
+  const _MemRow(this.left, this.right);
+  final _MemTile left;
+  final _MemTile right;
+
+  @override
+  Widget build(BuildContext context) => IntrinsicHeight(
+        child: Row(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+          Expanded(child: left),
+          const SizedBox(width: Gaps.tight),
+          Expanded(child: right),
+        ]),
+      );
+}
+
+/// A memory figure: its label, then the number in display type with a small
+/// unit after it ("11.2 days", "6.2 / 10"). The unit wraps under the number
+/// when both don't fit.
 class _MemTile extends StatelessWidget {
-  const _MemTile({required this.label, required this.value, this.highlight = false});
+  const _MemTile({required this.label, required this.value, this.suffix, this.highlight = false});
   final String label;
   final String value;
+  final String? suffix;
   final bool highlight;
+
+  static const _nbsp = '\u00A0';
 
   @override
   Widget build(BuildContext context) => Container(
         padding: CardDetailLayout.memGridPadding,
         decoration: BoxDecoration(
-            color: highlight ? Palette.pinkSoft : Palette.paper, border: Border.all(color: Palette.ink, width: Strokes.control)),
+            color: highlight ? Palette.pink : Palette.paper, border: Border.all(color: Palette.ink, width: Strokes.control)),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           mainAxisSize: MainAxisSize.min,
           children: [
-            Text(label,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: const TextStyle(
-                    fontWeight: Weights.black,
-                    fontSize: CardDetailLayout.memGridLabelFont,
-                    letterSpacing: TagStyle.tracking * CardDetailLayout.memGridLabelFont)),
-            Text(value,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: const TextStyle(fontFamily: Fonts.display, fontSize: CardDetailLayout.memGridValueFont)),
+            FittedBox(
+              fit: BoxFit.scaleDown,
+              alignment: Alignment.centerLeft,
+              child: Text(label,
+                  maxLines: 1,
+                  style: const TextStyle(
+                      fontWeight: Weights.black,
+                      fontSize: CardDetailLayout.memGridLabelFont,
+                      letterSpacing: TagStyle.tracking * CardDetailLayout.memGridLabelFont)),
+            ),
+            Text.rich(TextSpan(children: [
+              Phrases.span(value.replaceAll(' ', _nbsp),
+                  style: const TextStyle(fontFamily: Fonts.display, fontSize: CardDetailLayout.memGridValueFont)),
+              if (suffix != null)
+                Phrases.span(' ${suffix!.replaceAll(' ', _nbsp)}',
+                    style: const TextStyle(fontWeight: Weights.bold, fontSize: CardDetailLayout.memGridSuffixFont)),
+            ])),
           ],
         ),
       );
