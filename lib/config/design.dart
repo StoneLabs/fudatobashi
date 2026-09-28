@@ -1031,7 +1031,9 @@ abstract final class RankUpLayout {
   static const double topGap = 8;
   static const String title = '昇級!!';
   static const double titleFont = 104;
-  static const double titleOutline = 16;
+
+  /// Thin enough to keep the counters of 級 open.
+  static const double titleOutline = 9;
   static const double bandGap = 6;
   static const double bandInset = 40;
   static const double bandFont = 20;
@@ -1124,7 +1126,9 @@ abstract final class IslandCompleteLayout {
   static const double topGap = 4;
   static const String title = '制覇!!';
   static const double titleFont = 96;
-  static const double titleOutline = 16;
+
+  /// Thin enough to keep the dense strokes of 覇 apart.
+  static const double titleOutline = 8;
   static const double bandInset = 12;
   static const double bandFont = 19;
   static const double bandTracking = 0.14;

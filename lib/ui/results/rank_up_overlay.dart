@@ -419,11 +419,15 @@ class _NextClass extends StatelessWidget {
                 builder: (context, t, _) => _Bar((rating - floor) / (next.minRating - floor) * t),
               ),
               const SizedBox(height: RankUpLayout.barGap),
-              NumberedText(
-                s.nextClassPace,
-                [Rating.toSeconds(rating).toStringAsFixed(1), (next.minRating - rating).ceil()],
-                style: bold.copyWith(fontSize: RankUpLayout.nextNoteFont, fontWeight: Weights.bold),
-                numberStyle: number,
+              FittedBox(
+                fit: BoxFit.scaleDown,
+                alignment: Alignment.centerLeft,
+                child: NumberedText(
+                  s.nextClassPace,
+                  [Rating.toSeconds(rating).toStringAsFixed(1), (next.minRating - rating).ceil()],
+                  style: bold.copyWith(fontSize: RankUpLayout.nextNoteFont, fontWeight: Weights.bold),
+                  numberStyle: number,
+                ),
               ),
             ],
           ]),
