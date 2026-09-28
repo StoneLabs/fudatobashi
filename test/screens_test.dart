@@ -25,6 +25,7 @@ import 'package:fudatobashi/domain/synthetic_learner.dart';
 import 'package:fudatobashi/domain/trainer.dart';
 import 'package:fudatobashi/l10n/credits_strings.dart';
 import 'package:fudatobashi/l10n/home_strings.dart';
+import 'package:fudatobashi/l10n/onboarding_strings.dart';
 import 'package:fudatobashi/l10n/results_strings.dart';
 import 'package:fudatobashi/l10n/settings_strings.dart';
 import 'package:fudatobashi/l10n/stats_strings.dart';
@@ -39,6 +40,7 @@ import 'package:fudatobashi/ui/home/learn_ahead_button.dart';
 import 'package:fudatobashi/ui/home/training_hero.dart';
 import 'package:fudatobashi/ui/islands/island_map.dart';
 import 'package:fudatobashi/ui/manga/manga.dart';
+import 'package:fudatobashi/ui/onboarding/onboarding_panels.dart';
 import 'package:fudatobashi/ui/play/kimariji_chip.dart';
 import 'package:fudatobashi/ui/play/play_screen.dart';
 import 'package:fudatobashi/ui/rank/rank_screen.dart';
@@ -138,25 +140,148 @@ void main() {
     await tester.pumpWidget(const SizedBox());
   }
 
+  // The user's phone: 384 × 832 at 2.8125 px per dp, with a 28 dp status bar
+  // and a 48 dp navigation bar.
+  Future<void> onPhone(WidgetTester tester, Progress p, {required double fontScale}) async {
+    const dpr = 2.8125;
+    const bars = FakeViewPadding(top: 28 * dpr, bottom: 48 * dpr);
+    tester.view
+      ..devicePixelRatio = dpr
+      ..physicalSize = _phone * dpr
+      ..padding = bars
+      ..viewPadding = bars;
+    tester.platformDispatcher.textScaleFactorTestValue = fontScale;
+    addTearDown(tester.view.reset);
+    addTearDown(tester.platformDispatcher.clearTextScaleFactorTestValue);
+    await tester.binding.setSurfaceSize(_phone);
+    await tester.pumpWidget(RepaintBoundary(key: const ValueKey('screen'), child: FudatobashiApp(progress: p)));
+    await tester.pump(const Duration(milliseconds: 500));
+  }
+
+  // Taps [target] and pumps through the onboarding step swap frame by frame,
+  // failing on any layout error; [probe] runs just after the new step starts
+  // coming in.
+  Future<void> swapStep(WidgetTester tester, Finder target, {void Function()? probe}) async {
+    const frame = Duration(milliseconds: 20);
+    final probeAt = OnboardingMotion.enterDelay + OnboardingMotion.stagger;
+    var probed = false;
+    await tester.tap(target);
+    await tester.pump();
+    for (var t = frame; t < OnboardingMotion.length + frame; t += frame) {
+      await tester.pump(frame);
+      expect(tester.takeException(), isNull);
+      if (probe != null && !probed && t >= probeAt) {
+        probed = true;
+        probe();
+      }
+    }
+    await tester.pump();
+  }
+
+  // No layout errors, nothing to scroll, and no text under a go button.
+  void expectOnboardingFits(WidgetTester tester) {
+    expect(tester.takeException(), isNull);
+    for (final scroll in tester.stateList<ScrollableState>(find.byType(Scrollable))) {
+      expect(scroll.position.maxScrollExtent, 0, reason: 'the step fits without scrolling');
+    }
+    final texts = find.byType(RichText);
+    for (var i = 0; i < find.byType(GoButton).evaluate().length; i++) {
+      final go = tester.getRect(find.byType(GoButton).at(i));
+      for (var j = 0; j < texts.evaluate().length; j++) {
+        final text = tester.getRect(texts.at(j));
+        expect(go.overlaps(text), isFalse, reason: '"${tester.widget<RichText>(texts.at(j)).text.toPlainText()}" runs under a go button');
+      }
+    }
+  }
+
   for (final ja in [false, true]) {
     final lang = ja ? 'ja' : 'en';
 
-    testWidgets('onboarding ($lang)', (tester) async {
-      await show(tester, await open(tester, ja: ja), 'onboarding_$lang');
-    });
-
-    testWidgets('onboarding, pace step ($lang)', (tester) async {
+    testWidgets('onboarding: the pace step slides in from the right, and back slides the first step in from the left ($lang)',
+        (tester) async {
       final p = await open(tester, ja: ja);
-      await tester.binding.setSurfaceSize(_phone);
-      await tester.pumpWidget(RepaintBoundary(key: const ValueKey('screen'), child: FudatobashiApp(progress: p)));
-      await tester.pump(const Duration(milliseconds: 500));
-      await tester.tap(find.text(ja ? 'はじめて' : "I'm new"));
-      await tester.pump(const Duration(milliseconds: 500));
-      expect(find.text(ja ? '約15日' : 'About 15 days'), findsOneWidget);
-      expect(tester.takeException(), isNull);
-      await _capture(tester, 'onboarding_pace_$lang');
+      await onPhone(tester, p, fontScale: 1.1);
+      await swapStep(tester, find.text(S(ja).beginnerTitle), probe: () {
+        expect(tester.getTopLeft(find.byType(WelcomePanel)).dx, lessThan(0), reason: 'step 1 leaves to the left');
+        expect(tester.getTopLeft(find.byType(PaceHeader)).dx, greaterThan(Gaps.gutter), reason: 'step 2 comes from the right');
+      });
+      expect(find.byType(WelcomePanel), findsNothing);
+      expect(find.byType(PaceChoice), findsNWidgets(2));
+      await swapStep(tester, find.byType(InkIconButton), probe: () {
+        expect(tester.getTopLeft(find.byType(PaceHeader)).dx, greaterThan(Gaps.gutter), reason: 'step 2 leaves to the right');
+        expect(tester.getTopLeft(find.byType(WelcomePanel)).dx, lessThan(Gaps.gutter), reason: 'step 1 comes from the left');
+      });
+      expect(find.byType(PaceHeader), findsNothing);
+      expect(find.text(S(ja).beginnerTitle), findsOneWidget);
       await tester.pumpWidget(const SizedBox());
     });
+
+    testWidgets('onboarding: taps during the step swap do nothing ($lang)', (tester) async {
+      final p = await open(tester, ja: ja);
+      await onPhone(tester, p, fontScale: 1.1);
+      final s = S(ja);
+      await tester.tap(find.text(s.beginnerTitle));
+      await tester.pump();
+      await tester.pump(OnboardingMotion.stagger);
+      await tester.tap(find.text(s.expertTitle), warnIfMissed: false);
+      await tester.pump(OnboardingMotion.length - OnboardingMotion.stagger * 3);
+      await tester.tap(find.text(s.sprintTitle).last, warnIfMissed: false);
+      await tester.tap(find.byType(InkIconButton), warnIfMissed: false);
+      await tester.runAsync(() => Future<void>.delayed(const Duration(milliseconds: 50)));
+      await tester.pump(OnboardingMotion.length);
+      await tester.pump();
+      expect(p.settings.onboarded, isFalse);
+      expect(find.byType(PaceChoice), findsNWidgets(2), reason: 'the swap carried on to the pace step');
+      await tester.pumpWidget(const SizedBox());
+    });
+
+    testWidgets('onboarding: under reduced motion the pace step just appears ($lang)', (tester) async {
+      tester.platformDispatcher.accessibilityFeaturesTestValue = const FakeAccessibilityFeatures(disableAnimations: true);
+      addTearDown(tester.platformDispatcher.clearAccessibilityFeaturesTestValue);
+      final p = await open(tester, ja: ja);
+      await onPhone(tester, p, fontScale: 1.1);
+      await tester.tap(find.text(S(ja).beginnerTitle));
+      await tester.pump();
+      expect(find.byType(WelcomePanel), findsNothing);
+      expect(find.byType(PaceChoice), findsNWidgets(2));
+      await tester.pumpWidget(const SizedBox());
+    });
+
+    for (final pace in LearningPace.values) {
+      testWidgets('onboarding: the ${pace.name} choice starts the journey at that pace ($lang)', (tester) async {
+        final p = await open(tester, ja: ja);
+        await onPhone(tester, p, fontScale: 1.1);
+        final s = S(ja);
+        await swapStep(tester, find.text(s.beginnerTitle));
+        final title = switch (pace) {
+          LearningPace.month => s.relaxedTitle,
+          LearningPace.sprint => s.sprintTitle,
+        };
+        await tester.runAsync(() async {
+          await tester.tap(find.text(title).hitTestable());
+          await Future<void>.delayed(const Duration(milliseconds: 50));
+        });
+        await tester.pump();
+        expect(p.settings.onboarded, isTrue);
+        expect(p.trainer.config.learningMode, LearningMode.journey);
+        expect(p.trainer.config.pace, pace);
+        await tester.pumpWidget(const SizedBox());
+      });
+    }
+
+    for (final fontScale in [1.0, 1.1, 1.3]) {
+      testWidgets('onboarding fits the phone, both steps, at font scale $fontScale ($lang)', (tester) async {
+        final p = await open(tester, ja: ja);
+        await onPhone(tester, p, fontScale: fontScale);
+        expectOnboardingFits(tester);
+        await _capture(tester, 'onboarding_${lang}_$fontScale');
+        await swapStep(tester, find.text(S(ja).beginnerTitle));
+        expect(find.byType(PaceChoice), findsNWidgets(2));
+        expectOnboardingFits(tester);
+        await _capture(tester, 'onboarding_pace_${lang}_$fontScale');
+        await tester.pumpWidget(const SizedBox());
+      });
+    }
 
     testWidgets('home, journey: Learn next is locked while cards are shaky, and a tap says why ($lang)', (tester) async {
       tester.platformDispatcher.textScaleFactorTestValue = 1.2;

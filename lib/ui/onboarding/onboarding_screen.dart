@@ -8,7 +8,8 @@ import '../../l10n/onboarding_strings.dart';
 import '../../l10n/strings.dart';
 import '../../state/scope.dart';
 import '../manga/manga.dart';
-import '../shell/header_actions.dart';
+import 'onboarding_panels.dart';
+import 'step_swap.dart';
 
 /// First launch: Tobi asks how well the player knows the 100 cards, and the
 /// answer picks the learning mode (and so the Home screen). A beginner then
@@ -20,9 +21,11 @@ class OnboardingScreen extends StatefulWidget {
   State<OnboardingScreen> createState() => _OnboardingScreenState();
 }
 
+enum _Step { mode, pace }
+
 class _OnboardingScreenState extends State<OnboardingScreen> {
   bool _busy = false;
-  bool _pickingPace = false;
+  _Step _step = _Step.mode;
 
   Future<void> _choose(LearningMode mode, {LearningPace? pace}) async {
     if (_busy) return;
@@ -30,121 +33,178 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
     await ProgressScope.read(context).setLearningMode(mode, pace: pace);
   }
 
+  VoidCallback? _goTo(_Step step) => _busy ? null : () => setState(() => _step = step);
+
   @override
   Widget build(BuildContext context) {
     final s = S.of(context);
     return Scaffold(
       body: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: Gaps.gutter),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              const SizedBox(height: OnboardingLayout.topGap),
-              Flexible(
-                child: ConstrainedBox(
-                  constraints: const BoxConstraints(maxHeight: OnboardingLayout.skyHeight),
-                  child: _pickingPace
-                      ? _Welcome(
-                          title: 'ペース',
-                          banner: s.paceBanner,
-                          hello: s.tobiPace,
-                          question: s.howFast,
-                          other: s.other.howFast,
-                        )
-                      : _Welcome(
-                          title: 'ようこそ!',
-                          banner: s.welcomeBanner,
-                          hello: s.tobiHello,
-                          question: s.howWell,
-                          other: s.other.howWell,
-                        ),
-                ),
-              ),
-              const SizedBox(height: Gaps.panelWide),
-              ...(_pickingPace ? _paceChoices(s) : _modeChoices(s)),
-              const SizedBox(height: Gaps.section),
-              Row(
-                children: [
-                  if (_pickingPace) ...[
-                    InkIconButton(
-                      icon: IconArt.back,
-                      semanticLabel: s.back,
-                      onTap: _busy ? null : () => setState(() => _pickingPace = false),
-                    ),
-                    const SizedBox(width: Gaps.panelWide),
-                  ],
-                  Expanded(child: _ChangeLaterNote(where: _pickingPace ? s.paceLaterWhere : s.changeLaterWhere)),
-                ],
-              ),
-            ],
-          ),
+        child: StepSwap(
+          step: _step.index,
+          builder: (context, step) => switch (_Step.values[step]) {
+            _Step.mode => _modeStep(s),
+            _Step.pace => _paceStep(s),
+          },
         ),
       ),
     );
   }
 
-  List<Widget> _modeChoices(S s) {
+  Widget _modeStep(S s) {
     final first = fudaSets['initial:${initialGroups.first}'];
-    return [
-      _Choice(
-        shape: const PanelShape(topLeft: Offset(0, OnboardingLayout.choiceCut)),
-        color: Palette.landSoft,
-        art: const _SceneArt(PrerenderedArt.beginner),
-        tag: s.beginnerTag,
-        title: s.beginnerTitle,
-        sub: s.beginnerSub,
-        note: s.firstStop(first.label, first.poemIds.length),
-        onTap: _busy ? null : () => setState(() => _pickingPace = true),
-      ),
-      const SizedBox(height: Gaps.panel),
-      _Choice(
-        shape: const PanelShape(bottomRight: Offset(0, OnboardingLayout.choiceCut)),
-        color: Palette.sunSoft,
-        art: const _SceneArt(PrerenderedArt.expert),
-        tag: s.expertTag,
-        title: s.expertTitle,
-        sub: s.expertSub,
-        note: s.expertNote,
-        onTap: _busy ? null : () => _choose(LearningMode.allKnown),
-      ),
-    ];
+    return _StepPage(
+      children: [
+        Flexible(
+          child: SwapPiece(
+            order: 0,
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(
+                minHeight: OnboardingLayout.skyMinHeight,
+                maxHeight: OnboardingLayout.skyHeight,
+              ),
+              child: WelcomePanel(
+                title: s.welcomeTitle,
+                banner: s.welcomeBanner,
+                hello: s.tobiHello,
+                question: s.howWell,
+                other: s.other.howWellOneLine,
+              ),
+            ),
+          ),
+        ),
+        const SizedBox(height: Gaps.panelWide),
+        SwapPiece(
+          order: 1,
+          child: ModeChoice(
+            shape: const PanelShape(topLeft: Offset(0, OnboardingLayout.choiceCut)),
+            color: Palette.landSoft,
+            art: PrerenderedArt.beginner,
+            tag: s.beginnerTag,
+            title: s.beginnerTitle,
+            sub: s.beginnerSub,
+            note: s.firstStop(first.label, first.poemIds.length),
+            onTap: _goTo(_Step.pace),
+          ),
+        ),
+        const SizedBox(height: Gaps.panel),
+        SwapPiece(
+          order: 2,
+          child: ModeChoice(
+            shape: const PanelShape(bottomRight: Offset(0, OnboardingLayout.choiceCut)),
+            color: Palette.sunSoft,
+            art: PrerenderedArt.expert,
+            tag: s.expertTag,
+            title: s.expertTitle,
+            sub: s.expertSub,
+            note: s.expertNote,
+            onTap: _busy ? null : () => _choose(LearningMode.allKnown),
+          ),
+        ),
+        const SizedBox(height: Gaps.section),
+        SwapPiece(order: 3, child: _ChangeLaterNote(where: s.changeLaterWhere)),
+      ],
+    );
   }
 
-  List<Widget> _paceChoices(S s) => [
-    _Choice(
-      shape: const PanelShape(topLeft: Offset(0, OnboardingLayout.choiceCut)),
-      color: Palette.landSoft,
-      art: const _SceneArt(PrerenderedArt.beginner),
-      tag: s.relaxedTag,
-      title: s.relaxedTitle,
-      sub: s.relaxedSub,
-      note: s.relaxedNote,
-      onTap: _busy ? null : () => _choose(LearningMode.journey, pace: LearningPace.month),
-    ),
-    const SizedBox(height: Gaps.panel),
-    _Choice(
-      shape: const PanelShape(bottomRight: Offset(0, OnboardingLayout.choiceCut)),
-      color: Palette.sunSoft,
-      art: SizedBox.fromSize(
-        size: OnboardingLayout.sprintTobi,
-        child: const Tobi(pose: TobiPose.fired),
-      ),
-      tag: s.sprintTag,
-      title: s.sprintTitle,
-      sub: s.sprintSub,
-      note: s.sprintNote,
-      onTap: _busy ? null : () => _choose(LearningMode.journey, pace: LearningPace.sprint),
-    ),
-  ];
+  Widget _paceStep(S s) {
+    final relaxed = PaceCaption(title: s.relaxedTitle, sub: s.relaxedSub, note: s.relaxedNote);
+    final sprint = PaceCaption(title: s.sprintTitle, sub: s.sprintSub, note: s.sprintNote);
+    return _StepPage(
+      children: [
+        SwapPiece(
+          order: 0,
+          child: PaceHeader(banner: s.paceBanner, question: s.howFast, other: s.other.howFast),
+        ),
+        const SizedBox(height: Gaps.panelWide),
+        Expanded(
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Expanded(
+                child: SwapPiece(
+                  order: 1,
+                  child: PaceChoice(
+                    shape: const PanelShape(bottomRight: Offset(OnboardingLayout.paceSlant, 0)),
+                    art: const [
+                      RadialLayer(
+                          center: Backdrops.relaxedCenter, colors: Backdrops.relaxedColors, stops: Backdrops.relaxedStops),
+                      ToneLayer(Tones.seaFaint,
+                          fadeAngle: Backdrops.relaxedToneAngle, fadeStops: Backdrops.relaxedToneStops),
+                    ],
+                    band: OnboardingLayout.relaxedBand,
+                    pose: TobiPose.relaxed,
+                    callStyle: PaceCall.balloon,
+                    call: s.relaxedCall,
+                    tag: s.relaxedTag,
+                    caption: relaxed,
+                    beside: sprint,
+                    onTap: _busy ? null : () => _choose(LearningMode.journey, pace: LearningPace.month),
+                  ),
+                ),
+              ),
+              Expanded(
+                child: SwapPiece(
+                  order: 2,
+                  child: PaceChoice(
+                    shape: const PanelShape(topLeft: Offset(OnboardingLayout.paceSlant, 0)),
+                    art: const [
+                      RadialLayer(
+                          center: Backdrops.sprintCenter, colors: Backdrops.sprintColors, stops: Backdrops.sprintStops),
+                      BurstLayer(Bursts.sprint),
+                    ],
+                    band: OnboardingLayout.sprintBand,
+                    pose: TobiPose.tryHard,
+                    callStyle: PaceCall.shout,
+                    call: s.sprintCall,
+                    go: OnboardingLayout.sprintGo,
+                    tag: s.sprintTag,
+                    caption: sprint,
+                    beside: relaxed,
+                    onTap: _busy ? null : () => _choose(LearningMode.journey, pace: LearningPace.sprint),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: Gaps.section),
+        SwapPiece(
+          order: 3,
+          child: Row(
+            children: [
+              InkIconButton(icon: IconArt.back, semanticLabel: s.back, onTap: _goTo(_Step.mode)),
+              const SizedBox(width: Gaps.panelWide),
+              Expanded(child: _ChangeLaterNote(where: s.paceLaterWhere)),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
 }
 
-class _SceneArt extends StatelessWidget {
-  const _SceneArt(this.art);
-  final ArtImage art;
+/// A step's pieces top to bottom, filling the screen; the flexible ones take
+/// what's left. Scrolls instead when even their smallest sizes don't fit.
+class _StepPage extends StatelessWidget {
+  const _StepPage({required this.children});
+  final List<Widget> children;
 
   @override
-  Widget build(BuildContext context) => ArtImageBox(art, size: const Size.square(OnboardingLayout.illustration));
+  Widget build(BuildContext context) => LayoutBuilder(
+        builder: (context, box) => SingleChildScrollView(
+          child: ConstrainedBox(
+            constraints: BoxConstraints(minHeight: box.maxHeight),
+            child: IntrinsicHeight(
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(
+                    Gaps.gutter, OnboardingLayout.topGap, Gaps.gutter, OnboardingLayout.bottomGap),
+                child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: children),
+              ),
+            ),
+          ),
+        ),
+      );
 }
 
 class _ChangeLaterNote extends StatelessWidget {
@@ -180,190 +240,6 @@ class _ChangeLaterNote extends StatelessWidget {
             ),
           ),
         ],
-      ),
-    );
-  }
-}
-
-class _Welcome extends StatelessWidget {
-  const _Welcome({
-    required this.title,
-    required this.banner,
-    required this.hello,
-    required this.question,
-    required this.other,
-  });
-
-  /// Big lettering (Japanese in both languages), the banner under it, and
-  /// Tobi's balloon: a greeting, a question and the question in the other
-  /// language.
-  final String title, banner, hello, question, other;
-
-  @override
-  Widget build(BuildContext context) {
-    return Stack(
-      clipBehavior: Clip.none,
-      children: [
-        Positioned.fill(
-          child: MangaPanel(
-            shape: const PanelShape(bottomRight: Offset(0, OnboardingLayout.skyCut)),
-            art: const [
-              RadialLayer(center: Backdrops.skyCenter, colors: Backdrops.skyColors, stops: Backdrops.skyStops),
-              BurstLayer(Bursts.onboarding),
-            ],
-            child: Stack(
-              children: [
-                const Positioned(
-                  left: 0,
-                  right: 0,
-                  bottom: 0,
-                  height: OnboardingLayout.seaHeight,
-                  child: ArtImageBox(PrerenderedArt.welcomeSea),
-                ),
-                Positioned(
-                  left: OnboardingLayout.titleAt.dx,
-                  top: OnboardingLayout.titleAt.dy,
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      OutlinedText(
-                        title,
-                        outlineWidth: OnboardingLayout.titleOutline,
-                        style: const TextStyle(
-                          fontFamily: Fonts.display,
-                          fontSize: OnboardingLayout.title,
-                          height: TypeScale.displayLineHeight,
-                        ),
-                      ),
-                      const SizedBox(height: OnboardingLayout.titleBannerGap),
-                      InkBanner(banner),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
-        const Positioned(top: OnboardingLayout.langInset, right: OnboardingLayout.langInset, child: LanguageSwitch()),
-        const Placed(OnboardingLayout.tobi, child: Tobi(pose: TobiPose.waving)),
-        Placed(
-          OnboardingLayout.balloon,
-          child: SpeechBalloon(
-            speaker: OnboardingLayout.balloonSpeaker,
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text(
-                  hello,
-                  style: const TextStyle(
-                    fontFamily: Fonts.display,
-                    fontWeight: Weights.regular,
-                    fontSize: OnboardingLayout.balloonTitle,
-                  ),
-                ),
-                const SizedBox(height: OnboardingLayout.balloonGap),
-                Text(question, style: const TextStyle(fontSize: OnboardingLayout.balloonBody)),
-                const SizedBox(height: OnboardingLayout.balloonGap),
-                FittedBox(
-                  fit: BoxFit.scaleDown,
-                  child: Text(
-                    other,
-                    softWrap: false,
-                    style: const TextStyle(
-                      fontSize: OnboardingLayout.balloonSmall,
-                      fontWeight: Weights.bold,
-                      color: Palette.mute,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-}
-
-class _Choice extends StatelessWidget {
-  const _Choice({
-    required this.shape,
-    required this.color,
-    required this.art,
-    required this.tag,
-    required this.title,
-    required this.sub,
-    required this.note,
-    required this.onTap,
-  });
-
-  final PanelShape shape;
-  final Color color;
-  final Widget art;
-  final String tag, title, sub, note;
-  final VoidCallback? onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    return SizedBox(
-      height: OnboardingLayout.choiceHeight,
-      child: Pressable(
-        onTap: onTap,
-        scale: Press.panelScale,
-        turn: 0,
-        semanticLabel: '$title: $sub',
-        builder: (context, _) => MangaPanel(
-          shape: shape,
-          color: color,
-          child: Stack(
-            children: [
-              Positioned(left: OnboardingLayout.illustrationAt.dx, top: OnboardingLayout.illustrationAt.dy, child: art),
-              Positioned.fill(
-                child: Padding(
-                  padding: OnboardingLayout.textInsets,
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      InkTag(tag, padding: TagStyle.compactPadding),
-                      const SizedBox(height: OnboardingLayout.choiceTitleGap),
-                      FittedBox(
-                        fit: BoxFit.scaleDown,
-                        alignment: Alignment.centerLeft,
-                        child: Text(
-                          title,
-                          style: const TextStyle(
-                            fontFamily: Fonts.display,
-                            fontSize: OnboardingLayout.choiceTitle,
-                            height: TypeScale.displayLineHeight,
-                          ),
-                        ),
-                      ),
-                      const SizedBox(height: OnboardingLayout.choiceSubGap),
-                      Text(
-                        sub,
-                        style: const TextStyle(fontSize: OnboardingLayout.choiceSub, fontWeight: Weights.black),
-                      ),
-                      const SizedBox(height: OnboardingLayout.choiceNoteGap),
-                      Padding(
-                        padding: const EdgeInsets.only(right: OnboardingLayout.choiceNoteRightRoom),
-                        child: Text(
-                          note,
-                          style: const TextStyle(
-                            fontSize: OnboardingLayout.choiceNote,
-                            fontWeight: Weights.bold,
-                            height: OnboardingLayout.choiceNoteLineHeight,
-                            color: Palette.inkSoft,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-              const Positioned(right: OnboardingLayout.goInset, bottom: OnboardingLayout.goInset, child: GoButton()),
-            ],
-          ),
-        ),
       ),
     );
   }
