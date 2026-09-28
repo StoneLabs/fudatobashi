@@ -40,34 +40,37 @@ class _AppShellState extends State<AppShell> {
         if (!didPop) setState(() => _tab = AppTab.home);
       },
       child: Scaffold(
-        body: SafeArea(
-          child: Column(
-            children: [
-              Expanded(
-                child: IndexedStack(
-                  index: _tab.index,
-                  children: [
-                    for (final t in AppTab.values) TickerMode(enabled: t == _tab, child: _screen(t)),
-                  ],
+        body: Stack(children: [
+          if (_tab == AppTab.home) const Positioned.fill(child: GradationBox(Tones.home)),
+          SafeArea(
+            child: Column(
+              children: [
+                Expanded(
+                  child: IndexedStack(
+                    index: _tab.index,
+                    children: [
+                      for (final t in AppTab.values) TickerMode(enabled: t == _tab, child: _screen(t)),
+                    ],
+                  ),
                 ),
-              ),
-              Padding(
-                padding: const EdgeInsets.fromLTRB(Gaps.gutter, Gaps.section, Gaps.gutter, Gaps.section),
-                child: MangaTabBar(
-                  current: _tab.index,
-                  onSelect: (i) => setState(() => _tab = AppTab.values[i]),
-                  onUnready: ComingSoonBubble.show,
-                  tabs: [
-                    MangaTab(icon: IconArt.home, label: s.home),
-                    MangaTab(icon: IconArt.history, label: s.history),
-                    MangaTab(icon: IconArt.stats, label: s.stats),
-                    MangaTab(icon: IconArt.help, label: s.help, ready: false),
-                  ],
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(Gaps.gutter, Gaps.section, Gaps.gutter, Gaps.section),
+                  child: MangaTabBar(
+                    current: _tab.index,
+                    onSelect: (i) => setState(() => _tab = AppTab.values[i]),
+                    onUnready: ComingSoonBubble.show,
+                    tabs: [
+                      MangaTab(icon: IconArt.home, label: s.home),
+                      MangaTab(icon: IconArt.history, label: s.history),
+                      MangaTab(icon: IconArt.stats, label: s.stats),
+                      MangaTab(icon: IconArt.help, label: s.help, ready: false),
+                    ],
+                  ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
-        ),
+        ]),
       ),
     );
   }

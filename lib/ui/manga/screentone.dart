@@ -1,3 +1,4 @@
+import 'dart:math' as math;
 import 'dart:ui' as ui;
 
 import 'package:flutter/widgets.dart';
@@ -80,4 +81,92 @@ class _TonePainter extends CustomPainter {
 
   @override
   bool shouldRepaint(_TonePainter old) => old.spec != spec || old.opacity != opacity || old.pixelRatio != pixelRatio;
+}
+
+/// Gradation tones, rasterised once per box size and pixel density into an
+/// image of just the toned part, so painting one is a single image draw.
+abstract final class Gradation {
+  static final _images = <(GradationSpec, Size, double), (ui.Image, Offset)>{};
+
+  /// The toned part of [spec] over a box of [size], and where it sits in it.
+  static (ui.Image, Offset) image(GradationSpec spec, Size size, double pixelRatio) {
+    final key = (spec, size, pixelRatio);
+    final cached = _images[key];
+    if (cached != null) return cached;
+    if (_images.length >= Tones.gradationCacheSize) _images.remove(_images.keys.first)!.$1.dispose();
+    return _images[key] = _render(spec, size, pixelRatio);
+  }
+
+  static (ui.Image, Offset) _render(GradationSpec spec, Size size, double pixelRatio) {
+    final box = Offset.zero & size;
+    final begin = spec.begin.withinRect(box);
+    final axis = spec.end.withinRect(box) - begin;
+    final dots = <(Offset, double)>[];
+    var toned = Rect.zero;
+    for (var y = -1.0; y * spec.spacing < size.height + spec.spacing; y++) {
+      for (var x = -1.0; x * spec.spacing < size.width + spec.spacing; x++) {
+        for (final phase in [spec.phase, spec.phase + 0.5]) {
+          final c = Offset((x + phase) * spec.spacing, (y + phase) * spec.spacing);
+          final d = c - begin;
+          final t = (d.dx * axis.dx + d.dy * axis.dy) / axis.distanceSquared;
+          final r = spec.radiusAt(t);
+          if (r < Tones.gradationMinRadius) continue;
+          final dot = Rect.fromCircle(center: c, radius: r + Tones.softEdge);
+          toned = toned.isEmpty ? dot : toned.expandToInclude(dot);
+          dots.add((c, r + Tones.softEdge));
+        }
+      }
+    }
+    toned = toned.intersect(box);
+    final origin = Offset((toned.left * pixelRatio).floorToDouble(), (toned.top * pixelRatio).floorToDouble());
+    final width = math.max(1, (toned.right * pixelRatio).ceil() - origin.dx.toInt());
+    final height = math.max(1, (toned.bottom * pixelRatio).ceil() - origin.dy.toInt());
+    final rec = ui.PictureRecorder();
+    final canvas = Canvas(rec)
+      ..translate(-origin.dx, -origin.dy)
+      ..scale(pixelRatio);
+    final paint = Paint()
+      ..color = spec.dot
+      ..isAntiAlias = true;
+    for (final (c, r) in dots) {
+      canvas.drawCircle(c, r, paint);
+    }
+    final picture = rec.endRecording();
+    final image = picture.toImageSync(width, height);
+    picture.dispose();
+    return (image, origin / pixelRatio);
+  }
+}
+
+/// Fills its box with a gradation tone. Its own layer: the image is drawn
+/// once and never repaints with what sits on top of it.
+class GradationBox extends StatelessWidget {
+  const GradationBox(this.spec, {super.key});
+
+  final GradationSpec spec;
+
+  @override
+  Widget build(BuildContext context) => RepaintBoundary(
+        child: CustomPaint(
+          painter: _GradationPainter(spec, MediaQuery.devicePixelRatioOf(context)),
+          size: Size.infinite,
+        ),
+      );
+}
+
+class _GradationPainter extends CustomPainter {
+  _GradationPainter(this.spec, this.pixelRatio);
+  final GradationSpec spec;
+  final double pixelRatio;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    if (size.isEmpty) return;
+    final (image, origin) = Gradation.image(spec, size, pixelRatio);
+    final source = Offset.zero & Size(image.width.toDouble(), image.height.toDouble());
+    canvas.drawImageRect(image, source, origin & source.size / pixelRatio, Paint());
+  }
+
+  @override
+  bool shouldRepaint(_GradationPainter old) => old.spec != spec || old.pixelRatio != pixelRatio;
 }

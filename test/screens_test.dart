@@ -395,6 +395,28 @@ void main() {
     });
   }
 
+  // Home's dot backdrop (`Tones.home`) fills the whole screen behind Home's
+  // panels and tab bar, in both modes, and no other tab.
+  for (final mode in [LearningMode.journey, LearningMode.allKnown]) {
+    testWidgets('home, ${mode.name}: the dot backdrop sits behind Home, and only Home', (tester) async {
+      final p = await open(tester, mode: mode, journeyCards: 27);
+      await tester.binding.setSurfaceSize(_phone);
+      await tester.pumpWidget(RepaintBoundary(key: const ValueKey('screen'), child: FudatobashiApp(progress: p)));
+      await tester.pump(const Duration(milliseconds: 500));
+      final backdrop = find.byType(GradationBox);
+      expect(backdrop, findsOneWidget);
+      expect(tester.getRect(backdrop), Offset.zero & _phone);
+      const s = S(false);
+      await tester.tap(find.text(s.history));
+      await tester.pump(const Duration(milliseconds: 300));
+      expect(backdrop, findsNothing);
+      await tester.tap(find.text(s.home));
+      await tester.pump(const Duration(milliseconds: 300));
+      expect(backdrop, findsOneWidget);
+      await tester.pumpWidget(const SizedBox());
+    });
+  }
+
   // Plays a quick, fast, all-correct training run on the given poems (upright
   // only), then forces their FSRS due dates into the past: the simplest way
   // to get real due reviews (and a real known-card speed) without waiting on

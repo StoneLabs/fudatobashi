@@ -84,6 +84,55 @@ class ToneSpec {
   int get hashCode => Object.hash(dot, radius, spacing, background, phase);
 }
 
+/// A gradation tone (階調トーン): the dots of a [ToneSpec] lattice swell
+/// along the line from [begin] to [end], through [radii] at [stops], the way
+/// a manga page fades a tone in.
+@immutable
+class GradationSpec {
+  const GradationSpec({
+    required this.dot,
+    required this.spacing,
+    required this.begin,
+    required this.end,
+    required this.radii,
+    this.stops = const [0, 1],
+    this.phase = 0.5,
+  });
+
+  final Color dot;
+  final double spacing;
+  final Alignment begin;
+  final Alignment end;
+
+  /// One radius per stop.
+  final List<double> radii;
+  final List<double> stops;
+  final double phase;
+
+  /// The dot radius a fraction [t] of the way from [begin] to [end].
+  double radiusAt(double t) {
+    if (t <= stops.first) return radii.first;
+    for (var i = 1; i < stops.length; i++) {
+      if (t <= stops[i]) return radii[i - 1] + (radii[i] - radii[i - 1]) * (t - stops[i - 1]) / (stops[i] - stops[i - 1]);
+    }
+    return radii.last;
+  }
+
+  @override
+  bool operator ==(Object other) =>
+      other is GradationSpec &&
+      other.dot == dot &&
+      other.spacing == spacing &&
+      other.begin == begin &&
+      other.end == end &&
+      listEquals(other.radii, radii) &&
+      listEquals(other.stops, stops) &&
+      other.phase == phase;
+
+  @override
+  int get hashCode => Object.hash(dot, spacing, begin, end, Object.hashAll(radii), Object.hashAll(stops), phase);
+}
+
 /// Where an overlay (Tobi, a balloon) sits in its panel: two edges and a size.
 @immutable
 class Placement {
@@ -126,6 +175,23 @@ abstract final class Tones {
   static const mapLand = ToneSpec(dot: Color(0xFF71BA4B), radius: 0.95, spacing: 5, background: Color(0xFF9BDB70), phase: 0.25);
   static const mapShoal = ToneSpec(dot: Color(0xFF7FC6FB), radius: 0.9, spacing: 6, background: Color(0xFFA6DAFF), phase: 0.25);
   static const mapInk = ToneSpec(dot: Palette.ink, radius: 0.85, spacing: 4, phase: 0.25);
+
+  /// Gradation tones smaller than this radius are left out.
+  static const double gradationMinRadius = 0.15;
+
+  /// Gradation images kept for reuse (one per box size and pixel density).
+  static const int gradationCacheSize = 3;
+
+  /// Home's backdrop, behind its panels and buttons: sun dots under the
+  /// header that fade out down the screen and swell again toward the tab bar.
+  static const home = GradationSpec(
+    dot: Palette.sun,
+    spacing: 6,
+    begin: Alignment.topCenter,
+    end: Alignment.bottomCenter,
+    radii: [1.3, 0.3, 0, 0.5, 1.3],
+    stops: [0, 0.13, 0.3, 0.6, 1],
+  );
 }
 
 abstract final class Strokes {
