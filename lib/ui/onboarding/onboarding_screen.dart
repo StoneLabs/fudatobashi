@@ -90,7 +90,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
       _Choice(
         shape: const PanelShape(topLeft: Offset(0, OnboardingLayout.choiceCut)),
         color: Palette.landSoft,
-        art: const _SceneArt(SceneArt.beginner),
+        art: const _SceneArt(PrerenderedArt.beginner),
         tag: s.beginnerTag,
         title: s.beginnerTitle,
         sub: s.beginnerSub,
@@ -101,7 +101,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
       _Choice(
         shape: const PanelShape(bottomRight: Offset(0, OnboardingLayout.choiceCut)),
         color: Palette.sunSoft,
-        art: const _SceneArt(SceneArt.expert),
+        art: const _SceneArt(PrerenderedArt.expert),
         tag: s.expertTag,
         title: s.expertTitle,
         sub: s.expertSub,
@@ -115,7 +115,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
     _Choice(
       shape: const PanelShape(topLeft: Offset(0, OnboardingLayout.choiceCut)),
       color: Palette.landSoft,
-      art: const _SceneArt(SceneArt.beginner),
+      art: const _SceneArt(PrerenderedArt.beginner),
       tag: s.relaxedTag,
       title: s.relaxedTitle,
       sub: s.relaxedSub,
@@ -141,10 +141,10 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
 
 class _SceneArt extends StatelessWidget {
   const _SceneArt(this.art);
-  final VectorArt art;
+  final ArtImage art;
 
   @override
-  Widget build(BuildContext context) => VectorArtBox(art, size: const Size.square(OnboardingLayout.illustration));
+  Widget build(BuildContext context) => ArtImageBox(art, size: const Size.square(OnboardingLayout.illustration));
 }
 
 class _ChangeLaterNote extends StatelessWidget {
@@ -218,7 +218,7 @@ class _Welcome extends StatelessWidget {
                   right: 0,
                   bottom: 0,
                   height: OnboardingLayout.seaHeight,
-                  child: VectorArtBox(SceneArt.welcomeSea),
+                  child: ArtImageBox(PrerenderedArt.welcomeSea),
                 ),
                 Positioned(
                   left: OnboardingLayout.titleAt.dx,

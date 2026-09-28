@@ -7,6 +7,7 @@ import 'package:flutter/widgets.dart';
 import '../../config/design.dart';
 import '../../config/vector_art.dart';
 import '../../data/islands.dart';
+import '../manga/art_image.dart';
 import '../manga/geometry.dart';
 import '../manga/screentone.dart';
 import '../manga/seeded_random.dart';
@@ -499,7 +500,7 @@ class _LayerPainter extends CustomPainter {
     final boat = spec.boat;
     if (boat != null) {
       final b = MapStyle.boat;
-      VectorPainter.paint(canvas, MapArt.boat,
+      ArtImages.paint(canvas, PrerenderedArt.boat,
           Rect.fromLTWH(boat.dx - b.width / 2, boat.dy - b.height * MapStyle.boatLift, b.width, b.height),
           pixelRatio: ratio);
     }

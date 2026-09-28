@@ -1,5 +1,6 @@
 import 'dart:ui';
 
+import '../ui/manga/art_image.dart';
 import '../ui/manga/vector.dart';
 import 'design.dart';
 
@@ -125,4 +126,15 @@ abstract final class SceneArt {
     VEllipse.circle(Offset(30, 82), 19, VStyle(fill: Palette.pink, stroke: _ink, width: 2.6)),
     VText('100', Offset(30, 88), size: 17, family: Fonts.display, color: _ink),
   ]);
+}
+
+/// Art shown from pre-rendered images (see [ArtImage]): the map's boat and
+/// the onboarding scenes. Tobi stays live.
+abstract final class PrerenderedArt {
+  static const boat = ArtImage('boat', MapArt.boat);
+  static const welcomeSea = ArtImage('welcome_sea', SceneArt.welcomeSea);
+  static const beginner = ArtImage('beginner', SceneArt.beginner);
+  static const expert = ArtImage('expert', SceneArt.expert);
+
+  static const all = [boat, welcomeSea, beginner, expert];
 }

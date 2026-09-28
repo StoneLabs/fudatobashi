@@ -2,6 +2,7 @@
 library;
 
 export 'action_row.dart';
+export 'art_image.dart';
 export 'balloon.dart';
 export 'buttons.dart';
 export 'confetti.dart';

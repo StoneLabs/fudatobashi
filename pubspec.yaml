@@ -65,6 +65,7 @@ flutter:
     - assets/data/poems.json
     - assets/data/islands.json
     - assets/glyphs/
+    - assets/art/
 
   fonts:
     # Card kana come from assets/glyphs (pre-rendered, see tool/render_glyphs_test.dart);

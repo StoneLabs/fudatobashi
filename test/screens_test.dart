@@ -82,6 +82,15 @@ void main() {
     ]);
   });
 
+  test('every pre-rendered art image exists at its vector box size (run tool/render_art_test.dart)', () {
+    for (final a in PrerenderedArt.all) {
+      final png = File(a.asset).readAsBytesSync();
+      final header = ByteData.sublistView(png, 16, 24);
+      final expected = a.art.box * ArtRender.scale;
+      expect([header.getUint32(0), header.getUint32(4)], [expected.width.ceil(), expected.height.ceil()], reason: a.name);
+    }
+  });
+
   test('the island data matches the initial-kana groups', () {
     expect(archipelago.islands.map((i) => i.name), initialGroups);
     for (final isl in archipelago.islands) {

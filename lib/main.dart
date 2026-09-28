@@ -5,6 +5,7 @@ import 'package:flutter/widgets.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_displaymode/flutter_displaymode.dart';
 
+import 'config/vector_art.dart';
 import 'data/fuda_sets.dart';
 import 'data/islands.dart';
 import 'data/poem.dart';
@@ -12,6 +13,7 @@ import 'db/database.dart';
 import 'state/progress.dart';
 import 'ui/app.dart';
 import 'ui/debug/frame_stats.dart';
+import 'ui/manga/art_image.dart';
 import 'ui/torifuda/glyph_atlas.dart';
 
 Future<void> main() async {
@@ -28,6 +30,7 @@ Future<void> main() async {
   archipelago = await Archipelago.load();
   final progress = await Progress.open(AppDatabase());
   await GlyphAtlas.load();
+  await ArtImages.load(PrerenderedArt.all);
   FrameStats.instance.start();
   runApp(FudatobashiApp(progress: progress));
 }

@@ -1161,6 +1161,12 @@ abstract final class Backdrops {
   static const mapFogAlpha = [1.0, 0.93, 0.0];
 }
 
+/// Pre-rendered art (`PrerenderedArt`): image pixels per unit of the
+/// vector's box, enough for a crisp image at the phone's density.
+abstract final class ArtRender {
+  static const double scale = 4;
+}
+
 /// A focus-line burst: [count] wedges converging on [center] (a point in a
 /// box of [box] size; it scales with the actual box), starting between
 /// [innerMin] and [innerMax] from it.
