@@ -675,6 +675,12 @@ abstract final class ChartStyle {
 
   /// Opacity of a toggled-off series tile (spec's `aria-pressed=false`).
   static const double dimOpacity = 0.45;
+
+  /// `DailyChart`: a bar's share of its day's width, the dash of a dashed
+  /// line, and the grid's stroke.
+  static const double dailyBarShare = 0.6;
+  static const double dash = 4;
+  static const double gridStroke = 1;
 }
 
 /// The island detail screen (spec phone 7): the zoomed mini-map, this
@@ -1248,7 +1254,7 @@ abstract final class LearnAheadStyle {
   static const double icon = 16;
   static const EdgeInsets padding = EdgeInsets.symmetric(horizontal: 10, vertical: 6);
   static const double iconGap = 5;
-  static const Size balloon = Size(230, 92);
+  static const Size balloon = Size(270, 96);
   static const Duration balloonLife = Duration(milliseconds: 2800);
 }
 
@@ -1258,6 +1264,15 @@ abstract final class ComingSoonStyle {
   static const Placement tobi = Placement(left: 20, bottom: 0, size: Size(120, 143));
   static const Placement balloon = Placement(right: 0, top: 0, size: Size(150, 80));
   static const Alignment speaker = Alignment(-1.9, 2.7);
+}
+
+/// The debug Simulation page's summary and per-day charts.
+abstract final class SimulationStyle {
+  static const double labelWidth = 150;
+  static const double chartHeight = 110;
+  static const double chartGap = 20;
+  static const double legendGap = 12;
+  static const double swatch = 10;
 }
 
 /// A balloon popping out of a tapped control (`BalloonPop`, e.g. "coming

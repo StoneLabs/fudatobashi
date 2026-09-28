@@ -21,6 +21,7 @@ import 'package:fudatobashi/domain/card_mask.dart';
 import 'package:fudatobashi/domain/card_stats.dart';
 import 'package:fudatobashi/domain/play_session.dart';
 import 'package:fudatobashi/domain/rating.dart';
+import 'package:fudatobashi/domain/synthetic_learner.dart';
 import 'package:fudatobashi/domain/trainer.dart';
 import 'package:fudatobashi/l10n/home_strings.dart';
 import 'package:fudatobashi/l10n/results_strings.dart';
@@ -32,6 +33,7 @@ import 'package:fudatobashi/state/progress.dart';
 import 'package:fudatobashi/state/scope.dart';
 import 'package:fudatobashi/state/settings.dart';
 import 'package:fudatobashi/ui/app.dart';
+import 'package:fudatobashi/ui/debug/simulation_page.dart';
 import 'package:fudatobashi/ui/home/learn_ahead_button.dart';
 import 'package:fudatobashi/ui/home/training_hero.dart';
 import 'package:fudatobashi/ui/islands/island_map.dart';
@@ -744,6 +746,38 @@ void main() {
     await tester.pump();
     expect(p.settings.sounds, isFalse);
     expect(AppSettings.fromJson(p.settings.toJson()).sounds, isFalse);
+    await tester.pumpWidget(const SizedBox());
+  });
+
+  testWidgets('debug Simulation: a learner plays on a throwaway database, charted day by day; seeding lives here',
+      (tester) async {
+    final p = await open(tester, mode: LearningMode.journey);
+    final unlocked = p.trainer.unlocked.length;
+    await tester.binding.setSurfaceSize(_phone);
+    await tester.pumpWidget(RepaintBoundary(
+      key: const ValueKey('screen'),
+      child: ProgressScope(progress: p, child: const MaterialApp(home: SimulationPage())),
+    ));
+    await tester.tap(find.text(LearnerKind.quick.name));
+    final slider = find.byType(Slider);
+    await tester.tapAt(tester.getRect(slider).centerLeft);
+    await tester.pump();
+    await tester.tap(find.text('Simulate'));
+    await tester.pump();
+    expect(find.textContaining('Simulating'), findsOneWidget);
+    for (var i = 0; i < 300 && find.text('Simulate').evaluate().isEmpty; i++) {
+      await tester.runAsync(() => Future<void>.delayed(const Duration(milliseconds: 50)));
+      await tester.pump();
+    }
+    expect(find.text('Simulate'), findsOneWidget, reason: 'the run finished');
+    expect(find.text('all 100 cards'), findsOneWidget);
+    expect(find.text('Cards unlocked vs pace target'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+    expect(p.trainer.unlocked.length, unlocked, reason: "the player's own progress is untouched");
+    expect(p.sessions, isEmpty);
+    await _capture(tester, 'debug_simulation');
+    await tester.scrollUntilVisible(find.text('Seed demo data'), 300);
+    expect(find.text('Seed demo data'), findsOneWidget);
     await tester.pumpWidget(const SizedBox());
   });
 

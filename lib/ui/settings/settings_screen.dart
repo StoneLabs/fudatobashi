@@ -12,7 +12,7 @@ import '../../state/settings.dart';
 import '../debug/celebration_preview.dart';
 import '../debug/debug_page.dart';
 import '../debug/reset_actions.dart';
-import '../debug/seed_action.dart';
+import '../debug/simulation_page.dart';
 import '../manga/manga.dart';
 import '../shell/header_actions.dart';
 
@@ -255,7 +255,10 @@ class _DeveloperSection extends StatelessWidget {
         const SizedBox(height: Gaps.small),
         _ButtonRow(label: 'Preview celebrations', onTap: () => previewCelebrations(context)),
         const SizedBox(height: Gaps.small),
-        _ButtonRow(label: 'Seed demo data', onTap: () => confirmSeedDemoData(context)),
+        _ButtonRow(
+          label: 'Simulation',
+          onTap: () => Navigator.push(context, MangaRoute<void>(builder: (_) => const SimulationPage())),
+        ),
         const SizedBox(height: Gaps.small),
         _ButtonRow(label: 'Reset onboarding', onTap: () => confirmResetOnboarding(context)),
         const SizedBox(height: Gaps.small),

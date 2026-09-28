@@ -525,6 +525,18 @@ abstract final class SyntheticLearnerTuning {
   static const int roundStartJitterMinutes = 40;
 }
 
+/// The debug Simulation page (`simulatePace`): a journey played by a
+/// simulated learner, day by day, on a throwaway database.
+abstract final class SimulationTuning {
+  static const int defaultDays = 30;
+  static const int minDays = 7;
+  static const int maxDays = 60;
+
+  /// The learner's and planner's seed, fixed so runs compare (FSRS still
+  /// fuzzes its intervals, so they differ a little).
+  static const int seed = 1;
+}
+
 /// Dev-mode demo data (`seedDemoData`): a journey player's recent history,
 /// simulated day by day through the real training path.
 abstract final class DemoDataTuning {

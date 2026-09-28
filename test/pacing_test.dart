@@ -13,6 +13,7 @@ import 'package:fudatobashi/domain/play_session.dart';
 import 'package:fudatobashi/domain/synthetic_learner.dart';
 import 'package:fudatobashi/domain/trainer.dart';
 import 'package:fudatobashi/state/journey_simulator.dart';
+import 'package:fudatobashi/state/pace_simulation.dart';
 import 'package:fudatobashi/state/play_config.dart';
 import 'package:fudatobashi/state/progress.dart';
 
@@ -188,6 +189,25 @@ void main() {
       await progress.db.close();
     });
   });
+  test('the debug Simulation plays a learner day by day in the background, on its own database', () async {
+    final heard = <int>[];
+    final days = await simulatePace(
+      learner: LearnerKind.quick,
+      pace: LearningPace.month,
+      days: 4,
+      onDay: (d) => heard.add(d.day),
+    );
+    expect(heard, [1, 2, 3, 4]);
+    expect(days.map((d) => d.target), [for (var d = 0; d < 4; d++) LearningPace.month.targetUnlocked(d, 100)]);
+    for (final d in days) {
+      expect(d.swipes, greaterThanOrEqualTo(LearningPace.month.profile.dailyRounds * TrainingTuning.defaultSessionLength));
+      expect(d.reviews, inInclusiveRange(1, d.swipes));
+      expect(d.recall, inInclusiveRange(0.5, 1));
+    }
+    expect(days.last.unlocked, days.fold<int>(0, (n, d) => n + d.newCards));
+    expect(days.last.rating, isNotNull);
+  }, timeout: const Timeout(Duration(minutes: 1)));
+
   group("Home's Learn next (learn ahead)", () {
     /// A training round at [at] answering each of [ids] [times] times,
     /// correctly and fast, or [miss]ing them all.

@@ -271,3 +271,84 @@ class _ForgettingCurvePainter extends CustomPainter {
   bool shouldRepaint(_ForgettingCurvePainter old) =>
       !listEquals(old.samples, samples) || old.retentionGoal != retentionGoal;
 }
+
+/// One series of a [DailyChart]: a value per day (NaN for none), drawn as a
+/// line, a dashed line or bars.
+class DailySeries {
+  const DailySeries(this.label, this.values, this.color, {this.bars = false, this.dashed = false});
+
+  final String label;
+  final List<double> values;
+  final Color color;
+  final bool bars;
+  final bool dashed;
+
+  /// The largest value, 0 for none.
+  double get peak => values.where((v) => v.isFinite).fold(0, math.max);
+}
+
+/// Values per day on one scale from zero to [top] (by default the largest
+/// value), for the debug Simulation.
+class DailyChart extends StatelessWidget {
+  const DailyChart({super.key, required this.series, this.top});
+
+  final List<DailySeries> series;
+  final double? top;
+
+  /// The value at the chart's top edge.
+  double get scaleTop => top ?? math.max(1, series.fold(0.0, (m, s) => math.max(m, s.peak)));
+
+  @override
+  Widget build(BuildContext context) => CustomPaint(painter: _DailyChartPainter(series, scaleTop));
+}
+
+class _DailyChartPainter extends CustomPainter {
+  _DailyChartPainter(this.series, this.top);
+  final List<DailySeries> series;
+  final double top;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final days = series.fold(0, (n, s) => math.max(n, s.values.length));
+    if (days == 0) return;
+    final step = size.width / days;
+    double x(int i) => step * (i + 0.5);
+    double y(double v) => size.height * (1 - (v / top).clamp(0, 1));
+    final grid = Paint()
+      ..strokeWidth = ChartStyle.gridStroke
+      ..color = Palette.desk;
+    canvas
+      ..drawLine(Offset(0, size.height), Offset(size.width, size.height), grid)
+      ..drawLine(Offset.zero, Offset(size.width, 0), grid);
+
+    for (final s in series.where((s) => s.bars)) {
+      final paint = Paint()..color = s.color;
+      final half = step * ChartStyle.dailyBarShare / 2;
+      for (final (i, v) in s.values.indexed) {
+        if (v.isFinite && v > 0) canvas.drawRect(Rect.fromLTRB(x(i) - half, y(v), x(i) + half, size.height), paint);
+      }
+    }
+    for (final s in series.where((s) => !s.bars)) {
+      final paint = Paint()
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = ChartStyle.lineStroke
+        ..color = s.color;
+      Offset? last;
+      for (final (i, v) in s.values.indexed) {
+        final p = v.isFinite ? Offset(x(i), y(v)) : null;
+        if (last != null && p != null) s.dashed ? _dash(canvas, last, p, paint) : canvas.drawLine(last, p, paint);
+        last = p;
+      }
+    }
+  }
+
+  static void _dash(Canvas canvas, Offset a, Offset b, Paint paint) {
+    final length = (b - a).distance;
+    for (var t = 0.0; t < length; t += ChartStyle.dash * 2) {
+      canvas.drawLine(Offset.lerp(a, b, t / length)!, Offset.lerp(a, b, math.min(1, (t + ChartStyle.dash) / length))!, paint);
+    }
+  }
+
+  @override
+  bool shouldRepaint(_DailyChartPainter old) => old.series != series || old.top != top;
+}
