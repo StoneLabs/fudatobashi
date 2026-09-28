@@ -98,6 +98,12 @@ void main() {
     }
   });
 
+  test('every sound asset exists, and every file in assets/sounds is a sound in use', () {
+    final used = {for (final sfx in Sfx.values) ...sfx.assets.map((a) => 'assets/$a')};
+    final files = {for (final f in Directory('assets/sounds').listSync()) if (f.path.endsWith('.wav')) f.path};
+    expect(files, used);
+  });
+
   test('the island data matches the initial-kana groups', () {
     expect(archipelago.islands.map((i) => i.name), initialGroups);
     for (final isl in archipelago.islands) {

@@ -32,7 +32,8 @@
 	License: (Creative Commons Zero, CC0)
 	http://creativecommons.org/publicdomain/zero/1.0/
 
-	This content is free to use in personal, educational and commercial projects.
+	This content is free to use in personal, educational and commercial projects.
+
 	Support us by crediting Kenney or www.kenney.nl (this is not mandatory)
 
 			------------------------------
@@ -56,7 +57,8 @@
 	License: (Creative Commons Zero, CC0)
 	http://creativecommons.org/publicdomain/zero/1.0/
 
-	This content is free to use in personal, educational and commercial projects.
+	This content is free to use in personal, educational and commercial projects.
+
 	Support us by crediting Kenney or www.kenney.nl (this is not mandatory)
 
 			------------------------------
@@ -70,10 +72,14 @@
 Files in this folder, converted to mono 44.1 kHz WAV and peak-normalized:
 
   best.wav          Music Jingles / Hit jingles / jingles_HIT11.ogg
-  card_appears.wav  Music Jingles / Pizzicato jingles / jingles_PIZZI16.ogg
-  card_flick.wav    Impact Sounds / impactPunch_medium_000.ogg
+  card_appears.wav  Music Jingles / Hit jingles / jingles_HIT16.ogg
+  card_flick_0.wav  Impact Sounds / footstep_carpet_000.ogg
+  card_flick_1.wav  Impact Sounds / footstep_carpet_001.ogg
+  card_flick_2.wav  Impact Sounds / footstep_carpet_002.ogg
+  card_flick_3.wav  Impact Sounds / footstep_carpet_003.ogg
+  card_flick_4.wav  Impact Sounds / footstep_carpet_004.ogg
   goal_up.wav       Music Jingles / Pizzicato jingles / jingles_PIZZI10.ogg
-  island.wav        Music Jingles / Steel jingles / jingles_STEEL10.ogg
+  island.wav        Music Jingles / Hit jingles / jingles_HIT03.ogg
   look_alike.wav    Interface Sounds / question_001.ogg
   rank_up.wav       Music Jingles / Steel jingles / jingles_STEEL02.ogg
   results.wav       Interface Sounds / confirmation_001.ogg

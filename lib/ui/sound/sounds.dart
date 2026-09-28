@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:math';
 
 import 'package:audioplayers/audioplayers.dart';
 import 'package:flutter/foundation.dart';
@@ -8,12 +9,13 @@ import 'package:flutter/widgets.dart';
 import '../../config/config.dart';
 import '../../state/scope.dart';
 
-/// The celebration sounds, each preloaded into its own low-latency player
-/// by [load] at startup, so playing one never touches the disk. Nothing
-/// here runs during play: celebration pages and Results are the only
-/// callers.
+/// The celebration sounds, every asset preloaded into its own low-latency
+/// player by [load] at startup, so playing one never touches the disk.
+/// Nothing here runs during play: celebration pages and Results are the
+/// only callers.
 class Sounds {
-  final _players = <Sfx, AudioPlayer>{};
+  final _players = <Sfx, List<AudioPlayer>>{};
+  final _random = Random();
 
   /// Asks the Android host whether the ringer is on silent or vibrate
   /// (`MainActivity.kt`).
@@ -40,26 +42,36 @@ class Sounds {
       debugPrint('Sounds: no audio context ($e)');
     }
     for (final sfx in Sfx.values) {
-      final player = AudioPlayer();
-      try {
-        await player.setAudioContext(_context);
-        await player.setPlayerMode(PlayerMode.lowLatency);
-        // Stopping keeps the sound loaded (the default releases it).
-        await player.setReleaseMode(ReleaseMode.stop);
-        await player.setVolume(sfx.volume);
-        await player.setSource(AssetSource(sfx.asset));
-        _players[sfx] = player;
-      } catch (e) {
-        debugPrint('Sounds: ${sfx.asset} not loaded ($e)');
-        await player.dispose();
+      for (final asset in sfx.assets) {
+        final player = await _preload(asset, sfx.volume);
+        if (player != null) (_players[sfx] ??= []).add(player);
       }
     }
   }
 
-  /// Plays [sfx] from the start unless the phone is on silent or vibrate.
+  static Future<AudioPlayer?> _preload(String asset, double volume) async {
+    final player = AudioPlayer();
+    try {
+      await player.setAudioContext(_context);
+      await player.setPlayerMode(PlayerMode.lowLatency);
+      // Stopping keeps the sound loaded (the default releases it).
+      await player.setReleaseMode(ReleaseMode.stop);
+      await player.setVolume(volume);
+      await player.setSource(AssetSource(asset));
+      return player;
+    } catch (e) {
+      debugPrint('Sounds: $asset not loaded ($e)');
+      await player.dispose();
+      return null;
+    }
+  }
+
+  /// Plays [sfx] (a random one of its variants) from the start unless the
+  /// phone is on silent or vibrate.
   Future<void> play(Sfx sfx) async {
-    final player = _players[sfx];
-    if (player == null || await _silenced()) return;
+    final variants = _players[sfx];
+    if (variants == null || await _silenced()) return;
+    final player = variants[_random.nextInt(variants.length)];
     await player.stop();
     await player.resume();
   }

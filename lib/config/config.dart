@@ -487,20 +487,27 @@ abstract final class CelebrationPreviewTuning {
 }
 
 /// The celebration sounds (Kenney, CC0; provenance in
-/// `assets/sounds/License.txt`): each one's asset under `assets/` and its
-/// playback volume, 0–1. They play only on celebration pages and Results.
+/// `assets/sounds/License.txt`): each one's assets under `assets/` and its
+/// playback volume, 0–1. A sound with several assets plays a random one of
+/// them each time. They play only on celebration pages and Results.
 enum Sfx {
-  cardAppears('sounds/card_appears.wav', 0.8),
-  cardFlick('sounds/card_flick.wav', 0.7),
-  lookAlike('sounds/look_alike.wav', 0.7),
-  island('sounds/island.wav', 0.8),
-  stamp('sounds/stamp.wav', 0.9),
-  rankUp('sounds/rank_up.wav', 0.8),
-  goalUp('sounds/goal_up.wav', 0.8),
-  best('sounds/best.wav', 0.8),
-  results('sounds/results.wav', 0.5);
+  cardAppears(['sounds/card_appears.wav'], 0.8),
+  cardFlick([
+    'sounds/card_flick_0.wav',
+    'sounds/card_flick_1.wav',
+    'sounds/card_flick_2.wav',
+    'sounds/card_flick_3.wav',
+    'sounds/card_flick_4.wav',
+  ], 0.7),
+  lookAlike(['sounds/look_alike.wav'], 0.7),
+  island(['sounds/island.wav'], 0.8),
+  stamp(['sounds/stamp.wav'], 0.9),
+  rankUp(['sounds/rank_up.wav'], 0.8),
+  goalUp(['sounds/goal_up.wav'], 0.8),
+  best(['sounds/best.wav'], 0.8),
+  results(['sounds/results.wav'], 0.5);
 
-  const Sfx(this.asset, this.volume);
-  final String asset;
+  const Sfx(this.assets, this.volume);
+  final List<String> assets;
   final double volume;
 }
