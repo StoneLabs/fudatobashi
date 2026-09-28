@@ -8,6 +8,7 @@ import '../history/history_screen.dart';
 import '../home/home_screen.dart';
 import '../manga/manga.dart';
 import '../stats/stats_screen.dart';
+import 'coming_soon.dart';
 
 enum AppTab { home, history, stats, help }
 
@@ -33,8 +34,6 @@ class _AppShellState extends State<AppShell> {
   @override
   Widget build(BuildContext context) {
     final s = S.of(context);
-    MangaTab tab(VectorArt icon, String Function(S) label) =>
-        MangaTab(icon: icon, label: label(s), sub: label(s.other));
     return PopScope(
       canPop: _tab == AppTab.home,
       onPopInvokedWithResult: (didPop, _) {
@@ -57,11 +56,12 @@ class _AppShellState extends State<AppShell> {
                 child: MangaTabBar(
                   current: _tab.index,
                   onSelect: (i) => setState(() => _tab = AppTab.values[i]),
+                  onUnready: ComingSoonBubble.show,
                   tabs: [
-                    tab(IconArt.home, (s) => s.home),
-                    tab(IconArt.history, (s) => s.history),
-                    tab(IconArt.stats, (s) => s.stats),
-                    tab(IconArt.help, (s) => s.help),
+                    MangaTab(icon: IconArt.home, label: s.home),
+                    MangaTab(icon: IconArt.history, label: s.history),
+                    MangaTab(icon: IconArt.stats, label: s.stats),
+                    MangaTab(icon: IconArt.help, label: s.help, ready: false),
                   ],
                 ),
               ),

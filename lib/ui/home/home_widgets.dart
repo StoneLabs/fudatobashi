@@ -69,8 +69,9 @@ class _Pip extends StatelessWidget {
       };
 }
 
-/// The streak as 正 tally marks: five days make one 正. Shows the last two
-/// characters; today's newest stroke is pink, strokes still to come are faint.
+/// The streak as 正 tally marks: five days make one 正, and it tops out at
+/// 正正 (the label beside it carries the full count). The newest stroke is
+/// pink, strokes still to come are faint.
 class TallyMarks extends StatelessWidget {
   const TallyMarks(this.days, {super.key});
 
@@ -88,22 +89,21 @@ class _TallyPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
     final per = Tally.strokes.length;
-    final firstGroup = math.max(0, (days - 1) ~/ per - 1);
+    final shown = math.min(days, per * Tally.glyphs);
     final s = size.width / Tally.box.width;
     canvas.save();
     canvas.scale(s);
-    for (var g = 0; g < 2; g++) {
-      final group = firstGroup + g;
+    for (var g = 0; g < Tally.glyphs; g++) {
       for (var k = 0; k < per; k++) {
-        final n = group * per + k + 1;
+        final n = g * per + k + 1;
         final path = SvgPath.parse(Tally.strokes[k]).shift(Offset(g * Tally.glyphAdvance, 0));
         final paint = Paint()
           ..style = PaintingStyle.stroke
           ..strokeCap = StrokeCap.round;
-        if (n <= days) {
+        if (n <= shown) {
           paint
-            ..color = n == days ? Palette.pink : Palette.ink
-            ..strokeWidth = n == days ? Tally.latestStroke : Tally.stroke;
+            ..color = n == shown ? Palette.pink : Palette.ink
+            ..strokeWidth = n == shown ? Tally.latestStroke : Tally.stroke;
           canvas.drawPath(path, paint);
         } else {
           paint

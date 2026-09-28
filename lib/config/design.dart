@@ -249,9 +249,8 @@ abstract final class TabBarStyle {
   static const double height = 62;
   static const double gap = 8;
   static const double icon = 21;
-  static const double iconGap = 2;
-  static const double label = 13;
-  static const double sub = 12;
+  static const double iconGap = 4;
+  static const double label = 14;
 }
 
 abstract final class ButtonMetrics {
@@ -501,7 +500,7 @@ abstract final class HomeLayout {
   static const double mapMistFont = 12.5;
   static const EdgeInsets mapMistPadding = EdgeInsets.fromLTRB(8, 3, 8, 3);
 
-  static const EdgeInsets progressPadding = EdgeInsets.fromLTRB(12, 8, 12, 0);
+  static const EdgeInsets progressPadding = EdgeInsets.fromLTRB(12, 6, 12, 8);
   static const double islandTitle = 20;
   static const double nowFont = 12;
   static const EdgeInsets nowPadding = EdgeInsets.fromLTRB(6, 1, 6, 1);
@@ -519,6 +518,9 @@ abstract final class HomeLayout {
   static const double knownSpeedNumber = 14;
   static const double knownSpeedTrendIcon = 11;
   static const double knownSpeedGap = 4;
+
+  /// Above the known-card speed under the journey's card pips.
+  static const double pipsSpeedGap = 8;
 
   static const double journeyHeroHeight = 206;
   static const double journeyHeroCut = 8;
@@ -587,15 +589,13 @@ abstract final class HomeLayout {
   static const Offset modeIconAt = Offset(124, 28);
   static const Offset modeBadgeAt = Offset(124, 22);
 
-  static const double guestHeight = 104;
-  static const double guestIconCircle = 40;
-  static const double guestIcon = 22;
-  static const double guestChevron = 18;
-  static const double guestTitle = 15;
-  static const double guestNote = 12.5;
-  static const double guestNoteLineHeight = 1.38;
-  static const double guestNoteGap = 3;
-  static const int guestNoteLines = 3;
+  /// The slim guest bar under the known-mode panels.
+  static const double guestHeight = 40;
+  static const EdgeInsets guestPadding = EdgeInsets.symmetric(horizontal: 12, vertical: 4);
+  static const double guestIcon = 20;
+  static const double guestChevron = 16;
+  static const double guestTitle = 14;
+  static const double guestSub = 12.5;
 
   static const double rowJpFont = 17;
   static const double rowLineHeight = 1.1;
@@ -1085,6 +1085,9 @@ abstract final class Tally {
   static const Size box = Size(70, 32);
   static const List<String> strokes = ['M3 4 H27', 'M15 4 V27', 'M15 15.5 H25', 'M7 13 V27', 'M2 27.5 H28'];
   static const double glyphAdvance = 38;
+
+  /// 正 characters drawn: the tally stops growing at this many.
+  static const int glyphs = 2;
   static const double stroke = 3.2;
   static const double latestStroke = 3.8;
   static const double ghostStroke = 1.4;

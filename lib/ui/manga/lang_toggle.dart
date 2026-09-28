@@ -11,13 +11,16 @@ class LanguageToggle extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    const radius = BorderRadius.all(Radius.circular(LangToggleStyle.height / 2));
+    // The border is painted over the segments, so the selected fill never
+    // covers the rounded ends.
     return Container(
       height: LangToggleStyle.height,
       clipBehavior: Clip.antiAlias,
-      decoration: BoxDecoration(
-        color: Palette.paper,
+      decoration: const BoxDecoration(color: Palette.paper, borderRadius: radius),
+      foregroundDecoration: BoxDecoration(
         border: Border.all(color: Palette.ink, width: Strokes.control),
-        borderRadius: BorderRadius.circular(LangToggleStyle.height / 2),
+        borderRadius: radius,
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,

@@ -65,7 +65,7 @@ class KnownHome extends StatelessWidget {
           }),
         ),
         const SizedBox(height: Gaps.panelWide),
-        const SizedBox(height: HomeLayout.guestHeight, child: _GuestPanel()),
+        const _GuestPanel(),
       ],
     );
   }
@@ -157,6 +157,7 @@ class _RankRow extends StatelessWidget {
               shape: const PanelShape(topLeft: Offset(HomeLayout.rankSlant, 0)),
               color: Palette.seaSoft,
               tone: Tones.sea,
+              padding: const EdgeInsets.symmetric(horizontal: HomeLayout.rankSlant),
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
@@ -327,6 +328,7 @@ class _ModePanel extends StatelessWidget {
   }
 }
 
+/// Guest mode as a slim bar; the sheet it opens explains what it means.
 class _GuestPanel extends StatelessWidget {
   const _GuestPanel();
 
@@ -339,48 +341,28 @@ class _GuestPanel extends StatelessWidget {
       turn: 0,
       semanticLabel: s.guestMode,
       builder: (context, _) => MangaPanel(
-        padding: const EdgeInsets.symmetric(horizontal: Gaps.inner),
-        child: Row(
-          children: [
-            Container(
-              width: HomeLayout.guestIconCircle,
-              height: HomeLayout.guestIconCircle,
-              alignment: Alignment.center,
-              decoration: BoxDecoration(
-                color: Palette.sun,
-                shape: BoxShape.circle,
-                border: Border.all(color: Palette.ink, width: Strokes.control),
+        padding: HomeLayout.guestPadding,
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(minHeight: HomeLayout.guestHeight),
+          child: Row(
+            children: [
+              const MangaIcon(IconArt.person, size: HomeLayout.guestIcon),
+              const SizedBox(width: Gaps.small),
+              Text(s.guestMode, style: const TextStyle(fontSize: HomeLayout.guestTitle, fontWeight: Weights.black)),
+              const SizedBox(width: Gaps.small),
+              UntrackedLabel(s.untrackedTag),
+              const SizedBox(width: Gaps.small),
+              Expanded(
+                child: Text(
+                  s.guestShort,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(fontSize: HomeLayout.guestSub, fontWeight: Weights.bold, color: Palette.inkSoft),
+                ),
               ),
-              child: const MangaIcon(IconArt.person, size: HomeLayout.guestIcon),
-            ),
-            const SizedBox(width: Gaps.inner),
-            Expanded(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(children: [
-                    Text(s.guestMode, style: const TextStyle(fontSize: HomeLayout.guestTitle, fontWeight: Weights.black)),
-                    const SizedBox(width: Gaps.panel),
-                    UntrackedLabel(s.untrackedTag),
-                  ]),
-                  const SizedBox(height: HomeLayout.guestNoteGap),
-                  Text(
-                    s.guestNote,
-                    maxLines: HomeLayout.guestNoteLines,
-                    overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(
-                      fontSize: HomeLayout.guestNote,
-                      fontWeight: Weights.medium,
-                      height: HomeLayout.guestNoteLineHeight,
-                      color: Palette.inkBody,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            const MangaIcon(IconArt.chevron, size: HomeLayout.guestChevron),
-          ],
+              const MangaIcon(IconArt.chevron, size: HomeLayout.guestChevron),
+            ],
+          ),
         ),
       ),
     );

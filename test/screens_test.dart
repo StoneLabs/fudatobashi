@@ -165,6 +165,19 @@ void main() {
       await tester.pumpWidget(const SizedBox());
     });
 
+    testWidgets('the unbuilt Help tab pops a coming-soon balloon and stays on Home ($lang)', (tester) async {
+      final p = await open(tester, mode: LearningMode.allKnown, ja: ja);
+      await tester.binding.setSurfaceSize(_phone);
+      await tester.pumpWidget(RepaintBoundary(key: const ValueKey('screen'), child: FudatobashiApp(progress: p)));
+      await tester.pump(const Duration(milliseconds: 500));
+      await tester.tap(find.text(ja ? '解説' : 'Help'));
+      await tester.pump(const Duration(milliseconds: 300));
+      expect(find.text(ja ? '準備中' : 'Coming soon'), findsOneWidget);
+      expect(find.byType(TrainingHero), findsOneWidget, reason: 'still on Home');
+      await tester.pump(const Duration(seconds: 3));
+      await tester.pumpWidget(const SizedBox());
+    });
+
     testWidgets('home, journey: no Learn next button ($lang)', (tester) async {
       final p = await open(tester, mode: LearningMode.journey, ja: ja);
       await tester.binding.setSurfaceSize(_phone);

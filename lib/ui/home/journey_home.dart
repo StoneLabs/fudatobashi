@@ -211,8 +211,14 @@ class _IslandProgress extends StatelessWidget {
     final progress = ProgressScope.of(context);
     final island = journey.island;
     final shape = archipelago.islands[journey.current];
+    // Its top and bottom edges run parallel to the map's slanted bottom and
+    // the hero's slanted top, so both gutters are even.
     return MangaPanel(
-      padding: HomeLayout.progressPadding,
+      shape: const PanelShape(
+        topLeft: Offset(0, HomeLayout.mapCut),
+        bottomRight: Offset(0, HomeLayout.journeyHeroCut),
+      ),
+      padding: HomeLayout.progressPadding + const EdgeInsets.only(top: HomeLayout.mapCut, bottom: HomeLayout.journeyHeroCut),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -260,7 +266,7 @@ class _IslandProgress extends StatelessWidget {
                       : PipState.locked,
           ]..sort((a, b) => a.index.compareTo(b.index))),
           if (progress.knownCardSpeedMs != null) ...[
-            const SizedBox(height: HomeLayout.knownSpeedGap),
+            const SizedBox(height: HomeLayout.pipsSpeedGap),
             KnownSpeedTag(ms: progress.knownCardSpeedMs, weekAgoMs: progress.knownCardSpeedTrendAgo),
           ],
         ],
