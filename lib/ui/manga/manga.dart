@@ -9,6 +9,7 @@ export 'confetti.dart';
 export 'entrance.dart';
 export 'header.dart';
 export 'idle_motion.dart';
+export 'impact.dart';
 export 'labels.dart';
 export 'lang_toggle.dart';
 export 'lettering.dart';

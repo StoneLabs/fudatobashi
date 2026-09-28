@@ -78,7 +78,15 @@ class IslandCompleteOverlay extends StatelessWidget {
                 ),
               ),
             ),
-            Entrance(IslandCompleteMotion.band, child: _Band(s.islandCompleteBand)),
+            Entrance(
+              IslandCompleteMotion.band,
+              child: CelebrationBand(s.islandCompleteBand,
+                  inset: IslandCompleteLayout.bandInset,
+                  fontSize: IslandCompleteLayout.bandFont,
+                  tracking: IslandCompleteLayout.bandTracking,
+                  padding: IslandCompleteLayout.bandPadding,
+                  turnDeg: IslandCompleteLayout.bandTurnDeg),
+            ),
             const SizedBox(height: IslandCompleteLayout.subGap),
             Entrance(
               IslandCompleteMotion.sub,
@@ -133,36 +141,6 @@ class IslandCompleteOverlay extends StatelessWidget {
       ),
     );
   }
-}
-
-/// The black ISLAND COMPLETE band, tilted.
-class _Band extends StatelessWidget {
-  const _Band(this.text);
-  final String text;
-
-  @override
-  Widget build(BuildContext context) => Padding(
-        padding: const EdgeInsets.symmetric(horizontal: IslandCompleteLayout.bandInset),
-        child: Transform.rotate(
-          angle: IslandCompleteLayout.bandTurnDeg * math.pi / 180,
-          child: ColoredBox(
-            color: Palette.ink,
-            child: Padding(
-              padding: IslandCompleteLayout.bandPadding,
-              child: FittedBox(
-                fit: BoxFit.scaleDown,
-                child: Text(text,
-                    style: const TextStyle(
-                        fontFamily: Fonts.display,
-                        fontSize: IslandCompleteLayout.bandFont,
-                        letterSpacing: IslandCompleteLayout.bandTracking * IslandCompleteLayout.bandFont,
-                        color: Palette.sun,
-                        height: 1.1)),
-              ),
-            ),
-          ),
-        ),
-      );
 }
 
 /// White caption box with an ink border.

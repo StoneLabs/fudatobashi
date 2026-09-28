@@ -36,10 +36,10 @@ import 'package:fudatobashi/ui/manga/manga.dart';
 import 'package:fudatobashi/ui/play/kimariji_chip.dart';
 import 'package:fudatobashi/ui/play/play_screen.dart';
 import 'package:fudatobashi/ui/rank/rank_screen.dart';
-import 'package:fudatobashi/ui/results/celebration_overlays.dart';
 import 'package:fudatobashi/ui/results/celebrations.dart';
 import 'package:fudatobashi/ui/results/island_complete_overlay.dart';
 import 'package:fudatobashi/ui/results/new_card_overlay.dart';
+import 'package:fudatobashi/ui/results/rank_up_overlay.dart';
 import 'package:fudatobashi/ui/results/results_screen.dart';
 import 'package:fudatobashi/ui/run/learn_next_button.dart';
 import 'package:fudatobashi/ui/stats/card_list.dart';
@@ -875,6 +875,35 @@ void main() {
         await _capture(tester, 'island_complete_$lang');
         await tester.pumpWidget(const SizedBox());
       });
+
+      // Every step of the ladder, at a large font scale: the spread's halves,
+      // the counting rating and the next class's panel must fit, and the top
+      // class shows the summit instead of a next target.
+      for (final (from, to) in [(0, 1), (2, 3), (7, 8)]) {
+        testWidgets('rank up ${Rating.bands[from].id} → ${Rating.bands[to].id}, at a large font scale ($lang)',
+            (tester) async {
+          tester.platformDispatcher.textScaleFactorTestValue = 1.3;
+          addTearDown(tester.platformDispatcher.clearTextScaleFactorTestValue);
+          final p = await open(tester, ja: ja);
+          final after = Rating.bands[to].minRating + 12;
+          final before = from == 0 ? null : Rating.bands[from].minRating + 40;
+          var advanced = false;
+          await pumpPage(
+            tester,
+            p,
+            RankUpOverlay(
+              data: RankUpCelebration(Rating.bands[from], Rating.bands[to], before, after),
+              onNext: () => advanced = true,
+            ),
+            RankUpMotion.length + const Duration(milliseconds: 100),
+          );
+          expect(find.text('${after.round()}'), findsWidgets, reason: 'the rating has counted up to its new value');
+          await _capture(tester, 'rank_up_${Rating.bands[to].id}_$lang');
+          await tester.tap(find.text(ja ? '次へ' : 'ONWARD!'));
+          expect(advanced, isTrue);
+          await tester.pumpWidget(const SizedBox());
+        });
+      }
     }
   });
 }

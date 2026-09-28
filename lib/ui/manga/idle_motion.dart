@@ -98,6 +98,27 @@ class Sway extends StatelessWidget {
       );
 }
 
+/// [child] hopping [height] px once per [period]: a jump over the first
+/// [airShare] of the cycle, then a rest on the ground (a cheering mascot).
+class Hop extends StatelessWidget {
+  const Hop({super.key, required this.height, required this.period, required this.airShare, required this.child});
+
+  final double height;
+  final Duration period;
+  final double airShare;
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) => IdleLoop(
+        child: child,
+        builder: (context, elapsed, child) {
+          final q = _phase(elapsed, period) / airShare;
+          final rise = q < 1 ? 4 * q * (1 - q) : 0.0;
+          return Transform.translate(offset: Offset(0, -height * rise), child: child);
+        },
+      );
+}
+
 /// [child] jolted to a new random spot within [reach] px every [step] (the
 /// rumble of ゴゴゴゴ lettering).
 class Shake extends StatelessWidget {

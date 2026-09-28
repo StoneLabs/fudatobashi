@@ -6,6 +6,7 @@ import 'celebration_overlays.dart';
 import 'celebrations.dart';
 import 'island_complete_overlay.dart';
 import 'new_card_overlay.dart';
+import 'rank_up_overlay.dart';
 
 /// Celebration [pages] one after another over an opaque backdrop: the
 /// sequence fades in, cross-fades between pages, and after the last one

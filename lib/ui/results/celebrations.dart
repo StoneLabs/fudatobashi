@@ -37,7 +37,9 @@ class RankUpCelebration extends Celebration {
   const RankUpCelebration(this.before, this.after, this.ratingBefore, this.ratingAfter);
   final RankBand before;
   final RankBand after;
-  final double ratingBefore;
+
+  /// Null on the first rated run.
+  final double? ratingBefore;
   final double ratingAfter;
 }
 
@@ -67,7 +69,7 @@ List<Celebration> celebrationsFor(SessionReport report) {
     final before = report.ratingBefore == null ? Rating.bands.first : Rating.bandOf(report.ratingBefore!);
     final after = Rating.bandOf(report.ratingAfter!);
     if (Rating.bands.indexOf(after) > Rating.bands.indexOf(before)) {
-      list.add(RankUpCelebration(before, after, report.ratingBefore ?? report.ratingAfter!, report.ratingAfter!));
+      list.add(RankUpCelebration(before, after, report.ratingBefore, report.ratingAfter!));
     }
   }
   if (report.goalRaised) list.add(const GoalUpCelebration());

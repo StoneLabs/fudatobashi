@@ -883,17 +883,6 @@ abstract final class ResultsLayout {
   static const double confusableKimarijiFont = 15;
   static const Placement confusableTobi = Placement(right: 18, bottom: tobiAboveCta, size: Size(70, 86));
 
-  static const double rankTitleFont = 88;
-  static const double rankTitleOutline = 15;
-  static const double rankBandFont = 19;
-  static const double rankOldFont = 15;
-  static const double rankOldLabelFont = 12;
-  static const double rankNewFont = 40;
-  static const double rankNewLabelFont = 12;
-  static const double rankRateFont = 18;
-  static const double rankRateSmallFont = 12.5;
-  static const Placement rankTobi = Placement(right: 22, bottom: tobiAboveCta, size: Size(74, 92));
-
   static const double goalTitleFont = 30;
   static const double goalNoteFont = 14;
   static const Placement goalTobi = Placement(right: 18, bottom: tobiAboveCta, size: Size(70, 86));
@@ -985,6 +974,111 @@ abstract final class NewCardLayout {
   static const double learnFont = 13.5;
   static const double acceptFont = 19;
   static const double acceptSubFont = 13;
+}
+
+/// "Rank up" (昇級!!, `RankUpOverlay`): spec phone 9's two-page spread
+/// crossing the gutter, the old class struck off on the left page and the
+/// new one stamped on the right, then the rating and the next class.
+abstract final class RankUpLayout {
+  /// The left page's speed lines stream in from the gutter.
+  static const leftSpeed = SpeedLinesSpec(count: 44, seed: 12, fromEdge: true);
+
+  /// The right page: a sun glow under boiling focus lines, with a pink tone
+  /// fading in toward the bottom.
+  static const Alignment rightGlowAt = Alignment(0, 0.08);
+  static const List<Color> rightGlowColors = [Color(0xFFFFFBE3), Color(0xFFFFE77A), Palette.sun];
+  static const List<double> rightGlowStops = [0, 0.5, 1];
+  static const rightFocus = BurstSpec(
+      box: Size(195, 844), center: Offset(97, 450), count: 120, innerMin: 90, innerMax: 120, width: 4, seed: 14);
+  static const double rightToneAngle = 180;
+  static const List<double> rightToneStops = [0.45, 0.9];
+
+  /// The shadow in the gutter between the two pages.
+  static const double gutterWidth = 52;
+  static const List<Color> gutterColors = [
+    Color(0x00000000),
+    Color(0x29000000),
+    Color(0x47000000),
+    Color(0x29000000),
+    Color(0x00000000),
+  ];
+  static const List<double> gutterStops = [0, 0.46, 0.5, 0.54, 1];
+
+  static const double topGap = 8;
+  static const String title = '昇級!!';
+  static const double titleFont = 104;
+  static const double titleOutline = 16;
+  static const double bandGap = 6;
+  static const double bandInset = 40;
+  static const double bandFont = 20;
+  static const double bandTracking = 0.3;
+  static const EdgeInsets bandPadding = EdgeInsets.fromLTRB(8, 7, 8, 8);
+  static const double bandTurnDeg = -2.5;
+
+  /// BEFORE / NOW above each page's class.
+  static const double pageLabelFont = 12;
+  static const double pageLabelTracking = 0.2;
+  static const EdgeInsets pageLabelPadding = EdgeInsets.fromLTRB(5, 1, 5, 2);
+  static const double pageLabelGap = 4;
+
+  /// The old class, struck off with a pink bar reaching past both ends and
+  /// stamped CLEAR at its lower right.
+  static const double oldFont = 34;
+  static const double oldSuffixFont = 18;
+  static const EdgeInsets oldPadding = EdgeInsets.fromLTRB(8, 4, 8, 6);
+  static const double strikeHeight = 6;
+  static const double strikeBorder = 2;
+  static const double strikeTurnDeg = -8;
+  static const double strikeOverhangLeft = 6;
+  static const double strikeOverhangRight = 10;
+  static const Offset clearOffset = Offset(22, 18);
+
+  /// The new class stamp, in its rung colour, with focus lines bursting
+  /// out from behind it as it lands.
+  static const double newFont = 50;
+  static const double newSuffixFont = 26;
+  static const EdgeInsets newPadding = EdgeInsets.fromLTRB(14, 8, 14, 10);
+  static const double newBorder = 3.5;
+  static const double newTurnDeg = -4;
+  static const impactBurst = BurstSpec(
+      box: impactSize, center: Offset(140, 140), count: 44, innerMin: 70, innerMax: 92, width: 5, seed: 23);
+  static const Size impactSize = Size(280, 280);
+  static const double impactFromScale = 0.6;
+  static const double impactToScale = 1.35;
+
+  static const String sfx = 'ドドン!!';
+  static const double sfxFont = 36;
+  static const int sfxSeed = 3;
+  static const double sfxTurnDeg = 9;
+
+  static const Size tobi = Size(76, 92);
+  static const double tobiGap = 8;
+
+  /// The rating box: the old rating, the new one counting up, the gain.
+  static const double rateFont = 20;
+  static const double rateBorder = 3;
+  static const EdgeInsets ratePadding = EdgeInsets.fromLTRB(14, 7, 14, 8);
+  static const double rateGap = 10;
+  static const double gainFont = 13;
+  static const double gainBorder = 2;
+  static const EdgeInsets gainPadding = EdgeInsets.fromLTRB(6, 1, 6, 2);
+
+  /// The next class: its badge, its 100-card time and how far is left.
+  static const Offset nextCut = Offset(0, 10);
+  static const EdgeInsets nextPadding = EdgeInsets.fromLTRB(12, 16, 12, 10);
+  static const double nextGap = 12;
+  static const double nextTagFont = 12;
+  static const double nextBadgeFont = 30;
+  static const double nextBadgeSuffixFont = 16;
+  static const double nextTargetFont = 16;
+  static const double nextNoteFont = 12.5;
+  static const double barHeight = 12;
+  static const double barGap = 6;
+
+  static const double sectionGap = 12;
+  static const double actionHeight = 62;
+  static const double ctaFont = 20;
+  static const double ctaSubFont = 13;
 }
 
 /// "Island complete" (制覇!!, `IslandCompleteOverlay`).
@@ -1303,6 +1397,11 @@ abstract final class Entrances {
   static const pop = EntranceFrom(scale: 0.4);
   static const up = EntranceFrom(offset: Offset(0, 22));
   static const isrise = EntranceFrom(scale: 0.15, opaqueAt: 0.3);
+  static const thump = EntranceFrom(scale: 2.4, opaqueAt: 0.3);
+  static const stamp = EntranceFrom(scale: 2.6, turnDeg: -14, opaqueAt: 0.3);
+
+  /// For an `EntranceBuilder`, which draws its own motion from the progress.
+  static const custom = EntranceFrom(opacity: 1);
 
   static const settle = Cubic(0.2, 0.8, 0.2, 1);
   static const springy = Cubic(0.2, 1.5, 0.4, 1);
@@ -1369,6 +1468,59 @@ abstract final class NewCardMotion {
   static const String flickWord = 'バシッ!';
   static const double flickWordFont = 54;
   static const double flickWordTurnDeg = -9;
+}
+
+/// "Rank up" (昇級!!): the pages slide together, the old class is struck
+/// off, the new one slams down with a jolt at [impactAt], then the rating
+/// counts up and the next class's bar fills.
+abstract final class RankUpMotion {
+  static const pages = EntranceSpec(Entrances.custom, duration: Duration(milliseconds: 500), curve: Entrances.glide);
+  static const title = EntranceSpec(Entrances.slam,
+      duration: Duration(milliseconds: 500), delay: Duration(milliseconds: 250), curve: Entrances.springy);
+  static const band =
+      EntranceSpec(Entrances.pop, duration: Duration(milliseconds: 350), delay: Duration(milliseconds: 500));
+  static const before = EntranceSpec(Entrances.up,
+      duration: Duration(milliseconds: 400), delay: Duration(milliseconds: 400), curve: Entrances.glide);
+  static const strike = EntranceSpec(Entrances.custom,
+      duration: Duration(milliseconds: 220), delay: Duration(milliseconds: 800), curve: Curves.easeOut);
+  static const clear = EntranceSpec(Entrances.thump,
+      duration: Duration(milliseconds: 300), delay: Duration(milliseconds: 950), curve: Entrances.springy);
+  static const now =
+      EntranceSpec(Entrances.pop, duration: Duration(milliseconds: 300), delay: Duration(milliseconds: 850));
+  static const stamp = EntranceSpec(Entrances.stamp,
+      duration: Duration(milliseconds: 420), delay: Duration(milliseconds: 1000), curve: Entrances.springy);
+
+  /// When the stamp first lands (the springy curve reaches rest about a
+  /// quarter of the way through).
+  static const impactAt = Duration(milliseconds: 1110);
+  static const jolt = EntranceSpec(Entrances.custom, duration: Duration(milliseconds: 320), delay: impactAt, curve: Curves.linear);
+  static const double joltReach = 7;
+  static const int joltSteps = 9;
+  static const int joltSeed = 31;
+  static const burst = EntranceSpec(Entrances.custom, duration: Duration(milliseconds: 450), delay: impactAt, curve: Curves.easeOut);
+  static const sfx = EntranceSpec(Entrances.pop, duration: Duration(milliseconds: 400), delay: impactAt, curve: Entrances.bouncy);
+  static const tobi = EntranceSpec(Entrances.pop,
+      duration: Duration(milliseconds: 400), delay: Duration(milliseconds: 1160), curve: Entrances.bouncy);
+
+  static const rate = EntranceSpec(Entrances.pop,
+      duration: Duration(milliseconds: 350), delay: Duration(milliseconds: 1250), curve: Entrances.springy);
+  static const count = EntranceSpec(Entrances.custom,
+      duration: Duration(milliseconds: 900), delay: Duration(milliseconds: 1350), curve: Curves.easeOutCubic);
+  static const gain = EntranceSpec(Entrances.pop,
+      duration: Duration(milliseconds: 350), delay: Duration(milliseconds: 2250), curve: Entrances.bouncy);
+  static const next = EntranceSpec(Entrances.up,
+      duration: Duration(milliseconds: 450), delay: Duration(milliseconds: 1600), curve: Entrances.glide);
+  static const fill = EntranceSpec(Entrances.custom,
+      duration: Duration(milliseconds: 700), delay: Duration(milliseconds: 2000), curve: Curves.easeOutCubic);
+  static const actions = EntranceSpec(Entrances.pop,
+      duration: Duration(milliseconds: 400), delay: Duration(milliseconds: 1900), curve: Entrances.springy);
+
+  static Duration get length => fill.end;
+
+  /// Afterwards Tobi keeps hopping and the right page's focus lines boil.
+  static const double hopHeight = 12;
+  static const hopPeriod = Duration(milliseconds: 1100);
+  static const double hopAirShare = 0.4;
 }
 
 /// "Island complete" (制覇!!): entrance timeline and the next island rising.

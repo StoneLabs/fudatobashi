@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:flutter/widgets.dart';
 
 import '../../config/design.dart';
@@ -121,6 +123,53 @@ class CelebrationCta extends StatelessWidget {
               const SizedBox(width: Gaps.small),
               Text(sub, style: TextStyle(fontWeight: Weights.black, fontSize: subFontSize, height: 1)),
             ]),
+          ),
+        ),
+      );
+}
+
+/// A tilted ink band with sun lettering across the page (ISLAND COMPLETE,
+/// RANK UP), [inset] from both sides.
+class CelebrationBand extends StatelessWidget {
+  const CelebrationBand(
+    this.text, {
+    super.key,
+    required this.inset,
+    required this.fontSize,
+    required this.tracking,
+    required this.padding,
+    required this.turnDeg,
+  });
+
+  final String text;
+  final double inset;
+  final double fontSize;
+
+  /// Letter spacing as a share of [fontSize].
+  final double tracking;
+  final EdgeInsets padding;
+  final double turnDeg;
+
+  @override
+  Widget build(BuildContext context) => Padding(
+        padding: EdgeInsets.symmetric(horizontal: inset),
+        child: Transform.rotate(
+          angle: turnDeg * math.pi / 180,
+          child: ColoredBox(
+            color: Palette.ink,
+            child: Padding(
+              padding: padding,
+              child: FittedBox(
+                fit: BoxFit.scaleDown,
+                child: Text(text,
+                    style: TextStyle(
+                        fontFamily: Fonts.display,
+                        fontSize: fontSize,
+                        letterSpacing: tracking * fontSize,
+                        color: Palette.sun,
+                        height: 1.1)),
+              ),
+            ),
           ),
         ),
       );

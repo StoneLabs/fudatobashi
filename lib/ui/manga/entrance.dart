@@ -61,16 +61,35 @@ class Entrance extends StatelessWidget {
   final Widget child;
 
   @override
+  Widget build(BuildContext context) => EntranceBuilder(
+        spec,
+        child: child,
+        builder: (context, progress, child) => EntranceFrame(from: spec.from, progress: progress, child: child!),
+      );
+}
+
+/// Runs [builder] with [spec]'s eased progress on the enclosing
+/// [EntranceStage]: 0 before it starts, 1 once at rest (springy curves
+/// overshoot in between), and 1 without a stage. For motion an
+/// [EntranceFrame] can't express, like a number counting up or a bar filling.
+class EntranceBuilder extends StatelessWidget {
+  const EntranceBuilder(this.spec, {super.key, required this.builder, this.child});
+
+  final EntranceSpec spec;
+  final Widget Function(BuildContext context, double progress, Widget? child) builder;
+  final Widget? child;
+
+  @override
   Widget build(BuildContext context) {
     final stage = context.dependOnInheritedWidgetOfExactType<_StageScope>();
-    if (stage == null) return child;
+    if (stage == null) return builder(context, 1, child);
     return AnimatedBuilder(
       animation: stage.timeline,
       child: child,
       builder: (context, child) {
         final elapsed = stage.length * stage.timeline.value - spec.delay;
         final t = (elapsed.inMicroseconds / spec.duration.inMicroseconds).clamp(0.0, 1.0);
-        return EntranceFrame(from: spec.from, progress: t >= 1 ? 1 : spec.curve.transform(t), child: child!);
+        return builder(context, t >= 1 ? 1 : spec.curve.transform(t), child);
       },
     );
   }

@@ -11,8 +11,9 @@ import '../../l10n/stats_strings.dart';
 import '../../l10n/strings.dart';
 import '../../state/scope.dart';
 import '../manga/manga.dart';
-import '../results/celebration_overlays.dart';
+import 'rank_badges.dart';
 import '../results/celebrations.dart';
+import '../results/rank_up_overlay.dart';
 
 /// The rank ladder (spec phone 9): nine class rungs, coloured from white
 /// 入門 up through pink, yellow, green, sea and violet to a solid-ink A級,
@@ -149,20 +150,6 @@ class _TopBar extends StatelessWidget {
   }
 }
 
-/// Fill, texture and text colour for one rung, a step of the ladder's colour
-/// progression: flat white for 入門/F下級, then pink, yellow, green, a
-/// lighter and then a bolder sea, a bold violet and finally solid ink.
-({Color color, ToneSpec? tone, Color text}) _rungStyle(String bandId) => switch (bandId) {
-      'F+' => (color: Palette.pink, tone: Tones.pink, text: Palette.ink),
-      'E-' => (color: Palette.sun, tone: null, text: Palette.ink),
-      'E+' => (color: Palette.land, tone: null, text: Palette.ink),
-      'D' => (color: Palette.seaSoft, tone: Tones.sea, text: Palette.ink),
-      'C' => (color: Palette.sea, tone: Tones.seaDeep, text: Palette.ink),
-      'B' => (color: Palette.violet, tone: null, text: Palette.paper),
-      'A' => (color: Palette.ink, tone: null, text: Palette.paper),
-      _ => (color: Palette.paper, tone: null, text: Palette.ink), // 入門, F下級
-    };
-
 class _Rung extends StatelessWidget {
   const _Rung({
     required this.band,
@@ -185,7 +172,7 @@ class _Rung extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final s = S.of(context);
-    final style = _rungStyle(band.id);
+    final style = rungStyle(band.id);
     final markers = <Widget>[
       if (isTop) _TopClassNote(s.topClassNote),
       if (isNext)
@@ -214,7 +201,7 @@ class _Rung extends StatelessWidget {
                 style: TextStyle(color: style.text),
                 child: Row(
                   children: [
-                    _ClassBadge(band, accent: isTop),
+                    ClassBadge(band, color: isTop ? Palette.sun : Palette.paper),
                     if (isLocked) ...[
                       const SizedBox(width: RankLayout.lockGap),
                       MangaIcon(IconArt.lock, size: RankLayout.lockIcon, color: style.text),
@@ -250,7 +237,7 @@ class _Rung extends StatelessWidget {
               right: RankLayout.stampRight,
               top: 0,
               bottom: 0,
-              child: Center(child: _ClearStamp(s.clearStamp)),
+              child: Center(child: ClearStamp(s.clearStamp)),
             ),
           if (isYou) ...[
             const Placed(RankLayout.tobiPlacement, child: Tobi(pose: TobiPose.fired)),
@@ -356,56 +343,6 @@ class _YouTag extends StatelessWidget {
           ]),
         ),
       );
-}
-
-/// A rotated, pink-outlined stamp on every class already passed (spec's
-/// `.stamp`).
-class _ClearStamp extends StatelessWidget {
-  const _ClearStamp(this.label);
-  final String label;
-
-  @override
-  Widget build(BuildContext context) => Transform.rotate(
-        angle: RankLayout.stampTurn * math.pi / 180,
-        child: DecoratedBox(
-          decoration: BoxDecoration(
-            color: Palette.paper.withValues(alpha: 0.85),
-            border: Border.all(color: Palette.pinkDeep, width: Strokes.button),
-            borderRadius: BorderRadius.circular(RankLayout.stampRadius),
-          ),
-          child: Padding(
-            padding: RankLayout.stampPadding,
-            child: Text(label,
-                style: const TextStyle(fontFamily: Fonts.display, fontSize: RankLayout.stampFont, color: Palette.pinkDeep)),
-          ),
-        ),
-      );
-}
-
-/// The rung's own class badge: white, or sun-coloured on A級 (spec's `.rn`,
-/// skew art aside — see [Sticker]).
-class _ClassBadge extends StatelessWidget {
-  const _ClassBadge(this.band, {required this.accent});
-  final RankBand band;
-  final bool accent;
-
-  @override
-  Widget build(BuildContext context) {
-    const suffix = '級';
-    final main = band.label.endsWith(suffix) ? band.label.substring(0, band.label.length - 1) : band.label;
-    return Sticker(
-      tilt: 0,
-      color: accent ? Palette.sun : Palette.paper,
-      padding: RankLayout.badgePadding,
-      child: Text.rich(
-        TextSpan(children: [
-          TextSpan(text: main, style: const TextStyle(fontSize: RankLayout.badgeFont)),
-          if (main != band.label) const TextSpan(text: suffix, style: TextStyle(fontSize: RankLayout.badgeSuffixFont)),
-        ]),
-        style: const TextStyle(fontFamily: Fonts.display, height: 1, color: Palette.ink),
-      ),
-    );
-  }
 }
 
 /// The rank-up preview entry point, next to the NEXT tag.
