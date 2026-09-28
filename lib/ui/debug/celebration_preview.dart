@@ -1,39 +1,38 @@
 import 'package:flutter/widgets.dart';
 
+import '../../config/design.dart';
 import '../../data/fuda_sets.dart';
 import '../../data/poem.dart';
-import '../../domain/card_stats.dart';
 import '../../domain/rating.dart';
-import '../../state/play_config.dart';
-import '../../state/progress.dart';
 import '../../state/scope.dart';
 import '../manga/manga.dart';
-import '../results/results_screen.dart';
+import '../results/celebration_sequence.dart';
+import '../results/celebrations.dart';
 
-/// Opens the results screen with every celebration queued (a new card with
-/// its look-alike warning when one applies, the mock's island complete, a
-/// rank-up and a new goal), without touching any progress.
+/// The mock's island for the island-complete page.
 const _previewIsland = 2;
 
+/// Plays every celebration page in a row (a new card with its look-alike
+/// warning when one applies, the mock's island complete, a rank-up and a new
+/// goal), without touching any progress.
 void previewCelebrations(BuildContext context) {
   final progress = ProgressScope.read(context);
-  bool unlocked(int id) => progress.trainer.items[ItemKey(id, false)]?.unlocked == true;
-  final withKnownTwin = poems.all.where((p) => !unlocked(p.id) && fudaSets.tomofuda(p.id).any(unlocked));
+  final withKnownTwin = poems.all.where((p) => !progress.knows(p.id) && fudaSets.tomofuda(p.id).any(progress.knows));
   final card = withKnownTwin.isEmpty ? poems.all.first : withKnownTwin.first;
   final band = Rating.bands[1];
-  final report = SessionReport(
-    sessionId: null,
-    total: null,
-    attempts: const [],
-    previousBest: null,
-    ratingBefore: band.minRating - 1,
-    ratingAfter: band.minRating + 1,
-    unlocked: [ItemKey(card.id, false)],
-    goalRaised: true,
-    islandsCompleted: const [_previewIsland],
-  );
+  final pages = [
+    ...introductionOf(card.id, knows: progress.knows),
+    const IslandCompleteCelebration(_previewIsland),
+    RankUpCelebration(Rating.bands.first, band, band.minRating - 1, band.minRating + 1),
+    const GoalUpCelebration(),
+  ];
   Navigator.push(
     context,
-    MangaRoute<void>(builder: (_) => ResultsScreen(report: report, config: const PlayConfig(mode: PlayMode.training))),
+    MangaRoute<void>(
+      builder: (context) => ColoredBox(
+        color: Palette.paper,
+        child: CelebrationSequence(pages: pages, onDone: () => Navigator.pop(context)),
+      ),
+    ),
   );
 }

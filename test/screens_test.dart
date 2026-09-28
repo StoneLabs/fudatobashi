@@ -140,7 +140,6 @@ void main() {
         previousBest: null,
         ratingBefore: null,
         ratingAfter: null,
-        unlocked: const [],
         goalRaised: false,
       );
       await tester.pumpWidget(RepaintBoundary(

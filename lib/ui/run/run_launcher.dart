@@ -16,8 +16,8 @@ import 'shaky_sheet.dart';
 /// it. Always startable: after the dues come speed drills.
 Future<void> startTraining(BuildContext context) async {
   final planned = await ProgressScope.read(context).planTraining();
-  if (!context.mounted || planned.cards.isEmpty) return;
-  await _push(context, planned.cards, const PlayConfig(mode: PlayMode.training));
+  if (!context.mounted) return;
+  await _push(context, planned.cards, const PlayConfig(mode: PlayMode.training), newPoems: planned.newPoems);
 }
 
 /// Results' "Learn next cards" (journey): unlocks the next batch now and
@@ -31,7 +31,8 @@ Future<void> startLearnNext(BuildContext context) async {
   if (!context.mounted || planned.cards.isEmpty) return;
   await Navigator.of(context).pushReplacement(MangaRoute<void>(
     transition: MangaTransition.zoom,
-    builder: (_) => PlayScreen(cards: planned.cards, config: const PlayConfig(mode: PlayMode.training)),
+    builder: (_) =>
+        PlayScreen(cards: planned.cards, config: const PlayConfig(mode: PlayMode.training), newPoems: planned.newPoems),
   ));
 }
 
@@ -58,11 +59,11 @@ Future<void> startGuest(BuildContext context, PlayConfig config) {
   return _push(context, ProgressScope.read(context).freeDeck(run), run);
 }
 
-Future<void> _push(BuildContext context, List<CardRef> cards, PlayConfig config) async {
+Future<void> _push(BuildContext context, List<CardRef> cards, PlayConfig config, {Set<int> newPoems = const {}}) async {
   if (cards.isEmpty) return;
   await Navigator.of(context).push(MangaRoute<void>(
     transition: MangaTransition.zoom,
-    builder: (_) => PlayScreen(cards: cards, config: config),
+    builder: (_) => PlayScreen(cards: cards, config: config, newPoems: newPoems),
   ));
 }
 
@@ -72,8 +73,9 @@ Future<void> _push(BuildContext context, List<CardRef> cards, PlayConfig config)
 /// entry point above).
 Future<void> keepGoing(BuildContext context, PlayConfig config) async {
   final progress = ProgressScope.read(context);
+  final planned = config.mode == PlayMode.training ? await progress.planTraining() : null;
   final cards = switch (config.mode) {
-    PlayMode.training => (await progress.planTraining()).cards,
+    PlayMode.training => planned!.cards,
     PlayMode.nigate => progress.nigateDeck(config),
     PlayMode.free || PlayMode.guest => progress.freeDeck(config),
   };
@@ -84,6 +86,6 @@ Future<void> keepGoing(BuildContext context, PlayConfig config) async {
   }
   Navigator.of(context).pushReplacement(MangaRoute<void>(
     transition: MangaTransition.zoom,
-    builder: (_) => PlayScreen(cards: cards, config: config),
+    builder: (_) => PlayScreen(cards: cards, config: config, newPoems: planned?.newPoems ?? const {}),
   ));
 }

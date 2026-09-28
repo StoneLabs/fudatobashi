@@ -480,8 +480,14 @@ class Trainer {
 
   // ------------------------------------------------------------ sessions
 
+  /// Never trained in either orientation: the card is new to the player.
+  static bool isNewPoem(Map<ItemKey, CardStats> stats, int poemId) =>
+      !(stats[ItemKey(poemId, false)]?.seen ?? false) && !(stats[ItemKey(poemId, true)]?.seen ?? false);
+
   /// Plans a training session: due reviews first, then a weighted mix of
   /// fresh, slow and shaky cards, with a little maintenance of the rest.
+  /// New cards stay out of the first [TrainingTuning.newCardHoldBack] swipes
+  /// while there are other cards to open with.
   List<TrainingPick> planSession(Map<ItemKey, CardStats> stats, DateTime now, math.Random rng) {
     final pool = unlocked.toList();
     if (pool.isEmpty) return const [];
@@ -541,12 +547,29 @@ class Trainer {
     // Keep due cards from clumping at the start.
     picks.shuffle(rng);
     _spreadRepeats(picks);
+    final opening = holdBackNew(picks, (poemId) => isNewPoem(stats, poemId));
+    _spreadRepeats(picks, from: math.max(1, opening));
     return picks;
   }
 
-  /// Nudges identical neighbours apart where possible.
-  static void _spreadRepeats(List<TrainingPick> picks) {
-    for (var i = 1; i < picks.length; i++) {
+  /// Moves the first [TrainingTuning.newCardHoldBack] picks of known cards
+  /// to the front, keeping the order otherwise, so the run opens with cards
+  /// the player has met. Returns how many picks open the run that way.
+  static int holdBackNew(List<TrainingPick> picks, bool Function(int poemId) isNew) {
+    final opening = <TrainingPick>[], rest = <TrainingPick>[];
+    for (final p in picks) {
+      (opening.length < TrainingTuning.newCardHoldBack && !isNew(p.key.poemId) ? opening : rest).add(p);
+    }
+    picks
+      ..setAll(0, opening)
+      ..setAll(opening.length, rest);
+    return opening.length;
+  }
+
+  /// Nudges identical neighbours apart where possible, leaving the picks
+  /// before [from] in place.
+  static void _spreadRepeats(List<TrainingPick> picks, {int from = 1}) {
+    for (var i = from; i < picks.length; i++) {
       if (picks[i].key != picks[i - 1].key) continue;
       for (var j = i + 1; j < picks.length; j++) {
         if (picks[j].key != picks[i - 1].key && (j + 1 >= picks.length || picks[j + 1].key != picks[i].key)) {

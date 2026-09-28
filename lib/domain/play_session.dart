@@ -72,6 +72,9 @@ class PlaySession extends ChangeNotifier {
   Duration? _revealTs;
   Duration? firstRevealTs;
   Duration? endTs;
+  Duration? _lastCommitTs;
+  Duration _breaks = Duration.zero;
+  bool _onBreak = false;
   bool _redo = false;
   bool _currentTainted = false;
   bool aborted = false;
@@ -83,15 +86,22 @@ class PlaySession extends ChangeNotifier {
   CardRef? get next => index + 1 < cards.length ? cards[index + 1] : null;
   Attempt? get lastAttempt => attempts.isEmpty ? null : attempts.last;
 
-  /// Total time from the first reveal to the last swipe.
+  /// Total time from the first reveal to the last swipe, less breaks.
   Duration? get total =>
-      (firstRevealTs != null && endTs != null) ? endTs! - firstRevealTs! : null;
+      (firstRevealTs != null && endTs != null) ? endTs! - firstRevealTs! - _breaks : null;
+
+  /// Play pauses before the current card for a page in between (a new
+  /// card's introduction): the time from the last swipe to this card's
+  /// reveal is left out of [total].
+  void takeBreak() => _onBreak = true;
 
   /// Called with the vsync timestamp of the first frame showing the current card.
   void revealed(Duration frameTs) {
     if (finished || _revealTs != null) return;
     _revealTs = frameTs;
     firstRevealTs ??= frameTs;
+    if (_onBreak && _lastCommitTs != null) _breaks += frameTs - _lastCommitTs!;
+    _onBreak = false;
   }
 
   Duration? get revealTs => _revealTs;
@@ -119,6 +129,7 @@ class PlaySession extends ChangeNotifier {
     ));
     index++;
     _revealTs = null;
+    _lastCommitTs = commitTs;
     _redo = false;
     _currentTainted = false;
     if (finished) endTs = commitTs;

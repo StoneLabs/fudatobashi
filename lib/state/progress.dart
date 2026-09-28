@@ -26,8 +26,8 @@ class SessionReport {
     required this.previousBest,
     required this.ratingBefore,
     required this.ratingAfter,
-    required this.unlocked,
     required this.goalRaised,
+    this.newCards = const [],
     this.islandsReached = const [],
     this.islandsCompleted = const [],
   });
@@ -40,8 +40,11 @@ class SessionReport {
   final Duration? previousBest;
   final double? ratingBefore;
   final double? ratingAfter;
-  final List<ItemKey> unlocked;
   final bool goalRaised;
+
+  /// Cards swiped for the first time in this run (journey training), in
+  /// order of first appearance.
+  final List<int> newCards;
 
   /// Islands whose first card was unlocked by this run (journey mode).
   final List<int> islandsReached;
@@ -54,12 +57,16 @@ class SessionReport {
 
 /// A training session ready to play, with the scheduler's reasoning.
 class PlannedRun {
-  PlannedRun(this.cards, this.picks, this.unlockedBefore);
+  PlannedRun(this.cards, this.picks, this.unlockedBefore, this.newPoems);
   final List<CardRef> cards;
   final List<TrainingPick> picks;
 
-  /// Cards unlocked right before this run; the run's report celebrates them.
+  /// Cards unlocked right before this run.
   final List<ItemKey> unlockedBefore;
+
+  /// Journey mode: cards the player meets for the first time in this run.
+  /// Each is introduced with its page right before its first appearance.
+  final Set<int> newPoems;
 }
 
 /// All persistent progress: attempts, training state, rating, history and
@@ -77,8 +84,8 @@ class Progress extends ChangeNotifier {
   double? rating;
   final _statsCache = <ItemKey, CardStats>{};
 
-  /// Unlocked while planning a run, not yet reported: the next tracked
-  /// training report celebrates them.
+  /// Unlocked while planning a run and not yet part of a recorded one (for
+  /// the islands a run reaches).
   final _unreported = <ItemKey>[];
   final Set<int> _islandsCelebrated;
 
@@ -294,12 +301,23 @@ class Progress extends ChangeNotifier {
 
   PlannedRun _plan(List<ItemKey> fresh, math.Random rng, DateTime now) {
     _unreported.addAll(fresh);
-    final picks = trainer.planSession(allStats, now, rng);
+    final stats = allStats;
+    final picks = trainer.planSession(stats, now, rng);
     final cards = [
       for (final p in picks) _ref(p.key.poemId, p.key.inverted, trainer.items[p.key]!.maskLevel, rng),
     ];
-    return PlannedRun(cards, picks, fresh);
+    final newPoems = trainer.config.learningMode == LearningMode.journey
+        ? {for (final p in picks) if (Trainer.isNewPoem(stats, p.key.poemId)) p.key.poemId}
+        : <int>{};
+    return PlannedRun(cards, picks, fresh, newPoems);
   }
+
+  /// Unlocked and met before: the player knows this card (not a new card
+  /// still waiting for its introduction).
+  bool knows(int poemId) => trainer.items[ItemKey(poemId, false)]?.unlocked == true && _metBefore(poemId);
+
+  /// Trained before in either orientation (see [Trainer.isNewPoem]).
+  bool _metBefore(int poemId) => stats(ItemKey(poemId, false)).seen || stats(ItemKey(poemId, true)).seen;
 
   static bool _invertedFor(CardOrientation o, math.Random rng) => switch (o) {
         CardOrientation.random => rng.nextBool(),
@@ -382,11 +400,13 @@ class Progress extends ChangeNotifier {
         previousBest: previousBest,
         ratingBefore: rating,
         ratingAfter: rating,
-        unlocked: const [],
         goalRaised: false,
       );
     }
 
+    final newCards = config.mode == PlayMode.training && trainer.config.learningMode == LearningMode.journey
+        ? {for (final a in run.attempts) if (!_metBefore(a.card.poemId)) a.card.poemId}.toList()
+        : const <int>[];
     final all = [
       for (final a in run.undone) (a, true),
       for (final a in run.attempts) (a, false),
@@ -491,7 +511,6 @@ class Progress extends ChangeNotifier {
         if (!s.key.inverted && !_unreported.contains(s.key)) Trainer.islandOf(poems[s.key.poemId]),
     };
     final earned = trainer.unlockEarned(poems, fudaSets, allStats, now);
-    final fresh = config.mode == PlayMode.training ? [..._unreported, ...earned] : earned;
     if (config.mode == PlayMode.training) _unreported.clear();
     final after = islands;
     final reached = [for (final i in after) if (i.reached && !reachedBefore.contains(i.index)) i.index];
@@ -519,8 +538,8 @@ class Progress extends ChangeNotifier {
       previousBest: previousBest,
       ratingBefore: before,
       ratingAfter: rating,
-      unlocked: fresh,
       goalRaised: goalRaised,
+      newCards: newCards,
       islandsReached: trainer.config.learningMode == LearningMode.journey ? reached : const [],
       islandsCompleted: trainer.config.learningMode == LearningMode.journey ? completed : const [],
     );

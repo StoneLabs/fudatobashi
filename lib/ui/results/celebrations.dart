@@ -1,10 +1,9 @@
 import '../../data/fuda_sets.dart';
-import '../../domain/card_stats.dart';
 import '../../domain/rating.dart';
 import '../../state/progress.dart';
 
-/// One post-run celebration overlay's data. [celebrationsFor] orders them:
-/// new cards, island completions, a rank-up, then a new speed goal.
+/// One celebration page's data. A new card is introduced during the run
+/// ([introductionOf]); the rest follow it ([celebrationsFor]).
 sealed class Celebration {
   const Celebration();
 }
@@ -18,15 +17,14 @@ class NewCardCelebration extends Celebration {
   final List<int> twins;
 }
 
-/// A newly unlocked card shares a 決まり字 confusable set with card(s) the
-/// player already knows: a heads-up to tell them apart, shown right after
-/// that card's [NewCardCelebration].
+/// A new card shares a 決まり字 confusable set with card(s) the player
+/// already knows: a heads-up to tell them apart, shown right after that
+/// card's [NewCardCelebration].
 class ConfusableWarningCelebration extends Celebration {
   const ConfusableWarningCelebration(this.poemId, this.knownSiblings);
   final int poemId;
 
-  /// Already-unlocked confusable siblings (excludes cards unlocked in this
-  /// same run).
+  /// Confusable siblings the player already knows.
   final List<int> knownSiblings;
 }
 
@@ -47,22 +45,24 @@ class GoalUpCelebration extends Celebration {
   const GoalUpCelebration();
 }
 
-List<Celebration> celebrationsFor(SessionReport report, Progress progress) {
-  final list = <Celebration>[];
-  final seenPoems = <int>{};
-  final freshPoemIds = {for (final k in report.unlocked) k.poemId};
-  for (final k in report.unlocked) {
-    if (!seenPoems.add(k.poemId)) continue;
-    list.add(NewCardCelebration(k.poemId, fudaSets.tomofuda(k.poemId)));
-    final knownSiblings = fudaSets
-        .tomofuda(k.poemId)
-        .where((id) => !freshPoemIds.contains(id) && progress.trainer.items[ItemKey(id, false)]?.unlocked == true)
-        .toList();
-    if (knownSiblings.isNotEmpty) list.add(ConfusableWarningCelebration(k.poemId, knownSiblings));
-  }
-  for (final i in report.islandsCompleted) {
-    list.add(IslandCompleteCelebration(i));
-  }
+/// The pages introducing new card [poemId] right before it first appears:
+/// the card itself, then a look-alike warning if the player [knows] one of
+/// its confusable siblings.
+List<Celebration> introductionOf(int poemId, {required bool Function(int poemId) knows}) {
+  final twins = fudaSets.tomofuda(poemId);
+  final knownSiblings = twins.where(knows).toList();
+  return [
+    NewCardCelebration(poemId, twins),
+    if (knownSiblings.isNotEmpty) ConfusableWarningCelebration(poemId, knownSiblings),
+  ];
+}
+
+/// The pages after a run, in order: island completions, a rank-up, then a
+/// new speed goal.
+List<Celebration> celebrationsFor(SessionReport report) {
+  final list = <Celebration>[
+    for (final i in report.islandsCompleted) IslandCompleteCelebration(i),
+  ];
   if (report.ratingAfter != null) {
     final before = report.ratingBefore == null ? Rating.bands.first : Rating.bandOf(report.ratingBefore!);
     final after = Rating.bandOf(report.ratingAfter!);

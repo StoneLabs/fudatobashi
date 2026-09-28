@@ -183,6 +183,10 @@ abstract final class TrainingTuning {
   /// Share of a session that new cards' reserved slots may fill.
   static const double newCardMaxShare = 0.5;
 
+  /// A run opens with this many swipes of known cards before a new card's
+  /// first appearance (when that many are in the session).
+  static const int newCardHoldBack = 5;
+
   /// Clamp on the ewma/goal "slowness" ratio used in the scheduling weight.
   static const double slownessClampMin = 0.3;
   static const double slownessClampMax = 4.0;

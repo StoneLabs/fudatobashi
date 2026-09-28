@@ -18,13 +18,12 @@ import '../play/time_format.dart';
 import '../run/run_launcher.dart';
 import '../torifuda/torifuda_painter.dart';
 import '../run/learn_next_button.dart';
-import 'celebration_overlays.dart';
+import 'celebration_sequence.dart';
 import 'celebrations.dart';
-import 'island_complete_overlay.dart';
-import 'new_card_overlay.dart';
 
-/// Results (spec phone 5): a splash of the run's numbers, then the earned
-/// celebrations in sequence, each tap-anywhere-to-skip.
+/// Results (spec phone 5): a splash of the run's numbers and the round's new
+/// cards, then the earned celebrations in sequence, each
+/// tap-anywhere-to-skip.
 class ResultsScreen extends StatefulWidget {
   const ResultsScreen({super.key, required this.report, required this.config});
 
@@ -36,17 +35,16 @@ class ResultsScreen extends StatefulWidget {
 }
 
 class _ResultsScreenState extends State<ResultsScreen> {
-  late final List<Celebration> _celebrations;
-  int _shown = -1;
+  late final List<Celebration> _celebrations = celebrationsFor(widget.report);
+  bool _celebrating = false;
   Timer? _timer;
 
   @override
   void initState() {
     super.initState();
-    _celebrations = celebrationsFor(widget.report, ProgressScope.read(context));
     if (_celebrations.isNotEmpty) {
       _timer = Timer(ResultsLayout.overlayStagger, () {
-        if (mounted) setState(() => _shown = 0);
+        if (mounted) setState(() => _celebrating = true);
       });
     }
   }
@@ -57,41 +55,22 @@ class _ResultsScreenState extends State<ResultsScreen> {
     super.dispose();
   }
 
-  void _advance() => setState(() => _shown++);
-
   void _home(BuildContext context) => Navigator.of(context).popUntil((r) => r.isFirst);
 
   @override
-  Widget build(BuildContext context) {
-    final progress = ProgressScope.of(context);
-    final overlayWidget =
-        _shown >= 0 && _shown < _celebrations.length ? _buildOverlay(_celebrations[_shown], progress) : null;
-    return Scaffold(
-      backgroundColor: Palette.paper,
-      body: Stack(children: [
-        SafeArea(child: _Splash(report: widget.report, config: widget.config, onHome: () => _home(context))),
-        AnimatedSwitcher(
-          duration: ResultsLayout.overlayFade,
-          child: overlayWidget == null
-              ? const SizedBox.shrink(key: ValueKey('none'))
-              : KeyedSubtree(key: ValueKey(_shown), child: overlayWidget),
-        ),
-      ]),
-    );
-  }
-
-  Widget _buildOverlay(Celebration c, Progress progress) => switch (c) {
-        NewCardCelebration() => NewCardOverlay(data: c, onNext: _advance),
-        ConfusableWarningCelebration() => ConfusableWarningOverlay(data: c, onNext: _advance),
-        IslandCompleteCelebration() => IslandCompleteOverlay(
-            islandIndex: c.islandIndex,
-            islandsDone: progress.islands.where((i) => i.complete).length,
-            cardsUnlocked: progress.trainer.unlocked.where((s) => !s.key.inverted).length,
-            onNext: _advance,
-          ),
-        RankUpCelebration() => RankUpOverlay(data: c, onNext: _advance),
-        GoalUpCelebration() => GoalUpOverlay(goalMs: progress.trainer.goalMs.round(), onNext: _advance),
-      };
+  Widget build(BuildContext context) => Scaffold(
+        backgroundColor: Palette.paper,
+        body: Stack(children: [
+          SafeArea(child: _Splash(report: widget.report, config: widget.config, onHome: () => _home(context))),
+          if (_celebrating)
+            Positioned.fill(
+              child: CelebrationSequence(
+                pages: _celebrations,
+                onDone: () => setState(() => _celebrating = false),
+              ),
+            ),
+        ]),
+      );
 }
 
 class _Splash extends StatelessWidget {
@@ -149,9 +128,23 @@ class _Splash extends StatelessWidget {
                   Expanded(child: _RatingPanel(before: report.ratingBefore, after: report.ratingAfter)),
                 ]),
               ),
+              if (report.newCards.isNotEmpty) ...[
+                const SizedBox(height: Gaps.panel),
+                _CardShelf(
+                  heading: s.newCardsHeading,
+                  label: s.newCardsLabel,
+                  note: s.newCardsNote,
+                  cards: [for (final id in report.newCards) _NewCard(id)],
+                ),
+              ],
               if (toughest.isNotEmpty) ...[
                 const SizedBox(height: Gaps.panel),
-                _ToughestPanel(attempts: toughest.take(3).toList()),
+                _CardShelf(
+                  heading: s.toughestHeading,
+                  label: s.slowest,
+                  note: s.toughestNote,
+                  cards: [for (final a in toughest.take(ResultsLayout.toughCount)) _ToughCard(a)],
+                ),
               ],
             ]),
           ),
@@ -336,36 +329,57 @@ class _RatingPanel extends StatelessWidget {
   }
 }
 
-class _ToughestPanel extends StatelessWidget {
-  const _ToughestPanel({required this.attempts});
-  final List<Attempt> attempts;
+/// A heading beside a shelf of small cards (the round's new cards, its
+/// toughest ones).
+class _CardShelf extends StatelessWidget {
+  const _CardShelf({required this.heading, required this.label, required this.note, required this.cards});
+  final String heading, label, note;
+  final List<Widget> cards;
 
   @override
-  Widget build(BuildContext context) {
-    final s = S.of(context);
-    return MangaPanel(
-      padding: ResultsLayout.toughPadding,
-      child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        SizedBox(
-          width: ResultsLayout.toughHeaderWidth,
-          child: Column(crossAxisAlignment: CrossAxisAlignment.start, mainAxisSize: MainAxisSize.min, children: [
-            Text(s.toughestHeading, style: const TextStyle(fontFamily: Fonts.display, fontSize: ResultsLayout.toughHeadingFont, height: 1)),
-            const SizedBox(height: Gaps.tight),
-            Text(s.slowest, style: const TextStyle(fontWeight: Weights.black, fontSize: ResultsLayout.toughLabelFont)),
-            const SizedBox(height: Gaps.tight),
-            Text(s.toughestNote, style: const TextStyle(fontWeight: Weights.bold, fontSize: ResultsLayout.toughNoteFont, color: Palette.inkSoft)),
-          ]),
-        ),
-        const SizedBox(width: Gaps.section),
-        Expanded(
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-            children: [for (final a in attempts) _ToughCard(a)],
+  Widget build(BuildContext context) => MangaPanel(
+        padding: ResultsLayout.toughPadding,
+        child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          SizedBox(
+            width: ResultsLayout.toughHeaderWidth,
+            child: Column(crossAxisAlignment: CrossAxisAlignment.start, mainAxisSize: MainAxisSize.min, children: [
+              Text(heading, style: const TextStyle(fontFamily: Fonts.display, fontSize: ResultsLayout.toughHeadingFont, height: 1)),
+              const SizedBox(height: Gaps.tight),
+              Text(label, style: const TextStyle(fontWeight: Weights.black, fontSize: ResultsLayout.toughLabelFont)),
+              const SizedBox(height: Gaps.tight),
+              Text(note, style: const TextStyle(fontWeight: Weights.bold, fontSize: ResultsLayout.toughNoteFont, color: Palette.inkSoft)),
+            ]),
           ),
-        ),
-      ]),
-    );
-  }
+          const SizedBox(width: Gaps.section),
+          Expanded(
+            child: Wrap(
+              alignment: WrapAlignment.spaceEvenly,
+              spacing: Gaps.small,
+              runSpacing: Gaps.panel,
+              children: cards,
+            ),
+          ),
+        ]),
+      );
+}
+
+/// A new card of the round with its kimariji.
+class _NewCard extends StatelessWidget {
+  const _NewCard(this.poemId);
+  final int poemId;
+
+  @override
+  Widget build(BuildContext context) => SizedBox(
+        width: ResultsLayout.toughCardWidth,
+        child: Column(mainAxisSize: MainAxisSize.min, children: [
+          TorifudaCard(poem: poems[poemId]),
+          const SizedBox(height: Gaps.tight),
+          Text(poems[poemId].kimariji,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: const TextStyle(fontWeight: Weights.black, fontSize: ResultsLayout.toughKimarijiFont)),
+        ]),
+      );
 }
 
 class _ToughCard extends StatelessWidget {

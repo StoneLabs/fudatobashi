@@ -9,6 +9,10 @@ extension ResultsStrings on S {
   String get firstRecordedRun => t('First recorded run!', '初回記録!');
   String get guestNotRecorded => t('Guest run — not recorded', 'ゲストプレイ・記録なし');
 
+  String get newCardsHeading => '新顔';
+  String get newCardsLabel => t('New cards', '新しい札');
+  String get newCardsNote => t('Met for the first time this round', '今回はじめて出会った札');
+
   String get toughestHeading => '強敵';
   String get toughestNote => t('Your slowest cards this run', '今回、遅かった札');
 

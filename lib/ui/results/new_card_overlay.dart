@@ -271,7 +271,9 @@ class _Flick extends StatelessWidget {
             if (flick.value > 0 && streak < 1)
               Positioned.fill(
                 child: OverflowBox(
+                  minWidth: NewCardMotion.streakBox.width,
                   maxWidth: NewCardMotion.streakBox.width,
+                  minHeight: NewCardMotion.streakBox.height,
                   maxHeight: NewCardMotion.streakBox.height,
                   child: Opacity(
                     opacity: streakOpacity.clamp(0.0, 1.0),

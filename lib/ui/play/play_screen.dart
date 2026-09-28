@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
+import 'package:flutter/scheduler.dart';
 
 import '../../config/config.dart';
 import '../../config/design.dart';
@@ -17,6 +18,8 @@ import '../../state/scope.dart';
 import '../../state/settings.dart';
 import '../debug/play_overlay.dart';
 import '../manga/manga.dart';
+import '../results/celebration_sequence.dart';
+import '../results/celebrations.dart';
 import '../results/results_screen.dart';
 import 'kimariji_chip.dart';
 import 'sfx_overlay.dart';
@@ -27,11 +30,17 @@ import 'swipe_deck.dart';
 /// ひとつ前 / 終了, and a don't-remember button when that is the don't-know
 /// input. Ends into [ResultsScreen] once there is at least one
 /// attempt; 終了 with none goes straight back.
+///
+/// Each of [newPoems] is introduced with its pages right before its first
+/// appearance. Play stops meanwhile: the card stays blank under the pages
+/// and is revealed only once they are gone, and the break is left out of
+/// the run's total.
 class PlayScreen extends StatefulWidget {
-  const PlayScreen({super.key, required this.cards, required this.config});
+  const PlayScreen({super.key, required this.cards, required this.config, this.newPoems = const {}});
 
   final List<CardRef> cards;
   final PlayConfig config;
+  final Set<int> newPoems;
 
   @override
   State<PlayScreen> createState() => _PlayScreenState();
@@ -48,6 +57,15 @@ class _PlayScreenState extends State<PlayScreen> {
   bool _live = false;
   bool _ending = false;
 
+  /// New cards not introduced yet, and those introduced this run.
+  late final Set<int> _toIntroduce = {...widget.newPoems};
+  final Set<int> _introduced = {};
+
+  /// The current card's introduction while it is on screen, and the frame
+  /// after it is gone (see [_endIntro]).
+  List<Celebration>? _intro;
+  bool _resuming = false;
+
   /// Kept for [dispose], where the scope can no longer be looked up.
   late final Progress _progress;
 
@@ -56,6 +74,7 @@ class _PlayScreenState extends State<PlayScreen> {
     super.initState();
     _progress = ProgressScope.read(context);
     _session.addListener(_onSessionChanged);
+    _introduceIfNew();
     if (_progress.settings.leadIn) {
       Future.delayed(SwipeTuning.leadIn, () {
         if (mounted) setState(() => _live = true);
@@ -78,8 +97,33 @@ class _PlayScreenState extends State<PlayScreen> {
 
   void _onSessionChanged() {
     if (_session.finished && !_ending) unawaited(_finish());
+    _introduceIfNew();
     setState(() {});
   }
+
+  /// Stops play for the current card's introduction on its first appearance.
+  void _introduceIfNew() {
+    final card = _session.current;
+    if (_intro != null || card == null || !_toIntroduce.remove(card.poemId)) return;
+    _session.takeBreak();
+    _intro = introductionOf(card.poemId, knows: _knows);
+    _introduced.add(card.poemId);
+  }
+
+  /// The introduction is gone: the card is revealed a frame later, so the
+  /// frame that reveals it does nothing else.
+  void _endIntro() {
+    setState(() {
+      _intro = null;
+      _resuming = true;
+    });
+    SchedulerBinding.instance.addPostFrameCallback((_) {
+      if (mounted) setState(() => _resuming = false);
+    });
+  }
+
+  /// The player knows [poemId]: met in an earlier run or introduced in this one.
+  bool _knows(int poemId) => _introduced.contains(poemId) || _progress.knows(poemId);
 
   void _onCommitted(Attempt a) {
     if (ProgressScope.read(context).settings.sfxEffects) {
@@ -112,15 +156,12 @@ class _PlayScreenState extends State<PlayScreen> {
     if (a != null && a.wrong) _requeueMiss(a);
   }
 
-  /// Training only: brings a missed card back soon, plus one unlocked 友札.
+  /// Training only: brings a missed card back soon, plus one 友札 the player
+  /// knows (never a new card ahead of its introduction).
   void _requeueMiss(Attempt a) {
     if (widget.config.mode != PlayMode.training || !_requeuedForTraining.add(a)) return;
     _session.requeue(a.card);
-    final progress = ProgressScope.read(context);
-    final twins = fudaSets
-        .tomofuda(a.card.poemId)
-        .where((id) => progress.trainer.items[ItemKey(id, false)]?.unlocked == true)
-        .toList();
+    final twins = fudaSets.tomofuda(a.card.poemId).where(_knows).toList();
     if (twins.isNotEmpty) _session.requeue(CardRef(twins[_rng.nextInt(twins.length)]));
   }
 
@@ -161,94 +202,105 @@ class _PlayScreenState extends State<PlayScreen> {
     final buttonRows = dontKnowButton ? 2 : 1;
     final buttonsBottom =
         PlayLayout.buttonRowHeight * buttonRows + PlayLayout.buttonGap * (buttonRows - 1) + Gaps.section * 2;
+    final live = _live && _intro == null && !_resuming;
 
     return Scaffold(
       backgroundColor: Palette.paper,
-      body: SafeArea(
-        child: Stack(
-          children: [
-            Positioned(
-              left: 0,
-              right: 0,
-              bottom: 0,
-              height: PlayLayout.toneBandHeight,
-              child: const IgnorePointer(
-                child: StaticArt([ToneLayer(Tones.seaFaint, fadeAngle: 180, fadeStops: [0, 1])]),
+      body: Stack(children: [
+        SafeArea(
+          child: Stack(
+            children: [
+              Positioned(
+                left: 0,
+                right: 0,
+                bottom: 0,
+                height: PlayLayout.toneBandHeight,
+                child: const IgnorePointer(
+                  child: StaticArt([ToneLayer(Tones.seaFaint, fadeAngle: 180, fadeStops: [0, 1])]),
+                ),
               ),
-            ),
-            Positioned.fill(
-              bottom: buttonsBottom,
-              child: SwipeDeck(
-                key: _deckKey,
-                session: session,
-                live: _live,
-                dontKnowInput: dontKnowInput,
-                showNumber: settings.showPoemNumber,
-                haptics: settings.haptics,
-                onCommitted: _onCommitted,
+              Positioned.fill(
+                bottom: buttonsBottom,
+                child: SwipeDeck(
+                  key: _deckKey,
+                  session: session,
+                  live: live,
+                  dontKnowInput: dontKnowInput,
+                  showNumber: settings.showPoemNumber,
+                  haptics: settings.haptics,
+                  onCommitted: _onCommitted,
+                ),
               ),
-            ),
-            Positioned.fill(bottom: buttonsBottom, child: SfxOverlay(key: _sfxKey)),
-            Positioned(
-              left: Gaps.gutter,
-              top: Gaps.section,
-              child: KimarijiChip(
-                text: chipText,
-                timeMs: last == null ? null : last.responseUs / 1000,
-                wrong: last?.isMiss ?? false,
-                onTap: last == null ? null : _toggleWrong,
+              Positioned.fill(bottom: buttonsBottom, child: SfxOverlay(key: _sfxKey)),
+              Positioned(
+                left: Gaps.gutter,
+                top: Gaps.section,
+                child: KimarijiChip(
+                  text: chipText,
+                  timeMs: last == null ? null : last.responseUs / 1000,
+                  wrong: last?.isMiss ?? false,
+                  onTap: last == null ? null : _toggleWrong,
+                ),
               ),
-            ),
-            Positioned(
-              right: Gaps.gutter,
-              top: Gaps.section,
-              child: _Counter(n: math.min(session.index + 1, session.cards.length), total: session.cards.length),
-            ),
-            Positioned(
-              left: Gaps.gutter,
-              right: Gaps.gutter,
-              bottom: Gaps.section,
-              child: Column(children: [
-                if (dontKnowButton) ...[
+              Positioned(
+                right: Gaps.gutter,
+                top: Gaps.section,
+                child: _Counter(n: math.min(session.index + 1, session.cards.length), total: session.cards.length),
+              ),
+              Positioned(
+                left: Gaps.gutter,
+                right: Gaps.gutter,
+                bottom: Gaps.section,
+                child: Column(children: [
+                  if (dontKnowButton) ...[
+                    SizedBox(
+                      height: PlayLayout.buttonRowHeight,
+                      child: Listener(
+                        onPointerDown: (e) => _dontKnowDownTs = e.timeStamp,
+                        child: ActionRowButton(
+                          icon: IconArt.question,
+                          label: s.dontRemember,
+                          sub: "DON'T REMEMBER",
+                          color: Palette.pinkSoft,
+                          onTap: live && !_ending ? _markDontKnow : null,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: PlayLayout.buttonGap),
+                  ],
                   SizedBox(
                     height: PlayLayout.buttonRowHeight,
-                    child: Listener(
-                      onPointerDown: (e) => _dontKnowDownTs = e.timeStamp,
-                      child: ActionRowButton(
-                        icon: IconArt.question,
-                        label: s.dontRemember,
-                        sub: "DON'T REMEMBER",
-                        color: Palette.pinkSoft,
-                        onTap: _live && !_ending ? _markDontKnow : null,
+                    child: Row(children: [
+                      Expanded(
+                        child: ActionRowButton(
+                          icon: IconArt.undo,
+                          label: s.undo,
+                          sub: 'UNDO',
+                          onTap: session.attempts.isEmpty ? null : session.undo,
+                        ),
                       ),
-                    ),
+                      const SizedBox(width: PlayLayout.buttonGap),
+                      Expanded(
+                        child: ActionRowButton(icon: IconArt.end, label: s.end, sub: 'END', onTap: _ending ? null : _end),
+                      ),
+                    ]),
                   ),
-                  const SizedBox(height: PlayLayout.buttonGap),
-                ],
-                SizedBox(
-                  height: PlayLayout.buttonRowHeight,
-                  child: Row(children: [
-                    Expanded(
-                      child: ActionRowButton(
-                        icon: IconArt.undo,
-                        label: s.undo,
-                        sub: 'UNDO',
-                        onTap: session.attempts.isEmpty ? null : session.undo,
-                      ),
-                    ),
-                    const SizedBox(width: PlayLayout.buttonGap),
-                    Expanded(
-                      child: ActionRowButton(icon: IconArt.end, label: s.end, sub: 'END', onTap: _ending ? null : _end),
-                    ),
-                  ]),
-                ),
-              ]),
-            ),
-            if (settings.debugMode && settings.playOverlay)
-              Positioned(bottom: buttonsBottom + Gaps.section, left: Gaps.section, child: PlayDebugOverlay(session: session)),
-          ],
+                ]),
+              ),
+              if (settings.debugMode && settings.playOverlay)
+                Positioned(bottom: buttonsBottom + Gaps.section, left: Gaps.section, child: PlayDebugOverlay(session: session)),
+            ],
+          ),
         ),
-      ),
+        if (_intro != null)
+          Positioned.fill(
+            child: CelebrationSequence(
+              key: ObjectKey(_intro),
+              pages: _intro!,
+              onDone: _endIntro,
+            ),
+          ),
+      ]),
     );
   }
 }
