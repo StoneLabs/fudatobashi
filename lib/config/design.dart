@@ -738,9 +738,9 @@ abstract final class CardDetailLayout {
   static const double cardImageWidth = 104;
   static const double kimarijiFont = 44;
   static const double kimarijiCaptionFont = 11.5;
-  static const double bestWidth = 92;
-  static const double bestLabelFont = 11.5;
-  static const double bestValueFont = 18;
+  static const EdgeInsets topSpeedPadding = EdgeInsets.fromLTRB(10, 7, 10, 8);
+  static const double topSpeedLabelFont = 11.5;
+  static const double topSpeedValueFont = 18;
 
   static const double kamiFont = 13.5;
   static const double authorFont = 12.5;

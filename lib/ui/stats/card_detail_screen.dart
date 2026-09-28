@@ -18,7 +18,7 @@ import '../play/time_format.dart';
 import '../torifuda/torifuda_painter.dart';
 import 'stats_charts.dart';
 
-/// Which attempts feed the chart, the stat tiles and the "BEST" badge:
+/// Which attempts feed the chart, the stat tiles and the TOP SPEED badge:
 /// 修行 only, free play + 苦手 combined (guest attempts are never stored), or
 /// every attempt. Defaults to "All" so a freshly tapped card shows everything
 /// it has, however it was played.
@@ -84,7 +84,7 @@ class _CardDetailScreenState extends State<CardDetailScreen> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
-                      _Header(poem: poem, inverted: _inverted, bestMs: stats.bestMs),
+                      _Header(poem: poem, inverted: _inverted, topSpeedMs: stats.topSpeedMs),
                       const SizedBox(height: Gaps.section),
                       _ModeToggle(mode: _mode, onChanged: (m) => setState(() => _mode = m)),
                       const SizedBox(height: Gaps.panel),
@@ -224,10 +224,10 @@ class _Seg extends StatelessWidget {
 }
 
 class _Header extends StatelessWidget {
-  const _Header({required this.poem, required this.inverted, required this.bestMs});
+  const _Header({required this.poem, required this.inverted, required this.topSpeedMs});
   final Poem poem;
   final bool inverted;
-  final double? bestMs;
+  final double? topSpeedMs;
 
   @override
   Widget build(BuildContext context) {
@@ -264,33 +264,35 @@ class _Header extends StatelessWidget {
           ),
         ),
         const SizedBox(width: Gaps.small),
-        _BestBadge(bestMs: bestMs),
+        _TopSpeedBadge(ms: topSpeedMs),
       ],
     );
   }
 }
 
-class _BestBadge extends StatelessWidget {
-  const _BestBadge({required this.bestMs});
-  final double? bestMs;
+class _TopSpeedBadge extends StatelessWidget {
+  const _TopSpeedBadge({required this.ms});
+  final double? ms;
 
   @override
   Widget build(BuildContext context) {
     final s = S.of(context);
     return Container(
-      width: CardDetailLayout.bestWidth,
-      padding: const EdgeInsets.symmetric(vertical: 8),
-      alignment: Alignment.center,
+      padding: CardDetailLayout.topSpeedPadding,
       decoration: BoxDecoration(color: Palette.sun, border: Border.all(color: Palette.ink, width: Strokes.control)),
       child: Column(mainAxisSize: MainAxisSize.min, children: [
-        Text(s.bestLabel,
+        Text(s.topSpeedLabel,
+            maxLines: 1,
+            softWrap: false,
             style: const TextStyle(
                 fontWeight: Weights.black,
-                fontSize: CardDetailLayout.bestLabelFont,
-                letterSpacing: TagStyle.tracking * CardDetailLayout.bestLabelFont)),
+                fontSize: CardDetailLayout.topSpeedLabelFont,
+                letterSpacing: TagStyle.tracking * CardDetailLayout.topSpeedLabelFont)),
         const SizedBox(height: 2),
-        Text(bestMs == null ? '—' : '${formatChipSeconds(bestMs!)} s',
-            style: const TextStyle(fontFamily: Fonts.display, fontSize: CardDetailLayout.bestValueFont)),
+        Text(ms == null ? '—' : '${formatChipSeconds(ms!)} s',
+            maxLines: 1,
+            softWrap: false,
+            style: const TextStyle(fontFamily: Fonts.display, fontSize: CardDetailLayout.topSpeedValueFont)),
       ]),
     );
   }

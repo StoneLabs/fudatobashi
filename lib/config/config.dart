@@ -291,6 +291,12 @@ abstract final class StatsTuning {
   /// card's dot is hollow ("too few attempts to judge") instead of coloured
   /// by speed.
   static const int mapHollowMinTries = 5;
+
+  /// TOP SPEED (card detail): the fast end of a card's recent times, this
+  /// percentile of its last [topSpeedWindow] timed attempts. Steadier than
+  /// the single best time, which one lucky swipe sets for good.
+  static const double topSpeedPercentile = 5;
+  static const int topSpeedWindow = 100;
 }
 
 /// The island detail and card detail screens (`lib/ui/stats/island_screen.dart`,

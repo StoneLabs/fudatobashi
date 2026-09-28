@@ -101,6 +101,10 @@ class CardStats {
   double? get ewmaMs => _ewmaLog == null ? null : math.exp(_ewmaLog!);
 
   double? get bestMs => timed.isEmpty ? null : timed.reduce(math.min);
+
+  /// TOP SPEED: the [StatsTuning.topSpeedPercentile]th percentile of the last
+  /// [StatsTuning.topSpeedWindow] timed attempts.
+  double? get topSpeedMs => percentile(StatsTuning.topSpeedWindow, StatsTuning.topSpeedPercentile);
   double? get lastMs => timed.isEmpty ? null : timed.last;
 
   List<double> _window(int n) => timed.length <= n ? timed : timed.sublist(timed.length - n);
