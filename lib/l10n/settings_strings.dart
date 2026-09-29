@@ -5,6 +5,7 @@ extension SettingsStrings on S {
   String get sectionLearning => t('sectionLearning');
   String get sectionPlay => t('sectionPlay');
   String get sectionSound => t('sectionSound');
+  String get sectionData => t('sectionData');
   String get sectionDeveloper => t('sectionDeveloper');
 
   String get languageNote => t('languageNote');
@@ -33,11 +34,17 @@ extension SettingsStrings on S {
   String get dontKnowOffSub => t('dontKnowOffSub');
 
   String get warning => t('warning');
-  String get allKnownWarningShout => t('allKnownWarningShout');
+  String get warningShout => t('warningShout');
   String get allKnownWarningTitle => t('allKnownWarningTitle');
   String get allKnownWarningBody => t('allKnownWarningBody');
   String allKnownWarningHold(int seconds) => f('allKnownWarningHold', [seconds]);
-  String get allKnownWarningHolding => t('allKnownWarningHolding');
+  String get warningHolding => t('warningHolding');
+
+  String get resetAllData => t('resetAllData');
+  String get resetAllDataNote => t('resetAllDataNote');
+  String get resetAllWarningTitle => t('resetAllWarningTitle');
+  String get resetAllWarningBody => t('resetAllWarningBody');
+  String resetAllWarningHold(int seconds) => f('resetAllWarningHold', [seconds]);
 
   String get about => t('about');
   String get version => t('version');

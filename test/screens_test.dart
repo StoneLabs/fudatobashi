@@ -69,8 +69,8 @@ import 'package:fudatobashi/ui/results/rank_up_overlay.dart';
 import 'package:fudatobashi/ui/results/rating_overlay.dart';
 import 'package:fudatobashi/ui/results/results_screen.dart';
 import 'package:fudatobashi/ui/results/xp_overlay.dart';
-import 'package:fudatobashi/ui/settings/all_known_warning_screen.dart';
 import 'package:fudatobashi/ui/settings/credits_screen.dart';
+import 'package:fudatobashi/ui/settings/hold_warning_screen.dart';
 import 'package:fudatobashi/ui/settings/language_screen.dart';
 import 'package:fudatobashi/ui/settings/settings_screen.dart';
 import 'package:fudatobashi/ui/shell/header_actions.dart';
@@ -1499,7 +1499,7 @@ void main() {
     await tester.tap(find.text(const S('en').learningAllKnown));
     await tester.pump();
     await tester.pump(Motion.route);
-    expect(find.byType(AllKnownWarningScreen), findsOneWidget);
+    expect(find.byType(HoldWarningScreen), findsOneWidget);
   }
 
   testWidgets('settings: journey → all-known warns first; letting go early or closing changes nothing', (tester) async {
@@ -1512,19 +1512,19 @@ void main() {
 
     final hold = await tester.startGesture(tester.getCenter(find.byType(HoldToConfirmButton)));
     await tester.pump(const Duration(seconds: 1));
-    expect(find.text(const S('en').allKnownWarningHolding), findsOneWidget);
+    expect(find.text(const S('en').warningHolding), findsOneWidget);
     for (var i = 0; i < 12; i++) {
       await tester.pump(const Duration(seconds: 1));
     }
     await hold.up();
-    await tester.pump(AllKnownSwitchTuning.holdDuration);
-    expect(find.byType(AllKnownWarningScreen), findsOneWidget, reason: 'letting go at 13 of 15 s confirms nothing');
+    await tester.pump(HoldWarningTuning.holdDuration);
+    expect(find.byType(HoldWarningScreen), findsOneWidget, reason: 'letting go at 13 of 15 s confirms nothing');
     expect(find.text(const S('en').allKnownWarningHold(15)), findsOneWidget);
 
     await tester.tap(find.bySemanticsLabel(const S('en').cancel));
     await tester.pump();
     await tester.pump(Motion.route);
-    expect(find.byType(AllKnownWarningScreen), findsNothing);
+    expect(find.byType(HoldWarningScreen), findsNothing);
     expect(p.trainer.config.learningMode, LearningMode.journey);
     expect(p.allCardsUnlocked, isFalse);
     await tester.pumpWidget(const SizedBox());
@@ -1546,9 +1546,66 @@ void main() {
     await tester.runAsync(() => Future<void>.delayed(const Duration(milliseconds: 50)));
     await tester.pump();
     await tester.pump(Motion.route);
-    expect(find.byType(AllKnownWarningScreen), findsNothing);
+    expect(find.byType(HoldWarningScreen), findsNothing);
     expect(p.trainer.config.learningMode, LearningMode.allKnown);
     expect(p.allCardsUnlocked, isTrue);
+    await tester.pumpWidget(const SizedBox());
+  });
+
+  testWidgets('settings: Reset all data warns the same way; letting go keeps everything, the full hold erases it all',
+      (tester) async {
+    PackageInfo.setMockInitialValues(
+        appName: 'Fudatobashi', packageName: 'dev.fudatobashi', version: '1.0.0', buildNumber: '1', buildSignature: '');
+    final p = await open(tester, mode: LearningMode.allKnown);
+    await tester.runAsync(() => p.updateSettings(p.settings.copyWith(debugMode: true, sfxEffects: false)));
+    await tester.binding.setSurfaceSize(_phone);
+    await tester.pumpWidget(ProgressScope(progress: p, child: const MaterialApp(home: SettingsScreen())));
+    await tester.pump();
+    const s = S('en');
+    Future<void> openWarning() async {
+      await tester.scrollUntilVisible(find.text(s.resetAllData), 200);
+      await tester.tap(find.text(s.resetAllData));
+      await tester.pump();
+      await tester.pump(Motion.route);
+      expect(find.byType(HoldWarningScreen), findsOneWidget);
+      expect(find.text(s.resetAllWarningTitle), findsOneWidget);
+    }
+
+    await openWarning();
+    var hold = await tester.startGesture(tester.getCenter(find.byType(HoldToConfirmButton)));
+    for (var i = 0; i < 10; i++) {
+      await tester.pump(const Duration(seconds: 1));
+    }
+    await hold.up();
+    await tester.pump(HoldConfirmStyle.drain);
+    await tester.tap(find.bySemanticsLabel(s.cancel));
+    await tester.pump();
+    await tester.pump(Motion.route);
+    expect(find.byType(HoldWarningScreen), findsNothing);
+    expect(p.settings.onboarded, isTrue, reason: 'nothing erased');
+    expect(p.trainer.config.learningMode, LearningMode.allKnown);
+
+    await openWarning();
+    hold = await tester.startGesture(tester.getCenter(find.byType(HoldToConfirmButton)));
+    for (var i = 0; i < 17; i++) {
+      await tester.pump(const Duration(seconds: 1));
+    }
+    await hold.up();
+    await tester.runAsync(() => Future<void>.delayed(const Duration(milliseconds: 50)));
+    await tester.pump();
+    await tester.pump(Motion.route);
+    expect(find.byType(HoldWarningScreen), findsNothing);
+    expect(find.byType(SettingsScreen), findsOneWidget, reason: 'the first route here; in the app, the language picker');
+    expect(p.settings.languagePicked, isFalse);
+    expect(p.settings.onboarded, isFalse);
+    expect(p.settings.debugMode, isFalse);
+    expect(p.settings.sfxEffects, isTrue, reason: 'every setting back to its default');
+    expect(p.trainer.config.learningMode, LearningMode.journey);
+    expect(p.sessions, isEmpty);
+    expect(p.xp.total, 0);
+    final reopened = await tester.runAsync(() => Progress.open(p.db));
+    expect(reopened!.settings.languagePicked, isFalse, reason: 'nothing of the old data is left on disk');
+    expect(reopened.trainer.config.learningMode, LearningMode.journey);
     await tester.pumpWidget(const SizedBox());
   });
 
@@ -1572,23 +1629,23 @@ void main() {
         progress: p,
         child: MaterialApp(
           theme: buildMangaTheme(),
-          home: const RepaintBoundary(key: ValueKey('screen'), child: AllKnownWarningScreen()),
+          home: RepaintBoundary(key: const ValueKey('screen'), child: HoldWarningScreen.allKnown(S(lang))),
         ),
       ));
       Color backdrop() => tester
-          .widget<ColoredBox>(find.descendant(of: find.byType(AllKnownWarningScreen), matching: find.byType(ColoredBox)).first)
+          .widget<ColoredBox>(find.descendant(of: find.byType(HoldWarningScreen), matching: find.byType(ColoredBox)).first)
           .color;
       await tester.pump(const Duration(milliseconds: 800));
       expect(tester.takeException(), isNull);
       final s = S(lang);
-      expect(find.text(s.allKnownWarningShout), findsWidgets);
+      expect(find.text(s.warningShout), findsWidgets);
       expect(find.text(s.other.warning), findsOneWidget);
       for (final scroll in tester.stateList<ScrollableState>(find.byType(Scrollable))) {
         expect(scroll.position.maxScrollExtent, 0, reason: 'the warning fits without scrolling');
       }
       await _capture(tester, 'all_known_warning_$lang');
       final before = backdrop();
-      await tester.pump(AllKnownWarningStyle.flashPeriod ~/ 2);
+      await tester.pump(HoldWarningStyle.flashPeriod ~/ 2);
       expect(backdrop(), isNot(before), reason: 'the alarm flashes');
 
       // The first second's pump presses it; twelve more are 12 of 15 s.
@@ -1598,7 +1655,7 @@ void main() {
       }
       expect(tester.takeException(), isNull);
       expect(find.text('3'), findsWidgets, reason: 'the dome counts the seconds left');
-      expect(find.byWidgetPredicate((w) => w is SfxText && w.text == AllKnownWarningStyle.sfxArmed), findsOneWidget,
+      expect(find.byWidgetPredicate((w) => w is SfxText && w.text == HoldWarningStyle.sfxArmed), findsOneWidget,
           reason: 'Tobi screams near the end');
       await _capture(tester, 'all_known_warning_armed_$lang');
       await hold.up();
@@ -1612,13 +1669,13 @@ void main() {
     addTearDown(tester.platformDispatcher.clearAccessibilityFeaturesTestValue);
     final p = await open(tester, mode: LearningMode.journey);
     await tester.binding.setSurfaceSize(_phone);
-    await tester.pumpWidget(ProgressScope(progress: p, child: const MaterialApp(home: AllKnownWarningScreen())));
+    await tester.pumpWidget(ProgressScope(progress: p, child: MaterialApp(home: HoldWarningScreen.allKnown(const S('en')))));
     Color backdrop() => tester
-        .widget<ColoredBox>(find.descendant(of: find.byType(AllKnownWarningScreen), matching: find.byType(ColoredBox)).first)
+        .widget<ColoredBox>(find.descendant(of: find.byType(HoldWarningScreen), matching: find.byType(ColoredBox)).first)
         .color;
     final before = backdrop();
     for (var i = 0; i < 4; i++) {
-      await tester.pump(AllKnownWarningStyle.flashPeriod ~/ 4);
+      await tester.pump(HoldWarningStyle.flashPeriod ~/ 4);
       expect(backdrop(), before);
     }
     await tester.pumpWidget(const SizedBox());
@@ -1639,7 +1696,7 @@ void main() {
       await Future<void>.delayed(const Duration(milliseconds: 50));
     });
     await tester.pump();
-    expect(find.byType(AllKnownWarningScreen), findsNothing);
+    expect(find.byType(HoldWarningScreen), findsNothing);
     expect(p.trainer.config.learningMode, LearningMode.allKnown);
     await tester.pumpWidget(const SizedBox());
   });

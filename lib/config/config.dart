@@ -273,9 +273,10 @@ abstract final class FreePracticeTuning {
   static const int unlockRemembered = 50;
 }
 
-/// Settings' journey → all-known switch (`AllKnownWarningScreen`): it can't
-/// be undone, so confirming takes a deliberate hold instead of a tap.
-abstract final class AllKnownSwitchTuning {
+/// The full-screen warnings before what can't be undone (`HoldWarningScreen`:
+/// Settings' journey → all-known switch, Reset all data): confirming takes a
+/// deliberate hold instead of a tap.
+abstract final class HoldWarningTuning {
   static const Duration holdDuration = Duration(seconds: 15);
 }
 

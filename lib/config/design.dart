@@ -2136,12 +2136,12 @@ abstract final class HoldConfirmStyle {
   static const EdgeInsets labelPadding = EdgeInsets.fromLTRB(12, 6, 12, 7);
 }
 
-/// Settings' journey → all-known switch warning (`AllKnownWarningScreen`):
-/// a full-screen alarm before an irreversible unlock. Alarm red flashing
+/// The full-screen alarm before what can't be undone (`HoldWarningScreen`:
+/// Settings' journey → all-known switch, Reset all data). Alarm red flashing
 /// once per [flashPeriod], marching hazard tape round the edges, 警告!!
 /// between two warning lamps, and Tobi panicking in a siren glow that grows
 /// (with a darkening round the edges) as the hold arms.
-abstract final class AllKnownWarningStyle {
+abstract final class HoldWarningStyle {
   static const Duration flashPeriod = Duration(milliseconds: 900);
   static const tone = ToneSpec(dot: Color(0xFF8E0A14), radius: 1.4, spacing: 6);
   static const double toneOpacity = 0.55;

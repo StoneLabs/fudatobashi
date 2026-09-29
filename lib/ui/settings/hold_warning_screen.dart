@@ -14,20 +14,55 @@ import '../../l10n/strings.dart';
 import '../../state/scope.dart';
 import '../manga/manga.dart';
 
-/// A full-screen alarm before Settings' journey → all-known switch, since
-/// unlocking every card can't be undone (see [AllKnownWarningStyle]). Pops
-/// `true` once the hold confirms it; `false` (or a back gesture) leaves
-/// everything unchanged. Under reduced motion nothing flashes, marches or
-/// shakes.
-class AllKnownWarningScreen extends StatefulWidget {
-  const AllKnownWarningScreen({super.key});
+/// A full-screen alarm before something that can't be undone (see
+/// [HoldWarningStyle]), confirmed only by holding its button for
+/// [HoldWarningTuning.holdDuration]. Pops `true` once the hold confirms it;
+/// `false` (or a back gesture) leaves everything unchanged. Under reduced
+/// motion nothing flashes, marches or shakes.
+class HoldWarningScreen extends StatefulWidget {
+  const HoldWarningScreen({
+    super.key,
+    required this.headline,
+    required this.body,
+    required this.holdLabel,
+    required this.icon,
+  });
+
+  /// Before Settings' journey → all-known switch, which unlocks every card
+  /// for good.
+  HoldWarningScreen.allKnown(S s, {Key? key})
+      : this(
+          key: key,
+          headline: s.allKnownWarningTitle,
+          body: s.allKnownWarningBody,
+          holdLabel: s.allKnownWarningHold(HoldWarningTuning.holdDuration.inSeconds),
+          icon: IconArt.lock,
+        );
+
+  /// Before Settings' Reset all data, which erases everything.
+  HoldWarningScreen.resetAll(S s, {Key? key})
+      : this(
+          key: key,
+          headline: s.resetAllWarningTitle,
+          body: s.resetAllWarningBody,
+          holdLabel: s.resetAllWarningHold(HoldWarningTuning.holdDuration.inSeconds),
+          icon: IconArt.refresh,
+        );
+
+  /// What can't be undone, on an ink slab under 警告!!.
+  final String headline;
+  final String body;
+  final String holdLabel;
+
+  /// Sits in the hold button's dome until it is held.
+  final VectorArt icon;
 
   @override
-  State<AllKnownWarningScreen> createState() => _AllKnownWarningScreenState();
+  State<HoldWarningScreen> createState() => _HoldWarningScreenState();
 }
 
-class _AllKnownWarningScreenState extends State<AllKnownWarningScreen> {
-  /// How far the hold has armed the switch, 0–1.
+class _HoldWarningScreenState extends State<HoldWarningScreen> {
+  /// How far the hold has armed it, 0–1.
   final _armed = ValueNotifier<double>(0);
   late final bool _haptics = ProgressScope.read(context).settings.haptics;
 
@@ -51,29 +86,29 @@ class _AllKnownWarningScreenState extends State<AllKnownWarningScreen> {
       child: Scaffold(
         backgroundColor: Palette.alarmDeep,
         body: IdleLoop(
-          step: AllKnownWarningStyle.flashPeriod ~/ 2,
+          step: HoldWarningStyle.flashPeriod ~/ 2,
           builder: (context, elapsed, _) {
-            final lit = (elapsed.inMicroseconds ~/ (AllKnownWarningStyle.flashPeriod ~/ 2).inMicroseconds).isEven;
+            final lit = (elapsed.inMicroseconds ~/ (HoldWarningStyle.flashPeriod ~/ 2).inMicroseconds).isEven;
             return ColoredBox(
               color: lit ? Palette.alarm : Palette.alarmDeep,
               child: Stack(
                 children: [
                   const Positioned.fill(
-                    child: ToneBox(AllKnownWarningStyle.tone, opacity: AllKnownWarningStyle.toneOpacity),
+                    child: ToneBox(HoldWarningStyle.tone, opacity: HoldWarningStyle.toneOpacity),
                   ),
                   Positioned.fill(child: _ArmedDarkness(armed: _armed)),
                   SafeArea(
                     child: Stack(
                       children: [
                         EntranceStage(
-                          length: AllKnownWarningStyle.entranceLength,
+                          length: HoldWarningStyle.entranceLength,
                           child: CustomScrollView(
                             slivers: [
                               SliverFillRemaining(
                                 hasScrollBody: false,
                                 child: Padding(
-                                  padding: AllKnownWarningStyle.padding +
-                                      const EdgeInsets.all(AllKnownWarningStyle.tapeWidth),
+                                  padding: HoldWarningStyle.padding +
+                                      const EdgeInsets.all(HoldWarningStyle.tapeWidth),
                                   child: _content(context, s, lit),
                                 ),
                               ),
@@ -102,36 +137,36 @@ class _AllKnownWarningScreenState extends State<AllKnownWarningScreen> {
             InkIconButton(icon: IconArt.close, semanticLabel: s.cancel, onTap: () => Navigator.of(context).pop(false)),
           ]),
           const SizedBox(height: Gaps.small),
-          Entrance(AllKnownWarningStyle.shout, child: _Shout(text: s.allKnownWarningShout, lit: lit)),
+          Entrance(HoldWarningStyle.shout, child: _Shout(text: s.warningShout, lit: lit)),
           const SizedBox(height: Gaps.small),
-          Center(child: Entrance(AllKnownWarningStyle.headline, child: _Headline(s.allKnownWarningTitle))),
+          Center(child: Entrance(HoldWarningStyle.headline, child: _Headline(widget.headline))),
           Expanded(
             child: FittedBox(
               fit: BoxFit.scaleDown,
               child: SizedBox.fromSize(
-                size: AllKnownWarningStyle.tobi,
+                size: HoldWarningStyle.tobi,
                 child: _PanickingTobi(armed: _armed, lit: lit),
               ),
             ),
           ),
           NarrationBox(
             child: Text(
-              s.allKnownWarningBody,
+              widget.body,
               textAlign: TextAlign.center,
               style: const TextStyle(
                 fontWeight: Weights.bold,
-                fontSize: AllKnownWarningStyle.bodyFont,
-                height: AllKnownWarningStyle.bodyLineHeight,
+                fontSize: HoldWarningStyle.bodyFont,
+                height: HoldWarningStyle.bodyLineHeight,
               ),
             ),
           ),
           const SizedBox(height: Gaps.section),
           Center(
             child: HoldToConfirmButton(
-              duration: AllKnownSwitchTuning.holdDuration,
-              label: s.allKnownWarningHold(AllKnownSwitchTuning.holdDuration.inSeconds),
-              holdingLabel: s.allKnownWarningHolding,
-              icon: MangaIcon(IconArt.lock, size: HoldConfirmStyle.icon, color: Palette.paper),
+              duration: HoldWarningTuning.holdDuration,
+              label: widget.holdLabel,
+              holdingLabel: s.warningHolding,
+              icon: MangaIcon(widget.icon, size: HoldConfirmStyle.icon, color: Palette.paper),
               haptics: _haptics,
               onProgress: (p) => _armed.value = p,
               onConfirmed: () => Navigator.of(context).pop(true),
@@ -155,18 +190,18 @@ class _Shout extends StatelessWidget {
           child: FittedBox(
             fit: BoxFit.scaleDown,
             child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: AllKnownWarningStyle.shoutOutline / 2),
+              padding: const EdgeInsets.symmetric(horizontal: HoldWarningStyle.shoutOutline / 2),
               child: Transform.rotate(
-                angle: AllKnownWarningStyle.shoutTurnDeg * math.pi / 180,
+                angle: HoldWarningStyle.shoutTurnDeg * math.pi / 180,
                 child: OutlinedText(
                   text,
                   outline: Palette.ink,
-                  outlineWidth: AllKnownWarningStyle.shoutOutline,
+                  outlineWidth: HoldWarningStyle.shoutOutline,
                   style: TextStyle(
                     fontFamily: Fonts.display,
-                    fontSize: AllKnownWarningStyle.shoutFont,
+                    fontSize: HoldWarningStyle.shoutFont,
                     height: TypeScale.displayLineHeight,
-                    color: lit ? AllKnownWarningStyle.shoutLit : AllKnownWarningStyle.shoutDim,
+                    color: lit ? HoldWarningStyle.shoutLit : HoldWarningStyle.shoutDim,
                   ),
                 ),
               ),
@@ -184,17 +219,17 @@ class _Headline extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Transform.rotate(
-        angle: AllKnownWarningStyle.headlineTurnDeg * math.pi / 180,
+        angle: HoldWarningStyle.headlineTurnDeg * math.pi / 180,
         child: DecoratedBox(
           decoration: const BoxDecoration(color: Palette.ink),
           child: Padding(
-            padding: AllKnownWarningStyle.headlinePadding,
+            padding: HoldWarningStyle.headlinePadding,
             child: Text(
               text,
               textAlign: TextAlign.center,
               style: const TextStyle(
                 fontWeight: Weights.black,
-                fontSize: AllKnownWarningStyle.headlineFont,
+                fontSize: HoldWarningStyle.headlineFont,
                 color: Palette.paper,
               ),
             ),
@@ -215,11 +250,11 @@ class _PanickingTobi extends StatelessWidget {
   Widget build(BuildContext context) => ValueListenableBuilder<double>(
         valueListenable: armed,
         builder: (context, p, _) {
-          const box = AllKnownWarningStyle.tobi;
+          const box = HoldWarningStyle.tobi;
           final glow = box.width *
-              AllKnownWarningStyle.glowSize *
-              (lit ? 1 : AllKnownWarningStyle.glowDim) *
-              lerpDouble(1, AllKnownWarningStyle.glowArmed, p)!;
+              HoldWarningStyle.glowSize *
+              (lit ? 1 : HoldWarningStyle.glowDim) *
+              lerpDouble(1, HoldWarningStyle.glowArmed, p)!;
           return Stack(
             clipBehavior: Clip.none,
             children: [
@@ -230,7 +265,7 @@ class _PanickingTobi extends StatelessWidget {
                   child: const DecoratedBox(
                     decoration: BoxDecoration(
                       shape: BoxShape.circle,
-                      gradient: RadialGradient(colors: AllKnownWarningStyle.glowColors),
+                      gradient: RadialGradient(colors: HoldWarningStyle.glowColors),
                     ),
                     child: SizedBox.expand(),
                   ),
@@ -238,22 +273,22 @@ class _PanickingTobi extends StatelessWidget {
               ),
               Positioned.fill(
                 child: Shake(
-                  reach: lerpDouble(AllKnownWarningStyle.tobiTremble, AllKnownWarningStyle.tobiTrembleArmed, p)!,
-                  step: AllKnownWarningStyle.trembleStep,
-                  seed: AllKnownWarningStyle.sfxSeed,
+                  reach: lerpDouble(HoldWarningStyle.tobiTremble, HoldWarningStyle.tobiTrembleArmed, p)!,
+                  step: HoldWarningStyle.trembleStep,
+                  seed: HoldWarningStyle.sfxSeed,
                   child: const Tobi(pose: TobiPose.shocked),
                 ),
               ),
               Positioned(
-                left: AllKnownWarningStyle.sfxAt.dx,
-                top: AllKnownWarningStyle.sfxAt.dy,
+                left: HoldWarningStyle.sfxAt.dx,
+                top: HoldWarningStyle.sfxAt.dy,
                 child: Transform.rotate(
-                  angle: AllKnownWarningStyle.sfxTurnDeg * math.pi / 180,
+                  angle: HoldWarningStyle.sfxTurnDeg * math.pi / 180,
                   child: SfxText(
-                    p >= AllKnownWarningStyle.sfxArmedFrom ? AllKnownWarningStyle.sfxArmed : AllKnownWarningStyle.sfx,
-                    size: AllKnownWarningStyle.sfxFont,
+                    p >= HoldWarningStyle.sfxArmedFrom ? HoldWarningStyle.sfxArmed : HoldWarningStyle.sfx,
+                    size: HoldWarningStyle.sfxFont,
                     color: Palette.sun,
-                    seed: AllKnownWarningStyle.sfxSeed,
+                    seed: HoldWarningStyle.sfxSeed,
                     vertical: true,
                   ),
                 ),
@@ -279,7 +314,7 @@ class _ArmedDarkness extends StatelessWidget {
                 radius: 1,
                 colors: [
                   const Color(0x00000000),
-                  Palette.ink.withValues(alpha: AllKnownWarningStyle.armedDarkness * p),
+                  Palette.ink.withValues(alpha: HoldWarningStyle.armedDarkness * p),
                 ],
               ),
             ),
@@ -296,7 +331,7 @@ class _WarningLamp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => SizedBox.square(
-        dimension: AllKnownWarningStyle.lampSize,
+        dimension: HoldWarningStyle.lampSize,
         child: CustomPaint(painter: _LampPainter(lit: lit)),
       );
 }
@@ -308,34 +343,34 @@ class _LampPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
     Rect scaled(Rect r) => Rect.fromLTRB(r.left * size.width, r.top * size.height, r.right * size.width, r.bottom * size.height);
-    final domeBox = scaled(AllKnownWarningStyle.lampDome);
+    final domeBox = scaled(HoldWarningStyle.lampDome);
     final round = Radius.circular(domeBox.width / 2);
     final dome = RRect.fromRectAndCorners(domeBox, topLeft: round, topRight: round);
     final outline = Paint()
       ..style = PaintingStyle.stroke
-      ..strokeWidth = AllKnownWarningStyle.lampStroke
+      ..strokeWidth = HoldWarningStyle.lampStroke
       ..color = Palette.ink;
     if (lit) {
       final from = Offset(domeBox.center.dx, domeBox.top + domeBox.width / 2);
-      for (final deg in AllKnownWarningStyle.lampRays) {
+      for (final deg in HoldWarningStyle.lampRays) {
         final dir = Offset(math.cos(deg * math.pi / 180), math.sin(deg * math.pi / 180));
-        final a = from + dir * AllKnownWarningStyle.lampRayFrom * size.width;
-        final b = from + dir * AllKnownWarningStyle.lampRayTo * size.width;
+        final a = from + dir * HoldWarningStyle.lampRayFrom * size.width;
+        final b = from + dir * HoldWarningStyle.lampRayTo * size.width;
         final ray = Paint()
           ..strokeCap = StrokeCap.round
-          ..strokeWidth = AllKnownWarningStyle.lampRay + 2 * AllKnownWarningStyle.lampStroke
+          ..strokeWidth = HoldWarningStyle.lampRay + 2 * HoldWarningStyle.lampStroke
           ..color = Palette.ink;
         canvas.drawLine(a, b, ray);
         canvas.drawLine(a, b, ray
-          ..strokeWidth = AllKnownWarningStyle.lampRay
+          ..strokeWidth = HoldWarningStyle.lampRay
           ..color = Palette.sun);
       }
     }
-    canvas.drawRRect(dome, Paint()..color = lit ? AllKnownWarningStyle.lampLit : AllKnownWarningStyle.lampDim);
-    if (lit) canvas.drawOval(scaled(AllKnownWarningStyle.lampShine), Paint()..color = Palette.paper);
+    canvas.drawRRect(dome, Paint()..color = lit ? HoldWarningStyle.lampLit : HoldWarningStyle.lampDim);
+    if (lit) canvas.drawOval(scaled(HoldWarningStyle.lampShine), Paint()..color = Palette.paper);
     canvas.drawRRect(dome, outline);
     canvas.drawRRect(
-      RRect.fromRectAndRadius(scaled(AllKnownWarningStyle.lampBase), const Radius.circular(AllKnownWarningStyle.lampStroke)),
+      RRect.fromRectAndRadius(scaled(HoldWarningStyle.lampBase), const Radius.circular(HoldWarningStyle.lampStroke)),
       Paint()..color = Palette.ink,
     );
   }
@@ -355,8 +390,8 @@ class _HazardTape extends StatelessWidget {
             size: Size.infinite,
             painter: _HazardTapePainter(
               shift: 2 *
-                  AllKnownWarningStyle.tapeStripe *
-                  (elapsed.inMicroseconds / AllKnownWarningStyle.tapeMarch.inMicroseconds),
+                  HoldWarningStyle.tapeStripe *
+                  (elapsed.inMicroseconds / HoldWarningStyle.tapeMarch.inMicroseconds),
             ),
           ),
         ),
@@ -370,19 +405,19 @@ class _HazardTapePainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
     final outer = Offset.zero & size;
-    final inner = outer.deflate(AllKnownWarningStyle.tapeWidth);
+    final inner = outer.deflate(HoldWarningStyle.tapeWidth);
     canvas.save();
     canvas.clipPath(Path()
       ..fillType = PathFillType.evenOdd
       ..addRect(outer)
       ..addRect(inner));
-    paintHazardStripes(canvas, outer, stripe: AllKnownWarningStyle.tapeStripe, shift: shift);
+    paintHazardStripes(canvas, outer, stripe: HoldWarningStyle.tapeStripe, shift: shift);
     canvas.restore();
     canvas.drawRect(
       inner,
       Paint()
         ..style = PaintingStyle.stroke
-        ..strokeWidth = AllKnownWarningStyle.tapeBorder
+        ..strokeWidth = HoldWarningStyle.tapeBorder
         ..color = Palette.ink,
     );
   }

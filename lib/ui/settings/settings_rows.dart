@@ -115,6 +115,7 @@ class SettingsTapRow extends StatelessWidget {
     this.note,
     this.value,
     this.opensPage = false,
+    this.danger = false,
     required this.onTap,
   });
 
@@ -122,6 +123,9 @@ class SettingsTapRow extends StatelessWidget {
   final String? note;
   final String? value;
   final bool opensPage;
+
+  /// Titled in alarm red: it leads to something that can't be undone.
+  final bool danger;
   final VoidCallback onTap;
 
   @override
@@ -141,7 +145,7 @@ class SettingsTapRow extends StatelessWidget {
               ),
             ),
             _Row(children: [
-              Expanded(child: _TitleNote(title: title, note: note)),
+              Expanded(child: _TitleNote(title: title, note: note, color: danger ? Palette.alarmDeep : Palette.ink)),
               if (value != null)
                 Text(value!,
                     style: const TextStyle(
@@ -183,16 +187,17 @@ class _Row extends StatelessWidget {
 }
 
 class _TitleNote extends StatelessWidget {
-  const _TitleNote({required this.title, this.note});
+  const _TitleNote({required this.title, this.note, this.color = Palette.ink});
   final String title;
   final String? note;
+  final Color color;
 
   @override
   Widget build(BuildContext context) => Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         mainAxisSize: MainAxisSize.min,
         children: [
-          Text(title, style: const TextStyle(fontWeight: Weights.black, fontSize: SettingsLayout.titleFont)),
+          Text(title, style: TextStyle(fontWeight: Weights.black, fontSize: SettingsLayout.titleFont, color: color)),
           if (note != null) ...[
             const SizedBox(height: SettingsLayout.noteGap),
             Text(note!, style: _noteStyle),

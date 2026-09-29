@@ -719,4 +719,15 @@ class Progress extends ChangeNotifier {
     _xp = null;
     notifyListeners();
   }
+
+  /// Settings' Reset all data: everything [resetProgress] deletes plus the
+  /// learning setup and every setting, as on a fresh install, so the app
+  /// starts over at the language picker.
+  Future<void> resetAllData() async {
+    await db.delete(db.keyValues).go();
+    _settings = const AppSettings();
+    trainer.updateConfig(const TrainerConfig());
+    lastRun = null;
+    await resetProgress();
+  }
 }

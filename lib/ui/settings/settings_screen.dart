@@ -18,14 +18,15 @@ import '../debug/debug_page.dart';
 import '../debug/reset_actions.dart';
 import '../debug/simulation_page.dart';
 import '../manga/manga.dart';
-import 'all_known_warning_screen.dart';
 import 'credits_screen.dart';
+import 'hold_warning_screen.dart';
 import 'language_screen.dart';
 import 'settings_rows.dart';
 
 /// Settings, in sections: Language; Learning (mode, pace, the don't-know
 /// input); Play; Sound; About, whose version row hides the 10-tap
-/// developer-mode unlock; and, once that is unlocked, Developer.
+/// developer-mode unlock; Data (Reset all data); and, once developer mode
+/// is unlocked, Developer.
 class SettingsScreen extends StatelessWidget {
   const SettingsScreen({super.key});
 
@@ -114,6 +115,21 @@ class SettingsScreen extends StatelessWidget {
                           ]),
                         ],
                       ),
+                      const SizedBox(height: SettingsLayout.sectionGap),
+                      SettingsSection(
+                        title: s.sectionData,
+                        sub: s.other.sectionData,
+                        children: [
+                          SettingsGroup(children: [
+                            SettingsTapRow(
+                              title: s.resetAllData,
+                              note: s.resetAllDataNote,
+                              danger: true,
+                              onTap: () => _resetAllData(context, progress),
+                            ),
+                          ]),
+                        ],
+                      ),
                       if (settings.debugMode) ...[
                         const SizedBox(height: SettingsLayout.sectionGap),
                         const _DeveloperSection(),
@@ -197,8 +213,21 @@ Future<void> _chooseLearningMode(BuildContext context, Progress progress, Learni
     await progress.switchToAllKnown();
     return;
   }
-  final confirmed = await Navigator.of(context).push(MangaRoute<bool>(builder: (_) => const AllKnownWarningScreen()));
+  final warning = HoldWarningScreen.allKnown(S.of(context));
+  final confirmed = await Navigator.of(context).push(MangaRoute<bool>(builder: (_) => warning));
   if (confirmed == true) await progress.switchToAllKnown();
+}
+
+/// Reset all data goes behind the same full-screen warning. Once it is
+/// confirmed the app starts over at the language picker, as on a fresh
+/// install.
+Future<void> _resetAllData(BuildContext context, Progress progress) async {
+  final navigator = Navigator.of(context);
+  final warning = HoldWarningScreen.resetAll(S.of(context));
+  final confirmed = await navigator.push(MangaRoute<bool>(builder: (_) => warning));
+  if (confirmed != true) return;
+  await progress.resetAllData();
+  navigator.popUntil((route) => route.isFirst);
 }
 
 class _Option {
@@ -371,7 +400,7 @@ class _DeveloperSection extends StatelessWidget {
           SettingsTapRow(title: 'Preview graduation', onTap: () => previewGraduation(context)),
           SettingsTapRow(
             title: 'Preview all-known warning',
-            onTap: () => Navigator.push(context, MangaRoute<bool>(builder: (_) => const AllKnownWarningScreen())),
+            onTap: () => Navigator.push(context, MangaRoute<bool>(builder: (_) => HoldWarningScreen.allKnown(s))),
           ),
         ]),
         SettingsGroup(children: [
