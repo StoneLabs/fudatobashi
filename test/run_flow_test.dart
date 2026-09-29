@@ -28,12 +28,14 @@ import 'package:fudatobashi/ui/results/results_screen.dart';
 import 'package:fudatobashi/ui/results/xp_overlay.dart';
 import 'package:fudatobashi/ui/sound/sounds.dart';
 
+import 'test_l10n.dart';
 import 'test_vector_art.dart';
 
 /// New cards in a run: where they may first appear, their introduction
 /// pages, and the timing contract around them.
 void main() {
   loadTestVectorArt();
+  loadTestL10n();
   poems = Poems.fromJsonString(File('assets/data/poems.json').readAsStringSync());
   fudaSets = FudaSets(poems);
   archipelago = Archipelago.fromJsonString(File('assets/data/islands.json').readAsStringSync());
