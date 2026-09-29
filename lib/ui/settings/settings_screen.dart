@@ -276,6 +276,12 @@ class _DeveloperSection extends StatelessWidget {
         const SizedBox(height: Gaps.small),
         _ButtonRow(label: 'Preview celebrations', onTap: () => previewCelebrations(context)),
         const SizedBox(height: Gaps.small),
+        _ButtonRow(label: 'Preview XP', onTap: () => previewXp(context)),
+        const SizedBox(height: Gaps.small),
+        _ButtonRow(label: 'Preview XP + level up', onTap: () => previewXpLevelUp(context)),
+        const SizedBox(height: Gaps.small),
+        _ButtonRow(label: 'Preview graduation', onTap: () => previewGraduation(context)),
+        const SizedBox(height: Gaps.small),
         _ButtonRow(
           label: 'Simulation',
           onTap: () => Navigator.push(context, MangaRoute<void>(builder: (_) => const SimulationPage())),

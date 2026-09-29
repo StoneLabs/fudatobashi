@@ -666,6 +666,18 @@ abstract final class CelebrationPreviewTuning {
   ];
   static const int level = 7;
   static const int levelInto = 500;
+
+  /// "Preview XP": a typical round's XP, landing [roundInto] XP into
+  /// [level] before it and reaching no new level.
+  static const List<(XpSource, int, int)> xpRound = [
+    (XpSource.correct, 28, 280),
+    (XpSource.missed, 2, 4),
+    (XpSource.speed, 12, 85),
+    (XpSource.reviews, 8, 40),
+    (XpSource.clear, 1, 20),
+    (XpSource.daily, 3, 70),
+  ];
+  static const int roundInto = 150;
 }
 
 /// Sound pooling (`lib/ui/sound/sounds.dart`): concurrent, identically

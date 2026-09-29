@@ -1189,6 +1189,52 @@ void main() {
     });
   }
 
+  testWidgets('settings, developer: preview the XP page with and without a level-up, touching no progress',
+      (tester) async {
+    PackageInfo.setMockInitialValues(
+        appName: 'Fudatobashi', packageName: 'dev.fudatobashi', version: '1.0.0', buildNumber: '1', buildSignature: '');
+    final p = await open(tester, mode: LearningMode.journey);
+    await tester.runAsync(() => p.updateSettings(p.settings.copyWith(debugMode: true)));
+    await tester.binding.setSurfaceSize(_phone);
+    await tester.pumpWidget(ProgressScope(progress: p, child: MaterialApp(theme: buildMangaTheme(), home: const SettingsScreen())));
+
+    Future<void> openPreview(String label) async {
+      await tester.scrollUntilVisible(find.text(label), 200);
+      await tester.pump(const Duration(seconds: 1));
+      await tester.tap(find.text(label));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 500));
+    }
+
+    Future<void> skip(Type page) async {
+      expect(find.byType(page), findsOneWidget);
+      await tester.pump(const Duration(seconds: 4));
+      expect(tester.takeException(), isNull);
+      await tester.tap(find.byType(page));
+      for (var i = 0; i < 10; i++) {
+        await tester.pump(const Duration(milliseconds: 100));
+      }
+    }
+
+    await openPreview('Preview XP');
+    expect(previewXpGain(levelUp: false).levelsGained, 0);
+    await skip(XpOverlay);
+    expect(find.byType(LevelUpOverlay), findsNothing);
+    expect(find.byType(SettingsScreen), findsOneWidget, reason: 'back in Settings');
+
+    await openPreview('Preview XP + level up');
+    await skip(XpOverlay);
+    await skip(LevelUpOverlay);
+    expect(find.byType(SettingsScreen), findsOneWidget);
+
+    await openPreview('Preview graduation');
+    await skip(GraduationOverlay);
+    expect(p.sessions, isEmpty);
+    expect(p.xp.total, 0);
+    expect(p.trainer.config.learningMode, LearningMode.journey, reason: 'a preview never switches modes');
+    await tester.pumpWidget(const SizedBox());
+  });
+
   testWidgets('settings: sounds are on by default, and the Sounds switch turns them off for good', (tester) async {
     PackageInfo.setMockInitialValues(
         appName: 'Fudatobashi', packageName: 'dev.fudatobashi', version: '1.0.0', buildNumber: '1', buildSignature: '');

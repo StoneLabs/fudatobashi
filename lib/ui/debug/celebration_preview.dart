@@ -43,11 +43,39 @@ void previewCelebrations(BuildContext context) {
   );
 }
 
-/// The mock run's XP: every source, reaching two new levels.
-XpGain previewXpGain() => XpGain(
-      before: XpCurve.reach(CelebrationPreviewTuning.level) + CelebrationPreviewTuning.levelInto,
-      award: XpAward([for (final (source, count, xp) in CelebrationPreviewTuning.xp) XpPart(source, count, xp)]),
+/// The XP page for a typical round, reaching no new level.
+void previewXp(BuildContext context) => _previewPages(context, [XpCelebration(previewXpGain(levelUp: false))]);
+
+/// The XP page crossing two new levels, then the level-up.
+void previewXpLevelUp(BuildContext context) {
+  final gain = previewXpGain();
+  _previewPages(context, [XpCelebration(gain), LevelUpCelebration(gain)]);
+}
+
+void previewGraduation(BuildContext context) => _previewPages(context, const [GraduationCelebration()]);
+
+/// Plays [pages] as after a run, then comes back.
+void _previewPages(BuildContext context, List<Celebration> pages) => Navigator.push(
+      context,
+      MangaRoute<void>(
+        builder: (context) => Scaffold(
+          backgroundColor: Palette.paper,
+          body: CelebrationSequence(pages: pages, onDone: () => Navigator.pop(context)),
+        ),
+      ),
     );
+
+/// A mock run's XP: every source, reaching two new levels, or with
+/// [levelUp] false a typical round that reaches none.
+XpGain previewXpGain({bool levelUp = true}) {
+  final (lines, into) = levelUp
+      ? (CelebrationPreviewTuning.xp, CelebrationPreviewTuning.levelInto)
+      : (CelebrationPreviewTuning.xpRound, CelebrationPreviewTuning.roundInto);
+  return XpGain(
+    before: XpCurve.reach(CelebrationPreviewTuning.level) + into,
+    award: XpAward([for (final (source, count, xp) in lines) XpPart(source, count, xp)]),
+  );
+}
 
 SessionReport _report(int newCard) {
   final after = Rating.bands[CelebrationPreviewTuning.rankFrom + 1];
