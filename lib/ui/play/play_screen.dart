@@ -263,127 +263,133 @@ class _PlayScreenState extends State<PlayScreen> {
         PlayLayout.buttonRowHeight * buttonRows + PlayLayout.buttonGap * (buttonRows - 1) + Gaps.section * 2;
     final live = _started && _intro == null && !_resuming;
 
-    return Scaffold(
-      backgroundColor: Palette.paper,
-      body: Stack(children: [
-        SafeArea(
-          child: Stack(
-            children: [
-              Positioned(
-                left: 0,
-                right: 0,
-                bottom: 0,
-                height: PlayLayout.toneBandHeight,
-                child: const IgnorePointer(
-                  child: StaticArt([ToneLayer(Tones.seaFaint, fadeAngle: 180, fadeStops: [0, 1])]),
-                ),
-              ),
-              Positioned.fill(
-                bottom: buttonsBottom,
-                child: Column(children: [
-                  Expanded(
-                    child: SwipeDeck(
-                      key: _deckKey,
-                      session: session,
-                      live: live,
-                      dontKnowInput: dontKnowInput,
-                      showNumber: settings.showPoemNumber,
-                      haptics: settings.haptics,
-                      onCommitted: _onCommitted,
-                      startCard: StartCard(cue: s.swipeToStart),
-                      onStarted: _onStarted,
-                      cardFace: widget.tutorial ? (card, text) => TestCard(number: card.poemId, showText: text) : null,
-                    ),
+    return PopScope(
+      // Mid-round the tutorial holds you to its gestures; only before the
+      // start card is swiped can back leave it.
+      canPop: !widget.tutorial || !_started,
+      child: Scaffold(
+        backgroundColor: Palette.paper,
+        body: Stack(children: [
+          SafeArea(
+            child: Stack(
+              children: [
+                Positioned(
+                  left: 0,
+                  right: 0,
+                  bottom: 0,
+                  height: PlayLayout.toneBandHeight,
+                  child: const IgnorePointer(
+                    child: StaticArt([ToneLayer(Tones.seaFaint, fadeAngle: 180, fadeStops: [0, 1])]),
                   ),
-                  if (script != null)
-                    TutorialCoach(
-                      line: script.line(
-                          started: _started, index: session.index, finished: session.finished, retried: _retried),
-                      kana: TestCard.kanaOf(session.current ?? last!.card),
-                    ),
-                ]),
-              ),
-              Positioned.fill(bottom: buttonsBottom, child: SfxOverlay(key: _sfxKey)),
-              Positioned(
-                left: Gaps.gutter,
-                right: Gaps.gutter,
-                top: Gaps.section,
-                child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                  // Shrinks rather than running into the counter at large
-                  // font scales.
-                  Flexible(
-                    child: FittedBox(
-                      fit: BoxFit.scaleDown,
-                      alignment: Alignment.centerLeft,
-                      child: KimarijiChip(
-                        text: chipText,
-                        timeMs: last == null ? null : last.responseUs / 1000,
-                        wrong: last?.isMiss ?? false,
-                        onTap: last == null ? null : _toggleWrong,
+                ),
+                Positioned.fill(
+                  bottom: buttonsBottom,
+                  child: Column(children: [
+                    Expanded(
+                      child: SwipeDeck(
+                        key: _deckKey,
+                        session: session,
+                        live: live,
+                        dontKnowInput: dontKnowInput,
+                        showNumber: settings.showPoemNumber,
+                        haptics: settings.haptics,
+                        onCommitted: _onCommitted,
+                        startCard: StartCard(cue: s.swipeToStart),
+                        onStarted: _onStarted,
+                        cardFace: widget.tutorial ? (card, text) => TestCard(number: card.poemId, showText: text) : null,
                       ),
                     ),
-                  ),
-                  const SizedBox(width: Gaps.panel),
-                  _Counter(n: math.min(session.index + 1, session.cards.length), total: session.cards.length),
-                ]),
-              ),
-              Positioned(
-                left: Gaps.gutter,
-                right: Gaps.gutter,
-                bottom: Gaps.section,
-                child: Column(children: [
-                  if (dontKnowButton) ...[
+                    if (script != null)
+                      TutorialCoach(
+                        line: script.line(
+                            started: _started, index: session.index, finished: session.finished, retried: _retried),
+                        kana: TestCard.kanaOf(session.current ?? last!.card),
+                        onBack: _started ? null : _end,
+                      ),
+                  ]),
+                ),
+                Positioned.fill(bottom: buttonsBottom, child: SfxOverlay(key: _sfxKey)),
+                Positioned(
+                  left: Gaps.gutter,
+                  right: Gaps.gutter,
+                  top: Gaps.section,
+                  child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                    // Shrinks rather than running into the counter at large
+                    // font scales.
+                    Flexible(
+                      child: FittedBox(
+                        fit: BoxFit.scaleDown,
+                        alignment: Alignment.centerLeft,
+                        child: KimarijiChip(
+                          text: chipText,
+                          timeMs: last == null ? null : last.responseUs / 1000,
+                          wrong: last?.isMiss ?? false,
+                          onTap: last == null ? null : _toggleWrong,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: Gaps.panel),
+                    _Counter(n: math.min(session.index + 1, session.cards.length), total: session.cards.length),
+                  ]),
+                ),
+                Positioned(
+                  left: Gaps.gutter,
+                  right: Gaps.gutter,
+                  bottom: Gaps.section,
+                  child: Column(children: [
+                    if (dontKnowButton) ...[
+                      SizedBox(
+                        height: PlayLayout.buttonRowHeight,
+                        child: Listener(
+                          onPointerDown: (e) => _dontKnowDownTs = e.timeStamp,
+                          child: ActionRowButton(
+                            icon: IconArt.question,
+                            label: s.dontRemember,
+                            sub: "DON'T REMEMBER",
+                            color: Palette.pinkSoft,
+                            onTap: live && !_ending ? _markDontKnow : null,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: PlayLayout.buttonGap),
+                    ],
                     SizedBox(
                       height: PlayLayout.buttonRowHeight,
-                      child: Listener(
-                        onPointerDown: (e) => _dontKnowDownTs = e.timeStamp,
-                        child: ActionRowButton(
-                          icon: IconArt.question,
-                          label: s.dontRemember,
-                          sub: "DON'T REMEMBER",
-                          color: Palette.pinkSoft,
-                          onTap: live && !_ending ? _markDontKnow : null,
+                      child: Row(children: [
+                        Expanded(
+                          child: ActionRowButton(
+                            icon: IconArt.undo,
+                            label: s.undo,
+                            sub: 'UNDO',
+                            onTap: session.attempts.isEmpty ? null : session.undo,
+                          ),
                         ),
-                      ),
+                        const SizedBox(width: PlayLayout.buttonGap),
+                        Expanded(
+                          child: ActionRowButton(icon: IconArt.end, label: s.end, sub: 'END', onTap: _ending ? null : _end),
+                        ),
+                      ]),
                     ),
-                    const SizedBox(height: PlayLayout.buttonGap),
-                  ],
-                  SizedBox(
-                    height: PlayLayout.buttonRowHeight,
-                    child: Row(children: [
-                      Expanded(
-                        child: ActionRowButton(
-                          icon: IconArt.undo,
-                          label: s.undo,
-                          sub: 'UNDO',
-                          onTap: session.attempts.isEmpty ? null : session.undo,
-                        ),
-                      ),
-                      const SizedBox(width: PlayLayout.buttonGap),
-                      Expanded(
-                        child: ActionRowButton(icon: IconArt.end, label: s.end, sub: 'END', onTap: _ending ? null : _end),
-                      ),
-                    ]),
-                  ),
-                ]),
-              ),
-              if (settings.debugMode && settings.playOverlay && !widget.tutorial)
-                Positioned(bottom: buttonsBottom + Gaps.section, left: Gaps.section, child: PlayDebugOverlay(session: session)),
-            ],
-          ),
-        ),
-        if (_intro != null)
-          Positioned.fill(
-            child: CelebrationSequence(
-              key: ObjectKey(_intro),
-              pages: _intro!,
-              onDone: _endIntro,
+                  ]),
+                ),
+                if (settings.debugMode && settings.playOverlay && !widget.tutorial)
+                  Positioned(bottom: buttonsBottom + Gaps.section, left: Gaps.section, child: PlayDebugOverlay(session: session)),
+              ],
             ),
           ),
-      ]),
+          if (_intro != null)
+            Positioned.fill(
+              child: CelebrationSequence(
+                key: ObjectKey(_intro),
+                pages: _intro!,
+                onDone: _endIntro,
+              ),
+            ),
+        ]),
+      ),
     );
   }
 }

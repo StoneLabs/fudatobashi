@@ -1,6 +1,7 @@
 import 'package:flutter/widgets.dart';
 
 import '../../config/design.dart';
+import '../../config/vector_art.dart';
 import '../../domain/play_session.dart';
 import '../../l10n/strings.dart';
 import '../../l10n/tour_strings.dart';
@@ -80,21 +81,30 @@ class TutorialScript {
 }
 
 /// Tobi under the tutorial round's card, saying [line]; each new line pops
-/// in.
+/// in. On the very first line — before the start card is even swiped —
+/// [onBack] leaves the round the same way giving up on it does, back to the
+/// tour's last Home stop.
 class TutorialCoach extends StatelessWidget {
-  const TutorialCoach({super.key, required this.line, required this.kana});
+  const TutorialCoach({super.key, required this.line, required this.kana, this.onBack});
 
   final CoachLine line;
 
   /// The kana of the card on top, for the lines that name it.
   final String kana;
 
+  final VoidCallback? onBack;
+
   @override
   Widget build(BuildContext context) {
     final still = MediaQuery.disableAnimationsOf(context);
+    final onBack = this.onBack;
     return Padding(
       padding: TutorialStyle.padding,
       child: Row(children: [
+        if (onBack != null) ...[
+          InkIconButton(icon: IconArt.back, onTap: onBack, semanticLabel: S.of(context).back),
+          const SizedBox(width: TutorialStyle.gap),
+        ],
         SizedBox(
           height: TutorialStyle.tobiHeight,
           width: TutorialStyle.tobiHeight * TobiStyle.aspect,

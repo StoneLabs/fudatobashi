@@ -1330,6 +1330,21 @@ abstract final class TourStyle {
   static const Color bulbHalo = Color(0x66FFE9A0);
   static const Duration chase = Duration(milliseconds: 90);
   static const int chaseEvery = 3;
+
+  /// The typed-out line's still-to-come tail: laid out like the rest, just
+  /// invisible, so the balloon never resizes as it types.
+  static const Color typingHidden = Color(0x00000000);
+
+  /// A tap that misses the target jolts the arrows [nudgeCycles] times over
+  /// [nudgeDuration], decaying from [nudgeAmount] px — cheap (a composited
+  /// translate, no repaint) and skipped under reduced motion.
+  static const Duration nudgeDuration = Duration(milliseconds: 260);
+  static const double nudgeAmount = 10;
+  static const double nudgeCycles = 3;
+
+  /// The balloon's continue control (steps with nothing to tap): faded out
+  /// and untappable until the line has finished typing.
+  static const Duration continueFade = Duration(milliseconds: 200);
 }
 
 /// Results (spec phone 5) and its celebration overlays.

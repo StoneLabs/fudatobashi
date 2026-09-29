@@ -2597,36 +2597,66 @@ void main() {
       await tester.pump(const Duration(milliseconds: 600));
     }
 
+    // Settles a stop's pop-in and arrow spawn, and returns where its spot
+    // is laid out (null with none).
+    Future<Rect?> settleStep(WidgetTester tester, TourStep step) async {
+      await tester.pump(const Duration(milliseconds: 50));
+      await tester.pump(const Duration(milliseconds: 600));
+      final spot = step.spot;
+      return spot == null ? null : tester.getRect(find.byWidgetPredicate((w) => w is TourAnchor && w.spot == spot));
+    }
+
+    // Long enough for any line to finish typing itself out.
+    Future<void> waitForTyping(WidgetTester tester) => tester.pump(const Duration(seconds: 6));
+
+    // Waits out the typing, then moves the stop on: taps [target], or with
+    // none the balloon's own continue button.
+    Future<void> tapStepTarget(WidgetTester tester, {required Rect? target, required String hint}) async {
+      await waitForTyping(tester);
+      if (target != null) {
+        await tester.tapAt(target.center);
+      } else {
+        await tester.tap(find.text(hint));
+      }
+      await tester.pump();
+    }
+
+    Finder backIcon() => find.byWidgetPredicate((w) => w is InkIconButton && w.icon == IconArt.back);
+    Finder backButton() => find.descendant(of: find.byType(TourOverlay), matching: backIcon());
+    Finder coachBackButton() => find.descendant(of: find.byType(TutorialCoach), matching: backIcon());
+
+    String hintFor(S s, List<TourStep> steps, int i) =>
+        steps[i].practice ? s.tourTapPractice : i == steps.length - 1 ? s.tourTapDone : s.tourTapHint;
+
     for (final mode in LearningMode.values) {
       for (final ja in [false, true]) {
         final lang = ja ? 'ja' : 'en';
-        testWidgets('a new player gets the tour of ${mode.name} Home, spot by spot, and it ends after the practice round ($lang)',
+        testWidgets(
+            'a new player gets the tour of ${mode.name} Home, spot by spot, tapping each target, and it ends after the practice round ($lang)',
             (tester) async {
           final p = await open(tester, mode: mode, ja: ja, journeyCards: 7, tabsLocked: true, toured: false);
           await onPhone(tester, p, fontScale: 1.1);
+          final s = S(lang);
           final steps = TourStep.of(mode, tabsLocked: true);
           for (final (i, step) in steps.indexed) {
-            await tester.pump(const Duration(milliseconds: 50));
-            await tester.pump(const Duration(milliseconds: 600));
+            final target = await settleStep(tester, step);
             expect(tester.takeException(), isNull, reason: 'step $i');
             expect(find.byType(TourOverlay), findsOneWidget);
+            expect(backButton(), i == 0 ? findsNothing : findsOneWidget, reason: 'back button, step $i');
             final arrows = tester.widget<TourArrows>(find.byType(TourArrows));
-            final spot = step.spot;
-            if (spot != null) {
-              final target = tester.getRect(find.byWidgetPredicate((w) => w is TourAnchor && w.spot == spot));
-              expect(arrows.scribbles, isNotEmpty, reason: 'step $i: ${spot.name} is found');
+            if (target != null) {
+              expect(arrows.scribbles, isNotEmpty, reason: 'step $i: ${step.spot!.name} is found');
               for (final sc in arrows.scribbles) {
-                expect(Rect.fromPoints(sc.tail, sc.tip).overlaps(target), isFalse, reason: 'step $i: ${spot.name}');
+                expect(Rect.fromPoints(sc.tail, sc.tip).overlaps(target), isFalse, reason: 'step $i: ${step.spot!.name}');
               }
             } else {
               expect(arrows.scribbles, isEmpty);
             }
             await _capture(tester, 'tour_${mode.name}_${i}_$lang');
-            await tester.tapAt(const Offset(192, 420));
-            await tester.pump();
+            await tapStepTarget(tester, target: target, hint: hintFor(s, steps, i));
             if (step.practice) {
               await tester.pump(const Duration(milliseconds: 500));
-              expect(find.byType(PlayScreen), findsOneWidget, reason: 'the tour makes you practise');
+              expect(find.byType(PlayScreen), findsOneWidget, reason: 'tapping the target starts the practice round');
               await playTutorial(tester);
               expect(find.byType(PlayScreen), findsNothing);
             }
@@ -2640,25 +2670,107 @@ void main() {
       }
     }
 
-    testWidgets('leaving the practice round early keeps the tour on it', (tester) async {
+    testWidgets('a tap before the line finishes typing, or off the target, does nothing; the target works once it is done',
+        (tester) async {
+      final p = await open(tester, mode: LearningMode.journey, journeyCards: 7, tabsLocked: true, toured: false);
+      await onPhone(tester, p, fontScale: 1.0);
+      const s = S('en');
+      final steps = TourStep.of(LearningMode.journey, tabsLocked: true);
+      // Past the opening lines (no target) to the first spotted stop, Map.
+      for (var i = 0; i < 3; i++) {
+        final target = await settleStep(tester, steps[i]);
+        await tapStepTarget(tester, target: target, hint: hintFor(s, steps, i));
+      }
+      expect(steps[3].spot, TourSpot.map);
+      final target = await settleStep(tester, steps[3]);
+      final before = tester.widget<TourArrows>(find.byType(TourArrows)).key;
+
+      // The target itself, before the line is done typing: nothing.
+      await tester.tapAt(target!.center);
+      await tester.pump(const Duration(milliseconds: 200));
+      expect(tester.widget<TourArrows>(find.byType(TourArrows)).key, before, reason: 'too early');
+      expect(find.byType(TourOverlay), findsOneWidget);
+
+      // Off the target, even once it is done: also nothing, just a nudge.
+      await waitForTyping(tester);
+      final outside = target.center.dy < _phone.height / 2
+          ? Offset(target.center.dx, _phone.height - 40)
+          : Offset(target.center.dx, 40);
+      await tester.tapAt(outside);
+      await tester.pump(const Duration(milliseconds: 200));
+      expect(tester.widget<TourArrows>(find.byType(TourArrows)).key, before, reason: 'missed the target');
+
+      // The target itself, now that it is done: moves the tour on.
+      await tester.tapAt(target.center);
+      await tester.pump(const Duration(milliseconds: 50));
+      expect(tester.widget<TourArrows>(find.byType(TourArrows)).key, isNot(before));
+      await tester.pumpWidget(const SizedBox());
+    });
+
+    testWidgets('Back steps the tour back one stop, is gone on the first, and a stop it already finished shows instantly',
+        (tester) async {
+      final p = await open(tester, mode: LearningMode.journey, journeyCards: 7, tabsLocked: true, toured: false);
+      await onPhone(tester, p, fontScale: 1.0);
+      const s = S('en');
+      final steps = TourStep.of(LearningMode.journey, tabsLocked: true);
+      final target0 = await settleStep(tester, steps[0]);
+      expect(backButton(), findsNothing, reason: 'the very first stop');
+
+      // On to step 1, its line fully typed, then straight back to step 0.
+      await tapStepTarget(tester, target: target0, hint: hintFor(s, steps, 0));
+      await settleStep(tester, steps[1]);
+      expect(backButton(), findsOneWidget);
+      await waitForTyping(tester);
+      await tester.tap(backButton());
+      await tester.pump(const Duration(milliseconds: 50));
+      expect(backButton(), findsNothing, reason: 'back on step 0');
+
+      // Step 0 was already finished: its continue works right away, no
+      // waiting for it to type out again.
+      await tester.tap(find.text(s.tourTapHint));
+      await tester.pump(const Duration(milliseconds: 50));
+      expect(backButton(), findsOneWidget, reason: 'moved straight on to step 1');
+      await tester.pumpWidget(const SizedBox());
+    });
+
+    testWidgets('leaving the practice round early keeps the tour on it, and back on its first line does too', (tester) async {
       final p = await open(tester, mode: LearningMode.journey, journeyCards: 7, toured: false);
       await onPhone(tester, p, fontScale: 1.0);
-      final practice = TourStep.of(LearningMode.journey, tabsLocked: false).indexWhere((st) => st.practice);
-      for (var i = 0; i <= practice; i++) {
-        await tester.pump(const Duration(milliseconds: 400));
-        await tester.tapAt(const Offset(192, 420));
-        await tester.pump();
+      const s = S('en');
+      final steps = TourStep.of(LearningMode.journey, tabsLocked: false);
+      final practice = steps.indexWhere((st) => st.practice);
+      for (var i = 0; i < practice; i++) {
+        final target = await settleStep(tester, steps[i]);
+        await tapStepTarget(tester, target: target, hint: hintFor(s, steps, i));
       }
-      await tester.pump(const Duration(milliseconds: 500));
-      await tester.tap(find.text(const S('en').end));
+      final trainingTarget = await settleStep(tester, steps[practice]);
+
+      Future<void> startPractice() async {
+        await waitForTyping(tester);
+        await tester.tapAt(trainingTarget!.center);
+        await tester.pump(const Duration(milliseconds: 500));
+        await tester.pump(const Duration(milliseconds: 1500));
+        expect(find.byType(PlayScreen), findsOneWidget);
+      }
+
+      Future<void> expectBackOnTheTour() async {
+        await tester.pump(const Duration(milliseconds: 500));
+        expect(find.byType(PlayScreen), findsNothing);
+        expect(find.byType(TourOverlay), findsOneWidget);
+        expect(find.text(s.tourPracticeAgain), findsOneWidget);
+      }
+
+      // Giving up mid-round (the END button) keeps the tour on the stop.
+      await startPractice();
+      await tester.tap(find.text(s.end));
       await tester.pump();
-      await tester.pump(const Duration(milliseconds: 500));
-      expect(find.byType(PlayScreen), findsNothing);
-      expect(find.text(const S('en').tourPracticeAgain), findsOneWidget);
-      await tester.tapAt(const Offset(192, 420));
+      await expectBackOnTheTour();
+
+      // The coach's own back button, on its first line, does the same.
+      await startPractice();
+      await tester.tap(coachBackButton());
       await tester.pump();
-      await tester.pump(const Duration(milliseconds: 500));
-      expect(find.byType(PlayScreen), findsOneWidget, reason: 'the practice round again');
+      await expectBackOnTheTour();
       await tester.pumpWidget(const SizedBox());
     });
 

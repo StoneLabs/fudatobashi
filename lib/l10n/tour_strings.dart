@@ -37,7 +37,6 @@ extension TourStrings on S {
   String get tourTabs => t('tourTabs');
   String get tourTabsOpen => t('tourTabsOpen');
   String get tourSettings => t('tourSettings');
-  String get tourPractice => t('tourPractice');
   String get tourPracticeAgain => t('tourPracticeAgain');
   String get tourFinale => t('tourFinale');
   String get tourTapHint => t('tourTapHint');

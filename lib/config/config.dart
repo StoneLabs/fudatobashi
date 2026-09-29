@@ -113,6 +113,13 @@ abstract final class TutorialTuning {
   static const Duration doneLinger = Duration(milliseconds: 1800);
 }
 
+/// Tobi's tour balloon (`TourOverlay`): how its text types itself out.
+abstract final class TourTuning {
+  /// Time to reveal each visible character of a line — slow enough to read
+  /// as it goes, and never skippable.
+  static const Duration charInterval = Duration(milliseconds: 28);
+}
+
 /// Coloured SFX lettering that pops around the card on each flick
 /// (`lib/ui/play/sfx_overlay.dart`), never over it.
 abstract final class PlaySfxTuning {
