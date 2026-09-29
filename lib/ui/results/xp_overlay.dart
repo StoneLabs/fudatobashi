@@ -216,22 +216,6 @@ EntranceSpec _at(Duration delay, Duration length, {Curve curve = Curves.linear})
 EntranceSpec _pop(Duration delay, Duration length, {Curve curve = Entrances.bouncy}) =>
     EntranceSpec(Entrances.pop, duration: length, delay: delay, curve: curve);
 
-/// Rebuilds [builder] with the time into the page of [timeline] (its end
-/// under reduced motion), repainting on its own layer.
-class _Clock extends StatelessWidget {
-  const _Clock(this.timeline, {required this.builder});
-  final XpTimeline timeline;
-  final Widget Function(BuildContext context, Duration elapsed) builder;
-
-  @override
-  Widget build(BuildContext context) => RepaintBoundary(
-        child: EntranceBuilder(
-          _at(Duration.zero, timeline.length),
-          builder: (context, t, _) => builder(context, timeline.length * t),
-        ),
-      );
-}
-
 /// "+482 XP": counts up with the lines, then lands with a pulse and a burst
 /// of focus lines. The box keeps the final width while counting.
 class _Counter extends StatelessWidget {
@@ -265,7 +249,7 @@ class _Counter extends StatelessWidget {
               textBaseline: TextBaseline.alphabetic, children: [
             Stack(alignment: Alignment.centerRight, children: [
               Opacity(opacity: 0, child: lettering('+${timeline.gain.award.total}')),
-              _Clock(timeline, builder: (context, elapsed) => lettering('+${timeline.shownAt(elapsed).round()}')),
+              StageClock(length: timeline.length, builder: (context, elapsed) => lettering('+${timeline.shownAt(elapsed).round()}')),
             ]),
             const SizedBox(width: Gaps.small),
             lettering(s.xpUnit, style.copyWith(fontSize: XpLayout.counterUnitFont)),
@@ -288,7 +272,7 @@ class _LevelBar extends StatelessWidget {
     final levelUps = timeline.levelUps;
     return Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
       Row(children: [
-        _Clock(timeline, builder: (context, elapsed) {
+        StageClock(length: timeline.length, builder: (context, elapsed) {
           final since = _since(timeline.lastLevelUp(elapsed), elapsed);
           final pop = since == null ? 0.0 : math.sin(math.pi * since);
           return Transform.scale(
@@ -302,7 +286,7 @@ class _LevelBar extends StatelessWidget {
             height: XpLayout.barHeight,
             child: Stack(clipBehavior: Clip.none, children: [
               Positioned.fill(
-                child: _Clock(timeline, builder: (context, elapsed) {
+                child: StageClock(length: timeline.length, builder: (context, elapsed) {
                   final since = _since(timeline.lastLevelUp(elapsed), elapsed);
                   return CustomPaint(
                     painter: _BarPainter(timeline.levelAt(elapsed).fraction, flash: since == null ? 0 : 1 - since),
@@ -315,8 +299,8 @@ class _LevelBar extends StatelessWidget {
                 right: -XpSparks.reach.right,
                 bottom: -XpSparks.reach.bottom,
                 child: IgnorePointer(
-                  child: _Clock(
-                    timeline,
+                  child: StageClock(
+                    length: timeline.length,
                     builder: (context, elapsed) => CustomPaint(painter: _SparksPainter(timeline, elapsed)),
                   ),
                 ),
@@ -331,7 +315,7 @@ class _LevelBar extends StatelessWidget {
         Expanded(
           child: Align(
             alignment: Alignment.centerLeft,
-            child: _Clock(timeline, builder: (context, elapsed) {
+            child: StageClock(length: timeline.length, builder: (context, elapsed) {
               final level = timeline.levelAt(elapsed);
               return _Note(s.xpToNext(level.toNext, level.level + 1));
             }),
@@ -620,7 +604,7 @@ class _Line extends StatelessWidget {
       const SizedBox(width: XpLayout.rowCountGap),
       Stack(alignment: Alignment.centerRight, children: [
         Opacity(opacity: 0, child: Text('+${part.xp}', style: xpStyle)),
-        _Clock(timeline, builder: (context, elapsed) => Text('+${timeline.partAt(index, elapsed).round()}', style: xpStyle)),
+        StageClock(length: timeline.length, builder: (context, elapsed) => Text('+${timeline.partAt(index, elapsed).round()}', style: xpStyle)),
       ]),
     ]);
     return DecoratedBox(

@@ -18,8 +18,9 @@ import '../results/results_screen.dart';
 
 /// Plays every celebration in a row without touching any progress: a new
 /// card with its look-alike warning when one applies, then Results for a
-/// personal best that earns the mock's island complete, a rank-up, a new
-/// goal, graduation, its XP and two new levels.
+/// personal best that earns the mock's island complete, a new goal,
+/// graduation, its XP and two new levels, and a rating breaking through
+/// into a rank-up.
 void previewCelebrations(BuildContext context) {
   final progress = ProgressScope.read(context);
   final withKnownTwin = poems.all.where((p) => !progress.knows(p.id) && fudaSets.tomofuda(p.id).any(progress.knows));
@@ -52,6 +53,27 @@ void previewXpLevelUp(BuildContext context) {
   _previewPages(context, [XpCelebration(gain), LevelUpCelebration(gain)]);
 }
 
+/// The rating page for a run that raised the rating within its class.
+void previewRating(BuildContext context) {
+  final before = Rating.bands[CelebrationPreviewTuning.rankFrom].minRating + CelebrationPreviewTuning.ratingInto;
+  _previewPages(context, [RatingCelebration(before, before + CelebrationPreviewTuning.ratingGain)]);
+}
+
+/// The rating breaking through into the next class, then the rank-up.
+void previewRatingRankUp(BuildContext context) {
+  final (before, after) = _rankUpRatings;
+  _previewPages(context, [
+    RatingCelebration(before, after),
+    RankUpCelebration(Rating.bandOf(before), Rating.bandOf(after), before, after),
+  ]);
+}
+
+/// Ratings either side of the threshold above `Rating.bands[rankFrom]`.
+(double, double) get _rankUpRatings {
+  final threshold = Rating.bands[CelebrationPreviewTuning.rankFrom + 1].minRating;
+  return (threshold - CelebrationPreviewTuning.rankBelow, threshold + CelebrationPreviewTuning.rankAbove);
+}
+
 void previewGraduation(BuildContext context) => _previewPages(context, const [GraduationCelebration()]);
 
 /// Plays [pages] as after a run, then comes back.
@@ -78,7 +100,7 @@ XpGain previewXpGain({bool levelUp = true}) {
 }
 
 SessionReport _report(int newCard) {
-  final after = Rating.bands[CelebrationPreviewTuning.rankFrom + 1];
+  final (ratingBefore, ratingAfter) = _rankUpRatings;
   final now = DateTime.now();
   return SessionReport(
     sessionId: null,
@@ -95,8 +117,8 @@ SessionReport _report(int newCard) {
         ),
     ],
     previousBest: CelebrationPreviewTuning.previousBest,
-    ratingBefore: after.minRating - CelebrationPreviewTuning.rankGain / 2,
-    ratingAfter: after.minRating + CelebrationPreviewTuning.rankGain / 2,
+    ratingBefore: ratingBefore,
+    ratingAfter: ratingAfter,
     goalRaised: true,
     newCards: [newCard],
     islandsCompleted: const [CelebrationPreviewTuning.island],

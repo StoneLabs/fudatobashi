@@ -390,6 +390,18 @@ abstract final class RatingModel {
   static const double aMaxSeconds = 40;
 }
 
+/// The rating page after a run (`RatingOverlay`).
+abstract final class RatingScreenTuning {
+  /// Shown only when a run raised the displayed (rounded) rating by at
+  /// least this many points.
+  static const int minGain = 1;
+
+  /// Rating points spanned by the track of a class without a lower bound
+  /// (入門, up to the next class) or an upper one (the top class, up from
+  /// its own threshold).
+  static const double openSpan = 400;
+}
+
 /// Experience (XP, `XpLedger`): effort rewarded on every tracked run, apart
 /// from the rating's measure of skill. Derived from the recorded history, so
 /// a change here re-scores every past run too.
@@ -649,10 +661,16 @@ abstract final class CelebrationPreviewTuning {
   /// The island completed (the mock's 3rd).
   static const int island = 2;
 
-  /// The rank-up from `Rating.bands[rankFrom]` (F上級) to the next class,
-  /// gaining [rankGain] points across its threshold.
+  /// The rank-up from `Rating.bands[rankFrom]` (F上級) to the next class:
+  /// from [rankBelow] points under its threshold to [rankAbove] over it.
   static const int rankFrom = 2;
-  static const double rankGain = 26;
+  static const double rankBelow = 58;
+  static const double rankAbove = 14;
+
+  /// "Preview rating": [ratingInto] points into the same class, gaining
+  /// [ratingGain].
+  static const double ratingInto = 250;
+  static const double ratingGain = 26;
 
   /// The personal best: [cards] cards averaging [averageUs], spread evenly
   /// [spreadUs] apart, [total] in all against a [previousBest].
@@ -702,8 +720,12 @@ abstract final class SoundTuning {
   /// The XP counter ticks faster than one tick lasts.
   static const int xpTickPoolSize = 4;
 
-  /// Fireworks and breakdown pops can land on top of each other.
+  /// Fireworks, breakdown pops and the rating's heartbeat can land on top
+  /// of each other.
   static const int burstPoolSize = 2;
+
+  /// The rating's ratchet clicks faster than one click lasts.
+  static const int ratingTickPoolSize = 4;
 }
 
 /// The app's sound effects (Kenney, CC0; provenance in
@@ -736,6 +758,10 @@ enum Sfx {
   xpPop(['sounds/xp_pop.wav'], 0.6, poolSize: SoundTuning.burstPoolSize),
   xpDone(['sounds/xp_done.wav'], 0.8),
   levelUp(['sounds/level_up.wav'], 0.8),
+  ratingTick(['sounds/rating_tick.wav'], 0.4, poolSize: SoundTuning.ratingTickPoolSize),
+  ratingUp(['sounds/rating_up.wav'], 0.8),
+  ratingStrain(['sounds/rating_strain.wav'], 0.9, poolSize: SoundTuning.burstPoolSize),
+  ratingBreak(['sounds/rating_break.wav'], 0.9),
   graduation(['sounds/graduation.wav'], 0.85),
   firework(
     ['sounds/firework_0.wav', 'sounds/firework_1.wav', 'sounds/firework_2.wav'],

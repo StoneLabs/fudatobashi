@@ -24,6 +24,7 @@ abstract final class Palette {
   static const landDeep = Color(0xFF5E8C47);
   static const landSoft = Color(0xFFE5F6D8);
   static const sun = Color(0xFFFFD83A);
+  static const orange = Color(0xFFFF9A2E);
   static const sunSoft = Color(0xFFFFF4BF);
   static const violet = Color(0xFF9A5BC2);
   static const violetSoft = Color(0xFFF1E6F7);
@@ -34,7 +35,7 @@ abstract final class Palette {
   static const cardPaper = Color(0xFFEAEAEA);
 
   /// Speed tiers, fastest first (see [SpeedTiers]).
-  static const tiers = [sun, Color(0xFFFF9A2E), pink, violetDeep];
+  static const tiers = [sun, orange, pink, violetDeep];
   static const tierText = [ink, ink, ink, paper];
 }
 
@@ -2363,6 +2364,251 @@ abstract final class LevelUpMotion {
   static const double hopHeight = 14;
   static const hopPeriod = Duration(milliseconds: 900);
   static const double hopAirShare = 0.4;
+}
+
+/// The rating page (実力UP!!, `RatingOverlay`): an orange page with streaks
+/// rising to the top, a segmented power gauge for the class's track capped by
+/// a hazard-striped gate, and a needle tag carrying the rating up it.
+abstract final class RatingLayout {
+  static const Color color = Palette.orange;
+  static const Alignment glowAt = Alignment(-0.2, -0.05);
+  static const List<Color> glowColors = [Color(0xFFFFE9A6), Color(0xFFFFBE55), Palette.orange];
+  static const List<double> glowStops = [0, 0.45, 1];
+  static const tone = ToneSpec(dot: Color(0xFFE8740C), radius: 1.6, spacing: 6);
+  static const double toneAngle = 180;
+  static const List<double> toneStops = [0.5, 1];
+
+  /// Streaks shooting up from the bottom (speed lines turned on end).
+  static const streaks = SpeedLinesSpec(count: 46, seed: 17, fromEdge: true, color: Color(0x8CFFFFFF));
+
+  static const double topGap = 4;
+  static const String title = '実力UP!!';
+  static const double titleFont = 84;
+  static const double titleOutline = 9;
+  static const double bandInset = 50;
+  static const double bandFont = 20;
+  static const double bandTracking = 0.3;
+  static const EdgeInsets bandPadding = EdgeInsets.fromLTRB(8, 7, 8, 8);
+  static const double bandTurnDeg = 2;
+  static const double gaugeGap = 10;
+
+  /// The gauge: the tower's centre sits at [towerAt] of the width, with
+  /// room for the next class above it and the current one below.
+  static const double towerAt = 0.34;
+  static const double towerWidth = 60;
+  static const double topRoom = 66;
+  static const double bottomRoom = 50;
+  static const double badgeGap = 10;
+  static const double nextBadgeFont = 26;
+  static const double nextBadgeSuffixFont = 15;
+  static const double bandBadgeFont = 18;
+  static const double bandBadgeSuffixFont = 11;
+
+  /// The tower: an ink column of lit cells, cool at the bottom and hot at
+  /// the top. Unlit cells keep a hint of their colour.
+  static const int cells = 12;
+  static const double towerPadding = 5;
+  static const double cellGap = 4;
+  static const List<Color> cellColors = [Palette.shallow, Palette.land, Palette.sun, Palette.pink];
+  static const double cellOffTint = 0.2;
+
+  /// Cells lit by this run get a paper sheen down their left side, and the
+  /// cell at the needle flickers while it climbs.
+  static const Color gainSheen = Color(0x8CFFFFFF);
+  static const double gainSheenShare = 0.3;
+  static const double tipGlow = 0.55;
+  static const double oldMarkStroke = 2;
+
+  /// Ticks beside the tower at every cell boundary.
+  static const double tickLength = 8;
+  static const double tickGap = 3;
+  static const double tickStroke = 2;
+
+  /// The track's ends and the old rating, left of the tower.
+  static const double scaleFont = 13;
+  static const double scaleGap = 16;
+
+  /// A scale label is dropped when the old rating's marker comes this
+  /// close to it.
+  static const double scaleClear = 24;
+  static const double oldFont = 15;
+  static const double oldArrow = 9;
+  static const double oldArrowGap = 4;
+
+  /// The gate: a sun and ink hazard bar across the top of the tower,
+  /// reaching past it on both sides, bowing and cracking under the needle.
+  static const double gateHeight = 13;
+  static const double gateOverhang = 12;
+  static const double gateStripe = 9;
+  static const double gateBorder = 2.5;
+  static const double gateBow = 8;
+  static const double crackFrom = 0.45;
+  static const double crackStroke = 2;
+
+  /// The needle: an ink arrow and a paper tag with the rating, [needleGap]
+  /// right of the tower.
+  static const double needleGap = 8;
+  static const Size needleArrow = Size(16, 26);
+  static const double needleFont = 40;
+  static const double needleBorder = 3;
+  static const EdgeInsets needlePadding = EdgeInsets.fromLTRB(10, 3, 12, 6);
+  static const double landPulse = 0.16;
+  static const impactBurst = BurstSpec(
+      box: impactSize, center: Offset(130, 90), count: 40, innerMin: 54, innerMax: 76, width: 5, seed: 81);
+  static const Size impactSize = Size(260, 180);
+  static const double impactFromScale = 0.6;
+  static const double impactToScale = 1.3;
+
+  /// The gain, slapped onto the tag's lower right as it lands, hanging
+  /// [gainDrop] px below it.
+  static const double gainFont = 24;
+  static const EdgeInsets gainPadding = EdgeInsets.fromLTRB(9, 2, 9, 4);
+  static const double gainTurnDeg = -7;
+  static const double gainDrop = 24;
+  static const String landSfx = 'グンッ!!';
+  static const double landSfxFont = 26;
+  static const int landSfxSeed = 12;
+  static const double landSfxTurnDeg = -8;
+  static const Offset landSfxAt = Offset(14, -44);
+
+  /// What's left to the next class, with Tobi at its right end.
+  static const double stripGap = 12;
+  static const EdgeInsets stripPadding = EdgeInsets.fromLTRB(12, 8, 70, 9);
+  static const double stripFont = 17;
+  static const double stripNumberFont = 26;
+  static const Placement tobi = Placement(right: -2, bottom: 2, size: Size(64, 76));
+  static const double tobiTremble = 2.5;
+
+  /// The suspense before a breakthrough: the page darkens around the gauge
+  /// (title and band dim to [dimTo]), the tag strains up against the gate
+  /// and everything rumbles, with ゴゴゴゴ down both sides.
+  static const double darkness = 0.7;
+  static const double dimTo = 0.3;
+  static const double strainPush = 7;
+  static const double strainJitter = 2;
+  static const double rumbleReach = 3.5;
+  static const int rumbleSeed = 91;
+  static const double beatPulse = 0.03;
+  static const String rumble = 'ゴゴゴゴ';
+  static const double rumbleFont = 34;
+  static const int rumbleSeedLeft = 5, rumbleSeedRight = 6;
+  static const Color rumbleColor = Palette.violet;
+  static const double rumbleSide = 8;
+  static const Alignment rumbleAt = Alignment(0, 0.1);
+  static const double rumbleShake = 2;
+
+  /// The beat of silence: …!? hangs in display lettering right of the
+  /// tower, [hushAt] from its top right, under the straining needle.
+  static const String hush = '…!?';
+  static const double hushFont = 58;
+  static const double hushOutline = 9;
+  static const double hushTurnDeg = -8;
+  static const Offset hushAt = Offset(20, 44);
+
+  /// The breakthrough: the needle leaps [leap] px through the shattering
+  /// gate with バキィン!! and a burst, then the page flashes white.
+  static const double leap = 44;
+  static const String breakSfx = 'バキィン!!';
+  static const double breakSfxFont = 40;
+  static const int breakSfxSeed = 14;
+  static const double breakSfxTurnDeg = -9;
+  static const breakBurst = BurstSpec(
+      box: breakSize, center: Offset(180, 180), count: 56, innerMin: 60, innerMax: 90, width: 5, seed: 83);
+  static const Size breakSize = Size(360, 360);
+  static const Color flash = Palette.paper;
+
+  static const double actionHeight = 62;
+  static const double ctaFont = 20;
+  static const double ctaSubFont = 13;
+}
+
+/// The rating page's timeline. The needle climbs from [climbAt]; landing, or
+/// on a rank-up reaching the gate, it strains there for [strain], hangs in
+/// silence for [hush] and breaks through, handing over to the rank-up at
+/// the peak of the flash.
+abstract final class RatingMotion {
+  static const title = EntranceSpec(Entrances.slam,
+      duration: Duration(milliseconds: 500), delay: Duration(milliseconds: 100), curve: Entrances.springy);
+  static const band =
+      EntranceSpec(Entrances.pop, duration: Duration(milliseconds: 350), delay: Duration(milliseconds: 350));
+  static const gauge = EntranceSpec(Entrances.up,
+      duration: Duration(milliseconds: 400), delay: Duration(milliseconds: 400), curve: Entrances.glide);
+  static const needle = EntranceSpec(Entrances.pop,
+      duration: Duration(milliseconds: 300), delay: Duration(milliseconds: 700), curve: Entrances.springy);
+  static const strip = EntranceSpec(Entrances.up,
+      duration: Duration(milliseconds: 400), delay: Duration(milliseconds: 650), curve: Entrances.glide);
+
+  static const climbAt = Duration(milliseconds: 1000);
+  static const climb = Duration(milliseconds: 1300);
+  static const climbToGate = Duration(milliseconds: 1100);
+  static const Curve climbCurve = Curves.easeOutCubic;
+
+  /// A ratchet click each time the number goes up, at most this often.
+  static const tickStep = Duration(milliseconds: 60);
+
+  /// The tip cell flickers this often while climbing.
+  static const flicker = Duration(milliseconds: 90);
+
+  /// Landing: the tag pulses with a burst, then the gain, ググン!! and the
+  /// button follow.
+  static const landPulse = Duration(milliseconds: 380);
+  static const burst = Duration(milliseconds: 450);
+  static const gainAfter = Duration(milliseconds: 80);
+  static const gain = Duration(milliseconds: 400);
+  static const sfx = Duration(milliseconds: 400);
+  static const tobi = Duration(milliseconds: 400);
+  static const actionsAfter = Duration(milliseconds: 250);
+  static const actions = Duration(milliseconds: 400);
+
+  /// Straining against the gate, with a heartbeat thud at each of [beats].
+  static const strain = Duration(milliseconds: 1300);
+  static const List<Duration> beats = [
+    Duration.zero,
+    Duration(milliseconds: 480),
+    Duration(milliseconds: 860),
+    Duration(milliseconds: 1160),
+  ];
+  static const beatPulse = Duration(milliseconds: 220);
+  static const strainPeriod = Duration(milliseconds: 140);
+  static const rumbleStep = Duration(milliseconds: 40);
+  static const Curve darken = Curves.easeIn;
+
+  /// The beat of silence, with …!? popping in [hushPop] into it.
+  static const hush = Duration(milliseconds: 650);
+  static const hushPop = Duration(milliseconds: 120);
+  static const hushIn = Duration(milliseconds: 300);
+
+  /// The break: the gate shatters over [shatter] while the needle leaps;
+  /// [flashAt] in, the page flashes white over [flashIn] and holds for
+  /// [flashHold] before the cut.
+  static const shatter = Duration(milliseconds: 600);
+  static const leap = Duration(milliseconds: 260);
+  static const flashAt = Duration(milliseconds: 260);
+  static const flashIn = Duration(milliseconds: 110);
+  static const flashHold = Duration(milliseconds: 60);
+  static const double joltReach = 8;
+  static const int joltSteps = 9;
+  static const int joltSeed = 87;
+  static const jolt = Duration(milliseconds: 300);
+
+  static const double hopHeight = 10;
+  static const hopPeriod = Duration(milliseconds: 1000);
+  static const double hopAirShare = 0.4;
+}
+
+/// The gate's shards flying off as it breaks (`RatingOverlay`), in px.
+abstract final class RatingShards {
+  static const int count = 12;
+  static const int seed = 97;
+
+  /// Launch angles (degrees, -90 = up) and speeds (px/s).
+  static const double minAngle = -165, angleRange = 150;
+  static const double minSpeed = 260, speedRange = 320;
+  static const double gravity = 900;
+  static const double minSize = 7, sizeRange = 9;
+  static const double spin = 9;
+  static const double stroke = 1.5;
+  static const List<Color> colors = [Palette.sun, Palette.ink, Palette.sun, Palette.paper];
 }
 
 /// Graduation (卒業!!, `GraduationOverlay`): a night sky with fireworks,

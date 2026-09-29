@@ -315,6 +315,10 @@ class _DeveloperSection extends StatelessWidget {
         const SizedBox(height: Gaps.small),
         _ButtonRow(label: 'Preview XP + level up', onTap: () => previewXpLevelUp(context)),
         const SizedBox(height: Gaps.small),
+        _ButtonRow(label: 'Preview rating', onTap: () => previewRating(context)),
+        const SizedBox(height: Gaps.small),
+        _ButtonRow(label: 'Preview rating + rank-up', onTap: () => previewRatingRankUp(context)),
+        const SizedBox(height: Gaps.small),
         _ButtonRow(label: 'Preview graduation', onTap: () => previewGraduation(context)),
         const SizedBox(height: Gaps.small),
         _ButtonRow(

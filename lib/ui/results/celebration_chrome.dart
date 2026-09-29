@@ -176,3 +176,20 @@ class CelebrationBand extends StatelessWidget {
         ),
       );
 }
+
+/// Rebuilds [builder] with the time into the enclosing [EntranceStage] of
+/// [length] (its end under reduced motion), repainting on its own layer: for
+/// a page whose numbers and drawings follow its timeline frame by frame.
+class StageClock extends StatelessWidget {
+  const StageClock({super.key, required this.length, required this.builder});
+  final Duration length;
+  final Widget Function(BuildContext context, Duration elapsed) builder;
+
+  @override
+  Widget build(BuildContext context) => RepaintBoundary(
+        child: EntranceBuilder(
+          EntranceSpec(Entrances.custom, duration: length, curve: Curves.linear),
+          builder: (context, t, _) => builder(context, length * t),
+        ),
+      );
+}

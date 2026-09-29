@@ -1,3 +1,4 @@
+import '../../config/config.dart';
 import '../../data/fuda_sets.dart';
 import '../../domain/rating.dart';
 import '../../domain/xp.dart';
@@ -53,6 +54,17 @@ class GraduationCelebration extends Celebration {
   const GraduationCelebration();
 }
 
+/// A tracked run raised the rating: it climbs its class's track, breaking
+/// through into the next class when the run [ranksUp] (the rank-up page
+/// follows).
+class RatingCelebration extends Celebration {
+  const RatingCelebration(this.before, this.after);
+  final double before;
+  final double after;
+
+  bool get ranksUp => Rating.bands.indexOf(Rating.bandOf(after)) > Rating.bands.indexOf(Rating.bandOf(before));
+}
+
 /// The XP a tracked run earned, source by source.
 class XpCelebration extends Celebration {
   const XpCelebration(this.gain);
@@ -77,25 +89,30 @@ List<Celebration> introductionOf(int poemId, {required bool Function(int poemId)
   ];
 }
 
-/// The pages after a run, in order: island completions, a rank-up, a new
-/// speed goal, graduation, then the XP earned and any level it reached.
+/// The pages after a run, in order: island completions, a new speed goal,
+/// graduation, the XP earned and any level it reached, then the rating when
+/// it rose and a rank-up when it reached a new class.
 List<Celebration> celebrationsFor(SessionReport report) {
   final list = <Celebration>[
     for (final i in report.islandsCompleted) IslandCompleteCelebration(i),
+    if (report.goalRaised) const GoalUpCelebration(),
+    if (report.graduated) const GraduationCelebration(),
   ];
-  if (report.ratingAfter != null) {
-    final before = report.ratingBefore == null ? Rating.bands.first : Rating.bandOf(report.ratingBefore!);
-    final after = Rating.bandOf(report.ratingAfter!);
-    if (Rating.bands.indexOf(after) > Rating.bands.indexOf(before)) {
-      list.add(RankUpCelebration(before, after, report.ratingBefore, report.ratingAfter!));
-    }
-  }
-  if (report.goalRaised) list.add(const GoalUpCelebration());
-  if (report.graduated) list.add(const GraduationCelebration());
   final xp = report.xp;
   if (xp != null && xp.award.total > 0) {
     list.add(XpCelebration(xp));
     if (xp.levelsGained > 0) list.add(LevelUpCelebration(xp));
+  }
+  final (ratingBefore, ratingAfter) = (report.ratingBefore, report.ratingAfter);
+  if (ratingAfter != null) {
+    if (ratingBefore != null && ratingAfter.round() - ratingBefore.round() >= RatingScreenTuning.minGain) {
+      list.add(RatingCelebration(ratingBefore, ratingAfter));
+    }
+    final before = ratingBefore == null ? Rating.bands.first : Rating.bandOf(ratingBefore);
+    final after = Rating.bandOf(ratingAfter);
+    if (Rating.bands.indexOf(after) > Rating.bands.indexOf(before)) {
+      list.add(RankUpCelebration(before, after, ratingBefore, ratingAfter));
+    }
   }
   return list;
 }

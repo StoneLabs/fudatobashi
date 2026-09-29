@@ -66,6 +66,7 @@ import 'package:fudatobashi/ui/results/island_complete_overlay.dart';
 import 'package:fudatobashi/ui/results/level_up_overlay.dart';
 import 'package:fudatobashi/ui/results/new_card_overlay.dart';
 import 'package:fudatobashi/ui/results/rank_up_overlay.dart';
+import 'package:fudatobashi/ui/results/rating_overlay.dart';
 import 'package:fudatobashi/ui/results/results_screen.dart';
 import 'package:fudatobashi/ui/results/xp_overlay.dart';
 import 'package:fudatobashi/ui/settings/all_known_warning_screen.dart';
@@ -1334,7 +1335,7 @@ void main() {
     });
   }
 
-  testWidgets('settings, developer: preview the XP page with and without a level-up, touching no progress',
+  testWidgets('settings, developer: preview the XP, rating and graduation pages, touching no progress',
       (tester) async {
     PackageInfo.setMockInitialValues(
         appName: 'Fudatobashi', packageName: 'dev.fudatobashi', version: '1.0.0', buildNumber: '1', buildSignature: '');
@@ -1371,6 +1372,19 @@ void main() {
     await skip(XpOverlay);
     await skip(LevelUpOverlay);
     expect(find.byType(SettingsScreen), findsOneWidget);
+
+    await openPreview('Preview rating');
+    await skip(RatingOverlay);
+    expect(find.byType(RankUpOverlay), findsNothing);
+    expect(find.byType(SettingsScreen), findsOneWidget);
+
+    await openPreview('Preview rating + rank-up');
+    expect(find.byType(RatingOverlay), findsOneWidget);
+    await tester.pump(const Duration(seconds: 6));
+    expect(find.byType(RankUpOverlay), findsOneWidget, reason: 'the rating broke through by itself');
+    await skip(RankUpOverlay);
+    expect(find.byType(SettingsScreen), findsOneWidget);
+    expect(p.rating, isNull, reason: 'a preview never touches the rating');
 
     await openPreview('Preview graduation');
     await skip(GraduationOverlay);
@@ -1918,6 +1932,150 @@ void main() {
           await tester.pumpWidget(const SizedBox());
         });
       }
+
+      // The rating page: a run that stays in its class lands with the gain
+      // and the points left; F上級 mid-track, 入門's open floor and the top
+      // class's open ceiling must all fit at large font scales.
+      for (final (name, before, gain) in [
+        ('mid', Rating.bands[2].minRating + 250, 26.0),
+        ('novice', 520.0, 90.0),
+        ('top', Rating.bands.last.minRating + 60, 18.0),
+      ]) {
+        for (final fontScale in [1.1, 1.3]) {
+          testWidgets('the rating climbs its class ($name) and lands, at font scale $fontScale ($lang)', (tester) async {
+            tester.platformDispatcher.textScaleFactorTestValue = fontScale;
+            addTearDown(tester.platformDispatcher.clearTextScaleFactorTestValue);
+            final p = await open(tester, ja: ja);
+            final data = RatingCelebration(before, before + gain);
+            final timeline = RatingTimeline(data);
+            expect(data.ranksUp, isFalse);
+            var advanced = false;
+            final midClimb = RatingMotion.climbAt + (timeline.climbEnd - RatingMotion.climbAt) ~/ 3;
+            await pumpPage(tester, p, RatingOverlay(data: data, onNext: () => advanced = true), midClimb);
+            await _capture(tester, 'rating_climb_${name}_${lang}_$fontScale');
+            expect(find.text('${timeline.shownAt(midClimb)}'), findsOneWidget, reason: 'counting up');
+            expect(find.text('${(before + gain).round()}'), findsNothing);
+
+            await tester.pump(timeline.length - midClimb + const Duration(milliseconds: 50));
+            expect(tester.takeException(), isNull);
+            expect(find.text('${(before + gain).round()}'), findsOneWidget, reason: 'the needle reads the new rating');
+            expect(find.text('+${gain.round()}'), findsOneWidget, reason: 'the gain');
+            final s = S(ja ? 'ja' : 'en');
+            if (name == 'top') {
+              expect(find.text(s.topClassChase), findsOneWidget);
+            } else {
+              final next = Rating.nextBand(before)!;
+              expect(find.text(s.ratingToNext(next.label).replaceAll('{0}', '${timeline.toNextAt(timeline.length)}')),
+                  findsOneWidget, reason: "what's left to the next class");
+            }
+            await _capture(tester, 'rating_${name}_${lang}_$fontScale');
+            await tester.tap(find.text(s.ratingCta));
+            expect(advanced, isTrue);
+            await tester.pumpWidget(const SizedBox());
+          });
+        }
+      }
+
+      testWidgets('a rating breaking through strains in the dark, hangs silent, then cuts to the rank-up ($lang)',
+          (tester) async {
+        tester.platformDispatcher.textScaleFactorTestValue = 1.1;
+        addTearDown(tester.platformDispatcher.clearTextScaleFactorTestValue);
+        final heard = _HeardSounds();
+        sounds = heard;
+        addTearDown(() => sounds = Sounds());
+        final p = await open(tester, ja: ja);
+        final threshold = Rating.bands[3].minRating;
+        final data = RatingCelebration(threshold - 58, threshold + 14);
+        final timeline = RatingTimeline(data);
+        expect(data.ranksUp, isTrue);
+        var done = false;
+        final page = CelebrationSequence(
+          pages: [data, RankUpCelebration(Rating.bands[2], Rating.bands[3], data.before, data.after)],
+          onDone: () => done = true,
+        );
+        Finder sfx(String text) => find.byWidgetPredicate((w) => w is SfxText && w.text == text);
+
+        await pumpPage(tester, p, page, timeline.climbEnd + RatingMotion.strain ~/ 2);
+        await _capture(tester, 'rating_strain_$lang');
+        expect(find.text('${threshold.round()}'), findsWidgets, reason: 'the needle is held at the gate');
+        expect(sfx(RatingLayout.rumble), findsNWidgets(2));
+        expect(heard.played.where((s) => s == Sfx.ratingTick), isNotEmpty);
+        expect(heard.played.where((s) => s == Sfx.ratingStrain), hasLength(RatingMotion.beats.where((b) => b < RatingMotion.strain ~/ 2).length));
+
+        await tester.pump(timeline.strainEnd + RatingMotion.hushPop + RatingMotion.hushIn - (timeline.climbEnd + RatingMotion.strain ~/ 2));
+        expect(sfx(RatingLayout.rumble), findsNothing, reason: 'the rumble stops for the beat of silence');
+        expect(find.byWidgetPredicate((w) => w is OutlinedText && w.text == RatingLayout.hush), findsOneWidget);
+        await _capture(tester, 'rating_hush_$lang');
+        final beforeBreak = heard.played.length;
+        await tester.pump(timeline.breakAt - timeline.strainEnd - RatingMotion.hushPop - RatingMotion.hushIn - const Duration(milliseconds: 10));
+        expect(heard.played, hasLength(beforeBreak), reason: 'silence until the break');
+        expect(find.byType(RankUpOverlay), findsNothing);
+
+        await tester.pump(const Duration(milliseconds: 60));
+        expect(heard.played.last, Sfx.ratingBreak);
+        expect(sfx(RatingLayout.breakSfx), findsOneWidget);
+        await tester.pump(RatingMotion.flashAt);
+        await _capture(tester, 'rating_break_$lang');
+
+        await tester.pump(timeline.cutAt - timeline.breakAt - RatingMotion.flashAt + const Duration(milliseconds: 20));
+        expect(find.byType(RankUpOverlay), findsOneWidget, reason: 'the breakthrough hands over by itself');
+        await tester.pump(ResultsLayout.overlayFade + const Duration(milliseconds: 20));
+        expect(find.byType(RatingOverlay), findsNothing);
+        expect(done, isFalse);
+        await tester.pump(RankUpMotion.length);
+        expect(tester.takeException(), isNull);
+        await tester.pumpWidget(const SizedBox());
+      });
+
+      testWidgets('the rating page lands with a click per point and a jingle, silent with sounds off ($lang)', (tester) async {
+        final heard = _HeardSounds();
+        sounds = heard;
+        addTearDown(() => sounds = Sounds());
+        final p = await open(tester, ja: ja);
+        final before = Rating.bands[2].minRating + 250;
+        final data = RatingCelebration(before, before + 26);
+        final timeline = RatingTimeline(data);
+        final page = CelebrationSequence(pages: [data], onDone: () {});
+        await pumpPage(tester, p, page, RatingMotion.climbAt - const Duration(milliseconds: 20));
+        expect(heard.played, isEmpty, reason: 'silent until the needle moves');
+        await tester.pump(timeline.climbEnd - RatingMotion.climbAt + const Duration(milliseconds: 40));
+        final clicks = heard.played.where((s) => s == Sfx.ratingTick).length;
+        expect(clicks, inInclusiveRange(2, 26), reason: 'a click per point, never faster than a tick step');
+        expect(heard.played.last, Sfx.ratingUp);
+        expect(heard.played, isNot(contains(Sfx.ratingStrain)));
+
+        await tester.pumpWidget(const SizedBox());
+        heard.played.clear();
+        await tester.runAsync(() => p.updateSettings(p.settings.copyWith(sounds: false)));
+        await pumpPage(tester, p, page, timeline.length);
+        expect(heard.played, isEmpty);
+        await tester.pumpWidget(const SizedBox());
+      });
+
+      testWidgets('under reduced motion the rating page starts at rest and waits for a tap, even on a rank-up ($lang)',
+          (tester) async {
+        tester.platformDispatcher.accessibilityFeaturesTestValue = const FakeAccessibilityFeatures(disableAnimations: true);
+        addTearDown(tester.platformDispatcher.clearAccessibilityFeaturesTestValue);
+        final p = await open(tester, ja: ja);
+        final s = S(ja ? 'ja' : 'en');
+        final before = Rating.bands[2].minRating + 250;
+        await pumpPage(tester, p, RatingOverlay(data: RatingCelebration(before, before + 26), onNext: () {}),
+            const Duration(milliseconds: 16));
+        expect(find.text('${(before + 26).round()}'), findsOneWidget);
+        expect(find.text('+26'), findsOneWidget);
+        await _capture(tester, 'rating_still_$lang');
+
+        await tester.pumpWidget(const SizedBox());
+        final threshold = Rating.bands[3].minRating;
+        var advanced = false;
+        await pumpPage(tester, p, RatingOverlay(data: RatingCelebration(threshold - 30, threshold + 5), onNext: () => advanced = true),
+            const Duration(seconds: 6));
+        expect(advanced, isFalse, reason: 'no hand-over by itself when nothing moves');
+        await _capture(tester, 'rating_break_still_$lang');
+        await tester.tap(find.text(s.ratingCta));
+        expect(advanced, isTrue);
+        await tester.pumpWidget(const SizedBox());
+      });
     }
   });
 

@@ -11,6 +11,7 @@ import 'island_complete_overlay.dart';
 import 'level_up_overlay.dart';
 import 'new_card_overlay.dart';
 import 'rank_up_overlay.dart';
+import 'rating_overlay.dart';
 import 'xp_overlay.dart';
 
 /// Celebration [pages] one after another over an opaque backdrop: the
@@ -77,6 +78,7 @@ class _CelebrationSequenceState extends State<CelebrationSequence> with SingleTi
           color: Palette.paper,
           child: AnimatedSwitcher(
             duration: ResultsLayout.overlayFade,
+            transitionBuilder: _transition,
             child: SoundCues(
               key: ValueKey(i),
               cues: _soundsOf(widget.pages[i]),
@@ -86,6 +88,14 @@ class _CelebrationSequenceState extends State<CelebrationSequence> with SingleTi
         ),
       ),
     );
+  }
+
+  /// Pages cross-fade, except that a rating breaking through into the next
+  /// class cuts straight to the rank-up at the peak of its flash.
+  Widget _transition(Widget child, Animation<double> animation) {
+    final i = (child.key! as ValueKey<int>).value;
+    final before = i > 0 ? widget.pages[i - 1] : null;
+    return before is RatingCelebration && before.ranksUp ? child : FadeTransition(opacity: animation, child: child);
   }
 
   Widget _page(Celebration c, VoidCallback onNext) {
@@ -104,6 +114,7 @@ class _CelebrationSequenceState extends State<CelebrationSequence> with SingleTi
       GraduationCelebration() => GraduationOverlay(onNext: onNext),
       XpCelebration() => XpOverlay(gain: c.gain, onNext: onNext),
       LevelUpCelebration() => LevelUpOverlay(gain: c.gain, onNext: onNext),
+      RatingCelebration() => RatingOverlay(data: c, onNext: onNext),
     };
   }
 }
@@ -124,4 +135,5 @@ List<(Sfx, Duration)> _soundsOf(Celebration c) => switch (c) {
         ],
       XpCelebration() => XpTimeline(c.gain).sounds,
       LevelUpCelebration() => const [(Sfx.stamp, LevelUpMotion.impactAt), (Sfx.levelUp, LevelUpMotion.impactAt)],
+      RatingCelebration() => RatingTimeline(c).sounds,
     };

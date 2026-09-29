@@ -89,6 +89,10 @@ punch sat well under the other sounds' loudness at the same peak level):
   level_up.wav      Music Jingles / 8-Bit jingles / jingles_NES12.ogg
   look_alike.wav    Interface Sounds / question_001.ogg
   rank_up.wav       Music Jingles / Steel jingles / jingles_STEEL02.ogg
+  rating_break.wav  Impact Sounds / impactGlass_heavy_000.ogg
+  rating_strain.wav Impact Sounds / impactSoft_heavy_000.ogg
+  rating_tick.wav   Impact Sounds / impactMetal_light_001.ogg
+  rating_up.wav     Music Jingles / Sax jingles / jingles_SAX02.ogg
   results.wav       Interface Sounds / confirmation_001.ogg
   stamp.wav         Impact Sounds / impactPunch_heavy_000.ogg
   xp_done.wav       Music Jingles / 8-Bit jingles / jingles_NES03.ogg

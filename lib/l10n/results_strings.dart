@@ -95,6 +95,12 @@ extension ResultsStrings on S {
   String levelsGained(int n) => f('levelsGained', [n]);
   String get nextLevelBand => t('nextLevelBand');
 
+  String get ratingBand => t('ratingBand');
+
+  /// `{0}` marks the points, `{band}` the class they lead to.
+  String ratingToNext(String band) => t('ratingToNext').replaceAll('{band}', band);
+  String get ratingCta => t('ratingCta');
+
   String get graduationBand => t('graduationBand');
   String get graduationKai => t('graduationKai');
   String get graduationKaiNote => t('graduationKaiNote');
