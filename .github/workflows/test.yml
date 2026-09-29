@@ -1,0 +1,24 @@
+# Runs the same checks as scripts/check.sh: static analysis and the full
+# test suite. Triggers on every push (any branch) and on pull requests.
+name: Test
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  test:
+    name: Analyze and test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          flutter-version-file: .fvmrc
+          cache: true
+
+      - run: flutter pub get
+      - run: flutter analyze
+      - run: flutter test

@@ -1,0 +1,276 @@
+# Builds release artifacts for every platform. Triggers only on a version
+# tag push ("git push github vX.Y.Z") or manually via the "Run workflow"
+# button (workflow_dispatch) — never on every push, since the macOS runners
+# used here cost 10x the minutes. On a tag, the built files are also
+# attached to a new GitHub Release.
+#
+# Android release signing is optional: set these repo secrets to sign with
+# the real release key instead of falling back to the debug key:
+#   ANDROID_KEYSTORE_BASE64, ANDROID_KEYSTORE_PASSWORD, ANDROID_KEY_ALIAS, ANDROID_KEY_PASSWORD
+# That key is a GitHub-only signing key (the Play Store release will be signed
+# separately), so the built .apk/.aab are named …-GH_SIGNED, or …-debug-signed
+# when the secrets are missing. The iOS build has no Apple certificate at all,
+# so it's always named …-unsigned.
+name: Build
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+
+jobs:
+  version:
+    name: Resolve version
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.resolve.outputs.version }}
+    steps:
+      - uses: actions/checkout@v7
+
+      - id: resolve
+        run: |
+          if [ "${{ github.ref_type }}" = "tag" ]; then
+            version="${GITHUB_REF_NAME#v}"
+          else
+            version="$(sed -n 's/^version: *\([^+[:space:]]*\).*/\1/p' pubspec.yaml)"
+          fi
+          echo "Resolved version: $version"
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+
+  android:
+    name: Android (APK + AAB)
+    needs: version
+    runs-on: ubuntu-latest
+    env:
+      VERSION: ${{ needs.version.outputs.version }}
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          flutter-version-file: .fvmrc
+          cache: true
+
+      - uses: actions/setup-java@v6
+        with:
+          distribution: temurin
+          java-version: '21'
+
+      - name: Configure release signing
+        env:
+          ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+        run: |
+          if [ -n "$ANDROID_KEYSTORE_BASE64" ] && [ -n "$ANDROID_KEYSTORE_PASSWORD" ] && \
+             [ -n "$ANDROID_KEY_ALIAS" ] && [ -n "$ANDROID_KEY_PASSWORD" ]; then
+            echo "$ANDROID_KEYSTORE_BASE64" | base64 -d > android/app/release.keystore
+            {
+              echo "storeFile=release.keystore"
+              echo "storePassword=$ANDROID_KEYSTORE_PASSWORD"
+              echo "keyAlias=$ANDROID_KEY_ALIAS"
+              echo "keyPassword=$ANDROID_KEY_PASSWORD"
+            } > android/key.properties
+            echo "Signing release build with the uploaded release key."
+            echo "SIGNED_SUFFIX=GH_SIGNED" >> "$GITHUB_ENV"
+          else
+            echo "::warning::Android signing secrets are not set; the release build will use the debug key."
+            echo "SIGNED_SUFFIX=debug-signed" >> "$GITHUB_ENV"
+          fi
+
+      - run: flutter pub get
+      - run: flutter build apk --release
+      - run: flutter build appbundle --release
+
+      - name: Collect artifacts
+        run: |
+          mkdir -p dist
+          cp build/app/outputs/flutter-apk/app-release.apk "dist/fudatobashi-$VERSION-$SIGNED_SUFFIX.apk"
+          cp build/app/outputs/bundle/release/app-release.aab "dist/fudatobashi-$VERSION-$SIGNED_SUFFIX.aab"
+
+      - uses: actions/upload-artifact@v7
+        with:
+          name: fudatobashi-${{ needs.version.outputs.version }}-android-apk
+          path: dist/*.apk
+
+      - uses: actions/upload-artifact@v7
+        with:
+          name: fudatobashi-${{ needs.version.outputs.version }}-android-aab
+          path: dist/*.aab
+
+  ios:
+    name: iOS (unsigned IPA)
+    needs: version
+    runs-on: macos-latest
+    env:
+      VERSION: ${{ needs.version.outputs.version }}
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          flutter-version-file: .fvmrc
+          cache: true
+
+      - run: flutter pub get
+      - run: flutter build ios --release --no-codesign
+
+      - name: Package IPA
+        run: |
+          mkdir -p Payload dist
+          cp -r build/ios/iphoneos/Runner.app Payload/
+          zip -r "dist/fudatobashi-$VERSION-unsigned.ipa" Payload
+
+      - uses: actions/upload-artifact@v7
+        with:
+          name: fudatobashi-${{ needs.version.outputs.version }}-ios-ipa
+          path: dist/*.ipa
+
+  macos:
+    name: macOS (.app)
+    needs: version
+    runs-on: macos-latest
+    env:
+      VERSION: ${{ needs.version.outputs.version }}
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          flutter-version-file: .fvmrc
+          cache: true
+
+      - run: flutter pub get
+      - run: flutter build macos --release
+
+      - name: Zip app bundle
+        run: |
+          mkdir -p dist
+          ditto -c -k --sequesterRsrc --keepParent \
+            build/macos/Build/Products/Release/fudatobashi.app \
+            "dist/fudatobashi-$VERSION-macos.zip"
+
+      - uses: actions/upload-artifact@v7
+        with:
+          name: fudatobashi-${{ needs.version.outputs.version }}-macos
+          path: dist/*.zip
+
+  linux:
+    name: Linux (.tar.gz)
+    needs: version
+    runs-on: ubuntu-latest
+    env:
+      VERSION: ${{ needs.version.outputs.version }}
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          flutter-version-file: .fvmrc
+          cache: true
+
+      - name: Install Linux build dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            clang cmake ninja-build pkg-config libgtk-3-dev liblzma-dev libstdc++-12-dev \
+            libgstreamer1.0-dev libgstreamer-plugins-base1.0-dev
+
+      - run: flutter pub get
+      - run: flutter build linux --release
+
+      - name: Package tarball
+        run: |
+          mkdir -p dist
+          tar -czf "dist/fudatobashi-$VERSION-linux.tar.gz" -C build/linux/x64/release bundle
+
+      - uses: actions/upload-artifact@v7
+        with:
+          name: fudatobashi-${{ needs.version.outputs.version }}-linux
+          path: dist/*.tar.gz
+
+  windows:
+    name: Windows (Release folder)
+    needs: version
+    runs-on: windows-latest
+    env:
+      VERSION: ${{ needs.version.outputs.version }}
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          flutter-version-file: .fvmrc
+          cache: true
+
+      - run: flutter pub get
+      - run: flutter build windows --release
+
+      - name: Zip Release folder
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force -Path dist | Out-Null
+          Compress-Archive -Path build\windows\x64\runner\Release\* -DestinationPath "dist\fudatobashi-$env:VERSION-windows.zip"
+
+      - uses: actions/upload-artifact@v7
+        with:
+          name: fudatobashi-${{ needs.version.outputs.version }}-windows
+          path: dist/*.zip
+
+  web:
+    name: Web (build/web)
+    needs: version
+    runs-on: ubuntu-latest
+    env:
+      VERSION: ${{ needs.version.outputs.version }}
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          flutter-version-file: .fvmrc
+          cache: true
+
+      - run: flutter pub get
+      - run: flutter build web --release
+
+      - name: Zip web build
+        run: |
+          mkdir -p dist
+          (cd build/web && zip -r "../../dist/fudatobashi-$VERSION-web.zip" .)
+
+      - uses: actions/upload-artifact@v7
+        with:
+          name: fudatobashi-${{ needs.version.outputs.version }}-web
+          path: dist/*.zip
+
+  release:
+    name: Create GitHub release
+    if: github.ref_type == 'tag'
+    needs: [version, android, ios, macos, linux, windows, web]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/download-artifact@v8
+        with:
+          path: dist
+
+      - name: Create release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create "${{ github.ref_name }}" dist/*/* \
+            --repo "${{ github.repository }}" \
+            --title "Fudatobashi ${{ needs.version.outputs.version }}" \
+            --generate-notes
