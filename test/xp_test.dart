@@ -48,13 +48,19 @@ void main() {
   Map<XpSource, (int, int)> parts(XpGain g) => {for (final p in g.award.parts) p.source: (p.count, p.xp)};
 
   group('the level curve', () {
-    test('each level takes a step more XP than the one before', () {
+    test('a level takes the base times its square root: a little more each time, ever more gently', () {
       expect(XpCurve.reach(1), 0);
-      expect(XpCurve.reach(2), XpTuning.firstLevel);
-      expect(XpCurve.reach(3), 2 * XpTuning.firstLevel + XpTuning.levelStep);
-      for (var level = 1; level < 60; level++) {
+      expect(XpCurve.reach(2), XpTuning.levelBase.round());
+      expect(XpCurve.span(4), (2 * XpTuning.levelBase).round());
+      expect(XpCurve.span(100), (10 * XpTuning.levelBase).round());
+      for (var level = 1; level < 200; level++) {
         expect(XpCurve.reach(level + 1) - XpCurve.reach(level), XpCurve.span(level));
-        expect(XpCurve.span(level + 1) - XpCurve.span(level), XpTuning.levelStep);
+        expect(XpCurve.span(level + 1), greaterThan(XpCurve.span(level)));
+      }
+      for (var level = 2; level < 200; level++) {
+        expect(XpCurve.span(level + 1) - XpCurve.span(level),
+            lessThanOrEqualTo(XpCurve.span(level) - XpCurve.span(level - 1) + 1),
+            reason: 'never growing faster (±1 for rounding)');
       }
     });
 

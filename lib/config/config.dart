@@ -417,9 +417,9 @@ abstract final class XpTuning {
   /// Learning the 100th card, the end of the journey.
   static const int graduation = 1000;
 
-  /// XP from level L to L+1: [firstLevel] + [levelStep] × (L − 1).
-  static const int firstLevel = 300;
-  static const int levelStep = 150;
+  /// XP from level L to L+1: [levelBase] × √L. Levels come quickly at
+  /// first and keep coming: unlike the rank, a level never stalls.
+  static const double levelBase = 300;
 }
 
 /// 隠し字 masking: the uniqueness search (`Masking`) and the scramble style's
@@ -665,7 +665,7 @@ abstract final class CelebrationPreviewTuning {
     (XpSource.graduation, 1, 1000),
   ];
   static const int level = 7;
-  static const int levelInto = 900;
+  static const int levelInto = 500;
 }
 
 /// Sound pooling (`lib/ui/sound/sounds.dart`): concurrent, identically

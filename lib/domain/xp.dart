@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import '../config/config.dart';
 
 /// Where a run's experience came from, in the order the XP page lists it.
@@ -98,16 +100,21 @@ class XpLevel {
   int get toNext => span - into;
 }
 
-/// The level curve: each level takes [XpTuning.levelStep] more XP than the
-/// one before it.
+/// The level curve: getting through level L takes [XpTuning.levelBase] × √L
+/// XP, so each level asks a little more than the last, ever more gently.
 abstract final class XpCurve {
   /// XP it takes to get through [level].
-  static int span(int level) => XpTuning.firstLevel + XpTuning.levelStep * (level - 1);
+  static int span(int level) => (XpTuning.levelBase * math.sqrt(level)).round();
+
+  /// Total XP at which each level is reached, from level 1, grown as needed.
+  static final _reach = [0, 0];
 
   /// Total XP at which [level] is reached.
   static int reach(int level) {
-    final n = level - 1;
-    return XpTuning.firstLevel * n + XpTuning.levelStep * n * (n - 1) ~/ 2;
+    while (_reach.length <= level) {
+      _reach.add(_reach.last + span(_reach.length - 1));
+    }
+    return _reach[level];
   }
 
   static XpLevel of(int total) {
