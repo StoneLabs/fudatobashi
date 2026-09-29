@@ -2051,6 +2051,34 @@ abstract final class Confetti {
 }
 
 /// The "Licenses & credits" screen, reached from Settings.
+/// Settings (`SettingsScreen`): sections under ink banners with a rule
+/// running out to the edge; each setting is named, with a one-line note
+/// under its name, and switches and links sit in ink panels split by
+/// hairlines.
+abstract final class SettingsLayout {
+  static const double sectionGap = 28;
+  static const double headerFont = 16;
+
+  /// Keeps the skewed banner's foot inside the gutter.
+  static const double headerInset = 4;
+  static const double headerSubFont = TypeScale.label;
+  static const double headerSubGap = 8;
+  static const double headerRule = Strokes.control;
+  static const double headerGap = 12;
+  static const double itemGap = 18;
+  static const double labelGap = 8;
+  static const double titleFont = TypeScale.button;
+  static const double noteFont = TypeScale.small;
+  static const double noteLineHeight = 1.3;
+  static const double noteGap = 2;
+  static const EdgeInsets rowPadding = EdgeInsets.symmetric(horizontal: Gaps.inner, vertical: Gaps.small);
+  static const double rowGap = Gaps.panelWide;
+  static const double rowMinHeight = ButtonMetrics.rowHeight;
+  static const double valueFont = TypeScale.body;
+  static const double chevron = 16;
+  static const double footnoteGap = Gaps.small;
+}
+
 abstract final class CreditsLayout {
   static const double chevron = 16;
   static const double rowSubtitleGap = 2;

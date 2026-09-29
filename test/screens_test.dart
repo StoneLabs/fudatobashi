@@ -1403,6 +1403,7 @@ void main() {
     await tester.pumpWidget(ProgressScope(progress: p, child: const MaterialApp(home: SettingsScreen())));
     await tester.pump();
     const s = S('en');
+    await tester.scrollUntilVisible(find.text(s.sounds), 200);
     final row = find.ancestor(of: find.text(s.sounds), matching: find.byType(Row));
     await tester.runAsync(() async {
       await tester.tap(find.descendant(of: row.first, matching: find.byType(Switch)));
@@ -1411,6 +1412,83 @@ void main() {
     await tester.pump();
     expect(p.settings.sounds, isFalse);
     expect(AppSettings.fromJson(p.settings.toJson()).sounds, isFalse);
+    await tester.pumpWidget(const SizedBox());
+  });
+
+  for (final ja in [false, true]) {
+    final lang = ja ? 'ja' : 'en';
+    testWidgets('settings: every section under its header, nothing cramped at font scale 1.3 ($lang)', (tester) async {
+      PackageInfo.setMockInitialValues(
+          appName: 'Fudatobashi', packageName: 'dev.fudatobashi', version: '1.0.0', buildNumber: '1', buildSignature: '');
+      final p = await open(tester, mode: LearningMode.journey, ja: ja);
+      tester.platformDispatcher.textScaleFactorTestValue = 1.3;
+      addTearDown(tester.platformDispatcher.clearTextScaleFactorTestValue);
+      await tester.binding.setSurfaceSize(const Size(384, 2600));
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+      await tester.pumpWidget(ProgressScope(
+        progress: p,
+        child: MaterialApp(
+          theme: buildMangaTheme(),
+          home: const RepaintBoundary(key: ValueKey('screen'), child: SettingsScreen()),
+        ),
+      ));
+      await tester.pump(const Duration(milliseconds: 300));
+      expect(tester.takeException(), isNull);
+      final s = S(lang);
+      for (final header in [s.language, s.sectionLearning, s.sectionPlay, s.sectionSound, s.about]) {
+        expect(find.text(header.toUpperCase()), findsOneWidget, reason: '$header has its section header');
+      }
+      expect(find.text(s.sectionDeveloper.toUpperCase()), findsNothing, reason: 'Developer stays hidden');
+      for (final note in [s.languageNote, s.learningModeNote, s.paceNote, s.dontKnowInputNote, s.cardEffectsNote]) {
+        expect(find.text(note), findsOneWidget);
+      }
+      await _capture(tester, 'settings_$lang');
+      await tester.pumpWidget(const SizedBox());
+    });
+  }
+
+  testWidgets('settings: ten taps on the version unlock the Developer section', (tester) async {
+    PackageInfo.setMockInitialValues(
+        appName: 'Fudatobashi', packageName: 'dev.fudatobashi', version: '1.0.0', buildNumber: '1', buildSignature: '');
+    final p = await open(tester);
+    await tester.binding.setSurfaceSize(_phone);
+    await tester.pumpWidget(ProgressScope(progress: p, child: const MaterialApp(home: SettingsScreen())));
+    await tester.pump();
+    const s = S('en');
+    await tester.scrollUntilVisible(find.text(s.version), 200);
+    for (var i = 0; i < DevModeTuning.tapsRequired - 1; i++) {
+      await tester.tap(find.text(s.version));
+      await tester.pump(const Duration(milliseconds: 100));
+    }
+    expect(p.settings.debugMode, isFalse);
+    await tester.runAsync(() async {
+      await tester.tap(find.text(s.version));
+      await Future<void>.delayed(const Duration(milliseconds: 50));
+    });
+    await tester.pump();
+    expect(p.settings.debugMode, isTrue);
+    await tester.scrollUntilVisible(find.text(s.sectionDeveloper.toUpperCase()), 200);
+    expect(find.text('Debug page'), findsOneWidget);
+    await tester.pump(ToastStyle.hold + ToastStyle.fade * 2);
+    await tester.pumpWidget(const SizedBox());
+  });
+
+  testWidgets('settings: the Vibration switch turns haptics off', (tester) async {
+    PackageInfo.setMockInitialValues(
+        appName: 'Fudatobashi', packageName: 'dev.fudatobashi', version: '1.0.0', buildNumber: '1', buildSignature: '');
+    final p = await open(tester);
+    expect(p.settings.haptics, isTrue);
+    await tester.binding.setSurfaceSize(_phone);
+    await tester.pumpWidget(ProgressScope(progress: p, child: const MaterialApp(home: SettingsScreen())));
+    await tester.pump();
+    const s = S('en');
+    await tester.scrollUntilVisible(find.text(s.vibration), 200);
+    await tester.runAsync(() async {
+      await tester.tap(find.text(s.vibration));
+      await Future<void>.delayed(const Duration(milliseconds: 50));
+    });
+    await tester.pump();
+    expect(p.settings.haptics, isFalse, reason: 'tapping anywhere on the row flips its switch');
     await tester.pumpWidget(const SizedBox());
   });
 
@@ -2230,7 +2308,7 @@ void main() {
       await tester.pumpWidget(ProgressScope(progress: p, child: const MaterialApp(home: SettingsScreen())));
       await tester.pump();
       const s = S('en');
-      await tester.tap(find.text(s.language));
+      await tester.tap(find.text('English'));
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 500));
       expect(tester.takeException(), isNull);

@@ -21,9 +21,11 @@ import '../manga/manga.dart';
 import 'all_known_warning_screen.dart';
 import 'credits_screen.dart';
 import 'language_screen.dart';
+import 'settings_rows.dart';
 
-/// Settings: language, learning mode, About (hides the 10-tap developer-mode
-/// unlock) and, once unlocked, the Developer section.
+/// Settings, in sections: Language; Learning (mode, pace, the don't-know
+/// input); Play; Sound; About, whose version row hides the 10-tap
+/// developer-mode unlock; and, once that is unlocked, Developer.
 class SettingsScreen extends StatelessWidget {
   const SettingsScreen({super.key});
 
@@ -31,27 +33,7 @@ class SettingsScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final s = S.of(context);
     final progress = ProgressScope.of(context);
-    final mode = progress.trainer.config.learningMode;
-    final pace = progress.trainer.config.pace;
-    Widget choice(bool selected, String label, VoidCallback onTap) => Expanded(
-          child: SizedBox(
-            height: ButtonMetrics.rowHeight,
-            child: InkButton(
-              color: selected ? Palette.sun : Palette.paper,
-              onTap: selected ? null : onTap,
-              child: Text(label,
-                  textAlign: TextAlign.center,
-                  style: const TextStyle(fontWeight: Weights.black, fontSize: TypeScale.button)),
-            ),
-          ),
-        );
-    Widget modeChoice(LearningMode m, String label) =>
-        choice(mode == m, label, () => _chooseLearningMode(context, progress, mode, m));
-    Widget paceChoice(LearningPace p, String label) => choice(pace == p, label, () => progress.setLearningPace(p));
-    Widget label(String text) => Padding(
-          padding: const EdgeInsets.only(bottom: Gaps.small),
-          child: Text(text, style: const TextStyle(fontWeight: Weights.black, fontSize: TypeScale.button)),
-        );
+    final settings = progress.settings;
     return Scaffold(
       body: SafeArea(
         child: Padding(
@@ -72,52 +54,71 @@ class SettingsScreen extends StatelessWidget {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
-                      const _LanguageRow(),
-                      const SizedBox(height: Gaps.section),
-                      label(s.learningMode),
-                      Row(children: [
-                        modeChoice(LearningMode.journey, s.learningJourney),
-                        const SizedBox(width: Gaps.panelWide),
-                        modeChoice(LearningMode.allKnown, s.learningAllKnown),
-                      ]),
-                      if (mode == LearningMode.journey) ...[
-                        const SizedBox(height: Gaps.section),
-                        label(s.pace),
-                        Row(children: [
-                          paceChoice(LearningPace.month, s.paceMonth),
-                          const SizedBox(width: Gaps.panelWide),
-                          paceChoice(LearningPace.sprint, s.paceSprint),
-                        ]),
-                      ],
-                      const SizedBox(height: Gaps.section),
-                      label(s.dontKnowInput),
-                      _DontKnowInputChoice(mode: mode),
-                      const SizedBox(height: Gaps.section),
-                      _SwitchRow(
-                        label: s.cardEffects,
-                        value: progress.settings.sfxEffects,
-                        onChanged: (v) => progress.updateSettings(progress.settings.copyWith(sfxEffects: v)),
+                      SettingsSection(
+                        title: s.language,
+                        sub: s.other.language,
+                        children: const [SettingsGroup(children: [_LanguageRow()])],
                       ),
-                      const SizedBox(height: Gaps.section),
-                      _SwitchRow(
-                        label: s.sounds,
-                        value: progress.settings.sounds,
-                        onChanged: (v) => progress.updateSettings(progress.settings.copyWith(sounds: v)),
+                      const SizedBox(height: SettingsLayout.sectionGap),
+                      const _LearningSection(),
+                      const SizedBox(height: SettingsLayout.sectionGap),
+                      SettingsSection(
+                        title: s.sectionPlay,
+                        sub: s.other.sectionPlay,
+                        children: [
+                          SettingsGroup(children: [
+                            SettingsSwitch(
+                              title: s.cardEffects,
+                              note: s.cardEffectsNote,
+                              value: settings.sfxEffects,
+                              onChanged: (v) => progress.updateSettings(settings.copyWith(sfxEffects: v)),
+                            ),
+                            SettingsSwitch(
+                              title: s.vibration,
+                              note: s.vibrationNote,
+                              value: settings.haptics,
+                              onChanged: (v) => progress.updateSettings(settings.copyWith(haptics: v)),
+                            ),
+                          ]),
+                        ],
                       ),
-                      const SizedBox(height: Gaps.section),
-                      const _AboutRow(),
-                      const SizedBox(height: Gaps.small),
-                      _ButtonRow(
-                        label: s.credits,
-                        onTap: () => Navigator.push(context, MangaRoute<void>(builder: (_) => const CreditsScreen())),
+                      const SizedBox(height: SettingsLayout.sectionGap),
+                      SettingsSection(
+                        title: s.sectionSound,
+                        sub: s.other.sectionSound,
+                        footnote: s.soundSilentNote,
+                        children: [
+                          SettingsGroup(children: [
+                            SettingsSwitch(
+                              title: s.sounds,
+                              note: s.soundsNote,
+                              value: settings.sounds,
+                              onChanged: (v) => progress.updateSettings(settings.copyWith(sounds: v)),
+                            ),
+                          ]),
+                        ],
                       ),
-                      if (progress.settings.debugMode) ...[
-                        const SizedBox(height: Gaps.section),
+                      const SizedBox(height: SettingsLayout.sectionGap),
+                      SettingsSection(
+                        title: s.about,
+                        sub: s.other.about,
+                        children: [
+                          SettingsGroup(children: [
+                            const _VersionRow(),
+                            SettingsTapRow(
+                              title: s.credits,
+                              note: s.creditsNote,
+                              opensPage: true,
+                              onTap: () => Navigator.push(context, MangaRoute<void>(builder: (_) => const CreditsScreen())),
+                            ),
+                          ]),
+                        ],
+                      ),
+                      if (settings.debugMode) ...[
+                        const SizedBox(height: SettingsLayout.sectionGap),
                         const _DeveloperSection(),
                       ],
-                      const SizedBox(height: Gaps.section),
-                      Center(child: NarrationBox(child: Text(s.comingSoon))),
-                      const SizedBox(height: Gaps.section),
+                      const SizedBox(height: SettingsLayout.sectionGap),
                     ],
                   ),
                 ),
@@ -126,6 +127,59 @@ class SettingsScreen extends StatelessWidget {
           ),
         ),
       ),
+    );
+  }
+}
+
+/// Learning mode, the journey's pace (journey only) and how a card is
+/// marked "don't know" during play ("off" only in all-known mode).
+class _LearningSection extends StatelessWidget {
+  const _LearningSection();
+
+  @override
+  Widget build(BuildContext context) {
+    final s = S.of(context);
+    final progress = ProgressScope.of(context);
+    final mode = progress.trainer.config.learningMode;
+    final pace = progress.trainer.config.pace;
+    final dontKnow = progress.settings.dontKnowInputFor(mode);
+    void setDontKnow(DontKnowInput input) => progress.updateSettings(progress.settings.copyWith(dontKnowInput: input));
+    return SettingsSection(
+      title: s.sectionLearning,
+      sub: s.other.sectionLearning,
+      children: [
+        _Choices(
+          label: SettingsLabel(title: s.learningMode, note: s.learningModeNote),
+          side: true,
+          options: [
+            _Option(s.learningJourney, selected: mode == LearningMode.journey,
+                onTap: () => _chooseLearningMode(context, progress, mode, LearningMode.journey)),
+            _Option(s.learningAllKnown, selected: mode == LearningMode.allKnown,
+                onTap: () => _chooseLearningMode(context, progress, mode, LearningMode.allKnown)),
+          ],
+        ),
+        if (mode == LearningMode.journey)
+          _Choices(
+            label: SettingsLabel(title: s.pace, note: s.paceNote),
+            side: true,
+            options: [
+              _Option(s.paceMonth, selected: pace == LearningPace.month, onTap: () => progress.setLearningPace(LearningPace.month)),
+              _Option(s.paceSprint, selected: pace == LearningPace.sprint, onTap: () => progress.setLearningPace(LearningPace.sprint)),
+            ],
+          ),
+        _Choices(
+          label: SettingsLabel(title: s.dontKnowInput, note: s.dontKnowInputNote),
+          options: [
+            _Option(s.dontKnowHold, sub: s.dontKnowHoldSub, selected: dontKnow == DontKnowInput.hold,
+                onTap: () => setDontKnow(DontKnowInput.hold)),
+            _Option(s.dontKnowButton, sub: s.dontKnowButtonSub, selected: dontKnow == DontKnowInput.button,
+                onTap: () => setDontKnow(DontKnowInput.button)),
+            if (mode == LearningMode.allKnown)
+              _Option(s.dontKnowOff, sub: s.dontKnowOffSub, selected: dontKnow == DontKnowInput.off,
+                  onTap: () => setDontKnow(DontKnowInput.off)),
+          ],
+        ),
+      ],
     );
   }
 }
@@ -147,85 +201,105 @@ Future<void> _chooseLearningMode(BuildContext context, Progress progress, Learni
   if (confirmed == true) await progress.switchToAllKnown();
 }
 
-/// The don't-know input; "off" is only offered in all-known mode.
-class _DontKnowInputChoice extends StatelessWidget {
-  const _DontKnowInputChoice({required this.mode});
-  final LearningMode mode;
+class _Option {
+  const _Option(this.title, {this.sub, required this.selected, required this.onTap});
+  final String title;
+  final String? sub;
+  final bool selected;
+  final VoidCallback onTap;
+}
+
+/// A named choice: its label above sun-lit (chosen) or paper buttons, side
+/// by side or stacked, equal in height either way.
+class _Choices extends StatelessWidget {
+  const _Choices({required this.label, required this.options, this.side = false});
+  final SettingsLabel label;
+  final List<_Option> options;
+  final bool side;
 
   @override
   Widget build(BuildContext context) {
-    final s = S.of(context);
-    final progress = ProgressScope.of(context);
-    final current = progress.settings.dontKnowInputFor(mode);
-    Widget option(DontKnowInput input, String title, String sub) => Padding(
-          padding: const EdgeInsets.only(bottom: Gaps.small),
-          child: ConstrainedBox(
-            constraints: const BoxConstraints(minHeight: ButtonMetrics.rowHeight),
-            child: InkButton(
-              color: current == input ? Palette.sun : Palette.paper,
-              onTap: current == input
-                  ? null
-                  : () => progress.updateSettings(progress.settings.copyWith(dontKnowInput: input)),
-              padding: const EdgeInsets.symmetric(horizontal: Gaps.inner, vertical: Gaps.small),
-              alignment: Alignment.centerLeft,
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Text(title, style: const TextStyle(fontWeight: Weights.black, fontSize: TypeScale.button)),
-                  Text(sub, style: const TextStyle(fontWeight: Weights.bold, fontSize: TypeScale.small)),
-                ],
-              ),
-            ),
-          ),
-        );
+    final buttons = [for (final o in options) _button(o)];
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        option(DontKnowInput.hold, s.dontKnowHold, s.dontKnowHoldSub),
-        option(DontKnowInput.button, s.dontKnowButton, s.dontKnowButtonSub),
-        if (mode == LearningMode.allKnown) option(DontKnowInput.off, s.dontKnowOff, s.dontKnowOffSub),
+        label,
+        if (side)
+          IntrinsicHeight(
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                for (final (i, b) in buttons.indexed) ...[
+                  if (i > 0) const SizedBox(width: Gaps.panelWide),
+                  Expanded(child: b),
+                ],
+              ],
+            ),
+          )
+        else
+          for (final (i, b) in buttons.indexed) ...[
+            if (i > 0) const SizedBox(height: Gaps.small),
+            b,
+          ],
       ],
     );
   }
+
+  Widget _button(_Option o) => ConstrainedBox(
+        constraints: const BoxConstraints(minHeight: ButtonMetrics.rowHeight),
+        child: InkButton(
+          color: o.selected ? Palette.sun : Palette.paper,
+          onTap: o.selected ? null : o.onTap,
+          padding: SettingsLayout.rowPadding,
+          alignment: o.sub == null ? Alignment.center : Alignment.centerLeft,
+          child: Column(
+            crossAxisAlignment: o.sub == null ? CrossAxisAlignment.center : CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text.rich(
+                Phrases.span(o.title),
+                textAlign: o.sub == null ? TextAlign.center : TextAlign.start,
+                style: const TextStyle(fontWeight: Weights.black, fontSize: SettingsLayout.titleFont),
+              ),
+              if (o.sub != null)
+                Text(o.sub!, style: const TextStyle(fontWeight: Weights.bold, fontSize: SettingsLayout.noteFont)),
+            ],
+          ),
+        ),
+      );
 }
 
-/// Settings' Language row: the current choice, opening the full list
-/// (`LanguageScreen`) to change it.
+/// The language in use, opening the full list (`LanguageScreen`) to change
+/// it.
 class _LanguageRow extends StatelessWidget {
   const _LanguageRow();
 
   @override
   Widget build(BuildContext context) {
     final s = S.of(context);
-    final settings = ProgressScope.of(context).settings;
-    final current = settings.language == 'system'
+    final language = ProgressScope.of(context).settings.language;
+    final current = language == 'system'
         ? s.systemDefault
-        : Localization.languages.firstWhere((l) => l.code == settings.language, orElse: () => LanguageOption(settings.language, settings.language)).name;
-    return SizedBox(
-      height: ButtonMetrics.rowHeight,
-      child: InkButton(
-        onTap: () => Navigator.push(context, MangaRoute<void>(builder: (_) => const LanguageScreen())),
-        padding: const EdgeInsets.symmetric(horizontal: Gaps.inner),
-        child: Row(children: [
-          Expanded(child: Text(s.language, style: const TextStyle(fontWeight: Weights.black, fontSize: TypeScale.button))),
-          Text(current, style: const TextStyle(fontWeight: Weights.bold, fontSize: TypeScale.body, color: Palette.inkSoft)),
-          const SizedBox(width: Gaps.small),
-          MangaIcon(IconArt.chevron, size: CreditsLayout.chevron, color: Palette.mute),
-        ]),
-      ),
+        : Localization.languages.firstWhere((l) => l.code == language, orElse: () => LanguageOption(language, language)).name;
+    return SettingsTapRow(
+      title: current,
+      note: s.languageNote,
+      opensPage: true,
+      onTap: () => Navigator.push(context, MangaRoute<void>(builder: (_) => const LanguageScreen())),
     );
   }
 }
 
-class _AboutRow extends StatefulWidget {
-  const _AboutRow();
+/// The app's version; tapping it [DevModeTuning.tapsRequired] times unlocks
+/// developer mode.
+class _VersionRow extends StatefulWidget {
+  const _VersionRow();
 
   @override
-  State<_AboutRow> createState() => _AboutRowState();
+  State<_VersionRow> createState() => _VersionRowState();
 }
 
-class _AboutRowState extends State<_AboutRow> {
+class _VersionRowState extends State<_VersionRow> {
   String? _version;
   int _taps = 0;
 
@@ -252,25 +326,8 @@ class _AboutRowState extends State<_AboutRow> {
   }
 
   @override
-  Widget build(BuildContext context) {
-    final s = S.of(context);
-    return SizedBox(
-      height: ButtonMetrics.rowHeight,
-      child: InkButton(
-        onTap: _onTap,
-        padding: const EdgeInsets.symmetric(horizontal: Gaps.inner),
-        child: Row(children: [
-          Expanded(
-            child: Text(s.about, style: const TextStyle(fontWeight: Weights.black, fontSize: TypeScale.button)),
-          ),
-          Text(
-            _version == null ? '…' : '${s.version} $_version',
-            style: const TextStyle(fontWeight: Weights.bold, fontSize: TypeScale.body, color: Palette.inkSoft),
-          ),
-        ]),
-      ),
-    );
-  }
+  Widget build(BuildContext context) =>
+      SettingsTapRow(title: S.of(context).version, value: _version ?? '…', onTap: _onTap);
 }
 
 class _DeveloperSection extends StatelessWidget {
@@ -281,98 +338,47 @@ class _DeveloperSection extends StatelessWidget {
     final s = S.of(context);
     final progress = ProgressScope.of(context);
     final settings = progress.settings;
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
+    void open(Widget page) => Navigator.push(context, MangaRoute<void>(builder: (_) => page));
+    return SettingsSection(
+      title: s.sectionDeveloper,
+      sub: s.other.sectionDeveloper,
       children: [
-        const InkTag('DEVELOPER'),
-        const SizedBox(height: Gaps.panel),
-        _SwitchRow(
-          label: s.developerMode,
-          value: settings.debugMode,
-          onChanged: (v) => progress.updateSettings(settings.copyWith(debugMode: v)),
-        ),
-        const SizedBox(height: Gaps.small),
-        _ButtonRow(
-          label: 'Debug page',
-          onTap: () => Navigator.push(context, MangaRoute<void>(builder: (_) => const DebugPage())),
-        ),
-        const SizedBox(height: Gaps.small),
-        _SwitchRow(
-          label: 'Play overlay',
-          value: settings.playOverlay,
-          onChanged: (v) => progress.updateSettings(settings.copyWith(playOverlay: v)),
-        ),
-        const SizedBox(height: Gaps.small),
-        _SwitchRow(
-          label: 'Performance overlay',
-          value: settings.showPerformanceOverlay,
-          onChanged: (v) => progress.updateSettings(settings.copyWith(showPerformanceOverlay: v)),
-        ),
-        const SizedBox(height: Gaps.small),
-        _ButtonRow(label: 'Preview celebrations', onTap: () => previewCelebrations(context)),
-        const SizedBox(height: Gaps.small),
-        _ButtonRow(label: 'Preview XP', onTap: () => previewXp(context)),
-        const SizedBox(height: Gaps.small),
-        _ButtonRow(label: 'Preview XP + level up', onTap: () => previewXpLevelUp(context)),
-        const SizedBox(height: Gaps.small),
-        _ButtonRow(label: 'Preview rating', onTap: () => previewRating(context)),
-        const SizedBox(height: Gaps.small),
-        _ButtonRow(label: 'Preview rating + rank-up', onTap: () => previewRatingRankUp(context)),
-        const SizedBox(height: Gaps.small),
-        _ButtonRow(label: 'Preview graduation', onTap: () => previewGraduation(context)),
-        const SizedBox(height: Gaps.small),
-        _ButtonRow(
-          label: 'Preview all-known warning',
-          onTap: () => Navigator.push(context, MangaRoute<bool>(builder: (_) => const AllKnownWarningScreen())),
-        ),
-        const SizedBox(height: Gaps.small),
-        _ButtonRow(
-          label: 'Simulation',
-          onTap: () => Navigator.push(context, MangaRoute<void>(builder: (_) => const SimulationPage())),
-        ),
-        const SizedBox(height: Gaps.small),
-        _ButtonRow(label: 'Reset onboarding', onTap: () => confirmResetOnboarding(context)),
-        const SizedBox(height: Gaps.small),
-        _ButtonRow(label: 'Reset progress', onTap: () => confirmResetProgress(context)),
+        SettingsGroup(children: [
+          SettingsSwitch(
+            title: s.developerMode,
+            value: settings.debugMode,
+            onChanged: (v) => progress.updateSettings(settings.copyWith(debugMode: v)),
+          ),
+          SettingsSwitch(
+            title: 'Play overlay',
+            value: settings.playOverlay,
+            onChanged: (v) => progress.updateSettings(settings.copyWith(playOverlay: v)),
+          ),
+          SettingsSwitch(
+            title: 'Performance overlay',
+            value: settings.showPerformanceOverlay,
+            onChanged: (v) => progress.updateSettings(settings.copyWith(showPerformanceOverlay: v)),
+          ),
+        ]),
+        SettingsGroup(children: [
+          SettingsTapRow(title: 'Debug page', opensPage: true, onTap: () => open(const DebugPage())),
+          SettingsTapRow(title: 'Simulation', opensPage: true, onTap: () => open(const SimulationPage())),
+          SettingsTapRow(title: 'Preview celebrations', onTap: () => previewCelebrations(context)),
+          SettingsTapRow(title: 'Preview XP', onTap: () => previewXp(context)),
+          SettingsTapRow(title: 'Preview XP + level up', onTap: () => previewXpLevelUp(context)),
+          SettingsTapRow(title: 'Preview rating', onTap: () => previewRating(context)),
+          SettingsTapRow(title: 'Preview rating + rank-up', onTap: () => previewRatingRankUp(context)),
+          SettingsTapRow(title: 'Preview graduation', onTap: () => previewGraduation(context)),
+          SettingsTapRow(
+            title: 'Preview all-known warning',
+            onTap: () => Navigator.push(context, MangaRoute<bool>(builder: (_) => const AllKnownWarningScreen())),
+          ),
+        ]),
+        SettingsGroup(children: [
+          SettingsTapRow(title: 'Reset onboarding', onTap: () => confirmResetOnboarding(context)),
+          SettingsTapRow(title: 'Reset progress', onTap: () => confirmResetProgress(context)),
+        ]),
       ],
     );
   }
-}
-
-class _SwitchRow extends StatelessWidget {
-  const _SwitchRow({required this.label, required this.value, required this.onChanged});
-  final String label;
-  final bool value;
-  final ValueChanged<bool> onChanged;
-
-  @override
-  Widget build(BuildContext context) => SizedBox(
-        height: ButtonMetrics.rowHeight,
-        child: DecoratedBox(
-          decoration:
-              const BoxDecoration(border: Border.fromBorderSide(BorderSide(color: Palette.ink, width: Strokes.hairline))),
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: Gaps.inner),
-            child: Row(children: [
-              Expanded(child: Text(label, style: const TextStyle(fontWeight: Weights.black, fontSize: TypeScale.button))),
-              Switch(value: value, onChanged: onChanged, activeThumbColor: Palette.pink),
-            ]),
-          ),
-        ),
-      );
-}
-
-class _ButtonRow extends StatelessWidget {
-  const _ButtonRow({required this.label, required this.onTap});
-  final String label;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) => SizedBox(
-        height: ButtonMetrics.rowHeight,
-        child: InkButton(
-          onTap: onTap,
-          child: Text(label, style: const TextStyle(fontWeight: Weights.black, fontSize: TypeScale.button)),
-        ),
-      );
 }
