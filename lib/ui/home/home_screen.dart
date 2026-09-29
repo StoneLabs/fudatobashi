@@ -32,7 +32,11 @@ class HomeScreen extends StatelessWidget {
         children: [
           const SizedBox(height: HeaderStyle.topGap),
           MangaHeader(
-            title: TourAnchor(TourSpot.brand, child: BrandTitle(sub: s.brandSub)),
+            // Aligned, so the tour's spotlight hugs the lettering.
+            title: Align(
+              alignment: AlignmentDirectional.centerStart,
+              child: TourAnchor(TourSpot.brand, child: BrandTitle(sub: s.brandSub)),
+            ),
             actions: const [
               TourAnchor(TourSpot.level, child: LevelButton()),
               TourAnchor(TourSpot.settings, child: SettingsButton()),

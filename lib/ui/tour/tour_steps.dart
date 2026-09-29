@@ -16,9 +16,9 @@ class TourStep {
   final bool practice;
 
   /// The tour of Home in [mode]: what 札飛ばし is, then its buttons (the
-  /// journey's islands, or all-known mode's own), the practice round, and
-  /// off to 修行.
-  static List<TourStep> of(LearningMode mode) => [
+  /// journey's islands, or all-known mode's own; the tabs' chains only when
+  /// some are [tabsLocked]), the practice round, and off to 修行.
+  static List<TourStep> of(LearningMode mode, {required bool tabsLocked}) => [
         TourStep((s) => s.tourWelcome, TobiPose.waving, spot: TourSpot.brand),
         TourStep((s) => s.tourWhat, TobiPose.fired),
         if (mode == LearningMode.journey)
@@ -36,7 +36,7 @@ class TourStep {
           TourStep((s) => s.tourGuest, TobiPose.pointing, spot: TourSpot.guest),
         ],
         TourStep((s) => s.tourLevel, TobiPose.pointing, spot: TourSpot.level),
-        TourStep((s) => s.tourTabs, TobiPose.pointing, spot: TourSpot.tabs),
+        TourStep((s) => tabsLocked ? s.tourTabs : s.tourTabsOpen, TobiPose.pointing, spot: TourSpot.tabs),
         TourStep((s) => s.tourSettings, TobiPose.pointing, spot: TourSpot.settings),
         TourStep((s) => s.tourPractice, TobiPose.tryHard, practice: true),
         TourStep((s) => s.tourFinale, TobiPose.cheering, spot: TourSpot.training),

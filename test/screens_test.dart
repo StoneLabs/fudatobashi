@@ -2604,7 +2604,7 @@ void main() {
             (tester) async {
           final p = await open(tester, mode: mode, ja: ja, journeyCards: 7, tabsLocked: true, toured: false);
           await onPhone(tester, p, fontScale: 1.1);
-          final steps = TourStep.of(mode);
+          final steps = TourStep.of(mode, tabsLocked: true);
           for (final (i, step) in steps.indexed) {
             await tester.pump(const Duration(milliseconds: 50));
             await tester.pump(const Duration(milliseconds: 600));
@@ -2643,7 +2643,7 @@ void main() {
     testWidgets('leaving the practice round early keeps the tour on it', (tester) async {
       final p = await open(tester, mode: LearningMode.journey, journeyCards: 7, toured: false);
       await onPhone(tester, p, fontScale: 1.0);
-      final practice = TourStep.of(LearningMode.journey).indexWhere((st) => st.practice);
+      final practice = TourStep.of(LearningMode.journey, tabsLocked: false).indexWhere((st) => st.practice);
       for (var i = 0; i <= practice; i++) {
         await tester.pump(const Duration(milliseconds: 400));
         await tester.tapAt(const Offset(192, 420));

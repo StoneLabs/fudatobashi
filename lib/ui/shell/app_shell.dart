@@ -152,7 +152,10 @@ class _AppShellState extends State<AppShell> {
           if (touring)
             Positioned.fill(
               child: TourOverlay(
-                steps: TourStep.of(progress.trainer.config.learningMode),
+                steps: TourStep.of(
+                  progress.trainer.config.learningMode,
+                  tabsLocked: locks.values.any((lock) => lock != null),
+                ),
                 keys: _tourKeys,
                 onDone: () => _endTour(progress),
               ),

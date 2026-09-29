@@ -387,6 +387,7 @@
   "tourGuest": "Handing the phone to a friend? Guest mode records nothing.",
   "tourLevel": "Your level: every swipe earns XP. Tap it for My Profile.",
   "tourTabs": "History, Stats and Help live down here. The ones in chains open as you play!",
+  "tourTabsOpen": "History, Stats and Help live down here.",
   "tourSettings": "Settings: language, sounds, and how “I don't remember” works.",
   "tourPractice": "Enough talk! Your turn: three practice cards.",
   "tourPracticeAgain": "Come on, it's only three cards!",
@@ -395,5 +396,6 @@
   "tourTapPractice": "Tap to start",
   "tourHere": "HERE!",
   "replayTour": "Replay the tour",
-  "replayTourNote": "Tobi shows you around Home again, practice cards included."
+  "replayTourNote": "Tobi shows you around Home again.",
+  "tourTapDone": "Tap to finish"
 }

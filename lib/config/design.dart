@@ -1242,13 +1242,15 @@ abstract final class TourStyle {
   /// Tobi's block (Tobi and his balloon): beside the balloon, at most
   /// [block] tall and at least [blockMin] where room is short; from
   /// [stackAt] up, under a full-width balloon instead, [blockStacked] tall
-  /// beside a spotlight with room for it and [blockTall] with none, Tobi
-  /// then taking [stackedTobi] of it.
+  /// beside a spotlight with room for it and [blockTall] with none. Tobi
+  /// takes [besideTobi] of the block's height beside the balloon, and
+  /// [stackedTobi] under it.
   static const double block = 196;
   static const double blockMin = 136;
   static const double stackAt = 250;
   static const double blockStacked = 320;
   static const double blockTall = 390;
+  static const double besideTobi = 0.9;
   static const double stackedTobi = 0.56;
   static const Alignment speakerLeft = Alignment(-1.22, 0.38);
   static const Alignment speakerRight = Alignment(1.22, 0.38);

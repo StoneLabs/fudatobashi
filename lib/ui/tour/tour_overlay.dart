@@ -114,7 +114,11 @@ class _TourOverlayState extends State<TourOverlay> {
               key: ValueKey(('tobi', _index, _practiceLeft)),
               child: _TobiSays(
                 text: _practiceLeft ? s.tourPracticeAgain : step.line(s),
-                hint: step.practice ? s.tourTapPractice : s.tourTapHint,
+                hint: step.practice
+                    ? s.tourTapPractice
+                    : _index == widget.steps.length - 1
+                        ? s.tourTapDone
+                        : s.tourTapHint,
                 pose: step.pose,
                 tobiLeft: tobiLeft,
               ),
@@ -138,7 +142,7 @@ class _TobiSays extends StatelessWidget {
   Widget build(BuildContext context) {
     return LayoutBuilder(builder: (context, box) {
       final stacked = box.maxHeight >= TourStyle.stackAt;
-      final tobiHeight = box.maxHeight * (stacked ? TourStyle.stackedTobi : 1);
+      final tobiHeight = box.maxHeight * (stacked ? TourStyle.stackedTobi : TourStyle.besideTobi);
       // Tobi faces the balloon.
       final tobi = SizedBox(
         height: tobiHeight,

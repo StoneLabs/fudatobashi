@@ -35,12 +35,14 @@ extension TourStrings on S {
   String get tourGuest => t('tourGuest');
   String get tourLevel => t('tourLevel');
   String get tourTabs => t('tourTabs');
+  String get tourTabsOpen => t('tourTabsOpen');
   String get tourSettings => t('tourSettings');
   String get tourPractice => t('tourPractice');
   String get tourPracticeAgain => t('tourPracticeAgain');
   String get tourFinale => t('tourFinale');
   String get tourTapHint => t('tourTapHint');
   String get tourTapPractice => t('tourTapPractice');
+  String get tourTapDone => t('tourTapDone');
   String get tourHere => t('tourHere');
   String get replayTour => t('replayTour');
   String get replayTourNote => t('replayTourNote');
