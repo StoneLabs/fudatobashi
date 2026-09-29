@@ -307,7 +307,7 @@ class Progress extends ChangeNotifier {
   /// (only those still known), or its sets.
   List<int> freeDeckIds(PlayConfig c) {
     final picked = c.cardIds;
-    if (picked != null) return [for (final id in {...picked}) if (knownCards.contains(id)) id]..sort();
+    if (picked != null) return knownCards.intersection({...picked}).toList()..sort();
     if (c.isKnownDeck) return knownCards.toList()..sort();
     return fudaSets.union(c.setIds);
   }
