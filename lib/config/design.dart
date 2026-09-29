@@ -339,6 +339,16 @@ abstract final class LangToggleStyle {
   static const double font = 12.5;
 }
 
+/// The language list shared by the first-open picker and Settings' Language
+/// row (`LanguageCard`, `LanguageScreen`, `LanguagePickerScreen`).
+abstract final class LanguageLayout {
+  static const double cardHeight = ButtonMetrics.rowHeight;
+  static const double cardFont = TypeScale.button;
+  static const double pickerTopGap = 32;
+  static const double pickerTobiHeight = 120;
+  static const double pickerTitleFont = 22;
+}
+
 abstract final class TagStyle {
   static const double lineHeight = 1.15;
   static const double bannerLineHeight = 1.2;

@@ -5,6 +5,7 @@ import '../config/design.dart';
 import '../state/progress.dart';
 import '../state/scope.dart';
 import 'manga/manga.dart';
+import 'onboarding/language_picker_screen.dart';
 import 'onboarding/onboarding_screen.dart';
 import 'shell/app_shell.dart';
 
@@ -63,17 +64,19 @@ class _FudatobashiAppState extends State<FudatobashiApp> {
   }
 }
 
-/// Onboarding until the learning mode has been chosen, then the tabs.
+/// The language picker (a fresh install only) until a language is picked,
+/// then onboarding until the learning mode has been chosen, then the tabs.
 class _FirstLaunchGate extends StatelessWidget {
   const _FirstLaunchGate();
 
   @override
   Widget build(BuildContext context) {
-    final onboarded = ProgressScope.of(context).settings.onboarded;
-    return AnimatedSwitcher(
-      duration: Motion.route,
-      switchInCurve: Motion.routeCurve,
-      child: onboarded ? const AppShell(key: ValueKey('shell')) : const OnboardingScreen(key: ValueKey('onboarding')),
-    );
+    final settings = ProgressScope.of(context).settings;
+    final page = !settings.languagePicked
+        ? const LanguagePickerScreen(key: ValueKey('language'))
+        : settings.onboarded
+            ? const AppShell(key: ValueKey('shell'))
+            : const OnboardingScreen(key: ValueKey('onboarding'));
+    return AnimatedSwitcher(duration: Motion.route, switchInCurve: Motion.routeCurve, child: page);
   }
 }

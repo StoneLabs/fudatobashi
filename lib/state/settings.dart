@@ -34,10 +34,15 @@ class AppSettings {
     this.onboarded = DefaultSettings.onboarded,
     this.playOverlay = DefaultSettings.playOverlay,
     this.showPerformanceOverlay = DefaultSettings.showPerformanceOverlay,
+    this.languagePicked = DefaultSettings.languagePicked,
   });
 
   /// A language code (e.g. `'ja'`), or `'system'` for the device's language.
   final String language;
+
+  /// The first-open language picker has been resolved (a language chosen,
+  /// there or in Settings), so it never shows again.
+  final bool languagePicked;
 
   /// The stored choice; read it through [dontKnowInputFor].
   final DontKnowInput dontKnowInput;
@@ -93,12 +98,17 @@ class AppSettings {
         'onboarded': onboarded,
         'playOverlay': playOverlay,
         'showPerformanceOverlay': showPerformanceOverlay,
+        'languagePicked': languagePicked,
       };
 
   factory AppSettings.fromJson(Map<String, dynamic> j) => AppSettings(
         // The old `AppLanguage` enum's stored name ("system"/"en"/"ja") is
         // already the language code or "system" this field now holds.
         language: j['language'] as String? ?? DefaultSettings.language,
+        // A truly fresh install has no settings saved at all (`j` is empty):
+        // the first-open picker still has to run. Any prior settings, even
+        // from before this field existed, mean it doesn't.
+        languagePicked: j['languagePicked'] as bool? ?? j.isNotEmpty,
         dontKnowInput: DontKnowInput.values.asNameMap()[j['dontKnowInput']] ?? DefaultSettings.dontKnowInput,
         showPoemNumber: j['showPoemNumber'] as bool? ?? DefaultSettings.showPoemNumber,
         haptics: j['haptics'] as bool? ?? DefaultSettings.haptics,
@@ -136,6 +146,7 @@ class AppSettings {
     bool? onboarded,
     bool? playOverlay,
     bool? showPerformanceOverlay,
+    bool? languagePicked,
   }) =>
       AppSettings(
         language: language ?? this.language,
@@ -153,5 +164,6 @@ class AppSettings {
         onboarded: onboarded ?? this.onboarded,
         playOverlay: playOverlay ?? this.playOverlay,
         showPerformanceOverlay: showPerformanceOverlay ?? this.showPerformanceOverlay,
+        languagePicked: languagePicked ?? this.languagePicked,
       );
 }

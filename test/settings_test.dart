@@ -26,4 +26,19 @@ void main() {
       expect(AppSettings.fromJson({'language': 'fr'}).language, 'fr');
     });
   });
+
+  group('AppSettings.languagePicked (first-open language picker)', () {
+    test('a truly fresh install (nothing saved yet) has not picked one', () {
+      expect(AppSettings.fromJson({}).languagePicked, isFalse);
+    });
+
+    test('any settings saved before this field existed count as already picked', () {
+      expect(AppSettings.fromJson({'language': 'en'}).languagePicked, isTrue);
+    });
+
+    test('round-trips through toJson', () {
+      expect(AppSettings.fromJson(const AppSettings(languagePicked: true).toJson()).languagePicked, isTrue);
+      expect(AppSettings.fromJson(const AppSettings().toJson()).languagePicked, isFalse);
+    });
+  });
 }

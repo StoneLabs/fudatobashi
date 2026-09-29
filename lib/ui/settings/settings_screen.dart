@@ -6,6 +6,8 @@ import '../../config/design.dart';
 import '../../config/vector_art.dart';
 import '../../domain/trainer.dart';
 import '../../l10n/credits_strings.dart';
+import '../../l10n/language_strings.dart';
+import '../../l10n/localization.dart';
 import '../../l10n/settings_strings.dart';
 import '../../l10n/strings.dart';
 import '../../state/progress.dart';
@@ -16,9 +18,9 @@ import '../debug/debug_page.dart';
 import '../debug/reset_actions.dart';
 import '../debug/simulation_page.dart';
 import '../manga/manga.dart';
-import '../shell/header_actions.dart';
 import 'all_known_warning_screen.dart';
 import 'credits_screen.dart';
+import 'language_screen.dart';
 
 /// Settings: language, learning mode, About (hides the 10-tap developer-mode
 /// unlock) and, once unlocked, the Developer section.
@@ -70,7 +72,7 @@ class SettingsScreen extends StatelessWidget {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
-                      const Align(alignment: Alignment.centerLeft, child: LanguageSwitch()),
+                      const _LanguageRow(),
                       const SizedBox(height: Gaps.section),
                       label(s.learningMode),
                       Row(children: [
@@ -184,6 +186,34 @@ class _DontKnowInputChoice extends StatelessWidget {
         option(DontKnowInput.button, s.dontKnowButton, s.dontKnowButtonSub),
         if (mode == LearningMode.allKnown) option(DontKnowInput.off, s.dontKnowOff, s.dontKnowOffSub),
       ],
+    );
+  }
+}
+
+/// Settings' Language row: the current choice, opening the full list
+/// (`LanguageScreen`) to change it.
+class _LanguageRow extends StatelessWidget {
+  const _LanguageRow();
+
+  @override
+  Widget build(BuildContext context) {
+    final s = S.of(context);
+    final settings = ProgressScope.of(context).settings;
+    final current = settings.language == 'system'
+        ? s.systemDefault
+        : Localization.languages.firstWhere((l) => l.code == settings.language, orElse: () => LanguageOption(settings.language, settings.language)).name;
+    return SizedBox(
+      height: ButtonMetrics.rowHeight,
+      child: InkButton(
+        onTap: () => Navigator.push(context, MangaRoute<void>(builder: (_) => const LanguageScreen())),
+        padding: const EdgeInsets.symmetric(horizontal: Gaps.inner),
+        child: Row(children: [
+          Expanded(child: Text(s.language, style: const TextStyle(fontWeight: Weights.black, fontSize: TypeScale.button))),
+          Text(current, style: const TextStyle(fontWeight: Weights.bold, fontSize: TypeScale.body, color: Palette.inkSoft)),
+          const SizedBox(width: Gaps.small),
+          MangaIcon(IconArt.chevron, size: CreditsLayout.chevron, color: Palette.mute),
+        ]),
+      ),
     );
   }
 }

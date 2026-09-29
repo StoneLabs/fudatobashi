@@ -321,5 +321,8 @@
   "topClassNote": "TOP CLASS",
   "clearStamp": "CLEAR",
   "toGoTemplate": "{0} to go!",
-  "previewRankUp": "Preview"
+  "previewRankUp": "Preview",
+  "language": "Language",
+  "chooseLanguage": "Choose your language",
+  "systemDefault": "System default"
 }

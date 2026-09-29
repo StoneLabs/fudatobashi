@@ -321,5 +321,8 @@
   "topClassNote": "最高位",
   "clearStamp": "済",
   "toGoTemplate": "あと{0}！",
-  "previewRankUp": "プレビュー"
+  "previewRankUp": "プレビュー",
+  "language": "言語",
+  "chooseLanguage": "言語を選んでください",
+  "systemDefault": "端末の言語に合わせる"
 }

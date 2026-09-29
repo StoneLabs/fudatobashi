@@ -32,7 +32,7 @@ class HomeScreen extends StatelessWidget {
           const SizedBox(height: HeaderStyle.topGap),
           MangaHeader(
             title: BrandTitle(sub: s.brandSub),
-            actions: const [LanguageSwitch(), SettingsButton()],
+            actions: const [SettingsButton()],
           ),
           const SizedBox(height: HeaderStyle.topGap),
           Expanded(child: journey ? const JourneyHome() : const KnownHome()),

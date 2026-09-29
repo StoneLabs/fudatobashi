@@ -28,6 +28,7 @@ import 'package:fudatobashi/domain/xp.dart';
 import 'package:fudatobashi/l10n/credits_strings.dart';
 import 'package:fudatobashi/l10n/free_strings.dart';
 import 'package:fudatobashi/l10n/home_strings.dart';
+import 'package:fudatobashi/l10n/language_strings.dart';
 import 'package:fudatobashi/l10n/onboarding_strings.dart';
 import 'package:fudatobashi/l10n/results_strings.dart';
 import 'package:fudatobashi/l10n/settings_strings.dart';
@@ -48,7 +49,9 @@ import 'package:fudatobashi/ui/home/learn_ahead_button.dart';
 import 'package:fudatobashi/ui/home/training_hero.dart';
 import 'package:fudatobashi/ui/islands/island_map.dart';
 import 'package:fudatobashi/ui/manga/manga.dart';
+import 'package:fudatobashi/ui/onboarding/language_picker_screen.dart';
 import 'package:fudatobashi/ui/onboarding/onboarding_panels.dart';
+import 'package:fudatobashi/ui/onboarding/onboarding_screen.dart';
 import 'package:fudatobashi/ui/onboarding/welcome_sea.dart';
 import 'package:fudatobashi/ui/play/kimariji_chip.dart';
 import 'package:fudatobashi/ui/play/play_screen.dart';
@@ -64,6 +67,7 @@ import 'package:fudatobashi/ui/results/results_screen.dart';
 import 'package:fudatobashi/ui/results/xp_overlay.dart';
 import 'package:fudatobashi/ui/settings/all_known_warning_screen.dart';
 import 'package:fudatobashi/ui/settings/credits_screen.dart';
+import 'package:fudatobashi/ui/settings/language_screen.dart';
 import 'package:fudatobashi/ui/settings/settings_screen.dart';
 import 'package:fudatobashi/ui/sound/sounds.dart';
 import 'package:fudatobashi/ui/stats/card_detail_screen.dart';
@@ -131,7 +135,7 @@ void main() {
     late Progress p;
     await tester.runAsync(() async {
       p = await Progress.open(AppDatabase(NativeDatabase.memory()));
-      await p.updateSettings(p.settings.copyWith(language: ja ? 'ja' : 'en'));
+      await p.updateSettings(p.settings.copyWith(language: ja ? 'ja' : 'en', languagePicked: true));
       if (mode != null) await p.setLearningMode(mode);
     });
     final ids = [for (final isl in archipelago.islands) ...fudaSets['initial:${isl.name}'].poemIds];
@@ -1475,6 +1479,7 @@ void main() {
     await tester.pumpWidget(ProgressScope(progress: p, child: const MaterialApp(home: SettingsScreen())));
     await tester.pump();
     const s = S('en');
+    await tester.scrollUntilVisible(find.text(s.credits), 200);
     await tester.tap(find.text(s.credits));
     await tester.pumpAndSettle();
     expect(tester.takeException(), isNull);
@@ -1910,6 +1915,76 @@ void main() {
         });
       }
     }
+  });
+
+  group('Language picker and My Profile', () {
+    testWidgets('fresh install: the language picker gates onboarding; picking one sets it and continues',
+        (tester) async {
+      late Progress p;
+      await tester.runAsync(() async => p = await Progress.open(AppDatabase(NativeDatabase.memory())));
+      expect(p.settings.languagePicked, isFalse, reason: 'nothing saved yet');
+
+      tester.platformDispatcher.localeTestValue = const Locale('ja');
+      addTearDown(tester.platformDispatcher.clearLocaleTestValue);
+      await tester.binding.setSurfaceSize(_phone);
+      await tester.pumpWidget(RepaintBoundary(key: const ValueKey('screen'), child: FudatobashiApp(progress: p)));
+      await tester.pump(const Duration(milliseconds: 500));
+      expect(tester.takeException(), isNull);
+      expect(find.byType(LanguagePickerScreen), findsOneWidget);
+      expect(find.byType(OnboardingScreen), findsNothing);
+      await _capture(tester, 'language_picker');
+
+      await tester.runAsync(() async {
+        await tester.tap(find.text('日本語'));
+        await Future<void>.delayed(const Duration(milliseconds: 50));
+      });
+      await tester.pump();
+      await tester.pump(const Duration(seconds: 1));
+      expect(p.settings.language, 'ja');
+      expect(p.settings.languagePicked, isTrue);
+      expect(find.byType(LanguagePickerScreen), findsNothing);
+      expect(find.byType(OnboardingScreen), findsOneWidget);
+      await tester.pumpWidget(const SizedBox());
+    });
+
+    testWidgets('settings: the Language row opens the full list, and picking one updates it', (tester) async {
+      final p = await open(tester, mode: LearningMode.allKnown);
+      await tester.binding.setSurfaceSize(_phone);
+      await tester.pumpWidget(ProgressScope(progress: p, child: const MaterialApp(home: SettingsScreen())));
+      await tester.pump();
+      const s = S('en');
+      await tester.tap(find.text(s.language));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 500));
+      expect(tester.takeException(), isNull);
+      expect(find.byType(LanguageScreen), findsOneWidget);
+      expect(find.text(s.systemDefault), findsOneWidget);
+      expect(find.text('English'), findsOneWidget);
+      expect(find.text('日本語'), findsOneWidget);
+
+      await tester.tap(find.text('日本語'));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 500));
+      expect(p.settings.language, 'ja');
+      expect(find.byType(SettingsScreen), findsOneWidget, reason: 'popped back after choosing');
+      await tester.pumpWidget(const SizedBox());
+    });
+
+    testWidgets('settings, developer: Reset onboarding also brings back the language picker', (tester) async {
+      final p = await open(tester, mode: LearningMode.allKnown);
+      await tester.runAsync(() => p.updateSettings(p.settings.copyWith(debugMode: true)));
+      await tester.binding.setSurfaceSize(_phone);
+      await tester.pumpWidget(ProgressScope(progress: p, child: const MaterialApp(home: SettingsScreen())));
+      await tester.pump();
+      await tester.scrollUntilVisible(find.text('Reset onboarding'), 300);
+      await tester.tap(find.text('Reset onboarding'));
+      await tester.pump();
+      await tester.tap(find.text('Reset'));
+      await tester.pump();
+      expect(p.settings.onboarded, isFalse);
+      expect(p.settings.languagePicked, isFalse, reason: 'the language picker must show again too');
+      await tester.pumpWidget(const SizedBox());
+    });
   });
 }
 
