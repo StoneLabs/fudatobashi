@@ -440,16 +440,16 @@ abstract final class XpTuning {
 
   /// The first run of a day, plus [perStreakDay] for each day of the streak
   /// before it, up to [streakCapDays].
-  static const int daily = 50;
+  static const int daily = 100;
   static const int perStreakDay = 10;
   static const int streakCapDays = 10;
 
   /// A completed run faster than the best before it with the same setup.
-  static const int personalBest = 100;
-  static const int perIsland = 300;
+  static const int personalBest = 200;
+  static const int perIsland = 1000;
 
   /// Learning the 100th card, the end of the journey.
-  static const int graduation = 1000;
+  static const int graduation = 25000;
 
   /// XP from level L to L+1: [levelBase] × √L. Levels come quickly at
   /// first and keep coming: unlike the rank, a level never stalls.
