@@ -217,16 +217,18 @@ EntranceSpec _pop(Duration delay, Duration length, {Curve curve = Entrances.boun
     EntranceSpec(Entrances.pop, duration: length, delay: delay, curve: curve);
 
 /// Rebuilds [builder] with the time into the page of [timeline] (its end
-/// under reduced motion).
+/// under reduced motion), repainting on its own layer.
 class _Clock extends StatelessWidget {
   const _Clock(this.timeline, {required this.builder});
   final XpTimeline timeline;
   final Widget Function(BuildContext context, Duration elapsed) builder;
 
   @override
-  Widget build(BuildContext context) => EntranceBuilder(
-        _at(Duration.zero, timeline.length),
-        builder: (context, t, _) => builder(context, timeline.length * t),
+  Widget build(BuildContext context) => RepaintBoundary(
+        child: EntranceBuilder(
+          _at(Duration.zero, timeline.length),
+          builder: (context, t, _) => builder(context, timeline.length * t),
+        ),
       );
 }
 
@@ -300,14 +302,12 @@ class _LevelBar extends StatelessWidget {
             height: XpLayout.barHeight,
             child: Stack(clipBehavior: Clip.none, children: [
               Positioned.fill(
-                child: RepaintBoundary(
-                  child: _Clock(timeline, builder: (context, elapsed) {
-                    final since = _since(timeline.lastLevelUp(elapsed), elapsed);
-                    return CustomPaint(
-                      painter: _BarPainter(timeline.levelAt(elapsed).fraction, flash: since == null ? 0 : 1 - since),
-                    );
-                  }),
-                ),
+                child: _Clock(timeline, builder: (context, elapsed) {
+                  final since = _since(timeline.lastLevelUp(elapsed), elapsed);
+                  return CustomPaint(
+                    painter: _BarPainter(timeline.levelAt(elapsed).fraction, flash: since == null ? 0 : 1 - since),
+                  );
+                }),
               ),
               Positioned(
                 left: -XpSparks.reach.left,
@@ -315,11 +315,9 @@ class _LevelBar extends StatelessWidget {
                 right: -XpSparks.reach.right,
                 bottom: -XpSparks.reach.bottom,
                 child: IgnorePointer(
-                  child: RepaintBoundary(
-                    child: _Clock(
-                      timeline,
-                      builder: (context, elapsed) => CustomPaint(painter: _SparksPainter(timeline, elapsed)),
-                    ),
+                  child: _Clock(
+                    timeline,
+                    builder: (context, elapsed) => CustomPaint(painter: _SparksPainter(timeline, elapsed)),
                   ),
                 ),
               ),
@@ -502,7 +500,7 @@ class _SparksPainter extends CustomPainter {
           Offset(math.cos(angle), math.sin(angle)) * speed * age +
           Offset(0, XpSparks.gravity * age * age / 2);
       final fade = ((life - age) / (life * (1 - XpSparks.fadeFrom))).clamp(0.0, 1.0);
-      final size = (XpSparks.minSize + r.next() * XpSparks.sizeRange) * (0.4 + 0.6 * fade);
+      final size = (XpSparks.minSize + r.next() * XpSparks.sizeRange) * (XpSparks.fadedSize + (1 - XpSparks.fadedSize) * fade);
       final shape = k % XpSparks.squareEvery == 0
           ? _square(p, size, r.next() * XpSparks.spin * age)
           : _star(p, size, r.next() * XpSparks.spin * age);
@@ -515,6 +513,7 @@ class _SparksPainter extends CustomPainter {
       (fills[Palette.paper] ??= Path()).addPath(glint, Offset.zero);
       ink.addPath(glint, Offset.zero);
     }
+    // The fill covers the inner half of the stroke, leaving [XpSparks.stroke].
     canvas.drawPath(
       ink,
       Paint()

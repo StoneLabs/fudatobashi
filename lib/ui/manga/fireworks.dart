@@ -60,7 +60,7 @@ class _FireworksPainter extends CustomPainter {
         return [
           for (var i = 0; i < FireworksStyle.sparks; i++)
             () {
-              final a = (i + r.next() * 0.5) * 2 * math.pi / FireworksStyle.sparks;
+              final a = (i + r.next() * FireworksStyle.jitter) * 2 * math.pi / FireworksStyle.sparks;
               return (Offset(math.cos(a), math.sin(a)), FireworksStyle.minRadius + r.next() * FireworksStyle.radiusRange);
             }(),
         ];
@@ -98,7 +98,7 @@ class _FireworksPainter extends CustomPainter {
         streaks
           ..moveTo(tail.dx, tail.dy)
           ..lineTo(head.dx, head.dy);
-        dots.addOval(Rect.fromCircle(center: head, radius: FireworksStyle.dot * (1 - age * 0.5) * scale));
+        dots.addOval(Rect.fromCircle(center: head, radius: FireworksStyle.dot * (1 - age * FireworksStyle.dotShrink) * scale));
       }
       final color = b.color.withValues(alpha: fade);
       final outline = ink..color = Palette.ink.withValues(alpha: fade);

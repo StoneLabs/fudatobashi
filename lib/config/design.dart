@@ -2143,8 +2143,10 @@ abstract final class XpSparks {
   static const double spin = 6;
   static const double stroke = 1.5;
 
-  /// Opacity holds until this share of a spark's life, then fades out.
+  /// Opacity holds until this share of a spark's life, then fades out,
+  /// shrinking to [fadedSize] of its size.
   static const double fadeFrom = 0.55;
+  static const double fadedSize = 0.4;
 
   /// Every this-many sparks is a square rather than a star.
   static const int squareEvery = 3;
@@ -2420,6 +2422,10 @@ abstract final class FireworksStyle {
   static const double specWidth = 390;
   static const double specHeight = 844;
   static const int sparks = 18;
+
+  /// How far a spark's direction strays from even spacing, in shares of
+  /// the gap between two.
+  static const double jitter = 0.5;
   static const double minRadius = 70, radiusRange = 34;
 
   /// Seconds a burst lasts.
@@ -2432,6 +2438,9 @@ abstract final class FireworksStyle {
   static const double streak = 0.28;
   static const double streakWidth = 3.5;
   static const double dot = 3.8;
+
+  /// Share of its size a spark's dot has lost by the end.
+  static const double dotShrink = 0.5;
   static const double outline = 1.5;
 
   /// The flash at a burst's heart, over this share of its life.
