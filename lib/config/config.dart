@@ -10,8 +10,7 @@ import 'design.dart';
 /// The app's tuning constants and defaults, grouped by the system they drive.
 /// This is the one place to look for (and change) a magic number.
 
-/// Swipe-deck gesture and animation tuning (`lib/ui/play/swipe_deck.dart`),
-/// plus the temporary `PlayScreen`'s lead-in.
+/// Swipe-deck gesture and animation tuning (`lib/ui/play/swipe_deck.dart`).
 abstract final class SwipeTuning {
   /// How long a flicked-away card stays on screen, seconds.
   static const double flyDuration = 0.26;
@@ -98,10 +97,6 @@ abstract final class SwipeTuning {
   static const double holdRingGap = 6;
   static const Color holdRingColor = Palette.ink;
   static const Color holdRingTrackColor = Color(0xB3FFFFFF);
-
-  /// Lead-in before the first card's reveal, letting the route transition
-  /// settle.
-  static const Duration leadIn = Duration(milliseconds: 450);
 }
 
 /// Coloured SFX lettering that pops around the card on each flick
@@ -498,7 +493,6 @@ abstract final class DefaultSettings {
   static const DontKnowInput dontKnowInput = DontKnowInput.hold;
   static const bool showPoemNumber = true;
   static const bool haptics = true;
-  static const bool leadIn = true;
   static const bool sfxEffects = true;
   static const bool music = true;
   static const bool swipeSound = true;

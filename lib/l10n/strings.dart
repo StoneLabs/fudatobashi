@@ -72,6 +72,7 @@ class S {
   String get done => t('done');
   String get dontRemember => t('dontRemember');
   String get tapToStart => t('tapToStart');
+  String get swipeToStart => t('swipeToStart');
 
   // Results
   String get totalTime => t('totalTime');

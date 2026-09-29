@@ -23,7 +23,6 @@ class AppSettings {
     this.dontKnowInput = DefaultSettings.dontKnowInput,
     this.showPoemNumber = DefaultSettings.showPoemNumber,
     this.haptics = DefaultSettings.haptics,
-    this.leadIn = DefaultSettings.leadIn,
     this.sfxEffects = DefaultSettings.sfxEffects,
     this.music = DefaultSettings.music,
     this.swipeSound = DefaultSettings.swipeSound,
@@ -50,9 +49,6 @@ class AppSettings {
   final DontKnowInput dontKnowInput;
   final bool showPoemNumber;
   final bool haptics;
-
-  /// Short "開始" lead-in before the first card.
-  final bool leadIn;
 
   /// Coloured SFX pop for a fast correct card (see [PlaySfxTuning]).
   final bool sfxEffects;
@@ -98,7 +94,6 @@ class AppSettings {
         'dontKnowInput': dontKnowInput.name,
         'showPoemNumber': showPoemNumber,
         'haptics': haptics,
-        'leadIn': leadIn,
         'sfxEffects': sfxEffects,
         'music': music,
         'swipeSound': swipeSound,
@@ -129,7 +124,6 @@ class AppSettings {
       dontKnowInput: DontKnowInput.values.asNameMap()[j['dontKnowInput']] ?? DefaultSettings.dontKnowInput,
       showPoemNumber: j['showPoemNumber'] as bool? ?? DefaultSettings.showPoemNumber,
       haptics: j['haptics'] as bool? ?? DefaultSettings.haptics,
-      leadIn: j['leadIn'] as bool? ?? DefaultSettings.leadIn,
       sfxEffects: j['sfxEffects'] as bool? ?? DefaultSettings.sfxEffects,
       music: j['music'] as bool? ?? sounds ?? DefaultSettings.music,
       swipeSound: j['swipeSound'] as bool? ?? sounds ?? DefaultSettings.swipeSound,
@@ -155,7 +149,6 @@ class AppSettings {
     DontKnowInput? dontKnowInput,
     bool? showPoemNumber,
     bool? haptics,
-    bool? leadIn,
     bool? sfxEffects,
     bool? music,
     bool? swipeSound,
@@ -175,7 +168,6 @@ class AppSettings {
         dontKnowInput: dontKnowInput ?? this.dontKnowInput,
         showPoemNumber: showPoemNumber ?? this.showPoemNumber,
         haptics: haptics ?? this.haptics,
-        leadIn: leadIn ?? this.leadIn,
         sfxEffects: sfxEffects ?? this.sfxEffects,
         music: music ?? this.music,
         swipeSound: swipeSound ?? this.swipeSound,

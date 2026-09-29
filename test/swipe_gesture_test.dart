@@ -1,5 +1,6 @@
 import 'dart:io';
 
+import 'package:flutter/scheduler.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:fudatobashi/config/config.dart';
@@ -9,6 +10,7 @@ import 'package:fudatobashi/domain/trainer.dart';
 import 'package:fudatobashi/state/settings.dart';
 import 'package:fudatobashi/ui/play/swipe_deck.dart';
 import 'package:fudatobashi/ui/play/swipe_gesture.dart';
+import 'package:fudatobashi/ui/torifuda/torifuda_painter.dart';
 
 import 'test_vector_art.dart';
 
@@ -118,6 +120,87 @@ void main() {
       key.currentState!.markDontKnow(session.revealTs! + const Duration(milliseconds: 700));
       expect(session.attempts.last.outcome, Outcome.dontKnow);
       expect(session.attempts.last.responseUs, 700000);
+    });
+  });
+
+  group('SwipeDeck start card', () {
+    Duration? startedAt;
+
+    Future<PlaySession> pumpDeck(WidgetTester tester) async {
+      startedAt = null;
+      final session = PlaySession([const CardRef(1), const CardRef(2)]);
+      await tester.pumpWidget(Directionality(
+        textDirection: TextDirection.ltr,
+        child: MediaQuery(
+          data: const MediaQueryData(size: Size(400, 800)),
+          child: SwipeDeck(
+            session: session,
+            live: true,
+            haptics: false,
+            startCard: const ColoredBox(color: Color(0xFF000000)),
+            onStarted: () => startedAt = SchedulerBinding.instance.currentSystemFrameTimeStamp,
+          ),
+        ),
+      ));
+      await tester.pump(const Duration(seconds: 2));
+      return session;
+    }
+
+    bool anyTextShown(WidgetTester tester) =>
+        tester.widgetList<TorifudaCard>(find.byType(TorifudaCard)).any((c) => c.showText);
+
+    testWidgets('the first card stays blank under it and is revealed on a frame after it leaves; it is no attempt',
+        (tester) async {
+      final session = await pumpDeck(tester);
+      expect(session.currentRevealed, isFalse);
+      expect(anyTextShown(tester), isFalse, reason: 'nothing can be read under the start card');
+
+      // Straight down, which would be a don't-know hold for a real card.
+      final g = await tester.startGesture(const Offset(200, 400));
+      for (var i = 0; i < 6; i++) {
+        await g.moveBy(const Offset(0, 25));
+      }
+      expect(startedAt, isNotNull, reason: 'the start card goes whichever way it is swiped');
+      expect(session.currentRevealed, isFalse, reason: 'the reveal waits for a frame that paints the card');
+      await g.up();
+      await tester.pump(const Duration(milliseconds: 16));
+      expect(session.revealTs, SchedulerBinding.instance.currentSystemFrameTimeStamp);
+      expect(session.revealTs!, greaterThan(startedAt!));
+      expect(anyTextShown(tester), isTrue);
+      expect(session.attempts, isEmpty);
+      expect(session.index, 0);
+
+      for (var n = 1; n <= 2; n++) {
+        final swipe = await tester.startGesture(const Offset(200, 400));
+        for (var i = 0; i < 6 && session.attempts.length < n; i++) {
+          await swipe.moveBy(const Offset(25, 0));
+          await tester.pump(const Duration(milliseconds: 8));
+        }
+        await swipe.up();
+        await tester.pump(const Duration(milliseconds: 16));
+      }
+      expect(session.attempts.map((a) => a.card.poemId), [1, 2], reason: 'only the real cards are attempts');
+      expect(session.firstRevealTs!, greaterThan(startedAt!), reason: 'the run is timed from the first real card');
+    });
+
+    testWidgets('a finger already down when it leaves is timed from its first move after the reveal', (tester) async {
+      final session = await pumpDeck(tester);
+      final g = await tester.startGesture(const Offset(200, 400), pointer: 8);
+      final waiting = await tester.createGesture(pointer: 7);
+      await waiting.down(const Offset(120, 300), timeStamp: const Duration(seconds: 1));
+      for (var i = 0; i < 6; i++) {
+        await g.moveBy(const Offset(25, 0));
+      }
+      await g.up();
+      await tester.pump(const Duration(milliseconds: 16));
+      final reveal = session.revealTs!;
+
+      const late = Duration(milliseconds: 300);
+      for (var i = 0; i < 6 && session.attempts.isEmpty; i++) {
+        await waiting.moveBy(const Offset(25, 0), timeStamp: reveal + late + Duration(milliseconds: i));
+      }
+      await waiting.up();
+      expect(session.attempts.single.responseUs, late.inMicroseconds);
     });
   });
 

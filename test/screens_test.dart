@@ -57,6 +57,7 @@ import 'package:fudatobashi/ui/onboarding/onboarding_screen.dart';
 import 'package:fudatobashi/ui/onboarding/welcome_sea.dart';
 import 'package:fudatobashi/ui/play/kimariji_chip.dart';
 import 'package:fudatobashi/ui/play/play_screen.dart';
+import 'package:fudatobashi/ui/play/start_card.dart';
 import 'package:fudatobashi/ui/profile/profile_screen.dart';
 import 'package:fudatobashi/ui/rank/rank_screen.dart';
 import 'package:fudatobashi/ui/results/celebration_sequence.dart';
@@ -80,6 +81,7 @@ import 'package:fudatobashi/ui/stats/card_list.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 
 import 'test_l10n.dart';
+import 'test_play.dart';
 import 'test_vector_art.dart';
 
 const _phone = Size(384, 832);
@@ -115,6 +117,7 @@ void main() {
   setUpAll(() async {
     await _loadFont('Dela', ['DelaGothicOne-Regular.ttf']);
     await _loadFont('Reggae', ['ReggaeOne-Regular.ttf']);
+    await _loadFont('Joka', ['YujiSyuku-Joka.ttf']);
     await _loadFont('ZenKaku', [
       'ZenKakuGothicNew-Regular.ttf',
       'ZenKakuGothicNew-Medium.ttf',
@@ -1908,7 +1911,6 @@ void main() {
 
   group('Play chrome', () {
     Future<void> pumpPlay(WidgetTester tester, Progress p) async {
-      await tester.runAsync(() => p.updateSettings(p.settings.copyWith(leadIn: false)));
       await tester.binding.setSurfaceSize(_phone);
       await tester.pumpWidget(RepaintBoundary(
         key: const ValueKey('screen'),
@@ -1921,13 +1923,13 @@ void main() {
       ));
       await tester.pump();
       await tester.pump();
+      await swipeStartCard(tester);
     }
 
     testWidgets('the kimariji chip stays clear of the counter at a large font scale', (tester) async {
       tester.platformDispatcher.textScaleFactorTestValue = 1.3;
       addTearDown(tester.platformDispatcher.clearTextScaleFactorTestValue);
       final p = await open(tester, mode: LearningMode.allKnown);
-      await tester.runAsync(() => p.updateSettings(p.settings.copyWith(leadIn: false)));
       await tester.binding.setSurfaceSize(_phone);
       final long = poems.byKimariji('きみがためは').id;
       await tester.pumpWidget(ProgressScope(
@@ -1939,6 +1941,7 @@ void main() {
       ));
       await tester.pump();
       await tester.pump();
+      await swipeStartCard(tester);
       final g = await tester.startGesture(const Offset(192, 360));
       for (var i = 0; i < 4; i++) {
         await g.moveBy(const Offset(40, 0));
@@ -1965,6 +1968,49 @@ void main() {
         expect(tester.takeException(), isNull);
         await _capture(tester, 'play_button_${ja ? 'ja' : 'en'}');
         await tester.pump(const Duration(milliseconds: 500));
+        await tester.pumpWidget(const SizedBox());
+      });
+    }
+
+    for (final ja in [false, true]) {
+      testWidgets('the start card opens the run and is never recorded (${ja ? 'ja' : 'en'})', (tester) async {
+        final p = await open(tester, ja: ja);
+        await tester.binding.setSurfaceSize(_phone);
+        await tester.pumpWidget(RepaintBoundary(
+          key: const ValueKey('screen'),
+          child: ProgressScope(
+            progress: p,
+            child: MaterialApp(
+              home: Builder(
+                builder: (context) => GestureDetector(
+                  onTap: () => Navigator.push(
+                    context,
+                    MaterialPageRoute<void>(
+                      builder: (_) => const PlayScreen(cards: [CardRef(1), CardRef(2)], config: PlayConfig(mode: PlayMode.free)),
+                    ),
+                  ),
+                  child: const Text('home'),
+                ),
+              ),
+            ),
+          ),
+        ));
+        await tester.tap(find.text('home'));
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 500));
+        expect(find.byType(StartCard), findsOneWidget);
+        expect(tester.takeException(), isNull);
+        await _capture(tester, 'play_start_card_${ja ? 'ja' : 'en'}');
+
+        await swipeStartCard(tester);
+        await tester.pump(const Duration(milliseconds: 400));
+        expect(find.byType(StartCard), findsNothing);
+        await tester.tap(find.text(S(ja ? 'ja' : 'en').end));
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 500));
+        expect(find.byType(PlayScreen), findsNothing, reason: 'with no attempt, End goes straight back');
+        expect(find.byType(ResultsScreen), findsNothing);
+        expect(p.sessions, isEmpty, reason: 'the start card alone records no run');
         await tester.pumpWidget(const SizedBox());
       });
     }

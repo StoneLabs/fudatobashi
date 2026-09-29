@@ -29,6 +29,7 @@ import 'package:fudatobashi/ui/results/xp_overlay.dart';
 import 'package:fudatobashi/ui/sound/sounds.dart';
 
 import 'test_l10n.dart';
+import 'test_play.dart';
 import 'test_vector_art.dart';
 
 /// New cards in a run: where they may first appear, their introduction
@@ -108,7 +109,6 @@ void main() {
     late Progress p;
     await tester.runAsync(() async {
       p = await Progress.open(AppDatabase(NativeDatabase.memory()));
-      await p.updateSettings(p.settings.copyWith(leadIn: false));
     });
     const newCard = 100;
     final cards = [for (final id in [1, 2, 3, 4, 5]) CardRef(id), CardRef(newCard), const CardRef(7), const CardRef(8)];
@@ -121,6 +121,8 @@ void main() {
     ));
     await tester.pump();
     await tester.pump();
+    await swipeStartCard(tester);
+    heard.played.clear();
     final session = tester.widget<SwipeDeck>(find.byType(SwipeDeck)).session;
 
     Future<void> swipe() async {
@@ -181,7 +183,6 @@ void main() {
     final last = poems.all.last.id;
     await tester.runAsync(() async {
       p = await Progress.open(AppDatabase(NativeDatabase.memory()));
-      await p.updateSettings(p.settings.copyWith(leadIn: false));
       await p.setLearningMode(LearningMode.journey);
       for (final poem in poems.all) {
         p.trainer.items[ItemKey(poem.id, false)]!.unlocked = true;
@@ -204,6 +205,7 @@ void main() {
     ));
     await tester.pump();
     await tester.pump();
+    await swipeStartCard(tester);
     await _swipe(tester, tester.widget<SwipeDeck>(find.byType(SwipeDeck)).session);
     for (var i = 0; i < 20 && find.byType(ResultsScreen).evaluate().isEmpty; i++) {
       await tester.runAsync(() => Future<void>.delayed(ms(20)));
@@ -235,6 +237,8 @@ void main() {
     sounds = heard;
     addTearDown(() => sounds = Sounds());
     final session = await _openPlay(tester);
+    expect(heard.played, [Sfx.cardFlick], reason: 'the start card leaves with a footstep too');
+    heard.played.clear();
 
     final before = session.index;
     final g = await tester.startGesture(const Offset(192, 360));
@@ -269,6 +273,7 @@ void main() {
     sounds = heard;
     addTearDown(() => sounds = Sounds());
     final session = await _openPlay(tester, cardCount: 6);
+    heard.played.clear();
 
     for (var i = 0; i < 6; i++) {
       await _swipe(tester, session);
@@ -293,13 +298,13 @@ Future<void> _swipe(WidgetTester tester, PlaySession session) async {
   await tester.pump(const Duration(milliseconds: 16));
 }
 
-/// A play screen with [cardCount] ordinary (already-met) cards, ready to
-/// swipe.
+/// A play screen with [cardCount] ordinary (already-met) cards, its start
+/// card swiped away.
 Future<PlaySession> _openPlay(WidgetTester tester, {bool swipeSound = true, int cardCount = 5}) async {
   late Progress p;
   await tester.runAsync(() async {
     p = await Progress.open(AppDatabase(NativeDatabase.memory()));
-    await p.updateSettings(p.settings.copyWith(leadIn: false, swipeSound: swipeSound));
+    await p.updateSettings(p.settings.copyWith(swipeSound: swipeSound));
   });
   final cards = [for (var id = 1; id <= cardCount; id++) CardRef(id)];
   await tester.binding.setSurfaceSize(const Size(384, 832));
@@ -311,6 +316,7 @@ Future<PlaySession> _openPlay(WidgetTester tester, {bool swipeSound = true, int 
   ));
   await tester.pump();
   await tester.pump();
+  await swipeStartCard(tester);
   return tester.widget<SwipeDeck>(find.byType(SwipeDeck)).session;
 }
 

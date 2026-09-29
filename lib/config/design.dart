@@ -38,6 +38,15 @@ abstract final class Palette {
   static const cardFrame = Color(0xFF6A9354);
   static const cardPaper = Color(0xFFEAEAEA);
 
+  /// The start card's black lacquer, gold leaf and vermilion (朱).
+  static const lacquer = Color(0xFF120E0D);
+  static const lacquerGlow = Color(0xFF3B2923);
+  static const gold = Color(0xFFD8B25A);
+  static const goldLight = Color(0xFFF7E4A3);
+  static const goldDeep = Color(0xFF8E6B26);
+  static const vermilion = Color(0xFFD13A22);
+  static const vermilionDeep = Color(0xFF8F2012);
+
   /// Speed tiers, fastest first (see [SpeedTiers]).
   static const tiers = [sun, orange, pink, violetDeep];
   static const tierText = [ink, ink, ink, paper];
@@ -228,6 +237,10 @@ abstract final class Gaps {
 abstract final class Fonts {
   static const display = 'Dela';
   static const sfx = 'Reggae';
+
+  /// Brush lettering, cut down to the start card's few characters
+  /// (`scripts/joka_font.sh`).
+  static const joka = 'Joka';
   static const ui = 'ZenKaku';
 }
 
@@ -1008,6 +1021,70 @@ abstract final class PlayLayout {
 
   static const double buttonRowHeight = 62;
   static const double buttonGap = 14;
+}
+
+/// The start card on top of every run's deck (`StartCard`), drawn in the
+/// torifuda's card units (374 × 525) and scaled to the card's size.
+abstract final class StartCardStyle {
+  static const Size size = Size(374, 525);
+  static const double radius = 12;
+
+  /// The lacquer's soft glow, brightest at [glowCenter] (an [Alignment]).
+  static const Alignment glowCenter = Alignment(-0.35, -0.6);
+  static const double glowRadius = 1.25;
+
+  /// The gold frame: a heavy outer line and a fine inner one, with gold
+  /// brackets in the inner corners.
+  static const double outerFrameInset = 13;
+  static const double outerFrameWidth = 4.5;
+  static const double innerFrameInset = 23;
+  static const double innerFrameWidth = 1.6;
+  static const double cornerBracket = 24;
+  static const double cornerBracketWidth = 3;
+  static const double cornerBracketInset = 5;
+  static const List<Color> goldLeaf = [Palette.goldLight, Palette.gold, Palette.goldDeep, Palette.gold];
+
+  static const EdgeInsets padding = EdgeInsets.fromLTRB(40, 40, 40, 38);
+  static const double titleFont = 25;
+  static const double titleTracking = 0.7;
+  static const double titleRule = 58;
+  static const double titleRuleGap = 12;
+  static const double titleGap = 16;
+
+  /// The 序歌 in 散らし書き (scattered writing): five columns, right to
+  /// left, each dropped by its share of a character from the top.
+  static const double jokaFont = 42;
+  static const double jokaLineHeight = 1.06;
+  static const double jokaColumnGap = 13;
+  static const List<double> jokaDrops = [0, 1.15, 0.35, 1.5, 0.75];
+
+  /// The seal pressed beside the poem's last column, [sealDrop]
+  /// characters down.
+  static const String sealText = '飛';
+  static const double seal = 42;
+  static const double sealRadius = 5;
+  static const double sealDrop = 5.2;
+  static const double sealFont = 27;
+  static const double sealTurnDeg = -6;
+
+  /// The vermilion band with the greeting and the swipe cue.
+  static const double bandGap = 18;
+  static const EdgeInsets bandPadding = EdgeInsets.fromLTRB(10, 12, 10, 12);
+  static const double bandRule = 1.4;
+  static const double greetingFont = 27;
+  static const double cueGap = 6;
+  static const double cueFont = 14;
+  static const double cueTracking = 0.26;
+  static const String cueMarks = '›';
+  static const double cueMarkGap = 10;
+
+  /// A glint sweeping across the lacquer every [sheenPeriod], taking
+  /// [sheenSweep] to cross; frozen off the card under reduced motion.
+  static const Duration sheenPeriod = Duration(milliseconds: 3600);
+  static const Duration sheenSweep = Duration(milliseconds: 1200);
+  static const double sheenWidth = 120;
+  static const double sheenTurnDeg = 24;
+  static const double sheenAlpha = 0.2;
 }
 
 /// Results (spec phone 5) and its celebration overlays.

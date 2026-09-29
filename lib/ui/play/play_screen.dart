@@ -24,6 +24,7 @@ import '../results/results_screen.dart';
 import '../sound/sounds.dart';
 import 'kimariji_chip.dart';
 import 'sfx_overlay.dart';
+import 'start_card.dart';
 import 'swipe_deck.dart';
 
 /// The play chrome (spec phone 4): a calm paper page, the previous card's
@@ -31,6 +32,9 @@ import 'swipe_deck.dart';
 /// ひとつ前 / 終了, and a don't-remember button when that is the don't-know
 /// input. Ends into [ResultsScreen] once there is at least one
 /// attempt; 終了 with none goes straight back.
+///
+/// The run starts once its [StartCard] is swiped away, so the first card is
+/// timed from its own reveal, not from the screen opening.
 ///
 /// Each of [newPoems] is introduced with its pages right before its first
 /// appearance. Play stops meanwhile: the card stays blank under the pages
@@ -49,13 +53,15 @@ class PlayScreen extends StatefulWidget {
 
 class _PlayScreenState extends State<PlayScreen> {
   late final PlaySession _session = PlaySession(widget.cards);
-  final DateTime _startedAt = DateTime.now();
+  DateTime _startedAt = DateTime.now();
   final _sfxKey = GlobalKey<SfxOverlayState>();
   final _deckKey = GlobalKey<SwipeDeckState>();
   Duration? _dontKnowDownTs;
   final Set<Attempt> _requeuedForTraining = {};
   final _rng = math.Random();
-  bool _live = false;
+
+  /// The start card is gone.
+  bool _started = false;
   bool _ending = false;
 
   /// New cards not introduced yet, and those introduced this run.
@@ -75,14 +81,6 @@ class _PlayScreenState extends State<PlayScreen> {
     super.initState();
     _progress = ProgressScope.read(context);
     _session.addListener(_onSessionChanged);
-    _introduceIfNew();
-    if (_progress.settings.leadIn) {
-      Future.delayed(SwipeTuning.leadIn, () {
-        if (mounted) setState(() => _live = true);
-      });
-    } else {
-      _live = true;
-    }
   }
 
   @override
@@ -102,10 +100,19 @@ class _PlayScreenState extends State<PlayScreen> {
     setState(() {});
   }
 
+  void _onStarted() {
+    playSound(context, Sfx.cardFlick);
+    setState(() {
+      _started = true;
+      _startedAt = DateTime.now();
+      _introduceIfNew();
+    });
+  }
+
   /// Stops play for the current card's introduction on its first appearance.
   void _introduceIfNew() {
     final card = _session.current;
-    if (_intro != null || card == null || !_toIntroduce.remove(card.poemId)) return;
+    if (!_started || _intro != null || card == null || !_toIntroduce.remove(card.poemId)) return;
     _session.takeBreak();
     _intro = introductionOf(card.poemId, knows: _knows);
     _introduced.add(card.poemId);
@@ -207,7 +214,7 @@ class _PlayScreenState extends State<PlayScreen> {
     final buttonRows = dontKnowButton ? 2 : 1;
     final buttonsBottom =
         PlayLayout.buttonRowHeight * buttonRows + PlayLayout.buttonGap * (buttonRows - 1) + Gaps.section * 2;
-    final live = _live && _intro == null && !_resuming;
+    final live = _started && _intro == null && !_resuming;
 
     return Scaffold(
       backgroundColor: Palette.paper,
@@ -234,6 +241,8 @@ class _PlayScreenState extends State<PlayScreen> {
                   showNumber: settings.showPoemNumber,
                   haptics: settings.haptics,
                   onCommitted: _onCommitted,
+                  startCard: StartCard(cue: s.swipeToStart),
+                  onStarted: _onStarted,
                 ),
               ),
               Positioned.fill(bottom: buttonsBottom, child: SfxOverlay(key: _sfxKey)),

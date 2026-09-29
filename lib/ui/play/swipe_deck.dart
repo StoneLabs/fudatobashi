@@ -24,6 +24,10 @@ import 'swipe_gesture.dart';
 ///
 /// Don't know is marked per [dontKnowInput] (see [SwipeGesture]), or from
 /// outside with [SwipeDeckState.markDontKnow].
+///
+/// A [startCard] lies on top of the deck until it is swiped away, in any
+/// direction; the first card stays blank under it, so its timing only starts
+/// once the start card is gone. The start card is never an attempt.
 class SwipeDeck extends StatefulWidget {
   const SwipeDeck({
     super.key,
@@ -33,11 +37,15 @@ class SwipeDeck extends StatefulWidget {
     this.showNumber = true,
     this.haptics = true,
     this.onCommitted,
+    this.startCard,
+    this.onStarted,
+    this.cardFace,
   });
 
   final PlaySession session;
 
-  /// False keeps the top card blank (before the start / countdown).
+  /// False keeps the top card blank (while the play screen shows something
+  /// else, e.g. a new card's introduction).
   final bool live;
 
   final DontKnowInput dontKnowInput;
@@ -47,9 +55,20 @@ class SwipeDeck extends StatefulWidget {
   final bool haptics;
   final ValueChanged<Attempt>? onCommitted;
 
+  final Widget? startCard;
+
+  /// The start card has been swiped away.
+  final VoidCallback? onStarted;
+
+  /// Draws a card instead of its torifuda (see [CardFace]).
+  final CardFace? cardFace;
+
   @override
   State<SwipeDeck> createState() => SwipeDeckState();
 }
+
+/// Draws [card]; blank, so nothing can be read early, unless [text].
+typedef CardFace = Widget Function(CardRef card, bool text);
 
 class _Pointer {
   _Pointer(this.id, this.downTs, this.downPos, this.downBeforeReveal) : pos = downPos;
@@ -65,13 +84,12 @@ class _Pointer {
 }
 
 class _Flying {
-  _Flying(this.card, this.from, this.dir, this.speed, this.start, this.outcome, this.tilt);
-  final CardRef card;
+  _Flying(this.face, this.from, this.dir, this.speed, this.start, this.tilt);
+  final Widget face;
   final Offset from;
   final Offset dir;
   final double speed;
   final Duration start;
-  final Outcome outcome;
   final double tilt;
 }
 
@@ -88,6 +106,7 @@ class SwipeDeckState extends State<SwipeDeck> with SingleTickerProviderStateMixi
   final _flying = <_Flying>[];
   bool _revealScheduled = false;
   Size _card = Size.zero;
+  late bool _startCardUp = widget.startCard != null;
 
   /// While a drag is parked in the don't-know hold: when it began, in ticker
   /// time (drives the feedback) and in pointer time (the commit timestamp).
@@ -96,10 +115,17 @@ class SwipeDeckState extends State<SwipeDeck> with SingleTickerProviderStateMixi
 
   PlaySession get _s => widget.session;
 
+  /// The top card follows the finger: the start card, or a revealed card.
+  bool get _draggable => _startCardUp || _s.currentRevealed;
+
   double get _commitDistance =>
       math.max(SwipeTuning.commitDistanceMin, _card.width * SwipeTuning.commitDistanceWidthFraction);
 
-  SwipeGesture get _gesture => SwipeGesture(input: widget.dontKnowInput, commitDistance: _commitDistance);
+  /// The start card goes whichever way it is swiped.
+  SwipeGesture get _gesture => SwipeGesture(
+        input: _startCardUp ? DontKnowInput.off : widget.dontKnowInput,
+        commitDistance: _commitDistance,
+      );
 
   double get _holdProgress => _holdStart == null ? 0 : SwipeGesture.holdProgress(_now - _holdStart!);
 
@@ -155,7 +181,7 @@ class SwipeDeckState extends State<SwipeDeck> with SingleTickerProviderStateMixi
   }
 
   void _scheduleRevealIfNeeded() {
-    if (!widget.live || _s.finished || _s.currentRevealed || _revealScheduled) return;
+    if (!widget.live || _startCardUp || _s.finished || _s.currentRevealed || _revealScheduled) return;
     _revealScheduled = true;
     SchedulerBinding.instance.addPostFrameCallback((_) {
       _revealScheduled = false;
@@ -173,7 +199,7 @@ class SwipeDeckState extends State<SwipeDeck> with SingleTickerProviderStateMixi
     final p = _Pointer(e.pointer, e.timeStamp, e.localPosition, !_s.currentRevealed);
     p.tracker.addPosition(e.timeStamp, e.localPosition);
     _pointers[e.pointer] = p;
-    if (_dragger == null && _s.currentRevealed) {
+    if (_dragger == null && _draggable) {
       _dragger = e.pointer;
       _springing = false;
       _dragBase = _drag;
@@ -185,8 +211,8 @@ class SwipeDeckState extends State<SwipeDeck> with SingleTickerProviderStateMixi
     if (p == null) return;
     p.pos = e.localPosition;
     p.tracker.addPosition(e.timeStamp, e.localPosition);
-    if (p.consumed || !_s.currentRevealed) return;
-    if (p.downBeforeReveal && p.moveAfterRevealTs == null) {
+    if (p.consumed || !_draggable) return;
+    if (_s.currentRevealed && p.downBeforeReveal && p.moveAfterRevealTs == null) {
       if ((p.pos - (p.posAtReveal ?? p.downPos)).distance > SwipeTuning.revealMoveSlop) {
         p.moveAfterRevealTs = e.timeStamp;
       }
@@ -211,7 +237,7 @@ class SwipeDeckState extends State<SwipeDeck> with SingleTickerProviderStateMixi
   void _onUp(PointerUpEvent e) {
     final p = _pointers.remove(e.pointer);
     if (p == null) return;
-    if (!p.consumed && _dragger == p.id && _s.currentRevealed) {
+    if (!p.consumed && _dragger == p.id && _draggable) {
       final v = p.tracker.getVelocity().pixelsPerSecond;
       if (_gesture.onRelease(_drag, v) == SwipeVerdict.known) {
         _commitPointer(p, e.timeStamp, v, Outcome.known);
@@ -250,9 +276,22 @@ class SwipeDeckState extends State<SwipeDeck> with SingleTickerProviderStateMixi
   }
 
   void _commitPointer(_Pointer p, Duration ts, Offset velocity, Outcome outcome) {
-    final responseTs = p.downBeforeReveal ? (p.moveAfterRevealTs ?? ts) : p.downTs;
     p.consumed = true;
+    if (_startCardUp) {
+      _dismissStartCard(velocity);
+      return;
+    }
+    final responseTs = p.downBeforeReveal ? (p.moveAfterRevealTs ?? ts) : p.downTs;
     _commit(responseTs, ts, velocity, outcome);
+  }
+
+  /// The start card flies off and the first card can be revealed: on the
+  /// next frame, like any card after a commit.
+  void _dismissStartCard(Offset velocity) {
+    _launch(_Shadowed(child: widget.startCard!), velocity);
+    setState(() => _startCardUp = false);
+    if (widget.haptics) HapticFeedback.selectionClick();
+    widget.onStarted?.call();
   }
 
   /// Marks the card on top as don't know (the play screen's button), timed
@@ -267,22 +306,11 @@ class SwipeDeckState extends State<SwipeDeck> with SingleTickerProviderStateMixi
   void _commit(Duration responseTs, Duration commitTs, Offset velocity, Outcome outcome) {
     final card = _s.current;
     if (card == null) return;
-    final dirVec = _drag.distance > 12 ? _drag : (velocity.distance > 0 ? velocity : _drag);
-    final dir = dirVec.distance == 0 ? const Offset(1, 0) : dirVec / dirVec.distance;
-    _flying.add(_Flying(
-      card,
-      _drag,
-      dir,
-      math.max(velocity.distance, SwipeTuning.minFlySpeed),
-      _ticker.isActive ? _now : Duration.zero,
-      outcome,
-      _tiltFor(_drag),
-    ));
-    _dragger = null;
-    _drag = Offset.zero;
-    _springing = false;
-    _holdStart = null;
-    _animate();
+    final face = _face(card, text: true);
+    _launch(
+      outcome == Outcome.dontKnow ? Stack(fit: StackFit.expand, children: [face, const _DontKnowMark(progress: 1)]) : face,
+      velocity,
+    );
     _s.commit(responseTs: responseTs, commitTs: commitTs, outcome: outcome);
     if (widget.haptics) {
       outcome == Outcome.dontKnow ? HapticFeedback.heavyImpact() : HapticFeedback.selectionClick();
@@ -290,6 +318,37 @@ class SwipeDeckState extends State<SwipeDeck> with SingleTickerProviderStateMixi
     final a = _s.lastAttempt;
     if (a != null) widget.onCommitted?.call(a);
   }
+
+  /// Sends the top card, drawn as [face], flying off from where it was
+  /// dragged to.
+  void _launch(Widget face, Offset velocity) {
+    final dirVec = _drag.distance > 12 ? _drag : (velocity.distance > 0 ? velocity : _drag);
+    final dir = dirVec.distance == 0 ? const Offset(1, 0) : dirVec / dirVec.distance;
+    _flying.add(_Flying(
+      face,
+      _drag,
+      dir,
+      math.max(velocity.distance, SwipeTuning.minFlySpeed),
+      _ticker.isActive ? _now : Duration.zero,
+      _tiltFor(_drag),
+    ));
+    _dragger = null;
+    _drag = Offset.zero;
+    _springing = false;
+    _holdStart = null;
+    _animate();
+  }
+
+  Widget _face(CardRef ref, {required bool text}) => _Shadowed(
+        child: widget.cardFace?.call(ref, text) ??
+            TorifudaCard(
+              poem: poems[ref.poemId],
+              inverted: ref.inverted,
+              mask: ref.mask,
+              showText: text,
+              showNumber: widget.showNumber,
+            ),
+      );
 
   double _tiltFor(Offset d) => _card.width == 0 ? 0 : (d.dx / _card.width) * SwipeTuning.tiltFactor;
 
@@ -304,7 +363,10 @@ class SwipeDeckState extends State<SwipeDeck> with SingleTickerProviderStateMixi
       _card = Size(w, w * TorifudaSpec.aspect);
       final center = Offset(c.maxWidth / 2, c.maxHeight / 2);
       final current = _s.current;
-      final next = _s.next;
+      // Under the top card, blank: the card up next, and on a deck of three
+      // or more, one more peeking out below the stack for depth.
+      final under = _startCardUp ? current : _s.next;
+      final stacked = _s.cards.length - _s.index + (_startCardUp ? 1 : 0);
       final progress = (_drag.distance / _commitDistance).clamp(0.0, 1.0);
 
       Widget place(Widget child, {Offset offset = Offset.zero, double angle = 0, double scale = 1, double opacity = 1}) {
@@ -326,16 +388,6 @@ class SwipeDeckState extends State<SwipeDeck> with SingleTickerProviderStateMixi
         );
       }
 
-      Widget cardFor(CardRef ref, {required bool text}) => _Shadowed(
-            child: TorifudaCard(
-              poem: poems[ref.poemId],
-              inverted: ref.inverted,
-              mask: ref.mask,
-              showText: text,
-              showNumber: widget.showNumber,
-            ),
-          );
-
       return Listener(
         behavior: HitTestBehavior.opaque,
         onPointerDown: _onDown,
@@ -345,28 +397,29 @@ class SwipeDeckState extends State<SwipeDeck> with SingleTickerProviderStateMixi
         child: Stack(
           clipBehavior: Clip.none,
           children: [
-            // Depth: a blank card peeking out below the stack.
-            if (next != null && _s.index + 2 < _s.cards.length)
-              place(cardFor(next, text: false),
+            if (under != null && stacked > 2)
+              place(_face(under, text: false),
                   offset: const Offset(0, SwipeTuning.depthCardOffsetY),
                   scale: SwipeTuning.depthCardScale,
                   opacity: SwipeTuning.depthCardOpacity),
-            if (next != null)
-              place(cardFor(next, text: false),
+            if (under != null)
+              place(_face(under, text: false),
                   offset: Offset(0, SwipeTuning.nextCardOffsetY * (1 - progress)),
                   scale: SwipeTuning.nextCardScaleBase + SwipeTuning.nextCardScaleRange * progress),
-            if (current != null)
+            if (_startCardUp)
+              place(_Shadowed(child: widget.startCard!), offset: _drag, angle: _tiltFor(_drag))
+            else if (current != null)
               place(
                 // Always a Stack, so the card is never remounted when the
                 // hold mark comes and goes.
                 Stack(fit: StackFit.expand, children: [
-                  cardFor(current, text: widget.live),
+                  _face(current, text: widget.live),
                   if (_holdStart != null) _DontKnowMark(progress: _holdProgress),
                 ]),
                 offset: _drag,
                 angle: _tiltFor(_drag),
               ),
-            for (final f in _flying) _buildFlying(f, place, cardFor),
+            for (final f in _flying) _buildFlying(f, place),
           ],
         ),
       );
@@ -376,17 +429,12 @@ class SwipeDeckState extends State<SwipeDeck> with SingleTickerProviderStateMixi
   Widget _buildFlying(
     _Flying f,
     Widget Function(Widget, {Offset offset, double angle, double scale, double opacity}) place,
-    Widget Function(CardRef, {required bool text}) cardFor,
   ) {
     final t = ((_now - f.start).inMicroseconds / 1e6).clamp(0.0, SwipeTuning.flyDuration);
     final dist = f.speed * t + SwipeTuning.flyAcceleration * t * t;
     final spin = f.dir.dx.sign * t * SwipeTuning.flySpin;
-    Widget child = cardFor(f.card, text: true);
-    if (f.outcome == Outcome.dontKnow) {
-      child = Stack(fit: StackFit.expand, children: [child, const _DontKnowMark(progress: 1)]);
-    }
     return place(
-      child,
+      f.face,
       offset: f.from + f.dir * dist,
       angle: f.tilt + spin,
       opacity: 1 - t / SwipeTuning.flyDuration,

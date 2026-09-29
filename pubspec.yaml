@@ -94,6 +94,10 @@ flutter:
     - family: Reggae
       fonts:
         - asset: assets/fonts/ReggaeOne-Regular.ttf
+    # Yuji Syuku cut down to the start card's lettering (scripts/joka_font.sh).
+    - family: Joka
+      fonts:
+        - asset: assets/fonts/YujiSyuku-Joka.ttf
     - family: ZenKaku
       fonts:
         - asset: assets/fonts/ZenKakuGothicNew-Regular.ttf

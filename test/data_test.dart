@@ -2,6 +2,7 @@ import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:fudatobashi/data/fuda_sets.dart';
+import 'package:fudatobashi/data/joka.dart';
 import 'package:fudatobashi/data/poem.dart';
 
 void main() {
@@ -48,5 +49,12 @@ void main() {
     expect(p.kimarijiTwin(p.byKimariji('きみがためは'))?.kimariji, 'きみがためお');
     expect(p.kimarijiTwin(p.byKimariji('あきの'))?.kimariji, 'あきか');
     expect(p.kimarijiTwin(p.byKimariji('む')), isNull);
+  });
+
+  test('the start card font keeps every character of its lettering', () {
+    final script = File('scripts/joka_font.sh').readAsStringSync();
+    final kept = RegExp(r"TEXT='([^']*)'").firstMatch(script)!.group(1)!;
+    final lettering = [...jokaPhrases, jokaTitle, jokaGreeting].join();
+    expect(lettering.split('').where((c) => !kept.contains(c)), isEmpty, reason: 'rerun scripts/joka_font.sh');
   });
 }
