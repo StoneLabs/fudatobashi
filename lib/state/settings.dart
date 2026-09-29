@@ -29,7 +29,7 @@ class AppSettings {
     this.sfxEffects = DefaultSettings.sfxEffects,
     this.sounds = DefaultSettings.sounds,
     this.showRunningTimer = DefaultSettings.showRunningTimer,
-    this.freePlay = DefaultSettings.freePlay,
+    this.freePractice = DefaultSettings.freePractice,
     this.nigateCount = DefaultSettings.nigateCount,
     this.maskStyle = DefaultSettings.maskStyle,
     this.debugMode = DefaultSettings.debugMode,
@@ -56,8 +56,8 @@ class AppSettings {
   final bool sounds;
   final bool showRunningTimer;
 
-  /// Last free-play setup (表示する札を限定する).
-  final PlayConfig freePlay;
+  /// Free practice's last setup (its deck and 隠し字).
+  final FreePracticeSetup freePractice;
   final int nigateCount;
   final MaskStyle maskStyle;
 
@@ -87,7 +87,7 @@ class AppSettings {
         'sfxEffects': sfxEffects,
         'sounds': sounds,
         'showRunningTimer': showRunningTimer,
-        'freePlay': freePlay.toJson(),
+        'freePractice': freePractice.toJson(),
         'nigateCount': nigateCount,
         'maskStyle': maskStyle.name,
         'debugMode': debugMode,
@@ -105,9 +105,11 @@ class AppSettings {
         sfxEffects: j['sfxEffects'] as bool? ?? DefaultSettings.sfxEffects,
         sounds: j['sounds'] as bool? ?? DefaultSettings.sounds,
         showRunningTimer: j['showRunningTimer'] as bool? ?? DefaultSettings.showRunningTimer,
-        freePlay: j['freePlay'] is Map
-            ? PlayConfig.fromJson((j['freePlay'] as Map).cast<String, dynamic>())
-            : DefaultSettings.freePlay,
+        // The old `freePlay` entry (set ids, orientation) is dropped: free
+        // practice starts over at its default deck, which counts for SRS.
+        freePractice: j['freePractice'] is Map
+            ? FreePracticeSetup.fromJson((j['freePractice'] as Map).cast<String, dynamic>())
+            : DefaultSettings.freePractice,
         nigateCount: j['nigateCount'] as int? ?? DefaultSettings.nigateCount,
         maskStyle: MaskStyle.values.asNameMap()[j['maskStyle']] ?? DefaultSettings.maskStyle,
         debugMode: j['debugMode'] as bool? ?? DefaultSettings.debugMode,
@@ -126,7 +128,7 @@ class AppSettings {
     bool? sfxEffects,
     bool? sounds,
     bool? showRunningTimer,
-    PlayConfig? freePlay,
+    FreePracticeSetup? freePractice,
     int? nigateCount,
     MaskStyle? maskStyle,
     bool? debugMode,
@@ -143,7 +145,7 @@ class AppSettings {
         sfxEffects: sfxEffects ?? this.sfxEffects,
         sounds: sounds ?? this.sounds,
         showRunningTimer: showRunningTimer ?? this.showRunningTimer,
-        freePlay: freePlay ?? this.freePlay,
+        freePractice: freePractice ?? this.freePractice,
         nigateCount: nigateCount ?? this.nigateCount,
         maskStyle: maskStyle ?? this.maskStyle,
         debugMode: debugMode ?? this.debugMode,

@@ -68,6 +68,8 @@ class JourneySimulator {
     return _play(plan.cards, const PlayConfig(mode: PlayMode.training), start, onCard: onCard);
   }
 
+  /// A customised free-play round (all 100 cards, cut to [cards]): stored,
+  /// but it never counts for SRS.
   Future<DateTime> freeRound(DateTime start, int cards, {CardProgress? onCard}) async {
     const config = PlayConfig(mode: PlayMode.free);
     final deck = progress.freeDeck(config, rng: rng).take(cards).toList();

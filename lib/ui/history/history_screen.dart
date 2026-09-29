@@ -4,10 +4,10 @@ import '../../config/design.dart';
 import '../../db/database.dart' show Session;
 import '../../l10n/history_strings.dart';
 import '../../l10n/strings.dart';
-import '../../state/play_config.dart';
 import '../../state/scope.dart';
 import '../manga/manga.dart';
 import '../play/time_format.dart';
+import '../run/run_labels.dart';
 
 /// The History tab: every past run, newest first, high-contrast ink on paper
 /// (unlike the original app's dim grey-on-green history text). Opening a run
@@ -61,18 +61,10 @@ class _HistoryRow extends StatelessWidget {
   const _HistoryRow({required this.entry});
   final _HistoryEntry entry;
 
-  static String _modeLabel(S s, PlayMode mode) => switch (mode) {
-        PlayMode.training => s.training,
-        PlayMode.nigate => s.weakCards,
-        PlayMode.free => s.freePlay,
-        PlayMode.guest => s.guest,
-      };
-
   @override
   Widget build(BuildContext context) {
     final s = S.of(context);
     final session = entry.session;
-    final mode = PlayMode.values[session.mode];
     final total = session.completed && session.totalUs != null
         ? formatRunTime(Duration(microseconds: session.totalUs!))
         : s.runEndedEarly;
@@ -86,7 +78,7 @@ class _HistoryRow extends StatelessWidget {
               mainAxisSize: MainAxisSize.min,
               children: [
                 Row(mainAxisSize: MainAxisSize.min, children: [
-                  InkTag(_modeLabel(s, mode)),
+                  Flexible(child: InkTag(runLabel(s, ProgressScope.of(context).configOf(session)))),
                   const SizedBox(width: Gaps.panel),
                   Flexible(
                     child: Text(s.sessionDate(session.startedAt),

@@ -1,9 +1,9 @@
 import 'dart:convert';
 
-import '../data/fuda_sets.dart';
+import 'package:flutter/foundation.dart';
 
 enum PlayMode {
-  /// 始める: the chosen sets, once each (tracked).
+  /// 始める: free practice, a deck once through (tracked).
   free,
 
   /// 苦手: the slowest / shakiest cards (tracked).
@@ -16,57 +16,77 @@ enum PlayMode {
   guest,
 }
 
-/// 札の方向
-enum CardOrientation { random, upright, inverted }
-
 /// How a run is set up.
 class PlayConfig {
   const PlayConfig({
     required this.mode,
     this.setIds = const ['all'],
-    this.orientation = CardOrientation.random,
+    this.cardIds,
     this.maskLevel = 0,
   });
 
+  /// Free practice's default deck: every card the player knows, whatever that
+  /// is on the day (see `Progress.knownCards`).
+  static const knownDeckId = 'known';
+
   final PlayMode mode;
+
+  /// The `FudaSet`s that make up the deck (or [knownDeckId]), when [cardIds]
+  /// is null.
   final List<String> setIds;
-  final CardOrientation orientation;
+
+  /// A hand-picked deck (free practice customised).
+  final List<int>? cardIds;
 
   /// 隠し字 level (0 = off).
   final int maskLevel;
 
   bool get tracked => mode != PlayMode.guest;
 
-  /// History label like the original: the set name, or ミックス for several.
-  String label(FudaSets sets) {
-    if (mode == PlayMode.training) return '修行';
-    if (mode == PlayMode.nigate) return '苦手';
-    if (setIds.length == 1) return sets[setIds.first].label;
-    return 'ミックス';
-  }
+  /// Free practice's default deck: every known card.
+  bool get isKnownDeck => cardIds == null && setIds.length == 1 && setIds.first == knownDeckId;
+
+  /// Whether the run feeds FSRS, the training statistics and the rating: 修行,
+  /// or free practice left at its default (every known card, no 隠し字). Any
+  /// other free-play deck is stored for History and display only.
+  bool get countsForSrs => mode == PlayMode.training || (mode == PlayMode.free && isKnownDeck && maskLevel == 0);
 
   /// Runs with the same key count as "the same operation" in history.
-  String get historyKey => jsonEncode([mode.index, [...setIds]..sort(), orientation.index, maskLevel]);
+  String get historyKey => jsonEncode([mode.index, [...setIds]..sort(), if (cardIds != null) [...cardIds!]..sort(), maskLevel]);
+}
 
-  Map<String, Object> toJson() => {
-        'mode': mode.name,
-        'setIds': setIds,
-        'orientation': orientation.name,
-        'maskLevel': maskLevel,
-      };
+/// Free practice's remembered setup: the deck and 隠し字. Left at its default
+/// (every known card, 隠し字 off) a run counts like 修行; see
+/// [PlayConfig.countsForSrs].
+class FreePracticeSetup {
+  const FreePracticeSetup({this.cardIds, this.maskLevel = 0});
 
-  factory PlayConfig.fromJson(Map<String, dynamic> j) => PlayConfig(
-        mode: PlayMode.values.asNameMap()[j['mode']] ?? PlayMode.free,
-        setIds: (j['setIds'] as List?)?.cast<String>() ?? const ['all'],
-        orientation: CardOrientation.values.asNameMap()[j['orientation']] ?? CardOrientation.random,
+  /// The hand-picked deck, sorted, or null for every card the player knows.
+  final List<int>? cardIds;
+  final int maskLevel;
+
+  bool get customized => cardIds != null || maskLevel > 0;
+
+  PlayConfig get config => PlayConfig(
+        mode: PlayMode.free,
+        setIds: cardIds == null ? const [PlayConfig.knownDeckId] : const [],
+        cardIds: cardIds,
+        maskLevel: maskLevel,
+      );
+
+  Map<String, Object?> toJson() => {'cardIds': cardIds, 'maskLevel': maskLevel};
+
+  factory FreePracticeSetup.fromJson(Map<String, dynamic> j) => FreePracticeSetup(
+        cardIds: (j['cardIds'] as List?)?.cast<int>(),
         maskLevel: j['maskLevel'] as int? ?? 0,
       );
 
-  PlayConfig copyWith({PlayMode? mode, List<String>? setIds, CardOrientation? orientation, int? maskLevel}) =>
-      PlayConfig(
-        mode: mode ?? this.mode,
-        setIds: setIds ?? this.setIds,
-        orientation: orientation ?? this.orientation,
-        maskLevel: maskLevel ?? this.maskLevel,
-      );
+  @override
+  bool operator ==(Object other) =>
+      other is FreePracticeSetup &&
+      other.maskLevel == maskLevel &&
+      listEquals(other.cardIds, cardIds);
+
+  @override
+  int get hashCode => Object.hash(maskLevel, cardIds == null ? null : Object.hashAll(cardIds!));
 }

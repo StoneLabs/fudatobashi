@@ -25,6 +25,7 @@ import 'package:fudatobashi/domain/rating.dart';
 import 'package:fudatobashi/domain/synthetic_learner.dart';
 import 'package:fudatobashi/domain/trainer.dart';
 import 'package:fudatobashi/l10n/credits_strings.dart';
+import 'package:fudatobashi/l10n/free_strings.dart';
 import 'package:fudatobashi/l10n/home_strings.dart';
 import 'package:fudatobashi/l10n/onboarding_strings.dart';
 import 'package:fudatobashi/l10n/results_strings.dart';
@@ -576,6 +577,9 @@ void main() {
         t += const Duration(milliseconds: 100);
       }
       await p.recordRun(session, const PlayConfig(mode: PlayMode.free, setIds: ['all']), DateTime.now());
+      for (final setup in const [FreePracticeSetup(), FreePracticeSetup(cardIds: [1, 2]), FreePracticeSetup(maskLevel: 2)]) {
+        await p.recordRun(session, setup.config, DateTime.now());
+      }
     });
     expect(p.sessions, isNotEmpty);
 
@@ -587,7 +591,9 @@ void main() {
     await tester.tap(find.text(s.history));
     await tester.pump(const Duration(milliseconds: 500));
     expect(tester.takeException(), isNull);
-    expect(find.text(s.freePlay), findsWidgets);
+    for (final label in ['100首', s.deckAllKnown, s.deckCustom, '${s.deckAllKnown} · 隠し字']) {
+      expect(find.text('${s.freePlay} · $label'), findsOneWidget);
+    }
     await _capture(tester, 'history_scaled_en');
     await tester.pumpWidget(const SizedBox());
   });

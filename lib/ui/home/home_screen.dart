@@ -3,11 +3,12 @@ import 'package:flutter/widgets.dart';
 import '../../config/design.dart';
 import '../../config/vector_art.dart';
 import '../../domain/trainer.dart';
+import '../../l10n/free_strings.dart';
 import '../../l10n/home_strings.dart';
 import '../../l10n/strings.dart';
 import '../../state/scope.dart';
 import '../manga/manga.dart';
-import '../run/run_launcher.dart';
+import '../free/free_practice_sheet.dart';
 import '../shell/header_actions.dart';
 import 'guest_sheet.dart';
 import 'home_widgets.dart';
@@ -124,16 +125,7 @@ class FreeAndGuestRow extends StatelessWidget {
     final s = S.of(context);
     return Row(
       children: [
-        Expanded(
-          child: HomeRowButton(
-            icon: IconArt.cards,
-            title: '始める',
-            sub: s.freePlaySub,
-            displayTitle: true,
-            color: Palette.seaSoft,
-            onTap: () => startFreePlay(context, ProgressScope.read(context).settings.freePlay),
-          ),
-        ),
+        const Expanded(child: _FreePlayButton()),
         const SizedBox(width: Gaps.panelWide),
         Expanded(
           child: HomeRowButton(
@@ -145,6 +137,29 @@ class FreeAndGuestRow extends StatelessWidget {
           ),
         ),
       ],
+    );
+  }
+}
+
+/// The journey's 始める: opens free practice's setup, or while it is still
+/// locked (`Progress.freePractice`) says how many more cards to remember.
+class _FreePlayButton extends StatelessWidget {
+  const _FreePlayButton();
+
+  @override
+  Widget build(BuildContext context) {
+    final s = S.of(context);
+    final access = ProgressScope.of(context).freePractice();
+    return HomeRowButton(
+      icon: access.open ? IconArt.cards : IconArt.lock,
+      title: '始める',
+      sub: access.open ? s.freePlaySub : s.freeLockedSub(access.needed),
+      displayTitle: true,
+      color: access.open ? Palette.seaSoft : Palette.desk,
+      onTap: () => access.open
+          ? openFreePractice(context)
+          : BalloonPop.show(context, s.freeLockedWhy(access.needed),
+              size: FreePracticeLayout.lockBalloon, life: FreePracticeLayout.lockBalloonLife),
     );
   }
 }

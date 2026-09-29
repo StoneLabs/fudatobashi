@@ -11,10 +11,13 @@ class Sessions extends Table {
   /// PlayMode index.
   IntColumn get mode => integer()();
 
-  /// JSON list of FudaSet ids that defined the deck (empty for training).
+  /// JSON list of FudaSet ids that defined the deck (empty for training;
+  /// `PlayConfig.knownDeckId` for free practice's default deck). A
+  /// hand-picked deck's cards are in [meta] as `cardIds`.
   TextColumn get setIds => text().withDefault(const Constant('[]'))();
 
-  /// 0 random, 1 upright only, 2 inverted only.
+  /// The old free-play orientation setting (0 random, 1 upright only, 2
+  /// inverted only); new runs store 0.
   IntColumn get orientation => integer()();
   IntColumn get cardCount => integer()();
 

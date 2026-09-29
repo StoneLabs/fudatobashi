@@ -24,6 +24,9 @@ abstract final class IconArt {
   static late final VectorArt lock;
   static late final VectorArt person;
 
+  /// A tick (picked, in free practice's pickers).
+  static late final VectorArt check;
+
   /// Two cards fanned (free play), 34-unit box.
   static late final VectorArt cards;
 }

@@ -39,10 +39,14 @@ Future<void> startIslandPlay(BuildContext context, int islandIndex) async {
   await _push(context, progress.freeDeck(run), run);
 }
 
-/// 始める: the cards of [config]'s sets, once each.
-Future<void> startFreePlay(BuildContext context, PlayConfig config) {
-  final run = config.copyWith(mode: PlayMode.free);
-  return _push(context, ProgressScope.read(context).freeDeck(run), run);
+/// 始める: free practice with [setup]'s deck (every known card unless
+/// customised), once each. Re-checks the lock off [context], like
+/// [startIslandPlay].
+Future<void> startFreePlay(BuildContext context, FreePracticeSetup setup) async {
+  final progress = ProgressScope.read(context);
+  if (!progress.freePractice().open) return;
+  final run = progress.freePracticeRun(setup);
+  await _push(context, progress.freeDeck(run), run);
 }
 
 /// 苦手: the slowest and shakiest cards.
@@ -56,9 +60,9 @@ Future<void> startNigate(BuildContext context) async {
   await _push(context, deck, run);
 }
 
-/// A guest run of [config]'s sets: nothing is recorded.
-Future<void> startGuest(BuildContext context, PlayConfig config) {
-  final run = config.copyWith(mode: PlayMode.guest);
+/// A guest run of all 100 cards: nothing is recorded.
+Future<void> startGuest(BuildContext context) {
+  const run = PlayConfig(mode: PlayMode.guest);
   return _push(context, ProgressScope.read(context).freeDeck(run), run);
 }
 

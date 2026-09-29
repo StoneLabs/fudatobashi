@@ -28,7 +28,6 @@ extension HomeStrings on S {
   String get reviewsTodayLabel => t("Today's reviews: {0} cards", '今日の復習 {0}枚');
   String get streakDays => t('{0}-day streak', '{0}日連続');
   String get freePlaySub => t('Free play', 'フリー');
-  String get freePlayNote => t('Pick any card set', '好きな札で');
   String get nigateSub => t('Weak cards', '苦手な札');
   String get nigateNote => t('Slow or missed', '遅い・間違えた札');
   String get nigateEmpty => t('Play a few runs first: your weak cards will show up here.',

@@ -30,9 +30,9 @@ class ItemKey {
 /// The facts about one stored attempt that statistics need.
 ///
 /// Built fresh in memory from a stored `AttemptRow` (or a run in progress);
-/// not itself persisted. Carries the session's [mode] so callers can tell
-/// whether an attempt is allowed to feed FSRS and the speed statistics that
-/// drive scheduling/unlocks/rating (see [countsForSrs]).
+/// not itself persisted. Carries its session's [mode] and whether that
+/// session may feed FSRS and the speed statistics that drive
+/// scheduling/unlocks/rating (see [countsForSrs]).
 class AttemptRec {
   const AttemptRec({
     required this.at,
@@ -41,10 +41,11 @@ class AttemptRec {
     required this.clean,
     required this.deckSize,
     required this.mode,
+    bool? countsForSrs,
     this.maskLevel = 0,
     this.grade,
     this.sessionId,
-  });
+  }) : countsForSrs = countsForSrs ?? mode == PlayMode.training;
 
   final DateTime at;
   final int us;
@@ -67,10 +68,11 @@ class AttemptRec {
   /// Usable as a speed sample: clean and correct.
   bool get timed => clean && !miss;
 
-  /// Only 修行 (training) attempts feed FSRS and speed statistics; free play
-  /// and 苦手 runs are stored and shown to the player but never affect
-  /// scheduling, unlocks or rating.
-  bool get countsForSrs => mode == PlayMode.training;
+  /// Only attempts of a run that counts (`PlayConfig.countsForSrs`: 修行, or
+  /// free practice at its default) feed FSRS and speed statistics; other free
+  /// play and 苦手 runs are stored and shown to the player but never affect
+  /// scheduling, unlocks or rating. Defaults to "a 修行 attempt".
+  final bool countsForSrs;
 }
 
 /// Speed and accuracy statistics of one item, from its attempts in time order.

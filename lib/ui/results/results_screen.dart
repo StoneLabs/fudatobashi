@@ -9,6 +9,7 @@ import '../../config/vector_art.dart';
 import '../../data/poem.dart';
 import '../../domain/play_session.dart';
 import '../../domain/rating.dart';
+import '../../l10n/free_strings.dart';
 import '../../l10n/results_strings.dart';
 import '../../l10n/strings.dart';
 import '../../state/play_config.dart';
@@ -16,6 +17,7 @@ import '../../state/progress.dart';
 import '../../state/scope.dart';
 import '../manga/manga.dart';
 import '../play/time_format.dart';
+import '../run/run_labels.dart';
 import '../run/run_launcher.dart';
 import '../torifuda/torifuda_painter.dart';
 import '../sound/sounds.dart';
@@ -103,7 +105,7 @@ class _Splash extends StatelessWidget {
       child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
         const SizedBox(height: HeaderStyle.topGap),
         Row(children: [
-          InkTag('${_modeLabel(s, config.mode)} · ${s.cardsCount(attempts.length)}'),
+          Flexible(child: InkTag('${runLabel(s, config)} · ${s.cardsCount(attempts.length)}')),
           const Spacer(),
           InkIconButton(icon: IconArt.close, semanticLabel: s.home, onTap: onHome),
         ]),
@@ -112,8 +114,11 @@ class _Splash extends StatelessWidget {
           _KnownSpeedNote(ms: progress.knownCardSpeedMs!, weekAgoMs: progress.knownCardSpeedTrendAgo),
         ],
         const SizedBox(height: Gaps.section),
-        if (!config.tracked) ...[
-          DashedBox(padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8), child: Text(s.guestNotRecorded)),
+        if (!config.tracked || config.mode == PlayMode.free && !config.countsForSrs) ...[
+          DashedBox(
+            padding: ResultsLayout.notePadding,
+            child: Text(config.tracked ? s.customRunNote : s.guestNotRecorded),
+          ),
           const SizedBox(height: Gaps.section),
         ],
         Expanded(
@@ -178,12 +183,6 @@ class _Splash extends StatelessWidget {
     );
   }
 
-  static String _modeLabel(S s, PlayMode mode) => switch (mode) {
-        PlayMode.training => s.training,
-        PlayMode.nigate => s.weakCards,
-        PlayMode.free => s.freePlay,
-        PlayMode.guest => s.guest,
-      };
 }
 
 /// A subtle line for `Progress.knownCardSpeedMs`, with a small up/down arrow

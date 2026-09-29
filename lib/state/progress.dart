@@ -69,11 +69,24 @@ class PlannedRun {
   final Set<int> newPoems;
 }
 
+/// Whether free practice (始める) is open (see [Progress.freePractice]).
+class FreePracticeAccess {
+  const FreePracticeAccess({required this.open, required this.remembered});
+
+  final bool open;
+
+  /// Cards well remembered right now (journey mode, while still locked).
+  final int remembered;
+
+  /// Cards still to remember before it opens.
+  int get needed => math.max(0, FreePracticeTuning.unlockRemembered - remembered);
+}
+
 /// All persistent progress: attempts, training state, rating, history and
 /// settings. Loaded once at startup; the UI listens for changes.
 class Progress extends ChangeNotifier {
   Progress._(this.db, this.trainer, this._log, this.sessions, this.ratingPoints, this._settings, this.rating,
-      this._islandsCelebrated);
+      this._islandsCelebrated, this._freePracticeUnlocked);
 
   final AppDatabase db;
   final Trainer trainer;
@@ -89,6 +102,9 @@ class Progress extends ChangeNotifier {
   /// the islands a run reaches).
   final _unreported = <ItemKey>[];
   final Set<int> _islandsCelebrated;
+
+  /// Free practice has opened once, so it stays open (see [freePractice]).
+  bool _freePracticeUnlocked;
 
   /// The most recent run, kept in memory for the debug page's timing view.
   PlaySession? lastRun;
@@ -117,15 +133,15 @@ class Progress extends ChangeNotifier {
     );
 
     final sessions = await (db.select(db.sessions)..orderBy([(s) => OrderingTerm.asc(s.startedAt)])).get();
-    final modeOf = {for (final s in sessions) s.id: PlayMode.values[s.mode]};
+    final configOf = {for (final s in sessions) s.id: _configOf(s)};
 
     final log = <ItemKey, List<AttemptRec>>{};
     final rows = await (db.select(db.attempts)..orderBy([(a) => OrderingTerm.asc(a.at), (a) => OrderingTerm.asc(a.id)])).get();
     for (final a in rows) {
-      (log[ItemKey(a.poemId, a.inverted)] ??= []).add(_rec(a, modeOf[a.sessionId] ?? PlayMode.free));
+      (log[ItemKey(a.poemId, a.inverted)] ??= []).add(_rec(a, configOf[a.sessionId] ?? _orphanRun));
     }
     final points = await (db.select(db.ratingPoints)..orderBy([(r) => OrderingTerm.asc(r.at)])).get();
-    return Progress._(
+    final progress = Progress._(
       db,
       trainer,
       log,
@@ -134,16 +150,24 @@ class Progress extends ChangeNotifier {
       AppSettings.fromJson(json('settings')),
       double.tryParse(kv['rating'] ?? ''),
       {...((jsonDecode(kv['islandsCelebrated'] ?? '[]') as List).cast<int>())},
+      kv[_freePracticeKey] == 'true',
     );
+    await progress._latchFreePractice(DateTime.now());
+    return progress;
   }
 
-  static AttemptRec _rec(AttemptRow a, PlayMode mode) => AttemptRec(
+  /// Stands in for the session of an attempt whose session row is missing.
+  static const _orphanRun = PlayConfig(mode: PlayMode.free);
+  static const _freePracticeKey = 'freePracticeUnlocked';
+
+  static AttemptRec _rec(AttemptRow a, PlayConfig run) => AttemptRec(
         at: a.at,
         us: a.responseUs,
         miss: a.outcome == Outcome.dontKnow.index || a.wrong || a.undone,
         clean: !a.tainted && !a.undone,
         deckSize: a.deckSize,
-        mode: mode,
+        mode: run.mode,
+        countsForSrs: run.countsForSrs,
         maskLevel: a.maskLevel,
         grade: a.grade,
         sessionId: a.sessionId,
@@ -151,9 +175,10 @@ class Progress extends ChangeNotifier {
 
   // ---------------------------------------------------------------- reads
 
-  /// Training-only view of a card's statistics: the one the trainer's
-  /// scheduler, FSRS unlocking and the displayed rating are built from. Free
-  /// play and 苦手 attempts never affect it (see [AttemptRec.countsForSrs]).
+  /// Training view of a card's statistics: the one the trainer's scheduler,
+  /// FSRS unlocking and the displayed rating are built from. Only runs that
+  /// count (修行, and free practice at its default) feed it; customised free
+  /// play and 苦手 never do (see [AttemptRec.countsForSrs]).
   CardStats stats(ItemKey k) =>
       _statsCache[k] ??= CardStats([for (final a in _log[k] ?? const []) if (a.countsForSrs) a]);
 
@@ -242,7 +267,7 @@ class Progress extends ChangeNotifier {
     return PlayConfig(
       mode: PlayMode.values[s.mode],
       setIds: (jsonDecode(s.setIds) as List).cast<String>(),
-      orientation: CardOrientation.values[s.orientation],
+      cardIds: (meta['cardIds'] as List?)?.cast<int>(),
       maskLevel: meta['maskLevel'] as int? ?? 0,
     );
   }
@@ -267,10 +292,39 @@ class Progress extends ChangeNotifier {
 
   // ---------------------------------------------------------------- decks
 
+  /// The cards the player knows: free practice's default deck, and all its
+  /// pickers may choose from. Every card in all-known mode.
+  Set<int> get knownCards => {
+        for (final p in poems.all)
+          if (trainer.config.learningMode == LearningMode.allKnown || knows(p.id)) p.id,
+      };
+
+  /// The cards of a free-play or guest run, sorted: [PlayConfig.cardIds]
+  /// (only those still known), or its sets.
+  List<int> freeDeckIds(PlayConfig c) {
+    final picked = c.cardIds;
+    if (picked != null) return [for (final id in {...picked}) if (knownCards.contains(id)) id]..sort();
+    if (c.isKnownDeck) return knownCards.toList()..sort();
+    return fudaSets.union(c.setIds);
+  }
+
+  /// Free practice's run for [setup]. A hand-picked deck holding every known
+  /// card is the default deck again, so it counts.
+  PlayConfig freePracticeRun(FreePracticeSetup setup) {
+    final picked = setup.cardIds;
+    if (picked == null || !knownCards.every(picked.contains)) return setup.config;
+    return FreePracticeSetup(maskLevel: setup.maskLevel).config;
+  }
+
+  /// A free-play or guest run's deck, once each, shuffled. Free play turns a
+  /// card over only when its reversed item is unlocked, like 修行 does; a
+  /// guest gets either way up at random.
   List<CardRef> freeDeck(PlayConfig c, {math.Random? rng}) {
-    rng ??= math.Random();
-    final ids = fudaSets.union(c.setIds)..shuffle(rng);
-    return [for (final id in ids) _ref(id, _invertedFor(c.orientation, rng), c.maskLevel, rng)];
+    final random = rng ?? math.Random();
+    final ids = freeDeckIds(c)..shuffle(random);
+    bool inverted(int id) =>
+        (c.mode == PlayMode.guest || trainer.items[ItemKey(id, true)]!.unlocked) && random.nextBool();
+    return [for (final id in ids) _ref(id, inverted(id), c.maskLevel, random)];
   }
 
   /// 苦手: the cards with the worst expected time (misses count as slow).
@@ -334,11 +388,23 @@ class Progress extends ChangeNotifier {
   /// Trained before in either orientation (see [Trainer.isNewPoem]).
   bool _metBefore(int poemId) => stats(ItemKey(poemId, false)).seen || stats(ItemKey(poemId, true)).seen;
 
-  static bool _invertedFor(CardOrientation o, math.Random rng) => switch (o) {
-        CardOrientation.random => rng.nextBool(),
-        CardOrientation.upright => false,
-        CardOrientation.inverted => true,
-      };
+  /// Free practice is open in all-known mode, and in journey mode once
+  /// [FreePracticeTuning.unlockRemembered] cards have been well remembered
+  /// at the same time (latched: a bad day never locks it again).
+  FreePracticeAccess freePractice([DateTime? now]) {
+    if (_freePracticeUnlocked || trainer.config.learningMode == LearningMode.allKnown) {
+      return const FreePracticeAccess(open: true, remembered: FreePracticeTuning.unlockRemembered);
+    }
+    final remembered = trainer.wellRememberedCount(allStats, now ?? DateTime.now());
+    return FreePracticeAccess(open: remembered >= FreePracticeTuning.unlockRemembered, remembered: remembered);
+  }
+
+  /// Stores the free-practice latch the first time [freePractice] is open.
+  Future<void> _latchFreePractice(DateTime now) async {
+    if (_freePracticeUnlocked || !freePractice(now).open) return;
+    _freePracticeUnlocked = true;
+    await _put(_freePracticeKey, 'true');
+  }
 
   CardRef _ref(int poemId, bool inverted, int maskLevel, math.Random rng) => CardRef(
         poemId,
@@ -359,6 +425,7 @@ class Progress extends ChangeNotifier {
   Future<void> updateTrainerConfig(TrainerConfig c) async {
     trainer.updateConfig(c);
     await _put('trainer', jsonEncode(c.toJson()));
+    await _latchFreePractice(DateTime.now());
     notifyListeners();
   }
 
@@ -449,11 +516,15 @@ class Progress extends ChangeNotifier {
             startedAt: startedAt,
             mode: config.mode.index,
             setIds: Value(jsonEncode(config.setIds)),
-            orientation: config.orientation.index,
+            orientation: 0,
             cardCount: run.cards.length,
             totalUs: Value(run.finished ? run.total?.inMicroseconds : null),
             completed: run.finished,
-            meta: Value(jsonEncode({'maskLevel': config.maskLevel, 'goalMs': trainer.goalMs})),
+            meta: Value(jsonEncode({
+              'maskLevel': config.maskLevel,
+              'goalMs': trainer.goalMs,
+              if (config.cardIds != null) 'cardIds': config.cardIds,
+            })),
           ));
       final touched = <ItemKey>{};
       final rows = <AttemptsCompanion>[];
@@ -467,10 +538,11 @@ class Progress extends ChangeNotifier {
           clean: !a.tainted && !undone,
           deckSize: a.deckSize,
           mode: config.mode,
+          countsForSrs: config.countsForSrs,
           maskLevel: a.card.mask.hidden.isEmpty ? 0 : config.maskLevel,
           sessionId: id,
         );
-        // Only 修行 (training) attempts feed FSRS; see `AttemptRec.countsForSrs`.
+        // Only a run that counts feeds FSRS; see `PlayConfig.countsForSrs`.
         final grade = rec.countsForSrs ? trainer.review(key, rec) : null;
         final stored = AttemptRec(
           at: rec.at,
@@ -479,6 +551,7 @@ class Progress extends ChangeNotifier {
           clean: rec.clean,
           deckSize: rec.deckSize,
           mode: rec.mode,
+          countsForSrs: rec.countsForSrs,
           maskLevel: rec.maskLevel,
           grade: grade?.value,
           sessionId: id,
@@ -509,13 +582,13 @@ class Progress extends ChangeNotifier {
 
     sessions.add((await (db.select(db.sessions)..where((s) => s.id.equals(sessionId))).getSingle()));
 
-    // Rating: only a 修行 (training) run moves it. `stats()` already leaves
-    // free play and 苦手 out, so the projected performance would be unchanged
-    // anyway — but re-running the smoothing update would still nudge `rating`
-    // another step toward that same performance, which is exactly the leak
+    // Rating: only a run that counts moves it. `stats()` already leaves the
+    // others out, so the projected performance would be unchanged anyway —
+    // but re-running the smoothing update would still nudge `rating` another
+    // step toward that same performance, which is exactly the leak
     // `countsForSrs` is meant to prevent.
     final before = rating;
-    if (config.mode == PlayMode.training) {
+    if (config.countsForSrs) {
       final projected = projectedMs;
       final perf = Rating.performance(projected);
       rating = Rating.update(rating, perf, ratingPoints.length);
@@ -561,6 +634,7 @@ class Progress extends ChangeNotifier {
       goalRaised = true;
       await _put('goalLevel', '${trainer.goalLevel}');
     }
+    await _latchFreePractice(now);
 
     notifyListeners();
     return SessionReport(
@@ -584,7 +658,9 @@ class Progress extends ChangeNotifier {
       await db.delete(db.sessions).go();
       await db.delete(db.items).go();
       await db.delete(db.ratingPoints).go();
-      await (db.delete(db.keyValues)..where((k) => k.key.isIn(['rating', 'goalLevel', 'islandsCelebrated']))).go();
+      await (db.delete(db.keyValues)
+            ..where((k) => k.key.isIn(['rating', 'goalLevel', 'islandsCelebrated', _freePracticeKey])))
+          .go();
     });
     _log.clear();
     _statsCache.clear();
@@ -592,6 +668,7 @@ class Progress extends ChangeNotifier {
     ratingPoints.clear();
     rating = null;
     _islandsCelebrated.clear();
+    _freePracticeUnlocked = false;
     _unreported.clear();
     trainer.items
       ..clear()

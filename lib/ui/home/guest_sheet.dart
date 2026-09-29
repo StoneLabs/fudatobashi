@@ -3,7 +3,6 @@ import 'package:flutter/material.dart';
 import '../../config/design.dart';
 import '../../l10n/home_strings.dart';
 import '../../l10n/strings.dart';
-import '../../state/scope.dart';
 import '../manga/manga.dart';
 import '../run/run_launcher.dart';
 import 'home_widgets.dart';
@@ -26,7 +25,7 @@ Future<void> confirmGuestRun(BuildContext context) async {
     },
   );
   if (ok == true && context.mounted) {
-    await startGuest(context, ProgressScope.read(context).settings.freePlay);
+    await startGuest(context);
   }
 }
 

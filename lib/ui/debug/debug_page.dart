@@ -141,7 +141,7 @@ class _Overview extends StatelessWidget {
       Text('Knobs', style: Theme.of(context).textTheme.titleMedium),
       _Stepper('unlock batch size', c.batchSize, 1, 8, (v) => p.updateTrainerConfig(c.copyWith(batchSize: v))),
       _Stepper('session length', c.sessionLength, 10, 100,
-          (v) => p.updateTrainerConfig(c.copyWith(sessionLength: v)), step: 5),
+          (v) => p.updateTrainerConfig(c.copyWith(sessionLengthOverride: v)), step: 5),
       _Slider('easy ≤ goal ×', c.easyRatio, 0.3, 1.0, (v) => p.updateTrainerConfig(c.copyWith(easyRatio: v))),
       _Slider('good ≤ goal ×', c.goodRatio, 1.0, 3.0, (v) => p.updateTrainerConfig(c.copyWith(goodRatio: v))),
       _Slider('desired retention', c.desiredRetention, 0.7, 0.99,

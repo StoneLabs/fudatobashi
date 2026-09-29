@@ -153,7 +153,11 @@ abstract final class PlaySfxTuning {
 /// planner's scoring weights, and `PlaySession`'s in-training requeue policy.
 abstract final class TrainingTuning {
   static const int defaultBatchSize = 3;
+
+  /// Cards in a 修行 round: journey mode, and all-known mode (a player who
+  /// knows every card gets a longer round).
   static const int defaultSessionLength = 30;
+  static const int allKnownSessionLength = 50;
 
   /// Time / goal at or below which a correct answer is graded Easy.
   static const double defaultEasyRatio = 0.75;
@@ -259,6 +263,13 @@ abstract final class LearnAheadTuning {
   /// of them missed, and their median time within the goal.
   static const int recentWindow = 5;
   static const double maxRecentMissRate = 0.2;
+}
+
+/// Free practice (始める): locked in journey mode until this many cards are
+/// well remembered at once (`Trainer.wellRemembered`); from then on it stays
+/// open for good.
+abstract final class FreePracticeTuning {
+  static const int unlockRemembered = 50;
 }
 
 /// Settings' journey → all-known switch (`AllKnownWarningScreen`): it can't
@@ -422,7 +433,7 @@ abstract final class DefaultSettings {
   static const bool sfxEffects = true;
   static const bool sounds = true;
   static const bool showRunningTimer = false;
-  static const PlayConfig freePlay = PlayConfig(mode: PlayMode.free);
+  static const FreePracticeSetup freePractice = FreePracticeSetup();
 
   /// 苦手 deck size: how many of the slowest/shakiest cards it draws from.
   static const int nigateCount = 10;

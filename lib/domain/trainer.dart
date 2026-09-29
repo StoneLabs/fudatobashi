@@ -154,7 +154,7 @@ class TrainerConfig {
     this.pace = PaceTuning.defaultPace,
     this.batchSize = TrainingTuning.defaultBatchSize,
     this.reverseMode = ReverseMode.afterMastery,
-    this.sessionLength = TrainingTuning.defaultSessionLength,
+    this.sessionLengthOverride,
     this.easyRatio = TrainingTuning.defaultEasyRatio,
     this.goodRatio = TrainingTuning.defaultGoodRatio,
     this.desiredRetention = TrainingTuning.defaultDesiredRetention,
@@ -166,7 +166,16 @@ class TrainerConfig {
   final LearningPace pace;
   final int batchSize;
   final ReverseMode reverseMode;
-  final int sessionLength;
+
+  /// The debug page's round length, or null for the mode's default.
+  final int? sessionLengthOverride;
+
+  /// Cards in a 修行 round.
+  int get sessionLength =>
+      sessionLengthOverride ??
+      (learningMode == LearningMode.allKnown
+          ? TrainingTuning.allKnownSessionLength
+          : TrainingTuning.defaultSessionLength);
 
   /// Time / goal at or below which a correct answer is graded Easy.
   final double easyRatio;
@@ -177,12 +186,12 @@ class TrainerConfig {
   final double masteryStabilityDays;
   final List<int> goalsMs;
 
-  Map<String, Object> toJson() => {
+  Map<String, Object?> toJson() => {
         'learningMode': learningMode.name,
         'pace': pace.name,
         'batchSize': batchSize,
         'reverseMode': reverseMode.name,
-        'sessionLength': sessionLength,
+        'sessionLengthOverride': sessionLengthOverride,
         'easyRatio': easyRatio,
         'goodRatio': goodRatio,
         'desiredRetention': desiredRetention,
@@ -195,7 +204,9 @@ class TrainerConfig {
         pace: LearningPace.values.asNameMap()[j['pace']] ?? PaceTuning.defaultPace,
         batchSize: j['batchSize'] as int? ?? TrainingTuning.defaultBatchSize,
         reverseMode: ReverseMode.values.asNameMap()[j['reverseMode']] ?? ReverseMode.afterMastery,
-        sessionLength: j['sessionLength'] as int? ?? TrainingTuning.defaultSessionLength,
+        // The old always-written `sessionLength` is ignored, so the round
+        // follows the mode's default unless set on the debug page.
+        sessionLengthOverride: j['sessionLengthOverride'] as int?,
         easyRatio: (j['easyRatio'] as num?)?.toDouble() ?? TrainingTuning.defaultEasyRatio,
         goodRatio: (j['goodRatio'] as num?)?.toDouble() ?? TrainingTuning.defaultGoodRatio,
         desiredRetention: (j['desiredRetention'] as num?)?.toDouble() ?? TrainingTuning.defaultDesiredRetention,
@@ -209,7 +220,7 @@ class TrainerConfig {
     LearningPace? pace,
     int? batchSize,
     ReverseMode? reverseMode,
-    int? sessionLength,
+    int? sessionLengthOverride,
     double? easyRatio,
     double? goodRatio,
     double? desiredRetention,
@@ -219,7 +230,7 @@ class TrainerConfig {
         pace: pace ?? this.pace,
         batchSize: batchSize ?? this.batchSize,
         reverseMode: reverseMode ?? this.reverseMode,
-        sessionLength: sessionLength ?? this.sessionLength,
+        sessionLengthOverride: sessionLengthOverride ?? this.sessionLengthOverride,
         easyRatio: easyRatio ?? this.easyRatio,
         goodRatio: goodRatio ?? this.goodRatio,
         desiredRetention: desiredRetention ?? this.desiredRetention,
@@ -458,9 +469,13 @@ class Trainer {
     return stats.missRate(window) <= LearnAheadTuning.maxRecentMissRate && stats.median(window)! <= goalMs;
   }
 
+  /// Unlocked upright cards well remembered right now.
+  int wellRememberedCount(Map<ItemKey, CardStats> stats, DateTime now) =>
+      _uprightUnlocked.where((s) => wellRemembered(s.key, stats[s.key] ?? CardStats.empty, now)).length;
+
   LearnAhead learnAhead(Poems p, FudaSets sets, Map<ItemKey, CardStats> stats, DateTime now) {
     final up = _uprightUnlocked.toList();
-    final shaky = up.where((s) => !wellRemembered(s.key, stats[s.key] ?? CardStats.empty, now)).length;
+    final shaky = up.length - wellRememberedCount(stats, now);
     final hold = paceStatus(p, sets, stats, now).hold;
     return LearnAhead(
       lock: hold == UnlockHold.allUnlocked

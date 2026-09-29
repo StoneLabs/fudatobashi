@@ -650,12 +650,14 @@ abstract final class HomeLayout {
   static const double heroBalloonFont = 14.5;
   static const Alignment heroBalloonSpeaker = Alignment(1.8, -0.5);
 
-  static const double modeHeight = 112;
+  /// The free-play and 苦手 panels under the hero; free play, one of the
+  /// main ways in besides 修行, takes the wider share.
+  static const double modeHeight = 124;
   static const double modeSlant = 22;
   static const double modeGutter = 10;
 
   /// Where the free-play panel ends, as a fraction of the row width.
-  static const double modeSplit = 180 / 358;
+  static const double modeSplit = 204 / 358;
   static const double nigateTextLeft = 16;
   static const double modeTitleGap = 1;
   static const double modeNoteGap = 2;
@@ -664,8 +666,8 @@ abstract final class HomeLayout {
   static const double modeNote = 12.5;
   static const Offset modeTextAt = Offset(14, 30);
   static const double modeIcon = 34;
-  static const Offset modeIconAt = Offset(124, 28);
-  static const Offset modeBadgeAt = Offset(124, 22);
+  static const Offset modeIconAt = Offset(150, 30);
+  static const Offset modeBadgeAt = Offset(104, 22);
 
   /// The slim guest bar under the known-mode panels.
   static const double guestHeight = 40;
@@ -973,6 +975,9 @@ abstract final class PlayLayout {
 /// Results (spec phone 5) and its celebration overlays.
 abstract final class ResultsLayout {
   static const double topBarHeight = 44;
+
+  /// The dashed "not recorded" / "not counted" note under the top bar.
+  static const EdgeInsets notePadding = EdgeInsets.symmetric(horizontal: 12, vertical: 8);
   static const double splashHeight = 268;
   static const double splashCut = 28;
   static const splashBurst = BurstSpec(
@@ -1497,6 +1502,71 @@ abstract final class GuestSheetStyle {
   static const double cut = 14;
   static const Placement tobi = Placement(right: 18, top: -64, size: Size(76, 90));
   static const Color barrier = Color(0x8C141414);
+}
+
+/// Free practice (始める): its setup sheet (`free_practice_sheet.dart`), the
+/// island / card / 友札 pickers behind it, and the balloon of its lock.
+abstract final class FreePracticeLayout {
+  static const EdgeInsets sheetPadding = EdgeInsets.fromLTRB(18, 18, 18, 18);
+  static const double sheetCut = 14;
+  static const Placement tobi = Placement(right: 18, top: -66, size: Size(78, 93));
+  static const double title = 30;
+  static const double deckFont = 14;
+  static const double deckNumber = 22;
+  static const double titleGap = 2;
+
+  /// The island / card / 友札 rows.
+  static const double rowMinHeight = 46;
+  static const EdgeInsets rowPadding = EdgeInsets.fromLTRB(12, 6, 10, 6);
+  static const double rowLabelFont = 15;
+  static const double rowValueFont = 13.5;
+  static const double rowChevron = 16;
+  static const double rowGap = 6;
+
+  /// 隠し字's level chips.
+  static const double maskChip = 34;
+  static const double maskChipFont = 14;
+  static const double maskGap = 5;
+  static const double maskNoteFont = 12.5;
+
+  /// The counts / custom strip above the start button.
+  static const EdgeInsets statusPadding = EdgeInsets.fromLTRB(10, 7, 8, 8);
+  static const double statusNoteFont = 12.5;
+  static const double resetMinHeight = 34;
+  static const EdgeInsets resetPadding = EdgeInsets.symmetric(horizontal: 9, vertical: 4);
+  static const double resetIcon = 15;
+  static const double resetFont = 13;
+  static const double shoutHeight = 64;
+  static const Color barrier = Color(0x8C141414);
+
+  /// Pickers: the header count, hint, section titles and the footer buttons.
+  static const double hintFont = 12.5;
+  static const double sectionFont = 18;
+  static const double sectionGap = 14;
+  static const double footerMinHeight = 48;
+  static const double footerFont = 15;
+
+  /// A card chip (its kimariji), in the card and 友札 pickers.
+  static const EdgeInsets chipPadding = EdgeInsets.fromLTRB(9, 5, 9, 6);
+  static const double chipFont = 16;
+  static const double chipSmallFont = 13.5;
+  static const EdgeInsets chipSmallPadding = EdgeInsets.fromLTRB(7, 3, 7, 4);
+  static const double chipMinHeight = 40;
+  static const double chipGap = 6;
+
+  /// The all / some / none box of an island or 友札 set.
+  static const double coverageBox = 28;
+  static const double coverageIcon = 20;
+  static const Size coverageDash = Size(12, 3.5);
+  static const EdgeInsets setRowPadding = EdgeInsets.fromLTRB(10, 8, 10, 8);
+
+  /// The island picker's legend.
+  static const double legendDot = 12;
+  static const double legendFont = 12;
+  static const double legendGap = 12;
+
+  static const Size lockBalloon = Size(270, 96);
+  static const Duration lockBalloonLife = Duration(milliseconds: 2800);
 }
 
 /// Home's "Learn ahead" (`LearnAheadButton`) beside today's plan, and the

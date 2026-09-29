@@ -3,10 +3,12 @@ import 'package:flutter/widgets.dart';
 import '../../config/design.dart';
 import '../../config/vector_art.dart';
 import '../../domain/rating.dart';
+import '../../l10n/free_strings.dart';
 import '../../l10n/home_strings.dart';
 import '../../l10n/strings.dart';
 import '../../state/scope.dart';
 import '../manga/manga.dart';
+import '../free/free_practice_sheet.dart';
 import '../rank/rank_screen.dart';
 import '../run/run_launcher.dart';
 import 'guest_sheet.dart';
@@ -197,7 +199,8 @@ class _ModePanels extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final s = S.of(context);
-    final progress = ProgressScope.read(context);
+    final progress = ProgressScope.of(context);
+    final counts = progress.freePracticeRun(progress.settings.freePractice).countsForSrs;
     return LayoutBuilder(builder: (context, box) {
       final w = box.maxWidth;
       final split = w * HomeLayout.modeSplit;
@@ -219,11 +222,11 @@ class _ModePanels extends StatelessWidget {
               fade: Backdrops.freePlayStops,
               title: '始める',
               sub: s.freePlaySub,
-              note: s.freePlayNote,
+              note: counts ? s.homeFreeCounts : s.homeFreeCustom,
               textLeft: HomeLayout.modeTextAt.dx,
               corner: MangaIcon(IconArt.cards, size: HomeLayout.modeIcon),
               cornerAt: HomeLayout.modeIconAt,
-              onTap: () => startFreePlay(context, progress.settings.freePlay),
+              onTap: () => openFreePractice(context),
             ),
           ),
           Positioned(
