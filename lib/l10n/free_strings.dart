@@ -1,6 +1,7 @@
 import 'strings.dart';
 
-/// Strings of free practice (始める): its lock, setup sheet and pickers.
+/// Strings of free practice (始める): its lock, setup sheet and pickers. The
+/// sheet's notes mark Japanese phrase ends with `\u200B` (see `Phrases`).
 extension FreeStrings on S {
   String get freeSheetTag => t('FREE PLAY', 'フリー');
   String get freeStart => t('START', 'スタート');
@@ -13,9 +14,9 @@ extension FreeStrings on S {
 
   /// Whether the run counts: the tag, and a line on what that means.
   String get countsTag => t('COUNTS', 'カウント');
-  String get countsNote => t('Reviews and rating update, like 修行', '修行と同じく復習・レーティングに反映');
+  String get countsNote => t('Reviews and rating update, like 修行', '修行と同じく\u200B復習・レーティングに反映');
   String get customTag => t('CUSTOM · NOT COUNTED', 'カスタム · 記録のみ');
-  String get customNote => t('History only: reviews and rating stay put', '履歴だけ。復習・レーティングは変わらない');
+  String get customNote => t('History only: reviews and rating stay put', '履歴だけに記録。\u200B復習・レーティングは\u200B変わらない');
   String get resetToDefault => t('Reset', '戻す');
   String get resetToDefaultLabel => t('Reset to every known card, no 隠し字', '覚えた札ぜんぶ・隠し字なしに戻す');
 
@@ -27,7 +28,10 @@ extension FreeStrings on S {
   String get cardsRow => t('Cards', '札');
   String get lookAlikesRow => t('Look-alikes', '友札');
   String get allKnownIslands => t('All known islands', '覚えた島すべて');
-  String islandsOf(int n, int of) => ja ? '$of島中$n島' : '$n of $of islands';
+  /// [n] of [of] islands wholly in the deck, and [partly] more in part.
+  String islandsOf(int n, int of, {int partly = 0}) => ja
+      ? '$of島中$n島${partly > 0 ? '・一部$partly島' : ''}'
+      : '$n of $of islands${partly > 0 ? ', $partly partly' : ''}';
   String cardsOf(int n, int of) => ja ? '$of枚中$n枚' : '$n of $of cards';
   String setsOf(int n, int of) => ja ? '$of組中$n組' : '$n of $of sets';
   String get noSetsYet => t('None known yet', 'まだなし');

@@ -1524,9 +1524,9 @@ abstract final class FreePracticeLayout {
   static const double rowGap = 6;
 
   /// 隠し字's level chips.
-  static const double maskChip = 34;
+  static const double maskChip = 31;
   static const double maskChipFont = 14;
-  static const double maskGap = 5;
+  static const double maskGap = 4;
   static const double maskNoteFont = 12.5;
 
   /// The counts / custom strip above the start button.

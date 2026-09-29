@@ -76,7 +76,7 @@ class _SetRow extends StatelessWidget {
               spacing: FreePracticeLayout.chipGap,
               runSpacing: FreePracticeLayout.chipGap,
               children: [
-                for (final id in set.poemIds)
+                for (final id in [...set.poemIds]..sort((a, b) => poems[a].kimariji.compareTo(poems[b].kimariji)))
                   CardChip(poem: poems[id], picked: deck.contains(id), known: deck.known.contains(id), small: true),
               ],
             ),

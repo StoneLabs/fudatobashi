@@ -38,6 +38,10 @@ import 'package:fudatobashi/state/scope.dart';
 import 'package:fudatobashi/state/settings.dart';
 import 'package:fudatobashi/ui/app.dart';
 import 'package:fudatobashi/ui/debug/simulation_page.dart';
+import 'package:fudatobashi/ui/free/card_picker.dart';
+import 'package:fudatobashi/ui/free/free_practice_sheet.dart';
+import 'package:fudatobashi/ui/free/island_picker.dart';
+import 'package:fudatobashi/ui/free/look_alike_picker.dart';
 import 'package:fudatobashi/ui/home/learn_ahead_button.dart';
 import 'package:fudatobashi/ui/home/training_hero.dart';
 import 'package:fudatobashi/ui/islands/island_map.dart';
@@ -906,6 +910,97 @@ void main() {
     });
   }
 
+  // Free practice (始める): the journey lock, then the setup sheet and its
+  // three pickers on the user's phone at scaled fonts.
+  for (final ja in [false, true]) {
+    final lang = ja ? 'ja' : 'en';
+
+    testWidgets('free practice: journey Home keeps 始める locked, and a tap says how many cards are left ($lang)',
+        (tester) async {
+      final s = S(ja);
+      final p = await open(tester, mode: LearningMode.journey, ja: ja, journeyCards: 12);
+      final access = p.freePractice();
+      expect(access.open, isFalse);
+      await onPhone(tester, p, fontScale: 1.1);
+      expect(find.text(s.freeLockedSub(access.needed)), findsOneWidget);
+      await tester.tap(find.text('始める'));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 400));
+      expect(find.text(s.freeLockedWhy(access.needed)), findsOneWidget);
+      expect(find.byType(FreePracticeSheet), findsNothing, reason: 'a locked tap opens nothing');
+      expect(tester.takeException(), isNull);
+      await _capture(tester, 'free_locked_$lang');
+      await tester.pump(FreePracticeLayout.lockBalloonLife);
+      await tester.pumpWidget(const SizedBox());
+    });
+
+    for (final fontScale in [1.1, 1.3]) {
+      testWidgets('free practice: the sheet and its pickers fit, customising stops it counting, reset and start '
+          '(font scale $fontScale, $lang)', (tester) async {
+        final s = S(ja);
+        final p = await open(tester, mode: LearningMode.allKnown, ja: ja);
+        await onPhone(tester, p, fontScale: fontScale);
+        Finder inSheet(String text) => find.descendant(of: find.byType(FreePracticeSheet), matching: find.text(text));
+        Future<void> tapAndSettle(Finder target) async {
+          await tester.runAsync(() async {
+            await tester.tap(target);
+            await Future<void>.delayed(const Duration(milliseconds: 50));
+          });
+          await tester.pump();
+          await tester.pump(const Duration(milliseconds: 600));
+          expect(tester.takeException(), isNull);
+        }
+
+        await tapAndSettle(find.text('始める'));
+        expect(find.byType(FreePracticeSheet), findsOneWidget);
+        expect(inSheet(s.countsTag), findsOneWidget);
+        expect(find.text(s.allKnownIslands), findsOneWidget);
+        await _capture(tester, 'free_sheet_${lang}_$fontScale');
+
+        await tapAndSettle(find.text(s.cardsRow));
+        expect(find.byType(CardPickerScreen), findsOneWidget);
+        await _capture(tester, 'free_cards_${lang}_$fontScale');
+        final first = poems[fudaSets['initial:${initialGroups[0]}'].poemIds.first];
+        await tapAndSettle(find.text(first.kimariji));
+        expect(find.text('99/100'), findsOneWidget);
+        await tapAndSettle(find.text(s.done));
+        expect(p.settings.freePractice.cardIds, isNot(contains(first.id)));
+        expect(inSheet(s.customTag), findsOneWidget);
+        final islands = archipelago.islands.length;
+        expect(find.text(s.islandsOf(islands - 1, islands, partly: 1)), findsOneWidget);
+        await _capture(tester, 'free_sheet_custom_${lang}_$fontScale');
+
+        await tapAndSettle(find.text(s.islandsRow));
+        expect(find.byType(IslandPickerScreen), findsOneWidget);
+        await _capture(tester, 'free_islands_${lang}_$fontScale');
+        await tapAndSettle(find.text(s.selectNone));
+        expect(find.text('0/100'), findsOneWidget);
+        await tapAndSettle(find.byType(InkIconButton));
+
+        await tapAndSettle(find.text(s.lookAlikesRow));
+        expect(find.byType(LookAlikePickerScreen), findsOneWidget);
+        final set = fudaSets.ofKind(FudaSetKind.confusable).first;
+        await tapAndSettle(find.text(poems[set.poemIds.first].kimariji));
+        expect(find.text('${set.poemIds.length}/100'), findsOneWidget, reason: 'a set tap adds the whole set');
+        await _capture(tester, 'free_look_alikes_${lang}_$fontScale');
+        await tapAndSettle(find.text(s.done));
+        expect(p.settings.freePractice.cardIds, set.poemIds);
+
+        await tapAndSettle(find.text('3'));
+        expect(p.settings.freePractice.maskLevel, 3);
+        await tapAndSettle(find.text(s.resetToDefault));
+        expect(p.settings.freePractice, const FreePracticeSetup());
+        expect(inSheet(s.countsTag), findsOneWidget);
+
+        await tapAndSettle(find.text(s.freeStart));
+        final played = tester.widget<PlayScreen>(find.byType(PlayScreen));
+        expect(played.cards.length, 100);
+        expect(played.config.countsForSrs, isTrue);
+        await tester.pumpWidget(const SizedBox());
+      });
+    }
+  }
+
   // Reproduces "BOTTOM OVERFLOWED BY 3.0 PIXELS" on the island page's top bar
   // (`_TopBar` in `island_screen.dart`): its two-line title+subtitle Column
   // was squeezed into another fixed-height guess, same root cause and same
@@ -1049,6 +1144,39 @@ void main() {
     await tester.pump(const Duration(milliseconds: 500));
     expect(tester.takeException(), isNull);
     await tester.pumpWidget(const SizedBox());
+  });
+
+  testWidgets('results: a customised free run says it only went to History; the default one does not',
+      (tester) async {
+    tester.platformDispatcher.textScaleFactorTestValue = 1.1;
+    addTearDown(tester.platformDispatcher.clearTextScaleFactorTestValue);
+    const s = S(false);
+    final p = await open(tester, mode: LearningMode.allKnown);
+    final cards = [for (final id in [1, 2, 3]) CardRef(id)];
+    for (final (setup, noted) in [(const FreePracticeSetup(cardIds: [1, 2, 3]), true), (const FreePracticeSetup(), false)]) {
+      late SessionReport report;
+      await tester.runAsync(() async {
+        final session = PlaySession(cards);
+        var t = const Duration(seconds: 100);
+        for (final _ in cards) {
+          session.revealed(t);
+          t += const Duration(milliseconds: 600);
+          session.commit(responseTs: t, commitTs: t + const Duration(milliseconds: 80), outcome: Outcome.known);
+          t += const Duration(milliseconds: 100);
+        }
+        report = await p.recordRun(session, setup.config, DateTime.now());
+      });
+      await tester.binding.setSurfaceSize(_phone);
+      await tester.pumpWidget(ProgressScope(
+        progress: p,
+        child: MaterialApp(home: ResultsScreen(report: report, config: setup.config)),
+      ));
+      await tester.pump(const Duration(milliseconds: 500));
+      expect(tester.takeException(), isNull);
+      expect(find.text(s.customRunNote), noted ? findsOneWidget : findsNothing);
+      await tester.pumpWidget(const SizedBox());
+      await tester.pump(const Duration(seconds: 5));
+    }
   });
 
   // Reproduces the toughest-card time badge's seconds overflowing its box and

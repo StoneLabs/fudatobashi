@@ -170,13 +170,15 @@ class _FreePracticeSheetState extends State<FreePracticeSheet> {
 
   List<Widget> _pickerRows(S s) {
     final islands = [for (final i in archipelago.islands) if (_deck.knownOf(islandCards(i)).isNotEmpty) i];
-    final touched = islands.where((i) => _deck.coverageOf(islandCards(i)) != Coverage.none).length;
+    final coverage = [for (final i in islands) _deck.coverageOf(islandCards(i))];
+    final full = coverage.where((c) => c == Coverage.all).length;
+    final partly = coverage.where((c) => c == Coverage.some).length;
     final sets = offeredLookAlikes(_deck);
     final fullSets = sets.where((set) => _deck.coverageOf(set.poemIds) == Coverage.all).length;
     return [
       _PickerRow(
         label: s.islandsRow,
-        value: _deck.isDefault ? s.allKnownIslands : s.islandsOf(touched, islands.length),
+        value: _deck.isDefault ? s.allKnownIslands : s.islandsOf(full, islands.length, partly: partly),
         onTap: () => _pick((deck) => IslandPickerScreen(deck: deck)),
       ),
       const SizedBox(height: FreePracticeLayout.rowGap),
@@ -251,14 +253,18 @@ class _MaskRow extends StatelessWidget {
               constraints: const BoxConstraints(
                   minWidth: FreePracticeLayout.maskChip, minHeight: FreePracticeLayout.maskChip),
               padding: const EdgeInsets.symmetric(horizontal: Gaps.small),
-              alignment: Alignment.center,
               decoration: BoxDecoration(
                 color: l == level ? Palette.sun : Palette.paper,
                 border: Border.all(color: Palette.ink, width: l == level ? Strokes.button : Strokes.label),
               ),
-              child: Text(
-                l == 0 ? s.maskOff : '$l',
-                style: const TextStyle(fontFamily: Fonts.display, fontSize: FreePracticeLayout.maskChipFont, height: 1),
+              child: Align(
+                widthFactor: 1,
+                heightFactor: 1,
+                child: Text(
+                  l == 0 ? s.maskOff : '$l',
+                  style:
+                      const TextStyle(fontFamily: Fonts.display, fontSize: FreePracticeLayout.maskChipFont, height: 1),
+                ),
               ),
             ),
           ),
@@ -297,7 +303,7 @@ class _CountsStrip extends StatelessWidget {
                   : InkTag(s.customTag),
             ),
             const SizedBox(height: Gaps.tight),
-            Text(counts ? s.countsNote : s.customNote,
+            Text.rich(Phrases.span(counts ? s.countsNote : s.customNote),
                 style: const TextStyle(fontWeight: Weights.bold, fontSize: FreePracticeLayout.statusNoteFont)),
           ]),
         ),
