@@ -13,6 +13,7 @@ import '../domain/card_stats.dart';
 import '../domain/masking.dart';
 import '../domain/play_session.dart';
 import '../domain/rating.dart';
+import '../domain/tab_locks.dart';
 import '../domain/trainer.dart';
 import '../domain/xp.dart';
 import 'play_config.dart';
@@ -96,7 +97,7 @@ class FreePracticeAccess {
 /// settings. Loaded once at startup; the UI listens for changes.
 class Progress extends ChangeNotifier {
   Progress._(this.db, this.trainer, this._log, this.sessions, this.ratingPoints, this._settings, this.rating,
-      this._islandsCelebrated, this._freePracticeUnlocked);
+      this._islandsCelebrated, this._freePracticeUnlocked, this._tabsSeenLocked);
 
   final AppDatabase db;
   final Trainer trainer;
@@ -115,6 +116,10 @@ class Progress extends ChangeNotifier {
 
   /// Free practice has opened once, so it stays open (see [freePractice]).
   bool _freePracticeUnlocked;
+
+  /// Tabs the player has seen locked whose opening is still to be
+  /// celebrated (see [tabLock]).
+  final Set<LockedTab> _tabsSeenLocked;
 
   /// The most recent run, kept in memory for the debug page's timing view.
   PlaySession? lastRun;
@@ -159,16 +164,23 @@ class Progress extends ChangeNotifier {
     // counting as timed) falls back to the last good rating point.
     final stored = double.tryParse(kv['rating'] ?? '');
     final rating = stored == null || stored.isFinite ? stored : points.lastOrNull?.rating;
+    var settings = AppSettings.fromJson(json('settings'));
+    // Players from before the tour existed have found their way around.
+    if (!json('settings').containsKey('toured') && sessions.isNotEmpty) settings = settings.copyWith(toured: true);
     final progress = Progress._(
       db,
       trainer,
       log,
       sessions,
       points,
-      AppSettings.fromJson(json('settings')),
+      settings,
       rating,
       {...((jsonDecode(kv['islandsCelebrated'] ?? '[]') as List).cast<int>())},
       kv[_freePracticeKey] == 'true',
+      {
+        for (final name in (jsonDecode(kv[_tabsSeenLockedKey] ?? '[]') as List).cast<String>())
+          ?LockedTab.values.asNameMap()[name],
+      },
     );
     await progress._latchFreePractice(DateTime.now());
     return progress;
@@ -177,6 +189,7 @@ class Progress extends ChangeNotifier {
   /// Stands in for the session of an attempt whose session row is missing.
   static const _orphanRun = PlayConfig(mode: PlayMode.free);
   static const _freePracticeKey = 'freePracticeUnlocked';
+  static const _tabsSeenLockedKey = 'tabsSeenLocked';
 
   static AttemptRec _rec(AttemptRow a, PlayConfig run) => AttemptRec(
         at: a.at,
@@ -440,6 +453,42 @@ class Progress extends ChangeNotifier {
     await _put(_freePracticeKey, 'true');
   }
 
+  /// For tests that visit History and Stats without playing their way
+  /// there: no tab is ever locked.
+  @visibleForTesting
+  bool tabsAlwaysOpen = false;
+
+  /// What keeps [tab] locked for now, or null once it is open.
+  TabLock? tabLock(LockedTab tab) => tabsAlwaysOpen
+      ? null
+      : TabLock.of(
+        tab,
+        mode: trainer.config.learningMode,
+        rounds: sessions.length,
+        finishedRounds: sessions.where((s) => s.completed).length,
+        islandFinished: _islandsCelebrated.isNotEmpty || islands.any((i) => i.complete),
+      );
+
+  /// Tabs shown locked whose opening is still to be celebrated.
+  Set<LockedTab> get tabsSeenLocked => Set.unmodifiable(_tabsSeenLocked);
+
+  /// [tabs] have been shown locked.
+  Future<void> noteTabsSeenLocked(Iterable<LockedTab> tabs) async {
+    final before = _tabsSeenLocked.length;
+    _tabsSeenLocked.addAll(tabs);
+    if (_tabsSeenLocked.length != before) await _saveTabsSeenLocked();
+  }
+
+  /// [tabs] have opened, and their opening has been celebrated.
+  Future<void> noteTabsOpened(Iterable<LockedTab> tabs) async {
+    final before = _tabsSeenLocked.length;
+    _tabsSeenLocked.removeAll(tabs);
+    if (_tabsSeenLocked.length != before) await _saveTabsSeenLocked();
+  }
+
+  Future<void> _saveTabsSeenLocked() =>
+      _put(_tabsSeenLockedKey, jsonEncode([for (final t in _tabsSeenLocked) t.name]));
+
   CardRef _ref(int poemId, bool inverted, int maskLevel, math.Random rng) => CardRef(
         poemId,
         inverted: inverted,
@@ -701,7 +750,8 @@ class Progress extends ChangeNotifier {
       await db.delete(db.items).go();
       await db.delete(db.ratingPoints).go();
       await (db.delete(db.keyValues)
-            ..where((k) => k.key.isIn(['rating', 'goalLevel', 'islandsCelebrated', _freePracticeKey])))
+            ..where((k) => k.key
+                .isIn(['rating', 'goalLevel', 'islandsCelebrated', _freePracticeKey, _tabsSeenLockedKey])))
           .go();
     });
     _log.clear();
@@ -711,6 +761,7 @@ class Progress extends ChangeNotifier {
     rating = null;
     _islandsCelebrated.clear();
     _freePracticeUnlocked = false;
+    _tabsSeenLocked.clear();
     _unreported.clear();
     trainer.items
       ..clear()

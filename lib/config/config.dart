@@ -99,6 +99,14 @@ abstract final class SwipeTuning {
   static const Color holdRingTrackColor = Color(0xB3FFFFFF);
 }
 
+/// When the tabs a new player starts without open up (`TabLock`).
+abstract final class TabLockTuning {
+  static const int historyRounds = 3;
+
+  /// All-known mode's stand-in for finishing the first island.
+  static const int statsFinishedRounds = 1;
+}
+
 /// The tour's practice round (`PlayScreen.tutorial`).
 abstract final class TutorialTuning {
   /// How long Tobi's last line stays up before the round closes.
@@ -511,6 +519,7 @@ abstract final class DefaultSettings {
   static const MaskStyle maskStyle = MaskStyle.scramble;
   static const bool debugMode = false;
   static const bool onboarded = false;
+  static const bool toured = false;
   static const bool playOverlay = false;
   static const bool showPerformanceOverlay = false;
 }

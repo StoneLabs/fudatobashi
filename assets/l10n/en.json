@@ -368,5 +368,11 @@
   "coachDone": "Perfect! Every swipe is timed to the millisecond. Now for real!",
   "coachRetryKnow": "Oops, that was “I don't remember”! Flick it sideways or up instead.",
   "coachRetryHold": "So close! Swipe down and keep your finger there until the ring fills.",
-  "coachRetryButton": "This time, use the “Don't remember” button!"
+  "coachRetryButton": "This time, use the “Don't remember” button!",
+  "lockRoundsOne": "Play 1 more round to open {0}!",
+  "lockRoundsOther": "Play {0} more rounds to open {1}!",
+  "lockFirstIsland": "Finish your first island to open {0}!",
+  "lockFinishedOne": "Play 1 round to the last card to open {0}!",
+  "lockFinishedOther": "Play {0} more rounds to the last card to open {1}!",
+  "tabUnlocked": "{0} unlocked!"
 }

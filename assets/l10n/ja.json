@@ -368,5 +368,11 @@
   "coachDone": "完璧!​スワイプは​ミリ秒単位で​計ってるよ。​さあ、​本番だ!",
   "coachRetryKnow": "今のは​「覚えてない」!​横か​上に​払ってみて。",
   "coachRetryHold": "惜しい!​下に​スワイプしたら、​輪が​いっぱいに​なるまで​指を​離さないで。",
-  "coachRetryButton": "今度は​「覚えてない」​ボタンを​使ってね!"
+  "coachRetryButton": "今度は​「覚えてない」​ボタンを​使ってね!",
+  "lockRoundsOne": "あと1回​遊ぶと​{0}が​開くよ!",
+  "lockRoundsOther": "あと{0}回​遊ぶと​{1}が​開くよ!",
+  "lockFirstIsland": "最初の島を​クリアすると​{0}が​開くよ!",
+  "lockFinishedOne": "1回​最後まで​遊ぶと​{0}が​開くよ!",
+  "lockFinishedOther": "あと{0}回​最後まで​遊ぶと​{1}が​開くよ!",
+  "tabUnlocked": "{0}が​解放!"
 }

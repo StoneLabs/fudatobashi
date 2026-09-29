@@ -8,26 +8,27 @@ import 'vector.dart';
 /// One destination of [MangaTabBar].
 @immutable
 class MangaTab {
-  const MangaTab({required this.icon, required this.label, this.ready = true});
+  const MangaTab({required this.icon, required this.label, this.onBlocked, this.cover});
   final VectorArt icon;
   final String label;
 
-  /// False for a destination not built yet: tapping it calls
-  /// [MangaTabBar.onUnready] instead of selecting it.
-  final bool ready;
+  /// Set while the destination can't be opened (e.g. still locked): a tap
+  /// calls it with the tile's context instead of selecting it, and the
+  /// tile's contents fade.
+  final ValueChanged<BuildContext>? onBlocked;
+
+  /// Drawn over the tile, e.g. a locked tab's chains.
+  final Widget? cover;
 }
 
 /// The bottom navigation: a row of ink-bordered tiles; the current one is
 /// solid ink.
 class MangaTabBar extends StatelessWidget {
-  const MangaTabBar({super.key, required this.tabs, required this.current, required this.onSelect, this.onUnready});
+  const MangaTabBar({super.key, required this.tabs, required this.current, required this.onSelect});
 
   final List<MangaTab> tabs;
   final int current;
   final ValueChanged<int> onSelect;
-
-  /// A tile that is not [MangaTab.ready] was tapped (its context).
-  final ValueChanged<BuildContext>? onUnready;
 
   @override
   Widget build(BuildContext context) {
@@ -42,7 +43,7 @@ class MangaTabBar extends StatelessWidget {
                 builder: (tile) => _Tile(
                   tab: tab,
                   active: i == current,
-                  onTap: () => tab.ready ? onSelect(i) : onUnready?.call(tile),
+                  onTap: () => tab.onBlocked == null ? onSelect(i) : tab.onBlocked!(tile),
                 ),
               ),
             ),
@@ -62,6 +63,23 @@ class _Tile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final fg = active ? Palette.paper : Palette.ink;
+    final blocked = tab.onBlocked != null;
+    Widget contents = Column(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        MangaIcon(tab.icon, size: TabBarStyle.icon, color: fg),
+        const SizedBox(height: TabBarStyle.iconGap),
+        FittedBox(
+          fit: BoxFit.scaleDown,
+          child: Text(
+            tab.label,
+            maxLines: 1,
+            style: TextStyle(fontSize: TabBarStyle.label, fontWeight: Weights.black, color: fg, height: TabBarStyle.lineHeight),
+          ),
+        ),
+      ],
+    );
+    if (blocked) contents = Opacity(opacity: TabBarStyle.blockedOpacity, child: contents);
     return Semantics(
       selected: active,
       child: Pressable(
@@ -69,28 +87,17 @@ class _Tile extends StatelessWidget {
         scale: Press.tabScale,
         turn: 0,
         semanticLabel: tab.label,
-        builder: (context, _) => AnimatedContainer(
-          duration: Motion.tab,
-          decoration: BoxDecoration(
-            color: active ? Palette.ink : Palette.paper,
-            border: Border.all(color: Palette.ink, width: Strokes.control),
+        builder: (context, _) => Stack(clipBehavior: Clip.none, fit: StackFit.expand, children: [
+          AnimatedContainer(
+            duration: Motion.tab,
+            decoration: BoxDecoration(
+              color: active ? Palette.ink : (blocked ? Palette.desk : Palette.paper),
+              border: Border.all(color: Palette.ink, width: Strokes.control),
+            ),
+            child: contents,
           ),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              MangaIcon(tab.icon, size: TabBarStyle.icon, color: fg),
-              const SizedBox(height: TabBarStyle.iconGap),
-              FittedBox(
-                fit: BoxFit.scaleDown,
-                child: Text(
-                  tab.label,
-                  maxLines: 1,
-                  style: TextStyle(fontSize: TabBarStyle.label, fontWeight: Weights.black, color: fg, height: TabBarStyle.lineHeight),
-                ),
-              ),
-            ],
-          ),
-        ),
+          if (tab.cover != null) Positioned.fill(child: tab.cover!),
+        ]),
       ),
     );
   }

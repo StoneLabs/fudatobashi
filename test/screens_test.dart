@@ -1,6 +1,7 @@
 // Lays out onboarding and both Home modes in English and Japanese on a
 // phone-sized surface and fails on any layout error. With RENDER_SCREENS=1 it
 // also writes PNGs to build/screens/ for visual checks.
+import 'dart:convert';
 import 'dart:io';
 import 'dart:math' as math;
 import 'dart:ui' as ui;
@@ -23,6 +24,7 @@ import 'package:fudatobashi/domain/card_stats.dart';
 import 'package:fudatobashi/domain/play_session.dart';
 import 'package:fudatobashi/domain/rating.dart';
 import 'package:fudatobashi/domain/synthetic_learner.dart';
+import 'package:fudatobashi/domain/tab_locks.dart';
 import 'package:fudatobashi/domain/trainer.dart';
 import 'package:fudatobashi/domain/xp.dart';
 import 'package:fudatobashi/l10n/credits_strings.dart';
@@ -36,6 +38,7 @@ import 'package:fudatobashi/l10n/results_strings.dart';
 import 'package:fudatobashi/l10n/settings_strings.dart';
 import 'package:fudatobashi/l10n/stats_strings.dart';
 import 'package:fudatobashi/l10n/strings.dart';
+import 'package:fudatobashi/l10n/tour_strings.dart';
 import 'package:fudatobashi/state/play_config.dart';
 import 'package:fudatobashi/state/progress.dart';
 import 'package:fudatobashi/state/scope.dart';
@@ -77,6 +80,7 @@ import 'package:fudatobashi/ui/settings/hold_warning_screen.dart';
 import 'package:fudatobashi/ui/settings/language_screen.dart';
 import 'package:fudatobashi/ui/settings/settings_screen.dart';
 import 'package:fudatobashi/ui/shell/header_actions.dart';
+import 'package:fudatobashi/ui/shell/tab_chains.dart';
 import 'package:fudatobashi/ui/sound/sounds.dart';
 import 'package:fudatobashi/ui/stats/card_detail_screen.dart';
 import 'package:fudatobashi/ui/stats/card_list.dart';
@@ -142,10 +146,12 @@ void main() {
     }
   });
 
-  Future<Progress> open(WidgetTester tester, {LearningMode? mode, bool ja = false, int journeyCards = 0}) async {
+  Future<Progress> open(WidgetTester tester,
+      {LearningMode? mode, bool ja = false, int journeyCards = 0, bool tabsLocked = false}) async {
     late Progress p;
     await tester.runAsync(() async {
       p = await Progress.open(AppDatabase(NativeDatabase.memory()));
+      p.tabsAlwaysOpen = !tabsLocked;
       await p.updateSettings(p.settings.copyWith(language: ja ? 'ja' : 'en', languagePicked: true));
       if (mode != null) await p.setLearningMode(mode);
     });
@@ -368,16 +374,14 @@ void main() {
       await tester.pumpWidget(const SizedBox());
     });
 
-    testWidgets('the unbuilt Help tab pops a coming-soon balloon and stays on Home ($lang)', (tester) async {
+    testWidgets('the Help tab opens ($lang)', (tester) async {
       final p = await open(tester, mode: LearningMode.allKnown, ja: ja);
       await tester.binding.setSurfaceSize(_phone);
       await tester.pumpWidget(RepaintBoundary(key: const ValueKey('screen'), child: FudatobashiApp(progress: p)));
       await tester.pump(const Duration(milliseconds: 500));
-      await tester.tap(find.text(ja ? '解説' : 'Help'));
+      await tester.tap(find.descendant(of: find.byType(MangaTabBar), matching: find.text(ja ? '解説' : 'Help')));
       await tester.pump(const Duration(milliseconds: 300));
-      expect(find.text(ja ? '準備中' : 'Coming soon'), findsOneWidget);
-      expect(find.byType(TrainingHero), findsOneWidget, reason: 'still on Home');
-      await tester.pump(const Duration(seconds: 3));
+      expect(tester.widget<MangaTabBar>(find.byType(MangaTabBar)).current, 3);
       await tester.pumpWidget(const SizedBox());
     });
 
@@ -2415,6 +2419,117 @@ void main() {
         await tester.pumpWidget(const SizedBox());
       });
     }
+  });
+
+  group('Locked tabs', () {
+    TabLock? lock(LockedTab t,
+            {LearningMode mode = LearningMode.journey, int rounds = 0, int finished = 0, bool island = false}) =>
+        TabLock.of(t, mode: mode, rounds: rounds, finishedRounds: finished, islandFinished: island);
+
+    test('History opens after 3 rounds; Stats with the first island, or 1 finished round with no islands', () {
+      expect(lock(LockedTab.history)?.left, 3);
+      expect(lock(LockedTab.history, rounds: 2)?.left, 1);
+      expect(lock(LockedTab.history, rounds: 3), isNull);
+      expect(lock(LockedTab.stats, rounds: 9, finished: 9)?.needs, TabUnlock.firstIsland);
+      expect(lock(LockedTab.stats, island: true), isNull);
+      expect(lock(LockedTab.stats, mode: LearningMode.allKnown, rounds: 2)?.needs, TabUnlock.finishedRounds,
+          reason: 'rounds ended early do not count');
+      expect(lock(LockedTab.stats, mode: LearningMode.allKnown, rounds: 1, finished: 1), isNull);
+    });
+
+    Future<void> playRound(WidgetTester tester, Progress p) => tester.runAsync(() async {
+          final run = PlaySession([const CardRef(1)]);
+          run.revealed(Duration.zero);
+          run.commit(responseTs: const Duration(milliseconds: 800), commitTs: const Duration(milliseconds: 800), outcome: Outcome.known);
+          await p.recordRun(run, const PlayConfig(mode: PlayMode.free), DateTime.now());
+        });
+
+    Finder tab(String label) => find.descendant(of: find.byType(MangaTabBar), matching: find.text(label));
+
+    testWidgets('a new player finds History and Stats in chains, Tobi says what opens them, and each breaks free once',
+        (tester) async {
+      final p = await open(tester, mode: LearningMode.allKnown, tabsLocked: true);
+      await tester.runAsync(() => p.updateSettings(p.settings.copyWith(toured: true)));
+      await onPhone(tester, p, fontScale: 1.1);
+      expect(find.byType(TabChains), findsNWidgets(2));
+      await _capture(tester, 'tabs_locked');
+
+      await tester.tap(tab('History'));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 400));
+      expect(find.text(S('en').lockReason('History', const TabLock(TabUnlock.rounds, 3))), findsOneWidget);
+      expect(tester.widget<MangaTabBar>(find.byType(MangaTabBar)).current, 0, reason: 'a locked tab does not open');
+      expect(tester.takeException(), isNull);
+      await _capture(tester, 'tabs_locked_balloon');
+      await tester.pump(TabLockStyle.balloonLife);
+      await tester.runAsync(() async {
+        await Future<void>.delayed(const Duration(milliseconds: 50));
+      });
+      expect(p.tabsSeenLocked, {LockedTab.history, LockedTab.stats});
+
+      Future<void> breakFree() async {
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 16));
+        await tester.pump(TabLockStyle.breakTime ~/ 3);
+        expect(tester.takeException(), isNull);
+      }
+
+      await playRound(tester, p);
+      await breakFree();
+      expect(tester.widgetList<TabChains>(find.byType(TabChains)).where((c) => c.breaking), hasLength(1),
+          reason: 'Stats opens after one finished round');
+      await _capture(tester, 'tabs_breaking');
+      await tester.pump(TabLockStyle.breakTime);
+      await tester.pump();
+      expect(find.byType(TabChains), findsOneWidget);
+      expect(p.tabsSeenLocked, {LockedTab.history});
+      await tester.tap(tab('Stats'));
+      await tester.pump();
+      expect(tester.widget<MangaTabBar>(find.byType(MangaTabBar)).current, 2);
+      await tester.tap(tab('Home'));
+      await tester.pump();
+
+      await playRound(tester, p);
+      await playRound(tester, p);
+      await breakFree();
+      await tester.pump(TabLockStyle.breakTime);
+      await tester.pump();
+      expect(find.byType(TabChains), findsNothing);
+      expect(p.tabsSeenLocked, isEmpty, reason: 'latched: no chains ever again');
+      await tester.pumpWidget(const SizedBox());
+    });
+
+    testWidgets('a player who already qualifies sees no chains and nothing breaking', (tester) async {
+      final p = await open(tester, mode: LearningMode.allKnown, tabsLocked: true);
+      await tester.runAsync(() => p.updateSettings(p.settings.copyWith(toured: true)));
+      for (var i = 0; i < 3; i++) {
+        await playRound(tester, p);
+      }
+      await onPhone(tester, p, fontScale: 1.0);
+      await tester.pump(const Duration(milliseconds: 100));
+      expect(find.byType(TabChains), findsNothing);
+      await tester.pumpWidget(const SizedBox());
+    });
+
+    testWidgets('players from before the tour skip it; a fresh install takes it', (tester) async {
+      late Progress fresh, old;
+      await tester.runAsync(() async {
+        fresh = await Progress.open(AppDatabase(NativeDatabase.memory()));
+        final db = AppDatabase(NativeDatabase.memory());
+        final before = await Progress.open(db);
+        await before.recordRun(
+            PlaySession([const CardRef(1)])
+              ..revealed(Duration.zero)
+              ..commit(responseTs: Duration.zero, commitTs: Duration.zero, outcome: Outcome.known),
+            const PlayConfig(mode: PlayMode.free),
+            DateTime.now());
+        final json = before.settings.toJson()..remove('toured');
+        await db.into(db.keyValues).insertOnConflictUpdate(KeyValuesCompanion.insert(key: 'settings', value: jsonEncode(json)));
+        old = await Progress.open(db);
+      });
+      expect(fresh.settings.toured, isFalse);
+      expect(old.settings.toured, isTrue);
+    });
   });
 
   group('Tutorial round', () {

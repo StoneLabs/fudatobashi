@@ -1,11 +1,15 @@
+import 'dart:math' as math;
+
 import 'package:flutter/widgets.dart';
 
 import '../../config/design.dart';
 import 'balloon.dart';
 import 'entrance.dart';
+import 'tobi.dart';
 
 /// A speech balloon that pops out of a tapped control for a moment ("coming
-/// soon", why a button is locked), [size] across, for [life].
+/// soon", why a button is locked), [size] across, for [life]. With [tobi],
+/// Tobi pops up beside it in that pose and says it.
 abstract final class BalloonPop {
   static OverlayEntry? _shown;
 
@@ -15,6 +19,7 @@ abstract final class BalloonPop {
     String message, {
     Size size = BalloonPopStyle.size,
     Duration life = BalloonPopStyle.life,
+    TobiPose? tobi,
   }) {
     final box = context.findRenderObject();
     final overlay = Overlay.maybeOf(context);
@@ -29,6 +34,7 @@ abstract final class BalloonPop {
         message: message,
         size: size,
         life: life,
+        tobi: tobi,
         onDone: () {
           if (_shown != entry) return;
           entry.remove();
@@ -47,12 +53,14 @@ class _Bubble extends StatefulWidget {
     required this.message,
     required this.size,
     required this.life,
+    required this.tobi,
     required this.onDone,
   });
   final Rect anchor;
   final String message;
   final Size size;
   final Duration life;
+  final TobiPose? tobi;
   final VoidCallback onDone;
 
   @override
@@ -71,7 +79,12 @@ class _BubbleState extends State<_Bubble> with SingleTickerProviderStateMixin {
 
   @override
   Widget build(BuildContext context) {
-    final size = widget.size;
+    final tobi = widget.tobi;
+    const tobiSize = Size(BalloonPopStyle.tobi * TobiStyle.aspect, BalloonPopStyle.tobi);
+    final balloon = widget.size;
+    final size = tobi == null
+        ? balloon
+        : Size(tobiSize.width + BalloonPopStyle.tobiGap + balloon.width, math.max(tobiSize.height, balloon.height));
     final screen = MediaQuery.sizeOf(context);
     final safeTop = MediaQuery.paddingOf(context).top;
     final a = widget.anchor;
@@ -79,8 +92,22 @@ class _BubbleState extends State<_Bubble> with SingleTickerProviderStateMixin {
     final left = (a.center.dx - size.width / 2).clamp(Gaps.gutter, screen.width - size.width - Gaps.gutter);
     final top = above ? a.top - size.height - BalloonPopStyle.gap : a.bottom + BalloonPopStyle.gap;
     final target = Offset(a.center.dx, above ? a.top : a.bottom);
-    final speaker = Alignment((target.dx - left) / size.width * 2 - 1, (target.dy - top) / size.height * 2 - 1);
+    final speaker = tobi == null
+        ? Alignment((target.dx - left) / size.width * 2 - 1, (target.dy - top) / size.height * 2 - 1)
+        : BalloonPopStyle.tobiSpeaker;
     final still = MediaQuery.disableAnimationsOf(context);
+    Widget said = SpeechBalloon(
+      speaker: speaker,
+      color: Palette.sun,
+      child: Text(widget.message, style: const TextStyle(fontSize: TypeScale.button)),
+    );
+    if (tobi != null) {
+      said = Row(crossAxisAlignment: CrossAxisAlignment.end, children: [
+        SizedBox.fromSize(size: tobiSize, child: Tobi(pose: tobi)),
+        const SizedBox(width: BalloonPopStyle.tobiGap),
+        SizedBox.fromSize(size: balloon, child: said),
+      ]);
+    }
     return Positioned(
       left: left,
       top: top,
@@ -103,11 +130,7 @@ class _BubbleState extends State<_Bubble> with SingleTickerProviderStateMixin {
               ),
             );
           },
-          child: SpeechBalloon(
-            speaker: speaker,
-            color: Palette.sun,
-            child: Text(widget.message, style: const TextStyle(fontSize: TypeScale.button)),
-          ),
+          child: said,
         ),
       ),
     );

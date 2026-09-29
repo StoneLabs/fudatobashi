@@ -33,6 +33,7 @@ class AppSettings {
     this.maskStyle = DefaultSettings.maskStyle,
     this.debugMode = DefaultSettings.debugMode,
     this.onboarded = DefaultSettings.onboarded,
+    this.toured = DefaultSettings.toured,
     this.playOverlay = DefaultSettings.playOverlay,
     this.showPerformanceOverlay = DefaultSettings.showPerformanceOverlay,
     this.languagePicked = DefaultSettings.languagePicked,
@@ -71,6 +72,9 @@ class AppSettings {
   /// The first-launch journey / all-known choice has been made.
   final bool onboarded;
 
+  /// Tobi's tour of Home is done; set back to false to take it again.
+  final bool toured;
+
   /// Dev-mode corner readout of the last attempt's timing during play.
   final bool playOverlay;
 
@@ -104,6 +108,7 @@ class AppSettings {
         'maskStyle': maskStyle.name,
         'debugMode': debugMode,
         'onboarded': onboarded,
+        'toured': toured,
         'playOverlay': playOverlay,
         'showPerformanceOverlay': showPerformanceOverlay,
         'languagePicked': languagePicked,
@@ -138,6 +143,7 @@ class AppSettings {
       maskStyle: MaskStyle.values.asNameMap()[j['maskStyle']] ?? DefaultSettings.maskStyle,
       debugMode: j['debugMode'] as bool? ?? DefaultSettings.debugMode,
       onboarded: j['onboarded'] as bool? ?? DefaultSettings.onboarded,
+      toured: j['toured'] as bool? ?? DefaultSettings.toured,
       playOverlay: j['playOverlay'] as bool? ?? DefaultSettings.playOverlay,
       showPerformanceOverlay:
           j['showPerformanceOverlay'] as bool? ?? DefaultSettings.showPerformanceOverlay,
@@ -159,6 +165,7 @@ class AppSettings {
     MaskStyle? maskStyle,
     bool? debugMode,
     bool? onboarded,
+    bool? toured,
     bool? playOverlay,
     bool? showPerformanceOverlay,
     bool? languagePicked,
@@ -178,6 +185,7 @@ class AppSettings {
         maskStyle: maskStyle ?? this.maskStyle,
         debugMode: debugMode ?? this.debugMode,
         onboarded: onboarded ?? this.onboarded,
+        toured: toured ?? this.toured,
         playOverlay: playOverlay ?? this.playOverlay,
         showPerformanceOverlay: showPerformanceOverlay ?? this.showPerformanceOverlay,
         languagePicked: languagePicked ?? this.languagePicked,

@@ -336,6 +336,65 @@ abstract final class TabBarStyle {
   static const double icon = 21;
   static const double iconGap = 4;
   static const double label = 14;
+
+  /// How much of a blocked tile's icon and label shows through.
+  static const double blockedOpacity = 0.4;
+}
+
+/// A locked tab's chains and padlock (`TabChains`), and how they break
+/// when the tab opens.
+abstract final class TabLockStyle {
+  static const Color steel = Color(0xFFA9B0B8);
+  static const Color steelLight = Color(0xFFE6EAEE);
+
+  /// The chain: a link every [link] px, each [linkLength] long so they
+  /// overlap, [linkWidth] wide lying flat and [linkEdge] seen edge-on.
+  static const double link = 9;
+  static const double linkLength = 12;
+  static const double linkWidth = 6;
+  static const double linkEdge = 2.6;
+  static const double linkStroke = 1.6;
+  static const double linkShineInset = 1.9;
+
+  /// How far the crossed chains reach past the tile's corners.
+  static const double chainReach = 4;
+
+  /// The padlock over the tile's icon: its body, the shackle's radius and
+  /// thickness, and where it floats (an [Alignment] in the tile).
+  static const Size lockBody = Size(24, 18);
+  static const double lockRadius = 3.5;
+  static const double shackle = 7;
+  static const double shackleWidth = 3.4;
+  static const double keyhole = 2.6;
+  static const Alignment lockAt = Alignment(0, -0.22);
+
+  /// The padlock bobs by [bob] px and rocks by [rockDeg] each [bobPeriod].
+  static const Duration bobPeriod = Duration(milliseconds: 1800);
+  static const double bob = 2.5;
+  static const double rockDeg = 5;
+
+  /// The break: the padlock rattles until [snapAt] (share of [breakTime]),
+  /// then its shackle flips open and everything falls away, flung out at
+  /// [fling] px/s, pulled down at [gravity] px/s² and spinning at [spin]
+  /// rad/s, while [sparks] focus lines burst out to [sparkReach] px.
+  static const Duration breakTime = Duration(milliseconds: 1000);
+  static const double snapAt = 0.22;
+  static const double rattle = 2.2;
+  static const double rattleHz = 18;
+  static const double shackleOpenDeg = 50;
+  static const double fling = 130;
+  static const double gravity = 1400;
+  static const double spin = 5;
+  static const double chainSpin = 1.7;
+  static const int sparks = 12;
+  static const double sparkFrom = 12;
+  static const double sparkReach = 46;
+  static const double sparkLength = 16;
+  static const double sparkWidth = 2.6;
+
+  /// Tobi's balloon on a tapped locked tab.
+  static const Size balloon = Size(200, 92);
+  static const Duration balloonLife = Duration(milliseconds: 2600);
 }
 
 abstract final class ButtonMetrics {
@@ -1792,6 +1851,12 @@ abstract final class SimulationStyle {
 abstract final class BalloonPopStyle {
   static const Size size = Size(150, 64);
   static const double gap = 12;
+
+  /// With Tobi saying it: Tobi's height, the gap to the balloon, and where
+  /// the tail points (at Tobi, left of the balloon).
+  static const double tobi = 74;
+  static const double tobiGap = 2;
+  static const Alignment tobiSpeaker = Alignment(-1.3, 0.45);
   static const Duration life = Duration(milliseconds: 1600);
   static const Duration fade = Duration(milliseconds: 260);
   static const pop = EntranceSpec(Entrances.pop, duration: Duration(milliseconds: 320), curve: Entrances.springy);
