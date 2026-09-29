@@ -21,8 +21,12 @@ extension SettingsStrings on S {
   String get cardEffectsNote => t('cardEffectsNote');
   String get vibration => t('vibration');
   String get vibrationNote => t('vibrationNote');
-  String get sounds => t('sounds');
-  String get soundsNote => t('soundsNote');
+  String get music => t('music');
+  String get musicNote => t('musicNote');
+  String get swipeSound => t('swipeSound');
+  String get swipeSoundNote => t('swipeSoundNote');
+  String get effectSounds => t('effectSounds');
+  String get effectSoundsNote => t('effectSoundsNote');
   String get soundSilentNote => t('soundSilentNote');
   String get dontKnowInput => t('dontKnowInput');
   String get dontKnowInputNote => t('dontKnowInputNote');

@@ -27,6 +27,41 @@ void main() {
     });
   });
 
+  group('AppSettings sound switches (music, card swipe, other effects)', () {
+    test('an old single Sounds switch that was off turns all three off', () {
+      final s = AppSettings.fromJson({'language': 'en', 'sounds': false});
+      expect([s.music, s.swipeSound, s.effectSounds], [false, false, false]);
+    });
+
+    test('an old Sounds switch that was on, or none at all, leaves all three on', () {
+      for (final j in [
+        {'sounds': true},
+        <String, dynamic>{},
+      ]) {
+        final s = AppSettings.fromJson(j);
+        expect([s.music, s.swipeSound, s.effectSounds], [true, true, true]);
+      }
+    });
+
+    test('the new switches win over the old one, and it is no longer written', () {
+      final s = AppSettings.fromJson({'sounds': false, 'swipeSound': true});
+      expect([s.music, s.swipeSound, s.effectSounds], [false, true, false]);
+      expect(s.toJson().containsKey('sounds'), isFalse);
+    });
+
+    test('each round-trips through toJson on its own', () {
+      final s = AppSettings.fromJson(const AppSettings(music: false, effectSounds: false).toJson());
+      expect([s.music, s.swipeSound, s.effectSounds], [false, true, false]);
+    });
+
+    test('plays routes each category to its own switch', () {
+      const s = AppSettings(music: false, swipeSound: true, effectSounds: false);
+      expect(s.plays(SoundCategory.music), isFalse);
+      expect(s.plays(SoundCategory.swipe), isTrue);
+      expect(s.plays(SoundCategory.effects), isFalse);
+    });
+  });
+
   group('AppSettings.languagePicked (first-open language picker)', () {
     test('a truly fresh install (nothing saved yet) has not picked one', () {
       expect(AppSettings.fromJson({}).languagePicked, isFalse);

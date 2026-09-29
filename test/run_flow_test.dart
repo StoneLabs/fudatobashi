@@ -252,15 +252,15 @@ void main() {
     await tester.pumpWidget(const SizedBox());
   });
 
-  testWidgets('a committed swipe stays silent with Sounds off', (tester) async {
+  testWidgets('a committed swipe stays silent with the card swipe sound off, other sounds on or not', (tester) async {
     final heard = _HeardSounds();
     sounds = heard;
     addTearDown(() => sounds = Sounds());
-    final session = await _openPlay(tester, soundsOn: false);
+    final session = await _openPlay(tester, swipeSound: false);
 
     await _swipe(tester, session);
     expect(session.index, 1);
-    expect(heard.played, isEmpty, reason: 'the Sounds setting mutes the footstep too');
+    expect(heard.played, isEmpty, reason: 'the card swipe sound switch mutes the footstep');
     await tester.pumpWidget(const SizedBox());
   });
 
@@ -295,11 +295,11 @@ Future<void> _swipe(WidgetTester tester, PlaySession session) async {
 
 /// A play screen with [cardCount] ordinary (already-met) cards, ready to
 /// swipe.
-Future<PlaySession> _openPlay(WidgetTester tester, {bool soundsOn = true, int cardCount = 5}) async {
+Future<PlaySession> _openPlay(WidgetTester tester, {bool swipeSound = true, int cardCount = 5}) async {
   late Progress p;
   await tester.runAsync(() async {
     p = await Progress.open(AppDatabase(NativeDatabase.memory()));
-    await p.updateSettings(p.settings.copyWith(leadIn: false, sounds: soundsOn));
+    await p.updateSettings(p.settings.copyWith(leadIn: false, swipeSound: swipeSound));
   });
   final cards = [for (var id = 1; id <= cardCount; id++) CardRef(id)];
   await tester.binding.setSurfaceSize(const Size(384, 832));

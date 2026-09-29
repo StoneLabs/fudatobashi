@@ -500,7 +500,9 @@ abstract final class DefaultSettings {
   static const bool haptics = true;
   static const bool leadIn = true;
   static const bool sfxEffects = true;
-  static const bool sounds = true;
+  static const bool music = true;
+  static const bool swipeSound = true;
+  static const bool effectSounds = true;
   static const bool showRunningTimer = false;
   static const FreePracticeSetup freePractice = FreePracticeSetup();
 
@@ -740,6 +742,22 @@ abstract final class SoundTuning {
   static const int ratingTickPoolSize = 4;
 }
 
+/// What a sound belongs to. Each category has its own Settings switch
+/// (`AppSettings.plays`), and silent or vibrate mode mutes them all.
+enum SoundCategory {
+  /// Background music. There is none yet; music added later plays under
+  /// this category, so its switch already works.
+  music,
+
+  /// A card being swiped away: every card that leaves the deck during play,
+  /// and the new-card page's flick.
+  swipe,
+
+  /// Every other sound: new cards and islands, XP, level-ups, the rating,
+  /// rank-ups, graduation and Results.
+  effects,
+}
+
 /// The app's sound effects (Kenney, CC0; provenance in
 /// `assets/sounds/License.txt`): each one's assets under `assets/` and its
 /// playback volume, 0–1. A sound with several assets plays a random one of
@@ -758,6 +776,7 @@ enum Sfx {
     ],
     0.85,
     poolSize: SoundTuning.cardFlickPoolSize,
+    category: SoundCategory.swipe,
   ),
   lookAlike(['sounds/look_alike.wav'], 0.7),
   island(['sounds/island.wav'], 0.8),
@@ -781,9 +800,12 @@ enum Sfx {
     poolSize: SoundTuning.burstPoolSize,
   );
 
-  const Sfx(this.assets, this.volume, {this.poolSize = 1});
+  const Sfx(this.assets, this.volume, {this.poolSize = 1, this.category = SoundCategory.effects});
   final List<String> assets;
   final double volume;
+
+  /// Whose Settings switch it plays under.
+  final SoundCategory category;
 
   /// Players preloaded per asset (see [SoundTuning]); 1 unless a sound needs
   /// to overlap itself.

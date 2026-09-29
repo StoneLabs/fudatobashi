@@ -13,7 +13,8 @@ import '../../state/scope.dart';
 /// by [load] at startup (round-robin pooled per asset; see [Sfx.poolSize]),
 /// so playing one never touches the disk or the platform channel. Played
 /// during play (the swipe footstep) as well as on celebration pages and
-/// Results.
+/// Results, each only while its [SoundCategory] is switched on (see
+/// [playSound]).
 class Sounds with WidgetsBindingObserver {
   final _players = <Sfx, List<_Pool>>{};
   final _random = Random();
@@ -127,9 +128,9 @@ class _Pool {
 /// The app's sounds; tests swap in a recorder.
 Sounds sounds = Sounds();
 
-/// Plays [sfx] if the player has sounds on.
+/// Plays [sfx] if the player has its [SoundCategory] switched on.
 void playSound(BuildContext context, Sfx sfx) {
-  if (ProgressScope.read(context).settings.sounds) sounds.play(sfx);
+  if (ProgressScope.read(context).settings.plays(sfx.category)) sounds.play(sfx);
 }
 
 /// Plays each of [cues] at its time after [child] appears (a celebration

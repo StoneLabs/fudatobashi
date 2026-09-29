@@ -91,10 +91,22 @@ class SettingsScreen extends StatelessWidget {
                         children: [
                           SettingsGroup(children: [
                             SettingsSwitch(
-                              title: s.sounds,
-                              note: s.soundsNote,
-                              value: settings.sounds,
-                              onChanged: (v) => progress.updateSettings(settings.copyWith(sounds: v)),
+                              title: s.music,
+                              note: s.musicNote,
+                              value: settings.music,
+                              onChanged: (v) => progress.updateSettings(settings.copyWith(music: v)),
+                            ),
+                            SettingsSwitch(
+                              title: s.swipeSound,
+                              note: s.swipeSoundNote,
+                              value: settings.swipeSound,
+                              onChanged: (v) => progress.updateSettings(settings.copyWith(swipeSound: v)),
+                            ),
+                            SettingsSwitch(
+                              title: s.effectSounds,
+                              note: s.effectSoundsNote,
+                              value: settings.effectSounds,
+                              onChanged: (v) => progress.updateSettings(settings.copyWith(effectSounds: v)),
                             ),
                           ]),
                         ],

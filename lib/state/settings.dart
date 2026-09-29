@@ -25,7 +25,9 @@ class AppSettings {
     this.haptics = DefaultSettings.haptics,
     this.leadIn = DefaultSettings.leadIn,
     this.sfxEffects = DefaultSettings.sfxEffects,
-    this.sounds = DefaultSettings.sounds,
+    this.music = DefaultSettings.music,
+    this.swipeSound = DefaultSettings.swipeSound,
+    this.effectSounds = DefaultSettings.effectSounds,
     this.showRunningTimer = DefaultSettings.showRunningTimer,
     this.freePractice = DefaultSettings.freePractice,
     this.nigateCount = DefaultSettings.nigateCount,
@@ -55,9 +57,11 @@ class AppSettings {
   /// Coloured SFX pop for a fast correct card (see [PlaySfxTuning]).
   final bool sfxEffects;
 
-  /// Celebration sounds and the swipe footstep during play; silent or
-  /// vibrate mode still mutes them.
-  final bool sounds;
+  /// The sound switches, one per [SoundCategory]; read them through
+  /// [plays]. Silent or vibrate mode still mutes everything.
+  final bool music;
+  final bool swipeSound;
+  final bool effectSounds;
   final bool showRunningTimer;
 
   /// Free practice's last setup (its deck and 隠し字).
@@ -77,6 +81,13 @@ class AppSettings {
   /// Dev-mode `PerformanceOverlay`.
   final bool showPerformanceOverlay;
 
+  /// Whether sounds of [category] are switched on.
+  bool plays(SoundCategory category) => switch (category) {
+        SoundCategory.music => music,
+        SoundCategory.swipe => swipeSound,
+        SoundCategory.effects => effectSounds,
+      };
+
   /// The don't-know input in effect: journey mode has no "off" and falls
   /// back to [DontKnowInput.hold].
   DontKnowInput dontKnowInputFor(LearningMode mode) =>
@@ -89,7 +100,9 @@ class AppSettings {
         'haptics': haptics,
         'leadIn': leadIn,
         'sfxEffects': sfxEffects,
-        'sounds': sounds,
+        'music': music,
+        'swipeSound': swipeSound,
+        'effectSounds': effectSounds,
         'showRunningTimer': showRunningTimer,
         'freePractice': freePractice.toJson(),
         'nigateCount': nigateCount,
@@ -101,34 +114,41 @@ class AppSettings {
         'languagePicked': languagePicked,
       };
 
-  factory AppSettings.fromJson(Map<String, dynamic> j) => AppSettings(
-        // The old `AppLanguage` enum's stored name ("system"/"en"/"ja") is
-        // already the language code or "system" this field now holds.
-        language: j['language'] as String? ?? DefaultSettings.language,
-        // A truly fresh install has no settings saved at all (`j` is empty):
-        // the first-open picker still has to run. Any prior settings, even
-        // from before this field existed, mean it doesn't.
-        languagePicked: j['languagePicked'] as bool? ?? j.isNotEmpty,
-        dontKnowInput: DontKnowInput.values.asNameMap()[j['dontKnowInput']] ?? DefaultSettings.dontKnowInput,
-        showPoemNumber: j['showPoemNumber'] as bool? ?? DefaultSettings.showPoemNumber,
-        haptics: j['haptics'] as bool? ?? DefaultSettings.haptics,
-        leadIn: j['leadIn'] as bool? ?? DefaultSettings.leadIn,
-        sfxEffects: j['sfxEffects'] as bool? ?? DefaultSettings.sfxEffects,
-        sounds: j['sounds'] as bool? ?? DefaultSettings.sounds,
-        showRunningTimer: j['showRunningTimer'] as bool? ?? DefaultSettings.showRunningTimer,
-        // The old `freePlay` entry (set ids, orientation) is dropped: free
-        // practice starts over at its default deck, which counts for SRS.
-        freePractice: j['freePractice'] is Map
-            ? FreePracticeSetup.fromJson((j['freePractice'] as Map).cast<String, dynamic>())
-            : DefaultSettings.freePractice,
-        nigateCount: j['nigateCount'] as int? ?? DefaultSettings.nigateCount,
-        maskStyle: MaskStyle.values.asNameMap()[j['maskStyle']] ?? DefaultSettings.maskStyle,
-        debugMode: j['debugMode'] as bool? ?? DefaultSettings.debugMode,
-        onboarded: j['onboarded'] as bool? ?? DefaultSettings.onboarded,
-        playOverlay: j['playOverlay'] as bool? ?? DefaultSettings.playOverlay,
-        showPerformanceOverlay:
-            j['showPerformanceOverlay'] as bool? ?? DefaultSettings.showPerformanceOverlay,
-      );
+  factory AppSettings.fromJson(Map<String, dynamic> j) {
+    // The single `sounds` switch from before the split into music, swipe and
+    // other sounds: turned off, it turns all three off.
+    final sounds = j['sounds'] as bool?;
+    return AppSettings(
+      // The old `AppLanguage` enum's stored name ("system"/"en"/"ja") is
+      // already the language code or "system" this field now holds.
+      language: j['language'] as String? ?? DefaultSettings.language,
+      // A truly fresh install has no settings saved at all (`j` is empty):
+      // the first-open picker still has to run. Any prior settings, even
+      // from before this field existed, mean it doesn't.
+      languagePicked: j['languagePicked'] as bool? ?? j.isNotEmpty,
+      dontKnowInput: DontKnowInput.values.asNameMap()[j['dontKnowInput']] ?? DefaultSettings.dontKnowInput,
+      showPoemNumber: j['showPoemNumber'] as bool? ?? DefaultSettings.showPoemNumber,
+      haptics: j['haptics'] as bool? ?? DefaultSettings.haptics,
+      leadIn: j['leadIn'] as bool? ?? DefaultSettings.leadIn,
+      sfxEffects: j['sfxEffects'] as bool? ?? DefaultSettings.sfxEffects,
+      music: j['music'] as bool? ?? sounds ?? DefaultSettings.music,
+      swipeSound: j['swipeSound'] as bool? ?? sounds ?? DefaultSettings.swipeSound,
+      effectSounds: j['effectSounds'] as bool? ?? sounds ?? DefaultSettings.effectSounds,
+      showRunningTimer: j['showRunningTimer'] as bool? ?? DefaultSettings.showRunningTimer,
+      // The old `freePlay` entry (set ids, orientation) is dropped: free
+      // practice starts over at its default deck, which counts for SRS.
+      freePractice: j['freePractice'] is Map
+          ? FreePracticeSetup.fromJson((j['freePractice'] as Map).cast<String, dynamic>())
+          : DefaultSettings.freePractice,
+      nigateCount: j['nigateCount'] as int? ?? DefaultSettings.nigateCount,
+      maskStyle: MaskStyle.values.asNameMap()[j['maskStyle']] ?? DefaultSettings.maskStyle,
+      debugMode: j['debugMode'] as bool? ?? DefaultSettings.debugMode,
+      onboarded: j['onboarded'] as bool? ?? DefaultSettings.onboarded,
+      playOverlay: j['playOverlay'] as bool? ?? DefaultSettings.playOverlay,
+      showPerformanceOverlay:
+          j['showPerformanceOverlay'] as bool? ?? DefaultSettings.showPerformanceOverlay,
+    );
+  }
 
   AppSettings copyWith({
     String? language,
@@ -137,7 +157,9 @@ class AppSettings {
     bool? haptics,
     bool? leadIn,
     bool? sfxEffects,
-    bool? sounds,
+    bool? music,
+    bool? swipeSound,
+    bool? effectSounds,
     bool? showRunningTimer,
     FreePracticeSetup? freePractice,
     int? nigateCount,
@@ -155,7 +177,9 @@ class AppSettings {
         haptics: haptics ?? this.haptics,
         leadIn: leadIn ?? this.leadIn,
         sfxEffects: sfxEffects ?? this.sfxEffects,
-        sounds: sounds ?? this.sounds,
+        music: music ?? this.music,
+        swipeSound: swipeSound ?? this.swipeSound,
+        effectSounds: effectSounds ?? this.effectSounds,
         showRunningTimer: showRunningTimer ?? this.showRunningTimer,
         freePractice: freePractice ?? this.freePractice,
         nigateCount: nigateCount ?? this.nigateCount,

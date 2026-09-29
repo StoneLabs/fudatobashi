@@ -1394,24 +1394,63 @@ void main() {
     await tester.pumpWidget(const SizedBox());
   });
 
-  testWidgets('settings: sounds are on by default, and the Sounds switch turns them off for good', (tester) async {
+  testWidgets('settings: music, swipe and other sounds are on by default; each switch turns off only its own, for good',
+      (tester) async {
     PackageInfo.setMockInitialValues(
         appName: 'Fudatobashi', packageName: 'dev.fudatobashi', version: '1.0.0', buildNumber: '1', buildSignature: '');
     final p = await open(tester);
-    expect(p.settings.sounds, isTrue);
+    for (final category in SoundCategory.values) {
+      expect(p.settings.plays(category), isTrue, reason: '${category.name} is on by default');
+    }
     await tester.binding.setSurfaceSize(_phone);
     await tester.pumpWidget(ProgressScope(progress: p, child: const MaterialApp(home: SettingsScreen())));
     await tester.pump();
     const s = S('en');
-    await tester.scrollUntilVisible(find.text(s.sounds), 200);
-    final row = find.ancestor(of: find.text(s.sounds), matching: find.byType(Row));
-    await tester.runAsync(() async {
-      await tester.tap(find.descendant(of: row.first, matching: find.byType(Switch)));
-      await Future<void>.delayed(const Duration(milliseconds: 50));
-    });
-    await tester.pump();
-    expect(p.settings.sounds, isFalse);
-    expect(AppSettings.fromJson(p.settings.toJson()).sounds, isFalse);
+    for (final (title, category) in [
+      (s.music, SoundCategory.music),
+      (s.swipeSound, SoundCategory.swipe),
+      (s.effectSounds, SoundCategory.effects),
+    ]) {
+      await tester.scrollUntilVisible(find.text(title), 200);
+      final row = find.ancestor(of: find.text(title), matching: find.byType(Row));
+      await tester.runAsync(() async {
+        await tester.tap(find.descendant(of: row.first, matching: find.byType(Switch)));
+        await Future<void>.delayed(const Duration(milliseconds: 50));
+      });
+      await tester.pump();
+      expect(p.settings.plays(category), isFalse, reason: '$title turns ${category.name} off');
+      expect(AppSettings.fromJson(p.settings.toJson()).plays(category), isFalse, reason: 'and it stays off');
+      await tester.runAsync(() => p.updateSettings(p.settings.copyWith(music: true, swipeSound: true, effectSounds: true)));
+      await tester.pump();
+    }
+    await tester.pumpWidget(const SizedBox());
+  });
+
+  testWidgets('sounds: each plays only while its category is on, and the card flick is the only swipe sound',
+      (tester) async {
+    final heard = _HeardSounds();
+    sounds = heard;
+    addTearDown(() => sounds = Sounds());
+    final p = await open(tester);
+    late BuildContext context;
+    await tester.pumpWidget(ProgressScope(progress: p, child: Builder(builder: (c) {
+      context = c;
+      return const SizedBox();
+    })));
+    expect([for (final sfx in Sfx.values) if (sfx.category == SoundCategory.swipe) sfx], [Sfx.cardFlick]);
+    for (final off in SoundCategory.values) {
+      await tester.runAsync(() => p.updateSettings(p.settings.copyWith(
+            music: off != SoundCategory.music,
+            swipeSound: off != SoundCategory.swipe,
+            effectSounds: off != SoundCategory.effects,
+          )));
+      heard.played.clear();
+      for (final sfx in Sfx.values) {
+        playSound(context, sfx);
+      }
+      expect(heard.played, [for (final sfx in Sfx.values) if (sfx.category != off) sfx],
+          reason: 'with ${off.name} off, only it goes quiet');
+    }
     await tester.pumpWidget(const SizedBox());
   });
 
@@ -2041,7 +2080,7 @@ void main() {
 
         await tester.pumpWidget(const SizedBox());
         heard.played.clear();
-        await tester.runAsync(() => p.updateSettings(p.settings.copyWith(sounds: false)));
+        await tester.runAsync(() => p.updateSettings(p.settings.copyWith(effectSounds: false)));
         await pumpPage(tester, p, page, timeline.length);
         expect(heard.played, isEmpty);
         await tester.pumpWidget(const SizedBox());
@@ -2148,7 +2187,7 @@ void main() {
 
         await tester.pumpWidget(const SizedBox());
         heard.played.clear();
-        await tester.runAsync(() => p.updateSettings(p.settings.copyWith(sounds: false)));
+        await tester.runAsync(() => p.updateSettings(p.settings.copyWith(effectSounds: false)));
         await pumpPage(tester, p, page, RankUpMotion.length);
         expect(heard.played, isEmpty);
         await tester.pumpWidget(const SizedBox());
@@ -2296,7 +2335,7 @@ void main() {
 
         await tester.pumpWidget(const SizedBox());
         heard.played.clear();
-        await tester.runAsync(() => p.updateSettings(p.settings.copyWith(sounds: false)));
+        await tester.runAsync(() => p.updateSettings(p.settings.copyWith(effectSounds: false)));
         await pumpPage(tester, p, page, timeline.length);
         expect(heard.played, isEmpty);
         await tester.pumpWidget(const SizedBox());
