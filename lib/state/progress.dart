@@ -14,8 +14,10 @@ import '../domain/masking.dart';
 import '../domain/play_session.dart';
 import '../domain/rating.dart';
 import '../domain/trainer.dart';
+import '../domain/xp.dart';
 import 'play_config.dart';
 import 'settings.dart';
+import 'xp_history.dart';
 
 /// What a finished run changed (for the results screen).
 class SessionReport {
@@ -30,6 +32,8 @@ class SessionReport {
     this.newCards = const [],
     this.islandsReached = const [],
     this.islandsCompleted = const [],
+    this.xp,
+    this.graduated = false,
   });
 
   final int? sessionId;
@@ -51,6 +55,12 @@ class SessionReport {
 
   /// Islands completed (all cards solid) for the first time by this run.
   final List<int> islandsCompleted;
+
+  /// Experience earned (tracked runs only).
+  final XpGain? xp;
+
+  /// This run learned the journey's 100th card (once ever).
+  final bool graduated;
 
   bool get personalBest => total != null && (previousBest == null || total! < previousBest!);
 }
@@ -94,6 +104,10 @@ class Progress extends ChangeNotifier {
   PlaySession? lastRun;
 
   AppSettings get settings => _settings;
+
+  /// Experience so far, rebuilt from the recorded history on first use.
+  XpLedger get xp => _xp ??= XpHistory.ledgerOf(this);
+  XpLedger? _xp;
 
   static Future<Progress> open(AppDatabase db) async {
     final kv = {for (final r in await db.select(db.keyValues).get()) r.key: r.value};
@@ -436,6 +450,7 @@ class Progress extends ChangeNotifier {
       );
     }
 
+    final ledger = xp;
     final newCards = config.mode == PlayMode.training && trainer.config.learningMode == LearningMode.journey
         ? {for (final a in run.attempts) if (!_metBefore(a.card.poemId)) a.card.poemId}.toList()
         : const <int>[];
@@ -561,6 +576,11 @@ class Progress extends ChangeNotifier {
       goalRaised = true;
       await _put('goalLevel', '${trainer.goalLevel}');
     }
+    final journey = trainer.config.learningMode == LearningMode.journey;
+    final graduated = journey && !ledger.graduated && poems.all.every((p) => knows(p.id));
+    sessions.last = await XpHistory.noteMilestones(db, sessions.last,
+        islands: journey ? completed : const [], graduated: graduated);
+    final xpGain = ledger.add(XpHistory.latestRunOf(this, sessions.last));
 
     notifyListeners();
     return SessionReport(
@@ -574,6 +594,8 @@ class Progress extends ChangeNotifier {
       newCards: newCards,
       islandsReached: trainer.config.learningMode == LearningMode.journey ? reached : const [],
       islandsCompleted: trainer.config.learningMode == LearningMode.journey ? completed : const [],
+      xp: xpGain,
+      graduated: graduated,
     );
   }
 
@@ -597,6 +619,7 @@ class Progress extends ChangeNotifier {
       ..clear()
       ..addAll(Trainer.freshItems());
     trainer.goalLevel = 0;
+    _xp = null;
     notifyListeners();
   }
 }

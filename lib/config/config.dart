@@ -378,6 +378,49 @@ abstract final class RatingModel {
   static const double aMaxSeconds = 40;
 }
 
+/// Experience (XP, `XpLedger`): effort rewarded on every tracked run, apart
+/// from the rating's measure of skill. Derived from the recorded history, so
+/// a change here re-scores every past run too.
+abstract final class XpTuning {
+  static const int perCorrect = 10;
+
+  /// A card swiped away as "don't know" or marked wrong (undone swipes earn
+  /// nothing: their redo is what counts).
+  static const int perMiss = 2;
+
+  /// Extra for a correct, cleanly timed swipe at or under the goal time of
+  /// its run, more at or under [blazingRatio] of it.
+  static const int speedAtGoal = 5;
+  static const int speedBlazing = 10;
+  static const double blazingRatio = 0.75;
+
+  /// Extra for a due review answered correctly (FSRS graded it).
+  static const int perReview = 5;
+
+  /// A card met for the first time in a run that counts.
+  static const int perNewCard = 25;
+
+  /// A run played to its last card.
+  static const int clear = 20;
+
+  /// The first run of a day, plus [perStreakDay] for each day of the streak
+  /// before it, up to [streakCapDays].
+  static const int daily = 50;
+  static const int perStreakDay = 10;
+  static const int streakCapDays = 10;
+
+  /// A completed run faster than the best before it with the same setup.
+  static const int personalBest = 100;
+  static const int perIsland = 300;
+
+  /// Learning the 100th card, the end of the journey.
+  static const int graduation = 1000;
+
+  /// XP from level L to L+1: [firstLevel] + [levelStep] × (L − 1).
+  static const int firstLevel = 300;
+  static const int levelStep = 150;
+}
+
 /// 隠し字 masking: the uniqueness search (`Masking`) and the scramble style's
 /// tile rendering (`TorifudaGlyphs`).
 abstract final class MaskingTuning {
