@@ -224,38 +224,10 @@ jobs:
           name: fudatobashi-${{ needs.version.outputs.version }}-windows
           path: dist/*.zip
 
-  web:
-    name: Web (build/web)
-    needs: version
-    runs-on: ubuntu-latest
-    env:
-      VERSION: ${{ needs.version.outputs.version }}
-    steps:
-      - uses: actions/checkout@v7
-
-      - uses: subosito/flutter-action@v2
-        with:
-          channel: stable
-          flutter-version-file: .fvmrc
-          cache: true
-
-      - run: flutter pub get
-      - run: flutter build web --release
-
-      - name: Zip web build
-        run: |
-          mkdir -p dist
-          (cd build/web && zip -r "../../dist/fudatobashi-$VERSION-web.zip" .)
-
-      - uses: actions/upload-artifact@v7
-        with:
-          name: fudatobashi-${{ needs.version.outputs.version }}-web
-          path: dist/*.zip
-
   release:
     name: Create GitHub release
     if: github.ref_type == 'tag'
-    needs: [version, android, ios, macos, linux, windows, web]
+    needs: [version, android, ios, macos, linux, windows]
     runs-on: ubuntu-latest
     permissions:
       contents: write
