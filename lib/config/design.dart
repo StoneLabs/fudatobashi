@@ -1087,6 +1087,79 @@ abstract final class StartCardStyle {
   static const double sheenAlpha = 0.2;
 }
 
+/// The tutorial round's practice cards (`TestCard`): a TV test pattern
+/// crossed with a karuta card, in the torifuda's card units (374 × 525).
+abstract final class TestCardStyle {
+  static const Size size = Size(374, 525);
+  static const double radius = 12;
+
+  /// Each card's big kana, one per card of the round: テ, ス, ト.
+  static const List<String> kana = ['テ', 'ス', 'ト'];
+
+  /// The colour bars (75% SMPTE), then the thin strip of reversed bars
+  /// under them.
+  static const List<Color> bars = [
+    Color(0xFFC0C0C0),
+    Color(0xFFC0C000),
+    Color(0xFF00C0C0),
+    Color(0xFF00C000),
+    Color(0xFFC000C0),
+    Color(0xFFC00000),
+    Color(0xFF0000C0),
+  ];
+  static const List<Color> reverseBars = [
+    Color(0xFF0000C0),
+    Palette.ink,
+    Color(0xFFC000C0),
+    Palette.ink,
+    Color(0xFF00C0C0),
+    Palette.ink,
+    Color(0xFFC0C0C0),
+  ];
+  static const double inset = 12;
+  static const double barsHeight = 318;
+  static const double reverseBarsHeight = 30;
+
+  /// The test pattern's circle, with the kana on its crosshair.
+  static const Offset circleCenter = Offset(187, 176);
+  static const double circleRadius = 112;
+  static const double circleStroke = 6;
+  static const double crosshairStroke = 2.5;
+
+  /// The inner ring's radius, as a share of the circle's.
+  static const double innerRing = 0.68;
+  static const double kanaFont = 150;
+
+  /// The channel bug in the bars' lower-left corner (the play chrome
+  /// covers the card's top corners).
+  static const String channel = 'TOBI TV';
+  static const Offset channelAt = Offset(22, 290);
+  static const EdgeInsets channelPadding = EdgeInsets.symmetric(horizontal: 8, vertical: 3);
+  static const double channelFont = 15;
+
+  /// The label under the bars.
+  static const String title = '練習札';
+  static const String sub = 'TEST CARD';
+  static const double titleFont = 44;
+  static const double subFont = 14;
+  static const double subTracking = 0.3;
+  static const double numberFont = 30;
+  static const EdgeInsets labelPadding = EdgeInsets.fromLTRB(26, 0, 26, 8);
+}
+
+/// The tutorial round's coach: Tobi below the card with a balloon
+/// (`TutorialCoach`).
+abstract final class TutorialStyle {
+  static const double tobiHeight = 104;
+  static const double gap = 4;
+  static const EdgeInsets padding = EdgeInsets.fromLTRB(Gaps.gutter, Gaps.small, Gaps.gutter, 0);
+  static const Alignment speaker = Alignment(-1.3, 0.35);
+  static const EdgeInsets balloonPadding = EdgeInsets.symmetric(vertical: 4);
+  static const double font = 14;
+  static const Duration linePop = Duration(milliseconds: 220);
+  static const double linePopFrom = 0.8;
+}
+
 /// Results (spec phone 5) and its celebration overlays.
 abstract final class ResultsLayout {
   static const double topBarHeight = 44;

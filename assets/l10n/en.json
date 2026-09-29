@@ -358,5 +358,15 @@
   "systemDefault": "System default",
   "myProfile": "My Profile",
   "wellRememberedOf": "{0} / {1} well remembered",
-  "firstSwipeOn": "First swipe: {0}"
+  "firstSwipeOn": "First swipe: {0}",
+  "coachStartCard": "First, the start card. Ready? Swipe it away!",
+  "coachKnowIt": "A card! Say it out loud, “{0}”, and flick it away. Any way but straight down means “I know it”.",
+  "coachDontKnowHold": "Now pretend you forgot it: swipe DOWN and HOLD until the ring fills. That means “I don't remember”.",
+  "coachDontKnowButton": "Now pretend you forgot it: tap “Don't remember” below.",
+  "coachDontKnowOff": "“I don't remember” is switched off in your settings, so just flick this one too!",
+  "coachFast": "Last one. As fast as you can!",
+  "coachDone": "Perfect! Every swipe is timed to the millisecond. Now for real!",
+  "coachRetryKnow": "Oops, that was “I don't remember”! Flick it sideways or up instead.",
+  "coachRetryHold": "So close! Swipe down and keep your finger there until the ring fills.",
+  "coachRetryButton": "This time, use the “Don't remember” button!"
 }

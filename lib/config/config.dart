@@ -99,6 +99,12 @@ abstract final class SwipeTuning {
   static const Color holdRingTrackColor = Color(0xB3FFFFFF);
 }
 
+/// The tour's practice round (`PlayScreen.tutorial`).
+abstract final class TutorialTuning {
+  /// How long Tobi's last line stays up before the round closes.
+  static const Duration doneLinger = Duration(milliseconds: 1800);
+}
+
 /// Coloured SFX lettering that pops around the card on each flick
 /// (`lib/ui/play/sfx_overlay.dart`), never over it.
 abstract final class PlaySfxTuning {

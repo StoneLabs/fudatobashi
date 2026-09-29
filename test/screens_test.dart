@@ -58,6 +58,8 @@ import 'package:fudatobashi/ui/onboarding/welcome_sea.dart';
 import 'package:fudatobashi/ui/play/kimariji_chip.dart';
 import 'package:fudatobashi/ui/play/play_screen.dart';
 import 'package:fudatobashi/ui/play/start_card.dart';
+import 'package:fudatobashi/ui/play/swipe_deck.dart';
+import 'package:fudatobashi/ui/play/test_card.dart';
 import 'package:fudatobashi/ui/profile/profile_screen.dart';
 import 'package:fudatobashi/ui/rank/rank_screen.dart';
 import 'package:fudatobashi/ui/results/celebration_sequence.dart';
@@ -78,6 +80,7 @@ import 'package:fudatobashi/ui/shell/header_actions.dart';
 import 'package:fudatobashi/ui/sound/sounds.dart';
 import 'package:fudatobashi/ui/stats/card_detail_screen.dart';
 import 'package:fudatobashi/ui/stats/card_list.dart';
+import 'package:fudatobashi/ui/tour/tutorial_coach.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 
 import 'test_l10n.dart';
@@ -2409,6 +2412,107 @@ void main() {
         await _capture(tester, 'rating_break_still_$lang');
         await tester.tap(find.text(s.ratingCta));
         expect(advanced, isTrue);
+        await tester.pumpWidget(const SizedBox());
+      });
+    }
+  });
+
+  group('Tutorial round', () {
+    test('each card asks for its move, by the player\'s don\'t-know input', () {
+      const hold = TutorialScript(DontKnowInput.hold);
+      const button = TutorialScript(DontKnowInput.button);
+      const off = TutorialScript(DontKnowInput.off);
+      expect([for (var i = 0; i < 3; i++) hold.expected(i)], [Outcome.known, Outcome.dontKnow, null]);
+      expect([for (var i = 0; i < 3; i++) off.expected(i)], [Outcome.known, null, null]);
+      CoachLine at(TutorialScript s, int i, {Outcome? retried}) =>
+          s.line(started: true, index: i, finished: false, retried: retried);
+      expect(hold.line(started: false, index: 0, finished: false), CoachLine.startCard);
+      expect([at(hold, 0), at(hold, 1), at(hold, 2)], [CoachLine.knowIt, CoachLine.dontKnowHold, CoachLine.fast]);
+      expect(at(button, 1), CoachLine.dontKnowButton);
+      expect(at(off, 1), CoachLine.dontKnowOff);
+      expect(at(hold, 0, retried: Outcome.dontKnow), CoachLine.retryKnow);
+      expect(at(hold, 1, retried: Outcome.known), CoachLine.retryHold);
+      expect(at(button, 1, retried: Outcome.known), CoachLine.retryButton);
+      expect(hold.line(started: true, index: 3, finished: true), CoachLine.done);
+    });
+
+    for (final ja in [false, true]) {
+      final lang = ja ? 'ja' : 'en';
+      testWidgets('three test cards, one move each; a card swiped the wrong way comes back; nothing recorded ($lang)',
+          (tester) async {
+        tester.platformDispatcher.textScaleFactorTestValue = 1.1;
+        addTearDown(tester.platformDispatcher.clearTextScaleFactorTestValue);
+        final p = await open(tester, ja: ja);
+        await tester.binding.setSurfaceSize(_phone);
+        bool? done;
+        await tester.pumpWidget(RepaintBoundary(
+          key: const ValueKey('screen'),
+          child: ProgressScope(
+            progress: p,
+            child: MaterialApp(
+              home: Builder(
+                builder: (context) => GestureDetector(
+                  onTap: () async =>
+                      done = await Navigator.push<bool>(context, MaterialPageRoute(builder: (_) => PlayScreen.tutorial())),
+                  child: const Text('home'),
+                ),
+              ),
+            ),
+          ),
+        ));
+        await tester.tap(find.text('home'));
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 500));
+        final session = tester.widget<SwipeDeck>(find.byType(SwipeDeck)).session;
+        CoachLine line() => tester.widget<TutorialCoach>(find.byType(TutorialCoach)).line;
+        Future<void> flick() async {
+          final g = await tester.startGesture(const Offset(192, 300));
+          for (var i = 0; i < 4; i++) {
+            await g.moveBy(const Offset(40, 0));
+            await tester.pump(const Duration(milliseconds: 8));
+          }
+          await g.up();
+          await tester.pump(const Duration(milliseconds: 400));
+        }
+
+        Future<void> holdDown() async {
+          final g = await tester.startGesture(const Offset(192, 300));
+          for (var i = 0; i < 4; i++) {
+            await g.moveBy(const Offset(0, 25));
+            await tester.pump(const Duration(milliseconds: 8));
+          }
+          await tester.pump(SwipeTuning.dontKnowHoldDwell + const Duration(milliseconds: 50));
+          await g.up();
+          await tester.pump(const Duration(milliseconds: 400));
+        }
+
+        expect(line(), CoachLine.startCard);
+        expect(tester.takeException(), isNull);
+        await _capture(tester, 'tutorial_start_$lang');
+        await swipeStartCard(tester, from: const Offset(192, 300));
+        await tester.pump(const Duration(milliseconds: 400));
+        expect(line(), CoachLine.knowIt);
+        expect(find.byType(TestCard), findsWidgets);
+        await _capture(tester, 'tutorial_card_$lang');
+
+        await holdDown();
+        expect((session.index, line()), (0, CoachLine.retryKnow), reason: '"don\'t remember" on the first card');
+        await flick();
+        expect((session.index, line()), (1, CoachLine.dontKnowHold));
+        await _capture(tester, 'tutorial_hold_$lang');
+        await flick();
+        expect((session.index, line()), (1, CoachLine.retryHold), reason: 'a flick where a hold was asked for');
+        await holdDown();
+        expect((session.index, line()), (2, CoachLine.fast));
+        await flick();
+        expect(line(), CoachLine.done);
+        expect(tester.takeException(), isNull);
+        await tester.pump(TutorialTuning.doneLinger);
+        await tester.pump(const Duration(milliseconds: 500));
+        expect(done, isTrue);
+        expect(find.byType(PlayScreen), findsNothing);
+        expect(p.sessions, isEmpty, reason: 'the practice round is never recorded');
+        expect(p.xp.total, 0);
         await tester.pumpWidget(const SizedBox());
       });
     }

@@ -24,8 +24,10 @@ import '../results/results_screen.dart';
 import '../sound/sounds.dart';
 import 'kimariji_chip.dart';
 import 'sfx_overlay.dart';
+import '../tour/tutorial_coach.dart';
 import 'start_card.dart';
 import 'swipe_deck.dart';
+import 'test_card.dart';
 
 /// The play chrome (spec phone 4): a calm paper page, the previous card's
 /// kimariji as a speech chip, the n/N counter, coloured SFX around the card,
@@ -41,11 +43,22 @@ import 'swipe_deck.dart';
 /// and is revealed only once they are gone, and the break is left out of
 /// the run's total.
 class PlayScreen extends StatefulWidget {
-  const PlayScreen({super.key, required this.cards, required this.config, this.newPoems = const {}});
+  const PlayScreen({super.key, required this.cards, required this.config, this.newPoems = const {}})
+      : tutorial = false;
+
+  /// The tour's practice round: the [TestCard]s, with Tobi coaching each
+  /// move below them (see [TutorialScript]). Nothing of it is recorded; it
+  /// pops with true once every card is done.
+  PlayScreen.tutorial({super.key})
+      : cards = TestCard.deck,
+        config = const PlayConfig(mode: PlayMode.guest),
+        newPoems = const {},
+        tutorial = true;
 
   final List<CardRef> cards;
   final PlayConfig config;
   final Set<int> newPoems;
+  final bool tutorial;
 
   @override
   State<PlayScreen> createState() => _PlayScreenState();
@@ -76,10 +89,17 @@ class _PlayScreenState extends State<PlayScreen> {
   /// Kept for [dispose], where the scope can no longer be looked up.
   late final Progress _progress;
 
+  /// The tutorial's plan, and the move a card just came back for.
+  TutorialScript? _script;
+  Outcome? _retried;
+
   @override
   void initState() {
     super.initState();
     _progress = ProgressScope.read(context);
+    if (widget.tutorial) {
+      _script = TutorialScript(_progress.settings.dontKnowInputFor(_progress.trainer.config.learningMode));
+    }
     _session.addListener(_onSessionChanged);
   }
 
@@ -88,7 +108,7 @@ class _PlayScreenState extends State<PlayScreen> {
     _session.removeListener(_onSessionChanged);
     // Safety net for an unexpected pop (e.g. the system back gesture): still
     // record a partial run, just without showing results for it.
-    if (!_ending && _session.attempts.isNotEmpty) {
+    if (!_ending && !widget.tutorial && _session.attempts.isNotEmpty) {
       unawaited(_progress.recordRun(_session, widget.config, _startedAt));
     }
     super.dispose();
@@ -135,11 +155,23 @@ class _PlayScreenState extends State<PlayScreen> {
 
   void _onCommitted(Attempt a) {
     playSound(context, Sfx.cardFlick);
+    if (_coachSendsBack(a)) return;
     if (ProgressScope.read(context).settings.sfxEffects) {
       final dontKnow = a.outcome == Outcome.dontKnow;
-      if (dontKnow || _isFastCard(a)) _sfxKey.currentState?.pop(dontKnow: dontKnow);
+      if (dontKnow || widget.tutorial || _isFastCard(a)) _sfxKey.currentState?.pop(dontKnow: dontKnow);
     }
     if (a.isMiss) _requeueMiss(a);
+  }
+
+  /// Tutorial: a card that left the wrong way comes back for another go.
+  bool _coachSendsBack(Attempt a) {
+    final script = _script;
+    if (script == null) return false;
+    final expected = script.expected(a.index);
+    final wrong = expected != null && a.outcome != expected;
+    setState(() => _retried = wrong ? a.outcome : null);
+    if (wrong) _session.undo();
+    return wrong;
   }
 
   /// A correct card only earns its SFX pop when it beats a speed baseline:
@@ -191,6 +223,16 @@ class _PlayScreenState extends State<PlayScreen> {
   Future<void> _finish() async {
     if (_ending) return;
     _ending = true;
+    if (widget.tutorial) {
+      if (!_session.finished) {
+        Navigator.of(context).pop();
+        return;
+      }
+      setState(() {});
+      await Future<void>.delayed(TutorialTuning.doneLinger);
+      if (mounted) Navigator.of(context).pop(true);
+      return;
+    }
     final progress = ProgressScope.read(context);
     final report = await progress.recordRun(_session, widget.config, _startedAt);
     // The journey is over: every card is known, so no warning is needed.
@@ -210,7 +252,12 @@ class _PlayScreenState extends State<PlayScreen> {
     final dontKnowButton = dontKnowInput == DontKnowInput.button;
     final session = _session;
     final last = session.lastAttempt;
-    final chipText = last == null ? s.start : poems[last.card.poemId].kimariji;
+    final chipText = last == null
+        ? s.start
+        : widget.tutorial
+            ? TestCard.kanaOf(last.card)
+            : poems[last.card.poemId].kimariji;
+    final script = _script;
     final buttonRows = dontKnowButton ? 2 : 1;
     final buttonsBottom =
         PlayLayout.buttonRowHeight * buttonRows + PlayLayout.buttonGap * (buttonRows - 1) + Gaps.section * 2;
@@ -233,17 +280,28 @@ class _PlayScreenState extends State<PlayScreen> {
               ),
               Positioned.fill(
                 bottom: buttonsBottom,
-                child: SwipeDeck(
-                  key: _deckKey,
-                  session: session,
-                  live: live,
-                  dontKnowInput: dontKnowInput,
-                  showNumber: settings.showPoemNumber,
-                  haptics: settings.haptics,
-                  onCommitted: _onCommitted,
-                  startCard: StartCard(cue: s.swipeToStart),
-                  onStarted: _onStarted,
-                ),
+                child: Column(children: [
+                  Expanded(
+                    child: SwipeDeck(
+                      key: _deckKey,
+                      session: session,
+                      live: live,
+                      dontKnowInput: dontKnowInput,
+                      showNumber: settings.showPoemNumber,
+                      haptics: settings.haptics,
+                      onCommitted: _onCommitted,
+                      startCard: StartCard(cue: s.swipeToStart),
+                      onStarted: _onStarted,
+                      cardFace: widget.tutorial ? (card, text) => TestCard(number: card.poemId, showText: text) : null,
+                    ),
+                  ),
+                  if (script != null)
+                    TutorialCoach(
+                      line: script.line(
+                          started: _started, index: session.index, finished: session.finished, retried: _retried),
+                      kana: TestCard.kanaOf(session.current ?? last!.card),
+                    ),
+                ]),
               ),
               Positioned.fill(bottom: buttonsBottom, child: SfxOverlay(key: _sfxKey)),
               Positioned(
@@ -312,7 +370,7 @@ class _PlayScreenState extends State<PlayScreen> {
                   ),
                 ]),
               ),
-              if (settings.debugMode && settings.playOverlay)
+              if (settings.debugMode && settings.playOverlay && !widget.tutorial)
                 Positioned(bottom: buttonsBottom + Gaps.section, left: Gaps.section, child: PlayDebugOverlay(session: session)),
             ],
           ),
