@@ -24,6 +24,7 @@ import 'package:fudatobashi/domain/play_session.dart';
 import 'package:fudatobashi/domain/rating.dart';
 import 'package:fudatobashi/domain/synthetic_learner.dart';
 import 'package:fudatobashi/domain/trainer.dart';
+import 'package:fudatobashi/domain/xp.dart';
 import 'package:fudatobashi/l10n/credits_strings.dart';
 import 'package:fudatobashi/l10n/home_strings.dart';
 import 'package:fudatobashi/l10n/onboarding_strings.dart';
@@ -49,7 +50,9 @@ import 'package:fudatobashi/ui/play/play_screen.dart';
 import 'package:fudatobashi/ui/rank/rank_screen.dart';
 import 'package:fudatobashi/ui/results/celebration_sequence.dart';
 import 'package:fudatobashi/ui/results/celebrations.dart';
+import 'package:fudatobashi/ui/results/graduation_overlay.dart';
 import 'package:fudatobashi/ui/results/island_complete_overlay.dart';
+import 'package:fudatobashi/ui/results/level_up_overlay.dart';
 import 'package:fudatobashi/ui/results/new_card_overlay.dart';
 import 'package:fudatobashi/ui/results/rank_up_overlay.dart';
 import 'package:fudatobashi/ui/results/results_screen.dart';
@@ -1527,6 +1530,115 @@ void main() {
         await tester.pumpWidget(const SizedBox());
       });
 
+      testWidgets('the XP page pops a sound per line, ticks while it counts and chimes as the total lands ($lang)',
+          (tester) async {
+        final heard = _HeardSounds();
+        sounds = heard;
+        addTearDown(() => sounds = Sounds());
+        final p = await open(tester, ja: ja);
+        final gain = previewXpGain();
+        final timeline = XpTimeline(gain);
+        final page = CelebrationSequence(pages: [XpCelebration(gain)], onDone: () {});
+        await pumpPage(tester, p, page, XpMotion.rowsAt - const Duration(milliseconds: 20));
+        expect(heard.played, isEmpty, reason: 'silent until the first line pops in');
+        await tester.pump(timeline.finishAt - XpMotion.rowsAt + const Duration(milliseconds: 40));
+        expect(heard.played.where((s) => s == Sfx.xpPop), hasLength(gain.award.parts.length));
+        expect(heard.played.where((s) => s == Sfx.xpTick).length, greaterThan(gain.award.parts.length));
+        expect(heard.played.last, Sfx.xpDone);
+
+        await tester.pumpWidget(const SizedBox());
+        heard.played.clear();
+        await tester.runAsync(() => p.updateSettings(p.settings.copyWith(sounds: false)));
+        await pumpPage(tester, p, page, timeline.length);
+        expect(heard.played, isEmpty);
+        await tester.pumpWidget(const SizedBox());
+      });
+
+      testWidgets('graduation sounds its fanfare, fireworks and stamps; a level-up its jingle as the number lands ($lang)',
+          (tester) async {
+        final heard = _HeardSounds();
+        sounds = heard;
+        addTearDown(() => sounds = Sounds());
+        final p = await open(tester, ja: ja);
+        await pumpPage(tester, p, const CelebrationSequence(pages: [GraduationCelebration()], onDone: _noop),
+            GraduationMotion.length);
+        expect(heard.played.toSet(), {Sfx.firework, Sfx.graduation, Sfx.stamp});
+        expect(heard.played.where((s) => s == Sfx.stamp), hasLength(2), reason: 'one per stamp');
+
+        await tester.pumpWidget(const SizedBox());
+        heard.played.clear();
+        final gain = XpGain(before: 0, award: XpAward([XpPart(XpSource.correct, 40, XpCurve.reach(2))]));
+        await pumpPage(tester, p, CelebrationSequence(pages: [LevelUpCelebration(gain)], onDone: () {}),
+            LevelUpMotion.impactAt - const Duration(milliseconds: 20));
+        expect(heard.played, isEmpty);
+        await tester.pump(const Duration(milliseconds: 40));
+        expect(heard.played, [Sfx.stamp, Sfx.levelUp]);
+        await tester.pumpWidget(const SizedBox());
+      });
+
+      testWidgets('under reduced motion the XP, level-up and graduation pages start at rest ($lang)', (tester) async {
+        tester.platformDispatcher.accessibilityFeaturesTestValue = const FakeAccessibilityFeatures(disableAnimations: true);
+        addTearDown(tester.platformDispatcher.clearAccessibilityFeaturesTestValue);
+        final p = await open(tester, ja: ja);
+        final gain = previewXpGain();
+        await pumpPage(tester, p, XpOverlay(gain: gain, onNext: () {}), const Duration(milliseconds: 16));
+        expect(find.text('+${gain.award.total}'), findsWidgets);
+        expect(find.text('LV ${gain.levelAfter.level}'), findsOneWidget);
+        await _capture(tester, 'xp_still_$lang');
+        await pumpPage(tester, p, LevelUpOverlay(gain: gain, onNext: () {}), const Duration(milliseconds: 16));
+        expect(find.text(S(ja).levelsGained(gain.levelsGained)), findsOneWidget);
+        await pumpPage(tester, p, GraduationOverlay(onNext: () {}), const Duration(milliseconds: 16));
+        expect(find.text(S(ja).graduationKai), findsOneWidget);
+        await _capture(tester, 'graduation_still_$lang');
+        await tester.pumpWidget(const SizedBox());
+      });
+
+      testWidgets('graduation: fireworks, Tobi over the moon and the stamps, at a large font scale ($lang)', (tester) async {
+        tester.platformDispatcher.textScaleFactorTestValue = 1.3;
+        addTearDown(tester.platformDispatcher.clearTextScaleFactorTestValue);
+        final p = await open(tester, ja: ja);
+        var advanced = false;
+        await pumpPage(tester, p, GraduationOverlay(onNext: () => advanced = true), GraduationMotion.fly.delay);
+        await _capture(tester, 'graduation_fly_$lang');
+        await tester.pump(GraduationMotion.fullImpactAt - GraduationMotion.fly.delay + const Duration(milliseconds: 40));
+        await _capture(tester, 'graduation_stamp_$lang');
+        await tester.pump(GraduationMotion.length);
+        expect(tester.takeException(), isNull);
+        final s = S(ja);
+        expect(find.text(s.graduationKai), findsOneWidget);
+        expect(find.text(s.graduationSwitch), findsOneWidget);
+        await _capture(tester, 'graduation_$lang');
+        await tester.tap(find.text(s.graduationCta));
+        expect(advanced, isTrue);
+        await tester.pumpWidget(const SizedBox());
+      });
+
+      for (final levels in [1, 3]) {
+        testWidgets('level up by $levels, at a large font scale ($lang)', (tester) async {
+          tester.platformDispatcher.textScaleFactorTestValue = 1.3;
+          addTearDown(tester.platformDispatcher.clearTextScaleFactorTestValue);
+          final p = await open(tester, ja: ja);
+          final before = XpCurve.reach(11) + 40;
+          final gain = XpGain(
+            before: before,
+            award: XpAward([XpPart(XpSource.correct, 30, XpCurve.reach(11 + levels) + 200 - before)]),
+          );
+          expect(gain.levelsGained, levels);
+          var advanced = false;
+          await pumpPage(tester, p, LevelUpOverlay(gain: gain, onNext: () => advanced = true),
+              LevelUpMotion.impactAt + const Duration(milliseconds: 60));
+          await _capture(tester, 'level_up_impact_${levels}_$lang');
+          await tester.pump(LevelUpMotion.length);
+          expect(tester.takeException(), isNull);
+          expect(find.text('${11 + levels}'), findsWidgets);
+          expect(find.text(S(ja).levelsGained(levels)), levels > 1 ? findsOneWidget : findsNothing);
+          await _capture(tester, 'level_up_${levels}_$lang');
+          await tester.tap(find.text(ja ? '次へ' : 'ONWARD!'));
+          expect(advanced, isTrue);
+          await tester.pumpWidget(const SizedBox());
+        });
+      }
+
       testWidgets('the rank-up stamp sounds as it lands, and never with sounds off ($lang)', (tester) async {
         final heard = _HeardSounds();
         sounds = heard;
@@ -1580,6 +1692,8 @@ void main() {
     }
   });
 }
+
+void _noop() {}
 
 /// Records the sounds asked for instead of playing them.
 class _HeardSounds extends Sounds {

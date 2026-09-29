@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:fudatobashi/data/fuda_sets.dart';
 import 'package:fudatobashi/data/poem.dart';
+import 'package:fudatobashi/domain/xp.dart';
 import 'package:fudatobashi/state/progress.dart';
 import 'package:fudatobashi/ui/results/celebrations.dart';
 
@@ -18,6 +19,8 @@ void main() {
     double? ratingBefore,
     double? ratingAfter,
     bool goalRaised = false,
+    bool graduated = false,
+    XpGain? xp,
   }) =>
       SessionReport(
         sessionId: 1,
@@ -28,7 +31,10 @@ void main() {
         ratingAfter: ratingAfter,
         goalRaised: goalRaised,
         islandsCompleted: islandsCompleted,
+        graduated: graduated,
+        xp: xp,
       );
+  XpGain gain(int before, int xp) => XpGain(before: before, award: XpAward([XpPart(XpSource.correct, 1, xp)]));
 
   test('after a run: islands, rank-up, then goal', () {
     final list = celebrationsFor(report(islandsCompleted: [2], ratingBefore: 1200, ratingAfter: 1300, goalRaised: true));
@@ -67,6 +73,25 @@ void main() {
     expect(introductionOf(newWithTwin, knows: (_) => false), [isA<NewCardCelebration>()]);
     final newPlain = poems.byKimariji('たご').id; // no confusable set at all
     expect(introductionOf(newPlain, knows: (_) => true), [isA<NewCardCelebration>()]);
+  });
+
+  test('graduation, then the XP and the level it reached, come last', () {
+    final levelUp = gain(XpCurve.reach(2) - 5, 10);
+    final list = celebrationsFor(report(islandsCompleted: [2], goalRaised: true, graduated: true, xp: levelUp));
+    expect(list.map((c) => c.runtimeType), [
+      IslandCompleteCelebration,
+      GoalUpCelebration,
+      GraduationCelebration,
+      XpCelebration,
+      LevelUpCelebration,
+    ]);
+    expect((list[4] as LevelUpCelebration).gain, levelUp);
+  });
+
+  test('every run that earned XP gets its page, a level-up only when one was reached', () {
+    expect(celebrationsFor(report(xp: gain(0, 40))).map((c) => c.runtimeType), [XpCelebration]);
+    expect(celebrationsFor(report(xp: gain(0, 0))), isEmpty, reason: 'nothing earned, nothing to show');
+    expect(celebrationsFor(report()), isEmpty, reason: 'a guest run earns no XP');
   });
 
   test('no rank-up celebration when the band does not change', () {

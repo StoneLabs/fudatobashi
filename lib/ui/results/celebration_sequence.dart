@@ -6,7 +6,9 @@ import '../../state/scope.dart';
 import '../sound/sounds.dart';
 import 'celebration_overlays.dart';
 import 'celebrations.dart';
+import 'graduation_overlay.dart';
 import 'island_complete_overlay.dart';
+import 'level_up_overlay.dart';
 import 'new_card_overlay.dart';
 import 'rank_up_overlay.dart';
 import 'xp_overlay.dart';
@@ -99,9 +101,9 @@ class _CelebrationSequenceState extends State<CelebrationSequence> with SingleTi
         ),
       RankUpCelebration() => RankUpOverlay(data: c, onNext: onNext),
       GoalUpCelebration() => GoalUpOverlay(goalMs: progress.trainer.goalMs.round(), onNext: onNext),
-      GraduationCelebration() => GoalUpOverlay(goalMs: progress.trainer.goalMs.round(), onNext: onNext),
+      GraduationCelebration() => GraduationOverlay(onNext: onNext),
       XpCelebration() => XpOverlay(gain: c.gain, onNext: onNext),
-      LevelUpCelebration() => GoalUpOverlay(goalMs: progress.trainer.goalMs.round(), onNext: onNext),
+      LevelUpCelebration() => LevelUpOverlay(gain: c.gain, onNext: onNext),
     };
   }
 }
@@ -113,7 +115,13 @@ List<(Sfx, Duration)> _soundsOf(Celebration c) => switch (c) {
       IslandCompleteCelebration() => [(Sfx.island, IslandCompleteMotion.title.delay)],
       RankUpCelebration() => const [(Sfx.stamp, RankUpMotion.impactAt), (Sfx.rankUp, RankUpMotion.impactAt)],
       GoalUpCelebration() => const [(Sfx.goalUp, Duration.zero)],
-      GraduationCelebration() => const [],
+      GraduationCelebration() => [
+          for (final b in FireworksStyle.bursts.take(GraduationMotion.fireworkSounds))
+            (Sfx.firework, Duration(microseconds: (b.delay * 1e6).round())),
+          (Sfx.graduation, GraduationMotion.title.delay),
+          (Sfx.stamp, GraduationMotion.fullImpactAt),
+          (Sfx.stamp, GraduationMotion.kaidenImpactAt),
+        ],
       XpCelebration() => XpTimeline(c.gain).sounds,
-      LevelUpCelebration() => const [],
+      LevelUpCelebration() => const [(Sfx.stamp, LevelUpMotion.impactAt), (Sfx.levelUp, LevelUpMotion.impactAt)],
     };
