@@ -2,6 +2,7 @@ import 'package:flutter/painting.dart';
 
 import '../domain/card_mask.dart';
 import '../domain/learning_pace.dart';
+import '../domain/xp.dart';
 import '../state/play_config.dart';
 import '../state/settings.dart';
 import 'design.dart';
@@ -648,6 +649,23 @@ abstract final class CelebrationPreviewTuning {
   static const int spreadUs = 20000;
   static const total = Duration(milliseconds: 14906);
   static const previousBest = Duration(milliseconds: 15380);
+
+  /// The run's XP, one line per source (count, XP), landing [levelInto]
+  /// XP into [level] before it.
+  static const List<(XpSource, int, int)> xp = [
+    (XpSource.correct, 27, 270),
+    (XpSource.missed, 3, 6),
+    (XpSource.speed, 15, 110),
+    (XpSource.reviews, 9, 45),
+    (XpSource.newCards, 3, 75),
+    (XpSource.clear, 1, 20),
+    (XpSource.daily, 5, 90),
+    (XpSource.best, 1, 100),
+    (XpSource.island, 1, 300),
+    (XpSource.graduation, 1, 1000),
+  ];
+  static const int level = 7;
+  static const int levelInto = 900;
 }
 
 /// Sound pooling (`lib/ui/sound/sounds.dart`): concurrent, identically
@@ -656,6 +674,12 @@ abstract final class CelebrationPreviewTuning {
 /// instead of cutting itself off.
 abstract final class SoundTuning {
   static const int cardFlickPoolSize = 3;
+
+  /// The XP counter ticks faster than one tick lasts.
+  static const int xpTickPoolSize = 4;
+
+  /// Fireworks and breakdown pops can land on top of each other.
+  static const int burstPoolSize = 2;
 }
 
 /// The app's sound effects (Kenney, CC0; provenance in
@@ -683,7 +707,17 @@ enum Sfx {
   rankUp(['sounds/rank_up.wav'], 0.8),
   goalUp(['sounds/goal_up.wav'], 0.8),
   best(['sounds/best.wav'], 0.8),
-  results(['sounds/results.wav'], 0.5);
+  results(['sounds/results.wav'], 0.5),
+  xpTick(['sounds/xp_tick.wav'], 0.45, poolSize: SoundTuning.xpTickPoolSize),
+  xpPop(['sounds/xp_pop.wav'], 0.6, poolSize: SoundTuning.burstPoolSize),
+  xpDone(['sounds/xp_done.wav'], 0.8),
+  levelUp(['sounds/level_up.wav'], 0.8),
+  graduation(['sounds/graduation.wav'], 0.85),
+  firework(
+    ['sounds/firework_0.wav', 'sounds/firework_1.wav', 'sounds/firework_2.wav'],
+    0.6,
+    poolSize: SoundTuning.burstPoolSize,
+  );
 
   const Sfx(this.assets, this.volume, {this.poolSize = 1});
   final List<String> assets;

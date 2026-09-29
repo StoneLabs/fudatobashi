@@ -1,5 +1,6 @@
 import '../../data/fuda_sets.dart';
 import '../../domain/rating.dart';
+import '../../domain/xp.dart';
 import '../../state/progress.dart';
 
 /// One celebration page's data. A new card is introduced during the run
@@ -47,6 +48,23 @@ class GoalUpCelebration extends Celebration {
   const GoalUpCelebration();
 }
 
+/// The journey is over: all 100 cards learned (once ever).
+class GraduationCelebration extends Celebration {
+  const GraduationCelebration();
+}
+
+/// The XP a tracked run earned, source by source.
+class XpCelebration extends Celebration {
+  const XpCelebration(this.gain);
+  final XpGain gain;
+}
+
+/// The XP of a run reached a new level (or several).
+class LevelUpCelebration extends Celebration {
+  const LevelUpCelebration(this.gain);
+  final XpGain gain;
+}
+
 /// The pages introducing new card [poemId] right before it first appears:
 /// the card itself, then a look-alike warning if the player [knows] one of
 /// its confusable siblings.
@@ -59,8 +77,8 @@ List<Celebration> introductionOf(int poemId, {required bool Function(int poemId)
   ];
 }
 
-/// The pages after a run, in order: island completions, a rank-up, then a
-/// new speed goal.
+/// The pages after a run, in order: island completions, a rank-up, a new
+/// speed goal, graduation, then the XP earned and any level it reached.
 List<Celebration> celebrationsFor(SessionReport report) {
   final list = <Celebration>[
     for (final i in report.islandsCompleted) IslandCompleteCelebration(i),
@@ -73,5 +91,11 @@ List<Celebration> celebrationsFor(SessionReport report) {
     }
   }
   if (report.goalRaised) list.add(const GoalUpCelebration());
+  if (report.graduated) list.add(const GraduationCelebration());
+  final xp = report.xp;
+  if (xp != null && xp.award.total > 0) {
+    list.add(XpCelebration(xp));
+    if (xp.levelsGained > 0) list.add(LevelUpCelebration(xp));
+  }
   return list;
 }

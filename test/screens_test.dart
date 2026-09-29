@@ -36,6 +36,7 @@ import 'package:fudatobashi/state/progress.dart';
 import 'package:fudatobashi/state/scope.dart';
 import 'package:fudatobashi/state/settings.dart';
 import 'package:fudatobashi/ui/app.dart';
+import 'package:fudatobashi/ui/debug/celebration_preview.dart';
 import 'package:fudatobashi/ui/debug/simulation_page.dart';
 import 'package:fudatobashi/ui/home/learn_ahead_button.dart';
 import 'package:fudatobashi/ui/home/training_hero.dart';
@@ -52,6 +53,7 @@ import 'package:fudatobashi/ui/results/island_complete_overlay.dart';
 import 'package:fudatobashi/ui/results/new_card_overlay.dart';
 import 'package:fudatobashi/ui/results/rank_up_overlay.dart';
 import 'package:fudatobashi/ui/results/results_screen.dart';
+import 'package:fudatobashi/ui/results/xp_overlay.dart';
 import 'package:fudatobashi/ui/settings/credits_screen.dart';
 import 'package:fudatobashi/ui/settings/settings_screen.dart';
 import 'package:fudatobashi/ui/sound/sounds.dart';
@@ -1454,7 +1456,7 @@ void main() {
       await tester.binding.setSurfaceSize(_phone);
       await tester.pumpWidget(RepaintBoundary(
         key: const ValueKey('screen'),
-        child: ProgressScope(progress: p, child: MaterialApp(home: Scaffold(body: page))),
+        child: ProgressScope(progress: p, child: MaterialApp(theme: buildMangaTheme(), home: Scaffold(body: page))),
       ));
       await tester.pump(settle);
       expect(tester.takeException(), isNull);
@@ -1493,6 +1495,35 @@ void main() {
           const Duration(milliseconds: 2300),
         );
         await _capture(tester, 'island_complete_$lang');
+        await tester.pumpWidget(const SizedBox());
+      });
+
+      testWidgets('the XP page counts its lines up and fills the bar into new levels, at a large font scale ($lang)',
+          (tester) async {
+        tester.platformDispatcher.textScaleFactorTestValue = 1.3;
+        addTearDown(tester.platformDispatcher.clearTextScaleFactorTestValue);
+        final p = await open(tester, ja: ja);
+        final gain = previewXpGain();
+        final timeline = XpTimeline(gain);
+        var advanced = false;
+        await pumpPage(tester, p, XpOverlay(gain: gain, onNext: () => advanced = true), timeline.rowAt(1));
+        await _capture(tester, 'xp_counting_$lang');
+        expect(find.text('LV ${gain.levelBefore.level}'), findsOneWidget, reason: 'no new level yet');
+
+        final flash = timeline.levelUps.first + const Duration(milliseconds: 80);
+        await tester.pump(flash - timeline.rowAt(1));
+        expect(tester.takeException(), isNull);
+        expect(find.text('LV ${gain.levelBefore.level + 1}'), findsOneWidget);
+        await _capture(tester, 'xp_level_$lang');
+
+        await tester.pump(timeline.length - flash);
+        expect(tester.takeException(), isNull);
+        expect(find.text('+${gain.award.total}'), findsWidgets, reason: 'the total has counted up');
+        expect(find.text('LEVEL UP!'), findsOneWidget);
+        expect(find.text('LV ${gain.levelAfter.level}'), findsOneWidget);
+        await _capture(tester, 'xp_done_$lang');
+        await tester.tap(find.text(S(ja).xpCta));
+        expect(advanced, isTrue);
         await tester.pumpWidget(const SizedBox());
       });
 

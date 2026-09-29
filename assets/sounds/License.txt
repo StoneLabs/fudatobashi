@@ -80,11 +80,19 @@ punch sat well under the other sounds' loudness at the same peak level):
   card_flick_2.wav  Impact Sounds / footstep_carpet_002.ogg
   card_flick_3.wav  Impact Sounds / footstep_carpet_003.ogg
   card_flick_4.wav  Impact Sounds / footstep_carpet_004.ogg
+  firework_0.wav    Impact Sounds / impactGlass_light_000.ogg
+  firework_1.wav    Impact Sounds / impactGlass_light_001.ogg
+  firework_2.wav    Impact Sounds / impactGlass_light_002.ogg
   goal_up.wav       Music Jingles / Pizzicato jingles / jingles_PIZZI10.ogg
+  graduation.wav    Music Jingles / Steel jingles / jingles_STEEL10.ogg
   island.wav        Music Jingles / Hit jingles / jingles_HIT03.ogg
+  level_up.wav      Music Jingles / 8-Bit jingles / jingles_NES12.ogg
   look_alike.wav    Interface Sounds / question_001.ogg
   rank_up.wav       Music Jingles / Steel jingles / jingles_STEEL02.ogg
   results.wav       Interface Sounds / confirmation_001.ogg
   stamp.wav         Impact Sounds / impactPunch_heavy_000.ogg
+  xp_done.wav       Music Jingles / 8-Bit jingles / jingles_NES03.ogg
+  xp_pop.wav        Interface Sounds / pluck_001.ogg
+  xp_tick.wav       Interface Sounds / tick_002.ogg
 
 Source: https://kenney.nl/assets (Music Jingles, Impact Sounds, Interface Sounds)

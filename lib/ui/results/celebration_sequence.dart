@@ -9,6 +9,7 @@ import 'celebrations.dart';
 import 'island_complete_overlay.dart';
 import 'new_card_overlay.dart';
 import 'rank_up_overlay.dart';
+import 'xp_overlay.dart';
 
 /// Celebration [pages] one after another over an opaque backdrop: the
 /// sequence fades in, cross-fades between pages, and after the last one
@@ -98,6 +99,9 @@ class _CelebrationSequenceState extends State<CelebrationSequence> with SingleTi
         ),
       RankUpCelebration() => RankUpOverlay(data: c, onNext: onNext),
       GoalUpCelebration() => GoalUpOverlay(goalMs: progress.trainer.goalMs.round(), onNext: onNext),
+      GraduationCelebration() => GoalUpOverlay(goalMs: progress.trainer.goalMs.round(), onNext: onNext),
+      XpCelebration() => XpOverlay(gain: c.gain, onNext: onNext),
+      LevelUpCelebration() => GoalUpOverlay(goalMs: progress.trainer.goalMs.round(), onNext: onNext),
     };
   }
 }
@@ -109,4 +113,7 @@ List<(Sfx, Duration)> _soundsOf(Celebration c) => switch (c) {
       IslandCompleteCelebration() => [(Sfx.island, IslandCompleteMotion.title.delay)],
       RankUpCelebration() => const [(Sfx.stamp, RankUpMotion.impactAt), (Sfx.rankUp, RankUpMotion.impactAt)],
       GoalUpCelebration() => const [(Sfx.goalUp, Duration.zero)],
+      GraduationCelebration() => const [],
+      XpCelebration() => XpTimeline(c.gain).sounds,
+      LevelUpCelebration() => const [],
     };

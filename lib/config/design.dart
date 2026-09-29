@@ -1968,3 +1968,191 @@ abstract final class AllKnownWarningStyle {
   static const double bodyLineHeight = 1.4;
   static const EdgeInsets padding = EdgeInsets.fromLTRB(Gaps.gutter, Gaps.section, Gaps.gutter, Gaps.section);
 }
+
+/// The XP page (経験値!!, `XpOverlay`): violet, lit from behind the counter.
+abstract final class XpLayout {
+  static const Color color = Palette.violet;
+  static const List<Color> skyColors = [Color(0xFFB98AD6), Palette.violet, Color(0xFF7A3FA3)];
+  static const List<double> skyStops = [0, 0.55, 1];
+  static const Alignment skyCenter = Alignment(0, -0.45);
+  static const double toneAngle = 180;
+  static const List<double> toneStops = [0.55, 1];
+  static const focus = BurstSpec(
+      box: Size(390, 844), center: Offset(195, 215), count: 150, innerMin: 110, innerMax: 150, width: 4, seed: 41,
+      color: Palette.paper);
+  static const double focusOpacity = 0.85;
+  static const Alignment glowAt = Alignment(0, -0.5);
+  static const double glowSize = 420;
+  static const List<Color> glowColors = [Color(0xFFFFF7CC), Color(0xE6FFD83A), Color(0x00FFD83A)];
+  static const List<double> glowStops = [0.15, 0.42, 1];
+
+  static const double topGap = 4;
+  static const String title = '経験値!!';
+  static const double titleFont = 84;
+  static const double titleOutline = 8;
+  static const double bandInset = 40;
+
+  /// The band sits left of centre, leaving room for ドン!! on its right.
+  static const double bandShift = 70;
+  static const double bandFont = 20;
+  static const double bandTracking = 0.3;
+  static const EdgeInsets bandPadding = EdgeInsets.fromLTRB(8, 7, 8, 8);
+  static const double bandTurnDeg = -2.5;
+
+  /// The counter: "+482 XP" in sun lettering, pulsing as it lands.
+  static const double counterGap = 6;
+  static const double counterFont = 78;
+  static const double counterUnitFont = 30;
+  static const double counterOutline = 10;
+  static const double finishPulse = 0.18;
+  static const impactBurst = BurstSpec(
+      box: impactSize, center: Offset(170, 110), count: 48, innerMin: 70, innerMax: 96, width: 5, seed: 43);
+  static const Size impactSize = Size(340, 220);
+  static const double impactFromScale = 0.6;
+  static const double impactToScale = 1.3;
+  /// Kept clear of the counter on either side, with Tobi on the right
+  /// under ドン!! (up beside the band, from the counter's top right).
+  static const double counterSide = 58;
+  static const String sfx = 'ドン!!';
+  static const double sfxFont = 30;
+  static const int sfxSeed = 8;
+  static const double sfxTurnDeg = 10;
+  static const Offset sfxAt = Offset(-2, -62);
+  static const Placement tobi = Placement(right: -4, bottom: -6, size: Size(64, 76));
+
+  /// The level bar: LV badge, the bar filling in pink, what's left below.
+  static const double barGap = 16;
+  static const double badgeFont = 22;
+  static const EdgeInsets badgePadding = EdgeInsets.fromLTRB(9, 3, 9, 5);
+  static const double badgeTurnDeg = -4;
+  static const double badgePop = 0.45;
+  static const double barBadgeGap = 10;
+  static const double barHeight = 26;
+  static const double barBorder = 3;
+  static const Color barTrack = Palette.paper;
+  static const Color barFill = Palette.pink;
+
+  /// A lighter band across the top of the fill.
+  static const Color barSheen = Color(0x66FFFFFF);
+  static const double barSheenShare = 0.32;
+  static const Color barFlash = Palette.sun;
+  static const double noteGap = 6;
+  static const double noteFont = 13;
+  static const double noteBorder = 2;
+  static const EdgeInsets notePadding = EdgeInsets.fromLTRB(10, 2, 10, 3);
+  static const double flashFont = 13;
+  static const double flashTurnDeg = -6;
+
+  /// Lettering thrown off the bar's tip as each line counts in, cycling
+  /// through these.
+  static const List<String> tipWords = ['ギュン!', 'キラッ', 'ピコン!', 'シュバッ', 'ギュイン!', 'バシッ'];
+  static const List<Color> tipWordColors = [Palette.sun, Palette.paper, Palette.pink];
+  static const List<double> tipWordTurnDeg = [-10, 6, -4, 9, -7];
+  static const double tipWordFont = 20;
+
+  /// Words lean off the tip alternately to the left and right: the share
+  /// of a word's width on the far side.
+  static const double tipWordLean = 0.8;
+  static const int tipWordSeed = 60;
+  static const double tipWordRise = 46;
+  static const double tipWordPopShare = 0.15;
+  static const double tipWordFadeFrom = 0.55;
+
+  /// The breakdown: one strip per source, tilted either way in turn.
+  static const double listGap = 14;
+  static const double rowGap = 6;
+  static const double rowBorder = 2.5;
+  static const EdgeInsets rowPadding = EdgeInsets.fromLTRB(10, 3, 10, 4);
+  static const double rowTurnDeg = 0.8;
+  static const double rowLabelFont = 16;
+  static const double rowCountFont = 13;
+  static const double rowXpFont = 20;
+  static const double rowCountGap = 8;
+
+  static const double actionGap = 12;
+  static const double actionHeight = 62;
+  static const double ctaFont = 20;
+  static const double ctaSubFont = 13;
+}
+
+/// The XP page's timeline: the lines pop in one after another, each
+/// counting its XP into the total as the bar fills, then the total lands.
+abstract final class XpMotion {
+  static const title = EntranceSpec(Entrances.slam,
+      duration: Duration(milliseconds: 500), delay: Duration(milliseconds: 100), curve: Entrances.springy);
+  static const band =
+      EntranceSpec(Entrances.pop, duration: Duration(milliseconds: 350), delay: Duration(milliseconds: 350));
+  static const counter = EntranceSpec(Entrances.pop,
+      duration: Duration(milliseconds: 350), delay: Duration(milliseconds: 450), curve: Entrances.springy);
+  static const bar = EntranceSpec(Entrances.up,
+      duration: Duration(milliseconds: 400), delay: Duration(milliseconds: 550), curve: Entrances.glide);
+
+  /// The first line pops in at [rowsAt], the next every [rowStep]; each
+  /// takes [rowIn] to land and counts its XP in over [rowCount].
+  static const rowsAt = Duration(milliseconds: 850);
+  static const rowStep = Duration(milliseconds: 170);
+  static const rowIn = Duration(milliseconds: 350);
+  static const rowCount = Duration(milliseconds: 320);
+  static const Curve rowCurve = Entrances.bouncy;
+  static const Curve countCurve = Curves.easeOutCubic;
+
+  /// The counter ticks this often while it counts.
+  static const tickStep = Duration(milliseconds: 55);
+
+  /// The total lands this long after the count ends, then the rest follows.
+  static const finishGap = Duration(milliseconds: 120);
+  static const finishPulse = Duration(milliseconds: 380);
+  static const jolt = Duration(milliseconds: 320);
+  static const double joltReach = 6;
+  static const int joltSteps = 9;
+  static const int joltSeed = 47;
+  static const burst = Duration(milliseconds: 450);
+  static const sfx = Duration(milliseconds: 400);
+  static const tobiAfter = Duration(milliseconds: 60);
+  static const tobi = Duration(milliseconds: 400);
+  static const actionsAfter = Duration(milliseconds: 250);
+  static const actions = Duration(milliseconds: 400);
+
+  /// The bar flashes and the badge pops at each new level.
+  static const levelFlash = Duration(milliseconds: 420);
+
+  /// Each line's lettering leaves the tip this long after the line pops,
+  /// and flies for [tipWord].
+  static const tipWordAt = Duration(milliseconds: 60);
+  static const tipWord = Duration(milliseconds: 560);
+
+  static const double hopHeight = 10;
+  static const hopPeriod = Duration(milliseconds: 1000);
+  static const double hopAirShare = 0.4;
+}
+
+/// The sparks flying off the tip of the filling XP bar (`XpOverlay`), in px.
+abstract final class XpSparks {
+  static const spawnStep = Duration(milliseconds: 16);
+  static const int seed = 53;
+  static const double minLife = 0.5, lifeRange = 0.35;
+
+  /// Launch angles (degrees, 0 = right, -90 = up) and speeds (px/s).
+  static const double minAngle = -170, angleRange = 150;
+  static const double minSpeed = 110, speedRange = 190;
+  static const double gravity = 620;
+  static const double minSize = 5, sizeRange = 6;
+  static const double spin = 6;
+  static const double stroke = 1.5;
+
+  /// Opacity holds until this share of a spark's life, then fades out.
+  static const double fadeFrom = 0.55;
+
+  /// Every this-many sparks is a square rather than a star.
+  static const int squareEvery = 3;
+  static const List<Color> colors = [Palette.sun, Palette.paper, Palette.sun, Palette.pink, Palette.sea];
+
+  /// The glint riding the tip while it fills.
+  static const double glint = 13;
+
+  /// A star's inner points, as a share of its size.
+  static const double starWaist = 0.16;
+
+  /// How far past the bar the sparks may fly before they're cut off.
+  static const EdgeInsets reach = EdgeInsets.fromLTRB(40, 120, 40, 60);
+}
