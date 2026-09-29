@@ -349,6 +349,26 @@ abstract final class LanguageLayout {
   static const double pickerTitleFont = 22;
 }
 
+/// Home's level readout, where the language toggle used to sit: the level
+/// itself is the button that opens My Profile (see `LevelButton`).
+abstract final class LevelButtonStyle {
+  static const double height = LangToggleStyle.height;
+  static const double padding = 12;
+  static const double font = 15;
+}
+
+/// My Profile (opened from Home's level button): Tobi's welcome, rank,
+/// learned/well-remembered counts, level progress and the first-swipe line.
+abstract final class ProfileLayout {
+  static const double tobiWidth = 76;
+  static const double tobiHeight = 90;
+  static const double greetingFont = 14;
+  static const double statLabelFont = 13;
+  static const double statNumberFont = 20;
+  static const double levelFont = 28;
+  static const double levelBarHeight = 14;
+}
+
 abstract final class TagStyle {
   static const double lineHeight = 1.15;
   static const double bannerLineHeight = 1.2;

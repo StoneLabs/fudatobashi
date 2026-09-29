@@ -27,9 +27,11 @@ import 'package:fudatobashi/domain/trainer.dart';
 import 'package:fudatobashi/domain/xp.dart';
 import 'package:fudatobashi/l10n/credits_strings.dart';
 import 'package:fudatobashi/l10n/free_strings.dart';
+import 'package:fudatobashi/l10n/history_strings.dart';
 import 'package:fudatobashi/l10n/home_strings.dart';
 import 'package:fudatobashi/l10n/language_strings.dart';
 import 'package:fudatobashi/l10n/onboarding_strings.dart';
+import 'package:fudatobashi/l10n/profile_strings.dart';
 import 'package:fudatobashi/l10n/results_strings.dart';
 import 'package:fudatobashi/l10n/settings_strings.dart';
 import 'package:fudatobashi/l10n/stats_strings.dart';
@@ -55,6 +57,7 @@ import 'package:fudatobashi/ui/onboarding/onboarding_screen.dart';
 import 'package:fudatobashi/ui/onboarding/welcome_sea.dart';
 import 'package:fudatobashi/ui/play/kimariji_chip.dart';
 import 'package:fudatobashi/ui/play/play_screen.dart';
+import 'package:fudatobashi/ui/profile/profile_screen.dart';
 import 'package:fudatobashi/ui/rank/rank_screen.dart';
 import 'package:fudatobashi/ui/results/celebration_sequence.dart';
 import 'package:fudatobashi/ui/results/celebrations.dart';
@@ -69,6 +72,7 @@ import 'package:fudatobashi/ui/settings/all_known_warning_screen.dart';
 import 'package:fudatobashi/ui/settings/credits_screen.dart';
 import 'package:fudatobashi/ui/settings/language_screen.dart';
 import 'package:fudatobashi/ui/settings/settings_screen.dart';
+import 'package:fudatobashi/ui/shell/header_actions.dart';
 import 'package:fudatobashi/ui/sound/sounds.dart';
 import 'package:fudatobashi/ui/stats/card_detail_screen.dart';
 import 'package:fudatobashi/ui/stats/card_list.dart';
@@ -1983,6 +1987,61 @@ void main() {
       await tester.pump();
       expect(p.settings.onboarded, isFalse);
       expect(p.settings.languagePicked, isFalse, reason: 'the language picker must show again too');
+      await tester.pumpWidget(const SizedBox());
+    });
+
+    for (final mode in [LearningMode.journey, LearningMode.allKnown]) {
+      testWidgets('home, ${mode.name}: the level button opens My Profile', (tester) async {
+        final p = await open(tester, mode: mode, journeyCards: mode == LearningMode.journey ? 27 : 0);
+        await tester.binding.setSurfaceSize(_phone);
+        await tester.pumpWidget(RepaintBoundary(key: const ValueKey('screen'), child: FudatobashiApp(progress: p)));
+        await tester.pump(const Duration(milliseconds: 500));
+        const s = S('en');
+        expect(find.text(s.levelShort(1)), findsOneWidget, reason: 'the level button, where EN/JA used to sit');
+
+        await tester.tap(find.byType(LevelButton));
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 500));
+        expect(tester.takeException(), isNull);
+        expect(find.byType(ProfileScreen), findsOneWidget);
+        final profile = find.byType(ProfileScreen);
+        expect(find.descendant(of: profile, matching: find.text(s.levelShort(1))), findsOneWidget);
+        expect(find.descendant(of: profile, matching: find.byType(NarrationBox)), findsNothing,
+            reason: 'no swipe recorded yet');
+        await _capture(tester, 'profile_${mode.name}');
+        await tester.pumpWidget(const SizedBox());
+      });
+    }
+
+    testWidgets('My Profile: rank, learned/well-remembered counts and the first swipe render at font scale 1.3',
+        (tester) async {
+      tester.platformDispatcher.textScaleFactorTestValue = 1.3;
+      addTearDown(tester.platformDispatcher.clearTextScaleFactorTestValue);
+      final p = await open(tester, mode: LearningMode.allKnown);
+      final startedAt = DateTime.now().subtract(const Duration(days: 3));
+      await tester.runAsync(() async {
+        final cards = [for (final id in [1, 2, 3]) CardRef(id)];
+        final session = PlaySession(cards);
+        var t = const Duration(seconds: 100);
+        for (final _ in cards) {
+          session.revealed(t);
+          t += const Duration(milliseconds: 500);
+          session.commit(responseTs: t, commitTs: t + const Duration(milliseconds: 80), outcome: Outcome.known);
+          t += const Duration(milliseconds: 100);
+        }
+        await p.recordRun(session, const PlayConfig(mode: PlayMode.training), startedAt);
+      });
+      expect(p.firstSwipeAt, isNotNull);
+
+      await tester.pumpWidget(RepaintBoundary(
+        key: const ValueKey('screen'),
+        child: ProgressScope(progress: p, child: const MaterialApp(home: ProfileScreen())),
+      ));
+      await tester.pump(const Duration(milliseconds: 500));
+      expect(tester.takeException(), isNull);
+      const s = S('en');
+      expect(find.text(s.firstSwipeOn(s.sessionDate(p.firstSwipeAt!))), findsOneWidget);
+      await _capture(tester, 'profile_history_scaled');
       await tester.pumpWidget(const SizedBox());
     });
   });

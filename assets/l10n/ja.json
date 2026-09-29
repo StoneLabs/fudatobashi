@@ -324,5 +324,8 @@
   "previewRankUp": "プレビュー",
   "language": "言語",
   "chooseLanguage": "言語を選んでください",
-  "systemDefault": "端末の言語に合わせる"
+  "systemDefault": "端末の言語に合わせる",
+  "myProfile": "マイページ",
+  "wellRememberedOf": "{0} / {1} 定着",
+  "firstSwipeOn": "初スワイプ：{0}"
 }

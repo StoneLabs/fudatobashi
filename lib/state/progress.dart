@@ -295,6 +295,18 @@ class Progress extends ChangeNotifier {
         for (final s in sessions) DateTime(s.startedAt.year, s.startedAt.month, s.startedAt.day),
       };
 
+  /// The very first swipe ever recorded, for My Profile's "first swipe"
+  /// line — null with no history yet.
+  DateTime? get firstSwipeAt {
+    DateTime? earliest;
+    for (final attempts in _log.values) {
+      for (final a in attempts) {
+        if (earliest == null || a.at.isBefore(earliest)) earliest = a.at;
+      }
+    }
+    return earliest;
+  }
+
   int get streak {
     final days = practiceDays;
     var d = DateTime.now();

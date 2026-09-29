@@ -324,5 +324,8 @@
   "previewRankUp": "Preview",
   "language": "Language",
   "chooseLanguage": "Choose your language",
-  "systemDefault": "System default"
+  "systemDefault": "System default",
+  "myProfile": "My Profile",
+  "wellRememberedOf": "{0} / {1} well remembered",
+  "firstSwipeOn": "First swipe: {0}"
 }
