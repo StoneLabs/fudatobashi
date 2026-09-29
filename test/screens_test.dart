@@ -52,6 +52,7 @@ import 'package:fudatobashi/ui/results/island_complete_overlay.dart';
 import 'package:fudatobashi/ui/results/new_card_overlay.dart';
 import 'package:fudatobashi/ui/results/rank_up_overlay.dart';
 import 'package:fudatobashi/ui/results/results_screen.dart';
+import 'package:fudatobashi/ui/settings/all_known_warning_screen.dart';
 import 'package:fudatobashi/ui/settings/credits_screen.dart';
 import 'package:fudatobashi/ui/settings/settings_screen.dart';
 import 'package:fudatobashi/ui/sound/sounds.dart';
@@ -1201,6 +1202,43 @@ void main() {
     await tester.pump();
     expect(p.settings.sounds, isFalse);
     expect(AppSettings.fromJson(p.settings.toJson()).sounds, isFalse);
+    await tester.pumpWidget(const SizedBox());
+  });
+
+  testWidgets('settings: journey → all-known warns first while cards remain locked', (tester) async {
+    PackageInfo.setMockInitialValues(
+        appName: 'Fudatobashi', packageName: 'dev.fudatobashi', version: '1.0.0', buildNumber: '1', buildSignature: '');
+    final p = await open(tester, mode: LearningMode.journey);
+    expect(p.allCardsUnlocked, isFalse);
+    await tester.binding.setSurfaceSize(_phone);
+    await tester.pumpWidget(ProgressScope(progress: p, child: const MaterialApp(home: SettingsScreen())));
+    await tester.pump();
+    const s = S(false);
+    await tester.tap(find.text(s.learningAllKnown));
+    await tester.pump();
+    await tester.pump(Motion.route);
+    expect(find.byType(AllKnownWarningScreen), findsOneWidget);
+    expect(p.trainer.config.learningMode, LearningMode.journey, reason: 'still waiting on the hold to confirm');
+    await tester.pumpWidget(const SizedBox());
+  });
+
+  testWidgets('settings: journey → all-known switches immediately once every card is already unlocked',
+      (tester) async {
+    PackageInfo.setMockInitialValues(
+        appName: 'Fudatobashi', packageName: 'dev.fudatobashi', version: '1.0.0', buildNumber: '1', buildSignature: '');
+    final p = await open(tester, mode: LearningMode.journey, journeyCards: 100);
+    expect(p.allCardsUnlocked, isTrue);
+    await tester.binding.setSurfaceSize(_phone);
+    await tester.pumpWidget(ProgressScope(progress: p, child: const MaterialApp(home: SettingsScreen())));
+    await tester.pump();
+    const s = S(false);
+    await tester.runAsync(() async {
+      await tester.tap(find.text(s.learningAllKnown));
+      await Future<void>.delayed(const Duration(milliseconds: 50));
+    });
+    await tester.pump();
+    expect(find.byType(AllKnownWarningScreen), findsNothing);
+    expect(p.trainer.config.learningMode, LearningMode.allKnown);
     await tester.pumpWidget(const SizedBox());
   });
 

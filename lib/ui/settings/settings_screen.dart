@@ -129,11 +129,16 @@ class SettingsScreen extends StatelessWidget {
 }
 
 /// Journey → all-known goes behind a full-screen warning (it can't be
-/// undone); the other direction needs none, since journey then simply shows
-/// everything unlocked.
+/// undone), unless every card is already unlocked and there's nothing left
+/// to warn about; the other direction needs none either, since journey then
+/// simply shows everything unlocked.
 Future<void> _chooseLearningMode(BuildContext context, Progress progress, LearningMode from, LearningMode to) async {
   if (from != LearningMode.journey || to != LearningMode.allKnown) {
     await progress.setLearningMode(to);
+    return;
+  }
+  if (progress.allCardsUnlocked) {
+    await progress.switchToAllKnown();
     return;
   }
   final confirmed = await Navigator.of(context).push(MangaRoute<bool>(builder: (_) => const AllKnownWarningScreen()));

@@ -294,6 +294,10 @@ class Progress extends ChangeNotifier {
   bool get canLearnMore =>
       trainer.config.learningMode == LearningMode.journey && trainer.nextBatch(poems, fudaSets).isNotEmpty;
 
+  /// Every card already unlocked: switching journey → all-known has nothing
+  /// left to warn about.
+  bool get allCardsUnlocked => trainer.nextBatch(poems, fudaSets).isEmpty;
+
   /// 修行: unlock what was earned, then plan a session.
   Future<PlannedRun> planTraining({math.Random? rng, DateTime? now}) async {
     now ??= DateTime.now();
