@@ -84,6 +84,11 @@ import 'package:fudatobashi/ui/shell/tab_chains.dart';
 import 'package:fudatobashi/ui/sound/sounds.dart';
 import 'package:fudatobashi/ui/stats/card_detail_screen.dart';
 import 'package:fudatobashi/ui/stats/card_list.dart';
+import 'package:fudatobashi/ui/tour/tour_anchor.dart';
+import 'package:fudatobashi/ui/tour/tour_arrows.dart';
+import 'package:fudatobashi/ui/tour/tour_layout.dart';
+import 'package:fudatobashi/ui/tour/tour_overlay.dart';
+import 'package:fudatobashi/ui/tour/tour_steps.dart';
 import 'package:fudatobashi/ui/tour/tutorial_coach.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 
@@ -146,13 +151,15 @@ void main() {
     }
   });
 
+  // A player who has taken the tour, with every tab open, unless asked
+  // otherwise.
   Future<Progress> open(WidgetTester tester,
-      {LearningMode? mode, bool ja = false, int journeyCards = 0, bool tabsLocked = false}) async {
+      {LearningMode? mode, bool ja = false, int journeyCards = 0, bool tabsLocked = false, bool toured = true}) async {
     late Progress p;
     await tester.runAsync(() async {
       p = await Progress.open(AppDatabase(NativeDatabase.memory()));
       p.tabsAlwaysOpen = !tabsLocked;
-      await p.updateSettings(p.settings.copyWith(language: ja ? 'ja' : 'en', languagePicked: true));
+      await p.updateSettings(p.settings.copyWith(language: ja ? 'ja' : 'en', languagePicked: true, toured: toured));
       if (mode != null) await p.setLearningMode(mode);
     });
     final ids = [for (final isl in archipelago.islands) ...fudaSets['initial:${isl.name}'].poemIds];
@@ -2449,7 +2456,6 @@ void main() {
     testWidgets('a new player finds History and Stats in chains, Tobi says what opens them, and each breaks free once',
         (tester) async {
       final p = await open(tester, mode: LearningMode.allKnown, tabsLocked: true);
-      await tester.runAsync(() => p.updateSettings(p.settings.copyWith(toured: true)));
       await onPhone(tester, p, fontScale: 1.1);
       expect(find.byType(TabChains), findsNWidgets(2));
       await _capture(tester, 'tabs_locked');
@@ -2501,7 +2507,6 @@ void main() {
 
     testWidgets('a player who already qualifies sees no chains and nothing breaking', (tester) async {
       final p = await open(tester, mode: LearningMode.allKnown, tabsLocked: true);
-      await tester.runAsync(() => p.updateSettings(p.settings.copyWith(toured: true)));
       for (var i = 0; i < 3; i++) {
         await playRound(tester, p);
       }
@@ -2529,6 +2534,148 @@ void main() {
       });
       expect(fresh.settings.toured, isFalse);
       expect(old.settings.toured, isTrue);
+    });
+  });
+
+  group('Tour', () {
+    const safe = EdgeInsets.only(top: 28, bottom: 48);
+    final area = Rect.fromLTRB(Gaps.gutter, 28 + Gaps.gutter, _phone.width - Gaps.gutter, _phone.height - 48 - Gaps.gutter);
+    const spots = {
+      'brand': Rect.fromLTWH(16, 32, 170, 54),
+      'level': Rect.fromLTWH(262, 36, 60, 44),
+      'known hero': Rect.fromLTWH(16, 230, 352, 330),
+      'tabs': Rect.fromLTWH(16, 710, 352, 62),
+      'journey hero': Rect.fromLTWH(16, 540, 352, 150),
+    };
+    for (final MapEntry(key: name, value: spot) in spots.entries) {
+      test('the arrows point at the $name without covering it, and nothing leaves the screen', () {
+        for (var seed = 0; seed < 12; seed++) {
+          final l = TourLayout.of(size: _phone, safe: safe, spot: spot, seed: seed);
+          final hole = l.hole!.outerRect;
+          expect(hole.contains(spot.topLeft) && hole.contains(spot.bottomRight), isTrue);
+          expect(l.scribbles, isNotEmpty);
+          for (final sc in l.scribbles) {
+            expect(Rect.fromPoints(sc.tail, sc.tip).overlaps(hole), isFalse, reason: '$name, seed $seed');
+            expect(area.contains(sc.bounds.topLeft) && area.contains(sc.bounds.bottomRight), isTrue);
+            expect(sc.bounds.overlaps(l.block), isFalse);
+            final toSpot = hole.center - sc.tip;
+            expect((sc.tip - sc.tail).direction - toSpot.direction, isNot(closeTo(math.pi, 0.6)),
+                reason: 'points in, not away');
+          }
+          final m = l.marquee;
+          if (m != null) {
+            expect(m.bounds.overlaps(hole) || m.bounds.overlaps(l.block), isFalse);
+          }
+          expect(area.inflate(1).contains(l.block.topLeft) && area.inflate(1).contains(l.block.bottomRight), isTrue);
+        }
+      });
+    }
+
+    test('small spots with room around them get the marquee', () {
+      for (final name in ['brand', 'level', 'tabs', 'journey hero']) {
+        expect(TourLayout.of(size: _phone, safe: safe, spot: spots[name], seed: 1).marquee, isNotNull, reason: name);
+      }
+    });
+
+    Future<void> playTutorial(WidgetTester tester) async {
+      Future<void> drag(Offset by, {Duration hold = Duration.zero}) async {
+        final g = await tester.startGesture(const Offset(192, 300));
+        for (var i = 0; i < 4; i++) {
+          await g.moveBy(by);
+          await tester.pump(const Duration(milliseconds: 8));
+        }
+        await tester.pump(hold);
+        await g.up();
+        await tester.pump(const Duration(milliseconds: 400));
+      }
+
+      await drag(const Offset(40, 0));
+      await drag(const Offset(40, 0));
+      await drag(const Offset(0, 25), hold: SwipeTuning.dontKnowHoldDwell + const Duration(milliseconds: 50));
+      await drag(const Offset(40, 0));
+      await tester.pump(TutorialTuning.doneLinger);
+      await tester.pump(const Duration(milliseconds: 600));
+    }
+
+    for (final mode in LearningMode.values) {
+      for (final ja in [false, true]) {
+        final lang = ja ? 'ja' : 'en';
+        testWidgets('a new player gets the tour of ${mode.name} Home, spot by spot, and it ends after the practice round ($lang)',
+            (tester) async {
+          final p = await open(tester, mode: mode, ja: ja, journeyCards: 7, tabsLocked: true, toured: false);
+          await onPhone(tester, p, fontScale: 1.1);
+          final steps = TourStep.of(mode);
+          for (final (i, step) in steps.indexed) {
+            await tester.pump(const Duration(milliseconds: 50));
+            await tester.pump(const Duration(milliseconds: 600));
+            expect(tester.takeException(), isNull, reason: 'step $i');
+            expect(find.byType(TourOverlay), findsOneWidget);
+            final arrows = tester.widget<TourArrows>(find.byType(TourArrows));
+            final spot = step.spot;
+            if (spot != null) {
+              final target = tester.getRect(find.byWidgetPredicate((w) => w is TourAnchor && w.spot == spot));
+              expect(arrows.scribbles, isNotEmpty, reason: 'step $i: ${spot.name} is found');
+              for (final sc in arrows.scribbles) {
+                expect(Rect.fromPoints(sc.tail, sc.tip).overlaps(target), isFalse, reason: 'step $i: ${spot.name}');
+              }
+            } else {
+              expect(arrows.scribbles, isEmpty);
+            }
+            await _capture(tester, 'tour_${mode.name}_${i}_$lang');
+            await tester.tapAt(const Offset(192, 420));
+            await tester.pump();
+            if (step.practice) {
+              await tester.pump(const Duration(milliseconds: 500));
+              expect(find.byType(PlayScreen), findsOneWidget, reason: 'the tour makes you practise');
+              await playTutorial(tester);
+              expect(find.byType(PlayScreen), findsNothing);
+            }
+          }
+          await tester.pump(const Duration(milliseconds: 100));
+          expect(find.byType(TourOverlay), findsNothing);
+          expect(p.settings.toured, isTrue);
+          expect(p.sessions, isEmpty, reason: 'the practice round is not recorded');
+          await tester.pumpWidget(const SizedBox());
+        });
+      }
+    }
+
+    testWidgets('leaving the practice round early keeps the tour on it', (tester) async {
+      final p = await open(tester, mode: LearningMode.journey, journeyCards: 7, toured: false);
+      await onPhone(tester, p, fontScale: 1.0);
+      final practice = TourStep.of(LearningMode.journey).indexWhere((st) => st.practice);
+      for (var i = 0; i <= practice; i++) {
+        await tester.pump(const Duration(milliseconds: 400));
+        await tester.tapAt(const Offset(192, 420));
+        await tester.pump();
+      }
+      await tester.pump(const Duration(milliseconds: 500));
+      await tester.tap(find.text(const S('en').end));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 500));
+      expect(find.byType(PlayScreen), findsNothing);
+      expect(find.text(const S('en').tourPracticeAgain), findsOneWidget);
+      await tester.tapAt(const Offset(192, 420));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 500));
+      expect(find.byType(PlayScreen), findsOneWidget, reason: 'the practice round again');
+      await tester.pumpWidget(const SizedBox());
+    });
+
+    testWidgets('Help replays the tour', (tester) async {
+      final p = await open(tester, mode: LearningMode.allKnown);
+      await onPhone(tester, p, fontScale: 1.1);
+      await tester.tap(find.descendant(of: find.byType(MangaTabBar), matching: find.text('Help')));
+      await tester.pump(const Duration(milliseconds: 300));
+      expect(tester.takeException(), isNull);
+      await _capture(tester, 'help_replay');
+      await tester.tap(find.text(const S('en').replayTour));
+      await tester.runAsync(() => Future<void>.delayed(const Duration(milliseconds: 50)));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
+      expect(find.byType(TourOverlay), findsOneWidget);
+      expect(tester.widget<MangaTabBar>(find.byType(MangaTabBar)).current, 0, reason: 'on Home');
+      await tester.pumpWidget(const SizedBox());
     });
   });
 

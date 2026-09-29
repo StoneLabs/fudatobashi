@@ -1219,6 +1219,117 @@ abstract final class TutorialStyle {
   static const double linePopFrom = 0.8;
 }
 
+/// Tobi's tour of Home (`TourOverlay`): a greyed-out screen with a
+/// spotlight, Tobi large with a balloon, a spray of hand-scribbled arrows
+/// and a marquee arrow with chasing bulbs, all pointing at the spot.
+abstract final class TourStyle {
+  /// The greyed-out wall: lighter near the spotlight, darker at the edges,
+  /// fading over [dimReach] of the screen's longer side.
+  static const Color dimNear = Color(0xDCD6D9DD);
+  static const Color dimFar = Color(0xF0868C94);
+  static const double dimReach = 0.95;
+
+  /// The spotlight: its margin around the spot, corner radius, and a paper
+  /// ring with an ink line around it.
+  static const double spotPad = 6;
+  static const double spotRadius = 10;
+  static const double spotRing = 7;
+  static const double spotInk = 3;
+
+  /// Gaps between the spotlight, the marquee and Tobi's block.
+  static const double gap = 10;
+
+  /// Tobi's block (Tobi and his balloon): beside the balloon, at most
+  /// [block] tall and at least [blockMin] where room is short; from
+  /// [stackAt] up, under a full-width balloon instead, [blockStacked] tall
+  /// beside a spotlight with room for it and [blockTall] with none, Tobi
+  /// then taking [stackedTobi] of it.
+  static const double block = 196;
+  static const double blockMin = 136;
+  static const double stackAt = 250;
+  static const double blockStacked = 320;
+  static const double blockTall = 390;
+  static const double stackedTobi = 0.56;
+  static const Alignment speakerLeft = Alignment(-1.22, 0.38);
+  static const Alignment speakerRight = Alignment(1.22, 0.38);
+  static const Alignment speakerBelowLeft = Alignment(-0.62, 1.25);
+  static const Alignment speakerBelowRight = Alignment(0.62, 1.25);
+  static const EdgeInsets balloonPadding = EdgeInsets.symmetric(horizontal: 2, vertical: 2);
+  static const double font = 15.5;
+  static const double hintFont = 11.5;
+  static const double hintGap = 5;
+  static const Duration pop = Duration(milliseconds: 380);
+  static const double popFrom = 0.6;
+
+  /// Hand-scribbled arrows around the spotlight: up to [scribbles] of
+  /// them, [scribbleMin]–[scribbleMax] px long, their tips on
+  /// [scribbleRings] (px off the spotlight), turned up to
+  /// [scribbleTurnDeg] off square.
+  static const int scribbles = 10;
+  static const double scribbleMin = 40;
+  static const double scribbleMax = 66;
+  static const List<double> scribbleRings = [14, 44, 76];
+  static const double scribbleTurnDeg = 30;
+  static const double scribbleMargin = 9;
+  static const List<double> scribbleAlongTop = [0.1, 0.3, 0.5, 0.7, 0.9];
+  static const List<double> scribbleAlongSide = [0.25, 0.5, 0.75];
+
+  /// How one is drawn: two marker passes [scribblePass] px apart (the
+  /// second thinner), a shaft
+  /// bent by up to [scribbleBend] px and a head of two strokes.
+  static const Color scribbleInk = Palette.alarm;
+  static const double scribbleWidth = 3.8;
+  static const double scribbleWidthThin = 2.6;
+  static const double scribblePass = 1.7;
+  static const double scribbleBend = 7;
+  static const double scribbleHead = 19;
+  static const double scribbleHeadDeg = 27;
+
+  /// Stop-motion boil: the lines are redrawn every [boil], cycling through
+  /// [boilFrames] drawings, each wobbling by up to [boilJitter] px.
+  static const Duration boil = Duration(milliseconds: 120);
+  static const int boilFrames = 3;
+  static const double boilJitter = 1.8;
+
+  /// Each arrow stamps in over [scribbleIn] from [scribbleInFrom] of its
+  /// size, [scribbleStagger] after the one before, then jabs at the spot by
+  /// [jab] px every [jabPeriod].
+  static const Duration scribbleIn = Duration(milliseconds: 170);
+  static const Duration scribbleStagger = Duration(milliseconds: 45);
+  static const double scribbleInFrom = 1.6;
+  static const Duration jabPeriod = Duration(milliseconds: 700);
+  static const double jab = 5;
+
+  /// The marquee arrow: a fat red arrow [marqueeLength] long with a head
+  /// [marqueeHead] long and [marqueeHeadHeight] tall on a [marqueeBody]
+  /// tall body, placed [marqueeShift] px to one side of the spot's centre
+  /// in a band [marqueeRoom] tall.
+  static const double marqueeLength = 132;
+  static const double marqueeHead = 50;
+  static const double marqueeHeadHeight = 76;
+  static const double marqueeBody = 40;
+  static const double marqueeStroke = 3;
+  static const double marqueeRoom = 150;
+  static const double marqueeShift = 72;
+  static const Color marqueeFill = Palette.alarmDeep;
+  static const double marqueeFont = 16;
+
+  /// The label is only on a marquee within this of level, so it reads.
+  static const double marqueeLabelMaxDeg = 50;
+
+  /// Its light bulbs, [bulbPitch] px apart just inside its outline; every
+  /// [chaseEvery]th is lit, and the lit ones move on every [chase].
+  static const double bulb = 3.2;
+  static const double bulbGlow = 6.5;
+  static const double bulbPitch = 12.5;
+  static const double bulbInset = 7;
+  static const Color bulbOn = Palette.goldLight;
+  static const Color bulbOff = Color(0xFF5A3714);
+  static const Color bulbHalo = Color(0x66FFE9A0);
+  static const Duration chase = Duration(milliseconds: 90);
+  static const int chaseEvery = 3;
+}
+
 /// Results (spec phone 5) and its celebration overlays.
 abstract final class ResultsLayout {
   static const double topBarHeight = 44;

@@ -22,4 +22,26 @@ extension TourStrings on S {
         TabUnlock.firstIsland => f('lockFirstIsland', [tab]),
       };
   String tabUnlocked(String tab) => f('tabUnlocked', [tab]);
+
+  String get tourWelcome => t('tourWelcome');
+  String get tourWhat => t('tourWhat');
+  String get tourSrsJourney => t('tourSrsJourney');
+  String get tourSrsKnown => t('tourSrsKnown');
+  String get tourTraining => t('tourTraining');
+  String get tourMap => t('tourMap');
+  String get tourIslandPlan => t('tourIslandPlan');
+  String get tourRank => t('tourRank');
+  String get tourModes => t('tourModes');
+  String get tourGuest => t('tourGuest');
+  String get tourLevel => t('tourLevel');
+  String get tourTabs => t('tourTabs');
+  String get tourSettings => t('tourSettings');
+  String get tourPractice => t('tourPractice');
+  String get tourPracticeAgain => t('tourPracticeAgain');
+  String get tourFinale => t('tourFinale');
+  String get tourTapHint => t('tourTapHint');
+  String get tourTapPractice => t('tourTapPractice');
+  String get tourHere => t('tourHere');
+  String get replayTour => t('replayTour');
+  String get replayTourNote => t('replayTourNote');
 }

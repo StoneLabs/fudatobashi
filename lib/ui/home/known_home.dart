@@ -11,6 +11,7 @@ import '../manga/manga.dart';
 import '../free/free_practice_sheet.dart';
 import '../rank/rank_screen.dart';
 import '../run/run_launcher.dart';
+import '../tour/tour_anchor.dart';
 import 'guest_sheet.dart';
 import 'home_widgets.dart';
 import 'training_hero.dart';
@@ -38,7 +39,7 @@ class KnownHome extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        const _RankRow(),
+        const TourAnchor(TourSpot.rank, child: _RankRow()),
         const SizedBox(height: HomeLayout.heroGap),
         Expanded(
           child: LayoutBuilder(builder: (context, box) {
@@ -53,21 +54,24 @@ class KnownHome extends StatelessWidget {
                   right: 0,
                   top: 0,
                   height: box.maxHeight - HomeLayout.modeHeight + overlap,
-                  child: TrainingHero(size: HeroSize.full, narration: narration, balloon: s.letsGo),
+                  child: TourAnchor(
+                    TourSpot.training,
+                    child: TrainingHero(size: HeroSize.full, narration: narration, balloon: s.letsGo),
+                  ),
                 ),
                 Positioned(
                   left: 0,
                   right: 0,
                   bottom: 0,
                   height: HomeLayout.modeHeight,
-                  child: _ModePanels(slow: slow),
+                  child: TourAnchor(TourSpot.modes, child: _ModePanels(slow: slow)),
                 ),
               ],
             );
           }),
         ),
         const SizedBox(height: Gaps.panelWide),
-        const _GuestPanel(),
+        const TourAnchor(TourSpot.guest, child: _GuestPanel()),
       ],
     );
   }

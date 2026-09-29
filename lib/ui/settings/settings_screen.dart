@@ -18,6 +18,7 @@ import '../debug/debug_page.dart';
 import '../debug/reset_actions.dart';
 import '../debug/simulation_page.dart';
 import '../manga/manga.dart';
+import '../tour/tour_overlay.dart';
 import 'credits_screen.dart';
 import 'hold_warning_screen.dart';
 import 'language_screen.dart';
@@ -416,6 +417,7 @@ class _DeveloperSection extends StatelessWidget {
           ),
         ]),
         SettingsGroup(children: [
+          SettingsTapRow(title: 'Replay tour', onTap: () => replayTour(context)),
           SettingsTapRow(title: 'Reset onboarding', onTap: () => confirmResetOnboarding(context)),
           SettingsTapRow(title: 'Reset progress', onTap: () => confirmResetProgress(context)),
         ]),

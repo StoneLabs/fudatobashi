@@ -8,6 +8,7 @@ import '../../l10n/strings.dart';
 import '../../state/scope.dart';
 import '../islands/island_map.dart';
 import '../manga/manga.dart';
+import '../tour/tour_anchor.dart';
 import 'home_screen.dart';
 import 'home_widgets.dart';
 import 'journey_state.dart';
@@ -35,16 +36,19 @@ class JourneyHome extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        Expanded(child: _JourneyMap(journey)),
+        Expanded(child: TourAnchor(TourSpot.map, child: _JourneyMap(journey))),
         const SizedBox(height: Gaps.panel),
-        _IslandProgress(journey),
+        TourAnchor(TourSpot.islandPlan, child: _IslandProgress(journey)),
         const SizedBox(height: Gaps.panel),
         SizedBox(
           height: HomeLayout.journeyHeroHeight,
-          child: TrainingHero(
-            size: HeroSize.compact,
-            narration: narration,
-            balloon: journey.finished ? s.keepGoing : s.finishIsland(journey.island.name),
+          child: TourAnchor(
+            TourSpot.training,
+            child: TrainingHero(
+              size: HeroSize.compact,
+              narration: narration,
+              balloon: journey.finished ? s.keepGoing : s.finishIsland(journey.island.name),
+            ),
           ),
         ),
         const SizedBox(height: Gaps.section),

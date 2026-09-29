@@ -10,6 +10,7 @@ import '../../state/scope.dart';
 import '../manga/manga.dart';
 import '../free/free_practice_sheet.dart';
 import '../shell/header_actions.dart';
+import '../tour/tour_anchor.dart';
 import 'guest_sheet.dart';
 import 'home_widgets.dart';
 import 'journey_home.dart';
@@ -31,8 +32,11 @@ class HomeScreen extends StatelessWidget {
         children: [
           const SizedBox(height: HeaderStyle.topGap),
           MangaHeader(
-            title: BrandTitle(sub: s.brandSub),
-            actions: const [LevelButton(), SettingsButton()],
+            title: TourAnchor(TourSpot.brand, child: BrandTitle(sub: s.brandSub)),
+            actions: const [
+              TourAnchor(TourSpot.level, child: LevelButton()),
+              TourAnchor(TourSpot.settings, child: SettingsButton()),
+            ],
           ),
           const SizedBox(height: HeaderStyle.topGap),
           Expanded(child: journey ? const JourneyHome() : const KnownHome()),

@@ -13,6 +13,9 @@ import '../history/history_screen.dart';
 import '../home/home_screen.dart';
 import '../manga/manga.dart';
 import '../stats/stats_screen.dart';
+import '../tour/tour_anchor.dart';
+import '../tour/tour_overlay.dart';
+import '../tour/tour_steps.dart';
 import 'tab_chains.dart';
 
 enum AppTab { home, history, stats, help }
@@ -22,6 +25,9 @@ enum AppTab { home, history, stats, help }
 ///
 /// History and Stats start out locked under chains (see [TabLock]); a tab
 /// that opens has its chains broken, once, the next time Home shows.
+///
+/// Until the player has taken Tobi's tour of Home (`AppSettings.toured`,
+/// set back to take it again), Home is shown with the tour over it.
 class AppShell extends StatefulWidget {
   const AppShell({super.key});
 
@@ -35,6 +41,7 @@ class _AppShellState extends State<AppShell> {
   /// Tabs whose chains are breaking right now.
   final Set<LockedTab> _breaking = {};
   bool _syncScheduled = false;
+  final _tourKeys = TourKeys();
 
   static Widget _screen(AppTab t) => switch (t) {
         AppTab.home => const HomeScreen(),
@@ -88,47 +95,68 @@ class _AppShellState extends State<AppShell> {
             : null,
       );
 
+  void _endTour(Progress progress) {
+    setState(() => _tab = AppTab.home);
+    progress.updateSettings(progress.settings.copyWith(toured: true));
+  }
+
   @override
   Widget build(BuildContext context) {
     final s = S.of(context);
     final progress = ProgressScope.of(context);
+    final touring = !progress.settings.toured;
+    final tab = touring ? AppTab.home : _tab;
     final locks = {for (final t in LockedTab.values) t: progress.tabLock(t)};
     _syncLocks(progress, locks);
     return PopScope(
-      canPop: _tab == AppTab.home,
+      canPop: tab == AppTab.home,
       onPopInvokedWithResult: (didPop, _) {
         if (!didPop) setState(() => _tab = AppTab.home);
       },
       child: Scaffold(
         body: Stack(children: [
-          if (_tab == AppTab.home) const Positioned.fill(child: GradationBox(Tones.home)),
+          if (tab == AppTab.home) const Positioned.fill(child: GradationBox(Tones.home)),
           SafeArea(
-            child: Column(
-              children: [
-                Expanded(
-                  child: IndexedStack(
-                    index: _tab.index,
-                    children: [
-                      for (final t in AppTab.values) TickerMode(enabled: t == _tab, child: _screen(t)),
-                    ],
+            child: TourAnchors(
+              keys: _tourKeys,
+              child: Column(
+                children: [
+                  Expanded(
+                    child: IndexedStack(
+                      index: tab.index,
+                      children: [
+                        for (final t in AppTab.values) TickerMode(enabled: t == tab, child: _screen(t)),
+                      ],
+                    ),
                   ),
-                ),
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(Gaps.gutter, Gaps.section, Gaps.gutter, Gaps.section),
-                  child: MangaTabBar(
-                    current: _tab.index,
-                    onSelect: (i) => setState(() => _tab = AppTab.values[i]),
-                    tabs: [
-                      MangaTab(icon: IconArt.home, label: s.home),
-                      _lockable(s, progress, LockedTab.history, IconArt.history, locks[LockedTab.history]),
-                      _lockable(s, progress, LockedTab.stats, IconArt.stats, locks[LockedTab.stats]),
-                      MangaTab(icon: IconArt.help, label: s.help),
-                    ],
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(Gaps.gutter, Gaps.section, Gaps.gutter, Gaps.section),
+                    child: TourAnchor(
+                      TourSpot.tabs,
+                      child: MangaTabBar(
+                        current: tab.index,
+                        onSelect: (i) => setState(() => _tab = AppTab.values[i]),
+                        tabs: [
+                          MangaTab(icon: IconArt.home, label: s.home),
+                          _lockable(s, progress, LockedTab.history, IconArt.history, locks[LockedTab.history]),
+                          _lockable(s, progress, LockedTab.stats, IconArt.stats, locks[LockedTab.stats]),
+                          MangaTab(icon: IconArt.help, label: s.help),
+                        ],
+                      ),
+                    ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
           ),
+          if (touring)
+            Positioned.fill(
+              child: TourOverlay(
+                steps: TourStep.of(progress.trainer.config.learningMode),
+                keys: _tourKeys,
+                onDone: () => _endTour(progress),
+              ),
+            ),
         ]),
       ),
     );
