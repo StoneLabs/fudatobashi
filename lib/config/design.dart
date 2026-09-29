@@ -2417,6 +2417,10 @@ abstract final class RatingLayout {
   static const Color gainSheen = Color(0x8CFFFFFF);
   static const double gainSheenShare = 0.3;
   static const double tipGlow = 0.55;
+
+  /// The flash of light running up the lit cells as the needle lands.
+  static const double surgeHeight = 70;
+  static const double surgeGlow = 0.8;
   static const double oldMarkStroke = 2;
 
   /// Ticks beside the tower at every cell boundary.
@@ -2441,7 +2445,7 @@ abstract final class RatingLayout {
   static const double gateOverhang = 12;
   static const double gateStripe = 9;
   static const double gateBorder = 2.5;
-  static const double gateBow = 8;
+  static const double gateBow = 12;
   static const double crackFrom = 0.45;
   static const double crackStroke = 2;
 
@@ -2482,10 +2486,10 @@ abstract final class RatingLayout {
   /// The suspense before a breakthrough: the page darkens around the gauge
   /// (title and band dim to [dimTo]), the tag strains up against the gate
   /// and everything rumbles, with ゴゴゴゴ down both sides.
-  static const double darkness = 0.7;
+  static const double darkness = 0.8;
   static const double dimTo = 0.3;
-  static const double strainPush = 7;
-  static const double strainJitter = 2;
+  static const double strainPush = 9;
+  static const double strainJitter = 2.5;
   static const double rumbleReach = 3.5;
   static const int rumbleSeed = 91;
   static const double beatPulse = 0.03;
@@ -2546,12 +2550,15 @@ abstract final class RatingMotion {
   /// A ratchet click each time the number goes up, at most this often.
   static const tickStep = Duration(milliseconds: 60);
 
-  /// The tip cell flickers this often while climbing.
+  /// The tip cell flickers this often while climbing, and at [overload]
+  /// while straining.
   static const flicker = Duration(milliseconds: 90);
+  static const overload = Duration(milliseconds: 60);
 
-  /// Landing: the tag pulses with a burst, then the gain, ググン!! and the
-  /// button follow.
+  /// Landing: the tag pulses with a burst and light surges up the lit
+  /// cells, then the gain, グンッ!! and the button follow.
   static const landPulse = Duration(milliseconds: 380);
+  static const surge = Duration(milliseconds: 420);
   static const burst = Duration(milliseconds: 450);
   static const gainAfter = Duration(milliseconds: 80);
   static const gain = Duration(milliseconds: 400);

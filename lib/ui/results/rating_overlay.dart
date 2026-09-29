@@ -296,7 +296,10 @@ class _Gauge extends StatelessWidget {
             final shatter = t.ranksUp ? _progress(elapsed, t.breakAt, RatingMotion.shatter) : 0.0;
             final leap = Curves.easeOut.transform(t.ranksUp ? _progress(elapsed, t.breakAt, RatingMotion.leap) : 0);
             final climbing = elapsed > RatingMotion.climbAt && elapsed < t.climbEnd;
-            final flicker = climbing && elapsed.inMicroseconds ~/ RatingMotion.flicker.inMicroseconds % 2 == 0;
+            // The cell at the needle flickers as it climbs and blinks
+            // faster, overloaded, while it strains.
+            final flicker = (climbing && elapsed.inMicroseconds ~/ RatingMotion.flicker.inMicroseconds % 2 == 0) ||
+                (straining && elapsed.inMicroseconds ~/ RatingMotion.overload.inMicroseconds % 2 == 0);
             var needleY = yOf(t.ratingAt(elapsed)) - RatingLayout.strainPush * push - RatingLayout.leap * leap;
             if (straining) needleY += _jitter(elapsed, RatingMotion.rumbleStep, RatingLayout.rumbleSeed, RatingLayout.strainJitter).dy;
             final beat = _beatAt(elapsed);
@@ -333,6 +336,7 @@ class _Gauge extends StatelessWidget {
                       lit: track.fractionOf(t.ratingAt(elapsed)),
                       before: track.fractionOf(t.data.before),
                       glow: flicker ? 1 : 0,
+                      surge: t.ranksUp ? 0 : _progress(elapsed, t.climbEnd, RatingMotion.surge),
                       bow: RatingLayout.gateBow * push,
                       crack: ((strain - RatingLayout.crackFrom) / (1 - RatingLayout.crackFrom)).clamp(0.0, 1.0),
                       shatter: shatter,
@@ -763,6 +767,7 @@ class _TowerPainter extends CustomPainter {
     required this.lit,
     required this.before,
     required this.glow,
+    required this.surge,
     required this.bow,
     required this.crack,
     required this.shatter,
@@ -773,6 +778,10 @@ class _TowerPainter extends CustomPainter {
 
   /// The flicker on the cell at the needle, 0–1.
   final double glow;
+
+  /// How far a flash of light has run up the lit cells as the needle
+  /// lands, 0–1 (none at either end).
+  final double surge;
   final double bow, crack, shatter;
   final bool gate;
 
@@ -799,9 +808,15 @@ class _TowerPainter extends CustomPainter {
             on.left, on.top, on.left + on.width * RatingLayout.gainSheenShare, math.min(on.bottom, beforeY));
         canvas.drawRect(gained, Paint()..color = RatingLayout.gainSheen);
       }
-      if (glow > 0 && litTop > rect.top) {
+      if (glow > 0 && litTop >= rect.top) {
         canvas.drawRect(on, Paint()..color = Palette.paper.withValues(alpha: RatingLayout.tipGlow * glow));
       }
+    }
+    if (surge > 0 && surge < 1) {
+      final y = inner.bottom - (inner.bottom - litTop) * surge;
+      final band = Rect.fromLTRB(inner.left, math.max(litTop, y - RatingLayout.surgeHeight / 2), inner.right,
+          math.min(inner.bottom, y + RatingLayout.surgeHeight / 2));
+      canvas.drawRect(band, Paint()..color = Palette.paper.withValues(alpha: RatingLayout.surgeGlow * (1 - surge)));
     }
     if (before < lit) {
       canvas.drawLine(Offset(body.left, beforeY), Offset(body.right, beforeY),
@@ -928,6 +943,7 @@ class _TowerPainter extends CustomPainter {
       old.lit != lit ||
       old.before != before ||
       old.glow != glow ||
+      old.surge != surge ||
       old.bow != bow ||
       old.crack != crack ||
       old.shatter != shatter ||
