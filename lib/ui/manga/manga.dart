@@ -7,6 +7,7 @@ export 'balloon_pop.dart';
 export 'buttons.dart';
 export 'confetti.dart';
 export 'entrance.dart';
+export 'fireworks.dart';
 export 'header.dart';
 export 'hold_confirm.dart';
 export 'idle_motion.dart';

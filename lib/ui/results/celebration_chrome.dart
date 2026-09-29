@@ -1,5 +1,6 @@
 import 'dart:math' as math;
 
+import 'package:flutter/rendering.dart' show OverflowBoxFit;
 import 'package:flutter/widgets.dart';
 
 import '../../config/design.dart';
@@ -77,6 +78,7 @@ class CelebrationGlow extends StatelessWidget {
           child: OverflowBox(
             maxWidth: size,
             maxHeight: size,
+            fit: OverflowBoxFit.deferToChild,
             child: SizedBox.square(
               dimension: size,
               child: DecoratedBox(

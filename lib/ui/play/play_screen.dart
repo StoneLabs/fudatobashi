@@ -184,7 +184,10 @@ class _PlayScreenState extends State<PlayScreen> {
   Future<void> _finish() async {
     if (_ending) return;
     _ending = true;
-    final report = await ProgressScope.read(context).recordRun(_session, widget.config, _startedAt);
+    final progress = ProgressScope.read(context);
+    final report = await progress.recordRun(_session, widget.config, _startedAt);
+    // The journey is over: every card is known, so no warning is needed.
+    if (report.graduated) await progress.switchToAllKnown();
     if (!mounted) return;
     Navigator.of(context).pushReplacement(MangaRoute<void>(
       builder: (_) => ResultsScreen(report: report, config: widget.config),

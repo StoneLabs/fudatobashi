@@ -1,3 +1,4 @@
+import '../domain/xp.dart';
 import 'strings.dart';
 
 /// Strings of the results screen and its celebration overlays.
@@ -63,6 +64,45 @@ extension ResultsStrings on S {
   String get nextClassPace => t('Your pace {0} s · {1} pts to go', 'いまのペース {0}秒 · あと{1}pt');
   String get topClassReached => t('Top of the ladder!', '頂点に到達!');
   String get topClassChase => t('From here on, race your own best', 'ここからは自分との勝負');
+
+  String get xpBand => 'EXP GET!';
+  String get xpUnit => 'XP';
+  String levelShort(int level) => 'LV $level';
+  String xpToNext(int xp, int level) => ja ? 'LV $levelまで あと $xp XP' : '$xp XP to LV $level';
+  String get levelUpFlash => 'LEVEL UP!';
+  String get xpCta => t('SWEET!', 'やったね!');
+
+  String xpSource(XpSource source) => switch (source) {
+        XpSource.correct => t('Correct', '正解'),
+        XpSource.missed => t('Tried', '挑戦'),
+        XpSource.speed => t('Speed', 'スピード'),
+        XpSource.reviews => t('Reviews', '復習'),
+        XpSource.newCards => t('New cards', '新しい札'),
+        XpSource.clear => t('Run clear', '完走'),
+        XpSource.daily => t('Daily', 'デイリー'),
+        XpSource.best => t('Personal best', '自己ベスト'),
+        XpSource.island => t('Island complete', '島制覇'),
+        XpSource.graduation => t('All 100 learned', '100首習得'),
+      };
+
+  /// The count beside an XP line, or null where it says nothing.
+  String? xpCount(XpPart part) => switch (part.source) {
+        XpSource.clear || XpSource.best || XpSource.graduation => null,
+        XpSource.daily => part.count > 1 ? dayStreak(part.count) : null,
+        _ => '×${part.count}',
+      };
+
+  String get levelUpBand => 'レベルアップ';
+  String levelsGained(int n) => ja ? '$nレベルアップ!' : '+$n LEVELS';
+  String get nextLevelBand => 'NEXT LEVEL · 次のレベル';
+
+  String get graduationBand => 'ALL 100 CARDS LEARNED';
+  String get graduationKai => t('Join a real karuta kai!', '本物のかるた会へ行こう!');
+  String get graduationKaiNote =>
+      t('You know every card. Real matches at a かるた会 await.', '100首ぜんぶ覚えた。次はかるた会で実戦だ!');
+  String get graduationSwitch =>
+      t('From now on: All 100 known mode', 'これからは「100首ぜんぶ」モード');
+  String get graduationCta => t("LET'S GO!", 'いざ!');
 
   String get goalUpBand => 'NEW SPEED GOAL';
   String goalUpNote(int ms) => ja ? '1枚あたり${ms}ms以下が目標に' : 'Under ${ms}ms per card now';

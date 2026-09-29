@@ -2,6 +2,7 @@ import 'package:flutter/painting.dart';
 
 import '../domain/card_mask.dart';
 import '../domain/learning_pace.dart';
+import '../domain/xp.dart';
 import '../state/play_config.dart';
 import '../state/settings.dart';
 import 'design.dart';
@@ -389,6 +390,49 @@ abstract final class RatingModel {
   static const double aMaxSeconds = 40;
 }
 
+/// Experience (XP, `XpLedger`): effort rewarded on every tracked run, apart
+/// from the rating's measure of skill. Derived from the recorded history, so
+/// a change here re-scores every past run too.
+abstract final class XpTuning {
+  static const int perCorrect = 10;
+
+  /// A card swiped away as "don't know" or marked wrong (undone swipes earn
+  /// nothing: their redo is what counts).
+  static const int perMiss = 2;
+
+  /// Extra for a correct, cleanly timed swipe at or under the goal time of
+  /// its run, more at or under [blazingRatio] of it.
+  static const int speedAtGoal = 5;
+  static const int speedBlazing = 10;
+  static const double blazingRatio = 0.75;
+
+  /// Extra for a due review answered correctly (FSRS graded it).
+  static const int perReview = 5;
+
+  /// A card met for the first time in a run that counts.
+  static const int perNewCard = 25;
+
+  /// A run played to its last card.
+  static const int clear = 20;
+
+  /// The first run of a day, plus [perStreakDay] for each day of the streak
+  /// before it, up to [streakCapDays].
+  static const int daily = 50;
+  static const int perStreakDay = 10;
+  static const int streakCapDays = 10;
+
+  /// A completed run faster than the best before it with the same setup.
+  static const int personalBest = 100;
+  static const int perIsland = 300;
+
+  /// Learning the 100th card, the end of the journey.
+  static const int graduation = 1000;
+
+  /// XP from level L to L+1: [levelBase] × √L. Levels come quickly at
+  /// first and keep coming: unlike the rank, a level never stalls.
+  static const double levelBase = 300;
+}
+
 /// 隠し字 masking: the uniqueness search (`Masking`) and the scramble style's
 /// tile rendering (`TorifudaGlyphs`).
 abstract final class MaskingTuning {
@@ -616,6 +660,35 @@ abstract final class CelebrationPreviewTuning {
   static const int spreadUs = 20000;
   static const total = Duration(milliseconds: 14906);
   static const previousBest = Duration(milliseconds: 15380);
+
+  /// The run's XP, one line per source (count, XP), landing [levelInto]
+  /// XP into [level] before it.
+  static const List<(XpSource, int, int)> xp = [
+    (XpSource.correct, 27, 270),
+    (XpSource.missed, 3, 6),
+    (XpSource.speed, 15, 110),
+    (XpSource.reviews, 9, 45),
+    (XpSource.newCards, 3, 75),
+    (XpSource.clear, 1, 20),
+    (XpSource.daily, 5, 90),
+    (XpSource.best, 1, 100),
+    (XpSource.island, 1, 300),
+    (XpSource.graduation, 1, 1000),
+  ];
+  static const int level = 7;
+  static const int levelInto = 500;
+
+  /// "Preview XP": a typical round's XP, landing [roundInto] XP into
+  /// [level] before it and reaching no new level.
+  static const List<(XpSource, int, int)> xpRound = [
+    (XpSource.correct, 28, 280),
+    (XpSource.missed, 2, 4),
+    (XpSource.speed, 12, 85),
+    (XpSource.reviews, 8, 40),
+    (XpSource.clear, 1, 20),
+    (XpSource.daily, 3, 70),
+  ];
+  static const int roundInto = 150;
 }
 
 /// Sound pooling (`lib/ui/sound/sounds.dart`): concurrent, identically
@@ -624,6 +697,12 @@ abstract final class CelebrationPreviewTuning {
 /// instead of cutting itself off.
 abstract final class SoundTuning {
   static const int cardFlickPoolSize = 3;
+
+  /// The XP counter ticks faster than one tick lasts.
+  static const int xpTickPoolSize = 4;
+
+  /// Fireworks and breakdown pops can land on top of each other.
+  static const int burstPoolSize = 2;
 }
 
 /// The app's sound effects (Kenney, CC0; provenance in
@@ -651,7 +730,17 @@ enum Sfx {
   rankUp(['sounds/rank_up.wav'], 0.8),
   goalUp(['sounds/goal_up.wav'], 0.8),
   best(['sounds/best.wav'], 0.8),
-  results(['sounds/results.wav'], 0.5);
+  results(['sounds/results.wav'], 0.5),
+  xpTick(['sounds/xp_tick.wav'], 0.45, poolSize: SoundTuning.xpTickPoolSize),
+  xpPop(['sounds/xp_pop.wav'], 0.6, poolSize: SoundTuning.burstPoolSize),
+  xpDone(['sounds/xp_done.wav'], 0.8),
+  levelUp(['sounds/level_up.wav'], 0.8),
+  graduation(['sounds/graduation.wav'], 0.85),
+  firework(
+    ['sounds/firework_0.wav', 'sounds/firework_1.wav', 'sounds/firework_2.wav'],
+    0.6,
+    poolSize: SoundTuning.burstPoolSize,
+  );
 
   const Sfx(this.assets, this.volume, {this.poolSize = 1});
   final List<String> assets;
