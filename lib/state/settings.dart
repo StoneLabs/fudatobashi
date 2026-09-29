@@ -3,8 +3,6 @@ import '../domain/card_mask.dart';
 import '../domain/trainer.dart';
 import 'play_config.dart';
 
-enum AppLanguage { system, en, ja }
-
 /// How the player marks a card as "don't know" during play.
 enum DontKnowInput {
   /// Swipe straight down and hold there (see `SwipeTuning.dontKnowHoldDwell`);
@@ -38,7 +36,8 @@ class AppSettings {
     this.showPerformanceOverlay = DefaultSettings.showPerformanceOverlay,
   });
 
-  final AppLanguage language;
+  /// A language code (e.g. `'ja'`), or `'system'` for the device's language.
+  final String language;
 
   /// The stored choice; read it through [dontKnowInputFor].
   final DontKnowInput dontKnowInput;
@@ -79,7 +78,7 @@ class AppSettings {
       mode == LearningMode.journey && dontKnowInput == DontKnowInput.off ? DontKnowInput.hold : dontKnowInput;
 
   Map<String, Object> toJson() => {
-        'language': language.name,
+        'language': language,
         'dontKnowInput': dontKnowInput.name,
         'showPoemNumber': showPoemNumber,
         'haptics': haptics,
@@ -97,7 +96,9 @@ class AppSettings {
       };
 
   factory AppSettings.fromJson(Map<String, dynamic> j) => AppSettings(
-        language: AppLanguage.values.asNameMap()[j['language']] ?? DefaultSettings.language,
+        // The old `AppLanguage` enum's stored name ("system"/"en"/"ja") is
+        // already the language code or "system" this field now holds.
+        language: j['language'] as String? ?? DefaultSettings.language,
         dontKnowInput: DontKnowInput.values.asNameMap()[j['dontKnowInput']] ?? DefaultSettings.dontKnowInput,
         showPoemNumber: j['showPoemNumber'] as bool? ?? DefaultSettings.showPoemNumber,
         haptics: j['haptics'] as bool? ?? DefaultSettings.haptics,
@@ -120,7 +121,7 @@ class AppSettings {
       );
 
   AppSettings copyWith({
-    AppLanguage? language,
+    String? language,
     DontKnowInput? dontKnowInput,
     bool? showPoemNumber,
     bool? haptics,

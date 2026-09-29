@@ -12,6 +12,7 @@ import 'data/fuda_sets.dart';
 import 'data/islands.dart';
 import 'data/poem.dart';
 import 'db/database.dart';
+import 'l10n/localization.dart';
 import 'state/progress.dart';
 import 'ui/app.dart';
 import 'ui/debug/frame_stats.dart';
@@ -40,6 +41,7 @@ Future<void> main() async {
     } catch (_) {}
   }
   SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
+  await Localization.load();
   poems = await Poems.load();
   fudaSets = FudaSets(poems);
   archipelago = await Archipelago.load();

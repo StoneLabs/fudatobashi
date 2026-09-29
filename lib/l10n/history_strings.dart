@@ -6,13 +6,12 @@ const _monthAbbr = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep
 
 /// Strings of the History screen (the list of past runs).
 extension HistoryStrings on S {
-  String get noRunsYet =>
-      t('No runs yet — play a round to see it here.', 'まだ記録がありません。プレイすると記録がここに出ます。');
-  String get runEndedEarly => t('Ended early', '途中終了');
+  String get noRunsYet => t('noRunsYet');
+  String get runEndedEarly => t('runEndedEarly');
 
   /// "{0} cards · {1} misses", the numbers set in display type by
   /// `NumberedText`.
-  String get historyLineTemplate => t('{0} cards · {1} misses', '{0}枚 · ミス{1}回');
+  String get historyLineTemplate => t('historyLineTemplate');
 
   /// A short "Mon D, HH:MM" (EN) / "M月D日 HH:MM" (JA) timestamp.
   String sessionDate(DateTime at) {

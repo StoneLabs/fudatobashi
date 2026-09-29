@@ -3,7 +3,6 @@ import 'package:flutter/widgets.dart';
 import '../../config/vector_art.dart';
 import '../../l10n/strings.dart';
 import '../../state/scope.dart';
-import '../../state/settings.dart';
 import '../manga/manga.dart';
 import '../settings/settings_screen.dart';
 
@@ -20,8 +19,7 @@ class LanguageSwitch extends StatelessWidget {
     final progress = ProgressScope.of(context);
     return LanguageToggle(
       japanese: S.of(context).ja,
-      onChanged: (ja) =>
-          progress.updateSettings(progress.settings.copyWith(language: ja ? AppLanguage.ja : AppLanguage.en)),
+      onChanged: (ja) => progress.updateSettings(progress.settings.copyWith(language: ja ? 'ja' : 'en')),
     );
   }
 }

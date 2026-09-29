@@ -469,7 +469,7 @@ abstract final class AtlasTuning {
 
 /// Defaults of `AppSettings`.
 abstract final class DefaultSettings {
-  static const AppLanguage language = AppLanguage.system;
+  static const String language = 'system';
   static const DontKnowInput dontKnowInput = DontKnowInput.hold;
   static const bool showPoemNumber = true;
   static const bool haptics = true;

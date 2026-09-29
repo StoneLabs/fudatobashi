@@ -1,0 +1,8 @@
+To add a UI language:
+
+1. Copy en.json to <code>.json (e.g. fr.json for French), next to it.
+2. Translate every value. Keep the {0}, {1}, {band} … markers exactly where
+   they are — they get filled in with numbers or names at runtime.
+3. Set "languageName" to the language's own name, e.g. "Français".
+4. Add "<code>" to languages.json.
+5. Rebuild the app.
