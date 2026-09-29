@@ -30,6 +30,10 @@ abstract final class Palette {
   static const violetSoft = Color(0xFFF1E6F7);
   static const violetDeep = Color(0xFF6E2C8C);
 
+  /// Alarm red, for warnings, and its darker flash.
+  static const alarm = Color(0xFFE8202A);
+  static const alarmDeep = Color(0xFFB0101C);
+
   /// Torifuda colours as used in illustrations (Tobi, pips, fanned cards).
   static const cardFrame = Color(0xFF6A9354);
   static const cardPaper = Color(0xFFEAEAEA);
@@ -2053,24 +2057,129 @@ abstract final class CreditsLayout {
   static const double licenseTextLineHeight = 1.4;
 }
 
-/// A press-and-hold confirm button (`HoldToConfirmButton`): a ring fills
-/// around it as it is held, and releasing early resets it.
+/// A press-and-hold confirm button (`HoldToConfirmButton`), built like the
+/// arming button of something dangerous: an alarm-red dome inside a hazard
+/// striped bezel and an ink ring. Held, the ring fills from sun to paper,
+/// the dome counts down the seconds, the bezel spins up and the whole
+/// button rattles and glows harder toward the end. Releasing early drains
+/// it back to empty.
 abstract final class HoldConfirmStyle {
-  static const double ringSize = 120;
-  static const double ringStroke = 8;
-  static const double icon = 28;
-  static const Color track = Palette.desk;
-  static const Color fill = Palette.pink;
+  static const double ringSize = 148;
+  static const double ringStroke = 13;
+  static const double fillStroke = 7;
+  static const List<Color> fillColors = [Palette.sun, Palette.orange, Palette.paper];
+  static const double bezel = 14;
+  static const double bezelStripe = 7;
+
+  /// Full turns the bezel's stripes make over a whole hold, speeding up.
+  static const double bezelTurns = 4;
+  static const Color dome = Palette.alarm;
+  static const Color domeLit = Color(0xFFFF5A4E);
+  static const Alignment domeLight = Alignment(-0.35, -0.45);
+  static const double domeLightRadius = 0.95;
+  static const double domeBorder = 3;
+
+  /// The shine on the dome, in shares of its radius from its centre.
+  static const Offset shineAt = Offset(-0.34, -0.5);
+  static const Size shineSize = Size(0.52, 0.26);
+  static const double shineOpacity = 0.55;
+
+  /// The dome sinks a little while pressed.
+  static const double pressedScale = 0.94;
+  static const double icon = 34;
+  static const double countFont = 50;
+  static const double countOutline = 8;
+
+  /// The rattle, [shakeReach] px at the very end, growing with the square
+  /// of the progress, re-rolled every [shakeStep].
+  static const double shakeReach = 5;
+  static const Duration shakeStep = Duration(milliseconds: 35);
+
+  /// The glow around the ring, reaching this share of its radius past it
+  /// at the end.
+  static const double glowReach = 0.45;
+
+  /// Where the glow starts, as a share of the ring's radius.
+  static const double glowFrom = 0.9;
+  static const List<Color> glowColors = [Color(0xE6FFF1A8), Color(0x99FFD83A), Color(0x00FFD83A)];
+  static const Duration drain = Duration(milliseconds: 260);
+  static const double labelGap = 10;
+  static const double labelFont = TypeScale.button;
+  static const EdgeInsets labelPadding = EdgeInsets.fromLTRB(12, 6, 12, 7);
 }
 
-/// Settings' journey → all-known switch warning (`AllKnownWarningScreen`): a
-/// full-screen, hard-to-miss stop sign before an irreversible unlock.
+/// Settings' journey → all-known switch warning (`AllKnownWarningScreen`):
+/// a full-screen alarm before an irreversible unlock. Alarm red flashing
+/// once per [flashPeriod], marching hazard tape round the edges, 警告!!
+/// between two warning lamps, and Tobi panicking in a siren glow that grows
+/// (with a darkening round the edges) as the hold arms.
 abstract final class AllKnownWarningStyle {
-  static const double titleFont = 30;
-  static const double tobiHeight = 160;
+  static const Duration flashPeriod = Duration(milliseconds: 900);
+  static const tone = ToneSpec(dot: Color(0xFF8E0A14), radius: 1.4, spacing: 6);
+  static const double toneOpacity = 0.55;
+  static const double armedDarkness = 0.55;
+
+  /// The hazard tape framing the screen, marching one stripe pair per
+  /// [tapeMarch].
+  static const double tapeWidth = 14;
+  static const double tapeStripe = 12;
+  static const double tapeBorder = 2.5;
+  static const Duration tapeMarch = Duration(milliseconds: 1400);
+  static const EdgeInsets padding = EdgeInsets.fromLTRB(12, 10, 12, 12);
+
+  static const double shoutFont = 72;
+  static const double shoutOutline = 11;
+  static const double shoutTurnDeg = -4;
+  static const Color shoutLit = Palette.sun;
+  static const Color shoutDim = Palette.paper;
+  /// The warning lamps either side of 警告!!, lit in turn like a railway
+  /// crossing's. Their base, dome and rays are in shares of the lamp's box;
+  /// rays point at [lampRays] degrees (0 = right, clockwise) from the
+  /// dome's centre.
+  static const double lampSize = 54;
+  static const Color lampLit = Color(0xFFFF5A4E);
+  static const Color lampDim = Palette.alarmDeep;
+  static const Rect lampBase = Rect.fromLTRB(0.12, 0.76, 0.88, 0.95);
+  static const Rect lampDome = Rect.fromLTRB(0.26, 0.36, 0.74, 0.8);
+  static const Rect lampShine = Rect.fromLTRB(0.34, 0.44, 0.44, 0.62);
+  static const List<double> lampRays = [-165, -128, -90, -52, -15];
+  static const double lampRayFrom = 0.31, lampRayTo = 0.47;
+  static const double lampRay = 4;
+  static const double lampStroke = 2.5;
+  static const double headlineFont = TypeScale.title;
+  static const double headlineTurnDeg = -1.5;
+  static const EdgeInsets headlinePadding = EdgeInsets.fromLTRB(12, 5, 12, 7);
   static const double bodyFont = TypeScale.body;
   static const double bodyLineHeight = 1.4;
-  static const EdgeInsets padding = EdgeInsets.fromLTRB(Gaps.gutter, Gaps.section, Gaps.gutter, Gaps.section);
+
+  /// Tobi's box, scaled down when the page is short on room.
+  static const Size tobi = Size(126, 150);
+  static const double tobiTremble = 2;
+  static const double tobiTrembleArmed = 7;
+  static const Duration trembleStep = Duration(milliseconds: 55);
+  /// Tobi's cry, set vertically down its right side.
+  static const String sfx = 'ヒエェッ!!';
+  static const String sfxArmed = 'ギャアッ!!';
+
+  /// Past this share of the hold, Tobi's cry turns to [sfxArmed].
+  static const double sfxArmedFrom = 0.6;
+  static const double sfxFont = 22;
+  static const int sfxSeed = 23;
+  static const double sfxTurnDeg = 6;
+  static const Offset sfxAt = Offset(108, -6);
+
+  /// The siren glow behind Tobi, a share of its box's width across, pulsing
+  /// with the flash and swelling as the hold arms.
+  static const List<Color> glowColors = [Color(0xF2FFF1A8), Color(0xB3FFD83A), Color(0x00FF9A2E)];
+  static const double glowSize = 1.9;
+  static const double glowDim = 0.8;
+  static const double glowArmed = 1.35;
+
+  static const shout = EntranceSpec(Entrances.slam,
+      duration: Duration(milliseconds: 480), delay: Duration(milliseconds: 120), curve: Entrances.springy);
+  static const headline =
+      EntranceSpec(Entrances.pop, duration: Duration(milliseconds: 320), delay: Duration(milliseconds: 380));
+  static const Duration entranceLength = Duration(milliseconds: 700);
 }
 
 /// The XP page (経験値!!, `XpOverlay`): violet, lit from behind the counter.

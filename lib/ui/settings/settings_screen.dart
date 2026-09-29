@@ -322,6 +322,11 @@ class _DeveloperSection extends StatelessWidget {
         _ButtonRow(label: 'Preview graduation', onTap: () => previewGraduation(context)),
         const SizedBox(height: Gaps.small),
         _ButtonRow(
+          label: 'Preview all-known warning',
+          onTap: () => Navigator.push(context, MangaRoute<bool>(builder: (_) => const AllKnownWarningScreen())),
+        ),
+        const SizedBox(height: Gaps.small),
+        _ButtonRow(
           label: 'Simulation',
           onTap: () => Navigator.push(context, MangaRoute<void>(builder: (_) => const SimulationPage())),
         ),

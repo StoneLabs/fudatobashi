@@ -862,18 +862,7 @@ class _TowerPainter extends CustomPainter {
     final bounds = bar.getBounds();
     canvas.save();
     canvas.clipPath(bar);
-    canvas.drawRect(bounds, Paint()..color = Palette.sun);
-    final stripes = Path();
-    const w = RatingLayout.gateStripe;
-    for (var x = bounds.left - bounds.height; x < bounds.right; x += 2 * w) {
-      stripes
-        ..moveTo(x, bounds.bottom)
-        ..lineTo(x + bounds.height, bounds.top)
-        ..lineTo(x + bounds.height + w, bounds.top)
-        ..lineTo(x + w, bounds.bottom)
-        ..close();
-    }
-    canvas.drawPath(stripes, Paint()..color = Palette.ink);
+    paintHazardStripes(canvas, bounds, stripe: RatingLayout.gateStripe);
     canvas.restore();
     canvas.drawPath(
       bar,

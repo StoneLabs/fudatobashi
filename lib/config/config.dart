@@ -279,6 +279,17 @@ abstract final class AllKnownSwitchTuning {
   static const Duration holdDuration = Duration(seconds: 15);
 }
 
+/// `HoldToConfirmButton`'s haptics: buzzes that come faster and harder as
+/// the hold nears the end, like arming something. The gap between buzzes
+/// shrinks from [buzzFirst] to [buzzLast]; past each of [strengthSteps]
+/// (shares of the hold) a buzz steps up from a click to a light, a medium
+/// and a heavy impact.
+abstract final class HoldConfirmTuning {
+  static const Duration buzzFirst = Duration(milliseconds: 1000);
+  static const Duration buzzLast = Duration(milliseconds: 90);
+  static const List<double> strengthSteps = [0.35, 0.65, 0.88];
+}
+
 /// `CardStats`: how recent response times and misses are summarised.
 abstract final class StatsTuning {
   /// Attempts at which the EWMA's weight on an old sample halves.

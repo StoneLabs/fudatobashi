@@ -1414,20 +1414,135 @@ void main() {
     await tester.pumpWidget(const SizedBox());
   });
 
-  testWidgets('settings: journey → all-known warns first while cards remain locked', (tester) async {
+  Future<void> openAllKnownWarning(WidgetTester tester, Progress p) async {
+    await tester.binding.setSurfaceSize(_phone);
+    await tester.pumpWidget(ProgressScope(progress: p, child: const MaterialApp(home: SettingsScreen())));
+    await tester.pump();
+    await tester.tap(find.text(const S('en').learningAllKnown));
+    await tester.pump();
+    await tester.pump(Motion.route);
+    expect(find.byType(AllKnownWarningScreen), findsOneWidget);
+  }
+
+  testWidgets('settings: journey → all-known warns first; letting go early or closing changes nothing', (tester) async {
     PackageInfo.setMockInitialValues(
         appName: 'Fudatobashi', packageName: 'dev.fudatobashi', version: '1.0.0', buildNumber: '1', buildSignature: '');
     final p = await open(tester, mode: LearningMode.journey);
     expect(p.allCardsUnlocked, isFalse);
-    await tester.binding.setSurfaceSize(_phone);
-    await tester.pumpWidget(ProgressScope(progress: p, child: const MaterialApp(home: SettingsScreen())));
-    await tester.pump();
-    const s = S('en');
-    await tester.tap(find.text(s.learningAllKnown));
+    await openAllKnownWarning(tester, p);
+    expect(p.trainer.config.learningMode, LearningMode.journey, reason: 'still waiting on the hold to confirm');
+
+    final hold = await tester.startGesture(tester.getCenter(find.byType(HoldToConfirmButton)));
+    await tester.pump(const Duration(seconds: 1));
+    expect(find.text(const S('en').allKnownWarningHolding), findsOneWidget);
+    for (var i = 0; i < 12; i++) {
+      await tester.pump(const Duration(seconds: 1));
+    }
+    await hold.up();
+    await tester.pump(AllKnownSwitchTuning.holdDuration);
+    expect(find.byType(AllKnownWarningScreen), findsOneWidget, reason: 'letting go at 13 of 15 s confirms nothing');
+    expect(find.text(const S('en').allKnownWarningHold(15)), findsOneWidget);
+
+    await tester.tap(find.bySemanticsLabel(const S('en').cancel));
     await tester.pump();
     await tester.pump(Motion.route);
-    expect(find.byType(AllKnownWarningScreen), findsOneWidget);
-    expect(p.trainer.config.learningMode, LearningMode.journey, reason: 'still waiting on the hold to confirm');
+    expect(find.byType(AllKnownWarningScreen), findsNothing);
+    expect(p.trainer.config.learningMode, LearningMode.journey);
+    expect(p.allCardsUnlocked, isFalse);
+    await tester.pumpWidget(const SizedBox());
+  });
+
+  testWidgets('settings: holding the warning for the full 15 s unlocks everything and switches to all-known',
+      (tester) async {
+    PackageInfo.setMockInitialValues(
+        appName: 'Fudatobashi', packageName: 'dev.fudatobashi', version: '1.0.0', buildNumber: '1', buildSignature: '');
+    final p = await open(tester, mode: LearningMode.journey);
+    await openAllKnownWarning(tester, p);
+    final hold = await tester.startGesture(tester.getCenter(find.byType(HoldToConfirmButton)));
+    // The first second's pump presses it; the hold completes on the first
+    // frame past the full 15 s.
+    for (var i = 0; i < 17; i++) {
+      await tester.pump(const Duration(seconds: 1));
+    }
+    await hold.up();
+    await tester.runAsync(() => Future<void>.delayed(const Duration(milliseconds: 50)));
+    await tester.pump();
+    await tester.pump(Motion.route);
+    expect(find.byType(AllKnownWarningScreen), findsNothing);
+    expect(p.trainer.config.learningMode, LearningMode.allKnown);
+    expect(p.allCardsUnlocked, isTrue);
+    await tester.pumpWidget(const SizedBox());
+  });
+
+  for (final ja in [false, true]) {
+    final lang = ja ? 'ja' : 'en';
+    testWidgets('the all-known warning fits the phone at font scale 1.3, flashing, and arms as it is held ($lang)',
+        (tester) async {
+      final p = await open(tester, mode: LearningMode.journey, ja: ja);
+      const dpr = 2.8125;
+      const bars = FakeViewPadding(top: 28 * dpr, bottom: 48 * dpr);
+      tester.view
+        ..devicePixelRatio = dpr
+        ..physicalSize = _phone * dpr
+        ..padding = bars
+        ..viewPadding = bars;
+      tester.platformDispatcher.textScaleFactorTestValue = 1.3;
+      addTearDown(tester.view.reset);
+      addTearDown(tester.platformDispatcher.clearTextScaleFactorTestValue);
+      await tester.binding.setSurfaceSize(_phone);
+      await tester.pumpWidget(ProgressScope(
+        progress: p,
+        child: MaterialApp(
+          theme: buildMangaTheme(),
+          home: const RepaintBoundary(key: ValueKey('screen'), child: AllKnownWarningScreen()),
+        ),
+      ));
+      Color backdrop() => tester
+          .widget<ColoredBox>(find.descendant(of: find.byType(AllKnownWarningScreen), matching: find.byType(ColoredBox)).first)
+          .color;
+      await tester.pump(const Duration(milliseconds: 800));
+      expect(tester.takeException(), isNull);
+      final s = S(lang);
+      expect(find.text(s.allKnownWarningShout), findsWidgets);
+      expect(find.text(s.other.warning), findsOneWidget);
+      for (final scroll in tester.stateList<ScrollableState>(find.byType(Scrollable))) {
+        expect(scroll.position.maxScrollExtent, 0, reason: 'the warning fits without scrolling');
+      }
+      await _capture(tester, 'all_known_warning_$lang');
+      final before = backdrop();
+      await tester.pump(AllKnownWarningStyle.flashPeriod ~/ 2);
+      expect(backdrop(), isNot(before), reason: 'the alarm flashes');
+
+      // The first second's pump presses it; twelve more are 12 of 15 s.
+      final hold = await tester.startGesture(tester.getCenter(find.byType(HoldToConfirmButton)));
+      for (var i = 0; i < 13; i++) {
+        await tester.pump(const Duration(seconds: 1));
+      }
+      expect(tester.takeException(), isNull);
+      expect(find.text('3'), findsWidgets, reason: 'the dome counts the seconds left');
+      expect(find.byWidgetPredicate((w) => w is SfxText && w.text == AllKnownWarningStyle.sfxArmed), findsOneWidget,
+          reason: 'Tobi screams near the end');
+      await _capture(tester, 'all_known_warning_armed_$lang');
+      await hold.up();
+      await tester.pump(HoldConfirmStyle.drain);
+      await tester.pumpWidget(const SizedBox());
+    });
+  }
+
+  testWidgets('under reduced motion the all-known warning holds still: no flashing', (tester) async {
+    tester.platformDispatcher.accessibilityFeaturesTestValue = const FakeAccessibilityFeatures(disableAnimations: true);
+    addTearDown(tester.platformDispatcher.clearAccessibilityFeaturesTestValue);
+    final p = await open(tester, mode: LearningMode.journey);
+    await tester.binding.setSurfaceSize(_phone);
+    await tester.pumpWidget(ProgressScope(progress: p, child: const MaterialApp(home: AllKnownWarningScreen())));
+    Color backdrop() => tester
+        .widget<ColoredBox>(find.descendant(of: find.byType(AllKnownWarningScreen), matching: find.byType(ColoredBox)).first)
+        .color;
+    final before = backdrop();
+    for (var i = 0; i < 4; i++) {
+      await tester.pump(AllKnownWarningStyle.flashPeriod ~/ 4);
+      expect(backdrop(), before);
+    }
     await tester.pumpWidget(const SizedBox());
   });
 

@@ -18,9 +18,12 @@ extension SettingsStrings on S {
   String get dontKnowOff => t('dontKnowOff');
   String get dontKnowOffSub => t('dontKnowOffSub');
 
+  String get warning => t('warning');
+  String get allKnownWarningShout => t('allKnownWarningShout');
   String get allKnownWarningTitle => t('allKnownWarningTitle');
   String get allKnownWarningBody => t('allKnownWarningBody');
-  String get allKnownWarningHold => t('allKnownWarningHold');
+  String allKnownWarningHold(int seconds) => f('allKnownWarningHold', [seconds]);
+  String get allKnownWarningHolding => t('allKnownWarningHolding');
 
   String get about => t('about');
   String get version => t('version');
