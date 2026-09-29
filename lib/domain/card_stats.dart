@@ -65,8 +65,10 @@ class AttemptRec {
 
   double get ms => us / 1000;
 
-  /// Usable as a speed sample: clean and correct.
-  bool get timed => clean && !miss;
+  /// Usable as a speed sample: clean, correct, and answered after the card
+  /// was revealed (a 0 µs response is no measurement, and its log would
+  /// poison the EWMA and, through it, the rating).
+  bool get timed => clean && !miss && us > 0;
 
   /// Only attempts of a run that counts (`PlayConfig.countsForSrs`: 修行, or
   /// free practice at its default) feed FSRS and speed statistics; other free

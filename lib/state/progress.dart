@@ -141,6 +141,10 @@ class Progress extends ChangeNotifier {
       (log[ItemKey(a.poemId, a.inverted)] ??= []).add(_rec(a, configOf[a.sessionId] ?? _orphanRun));
     }
     final points = await (db.select(db.ratingPoints)..orderBy([(r) => OrderingTerm.asc(r.at)])).get();
+    // A rating stored as NaN (from a 0 µs sample, before those stopped
+    // counting as timed) falls back to the last good rating point.
+    final stored = double.tryParse(kv['rating'] ?? '');
+    final rating = stored == null || stored.isFinite ? stored : points.lastOrNull?.rating;
     final progress = Progress._(
       db,
       trainer,
@@ -148,7 +152,7 @@ class Progress extends ChangeNotifier {
       sessions,
       points,
       AppSettings.fromJson(json('settings')),
-      double.tryParse(kv['rating'] ?? ''),
+      rating,
       {...((jsonDecode(kv['islandsCelebrated'] ?? '[]') as List).cast<int>())},
       kv[_freePracticeKey] == 'true',
     );

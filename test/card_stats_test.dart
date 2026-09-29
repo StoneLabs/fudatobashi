@@ -36,4 +36,11 @@ void main() {
       expect(CardStats([...old, ...recent]).topSpeedMs, 700);
     });
   });
+
+  test('a 0 µs response is no speed sample, so the EWMA stays finite', () {
+    final stats = CardStats([_attempt(0), _attempt(700), _attempt(0), _attempt(650)]);
+    expect(stats.timed, [700, 650]);
+    expect(stats.ewmaMs!.isFinite, isTrue);
+    expect(stats.expectedMs().isFinite, isTrue);
+  });
 }

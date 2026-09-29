@@ -109,6 +109,18 @@ void main() {
     await db.close();
   });
 
+  test('a rating stored as NaN falls back to the last rating point on load', () async {
+    final db = AppDatabase(NativeDatabase.memory());
+    await Progress.open(db);
+    await db.into(db.ratingPoints).insert(
+        RatingPointsCompanion.insert(at: DateTime(2026), rating: 812.5, performance: 800, projectedMs: 90000));
+    await db.into(db.keyValues).insertOnConflictUpdate(KeyValuesCompanion.insert(key: 'rating', value: 'NaN'));
+    final again = await Progress.open(db);
+    expect(again.rating, 812.5);
+    expect(again.currentRating.isFinite, isTrue);
+    await db.close();
+  });
+
   test('guest runs record nothing', () async {
     final db = AppDatabase(NativeDatabase.memory());
     final progress = await Progress.open(db);
