@@ -12,10 +12,10 @@ import '../../state/settings.dart';
 
 /// The app's sound effects, every asset preloaded into low-latency players
 /// by [load] at startup (round-robin pooled per asset; see [Sfx.poolSize]),
-/// so playing one never touches the disk or the platform channel. Played
-/// during play (the swipe footstep) as well as on celebration pages and
-/// Results, each only while its [SoundCategory] is switched on (see
-/// [playSound]). Background music is a separate concern; see [Music].
+/// so playing one never touches the disk. Played during play (the swipe
+/// footstep) as well as on celebration pages and Results, each only while
+/// its [SoundCategory] is switched on (see [playSound]). Background music is
+/// a separate concern; see [Music].
 class Sounds with WidgetsBindingObserver {
   final _players = <Sfx, List<_Pool>>{};
   final _random = Random();
@@ -70,7 +70,7 @@ class Sounds with WidgetsBindingObserver {
   }
 
   static Future<AudioPlayer?> _preload(String asset, double volume) async {
-    final player = AudioPlayer();
+    final player = _newPlayer();
     try {
       await player.setAudioContext(_context);
       await player.setPlayerMode(PlayerMode.lowLatency);
@@ -110,6 +110,13 @@ class Sounds with WidgetsBindingObserver {
     }
   }
 }
+
+/// A player that never reports its position. audioplayers otherwise asks
+/// the platform for it on every frame for as long as the player plays, and
+/// a low-latency one plays forever as far as it knows (SoundPool reports no
+/// end), so every effect ever played would keep asking until the main
+/// thread is flooded and new sounds queue behind it for seconds.
+AudioPlayer _newPlayer() => AudioPlayer()..positionUpdater = null;
 
 /// A few interchangeable players preloaded with the same asset, handed out
 /// round-robin so a retrigger while the last one is still sounding overlaps
@@ -152,7 +159,7 @@ class Music with WidgetsBindingObserver {
   /// app is already showing a menu screen. A track that fails to load stays
   /// silent for good.
   Future<void> load() async {
-    final player = AudioPlayer();
+    final player = _newPlayer();
     try {
       await player.setAudioContext(Sounds._context);
       await player.setReleaseMode(ReleaseMode.loop);
