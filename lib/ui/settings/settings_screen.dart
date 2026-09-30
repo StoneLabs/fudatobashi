@@ -97,6 +97,12 @@ class SettingsScreen extends StatelessWidget {
                               value: settings.music,
                               onChanged: (v) => progress.updateSettings(settings.copyWith(music: v)),
                             ),
+                            SettingsSlider(
+                              title: s.musicVolume,
+                              enabled: settings.music,
+                              value: settings.musicVolume,
+                              onChanged: (v) => progress.updateSettings(settings.copyWith(musicVolume: v)),
+                            ),
                             SettingsSwitch(
                               title: s.swipeSound,
                               note: s.swipeSoundNote,

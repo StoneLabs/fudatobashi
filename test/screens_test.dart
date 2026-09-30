@@ -1443,6 +1443,29 @@ void main() {
     await tester.pumpWidget(const SizedBox());
   });
 
+  testWidgets('settings: music volume slider drags live and persists, and dims while Music is off', (tester) async {
+    final p = await open(tester);
+    expect(p.settings.musicVolume, DefaultSettings.musicVolume);
+    await tester.binding.setSurfaceSize(_phone);
+    await tester.pumpWidget(ProgressScope(progress: p, child: const MaterialApp(home: SettingsScreen())));
+    await tester.pump();
+    const s = S('en');
+    await tester.scrollUntilVisible(find.text(s.musicVolume), 200);
+    final slider = find.byType(Slider);
+    expect(tester.widget<Slider>(slider).onChanged, isNotNull, reason: 'enabled while Music is on');
+
+    await tester.drag(slider, const Offset(-80, 0));
+    await tester.pump();
+    expect(p.settings.musicVolume, lessThan(DefaultSettings.musicVolume), reason: 'dragging left turns it down live');
+    expect(AppSettings.fromJson(p.settings.toJson()).musicVolume, p.settings.musicVolume, reason: 'and it persists');
+
+    await tester.runAsync(() => p.updateSettings(p.settings.copyWith(music: false)));
+    await tester.pump();
+    expect(tester.widget<Slider>(slider).onChanged, isNull, reason: 'disabled while Music is off');
+
+    await tester.pumpWidget(const SizedBox());
+  });
+
   testWidgets('sounds: each plays only while its category is on, and the card flick is the only swipe sound',
       (tester) async {
     final heard = _HeardSounds();

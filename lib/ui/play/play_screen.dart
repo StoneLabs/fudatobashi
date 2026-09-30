@@ -93,6 +93,11 @@ class _PlayScreenState extends State<PlayScreen> {
   TutorialScript? _script;
   Outcome? _retried;
 
+  /// Set just before handing off to [ResultsScreen], which then owns the
+  /// music itself (silent through its celebration, if any). Every other way
+  /// this screen leaves goes back to a menu, so [dispose] fades music in.
+  bool _wentToResults = false;
+
   @override
   void initState() {
     super.initState();
@@ -101,11 +106,13 @@ class _PlayScreenState extends State<PlayScreen> {
       _script = TutorialScript(_progress.settings.dontKnowInputFor(_progress.trainer.config.learningMode));
     }
     _session.addListener(_onSessionChanged);
+    unawaited(music.leaveMenu());
   }
 
   @override
   void dispose() {
     _session.removeListener(_onSessionChanged);
+    if (!_wentToResults) unawaited(music.enterMenu());
     // Safety net for an unexpected pop (e.g. the system back gesture): still
     // record a partial run, just without showing results for it.
     if (!_ending && !widget.tutorial && _session.attempts.isNotEmpty) {
@@ -238,6 +245,7 @@ class _PlayScreenState extends State<PlayScreen> {
     // The journey is over: every card is known, so no warning is needed.
     if (report.graduated) await progress.switchToAllKnown();
     if (!mounted) return;
+    _wentToResults = true;
     Navigator.of(context).pushReplacement(MangaRoute<void>(
       builder: (_) => ResultsScreen(report: report, config: widget.config),
     ));

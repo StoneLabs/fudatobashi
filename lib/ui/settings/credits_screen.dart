@@ -63,6 +63,11 @@ class CreditsScreen extends StatelessWidget {
                       ),
                       const SizedBox(height: Gaps.section),
                       _Section(
+                        title: s.creditsMusic,
+                        children: [NarrationBox(child: Text(s.creditsMusicBody))],
+                      ),
+                      const SizedBox(height: Gaps.section),
+                      _Section(
                         title: s.creditsPoemData,
                         children: [NarrationBox(child: Text(s.creditsPoemDataBody))],
                       ),

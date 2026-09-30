@@ -8,13 +8,14 @@ import 'package:flutter/widgets.dart';
 
 import '../../config/config.dart';
 import '../../state/scope.dart';
+import '../../state/settings.dart';
 
 /// The app's sound effects, every asset preloaded into low-latency players
 /// by [load] at startup (round-robin pooled per asset; see [Sfx.poolSize]),
 /// so playing one never touches the disk or the platform channel. Played
 /// during play (the swipe footstep) as well as on celebration pages and
 /// Results, each only while its [SoundCategory] is switched on (see
-/// [playSound]).
+/// [playSound]). Background music is a separate concern; see [Music].
 class Sounds with WidgetsBindingObserver {
   final _players = <Sfx, List<_Pool>>{};
   final _random = Random();
@@ -127,6 +128,122 @@ class _Pool {
 
 /// The app's sounds; tests swap in a recorder.
 Sounds sounds = Sounds();
+
+/// The app's background music: a single looping player, entirely separate
+/// from the effect pools above so a swipe never waits on it. Playing only on
+/// menu screens (see [enterMenu]/[leaveMenu]), it fades out for a play/swipe
+/// screen and a run's celebration, and back in once a menu screen is on top
+/// again. [applySettings] applies the Music switch and its volume slider,
+/// live. Until [load] (and in tests, which never load) every call here stays
+/// silent, like an unloaded [Sounds].
+class Music with WidgetsBindingObserver {
+  AudioPlayer? _player;
+  Timer? _fadeTimer;
+
+  bool _enabled = DefaultSettings.music;
+  double _volume = DefaultSettings.musicVolume;
+
+  /// False only while a play/swipe screen or a run's celebration is on top.
+  bool _wantsMenu = true;
+  bool _backgrounded = false;
+  bool _silenced = false;
+
+  /// Preloads the track, looped, at zero volume, then brings it up if the
+  /// app is already showing a menu screen. A track that fails to load stays
+  /// silent for good.
+  Future<void> load() async {
+    final player = AudioPlayer();
+    try {
+      await player.setAudioContext(Sounds._context);
+      await player.setReleaseMode(ReleaseMode.loop);
+      await player.setVolume(0);
+      await player.setSource(AssetSource(MusicTuning.asset));
+    } catch (e) {
+      debugPrint('Music: not loaded ($e)');
+      await player.dispose();
+      return;
+    }
+    _player = player;
+    _silenced = await Sounds._querySilenced();
+    WidgetsBinding.instance.addObserver(this);
+    await _sync();
+  }
+
+  /// Applies the Music switch and its volume slider (Settings › Sound),
+  /// live: switching off silences immediately, and the slider updates the
+  /// volume of any music already playing or fading in.
+  Future<void> applySettings(AppSettings settings) async {
+    _enabled = settings.music;
+    _volume = settings.musicVolume;
+    await _sync();
+  }
+
+  /// A play/swipe screen, or a run's celebration, has taken over: music
+  /// fades out and pauses once silent.
+  Future<void> leaveMenu() async {
+    _wantsMenu = false;
+    await _sync();
+  }
+
+  /// Back on a menu screen (Home, Settings, onboarding, the tour, or the
+  /// Results overview once its celebration is done): music fades back in.
+  Future<void> enterMenu() async {
+    _wantsMenu = true;
+    await _sync();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state != AppLifecycleState.resumed) {
+      _backgrounded = true;
+      _fadeTimer?.cancel();
+      unawaited(_player?.pause());
+      return;
+    }
+    _backgrounded = false;
+    unawaited(() async {
+      _silenced = await Sounds._querySilenced();
+      await _sync();
+    }());
+  }
+
+  /// Brings the player to where [_enabled], [_wantsMenu], [_silenced] and
+  /// [_backgrounded] say it should be: playing at [_volume], or silent.
+  /// Never overlaps a fade already under way.
+  Future<void> _sync() async {
+    final player = _player;
+    if (player == null || _backgrounded) return;
+    await _fadeTo(player, _enabled && _wantsMenu && !_silenced ? _volume : 0);
+  }
+
+  Future<void> _fadeTo(AudioPlayer player, double target) async {
+    _fadeTimer?.cancel();
+    final start = player.volume;
+    if (start == target) {
+      if (target > 0) await player.resume();
+      return;
+    }
+    if (target > 0) await player.resume();
+    final steps = MusicTuning.fadeSteps;
+    final stepDuration = (target > start ? MusicTuning.fadeIn : MusicTuning.fadeOut) ~/ steps;
+    final completer = Completer<void>();
+    var i = 0;
+    _fadeTimer = Timer.periodic(stepDuration, (timer) {
+      i++;
+      unawaited(player.setVolume((start + (target - start) * (i / steps)).clamp(0, 1)));
+      if (i >= steps) {
+        timer.cancel();
+        if (target == 0) unawaited(player.pause());
+        completer.complete();
+      }
+    });
+    return completer.future;
+  }
+}
+
+/// The app's background music; tests never [Music.load] it, so it stays
+/// silent.
+Music music = Music();
 
 /// Plays [sfx] if the player has its [SoundCategory] switched on.
 void playSound(BuildContext context, Sfx sfx) {

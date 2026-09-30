@@ -62,6 +62,24 @@ void main() {
     });
   });
 
+  group('AppSettings.musicVolume', () {
+    test('defaults when nothing is saved yet', () {
+      expect(AppSettings.fromJson({}).musicVolume, DefaultSettings.musicVolume);
+    });
+
+    test('round-trips through toJson', () {
+      final s = AppSettings.fromJson(const AppSettings(musicVolume: 0.2).toJson());
+      expect(s.musicVolume, 0.2);
+    });
+
+    test('copyWith changes only the volume', () {
+      const s = AppSettings(music: true);
+      final louder = s.copyWith(musicVolume: 0.9);
+      expect(louder.musicVolume, 0.9);
+      expect(louder.music, isTrue);
+    });
+  });
+
   group('AppSettings.languagePicked (first-open language picker)', () {
     test('a truly fresh install (nothing saved yet) has not picked one', () {
       expect(AppSettings.fromJson({}).languagePicked, isFalse);

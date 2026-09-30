@@ -25,6 +25,7 @@ class AppSettings {
     this.haptics = DefaultSettings.haptics,
     this.sfxEffects = DefaultSettings.sfxEffects,
     this.music = DefaultSettings.music,
+    this.musicVolume = DefaultSettings.musicVolume,
     this.swipeSound = DefaultSettings.swipeSound,
     this.effectSounds = DefaultSettings.effectSounds,
     this.showRunningTimer = DefaultSettings.showRunningTimer,
@@ -57,6 +58,9 @@ class AppSettings {
   /// The sound switches, one per [SoundCategory]; read them through
   /// [plays]. Silent or vibrate mode still mutes everything.
   final bool music;
+
+  /// The music player's volume, 0–1; only meaningful while [music] is on.
+  final double musicVolume;
   final bool swipeSound;
   final bool effectSounds;
   final bool showRunningTimer;
@@ -100,6 +104,7 @@ class AppSettings {
         'haptics': haptics,
         'sfxEffects': sfxEffects,
         'music': music,
+        'musicVolume': musicVolume,
         'swipeSound': swipeSound,
         'effectSounds': effectSounds,
         'showRunningTimer': showRunningTimer,
@@ -131,6 +136,7 @@ class AppSettings {
       haptics: j['haptics'] as bool? ?? DefaultSettings.haptics,
       sfxEffects: j['sfxEffects'] as bool? ?? DefaultSettings.sfxEffects,
       music: j['music'] as bool? ?? sounds ?? DefaultSettings.music,
+      musicVolume: (j['musicVolume'] as num?)?.toDouble() ?? DefaultSettings.musicVolume,
       swipeSound: j['swipeSound'] as bool? ?? sounds ?? DefaultSettings.swipeSound,
       effectSounds: j['effectSounds'] as bool? ?? sounds ?? DefaultSettings.effectSounds,
       showRunningTimer: j['showRunningTimer'] as bool? ?? DefaultSettings.showRunningTimer,
@@ -157,6 +163,7 @@ class AppSettings {
     bool? haptics,
     bool? sfxEffects,
     bool? music,
+    double? musicVolume,
     bool? swipeSound,
     bool? effectSounds,
     bool? showRunningTimer,
@@ -177,6 +184,7 @@ class AppSettings {
         haptics: haptics ?? this.haptics,
         sfxEffects: sfxEffects ?? this.sfxEffects,
         music: music ?? this.music,
+        musicVolume: musicVolume ?? this.musicVolume,
         swipeSound: swipeSound ?? this.swipeSound,
         effectSounds: effectSounds ?? this.effectSounds,
         showRunningTimer: showRunningTimer ?? this.showRunningTimer,

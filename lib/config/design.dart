@@ -2420,6 +2420,16 @@ abstract final class SettingsLayout {
   static const double valueFont = TypeScale.body;
   static const double chevron = 16;
   static const double footnoteGap = Gaps.small;
+
+  /// A row with a slider (the music volume) under its title: the slider
+  /// sits right under the title/note, no extra top gap of its own.
+  static const double sliderTrackHeight = 4;
+  static const double sliderThumbRadius = 9;
+  static const double sliderOverlayRadius = 16;
+
+  /// Dims a row that a switch above it has turned moot (the music volume
+  /// slider while Music itself is off).
+  static const double disabledOpacity = 0.4;
 }
 
 abstract final class CreditsLayout {

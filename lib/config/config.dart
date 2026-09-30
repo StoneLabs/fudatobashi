@@ -516,6 +516,7 @@ abstract final class DefaultSettings {
   static const bool haptics = true;
   static const bool sfxEffects = true;
   static const bool music = true;
+  static const double musicVolume = 0.5;
   static const bool swipeSound = true;
   static const bool effectSounds = true;
   static const bool showRunningTimer = false;
@@ -758,11 +759,26 @@ abstract final class SoundTuning {
   static const int ratingTickPoolSize = 4;
 }
 
+/// Background music (`Music` in `lib/ui/sound/sounds.dart`): a single
+/// looping track, playing only on menu screens (Home and its tabs, Settings,
+/// onboarding, the tour) and faded out for a play/swipe screen and a run's
+/// celebration.
+abstract final class MusicTuning {
+  static const String asset = 'sounds/bgm_fun_022824.m4a';
+
+  /// How long a fade takes either way.
+  static const Duration fadeIn = Duration(milliseconds: 900);
+  static const Duration fadeOut = Duration(milliseconds: 600);
+
+  /// Volume steps a fade is split into; smooth without waking up too often.
+  static const int fadeSteps = 20;
+}
+
 /// What a sound belongs to. Each category has its own Settings switch
 /// (`AppSettings.plays`), and silent or vibrate mode mutes them all.
 enum SoundCategory {
-  /// Background music. There is none yet; music added later plays under
-  /// this category, so its switch already works.
+  /// Background music (see [Music]), switched by [AppSettings.music] and
+  /// its volume slider ([AppSettings.musicVolume]).
   music,
 
   /// A card being swiped away: every card that leaves the deck during play,

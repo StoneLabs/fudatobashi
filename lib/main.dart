@@ -52,4 +52,5 @@ Future<void> main() async {
   runApp(FudatobashiApp(progress: progress));
   // Loaded in the background: the first celebration is at least a run away.
   unawaited(sounds.load());
+  unawaited(music.load());
 }

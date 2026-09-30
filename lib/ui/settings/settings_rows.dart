@@ -106,6 +106,55 @@ class SettingsSwitch extends StatelessWidget {
       );
 }
 
+/// A slider under its name and note, e.g. the music volume; [enabled] false
+/// dims the whole row and disables the slider (its switch is off).
+class SettingsSlider extends StatelessWidget {
+  const SettingsSlider({
+    super.key,
+    required this.title,
+    this.note,
+    required this.value,
+    required this.enabled,
+    required this.onChanged,
+  });
+
+  final String title;
+  final String? note;
+  final double value;
+  final bool enabled;
+  final ValueChanged<double> onChanged;
+
+  @override
+  Widget build(BuildContext context) => AnimatedOpacity(
+        opacity: enabled ? 1 : SettingsLayout.disabledOpacity,
+        duration: Motion.stampFade,
+        child: Padding(
+          padding: SettingsLayout.rowPadding,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              _TitleNote(title: title, note: note),
+              SliderTheme(
+                data: SliderTheme.of(context).copyWith(
+                  activeTrackColor: Palette.pink,
+                  thumbColor: Palette.pink,
+                  trackHeight: SettingsLayout.sliderTrackHeight,
+                  thumbShape: const RoundSliderThumbShape(enabledThumbRadius: SettingsLayout.sliderThumbRadius),
+                  overlayShape: const RoundSliderOverlayShape(overlayRadius: SettingsLayout.sliderOverlayRadius),
+                ),
+                child: Slider(
+                  value: value,
+                  onChanged: enabled ? onChanged : null,
+                  label: '${(value * 100).round()}%',
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
+}
+
 /// A row that stamps when tapped: its name and note on the left, then
 /// [value] and, when it opens a page, a chevron.
 class SettingsTapRow extends StatelessWidget {

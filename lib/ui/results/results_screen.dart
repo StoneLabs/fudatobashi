@@ -47,9 +47,14 @@ class _ResultsScreenState extends State<ResultsScreen> {
   void initState() {
     super.initState();
     if (_celebrations.isNotEmpty) {
+      // Kept silent (the run's own PlayScreen already faded music out) until
+      // the celebration, which has its own jingles, is done.
+      unawaited(music.leaveMenu());
       _timer = Timer(ResultsLayout.overlayStagger + (_personalBest ? PersonalBestMotion.length : Duration.zero), () {
         if (mounted) setState(() => _celebrating = true);
       });
+    } else {
+      unawaited(music.enterMenu());
     }
   }
 
@@ -74,7 +79,10 @@ class _ResultsScreenState extends State<ResultsScreen> {
               Positioned.fill(
                 child: CelebrationSequence(
                   pages: _celebrations,
-                  onDone: () => setState(() => _celebrating = false),
+                  onDone: () {
+                    setState(() => _celebrating = false);
+                    unawaited(music.enterMenu());
+                  },
                 ),
               ),
           ]),

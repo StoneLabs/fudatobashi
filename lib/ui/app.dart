@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
@@ -8,6 +10,7 @@ import 'manga/manga.dart';
 import 'onboarding/language_picker_screen.dart';
 import 'onboarding/onboarding_screen.dart';
 import 'shell/app_shell.dart';
+import 'sound/sounds.dart';
 
 class FudatobashiApp extends StatefulWidget {
   const FudatobashiApp({super.key, required this.progress});
@@ -23,6 +26,7 @@ class _FudatobashiAppState extends State<FudatobashiApp> {
   void initState() {
     super.initState();
     widget.progress.addListener(_onProgressChanged);
+    unawaited(music.applySettings(widget.progress.settings));
   }
 
   @override
@@ -33,8 +37,13 @@ class _FudatobashiAppState extends State<FudatobashiApp> {
 
   // The dev-mode PerformanceOverlay is a MaterialApp constructor argument, so
   // toggling it needs this widget itself to rebuild (a descendant depending
-  // on ProgressScope would not re-run MaterialApp's own build).
-  void _onProgressChanged() => setState(() {});
+  // on ProgressScope would not re-run MaterialApp's own build). Settings
+  // changes (the Music switch, its volume slider) reach here too, the one
+  // place that keeps the music player in step with them.
+  void _onProgressChanged() {
+    unawaited(music.applySettings(widget.progress.settings));
+    setState(() {});
+  }
 
   @override
   Widget build(BuildContext context) {

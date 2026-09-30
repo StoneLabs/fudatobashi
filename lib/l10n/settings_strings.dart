@@ -23,6 +23,7 @@ extension SettingsStrings on S {
   String get vibrationNote => t('vibrationNote');
   String get music => t('music');
   String get musicNote => t('musicNote');
+  String get musicVolume => t('musicVolume');
   String get swipeSound => t('swipeSound');
   String get swipeSoundNote => t('swipeSoundNote');
   String get effectSounds => t('effectSounds');

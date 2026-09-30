@@ -12,6 +12,9 @@ extension CreditsStrings on S {
   String get creditsSounds => t('creditsSounds');
   String get creditsSoundsBody => t('creditsSoundsBody');
 
+  String get creditsMusic => t('creditsMusic');
+  String get creditsMusicBody => t('creditsMusicBody');
+
   String get creditsPoemData => t('creditsPoemData');
   String get creditsPoemDataBody => t('creditsPoemDataBody');
 
