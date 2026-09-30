@@ -48,3 +48,6 @@ const fontCredits = [
 ];
 
 const soundsLicenseAsset = 'assets/sounds/License.txt';
+
+/// The background music's license (CC BY 3.0 Unported legal code).
+const musicLicenseAsset = 'assets/sounds/License-music-CC-BY-3.0.txt';

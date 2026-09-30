@@ -19,7 +19,7 @@ import 'ui/debug/frame_stats.dart';
 import 'ui/sound/sounds.dart';
 import 'ui/torifuda/glyph_atlas.dart';
 
-/// Bundled font and sound licenses, added so they show up in
+/// Bundled font, sound and music licenses, added so they show up in
 /// `showLicensePage` alongside every pub package (see the credits screen,
 /// `lib/ui/settings/credits_screen.dart`, for the same texts read on demand).
 void _registerBundledLicenses() {
@@ -28,6 +28,7 @@ void _registerBundledLicenses() {
       yield LicenseEntryWithLineBreaks([font.name], await rootBundle.loadString(font.licenseAsset));
     }
     yield LicenseEntryWithLineBreaks(['Kenney sound effects'], await rootBundle.loadString(soundsLicenseAsset));
+    yield LicenseEntryWithLineBreaks(['fun bgm 022824 (syncopika)'], await rootBundle.loadString(musicLicenseAsset));
   });
 }
 

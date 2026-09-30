@@ -64,7 +64,17 @@ class CreditsScreen extends StatelessWidget {
                       const SizedBox(height: Gaps.section),
                       _Section(
                         title: s.creditsMusic,
-                        children: [NarrationBox(child: Text(s.creditsMusicBody))],
+                        children: [
+                          NarrationBox(child: Text(s.creditsMusicBody)),
+                          const SizedBox(height: Gaps.small),
+                          _TapRow(
+                            title: s.creditsViewLicense,
+                            onTap: () => Navigator.push(
+                              context,
+                              MangaRoute<void>(builder: (_) => LicenseTextScreen(title: s.creditsMusic, asset: musicLicenseAsset)),
+                            ),
+                          ),
+                        ],
                       ),
                       const SizedBox(height: Gaps.section),
                       _Section(
