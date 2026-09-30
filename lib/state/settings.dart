@@ -59,7 +59,8 @@ class AppSettings {
   /// [plays]. Silent or vibrate mode still mutes everything.
   final bool music;
 
-  /// The music player's volume, 0–1; only meaningful while [music] is on.
+  /// The music volume slider's position, 0–1, which `Music.gainFor` turns
+  /// into the player's gain; only meaningful while [music] is on.
   final double musicVolume;
   final bool swipeSound;
   final bool effectSounds;

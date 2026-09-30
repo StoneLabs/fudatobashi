@@ -1,5 +1,3 @@
-import 'dart:async';
-
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
@@ -26,7 +24,7 @@ class _FudatobashiAppState extends State<FudatobashiApp> {
   void initState() {
     super.initState();
     widget.progress.addListener(_onProgressChanged);
-    unawaited(music.applySettings(widget.progress.settings));
+    music.applySettings(widget.progress.settings);
   }
 
   @override
@@ -41,7 +39,7 @@ class _FudatobashiAppState extends State<FudatobashiApp> {
   // changes (the Music switch, its volume slider) reach here too, the one
   // place that keeps the music player in step with them.
   void _onProgressChanged() {
-    unawaited(music.applySettings(widget.progress.settings));
+    music.applySettings(widget.progress.settings);
     setState(() {});
   }
 

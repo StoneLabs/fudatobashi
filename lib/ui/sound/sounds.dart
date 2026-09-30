@@ -155,6 +155,10 @@ class Music with WidgetsBindingObserver {
   bool _backgrounded = false;
   bool _silenced = false;
 
+  /// The player's own gain (linear amplitude, touching no system or effect
+  /// volume) for a volume slider position; see [MusicTuning.volumeExponent].
+  static double gainFor(double volume) => pow(volume, MusicTuning.volumeExponent).toDouble();
+
   /// Preloads the track, looped, at zero volume, then brings it up if the
   /// app is already showing a menu screen. A track that fails to load stays
   /// silent for good.
@@ -173,30 +177,33 @@ class Music with WidgetsBindingObserver {
     _player = player;
     _silenced = await Sounds._querySilenced();
     WidgetsBinding.instance.addObserver(this);
-    await _sync();
+    _sync();
   }
 
   /// Applies the Music switch and its volume slider (Settings › Sound),
-  /// live: switching off silences immediately, and the slider updates the
-  /// volume of any music already playing or fading in.
-  Future<void> applySettings(AppSettings settings) async {
+  /// ignoring every other setting: the switch fades music in or out, and the
+  /// slider sets the volume of music already playing at once, so it follows
+  /// the finger.
+  void applySettings(AppSettings settings) {
+    if (settings.music == _enabled && settings.musicVolume == _volume) return;
+    final switched = settings.music != _enabled;
     _enabled = settings.music;
     _volume = settings.musicVolume;
-    await _sync();
+    _sync(fade: switched);
   }
 
   /// A play/swipe screen, or a run's celebration, has taken over: music
   /// fades out and pauses once silent.
-  Future<void> leaveMenu() async {
+  void leaveMenu() {
     _wantsMenu = false;
-    await _sync();
+    _sync();
   }
 
   /// Back on a menu screen (Home, Settings, onboarding, the tour, or the
   /// Results overview once its celebration is done): music fades back in.
-  Future<void> enterMenu() async {
+  void enterMenu() {
     _wantsMenu = true;
-    await _sync();
+    _sync();
   }
 
   @override
@@ -210,42 +217,45 @@ class Music with WidgetsBindingObserver {
     _backgrounded = false;
     unawaited(() async {
       _silenced = await Sounds._querySilenced();
-      await _sync();
+      _sync();
     }());
   }
 
   /// Brings the player to where [_enabled], [_wantsMenu], [_silenced] and
-  /// [_backgrounded] say it should be: playing at [_volume], or silent.
-  /// Never overlaps a fade already under way.
-  Future<void> _sync() async {
+  /// [_backgrounded] say it should be: playing at the slider's gain, or
+  /// paused at silence. It fades there, taking over from any fade under way,
+  /// unless [fade] is false.
+  void _sync({bool fade = true}) {
     final player = _player;
     if (player == null || _backgrounded) return;
-    await _fadeTo(player, _enabled && _wantsMenu && !_silenced ? _volume : 0);
-  }
-
-  Future<void> _fadeTo(AudioPlayer player, double target) async {
+    final target = _enabled && _wantsMenu && !_silenced ? gainFor(_volume) : 0.0;
     _fadeTimer?.cancel();
-    final start = player.volume;
-    if (start == target) {
-      if (target > 0) await player.resume();
+    if (!fade) {
+      unawaited(player.setVolume(target));
+      _settle(player, target);
       return;
     }
-    if (target > 0) await player.resume();
-    final steps = MusicTuning.fadeSteps;
+    final start = player.volume;
+    if (start == target) {
+      _settle(player, target);
+      return;
+    }
+    if (target > 0) unawaited(player.resume());
+    const steps = MusicTuning.fadeSteps;
     final stepDuration = (target > start ? MusicTuning.fadeIn : MusicTuning.fadeOut) ~/ steps;
-    final completer = Completer<void>();
-    var i = 0;
+    var step = 0;
     _fadeTimer = Timer.periodic(stepDuration, (timer) {
-      i++;
-      unawaited(player.setVolume((start + (target - start) * (i / steps)).clamp(0, 1)));
-      if (i >= steps) {
+      step++;
+      unawaited(player.setVolume(step < steps ? start + (target - start) * step / steps : target));
+      if (step == steps) {
         timer.cancel();
-        if (target == 0) unawaited(player.pause());
-        completer.complete();
+        _settle(player, target);
       }
     });
-    return completer.future;
   }
+
+  /// Keeps [player] going at an audible [gain], or pauses it at silence.
+  static void _settle(AudioPlayer player, double gain) => unawaited(gain > 0 ? player.resume() : player.pause());
 }
 
 /// The app's background music; tests never [Music.load] it, so it stays

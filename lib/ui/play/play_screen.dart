@@ -106,13 +106,13 @@ class _PlayScreenState extends State<PlayScreen> {
       _script = TutorialScript(_progress.settings.dontKnowInputFor(_progress.trainer.config.learningMode));
     }
     _session.addListener(_onSessionChanged);
-    unawaited(music.leaveMenu());
+    music.leaveMenu();
   }
 
   @override
   void dispose() {
     _session.removeListener(_onSessionChanged);
-    if (!_wentToResults) unawaited(music.enterMenu());
+    if (!_wentToResults) music.enterMenu();
     // Safety net for an unexpected pop (e.g. the system back gesture): still
     // record a partial run, just without showing results for it.
     if (!_ending && !widget.tutorial && _session.attempts.isNotEmpty) {

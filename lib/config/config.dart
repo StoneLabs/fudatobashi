@@ -772,6 +772,11 @@ abstract final class MusicTuning {
 
   /// Volume steps a fade is split into; smooth without waking up too often.
   static const int fadeSteps = 20;
+
+  /// The volume slider is perceptual, the player's gain a linear amplitude:
+  /// the gain is the slider's position to this power, so halfway sounds
+  /// about half as loud (−12 dB) instead of hardly quieter than full (−6 dB).
+  static const double volumeExponent = 2;
 }
 
 /// What a sound belongs to. Each category has its own Settings switch
