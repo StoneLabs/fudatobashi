@@ -44,6 +44,15 @@ void main() {
     expect(ja['languageName'], '日本語');
   });
 
+  test('every one of the 100 poems has a kimariji key and a pre-generated voice clip', () {
+    for (var id = 1; id <= 100; id++) {
+      final key = 'kimariji${id.toString().padLeft(3, '0')}';
+      expect(en[key], isA<String>(), reason: key);
+      expect(ja[key], isA<String>(), reason: key);
+      expect(File('assets/voice/kimariji/${id.toString().padLeft(3, '0')}.m4a').existsSync(), isTrue, reason: key);
+    }
+  });
+
   group('Localization', () {
     setUp(() {
       Localization.loadFromSource(

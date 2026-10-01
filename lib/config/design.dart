@@ -410,6 +410,15 @@ abstract final class ButtonMetrics {
   static const double rowGap = 10;
 }
 
+/// The kimariji speaker button (`KimarijiSpeakerButton`, new-card page and
+/// card detail): a plain tappable icon, no border, small enough to sit right
+/// beside the kimariji it reads out.
+abstract final class VoiceLayout {
+  static const double speakerIcon = 20;
+  static const double speakerStroke = 2.2;
+  static const double speakerPadding = 8;
+}
+
 abstract final class LangToggleStyle {
   static const double height = 34;
   static const double padding = 11;
@@ -966,6 +975,9 @@ abstract final class CardDetailLayout {
 
   static const double cardImageWidth = 104;
   static const double kimarijiFont = 44;
+
+  /// The kana under the romaji, English only (see `NewCardLayout`'s twin).
+  static const double kimarijiKanaFont = 16;
   static const double captionFont = 11.5;
 
   static const double authorFont = 14;
@@ -1492,6 +1504,12 @@ abstract final class NewCardLayout {
   static const EdgeInsets infoPadding = EdgeInsets.fromLTRB(16, 16, 14, 12);
   static const double kimarijiFont = 33;
   static const double kimarijiOutline = 7;
+
+  /// The kana under the romaji, English only (the cards show kana, so it's
+  /// worth keeping in view even once it's not the primary label).
+  static const double kimarijiKanaFont = 15;
+  static const double kimarijiKanaGap = 2;
+  static const double speakerGap = 6;
   static const double labelFont = 12;
   static const double labelTracking = 0.12;
   static const double labelGap = 10;

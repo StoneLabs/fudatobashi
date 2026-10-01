@@ -15,6 +15,7 @@ import '../../state/play_config.dart';
 import '../../state/scope.dart';
 import '../manga/manga.dart';
 import '../play/time_format.dart';
+import '../sound/sounds.dart';
 import '../torifuda/torifuda_painter.dart';
 import 'stats_charts.dart';
 
@@ -269,13 +270,29 @@ class _Header extends StatelessWidget {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        FittedBox(
-                          fit: BoxFit.scaleDown,
-                          alignment: Alignment.centerLeft,
-                          child: Text(poem.kimariji,
-                              maxLines: 1,
-                              style: const TextStyle(
-                                  fontFamily: Fonts.display, fontSize: CardDetailLayout.kimarijiFont, height: 1)),
+                        Row(
+                          crossAxisAlignment: CrossAxisAlignment.center,
+                          children: [
+                            Flexible(
+                              child: FittedBox(
+                                fit: BoxFit.scaleDown,
+                                alignment: Alignment.centerLeft,
+                                child: Column(crossAxisAlignment: CrossAxisAlignment.start, mainAxisSize: MainAxisSize.min, children: [
+                                  Text(s.kimariji(poem.id),
+                                      maxLines: 1,
+                                      style: const TextStyle(
+                                          fontFamily: Fonts.display, fontSize: CardDetailLayout.kimarijiFont, height: 1)),
+                                  if (!s.ja)
+                                    Text(poem.kimariji,
+                                        maxLines: 1,
+                                        style: const TextStyle(
+                                            fontFamily: Fonts.ui, fontWeight: Weights.bold, fontSize: CardDetailLayout.kimarijiKanaFont)),
+                                ]),
+                              ),
+                            ),
+                            const SizedBox(width: Gaps.tight),
+                            KimarijiSpeakerButton(poemId: poem.id),
+                          ],
                         ),
                         _Caption(s.kimarijiCaption),
                       ],
@@ -330,27 +347,30 @@ class _LookAlikeChip extends StatelessWidget {
   final bool inverted;
 
   @override
-  Widget build(BuildContext context) => Pressable(
-        semanticLabel: poem.kimariji,
-        onTap: () => Navigator.push(
-          context,
-          MangaRoute<void>(builder: (_) => CardDetailScreen(itemKey: ItemKey(poem.id, inverted))),
-        ),
-        builder: (context, pressed) => Container(
-          padding: CardDetailLayout.lookAlikePadding,
-          decoration: BoxDecoration(
-              color: pressed ? Palette.sunSoft : Palette.paper,
-              border: Border.all(color: Palette.ink, width: Strokes.control)),
-          child: Row(mainAxisSize: MainAxisSize.min, children: [
-            SizedBox(width: CardDetailLayout.lookAlikeCardWidth, child: TorifudaCard(poem: poem, inverted: inverted)),
-            const SizedBox(width: Gaps.small),
-            Text(poem.kimariji,
-                style: const TextStyle(fontFamily: Fonts.display, fontSize: CardDetailLayout.lookAlikeKimarijiFont)),
-            const SizedBox(width: Gaps.tight),
-            MangaIcon(IconArt.chevron, size: CardDetailLayout.lookAlikeChevron),
-          ]),
-        ),
-      );
+  Widget build(BuildContext context) {
+    final s = S.of(context);
+    return Pressable(
+      semanticLabel: s.kimariji(poem.id),
+      onTap: () => Navigator.push(
+        context,
+        MangaRoute<void>(builder: (_) => CardDetailScreen(itemKey: ItemKey(poem.id, inverted))),
+      ),
+      builder: (context, pressed) => Container(
+        padding: CardDetailLayout.lookAlikePadding,
+        decoration: BoxDecoration(
+            color: pressed ? Palette.sunSoft : Palette.paper,
+            border: Border.all(color: Palette.ink, width: Strokes.control)),
+        child: Row(mainAxisSize: MainAxisSize.min, children: [
+          SizedBox(width: CardDetailLayout.lookAlikeCardWidth, child: TorifudaCard(poem: poem, inverted: inverted)),
+          const SizedBox(width: Gaps.small),
+          Text(s.kimariji(poem.id),
+              style: const TextStyle(fontFamily: Fonts.display, fontSize: CardDetailLayout.lookAlikeKimarijiFont)),
+          const SizedBox(width: Gaps.tight),
+          MangaIcon(IconArt.chevron, size: CardDetailLayout.lookAlikeChevron),
+        ]),
+      ),
+    );
+  }
 }
 
 /// TOP SPEED, the attempts and the "don't know"s, on the grid of the stat

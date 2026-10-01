@@ -762,6 +762,7 @@ void main() {
         await tester.pump(const Duration(milliseconds: 500));
         expect(tester.takeException(), isNull);
         await _capture(tester, 'card_detail_history_${lang}_$fontScale');
+        expect(find.byType(KimarijiSpeakerButton), findsOneWidget);
 
         final detail = find.byType(CardDetailScreen);
         // The whole poem and its poet, every kanji run with its reading.
@@ -799,7 +800,7 @@ void main() {
         final lookAlike = poems[fudaSets.tomofuda(poemId).first];
         await tester.drag(find.descendant(of: detail, matching: find.byType(Scrollable)), const Offset(0, 600));
         await tester.pump(const Duration(milliseconds: 500));
-        await tester.tap(find.text(lookAlike.kimariji));
+        await tester.tap(find.text(s.kimariji(lookAlike.id)));
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 500));
         expect(tester.takeException(), isNull);
@@ -995,7 +996,7 @@ void main() {
         expect(find.byType(CardPickerScreen), findsOneWidget);
         await _capture(tester, 'free_cards_${lang}_$fontScale');
         final first = poems[fudaSets['initial:${initialGroups[0]}'].poemIds.first];
-        await tapAndSettle(find.text(first.kimariji));
+        await tapAndSettle(find.text(s.kimariji(first.id)));
         expect(find.text('99/100'), findsOneWidget);
         await tapAndSettle(find.text(s.done));
         expect(p.settings.freePractice.cardIds, isNot(contains(first.id)));
@@ -1014,7 +1015,7 @@ void main() {
         await tapAndSettle(find.text(s.lookAlikesRow));
         expect(find.byType(LookAlikePickerScreen), findsOneWidget);
         final set = fudaSets.ofKind(FudaSetKind.confusable).first;
-        await tapAndSettle(find.text(poems[set.poemIds.first].kimariji));
+        await tapAndSettle(find.text(s.kimariji(set.poemIds.first)));
         expect(find.text('${set.poemIds.length}/100'), findsOneWidget, reason: 'a set tap adds the whole set');
         await _capture(tester, 'free_look_alikes_${lang}_$fontScale');
         await tapAndSettle(find.text(s.done));
@@ -2096,6 +2097,7 @@ void main() {
           const Duration(milliseconds: 1300),
         );
         await _capture(tester, 'new_card_$lang');
+        expect(find.byType(KimarijiSpeakerButton), findsOneWidget);
         await tester.tap(find.text(ja ? '受けて立つ' : 'BRING IT ON!'));
         await tester.pump(const Duration(milliseconds: 300));
         expect(advanced, isTrue, reason: 'the accept flick hands over to the next page');

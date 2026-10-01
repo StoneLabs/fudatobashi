@@ -29,6 +29,9 @@ abstract final class IconArt {
 
   /// Two cards fanned (free play), 34-unit box.
   static late final VectorArt cards;
+
+  /// A speaker with sound waves (the kimariji readout button).
+  static late final VectorArt speaker;
 }
 
 /// Map furniture.

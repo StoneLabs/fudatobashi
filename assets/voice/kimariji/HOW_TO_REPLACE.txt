@@ -1,0 +1,30 @@
+Replacing a generated kimariji clip with a real recording
+===========================================================
+
+These 100 files (001.m4a … 100.m4a) are the kimariji (決まり字, the deciding
+opening kana) readouts for each of the 100 Hyakunin Isshu poems this app
+teaches. They are currently synthesized with an offline text-to-speech
+engine (see scripts/kimariji_voice.py) as placeholders.
+
+To swap one in for a real recording:
+
+1. Naming: name your file NNN.m4a, where NNN is the poem's id from
+   assets/data/poems.json, zero-padded to 3 digits (001–100). Drop it into
+   this folder, overwriting the generated file of the same name. No other
+   change is needed — the app loads clips by this filename.
+
+2. Format: AAC audio in an .m4a container. Mono is fine (these are short
+   spoken-word clips, not music). A sample rate of roughly 22kHz or higher
+   is plenty for speech.
+
+3. Length: a card's kimariji is only 1–12 kana, so a clip should be short —
+   well under 2 seconds. Trim dead air from the start and end, but leave a
+   small amount of silence (well under a tenth of a second) rather than
+   cutting to the very first and last sample, so the attack of the first
+   consonant isn't clipped.
+
+4. Loudness: peak-normalize your recording to roughly the same level as
+   the generated clips (around -1 dBFS peak — check with
+   `ffmpeg -i yourfile.m4a -af volumedetect -f null -` and look at
+   max_volume) so that swapping in one human recording doesn't create a
+   jarring volume jump against its still-generated neighbors.

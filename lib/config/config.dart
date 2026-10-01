@@ -848,3 +848,12 @@ enum Sfx {
   /// to overlap itself.
   final int poolSize;
 }
+
+/// The pre-generated kimariji readouts (`scripts/kimariji_voice.py`), one
+/// clip per poem, played on demand by the speaker button next to a card's
+/// kimariji — never preloaded like [Sfx], since only one plays at a time and
+/// it's never on the play loop's critical path.
+abstract final class VoiceTuning {
+  static String kimarijiAsset(int poemId) => 'voice/kimariji/${poemId.toString().padLeft(3, '0')}.m4a';
+  static const double volume = 1;
+}

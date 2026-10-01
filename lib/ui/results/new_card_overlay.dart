@@ -359,7 +359,8 @@ class _InfoPanel extends StatelessWidget {
     final island = archipelago.islands[Trainer.islandOf(poem)];
     final order = island.sites.indexWhere((site) => site.poemId == poem.id) + 1;
     final kimariji = poem.kimariji;
-    final tip = s.deciderTip(kimariji.length, poems.kimarijiTwin(poem)?.kimariji).split('{0}');
+    final twin = poems.kimarijiTwin(poem);
+    final tip = s.deciderTip(kimariji.length, twin == null ? null : s.kimariji(twin.id)).split('{0}');
     return MangaPanel(
       shape: const PanelShape(topLeft: NewCardLayout.infoCut),
       padding: NewCardLayout.infoPadding,
@@ -369,13 +370,21 @@ class _InfoPanel extends StatelessWidget {
             child: FittedBox(
               fit: BoxFit.scaleDown,
               alignment: Alignment.centerLeft,
-              child: OutlinedText(kimariji,
-                  style: const TextStyle(
-                      fontFamily: Fonts.display, fontSize: NewCardLayout.kimarijiFont, color: Palette.pink, height: 1),
-                  outline: Palette.ink,
-                  outlineWidth: NewCardLayout.kimarijiOutline),
+              child: Column(crossAxisAlignment: CrossAxisAlignment.start, mainAxisSize: MainAxisSize.min, children: [
+                OutlinedText(s.kimariji(poem.id),
+                    style: const TextStyle(
+                        fontFamily: Fonts.display, fontSize: NewCardLayout.kimarijiFont, color: Palette.pink, height: 1),
+                    outline: Palette.ink,
+                    outlineWidth: NewCardLayout.kimarijiOutline),
+                if (!s.ja) ...[
+                  const SizedBox(height: NewCardLayout.kimarijiKanaGap),
+                  Text(kimariji, style: const TextStyle(fontFamily: Fonts.ui, fontWeight: Weights.bold, fontSize: NewCardLayout.kimarijiKanaFont)),
+                ],
+              ]),
             ),
           ),
+          const SizedBox(width: NewCardLayout.speakerGap),
+          KimarijiSpeakerButton(poemId: poem.id),
           const SizedBox(width: NewCardLayout.labelGap),
           Text(s.kimarijiLabel,
               style: const TextStyle(

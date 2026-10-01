@@ -7,8 +7,12 @@ import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
 
 import '../../config/config.dart';
+import '../../config/design.dart';
+import '../../config/vector_art.dart';
+import '../../l10n/strings.dart';
 import '../../state/scope.dart';
 import '../../state/settings.dart';
+import '../manga/manga.dart';
 
 /// The app's sound effects, every asset preloaded into low-latency players
 /// by [load] at startup (round-robin pooled per asset; see [Sfx.poolSize]),
@@ -95,6 +99,25 @@ class Sounds with WidgetsBindingObserver {
     final player = pools[_random.nextInt(pools.length)].take();
     await player.stop();
     await player.resume();
+  }
+
+  /// Plays poem [poemId]'s kimariji readout from a fresh, disposable player
+  /// (it's tapped at most occasionally, never pooled like [Sfx]). This is a
+  /// user-initiated sound — the speaker button beside a card's kimariji — so
+  /// it ignores the Settings sound switches; a silenced phone and a card
+  /// with no clip both just stay quiet, never a crash.
+  Future<void> playKimarijiVoice(int poemId) async {
+    if (_silenced) return;
+    final player = _newPlayer();
+    try {
+      await player.setAudioContext(_context);
+      await player.setVolume(VoiceTuning.volume);
+      unawaited(player.onPlayerComplete.first.then((_) => player.dispose()));
+      await player.play(AssetSource(VoiceTuning.kimarijiAsset(poemId)));
+    } catch (e) {
+      debugPrint('Sounds: kimariji $poemId not played ($e)');
+      await player.dispose();
+    }
   }
 
   Future<void> _refreshSilenced() async {
@@ -265,6 +288,27 @@ Music music = Music();
 /// Plays [sfx] if the player has its [SoundCategory] switched on.
 void playSound(BuildContext context, Sfx sfx) {
   if (ProgressScope.read(context).settings.plays(sfx.category)) sounds.play(sfx);
+}
+
+/// The small speaker button beside a card's kimariji (new-card page, card
+/// detail): a plain tappable icon with no border, since it's a detail next
+/// to the text rather than a nav-level control. A missing clip just plays
+/// nothing (see [Sounds.playKimarijiVoice]) — never a crash.
+class KimarijiSpeakerButton extends StatelessWidget {
+  const KimarijiSpeakerButton({super.key, required this.poemId, this.color = Palette.ink});
+
+  final int poemId;
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) => Pressable(
+        semanticLabel: S.of(context).kimarijiPlayLabel,
+        onTap: () => sounds.playKimarijiVoice(poemId),
+        builder: (context, _) => Padding(
+          padding: const EdgeInsets.all(VoiceLayout.speakerPadding),
+          child: MangaIcon(IconArt.speaker, size: VoiceLayout.speakerIcon, strokeWidth: VoiceLayout.speakerStroke, color: color),
+        ),
+      );
 }
 
 /// Plays each of [cues] at its time after [child] appears (a celebration
