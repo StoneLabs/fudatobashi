@@ -76,7 +76,6 @@ flutter:
     - assets/svg/tobi/
     - assets/sounds/
     - assets/voice/kimariji/
-    - assets/voice/License-openjtalk.txt
     - assets/fonts/OFL-delagothicone.txt
     - assets/fonts/OFL-reggaeone.txt
     - assets/fonts/OFL-YujiSyuku.txt

@@ -51,8 +51,3 @@ const soundsLicenseAsset = 'assets/sounds/License.txt';
 
 /// The background music's license (CC BY 3.0 Unported legal code).
 const musicLicenseAsset = 'assets/sounds/License-music-CC-BY-3.0.txt';
-
-/// Licenses for the kimariji voice clips' generator: pyopenjtalk, Open
-/// JTalk, hts_engine API, its bundled dictionary and its default "Mei"
-/// voice model (CC BY 3.0).
-const voiceLicenseAsset = 'assets/voice/License-openjtalk.txt';

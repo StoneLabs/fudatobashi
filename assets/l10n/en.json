@@ -506,5 +506,5 @@
   "kimariji100": "momo",
   "kimarijiPlayLabel": "Play reading",
   "creditsVoice": "Kimariji voice",
-  "creditsVoiceBody": "The spoken kimariji (scripts/kimariji_voice.py) are generated offline with pyopenjtalk — Open JTalk's text-to-speech engine and its bundled \"Mei\" voice. Drop a real recording into assets/voice/kimariji/ (see HOW_TO_REPLACE.txt) to replace any of them."
+  "creditsVoiceBody": "The spoken kimariji are AI-generated speech, made with Google's Gemini TTS (voice \"Puck\"). Google claims no ownership of the generated audio, and no license or attribution is required for it."
 }

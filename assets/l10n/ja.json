@@ -506,5 +506,5 @@
   "kimariji100": "もも",
   "kimarijiPlayLabel": "読み上げを再生",
   "creditsVoice": "決まり字の読み上げ",
-  "creditsVoiceBody": "決まり字の読み上げ音声は、オフラインの音声合成エンジン pyopenjtalk（Open JTalkと同梱の音声「Mei」、scripts/kimariji_voice.py）で生成しています。assets/voice/kimariji/ に録音を置き換えると、実際の声に差し替えられます（HOW_TO_REPLACE.txt 参照）。"
+  "creditsVoiceBody": "決まり字の読み上げは、GoogleのGemini TTS（音声「Puck」）で生成したAI合成音声です。生成された音声の所有権をGoogleは主張しておらず、ライセンスやクレジット表記の義務はありません。"
 }
