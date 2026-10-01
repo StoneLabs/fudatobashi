@@ -1,30 +1,59 @@
-Replacing a generated kimariji clip with a real recording
-===========================================================
+Kimariji voice clips: what they are and how to replace them
+=============================================================
 
-These 100 files (001.m4a … 100.m4a) are the kimariji (決まり字, the deciding
-opening kana) readouts for each of the 100 Hyakunin Isshu poems this app
-teaches. They are currently synthesized with an offline text-to-speech
-engine (see scripts/kimariji_voice.py) as placeholders.
+These 100 files (001.m4a … 100.m4a) are the spoken kimariji (決まり字, the
+deciding opening kana) of the 100 Hyakunin Isshu poems, one per poem id.
 
-To swap one in for a real recording:
+Where they come from
+--------------------
+AI-generated speech: Google's Gemini 3.8 Flash TTS (google/gemini-3.8-flash-tts,
+voice "Puck"), called through OpenRouter by scripts/kimariji_voice.py. Each
+poem's kimarijiReading in assets/data/poems.json (the modern pronunciation,
+e.g. あひ → あい) is sent as katakana only, with を as オ. The seven
+single-kana cards (す ふ さ め ほ せ む) also get a "speak slowly and clearly,
+fully voiced vowel" style direction, sent as speech metadata, so a lone
+フ or ム isn't devoiced to a bare consonant.
 
-1. Naming: name your file NNN.m4a, where NNN is the poem's id from
-   assets/data/poems.json, zero-padded to 3 digits (001–100). Drop it into
-   this folder, overwriting the generated file of the same name. No other
-   change is needed — the app loads clips by this filename.
+Licensing: under the Gemini API Additional Terms of Service
+(ai.google.dev/gemini-api/terms), which OpenRouter's terms defer to for
+model output, Google claims no ownership of generated content; no license
+file or attribution is required. The Credits screen still discloses that the
+voice is AI-generated with Gemini TTS. Google embeds an inaudible SynthID
+watermark in Gemini TTS audio. The same terms forbid using the API "as part
+of" an app likely to be used by under-18s. This app never calls the API: the
+clips are made once, at build time. If a clip is replaced with a human
+recording, update the "creditsVoiceBody" text in assets/l10n/*.json to match.
 
-2. Format: AAC audio in an .m4a container. Mono is fine (these are short
-   spoken-word clips, not music). A sample rate of roughly 22kHz or higher
-   is plenty for speech.
+Regenerating
+------------
+  ./scripts/kimariji_voice.sh           all 100 clips
+  ./scripts/kimariji_voice.sh 22 87     only these poem ids
+  ./scripts/kimariji_voice.sh --check   only re-check the existing clips
 
-3. Length: a card's kimariji is only 1–12 kana, so a clip should be short —
-   well under 2 seconds. Trim dead air from the start and end, but leave a
-   small amount of silence (well under a tenth of a second) rather than
-   cutting to the very first and last sample, so the attack of the first
-   consonant isn't clipped.
+Needs ffmpeg, uv and an OpenRouter API key, either in OPENROUTER_API_KEY or
+in ~/.config/fudatobashi/openrouter.key. Gemini's output varies between runs,
+so a rerun produces new takes. A take whose speech is implausibly short or
+long for its number of kana (outside 0.08–0.6 s per kana) is retaken, up to
+3 times. The results land in .scratchpad/kimariji_voice_review.txt, where
+CHECK marks a clip worth listening to.
 
-4. Loudness: peak-normalize your recording to roughly the same level as
-   the generated clips (around -1 dBFS peak — check with
-   `ffmpeg -i yourfile.m4a -af volumedetect -f null -` and look at
-   max_volume) so that swapping in one human recording doesn't create a
-   jarring volume jump against its still-generated neighbors.
+Replacing a clip with your own recording
+----------------------------------------
+1. Naming: NNN.m4a, where NNN is the poem's id from assets/data/poems.json,
+   zero-padded to 3 digits (001–100). Overwrite the file of the same name;
+   the app loads clips by this filename.
+
+2. Format: AAC in an .m4a container (iOS/macOS can't play Ogg), mono,
+   24 kHz or higher. The generated clips are 24 kHz mono AAC at 64 kbps.
+
+3. Length: well under 2 seconds. Trim the dead air from the start and end,
+   but keep a short margin (the generated clips keep 60 ms before the first
+   sound and 120 ms after the last), so the first consonant's attack and the
+   last vowel's release aren't cut off.
+
+4. Loudness: the generated clips are normalized so their speech sits at
+   about -16 dBFS RMS, with peaks no higher than -1 dBFS. Match that, so one
+   swapped-in recording doesn't jump out against its neighbours. Check with
+   `ffmpeg -i yourfile.m4a -af volumedetect -f null -`: mean_volume should
+   be around -18 to -20 dB (it includes the quiet margins), and max_volume
+   no higher than -1 dB.
