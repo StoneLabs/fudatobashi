@@ -1484,10 +1484,11 @@ abstract final class NewCardLayout {
   static const double bandTracking = 0.24;
   static const EdgeInsets bandPadding = EdgeInsets.fromLTRB(10, 3, 10, 4);
 
-  /// ババーン!! over the shout's lower right, from the header's top right.
+  /// ババーン!! at the band's right, raised [bangLift] over the shout's
+  /// lower right, at least [bangGap] clear of the band.
   static const String bang = 'ババーン!!';
-  static const double bangTop = 80;
-  static const double bangRight = 0;
+  static const double bangLift = 24;
+  static const double bangGap = 8;
   static const double bangFont = 33;
   static const double bangTurnDeg = -7;
   static const int bangSeed = 7;

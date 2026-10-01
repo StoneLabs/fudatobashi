@@ -190,7 +190,7 @@
   "knownOf": "{0} / {1} known",
   "knownSpeedNote": "{0}s known speed",
   "newCardShout": "A new card appears!",
-  "newCardBand": "A NEW CARD APPEARS",
+  "newCardBand": "NEW CARD",
   "deciderTipNoTwin": "Decided on the {nth}: {0}",
   "deciderTipTwin": "Twin of {twin}: wait for the {nth}, {0}",
   "learnAboutCard": "Learn about this card",

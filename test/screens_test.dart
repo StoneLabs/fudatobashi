@@ -2155,6 +2155,9 @@ void main() {
         );
         await _capture(tester, 'new_card_$lang');
         expect(find.byType(KimarijiSpeakerButton), findsOneWidget);
+        final band = tester.getRect(find.byType(InkTag).first);
+        final bang = tester.getRect(find.byWidgetPredicate((w) => w is SfxText && w.text == NewCardLayout.bang));
+        expect(band.overlaps(bang), isFalse, reason: 'the band stays clear of ${NewCardLayout.bang}');
         await tester.tap(find.text(ja ? '受けて立つ' : 'BRING IT ON!'));
         await tester.pump(const Duration(milliseconds: 300));
         expect(advanced, isTrue, reason: 'the accept flick hands over to the next page');

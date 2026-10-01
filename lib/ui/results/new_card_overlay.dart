@@ -152,56 +152,68 @@ class _NewCardOverlayState extends State<NewCardOverlay> with SingleTickerProvid
   }
 }
 
-/// The 新しい札、登場!! shout, the band under it, and ババーン!! across both.
+/// The 新しい札、登場!! shout, the band under it, and ババーン!! beside the
+/// band, rising over the shout's lower right. The band shrinks rather than
+/// run under ババーン!!.
 class _Header extends StatelessWidget {
   const _Header({required this.shout, required this.band});
   final String shout;
   final String band;
 
   @override
-  Widget build(BuildContext context) => Stack(clipBehavior: Clip.none, children: [
-        Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          Entrance(
-            NewCardMotion.shout,
-            child: SizedBox(
-              height: NewCardLayout.shoutHeight,
-              width: double.infinity,
-              child: CustomPaint(
-                painter: const ShoutPainter(NewCardLayout.shout, fill: Palette.paper),
-                child: Padding(
-                  padding: NewCardLayout.shoutPadding,
-                  child: Center(
-                    child: FittedBox(
-                      fit: BoxFit.scaleDown,
-                      child: Text(shout,
-                          style: const TextStyle(fontFamily: Fonts.display, fontSize: NewCardLayout.shoutFont, height: 1)),
-                    ),
+  Widget build(BuildContext context) => Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+        Entrance(
+          NewCardMotion.shout,
+          child: SizedBox(
+            height: NewCardLayout.shoutHeight,
+            child: CustomPaint(
+              painter: const ShoutPainter(NewCardLayout.shout, fill: Palette.paper),
+              child: Padding(
+                padding: NewCardLayout.shoutPadding,
+                child: Center(
+                  child: FittedBox(
+                    fit: BoxFit.scaleDown,
+                    child: Text(shout,
+                        style: const TextStyle(fontFamily: Fonts.display, fontSize: NewCardLayout.shoutFont, height: 1)),
                   ),
                 ),
               ),
             ),
           ),
-          const SizedBox(height: NewCardLayout.bandGap),
-          Padding(
-            padding: const EdgeInsets.only(left: NewCardLayout.bandIndent),
-            child: InkTag(band,
-                fontSize: NewCardLayout.bandFont, tracking: NewCardLayout.bandTracking, padding: NewCardLayout.bandPadding),
-          ),
-        ]),
-        Positioned(
-          top: NewCardLayout.bangTop,
-          right: NewCardLayout.bangRight,
-          child: Entrance(
-            NewCardMotion.sfx,
-            child: Transform.rotate(
-              angle: NewCardLayout.bangTurnDeg * math.pi / 180,
-              child: const SfxText(NewCardLayout.bang,
-                  size: NewCardLayout.bangFont,
-                  color: Palette.sun,
-                  seed: NewCardLayout.bangSeed,
-                  outline: NewCardLayout.sfxOutline),
+        ),
+        const SizedBox(height: NewCardLayout.bandGap),
+        Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Flexible(
+              child: Padding(
+                padding: const EdgeInsets.only(left: NewCardLayout.bandIndent, right: NewCardLayout.bangGap),
+                child: FittedBox(
+                  fit: BoxFit.scaleDown,
+                  alignment: Alignment.centerLeft,
+                  child: InkTag(band,
+                      fontSize: NewCardLayout.bandFont,
+                      tracking: NewCardLayout.bandTracking,
+                      padding: NewCardLayout.bandPadding),
+                ),
+              ),
             ),
-          ),
+            Transform.translate(
+              offset: const Offset(0, -NewCardLayout.bangLift),
+              child: Entrance(
+                NewCardMotion.sfx,
+                child: Transform.rotate(
+                  angle: NewCardLayout.bangTurnDeg * math.pi / 180,
+                  child: const SfxText(NewCardLayout.bang,
+                      size: NewCardLayout.bangFont,
+                      color: Palette.sun,
+                      seed: NewCardLayout.bangSeed,
+                      outline: NewCardLayout.sfxOutline),
+                ),
+              ),
+            ),
+          ],
         ),
       ]);
 }
