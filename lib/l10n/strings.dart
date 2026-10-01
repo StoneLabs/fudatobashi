@@ -6,6 +6,7 @@ import '../data/poem.dart';
 import '../state/scope.dart';
 import '../state/settings.dart';
 import 'localization.dart';
+import 'romaji.dart';
 
 /// UI strings, loaded from `assets/l10n/*.json` (see [Localization]).
 /// Karuta content (poems, set names) is always Japanese and does not go
@@ -45,8 +46,10 @@ class S {
   /// kana count should use — that's still `Poem.kimariji`.
   String kimariji(int id) => t('kimariji${id.toString().padLeft(3, '0')}');
 
-  /// The speaker button beside a card's kimariji (new-card page, card
-  /// detail).
+  /// The tag over a card's kimariji (see `KimarijiHeading`).
+  String get kimarijiCaption => t('kimarijiCaption');
+
+  /// The speaker button after a card's kimariji.
   String get kimarijiPlayLabel => t('kimarijiPlayLabel');
 
   /// Fills `{0}`, `{1}` … in the template at [key] with [args].
@@ -114,10 +117,19 @@ KimarijiScript resolvedKimarijiScript(BuildContext context) =>
 /// the hiragana straight from the card data, or the Hepburn romaji — the
 /// English key, since the Japanese key holds hiragana. Every screen shows a
 /// kimariji through this one function rather than deciding the script
-/// itself; the new-card page is the one exception, pairing romaji with the
-/// small kana beside it (see [resolvedKimarijiScript]). Never used for the
-/// torifuda card itself, which always shows [Poem.torifuda].
+/// itself; `KimarijiHeading` alone also pairs romaji with the kana under
+/// it. Never used for the torifuda card itself, which always shows
+/// [Poem.torifuda].
 String kimarijiFor(BuildContext context, int id) {
   final s = S.of(context);
   return resolvedKimarijiScript(context) == KimarijiScript.hiragana ? poems[id].kimariji : (s.ja ? s.other : s).kimariji(id);
+}
+
+/// The kana that decides poem [id] — its kimariji's last — per
+/// [resolvedKimarijiScript]: as [Poem.kimariji] writes it, or in romaji as
+/// it's read (ひとは's は is "wa", as in its romaji kimariji "hitowa").
+String decidingSoundFor(BuildContext context, int id) {
+  final poem = poems[id];
+  final at = poem.kimariji.length - 1;
+  return resolvedKimarijiScript(context) == KimarijiScript.romaji ? hepburn(poem.kamiReading[at]) : poem.kimariji[at];
 }

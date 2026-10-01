@@ -2,7 +2,9 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
+import 'package:fudatobashi/data/poem.dart';
 import 'package:fudatobashi/l10n/localization.dart';
+import 'package:fudatobashi/l10n/romaji.dart';
 import 'package:fudatobashi/l10n/strings.dart';
 
 /// `{0}`, `{1}` … or a named slot like `{band}`.
@@ -50,6 +52,15 @@ void main() {
       expect(en[key], isA<String>(), reason: key);
       expect(ja[key], isA<String>(), reason: key);
       expect(File('assets/voice/kimariji/${id.toString().padLeft(3, '0')}.m4a').existsSync(), isTrue, reason: key);
+    }
+  });
+
+  test("hepburn reads each card's kimariji as its romaji key does (long vowels aside)", () {
+    final poems = Poems.fromJsonString(File('assets/data/poems.json').readAsStringSync());
+    for (final poem in poems.all) {
+      final key = 'kimariji${poem.id.toString().padLeft(3, '0')}';
+      final romaji = (en[key] as String).replaceAll('ō', 'oo').replaceAll('ū', 'uu');
+      expect(hepburn(poem.kamiReading.substring(0, poem.kimariji.length)), romaji, reason: key);
     }
   });
 

@@ -410,13 +410,25 @@ abstract final class ButtonMetrics {
   static const double rowGap = 10;
 }
 
-/// The kimariji speaker button (`KimarijiSpeakerButton`, new-card page and
-/// card detail): a plain tappable icon, no border, small enough to sit right
-/// beside the kimariji it reads out.
+/// The kimariji speaker button (`KimarijiSpeakerButton`): a round sun ink
+/// button, a full touch target around a slightly smaller disc.
 abstract final class VoiceLayout {
-  static const double speakerIcon = 20;
-  static const double speakerStroke = 2.2;
-  static const double speakerPadding = 8;
+  static const double speakerTarget = 48;
+  static const double speakerDisc = 42;
+  static const double speakerIcon = 22;
+  static const double speakerStroke = 2.4;
+}
+
+/// A card's kimariji as one unit (`KimarijiHeading`, new-card page and card
+/// detail): the KIMARIJI tag over the kimariji, the speaker right after it.
+/// Each screen sets the kimariji's own size.
+abstract final class KimarijiHeadingStyle {
+  static const double tagFont = 11;
+  static const double tagGap = 7;
+
+  /// Between the romaji and the kana under it.
+  static const double kanaGap = 2;
+  static const double speakerGap = 6;
 }
 
 abstract final class LangToggleStyle {
@@ -976,7 +988,7 @@ abstract final class CardDetailLayout {
   static const double cardImageWidth = 104;
   static const double kimarijiFont = 44;
 
-  /// The kana under the romaji, English only (see `NewCardLayout`'s twin).
+  /// The kana under the romaji, in romaji mode.
   static const double kimarijiKanaFont = 16;
   static const double captionFont = 11.5;
 
@@ -1505,14 +1517,8 @@ abstract final class NewCardLayout {
   static const double kimarijiFont = 33;
   static const double kimarijiOutline = 7;
 
-  /// The kana under the romaji, English only (the cards show kana, so it's
-  /// worth keeping in view even once it's not the primary label).
+  /// The kana under the romaji, in romaji mode.
   static const double kimarijiKanaFont = 15;
-  static const double kimarijiKanaGap = 2;
-  static const double speakerGap = 6;
-  static const double labelFont = 12;
-  static const double labelTracking = 0.12;
-  static const double labelGap = 10;
   static const double metaGap = 8;
   static const double metaFont = 14;
   static const double tipGap = 7;

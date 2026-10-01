@@ -13,10 +13,9 @@ import '../../l10n/stats_strings.dart';
 import '../../l10n/strings.dart';
 import '../../state/play_config.dart';
 import '../../state/scope.dart';
-import '../../state/settings.dart';
 import '../manga/manga.dart';
 import '../play/time_format.dart';
-import '../sound/sounds.dart';
+import '../shell/kimariji_heading.dart';
 import '../torifuda/torifuda_painter.dart';
 import 'stats_charts.dart';
 
@@ -252,7 +251,6 @@ class _Header extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final s = S.of(context);
-    final script = resolvedKimarijiScript(context);
     final lookAlikes = fudaSets.tomofuda(poem.id);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -268,36 +266,10 @@ class _Header extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Row(
-                          crossAxisAlignment: CrossAxisAlignment.center,
-                          children: [
-                            Flexible(
-                              child: FittedBox(
-                                fit: BoxFit.scaleDown,
-                                alignment: Alignment.centerLeft,
-                                child: Column(crossAxisAlignment: CrossAxisAlignment.start, mainAxisSize: MainAxisSize.min, children: [
-                                  Text(kimarijiFor(context, poem.id),
-                                      maxLines: 1,
-                                      style: const TextStyle(
-                                          fontFamily: Fonts.display, fontSize: CardDetailLayout.kimarijiFont, height: 1)),
-                                  if (script == KimarijiScript.romaji)
-                                    Text(poem.kimariji,
-                                        maxLines: 1,
-                                        style: const TextStyle(
-                                            fontFamily: Fonts.ui, fontWeight: Weights.bold, fontSize: CardDetailLayout.kimarijiKanaFont)),
-                                ]),
-                              ),
-                            ),
-                            const SizedBox(width: Gaps.tight),
-                            KimarijiSpeakerButton(poemId: poem.id),
-                          ],
-                        ),
-                        _Caption(s.kimarijiCaption),
-                      ],
+                    KimarijiHeading(
+                      poemId: poem.id,
+                      fontSize: CardDetailLayout.kimarijiFont,
+                      kanaFontSize: CardDetailLayout.kimarijiKanaFont,
                     ),
                     const SizedBox(height: Gaps.small),
                     RubyText(poem.authorRuby,
@@ -328,7 +300,7 @@ class _Header extends StatelessWidget {
   }
 }
 
-/// A small spaced-capitals caption ("KIMARIJI · 決まり字").
+/// A small spaced-capitals caption ("EASILY CONFUSED WITH · 友札").
 class _Caption extends StatelessWidget {
   const _Caption(this.text);
   final String text;

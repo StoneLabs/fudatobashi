@@ -35,6 +35,7 @@ import 'package:fudatobashi/l10n/language_strings.dart';
 import 'package:fudatobashi/l10n/onboarding_strings.dart';
 import 'package:fudatobashi/l10n/profile_strings.dart';
 import 'package:fudatobashi/l10n/results_strings.dart';
+import 'package:fudatobashi/l10n/romaji.dart';
 import 'package:fudatobashi/l10n/settings_strings.dart';
 import 'package:fudatobashi/l10n/stats_strings.dart';
 import 'package:fudatobashi/l10n/strings.dart';
@@ -80,6 +81,7 @@ import 'package:fudatobashi/ui/settings/hold_warning_screen.dart';
 import 'package:fudatobashi/ui/settings/language_screen.dart';
 import 'package:fudatobashi/ui/settings/settings_screen.dart';
 import 'package:fudatobashi/ui/shell/header_actions.dart';
+import 'package:fudatobashi/ui/shell/kimariji_heading.dart';
 import 'package:fudatobashi/ui/shell/tab_chains.dart';
 import 'package:fudatobashi/ui/sound/sounds.dart';
 import 'package:fudatobashi/ui/stats/card_detail_screen.dart';
@@ -194,6 +196,37 @@ void main() {
     await tester.binding.setSurfaceSize(_phone);
     await tester.pumpWidget(RepaintBoundary(key: const ValueKey('screen'), child: FudatobashiApp(progress: p)));
     await tester.pump(const Duration(milliseconds: 500));
+  }
+
+  // A card's kimariji heading (new-card page, card detail) as one unit: the
+  // tag over the kimariji, the kana under it in romaji only, and the speaker,
+  // a full touch target, right after it and level with it; nothing cut off.
+  void expectKimarijiHeading(WidgetTester tester, Poem poem, KimarijiScript script) {
+    expect(tester.takeException(), isNull);
+    final heading = find.byType(KimarijiHeading);
+    final romaji = script == KimarijiScript.romaji;
+    final kana = find.descendant(of: heading, matching: find.text(poem.kimariji));
+    if (romaji) {
+      expect(find.descendant(of: heading, matching: find.text(S('en').kimariji(poem.id))), findsWidgets);
+      expect(kana, findsOneWidget, reason: 'the kana under the romaji');
+    } else {
+      expect(kana, findsWidgets);
+    }
+    final box = tester.getRect(heading);
+    final tag = tester.getRect(find.descendant(of: heading, matching: find.byType(InkTag)));
+    final word = tester.getRect(find.ancestor(of: kana.first, matching: find.byType(Column)).first);
+    final speaker = tester.getRect(find.descendant(of: heading, matching: find.byType(KimarijiSpeakerButton)));
+    expect(tag.right, lessThanOrEqualTo(box.right), reason: 'the tag fits');
+    expect(tag.bottom, lessThanOrEqualTo(word.top), reason: 'the tag sits over the kimariji');
+    if (romaji) {
+      expect(tester.getRect(kana).height, moreOrLessEquals(tester.getSize(kana).height),
+          reason: 'the kana keeps its size under a long romaji');
+    }
+    expect(speaker.shortestSide, greaterThanOrEqualTo(VoiceLayout.speakerTarget));
+    expect(speaker.left - word.right, moreOrLessEquals(KimarijiHeadingStyle.speakerGap, epsilon: 0.01),
+        reason: 'the speaker is right after the kimariji');
+    expect(speaker.center.dy, moreOrLessEquals(word.center.dy, epsilon: 0.5), reason: 'level with the kimariji');
+    expect(speaker.right, lessThanOrEqualTo(box.right));
   }
 
   // Taps [target] and pumps through the onboarding step swap frame by frame,
@@ -808,6 +841,30 @@ void main() {
 
         await tester.pumpWidget(const SizedBox());
       });
+    }
+  }
+
+  // The card detail header's kimariji, in both scripts, for the shortest
+  // kimariji and the widest romaji.
+  for (final ja in [false, true]) {
+    final lang = ja ? 'ja' : 'en';
+    for (final script in [KimarijiScript.hiragana, KimarijiScript.romaji]) {
+      for (final kimariji in ['む', 'わたのはらや']) {
+        testWidgets('card detail: the kimariji, speaker and tag fit as one ($kimariji, ${script.name}, $lang)',
+            (tester) async {
+          final p = await open(tester, ja: ja);
+          await tester.runAsync(() => p.updateSettings(p.settings.copyWith(kimarijiScript: script)));
+          final poem = poems.byKimariji(kimariji);
+          await onPhone(tester, p, fontScale: 1.3);
+          tester.state<NavigatorState>(find.byType(Navigator).first).push(
+              MangaRoute<void>(builder: (_) => CardDetailScreen(itemKey: ItemKey(poem.id, false))));
+          await tester.pump();
+          await tester.pump(const Duration(milliseconds: 500));
+          await _capture(tester, 'card_detail_${kimariji}_${script.name}_$lang');
+          expectKimarijiHeading(tester, poem, script);
+          await tester.pumpWidget(const SizedBox());
+        });
+      }
     }
   }
 
@@ -2103,6 +2160,40 @@ void main() {
         expect(advanced, isTrue, reason: 'the accept flick hands over to the next page');
         await tester.pumpWidget(const SizedBox());
       });
+
+      // The shortest kimariji, the widest romaji and a card decided on a
+      // sound read differently from its kana (ひとは, "hitowa"), in both
+      // scripts.
+      for (final script in [KimarijiScript.hiragana, KimarijiScript.romaji]) {
+        for (final kimariji in ['む', 'わたのはらや', 'ひとは']) {
+          testWidgets('a new card\'s kimariji, speaker and tag fit as one ($kimariji, ${script.name}, $lang)',
+              (tester) async {
+            tester.platformDispatcher.textScaleFactorTestValue = 1.3;
+            addTearDown(tester.platformDispatcher.clearTextScaleFactorTestValue);
+            final p = await open(tester, ja: ja);
+            await tester.runAsync(() => p.updateSettings(p.settings.copyWith(kimarijiScript: script)));
+            final card = poems.byKimariji(kimariji);
+            await pumpPage(
+              tester,
+              p,
+              NewCardOverlay(data: NewCardCelebration(card.id, fudaSets.tomofuda(card.id)), onNext: () {}),
+              const Duration(milliseconds: 1300),
+            );
+            await _capture(tester, 'new_card_${kimariji}_${script.name}_$lang');
+            expectKimarijiHeading(tester, card, script);
+            final island = archipelago.islands[Trainer.islandOf(card)];
+            final sound = card.kimariji.characters.last;
+            if (script == KimarijiScript.romaji) {
+              expect(find.textContaining('${island.name} (${hepburn(island.name)}) '), findsOneWidget);
+              expect(find.text(sound == 'は' ? 'wa' : hepburn(sound)), findsWidgets, reason: 'the deciding sound as read');
+            } else {
+              expect(find.textContaining('· ${island.name} '), findsOneWidget);
+              expect(find.text(sound), findsWidgets);
+            }
+            await tester.pumpWidget(const SizedBox());
+          });
+        }
+      }
 
       testWidgets('island complete, at a large font scale ($lang)', (tester) async {
         tester.platformDispatcher.textScaleFactorTestValue = 1.3;

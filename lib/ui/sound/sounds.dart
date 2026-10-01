@@ -290,23 +290,33 @@ void playSound(BuildContext context, Sfx sfx) {
   if (ProgressScope.read(context).settings.plays(sfx.category)) sounds.play(sfx);
 }
 
-/// The small speaker button beside a card's kimariji (new-card page, card
-/// detail): a plain tappable icon with no border, since it's a detail next
-/// to the text rather than a nav-level control. A missing clip just plays
-/// nothing (see [Sounds.playKimarijiVoice]) — never a crash.
+/// The round speaker button after a card's kimariji (see `KimarijiHeading`)
+/// that plays its reading. A missing clip just plays nothing (see
+/// [Sounds.playKimarijiVoice]) — never a crash.
 class KimarijiSpeakerButton extends StatelessWidget {
-  const KimarijiSpeakerButton({super.key, required this.poemId, this.color = Palette.ink});
+  const KimarijiSpeakerButton({super.key, required this.poemId});
 
   final int poemId;
-  final Color color;
 
   @override
   Widget build(BuildContext context) => Pressable(
         semanticLabel: S.of(context).kimarijiPlayLabel,
         onTap: () => sounds.playKimarijiVoice(poemId),
-        builder: (context, _) => Padding(
-          padding: const EdgeInsets.all(VoiceLayout.speakerPadding),
-          child: MangaIcon(IconArt.speaker, size: VoiceLayout.speakerIcon, strokeWidth: VoiceLayout.speakerStroke, color: color),
+        builder: (context, pressed) => SizedBox.square(
+          dimension: VoiceLayout.speakerTarget,
+          child: Center(
+            child: Container(
+              width: VoiceLayout.speakerDisc,
+              height: VoiceLayout.speakerDisc,
+              alignment: Alignment.center,
+              decoration: BoxDecoration(
+                color: Palette.sun,
+                shape: BoxShape.circle,
+                border: Border.all(color: Palette.ink, width: pressed ? Strokes.control + Strokes.pressed : Strokes.control),
+              ),
+              child: MangaIcon(IconArt.speaker, size: VoiceLayout.speakerIcon, strokeWidth: VoiceLayout.speakerStroke),
+            ),
+          ),
         ),
       );
 }

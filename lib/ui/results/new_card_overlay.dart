@@ -10,11 +10,13 @@ import '../../data/islands.dart';
 import '../../data/poem.dart';
 import '../../domain/trainer.dart';
 import '../../l10n/results_strings.dart';
+import '../../l10n/romaji.dart';
 import '../../l10n/strings.dart';
 import '../../state/settings.dart';
 import '../manga/manga.dart';
 import '../play/sfx_overlay.dart';
 import '../shell/coming_soon.dart';
+import '../shell/kimariji_heading.dart';
 import '../sound/sounds.dart';
 import '../torifuda/torifuda_painter.dart';
 import 'celebration_chrome.dart';
@@ -350,6 +352,9 @@ class _Streak extends StatelessWidget {
   }
 }
 
+/// The kimariji, the card's poet and place on its island, and what decides
+/// it. In romaji, the island keeps the kana it's named by on the map, with
+/// the romaji after it.
 class _InfoPanel extends StatelessWidget {
   const _InfoPanel({required this.poem});
   final Poem poem;
@@ -357,50 +362,29 @@ class _InfoPanel extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final s = S.of(context);
-    final script = resolvedKimarijiScript(context);
     final island = archipelago.islands[Trainer.islandOf(poem)];
+    final group =
+        resolvedKimarijiScript(context) == KimarijiScript.romaji ? '${island.name} (${hepburn(island.name)})' : island.name;
     final order = island.sites.indexWhere((site) => site.poemId == poem.id) + 1;
-    final kimariji = poem.kimariji;
     final twin = poems.kimarijiTwin(poem);
-    final tip = s.deciderTip(kimariji.length, twin == null ? null : kimarijiFor(context, twin.id)).split('{0}');
+    final tip = s.deciderTip(poem.kimariji.length, twin == null ? null : kimarijiFor(context, twin.id)).split('{0}');
     return MangaPanel(
       shape: const PanelShape(topLeft: NewCardLayout.infoCut),
       padding: NewCardLayout.infoPadding,
       child: Column(crossAxisAlignment: CrossAxisAlignment.start, mainAxisSize: MainAxisSize.min, children: [
-        Row(crossAxisAlignment: CrossAxisAlignment.end, children: [
-          Flexible(
-            child: FittedBox(
-              fit: BoxFit.scaleDown,
-              alignment: Alignment.centerLeft,
-              child: Column(crossAxisAlignment: CrossAxisAlignment.start, mainAxisSize: MainAxisSize.min, children: [
-                OutlinedText(kimarijiFor(context, poem.id),
-                    style: const TextStyle(
-                        fontFamily: Fonts.display, fontSize: NewCardLayout.kimarijiFont, color: Palette.pink, height: 1),
-                    outline: Palette.ink,
-                    outlineWidth: NewCardLayout.kimarijiOutline),
-                if (script == KimarijiScript.romaji) ...[
-                  const SizedBox(height: NewCardLayout.kimarijiKanaGap),
-                  Text(kimariji, style: const TextStyle(fontFamily: Fonts.ui, fontWeight: Weights.bold, fontSize: NewCardLayout.kimarijiKanaFont)),
-                ],
-              ]),
-            ),
-          ),
-          const SizedBox(width: NewCardLayout.speakerGap),
-          KimarijiSpeakerButton(poemId: poem.id),
-          const SizedBox(width: NewCardLayout.labelGap),
-          Text(s.kimarijiLabel,
-              style: const TextStyle(
-                  fontWeight: Weights.black,
-                  fontSize: NewCardLayout.labelFont,
-                  letterSpacing: NewCardLayout.labelTracking * NewCardLayout.labelFont,
-                  height: 1.2)),
-        ]),
+        KimarijiHeading(
+          poemId: poem.id,
+          fontSize: NewCardLayout.kimarijiFont,
+          kanaFontSize: NewCardLayout.kimarijiKanaFont,
+          color: Palette.pink,
+          outline: NewCardLayout.kimarijiOutline,
+        ),
         const SizedBox(height: NewCardLayout.metaGap),
         Text.rich(
           TextSpan(style: const TextStyle(fontWeight: Weights.black, fontSize: NewCardLayout.metaFont), children: [
             TextSpan(text: '#${poem.id} '),
             TextSpan(text: '· ${poem.author} · ', style: const TextStyle(fontWeight: Weights.bold)),
-            TextSpan(text: '${island.name} $order / ${island.sites.length}'),
+            TextSpan(text: '$group $order / ${island.sites.length}'),
           ]),
         ),
         const SizedBox(height: NewCardLayout.tipGap),
@@ -416,7 +400,7 @@ class _InfoPanel extends StatelessWidget {
                 ),
                 child: Padding(
                   padding: NewCardLayout.tipKanaPadding,
-                  child: Text(kimariji.characters.last,
+                  child: Text(decidingSoundFor(context, poem.id),
                       style: const TextStyle(fontWeight: Weights.black, fontSize: NewCardLayout.tipFont)),
                 ),
               ),

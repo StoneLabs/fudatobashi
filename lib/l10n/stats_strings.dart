@@ -53,7 +53,6 @@ extension StatsStrings on S {
   // ------------------------------------------------------------ Card detail
 
   String islandCrumb(String islandName) => f('islandCrumb', [islandName]);
-  String get kimarijiCaption => t('kimarijiCaption');
   String get topSpeedLabel => t('topSpeedLabel');
   String get attemptsLabel => t('attemptsLabel');
   String get dontKnowLabel => t('dontKnowLabel');

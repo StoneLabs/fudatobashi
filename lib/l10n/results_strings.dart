@@ -23,7 +23,6 @@ extension ResultsStrings on S {
   String get knownSpeedNote => t('knownSpeedNote');
 
   String get newCardShout => t('newCardShout');
-  String get kimarijiLabel => t('kimarijiLabel');
   String get newCardBand => t('newCardBand');
 
   /// Where a card is decided; `{0}` marks where the deciding kana goes.
