@@ -65,7 +65,7 @@ class _ConfusableCard extends StatelessWidget {
       ],
       SizedBox(width: ResultsLayout.confusableCardWidth, child: TorifudaCard(poem: poems[poemId])),
       const SizedBox(height: Gaps.tight),
-      Text(s.kimariji(poemId),
+      Text(kimarijiFor(context, poemId),
           maxLines: 1,
           softWrap: false,
           overflow: TextOverflow.ellipsis,

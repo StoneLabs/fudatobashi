@@ -234,7 +234,6 @@ class CardTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final s = S.of(context);
     final locked = data.badge == CardBadge.locked;
     return GestureDetector(
       behavior: HitTestBehavior.opaque,
@@ -254,7 +253,7 @@ class CardTile extends StatelessWidget {
                   mainAxisAlignment: MainAxisAlignment.center,
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    Text(locked ? '？？？' : s.kimariji(poem.id),
+                    Text(locked ? '？？？' : kimarijiFor(context, poem.id),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                         style: const TextStyle(fontFamily: Fonts.display, fontSize: IslandDetailLayout.rowKimarijiFont, height: 1)),

@@ -38,6 +38,11 @@ extension SettingsStrings on S {
   String get dontKnowOff => t('dontKnowOff');
   String get dontKnowOffSub => t('dontKnowOffSub');
 
+  String get kimarijiScript => t('kimarijiScript');
+  String get kimarijiScriptNote => t('kimarijiScriptNote');
+  String get kimarijiHiragana => t('kimarijiHiragana');
+  String get kimarijiRomaji => t('kimarijiRomaji');
+
   String get warning => t('warning');
   String get warningShout => t('warningShout');
   String get allKnownWarningTitle => t('allKnownWarningTitle');

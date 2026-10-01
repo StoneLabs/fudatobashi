@@ -16,6 +16,26 @@ enum DontKnowInput {
   off,
 }
 
+/// Which script a card's kimariji (決まり字) is shown in; read it through
+/// `kimarijiFor` (`lib/l10n/strings.dart`), which also resolves [auto].
+enum KimarijiScript {
+  /// Follows the UI language: hiragana for Japanese, romaji otherwise.
+  auto,
+
+  /// The hiragana reading straight from the card data.
+  hiragana,
+
+  /// Lowercase Hepburn romaji of how it's read in competitive karuta.
+  romaji,
+}
+
+extension KimarijiScriptResolution on KimarijiScript {
+  /// Resolves [KimarijiScript.auto] against the UI language; any explicit
+  /// choice passes through unchanged.
+  KimarijiScript resolve({required bool uiJapanese}) =>
+      this == KimarijiScript.auto ? (uiJapanese ? KimarijiScript.hiragana : KimarijiScript.romaji) : this;
+}
+
 /// User preferences (persisted as JSON).
 class AppSettings {
   const AppSettings({
@@ -38,6 +58,7 @@ class AppSettings {
     this.playOverlay = DefaultSettings.playOverlay,
     this.showPerformanceOverlay = DefaultSettings.showPerformanceOverlay,
     this.languagePicked = DefaultSettings.languagePicked,
+    this.kimarijiScript = DefaultSettings.kimarijiScript,
   });
 
   /// A language code (e.g. `'ja'`), or `'system'` for the device's language.
@@ -86,6 +107,9 @@ class AppSettings {
   /// Dev-mode `PerformanceOverlay`.
   final bool showPerformanceOverlay;
 
+  /// The player's choice of kimariji script; read it through `kimarijiFor`.
+  final KimarijiScript kimarijiScript;
+
   /// Whether sounds of [category] are switched on.
   bool plays(SoundCategory category) => switch (category) {
         SoundCategory.music => music,
@@ -118,6 +142,7 @@ class AppSettings {
         'playOverlay': playOverlay,
         'showPerformanceOverlay': showPerformanceOverlay,
         'languagePicked': languagePicked,
+        'kimarijiScript': kimarijiScript.name,
       };
 
   factory AppSettings.fromJson(Map<String, dynamic> j) {
@@ -154,6 +179,7 @@ class AppSettings {
       playOverlay: j['playOverlay'] as bool? ?? DefaultSettings.playOverlay,
       showPerformanceOverlay:
           j['showPerformanceOverlay'] as bool? ?? DefaultSettings.showPerformanceOverlay,
+      kimarijiScript: KimarijiScript.values.asNameMap()[j['kimarijiScript']] ?? DefaultSettings.kimarijiScript,
     );
   }
 
@@ -177,6 +203,7 @@ class AppSettings {
     bool? playOverlay,
     bool? showPerformanceOverlay,
     bool? languagePicked,
+    KimarijiScript? kimarijiScript,
   }) =>
       AppSettings(
         language: language ?? this.language,
@@ -198,5 +225,6 @@ class AppSettings {
         playOverlay: playOverlay ?? this.playOverlay,
         showPerformanceOverlay: showPerformanceOverlay ?? this.showPerformanceOverlay,
         languagePicked: languagePicked ?? this.languagePicked,
+        kimarijiScript: kimarijiScript ?? this.kimarijiScript,
       );
 }

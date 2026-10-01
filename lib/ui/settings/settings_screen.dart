@@ -59,7 +59,10 @@ class SettingsScreen extends StatelessWidget {
                       SettingsSection(
                         title: s.language,
                         sub: s.other.language,
-                        children: const [SettingsGroup(children: [_LanguageRow()])],
+                        children: const [
+                          SettingsGroup(children: [_LanguageRow()]),
+                          _KimarijiScriptRow(),
+                        ],
                       ),
                       const SizedBox(height: SettingsLayout.sectionGap),
                       const _LearningSection(),
@@ -334,6 +337,31 @@ class _LanguageRow extends StatelessWidget {
       note: s.languageNote,
       opensPage: true,
       onTap: () => Navigator.push(context, MangaRoute<void>(builder: (_) => const LanguageScreen())),
+    );
+  }
+}
+
+/// Hiragana or romaji for every card's kimariji. [KimarijiScript.auto] has
+/// no button of its own: whichever it resolves to (see
+/// [resolvedKimarijiScript]) shows pre-selected until the player taps the
+/// other one, which then becomes their explicit, standing choice.
+class _KimarijiScriptRow extends StatelessWidget {
+  const _KimarijiScriptRow();
+
+  @override
+  Widget build(BuildContext context) {
+    final s = S.of(context);
+    final progress = ProgressScope.of(context);
+    final current = resolvedKimarijiScript(context);
+    void choose(KimarijiScript script) => progress.updateSettings(progress.settings.copyWith(kimarijiScript: script));
+    return _Choices(
+      label: SettingsLabel(title: s.kimarijiScript, note: s.kimarijiScriptNote),
+      side: true,
+      options: [
+        _Option(s.kimarijiHiragana,
+            selected: current == KimarijiScript.hiragana, onTap: () => choose(KimarijiScript.hiragana)),
+        _Option(s.kimarijiRomaji, selected: current == KimarijiScript.romaji, onTap: () => choose(KimarijiScript.romaji)),
+      ],
     );
   }
 }

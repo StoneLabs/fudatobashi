@@ -530,6 +530,7 @@ abstract final class DefaultSettings {
   static const bool toured = false;
   static const bool playOverlay = false;
   static const bool showPerformanceOverlay = false;
+  static const KimarijiScript kimarijiScript = KimarijiScript.auto;
 }
 
 /// The dev-mode play overlay (`PlayDebugOverlay`).

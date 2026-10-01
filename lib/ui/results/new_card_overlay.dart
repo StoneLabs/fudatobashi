@@ -11,6 +11,7 @@ import '../../data/poem.dart';
 import '../../domain/trainer.dart';
 import '../../l10n/results_strings.dart';
 import '../../l10n/strings.dart';
+import '../../state/settings.dart';
 import '../manga/manga.dart';
 import '../play/sfx_overlay.dart';
 import '../shell/coming_soon.dart';
@@ -356,11 +357,12 @@ class _InfoPanel extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final s = S.of(context);
+    final script = resolvedKimarijiScript(context);
     final island = archipelago.islands[Trainer.islandOf(poem)];
     final order = island.sites.indexWhere((site) => site.poemId == poem.id) + 1;
     final kimariji = poem.kimariji;
     final twin = poems.kimarijiTwin(poem);
-    final tip = s.deciderTip(kimariji.length, twin == null ? null : s.kimariji(twin.id)).split('{0}');
+    final tip = s.deciderTip(kimariji.length, twin == null ? null : kimarijiFor(context, twin.id)).split('{0}');
     return MangaPanel(
       shape: const PanelShape(topLeft: NewCardLayout.infoCut),
       padding: NewCardLayout.infoPadding,
@@ -371,12 +373,12 @@ class _InfoPanel extends StatelessWidget {
               fit: BoxFit.scaleDown,
               alignment: Alignment.centerLeft,
               child: Column(crossAxisAlignment: CrossAxisAlignment.start, mainAxisSize: MainAxisSize.min, children: [
-                OutlinedText(s.kimariji(poem.id),
+                OutlinedText(kimarijiFor(context, poem.id),
                     style: const TextStyle(
                         fontFamily: Fonts.display, fontSize: NewCardLayout.kimarijiFont, color: Palette.pink, height: 1),
                     outline: Palette.ink,
                     outlineWidth: NewCardLayout.kimarijiOutline),
-                if (!s.ja) ...[
+                if (script == KimarijiScript.romaji) ...[
                   const SizedBox(height: NewCardLayout.kimarijiKanaGap),
                   Text(kimariji, style: const TextStyle(fontFamily: Fonts.ui, fontWeight: Weights.bold, fontSize: NewCardLayout.kimarijiKanaFont)),
                 ],

@@ -13,6 +13,7 @@ import '../../l10n/stats_strings.dart';
 import '../../l10n/strings.dart';
 import '../../state/play_config.dart';
 import '../../state/scope.dart';
+import '../../state/settings.dart';
 import '../manga/manga.dart';
 import '../play/time_format.dart';
 import '../sound/sounds.dart';
@@ -251,6 +252,7 @@ class _Header extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final s = S.of(context);
+    final script = resolvedKimarijiScript(context);
     final lookAlikes = fudaSets.tomofuda(poem.id);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -278,11 +280,11 @@ class _Header extends StatelessWidget {
                                 fit: BoxFit.scaleDown,
                                 alignment: Alignment.centerLeft,
                                 child: Column(crossAxisAlignment: CrossAxisAlignment.start, mainAxisSize: MainAxisSize.min, children: [
-                                  Text(s.kimariji(poem.id),
+                                  Text(kimarijiFor(context, poem.id),
                                       maxLines: 1,
                                       style: const TextStyle(
                                           fontFamily: Fonts.display, fontSize: CardDetailLayout.kimarijiFont, height: 1)),
-                                  if (!s.ja)
+                                  if (script == KimarijiScript.romaji)
                                     Text(poem.kimariji,
                                         maxLines: 1,
                                         style: const TextStyle(
@@ -348,9 +350,8 @@ class _LookAlikeChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final s = S.of(context);
     return Pressable(
-      semanticLabel: s.kimariji(poem.id),
+      semanticLabel: kimarijiFor(context, poem.id),
       onTap: () => Navigator.push(
         context,
         MangaRoute<void>(builder: (_) => CardDetailScreen(itemKey: ItemKey(poem.id, inverted))),
@@ -363,7 +364,7 @@ class _LookAlikeChip extends StatelessWidget {
         child: Row(mainAxisSize: MainAxisSize.min, children: [
           SizedBox(width: CardDetailLayout.lookAlikeCardWidth, child: TorifudaCard(poem: poem, inverted: inverted)),
           const SizedBox(width: Gaps.small),
-          Text(s.kimariji(poem.id),
+          Text(kimarijiFor(context, poem.id),
               style: const TextStyle(fontFamily: Fonts.display, fontSize: CardDetailLayout.lookAlikeKimarijiFont)),
           const SizedBox(width: Gaps.tight),
           MangaIcon(IconArt.chevron, size: CardDetailLayout.lookAlikeChevron),

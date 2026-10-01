@@ -274,7 +274,9 @@ class _NextIsland extends StatelessWidget {
               Text(island.name,
                   style: const TextStyle(fontFamily: Fonts.display, fontSize: IslandCompleteLayout.nextNameFont, height: 1.1)),
               if (sites.length > 1)
-                Text(s.nextIslandNote(sites.length, s.kimariji(sites[0].poemId), s.kimariji(sites[1].poemId)),
+                Text(
+                    s.nextIslandNote(
+                        sites.length, kimarijiFor(context, sites[0].poemId), kimarijiFor(context, sites[1].poemId)),
                     style: const TextStyle(fontWeight: Weights.bold, fontSize: IslandCompleteLayout.nextNoteFont)),
             ]),
           ),

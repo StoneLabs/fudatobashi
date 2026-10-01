@@ -108,7 +108,7 @@ class CardChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final label = S.of(context).kimariji(poem.id);
+    final label = kimarijiFor(context, poem.id);
     final chip = Container(
       constraints: small ? null : const BoxConstraints(minHeight: FreePracticeLayout.chipMinHeight),
       padding: small ? FreePracticeLayout.chipSmallPadding : FreePracticeLayout.chipPadding,

@@ -263,7 +263,7 @@ class _PlayScreenState extends State<PlayScreen> {
         ? s.start
         : widget.tutorial
             ? TestCard.kanaOf(last.card)
-            : s.kimariji(last.card.poemId);
+            : kimarijiFor(context, last.card.poemId);
     final script = _script;
     final buttonRows = dontKnowButton ? 2 : 1;
     final buttonsBottom =

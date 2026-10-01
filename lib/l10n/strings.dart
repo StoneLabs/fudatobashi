@@ -2,7 +2,9 @@ import 'dart:ui' show PlatformDispatcher;
 
 import 'package:flutter/widgets.dart';
 
+import '../data/poem.dart';
 import '../state/scope.dart';
+import '../state/settings.dart';
 import 'localization.dart';
 
 /// UI strings, loaded from `assets/l10n/*.json` (see [Localization]).
@@ -101,4 +103,21 @@ class S {
   String dueCount(int n) => f('dueCount', [n]);
   String dayStreak(int n) => f('dayStreak', [n]);
   String toNext(int points, String band) => f('toNext', [points, band]);
+}
+
+/// The player's [KimarijiScript] choice, with [KimarijiScript.auto] resolved
+/// against the UI language (see [KimarijiScriptResolution.resolve]).
+KimarijiScript resolvedKimarijiScript(BuildContext context) =>
+    ProgressScope.of(context).settings.kimarijiScript.resolve(uiJapanese: S.of(context).ja);
+
+/// The text to show for poem [id]'s kimariji, per [resolvedKimarijiScript]:
+/// the hiragana straight from the card data, or the Hepburn romaji — the
+/// English key, since the Japanese key holds hiragana. Every screen shows a
+/// kimariji through this one function rather than deciding the script
+/// itself; the new-card page is the one exception, pairing romaji with the
+/// small kana beside it (see [resolvedKimarijiScript]). Never used for the
+/// torifuda card itself, which always shows [Poem.torifuda].
+String kimarijiFor(BuildContext context, int id) {
+  final s = S.of(context);
+  return resolvedKimarijiScript(context) == KimarijiScript.hiragana ? poems[id].kimariji : (s.ja ? s.other : s).kimariji(id);
 }

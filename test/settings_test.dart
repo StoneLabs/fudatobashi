@@ -80,6 +80,32 @@ void main() {
     });
   });
 
+  group('AppSettings.kimarijiScript', () {
+    test('defaults to auto', () {
+      expect(const AppSettings().kimarijiScript, KimarijiScript.auto);
+      expect(DefaultSettings.kimarijiScript, KimarijiScript.auto);
+    });
+
+    test('auto resolves to hiragana or romaji per UI language', () {
+      expect(KimarijiScript.auto.resolve(uiJapanese: true), KimarijiScript.hiragana);
+      expect(KimarijiScript.auto.resolve(uiJapanese: false), KimarijiScript.romaji);
+    });
+
+    test('an explicit choice overrides auto in either UI language', () {
+      expect(KimarijiScript.hiragana.resolve(uiJapanese: false), KimarijiScript.hiragana);
+      expect(KimarijiScript.romaji.resolve(uiJapanese: true), KimarijiScript.romaji);
+    });
+
+    test('a missing value defaults to auto', () {
+      expect(AppSettings.fromJson({}).kimarijiScript, KimarijiScript.auto);
+    });
+
+    test('round-trips through toJson', () {
+      final s = AppSettings.fromJson(const AppSettings(kimarijiScript: KimarijiScript.romaji).toJson());
+      expect(s.kimarijiScript, KimarijiScript.romaji);
+    });
+  });
+
   group('AppSettings.languagePicked (first-open language picker)', () {
     test('a truly fresh install (nothing saved yet) has not picked one', () {
       expect(AppSettings.fromJson({}).languagePicked, isFalse);
