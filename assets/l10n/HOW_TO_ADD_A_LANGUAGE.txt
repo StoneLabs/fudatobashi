@@ -6,3 +6,16 @@ To add a UI language:
 3. Set "languageName" to the language's own name, e.g. "Français".
 4. Add "<code>" to languages.json.
 5. Rebuild the app.
+
+kimariji001–kimariji100 are a special case: one per poem (by its id, zero-
+padded to 3 digits), for each card's kimariji (決まり字). These are
+READINGS, not spellings — how the card actually sounds in competitive
+karuta, not a letter-by-letter transliteration of its hiragana. en.json's
+are lowercase Hepburn romaji (macrons for long vowels, e.g. "ōe"); ja.json's
+are the hiragana a Japanese reader would say aloud, which can differ from
+the poem's own historical-kana spelling (`kimariji` in poems.json) — see
+each poem's `kimarijiReading` in assets/data/poems.json, which is what both
+of these are built from (and what scripts/kimariji_voice.py synthesizes
+audio from). A new language should translate the *reading*, e.g. the
+pronunciation in its own script or romanization, not copy en.json's romaji
+as if it were English text.

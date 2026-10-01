@@ -8,7 +8,6 @@ import '../../config/config.dart';
 import '../../config/design.dart';
 import '../../config/vector_art.dart';
 import '../../data/fuda_sets.dart';
-import '../../data/poem.dart';
 import '../../domain/card_stats.dart';
 import '../../domain/play_session.dart';
 import '../../l10n/strings.dart';
@@ -264,7 +263,7 @@ class _PlayScreenState extends State<PlayScreen> {
         ? s.start
         : widget.tutorial
             ? TestCard.kanaOf(last.card)
-            : poems[last.card.poemId].kimariji;
+            : s.kimariji(last.card.poemId);
     final script = _script;
     final buttonRows = dontKnowButton ? 2 : 1;
     final buttonsBottom =

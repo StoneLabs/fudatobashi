@@ -6,8 +6,10 @@ import '../state/scope.dart';
 import 'localization.dart';
 
 /// UI strings, loaded from `assets/l10n/*.json` (see [Localization]).
-/// Karuta content (kimariji, poems, set names) is always Japanese and does
-/// not go through here.
+/// Karuta content (poems, set names) is always Japanese and does not go
+/// through here — except each card's kimariji (決まり字), which has its own
+/// per-poem key below: the hiragana reading in Japanese, lowercase Hepburn
+/// romaji of how it's actually read in English (see [kimariji]).
 ///
 /// Features add their own strings in an `extension FooStrings on S` using
 /// [t] or [f]. Templates mark numbers as `{0}`, `{1}` … so `NumberedText` can
@@ -33,6 +35,17 @@ class S {
   S get other => S(ja ? 'en' : 'ja');
 
   String t(String key) => Localization.lookup(code, key);
+
+  /// Poem [id]'s kimariji (決まり字), for display: the hiragana reading in
+  /// Japanese, lowercase Hepburn romaji of how it's read in competitive
+  /// karuta otherwise (`kimariji001`–`kimariji100`, see
+  /// `assets/l10n/HOW_TO_ADD_A_LANGUAGE.txt`). Never the string a sort or a
+  /// kana count should use — that's still `Poem.kimariji`.
+  String kimariji(int id) => t('kimariji${id.toString().padLeft(3, '0')}');
+
+  /// The speaker button beside a card's kimariji (new-card page, card
+  /// detail).
+  String get kimarijiPlayLabel => t('kimarijiPlayLabel');
 
   /// Fills `{0}`, `{1}` … in the template at [key] with [args].
   String f(String key, List<Object> args) {

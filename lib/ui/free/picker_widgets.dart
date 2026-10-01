@@ -108,6 +108,7 @@ class CardChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final label = S.of(context).kimariji(poem.id);
     final chip = Container(
       constraints: small ? null : const BoxConstraints(minHeight: FreePracticeLayout.chipMinHeight),
       padding: small ? FreePracticeLayout.chipSmallPadding : FreePracticeLayout.chipPadding,
@@ -116,7 +117,7 @@ class CardChip extends StatelessWidget {
         border: Border.all(color: known ? Palette.ink : Palette.mute, width: Strokes.label),
       ),
       child: Text(
-        poem.kimariji,
+        label,
         textAlign: TextAlign.center,
         style: TextStyle(
           fontFamily: Fonts.display,
@@ -126,10 +127,10 @@ class CardChip extends StatelessWidget {
         ),
       ),
     );
-    if (onTap == null) return Semantics(label: poem.kimariji, selected: picked, child: chip);
+    if (onTap == null) return Semantics(label: label, selected: picked, child: chip);
     return Semantics(
       selected: picked,
-      child: Pressable(onTap: known ? onTap : null, semanticLabel: poem.kimariji, builder: (context, _) => chip),
+      child: Pressable(onTap: known ? onTap : null, semanticLabel: label, builder: (context, _) => chip),
     );
   }
 }

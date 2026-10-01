@@ -65,7 +65,11 @@ class _ConfusableCard extends StatelessWidget {
       ],
       SizedBox(width: ResultsLayout.confusableCardWidth, child: TorifudaCard(poem: poems[poemId])),
       const SizedBox(height: Gaps.tight),
-      Text(poems[poemId].kimariji, style: const TextStyle(fontFamily: Fonts.display, fontSize: ResultsLayout.confusableKimarijiFont)),
+      Text(s.kimariji(poemId),
+          maxLines: 1,
+          softWrap: false,
+          overflow: TextOverflow.ellipsis,
+          style: const TextStyle(fontFamily: Fonts.display, fontSize: ResultsLayout.confusableKimarijiFont)),
     ]);
   }
 }

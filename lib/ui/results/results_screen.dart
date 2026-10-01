@@ -530,7 +530,7 @@ class _NewCard extends StatelessWidget {
         child: Column(mainAxisSize: MainAxisSize.min, children: [
           TorifudaCard(poem: poems[poemId]),
           const SizedBox(height: Gaps.tight),
-          Text(poems[poemId].kimariji,
+          Text(S.of(context).kimariji(poemId),
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
               style: const TextStyle(fontWeight: Weights.black, fontSize: ResultsLayout.toughKimarijiFont)),
@@ -564,7 +564,7 @@ class _ToughCard extends StatelessWidget {
           ),
         ),
         const SizedBox(height: Gaps.tight),
-        Text(poems[attempt.card.poemId].kimariji,
+        Text(S.of(context).kimariji(attempt.card.poemId),
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
             style: const TextStyle(fontWeight: Weights.black, fontSize: ResultsLayout.toughKimarijiFont)),
