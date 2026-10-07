@@ -24,6 +24,7 @@ import 'xp_history.dart';
 class SessionReport {
   SessionReport({
     required this.sessionId,
+    required this.completed,
     required this.total,
     required this.attempts,
     required this.previousBest,
@@ -38,6 +39,11 @@ class SessionReport {
   });
 
   final int? sessionId;
+
+  /// The run was played to its last card.
+  final bool completed;
+
+  /// Null when the run was ended early, or its time is no measurement.
   final Duration? total;
   final List<Attempt> attempts;
 
@@ -282,14 +288,19 @@ class Progress extends ChangeNotifier {
 
   /// Best completed total for runs with the same setup.
   Duration? bestFor(PlayConfig c) {
-    int? best;
+    Duration? best;
     for (final s in sessions) {
-      if (!s.completed || s.totalUs == null) continue;
-      if (_configOf(s).historyKey != c.historyKey) continue;
-      if (best == null || s.totalUs! < best) best = s.totalUs;
+      final total = totalOf(s);
+      if (total == null || _configOf(s).historyKey != c.historyKey) continue;
+      if (best == null || total < best) best = total;
     }
-    return best == null ? null : Duration(microseconds: best);
+    return best;
   }
+
+  /// Session [s]'s total time; null when it was ended early or its time is
+  /// no measurement.
+  static Duration? totalOf(Session s) =>
+      s.completed && s.totalUs != null && s.totalUs! > 0 ? Duration(microseconds: s.totalUs!) : null;
 
   PlayConfig configOf(Session s) => _configOf(s);
 
@@ -577,7 +588,8 @@ class Progress extends ChangeNotifier {
     if (!config.tracked || run.attempts.isEmpty) {
       return SessionReport(
         sessionId: null,
-        total: run.finished ? run.total : null,
+        completed: run.finished,
+        total: run.total,
         attempts: run.attempts,
         previousBest: previousBest,
         ratingBefore: rating,
@@ -602,7 +614,7 @@ class Progress extends ChangeNotifier {
             setIds: Value(jsonEncode(config.setIds)),
             orientation: 0,
             cardCount: run.cards.length,
-            totalUs: Value(run.finished ? run.total?.inMicroseconds : null),
+            totalUs: Value(run.total?.inMicroseconds),
             completed: run.finished,
             meta: Value(jsonEncode({
               'maskLevel': config.maskLevel,
@@ -728,7 +740,8 @@ class Progress extends ChangeNotifier {
     notifyListeners();
     return SessionReport(
       sessionId: sessionId,
-      total: run.finished ? run.total : null,
+      completed: run.finished,
+      total: run.total,
       attempts: run.attempts,
       previousBest: previousBest,
       ratingBefore: before,

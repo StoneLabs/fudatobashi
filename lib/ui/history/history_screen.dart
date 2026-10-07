@@ -4,6 +4,7 @@ import '../../config/design.dart';
 import '../../db/database.dart' show Session;
 import '../../l10n/history_strings.dart';
 import '../../l10n/strings.dart';
+import '../../state/progress.dart';
 import '../../state/scope.dart';
 import '../manga/manga.dart';
 import '../play/time_format.dart';
@@ -65,9 +66,12 @@ class _HistoryRow extends StatelessWidget {
   Widget build(BuildContext context) {
     final s = S.of(context);
     final session = entry.session;
-    final total = session.completed && session.totalUs != null
-        ? formatRunTime(Duration(microseconds: session.totalUs!))
-        : s.runEndedEarly;
+    final time = Progress.totalOf(session);
+    final total = time != null
+        ? formatRunTime(time)
+        : session.completed
+            ? missingTime
+            : s.runEndedEarly;
     return MangaPanel(
       padding: HistoryLayout.rowPadding,
       child: Row(

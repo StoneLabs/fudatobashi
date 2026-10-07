@@ -30,11 +30,18 @@ class Attempt {
   final int index;
   final CardRef card;
 
-  /// Reveal → response, in microseconds.
+  /// Reveal → response, in microseconds, as measured (see [isValidTime]).
   final int responseUs;
   final Outcome outcome;
   final DateTime at;
   final int deckSize;
+
+  /// A response at or before the reveal (≤ 0 µs) is no measurement: it never
+  /// counts as a timed answer, for speed, scheduling, rating, experience or
+  /// a run's numbers.
+  static bool isValidTime(int us) => us > 0;
+
+  bool get validTime => isValidTime(responseUs);
 
   /// Marked wrong afterwards (kimariji chip tap or ひとつ前).
   bool wrong = false;
@@ -86,9 +93,13 @@ class PlaySession extends ChangeNotifier {
   CardRef? get next => index + 1 < cards.length ? cards[index + 1] : null;
   Attempt? get lastAttempt => attempts.isEmpty ? null : attempts.last;
 
-  /// Total time from the first reveal to the last swipe, less breaks.
-  Duration? get total =>
-      (firstRevealTs != null && endTs != null) ? endTs! - firstRevealTs! - _breaks : null;
+  /// Total time from the first reveal to the last swipe, less breaks; null
+  /// until the run is finished, or if it is no measurement (≤ 0).
+  Duration? get total {
+    if (firstRevealTs == null || endTs == null) return null;
+    final t = endTs! - firstRevealTs! - _breaks;
+    return t > Duration.zero ? t : null;
+  }
 
   /// Play pauses before the current card for a page in between (a new
   /// card's introduction): the time from the last swipe to this card's
@@ -117,11 +128,10 @@ class PlaySession extends ChangeNotifier {
     DateTime? at,
   }) {
     if (finished || _revealTs == null) return;
-    final us = (responseTs - _revealTs!).inMicroseconds;
     attempts.add(Attempt(
       index: index,
       card: cards[index],
-      responseUs: us < 0 ? 0 : us,
+      responseUs: (responseTs - _revealTs!).inMicroseconds,
       outcome: outcome,
       at: at ?? DateTime.now(),
       deckSize: cards.length,

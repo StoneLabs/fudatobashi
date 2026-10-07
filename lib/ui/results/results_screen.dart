@@ -102,9 +102,10 @@ class _Splash extends StatelessWidget {
     final progress = ProgressScope.of(context);
     final attempts = report.attempts;
     final known = attempts.where((a) => !a.isMiss).length;
-    final avgMs = attempts.isEmpty ? 0.0 : attempts.map((a) => a.responseUs / 1000).reduce((a, b) => a + b) / attempts.length;
+    final timed = attempts.where((a) => a.validTime);
+    final avgMs = timed.isEmpty ? null : timed.map((a) => a.responseUs / 1000).reduce((a, b) => a + b) / timed.length;
     final toughest = [
-      for (final a in attempts)
+      for (final a in timed)
         if (!a.tainted && !a.isMiss) a,
     ]..sort((a, b) => b.responseUs.compareTo(a.responseUs));
 
@@ -139,8 +140,8 @@ class _Splash extends StatelessWidget {
                   Expanded(
                     child: _StatPanel(
                       label: s.avgPerCardLabel,
-                      big: (avgMs / 1000).toStringAsFixed(3),
-                      unit: 's',
+                      big: avgMs == null ? missingTime : (avgMs / 1000).toStringAsFixed(3),
+                      unit: avgMs == null ? null : 's',
                       note: s.knownOf(known, attempts.length),
                     ),
                   ),
@@ -249,13 +250,13 @@ class _TimePanel extends StatelessWidget {
         constraints: const BoxConstraints(minHeight: ResultsLayout.splashHeight - 36),
         child: Center(
           child: Column(mainAxisSize: MainAxisSize.min, children: [
-            Text(total == null ? s.endedEarly : s.totalTime.toUpperCase(),
+            Text(report.completed ? s.totalTime.toUpperCase() : s.endedEarly,
                 style: const TextStyle(
                     fontWeight: Weights.black,
                     fontSize: ResultsLayout.splashLabelFont,
                     letterSpacing: ResultsLayout.splashLabelTracking * ResultsLayout.splashLabelFont)),
             const SizedBox(height: Gaps.small),
-            if (total != null)
+            if (report.completed)
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: Gaps.inner),
                 child: FittedBox(
@@ -313,12 +314,13 @@ class _TimePanel extends StatelessWidget {
   }
 }
 
+/// A run's time, or [missingTime] when it is no measurement.
 class _RunTime extends StatelessWidget {
   const _RunTime(this.time);
-  final Duration time;
+  final Duration? time;
 
   @override
-  Widget build(BuildContext context) => OutlinedText(formatRunTime(time),
+  Widget build(BuildContext context) => OutlinedText(time == null ? missingTime : formatRunTime(time!),
       style: const TextStyle(fontFamily: Fonts.display, fontSize: ResultsLayout.splashTimeFont, height: 1),
       outlineWidth: ResultsLayout.splashTimeOutline);
 }
@@ -412,7 +414,8 @@ class _PreviousBest extends StatelessWidget {
 
 class _StatPanel extends StatelessWidget {
   const _StatPanel({required this.label, required this.big, required this.unit, required this.note});
-  final String label, big, unit, note;
+  final String label, big, note;
+  final String? unit;
 
   @override
   Widget build(BuildContext context) => MangaPanel(
@@ -431,7 +434,8 @@ class _StatPanel extends StatelessWidget {
                     letterSpacing: ResultsLayout.statLabelTracking * ResultsLayout.statLabelFont)),
             _OneLine(Text.rich(TextSpan(children: [
               TextSpan(text: big, style: const TextStyle(fontFamily: Fonts.display, fontSize: ResultsLayout.statBigFont, height: 1.05)),
-              TextSpan(text: ' $unit', style: const TextStyle(fontFamily: Fonts.display, fontSize: ResultsLayout.statBigUnitFont, height: 1)),
+              if (unit != null)
+                TextSpan(text: ' $unit', style: const TextStyle(fontFamily: Fonts.display, fontSize: ResultsLayout.statBigUnitFont, height: 1)),
             ]))),
             _OneLine(Text(note, style: const TextStyle(fontWeight: Weights.bold, fontSize: ResultsLayout.statNoteFont))),
           ],

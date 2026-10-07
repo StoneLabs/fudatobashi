@@ -1285,6 +1285,7 @@ void main() {
         final p = await open(tester, mode: LearningMode.allKnown, ja: ja);
         final report = SessionReport(
           sessionId: null,
+          completed: true,
           total: const Duration(seconds: 30),
           attempts: [
             Attempt(
@@ -1365,6 +1366,7 @@ void main() {
       final p = await open(tester, mode: LearningMode.allKnown, ja: ja);
       final report = SessionReport(
         sessionId: null,
+        completed: true,
         total: const Duration(milliseconds: 14906),
         attempts: [
           for (var i = 0; i < 5; i++)

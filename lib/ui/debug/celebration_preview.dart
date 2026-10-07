@@ -104,6 +104,7 @@ SessionReport _report(int newCard) {
   final now = DateTime.now();
   return SessionReport(
     sessionId: null,
+    completed: true,
     total: CelebrationPreviewTuning.total,
     attempts: [
       for (final (i, poem) in poems.all.take(CelebrationPreviewTuning.cards).indexed)

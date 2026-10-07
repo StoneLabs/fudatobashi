@@ -1,6 +1,7 @@
 import 'dart:math' as math;
 
 import '../config/config.dart';
+import 'play_session.dart';
 
 /// Where a run's experience came from, in the order the XP page lists it.
 enum XpSource { correct, missed, speed, reviews, newCards, clear, daily, best, island, graduation }
@@ -25,6 +26,10 @@ class XpSwipe {
 
   /// FSRS graded it: a due card, or a miss.
   final bool graded;
+
+  /// Correct, clean and a valid time (see [Attempt.isValidTime]): it can earn
+  /// a speed bonus.
+  bool get timed => correct && clean && Attempt.isValidTime(us);
 }
 
 /// A recorded run, as experience sees it.
@@ -33,6 +38,7 @@ class XpRun {
     required this.sessionId,
     required this.startedAt,
     required this.setup,
+    required this.completed,
     required this.total,
     required this.goalMs,
     required this.counts,
@@ -47,7 +53,10 @@ class XpRun {
   /// Runs with the same setup race each other for a personal best.
   final String setup;
 
-  /// Null when the run was ended early.
+  /// The run was played to its last card.
+  final bool completed;
+
+  /// Null when the run was ended early, or its time is no measurement.
   final Duration? total;
 
   /// The goal time per card when the run was played.
@@ -193,7 +202,7 @@ class XpLedger {
       }
       correct++;
       if (s.graded && !isNew) reviews++;
-      if (!s.clean) continue;
+      if (!s.timed) continue;
       final bonus = s.us <= run.goalMs * 1000 * XpTuning.blazingRatio
           ? XpTuning.speedBlazing
           : s.us <= run.goalMs * 1000
@@ -224,7 +233,7 @@ class XpLedger {
         XpPart(XpSource.speed, fast, speedXp),
         XpPart(XpSource.reviews, reviews, reviews * XpTuning.perReview),
         XpPart(XpSource.newCards, fresh, fresh * XpTuning.perNewCard),
-        XpPart(XpSource.clear, 1, total != null ? XpTuning.clear : 0),
+        XpPart(XpSource.clear, 1, run.completed ? XpTuning.clear : 0),
         XpPart(XpSource.daily, _streak, firstToday ? XpTuning.daily + streakDays * XpTuning.perStreakDay : 0),
         XpPart(XpSource.best, 1, best ? XpTuning.personalBest : 0),
         XpPart(XpSource.island, run.islands, run.islands * XpTuning.perIsland),

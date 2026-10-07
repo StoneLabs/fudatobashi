@@ -82,8 +82,9 @@ enum ChartSeries {
 typedef ChartPoint = ({int x, double ms});
 
 /// A card's attempts, ready to chart: every attempt on one chronological X
-/// axis (a miss has no time, so it gets a marker instead of a dot), the
-/// series over the timed ones, TOP SPEED and the ms axis. Build it once per
+/// axis (a miss has no time, so it gets a marker instead of a dot; an
+/// impossible time gets neither), the series over the timed ones, TOP SPEED
+/// and the ms axis. Build it once per
 /// attempt list: the painted geometry is cached on it.
 class AttemptChartData {
   AttemptChartData(List<AttemptRec> attempts)
@@ -131,9 +132,9 @@ class AttemptChartData {
     return timedXs[nearest];
   }();
 
-  /// The ms axis around every dot, null when every attempt is a miss.
+  /// The ms axis around every dot, null when no attempt has a time to show.
   late final ChartAxis? axis = () {
-    final times = [for (final a in attempts) if (!a.miss) a.ms];
+    final times = [for (final a in attempts) if (!a.miss && a.validTime) a.ms];
     return times.isEmpty ? null : ChartAxis.fit(times.reduce(math.min), times.reduce(math.max));
   }();
 
@@ -299,11 +300,12 @@ class _AttemptChartGeometry {
           ..relativeLineTo(marker.width, 0)
           ..relativeLineTo(-marker.width / 2, marker.height)
           ..close();
-      } else {
+      } else if (a.validTime) {
         dots.addOval(Rect.fromCircle(center: Offset(x(i), y(a.ms)), radius: ChartStyle.attemptDotRadius));
       }
     }
-    if (n > 0) latest = Offset(x(n - 1), attempts.last.miss ? markerY : y(attempts.last.ms));
+    final last = attempts.lastOrNull;
+    if (last != null && (last.miss || last.validTime)) latest = Offset(x(n - 1), last.miss ? markerY : y(last.ms));
 
     final top = data.stats.topSpeedMs;
     if (top != null) {

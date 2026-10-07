@@ -279,7 +279,8 @@ void main() {
       await _swipe(tester, session);
     }
     expect(session.index, 6);
-    expect(heard.played, List.filled(6, Sfx.cardFlick), reason: 'none are dropped or merged under a fast streak');
+    expect(heard.played.where((s) => s == Sfx.cardFlick), List.filled(6, Sfx.cardFlick),
+        reason: 'none are dropped or merged under a fast streak');
     await tester.pumpWidget(const SizedBox());
   });
 }

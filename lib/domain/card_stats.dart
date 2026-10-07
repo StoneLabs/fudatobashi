@@ -2,6 +2,7 @@ import 'dart:math' as math;
 
 import '../config/config.dart';
 import '../state/play_config.dart';
+import 'play_session.dart';
 
 /// Identifies a training item: a card in one orientation.
 class ItemKey {
@@ -65,10 +66,12 @@ class AttemptRec {
 
   double get ms => us / 1000;
 
-  /// Usable as a speed sample: clean, correct, and answered after the card
-  /// was revealed (a 0 µs response is no measurement, and its log would
-  /// poison the EWMA and, through it, the rating).
-  bool get timed => clean && !miss && us > 0;
+  /// Its time is a measurement (see [Attempt.isValidTime]).
+  bool get validTime => Attempt.isValidTime(us);
+
+  /// Usable as a speed sample: clean, correct, and a valid time (the log of
+  /// an impossible one would poison the EWMA and, through it, the rating).
+  bool get timed => clean && !miss && validTime;
 
   /// Only attempts of a run that counts (`PlayConfig.countsForSrs`: 修行, or
   /// free practice at its default) feed FSRS and speed statistics; other free

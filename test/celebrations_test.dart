@@ -24,6 +24,7 @@ void main() {
   }) =>
       SessionReport(
         sessionId: 1,
+        completed: true,
         total: const Duration(seconds: 10),
         attempts: const [],
         previousBest: null,

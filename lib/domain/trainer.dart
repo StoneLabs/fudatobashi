@@ -305,10 +305,11 @@ class Trainer {
   /// carries no long-term memory evidence: a redo, a corrected card, or a
   /// correct answer on a card that is not due yet. Players keep drilling after
   /// their dues are done; those extra swipes train speed (see [CardStats]) but
-  /// would otherwise inflate FSRS stability with short-term recall. A miss
-  /// always counts, since failing a card is evidence of forgetting.
+  /// would otherwise inflate FSRS stability with short-term recall. A correct
+  /// answer without a valid time can't be graded either. A miss always counts,
+  /// since failing a card is evidence of forgetting.
   fsrs.Rating? review(ItemKey key, AttemptRec a) {
-    if (!a.clean && !a.miss) return null;
+    if (!a.miss && !a.timed) return null;
     final s = items[key]!;
     final due = !s.reviewed || !s.card.due.isAfter(a.at.toUtc());
     if (!due && !a.miss) return null;

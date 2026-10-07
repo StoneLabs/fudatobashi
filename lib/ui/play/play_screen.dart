@@ -184,6 +184,7 @@ class _PlayScreenState extends State<PlayScreen> {
   /// the card's own average once it has enough history, else this run's
   /// average so far. Keeps the celebration for a snappy answer, not every one.
   bool _isFastCard(Attempt a) {
+    if (!a.validTime) return false;
     final cardStats = ProgressScope.read(context).stats(ItemKey(a.card.poemId, a.card.inverted));
     final baseline = cardStats.timed.length >= PlaySfxTuning.minCardSamplesForBaseline
         ? cardStats.ewmaMs
@@ -192,7 +193,8 @@ class _PlayScreenState extends State<PlayScreen> {
   }
 
   double? _sessionAverageMs() {
-    final prior = _session.attempts.take(_session.attempts.length - 1).where((x) => !x.isMiss && !x.tainted);
+    final prior =
+        _session.attempts.take(_session.attempts.length - 1).where((x) => !x.isMiss && !x.tainted && x.validTime);
     if (prior.isEmpty) return null;
     return prior.map((x) => x.responseUs / 1000).reduce((a, b) => a + b) / prior.length;
   }
@@ -332,7 +334,7 @@ class _PlayScreenState extends State<PlayScreen> {
                         alignment: Alignment.centerLeft,
                         child: KimarijiChip(
                           text: chipText,
-                          timeMs: last == null ? null : last.responseUs / 1000,
+                          timeMs: last == null || !last.validTime ? null : last.responseUs / 1000,
                           wrong: last?.isMiss ?? false,
                           onTap: last == null ? null : _toggleWrong,
                         ),

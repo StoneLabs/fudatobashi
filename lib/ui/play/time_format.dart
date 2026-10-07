@@ -1,3 +1,6 @@
+/// Stands in for a time that is missing or no measurement.
+const missingTime = '—';
+
 /// Formats a duration like the original app: mm:ss.mmm
 String formatRunTime(Duration d) {
   final ms = d.inMilliseconds;

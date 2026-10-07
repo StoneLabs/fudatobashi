@@ -43,7 +43,8 @@ abstract final class XpHistory {
       sessionId: s.id,
       startedAt: s.startedAt,
       setup: config.historyKey,
-      total: s.completed && s.totalUs != null ? Duration(microseconds: s.totalUs!) : null,
+      completed: s.completed,
+      total: Progress.totalOf(s),
       goalMs: (meta['goalMs'] as num?)?.toDouble() ?? progress.trainer.goalMs,
       counts: attempts.any((e) => e.$2.countsForSrs),
       swipes: [
