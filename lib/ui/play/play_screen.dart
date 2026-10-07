@@ -22,6 +22,7 @@ import '../results/celebrations.dart';
 import '../results/results_screen.dart';
 import '../sound/sounds.dart';
 import 'kimariji_chip.dart';
+import 'pointer_clock.dart';
 import 'sfx_overlay.dart';
 import '../tour/tutorial_coach.dart';
 import 'start_card.dart';
@@ -106,6 +107,7 @@ class _PlayScreenState extends State<PlayScreen> {
     }
     _session.addListener(_onSessionChanged);
     music.leaveMenu();
+    unawaited(PointerClock.sync());
   }
 
   @override

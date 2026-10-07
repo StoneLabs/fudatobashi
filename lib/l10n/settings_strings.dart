@@ -62,4 +62,6 @@ extension SettingsStrings on S {
   String tapsRemaining(int n) => f(n == 1 ? 'tapsRemainingOne' : 'tapsRemainingOther', [n]);
   String get devModeUnlocked => t('devModeUnlocked');
   String get developerMode => t('developerMode');
+  String get clockOffset => t('clockOffset');
+  String get clockOffsetUnread => t('clockOffsetUnread');
 }

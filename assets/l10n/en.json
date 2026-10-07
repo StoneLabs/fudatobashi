@@ -296,6 +296,8 @@
   "tapsRemainingOther": "{0} more taps…",
   "devModeUnlocked": "Developer mode unlocked",
   "developerMode": "Developer mode",
+  "clockOffset": "Touch clock offset",
+  "clockOffsetUnread": "not read",
   "islandsTab": "Islands",
   "allTab": "All",
   "summaryLine": "{0} cards · median {1} s · {2} due today",

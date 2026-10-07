@@ -55,8 +55,8 @@ class Attempt {
 }
 
 /// State machine of one 札落とし run: the queue, the current card, timing and
-/// corrections. Timestamps are engine timestamps (same clock as pointer
-/// events and frame vsync times).
+/// corrections. Timestamps are on the pointer-event clock; a reveal's vsync
+/// time is put on it first (see `PointerClock`).
 class PlaySession extends ChangeNotifier {
   PlaySession(List<CardRef> cards)
       : assert(cards.isNotEmpty),
@@ -106,7 +106,8 @@ class PlaySession extends ChangeNotifier {
   /// reveal is left out of [total].
   void takeBreak() => _onBreak = true;
 
-  /// Called with the vsync timestamp of the first frame showing the current card.
+  /// Called with the vsync timestamp of the first frame showing the current
+  /// card, on the pointer-event clock.
   void revealed(Duration frameTs) {
     if (finished || _revealTs != null) return;
     _revealTs = frameTs;

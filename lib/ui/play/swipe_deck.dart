@@ -11,14 +11,15 @@ import '../../data/poem.dart';
 import '../../domain/play_session.dart';
 import '../../state/settings.dart';
 import '../torifuda/torifuda_painter.dart';
+import 'pointer_clock.dart';
 import 'swipe_gesture.dart';
 
 /// The stack of cards the player flicks away.
 ///
 /// Timing contract (see PlaySession):
 /// * reveal = vsync timestamp of the first frame that paints the top card's
-///   glyphs. The card underneath is drawn blank until then, so nothing can be
-///   read early.
+///   glyphs, put on the pointer-event clock ([PointerClock]). The card
+///   underneath is drawn blank until then, so nothing can be read early.
 /// * response = pointer-down timestamp of the committing touch, or, if that
 ///   finger was already down before the reveal, its first movement after it.
 ///
@@ -186,7 +187,7 @@ class SwipeDeckState extends State<SwipeDeck> with SingleTickerProviderStateMixi
     SchedulerBinding.instance.addPostFrameCallback((_) {
       _revealScheduled = false;
       if (!mounted || !widget.live || _s.currentRevealed) return;
-      _s.revealed(SchedulerBinding.instance.currentSystemFrameTimeStamp);
+      _s.revealed(PointerClock.fromFrame(SchedulerBinding.instance.currentSystemFrameTimeStamp));
       for (final p in _pointers.values) {
         p.posAtReveal = p.pos;
       }

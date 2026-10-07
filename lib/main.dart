@@ -16,6 +16,7 @@ import 'l10n/localization.dart';
 import 'state/progress.dart';
 import 'ui/app.dart';
 import 'ui/debug/frame_stats.dart';
+import 'ui/play/pointer_clock.dart';
 import 'ui/sound/sounds.dart';
 import 'ui/torifuda/glyph_atlas.dart';
 
@@ -34,6 +35,7 @@ void _registerBundledLicenses() {
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  PointerClock.start();
   _registerBundledLicenses();
   if (!kIsWeb && Platform.isAndroid) {
     // Samsung and others default Flutter apps to 60 Hz.

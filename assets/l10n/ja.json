@@ -296,6 +296,8 @@
   "tapsRemainingOther": "あと{0}タップ…",
   "devModeUnlocked": "開発者モードが有効になりました",
   "developerMode": "開発者モード",
+  "clockOffset": "タッチ時刻のずれ",
+  "clockOffsetUnread": "未取得",
   "islandsTab": "諸島",
   "allTab": "すべて",
   "summaryLine": "{0}枚 · 中央値 {1} 秒 · 本日の復習 {2}枚",

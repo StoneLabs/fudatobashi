@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart' show defaultTargetPlatform;
 import 'package:flutter/material.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 
@@ -18,6 +19,7 @@ import '../debug/debug_page.dart';
 import '../debug/reset_actions.dart';
 import '../debug/simulation_page.dart';
 import '../manga/manga.dart';
+import '../play/pointer_clock.dart';
 import '../tour/tour_overlay.dart';
 import 'credits_screen.dart';
 import 'hold_warning_screen.dart';
@@ -435,6 +437,7 @@ class _DeveloperSection extends StatelessWidget {
             value: settings.showPerformanceOverlay,
             onChanged: (v) => progress.updateSettings(settings.copyWith(showPerformanceOverlay: v)),
           ),
+          const _ClockOffsetRow(),
         ]),
         SettingsGroup(children: [
           SettingsTapRow(title: 'Debug page', opensPage: true, onTap: () => open(const DebugPage())),
@@ -456,6 +459,37 @@ class _DeveloperSection extends StatelessWidget {
           SettingsTapRow(title: 'Reset progress', onTap: () => confirmResetProgress(context)),
         ]),
       ],
+    );
+  }
+}
+
+/// How far the pointer-event clock is behind the frame clock on this
+/// platform (see [PointerClock]), for testers' screenshots; a tap reads it
+/// again.
+class _ClockOffsetRow extends StatefulWidget {
+  const _ClockOffsetRow();
+
+  @override
+  State<_ClockOffsetRow> createState() => _ClockOffsetRowState();
+}
+
+class _ClockOffsetRowState extends State<_ClockOffsetRow> {
+  Future<void> _read() async {
+    await PointerClock.sync();
+    if (mounted) setState(() {});
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final s = S.of(context);
+    final offset = PointerClock.offset;
+    return SettingsTapRow(
+      title: s.clockOffset,
+      note: defaultTargetPlatform.name,
+      value: offset == null
+          ? s.clockOffsetUnread
+          : '${(offset.inMicroseconds / Duration.microsecondsPerSecond).toStringAsFixed(6)} s',
+      onTap: _read,
     );
   }
 }
