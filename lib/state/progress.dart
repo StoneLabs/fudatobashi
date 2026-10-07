@@ -16,6 +16,7 @@ import '../domain/rating.dart';
 import '../domain/tab_locks.dart';
 import '../domain/trainer.dart';
 import '../domain/xp.dart';
+import 'db_integrity.dart';
 import 'play_config.dart';
 import 'settings.dart';
 import 'xp_history.dart';
@@ -137,6 +138,7 @@ class Progress extends ChangeNotifier {
   XpLedger? _xp;
 
   static Future<Progress> open(AppDatabase db) async {
+    await DbIntegrity.run(db);
     final kv = {for (final r in await db.select(db.keyValues).get()) r.key: r.value};
     Map<String, dynamic> json(String k) => kv[k] == null ? {} : jsonDecode(kv[k]!) as Map<String, dynamic>;
 

@@ -267,19 +267,19 @@ class ItemState {
 /// miss → Again, ≤ easyRatio·goal → Easy, ≤ goodRatio·goal → Good, else Hard.
 class Trainer {
   Trainer({required this.config, required this.items, this.goalLevel = 0})
-      : scheduler = _makeScheduler(config);
+      : scheduler = schedulerFor(config);
 
   TrainerConfig config;
   final Map<ItemKey, ItemState> items;
   int goalLevel;
   fsrs.Scheduler scheduler;
 
-  static fsrs.Scheduler _makeScheduler(TrainerConfig c) =>
+  static fsrs.Scheduler schedulerFor(TrainerConfig c) =>
       fsrs.Scheduler(desiredRetention: c.desiredRetention);
 
   void updateConfig(TrainerConfig c) {
     config = c;
-    scheduler = _makeScheduler(c);
+    scheduler = schedulerFor(c);
   }
 
   static Map<ItemKey, ItemState> freshItems() => {
