@@ -18,19 +18,18 @@ void main() {
   bool linked(int a, int b) => tomo[a]!.contains(b);
 
   group('levels', () {
-    test('the table: a gentle start, growing smoothly to a real match', () {
-      expect([for (final l in AnkirenLevels.all) l.perSide], [3, 4, 5, 6, 8, 10, 12, 15, 18, 21, 25]);
-      expect(AnkirenLevels.of(0).memorise, const Duration(minutes: 1));
-      expect(AnkirenLevels.of(4).memorise, const Duration(minutes: 3, seconds: 30));
-      expect(AnkirenLevels.of(AnkirenLevels.top).memorise, const Duration(minutes: 15));
-      double perCard(int l) => AnkirenLevels.of(l).memorise.inSeconds / AnkirenLevels.of(l).cards;
-      expect(perCard(0), greaterThanOrEqualTo(10), reason: 'time to spare at level 0');
+    test('the table: a beginner start, growing to a real match, then less time', () {
+      expect([for (final l in AnkirenLevels.all) l.perSide], [3, 4, 5, 7, 10, 13, 18, 21, 25, 25, 25]);
+      expect([for (final l in AnkirenLevels.all) l.memorise.inSeconds],
+          [90, 90, 120, 240, 360, 360, 600, 720, 900, 720, 480]);
+      expect([for (final l in AnkirenLevels.all) l.allInMiddle], [true, ...List.filled(10, false)]);
+      expect(AnkirenLevels.of(8).memorise, const Duration(minutes: 15), reason: "a real match's field and time");
       for (var l = 1; l <= AnkirenLevels.top; l++) {
         final (a, b) = (AnkirenLevels.of(l - 1), AnkirenLevels.of(l));
-        expect(b.perSide, greaterThan(a.perSide));
-        expect(b.perSide / a.perSide, lessThanOrEqualTo(4 / 3), reason: 'a small step to level $l');
-        expect(b.memorise, greaterThan(a.memorise));
-        expect(perCard(l), greaterThanOrEqualTo(perCard(l - 1)), reason: 'bigger fields get more time a card');
+        expect(b.perSide, greaterThanOrEqualTo(a.perSide));
+        expect(b.perSide / a.perSide, lessThanOrEqualTo(1.5), reason: 'a small step to level $l');
+        if (b.perSide == a.perSide) expect(b.memorise, lessThan(a.memorise), reason: 'level $l: less time');
+        if (b.perSide > a.perSide) expect(b.memorise, greaterThanOrEqualTo(a.memorise), reason: 'level $l');
       }
     });
 
@@ -40,10 +39,10 @@ void main() {
       expect(AnkirenLevels.maxLevelFor(6), 0);
       expect(AnkirenLevels.maxLevelFor(7), 0);
       expect(AnkirenLevels.maxLevelFor(8), 1);
-      expect(AnkirenLevels.maxLevelFor(24), 6);
-      expect(AnkirenLevels.maxLevelFor(25), 6, reason: 'level 6 deals 24 cards');
-      expect(AnkirenLevels.maxLevelFor(30), 7);
-      expect(AnkirenLevels.maxLevelFor(49), 9);
+      expect(AnkirenLevels.maxLevelFor(20), 4);
+      expect(AnkirenLevels.maxLevelFor(25), 4, reason: 'level 5 deals 26 cards');
+      expect(AnkirenLevels.maxLevelFor(30), 5);
+      expect(AnkirenLevels.maxLevelFor(49), 7);
       expect(AnkirenLevels.maxLevelFor(50), 10);
       expect(AnkirenLevels.maxLevelFor(100), 10);
     });
@@ -51,7 +50,7 @@ void main() {
     test('setups: a preset carries its level, a custom one stays within the known cards', () {
       final preset = AnkirenSetup.forLevel(4, ranked: true);
       expect((preset.perSide, preset.memorise, preset.level, preset.ranked, preset.cards),
-          (8, const Duration(minutes: 3, seconds: 30), 4, true, 16));
+          (10, const Duration(minutes: 6), 4, true, 20));
       expect(preset, AnkirenSetup.forLevel(4, ranked: true));
       expect(preset, isNot(AnkirenSetup.forLevel(4)));
       const custom = AnkirenSetup.custom(perSide: 7, memorise: Duration(seconds: 40));
@@ -203,7 +202,7 @@ void main() {
 
     test('middle cards only where a side splits into left and right clusters, never at the small levels', () {
       expect([for (final l in AnkirenLevels.all) AnkirenDealer.mayHaveMiddle(l.perSide)],
-          [false, false, false, false, false, false, true, true, true, true, true]);
+          [false, false, false, false, false, false, false, true, true, true, true]);
       final rng = math.Random(5);
       for (var level = 0; !AnkirenDealer.mayHaveMiddle(AnkirenLevels.of(level).perSide); level++) {
         for (var g = 0; g < 5000; g++) {
@@ -302,6 +301,17 @@ void main() {
         }
       }
       expect(checked, greaterThan(100));
+    });
+
+    test("a beginner's field puts every card in the open middle of 上段", () {
+      final rng = math.Random(4);
+      for (var g = 0; g < 200; g++) {
+        final f = dealer.deal(all, 3, rng, allInMiddle: true);
+        for (final half in [f.own, f.opponent]) {
+          expect(half.row(AnkirenTuning.middleRow).middle, hasLength(3));
+          expect(half.middleCards, half.cards);
+        }
+      }
     });
 
     test('the same seed deals the same field', () {
@@ -441,6 +451,24 @@ void main() {
       expect(folded.height, closeTo(2 * AnkirenFieldSize.cardH + AnkirenFieldSize.rowGap, eps));
       expect(real.width, AnkirenFieldSize.territoryW);
       expect(real.height, closeTo(3 * AnkirenFieldSize.cardH + 2 * AnkirenFieldSize.rowGap, eps));
+    });
+
+    test('folded, it opens its middles up to a wider width, and a beginner row spreads evenly', () {
+      final f = dealer.deal(all, 7, math.Random(2));
+      final natural = FieldGeometry.of(f, folded: true);
+      final wide = FieldGeometry.of(f, folded: true, minWidth: natural.width * 1.6);
+      expect(wide.width, closeTo(natural.width * 1.6, eps));
+      expect(wide.height, natural.height);
+      expect(problems(f, wide, folded: true), isEmpty, reason: 'clusters still at the edges');
+      expect(FieldGeometry.of(f, folded: true, minWidth: natural.width / 2).width, natural.width,
+          reason: 'never narrower than its rows');
+
+      final beginner = dealer.deal(all, 3, math.Random(2), allInMiddle: true);
+      final g = FieldGeometry.of(beginner, folded: true, minWidth: 60);
+      expect(g.height, AnkirenFieldSize.cardH, reason: 'one row: 上段');
+      final xs = [for (final id in beginner.own.middleCards) g.half(FieldSide.own)[id]!.x];
+      expect(xs[1] - xs[0], closeTo(xs[2] - xs[1], eps));
+      expect(xs.first + AnkirenFieldSize.cardW / 2, closeTo(xs[1] - xs[0], eps), reason: 'as far from the edge');
     });
 
     test('the opponent half is turned: its 下段 at the top, its owner\'s left on the right', () {

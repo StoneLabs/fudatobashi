@@ -106,19 +106,23 @@ class AnkirenDealer {
   final List<int> Function(int poemId) tomofuda;
   final int Function(int poemId) kimarijiLength;
 
-  AnkirenField deal(List<int> known, int perSide, math.Random rng) {
+  /// [allInMiddle] lays each side out for beginners: every card in the open
+  /// middle of [AnkirenTuning.middleRow], in random order.
+  AnkirenField deal(List<int> known, int perSide, math.Random rng, {bool allInMiddle = false}) {
     final deck = {...known}.toList()..shuffle(rng);
     assert(perSide >= 1 && deck.length >= 2 * perSide, 'not enough known cards for $perSide per side');
     final ownCards = deck.sublist(0, perSide);
     final opponentCards = deck.sublist(perSide, 2 * perSide);
-    return AnkirenField(own: _arrange(ownCards, rng), opponent: _arrange(opponentCards, rng));
+    AnkirenHalf arrange(List<int> cards) => allInMiddle ? _spread(cards) : _arrange(cards, rng);
+    return AnkirenField(own: arrange(ownCards), opponent: arrange(opponentCards));
   }
 
-  /// The most cards a side of [perSide] may put in the open middle: up to
-  /// [AnkirenTuning.middleMax], as long as [AnkirenTuning.middleMinClustered]
-  /// stay in its clusters; 0 when that leaves room for fewer than
-  /// [AnkirenTuning.middleMin].
+  /// The most cards a side of [perSide] may put in the open middle: none
+  /// below [AnkirenTuning.middleMinPerSide], else up to
+  /// [AnkirenTuning.middleMax] as long as [AnkirenTuning.middleMinClustered]
+  /// stay in its clusters.
   static int maxMiddle(int perSide) {
+    if (perSide < AnkirenTuning.middleMinPerSide) return 0;
     final room = math.min(AnkirenTuning.middleMax, perSide - AnkirenTuning.middleMinClustered);
     return room < AnkirenTuning.middleMin ? 0 : room;
   }
@@ -178,6 +182,11 @@ class AnkirenDealer {
     if (rng.nextDouble() < AnkirenTuning.splitLean) left += rng.nextBool() ? 1 : -1;
     return left.clamp(0, n);
   }
+
+  static AnkirenHalf _spread(List<int> cards) => AnkirenHalf([
+        for (final r in FieldRow.values)
+          AnkirenRow(left: const [], middle: r == AnkirenTuning.middleRow ? cards : const [], right: const []),
+      ]);
 
   AnkirenHalf _arrange(List<int> cards, math.Random rng) {
     final middle = _middleCards(cards, rng);

@@ -900,22 +900,23 @@ abstract final class VoiceTuning {
 /// (`AnkirenSetup`), how a field is dealt (`AnkirenDealer`), and a game's
 /// prompts and points (`AnkirenGame`, `AnkirenScore`).
 abstract final class AnkirenTuning {
-  /// The levels, 0 first: cards per side and memorise time. Level 0 is a
-  /// gentle start (6 cards, 10 s a card); level 10 is a real match's field
-  /// and memorise time (25 a side, 15 minutes). Ranked play moves through
-  /// them by rating, so each step is a small one.
+  /// The levels, 0 first: cards per side and memorise time. Level 0 is for
+  /// beginners: its cards lie spread out in the open middle (see
+  /// [AnkirenLevel.allInMiddle]). The field grows to a real match's 25 a side
+  /// at level 8, and the last levels cut the memorise time from 15 minutes,
+  /// a real match's, to 8. Ranked play moves through them by rating.
   static const List<AnkirenLevel> levels = [
-    AnkirenLevel(3, Duration(minutes: 1)),
+    AnkirenLevel(3, Duration(minutes: 1, seconds: 30), allInMiddle: true),
     AnkirenLevel(4, Duration(minutes: 1, seconds: 30)),
     AnkirenLevel(5, Duration(minutes: 2)),
-    AnkirenLevel(6, Duration(minutes: 2, seconds: 30)),
-    AnkirenLevel(8, Duration(minutes: 3, seconds: 30)),
-    AnkirenLevel(10, Duration(minutes: 4, seconds: 30)),
-    AnkirenLevel(12, Duration(minutes: 6)),
-    AnkirenLevel(15, Duration(minutes: 8)),
+    AnkirenLevel(7, Duration(minutes: 4)),
+    AnkirenLevel(10, Duration(minutes: 6)),
+    AnkirenLevel(13, Duration(minutes: 6)),
     AnkirenLevel(18, Duration(minutes: 10)),
     AnkirenLevel(21, Duration(minutes: 12)),
     AnkirenLevel(25, Duration(minutes: 15)),
+    AnkirenLevel(25, Duration(minutes: 12)),
+    AnkirenLevel(25, Duration(minutes: 8)),
   ];
 
   /// A custom free-play setup's cards per side (and at most half the known
@@ -935,13 +936,13 @@ abstract final class AnkirenTuning {
   /// one of them in the open middle of its 上段, the row at the centre line.
   /// With [middleChancePerSide], a side that holds such a pair puts
   /// [middleMin] to [middleMax] cards there, each with a 友札 left in its
-  /// clusters. It only does while at least [middleMinClustered] cards stay in
-  /// its clusters, so it keeps a real 定位置's left and right clusters; a
-  /// smaller side never does. At a real match's 25 a side (4 sides in 5 hold
-  /// a pair) about 1 game in 5 has some; smaller fields hold fewer pairs.
+  /// clusters. Only a side of at least [middleMinPerSide] cards does, and
+  /// keeps at least [middleMinClustered] in its clusters. At a real match's
+  /// 25 a side (4 sides in 5 hold a pair) about 1 game in 5 has some.
   static const double middleChancePerSide = 0.13;
   static const int middleMin = 1;
   static const int middleMax = 5;
+  static const int middleMinPerSide = 21;
   static const int middleMinClustered = 10;
   static const FieldRow middleRow = FieldRow.upper;
 
@@ -975,6 +976,16 @@ abstract final class AnkirenTuning {
   static const int firstTry = 100;
   static const int secondTry = 50;
   static const int speedMax = 100;
+
+  /// Being ready before the memorise time is up multiplies the points by up
+  /// to 1 + [earlyBonus], in proportion to the share of the time left.
+  static const double earlyBonus = 0.5;
+
+  /// Each level below the top multiplies the score by [levelFactor] once
+  /// more, so being ready early at a level never beats the next level's
+  /// shorter time played in full (level 9 ended at 8 minutes scores below
+  /// level 10).
+  static const double levelFactor = 0.85;
 
   /// The speed bonus's curve over the response time t: a logistic curve over
   /// ln t, centred on [speedMidpoint] and as steep as [speedSteepness],

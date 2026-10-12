@@ -484,9 +484,10 @@ void main() {
       await toResults(tester);
       final run = p.sideTrips.runs.single;
       expect(run.completed, isTrue, reason: 'giving up a card still finishes the game');
-      final taken = AnkirenLevels.of(0).cards - 1;
-      expect(run.score, inInclusiveRange(taken * AnkirenTuning.firstTry, taken * (AnkirenTuning.firstTry + AnkirenTuning.speedMax)),
-          reason: 'the card given up earns nothing');
+      final answers = await tester.runAsync(() => p.db.select(p.db.sideTripAnswers).get());
+      final given = answers!.singleWhere((a) => a.poemId == id);
+      expect((given.responseUs, given.wrongTaps), (null, 0), reason: 'the card given up earns nothing');
+      expect(p.sideTrips.missesIn(run), 1);
       await tester.pumpWidget(const SizedBox());
     });
 
@@ -567,6 +568,26 @@ void main() {
         await tester.pumpWidget(const SizedBox());
       });
     }
+
+    testWidgets('a small folded field still spans the screen: its middles open up',
+        (tester) async {
+      final p = await open(tester);
+      for (final level in [0, 3, 5]) {
+        await play(tester, p, AnkirenSetup.forLevel(level), tracked: false, seed: level);
+        expectLaidOut(tester, _phone);
+        final rects = [for (final c in find.byType(AnkirenCard).evaluate()) tester.getRect(find.byWidget(c.widget))];
+        final left = rects.map((r) => r.left).reduce(math.min), right = rects.map((r) => r.right).reduce(math.max);
+        if (level == 0) {
+          expect(left, greaterThan(AnkirenPlayLayout.padding + 1), reason: "a beginner's row is spread evenly");
+        } else {
+          expect(left, moreOrLessEquals(AnkirenPlayLayout.padding, epsilon: 0.5), reason: 'level $level');
+          expect(right, moreOrLessEquals(_phone.width - AnkirenPlayLayout.padding, epsilon: 0.5), reason: 'level $level');
+        }
+        expect(rects.first.width, lessThanOrEqualTo(AnkirenPlayLayout.maxCardW + 0.01));
+        await _capture(tester, 'ankiren_spread_l$level');
+        await tester.pumpWidget(const SizedBox());
+      }
+    });
 
     testWidgets('accessibility mode zooms portrait: cards stay tappable, the field pans, starting centred',
         (tester) async {

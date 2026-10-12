@@ -75,11 +75,26 @@ class AnkirenGame extends ChangeNotifier {
   /// Found or given up: its card is face up for good.
   bool isDone(int poemId) => isFound(poemId) || isForgotten(poemId);
 
-  AnkirenScore get score => AnkirenScore(answers, prompts: prompts.length);
+  AnkirenScore get score => AnkirenScore(
+        answers,
+        prompts: prompts.length,
+        timeLeft: timeLeft,
+        factor: AnkirenScore.factorFor(setup),
+      );
 
-  /// Turns the cards face down and asks the first one.
-  void startRecall() {
+  /// How long the field was memorised: all of its time unless the player was
+  /// ready sooner.
+  Duration get memorised => _memorised ?? setup.memorise;
+  Duration? _memorised;
+
+  /// The share of the memorise time left unused.
+  double get timeLeft => (1 - memorised.inMicroseconds / setup.memorise.inMicroseconds).clamp(0.0, 1.0);
+
+  /// Turns the cards face down and asks the first one; [memorised] when the
+  /// player is ready before the time is up.
+  void startRecall({Duration? memorised}) {
     if (phase != AnkirenPhase.memorise) return;
+    _memorised = memorised;
     phase = AnkirenPhase.recall;
     notifyListeners();
   }

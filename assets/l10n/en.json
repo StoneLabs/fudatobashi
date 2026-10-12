@@ -552,6 +552,7 @@
   "ankirenForgot": "Don't know",
   "ankirenScoreLabel": "SCORE",
   "ankirenScoreOf": "of {0}",
+  "ankirenEarlyBonus": "+{0} for being ready early",
   "ankirenFirstTryLabel": "FIRST TAP",
   "ankirenWrongTapsNone": "No wrong taps!",
   "ankirenWrongTapsOne": "{0} wrong tap",

@@ -11,7 +11,8 @@ import 'package:fudatobashi/domain/ankiren_level.dart';
 /// ended early after [endAfter] prompts.
 AnkirenGame playAnkiren(AnkirenSetup setup, {int seed = 1, int ms = 700, Set<int> wrongAt = const {}, int? endAfter}) {
   final rng = Random(seed);
-  final field = AnkirenDealer.ofPoems().deal([for (final p in poems.all) p.id], setup.perSide, rng);
+  final field = AnkirenDealer.ofPoems()
+      .deal([for (final p in poems.all) p.id], setup.perSide, rng, allInMiddle: setup.allInMiddle);
   final game = AnkirenGame(field: field, setup: setup, rng: rng)..startRecall();
   var t = const Duration(seconds: 100);
   for (var i = 0; game.phase == AnkirenPhase.recall; i++) {

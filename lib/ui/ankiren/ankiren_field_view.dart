@@ -8,14 +8,15 @@ import '../../domain/ankiren_field.dart';
 import '../../domain/ankiren_geometry.dart';
 
 /// 暗記練's field on screen: the opponent's half above the centre [band],
-/// the own half below it, every card where [geometry] puts it, at the scale
-/// [scaleFor] picks. A field too wide for the screen (zoom) pans sideways
-/// as one, starting centred, while the band stays put. An [overlay] is laid
+/// the own half below it, every card where its [FieldGeometry] puts it, at
+/// the scale [scaleFor] picks. A folded field narrower than the screen opens
+/// its middles up to span it; one too wide for it (zoom) pans sideways as
+/// one, starting centred, while the band stays put. An [overlay] is laid
 /// over the field and pans with it, without taking taps.
 class AnkirenFieldView extends StatefulWidget {
   const AnkirenFieldView({
     super.key,
-    required this.geometry,
+    required this.field,
     required this.landscape,
     required this.zoom,
     required this.card,
@@ -23,7 +24,7 @@ class AnkirenFieldView extends StatefulWidget {
     this.overlay,
   });
 
-  final FieldGeometry geometry;
+  final AnkirenField field;
 
   /// The true-scale field across a landscape screen; else the folded one,
   /// portrait.
@@ -60,6 +61,17 @@ class AnkirenFieldView extends StatefulWidget {
 
 class _AnkirenFieldViewState extends State<AnkirenFieldView> {
   ScrollController? _pan;
+  late final FieldGeometry _natural = FieldGeometry.of(widget.field, folded: !widget.landscape);
+  FieldGeometry? _widened;
+
+  /// The folded field opened up to [width] cm, kept while the width holds.
+  FieldGeometry _widenedTo(double width) {
+    final widened = _widened;
+    if (widened != null && (widened.width - width).abs() < _widthTolerance) return widened;
+    return _widened = FieldGeometry.of(widget.field, folded: true, minWidth: width);
+  }
+
+  static const _widthTolerance = 1e-6;
 
   @override
   void dispose() {
@@ -70,10 +82,10 @@ class _AnkirenFieldViewState extends State<AnkirenFieldView> {
   @override
   Widget build(BuildContext context) => LayoutBuilder(builder: (context, box) {
         const pad = AnkirenPlayLayout.padding;
-        final g = widget.geometry;
         final bandH = AnkirenFieldView.bandHeight(landscape: widget.landscape);
         final area = Size(box.maxWidth - 2 * pad, box.maxHeight - 2 * pad);
-        final s = AnkirenFieldView.scaleFor(g, area, landscape: widget.landscape, zoom: widget.zoom);
+        final s = AnkirenFieldView.scaleFor(_natural, area, landscape: widget.landscape, zoom: widget.zoom);
+        final g = widget.landscape || _natural.width * s >= area.width ? _natural : _widenedTo(area.width / s);
         final width = g.width * s;
         final halfH = g.height * s;
         final height = 2 * halfH + bandH;

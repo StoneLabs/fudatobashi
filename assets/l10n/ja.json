@@ -552,6 +552,7 @@
   "ankirenForgot": "わからない",
   "ankirenScoreLabel": "スコア",
   "ankirenScoreOf": "{0}点満点",
+  "ankirenEarlyBonus": "早めに覚えて +{0}",
   "ankirenFirstTryLabel": "一発で取った",
   "ankirenWrongTapsNone": "お手つきなし！",
   "ankirenWrongTapsOne": "お手つき{0}回",

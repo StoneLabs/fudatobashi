@@ -84,7 +84,13 @@ class _AnkirenResultsScreenState extends State<AnkirenResultsScreen> {
               Expanded(
                 child: SingleChildScrollView(
                   child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-                    _ScorePanel(total: score.total, max: score.max, completed: game.completed, fraction: score.fraction),
+                    _ScorePanel(
+                      total: score.total,
+                      max: score.max,
+                      early: score.early,
+                      completed: game.completed,
+                      fraction: score.fraction,
+                    ),
                     const SizedBox(height: Gaps.panel),
                     IntrinsicHeight(
                       child: Row(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
@@ -153,9 +159,17 @@ class _AnkirenResultsScreenState extends State<AnkirenResultsScreen> {
 /// The score on a sunburst, out of the most the game could give, with Tobi
 /// cheering a game at or above par.
 class _ScorePanel extends StatelessWidget {
-  const _ScorePanel({required this.total, required this.max, required this.completed, required this.fraction});
+  const _ScorePanel({
+    required this.total,
+    required this.max,
+    required this.early,
+    required this.completed,
+    required this.fraction,
+  });
 
-  final int total, max;
+  /// The score, the best one without being ready early, and what being
+  /// ready early added.
+  final int total, max, early;
   final bool completed;
   final double fraction;
 
@@ -189,6 +203,10 @@ class _ScorePanel extends StatelessWidget {
               const SizedBox(height: Gaps.tight),
               Text(s.ankirenScoreOf(max),
                   style: const TextStyle(fontWeight: Weights.black, fontSize: AnkirenResultsLayout.scoreOfFont)),
+              if (early > 0)
+                Text(s.ankirenEarlyBonus(early),
+                    textAlign: TextAlign.center,
+                    style: const TextStyle(fontWeight: Weights.bold, fontSize: AnkirenResultsLayout.scoreOfFont)),
             ]),
           ),
         ),

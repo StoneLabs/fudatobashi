@@ -81,6 +81,51 @@ void main() {
     });
   });
 
+  group('score: being ready early and the level', () {
+    AnkirenAnswer found(int ms) =>
+        AnkirenAnswer(poemId: 1, side: FieldSide.own, wrongTaps: 0, responseUs: ms * 1000, at: DateTime(2026));
+
+    test('recall points make the fraction; time left and the level scale the score', () {
+      final answers = [found(100), found(1000)];
+      final plain = AnkirenScore(answers, prompts: 2);
+      expect((plain.recall, plain.maxRecall, plain.total, plain.max, plain.early), (356, 400, 356, 400, 0));
+      final quick = AnkirenScore(answers, prompts: 2, timeLeft: 0.5, factor: 0.85);
+      expect(quick.fraction, plain.fraction, reason: 'the rating reads recall only');
+      expect(quick.total, (356 * (1 + AnkirenTuning.earlyBonus * 0.5) * 0.85).round());
+      expect(quick.max, (400 * 0.85).round());
+      expect(quick.early, quick.total - (356 * 0.85).round());
+      expect(AnkirenScore([], prompts: 2, timeLeft: 1).total, 0, reason: 'nothing found, nothing to multiply');
+    });
+
+    test('each level below the top counts less; a custom setup like the hardest level it matches', () {
+      expect(AnkirenScore.factorFor(AnkirenSetup.forLevel(AnkirenLevels.top)), 1);
+      for (var l = 1; l <= AnkirenLevels.top; l++) {
+        expect(AnkirenScore.factorFor(AnkirenSetup.forLevel(l - 1)),
+            closeTo(AnkirenScore.factorFor(AnkirenSetup.forLevel(l)) * AnkirenTuning.levelFactor, 1e-12));
+      }
+      double custom(int perSide, int seconds) =>
+          AnkirenScore.factorFor(AnkirenSetup.custom(perSide: perSide, memorise: Duration(seconds: seconds)));
+      expect(custom(25, 900), AnkirenScore.factorFor(AnkirenSetup.forLevel(8)));
+      expect(custom(25, 300), 1);
+      expect(custom(2, 900), AnkirenScore.factorFor(AnkirenSetup.forLevel(0)));
+    });
+
+    test("being ready early at a level never beats the next level's shorter time played in full", () {
+      // The same recall at each: level a ended at level b's memorise time
+      // against level b played to its end.
+      for (var a = 0; a < AnkirenLevels.top; a++) {
+        for (var b = a + 1; b <= AnkirenLevels.top; b++) {
+          final (la, lb) = (AnkirenLevels.of(a), AnkirenLevels.of(b));
+          if (lb.memorise >= la.memorise) continue;
+          final timeLeft = 1 - lb.memorise.inSeconds / la.memorise.inSeconds;
+          final early = la.cards * AnkirenScore.factorFor(AnkirenSetup.forLevel(a)) * (1 + AnkirenTuning.earlyBonus * timeLeft);
+          final full = lb.cards * AnkirenScore.factorFor(AnkirenSetup.forLevel(b));
+          expect(early, lessThanOrEqualTo(full), reason: 'level $a ended at level $b\'s time');
+        }
+      }
+    });
+  });
+
   group('rating', () {
     const ratings = AnkirenRatingModel.levelRatings;
 
@@ -179,6 +224,14 @@ void main() {
     Duration t(int ms) => Duration(milliseconds: ms);
     int other(AnkirenGame g) => g.field.cards.firstWhere((c) => c != g.current && !g.isFound(c));
 
+    test('ready early: the share of the memorise time left counts; out of time, none', () {
+      final g = newGame()..startRecall(memorised: const Duration(seconds: 5));
+      expect((g.memorised, g.timeLeft, g.score.timeLeft), (const Duration(seconds: 5), 0.75, 0.75));
+      final h = newGame()..startRecall();
+      expect((h.memorised, h.timeLeft), (h.setup.memorise, 0.0));
+      expect((newGame()..startRecall(memorised: const Duration(minutes: 5))).timeLeft, 0);
+    });
+
     test('every field card is asked once, in a seeded random order', () {
       final g = newGame(perSide: 12);
       expect(g.prompts.toSet(), g.field.cards.toSet());
@@ -248,7 +301,7 @@ void main() {
       }
       expect((g.phase, g.completed, g.current), (AnkirenPhase.done, true, null));
       expect(g.answers.map((a) => a.poemId), g.prompts);
-      expect(g.score.total, g.prompts.length * (100 + 77));
+      expect(g.score.recall, g.prompts.length * (100 + 77));
       expect(g.score.fraction, closeTo(177 / 200, 1e-12));
       expect(g.tap(g.prompts.first, t(now + 100)), TapResult.ignored);
       expect(notified, 1 + g.prompts.length);
@@ -290,7 +343,7 @@ void main() {
       expect(g.answers.map((a) => a.poemId), g.prompts);
       expect(g.answers.skip(1).every((a) => !a.found && a.responseUs == null), isTrue);
       expect(g.answers[1].wrongTaps, 1, reason: 'the prompt on screen keeps its wrong tap');
-      expect(g.score.total, 100 + 63);
+      expect(g.score.recall, 100 + 63);
       expect(g.tap(g.prompts.last, t(3000)), TapResult.ignored);
     });
 

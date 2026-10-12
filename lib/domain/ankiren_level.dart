@@ -3,10 +3,14 @@ import '../config/config.dart';
 /// One 暗記練 difficulty level: how many cards each side of the field holds
 /// and how long the player may memorise them.
 class AnkirenLevel {
-  const AnkirenLevel(this.perSide, this.memorise);
+  const AnkirenLevel(this.perSide, this.memorise, {this.allInMiddle = false});
 
   final int perSide;
   final Duration memorise;
+
+  /// A beginner's field: every card in the open middle, spread out evenly,
+  /// instead of a 定位置's clusters.
+  final bool allInMiddle;
 
   /// Cards on the whole field, which must all be known cards.
   int get cards => 2 * perSide;
@@ -55,6 +59,9 @@ class AnkirenSetup {
   final bool ranked;
 
   int get cards => 2 * perSide;
+
+  /// Deals a beginner's field (see [AnkirenLevel.allInMiddle]).
+  bool get allInMiddle => level != null && AnkirenLevels.of(level!).allInMiddle;
 
   /// The largest custom per-side count [known] cards allow, or null when they
   /// allow not even [AnkirenTuning.customMinPerSide].

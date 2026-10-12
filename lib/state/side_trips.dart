@@ -19,6 +19,7 @@ class AnkirenReport {
     required this.memorise,
     required this.score,
     required this.maxScore,
+    required this.fraction,
     required this.prompts,
     required this.foundFirstTry,
     required this.averageMs,
@@ -56,7 +57,9 @@ class AnkirenReport {
   /// Every card was found (false for a game ended early).
   final bool completed;
 
-  double get fraction => maxScore == 0 ? 0 : score / maxScore;
+  /// The share of the best recall reached, which moves the rating (see
+  /// `AnkirenScore.fraction`).
+  final double fraction;
 
   RankBand? get bandBefore => ratingBefore == null ? null : Rating.bandOf(ratingBefore!);
   RankBand? get bandAfter => ratingAfter == null ? null : Rating.bandOf(ratingAfter!);
@@ -158,6 +161,7 @@ class SideTrips {
               'perSide': setup.perSide,
               'memoriseMs': setup.memorise.inMilliseconds,
               'middle': game.field.own.middleCards.length + game.field.opponent.middleCards.length,
+              'memorisedMs': game.memorised.inMilliseconds,
               ...meta,
             })),
           ));
@@ -185,6 +189,7 @@ class SideTrips {
       memorise: setup.memorise,
       score: score.total,
       maxScore: score.max,
+      fraction: score.fraction,
       prompts: game.prompts.length,
       foundFirstTry: score.firstTries,
       averageMs: score.averageFirstTryMs,

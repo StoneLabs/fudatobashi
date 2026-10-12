@@ -30,7 +30,8 @@ class FieldRect {
 /// True scale lays a half out over the real territory's [AnkirenFieldSize.slots]
 /// card slots, all three rows. Folded keeps only the rows some half uses
 /// and is as wide as its widest row with that row's open middle closed to
-/// [AnkirenFieldSize.foldedHole] pitches, or to room for its middle cards. Either way the left
+/// [AnkirenFieldSize.foldedHole] pitches, or to room for its middle cards
+/// (or as wide as asked, opening the middles up). Either way the left
 /// cluster starts at the half's left edge, the right one ends at its right
 /// edge, and middle cards are spread evenly over their row's open gap.
 class FieldGeometry {
@@ -46,12 +47,15 @@ class FieldGeometry {
   static const double _pitch = AnkirenFieldSize.cardW + AnkirenFieldSize.cardGap;
   static const double _rowPitch = AnkirenFieldSize.cardH + AnkirenFieldSize.rowGap;
 
-  factory FieldGeometry.of(AnkirenField field, {required bool folded}) {
+  /// [minWidth] (folded only, cm) widens the open middles so the clusters
+  /// reach out that far.
+  factory FieldGeometry.of(AnkirenField field, {required bool folded, double minWidth = 0}) {
     final halves = [field.own, field.opponent];
-    final rowsShown = folded
-        ? halves.map((h) => FieldRow.values.lastIndexWhere((r) => !h.row(r).isEmpty) + 1).reduce(math.max)
-        : FieldRow.values.length;
-    final height = rowsShown * AnkirenFieldSize.cardH + (rowsShown - 1) * AnkirenFieldSize.rowGap;
+    final rowsShown = [
+      for (final r in FieldRow.values)
+        if (!folded || halves.any((h) => !h.row(r).isEmpty)) r,
+    ];
+    final height = rowsShown.length * AnkirenFieldSize.cardH + (rowsShown.length - 1) * AnkirenFieldSize.rowGap;
 
     final double slots, x0, width;
     if (folded) {
@@ -61,7 +65,10 @@ class FieldGeometry {
           (r.middle.isEmpty
               ? AnkirenFieldSize.foldedHole
               : math.max(AnkirenFieldSize.foldedHole, r.middle.length + 2 * AnkirenFieldSize.middleMargin));
-      slots = [for (final h in halves) ...h.rows.map(rowSlots)].reduce(math.max);
+      slots = [
+        for (final h in halves) ...h.rows.map(rowSlots),
+        (minWidth + AnkirenFieldSize.cardGap) / _pitch,
+      ].reduce(math.max);
       x0 = 0;
       width = slots * _pitch - AnkirenFieldSize.cardGap;
     } else {
@@ -80,7 +87,7 @@ class FieldGeometry {
       for (final row in FieldRow.values) {
         final cards = half.row(row);
         if (cards.isEmpty) continue;
-        final y = (rowsShown - 1 - row.index) * _rowPitch;
+        final y = (rowsShown.length - 1 - rowsShown.indexOf(row)) * _rowPitch;
         final rightStart = slots - cards.right.length;
         for (final (j, id) in cards.left.indexed) {
           put(id, x0 + j * _pitch, y);

@@ -121,7 +121,7 @@ class _DebugPainter extends CustomPainter {
           ..drawRect(gap, middleFill)
           ..drawRect(gap, middlePaint);
         final label = cards.middle.isEmpty ? 'open' : 'open · ${cards.middle.length} mid';
-        _label(canvas, label, gap.topCenter, color: AnkirenDebugStyle.middle, align: Alignment.topCenter);
+        _label(canvas, label, gap.center, color: AnkirenDebugStyle.middle, align: Alignment.center);
       }
     }
   }

@@ -11,7 +11,6 @@ import '../../config/design.dart';
 import '../../config/vector_art.dart';
 import '../../domain/ankiren_field.dart';
 import '../../domain/ankiren_game.dart';
-import '../../domain/ankiren_geometry.dart';
 import '../../domain/ankiren_level.dart';
 import '../../l10n/ankiren_strings.dart';
 import '../../l10n/strings.dart';
@@ -83,10 +82,10 @@ class _AnkirenScreenState extends State<AnkirenScreen> {
   late final AnkirenSettings _options;
   late final bool _zoom;
   late final AnkirenGame _game;
-  late final FieldGeometry _geometry;
   final DateTime _startedAt = DateTime.now();
 
   late final ValueNotifier<Duration> _left = ValueNotifier(widget.setup.memorise);
+  final Stopwatch _memorising = Stopwatch()..start();
   Timer? _clock;
   Timer? _pause;
 
@@ -116,9 +115,9 @@ class _AnkirenScreenState extends State<AnkirenScreen> {
     _options = _progress.settings.ankiren;
     _zoom = _progress.settings.accessibilityMode && !_landscape;
     final rng = math.Random(widget.seed);
-    final field = AnkirenDealer.ofPoems().deal(widget.known, widget.setup.perSide, rng);
+    final field =
+        AnkirenDealer.ofPoems().deal(widget.known, widget.setup.perSide, rng, allInMiddle: widget.setup.allInMiddle);
     _game = AnkirenGame(field: field, setup: widget.setup, rng: rng);
-    _geometry = FieldGeometry.of(field, folded: !_landscape);
     unawaited(SystemChrome.setPreferredOrientations(_landscape
         ? const [DeviceOrientation.landscapeLeft, DeviceOrientation.landscapeRight]
         : const [DeviceOrientation.portraitUp]));
@@ -155,12 +154,12 @@ class _AnkirenScreenState extends State<AnkirenScreen> {
 
   bool get _still => MediaQuery.disableAnimationsOf(context);
 
-  /// The memorise time is up, or the player is ready: the field turns face
-  /// down and the first prompt follows.
-  void _startRecall() {
+  /// The memorise time is up, or the player is [ready] sooner: the field
+  /// turns face down and the first prompt follows.
+  void _startRecall({bool ready = false}) {
     _clock?.cancel();
     if (!mounted || _game.phase != AnkirenPhase.memorise) return;
-    setState(_game.startRecall);
+    setState(() => _game.startRecall(memorised: ready ? _memorising.elapsed : null));
     playSound(context, Sfx.ankirenFlip);
     _pause = Timer((_still ? Duration.zero : AnkirenMotion.flip) + AnkirenPlayTuning.promptPause, _showPrompt);
   }
@@ -297,7 +296,7 @@ class _AnkirenScreenState extends State<AnkirenScreen> {
               if (voice && asked != null) KimarijiSpeakerButton(poemId: asked),
             ]),
       trailing: memorising
-          ? BandButton(icon: IconArt.arrow, label: s.ankirenReady, color: Palette.sun, onTap: _startRecall)
+          ? BandButton(icon: IconArt.arrow, label: s.ankirenReady, color: Palette.sun, onTap: () => _startRecall(ready: true))
           : BandButton(icon: IconArt.question, label: s.ankirenForgot, onTap: asked == null ? null : _giveUp),
     );
 
@@ -314,7 +313,7 @@ class _AnkirenScreenState extends State<AnkirenScreen> {
         ),
         child: SafeArea(
           child: AnkirenFieldView(
-            geometry: _geometry,
+            field: _game.field,
             landscape: _landscape,
             zoom: _zoom,
             card: card,

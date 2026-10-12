@@ -21,6 +21,7 @@ extension AnkirenStrings on S {
 
   String get ankirenScoreLabel => t('ankirenScoreLabel');
   String ankirenScoreOf(int max) => f('ankirenScoreOf', [max]);
+  String ankirenEarlyBonus(int points) => f('ankirenEarlyBonus', [points]);
   String get ankirenFirstTryLabel => t('ankirenFirstTryLabel');
 
   /// Every wrong tap of a game (お手つき).

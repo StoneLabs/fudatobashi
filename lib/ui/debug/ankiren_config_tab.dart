@@ -42,6 +42,8 @@ class AnkirenConfigTab extends StatelessWidget {
         _line('first try', '${AnkirenTuning.firstTry} + up to ${AnkirenTuning.speedMax} speed bonus'),
         _line('after 1 wrong tap', '${AnkirenTuning.secondTry}'),
         _line('shown, given up, missed', '0 (shown after ${AnkirenTuning.revealAfterWrong} wrong taps)'),
+        _line('ready early', '× up to ${1 + AnkirenTuning.earlyBonus}, by the share of time left'),
+        _line('level', '× ${AnkirenTuning.levelFactor} per level below ${AnkirenLevels.top}'),
         _line('rating par', '${(AnkirenRatingModel.par * 100).round()}% of the best score'),
         _line(
           'placement',
@@ -97,7 +99,7 @@ class _LevelTable extends StatelessWidget {
         defaultColumnWidth: const IntrinsicColumnWidth(),
         columnWidths: const {0: FixedColumnWidth(28)},
         children: [
-          row(['L', '/side ', 'cards ', 'time  ', 's/card ', 'middle ', 'rating'], head: true),
+          row(['L', '/side ', 'cards ', 'time  ', 's/card ', 'middle ', 'score× ', 'rating'], head: true),
           for (final (i, l) in AnkirenLevels.all.indexed)
             row([
               '$i',
@@ -105,7 +107,12 @@ class _LevelTable extends StatelessWidget {
               '${l.cards}',
               formatMinutes(l.memorise),
               (l.memorise.inMilliseconds / 1000 / l.cards).toStringAsFixed(1),
-              AnkirenDealer.mayHaveMiddle(l.perSide) ? '≤ ${AnkirenDealer.maxMiddle(l.perSide)}' : '—',
+              l.allInMiddle
+                  ? 'all'
+                  : AnkirenDealer.mayHaveMiddle(l.perSide)
+                      ? '≤ ${AnkirenDealer.maxMiddle(l.perSide)}'
+                      : '—',
+              AnkirenScore.factorFor(AnkirenSetup.forLevel(i)).toStringAsFixed(3),
               AnkirenRatingModel.levelRatings[i].toStringAsFixed(0),
             ]),
         ],
