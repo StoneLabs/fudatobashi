@@ -210,9 +210,9 @@ void main() {
           child: ProgressScope(progress: p, child: const MaterialApp(home: SettingsScreen())),
         ));
         await tester.pump();
-        await tester.scrollUntilVisible(find.text(s.ankirenSettingsNote), 200);
+        await tester.scrollUntilVisible(find.text(s.ankirenName), 200);
         expect(find.text(s.sideTrips.toUpperCase()), findsOneWidget, reason: 'the section header');
-        await tester.tap(find.text(s.ankirenSettingsNote));
+        await tester.tap(find.text(s.ankirenName));
         await tester.pump();
         await tester.pump(Motion.route);
         expect(find.byType(AnkirenSettingsScreen), findsOneWidget);

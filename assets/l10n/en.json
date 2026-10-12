@@ -279,7 +279,7 @@
   "soundSilentNote": "Silent or vibrate mode mutes all sound.",
   "sectionAccessibility": "Accessibility",
   "accessibilityMode": "Accessibility mode",
-  "accessibilityModeNote": "Bigger cards that are easier to tap. For now only 暗記練 uses it, in portrait.",
+  "accessibilityModeNote": "Improved visibility in some areas (work in progress)",
   "dontKnowInput": "Marking \"don't know\"",
   "dontKnowInputNote": "How you mark a card you didn't know during play.",
   "dontKnowHold": "Swipe down and hold",
@@ -521,6 +521,7 @@
   "sideTrips": "Side Trips",
   "sideTripsIntro": "Detours off the journey: games that train other skills.",
   "sideTripsMore": "More side trips are on the way!",
+  "ankirenName": "AnkiRen",
   "ankirenBanner": "MEMORY DRILL",
   "ankirenAbout": "Memorise a field of your cards, then take each one by its kimariji, fast!",
   "sideTripUnranked": "Unranked",
@@ -536,7 +537,6 @@
   "sideTripLockedOther": "Remember {0} more cards well to open it!",
   "sideTripFreeLockedOne": "Remember {0} more card well to unlock its free play!",
   "sideTripFreeLockedOther": "Remember {0} more cards well to unlock its free play!",
-  "ankirenSettingsNote": "Layout and prompts",
   "ankirenLayout": "Layout",
   "ankirenLayoutNote": "Portrait gives you bigger cards. Landscape keeps the real field's shape.",
   "ankirenPortrait": "Portrait",
@@ -574,5 +574,5 @@
   "ankirenMemoriseTime": "Memorise time",
   "ankirenLess": "Less",
   "ankirenMore": "More",
-  "ankirenNeedCards": "暗記練 needs at least {0} cards you know."
+  "ankirenNeedCards": "AnkiRen needs at least {0} cards you know."
 }

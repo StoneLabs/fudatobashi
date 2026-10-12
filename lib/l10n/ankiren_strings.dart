@@ -3,7 +3,8 @@ import 'strings.dart';
 /// Strings of 暗記練: its settings page, the play screen, results and the
 /// free-play setup sheet.
 extension AnkirenStrings on S {
-  String get ankirenSettingsNote => t('ankirenSettingsNote');
+  /// The game's name: AnkiRen in English, 暗記練 in Japanese.
+  String get ankirenName => t('ankirenName');
   String get ankirenLayout => t('ankirenLayout');
   String get ankirenLayoutNote => t('ankirenLayoutNote');
   String get ankirenPortrait => t('ankirenPortrait');

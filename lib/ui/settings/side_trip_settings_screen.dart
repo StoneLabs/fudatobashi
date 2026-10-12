@@ -31,7 +31,7 @@ class AnkirenSettingsScreen extends StatelessWidget {
             children: [
               const SizedBox(height: HeaderStyle.topGap),
               MangaHeader(
-                title: ScreenTitle(SideTrip.ankiren.label, sub: s.tripBanner(SideTrip.ankiren)),
+                title: ScreenTitle(s.ankirenName, sub: s.tripBanner(SideTrip.ankiren)),
                 actions: [
                   InkIconButton(icon: IconArt.back, semanticLabel: s.back, onTap: () => Navigator.maybePop(context)),
                 ],
