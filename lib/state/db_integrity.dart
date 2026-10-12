@@ -5,9 +5,11 @@ import 'package:flutter/foundation.dart';
 import 'package:fsrs/fsrs.dart' as fsrs;
 
 import '../db/database.dart';
+import '../domain/ankiren_rating.dart';
 import '../domain/card_stats.dart';
 import '../domain/play_session.dart';
 import '../domain/rating.dart';
+import '../domain/side_trips.dart';
 import '../domain/trainer.dart';
 
 /// One independent integrity check: a cheap [detect] that only reads, and a
@@ -31,6 +33,8 @@ class IntegrityCheck {
 abstract final class DbIntegrity {
   static final checks = <IntegrityCheck>[
     IntegrityCheck('impossible times', _hasImpossibleTimes, _repairImpossibleTimes),
+    IntegrityCheck('orphaned side-trip answers', _hasOrphanedAnswers, _deleteOrphanedAnswers),
+    IntegrityCheck('side-trip ratings', _hasBrokenSideTripRatings, _replaySideTripRatings),
   ];
 
   static Future<void> run(AppDatabase db) async {
@@ -146,6 +150,74 @@ abstract final class DbIntegrity {
       await (db.update(db.items)
             ..where((i) => i.poemId.equals(key.poemId) & i.inverted.equals(key.inverted)))
           .write(ItemsCompanion(fsrs: Value(item.reviewed ? item.fsrsJson : null)));
+    }
+  }
+
+  /// Answers of a side-trip game that is no longer stored: nothing reads
+  /// them, so they go.
+  static Future<bool> _hasOrphanedAnswers(AppDatabase db) async {
+    final found = await db.customSelect(
+      '''
+      SELECT EXISTS (
+        SELECT 1 FROM side_trip_answers a WHERE NOT EXISTS (SELECT 1 FROM side_trip_runs r WHERE r.id = a.run_id)
+      ) AS found
+      ''',
+    ).getSingle();
+    return found.read<bool>('found');
+  }
+
+  static Future<void> _deleteOrphanedAnswers(AppDatabase db) async {
+    final runs = db.selectOnly(db.sideTripRuns)..addColumns([db.sideTripRuns.id]);
+    await (db.delete(db.sideTripAnswers)..where((a) => a.runId.isNotInQuery(runs))).go();
+  }
+
+  /// A ranked side-trip game stores its performance and the trip's rating
+  /// after it, both finite, or neither (its game was dropped from the
+  /// rating). SQLite keeps an infinity, and stores NaN as null.
+  ///
+  /// From the first ranked game of a trip that breaks this, its ratings are
+  /// replayed from the stored performances in order; a game whose
+  /// performance is no number is dropped from the rating.
+  static Future<bool> _hasBrokenSideTripRatings(AppDatabase db) async {
+    final found = await db.customSelect(
+      '''
+      SELECT EXISTS (
+        SELECT 1 FROM side_trip_runs
+        WHERE ranked AND ((performance IS NULL) != (rating IS NULL) OR abs(performance) = 9e999 OR abs(rating) = 9e999)
+      ) AS found
+      ''',
+    ).getSingle();
+    return found.read<bool>('found');
+  }
+
+  static Future<void> _replaySideTripRatings(AppDatabase db) async {
+    final ranked = await (db.select(db.sideTripRuns)
+          ..where((r) => r.ranked)
+          ..orderBy([(r) => OrderingTerm.asc(r.id)]))
+        .get();
+    bool sound(SideTripRun r) =>
+        r.performance == null ? r.rating == null : r.performance!.isFinite && (r.rating?.isFinite ?? false);
+    for (final trip in SideTrip.values) {
+      final (start, update) = switch (trip) {
+        SideTrip.ankiren => (AnkirenRating.start, AnkirenRating.update),
+      };
+      final runs = [for (final r in ranked) if (r.game == trip.name) r];
+      final first = runs.indexWhere((r) => !sound(r));
+      if (first < 0) continue;
+      final kept = [for (final r in runs.take(first)) if (r.rating != null) r];
+      var rating = kept.lastOrNull?.rating ?? start;
+      var games = kept.length;
+      for (final r in runs.skip(first)) {
+        final performance = r.performance;
+        final SideTripRunsCompanion replayed;
+        if (performance == null || !performance.isFinite) {
+          replayed = const SideTripRunsCompanion(rating: Value(null), performance: Value(null));
+        } else {
+          rating = update(rating, performance, games++);
+          replayed = SideTripRunsCompanion(rating: Value(rating));
+        }
+        await (db.update(db.sideTripRuns)..where((x) => x.id.equals(r.id))).write(replayed);
+      }
     }
   }
 }

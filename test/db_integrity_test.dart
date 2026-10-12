@@ -8,13 +8,18 @@ import 'package:fudatobashi/data/fuda_sets.dart';
 import 'package:fudatobashi/data/islands.dart';
 import 'package:fudatobashi/data/poem.dart';
 import 'package:fudatobashi/db/database.dart';
+import 'package:fudatobashi/domain/ankiren_level.dart';
+import 'package:fudatobashi/domain/ankiren_rating.dart';
 import 'package:fudatobashi/domain/card_stats.dart';
 import 'package:fudatobashi/domain/play_session.dart';
 import 'package:fudatobashi/domain/rating.dart';
+import 'package:fudatobashi/domain/side_trips.dart';
 import 'package:fudatobashi/domain/trainer.dart';
 import 'package:fudatobashi/state/play_config.dart';
 import 'package:fudatobashi/state/progress.dart';
 import 'package:fudatobashi/state/db_integrity.dart';
+
+import 'test_ankiren.dart';
 
 /// One swipe as an older version stored it.
 typedef Swipe = (int poemId, int us, bool dontKnow, fsrs.Rating? grade);
@@ -200,5 +205,71 @@ void main() {
     await DbIntegrity.run(db);
     expect((await db.select(db.sessions).get()).singleWhere((s) => s.id == bad).totalUs, isNull);
     await db.close();
+  });
+
+  group('side trips', () {
+    Future<int> trip(AppDatabase db, int d, {bool ranked = true, double? performance, double? rating}) =>
+        db.into(db.sideTripRuns).insert(SideTripRunsCompanion.insert(
+              game: SideTrip.ankiren.name,
+              startedAt: day(d),
+              ranked: ranked,
+              level: const Value(0),
+              cardCount: 8,
+              score: 900,
+              maxScore: 1200,
+              completed: true,
+              rating: Value(rating),
+              performance: Value(performance),
+            ));
+
+    Future<void> answer(AppDatabase db, int runId) => db.into(db.sideTripAnswers).insert(
+        SideTripAnswersCompanion.insert(runId: runId, seq: 0, poemId: 1, wrongTaps: 0, responseUs: const Value(900000), at: day(1)));
+
+    Future<String> dumpTrips(AppDatabase db) async =>
+        [await db.select(db.sideTripRuns).get(), await db.select(db.sideTripAnswers).get()].join('\n');
+
+    test('answers of a missing game are deleted; ratings that are no number are replayed', () async {
+      final db = AppDatabase(NativeDatabase.memory());
+      final placed = AnkirenRating.update(AnkirenRating.start, 1300, 0);
+      final a = await trip(db, 1, performance: 1300, rating: placed);
+      final b = await trip(db, 2, performance: double.infinity, rating: double.infinity);
+      final c = await trip(db, 3, ranked: false);
+      final d = await trip(db, 4, performance: 1500, rating: double.nan);
+      final e = await trip(db, 5, performance: 1200, rating: 9999);
+      await answer(db, a);
+      await answer(db, 99);
+      expect((await db.select(db.sideTripRuns).get()).singleWhere((r) => r.id == d).rating, isNull,
+          reason: 'SQLite stores NaN as null');
+
+      final p = await Progress.open(db);
+
+      expect([for (final x in await db.select(db.sideTripAnswers).get()) x.runId], [a]);
+      final runs = {for (final r in await db.select(db.sideTripRuns).get()) r.id: r};
+      expect([runs[a]!.performance, runs[a]!.rating], [1300, placed], reason: 'games before the first bad one stay');
+      expect([runs[b]!.performance, runs[b]!.rating], [null, null], reason: 'no performance: dropped from the rating');
+      expect([runs[c]!.performance, runs[c]!.rating], [null, null]);
+      final rd = AnkirenRating.update(placed, 1500, 1);
+      expect([runs[d]!.performance, runs[d]!.rating], [1500, rd]);
+      expect(runs[e]!.rating, AnkirenRating.update(rd, 1200, 2));
+      expect(p.sideTrips.ratingOf(SideTrip.ankiren), runs[e]!.rating);
+      expect(p.sideTrips.rankedGames(SideTrip.ankiren), 3);
+
+      final repaired = await dumpTrips(db);
+      expect(await writesDuring(db, () => DbIntegrity.run(db)), isEmpty);
+      expect(await dumpTrips(db), repaired);
+      await db.close();
+    });
+
+    test('recorded games, ranked and free, are left exactly as they were', () async {
+      final db = AppDatabase(NativeDatabase.memory());
+      final p = await Progress.open(db);
+      await p.setLearningMode(LearningMode.allKnown);
+      await p.recordAnkiren(playAnkiren(AnkirenSetup.forLevel(0, ranked: true)), startedAt: day(1));
+      await p.recordAnkiren(playAnkiren(AnkirenSetup.forLevel(1), endAfter: 2), startedAt: day(2));
+      final before = await dumpTrips(db);
+      expect(await writesDuring(db, () => DbIntegrity.run(db)), isEmpty);
+      expect(await dumpTrips(db), before);
+      await db.close();
+    });
   });
 }
