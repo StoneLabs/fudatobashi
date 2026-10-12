@@ -4,10 +4,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import '../../config/design.dart';
-import '../../data/fuda_sets.dart';
 import '../../data/poem.dart';
 import '../../domain/ankiren_field.dart';
 import '../../domain/ankiren_level.dart';
+import '../../domain/ankiren_tomofuda.dart';
 import '../ankiren/ankiren_band.dart';
 import '../ankiren/ankiren_screen.dart';
 import 'ankiren_debug_overlay.dart';
@@ -16,11 +16,18 @@ import 'ankiren_debug_overlay.dart';
 /// that switches the level (dealing a new field at once), reseeds the deal,
 /// and toggles the debug layers over the field ([AnkirenDebugOverlay]).
 class AnkirenDebugGame extends StatefulWidget {
-  const AnkirenDebugGame({super.key, required this.known, this.level = 0});
+  const AnkirenDebugGame({super.key, required this.known, this.level = 0, this.seed});
 
   /// The player's known cards; a level they cannot fill deals from all.
   final List<int> known;
   final int level;
+
+  /// The first deal's seed; random when null.
+  final int? seed;
+
+  /// The cards a game at [level] deals from: [known] if they fill it, else all.
+  static List<int> deckFor(List<int> known, int level) =>
+      known.length >= AnkirenLevels.of(level).cards ? known : [for (final p in poems.all) p.id];
 
   @override
   State<AnkirenDebugGame> createState() => _AnkirenDebugGameState();
@@ -28,14 +35,14 @@ class AnkirenDebugGame extends StatefulWidget {
 
 class _AnkirenDebugGameState extends State<AnkirenDebugGame> {
   final _seeds = math.Random();
+  final _tomofuda = AnkirenTomofuda(poems);
   late int _level = widget.level;
-  late int _seed = _newSeed();
+  late int _seed = widget.seed ?? _newSeed();
   final Set<AnkirenDebugLayer> _layers = {...AnkirenDebugLayer.values};
 
   int _newSeed() => _seeds.nextInt(1 << 31);
 
-  List<int> get _deck =>
-      widget.known.length >= AnkirenLevels.of(_level).cards ? widget.known : [for (final p in poems.all) p.id];
+  List<int> get _deck => AnkirenDebugGame.deckFor(widget.known, _level);
 
   void _toggle(AnkirenDebugLayer layer) =>
       setState(() => _layers.contains(layer) ? _layers.remove(layer) : _layers.add(layer));
@@ -117,7 +124,7 @@ class _AnkirenDebugGameState extends State<AnkirenDebugGame> {
                             placement: placement,
                             layers: layers,
                             kimariji: (id) => poems[id].kimariji,
-                            tomofuda: fudaSets.tomofuda,
+                            tomofuda: _tomofuda.of,
                           ),
                 ),
               ),

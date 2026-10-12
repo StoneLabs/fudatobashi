@@ -932,7 +932,7 @@ abstract final class AnkirenTuning {
   static const Duration customFineUntil = Duration(minutes: 1);
   static const Duration customCoarseStep = Duration(seconds: 30);
 
-  /// Middle cards: a side splits a 友札 pair (e.g. two あら cards) by putting
+  /// Middle cards: a side splits a 友札 pair (e.g. なげき and なげけ) by putting
   /// one of them in the open middle of its 上段, the row at the centre line.
   /// With [middleChancePerSide], a side that holds such a pair puts
   /// [middleMin] to [middleMax] cards there, each with a 友札 left in its
@@ -940,6 +940,7 @@ abstract final class AnkirenTuning {
   /// keeps at least [middleMinClustered] in its clusters. At a real match's
   /// 25 a side (4 sides in 5 hold a pair) about 1 game in 5 has some.
   static const double middleChancePerSide = 0.13;
+  static const int tomofudaMinShared = 2;
   static const int middleMin = 1;
   static const int middleMax = 5;
   static const int middleMinPerSide = 21;
@@ -998,6 +999,24 @@ abstract final class AnkirenTuning {
 
   /// The response times (ms) the curve was fitted to, and their bonus.
   static const Map<int, int> speedTargets = {100: 100, 300: 90, 600: 75, 1000: 50, 3000: 20};
+}
+
+/// The developer's 暗記練 tools (`AnkirenToolsPage`): the points calculator's
+/// response-time range and the middle-card simulator's game counts.
+abstract final class AnkirenToolsTuning {
+  static const Duration responseMin = Duration(milliseconds: 100);
+  static const Duration responseMax = Duration(seconds: 6);
+  static const Duration responseStep = Duration(milliseconds: 100);
+  static const Duration responseStart = Duration(seconds: 1);
+
+  /// The curve is drawn every [curveStepMs] ms.
+  static const int curveStepMs = 25;
+
+  static const List<int> simulationGames = [100, 1000, 5000];
+  static const int simulationGamesStart = 1000;
+
+  /// Seeds tried when looking for a game with middle cards.
+  static const int seedSearchLimit = 20000;
 }
 
 /// 暗記練's play screen (`AnkirenScreen`): its pace between prompts.

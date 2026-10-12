@@ -3,19 +3,49 @@ import 'dart:math' as math;
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:fudatobashi/config/config.dart';
-import 'package:fudatobashi/data/fuda_sets.dart';
 import 'package:fudatobashi/data/poem.dart';
 import 'package:fudatobashi/domain/ankiren_field.dart';
 import 'package:fudatobashi/domain/ankiren_geometry.dart';
 import 'package:fudatobashi/domain/ankiren_level.dart';
+import 'package:fudatobashi/domain/ankiren_tomofuda.dart';
 
 void main() {
   final p = Poems.fromJsonString(File('assets/data/poems.json').readAsStringSync());
-  final sets = FudaSets(p);
-  final tomo = {for (final x in p.all) x.id: sets.tomofuda(x.id)};
-  final dealer = AnkirenDealer(tomofuda: (id) => tomo[id]!, kimarijiLength: (id) => p[id].kimariji.length);
+  final tomofuda = AnkirenTomofuda(p);
+  final dealer = AnkirenDealer(tomofuda: tomofuda.of, kimarijiLength: (id) => p[id].kimariji.length);
   final all = [for (var id = 1; id <= 100; id++) id];
-  bool linked(int a, int b) => tomo[a]!.contains(b);
+  bool linked(int a, int b) => tomofuda.of(a).contains(b);
+
+  group('友札', () {
+    List<String> family(String kimariji) => [
+          kimariji,
+          for (final id in tomofuda.of(p.byKimariji(kimariji).id)) p[id].kimariji,
+        ]..sort();
+
+    test('a kimariji family splits only at the deciding sound', () {
+      expect(family('あさぼらけう'), ['あさぼらけあ', 'あさぼらけう', 'あさじ']..sort());
+      expect(family('きみがためは'), ['きみがためお', 'きみがためは']..sort());
+      expect(family('なにし'), ['なにし', 'なにわえ', 'なにわが']..sort());
+      expect(family('なげき'), ['なげき', 'なげけ']..sort());
+      expect(family('あきの'), ['あきか', 'あきの']..sort());
+    });
+
+    test('one-sound cards and cards that split at the second sound have none', () {
+      for (final k in ['む', 'す', 'め', 'ふ', 'さ', 'ほ', 'せ', 'あけ', 'うら', 'つき', 'みち']) {
+        expect(tomofuda.of(p.byKimariji(k).id), isEmpty, reason: k);
+      }
+    });
+
+    test('the relation is symmetric and the families are disjoint', () {
+      for (final x in p.all) {
+        for (final y in tomofuda.of(x.id)) {
+          expect(tomofuda.of(y), contains(x.id));
+        }
+      }
+      final cards = [for (final f in tomofuda.families) ...f];
+      expect(cards.toSet(), hasLength(cards.length));
+    });
+  });
 
   group('levels', () {
     test('the table: a beginner start, growing to a real match, then less time', () {
@@ -191,7 +221,7 @@ void main() {
         final clustered = {...left, ...right};
         bool single(int c) => !clustered.any((o) => linked(c, o));
         for (final c in clustered) {
-          final family = {c, ...tomo[c]!.where(clustered.contains)};
+          final family = {c, ...tomofuda.of(c).where(clustered.contains)};
           final inLeft = family.where(left.contains).length, inRight = family.length - inLeft;
           final short = inLeft - inRight >= 2 ? right : inRight - inLeft >= 2 ? left : null;
           if (short != null && short.any(single)) out.add('$side left a 友札 family together: $family');

@@ -1,8 +1,8 @@
 import 'dart:math' as math;
 
 import '../config/config.dart';
-import '../data/fuda_sets.dart';
 import '../data/poem.dart';
+import 'ankiren_tomofuda.dart';
 
 /// The two halves of the field: the player's own (自陣, the bottom of the
 /// screen) and the opponent's (敵陣, the top).
@@ -97,12 +97,10 @@ class AnkirenDealer {
   AnkirenDealer({required this.tomofuda, required this.kimarijiLength});
 
   /// A dealer over the app's poems and 友札 sets.
-  factory AnkirenDealer.ofPoems() {
-    final tomo = {for (final p in poems.all) p.id: fudaSets.tomofuda(p.id)};
-    return AnkirenDealer(tomofuda: (id) => tomo[id]!, kimarijiLength: (id) => poems[id].kimariji.length);
-  }
+  factory AnkirenDealer.ofPoems() =>
+      AnkirenDealer(tomofuda: AnkirenTomofuda(poems).of, kimarijiLength: (id) => poems[id].kimariji.length);
 
-  /// A card's 友札: the cards it is easily confused with.
+  /// A card's 友札 (see [AnkirenTomofuda]).
   final List<int> Function(int poemId) tomofuda;
   final int Function(int poemId) kimarijiLength;
 
