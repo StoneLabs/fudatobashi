@@ -375,8 +375,8 @@ class _Segment extends StatelessWidget {
 }
 
 /// A run's panel: its tag (shrunk rather than cut when it is too long) and
-/// date (under the tag when both don't fit on one line) over its "{n} cards · {m} misses" line, and its result
-/// on the right.
+/// date (under the tag when both don't fit on one line) over its
+/// "{n} cards · {m} misses" line, and its result on the right.
 class _RunPanel extends StatelessWidget {
   const _RunPanel({required this.tag, required this.at, required this.cards, required this.misses, required this.result});
   final String tag;

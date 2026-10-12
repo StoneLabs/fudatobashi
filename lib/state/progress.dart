@@ -802,8 +802,7 @@ class Progress extends ChangeNotifier {
   }
 
   /// Stores a 暗記練 game once it is over, ranked or free, and moves its
-  /// rating for a ranked one (see [SideTrips.recordAnkiren]). A game that
-  /// never reached recall is not recorded.
+  /// rating for a ranked one (see [SideTrips.recordAnkiren]).
   Future<AnkirenReport> recordAnkiren(
     AnkirenGame game, {
     required DateTime startedAt,

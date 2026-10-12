@@ -34,9 +34,9 @@ import 'settings_rows.dart';
 import 'side_trip_settings_screen.dart';
 
 /// Settings, in sections: Language; Learning (mode, pace, the don't-know
-/// input); Play; Sound; Side Trips (a page per side trip); About, whose version row hides the 10-tap
-/// developer-mode unlock; Data (Reset all data); and, once developer mode
-/// is unlocked, Developer.
+/// input); Play; Sound; Accessibility; Side Trips (a page per side trip);
+/// About, whose version row hides the 10-tap developer-mode unlock; Data
+/// (Reset all data); and, once developer mode is unlocked, Developer.
 class SettingsScreen extends StatelessWidget {
   const SettingsScreen({super.key});
 

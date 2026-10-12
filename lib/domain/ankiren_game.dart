@@ -25,9 +25,9 @@ enum TapResult {
 }
 
 /// State machine of one 暗記練 game: every field card is asked once, in a
-/// random order, until each is found or given up, or the game is ended. Timestamps are on
-/// the pointer-event clock; a prompt's vsync time is put on it first (see
-/// `PointerClock`).
+/// random order, until each is found or given up, or the game is ended.
+/// Timestamps are on the pointer-event clock; a prompt's vsync time is put
+/// on it first (see `PointerClock`).
 class AnkirenGame extends ChangeNotifier {
   AnkirenGame({
     required this.field,

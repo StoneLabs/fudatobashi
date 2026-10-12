@@ -18,8 +18,9 @@ import '../manga/manga.dart';
 import '../rank/rank_badges.dart';
 
 /// My Profile (opened from Home's level button): Tobi's welcome, the
-/// player's rank and, smaller, each side trip's, how much of the deck they've learned and hold onto well,
-/// their level with its XP progress, and their first swipe ever, if any.
+/// player's rank and, smaller, each side trip's, how much of the deck
+/// they've learned and hold onto well, their level with its XP progress,
+/// and their first swipe ever, if any.
 class ProfileScreen extends StatelessWidget {
   const ProfileScreen({super.key});
 
