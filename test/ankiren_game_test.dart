@@ -37,6 +37,22 @@ void main() {
       expect(total(top - 1, left: const Duration(minutes: 4)), lessThan(total(top)), reason: 'early < next level');
     });
 
+    test('a level ended early never beats a harder one played in full within that time', () {
+      int total(int level, Duration used) {
+        final setup = AnkirenSetup.forLevel(level);
+        return AnkirenScore.firstTryTotal(setup, responseMs: 1000, timeLeft: setup.memorise - used);
+      }
+
+      for (var l = 0; l < AnkirenLevels.top; l++) {
+        for (var m = l + 1; m <= AnkirenLevels.top; m++) {
+          final full = total(m, AnkirenLevels.of(m).memorise);
+          for (var s = AnkirenLevels.of(m).memorise.inSeconds; s <= AnkirenLevels.of(l).memorise.inSeconds; s += 10) {
+            expect(total(l, Duration(seconds: s)), lessThan(full), reason: 'level $l ended at ${s}s vs level $m full');
+          }
+        }
+      }
+    });
+
     test('the speed bonus is a smooth sigmoid through the fitted points, 0.1 s to 5 s', () {
       final at = {for (final t in [100, 300, 600, 1000, 3000, 5000]) t: AnkirenScore.speedBonus(ms(t))};
       expect(at, {100: 100, 300: 88, 600: 72, 1000: 56, 3000: 16, 5000: 0});

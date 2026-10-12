@@ -1019,6 +1019,10 @@ abstract final class AnkirenToolsTuning {
   static const Duration responseTick = Duration(seconds: 1);
   static const int yDivisions = 4;
 
+  /// The time-used graph's marker starts here: a 12:00 level ended at 8:00
+  /// against the 8:00 level played in full.
+  static const Duration timeUsedStart = Duration(minutes: 8);
+
   static const List<int> simulationGames = [100, 1000, 5000];
   static const int simulationGamesStart = 1000;
 
