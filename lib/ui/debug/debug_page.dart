@@ -12,11 +12,10 @@ import '../../domain/rating.dart';
 import '../../domain/trainer.dart';
 import '../../state/progress.dart';
 import '../../state/scope.dart';
-import 'ankiren_config_tab.dart';
-import 'frame_stats.dart';
+import 'debug_common.dart';
 import 'reset_actions.dart';
 
-const _mono = TextStyle(fontFamily: 'monospace', fontSize: 12, fontFeatures: [FontFeature.tabularFigures()]);
+const _mono = debugMono;
 
 String _ms(double? v) => v == null ? '—' : v.toStringAsFixed(0);
 
@@ -39,20 +38,18 @@ class DebugPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return DefaultTabController(
-      length: 6,
+      length: 4,
       child: Scaffold(
         backgroundColor: Palette.paper,
         appBar: AppBar(
           backgroundColor: Palette.paper,
           foregroundColor: Palette.ink,
-          title: const Text('Debug', style: TextStyle(fontFamily: Fonts.display, fontWeight: Weights.regular)),
+          title: const Text('SRS Debug Info', style: TextStyle(fontFamily: Fonts.display, fontWeight: Weights.regular)),
           bottom: const TabBar(isScrollable: true, indicatorColor: Palette.pink, tabs: [
             Tab(text: 'Overview'),
             Tab(text: 'Items'),
             Tab(text: 'Scheduler'),
             Tab(text: 'Rating'),
-            Tab(text: 'Timing'),
-            Tab(text: 'AnkiRen'),
           ]),
         ),
         // Edge-to-edge system UI means the bottom system bar/gesture strip
@@ -63,28 +60,11 @@ class DebugPage extends StatelessWidget {
             _Items(),
             _Scheduler(),
             _RatingTab(),
-            _Timing(),
-            AnkirenConfigTab(),
           ]),
         ),
       ),
     );
   }
-}
-
-class _KV extends StatelessWidget {
-  const _KV(this.k, this.v);
-  final String k;
-  final String v;
-
-  @override
-  Widget build(BuildContext context) => Padding(
-        padding: const EdgeInsets.symmetric(vertical: 2),
-        child: Row(children: [
-          SizedBox(width: 170, child: Text(k, style: _mono.copyWith(color: Colors.grey))),
-          Expanded(child: SelectableText(v, style: _mono)),
-        ]),
-      );
 }
 
 class _Overview extends StatelessWidget {
@@ -106,32 +86,32 @@ class _Overview extends StatelessWidget {
     final ahead = p.learnAhead(now);
     final (roundsToday, attemptsToday) = _today(p, now);
     return ListView(padding: const EdgeInsets.all(16), children: [
-      _KV('goal level', '${t.goalLevel}  (${t.goalMs.toStringAsFixed(0)} ms)'),
-      _KV('goal ladder', c.goalsMs.join(' → ')),
-      _KV('unlocked items', '${unlocked.length} (${unlocked.where((s) => s.key.inverted).length} inverted)'),
-      _KV('solid at goal', '$solid / ${unlocked.length}'),
-      _KV('all solid', '${t.allSolid(stats)}'),
-      _KV('next batch', next.map((id) => poems[id].kimariji).join(' ')),
-      _KV('due now', '$due'),
-      _KV('attempts stored', '${stats.values.fold<int>(0, (a, s) => a + s.count)}'),
-      _KV('sessions', '${p.sessions.length}'),
-      _KV('streak', '${p.streak} days'),
+      DebugKV('goal level', '${t.goalLevel}  (${t.goalMs.toStringAsFixed(0)} ms)'),
+      DebugKV('goal ladder', c.goalsMs.join(' → ')),
+      DebugKV('unlocked items', '${unlocked.length} (${unlocked.where((s) => s.key.inverted).length} inverted)'),
+      DebugKV('solid at goal', '$solid / ${unlocked.length}'),
+      DebugKV('all solid', '${t.allSolid(stats)}'),
+      DebugKV('next batch', next.map((id) => poems[id].kimariji).join(' ')),
+      DebugKV('due now', '$due'),
+      DebugKV('attempts stored', '${stats.values.fold<int>(0, (a, s) => a + s.count)}'),
+      DebugKV('sessions', '${p.sessions.length}'),
+      DebugKV('streak', '${p.streak} days'),
       const Divider(height: 32),
       Text('Journey pace', style: Theme.of(context).textTheme.titleMedium),
-      _KV('learning mode / pace', '${c.learningMode.name} / ${c.pace.name}'
+      DebugKV('learning mode / pace', '${c.learningMode.name} / ${c.pace.name}'
           ' (${c.pace.profile.daysToAll}d, cap ${c.pace.profile.dailyAutoCap}/day,'
           ' routine ${c.pace.profile.dailyRounds} rounds/day)'),
-      _KV('journey day', '${status.day}'),
-      _KV('unlocked / target / total', '${status.unlocked} / ${status.target} / ${status.total}'),
-      _KV('readiness',
+      DebugKV('journey day', '${status.day}'),
+      DebugKV('unlocked / target / total', '${status.unlocked} / ${status.target} / ${status.total}'),
+      DebugKV('readiness',
           '${(readiness.solidFraction * 100).toStringAsFixed(0)}% solid (${readiness.solid}/${readiness.unlocked})'
           ', ${readiness.underPractised.length} under-practised, ready=${readiness.ready}'),
-      _KV('hold', status.hold.name),
-      _KV('next auto-unlock',
+      DebugKV('hold', status.hold.name),
+      DebugKV('next auto-unlock',
           status.nextPaceDay == null ? '—' : 'day ${status.nextPaceDay} (${status.nextPaceDay! - status.day}d away)'),
-      _KV('new today', '${status.newToday}'),
-      _KV('Home Learn ahead', '${ahead.lock.name}, ${ahead.unlocked - ahead.shaky}/${ahead.unlocked} well remembered'),
-      _KV('rounds / attempts today', '$roundsToday / $attemptsToday'),
+      DebugKV('new today', '${status.newToday}'),
+      DebugKV('Home Learn ahead', '${ahead.lock.name}, ${ahead.unlocked - ahead.shaky}/${ahead.unlocked} well remembered'),
+      DebugKV('rounds / attempts today', '$roundsToday / $attemptsToday'),
       const SizedBox(height: 4),
       const Text('day  target', style: _mono),
       for (var d = status.day; d <= status.day + PaceTuning.debugLookaheadDays; d++)
@@ -322,23 +302,23 @@ class ItemDebugPage extends StatelessWidget {
       body: ListView(padding: const EdgeInsets.all(16), children: [
         Text('${poem.kami}\n${poem.shimo}'),
         const SizedBox(height: 12),
-        _KV('torifuda', poem.columns.join(' / ')),
-        _KV('unlocked', '${s.unlocked} ${s.unlockedAt ?? ''}'),
-        _KV('fsrs state', '${s.card.state.name} step=${s.card.step}'),
-        _KV('stability', '${s.card.stability?.toStringAsFixed(3) ?? '—'} days'),
-        _KV('difficulty', s.card.difficulty?.toStringAsFixed(3) ?? '—'),
-        _KV('retrievability', s.reviewed ? t.retrievability(itemKey, now).toStringAsFixed(4) : '—'),
-        _KV('due', s.reviewed ? '${s.card.due.toLocal()}' : '—'),
-        _KV('last review', '${s.card.lastReview?.toLocal() ?? '—'}'),
-        _KV('attempts / timed', '${st.count} / ${st.timed.length}'),
-        _KV('ewma (geo, hl=5)', _ms(st.ewmaMs)),
+        DebugKV('torifuda', poem.columns.join(' / ')),
+        DebugKV('unlocked', '${s.unlocked} ${s.unlockedAt ?? ''}'),
+        DebugKV('fsrs state', '${s.card.state.name} step=${s.card.step}'),
+        DebugKV('stability', '${s.card.stability?.toStringAsFixed(3) ?? '—'} days'),
+        DebugKV('difficulty', s.card.difficulty?.toStringAsFixed(3) ?? '—'),
+        DebugKV('retrievability', s.reviewed ? t.retrievability(itemKey, now).toStringAsFixed(4) : '—'),
+        DebugKV('due', s.reviewed ? '${s.card.due.toLocal()}' : '—'),
+        DebugKV('last review', '${s.card.lastReview?.toLocal() ?? '—'}'),
+        DebugKV('attempts / timed', '${st.count} / ${st.timed.length}'),
+        DebugKV('ewma (geo, hl=5)', _ms(st.ewmaMs)),
         for (final n in [5, 10, 50, 100])
-          _KV('last $n  mean/med/p95', '${_ms(st.mean(n))} / ${_ms(st.median(n))} / ${_ms(st.percentile(n, 95))}'),
-        _KV('best', _ms(st.bestMs)),
-        _KV('miss rate (10)', '${(st.missRate() * 100).toStringAsFixed(1)}%'),
-        _KV('expected ms', st.expectedMs().toStringAsFixed(0)),
-        _KV('solid @ goal', '${st.solid(t.goalMs)}'),
-        _KV('mastered', '${t.mastered(itemKey, st)}'),
+          DebugKV('last $n  mean/med/p95', '${_ms(st.mean(n))} / ${_ms(st.median(n))} / ${_ms(st.percentile(n, 95))}'),
+        DebugKV('best', _ms(st.bestMs)),
+        DebugKV('miss rate (10)', '${(st.missRate() * 100).toStringAsFixed(1)}%'),
+        DebugKV('expected ms', st.expectedMs().toStringAsFixed(0)),
+        DebugKV('solid @ goal', '${st.solid(t.goalMs)}'),
+        DebugKV('mastered', '${t.mastered(itemKey, st)}'),
         const SizedBox(height: 12),
         SizedBox(height: 180, child: CustomPaint(painter: _ScatterPainter(st))),
         const SizedBox(height: 12),
@@ -415,7 +395,7 @@ class _SchedulerState extends State<_Scheduler> {
         Expanded(child: Text('Preview of the next training session (dry run, seed $_seed)')),
         IconButton(onPressed: () => setState(() => _seed++), icon: const Icon(Icons.casino)),
       ]),
-      _KV('pick-reason mix', counts.entries.map((e) => '${e.key.name}:${e.value}').join('  ')),
+      DebugKV('pick-reason mix', counts.entries.map((e) => '${e.key.name}:${e.value}').join('  ')),
       const SizedBox(height: 8),
       for (final (i, x) in picks.indexed)
         Text(
@@ -425,25 +405,25 @@ class _SchedulerState extends State<_Scheduler> {
         ),
       const Divider(height: 32),
       Text('FSRS', style: Theme.of(context).textTheme.titleMedium),
-      _KV('desired retention', scheduler.desiredRetention.toStringAsFixed(2)),
-      _KV('parameters', scheduler.parameters.map((v) => v.toStringAsFixed(3)).join(', ')),
-      _KV('due now / +1d / +3d',
+      DebugKV('desired retention', scheduler.desiredRetention.toStringAsFixed(2)),
+      DebugKV('parameters', scheduler.parameters.map((v) => v.toStringAsFixed(3)).join(', ')),
+      DebugKV('due now / +1d / +3d',
           '${p.dueCount(now)} / ${p.dueCount(now.add(const Duration(days: 1)))} / ${p.dueCount(now.add(const Duration(days: 3)))}'),
       const Divider(height: 32),
       Text('TrainerConfig', style: Theme.of(context).textTheme.titleMedium),
-      for (final e in config.toJson().entries) _KV(e.key, '${e.value}'),
+      for (final e in config.toJson().entries) DebugKV(e.key, '${e.value}'),
       const Divider(height: 32),
       Text('Scheduler tuning', style: Theme.of(context).textTheme.titleMedium),
-      _KV('dueShare / freshWeight', '${TrainingTuning.dueShare} / ${TrainingTuning.freshWeight}'),
-      _KV('newCardMinTimed / newCardMaxShare', '${TrainingTuning.newCardMinTimed} / ${TrainingTuning.newCardMaxShare}'),
-      _KV('slowness clamp', '${TrainingTuning.slownessClampMin}–${TrainingTuning.slownessClampMax}'),
-      _KV('missWeightFactor / recencyCapDays', '${TrainingTuning.missWeightFactor} / ${TrainingTuning.recencyCapDays}'),
-      _KV('unsolid× / maintenance×',
+      DebugKV('dueShare / freshWeight', '${TrainingTuning.dueShare} / ${TrainingTuning.freshWeight}'),
+      DebugKV('newCardMinTimed / newCardMaxShare', '${TrainingTuning.newCardMinTimed} / ${TrainingTuning.newCardMaxShare}'),
+      DebugKV('slowness clamp', '${TrainingTuning.slownessClampMin}–${TrainingTuning.slownessClampMax}'),
+      DebugKV('missWeightFactor / recencyCapDays', '${TrainingTuning.missWeightFactor} / ${TrainingTuning.recencyCapDays}'),
+      DebugKV('unsolid× / maintenance×',
           '${TrainingTuning.unsolidWeightMultiplier} / ${TrainingTuning.maintenanceWeightMultiplier}'),
-      _KV('recentRepeatWindow', '${TrainingTuning.recentRepeatWindow}'),
-      _KV('requeue gap / cap growth', '${TrainingTuning.requeueGap} / ${TrainingTuning.requeueCapGrowth}'),
-      _KV('pace readySolidFraction', '${PaceTuning.readySolidFraction}'),
-      _KV('pace curve', PaceTuning.curve.map((k) => '(${k.$1},${k.$2})').join(' ')),
+      DebugKV('recentRepeatWindow', '${TrainingTuning.recentRepeatWindow}'),
+      DebugKV('requeue gap / cap growth', '${TrainingTuning.requeueGap} / ${TrainingTuning.requeueCapGrowth}'),
+      DebugKV('pace readySolidFraction', '${PaceTuning.readySolidFraction}'),
+      DebugKV('pace curve', PaceTuning.curve.map((k) => '(${k.$1},${k.$2})').join(' ')),
     ]);
   }
 }
@@ -461,64 +441,18 @@ class _RatingTab extends StatelessWidget {
         (id, Rating.cardExpectedMs(p.stats(ItemKey(id, false)), p.stats(ItemKey(id, true)))),
     ]..sort((a, b) => b.$2.compareTo(a.$2));
     return ListView(padding: const EdgeInsets.all(16), children: [
-      _KV('projected 100 (s)', (projected / 1000).toStringAsFixed(2)),
-      _KV('performance P', perf.toStringAsFixed(1)),
-      _KV('rating R', p.rating?.toStringAsFixed(1) ?? '— (no runs yet)'),
-      _KV('band', Rating.bandOf(p.rating ?? perf).label),
-      _KV('next band', Rating.nextBand(p.rating ?? perf)?.label ?? '—'),
-      _KV('formula', 'P = 600·log2(1000 s / T), R += K(P−R)'),
-      _KV('rating points', '${p.ratingPoints.length}'),
+      DebugKV('projected 100 (s)', (projected / 1000).toStringAsFixed(2)),
+      DebugKV('performance P', perf.toStringAsFixed(1)),
+      DebugKV('rating R', p.rating?.toStringAsFixed(1) ?? '— (no runs yet)'),
+      DebugKV('band', Rating.bandOf(p.rating ?? perf).label),
+      DebugKV('next band', Rating.nextBand(p.rating ?? perf)?.label ?? '—'),
+      DebugKV('formula', 'P = 600·log2(1000 s / T), R += K(P−R)'),
+      DebugKV('rating points', '${p.ratingPoints.length}'),
       const Divider(height: 24),
       const Text('Card contributions to T (worst first)', style: _mono),
       for (final (id, ms) in rows)
         Text('${id.toString().padLeft(3)} ${poems[id].kimariji.padRight(7, '　')} ${(ms / 1000).toStringAsFixed(3).padLeft(7)} s',
             style: _mono),
-    ]);
-  }
-}
-
-class _Timing extends StatefulWidget {
-  const _Timing();
-
-  @override
-  State<_Timing> createState() => _TimingState();
-}
-
-class _TimingState extends State<_Timing> {
-  @override
-  Widget build(BuildContext context) {
-    final p = ProgressScope.of(context);
-    final f = FrameStats.instance.summary();
-    final run = p.lastRun;
-    return ListView(padding: const EdgeInsets.all(16), children: [
-      Row(children: [
-        const Expanded(child: Text('Frames (last ≤600)')),
-        IconButton(onPressed: () => setState(() {}), icon: const Icon(Icons.refresh)),
-      ]),
-      _KV('frames', '${f.frames}'),
-      _KV('avg build / raster', '${f.avgBuildMs.toStringAsFixed(2)} / ${f.avgRasterMs.toStringAsFixed(2)} ms'),
-      _KV('worst total span', '${f.worstTotalMs.toStringAsFixed(2)} ms'),
-      _KV('over 8.33 ms budget', '${f.jankPct.toStringAsFixed(1)}%'),
-      const Divider(height: 24),
-      const Text('Clocks: pointer timestamps (1 ms resolution on Android) and frame vsync timestamps '
-          '(µs) share the engine monotonic clock. reveal = vsync of first frame painting the card; '
-          'response = pointer-down (or first move after reveal if the finger was already down).'),
-      const Divider(height: 24),
-      if (run == null)
-        const Text('No run yet this app session.')
-      else ...[
-        _KV('cards', '${run.cards.length}, attempts ${run.attempts.length}, undone ${run.undone.length}'),
-        _KV('total', run.total == null ? '—' : '${run.total!.inMicroseconds} µs'),
-        const SizedBox(height: 8),
-        const Text(' #  card  kimariji    response µs  outcome  flags', style: _mono),
-        for (final a in run.attempts)
-          Text(
-            '${a.index.toString().padLeft(2)}  ${a.card.poemId.toString().padLeft(3)}${a.card.inverted ? 'v' : '^'}'
-            ' ${poems[a.card.poemId].kimariji.padRight(7, '　')} ${a.responseUs.toString().padLeft(10)}'
-            '  ${a.outcome.name.padRight(8)} ${a.wrong ? 'wrong ' : ''}${a.tainted ? 'tainted' : ''}',
-            style: _mono,
-          ),
-      ],
     ]);
   }
 }

@@ -1643,7 +1643,7 @@ void main() {
     await tester.pump();
     expect(p.settings.debugMode, isTrue);
     await tester.scrollUntilVisible(find.text(s.sectionDeveloper.toUpperCase()), 200);
-    expect(find.text('Debug page'), findsOneWidget);
+    expect(find.text('SRS Debug Info'), findsOneWidget);
     await tester.pump(ToastStyle.hold + ToastStyle.fade * 2);
     await tester.pumpWidget(const SizedBox());
   });

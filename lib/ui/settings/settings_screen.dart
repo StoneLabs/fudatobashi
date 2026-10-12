@@ -6,7 +6,6 @@ import '../../config/config.dart';
 import '../../config/design.dart';
 import '../../config/licenses.dart';
 import '../../config/vector_art.dart';
-import '../../domain/side_trips.dart';
 import '../../domain/trainer.dart';
 import '../../l10n/ankiren_strings.dart';
 import '../../l10n/credits_strings.dart';
@@ -18,10 +17,12 @@ import '../../l10n/strings.dart';
 import '../../state/progress.dart';
 import '../../state/scope.dart';
 import '../../state/settings.dart';
+import '../debug/ankiren_tools_page.dart';
 import '../debug/celebration_preview.dart';
 import '../debug/debug_page.dart';
 import '../debug/reset_actions.dart';
 import '../debug/simulation_page.dart';
+import '../debug/timing_page.dart';
 import '../manga/manga.dart';
 import '../play/pointer_clock.dart';
 import '../run/run_launcher.dart';
@@ -151,8 +152,7 @@ class SettingsScreen extends StatelessWidget {
                         children: [
                           SettingsGroup(children: [
                             SettingsTapRow(
-                              title: SideTrip.ankiren.label,
-                              note: s.ankirenSettingsNote,
+                              title: s.ankirenName,
                               opensPage: true,
                               onTap: () => Navigator.push(
                                   context, MangaRoute<void>(builder: (_) => const AnkirenSettingsScreen())),
@@ -419,11 +419,12 @@ class _DeveloperSection extends StatelessWidget {
           const _ClockOffsetRow(),
         ]),
         SettingsGroup(children: [
-          SettingsTapRow(title: 'Debug page', opensPage: true, onTap: () => open(const DebugPage())),
+          SettingsTapRow(title: 'SRS Debug Info', opensPage: true, onTap: () => open(const DebugPage())),
+          SettingsTapRow(title: 'Timing', opensPage: true, onTap: () => open(const TimingPage())),
+          SettingsTapRow(title: 'AnkiRen', opensPage: true, onTap: () => open(const AnkirenToolsPage())),
           SettingsTapRow(title: 'Simulation', opensPage: true, onTap: () => open(const SimulationPage())),
           SettingsTapRow(
-            title: '${SideTrip.ankiren.label} test game',
-            note: 'Untracked; any level, debug layers',
+            title: 'AnkiRen test game',
             onTap: () => startAnkirenTest(context),
           ),
           SettingsTapRow(title: 'Preview celebrations', onTap: () => previewCelebrations(context)),

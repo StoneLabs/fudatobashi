@@ -2064,6 +2064,16 @@ abstract final class SimulationStyle {
   static const double swatch = 10;
 }
 
+/// The developer's 暗記練 tools page (`AnkirenToolsPage`): the speed-bonus
+/// chart.
+abstract final class AnkirenToolsStyle {
+  static const double chartHeight = 120;
+  static const double curveStroke = 2;
+  static const double markerStroke = 1.5;
+  static const double targetRadius = 3;
+  static const double gap = 8;
+}
+
 /// The developer's 暗記練 test game (`AnkirenDebugGame`): its debug bar and
 /// the debug layer over the field, drawn like Flutter's own debug paint:
 /// hairlines and small monospace labels in high-contrast colours.

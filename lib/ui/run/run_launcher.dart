@@ -135,11 +135,11 @@ Future<void> startAnkirenFree(BuildContext context, AnkirenSetup setup, {bool re
 }
 
 /// Developer mode's 暗記練 test game ([AnkirenDebugGame]) at [level],
-/// recording nothing.
-Future<void> startAnkirenTest(BuildContext context, {int level = 0, bool replace = false}) async {
+/// recording nothing, on [seed]'s deal if given.
+Future<void> startAnkirenTest(BuildContext context, {int level = 0, int? seed, bool replace = false}) async {
   final route = MangaRoute<void>(
     transition: MangaTransition.zoom,
-    builder: (_) => AnkirenDebugGame(known: ProgressScope.read(context).knownCards.toList(), level: level),
+    builder: (_) => AnkirenDebugGame(known: ProgressScope.read(context).knownCards.toList(), level: level, seed: seed),
   );
   final navigator = Navigator.of(context);
   await (replace ? navigator.pushReplacement(route) : navigator.push(route));
