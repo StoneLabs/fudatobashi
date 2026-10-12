@@ -11,6 +11,7 @@ import 'package:fudatobashi/domain/ankiren_level.dart';
 import 'package:fudatobashi/domain/ankiren_rating.dart';
 import 'package:fudatobashi/domain/card_stats.dart';
 import 'package:fudatobashi/domain/play_session.dart';
+import 'package:fudatobashi/domain/rating.dart';
 import 'package:fudatobashi/domain/side_trips.dart';
 import 'package:fudatobashi/domain/trainer.dart';
 import 'package:fudatobashi/state/play_config.dart';
@@ -44,7 +45,10 @@ void main() {
     expect(notified, 1);
     final placed = AnkirenRating.update(
         AnkirenRating.start, AnkirenRating.performance(0, 1, placement: true), 0);
-    expect([first.ranked, first.level, first.completed, first.fraction], [true, 0, true, 1.0]);
+    final stored = p.sideTrips.runs.single;
+    expect([stored.ranked, stored.level, stored.completed, stored.cardCount, stored.score, stored.maxScore],
+        [true, 0, true, perfect.prompts.length, perfect.score.total, perfect.score.max]);
+    expect([stored.rating, stored.performance], [placed, AnkirenRating.performance(0, 1, placement: true)]);
     expect([first.ratingBefore, first.ratingAfter], [AnkirenRating.start, placed]);
     expect(
         placed - AnkirenRating.start,
@@ -53,12 +57,11 @@ void main() {
             AnkirenRatingModel.weight *
             (1 - AnkirenRatingModel.par),
         reason: 'placement: K ${AnkirenRatingModel.placementK} of a stretched performance');
-    expect([first.prompts, first.foundFirstTry, first.perSide],
-        [perfect.prompts.length, perfect.prompts.length, AnkirenLevels.of(0).perSide]);
-    expect(first.averageMs, 100);
-    expect(first.bandAfter, isNot(first.bandBefore));
+    expect(p.sideTrips.missesIn(stored), 0);
+    expect(stored.meta, contains('"perSide":${AnkirenLevels.of(0).perSide}'));
+    expect(Rating.bandOf(placed), isNot(Rating.bandOf(AnkirenRating.start)));
 
-    final answers = await (db.select(db.sideTripAnswers)..where((a) => a.runId.equals(first.runId))).get();
+    final answers = await (db.select(db.sideTripAnswers)..where((a) => a.runId.equals(stored.id))).get();
     expect([for (final a in answers) a.poemId], perfect.prompts);
     expect([for (final a in answers) a.seq], List.generate(answers.length, (i) => i));
     expect(answers.every((a) => a.wrongTaps == 0 && a.responseUs == 100000), isTrue);
@@ -67,8 +70,7 @@ void main() {
     expect([hub.rating, hub.rankedLevel, hub.games], [placed, AnkirenRating.levelFor(placed, maxLevel: 10), 1]);
 
     final free = await p.recordAnkiren(playAnkiren(AnkirenSetup.forLevel(2), wrongAt: {0, 3}), startedAt: startedAt);
-    expect([free.ranked, free.ratingBefore, free.ratingAfter], [false, null, null]);
-    expect(free.foundFirstTry, free.prompts - 2);
+    expect([free.ratingBefore, free.ratingAfter], [null, null]);
     expect(p.sideTrips.ratingOf(ankiren), placed, reason: 'free play never moves the rating');
     expect(p.sideTrips.rankedGames(ankiren), 1);
     final run = p.sideTrips.runs.last;
@@ -88,10 +90,10 @@ void main() {
     final ratings = <double>[];
     for (var game = 0; game <= AnkirenRatingModel.placementGames; game++) {
       final level = p.sideTripsHub()[ankiren].rankedLevel!;
-      final report = await p.recordAnkiren(playAnkiren(AnkirenSetup.forLevel(level, ranked: true), seed: game, ms: 3000),
-          startedAt: startedAt);
+      final played = playAnkiren(AnkirenSetup.forLevel(level, ranked: true), seed: game, ms: 3000);
+      final report = await p.recordAnkiren(played, startedAt: startedAt);
       final placing = game < AnkirenRatingModel.placementGames;
-      final perf = AnkirenRating.performance(level, report.fraction, placement: placing);
+      final perf = AnkirenRating.performance(level, played.score.fraction, placement: placing);
       final k = placing ? AnkirenRatingModel.placementK : AnkirenRatingModel.establishedK;
       expect(report.ratingAfter, closeTo(report.ratingBefore! + k * (perf - report.ratingBefore!), 1e-9));
       ratings.add(report.ratingAfter!);
@@ -106,12 +108,12 @@ void main() {
     final p = await allKnown(db);
     final game = playAnkiren(AnkirenSetup.forLevel(1, ranked: true), endAfter: 3);
     final report = await p.recordAnkiren(game, startedAt: startedAt, meta: {'layout': 'v2'});
-    expect([report.completed, report.foundFirstTry, report.prompts], [false, 3, AnkirenLevels.of(1).cards]);
     expect(report.ratingAfter, isNotNull);
     final answers = await db.select(db.sideTripAnswers).get();
     final cards = AnkirenLevels.of(1).cards;
     expect([for (final a in answers) a.responseUs == null], [for (var i = 0; i < cards; i++) i >= 3]);
     final run = p.sideTrips.runs.single;
+    expect([run.completed, run.cardCount], [false, cards]);
     expect(p.sideTrips.missesIn(run), cards - 3);
     expect(run.meta, contains('"layout":"v2"'));
     expect(run.meta, contains('"perSide":${AnkirenLevels.of(1).perSide}'));

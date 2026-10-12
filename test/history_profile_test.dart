@@ -26,7 +26,6 @@ import 'package:fudatobashi/l10n/strings.dart';
 import 'package:fudatobashi/state/play_config.dart';
 import 'package:fudatobashi/state/progress.dart';
 import 'package:fudatobashi/state/scope.dart';
-import 'package:fudatobashi/state/side_trips.dart';
 import 'package:fudatobashi/ui/app.dart';
 import 'package:fudatobashi/ui/manga/manga.dart';
 import 'package:fudatobashi/ui/profile/profile_screen.dart';
@@ -135,16 +134,15 @@ void main() {
           (tester) async {
         final s = S(ja ? 'ja' : 'en');
         final p = await open(tester, ja: ja);
-        late AnkirenReport ranked, custom;
+        final ranked = playAnkiren(AnkirenSetup.forLevel(0, ranked: true), wrongAt: {1});
+        final custom =
+            playAnkiren(const AnkirenSetup.custom(perSide: 3, memorise: Duration(seconds: 30)), endAfter: 4);
         // The 暗記練 games come the next day.
         await tester.runAsync(() async {
           await p.recordRun(swipes([1, 2, 3]), const PlayConfig(mode: PlayMode.training), day);
           await p.recordRun(swipes([4, 5]), const FreePracticeSetup().config, day.add(const Duration(hours: 1)));
-          ranked = await p.recordAnkiren(playAnkiren(AnkirenSetup.forLevel(0, ranked: true), wrongAt: {1}),
-              startedAt: day.add(const Duration(hours: 26)));
-          custom = await p.recordAnkiren(
-              playAnkiren(const AnkirenSetup.custom(perSide: 3, memorise: Duration(seconds: 30)), endAfter: 4),
-              startedAt: day.add(const Duration(hours: 27)));
+          await p.recordAnkiren(ranked, startedAt: day.add(const Duration(hours: 26)));
+          await p.recordAnkiren(custom, startedAt: day.add(const Duration(hours: 27)));
         });
         onPhone(tester, fontScale: fontScale, size: phone);
         await tester.pumpWidget(RepaintBoundary(key: const ValueKey('screen'), child: FudatobashiApp(progress: p)));
@@ -186,8 +184,8 @@ void main() {
         expect(find.text(line(AnkirenLevels.of(0).cards, 1)), findsOneWidget,
             reason: 'one card found after a wrong tap');
         expect(find.text(line(6, 2)), findsOneWidget, reason: 'ended with two cards never found');
-        expect(find.text(score(ranked.score)), findsOneWidget);
-        expect(find.text(score(custom.score)), findsOneWidget);
+        expect(find.text(score(ranked.score.total)), findsOneWidget);
+        expect(find.text(score(custom.score.total)), findsOneWidget);
         expect(record(), {
           s.historyRunsLabel: '4',
           s.historyCardsLabel: '${3 + 2 + AnkirenLevels.of(0).cards + 6}',
@@ -208,7 +206,7 @@ void main() {
         expect(record(), {
           s.historyRunsLabel: '2',
           s.historyCardsLabel: '${AnkirenLevels.of(0).cards + 6}',
-          s.historyBestLabel: '${math.max(ranked.score, custom.score)}',
+          s.historyBestLabel: '${math.max(ranked.score.total, custom.score.total)}',
         });
         await filter(s.training);
         expect([for (final e in tester.widgetList<InkTag>(tags())) e.text], [s.training]);

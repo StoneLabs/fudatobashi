@@ -6,63 +6,15 @@ import '../db/database.dart';
 import '../domain/ankiren_game.dart';
 import '../domain/ankiren_level.dart';
 import '../domain/ankiren_rating.dart';
-import '../domain/rating.dart';
 import '../domain/side_trips.dart';
 
-/// What a recorded 暗記練 game came to (for its results).
+/// What recording a 暗記練 game changed (for its results): 暗記練's rating
+/// before and after a ranked game, both null for free play.
 class AnkirenReport {
-  const AnkirenReport({
-    required this.runId,
-    required this.ranked,
-    required this.level,
-    required this.perSide,
-    required this.memorise,
-    required this.score,
-    required this.maxScore,
-    required this.fraction,
-    required this.prompts,
-    required this.foundFirstTry,
-    required this.averageMs,
-    required this.ratingBefore,
-    required this.ratingAfter,
-    required this.completed,
-  });
+  const AnkirenReport({required this.ratingBefore, required this.ratingAfter});
 
-  final int runId;
-  final bool ranked;
-
-  /// The level played; null for a custom setup.
-  final int? level;
-  final int perSide;
-  final Duration memorise;
-
-  /// Points earned, and the most the game could give (see `AnkirenScore`).
-  final int score;
-  final int maxScore;
-
-  /// Cards asked: every field card once.
-  final int prompts;
-
-  /// Cards found with the first tap.
-  final int foundFirstTry;
-
-  /// Mean response time of the first-try finds with a valid time, ms; null
-  /// when there are none.
-  final double? averageMs;
-
-  /// 暗記練's rating before and after the game; null for free play.
   final double? ratingBefore;
   final double? ratingAfter;
-
-  /// Every card was found (false for a game ended early).
-  final bool completed;
-
-  /// The share of the best recall reached, which moves the rating (see
-  /// `AnkirenScore.fraction`).
-  final double fraction;
-
-  RankBand? get bandBefore => ratingBefore == null ? null : Rating.bandOf(ratingBefore!);
-  RankBand? get bandAfter => ratingAfter == null ? null : Rating.bandOf(ratingAfter!);
 }
 
 /// The side trips' recorded games (寄り道), in the order they were played,
@@ -181,22 +133,7 @@ class SideTrips {
     _runs.add(await (db.select(db.sideTripRuns)..where((r) => r.id.equals(runId))).getSingle());
     _firstTries[runId] = score.firstTries;
 
-    return AnkirenReport(
-      runId: runId,
-      ranked: setup.ranked,
-      level: setup.level,
-      perSide: setup.perSide,
-      memorise: setup.memorise,
-      score: score.total,
-      maxScore: score.max,
-      fraction: score.fraction,
-      prompts: game.prompts.length,
-      foundFirstTry: score.firstTries,
-      averageMs: score.averageFirstTryMs,
-      ratingBefore: before,
-      ratingAfter: after,
-      completed: game.completed,
-    );
+    return AnkirenReport(ratingBefore: before, ratingAfter: after);
   }
 
   /// Forgets every game, once the caller has deleted them from the database.

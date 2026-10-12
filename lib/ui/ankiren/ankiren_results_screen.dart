@@ -114,7 +114,7 @@ class _AnkirenResultsScreenState extends State<AnkirenResultsScreen> {
                     ),
                     if (report?.ratingAfter != null) ...[
                       const SizedBox(height: Gaps.panel),
-                      _RatingPanel(before: report!.ratingBefore, after: report.ratingAfter!),
+                      _RatingPanel(before: report!.ratingBefore!, after: report.ratingAfter!),
                     ] else if (widget.tracked && !setup.ranked) ...[
                       const SizedBox(height: Gaps.panel),
                       DashedBox(
@@ -262,14 +262,13 @@ class _Stat extends StatelessWidget {
 /// what comes next: a placement game, and the level of the next one.
 class _RatingPanel extends StatelessWidget {
   const _RatingPanel({required this.before, required this.after});
-  final double? before;
-  final double after;
+  final double before, after;
 
   @override
   Widget build(BuildContext context) {
     final s = S.of(context);
     final progress = ProgressScope.of(context);
-    final delta = before == null ? null : (after - before!).round();
+    final delta = (after - before).round();
     final band = Rating.bandOf(after);
     final rung = rungStyle(band.id);
     final games = progress.sideTrips.rankedGames(SideTrip.ankiren);
@@ -288,11 +287,11 @@ class _RatingPanel extends StatelessWidget {
                     fontSize: ResultsLayout.statLabelFont,
                     letterSpacing: ResultsLayout.statLabelTracking * ResultsLayout.statLabelFont))),
             _OneLine(Text(
-              delta == null ? '${after.round()}' : (delta >= 0 ? '+$delta' : '$delta'),
+              delta >= 0 ? '+$delta' : '$delta',
               style: const TextStyle(
                   fontFamily: Fonts.display, fontSize: ResultsLayout.statBigFont, height: TypeScale.displayLineHeight),
             )),
-            _OneLine(Text('${before?.round() ?? s.newBadge} → ${after.round()} · ${band.label}', style: noteStyle)),
+            _OneLine(Text('${before.round()} → ${after.round()} · ${band.label}', style: noteStyle)),
             if (games <= AnkirenRatingModel.placementGames)
               _OneLine(Text(s.ankirenPlacement(games, AnkirenRatingModel.placementGames), style: noteStyle)),
             if (next != null) _OneLine(Text(s.ankirenNextLevel(next), style: noteStyle)),

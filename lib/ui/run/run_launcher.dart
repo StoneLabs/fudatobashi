@@ -1,7 +1,6 @@
 import 'package:flutter/widgets.dart';
 
 import '../../domain/ankiren_level.dart';
-import '../../domain/ankiren_rating.dart';
 import '../../domain/play_session.dart';
 import '../../domain/side_trips.dart';
 import '../../l10n/ankiren_strings.dart';
@@ -110,15 +109,14 @@ Future<void> keepGoing(BuildContext context, PlayConfig config) async {
 Future<void> startAnkirenRanked(BuildContext context, {bool replace = false}) async {
   final progress = ProgressScope.read(context);
   final entry = progress.sideTripsHub()[SideTrip.ankiren];
-  final known = progress.knownCards.toList();
-  final maxLevel = AnkirenLevels.maxLevelFor(known.length);
   if (!entry.open) return;
-  if (maxLevel == null) {
+  final level = entry.rankedLevel;
+  if (level == null) {
     MangaToast.show(context, S.of(context).ankirenNeedCards(AnkirenLevels.of(0).cards));
     return;
   }
-  final level = entry.rankedLevel ?? AnkirenRating.levelFor(entry.rating ?? AnkirenRating.start, maxLevel: maxLevel);
-  await _pushAnkiren(context, AnkirenSetup.forLevel(level, ranked: true), known, replace: replace);
+  await _pushAnkiren(context, AnkirenSetup.forLevel(level, ranked: true), progress.knownCards.toList(),
+      replace: replace);
 }
 
 /// 暗記練's free play at [setup], once its free play is open and the known
