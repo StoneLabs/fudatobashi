@@ -20,6 +20,13 @@ extension HistoryStrings on S {
   /// A free-play side-trip game at a level preset.
   String historyFreeLevel(int level) => f('historyFreeLevel', [level]);
 
+  /// The record strip's labels: how many runs are on show, their cards, the
+  /// days they were played on, and a side trip's best score.
+  String get historyRunsLabel => t('historyRunsLabel');
+  String get historyCardsLabel => t('historyCardsLabel');
+  String get historyDaysLabel => t('historyDaysLabel');
+  String get historyBestLabel => t('historyBestLabel');
+
   /// A short "Mon D, HH:MM" (EN) / "M月D日 HH:MM" (JA) timestamp.
   String sessionDate(DateTime at) {
     final local = at.toLocal();

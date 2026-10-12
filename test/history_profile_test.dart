@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'dart:math' as math;
 import 'dart:ui' as ui;
 
 import 'package:drift/drift.dart' show driftRuntimeOptions;
@@ -37,6 +38,10 @@ import 'test_l10n.dart';
 import 'test_vector_art.dart';
 
 const _phone = Size(384, 832);
+
+/// A narrower phone as tall as the user's, where a large font scale leaves
+/// History's header the least room.
+const _narrowPhone = Size(360, 832);
 
 Future<void> _loadFont(String family, List<String> files) async {
   final loader = FontLoader(family);
@@ -107,12 +112,12 @@ void main() {
 
   // The user's phone: 384 × 832 at 2.8125 px per dp, with a 28 dp status bar
   // and a 48 dp navigation bar.
-  void onPhone(WidgetTester tester, {required double fontScale}) {
+  void onPhone(WidgetTester tester, {required double fontScale, Size size = _phone}) {
     const dpr = 2.8125;
     const bars = FakeViewPadding(top: 28 * dpr, bottom: 48 * dpr);
     tester.view
       ..devicePixelRatio = dpr
-      ..physicalSize = _phone * dpr
+      ..physicalSize = size * dpr
       ..padding = bars
       ..viewPadding = bars;
     tester.platformDispatcher.textScaleFactorTestValue = fontScale;
@@ -123,65 +128,100 @@ void main() {
   for (final ja in [false, true]) {
     final lang = ja ? 'ja' : 'en';
 
-    testWidgets('History lists runs and 暗記練 games newest first, and its filter narrows them ($lang)', (tester) async {
-      final s = S(ja ? 'ja' : 'en');
-      final p = await open(tester, ja: ja);
-      late AnkirenReport ranked, custom;
-      await tester.runAsync(() async {
-        await p.recordRun(swipes([1, 2, 3]), const PlayConfig(mode: PlayMode.training), day);
-        await p.recordRun(swipes([4, 5]), const FreePracticeSetup().config, day.add(const Duration(hours: 1)));
-        ranked = await p.recordAnkiren(playAnkiren(AnkirenSetup.forLevel(0, ranked: true), wrongAt: {1}),
-            startedAt: day.add(const Duration(hours: 2)));
-        custom = await p.recordAnkiren(
-            playAnkiren(const AnkirenSetup.custom(perSide: 3, memorise: Duration(seconds: 30)), endAfter: 4),
-            startedAt: day.add(const Duration(hours: 3)));
-      });
-      onPhone(tester, fontScale: 1.3);
-      await tester.pumpWidget(RepaintBoundary(key: const ValueKey('screen'), child: FudatobashiApp(progress: p)));
-      await tester.pump(const Duration(milliseconds: 500));
-      await tester.tap(find.descendant(of: find.byType(MangaTabBar), matching: find.text(s.history)));
-      await tester.pump(const Duration(milliseconds: 500));
-      expect(tester.takeException(), isNull);
+    for (final (phone, fontScale) in [(_phone, 1.0), (_phone, 1.3), (_narrowPhone, 1.3)]) {
+      final setup = '$lang, ${phone.width.round()} dp, font scale $fontScale';
 
-      Finder tags() => find.descendant(of: find.byType(ListView), matching: find.byType(InkTag));
-      Finder chip(String label) => find.descendant(of: find.byType(Wrap).first, matching: find.text(label));
-      Future<void> filter(String label) async {
-        await tester.tap(chip(label));
-        await tester.pump(const Duration(milliseconds: 300));
+      testWidgets('History lists runs and 暗記練 games newest first, sums them up, and its filter narrows both ($setup)',
+          (tester) async {
+        final s = S(ja ? 'ja' : 'en');
+        final p = await open(tester, ja: ja);
+        late AnkirenReport ranked, custom;
+        // The 暗記練 games come the next day.
+        await tester.runAsync(() async {
+          await p.recordRun(swipes([1, 2, 3]), const PlayConfig(mode: PlayMode.training), day);
+          await p.recordRun(swipes([4, 5]), const FreePracticeSetup().config, day.add(const Duration(hours: 1)));
+          ranked = await p.recordAnkiren(playAnkiren(AnkirenSetup.forLevel(0, ranked: true), wrongAt: {1}),
+              startedAt: day.add(const Duration(hours: 26)));
+          custom = await p.recordAnkiren(
+              playAnkiren(const AnkirenSetup.custom(perSide: 3, memorise: Duration(seconds: 30)), endAfter: 4),
+              startedAt: day.add(const Duration(hours: 27)));
+        });
+        onPhone(tester, fontScale: fontScale, size: phone);
+        await tester.pumpWidget(RepaintBoundary(key: const ValueKey('screen'), child: FudatobashiApp(progress: p)));
+        await tester.pump(const Duration(milliseconds: 500));
+        await tester.tap(find.descendant(of: find.byType(MangaTabBar), matching: find.text(s.history)));
+        await tester.pump(const Duration(milliseconds: 500));
         expect(tester.takeException(), isNull);
-      }
 
-      final rankedTag = '暗記練 · ${s.sideTripRankedLevel(0)}';
-      final customTag = '暗記練 · ${s.freePlay} · ${s.deckCustom}';
-      expect([for (final e in tester.widgetList<InkTag>(tags())) e.text],
-          [customTag, rankedTag, '${s.freePlay} · ${s.deckAllKnown}', s.training]);
-      String line(int cards, int misses) =>
-          s.historyLineTemplate.replaceAll('{0}', '$cards').replaceAll('{1}', '$misses');
-      String score(int points) => s.historyScoreTemplate.replaceAll('{0}', '$points');
-      expect(find.text(line(AnkirenLevels.of(0).cards, 1)), findsOneWidget, reason: 'one card found after a wrong tap');
-      expect(find.text(line(6, 2)), findsOneWidget, reason: 'ended with two cards never found');
-      expect(find.text(score(ranked.score)), findsOneWidget);
-      expect(find.text(score(custom.score)), findsOneWidget);
+        Finder tags() => find.descendant(of: find.byType(ListView), matching: find.byType(InkTag));
+        // The filter sits above the list, whose tags may read the same.
+        Finder chip(String label) => find.text(label).first;
+        Future<void> filter(String label) async {
+          await tester.tap(chip(label));
+          await tester.pump(const Duration(milliseconds: 300));
+          expect(tester.takeException(), isNull);
+        }
 
-      for (final label in [s.allTab, s.training, s.freePlay, s.weakCards, SideTrip.ankiren.label]) {
-        final rect = tester.getRect(chip(label));
-        expect(rect.left, greaterThanOrEqualTo(Gaps.gutter));
-        expect(rect.right, lessThanOrEqualTo(_phone.width - Gaps.gutter), reason: 'the filter row wraps');
-      }
+        // The record strip's stats on show, each label with the number under it.
+        Map<String, String?> record() => {
+              for (final label in [s.historyRunsLabel, s.historyCardsLabel, s.historyDaysLabel, s.historyBestLabel])
+                if (find.text(label).evaluate().isNotEmpty)
+                  label: tester
+                      .widget<Text>(find
+                          .descendant(
+                            of: find.ancestor(of: find.text(label), matching: find.byType(Column)).first,
+                            matching: find.byType(Text),
+                          )
+                          .last)
+                      .data,
+            };
 
-      await _capture(tester, 'history_filter_$lang');
-      await filter(SideTrip.ankiren.label);
-      await _capture(tester, 'history_ankiren_$lang');
-      expect([for (final e in tester.widgetList<InkTag>(tags())) e.text], [customTag, rankedTag]);
-      await filter(s.training);
-      expect([for (final e in tester.widgetList<InkTag>(tags())) e.text], [s.training]);
-      await filter(s.weakCards);
-      expect(tags(), findsNothing);
-      expect(find.text(s.noRunsYet), findsOneWidget);
-      await filter(s.allTab);
-      expect(tags(), findsNWidgets(4));
-      await tester.pumpWidget(const SizedBox());
-    });
+        final rankedTag = '暗記練 · ${s.sideTripRankedLevel(0)}';
+        final customTag = '暗記練 · ${s.freePlay} · ${s.deckCustom}';
+        expect([for (final e in tester.widgetList<InkTag>(tags())) e.text],
+            [customTag, rankedTag, '${s.freePlay} · ${s.deckAllKnown}', s.training]);
+        String line(int cards, int misses) =>
+            s.historyLineTemplate.replaceAll('{0}', '$cards').replaceAll('{1}', '$misses');
+        String score(int points) => s.historyScoreTemplate.replaceAll('{0}', '$points');
+        expect(find.text(line(AnkirenLevels.of(0).cards, 1)), findsOneWidget,
+            reason: 'one card found after a wrong tap');
+        expect(find.text(line(6, 2)), findsOneWidget, reason: 'ended with two cards never found');
+        expect(find.text(score(ranked.score)), findsOneWidget);
+        expect(find.text(score(custom.score)), findsOneWidget);
+        expect(record(), {
+          s.historyRunsLabel: '4',
+          s.historyCardsLabel: '${3 + 2 + AnkirenLevels.of(0).cards + 6}',
+          s.historyDaysLabel: '2'
+        });
+
+        for (final label in [s.allTab, s.training, s.freePlay, s.weakCards, SideTrip.ankiren.label]) {
+          final rect = tester.getRect(chip(label));
+          expect(rect.left, greaterThanOrEqualTo(Gaps.gutter));
+          expect(rect.right, lessThanOrEqualTo(phone.width - Gaps.gutter), reason: 'the filter wraps into rows');
+        }
+
+        final shot = '${lang}_${phone.width.round()}_$fontScale';
+        await _capture(tester, 'history_filter_$shot');
+        await filter(SideTrip.ankiren.label);
+        await _capture(tester, 'history_ankiren_$shot');
+        expect([for (final e in tester.widgetList<InkTag>(tags())) e.text], [customTag, rankedTag]);
+        expect(record(), {
+          s.historyRunsLabel: '2',
+          s.historyCardsLabel: '${AnkirenLevels.of(0).cards + 6}',
+          s.historyBestLabel: '${math.max(ranked.score, custom.score)}',
+        });
+        await filter(s.training);
+        expect([for (final e in tester.widgetList<InkTag>(tags())) e.text], [s.training]);
+        expect(record(), {s.historyRunsLabel: '1', s.historyCardsLabel: '3', s.historyDaysLabel: '1'});
+        await filter(s.weakCards);
+        expect(tags(), findsNothing);
+        expect(find.text(s.noRunsYet), findsOneWidget);
+        expect(record(), {s.historyRunsLabel: '0', s.historyCardsLabel: '0', s.historyDaysLabel: '0'});
+        await filter(s.allTab);
+        expect(tags(), findsNWidgets(4));
+        await tester.pumpWidget(const SizedBox());
+      });
+    }
 
     testWidgets('My Profile shows 暗記練\'s rank under the main one, unranked at 入門 before its first game ($lang)',
         (tester) async {

@@ -890,12 +890,27 @@ abstract final class HistoryLayout {
   static const double rowDateFont = 12.5;
   static const double rowTimeFont = 18;
   static const EdgeInsets emptyPadding = EdgeInsets.symmetric(horizontal: 16, vertical: 12);
+}
 
-  /// The filter row's buttons (every run, a play mode, a side trip).
-  static const EdgeInsets filterPadding = EdgeInsets.symmetric(horizontal: 12, vertical: 6);
-  static const double filterHeight = 36;
-  static const double filterFont = 13;
-  static const double filterGap = 6;
+/// History's header under its title: the record strip summing up the runs
+/// on show, and the run-kind filter, a segmented control whose segments wrap
+/// into as few rows as fit.
+abstract final class HistoryHeaderLayout {
+  /// The record strip: a sun-toned panel with its right edge cut in, each
+  /// stat a tracked label over its number, split by ink rules.
+  static const double stripCut = 14;
+  static const EdgeInsets stripPadding = EdgeInsets.fromLTRB(14, 9, 14 + stripCut, 10);
+  static const double statLabelFont = 11;
+  static const double statLabelTracking = 0.14;
+  static const double statGap = 2;
+  static const double statFont = 26;
+  static const double statRuleInset = 12;
+
+  /// Between the strip and the filter.
+  static const double filterGap = 10;
+  static const double segmentHeight = 40;
+  static const double segmentPadding = 10;
+  static const double segmentFont = 13;
 }
 
 /// Small charts shared by the island list (a per-card sparkline) and the card
