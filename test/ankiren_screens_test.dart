@@ -37,6 +37,7 @@ import 'package:fudatobashi/ui/ankiren/ankiren_results_screen.dart';
 import 'package:fudatobashi/ui/ankiren/ankiren_screen.dart';
 import 'package:fudatobashi/ui/app.dart';
 import 'package:fudatobashi/ui/manga/manga.dart';
+import 'package:fudatobashi/ui/rank/rank_badges.dart';
 import 'package:fudatobashi/ui/settings/settings_screen.dart';
 import 'package:fudatobashi/ui/settings/side_trip_settings_screen.dart';
 import 'package:fudatobashi/ui/side_trips/ankiren_free_sheet.dart';
@@ -333,6 +334,9 @@ void main() {
       expect(find.byType(AnkirenResultsScreen), findsOneWidget);
       expect(p.sideTrips.rankedGames(SideTrip.ankiren), 1, reason: 'the ranked game was recorded');
       expect(find.text(s.ankirenWrongTaps(0)), findsOneWidget);
+      expect(find.byType(ClassBadge), findsOneWidget, reason: "a ranked game shows the rating's class");
+      expect(find.text(s.ankirenPlacement(1, AnkirenRatingModel.placementGames)), findsOneWidget);
+      expect(find.text(s.ankirenNextLevel(p.sideTripsHub()[SideTrip.ankiren].rankedLevel!)), findsOneWidget);
       expect(find.text(s.again), findsOneWidget);
       await _capture(tester, 'ankiren_results');
       await tester.pumpWidget(const SizedBox());
