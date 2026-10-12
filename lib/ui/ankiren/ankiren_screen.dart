@@ -124,9 +124,12 @@ class _AnkirenScreenState extends State<AnkirenScreen> {
     _live++;
     music.leaveMenu();
     unawaited(PointerClock.sync());
-    _clock = Timer.periodic(AnkirenPlayTuning.clockTick, (_) {
-      _left.value -= AnkirenPlayTuning.clockTick;
-      if (_left.value <= Duration.zero) _startRecall();
+    // Counted by the ticks due, not the ones run: a stalled or suspended app
+    // skips ticks, never time.
+    _clock = Timer.periodic(AnkirenPlayTuning.clockTick, (timer) {
+      final left = widget.setup.memorise - AnkirenPlayTuning.clockTick * timer.tick;
+      _left.value = left > Duration.zero ? left : Duration.zero;
+      if (left <= Duration.zero) _startRecall();
     });
   }
 
