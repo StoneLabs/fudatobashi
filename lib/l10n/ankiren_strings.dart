@@ -27,7 +27,14 @@ extension AnkirenStrings on S {
   String get ankirenScoreLabel => t('ankirenScoreLabel');
   String ankirenScoreOf(int max) => f('ankirenScoreOf', [max]);
   String get ankirenFirstTryLabel => t('ankirenFirstTryLabel');
-  String ankirenFirstTryNote(int found, int cards) => f('ankirenFirstTryNote', [found, cards]);
+
+  /// Every wrong tap of a game (お手つき).
+  String ankirenWrongTaps(int n) => switch (n) {
+        0 => t('ankirenWrongTapsNone'),
+        1 => f('ankirenWrongTapsOne', [n]),
+        _ => f('ankirenWrongTapsOther', [n]),
+      };
+
   String get ankirenAvgLabel => t('ankirenAvgLabel');
   String get ankirenAvgNote => t('ankirenAvgNote');
   String ankirenNextLevel(int level) => f('ankirenNextLevel', [level]);

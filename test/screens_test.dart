@@ -87,6 +87,7 @@ import 'package:fudatobashi/ui/settings/settings_screen.dart';
 import 'package:fudatobashi/ui/shell/header_actions.dart';
 import 'package:fudatobashi/ui/shell/kimariji_heading.dart';
 import 'package:fudatobashi/ui/shell/tab_chains.dart';
+import 'package:fudatobashi/ui/side_trips/ankiren_free_sheet.dart';
 import 'package:fudatobashi/ui/side_trips/side_trips_screen.dart';
 import 'package:fudatobashi/ui/sound/sounds.dart';
 import 'package:fudatobashi/ui/stats/card_detail_screen.dart';
@@ -2767,8 +2768,10 @@ void main() {
         expect(tester.widget<ClassBadge>(inTrips(find.byType(ClassBadge))).band, Rating.bands.first);
         expect(inTrips(find.text(s.sideTripUnranked)), findsOneWidget);
         await _capture(tester, 'side_trips_open_$lang');
-        await expectBalloon(tester, inTrips(find.text(s.sideTripRankedLevel(0))), s.comingSoon);
-        await expectBalloon(tester, inTrips(find.text(s.freePlay)), s.comingSoon);
+        await tester.tap(inTrips(find.text(s.freePlay)));
+        await tester.pump();
+        await tester.pump(Motion.sheet);
+        expect(find.byType(AnkirenFreeSheet), findsOneWidget, reason: 'open free play shows its setup');
         await tester.pumpWidget(const SizedBox());
       });
 
@@ -2806,7 +2809,6 @@ void main() {
       expect(inTrips(find.text(s.sideTripUnranked)), findsOneWidget);
       expect(inTrips(find.text(s.sideTripLockedSub(free - ranked))), findsOneWidget, reason: 'free play is still locked');
       await _capture(tester, 'side_trips_ranked_open');
-      await expectBalloon(tester, inTrips(find.text(s.sideTripRankedLevel(0))), s.comingSoon);
       await expectBalloon(tester, inTrips(find.text(s.freePlay)), s.sideTripFreeLockedWhy(free - ranked));
 
       await remember(tester, p, journeyOrder.skip(ranked).take(free - ranked));
@@ -2814,7 +2816,6 @@ void main() {
       entry = p.sideTripsHub()[SideTrip.ankiren];
       expect(entry.freeOpen, isTrue);
       expect(inTrips(find.text(s.sideTripFreeUpTo(entry.maxLevel!))), findsOneWidget);
-      await expectBalloon(tester, inTrips(find.text(s.freePlay)), s.comingSoon);
 
       // Weeks later every card is due, so none is well remembered: the latch
       // keeps both open.

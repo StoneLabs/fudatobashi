@@ -1,10 +1,16 @@
 import 'package:flutter/widgets.dart';
 
+import '../../data/poem.dart';
+import '../../domain/ankiren_level.dart';
+import '../../domain/ankiren_rating.dart';
 import '../../domain/play_session.dart';
+import '../../domain/side_trips.dart';
+import '../../l10n/ankiren_strings.dart';
 import '../../l10n/home_strings.dart';
 import '../../l10n/strings.dart';
 import '../../state/play_config.dart';
 import '../../state/scope.dart';
+import '../ankiren/ankiren_screen.dart';
 import '../manga/manga.dart';
 import '../play/play_screen.dart';
 
@@ -95,4 +101,61 @@ Future<void> keepGoing(BuildContext context, PlayConfig config) async {
     transition: MangaTransition.zoom,
     builder: (_) => PlayScreen(cards: cards, config: config, newPoems: planned?.newPoems ?? const {}),
   ));
+}
+
+/// 暗記練's ranked game, at the level its rating has reached (capped by the
+/// known cards). Re-checks the lock and the known cards off [context], like
+/// [startFreePlay]; [replace] puts it in place of the current screen
+/// (Results' Again).
+Future<void> startAnkirenRanked(BuildContext context, {bool replace = false}) async {
+  final progress = ProgressScope.read(context);
+  final entry = progress.sideTripsHub()[SideTrip.ankiren];
+  final known = progress.knownCards.toList();
+  final maxLevel = AnkirenLevels.maxLevelFor(known.length);
+  if (!entry.open) return;
+  if (maxLevel == null) {
+    MangaToast.show(context, S.of(context).ankirenNeedCards(AnkirenLevels.of(0).cards));
+    return;
+  }
+  final level = entry.rankedLevel ?? AnkirenRating.levelFor(entry.rating ?? AnkirenRating.start, maxLevel: maxLevel);
+  await _pushAnkiren(context, AnkirenSetup.forLevel(level, ranked: true), known, replace: replace);
+}
+
+/// 暗記練's free play at [setup], once its free play is open and the known
+/// cards fill the field.
+Future<void> startAnkirenFree(BuildContext context, AnkirenSetup setup, {bool replace = false}) async {
+  final progress = ProgressScope.read(context);
+  final known = progress.knownCards.toList();
+  if (!progress.sideTripsHub()[SideTrip.ankiren].freeOpen || setup.ranked) return;
+  if (setup.cards > known.length) {
+    MangaToast.show(context, S.of(context).ankirenNeedCards(setup.cards));
+    return;
+  }
+  await _pushAnkiren(context, setup, known, replace: replace);
+}
+
+/// Developer mode's 暗記練 test game: level 0, recording nothing, dealt from
+/// the known cards, or from all of them while too few are known.
+Future<void> startAnkirenTest(BuildContext context, {bool replace = false}) {
+  final setup = AnkirenSetup.forLevel(0);
+  final known = ProgressScope.read(context).knownCards;
+  final deck = known.length >= setup.cards ? known.toList() : [for (final p in poems.all) p.id];
+  return _pushAnkiren(context, setup, deck, tracked: false, replace: replace);
+}
+
+/// 暗記練 Results' Again: the next game, started the way [setup]'s was.
+Future<void> ankirenAgain(BuildContext context, AnkirenSetup setup, {required bool tracked}) => !tracked
+    ? startAnkirenTest(context, replace: true)
+    : setup.ranked
+        ? startAnkirenRanked(context, replace: true)
+        : startAnkirenFree(context, setup, replace: true);
+
+Future<void> _pushAnkiren(BuildContext context, AnkirenSetup setup, List<int> known,
+    {bool tracked = true, required bool replace}) async {
+  final route = MangaRoute<void>(
+    transition: MangaTransition.zoom,
+    builder: (_) => AnkirenScreen(setup: setup, known: known, tracked: tracked),
+  );
+  final navigator = Navigator.of(context);
+  await (replace ? navigator.pushReplacement(route) : navigator.push(route));
 }

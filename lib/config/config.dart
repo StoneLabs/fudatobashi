@@ -781,6 +781,10 @@ abstract final class SoundTuning {
 
   /// The rating's ratchet clicks faster than one click lasts.
   static const int ratingTickPoolSize = 4;
+
+  /// 暗記練's right and wrong taps can follow each other faster than one
+  /// lasts.
+  static const int ankirenTapPoolSize = 2;
 }
 
 /// Background music (`Music` in `lib/ui/sound/sounds.dart`): a single
@@ -855,6 +859,10 @@ enum Sfx {
   ratingStrain(['sounds/rating_strain.wav'], 0.9, poolSize: SoundTuning.burstPoolSize),
   ratingBreak(['sounds/rating_break.wav'], 0.9),
   graduation(['sounds/graduation.wav'], 0.85),
+
+  /// 暗記練: the card asked for was tapped, or another one.
+  ankirenRight(['sounds/ankiren_right.wav'], 0.6, poolSize: SoundTuning.ankirenTapPoolSize),
+  ankirenWrong(['sounds/ankiren_wrong.wav'], 0.75, poolSize: SoundTuning.ankirenTapPoolSize),
   firework(
     ['sounds/firework_0.wav', 'sounds/firework_1.wav', 'sounds/firework_2.wav'],
     0.6,
@@ -937,6 +945,19 @@ abstract final class AnkirenTuning {
   static const int speedMax = 50;
   static const int fastMs = 800;
   static const int slowMs = 5000;
+}
+
+/// 暗記練's play screen (`AnkirenScreen`): its pace between prompts.
+abstract final class AnkirenPlayTuning {
+  /// Before each prompt shows: after the field turns face down, and after
+  /// the card before it is found, so its flip and sound land first.
+  static const Duration promptPause = Duration(milliseconds: 350);
+
+  /// After the last card is found, before Results.
+  static const Duration finishPause = Duration(milliseconds: 700);
+
+  /// The memorise countdown's step: it shows whole seconds.
+  static const Duration clockTick = Duration(seconds: 1);
 }
 
 /// 暗記練's rating (see `AnkirenRating`), on the main rating's scale.

@@ -4,6 +4,7 @@ import 'dart:ui' as ui;
 import 'package:flutter/widgets.dart';
 
 import '../../config/config.dart';
+import '../../config/design.dart';
 import '../../config/torifuda_spec.dart';
 import '../../data/poem.dart';
 import '../../domain/card_mask.dart';
@@ -125,7 +126,6 @@ class TorifudaPainter extends CustomPainter {
 /// Records and caches the glyph layer of a card as a [ui.Picture].
 abstract final class TorifudaGlyphs {
   static final _cache = <String, ui.Picture>{};
-  static const _maxEntries = 48;
 
   /// Column / row of the i-th kana of [columns].
   static (int, int) cellOf(int i, List<String> columns) {
@@ -143,7 +143,7 @@ abstract final class TorifudaGlyphs {
     if (hit != null) return _cache[key] = hit;
     final pic = _record(poem, mask, scale, showNumber);
     _cache[key] = pic;
-    if (_cache.length > _maxEntries) _cache.remove(_cache.keys.first)?.dispose();
+    if (_cache.length > CacheLimits.torifudaGlyphs) _cache.remove(_cache.keys.first)?.dispose();
     return pic;
   }
 

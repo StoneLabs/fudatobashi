@@ -10,7 +10,8 @@ import '../../state/scope.dart';
 import '../home/home_screen.dart';
 import '../manga/manga.dart';
 import '../rank/rank_badges.dart';
-import '../shell/coming_soon.dart';
+import '../run/run_launcher.dart';
+import 'ankiren_free_sheet.dart';
 
 /// The Side Trips tab (寄り道): a panel per side trip ([SideTripsHub]), then
 /// a word that more are coming. Everything it shows comes from the hub, so
@@ -37,7 +38,11 @@ class SideTripsScreen extends StatelessWidget {
                   NarrationBox(child: Text.rich(Phrases.span(s.sideTripsIntro))),
                   for (final entry in hub.entries) ...[
                     const SizedBox(height: Gaps.section),
-                    SideTripPanel(entry, onRanked: ComingSoonBubble.show, onFree: ComingSoonBubble.show),
+                    SideTripPanel(
+                      entry,
+                      onRanked: (c) => _startRanked(c, entry.trip),
+                      onFree: (c) => _openFree(c, entry.trip),
+                    ),
                   ],
                   const SizedBox(height: Gaps.section),
                   const _MoreToCome(),
@@ -51,6 +56,16 @@ class SideTripsScreen extends StatelessWidget {
     );
   }
 }
+
+/// [trip]'s ranked game.
+void _startRanked(BuildContext context, SideTrip trip) => switch (trip) {
+      SideTrip.ankiren => startAnkirenRanked(context),
+    };
+
+/// [trip]'s free-play setup, and its game from there.
+void _openFree(BuildContext context, SideTrip trip) => switch (trip) {
+      SideTrip.ankiren => openAnkirenFree(context),
+    };
 
 /// One side trip: its name lettering beside Tobi, what it is, its rank (or
 /// what still keeps it shut), and its ranked and free-play buttons. An open

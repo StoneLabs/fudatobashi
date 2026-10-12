@@ -24,6 +24,7 @@ import '../debug/reset_actions.dart';
 import '../debug/simulation_page.dart';
 import '../manga/manga.dart';
 import '../play/pointer_clock.dart';
+import '../run/run_launcher.dart';
 import '../tour/tour_overlay.dart';
 import 'credits_screen.dart';
 import 'hold_warning_screen.dart';
@@ -405,6 +406,11 @@ class _DeveloperSection extends StatelessWidget {
         SettingsGroup(children: [
           SettingsTapRow(title: 'Debug page', opensPage: true, onTap: () => open(const DebugPage())),
           SettingsTapRow(title: 'Simulation', opensPage: true, onTap: () => open(const SimulationPage())),
+          SettingsTapRow(
+            title: '${SideTrip.ankiren.label} test game',
+            note: 'Level 0, untracked',
+            onTap: () => startAnkirenTest(context),
+          ),
           SettingsTapRow(title: 'Preview celebrations', onTap: () => previewCelebrations(context)),
           SettingsTapRow(title: 'Preview XP', onTap: () => previewXp(context)),
           SettingsTapRow(title: 'Preview XP + level up', onTap: () => previewXpLevelUp(context)),

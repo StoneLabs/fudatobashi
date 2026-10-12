@@ -327,6 +327,10 @@ abstract final class ToastStyle {
 abstract final class CacheLimits {
   static const int staticArt = 12;
   static const int mapLayers = 8;
+
+  /// Recorded torifuda glyph layers: a full 暗記練 field (50 cards) and a
+  /// few more.
+  static const int torifudaGlyphs = 64;
 }
 
 abstract final class TabBarStyle {
@@ -3367,4 +3371,105 @@ abstract final class FireworksStyle {
 
   /// Under reduced motion every burst hangs still at this share of its life.
   static const double stillAt = 0.45;
+}
+
+/// 暗記練's play screen (`lib/ui/ankiren/`): the field scaled into the screen
+/// like the layout mock (`research/design/ankiren_layouts.html`), the band
+/// across its centre, and the cards' backs and feedback.
+abstract final class AnkirenPlayLayout {
+  /// Kept clear around the field.
+  static const double padding = 6;
+
+  /// The centre band's height: in portrait, and in landscape, where it
+  /// widens the real field's gap between the halves.
+  static const double bandPortrait = 72;
+  static const double bandLandscape = 40;
+
+  /// A card is never drawn wider than [maxCardW] (portrait), and zoom never
+  /// lets one get narrower than [minTapCardW], a comfortable tap.
+  static const double maxCardW = 80;
+  static const double minTapCardW = 48;
+
+  static const Color background = Palette.desk;
+
+  /// A face-down card: a plain back in the torifuda's frame colour.
+  static const Color backFill = Palette.cardFrame;
+  static const Color backBorder = Palette.ink;
+  static const double backBorderWidth = 1;
+
+  /// Outlines over a card: just found, tapped wrongly, and (under reduced
+  /// motion) shown after the wrong taps.
+  static const Color rightGlow = Palette.land;
+  static const Color wrongTint = Palette.alarm;
+  static const double wrongTintOpacity = 0.75;
+  static const Color revealGlow = Palette.sun;
+  static const double glowWidth = 3;
+
+  /// The band: a paper strip between ink rules, its controls inset.
+  static const Color bandColor = Palette.paper;
+  static const double bandRule = Strokes.panel;
+  static const EdgeInsets bandPadding = EdgeInsets.symmetric(horizontal: 8, vertical: 6);
+  static const EdgeInsets bandPaddingLandscape = EdgeInsets.symmetric(horizontal: 8, vertical: 3);
+  static const double bandGap = 8;
+
+  /// Each of the band's two control slots, either side of its centre.
+  static const double sideSlot = 96;
+  static const double timerFont = 34;
+  static const double timerFontLandscape = 24;
+  static const double promptFont = 32;
+  static const double promptFontLandscape = 24;
+  static const double labelFont = 12;
+  static const double labelTracking = 0.14;
+  static const double countFont = 13;
+  static const double controlFont = 14;
+  static const double controlIcon = 18;
+  static const EdgeInsets controlPadding = EdgeInsets.symmetric(horizontal: 8);
+
+  /// The kimariji just found, while the next prompt waits.
+  static const Color foundText = Palette.landDeep;
+}
+
+/// 暗記練's card animations.
+abstract final class AnkirenMotion {
+  /// A card turning over, both halves of the turn.
+  static const Duration flip = Duration(milliseconds: 220);
+
+  /// A right tap's glow fading out.
+  static const Duration rightGlow = Duration(milliseconds: 650);
+
+  /// A wrong tap: the tint fading out while the card shakes [wrongShakes]
+  /// times, [wrongShakeReach] px to either side, settling.
+  static const Duration wrongFlash = Duration(milliseconds: 450);
+  static const int wrongShakes = 3;
+  static const double wrongShakeReach = 5;
+
+  /// The card shown after the wrong taps rumbles until it is tapped.
+  static const double revealShakeReach = 4;
+  static const Duration revealShakeStep = Duration(milliseconds: 50);
+  static const int revealShakeSeed = 7;
+}
+
+/// 暗記練's results (`AnkirenResultsScreen`).
+abstract final class AnkirenResultsLayout {
+  static const double scoreFont = 56;
+  static const double scoreOutline = 11;
+  static const double scoreOfFont = 15;
+  static const EdgeInsets splashPadding = EdgeInsets.symmetric(horizontal: Gaps.inner, vertical: 18);
+  static const double splashMinHeight = 190;
+  static const Size tobi = Size(64, 76);
+  static const double noteFont = 13;
+}
+
+/// 暗記練's free-play setup sheet (`ankiren_free_sheet.dart`).
+abstract final class AnkirenSheetLayout {
+  static const double levelChip = 36;
+  static const double levelChipFont = 15;
+  static const double chipGap = 5;
+  static const double sectionFont = 15;
+  static const double lineFont = 13.5;
+  static const double stepperButton = 40;
+  static const double stepperFont = 22;
+  static const double stepperValueWidth = 72;
+  static const Size lockBalloon = Size(280, 96);
+  static const Duration lockBalloonLife = Duration(milliseconds: 2800);
 }
