@@ -1,6 +1,5 @@
 import 'package:flutter/widgets.dart';
 
-import '../../data/poem.dart';
 import '../../domain/ankiren_level.dart';
 import '../../domain/ankiren_rating.dart';
 import '../../domain/play_session.dart';
@@ -11,6 +10,7 @@ import '../../l10n/strings.dart';
 import '../../state/play_config.dart';
 import '../../state/scope.dart';
 import '../ankiren/ankiren_screen.dart';
+import '../debug/ankiren_debug_game.dart';
 import '../manga/manga.dart';
 import '../play/play_screen.dart';
 
@@ -134,18 +134,20 @@ Future<void> startAnkirenFree(BuildContext context, AnkirenSetup setup, {bool re
   await _pushAnkiren(context, setup, known, replace: replace);
 }
 
-/// Developer mode's 暗記練 test game: level 0, recording nothing, dealt from
-/// the known cards, or from all of them while too few are known.
-Future<void> startAnkirenTest(BuildContext context, {bool replace = false}) {
-  final setup = AnkirenSetup.forLevel(0);
-  final known = ProgressScope.read(context).knownCards;
-  final deck = known.length >= setup.cards ? known.toList() : [for (final p in poems.all) p.id];
-  return _pushAnkiren(context, setup, deck, tracked: false, replace: replace);
+/// Developer mode's 暗記練 test game ([AnkirenDebugGame]) at [level],
+/// recording nothing.
+Future<void> startAnkirenTest(BuildContext context, {int level = 0, bool replace = false}) async {
+  final route = MangaRoute<void>(
+    transition: MangaTransition.zoom,
+    builder: (_) => AnkirenDebugGame(known: ProgressScope.read(context).knownCards.toList(), level: level),
+  );
+  final navigator = Navigator.of(context);
+  await (replace ? navigator.pushReplacement(route) : navigator.push(route));
 }
 
 /// 暗記練 Results' Again: the next game, started the way [setup]'s was.
 Future<void> ankirenAgain(BuildContext context, AnkirenSetup setup, {required bool tracked}) => !tracked
-    ? startAnkirenTest(context, replace: true)
+    ? startAnkirenTest(context, level: setup.level ?? 0, replace: true)
     : setup.ranked
         ? startAnkirenRanked(context, replace: true)
         : startAnkirenFree(context, setup, replace: true);

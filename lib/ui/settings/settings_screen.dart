@@ -423,7 +423,7 @@ class _DeveloperSection extends StatelessWidget {
           SettingsTapRow(title: 'Simulation', opensPage: true, onTap: () => open(const SimulationPage())),
           SettingsTapRow(
             title: '${SideTrip.ankiren.label} test game',
-            note: 'Level 0, untracked',
+            note: 'Untracked; any level, debug layers',
             onTap: () => startAnkirenTest(context),
           ),
           SettingsTapRow(title: 'Preview celebrations', onTap: () => previewCelebrations(context)),

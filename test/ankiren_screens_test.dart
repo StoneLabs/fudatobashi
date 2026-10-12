@@ -37,6 +37,8 @@ import 'package:fudatobashi/ui/ankiren/ankiren_field_view.dart';
 import 'package:fudatobashi/ui/ankiren/ankiren_results_screen.dart';
 import 'package:fudatobashi/ui/ankiren/ankiren_screen.dart';
 import 'package:fudatobashi/ui/app.dart';
+import 'package:fudatobashi/ui/debug/ankiren_debug_game.dart';
+import 'package:fudatobashi/ui/debug/ankiren_debug_overlay.dart';
 import 'package:fudatobashi/ui/manga/manga.dart';
 import 'package:fudatobashi/ui/rank/rank_badges.dart';
 import 'package:fudatobashi/ui/settings/settings_screen.dart';
@@ -485,6 +487,40 @@ void main() {
       final taken = AnkirenLevels.of(0).cards - 1;
       expect(run.score, inInclusiveRange(taken * AnkirenTuning.firstTry, taken * (AnkirenTuning.firstTry + AnkirenTuning.speedMax)),
           reason: 'the card given up earns nothing');
+      await tester.pumpWidget(const SizedBox());
+    });
+
+    testWidgets('the debug game: its bar switches the level and reseeds at once; its layers toggle', (tester) async {
+      final p = await open(tester);
+      phone(tester);
+      await tester.pumpWidget(RepaintBoundary(
+        key: const ValueKey('screen'),
+        child: ProgressScope(progress: p, child: MaterialApp(home: AnkirenDebugGame(known: allCards))),
+      ));
+      await tester.pump();
+      expect(cards(tester), hasLength(AnkirenLevels.of(0).cards));
+      expect(find.byType(AnkirenDebugOverlay), findsOneWidget);
+
+      Future<void> tapBar(String label) async {
+        await tester.tap(find.descendant(of: find.byType(AnkirenDebugGame), matching: find.text(label)).first);
+        await tester.pump();
+        expect(tester.takeException(), isNull);
+      }
+
+      await tapBar('7');
+      expect(cards(tester), hasLength(AnkirenLevels.of(7).cards), reason: 'a new field at once');
+      await _capture(tester, 'ankiren_debug_l7');
+      final dealt = {for (final c in cards(tester)) c.poemId};
+      await tapBar('reseed');
+      expect({for (final c in cards(tester)) c.poemId}, isNot(dealt));
+      await ready(tester);
+      expect(cards(tester).any((c) => c.faceUp), isFalse, reason: 'it plays like a real game');
+
+      for (final layer in AnkirenDebugLayer.values) {
+        await tapBar(layer.name);
+      }
+      expect(find.byType(AnkirenDebugOverlay), findsNothing);
+      expect(p.sideTrips.runs, isEmpty);
       await tester.pumpWidget(const SizedBox());
     });
 

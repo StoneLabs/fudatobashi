@@ -12,6 +12,7 @@ import '../../domain/rating.dart';
 import '../../domain/trainer.dart';
 import '../../state/progress.dart';
 import '../../state/scope.dart';
+import 'ankiren_config_tab.dart';
 import 'frame_stats.dart';
 import 'reset_actions.dart';
 
@@ -38,7 +39,7 @@ class DebugPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return DefaultTabController(
-      length: 5,
+      length: 6,
       child: Scaffold(
         backgroundColor: Palette.paper,
         appBar: AppBar(
@@ -51,6 +52,7 @@ class DebugPage extends StatelessWidget {
             Tab(text: 'Scheduler'),
             Tab(text: 'Rating'),
             Tab(text: 'Timing'),
+            Tab(text: 'AnkiRen'),
           ]),
         ),
         // Edge-to-edge system UI means the bottom system bar/gesture strip
@@ -62,6 +64,7 @@ class DebugPage extends StatelessWidget {
             _Scheduler(),
             _RatingTab(),
             _Timing(),
+            AnkirenConfigTab(),
           ]),
         ),
       ),
