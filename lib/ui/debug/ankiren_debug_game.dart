@@ -44,6 +44,11 @@ class _AnkirenDebugGameState extends State<AnkirenDebugGame> {
   Widget build(BuildContext context) {
     final level = AnkirenLevels.of(_level);
     final perCard = level.memorise.inMilliseconds / 1000 / level.cards;
+    final middle = level.allInMiddle
+        ? 'all (beginner)'
+        : AnkirenDealer.mayHaveMiddle(level.perSide)
+            ? 'up to ${AnkirenDealer.maxMiddle(level.perSide)}'
+            : 'never';
     final layers = {..._layers};
     return AnnotatedRegion<SystemUiOverlayStyle>(
       value: SystemUiOverlayStyle.light,
@@ -83,7 +88,7 @@ class _AnkirenDebugGameState extends State<AnkirenDebugGame> {
                     Text(
                       'L$_level  ${level.perSide}/side  ${level.cards} cards  ${formatMinutes(level.memorise)}'
                       '  ${perCard.toStringAsFixed(1)} s/card'
-                      '  middle ${AnkirenDealer.mayHaveMiddle(level.perSide) ? 'up to ${AnkirenDealer.maxMiddle(level.perSide)}' : 'never'}'
+                      '  middle $middle'
                       '  seed $_seed',
                       style: const TextStyle(
                         fontFamily: AnkirenDebugStyle.mono,
