@@ -2064,14 +2064,26 @@ abstract final class SimulationStyle {
   static const double swatch = 10;
 }
 
-/// The developer's 暗記練 tools page (`AnkirenToolsPage`): the speed-bonus
-/// chart.
+/// The developer's 暗記練 tools page (`AnkirenToolsPage`): its charts and
+/// spacing.
 abstract final class AnkirenToolsStyle {
   static const double chartHeight = 120;
   static const double curveStroke = 2;
   static const double markerStroke = 1.5;
   static const double targetRadius = 3;
   static const double gap = 8;
+
+  /// The total-points graphs: their height, the margins that hold the axis
+  /// labels, the lines' stroke and label size, and the hues one line per
+  /// level runs through (level 0 at [hueStart], the top level at [hueEnd]).
+  static const double graphHeight = 240;
+  static const EdgeInsets graphMargin = EdgeInsets.fromLTRB(44, 8, 20, 18);
+  static const double lineStroke = 1.5;
+  static const double axisFont = 10;
+  static const double hueStart = 0;
+  static const double hueEnd = 290;
+  static const double lineSaturation = 0.75;
+  static const double lineLightness = 0.42;
 }
 
 /// The developer's 暗記練 test game (`AnkirenDebugGame`): its debug bar and

@@ -13,19 +13,13 @@ import '../../state/scope.dart';
 import '../ankiren/ankiren_band.dart';
 import '../run/run_launcher.dart';
 import 'ankiren_debug_game.dart';
+import 'ankiren_graphs.dart';
 import 'debug_common.dart';
 
-/// The developer's 暗記練 tools: the level table, a live points calculator
-/// and a middle-card simulator.
-class AnkirenToolsPage extends StatefulWidget {
+/// The developer's 暗記練 tools: the level table, a live points calculator,
+/// total-points graphs across the levels and a middle-card simulator.
+class AnkirenToolsPage extends StatelessWidget {
   const AnkirenToolsPage({super.key});
-
-  @override
-  State<AnkirenToolsPage> createState() => _AnkirenToolsPageState();
-}
-
-class _AnkirenToolsPageState extends State<AnkirenToolsPage> {
-  int _level = AnkirenLevels.top;
 
   @override
   Widget build(BuildContext context) {
@@ -39,24 +33,17 @@ class _AnkirenToolsPageState extends State<AnkirenToolsPage> {
           const SizedBox(height: AnkirenToolsStyle.gap),
           const _LevelTable(),
           const Divider(height: 32),
-          Text('Level', style: title),
-          Wrap(
-            spacing: AnkirenToolsStyle.gap,
-            children: [
-              for (var l = 0; l <= AnkirenLevels.top; l++)
-                ChoiceChip(
-                  label: Text('$l', style: debugMono),
-                  selected: l == _level,
-                  onSelected: (_) => setState(() => _level = l),
-                ),
-            ],
-          ),
-          const Divider(height: 32),
           Text('Points', style: title),
-          _PointsCalculator(level: _level),
+          const _PointsCalculator(),
+          const Divider(height: 32),
+          Text('Total by time left', style: title),
+          const AnkirenTimeLeftGraph(),
+          const Divider(height: 32),
+          Text('Total by card time', style: title),
+          const AnkirenCardTimeGraph(),
           const Divider(height: 32),
           Text('Middle cards', style: title),
-          _MiddleSimulator(level: _level),
+          const _MiddleSimulator(),
         ],
       ),
     );
@@ -64,22 +51,21 @@ class _AnkirenToolsPageState extends State<AnkirenToolsPage> {
 }
 
 class _PointsCalculator extends StatefulWidget {
-  const _PointsCalculator({required this.level});
-
-  final int level;
+  const _PointsCalculator();
 
   @override
   State<_PointsCalculator> createState() => _PointsCalculatorState();
 }
 
 class _PointsCalculatorState extends State<_PointsCalculator> {
+  int _level = AnkirenLevels.top;
   double _responseMs = AnkirenToolsTuning.responseStart.inMilliseconds.toDouble();
   int _wrongTaps = 0;
   double _timeLeft = 0;
 
   static const _wrongLabels = ['0', '1', 'shown'];
 
-  int get _memoriseSeconds => AnkirenLevels.of(widget.level).memorise.inSeconds;
+  int get _memoriseSeconds => AnkirenLevels.of(_level).memorise.inSeconds;
 
   @override
   Widget build(BuildContext context) {
@@ -92,20 +78,22 @@ class _PointsCalculatorState extends State<_PointsCalculator> {
     );
     final share = _timeLeft.clamp(0, _memoriseSeconds) / _memoriseSeconds;
     final early = 1 + AnkirenTuning.earlyBonus * share;
-    final factor = AnkirenScore.factorFor(AnkirenSetup.forLevel(widget.level));
+    final factor = AnkirenScore.factorFor(AnkirenSetup.forLevel(_level));
     final points = AnkirenScore.points(answer);
     final firstTry = _wrongTaps == 0;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        _slider(
-          'response ${(_responseMs / 1000).toStringAsFixed(1)} s',
-          _responseMs,
-          AnkirenToolsTuning.responseMin.inMilliseconds.toDouble(),
-          AnkirenToolsTuning.responseMax.inMilliseconds.toDouble(),
-          AnkirenToolsTuning.responseMax.inMilliseconds ~/ AnkirenToolsTuning.responseStep.inMilliseconds -
-              AnkirenToolsTuning.responseMin.inMilliseconds ~/ AnkirenToolsTuning.responseStep.inMilliseconds,
-          (v) => setState(() => _responseMs = v),
+        DebugLevelChips(level: _level, onChanged: (l) => setState(() => _level = l)),
+        DebugSlider(
+          label: 'response ${(_responseMs / 1000).toStringAsFixed(1)} s',
+          value: _responseMs,
+          min: AnkirenToolsTuning.responseMin.inMilliseconds.toDouble(),
+          max: AnkirenToolsTuning.responseMax.inMilliseconds.toDouble(),
+          divisions:
+              (AnkirenToolsTuning.responseMax - AnkirenToolsTuning.responseMin).inMilliseconds ~/
+              AnkirenToolsTuning.responseStep.inMilliseconds,
+          onChanged: (v) => setState(() => _responseMs = v),
         ),
         Row(
           children: [
@@ -118,14 +106,14 @@ class _PointsCalculatorState extends State<_PointsCalculator> {
             ),
           ],
         ),
-        _slider(
-          'time left ${formatMinutes(Duration(seconds: _timeLeft.round()))} of ${formatMinutes(AnkirenLevels.of(widget.level).memorise)}'
-          '  (${(share * 100).round()}%)',
-          _timeLeft.clamp(0, _memoriseSeconds).toDouble(),
-          0,
-          _memoriseSeconds.toDouble(),
-          null,
-          (v) => setState(() => _timeLeft = v),
+        DebugSlider(
+          label:
+              'time left ${formatMinutes(Duration(seconds: _timeLeft.round()))}'
+              ' of ${formatMinutes(AnkirenLevels.of(_level).memorise)}  (${(share * 100).round()}%)',
+          value: _timeLeft.clamp(0, _memoriseSeconds).toDouble(),
+          min: 0,
+          max: _memoriseSeconds.toDouble(),
+          onChanged: (v) => setState(() => _timeLeft = v),
         ),
         const SizedBox(height: AnkirenToolsStyle.gap),
         SizedBox(
@@ -150,15 +138,6 @@ class _PointsCalculatorState extends State<_PointsCalculator> {
       ],
     );
   }
-
-  Widget _slider(String label, double value, double min, double max, int? divisions, ValueChanged<double> onChanged) =>
-      Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          Text(label, style: debugMono),
-          Slider(value: value, min: min, max: max, divisions: divisions, onChanged: onChanged),
-        ],
-      );
 }
 
 /// The speed bonus over the response time, the fitted targets as dots and a
@@ -225,24 +204,23 @@ class _MiddleResult {
 }
 
 class _MiddleSimulator extends StatefulWidget {
-  const _MiddleSimulator({required this.level});
-
-  final int level;
+  const _MiddleSimulator();
 
   @override
   State<_MiddleSimulator> createState() => _MiddleSimulatorState();
 }
 
 class _MiddleSimulatorState extends State<_MiddleSimulator> {
+  int _level = AnkirenLevels.top;
   int _games = AnkirenToolsTuning.simulationGamesStart;
   _MiddleResult? _result;
   int? _resultLevel;
   bool _running = false;
 
-  List<int> get _deck => AnkirenDebugGame.deckFor(ProgressScope.read(context).knownCards.toList(), widget.level);
+  List<int> get _deck => AnkirenDebugGame.deckFor(ProgressScope.read(context).knownCards.toList(), _level);
 
   Future<void> _run() async {
-    final level = widget.level;
+    final level = _level;
     final deck = _deck;
     setState(() => _running = true);
     await Future<void>.delayed(Duration.zero);
@@ -295,7 +273,7 @@ class _MiddleSimulatorState extends State<_MiddleSimulator> {
 
   void _openGame() {
     final deck = _deck;
-    final setup = AnkirenSetup.forLevel(widget.level);
+    final setup = AnkirenSetup.forLevel(_level);
     final dealer = AnkirenDealer.ofPoems();
     final start = math.Random().nextInt(1 << 30);
     int? found;
@@ -307,7 +285,7 @@ class _MiddleSimulatorState extends State<_MiddleSimulator> {
       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('No seed with middle cards')));
       return;
     }
-    startAnkirenTest(context, level: widget.level, seed: found);
+    startAnkirenTest(context, level: _level, seed: found);
   }
 
   String _pct(int n, int of) => '${(100 * n / of).toStringAsFixed(1)}%';
@@ -324,6 +302,7 @@ class _MiddleSimulatorState extends State<_MiddleSimulator> {
       children: [
         Text(rules, style: debugMono.copyWith(color: Palette.mute)),
         const SizedBox(height: AnkirenToolsStyle.gap),
+        DebugLevelChips(level: _level, onChanged: (l) => setState(() => _level = l)),
         Row(
           children: [
             for (final n in AnkirenToolsTuning.simulationGames)
@@ -335,7 +314,7 @@ class _MiddleSimulatorState extends State<_MiddleSimulator> {
                   onSelected: (_) => setState(() => _games = n),
                 ),
               ),
-            FilledButton(onPressed: _running ? null : _run, child: Text(_running ? '…' : 'Run L${widget.level}')),
+            FilledButton(onPressed: _running ? null : _run, child: Text(_running ? '…' : 'Run L$_level')),
           ],
         ),
         if (result != null) ...[
@@ -348,7 +327,7 @@ class _MiddleSimulatorState extends State<_MiddleSimulator> {
             Text('${e.value.toString().padLeft(5)}  ${_pct(e.value, result.sides)}  ${e.key}', style: debugMono),
         ],
         const SizedBox(height: AnkirenToolsStyle.gap),
-        OutlinedButton(onPressed: _openGame, child: Text('Open L${widget.level} game with middle cards')),
+        OutlinedButton(onPressed: _openGame, child: Text('Open L$_level game with middle cards')),
       ],
     );
   }

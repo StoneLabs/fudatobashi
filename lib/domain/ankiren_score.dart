@@ -74,7 +74,7 @@ class AnkirenScore {
 
   double get fraction => maxRecall == 0 ? 0 : recall / maxRecall;
 
-  int get total => (recall * (1 + AnkirenTuning.earlyBonus * timeLeft) * factor).round();
+  int get total => totalOf(recall, timeLeft, factor);
   int get max => (maxRecall * factor).round();
   int get early => total - (recall * factor).round();
 
@@ -86,6 +86,20 @@ class AnkirenScore {
     final level = setup.level ??
         AnkirenLevels.all.lastIndexWhere((l) => setup.perSide >= l.perSide && setup.memorise <= l.memorise);
     return math.pow(AnkirenTuning.levelFactor, AnkirenLevels.top - math.max(0, level)).toDouble();
+  }
+
+  /// The score of [recall] points with [timeLeft] of the memorise time unused
+  /// (as a share) at a level [factor].
+  static int totalOf(int recall, double timeLeft, double factor) =>
+      (recall * (1 + AnkirenTuning.earlyBonus * timeLeft) * factor).round();
+
+  /// A game of [setup] where every card is found with its first tap
+  /// [responseMs] after its prompt, and the player was ready with [timeLeft]
+  /// of the memorise time to spare (at most all of it).
+  static int firstTryTotal(AnkirenSetup setup, {required double responseMs, required Duration timeLeft}) {
+    final share = (timeLeft.inMicroseconds / setup.memorise.inMicroseconds).clamp(0.0, 1.0);
+    final perCard = AnkirenTuning.firstTry + speedBonus((responseMs * 1000).round());
+    return totalOf(setup.cards * perCard, share, factorFor(setup));
   }
 
   static int maxFor(int prompts) => prompts * (AnkirenTuning.firstTry + AnkirenTuning.speedMax);

@@ -26,6 +26,17 @@ void main() {
       expect(AnkirenScore.points(answer(us: ms(20000))), AnkirenTuning.firstTry);
     });
 
+    test('a perfect game: the total follows the card count, the time left and the level', () {
+      int total(int level, {int responseMs = 1000, Duration left = Duration.zero}) =>
+          AnkirenScore.firstTryTotal(AnkirenSetup.forLevel(level), responseMs: responseMs.toDouble(), timeLeft: left);
+      final top = AnkirenLevels.top;
+      final topTime = AnkirenLevels.of(top).memorise;
+      expect(total(top, responseMs: 100), AnkirenScore.maxFor(AnkirenLevels.of(top).cards));
+      expect(total(top, left: topTime), (total(top) * (1 + AnkirenTuning.earlyBonus)).round());
+      expect(total(top, left: const Duration(days: 1)), total(top, left: topTime));
+      expect(total(top - 1, left: const Duration(minutes: 4)), lessThan(total(top)), reason: 'early < next level');
+    });
+
     test('the speed bonus is a smooth sigmoid through the fitted points, 0.1 s to 5 s', () {
       final at = {for (final t in [100, 300, 600, 1000, 3000, 5000]) t: AnkirenScore.speedBonus(ms(t))};
       expect(at, {100: 100, 300: 88, 600: 72, 1000: 56, 3000: 16, 5000: 0});

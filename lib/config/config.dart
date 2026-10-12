@@ -1012,6 +1012,13 @@ abstract final class AnkirenToolsTuning {
   /// The curve is drawn every [curveStepMs] ms.
   static const int curveStepMs = 25;
 
+  /// The total-points graphs: the time-left sliders' step, and the gap
+  /// between the x axis's labels.
+  static const Duration timeLeftStep = Duration(seconds: 10);
+  static const Duration timeLeftTick = Duration(minutes: 3);
+  static const Duration responseTick = Duration(seconds: 1);
+  static const int yDivisions = 4;
+
   static const List<int> simulationGames = [100, 1000, 5000];
   static const int simulationGamesStart = 1000;
 
