@@ -86,7 +86,8 @@ class _PointsCalculatorState extends State<_PointsCalculator> {
       children: [
         DebugLevelChips(level: _level, onChanged: (l) => setState(() => _level = l)),
         DebugResponseSlider(label: 'response', ms: _responseMs, onChanged: (v) => setState(() => _responseMs = v)),
-        Row(
+        Wrap(
+          crossAxisAlignment: WrapCrossAlignment.center,
           children: [
             Text('wrong taps ', style: debugMono),
             SegmentedButton<int>(
@@ -294,16 +295,15 @@ class _MiddleSimulatorState extends State<_MiddleSimulator> {
         Text(rules, style: debugMono.copyWith(color: Palette.mute)),
         const SizedBox(height: AnkirenToolsStyle.gap),
         DebugLevelChips(level: _level, onChanged: (l) => setState(() => _level = l)),
-        Row(
+        Wrap(
+          spacing: AnkirenToolsStyle.gap,
+          crossAxisAlignment: WrapCrossAlignment.center,
           children: [
             for (final n in AnkirenToolsTuning.simulationGames)
-              Padding(
-                padding: const EdgeInsets.only(right: AnkirenToolsStyle.gap),
-                child: ChoiceChip(
-                  label: Text('$n', style: debugMono),
-                  selected: n == _games,
-                  onSelected: (_) => setState(() => _games = n),
-                ),
+              ChoiceChip(
+                label: Text('$n', style: debugMono),
+                selected: n == _games,
+                onSelected: (_) => setState(() => _games = n),
               ),
             FilledButton(onPressed: _running ? null : _run, child: Text(_running ? '…' : 'Run L$_level')),
           ],

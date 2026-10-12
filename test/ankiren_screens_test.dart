@@ -20,6 +20,7 @@ import 'package:fudatobashi/db/database.dart';
 import 'package:fudatobashi/domain/ankiren_field.dart';
 import 'package:fudatobashi/domain/ankiren_geometry.dart';
 import 'package:fudatobashi/domain/ankiren_level.dart';
+import 'package:fudatobashi/domain/ankiren_score.dart';
 import 'package:fudatobashi/domain/side_trips.dart';
 import 'package:fudatobashi/domain/trainer.dart';
 import 'package:fudatobashi/l10n/ankiren_strings.dart';
@@ -39,6 +40,8 @@ import 'package:fudatobashi/ui/ankiren/ankiren_screen.dart';
 import 'package:fudatobashi/ui/app.dart';
 import 'package:fudatobashi/ui/debug/ankiren_debug_game.dart';
 import 'package:fudatobashi/ui/debug/ankiren_debug_overlay.dart';
+import 'package:fudatobashi/ui/debug/ankiren_tools_page.dart';
+import 'package:fudatobashi/ui/debug/debug_common.dart';
 import 'package:fudatobashi/ui/manga/manga.dart';
 import 'package:fudatobashi/ui/play/time_format.dart';
 import 'package:fudatobashi/ui/rank/rank_badges.dart';
@@ -731,6 +734,61 @@ void main() {
         await tester.pumpWidget(const SizedBox());
       });
     }
+  });
+
+  group('Developer tools', () {
+    testWidgets('the AnkiRen page: levels, points, both graphs, and the middle-card simulator', (tester) async {
+      final p = await open(tester);
+      phone(tester);
+      await tester.pumpWidget(RepaintBoundary(
+        key: const ValueKey('screen'),
+        child: ProgressScope(progress: p, child: const MaterialApp(home: AnkirenToolsPage())),
+      ));
+      await tester.pump();
+      final page = find.byType(Scrollable).first;
+      String kv(String key) => tester.widget<DebugKV>(find.byWidgetPredicate((w) => w is DebugKV && w.k == key)).v;
+
+      expect(kv('per card'), '${AnkirenTuning.firstTry + AnkirenScore.speedBonus(1000000)}');
+      Finder wrongTaps(String label) =>
+          find.descendant(of: find.byType(SegmentedButton<int>), matching: find.text(label));
+      await tester.ensureVisible(find.byType(SegmentedButton<int>));
+      await tester.pump();
+      await tester.tap(wrongTaps('1'));
+      await tester.pump();
+      expect(kv('per card'), '${AnkirenTuning.secondTry}');
+      await tester.tap(wrongTaps('shown'));
+      await tester.pump();
+      expect(kv('per card'), '0');
+
+      for (final title in ['Total by time used', 'Total by card time', 'Middle cards']) {
+        await tester.scrollUntilVisible(find.text(title), 200, scrollable: page);
+        expect(tester.takeException(), isNull);
+      }
+      final run = find.text('Run L${AnkirenLevels.top}');
+      await tester.scrollUntilVisible(run, 200, scrollable: page);
+      await tester.ensureVisible(run);
+      await tester.pump();
+      await tester.tap(find.text('${AnkirenToolsTuning.simulationGames.first}'));
+      await tester.pump();
+      await tester.tap(run);
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 1));
+      expect(kv('level / games'), 'L${AnkirenLevels.top} × ${AnkirenToolsTuning.simulationGames.first}');
+      expect(tester.takeException(), isNull);
+      await _capture(tester, 'debug_ankiren_tools');
+
+      final openGame = find.textContaining('game with middle cards');
+      await tester.scrollUntilVisible(openGame, 200, scrollable: page);
+      await tester.ensureVisible(openGame);
+      await tester.pump();
+      await tester.tap(openGame);
+      await tester.pump();
+      await tester.pump(Motion.route);
+      await tester.pump(Motion.route);
+      expect(find.byType(AnkirenDebugGame), findsOneWidget);
+      expect(tester.takeException(), isNull);
+      await tester.pumpWidget(const SizedBox());
+    });
   });
 
   group('Reduced motion', () {
