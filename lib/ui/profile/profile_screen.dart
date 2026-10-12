@@ -3,19 +3,22 @@ import 'package:flutter/material.dart';
 import '../../config/design.dart';
 import '../../config/vector_art.dart';
 import '../../domain/rating.dart';
+import '../../domain/side_trips.dart';
 import '../../domain/xp.dart';
 import '../../l10n/history_strings.dart';
 import '../../l10n/home_strings.dart';
 import '../../l10n/onboarding_strings.dart';
 import '../../l10n/profile_strings.dart';
 import '../../l10n/results_strings.dart';
+import '../../l10n/side_trip_strings.dart';
 import '../../l10n/strings.dart';
 import '../../state/scope.dart';
 import '../home/home_widgets.dart';
 import '../manga/manga.dart';
+import '../rank/rank_badges.dart';
 
 /// My Profile (opened from Home's level button): Tobi's welcome, the
-/// player's rank, how much of the deck they've learned and hold onto well,
+/// player's rank and, smaller, each side trip's, how much of the deck they've learned and hold onto well,
 /// their level with its XP progress, and their first swipe ever, if any.
 class ProfileScreen extends StatelessWidget {
   const ProfileScreen({super.key});
@@ -57,6 +60,8 @@ class ProfileScreen extends StatelessWidget {
                       _Welcome(s.tobiHello),
                       const SizedBox(height: Gaps.section),
                       _RankPanel(band: band, rating: rating, fraction: fraction, next: next),
+                      const SizedBox(height: Gaps.panel),
+                      _SideTripRanks(progress.sideTripsHub(now).entries),
                       const SizedBox(height: Gaps.section),
                       Row(
                         children: [
@@ -156,6 +161,77 @@ class _RankPanel extends StatelessWidget {
           ),
         ],
       ),
+    );
+  }
+}
+
+/// Each side trip's rank under the main one, smaller: its class badge, its
+/// name and its rating, or "unranked" at 入門 before its first ranked game.
+class _SideTripRanks extends StatelessWidget {
+  const _SideTripRanks(this.entries);
+  final List<SideTripEntry> entries;
+
+  @override
+  Widget build(BuildContext context) {
+    final s = S.of(context);
+    return MangaPanel(
+      padding: const EdgeInsets.all(Gaps.inner),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text(
+            s.sideTrips,
+            style: const TextStyle(
+              fontWeight: Weights.black,
+              fontSize: ProfileLayout.tripLabelFont,
+              letterSpacing: ProfileLayout.tripLabelTracking * ProfileLayout.tripLabelFont,
+            ),
+          ),
+          for (final entry in entries) ...[
+            const SizedBox(height: ProfileLayout.tripGap),
+            _SideTripRank(entry),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+class _SideTripRank extends StatelessWidget {
+  const _SideTripRank(this.entry);
+  final SideTripEntry entry;
+
+  @override
+  Widget build(BuildContext context) {
+    final rating = entry.rating;
+    final rung = rungStyle(entry.band.id);
+    return Row(
+      children: [
+        ClassBadge(
+          entry.band,
+          color: rung.color,
+          textColor: rung.text,
+          fontSize: ProfileLayout.tripBadgeFont,
+          suffixSize: ProfileLayout.tripBadgeSuffixFont,
+          padding: ProfileLayout.tripBadgePadding,
+        ),
+        const SizedBox(width: ProfileLayout.tripGap),
+        Expanded(
+          child: FittedBox(
+            fit: BoxFit.scaleDown,
+            alignment: Alignment.centerLeft,
+            child: Text(entry.trip.label,
+                style: const TextStyle(fontFamily: Fonts.display, fontSize: ProfileLayout.tripNameFont, height: 1)),
+          ),
+        ),
+        const SizedBox(width: ProfileLayout.tripGap),
+        rating == null
+            ? Text(S.of(context).sideTripUnranked,
+                style: const TextStyle(fontWeight: Weights.black, fontSize: ProfileLayout.tripUnrankedFont))
+            : Text('${rating.round()}',
+                style: const TextStyle(fontFamily: Fonts.display, fontSize: ProfileLayout.tripRatingFont, height: 1)),
+      ],
     );
   }
 }

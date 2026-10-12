@@ -13,6 +13,13 @@ extension HistoryStrings on S {
   /// `NumberedText`.
   String get historyLineTemplate => t('historyLineTemplate');
 
+  /// A side-trip game's score, "{0} pts", the number set in display type by
+  /// `NumberedText`.
+  String get historyScoreTemplate => t('historyScoreTemplate');
+
+  /// A free-play side-trip game at a level preset.
+  String historyFreeLevel(int level) => f('historyFreeLevel', [level]);
+
   /// A short "Mon D, HH:MM" (EN) / "M月D日 HH:MM" (JA) timestamp.
   String sessionDate(DateTime at) {
     final local = at.toLocal();

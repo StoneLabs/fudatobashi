@@ -465,6 +465,18 @@ abstract final class ProfileLayout {
   static const double statNumberFont = 20;
   static const double levelFont = 28;
   static const double levelBarHeight = 14;
+
+  /// The side trips' ranks under the main one, smaller: a class badge, the
+  /// trip's name and its rating.
+  static const double tripGap = 8;
+  static const double tripLabelFont = 11;
+  static const double tripLabelTracking = 0.14;
+  static const double tripBadgeFont = 15;
+  static const double tripBadgeSuffixFont = 10;
+  static const EdgeInsets tripBadgePadding = EdgeInsets.fromLTRB(7, 3, 7, 4);
+  static const double tripNameFont = 18;
+  static const double tripRatingFont = 20;
+  static const double tripUnrankedFont = 14;
 }
 
 abstract final class TagStyle {
@@ -874,6 +886,12 @@ abstract final class HistoryLayout {
   static const double rowDateFont = 12.5;
   static const double rowTimeFont = 18;
   static const EdgeInsets emptyPadding = EdgeInsets.symmetric(horizontal: 16, vertical: 12);
+
+  /// The filter row's buttons (every run, a play mode, a side trip).
+  static const EdgeInsets filterPadding = EdgeInsets.symmetric(horizontal: 12, vertical: 6);
+  static const double filterHeight = 36;
+  static const double filterFont = 13;
+  static const double filterGap = 6;
 }
 
 /// Small charts shared by the island list (a per-card sparkline) and the card
