@@ -4,24 +4,25 @@ import 'package:flutter/scheduler.dart';
 import '../../config/design.dart';
 import '../../config/vector_art.dart';
 import '../../domain/tab_locks.dart';
+import '../../l10n/side_trip_strings.dart';
 import '../../l10n/strings.dart';
 import '../../l10n/tour_strings.dart';
 import '../../state/progress.dart';
 import '../../state/scope.dart';
-import '../help/help_screen.dart';
 import '../history/history_screen.dart';
 import '../home/home_screen.dart';
 import '../manga/manga.dart';
+import '../side_trips/side_trips_screen.dart';
 import '../stats/stats_screen.dart';
 import '../tour/tour_anchor.dart';
 import '../tour/tour_overlay.dart';
 import '../tour/tour_steps.dart';
 import 'tab_chains.dart';
 
-enum AppTab { home, history, stats, help }
+enum AppTab { home, history, stats, sideTrips }
 
-/// The main screen: the four tabs above the manga tab bar. Settings open from
-/// each tab's header (see `openSettings`).
+/// The main screen: the four tabs above the manga tab bar. Settings and Help
+/// open from Home's header (see `openSettings`, `openHelp`).
 ///
 /// History and Stats start out locked under chains (see [TabLock]); a tab
 /// that opens has its chains broken, once, the next time Home shows.
@@ -47,7 +48,7 @@ class _AppShellState extends State<AppShell> {
         AppTab.home => const HomeScreen(),
         AppTab.history => const HistoryScreen(),
         AppTab.stats => const StatsScreen(),
-        AppTab.help => const HelpScreen(),
+        AppTab.sideTrips => const SideTripsScreen(),
       };
 
   /// Remembers the tabs shown locked, and breaks the chains of any that have
@@ -140,7 +141,7 @@ class _AppShellState extends State<AppShell> {
                           MangaTab(icon: IconArt.home, label: s.home),
                           _lockable(s, progress, LockedTab.history, IconArt.history, locks[LockedTab.history]),
                           _lockable(s, progress, LockedTab.stats, IconArt.stats, locks[LockedTab.stats]),
-                          MangaTab(icon: IconArt.help, label: s.help),
+                          MangaTab(icon: IconArt.cards, label: s.sideTrips),
                         ],
                       ),
                     ),

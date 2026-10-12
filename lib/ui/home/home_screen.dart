@@ -39,7 +39,15 @@ class HomeScreen extends StatelessWidget {
             ),
             actions: const [
               TourAnchor(TourSpot.level, child: LevelButton()),
-              TourAnchor(TourSpot.settings, child: SettingsButton()),
+              // One tour stop for both: Help is where the tour replays.
+              TourAnchor(
+                TourSpot.settings,
+                child: Row(mainAxisSize: MainAxisSize.min, children: [
+                  HelpButton(),
+                  SizedBox(width: HeaderStyle.actionGap),
+                  SettingsButton(),
+                ]),
+              ),
             ],
           ),
           const SizedBox(height: HeaderStyle.topGap),

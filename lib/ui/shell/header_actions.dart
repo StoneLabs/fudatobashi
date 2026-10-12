@@ -6,6 +6,7 @@ import '../../l10n/profile_strings.dart';
 import '../../l10n/results_strings.dart';
 import '../../l10n/strings.dart';
 import '../../state/scope.dart';
+import '../help/help_screen.dart';
 import '../manga/manga.dart';
 import '../profile/profile_screen.dart';
 import '../settings/settings_screen.dart';
@@ -13,6 +14,10 @@ import '../settings/settings_screen.dart';
 /// Opens the settings screen.
 Future<void> openSettings(BuildContext context) =>
     Navigator.of(context).push(MangaRoute<void>(builder: (_) => const SettingsScreen()));
+
+/// Opens Help.
+Future<void> openHelp(BuildContext context) =>
+    Navigator.of(context).push(MangaRoute<void>(builder: (_) => const HelpScreen()));
 
 /// Opens My Profile.
 Future<void> openProfile(BuildContext context) =>
@@ -61,4 +66,13 @@ class SettingsButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) =>
       InkIconButton(icon: IconArt.settings, semanticLabel: S.of(context).settings, onTap: () => openSettings(context));
+}
+
+/// The "?" button, left of the gear, that opens Help.
+class HelpButton extends StatelessWidget {
+  const HelpButton({super.key});
+
+  @override
+  Widget build(BuildContext context) =>
+      InkIconButton(icon: IconArt.help, semanticLabel: S.of(context).help, onTap: () => openHelp(context));
 }

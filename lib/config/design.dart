@@ -1989,6 +1989,35 @@ abstract final class ComingSoonStyle {
   static const Alignment speaker = Alignment(-1.9, 2.7);
 }
 
+/// The Side Trips tab (`SideTripsScreen`): a panel per side trip with its
+/// name lettering beside Tobi, what it is, its rank or lock line, and its
+/// ranked and free-play buttons; then the "more to come" box.
+abstract final class SideTripsLayout {
+  static const EdgeInsets padding = EdgeInsets.fromLTRB(14, 16, 12, 14);
+
+  /// How far the panel's top-left corner is cut down.
+  static const double cut = 12;
+  static const double titleFont = 40;
+  static const double titleOutline = 8;
+  static const Size tobi = Size(70, 83);
+  static const double gap = 10;
+  static const double aboutFont = 14;
+
+  /// The rank line: the class badge, then RATING over the rating.
+  static const double rankGap = 10;
+  static const double ratingLabelFont = 11;
+  static const double ratingLabelTracking = 0.14;
+  static const double ratingFont = 24;
+  static const double unrankedFont = 16;
+  static const double lockIcon = 22;
+
+  static const Size lockBalloon = Size(270, 96);
+  static const Duration lockBalloonLife = Duration(milliseconds: 2800);
+
+  static const EdgeInsets morePadding = EdgeInsets.fromLTRB(14, 14, 14, 14);
+  static const double moreIcon = 28;
+}
+
 /// The debug Simulation page's summary and per-day charts.
 abstract final class SimulationStyle {
   static const double labelWidth = 150;

@@ -23,6 +23,7 @@ import 'package:fudatobashi/domain/card_mask.dart';
 import 'package:fudatobashi/domain/card_stats.dart';
 import 'package:fudatobashi/domain/play_session.dart';
 import 'package:fudatobashi/domain/rating.dart';
+import 'package:fudatobashi/domain/side_trips.dart';
 import 'package:fudatobashi/domain/synthetic_learner.dart';
 import 'package:fudatobashi/domain/tab_locks.dart';
 import 'package:fudatobashi/domain/trainer.dart';
@@ -37,6 +38,7 @@ import 'package:fudatobashi/l10n/profile_strings.dart';
 import 'package:fudatobashi/l10n/results_strings.dart';
 import 'package:fudatobashi/l10n/romaji.dart';
 import 'package:fudatobashi/l10n/settings_strings.dart';
+import 'package:fudatobashi/l10n/side_trip_strings.dart';
 import 'package:fudatobashi/l10n/stats_strings.dart';
 import 'package:fudatobashi/l10n/strings.dart';
 import 'package:fudatobashi/l10n/tour_strings.dart';
@@ -51,6 +53,7 @@ import 'package:fudatobashi/ui/free/card_picker.dart';
 import 'package:fudatobashi/ui/free/free_practice_sheet.dart';
 import 'package:fudatobashi/ui/free/island_picker.dart';
 import 'package:fudatobashi/ui/free/look_alike_picker.dart';
+import 'package:fudatobashi/ui/help/help_screen.dart';
 import 'package:fudatobashi/ui/home/learn_ahead_button.dart';
 import 'package:fudatobashi/ui/home/training_hero.dart';
 import 'package:fudatobashi/ui/islands/island_map.dart';
@@ -65,6 +68,7 @@ import 'package:fudatobashi/ui/play/start_card.dart';
 import 'package:fudatobashi/ui/play/swipe_deck.dart';
 import 'package:fudatobashi/ui/play/test_card.dart';
 import 'package:fudatobashi/ui/profile/profile_screen.dart';
+import 'package:fudatobashi/ui/rank/rank_badges.dart';
 import 'package:fudatobashi/ui/rank/rank_screen.dart';
 import 'package:fudatobashi/ui/results/celebration_sequence.dart';
 import 'package:fudatobashi/ui/results/celebrations.dart';
@@ -83,6 +87,7 @@ import 'package:fudatobashi/ui/settings/settings_screen.dart';
 import 'package:fudatobashi/ui/shell/header_actions.dart';
 import 'package:fudatobashi/ui/shell/kimariji_heading.dart';
 import 'package:fudatobashi/ui/shell/tab_chains.dart';
+import 'package:fudatobashi/ui/side_trips/side_trips_screen.dart';
 import 'package:fudatobashi/ui/sound/sounds.dart';
 import 'package:fudatobashi/ui/stats/card_detail_screen.dart';
 import 'package:fudatobashi/ui/stats/card_list.dart';
@@ -414,14 +419,44 @@ void main() {
       await tester.pumpWidget(const SizedBox());
     });
 
-    testWidgets('the Help tab opens ($lang)', (tester) async {
+    testWidgets('Home\'s "?" sits just left of the wheel, the same size, opens Help, and back returns ($lang)',
+        (tester) async {
       final p = await open(tester, mode: LearningMode.allKnown, ja: ja);
-      await tester.binding.setSurfaceSize(_phone);
-      await tester.pumpWidget(RepaintBoundary(key: const ValueKey('screen'), child: FudatobashiApp(progress: p)));
+      await onPhone(tester, p, fontScale: 1.3);
+      await _capture(tester, 'home_header_$lang');
+      final help = tester.getRect(find.byType(HelpButton));
+      final wheel = tester.getRect(find.byType(SettingsButton));
+      expect(help.size, wheel.size);
+      expect(wheel.left - help.right, moreOrLessEquals(HeaderStyle.actionGap), reason: 'directly left of the wheel');
+      expect(help.center.dy, moreOrLessEquals(wheel.center.dy));
+      expect(help.left, greaterThan(tester.getRect(find.byType(LevelButton)).right), reason: 'LV · ? · ⚙');
+      expect(find.descendant(of: find.byType(MangaTabBar), matching: find.text(S(lang).help)), findsNothing,
+          reason: 'Help left the tab bar');
+
+      await tester.tap(find.byType(HelpButton));
+      await tester.pump();
       await tester.pump(const Duration(milliseconds: 500));
-      await tester.tap(find.descendant(of: find.byType(MangaTabBar), matching: find.text(ja ? '解説' : 'Help')));
+      expect(find.byType(HelpScreen), findsOneWidget);
+      expect(find.text(S(lang).replayTour), findsOneWidget);
+      expect(tester.takeException(), isNull);
+      await _capture(tester, 'help_$lang');
+      await tester.tap(find.descendant(
+          of: find.byType(HelpScreen), matching: find.byWidgetPredicate((w) => w is InkIconButton && w.icon == IconArt.back)));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 500));
+      expect(find.byType(HelpScreen), findsNothing);
+      expect(find.byType(HelpButton), findsOneWidget, reason: 'back on Home');
+      await tester.pumpWidget(const SizedBox());
+    });
+
+    testWidgets('the Side Trips tab opens ($lang)', (tester) async {
+      final p = await open(tester, mode: LearningMode.allKnown, ja: ja);
+      await onPhone(tester, p, fontScale: 1.1);
+      await tester.tap(find.descendant(of: find.byType(MangaTabBar), matching: find.text(ja ? '寄り道' : 'Side Trips')));
       await tester.pump(const Duration(milliseconds: 300));
       expect(tester.widget<MangaTabBar>(find.byType(MangaTabBar)).current, 3);
+      expect(find.byType(SideTripsScreen), findsOneWidget);
+      expect(find.byWidgetPredicate((w) => w is OutlinedText && w.text == SideTrip.ankiren.label), findsOneWidget);
       await tester.pumpWidget(const SizedBox());
     });
 
@@ -2658,6 +2693,139 @@ void main() {
     });
   });
 
+  group('Side Trips', () {
+    Finder inTrips(Finder f) => find.descendant(of: find.byType(SideTripsScreen), matching: f);
+
+    // Text set with `Phrases.span`, matched without its line-break marks.
+    Finder phrased(String text) => find.byWidgetPredicate((w) =>
+        w is Text && w.textSpan?.toPlainText().replaceAll(RegExp('[​⁠]'), '') == Phrases.spoken(text));
+
+    Future<void> openTrips(WidgetTester tester, Progress p, {double fontScale = 1.1}) async {
+      await onPhone(tester, p, fontScale: fontScale);
+      await tester.tap(find.descendant(of: find.byType(MangaTabBar), matching: find.text(S(p.settings.language).sideTrips)));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
+      expect(tester.takeException(), isNull);
+    }
+
+    // Unlocks [ids] (journey) and trains each until it is well remembered.
+    Future<void> remember(WidgetTester tester, Progress p, Iterable<int> ids) => tester.runAsync(() async {
+          for (final id in ids) {
+            p.trainer.items[ItemKey(id, false)]!.unlocked = true;
+          }
+          final session = PlaySession([for (var i = 0; i < StatsTuning.solidMinTimed; i++) ...ids.map(CardRef.new)]);
+          var t = const Duration(seconds: 100);
+          while (!session.finished) {
+            session.revealed(t);
+            t += const Duration(milliseconds: 700);
+            session.commit(responseTs: t, commitTs: t + const Duration(milliseconds: 80), outcome: Outcome.known);
+            t += const Duration(milliseconds: 100);
+          }
+          await p.recordRun(session, const PlayConfig(mode: PlayMode.training), DateTime.now());
+        });
+
+    Future<void> expectBalloon(WidgetTester tester, Finder button, String says) async {
+      await tester.tap(button);
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 400));
+      expect(find.descendant(of: find.byType(SpeechBalloon), matching: find.text(says)), findsOneWidget);
+      expect(tester.takeException(), isNull);
+      await tester.pump(SideTripsLayout.lockBalloonLife);
+    }
+
+    final journeyOrder = [for (final isl in archipelago.islands) ...fudaSets['initial:${isl.name}'].poemIds];
+
+    for (final ja in [false, true]) {
+      final lang = ja ? 'ja' : 'en';
+
+      testWidgets('a fresh journey shows 暗記練 locked, says what opens it, and either button says why ($lang)',
+          (tester) async {
+        final s = S(lang);
+        final p = await open(tester, mode: LearningMode.journey, ja: ja, journeyCards: 3);
+        final entry = p.sideTripsHub()[SideTrip.ankiren];
+        expect(entry.lock?.needed, SideTripTuning.ankirenRemembered);
+        expect(entry.freeLock?.needed, SideTripTuning.ankirenFreeRemembered);
+        await openTrips(tester, p);
+        expect(inTrips(phrased(s.sideTripLockedWhy(SideTripTuning.ankirenRemembered))), findsOneWidget);
+        expect(inTrips(find.byType(ClassBadge)), findsNothing, reason: 'a locked trip shows its lock, not a rank');
+        expect(inTrips(find.text(s.sideTripLockedSub(SideTripTuning.ankirenRemembered))), findsOneWidget);
+        expect(inTrips(find.text(s.sideTripLockedSub(SideTripTuning.ankirenFreeRemembered))), findsOneWidget);
+        await _capture(tester, 'side_trips_locked_$lang');
+        await expectBalloon(
+            tester, inTrips(find.text(s.sideTripRanked)), s.sideTripLockedWhy(SideTripTuning.ankirenRemembered));
+        await expectBalloon(
+            tester, inTrips(find.text(s.freePlay)), s.sideTripFreeLockedWhy(SideTripTuning.ankirenFreeRemembered));
+        await tester.pumpWidget(const SizedBox());
+      });
+
+      testWidgets('all-known mode opens 暗記練 and its free play, unranked at 入門 ($lang)', (tester) async {
+        final s = S(lang);
+        final p = await open(tester, mode: LearningMode.allKnown, ja: ja);
+        final entry = p.sideTripsHub()[SideTrip.ankiren];
+        expect([entry.open, entry.freeOpen], [true, true]);
+        await openTrips(tester, p);
+        expect(tester.widget<ClassBadge>(inTrips(find.byType(ClassBadge))).band, Rating.bands.first);
+        expect(inTrips(find.text(s.sideTripUnranked)), findsOneWidget);
+        await _capture(tester, 'side_trips_open_$lang');
+        await expectBalloon(tester, inTrips(find.text(s.sideTripRanked)), s.comingSoon);
+        await expectBalloon(tester, inTrips(find.text(s.freePlay)), s.comingSoon);
+        await tester.pumpWidget(const SizedBox());
+      });
+
+      for (final fontScale in [1.0, 1.1, 1.3]) {
+        for (final mode in LearningMode.values) {
+          testWidgets('the Side Trips tab fits the phone, ${mode.name}, at font scale $fontScale ($lang)', (tester) async {
+            final p = await open(tester, mode: mode, ja: ja, journeyCards: 3);
+            await openTrips(tester, p, fontScale: fontScale);
+            final panel = tester.getRect(find.byType(SideTripPanel));
+            final more = tester.getRect(inTrips(find.byType(DashedBox)));
+            final bar = tester.getRect(find.byType(MangaTabBar));
+            expect(panel.left, greaterThanOrEqualTo(Gaps.gutter));
+            expect(panel.right, lessThanOrEqualTo(_phone.width - Gaps.gutter));
+            expect(more.bottom, lessThan(bar.top), reason: 'the whole hub shows without scrolling');
+            await _capture(tester, 'side_trips_${mode.name}_${lang}_$fontScale');
+            await tester.pumpWidget(const SizedBox());
+          });
+        }
+      }
+    }
+
+    testWidgets('暗記練 opens at 25 cards remembered well, its free play at 50, and both stay open', (tester) async {
+      const s = S('en');
+      const ranked = SideTripTuning.ankirenRemembered, free = SideTripTuning.ankirenFreeRemembered;
+      final p = await open(tester, mode: LearningMode.journey);
+      await remember(tester, p, journeyOrder.take(ranked - 1));
+      expect(p.sideTripsHub()[SideTrip.ankiren].lock?.needed, 1);
+      await remember(tester, p, [journeyOrder[ranked - 1]]);
+      var entry = p.sideTripsHub()[SideTrip.ankiren];
+      expect(entry.open, isTrue);
+      expect(entry.freeLock?.needed, free - ranked);
+
+      await openTrips(tester, p);
+      expect(inTrips(find.byType(ClassBadge)), findsOneWidget);
+      expect(inTrips(find.text(s.sideTripUnranked)), findsOneWidget);
+      expect(inTrips(find.text(s.sideTripLockedSub(free - ranked))), findsOneWidget, reason: 'free play is still locked');
+      await _capture(tester, 'side_trips_ranked_open');
+      await expectBalloon(tester, inTrips(find.text(s.sideTripRanked)), s.comingSoon);
+      await expectBalloon(tester, inTrips(find.text(s.freePlay)), s.sideTripFreeLockedWhy(free - ranked));
+
+      await remember(tester, p, journeyOrder.skip(ranked).take(free - ranked));
+      await tester.pump();
+      entry = p.sideTripsHub()[SideTrip.ankiren];
+      expect(entry.freeOpen, isTrue);
+      expect(inTrips(find.text(s.sideTripFreeSub)), findsOneWidget);
+      await expectBalloon(tester, inTrips(find.text(s.freePlay)), s.comingSoon);
+
+      // Weeks later every card is due, so none is well remembered: the latch
+      // keeps both open.
+      final later = DateTime.now().add(const Duration(days: 60));
+      expect(p.trainer.wellRememberedCount(p.allStats, later), 0);
+      final latched = p.sideTripsHub(later)[SideTrip.ankiren];
+      expect([latched.open, latched.freeOpen], [true, true]);
+      await tester.pumpWidget(const SizedBox());
+    });
+  });
+
   group('Tour', () {
     const safe = EdgeInsets.only(top: 28, bottom: 48);
     final area = Rect.fromLTRB(Gaps.gutter, 28 + Gaps.gutter, _phone.width - Gaps.gutter, _phone.height - 48 - Gaps.gutter);
@@ -2898,8 +3066,9 @@ void main() {
     testWidgets('Help replays the tour', (tester) async {
       final p = await open(tester, mode: LearningMode.allKnown);
       await onPhone(tester, p, fontScale: 1.1);
-      await tester.tap(find.descendant(of: find.byType(MangaTabBar), matching: find.text('Help')));
-      await tester.pump(const Duration(milliseconds: 300));
+      await tester.tap(find.byType(HelpButton));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 500));
       expect(tester.takeException(), isNull);
       await _capture(tester, 'help_replay');
       await tester.tap(find.text(const S('en').replayTour));
@@ -2907,6 +3076,7 @@ void main() {
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 300));
       expect(find.byType(TourOverlay), findsOneWidget);
+      expect(find.byType(HelpScreen), findsNothing);
       expect(tester.widget<MangaTabBar>(find.byType(MangaTabBar)).current, 0, reason: 'on Home');
       await tester.pumpWidget(const SizedBox());
     });
