@@ -29,8 +29,8 @@ class FieldRect {
 ///
 /// True scale lays a half out over the real territory's [AnkirenFieldSize.slots]
 /// card slots, all three rows. Folded keeps only the rows some half uses
-/// and closes the open middle to [AnkirenFieldSize.foldedHole] pitches, or
-/// to room for the middle cards when a row has some. Either way the left
+/// and is as wide as its widest row with that row's open middle closed to
+/// [AnkirenFieldSize.foldedHole] pitches, or to room for its middle cards. Either way the left
 /// cluster starts at the half's left edge, the right one ends at its right
 /// edge, and middle cards are spread evenly over their row's open gap.
 class FieldGeometry {
@@ -55,13 +55,13 @@ class FieldGeometry {
 
     final double slots, x0, width;
     if (folded) {
-      int widest(int Function(AnkirenRow) count) =>
-          [for (final h in halves) ...h.rows.map(count)].reduce(math.max);
-      final middle = widest((r) => r.middle.length);
-      final hole = middle == 0
-          ? AnkirenFieldSize.foldedHole
-          : math.max(AnkirenFieldSize.foldedHole, middle + 2 * AnkirenFieldSize.middleMargin);
-      slots = widest((r) => r.left.length) + hole + widest((r) => r.right.length);
+      double rowSlots(AnkirenRow r) =>
+          r.left.length +
+          r.right.length +
+          (r.middle.isEmpty
+              ? AnkirenFieldSize.foldedHole
+              : math.max(AnkirenFieldSize.foldedHole, r.middle.length + 2 * AnkirenFieldSize.middleMargin));
+      slots = [for (final h in halves) ...h.rows.map(rowSlots)].reduce(math.max);
       x0 = 0;
       width = slots * _pitch - AnkirenFieldSize.cardGap;
     } else {

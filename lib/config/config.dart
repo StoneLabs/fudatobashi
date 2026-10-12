@@ -931,21 +931,35 @@ abstract final class AnkirenTuning {
   static const Duration customFineUntil = Duration(minutes: 1);
   static const Duration customCoarseStep = Duration(seconds: 30);
 
-  /// Chance, for each side on its own, that it puts [middleMin] to
-  /// [middleMax] cards in the open middle of one of [middleRows]: about 1
-  /// game in 5 has some. A side only does while at least [middleMinClustered]
-  /// cards stay in its clusters, so it keeps a real 定位置's left and right
-  /// clusters (下段 two cards wide on each side); a smaller one never does.
-  static const double middleChancePerSide = 0.106;
+  /// Middle cards: a side splits a 友札 pair (e.g. two あら cards) by putting
+  /// one of them in the open middle of its 上段, the row at the centre line.
+  /// With [middleChancePerSide], a side that holds such a pair puts
+  /// [middleMin] to [middleMax] cards there, each with a 友札 left in its
+  /// clusters. It only does while at least [middleMinClustered] cards stay in
+  /// its clusters, so it keeps a real 定位置's left and right clusters; a
+  /// smaller side never does. At a real match's 25 a side (4 sides in 5 hold
+  /// a pair) about 1 game in 5 has some; smaller fields hold fewer pairs.
+  static const double middleChancePerSide = 0.13;
   static const int middleMin = 1;
   static const int middleMax = 5;
   static const int middleMinClustered = 10;
-  static const List<FieldRow> middleRows = [FieldRow.lower, FieldRow.middle];
+  static const FieldRow middleRow = FieldRow.upper;
 
-  /// 中段's share, in percent and rounded up, of a side's cluster cards left
-  /// after 下段 (a third, rounded up); never more than 下段. 上段 takes the
-  /// rest.
+  /// A side's cluster cards take 下段 alone up to [singleRowUpTo] cards, 下段
+  /// and 中段 (half each, 下段 the odd one) up to [twoRowsUpTo], and all three
+  /// rows above that, like a real 定位置 being built up from 下段.
+  static const int singleRowUpTo = 4;
+  static const int twoRowsUpTo = 8;
+
+  /// With all three rows: 中段's share, in percent and rounded up, of the
+  /// cards left after 下段 (a third, rounded up); never more than 下段. 上段
+  /// takes the rest.
   static const int middleRowPercent = 55;
+
+  /// The most cards a row holds, its middle cards counted, so a folded
+  /// field is at most [rowMax] + 1 cards wide (see `FieldGeometry`). 上段
+  /// passes any cards over to 下段 and 中段 to keep room for its middle cards.
+  static const int rowMax = 9;
 
   /// Wrong taps on one prompt after which its card is shown.
   static const int revealAfterWrong = 2;
@@ -1020,8 +1034,8 @@ abstract final class AnkirenFieldSize {
   static const int slots = 16;
 
   /// The folded field's open middle, in card pitches (card + gap):
-  /// [foldedHole], or room for the most middle cards in a row plus
-  /// [middleMargin] either side.
+  /// [foldedHole], or room for a row's middle cards plus [middleMargin]
+  /// either side.
   static const double foldedHole = 0.6;
   static const double middleMargin = 0.5;
 }

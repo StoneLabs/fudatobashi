@@ -82,11 +82,11 @@ class AnkirenField {
 ///
 /// The known cards are shuffled and 2 × perSide are dealt, the first half to
 /// the own side. Then each side, on its own:
-/// - A side big enough for an open middle ([maxMiddle]) puts a few cards
-///   there with [AnkirenTuning.middleChancePerSide], all in one row
-///   ([AnkirenTuning.middleRows]). The first is a card with a 友札 anywhere on
-///   the field when there is one; no two middle cards of a side are each
-///   other's 友札.
+/// - A side big enough for an open middle ([maxMiddle]) that holds a 友札
+///   pair ([middleCandidates]) splits it, with
+///   [AnkirenTuning.middleChancePerSide]: a few cards go to the open middle
+///   of [AnkirenTuning.middleRow], each with a 友札 left in the clusters, no
+///   two of them each other's 友札.
 /// - The rest form the left and right clusters. 下段 fills first, 上段 is the
 ///   sparsest (see [rowCounts]), and each row splits left / right (see
 ///   [leftCount]).
@@ -111,11 +111,7 @@ class AnkirenDealer {
     assert(perSide >= 1 && deck.length >= 2 * perSide, 'not enough known cards for $perSide per side');
     final ownCards = deck.sublist(0, perSide);
     final opponentCards = deck.sublist(perSide, 2 * perSide);
-    final field = {...ownCards, ...opponentCards};
-    return AnkirenField(
-      own: _arrange(ownCards, field, rng),
-      opponent: _arrange(opponentCards, field, rng),
-    );
+    return AnkirenField(own: _arrange(ownCards, rng), opponent: _arrange(opponentCards, rng));
   }
 
   /// The most cards a side of [perSide] may put in the open middle: up to
@@ -129,24 +125,38 @@ class AnkirenDealer {
 
   static bool mayHaveMiddle(int perSide) => maxMiddle(perSide) > 0;
 
-  /// Cards per row for [clustered] cluster cards, indexed by [FieldRow.index].
-  static List<int> rowCounts(int clustered) {
-    final lower = (clustered + 2) ~/ 3;
+  /// Cards per row for [clustered] cluster cards, indexed by [FieldRow.index]
+  /// (see [AnkirenTuning.singleRowUpTo]), when [AnkirenTuning.middleRow]
+  /// also holds [middleCards] (see [AnkirenTuning.rowMax]).
+  static List<int> rowCounts(int clustered, {int middleCards = 0}) {
+    if (clustered <= AnkirenTuning.singleRowUpTo) return [clustered, 0, 0];
+    if (clustered <= AnkirenTuning.twoRowsUpTo) return [(clustered + 1) ~/ 2, clustered ~/ 2, 0];
+    var lower = (clustered + 2) ~/ 3;
     final rest = clustered - lower;
-    final middle = math.min(lower, (rest * AnkirenTuning.middleRowPercent + 99) ~/ 100);
-    return [lower, middle, rest - middle];
+    var middle = math.min(lower, (rest * AnkirenTuning.middleRowPercent + 99) ~/ 100);
+    final upper = math.min(rest - middle, AnkirenTuning.rowMax - middleCards);
+    for (var spill = rest - middle - upper; spill > 0; spill--) {
+      lower > middle ? middle++ : lower++;
+    }
+    return [lower, middle, upper];
   }
+
+  /// The cards of a side that may go to its open middle: those with a 友札
+  /// among its other cards.
+  List<int> middleCandidates(List<int> side) => [
+        for (final c in side)
+          if (tomofuda(c).any((t) => t != c && side.contains(t))) c,
+      ];
 
   /// How many of a row's [n] cluster cards go to its left cluster: the extra
   /// card of an odd row goes left, except in 中段 where it goes right.
   static int leftCount(FieldRow row, int n) => row == FieldRow.middle ? n ~/ 2 : (n + 1) ~/ 2;
 
-  AnkirenHalf _arrange(List<int> cards, Set<int> field, math.Random rng) {
-    final middle = _middleCards(cards, field, rng);
-    final middleRow = AnkirenTuning.middleRows[rng.nextInt(AnkirenTuning.middleRows.length)];
+  AnkirenHalf _arrange(List<int> cards, math.Random rng) {
+    final middle = _middleCards(cards, rng);
     final clustered = [for (final c in cards) if (!middle.contains(c)) c];
 
-    final counts = rowCounts(clustered.length);
+    final counts = rowCounts(clustered.length, middleCards: middle.length);
     final leftRows = [for (final r in FieldRow.values) leftCount(r, counts[r.index])];
     final rightRows = [for (final r in FieldRow.values) counts[r.index] - leftRows[r.index]];
     final (left, right) = _splitClusters(clustered, leftRows.fold(0, (a, b) => a + b), rng);
@@ -157,23 +167,21 @@ class AnkirenDealer {
       for (final r in FieldRow.values)
         AnkirenRow(
           left: leftByRow[r.index],
-          middle: r == middleRow ? middle : const [],
+          middle: r == AnkirenTuning.middleRow ? middle : const [],
           right: rightByRow[r.index],
         ),
     ]);
   }
 
-  List<int> _middleCards(List<int> cards, Set<int> field, math.Random rng) {
+  List<int> _middleCards(List<int> cards, math.Random rng) {
     final most = maxMiddle(cards.length);
-    if (most == 0 || rng.nextDouble() >= AnkirenTuning.middleChancePerSide) return const [];
+    final candidates = middleCandidates(cards);
+    if (most == 0 || candidates.isEmpty || rng.nextDouble() >= AnkirenTuning.middleChancePerSide) return const [];
     final k = AnkirenTuning.middleMin + rng.nextInt(most - AnkirenTuning.middleMin + 1);
-
-    final paired = [for (final c in cards) if (tomofuda(c).any(field.contains)) c];
-    final first = paired.isEmpty ? cards[rng.nextInt(cards.length)] : paired[rng.nextInt(paired.length)];
-    final chosen = [first];
-    for (final c in [...cards]..shuffle(rng)) {
+    final chosen = <int>[];
+    for (final c in candidates..shuffle(rng)) {
       if (chosen.length == k) break;
-      if (c != first && !chosen.any((m) => tomofuda(m).contains(c))) chosen.add(c);
+      if (!chosen.any((m) => tomofuda(m).contains(c) || tomofuda(c).contains(m))) chosen.add(c);
     }
     return chosen;
   }
