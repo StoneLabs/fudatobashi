@@ -153,7 +153,7 @@ class _PointsCalculatorState extends State<_PointsCalculator> {
 
   Widget _slider(String label, double value, double min, double max, int? divisions, ValueChanged<double> onChanged) =>
       Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           Text(label, style: debugMono),
           Slider(value: value, min: min, max: max, divisions: divisions, onChanged: onChanged),
