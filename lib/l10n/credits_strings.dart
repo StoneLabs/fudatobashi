@@ -4,6 +4,8 @@ import 'strings.dart';
 extension CreditsStrings on S {
   String get credits => t('credits');
 
+  String get privacyPolicy => t('privacyPolicy');
+
   String get creditsFonts => t('creditsFonts');
 
   String get creditsCardKana => t('creditsCardKana');

@@ -507,5 +507,6 @@
   "kimariji100": "もも",
   "kimarijiPlayLabel": "読み上げを再生",
   "creditsVoice": "決まり字の読み上げ",
-  "creditsVoiceBody": "決まり字の読み上げは、GoogleのGemini TTS（音声「Puck」）で生成したAI合成音声です。生成された音声の所有権をGoogleは主張しておらず、ライセンスやクレジット表記の義務はありません。"
+  "creditsVoiceBody": "決まり字の読み上げは、GoogleのGemini TTS（音声「Puck」）で生成したAI合成音声です。生成された音声の所有権をGoogleは主張しておらず、ライセンスやクレジット表記の義務はありません。",
+  "privacyPolicy": "プライバシーポリシー"
 }

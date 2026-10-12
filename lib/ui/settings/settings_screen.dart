@@ -4,6 +4,7 @@ import 'package:package_info_plus/package_info_plus.dart';
 
 import '../../config/config.dart';
 import '../../config/design.dart';
+import '../../config/licenses.dart';
 import '../../config/vector_art.dart';
 import '../../domain/trainer.dart';
 import '../../l10n/credits_strings.dart';
@@ -135,6 +136,16 @@ class SettingsScreen extends StatelessWidget {
                               note: s.creditsNote,
                               opensPage: true,
                               onTap: () => Navigator.push(context, MangaRoute<void>(builder: (_) => const CreditsScreen())),
+                            ),
+                            SettingsTapRow(
+                              title: s.privacyPolicy,
+                              opensPage: true,
+                              onTap: () => Navigator.push(
+                                context,
+                                MangaRoute<void>(
+                                  builder: (_) => LicenseTextScreen(title: s.privacyPolicy, asset: privacyPolicyAsset(ja: s.ja)),
+                                ),
+                              ),
                             ),
                           ]),
                         ],
