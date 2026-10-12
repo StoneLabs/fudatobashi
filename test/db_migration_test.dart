@@ -1,7 +1,10 @@
+import 'dart:io';
+
 import 'package:drift/drift.dart' hide isNull, isNotNull;
 import 'package:drift/native.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:fudatobashi/db/database.dart';
+import 'package:fudatobashi/migrations/migrations.dart';
 
 /// The schema of version 1 (before the side trips' tables), as that
 /// version's `AppDatabase` created it.
@@ -87,5 +90,42 @@ void main() {
         runId: run, seq: 0, poemId: 12, wrongTaps: 1, at: DateTime(2026, 10, 12)));
     expect((await db.select(db.sideTripAnswers).getSingle()).responseUs, isNull);
     await db.close();
+  });
+
+  test('one upgrade step leads from every version to the next, up to the current one', () async {
+    final db = AppDatabase(NativeDatabase.memory());
+    expect(migrationSteps, hasLength(db.schemaVersion - 1),
+        reason: 'versions 1 to ${db.schemaVersion} need ${db.schemaVersion - 1} steps');
+    await db.close();
+  });
+
+  test('an upgrade cut short leaves the database as it was', () async {
+    final dir = await Directory.systemTemp.createTemp('fudatobashi_migration');
+    addTearDown(() => dir.delete(recursive: true));
+    final file = File('${dir.path}/app.sqlite');
+    // A version 1 install with a stray side_trip_answers table: the upgrade
+    // creates side_trip_runs, then fails on it.
+    late ({int version, Set<String> tables}) seen;
+    AppDatabase open() => AppDatabase(NativeDatabase(file, setup: (raw) {
+          if (raw.userVersion == 0) {
+            for (final sql in [..._v1Schema, ..._v1Rows, 'CREATE TABLE side_trip_answers (id INTEGER)']) {
+              raw.execute(sql);
+            }
+            raw.userVersion = 1;
+          }
+          seen = (
+            version: raw.userVersion,
+            tables: {for (final row in raw.select("SELECT name FROM sqlite_master WHERE type = 'table'")) row['name'] as String},
+          );
+        }));
+
+    for (var attempt = 0; attempt < 2; attempt++) {
+      final db = open();
+      await expectLater(db.select(db.sessions).get(), throwsA(isA<SqliteException>()));
+      await db.close();
+    }
+    expect(seen.version, 1);
+    expect(seen.tables, isNot(contains('side_trip_runs')), reason: 'the failed upgrade was rolled back');
+    expect(seen.tables, containsAll(['sessions', 'attempts', 'items', 'rating_points', 'key_values']));
   });
 }

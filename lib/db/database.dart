@@ -1,6 +1,8 @@
 import 'package:drift/drift.dart';
 import 'package:drift_flutter/drift_flutter.dart';
 
+import '../migrations/migrations.dart';
+
 part 'database.g.dart';
 
 /// One run (札落とし session). Guest runs are never stored.
@@ -140,6 +142,7 @@ class SideTripAnswers extends Table {
 class AppDatabase extends _$AppDatabase {
   AppDatabase([QueryExecutor? executor]) : super(executor ?? driftDatabase(name: 'fudatobashi'));
 
+  /// Raised with each new upgrade step in `lib/migrations/` ([migrationSteps]).
   @override
   int get schemaVersion => 2;
 
@@ -147,18 +150,16 @@ class AppDatabase extends _$AppDatabase {
   MigrationStrategy get migration => MigrationStrategy(
         onCreate: (m) async {
           await m.createAll();
-          await customStatement('CREATE INDEX attempts_poem ON attempts (poem_id, inverted)');
-          await customStatement('CREATE INDEX attempts_session ON attempts (session_id)');
-          await customStatement(_sideTripAnswersIndex);
-        },
-        onUpgrade: (m, from, to) async {
-          if (from < 2) {
-            await m.createTable(sideTripRuns);
-            await m.createTable(sideTripAnswers);
-            await customStatement(_sideTripAnswersIndex);
+          for (final index in _indexes) {
+            await customStatement(index);
           }
         },
+        onUpgrade: migrate,
       );
 
-  static const _sideTripAnswersIndex = 'CREATE INDEX side_trip_answers_run ON side_trip_answers (run_id)';
+  static const _indexes = [
+    'CREATE INDEX attempts_poem ON attempts (poem_id, inverted)',
+    'CREATE INDEX attempts_session ON attempts (session_id)',
+    'CREATE INDEX side_trip_answers_run ON side_trip_answers (run_id)',
+  ];
 }
