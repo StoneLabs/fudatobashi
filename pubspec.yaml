@@ -81,6 +81,8 @@ flutter:
     - assets/fonts/OFL-YujiSyuku.txt
     - assets/fonts/OFL-zenkakugothicnew.txt
     - assets/fonts/GUST-FONT-LICENSE.txt
+    - assets/legal/privacy-policy.md
+    - assets/legal/privacy-policy.ja.md
 
   fonts:
     # Card kana come from assets/glyphs (pre-rendered, see tool/render_glyphs_test.dart);

@@ -51,3 +51,8 @@ const soundsLicenseAsset = 'assets/sounds/License.txt';
 
 /// The background music's license (CC BY 3.0 Unported legal code).
 const musicLicenseAsset = 'assets/sounds/License-music-CC-BY-3.0.txt';
+
+/// The privacy policy shown in Settings, one bundled file per UI language
+/// (the same files serve as the public policy, see `assets/legal/`).
+String privacyPolicyAsset({required bool ja}) =>
+    ja ? 'assets/legal/privacy-policy.ja.md' : 'assets/legal/privacy-policy.md';
