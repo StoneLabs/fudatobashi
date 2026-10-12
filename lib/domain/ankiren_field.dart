@@ -87,9 +87,9 @@ class AnkirenField {
 ///   [AnkirenTuning.middleChancePerSide]: a few cards go to the open middle
 ///   of [AnkirenTuning.middleRow], each with a 友札 left in the clusters, no
 ///   two of them each other's 友札.
-/// - The rest form the left and right clusters. 下段 fills first, 上段 is the
-///   sparsest (see [rowCounts]), and each row splits left / right (see
-///   [leftCount]).
+/// - The rest form the left and right clusters, in a shape that varies from
+///   deal to deal: 下段 fills first and stays the fullest ([rowShapes]), and
+///   each row splits about evenly between left and right ([leftOf]).
 /// - A side's 友札 are split between the left and right clusters as far as
 ///   their room allows. Inside a cluster the shortest kimariji take 下段, the
 ///   longest 上段; within a row the order is random.
@@ -125,9 +125,10 @@ class AnkirenDealer {
 
   static bool mayHaveMiddle(int perSide) => maxMiddle(perSide) > 0;
 
-  /// Cards per row for [clustered] cluster cards, indexed by [FieldRow.index]
-  /// (see [AnkirenTuning.singleRowUpTo]), when [AnkirenTuning.middleRow]
-  /// also holds [middleCards] (see [AnkirenTuning.rowMax]).
+  /// The typical shape (cards per row, by [FieldRow.index]) for [clustered]
+  /// cluster cards (see [AnkirenTuning.singleRowUpTo]), when
+  /// [AnkirenTuning.middleRow] also holds [middleCards] (see
+  /// [AnkirenTuning.rowMax]); a deal varies it ([rowShapes]).
   static List<int> rowCounts(int clustered, {int middleCards = 0}) {
     if (clustered <= AnkirenTuning.singleRowUpTo) return [clustered, 0, 0];
     if (clustered <= AnkirenTuning.twoRowsUpTo) return [(clustered + 1) ~/ 2, clustered ~/ 2, 0];
@@ -148,16 +149,43 @@ class AnkirenDealer {
           if (tomofuda(c).any((t) => t != c && side.contains(t))) c,
       ];
 
-  /// How many of a row's [n] cluster cards go to its left cluster: the extra
-  /// card of an odd row goes left, except in 中段 where it goes right.
-  static int leftCount(FieldRow row, int n) => row == FieldRow.middle ? n ~/ 2 : (n + 1) ~/ 2;
+  /// Every shape (cards per row, by [FieldRow.index]) a side may give its
+  /// [clustered] cluster cards when [AnkirenTuning.middleRow] also holds
+  /// [middleCards]: the rows [rowCounts] uses, each within
+  /// [AnkirenTuning.rowJitter] of it, 下段 the fullest, and no row over
+  /// [AnkirenTuning.rowMax] with its middle cards.
+  static List<List<int>> rowShapes(int clustered, {int middleCards = 0}) {
+    final base = rowCounts(clustered, middleCards: middleCards);
+    const j = AnkirenTuning.rowJitter;
+    bool fits(List<int> shape) => FieldRow.values.every((r) {
+          final n = shape[r.index];
+          final room = AnkirenTuning.rowMax - (r == AnkirenTuning.middleRow ? middleCards : 0);
+          return n >= 0 && n <= room && (n > 0) == (base[r.index] > 0) && n <= shape[FieldRow.lower.index];
+        });
+    return [
+      for (var lower = base[0] - j; lower <= base[0] + j; lower++)
+        for (var middle = base[1] - j; middle <= base[1] + j; middle++)
+          if ((clustered - lower - middle - base[2]).abs() <= j && fits([lower, middle, clustered - lower - middle]))
+            [lower, middle, clustered - lower - middle],
+    ];
+  }
+
+  /// How many of a row's [n] cluster cards go to its left cluster: half, the
+  /// odd card either way, and with [AnkirenTuning.splitLean] one card more to
+  /// one side.
+  static int leftOf(int n, math.Random rng) {
+    var left = n ~/ 2 + (n.isOdd && rng.nextBool() ? 1 : 0);
+    if (rng.nextDouble() < AnkirenTuning.splitLean) left += rng.nextBool() ? 1 : -1;
+    return left.clamp(0, n);
+  }
 
   AnkirenHalf _arrange(List<int> cards, math.Random rng) {
     final middle = _middleCards(cards, rng);
     final clustered = [for (final c in cards) if (!middle.contains(c)) c];
 
-    final counts = rowCounts(clustered.length, middleCards: middle.length);
-    final leftRows = [for (final r in FieldRow.values) leftCount(r, counts[r.index])];
+    final shapes = rowShapes(clustered.length, middleCards: middle.length);
+    final counts = shapes[rng.nextInt(shapes.length)];
+    final leftRows = [for (final n in counts) leftOf(n, rng)];
     final rightRows = [for (final r in FieldRow.values) counts[r.index] - leftRows[r.index]];
     final (left, right) = _splitClusters(clustered, leftRows.fold(0, (a, b) => a + b), rng);
     final leftByRow = _fillRows(left, leftRows, rng);

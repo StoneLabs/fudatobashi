@@ -956,6 +956,13 @@ abstract final class AnkirenTuning {
   /// takes the rest.
   static const int middleRowPercent = 55;
 
+  /// No two deals take the same shape: a side's rows may each differ from
+  /// the shape above by up to [rowJitter] cards, and each row's split
+  /// between the left and right clusters leans one card further to a side
+  /// with [splitLean] (see `AnkirenDealer.rowShapes`, `leftOf`).
+  static const int rowJitter = 1;
+  static const double splitLean = 0.25;
+
   /// The most cards a row holds, its middle cards counted, so a folded
   /// field is at most [rowMax] + 1 cards wide (see `FieldGeometry`). 上段
   /// passes any cards over to 下段 and 中段 to keep room for its middle cards.

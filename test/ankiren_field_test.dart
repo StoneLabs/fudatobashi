@@ -91,11 +91,55 @@ void main() {
       }
     });
 
-    test('an odd row puts its extra card left, except 中段 which puts it right', () {
-      expect(AnkirenDealer.leftCount(FieldRow.lower, 5), 3);
-      expect(AnkirenDealer.leftCount(FieldRow.middle, 5), 2);
-      expect(AnkirenDealer.leftCount(FieldRow.upper, 5), 3);
-      expect(AnkirenDealer.leftCount(FieldRow.middle, 4), 2);
+    test('a deal varies the shape: each row within one card of the typical one, 下段 still the fullest', () {
+      expect(AnkirenDealer.rowShapes(3), [
+        [3, 0, 0],
+      ]);
+      expect(AnkirenDealer.rowShapes(5), unorderedEquals([
+        [3, 2, 0],
+        [4, 1, 0],
+      ]));
+      expect(AnkirenDealer.rowShapes(10), unorderedEquals([
+        [4, 4, 2],
+        [5, 4, 1],
+        [5, 3, 2],
+        [4, 3, 3],
+      ]));
+      expect(AnkirenDealer.rowShapes(25), unorderedEquals([
+        [9, 9, 7],
+        [9, 8, 8],
+      ]), reason: 'no row over rowMax');
+      expect(AnkirenDealer.rowShapes(20, middleCards: 5), everyElement(predicate<List<int>>((s) => s[2] <= 4)),
+          reason: '上段 keeps room for its middle cards');
+      for (var c = 0; c <= AnkirenTuning.customMaxPerSide; c++) {
+        for (var k = 0; k <= AnkirenTuning.middleMax && c + k <= AnkirenTuning.customMaxPerSide; k++) {
+          final shapes = AnkirenDealer.rowShapes(c, middleCards: k);
+          expect(shapes, anyElement(orderedEquals(AnkirenDealer.rowCounts(c, middleCards: k))), reason: '$c + $k');
+          for (final [lower, middle, upper] in shapes) {
+            expect(lower + middle + upper, c);
+            expect(lower >= middle && lower >= upper && upper >= 0, isTrue, reason: '$c: $lower/$middle/$upper');
+            expect([lower, middle, upper + k], everyElement(lessThanOrEqualTo(AnkirenTuning.rowMax)));
+          }
+        }
+      }
+    });
+
+    test('a row splits about evenly: level 0 is mostly 1 | 2 or 2 | 1, sometimes 0 | 3 or 3 | 0', () {
+      final rng = math.Random(9);
+      final splits = <int, int>{};
+      for (var g = 0; g < 8000; g++) {
+        final f = dealer.deal(all, AnkirenLevels.of(0).perSide, rng);
+        for (final half in [f.own, f.opponent]) {
+          final lower = half.row(FieldRow.lower);
+          expect(lower.cards, hasLength(3), reason: 'level 0 keeps to 下段');
+          splits.update(lower.left.length, (n) => n + 1, ifAbsent: () => 1);
+        }
+      }
+      double share(int left) => splits[left]! / 16000;
+      expect(share(1), closeTo(0.44, 0.02));
+      expect(share(2), closeTo(0.44, 0.02));
+      expect(share(0), closeTo(0.06, 0.01));
+      expect(share(3), closeTo(0.06, 0.01));
     });
   });
 
@@ -127,13 +171,11 @@ void main() {
         }
 
         final counts = [for (final r in half.rows) r.left.length + r.right.length];
-        if (counts.toString() != AnkirenDealer.rowCounts(perSide - k, middleCards: k).toString()) {
-          out.add('$side rows $counts');
-        }
+        final shapes = AnkirenDealer.rowShapes(perSide - k, middleCards: k);
+        if (!shapes.any((shape) => shape.toString() == counts.toString())) out.add('$side rows $counts');
         if (half.rows.any((r) => r.cards.length > AnkirenTuning.rowMax)) out.add('$side has a row over rowMax');
-        for (final r in FieldRow.values) {
-          final row = half.row(r);
-          if (row.left.length != AnkirenDealer.leftCount(r, counts[r.index])) out.add('$side $r left/right split');
+        for (final r in half.rows) {
+          if ((r.left.length - r.right.length).abs() > 3) out.add('$side a row split ${r.left.length}|${r.right.length}');
         }
 
         for (final cluster in [half.rows.map((r) => r.left), half.rows.map((r) => r.right)]) {
@@ -162,15 +204,6 @@ void main() {
     test('middle cards only where a side splits into left and right clusters, never at the small levels', () {
       expect([for (final l in AnkirenLevels.all) AnkirenDealer.mayHaveMiddle(l.perSide)],
           [false, false, false, false, false, false, true, true, true, true, true]);
-      for (var perSide = 1; perSide <= AnkirenTuning.customMaxPerSide; perSide++) {
-        if (!AnkirenDealer.mayHaveMiddle(perSide)) continue;
-        final most = AnkirenDealer.maxMiddle(perSide);
-        final rows = AnkirenDealer.rowCounts(perSide - most, middleCards: most);
-        final lower = rows[FieldRow.lower.index];
-        expect([AnkirenDealer.leftCount(FieldRow.lower, lower), lower - AnkirenDealer.leftCount(FieldRow.lower, lower)],
-            everyElement(greaterThanOrEqualTo(2)),
-            reason: '$perSide a side: its 下段 clusters stay at least two cards wide around the middle');
-      }
       final rng = math.Random(5);
       for (var level = 0; !AnkirenDealer.mayHaveMiddle(AnkirenLevels.of(level).perSide); level++) {
         for (var g = 0; g < 5000; g++) {
@@ -226,7 +259,7 @@ void main() {
       expect(found, isEmpty);
     });
 
-    test('a side\'s 友札 pairs go to opposite clusters', () {
+    test('a side\'s 友札 pairs go to opposite clusters as far as their room allows', () {
       final pairs = AnkirenDealer(
         tomofuda: (id) => [id.isOdd ? id + 1 : id - 1],
         kimarijiLength: (_) => 2,
@@ -238,11 +271,13 @@ void main() {
         for (final half in [f.own, f.opponent]) {
           final left = {for (final r in half.rows) ...r.left};
           final right = {for (final r in half.rows) ...r.right};
-          for (final cluster in [left, right]) {
-            for (final c in cluster) {
-              expect(cluster.contains(c.isOdd ? c + 1 : c - 1), isFalse, reason: 'game $g: $left | $right');
-            }
-          }
+          int together(Set<int> cluster) => cluster.where((c) => c.isOdd && cluster.contains(c + 1)).length;
+          // A cluster holds a pair only when it has more cards than the side
+          // has families.
+          final families = {for (final c in half.cards) (c + 1) ~/ 2}.length;
+          expect(together(left) + together(right),
+              math.max(0, left.length - families) + math.max(0, right.length - families),
+              reason: 'game $g: $left | $right');
         }
       }
     });
@@ -387,12 +422,22 @@ void main() {
     });
 
     test('folded closes the open middle and drops rows no half uses; true scale keeps all three', () {
-      final f = dealer.deal(all, 6, math.Random(1));
-      expect(f.own.middleCards.isEmpty && f.opponent.middleCards.isEmpty, isTrue);
+      final f = fieldOf(
+        [
+          [[1, 2], [], [3]],
+          [[4], [], [5, 6]],
+          [[], [], []],
+        ],
+        [
+          [[7, 8], [], [9, 10]],
+          [[11], [], [12]],
+          [[], [], []],
+        ],
+      );
       final folded = FieldGeometry.of(f, folded: true);
       final real = FieldGeometry.of(f, folded: false);
-      expect(folded.width, closeTo((3 + AnkirenFieldSize.foldedHole) * pitch - AnkirenFieldSize.cardGap, eps),
-          reason: '3 + 3 in two rows of 3, each with its open middle closed');
+      expect(folded.width, closeTo((4 + AnkirenFieldSize.foldedHole) * pitch - AnkirenFieldSize.cardGap, eps),
+          reason: 'the widest row, its open middle closed');
       expect(folded.height, closeTo(2 * AnkirenFieldSize.cardH + AnkirenFieldSize.rowGap, eps));
       expect(real.width, AnkirenFieldSize.territoryW);
       expect(real.height, closeTo(3 * AnkirenFieldSize.cardH + 2 * AnkirenFieldSize.rowGap, eps));
