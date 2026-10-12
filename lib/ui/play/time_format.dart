@@ -13,3 +13,9 @@ String formatRunTime(Duration d) {
 /// Formats a response time like the previous-card chip: truncated (not
 /// rounded) to hundredths of a second, e.g. 583 ms -> "0.58".
 String formatChipSeconds(double ms) => ((ms / 10).floor() / 100).toStringAsFixed(2);
+
+/// [d] as m:ss, e.g. 1:05.
+String formatMinutes(Duration d) {
+  final seconds = d.inSeconds;
+  return '${seconds ~/ 60}:${(seconds % 60).toString().padLeft(2, '0')}';
+}

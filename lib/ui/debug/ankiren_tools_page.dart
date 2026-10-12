@@ -10,7 +10,7 @@ import '../../domain/ankiren_level.dart';
 import '../../domain/ankiren_score.dart';
 import '../../domain/ankiren_tomofuda.dart';
 import '../../state/scope.dart';
-import '../ankiren/ankiren_band.dart';
+import '../play/time_format.dart';
 import '../run/run_launcher.dart';
 import 'ankiren_debug_game.dart';
 import 'ankiren_graphs.dart';

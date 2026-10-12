@@ -8,8 +8,8 @@ import '../../data/poem.dart';
 import '../../domain/ankiren_field.dart';
 import '../../domain/ankiren_level.dart';
 import '../../domain/ankiren_tomofuda.dart';
-import '../ankiren/ankiren_band.dart';
 import '../ankiren/ankiren_screen.dart';
+import '../play/time_format.dart';
 import 'ankiren_debug_overlay.dart';
 
 /// The developer's 暗記練 test game: an untracked game under a debug bar

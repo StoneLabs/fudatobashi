@@ -11,8 +11,8 @@ import '../../l10n/free_strings.dart';
 import '../../l10n/strings.dart';
 import '../../state/progress.dart';
 import '../../state/scope.dart';
-import '../ankiren/ankiren_band.dart';
 import '../manga/manga.dart';
+import '../play/time_format.dart';
 import '../run/run_launcher.dart';
 
 /// 暗記練's free play: its setup sheet, then the game from its big button.

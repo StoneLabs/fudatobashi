@@ -18,7 +18,6 @@ import '../play/time_format.dart';
 import '../rank/rank_badges.dart';
 import '../run/run_launcher.dart';
 import '../sound/sounds.dart';
-import 'ankiren_band.dart';
 
 /// 暗記練's results: the score on a sunburst, the cards found with the first
 /// tap and their average time, and for a ranked game how the rating moved

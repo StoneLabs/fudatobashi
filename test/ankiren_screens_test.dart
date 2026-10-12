@@ -40,6 +40,7 @@ import 'package:fudatobashi/ui/app.dart';
 import 'package:fudatobashi/ui/debug/ankiren_debug_game.dart';
 import 'package:fudatobashi/ui/debug/ankiren_debug_overlay.dart';
 import 'package:fudatobashi/ui/manga/manga.dart';
+import 'package:fudatobashi/ui/play/time_format.dart';
 import 'package:fudatobashi/ui/rank/rank_badges.dart';
 import 'package:fudatobashi/ui/settings/settings_screen.dart';
 import 'package:fudatobashi/ui/settings/side_trip_settings_screen.dart';

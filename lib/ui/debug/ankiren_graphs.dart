@@ -6,7 +6,7 @@ import '../../config/config.dart';
 import '../../config/design.dart';
 import '../../domain/ankiren_level.dart';
 import '../../domain/ankiren_score.dart';
-import '../ankiren/ankiren_band.dart';
+import '../play/time_format.dart';
 import 'debug_common.dart';
 
 /// One line per level: total points over the time spent memorising before

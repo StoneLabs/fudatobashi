@@ -6,12 +6,7 @@ import '../../config/vector_art.dart';
 import '../../l10n/ankiren_strings.dart';
 import '../../l10n/strings.dart';
 import '../manga/manga.dart';
-
-/// [d] as m:ss, e.g. 1:05.
-String formatMinutes(Duration d) {
-  final seconds = d.inSeconds;
-  return '${seconds ~/ 60}:${(seconds % 60).toString().padLeft(2, '0')}';
-}
+import '../play/time_format.dart';
 
 /// 暗記練's centre band, a paper strip between ink rules: [leading] and
 /// [trailing] controls in equal slots either side, so [center] sits in the
