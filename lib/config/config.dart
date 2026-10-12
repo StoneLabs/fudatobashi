@@ -873,7 +873,8 @@ abstract final class VoiceTuning {
 }
 
 /// 暗記練 (the memorisation side trip): its levels and custom setups
-/// (`AnkirenSetup`) and how a field is dealt (`AnkirenDealer`).
+/// (`AnkirenSetup`), how a field is dealt (`AnkirenDealer`), and a game's
+/// prompts and points (`AnkirenGame`, `AnkirenScore`).
 abstract final class AnkirenTuning {
   /// The levels, 0 first: cards per side and memorise time. Ranked play
   /// moves through them by rating, so each step is a small one.
@@ -916,6 +917,35 @@ abstract final class AnkirenTuning {
   /// after 下段 (a third, rounded up); never more than 下段. 上段 takes the
   /// rest.
   static const int middleRowPercent = 55;
+
+  /// Wrong taps on one prompt after which its card is shown.
+  static const int revealAfterWrong = 2;
+
+  /// Points per prompt (see `AnkirenScore`).
+  static const int firstTry = 100;
+  static const int secondTry = 40;
+  static const int speedMax = 50;
+  static const int fastMs = 800;
+  static const int slowMs = 5000;
+}
+
+/// 暗記練's rating (see `AnkirenRating`), on the main rating's scale.
+abstract final class AnkirenRatingModel {
+  /// Each level's difficulty: a game at [par] holds the rating there. Level
+  /// 0's is the start and the floor (入門).
+  static const List<double> levelRatings = [400, 650, 900, 1150, 1400, 1650, 1900, 2150, 2400, 2650, 2900];
+
+  /// Performance points per unit of score fraction above or below [par].
+  static const double weight = 1000;
+  static const double par = 0.7;
+
+  /// Placement: the first [placementGames] ranked games stretch the
+  /// performance by [placementStretch] and move the rating by [placementK]
+  /// of the way to it; later games by [establishedK].
+  static const int placementGames = 3;
+  static const double placementStretch = 3;
+  static const double placementK = 1;
+  static const double establishedK = 0.35;
 }
 
 /// The real 競技かるた field that 暗記練 lays out (`FieldGeometry`), cm.
