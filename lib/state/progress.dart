@@ -13,6 +13,7 @@ import '../domain/card_stats.dart';
 import '../domain/masking.dart';
 import '../domain/play_session.dart';
 import '../domain/rating.dart';
+import '../domain/side_trips.dart';
 import '../domain/tab_locks.dart';
 import '../domain/trainer.dart';
 import '../domain/xp.dart';
@@ -104,7 +105,7 @@ class FreePracticeAccess {
 /// settings. Loaded once at startup; the UI listens for changes.
 class Progress extends ChangeNotifier {
   Progress._(this.db, this.trainer, this._log, this.sessions, this.ratingPoints, this._settings, this.rating,
-      this._islandsCelebrated, this._freePracticeUnlocked, this._tabsSeenLocked);
+      this._islandsCelebrated, this._freePracticeUnlocked, this._tabsSeenLocked, this._sideTripsOpened);
 
   final AppDatabase db;
   final Trainer trainer;
@@ -127,6 +128,10 @@ class Progress extends ChangeNotifier {
   /// Tabs the player has seen locked whose opening is still to be
   /// celebrated (see [tabLock]).
   final Set<LockedTab> _tabsSeenLocked;
+
+  /// Side trips' modes that have opened once, so they stay open (see
+  /// [sideTripsHub]).
+  final Set<SideTripGate> _sideTripsOpened;
 
   /// The most recent run, kept in memory for the debug page's timing view.
   PlaySession? lastRun;
@@ -189,8 +194,13 @@ class Progress extends ChangeNotifier {
         for (final name in (jsonDecode(kv[_tabsSeenLockedKey] ?? '[]') as List).cast<String>())
           ?LockedTab.values.asNameMap()[name],
       },
+      {
+        for (final name in (jsonDecode(kv[_sideTripsKey] ?? '[]') as List).cast<String>())
+          ?SideTripUnlocks.named(name),
+      },
     );
     await progress._latchFreePractice(DateTime.now());
+    await progress._latchSideTrips(DateTime.now());
     return progress;
   }
 
@@ -198,6 +208,7 @@ class Progress extends ChangeNotifier {
   static const _orphanRun = PlayConfig(mode: PlayMode.free);
   static const _freePracticeKey = 'freePracticeUnlocked';
   static const _tabsSeenLockedKey = 'tabsSeenLocked';
+  static const _sideTripsKey = 'sideTripsUnlocked';
 
   static AttemptRec _rec(AttemptRow a, PlayConfig run) => AttemptRec(
         at: a.at,
@@ -466,6 +477,28 @@ class Progress extends ChangeNotifier {
     await _put(_freePracticeKey, 'true');
   }
 
+  /// The Side Trips tab: each side trip's locks and standing. Its modes open
+  /// in all-known mode, and in journey mode as cards are well remembered
+  /// (latched like [freePractice]: a bad day never locks them again).
+  SideTripsHub sideTripsHub([DateTime? now]) {
+    final allKnown = trainer.config.learningMode == LearningMode.allKnown;
+    // With every mode open there is no lock to count toward.
+    final allOpen = allKnown || SideTripUnlocks.gates.every(_sideTripsOpened.contains);
+    return SideTripsHub.of(
+      allKnown: allKnown,
+      remembered: allOpen ? 0 : trainer.wellRememberedCount(allStats, now ?? DateTime.now()),
+      latched: _sideTripsOpened,
+    );
+  }
+
+  /// Stores the side-trip latch for every mode [sideTripsHub] shows open.
+  Future<void> _latchSideTrips(DateTime now) async {
+    final open = sideTripsHub(now).openGates;
+    if (_sideTripsOpened.containsAll(open)) return;
+    _sideTripsOpened.addAll(open);
+    await _put(_sideTripsKey, jsonEncode([for (final g in _sideTripsOpened) SideTripUnlocks.nameOf(g)]));
+  }
+
   /// For tests that visit History and Stats without playing their way
   /// there: no tab is ever locked.
   @visibleForTesting
@@ -522,6 +555,7 @@ class Progress extends ChangeNotifier {
     trainer.updateConfig(c);
     await _put('trainer', jsonEncode(c.toJson()));
     await _latchFreePractice(DateTime.now());
+    await _latchSideTrips(DateTime.now());
     notifyListeners();
   }
 
@@ -733,6 +767,7 @@ class Progress extends ChangeNotifier {
       await _put('goalLevel', '${trainer.goalLevel}');
     }
     await _latchFreePractice(now);
+    await _latchSideTrips(now);
     final journey = trainer.config.learningMode == LearningMode.journey;
     final graduated = journey && !ledger.graduated && poems.all.every((p) => knows(p.id));
     sessions.last = await XpHistory.noteMilestones(db, sessions.last,
@@ -765,8 +800,14 @@ class Progress extends ChangeNotifier {
       await db.delete(db.items).go();
       await db.delete(db.ratingPoints).go();
       await (db.delete(db.keyValues)
-            ..where((k) => k.key
-                .isIn(['rating', 'goalLevel', 'islandsCelebrated', _freePracticeKey, _tabsSeenLockedKey])))
+            ..where((k) => k.key.isIn([
+                  'rating',
+                  'goalLevel',
+                  'islandsCelebrated',
+                  _freePracticeKey,
+                  _tabsSeenLockedKey,
+                  _sideTripsKey,
+                ])))
           .go();
     });
     _log.clear();
@@ -777,6 +818,7 @@ class Progress extends ChangeNotifier {
     _islandsCelebrated.clear();
     _freePracticeUnlocked = false;
     _tabsSeenLocked.clear();
+    _sideTripsOpened.clear();
     _unreported.clear();
     trainer.items
       ..clear()

@@ -291,6 +291,17 @@ abstract final class FreePracticeTuning {
   static const int unlockRemembered = 50;
 }
 
+/// When the side trips (寄り道, `SideTripUnlocks`) open in journey mode: once
+/// this many cards are well remembered at once, free practice's counter;
+/// from then on they stay open for good. All-known mode opens them all.
+abstract final class SideTripTuning {
+  /// 暗記練 itself, with its ranked games.
+  static const int ankirenRemembered = 25;
+
+  /// 暗記練's free play.
+  static const int ankirenFreeRemembered = 50;
+}
+
 /// The full-screen warnings before what can't be undone (`HoldWarningScreen`:
 /// Settings' journey → all-known switch, Reset all data): confirming takes a
 /// deliberate hold instead of a tap.
