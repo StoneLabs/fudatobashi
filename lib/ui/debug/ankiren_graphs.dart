@@ -95,11 +95,12 @@ class _AnkirenTimeUsedGraphState extends State<AnkirenTimeUsedGraph> {
     }
     final rivalPoints = rival == null ? null : _total(rival, AnkirenLevels.of(rival).memorise.inSeconds);
     final beats = rivalPoints != null && points >= rivalPoints;
-    return DebugKV(
-      'L$level  ${formatMinutes(AnkirenLevels.of(level).memorise)}',
+    final head = 'L$level ${formatMinutes(AnkirenLevels.of(level).memorise).padLeft(5)}  ${'$points'.padLeft(5)}';
+    return Text(
       rivalPoints == null
-          ? '$points'
-          : '$points  ${beats ? '!' : '<'}  L$rival full $rivalPoints (${points - rivalPoints})',
+          ? head
+          : '$head  ${beats ? '!' : '<'}  L$rival ${'$rivalPoints'.padLeft(5)}  ${points - rivalPoints}',
+      style: debugMono,
     );
   }
 }
