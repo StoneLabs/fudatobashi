@@ -39,7 +39,7 @@ class _AnkirenTimeUsedGraphState extends State<AnkirenTimeUsedGraph> {
   @override
   Widget build(BuildContext context) {
     final step = AnkirenToolsTuning.timeLeftStep.inSeconds;
-    final longest = AnkirenLevels.all.map((l) => l.memorise.inSeconds).reduce(math.max);
+    final longest = _longestMemorise;
     final used = _used.round();
     final lines = [
       for (var l = 0; l <= AnkirenLevels.top; l++)
@@ -51,14 +51,7 @@ class _AnkirenTimeUsedGraphState extends State<AnkirenTimeUsedGraph> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        DebugSlider(
-          label: 'card time ${(_responseMs / 1000).toStringAsFixed(1)} s',
-          value: _responseMs,
-          min: AnkirenToolsTuning.responseMin.inMilliseconds.toDouble(),
-          max: AnkirenToolsTuning.responseMax.inMilliseconds.toDouble(),
-          divisions: _responseDivisions,
-          onChanged: (v) => setState(() => _responseMs = v),
-        ),
+        DebugResponseSlider(label: 'card time', ms: _responseMs, onChanged: (v) => setState(() => _responseMs = v)),
         DebugSlider(
           label: 'ended at ${formatMinutes(Duration(seconds: used))}',
           value: _used,
@@ -146,10 +139,8 @@ class _AnkirenCardTimeGraphState extends State<AnkirenCardTimeGraph> {
           label: 'time left ${formatMinutes(timeLeft)}',
           value: _timeLeft,
           min: 0,
-          max: AnkirenLevels.all.map((l) => l.memorise.inSeconds).reduce(math.max).toDouble(),
-          divisions:
-              AnkirenLevels.all.map((l) => l.memorise.inSeconds).reduce(math.max) ~/
-              AnkirenToolsTuning.timeLeftStep.inSeconds,
+          max: _longestMemorise.toDouble(),
+          divisions: _longestMemorise ~/ AnkirenToolsTuning.timeLeftStep.inSeconds,
           onChanged: (v) => setState(() => _timeLeft = v),
         ),
         _LinesChart(
@@ -164,9 +155,8 @@ class _AnkirenCardTimeGraphState extends State<AnkirenCardTimeGraph> {
   }
 }
 
-int get _responseDivisions =>
-    (AnkirenToolsTuning.responseMax - AnkirenToolsTuning.responseMin).inMilliseconds ~/
-    AnkirenToolsTuning.responseStep.inMilliseconds;
+/// The longest memorise time of any level, in seconds.
+int get _longestMemorise => AnkirenLevels.all.map((l) => l.memorise.inSeconds).reduce(math.max);
 
 Color _levelColor(int level) => HSLColor.fromAHSL(
   1,
@@ -216,7 +206,7 @@ class _LinesPainter extends CustomPainter {
     final yMax = top == 0 ? 1.0 : top;
     Offset at(Offset p) => Offset(plot.left + plot.width * p.dx / xMax, plot.bottom - plot.height * p.dy / yMax);
     final grid = Paint()..color = Palette.desk;
-    const label = TextStyle(fontSize: AnkirenToolsStyle.axisFont, color: Palette.mute, fontFamily: 'monospace');
+    const label = TextStyle(fontSize: AnkirenToolsStyle.axisFont, color: Palette.mute, fontFamily: AnkirenDebugStyle.mono);
 
     void text(String s, Offset anchor, {required Alignment align, TextStyle style = label}) {
       final tp = TextPainter(
@@ -231,14 +221,14 @@ class _LinesPainter extends CustomPainter {
       canvas.drawLine(Offset(plot.left, y), Offset(plot.right, y), grid);
       text(
         '${(yMax * i / AnkirenToolsTuning.yDivisions).round()}',
-        Offset(plot.left - 4, y),
+        Offset(plot.left - AnkirenToolsStyle.axisLabelGap, y),
         align: Alignment.centerRight,
       );
     }
     for (var x = 0.0; x <= xMax; x += xTick) {
       final px = at(Offset(x, 0)).dx;
       canvas.drawLine(Offset(px, plot.top), Offset(px, plot.bottom), grid);
-      text(xLabel(x), Offset(px, plot.bottom + 2), align: Alignment.topCenter);
+      text(xLabel(x), Offset(px, plot.bottom + AnkirenToolsStyle.axisLabelGap), align: Alignment.topCenter);
     }
 
     for (final line in lines) {
@@ -257,7 +247,7 @@ class _LinesPainter extends CustomPainter {
       );
       text(
         '${line.level}',
-        at(line.points.last) + const Offset(3, 0),
+        at(line.points.last) + const Offset(AnkirenToolsStyle.axisLabelGap, 0),
         align: Alignment.centerLeft,
         style: label.copyWith(color: color, fontWeight: Weights.black),
       );

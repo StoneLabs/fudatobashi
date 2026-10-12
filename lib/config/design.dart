@@ -2080,6 +2080,9 @@ abstract final class AnkirenToolsStyle {
   static const EdgeInsets graphMargin = EdgeInsets.fromLTRB(44, 8, 20, 18);
   static const double lineStroke = 1.5;
   static const double axisFont = 10;
+
+  /// Between an axis, or a line's end, and its label.
+  static const double axisLabelGap = 3;
   static const double hueStart = 0;
   static const double hueEnd = 290;
   static const double lineSaturation = 0.75;

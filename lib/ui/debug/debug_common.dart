@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../config/config.dart';
 import '../../config/design.dart';
 import '../../domain/ankiren_level.dart';
 
@@ -94,5 +95,28 @@ class DebugLevelChips extends StatelessWidget {
           onSelected: (_) => onChanged(l),
         ),
     ],
+  );
+}
+
+/// A response-time slider over the 暗記練 tools' range
+/// ([AnkirenToolsTuning.responseMin] to [AnkirenToolsTuning.responseMax]),
+/// in ms, its value shown in seconds after [label].
+class DebugResponseSlider extends StatelessWidget {
+  const DebugResponseSlider({super.key, required this.label, required this.ms, required this.onChanged});
+
+  final String label;
+  final double ms;
+  final ValueChanged<double> onChanged;
+
+  @override
+  Widget build(BuildContext context) => DebugSlider(
+    label: '$label ${(ms / 1000).toStringAsFixed(1)} s',
+    value: ms,
+    min: AnkirenToolsTuning.responseMin.inMilliseconds.toDouble(),
+    max: AnkirenToolsTuning.responseMax.inMilliseconds.toDouble(),
+    divisions:
+        (AnkirenToolsTuning.responseMax - AnkirenToolsTuning.responseMin).inMilliseconds ~/
+        AnkirenToolsTuning.responseStep.inMilliseconds,
+    onChanged: onChanged,
   );
 }

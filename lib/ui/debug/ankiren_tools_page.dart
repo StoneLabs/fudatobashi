@@ -85,16 +85,7 @@ class _PointsCalculatorState extends State<_PointsCalculator> {
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         DebugLevelChips(level: _level, onChanged: (l) => setState(() => _level = l)),
-        DebugSlider(
-          label: 'response ${(_responseMs / 1000).toStringAsFixed(1)} s',
-          value: _responseMs,
-          min: AnkirenToolsTuning.responseMin.inMilliseconds.toDouble(),
-          max: AnkirenToolsTuning.responseMax.inMilliseconds.toDouble(),
-          divisions:
-              (AnkirenToolsTuning.responseMax - AnkirenToolsTuning.responseMin).inMilliseconds ~/
-              AnkirenToolsTuning.responseStep.inMilliseconds,
-          onChanged: (v) => setState(() => _responseMs = v),
-        ),
+        DebugResponseSlider(label: 'response', ms: _responseMs, onChanged: (v) => setState(() => _responseMs = v)),
         Row(
           children: [
             Text('wrong taps ', style: debugMono),
