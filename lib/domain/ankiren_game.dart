@@ -50,7 +50,7 @@ class AnkirenGame extends ChangeNotifier {
   final List<AnkirenAnswer> answers = [];
 
   final Set<int> _found = {};
-  final Set<int> _forgotten = {};
+  final Set<int> _givenUp = {};
   int _wrongTaps = 0;
   Duration? _revealTs;
   bool _endedEarly = false;
@@ -70,10 +70,10 @@ class AnkirenGame extends ChangeNotifier {
   bool get revealed => _wrongTaps >= AnkirenTuning.revealAfterWrong;
 
   bool isFound(int poemId) => _found.contains(poemId);
-  bool isForgotten(int poemId) => _forgotten.contains(poemId);
+  bool isGivenUp(int poemId) => _givenUp.contains(poemId);
 
   /// Found or given up: its card is face up for good.
-  bool isDone(int poemId) => isFound(poemId) || isForgotten(poemId);
+  bool isDone(int poemId) => isFound(poemId) || isGivenUp(poemId);
 
   AnkirenScore get score => AnkirenScore(
         answers,
@@ -129,11 +129,11 @@ class AnkirenGame extends ChangeNotifier {
   /// The player doesn't know the current card ("don't know"): it is given up,
   /// earning nothing, and the next one is asked. Returns the card given up,
   /// or null when no prompt is on screen.
-  int? forget() {
+  int? giveUp() {
     final asked = current;
     if (asked == null || _revealTs == null) return null;
     _answer(asked, null);
-    _forgotten.add(asked);
+    _givenUp.add(asked);
     _moveOn();
     return asked;
   }

@@ -18,7 +18,7 @@ extension AnkirenStrings on S {
 
   String get ankirenMemorise => t('ankirenMemorise');
   String get ankirenReady => t('ankirenReady');
-  String get ankirenForgot => t('ankirenForgot');
+  String get ankirenDontKnow => t('ankirenDontKnow');
 
   String get ankirenScoreLabel => t('ankirenScoreLabel');
   String ankirenScoreOf(int max) => f('ankirenScoreOf', [max]);

@@ -549,7 +549,7 @@
   "ankirenPromptText": "文字だけ",
   "ankirenMemorise": "暗記中",
   "ankirenReady": "覚えた",
-  "ankirenForgot": "わからない",
+  "ankirenDontKnow": "わからない",
   "ankirenScoreLabel": "スコア",
   "ankirenScoreOf": "{0}点満点",
   "ankirenEarlyBonus": "早めに覚えて +{0}",

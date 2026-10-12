@@ -492,7 +492,7 @@ void main() {
         (tester) async {
       final p = await open(tester);
       await play(tester, p, AnkirenSetup.forLevel(0, ranked: true));
-      final giveUp = find.widgetWithText(BandButton, s.ankirenForgot);
+      final giveUp = find.widgetWithText(BandButton, s.ankirenDontKnow);
       expect(giveUp, findsNothing, reason: 'memorise has Ready there instead');
       await ready(tester);
       expect(giveUp, findsOneWidget);

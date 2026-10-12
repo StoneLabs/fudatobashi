@@ -221,7 +221,7 @@ class _AnkirenScreenState extends State<AnkirenScreen> {
   /// "Don't know": the card asked for is shown as after the wrong taps, then
   /// turns face up, and the next one is asked.
   void _giveUp() {
-    final poemId = _game.forget();
+    final poemId = _game.giveUp();
     if (poemId == null) return;
     setState(() {
       _promptShown = false;
@@ -311,7 +311,7 @@ class _AnkirenScreenState extends State<AnkirenScreen> {
             ]),
       trailing: memorising
           ? BandButton(icon: IconArt.arrow, label: s.ankirenReady, color: Palette.sun, onTap: () => _startRecall(ready: true))
-          : BandButton(icon: IconArt.question, label: s.ankirenForgot, onTap: asked == null ? null : _giveUp),
+          : BandButton(icon: IconArt.question, label: s.ankirenDontKnow, onTap: asked == null ? null : _giveUp),
     );
 
     final overlay = widget.overlay;

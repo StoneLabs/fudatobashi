@@ -336,23 +336,23 @@ void main() {
 
     test('"don\'t know" gives the card up for nothing and asks the next; the game still completes', () {
       final g = newGame()..startRecall();
-      expect(g.forget(), isNull, reason: 'the prompt is not on screen yet');
+      expect(g.giveUp(), isNull, reason: 'the prompt is not on screen yet');
       g.promptRevealed(t(0));
       final first = g.current!;
       g.tap(other(g), t(300));
-      expect(g.forget(), first);
-      expect((g.isForgotten(first), g.isFound(first), g.isDone(first)), (true, false, true));
+      expect(g.giveUp(), first);
+      expect((g.isGivenUp(first), g.isFound(first), g.isDone(first)), (true, false, true));
       final a = g.answers.single;
       expect((a.poemId, a.found, a.responseUs, a.wrongTaps), (first, false, null, 1));
       expect(AnkirenScore.points(a), 0);
       expect((g.current, g.wrongTaps, g.revealTs), (g.prompts[1], 0, null));
-      expect(g.forget(), isNull, reason: 'the next prompt is not on screen yet');
+      expect(g.giveUp(), isNull, reason: 'the next prompt is not on screen yet');
       g.promptRevealed(t(1000));
       expect(g.tap(first, t(1200)), TapResult.ignored, reason: 'a card given up is out of play');
       var now = 1000;
       while (g.phase == AnkirenPhase.recall) {
         g.promptRevealed(t(now += 1000));
-        g.forget();
+        g.giveUp();
       }
       expect((g.phase, g.completed, g.score.total), (AnkirenPhase.done, true, 0));
       expect(g.answers.map((a) => a.poemId), g.prompts);
