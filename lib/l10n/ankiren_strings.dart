@@ -10,19 +10,14 @@ extension AnkirenStrings on S {
   String get ankirenPortraitSub => t('ankirenPortraitSub');
   String get ankirenLandscape => t('ankirenLandscape');
   String get ankirenLandscapeSub => t('ankirenLandscapeSub');
-  String get ankirenZoom => t('ankirenZoom');
-  String get ankirenZoomNote => t('ankirenZoomNote');
   String get ankirenPrompt => t('ankirenPrompt');
   String get ankirenPromptNote => t('ankirenPromptNote');
   String get ankirenPromptVoice => t('ankirenPromptVoice');
   String get ankirenPromptText => t('ankirenPromptText');
-  String get ankirenOpponent => t('ankirenOpponent');
-  String get ankirenOpponentNote => t('ankirenOpponentNote');
-  String get ankirenUpsideDown => t('ankirenUpsideDown');
-  String get ankirenUpright => t('ankirenUpright');
 
   String get ankirenMemorise => t('ankirenMemorise');
   String get ankirenReady => t('ankirenReady');
+  String get ankirenForgot => t('ankirenForgot');
 
   String get ankirenScoreLabel => t('ankirenScoreLabel');
   String ankirenScoreOf(int max) => f('ankirenScoreOf', [max]);

@@ -29,6 +29,9 @@ extension SettingsStrings on S {
   String get effectSounds => t('effectSounds');
   String get effectSoundsNote => t('effectSoundsNote');
   String get soundSilentNote => t('soundSilentNote');
+  String get sectionAccessibility => t('sectionAccessibility');
+  String get accessibilityMode => t('accessibilityMode');
+  String get accessibilityModeNote => t('accessibilityModeNote');
   String get dontKnowInput => t('dontKnowInput');
   String get dontKnowInputNote => t('dontKnowInputNote');
   String get dontKnowHold => t('dontKnowHold');

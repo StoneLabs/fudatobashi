@@ -116,13 +116,17 @@ class MemoriseClock extends StatelessWidget {
       );
 }
 
-/// The kimariji asked for ([text]), or the one just [found] while the next
-/// waits (with a tick), and how many cards are [done] out of [total].
+/// Where the band's prompt stands: a card asked for, or the last one, found
+/// or given up, while the next waits.
+enum PromptState { asked, found, givenUp }
+
+/// The kimariji of the card [state] says ([text]), and how many cards are
+/// [done] out of [total].
 class PromptText extends StatelessWidget {
   const PromptText({
     super.key,
     required this.text,
-    required this.found,
+    required this.state,
     required this.done,
     required this.total,
     required this.landscape,
@@ -130,16 +134,20 @@ class PromptText extends StatelessWidget {
 
   /// Null while nothing is asked yet.
   final String? text;
-  final bool found;
+  final PromptState state;
   final int done, total;
   final bool landscape;
 
   @override
   Widget build(BuildContext context) {
-    final color = found ? AnkirenPlayLayout.foundText : Palette.ink;
+    final (color, icon) = switch (state) {
+      PromptState.asked => (Palette.ink, null),
+      PromptState.found => (AnkirenPlayLayout.foundText, IconArt.check),
+      PromptState.givenUp => (AnkirenPlayLayout.givenUpText, IconArt.question),
+    };
     return Row(mainAxisSize: MainAxisSize.min, children: [
-      if (found) ...[
-        MangaIcon(IconArt.check, size: AnkirenPlayLayout.controlIcon, color: color),
+      if (icon != null && text != null) ...[
+        MangaIcon(icon, size: AnkirenPlayLayout.controlIcon, color: color),
         const SizedBox(width: Gaps.tight),
       ],
       Text(

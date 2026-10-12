@@ -10,7 +10,8 @@ import '../../domain/ankiren_geometry.dart';
 /// 暗記練's field on screen: the opponent's half above the centre [band],
 /// the own half below it, every card where [geometry] puts it, at the scale
 /// [scaleFor] picks. A field too wide for the screen (zoom) pans sideways
-/// as one, starting centred, while the band stays put.
+/// as one, starting centred, while the band stays put. An [overlay] is laid
+/// over the field and pans with it, without taking taps.
 class AnkirenFieldView extends StatefulWidget {
   const AnkirenFieldView({
     super.key,
@@ -19,6 +20,7 @@ class AnkirenFieldView extends StatefulWidget {
     required this.zoom,
     required this.card,
     required this.band,
+    this.overlay,
   });
 
   final FieldGeometry geometry;
@@ -33,6 +35,7 @@ class AnkirenFieldView extends StatefulWidget {
   /// The card for each poem, sized and placed by the view.
   final Widget Function(int poemId, FieldSide side) card;
   final Widget band;
+  final Widget Function(FieldPlacement placement)? overlay;
 
   static double bandHeight({required bool landscape}) =>
       landscape ? AnkirenPlayLayout.bandLandscape : AnkirenPlayLayout.bandPortrait;
@@ -86,12 +89,17 @@ class _AnkirenFieldViewState extends State<AnkirenFieldView> {
                   child: widget.card(id, side),
                 ),
             ];
+        final overlay = widget.overlay;
         final field = SizedBox(
           width: width,
           height: height,
           child: Stack(children: [
             ...half(FieldSide.opponent, 0),
             ...half(FieldSide.own, halfH + bandH),
+            if (overlay != null)
+              Positioned.fill(
+                child: IgnorePointer(child: overlay(FieldPlacement(geometry: g, scale: s, ownTop: halfH + bandH))),
+              ),
           ]),
         );
 
@@ -112,4 +120,32 @@ class _AnkirenFieldViewState extends State<AnkirenFieldView> {
           Positioned(left: 0, right: 0, top: top + halfH, height: bandH, child: widget.band),
         ]);
       });
+}
+
+/// Where an [AnkirenFieldView] draws its field: [scale] dp per centimetre,
+/// the opponent's half at the top, the own half from [ownTop] down.
+class FieldPlacement {
+  const FieldPlacement({required this.geometry, required this.scale, required this.ownTop});
+
+  final FieldGeometry geometry;
+  final double scale;
+  final double ownTop;
+
+  double topOf(FieldSide side) => side == FieldSide.own ? ownTop : 0;
+
+  /// [r], a rectangle of [side]'s half, on screen.
+  Rect rectOf(FieldSide side, FieldRect r) =>
+      Rect.fromLTWH(r.x * scale, topOf(side) + r.y * scale, r.w * scale, r.h * scale);
+
+  /// [side]'s whole half on screen.
+  Rect halfRect(FieldSide side) =>
+      rectOf(side, FieldRect(0, 0, geometry.width, geometry.height));
+
+  /// The card of [poemId] on screen, or null when it is not on the field.
+  Rect? cardRect(int poemId) {
+    for (final side in FieldSide.values) {
+      if (geometry.half(side)[poemId] case final r?) return rectOf(side, r);
+    }
+    return null;
+  }
 }

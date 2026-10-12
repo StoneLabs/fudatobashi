@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import '../config/config.dart';
 import 'ankiren_field.dart';
 import 'play_session.dart';
@@ -19,11 +21,11 @@ class AnkirenAnswer {
   final int wrongTaps;
 
   /// The prompt's reveal → the tap on its card, in microseconds, as measured
-  /// (see [Attempt.isValidTime]); null when it was never found (the game
-  /// ended first).
+  /// (see [Attempt.isValidTime]); null when it was never found: given up, or
+  /// the game ended first.
   final int? responseUs;
 
-  /// When it was found, or when the game ended without it.
+  /// When it was found or given up, or when the game ended without it.
   final DateTime at;
 
   bool get found => responseUs != null;
@@ -36,13 +38,11 @@ class AnkirenAnswer {
 
 /// A 暗記練 game's points. Every field card is asked once, and earns:
 /// - found with the first tap: [AnkirenTuning.firstTry] plus a speed bonus
-///   of `speedMax × clamp((slowMs − t) / (slowMs − fastMs), 0, 1)` for a
-///   response time of t ms ([AnkirenTuning.speedMax], [AnkirenTuning.fastMs],
-///   [AnkirenTuning.slowMs]), rounded; a time that is no measurement (see
-///   [Attempt.isValidTime]) earns no bonus;
-/// - found after one wrong tap: [AnkirenTuning.secondTry];
-/// - shown after [AnkirenTuning.revealAfterWrong] wrong taps, or never found:
-///   nothing.
+///   of up to [AnkirenTuning.speedMax] ([speedBonus]); a time that is no
+///   measurement (see [Attempt.isValidTime]) earns no bonus;
+/// - found after one wrong tap: [AnkirenTuning.secondTry], no bonus;
+/// - shown after [AnkirenTuning.revealAfterWrong] wrong taps, given up
+///   ("don't know"), or never found: nothing.
 ///
 /// The best possible game ([max]) finds every card first try at full speed;
 /// [fraction] is the share of it reached, which drives the rating.
@@ -73,10 +73,22 @@ class AnkirenScore {
     return AnkirenTuning.firstTry + speedBonus(a.responseUs!);
   }
 
-  static int speedBonus(int responseUs) {
-    if (!Attempt.isValidTime(responseUs)) return 0;
-    final share = (AnkirenTuning.slowMs - responseUs / 1000) / (AnkirenTuning.slowMs - AnkirenTuning.fastMs);
-    return (AnkirenTuning.speedMax * share.clamp(0.0, 1.0)).round();
+  /// The bonus for a first-try find [responseUs] after its prompt, rounded
+  /// [speedShare] of [AnkirenTuning.speedMax].
+  static int speedBonus(int responseUs) =>
+      Attempt.isValidTime(responseUs) ? (AnkirenTuning.speedMax * speedShare(responseUs / 1000)).round() : 0;
+
+  /// The share of the speed bonus a find [ms] after its prompt earns: 1 up
+  /// to [AnkirenTuning.speedFull], then falling along a logistic curve over
+  /// ln t (centred on [AnkirenTuning.speedMidpoint], as steep as
+  /// [AnkirenTuning.speedSteepness]), stretched to reach 0 at
+  /// [AnkirenTuning.speedNone] and staying there.
+  static double speedShare(double ms) {
+    double logistic(double t) =>
+        1 / (1 + math.pow(t / AnkirenTuning.speedMidpoint.inMilliseconds, AnkirenTuning.speedSteepness));
+    final top = logistic(AnkirenTuning.speedFull.inMilliseconds.toDouble());
+    final bottom = logistic(AnkirenTuning.speedNone.inMilliseconds.toDouble());
+    return ((logistic(ms) - bottom) / (top - bottom)).clamp(0.0, 1.0);
   }
 
   static double? _averageMs(Iterable<AnkirenAnswer> timed) =>

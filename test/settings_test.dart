@@ -124,26 +124,53 @@ void main() {
     });
   });
 
+  group('AppSettings.accessibilityMode', () {
+    test('off by default, round-trips, and copyWith changes only it', () {
+      expect(const AppSettings().accessibilityMode, isFalse);
+      expect(AppSettings.fromJson({}).accessibilityMode, isFalse);
+      final on = const AppSettings(language: 'ja').copyWith(accessibilityMode: true);
+      expect((on.accessibilityMode, on.language), (true, 'ja'));
+      expect(AppSettings.fromJson(on.toJson()).accessibilityMode, isTrue);
+    });
+
+    test('takes over 暗記練\'s old zoom switch, which then is no longer stored', () {
+      expect(AppSettings.fromJson({'ankiren': {'zoom': true}}).accessibilityMode, isTrue);
+      expect(AppSettings.fromJson({'ankiren': {'zoom': false}}).accessibilityMode, isFalse);
+      expect(AppSettings.fromJson({'accessibilityMode': false, 'ankiren': {'zoom': true}}).accessibilityMode, isFalse,
+          reason: 'the new switch wins');
+      final migrated = AppSettings.fromJson({'ankiren': {'zoom': true, 'layout': 'landscape'}});
+      expect(migrated.ankiren.layout, AnkirenLayout.landscape);
+      expect(migrated.toJson()['accessibilityMode'], isTrue);
+    });
+  });
+
   group('AppSettings.ankiren (Settings › 寄り道 › 暗記練)', () {
     AppSettings roundTrip(AppSettings s) =>
         AppSettings.fromJson((jsonDecode(jsonEncode(s.toJson())) as Map).cast<String, dynamic>());
 
-    test('defaults: portrait, no zoom, text + voice, opponent upside down, free play at level 0', () {
+    test('defaults: portrait, text + voice, free play at level 0', () {
       for (final s in [const AppSettings(), AppSettings.fromJson({})]) {
         final a = s.ankiren;
-        expect([a.layout, a.zoom, a.prompt, a.opponentUpright],
-            [AnkirenLayout.portrait, false, AnkirenPrompt.textAndVoice, false]);
+        expect([a.layout, a.prompt], [AnkirenLayout.portrait, AnkirenPrompt.textAndVoice]);
         expect(a.freeSetup, AnkirenSetup.forLevel(0));
       }
     });
 
     test('every option round-trips through JSON, leaving the rest of the settings alone', () {
-      const ankiren = AnkirenSettings(
-          layout: AnkirenLayout.landscape, zoom: true, prompt: AnkirenPrompt.textOnly, opponentUpright: true);
+      const ankiren = AnkirenSettings(layout: AnkirenLayout.landscape, prompt: AnkirenPrompt.textOnly);
       final s = roundTrip(const AppSettings(language: 'ja', ankiren: ankiren));
-      expect([s.ankiren.layout, s.ankiren.zoom, s.ankiren.prompt, s.ankiren.opponentUpright],
-          [AnkirenLayout.landscape, true, AnkirenPrompt.textOnly, true]);
+      expect([s.ankiren.layout, s.ankiren.prompt], [AnkirenLayout.landscape, AnkirenPrompt.textOnly]);
       expect(s.language, 'ja');
+    });
+
+    test('the old opponent-cards and zoom options are dropped and no longer written', () {
+      final a = AnkirenSettings.fromJson({'layout': 'landscape', 'zoom': true, 'opponentUpright': true});
+      expect(a.layout, AnkirenLayout.landscape);
+      expect(a.toJson().keys, isNot(anyOf(contains('zoom'), contains('opponentUpright'))));
+      final s = AppSettings.fromJson({
+        'ankiren': {'zoom': true, 'opponentUpright': true},
+      });
+      expect((s.toJson()['ankiren'] as Map).keys, isNot(anyOf(contains('zoom'), contains('opponentUpright'))));
     });
 
     test('free play remembers a preset, or a custom setup, and keeps the custom one under a preset', () {
@@ -158,8 +185,10 @@ void main() {
     });
 
     test('copyWith changes only the options it is given', () {
-      final a = const AnkirenSettings().withFreeSetup(AnkirenSetup.forLevel(4)).copyWith(zoom: true);
-      expect([a.zoom, a.layout, a.freeLevel], [true, AnkirenLayout.portrait, 4]);
+      final a = const AnkirenSettings()
+          .withFreeSetup(AnkirenSetup.forLevel(4))
+          .copyWith(prompt: AnkirenPrompt.textOnly);
+      expect([a.prompt, a.layout, a.freeLevel], [AnkirenPrompt.textOnly, AnkirenLayout.portrait, 4]);
     });
 
     test('values out of range or unknown fall back into range', () {

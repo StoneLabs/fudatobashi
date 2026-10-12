@@ -25,6 +25,7 @@ import 'package:fudatobashi/domain/trainer.dart';
 import 'package:fudatobashi/l10n/ankiren_strings.dart';
 import 'package:fudatobashi/l10n/free_strings.dart';
 import 'package:fudatobashi/l10n/results_strings.dart';
+import 'package:fudatobashi/l10n/settings_strings.dart';
 import 'package:fudatobashi/l10n/side_trip_strings.dart';
 import 'package:fudatobashi/l10n/strings.dart';
 import 'package:fudatobashi/state/progress.dart';
@@ -100,14 +101,20 @@ void main() {
   });
 
   // An all-known player who has taken the tour, with [ankiren] options.
-  Future<Progress> open(WidgetTester tester, {AnkirenSettings ankiren = const AnkirenSettings()}) async {
+  Future<Progress> open(WidgetTester tester,
+      {AnkirenSettings ankiren = const AnkirenSettings(), bool accessibilityMode = false}) async {
     late Progress p;
     await tester.runAsync(() async {
       p = await Progress.open(AppDatabase(NativeDatabase.memory()));
       p.tabsAlwaysOpen = true;
       await p.setLearningMode(LearningMode.allKnown);
       await p.updateSettings(
-          p.settings.copyWith(language: 'en', languagePicked: true, toured: true, ankiren: ankiren));
+          p.settings.copyWith(
+              language: 'en',
+              languagePicked: true,
+              toured: true,
+              ankiren: ankiren,
+              accessibilityMode: accessibilityMode));
     });
     return p;
   }
@@ -209,7 +216,7 @@ void main() {
         expect(find.byType(AnkirenSettingsScreen), findsOneWidget);
         expect(tester.takeException(), isNull);
         final page = find.descendant(of: find.byType(AnkirenSettingsScreen), matching: find.byType(Scrollable));
-        for (final note in [s.ankirenLayoutNote, s.ankirenZoomNote, s.ankirenPromptNote, s.ankirenOpponentNote]) {
+        for (final note in [s.ankirenLayoutNote, s.ankirenPromptNote]) {
           await tester.scrollUntilVisible(find.text(note), 100, scrollable: page);
           expect(find.text(note), findsOneWidget);
         }
@@ -225,13 +232,39 @@ void main() {
         }
 
         await choose(s.ankirenLandscape);
-        await choose(s.ankirenZoom);
         await choose(s.ankirenPromptText);
-        await choose(s.ankirenUpright);
         final a = p.settings.ankiren;
-        expect([a.layout, a.zoom, a.prompt, a.opponentUpright],
-            [AnkirenLayout.landscape, true, AnkirenPrompt.textOnly, true]);
+        expect([a.layout, a.prompt], [AnkirenLayout.landscape, AnkirenPrompt.textOnly]);
+        expect(find.descendant(of: find.byType(AnkirenSettingsScreen), matching: find.text(s.accessibilityMode)),
+            findsNothing,
+            reason: 'accessibility is app-wide, not 暗記練\'s');
         expect(tester.takeException(), isNull);
+        await tester.pumpWidget(const SizedBox());
+      });
+
+      testWidgets('Accessibility mode is its own top-level section, and its switch sticks (font scale $fontScale)',
+          (tester) async {
+        PackageInfo.setMockInitialValues(
+            appName: 'Fudatobashi', packageName: 'dev.fudatobashi', version: '1.0.0', buildNumber: '1', buildSignature: '');
+        final p = await open(tester);
+        phone(tester, fontScale: fontScale);
+        await tester.pumpWidget(RepaintBoundary(
+          key: const ValueKey('screen'),
+          child: ProgressScope(progress: p, child: const MaterialApp(home: SettingsScreen())),
+        ));
+        await tester.pump();
+        await tester.scrollUntilVisible(find.text(s.accessibilityModeNote), 200);
+        await tester.ensureVisible(find.text(s.sectionAccessibility.toUpperCase()));
+        await tester.pump();
+        expect(p.settings.accessibilityMode, isFalse);
+        await tester.runAsync(() async {
+          await tester.tap(find.text(s.accessibilityMode));
+          await Future<void>.delayed(const Duration(milliseconds: 50));
+        });
+        await tester.pump();
+        expect(p.settings.accessibilityMode, isTrue);
+        expect(tester.takeException(), isNull);
+        await _capture(tester, 'settings_accessibility_$fontScale');
         await tester.pumpWidget(const SizedBox());
       });
     }
@@ -314,10 +347,12 @@ void main() {
       await _capture(tester, 'ankiren_memorise');
 
       await tester.pump(const Duration(seconds: 3));
-      expect(find.text('0:17'), findsOneWidget, reason: 'the clock counts down');
+      final left = AnkirenLevels.of(0).memorise - const Duration(seconds: 3);
+      expect(find.text(formatMinutes(left)), findsOneWidget, reason: 'the clock counts down');
       await ready(tester);
       expect(cards(tester).any((c) => c.faceUp), isFalse, reason: 'recall: every card face down');
-      expect(heard.played, contains(Sfx.cardAppears));
+      expect(heard.played, containsAllInOrder([Sfx.ankirenFlip, Sfx.ankirenRecall]),
+          reason: 'the field turns over, then recall starts');
       await _capture(tester, 'ankiren_recall');
 
       final total = AnkirenLevels.of(0).cards;
@@ -329,7 +364,8 @@ void main() {
         expect(card(tester, id).flash?.kind, CardFeedback.right);
         if (i < total - 1) await next(tester);
       }
-      expect(heard.played.where((x) => x == Sfx.ankirenRight).length, total);
+      expect(heard.played.where((x) => x == Sfx.ankirenTake).length, total);
+      expect(heard.played.where((x) => x == Sfx.ankirenRecall).length, 1);
       await toResults(tester);
       expect(find.byType(AnkirenResultsScreen), findsOneWidget);
       expect(p.sideTrips.rankedGames(SideTrip.ankiren), 1, reason: 'the ranked game was recorded');
@@ -412,11 +448,50 @@ void main() {
       await tester.pumpWidget(const SizedBox());
     });
 
-    testWidgets('opponent cards upright when set; text-only prompts play no voice', (tester) async {
-      final p = await open(tester,
-          ankiren: const AnkirenSettings(opponentUpright: true, prompt: AnkirenPrompt.textOnly));
+    testWidgets("don't know shows the card like the wrong taps do, turns it up for nothing, and moves on",
+        (tester) async {
+      final p = await open(tester);
+      await play(tester, p, AnkirenSetup.forLevel(0, ranked: true));
+      final giveUp = find.widgetWithText(BandButton, s.ankirenForgot);
+      expect(giveUp, findsNothing, reason: 'memorise has Ready there instead');
+      await ready(tester);
+      expect(giveUp, findsOneWidget);
+
+      final id = asked(tester);
+      await tester.tap(giveUp);
+      await tester.pump();
+      expect(card(tester, id).revealed, isTrue, reason: 'shown as after two wrong taps');
+      expect(card(tester, id).faceUp, isFalse);
+      final prompt = tester.widget<PromptText>(find.byType(PromptText));
+      expect((prompt.state, prompt.done), (PromptState.givenUp, 1));
+      expect(tester.widget<BandButton>(giveUp).onTap, isNull, reason: 'nothing asked until the next prompt');
+      await tester.tap(cardOf(id), warnIfMissed: false);
+      await tester.pump();
+      expect(heard.played, isNot(contains(Sfx.ankirenTake)), reason: 'a card given up cannot be taken');
+
+      await tester.pump(AnkirenPlayTuning.givenUpReveal);
+      expect((card(tester, id).faceUp, card(tester, id).revealed), (true, false), reason: 'then it turns up');
+      await next(tester);
+      expect(asked(tester), isNot(id));
+      expect(tester.widget<PromptText>(find.byType(PromptText)).state, PromptState.asked);
+
+      for (var i = 1; i < AnkirenLevels.of(0).cards; i++) {
+        await take(tester, asked(tester));
+        await next(tester);
+      }
+      await toResults(tester);
+      final run = p.sideTrips.runs.single;
+      expect(run.completed, isTrue, reason: 'giving up a card still finishes the game');
+      final taken = AnkirenLevels.of(0).cards - 1;
+      expect(run.score, inInclusiveRange(taken * AnkirenTuning.firstTry, taken * (AnkirenTuning.firstTry + AnkirenTuning.speedMax)),
+          reason: 'the card given up earns nothing');
+      await tester.pumpWidget(const SizedBox());
+    });
+
+    testWidgets('opponent cards are always upside down; text-only prompts play no voice', (tester) async {
+      final p = await open(tester, ankiren: const AnkirenSettings(prompt: AnkirenPrompt.textOnly));
       await play(tester, p, AnkirenSetup.forLevel(0), tracked: false);
-      expect(cards(tester).any((c) => c.inverted), isFalse);
+      expect(cards(tester).where((c) => c.inverted).length, AnkirenLevels.of(0).perSide);
       await ready(tester);
       expect(find.byType(KimarijiSpeakerButton), findsNothing);
       await tester.pumpWidget(const SizedBox());
@@ -457,8 +532,9 @@ void main() {
       });
     }
 
-    testWidgets('portrait zoom keeps cards tappable and pans the field, starting centred', (tester) async {
-      final p = await open(tester, ankiren: const AnkirenSettings(zoom: true));
+    testWidgets('accessibility mode zooms portrait: cards stay tappable, the field pans, starting centred',
+        (tester) async {
+      final p = await open(tester, accessibilityMode: true);
       await play(tester, p, AnkirenSetup.forLevel(AnkirenLevels.top), tracked: false);
       expect(tester.takeException(), isNull);
       for (final c in find.byType(AnkirenCard).evaluate()) {

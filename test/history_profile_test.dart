@@ -158,7 +158,7 @@ void main() {
       String line(int cards, int misses) =>
           s.historyLineTemplate.replaceAll('{0}', '$cards').replaceAll('{1}', '$misses');
       String score(int points) => s.historyScoreTemplate.replaceAll('{0}', '$points');
-      expect(find.text(line(8, 1)), findsOneWidget, reason: 'one card found after a wrong tap');
+      expect(find.text(line(AnkirenLevels.of(0).cards, 1)), findsOneWidget, reason: 'one card found after a wrong tap');
       expect(find.text(line(6, 2)), findsOneWidget, reason: 'ended with two cards never found');
       expect(find.text(score(ranked.score)), findsOneWidget);
       expect(find.text(score(custom.score)), findsOneWidget);

@@ -39,23 +39,29 @@ void main() {
 
     var notified = 0;
     p.addListener(() => notified++);
-    final perfect = playAnkiren(AnkirenSetup.forLevel(0, ranked: true));
+    final perfect = playAnkiren(AnkirenSetup.forLevel(0, ranked: true), ms: 100);
     final first = await p.recordAnkiren(perfect, startedAt: startedAt);
     expect(notified, 1);
     final placed = AnkirenRating.update(
         AnkirenRating.start, AnkirenRating.performance(0, 1, placement: true), 0);
     expect([first.ranked, first.level, first.completed, first.fraction], [true, 0, true, 1.0]);
     expect([first.ratingBefore, first.ratingAfter], [AnkirenRating.start, placed]);
-    expect(placed - AnkirenRating.start, AnkirenRatingModel.placementK * AnkirenRatingModel.placementStretch * 300,
+    expect(
+        placed - AnkirenRating.start,
+        AnkirenRatingModel.placementK *
+            AnkirenRatingModel.placementStretch *
+            AnkirenRatingModel.weight *
+            (1 - AnkirenRatingModel.par),
         reason: 'placement: K ${AnkirenRatingModel.placementK} of a stretched performance');
-    expect([first.prompts, first.foundFirstTry, first.perSide], [perfect.prompts.length, perfect.prompts.length, 4]);
-    expect(first.averageMs, 700);
+    expect([first.prompts, first.foundFirstTry, first.perSide],
+        [perfect.prompts.length, perfect.prompts.length, AnkirenLevels.of(0).perSide]);
+    expect(first.averageMs, 100);
     expect(first.bandAfter, isNot(first.bandBefore));
 
     final answers = await (db.select(db.sideTripAnswers)..where((a) => a.runId.equals(first.runId))).get();
     expect([for (final a in answers) a.poemId], perfect.prompts);
     expect([for (final a in answers) a.seq], List.generate(answers.length, (i) => i));
-    expect(answers.every((a) => a.wrongTaps == 0 && a.responseUs == 700000), isTrue);
+    expect(answers.every((a) => a.wrongTaps == 0 && a.responseUs == 100000), isTrue);
 
     final hub = p.sideTripsHub()[ankiren];
     expect([hub.rating, hub.rankedLevel, hub.games], [placed, AnkirenRating.levelFor(placed, maxLevel: 10), 1]);
@@ -100,14 +106,15 @@ void main() {
     final p = await allKnown(db);
     final game = playAnkiren(AnkirenSetup.forLevel(1, ranked: true), endAfter: 3);
     final report = await p.recordAnkiren(game, startedAt: startedAt, meta: {'layout': 'v2'});
-    expect([report.completed, report.foundFirstTry, report.prompts], [false, 3, 12]);
+    expect([report.completed, report.foundFirstTry, report.prompts], [false, 3, AnkirenLevels.of(1).cards]);
     expect(report.ratingAfter, isNotNull);
     final answers = await db.select(db.sideTripAnswers).get();
-    expect([for (final a in answers) a.responseUs == null], [for (var i = 0; i < 12; i++) i >= 3]);
+    final cards = AnkirenLevels.of(1).cards;
+    expect([for (final a in answers) a.responseUs == null], [for (var i = 0; i < cards; i++) i >= 3]);
     final run = p.sideTrips.runs.single;
-    expect(p.sideTrips.missesIn(run), 9);
+    expect(p.sideTrips.missesIn(run), cards - 3);
     expect(run.meta, contains('"layout":"v2"'));
-    expect(run.meta, contains('"perSide":6'));
+    expect(run.meta, contains('"perSide":${AnkirenLevels.of(1).perSide}'));
     await db.close();
   });
 
@@ -131,7 +138,7 @@ void main() {
     await p.recordAnkiren(playAnkiren(AnkirenSetup.forLevel(0, ranked: true)), startedAt: startedAt);
     final rating = p.sideTrips.ratingOf(ankiren)!;
     expect(AnkirenRating.levelFor(rating, maxLevel: AnkirenLevels.top), greaterThan(1));
-    for (final (known, maxLevel) in [(100, AnkirenLevels.top), (12, 1), (11, 0), (7, null)]) {
+    for (final (known, maxLevel) in [(100, AnkirenLevels.top), (8, 1), (7, 0), (5, null)]) {
       final standing = p.sideTrips.standingOf(ankiren, known: known);
       expect([standing.maxLevel, standing.rankedLevel],
           [maxLevel, maxLevel == null ? null : AnkirenRating.levelFor(rating, maxLevel: maxLevel)],
@@ -156,7 +163,8 @@ void main() {
     await journey.recordRun(session, const PlayConfig(mode: PlayMode.training), DateTime.now());
     expect(journey.knownCards, hasLength(10));
     final entry = journey.sideTripsHub()[ankiren];
-    expect([entry.maxLevel, entry.rankedLevel], [0, 0]);
+    expect([entry.maxLevel, entry.rankedLevel], [AnkirenLevels.maxLevelFor(10), 0]);
+    expect(entry.maxLevel, 2);
     await db.close();
     await journey.db.close();
   });

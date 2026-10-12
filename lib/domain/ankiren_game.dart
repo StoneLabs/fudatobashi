@@ -25,7 +25,7 @@ enum TapResult {
 }
 
 /// State machine of one 暗記練 game: every field card is asked once, in a
-/// random order, until each is found or the game is ended. Timestamps are on
+/// random order, until each is found or given up, or the game is ended. Timestamps are on
 /// the pointer-event clock; a prompt's vsync time is put on it first (see
 /// `PointerClock`).
 class AnkirenGame extends ChangeNotifier {
@@ -50,11 +50,14 @@ class AnkirenGame extends ChangeNotifier {
   final List<AnkirenAnswer> answers = [];
 
   final Set<int> _found = {};
+  final Set<int> _forgotten = {};
   int _wrongTaps = 0;
   Duration? _revealTs;
+  bool _endedEarly = false;
 
-  /// Every card was found (false for a game ended early).
-  bool get completed => phase == AnkirenPhase.done && _found.length == prompts.length;
+  /// Every card was asked and found or given up (false for a game ended
+  /// early).
+  bool get completed => phase == AnkirenPhase.done && !_endedEarly;
 
   /// The card being asked for, in recall.
   int? get current => phase == AnkirenPhase.recall ? prompts[answers.length] : null;
@@ -67,6 +70,10 @@ class AnkirenGame extends ChangeNotifier {
   bool get revealed => _wrongTaps >= AnkirenTuning.revealAfterWrong;
 
   bool isFound(int poemId) => _found.contains(poemId);
+  bool isForgotten(int poemId) => _forgotten.contains(poemId);
+
+  /// Found or given up: its card is face up for good.
+  bool isDone(int poemId) => isFound(poemId) || isForgotten(poemId);
 
   AnkirenScore get score => AnkirenScore(answers, prompts: prompts.length);
 
@@ -90,7 +97,7 @@ class AnkirenGame extends ChangeNotifier {
   /// clock.
   TapResult tap(int poemId, Duration pointerDownTs) {
     final asked = current;
-    if (asked == null || _revealTs == null || _found.contains(poemId) || field.sideOf(poemId) == null) {
+    if (asked == null || _revealTs == null || isDone(poemId) || field.sideOf(poemId) == null) {
       return TapResult.ignored;
     }
     if (poemId != asked) {
@@ -100,14 +107,31 @@ class AnkirenGame extends ChangeNotifier {
     }
     _answer(asked, (pointerDownTs - _revealTs!).inMicroseconds);
     _found.add(asked);
+    _moveOn();
+    return TapResult.right;
+  }
+
+  /// The player doesn't know the current card ("don't know"): it is given up,
+  /// earning nothing, and the next one is asked. Returns the card given up,
+  /// or null when no prompt is on screen.
+  int? forget() {
+    final asked = current;
+    if (asked == null || _revealTs == null) return null;
+    _answer(asked, null);
+    _forgotten.add(asked);
+    _moveOn();
+    return asked;
+  }
+
+  void _moveOn() {
     if (answers.length == prompts.length) phase = AnkirenPhase.done;
     notifyListeners();
-    return TapResult.right;
   }
 
   /// Ends the game early: the prompts not found yet count as never found.
   void end() {
     if (phase == AnkirenPhase.done) return;
+    _endedEarly = true;
     while (answers.length < prompts.length) {
       _answer(prompts[answers.length], null);
     }

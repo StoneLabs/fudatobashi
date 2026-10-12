@@ -20,12 +20,28 @@ void main() {
 
     test('first try: base points plus a speed bonus from slow to fast', () {
       const full = AnkirenTuning.firstTry + AnkirenTuning.speedMax;
-      expect(AnkirenScore.points(answer(us: ms(300))), full);
-      expect(AnkirenScore.points(answer(us: ms(AnkirenTuning.fastMs))), full);
-      final halfway = (AnkirenTuning.fastMs + AnkirenTuning.slowMs) ~/ 2;
-      expect(AnkirenScore.points(answer(us: ms(halfway))), AnkirenTuning.firstTry + AnkirenTuning.speedMax ~/ 2);
-      expect(AnkirenScore.points(answer(us: ms(AnkirenTuning.slowMs))), AnkirenTuning.firstTry);
+      expect(AnkirenScore.points(answer(us: ms(50))), full);
+      expect(AnkirenScore.points(answer(us: ms(AnkirenTuning.speedFull.inMilliseconds))), full);
+      expect(AnkirenScore.points(answer(us: ms(AnkirenTuning.speedNone.inMilliseconds))), AnkirenTuning.firstTry);
       expect(AnkirenScore.points(answer(us: ms(20000))), AnkirenTuning.firstTry);
+    });
+
+    test('the speed bonus is a smooth sigmoid through the fitted points, 0.1 s to 5 s', () {
+      final at = {for (final t in [100, 300, 600, 1000, 3000, 5000]) t: AnkirenScore.speedBonus(ms(t))};
+      expect(at, {100: 100, 300: 88, 600: 72, 1000: 56, 3000: 16, 5000: 0});
+      // Within reach of the targets it was fitted to.
+      for (final MapEntry(key: t, value: v) in AnkirenTuning.speedTargets.entries) {
+        expect(at[t]! - v, inInclusiveRange(-6, 6), reason: '$t ms');
+      }
+      // Falling all the way, never in a jump: the share over every ms.
+      var last = 1.0;
+      for (var t = 1; t <= 6000; t++) {
+        final share = AnkirenScore.speedShare(t.toDouble());
+        expect(share, lessThanOrEqualTo(last));
+        expect(last - share, lessThan(0.002), reason: 'at $t ms');
+        last = share;
+      }
+      expect(AnkirenScore.speedShare(4900), inExclusiveRange(0, 0.02));
     });
 
     test('a time that is no measurement keeps the points but earns no speed bonus', () {
@@ -35,7 +51,8 @@ void main() {
       expect(answer(us: 1).validTime, isTrue);
     });
 
-    test('second try earns less and no bonus; revealed or never found earns nothing', () {
+    test('second try earns a quarter of the best and no bonus; revealed or never found earns nothing', () {
+      expect(AnkirenTuning.secondTry * 4, AnkirenTuning.firstTry + AnkirenTuning.speedMax);
       expect(AnkirenScore.points(answer(wrongTaps: 1, us: ms(500))), AnkirenTuning.secondTry);
       expect(AnkirenScore.points(answer(wrongTaps: 2, us: ms(500))), 0);
       expect(answer(wrongTaps: 2, us: ms(500)).revealed, isTrue);
@@ -46,19 +63,19 @@ void main() {
 
     test('a game: total, max, fraction and the first-try summary', () {
       final answers = [
-        answer(us: ms(800)),
-        answer(us: ms(2900)),
+        answer(us: ms(100)),
+        answer(us: ms(3000)),
         answer(us: 0),
         answer(wrongTaps: 1, us: ms(1000)),
         answer(wrongTaps: 2, us: ms(1000)),
         answer(),
       ];
       final s = AnkirenScore(answers, prompts: 6);
-      expect(s.total, 150 + 125 + 100 + 40);
-      expect(s.max, 6 * 150);
-      expect(s.fraction, closeTo(415 / 900, 1e-12));
+      expect(s.total, 200 + 116 + 100 + 50);
+      expect(s.max, 6 * 200);
+      expect(s.fraction, closeTo(466 / 1200, 1e-12));
       expect(s.firstTries, 3);
-      expect(s.averageFirstTryMs, closeTo((800 + 2900) / 2, 1e-9), reason: 'valid times only');
+      expect(s.averageFirstTryMs, closeTo((100 + 3000) / 2, 1e-9), reason: 'valid times only');
       expect(AnkirenScore([], prompts: 6).averageFirstTryMs, isNull);
       expect(AnkirenScore([], prompts: 0).fraction, 0);
     });
@@ -138,7 +155,8 @@ void main() {
       final established = AnkirenRating.update(ratings[5], p, 10) - ratings[5];
       expect(established, greaterThan(0));
       expect(established, lessThan(placed));
-      expect(AnkirenRating.performance(5, 0.9, placement: true) - ratings[5], closeTo(3 * (p - ratings[5]), 1e-9));
+      expect(AnkirenRating.performance(5, 0.9, placement: true) - ratings[5],
+          closeTo(AnkirenRatingModel.placementStretch * (p - ratings[5]), 1e-9));
       for (var f = 0.0; f < 1; f += 0.01) {
         final step = AnkirenRating.performance(5, f + 0.001, placement: false) -
             AnkirenRating.performance(5, f, placement: false);
@@ -184,7 +202,7 @@ void main() {
       final a = g.answers.single;
       expect(a.responseUs, 2900 * 1000, reason: 'from the first reveal');
       expect((a.side, a.at), (g.field.sideOf(g.prompts.first), DateTime(2026, 10, 12)));
-      expect(AnkirenScore.points(a), 100 + 25);
+      expect(AnkirenScore.points(a), 100 + 17);
       expect(g.current, g.prompts[1]);
       expect(g.tap(g.prompts[1], t(1700)), TapResult.ignored, reason: 'the next prompt is not on screen yet');
     });
@@ -230,10 +248,34 @@ void main() {
       }
       expect((g.phase, g.completed, g.current), (AnkirenPhase.done, true, null));
       expect(g.answers.map((a) => a.poemId), g.prompts);
-      expect(g.score.total, g.prompts.length * (100 + 50));
-      expect(g.score.fraction, 1);
+      expect(g.score.total, g.prompts.length * (100 + 77));
+      expect(g.score.fraction, closeTo(177 / 200, 1e-12));
       expect(g.tap(g.prompts.first, t(now + 100)), TapResult.ignored);
       expect(notified, 1 + g.prompts.length);
+    });
+
+    test('"don\'t know" gives the card up for nothing and asks the next; the game still completes', () {
+      final g = newGame()..startRecall();
+      expect(g.forget(), isNull, reason: 'the prompt is not on screen yet');
+      g.promptRevealed(t(0));
+      final first = g.current!;
+      g.tap(other(g), t(300));
+      expect(g.forget(), first);
+      expect((g.isForgotten(first), g.isFound(first), g.isDone(first)), (true, false, true));
+      final a = g.answers.single;
+      expect((a.poemId, a.found, a.responseUs, a.wrongTaps), (first, false, null, 1));
+      expect(AnkirenScore.points(a), 0);
+      expect((g.current, g.wrongTaps, g.revealTs), (g.prompts[1], 0, null));
+      expect(g.forget(), isNull, reason: 'the next prompt is not on screen yet');
+      g.promptRevealed(t(1000));
+      expect(g.tap(first, t(1200)), TapResult.ignored, reason: 'a card given up is out of play');
+      var now = 1000;
+      while (g.phase == AnkirenPhase.recall) {
+        g.promptRevealed(t(now += 1000));
+        g.forget();
+      }
+      expect((g.phase, g.completed, g.score.total), (AnkirenPhase.done, true, 0));
+      expect(g.answers.map((a) => a.poemId), g.prompts);
     });
 
     test('ending early records the rest as never found and counts them as nothing', () {
@@ -248,7 +290,7 @@ void main() {
       expect(g.answers.map((a) => a.poemId), g.prompts);
       expect(g.answers.skip(1).every((a) => !a.found && a.responseUs == null), isTrue);
       expect(g.answers[1].wrongTaps, 1, reason: 'the prompt on screen keeps its wrong tap');
-      expect(g.score.total, 100 + 50);
+      expect(g.score.total, 100 + 63);
       expect(g.tap(g.prompts.last, t(3000)), TapResult.ignored);
     });
 

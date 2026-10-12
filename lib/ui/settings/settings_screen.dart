@@ -131,6 +131,21 @@ class SettingsScreen extends StatelessWidget {
                       ),
                       const SizedBox(height: SettingsLayout.sectionGap),
                       SettingsSection(
+                        title: s.sectionAccessibility,
+                        sub: s.other.sectionAccessibility,
+                        children: [
+                          SettingsGroup(children: [
+                            SettingsSwitch(
+                              title: s.accessibilityMode,
+                              note: s.accessibilityModeNote,
+                              value: settings.accessibilityMode,
+                              onChanged: (v) => progress.updateSettings(settings.copyWith(accessibilityMode: v)),
+                            ),
+                          ]),
+                        ],
+                      ),
+                      const SizedBox(height: SettingsLayout.sectionGap),
+                      SettingsSection(
                         title: s.sideTrips,
                         sub: s.other.sideTrips,
                         children: [

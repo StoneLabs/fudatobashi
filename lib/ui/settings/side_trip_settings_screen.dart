@@ -11,8 +11,8 @@ import '../../state/settings.dart';
 import '../manga/manga.dart';
 import 'settings_rows.dart';
 
-/// Settings › 寄り道 › 暗記練: the field's layout, zoom, how each card is
-/// asked for, and which way the opponent's cards face.
+/// Settings › 寄り道 › 暗記練: the field's layout and how each card is asked
+/// for.
 class AnkirenSettingsScreen extends StatelessWidget {
   const AnkirenSettingsScreen({super.key});
 
@@ -56,15 +56,6 @@ class AnkirenSettingsScreen extends StatelessWidget {
                               onTap: () => update(a.copyWith(layout: AnkirenLayout.landscape))),
                         ],
                       ),
-                      const SizedBox(height: SettingsLayout.itemGap),
-                      SettingsGroup(children: [
-                        SettingsSwitch(
-                          title: s.ankirenZoom,
-                          note: s.ankirenZoomNote,
-                          value: a.zoom,
-                          onChanged: (v) => update(a.copyWith(zoom: v)),
-                        ),
-                      ]),
                       const SizedBox(height: SettingsLayout.sectionGap),
                       SettingsChoices(
                         label: SettingsLabel(title: s.ankirenPrompt, note: s.ankirenPromptNote),
@@ -76,17 +67,6 @@ class AnkirenSettingsScreen extends StatelessWidget {
                           SettingsOption(s.ankirenPromptText,
                               selected: a.prompt == AnkirenPrompt.textOnly,
                               onTap: () => update(a.copyWith(prompt: AnkirenPrompt.textOnly))),
-                        ],
-                      ),
-                      const SizedBox(height: SettingsLayout.sectionGap),
-                      SettingsChoices(
-                        label: SettingsLabel(title: s.ankirenOpponent, note: s.ankirenOpponentNote),
-                        side: true,
-                        options: [
-                          SettingsOption(s.ankirenUpsideDown,
-                              selected: !a.opponentUpright, onTap: () => update(a.copyWith(opponentUpright: false))),
-                          SettingsOption(s.ankirenUpright,
-                              selected: a.opponentUpright, onTap: () => update(a.copyWith(opponentUpright: true))),
                         ],
                       ),
                       const SizedBox(height: SettingsLayout.sectionGap),

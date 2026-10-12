@@ -2482,6 +2482,9 @@ abstract final class SettingsLayout {
   static const double headerInset = 4;
   static const double headerSubFont = TypeScale.label;
   static const double headerSubGap = 8;
+
+  /// The sub's share of the room beside the banner, against the rule's 1.
+  static const int headerSubFlex = 4;
   static const double headerRule = Strokes.control;
   static const double headerGap = 12;
   static const double itemGap = 18;
@@ -3425,8 +3428,15 @@ abstract final class AnkirenPlayLayout {
   static const double controlIcon = 18;
   static const EdgeInsets controlPadding = EdgeInsets.symmetric(horizontal: 8);
 
-  /// The kimariji just found, while the next prompt waits.
+  /// The kimariji just found, or just given up, while the next prompt
+  /// waits.
   static const Color foundText = Palette.landDeep;
+  static const Color givenUpText = Palette.violetDeep;
+
+  /// The tatami behind the field: a seamless tile drawn for [tatamiScale]×
+  /// density, on [background] until it loads.
+  static const String tatami = 'assets/images/ankiren/tatami.webp';
+  static const double tatamiScale = 3;
 }
 
 /// 暗記練's card animations.

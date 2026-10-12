@@ -26,7 +26,18 @@ class SettingsSection extends StatelessWidget {
               const SizedBox(width: SettingsLayout.headerInset),
               InkBanner(title.toUpperCase(), fontSize: SettingsLayout.headerFont),
               const SizedBox(width: SettingsLayout.headerSubGap),
-              Text(sub, style: const TextStyle(fontWeight: Weights.black, fontSize: SettingsLayout.headerSubFont)),
+              // A long sub gives way (fading out) before the banner does; the
+              // rule takes whatever is left.
+              Flexible(
+                flex: SettingsLayout.headerSubFlex,
+                child: Text(
+                  sub,
+                  maxLines: 1,
+                  softWrap: false,
+                  overflow: TextOverflow.fade,
+                  style: const TextStyle(fontWeight: Weights.black, fontSize: SettingsLayout.headerSubFont),
+                ),
+              ),
               const SizedBox(width: SettingsLayout.headerSubGap),
               const Expanded(
                 child: SizedBox(height: SettingsLayout.headerRule, child: ColoredBox(color: Palette.ink)),

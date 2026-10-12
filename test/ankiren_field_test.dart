@@ -18,26 +18,31 @@ void main() {
   bool linked(int a, int b) => tomo[a]!.contains(b);
 
   group('levels', () {
-    test('the table: cards per side and memorise time, both growing level by level', () {
-      expect([for (final l in AnkirenLevels.all) l.perSide], [4, 6, 8, 10, 12, 14, 16, 18, 20, 22, 25]);
-      expect(AnkirenLevels.of(0).memorise, const Duration(seconds: 20));
-      expect(AnkirenLevels.of(4).memorise, const Duration(seconds: 90));
-      expect(AnkirenLevels.of(AnkirenLevels.top).memorise, const Duration(minutes: 5));
+    test('the table: a gentle start, growing smoothly to a real match', () {
+      expect([for (final l in AnkirenLevels.all) l.perSide], [3, 4, 5, 6, 8, 10, 12, 15, 18, 21, 25]);
+      expect(AnkirenLevels.of(0).memorise, const Duration(minutes: 1));
+      expect(AnkirenLevels.of(4).memorise, const Duration(minutes: 3, seconds: 30));
+      expect(AnkirenLevels.of(AnkirenLevels.top).memorise, const Duration(minutes: 15));
+      double perCard(int l) => AnkirenLevels.of(l).memorise.inSeconds / AnkirenLevels.of(l).cards;
+      expect(perCard(0), greaterThanOrEqualTo(10), reason: 'time to spare at level 0');
       for (var l = 1; l <= AnkirenLevels.top; l++) {
-        expect(AnkirenLevels.of(l).perSide, greaterThan(AnkirenLevels.of(l - 1).perSide));
-        expect(AnkirenLevels.of(l).memorise, greaterThan(AnkirenLevels.of(l - 1).memorise));
+        final (a, b) = (AnkirenLevels.of(l - 1), AnkirenLevels.of(l));
+        expect(b.perSide, greaterThan(a.perSide));
+        expect(b.perSide / a.perSide, lessThanOrEqualTo(4 / 3), reason: 'a small step to level $l');
+        expect(b.memorise, greaterThan(a.memorise));
+        expect(perCard(l), greaterThanOrEqualTo(perCard(l - 1)), reason: 'bigger fields get more time a card');
       }
     });
 
     test('the known cards cap the level: it needs twice its per-side count', () {
       expect(AnkirenLevels.maxLevelFor(0), isNull);
-      expect(AnkirenLevels.maxLevelFor(7), isNull);
-      expect(AnkirenLevels.maxLevelFor(8), 0);
-      expect(AnkirenLevels.maxLevelFor(11), 0);
-      expect(AnkirenLevels.maxLevelFor(12), 1);
-      expect(AnkirenLevels.maxLevelFor(24), 4);
-      expect(AnkirenLevels.maxLevelFor(25), 4, reason: 'level 4 deals 24 cards');
-      expect(AnkirenLevels.maxLevelFor(28), 5);
+      expect(AnkirenLevels.maxLevelFor(5), isNull);
+      expect(AnkirenLevels.maxLevelFor(6), 0);
+      expect(AnkirenLevels.maxLevelFor(7), 0);
+      expect(AnkirenLevels.maxLevelFor(8), 1);
+      expect(AnkirenLevels.maxLevelFor(24), 6);
+      expect(AnkirenLevels.maxLevelFor(25), 6, reason: 'level 6 deals 24 cards');
+      expect(AnkirenLevels.maxLevelFor(30), 7);
       expect(AnkirenLevels.maxLevelFor(49), 9);
       expect(AnkirenLevels.maxLevelFor(50), 10);
       expect(AnkirenLevels.maxLevelFor(100), 10);
@@ -46,7 +51,7 @@ void main() {
     test('setups: a preset carries its level, a custom one stays within the known cards', () {
       final preset = AnkirenSetup.forLevel(4, ranked: true);
       expect((preset.perSide, preset.memorise, preset.level, preset.ranked, preset.cards),
-          (12, const Duration(seconds: 90), 4, true, 24));
+          (8, const Duration(minutes: 3, seconds: 30), 4, true, 16));
       expect(preset, AnkirenSetup.forLevel(4, ranked: true));
       expect(preset, isNot(AnkirenSetup.forLevel(4)));
       const custom = AnkirenSetup.custom(perSide: 7, memorise: Duration(seconds: 40));
@@ -107,7 +112,7 @@ void main() {
         if (k > 0) {
           final rows = [for (final r in FieldRow.values) if (half.row(r).middle.isNotEmpty) r];
           if (rows.length != 1 || !AnkirenTuning.middleRows.contains(rows.single)) out.add('$side middle rows $rows');
-          if (k < AnkirenTuning.middleMin || k > math.min(AnkirenTuning.middleMax, perSide ~/ 2)) {
+          if (k < AnkirenTuning.middleMin || k > AnkirenDealer.maxMiddle(perSide)) {
             out.add('$side has $k middle cards');
           }
           for (final a in middle) {
@@ -147,9 +152,29 @@ void main() {
       return out;
     }
 
-    test('20 000 games per level: sound fields, about 1 in 5 with middle cards', () {
+    test('middle cards only where a side splits into left and right clusters, never at the small levels', () {
+      expect([for (final l in AnkirenLevels.all) AnkirenDealer.mayHaveMiddle(l.perSide)],
+          [false, false, false, false, false, false, true, true, true, true, true]);
+      for (var perSide = 1; perSide <= AnkirenTuning.customMaxPerSide; perSide++) {
+        if (!AnkirenDealer.mayHaveMiddle(perSide)) continue;
+        final rows = AnkirenDealer.rowCounts(perSide - AnkirenDealer.maxMiddle(perSide));
+        final lower = rows[FieldRow.lower.index];
+        expect([AnkirenDealer.leftCount(FieldRow.lower, lower), lower - AnkirenDealer.leftCount(FieldRow.lower, lower)],
+            everyElement(greaterThanOrEqualTo(2)),
+            reason: '$perSide a side: its 下段 clusters stay at least two cards wide around the middle');
+      }
+      final rng = math.Random(5);
+      for (var level = 0; !AnkirenDealer.mayHaveMiddle(AnkirenLevels.of(level).perSide); level++) {
+        for (var g = 0; g < 5000; g++) {
+          final f = dealer.deal(all, AnkirenLevels.of(level).perSide, rng);
+          expect([f.own.middleCards, f.opponent.middleCards], [isEmpty, isEmpty], reason: 'level $level');
+        }
+      }
+    });
+
+    test('20 000 games per level: sound fields, about 1 in 5 with middle cards where they may be', () {
       const games = 20000;
-      for (final level in [0, 2, 4, 7, 10]) {
+      for (final level in [0, 2, 4, 6, 7, 10]) {
         final perSide = AnkirenLevels.of(level).perSide;
         final rng = math.Random(level);
         final found = <String>{};
@@ -168,11 +193,15 @@ void main() {
           }
         }
         expect(found, isEmpty, reason: 'level $level');
+        if (!AnkirenDealer.mayHaveMiddle(perSide)) {
+          expect(sidesWithMiddle, 0, reason: 'level $level');
+          continue;
+        }
         final perSideChance = sidesWithMiddle / (2 * games);
         expect(perSideChance, closeTo(AnkirenTuning.middleChancePerSide, 0.008), reason: 'level $level');
         final anySide = 1 - math.pow(1 - AnkirenTuning.middleChancePerSide, 2);
         expect(gamesWithMiddle / games, closeTo(anySide, 0.012), reason: 'level $level');
-        expect(maxMiddle, math.min(AnkirenTuning.middleMax, perSide ~/ 2));
+        expect(maxMiddle, AnkirenDealer.maxMiddle(perSide));
         expect(middleRows, AnkirenTuning.middleRows.toSet());
       }
     });

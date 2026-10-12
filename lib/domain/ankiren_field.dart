@@ -82,10 +82,11 @@ class AnkirenField {
 ///
 /// The known cards are shuffled and 2 × perSide are dealt, the first half to
 /// the own side. Then each side, on its own:
-/// - With [AnkirenTuning.middleChancePerSide], it puts a few cards in the
-///   open middle of one row ([AnkirenTuning.middleRows]), at most half its
-///   cards. The first is a card with a 友札 anywhere on the field when there is
-///   one; no two middle cards of a side are each other's 友札.
+/// - A side big enough for an open middle ([maxMiddle]) puts a few cards
+///   there with [AnkirenTuning.middleChancePerSide], all in one row
+///   ([AnkirenTuning.middleRows]). The first is a card with a 友札 anywhere on
+///   the field when there is one; no two middle cards of a side are each
+///   other's 友札.
 /// - The rest form the left and right clusters. 下段 fills first, 上段 is the
 ///   sparsest (see [rowCounts]), and each row splits left / right (see
 ///   [leftCount]).
@@ -116,6 +117,17 @@ class AnkirenDealer {
       opponent: _arrange(opponentCards, field, rng),
     );
   }
+
+  /// The most cards a side of [perSide] may put in the open middle: up to
+  /// [AnkirenTuning.middleMax], as long as [AnkirenTuning.middleMinClustered]
+  /// stay in its clusters; 0 when that leaves room for fewer than
+  /// [AnkirenTuning.middleMin].
+  static int maxMiddle(int perSide) {
+    final room = math.min(AnkirenTuning.middleMax, perSide - AnkirenTuning.middleMinClustered);
+    return room < AnkirenTuning.middleMin ? 0 : room;
+  }
+
+  static bool mayHaveMiddle(int perSide) => maxMiddle(perSide) > 0;
 
   /// Cards per row for [clustered] cluster cards, indexed by [FieldRow.index].
   static List<int> rowCounts(int clustered) {
@@ -152,10 +164,9 @@ class AnkirenDealer {
   }
 
   List<int> _middleCards(List<int> cards, Set<int> field, math.Random rng) {
-    if (rng.nextDouble() >= AnkirenTuning.middleChancePerSide) return const [];
-    final range = AnkirenTuning.middleMax - AnkirenTuning.middleMin + 1;
-    final k = math.min(AnkirenTuning.middleMin + rng.nextInt(range), cards.length ~/ 2);
-    if (k == 0) return const [];
+    final most = maxMiddle(cards.length);
+    if (most == 0 || rng.nextDouble() >= AnkirenTuning.middleChancePerSide) return const [];
+    final k = AnkirenTuning.middleMin + rng.nextInt(most - AnkirenTuning.middleMin + 1);
 
     final paired = [for (final c in cards) if (tomofuda(c).any(field.contains)) c];
     final first = paired.isEmpty ? cards[rng.nextInt(cards.length)] : paired[rng.nextInt(paired.length)];

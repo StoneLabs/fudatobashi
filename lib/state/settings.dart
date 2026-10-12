@@ -61,23 +61,14 @@ enum AnkirenPrompt {
 class AnkirenSettings {
   const AnkirenSettings({
     this.layout = DefaultSettings.ankirenLayout,
-    this.zoom = DefaultSettings.ankirenZoom,
     this.prompt = DefaultSettings.ankirenPrompt,
-    this.opponentUpright = DefaultSettings.ankirenOpponentUpright,
     this.freeLevel = DefaultSettings.ankirenFreeLevel,
     this.customPerSide = DefaultSettings.ankirenCustomPerSide,
     this.customMemorise = DefaultSettings.ankirenCustomMemorise,
   });
 
   final AnkirenLayout layout;
-
-  /// Portrait only: cards never smaller than a comfortable tap, the field
-  /// panning sideways when it no longer fits.
-  final bool zoom;
   final AnkirenPrompt prompt;
-
-  /// The opponent's cards face the player instead of their owner.
-  final bool opponentUpright;
 
   /// Free play's last level preset, or null when its last setup was custom.
   final int? freeLevel;
@@ -94,9 +85,7 @@ class AnkirenSettings {
   /// These settings with [setup] as free play's last one.
   AnkirenSettings withFreeSetup(AnkirenSetup setup) => AnkirenSettings(
         layout: layout,
-        zoom: zoom,
         prompt: prompt,
-        opponentUpright: opponentUpright,
         freeLevel: setup.level,
         customPerSide: setup.level == null ? setup.perSide : customPerSide,
         customMemorise: setup.level == null ? setup.memorise : customMemorise,
@@ -104,9 +93,7 @@ class AnkirenSettings {
 
   Map<String, Object?> toJson() => {
         'layout': layout.name,
-        'zoom': zoom,
         'prompt': prompt.name,
-        'opponentUpright': opponentUpright,
         'freeLevel': freeLevel,
         'customPerSide': customPerSide,
         'customMemoriseMs': customMemorise.inMilliseconds,
@@ -117,9 +104,7 @@ class AnkirenSettings {
     final memoriseMs = j['customMemoriseMs'] as int?;
     return AnkirenSettings(
       layout: AnkirenLayout.values.asNameMap()[j['layout']] ?? DefaultSettings.ankirenLayout,
-      zoom: j['zoom'] as bool? ?? DefaultSettings.ankirenZoom,
       prompt: AnkirenPrompt.values.asNameMap()[j['prompt']] ?? DefaultSettings.ankirenPrompt,
-      opponentUpright: j['opponentUpright'] as bool? ?? DefaultSettings.ankirenOpponentUpright,
       freeLevel: level?.clamp(0, AnkirenLevels.top),
       customPerSide: (j['customPerSide'] as int? ?? DefaultSettings.ankirenCustomPerSide)
           .clamp(AnkirenTuning.customMinPerSide, AnkirenTuning.customMaxPerSide),
@@ -131,12 +116,9 @@ class AnkirenSettings {
     );
   }
 
-  AnkirenSettings copyWith({AnkirenLayout? layout, bool? zoom, AnkirenPrompt? prompt, bool? opponentUpright}) =>
-      AnkirenSettings(
+  AnkirenSettings copyWith({AnkirenLayout? layout, AnkirenPrompt? prompt}) => AnkirenSettings(
         layout: layout ?? this.layout,
-        zoom: zoom ?? this.zoom,
         prompt: prompt ?? this.prompt,
-        opponentUpright: opponentUpright ?? this.opponentUpright,
         freeLevel: freeLevel,
         customPerSide: customPerSide,
         customMemorise: customMemorise,
@@ -166,6 +148,7 @@ class AppSettings {
     this.showPerformanceOverlay = DefaultSettings.showPerformanceOverlay,
     this.languagePicked = DefaultSettings.languagePicked,
     this.kimarijiScript = DefaultSettings.kimarijiScript,
+    this.accessibilityMode = DefaultSettings.accessibilityMode,
     this.ankiren = DefaultSettings.ankiren,
   });
 
@@ -218,6 +201,10 @@ class AppSettings {
   /// The player's choice of kimariji script; read it through `kimarijiFor`.
   final KimarijiScript kimarijiScript;
 
+  /// Easier to see and tap: bigger cards, at the cost of fitting less on
+  /// screen. Only 暗記練 reads it so far (its field zooms in and pans).
+  final bool accessibilityMode;
+
   /// 暗記練's options and its free play's last setup.
   final AnkirenSettings ankiren;
 
@@ -254,6 +241,7 @@ class AppSettings {
         'showPerformanceOverlay': showPerformanceOverlay,
         'languagePicked': languagePicked,
         'kimarijiScript': kimarijiScript.name,
+        'accessibilityMode': accessibilityMode,
         'ankiren': ankiren.toJson(),
       };
 
@@ -261,6 +249,7 @@ class AppSettings {
     // The single `sounds` switch from before the split into music, swipe and
     // other sounds: turned off, it turns all three off.
     final sounds = j['sounds'] as bool?;
+    final ankiren = j['ankiren'] is Map ? (j['ankiren'] as Map).cast<String, dynamic>() : null;
     return AppSettings(
       // The old `AppLanguage` enum's stored name ("system"/"en"/"ja") is
       // already the language code or "system" this field now holds.
@@ -292,9 +281,10 @@ class AppSettings {
       showPerformanceOverlay:
           j['showPerformanceOverlay'] as bool? ?? DefaultSettings.showPerformanceOverlay,
       kimarijiScript: KimarijiScript.values.asNameMap()[j['kimarijiScript']] ?? DefaultSettings.kimarijiScript,
-      ankiren: j['ankiren'] is Map
-          ? AnkirenSettings.fromJson((j['ankiren'] as Map).cast<String, dynamic>())
-          : DefaultSettings.ankiren,
+      // 暗記練's own zoom switch became this app-wide one.
+      accessibilityMode:
+          j['accessibilityMode'] as bool? ?? ankiren?['zoom'] as bool? ?? DefaultSettings.accessibilityMode,
+      ankiren: ankiren == null ? DefaultSettings.ankiren : AnkirenSettings.fromJson(ankiren),
     );
   }
 
@@ -319,6 +309,7 @@ class AppSettings {
     bool? showPerformanceOverlay,
     bool? languagePicked,
     KimarijiScript? kimarijiScript,
+    bool? accessibilityMode,
     AnkirenSettings? ankiren,
   }) =>
       AppSettings(
@@ -342,6 +333,7 @@ class AppSettings {
         showPerformanceOverlay: showPerformanceOverlay ?? this.showPerformanceOverlay,
         languagePicked: languagePicked ?? this.languagePicked,
         kimarijiScript: kimarijiScript ?? this.kimarijiScript,
+        accessibilityMode: accessibilityMode ?? this.accessibilityMode,
         ankiren: ankiren ?? this.ankiren,
       );
 }

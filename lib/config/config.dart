@@ -544,13 +544,12 @@ abstract final class DefaultSettings {
   static const bool playOverlay = false;
   static const bool showPerformanceOverlay = false;
   static const KimarijiScript kimarijiScript = KimarijiScript.auto;
+  static const bool accessibilityMode = false;
 
   /// 暗記練 (Settings › 寄り道 › 暗記練), and its free play's last setup.
   static const AnkirenSettings ankiren = AnkirenSettings();
   static const AnkirenLayout ankirenLayout = AnkirenLayout.portrait;
-  static const bool ankirenZoom = false;
   static const AnkirenPrompt ankirenPrompt = AnkirenPrompt.textAndVoice;
-  static const bool ankirenOpponentUpright = false;
   static const int ankirenFreeLevel = 0;
   static const int ankirenCustomPerSide = 8;
   static const Duration ankirenCustomMemorise = Duration(minutes: 1);
@@ -782,7 +781,7 @@ abstract final class SoundTuning {
   /// The rating's ratchet clicks faster than one click lasts.
   static const int ratingTickPoolSize = 4;
 
-  /// 暗記練's right and wrong taps can follow each other faster than one
+  /// 暗記練's takes and wrong taps can follow each other faster than one
   /// lasts.
   static const int ankirenTapPoolSize = 2;
 }
@@ -860,9 +859,16 @@ enum Sfx {
   ratingBreak(['sounds/rating_break.wav'], 0.9),
   graduation(['sounds/graduation.wav'], 0.85),
 
-  /// 暗記練: the card asked for was tapped, or another one.
-  ankirenRight(['sounds/ankiren_right.wav'], 0.6, poolSize: SoundTuning.ankirenTapPoolSize),
+  /// 暗記練: the card asked for taken, another one tapped, the field turning
+  /// face down, and the first card asked.
+  ankirenTake(
+    ['sounds/ankiren_take_0.wav', 'sounds/ankiren_take_1.wav', 'sounds/ankiren_take_2.wav'],
+    0.8,
+    poolSize: SoundTuning.ankirenTapPoolSize,
+  ),
   ankirenWrong(['sounds/ankiren_wrong.wav'], 0.75, poolSize: SoundTuning.ankirenTapPoolSize),
+  ankirenFlip(['sounds/ankiren_flip.wav'], 0.7),
+  ankirenRecall(['sounds/ankiren_recall.wav'], 0.6),
   firework(
     ['sounds/firework_0.wav', 'sounds/firework_1.wav', 'sounds/firework_2.wav'],
     0.6,
@@ -894,20 +900,22 @@ abstract final class VoiceTuning {
 /// (`AnkirenSetup`), how a field is dealt (`AnkirenDealer`), and a game's
 /// prompts and points (`AnkirenGame`, `AnkirenScore`).
 abstract final class AnkirenTuning {
-  /// The levels, 0 first: cards per side and memorise time. Ranked play
-  /// moves through them by rating, so each step is a small one.
+  /// The levels, 0 first: cards per side and memorise time. Level 0 is a
+  /// gentle start (6 cards, 10 s a card); level 10 is a real match's field
+  /// and memorise time (25 a side, 15 minutes). Ranked play moves through
+  /// them by rating, so each step is a small one.
   static const List<AnkirenLevel> levels = [
-    AnkirenLevel(4, Duration(seconds: 20)),
-    AnkirenLevel(6, Duration(seconds: 30)),
-    AnkirenLevel(8, Duration(seconds: 45)),
-    AnkirenLevel(10, Duration(minutes: 1)),
-    AnkirenLevel(12, Duration(minutes: 1, seconds: 30)),
-    AnkirenLevel(14, Duration(minutes: 2)),
-    AnkirenLevel(16, Duration(minutes: 2, seconds: 30)),
-    AnkirenLevel(18, Duration(minutes: 3)),
-    AnkirenLevel(20, Duration(minutes: 3, seconds: 30)),
-    AnkirenLevel(22, Duration(minutes: 4)),
-    AnkirenLevel(25, Duration(minutes: 5)),
+    AnkirenLevel(3, Duration(minutes: 1)),
+    AnkirenLevel(4, Duration(minutes: 1, seconds: 30)),
+    AnkirenLevel(5, Duration(minutes: 2)),
+    AnkirenLevel(6, Duration(minutes: 2, seconds: 30)),
+    AnkirenLevel(8, Duration(minutes: 3, seconds: 30)),
+    AnkirenLevel(10, Duration(minutes: 4, seconds: 30)),
+    AnkirenLevel(12, Duration(minutes: 6)),
+    AnkirenLevel(15, Duration(minutes: 8)),
+    AnkirenLevel(18, Duration(minutes: 10)),
+    AnkirenLevel(21, Duration(minutes: 12)),
+    AnkirenLevel(25, Duration(minutes: 15)),
   ];
 
   /// A custom free-play setup's cards per side (and at most half the known
@@ -924,11 +932,14 @@ abstract final class AnkirenTuning {
   static const Duration customCoarseStep = Duration(seconds: 30);
 
   /// Chance, for each side on its own, that it puts [middleMin] to
-  /// [middleMax] cards (at most half its cards) in the open middle of one of
-  /// [middleRows]: about 1 game in 5 has some.
+  /// [middleMax] cards in the open middle of one of [middleRows]: about 1
+  /// game in 5 has some. A side only does while at least [middleMinClustered]
+  /// cards stay in its clusters, so it keeps a real 定位置's left and right
+  /// clusters (下段 two cards wide on each side); a smaller one never does.
   static const double middleChancePerSide = 0.106;
   static const int middleMin = 1;
   static const int middleMax = 5;
+  static const int middleMinClustered = 10;
   static const List<FieldRow> middleRows = [FieldRow.lower, FieldRow.middle];
 
   /// 中段's share, in percent and rounded up, of a side's cluster cards left
@@ -941,10 +952,20 @@ abstract final class AnkirenTuning {
 
   /// Points per prompt (see `AnkirenScore`).
   static const int firstTry = 100;
-  static const int secondTry = 40;
-  static const int speedMax = 50;
-  static const int fastMs = 800;
-  static const int slowMs = 5000;
+  static const int secondTry = 50;
+  static const int speedMax = 100;
+
+  /// The speed bonus's curve over the response time t: a logistic curve over
+  /// ln t, centred on [speedMidpoint] and as steep as [speedSteepness],
+  /// stretched to be exactly [speedMax] at [speedFull] and 0 at [speedNone].
+  /// Fitted to [speedTargets]: it gives 100, 88, 72, 56, 16.
+  static const Duration speedFull = Duration(milliseconds: 100);
+  static const Duration speedNone = Duration(seconds: 5);
+  static const Duration speedMidpoint = Duration(milliseconds: 1650);
+  static const double speedSteepness = 1.1;
+
+  /// The response times (ms) the curve was fitted to, and their bonus.
+  static const Map<int, int> speedTargets = {100: 100, 300: 90, 600: 75, 1000: 50, 3000: 20};
 }
 
 /// 暗記練's play screen (`AnkirenScreen`): its pace between prompts.
@@ -956,6 +977,9 @@ abstract final class AnkirenPlayTuning {
   /// After the last card is found, before Results.
   static const Duration finishPause = Duration(milliseconds: 700);
 
+  /// A card given up ("don't know") rumbles this long, then turns face up.
+  static const Duration givenUpReveal = Duration(milliseconds: 900);
+
   /// The memorise countdown's step: it shows whole seconds.
   static const Duration clockTick = Duration(seconds: 1);
 }
@@ -966,15 +990,17 @@ abstract final class AnkirenRatingModel {
   /// 0's is the start and the floor (入門).
   static const List<double> levelRatings = [400, 650, 900, 1150, 1400, 1650, 1900, 2150, 2400, 2650, 2900];
 
-  /// Performance points per unit of score fraction above or below [par].
+  /// Performance points per unit of score fraction above or below [par]. A
+  /// game at par finds about 70% of the cards first try in 1.5 s, and 15%
+  /// after a wrong tap.
   static const double weight = 1000;
-  static const double par = 0.7;
+  static const double par = 0.53;
 
   /// Placement: the first [placementGames] ranked games stretch the
   /// performance by [placementStretch] and move the rating by [placementK]
   /// of the way to it; later games by [establishedK].
   static const int placementGames = 3;
-  static const double placementStretch = 3;
+  static const double placementStretch = 2;
   static const double placementK = 1;
   static const double establishedK = 0.35;
 }

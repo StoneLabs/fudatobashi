@@ -69,11 +69,38 @@
 	Follow on Twitter for updates:
 	http://twitter.com/KenneyNL
 
+	
+
+	Casino Audio (1.1)
+
+	by  Kenney Vleugels (Kenney.nl)
+
+			------------------------------
+
+	License (Creative Commons Zero, CC0)
+	http://creativecommons.org/publicdomain/zero/1.0/
+
+	You may use these assets in personal and commercial projects.
+	Credit (Kenney or www.kenney.nl) would be nice but is not mandatory.
+
+			------------------------------
+
+	Donate:   http://support.kenney.nl
+	Request:  http://request.kenney.nl
+
+	Follow on Twitter for updates:
+	@KenneyNL
+
 Files in this folder, converted to mono 44.1 kHz WAV and peak-normalized;
 card_flick_0..4 also trimmed of silent padding and compressor-boosted (their
-punch sat well under the other sounds' loudness at the same peak level):
+punch sat well under the other sounds' loudness at the same peak level), and
+ankiren_* trimmed of silent padding (ankiren_take_* also cut short):
 
-  ankiren_right.wav Interface Sounds / confirmation_003.ogg
+  ankiren_flip.wav  Casino Audio / card-fan-1.ogg
+  ankiren_recall.wav Interface Sounds / bong_001.ogg
+  ankiren_take_0.wav Casino Audio / card-shove-1.ogg
+  ankiren_take_1.wav Casino Audio / card-shove-2.ogg
+  ankiren_take_2.wav Casino Audio / card-shove-3.ogg
   ankiren_wrong.wav Interface Sounds / error_008.ogg
   best.wav          Music Jingles / Hit jingles / jingles_HIT11.ogg
   card_appears.wav  Music Jingles / Hit jingles / jingles_HIT16.ogg
@@ -101,4 +128,5 @@ punch sat well under the other sounds' loudness at the same peak level):
   xp_pop.wav        Interface Sounds / pluck_001.ogg
   xp_tick.wav       Interface Sounds / tick_002.ogg
 
-Source: https://kenney.nl/assets (Music Jingles, Impact Sounds, Interface Sounds)
+Source: https://kenney.nl/assets (Music Jingles, Impact Sounds, Interface Sounds,
+Casino Audio)

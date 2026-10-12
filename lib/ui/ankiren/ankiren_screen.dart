@@ -29,8 +29,8 @@ import 'ankiren_results_screen.dart';
 /// 暗記練's play screen. A field of [setup]'s size is dealt from [known]
 /// and shown face up while its memorise time counts down (or until the
 /// player is ready); then every card turns face down and each is asked for
-/// by its kimariji, in turn, until all are found or the game is ended. It
-/// ends into [AnkirenResultsScreen].
+/// by its kimariji, in turn, until all are found or given up ("don't know"),
+/// or the game is ended. It ends into [AnkirenResultsScreen].
 ///
 /// Timing follows the swipe deck's contract: a prompt is revealed at the
 /// vsync of the first frame showing it, on the pointer-event clock
@@ -39,9 +39,18 @@ import 'ankiren_results_screen.dart';
 /// field never takes a card.
 ///
 /// The screen holds its orientation while it is up: portrait, or landscape
-/// for the true-scale field.
+/// for the true-scale field. It also keeps the menu music out; both hold
+/// while any game is up, so one game replacing another in place (the test
+/// game's next deal) never lets go of them in between.
 class AnkirenScreen extends StatefulWidget {
-  const AnkirenScreen({super.key, required this.setup, required this.known, this.tracked = true, this.seed});
+  const AnkirenScreen({
+    super.key,
+    required this.setup,
+    required this.known,
+    this.tracked = true,
+    this.seed,
+    this.overlay,
+  });
 
   final AnkirenSetup setup;
 
@@ -54,6 +63,9 @@ class AnkirenScreen extends StatefulWidget {
   /// Seeds the deal and the order of the prompts; random when null.
   final int? seed;
 
+  /// Drawn over the field (the developer's test game's debug layer).
+  final Widget Function(AnkirenGame game, FieldPlacement placement)? overlay;
+
   @override
   State<AnkirenScreen> createState() => _AnkirenScreenState();
 }
@@ -62,10 +74,14 @@ class AnkirenScreen extends StatefulWidget {
 typedef _Press = ({int poemId, Duration at, Offset where});
 
 class _AnkirenScreenState extends State<AnkirenScreen> {
+  /// Games up right now (see the class's note on orientation and music).
+  static int _live = 0;
+
   late final Progress _progress;
 
   /// Read once, so the field cannot change under the player mid-game.
   late final AnkirenSettings _options;
+  late final bool _zoom;
   late final AnkirenGame _game;
   late final FieldGeometry _geometry;
   final DateTime _startedAt = DateTime.now();
@@ -75,9 +91,12 @@ class _AnkirenScreenState extends State<AnkirenScreen> {
   Timer? _pause;
 
   /// The current prompt is on screen (between prompts the band shows the
-  /// card just found).
+  /// card just found or given up).
   bool _promptShown = false;
-  int? _lastFound;
+  ({int poemId, PromptState state})? _last;
+
+  /// A card just given up, rumbling until it turns face up.
+  int? _givingUp;
 
   final Map<int, CardFlash> _flashes = {};
   int _flashSerial = 0;
@@ -95,6 +114,7 @@ class _AnkirenScreenState extends State<AnkirenScreen> {
     super.initState();
     _progress = ProgressScope.read(context);
     _options = _progress.settings.ankiren;
+    _zoom = _progress.settings.accessibilityMode && !_landscape;
     final rng = math.Random(widget.seed);
     final field = AnkirenDealer.ofPoems().deal(widget.known, widget.setup.perSide, rng);
     _game = AnkirenGame(field: field, setup: widget.setup, rng: rng);
@@ -102,6 +122,7 @@ class _AnkirenScreenState extends State<AnkirenScreen> {
     unawaited(SystemChrome.setPreferredOrientations(_landscape
         ? const [DeviceOrientation.landscapeLeft, DeviceOrientation.landscapeRight]
         : const [DeviceOrientation.portraitUp]));
+    _live++;
     music.leaveMenu();
     unawaited(PointerClock.sync());
     _clock = Timer.periodic(AnkirenPlayTuning.clockTick, (_) {
@@ -115,8 +136,10 @@ class _AnkirenScreenState extends State<AnkirenScreen> {
     _clock?.cancel();
     _pause?.cancel();
     _left.dispose();
-    _releaseOrientation();
-    if (!_wentToResults) music.enterMenu();
+    if (--_live == 0) {
+      _releaseOrientation();
+      if (!_wentToResults) music.enterMenu();
+    }
     // Safety net for an unexpected pop (e.g. the system back gesture) once
     // recall has begun: the game still counts, just without Results.
     if (!_ending && widget.tracked && _game.phase == AnkirenPhase.recall) {
@@ -128,7 +151,7 @@ class _AnkirenScreenState extends State<AnkirenScreen> {
 
   static void _releaseOrientation() => unawaited(SystemChrome.setPreferredOrientations(const []));
 
-  Map<String, Object?> get _meta => {'layout': _options.layout.name, 'zoom': _options.zoom && !_landscape};
+  Map<String, Object?> get _meta => {'layout': _options.layout.name, 'zoom': _zoom};
 
   bool get _still => MediaQuery.disableAnimationsOf(context);
 
@@ -138,12 +161,13 @@ class _AnkirenScreenState extends State<AnkirenScreen> {
     _clock?.cancel();
     if (!mounted || _game.phase != AnkirenPhase.memorise) return;
     setState(_game.startRecall);
-    playSound(context, Sfx.cardAppears);
+    playSound(context, Sfx.ankirenFlip);
     _pause = Timer((_still ? Duration.zero : AnkirenMotion.flip) + AnkirenPlayTuning.promptPause, _showPrompt);
   }
 
   void _showPrompt() {
     if (!mounted || _game.phase != AnkirenPhase.recall) return;
+    if (_game.answers.isEmpty) playSound(context, Sfx.ankirenRecall);
     setState(() => _promptShown = true);
     SchedulerBinding.instance.addPostFrameCallback((_) {
       final asked = _game.current;
@@ -172,18 +196,38 @@ class _AnkirenScreenState extends State<AnkirenScreen> {
         if (haptics) unawaited(HapticFeedback.heavyImpact());
         setState(() => _flashes[poemId] = CardFlash(CardFeedback.wrong, ++_flashSerial));
       case TapResult.right:
-        playSound(context, Sfx.ankirenRight);
+        playSound(context, Sfx.ankirenTake);
         if (haptics) unawaited(HapticFeedback.lightImpact());
         setState(() {
           _flashes[poemId] = CardFlash(CardFeedback.right, ++_flashSerial);
           _promptShown = false;
-          _lastFound = poemId;
+          _last = (poemId: poemId, state: PromptState.found);
         });
-        _pause = _game.phase == AnkirenPhase.done
-            ? Timer(AnkirenPlayTuning.finishPause, _finish)
-            : Timer(AnkirenPlayTuning.promptPause, _showPrompt);
+        _next();
     }
   }
+
+  /// "Don't know": the card asked for is shown as after the wrong taps, then
+  /// turns face up, and the next one is asked.
+  void _giveUp() {
+    final poemId = _game.forget();
+    if (poemId == null) return;
+    setState(() {
+      _promptShown = false;
+      _last = (poemId: poemId, state: PromptState.givenUp);
+      _givingUp = poemId;
+    });
+    _pause = Timer(AnkirenPlayTuning.givenUpReveal, () {
+      if (!mounted) return;
+      setState(() => _givingUp = null);
+      _next();
+    });
+  }
+
+  /// After a card is taken or given up: the next prompt, or Results.
+  void _next() => _pause = _game.phase == AnkirenPhase.done
+      ? Timer(AnkirenPlayTuning.finishPause, _finish)
+      : Timer(AnkirenPlayTuning.promptPause, _showPrompt);
 
   /// End: before recall nothing has been played, so it just leaves; after,
   /// the cards not found yet count as missed.
@@ -216,7 +260,7 @@ class _AnkirenScreenState extends State<AnkirenScreen> {
     final s = S.of(context);
     final memorising = _game.phase == AnkirenPhase.memorise;
     final asked = _promptShown ? _game.current : null;
-    final shown = asked ?? _lastFound;
+    final last = _last;
     final voice = _options.prompt == AnkirenPrompt.textAndVoice;
     final showNumber = _progress.settings.showPoemNumber;
 
@@ -228,42 +272,55 @@ class _AnkirenScreenState extends State<AnkirenScreen> {
           child: AnkirenCard(
             key: ValueKey(poemId),
             poemId: poemId,
-            faceUp: memorising || _game.isFound(poemId),
-            inverted: side == FieldSide.opponent && !_options.opponentUpright,
+            faceUp: memorising || (_game.isDone(poemId) && _givingUp != poemId),
+            inverted: side == FieldSide.opponent,
             showNumber: showNumber,
             flash: _flashes[poemId],
-            revealed: asked == poemId && _game.revealed,
+            revealed: (asked == poemId && _game.revealed) || _givingUp == poemId,
           ),
         );
 
+    final shown = asked ?? last?.poemId;
     final band = AnkirenBand(
       landscape: _landscape,
       leading: BandButton(icon: IconArt.end, label: s.end, onTap: _ending ? null : _end),
       center: memorising
           ? MemoriseClock(left: _left, landscape: _landscape)
-          : PromptText(
-              text: shown == null ? null : kimarijiFor(context, shown),
-              found: asked == null && shown != null,
-              done: _game.answers.length,
-              total: _game.prompts.length,
-              landscape: _landscape,
-            ),
+          : Row(mainAxisSize: MainAxisSize.min, children: [
+              PromptText(
+                text: shown == null ? null : kimarijiFor(context, shown),
+                state: asked != null || last == null ? PromptState.asked : last.state,
+                done: _game.answers.length,
+                total: _game.prompts.length,
+                landscape: _landscape,
+              ),
+              if (voice && asked != null) KimarijiSpeakerButton(poemId: asked),
+            ]),
       trailing: memorising
           ? BandButton(icon: IconArt.arrow, label: s.ankirenReady, color: Palette.sun, onTap: _startRecall)
-          : voice && asked != null
-              ? FittedBox(child: KimarijiSpeakerButton(poemId: asked))
-              : null,
+          : BandButton(icon: IconArt.question, label: s.ankirenForgot, onTap: asked == null ? null : _giveUp),
     );
 
+    final overlay = widget.overlay;
     return Scaffold(
       backgroundColor: AnkirenPlayLayout.background,
-      body: SafeArea(
-        child: AnkirenFieldView(
-          geometry: _geometry,
-          landscape: _landscape,
-          zoom: _options.zoom,
-          card: card,
-          band: band,
+      body: DecoratedBox(
+        decoration: const BoxDecoration(
+          image: DecorationImage(
+            image: AssetImage(AnkirenPlayLayout.tatami),
+            repeat: ImageRepeat.repeat,
+            scale: AnkirenPlayLayout.tatamiScale,
+          ),
+        ),
+        child: SafeArea(
+          child: AnkirenFieldView(
+            geometry: _geometry,
+            landscape: _landscape,
+            zoom: _zoom,
+            card: card,
+            band: band,
+            overlay: overlay == null ? null : (placement) => overlay(_game, placement),
+          ),
         ),
       ),
     );
