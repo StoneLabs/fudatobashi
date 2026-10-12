@@ -544,6 +544,16 @@ abstract final class DefaultSettings {
   static const bool playOverlay = false;
   static const bool showPerformanceOverlay = false;
   static const KimarijiScript kimarijiScript = KimarijiScript.auto;
+
+  /// 暗記練 (Settings › 寄り道 › 暗記練), and its free play's last setup.
+  static const AnkirenSettings ankiren = AnkirenSettings();
+  static const AnkirenLayout ankirenLayout = AnkirenLayout.portrait;
+  static const bool ankirenZoom = false;
+  static const AnkirenPrompt ankirenPrompt = AnkirenPrompt.textAndVoice;
+  static const bool ankirenOpponentUpright = false;
+  static const int ankirenFreeLevel = 0;
+  static const int ankirenCustomPerSide = 8;
+  static const Duration ankirenCustomMemorise = Duration(minutes: 1);
 }
 
 /// The dev-mode play overlay (`PlayDebugOverlay`).

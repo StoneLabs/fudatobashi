@@ -6,11 +6,14 @@ import '../../config/config.dart';
 import '../../config/design.dart';
 import '../../config/licenses.dart';
 import '../../config/vector_art.dart';
+import '../../domain/side_trips.dart';
 import '../../domain/trainer.dart';
+import '../../l10n/ankiren_strings.dart';
 import '../../l10n/credits_strings.dart';
 import '../../l10n/language_strings.dart';
 import '../../l10n/localization.dart';
 import '../../l10n/settings_strings.dart';
+import '../../l10n/side_trip_strings.dart';
 import '../../l10n/strings.dart';
 import '../../state/progress.dart';
 import '../../state/scope.dart';
@@ -26,9 +29,10 @@ import 'credits_screen.dart';
 import 'hold_warning_screen.dart';
 import 'language_screen.dart';
 import 'settings_rows.dart';
+import 'side_trip_settings_screen.dart';
 
 /// Settings, in sections: Language; Learning (mode, pace, the don't-know
-/// input); Play; Sound; About, whose version row hides the 10-tap
+/// input); Play; Sound; Side Trips (a page per side trip); About, whose version row hides the 10-tap
 /// developer-mode unlock; Data (Reset all data); and, once developer mode
 /// is unlocked, Developer.
 class SettingsScreen extends StatelessWidget {
@@ -126,6 +130,22 @@ class SettingsScreen extends StatelessWidget {
                       ),
                       const SizedBox(height: SettingsLayout.sectionGap),
                       SettingsSection(
+                        title: s.sideTrips,
+                        sub: s.other.sideTrips,
+                        children: [
+                          SettingsGroup(children: [
+                            SettingsTapRow(
+                              title: SideTrip.ankiren.label,
+                              note: s.ankirenSettingsNote,
+                              opensPage: true,
+                              onTap: () => Navigator.push(
+                                  context, MangaRoute<void>(builder: (_) => const AnkirenSettingsScreen())),
+                            ),
+                          ]),
+                        ],
+                      ),
+                      const SizedBox(height: SettingsLayout.sectionGap),
+                      SettingsSection(
                         title: s.about,
                         sub: s.other.about,
                         children: [
@@ -199,34 +219,34 @@ class _LearningSection extends StatelessWidget {
       title: s.sectionLearning,
       sub: s.other.sectionLearning,
       children: [
-        _Choices(
+        SettingsChoices(
           label: SettingsLabel(title: s.learningMode, note: s.learningModeNote),
           side: true,
           options: [
-            _Option(s.learningJourney, selected: mode == LearningMode.journey,
+            SettingsOption(s.learningJourney, selected: mode == LearningMode.journey,
                 onTap: () => _chooseLearningMode(context, progress, mode, LearningMode.journey)),
-            _Option(s.learningAllKnown, selected: mode == LearningMode.allKnown,
+            SettingsOption(s.learningAllKnown, selected: mode == LearningMode.allKnown,
                 onTap: () => _chooseLearningMode(context, progress, mode, LearningMode.allKnown)),
           ],
         ),
         if (mode == LearningMode.journey)
-          _Choices(
+          SettingsChoices(
             label: SettingsLabel(title: s.pace, note: s.paceNote),
             side: true,
             options: [
-              _Option(s.paceMonth, selected: pace == LearningPace.month, onTap: () => progress.setLearningPace(LearningPace.month)),
-              _Option(s.paceSprint, selected: pace == LearningPace.sprint, onTap: () => progress.setLearningPace(LearningPace.sprint)),
+              SettingsOption(s.paceMonth, selected: pace == LearningPace.month, onTap: () => progress.setLearningPace(LearningPace.month)),
+              SettingsOption(s.paceSprint, selected: pace == LearningPace.sprint, onTap: () => progress.setLearningPace(LearningPace.sprint)),
             ],
           ),
-        _Choices(
+        SettingsChoices(
           label: SettingsLabel(title: s.dontKnowInput, note: s.dontKnowInputNote),
           options: [
-            _Option(s.dontKnowHold, sub: s.dontKnowHoldSub, selected: dontKnow == DontKnowInput.hold,
+            SettingsOption(s.dontKnowHold, sub: s.dontKnowHoldSub, selected: dontKnow == DontKnowInput.hold,
                 onTap: () => setDontKnow(DontKnowInput.hold)),
-            _Option(s.dontKnowButton, sub: s.dontKnowButtonSub, selected: dontKnow == DontKnowInput.button,
+            SettingsOption(s.dontKnowButton, sub: s.dontKnowButtonSub, selected: dontKnow == DontKnowInput.button,
                 onTap: () => setDontKnow(DontKnowInput.button)),
             if (mode == LearningMode.allKnown)
-              _Option(s.dontKnowOff, sub: s.dontKnowOffSub, selected: dontKnow == DontKnowInput.off,
+              SettingsOption(s.dontKnowOff, sub: s.dontKnowOffSub, selected: dontKnow == DontKnowInput.off,
                   onTap: () => setDontKnow(DontKnowInput.off)),
           ],
         ),
@@ -265,74 +285,6 @@ Future<void> _resetAllData(BuildContext context, Progress progress) async {
   navigator.popUntil((route) => route.isFirst);
 }
 
-class _Option {
-  const _Option(this.title, {this.sub, required this.selected, required this.onTap});
-  final String title;
-  final String? sub;
-  final bool selected;
-  final VoidCallback onTap;
-}
-
-/// A named choice: its label above sun-lit (chosen) or paper buttons, side
-/// by side or stacked, equal in height either way.
-class _Choices extends StatelessWidget {
-  const _Choices({required this.label, required this.options, this.side = false});
-  final SettingsLabel label;
-  final List<_Option> options;
-  final bool side;
-
-  @override
-  Widget build(BuildContext context) {
-    final buttons = [for (final o in options) _button(o)];
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        label,
-        if (side)
-          IntrinsicHeight(
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                for (final (i, b) in buttons.indexed) ...[
-                  if (i > 0) const SizedBox(width: Gaps.panelWide),
-                  Expanded(child: b),
-                ],
-              ],
-            ),
-          )
-        else
-          for (final (i, b) in buttons.indexed) ...[
-            if (i > 0) const SizedBox(height: Gaps.small),
-            b,
-          ],
-      ],
-    );
-  }
-
-  Widget _button(_Option o) => ConstrainedBox(
-        constraints: const BoxConstraints(minHeight: ButtonMetrics.rowHeight),
-        child: InkButton(
-          color: o.selected ? Palette.sun : Palette.paper,
-          onTap: o.selected ? null : o.onTap,
-          padding: SettingsLayout.rowPadding,
-          alignment: o.sub == null ? Alignment.center : Alignment.centerLeft,
-          child: Column(
-            crossAxisAlignment: o.sub == null ? CrossAxisAlignment.center : CrossAxisAlignment.start,
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text.rich(
-                Phrases.span(o.title),
-                textAlign: o.sub == null ? TextAlign.center : TextAlign.start,
-                style: const TextStyle(fontWeight: Weights.black, fontSize: SettingsLayout.titleFont),
-              ),
-              if (o.sub != null)
-                Text(o.sub!, style: const TextStyle(fontWeight: Weights.bold, fontSize: SettingsLayout.noteFont)),
-            ],
-          ),
-        ),
-      );
-}
-
 /// The language in use, opening the full list (`LanguageScreen`) to change
 /// it.
 class _LanguageRow extends StatelessWidget {
@@ -367,13 +319,13 @@ class _KimarijiScriptRow extends StatelessWidget {
     final progress = ProgressScope.of(context);
     final current = resolvedKimarijiScript(context);
     void choose(KimarijiScript script) => progress.updateSettings(progress.settings.copyWith(kimarijiScript: script));
-    return _Choices(
+    return SettingsChoices(
       label: SettingsLabel(title: s.kimarijiScript, note: s.kimarijiScriptNote),
       side: true,
       options: [
-        _Option(s.kimarijiHiragana,
+        SettingsOption(s.kimarijiHiragana,
             selected: current == KimarijiScript.hiragana, onTap: () => choose(KimarijiScript.hiragana)),
-        _Option(s.kimarijiRomaji, selected: current == KimarijiScript.romaji, onTap: () => choose(KimarijiScript.romaji)),
+        SettingsOption(s.kimarijiRomaji, selected: current == KimarijiScript.romaji, onTap: () => choose(KimarijiScript.romaji)),
       ],
     );
   }

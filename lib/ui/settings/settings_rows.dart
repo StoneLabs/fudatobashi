@@ -61,6 +61,76 @@ class SettingsLabel extends StatelessWidget {
       );
 }
 
+/// One button of a [SettingsChoices]: its [title], an optional line under
+/// it, whether it is the current choice, and what choosing it does.
+class SettingsOption {
+  const SettingsOption(this.title, {this.sub, required this.selected, required this.onTap});
+  final String title;
+  final String? sub;
+  final bool selected;
+  final VoidCallback onTap;
+}
+
+/// A named choice: its label above sun-lit (chosen) or paper buttons, side
+/// by side or stacked, equal in height either way.
+class SettingsChoices extends StatelessWidget {
+  const SettingsChoices({super.key, required this.label, required this.options, this.side = false});
+  final SettingsLabel label;
+  final List<SettingsOption> options;
+  final bool side;
+
+  @override
+  Widget build(BuildContext context) {
+    final buttons = [for (final o in options) _button(o)];
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        label,
+        if (side)
+          IntrinsicHeight(
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                for (final (i, b) in buttons.indexed) ...[
+                  if (i > 0) const SizedBox(width: Gaps.panelWide),
+                  Expanded(child: b),
+                ],
+              ],
+            ),
+          )
+        else
+          for (final (i, b) in buttons.indexed) ...[
+            if (i > 0) const SizedBox(height: Gaps.small),
+            b,
+          ],
+      ],
+    );
+  }
+
+  Widget _button(SettingsOption o) => ConstrainedBox(
+        constraints: const BoxConstraints(minHeight: ButtonMetrics.rowHeight),
+        child: InkButton(
+          color: o.selected ? Palette.sun : Palette.paper,
+          onTap: o.selected ? null : o.onTap,
+          padding: SettingsLayout.rowPadding,
+          alignment: o.sub == null ? Alignment.center : Alignment.centerLeft,
+          child: Column(
+            crossAxisAlignment: o.sub == null ? CrossAxisAlignment.center : CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text.rich(
+                Phrases.span(o.title),
+                textAlign: o.sub == null ? TextAlign.center : TextAlign.start,
+                style: const TextStyle(fontWeight: Weights.black, fontSize: SettingsLayout.titleFont),
+              ),
+              if (o.sub != null)
+                Text(o.sub!, style: const TextStyle(fontWeight: Weights.bold, fontSize: SettingsLayout.noteFont)),
+            ],
+          ),
+        ),
+      );
+}
+
 /// Rows in one ink panel, split by hairlines.
 class SettingsGroup extends StatelessWidget {
   const SettingsGroup({super.key, required this.children});

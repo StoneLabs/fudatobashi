@@ -1,5 +1,8 @@
+import 'dart:convert';
+
 import 'package:flutter_test/flutter_test.dart';
 import 'package:fudatobashi/config/config.dart';
+import 'package:fudatobashi/domain/ankiren_level.dart';
 import 'package:fudatobashi/state/settings.dart';
 
 void main() {
@@ -118,6 +121,59 @@ void main() {
     test('round-trips through toJson', () {
       expect(AppSettings.fromJson(const AppSettings(languagePicked: true).toJson()).languagePicked, isTrue);
       expect(AppSettings.fromJson(const AppSettings().toJson()).languagePicked, isFalse);
+    });
+  });
+
+  group('AppSettings.ankiren (Settings › 寄り道 › 暗記練)', () {
+    AppSettings roundTrip(AppSettings s) =>
+        AppSettings.fromJson((jsonDecode(jsonEncode(s.toJson())) as Map).cast<String, dynamic>());
+
+    test('defaults: portrait, no zoom, text + voice, opponent upside down, free play at level 0', () {
+      for (final s in [const AppSettings(), AppSettings.fromJson({})]) {
+        final a = s.ankiren;
+        expect([a.layout, a.zoom, a.prompt, a.opponentUpright],
+            [AnkirenLayout.portrait, false, AnkirenPrompt.textAndVoice, false]);
+        expect(a.freeSetup, AnkirenSetup.forLevel(0));
+      }
+    });
+
+    test('every option round-trips through JSON, leaving the rest of the settings alone', () {
+      const ankiren = AnkirenSettings(
+          layout: AnkirenLayout.landscape, zoom: true, prompt: AnkirenPrompt.textOnly, opponentUpright: true);
+      final s = roundTrip(const AppSettings(language: 'ja', ankiren: ankiren));
+      expect([s.ankiren.layout, s.ankiren.zoom, s.ankiren.prompt, s.ankiren.opponentUpright],
+          [AnkirenLayout.landscape, true, AnkirenPrompt.textOnly, true]);
+      expect(s.language, 'ja');
+    });
+
+    test('free play remembers a preset, or a custom setup, and keeps the custom one under a preset', () {
+      const custom = AnkirenSetup.custom(perSide: 13, memorise: Duration(minutes: 2, seconds: 30));
+      final asCustom = const AnkirenSettings().withFreeSetup(custom);
+      expect(roundTrip(AppSettings(ankiren: asCustom)).ankiren.freeSetup, custom);
+
+      final asPreset = asCustom.withFreeSetup(AnkirenSetup.forLevel(7));
+      final back = roundTrip(AppSettings(ankiren: asPreset)).ankiren;
+      expect(back.freeSetup, AnkirenSetup.forLevel(7));
+      expect([back.customPerSide, back.customMemorise], [13, const Duration(minutes: 2, seconds: 30)]);
+    });
+
+    test('copyWith changes only the options it is given', () {
+      final a = const AnkirenSettings().withFreeSetup(AnkirenSetup.forLevel(4)).copyWith(zoom: true);
+      expect([a.zoom, a.layout, a.freeLevel], [true, AnkirenLayout.portrait, 4]);
+    });
+
+    test('values out of range or unknown fall back into range', () {
+      final a = AnkirenSettings.fromJson({
+        'layout': 'sideways',
+        'prompt': 'mime',
+        'freeLevel': 99,
+        'customPerSide': 1,
+        'customMemoriseMs': 3600000,
+      });
+      expect([a.layout, a.prompt], [AnkirenLayout.portrait, AnkirenPrompt.textAndVoice]);
+      expect(a.freeLevel, AnkirenLevels.top);
+      expect(a.customPerSide, AnkirenTuning.customMinPerSide);
+      expect(a.customMemorise, AnkirenTuning.customMaxMemorise);
     });
   });
 }

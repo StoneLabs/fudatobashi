@@ -1,4 +1,5 @@
 import '../config/config.dart';
+import '../domain/ankiren_level.dart';
 import '../domain/card_mask.dart';
 import '../domain/trainer.dart';
 import 'play_config.dart';
@@ -36,6 +37,112 @@ extension KimarijiScriptResolution on KimarijiScript {
       this == KimarijiScript.auto ? (uiJapanese ? KimarijiScript.hiragana : KimarijiScript.romaji) : this;
 }
 
+/// How 暗記練 lays out its field.
+enum AnkirenLayout {
+  /// Portrait, each half folded to its clusters (the open middle closed,
+  /// empty rows dropped), so the cards come out as big as they can.
+  portrait,
+
+  /// Landscape, the field at its true proportions.
+  landscape,
+}
+
+/// How 暗記練 asks for each card in recall.
+enum AnkirenPrompt {
+  /// Its kimariji, written and read out.
+  textAndVoice,
+
+  /// Its kimariji, written only.
+  textOnly,
+}
+
+/// 暗記練's options (Settings › 寄り道 › 暗記練) and its free play's last
+/// setup.
+class AnkirenSettings {
+  const AnkirenSettings({
+    this.layout = DefaultSettings.ankirenLayout,
+    this.zoom = DefaultSettings.ankirenZoom,
+    this.prompt = DefaultSettings.ankirenPrompt,
+    this.opponentUpright = DefaultSettings.ankirenOpponentUpright,
+    this.freeLevel = DefaultSettings.ankirenFreeLevel,
+    this.customPerSide = DefaultSettings.ankirenCustomPerSide,
+    this.customMemorise = DefaultSettings.ankirenCustomMemorise,
+  });
+
+  final AnkirenLayout layout;
+
+  /// Portrait only: cards never smaller than a comfortable tap, the field
+  /// panning sideways when it no longer fits.
+  final bool zoom;
+  final AnkirenPrompt prompt;
+
+  /// The opponent's cards face the player instead of their owner.
+  final bool opponentUpright;
+
+  /// Free play's last level preset, or null when its last setup was custom.
+  final int? freeLevel;
+
+  /// Free play's custom setup, kept while a preset is chosen.
+  final int customPerSide;
+  final Duration customMemorise;
+
+  /// Free play's last setup.
+  AnkirenSetup get freeSetup => freeLevel == null
+      ? AnkirenSetup.custom(perSide: customPerSide, memorise: customMemorise)
+      : AnkirenSetup.forLevel(freeLevel!);
+
+  /// These settings with [setup] as free play's last one.
+  AnkirenSettings withFreeSetup(AnkirenSetup setup) => AnkirenSettings(
+        layout: layout,
+        zoom: zoom,
+        prompt: prompt,
+        opponentUpright: opponentUpright,
+        freeLevel: setup.level,
+        customPerSide: setup.level == null ? setup.perSide : customPerSide,
+        customMemorise: setup.level == null ? setup.memorise : customMemorise,
+      );
+
+  Map<String, Object?> toJson() => {
+        'layout': layout.name,
+        'zoom': zoom,
+        'prompt': prompt.name,
+        'opponentUpright': opponentUpright,
+        'freeLevel': freeLevel,
+        'customPerSide': customPerSide,
+        'customMemoriseMs': customMemorise.inMilliseconds,
+      };
+
+  factory AnkirenSettings.fromJson(Map<String, dynamic> j) {
+    final level = j.containsKey('freeLevel') ? j['freeLevel'] as int? : DefaultSettings.ankirenFreeLevel;
+    final memoriseMs = j['customMemoriseMs'] as int?;
+    return AnkirenSettings(
+      layout: AnkirenLayout.values.asNameMap()[j['layout']] ?? DefaultSettings.ankirenLayout,
+      zoom: j['zoom'] as bool? ?? DefaultSettings.ankirenZoom,
+      prompt: AnkirenPrompt.values.asNameMap()[j['prompt']] ?? DefaultSettings.ankirenPrompt,
+      opponentUpright: j['opponentUpright'] as bool? ?? DefaultSettings.ankirenOpponentUpright,
+      freeLevel: level?.clamp(0, AnkirenLevels.top),
+      customPerSide: (j['customPerSide'] as int? ?? DefaultSettings.ankirenCustomPerSide)
+          .clamp(AnkirenTuning.customMinPerSide, AnkirenTuning.customMaxPerSide),
+      customMemorise: memoriseMs == null
+          ? DefaultSettings.ankirenCustomMemorise
+          : Duration(
+              milliseconds: memoriseMs.clamp(
+                  AnkirenTuning.customMinMemorise.inMilliseconds, AnkirenTuning.customMaxMemorise.inMilliseconds)),
+    );
+  }
+
+  AnkirenSettings copyWith({AnkirenLayout? layout, bool? zoom, AnkirenPrompt? prompt, bool? opponentUpright}) =>
+      AnkirenSettings(
+        layout: layout ?? this.layout,
+        zoom: zoom ?? this.zoom,
+        prompt: prompt ?? this.prompt,
+        opponentUpright: opponentUpright ?? this.opponentUpright,
+        freeLevel: freeLevel,
+        customPerSide: customPerSide,
+        customMemorise: customMemorise,
+      );
+}
+
 /// User preferences (persisted as JSON).
 class AppSettings {
   const AppSettings({
@@ -59,6 +166,7 @@ class AppSettings {
     this.showPerformanceOverlay = DefaultSettings.showPerformanceOverlay,
     this.languagePicked = DefaultSettings.languagePicked,
     this.kimarijiScript = DefaultSettings.kimarijiScript,
+    this.ankiren = DefaultSettings.ankiren,
   });
 
   /// A language code (e.g. `'ja'`), or `'system'` for the device's language.
@@ -110,6 +218,9 @@ class AppSettings {
   /// The player's choice of kimariji script; read it through `kimarijiFor`.
   final KimarijiScript kimarijiScript;
 
+  /// 暗記練's options and its free play's last setup.
+  final AnkirenSettings ankiren;
+
   /// Whether sounds of [category] are switched on.
   bool plays(SoundCategory category) => switch (category) {
         SoundCategory.music => music,
@@ -143,6 +254,7 @@ class AppSettings {
         'showPerformanceOverlay': showPerformanceOverlay,
         'languagePicked': languagePicked,
         'kimarijiScript': kimarijiScript.name,
+        'ankiren': ankiren.toJson(),
       };
 
   factory AppSettings.fromJson(Map<String, dynamic> j) {
@@ -180,6 +292,9 @@ class AppSettings {
       showPerformanceOverlay:
           j['showPerformanceOverlay'] as bool? ?? DefaultSettings.showPerformanceOverlay,
       kimarijiScript: KimarijiScript.values.asNameMap()[j['kimarijiScript']] ?? DefaultSettings.kimarijiScript,
+      ankiren: j['ankiren'] is Map
+          ? AnkirenSettings.fromJson((j['ankiren'] as Map).cast<String, dynamic>())
+          : DefaultSettings.ankiren,
     );
   }
 
@@ -204,6 +319,7 @@ class AppSettings {
     bool? showPerformanceOverlay,
     bool? languagePicked,
     KimarijiScript? kimarijiScript,
+    AnkirenSettings? ankiren,
   }) =>
       AppSettings(
         language: language ?? this.language,
@@ -226,5 +342,6 @@ class AppSettings {
         showPerformanceOverlay: showPerformanceOverlay ?? this.showPerformanceOverlay,
         languagePicked: languagePicked ?? this.languagePicked,
         kimarijiScript: kimarijiScript ?? this.kimarijiScript,
+        ankiren: ankiren ?? this.ankiren,
       );
 }
