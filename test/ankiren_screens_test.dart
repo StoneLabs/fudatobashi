@@ -431,6 +431,40 @@ void main() {
       await tester.pumpWidget(const SizedBox());
     });
 
+    testWidgets('the back gesture records a game once recall has begun, and leaves Home in place', (tester) async {
+      Future<void> back() async {
+        await tester.binding.handlePopRoute();
+        await tester.pump();
+        await tester.pump(const Duration(seconds: 1));
+        await tester.runAsync(() => Future<void>.delayed(const Duration(milliseconds: 100)));
+        await tester.pump();
+        expect(find.byType(AnkirenScreen), findsNothing);
+        expect(find.byType(AnkirenResultsScreen), findsNothing);
+        expect(find.text(_home), findsOneWidget);
+        expect(tester.takeException(), isNull);
+      }
+
+      final p = await open(tester);
+      await play(tester, p, AnkirenSetup.forLevel(0, ranked: true));
+      await ready(tester);
+      await take(tester, asked(tester));
+      await back();
+      expect(p.sideTrips.runs.single.completed, isFalse, reason: 'left mid-game: the rest count as missed');
+      await tester.pumpWidget(const SizedBox());
+
+      await play(tester, p, AnkirenSetup.forLevel(0, ranked: true));
+      await ready(tester);
+      final total = AnkirenLevels.of(0).cards;
+      for (var i = 0; i < total; i++) {
+        await take(tester, asked(tester));
+        if (i < total - 1) await next(tester);
+      }
+      await back();
+      expect(p.sideTrips.runs, hasLength(2), reason: 'left in the pause before Results');
+      expect(p.sideTrips.runs.last.completed, isTrue);
+      await tester.pumpWidget(const SizedBox());
+    });
+
     testWidgets('the test game records nothing, and Results offer it again', (tester) async {
       final p = await open(tester);
       await play(tester, p, AnkirenSetup.forLevel(0), tracked: false);

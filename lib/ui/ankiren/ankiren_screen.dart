@@ -139,13 +139,22 @@ class _AnkirenScreenState extends State<AnkirenScreen> {
       _releaseOrientation();
       if (!_wentToResults) music.enterMenu();
     }
-    // Safety net for an unexpected pop (e.g. the system back gesture) once
-    // recall has begun: the game still counts, just without Results.
-    if (!_ending && widget.tracked && _game.phase == AnkirenPhase.recall) {
+    _leave();
+    super.dispose();
+  }
+
+  /// The screen is going without End or Results (e.g. the system back
+  /// gesture): nothing more happens on it, and once recall has begun the
+  /// game still counts, recorded without Results.
+  void _leave() {
+    if (_ending) return;
+    _ending = true;
+    _clock?.cancel();
+    _pause?.cancel();
+    if (widget.tracked && _game.phase != AnkirenPhase.memorise) {
       _game.end();
       unawaited(_progress.recordAnkiren(_game, startedAt: _startedAt, meta: _meta));
     }
-    super.dispose();
   }
 
   static void _releaseOrientation() => unawaited(SystemChrome.setPreferredOrientations(const []));
@@ -246,7 +255,9 @@ class _AnkirenScreenState extends State<AnkirenScreen> {
     _pause?.cancel();
     final report =
         widget.tracked ? await _progress.recordAnkiren(_game, startedAt: _startedAt, meta: _meta) : null;
-    if (!mounted) return;
+    // Left meanwhile: its route is on its way out, and replacing "the
+    // current route" would replace the one under it.
+    if (!mounted || ModalRoute.isCurrentOf(context) == false) return;
     _wentToResults = true;
     _releaseOrientation();
     unawaited(Navigator.of(context).pushReplacement(MangaRoute<void>(
@@ -301,7 +312,7 @@ class _AnkirenScreenState extends State<AnkirenScreen> {
     );
 
     final overlay = widget.overlay;
-    return Scaffold(
+    final screen = Scaffold(
       backgroundColor: AnkirenPlayLayout.background,
       body: DecoratedBox(
         decoration: const BoxDecoration(
@@ -323,5 +334,6 @@ class _AnkirenScreenState extends State<AnkirenScreen> {
         ),
       ),
     );
+    return PopScope(onPopInvokedWithResult: (_, _) => _leave(), child: screen);
   }
 }
