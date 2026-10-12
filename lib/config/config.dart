@@ -1,5 +1,7 @@
 import 'package:flutter/painting.dart';
 
+import '../domain/ankiren_field.dart';
+import '../domain/ankiren_level.dart';
 import '../domain/card_mask.dart';
 import '../domain/learning_pace.dart';
 import '../domain/xp.dart';
@@ -857,4 +859,71 @@ enum Sfx {
 abstract final class VoiceTuning {
   static String kimarijiAsset(int poemId) => 'voice/kimariji/${poemId.toString().padLeft(3, '0')}.m4a';
   static const double volume = 1;
+}
+
+/// 暗記練 (the memorisation side trip): its levels and custom setups
+/// (`AnkirenSetup`) and how a field is dealt (`AnkirenDealer`).
+abstract final class AnkirenTuning {
+  /// The levels, 0 first: cards per side and memorise time. Ranked play
+  /// moves through them by rating, so each step is a small one.
+  static const List<AnkirenLevel> levels = [
+    AnkirenLevel(4, Duration(seconds: 20)),
+    AnkirenLevel(6, Duration(seconds: 30)),
+    AnkirenLevel(8, Duration(seconds: 45)),
+    AnkirenLevel(10, Duration(minutes: 1)),
+    AnkirenLevel(12, Duration(minutes: 1, seconds: 30)),
+    AnkirenLevel(14, Duration(minutes: 2)),
+    AnkirenLevel(16, Duration(minutes: 2, seconds: 30)),
+    AnkirenLevel(18, Duration(minutes: 3)),
+    AnkirenLevel(20, Duration(minutes: 3, seconds: 30)),
+    AnkirenLevel(22, Duration(minutes: 4)),
+    AnkirenLevel(25, Duration(minutes: 5)),
+  ];
+
+  /// A custom free-play setup's cards per side (and at most half the known
+  /// cards).
+  static const int customMinPerSide = 2;
+  static const int customMaxPerSide = 25;
+
+  /// A custom setup's memorise times: [customFineStep]s up to
+  /// [customFineUntil], [customCoarseStep]s after.
+  static const Duration customMinMemorise = Duration(seconds: 10);
+  static const Duration customMaxMemorise = Duration(minutes: 15);
+  static const Duration customFineStep = Duration(seconds: 10);
+  static const Duration customFineUntil = Duration(minutes: 1);
+  static const Duration customCoarseStep = Duration(seconds: 30);
+
+  /// Chance, for each side on its own, that it puts [middleMin] to
+  /// [middleMax] cards (at most half its cards) in the open middle of one of
+  /// [middleRows]: about 1 game in 5 has some.
+  static const double middleChancePerSide = 0.106;
+  static const int middleMin = 1;
+  static const int middleMax = 5;
+  static const List<FieldRow> middleRows = [FieldRow.lower, FieldRow.middle];
+
+  /// 中段's share, in percent and rounded up, of a side's cluster cards left
+  /// after 下段 (a third, rounded up); never more than 下段. 上段 takes the
+  /// rest.
+  static const int middleRowPercent = 55;
+}
+
+/// The real 競技かるた field that 暗記練 lays out (`FieldGeometry`), cm.
+abstract final class AnkirenFieldSize {
+  /// A torifuda.
+  static const double cardW = 5.2;
+  static const double cardH = 7.3;
+
+  /// Between the cards of a row, and between rows.
+  static const double cardGap = 0.1;
+  static const double rowGap = 1;
+
+  /// A half's true width and the card slots across it.
+  static const double territoryW = 87;
+  static const int slots = 16;
+
+  /// The folded field's open middle, in card pitches (card + gap):
+  /// [foldedHole], or room for the most middle cards in a row plus
+  /// [middleMargin] either side.
+  static const double foldedHole = 0.6;
+  static const double middleMargin = 0.5;
 }
