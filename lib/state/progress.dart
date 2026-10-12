@@ -8,6 +8,7 @@ import '../config/config.dart';
 import '../data/fuda_sets.dart';
 import '../data/poem.dart';
 import '../db/database.dart';
+import '../domain/ankiren_game.dart';
 import '../domain/card_mask.dart';
 import '../domain/card_stats.dart';
 import '../domain/masking.dart';
@@ -20,6 +21,7 @@ import '../domain/xp.dart';
 import 'db_integrity.dart';
 import 'play_config.dart';
 import 'settings.dart';
+import 'side_trips.dart';
 import 'xp_history.dart';
 
 /// What a finished run changed (for the results screen).
@@ -105,7 +107,7 @@ class FreePracticeAccess {
 /// settings. Loaded once at startup; the UI listens for changes.
 class Progress extends ChangeNotifier {
   Progress._(this.db, this.trainer, this._log, this.sessions, this.ratingPoints, this._settings, this.rating,
-      this._islandsCelebrated, this._freePracticeUnlocked, this._tabsSeenLocked, this._sideTripsOpened);
+      this._islandsCelebrated, this._freePracticeUnlocked, this._tabsSeenLocked, this._sideTripsOpened, this.sideTrips);
 
   final AppDatabase db;
   final Trainer trainer;
@@ -132,6 +134,9 @@ class Progress extends ChangeNotifier {
   /// Side trips' modes that have opened once, so they stay open (see
   /// [sideTripsHub]).
   final Set<SideTripGate> _sideTripsOpened;
+
+  /// The side trips' recorded games and ratings.
+  final SideTrips sideTrips;
 
   /// The most recent run, kept in memory for the debug page's timing view.
   PlaySession? lastRun;
@@ -198,6 +203,7 @@ class Progress extends ChangeNotifier {
         for (final name in (jsonDecode(kv[_sideTripsKey] ?? '[]') as List).cast<String>())
           ?SideTripUnlocks.named(name),
       },
+      await SideTrips.load(db),
     );
     await progress._latchFreePractice(DateTime.now());
     await progress._latchSideTrips(DateTime.now());
@@ -488,6 +494,9 @@ class Progress extends ChangeNotifier {
       allKnown: allKnown,
       remembered: allOpen ? 0 : trainer.wellRememberedCount(allStats, now ?? DateTime.now()),
       latched: _sideTripsOpened,
+      standings: {
+        for (final trip in SideTrip.values) trip: sideTrips.standingOf(trip, known: knownCards.length),
+      },
     );
   }
 
@@ -792,6 +801,19 @@ class Progress extends ChangeNotifier {
     );
   }
 
+  /// Stores a 暗記練 game once it is over, ranked or free, and moves its
+  /// rating for a ranked one (see [SideTrips.recordAnkiren]). A game that
+  /// never reached recall is not recorded.
+  Future<AnkirenReport> recordAnkiren(
+    AnkirenGame game, {
+    required DateTime startedAt,
+    Map<String, Object?> meta = const {},
+  }) async {
+    final report = await sideTrips.recordAnkiren(db, game, startedAt: startedAt, meta: meta);
+    notifyListeners();
+    return report;
+  }
+
   /// Deletes everything (settings are kept).
   Future<void> resetProgress() async {
     await db.transaction(() async {
@@ -799,6 +821,8 @@ class Progress extends ChangeNotifier {
       await db.delete(db.sessions).go();
       await db.delete(db.items).go();
       await db.delete(db.ratingPoints).go();
+      await db.delete(db.sideTripAnswers).go();
+      await db.delete(db.sideTripRuns).go();
       await (db.delete(db.keyValues)
             ..where((k) => k.key.isIn([
                   'rating',
@@ -819,6 +843,7 @@ class Progress extends ChangeNotifier {
     _freePracticeUnlocked = false;
     _tabsSeenLocked.clear();
     _sideTripsOpened.clear();
+    sideTrips.clear();
     _unreported.clear();
     trainer.items
       ..clear()

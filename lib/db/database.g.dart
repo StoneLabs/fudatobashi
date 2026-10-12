@@ -257,10 +257,13 @@ class Session extends DataClass implements Insertable<Session> {
   /// PlayMode index.
   final int mode;
 
-  /// JSON list of FudaSet ids that defined the deck (empty for training).
+  /// JSON list of FudaSet ids that defined the deck (empty for training;
+  /// `PlayConfig.knownDeckId` for free practice's default deck). A
+  /// hand-picked deck's cards are in [meta] as `cardIds`.
   final String setIds;
 
-  /// 0 random, 1 upright only, 2 inverted only.
+  /// The old free-play orientation setting (0 random, 1 upright only, 2
+  /// inverted only); new runs store 0.
   final int orientation;
   final int cardCount;
 
@@ -2380,6 +2383,1160 @@ class KeyValuesCompanion extends UpdateCompanion<KeyValue> {
   }
 }
 
+class $SideTripRunsTable extends SideTripRuns
+    with TableInfo<$SideTripRunsTable, SideTripRun> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $SideTripRunsTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<int> id = GeneratedColumn<int>(
+    'id',
+    aliasedName,
+    false,
+    hasAutoIncrement: true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'PRIMARY KEY AUTOINCREMENT',
+    ),
+  );
+  static const VerificationMeta _gameMeta = const VerificationMeta('game');
+  @override
+  late final GeneratedColumn<String> game = GeneratedColumn<String>(
+    'game',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _startedAtMeta = const VerificationMeta(
+    'startedAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> startedAt = GeneratedColumn<DateTime>(
+    'started_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _rankedMeta = const VerificationMeta('ranked');
+  @override
+  late final GeneratedColumn<bool> ranked = GeneratedColumn<bool>(
+    'ranked',
+    aliasedName,
+    false,
+    type: DriftSqlType.bool,
+    requiredDuringInsert: true,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'CHECK ("ranked" IN (0, 1))',
+    ),
+  );
+  static const VerificationMeta _levelMeta = const VerificationMeta('level');
+  @override
+  late final GeneratedColumn<int> level = GeneratedColumn<int>(
+    'level',
+    aliasedName,
+    true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _cardCountMeta = const VerificationMeta(
+    'cardCount',
+  );
+  @override
+  late final GeneratedColumn<int> cardCount = GeneratedColumn<int>(
+    'card_count',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _scoreMeta = const VerificationMeta('score');
+  @override
+  late final GeneratedColumn<int> score = GeneratedColumn<int>(
+    'score',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _maxScoreMeta = const VerificationMeta(
+    'maxScore',
+  );
+  @override
+  late final GeneratedColumn<int> maxScore = GeneratedColumn<int>(
+    'max_score',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _completedMeta = const VerificationMeta(
+    'completed',
+  );
+  @override
+  late final GeneratedColumn<bool> completed = GeneratedColumn<bool>(
+    'completed',
+    aliasedName,
+    false,
+    type: DriftSqlType.bool,
+    requiredDuringInsert: true,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'CHECK ("completed" IN (0, 1))',
+    ),
+  );
+  static const VerificationMeta _ratingMeta = const VerificationMeta('rating');
+  @override
+  late final GeneratedColumn<double> rating = GeneratedColumn<double>(
+    'rating',
+    aliasedName,
+    true,
+    type: DriftSqlType.double,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _performanceMeta = const VerificationMeta(
+    'performance',
+  );
+  @override
+  late final GeneratedColumn<double> performance = GeneratedColumn<double>(
+    'performance',
+    aliasedName,
+    true,
+    type: DriftSqlType.double,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _metaMeta = const VerificationMeta('meta');
+  @override
+  late final GeneratedColumn<String> meta = GeneratedColumn<String>(
+    'meta',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant('{}'),
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    id,
+    game,
+    startedAt,
+    ranked,
+    level,
+    cardCount,
+    score,
+    maxScore,
+    completed,
+    rating,
+    performance,
+    meta,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'side_trip_runs';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<SideTripRun> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    }
+    if (data.containsKey('game')) {
+      context.handle(
+        _gameMeta,
+        game.isAcceptableOrUnknown(data['game']!, _gameMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_gameMeta);
+    }
+    if (data.containsKey('started_at')) {
+      context.handle(
+        _startedAtMeta,
+        startedAt.isAcceptableOrUnknown(data['started_at']!, _startedAtMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_startedAtMeta);
+    }
+    if (data.containsKey('ranked')) {
+      context.handle(
+        _rankedMeta,
+        ranked.isAcceptableOrUnknown(data['ranked']!, _rankedMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_rankedMeta);
+    }
+    if (data.containsKey('level')) {
+      context.handle(
+        _levelMeta,
+        level.isAcceptableOrUnknown(data['level']!, _levelMeta),
+      );
+    }
+    if (data.containsKey('card_count')) {
+      context.handle(
+        _cardCountMeta,
+        cardCount.isAcceptableOrUnknown(data['card_count']!, _cardCountMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_cardCountMeta);
+    }
+    if (data.containsKey('score')) {
+      context.handle(
+        _scoreMeta,
+        score.isAcceptableOrUnknown(data['score']!, _scoreMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_scoreMeta);
+    }
+    if (data.containsKey('max_score')) {
+      context.handle(
+        _maxScoreMeta,
+        maxScore.isAcceptableOrUnknown(data['max_score']!, _maxScoreMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_maxScoreMeta);
+    }
+    if (data.containsKey('completed')) {
+      context.handle(
+        _completedMeta,
+        completed.isAcceptableOrUnknown(data['completed']!, _completedMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_completedMeta);
+    }
+    if (data.containsKey('rating')) {
+      context.handle(
+        _ratingMeta,
+        rating.isAcceptableOrUnknown(data['rating']!, _ratingMeta),
+      );
+    }
+    if (data.containsKey('performance')) {
+      context.handle(
+        _performanceMeta,
+        performance.isAcceptableOrUnknown(
+          data['performance']!,
+          _performanceMeta,
+        ),
+      );
+    }
+    if (data.containsKey('meta')) {
+      context.handle(
+        _metaMeta,
+        meta.isAcceptableOrUnknown(data['meta']!, _metaMeta),
+      );
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  SideTripRun map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return SideTripRun(
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}id'],
+      )!,
+      game: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}game'],
+      )!,
+      startedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}started_at'],
+      )!,
+      ranked: attachedDatabase.typeMapping.read(
+        DriftSqlType.bool,
+        data['${effectivePrefix}ranked'],
+      )!,
+      level: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}level'],
+      ),
+      cardCount: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}card_count'],
+      )!,
+      score: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}score'],
+      )!,
+      maxScore: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}max_score'],
+      )!,
+      completed: attachedDatabase.typeMapping.read(
+        DriftSqlType.bool,
+        data['${effectivePrefix}completed'],
+      )!,
+      rating: attachedDatabase.typeMapping.read(
+        DriftSqlType.double,
+        data['${effectivePrefix}rating'],
+      ),
+      performance: attachedDatabase.typeMapping.read(
+        DriftSqlType.double,
+        data['${effectivePrefix}performance'],
+      ),
+      meta: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}meta'],
+      )!,
+    );
+  }
+
+  @override
+  $SideTripRunsTable createAlias(String alias) {
+    return $SideTripRunsTable(attachedDatabase, alias);
+  }
+}
+
+class SideTripRun extends DataClass implements Insertable<SideTripRun> {
+  final int id;
+
+  /// `SideTrip.name`, e.g. `ankiren`.
+  final String game;
+  final DateTime startedAt;
+  final bool ranked;
+
+  /// The level played; null for a custom setup.
+  final int? level;
+
+  /// Prompts asked.
+  final int cardCount;
+  final int score;
+  final int maxScore;
+
+  /// Played to the last prompt (false for a game ended early).
+  final bool completed;
+
+  /// The trip's rating after this game, and the game's performance on the
+  /// same scale; null for free play.
+  final double? rating;
+  final double? performance;
+
+  /// Free-form JSON (cards per side, memorise time, …).
+  final String meta;
+  const SideTripRun({
+    required this.id,
+    required this.game,
+    required this.startedAt,
+    required this.ranked,
+    this.level,
+    required this.cardCount,
+    required this.score,
+    required this.maxScore,
+    required this.completed,
+    this.rating,
+    this.performance,
+    required this.meta,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<int>(id);
+    map['game'] = Variable<String>(game);
+    map['started_at'] = Variable<DateTime>(startedAt);
+    map['ranked'] = Variable<bool>(ranked);
+    if (!nullToAbsent || level != null) {
+      map['level'] = Variable<int>(level);
+    }
+    map['card_count'] = Variable<int>(cardCount);
+    map['score'] = Variable<int>(score);
+    map['max_score'] = Variable<int>(maxScore);
+    map['completed'] = Variable<bool>(completed);
+    if (!nullToAbsent || rating != null) {
+      map['rating'] = Variable<double>(rating);
+    }
+    if (!nullToAbsent || performance != null) {
+      map['performance'] = Variable<double>(performance);
+    }
+    map['meta'] = Variable<String>(meta);
+    return map;
+  }
+
+  SideTripRunsCompanion toCompanion(bool nullToAbsent) {
+    return SideTripRunsCompanion(
+      id: Value(id),
+      game: Value(game),
+      startedAt: Value(startedAt),
+      ranked: Value(ranked),
+      level: level == null && nullToAbsent
+          ? const Value.absent()
+          : Value(level),
+      cardCount: Value(cardCount),
+      score: Value(score),
+      maxScore: Value(maxScore),
+      completed: Value(completed),
+      rating: rating == null && nullToAbsent
+          ? const Value.absent()
+          : Value(rating),
+      performance: performance == null && nullToAbsent
+          ? const Value.absent()
+          : Value(performance),
+      meta: Value(meta),
+    );
+  }
+
+  factory SideTripRun.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return SideTripRun(
+      id: serializer.fromJson<int>(json['id']),
+      game: serializer.fromJson<String>(json['game']),
+      startedAt: serializer.fromJson<DateTime>(json['startedAt']),
+      ranked: serializer.fromJson<bool>(json['ranked']),
+      level: serializer.fromJson<int?>(json['level']),
+      cardCount: serializer.fromJson<int>(json['cardCount']),
+      score: serializer.fromJson<int>(json['score']),
+      maxScore: serializer.fromJson<int>(json['maxScore']),
+      completed: serializer.fromJson<bool>(json['completed']),
+      rating: serializer.fromJson<double?>(json['rating']),
+      performance: serializer.fromJson<double?>(json['performance']),
+      meta: serializer.fromJson<String>(json['meta']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<int>(id),
+      'game': serializer.toJson<String>(game),
+      'startedAt': serializer.toJson<DateTime>(startedAt),
+      'ranked': serializer.toJson<bool>(ranked),
+      'level': serializer.toJson<int?>(level),
+      'cardCount': serializer.toJson<int>(cardCount),
+      'score': serializer.toJson<int>(score),
+      'maxScore': serializer.toJson<int>(maxScore),
+      'completed': serializer.toJson<bool>(completed),
+      'rating': serializer.toJson<double?>(rating),
+      'performance': serializer.toJson<double?>(performance),
+      'meta': serializer.toJson<String>(meta),
+    };
+  }
+
+  SideTripRun copyWith({
+    int? id,
+    String? game,
+    DateTime? startedAt,
+    bool? ranked,
+    Value<int?> level = const Value.absent(),
+    int? cardCount,
+    int? score,
+    int? maxScore,
+    bool? completed,
+    Value<double?> rating = const Value.absent(),
+    Value<double?> performance = const Value.absent(),
+    String? meta,
+  }) => SideTripRun(
+    id: id ?? this.id,
+    game: game ?? this.game,
+    startedAt: startedAt ?? this.startedAt,
+    ranked: ranked ?? this.ranked,
+    level: level.present ? level.value : this.level,
+    cardCount: cardCount ?? this.cardCount,
+    score: score ?? this.score,
+    maxScore: maxScore ?? this.maxScore,
+    completed: completed ?? this.completed,
+    rating: rating.present ? rating.value : this.rating,
+    performance: performance.present ? performance.value : this.performance,
+    meta: meta ?? this.meta,
+  );
+  SideTripRun copyWithCompanion(SideTripRunsCompanion data) {
+    return SideTripRun(
+      id: data.id.present ? data.id.value : this.id,
+      game: data.game.present ? data.game.value : this.game,
+      startedAt: data.startedAt.present ? data.startedAt.value : this.startedAt,
+      ranked: data.ranked.present ? data.ranked.value : this.ranked,
+      level: data.level.present ? data.level.value : this.level,
+      cardCount: data.cardCount.present ? data.cardCount.value : this.cardCount,
+      score: data.score.present ? data.score.value : this.score,
+      maxScore: data.maxScore.present ? data.maxScore.value : this.maxScore,
+      completed: data.completed.present ? data.completed.value : this.completed,
+      rating: data.rating.present ? data.rating.value : this.rating,
+      performance: data.performance.present
+          ? data.performance.value
+          : this.performance,
+      meta: data.meta.present ? data.meta.value : this.meta,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('SideTripRun(')
+          ..write('id: $id, ')
+          ..write('game: $game, ')
+          ..write('startedAt: $startedAt, ')
+          ..write('ranked: $ranked, ')
+          ..write('level: $level, ')
+          ..write('cardCount: $cardCount, ')
+          ..write('score: $score, ')
+          ..write('maxScore: $maxScore, ')
+          ..write('completed: $completed, ')
+          ..write('rating: $rating, ')
+          ..write('performance: $performance, ')
+          ..write('meta: $meta')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(
+    id,
+    game,
+    startedAt,
+    ranked,
+    level,
+    cardCount,
+    score,
+    maxScore,
+    completed,
+    rating,
+    performance,
+    meta,
+  );
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is SideTripRun &&
+          other.id == this.id &&
+          other.game == this.game &&
+          other.startedAt == this.startedAt &&
+          other.ranked == this.ranked &&
+          other.level == this.level &&
+          other.cardCount == this.cardCount &&
+          other.score == this.score &&
+          other.maxScore == this.maxScore &&
+          other.completed == this.completed &&
+          other.rating == this.rating &&
+          other.performance == this.performance &&
+          other.meta == this.meta);
+}
+
+class SideTripRunsCompanion extends UpdateCompanion<SideTripRun> {
+  final Value<int> id;
+  final Value<String> game;
+  final Value<DateTime> startedAt;
+  final Value<bool> ranked;
+  final Value<int?> level;
+  final Value<int> cardCount;
+  final Value<int> score;
+  final Value<int> maxScore;
+  final Value<bool> completed;
+  final Value<double?> rating;
+  final Value<double?> performance;
+  final Value<String> meta;
+  const SideTripRunsCompanion({
+    this.id = const Value.absent(),
+    this.game = const Value.absent(),
+    this.startedAt = const Value.absent(),
+    this.ranked = const Value.absent(),
+    this.level = const Value.absent(),
+    this.cardCount = const Value.absent(),
+    this.score = const Value.absent(),
+    this.maxScore = const Value.absent(),
+    this.completed = const Value.absent(),
+    this.rating = const Value.absent(),
+    this.performance = const Value.absent(),
+    this.meta = const Value.absent(),
+  });
+  SideTripRunsCompanion.insert({
+    this.id = const Value.absent(),
+    required String game,
+    required DateTime startedAt,
+    required bool ranked,
+    this.level = const Value.absent(),
+    required int cardCount,
+    required int score,
+    required int maxScore,
+    required bool completed,
+    this.rating = const Value.absent(),
+    this.performance = const Value.absent(),
+    this.meta = const Value.absent(),
+  }) : game = Value(game),
+       startedAt = Value(startedAt),
+       ranked = Value(ranked),
+       cardCount = Value(cardCount),
+       score = Value(score),
+       maxScore = Value(maxScore),
+       completed = Value(completed);
+  static Insertable<SideTripRun> custom({
+    Expression<int>? id,
+    Expression<String>? game,
+    Expression<DateTime>? startedAt,
+    Expression<bool>? ranked,
+    Expression<int>? level,
+    Expression<int>? cardCount,
+    Expression<int>? score,
+    Expression<int>? maxScore,
+    Expression<bool>? completed,
+    Expression<double>? rating,
+    Expression<double>? performance,
+    Expression<String>? meta,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (game != null) 'game': game,
+      if (startedAt != null) 'started_at': startedAt,
+      if (ranked != null) 'ranked': ranked,
+      if (level != null) 'level': level,
+      if (cardCount != null) 'card_count': cardCount,
+      if (score != null) 'score': score,
+      if (maxScore != null) 'max_score': maxScore,
+      if (completed != null) 'completed': completed,
+      if (rating != null) 'rating': rating,
+      if (performance != null) 'performance': performance,
+      if (meta != null) 'meta': meta,
+    });
+  }
+
+  SideTripRunsCompanion copyWith({
+    Value<int>? id,
+    Value<String>? game,
+    Value<DateTime>? startedAt,
+    Value<bool>? ranked,
+    Value<int?>? level,
+    Value<int>? cardCount,
+    Value<int>? score,
+    Value<int>? maxScore,
+    Value<bool>? completed,
+    Value<double?>? rating,
+    Value<double?>? performance,
+    Value<String>? meta,
+  }) {
+    return SideTripRunsCompanion(
+      id: id ?? this.id,
+      game: game ?? this.game,
+      startedAt: startedAt ?? this.startedAt,
+      ranked: ranked ?? this.ranked,
+      level: level ?? this.level,
+      cardCount: cardCount ?? this.cardCount,
+      score: score ?? this.score,
+      maxScore: maxScore ?? this.maxScore,
+      completed: completed ?? this.completed,
+      rating: rating ?? this.rating,
+      performance: performance ?? this.performance,
+      meta: meta ?? this.meta,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<int>(id.value);
+    }
+    if (game.present) {
+      map['game'] = Variable<String>(game.value);
+    }
+    if (startedAt.present) {
+      map['started_at'] = Variable<DateTime>(startedAt.value);
+    }
+    if (ranked.present) {
+      map['ranked'] = Variable<bool>(ranked.value);
+    }
+    if (level.present) {
+      map['level'] = Variable<int>(level.value);
+    }
+    if (cardCount.present) {
+      map['card_count'] = Variable<int>(cardCount.value);
+    }
+    if (score.present) {
+      map['score'] = Variable<int>(score.value);
+    }
+    if (maxScore.present) {
+      map['max_score'] = Variable<int>(maxScore.value);
+    }
+    if (completed.present) {
+      map['completed'] = Variable<bool>(completed.value);
+    }
+    if (rating.present) {
+      map['rating'] = Variable<double>(rating.value);
+    }
+    if (performance.present) {
+      map['performance'] = Variable<double>(performance.value);
+    }
+    if (meta.present) {
+      map['meta'] = Variable<String>(meta.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('SideTripRunsCompanion(')
+          ..write('id: $id, ')
+          ..write('game: $game, ')
+          ..write('startedAt: $startedAt, ')
+          ..write('ranked: $ranked, ')
+          ..write('level: $level, ')
+          ..write('cardCount: $cardCount, ')
+          ..write('score: $score, ')
+          ..write('maxScore: $maxScore, ')
+          ..write('completed: $completed, ')
+          ..write('rating: $rating, ')
+          ..write('performance: $performance, ')
+          ..write('meta: $meta')
+          ..write(')'))
+        .toString();
+  }
+}
+
+class $SideTripAnswersTable extends SideTripAnswers
+    with TableInfo<$SideTripAnswersTable, SideTripAnswerRow> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $SideTripAnswersTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<int> id = GeneratedColumn<int>(
+    'id',
+    aliasedName,
+    false,
+    hasAutoIncrement: true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'PRIMARY KEY AUTOINCREMENT',
+    ),
+  );
+  static const VerificationMeta _runIdMeta = const VerificationMeta('runId');
+  @override
+  late final GeneratedColumn<int> runId = GeneratedColumn<int>(
+    'run_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'REFERENCES side_trip_runs (id)',
+    ),
+  );
+  static const VerificationMeta _seqMeta = const VerificationMeta('seq');
+  @override
+  late final GeneratedColumn<int> seq = GeneratedColumn<int>(
+    'seq',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _poemIdMeta = const VerificationMeta('poemId');
+  @override
+  late final GeneratedColumn<int> poemId = GeneratedColumn<int>(
+    'poem_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _wrongTapsMeta = const VerificationMeta(
+    'wrongTaps',
+  );
+  @override
+  late final GeneratedColumn<int> wrongTaps = GeneratedColumn<int>(
+    'wrong_taps',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _responseUsMeta = const VerificationMeta(
+    'responseUs',
+  );
+  @override
+  late final GeneratedColumn<int> responseUs = GeneratedColumn<int>(
+    'response_us',
+    aliasedName,
+    true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _atMeta = const VerificationMeta('at');
+  @override
+  late final GeneratedColumn<DateTime> at = GeneratedColumn<DateTime>(
+    'at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: true,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    id,
+    runId,
+    seq,
+    poemId,
+    wrongTaps,
+    responseUs,
+    at,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'side_trip_answers';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<SideTripAnswerRow> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    }
+    if (data.containsKey('run_id')) {
+      context.handle(
+        _runIdMeta,
+        runId.isAcceptableOrUnknown(data['run_id']!, _runIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_runIdMeta);
+    }
+    if (data.containsKey('seq')) {
+      context.handle(
+        _seqMeta,
+        seq.isAcceptableOrUnknown(data['seq']!, _seqMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_seqMeta);
+    }
+    if (data.containsKey('poem_id')) {
+      context.handle(
+        _poemIdMeta,
+        poemId.isAcceptableOrUnknown(data['poem_id']!, _poemIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_poemIdMeta);
+    }
+    if (data.containsKey('wrong_taps')) {
+      context.handle(
+        _wrongTapsMeta,
+        wrongTaps.isAcceptableOrUnknown(data['wrong_taps']!, _wrongTapsMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_wrongTapsMeta);
+    }
+    if (data.containsKey('response_us')) {
+      context.handle(
+        _responseUsMeta,
+        responseUs.isAcceptableOrUnknown(data['response_us']!, _responseUsMeta),
+      );
+    }
+    if (data.containsKey('at')) {
+      context.handle(_atMeta, at.isAcceptableOrUnknown(data['at']!, _atMeta));
+    } else if (isInserting) {
+      context.missing(_atMeta);
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  SideTripAnswerRow map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return SideTripAnswerRow(
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}id'],
+      )!,
+      runId: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}run_id'],
+      )!,
+      seq: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}seq'],
+      )!,
+      poemId: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}poem_id'],
+      )!,
+      wrongTaps: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}wrong_taps'],
+      )!,
+      responseUs: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}response_us'],
+      ),
+      at: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}at'],
+      )!,
+    );
+  }
+
+  @override
+  $SideTripAnswersTable createAlias(String alias) {
+    return $SideTripAnswersTable(attachedDatabase, alias);
+  }
+}
+
+class SideTripAnswerRow extends DataClass
+    implements Insertable<SideTripAnswerRow> {
+  final int id;
+  final int runId;
+  final int seq;
+  final int poemId;
+
+  /// Other cards tapped while this one was asked.
+  final int wrongTaps;
+
+  /// Prompt → the tap on its card, µs; null when it was never found.
+  final int? responseUs;
+  final DateTime at;
+  const SideTripAnswerRow({
+    required this.id,
+    required this.runId,
+    required this.seq,
+    required this.poemId,
+    required this.wrongTaps,
+    this.responseUs,
+    required this.at,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<int>(id);
+    map['run_id'] = Variable<int>(runId);
+    map['seq'] = Variable<int>(seq);
+    map['poem_id'] = Variable<int>(poemId);
+    map['wrong_taps'] = Variable<int>(wrongTaps);
+    if (!nullToAbsent || responseUs != null) {
+      map['response_us'] = Variable<int>(responseUs);
+    }
+    map['at'] = Variable<DateTime>(at);
+    return map;
+  }
+
+  SideTripAnswersCompanion toCompanion(bool nullToAbsent) {
+    return SideTripAnswersCompanion(
+      id: Value(id),
+      runId: Value(runId),
+      seq: Value(seq),
+      poemId: Value(poemId),
+      wrongTaps: Value(wrongTaps),
+      responseUs: responseUs == null && nullToAbsent
+          ? const Value.absent()
+          : Value(responseUs),
+      at: Value(at),
+    );
+  }
+
+  factory SideTripAnswerRow.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return SideTripAnswerRow(
+      id: serializer.fromJson<int>(json['id']),
+      runId: serializer.fromJson<int>(json['runId']),
+      seq: serializer.fromJson<int>(json['seq']),
+      poemId: serializer.fromJson<int>(json['poemId']),
+      wrongTaps: serializer.fromJson<int>(json['wrongTaps']),
+      responseUs: serializer.fromJson<int?>(json['responseUs']),
+      at: serializer.fromJson<DateTime>(json['at']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<int>(id),
+      'runId': serializer.toJson<int>(runId),
+      'seq': serializer.toJson<int>(seq),
+      'poemId': serializer.toJson<int>(poemId),
+      'wrongTaps': serializer.toJson<int>(wrongTaps),
+      'responseUs': serializer.toJson<int?>(responseUs),
+      'at': serializer.toJson<DateTime>(at),
+    };
+  }
+
+  SideTripAnswerRow copyWith({
+    int? id,
+    int? runId,
+    int? seq,
+    int? poemId,
+    int? wrongTaps,
+    Value<int?> responseUs = const Value.absent(),
+    DateTime? at,
+  }) => SideTripAnswerRow(
+    id: id ?? this.id,
+    runId: runId ?? this.runId,
+    seq: seq ?? this.seq,
+    poemId: poemId ?? this.poemId,
+    wrongTaps: wrongTaps ?? this.wrongTaps,
+    responseUs: responseUs.present ? responseUs.value : this.responseUs,
+    at: at ?? this.at,
+  );
+  SideTripAnswerRow copyWithCompanion(SideTripAnswersCompanion data) {
+    return SideTripAnswerRow(
+      id: data.id.present ? data.id.value : this.id,
+      runId: data.runId.present ? data.runId.value : this.runId,
+      seq: data.seq.present ? data.seq.value : this.seq,
+      poemId: data.poemId.present ? data.poemId.value : this.poemId,
+      wrongTaps: data.wrongTaps.present ? data.wrongTaps.value : this.wrongTaps,
+      responseUs: data.responseUs.present
+          ? data.responseUs.value
+          : this.responseUs,
+      at: data.at.present ? data.at.value : this.at,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('SideTripAnswerRow(')
+          ..write('id: $id, ')
+          ..write('runId: $runId, ')
+          ..write('seq: $seq, ')
+          ..write('poemId: $poemId, ')
+          ..write('wrongTaps: $wrongTaps, ')
+          ..write('responseUs: $responseUs, ')
+          ..write('at: $at')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode =>
+      Object.hash(id, runId, seq, poemId, wrongTaps, responseUs, at);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is SideTripAnswerRow &&
+          other.id == this.id &&
+          other.runId == this.runId &&
+          other.seq == this.seq &&
+          other.poemId == this.poemId &&
+          other.wrongTaps == this.wrongTaps &&
+          other.responseUs == this.responseUs &&
+          other.at == this.at);
+}
+
+class SideTripAnswersCompanion extends UpdateCompanion<SideTripAnswerRow> {
+  final Value<int> id;
+  final Value<int> runId;
+  final Value<int> seq;
+  final Value<int> poemId;
+  final Value<int> wrongTaps;
+  final Value<int?> responseUs;
+  final Value<DateTime> at;
+  const SideTripAnswersCompanion({
+    this.id = const Value.absent(),
+    this.runId = const Value.absent(),
+    this.seq = const Value.absent(),
+    this.poemId = const Value.absent(),
+    this.wrongTaps = const Value.absent(),
+    this.responseUs = const Value.absent(),
+    this.at = const Value.absent(),
+  });
+  SideTripAnswersCompanion.insert({
+    this.id = const Value.absent(),
+    required int runId,
+    required int seq,
+    required int poemId,
+    required int wrongTaps,
+    this.responseUs = const Value.absent(),
+    required DateTime at,
+  }) : runId = Value(runId),
+       seq = Value(seq),
+       poemId = Value(poemId),
+       wrongTaps = Value(wrongTaps),
+       at = Value(at);
+  static Insertable<SideTripAnswerRow> custom({
+    Expression<int>? id,
+    Expression<int>? runId,
+    Expression<int>? seq,
+    Expression<int>? poemId,
+    Expression<int>? wrongTaps,
+    Expression<int>? responseUs,
+    Expression<DateTime>? at,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (runId != null) 'run_id': runId,
+      if (seq != null) 'seq': seq,
+      if (poemId != null) 'poem_id': poemId,
+      if (wrongTaps != null) 'wrong_taps': wrongTaps,
+      if (responseUs != null) 'response_us': responseUs,
+      if (at != null) 'at': at,
+    });
+  }
+
+  SideTripAnswersCompanion copyWith({
+    Value<int>? id,
+    Value<int>? runId,
+    Value<int>? seq,
+    Value<int>? poemId,
+    Value<int>? wrongTaps,
+    Value<int?>? responseUs,
+    Value<DateTime>? at,
+  }) {
+    return SideTripAnswersCompanion(
+      id: id ?? this.id,
+      runId: runId ?? this.runId,
+      seq: seq ?? this.seq,
+      poemId: poemId ?? this.poemId,
+      wrongTaps: wrongTaps ?? this.wrongTaps,
+      responseUs: responseUs ?? this.responseUs,
+      at: at ?? this.at,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<int>(id.value);
+    }
+    if (runId.present) {
+      map['run_id'] = Variable<int>(runId.value);
+    }
+    if (seq.present) {
+      map['seq'] = Variable<int>(seq.value);
+    }
+    if (poemId.present) {
+      map['poem_id'] = Variable<int>(poemId.value);
+    }
+    if (wrongTaps.present) {
+      map['wrong_taps'] = Variable<int>(wrongTaps.value);
+    }
+    if (responseUs.present) {
+      map['response_us'] = Variable<int>(responseUs.value);
+    }
+    if (at.present) {
+      map['at'] = Variable<DateTime>(at.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('SideTripAnswersCompanion(')
+          ..write('id: $id, ')
+          ..write('runId: $runId, ')
+          ..write('seq: $seq, ')
+          ..write('poemId: $poemId, ')
+          ..write('wrongTaps: $wrongTaps, ')
+          ..write('responseUs: $responseUs, ')
+          ..write('at: $at')
+          ..write(')'))
+        .toString();
+  }
+}
+
 abstract class _$AppDatabase extends GeneratedDatabase {
   _$AppDatabase(QueryExecutor e) : super(e);
   $AppDatabaseManager get managers => $AppDatabaseManager(this);
@@ -2388,6 +3545,10 @@ abstract class _$AppDatabase extends GeneratedDatabase {
   late final $ItemsTable items = $ItemsTable(this);
   late final $RatingPointsTable ratingPoints = $RatingPointsTable(this);
   late final $KeyValuesTable keyValues = $KeyValuesTable(this);
+  late final $SideTripRunsTable sideTripRuns = $SideTripRunsTable(this);
+  late final $SideTripAnswersTable sideTripAnswers = $SideTripAnswersTable(
+    this,
+  );
   @override
   Iterable<TableInfo<Table, Object?>> get allTables =>
       allSchemaEntities.whereType<TableInfo<Table, Object?>>();
@@ -2398,6 +3559,8 @@ abstract class _$AppDatabase extends GeneratedDatabase {
     items,
     ratingPoints,
     keyValues,
+    sideTripRuns,
+    sideTripAnswers,
   ];
 }
 
@@ -3829,6 +4992,800 @@ typedef $$KeyValuesTableProcessedTableManager =
       KeyValue,
       PrefetchHooks Function()
     >;
+typedef $$SideTripRunsTableCreateCompanionBuilder =
+    SideTripRunsCompanion Function({
+      Value<int> id,
+      required String game,
+      required DateTime startedAt,
+      required bool ranked,
+      Value<int?> level,
+      required int cardCount,
+      required int score,
+      required int maxScore,
+      required bool completed,
+      Value<double?> rating,
+      Value<double?> performance,
+      Value<String> meta,
+    });
+typedef $$SideTripRunsTableUpdateCompanionBuilder =
+    SideTripRunsCompanion Function({
+      Value<int> id,
+      Value<String> game,
+      Value<DateTime> startedAt,
+      Value<bool> ranked,
+      Value<int?> level,
+      Value<int> cardCount,
+      Value<int> score,
+      Value<int> maxScore,
+      Value<bool> completed,
+      Value<double?> rating,
+      Value<double?> performance,
+      Value<String> meta,
+    });
+
+final class $$SideTripRunsTableReferences
+    extends BaseReferences<_$AppDatabase, $SideTripRunsTable, SideTripRun> {
+  $$SideTripRunsTableReferences(super.$_db, super.$_table, super.$_typedResult);
+
+  static MultiTypedResultKey<$SideTripAnswersTable, List<SideTripAnswerRow>>
+  _sideTripAnswersRefsTable(_$AppDatabase db) => MultiTypedResultKey.fromTable(
+    db.sideTripAnswers,
+    aliasName: 'side_trip_runs__id__side_trip_answers__run_id',
+  );
+
+  $$SideTripAnswersTableProcessedTableManager get sideTripAnswersRefs {
+    final manager = $$SideTripAnswersTableTableManager(
+      $_db,
+      $_db.sideTripAnswers,
+    ).filter((f) => f.runId.id.sqlEquals($_itemColumn<int>('id')!));
+
+    final cache = $_typedResult.readTableOrNull(
+      _sideTripAnswersRefsTable($_db),
+    );
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: cache),
+    );
+  }
+}
+
+class $$SideTripRunsTableFilterComposer
+    extends Composer<_$AppDatabase, $SideTripRunsTable> {
+  $$SideTripRunsTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<int> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get game => $composableBuilder(
+    column: $table.game,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get startedAt => $composableBuilder(
+    column: $table.startedAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<bool> get ranked => $composableBuilder(
+    column: $table.ranked,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get level => $composableBuilder(
+    column: $table.level,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get cardCount => $composableBuilder(
+    column: $table.cardCount,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get score => $composableBuilder(
+    column: $table.score,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get maxScore => $composableBuilder(
+    column: $table.maxScore,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<bool> get completed => $composableBuilder(
+    column: $table.completed,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<double> get rating => $composableBuilder(
+    column: $table.rating,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<double> get performance => $composableBuilder(
+    column: $table.performance,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get meta => $composableBuilder(
+    column: $table.meta,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  Expression<bool> sideTripAnswersRefs(
+    Expression<bool> Function($$SideTripAnswersTableFilterComposer f) f,
+  ) {
+    final $$SideTripAnswersTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.sideTripAnswers,
+      getReferencedColumn: (t) => t.runId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$SideTripAnswersTableFilterComposer(
+            $db: $db,
+            $table: $db.sideTripAnswers,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
+}
+
+class $$SideTripRunsTableOrderingComposer
+    extends Composer<_$AppDatabase, $SideTripRunsTable> {
+  $$SideTripRunsTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<int> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get game => $composableBuilder(
+    column: $table.game,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get startedAt => $composableBuilder(
+    column: $table.startedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<bool> get ranked => $composableBuilder(
+    column: $table.ranked,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get level => $composableBuilder(
+    column: $table.level,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get cardCount => $composableBuilder(
+    column: $table.cardCount,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get score => $composableBuilder(
+    column: $table.score,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get maxScore => $composableBuilder(
+    column: $table.maxScore,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<bool> get completed => $composableBuilder(
+    column: $table.completed,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<double> get rating => $composableBuilder(
+    column: $table.rating,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<double> get performance => $composableBuilder(
+    column: $table.performance,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get meta => $composableBuilder(
+    column: $table.meta,
+    builder: (column) => ColumnOrderings(column),
+  );
+}
+
+class $$SideTripRunsTableAnnotationComposer
+    extends Composer<_$AppDatabase, $SideTripRunsTable> {
+  $$SideTripRunsTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<int> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<String> get game =>
+      $composableBuilder(column: $table.game, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get startedAt =>
+      $composableBuilder(column: $table.startedAt, builder: (column) => column);
+
+  GeneratedColumn<bool> get ranked =>
+      $composableBuilder(column: $table.ranked, builder: (column) => column);
+
+  GeneratedColumn<int> get level =>
+      $composableBuilder(column: $table.level, builder: (column) => column);
+
+  GeneratedColumn<int> get cardCount =>
+      $composableBuilder(column: $table.cardCount, builder: (column) => column);
+
+  GeneratedColumn<int> get score =>
+      $composableBuilder(column: $table.score, builder: (column) => column);
+
+  GeneratedColumn<int> get maxScore =>
+      $composableBuilder(column: $table.maxScore, builder: (column) => column);
+
+  GeneratedColumn<bool> get completed =>
+      $composableBuilder(column: $table.completed, builder: (column) => column);
+
+  GeneratedColumn<double> get rating =>
+      $composableBuilder(column: $table.rating, builder: (column) => column);
+
+  GeneratedColumn<double> get performance => $composableBuilder(
+    column: $table.performance,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get meta =>
+      $composableBuilder(column: $table.meta, builder: (column) => column);
+
+  Expression<T> sideTripAnswersRefs<T extends Object>(
+    Expression<T> Function($$SideTripAnswersTableAnnotationComposer a) f,
+  ) {
+    final $$SideTripAnswersTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.sideTripAnswers,
+      getReferencedColumn: (t) => t.runId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$SideTripAnswersTableAnnotationComposer(
+            $db: $db,
+            $table: $db.sideTripAnswers,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
+}
+
+class $$SideTripRunsTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $SideTripRunsTable,
+          SideTripRun,
+          $$SideTripRunsTableFilterComposer,
+          $$SideTripRunsTableOrderingComposer,
+          $$SideTripRunsTableAnnotationComposer,
+          $$SideTripRunsTableCreateCompanionBuilder,
+          $$SideTripRunsTableUpdateCompanionBuilder,
+          (SideTripRun, $$SideTripRunsTableReferences),
+          SideTripRun,
+          PrefetchHooks Function({bool sideTripAnswersRefs})
+        > {
+  $$SideTripRunsTableTableManager(_$AppDatabase db, $SideTripRunsTable table)
+    : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$SideTripRunsTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$SideTripRunsTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$SideTripRunsTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback:
+              ({
+                Value<int> id = const Value.absent(),
+                Value<String> game = const Value.absent(),
+                Value<DateTime> startedAt = const Value.absent(),
+                Value<bool> ranked = const Value.absent(),
+                Value<int?> level = const Value.absent(),
+                Value<int> cardCount = const Value.absent(),
+                Value<int> score = const Value.absent(),
+                Value<int> maxScore = const Value.absent(),
+                Value<bool> completed = const Value.absent(),
+                Value<double?> rating = const Value.absent(),
+                Value<double?> performance = const Value.absent(),
+                Value<String> meta = const Value.absent(),
+              }) => SideTripRunsCompanion(
+                id: id,
+                game: game,
+                startedAt: startedAt,
+                ranked: ranked,
+                level: level,
+                cardCount: cardCount,
+                score: score,
+                maxScore: maxScore,
+                completed: completed,
+                rating: rating,
+                performance: performance,
+                meta: meta,
+              ),
+          createCompanionCallback:
+              ({
+                Value<int> id = const Value.absent(),
+                required String game,
+                required DateTime startedAt,
+                required bool ranked,
+                Value<int?> level = const Value.absent(),
+                required int cardCount,
+                required int score,
+                required int maxScore,
+                required bool completed,
+                Value<double?> rating = const Value.absent(),
+                Value<double?> performance = const Value.absent(),
+                Value<String> meta = const Value.absent(),
+              }) => SideTripRunsCompanion.insert(
+                id: id,
+                game: game,
+                startedAt: startedAt,
+                ranked: ranked,
+                level: level,
+                cardCount: cardCount,
+                score: score,
+                maxScore: maxScore,
+                completed: completed,
+                rating: rating,
+                performance: performance,
+                meta: meta,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map(
+                (e) => (
+                  e.readTable<$SideTripRunsTable, SideTripRun>(table),
+                  $$SideTripRunsTableReferences(db, table, e),
+                ),
+              )
+              .toList(),
+          prefetchHooksCallback: ({sideTripAnswersRefs = false}) {
+            return PrefetchHooks(
+              db: db,
+              explicitlyWatchedTables: [
+                if (sideTripAnswersRefs) db.sideTripAnswers,
+              ],
+              addJoins: null,
+              getPrefetchedDataCallback: (items) async {
+                return [
+                  if (sideTripAnswersRefs)
+                    await $_getPrefetchedData<
+                      SideTripRun,
+                      $SideTripRunsTable,
+                      SideTripAnswerRow
+                    >(
+                      currentTable: table,
+                      referencedTable: $$SideTripRunsTableReferences
+                          ._sideTripAnswersRefsTable(db),
+                      managerFromTypedResult: (p0) =>
+                          $$SideTripRunsTableReferences(
+                            db,
+                            table,
+                            p0,
+                          ).sideTripAnswersRefs,
+                      referencedItemsForCurrentItem: (item, referencedItems) =>
+                          referencedItems.where((e) => e.runId == item.id),
+                      typedResults: items,
+                    ),
+                ];
+              },
+            );
+          },
+        ),
+      );
+}
+
+typedef $$SideTripRunsTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $SideTripRunsTable,
+      SideTripRun,
+      $$SideTripRunsTableFilterComposer,
+      $$SideTripRunsTableOrderingComposer,
+      $$SideTripRunsTableAnnotationComposer,
+      $$SideTripRunsTableCreateCompanionBuilder,
+      $$SideTripRunsTableUpdateCompanionBuilder,
+      (SideTripRun, $$SideTripRunsTableReferences),
+      SideTripRun,
+      PrefetchHooks Function({bool sideTripAnswersRefs})
+    >;
+typedef $$SideTripAnswersTableCreateCompanionBuilder =
+    SideTripAnswersCompanion Function({
+      Value<int> id,
+      required int runId,
+      required int seq,
+      required int poemId,
+      required int wrongTaps,
+      Value<int?> responseUs,
+      required DateTime at,
+    });
+typedef $$SideTripAnswersTableUpdateCompanionBuilder =
+    SideTripAnswersCompanion Function({
+      Value<int> id,
+      Value<int> runId,
+      Value<int> seq,
+      Value<int> poemId,
+      Value<int> wrongTaps,
+      Value<int?> responseUs,
+      Value<DateTime> at,
+    });
+
+final class $$SideTripAnswersTableReferences
+    extends
+        BaseReferences<
+          _$AppDatabase,
+          $SideTripAnswersTable,
+          SideTripAnswerRow
+        > {
+  $$SideTripAnswersTableReferences(
+    super.$_db,
+    super.$_table,
+    super.$_typedResult,
+  );
+
+  static $SideTripRunsTable _runIdTable(_$AppDatabase db) => db.sideTripRuns
+      .createAlias('side_trip_answers__run_id__side_trip_runs__id');
+
+  $$SideTripRunsTableProcessedTableManager get runId {
+    final $_column = $_itemColumn<int>('run_id')!;
+
+    final manager = $$SideTripRunsTableTableManager(
+      $_db,
+      $_db.sideTripRuns,
+    ).filter((f) => f.id.sqlEquals($_column));
+    final item = $_typedResult.readTableOrNull(_runIdTable($_db));
+    if (item == null) return manager;
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: [item]),
+    );
+  }
+}
+
+class $$SideTripAnswersTableFilterComposer
+    extends Composer<_$AppDatabase, $SideTripAnswersTable> {
+  $$SideTripAnswersTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<int> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get seq => $composableBuilder(
+    column: $table.seq,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get poemId => $composableBuilder(
+    column: $table.poemId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get wrongTaps => $composableBuilder(
+    column: $table.wrongTaps,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get responseUs => $composableBuilder(
+    column: $table.responseUs,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get at => $composableBuilder(
+    column: $table.at,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  $$SideTripRunsTableFilterComposer get runId {
+    final $$SideTripRunsTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.runId,
+      referencedTable: $db.sideTripRuns,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$SideTripRunsTableFilterComposer(
+            $db: $db,
+            $table: $db.sideTripRuns,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$SideTripAnswersTableOrderingComposer
+    extends Composer<_$AppDatabase, $SideTripAnswersTable> {
+  $$SideTripAnswersTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<int> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get seq => $composableBuilder(
+    column: $table.seq,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get poemId => $composableBuilder(
+    column: $table.poemId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get wrongTaps => $composableBuilder(
+    column: $table.wrongTaps,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get responseUs => $composableBuilder(
+    column: $table.responseUs,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get at => $composableBuilder(
+    column: $table.at,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  $$SideTripRunsTableOrderingComposer get runId {
+    final $$SideTripRunsTableOrderingComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.runId,
+      referencedTable: $db.sideTripRuns,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$SideTripRunsTableOrderingComposer(
+            $db: $db,
+            $table: $db.sideTripRuns,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$SideTripAnswersTableAnnotationComposer
+    extends Composer<_$AppDatabase, $SideTripAnswersTable> {
+  $$SideTripAnswersTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<int> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<int> get seq =>
+      $composableBuilder(column: $table.seq, builder: (column) => column);
+
+  GeneratedColumn<int> get poemId =>
+      $composableBuilder(column: $table.poemId, builder: (column) => column);
+
+  GeneratedColumn<int> get wrongTaps =>
+      $composableBuilder(column: $table.wrongTaps, builder: (column) => column);
+
+  GeneratedColumn<int> get responseUs => $composableBuilder(
+    column: $table.responseUs,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<DateTime> get at =>
+      $composableBuilder(column: $table.at, builder: (column) => column);
+
+  $$SideTripRunsTableAnnotationComposer get runId {
+    final $$SideTripRunsTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.runId,
+      referencedTable: $db.sideTripRuns,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$SideTripRunsTableAnnotationComposer(
+            $db: $db,
+            $table: $db.sideTripRuns,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$SideTripAnswersTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $SideTripAnswersTable,
+          SideTripAnswerRow,
+          $$SideTripAnswersTableFilterComposer,
+          $$SideTripAnswersTableOrderingComposer,
+          $$SideTripAnswersTableAnnotationComposer,
+          $$SideTripAnswersTableCreateCompanionBuilder,
+          $$SideTripAnswersTableUpdateCompanionBuilder,
+          (SideTripAnswerRow, $$SideTripAnswersTableReferences),
+          SideTripAnswerRow,
+          PrefetchHooks Function({bool runId})
+        > {
+  $$SideTripAnswersTableTableManager(
+    _$AppDatabase db,
+    $SideTripAnswersTable table,
+  ) : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$SideTripAnswersTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$SideTripAnswersTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$SideTripAnswersTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback:
+              ({
+                Value<int> id = const Value.absent(),
+                Value<int> runId = const Value.absent(),
+                Value<int> seq = const Value.absent(),
+                Value<int> poemId = const Value.absent(),
+                Value<int> wrongTaps = const Value.absent(),
+                Value<int?> responseUs = const Value.absent(),
+                Value<DateTime> at = const Value.absent(),
+              }) => SideTripAnswersCompanion(
+                id: id,
+                runId: runId,
+                seq: seq,
+                poemId: poemId,
+                wrongTaps: wrongTaps,
+                responseUs: responseUs,
+                at: at,
+              ),
+          createCompanionCallback:
+              ({
+                Value<int> id = const Value.absent(),
+                required int runId,
+                required int seq,
+                required int poemId,
+                required int wrongTaps,
+                Value<int?> responseUs = const Value.absent(),
+                required DateTime at,
+              }) => SideTripAnswersCompanion.insert(
+                id: id,
+                runId: runId,
+                seq: seq,
+                poemId: poemId,
+                wrongTaps: wrongTaps,
+                responseUs: responseUs,
+                at: at,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map(
+                (e) => (
+                  e.readTable<$SideTripAnswersTable, SideTripAnswerRow>(table),
+                  $$SideTripAnswersTableReferences(db, table, e),
+                ),
+              )
+              .toList(),
+          prefetchHooksCallback: ({runId = false}) {
+            return PrefetchHooks(
+              db: db,
+              explicitlyWatchedTables: [],
+              addJoins:
+                  <
+                    T extends TableManagerState<
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic
+                    >
+                  >(state) {
+                    if (runId) {
+                      state = state.withJoin(
+                        currentTable: table,
+                        currentColumn: table.runId,
+                        referencedTable: $$SideTripAnswersTableReferences
+                            ._runIdTable(db),
+                        referencedColumn: $$SideTripAnswersTableReferences
+                            ._runIdTable(db)
+                            .id,
+                      ) as T;
+                    }
+
+                    return state;
+                  },
+              getPrefetchedDataCallback: (items) async {
+                return [];
+              },
+            );
+          },
+        ),
+      );
+}
+
+typedef $$SideTripAnswersTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $SideTripAnswersTable,
+      SideTripAnswerRow,
+      $$SideTripAnswersTableFilterComposer,
+      $$SideTripAnswersTableOrderingComposer,
+      $$SideTripAnswersTableAnnotationComposer,
+      $$SideTripAnswersTableCreateCompanionBuilder,
+      $$SideTripAnswersTableUpdateCompanionBuilder,
+      (SideTripAnswerRow, $$SideTripAnswersTableReferences),
+      SideTripAnswerRow,
+      PrefetchHooks Function({bool runId})
+    >;
 
 class $AppDatabaseManager {
   final _$AppDatabase _db;
@@ -3843,4 +5800,8 @@ class $AppDatabaseManager {
       $$RatingPointsTableTableManager(_db, _db.ratingPoints);
   $$KeyValuesTableTableManager get keyValues =>
       $$KeyValuesTableTableManager(_db, _db.keyValues);
+  $$SideTripRunsTableTableManager get sideTripRuns =>
+      $$SideTripRunsTableTableManager(_db, _db.sideTripRuns);
+  $$SideTripAnswersTableTableManager get sideTripAnswers =>
+      $$SideTripAnswersTableTableManager(_db, _db.sideTripAnswers);
 }

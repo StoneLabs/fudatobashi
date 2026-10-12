@@ -89,12 +89,59 @@ class KeyValues extends Table {
   Set<Column> get primaryKey => {key};
 }
 
-@DriftDatabase(tables: [Sessions, Attempts, Items, RatingPoints, KeyValues])
+/// One game of a side trip (寄り道), ranked or free play. Every trip shares
+/// this table; [game] says which one it was.
+@DataClassName('SideTripRun')
+class SideTripRuns extends Table {
+  IntColumn get id => integer().autoIncrement()();
+
+  /// `SideTrip.name`, e.g. `ankiren`.
+  TextColumn get game => text()();
+  DateTimeColumn get startedAt => dateTime()();
+  BoolColumn get ranked => boolean()();
+
+  /// The level played; null for a custom setup.
+  IntColumn get level => integer().nullable()();
+
+  /// Prompts asked.
+  IntColumn get cardCount => integer()();
+  IntColumn get score => integer()();
+  IntColumn get maxScore => integer()();
+
+  /// Played to the last prompt (false for a game ended early).
+  BoolColumn get completed => boolean()();
+
+  /// The trip's rating after this game, and the game's performance on the
+  /// same scale; null for free play.
+  RealColumn get rating => real().nullable()();
+  RealColumn get performance => real().nullable()();
+
+  /// Free-form JSON (cards per side, memorise time, …).
+  TextColumn get meta => text().withDefault(const Constant('{}'))();
+}
+
+/// One prompt of a side-trip game and how it was answered.
+@DataClassName('SideTripAnswerRow')
+class SideTripAnswers extends Table {
+  IntColumn get id => integer().autoIncrement()();
+  IntColumn get runId => integer().references(SideTripRuns, #id)();
+  IntColumn get seq => integer()();
+  IntColumn get poemId => integer()();
+
+  /// Other cards tapped while this one was asked.
+  IntColumn get wrongTaps => integer()();
+
+  /// Prompt → the tap on its card, µs; null when it was never found.
+  IntColumn get responseUs => integer().nullable()();
+  DateTimeColumn get at => dateTime()();
+}
+
+@DriftDatabase(tables: [Sessions, Attempts, Items, RatingPoints, KeyValues, SideTripRuns, SideTripAnswers])
 class AppDatabase extends _$AppDatabase {
   AppDatabase([QueryExecutor? executor]) : super(executor ?? driftDatabase(name: 'fudatobashi'));
 
   @override
-  int get schemaVersion => 1;
+  int get schemaVersion => 2;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -102,6 +149,16 @@ class AppDatabase extends _$AppDatabase {
           await m.createAll();
           await customStatement('CREATE INDEX attempts_poem ON attempts (poem_id, inverted)');
           await customStatement('CREATE INDEX attempts_session ON attempts (session_id)');
+          await customStatement(_sideTripAnswersIndex);
+        },
+        onUpgrade: (m, from, to) async {
+          if (from < 2) {
+            await m.createTable(sideTripRuns);
+            await m.createTable(sideTripAnswers);
+            await customStatement(_sideTripAnswersIndex);
+          }
         },
       );
+
+  static const _sideTripAnswersIndex = 'CREATE INDEX side_trip_answers_run ON side_trip_answers (run_id)';
 }
