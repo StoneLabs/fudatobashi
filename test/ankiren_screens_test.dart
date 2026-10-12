@@ -105,7 +105,7 @@ void main() {
 
   // An all-known player who has taken the tour, with [ankiren] options.
   Future<Progress> open(WidgetTester tester,
-      {AnkirenSettings ankiren = const AnkirenSettings(), bool accessibilityMode = false}) async {
+      {AnkirenSettings ankiren = const AnkirenSettings(), bool accessibilityMode = false, String language = 'en'}) async {
     late Progress p;
     await tester.runAsync(() async {
       p = await Progress.open(AppDatabase(NativeDatabase.memory()));
@@ -113,7 +113,7 @@ void main() {
       await p.setLearningMode(LearningMode.allKnown);
       await p.updateSettings(
           p.settings.copyWith(
-              language: 'en',
+              language: language,
               languagePicked: true,
               toured: true,
               ankiren: ankiren,
@@ -685,6 +685,52 @@ void main() {
       final wide = AnkirenFieldView.scaleFor(trueScale, roomy, landscape: true, zoom: true);
       expect(wide, moreOrLessEquals(roomy.width / AnkirenFieldSize.territoryW), reason: 'landscape fills the width');
     });
+  });
+
+  group('Font scale 1.3', () {
+    for (final lang in ['en', 'ja']) {
+      testWidgets('the free-play sheet and a ranked game\'s Results fit ($lang)', (tester) async {
+        final t = S(lang);
+        final p = await open(tester, language: lang);
+        phone(tester, fontScale: 1.3);
+        await tester.pumpWidget(RepaintBoundary(key: const ValueKey('screen'), child: FudatobashiApp(progress: p)));
+        await tester.pump(const Duration(milliseconds: 500));
+        await tester.tap(find.descendant(of: find.byType(MangaTabBar), matching: find.text(t.sideTrips)));
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
+        expect(tester.takeException(), isNull);
+        await tester.ensureVisible(find.text(t.freePlay));
+        await tester.pump();
+        await tester.tap(find.text(t.freePlay));
+        await tester.pump();
+        await tester.pump(Motion.sheet);
+        expect(find.byType(AnkirenFreeSheet), findsOneWidget);
+        await tester.runAsync(() async {
+          await tester.tap(find.text(t.ankirenCustom));
+          await Future<void>.delayed(const Duration(milliseconds: 50));
+        });
+        await tester.pump();
+        expect(tester.takeException(), isNull);
+        await _capture(tester, 'ankiren_free_sheet_${lang}_1.3');
+        await tester.pumpWidget(const SizedBox());
+
+        await play(tester, p, AnkirenSetup.forLevel(0, ranked: true), fontScale: 1.3);
+        await tester.tap(find.text(t.ankirenReady));
+        await tester.pump();
+        await tester.pump(AnkirenMotion.flip + AnkirenPlayTuning.promptPause);
+        await tester.pump();
+        final total = AnkirenLevels.of(0).cards;
+        for (var i = 0; i < total; i++) {
+          await take(tester, asked(tester));
+          if (i < total - 1) await next(tester);
+        }
+        await toResults(tester);
+        expect(find.byType(AnkirenResultsScreen), findsOneWidget);
+        expect(find.byType(ClassBadge), findsOneWidget);
+        await _capture(tester, 'ankiren_results_${lang}_1.3');
+        await tester.pumpWidget(const SizedBox());
+      });
+    }
   });
 
   group('Reduced motion', () {
