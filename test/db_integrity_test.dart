@@ -272,4 +272,16 @@ void main() {
       await db.close();
     });
   });
+
+  test('cards of a missing day are deleted; a day with its cards stays', () async {
+    final db = AppDatabase(NativeDatabase.memory());
+    await db.into(db.days).insert(DaysCompanion.insert(number: const Value(20261014), startsAt: day(1), endsAt: day(2)));
+    for (final d in [20261014, 20261013]) {
+      await db.into(db.dayCards).insert(DayCardsCompanion.insert(day: d, poemId: 1, inverted: false, kind: 0));
+    }
+    await DbIntegrity.run(db);
+    expect([for (final c in await db.select(db.dayCards).get()) c.day], [20261014]);
+    expect(await writesDuring(db, () => DbIntegrity.run(db)), isEmpty);
+    await db.close();
+  });
 }

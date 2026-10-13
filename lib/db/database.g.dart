@@ -3706,6 +3706,821 @@ class SideTripAnswersCompanion extends UpdateCompanion<SideTripAnswerRow> {
   }
 }
 
+class $DaysTable extends Days with TableInfo<$DaysTable, DayRow> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $DaysTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _numberMeta = const VerificationMeta('number');
+  @override
+  late final GeneratedColumn<int> number = GeneratedColumn<int>(
+    'number',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _startsAtMeta = const VerificationMeta(
+    'startsAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> startsAt = GeneratedColumn<DateTime>(
+    'starts_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _endsAtMeta = const VerificationMeta('endsAt');
+  @override
+  late final GeneratedColumn<DateTime> endsAt = GeneratedColumn<DateTime>(
+    'ends_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _builtAtMeta = const VerificationMeta(
+    'builtAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> builtAt = GeneratedColumn<DateTime>(
+    'built_at',
+    aliasedName,
+    true,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _missGuessMeta = const VerificationMeta(
+    'missGuess',
+  );
+  @override
+  late final GeneratedColumn<int> missGuess = GeneratedColumn<int>(
+    'miss_guess',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(0),
+  );
+  static const VerificationMeta _newPausedMeta = const VerificationMeta(
+    'newPaused',
+  );
+  @override
+  late final GeneratedColumn<bool> newPaused = GeneratedColumn<bool>(
+    'new_paused',
+    aliasedName,
+    false,
+    type: DriftSqlType.bool,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'CHECK ("new_paused" IN (0, 1))',
+    ),
+    defaultValue: const Constant(false),
+  );
+  static const VerificationMeta _pauseAskedMeta = const VerificationMeta(
+    'pauseAsked',
+  );
+  @override
+  late final GeneratedColumn<bool> pauseAsked = GeneratedColumn<bool>(
+    'pause_asked',
+    aliasedName,
+    false,
+    type: DriftSqlType.bool,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'CHECK ("pause_asked" IN (0, 1))',
+    ),
+    defaultValue: const Constant(false),
+  );
+  static const VerificationMeta _doneAtMeta = const VerificationMeta('doneAt');
+  @override
+  late final GeneratedColumn<DateTime> doneAt = GeneratedColumn<DateTime>(
+    'done_at',
+    aliasedName,
+    true,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    number,
+    startsAt,
+    endsAt,
+    builtAt,
+    missGuess,
+    newPaused,
+    pauseAsked,
+    doneAt,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'days';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<DayRow> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('number')) {
+      context.handle(
+        _numberMeta,
+        number.isAcceptableOrUnknown(data['number']!, _numberMeta),
+      );
+    }
+    if (data.containsKey('starts_at')) {
+      context.handle(
+        _startsAtMeta,
+        startsAt.isAcceptableOrUnknown(data['starts_at']!, _startsAtMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_startsAtMeta);
+    }
+    if (data.containsKey('ends_at')) {
+      context.handle(
+        _endsAtMeta,
+        endsAt.isAcceptableOrUnknown(data['ends_at']!, _endsAtMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_endsAtMeta);
+    }
+    if (data.containsKey('built_at')) {
+      context.handle(
+        _builtAtMeta,
+        builtAt.isAcceptableOrUnknown(data['built_at']!, _builtAtMeta),
+      );
+    }
+    if (data.containsKey('miss_guess')) {
+      context.handle(
+        _missGuessMeta,
+        missGuess.isAcceptableOrUnknown(data['miss_guess']!, _missGuessMeta),
+      );
+    }
+    if (data.containsKey('new_paused')) {
+      context.handle(
+        _newPausedMeta,
+        newPaused.isAcceptableOrUnknown(data['new_paused']!, _newPausedMeta),
+      );
+    }
+    if (data.containsKey('pause_asked')) {
+      context.handle(
+        _pauseAskedMeta,
+        pauseAsked.isAcceptableOrUnknown(data['pause_asked']!, _pauseAskedMeta),
+      );
+    }
+    if (data.containsKey('done_at')) {
+      context.handle(
+        _doneAtMeta,
+        doneAt.isAcceptableOrUnknown(data['done_at']!, _doneAtMeta),
+      );
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {number};
+  @override
+  DayRow map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return DayRow(
+      number: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}number'],
+      )!,
+      startsAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}starts_at'],
+      )!,
+      endsAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}ends_at'],
+      )!,
+      builtAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}built_at'],
+      ),
+      missGuess: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}miss_guess'],
+      )!,
+      newPaused: attachedDatabase.typeMapping.read(
+        DriftSqlType.bool,
+        data['${effectivePrefix}new_paused'],
+      )!,
+      pauseAsked: attachedDatabase.typeMapping.read(
+        DriftSqlType.bool,
+        data['${effectivePrefix}pause_asked'],
+      )!,
+      doneAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}done_at'],
+      ),
+    );
+  }
+
+  @override
+  $DaysTable createAlias(String alias) {
+    return $DaysTable(attachedDatabase, alias);
+  }
+}
+
+class DayRow extends DataClass implements Insertable<DayRow> {
+  /// The day's date as yyyymmdd.
+  final int number;
+  final DateTime startsAt;
+  final DateTime endsAt;
+
+  /// When today's set was built; null on a day without one.
+  final DateTime? builtAt;
+
+  /// The morning's guess at the extra looks misses will add.
+  final int missGuess;
+  final bool newPaused;
+  final bool pauseAsked;
+  final DateTime? doneAt;
+  const DayRow({
+    required this.number,
+    required this.startsAt,
+    required this.endsAt,
+    this.builtAt,
+    required this.missGuess,
+    required this.newPaused,
+    required this.pauseAsked,
+    this.doneAt,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['number'] = Variable<int>(number);
+    map['starts_at'] = Variable<DateTime>(startsAt);
+    map['ends_at'] = Variable<DateTime>(endsAt);
+    if (!nullToAbsent || builtAt != null) {
+      map['built_at'] = Variable<DateTime>(builtAt);
+    }
+    map['miss_guess'] = Variable<int>(missGuess);
+    map['new_paused'] = Variable<bool>(newPaused);
+    map['pause_asked'] = Variable<bool>(pauseAsked);
+    if (!nullToAbsent || doneAt != null) {
+      map['done_at'] = Variable<DateTime>(doneAt);
+    }
+    return map;
+  }
+
+  DaysCompanion toCompanion(bool nullToAbsent) {
+    return DaysCompanion(
+      number: Value(number),
+      startsAt: Value(startsAt),
+      endsAt: Value(endsAt),
+      builtAt: builtAt == null && nullToAbsent
+          ? const Value.absent()
+          : Value(builtAt),
+      missGuess: Value(missGuess),
+      newPaused: Value(newPaused),
+      pauseAsked: Value(pauseAsked),
+      doneAt: doneAt == null && nullToAbsent
+          ? const Value.absent()
+          : Value(doneAt),
+    );
+  }
+
+  factory DayRow.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return DayRow(
+      number: serializer.fromJson<int>(json['number']),
+      startsAt: serializer.fromJson<DateTime>(json['startsAt']),
+      endsAt: serializer.fromJson<DateTime>(json['endsAt']),
+      builtAt: serializer.fromJson<DateTime?>(json['builtAt']),
+      missGuess: serializer.fromJson<int>(json['missGuess']),
+      newPaused: serializer.fromJson<bool>(json['newPaused']),
+      pauseAsked: serializer.fromJson<bool>(json['pauseAsked']),
+      doneAt: serializer.fromJson<DateTime?>(json['doneAt']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'number': serializer.toJson<int>(number),
+      'startsAt': serializer.toJson<DateTime>(startsAt),
+      'endsAt': serializer.toJson<DateTime>(endsAt),
+      'builtAt': serializer.toJson<DateTime?>(builtAt),
+      'missGuess': serializer.toJson<int>(missGuess),
+      'newPaused': serializer.toJson<bool>(newPaused),
+      'pauseAsked': serializer.toJson<bool>(pauseAsked),
+      'doneAt': serializer.toJson<DateTime?>(doneAt),
+    };
+  }
+
+  DayRow copyWith({
+    int? number,
+    DateTime? startsAt,
+    DateTime? endsAt,
+    Value<DateTime?> builtAt = const Value.absent(),
+    int? missGuess,
+    bool? newPaused,
+    bool? pauseAsked,
+    Value<DateTime?> doneAt = const Value.absent(),
+  }) => DayRow(
+    number: number ?? this.number,
+    startsAt: startsAt ?? this.startsAt,
+    endsAt: endsAt ?? this.endsAt,
+    builtAt: builtAt.present ? builtAt.value : this.builtAt,
+    missGuess: missGuess ?? this.missGuess,
+    newPaused: newPaused ?? this.newPaused,
+    pauseAsked: pauseAsked ?? this.pauseAsked,
+    doneAt: doneAt.present ? doneAt.value : this.doneAt,
+  );
+  DayRow copyWithCompanion(DaysCompanion data) {
+    return DayRow(
+      number: data.number.present ? data.number.value : this.number,
+      startsAt: data.startsAt.present ? data.startsAt.value : this.startsAt,
+      endsAt: data.endsAt.present ? data.endsAt.value : this.endsAt,
+      builtAt: data.builtAt.present ? data.builtAt.value : this.builtAt,
+      missGuess: data.missGuess.present ? data.missGuess.value : this.missGuess,
+      newPaused: data.newPaused.present ? data.newPaused.value : this.newPaused,
+      pauseAsked: data.pauseAsked.present
+          ? data.pauseAsked.value
+          : this.pauseAsked,
+      doneAt: data.doneAt.present ? data.doneAt.value : this.doneAt,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('DayRow(')
+          ..write('number: $number, ')
+          ..write('startsAt: $startsAt, ')
+          ..write('endsAt: $endsAt, ')
+          ..write('builtAt: $builtAt, ')
+          ..write('missGuess: $missGuess, ')
+          ..write('newPaused: $newPaused, ')
+          ..write('pauseAsked: $pauseAsked, ')
+          ..write('doneAt: $doneAt')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(
+    number,
+    startsAt,
+    endsAt,
+    builtAt,
+    missGuess,
+    newPaused,
+    pauseAsked,
+    doneAt,
+  );
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is DayRow &&
+          other.number == this.number &&
+          other.startsAt == this.startsAt &&
+          other.endsAt == this.endsAt &&
+          other.builtAt == this.builtAt &&
+          other.missGuess == this.missGuess &&
+          other.newPaused == this.newPaused &&
+          other.pauseAsked == this.pauseAsked &&
+          other.doneAt == this.doneAt);
+}
+
+class DaysCompanion extends UpdateCompanion<DayRow> {
+  final Value<int> number;
+  final Value<DateTime> startsAt;
+  final Value<DateTime> endsAt;
+  final Value<DateTime?> builtAt;
+  final Value<int> missGuess;
+  final Value<bool> newPaused;
+  final Value<bool> pauseAsked;
+  final Value<DateTime?> doneAt;
+  const DaysCompanion({
+    this.number = const Value.absent(),
+    this.startsAt = const Value.absent(),
+    this.endsAt = const Value.absent(),
+    this.builtAt = const Value.absent(),
+    this.missGuess = const Value.absent(),
+    this.newPaused = const Value.absent(),
+    this.pauseAsked = const Value.absent(),
+    this.doneAt = const Value.absent(),
+  });
+  DaysCompanion.insert({
+    this.number = const Value.absent(),
+    required DateTime startsAt,
+    required DateTime endsAt,
+    this.builtAt = const Value.absent(),
+    this.missGuess = const Value.absent(),
+    this.newPaused = const Value.absent(),
+    this.pauseAsked = const Value.absent(),
+    this.doneAt = const Value.absent(),
+  }) : startsAt = Value(startsAt),
+       endsAt = Value(endsAt);
+  static Insertable<DayRow> custom({
+    Expression<int>? number,
+    Expression<DateTime>? startsAt,
+    Expression<DateTime>? endsAt,
+    Expression<DateTime>? builtAt,
+    Expression<int>? missGuess,
+    Expression<bool>? newPaused,
+    Expression<bool>? pauseAsked,
+    Expression<DateTime>? doneAt,
+  }) {
+    return RawValuesInsertable({
+      if (number != null) 'number': number,
+      if (startsAt != null) 'starts_at': startsAt,
+      if (endsAt != null) 'ends_at': endsAt,
+      if (builtAt != null) 'built_at': builtAt,
+      if (missGuess != null) 'miss_guess': missGuess,
+      if (newPaused != null) 'new_paused': newPaused,
+      if (pauseAsked != null) 'pause_asked': pauseAsked,
+      if (doneAt != null) 'done_at': doneAt,
+    });
+  }
+
+  DaysCompanion copyWith({
+    Value<int>? number,
+    Value<DateTime>? startsAt,
+    Value<DateTime>? endsAt,
+    Value<DateTime?>? builtAt,
+    Value<int>? missGuess,
+    Value<bool>? newPaused,
+    Value<bool>? pauseAsked,
+    Value<DateTime?>? doneAt,
+  }) {
+    return DaysCompanion(
+      number: number ?? this.number,
+      startsAt: startsAt ?? this.startsAt,
+      endsAt: endsAt ?? this.endsAt,
+      builtAt: builtAt ?? this.builtAt,
+      missGuess: missGuess ?? this.missGuess,
+      newPaused: newPaused ?? this.newPaused,
+      pauseAsked: pauseAsked ?? this.pauseAsked,
+      doneAt: doneAt ?? this.doneAt,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (number.present) {
+      map['number'] = Variable<int>(number.value);
+    }
+    if (startsAt.present) {
+      map['starts_at'] = Variable<DateTime>(startsAt.value);
+    }
+    if (endsAt.present) {
+      map['ends_at'] = Variable<DateTime>(endsAt.value);
+    }
+    if (builtAt.present) {
+      map['built_at'] = Variable<DateTime>(builtAt.value);
+    }
+    if (missGuess.present) {
+      map['miss_guess'] = Variable<int>(missGuess.value);
+    }
+    if (newPaused.present) {
+      map['new_paused'] = Variable<bool>(newPaused.value);
+    }
+    if (pauseAsked.present) {
+      map['pause_asked'] = Variable<bool>(pauseAsked.value);
+    }
+    if (doneAt.present) {
+      map['done_at'] = Variable<DateTime>(doneAt.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('DaysCompanion(')
+          ..write('number: $number, ')
+          ..write('startsAt: $startsAt, ')
+          ..write('endsAt: $endsAt, ')
+          ..write('builtAt: $builtAt, ')
+          ..write('missGuess: $missGuess, ')
+          ..write('newPaused: $newPaused, ')
+          ..write('pauseAsked: $pauseAsked, ')
+          ..write('doneAt: $doneAt')
+          ..write(')'))
+        .toString();
+  }
+}
+
+class $DayCardsTable extends DayCards
+    with TableInfo<$DayCardsTable, DayCardRow> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $DayCardsTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _dayMeta = const VerificationMeta('day');
+  @override
+  late final GeneratedColumn<int> day = GeneratedColumn<int>(
+    'day',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _poemIdMeta = const VerificationMeta('poemId');
+  @override
+  late final GeneratedColumn<int> poemId = GeneratedColumn<int>(
+    'poem_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _invertedMeta = const VerificationMeta(
+    'inverted',
+  );
+  @override
+  late final GeneratedColumn<bool> inverted = GeneratedColumn<bool>(
+    'inverted',
+    aliasedName,
+    false,
+    type: DriftSqlType.bool,
+    requiredDuringInsert: true,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'CHECK ("inverted" IN (0, 1))',
+    ),
+  );
+  static const VerificationMeta _kindMeta = const VerificationMeta('kind');
+  @override
+  late final GeneratedColumn<int> kind = GeneratedColumn<int>(
+    'kind',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [day, poemId, inverted, kind];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'day_cards';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<DayCardRow> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('day')) {
+      context.handle(
+        _dayMeta,
+        day.isAcceptableOrUnknown(data['day']!, _dayMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_dayMeta);
+    }
+    if (data.containsKey('poem_id')) {
+      context.handle(
+        _poemIdMeta,
+        poemId.isAcceptableOrUnknown(data['poem_id']!, _poemIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_poemIdMeta);
+    }
+    if (data.containsKey('inverted')) {
+      context.handle(
+        _invertedMeta,
+        inverted.isAcceptableOrUnknown(data['inverted']!, _invertedMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_invertedMeta);
+    }
+    if (data.containsKey('kind')) {
+      context.handle(
+        _kindMeta,
+        kind.isAcceptableOrUnknown(data['kind']!, _kindMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_kindMeta);
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {day, poemId, inverted};
+  @override
+  DayCardRow map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return DayCardRow(
+      day: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}day'],
+      )!,
+      poemId: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}poem_id'],
+      )!,
+      inverted: attachedDatabase.typeMapping.read(
+        DriftSqlType.bool,
+        data['${effectivePrefix}inverted'],
+      )!,
+      kind: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}kind'],
+      )!,
+    );
+  }
+
+  @override
+  $DayCardsTable createAlias(String alias) {
+    return $DayCardsTable(attachedDatabase, alias);
+  }
+}
+
+class DayCardRow extends DataClass implements Insertable<DayCardRow> {
+  final int day;
+  final int poemId;
+  final bool inverted;
+
+  /// `StepKind` index: a due review or a new card.
+  final int kind;
+  const DayCardRow({
+    required this.day,
+    required this.poemId,
+    required this.inverted,
+    required this.kind,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['day'] = Variable<int>(day);
+    map['poem_id'] = Variable<int>(poemId);
+    map['inverted'] = Variable<bool>(inverted);
+    map['kind'] = Variable<int>(kind);
+    return map;
+  }
+
+  DayCardsCompanion toCompanion(bool nullToAbsent) {
+    return DayCardsCompanion(
+      day: Value(day),
+      poemId: Value(poemId),
+      inverted: Value(inverted),
+      kind: Value(kind),
+    );
+  }
+
+  factory DayCardRow.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return DayCardRow(
+      day: serializer.fromJson<int>(json['day']),
+      poemId: serializer.fromJson<int>(json['poemId']),
+      inverted: serializer.fromJson<bool>(json['inverted']),
+      kind: serializer.fromJson<int>(json['kind']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'day': serializer.toJson<int>(day),
+      'poemId': serializer.toJson<int>(poemId),
+      'inverted': serializer.toJson<bool>(inverted),
+      'kind': serializer.toJson<int>(kind),
+    };
+  }
+
+  DayCardRow copyWith({int? day, int? poemId, bool? inverted, int? kind}) =>
+      DayCardRow(
+        day: day ?? this.day,
+        poemId: poemId ?? this.poemId,
+        inverted: inverted ?? this.inverted,
+        kind: kind ?? this.kind,
+      );
+  DayCardRow copyWithCompanion(DayCardsCompanion data) {
+    return DayCardRow(
+      day: data.day.present ? data.day.value : this.day,
+      poemId: data.poemId.present ? data.poemId.value : this.poemId,
+      inverted: data.inverted.present ? data.inverted.value : this.inverted,
+      kind: data.kind.present ? data.kind.value : this.kind,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('DayCardRow(')
+          ..write('day: $day, ')
+          ..write('poemId: $poemId, ')
+          ..write('inverted: $inverted, ')
+          ..write('kind: $kind')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(day, poemId, inverted, kind);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is DayCardRow &&
+          other.day == this.day &&
+          other.poemId == this.poemId &&
+          other.inverted == this.inverted &&
+          other.kind == this.kind);
+}
+
+class DayCardsCompanion extends UpdateCompanion<DayCardRow> {
+  final Value<int> day;
+  final Value<int> poemId;
+  final Value<bool> inverted;
+  final Value<int> kind;
+  final Value<int> rowid;
+  const DayCardsCompanion({
+    this.day = const Value.absent(),
+    this.poemId = const Value.absent(),
+    this.inverted = const Value.absent(),
+    this.kind = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  DayCardsCompanion.insert({
+    required int day,
+    required int poemId,
+    required bool inverted,
+    required int kind,
+    this.rowid = const Value.absent(),
+  }) : day = Value(day),
+       poemId = Value(poemId),
+       inverted = Value(inverted),
+       kind = Value(kind);
+  static Insertable<DayCardRow> custom({
+    Expression<int>? day,
+    Expression<int>? poemId,
+    Expression<bool>? inverted,
+    Expression<int>? kind,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (day != null) 'day': day,
+      if (poemId != null) 'poem_id': poemId,
+      if (inverted != null) 'inverted': inverted,
+      if (kind != null) 'kind': kind,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  DayCardsCompanion copyWith({
+    Value<int>? day,
+    Value<int>? poemId,
+    Value<bool>? inverted,
+    Value<int>? kind,
+    Value<int>? rowid,
+  }) {
+    return DayCardsCompanion(
+      day: day ?? this.day,
+      poemId: poemId ?? this.poemId,
+      inverted: inverted ?? this.inverted,
+      kind: kind ?? this.kind,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (day.present) {
+      map['day'] = Variable<int>(day.value);
+    }
+    if (poemId.present) {
+      map['poem_id'] = Variable<int>(poemId.value);
+    }
+    if (inverted.present) {
+      map['inverted'] = Variable<bool>(inverted.value);
+    }
+    if (kind.present) {
+      map['kind'] = Variable<int>(kind.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('DayCardsCompanion(')
+          ..write('day: $day, ')
+          ..write('poemId: $poemId, ')
+          ..write('inverted: $inverted, ')
+          ..write('kind: $kind, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
 abstract class _$AppDatabase extends GeneratedDatabase {
   _$AppDatabase(QueryExecutor e) : super(e);
   $AppDatabaseManager get managers => $AppDatabaseManager(this);
@@ -3718,6 +4533,8 @@ abstract class _$AppDatabase extends GeneratedDatabase {
   late final $SideTripAnswersTable sideTripAnswers = $SideTripAnswersTable(
     this,
   );
+  late final $DaysTable days = $DaysTable(this);
+  late final $DayCardsTable dayCards = $DayCardsTable(this);
   @override
   Iterable<TableInfo<Table, Object?>> get allTables =>
       allSchemaEntities.whereType<TableInfo<Table, Object?>>();
@@ -3730,6 +4547,8 @@ abstract class _$AppDatabase extends GeneratedDatabase {
     keyValues,
     sideTripRuns,
     sideTripAnswers,
+    days,
+    dayCards,
   ];
 }
 
@@ -6014,6 +6833,443 @@ typedef $$SideTripAnswersTableProcessedTableManager =
       SideTripAnswerRow,
       PrefetchHooks Function({bool runId})
     >;
+typedef $$DaysTableCreateCompanionBuilder = DaysCompanion Function({
+  Value<int> number,
+  required DateTime startsAt,
+  required DateTime endsAt,
+  Value<DateTime?> builtAt,
+  Value<int> missGuess,
+  Value<bool> newPaused,
+  Value<bool> pauseAsked,
+  Value<DateTime?> doneAt,
+});
+typedef $$DaysTableUpdateCompanionBuilder = DaysCompanion Function({
+  Value<int> number,
+  Value<DateTime> startsAt,
+  Value<DateTime> endsAt,
+  Value<DateTime?> builtAt,
+  Value<int> missGuess,
+  Value<bool> newPaused,
+  Value<bool> pauseAsked,
+  Value<DateTime?> doneAt,
+});
+
+class $$DaysTableFilterComposer extends Composer<_$AppDatabase, $DaysTable> {
+  $$DaysTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<int> get number => $composableBuilder(
+    column: $table.number,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get startsAt => $composableBuilder(
+    column: $table.startsAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get endsAt => $composableBuilder(
+    column: $table.endsAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get builtAt => $composableBuilder(
+    column: $table.builtAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get missGuess => $composableBuilder(
+    column: $table.missGuess,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<bool> get newPaused => $composableBuilder(
+    column: $table.newPaused,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<bool> get pauseAsked => $composableBuilder(
+    column: $table.pauseAsked,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get doneAt => $composableBuilder(
+    column: $table.doneAt,
+    builder: (column) => ColumnFilters(column),
+  );
+}
+
+class $$DaysTableOrderingComposer extends Composer<_$AppDatabase, $DaysTable> {
+  $$DaysTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<int> get number => $composableBuilder(
+    column: $table.number,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get startsAt => $composableBuilder(
+    column: $table.startsAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get endsAt => $composableBuilder(
+    column: $table.endsAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get builtAt => $composableBuilder(
+    column: $table.builtAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get missGuess => $composableBuilder(
+    column: $table.missGuess,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<bool> get newPaused => $composableBuilder(
+    column: $table.newPaused,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<bool> get pauseAsked => $composableBuilder(
+    column: $table.pauseAsked,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get doneAt => $composableBuilder(
+    column: $table.doneAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+}
+
+class $$DaysTableAnnotationComposer
+    extends Composer<_$AppDatabase, $DaysTable> {
+  $$DaysTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<int> get number =>
+      $composableBuilder(column: $table.number, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get startsAt =>
+      $composableBuilder(column: $table.startsAt, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get endsAt =>
+      $composableBuilder(column: $table.endsAt, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get builtAt =>
+      $composableBuilder(column: $table.builtAt, builder: (column) => column);
+
+  GeneratedColumn<int> get missGuess =>
+      $composableBuilder(column: $table.missGuess, builder: (column) => column);
+
+  GeneratedColumn<bool> get newPaused =>
+      $composableBuilder(column: $table.newPaused, builder: (column) => column);
+
+  GeneratedColumn<bool> get pauseAsked => $composableBuilder(
+    column: $table.pauseAsked,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<DateTime> get doneAt =>
+      $composableBuilder(column: $table.doneAt, builder: (column) => column);
+}
+
+class $$DaysTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $DaysTable,
+          DayRow,
+          $$DaysTableFilterComposer,
+          $$DaysTableOrderingComposer,
+          $$DaysTableAnnotationComposer,
+          $$DaysTableCreateCompanionBuilder,
+          $$DaysTableUpdateCompanionBuilder,
+          (DayRow, BaseReferences<_$AppDatabase, $DaysTable, DayRow>),
+          DayRow,
+          PrefetchHooks Function()
+        > {
+  $$DaysTableTableManager(_$AppDatabase db, $DaysTable table)
+    : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$DaysTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$DaysTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$DaysTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback:
+              ({
+                Value<int> number = const Value.absent(),
+                Value<DateTime> startsAt = const Value.absent(),
+                Value<DateTime> endsAt = const Value.absent(),
+                Value<DateTime?> builtAt = const Value.absent(),
+                Value<int> missGuess = const Value.absent(),
+                Value<bool> newPaused = const Value.absent(),
+                Value<bool> pauseAsked = const Value.absent(),
+                Value<DateTime?> doneAt = const Value.absent(),
+              }) => DaysCompanion(
+                number: number,
+                startsAt: startsAt,
+                endsAt: endsAt,
+                builtAt: builtAt,
+                missGuess: missGuess,
+                newPaused: newPaused,
+                pauseAsked: pauseAsked,
+                doneAt: doneAt,
+              ),
+          createCompanionCallback:
+              ({
+                Value<int> number = const Value.absent(),
+                required DateTime startsAt,
+                required DateTime endsAt,
+                Value<DateTime?> builtAt = const Value.absent(),
+                Value<int> missGuess = const Value.absent(),
+                Value<bool> newPaused = const Value.absent(),
+                Value<bool> pauseAsked = const Value.absent(),
+                Value<DateTime?> doneAt = const Value.absent(),
+              }) => DaysCompanion.insert(
+                number: number,
+                startsAt: startsAt,
+                endsAt: endsAt,
+                builtAt: builtAt,
+                missGuess: missGuess,
+                newPaused: newPaused,
+                pauseAsked: pauseAsked,
+                doneAt: doneAt,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map(
+                (e) => (
+                  e.readTable<$DaysTable, DayRow>(table),
+                  BaseReferences<_$AppDatabase, $DaysTable, DayRow>(
+                    db,
+                    table,
+                    e,
+                  ),
+                ),
+              )
+              .toList(),
+          prefetchHooksCallback: null,
+        ),
+      );
+}
+
+typedef $$DaysTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $DaysTable,
+      DayRow,
+      $$DaysTableFilterComposer,
+      $$DaysTableOrderingComposer,
+      $$DaysTableAnnotationComposer,
+      $$DaysTableCreateCompanionBuilder,
+      $$DaysTableUpdateCompanionBuilder,
+      (DayRow, BaseReferences<_$AppDatabase, $DaysTable, DayRow>),
+      DayRow,
+      PrefetchHooks Function()
+    >;
+typedef $$DayCardsTableCreateCompanionBuilder = DayCardsCompanion Function({
+  required int day,
+  required int poemId,
+  required bool inverted,
+  required int kind,
+  Value<int> rowid,
+});
+typedef $$DayCardsTableUpdateCompanionBuilder = DayCardsCompanion Function({
+  Value<int> day,
+  Value<int> poemId,
+  Value<bool> inverted,
+  Value<int> kind,
+  Value<int> rowid,
+});
+
+class $$DayCardsTableFilterComposer
+    extends Composer<_$AppDatabase, $DayCardsTable> {
+  $$DayCardsTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<int> get day => $composableBuilder(
+    column: $table.day,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get poemId => $composableBuilder(
+    column: $table.poemId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<bool> get inverted => $composableBuilder(
+    column: $table.inverted,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get kind => $composableBuilder(
+    column: $table.kind,
+    builder: (column) => ColumnFilters(column),
+  );
+}
+
+class $$DayCardsTableOrderingComposer
+    extends Composer<_$AppDatabase, $DayCardsTable> {
+  $$DayCardsTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<int> get day => $composableBuilder(
+    column: $table.day,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get poemId => $composableBuilder(
+    column: $table.poemId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<bool> get inverted => $composableBuilder(
+    column: $table.inverted,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get kind => $composableBuilder(
+    column: $table.kind,
+    builder: (column) => ColumnOrderings(column),
+  );
+}
+
+class $$DayCardsTableAnnotationComposer
+    extends Composer<_$AppDatabase, $DayCardsTable> {
+  $$DayCardsTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<int> get day =>
+      $composableBuilder(column: $table.day, builder: (column) => column);
+
+  GeneratedColumn<int> get poemId =>
+      $composableBuilder(column: $table.poemId, builder: (column) => column);
+
+  GeneratedColumn<bool> get inverted =>
+      $composableBuilder(column: $table.inverted, builder: (column) => column);
+
+  GeneratedColumn<int> get kind =>
+      $composableBuilder(column: $table.kind, builder: (column) => column);
+}
+
+class $$DayCardsTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $DayCardsTable,
+          DayCardRow,
+          $$DayCardsTableFilterComposer,
+          $$DayCardsTableOrderingComposer,
+          $$DayCardsTableAnnotationComposer,
+          $$DayCardsTableCreateCompanionBuilder,
+          $$DayCardsTableUpdateCompanionBuilder,
+          (
+            DayCardRow,
+            BaseReferences<_$AppDatabase, $DayCardsTable, DayCardRow>,
+          ),
+          DayCardRow,
+          PrefetchHooks Function()
+        > {
+  $$DayCardsTableTableManager(_$AppDatabase db, $DayCardsTable table)
+    : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$DayCardsTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$DayCardsTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$DayCardsTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback:
+              ({
+                Value<int> day = const Value.absent(),
+                Value<int> poemId = const Value.absent(),
+                Value<bool> inverted = const Value.absent(),
+                Value<int> kind = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => DayCardsCompanion(
+                day: day,
+                poemId: poemId,
+                inverted: inverted,
+                kind: kind,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                required int day,
+                required int poemId,
+                required bool inverted,
+                required int kind,
+                Value<int> rowid = const Value.absent(),
+              }) => DayCardsCompanion.insert(
+                day: day,
+                poemId: poemId,
+                inverted: inverted,
+                kind: kind,
+                rowid: rowid,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map(
+                (e) => (
+                  e.readTable<$DayCardsTable, DayCardRow>(table),
+                  BaseReferences<_$AppDatabase, $DayCardsTable, DayCardRow>(
+                    db,
+                    table,
+                    e,
+                  ),
+                ),
+              )
+              .toList(),
+          prefetchHooksCallback: null,
+        ),
+      );
+}
+
+typedef $$DayCardsTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $DayCardsTable,
+      DayCardRow,
+      $$DayCardsTableFilterComposer,
+      $$DayCardsTableOrderingComposer,
+      $$DayCardsTableAnnotationComposer,
+      $$DayCardsTableCreateCompanionBuilder,
+      $$DayCardsTableUpdateCompanionBuilder,
+      (DayCardRow, BaseReferences<_$AppDatabase, $DayCardsTable, DayCardRow>),
+      DayCardRow,
+      PrefetchHooks Function()
+    >;
 
 class $AppDatabaseManager {
   final _$AppDatabase _db;
@@ -6032,4 +7288,7 @@ class $AppDatabaseManager {
       $$SideTripRunsTableTableManager(_db, _db.sideTripRuns);
   $$SideTripAnswersTableTableManager get sideTripAnswers =>
       $$SideTripAnswersTableTableManager(_db, _db.sideTripAnswers);
+  $$DaysTableTableManager get days => $$DaysTableTableManager(_db, _db.days);
+  $$DayCardsTableTableManager get dayCards =>
+      $$DayCardsTableTableManager(_db, _db.dayCards);
 }

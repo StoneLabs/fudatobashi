@@ -35,6 +35,7 @@ abstract final class DbIntegrity {
     IntegrityCheck('impossible times', _hasImpossibleTimes, _repairImpossibleTimes),
     IntegrityCheck('orphaned side-trip answers', _hasOrphanedAnswers, _deleteOrphanedAnswers),
     IntegrityCheck('side-trip ratings', _hasBrokenSideTripRatings, _replaySideTripRatings),
+    IntegrityCheck('orphaned day cards', _hasOrphanedDayCards, _deleteOrphanedDayCards),
   ];
 
   static Future<void> run(AppDatabase db) async {
@@ -169,6 +170,23 @@ abstract final class DbIntegrity {
   static Future<void> _deleteOrphanedAnswers(AppDatabase db) async {
     final runs = db.selectOnly(db.sideTripRuns)..addColumns([db.sideTripRuns.id]);
     await (db.delete(db.sideTripAnswers)..where((a) => a.runId.isNotInQuery(runs))).go();
+  }
+
+  /// A card of a day's set whose day is gone.
+  static Future<bool> _hasOrphanedDayCards(AppDatabase db) async {
+    final found = await db.customSelect(
+      '''
+      SELECT EXISTS (
+        SELECT 1 FROM day_cards c WHERE NOT EXISTS (SELECT 1 FROM days d WHERE d.number = c.day)
+      ) AS found
+      ''',
+    ).getSingle();
+    return found.read<bool>('found');
+  }
+
+  static Future<void> _deleteOrphanedDayCards(AppDatabase db) async {
+    final days = db.selectOnly(db.days)..addColumns([db.days.number]);
+    await (db.delete(db.dayCards)..where((c) => c.day.isNotInQuery(days))).go();
   }
 
   /// A ranked side-trip game stores its performance and the trip's rating

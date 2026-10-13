@@ -149,7 +149,43 @@ class SideTripAnswers extends Table {
   IntColumn get secondTap => integer().nullable()();
 }
 
-@DriftDatabase(tables: [Sessions, Attempts, Items, RatingPoints, KeyValues, SideTripRuns, SideTripAnswers])
+/// One practice day (see `DayWindow`): journey mode's today's set and
+/// whether it was done. Created the first time the day is needed.
+@DataClassName('DayRow')
+class Days extends Table {
+  /// The day's date as yyyymmdd.
+  IntColumn get number => integer()();
+  DateTimeColumn get startsAt => dateTime()();
+  DateTimeColumn get endsAt => dateTime()();
+
+  /// When today's set was built; null on a day without one.
+  DateTimeColumn get builtAt => dateTime().nullable()();
+
+  /// The morning's guess at the extra looks misses will add.
+  IntColumn get missGuess => integer().withDefault(const Constant(0))();
+  BoolColumn get newPaused => boolean().withDefault(const Constant(false))();
+  BoolColumn get pauseAsked => boolean().withDefault(const Constant(false))();
+  DateTimeColumn get doneAt => dateTime().nullable()();
+
+  @override
+  Set<Column> get primaryKey => {number};
+}
+
+/// A card of a day's set.
+@DataClassName('DayCardRow')
+class DayCards extends Table {
+  IntColumn get day => integer()();
+  IntColumn get poemId => integer()();
+  BoolColumn get inverted => boolean()();
+
+  /// `StepKind` index: a due review or a new card.
+  IntColumn get kind => integer()();
+
+  @override
+  Set<Column> get primaryKey => {day, poemId, inverted};
+}
+
+@DriftDatabase(tables: [Sessions, Attempts, Items, RatingPoints, KeyValues, SideTripRuns, SideTripAnswers, Days, DayCards])
 class AppDatabase extends _$AppDatabase {
   AppDatabase([QueryExecutor? executor]) : super(executor ?? driftDatabase(name: 'fudatobashi'));
 
