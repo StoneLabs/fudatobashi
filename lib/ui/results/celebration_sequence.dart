@@ -7,6 +7,7 @@ import '../ankiren/ankiren_rating_overlay.dart';
 import '../sound/sounds.dart';
 import 'celebration_overlays.dart';
 import 'celebrations.dart';
+import 'day_done_overlay.dart';
 import 'graduation_overlay.dart';
 import 'island_complete_overlay.dart';
 import 'level_up_overlay.dart';
@@ -119,6 +120,7 @@ class _CelebrationSequenceState extends State<CelebrationSequence> with SingleTi
       RankUpCelebration() => RankUpOverlay(data: c, onNext: onNext),
       GoalUpCelebration() => GoalUpOverlay(goalMs: progress.trainer.goalMs.round(), onNext: onNext),
       GraduationCelebration() => GraduationOverlay(onNext: onNext),
+      DayDoneCelebration() => DayDoneOverlay(day: c.day, onNext: onNext),
       XpCelebration() => XpOverlay(gain: c.gain, onNext: onNext),
       LevelUpCelebration() => LevelUpOverlay(gain: c.gain, onNext: onNext),
       RatingCelebration() => RatingOverlay(data: c, onNext: onNext),
@@ -141,6 +143,7 @@ List<(Sfx, Duration)> _soundsOf(Celebration c) => switch (c) {
           (Sfx.stamp, GraduationMotion.fullImpactAt),
           (Sfx.stamp, GraduationMotion.kaidenImpactAt),
         ],
+      DayDoneCelebration() => const [(Sfx.goalUp, Duration.zero), (Sfx.stamp, DayDoneMotion.impactAt)],
       XpCelebration() => XpTimeline(c.gain).sounds,
       LevelUpCelebration() => const [(Sfx.stamp, LevelUpMotion.impactAt), (Sfx.levelUp, LevelUpMotion.impactAt)],
       RatingCelebration() => RatingTimeline(c).sounds,

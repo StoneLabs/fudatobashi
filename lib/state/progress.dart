@@ -88,7 +88,7 @@ class SessionReport {
 class DayDone {
   const DayDone({
     required this.date,
-    required this.looks,
+    required this.bar,
     required this.rounds,
     required this.newCards,
     required this.missesFixed,
@@ -99,8 +99,11 @@ class DayDone {
   /// The day (a UTC midnight).
   final DateTime date;
 
-  /// Looks the set took, over [rounds] training runs.
-  final int looks, rounds;
+  /// The set's bar, all done.
+  final SetBar bar;
+
+  /// Training runs the set took.
+  final int rounds;
   final int newCards;
 
   /// Misses on the set's cards, each answered right again since.
@@ -109,6 +112,9 @@ class DayDone {
   /// Days in a row with the set done, today included.
   final int goalStreak;
   final int xp;
+
+  /// Looks the set took.
+  int get looks => bar.total;
 }
 
 /// One of Home's week stamps.
@@ -1243,7 +1249,7 @@ class Progress extends ChangeNotifier {
     final date = done.window.date;
     return DayDone(
       date: date,
-      looks: done.bar.total,
+      bar: done.bar,
       rounds: sessions.where((s) => s.mode == PlayMode.training.index && dayOf(s) == date).length,
       newCards: done.newCards,
       missesFixed: done.misses,

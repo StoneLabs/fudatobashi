@@ -1,8 +1,10 @@
 import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
+import 'package:fudatobashi/config/config.dart';
 import 'package:fudatobashi/data/fuda_sets.dart';
 import 'package:fudatobashi/data/poem.dart';
+import 'package:fudatobashi/domain/today_set.dart';
 import 'package:fudatobashi/domain/xp.dart';
 import 'package:fudatobashi/state/progress.dart';
 import 'package:fudatobashi/ui/results/celebrations.dart';
@@ -20,6 +22,7 @@ void main() {
     double? ratingAfter,
     bool goalRaised = false,
     bool graduated = false,
+    DayDone? dayDone,
     XpGain? xp,
   }) =>
       SessionReport(
@@ -33,6 +36,7 @@ void main() {
         goalRaised: goalRaised,
         islandsCompleted: islandsCompleted,
         graduated: graduated,
+        dayDone: dayDone,
         xp: xp,
       );
   XpGain gain(int before, int xp) => XpGain(before: before, award: XpAward([XpPart(XpSource.correct, 1, xp)]));
@@ -131,6 +135,31 @@ void main() {
       LevelUpCelebration,
     ]);
     expect((list[4] as LevelUpCelebration).gain, levelUp);
+  });
+
+  test("today's set done comes after graduation and before the XP, only on the run that finished it", () {
+    final day = DayDone(
+      date: DateTime.utc(2026, 10, 14),
+      bar: const SetBar(reviews: 22, reviewsDone: 22, fresh: 16, freshDone: 16, extra: 6, extraDone: 6),
+      rounds: 2,
+      newCards: 4,
+      missesFixed: 6,
+      goalStreak: 5,
+      xp: XpTuning.dayDone,
+    );
+    final levelUp = gain(XpCurve.reach(2) - 5, 10);
+    final list = celebrationsFor(report(islandsCompleted: [2], graduated: true, dayDone: day, xp: levelUp));
+    expect(list.map((c) => c.runtimeType), [
+      IslandCompleteCelebration,
+      GraduationCelebration,
+      DayDoneCelebration,
+      XpCelebration,
+      LevelUpCelebration,
+    ]);
+    expect((list[2] as DayDoneCelebration).day, day);
+    expect(celebrationsFor(report(dayDone: day, xp: gain(0, 40))).map((c) => c.runtimeType),
+        [DayDoneCelebration, XpCelebration]);
+    expect(celebrationsFor(report(graduated: true, xp: levelUp)).whereType<DayDoneCelebration>(), isEmpty);
   });
 
   test('every run that earned XP gets its page, a level-up only when one was reached', () {

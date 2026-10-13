@@ -4370,3 +4370,151 @@ abstract final class AnkirenRatingMotion {
   static const hopPeriod = Duration(milliseconds: 1000);
   static const double hopAirShare = 0.4;
 }
+
+/// [curve] advancing in [count] whole steps, like CSS `steps(count, end)`:
+/// the stop-motion of manga entrances.
+class StepCurve extends Curve {
+  const StepCurve(this.count, [this.curve = Curves.linear]);
+  final int count;
+  final Curve curve;
+
+  @override
+  double transformInternal(double t) => curve.transform((t * count).floor() / count);
+}
+
+/// "Today's set done" (本日完了!!, `DayDoneOverlay`): sea blue under a pale
+/// glow and white focus lines; the day's bar, the 完了 hanko on it, Tobi
+/// cheering and the day's numbers.
+abstract final class DayDoneLayout {
+  static const Color color = Palette.sea;
+  static const Alignment glowAt = Alignment(0, -0.34);
+  static const List<Color> glowColors = [Color(0xF2DCEFFF), Color(0x8CA9DCFF), Color(0x002B9BFF)];
+  static const List<double> glowStops = [0, 0.2, 0.46];
+  static const focus = BurstSpec(
+      box: Size(384, 832),
+      center: Offset(192, 246),
+      count: 200,
+      innerMin: 150,
+      innerMax: 210,
+      width: 4,
+      seed: 19,
+      color: Color(0xD9FFFFFF));
+
+  static const double topGap = 26;
+  static const String title = '本日完了!!';
+  static const double titleFont = 52;
+  static const double titleOutline = 16;
+
+  /// The ink band under the title: a slanted parallelogram with a paper
+  /// edge, its lettering upright; ドン! bursts out at its lower right,
+  /// [sfxRight] from the screen's edge and [sfxTop] below the band's top.
+  static const double bandGap = 18;
+  static const double bandFont = 18.5;
+  static const double bandTracking = 0.04;
+  static const double bandLineHeight = 1.5;
+  static const EdgeInsets bandPadding = EdgeInsets.fromLTRB(16, 5, 16, 7);
+  static const double bandTurnDeg = -3.5;
+  static const double bandSkewDeg = -12;
+  static const double bandEdge = 3;
+  static const String sfx = 'ドン!';
+  static const double sfxFont = 40;
+  static const double sfxOutline = 5;
+  static const int sfxSeed = 5;
+  static const double sfxTurnDeg = -12;
+  static const double sfxRight = 14;
+  static const double sfxTop = 34;
+
+  /// The day's bar as on Home (reviews, new cards, misses), green from the
+  /// left up to [sweepFrom] before its last bit sweeps green, with a paper
+  /// edge round its ink border.
+  static const double barGap = 30;
+  static const double barInset = 24;
+  static const double barHeight = 32;
+  static const double barBorder = 3;
+  static const double barEdge = 3;
+  static const double sweepFrom = 0.8;
+
+  /// The 完了 hanko slammed onto the bar, the day's date under it: a
+  /// pink-deep border with a thin rule [stampRuleGap] inside it.
+  static const String stamp = '完了';
+  static const double stampFont = 32;
+  static const double stampTracking = 0.12;
+  static const Color stampPaper = Color(0xDBFFFFFF);
+  static const double stampBorder = 3;
+  static const double stampRuleGap = 2;
+  static const double stampRule = 1.6;
+  static const EdgeInsets stampPadding = EdgeInsets.fromLTRB(15, 3.5, 15, 1.5);
+  static const double stampTurnDeg = -7;
+  static const double dateFont = 10;
+  static const double dateTracking = 0.14;
+  static const double dateGap = 3;
+  static const String dateSeparator = '.';
+
+  /// Tobi cheering between the bar and the numbers; he shrinks when the
+  /// numbers need the room, down to [tobiMinHeight].
+  static const Size tobi = Size(118, 140);
+  static const double tobiMinHeight = 64;
+  static const double tobiGap = 24;
+  static const double statsGap = 22;
+
+  /// The day's numbers, one per row with dashed rules between, then the XP
+  /// under an ink rule.
+  static const double statsInset = 24;
+  static const EdgeInsets statsPadding = EdgeInsets.fromLTRB(16, 12, 16, 14);
+  static const double statFont = 14.5;
+  static const double statNumberFont = 22;
+  static const double statRowPadding = 4;
+  static const Color statRule = Color(0xFFC9C6BF);
+  static const double xpGap = 8;
+  static const double xpRule = 3;
+  static const double xpRuleGap = 10;
+  static const double xpLabelFont = 13;
+  static const double xpLabelGap = 8;
+
+  /// "+1000 XP" on a sun chip, taking at most [xpChipShare] of the row;
+  /// both it and its label shrink to fit.
+  static const double xpChipFont = 26;
+  static const EdgeInsets xpChipPadding = EdgeInsets.fromLTRB(12, 5, 12, 7);
+  static const double xpChipTurnDeg = -2;
+  static const double xpChipShare = 0.6;
+
+  static const double ctaGap = 12;
+  static const double ctaHeight = 66;
+  static const double ctaFont = 28;
+  static const double ctaSubFont = 15;
+  static const Offset ctaShadow = Offset(5, 5);
+}
+
+/// The 本日完了!! entrance, all in stop-motion steps: the title drops, the
+/// band slides in, the bar's last bit sweeps green, the hanko slams down
+/// with ドン! and a jolt at [impactAt], Tobi hops in, then the numbers and
+/// the button rise while the XP counts up.
+abstract final class DayDoneMotion {
+  static const title = EntranceSpec(EntranceFrom(offset: Offset(0, -40), scale: 1.25),
+      duration: Duration(milliseconds: 260), curve: StepCurve(4));
+  static const band = EntranceSpec(EntranceFrom(offset: Offset(-300, 0), opaqueAt: 0.3),
+      duration: Duration(milliseconds: 200), delay: Duration(milliseconds: 160), curve: StepCurve(3));
+  static const sweep = EntranceSpec(Entrances.custom,
+      duration: Duration(milliseconds: 520), delay: Duration(milliseconds: 380), curve: StepCurve(8));
+  static const stamp = EntranceSpec(EntranceFrom(scale: 2.6, turnDeg: -9),
+      duration: Duration(milliseconds: 230), delay: Duration(milliseconds: 980), curve: Cubic(0.3, 1.6, 0.6, 1));
+  static const sfx = EntranceSpec(EntranceFrom(scale: 0.2),
+      duration: Duration(milliseconds: 260), delay: Duration(milliseconds: 1000), curve: StepCurve(3, Entrances.bouncy));
+
+  static const impactAt = Duration(milliseconds: 1050);
+  static const jolt = EntranceSpec(Entrances.custom, duration: Duration(milliseconds: 180), delay: impactAt, curve: Curves.linear);
+  static const double joltReach = 4;
+  static const int joltSteps = 4;
+  static const int joltSeed = 23;
+
+  static const tobi = EntranceSpec(EntranceFrom(offset: Offset(0, 30)),
+      duration: Duration(milliseconds: 420), delay: Duration(milliseconds: 1150), curve: StepCurve(4, Entrances.bouncy));
+  static const stats = EntranceSpec(EntranceFrom(offset: Offset(0, 24)),
+      duration: Duration(milliseconds: 260), delay: Duration(milliseconds: 1250), curve: StepCurve(4));
+  static const xp = EntranceSpec(Entrances.custom,
+      duration: Duration(milliseconds: 600), delay: Duration(milliseconds: 1300), curve: Curves.linear);
+  static const cta = EntranceSpec(EntranceFrom(offset: Offset(0, 24)),
+      duration: Duration(milliseconds: 260), delay: Duration(milliseconds: 1450), curve: StepCurve(4));
+
+  static Duration get length => xp.end;
+}

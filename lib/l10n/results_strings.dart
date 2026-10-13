@@ -115,4 +115,16 @@ extension ResultsStrings on S {
   String get goalUpBand => t('goalUpBand');
   String goalUpNote(int ms) => f('goalUpNote', [ms]);
   String get nicePace => t('nicePace');
+
+  /// The day-done page's lines are templates for `NumberedText`: `{0}` the
+  /// line's number, and `{1}` the rounds after the looks.
+  String get dayDoneBand => t('dayDoneBand');
+  String dayDoneCleared(int rounds) => t(rounds == 1 ? 'dayDoneClearedOne' : 'dayDoneCleared');
+  String dayDoneNew(int cards) => t(cards == 1 ? 'dayDoneNewOne' : 'dayDoneNew');
+  String dayDoneMisses(int misses) => t(switch (misses) {
+        0 => 'dayDoneNoMisses',
+        1 => 'dayDoneMissOne',
+        _ => 'dayDoneMisses',
+      });
+  String dayDoneStreak(int days) => t(days == 1 ? 'dayDoneStreakStarts' : 'dayDoneStreak');
 }

@@ -59,6 +59,12 @@ class GraduationCelebration extends Celebration {
   const GraduationCelebration();
 }
 
+/// The run finished today's set (journey mode, once a day).
+class DayDoneCelebration extends Celebration {
+  const DayDoneCelebration(this.day);
+  final DayDone day;
+}
+
 /// A tracked run raised the rating: it climbs its class's track, breaking
 /// through into the next class when the run [ranksUp] (the rank-up page
 /// follows).
@@ -158,13 +164,14 @@ List<Celebration> xpCelebrations(XpGain? xp) => [
     ];
 
 /// The pages after a run, in order: island completions, a new speed goal,
-/// graduation, the XP earned and any level it reached, then the rating when
-/// it rose and a rank-up when it reached a new class.
+/// graduation, today's set done, the XP earned and any level it reached,
+/// then the rating when it rose and a rank-up when it reached a new class.
 List<Celebration> celebrationsFor(SessionReport report) {
   final list = <Celebration>[
     for (final i in report.islandsCompleted) IslandCompleteCelebration(i),
     if (report.goalRaised) const GoalUpCelebration(),
     if (report.graduated) const GraduationCelebration(),
+    if (report.dayDone case final day?) DayDoneCelebration(day),
     ...xpCelebrations(report.xp),
   ];
   final (ratingBefore, ratingAfter) = (report.ratingBefore, report.ratingAfter);
