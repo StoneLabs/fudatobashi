@@ -67,7 +67,6 @@ extension AnkirenStrings on S {
   /// next ranked game with why it plays that level.
   String get ankirenOpenPage => t('ankirenOpenPage');
   String get ankirenPageTitle => t('ankirenPageTitle');
-  String get ankirenPageSub => t('ankirenPageSub');
   String get ankirenLast5 => t('ankirenLast5');
   String get ankirenPlacementTitle => t('ankirenPlacementTitle');
   String get ankirenPlacementCount => t('ankirenPlacementCount');
