@@ -194,10 +194,10 @@ class _Summary extends StatelessWidget {
       line('swipes', '$swipes (${(swipes / days.length).round()} a day)'),
       line('FSRS reviews', '${sum((d) => d.reviews)} (${(sum((d) => d.reviews) / days.length).round()} a day)'),
       line('recall', '${(100 * (1 - misses / swipes)).toStringAsFixed(1)}%'),
-      line('misses: forgot', '${share(sum((d) => d.forgotToday), misses)} same day, '
+      line('misses: forgot', '${share(sum((d) => d.forgotToday), misses)} today, '
           '${share(sum((d) => d.forgotEarlier), misses)} earlier'),
       line('misses: other', '${share(sum((d) => d.lookAlikes), misses)} 友札, ${share(sum((d) => d.slips), misses)} slips'),
-      line('new cards, next day', '${share(sum((d) => d.newCardCheckMisses), sum((d) => d.newCardChecks))} missed'),
+      line('next-day misses', '${share(sum((d) => d.newCardCheckMisses), sum((d) => d.newCardChecks))} of new cards'),
       line('rating', last.rating?.toStringAsFixed(0) ?? '—'),
     ]);
   }
