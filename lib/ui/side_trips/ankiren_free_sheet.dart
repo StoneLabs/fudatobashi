@@ -191,7 +191,7 @@ class _AnkirenFreeSheetState extends State<AnkirenFreeSheet> {
 }
 
 /// A section's label, with the other language's [sub] in small tracked
-/// capitals.
+/// capitals, each breaking only between words.
 class _SheetLabel extends StatelessWidget {
   const _SheetLabel(this.text, this.sub);
 
@@ -200,10 +200,10 @@ class _SheetLabel extends StatelessWidget {
   @override
   Widget build(BuildContext context) => Text.rich(
         TextSpan(children: [
-          TextSpan(text: text),
+          Phrases.span(text),
           const TextSpan(text: ' '),
-          TextSpan(
-            text: sub.toUpperCase(),
+          Phrases.span(
+            sub.toUpperCase(),
             style: const TextStyle(
               fontSize: AnkirenSheetLayout.labelSubFont,
               letterSpacing: AnkirenSheetLayout.labelSubTracking * AnkirenSheetLayout.labelSubFont,

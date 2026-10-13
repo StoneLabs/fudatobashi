@@ -7,9 +7,10 @@ import '../manga/manga.dart';
 
 /// 暗記練's sheets' frame: free practice's floating panel, its top edge
 /// tilted, at the bottom of the screen. Its head is [title] in display
-/// type with the other language's [sub], an optional [line] under them and
-/// a close button; then [body], a block at a time, scrolling when the
-/// screen is short; then [footer], which stays in view.
+/// type with the other language's [sub], each breaking only between
+/// words, an optional [line] under them and a close button; then [body],
+/// a block at a time, scrolling when the screen is short; then [footer],
+/// which stays in view.
 class AnkirenSheet extends StatelessWidget {
   const AnkirenSheet({super.key, required this.title, required this.sub, this.line, required this.body, this.footer});
 
@@ -44,10 +45,10 @@ class AnkirenSheet extends StatelessWidget {
                           header: true,
                           child: Text.rich(
                             TextSpan(children: [
-                              TextSpan(text: title),
+                              Phrases.span(title),
                               const TextSpan(text: '  '),
-                              TextSpan(
-                                text: sub.toUpperCase(),
+                              Phrases.span(
+                                sub.toUpperCase(),
                                 style: const TextStyle(
                                   fontFamily: Fonts.ui,
                                   fontWeight: Weights.black,
