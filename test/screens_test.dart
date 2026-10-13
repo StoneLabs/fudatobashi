@@ -14,6 +14,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:fudatobashi/config/config.dart';
 import 'package:fudatobashi/config/design.dart';
+import 'package:fudatobashi/config/links.dart';
 import 'package:fudatobashi/config/vector_art.dart';
 import 'package:fudatobashi/data/fuda_sets.dart';
 import 'package:fudatobashi/data/islands.dart';
@@ -1940,6 +1941,36 @@ void main() {
     expect(find.byType(LicenseTextScreen), findsOneWidget);
     expect(find.textContaining('SIL OPEN FONT LICENSE'), findsOneWidget);
     await tester.pumpWidget(const SizedBox());
+  });
+
+  testWidgets('settings: the About row for the source code opens the repository in the browser', (tester) async {
+    PackageInfo.setMockInitialValues(
+        appName: 'Fudatobashi', packageName: 'dev.fudatobashi', version: '1.0.0', buildNumber: '1', buildSignature: '');
+    final launches = <Map<Object?, Object?>>[];
+    const channel = MethodChannel('plugins.flutter.io/url_launcher');
+    tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(channel, (call) async {
+      if (call.method == 'launch') launches.add(call.arguments as Map<Object?, Object?>);
+      return true;
+    });
+    addTearDown(() => tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(channel, null));
+    for (final lang in ['en', 'ja']) {
+      launches.clear();
+      final p = await open(tester, ja: lang == 'ja');
+      await tester.binding.setSurfaceSize(_phone);
+      await tester.pumpWidget(ProgressScope(progress: p, child: const MaterialApp(home: SettingsScreen())));
+      await tester.pump();
+      final s = S(lang);
+      await tester.scrollUntilVisible(find.text(s.repositoryLink), 200);
+      expect(tester.getTopLeft(find.text(s.repositoryLink)).dy, greaterThan(tester.getTopLeft(find.text(s.privacyPolicy)).dy),
+          reason: 'after the privacy policy');
+      await tester.tap(find.text(s.repositoryLink));
+      await tester.pump();
+      expect(launches, hasLength(1));
+      expect(launches.single['url'], Links.repository);
+      expect(launches.single['useWebView'], isFalse, reason: 'the browser, not a view inside the app');
+      expect(tester.takeException(), isNull);
+      await tester.pumpWidget(const SizedBox());
+    }
   });
 
   group('Rank ladder edge cases', () {

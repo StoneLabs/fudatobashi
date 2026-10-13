@@ -1,10 +1,12 @@
 import 'package:flutter/foundation.dart' show defaultTargetPlatform;
 import 'package:flutter/material.dart';
 import 'package:package_info_plus/package_info_plus.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import '../../config/config.dart';
 import '../../config/design.dart';
 import '../../config/licenses.dart';
+import '../../config/links.dart';
 import '../../config/vector_art.dart';
 import '../../domain/trainer.dart';
 import '../../l10n/ankiren_strings.dart';
@@ -183,6 +185,10 @@ class SettingsScreen extends StatelessWidget {
                                   builder: (_) => LicenseTextScreen(title: s.privacyPolicy, asset: privacyPolicyAsset(ja: s.ja)),
                                 ),
                               ),
+                            ),
+                            SettingsTapRow(
+                              title: s.repositoryLink,
+                              onTap: () => launchUrl(Uri.parse(Links.repository), mode: LaunchMode.externalApplication),
                             ),
                           ]),
                         ],

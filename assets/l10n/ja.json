@@ -525,6 +525,7 @@
   "creditsVoice": "決まり字の読み上げ",
   "creditsVoiceBody": "決まり字の読み上げは、GoogleのGemini TTS（音声「Puck」）で生成したAI合成音声です。生成された音声の所有権をGoogleは主張しておらず、ライセンスやクレジット表記の義務はありません。",
   "privacyPolicy": "プライバシーポリシー",
+  "repositoryLink": "オープンソース・不具合報告",
   "sideTrips": "寄り道",
   "ankirenName": "暗記練",
   "ankirenBanner": "MEMORY DRILL",

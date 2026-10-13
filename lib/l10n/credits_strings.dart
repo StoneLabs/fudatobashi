@@ -6,6 +6,9 @@ extension CreditsStrings on S {
 
   String get privacyPolicy => t('privacyPolicy');
 
+  /// The About row that opens the source code and issue tracker in the browser.
+  String get repositoryLink => t('repositoryLink');
+
   String get creditsFonts => t('creditsFonts');
 
   String get creditsCardKana => t('creditsCardKana');
