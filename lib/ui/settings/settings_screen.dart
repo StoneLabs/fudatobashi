@@ -433,6 +433,8 @@ class _DeveloperSection extends StatelessWidget {
           SettingsTapRow(title: 'Preview rating', onTap: () => previewRating(context)),
           SettingsTapRow(title: 'Preview rating + rank-up', onTap: () => previewRatingRankUp(context)),
           SettingsTapRow(title: 'Preview graduation', onTap: () => previewGraduation(context)),
+          SettingsTapRow(title: 'Preview AnkiRen unlock', onTap: () => previewAnkirenUnlock(context)),
+          SettingsTapRow(title: 'Preview Side Trips tab unlock', onTap: () => previewSideTripsTabUnlock(context)),
           SettingsTapRow(
             title: 'Preview all-known warning',
             onTap: () => Navigator.push(context, MangaRoute<bool>(builder: (_) => HoldWarningScreen.allKnown(s))),

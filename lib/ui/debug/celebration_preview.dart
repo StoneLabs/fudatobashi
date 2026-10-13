@@ -3,11 +3,15 @@ import 'package:flutter/widgets.dart';
 
 import '../../config/config.dart';
 import '../../config/design.dart';
+import '../../config/vector_art.dart';
 import '../../data/fuda_sets.dart';
 import '../../data/poem.dart';
 import '../../domain/play_session.dart';
 import '../../domain/rating.dart';
 import '../../domain/xp.dart';
+import '../../l10n/side_trip_strings.dart';
+import '../../l10n/strings.dart';
+import '../../l10n/tour_strings.dart';
 import '../../state/play_config.dart';
 import '../../state/progress.dart';
 import '../../state/scope.dart';
@@ -15,6 +19,8 @@ import '../manga/manga.dart';
 import '../results/celebration_sequence.dart';
 import '../results/celebrations.dart';
 import '../results/results_screen.dart';
+import '../shell/tab_chains.dart';
+import '../side_trips/dojo_scene.dart';
 
 /// Plays every celebration in a row without touching any progress: a new
 /// card with its look-alike warning when one applies, then Results for a
@@ -75,6 +81,49 @@ void previewRatingRankUp(BuildContext context) {
 }
 
 void previewGraduation(BuildContext context) => _previewPages(context, const [GraduationCelebration()]);
+
+/// 暗記練's first opening on the Side Trips hub: its torii rattles, the
+/// chains break and the gate snaps open, with the sound, buzz and toast.
+/// The hub's latch is not read or changed.
+void previewAnkirenUnlock(BuildContext context) => Navigator.push(
+      context,
+      MangaRoute<void>(
+        builder: (_) => const Scaffold(
+          backgroundColor: Palette.paper,
+          body: DojoScene(
+            turn: kAlwaysDismissedAnimation,
+            fade: kAlwaysCompleteAnimation,
+            fadeFrom: 0,
+            gate: GateState.opening,
+          ),
+        ),
+      ),
+    );
+
+/// The Side Trips tab's chains breaking on a tab bar, with the unlock
+/// toast. The tab latch is not read or changed.
+void previewSideTripsTabUnlock(BuildContext context) {
+  final s = S.of(context);
+  Navigator.push(
+    context,
+    MangaRoute<void>(
+      builder: (context) => Scaffold(
+        backgroundColor: Palette.paper,
+        body: const SizedBox.expand(),
+        bottomNavigationBar: MangaTabBar(
+          current: 0,
+          onSelect: (_) {},
+          tabs: [
+            MangaTab(icon: IconArt.sideTrips, label: s.sideTrips, cover: const TabChains(breaking: true)),
+          ],
+        ),
+      ),
+    ),
+  );
+  WidgetsBinding.instance.addPostFrameCallback((_) {
+    if (context.mounted) MangaToast.show(context, s.tabUnlocked(s.sideTrips));
+  });
+}
 
 /// Plays [pages] as after a run, then comes back.
 void _previewPages(BuildContext context, List<Celebration> pages) => Navigator.push(
