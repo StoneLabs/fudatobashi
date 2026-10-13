@@ -297,14 +297,18 @@ void main() {
         calls.add(call);
         return null;
       });
-      final p = await open(tester);
+      final p = await open(tester, ankiren: const AnkirenSettings(rulesSeen: true));
       await openHub(tester, p);
+      await tester.tap(find.byType(PageBurst));
+      await tester.pump();
+      await tester.pump(Motion.route * 2);
       await tester.tap(find.byType(RankedBurst));
       await tester.pump();
       await tester.pump(Motion.route);
       expect(find.byType(AnkirenScreen), findsOneWidget);
       expect(find.byType(AnkirenCard), findsNWidgets(AnkirenLevels.of(0).cards));
-      expect(find.text(formatMinutes(AnkirenLevels.of(0).memorise)), findsOneWidget);
+      expect(find.descendant(of: find.byType(AnkirenScreen), matching: find.text(formatMinutes(AnkirenLevels.of(0).memorise))),
+          findsOneWidget);
       final orientations = calls.where((c) => c.method == 'SystemChrome.setPreferredOrientations');
       expect(orientations.last.arguments, ['DeviceOrientation.portraitUp'], reason: 'portrait is held while playing');
       expect(tester.takeException(), isNull);

@@ -2769,7 +2769,7 @@ void main() {
         await openTrips(tester, p);
         expect([for (final row in tester.widgetList<CardPips>(inTrips(find.byType(CardPips)))) ...row.pips],
             hasLength(SideTripTuning.ankirenRemembered));
-        expect(inTrips(find.byType(RankedBurst)), findsNothing, reason: 'a locked trip shows its lock, not its burst');
+        expect(inTrips(find.byType(PageBurst)), findsNothing, reason: 'a locked trip shows its lock, not its burst');
         expect(inTrips(find.text(s.freePlay)), findsNothing, reason: 'one lock at a time');
         await _capture(tester, 'side_trips_locked_$lang');
         await expectBalloon(tester, inTrips(find.textContaining(s.sideTripRanked)),
@@ -2787,7 +2787,7 @@ void main() {
         expect(inTrips(find.text(Rating.bands.first.label)), findsOneWidget, reason: 'the flag flies 入門');
         expect(inTrips(find.text(s.sideTripUnranked)), findsOneWidget);
         await _capture(tester, 'side_trips_open_$lang');
-        await tester.tap(inTrips(find.text(s.ankirenPageTitle)));
+        await tester.tap(inTrips(find.byType(PageBurst)));
         await tester.pump();
         await tester.pump(Motion.route * 2);
         await tester.tap(find.text(s.freePlay));
@@ -2853,7 +2853,7 @@ void main() {
       expect(p.sideTripsHub()[SideTrip.ankiren].lock?.needed, opens - tabAt);
 
       await openTrips(tester, p);
-      expect(inTrips(find.byType(RankedBurst)), findsNothing);
+      expect(inTrips(find.byType(PageBurst)), findsNothing);
       expect(inTrips(find.text(s.freePlay)), findsNothing, reason: 'free play opens with ranked');
       expect(inTrips(find.text(s.howToPlay)), findsOneWidget, reason: 'the rules are there all along');
       await remember(tester, p, journeyOrder.skip(tabAt).take(opens - tabAt - 1));
@@ -2864,7 +2864,7 @@ void main() {
       await tester.pump();
       final entry = p.sideTripsHub()[SideTrip.ankiren];
       expect(entry.open, isTrue);
-      expect(inTrips(find.byType(RankedBurst)), findsOneWidget);
+      expect(inTrips(find.byType(PageBurst)), findsOneWidget);
       expect(inTrips(find.text(s.ankirenPageTitle)), findsOneWidget);
       await _capture(tester, 'side_trips_ankiren_open');
 

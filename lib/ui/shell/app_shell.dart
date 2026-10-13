@@ -45,11 +45,11 @@ class _AppShellState extends State<AppShell> {
   bool _syncScheduled = false;
   final _tourKeys = TourKeys();
 
-  static Widget _screen(AppTab t) => switch (t) {
+  static Widget _screen(AppTab t, {required double underBar}) => switch (t) {
         AppTab.home => const HomeScreen(),
         AppTab.history => const HistoryScreen(),
         AppTab.stats => const StatsScreen(),
-        AppTab.sideTrips => const SideTripsScreen(),
+        AppTab.sideTrips => SideTripsScreen(underBar: underBar),
       };
 
   /// Remembers the tabs shown locked, and breaks the chains of any that have
@@ -111,6 +111,7 @@ class _AppShellState extends State<AppShell> {
     final tab = touring ? AppTab.home : _tab;
     final locks = {for (final t in LockedTab.values) t: progress.tabLock(t)};
     _syncLocks(progress, locks);
+    final underBar = TabBarStyle.height + 2 * Gaps.section + MediaQuery.paddingOf(context).bottom;
     return PopScope(
       canPop: tab == AppTab.home,
       onPopInvokedWithResult: (didPop, _) {
@@ -119,8 +120,6 @@ class _AppShellState extends State<AppShell> {
       child: Scaffold(
         body: Stack(children: [
           if (tab == AppTab.home) const Positioned.fill(child: GradationBox(Tones.home)),
-          // The sea carries on under the Side Trips scene, down to the tab bar.
-          if (tab == AppTab.sideTrips) const Positioned.fill(child: ColoredBox(color: Palette.sea)),
           SafeArea(
             // The Side Trips scene runs up under the status bar.
             top: tab != AppTab.sideTrips,
@@ -131,8 +130,10 @@ class _AppShellState extends State<AppShell> {
                   Expanded(
                     child: IndexedStack(
                       index: tab.index,
+                      clipBehavior: Clip.none,
                       children: [
-                        for (final t in AppTab.values) TickerMode(enabled: t == tab, child: _screen(t)),
+                        for (final t in AppTab.values)
+                          TickerMode(enabled: t == tab, child: _screen(t, underBar: underBar)),
                       ],
                     ),
                   ),

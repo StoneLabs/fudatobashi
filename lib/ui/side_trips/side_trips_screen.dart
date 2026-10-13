@@ -13,7 +13,6 @@ import '../../l10n/side_trip_strings.dart';
 import '../../l10n/strings.dart';
 import '../../state/progress.dart';
 import '../../state/scope.dart';
-import '../run/run_launcher.dart';
 import 'ankiren_page.dart';
 import 'ankiren_rules_sheet.dart';
 import '../manga/manga.dart';
@@ -36,7 +35,10 @@ import 'side_trip_entry.dart';
 /// torii opens with a snap; once, like the tab chains, and only with
 /// 暗記練 in front.
 class SideTripsScreen extends StatefulWidget {
-  const SideTripsScreen({super.key});
+  const SideTripsScreen({super.key, this.underBar = 0});
+
+  /// How far the sea runs on below the screen, under the tab bar.
+  final double underBar;
 
   @override
   State<SideTripsScreen> createState() => _SideTripsScreenState();
@@ -233,7 +235,6 @@ class _SideTripsScreenState extends State<SideTripsScreen> with TickerProviderSt
         SideTrip.ankiren => SideTripEntryView(
             hub[SideTrip.ankiren],
             onOpen: () => openAnkirenPage(context),
-            onRanked: () => startAnkirenRanked(context),
             onRules: () => openAnkirenRules(context),
           ),
       };
@@ -246,7 +247,16 @@ class _SideTripsScreenState extends State<SideTripsScreen> with TickerProviderSt
   }
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context) => LayoutBuilder(
+        builder: (context, bounds) => OverflowBox(
+          alignment: Alignment.topCenter,
+          minHeight: bounds.maxHeight + widget.underBar,
+          maxHeight: bounds.maxHeight + widget.underBar,
+          child: _hub(context),
+        ),
+      );
+
+  Widget _hub(BuildContext context) {
     final s = S.of(context);
     final progress = ProgressScope.of(context);
     final hub = progress.sideTripsHub();
@@ -269,7 +279,7 @@ class _SideTripsScreenState extends State<SideTripsScreen> with TickerProviderSt
               child: _HubFrame(
                 minScene: DojoSceneLayout.minHeight * k,
                 side: math.max(Gaps.gutter, (box.maxWidth - SideTripsLayout.maxWidth) / 2),
-                bottomGap: SideTripsLayout.bottomGap,
+                bottomGap: SideTripsLayout.bottomGap + widget.underBar,
                 crest: DojoSceneLayout.crest * k + DojoSceneLayout.crestGap,
                 turn: _turn,
                 fade: _fade,

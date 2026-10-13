@@ -20,16 +20,16 @@ import 'burst_button.dart';
 /// A side trip's entry on the hub: its head ([SideTripHead]) hanging over
 /// the top of its panel and buttons ([SideTripBody]).
 class SideTripEntryView extends StatelessWidget {
-  const SideTripEntryView(this.entry, {super.key, this.onOpen, required this.onRanked, required this.onRules});
+  const SideTripEntryView(this.entry, {super.key, this.onOpen, required this.onRules});
 
   final SideTripEntry entry;
   final VoidCallback? onOpen;
-  final VoidCallback onRanked, onRules;
+  final VoidCallback onRules;
 
   @override
   Widget build(BuildContext context) => _HeadOver(
         head: SideTripHead(entry),
-        body: SideTripBody(entry, onOpen: onOpen, onRanked: onRanked, onRules: onRules),
+        body: SideTripBody(entry, onOpen: onOpen, onRules: onRules),
       );
 }
 
@@ -223,23 +223,21 @@ class _RankFlag extends StatelessWidget {
       );
 }
 
-/// A side trip's panel on the hub, then a button under it. Open: its
-/// rating with the last game's change and the next ranked game, a row that
-/// opens the trip's page ([onOpen]), and the burst that starts the game
-/// ([onRanked]); a button to the page under it. Locked: the cards
-/// remembered so far as pips and a grey bar saying how many more open it,
-/// where the burst will be; the rules ([onRules]) under it.
+/// A side trip's panel on the hub. Open: its rating with the last game's
+/// change and the next ranked game, and the burst that opens the trip's
+/// page ([onOpen]), as does the row above it. Locked: the cards remembered
+/// so far as pips and a grey bar saying how many more open it, where the
+/// burst will be; the rules ([onRules]) under it.
 class SideTripBody extends StatelessWidget {
-  const SideTripBody(this.entry, {super.key, this.onOpen, required this.onRanked, required this.onRules});
+  const SideTripBody(this.entry, {super.key, this.onOpen, required this.onRules});
 
   final SideTripEntry entry;
   final VoidCallback? onOpen;
-  final VoidCallback onRanked, onRules;
+  final VoidCallback onRules;
 
   @override
   Widget build(BuildContext context) {
     final lock = entry.lock;
-    final rules = SideTripRulesButton(onTap: onRules);
     return Column(
       mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -255,14 +253,16 @@ class SideTripBody extends StatelessWidget {
                     _StatsRow(entry, onTap: onOpen),
                     Padding(
                       padding: SideTripsLayout.burstMargin,
-                      child: RankedBurst(onTap: onRanked),
+                      child: PageBurst(onTap: onOpen),
                     ),
                   ],
                 )
               : _LockedRows(lock),
         ),
-        const SizedBox(height: SideTripsLayout.buttonTop),
-        if (lock == null) SideTripPageButton(onTap: onOpen) else rules,
+        if (lock != null) ...[
+          const SizedBox(height: SideTripsLayout.rulesTop),
+          SideTripRulesButton(onTap: onRules),
+        ],
       ],
     );
   }
@@ -313,8 +313,8 @@ class _Stat extends StatelessWidget {
 }
 
 /// The ranked rating and its last change (or "unranked"), and the next
-/// ranked game: its level, cards a side and memorise time; a chevron says
-/// a tap opens more ([onTap]).
+/// ranked game: its level, cards a side and memorise time; a tap opens the
+/// trip's page ([onTap]).
 class _StatsRow extends StatelessWidget {
   const _StatsRow(this.entry, {required this.onTap});
 
@@ -394,9 +394,6 @@ class _StatsRow extends StatelessWidget {
                 ),
               ),
             ),
-            if (onTap != null)
-              MangaIcon(IconArt.chevron,
-                  size: SideTripsLayout.openChevron, strokeWidth: SideTripsLayout.openChevronStroke),
           ]),
         ),
       ),
@@ -455,6 +452,20 @@ class RankedBurst extends StatelessWidget {
   Widget build(BuildContext context) {
     final s = S.of(context);
     return BurstButton(title: s.sideTripRanked, sub: s.other.sideTripRanked.toUpperCase(), onTap: onTap);
+  }
+}
+
+/// The shout that opens the trip's page, where its games start
+/// ([BurstButton]); grey while there is nowhere to go.
+class PageBurst extends StatelessWidget {
+  const PageBurst({super.key, required this.onTap});
+
+  final VoidCallback? onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final s = S.of(context);
+    return BurstButton(title: s.ankirenPageTitle, sub: s.other.ankirenPageTitle.toUpperCase(), onTap: onTap);
   }
 }
 
@@ -598,28 +609,6 @@ class SideTripFreeButton extends StatelessWidget {
       title: s.freePlay,
       badge: _Sub(s.other.freePlay),
       sub: maxLevel == null ? s.sideTripFreeSub : s.sideTripFreeUpTo(maxLevel),
-      onTap: onTap,
-    );
-  }
-}
-
-/// The way into the trip's page, in Home's button style, saying what is
-/// there. Left out without [onTap].
-class SideTripPageButton extends StatelessWidget {
-  const SideTripPageButton({super.key, required this.onTap});
-
-  final VoidCallback? onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    final s = S.of(context);
-    final onTap = this.onTap;
-    if (onTap == null) return const SizedBox.shrink();
-    return HomeRowButton(
-      icon: IconArt.cards,
-      title: s.ankirenPageTitle,
-      badge: _Sub(s.other.ankirenPageTitle),
-      sub: s.ankirenPageSub,
       onTap: onTap,
     );
   }

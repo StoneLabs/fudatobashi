@@ -2305,8 +2305,8 @@ abstract final class DojoUnlockMotion {
 /// The Side Trips tab's entry for 暗記練 under the dojo scene
 /// (`research/design/sidetrips_c.html`): its lettering and rank flag
 /// breaking out over the panel's top; the rating and next game and the
-/// ranked burst, or while it is locked the cards still to remember; then
-/// a button to the trip's page, or the rules.
+/// burst to the trip's page, or while it is locked the cards still to
+/// remember and under them the rules.
 abstract final class SideTripsLayout {
   /// The entry never grows wider than this (a landscape screen).
   static const double maxWidth = 480;
@@ -2361,10 +2361,6 @@ abstract final class SideTripsLayout {
   static const double factsFont = 13.5;
   static const double factsNumber = 15;
 
-  /// The stats row's chevron: a tap on the row opens the trip's page.
-  static const double openChevron = 20;
-  static const double openChevronStroke = 2.8;
-
   /// The last game's rating change: ▲ on ink, ▼ on paper.
   static const double deltaFont = 12.5;
   static const EdgeInsets deltaPadding = EdgeInsets.fromLTRB(4, 3, 5, 4);
@@ -2400,9 +2396,9 @@ abstract final class SideTripsLayout {
   static const double lockLineFont = 12;
   static const double lockLineNumber = 14;
 
-  /// Between the panel and the button under it; and between the pair of
-  /// buttons on the trip's page.
-  static const double buttonTop = 8;
+  /// Between a locked panel and the rules button under it; and between the
+  /// pair of buttons on the trip's page.
+  static const double rulesTop = 8;
   static const double pairGap = Gaps.panelWide;
 
   static const Size lockBalloon = Size(270, 96);

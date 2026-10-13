@@ -32,8 +32,10 @@ import 'package:fudatobashi/l10n/strings.dart';
 import 'package:fudatobashi/l10n/tour_strings.dart';
 import 'package:fudatobashi/state/play_config.dart';
 import 'package:fudatobashi/state/progress.dart';
+import 'package:fudatobashi/state/settings.dart';
 import 'package:fudatobashi/ui/ankiren/ankiren_screen.dart';
 import 'package:fudatobashi/ui/app.dart';
+import 'package:fudatobashi/ui/home/home_screen.dart';
 import 'package:fudatobashi/ui/home/home_widgets.dart';
 import 'package:fudatobashi/ui/manga/manga.dart';
 import 'package:fudatobashi/ui/side_trips/ankiren_page.dart';
@@ -130,7 +132,7 @@ void main() {
     await tester.runAsync(() async {
       p = await Progress.open(AppDatabase(NativeDatabase.memory()));
       p.tabsAlwaysOpen = true;
-      await p.updateSettings(p.settings.copyWith(language: lang, languagePicked: true, toured: true));
+      await p.updateSettings(p.settings.copyWith(language: lang, languagePicked: true, toured: true, ankiren: const AnkirenSettings(rulesSeen: true)));
       switch (hub) {
         case _Hub.locked:
           await p.setLearningMode(LearningMode.journey);
@@ -255,20 +257,22 @@ void main() {
                   greaterThanOrEqualTo(crestBottom(tester, phone)), reason: 'the entry sits under the crest');
               expect(tester.getRect(inHub(find.text(s.sideTripsLettering)).first).top,
                   greaterThanOrEqualTo(_statusBar), reason: 'the title clears the status bar');
+              expect(tester.getRect(inHub(find.byType(SingleChildScrollView))).bottom, phone.size.height,
+                  reason: 'the sea runs on under the tab bar');
               if (hub == _Hub.locked) {
                 expectShown(tester, inHub(find.text(s.howToPlay)), phone);
-                expect(inHub(find.text(s.ankirenPageTitle)), findsNothing);
+                expect(inHub(find.byType(PageBurst)), findsNothing);
               } else {
+                expectShown(tester, inHub(find.byType(PageBurst)), phone);
                 expectShown(tester, inHub(find.text(s.ankirenPageTitle)), phone);
-                expectShown(tester, inHub(find.byType(RankedBurst)), phone);
-                expectShown(tester, inHub(find.text(s.ankirenPageSub)), phone);
-                expect(inHub(find.text(s.freePlay)), findsNothing, reason: 'free play and the rules are on the page');
-                expect(inHub(find.text(s.howToPlay)), findsNothing);
+                expect(inHub(find.byType(RankedBurst)), findsNothing, reason: 'ranked starts from the page');
+                expect(inHub(find.byType(SideTripRulesButton)), findsNothing);
+                expect(inHub(find.byType(SideTripFreeButton)), findsNothing);
+                expect(inHub(find.byType(HomeRowButton)), findsNothing, reason: 'the burst is the only button');
               }
 
               switch (hub) {
                 case _Hub.locked:
-                  expect(inHub(find.byType(RankedBurst)), findsNothing);
                   expect(inHub(find.text(s.freePlay)), findsNothing, reason: 'one lock at a time');
                   final rows = tester.widgetList<CardPips>(inHub(find.byType(CardPips)));
                   expect([for (final r in rows) r.pips.length], [25, 25], reason: '50 pips in two rows');
@@ -288,14 +292,18 @@ void main() {
   });
 
   group('actions', () {
-    testWidgets('the burst starts a ranked game', (tester) async {
+    testWidgets('the burst opens AnkiRen\'s page, where ranked starts', (tester) async {
       tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(SystemChannels.platform, (_) async => null);
       addTearDown(
           () => tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(SystemChannels.platform, null));
       final p = await open(tester, _Hub.ranked, 'en');
       await openHub(tester, p, _users);
       final level = p.sideTripsHub()[SideTrip.ankiren].rankedLevel!;
-      await tester.tap(inHub(find.byType(RankedBurst)));
+      await tester.tap(inHub(find.byType(PageBurst)));
+      await tester.pump();
+      await tester.pump(Motion.route * 2);
+      expect(find.byType(AnkirenPage), findsOneWidget);
+      await tester.tap(find.byType(RankedBurst));
       await tester.pump();
       await tester.pump(Motion.route);
       final game = tester.widget<AnkirenScreen>(find.byType(AnkirenScreen));
@@ -303,7 +311,7 @@ void main() {
       await tester.pumpWidget(const SizedBox());
     });
 
-    testWidgets('the stats row opens AnkiRen\'s page', (tester) async {
+    testWidgets('the stats row opens AnkiRen\'s page too', (tester) async {
       const s = S('en');
       final p = await open(tester, _Hub.ranked, 'en');
       await openHub(tester, p, _users);
@@ -311,20 +319,6 @@ void main() {
       await tester.pump();
       await tester.pump(Motion.route);
       expect(find.byType(AnkirenPage), findsOneWidget);
-      expect(tester.takeException(), isNull);
-      await tester.pumpWidget(const SizedBox());
-    });
-
-    testWidgets('the button under the panel opens AnkiRen\'s page, with free play and the rules', (tester) async {
-      const s = S('en');
-      final p = await open(tester, _Hub.ranked, 'en');
-      await openHub(tester, p, _users);
-      await tester.tap(inHub(find.text(s.ankirenPageTitle)));
-      await tester.pump();
-      await tester.pump(Motion.route);
-      expect(find.byType(AnkirenPage), findsOneWidget);
-      expect(find.text(s.freePlay), findsOneWidget);
-      expect(find.text(s.howToPlay), findsOneWidget);
       expect(tester.takeException(), isNull);
       await tester.pumpWidget(const SizedBox());
     });
@@ -566,7 +560,7 @@ void main() {
     testWidgets('a swipe that starts on the burst turns the ring and starts no game', (tester) async {
       final p = await open(tester, _Hub.ranked, 'en');
       await openHub(tester, p, _users);
-      await tester.fling(inHub(find.byType(RankedBurst)), const Offset(-200, 0), 1200);
+      await tester.fling(inHub(find.byType(PageBurst)), const Offset(-200, 0), 1200);
       await tester.pump();
       await tester.pump(const Duration(seconds: 2));
       expect(frontOf(tester), SideTripIsle.building);
