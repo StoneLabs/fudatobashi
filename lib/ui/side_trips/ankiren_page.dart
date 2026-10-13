@@ -41,8 +41,10 @@ Future<void> openAnkirenPage(BuildContext context) async {
 /// or setup of the player's own, and the rules are Home's button pair
 /// under it, each a sheet. The first visit opens with the rules.
 ///
-/// The field preview is the one part that gives up height; when even
-/// without it the page is taller than the screen, it scrolls.
+/// The field preview is the one part that gives up height. With too
+/// little room for it, the panel closes up over the burst, which stays
+/// near the thumb, and the room left parts the last games from it. When
+/// even without it the page is taller than the screen, it scrolls.
 class AnkirenPage extends StatefulWidget {
   const AnkirenPage({super.key});
 
@@ -91,7 +93,7 @@ class _AnkirenPageState extends State<AnkirenPage> {
                   else
                     _LastGames(entry.results),
                   const SizedBox(height: AnkirenPageLayout.nextTop),
-                  Expanded(child: _NextGame(entry)),
+                  Expanded(child: Align(alignment: Alignment.bottomCenter, child: _NextGame(entry))),
                   const SizedBox(height: AnkirenPageLayout.gap),
                   Row(children: [
                     Expanded(child: SideTripFreeButton(entry, onTap: () => openAnkirenFree(context))),
@@ -110,7 +112,7 @@ class _AnkirenPageState extends State<AnkirenPage> {
 }
 
 /// [text] in black type, then [sub] (the other language's) in small tracked
-/// capitals; [underline]d as a link.
+/// capitals, each breaking only between words; [underline]d as a link.
 class _Label extends StatelessWidget {
   const _Label(this.text, this.sub,
       {this.fontSize = AnkirenPageLayout.labelFont, this.color = Palette.ink, this.underline = false});
@@ -123,10 +125,10 @@ class _Label extends StatelessWidget {
   @override
   Widget build(BuildContext context) => Text.rich(
         TextSpan(children: [
-          TextSpan(text: text),
+          Phrases.span(text),
           const TextSpan(text: ' '),
-          TextSpan(
-            text: sub.toUpperCase(),
+          Phrases.span(
+            sub.toUpperCase(),
             style: const TextStyle(
               fontSize: AnkirenPageLayout.labelFont,
               letterSpacing: AnkirenPageLayout.labelTracking * AnkirenPageLayout.labelFont,
@@ -387,7 +389,8 @@ class _GameRow extends StatelessWidget {
       );
 }
 
-/// One ranked game: its score, what it did to the rating, and its level.
+/// One ranked game: its score, what it did to the rating, and its level,
+/// each on one line, shrinking rather than overflowing.
 class _Game extends StatelessWidget {
   const _Game(this.result);
 
@@ -396,22 +399,25 @@ class _Game extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final s = S.of(context);
-    return Column(children: [
-      FittedBox(
-        fit: BoxFit.scaleDown,
-        child: Text('${result.score}',
-            style: const TextStyle(fontFamily: Fonts.display, fontSize: AnkirenPageLayout.scoreFont, height: 1)),
-      ),
-      const SizedBox(height: AnkirenPageLayout.gameGap),
-      FittedBox(fit: BoxFit.scaleDown, child: RatingChangeTag(result.ratingChange.round())),
-      const SizedBox(height: AnkirenPageLayout.gameGap),
-      Text(
-        s.ankirenLevelTag(result.level),
-        maxLines: 1,
-        style: const TextStyle(
-            fontWeight: Weights.black, fontSize: AnkirenPageLayout.gameLevelFont, height: 1, color: Palette.mute),
-      ),
-    ]);
+    return DefaultTextStyle.merge(
+      softWrap: false,
+      child: Column(children: [
+        FittedBox(
+          fit: BoxFit.scaleDown,
+          child: Text('${result.score}',
+              style: const TextStyle(fontFamily: Fonts.display, fontSize: AnkirenPageLayout.scoreFont, height: 1)),
+        ),
+        const SizedBox(height: AnkirenPageLayout.gameGap),
+        FittedBox(fit: BoxFit.scaleDown, child: RatingChangeTag(result.ratingChange.round())),
+        const SizedBox(height: AnkirenPageLayout.gameGap),
+        Text(
+          s.ankirenLevelTag(result.level),
+          maxLines: 1,
+          style: const TextStyle(
+              fontWeight: Weights.black, fontSize: AnkirenPageLayout.gameLevelFont, height: 1, color: Palette.mute),
+        ),
+      ]),
+    );
   }
 }
 
@@ -547,10 +553,10 @@ class _NextGame extends StatelessWidget {
         padding: const EdgeInsets.only(top: AnkirenPageLayout.tagRise),
         child: MangaPanel(
           shape: const PanelShape(topLeft: Offset(0, SideTripsLayout.cut)),
-          child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+          child: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.stretch, children: [
             _Stats(level),
             _Hint(entry, level),
-            Expanded(child: AnkirenFieldPreview(level)),
+            Flexible(child: AnkirenFieldPreview(level)),
             Padding(
               padding: AnkirenPageLayout.burstMargin,
               child: RankedBurst(onTap: () => startAnkirenRanked(context)),
@@ -560,8 +566,12 @@ class _NextGame extends StatelessWidget {
       ),
       Positioned(
         left: AnkirenPageLayout.tagLeft,
+        right: AnkirenPageLayout.tagLeft,
         top: 0,
-        child: _Tag(s.ankirenNextRanked, s.other.ankirenNextRanked),
+        child: Align(
+          alignment: Alignment.centerLeft,
+          child: FittedBox(fit: BoxFit.scaleDown, child: _Tag(s.ankirenNextRanked, s.other.ankirenNextRanked)),
+        ),
       ),
     ]);
   }
