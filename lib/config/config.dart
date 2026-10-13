@@ -178,8 +178,14 @@ abstract final class TrainingTuning {
   static const int defaultSessionLength = 30;
   static const int allKnownSessionLength = 50;
 
-  /// Time / goal at or below which a correct answer is graded Easy.
-  static const double defaultEasyRatio = 0.75;
+  /// A correct answer at or under this time, ms, is graded Easy, whatever
+  /// the goal.
+  static const int defaultEasyMs = 300;
+
+  /// Debug page range of [defaultEasyMs], ms.
+  static const int easyMsMin = 100;
+  static const int easyMsMax = 1000;
+  static const int easyMsStep = 50;
 
   /// Time / goal at or below which a correct answer is graded Good (else Hard).
   static const double defaultGoodRatio = 1.5;

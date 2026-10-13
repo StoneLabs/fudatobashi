@@ -155,7 +155,7 @@ class TrainerConfig {
     this.batchSize = TrainingTuning.defaultBatchSize,
     this.reverseMode = ReverseMode.afterMastery,
     this.sessionLengthOverride,
-    this.easyRatio = TrainingTuning.defaultEasyRatio,
+    this.easyMs = TrainingTuning.defaultEasyMs,
     this.goodRatio = TrainingTuning.defaultGoodRatio,
     this.desiredRetention = TrainingTuning.defaultDesiredRetention,
     this.masteryStabilityDays = TrainingTuning.defaultMasteryStabilityDays,
@@ -177,8 +177,8 @@ class TrainerConfig {
           ? TrainingTuning.allKnownSessionLength
           : TrainingTuning.defaultSessionLength);
 
-  /// Time / goal at or below which a correct answer is graded Easy.
-  final double easyRatio;
+  /// Time, ms, at or below which a correct answer is graded Easy.
+  final int easyMs;
 
   /// Time / goal at or below which a correct answer is graded Good (else Hard).
   final double goodRatio;
@@ -192,7 +192,7 @@ class TrainerConfig {
         'batchSize': batchSize,
         'reverseMode': reverseMode.name,
         'sessionLengthOverride': sessionLengthOverride,
-        'easyRatio': easyRatio,
+        'easyMs': easyMs,
         'goodRatio': goodRatio,
         'desiredRetention': desiredRetention,
         'masteryStabilityDays': masteryStabilityDays,
@@ -207,7 +207,8 @@ class TrainerConfig {
         // The old always-written `sessionLength` is ignored, so the round
         // follows the mode's default unless set on the debug page.
         sessionLengthOverride: j['sessionLengthOverride'] as int?,
-        easyRatio: (j['easyRatio'] as num?)?.toDouble() ?? TrainingTuning.defaultEasyRatio,
+        // The old `easyRatio` (a share of the goal) is ignored.
+        easyMs: j['easyMs'] as int? ?? TrainingTuning.defaultEasyMs,
         goodRatio: (j['goodRatio'] as num?)?.toDouble() ?? TrainingTuning.defaultGoodRatio,
         desiredRetention: (j['desiredRetention'] as num?)?.toDouble() ?? TrainingTuning.defaultDesiredRetention,
         masteryStabilityDays:
@@ -221,7 +222,7 @@ class TrainerConfig {
     int? batchSize,
     ReverseMode? reverseMode,
     int? sessionLengthOverride,
-    double? easyRatio,
+    int? easyMs,
     double? goodRatio,
     double? desiredRetention,
   }) =>
@@ -231,7 +232,7 @@ class TrainerConfig {
         batchSize: batchSize ?? this.batchSize,
         reverseMode: reverseMode ?? this.reverseMode,
         sessionLengthOverride: sessionLengthOverride ?? this.sessionLengthOverride,
-        easyRatio: easyRatio ?? this.easyRatio,
+        easyMs: easyMs ?? this.easyMs,
         goodRatio: goodRatio ?? this.goodRatio,
         desiredRetention: desiredRetention ?? this.desiredRetention,
         masteryStabilityDays: masteryStabilityDays,
@@ -263,8 +264,8 @@ class ItemState {
 ///
 /// FSRS models *memory* (when a card is due again); ms statistics model *speed*
 /// (what to drill now, and when the player is ready for new cards). Each
-/// attempt is turned into an FSRS grade by comparing its time to the goal:
-/// miss → Again, ≤ easyRatio·goal → Easy, ≤ goodRatio·goal → Good, else Hard.
+/// attempt is turned into an FSRS grade by its time: miss → Again,
+/// ≤ easyMs → Easy, ≤ goodRatio·goal → Good, else Hard.
 class Trainer {
   Trainer({required this.config, required this.items, this.goalLevel = 0})
       : scheduler = schedulerFor(config);
@@ -304,9 +305,8 @@ class Trainer {
 
   fsrs.Rating gradeFor(AttemptRec a) {
     if (a.miss) return fsrs.Rating.again;
-    final r = a.ms / goalMs;
-    if (r <= config.easyRatio) return fsrs.Rating.easy;
-    if (r <= config.goodRatio) return fsrs.Rating.good;
+    if (a.ms <= config.easyMs) return fsrs.Rating.easy;
+    if (a.ms / goalMs <= config.goodRatio) return fsrs.Rating.good;
     return fsrs.Rating.hard;
   }
 

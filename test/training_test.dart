@@ -2,6 +2,7 @@ import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:fsrs/fsrs.dart' as fsrs;
+import 'package:fudatobashi/config/config.dart';
 import 'package:fudatobashi/data/fuda_sets.dart';
 import 'package:fudatobashi/data/poem.dart';
 import 'package:fudatobashi/domain/card_stats.dart';
@@ -53,12 +54,14 @@ void main() {
   });
 
   group('trainer', () {
-    test('grades follow time relative to the goal', () {
+    test('grades Easy at a fixed time, Good and Hard relative to the goal', () {
       final t = Trainer(config: const TrainerConfig(), items: Trainer.freshItems());
       AttemptRec a(int ms, {bool miss = false}) => AttemptRec(
           at: DateTime.utc(2026), us: ms * 1000, miss: miss, clean: true, deckSize: 10, mode: PlayMode.training);
-      expect(t.gradeFor(a(2000)), fsrs.Rating.easy); // goal 3 s: ≤ 2.25 s
-      expect(t.gradeFor(a(4000)), fsrs.Rating.good); // ≤ 4.5 s
+      expect(t.gradeFor(a(TrainingTuning.defaultEasyMs)), fsrs.Rating.easy);
+      expect(t.gradeFor(a(TrainingTuning.defaultEasyMs + 1)), fsrs.Rating.good);
+      expect(t.gradeFor(a(2000)), fsrs.Rating.good); // goal 3 s: ≤ 4.5 s
+      expect(t.gradeFor(a(4000)), fsrs.Rating.good);
       expect(t.gradeFor(a(5000)), fsrs.Rating.hard);
       expect(t.gradeFor(a(900, miss: true)), fsrs.Rating.again);
     });
