@@ -2104,56 +2104,72 @@ class DriftingPiece {
 
 /// Where an island stands in one slot of the ring ([DojoRingLayout]): its
 /// canvas's [DojoRingLayout.foot] at [foot] on the scene, at [scale]; in
-/// colour or blue [haze] (0–1); its label shown by [label] (0–1); and its
+/// colour or blue [haze] (0–1); its label shown by [label] (0–1), a "coming
+/// soon" tag pinned by its [tagAlign] point to [tag] on the canvas; and its
 /// [depth], the deepest painted first.
 @immutable
 class RingSlotSpec {
-  const RingSlotSpec({required this.foot, required this.scale, required this.haze, required this.label, required this.depth});
-  final Offset foot;
+  const RingSlotSpec({
+    required this.foot,
+    required this.scale,
+    required this.haze,
+    required this.label,
+    required this.tag,
+    required this.tagAlign,
+    required this.depth,
+  });
+  final Offset foot, tag;
   final double scale, haze, label, depth;
+  final Alignment tagAlign;
 
   static RingSlotSpec lerp(RingSlotSpec a, RingSlotSpec b, double t) => RingSlotSpec(
         foot: Offset.lerp(a.foot, b.foot, t)!,
         scale: lerpDouble(a.scale, b.scale, t)!,
         haze: lerpDouble(a.haze, b.haze, t)!,
         label: lerpDouble(a.label, b.label, t)!,
+        tag: Offset.lerp(a.tag, b.tag, t)!,
+        tagAlign: Alignment.lerp(a.tagAlign, b.tagAlign, t)!,
         depth: lerpDouble(a.depth, b.depth, t)!,
       );
 }
 
 /// One island of the ring: its picture in [colour] and the same drawing in
-/// blue [haze], both filling the island canvas, and where its "coming
-/// soon" tag hangs from ([tag], its top left corner on the canvas), if it
-/// has one.
+/// blue [haze], both filling the island canvas.
 @immutable
 class RingIsleArt {
-  const RingIsleArt(this.colour, this.haze, {this.tag});
+  const RingIsleArt(this.colour, this.haze);
   final String colour, haze;
-  final Offset? tag;
 }
 
 /// The ring of islands on the dojo scene (`SideTripRing`). Every island is
 /// drawn on one [canvas] (units as the scene's) and stands on its
 /// waterline at [foot]; each slot of the ring ([slots], in `RingSlot`
 /// order: front, right, back, left) puts it somewhere on the scene. An
-/// island between two slots is part of the way between the two.
+/// island between two slots is part of the way between the two. In front
+/// its tag hangs in the water under its left end; elsewhere it floats over
+/// the island, clear of the one in front.
 abstract final class DojoRingLayout {
   static const _dir = 'assets/images/sidetrips';
   static const Size canvas = Size(370, 226);
   static const Offset foot = Offset(185, 213);
 
   static const slots = [
-    RingSlotSpec(foot: Offset(169, 397), scale: 1, haze: 0, label: 1, depth: 3),
-    RingSlotSpec(foot: Offset(334, 248), scale: 0.36, haze: 0, label: 1, depth: 2),
-    RingSlotSpec(foot: Offset(208, 200), scale: 0.35, haze: 1, label: 0, depth: 0),
-    RingSlotSpec(foot: Offset(36, 201), scale: 0.21, haze: 1, label: 0, depth: 1),
+    RingSlotSpec(
+        foot: Offset(169, 397), scale: 1, haze: 0, label: 1, tag: _under, tagAlign: Alignment.topLeft, depth: 3),
+    RingSlotSpec(
+        foot: Offset(334, 248), scale: 0.36, haze: 0, label: 1, tag: _over, tagAlign: Alignment.bottomCenter, depth: 2),
+    RingSlotSpec(
+        foot: Offset(208, 200), scale: 0.26, haze: 1, label: 0, tag: _over, tagAlign: Alignment.bottomCenter, depth: 0),
+    RingSlotSpec(
+        foot: Offset(30, 201), scale: 0.16, haze: 1, label: 0, tag: _over, tagAlign: Alignment.bottomCenter, depth: 1),
   ];
+  static const _under = Offset(36, 231);
+  static const _over = Offset(185, -4);
 
   static const ankiren = RingIsleArt('$_dir/isle-ankiren.webp', '$_dir/far-ankiren.webp');
-  static const building = RingIsleArt('$_dir/isle-construction.webp', '$_dir/far-construction.webp', tag: _tag);
-  static const fuji = RingIsleArt('$_dir/isle-fuji.webp', '$_dir/far-fuji.webp', tag: _tag);
-  static const lighthouse = RingIsleArt('$_dir/isle-lighthouse.webp', '$_dir/far-lighthouse.webp', tag: _tag);
-  static const _tag = Offset(36, 231);
+  static const building = RingIsleArt('$_dir/isle-construction.webp', '$_dir/far-construction.webp');
+  static const fuji = RingIsleArt('$_dir/isle-fuji.webp', '$_dir/far-fuji.webp');
+  static const lighthouse = RingIsleArt('$_dir/isle-lighthouse.webp', '$_dir/far-lighthouse.webp');
 
   /// 暗記練's banner on its island's grass, once it is open: its label.
   static const nobori = ScenePiece('$_dir/nobori-ankiren.webp', Rect.fromLTWH(277.2, 56, 30, 100));

@@ -162,8 +162,8 @@ class _DojoSceneState extends State<DojoScene> with SingleTickerProviderStateMix
       });
 
   /// The islands, back to front, then the torii and the islands' tags: the
-  /// ring at [widget.turn], or while [widget.fade] runs, the ring at
-  /// [widget.fadeFrom] fading out under it fading in.
+  /// ring at [widget.turn]; while [widget.fade] runs, over the ring at
+  /// [widget.fadeFrom] fading out.
   List<Widget> _ring(_Frame frame) {
     final fade = widget.fade.value;
     final turn = widget.turn.value;
@@ -179,11 +179,11 @@ class _DojoSceneState extends State<DojoScene> with SingleTickerProviderStateMix
       _torii(frame, front == SideTripIsle.ankiren ? widget.gate : GateState.locked),
       for (final ring in shown)
         for (final (isle, spec) in _placed(ring.turn))
-          if (_artOf(isle).tag case final tag? when spec.label * ring.opacity > 0)
+          if (isle.comingSoon && spec.label * ring.opacity > 0)
             Positioned.fill(
-              key: ValueKey((ring.leaving, isle, tag)),
+              key: ValueKey((ring.leaving, isle, 'tag')),
               child: CustomSingleChildLayout(
-                delegate: _TagAnchor(frame.onCanvas(spec, tag)),
+                delegate: _TagAnchor(frame.onCanvas(spec, spec.tag), spec.tagAlign),
                 child: ExcludeSemantics(
                   child: Opacity(opacity: spec.label * ring.opacity, child: _SoonTag(S.of(context).sideTripsBuilding)),
                 ),
@@ -455,20 +455,23 @@ class _SoonTag extends StatelessWidget {
       );
 }
 
-/// Hangs a tag from its top left corner at [at], kept inside the screen's
-/// gutters.
+/// Pins a tag's [align] point to [at], kept inside the screen's gutters.
 class _TagAnchor extends SingleChildLayoutDelegate {
-  _TagAnchor(this.at);
+  _TagAnchor(this.at, this.align);
 
   final Offset at;
+  final Alignment align;
 
   @override
   BoxConstraints getConstraintsForChild(BoxConstraints constraints) => constraints.loosen();
 
   @override
-  Offset getPositionForChild(Size size, Size childSize) =>
-      Offset(at.dx.clamp(Gaps.gutter, math.max(Gaps.gutter, size.width - Gaps.gutter - childSize.width)), at.dy);
+  Offset getPositionForChild(Size size, Size childSize) {
+    final corner = at - align.alongSize(childSize);
+    return Offset(
+        corner.dx.clamp(Gaps.gutter, math.max(Gaps.gutter, size.width - Gaps.gutter - childSize.width)), corner.dy);
+  }
 
   @override
-  bool shouldRelayout(_TagAnchor old) => old.at != at;
+  bool shouldRelayout(_TagAnchor old) => old.at != at || old.align != align;
 }
