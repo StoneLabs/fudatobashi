@@ -52,21 +52,32 @@ class _PlayDebugOverlayState extends State<PlayDebugOverlay> {
       'build ${f.avgBuildMs.toStringAsFixed(1)}  raster ${f.avgRasterMs.toStringAsFixed(1)} ms'
           '  jank ${f.jankPct.toStringAsFixed(0)}%',
     ];
-    return IgnorePointer(
-      child: DecoratedBox(
-        decoration: BoxDecoration(
-          color: DebugOverlayStyle.background,
-          borderRadius: BorderRadius.circular(DebugOverlayStyle.radius),
-        ),
-        child: Padding(
-          padding: DebugOverlayStyle.padding,
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [for (final l in lines) Text(l, style: _mono)],
+    return DebugReadout(lines);
+  }
+}
+
+/// Dev mode's corner readout: [lines] of monospace on a dark chip, never
+/// taking taps.
+class DebugReadout extends StatelessWidget {
+  const DebugReadout(this.lines, {super.key});
+
+  final List<String> lines;
+
+  @override
+  Widget build(BuildContext context) => IgnorePointer(
+        child: DecoratedBox(
+          decoration: BoxDecoration(
+            color: DebugOverlayStyle.background,
+            borderRadius: BorderRadius.circular(DebugOverlayStyle.radius),
+          ),
+          child: Padding(
+            padding: DebugOverlayStyle.padding,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [for (final l in lines) Text(l, style: _mono)],
+            ),
           ),
         ),
-      ),
-    );
-  }
+      );
 }

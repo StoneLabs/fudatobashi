@@ -41,6 +41,7 @@ import 'package:fudatobashi/ui/ankiren/ankiren_screen.dart';
 import 'package:fudatobashi/ui/app.dart';
 import 'package:fudatobashi/ui/debug/ankiren_debug_game.dart';
 import 'package:fudatobashi/ui/debug/ankiren_debug_overlay.dart';
+import 'package:fudatobashi/ui/debug/ankiren_score_readout.dart';
 import 'package:fudatobashi/ui/debug/ankiren_tools_page.dart';
 import 'package:fudatobashi/ui/debug/debug_common.dart';
 import 'package:fudatobashi/ui/manga/manga.dart';
@@ -421,6 +422,32 @@ void main() {
       await take(tester, id);
       expect(card(tester, id).faceUp, isTrue);
       expect(card(tester, id).revealed, isFalse);
+      await tester.pumpWidget(const SizedBox());
+    });
+
+    testWidgets("dev mode's play overlay tells how the last card scored", (tester) async {
+      final p = await open(tester);
+      await play(tester, p, AnkirenSetup.forLevel(0), tracked: false);
+      expect(find.byType(AnkirenScoreReadout), findsNothing, reason: 'off unless asked for');
+      await tester.pumpWidget(const SizedBox());
+
+      await tester.runAsync(() => p.updateSettings(p.settings.copyWith(debugMode: true, playOverlay: true)));
+      await play(tester, p, AnkirenSetup.forLevel(0), tracked: false);
+      expect(find.text('no card answered yet'), findsOneWidget);
+      await ready(tester);
+      final id = asked(tester);
+      await take(tester, cards(tester).map((c) => c.poemId).firstWhere((x) => x != id));
+      await tester.pump(AnkirenMotion.wrongFlash);
+      await take(tester, id);
+      final game = tester.widget<AnkirenScoreReadout>(find.byType(AnkirenScoreReadout)).game;
+      final a = game.answers.single;
+      final lines = AnkirenScoreReadout.lines(game);
+      expect(lines[0], endsWith('found with the second tap'));
+      expect(lines[1], startsWith('first tap ${a.firstTap!.name} at'));
+      expect(lines[2], endsWith('= ${AnkirenScore.points(a)} pt'));
+      for (final line in lines) {
+        expect(find.text(line), findsOneWidget);
+      }
       await tester.pumpWidget(const SizedBox());
     });
 

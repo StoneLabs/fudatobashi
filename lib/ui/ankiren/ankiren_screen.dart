@@ -18,6 +18,7 @@ import '../../state/progress.dart';
 import '../../state/scope.dart';
 import '../../state/settings.dart';
 import '../manga/manga.dart';
+import '../debug/ankiren_score_readout.dart';
 import '../play/pointer_clock.dart';
 import '../sound/sounds.dart';
 import 'ankiren_band.dart';
@@ -301,7 +302,8 @@ class _AnkirenScreenState extends State<AnkirenScreen> {
     final asked = _promptShown ? _game.current : null;
     final last = _last;
     final voice = _options.prompt == AnkirenPrompt.textAndVoice;
-    final showNumber = _progress.settings.showPoemNumber;
+    final settings = _progress.settings;
+    final showNumber = settings.showPoemNumber;
 
     Widget card(int poemId, FieldSide side) => Listener(
           behavior: HitTestBehavior.opaque,
@@ -352,14 +354,20 @@ class _AnkirenScreenState extends State<AnkirenScreen> {
           ),
         ),
         child: SafeArea(
-          child: AnkirenFieldView(
-            field: _game.field,
-            landscape: _landscape,
-            zoom: _zoom,
-            card: card,
-            band: band,
-            overlay: overlay == null ? null : (placement) => overlay(_game, placement),
-          ),
+          child: Stack(children: [
+            Positioned.fill(
+              child: AnkirenFieldView(
+                field: _game.field,
+                landscape: _landscape,
+                zoom: _zoom,
+                card: card,
+                band: band,
+                overlay: overlay == null ? null : (placement) => overlay(_game, placement),
+              ),
+            ),
+            if (settings.debugMode && settings.playOverlay)
+              Positioned(left: Gaps.section, top: Gaps.section, child: AnkirenScoreReadout(game: _game)),
+          ]),
         ),
       ),
     );
