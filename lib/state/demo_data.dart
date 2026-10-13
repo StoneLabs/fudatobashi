@@ -32,6 +32,23 @@ Future<void> seedDemoData(
   );
   final sim = JourneySimulator(progress, seed: seed, learner: learner);
   final today = DateTime.now();
+  progress.trainer.fuzzing = false;
+  try {
+    await _simulate(progress, sim, today, pace, days, onProgress);
+  } finally {
+    progress.trainer.fuzzing = true;
+  }
+  onProgress?.call(days, days, 1);
+}
+
+Future<void> _simulate(
+  Progress progress,
+  JourneySimulator sim,
+  DateTime today,
+  LearningPace pace,
+  int days,
+  SeedProgress? onProgress,
+) async {
   for (var d = 0; d < days; d++) {
     final rounds = pace.profile.dailyRounds;
     final freeRounds = d % DemoDataTuning.freeRunEvery == DemoDataTuning.freeRunEvery - 1 ? 1 : 0;
@@ -45,5 +62,4 @@ Future<void> seedDemoData(
       onRound: (round, done, cards) => onProgress?.call(d + 1, days, (round + done / cards) / runs),
     );
   }
-  onProgress?.call(days, days, 1);
 }

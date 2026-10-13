@@ -274,12 +274,21 @@ class Trainer {
   int goalLevel;
   fsrs.Scheduler scheduler;
 
-  static fsrs.Scheduler schedulerFor(TrainerConfig c) =>
-      fsrs.Scheduler(desiredRetention: c.desiredRetention);
+  bool _fuzzing = true;
+
+  /// Whether the scheduler randomly spreads its review intervals. Off, a
+  /// simulation replays exactly.
+  set fuzzing(bool on) {
+    _fuzzing = on;
+    scheduler = schedulerFor(config, fuzzing: on);
+  }
+
+  static fsrs.Scheduler schedulerFor(TrainerConfig c, {bool fuzzing = true}) =>
+      fsrs.Scheduler(desiredRetention: c.desiredRetention, enableFuzzing: fuzzing);
 
   void updateConfig(TrainerConfig c) {
     config = c;
-    scheduler = schedulerFor(c);
+    scheduler = schedulerFor(c, fuzzing: _fuzzing);
   }
 
   static Map<ItemKey, ItemState> freshItems() => {
