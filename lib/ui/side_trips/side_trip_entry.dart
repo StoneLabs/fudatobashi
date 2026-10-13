@@ -34,7 +34,7 @@ class SideTripEntryView extends StatelessWidget {
 }
 
 /// A side trip's name lettered on the hub with its tag, and once it is open
-/// its rank flag at the right: the head that breaks out over the top of its
+/// its rank stamp at the right: the head that breaks out over the top of its
 /// panel ([SideTripBody]).
 class SideTripHead extends StatelessWidget {
   const SideTripHead(this.entry, {super.key});
@@ -54,8 +54,11 @@ class SideTripHead extends StatelessWidget {
             ),
             if (entry.open)
               Padding(
-                padding: const EdgeInsets.only(right: SideTripsLayout.flagRight, bottom: SideTripsLayout.flagDrop),
-                child: _RankFlag(entry.band),
+                padding: const EdgeInsets.only(bottom: SideTripsLayout.stampLift),
+                child: Transform.translate(
+                  offset: const Offset(SideTripsLayout.stampHang, 0),
+                  child: _RankStamp(entry.band),
+                ),
               ),
           ],
         ),
@@ -185,41 +188,41 @@ class _RenderHeadOver extends RenderBox
       defaultHitTestChildren(result, position: position);
 }
 
-/// The rank flag planted on the panel's edge, its cloth lettered with the
-/// class: "F上" big, "級" small.
-class _RankFlag extends StatelessWidget {
-  const _RankFlag(this.band);
+/// The class stamped on the panel's corner in vermilion on paper, "F上" big
+/// and "級" small, inside a double rule.
+class _RankStamp extends StatelessWidget {
+  const _RankStamp(this.band);
 
   final RankBand band;
 
   @override
-  Widget build(BuildContext context) => SizedBox.fromSize(
-        size: SideTripsLayout.flagSize,
-        child: Stack(children: [
-          Positioned.fill(
-            child: Image.asset(
-              SideTripsLayout.flag,
-              fit: BoxFit.fill,
-              filterQuality: FilterQuality.medium,
-              excludeFromSemantics: true,
-            ),
-          ),
-          Positioned.fromRect(
-            rect: SideTripsLayout.flagText,
-            child: FittedBox(
-              fit: BoxFit.scaleDown,
-              child: Text.rich(
-                TextSpan(children: [
-                  TextSpan(text: band.stem),
-                  if (band.stem != band.label)
-                    const TextSpan(
-                        text: RankBand.classSuffix, style: TextStyle(fontSize: SideTripsLayout.flagSuffixFont)),
-                ]),
-                style: const TextStyle(fontFamily: Fonts.display, fontSize: SideTripsLayout.flagFont, height: 1),
+  Widget build(BuildContext context) => Sticker(
+        color: Palette.paper,
+        borderColor: Palette.vermilion,
+        tilt: SideTripsLayout.stampTilt,
+        padding: const EdgeInsets.all(Strokes.control + SideTripsLayout.stampGap),
+        child: DecoratedBox(
+          decoration: BoxDecoration(border: Border.all(color: Palette.vermilion, width: Strokes.hairline)),
+          child: Padding(
+            padding: SideTripsLayout.stampPadding,
+            child: Text.rich(
+              TextSpan(children: [
+                TextSpan(text: band.stem),
+                if (band.stem != band.label)
+                  const TextSpan(
+                      text: RankBand.classSuffix, style: TextStyle(fontSize: SideTripsLayout.stampSuffixFont)),
+              ]),
+              maxLines: 1,
+              softWrap: false,
+              style: const TextStyle(
+                fontFamily: Fonts.display,
+                fontSize: SideTripsLayout.stampFont,
+                height: 1,
+                color: Palette.vermilion,
               ),
             ),
           ),
-        ]),
+        ),
       );
 }
 

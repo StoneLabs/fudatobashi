@@ -101,19 +101,21 @@ class InkBanner extends StatelessWidget {
   }
 }
 
-/// A slightly tilted coloured sticker with an ink border.
+/// A slightly tilted coloured sticker with a border, ink unless given
+/// another [borderColor].
 class Sticker extends StatelessWidget {
   const Sticker({
     super.key,
     required this.child,
     this.color = Palette.sun,
+    this.borderColor = Palette.ink,
     this.tilt = Tilt.sticker,
     this.padding = StickerStyle.padding,
     this.border = Strokes.control,
   });
 
   final Widget child;
-  final Color color;
+  final Color color, borderColor;
 
   /// Degrees.
   final double tilt;
@@ -124,7 +126,7 @@ class Sticker extends StatelessWidget {
   Widget build(BuildContext context) => Transform.rotate(
         angle: tilt * math.pi / 180,
         child: DecoratedBox(
-          decoration: BoxDecoration(color: color, border: Border.all(color: Palette.ink, width: border)),
+          decoration: BoxDecoration(color: color, border: Border.all(color: borderColor, width: border)),
           child: Padding(padding: padding, child: child),
         ),
       );

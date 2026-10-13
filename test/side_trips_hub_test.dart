@@ -58,6 +58,10 @@ const _wide = (name: '412', size: Size(1080 / 2.625, 2340 / 2.625), dpr: 2.625);
 const _users = (name: '384', size: Size(384, 832), dpr: 2.8125);
 const _statusBar = 28.0, _navBar = 48.0;
 
+/// The least left between the rank stamp, hanging out over the panel's
+/// corner, and the screen's right edge.
+const _stampMargin = 4.0;
+
 /// Cards remembered well on the locked hub: 13 short of 暗記練.
 const _lockedCards = 37;
 
@@ -209,6 +213,21 @@ void main() {
     expect(r.bottom, lessThanOrEqualTo(bar.top), reason: '$f');
   }
 
+  // The box that holds [f], tilted, on screen: its corners' bounds.
+  Rect paintedRect(WidgetTester tester, Finder f) {
+    final box = tester.renderObject<RenderBox>(find.descendant(of: f, matching: find.byType(DecoratedBox)).first);
+    final corners = [
+      for (final c in [Offset.zero, Offset(box.size.width, 0), Offset(0, box.size.height), box.size.bottomRight(Offset.zero)])
+        box.localToGlobal(c),
+    ];
+    return Rect.fromLTRB(
+      corners.map((c) => c.dx).reduce(math.min),
+      corners.map((c) => c.dy).reduce(math.min),
+      corners.map((c) => c.dx).reduce(math.max),
+      corners.map((c) => c.dy).reduce(math.max),
+    );
+  }
+
   test('every picture in assets/images/sidetrips is art the hub, its rules or the rating page use', () {
     final used = {
       for (final piece in [
@@ -225,7 +244,6 @@ void main() {
         piece.asset,
       for (final art in [DojoRingLayout.ankiren, DojoRingLayout.building, DojoRingLayout.fuji, DojoRingLayout.lighthouse])
         ...[art.colour, art.haze],
-      SideTripsLayout.flag,
       AnkirenRulesLayout.memorise,
       AnkirenRulesLayout.flip,
       AnkirenRulesLayout.take,
@@ -282,6 +300,29 @@ void main() {
                   expect(inHub(find.text(s.sideTripUnranked)), findsOneWidget);
                 case _Hub.ranked:
                   expect(inHub(find.text('${entry.rating!.round()}')), findsOneWidget);
+              }
+
+              final stamp = inHub(find.byType(Sticker));
+              expect(find.descendant(of: inHub(find.byType(SideTripHead)), matching: find.byType(Image)), findsNothing,
+                  reason: 'no flag picture');
+              if (hub == _Hub.locked) {
+                expect(stamp, findsNothing, reason: 'no class while locked');
+              } else {
+                expect(stamp, findsOneWidget);
+                expect(find.descendant(of: stamp, matching: find.textContaining(entry.band.stem, findRichText: true)),
+                    findsOneWidget, reason: 'the stamp says ${entry.band.label}');
+                final painted = paintedRect(tester, stamp);
+                expect(painted.left, greaterThan(0), reason: '$painted');
+                expect(painted.right, lessThanOrEqualTo(phone.size.width - _stampMargin), reason: '$painted');
+                expect(painted.top, greaterThanOrEqualTo(_statusBar), reason: '$painted');
+                final rows = find.descendant(
+                    of: inHub(find.byWidgetPredicate((w) => w is Pressable && w.semanticLabel == s.ankirenOpenPage)),
+                    matching: find.byType(RichText));
+                expect(rows, findsWidgets);
+                for (final text in rows.evaluate()) {
+                  final rect = tester.getRect(find.byWidget(text.widget));
+                  expect(painted.overlaps(rect), isFalse, reason: 'the stamp $painted covers text at $rect');
+                }
               }
               await tester.pumpWidget(const SizedBox());
             });

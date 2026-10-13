@@ -2315,7 +2315,7 @@ abstract final class DojoUnlockMotion {
 }
 
 /// The Side Trips tab's entry for 暗記練 under the dojo scene
-/// (`research/design/sidetrips_c.html`): its lettering and rank flag
+/// (`research/design/sidetrips_c.html`): its lettering and rank stamp
 /// breaking out over the panel's top; the rating and next game and the
 /// burst to the trip's page, or while it is locked the cards still to
 /// remember and under them the rules.
@@ -2330,7 +2330,7 @@ abstract final class SideTripsLayout {
   /// grows with the system text size only up to this factor.
   static const double letteringMaxScale = 1.1;
 
-  /// How far the lettering and flag hang over the panel's top.
+  /// How far the lettering and stamp hang over the panel's top.
   static const double overlap = 13;
   static const double headInset = 6;
   static const double letteringFont = 37;
@@ -2339,15 +2339,17 @@ abstract final class SideTripsLayout {
   static const double letteringDrop = 4;
   static const double bannerFont = 11;
 
-  /// The rank flag: the picture, where its cloth takes the class, and how
-  /// it stands on the panel's edge.
-  static const String flag = 'assets/images/sidetrips/ui/rank-flag.webp';
-  static const Size flagSize = Size(98, 50);
-  static const Rect flagText = Rect.fromLTWH(13, 10, 66, 24);
-  static const double flagFont = 16;
-  static const double flagSuffixFont = 12;
-  static const double flagRight = 2;
-  static const double flagDrop = 9;
+  /// The rank stamp pressed on the panel's top right corner: tilted clockwise
+  /// (degrees), its class lettered big with 級 small inside a double rule,
+  /// lifted [stampLift] off the head's foot so it stays off the panel's rows,
+  /// and hanging [stampHang] out past the panel's right edge.
+  static const double stampTilt = 10;
+  static const double stampFont = 18;
+  static const double stampSuffixFont = 13;
+  static const double stampGap = 2;
+  static const EdgeInsets stampPadding = EdgeInsets.symmetric(horizontal: 7, vertical: 4);
+  static const double stampLift = 4;
+  static const double stampHang = 8;
 
   /// How far the panel's top-left corner is cut down.
   static const double cut = 12;
