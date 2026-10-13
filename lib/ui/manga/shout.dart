@@ -84,7 +84,9 @@ class ShoutPainter extends CustomPainter {
 }
 
 /// The big call to action: a spiky pink shout balloon with display lettering
-/// and an arrow. Pressing it darkens the ink and squeezes the balloon.
+/// and an arrow. Pressing it darkens the ink and squeezes the balloon. With a
+/// [sub] (the call in the other language) under the label, both shrink to
+/// fit inside the spikes.
 class ShoutButton extends StatelessWidget {
   const ShoutButton({
     super.key,
@@ -95,6 +97,8 @@ class ShoutButton extends StatelessWidget {
     this.pressedColor = Palette.pinkDeep,
     this.fontSize = ShoutStyle.font,
     this.arrow = true,
+    this.sub,
+    this.subFontSize = ShoutStyle.subFont,
   });
 
   final String label;
@@ -104,9 +108,25 @@ class ShoutButton extends StatelessWidget {
   final Color pressedColor;
   final double fontSize;
   final bool arrow;
+  final String? sub;
+  final double subFontSize;
 
   @override
   Widget build(BuildContext context) {
+    final sub = this.sub;
+    final text = Text(
+      label,
+      maxLines: 1,
+      overflow: TextOverflow.fade,
+      softWrap: false,
+      style: TextStyle(
+        fontFamily: Fonts.display,
+        fontSize: fontSize,
+        letterSpacing: ShoutStyle.tracking * fontSize,
+        color: Palette.ink,
+        height: 1,
+      ),
+    );
     return Pressable(
       onTap: onTap,
       drop: 0,
@@ -119,30 +139,32 @@ class ShoutButton extends StatelessWidget {
           fill: pressed ? pressedColor : color,
           stroke: pressed ? ShoutStyle.strokePressed : ShoutStyle.stroke,
         ),
-        child: Center(
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Flexible(
-                child: Text(
-                  label,
-                  maxLines: 1,
-                  overflow: TextOverflow.fade,
-                  softWrap: false,
-                  style: TextStyle(
-                    fontFamily: Fonts.display,
-                    fontSize: fontSize,
-                    letterSpacing: ShoutStyle.tracking * fontSize,
-                    color: Palette.ink,
-                    height: 1,
-                  ),
+        child: Padding(
+          padding: EdgeInsets.symmetric(horizontal: sub == null ? 0 : ShoutStyle.subInset),
+          child: Center(
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Flexible(
+                  child: sub == null
+                      ? text
+                      : FittedBox(
+                          fit: BoxFit.scaleDown,
+                          child: Column(mainAxisSize: MainAxisSize.min, children: [
+                            text,
+                            const SizedBox(height: ShoutStyle.subGap),
+                            Text(sub,
+                                maxLines: 1,
+                                style: TextStyle(fontWeight: Weights.black, fontSize: subFontSize, height: 1)),
+                          ]),
+                        ),
                 ),
-              ),
-              if (arrow) ...[
-                const SizedBox(width: ShoutStyle.gap),
-                MangaIcon(IconArt.arrow, size: ShoutStyle.icon, strokeWidth: ShoutStyle.iconStroke),
+                if (arrow) ...[
+                  const SizedBox(width: ShoutStyle.gap),
+                  MangaIcon(IconArt.arrow, size: ShoutStyle.icon, strokeWidth: ShoutStyle.iconStroke),
+                ],
               ],
-            ],
+            ),
           ),
         ),
       ),

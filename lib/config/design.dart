@@ -593,6 +593,11 @@ abstract final class ShoutStyle {
   static const double stroke = 3;
   static const double strokePressed = 5;
 
+  /// A sub-label under the lettering, and how far both keep off the sides.
+  static const double subFont = 11;
+  static const double subGap = 3;
+  static const double subInset = 18;
+
   /// Superellipse samples used to place the spikes.
   static const int samples = 720;
 
