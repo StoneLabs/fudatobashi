@@ -100,13 +100,31 @@ abstract final class SideTripUnlocks {
       open || remembered >= opensAt ? null : SideTripLock(opensAt: opensAt, remembered: remembered);
 }
 
+/// One ranked game of a side trip: its [score], what it did to the rating
+/// ([ratingChange]) and the [level] it was played at.
+class SideTripResult {
+  const SideTripResult({required this.score, required this.ratingChange, required this.level});
+
+  final int score;
+  final double ratingChange;
+  final int level;
+}
+
 /// A side trip's standing so far, as plain values: its ranked [rating]
 /// and the last ranked game's [ratingChange] (both null until a ranked game
 /// is played), the [rankedLevel] ranked plays at now and the highest level
-/// the known cards allow ([maxLevel]; either null while unknown), and the
-/// [games] played, ranked or free.
+/// the known cards allow ([maxLevel]; either null while unknown), the
+/// [games] played, ranked or free, and the ranked ones' [results], oldest
+/// first.
 class SideTripStanding {
-  const SideTripStanding({this.rating, this.ratingChange, this.rankedLevel, this.maxLevel, this.games = 0});
+  const SideTripStanding({
+    this.rating,
+    this.ratingChange,
+    this.rankedLevel,
+    this.maxLevel,
+    this.games = 0,
+    this.results = const [],
+  });
 
   static const none = SideTripStanding();
 
@@ -115,6 +133,7 @@ class SideTripStanding {
   final int? rankedLevel;
   final int? maxLevel;
   final int games;
+  final List<SideTripResult> results;
 }
 
 /// One island of the Side Trips tab: a [trip], what keeps it shut
@@ -129,6 +148,7 @@ class SideTripEntry {
     required this.rankedLevel,
     required this.maxLevel,
     required this.games,
+    required this.results,
   });
 
   final SideTrip trip;
@@ -149,6 +169,9 @@ class SideTripEntry {
   final int? rankedLevel;
   final int? maxLevel;
   final int games;
+
+  /// The ranked games that moved the rating, oldest first.
+  final List<SideTripResult> results;
 
   bool get open => lock == null;
   bool get ranked => rating != null;
@@ -182,6 +205,7 @@ class SideTripsHub {
         rankedLevel: standing.rankedLevel,
         maxLevel: standing.maxLevel,
         games: standing.games,
+        results: standing.results,
       );
     }
 

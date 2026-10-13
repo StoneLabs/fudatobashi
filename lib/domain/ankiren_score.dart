@@ -79,14 +79,10 @@ class AnkirenScore {
   int get early => total - (recall * factor).round();
 
   /// How much a game of [setup] counts: [AnkirenTuning.levelFactor] once for
-  /// every level below the top. A custom setup counts like the hardest level
-  /// it is at least as hard as (as many cards a side or more, as long to
-  /// memorise or less), or level 0.
-  static double factorFor(AnkirenSetup setup) {
-    final level = setup.level ??
-        AnkirenLevels.all.lastIndexWhere((l) => setup.perSide >= l.perSide && setup.memorise <= l.memorise);
-    return math.pow(AnkirenTuning.levelFactor, AnkirenLevels.top - math.max(0, level)).toDouble();
-  }
+  /// every level below the top, from the level it scores as
+  /// ([AnkirenSetup.scoredLevel]).
+  static double factorFor(AnkirenSetup setup) =>
+      math.pow(AnkirenTuning.levelFactor, AnkirenLevels.top - setup.scoredLevel).toDouble();
 
   /// The score of [recall] points with [timeLeft] of the memorise time unused
   /// (as a share) at a level [factor].

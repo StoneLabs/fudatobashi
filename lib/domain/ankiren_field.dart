@@ -181,6 +181,30 @@ class AnkirenDealer {
     return left.clamp(0, n);
   }
 
+  /// The usual shape of a field of [perSide] cards a side, to show a level
+  /// before any deal: each side's [rowCounts], every row split evenly (下段
+  /// and 上段 give their odd card to the left, 中段 to the right), and no
+  /// middle cards; with [allInMiddle], a beginner's field. Its cards are
+  /// numbered from 0, not poems.
+  static AnkirenField typical(int perSide, {bool allInMiddle = false}) {
+    var next = 0;
+    List<int> take(int n) => [for (var i = 0; i < n; i++) next++];
+    AnkirenHalf half() {
+      if (allInMiddle) return _spread(take(perSide));
+      final counts = rowCounts(perSide);
+      return AnkirenHalf([
+        for (final r in FieldRow.values)
+          AnkirenRow(
+            left: take((counts[r.index] + (r == FieldRow.middle ? 0 : 1)) ~/ 2),
+            middle: const [],
+            right: take((counts[r.index] + (r == FieldRow.middle ? 1 : 0)) ~/ 2),
+          ),
+      ]);
+    }
+
+    return AnkirenField(own: half(), opponent: half());
+  }
+
   static AnkirenHalf _spread(List<int> cards) => AnkirenHalf([
         for (final r in FieldRow.values)
           AnkirenRow(left: const [], middle: r == AnkirenTuning.middleRow ? cards : const [], right: const []),

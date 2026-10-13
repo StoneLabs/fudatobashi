@@ -29,6 +29,13 @@ abstract final class AnkirenRating {
     return reached.clamp(0, maxLevel);
   }
 
+  /// The rating at which ranked games move up from [level], or null at the
+  /// top level.
+  static double? nextLevelAt(int level) {
+    const ratings = AnkirenRatingModel.levelRatings;
+    return level + 1 < ratings.length ? ratings[level + 1] : null;
+  }
+
   static double performance(int level, double fraction, {required bool placement}) {
     final stretch = placement ? AnkirenRatingModel.placementStretch : 1.0;
     return AnkirenRatingModel.levelRatings[level] +

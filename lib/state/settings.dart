@@ -65,6 +65,7 @@ class AnkirenSettings {
     this.freeLevel = DefaultSettings.ankirenFreeLevel,
     this.customPerSide = DefaultSettings.ankirenCustomPerSide,
     this.customMemorise = DefaultSettings.ankirenCustomMemorise,
+    this.rulesSeen = DefaultSettings.ankirenRulesSeen,
   });
 
   final AnkirenLayout layout;
@@ -76,6 +77,10 @@ class AnkirenSettings {
   /// Free play's custom setup, kept while a preset is chosen.
   final int customPerSide;
   final Duration customMemorise;
+
+  /// The rules (遊び方) have been shown once, so 暗記練's page no longer
+  /// opens with them.
+  final bool rulesSeen;
 
   /// Free play's last setup.
   AnkirenSetup get freeSetup => freeLevel == null
@@ -89,6 +94,7 @@ class AnkirenSettings {
         freeLevel: setup.level,
         customPerSide: setup.level == null ? setup.perSide : customPerSide,
         customMemorise: setup.level == null ? setup.memorise : customMemorise,
+        rulesSeen: rulesSeen,
       );
 
   Map<String, Object?> toJson() => {
@@ -97,6 +103,7 @@ class AnkirenSettings {
         'freeLevel': freeLevel,
         'customPerSide': customPerSide,
         'customMemoriseMs': customMemorise.inMilliseconds,
+        'rulesSeen': rulesSeen,
       };
 
   factory AnkirenSettings.fromJson(Map<String, dynamic> j) {
@@ -113,15 +120,17 @@ class AnkirenSettings {
           : Duration(
               milliseconds: memoriseMs.clamp(
                   AnkirenTuning.customMinMemorise.inMilliseconds, AnkirenTuning.customMaxMemorise.inMilliseconds)),
+      rulesSeen: j['rulesSeen'] as bool? ?? DefaultSettings.ankirenRulesSeen,
     );
   }
 
-  AnkirenSettings copyWith({AnkirenLayout? layout, AnkirenPrompt? prompt}) => AnkirenSettings(
+  AnkirenSettings copyWith({AnkirenLayout? layout, AnkirenPrompt? prompt, bool? rulesSeen}) => AnkirenSettings(
         layout: layout ?? this.layout,
         prompt: prompt ?? this.prompt,
         freeLevel: freeLevel,
         customPerSide: customPerSide,
         customMemorise: customMemorise,
+        rulesSeen: rulesSeen ?? this.rulesSeen,
       );
 }
 

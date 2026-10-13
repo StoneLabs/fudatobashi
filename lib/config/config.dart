@@ -569,6 +569,7 @@ abstract final class DefaultSettings {
   static const int ankirenFreeLevel = 0;
   static const int ankirenCustomPerSide = 8;
   static const Duration ankirenCustomMemorise = Duration(minutes: 1);
+  static const bool ankirenRulesSeen = false;
 }
 
 /// The dev-mode play overlay (`PlayDebugOverlay`).
