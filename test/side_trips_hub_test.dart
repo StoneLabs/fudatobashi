@@ -565,6 +565,38 @@ void main() {
       await tester.pumpWidget(const SizedBox());
     });
 
+    for (final still in [false, true]) {
+      testWidgets(still ? 'under reduced motion the clouds stay put' : 'the clouds drift slowly and come round',
+          (tester) async {
+        if (still) {
+          tester.platformDispatcher.accessibilityFeaturesTestValue =
+              const FakeAccessibilityFeatures(disableAnimations: true);
+          addTearDown(tester.platformDispatcher.clearAccessibilityFeaturesTestValue);
+        }
+        final p = await open(tester, _Hub.ranked, 'en');
+        await openHub(tester, p, _users);
+        final clouds = [for (final cloud in DojoSceneLayout.clouds) pictures(cloud.piece.asset)];
+        List<double> lefts() => [for (final c in clouds) tester.getRect(c).left];
+        final start = lefts();
+        await tester.pump(const Duration(seconds: 1));
+        final second = lefts();
+        await tester.pump(DojoSceneLayout.cloudLoop * 0.3);
+        final later = lefts();
+        await tester.pump(DojoSceneLayout.cloudLoop - DojoSceneLayout.cloudLoop * 0.3 - const Duration(seconds: 1));
+        final round = lefts();
+        for (var i = 0; i < clouds.length; i++) {
+          if (still) {
+            expect([second[i], later[i]], everyElement(start[i]));
+          } else {
+            expect(second[i] - start[i], inInclusiveRange(0, 4), reason: 'slowly');
+            expect(later[i], isNot(closeTo(start[i], 1)));
+            expect(round[i], closeTo(start[i], 0.5), reason: 'round again after a loop');
+          }
+        }
+        await tester.pumpWidget(const SizedBox());
+      });
+    }
+
     testWidgets('every coming-soon entry fits under its crest', (tester) async {
       for (final (phone, lang, fontScale) in [(_narrow, 'ja', 1.3), (_users, 'en', 1.3), (_wide, 'en', 1.0)]) {
         final p = await open(tester, _Hub.ranked, lang);
