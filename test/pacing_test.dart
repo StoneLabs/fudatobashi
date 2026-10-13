@@ -4,7 +4,6 @@ import 'dart:math' as math;
 import 'package:drift/drift.dart' show driftRuntimeOptions;
 import 'package:drift/native.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:fsrs/fsrs.dart' as fsrs;
 import 'package:fudatobashi/config/config.dart';
 import 'package:fudatobashi/data/fuda_sets.dart';
 import 'package:fudatobashi/data/poem.dart';
@@ -12,29 +11,38 @@ import 'package:fudatobashi/db/database.dart';
 import 'package:fudatobashi/domain/play_session.dart';
 import 'package:fudatobashi/domain/synthetic_learner.dart';
 import 'package:fudatobashi/domain/trainer.dart';
-import 'package:fudatobashi/state/journey_simulator.dart';
 import 'package:fudatobashi/state/pace_simulation.dart';
 import 'package:fudatobashi/state/play_config.dart';
 import 'package:fudatobashi/state/progress.dart';
 
-/// Upright cards unlocked at the end of each simulated day, and the island
-/// events the run reports announced.
+/// A simulated journey, day by day, and where it stood after the last day.
 class Journey {
-  final unlockedByDay = <int>[];
+  Journey(this.days, {required this.solidAtEnd, required this.islands});
+
+  final List<SimulatedDay> days;
 
   /// Share of the unlocked cards solid after the last day.
-  late double solidAtEnd;
-  final reached = <int>{};
-  final completed = <int>{};
+  final double solidAtEnd;
+  final List<IslandProgress> islands;
 
-  /// Unlocked after [days] days of practice.
-  int after(int days) => unlockedByDay[days - 1];
+  /// Upright cards unlocked after [day] days of practice.
+  int after(int day) => days[day - 1].unlocked;
 
   /// Days of practice until every card was unlocked, or null.
   int? get daysToAll {
-    final i = unlockedByDay.indexOf(100);
+    final i = days.indexWhere((d) => d.unlocked == d.total);
     return i < 0 ? null : i + 1;
   }
+
+  /// Share of new cards missed the first time they came back on a later day.
+  double get newCardsMissedNextTime =>
+      days.fold(0, (n, d) => n + d.newCardCheckMisses) / days.fold(0, (n, d) => n + d.newCardChecks);
+
+  /// FSRS reviews (due cards and misses) a day, on average.
+  double get reviewsPerDay => days.fold(0, (n, d) => n + d.reviews) / days.length;
+
+  /// The most cards due as a day began.
+  int get mostDue => days.fold(0, (n, d) => math.max(n, d.dueAtStart));
 }
 
 void main() {
@@ -42,21 +50,17 @@ void main() {
   fudaSets = FudaSets(poems);
   driftRuntimeOptions.dontWarnAboutMultipleDatabases = true;
 
-  Future<Progress> open(LearningPace pace, int seed) async {
+  Future<Progress> open(LearningPace pace) async {
     final progress = await Progress.open(AppDatabase(NativeDatabase.memory()));
     await progress.updateTrainerConfig(TrainerConfig(pace: pace));
-    // FSRS fuzzes intervals with its own unseeded Random.
-    progress.trainer.scheduler = fsrs.Scheduler.customRandom(
-      math.Random(seed),
-      desiredRetention: progress.trainer.config.desiredRetention,
-    );
+    progress.trainer.fuzzing = false;
     return progress;
   }
 
   int uprightUnlocked(Progress p) => p.trainer.unlocked.where((s) => !s.key.inverted).length;
 
   /// [days] of [learner] playing [roundsPerDay] rounds a day (by default the
-  /// routine [pace] is built for).
+  /// routine [pace] is built for), from 1 September.
   Future<Journey> simulate(
     LearningPace pace, {
     LearnerKind learner = LearnerKind.average,
@@ -64,23 +68,16 @@ void main() {
     required int days,
     required int seed,
   }) async {
-    final progress = await open(pace, seed);
-    final journey = Journey();
-    final sim = JourneySimulator(
-      progress,
-      seed: seed,
+    final sim = await PaceSimulation.open(
       learner: learner,
-      onReport: (r) {
-        journey.reached.addAll(r.islandsReached);
-        journey.completed.addAll(r.islandsCompleted);
-      },
+      pace: pace,
+      seed: seed,
+      start: DateTime(2026, 9, 1),
+      roundsPerDay: roundsPerDay,
     );
-    for (var d = 0; d < days; d++) {
-      await sim.day(DateTime(2026, 9, 1 + d), rounds: roundsPerDay ?? pace.profile.dailyRounds);
-      journey.unlockedByDay.add(uprightUnlocked(progress));
-    }
-    journey.solidAtEnd = progress.readiness.solidFraction;
-    await progress.db.close();
+    final played = [for (var d = 0; d < days; d++) await sim.nextDay()];
+    final journey = Journey(played, solidAtEnd: sim.progress.readiness.solidFraction, islands: sim.progress.islands);
+    await sim.close();
     return journey;
   }
 
@@ -100,27 +97,37 @@ void main() {
     });
   });
 
+  // Pinned to the synthetic learners of `SyntheticLearnerTuning`, which forget
+  // within the day, mix up 友札 and slip: the pace's outcomes for believable
+  // players.
   group('simulated learner', () {
     for (final seed in [1, 2, 3]) {
       test(
-        'month pace, 3 rounds of 30 a day: ~30 after a week, ~60 after two, all by day 28-30 (seed $seed)',
+        'month pace, 3 rounds a day: ~30 after a week, ~60 after two, all by day 28-29 (seed $seed)',
         () async {
           final j = await simulate(LearningPace.month, days: 30, seed: seed);
-          expect(j.after(7), inInclusiveRange(25, 35), reason: '${j.unlockedByDay}');
-          expect(j.after(14), inInclusiveRange(50, 70), reason: '${j.unlockedByDay}');
-          expect(j.daysToAll, inInclusiveRange(28, 30), reason: '${j.unlockedByDay}');
-          for (var i = 1; i < j.unlockedByDay.length; i++) {
-            expect(j.unlockedByDay[i], greaterThanOrEqualTo(j.unlockedByDay[i - 1]));
+          final unlocked = [for (final d in j.days) d.unlocked];
+          expect(j.after(7), inInclusiveRange(25, 35), reason: '$unlocked');
+          expect(j.after(14), inInclusiveRange(55, 65), reason: '$unlocked');
+          expect(j.daysToAll, inInclusiveRange(28, 29), reason: '$unlocked');
+          for (var i = 1; i < unlocked.length; i++) {
+            expect(unlocked[i], greaterThanOrEqualTo(unlocked[i - 1]));
           }
-          expect(j.reached.length, initialGroups.length);
-          expect(j.completed, isNotEmpty);
+          expect(j.islands.where((i) => i.reached).length, initialGroups.length);
+          expect(j.islands.where((i) => i.complete), isNotEmpty);
+          expect(j.newCardsMissedNextTime, inInclusiveRange(0.2, 0.38), reason: 'about 3 in 10');
+          expect(j.reviewsPerDay, inInclusiveRange(38, 54));
+          expect(j.mostDue, lessThanOrEqualTo(22), reason: 'no backlog builds up');
         },
         timeout: const Timeout(Duration(minutes: 2)),
       );
 
-      test('sprint pace, 6 rounds of 30 a day: all by day 15-16 (seed $seed)', () async {
+      test('sprint pace, 6 rounds a day: all by day 15-16 (seed $seed)', () async {
         final j = await simulate(LearningPace.sprint, days: 16, seed: seed);
-        expect(j.daysToAll, inInclusiveRange(15, 16), reason: '${j.unlockedByDay}');
+        expect(j.daysToAll, inInclusiveRange(15, 16), reason: '${[for (final d in j.days) d.unlocked]}');
+        expect(j.newCardsMissedNextTime, inInclusiveRange(0.08, 0.3));
+        expect(j.reviewsPerDay, inInclusiveRange(65, 90));
+        expect(j.mostDue, lessThanOrEqualTo(16));
       }, timeout: const Timeout(Duration(minutes: 2)));
     }
 
@@ -129,27 +136,40 @@ void main() {
     // solid instead of being flooded with new ones.
     for (final pace in LearningPace.values) {
       final days = pace.profile.daysToAll;
-      test('a quick learner on the $pace routine reaches all 100 in time', () async {
+      test('a quick learner on the $pace routine reaches all 100 in time, and forgets few new cards', () async {
         final j = await simulate(pace, learner: LearnerKind.quick, days: days + 2, seed: 1);
-        expect(j.daysToAll, inInclusiveRange(days, days + 1), reason: '${j.unlockedByDay}');
+        expect(j.daysToAll, inInclusiveRange(days, days + 1), reason: '${[for (final d in j.days) d.unlocked]}');
+        expect(j.newCardsMissedNextTime, lessThan(0.2));
       }, timeout: const Timeout(Duration(minutes: 2)));
 
       test('a slow, forgetful learner on the $pace routine is held back, not flooded', () async {
         final j = await simulate(pace, learner: LearnerKind.slow, days: days, seed: 1);
-        expect(j.after(days), inInclusiveRange(30, 75), reason: '${j.unlockedByDay}');
-        expect(j.solidAtEnd, greaterThanOrEqualTo(0.6), reason: 'most of what they have is solid');
+        expect(j.after(days), inInclusiveRange(35, 70), reason: '${[for (final d in j.days) d.unlocked]}');
+        expect(j.solidAtEnd, greaterThanOrEqualTo(0.7), reason: 'most of what they have is solid');
+        expect(j.newCardsMissedNextTime, greaterThan(0.2));
       }, timeout: const Timeout(Duration(minutes: 2)));
     }
 
     test('sprint pace on a light routine falls behind its curve (readiness holds it back)', () async {
       final j = await simulate(LearningPace.sprint, roundsPerDay: 2, days: 15, seed: 1);
-      expect(j.after(15), lessThan(100), reason: '${j.unlockedByDay}');
+      expect(j.after(15), lessThan(100), reason: '${[for (final d in j.days) d.unlocked]}');
+    }, timeout: const Timeout(Duration(minutes: 2)));
+
+    test('a rerun replays exactly', () async {
+      List<List<Object?>> run(Journey j) => [
+            for (final d in j.days)
+              [d.unlocked, d.swipes, d.reviews, d.misses, d.forgotToday, d.lookAlikes, d.slips, d.dueAtStart, d.rating],
+          ];
+      final first = await simulate(LearningPace.month, days: 8, seed: 4);
+      final again = await simulate(LearningPace.month, days: 8, seed: 4);
+      expect(run(again), run(first));
+      expect(first.days.fold(0, (n, d) => n + d.forgotToday + d.lookAlikes + d.slips), greaterThan(0));
     }, timeout: const Timeout(Duration(minutes: 2)));
   });
 
   group('learn ahead cards', () {
     test('unlocks the next batch even when not ready, and the round drills it', () async {
-      final progress = await open(LearningPace.month, 1);
+      final progress = await open(LearningPace.month);
       final day0 = DateTime(2026, 9, 1, 9);
       final first = await progress.planTraining(rng: math.Random(1), now: day0);
       expect(first.unlockedBefore.map((k) => poems[k.poemId].kimariji), ['む', 'す', 'め']);
@@ -168,7 +188,7 @@ void main() {
     });
 
     test('pulling ahead of the curve pauses auto-unlocks until the curve catches up', () async {
-      final progress = await open(LearningPace.month, 1);
+      final progress = await open(LearningPace.month);
       final day0 = DateTime(2026, 9, 1, 9);
       await progress.planTraining(now: day0);
       while (uprightUnlocked(progress) < 20) {
@@ -182,7 +202,7 @@ void main() {
     });
 
     test('is not offered in all-known mode', () async {
-      final progress = await open(LearningPace.month, 1);
+      final progress = await open(LearningPace.month);
       expect(progress.canLearnMore, isTrue);
       await progress.setLearningMode(LearningMode.allKnown);
       expect(progress.canLearnMore, isFalse);
@@ -203,7 +223,11 @@ void main() {
       expect(d.swipes, greaterThanOrEqualTo(LearningPace.month.profile.dailyRounds * TrainingTuning.defaultSessionLength));
       expect(d.reviews, inInclusiveRange(1, d.swipes));
       expect(d.recall, inInclusiveRange(0.5, 1));
+      expect(d.forgotToday + d.lookAlikes + d.slips, lessThanOrEqualTo(d.misses));
+      expect(d.newCardCheckMisses, lessThanOrEqualTo(d.newCardChecks));
     }
+    expect(days.first.newCardChecks, 0, reason: 'nothing was met on an earlier day');
+    expect(days.skip(1).fold(0, (n, d) => n + d.newCardChecks), greaterThan(0));
     expect(days.last.unlocked, days.fold<int>(0, (n, d) => n + d.newCards));
     expect(days.last.rating, isNotNull);
   }, timeout: const Timeout(Duration(minutes: 1)));
@@ -236,7 +260,7 @@ void main() {
     }
 
     test('opens only once every card is well remembered and the pace has no new cards left today', () async {
-      final progress = await open(LearningPace.month, 1);
+      final progress = await open(LearningPace.month);
       final day0 = DateTime(2026, 9, 1, 9);
       await progress.planTraining(now: day0);
       expect(progress.learnAhead(day0).lock, LearnAheadLock.shaky, reason: 'the first batch is not learned yet');
@@ -258,7 +282,7 @@ void main() {
     });
 
     test('a fresh miss or a due review locks it again', () async {
-      final progress = await open(LearningPace.month, 1);
+      final progress = await open(LearningPace.month);
       final day0 = DateTime(2026, 9, 1, 9);
       await progress.planTraining(now: day0);
       await learnAll(progress, day0);
@@ -274,7 +298,7 @@ void main() {
     });
 
     test('has nothing to offer once every card is unlocked', () async {
-      final progress = await open(LearningPace.month, 1);
+      final progress = await open(LearningPace.month);
       for (final s in progress.trainer.items.values) {
         s.unlocked = true;
       }
