@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 
 import '../../config/config.dart';
@@ -16,13 +18,17 @@ import '../../state/side_trips.dart';
 import '../manga/manga.dart';
 import '../play/time_format.dart';
 import '../rank/rank_badges.dart';
+import '../results/celebration_sequence.dart';
+import '../results/celebrations.dart';
 import '../run/run_launcher.dart';
 import '../sound/sounds.dart';
 
 /// 暗記練's results: the score on a sunburst, the cards found with the first
 /// tap and their average time, and for a ranked game how the rating moved
 /// and the level the next one plays; then Again (the same way: ranked reads
-/// its level afresh, free play replays the setup) or Done.
+/// its level afresh, free play replays the setup) or Done. A recorded game's
+/// celebrations play over it first, each tap-anywhere-to-skip: the XP it
+/// earned and any level it reached, then a ranked game's rating page.
 class AnkirenResultsScreen extends StatefulWidget {
   const AnkirenResultsScreen({super.key, required this.game, required this.report, required this.tracked});
 
@@ -37,10 +43,39 @@ class AnkirenResultsScreen extends StatefulWidget {
 }
 
 class _AnkirenResultsScreenState extends State<AnkirenResultsScreen> {
+  late final List<Celebration> _celebrations;
+  bool _celebrating = false;
+  Timer? _timer;
+
   @override
   void initState() {
     super.initState();
-    music.enterMenu();
+    final report = widget.report;
+    _celebrations = report == null ? const [] : ankirenCelebrationsFor(report, placementScores: _placementScores(report));
+    if (_celebrations.isNotEmpty) {
+      // Kept silent (the game already faded the music out) until the
+      // celebration, which has its own jingles, is done.
+      music.leaveMenu();
+      _timer = Timer(ResultsLayout.overlayStagger, () {
+        if (mounted) setState(() => _celebrating = true);
+      });
+    } else {
+      music.enterMenu();
+    }
+  }
+
+  @override
+  void dispose() {
+    _timer?.cancel();
+    super.dispose();
+  }
+
+  /// The placement games' scores so far, when [report]'s game is one of
+  /// them.
+  List<int> _placementScores(AnkirenReport report) {
+    if (report.rankedGames > AnkirenRatingModel.placementGames) return const [];
+    final results = ProgressScope.read(context).sideTripsHub()[SideTrip.ankiren].results;
+    return [for (final r in results.take(report.rankedGames)) r.score];
   }
 
   void _done() => Navigator.of(context).popUntil((r) => r.isFirst);
@@ -64,92 +99,104 @@ class _AnkirenResultsScreenState extends State<AnkirenResultsScreen> {
       backgroundColor: Palette.paper,
       body: SoundCues(
         cues: const [(Sfx.results, Duration.zero)],
-        child: SafeArea(
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: Gaps.gutter),
-            child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-              const SizedBox(height: HeaderStyle.topGap),
-              Row(children: [
+        child: Stack(children: [
+          SafeArea(
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: Gaps.gutter),
+              child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+                const SizedBox(height: HeaderStyle.topGap),
+                Row(children: [
+                  Expanded(
+                    child: Align(
+                      alignment: Alignment.centerLeft,
+                      child: FittedBox(fit: BoxFit.scaleDown, child: InkTag(tag)),
+                    ),
+                  ),
+                  const SizedBox(width: Gaps.panel),
+                  InkIconButton(icon: IconArt.close, semanticLabel: s.done, onTap: _done),
+                ]),
+                const SizedBox(height: Gaps.section),
                 Expanded(
-                  child: Align(
-                    alignment: Alignment.centerLeft,
-                    child: FittedBox(fit: BoxFit.scaleDown, child: InkTag(tag)),
+                  child: SingleChildScrollView(
+                    child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+                      _ScorePanel(
+                        total: score.total,
+                        max: score.max,
+                        early: score.early,
+                        completed: game.completed,
+                        fraction: score.fraction,
+                      ),
+                      const SizedBox(height: Gaps.panel),
+                      IntrinsicHeight(
+                        child: Row(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+                          Expanded(
+                            child: _Stat(
+                              label: s.ankirenFirstTryLabel,
+                              big: '${score.firstTries}',
+                              unit: '/ ${game.prompts.length}',
+                              note: s.ankirenWrongTaps(game.answers.fold(0, (n, a) => n + a.wrongTaps)),
+                            ),
+                          ),
+                          const SizedBox(width: Gaps.panel),
+                          Expanded(
+                            child: _Stat(
+                              label: s.ankirenAvgLabel,
+                              big: avgMs == null ? missingTime : (avgMs / 1000).toStringAsFixed(2),
+                              unit: avgMs == null ? null : 's',
+                              note: s.ankirenAvgNote,
+                            ),
+                          ),
+                        ]),
+                      ),
+                      if (report?.ratingAfter != null) ...[
+                        const SizedBox(height: Gaps.panel),
+                        _RatingPanel(before: report!.ratingBefore!, after: report.ratingAfter!),
+                      ] else if (widget.tracked && !setup.ranked) ...[
+                        const SizedBox(height: Gaps.panel),
+                        DashedBox(
+                          padding: ResultsLayout.notePadding,
+                          child: Text.rich(Phrases.span(s.ankirenFreeNote),
+                              style: const TextStyle(fontWeight: Weights.bold, fontSize: AnkirenResultsLayout.noteFont)),
+                        ),
+                      ],
+                      const SizedBox(height: Gaps.section),
+                    ]),
                   ),
                 ),
-                const SizedBox(width: Gaps.panel),
-                InkIconButton(icon: IconArt.close, semanticLabel: s.done, onTap: _done),
-              ]),
-              const SizedBox(height: Gaps.section),
-              Expanded(
-                child: SingleChildScrollView(
-                  child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-                    _ScorePanel(
-                      total: score.total,
-                      max: score.max,
-                      early: score.early,
-                      completed: game.completed,
-                      fraction: score.fraction,
-                    ),
-                    const SizedBox(height: Gaps.panel),
-                    IntrinsicHeight(
-                      child: Row(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-                        Expanded(
-                          child: _Stat(
-                            label: s.ankirenFirstTryLabel,
-                            big: '${score.firstTries}',
-                            unit: '/ ${game.prompts.length}',
-                            note: s.ankirenWrongTaps(game.answers.fold(0, (n, a) => n + a.wrongTaps)),
-                          ),
-                        ),
-                        const SizedBox(width: Gaps.panel),
-                        Expanded(
-                          child: _Stat(
-                            label: s.ankirenAvgLabel,
-                            big: avgMs == null ? missingTime : (avgMs / 1000).toStringAsFixed(2),
-                            unit: avgMs == null ? null : 's',
-                            note: s.ankirenAvgNote,
-                          ),
-                        ),
-                      ]),
-                    ),
-                    if (report?.ratingAfter != null) ...[
-                      const SizedBox(height: Gaps.panel),
-                      _RatingPanel(before: report!.ratingBefore!, after: report.ratingAfter!),
-                    ] else if (widget.tracked && !setup.ranked) ...[
-                      const SizedBox(height: Gaps.panel),
-                      DashedBox(
-                        padding: ResultsLayout.notePadding,
-                        child: Text.rich(Phrases.span(s.ankirenFreeNote),
-                            style: const TextStyle(fontWeight: Weights.bold, fontSize: AnkirenResultsLayout.noteFont)),
+                const SizedBox(height: Gaps.section),
+                SizedBox(
+                  height: ResultsLayout.actionRowHeight,
+                  child: Row(children: [
+                    Expanded(
+                        child: ActionRowButton(icon: IconArt.home, label: s.done, sub: s.ankirenDoneSub, onTap: _done)),
+                    const SizedBox(width: PlayLayout.buttonGap),
+                    Expanded(
+                      flex: 2,
+                      child: ActionRowButton(
+                        icon: IconArt.refresh,
+                        label: s.again,
+                        sub: s.ankirenAgainSub,
+                        color: Palette.pink,
+                        onTap: () => ankirenAgain(context, setup, tracked: widget.tracked),
                       ),
-                    ],
-                    const SizedBox(height: Gaps.section),
+                    ),
                   ]),
                 ),
-              ),
-              const SizedBox(height: Gaps.section),
-              SizedBox(
-                height: ResultsLayout.actionRowHeight,
-                child: Row(children: [
-                  Expanded(
-                      child: ActionRowButton(icon: IconArt.home, label: s.done, sub: s.ankirenDoneSub, onTap: _done)),
-                  const SizedBox(width: PlayLayout.buttonGap),
-                  Expanded(
-                    flex: 2,
-                    child: ActionRowButton(
-                      icon: IconArt.refresh,
-                      label: s.again,
-                      sub: s.ankirenAgainSub,
-                      color: Palette.pink,
-                      onTap: () => ankirenAgain(context, setup, tracked: widget.tracked),
-                    ),
-                  ),
-                ]),
-              ),
-              const SizedBox(height: Gaps.section),
-            ]),
+                const SizedBox(height: Gaps.section),
+              ]),
+            ),
           ),
-        ),
+          if (_celebrating)
+            Positioned.fill(
+              child: CelebrationSequence(
+                pages: _celebrations,
+                onDone: () {
+                  setState(() => _celebrating = false);
+                  music.enterMenu();
+                },
+              ),
+            ),
+        ]),
       ),
     );
   }
