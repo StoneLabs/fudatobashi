@@ -963,7 +963,7 @@ abstract final class AnkirenTuning {
   static const List<AnkirenLevel> levels = [
     AnkirenLevel(3, Duration(minutes: 1, seconds: 30), allInMiddle: true),
     AnkirenLevel(4, Duration(minutes: 1, seconds: 30)),
-    AnkirenLevel(5, Duration(minutes: 2)),
+    AnkirenLevel(5, Duration(minutes: 2, seconds: 30)),
     AnkirenLevel(7, Duration(minutes: 4)),
     AnkirenLevel(10, Duration(minutes: 6)),
     AnkirenLevel(13, Duration(minutes: 6)),
