@@ -25,37 +25,42 @@ class MangaHeader extends StatelessWidget {
       );
 }
 
-/// The app's logo lettering: 札飛ばし over FUDATOBASHI.
+/// The app's logo lettering: 札飛ばし over FUDATOBASHI, shrinking rather
+/// than breaking when the header is tight.
 class BrandTitle extends StatelessWidget {
   const BrandTitle({super.key, required this.sub});
 
   final String sub;
 
   @override
-  Widget build(BuildContext context) => Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Text(
-            '札飛ばし',
-            style: TextStyle(
-              fontFamily: Fonts.display,
-              fontSize: HeaderStyle.logo,
-              letterSpacing: HeaderStyle.logoTracking * HeaderStyle.logo,
-              height: 1,
+  Widget build(BuildContext context) => FittedBox(
+        fit: BoxFit.scaleDown,
+        alignment: AlignmentDirectional.centerStart,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              '札飛ばし',
+              style: TextStyle(
+                fontFamily: Fonts.display,
+                fontSize: HeaderStyle.logo,
+                letterSpacing: HeaderStyle.logoTracking * HeaderStyle.logo,
+                height: 1,
+              ),
             ),
-          ),
-          const SizedBox(height: HeaderStyle.subGap),
-          Text(
-            sub,
-            style: const TextStyle(
-              fontWeight: Weights.black,
-              fontSize: HeaderStyle.sub,
-              letterSpacing: HeaderStyle.subTracking * HeaderStyle.sub,
-              height: 1,
+            const SizedBox(height: HeaderStyle.subGap),
+            Text(
+              sub,
+              style: const TextStyle(
+                fontWeight: Weights.black,
+                fontSize: HeaderStyle.sub,
+                letterSpacing: HeaderStyle.subTracking * HeaderStyle.sub,
+                height: 1,
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       );
 }
 
