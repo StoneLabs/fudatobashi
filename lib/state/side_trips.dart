@@ -36,11 +36,13 @@ class SideTrips {
         .get();
     final answers = <int, List<AnkirenXpAnswer>>{};
     for (final a in rows) {
-      final firstTap = a.firstTap;
       (answers[a.runId] ??= []).add((
         wrongTaps: a.wrongTaps,
         responseUs: a.responseUs,
-        firstTap: firstTap == null ? null : TapProximity.values.elementAtOrNull(firstTap),
+        taps: [
+          for (final place in [a.firstTap, a.secondTap])
+            if (place != null) ?TapProximity.values.elementAtOrNull(place),
+        ],
         firstTapUs: a.firstTapUs,
       ));
     }
@@ -157,8 +159,9 @@ class SideTrips {
                 wrongTaps: a.wrongTaps,
                 responseUs: Value(a.responseUs),
                 at: a.at,
-                firstTap: Value(a.firstTap?.index),
+                firstTap: Value(a.taps.elementAtOrNull(0)?.index),
                 firstTapUs: Value(a.firstTapUs),
+                secondTap: Value(a.taps.elementAtOrNull(1)?.index),
               ),
           ]));
       return id;
@@ -166,7 +169,7 @@ class SideTrips {
     _runs.add(await (db.select(db.sideTripRuns)..where((r) => r.id.equals(runId))).getSingle());
     _answers[runId] = [
       for (final a in game.answers)
-        (wrongTaps: a.wrongTaps, responseUs: a.responseUs, firstTap: a.firstTap, firstTapUs: a.firstTapUs),
+        (wrongTaps: a.wrongTaps, responseUs: a.responseUs, taps: a.taps, firstTapUs: a.firstTapUs),
     ];
 
     return AnkirenReport(ratingBefore: before, ratingAfter: after, rankedGames: setup.ranked ? rankedGames(trip) : 0);

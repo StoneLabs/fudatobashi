@@ -1,3 +1,4 @@
+import '../domain/ankiren_field.dart';
 import '../domain/side_trips.dart';
 import 'strings.dart';
 
@@ -90,10 +91,25 @@ extension SideTripStrings on S {
   String get ankirenScoring => t('ankirenScoring');
   String ankirenScoreFind(int firstTry, int speed) => f('ankirenScoreFind', [firstTry, speed]);
 
-  /// A find with the second tap: its share of the points by where the first
-  /// tap landed, from next to the card to the other side ([shares], nearest
-  /// first).
-  String ankirenScoreNear(List<String> shares) => f('ankirenScoreNear', shares);
+  /// Taps that miss score by where they land (the tier table): a card's
+  /// first tap plus its second, which counts [percent]%; later ones not at
+  /// all.
+  String ankirenScoreNear(int percent) => f('ankirenScoreNear', [percent]);
+
+  /// The tier table: its heads, a first tap on the card ([points] plus its
+  /// speed bonus), and where a tap lands, nearest first.
+  String get ankirenTierPlace => t('ankirenTierPlace');
+  String get ankirenTierFirst => t('ankirenTierFirst');
+  String get ankirenTierSecond => t('ankirenTierSecond');
+  String ankirenTierSpeed(String points) => f('ankirenTierSpeed', [points]);
+  String ankirenTier(TapProximity place) => switch (place) {
+        TapProximity.card => t('ankirenTierCard'),
+        TapProximity.neighbour => t('ankirenTierNeighbour'),
+        TapProximity.row => t('ankirenTierRow'),
+        TapProximity.quadrant => t('ankirenTierQuadrant'),
+        TapProximity.side => t('ankirenTierSide'),
+        TapProximity.otherSide => t('ankirenTierOtherSide'),
+      };
   String ankirenScoreEarly(String factor) => f('ankirenScoreEarly', [factor]);
   String get ankirenScoreLevel => t('ankirenScoreLevel');
 

@@ -82,7 +82,7 @@ extension ResultsStrings on S {
         XpSource.island => t('xpSourceIsland'),
         XpSource.graduation => t('xpSourceGraduation'),
         XpSource.firstTap => t('xpSourceFirstTap'),
-        XpSource.secondTap => t('xpSourceSecondTap'),
+        XpSource.nearMiss => t('xpSourceNearMiss'),
         XpSource.ranked => t('xpSourceRanked'),
         XpSource.placement => t('xpSourcePlacement'),
       };

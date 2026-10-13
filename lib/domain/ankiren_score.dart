@@ -13,7 +13,7 @@ class AnkirenAnswer {
     required this.wrongTaps,
     required this.responseUs,
     required this.at,
-    this.firstTap,
+    this.taps = const [],
     this.firstTapUs,
   });
 
@@ -31,10 +31,12 @@ class AnkirenAnswer {
   /// When it was found or given up, or when the game ended without it.
   final DateTime at;
 
-  /// Where the first tap while it was asked landed, and that tap's time
-  /// after the prompt in microseconds, as measured; null when no card was
-  /// tapped.
-  final TapProximity? firstTap;
+  /// Where each tap that counts ([AnkirenTuning.tapWeights]) landed, in
+  /// order; empty when no card was tapped.
+  final List<TapProximity> taps;
+
+  /// The first tap's time after the prompt in microseconds, as measured;
+  /// null when no card was tapped.
   final int? firstTapUs;
 
   bool get found => responseUs != null;
@@ -43,19 +45,11 @@ class AnkirenAnswer {
 
   /// The card had to be shown ([AnkirenTuning.revealAfterWrong] wrong taps).
   bool get revealed => wrongTaps >= AnkirenTuning.revealAfterWrong;
-
-  /// See [AnkirenScore.credit].
-  double get credit => AnkirenScore.credit(found: found, wrongTaps: wrongTaps, firstTap: firstTap);
 }
 
 /// A 暗記練 game's score; custom games are not scored. Every field card is
-/// asked once, and earns [AnkirenTuning.firstTry] points plus a speed bonus
-/// of up to [AnkirenTuning.speedMax] ([speedBonus]) for the time of the
-/// prompt's first tap, times its [credit]: all of them when the first
-/// tap finds it, a share by how near the first tap landed when the next one
-/// finds it, and nothing when it had to be shown, was given up ("don't
-/// know") or was never found. A time that is no measurement (see
-/// [Attempt.isValidTime]) earns no bonus.
+/// asked once and earns [points] for the taps made while it was asked,
+/// however its prompt ended (found, given up or the game ended).
 ///
 /// These [recall] points, out of [maxRecall] (every card first try at full
 /// speed), make the [fraction] that drives the rating. The score shown is
@@ -96,25 +90,37 @@ class AnkirenScore {
   static int firstTryTotal(int level, {required double responseMs, required Duration timeLeft}) {
     final setup = AnkirenLevels.of(level);
     final share = (timeLeft.inMicroseconds / setup.memorise.inMicroseconds).clamp(0.0, 1.0);
-    final perCard = AnkirenTuning.firstTry + speedBonus((responseMs * 1000).round());
+    final perCard = AnkirenTuning.cardPoints + speedBonus((responseMs * 1000).round());
     return totalOf(setup.cards * perCard, share, factorFor(level));
   }
 
-  static int maxFor(int prompts) => prompts * (AnkirenTuning.firstTry + AnkirenTuning.speedMax);
+  static int maxFor(int prompts) => prompts * (AnkirenTuning.cardPoints + AnkirenTuning.speedMax);
 
-  /// The share of a first-tap find's points a card earns when it was
-  /// [found] before it was shown: by where the first tap while it was asked
-  /// landed ([AnkirenTuning.firstTapCredit]), plus
-  /// [AnkirenTuning.secondTapShare] when it took a second tap. Else nothing.
-  static double credit({required bool found, required int wrongTaps, required TapProximity? firstTap}) =>
-      found && wrongTaps < AnkirenTuning.revealAfterWrong
-          ? (AnkirenTuning.firstTapCredit[firstTap] ?? 0) + (wrongTaps > 0 ? AnkirenTuning.secondTapShare : 0)
-          : 0;
+  static int points(AnkirenAnswer a) => pointsOf(a.taps, a.firstTapUs);
 
-  static int points(AnkirenAnswer a) {
-    final credit = a.credit;
-    return credit == 0 ? 0 : ((AnkirenTuning.firstTry + speedBonus(a.firstTapUs!)) * credit).round();
+  /// A card's points for its [taps], the first [firstTapUs] after its
+  /// prompt: [share] of [AnkirenTuning.cardPoints], plus the first tap's
+  /// [speedBonus] times [speedWeight].
+  static int pointsOf(List<TapProximity> taps, int? firstTapUs) {
+    final speed = firstTapUs == null ? 0 : speedWeight(taps) * speedBonus(firstTapUs);
+    return (AnkirenTuning.cardPoints * share(taps) + speed).round();
   }
+
+  /// The share of [AnkirenTuning.cardPoints] a card's [taps] earn: for each
+  /// tap that counts, its weight ([AnkirenTuning.tapWeights]) times the
+  /// share where it landed earns ([AnkirenTuning.tapShare]).
+  static double share(List<TapProximity> taps) {
+    var sum = 0.0;
+    for (final (i, place) in taps.take(AnkirenTuning.tapWeights.length).indexed) {
+      sum += AnkirenTuning.tapWeights[i] * AnkirenTuning.tapShare[place]!;
+    }
+    return sum;
+  }
+
+  /// How much a card's speed bonus counts: as much as its first tap when
+  /// that found the card, else not at all.
+  static double speedWeight(List<TapProximity> taps) =>
+      taps.firstOrNull == TapProximity.card ? AnkirenTuning.tapWeights.first : 0;
 
   /// The bonus for a first tap [responseUs] after its prompt, rounded
   /// [speedShare] of [AnkirenTuning.speedMax].

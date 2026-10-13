@@ -53,7 +53,8 @@ class AnkirenGame extends ChangeNotifier {
   final Set<int> _givenUp = {};
   int _wrongTaps = 0;
   Duration? _revealTs;
-  (TapProximity, int)? _firstTap;
+  final List<TapProximity> _taps = [];
+  int? _firstTapUs;
   bool _endedEarly = false;
 
   /// Every card was asked and found or given up (false for a game ended
@@ -122,13 +123,16 @@ class AnkirenGame extends ChangeNotifier {
 
   /// A tap on [poemId]'s card, its pointer-down time on the pointer-event
   /// clock. A press that began before the prompt was on screen is ignored.
+  /// Where it lands is kept while taps still count
+  /// ([AnkirenTuning.tapWeights]), a card tapped twice counting twice.
   TapResult tap(int poemId, Duration pointerDownTs) {
     final asked = current;
     final revealTs = _revealTs;
     if (asked == null || revealTs == null || pointerDownTs < revealTs || isDone(poemId) || field.sideOf(poemId) == null) {
       return TapResult.ignored;
     }
-    _firstTap ??= (field.proximity(asked, poemId), (pointerDownTs - revealTs).inMicroseconds);
+    _firstTapUs ??= (pointerDownTs - revealTs).inMicroseconds;
+    if (_taps.length < AnkirenTuning.tapWeights.length) _taps.add(field.proximity(asked, poemId));
     if (poemId != asked) {
       _wrongTaps++;
       notifyListeners();
@@ -140,9 +144,9 @@ class AnkirenGame extends ChangeNotifier {
     return TapResult.right;
   }
 
-  /// The player doesn't know the current card ("don't know"): it is given up,
-  /// earning nothing, and the next one is asked. Returns the card given up,
-  /// or null when no prompt is on screen.
+  /// The player doesn't know the current card ("don't know"): it is given
+  /// up, keeping what its taps so far earned, and the next one is asked.
+  /// Returns the card given up, or null when no prompt is on screen.
   int? giveUp() {
     final asked = current;
     if (asked == null || _revealTs == null) return null;
@@ -157,7 +161,8 @@ class AnkirenGame extends ChangeNotifier {
     notifyListeners();
   }
 
-  /// Ends the game early: the prompts not found yet count as never found.
+  /// Ends the game early: the prompts not found yet count as never found,
+  /// the one asked keeping its taps so far.
   void end() {
     if (phase == AnkirenPhase.done) return;
     _endedEarly = true;
@@ -175,11 +180,12 @@ class AnkirenGame extends ChangeNotifier {
       wrongTaps: _wrongTaps,
       responseUs: responseUs,
       at: _clock(),
-      firstTap: _firstTap?.$1,
-      firstTapUs: _firstTap?.$2,
+      taps: List.unmodifiable(_taps),
+      firstTapUs: _firstTapUs,
     ));
     _wrongTaps = 0;
     _revealTs = null;
-    _firstTap = null;
+    _taps.clear();
+    _firstTapUs = null;
   }
 }

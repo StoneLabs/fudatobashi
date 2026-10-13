@@ -26,6 +26,7 @@ import 'package:fudatobashi/data/poem.dart';
 import 'package:fudatobashi/db/database.dart';
 import 'package:fudatobashi/domain/ankiren_level.dart';
 import 'package:fudatobashi/domain/ankiren_rating.dart';
+import 'package:fudatobashi/domain/ankiren_score.dart';
 import 'package:fudatobashi/domain/ankiren_xp.dart';
 import 'package:fudatobashi/domain/rating.dart';
 import 'package:fudatobashi/domain/side_trips.dart';
@@ -101,8 +102,8 @@ XpGain _ankirenGain({int into = 150}) => XpGain(
       before: XpCurve.reach(7) + into,
       award: XpAward([
         XpPart(XpSource.firstTap, 12, 12 * AnkirenXp.cardXp(3)),
-        XpPart(XpSource.secondTap, 3,
-            3 * (AnkirenXp.cardXp(3) * AnkirenTuning.firstTapCredit[TapProximity.row]!).round()),
+        XpPart(XpSource.nearMiss, 3,
+            3 * (AnkirenXp.cardXp(3) * AnkirenScore.share(const [TapProximity.row, TapProximity.card])).round()),
         const XpPart(XpSource.missed, 2, 2 * AnkirenXpTuning.perMiss),
         const XpPart(XpSource.speed, 12, 310),
         const XpPart(XpSource.clear, 1, AnkirenXpTuning.clear),
@@ -347,7 +348,7 @@ void main() {
             await showPage(tester, p, XpOverlay(gain: gain, onNext: () {}), phone,
                 fontScale: fontScale, settle: timeline.length);
             expect(tester.takeException(), isNull, reason: '${phone.name} dp, $fontScale');
-            for (final source in [XpSource.firstTap, XpSource.secondTap, XpSource.ranked, XpSource.placement]) {
+            for (final source in [XpSource.firstTap, XpSource.nearMiss, XpSource.ranked, XpSource.placement]) {
               expect(find.text(s.xpSource(source)), findsOneWidget);
             }
             expect(find.text('+${gain.award.total}'), findsWidgets);

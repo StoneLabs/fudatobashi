@@ -116,7 +116,7 @@ void main() {
       ));
       for (var i = 0; i < _rankedGames[stage]!; i++) {
         final level = p.sideTripsHub()[SideTrip.ankiren].rankedLevel!;
-        await p.recordAnkiren(playAnkiren(AnkirenSetup.forLevel(level, ranked: true), ms: 500 + 150 * i, seed: i),
+        await p.recordAnkiren(playAnkiren(AnkirenSetup.forLevel(level, ranked: true), ms: 500 + 120 * i, seed: i),
             startedAt: DateTime.now());
       }
     });
@@ -254,7 +254,7 @@ void main() {
 
   group('acts', () {
     for (final lang in ['en', 'ja']) {
-      testWidgets('the rules score a find by its first tap, with the numbers from the tuning ($lang)', (tester) async {
+      testWidgets('the rules explain every tier and both taps, with the tuning\'s numbers ($lang)', (tester) async {
         final s = S(lang);
         final p = await open(tester, _Stage.placed, lang);
         await showPage(tester, p, _users);
@@ -263,18 +263,30 @@ void main() {
         await tester.pump(Motion.sheet);
         final rules = find.byType(AnkirenRulesSheet);
         String shown(Text t) => Phrases.spoken(t.textSpan?.toPlainText() ?? t.data ?? '').replaceAll('\u2060', '');
-        final lines = [
-          for (final t in tester.widgetList<Text>(find.descendant(of: rules, matching: find.byType(Text)))) shown(t),
-        ];
+        List<String> texts(Finder of) =>
+            [for (final t in tester.widgetList<Text>(find.descendant(of: of, matching: find.byType(Text)))) shown(t)];
+        final lines = texts(rules);
         bool listed(String line) => lines.any((l) => l.contains(Phrases.spoken(line)));
-        final shares = [
-          for (final p in TapProximity.values.skip(1))
-            '${((AnkirenTuning.firstTapCredit[p]! + AnkirenTuning.secondTapShare) * 100).round() / 100}',
-        ];
-        expect(listed(s.ankirenScoreFind(AnkirenTuning.firstTry, AnkirenTuning.speedMax)), isTrue);
-        expect(listed(s.ankirenScoreNear(shares)), isTrue);
+        expect(listed(s.ankirenScoreFind(AnkirenTuning.cardPoints, AnkirenTuning.speedMax)), isTrue);
+        expect(listed(s.ankirenScoreNear((AnkirenTuning.tapWeights[1] * 100).round())), isTrue);
+        expect(lines.where((l) => l.contains('20%')), hasLength(1), reason: 'the second tap counts a fifth');
         expect(listed(s.ankirenScoreLevel), isTrue, reason: 'custom games are not scored');
-        expect(lines.where((l) => l.contains('×0.')), hasLength(1), reason: 'the shares, in one line');
+
+        final cells = texts(find.descendant(of: rules, matching: find.byType(Table)));
+        String line(String cell) => cell.split('\n').first;
+        expect([for (final c in cells.take(3)) line(c)],
+            [for (final head in [s.ankirenTierPlace, s.ankirenTierFirst, s.ankirenTierSecond]) Phrases.spoken(head)]);
+        final rows = [for (var i = 3; i + 2 < cells.length; i += 3) cells.sublist(i, i + 3)];
+        expect([for (final r in rows) line(r.first)],
+            [for (final place in TapProximity.values) Phrases.spoken(s.ankirenTier(place))]);
+        expect([for (final r in rows) r.skip(1).toList()], [
+          [Phrases.spoken(s.ankirenTierSpeed('100')), '20'],
+          ['60', '12'],
+          ['40', '8'],
+          ['25', '5'],
+          ['15', '3'],
+          ['0', '0'],
+        ]);
         await tester.pumpWidget(const SizedBox());
       });
     }
@@ -421,6 +433,9 @@ void main() {
                 await tester.pump();
                 await tester.pump(Motion.sheet);
                 await capture(tester, phone, 'rules_${phone.name}_${lang}_$fontScale');
+                await tester.ensureVisible(find.byType(Table));
+                await tester.pump();
+                await capture(tester, phone, 'scoring_${phone.name}_${lang}_$fontScale');
                 await tester.tap(close(S(lang)));
                 await tester.pump();
                 await tester.pump(Motion.sheet * 2);

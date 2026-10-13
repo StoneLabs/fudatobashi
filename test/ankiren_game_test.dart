@@ -13,24 +13,33 @@ void main() {
   final dealer = AnkirenDealer(tomofuda: (_) => const [], kimarijiLength: (id) => 1 + id % 4);
   final known = [for (var id = 1; id <= 30; id++) id];
 
-  group('score', () {
-    AnkirenAnswer answer({int wrongTaps = 0, int? us, TapProximity? first, int? firstUs}) => AnkirenAnswer(
-          poemId: 1,
-          side: FieldSide.own,
-          wrongTaps: wrongTaps,
-          responseUs: us,
-          at: DateTime(2026),
-          firstTap: first ?? (wrongTaps == 0 && us != null ? TapProximity.card : null),
-          firstTapUs: firstUs ?? (wrongTaps == 0 ? us : null),
-        );
-    int ms(int t) => t * 1000;
+  const card = TapProximity.card, neighbour = TapProximity.neighbour, row = TapProximity.row;
+  const quadrant = TapProximity.quadrant, side = TapProximity.side, otherSide = TapProximity.otherSide;
+  int ms(int t) => t * 1000;
+  AnkirenAnswer answer({int wrongTaps = 0, int? us, List<TapProximity> taps = const [], int? firstUs}) => AnkirenAnswer(
+        poemId: 1,
+        side: FieldSide.own,
+        wrongTaps: wrongTaps,
+        responseUs: us,
+        at: DateTime(2026),
+        taps: taps,
+        firstTapUs: firstUs,
+      );
 
+  /// A card found with its first tap [t] ms after its prompt.
+  AnkirenAnswer found(int t) => answer(us: ms(t), taps: const [card], firstUs: ms(t));
+
+  /// A card's points for [taps], the first [firstMs] after its prompt.
+  int points(List<TapProximity> taps, {int firstMs = 300}) => AnkirenScore.pointsOf(taps, ms(firstMs));
+  const misses = [neighbour, row, quadrant, side, otherSide];
+
+  group('score', () {
     test('first try: base points plus a speed bonus from slow to fast', () {
-      const full = AnkirenTuning.firstTry + AnkirenTuning.speedMax;
-      expect(AnkirenScore.points(answer(us: ms(50))), full);
-      expect(AnkirenScore.points(answer(us: ms(AnkirenTuning.speedFull.inMilliseconds))), full);
-      expect(AnkirenScore.points(answer(us: ms(AnkirenTuning.speedNone.inMilliseconds))), AnkirenTuning.firstTry);
-      expect(AnkirenScore.points(answer(us: ms(20000))), AnkirenTuning.firstTry);
+      const full = AnkirenTuning.cardPoints + AnkirenTuning.speedMax;
+      expect(AnkirenScore.points(found(50)), full);
+      expect(AnkirenScore.points(found(AnkirenTuning.speedFull.inMilliseconds)), full);
+      expect(AnkirenScore.points(found(AnkirenTuning.speedNone.inMilliseconds)), AnkirenTuning.cardPoints);
+      expect(AnkirenScore.points(found(20000)), AnkirenTuning.cardPoints);
     });
 
     test('a perfect game: the total follows the card count, the time left and the level', () {
@@ -77,93 +86,103 @@ void main() {
     });
 
     test('a time that is no measurement keeps the points but earns no speed bonus', () {
-      expect(AnkirenScore.points(answer(us: 0)), AnkirenTuning.firstTry);
-      expect(AnkirenScore.points(answer(us: -5000)), AnkirenTuning.firstTry);
-      expect(answer(us: 0).validTime, isFalse);
+      expect(AnkirenScore.points(found(0)), AnkirenTuning.cardPoints);
+      expect(AnkirenScore.points(answer(us: -5000, taps: const [card], firstUs: -5000)), AnkirenTuning.cardPoints);
+      expect(found(0).validTime, isFalse);
       expect(answer(us: 1).validTime, isTrue);
     });
 
-    test('the first tap\'s credit falls from the card itself to nothing on the other side', () {
-      const credit = AnkirenTuning.firstTapCredit;
-      expect(credit.keys, TapProximity.values, reason: 'every place has its share');
-      expect(credit[TapProximity.card], 1);
-      expect(credit[TapProximity.otherSide], 0);
+    test('the tiers fall from the card itself to nothing on the other side; the second tap counts a fifth', () {
+      const share = AnkirenTuning.tapShare;
+      expect(share.keys, TapProximity.values, reason: 'every place has its share');
+      expect(share.values, [1, 0.6, 0.4, 0.25, 0.15, 0], reason: "the user's tiers");
       for (var i = 1; i < TapProximity.values.length; i++) {
-        expect(credit[TapProximity.values[i]], lessThan(credit[TapProximity.values[i - 1]]!));
+        expect(share[TapProximity.values[i]], lessThan(share[TapProximity.values[i - 1]]!));
       }
+      expect(AnkirenTuning.tapWeights, [1, 0.2], reason: 'two taps count, the second a fifth');
+      expect(AnkirenTuning.tapWeights.length, lessThanOrEqualTo(AnkirenTuning.revealAfterWrong),
+          reason: 'no tap on a card already shown counts');
     });
 
-    test('found with the second tap: the first tap\'s share and a little more, speed bonus and all', () {
-      final bonus = AnkirenScore.speedBonus(ms(300));
-      for (final place in TapProximity.values.skip(1)) {
-        final a = answer(wrongTaps: 1, us: ms(4000), first: place, firstUs: ms(300));
-        expect(a.credit, AnkirenTuning.firstTapCredit[place]! + AnkirenTuning.secondTapShare);
-        expect(AnkirenScore.points(a), ((AnkirenTuning.firstTry + bonus) * a.credit).round(), reason: place.name);
+    test('the first tap: the card earns its points and speed; a miss its tier, with no speed', () {
+      expect([for (final p in TapProximity.values) points([p], firstMs: 100)], [200, 60, 40, 25, 15, 0]);
+      expect([for (final p in TapProximity.values) points([p], firstMs: 4000)],
+          [100 + AnkirenScore.speedBonus(ms(4000)), 60, 40, 25, 15, 0]);
+      expect([for (final p in TapProximity.values) AnkirenScore.speedWeight([p])], [1, 0, 0, 0, 0, 0]);
+    });
+
+    test('the second tap: a fifth of its tier, with no speed, right card or not', () {
+      for (final first in misses) {
+        for (final second in TapProximity.values) {
+          final expected = (100 * AnkirenTuning.tapShare[first]! + 20 * AnkirenTuning.tapShare[second]!).round();
+          expect(points([first, second]), expected, reason: '${first.name} then ${second.name}');
+          expect(points([first, second], firstMs: 100), expected, reason: 'no speed bonus for a miss');
+        }
       }
-      expect(AnkirenScore.points(answer(wrongTaps: 1, us: ms(4000), first: TapProximity.neighbour, firstUs: ms(300))),
-          (188 * 0.7).round());
-      expect(AnkirenScore.points(answer(wrongTaps: 1, us: ms(4000), first: TapProximity.otherSide, firstUs: ms(300))),
-          (188 * 0.1).round());
+      expect(points([neighbour, card]), 60 + 20);
+      expect(points([neighbour, neighbour]), 60 + 12);
+      expect(points([row, card]), 40 + 20);
+      expect(points([quadrant, side]), 25 + 3);
+      expect(points([side, side]), 15 + 3);
+      expect(points([otherSide, card]), 20);
+      expect(points([otherSide, otherSide]), 0);
     });
 
-    test('the second tap: finding the card always beats missing it, never a find with the first tap', () {
-      for (final place in TapProximity.values.skip(1)) {
-        final found = AnkirenScore.credit(found: true, wrongTaps: 1, firstTap: place);
-        expect(found, greaterThan(AnkirenScore.credit(found: true, wrongTaps: 2, firstTap: place)), reason: place.name);
-        expect(found, greaterThan(AnkirenScore.credit(found: false, wrongTaps: 1, firstTap: place)),
-            reason: place.name);
-        expect(found, lessThan(AnkirenScore.credit(found: true, wrongTaps: 0, firstTap: TapProximity.card)));
+    test('taps after the second add nothing', () {
+      expect(AnkirenScore.share([neighbour, row, card]), AnkirenScore.share([neighbour, row]));
+      expect(AnkirenScore.pointsOf([side, otherSide, card, card], ms(300)), points([side, otherSide]));
+    });
+
+    test('the most a card earns is a first tap on it at full speed; a miss first never reaches a find', () {
+      const best = AnkirenTuning.cardPoints + AnkirenTuning.speedMax;
+      final slowest = points([card], firstMs: 60000);
+      expect(slowest, AnkirenTuning.cardPoints);
+      for (final first in TapProximity.values) {
+        expect(points([first], firstMs: 1), lessThanOrEqualTo(best));
+        if (first == card) continue;
+        for (final second in TapProximity.values) {
+          expect(points([first, second], firstMs: 1), lessThan(slowest), reason: '${first.name} then ${second.name}');
+          final weighted = AnkirenTuning.tapWeights[0] * AnkirenTuning.tapShare[first]! +
+              AnkirenTuning.tapWeights[1] * AnkirenTuning.tapShare[second]!;
+          expect(weighted, lessThan(AnkirenTuning.tapWeights[0] * AnkirenTuning.tapShare[card]!));
+          if (second != card) expect(points([first, card]), greaterThan(points([first, second])));
+          expect(points([first, second]), greaterThanOrEqualTo(points([first])),
+              reason: 'giving up after a tap never beats going on');
+        }
       }
+      expect(points([neighbour, card]), 80, reason: 'the best a miss first can do');
     });
 
-    test('the speed bonus is timed at the first tap, not the find, and scaled by its share', () {
-      int near(int firstMs, int foundMs) => AnkirenScore.points(
-          answer(wrongTaps: 1, us: ms(foundMs), first: TapProximity.row, firstUs: ms(firstMs)));
-      expect(near(300, 900), near(300, 9000), reason: 'the find\'s time does not count');
-      expect(near(100, 5000), ((AnkirenTuning.firstTry + AnkirenTuning.speedMax) * 0.5).round());
-      expect(near(5000, 5100), (AnkirenTuning.firstTry * 0.5).round());
-      expect(near(0, 900), (AnkirenTuning.firstTry * 0.5).round(), reason: 'no measurement, no bonus');
-    });
-
-    test('shown, given up or never found earns nothing, however near the first tap', () {
-      final shown = answer(wrongTaps: 2, us: ms(500), first: TapProximity.neighbour, firstUs: ms(200));
+    test('shown, given up or never found: the taps made still count', () {
+      final shown = answer(wrongTaps: 2, us: ms(900), taps: const [neighbour, row], firstUs: ms(200));
       expect(shown.revealed, isTrue);
-      expect(AnkirenScore.points(shown), 0);
-      final late = answer(wrongTaps: 5, us: ms(500), first: TapProximity.neighbour, firstUs: ms(200));
-      expect(AnkirenScore.points(late), 0);
-      final givenUp = answer(wrongTaps: 1, first: TapProximity.neighbour, firstUs: ms(200));
-      expect((givenUp.found, givenUp.credit, AnkirenScore.points(givenUp)), (false, 0, 0));
-      expect(AnkirenScore.points(answer()), 0);
+      expect(AnkirenScore.points(shown), 60 + 8);
+      final givenUpAfterOne = answer(wrongTaps: 1, taps: const [quadrant], firstUs: ms(200));
+      expect((givenUpAfterOne.found, AnkirenScore.points(givenUpAfterOne)), (false, 25));
+      final givenUpAfterTwo = answer(wrongTaps: 2, taps: const [side, neighbour], firstUs: ms(200));
+      expect(AnkirenScore.points(givenUpAfterTwo), 15 + 12);
+      expect(AnkirenScore.points(answer()), 0, reason: 'given up or never found with no tap');
       expect(answer().found, isFalse);
     });
 
     test('a game: total, max and fraction', () {
       final answers = [
-        answer(us: ms(100)),
-        answer(us: ms(3000)),
-        answer(us: 0),
-        answer(wrongTaps: 1, us: ms(1000), first: TapProximity.quadrant, firstUs: ms(1000)),
-        answer(wrongTaps: 2, us: ms(1000), first: TapProximity.neighbour, firstUs: ms(500)),
+        found(100),
+        found(3000),
+        found(0),
+        answer(wrongTaps: 1, us: ms(1000), taps: const [quadrant, card], firstUs: ms(400)),
+        answer(wrongTaps: 2, us: ms(1000), taps: const [neighbour, side], firstUs: ms(500)),
         answer(),
       ];
       final s = AnkirenScore(answers, prompts: 6);
-      expect(s.total, 200 + 116 + 100 + 55);
+      expect(s.total, 200 + 116 + 100 + 45 + 63);
       expect(s.max, 6 * 200);
-      expect(s.fraction, closeTo(471 / 1200, 1e-12));
+      expect(s.fraction, closeTo(524 / 1200, 1e-12));
       expect(AnkirenScore([], prompts: 0).fraction, 0);
     });
   });
 
   group('score: being ready early and the level', () {
-    AnkirenAnswer found(int ms) => AnkirenAnswer(
-        poemId: 1,
-        side: FieldSide.own,
-        wrongTaps: 0,
-        responseUs: ms * 1000,
-        at: DateTime(2026),
-        firstTap: TapProximity.card,
-        firstTapUs: ms * 1000);
-
     test('recall points make the fraction; time left and the level scale the score', () {
       final answers = [found(100), found(1000)];
       final plain = AnkirenScore(answers, prompts: 2);
@@ -254,6 +273,38 @@ void main() {
           }
         }
       }
+    });
+
+    test('par is the score of the game its tuning describes', () {
+      // 70 cards in 100 found with the first tap in 1.5 s, 10 with the
+      // second after a first tap in their row, and 20 tapped twice
+      // elsewhere on their side.
+      final answers = [
+        for (var i = 0; i < 70; i++) found(1500),
+        for (var i = 0; i < 10; i++) answer(wrongTaps: 1, us: ms(3000), taps: const [row, card], firstUs: ms(1500)),
+        for (var i = 0; i < 20; i++) answer(wrongTaps: 2, taps: const [side, side], firstUs: ms(2000)),
+      ];
+      expect(AnkirenScore(answers, prompts: 100).fraction, closeTo(AnkirenRatingModel.par, 0.005));
+    });
+
+    test('near misses rate above giving up, and below finding the card', () {
+      double performance(List<AnkirenAnswer> misses) => AnkirenRating.performance(
+          5, AnkirenScore([for (var i = 0; i < 8; i++) found(1500), ...misses], prompts: 10).fraction,
+          placement: false);
+      final givenUp = performance([answer(), answer()]);
+      final near = performance([
+        answer(wrongTaps: 1, taps: const [neighbour], firstUs: ms(900)),
+        answer(wrongTaps: 2, taps: const [quadrant, side], firstUs: ms(900)),
+      ]);
+      final secondTap = performance([
+        for (var i = 0; i < 2; i++) answer(wrongTaps: 1, us: ms(2000), taps: const [neighbour, card], firstUs: ms(900)),
+      ]);
+      final firstTap = performance([found(1500), found(1500)]);
+      expect(givenUp, lessThan(near));
+      expect(near, lessThan(secondTap));
+      expect(secondTap, lessThan(firstTap));
+      expect(near - givenUp, lessThan(AnkirenRatingModel.levelRatings[1] - AnkirenRatingModel.levelRatings[0]),
+          reason: 'two near misses in ten cards move a game less than a level');
     });
 
     test('the rating never drops below the start', () {
@@ -358,7 +409,10 @@ void main() {
       expect(g.tap(asked, t(900)), TapResult.right);
       final a = g.answers.single;
       expect((a.poemId, a.wrongTaps, a.responseUs, a.revealed), (asked, 2, 900 * 1000, true));
-      expect(AnkirenScore.points(a), 0);
+      expect(a.taps, hasLength(AnkirenTuning.tapWeights.length),
+          reason: 'the third tap, on the card shown, is not kept');
+      expect(AnkirenScore.points(a), AnkirenScore.pointsOf(a.taps, 300 * 1000));
+      expect(a.taps, isNot(contains(TapProximity.card)));
       expect((g.wrongTaps, g.revealed), (0, false));
     });
 
@@ -373,46 +427,144 @@ void main() {
       expect(g.tap(g.current!, t(1000)), TapResult.right);
       expect(g.answers.last.responseUs, 0);
       expect(g.answers.last.validTime, isFalse);
-      expect(AnkirenScore.points(g.answers.last), AnkirenTuning.firstTry);
+      expect(AnkirenScore.points(g.answers.last), AnkirenTuning.cardPoints);
     });
 
-    test('the first tap is kept with each answer: where it landed and when', () {
+    test('each answer keeps where its taps landed, measured from the card asked, and the first one\'s time', () {
       final g = newGame(perSide: 12)..startRecall();
       g.promptRevealed(t(0));
       final asked = g.current!;
       final wrong = other(g);
       g.tap(wrong, t(300));
-      g.tap(other(g), t(600));
+      final second = g.field.cards.lastWhere((c) => c != asked && c != wrong);
+      g.tap(second, t(600));
       g.tap(asked, t(900));
       g.promptRevealed(t(1000));
       g.tap(g.current!, t(1700));
       g.promptRevealed(t(2000));
       g.giveUp();
       g.promptRevealed(t(3000));
-      g.tap(other(g), t(3400));
+      final missedAsked = g.current!;
+      final missedTap = other(g);
+      g.tap(missedTap, t(3400));
       g.giveUp();
       final [shown, first, untouched, missed, ...] = g.answers;
-      expect((shown.firstTap, shown.firstTapUs), (g.field.proximity(asked, wrong), 300 * 1000));
-      expect((first.firstTap, first.firstTapUs, first.responseUs), (TapProximity.card, 700 * 1000, 700 * 1000));
-      expect((untouched.firstTap, untouched.firstTapUs), (null, null));
-      expect(missed.firstTap, isNotNull);
-      expect(missed.firstTapUs, 400 * 1000);
-      expect([for (final a in [shown, untouched, missed]) AnkirenScore.points(a)], [0, 0, 0]);
+      expect(shown.taps, [g.field.proximity(asked, wrong), g.field.proximity(asked, second)]);
+      expect(shown.firstTapUs, 300 * 1000);
+      expect([first.taps, first.firstTapUs, first.responseUs], [[TapProximity.card], 700 * 1000, 700 * 1000]);
+      expect([untouched.taps, untouched.firstTapUs], [isEmpty, null]);
+      expect([missed.taps, missed.firstTapUs], [[g.field.proximity(missedAsked, missedTap)], 400 * 1000]);
+      expect([for (final a in [shown, untouched, missed]) AnkirenScore.points(a)], [
+        AnkirenScore.pointsOf(shown.taps, null),
+        0,
+        (100 * AnkirenTuning.tapShare[missed.taps.single]!).round(),
+      ]);
     });
 
-    test('found with the second tap, after a first tap next to the card', () {
+    test('found with the second tap, after a first tap next to the card: 60 + a fifth of 100', () {
       for (var seed = 1;; seed++) {
         final g = newGame(seed: seed, perSide: 12)..startRecall();
         g.promptRevealed(t(0));
         final asked = g.current!;
         final next = g.field.cards.where((c) => g.field.proximity(asked, c) == TapProximity.neighbour).firstOrNull;
         if (next == null) continue;
-        expect(g.tap(next, t(300)), TapResult.wrong);
-        expect(g.tap(asked, t(4000)), TapResult.right);
+        expect(g.tap(next, t(100)), TapResult.wrong);
+        expect(g.tap(asked, t(400)), TapResult.right);
         final a = g.answers.single;
-        expect((a.wrongTaps, a.firstTap, a.firstTapUs), (1, TapProximity.neighbour, 300 * 1000));
-        expect(AnkirenScore.points(a), ((100 + 88) * 0.7).round());
+        expect([a.wrongTaps, a.taps, a.firstTapUs], [1, [neighbour, card], 100 * 1000]);
+        expect(AnkirenScore.points(a), 80, reason: 'neither tap earns a speed bonus');
         return;
+      }
+    });
+
+    test('a card found on the third tap or later scores its first two taps, not nothing', () {
+      for (var seed = 1;; seed++) {
+        final g = newGame(seed: seed, perSide: 12)..startRecall();
+        g.promptRevealed(t(0));
+        final asked = g.current!;
+        final f = g.field;
+        final near = f.cards.where((c) => f.proximity(asked, c) == neighbour).firstOrNull;
+        final far = f.cards.where((c) => f.proximity(asked, c) == otherSide).firstOrNull;
+        if (near == null || far == null) continue;
+        g.tap(near, t(300));
+        g.tap(far, t(600));
+        expect(g.revealed, isTrue, reason: 'the card shakes');
+        g.tap(far, t(800));
+        expect(g.tap(asked, t(1200)), TapResult.right);
+        final a = g.answers.single;
+        expect([a.wrongTaps, a.found, a.taps], [3, true, [neighbour, otherSide]]);
+        expect(AnkirenScore.points(a), 60, reason: 'the shown card and the tap before it add nothing');
+        return;
+      }
+    });
+
+    test('the same wrong card tapped twice counts as both taps, and shows the card', () {
+      final g = newGame(perSide: 12)..startRecall();
+      g.promptRevealed(t(0));
+      final asked = g.current!;
+      final wrong = other(g);
+      final place = g.field.proximity(asked, wrong);
+      expect(g.tap(wrong, t(300)), TapResult.wrong);
+      expect(g.tap(wrong, t(500)), TapResult.wrong);
+      expect((g.wrongTaps, g.revealed), (2, true));
+      g.tap(asked, t(900));
+      final a = g.answers.single;
+      expect(a.taps, [place, place]);
+      expect(AnkirenScore.points(a), (120 * AnkirenTuning.tapShare[place]!).round());
+    });
+
+    test('every tier counts on either tap, for cluster cards, middle cards and a beginner field', () {
+      AnkirenRow r(List<int> left, [List<int> middle = const [], List<int> right = const []]) =>
+          AnkirenRow(left: left, middle: middle, right: right);
+      // Own side, from 下段: 1 2 3 | 4 5, then 6 7 | 8, then 9 [10 11] 12 13
+      // with 10 and 11 in the open middle of 上段. Opponent: 21 22 | 23.
+      final clustered = AnkirenField(
+        own: AnkirenHalf([r([1, 2, 3], [], [4, 5]), r([6, 7], [], [8]), r([9], [10, 11], [12, 13])]),
+        opponent: AnkirenHalf([r([21, 22], [], [23]), r([]), r([])]),
+      );
+      final beginner = AnkirenField(
+        own: AnkirenHalf([r([]), r([]), r([], [31, 32, 33, 34])]),
+        opponent: AnkirenHalf([r([]), r([]), r([], [41, 42, 43])]),
+      );
+      // [asked]'s answer in a game on [field] where it is asked first and
+      // [taps] are made, the first 300 ms after the prompt; given up unless
+      // they find it.
+      AnkirenAnswer play(AnkirenField field, int asked, List<int> taps) {
+        final setup = AnkirenSetup(perSide: field.perSide, memorise: const Duration(minutes: 1), level: 0);
+        var seed = 0;
+        AnkirenGame g;
+        do {
+          g = AnkirenGame(field: field, setup: setup, rng: math.Random(seed++));
+        } while (g.prompts.first != asked);
+        g
+          ..startRecall()
+          ..promptRevealed(t(0));
+        for (final (i, c) in taps.indexed) {
+          g.tap(c, t(300 + 400 * i));
+        }
+        if (g.answers.isEmpty) g.giveUp();
+        return g.answers.single;
+      }
+
+      final cases = [
+        (clustered, 2, [2], [card], 188),
+        (clustered, 2, [1, 2], [neighbour, card], 60 + 20),
+        (clustered, 1, [3, 7], [row, quadrant], 40 + 5),
+        (clustered, 2, [6, 4], [quadrant, side], 25 + 3),
+        (clustered, 2, [21, 22], [otherSide, otherSide], 0),
+        (clustered, 2, [10, 2], [side, card], 15 + 20),
+        (clustered, 10, [11, 12], [row, row], 40 + 8),
+        (clustered, 10, [4, 10], [side, card], 15 + 20),
+        (clustered, 10, [23, 9], [otherSide, row], 8),
+        (clustered, 12, [11, 13], [side, neighbour], 15 + 12),
+        (clustered, 22, [21, 23, 22], [neighbour, side], 60 + 3),
+        (beginner, 32, [31, 34], [neighbour, row], 60 + 8),
+        (beginner, 32, [41, 32], [otherSide, card], 20),
+        (beginner, 41, [43], [row], 40),
+      ];
+      for (final (field, asked, taps, places, points) in cases) {
+        final a = play(field, asked, taps);
+        expect([a.taps, AnkirenScore.points(a)], [places, points], reason: 'asked $asked, tapped $taps');
       }
     });
 
@@ -449,7 +601,7 @@ void main() {
       expect(notified, 1 + g.prompts.length);
     });
 
-    test('"don\'t know" gives the card up for nothing and asks the next; the game still completes', () {
+    test('"don\'t know" gives the card up, keeping its taps, and asks the next; the game still completes', () {
       final g = newGame()..startRecall();
       expect(g.giveUp(), isNull, reason: 'the prompt is not on screen yet');
       g.promptRevealed(t(0));
@@ -459,7 +611,8 @@ void main() {
       expect((g.isGivenUp(first), g.isFound(first), g.isDone(first)), (true, false, true));
       final a = g.answers.single;
       expect((a.poemId, a.found, a.responseUs, a.wrongTaps), (first, false, null, 1));
-      expect(AnkirenScore.points(a), 0);
+      expect(AnkirenScore.points(a), (100 * AnkirenTuning.tapShare[a.taps.single]!).round(),
+          reason: 'its tap still counts');
       expect((g.current, g.wrongTaps, g.revealTs), (g.prompts[1], 0, null));
       expect(g.giveUp(), isNull, reason: 'the next prompt is not on screen yet');
       g.promptRevealed(t(1000));
@@ -469,11 +622,11 @@ void main() {
         g.promptRevealed(t(now += 1000));
         g.giveUp();
       }
-      expect((g.phase, g.completed, g.score!.total), (AnkirenPhase.done, true, 0));
+      expect((g.phase, g.completed, g.score!.recall), (AnkirenPhase.done, true, AnkirenScore.points(a)));
       expect(g.answers.map((a) => a.poemId), g.prompts);
     });
 
-    test('ending early records the rest as never found and counts them as nothing', () {
+    test('ending early: the card asked keeps its taps, the rest were never reached and earn nothing', () {
       final g = newGame()..startRecall();
       g.promptRevealed(t(0));
       g.tap(g.current!, t(800));
@@ -485,7 +638,9 @@ void main() {
       expect(g.answers.map((a) => a.poemId), g.prompts);
       expect(g.answers.skip(1).every((a) => !a.found && a.responseUs == null), isTrue);
       expect(g.answers[1].wrongTaps, 1, reason: 'the prompt on screen keeps its wrong tap');
-      expect(g.score!.recall, 100 + 63);
+      expect(g.answers.skip(2).every((a) => a.taps.isEmpty), isTrue, reason: 'cards never reached');
+      expect(g.score!.recall, 100 + 63 + AnkirenScore.points(g.answers[1]));
+      expect([for (final a in g.answers.skip(2)) AnkirenScore.points(a)], everyElement(0));
       expect(g.tap(g.prompts.last, t(3000)), TapResult.ignored);
     });
 

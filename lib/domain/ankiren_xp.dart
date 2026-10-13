@@ -5,9 +5,10 @@ import 'play_session.dart';
 import 'xp.dart';
 
 /// One card of a recorded 暗記練 game: the wrong taps while it was asked,
-/// the prompt → tap time when it was found (null when it never was), and
-/// where the first tap landed and when (null when no card was tapped).
-typedef AnkirenXpAnswer = ({int wrongTaps, int? responseUs, TapProximity? firstTap, int? firstTapUs});
+/// the prompt → tap time when it was found (null when it never was), where
+/// each tap that counts landed, and the first one's time (null when no card
+/// was tapped).
+typedef AnkirenXpAnswer = ({int wrongTaps, int? responseUs, List<TapProximity> taps, int? firstTapUs});
 
 /// A recorded 暗記練 game, as experience sees it.
 class AnkirenXpRun {
@@ -43,13 +44,15 @@ class AnkirenXpRun {
 
 /// 暗記練's experience rules ([AnkirenXpTuning]), keeping what each game
 /// needs from the games before it: the best score of each level and the
-/// ranked games played. Every card found earns XP, more at a higher level,
-/// plus a speed bonus for the time of its first tap; a card found with the
-/// second tap earns its share of both by where the first one landed
-/// (`AnkirenScore.credit`). A game played to the end adds a clear (and a
-/// ranked one more), a personal best adds its bonus, and the ranked game
+/// ranked games played. Each card earns the same share of a find's XP
+/// (more at a higher level) as of its points (`AnkirenScore.share`): all of
+/// it when the first tap found it, part when its taps landed near it; and
+/// a find with the first tap a speed bonus for its time. A game played to
+/// the end pays the cards that earned nothing for trying, adds a clear (and
+/// a ranked one more), a personal best adds its bonus, and the ranked game
 /// that finishes placement adds a one-off bonus. A forfeit and a custom
-/// game earn nothing; a free game ended early earns only its finds.
+/// game earn nothing; a free game ended early earns only what its cards
+/// earned.
 class AnkirenXp {
   final _best = <int, int>{};
   int _rankedGames = 0;
@@ -57,7 +60,8 @@ class AnkirenXp {
   /// XP a first-tap find earns at [level].
   static int cardXp(int level) => AnkirenXpTuning.firstTap + AnkirenXpTuning.firstTapPerLevel * level;
 
-  /// XP a first tap [responseUs] after its prompt earns for speed.
+  /// XP a first tap on the card [responseUs] after its prompt earns for
+  /// speed.
   static int speedXp(int responseUs) => Attempt.isValidTime(responseUs)
       ? (AnkirenXpTuning.speedMax * AnkirenScore.speedShare(responseUs / 1000)).round()
       : 0;
@@ -73,22 +77,24 @@ class AnkirenXp {
     if (run.forfeit) return const XpAward([]);
 
     final card = cardXp(level);
-    var first = 0, second = 0, missed = 0, fast = 0;
-    var firstXp = 0, secondXp = 0, speed = 0;
+    var first = 0, near = 0, missed = 0, fast = 0;
+    var firstXp = 0, nearXp = 0, speed = 0;
     for (final a in run.answers) {
-      final credit = AnkirenScore.credit(found: a.responseUs != null, wrongTaps: a.wrongTaps, firstTap: a.firstTap);
-      if (credit == 0) {
+      final share = AnkirenScore.share(a.taps);
+      if (share == 0) {
         missed++;
         continue;
       }
-      if (a.wrongTaps == 0) {
+      final xp = (card * share).round();
+      if (a.taps.first == TapProximity.card) {
         first++;
-        firstXp += card;
+        firstXp += xp;
       } else {
-        second++;
-        secondXp += (card * credit).round();
+        near++;
+        nearXp += xp;
       }
-      final bonus = (speedXp(a.firstTapUs!) * credit).round();
+      final us = a.firstTapUs;
+      final bonus = us == null ? 0 : (AnkirenScore.speedWeight(a.taps) * speedXp(us)).round();
       if (bonus > 0) fast++;
       speed += bonus;
     }
@@ -96,7 +102,7 @@ class AnkirenXp {
     return XpAward([
       for (final p in [
         XpPart(XpSource.firstTap, first, firstXp),
-        XpPart(XpSource.secondTap, second, secondXp),
+        XpPart(XpSource.nearMiss, near, nearXp),
         XpPart(XpSource.missed, missed, done ? missed * AnkirenXpTuning.perMiss : 0),
         XpPart(XpSource.speed, fast, speed),
         XpPart(XpSource.clear, 1, done ? AnkirenXpTuning.clear : 0),

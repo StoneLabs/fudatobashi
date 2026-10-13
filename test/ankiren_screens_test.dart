@@ -19,6 +19,7 @@ import 'package:fudatobashi/data/islands.dart';
 import 'package:fudatobashi/data/poem.dart';
 import 'package:fudatobashi/db/database.dart';
 import 'package:fudatobashi/domain/ankiren_field.dart';
+import 'package:fudatobashi/domain/ankiren_game.dart';
 import 'package:fudatobashi/domain/ankiren_geometry.dart';
 import 'package:fudatobashi/domain/ankiren_level.dart';
 import 'package:fudatobashi/domain/ankiren_score.dart';
@@ -44,6 +45,7 @@ import 'package:fudatobashi/ui/debug/ankiren_debug_overlay.dart';
 import 'package:fudatobashi/ui/debug/ankiren_score_readout.dart';
 import 'package:fudatobashi/ui/debug/ankiren_tools_page.dart';
 import 'package:fudatobashi/ui/debug/debug_common.dart';
+import 'package:fudatobashi/ui/debug/play_overlay.dart';
 import 'package:fudatobashi/ui/manga/manga.dart';
 import 'package:fudatobashi/ui/play/time_format.dart';
 import 'package:fudatobashi/ui/rank/rank_badges.dart';
@@ -425,7 +427,7 @@ void main() {
       await tester.pumpWidget(const SizedBox());
     });
 
-    testWidgets("dev mode's play overlay tells how the last card scored", (tester) async {
+    testWidgets("dev mode's play overlay tells how the last card scored, tap by tap", (tester) async {
       final p = await open(tester);
       await play(tester, p, AnkirenSetup.forLevel(0), tracked: false);
       expect(find.byType(AnkirenScoreReadout), findsNothing, reason: 'off unless asked for');
@@ -433,7 +435,7 @@ void main() {
 
       await tester.runAsync(() => p.updateSettings(p.settings.copyWith(debugMode: true, playOverlay: true)));
       await play(tester, p, AnkirenSetup.forLevel(0), tracked: false);
-      expect(find.text('no card answered yet'), findsOneWidget);
+      expect(find.text('none answered yet'), findsOneWidget);
       await ready(tester);
       final id = asked(tester);
       await take(tester, cards(tester).map((c) => c.poemId).firstWhere((x) => x != id));
@@ -441,13 +443,25 @@ void main() {
       await take(tester, id);
       final game = tester.widget<AnkirenScoreReadout>(find.byType(AnkirenScoreReadout)).game;
       final a = game.answers.single;
-      final lines = AnkirenScoreReadout.lines(game);
-      expect(lines[0], endsWith('found with the second tap'));
-      expect(lines[1], startsWith('first tap ${a.firstTap!.name} at'));
-      expect(lines[2], endsWith('= ${AnkirenScore.points(a)} pt'));
-      for (final line in lines) {
-        expect(find.text(line), findsOneWidget);
+      final first = a.taps.first;
+      final firstPoints = (AnkirenTuning.cardPoints * AnkirenTuning.tapShare[first]!).round();
+      final rows = [for (final r in AnkirenScoreReadout.rows(game)) [r.label, r.value]];
+      expect(rows, containsAllInOrder([
+        ['CARD', '#$id ${poems[id].kimariji}'],
+        ['result', 'found on tap 2'],
+        ['TAP 1', first.name],
+        ['speed', '0, not the card'],
+        ['TAP 2', 'card'],
+        ['points', '1 × 100 = 100'],
+        ['SUM', '$firstPoints + 0.2 × 100 = ${AnkirenScore.points(a)}'],
+        ['GAME', '${AnkirenScore.points(a)} / ${AnkirenScore.maxFor(game.prompts.length)}'],
+      ]));
+      for (final [label, value] in rows) {
+        expect(find.text(label), findsWidgets);
+        expect(find.text(value), findsWidgets);
       }
+      expect(find.ancestor(of: find.byType(DebugTable), matching: find.byType(IgnorePointer)), findsWidgets,
+          reason: 'every tap goes through');
       await tester.pumpWidget(const SizedBox());
     });
 
@@ -824,6 +838,92 @@ void main() {
   });
 
   group('Developer tools', () {
+    test("the play overlay's readout: each tap's place, tier, time, speed and points, their sum and the game", () {
+      AnkirenRow r(List<int> left, [List<int> right = const []]) =>
+          AnkirenRow(left: left, middle: const [], right: right);
+      // Own side: 1 2 3 | 4 in 下段; opponent: 5 6.
+      final field = AnkirenField(
+        own: AnkirenHalf([r([1, 2, 3], [4]), r([]), r([])]),
+        opponent: AnkirenHalf([r([5, 6]), r([]), r([])]),
+      );
+      // A game on [field] asking 2 first, at the top level or custom.
+      AnkirenGame game({bool custom = false}) {
+        const memorise = Duration(minutes: 1);
+        final setup = custom
+            ? const AnkirenSetup.custom(perSide: 3, memorise: memorise)
+            : AnkirenSetup(perSide: 3, memorise: memorise, level: AnkirenLevels.top);
+        for (var seed = 0;; seed++) {
+          final g = AnkirenGame(field: field, setup: setup, rng: math.Random(seed));
+          if (g.prompts.first == 2) {
+            return g
+              ..startRecall()
+              ..promptRevealed(Duration.zero);
+          }
+        }
+      }
+
+      List<List<String>> rows(AnkirenGame g) => [for (final r in AnkirenScoreReadout.rows(g)) [r.label, r.value]];
+      const ms = Duration(milliseconds: 1);
+      final kimariji = poems[2].kimariji;
+
+      final quick = game()..tap(2, ms * 300);
+      expect(rows(quick), [
+        ['CARD', '#2 $kimariji'],
+        ['result', 'found on tap 1'],
+        ['TAP 1', 'card'],
+        ['tier', '1'],
+        ['time', '300 ms'],
+        ['curve', '(300 / 1650) ^ 1.1'],
+        ['range', '100 → 5000 ms'],
+        ['speed', '0.88 × 100 = 88'],
+        ['points', '1 × 100 + 88 = 188'],
+        ['TAP 2', 'none'],
+        ['SUM', '188 + 0.2 × 0 = 188'],
+        ['GAME', '188 / 1200'],
+        ['early', '× 1'],
+        ['level', '× 1'],
+        ['score', '188'],
+      ]);
+
+      expect([for (final part in AnkirenScoreReadout.parts(quick)) part.first.label], ['CARD', 'TAP 2'],
+          reason: 'side by side: the card and its first tap, then the rest');
+
+      final shown = game()
+        ..tap(1, ms * 300)
+        ..tap(5, ms * 600)
+        ..tap(6, ms * 700)
+        ..tap(2, ms * 900);
+      expect(rows(shown).sublist(1, 13), [
+        ['result', 'found on tap 4, shown'],
+        ['TAP 1', 'neighbour'],
+        ['tier', '0.6'],
+        ['time', '300 ms'],
+        ['speed', '0, not the card'],
+        ['points', '0.6 × 100 = 60'],
+        ['TAP 2', 'otherSide'],
+        ['tier', '0'],
+        ['points', '0 × 100 = 0'],
+        ['later', '2 taps, not counted'],
+        ['SUM', '60 + 0.2 × 0 = 60'],
+        ['GAME', '60 / 1200'],
+      ]);
+
+      final givenUp = game()..tap(4, ms * 500);
+      givenUp.giveUp();
+      expect(rows(givenUp)[1], ['result', 'given up after 1 tap']);
+      expect(rows(givenUp).firstWhere((r) => r.first == 'SUM'), ['SUM', '15 + 0.2 × 0 = 15']);
+
+      final untapped = game()..giveUp();
+      expect(rows(untapped).sublist(1, 5), [
+        ['result', 'given up, no tap'],
+        ['TAP 1', 'none'],
+        ['TAP 2', 'none'],
+        ['SUM', '0 + 0.2 × 0 = 0'],
+      ]);
+
+      expect(rows(game(custom: true)..tap(2, ms * 300)).last, ['GAME', 'custom, not scored']);
+    });
+
     testWidgets('the AnkiRen page: levels, points, both graphs, and the middle-card simulator', (tester) async {
       final p = await open(tester);
       phone(tester);
@@ -835,18 +935,22 @@ void main() {
       final page = find.byType(Scrollable).first;
       String kv(String key) => tester.widget<DebugKV>(find.byWidgetPredicate((w) => w is DebugKV && w.k == key)).v;
 
-      final full = AnkirenTuning.firstTry + AnkirenScore.speedBonus(1000000);
+      final full = AnkirenTuning.cardPoints + AnkirenScore.speedBonus(1000000);
       expect(kv('per card'), '$full');
-      Finder firstTap(String label) =>
-          find.descendant(of: find.byType(SegmentedButton<TapProximity?>), matching: find.text(label));
-      await tester.ensureVisible(find.byType(SegmentedButton<TapProximity?>));
-      await tester.pump();
-      await tester.tap(firstTap(TapProximity.row.name));
-      await tester.pump();
-      expect(kv('per card'),
-          '${(full * (AnkirenTuning.firstTapCredit[TapProximity.row]! + AnkirenTuning.secondTapShare)).round()}');
-      await tester.tap(firstTap('shown'));
-      await tester.pump();
+      final pickers = find.byType(SegmentedButton<TapProximity?>);
+      Future<void> pick(int tap, String place) async {
+        final segment = find.descendant(of: pickers.at(tap), matching: find.text(place));
+        await tester.ensureVisible(segment);
+        await tester.pump();
+        await tester.tap(segment);
+        await tester.pump();
+      }
+
+      await pick(0, TapProximity.row.name);
+      expect([kv('per card'), kv('speed bonus')], ['40', '0 / ${AnkirenTuning.speedMax}'], reason: 'no second tap yet');
+      await pick(1, TapProximity.card.name);
+      expect(kv('per card'), '${AnkirenScore.pointsOf(const [TapProximity.row, TapProximity.card], null)}');
+      await pick(0, 'none');
       expect(kv('per card'), '0');
 
       for (final title in ['Total by time used', 'Total by card time', 'Middle cards']) {

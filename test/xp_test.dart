@@ -230,18 +230,19 @@ void main() {
 
   group('暗記練 games', () {
     var nextRun = 1;
-    AnkirenXpAnswer first(int ms) =>
-        (wrongTaps: 0, responseUs: ms * 1000, firstTap: TapProximity.card, firstTapUs: ms * 1000);
-    AnkirenXpAnswer second(TapProximity place, {int ms = 300}) =>
-        (wrongTaps: 1, responseUs: 2000000, firstTap: place, firstTapUs: ms * 1000);
-    const shown = (
-      wrongTaps: AnkirenTuning.revealAfterWrong,
-      responseUs: 3000000,
-      firstTap: TapProximity.neighbour,
-      firstTapUs: 100000,
-    );
-    const givenUp = (wrongTaps: 0, responseUs: null, firstTap: null, firstTapUs: null);
-    double share(TapProximity place) => AnkirenScore.credit(found: true, wrongTaps: 1, firstTap: place);
+    const card = TapProximity.card, neighbour = TapProximity.neighbour, row = TapProximity.row;
+    const otherSide = TapProximity.otherSide;
+    AnkirenXpAnswer first(int ms) => (wrongTaps: 0, responseUs: ms * 1000, taps: const [card], firstTapUs: ms * 1000);
+
+    /// A card whose first tap missed: [taps] made, the first [ms] after its
+    /// prompt, found by the last when it is the card.
+    AnkirenXpAnswer missed(List<TapProximity> taps, {int ms = 300}) => (
+          wrongTaps: taps.where((p) => p != card).length,
+          responseUs: taps.lastOrNull == card ? 2000000 : null,
+          taps: taps,
+          firstTapUs: ms * 1000,
+        );
+    const AnkirenXpAnswer givenUp = (wrongTaps: 0, responseUs: null, taps: [], firstTapUs: null);
     AnkirenXpRun game(
       List<AnkirenXpAnswer> answers, {
       bool ranked = false,
@@ -269,37 +270,59 @@ void main() {
       expect(AnkirenXp.speedXp(0), 0, reason: 'no measurement');
     });
 
-    test('a ranked game played to the end: finds, misses, speed, the clear and the ranked bonus', () {
+    test('a ranked game played to the end: finds, near misses, misses, speed, the clear and the ranked bonus', () {
       final gain = XpLedger().addAnkiren(game(
-        [first(100), first(100), first(0), second(TapProximity.neighbour, ms: 100), shown, givenUp],
+        [
+          first(100),
+          first(100),
+          first(0),
+          missed([neighbour, card], ms: 100),
+          missed([neighbour, row, card]),
+          missed([otherSide, otherSide, card]),
+          givenUp,
+        ],
         ranked: true,
       ));
-      final card = AnkirenXp.cardXp(2);
-      final near = share(TapProximity.neighbour);
+      final xp = AnkirenXp.cardXp(2);
       expect(parts(gain), {
-        XpSource.firstTap: (3, 3 * card),
-        XpSource.secondTap: (1, (card * near).round()),
+        XpSource.firstTap: (3, 3 * xp),
+        XpSource.nearMiss: (2, (xp * 0.8).round() + (xp * 0.68).round()),
         XpSource.missed: (2, 2 * AnkirenXpTuning.perMiss),
-        XpSource.speed: (3, 2 * AnkirenXpTuning.speedMax + (AnkirenXpTuning.speedMax * near).round()),
+        XpSource.speed: (2, 2 * AnkirenXpTuning.speedMax),
         XpSource.clear: (1, AnkirenXpTuning.clear),
         XpSource.ranked: (1, AnkirenXpTuning.ranked),
       });
       expect(gain.award.parts.map((p) => p.source).toList(),
-          [XpSource.firstTap, XpSource.secondTap, XpSource.missed, XpSource.speed, XpSource.clear, XpSource.ranked],
+          [XpSource.firstTap, XpSource.nearMiss, XpSource.missed, XpSource.speed, XpSource.clear, XpSource.ranked],
           reason: 'listed in the order the XP page shows them');
     });
 
-    test('a find with the second tap earns its share by the first tap, for the card and its speed', () {
-      final card = AnkirenXp.cardXp(2), speed = AnkirenXp.speedXp(300000);
+    test("a card whose first tap missed earns its points' share of a find's XP, and nothing for speed", () {
+      final xp = AnkirenXp.cardXp(2);
       for (final place in TapProximity.values.skip(1)) {
-        final gain = XpLedger().addAnkiren(game([second(place)], completed: false));
-        expect(parts(gain), {
-          XpSource.secondTap: (1, (card * share(place)).round()),
-          XpSource.speed: (1, (speed * share(place)).round()),
-        }, reason: place.name);
+        for (final taps in [
+          [place],
+          for (final second in TapProximity.values) [place, second],
+        ]) {
+          final answer = missed(taps, ms: 100);
+          final share = AnkirenScore.share(taps);
+          expect(share, closeTo(AnkirenScore.pointsOf(taps, 100000) / AnkirenTuning.cardPoints, 1e-9),
+              reason: 'as the score');
+          final gain = XpLedger().addAnkiren(game([answer], completed: false));
+          expect(parts(gain), share == 0 ? isEmpty : {XpSource.nearMiss: (1, (xp * share).round())},
+              reason: taps.map((p) => p.name).join(' then '));
+        }
       }
-      expect(parts(XpLedger().addAnkiren(game([shown]))).keys, [XpSource.missed, XpSource.clear],
-          reason: 'shown before it was found, however near the first tap');
+      for (var level = 0; level <= AnkirenLevels.top; level++) {
+        final least = [
+          for (final first in TapProximity.values.skip(1))
+            for (final second in TapProximity.values) AnkirenScore.share([first, second]),
+        ].where((s) => s > 0).reduce((a, b) => a < b ? a : b);
+        expect((AnkirenXp.cardXp(level) * least).round(), greaterThanOrEqualTo(AnkirenXpTuning.perMiss),
+            reason: 'a near miss never earns less than trying, at level $level');
+      }
+      expect(parts(XpLedger().addAnkiren(game([missed([otherSide, otherSide, card])]))).keys,
+          [XpSource.missed, XpSource.clear], reason: 'found on the third tap after two far misses: nothing');
     });
 
     test('a custom game earns nothing and races nobody', () {
@@ -308,12 +331,12 @@ void main() {
       expect(parts(ledger.addAnkiren(game([first(100)], score: 10))).containsKey(XpSource.best), isFalse);
     });
 
-    test('free play earns the same finds without the ranked bonus; ended early, only its finds', () {
+    test('free play earns the same without the ranked bonus; ended early, only what its cards earned', () {
       final ledger = XpLedger();
       final free = ledger.addAnkiren(game([first(100), givenUp]));
       expect(parts(free).keys, [XpSource.firstTap, XpSource.missed, XpSource.speed, XpSource.clear]);
-      final ended = ledger.addAnkiren(game([first(100), givenUp, givenUp], completed: false));
-      expect(parts(ended).keys, [XpSource.firstTap, XpSource.speed]);
+      final ended = ledger.addAnkiren(game([first(100), missed([neighbour]), givenUp], completed: false));
+      expect(parts(ended).keys, [XpSource.firstTap, XpSource.nearMiss, XpSource.speed]);
     });
 
     test('a forfeit earns nothing, but counts toward placement', () {
@@ -370,7 +393,7 @@ void main() {
       final ranked = await record(AnkirenSetup.forLevel(1, ranked: true), wrongAt: {0});
       final cards = AnkirenLevels.of(1).cards;
       expect(parts(ranked)[XpSource.firstTap], (cards - 1, (cards - 1) * AnkirenXp.cardXp(1)));
-      expect(parts(ranked)[XpSource.secondTap]?.$1, 1);
+      expect(parts(ranked)[XpSource.nearMiss]?.$1, 1);
       expect(parts(ranked).keys, containsAll([XpSource.speed, XpSource.clear, XpSource.ranked]));
       expect(ranked.before, 0);
 

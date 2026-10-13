@@ -4,7 +4,6 @@ import '../../config/config.dart';
 import '../../config/design.dart';
 import '../../config/vector_art.dart';
 import '../../domain/ankiren_field.dart';
-import '../../domain/ankiren_score.dart';
 import '../../l10n/side_trip_strings.dart';
 import '../../l10n/strings.dart';
 import '../../state/scope.dart';
@@ -30,9 +29,9 @@ Future<void> openAnkirenRules(BuildContext context) {
 
 /// The game's three steps in pictures with a line on each, then what a
 /// wrong tap, giving up and leaving do, and how a game scores, with the
-/// numbers from [AnkirenTuning]. Every line
-/// has the other language's under it. It closes with ×, a tap outside or
-/// Back.
+/// numbers from [AnkirenTuning]: a tap's points by where it lands in a
+/// table. Every line has the other language's under it. It closes with ×,
+/// a tap outside or Back.
 class AnkirenRulesSheet extends StatelessWidget {
   const AnkirenRulesSheet({super.key});
 
@@ -46,12 +45,9 @@ class AnkirenRulesSheet extends StatelessWidget {
       (AnkirenRulesLayout.take, s.ankirenStepTake, s.ankirenStepTakeLine, o.ankirenStepTakeLine),
     ];
     const reveal = AnkirenTuning.revealAfterWrong;
-    const first = AnkirenTuning.firstTry, speed = AnkirenTuning.speedMax;
-    final near = [
-      for (final p in TapProximity.values.skip(1))
-        _factor(AnkirenScore.credit(found: true, wrongTaps: 1, firstTap: p)),
-    ];
-    final early = _factor(1 + AnkirenTuning.earlyBonus);
+    const first = AnkirenTuning.cardPoints, speed = AnkirenTuning.speedMax;
+    final second = (AnkirenTuning.tapWeights[1] * 100).round();
+    final early = _number(1 + AnkirenTuning.earlyBonus);
     return AnkirenSheet(
       title: s.howToPlay,
       sub: o.howToPlay,
@@ -63,28 +59,79 @@ class AnkirenRulesSheet extends StatelessWidget {
           ],
         ]),
         _RuleList([
-          (_Mark.icon(Palette.pinkSoft, IconArt.close), s.ankirenRuleWrong, o.ankirenRuleWrong),
-          (const _Mark.text(Palette.sun, '$reveal'), s.ankirenRuleReveal(reveal), o.ankirenRuleReveal(reveal)),
-          (_Mark.icon(Palette.desk, IconArt.question), s.ankirenRuleDontKnow, o.ankirenRuleDontKnow),
-          (_Mark.icon(Palette.ink, IconArt.end), s.ankirenRuleLeave, o.ankirenRuleLeave),
+          _Rule(_Mark.icon(Palette.pinkSoft, IconArt.close), s.ankirenRuleWrong, o.ankirenRuleWrong),
+          _Rule(const _Mark.text(Palette.sun, '$reveal'), s.ankirenRuleReveal(reveal), o.ankirenRuleReveal(reveal)),
+          _Rule(_Mark.icon(Palette.desk, IconArt.question), s.ankirenRuleDontKnow, o.ankirenRuleDontKnow),
+          _Rule(_Mark.icon(Palette.ink, IconArt.end), s.ankirenRuleLeave, o.ankirenRuleLeave),
         ]),
         SettingsSection(title: s.ankirenScoring, sub: o.ankirenScoring.toUpperCase(), children: [
           _RuleList([
-            (_Mark.text(Palette.paper, s.ankirenMarkPoints), s.ankirenScoreFind(first, speed),
+            _Rule(_Mark.text(Palette.paper, s.ankirenMarkPoints), s.ankirenScoreFind(first, speed),
                 o.ankirenScoreFind(first, speed)),
-            (const _Mark.text(Palette.paper, '×'), s.ankirenScoreNear(near), o.ankirenScoreNear(near)),
-            (_Mark.icon(Palette.sun, IconArt.history), s.ankirenScoreEarly(early), o.ankirenScoreEarly(early)),
-            (_Mark.text(Palette.paper, s.ankirenMarkLevel), s.ankirenScoreLevel, o.ankirenScoreLevel),
+            _Rule(_Mark.icon(Palette.paper, IconArt.cards), s.ankirenScoreNear(second), o.ankirenScoreNear(second),
+                below: const _TierTable()),
+            _Rule(_Mark.icon(Palette.sun, IconArt.history), s.ankirenScoreEarly(early), o.ankirenScoreEarly(early)),
+            _Rule(_Mark.text(Palette.paper, s.ankirenMarkLevel), s.ankirenScoreLevel, o.ankirenScoreLevel),
           ]),
         ]),
       ],
     );
   }
 
-  /// A multiplier as the rules print it: "0.25", or "2" when whole.
-  static String _factor(double x) {
+  /// A number as the rules print it: "0.25", or "2" when whole.
+  static String _number(double x) {
     final rounded = double.parse(x.toStringAsFixed(AnkirenRulesLayout.shareDecimals));
     return rounded == rounded.roundToDouble() ? '${rounded.round()}' : '$rounded';
+  }
+}
+
+/// What a tap earns by where it lands, nearest first: as the first tap (on
+/// the card, plus its speed bonus) and as the second, weighted
+/// ([AnkirenTuning.tapWeights]). Every name has the other language's under
+/// it.
+class _TierTable extends StatelessWidget {
+  const _TierTable();
+
+  @override
+  Widget build(BuildContext context) {
+    final s = S.of(context);
+    final o = s.other;
+    String points(TapProximity place, int tap) => AnkirenRulesSheet._number(
+        AnkirenTuning.cardPoints * AnkirenTuning.tapShare[place]! * AnkirenTuning.tapWeights[tap]);
+    Widget name(String line, String sub, {bool head = false, TextAlign align = TextAlign.start}) => Padding(
+          padding: AnkirenRulesLayout.tierCellPadding,
+          child: _Lines(line, sub,
+              fontSize: head ? AnkirenRulesLayout.tierHeadFont : AnkirenRulesLayout.tierFont,
+              subFontSize: AnkirenRulesLayout.tierSubFont,
+              align: align),
+        );
+    Widget value(String text) => Padding(
+          padding: AnkirenRulesLayout.tierCellPadding,
+          child: Text(text,
+              textAlign: TextAlign.end,
+              style: const TextStyle(fontWeight: Weights.black, fontSize: AnkirenRulesLayout.tierFont)),
+        );
+    const rule = BoxDecoration(
+      border: Border(top: BorderSide(color: AnkirenPageLayout.lightRule, width: AnkirenPageLayout.lightRuleWidth)),
+    );
+    const firstTap = 0, secondTap = 1;
+    return Table(
+      columnWidths: const {1: IntrinsicColumnWidth(), 2: IntrinsicColumnWidth()},
+      defaultVerticalAlignment: TableCellVerticalAlignment.middle,
+      children: [
+        TableRow(children: [
+          name(s.ankirenTierPlace, o.ankirenTierPlace, head: true),
+          name(s.ankirenTierFirst, o.ankirenTierFirst, head: true, align: TextAlign.end),
+          name(s.ankirenTierSecond, o.ankirenTierSecond, head: true, align: TextAlign.end),
+        ]),
+        for (final place in TapProximity.values)
+          TableRow(decoration: rule, children: [
+            name(s.ankirenTier(place), o.ankirenTier(place)),
+            value(place == TapProximity.card ? s.ankirenTierSpeed(points(place, firstTap)) : points(place, firstTap)),
+            value(points(place, secondTap)),
+          ]),
+      ],
+    );
   }
 }
 
@@ -149,11 +196,13 @@ class _Number extends StatelessWidget {
 /// A [line] in the UI's language, and the other language's [sub] under it
 /// in lighter type.
 class _Lines extends StatelessWidget {
-  const _Lines(this.line, this.sub, {required this.fontSize, required this.subFontSize, this.weight = Weights.bold});
+  const _Lines(this.line, this.sub,
+      {required this.fontSize, required this.subFontSize, this.weight = Weights.bold, this.align = TextAlign.start});
 
   final String line, sub;
   final double fontSize, subFontSize;
   final FontWeight weight;
+  final TextAlign align;
 
   @override
   Widget build(BuildContext context) => Text.rich(
@@ -163,6 +212,7 @@ class _Lines extends StatelessWidget {
           Phrases.span(sub,
               style: TextStyle(fontWeight: Weights.medium, fontSize: subFontSize, color: Palette.mute)),
         ]),
+        textAlign: align,
         style: TextStyle(fontWeight: weight, fontSize: fontSize, height: AnkirenRulesLayout.lineHeight),
       );
 }
@@ -201,8 +251,15 @@ class _Mark extends StatelessWidget {
   }
 }
 
-/// A rule: its [mark], its [line] and the other language's [sub].
-typedef _Rule = (_Mark mark, String line, String sub);
+/// A rule: its [mark], its [line] and the other language's [sub], and what
+/// shows [below] them.
+class _Rule {
+  const _Rule(this.mark, this.line, this.sub, {this.below});
+
+  final _Mark mark;
+  final String line, sub;
+  final Widget? below;
+}
 
 /// Rules, one a row, split by light rules.
 class _RuleList extends StatelessWidget {
@@ -214,7 +271,7 @@ class _RuleList extends StatelessWidget {
   Widget build(BuildContext context) => Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          for (final (i, (mark, line, sub)) in rules.indexed) ...[
+          for (final (i, rule) in rules.indexed) ...[
             if (i > 0)
               const SizedBox(
                 height: AnkirenPageLayout.lightRuleWidth,
@@ -223,13 +280,19 @@ class _RuleList extends StatelessWidget {
             Padding(
               padding: AnkirenRulesLayout.rowPadding,
               child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                mark,
+                rule.mark,
                 const SizedBox(width: AnkirenRulesLayout.markGap),
                 Expanded(
-                  child: _Lines(line, sub,
-                      fontSize: AnkirenRulesLayout.ruleLineFont,
-                      subFontSize: AnkirenRulesLayout.ruleSubFont,
-                      weight: Weights.black),
+                  child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+                    _Lines(rule.line, rule.sub,
+                        fontSize: AnkirenRulesLayout.ruleLineFont,
+                        subFontSize: AnkirenRulesLayout.ruleSubFont,
+                        weight: Weights.black),
+                    if (rule.below case final below?) ...[
+                      const SizedBox(height: AnkirenRulesLayout.belowGap),
+                      below,
+                    ],
+                  ]),
                 ),
               ]),
             ),

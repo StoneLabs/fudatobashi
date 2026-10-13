@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'dart:math' as math;
 
 import 'package:drift/drift.dart' show driftRuntimeOptions;
 import 'package:drift/native.dart';
@@ -8,8 +9,10 @@ import 'package:fudatobashi/data/fuda_sets.dart';
 import 'package:fudatobashi/data/poem.dart';
 import 'package:fudatobashi/db/database.dart';
 import 'package:fudatobashi/domain/ankiren_field.dart';
+import 'package:fudatobashi/domain/ankiren_game.dart';
 import 'package:fudatobashi/domain/ankiren_level.dart';
 import 'package:fudatobashi/domain/ankiren_rating.dart';
+import 'package:fudatobashi/domain/ankiren_score.dart';
 import 'package:fudatobashi/domain/card_stats.dart';
 import 'package:fudatobashi/domain/play_session.dart';
 import 'package:fudatobashi/domain/rating.dart';
@@ -53,10 +56,12 @@ void main() {
     expect([first.ratingBefore, first.ratingAfter], [AnkirenRating.start, placed]);
     expect(
         placed - AnkirenRating.start,
-        AnkirenRatingModel.placementK *
-            AnkirenRatingModel.placementStretch *
-            AnkirenRatingModel.weight *
-            (1 - AnkirenRatingModel.par),
+        closeTo(
+            AnkirenRatingModel.placementK *
+                AnkirenRatingModel.placementStretch *
+                AnkirenRatingModel.weight *
+                (1 - AnkirenRatingModel.par),
+            1e-9),
         reason: 'placement: K ${AnkirenRatingModel.placementK} of a stretched performance');
     expect(p.sideTrips.missesIn(stored), 0);
     expect(stored.meta, contains('"perSide":${AnkirenLevels.of(0).perSide}'));
@@ -121,19 +126,21 @@ void main() {
     await db.close();
   });
 
-  test('each answer keeps where its first tap landed; a custom game is stored without a score', () async {
+  test('each answer keeps where its taps landed; a custom game is stored without a score', () async {
     final db = AppDatabase(NativeDatabase.memory());
     final p = await allKnown(db);
     final free = playAnkiren(AnkirenSetup.forLevel(2), wrongAt: {0});
     await p.recordAnkiren(free, startedAt: startedAt);
     final rows = await db.select(db.sideTripAnswers).get();
-    expect([for (final r in rows) (r.firstTap, r.firstTapUs)],
-        [for (final a in free.answers) (a.firstTap!.index, a.firstTapUs)]);
-    expect(rows.first.firstTap, isNot(TapProximity.card.index), reason: 'the first prompt began with a wrong tap');
+    expect([for (final r in rows) [r.firstTap, r.firstTapUs, r.secondTap]], [
+      for (final a in free.answers) [a.taps.first.index, a.firstTapUs, a.taps.elementAtOrNull(1)?.index],
+    ]);
+    expect([rows.first.firstTap, rows.first.secondTap], isNot(contains(null)), reason: 'a wrong tap, then the card');
+    expect(rows.skip(1).map((r) => r.secondTap), everyElement(isNull), reason: 'found with the first tap');
     expect([for (final r in rows.skip(1)) r.firstTapUs], [for (final r in rows.skip(1)) r.responseUs]);
     final again = await Progress.open(db);
-    expect([for (final a in again.sideTrips.answersOf(again.sideTrips.runs.single)) (a.firstTap, a.firstTapUs)],
-        [for (final a in free.answers) (a.firstTap, a.firstTapUs)]);
+    expect([for (final a in again.sideTrips.answersOf(again.sideTrips.runs.single)) [a.taps, a.firstTapUs]],
+        [for (final a in free.answers) [a.taps, a.firstTapUs]]);
 
     final custom = await p.recordAnkiren(
         playAnkiren(const AnkirenSetup.custom(perSide: 4, memorise: Duration(minutes: 1))),
@@ -141,6 +148,34 @@ void main() {
     final run = p.sideTrips.runs.last;
     expect([run.level, run.score, run.maxScore, run.rating, run.performance], [null, null, null, null, null]);
     expect(custom.xp!.award.parts, isEmpty);
+    await db.close();
+  });
+
+  test('every tap that counts is stored: a reloaded game scores and earns as it did when played', () async {
+    final db = AppDatabase(NativeDatabase.memory());
+    final p = await allKnown(db);
+    final rng = math.Random(4);
+    final setup = AnkirenSetup.forLevel(3);
+    final field = AnkirenDealer.ofPoems().deal([for (final poem in poems.all) poem.id], setup.perSide, rng);
+    final game = AnkirenGame(field: field, setup: setup, rng: rng)..startRecall();
+    var t = const Duration(seconds: 100);
+    const step = Duration(milliseconds: 300);
+    // From none to three wrong taps a card; every fifth given up.
+    for (var i = 0; game.phase == AnkirenPhase.recall; i++) {
+      game.promptRevealed(t += step);
+      final asked = game.current!;
+      for (final other in field.cards.where((c) => c != asked && !game.isDone(c)).take(i % 4)) {
+        game.tap(other, t += step);
+      }
+      i % 5 == 4 ? game.giveUp() : game.tap(asked, t += step);
+    }
+    await p.recordAnkiren(game, startedAt: startedAt);
+    final again = await Progress.open(db);
+    final stored = again.sideTrips.answersOf(again.sideTrips.runs.single);
+    expect([for (final a in stored) [a.taps, a.firstTapUs]], [for (final a in game.answers) [a.taps, a.firstTapUs]]);
+    expect([for (final a in stored) AnkirenScore.pointsOf(a.taps, a.firstTapUs)],
+        [for (final a in game.answers) AnkirenScore.points(a)]);
+    expect(again.xp.total, p.xp.total);
     await db.close();
   });
 

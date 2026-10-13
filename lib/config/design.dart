@@ -2462,6 +2462,13 @@ abstract final class AnkirenRulesLayout {
   static const EdgeInsets rowPadding = EdgeInsets.symmetric(vertical: 8);
   static const double ruleLineFont = 13;
   static const double ruleSubFont = 11.5;
+
+  /// A table under a rule's line: points by where a tap lands.
+  static const double belowGap = 6;
+  static const EdgeInsets tierCellPadding = EdgeInsets.symmetric(horizontal: 4, vertical: 4);
+  static const double tierHeadFont = 11;
+  static const double tierFont = 12.5;
+  static const double tierSubFont = 10.5;
 }
 
 /// The debug Simulation page's summary and per-day charts.

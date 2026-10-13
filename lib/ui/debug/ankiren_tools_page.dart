@@ -61,54 +61,46 @@ class _PointsCalculatorState extends State<_PointsCalculator> {
   int _level = AnkirenLevels.top;
   double _responseMs = AnkirenToolsTuning.responseStart.inMilliseconds.toDouble();
 
-  /// Where the first tap landed; null for a card that had to be shown.
-  TapProximity? _firstTap = TapProximity.card;
+  /// Where the first and second taps landed; null for no tap.
+  TapProximity? _first = TapProximity.card;
+  TapProximity? _second;
   double _timeLeft = 0;
 
   int get _memoriseSeconds => AnkirenLevels.of(_level).memorise.inSeconds;
 
   @override
   Widget build(BuildContext context) {
-    final firstTap = _firstTap;
+    final first = _first;
+    final taps = first == null ? const <TapProximity>[] : [first, if (first != TapProximity.card) ?_second];
     final tapUs = (_responseMs * 1000).round();
-    final answer = AnkirenAnswer(
-      poemId: 0,
-      side: FieldSide.own,
-      wrongTaps: switch (firstTap) {
-        null => AnkirenTuning.revealAfterWrong,
-        TapProximity.card => 0,
-        _ => 1,
-      },
-      responseUs: tapUs,
-      at: DateTime.now(),
-      firstTap: firstTap ?? TapProximity.neighbour,
-      firstTapUs: tapUs,
-    );
     final share = _timeLeft.clamp(0, _memoriseSeconds) / _memoriseSeconds;
     final early = 1 + AnkirenTuning.earlyBonus * share;
     final factor = AnkirenScore.factorFor(_level);
-    final points = AnkirenScore.points(answer);
-    final credited = answer.credit > 0;
+    final points = AnkirenScore.pointsOf(taps, first == null ? null : tapUs);
+    final timed = AnkirenScore.speedWeight(taps) > 0;
+    Widget picker(String label, TapProximity? selected, ValueChanged<TapProximity?>? onChanged) => Wrap(
+          crossAxisAlignment: WrapCrossAlignment.center,
+          children: [
+            Text('$label ', style: debugMono),
+            SegmentedButton<TapProximity?>(
+              showSelectedIcon: false,
+              segments: [
+                for (final p in TapProximity.values) ButtonSegment(value: p, label: Text(p.name)),
+                const ButtonSegment(value: null, label: Text('none')),
+              ],
+              selected: {selected},
+              onSelectionChanged: onChanged == null ? null : (s) => onChanged(s.first),
+            ),
+          ],
+        );
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         DebugLevelChips(level: _level, onChanged: (l) => setState(() => _level = l)),
         DebugResponseSlider(label: 'first tap', ms: _responseMs, onChanged: (v) => setState(() => _responseMs = v)),
-        Wrap(
-          crossAxisAlignment: WrapCrossAlignment.center,
-          children: [
-            Text('first tap on ', style: debugMono),
-            SegmentedButton<TapProximity?>(
-              showSelectedIcon: false,
-              segments: [
-                for (final p in TapProximity.values) ButtonSegment(value: p, label: Text(p.name)),
-                const ButtonSegment(value: null, label: Text('shown')),
-              ],
-              selected: {firstTap},
-              onSelectionChanged: (s) => setState(() => _firstTap = s.first),
-            ),
-          ],
-        ),
+        picker('tap 1 on', first, (p) => setState(() => _first = p)),
+        picker('tap 2 on', taps.length > 1 ? _second : null,
+            first == null || first == TapProximity.card ? null : (p) => setState(() => _second = p)),
         DebugSlider(
           label:
               'time left ${formatMinutes(Duration(seconds: _timeLeft.round()))}'
@@ -121,7 +113,7 @@ class _PointsCalculatorState extends State<_PointsCalculator> {
         const SizedBox(height: AnkirenToolsStyle.gap),
         SizedBox(
           height: AnkirenToolsStyle.chartHeight,
-          child: CustomPaint(painter: _BonusPainter(_responseMs, credited)),
+          child: CustomPaint(painter: _BonusPainter(_responseMs, timed)),
         ),
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -130,8 +122,8 @@ class _PointsCalculatorState extends State<_PointsCalculator> {
           ],
         ),
         const SizedBox(height: AnkirenToolsStyle.gap),
-        DebugKV('speed bonus', '${AnkirenScore.speedBonus(tapUs)} / ${AnkirenTuning.speedMax}'),
-        DebugKV('first tap ×', answer.credit.toStringAsFixed(2)),
+        DebugKV('speed bonus', '${timed ? AnkirenScore.speedBonus(tapUs) : 0} / ${AnkirenTuning.speedMax}'),
+        DebugKV('tap share', AnkirenScore.share(taps).toStringAsFixed(2)),
         DebugKV('per card', '$points'),
         DebugKV('early ×', early.toStringAsFixed(3)),
         DebugKV('level ×', factor.toStringAsFixed(3)),

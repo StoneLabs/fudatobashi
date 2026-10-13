@@ -19,9 +19,10 @@ enum XpSource {
   island,
   graduation,
 
-  /// 暗記練: cards found with the first tap, and with the second.
+  /// 暗記練: cards found with the first tap, and cards whose taps missed
+  /// but landed near enough to earn part of a find.
   firstTap,
-  secondTap,
+  nearMiss,
 
   /// 暗記練: a ranked game played to the end.
   ranked,
