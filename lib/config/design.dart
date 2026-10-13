@@ -2040,12 +2040,12 @@ class ScenePiece {
 
 /// The dojo scene at the top of the Side Trips tab (`DojoScene`,
 /// `research/design/sidetrips_b2.html`): pictures from
-/// `assets/images/sidetrips/`, back to front, in a design frame [width]
+/// `assets/images/sidetrips/scene/`, back to front, in a design frame [width]
 /// units wide whose top is the screen's top, scaled to the screen's width.
 /// The islands stand in a ring (`DojoRingLayout`).
 abstract final class DojoSceneLayout {
   static const double width = 390;
-  static const _dir = 'assets/images/sidetrips';
+  static const _dir = 'assets/images/sidetrips/scene';
 
   static const sky = ScenePiece('$_dir/sky.webp', Rect.fromLTWH(0, 0, 390, 200));
 
@@ -2149,7 +2149,7 @@ class RingIsleArt {
 /// its tag hangs in the water under its left end; elsewhere it floats over
 /// the island, clear of the one in front.
 abstract final class DojoRingLayout {
-  static const _dir = 'assets/images/sidetrips';
+  static const _dir = 'assets/images/sidetrips/islands';
   static const Size canvas = Size(370, 226);
   static const Offset foot = Offset(185, 213);
 
@@ -2166,13 +2166,13 @@ abstract final class DojoRingLayout {
   static const _under = Offset(36, 231);
   static const _over = Offset(185, -4);
 
-  static const ankiren = RingIsleArt('$_dir/isle-ankiren.webp', '$_dir/far-ankiren.webp');
-  static const building = RingIsleArt('$_dir/isle-construction.webp', '$_dir/far-construction.webp');
-  static const fuji = RingIsleArt('$_dir/isle-fuji.webp', '$_dir/far-fuji.webp');
-  static const lighthouse = RingIsleArt('$_dir/isle-lighthouse.webp', '$_dir/far-lighthouse.webp');
+  static const ankiren = RingIsleArt('$_dir/ankiren.webp', '$_dir/ankiren-haze.webp');
+  static const building = RingIsleArt('$_dir/construction.webp', '$_dir/construction-haze.webp');
+  static const fuji = RingIsleArt('$_dir/fuji.webp', '$_dir/fuji-haze.webp');
+  static const lighthouse = RingIsleArt('$_dir/lighthouse.webp', '$_dir/lighthouse-haze.webp');
 
   /// 暗記練's banner on its island's grass, once it is open: its label.
-  static const nobori = ScenePiece('$_dir/nobori-ankiren.webp', Rect.fromLTWH(277.2, 56, 30, 100));
+  static const nobori = ScenePiece('assets/images/sidetrips/ankiren/nobori.webp', Rect.fromLTWH(277.2, 56, 30, 100));
 }
 
 /// How the ring of islands turns (`SideTripsScreen`).
@@ -2253,7 +2253,7 @@ abstract final class SideTripsLayout {
 
   /// The rank flag: the picture, where its cloth takes the class, and how
   /// it stands on the panel's edge.
-  static const String flag = 'assets/images/sidetrips/rank-flag.webp';
+  static const String flag = 'assets/images/sidetrips/ui/rank-flag.webp';
   static const Size flagSize = Size(98, 50);
   static const Rect flagText = Rect.fromLTWH(13, 10, 66, 24);
   static const double flagFont = 16;
@@ -2337,9 +2337,9 @@ abstract final class SideTripsLayout {
 /// 暗記練's rules sheet (遊び方, `ankiren_rules_sheet.dart`): its three
 /// steps in pictures, a line on each, and how a game scores.
 abstract final class AnkirenRulesLayout {
-  static const String memorise = 'assets/images/sidetrips/howto-memorize.webp';
-  static const String flip = 'assets/images/sidetrips/howto-flip.webp';
-  static const String take = 'assets/images/sidetrips/howto-take.webp';
+  static const String memorise = 'assets/images/sidetrips/ankiren/howto-memorize.webp';
+  static const String flip = 'assets/images/sidetrips/ankiren/howto-flip.webp';
+  static const String take = 'assets/images/sidetrips/ankiren/howto-take.webp';
 
   /// The pictures' own aspect (96 × 90).
   static const double pictureAspect = 96 / 90;

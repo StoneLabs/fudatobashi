@@ -224,7 +224,8 @@ void main() {
       AnkirenRulesLayout.flip,
       AnkirenRulesLayout.take,
     };
-    expect({for (final f in Directory('assets/images/sidetrips').listSync()) f.path}, used);
+    final files = Directory('assets/images/sidetrips').listSync(recursive: true).whereType<File>();
+    expect({for (final f in files) f.path}, used);
   });
 
   group('fits', () {
