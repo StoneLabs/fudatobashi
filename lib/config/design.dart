@@ -4019,11 +4019,6 @@ abstract final class AnkirenPageLayout {
   /// The record strip (History's): the class and the rating split by an
   /// ink rule, over the gauge to the next class.
   static const double stripCut = HistoryHeaderLayout.stripCut;
-
-  /// The most room each cell of a row may take, as shares: the strip's
-  /// class and rating; the next game's level, cards and memorise time.
-  static const (int, int) stripFlex = (2, 3);
-  static const (int, int, int) statFlex = (5, 6, 7);
   static const EdgeInsets cellsPadding = EdgeInsets.fromLTRB(14, 9, 14 + stripCut, 8);
   static const double cellGap = 12;
   static const double stripFont = 26;

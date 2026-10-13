@@ -1,6 +1,7 @@
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 import 'package:flutter/scheduler.dart';
 
 import '../../config/config.dart';
@@ -143,15 +144,103 @@ class _Label extends StatelessWidget {
       );
 }
 
-/// An ink rule between two cells of a row.
-class _CellRule extends StatelessWidget {
-  const _CellRule();
+/// Cells side by side, split by ink rules: each as wide as it is on one
+/// line, all narrowed in proportion when the row is too narrow for that,
+/// and all as tall as the tallest.
+class _CellRow extends MultiChildRenderObjectWidget {
+  const _CellRow({required super.children});
 
   @override
-  Widget build(BuildContext context) => const Padding(
-        padding: EdgeInsets.symmetric(horizontal: AnkirenPageLayout.cellGap),
-        child: SizedBox(width: Strokes.control, child: ColoredBox(color: Palette.ink)),
-      );
+  RenderObject createRenderObject(BuildContext context) => _RenderCellRow();
+}
+
+class _CellRowParentData extends ContainerBoxParentData<RenderBox> {}
+
+class _RenderCellRow extends RenderBox
+    with
+        ContainerRenderObjectMixin<RenderBox, _CellRowParentData>,
+        RenderBoxContainerDefaultsMixin<RenderBox, _CellRowParentData> {
+  /// The room between two cells, the rule in its middle.
+  static const _between = 2 * AnkirenPageLayout.cellGap + Strokes.control;
+
+  /// Where each rule starts, from the last layout.
+  List<double> _rules = const [];
+
+  @override
+  void setupParentData(RenderBox child) {
+    if (child.parentData is! _CellRowParentData) child.parentData = _CellRowParentData();
+  }
+
+  double get _gaps => _between * math.max(0, childCount - 1);
+
+  /// Each cell's width in a row [width] wide.
+  List<double> _widths(double width) {
+    final natural = [for (final cell in getChildrenAsList()) cell.getMaxIntrinsicWidth(double.infinity)];
+    final total = natural.fold(0.0, (sum, w) => sum + w);
+    final room = math.max(0.0, width - _gaps);
+    final scale = total > room ? room / total : 1.0;
+    return [for (final w in natural) w * scale];
+  }
+
+  double _tallest(double width, double Function(RenderBox cell, double width) heightOf) {
+    final widths = _widths(width);
+    return [for (final (i, cell) in getChildrenAsList().indexed) heightOf(cell, widths[i])].fold(0.0, math.max);
+  }
+
+  double _dryHeight(RenderBox cell, double width) => cell.getDryLayout(BoxConstraints(maxWidth: width)).height;
+
+  @override
+  double computeMinIntrinsicWidth(double height) =>
+      _gaps + getChildrenAsList().fold(0.0, (sum, cell) => sum + cell.getMinIntrinsicWidth(double.infinity));
+
+  @override
+  double computeMaxIntrinsicWidth(double height) =>
+      _gaps + getChildrenAsList().fold(0.0, (sum, cell) => sum + cell.getMaxIntrinsicWidth(double.infinity));
+
+  @override
+  double computeMinIntrinsicHeight(double width) => _tallest(width, (cell, w) => cell.getMinIntrinsicHeight(w));
+
+  @override
+  double computeMaxIntrinsicHeight(double width) => _tallest(width, (cell, w) => cell.getMaxIntrinsicHeight(w));
+
+  @override
+  Size computeDryLayout(BoxConstraints constraints) {
+    final widths = _widths(constraints.maxWidth);
+    final width = _gaps + widths.fold(0.0, (sum, w) => sum + w);
+    return constraints.constrain(Size(width, _tallest(constraints.maxWidth, _dryHeight)));
+  }
+
+  @override
+  void performLayout() {
+    final widths = _widths(constraints.maxWidth);
+    final height = _tallest(constraints.maxWidth, _dryHeight);
+    final rules = <double>[];
+    var x = 0.0;
+    for (final (i, cell) in getChildrenAsList().indexed) {
+      if (i > 0) {
+        rules.add(x + AnkirenPageLayout.cellGap);
+        x += _between;
+      }
+      cell.layout(BoxConstraints(maxWidth: widths[i], minHeight: height, maxHeight: height));
+      (cell.parentData! as _CellRowParentData).offset = Offset(x, 0);
+      x += widths[i];
+    }
+    _rules = rules;
+    size = constraints.constrain(Size(x, height));
+  }
+
+  @override
+  void paint(PaintingContext context, Offset offset) {
+    defaultPaint(context, offset);
+    final ink = Paint()..color = Palette.ink;
+    for (final left in _rules) {
+      context.canvas.drawRect(Rect.fromLTWH(offset.dx + left, offset.dy, Strokes.control, size.height), ink);
+    }
+  }
+
+  @override
+  bool hitTestChildren(BoxHitTestResult result, {required Offset position}) =>
+      defaultHitTestChildren(result, position: position);
 }
 
 /// A label over its value, the value on one line, shrinking rather than
@@ -203,40 +292,30 @@ class _RecordStrip extends StatelessWidget {
         children: [
           Padding(
             padding: AnkirenPageLayout.cellsPadding,
-            child: IntrinsicHeight(
-              child: Row(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-                Flexible(
-                  flex: AnkirenPageLayout.stripFlex.$1,
-                  child: _Cell(
-                    label: _Label(s.sideTripClass, s.other.sideTripClass),
-                    value: Text.rich(
-                      TextSpan(children: [
-                        TextSpan(text: band.stem),
-                        if (band.stem != band.label)
-                          const TextSpan(
-                              text: RankBand.classSuffix,
-                              style: TextStyle(fontSize: AnkirenPageLayout.classSuffixFont)),
-                      ]),
-                      style: big,
-                    ),
-                  ),
+            child: _CellRow(children: [
+              _Cell(
+                label: _Label(s.sideTripClass, s.other.sideTripClass),
+                value: Text.rich(
+                  TextSpan(children: [
+                    TextSpan(text: band.stem),
+                    if (band.stem != band.label)
+                      const TextSpan(
+                          text: RankBand.classSuffix, style: TextStyle(fontSize: AnkirenPageLayout.classSuffixFont)),
+                  ]),
+                  style: big,
                 ),
-                const _CellRule(),
-                Flexible(
-                  flex: AnkirenPageLayout.stripFlex.$2,
-                  child: _Cell(
-                    label: _Label(s.rating, s.other.rating),
-                    value: Row(mainAxisSize: MainAxisSize.min, children: [
-                      Text(rating == null ? s.sideTripUnranked : '${rating.round()}', style: big),
-                      if (change != 0) ...[
-                        const SizedBox(width: AnkirenPageLayout.valueGap),
-                        RatingChangeTag(change),
-                      ],
-                    ]),
-                  ),
-                ),
-              ]),
-            ),
+              ),
+              _Cell(
+                label: _Label(s.rating, s.other.rating),
+                value: Row(mainAxisSize: MainAxisSize.min, children: [
+                  Text(rating == null ? s.sideTripUnranked : '${rating.round()}', style: big),
+                  if (change != 0) ...[
+                    const SizedBox(width: AnkirenPageLayout.valueGap),
+                    RatingChangeTag(change),
+                  ],
+                ]),
+              ),
+            ]),
           ),
           if (next != null)
             DecoratedBox(
@@ -547,43 +626,30 @@ class _Stats extends StatelessWidget {
     const big = TextStyle(fontFamily: Fonts.display, fontSize: AnkirenPageLayout.statFont, height: 1);
     return Padding(
       padding: AnkirenPageLayout.statsPadding,
-      child: IntrinsicHeight(
-        child: Row(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-          Flexible(
-            flex: AnkirenPageLayout.statFlex.$1,
-            child: _Cell(
-              label: _Label(s.ankirenLevelRow, s.other.ankirenLevelRow),
-              value: NumberedText(
-                s.ankirenLevelValue,
-                [level],
-                style: const TextStyle(fontFamily: Fonts.display, fontSize: AnkirenPageLayout.statUnitFont, height: 1),
-                numberStyle: big,
-              ),
-            ),
+      child: _CellRow(children: [
+        _Cell(
+          label: _Label(s.ankirenLevelRow, s.other.ankirenLevelRow),
+          value: NumberedText(
+            s.ankirenLevelValue,
+            [level],
+            style: const TextStyle(fontFamily: Fonts.display, fontSize: AnkirenPageLayout.statUnitFont, height: 1),
+            numberStyle: big,
           ),
-          const _CellRule(),
-          Flexible(
-            flex: AnkirenPageLayout.statFlex.$2,
-            child: _Cell(
-              label: _Label(s.ankirenCards, s.other.ankirenCards),
-              value: NumberedText(
-                s.ankirenPerSideCount,
-                [of.perSide],
-                style: const TextStyle(fontWeight: Weights.black, fontSize: AnkirenPageLayout.statSuffixFont, height: 1),
-                numberStyle: big,
-              ),
-            ),
+        ),
+        _Cell(
+          label: _Label(s.ankirenCards, s.other.ankirenCards),
+          value: NumberedText(
+            s.ankirenPerSideCount,
+            [of.perSide],
+            style: const TextStyle(fontWeight: Weights.black, fontSize: AnkirenPageLayout.statSuffixFont, height: 1),
+            numberStyle: big,
           ),
-          const _CellRule(),
-          Flexible(
-            flex: AnkirenPageLayout.statFlex.$3,
-            child: _Cell(
-              label: _Label(s.ankirenMemoriseLabel, s.other.ankirenMemoriseLabel),
-              value: Text(formatMinutes(of.memorise), style: big),
-            ),
-          ),
-        ]),
-      ),
+        ),
+        _Cell(
+          label: _Label(s.ankirenMemoriseLabel, s.other.ankirenMemoriseLabel),
+          value: Text(formatMinutes(of.memorise), style: big),
+        ),
+      ]),
     );
   }
 }
