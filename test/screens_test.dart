@@ -2886,7 +2886,7 @@ void main() {
       await openTrips(tester, p);
       expect(inTrips(find.byType(PageBurst)), findsNothing);
       expect(inTrips(find.text(s.freePlay)), findsNothing, reason: 'free play opens with ranked');
-      expect(inTrips(find.text(s.howToPlay)), findsOneWidget, reason: 'the rules are there all along');
+      expect(inTrips(find.text(s.howToPlay)), findsNothing, reason: 'no rules while locked');
       await remember(tester, p, journeyOrder.skip(tabAt).take(opens - tabAt - 1));
       await tester.pump();
       expect(p.sideTripsHub()[SideTrip.ankiren].lock?.needed, 1);
