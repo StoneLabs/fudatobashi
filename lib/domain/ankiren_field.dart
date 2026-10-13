@@ -12,6 +12,34 @@ enum FieldSide { own, opponent }
 /// the centre line).
 enum FieldRow { lower, middle, upper }
 
+/// The parts of one row, left to right as the half's owner sees it: the
+/// left cluster, the open middle and the right cluster. A half's clusters
+/// are its quadrants.
+enum RowPart { left, middle, right }
+
+/// How near a tap lands to the card asked for (see [AnkirenField.proximity]),
+/// nearest first. Stored by index with each answer, so new values only ever
+/// go last.
+enum TapProximity {
+  /// The card itself.
+  card,
+
+  /// Right next to it in its row of its cluster.
+  neighbour,
+
+  /// Elsewhere in that row of its cluster.
+  row,
+
+  /// Elsewhere in its cluster.
+  quadrant,
+
+  /// Elsewhere on its side.
+  side,
+
+  /// On the other side.
+  otherSide,
+}
+
 /// One row of one half, each list running left to right as the half's owner
 /// sees it.
 class AnkirenRow {
@@ -49,6 +77,19 @@ class AnkirenHalf {
   /// The cards in the open middle (all in one row).
   List<int> get middleCards => [for (final r in rows) ...r.middle];
 
+  /// Where [poemId] lies: its row, the part of the row and its place in
+  /// that part, left to right; null when it is not in this half.
+  ({FieldRow row, RowPart part, int index})? placeOf(int poemId) {
+    for (final r in FieldRow.values) {
+      final row = this.row(r);
+      for (final (part, cards) in [(RowPart.left, row.left), (RowPart.middle, row.middle), (RowPart.right, row.right)]) {
+        final i = cards.indexOf(poemId);
+        if (i >= 0) return (row: r, part: part, index: i);
+      }
+    }
+    return null;
+  }
+
   /// The row holding the middle cards, or null when there are none.
   FieldRow? get middleRow {
     for (final r in FieldRow.values) {
@@ -74,6 +115,25 @@ class AnkirenField {
       : opponent.cards.contains(poemId)
           ? FieldSide.opponent
           : null;
+
+  /// How near a tap on [tapped] lands to [asked]. A middle card lies in no
+  /// quadrant and is no card's neighbour: for one asked, a tap in its row is
+  /// [TapProximity.row] and anywhere else on its side [TapProximity.side].
+  /// A beginner's side, every card in the open middle, is one row of
+  /// neighbours, like a cluster's.
+  TapProximity proximity(int asked, int tapped) {
+    if (tapped == asked) return TapProximity.card;
+    final side = sideOf(asked);
+    if (side == null || sideOf(tapped) != side) return TapProximity.otherSide;
+    final half = this.half(side);
+    final a = half.placeOf(asked)!, t = half.placeOf(tapped)!;
+    final sameRow = a.row == t.row;
+    final clustered = half.middleCards.length < half.cards.length;
+    if (clustered && a.part == RowPart.middle) return sameRow ? TapProximity.row : TapProximity.side;
+    if (t.part != a.part) return TapProximity.side;
+    if (!sameRow) return TapProximity.quadrant;
+    return (a.index - t.index).abs() == 1 ? TapProximity.neighbour : TapProximity.row;
+  }
 }
 
 /// Deals 暗記練 fields like a real player lays out a 定位置, every random

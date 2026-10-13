@@ -356,6 +356,88 @@ void main() {
     });
   });
 
+  group('first-tap proximity', () {
+    AnkirenRow row(List<int> left, [List<int> middle = const [], List<int> right = const []]) =>
+        AnkirenRow(left: left, middle: middle, right: right);
+    // Own side, from 下段: 1 2 3 | 4 5, then 6 7 | 8, then 9 [10 11] 12 13
+    // with 10 and 11 in the open middle of 上段. Opponent: 21 22 | 23.
+    final field = AnkirenField(
+      own: AnkirenHalf([row([1, 2, 3], [], [4, 5]), row([6, 7], [], [8]), row([9], [10, 11], [12, 13])]),
+      opponent: AnkirenHalf([row([21, 22], [], [23]), row([]), row([])]),
+    );
+    Map<int, TapProximity> from(AnkirenField f, int asked) => {for (final c in f.cards) c: f.proximity(asked, c)};
+    const own = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13], opponent = [21, 22, 23];
+
+    test('stored by index: the order of the places never changes', () {
+      expect([for (final p in TapProximity.values) p.name], ['card', 'neighbour', 'row', 'quadrant', 'side', 'otherSide']);
+    });
+
+    test('a cluster card: next to it, its row, its quadrant, its side, the other side', () {
+      expect(from(field, 2), {
+        1: TapProximity.neighbour,
+        2: TapProximity.card,
+        3: TapProximity.neighbour,
+        for (final c in [4, 5, 8, 10, 11, 12, 13]) c: TapProximity.side,
+        for (final c in [6, 7, 9]) c: TapProximity.quadrant,
+        for (final c in opponent) c: TapProximity.otherSide,
+      });
+      expect(field.proximity(1, 3), TapProximity.row);
+      expect(field.proximity(4, 5), TapProximity.neighbour);
+      expect(field.proximity(3, 4), TapProximity.side, reason: 'across the open middle is another quadrant');
+      expect(field.proximity(12, 13), TapProximity.neighbour);
+      expect(field.proximity(9, 10), TapProximity.side, reason: 'a middle card is in no quadrant');
+      expect(field.proximity(12, 11), TapProximity.side, reason: "nor anyone's neighbour");
+    });
+
+    test('a middle card has no neighbours or quadrant: its row, then its side', () {
+      expect(from(field, 10), {
+        for (final c in own) c: TapProximity.side,
+        for (final c in [9, 11, 12, 13]) c: TapProximity.row,
+        10: TapProximity.card,
+        for (final c in opponent) c: TapProximity.otherSide,
+      });
+    });
+
+    test('the opponent side works alike; a tap across the centre line is the other side', () {
+      expect(from(field, 22), {
+        for (final c in own) c: TapProximity.otherSide,
+        21: TapProximity.neighbour,
+        22: TapProximity.card,
+        23: TapProximity.side,
+      });
+    });
+
+    test("a beginner's side, all in the open middle, is one row of neighbours", () {
+      final beginner = AnkirenField(
+        own: AnkirenHalf([row([]), row([]), row([], [31, 32, 33, 34])]),
+        opponent: AnkirenHalf([row([]), row([]), row([], [41, 42, 43])]),
+      );
+      expect(from(beginner, 32), {
+        31: TapProximity.neighbour,
+        32: TapProximity.card,
+        33: TapProximity.neighbour,
+        34: TapProximity.row,
+        for (final c in [41, 42, 43]) c: TapProximity.otherSide,
+      });
+      expect(beginner.proximity(41, 43), TapProximity.row);
+    });
+
+    test('every dealt field: one card itself, the other side whole, at most two neighbours', () {
+      final rng = math.Random(9);
+      for (final perSide in [3, 7, 13, 25]) {
+        for (var g = 0; g < 50; g++) {
+          final f = dealer.deal(all, perSide, rng, allInMiddle: perSide == 3);
+          for (final asked in f.cards) {
+            final near = from(f, asked).values;
+            expect(near.where((p) => p == TapProximity.card), hasLength(1));
+            expect(near.where((p) => p == TapProximity.otherSide), hasLength(perSide));
+            expect(near.where((p) => p == TapProximity.neighbour).length, lessThanOrEqualTo(2));
+          }
+        }
+      }
+    });
+  });
+
   group('geometry', () {
     const eps = 1e-9;
     const pitch = AnkirenFieldSize.cardW + AnkirenFieldSize.cardGap;
