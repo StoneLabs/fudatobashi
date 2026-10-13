@@ -65,4 +65,10 @@ extension HomeStrings on S {
   String get heroKeepGoing => t('heroKeepGoing');
   String get todayLeft => t('todayLeft');
   String get todayDoneExtra => t('todayDoneExtra');
+
+  String pauseTitle(int reviews) => f('pauseTitle', [reviews]);
+  String get pauseBody => t('pauseBody');
+  String get pauseNote => t('pauseNote');
+  String get pauseYes => t('pauseYes');
+  String get pauseNo => t('pauseNo');
 }

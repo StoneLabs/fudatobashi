@@ -13,12 +13,14 @@ import '../manga/manga.dart';
 import '../tour/tour_anchor.dart';
 import 'home_screen.dart';
 import 'journey_state.dart';
+import 'pause_sheet.dart';
 import 'today_box.dart';
 import 'training_hero.dart';
 
 /// Home in journey mode (spec phone 2): the archipelago map as the progress
 /// bar, today's set, and the Training hero. A new day's set is built when
-/// Home finds it missing.
+/// Home finds it missing; the first time Home shows on a day with reviews
+/// piled up, it offers to pause the new cards.
 class JourneyHome extends StatefulWidget {
   const JourneyHome({super.key});
 
@@ -28,13 +30,24 @@ class JourneyHome extends StatefulWidget {
 
 class _JourneyHomeState extends State<JourneyHome> {
   bool _refreshing = false;
+  bool _asking = false;
 
   void _watchToday(Progress progress) {
-    if (!progress.todayStale || _refreshing) return;
-    _refreshing = true;
+    if (progress.todayStale) {
+      if (_refreshing) return;
+      _refreshing = true;
+      SchedulerBinding.instance.addPostFrameCallback((_) async {
+        await progress.refreshToday();
+        _refreshing = false;
+      });
+      return;
+    }
+    final shown = TickerMode.valuesOf(context).enabled && ModalRoute.isCurrentOf(context) != false;
+    if (_asking || !shown || !progress.settings.toured || !progress.pauseOffered()) return;
+    _asking = true;
     SchedulerBinding.instance.addPostFrameCallback((_) async {
-      await progress.refreshToday();
-      _refreshing = false;
+      if (mounted) await askToPauseNewCards(context);
+      _asking = false;
     });
   }
 

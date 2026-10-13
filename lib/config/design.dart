@@ -925,6 +925,31 @@ abstract final class TodayBoxLayout {
   static const EdgeInsets doneStampPadding = EdgeInsets.fromLTRB(13, 6, 13, 8);
 }
 
+/// The sheet that offers to pause today's new cards when reviews pile up.
+abstract final class PauseSheetLayout {
+  static const double cut = 14;
+  static const EdgeInsets padding = EdgeInsets.fromLTRB(20, 33, 20, 20);
+  static const double title = 22;
+  static const double sub = 13;
+  static const double subGap = 3;
+  static const double body = 14;
+  static const double bodyLineHeight = 1.45;
+  static const double bodyGap = 12;
+  static const double note = 12.5;
+  static const double noteGap = 4;
+  static const double shoutGap = 14;
+  static const double shoutHeight = 64;
+  static const double shoutFont = 17;
+  static const shout = ShoutSpec(spikes: 26, outer: 7);
+  static const double keepGap = 8;
+  static const double keepHeight = 48;
+  static const double keepFont = 15;
+  static const double keepSub = 11.5;
+  static const double keepSubGap = 8;
+  static const Placement tobi = Placement(right: 14, top: -50, size: Size(76, 90));
+  static const Color barrier = Color(0x8C141414);
+}
+
 /// The Stats screen (spec phone 6): the archipelago map, its legend, and the
 /// slowest-island panel.
 abstract final class StatsLayout {
