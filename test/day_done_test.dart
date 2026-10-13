@@ -66,7 +66,7 @@ class _QuietSounds extends Sounds {
 DayDone _day({int reviews = 22, int fresh = 16, int extra = 6, int rounds = 2, int newCards = 4, int misses = 6, int streak = 5}) =>
     DayDone(
       date: DateTime.utc(2026, 10, 14),
-      bar: SetBar(reviews: reviews, reviewsDone: reviews, fresh: fresh, freshDone: fresh, extra: extra, extraDone: extra),
+      bar: SetBar(reviews: reviews, reviewsDone: reviews, fresh: fresh, freshDone: fresh, extra: extra, extraDone: extra, extraKnown: extra),
       rounds: rounds,
       newCards: newCards,
       missesFixed: misses,

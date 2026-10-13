@@ -99,6 +99,7 @@ DayDone previewDay() {
       freshDone: CelebrationPreviewTuning.dayNewLooks,
       extra: CelebrationPreviewTuning.dayExtraLooks,
       extraDone: CelebrationPreviewTuning.dayExtraLooks,
+      extraKnown: CelebrationPreviewTuning.dayExtraLooks,
     ),
     rounds: CelebrationPreviewTuning.dayRounds,
     newCards: CelebrationPreviewTuning.dayNewCards,

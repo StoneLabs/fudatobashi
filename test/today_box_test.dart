@@ -252,7 +252,8 @@ void main() {
       if (set.newCards > 0) expectCell(tester, s.todayNew(set.newCards, TodaySetTuning.newLooks), '${bar.fresh}');
       expectCell(tester, s.todayDone, '0 / ${bar.total}');
       expect(balloon(tester), s.heroTodaySet);
-      expectNarration(tester, s.todayLeft, bar.total);
+      expectNarration(tester, s.todayLeft, bar.left);
+      expect(bar.left, lessThan(bar.total), reason: "what is left counts no guessed misses, like Play's counter");
       expectBoxFits(tester, _users, 'morning');
     });
 
@@ -266,10 +267,10 @@ void main() {
       expect(bar.done, inInclusiveRange(10, 14), reason: "14 swipes, a 友札 after a miss may be outside the set");
       expect(segments(tester).first, Palette.land);
       expect(segments(tester), hasLength(greaterThan(1)));
-      expectCell(tester, s.todayMisses, '${bar.extra}');
+      expectCell(tester, s.todayMisses, '${bar.extraKnown}');
       expectCell(tester, s.todayDone, '${bar.done} / ${bar.total}');
       expect(balloon(tester), s.heroKeepItUp);
-      expectNarration(tester, s.todayLeft, bar.total - bar.done);
+      expectNarration(tester, s.todayLeft, bar.left);
       expectBoxFits(tester, _users, 'part done');
     });
 

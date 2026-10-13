@@ -160,15 +160,16 @@ void main() {
           k(3): [true, false],
           k(20): [false],
         },
-        missGuess: 1,
+        missGuess: 3,
       );
       expect(set.settled, isFalse);
       expect(set.doneKeys, {k(1)});
       expect(set.misses, 1);
       final bar = set.bar;
       expect((bar.reviews, bar.reviewsDone, bar.fresh, bar.freshDone), (4, 4, 4, 1));
-      expect((bar.extra, bar.extraDone), (1, 0), reason: "the miss's extra look is still to come");
-      expect((bar.total, bar.done), (9, 5));
+      expect((bar.extra, bar.extraDone), (3, 0), reason: "the morning's guess holds the space; the extra look is to come");
+      expect((bar.total, bar.done), (11, 5));
+      expect((bar.extraKnown, bar.left), (1, 4), reason: 'what is left counts the real misses, not the guess');
     });
 
     test('guesses misses from the recent miss rate', () {

@@ -140,7 +140,7 @@ void main() {
   test("today's set done comes after graduation and before the XP, only on the run that finished it", () {
     final day = DayDone(
       date: DateTime.utc(2026, 10, 14),
-      bar: const SetBar(reviews: 22, reviewsDone: 22, fresh: 16, freshDone: 16, extra: 6, extraDone: 6),
+      bar: const SetBar(reviews: 22, reviewsDone: 22, fresh: 16, freshDone: 16, extra: 6, extraDone: 6, extraKnown: 6),
       rounds: 2,
       newCards: 4,
       missesFixed: 6,

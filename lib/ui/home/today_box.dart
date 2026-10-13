@@ -22,7 +22,7 @@ class TodayBox extends StatelessWidget {
   final TodaySet? set;
   final List<WeekStamp> week;
 
-  static const _empty = SetBar(reviews: 0, reviewsDone: 0, fresh: 0, freshDone: 0, extra: 0, extraDone: 0);
+  static const _empty = SetBar(reviews: 0, reviewsDone: 0, fresh: 0, freshDone: 0, extra: 0, extraDone: 0, extraKnown: 0);
 
   @override
   Widget build(BuildContext context) {
@@ -318,7 +318,7 @@ class _Legend extends StatelessWidget {
       fresh > 0
           ? _Cell(Palette.sun, s.todayNew(fresh, TodaySetTuning.newLooks), values: [bar.fresh])
           : _Cell(Palette.sun, paused ? s.todayNewPaused : s.todayNoNew, muted: true, hatched: paused),
-      _Cell(Palette.pink, s.todayMisses, values: [if ((set?.misses ?? 0) > 0) bar.extra]),
+      _Cell(Palette.pink, s.todayMisses, values: [if ((set?.misses ?? 0) > 0) bar.extraKnown]),
       _Cell(Palette.land, s.todayDone, values: [bar.done, bar.total], template: s.todayDoneOf),
     ];
     return LayoutBuilder(builder: (context, box) {

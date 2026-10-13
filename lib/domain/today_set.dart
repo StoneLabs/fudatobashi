@@ -15,6 +15,7 @@ class SetBar {
     required this.freshDone,
     required this.extra,
     required this.extraDone,
+    required this.extraKnown,
   });
 
   /// Due reviews' and new cards' base looks.
@@ -24,8 +25,15 @@ class SetBar {
   /// larger and the day is not done.
   final int extra, extraDone;
 
+  /// Looks that the misses so far add, without the guess.
+  final int extraKnown;
+
   int get total => reviews + fresh + extra;
   int get done => reviewsDone + freshDone + extraDone;
+
+  /// Looks still to come if every answer left is right (what a run of the
+  /// rest of the set counts).
+  int get left => reviews + fresh + extraKnown - done;
 }
 
 /// Journey mode's daily set: the due reviews and new cards of one day, each
@@ -129,6 +137,7 @@ class TodaySet {
       freshDone: freshDone,
       extra: done ? extra : math.max(extra, missGuess),
       extraDone: extraDone,
+      extraKnown: extra,
     );
   }
 }

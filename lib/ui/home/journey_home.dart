@@ -61,7 +61,7 @@ class _JourneyHomeState extends State<JourneyHome> {
     final set = progress.todaySet();
     final bar = set?.bar;
     const number = TextStyle(fontFamily: Fonts.display, fontSize: NarrationStyle.number);
-    final left = bar == null ? 0 : bar.total - bar.done;
+    final left = bar?.left ?? 0;
     final narration = set != null && set.done
         ? NumberedText(s.todayDoneExtra, [progress.trainer.config.sessionLength], numberStyle: number)
         : left == 0
