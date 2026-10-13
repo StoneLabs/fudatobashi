@@ -144,6 +144,9 @@ class SideTripAnswers extends Table {
   /// and prompt → that tap, µs; null when no card was tapped.
   IntColumn get firstTap => integer().nullable()();
   IntColumn get firstTapUs => integer().nullable()();
+
+  /// Where the second tap landed; null when there was none.
+  IntColumn get secondTap => integer().nullable()();
 }
 
 @DriftDatabase(tables: [Sessions, Attempts, Items, RatingPoints, KeyValues, SideTripRuns, SideTripAnswers])

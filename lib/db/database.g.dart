@@ -3197,6 +3197,17 @@ class $SideTripAnswersTable extends SideTripAnswers
     type: DriftSqlType.int,
     requiredDuringInsert: false,
   );
+  static const VerificationMeta _secondTapMeta = const VerificationMeta(
+    'secondTap',
+  );
+  @override
+  late final GeneratedColumn<int> secondTap = GeneratedColumn<int>(
+    'second_tap',
+    aliasedName,
+    true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+  );
   @override
   List<GeneratedColumn> get $columns => [
     id,
@@ -3208,6 +3219,7 @@ class $SideTripAnswersTable extends SideTripAnswers
     at,
     firstTap,
     firstTapUs,
+    secondTap,
   ];
   @override
   String get aliasedName => _alias ?? actualTableName;
@@ -3282,6 +3294,12 @@ class $SideTripAnswersTable extends SideTripAnswers
         ),
       );
     }
+    if (data.containsKey('second_tap')) {
+      context.handle(
+        _secondTapMeta,
+        secondTap.isAcceptableOrUnknown(data['second_tap']!, _secondTapMeta),
+      );
+    }
     return context;
   }
 
@@ -3327,6 +3345,10 @@ class $SideTripAnswersTable extends SideTripAnswers
         DriftSqlType.int,
         data['${effectivePrefix}first_tap_us'],
       ),
+      secondTap: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}second_tap'],
+      ),
     );
   }
 
@@ -3354,6 +3376,9 @@ class SideTripAnswerRow extends DataClass
   /// and prompt → that tap, µs; null when no card was tapped.
   final int? firstTap;
   final int? firstTapUs;
+
+  /// Where the second tap landed; null when there was none.
+  final int? secondTap;
   const SideTripAnswerRow({
     required this.id,
     required this.runId,
@@ -3364,6 +3389,7 @@ class SideTripAnswerRow extends DataClass
     required this.at,
     this.firstTap,
     this.firstTapUs,
+    this.secondTap,
   });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
@@ -3382,6 +3408,9 @@ class SideTripAnswerRow extends DataClass
     }
     if (!nullToAbsent || firstTapUs != null) {
       map['first_tap_us'] = Variable<int>(firstTapUs);
+    }
+    if (!nullToAbsent || secondTap != null) {
+      map['second_tap'] = Variable<int>(secondTap);
     }
     return map;
   }
@@ -3403,6 +3432,9 @@ class SideTripAnswerRow extends DataClass
       firstTapUs: firstTapUs == null && nullToAbsent
           ? const Value.absent()
           : Value(firstTapUs),
+      secondTap: secondTap == null && nullToAbsent
+          ? const Value.absent()
+          : Value(secondTap),
     );
   }
 
@@ -3421,6 +3453,7 @@ class SideTripAnswerRow extends DataClass
       at: serializer.fromJson<DateTime>(json['at']),
       firstTap: serializer.fromJson<int?>(json['firstTap']),
       firstTapUs: serializer.fromJson<int?>(json['firstTapUs']),
+      secondTap: serializer.fromJson<int?>(json['secondTap']),
     );
   }
   @override
@@ -3436,6 +3469,7 @@ class SideTripAnswerRow extends DataClass
       'at': serializer.toJson<DateTime>(at),
       'firstTap': serializer.toJson<int?>(firstTap),
       'firstTapUs': serializer.toJson<int?>(firstTapUs),
+      'secondTap': serializer.toJson<int?>(secondTap),
     };
   }
 
@@ -3449,6 +3483,7 @@ class SideTripAnswerRow extends DataClass
     DateTime? at,
     Value<int?> firstTap = const Value.absent(),
     Value<int?> firstTapUs = const Value.absent(),
+    Value<int?> secondTap = const Value.absent(),
   }) => SideTripAnswerRow(
     id: id ?? this.id,
     runId: runId ?? this.runId,
@@ -3459,6 +3494,7 @@ class SideTripAnswerRow extends DataClass
     at: at ?? this.at,
     firstTap: firstTap.present ? firstTap.value : this.firstTap,
     firstTapUs: firstTapUs.present ? firstTapUs.value : this.firstTapUs,
+    secondTap: secondTap.present ? secondTap.value : this.secondTap,
   );
   SideTripAnswerRow copyWithCompanion(SideTripAnswersCompanion data) {
     return SideTripAnswerRow(
@@ -3475,6 +3511,7 @@ class SideTripAnswerRow extends DataClass
       firstTapUs: data.firstTapUs.present
           ? data.firstTapUs.value
           : this.firstTapUs,
+      secondTap: data.secondTap.present ? data.secondTap.value : this.secondTap,
     );
   }
 
@@ -3489,7 +3526,8 @@ class SideTripAnswerRow extends DataClass
           ..write('responseUs: $responseUs, ')
           ..write('at: $at, ')
           ..write('firstTap: $firstTap, ')
-          ..write('firstTapUs: $firstTapUs')
+          ..write('firstTapUs: $firstTapUs, ')
+          ..write('secondTap: $secondTap')
           ..write(')'))
         .toString();
   }
@@ -3505,6 +3543,7 @@ class SideTripAnswerRow extends DataClass
     at,
     firstTap,
     firstTapUs,
+    secondTap,
   );
   @override
   bool operator ==(Object other) =>
@@ -3518,7 +3557,8 @@ class SideTripAnswerRow extends DataClass
           other.responseUs == this.responseUs &&
           other.at == this.at &&
           other.firstTap == this.firstTap &&
-          other.firstTapUs == this.firstTapUs);
+          other.firstTapUs == this.firstTapUs &&
+          other.secondTap == this.secondTap);
 }
 
 class SideTripAnswersCompanion extends UpdateCompanion<SideTripAnswerRow> {
@@ -3531,6 +3571,7 @@ class SideTripAnswersCompanion extends UpdateCompanion<SideTripAnswerRow> {
   final Value<DateTime> at;
   final Value<int?> firstTap;
   final Value<int?> firstTapUs;
+  final Value<int?> secondTap;
   const SideTripAnswersCompanion({
     this.id = const Value.absent(),
     this.runId = const Value.absent(),
@@ -3541,6 +3582,7 @@ class SideTripAnswersCompanion extends UpdateCompanion<SideTripAnswerRow> {
     this.at = const Value.absent(),
     this.firstTap = const Value.absent(),
     this.firstTapUs = const Value.absent(),
+    this.secondTap = const Value.absent(),
   });
   SideTripAnswersCompanion.insert({
     this.id = const Value.absent(),
@@ -3552,6 +3594,7 @@ class SideTripAnswersCompanion extends UpdateCompanion<SideTripAnswerRow> {
     required DateTime at,
     this.firstTap = const Value.absent(),
     this.firstTapUs = const Value.absent(),
+    this.secondTap = const Value.absent(),
   }) : runId = Value(runId),
        seq = Value(seq),
        poemId = Value(poemId),
@@ -3567,6 +3610,7 @@ class SideTripAnswersCompanion extends UpdateCompanion<SideTripAnswerRow> {
     Expression<DateTime>? at,
     Expression<int>? firstTap,
     Expression<int>? firstTapUs,
+    Expression<int>? secondTap,
   }) {
     return RawValuesInsertable({
       if (id != null) 'id': id,
@@ -3578,6 +3622,7 @@ class SideTripAnswersCompanion extends UpdateCompanion<SideTripAnswerRow> {
       if (at != null) 'at': at,
       if (firstTap != null) 'first_tap': firstTap,
       if (firstTapUs != null) 'first_tap_us': firstTapUs,
+      if (secondTap != null) 'second_tap': secondTap,
     });
   }
 
@@ -3591,6 +3636,7 @@ class SideTripAnswersCompanion extends UpdateCompanion<SideTripAnswerRow> {
     Value<DateTime>? at,
     Value<int?>? firstTap,
     Value<int?>? firstTapUs,
+    Value<int?>? secondTap,
   }) {
     return SideTripAnswersCompanion(
       id: id ?? this.id,
@@ -3602,6 +3648,7 @@ class SideTripAnswersCompanion extends UpdateCompanion<SideTripAnswerRow> {
       at: at ?? this.at,
       firstTap: firstTap ?? this.firstTap,
       firstTapUs: firstTapUs ?? this.firstTapUs,
+      secondTap: secondTap ?? this.secondTap,
     );
   }
 
@@ -3635,6 +3682,9 @@ class SideTripAnswersCompanion extends UpdateCompanion<SideTripAnswerRow> {
     if (firstTapUs.present) {
       map['first_tap_us'] = Variable<int>(firstTapUs.value);
     }
+    if (secondTap.present) {
+      map['second_tap'] = Variable<int>(secondTap.value);
+    }
     return map;
   }
 
@@ -3649,7 +3699,8 @@ class SideTripAnswersCompanion extends UpdateCompanion<SideTripAnswerRow> {
           ..write('responseUs: $responseUs, ')
           ..write('at: $at, ')
           ..write('firstTap: $firstTap, ')
-          ..write('firstTapUs: $firstTapUs')
+          ..write('firstTapUs: $firstTapUs, ')
+          ..write('secondTap: $secondTap')
           ..write(')'))
         .toString();
   }
@@ -5555,6 +5606,7 @@ typedef $$SideTripAnswersTableCreateCompanionBuilder =
       required DateTime at,
       Value<int?> firstTap,
       Value<int?> firstTapUs,
+      Value<int?> secondTap,
     });
 typedef $$SideTripAnswersTableUpdateCompanionBuilder =
     SideTripAnswersCompanion Function({
@@ -5567,6 +5619,7 @@ typedef $$SideTripAnswersTableUpdateCompanionBuilder =
       Value<DateTime> at,
       Value<int?> firstTap,
       Value<int?> firstTapUs,
+      Value<int?> secondTap,
     });
 
 final class $$SideTripAnswersTableReferences
@@ -5649,6 +5702,11 @@ class $$SideTripAnswersTableFilterComposer
     builder: (column) => ColumnFilters(column),
   );
 
+  ColumnFilters<int> get secondTap => $composableBuilder(
+    column: $table.secondTap,
+    builder: (column) => ColumnFilters(column),
+  );
+
   $$SideTripRunsTableFilterComposer get runId {
     final $$SideTripRunsTableFilterComposer composer = $composerBuilder(
       composer: this,
@@ -5722,6 +5780,11 @@ class $$SideTripAnswersTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<int> get secondTap => $composableBuilder(
+    column: $table.secondTap,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   $$SideTripRunsTableOrderingComposer get runId {
     final $$SideTripRunsTableOrderingComposer composer = $composerBuilder(
       composer: this,
@@ -5782,6 +5845,9 @@ class $$SideTripAnswersTableAnnotationComposer
     column: $table.firstTapUs,
     builder: (column) => column,
   );
+
+  GeneratedColumn<int> get secondTap =>
+      $composableBuilder(column: $table.secondTap, builder: (column) => column);
 
   $$SideTripRunsTableAnnotationComposer get runId {
     final $$SideTripRunsTableAnnotationComposer composer = $composerBuilder(
@@ -5846,6 +5912,7 @@ class $$SideTripAnswersTableTableManager
                 Value<DateTime> at = const Value.absent(),
                 Value<int?> firstTap = const Value.absent(),
                 Value<int?> firstTapUs = const Value.absent(),
+                Value<int?> secondTap = const Value.absent(),
               }) => SideTripAnswersCompanion(
                 id: id,
                 runId: runId,
@@ -5856,6 +5923,7 @@ class $$SideTripAnswersTableTableManager
                 at: at,
                 firstTap: firstTap,
                 firstTapUs: firstTapUs,
+                secondTap: secondTap,
               ),
           createCompanionCallback:
               ({
@@ -5868,6 +5936,7 @@ class $$SideTripAnswersTableTableManager
                 required DateTime at,
                 Value<int?> firstTap = const Value.absent(),
                 Value<int?> firstTapUs = const Value.absent(),
+                Value<int?> secondTap = const Value.absent(),
               }) => SideTripAnswersCompanion.insert(
                 id: id,
                 runId: runId,
@@ -5878,6 +5947,7 @@ class $$SideTripAnswersTableTableManager
                 at: at,
                 firstTap: firstTap,
                 firstTapUs: firstTapUs,
+                secondTap: secondTap,
               ),
           withReferenceMapper: (p0) => p0
               .map(

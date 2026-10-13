@@ -89,7 +89,7 @@ void main() {
         runId: run, seq: 0, poemId: 12, wrongTaps: 1, at: DateTime(2026, 10, 12)));
     expect((await db.select(db.sideTripRuns).getSingle()).score, isNull, reason: 'a custom game has no score');
     final answer = await db.select(db.sideTripAnswers).getSingle();
-    expect([answer.responseUs, answer.firstTap, answer.firstTapUs], [null, null, null]);
+    expect([answer.responseUs, answer.firstTap, answer.firstTapUs, answer.secondTap], [null, null, null, null]);
     await db.close();
   });
 
