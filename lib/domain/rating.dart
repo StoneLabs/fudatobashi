@@ -17,6 +17,12 @@ class RankBand {
   /// (null for the unranked band).
   final double? maxSeconds;
 
+  /// The 級 that ends every class's [label] but 入門's.
+  static const classSuffix = '級';
+
+  /// [label] without its [classSuffix], e.g. "F上"; 入門 as it is.
+  String get stem => label.endsWith(classSuffix) ? label.substring(0, label.length - classSuffix.length) : label;
+
   double get minRating => maxSeconds == null ? double.negativeInfinity : Rating.fromSeconds(maxSeconds!);
 }
 

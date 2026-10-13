@@ -116,8 +116,11 @@ class _AppShellState extends State<AppShell> {
       },
       child: Scaffold(
         body: Stack(children: [
-          if (tab == AppTab.home) const Positioned.fill(child: GradationBox(Tones.home)),
+          // Under the Side Trips scene, the same tone floors the tab bar.
+          if (tab == AppTab.home || tab == AppTab.sideTrips) const Positioned.fill(child: GradationBox(Tones.home)),
           SafeArea(
+            // The Side Trips scene runs up under the status bar.
+            top: tab != AppTab.sideTrips,
             child: TourAnchors(
               keys: _tourKeys,
               child: Column(
@@ -141,7 +144,7 @@ class _AppShellState extends State<AppShell> {
                           MangaTab(icon: IconArt.home, label: s.home),
                           _lockable(s, progress, LockedTab.history, IconArt.history, locks[LockedTab.history]),
                           _lockable(s, progress, LockedTab.stats, IconArt.stats, locks[LockedTab.stats]),
-                          MangaTab(icon: IconArt.cards, label: s.sideTrips),
+                          MangaTab(icon: IconArt.sideTrips, label: s.sideTrips),
                         ],
                       ),
                     ),

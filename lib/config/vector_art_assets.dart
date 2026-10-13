@@ -14,6 +14,8 @@ final _assetPaths = [
   for (final n in _sceneNames) 'scenes/$n',
   for (final n in _tobiNames) 'tobi/$n',
   'tally',
+  'sidetrips/burst',
+  'sidetrips/icon-sidetrips',
 ];
 
 const _iconNames = [
@@ -27,8 +29,9 @@ const _tobiNames = [
 ];
 
 /// Loads every piece of vector art (icons, map furniture, onboarding scenes,
-/// Tobi and the streak tally) from `assets/svg/`. Call once, before the
-/// first frame that draws any of it; synchronous access afterwards.
+/// Tobi, the streak tally and the Side Trips burst) from `assets/svg/`. Call
+/// once, before the first frame that draws any of it; synchronous access
+/// afterwards.
 Future<void> loadVectorArt() async {
   final entries =
       await Future.wait(_assetPaths.map((p) async => MapEntry(p, await rootBundle.loadString('assets/svg/$p.svg'))));
@@ -63,6 +66,7 @@ void installVectorArt(Map<String, String> svg) {
   IconArt.cards = parse('icons/cards');
   IconArt.check = parse('icons/check');
   IconArt.speaker = parse('icons/speaker');
+  IconArt.sideTrips = parse('sidetrips/icon-sidetrips');
 
   MapArt.boat = parse('map/boat');
   MapArt.flag = parse('map/flag');
@@ -92,4 +96,6 @@ void installVectorArt(Map<String, String> svg) {
   TobiArt.relaxedBehind = parse('tobi/relaxed-behind').shapes;
 
   Tally.strokes = SvgArt.strokes(svg['tally']!, debugName: 'assets/svg/tally.svg');
+
+  SideTripArt.burst = parse('sidetrips/burst');
 }

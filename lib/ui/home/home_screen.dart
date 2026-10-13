@@ -115,12 +115,15 @@ class HomeRowButton extends StatelessWidget {
                       if (badge != null) ...[const SizedBox(width: HomeLayout.untrackedGap), badge!],
                     ]),
                   ),
-                  Text(
-                    sub,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(
-                        fontWeight: Weights.bold, fontSize: HomeLayout.rowSubFont, height: HomeLayout.rowLineHeight),
+                  FittedBox(
+                    fit: BoxFit.scaleDown,
+                    alignment: Alignment.centerLeft,
+                    child: Text(
+                      sub,
+                      maxLines: 1,
+                      style: const TextStyle(
+                          fontWeight: Weights.bold, fontSize: HomeLayout.rowSubFont, height: HomeLayout.rowLineHeight),
+                    ),
                   ),
                 ],
               ),

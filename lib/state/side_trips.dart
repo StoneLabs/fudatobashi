@@ -61,16 +61,27 @@ class SideTrips {
   int missesIn(SideTripRun run) => run.cardCount - (_firstTries[run.id] ?? 0);
 
   /// [trip]'s standing on the hub for a player who knows [known] cards: a
-  /// ranked level capped by the levels those cards fill.
+  /// ranked level capped by the levels those cards fill, and what the last
+  /// ranked game did to the rating (from the start for the first).
   SideTripStanding standingOf(SideTrip trip, {required int known}) {
-    final rating = ratingOf(trip);
+    final rated = [for (final r in _rated(trip)) r.rating!];
+    final rating = rated.lastOrNull;
+    final start = switch (trip) {
+      SideTrip.ankiren => AnkirenRating.start,
+    };
     final maxLevel = switch (trip) {
       SideTrip.ankiren => AnkirenLevels.maxLevelFor(known),
     };
     final rankedLevel = switch (trip) {
-      SideTrip.ankiren => maxLevel == null ? null : AnkirenRating.levelFor(rating ?? AnkirenRating.start, maxLevel: maxLevel),
+      SideTrip.ankiren => maxLevel == null ? null : AnkirenRating.levelFor(rating ?? start, maxLevel: maxLevel),
     };
-    return SideTripStanding(rating: rating, rankedLevel: rankedLevel, maxLevel: maxLevel, games: runsOf(trip).length);
+    return SideTripStanding(
+      rating: rating,
+      ratingChange: rating == null ? null : rating - (rated.length > 1 ? rated[rated.length - 2] : start),
+      rankedLevel: rankedLevel,
+      maxLevel: maxLevel,
+      games: runsOf(trip).length,
+    );
   }
 
   /// Stores [game], once it is over (see [AnkirenGame.end]), as started at

@@ -730,6 +730,7 @@ abstract final class HomeLayout {
   static const double learnedNumber = 18;
   static const double pipWidth = 21;
   static const double pipHeight = 24;
+  static const double pipAspect = pipHeight / pipWidth;
   static const double pipGap = 6;
   static const double pipTop = 8;
   static const double pipRadius = 3;
@@ -2026,33 +2027,227 @@ abstract final class ComingSoonStyle {
   static const Alignment speaker = Alignment(-1.9, 2.7);
 }
 
-/// The Side Trips tab (`SideTripsScreen`): a panel per side trip with its
-/// name lettering beside Tobi, what it is, its rank or lock line, and its
-/// ranked and free-play buttons; then the "more to come" box.
+/// One picture of a scene: its asset (a lossless 3× render) and where it
+/// sits, in the scene's design units (the picture's pixel size ÷ 3).
+@immutable
+class ScenePiece {
+  const ScenePiece(this.asset, this.rect);
+  final String asset;
+  final Rect rect;
+}
+
+/// The dojo scene at the top of the Side Trips tab (`DojoScene`,
+/// `research/design/sidetrips_b2.html`): pictures from
+/// `assets/images/sidetrips/`, back to front, in a design frame [width]
+/// units wide whose top is the screen's top, scaled to the screen's width.
+abstract final class DojoSceneLayout {
+  static const double width = 390;
+  static const _dir = 'assets/images/sidetrips';
+
+  static const sky = ScenePiece('$_dir/sky.webp', Rect.fromLTWH(0, 0, 390, 200));
+
+  /// The far isles on the horizon (y 200): one of [farLeft], a different
+  /// one each day, and Fuji in the middle.
+  static const farLeft = [
+    ScenePiece('$_dir/far-pagoda.webp', Rect.fromLTWH(-2, 150, 68, 50)),
+    ScenePiece('$_dir/far-lighthouse.webp', Rect.fromLTWH(8, 142, 48, 58)),
+  ];
+  static const fuji = ScenePiece('$_dir/far-fuji.webp', Rect.fromLTWH(146, 160, 124, 40));
+  static const sea = ScenePiece('$_dir/sea.webp', Rect.fromLTWH(0, 200, 390, 644));
+  static const construction = ScenePiece('$_dir/far-construction.webp', Rect.fromLTWH(268, 150, 132, 100));
+  static const isle = ScenePiece('$_dir/isle-ankiren.webp', Rect.fromLTWH(-16, 184, 370, 226));
+
+  /// 暗記練's banner, up once it is open.
+  static const nobori = ScenePiece('$_dir/nobori-ankiren.webp', Rect.fromLTWH(232, 196, 30, 100));
+  static const toriiLocked = ScenePiece('$_dir/torii-locked.webp', Rect.fromLTWH(280, 338, 104, 140));
+  static const toriiOpen = ScenePiece('$_dir/torii-open.webp', Rect.fromLTWH(280, 338, 104, 140));
+  static const boat = ScenePiece('$_dir/tobi-boat.webp', Rect.fromLTWH(114, 374, 124, 110));
+
+  /// The near swell. Its crest never sits below the panel's top, so the
+  /// panel always floats on it.
+  static const seaNear = ScenePiece('$_dir/sea-near.webp', Rect.fromLTWH(0, 488, 390, 300));
+
+  /// The bottom of what the panel must leave clear (the boat's foam
+  /// skirt): on a short screen the scene lifts by up to [maxLift] to show
+  /// it, and beyond that the near swell rises over it.
+  static const double foreground = 486;
+  static const double maxLift = 44;
+
+  /// The least of the scene kept above the panel; a screen too short for
+  /// it and the panel scrolls.
+  static const double minHeight = 360;
+
+  /// The "coming soon" tags: over Fuji in the mist (where the tag's bottom
+  /// left corner sits) and on the building site (its top left corner).
+  static const Offset mistTag = Offset(162, 154);
+  static const Offset buildingTag = Offset(280, 254);
+
+  /// The torii and Tobi's boat bob (and the boat rocks) once per period.
+  static const double toriiLift = 2;
+  static const toriiPeriod = Duration(milliseconds: 5200);
+  static const double boatLift = 3;
+  static const double boatTurnDeg = 1.5;
+  static const boatPeriod = Duration(milliseconds: 3800);
+}
+
+/// The tab's title lettering over the sky, and the scene's "coming soon"
+/// tags (`DojoScene`). In dp, not scaled with the scene.
+abstract final class DojoSceneStyle {
+  /// The title's top left corner, below the status bar.
+  static const Offset title = Offset(16, 6);
+  static const double titleFont = 42;
+  static const double titleOutline = 10;
+  static const double titleBannerFont = 11;
+  static const double titleBannerGap = 6;
+
+  static const double tagFont = 11;
+  static const double tagLineHeight = 1.2;
+  static const double tagBorder = 1.8;
+  static const List<double> tagDash = [4, 3];
+  static const EdgeInsets tagPadding = EdgeInsets.fromLTRB(6, 2, 6, 3);
+  static const double chipFont = 9.5;
+  static const double chipTracking = 0.08;
+  static const EdgeInsets chipPadding = EdgeInsets.symmetric(horizontal: 4);
+  static const double chipGap = 4;
+}
+
+/// The unlock moment, once, when 暗記練 first opens on the hub: the
+/// padlocked torii rattles, snaps at [snapAt] of [unlock], and gives way to
+/// the open one popping in while the banner rises.
+abstract final class DojoUnlockMotion {
+  static const unlock = Duration(milliseconds: 1100);
+  static const double snapAt = 0.45;
+  static const double rattle = 3;
+  static const double rattleHz = 14;
+
+  /// The torii's swell at the swap, a share of its size.
+  static const double pop = 0.14;
+
+  /// How far the banner rises into place, in scene units.
+  static const double banner = 24;
+}
+
+/// The Side Trips tab's entry for 暗記練 under the dojo scene
+/// (`research/design/sidetrips_c.html`): its lettering and rank flag
+/// breaking out over the panel's top; the rating and next game and the
+/// ranked burst, or while it is locked the cards still to remember; then
+/// Home's button pair.
 abstract final class SideTripsLayout {
-  static const EdgeInsets padding = EdgeInsets.fromLTRB(14, 16, 12, 14);
+  /// The entry never grows wider than this (a landscape screen).
+  static const double maxWidth = 480;
+
+  /// Left between the entry and the tab bar.
+  static const double bottomGap = 12;
+
+  /// Display lettering (the tab's title, the trip's name, the scene's tags)
+  /// grows with the system text size only up to this factor.
+  static const double letteringMaxScale = 1.1;
+
+  /// How far the lettering and flag hang over the panel's top.
+  static const double overlap = 13;
+  static const double headInset = 6;
+  static const double letteringFont = 37;
+  static const double letteringOutline = 10;
+  static const double letteringGap = 8;
+  static const double letteringDrop = 4;
+  static const double bannerFont = 11;
+
+  /// The rank flag: the picture, where its cloth takes the class, and how
+  /// it stands on the panel's edge.
+  static const String flag = 'assets/images/sidetrips/rank-flag.webp';
+  static const Size flagSize = Size(98, 50);
+  static const Rect flagText = Rect.fromLTWH(13, 10, 66, 24);
+  static const double flagFont = 16;
+  static const double flagSuffixFont = 12;
+  static const double flagRight = 2;
+  static const double flagDrop = 9;
 
   /// How far the panel's top-left corner is cut down.
   static const double cut = 12;
-  static const double titleFont = 40;
-  static const double titleOutline = 8;
-  static const Size tobi = Size(70, 83);
-  static const double gap = 10;
-  static const double aboutFont = 14;
 
-  /// The rank line: the class badge, then RATING over the rating.
-  static const double rankGap = 10;
-  static const double ratingLabelFont = 11;
-  static const double ratingLabelTracking = 0.14;
-  static const double ratingFont = 24;
-  static const double unrankedFont = 16;
-  static const double lockIcon = 22;
+  /// The rows inside the panel: a label (with its other-language sub) over
+  /// a value, side by side when there are two, split by a rule.
+  static const EdgeInsets rowPadding = EdgeInsets.fromLTRB(14, 4, 6, 4);
+  static const double rowMinHeight = 56;
+  static const double lockedRowMinHeight = 50;
+  static const double rowGap = 12;
+  static const double ruleWidth = 2;
+  static const double ruleInset = 8;
+  static const int ratingFlex = 5;
+  static const int nextFlex = 6;
+  static const double labelFont = 12;
+  static const double labelLineHeight = 1.2;
+  static const double subFont = 11;
+  static const double subTracking = 0.14;
+  static const double labelGap = 3;
+  static const double valueFont = 22;
+  static const double unrankedFont = 20;
+  static const double valueGap = 6;
+  static const double factsFont = 13.5;
+  static const double factsNumber = 15;
+
+  /// The last game's rating change: ▲ on ink, ▼ on paper.
+  static const double deltaFont = 12.5;
+  static const EdgeInsets deltaPadding = EdgeInsets.fromLTRB(4, 3, 5, 4);
+
+  /// The ranked burst (`burst.svg`): one fixed piece, scaled down only to
+  /// fit a narrow panel; its label in the art's safe box.
+  static const Size burst = Size(344, 64);
+  static const Rect burstLabel = Rect.fromLTRB(34, 17, 310, 47);
+  static const EdgeInsets burstMargin = EdgeInsets.fromLTRB(0, 6, 0, 8);
+  static const double burstFont = 21;
+  static const double burstSubFont = 11;
+  static const double burstSubTracking = 0.12;
+  static const double burstGap = 8;
+  static const double burstIcon = 22;
+  static const double burstIconStroke = 3.2;
+
+  /// While locked: the cards to remember as pips, then a grey bar where the
+  /// burst will be.
+  static const EdgeInsets pipsPadding = EdgeInsets.fromLTRB(14, 2, 14, 0);
+  static const double pipGap = 3;
+
+  /// Narrow pips keep a card's shape.
+  static const double pipAspect = 1.45;
+  static const double lockTop = 12;
+  static const double lockMinHeight = 60;
+  static const EdgeInsets lockPadding = EdgeInsets.symmetric(horizontal: 14, vertical: 8);
+  static const double lockIcon = 24;
+  static const double lockIconStroke = 2.6;
+  static const double lockGap = 10;
+  static const double lockTitleFont = 18;
+  static const double lockLineFont = 12;
+  static const double lockLineNumber = 14;
+
+  /// Between the panel and Home's button pair, and between the two.
+  static const double pairTop = 8;
+  static const double pairGap = Gaps.panelWide;
 
   static const Size lockBalloon = Size(270, 96);
   static const Duration lockBalloonLife = Duration(milliseconds: 2800);
+}
 
-  static const EdgeInsets morePadding = EdgeInsets.fromLTRB(14, 14, 14, 14);
-  static const double moreIcon = 28;
+/// 暗記練's rules sheet (遊び方, `ankiren_rules_sheet.dart`): its three
+/// steps in pictures, a line on each, and how a game scores.
+abstract final class AnkirenRulesLayout {
+  static const String memorise = 'assets/images/sidetrips/howto-memorize.webp';
+  static const String flip = 'assets/images/sidetrips/howto-flip.webp';
+  static const String take = 'assets/images/sidetrips/howto-take.webp';
+
+  /// The pictures' own aspect (96 × 90).
+  static const double pictureAspect = 96 / 90;
+  static const double stepGap = 8;
+  static const double captionFont = 13;
+  static const double numberFont = 11;
+  static const double numberBox = 18;
+  static const double captionGap = 5;
+  static const EdgeInsets captionPadding = EdgeInsets.symmetric(vertical: 4);
+  static const double noteFont = 13.5;
+  static const double noteGap = 6;
+  static const double title = 30;
+  static const double aboutFont = 14;
+  static const double doneHeight = 52;
+  static const double doneFont = 17;
 }
 
 /// The debug Simulation page's summary and per-day charts.

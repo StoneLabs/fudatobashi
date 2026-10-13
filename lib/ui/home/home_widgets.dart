@@ -13,23 +13,26 @@ import '../manga/svg_path.dart';
 
 enum PipState { learned, next, locked }
 
-/// A row of little torifuda, one per card of an island.
+/// A row of little torifuda, one per card of an island, [gap] apart and
+/// [aspect] times as tall as they are wide.
 class CardPips extends StatelessWidget {
-  const CardPips(this.pips, {super.key});
+  const CardPips(this.pips, {super.key, this.gap = HomeLayout.pipGap, this.aspect = HomeLayout.pipAspect});
 
   final List<PipState> pips;
+  final double gap;
+  final double aspect;
 
   @override
   Widget build(BuildContext context) {
     return LayoutBuilder(builder: (context, box) {
       final n = pips.length;
-      final fit = (box.maxWidth - HomeLayout.pipGap * (n - 1)) / n;
+      final fit = (box.maxWidth - gap * (n - 1)) / n;
       final w = fit < HomeLayout.pipWidth ? fit : HomeLayout.pipWidth;
-      final h = w * HomeLayout.pipHeight / HomeLayout.pipWidth;
+      final h = w * aspect;
       return Row(
         children: [
           for (final (i, p) in pips.indexed) ...[
-            if (i > 0) const SizedBox(width: HomeLayout.pipGap),
+            if (i > 0) SizedBox(width: gap),
             SizedBox(width: w, height: h, child: _Pip(p)),
           ],
         ],
@@ -128,14 +131,12 @@ class RankSticker extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    const suffix = '級';
-    final main = band.label.endsWith(suffix) ? band.label.substring(0, band.label.length - 1) : band.label;
     return Sticker(
       child: Text.rich(
         TextSpan(children: [
-          TextSpan(text: main, style: const TextStyle(fontSize: HomeLayout.classFont)),
-          if (main != band.label)
-            const TextSpan(text: suffix, style: TextStyle(fontSize: HomeLayout.classSuffixFont)),
+          TextSpan(text: band.stem, style: const TextStyle(fontSize: HomeLayout.classFont)),
+          if (band.stem != band.label)
+            const TextSpan(text: RankBand.classSuffix, style: TextStyle(fontSize: HomeLayout.classSuffixFont)),
         ]),
         style: const TextStyle(fontFamily: Fonts.display, height: 1),
       ),

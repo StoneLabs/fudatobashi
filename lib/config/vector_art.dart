@@ -32,6 +32,9 @@ abstract final class IconArt {
 
   /// A speaker with sound waves (the kimariji readout button).
   static late final VectorArt speaker;
+
+  /// A signpost, its pole broken behind the boards (the Side Trips tab).
+  static late final VectorArt sideTrips;
 }
 
 /// Map furniture.
@@ -72,4 +75,12 @@ abstract final class SceneArt {
 
   /// "I know all 100": a fanned deck with a 100 badge.
   static late final VectorArt expert;
+}
+
+/// The Side Trips tab's art that stays vector.
+abstract final class SideTripArt {
+  /// The ranked shout's burst: one fixed piece in [SideTripsLayout.burst],
+  /// filled in the current colour, its label set in
+  /// [SideTripsLayout.burstLabel]; scaled only uniformly.
+  static late final VectorArt burst;
 }

@@ -107,7 +107,8 @@ class FreePracticeAccess {
 /// settings. Loaded once at startup; the UI listens for changes.
 class Progress extends ChangeNotifier {
   Progress._(this.db, this.trainer, this._log, this.sessions, this.ratingPoints, this._settings, this.rating,
-      this._islandsCelebrated, this._freePracticeUnlocked, this._tabsSeenLocked, this._sideTripsOpened, this.sideTrips);
+      this._islandsCelebrated, this._freePracticeUnlocked, this._tabsSeenLocked, this._sideTripsOpened,
+      this._sideTripsSeenLocked, this.sideTrips);
 
   final AppDatabase db;
   final Trainer trainer;
@@ -134,6 +135,10 @@ class Progress extends ChangeNotifier {
   /// Side trips' modes that have opened once, so they stay open (see
   /// [sideTripsHub]).
   final Set<SideTripGate> _sideTripsOpened;
+
+  /// Side trips the player has seen locked on the hub whose opening is
+  /// still to be shown.
+  final Set<SideTrip> _sideTripsSeenLocked;
 
   /// The side trips' recorded games and ratings.
   final SideTrips sideTrips;
@@ -203,6 +208,10 @@ class Progress extends ChangeNotifier {
         for (final name in (jsonDecode(kv[_sideTripsKey] ?? '[]') as List).cast<String>())
           ?SideTripUnlocks.named(name),
       },
+      {
+        for (final name in (jsonDecode(kv[_sideTripsSeenLockedKey] ?? '[]') as List).cast<String>())
+          ?SideTrip.values.asNameMap()[name],
+      },
       await SideTrips.load(db),
     );
     await progress._latchFreePractice(DateTime.now());
@@ -215,6 +224,7 @@ class Progress extends ChangeNotifier {
   static const _freePracticeKey = 'freePracticeUnlocked';
   static const _tabsSeenLockedKey = 'tabsSeenLocked';
   static const _sideTripsKey = 'sideTripsUnlocked';
+  static const _sideTripsSeenLockedKey = 'sideTripsSeenLocked';
 
   static AttemptRec _rec(AttemptRow a, PlayConfig run) => AttemptRec(
         at: a.at,
@@ -544,6 +554,26 @@ class Progress extends ChangeNotifier {
   Future<void> _saveTabsSeenLocked() =>
       _put(_tabsSeenLockedKey, jsonEncode([for (final t in _tabsSeenLocked) t.name]));
 
+  /// Side trips shown locked on the hub whose opening is still to be shown.
+  Set<SideTrip> get sideTripsSeenLocked => Set.unmodifiable(_sideTripsSeenLocked);
+
+  /// [trips] have been shown locked on the hub.
+  Future<void> noteSideTripsSeenLocked(Iterable<SideTrip> trips) async {
+    final before = _sideTripsSeenLocked.length;
+    _sideTripsSeenLocked.addAll(trips);
+    if (_sideTripsSeenLocked.length != before) await _saveSideTripsSeenLocked();
+  }
+
+  /// [trips] have opened, and their opening has been shown.
+  Future<void> noteSideTripsOpened(Iterable<SideTrip> trips) async {
+    final before = _sideTripsSeenLocked.length;
+    _sideTripsSeenLocked.removeAll(trips);
+    if (_sideTripsSeenLocked.length != before) await _saveSideTripsSeenLocked();
+  }
+
+  Future<void> _saveSideTripsSeenLocked() =>
+      _put(_sideTripsSeenLockedKey, jsonEncode([for (final t in _sideTripsSeenLocked) t.name]));
+
   CardRef _ref(int poemId, bool inverted, int maskLevel, math.Random rng) => CardRef(
         poemId,
         inverted: inverted,
@@ -830,6 +860,7 @@ class Progress extends ChangeNotifier {
                   _freePracticeKey,
                   _tabsSeenLockedKey,
                   _sideTripsKey,
+                  _sideTripsSeenLockedKey,
                 ])))
           .go();
     });
@@ -842,6 +873,7 @@ class Progress extends ChangeNotifier {
     _freePracticeUnlocked = false;
     _tabsSeenLocked.clear();
     _sideTripsOpened.clear();
+    _sideTripsSeenLocked.clear();
     sideTrips.clear();
     _unreported.clear();
     trainer.items

@@ -1,278 +1,198 @@
+import 'dart:math' as math;
+
+import 'package:flutter/rendering.dart';
+import 'package:flutter/scheduler.dart';
 import 'package:flutter/widgets.dart';
 
 import '../../config/design.dart';
-import '../../config/vector_art.dart';
 import '../../domain/side_trips.dart';
-import '../../l10n/home_strings.dart';
-import '../../l10n/side_trip_strings.dart';
-import '../../l10n/strings.dart';
+import '../../state/progress.dart';
 import '../../state/scope.dart';
-import '../home/home_screen.dart';
-import '../manga/manga.dart';
-import '../rank/rank_badges.dart';
 import '../run/run_launcher.dart';
 import 'ankiren_free_sheet.dart';
+import 'ankiren_rules_sheet.dart';
+import 'dojo_scene.dart';
+import 'side_trip_entry.dart';
 
-/// The Side Trips tab (寄り道): a panel per side trip ([SideTripsHub]), then
-/// a word that more are coming. Everything it shows comes from the hub, so
-/// the look can change without touching the rules.
-class SideTripsScreen extends StatelessWidget {
+/// The Side Trips tab (寄り道): the dojo scene ([DojoScene]) over 暗記練's
+/// entry, its lettering ([SideTripHead]) breaking out over its panel and
+/// button pair ([SideTripBody]). Everything it shows comes from the hub
+/// ([SideTripsHub]).
+///
+/// The first time the tab shows 暗記練 open after showing it locked, its
+/// torii opens with a snap; once, like the tab chains.
+class SideTripsScreen extends StatefulWidget {
   const SideTripsScreen({super.key});
 
   @override
+  State<SideTripsScreen> createState() => _SideTripsScreenState();
+}
+
+class _SideTripsScreenState extends State<SideTripsScreen> {
+  /// Trips whose opening is being shown.
+  final Set<SideTrip> _opening = {};
+  bool _syncScheduled = false;
+
+  /// While the tab is on screen: remembers the trips it shows locked, and
+  /// starts showing the opening of any seen locked that have opened since.
+  void _syncLatch(Progress progress, SideTripsHub hub) {
+    if (!TickerMode.valuesOf(context).enabled) return;
+    final seen = progress.sideTripsSeenLocked;
+    final locked = [
+      for (final e in hub.entries)
+        if (!e.open) e.trip,
+    ];
+    final opened = [
+      for (final t in seen)
+        if (hub[t].open) t,
+    ];
+    if (_syncScheduled || (seen.containsAll(locked) && opened.isEmpty)) return;
+    _syncScheduled = true;
+    SchedulerBinding.instance.addPostFrameCallback((_) {
+      _syncScheduled = false;
+      if (!mounted) return;
+      progress.noteSideTripsSeenLocked(locked);
+      if (opened.isEmpty) return;
+      progress.noteSideTripsOpened(opened);
+      setState(() => _opening.addAll(opened));
+    });
+  }
+
+  /// [entry]'s torii: padlocked until its opening has been shown.
+  GateState _gate(Progress progress, SideTripEntry entry) {
+    if (!entry.open || progress.sideTripsSeenLocked.contains(entry.trip)) return GateState.locked;
+    return _opening.contains(entry.trip) ? GateState.opening : GateState.open;
+  }
+
+  @override
   Widget build(BuildContext context) {
-    final s = S.of(context);
-    final hub = ProgressScope.of(context).sideTripsHub();
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: Gaps.gutter),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          MangaHeader(title: ScreenTitle(s.sideTrips, sub: s.other.sideTrips)),
-          const SizedBox(height: Gaps.section),
-          Expanded(
-            child: SingleChildScrollView(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  NarrationBox(child: Text.rich(Phrases.span(s.sideTripsIntro))),
-                  for (final entry in hub.entries) ...[
-                    const SizedBox(height: Gaps.section),
-                    SideTripPanel(
-                      entry,
-                      onRanked: (c) => _startRanked(c, entry.trip),
-                      onFree: (c) => _openFree(c, entry.trip),
-                    ),
-                  ],
-                  const SizedBox(height: Gaps.section),
-                  const _MoreToCome(),
-                  const SizedBox(height: Gaps.section),
-                ],
+    final progress = ProgressScope.of(context);
+    final hub = progress.sideTripsHub();
+    _syncLatch(progress, hub);
+    final entry = hub[SideTrip.ankiren];
+    // The scene ends on an ink edge, over the tab bar's floor.
+    return ClipRect(
+      child: DecoratedBox(
+        position: DecorationPosition.foreground,
+        decoration: const BoxDecoration(border: Border(bottom: BorderSide(color: Palette.ink, width: Strokes.panel))),
+        child: LayoutBuilder(builder: (context, box) {
+          final side = math.max(Gaps.gutter, (box.maxWidth - SideTripsLayout.maxWidth) / 2);
+          return SingleChildScrollView(
+            physics: const ClampingScrollPhysics(),
+            child: ConstrainedBox(
+              constraints: BoxConstraints(minHeight: box.maxHeight),
+              child: _HubFrame(
+                minScene: DojoSceneLayout.minHeight * box.maxWidth / DojoSceneLayout.width,
+                padding: EdgeInsets.fromLTRB(side, 0, side, SideTripsLayout.bottomGap),
+                overlap: SideTripsLayout.overlap,
+                scene: DojoScene(
+                  gate: _gate(progress, entry),
+                  day: DateTime.now().day,
+                  onOpened: () => setState(() => _opening.remove(entry.trip)),
+                ),
+                body: SideTripBody(
+                  entry,
+                  onRanked: () => startAnkirenRanked(context),
+                  onFree: () => openAnkirenFree(context),
+                  onRules: () => openAnkirenRules(context),
+                ),
+                head: SideTripHead(entry),
               ),
             ),
-          ),
-        ],
+          );
+        }),
       ),
     );
   }
 }
 
-/// [trip]'s ranked game.
-void _startRanked(BuildContext context, SideTrip trip) => switch (trip) {
-      SideTrip.ankiren => startAnkirenRanked(context),
-    };
+/// The hub's layout: the entry ([head] hanging [overlap] over the top of
+/// [body]) at the bottom inside [padding], and [scene] filling everything
+/// above it, at least [minScene] tall. When the two need more height than
+/// the hub is given, it grows (and the tab scrolls).
+class _HubFrame extends MultiChildRenderObjectWidget {
+  _HubFrame({
+    required this.minScene,
+    required this.padding,
+    required this.overlap,
+    required Widget scene,
+    required Widget body,
+    required Widget head,
+  }) : super(children: [scene, body, head]);
 
-/// [trip]'s free-play setup, and its game from there.
-void _openFree(BuildContext context, SideTrip trip) => switch (trip) {
-      SideTrip.ankiren => openAnkirenFree(context),
-    };
-
-/// One side trip: its name lettering beside Tobi, what it is, its rank (or
-/// what still keeps it shut), and its ranked and free-play buttons. An open
-/// button calls [onRanked] or [onFree] with its own context; a locked one
-/// says what opens it.
-class SideTripPanel extends StatelessWidget {
-  const SideTripPanel(this.entry, {super.key, required this.onRanked, required this.onFree});
-
-  final SideTripEntry entry;
-  final ValueChanged<BuildContext> onRanked, onFree;
+  final double minScene;
+  final EdgeInsets padding;
+  final double overlap;
 
   @override
-  Widget build(BuildContext context) {
-    final s = S.of(context);
-    final lock = entry.lock;
-    final level = entry.rankedLevel;
-    final maxLevel = entry.maxLevel;
-    return MangaPanel(
-      shape: const PanelShape(topLeft: Offset(0, SideTripsLayout.cut)),
-      color: Palette.seaSoft,
-      padding: SideTripsLayout.padding,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          Row(
-            children: [
-              Expanded(
-                child: FittedBox(
-                  fit: BoxFit.scaleDown,
-                  alignment: Alignment.centerLeft,
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      OutlinedText(
-                        entry.trip.label,
-                        outlineWidth: SideTripsLayout.titleOutline,
-                        style: const TextStyle(
-                            fontFamily: Fonts.display,
-                            fontSize: SideTripsLayout.titleFont,
-                            height: TypeScale.displayLineHeight),
-                      ),
-                      InkBanner(s.tripBanner(entry.trip)),
-                    ],
-                  ),
-                ),
-              ),
-              SizedBox.fromSize(
-                size: SideTripsLayout.tobi,
-                child: Tobi(pose: entry.open ? TobiPose.fired : TobiPose.pointing),
-              ),
-            ],
-          ),
-          const SizedBox(height: SideTripsLayout.gap),
-          Text.rich(
-            Phrases.span(s.tripAbout(entry.trip)),
-            style: const TextStyle(fontWeight: Weights.bold, fontSize: SideTripsLayout.aboutFont),
-          ),
-          const SizedBox(height: SideTripsLayout.gap),
-          if (lock == null) _RankLine(entry) else _LockLine(s.sideTripLockedWhy(lock.needed)),
-          const SizedBox(height: SideTripsLayout.gap),
-          _ModeButton(
-            icon: IconArt.arrow,
-            title: level == null ? s.sideTripRanked : s.sideTripRankedLevel(level),
-            sub: s.sideTripRankedSub,
-            color: Palette.pink,
-            lock: lock,
-            why: s.sideTripLockedWhy,
-            onTap: onRanked,
-          ),
-          const SizedBox(height: Gaps.panel),
-          _ModeButton(
-            icon: IconArt.cards,
-            title: s.freePlay,
-            sub: maxLevel == null ? s.sideTripFreeSub : s.sideTripFreeUpTo(maxLevel),
-            color: Palette.paper,
-            lock: entry.freeLock,
-            why: s.sideTripFreeLockedWhy,
-            onTap: onFree,
-          ),
-        ],
-      ),
-    );
+  RenderObject createRenderObject(BuildContext context) =>
+      _RenderHubFrame(minScene: minScene, padding: padding, overlap: overlap);
+
+  @override
+  void updateRenderObject(BuildContext context, _RenderHubFrame renderObject) => renderObject
+    ..minScene = minScene
+    ..padding = padding
+    ..overlap = overlap;
+}
+
+class _HubFrameParentData extends ContainerBoxParentData<RenderBox> {}
+
+/// Paints the scene, then the body, then the head over both; hit tests the
+/// other way round.
+class _RenderHubFrame extends RenderBox
+    with
+        ContainerRenderObjectMixin<RenderBox, _HubFrameParentData>,
+        RenderBoxContainerDefaultsMixin<RenderBox, _HubFrameParentData> {
+  _RenderHubFrame({required this._minScene, required this._padding, required this._overlap});
+
+  double _minScene;
+  set minScene(double v) {
+    if (v == _minScene) return;
+    _minScene = v;
+    markNeedsLayout();
   }
-}
 
-/// The trip's class badge, then RATING over its rating, or "unranked"
-/// before its first ranked game; and how many games it has seen.
-class _RankLine extends StatelessWidget {
-  const _RankLine(this.entry);
-  final SideTripEntry entry;
-
-  @override
-  Widget build(BuildContext context) {
-    final s = S.of(context);
-    final rating = entry.rating;
-    final rung = rungStyle(entry.band.id);
-    return Row(
-      children: [
-        ClassBadge(entry.band, color: rung.color, textColor: rung.text),
-        const SizedBox(width: SideTripsLayout.rankGap),
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                s.ratingLabel,
-                style: const TextStyle(
-                  fontWeight: Weights.black,
-                  fontSize: SideTripsLayout.ratingLabelFont,
-                  letterSpacing: SideTripsLayout.ratingLabelTracking * SideTripsLayout.ratingLabelFont,
-                ),
-              ),
-              FittedBox(
-                fit: BoxFit.scaleDown,
-                alignment: Alignment.centerLeft,
-                child: rating == null
-                    ? Text(s.sideTripUnranked,
-                        style: const TextStyle(fontWeight: Weights.black, fontSize: SideTripsLayout.unrankedFont))
-                    : Text(
-                        '${rating.round()}',
-                        style: const TextStyle(
-                            fontFamily: Fonts.display,
-                            fontSize: SideTripsLayout.ratingFont,
-                            height: TypeScale.displayLineHeight),
-                      ),
-              ),
-            ],
-          ),
-        ),
-        if (entry.games > 0) Pill(s.sideTripGames(entry.games)),
-      ],
-    );
+  EdgeInsets _padding;
+  set padding(EdgeInsets v) {
+    if (v == _padding) return;
+    _padding = v;
+    markNeedsLayout();
   }
-}
 
-/// A padlock and what opens the trip.
-class _LockLine extends StatelessWidget {
-  const _LockLine(this.why);
-  final String why;
-
-  @override
-  Widget build(BuildContext context) => Row(
-        children: [
-          MangaIcon(IconArt.lock, size: SideTripsLayout.lockIcon),
-          const SizedBox(width: SideTripsLayout.rankGap),
-          Expanded(
-            child: Text.rich(Phrases.span(why), style: const TextStyle(fontWeight: Weights.black, fontSize: TypeScale.body)),
-          ),
-        ],
-      );
-}
-
-/// A trip's ranked or free-play button: [onTap] with its own context while
-/// open; while [lock] holds it, a padlock, the cards still to go, and a tap
-/// pops up [why].
-class _ModeButton extends StatelessWidget {
-  const _ModeButton({
-    required this.icon,
-    required this.title,
-    required this.sub,
-    required this.color,
-    required this.lock,
-    required this.why,
-    required this.onTap,
-  });
-
-  final VectorArt icon;
-  final String title, sub;
-  final Color color;
-  final SideTripLock? lock;
-  final String Function(int needed) why;
-  final ValueChanged<BuildContext> onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    final lock = this.lock;
-    return HomeRowButton(
-      icon: lock == null ? icon : IconArt.lock,
-      title: title,
-      sub: lock == null ? sub : S.of(context).sideTripLockedSub(lock.needed),
-      color: lock == null ? color : Palette.desk,
-      onTap: () => lock == null
-          ? onTap(context)
-          : BalloonPop.show(context, why(lock.needed),
-              size: SideTripsLayout.lockBalloon, life: SideTripsLayout.lockBalloonLife),
-    );
+  double _overlap;
+  set overlap(double v) {
+    if (v == _overlap) return;
+    _overlap = v;
+    markNeedsLayout();
   }
-}
-
-/// The dashed box after the trips: more are on the way.
-class _MoreToCome extends StatelessWidget {
-  const _MoreToCome();
 
   @override
-  Widget build(BuildContext context) => DashedBox(
-        padding: SideTripsLayout.morePadding,
-        child: Row(
-          children: [
-            MangaIcon(IconArt.question, size: SideTripsLayout.moreIcon),
-            const SizedBox(width: SideTripsLayout.rankGap),
-            Expanded(
-              child: Text.rich(
-                Phrases.span(S.of(context).sideTripsMore),
-                style: const TextStyle(fontWeight: Weights.black, fontSize: TypeScale.button),
-              ),
-            ),
-          ],
-        ),
-      );
+  void setupParentData(RenderBox child) {
+    if (child.parentData is! _HubFrameParentData) child.parentData = _HubFrameParentData();
+  }
+
+  @override
+  void performLayout() {
+    final scene = firstChild!;
+    final body = childAfter(scene)!;
+    final head = childAfter(body)!;
+    final width = constraints.maxWidth;
+    final entry = BoxConstraints.tightFor(width: math.max(0, width - _padding.horizontal));
+    body.layout(entry, parentUsesSize: true);
+    head.layout(entry, parentUsesSize: true);
+    final entryHeight = head.size.height - _overlap + body.size.height + _padding.bottom;
+    final height = math.max(constraints.minHeight, _minScene + entryHeight);
+    final top = height - entryHeight;
+    scene.layout(BoxConstraints.tight(Size(width, top)));
+    (head.parentData! as _HubFrameParentData).offset = Offset(_padding.left, top);
+    (body.parentData! as _HubFrameParentData).offset = Offset(_padding.left, top + head.size.height - _overlap);
+    size = constraints.constrain(Size(width, height));
+  }
+
+  @override
+  void paint(PaintingContext context, Offset offset) => defaultPaint(context, offset);
+
+  @override
+  bool hitTestChildren(BoxHitTestResult result, {required Offset position}) =>
+      defaultHitTestChildren(result, position: position);
 }

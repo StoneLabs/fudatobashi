@@ -72,15 +72,17 @@ abstract final class SideTripUnlocks {
 }
 
 /// A side trip's standing so far, as plain values: its ranked [rating]
-/// (null until a ranked game is played), the [rankedLevel] ranked plays at
-/// now and the highest level the known cards allow ([maxLevel]; either
-/// null while unknown), and the [games] played, ranked or free.
+/// and the last ranked game's [ratingChange] (both null until a ranked game
+/// is played), the [rankedLevel] ranked plays at now and the highest level
+/// the known cards allow ([maxLevel]; either null while unknown), and the
+/// [games] played, ranked or free.
 class SideTripStanding {
-  const SideTripStanding({this.rating, this.rankedLevel, this.maxLevel, this.games = 0});
+  const SideTripStanding({this.rating, this.ratingChange, this.rankedLevel, this.maxLevel, this.games = 0});
 
   static const none = SideTripStanding();
 
   final double? rating;
+  final double? ratingChange;
   final int? rankedLevel;
   final int? maxLevel;
   final int games;
@@ -94,6 +96,7 @@ class SideTripEntry {
     required this.lock,
     required this.freeLock,
     required this.rating,
+    required this.ratingChange,
     required this.band,
     required this.rankedLevel,
     required this.maxLevel,
@@ -108,8 +111,10 @@ class SideTripEntry {
   /// Null once its free play is open.
   final SideTripLock? freeLock;
 
-  /// The ranked rating; null until a ranked game is played.
+  /// The ranked rating, and what the last ranked game did to it; null
+  /// until a ranked game is played.
   final double? rating;
+  final double? ratingChange;
 
   /// The class of [rating] on the main rank's ladder; 入門 before any.
   final RankBand band;
@@ -151,6 +156,7 @@ class SideTripsHub {
         lock: lock(trip, SideTripMode.ranked),
         freeLock: lock(trip, SideTripMode.free),
         rating: rating,
+        ratingChange: standing.ratingChange,
         band: rating == null ? Rating.bands.first : Rating.bandOf(rating),
         rankedLevel: standing.rankedLevel,
         maxLevel: standing.maxLevel,

@@ -54,6 +54,7 @@ import 'package:fudatobashi/ui/free/free_practice_sheet.dart';
 import 'package:fudatobashi/ui/free/island_picker.dart';
 import 'package:fudatobashi/ui/free/look_alike_picker.dart';
 import 'package:fudatobashi/ui/help/help_screen.dart';
+import 'package:fudatobashi/ui/home/home_widgets.dart';
 import 'package:fudatobashi/ui/home/learn_ahead_button.dart';
 import 'package:fudatobashi/ui/home/training_hero.dart';
 import 'package:fudatobashi/ui/islands/island_map.dart';
@@ -68,7 +69,6 @@ import 'package:fudatobashi/ui/play/start_card.dart';
 import 'package:fudatobashi/ui/play/swipe_deck.dart';
 import 'package:fudatobashi/ui/play/test_card.dart';
 import 'package:fudatobashi/ui/profile/profile_screen.dart';
-import 'package:fudatobashi/ui/rank/rank_badges.dart';
 import 'package:fudatobashi/ui/rank/rank_screen.dart';
 import 'package:fudatobashi/ui/results/celebration_sequence.dart';
 import 'package:fudatobashi/ui/results/celebrations.dart';
@@ -88,6 +88,7 @@ import 'package:fudatobashi/ui/shell/header_actions.dart';
 import 'package:fudatobashi/ui/shell/kimariji_heading.dart';
 import 'package:fudatobashi/ui/shell/tab_chains.dart';
 import 'package:fudatobashi/ui/side_trips/ankiren_free_sheet.dart';
+import 'package:fudatobashi/ui/side_trips/side_trip_entry.dart';
 import 'package:fudatobashi/ui/side_trips/side_trips_screen.dart';
 import 'package:fudatobashi/ui/sound/sounds.dart';
 import 'package:fudatobashi/ui/stats/card_detail_screen.dart';
@@ -2697,10 +2698,6 @@ void main() {
   group('Side Trips', () {
     Finder inTrips(Finder f) => find.descendant(of: find.byType(SideTripsScreen), matching: f);
 
-    // Text set with `Phrases.span`, matched without its line-break marks.
-    Finder phrased(String text) => find.byWidgetPredicate((w) =>
-        w is Text && w.textSpan?.toPlainText().replaceAll(RegExp('[​⁠]'), '') == Phrases.spoken(text));
-
     Future<void> openTrips(WidgetTester tester, Progress p, {double fontScale = 1.1}) async {
       await onPhone(tester, p, fontScale: fontScale);
       await tester.tap(find.descendant(of: find.byType(MangaTabBar), matching: find.text(S(p.settings.language).sideTrips)));
@@ -2739,7 +2736,7 @@ void main() {
     for (final ja in [false, true]) {
       final lang = ja ? 'ja' : 'en';
 
-      testWidgets('a fresh journey shows 暗記練 locked, says what opens it, and either button says why ($lang)',
+      testWidgets('a fresh journey shows 暗記練 locked, counts what opens it, and its bar says why ($lang)',
           (tester) async {
         final s = S(lang);
         final p = await open(tester, mode: LearningMode.journey, ja: ja, journeyCards: 3);
@@ -2747,15 +2744,14 @@ void main() {
         expect(entry.lock?.needed, SideTripTuning.ankirenRemembered);
         expect(entry.freeLock?.needed, SideTripTuning.ankirenFreeRemembered);
         await openTrips(tester, p);
-        expect(inTrips(phrased(s.sideTripLockedWhy(SideTripTuning.ankirenRemembered))), findsOneWidget);
-        expect(inTrips(find.byType(ClassBadge)), findsNothing, reason: 'a locked trip shows its lock, not a rank');
-        expect(inTrips(find.text(s.sideTripLockedSub(SideTripTuning.ankirenRemembered))), findsOneWidget);
-        expect(inTrips(find.text(s.sideTripLockedSub(SideTripTuning.ankirenFreeRemembered))), findsOneWidget);
+        expect(inTrips(find.byType(CardPips)), findsOneWidget);
+        expect(tester.widget<CardPips>(inTrips(find.byType(CardPips))).pips,
+            hasLength(SideTripTuning.ankirenRemembered));
+        expect(inTrips(find.byType(RankedBurst)), findsNothing, reason: 'a locked trip shows its lock, not its burst');
+        expect(inTrips(find.text(s.freePlay)), findsNothing, reason: 'one lock at a time');
         await _capture(tester, 'side_trips_locked_$lang');
-        await expectBalloon(
-            tester, inTrips(find.text(s.sideTripRanked)), s.sideTripLockedWhy(SideTripTuning.ankirenRemembered));
-        await expectBalloon(
-            tester, inTrips(find.text(s.freePlay)), s.sideTripFreeLockedWhy(SideTripTuning.ankirenFreeRemembered));
+        await expectBalloon(tester, inTrips(find.textContaining(s.sideTripRanked)),
+            s.sideTripLockedWhy(SideTripTuning.ankirenRemembered));
         await tester.pumpWidget(const SizedBox());
       });
 
@@ -2765,7 +2761,7 @@ void main() {
         final entry = p.sideTripsHub()[SideTrip.ankiren];
         expect([entry.open, entry.freeOpen], [true, true]);
         await openTrips(tester, p);
-        expect(tester.widget<ClassBadge>(inTrips(find.byType(ClassBadge))).band, Rating.bands.first);
+        expect(inTrips(find.text(Rating.bands.first.label)), findsOneWidget, reason: 'the flag flies 入門');
         expect(inTrips(find.text(s.sideTripUnranked)), findsOneWidget);
         await _capture(tester, 'side_trips_open_$lang');
         await tester.tap(inTrips(find.text(s.freePlay)));
@@ -2780,12 +2776,11 @@ void main() {
           testWidgets('the Side Trips tab fits the phone, ${mode.name}, at font scale $fontScale ($lang)', (tester) async {
             final p = await open(tester, mode: mode, ja: ja, journeyCards: 3);
             await openTrips(tester, p, fontScale: fontScale);
-            final panel = tester.getRect(find.byType(SideTripPanel));
-            final more = tester.getRect(inTrips(find.byType(DashedBox)));
+            final entry = tester.getRect(find.byType(SideTripBody));
             final bar = tester.getRect(find.byType(MangaTabBar));
-            expect(panel.left, greaterThanOrEqualTo(Gaps.gutter));
-            expect(panel.right, lessThanOrEqualTo(_phone.width - Gaps.gutter));
-            expect(more.bottom, lessThan(bar.top), reason: 'the whole hub shows without scrolling');
+            expect(entry.left, greaterThanOrEqualTo(Gaps.gutter));
+            expect(entry.right, lessThanOrEqualTo(_phone.width - Gaps.gutter));
+            expect(entry.bottom, lessThan(bar.top), reason: 'the whole hub shows without scrolling');
             await _capture(tester, 'side_trips_${mode.name}_${lang}_$fontScale');
             await tester.pumpWidget(const SizedBox());
           });
@@ -2805,7 +2800,7 @@ void main() {
       expect(entry.freeLock?.needed, free - ranked);
 
       await openTrips(tester, p);
-      expect(inTrips(find.byType(ClassBadge)), findsOneWidget);
+      expect(inTrips(find.byType(RankedBurst)), findsOneWidget);
       expect(inTrips(find.text(s.sideTripUnranked)), findsOneWidget);
       expect(inTrips(find.text(s.sideTripLockedSub(free - ranked))), findsOneWidget, reason: 'free play is still locked');
       await _capture(tester, 'side_trips_ranked_open');

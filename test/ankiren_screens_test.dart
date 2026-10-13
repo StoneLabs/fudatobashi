@@ -49,6 +49,7 @@ import 'package:fudatobashi/ui/rank/rank_badges.dart';
 import 'package:fudatobashi/ui/settings/settings_screen.dart';
 import 'package:fudatobashi/ui/settings/side_trip_settings_screen.dart';
 import 'package:fudatobashi/ui/side_trips/ankiren_free_sheet.dart';
+import 'package:fudatobashi/ui/side_trips/side_trip_entry.dart';
 import 'package:fudatobashi/ui/sound/sounds.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 
@@ -298,7 +299,7 @@ void main() {
       });
       final p = await open(tester);
       await openHub(tester, p);
-      await tester.tap(find.text(s.sideTripRankedSub));
+      await tester.tap(find.byType(RankedBurst));
       await tester.pump();
       await tester.pump(Motion.route);
       expect(find.byType(AnkirenScreen), findsOneWidget);
