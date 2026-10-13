@@ -779,6 +779,36 @@ abstract final class CelebrationPreviewTuning {
     (XpSource.daily, 3, 70),
   ];
   static const int roundInto = 150;
+
+  /// "Preview AnkiRen XP": a ranked 暗記練 game's XP, one line per source
+  /// (count, XP), landing [ankirenRoundInto] XP into [ankirenLevel] and
+  /// reaching no new level, or [ankirenLevelInto] in and reaching one.
+  static const List<(XpSource, int, int)> ankirenXp = [
+    (XpSource.firstTap, 12, 960),
+    (XpSource.secondTap, 3, 120),
+    (XpSource.missed, 1, 2),
+    (XpSource.speed, 12, 290),
+    (XpSource.clear, 1, 20),
+    (XpSource.ranked, 1, 50),
+    (XpSource.best, 1, 200),
+  ];
+  static const int ankirenLevel = 40;
+  static const int ankirenRoundInto = 60;
+  static const int ankirenLevelInto = 1000;
+
+  /// 暗記練's rating page: [ankirenInto] points into `Rating.bands[ankirenClass]`
+  /// (E下級), moving [ankirenMove]; a breakthrough or a fall crosses its
+  /// threshold by [ankirenCross]. Placement: the games' scores, the rating
+  /// after the second and after the third, and the game played after
+  /// placement.
+  static const int ankirenClass = 3;
+  static const double ankirenInto = 60;
+  static const double ankirenMove = 58;
+  static const double ankirenCross = 24;
+  static const List<int> ankirenPlacementScores = [612, 845, 903];
+  static const double ankirenPlacing = 1010;
+  static const double ankirenPlaced = 1180;
+  static const int ankirenGame = 9;
 }
 
 /// Sound pooling (`lib/ui/sound/sounds.dart`): concurrent, identically

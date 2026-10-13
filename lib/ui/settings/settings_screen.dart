@@ -25,6 +25,7 @@ import '../debug/simulation_page.dart';
 import '../debug/timing_page.dart';
 import '../manga/manga.dart';
 import '../play/pointer_clock.dart';
+import '../results/celebrations.dart';
 import '../run/run_launcher.dart';
 import '../tour/tour_overlay.dart';
 import 'credits_screen.dart';
@@ -441,6 +442,12 @@ class _DeveloperSection extends StatelessWidget {
           ),
         ]),
         SettingsGroup(children: [
+          SettingsTapRow(title: 'Preview AnkiRen XP', onTap: () => previewAnkirenXp(context)),
+          SettingsTapRow(title: 'Preview AnkiRen XP + level up', onTap: () => previewAnkirenXp(context, levelUp: true)),
+          for (final moment in AnkirenRatingMoment.values)
+            SettingsTapRow(title: _ankirenPreviewTitle(moment), onTap: () => previewAnkirenRating(context, moment)),
+        ]),
+        SettingsGroup(children: [
           SettingsTapRow(title: 'Replay tour', onTap: () => replayTour(context)),
           SettingsTapRow(title: 'Reset onboarding', onTap: () => confirmResetOnboarding(context)),
           SettingsTapRow(title: 'Reset progress', onTap: () => confirmResetProgress(context)),
@@ -449,6 +456,16 @@ class _DeveloperSection extends StatelessWidget {
     );
   }
 }
+
+String _ankirenPreviewTitle(AnkirenRatingMoment moment) => switch (moment) {
+      AnkirenRatingMoment.placing => 'Preview AnkiRen placement game',
+      AnkirenRatingMoment.placed => 'Preview AnkiRen rank reveal',
+      AnkirenRatingMoment.up => 'Preview AnkiRen rating up',
+      AnkirenRatingMoment.held => 'Preview AnkiRen rating held',
+      AnkirenRatingMoment.down => 'Preview AnkiRen rating down',
+      AnkirenRatingMoment.rankUp => 'Preview AnkiRen rating + rank-up',
+      AnkirenRatingMoment.rankDown => 'Preview AnkiRen class down',
+    };
 
 /// How far the pointer-event clock is behind the frame clock on this
 /// platform (see [PointerClock]), for testers' screenshots; a tap reads it

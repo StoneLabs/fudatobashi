@@ -38,6 +38,7 @@ import 'package:fudatobashi/state/scope.dart';
 import 'package:fudatobashi/state/side_trips.dart';
 import 'package:fudatobashi/ui/ankiren/ankiren_rating_overlay.dart';
 import 'package:fudatobashi/ui/ankiren/ankiren_results_screen.dart';
+import 'package:fudatobashi/ui/debug/celebration_preview.dart';
 import 'package:fudatobashi/ui/manga/manga.dart';
 import 'package:fudatobashi/ui/results/celebration_chrome.dart';
 import 'package:fudatobashi/ui/results/celebration_sequence.dart';
@@ -536,6 +537,46 @@ void main() {
         expect(advanced, isFalse, reason: '${moment.name}: nothing moves on by itself');
         await tester.tap(find.byType(CelebrationCta));
         expect(advanced, isTrue);
+        await tester.pumpWidget(const SizedBox());
+      }
+    });
+  });
+
+  group('dev previews', () {
+    // Opens [preview] from a button, on the user's phone.
+    Future<void> preview(WidgetTester tester, Progress p, void Function(BuildContext) preview) async {
+      onPhone(tester, _users, 1);
+      await tester.pumpWidget(app(
+        p,
+        Scaffold(body: Builder(builder: (context) => TextButton(onPressed: () => preview(context), child: const Text('go')))),
+      ));
+      await tester.tap(find.text('go'));
+      await tester.pump();
+      await tester.pump(Motion.route);
+    }
+
+    testWidgets('AnkiRen XP plays alone, or into the level-up', (tester) async {
+      final p = await open(tester, 'en');
+      await preview(tester, p, previewAnkirenXp);
+      final sequence = tester.widget<CelebrationSequence>(find.byType(CelebrationSequence));
+      expect([for (final c in sequence.pages) c.runtimeType], [XpCelebration]);
+      expect((sequence.pages.single as XpCelebration).gain.award.parts.map((p) => p.source), contains(XpSource.firstTap));
+      await tester.pumpWidget(const SizedBox());
+      await preview(tester, p, (context) => previewAnkirenXp(context, levelUp: true));
+      expect([for (final c in tester.widget<CelebrationSequence>(find.byType(CelebrationSequence)).pages) c.runtimeType],
+          [XpCelebration, LevelUpCelebration]);
+      await tester.pumpWidget(const SizedBox());
+    });
+
+    testWidgets('every moment of the rating page plays, a breakthrough into the rank-up', (tester) async {
+      final p = await open(tester, 'en');
+      for (final moment in AnkirenRatingMoment.values) {
+        await preview(tester, p, (context) => previewAnkirenRating(context, moment));
+        final pages = tester.widget<CelebrationSequence>(find.byType(CelebrationSequence)).pages;
+        expect((pages.first as AnkirenRatingCelebration).moment, moment);
+        expect(pages.length, moment == AnkirenRatingMoment.rankUp ? 2 : 1, reason: moment.name);
+        await tester.pump(AnkirenRatingTimeline(pages.first as AnkirenRatingCelebration).length);
+        expect(tester.takeException(), isNull, reason: moment.name);
         await tester.pumpWidget(const SizedBox());
       }
     });

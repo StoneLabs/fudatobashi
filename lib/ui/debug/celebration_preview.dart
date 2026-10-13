@@ -6,6 +6,7 @@ import '../../config/design.dart';
 import '../../config/vector_art.dart';
 import '../../data/fuda_sets.dart';
 import '../../data/poem.dart';
+import '../../domain/ankiren_rating.dart';
 import '../../domain/play_session.dart';
 import '../../domain/rating.dart';
 import '../../domain/xp.dart';
@@ -15,6 +16,7 @@ import '../../l10n/tour_strings.dart';
 import '../../state/play_config.dart';
 import '../../state/progress.dart';
 import '../../state/scope.dart';
+import '../../state/side_trips.dart';
 import '../manga/manga.dart';
 import '../results/celebration_sequence.dart';
 import '../results/celebrations.dart';
@@ -81,6 +83,41 @@ void previewRatingRankUp(BuildContext context) {
 }
 
 void previewGraduation(BuildContext context) => _previewPages(context, const [GraduationCelebration()]);
+
+/// 暗記練's XP page for a ranked game, reaching no new level, or with
+/// [levelUp] reaching one, then the level-up.
+void previewAnkirenXp(BuildContext context, {bool levelUp = false}) {
+  final gain = XpGain(
+    before: XpCurve.reach(CelebrationPreviewTuning.ankirenLevel) +
+        (levelUp ? CelebrationPreviewTuning.ankirenLevelInto : CelebrationPreviewTuning.ankirenRoundInto),
+    award: XpAward([for (final (source, count, xp) in CelebrationPreviewTuning.ankirenXp) XpPart(source, count, xp)]),
+  );
+  _previewPages(context, xpCelebrations(gain));
+}
+
+/// 暗記練's rating page after a ranked game in [moment], then 暗記練's own
+/// rank-up after a breakthrough.
+void previewAnkirenRating(BuildContext context, AnkirenRatingMoment moment) {
+  final floor = Rating.bands[CelebrationPreviewTuning.ankirenClass].minRating;
+  final into = floor + CelebrationPreviewTuning.ankirenInto;
+  const move = CelebrationPreviewTuning.ankirenMove, cross = CelebrationPreviewTuning.ankirenCross;
+  const scores = CelebrationPreviewTuning.ankirenPlacementScores;
+  final (before, after, game) = switch (moment) {
+    AnkirenRatingMoment.placing => (AnkirenRating.start, CelebrationPreviewTuning.ankirenPlacing, 1),
+    AnkirenRatingMoment.placed => (
+        CelebrationPreviewTuning.ankirenPlacing,
+        CelebrationPreviewTuning.ankirenPlaced,
+        AnkirenRatingModel.placementGames,
+      ),
+    AnkirenRatingMoment.up => (into, into + move, CelebrationPreviewTuning.ankirenGame),
+    AnkirenRatingMoment.held => (into, into, CelebrationPreviewTuning.ankirenGame),
+    AnkirenRatingMoment.down => (into + move, into, CelebrationPreviewTuning.ankirenGame),
+    AnkirenRatingMoment.rankUp => (floor - cross, floor + cross, CelebrationPreviewTuning.ankirenGame),
+    AnkirenRatingMoment.rankDown => (floor + cross, floor - cross, CelebrationPreviewTuning.ankirenGame),
+  };
+  final report = AnkirenReport(ratingBefore: before, ratingAfter: after, rankedGames: game);
+  _previewPages(context, ankirenCelebrationsFor(report, placementScores: scores.take(game).toList()));
+}
 
 /// 暗記練's first opening on the Side Trips hub: its torii rattles, the
 /// chains break and the gate snaps open, with the sound, buzz and toast.
