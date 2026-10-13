@@ -3889,6 +3889,13 @@ abstract final class AnkirenPlayLayout {
   static const double maxCardW = 80;
   static const double minTapCardW = 48;
 
+  /// Dev mode's scoring readout (the play overlay) has room of its own, so
+  /// it never hides a card: a strip [readoutStrip] tall above the field in
+  /// portrait, a column [readoutColumn] wide beside it in landscape. It is
+  /// scaled down should it not fit.
+  static const double readoutStrip = 158;
+  static const double readoutColumn = 236;
+
   static const Color background = Palette.desk;
 
   /// A face-down card: a plain back in the torifuda's frame colour.

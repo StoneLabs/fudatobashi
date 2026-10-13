@@ -9,16 +9,18 @@ import 'play_overlay.dart';
 
 /// Dev mode's readout over a 暗記練 game (the play overlay setting): how the
 /// last card answered scored, tap by tap with the tuning each step used,
-/// and the game's points so far.
+/// and the game's points so far. [split] lays it out as two tables side by
+/// side, the card and its first tap beside the rest, to keep it short.
 class AnkirenScoreReadout extends StatelessWidget {
-  const AnkirenScoreReadout({super.key, required this.game});
+  const AnkirenScoreReadout({super.key, required this.game, this.split = false});
 
   final AnkirenGame game;
+  final bool split;
 
   @override
   Widget build(BuildContext context) => ListenableBuilder(
         listenable: game,
-        builder: (context, _) => DebugTable(rows(game)),
+        builder: (context, _) => DebugTable(split ? parts(game) : [rows(game)]),
       );
 
   /// The readout for [game] as it stands, one fact a row.

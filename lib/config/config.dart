@@ -583,10 +583,12 @@ abstract final class DebugOverlayStyle {
   static const EdgeInsets padding = EdgeInsets.symmetric(horizontal: 8, vertical: 6);
 
   /// A table readout: its labels dimmer than the values, the line starting
-  /// each part brighter, and the gap between the columns.
+  /// each part brighter, the gap between a label and its value, and between
+  /// tables side by side.
   static const Color labelColor = Color(0xFF8FBF80);
   static const Color headColor = Color(0xFFFFE08A);
   static const double columnGap = 10;
+  static const double tableGap = 16;
 }
 
 /// The hidden developer-mode unlock (tapping the About version).

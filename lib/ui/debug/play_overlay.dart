@@ -79,26 +79,36 @@ class DebugReadout extends StatelessWidget {
 /// starts a part of the table and stands out.
 typedef DebugRow = ({String label, String value, bool head});
 
-/// Dev mode's corner readout as a table, one fact a line: [rows] of labels
-/// and values in two aligned columns on a dark chip, never taking taps.
+/// Dev mode's corner readout as tables, one fact a line: each of [columns]
+/// a table of labels and values in two aligned columns, the tables side by
+/// side on one dark chip, never taking taps.
 class DebugTable extends StatelessWidget {
-  const DebugTable(this.rows, {super.key});
+  const DebugTable(this.columns, {super.key});
 
-  final List<DebugRow> rows;
+  final List<List<DebugRow>> columns;
 
   @override
   Widget build(BuildContext context) => _DebugPanel(
-        child: Table(
-          columnWidths: const {0: IntrinsicColumnWidth(), 1: IntrinsicColumnWidth()},
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            for (final r in rows)
-              TableRow(children: [
-                Padding(
-                  padding: const EdgeInsets.only(right: DebugOverlayStyle.columnGap),
-                  child: Text(r.label, style: r.head ? _head : _label),
-                ),
-                Text(r.value, style: r.head ? _head : _mono),
-              ]),
+            for (final (i, rows) in columns.indexed) ...[
+              if (i > 0) const SizedBox(width: DebugOverlayStyle.tableGap),
+              Table(
+                columnWidths: const {0: IntrinsicColumnWidth(), 1: IntrinsicColumnWidth()},
+                children: [
+                  for (final r in rows)
+                    TableRow(children: [
+                      Padding(
+                        padding: const EdgeInsets.only(right: DebugOverlayStyle.columnGap),
+                        child: Text(r.label, style: r.head ? _head : _label),
+                      ),
+                      Text(r.value, style: r.head ? _head : _mono),
+                    ]),
+                ],
+              ),
+            ],
           ],
         ),
       );

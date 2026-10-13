@@ -460,6 +460,14 @@ void main() {
         expect(find.text(label), findsWidgets);
         expect(find.text(value), findsWidgets);
       }
+      final panel = tester.getRect(find.byType(DebugTable));
+      expect(tester.widget<DebugTable>(find.byType(DebugTable)).columns, hasLength(2),
+          reason: 'two tables side by side in portrait, to keep it short');
+      expect(panel.bottom, lessThanOrEqualTo(tester.getTopLeft(find.byType(AnkirenFieldView)).dy),
+          reason: 'its own strip above the field');
+      for (final c in tester.widgetList<AnkirenCard>(find.byType(AnkirenCard))) {
+        expect(tester.getRect(find.byWidget(c)).overlaps(panel), isFalse, reason: 'it never hides a card');
+      }
       expect(find.ancestor(of: find.byType(DebugTable), matching: find.byType(IgnorePointer)), findsWidgets,
           reason: 'every tap goes through');
       await tester.pumpWidget(const SizedBox());

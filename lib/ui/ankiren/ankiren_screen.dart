@@ -343,6 +343,14 @@ class _AnkirenScreenState extends State<AnkirenScreen> {
     );
 
     final overlay = widget.overlay;
+    final Widget field = AnkirenFieldView(
+      field: _game.field,
+      landscape: _landscape,
+      zoom: _zoom,
+      card: card,
+      band: band,
+      overlay: overlay == null ? null : (placement) => overlay(_game, placement),
+    );
     final screen = Scaffold(
       backgroundColor: AnkirenPlayLayout.background,
       body: DecoratedBox(
@@ -354,20 +362,7 @@ class _AnkirenScreenState extends State<AnkirenScreen> {
           ),
         ),
         child: SafeArea(
-          child: Stack(children: [
-            Positioned.fill(
-              child: AnkirenFieldView(
-                field: _game.field,
-                landscape: _landscape,
-                zoom: _zoom,
-                card: card,
-                band: band,
-                overlay: overlay == null ? null : (placement) => overlay(_game, placement),
-              ),
-            ),
-            if (settings.debugMode && settings.playOverlay)
-              Positioned(left: Gaps.section, top: Gaps.section, child: AnkirenScoreReadout(game: _game)),
-          ]),
+          child: settings.debugMode && settings.playOverlay ? _withReadout(field) : field,
         ),
       ),
     );
@@ -376,5 +371,30 @@ class _AnkirenScreenState extends State<AnkirenScreen> {
       onPopInvokedWithResult: (didPop, _) => didPop ? _leave() : unawaited(_end()),
       child: screen,
     );
+  }
+
+  /// [field] with dev mode's scoring readout in room of its own, above it
+  /// in portrait and beside it in landscape, so it never hides a card.
+  Widget _withReadout(Widget field) {
+    final readout = Padding(
+      padding: const EdgeInsets.fromLTRB(Gaps.section, Gaps.small, Gaps.section, 0),
+      child: Align(
+        alignment: Alignment.topLeft,
+        child: FittedBox(
+          fit: BoxFit.scaleDown,
+          alignment: Alignment.topLeft,
+          child: AnkirenScoreReadout(game: _game, split: !_landscape),
+        ),
+      ),
+    );
+    return _landscape
+        ? Row(children: [
+            SizedBox(width: AnkirenPlayLayout.readoutColumn, child: readout),
+            Expanded(child: field),
+          ])
+        : Column(children: [
+            SizedBox(height: AnkirenPlayLayout.readoutStrip, child: readout),
+            Expanded(child: field),
+          ]);
   }
 }
