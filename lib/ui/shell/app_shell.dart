@@ -45,6 +45,24 @@ class _AppShellState extends State<AppShell> {
   bool _syncScheduled = false;
   final _tourKeys = TourKeys();
 
+  late final AppLifecycleListener _lifecycle;
+
+  @override
+  void initState() {
+    super.initState();
+    // A new practice day may have begun while the app was away.
+    _lifecycle = AppLifecycleListener(onResume: () {
+      final progress = ProgressScope.read(context);
+      if (progress.todayStale) progress.refreshToday();
+    });
+  }
+
+  @override
+  void dispose() {
+    _lifecycle.dispose();
+    super.dispose();
+  }
+
   static Widget _screen(AppTab t, {required double underBar}) => switch (t) {
         AppTab.home => const HomeScreen(),
         AppTab.history => const HistoryScreen(),
