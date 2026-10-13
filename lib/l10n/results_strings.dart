@@ -77,6 +77,7 @@ extension ResultsStrings on S {
         XpSource.reviews => t('xpSourceReviews'),
         XpSource.newCards => t('xpSourceNewCards'),
         XpSource.clear => t('xpSourceClear'),
+        XpSource.dayDone => t('xpSourceDayDone'),
         XpSource.daily => t('xpSourceDaily'),
         XpSource.best => t('xpSourceBest'),
         XpSource.island => t('xpSourceIsland'),
@@ -89,7 +90,8 @@ extension ResultsStrings on S {
 
   /// The count beside an XP line, or null where it says nothing.
   String? xpCount(XpPart part) => switch (part.source) {
-        XpSource.clear || XpSource.best || XpSource.graduation || XpSource.ranked || XpSource.placement => null,
+        XpSource.clear || XpSource.dayDone || XpSource.best || XpSource.graduation => null,
+        XpSource.ranked || XpSource.placement => null,
         XpSource.daily => part.count > 1 ? dayStreak(part.count) : null,
         _ => f('xpCountTimes', [part.count]),
       };

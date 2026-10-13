@@ -246,12 +246,20 @@ abstract final class TrainingTuning {
 /// One journey pace: how many days it targets for all 100 cards, how many
 /// new cards it may auto-unlock in one day (catching up after days off), and
 /// the daily practice it is built for: [dailyRounds] training rounds, which a
-/// capable player needs to keep up (the pacing simulations' routine).
+/// capable player needs to keep up (the pacing simulations' routine). With
+/// more than [pauseNewOver] reviews in today's set, Home asks whether to
+/// pause today's new cards.
 class PaceProfile {
-  const PaceProfile({required this.daysToAll, required this.dailyAutoCap, required this.dailyRounds});
+  const PaceProfile({
+    required this.daysToAll,
+    required this.dailyAutoCap,
+    required this.dailyRounds,
+    required this.pauseNewOver,
+  });
   final int daysToAll;
   final int dailyAutoCap;
   final int dailyRounds;
+  final int pauseNewOver;
 }
 
 /// Journey pacing: when new cards arrive (`Trainer.unlockEarned`,
@@ -265,8 +273,8 @@ class PaceProfile {
 /// pulls cards in ahead of the curve (see [LearnAheadTuning]).
 abstract final class PaceTuning {
   static const LearningPace defaultPace = LearningPace.month;
-  static const PaceProfile month = PaceProfile(daysToAll: 28, dailyAutoCap: 10, dailyRounds: 3);
-  static const PaceProfile sprint = PaceProfile(daysToAll: 15, dailyAutoCap: 16, dailyRounds: 6);
+  static const PaceProfile month = PaceProfile(daysToAll: 28, dailyAutoCap: 10, dailyRounds: 3, pauseNewOver: 75);
+  static const PaceProfile sprint = PaceProfile(daysToAll: 15, dailyAutoCap: 16, dailyRounds: 6, pauseNewOver: 150);
 
   /// The pace curve: (share of the pace's days elapsed, share of all cards
   /// expected unlocked), linearly interpolated. Front-loaded, since the
@@ -541,10 +549,13 @@ abstract final class XpTuning {
 
   /// A completed run faster than the best before it with the same setup.
   static const int personalBest = 200;
-  static const int perIsland = 1000;
+  static const int perIsland = 10000;
+
+  /// Finishing today's set (journey mode), once a day.
+  static const int dayDone = 1000;
 
   /// Learning the 100th card, the end of the journey.
-  static const int graduation = 25000;
+  static const int graduation = 100000;
 
   /// XP from level L to L+1: [levelBase] × √L. Levels come quickly at
   /// first and keep coming: unlike the rank, a level never stalls.
@@ -832,6 +843,10 @@ abstract final class SimulationTuning {
   /// The learner's and planner's seed. With FSRS's interval fuzz off, a
   /// rerun replays exactly.
   static const int seed = 1;
+
+  /// Local hour at which a simulated day's set is looked at (any hour of
+  /// the day's practice window).
+  static const int setCheckHour = 12;
 }
 
 /// Dev-mode demo data (`seedDemoData`): a journey player's recent history,

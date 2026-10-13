@@ -15,6 +15,7 @@ import 'side_trips.dart';
 abstract final class XpHistory {
   static const _islandsKey = 'islandsCompleted';
   static const _graduatedKey = 'graduated';
+  static const _dayDoneKey = 'dayDone';
 
   /// Every recorded game of [progress], oldest first.
   static XpLedger ledgerOf(Progress progress) {
@@ -47,14 +48,17 @@ abstract final class XpHistory {
   static XpRun latestRunOf(Progress progress, Session s) {
     final attempts = <(ItemKey, AttemptRec)>[];
     for (final k in progress.trainer.items.keys) {
-      for (final a in progress.attemptsOf(k).reversed) {
-        if (a.sessionId != s.id) break;
-        attempts.add((k, a));
+      final log = progress.attemptsOf(k);
+      var from = log.length;
+      while (from > 0 && log[from - 1].sessionId == s.id) {
+        from--;
       }
+      attempts.addAll([for (final a in log.skip(from)) (k, a)]);
     }
     return runOf(progress, s, attempts);
   }
 
+  /// [attempts] hold each card's in the order played.
   static XpRun runOf(Progress progress, Session s, List<(ItemKey, AttemptRec)> attempts) {
     final meta = jsonDecode(s.meta) as Map<String, dynamic>;
     final config = progress.configOf(s);
@@ -67,22 +71,33 @@ abstract final class XpHistory {
       goalMs: (meta['goalMs'] as num?)?.toDouble() ?? progress.trainer.goalMs,
       counts: attempts.any((e) => e.$2.countsForSrs),
       swipes: [
-        for (final (k, a) in [...attempts]..sort((x, y) => x.$2.at.compareTo(y.$2.at)))
+        for (final (_, (k, a)) in [...attempts.indexed]..sort((x, y) {
+            final byTime = x.$2.$2.at.compareTo(y.$2.$2.at);
+            return byTime != 0 ? byTime : x.$1.compareTo(y.$1);
+          }))
           XpSwipe(poemId: k.poemId, correct: !a.miss, clean: a.clean, us: a.us, graded: a.grade != null),
       ],
       islands: (meta[_islandsKey] as List?)?.length ?? 0,
       graduated: meta[_graduatedKey] == true,
+      day: progress.dayOf(s),
+      dayDone: meta[_dayDoneKey] == true,
     );
   }
 
-  /// Marks on session [s] the [islands] it completed and whether it
-  /// [graduated], stored and returned as the updated session.
+  /// Marks on session [s] the [islands] it completed, whether it
+  /// [graduated] and whether it finished today's set ([dayDone]), stored and
+  /// returned as the updated session.
   static Future<Session> noteMilestones(AppDatabase db, Session s,
-      {required List<int> islands, required bool graduated}) async {
-    if (islands.isEmpty && !graduated) return s;
+      {required List<int> islands, required bool graduated, bool dayDone = false}) async {
+    if (islands.isEmpty && !graduated && !dayDone) return s;
     final meta = jsonDecode(s.meta) as Map<String, dynamic>;
     final updated = s.copyWith(
-      meta: jsonEncode({...meta, if (islands.isNotEmpty) _islandsKey: islands, if (graduated) _graduatedKey: true}),
+      meta: jsonEncode({
+        ...meta,
+        if (islands.isNotEmpty) _islandsKey: islands,
+        if (graduated) _graduatedKey: true,
+        if (dayDone) _dayDoneKey: true,
+      }),
     );
     await db.update(db.sessions).replace(updated);
     return updated;

@@ -54,18 +54,28 @@ class Attempt {
   bool get isMiss => wrong || outcome == Outcome.dontKnow;
 }
 
+/// Plans the rest of a run from its [swipes] so far, with [next] already on
+/// screen when given (it stays where it is).
+typedef RunPlanner = List<CardRef> Function(List<Attempt> swipes, CardRef? next);
+
 /// State machine of one 札落とし run: the queue, the current card, timing and
 /// corrections. Timestamps are on the pointer-event clock; a reveal's vsync
 /// time is put on it first (see `PointerClock`).
 class PlaySession extends ChangeNotifier {
-  PlaySession(List<CardRef> cards)
+  PlaySession(List<CardRef> cards, {this.planner})
       : assert(cards.isNotEmpty),
         cards = [...cards],
         initialLength = cards.length;
 
-  /// The queue. Training may grow it with [requeue].
+  /// The queue. Training may grow it with [requeue], or its [planner]
+  /// replans what comes after the card on screen at every swipe and
+  /// correction.
   final List<CardRef> cards;
   final int initialLength;
+  final RunPlanner? planner;
+
+  /// Every swipe in the order made, undone ones included.
+  final List<Attempt> swipes = [];
 
   /// Index of the card currently on top.
   int index = 0;
@@ -129,7 +139,7 @@ class PlaySession extends ChangeNotifier {
     DateTime? at,
   }) {
     if (finished || _revealTs == null) return;
-    attempts.add(Attempt(
+    final attempt = Attempt(
       index: index,
       card: cards[index],
       responseUs: (responseTs - _revealTs!).inMicroseconds,
@@ -137,8 +147,11 @@ class PlaySession extends ChangeNotifier {
       at: at ?? DateTime.now(),
       deckSize: cards.length,
       tainted: _redo || _currentTainted,
-    ));
+    );
+    attempts.add(attempt);
+    swipes.add(attempt);
     index++;
+    _replan();
     _revealTs = null;
     _lastCommitTs = commitTs;
     _redo = false;
@@ -165,6 +178,7 @@ class PlaySession extends ChangeNotifier {
     final prev = attempts.removeLast()..wrong = true;
     undone.add(prev);
     index = prev.index;
+    _replan(next: cards[index]);
     _revealTs = null;
     _redo = true;
     _currentTainted = false;
@@ -181,6 +195,16 @@ class PlaySession extends ChangeNotifier {
     if (a == null) return;
     a.wrong = !a.wrong;
     if (a.wrong && !finished) _currentTainted = true;
+    if (!finished) _replan(next: cards[index]);
     notifyListeners();
+  }
+
+  /// Replaces the queue after the current card ([next], kept) or from it.
+  void _replan({CardRef? next}) {
+    final plan = planner;
+    if (plan == null) return;
+    cards
+      ..removeRange(next == null ? index : index + 1, cards.length)
+      ..addAll(plan(swipes, next));
   }
 }

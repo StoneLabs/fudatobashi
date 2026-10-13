@@ -578,7 +578,13 @@ class _Line extends StatelessWidget {
   final int index;
 
   /// Big one-off bonuses sit on a sun strip.
-  static const _highlighted = {XpSource.best, XpSource.island, XpSource.graduation, XpSource.placement};
+  static const _highlighted = {
+    XpSource.best,
+    XpSource.dayDone,
+    XpSource.island,
+    XpSource.graduation,
+    XpSource.placement,
+  };
 
   @override
   Widget build(BuildContext context) {

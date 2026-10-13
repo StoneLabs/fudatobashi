@@ -7,6 +7,7 @@ import '../config/config.dart';
 import '../data/fuda_sets.dart';
 import '../data/poem.dart';
 import 'card_stats.dart';
+import 'day_window.dart';
 import 'learning_pace.dart';
 
 export 'learning_pace.dart';
@@ -267,13 +268,20 @@ class ItemState {
 /// attempt is turned into an FSRS grade by its time: miss → Again,
 /// ≤ easyMs → Easy, ≤ goodRatio·goal → Good, else Hard.
 class Trainer {
-  Trainer({required this.config, required this.items, this.goalLevel = 0})
-      : scheduler = schedulerFor(config);
+  Trainer({
+    required this.config,
+    required this.items,
+    this.goalLevel = 0,
+    this.dayStartHour = TodaySetTuning.defaultDayStartHour,
+  }) : scheduler = schedulerFor(config);
 
   TrainerConfig config;
   final Map<ItemKey, ItemState> items;
   int goalLevel;
   fsrs.Scheduler scheduler;
+
+  /// The local hour at which a new day begins.
+  int dayStartHour;
 
   bool _fuzzing = true;
 
@@ -317,10 +325,16 @@ class Trainer {
   /// would otherwise inflate FSRS stability with short-term recall. A correct
   /// answer without a valid time can't be graded either. A miss always counts,
   /// since failing a card is evidence of forgetting.
-  fsrs.Rating? review(ItemKey key, AttemptRec a) {
+  ///
+  /// Journey mode grades by the day: given [dayEnd], a card is due when its
+  /// review falls before the day ends, and only the day's first attempt on
+  /// it ([firstToday]) can grade a correct answer, so the looks today's set
+  /// asks for after it are never extra reviews.
+  fsrs.Rating? review(ItemKey key, AttemptRec a, {DateTime? dayEnd, bool firstToday = true}) {
     if (!a.miss && !a.timed) return null;
     final s = items[key]!;
-    final due = !s.reviewed || !s.card.due.isAfter(a.at.toUtc());
+    final dueNow = dayEnd == null ? !s.card.due.isAfter(a.at.toUtc()) : s.card.due.isBefore(dayEnd.toUtc());
+    final due = !s.reviewed || (firstToday && dueNow);
     if (!due && !a.miss) return null;
     final g = gradeFor(a);
     s.card = scheduler.reviewCard(s.card, g, reviewDateTime: a.at.toUtc(), reviewDuration: a.us ~/ 1000).card;
@@ -439,22 +453,16 @@ class Trainer {
     return first;
   }
 
-  /// Local calendar days from the journey's start to [now] (0 on its first day).
+  /// Days from the journey's start to [now] (0 on its first day).
   int journeyDay(DateTime now) {
     final start = journeyStart;
-    return start == null ? 0 : math.max(0, daysBetween(start, now));
+    return start == null ? 0 : math.max(0, daysBetween(start, now, dayStartHour: dayStartHour));
   }
 
-  /// Calendar days (local time) from [a] to [b]: 0 on the same day,
-  /// negative when [b] is earlier.
-  static int daysBetween(DateTime a, DateTime b) {
-    DateTime date(DateTime t) {
-      final l = t.toLocal();
-      return DateTime.utc(l.year, l.month, l.day);
-    }
-
-    return date(b).difference(date(a)).inDays;
-  }
+  /// Days (local time, each starting at [dayStartHour]) from [a] to [b]: 0
+  /// on the same day, negative when [b] is earlier.
+  static int daysBetween(DateTime a, DateTime b, {int dayStartHour = 0}) =>
+      DayWindow.at(b, dayStartHour).date.difference(DayWindow.at(a, dayStartHour).date).inDays;
 
   PaceStatus paceStatus(Poems p, FudaSets sets, Map<ItemKey, CardStats> stats, DateTime now) {
     final up = _uprightUnlocked.toList();
@@ -463,36 +471,51 @@ class Trainer {
       day: journeyDay(now),
       unlocked: up.length,
       total: items.length ~/ 2,
-      newToday: up.where((s) => s.unlockedAt != null && daysBetween(s.unlockedAt!, now) == 0).length,
+      newToday: up
+          .where((s) => s.unlockedAt != null && daysBetween(s.unlockedAt!, now, dayStartHour: dayStartHour) == 0)
+          .length,
       readiness: readiness(p, sets, stats),
       nextBatch: nextBatch(p, sets),
     );
   }
 
   /// Well remembered: practised, its latest answer correct, at most the odd
-  /// slip lately, quick enough for the goal, and no FSRS review due. More
-  /// forgiving than [CardStats.solid], which one slip resets, so a whole deck
-  /// can be well remembered at once.
-  bool wellRemembered(ItemKey key, CardStats stats, DateTime now) {
-    if (stats.timed.length < StatsTuning.solidMinTimed || stats.all.last.miss || isDue(key, now)) return false;
+  /// slip lately, quick enough for the goal, and no FSRS review due (one
+  /// [settled] in today's set has had its review). More forgiving than
+  /// [CardStats.solid], which one slip resets, so a whole deck can be well
+  /// remembered at once.
+  bool wellRemembered(ItemKey key, CardStats stats, DateTime now, {Set<ItemKey> settled = const {}}) {
+    if (stats.timed.length < StatsTuning.solidMinTimed || stats.all.last.miss) return false;
+    if (isDue(key, now) && !settled.contains(key)) return false;
     const window = LearnAheadTuning.recentWindow;
     return stats.missRate(window) <= LearnAheadTuning.maxRecentMissRate && stats.median(window)! <= goalMs;
   }
 
   /// Unlocked upright cards well remembered right now.
-  int wellRememberedCount(Map<ItemKey, CardStats> stats, DateTime now) =>
-      _uprightUnlocked.where((s) => wellRemembered(s.key, stats[s.key] ?? CardStats.empty, now)).length;
+  int wellRememberedCount(Map<ItemKey, CardStats> stats, DateTime now, {Set<ItemKey> settled = const {}}) =>
+      _uprightUnlocked
+          .where((s) => wellRemembered(s.key, stats[s.key] ?? CardStats.empty, now, settled: settled))
+          .length;
 
-  LearnAhead learnAhead(Poems p, FudaSets sets, Map<ItemKey, CardStats> stats, DateTime now) {
+  /// [newPending]: today's set still has new cards to settle; without a
+  /// set, the pace still has new cards for today.
+  LearnAhead learnAhead(
+    Poems p,
+    FudaSets sets,
+    Map<ItemKey, CardStats> stats,
+    DateTime now, {
+    Set<ItemKey> settled = const {},
+    bool? newPending,
+  }) {
     final up = _uprightUnlocked.toList();
-    final shaky = up.length - wellRememberedCount(stats, now);
+    final shaky = up.length - wellRememberedCount(stats, now, settled: settled);
     final hold = paceStatus(p, sets, stats, now).hold;
     return LearnAhead(
       lock: hold == UnlockHold.allUnlocked
           ? LearnAheadLock.allUnlocked
           : shaky > 0
               ? LearnAheadLock.shaky
-              : hold == UnlockHold.none
+              : newPending ?? hold == UnlockHold.none
                   ? LearnAheadLock.newCardsPending
                   : LearnAheadLock.none,
       unlocked: up.length,
@@ -523,8 +546,10 @@ class Trainer {
       _unlock(_batchKeys(nextBatch(p, sets)), now);
 
   /// Unlocks what the player has earned. Returns the newly unlocked items
-  /// (celebrate these!).
-  List<ItemKey> unlockEarned(Poems p, FudaSets sets, Map<ItemKey, CardStats> stats, DateTime now) {
+  /// (celebrate these!). Without [batches] the journey's new cards wait for
+  /// the morning ([unlockForToday]); reverse items still follow mastery.
+  List<ItemKey> unlockEarned(Poems p, FudaSets sets, Map<ItemKey, CardStats> stats, DateTime now,
+      {bool batches = true}) {
     final fresh = <ItemKey>[];
     // Reverse items follow mastery of their upright card.
     if (config.reverseMode == ReverseMode.afterMastery) {
@@ -536,8 +561,25 @@ class Trainer {
     if (config.learningMode == LearningMode.allKnown) {
       return fresh..addAll(_unlock(_batchKeys([for (var id = 1; id <= items.length ~/ 2; id++) id]), now));
     }
-    if (unlocked.isEmpty || paceStatus(p, sets, stats, now).hold == UnlockHold.none) {
+    if (batches && (unlocked.isEmpty || paceStatus(p, sets, stats, now).hold == UnlockHold.none)) {
       fresh.addAll(unlockNextBatch(p, sets, now));
+    }
+    return fresh;
+  }
+
+  /// The journey's new cards for today, all at once in the morning: when
+  /// nothing is unlocked yet, or the player is ready, whole batches until
+  /// the pace's target for today or its daily cap is reached.
+  List<ItemKey> unlockForToday(Poems p, FudaSets sets, Map<ItemKey, CardStats> stats, DateTime now) {
+    final fresh = <ItemKey>[];
+    if (unlocked.isNotEmpty && !readiness(p, sets, stats).ready) return fresh;
+    while (true) {
+      final pace = paceStatus(p, sets, stats, now);
+      final hold = pace.hold;
+      if (hold != UnlockHold.none && hold != UnlockHold.notReady && pace.unlocked > 0) break;
+      final batch = unlockNextBatch(p, sets, now);
+      if (batch.isEmpty) break;
+      fresh.addAll(batch);
     }
     return fresh;
   }

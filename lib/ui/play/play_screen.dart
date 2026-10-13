@@ -38,13 +38,21 @@ import 'test_card.dart';
 /// The run starts once its [StartCard] is swiped away, so the first card is
 /// timed from its own reveal, not from the screen opening.
 ///
+/// A [planner] replans the run at every swipe (journey's training: a miss
+/// comes back in steps); without one, training brings a miss back once.
+///
 /// Each of [newPoems] is introduced with its pages right before its first
 /// appearance. Play stops meanwhile: the card stays blank under the pages
 /// and is revealed only once they are gone, and the break is left out of
 /// the run's total.
 class PlayScreen extends StatefulWidget {
-  const PlayScreen({super.key, required this.cards, required this.config, this.newPoems = const {}})
-      : tutorial = false;
+  const PlayScreen({
+    super.key,
+    required this.cards,
+    required this.config,
+    this.newPoems = const {},
+    this.planner,
+  }) : tutorial = false;
 
   /// The tour's practice round: the [TestCard]s, with Tobi coaching each
   /// move below them (see [TutorialScript]). Nothing of it is recorded; it
@@ -53,11 +61,13 @@ class PlayScreen extends StatefulWidget {
       : cards = TestCard.deck,
         config = const PlayConfig(mode: PlayMode.guest),
         newPoems = const {},
+        planner = null,
         tutorial = true;
 
   final List<CardRef> cards;
   final PlayConfig config;
   final Set<int> newPoems;
+  final RunPlanner? planner;
   final bool tutorial;
 
   @override
@@ -65,7 +75,7 @@ class PlayScreen extends StatefulWidget {
 }
 
 class _PlayScreenState extends State<PlayScreen> {
-  late final PlaySession _session = PlaySession(widget.cards);
+  late final PlaySession _session = PlaySession(widget.cards, planner: widget.planner);
   DateTime _startedAt = DateTime.now();
   final _sfxKey = GlobalKey<SfxOverlayState>();
   final _deckKey = GlobalKey<SwipeDeckState>();
@@ -207,10 +217,10 @@ class _PlayScreenState extends State<PlayScreen> {
     if (a != null && a.wrong) _requeueMiss(a);
   }
 
-  /// Training only: brings a missed card back soon, plus one 友札 the player
-  /// knows (never a new card ahead of its introduction).
+  /// Training without a planner: brings a missed card back soon, plus one
+  /// 友札 the player knows (never a new card ahead of its introduction).
   void _requeueMiss(Attempt a) {
-    if (widget.config.mode != PlayMode.training || !_requeuedForTraining.add(a)) return;
+    if (widget.config.mode != PlayMode.training || widget.planner != null || !_requeuedForTraining.add(a)) return;
     _session.requeue(a.card);
     final twins = fudaSets.tomofuda(a.card.poemId).where(_knows).toList();
     if (twins.isNotEmpty) _session.requeue(CardRef(twins[_rng.nextInt(twins.length)]));

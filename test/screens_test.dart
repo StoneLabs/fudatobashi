@@ -469,7 +469,8 @@ void main() {
       final p = await open(tester, mode: LearningMode.journey, ja: ja, journeyCards: 12);
       final ids = [for (final s in p.trainer.unlocked) s.key.poemId];
       await tester.runAsync(() async {
-        final session = PlaySession([for (var i = 0; i < StatsTuning.solidMinTimed; i++) ...ids.map(CardRef.new)]);
+        final looks = math.max(StatsTuning.solidMinTimed, TodaySetTuning.newLooks);
+        final session = PlaySession([for (var i = 0; i < looks; i++) ...ids.map(CardRef.new)]);
         var t = const Duration(seconds: 100);
         while (!session.finished) {
           session.revealed(t);
@@ -479,7 +480,7 @@ void main() {
         }
         await p.recordRun(session, const PlayConfig(mode: PlayMode.training), DateTime.now());
       });
-      expect(p.learnAhead().lock, LearnAheadLock.none, reason: 'all 12 well remembered, ahead of day 0\'s pace');
+      expect(p.learnAhead().lock, LearnAheadLock.none, reason: 'all well remembered, ahead of day 0\'s pace');
       await tester.binding.setSurfaceSize(_phone);
       await tester.pumpWidget(RepaintBoundary(key: const ValueKey('screen'), child: FudatobashiApp(progress: p)));
       await tester.pump(const Duration(milliseconds: 500));
@@ -492,7 +493,7 @@ void main() {
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 500));
       expect(find.byType(PlayScreen), findsOneWidget);
-      expect(p.trainer.unlocked.where((s) => !s.key.inverted).length, 12 + next.length);
+      expect(p.trainer.unlocked.where((s) => !s.key.inverted).length, ids.length + next.length);
       expect(p.learnAhead().lock, LearnAheadLock.shaky, reason: 'the new batch still has to be learned');
       await tester.pumpWidget(const SizedBox());
     });
@@ -2766,7 +2767,8 @@ void main() {
           for (final id in ids) {
             p.trainer.items[ItemKey(id, false)]!.unlocked = true;
           }
-          final session = PlaySession([for (var i = 0; i < StatsTuning.solidMinTimed; i++) ...ids.map(CardRef.new)]);
+          final looks = math.max(StatsTuning.solidMinTimed, TodaySetTuning.newLooks);
+        final session = PlaySession([for (var i = 0; i < looks; i++) ...ids.map(CardRef.new)]);
           var t = const Duration(seconds: 100);
           while (!session.finished) {
             session.revealed(t);

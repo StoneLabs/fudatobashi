@@ -38,7 +38,7 @@ void main() {
     final db = AppDatabase(executor);
     final progress = await Progress.open(db);
     final planned = await progress.planTraining();
-    expect(planned.unlockedBefore.map((k) => poems[k.poemId].kimariji), ['む', 'す', 'め']);
+    expect(planned.unlockedBefore.map((k) => poems[k.poemId].kimariji).take(3), ['む', 'す', 'め']);
 
     final cards = planned.cards.take(4).toList();
     final run = play(cards, [(900, Outcome.known), (4000, Outcome.known), (700, Outcome.dontKnow), (1200, Outcome.known)]);

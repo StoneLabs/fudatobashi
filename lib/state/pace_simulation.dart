@@ -30,6 +30,13 @@ class SimulatedDay {
     required this.newCardCheckMisses,
     required this.dueAtStart,
     required this.rating,
+    this.setCards = 0,
+    this.setLooks = 0,
+    this.dayDone = false,
+    this.dueChecks = 0,
+    this.dueCheckMisses = 0,
+    this.newCardsMet = 0,
+    this.newCardsMissedSameDay = 0,
   });
 
   /// 1 on the first day.
@@ -61,6 +68,19 @@ class SimulatedDay {
   final int dueAtStart;
   final double? rating;
 
+  /// Today's set: its cards, the looks it took (or would take, if every
+  /// answer left were right), and whether it was done.
+  final int setCards, setLooks;
+  final bool dayDone;
+
+  /// Cards due today, seen for the first time today, and how many of those
+  /// first looks missed.
+  final int dueChecks, dueCheckMisses;
+
+  /// Cards met for the first time today, and how many of them were missed
+  /// on a later look the same day.
+  final int newCardsMet, newCardsMissedSameDay;
+
   double get recall => swipes == 0 ? 1 : 1 - misses / swipes;
 }
 
@@ -69,18 +89,21 @@ class SimulatedDay {
 /// record) on a throwaway in-memory database. Every random source is seeded
 /// and FSRS's interval fuzz is off, so a rerun replays exactly.
 class PaceSimulation {
-  PaceSimulation._(this.progress, this.pace, this._start, this._rounds, LearnerKind learner, int seed) {
+  PaceSimulation._(this.progress, this.pace, this._start, this._rounds, this._wholeSets, LearnerKind learner, int seed) {
     _sim = JourneySimulator(progress, seed: seed, learner: learner, onAnswer: _onAnswer);
   }
 
   /// Starts a journey on the local day of [start] (by default today), with
-  /// [roundsPerDay] training rounds a day (by default the pace's routine).
+  /// [roundsPerDay] training rounds a day (by default the pace's routine),
+  /// each round of today's set a round's length unless the learner plays
+  /// [wholeSets] (see [JourneySimulator.day]).
   static Future<PaceSimulation> open({
     required LearnerKind learner,
     required LearningPace pace,
     int seed = SimulationTuning.seed,
     DateTime? start,
     int? roundsPerDay,
+    bool wholeSets = false,
   }) async {
     final progress = await Progress.open(AppDatabase(NativeDatabase.memory()));
     await progress.updateTrainerConfig(TrainerConfig(pace: pace));
@@ -91,6 +114,7 @@ class PaceSimulation {
       pace,
       DateTime(from.year, from.month, from.day),
       roundsPerDay ?? pace.profile.dailyRounds,
+      wholeSets,
       learner,
       seed,
     );
@@ -100,6 +124,7 @@ class PaceSimulation {
   final LearningPace pace;
   final DateTime _start;
   final int _rounds;
+  final bool _wholeSets;
   late final JourneySimulator _sim;
   var _day = 0;
 
@@ -109,10 +134,26 @@ class PaceSimulation {
   final _checked = <int>{};
 
   var _swipes = 0, _misses = 0, _forgotToday = 0, _lookAlikes = 0, _slips = 0, _checks = 0, _checkMisses = 0;
+  var _dueChecks = 0, _dueMisses = 0;
+
+  /// Today: cards looked at, cards met for the first time, and those of them
+  /// missed since.
+  final _seenToday = <ItemKey>{}, _metToday = <ItemKey>{}, _missedSameDay = <ItemKey>{};
 
   void _onAnswer(ItemKey key, DateTime at, LearnerAnswer answer) {
     _swipes++;
     if (answer.missed) _misses++;
+    final item = progress.trainer.items[key]!;
+    if (_seenToday.add(key)) {
+      if (!item.reviewed) {
+        _metToday.add(key);
+      } else if (item.card.due.isBefore(progress.dayAt(at).end.toUtc())) {
+        _dueChecks++;
+        if (answer.missed) _dueMisses++;
+      }
+    } else if (answer.missed && _metToday.contains(key)) {
+      _missedSameDay.add(key);
+    }
     switch (answer.miss) {
       case MissCause.forgotToday:
         _forgotToday++;
@@ -143,8 +184,12 @@ class PaceSimulation {
     final morning = date.add(const Duration(hours: SyntheticLearnerTuning.firstRoundHour));
     final due = trainer.unlocked.where((s) => trainer.isDue(s.key, morning)).length;
     final (unlockedBefore, gradedBefore) = (upright(), graded());
-    _swipes = _misses = _forgotToday = _lookAlikes = _slips = _checks = _checkMisses = 0;
-    await _sim.day(date, rounds: _rounds);
+    _swipes = _misses = _forgotToday = _lookAlikes = _slips = _checks = _checkMisses = _dueChecks = _dueMisses = 0;
+    _seenToday.clear();
+    _metToday.clear();
+    _missedSameDay.clear();
+    await _sim.day(date, rounds: _rounds, wholeSets: _wholeSets);
+    final set = progress.todaySet(date.add(const Duration(hours: SimulationTuning.setCheckHour)));
     _day++;
     return SimulatedDay(
       day: _day,
@@ -162,6 +207,13 @@ class PaceSimulation {
       newCardCheckMisses: _checkMisses,
       dueAtStart: due,
       rating: progress.rating,
+      setCards: set?.steps.length ?? 0,
+      setLooks: set?.bar.total ?? 0,
+      dayDone: set?.done ?? false,
+      dueChecks: _dueChecks,
+      dueCheckMisses: _dueMisses,
+      newCardsMet: _metToday.length,
+      newCardsMissedSameDay: _missedSameDay.length,
     );
   }
 

@@ -21,7 +21,8 @@ import '../play/play_screen.dart';
 Future<void> startTraining(BuildContext context) async {
   final planned = await ProgressScope.read(context).planTraining();
   if (!context.mounted) return;
-  await _push(context, planned.cards, const PlayConfig(mode: PlayMode.training), newPoems: planned.newPoems);
+  await _push(context, planned.cards, const PlayConfig(mode: PlayMode.training),
+      newPoems: planned.newPoems, planner: planned.planner);
 }
 
 /// Home's "Learn ahead" (journey, once `Progress.learnAhead` is open):
@@ -29,7 +30,8 @@ Future<void> startTraining(BuildContext context) async {
 Future<void> startLearnAhead(BuildContext context) async {
   final planned = await ProgressScope.read(context).learnAheadCards();
   if (!context.mounted || planned.cards.isEmpty) return;
-  await _push(context, planned.cards, const PlayConfig(mode: PlayMode.training), newPoems: planned.newPoems);
+  await _push(context, planned.cards, const PlayConfig(mode: PlayMode.training),
+      newPoems: planned.newPoems, planner: planned.planner);
 }
 
 /// Stats' "Play this island" (journey, once every card of it is uncovered):
@@ -71,11 +73,12 @@ Future<void> startGuest(BuildContext context) {
   return _push(context, ProgressScope.read(context).freeDeck(run), run);
 }
 
-Future<void> _push(BuildContext context, List<CardRef> cards, PlayConfig config, {Set<int> newPoems = const {}}) async {
+Future<void> _push(BuildContext context, List<CardRef> cards, PlayConfig config,
+    {Set<int> newPoems = const {}, RunPlanner? planner}) async {
   if (cards.isEmpty) return;
   await Navigator.of(context).push(MangaRoute<void>(
     transition: MangaTransition.zoom,
-    builder: (_) => PlayScreen(cards: cards, config: config, newPoems: newPoems),
+    builder: (_) => PlayScreen(cards: cards, config: config, newPoems: newPoems, planner: planner),
   ));
 }
 
@@ -98,7 +101,8 @@ Future<void> keepGoing(BuildContext context, PlayConfig config) async {
   }
   Navigator.of(context).pushReplacement(MangaRoute<void>(
     transition: MangaTransition.zoom,
-    builder: (_) => PlayScreen(cards: cards, config: config, newPoems: planned?.newPoems ?? const {}),
+    builder: (_) =>
+        PlayScreen(cards: cards, config: config, newPoems: planned?.newPoems ?? const {}, planner: planned?.planner),
   ));
 }
 

@@ -39,13 +39,17 @@ class JourneySimulator {
   final SimulatedAnswer? onAnswer;
 
   /// Plays [rounds] training rounds spread over the local day [date], then
-  /// [freeRounds] free-play runs of [freeCards] cards. [onRound] reports each
-  /// round's card progress, with the round's 0-based index.
+  /// [freeRounds] free-play runs of [freeCards] cards. A round of today's set
+  /// stops after a round's length of swipes (the player sits down that
+  /// often), unless the player plays [wholeSets]; once the day is done,
+  /// rounds are batches. [onRound] reports each round's card progress, with
+  /// the round's 0-based index.
   Future<void> day(
     DateTime date, {
     required int rounds,
     int freeRounds = 0,
     int freeCards = 0,
+    bool wholeSets = false,
     void Function(int round, int done, int total)? onRound,
   }) async {
     final count = rounds + freeRounds;
@@ -62,21 +66,24 @@ class JourneySimulator {
       );
       void onCard(int done, int total) => onRound?.call(i, done, total);
       if (i < rounds) {
-        await trainingRound(start, onCard: onCard);
+        await trainingRound(start,
+            onCard: onCard, setSwipes: wholeSets ? null : progress.trainer.config.sessionLength);
       } else {
         await freeRound(start, freeCards, onCard: onCard);
       }
     }
   }
 
-  /// One training round from [start] ([learnAhead]: after "Learn ahead").
-  /// Returns when it ended.
-  Future<DateTime> trainingRound(DateTime start, {bool learnAhead = false, CardProgress? onCard}) async {
+  /// One training round from [start] ([learnAhead]: after "Learn ahead"),
+  /// ended after [setSwipes] swipes if it plays today's set. Returns when it
+  /// ended.
+  Future<DateTime> trainingRound(DateTime start, {bool learnAhead = false, CardProgress? onCard, int? setSwipes}) async {
     final plan = learnAhead
         ? await progress.learnAheadCards(rng: rng, now: start)
         : await progress.planTraining(rng: rng, now: start);
     if (plan.cards.isEmpty) return start;
-    return _play(plan.cards, const PlayConfig(mode: PlayMode.training), start, newPoems: plan.newPoems, onCard: onCard);
+    return _play(plan.cards, const PlayConfig(mode: PlayMode.training), start,
+        newPoems: plan.newPoems, planner: plan.planner, maxSwipes: plan.ofSet ? setSwipes : null, onCard: onCard);
   }
 
   /// A customised free-play round (all 100 cards, cut to [cards]): stored,
@@ -89,20 +96,23 @@ class JourneySimulator {
   }
 
   /// Plays [cards] from [start], introducing each of [newPoems] before its
-  /// first swipe and, in training, bringing a missed card back with one 友札
-  /// the player knows, as the play screen does.
+  /// first swipe and, in training without a [planner], bringing a missed
+  /// card back with one 友札 the player knows, as the play screen does. The
+  /// player ends the run early after [maxSwipes] swipes.
   Future<DateTime> _play(
     List<CardRef> cards,
     PlayConfig config,
     DateTime start, {
     Set<int> newPoems = const {},
+    RunPlanner? planner,
+    int? maxSwipes,
     CardProgress? onCard,
   }) async {
-    final session = PlaySession(cards);
+    final session = PlaySession(cards, planner: planner);
     final toIntroduce = {...newPoems};
     var engine = Duration.zero;
     var wall = start;
-    while (!session.finished) {
+    while (!session.finished && (maxSwipes == null || session.swipes.length < maxSwipes)) {
       final card = session.current!;
       final key = ItemKey(card.poemId, card.inverted);
       session.revealed(engine);
@@ -116,7 +126,7 @@ class JourneySimulator {
         outcome: answer.missed ? Outcome.dontKnow : Outcome.known,
         at: wall,
       );
-      if (answer.missed && config.mode == PlayMode.training) {
+      if (answer.missed && config.mode == PlayMode.training && planner == null) {
         session.requeue(card);
         bool knows(int id) => (newPoems.contains(id) && !toIntroduce.contains(id)) || progress.knows(id);
         final twins = fudaSets.tomofuda(card.poemId).where(knows).toList();

@@ -3,6 +3,7 @@ import 'dart:math' as math;
 
 import 'package:drift/drift.dart';
 import 'package:flutter/foundation.dart';
+import 'package:fsrs/fsrs.dart' as fsrs;
 
 import '../config/config.dart';
 import '../data/fuda_sets.dart';
@@ -11,11 +12,14 @@ import '../db/database.dart';
 import '../domain/ankiren_game.dart';
 import '../domain/card_mask.dart';
 import '../domain/card_stats.dart';
+import '../domain/day_window.dart';
 import '../domain/masking.dart';
 import '../domain/play_session.dart';
 import '../domain/rating.dart';
 import '../domain/side_trips.dart';
+import '../domain/step_plan.dart';
 import '../domain/tab_locks.dart';
+import '../domain/today_set.dart';
 import '../domain/trainer.dart';
 import '../domain/xp.dart';
 import 'db_integrity.dart';
@@ -40,6 +44,7 @@ class SessionReport {
     this.islandsCompleted = const [],
     this.xp,
     this.graduated = false,
+    this.dayDone,
   });
 
   final int? sessionId;
@@ -73,14 +78,63 @@ class SessionReport {
   /// This run learned the journey's 100th card (once ever).
   final bool graduated;
 
+  /// This run finished today's set (journey mode).
+  final DayDone? dayDone;
+
   bool get personalBest => total != null && (previousBest == null || total! < previousBest!);
+}
+
+/// Today's set as the run that finished it saw it.
+class DayDone {
+  const DayDone({
+    required this.date,
+    required this.looks,
+    required this.rounds,
+    required this.newCards,
+    required this.missesFixed,
+    required this.goalStreak,
+    required this.xp,
+  });
+
+  /// The day (a UTC midnight).
+  final DateTime date;
+
+  /// Looks the set took, over [rounds] training runs.
+  final int looks, rounds;
+  final int newCards;
+
+  /// Misses on the set's cards, each answered right again since.
+  final int missesFixed;
+
+  /// Days in a row with the set done, today included.
+  final int goalStreak;
+  final int xp;
+}
+
+/// One of Home's week stamps.
+class WeekStamp {
+  const WeekStamp({required this.date, required this.done, required this.missed, required this.today});
+
+  /// The day (a UTC midnight).
+  final DateTime date;
+
+  /// Today's set was done; the day passed with the set not done.
+  final bool done, missed;
+  final bool today;
 }
 
 /// A training session ready to play, with the scheduler's reasoning.
 class PlannedRun {
-  PlannedRun(this.cards, this.picks, this.unlockedBefore, this.newPoems);
+  PlannedRun(this.cards, this.picks, this.unlockedBefore, this.newPoems, {this.planner, this.ofSet = false});
   final List<CardRef> cards;
   final List<TrainingPick> picks;
+
+  /// The run plays today's set (journey mode, before the day is done).
+  final bool ofSet;
+
+  /// Replans the run as it is played (journey: looks spaced in steps, see
+  /// [StepPlan]); null for a fixed queue.
+  final RunPlanner? planner;
 
   /// Cards unlocked right before this run.
   final List<ItemKey> unlockedBefore;
@@ -149,6 +203,12 @@ class Progress extends ChangeNotifier {
   /// The most recent run, kept in memory for the debug page's timing view.
   PlaySession? lastRun;
 
+  /// Every stored practice day by number, the latest of them, and its set
+  /// (journey mode, once built).
+  final _days = <int, DayRow>{};
+  DayRow? _day;
+  TodaySet? _today;
+
   AppSettings get settings => _settings;
 
   /// Experience so far, rebuilt from the recorded history on first use.
@@ -193,6 +253,7 @@ class Progress extends ChangeNotifier {
     var settings = AppSettings.fromJson(json('settings'));
     // Players from before the tour existed have found their way around.
     if (!json('settings').containsKey('toured') && sessions.isNotEmpty) settings = settings.copyWith(toured: true);
+    trainer.dayStartHour = settings.dayStartHour;
     final progress = Progress._(
       db,
       trainer,
@@ -218,6 +279,12 @@ class Progress extends ChangeNotifier {
       },
       await SideTrips.load(db),
     );
+    for (final d in await db.select(db.days).get()) {
+      progress._days[d.number] = d;
+    }
+    progress._day = progress._days.values.fold<DayRow?>(null, (a, d) => a == null || d.number > a.number ? d : a);
+    await progress._loadToday();
+    if (settings.onboarded && !progress._allKnown) await progress.refreshToday();
     await progress._latchFreePractice(DateTime.now());
     await progress._latchSideTrips(DateTime.now());
     return progress;
@@ -348,10 +415,14 @@ class Progress extends ChangeNotifier {
     );
   }
 
-  /// Days (local dates) with at least one tracked run.
-  Set<DateTime> get practiceDays => {
-        for (final s in sessions) DateTime(s.startedAt.year, s.startedAt.month, s.startedAt.day),
-      };
+  /// Days (see [dayOf]) with at least one tracked run.
+  Set<DateTime> get practiceDays => {for (final s in sessions) dayOf(s)};
+
+  /// The practice day session [s] was played on (a UTC midnight).
+  DateTime dayOf(Session s) {
+    final day = (jsonDecode(s.meta) as Map<String, dynamic>)[_dayKey] as int?;
+    return day != null ? DayWindow.dateOf(day) : DayWindow.at(s.startedAt, settings.dayStartHour).date;
+  }
 
   /// The very first swipe ever recorded, for My Profile's "first swipe"
   /// line — null with no history yet.
@@ -365,17 +436,229 @@ class Progress extends ChangeNotifier {
     return earliest;
   }
 
-  int get streak {
-    final days = practiceDays;
-    var d = DateTime.now();
-    d = DateTime(d.year, d.month, d.day);
-    if (!days.contains(d)) d = d.subtract(const Duration(days: 1));
+  int get streak => _daysInRow(practiceDays.contains);
+
+  /// Days in a row, up to today (or yesterday while today isn't yet), that
+  /// [counts].
+  int _daysInRow(bool Function(DateTime day) counts, [DateTime? now]) {
+    var d = dayAt(now).date;
+    if (!counts(d)) d = d.subtract(const Duration(days: 1));
     var n = 0;
-    while (days.contains(d)) {
+    while (counts(d)) {
       n++;
       d = d.subtract(const Duration(days: 1));
     }
     return n;
+  }
+
+  // ---------------------------------------------------------------- today
+
+  static const _dayKey = 'day';
+
+  /// The practice day [now] falls in (see [DayWindow]): the latest stored
+  /// day while it lasts, then the one after it.
+  DayWindow dayAt([DateTime? now]) {
+    now ??= DateTime.now();
+    final last = _day;
+    if (last != null) {
+      final w = _windowOf(last);
+      if (w.contains(now)) return w;
+      if (!now.isBefore(w.end)) return DayWindow.after(w, now, settings.dayStartHour);
+    }
+    return DayWindow.at(now, settings.dayStartHour);
+  }
+
+  static DayWindow _windowOf(DayRow d) => DayWindow(DayWindow.dateOf(d.number), d.startsAt, d.endsAt);
+
+  /// Journey mode's set for the day [now] falls in, once built (see
+  /// [refreshToday]).
+  TodaySet? todaySet([DateTime? now]) {
+    final set = _today;
+    return set != null && set.window.contains(now ?? DateTime.now()) ? set : null;
+  }
+
+  /// Today's set is missing or from an earlier day ([refreshToday] builds
+  /// it).
+  bool get todayStale => !_allKnown && todaySet() == null;
+
+  /// Stores the day [now] falls in, if it is new.
+  Future<DayRow> _storeDay(DateTime now) async {
+    final w = dayAt(now);
+    final known = _days[w.number];
+    if (known != null) return known;
+    final row = DayRow(
+      number: w.number,
+      startsAt: w.start,
+      endsAt: w.end,
+      missGuess: 0,
+      newPaused: false,
+      pauseAsked: false,
+    );
+    await db.into(db.days).insert(row, mode: InsertMode.insertOrIgnore);
+    _days[w.number] = row;
+    if (_day == null || w.number > _day!.number) {
+      _day = row;
+      _today = null;
+    }
+    return row;
+  }
+
+  Future<void> _updateDay(DayRow row) async {
+    await db.update(db.days).replace(row);
+    _days[row.number] = row;
+    if (_day?.number == row.number) _day = row;
+  }
+
+  /// Journey mode: builds the set for the day [now] falls in, the first time
+  /// it is needed that day. The morning's new cards are unlocked with it;
+  /// returns them.
+  Future<List<ItemKey>> refreshToday([DateTime? now]) async {
+    now ??= DateTime.now();
+    final day = await _storeDay(now);
+    if (_allKnown || day.number != _day?.number) return const [];
+    if (day.builtAt != null) {
+      if (_today?.window.date != DayWindow.dateOf(day.number)) await _loadToday();
+      return const [];
+    }
+    final fresh = trainer.unlockForToday(poems, fudaSets, allStats, now);
+    if (fresh.isNotEmpty) {
+      await _saveItems(fresh);
+      _unreported.addAll(fresh);
+    }
+    final window = _windowOf(day);
+    final kinds = {
+      for (final s in trainer.unlocked)
+        if (!s.reviewed) s.key: StepKind.newCard else if (s.card.due.isBefore(window.end)) s.key: StepKind.review,
+    };
+    await _storeSetCards(day.number, kinds);
+    final recent = [
+      for (final k in trainer.items.keys)
+        for (final a in _log[k] ?? const <AttemptRec>[]) if (a.mode == PlayMode.training) a,
+    ]..sort((a, b) => a.at.compareTo(b.at));
+    final base = kinds.values.fold(0, (n, k) => n + CardSteps.forSet(k).base);
+    await _updateDay(day.copyWith(
+      builtAt: Value(now),
+      missGuess: TodaySet.guessMisses(
+        base,
+        [for (final a in recent.skip(math.max(0, recent.length - TodaySetTuning.missGuessWindow))) a.miss],
+      ),
+    ));
+    _today = _replay(_day!, kinds);
+    notifyListeners();
+    return fresh;
+  }
+
+  Future<void> _storeSetCards(int day, Map<ItemKey, StepKind> kinds) => db.batch((b) {
+        for (final e in kinds.entries) {
+          b.insert(
+            db.dayCards,
+            DayCardsCompanion.insert(day: day, poemId: e.key.poemId, inverted: e.key.inverted, kind: e.value.index),
+            mode: InsertMode.insertOrReplace,
+          );
+        }
+      });
+
+  /// Loads the latest day's set, if it was built.
+  Future<void> _loadToday() async {
+    final day = _day;
+    if (day == null || day.builtAt == null) {
+      _today = null;
+      return;
+    }
+    final rows = await (db.select(db.dayCards)..where((c) => c.day.equals(day.number))).get();
+    _today = _replay(day, {for (final r in rows) ItemKey(r.poemId, r.inverted): StepKind.values[r.kind]});
+  }
+
+  /// [day]'s set with its progress, replayed from the day's training swipes.
+  TodaySet _replay(DayRow day, Map<ItemKey, StepKind> kinds) {
+    final window = _windowOf(day);
+    return TodaySet.replay(
+      window: window,
+      kinds: kinds,
+      looks: {
+        for (final k in kinds.keys)
+          k: [
+            for (final a in _log[k] ?? const <AttemptRec>[])
+              if (a.mode == PlayMode.training && window.contains(a.at)) a.miss,
+          ],
+      },
+      missGuess: day.missGuess,
+      newPaused: day.newPaused,
+      pauseAsked: day.pauseAsked,
+      doneAt: day.doneAt,
+    );
+  }
+
+  /// Home asks once a day whether to pause the new cards: today's set has
+  /// more reviews than the pace's [PaceProfile.pauseNewOver] and new cards
+  /// not started yet.
+  bool pauseOffered([DateTime? now]) {
+    final set = todaySet(now);
+    return set != null &&
+        !set.pauseAsked &&
+        !set.done &&
+        set.reviews > trainer.config.pace.profile.pauseNewOver &&
+        _pausable(set).isNotEmpty;
+  }
+
+  /// Today's new cards not looked at yet.
+  List<ItemKey> _pausable(TodaySet set) => [
+        for (final e in set.steps.entries)
+          if (e.value.kind == StepKind.newCard && e.value.looks == 0) e.key,
+      ];
+
+  /// The pause question was answered: [pause] takes today's new cards not
+  /// started yet out of the set and locks them again until a later day.
+  Future<void> answerPause({required bool pause, DateTime? now}) async {
+    final set = todaySet(now);
+    final day = _day;
+    if (set == null || day == null) return;
+    if (pause) {
+      final keys = _pausable(set);
+      for (final k in keys) {
+        trainer.items[k]!
+          ..unlocked = false
+          ..unlockedAt = null;
+      }
+      _unreported.removeWhere(keys.contains);
+      await _saveItems(keys);
+      await (db.delete(db.dayCards)
+            ..where((c) => c.day.equals(day.number))
+            ..where((c) => c.kind.equals(StepKind.newCard.index)))
+          .go();
+      await _storeSetCards(day.number, {for (final e in set.kinds.entries) if (!keys.contains(e.key)) e.key: e.value});
+    }
+    await _updateDay(day.copyWith(pauseAsked: true, newPaused: _day!.newPaused || pause));
+    await _loadToday();
+    notifyListeners();
+  }
+
+  /// Days in a row with today's set done, up to today (or yesterday while
+  /// today's isn't yet).
+  int goalStreak([DateTime? now]) => _daysInRow((d) => _days[DayWindow.numberOf(d)]?.doneAt != null, now);
+
+  /// The last [TodaySetTuning.weekDays] days, today last: whose set was
+  /// done, and which passed without it (since the first day with a set).
+  List<WeekStamp> weekStamps([DateTime? now]) {
+    final today = dayAt(now).date;
+    final firstSet = _days.values.where((d) => d.builtAt != null).map((d) => d.number).fold<int?>(
+          null,
+          (a, n) => a == null || n < a ? n : a,
+        );
+    return [
+      for (var i = TodaySetTuning.weekDays - 1; i >= 0; i--)
+        () {
+          final date = today.subtract(Duration(days: i));
+          final n = DayWindow.numberOf(date);
+          final done = _days[n]?.doneAt != null;
+          return WeekStamp(
+            date: date,
+            done: done,
+            missed: i > 0 && !done && firstSet != null && n >= firstSet,
+            today: i == 0,
+          );
+        }(),
+    ];
   }
 
   // ---------------------------------------------------------------- decks
@@ -429,8 +712,19 @@ class Progress extends ChangeNotifier {
 
   PaceStatus paceStatus([DateTime? now]) => trainer.paceStatus(poems, fudaSets, allStats, now ?? DateTime.now());
 
-  /// Whether Home's "Learn ahead" is open, and why not.
-  LearnAhead learnAhead([DateTime? now]) => trainer.learnAhead(poems, fudaSets, allStats, now ?? DateTime.now());
+  /// Whether Home's "Learn ahead" is open, and why not. With today's set,
+  /// it waits for the set's new cards, and a card settled today counts as
+  /// reviewed.
+  LearnAhead learnAhead([DateTime? now]) {
+    now ??= DateTime.now();
+    final set = todaySet(now);
+    return trainer.learnAhead(poems, fudaSets, allStats, now,
+        settled: _settled(now), newPending: set?.newPending);
+  }
+
+  /// Cards settled in today's set: reviewed today, though FSRS may still
+  /// hold them in its short learning steps.
+  Set<ItemKey> _settled(DateTime now) => todaySet(now)?.doneKeys ?? const {};
 
   /// Journey mode with cards still locked: "Learn ahead" is on offer.
   bool get canLearnMore =>
@@ -440,37 +734,101 @@ class Progress extends ChangeNotifier {
   /// left to warn about.
   bool get allCardsUnlocked => trainer.nextBatch(poems, fudaSets).isEmpty;
 
-  /// 修行: unlock what was earned, then plan a session.
+  /// 修行: unlock what was earned, then plan a session: in journey mode the
+  /// rest of today's set, or a batch once the day is done.
   Future<PlannedRun> planTraining({math.Random? rng, DateTime? now}) async {
     now ??= DateTime.now();
-    final fresh = trainer.unlockEarned(poems, fudaSets, allStats, now);
+    final morning = _allKnown ? const <ItemKey>[] : await refreshToday(now);
+    final fresh = trainer.unlockEarned(poems, fudaSets, allStats, now, batches: _allKnown);
     if (fresh.isNotEmpty) await _saveItems(fresh);
-    return _plan(fresh, rng ?? math.Random(), now);
+    return _plan([...morning, ...fresh], rng ?? math.Random(), now);
   }
 
   /// "Learn ahead": unlocks the next batch now, ignoring pace and
   /// readiness, then plans a session that includes it.
   Future<PlannedRun> learnAheadCards({math.Random? rng, DateTime? now}) async {
     now ??= DateTime.now();
+    if (!_allKnown) await refreshToday(now);
     final fresh = trainer.unlockNextBatch(poems, fudaSets, now);
     if (fresh.isNotEmpty) {
       await _saveItems(fresh);
+      final set = todaySet(now), day = _day;
+      if (set != null && !set.done && day != null) {
+        await _storeSetCards(day.number, {...set.kinds, for (final k in fresh) k: StepKind.newCard});
+        await _loadToday();
+      }
       notifyListeners();
     }
     return _plan(fresh, rng ?? math.Random(), now);
   }
 
   PlannedRun _plan(List<ItemKey> fresh, math.Random rng, DateTime now) {
-    _unreported.addAll(fresh);
+    _unreported.addAll(fresh.where((k) => !_unreported.contains(k)));
     final stats = allStats;
-    final picks = trainer.planSession(stats, now, rng);
-    final cards = [
-      for (final p in picks) _ref(p.key.poemId, p.key.inverted, trainer.items[p.key]!.maskLevel, rng),
-    ];
-    final newPoems = trainer.config.learningMode == LearningMode.journey
-        ? {for (final p in picks) if (Trainer.isNewPoem(stats, p.key.poemId)) p.key.poemId}
-        : <int>{};
-    return PlannedRun(cards, picks, fresh, newPoems);
+    if (_allKnown) {
+      final picks = trainer.planSession(stats, now, rng);
+      final cards = [
+        for (final p in picks) _ref(p.key.poemId, p.key.inverted, trainer.items[p.key]!.maskLevel, rng),
+      ];
+      return PlannedRun(cards, picks, fresh, const {});
+    }
+    final set = todaySet(now);
+    final known = {for (final p in poems.all) if (knows(p.id)) p.id};
+    final seed = rng.nextInt(1 << 30);
+    final StepPlan plan;
+    final ofSet = set != null && !set.done && set.steps.values.any((s) => !s.done);
+    if (ofSet) {
+      final start = {for (final e in set.steps.entries) if (!e.value.done) e.key: e.value.copy()};
+      final order = {
+        for (final (i, id) in Trainer.learningBatches(poems, fudaSets, trainer.config.batchSize).expand((b) => b).indexed)
+          id: i,
+      };
+      plan = StepPlan.forSet(
+        start: start,
+        reviews: [for (final k in start.keys) if (start[k]!.kind == StepKind.review) k]..shuffle(rng),
+        newCards: [for (final k in start.keys) if (start[k]!.kind == StepKind.newCard) k]
+          ..sort((a, b) => a.inverted != b.inverted
+              ? (a.inverted ? 1 : -1)
+              : (order[a.poemId] ?? 0).compareTo(order[b.poemId] ?? 0)),
+        fillers: [
+          for (final s in trainer.unlocked)
+            if (!start.containsKey(s.key) && known.contains(s.key.poemId)) s.key,
+        ],
+        knownBefore: known,
+        twinsOf: fudaSets.tomofuda,
+        seed: seed,
+      );
+    } else {
+      plan = StepPlan.forBatch(
+        picks: [for (final p in trainer.planSession(stats, now, rng)) p.key],
+        knownBefore: known,
+        twinsOf: fudaSets.tomofuda,
+        seed: seed,
+      );
+    }
+    final refs = <ItemKey, CardRef>{};
+    CardRef ref(ItemKey k) => refs[k] ??= _ref(k.poemId, k.inverted, trainer.items[k]!.maskLevel, rng);
+    ItemKey keyOf(CardRef c) => ItemKey(c.poemId, c.inverted);
+    final keys = plan.cards;
+    return PlannedRun(
+      [for (final k in keys) ref(k)],
+      [
+        for (final k in keys)
+          TrainingPick(
+            k,
+            !stats[k]!.seen ? PickReason.fresh : (trainer.isDue(k, now) ? PickReason.due : PickReason.repeat),
+            1,
+          ),
+      ],
+      fresh,
+      {for (final k in keys) if (Trainer.isNewPoem(stats, k.poemId)) k.poemId},
+      ofSet: ofSet,
+      planner: (swipes, next) => [
+        for (final k in plan.upcoming([for (final a in swipes) (keyOf(a.card), a.isMiss)],
+            next: next == null ? null : keyOf(next)))
+          ref(k),
+      ],
+    );
   }
 
   /// Unlocked and met before: the player knows this card (not a new card
@@ -487,7 +845,8 @@ class Progress extends ChangeNotifier {
     if (_freePracticeUnlocked || trainer.config.learningMode == LearningMode.allKnown) {
       return const FreePracticeAccess(open: true, remembered: FreePracticeTuning.unlockRemembered);
     }
-    final remembered = trainer.wellRememberedCount(allStats, now ?? DateTime.now());
+    now ??= DateTime.now();
+    final remembered = trainer.wellRememberedCount(allStats, now, settled: _settled(now));
     return FreePracticeAccess(open: remembered >= FreePracticeTuning.unlockRemembered, remembered: remembered);
   }
 
@@ -517,7 +876,7 @@ class Progress extends ChangeNotifier {
   int _sideTripsRemembered(DateTime now) =>
       _allKnown || (_sideTripsTabOpened && _sideTripsOpened.containsAll(SideTrip.values))
           ? 0
-          : trainer.wellRememberedCount(allStats, now);
+          : trainer.wellRememberedCount(allStats, now, settled: _settled(now));
 
   /// Stores the side-trip latches for the tab and every trip open now.
   Future<void> _latchSideTrips(DateTime now) async {
@@ -603,6 +962,7 @@ class Progress extends ChangeNotifier {
 
   Future<void> updateSettings(AppSettings s) async {
     _settings = s;
+    trainer.dayStartHour = s.dayStartHour;
     await _put('settings', jsonEncode(s.toJson()));
     notifyListeners();
   }
@@ -623,9 +983,10 @@ class Progress extends ChangeNotifier {
       pace: pace,
       reverseMode: mode == LearningMode.allKnown ? ReverseMode.mixed : trainer.config.reverseMode,
     ));
-    final fresh = trainer.unlockEarned(poems, fudaSets, allStats, DateTime.now());
+    final fresh = trainer.unlockEarned(poems, fudaSets, allStats, DateTime.now(), batches: _allKnown);
     if (fresh.isNotEmpty) await _saveItems(fresh);
     await updateSettings(settings.copyWith(onboarded: true));
+    if (!_allKnown) await refreshToday();
   }
 
   Future<void> setLearningPace(LearningPace pace) => updateTrainerConfig(trainer.config.copyWith(pace: pace));
@@ -691,7 +1052,9 @@ class Progress extends ChangeNotifier {
     }
 
     final ledger = xp;
-    final newCards = config.mode == PlayMode.training && trainer.config.learningMode == LearningMode.journey
+    final journey = !_allKnown;
+    final day = await _storeDay(startedAt);
+    final newCards = config.mode == PlayMode.training && journey
         ? {for (final a in run.attempts) if (!_metBefore(a.card.poemId)) a.card.poemId}.toList()
         : const <int>[];
     final all = [
@@ -712,6 +1075,7 @@ class Progress extends ChangeNotifier {
               'maskLevel': config.maskLevel,
               'goalMs': trainer.goalMs,
               if (config.cardIds != null) 'cardIds': config.cardIds,
+              _dayKey: day.number,
             })),
           ));
       final touched = <ItemKey>{};
@@ -731,7 +1095,11 @@ class Progress extends ChangeNotifier {
           sessionId: id,
         );
         // Only a run that counts feeds FSRS; see `PlayConfig.countsForSrs`.
-        final grade = rec.countsForSrs ? trainer.review(key, rec) : null;
+        final grade = !rec.countsForSrs
+            ? null
+            : journey
+                ? _reviewByDay(key, rec)
+                : trainer.review(key, rec);
         final stored = AttemptRec(
           at: rec.at,
           us: rec.us,
@@ -803,7 +1171,7 @@ class Progress extends ChangeNotifier {
       for (final s in trainer.unlocked)
         if (!s.key.inverted && !_unreported.contains(s.key)) Trainer.islandOf(poems[s.key.poemId]),
     };
-    final earned = trainer.unlockEarned(poems, fudaSets, allStats, now);
+    final earned = trainer.unlockEarned(poems, fudaSets, allStats, now, batches: _allKnown);
     if (config.mode == PlayMode.training) _unreported.clear();
     final after = islands;
     final reached = [for (final i in after) if (i.reached && !reachedBefore.contains(i.index)) i.index];
@@ -824,10 +1192,10 @@ class Progress extends ChangeNotifier {
     }
     await _latchFreePractice(now);
     await _latchSideTrips(now);
-    final journey = trainer.config.learningMode == LearningMode.journey;
     final graduated = journey && !ledger.graduated && poems.all.every((p) => knows(p.id));
+    final dayDone = journey ? await _noteDayDone(config, now) : null;
     sessions.last = await XpHistory.noteMilestones(db, sessions.last,
-        islands: journey ? completed : const [], graduated: graduated);
+        islands: journey ? completed : const [], graduated: graduated, dayDone: dayDone != null);
     final xpGain = ledger.add(XpHistory.latestRunOf(this, sessions.last));
 
     notifyListeners();
@@ -841,10 +1209,46 @@ class Progress extends ChangeNotifier {
       ratingAfter: rating,
       goalRaised: goalRaised,
       newCards: newCards,
-      islandsReached: trainer.config.learningMode == LearningMode.journey ? reached : const [],
-      islandsCompleted: trainer.config.learningMode == LearningMode.journey ? completed : const [],
+      islandsReached: journey ? reached : const [],
+      islandsCompleted: journey ? completed : const [],
       xp: xpGain,
       graduated: graduated,
+      dayDone: dayDone,
+    );
+  }
+
+  /// Journey mode's FSRS rule: grades by the day the attempt falls in (see
+  /// [Trainer.review]), so only the day's first look at a card, and every
+  /// miss, is a review.
+  fsrs.Rating? _reviewByDay(ItemKey key, AttemptRec a) {
+    final window = dayAt(a.at);
+    final firstToday = !(_log[key] ?? const <AttemptRec>[])
+        .reversed
+        .takeWhile((x) => !x.at.isBefore(window.start))
+        .any((x) => x.countsForSrs);
+    return trainer.review(key, a, dayEnd: window.end, firstToday: firstToday);
+  }
+
+  /// After a journey run: today's set is replayed, and once every card of it
+  /// is settled (an empty set: once a training run is played) the day is
+  /// done, which this returns the first time.
+  Future<DayDone?> _noteDayDone(PlayConfig config, DateTime now) async {
+    final day = _day;
+    if (day == null || day.builtAt == null) return null;
+    final set = _replay(day, _today?.kinds ?? const {});
+    _today = set;
+    if (set.done || !(set.settled || (set.steps.isEmpty && config.mode == PlayMode.training))) return null;
+    await _updateDay(day.copyWith(doneAt: Value(now)));
+    final done = _today = _replay(_day!, set.kinds);
+    final date = done.window.date;
+    return DayDone(
+      date: date,
+      looks: done.bar.total,
+      rounds: sessions.where((s) => s.mode == PlayMode.training.index && dayOf(s) == date).length,
+      newCards: done.newCards,
+      missesFixed: done.misses,
+      goalStreak: goalStreak(now),
+      xp: XpTuning.dayDone,
     );
   }
 
@@ -877,6 +1281,8 @@ class Progress extends ChangeNotifier {
       await db.delete(db.ratingPoints).go();
       await db.delete(db.sideTripAnswers).go();
       await db.delete(db.sideTripRuns).go();
+      await db.delete(db.dayCards).go();
+      await db.delete(db.days).go();
       await (db.delete(db.keyValues)
             ..where((k) => k.key.isIn([
                   'rating',
@@ -903,6 +1309,9 @@ class Progress extends ChangeNotifier {
     _sideTripsSeenLocked.clear();
     sideTrips.clear();
     _unreported.clear();
+    _days.clear();
+    _day = null;
+    _today = null;
     trainer.items
       ..clear()
       ..addAll(Trainer.freshItems());

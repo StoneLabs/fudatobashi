@@ -19,6 +19,9 @@ enum XpSource {
   island,
   graduation,
 
+  /// Journey mode: the run that finished today's set.
+  dayDone,
+
   /// 暗記練: cards found with the first tap, and cards whose taps missed
   /// but landed near enough to earn part of a find.
   firstTap,
@@ -70,6 +73,8 @@ class XpRun {
     required this.swipes,
     this.islands = 0,
     this.graduated = false,
+    this.day,
+    this.dayDone = false,
   });
 
   final int sessionId;
@@ -96,6 +101,13 @@ class XpRun {
 
   /// The run learned the journey's last card.
   final bool graduated;
+
+  /// The practice day it was played on (a UTC midnight); by default the
+  /// calendar date it started.
+  final DateTime? day;
+
+  /// The run finished today's set.
+  final bool dayDone;
 }
 
 /// One line of a run's experience: [count] things (cards, streak days,
@@ -255,11 +267,11 @@ class XpLedger {
       speedXp += bonus;
     }
 
-    final day = DateTime(run.startedAt.year, run.startedAt.month, run.startedAt.day);
+    final day = run.day ?? DateTime.utc(run.startedAt.year, run.startedAt.month, run.startedAt.day);
     final last = _lastDay;
     final firstToday = last == null || day.isAfter(last);
     if (firstToday) {
-      _streak = last != null && DateTime(last.year, last.month, last.day + 1) == day ? _streak + 1 : 1;
+      _streak = last != null && DateTime.utc(last.year, last.month, last.day + 1) == day ? _streak + 1 : 1;
       _lastDay = day;
     }
 
@@ -277,6 +289,7 @@ class XpLedger {
         XpPart(XpSource.reviews, reviews, reviews * XpTuning.perReview),
         XpPart(XpSource.newCards, fresh, fresh * XpTuning.perNewCard),
         XpPart(XpSource.clear, 1, run.completed ? XpTuning.clear : 0),
+        XpPart(XpSource.dayDone, 1, run.dayDone ? XpTuning.dayDone : 0),
         XpPart(XpSource.daily, _streak, firstToday ? XpTuning.daily + streakDays * XpTuning.perStreakDay : 0),
         XpPart(XpSource.best, 1, best ? XpTuning.personalBest : 0),
         XpPart(XpSource.island, run.islands, run.islands * XpTuning.perIsland),

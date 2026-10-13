@@ -103,21 +103,23 @@ void main() {
   group('simulated learner', () {
     for (final seed in [1, 2, 3]) {
       test(
-        'month pace, 3 rounds a day: ~30 after a week, ~60 after two, all by day 28-29 (seed $seed)',
+        'month pace, 3 rounds a day: ~30 after a week, ~45 after two, 80+ by day 30 (seed $seed)',
         () async {
           final j = await simulate(LearningPace.month, days: 30, seed: seed);
           final unlocked = [for (final d in j.days) d.unlocked];
           expect(j.after(7), inInclusiveRange(25, 35), reason: '$unlocked');
-          expect(j.after(14), inInclusiveRange(55, 65), reason: '$unlocked');
-          expect(j.daysToAll, inInclusiveRange(28, 29), reason: '$unlocked');
+          expect(j.after(14), inInclusiveRange(35, 55), reason: '$unlocked');
+          expect(j.after(30), inInclusiveRange(80, 100), reason: '$unlocked');
           for (var i = 1; i < unlocked.length; i++) {
             expect(unlocked[i], greaterThanOrEqualTo(unlocked[i - 1]));
           }
-          expect(j.islands.where((i) => i.reached).length, initialGroups.length);
+          expect(j.islands.where((i) => i.reached).length, greaterThanOrEqualTo(initialGroups.length - 1));
           expect(j.islands.where((i) => i.complete), isNotEmpty);
-          expect(j.newCardsMissedNextTime, inInclusiveRange(0.2, 0.45), reason: 'about 4 in 10');
-          expect(j.reviewsPerDay, inInclusiveRange(38, 60));
-          expect(j.mostDue, lessThanOrEqualTo(30), reason: 'no backlog builds up');
+          expect(j.newCardsMissedNextTime, inInclusiveRange(0.35, 0.6), reason: 'about half');
+          expect(j.reviewsPerDay, inInclusiveRange(30, 50));
+          expect(j.mostDue, lessThanOrEqualTo(40), reason: 'no backlog builds up');
+          expect(j.days.where((d) => d.dayDone).length, inInclusiveRange(8, 18),
+              reason: "today's set is often more than three rounds");
         },
         timeout: const Timeout(Duration(minutes: 2)),
       );
@@ -125,9 +127,10 @@ void main() {
       test('sprint pace, 6 rounds a day: all by day 15-16 (seed $seed)', () async {
         final j = await simulate(LearningPace.sprint, days: 16, seed: seed);
         expect(j.daysToAll, inInclusiveRange(15, 16), reason: '${[for (final d in j.days) d.unlocked]}');
-        expect(j.newCardsMissedNextTime, inInclusiveRange(0.08, 0.3));
-        expect(j.reviewsPerDay, inInclusiveRange(65, 90));
-        expect(j.mostDue, lessThanOrEqualTo(16));
+        expect(j.newCardsMissedNextTime, inInclusiveRange(0.2, 0.45));
+        expect(j.reviewsPerDay, inInclusiveRange(55, 80));
+        expect(j.mostDue, lessThanOrEqualTo(40));
+        expect(j.days.where((d) => d.dayDone).length, greaterThanOrEqualTo(10), reason: 'six rounds fit most sets');
       }, timeout: const Timeout(Duration(minutes: 2)));
     }
 
@@ -139,13 +142,13 @@ void main() {
       test('a quick learner on the $pace routine reaches all 100 in time, and forgets few new cards', () async {
         final j = await simulate(pace, learner: LearnerKind.quick, days: days + 2, seed: 1);
         expect(j.daysToAll, inInclusiveRange(days, days + 1), reason: '${[for (final d in j.days) d.unlocked]}');
-        expect(j.newCardsMissedNextTime, lessThan(0.2));
+        expect(j.newCardsMissedNextTime, lessThan(0.3));
       }, timeout: const Timeout(Duration(minutes: 2)));
 
       test('a slow, forgetful learner on the $pace routine is held back, not flooded', () async {
         final j = await simulate(pace, learner: LearnerKind.slow, days: days, seed: 1);
         expect(j.after(days), inInclusiveRange(35, 70), reason: '${[for (final d in j.days) d.unlocked]}');
-        expect(j.solidAtEnd, greaterThanOrEqualTo(0.7), reason: 'most of what they have is solid');
+        expect(j.solidAtEnd, greaterThanOrEqualTo(0.5), reason: 'half or more of what they have is solid');
         expect(j.newCardsMissedNextTime, greaterThan(0.2));
       }, timeout: const Timeout(Duration(minutes: 2)));
     }
@@ -172,18 +175,21 @@ void main() {
       final progress = await open(LearningPace.month);
       final day0 = DateTime(2026, 9, 1, 9);
       final first = await progress.planTraining(rng: math.Random(1), now: day0);
-      expect(first.unlockedBefore.map((k) => poems[k.poemId].kimariji), ['む', 'す', 'め']);
+      expect(first.unlockedBefore.map((k) => poems[k.poemId].kimariji).take(3), ['む', 'す', 'め']);
+      expect(first.unlockedBefore.length, greaterThanOrEqualTo(LearningPace.month.targetUnlocked(0, 100)),
+          reason: "the morning brings day 0's new cards");
       expect(progress.readiness.ready, isFalse);
 
+      final next = progress.trainer.nextBatch(poems, fudaSets);
       final pulled = await progress.learnAheadCards(rng: math.Random(2), now: day0);
-      expect(pulled.unlockedBefore.map((k) => poems[k.poemId].kimariji), ['ふ', 'さ', 'ほ']);
+      expect(pulled.unlockedBefore.map((k) => k.poemId), next);
       for (final k in pulled.unlockedBefore) {
-        expect(pulled.picks.where((p) => p.key == k).length, greaterThanOrEqualTo(TrainingTuning.newCardMinTimed));
+        expect(pulled.picks.where((p) => p.key == k).length, TodaySetTuning.newLooks, reason: "in today's set");
       }
       final r = progress.readiness;
-      expect(r.shaky, 6);
-      expect(r.latestBatch, pulled.unlockedBefore.map((k) => k.poemId));
-      expect(r.underPractised.length, 3);
+      expect(r.shaky, first.unlockedBefore.length + next.length);
+      expect(r.latestBatch, next);
+      expect(r.underPractised.length, next.length);
       await progress.db.close();
     });
 
@@ -219,8 +225,11 @@ void main() {
     );
     expect(heard, [1, 2, 3, 4]);
     expect(days.map((d) => d.target), [for (var d = 0; d < 4; d++) LearningPace.month.targetUnlocked(d, 100)]);
+    expect(days.first.dayDone, isTrue, reason: "day 0's set fits the routine");
     for (final d in days) {
-      expect(d.swipes, greaterThanOrEqualTo(LearningPace.month.profile.dailyRounds * TrainingTuning.defaultSessionLength));
+      expect(d.setCards, greaterThan(0));
+      expect(d.swipes,
+          greaterThanOrEqualTo(math.min(d.setLooks, LearningPace.month.profile.dailyRounds * TrainingTuning.defaultSessionLength)));
       expect(d.reviews, inInclusiveRange(1, d.swipes));
       expect(d.recall, inInclusiveRange(0.5, 1));
       expect(d.forgotToday + d.lookAlikes + d.slips, lessThanOrEqualTo(d.misses));
@@ -236,7 +245,7 @@ void main() {
     /// A training round at [at] answering each of [ids] [times] times,
     /// correctly and fast, or [miss]ing them all.
     Future<void> drill(Progress p, Iterable<int> ids, DateTime at,
-        {int times = StatsTuning.solidMinTimed, bool miss = false}) async {
+        {int times = TodaySetTuning.newLooks, bool miss = false}) async {
       final session = PlaySession([for (var i = 0; i < times; i++) ...ids.map(CardRef.new)]);
       var t = Duration.zero;
       while (!session.finished) {

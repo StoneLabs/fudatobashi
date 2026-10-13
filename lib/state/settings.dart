@@ -149,6 +149,7 @@ class AppSettings {
     this.showRunningTimer = DefaultSettings.showRunningTimer,
     this.freePractice = DefaultSettings.freePractice,
     this.nigateCount = DefaultSettings.nigateCount,
+    this.dayStartHour = TodaySetTuning.defaultDayStartHour,
     this.maskStyle = DefaultSettings.maskStyle,
     this.debugMode = DefaultSettings.debugMode,
     this.onboarded = DefaultSettings.onboarded,
@@ -190,6 +191,10 @@ class AppSettings {
   /// Free practice's last setup (its deck and 隠し字).
   final FreePracticeSetup freePractice;
   final int nigateCount;
+
+  /// The local hour at which a new day begins (journey: today's set, new
+  /// cards, the daily bonus, streaks and week stamps).
+  final int dayStartHour;
   final MaskStyle maskStyle;
 
   /// Shows the nerd pages (FSRS state, scheduler, timing diagnostics).
@@ -242,6 +247,7 @@ class AppSettings {
         'showRunningTimer': showRunningTimer,
         'freePractice': freePractice.toJson(),
         'nigateCount': nigateCount,
+        'dayStartHour': dayStartHour,
         'maskStyle': maskStyle.name,
         'debugMode': debugMode,
         'onboarded': onboarded,
@@ -282,6 +288,8 @@ class AppSettings {
           ? FreePracticeSetup.fromJson((j['freePractice'] as Map).cast<String, dynamic>())
           : DefaultSettings.freePractice,
       nigateCount: j['nigateCount'] as int? ?? DefaultSettings.nigateCount,
+      dayStartHour: (j['dayStartHour'] as int? ?? TodaySetTuning.defaultDayStartHour)
+          .clamp(TodaySetTuning.firstDayStartHour, TodaySetTuning.lastDayStartHour),
       maskStyle: MaskStyle.values.asNameMap()[j['maskStyle']] ?? DefaultSettings.maskStyle,
       debugMode: j['debugMode'] as bool? ?? DefaultSettings.debugMode,
       onboarded: j['onboarded'] as bool? ?? DefaultSettings.onboarded,
@@ -310,6 +318,7 @@ class AppSettings {
     bool? showRunningTimer,
     FreePracticeSetup? freePractice,
     int? nigateCount,
+    int? dayStartHour,
     MaskStyle? maskStyle,
     bool? debugMode,
     bool? onboarded,
@@ -334,6 +343,7 @@ class AppSettings {
         showRunningTimer: showRunningTimer ?? this.showRunningTimer,
         freePractice: freePractice ?? this.freePractice,
         nigateCount: nigateCount ?? this.nigateCount,
+        dayStartHour: dayStartHour ?? this.dayStartHour,
         maskStyle: maskStyle ?? this.maskStyle,
         debugMode: debugMode ?? this.debugMode,
         onboarded: onboarded ?? this.onboarded,
