@@ -20,6 +20,8 @@ extension TourStrings on S {
         TabUnlock.finishedRounds =>
           lock.left == 1 ? f('lockFinishedOne', [tab]) : f('lockFinishedOther', [lock.left, tab]),
         TabUnlock.firstIsland => f('lockFirstIsland', [tab]),
+        TabUnlock.rememberedCards =>
+          lock.left == 1 ? f('lockRememberedOne', [tab]) : f('lockRememberedOther', [lock.left, tab]),
       };
   String tabUnlocked(String tab) => f('tabUnlocked', [tab]);
 

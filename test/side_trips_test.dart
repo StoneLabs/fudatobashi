@@ -1,6 +1,6 @@
 import 'dart:io';
 
-import 'package:drift/drift.dart' show driftRuntimeOptions;
+import 'package:drift/drift.dart' show Value, driftRuntimeOptions;
 import 'package:drift/native.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:fudatobashi/config/config.dart';
@@ -11,47 +11,40 @@ import 'package:fudatobashi/domain/card_stats.dart';
 import 'package:fudatobashi/domain/play_session.dart';
 import 'package:fudatobashi/domain/rating.dart';
 import 'package:fudatobashi/domain/side_trips.dart';
+import 'package:fudatobashi/domain/tab_locks.dart';
 import 'package:fudatobashi/domain/trainer.dart';
 import 'package:fudatobashi/state/play_config.dart';
 import 'package:fudatobashi/state/progress.dart';
 
 void main() {
-  const ranked = (trip: SideTrip.ankiren, mode: SideTripMode.ranked);
-  const free = (trip: SideTrip.ankiren, mode: SideTripMode.free);
+  const ankiren = SideTrip.ankiren;
+  const tabAt = SideTripTuning.tabRemembered, ankirenAt = SideTripTuning.ankirenRemembered;
 
   group('unlock rule', () {
-    SideTripLock? lock(SideTripGate gate, int remembered, {bool allKnown = false, Set<SideTripGate> latched = const {}}) =>
-        SideTripUnlocks.lockOf(gate, allKnown: allKnown, remembered: remembered, latched: latched);
+    SideTripLock? lock(int remembered, {bool allKnown = false, Set<SideTrip> latched = const {}}) =>
+        SideTripUnlocks.lockOf(ankiren, allKnown: allKnown, remembered: remembered, latched: latched);
+    SideTripLock? tab(int remembered, {bool allKnown = false, bool latched = false}) =>
+        SideTripUnlocks.tabLock(allKnown: allKnown, remembered: remembered, latched: latched);
 
-    test('journey: 暗記練 opens at its count of well-remembered cards, its free play at a higher one', () {
-      expect(SideTripUnlocks.opensAt(ranked), SideTripTuning.ankirenRemembered);
-      expect(SideTripUnlocks.opensAt(free), SideTripTuning.ankirenFreeRemembered);
-      expect(SideTripTuning.ankirenFreeRemembered, greaterThan(SideTripTuning.ankirenRemembered));
+    test('journey: the tab opens at 25 well-remembered cards, 暗記練 at 50', () {
+      expect([tabAt, ankirenAt], [25, 50]);
+      expect(SideTripUnlocks.opensAt(ankiren), ankirenAt);
 
-      final shut = lock(ranked, 18)!;
-      expect([shut.opensAt, shut.remembered, shut.needed], [SideTripTuning.ankirenRemembered, 18, 7]);
-      expect(lock(ranked, SideTripTuning.ankirenRemembered - 1)?.needed, 1);
-      expect(lock(ranked, SideTripTuning.ankirenRemembered), isNull);
-      expect(lock(free, SideTripTuning.ankirenRemembered)?.needed,
-          SideTripTuning.ankirenFreeRemembered - SideTripTuning.ankirenRemembered);
-      expect(lock(free, SideTripTuning.ankirenFreeRemembered), isNull);
+      final shut = tab(18)!;
+      expect([shut.opensAt, shut.remembered, shut.needed], [tabAt, 18, 7]);
+      expect(tab(tabAt - 1)?.needed, 1);
+      expect(tab(tabAt), isNull);
+
+      expect(lock(tabAt)?.needed, ankirenAt - tabAt, reason: 'the tab opens before the game');
+      expect(lock(ankirenAt - 1)?.needed, 1);
+      expect(lock(ankirenAt), isNull);
     });
 
-    test('a latched gate stays open whatever the count, and all-known mode opens every gate', () {
-      expect(lock(ranked, 0, latched: {ranked}), isNull);
-      expect(lock(free, 0, latched: {ranked}), isNotNull, reason: 'each gate latches on its own');
-      for (final gate in SideTripUnlocks.gates) {
-        expect(lock(gate, 0, allKnown: true), isNull);
-      }
-    });
-
-    test('gates round-trip through their stored names; unknown names are dropped', () {
-      expect(SideTripUnlocks.gates, hasLength(SideTrip.values.length * SideTripMode.values.length));
-      for (final gate in SideTripUnlocks.gates) {
-        expect(SideTripUnlocks.named(SideTripUnlocks.nameOf(gate)), gate);
-      }
-      expect(SideTripUnlocks.nameOf(free), 'ankiren.free');
-      expect(SideTripUnlocks.named('karuta.ranked'), isNull);
+    test('a latch keeps the tab or a trip open whatever the count, and all-known mode opens both', () {
+      expect(tab(0, latched: true), isNull);
+      expect(lock(0, latched: {ankiren}), isNull);
+      expect(tab(0, allKnown: true), isNull);
+      expect(lock(0, allKnown: true), isNull);
     });
   });
 
@@ -104,21 +97,18 @@ void main() {
       final hub = SideTripsHub.of(allKnown: false, remembered: 3);
       expect(hub.entries.map((e) => e.trip), SideTrip.values);
       final e = hub[SideTrip.ankiren];
-      expect([e.open, e.freeOpen, e.ranked], [false, false, false]);
-      expect(e.lock?.needed, SideTripTuning.ankirenRemembered - 3);
-      expect(e.freeLock?.needed, SideTripTuning.ankirenFreeRemembered - 3);
+      expect([e.open, e.ranked], [false, false]);
+      expect(e.lock?.needed, ankirenAt - 3);
       expect(e.band, Rating.bands.first);
       expect([e.rating, e.rankedLevel, e.maxLevel, e.games], [null, null, null, 0]);
-      expect(hub.openGates, isEmpty);
+      expect(hub.openTrips, isEmpty);
     });
 
-    test('opens ranked first, then free play, and reports the open gates for the latch', () {
-      final half = SideTripsHub.of(allKnown: false, remembered: SideTripTuning.ankirenRemembered);
-      expect([half[SideTrip.ankiren].open, half[SideTrip.ankiren].freeOpen], [true, false]);
-      expect(half.openGates, {ranked});
-      final full = SideTripsHub.of(allKnown: false, remembered: SideTripTuning.ankirenFreeRemembered);
-      expect(full.openGates, {ranked, free});
-      expect(SideTripsHub.of(allKnown: true, remembered: 0).openGates, {...SideTripUnlocks.gates});
+    test('opens 暗記練 whole at 50, and reports the open trips for the latch', () {
+      expect(SideTripsHub.of(allKnown: false, remembered: ankirenAt - 1).openTrips, isEmpty);
+      expect(SideTripsHub.of(allKnown: false, remembered: ankirenAt).openTrips, {ankiren});
+      expect(SideTripsHub.of(allKnown: false, remembered: 0, latched: {ankiren}).openTrips, {ankiren});
+      expect(SideTripsHub.of(allKnown: true, remembered: 0).openTrips, {...SideTrip.values});
     });
 
     test('a standing carries through, its rating placed on the main ladder', () {
@@ -157,33 +147,69 @@ void main() {
       await p.recordRun(session, const PlayConfig(mode: PlayMode.training), DateTime.now());
     }
 
-    test('journey: 暗記練 latches open, survives a restart and a bad day, and a reset locks it again', () async {
+    Future<String?> stored(AppDatabase db, String key) async =>
+        (await (db.select(db.keyValues)..where((k) => k.key.equals(key))).getSingleOrNull())?.value;
+
+    test('journey: the tab latches open at 25 and 暗記練 at 50; both survive a restart and a bad day, '
+        'and a reset locks them again', () async {
       final db = AppDatabase(NativeDatabase.memory());
       final p = await Progress.open(db);
       await p.setLearningMode(LearningMode.journey);
-      expect(p.sideTripsHub().openGates, isEmpty);
+      expect(p.tabLock(LockedTab.sideTrips)?.left, tabAt);
+      expect(p.sideTripsHub().openTrips, isEmpty);
 
-      await remember(p, journeyOrder.take(SideTripTuning.ankirenRemembered));
-      expect(p.sideTripsHub().openGates, {ranked});
+      await remember(p, journeyOrder.take(tabAt));
+      expect(p.tabLock(LockedTab.sideTrips), isNull);
+      expect(p.sideTripsHub()[ankiren].lock?.needed, ankirenAt - tabAt);
+      await remember(p, journeyOrder.skip(tabAt).take(ankirenAt - tabAt));
+      expect(p.sideTripsHub().openTrips, {ankiren});
 
       final later = DateTime.now().add(const Duration(days: 60));
       expect(p.trainer.wellRememberedCount(p.allStats, later), 0, reason: 'every card is due weeks later');
-      expect(p.sideTripsHub(later).openGates, {ranked});
-      final stored = await (db.select(db.keyValues)..where((k) => k.key.equals('sideTripsUnlocked'))).get();
-      expect(stored.single.value, '["ankiren.ranked"]');
+      expect(p.sideTripsHub(later).openTrips, {ankiren});
+      expect(await stored(db, 'sideTripsUnlocked'), '["ankiren"]');
+      expect(await stored(db, 'sideTripsTabUnlocked'), 'true');
       final again = await Progress.open(db);
-      expect(again.sideTripsHub(later).openGates, {ranked});
+      expect(again.sideTripsHub(later).openTrips, {ankiren});
+      expect(again.tabLock(LockedTab.sideTrips), isNull);
 
       await again.resetProgress();
-      expect(again.sideTripsHub().openGates, isEmpty, reason: 'a progress reset locks it again');
+      expect(again.sideTripsHub().openTrips, isEmpty, reason: 'a progress reset locks it again');
+      expect(again.tabLock(LockedTab.sideTrips), isNotNull);
       await db.close();
     });
 
-    test('all-known mode: every side trip open', () async {
+    test('a player who opened 暗記練 at 25 under the old rule finds it locked below 50, rating kept', () async {
+      final db = AppDatabase(NativeDatabase.memory());
+      final p = await Progress.open(db);
+      await p.setLearningMode(LearningMode.journey);
+      await remember(p, journeyOrder.take(30));
+      await db.into(db.keyValues).insertOnConflictUpdate(
+          KeyValuesCompanion.insert(key: 'sideTripsUnlocked', value: '["ankiren.ranked"]'));
+      await db.into(db.sideTripRuns).insert(SideTripRunsCompanion.insert(
+          game: ankiren.name,
+          startedAt: DateTime.now(),
+          ranked: true,
+          cardCount: 6,
+          score: 900,
+          maxScore: 1200,
+          completed: true,
+          rating: const Value(812),
+          performance: const Value(900)));
+      final again = await Progress.open(db);
+      expect(again.tabLock(LockedTab.sideTrips), isNull);
+      final entry = again.sideTripsHub()[ankiren];
+      expect(entry.lock?.needed, ankirenAt - 30);
+      expect([entry.rating, entry.games], [812, 1]);
+      await db.close();
+    });
+
+    test('all-known mode: the tab and every side trip open', () async {
       final db = AppDatabase(NativeDatabase.memory());
       final p = await Progress.open(db);
       await p.setLearningMode(LearningMode.allKnown);
-      expect(p.sideTripsHub().openGates, {...SideTripUnlocks.gates});
+      expect(p.tabLock(LockedTab.sideTrips), isNull);
+      expect(p.sideTripsHub().openTrips, {...SideTrip.values});
       await db.close();
     });
   });

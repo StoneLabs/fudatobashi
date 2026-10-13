@@ -224,10 +224,10 @@ class _RankFlag extends StatelessWidget {
 
 /// A side trip's panel on the hub, then Home's button pair. Open: its
 /// rating with the last game's change, the next ranked game, and the burst
-/// that starts it ([onRanked]); free play ([onFree], or why it is still
-/// locked) and the rules ([onRules]) under it. Locked: the cards remembered
-/// so far as pips and a grey bar saying how many more open it, where the
-/// burst will be; only the rules under it.
+/// that starts it ([onRanked]); free play ([onFree]) and the rules
+/// ([onRules]) under it. Locked: the cards remembered so far as pips and a
+/// grey bar saying how many more open it, where the burst will be; only
+/// the rules under it.
 class SideTripBody extends StatelessWidget {
   const SideTripBody(this.entry, {super.key, required this.onRanked, required this.onFree, required this.onRules});
 
@@ -488,7 +488,7 @@ class RankedBurst extends StatelessWidget {
 }
 
 /// A locked trip: the cards remembered well so far out of what opens it, as
-/// a count and as pips, and the bar where its ranked burst will be.
+/// a count and as rows of pips, and the bar where its ranked burst will be.
 class _LockedRows extends StatelessWidget {
   const _LockedRows(this.lock);
 
@@ -521,11 +521,19 @@ class _LockedRows extends StatelessWidget {
         ),
         Padding(
           padding: SideTripsLayout.pipsPadding,
-          child: CardPips(
-            [for (var i = 0; i < lock.opensAt; i++) i < lock.remembered ? PipState.learned : PipState.locked],
-            gap: SideTripsLayout.pipGap,
-            aspect: SideTripsLayout.pipAspect,
-          ),
+          child: Column(children: [
+            for (var row = 0; row < lock.opensAt; row += SideTripsLayout.pipsPerRow) ...[
+              if (row > 0) const SizedBox(height: SideTripsLayout.pipRowGap),
+              CardPips(
+                [
+                  for (var i = row; i < math.min(row + SideTripsLayout.pipsPerRow, lock.opensAt); i++)
+                    i < lock.remembered ? PipState.learned : PipState.locked,
+                ],
+                gap: SideTripsLayout.pipGap,
+                aspect: SideTripsLayout.pipAspect,
+              ),
+            ],
+          ]),
         ),
         const SizedBox(height: SideTripsLayout.lockTop),
         _LockBar(lock),
@@ -603,9 +611,7 @@ class _LockBar extends StatelessWidget {
   }
 }
 
-/// Free play, in Home's button style: open, it says the levels it offers;
-/// locked, grey with a padlock, how many more cards open it, and a tap
-/// says why.
+/// Free play, in Home's button style, saying the levels it offers.
 class _FreeButton extends StatelessWidget {
   const _FreeButton(this.entry, {required this.onTap});
 
@@ -615,22 +621,13 @@ class _FreeButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final s = S.of(context);
-    final lock = entry.freeLock;
     final maxLevel = entry.maxLevel;
     return HomeRowButton(
-      icon: lock == null ? IconArt.cards : IconArt.lock,
+      icon: IconArt.cards,
       title: s.freePlay,
       badge: _Sub(s.other.freePlay),
-      sub: lock != null
-          ? s.sideTripLockedSub(lock.needed)
-          : maxLevel == null
-              ? s.sideTripFreeSub
-              : s.sideTripFreeUpTo(maxLevel),
-      color: lock == null ? Palette.paper : Palette.desk,
-      onTap: () => lock == null
-          ? onTap()
-          : BalloonPop.show(context, s.sideTripFreeLockedWhy(lock.needed),
-              size: SideTripsLayout.lockBalloon, life: SideTripsLayout.lockBalloonLife),
+      sub: maxLevel == null ? s.sideTripFreeSub : s.sideTripFreeUpTo(maxLevel),
+      onTap: onTap,
     );
   }
 }

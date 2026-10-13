@@ -119,12 +119,12 @@ Future<void> startAnkirenRanked(BuildContext context, {bool replace = false}) as
       replace: replace);
 }
 
-/// 暗記練's free play at [setup], once its free play is open and the known
-/// cards fill the field.
+/// 暗記練's free play at [setup], once 暗記練 is open and the known cards
+/// fill the field.
 Future<void> startAnkirenFree(BuildContext context, AnkirenSetup setup, {bool replace = false}) async {
   final progress = ProgressScope.read(context);
   final known = progress.knownCards.toList();
-  if (!progress.sideTripsHub()[SideTrip.ankiren].freeOpen || setup.ranked) return;
+  if (!progress.sideTripsHub()[SideTrip.ankiren].open || setup.ranked) return;
   if (setup.cards > known.length) {
     MangaToast.show(context, S.of(context).ankirenNeedCards(setup.cards));
     return;

@@ -107,8 +107,8 @@ class FreePracticeAccess {
 /// settings. Loaded once at startup; the UI listens for changes.
 class Progress extends ChangeNotifier {
   Progress._(this.db, this.trainer, this._log, this.sessions, this.ratingPoints, this._settings, this.rating,
-      this._islandsCelebrated, this._freePracticeUnlocked, this._tabsSeenLocked, this._sideTripsOpened,
-      this._sideTripsSeenLocked, this.sideTrips);
+      this._islandsCelebrated, this._freePracticeUnlocked, this._tabsSeenLocked, this._sideTripsTabOpened,
+      this._sideTripsOpened, this._sideTripsSeenLocked, this.sideTrips);
 
   final AppDatabase db;
   final Trainer trainer;
@@ -132,9 +132,12 @@ class Progress extends ChangeNotifier {
   /// celebrated (see [tabLock]).
   final Set<LockedTab> _tabsSeenLocked;
 
-  /// Side trips' modes that have opened once, so they stay open (see
+  /// The Side Trips tab has opened once, so it stays open (see [tabLock]).
+  bool _sideTripsTabOpened;
+
+  /// Side trips that have opened once, so they stay open (see
   /// [sideTripsHub]).
-  final Set<SideTripGate> _sideTripsOpened;
+  final Set<SideTrip> _sideTripsOpened;
 
   /// Side trips the player has seen locked on the hub whose opening is
   /// still to be shown.
@@ -204,9 +207,10 @@ class Progress extends ChangeNotifier {
         for (final name in (jsonDecode(kv[_tabsSeenLockedKey] ?? '[]') as List).cast<String>())
           ?LockedTab.values.asNameMap()[name],
       },
+      kv[_sideTripsTabKey] == 'true',
       {
         for (final name in (jsonDecode(kv[_sideTripsKey] ?? '[]') as List).cast<String>())
-          ?SideTripUnlocks.named(name),
+          ?SideTrip.values.asNameMap()[name],
       },
       {
         for (final name in (jsonDecode(kv[_sideTripsSeenLockedKey] ?? '[]') as List).cast<String>())
@@ -223,6 +227,7 @@ class Progress extends ChangeNotifier {
   static const _orphanRun = PlayConfig(mode: PlayMode.free);
   static const _freePracticeKey = 'freePracticeUnlocked';
   static const _tabsSeenLockedKey = 'tabsSeenLocked';
+  static const _sideTripsTabKey = 'sideTripsTabUnlocked';
   static const _sideTripsKey = 'sideTripsUnlocked';
   static const _sideTripsSeenLockedKey = 'sideTripsSeenLocked';
 
@@ -493,29 +498,39 @@ class Progress extends ChangeNotifier {
     await _put(_freePracticeKey, 'true');
   }
 
-  /// The Side Trips tab: each side trip's locks and standing. Its modes open
+  bool get _allKnown => trainer.config.learningMode == LearningMode.allKnown;
+
+  /// The Side Trips tab: each side trip's lock and standing. The trips open
   /// in all-known mode, and in journey mode as cards are well remembered
   /// (latched like [freePractice]: a bad day never locks them again).
-  SideTripsHub sideTripsHub([DateTime? now]) {
-    final allKnown = trainer.config.learningMode == LearningMode.allKnown;
-    // With every mode open there is no lock to count toward.
-    final allOpen = allKnown || SideTripUnlocks.gates.every(_sideTripsOpened.contains);
-    return SideTripsHub.of(
-      allKnown: allKnown,
-      remembered: allOpen ? 0 : trainer.wellRememberedCount(allStats, now ?? DateTime.now()),
-      latched: _sideTripsOpened,
-      standings: {
-        for (final trip in SideTrip.values) trip: sideTrips.standingOf(trip, known: knownCards.length),
-      },
-    );
-  }
+  SideTripsHub sideTripsHub([DateTime? now]) => SideTripsHub.of(
+        allKnown: _allKnown,
+        remembered: _sideTripsRemembered(now ?? DateTime.now()),
+        latched: _sideTripsOpened,
+        standings: {
+          for (final trip in SideTrip.values) trip: sideTrips.standingOf(trip, known: knownCards.length),
+        },
+      );
 
-  /// Stores the side-trip latch for every mode [sideTripsHub] shows open.
+  /// Cards well remembered at once, for the side trips' locks; 0 once
+  /// the tab and every trip are open, with no lock left to count toward.
+  int _sideTripsRemembered(DateTime now) =>
+      _allKnown || (_sideTripsTabOpened && _sideTripsOpened.containsAll(SideTrip.values))
+          ? 0
+          : trainer.wellRememberedCount(allStats, now);
+
+  /// Stores the side-trip latches for the tab and every trip open now.
   Future<void> _latchSideTrips(DateTime now) async {
-    final open = sideTripsHub(now).openGates;
+    final remembered = _sideTripsRemembered(now);
+    if (!_sideTripsTabOpened &&
+        SideTripUnlocks.tabLock(allKnown: _allKnown, remembered: remembered, latched: false) == null) {
+      _sideTripsTabOpened = true;
+      await _put(_sideTripsTabKey, 'true');
+    }
+    final open = sideTripsHub(now).openTrips;
     if (_sideTripsOpened.containsAll(open)) return;
     _sideTripsOpened.addAll(open);
-    await _put(_sideTripsKey, jsonEncode([for (final g in _sideTripsOpened) SideTripUnlocks.nameOf(g)]));
+    await _put(_sideTripsKey, jsonEncode([for (final t in _sideTripsOpened) t.name]));
   }
 
   /// For tests that visit History and Stats without playing their way
@@ -532,6 +547,8 @@ class Progress extends ChangeNotifier {
         rounds: sessions.length,
         finishedRounds: sessions.where((s) => s.completed).length,
         islandFinished: _islandsCelebrated.isNotEmpty || islands.any((i) => i.complete),
+        remembered: _sideTripsRemembered(DateTime.now()),
+        sideTripsLatched: _sideTripsTabOpened,
       );
 
   /// Tabs shown locked whose opening is still to be celebrated.
@@ -859,6 +876,7 @@ class Progress extends ChangeNotifier {
                   'islandsCelebrated',
                   _freePracticeKey,
                   _tabsSeenLockedKey,
+                  _sideTripsTabKey,
                   _sideTripsKey,
                   _sideTripsSeenLockedKey,
                 ])))
@@ -872,6 +890,7 @@ class Progress extends ChangeNotifier {
     _islandsCelebrated.clear();
     _freePracticeUnlocked = false;
     _tabsSeenLocked.clear();
+    _sideTripsTabOpened = false;
     _sideTripsOpened.clear();
     _sideTripsSeenLocked.clear();
     sideTrips.clear();

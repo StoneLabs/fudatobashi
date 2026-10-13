@@ -2588,8 +2588,19 @@ void main() {
 
   group('Locked tabs', () {
     TabLock? lock(LockedTab t,
-            {LearningMode mode = LearningMode.journey, int rounds = 0, int finished = 0, bool island = false}) =>
-        TabLock.of(t, mode: mode, rounds: rounds, finishedRounds: finished, islandFinished: island);
+            {LearningMode mode = LearningMode.journey,
+            int rounds = 0,
+            int finished = 0,
+            bool island = false,
+            int remembered = 0,
+            bool latched = false}) =>
+        TabLock.of(t,
+            mode: mode,
+            rounds: rounds,
+            finishedRounds: finished,
+            islandFinished: island,
+            remembered: remembered,
+            sideTripsLatched: latched);
 
     test('History opens after 3 rounds; Stats with the first island, or 1 finished round with no islands', () {
       expect(lock(LockedTab.history)?.left, 3);
@@ -2600,6 +2611,18 @@ void main() {
       expect(lock(LockedTab.stats, mode: LearningMode.allKnown, rounds: 2)?.needs, TabUnlock.finishedRounds,
           reason: 'rounds ended early do not count');
       expect(lock(LockedTab.stats, mode: LearningMode.allKnown, rounds: 1, finished: 1), isNull);
+    });
+
+    test('Side Trips opens at 25 cards remembered well, for good once it has, and right away with all known', () {
+      const opens = SideTripTuning.tabRemembered;
+      final shut = lock(LockedTab.sideTrips, remembered: opens - 4, rounds: 9, finished: 9, island: true)!;
+      expect([shut.needs, shut.left], [TabUnlock.rememberedCards, 4]);
+      expect(lock(LockedTab.sideTrips, remembered: opens), isNull);
+      expect(lock(LockedTab.sideTrips, latched: true), isNull);
+      expect(lock(LockedTab.sideTrips, mode: LearningMode.allKnown), isNull);
+      expect(S('en').lockReason('Side Trips', shut), 'Remember 4 more cards well to open Side Trips!');
+      expect(S('en').lockReason('Side Trips', const TabLock(TabUnlock.rememberedCards, 1)),
+          'Remember 1 more card well to open Side Trips!');
     });
 
     Future<void> playRound(WidgetTester tester, Progress p) => tester.runAsync(() async {
@@ -2742,10 +2765,8 @@ void main() {
         final p = await open(tester, mode: LearningMode.journey, ja: ja, journeyCards: 3);
         final entry = p.sideTripsHub()[SideTrip.ankiren];
         expect(entry.lock?.needed, SideTripTuning.ankirenRemembered);
-        expect(entry.freeLock?.needed, SideTripTuning.ankirenFreeRemembered);
         await openTrips(tester, p);
-        expect(inTrips(find.byType(CardPips)), findsOneWidget);
-        expect(tester.widget<CardPips>(inTrips(find.byType(CardPips))).pips,
+        expect([for (final row in tester.widgetList<CardPips>(inTrips(find.byType(CardPips)))) ...row.pips],
             hasLength(SideTripTuning.ankirenRemembered));
         expect(inTrips(find.byType(RankedBurst)), findsNothing, reason: 'a locked trip shows its lock, not its burst');
         expect(inTrips(find.text(s.freePlay)), findsNothing, reason: 'one lock at a time');
@@ -2758,8 +2779,7 @@ void main() {
       testWidgets('all-known mode opens 暗記練 and its free play, unranked at 入門 ($lang)', (tester) async {
         final s = S(lang);
         final p = await open(tester, mode: LearningMode.allKnown, ja: ja);
-        final entry = p.sideTripsHub()[SideTrip.ankiren];
-        expect([entry.open, entry.freeOpen], [true, true]);
+        expect(p.sideTripsHub()[SideTrip.ankiren].open, isTrue);
         await openTrips(tester, p);
         expect(inTrips(find.text(Rating.bands.first.label)), findsOneWidget, reason: 'the flag flies 入門');
         expect(inTrips(find.text(s.sideTripUnranked)), findsOneWidget);
@@ -2788,36 +2808,66 @@ void main() {
       }
     }
 
-    testWidgets('暗記練 opens at 25 cards remembered well, its free play at 50, and both stay open', (tester) async {
+    testWidgets('a new journey finds Side Trips in chains until 25 cards are remembered well', (tester) async {
       const s = S('en');
-      const ranked = SideTripTuning.ankirenRemembered, free = SideTripTuning.ankirenFreeRemembered;
+      const opens = SideTripTuning.tabRemembered;
+      final p = await open(tester, mode: LearningMode.journey, tabsLocked: true);
+      await onPhone(tester, p, fontScale: 1.1);
+      Finder chains() => find.byKey(const ValueKey(LockedTab.sideTrips));
+      expect(chains(), findsOneWidget);
+      await tester.tap(find.descendant(of: find.byType(MangaTabBar), matching: find.text(s.sideTrips)));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 400));
+      expect(find.text(s.lockReason(s.sideTrips, const TabLock(TabUnlock.rememberedCards, opens))), findsOneWidget);
+      expect(tester.widget<MangaTabBar>(find.byType(MangaTabBar)).current, 0, reason: 'a locked tab does not open');
+      await _capture(tester, 'side_trips_tab_locked');
+      await tester.pump(TabLockStyle.balloonLife);
+      await tester.runAsync(() async {
+        await Future<void>.delayed(const Duration(milliseconds: 50));
+      });
+      expect(p.tabsSeenLocked, contains(LockedTab.sideTrips));
+
+      await remember(tester, p, journeyOrder.take(opens));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 16));
+      expect(tester.widget<TabChains>(chains()).breaking, isTrue);
+      expect(find.textContaining(s.tabUnlocked(s.sideTrips)), findsOneWidget);
+      await tester.pump(TabLockStyle.breakTime * 1.5);
+      await tester.pump();
+      expect(chains(), findsNothing);
+      expect(p.tabsSeenLocked, isNot(contains(LockedTab.sideTrips)));
+      await tester.pumpWidget(const SizedBox());
+    });
+
+    testWidgets('暗記練 opens whole at 50 cards remembered well, ranked and free play, and stays open', (tester) async {
+      const s = S('en');
+      const tabAt = SideTripTuning.tabRemembered, opens = SideTripTuning.ankirenRemembered;
       final p = await open(tester, mode: LearningMode.journey);
-      await remember(tester, p, journeyOrder.take(ranked - 1));
-      expect(p.sideTripsHub()[SideTrip.ankiren].lock?.needed, 1);
-      await remember(tester, p, [journeyOrder[ranked - 1]]);
-      var entry = p.sideTripsHub()[SideTrip.ankiren];
-      expect(entry.open, isTrue);
-      expect(entry.freeLock?.needed, free - ranked);
+      await remember(tester, p, journeyOrder.take(tabAt));
+      expect(p.sideTripsHub()[SideTrip.ankiren].lock?.needed, opens - tabAt);
 
       await openTrips(tester, p);
-      expect(inTrips(find.byType(RankedBurst)), findsOneWidget);
-      expect(inTrips(find.text(s.sideTripUnranked)), findsOneWidget);
-      expect(inTrips(find.text(s.sideTripLockedSub(free - ranked))), findsOneWidget, reason: 'free play is still locked');
-      await _capture(tester, 'side_trips_ranked_open');
-      await expectBalloon(tester, inTrips(find.text(s.freePlay)), s.sideTripFreeLockedWhy(free - ranked));
-
-      await remember(tester, p, journeyOrder.skip(ranked).take(free - ranked));
+      expect(inTrips(find.byType(RankedBurst)), findsNothing);
+      expect(inTrips(find.text(s.freePlay)), findsNothing, reason: 'free play opens with ranked');
+      expect(inTrips(find.text(s.howToPlay)), findsOneWidget, reason: 'the rules are there all along');
+      await remember(tester, p, journeyOrder.skip(tabAt).take(opens - tabAt - 1));
       await tester.pump();
-      entry = p.sideTripsHub()[SideTrip.ankiren];
-      expect(entry.freeOpen, isTrue);
+      expect(p.sideTripsHub()[SideTrip.ankiren].lock?.needed, 1);
+
+      await remember(tester, p, [journeyOrder[opens - 1]]);
+      await tester.pump();
+      final entry = p.sideTripsHub()[SideTrip.ankiren];
+      expect(entry.open, isTrue);
+      expect(inTrips(find.byType(RankedBurst)), findsOneWidget);
       expect(inTrips(find.text(s.sideTripFreeUpTo(entry.maxLevel!))), findsOneWidget);
+      await _capture(tester, 'side_trips_ankiren_open');
 
       // Weeks later every card is due, so none is well remembered: the latch
-      // keeps both open.
+      // keeps it open.
       final later = DateTime.now().add(const Duration(days: 60));
       expect(p.trainer.wellRememberedCount(p.allStats, later), 0);
-      final latched = p.sideTripsHub(later)[SideTrip.ankiren];
-      expect([latched.open, latched.freeOpen], [true, true]);
+      expect(p.sideTripsHub(later)[SideTrip.ankiren].open, isTrue);
+      await tester.pump(const Duration(seconds: 3));
       await tester.pumpWidget(const SizedBox());
     });
   });

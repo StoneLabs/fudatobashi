@@ -295,11 +295,12 @@ abstract final class FreePracticeTuning {
 /// this many cards are well remembered at once, free practice's counter;
 /// from then on they stay open for good. All-known mode opens them all.
 abstract final class SideTripTuning {
-  /// 暗記練 itself, with its ranked games.
-  static const int ankirenRemembered = 25;
+  /// The Side Trips tab.
+  static const int tabRemembered = 25;
 
-  /// 暗記練's free play.
-  static const int ankirenFreeRemembered = 50;
+  /// 暗記練, its ranked games and free play together; ranked always has
+  /// enough known cards to deal from by then.
+  static const int ankirenRemembered = 50;
 }
 
 /// How a swipe turns the Side Trips tab's ring of islands (`SideTripRing`).

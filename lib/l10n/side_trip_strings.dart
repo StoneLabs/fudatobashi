@@ -63,16 +63,15 @@ extension SideTripStrings on S {
   String get sideTripRemembered => t('sideTripRemembered');
   String get sideTripRememberedCount => t('sideTripRememberedCount');
 
-  /// A locked button's line: [n] cards still to remember well.
+  /// A locked trip in brief: [n] cards still to remember well.
   String sideTripLockedSub(int n) => f('sideTripLockedSub', [n]);
 
   /// The locked ranked bar's line: [n] cards still to remember well (a
   /// template, its number set in display type).
   String sideTripLandIn(int n) => t(n == 1 ? 'sideTripLandInOne' : 'sideTripLandInOther');
 
-  /// What opens a trip, or its free play: remembering [n] more cards well.
+  /// What opens a trip: remembering [n] more cards well.
   String sideTripLockedWhy(int n) => f(n == 1 ? 'sideTripLockedOne' : 'sideTripLockedOther', [n]);
-  String sideTripFreeLockedWhy(int n) => f(n == 1 ? 'sideTripFreeLockedOne' : 'sideTripFreeLockedOther', [n]);
 
   /// 暗記練's rules: its three steps, a line on each, and its scoring.
   String get howToPlay => t('howToPlay');

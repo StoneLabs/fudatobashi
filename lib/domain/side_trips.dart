@@ -56,16 +56,9 @@ abstract final class SideTripRing {
   static double place(SideTripIsle isle, double turn) => (isle.index - turn) % isles.length;
 }
 
-/// The two ways into a side trip: its ranked games, which move its own
-/// rating, and free play at any setup.
-enum SideTripMode { ranked, free }
-
-/// One mode of one side trip: what opens, and what the unlock latch keeps
-/// open.
-typedef SideTripGate = ({SideTrip trip, SideTripMode mode});
-
-/// What keeps a side trip's mode shut in journey mode: it opens once
-/// [opensAt] cards are well remembered at once, and [remembered] are now.
+/// What keeps the Side Trips tab or a side trip shut in journey mode: it
+/// opens once [opensAt] cards are well remembered at once, and
+/// [remembered] are now.
 class SideTripLock {
   const SideTripLock({required this.opensAt, required this.remembered});
 
@@ -76,40 +69,35 @@ class SideTripLock {
   int get needed => math.max(0, opensAt - remembered);
 }
 
-/// When side trips open: in journey mode once enough cards are well
-/// remembered at once (`Trainer.wellRememberedCount`, free practice's
-/// counter, thresholds in [SideTripTuning]), and for good once they have;
-/// in all-known mode right away. A trip's own lock covers its ranked games.
+/// When the Side Trips tab and its trips open: in journey mode once enough
+/// cards are well remembered at once (`Trainer.wellRememberedCount`, free
+/// practice's counter, thresholds in [SideTripTuning]), and for good once
+/// they have; in all-known mode right away. A trip opens whole, its ranked
+/// games and free play together.
 abstract final class SideTripUnlocks {
-  static final List<SideTripGate> gates = [
-    for (final trip in SideTrip.values)
-      for (final mode in SideTripMode.values) (trip: trip, mode: mode),
-  ];
-
-  /// Well-remembered cards [gate] needs in journey mode.
-  static int opensAt(SideTripGate gate) => switch (gate) {
-        (trip: SideTrip.ankiren, mode: SideTripMode.ranked) => SideTripTuning.ankirenRemembered,
-        (trip: SideTrip.ankiren, mode: SideTripMode.free) => SideTripTuning.ankirenFreeRemembered,
+  /// Well-remembered cards [trip] needs in journey mode.
+  static int opensAt(SideTrip trip) => switch (trip) {
+        SideTrip.ankiren => SideTripTuning.ankirenRemembered,
       };
 
-  /// What keeps [gate] shut, or null once it is open: [allKnown] mode and
-  /// the [latched] gates are open whatever the [remembered] count.
+  /// What keeps the tab shut, or null once it is open: in [allKnown] mode,
+  /// or once [latched], it is open whatever the [remembered] count.
+  static SideTripLock? tabLock({required bool allKnown, required int remembered, required bool latched}) =>
+      _lock(SideTripTuning.tabRemembered, open: allKnown || latched, remembered: remembered);
+
+  /// What keeps [trip] shut, or null once it is open: in [allKnown] mode,
+  /// or once among the [latched] trips, it is open whatever the
+  /// [remembered] count.
   static SideTripLock? lockOf(
-    SideTripGate gate, {
+    SideTrip trip, {
     required bool allKnown,
     required int remembered,
-    required Set<SideTripGate> latched,
-  }) {
-    if (allKnown || latched.contains(gate)) return null;
-    final need = opensAt(gate);
-    return remembered >= need ? null : SideTripLock(opensAt: need, remembered: remembered);
-  }
+    required Set<SideTrip> latched,
+  }) =>
+      _lock(opensAt(trip), open: allKnown || latched.contains(trip), remembered: remembered);
 
-  /// [gate] as the latch stores it, e.g. `ankiren.free`.
-  static String nameOf(SideTripGate gate) => '${gate.trip.name}.${gate.mode.name}';
-
-  /// The gate stored as [name], or null for one that no longer exists.
-  static SideTripGate? named(String name) => gates.where((g) => nameOf(g) == name).firstOrNull;
+  static SideTripLock? _lock(int opensAt, {required bool open, required int remembered}) =>
+      open || remembered >= opensAt ? null : SideTripLock(opensAt: opensAt, remembered: remembered);
 }
 
 /// A side trip's standing so far, as plain values: its ranked [rating]
@@ -129,13 +117,12 @@ class SideTripStanding {
   final int games;
 }
 
-/// One island of the Side Trips tab: a [trip], what keeps it ([lock]) or
-/// its free play ([freeLock]) shut, and its standing.
+/// One island of the Side Trips tab: a [trip], what keeps it shut
+/// ([lock]), and its standing.
 class SideTripEntry {
   const SideTripEntry({
     required this.trip,
     required this.lock,
-    required this.freeLock,
     required this.rating,
     required this.ratingChange,
     required this.band,
@@ -146,11 +133,8 @@ class SideTripEntry {
 
   final SideTrip trip;
 
-  /// Null once the trip and its ranked games are open.
+  /// Null once the trip, its ranked games and free play, is open.
   final SideTripLock? lock;
-
-  /// Null once its free play is open.
-  final SideTripLock? freeLock;
 
   /// The ranked rating, and what the last ranked game did to it; null
   /// until a ranked game is played.
@@ -167,7 +151,6 @@ class SideTripEntry {
   final int games;
 
   bool get open => lock == null;
-  bool get freeOpen => freeLock == null;
   bool get ranked => rating != null;
 }
 
@@ -179,23 +162,20 @@ class SideTripsHub {
   final List<SideTripEntry> entries;
 
   /// The hub for a player in [allKnown] mode or not, with [remembered]
-  /// cards well remembered now, the [latched] gates open for good, and
+  /// cards well remembered now, the [latched] trips open for good, and
   /// each trip's [standings] (none when missing).
   factory SideTripsHub.of({
     required bool allKnown,
     required int remembered,
-    Set<SideTripGate> latched = const {},
+    Set<SideTrip> latched = const {},
     Map<SideTrip, SideTripStanding> standings = const {},
   }) {
-    SideTripLock? lock(SideTrip trip, SideTripMode mode) =>
-        SideTripUnlocks.lockOf((trip: trip, mode: mode), allKnown: allKnown, remembered: remembered, latched: latched);
     SideTripEntry entry(SideTrip trip) {
       final standing = standings[trip] ?? SideTripStanding.none;
       final rating = standing.rating;
       return SideTripEntry(
         trip: trip,
-        lock: lock(trip, SideTripMode.ranked),
-        freeLock: lock(trip, SideTripMode.free),
+        lock: SideTripUnlocks.lockOf(trip, allKnown: allKnown, remembered: remembered, latched: latched),
         rating: rating,
         ratingChange: standing.ratingChange,
         band: rating == null ? Rating.bands.first : Rating.bandOf(rating),
@@ -210,11 +190,9 @@ class SideTripsHub {
 
   SideTripEntry operator [](SideTrip trip) => entries.firstWhere((e) => e.trip == trip);
 
-  /// The gates open now, for the unlock latch.
-  Set<SideTripGate> get openGates => {
-        for (final e in entries) ...[
-          if (e.open) (trip: e.trip, mode: SideTripMode.ranked),
-          if (e.freeOpen) (trip: e.trip, mode: SideTripMode.free),
-        ],
+  /// The trips open now, for the unlock latch.
+  Set<SideTrip> get openTrips => {
+        for (final e in entries)
+          if (e.open) e.trip,
       };
 }

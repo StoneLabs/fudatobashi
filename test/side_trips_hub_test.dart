@@ -56,6 +56,9 @@ const _wide = (name: '412', size: Size(1080 / 2.625, 2340 / 2.625), dpr: 2.625);
 const _users = (name: '384', size: Size(384, 832), dpr: 2.8125);
 const _statusBar = 28.0, _navBar = 48.0;
 
+/// Cards remembered well on the locked hub: 13 short of 暗記練.
+const _lockedCards = 37;
+
 enum _Hub { locked, open, ranked }
 
 Future<void> _loadFont(String family, List<String> files) async {
@@ -118,8 +121,8 @@ void main() {
   }
 
   // A player on the journey who has taken the tour, in [lang], with the hub
-  // [hub]: locked (12 cards remembered), open (27: ranked open, free play
-  // still locked, unranked) or ranked (60, and two ranked games played).
+  // [hub]: locked (37 cards remembered: the tab is open, 暗記練 is not), open
+  // (52, unranked) or ranked (60, and two ranked games played).
   // (All-known Home itself overflows a 360 dp phone at font scale 1.3 in
   // Japanese, so these stay on the journey.)
   Future<Progress> open(WidgetTester tester, _Hub hub, String lang) async {
@@ -131,10 +134,10 @@ void main() {
       switch (hub) {
         case _Hub.locked:
           await p.setLearningMode(LearningMode.journey);
-          await remember(p, journeyOrder.take(12));
+          await remember(p, journeyOrder.take(_lockedCards));
         case _Hub.open:
           await p.setLearningMode(LearningMode.journey);
-          await remember(p, journeyOrder.take(27));
+          await remember(p, journeyOrder.take(52));
         case _Hub.ranked:
           await p.setLearningMode(LearningMode.journey);
           await remember(p, journeyOrder.take(60));
@@ -257,12 +260,15 @@ void main() {
                 case _Hub.locked:
                   expect(inHub(find.byType(RankedBurst)), findsNothing);
                   expect(inHub(find.text(s.freePlay)), findsNothing, reason: 'one lock at a time');
-                  expect(inHub(find.byType(CardPips)), findsOneWidget);
+                  final rows = tester.widgetList<CardPips>(inHub(find.byType(CardPips)));
+                  expect([for (final r in rows) r.pips.length], [25, 25], reason: '50 pips in two rows');
+                  expect([for (final r in rows) ...r.pips].where((p) => p == PipState.learned),
+                      hasLength(_lockedCards));
                 case _Hub.open:
                   expectShown(tester, inHub(find.byType(RankedBurst)), phone);
                   expect(inHub(find.text(s.sideTripUnranked)), findsOneWidget);
-                  expect(inHub(find.text(s.sideTripLockedSub(SideTripTuning.ankirenFreeRemembered - 27))),
-                      findsOneWidget, reason: 'free play is still locked');
+                  expect(inHub(find.text(s.sideTripFreeUpTo(entry.maxLevel!))), findsOneWidget,
+                      reason: 'free play opens with ranked');
                 case _Hub.ranked:
                   expectShown(tester, inHub(find.byType(RankedBurst)), phone);
                   expect(inHub(find.text('${entry.rating!.round()}')), findsOneWidget);
@@ -331,18 +337,8 @@ void main() {
       });
     }
 
-    testWidgets('locked: the bar and free play say what opens them', (tester) async {
+    testWidgets('locked: the bar says what opens it', (tester) async {
       const s = S('en');
-      final p = await open(tester, _Hub.open, 'en');
-      await openHub(tester, p, _users);
-      await tester.tap(inHub(find.text(s.freePlay)));
-      await tester.pump();
-      await tester.pump(const Duration(milliseconds: 400));
-      expect(find.descendant(of: find.byType(SpeechBalloon), matching: find.text(s.sideTripFreeLockedWhy(23))),
-          findsOneWidget);
-      await tester.pump(SideTripsLayout.lockBalloonLife);
-      await tester.pumpWidget(const SizedBox());
-
       final locked = await open(tester, _Hub.locked, 'en');
       await openHub(tester, locked, _users);
       await tester.tap(inHub(find.textContaining(s.sideTripRanked)));
@@ -618,12 +614,12 @@ void main() {
     testWidgets('暗記練 seen locked opens once, with the chains\' snap and a toast; then it stays open', (tester) async {
       const s = S('en');
       final p = await open(tester, _Hub.locked, 'en');
-      await tester.runAsync(() => remember(p, journeyOrder.skip(12).take(11)));
+      await tester.runAsync(() => remember(p, journeyOrder.skip(_lockedCards).take(11)));
       await openHub(tester, p, _users);
       expect(gate(tester), GateState.locked);
       expect(p.sideTripsSeenLocked, {SideTrip.ankiren});
 
-      await tester.runAsync(() => remember(p, journeyOrder.skip(23).take(2)));
+      await tester.runAsync(() => remember(p, journeyOrder.skip(_lockedCards + 11).take(2)));
       await tester.pump();
       expect(p.sideTripsHub()[SideTrip.ankiren].open, isTrue);
       await tester.pump();
@@ -650,11 +646,11 @@ void main() {
 
     testWidgets('暗記練 opening while another island is in front waits until it comes back', (tester) async {
       final p = await open(tester, _Hub.locked, 'en');
-      await tester.runAsync(() => remember(p, journeyOrder.skip(12).take(11)));
+      await tester.runAsync(() => remember(p, journeyOrder.skip(_lockedCards).take(11)));
       await openHub(tester, p, _users);
       await swipe(tester);
       expect(frontOf(tester), SideTripIsle.building);
-      await tester.runAsync(() => remember(p, journeyOrder.skip(23).take(2)));
+      await tester.runAsync(() => remember(p, journeyOrder.skip(_lockedCards + 11).take(2)));
       await tester.pump();
       await tester.pump(DojoUnlockMotion.unlock);
       expect(heard.played, isEmpty);
@@ -682,11 +678,11 @@ void main() {
 
     testWidgets('under reduced motion it opens at once', (tester) async {
       final p = await open(tester, _Hub.locked, 'en');
-      await tester.runAsync(() => remember(p, journeyOrder.skip(12).take(11)));
+      await tester.runAsync(() => remember(p, journeyOrder.skip(_lockedCards).take(11)));
       tester.platformDispatcher.accessibilityFeaturesTestValue = const FakeAccessibilityFeatures(disableAnimations: true);
       addTearDown(tester.platformDispatcher.clearAccessibilityFeaturesTestValue);
       await openHub(tester, p, _users);
-      await tester.runAsync(() => remember(p, journeyOrder.skip(23).take(2)));
+      await tester.runAsync(() => remember(p, journeyOrder.skip(_lockedCards + 11).take(2)));
       for (var i = 0; i < 4; i++) {
         await tester.pump();
       }
@@ -721,9 +717,9 @@ void main() {
 
     testWidgets('unlock', (tester) async {
       final p = await open(tester, _Hub.locked, 'ja');
-      await tester.runAsync(() => remember(p, journeyOrder.skip(12).take(11)));
+      await tester.runAsync(() => remember(p, journeyOrder.skip(_lockedCards).take(11)));
       await openHub(tester, p, _users);
-      await tester.runAsync(() => remember(p, journeyOrder.skip(23).take(2)));
+      await tester.runAsync(() => remember(p, journeyOrder.skip(_lockedCards + 11).take(2)));
       await tester.pump();
       await tester.pump();
       await tester.pump();

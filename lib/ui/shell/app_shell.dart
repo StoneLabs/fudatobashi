@@ -24,8 +24,9 @@ enum AppTab { home, history, stats, sideTrips }
 /// The main screen: the four tabs above the manga tab bar. Settings and Help
 /// open from Home's header (see `openSettings`, `openHelp`).
 ///
-/// History and Stats start out locked under chains (see [TabLock]); a tab
-/// that opens has its chains broken, once, the next time Home shows.
+/// History, Stats and Side Trips start out locked under chains (see
+/// [TabLock]); a tab that opens has its chains broken, once, the next time
+/// Home shows.
 ///
 /// Until the player has taken Tobi's tour of Home (`AppSettings.toured`,
 /// set back to take it again), Home is shown with the tour over it.
@@ -76,6 +77,7 @@ class _AppShellState extends State<AppShell> {
   static String _label(S s, LockedTab t) => switch (t) {
         LockedTab.history => s.history,
         LockedTab.stats => s.stats,
+        LockedTab.sideTrips => s.sideTrips,
       };
 
   /// Tab [t], in chains while [lock] holds it shut, and after it opens
@@ -144,7 +146,7 @@ class _AppShellState extends State<AppShell> {
                           MangaTab(icon: IconArt.home, label: s.home),
                           _lockable(s, progress, LockedTab.history, IconArt.history, locks[LockedTab.history]),
                           _lockable(s, progress, LockedTab.stats, IconArt.stats, locks[LockedTab.stats]),
-                          MangaTab(icon: IconArt.sideTrips, label: s.sideTrips),
+                          _lockable(s, progress, LockedTab.sideTrips, IconArt.sideTrips, locks[LockedTab.sideTrips]),
                         ],
                       ),
                     ),

@@ -2301,14 +2301,16 @@ abstract final class SideTripsLayout {
   static const double burstIcon = 22;
   static const double burstIconStroke = 3.2;
 
-  /// While locked: the cards to remember as pips, then a grey bar where the
-  /// burst will be.
+  /// While locked: the cards to remember as rows of pips, then a grey bar
+  /// where the burst will be.
   static const EdgeInsets pipsPadding = EdgeInsets.fromLTRB(14, 2, 14, 0);
+  static const int pipsPerRow = 25;
   static const double pipGap = 3;
+  static const double pipRowGap = 3;
 
   /// Narrow pips keep a card's shape.
   static const double pipAspect = 1.45;
-  static const double lockTop = 12;
+  static const double lockTop = 8;
   static const double lockMinHeight = 60;
   static const EdgeInsets lockPadding = EdgeInsets.symmetric(horizontal: 14, vertical: 8);
   static const double lockIcon = 24;
