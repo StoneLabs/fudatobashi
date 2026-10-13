@@ -2359,6 +2359,10 @@ abstract final class SideTripsLayout {
   static const double factsFont = 13.5;
   static const double factsNumber = 15;
 
+  /// The stats row's chevron: a tap on the row opens the trip's page.
+  static const double openChevron = 20;
+  static const double openChevronStroke = 2.8;
+
   /// The last game's rating change: ▲ on ink, ▼ on paper.
   static const double deltaFont = 12.5;
   static const EdgeInsets deltaPadding = EdgeInsets.fromLTRB(4, 3, 5, 4);
@@ -2410,27 +2414,37 @@ abstract final class SideTripsLayout {
   static const double soonLineGap = 3;
 }
 
-/// 暗記練's rules sheet (遊び方, `ankiren_rules_sheet.dart`): its three
-/// steps in pictures, a line on each, and how a game scores.
+/// 暗記練's rules sheet (遊び方, `ankiren_rules_sheet.dart`): its three steps
+/// in pictures with a line on each, then the rules and the scoring as
+/// lists, each line with the other language's under it.
 abstract final class AnkirenRulesLayout {
   static const String memorise = 'assets/images/sidetrips/ankiren/howto-memorize.webp';
   static const String flip = 'assets/images/sidetrips/ankiren/howto-flip.webp';
   static const String take = 'assets/images/sidetrips/ankiren/howto-take.webp';
 
-  /// The pictures' own aspect (96 × 90).
-  static const double pictureAspect = 96 / 90;
-  static const double stepGap = 8;
-  static const double captionFont = 13;
-  static const double numberFont = 11;
+  /// A step: its picture on desk grey, then its number and name, then its
+  /// line.
+  static const double pictureHeight = 90;
+  static const double pictureBorder = Strokes.label;
+  static const double stepGap = 6;
+  static const double stepInnerGap = 5;
+  static const double stepFont = 14;
   static const double numberBox = 18;
-  static const double captionGap = 5;
-  static const EdgeInsets captionPadding = EdgeInsets.symmetric(vertical: 4);
-  static const double noteFont = 13.5;
-  static const double noteGap = 6;
-  static const double title = 30;
-  static const double aboutFont = 14;
-  static const double doneHeight = 52;
-  static const double doneFont = 17;
+  static const double numberFont = 11;
+  static const double stepLineFont = 12;
+  static const double stepSubFont = 11;
+  static const double lineHeight = 1.35;
+
+  /// A list row: a marked box, then the line.
+  static const double markBox = 28;
+  static const double markBorder = Strokes.label;
+  static const double markFont = 12;
+  static const double markIcon = 17;
+  static const double markIconStroke = 2.6;
+  static const double markGap = 10;
+  static const EdgeInsets rowPadding = EdgeInsets.symmetric(vertical: 8);
+  static const double ruleLineFont = 13;
+  static const double ruleSubFont = 11.5;
 }
 
 /// The debug Simulation page's summary and per-day charts.
@@ -3928,16 +3942,157 @@ abstract final class AnkirenResultsLayout {
   static const double noteFont = 13;
 }
 
-/// 暗記練's free-play setup sheet (`ankiren_free_sheet.dart`).
+/// 暗記練's sheets (`ankiren_free_sheet.dart`, `ankiren_rules_sheet.dart`):
+/// free practice's floating panel, its top edge tilted, a head with the
+/// close button, and for free play the level keys, the steppers and the
+/// level the setup scores as.
 abstract final class AnkirenSheetLayout {
-  static const double levelChip = 36;
-  static const double levelChipFont = 15;
-  static const double chipGap = 5;
-  static const double sectionFont = 15;
-  static const double lineFont = 13.5;
-  static const double stepperButton = 40;
-  static const double stepperFont = 22;
-  static const double stepperValueWidth = 72;
+  static const EdgeInsets padding = EdgeInsets.fromLTRB(14, 22, 14, 14);
+  static const double gap = 12;
+
+  /// The head: the title with its other-language sub, and a line under it.
+  static const double titleFont = 26;
+  static const double titleSubFont = 11;
+  static const double titleSubTracking = 0.18;
+  static const double lineFont = 12;
+  static const double lineGap = 3;
+  static const double headGap = 10;
+
+  /// A section's label with its other-language sub.
+  static const double labelFont = 13;
+  static const double labelSubFont = 11;
+  static const double labelSubTracking = 0.14;
+  static const double labelGap = 6;
+
+  /// The level keys, [keysPerRow] a row: the chosen one sun-lit with a
+  /// thicker border, one the known cards cannot fill desk grey.
+  static const int keysPerRow = 6;
+  static const double keyGap = 5;
+  static const double keyHeight = 50;
+  static const double keyBorder = Strokes.control;
+  static const double keyChosenBorder = 4;
+  static const double keyFont = 19;
+  static const double keySubFont = 11;
+  static const double keyCustomFont = 11;
+  static const double keyCustomSubFont = 9;
+  static const double keyLabelGap = 4;
+  static const EdgeInsets keyPadding = EdgeInsets.symmetric(horizontal: 2);
+
+  /// − value +: a stepper beside its label, which gives way first.
+  static const double stepperButton = 48;
+  static const double stepperGap = 4;
+  static const double stepperSignFont = 22;
+  static const double stepperValueWidth = 84;
+  static const double stepperValueFont = 24;
+  static const double stepperUnitFont = 12;
+
+  /// The level the setup scores as, over a rule.
+  static const double scoredRule = Strokes.label;
+  static const double scoredTop = 9;
+  static const EdgeInsets scoredTagPadding = EdgeInsets.fromLTRB(7, 2, 7, 3);
+  static const double scoredTagBorder = Strokes.label;
+  static const double scoredFont = 12;
+  static const double scoredNumber = 14;
+  static const double scoredGap = 8;
+
   static const Size lockBalloon = Size(280, 96);
   static const Duration lockBalloonLife = Duration(milliseconds: 2800);
+}
+
+/// 暗記練's page (`ankiren_page.dart`): the record strip, the last games or
+/// placement, the next ranked game's panel with a preview of its field and
+/// the ranked burst, then Home's button pair.
+abstract final class AnkirenPageLayout {
+  /// Between the page's blocks; above the next game's panel, whose tag
+  /// rises [tagRise] over its top edge; and under the pair.
+  static const double gap = 12;
+  static const double nextTop = 8;
+  static const double bottomGap = 12;
+
+  /// A label in black type, its other-language sub in small tracked
+  /// capitals.
+  static const double labelFont = 11;
+  static const double labelTracking = 0.14;
+  static const double labelLineHeight = 1.2;
+  static const double labelGap = 3;
+
+  /// The record strip (History's): the class and the rating split by an
+  /// ink rule, over the gauge to the next class.
+  static const double stripCut = HistoryHeaderLayout.stripCut;
+
+  /// The most room each cell of a row may take, as shares: the strip's
+  /// class and rating; the next game's level, cards and memorise time.
+  static const (int, int) stripFlex = (2, 3);
+  static const (int, int, int) statFlex = (5, 6, 7);
+  static const EdgeInsets cellsPadding = EdgeInsets.fromLTRB(14, 9, 14 + stripCut, 8);
+  static const double cellGap = 12;
+  static const double stripFont = 26;
+  static const double classSuffixFont = 16;
+  static const double valueGap = 6;
+  static const EdgeInsets gaugePadding = EdgeInsets.fromLTRB(11, 7, 12 + stripCut, 8);
+  static const double gaugeFont = 12;
+  static const double gaugeNumber = 15;
+  static const double gaugeGap = 10;
+
+  /// The last games or the placement games: a heading, then a column a
+  /// game, split by light rules.
+  static const int lastGames = 5;
+  static const double headFont = 14;
+  static const double headGap = 6;
+  static const double countFont = 12;
+  static const double countNumber = 15;
+  static const double linkFont = 12.5;
+  static const double linkIcon = 14;
+  static const double linkIconStroke = 3;
+  static const double linkGap = 3;
+  static const double linkUnderline = 2;
+  static const double scoreFont = 17;
+  static const double gameLevelFont = 11;
+  static const double gameGap = 4;
+  static const EdgeInsets gamePadding = EdgeInsets.fromLTRB(2, 2, 2, 3);
+  static const Color lightRule = Color(0xFFC9C6BF);
+  static const double lightRuleWidth = Strokes.hairline;
+
+  /// A placement game still to play: its number in a dashed slot, both
+  /// greyed.
+  static const double slot = 26;
+  static const double slotFont = 13;
+  static const double slotBorder = Strokes.label;
+  static const Color slotInk = Color(0xFF8A8A8A);
+  static const Color todo = Color(0xFF6B6B6B);
+
+  /// The next game's panel: the side trips' cut corner, its tag breaking
+  /// the top edge, then the stats, the hint, the field and the burst.
+  static const double tagRise = 13;
+  static const double tagLeft = 18;
+  static const EdgeInsets tagPadding = EdgeInsets.fromLTRB(10, 4, 13, 5);
+  static const double tagFont = 15;
+  static const double tagSubFont = 10.5;
+  static const double tagSubTracking = 0.16;
+  static const double tagGap = 7;
+  static const EdgeInsets statsPadding = EdgeInsets.fromLTRB(15, 22, 14, 0);
+  static const double statFont = 28;
+  static const double statUnitFont = 15;
+  static const double statSuffixFont = 13;
+  static const double statGap = 3;
+  static const EdgeInsets hintPadding = EdgeInsets.fromLTRB(15, 9, 14, 0);
+  static const double hintFont = 12;
+  static const double hintNumber = 14;
+  static const double hintIcon = 15;
+  static const double hintIconStroke = 2.6;
+  static const double hintGap = 4;
+  static const EdgeInsets burstMargin = EdgeInsets.fromLTRB(6, 12, 6, 12);
+
+  /// The field preview: the next game's shape, face down on the play
+  /// screen's tatami, as big as the room left allows, cards at most
+  /// [previewMaxCardW] wide; hidden below [previewMinHeight].
+  static const EdgeInsets previewMargin = EdgeInsets.fromLTRB(14, 11, 14, 0);
+  static const double previewMinHeight = 96;
+  static const double previewBorder = Strokes.control;
+  static const double previewPadding = 10;
+  static const double previewBand = 9;
+  static const double previewBandRule = Strokes.label;
+  static const double previewBandGap = 7;
+  static const double previewMaxCardW = 30;
+  static const Color previewGround = Color(0xFF99A083);
 }

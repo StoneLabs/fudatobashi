@@ -50,11 +50,41 @@ extension AnkirenStrings on S {
 
   String get ankirenLevelRow => t('ankirenLevelRow');
   String get ankirenCustom => t('ankirenCustom');
-  String ankirenSetupLine(int perSide, String memorise) => f('ankirenSetupLine', [perSide, memorise]);
   String ankirenLevelNeeds(int level, int cards, int known) => f('ankirenLevelNeeds', [level, cards, known]);
+  String get ankirenScoredAs => t('ankirenScoredAs');
+
+  /// The level a setup scores as and a field's cards per side ("7×2"), as
+  /// templates; and the cards on a level key.
+  String get ankirenPerSideCount => t('ankirenPerSideCount');
+  String ankirenKeyCards(int perSide) => f('ankirenKeyCards', [perSide]);
   String get ankirenPerSide => t('ankirenPerSide');
   String get ankirenMemoriseTime => t('ankirenMemoriseTime');
   String get ankirenLess => t('ankirenLess');
   String get ankirenMore => t('ankirenMore');
   String ankirenNeedCards(int n) => f('ankirenNeedCards', [n]);
+
+  /// 暗記練's page: the hub's way in, its last games or placement, and the
+  /// next ranked game with why it plays that level.
+  String get ankirenOpenPage => t('ankirenOpenPage');
+  String get ankirenLast5 => t('ankirenLast5');
+  String get ankirenPlacementTitle => t('ankirenPlacementTitle');
+  String get ankirenPlacementCount => t('ankirenPlacementCount');
+  String get ankirenPlacementNext => t('ankirenPlacementNext');
+  String get ankirenNextRanked => t('ankirenNextRanked');
+  String get ankirenCards => t('ankirenCards');
+  String get ankirenMemoriseLabel => t('ankirenMemoriseLabel');
+  String get ankirenSetByRating => t('ankirenSetByRating');
+  String get ankirenCapped => t('ankirenCapped');
+  String get ankirenTopLevel => t('ankirenTopLevel');
+
+  /// Templates: the rating points still to go to the next level, and the
+  /// cards a level needs.
+  String get ankirenToLevel => t('ankirenToLevel');
+  String get ankirenLevelFrom => t('ankirenLevelFrom');
+
+  /// The level tag as a template, for its number in display type.
+  String get ankirenLevelValue => t('ankirenLevelTag');
+
+  /// The field preview, for screen readers.
+  String ankirenPreviewLabel(int perSide) => f('ankirenPreviewLabel', [perSide]);
 }

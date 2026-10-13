@@ -35,13 +35,10 @@ extension SideTripStrings on S {
   String get sideTripsNextIsland => t('sideTripsNextIsland');
   String get sideTripsPreviousIsland => t('sideTripsPreviousIsland');
 
-  /// The banner under [trip]'s name, what it is, and the tag beside its
-  /// lettering on the hub.
+  /// The banner under [trip]'s name, and the tag beside its lettering on
+  /// the hub.
   String tripBanner(SideTrip trip) => switch (trip) {
         SideTrip.ankiren => t('ankirenBanner'),
-      };
-  String tripAbout(SideTrip trip) => switch (trip) {
-        SideTrip.ankiren => t('ankirenAbout'),
       };
   String tripTag(SideTrip trip) => switch (trip) {
         SideTrip.ankiren => t('ankirenTag'),
@@ -73,14 +70,30 @@ extension SideTripStrings on S {
   /// What opens a trip: remembering [n] more cards well.
   String sideTripLockedWhy(int n) => f(n == 1 ? 'sideTripLockedOne' : 'sideTripLockedOther', [n]);
 
-  /// 暗記練's rules: its three steps, a line on each, and its scoring.
+  /// A trip's class on the main rank's ladder.
+  String get sideTripClass => t('sideTripClass');
+
+  /// 暗記練's rules: its three steps with a line on each, what a miss or
+  /// leaving does, and how a game scores. The templates take their numbers
+  /// from the tuning.
   String get howToPlay => t('howToPlay');
   String get ankirenStepMemorise => t('ankirenStepMemorise');
   String get ankirenStepFlip => t('ankirenStepFlip');
   String get ankirenStepTake => t('ankirenStepTake');
-  String get ankirenStepMemoriseNote => t('ankirenStepMemoriseNote');
-  String get ankirenStepFlipNote => t('ankirenStepFlipNote');
-  String get ankirenStepTakeNote => t('ankirenStepTakeNote');
-  String get ankirenRulesScore => t('ankirenRulesScore');
-  String get sideTripRulesDone => t('sideTripRulesDone');
+  String get ankirenStepMemoriseLine => t('ankirenStepMemoriseLine');
+  String get ankirenStepFlipLine => t('ankirenStepFlipLine');
+  String get ankirenStepTakeLine => t('ankirenStepTakeLine');
+  String get ankirenRuleWrong => t('ankirenRuleWrong');
+  String ankirenRuleReveal(int taps) => f('ankirenRuleReveal', [taps]);
+  String get ankirenRuleDontKnow => t('ankirenRuleDontKnow');
+  String get ankirenRuleLeave => t('ankirenRuleLeave');
+  String get ankirenScoring => t('ankirenScoring');
+  String ankirenScoreFind(int firstTry, int speed, int secondTry) =>
+      f('ankirenScoreFind', [firstTry, speed, secondTry]);
+  String ankirenScoreEarly(String factor) => f('ankirenScoreEarly', [factor]);
+  String get ankirenScoreLevel => t('ankirenScoreLevel');
+
+  /// The marks on the scoring rows: points, and level.
+  String get ankirenMarkPoints => t('ankirenMarkPoints');
+  String get ankirenMarkLevel => t('ankirenMarkLevel');
 }

@@ -144,15 +144,16 @@ class RankSticker extends StatelessWidget {
   }
 }
 
-/// Progress toward the next class.
+/// Progress toward the next class, [width] wide (infinite to fill).
 class RatingBar extends StatelessWidget {
-  const RatingBar(this.fraction, {super.key});
+  const RatingBar(this.fraction, {super.key, this.width = HomeLayout.ratingBarWidth});
 
   final double fraction;
+  final double width;
 
   @override
   Widget build(BuildContext context) => Container(
-        width: HomeLayout.ratingBarWidth,
+        width: width,
         height: HomeLayout.ratingBarHeight,
         decoration: BoxDecoration(
           color: Palette.paper,

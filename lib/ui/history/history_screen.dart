@@ -1,6 +1,7 @@
-import 'package:flutter/widgets.dart';
+import 'package:flutter/material.dart';
 
 import '../../config/design.dart';
+import '../../config/vector_art.dart';
 import '../../db/database.dart' show Session, SideTripRun;
 import '../../domain/side_trips.dart';
 import '../../l10n/free_strings.dart';
@@ -15,19 +16,38 @@ import '../manga/manga.dart';
 import '../play/time_format.dart';
 import '../run/run_labels.dart';
 
+/// Opens History as a page of its own, showing [trip]'s games, with a
+/// back button.
+Future<void> openTripHistory(BuildContext context, SideTrip trip) =>
+    Navigator.of(context).push(MangaRoute<void>(
+      builder: (context) => Scaffold(
+        body: SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.only(top: HeaderStyle.topGap),
+            child: HistoryScreen(trip: trip, onBack: () => Navigator.maybePop(context)),
+          ),
+        ),
+      ),
+    ));
+
 /// The History tab: every past run and side-trip game, newest first, high-
 /// contrast ink on paper (unlike the original app's dim grey-on-green history
 /// text), under a record strip summing them up and a run-kind filter that
-/// narrows both. Opening a run for detail is a later task.
+/// narrows both, set to [trip]'s games at first if given. As a page of its
+/// own its header has a back button ([onBack]). Opening a run for detail is
+/// a later task.
 class HistoryScreen extends StatefulWidget {
-  const HistoryScreen({super.key});
+  const HistoryScreen({super.key, this.trip, this.onBack});
+
+  final SideTrip? trip;
+  final VoidCallback? onBack;
 
   @override
   State<HistoryScreen> createState() => _HistoryScreenState();
 }
 
 class _HistoryScreenState extends State<HistoryScreen> {
-  _Filter _filter = _Filter.all;
+  late _Filter _filter = _Filter.values.firstWhere((f) => f.trip == widget.trip);
 
   @override
   Widget build(BuildContext context) {
@@ -43,7 +63,12 @@ class _HistoryScreenState extends State<HistoryScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          MangaHeader(title: ScreenTitle(s.history, sub: s.other.history)),
+          MangaHeader(
+            title: ScreenTitle(s.history, sub: s.other.history),
+            actions: [
+              if (widget.onBack case final onBack?) InkIconButton(icon: IconArt.back, semanticLabel: s.back, onTap: onBack),
+            ],
+          ),
           _RecordStrip(_Record(entries), showBest: _filter.trip != null),
           const SizedBox(height: HistoryHeaderLayout.filterGap),
           _FilterBar(selected: _filter, onChanged: (filter) => setState(() => _filter = filter)),

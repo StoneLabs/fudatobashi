@@ -80,6 +80,7 @@ class S {
   String get debug => t('debug');
   String get back => t('back');
   String get cancel => t('cancel');
+  String get close => t('close');
   String get comingSoon => t('comingSoon');
 
   // Play

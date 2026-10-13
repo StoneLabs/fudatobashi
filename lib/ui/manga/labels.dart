@@ -185,12 +185,13 @@ class NarrationBox extends StatelessWidget {
       );
 }
 
-/// A box with a dashed ink border.
+/// A box of [color] with a dashed border of [ink].
 class DashedBox extends StatelessWidget {
   const DashedBox({
     super.key,
     required this.child,
     this.color = Palette.paper,
+    this.ink = Palette.ink,
     this.border = Strokes.control,
     this.dash = Strokes.dash,
     this.radius = 0,
@@ -198,7 +199,7 @@ class DashedBox extends StatelessWidget {
   });
 
   final Widget child;
-  final Color color;
+  final Color color, ink;
   final double border;
   final List<double> dash;
   final double radius;
@@ -206,14 +207,14 @@ class DashedBox extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => CustomPaint(
-        painter: _DashedPainter(color, border, dash, radius),
+        painter: _DashedPainter(color, ink, border, dash, radius),
         child: Padding(padding: padding, child: child),
       );
 }
 
 class _DashedPainter extends CustomPainter {
-  _DashedPainter(this.color, this.border, this.dash, this.radius);
-  final Color color;
+  _DashedPainter(this.color, this.ink, this.border, this.dash, this.radius);
+  final Color color, ink;
   final double border;
   final List<double> dash;
   final double radius;
@@ -227,11 +228,11 @@ class _DashedPainter extends CustomPainter {
       Paint()
         ..style = PaintingStyle.stroke
         ..strokeWidth = border
-        ..color = Palette.ink,
+        ..color = ink,
     );
   }
 
   @override
   bool shouldRepaint(_DashedPainter old) =>
-      old.color != color || old.border != border || old.dash != dash || old.radius != radius;
+      old.color != color || old.ink != ink || old.border != border || old.dash != dash || old.radius != radius;
 }

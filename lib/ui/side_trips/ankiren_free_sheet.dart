@@ -5,7 +5,6 @@ import 'package:flutter/material.dart';
 import '../../config/config.dart';
 import '../../config/design.dart';
 import '../../domain/ankiren_level.dart';
-import '../../domain/side_trips.dart';
 import '../../l10n/ankiren_strings.dart';
 import '../../l10n/free_strings.dart';
 import '../../l10n/strings.dart';
@@ -14,9 +13,11 @@ import '../../state/scope.dart';
 import '../manga/manga.dart';
 import '../play/time_format.dart';
 import '../run/run_launcher.dart';
+import 'ankiren_sheet.dart';
+import 'burst_button.dart';
 
-/// 暗記練's free play: its setup sheet, then the game from its big button.
-/// The setup is stored as it changes, so it is there next time.
+/// 暗記練's free play: its setup sheet, then the game from its burst. The
+/// setup is stored as it changes, so it is there next time.
 Future<void> openAnkirenFree(BuildContext context) async {
   final start = await showMangaSheet<bool>(
     context,
@@ -29,8 +30,11 @@ Future<void> openAnkirenFree(BuildContext context) async {
   }
 }
 
-/// A level preset (those the known cards cannot fill say why instead), or a
-/// custom count of cards per side and memorise time; and the start button.
+/// One set of controls for a free game: a level key fills in its cards and
+/// memorise time (a level the known cards cannot fill says why instead),
+/// and touching a stepper makes the setup custom, from what the steppers
+/// showed. The custom key brings back the last custom setup. Under them,
+/// the level the setup scores as; then the start burst.
 class AnkirenFreeSheet extends StatefulWidget {
   const AnkirenFreeSheet({super.key});
 
@@ -44,7 +48,7 @@ class _AnkirenFreeSheetState extends State<AnkirenFreeSheet> {
   late final int _maxPerSide;
   final _memorise = AnkirenSetup.memoriseOptions;
 
-  /// The preset chosen, or null for the custom setup.
+  /// The level chosen, or null for the custom setup.
   int? _level;
   late int _perSide;
   late int _memoriseIndex;
@@ -83,6 +87,15 @@ class _AnkirenFreeSheetState extends State<AnkirenFreeSheet> {
     _save();
   }
 
+  /// Makes the setup custom from what it is now, then [step]s it.
+  void _stepCustom(VoidCallback step) => _change(() {
+        final setup = _setup;
+        _level = null;
+        _perSide = setup.perSide.clamp(AnkirenTuning.customMinPerSide, _maxPerSide);
+        _memoriseIndex = _nearest(setup.memorise);
+        step();
+      });
+
   Future<void> _start() async {
     await _save();
     if (mounted) Navigator.pop(context, true);
@@ -92,196 +105,241 @@ class _AnkirenFreeSheetState extends State<AnkirenFreeSheet> {
   Widget build(BuildContext context) {
     final s = S.of(context);
     final setup = _setup;
-    final fits = setup.cards <= _known;
-    return SafeArea(
-      child: Align(
-        alignment: Alignment.bottomCenter,
-        child: Padding(
-          padding: const EdgeInsets.all(Gaps.gutter),
-          child: Material(
-            type: MaterialType.transparency,
-            child: Stack(clipBehavior: Clip.none, children: [
-              MangaPanel(
-                shape: const PanelShape(topLeft: Offset(0, FreePracticeLayout.sheetCut)),
-                padding: FreePracticeLayout.sheetPadding,
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    Flexible(
-                      child: SingleChildScrollView(
-                        child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-                          Row(children: [InkTag(s.freeSheetTag)]),
-                          const SizedBox(height: Gaps.small),
-                          Text(SideTrip.ankiren.label,
-                              style: const TextStyle(
-                                  fontFamily: Fonts.display,
-                                  fontSize: FreePracticeLayout.title,
-                                  height: TypeScale.displayLineHeight)),
-                          const SizedBox(height: FreePracticeLayout.titleGap),
-                          Text(s.ankirenSetupLine(setup.perSide, formatMinutes(setup.memorise)),
-                              style: const TextStyle(fontWeight: Weights.black, fontSize: AnkirenSheetLayout.lineFont)),
-                          const SizedBox(height: Gaps.section),
-                          _heading(s.ankirenLevelRow),
-                          const SizedBox(height: Gaps.small),
-                          _levelChips(s),
-                          if (_level == null) ...[
-                            const SizedBox(height: Gaps.section),
-                            _heading(s.ankirenPerSide),
-                            const SizedBox(height: Gaps.tight),
-                            _Stepper(
-                              value: '$_perSide',
-                              onLess: _perSide > AnkirenTuning.customMinPerSide ? () => _change(() => _perSide--) : null,
-                              onMore: _perSide < _maxPerSide ? () => _change(() => _perSide++) : null,
-                            ),
-                            const SizedBox(height: Gaps.small),
-                            _heading(s.ankirenMemoriseTime),
-                            const SizedBox(height: Gaps.tight),
-                            _Stepper(
-                              value: formatMinutes(_memorise[_memoriseIndex]),
-                              onLess: _memoriseIndex > 0 ? () => _change(() => _memoriseIndex--) : null,
-                              onMore:
-                                  _memoriseIndex < _memorise.length - 1 ? () => _change(() => _memoriseIndex++) : null,
-                            ),
-                          ],
-                          const SizedBox(height: Gaps.section),
-                          DashedBox(
-                            padding: FreePracticeLayout.statusPadding,
-                            child: Text.rich(Phrases.span(s.ankirenFreeNote),
-                                style: const TextStyle(
-                                    fontWeight: Weights.bold, fontSize: FreePracticeLayout.statusNoteFont)),
-                          ),
-                        ]),
-                      ),
-                    ),
-                    const SizedBox(height: Gaps.section),
-                    SizedBox(
-                      height: FreePracticeLayout.shoutHeight,
-                      child: ShoutButton(
-                        label: s.freeStart,
-                        color: fits ? Palette.pink : Palette.desk,
-                        onTap: fits ? _start : null,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              const Placed(FreePracticeLayout.tobi, child: Tobi(pose: TobiPose.fired)),
-            ]),
+    final memorise = _nearest(setup.memorise);
+    return AnkirenSheet(
+      title: s.freePlay,
+      sub: s.other.freePlay,
+      line: s.ankirenFreeNote,
+      body: [
+        Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+          _SheetLabel(s.ankirenLevelRow, s.other.ankirenLevelRow),
+          const SizedBox(height: AnkirenSheetLayout.labelGap),
+          _levelKeys(s),
+        ]),
+        _Stepper(
+          label: _SheetLabel(s.ankirenPerSide, s.other.ankirenPerSide),
+          value: NumberedText(
+            s.ankirenPerSideCount,
+            [setup.perSide],
+            style: const TextStyle(fontWeight: Weights.black, fontSize: AnkirenSheetLayout.stepperUnitFont),
+            numberStyle: const TextStyle(fontFamily: Fonts.display, fontSize: AnkirenSheetLayout.stepperValueFont),
           ),
+          onLess: setup.perSide > AnkirenTuning.customMinPerSide ? () => _stepCustom(() => _perSide--) : null,
+          onMore: setup.perSide < _maxPerSide ? () => _stepCustom(() => _perSide++) : null,
         ),
+        _Stepper(
+          label: _SheetLabel(s.ankirenMemoriseTime, s.other.ankirenMemoriseTime),
+          value: Text(formatMinutes(setup.memorise),
+              style: const TextStyle(fontFamily: Fonts.display, fontSize: AnkirenSheetLayout.stepperValueFont)),
+          onLess: memorise > 0 ? () => _stepCustom(() => _memoriseIndex--) : null,
+          onMore: memorise < _memorise.length - 1 ? () => _stepCustom(() => _memoriseIndex++) : null,
+        ),
+        _ScoredAs(setup.scoredLevel),
+      ],
+      footer: BurstButton(
+        title: s.freeStart,
+        sub: s.other.freeStart.toUpperCase(),
+        onTap: setup.cards <= _known ? _start : null,
       ),
     );
   }
 
-  Widget _heading(String text) =>
-      Text(text, style: const TextStyle(fontWeight: Weights.black, fontSize: AnkirenSheetLayout.sectionFont));
-
-  /// Levels 0–10 and Custom, one tap each; a level the known cards cannot
-  /// fill pops up why instead.
-  Widget _levelChips(S s) => Wrap(
-        spacing: AnkirenSheetLayout.chipGap,
-        runSpacing: AnkirenSheetLayout.chipGap,
-        children: [
-          for (final (l, level) in AnkirenLevels.all.indexed)
-            Builder(
-              builder: (context) => _Chip(
-                label: '$l',
-                semanticLabel: s.ankirenLevelTag(l),
-                selected: _level == l,
-                enabled: level.cards <= _known,
-                onTap: level.cards <= _known
-                    ? () => _change(() => _level = l)
-                    : () => BalloonPop.show(context, s.ankirenLevelNeeds(l, level.cards, _known),
-                        size: AnkirenSheetLayout.lockBalloon, life: AnkirenSheetLayout.lockBalloonLife),
-              ),
-            ),
-          _Chip(
-            label: s.ankirenCustom,
-            selected: _level == null,
-            enabled: true,
-            onTap: () => _change(() => _level = null),
+  /// Levels 0–10 and the custom setup, [AnkirenSheetLayout.keysPerRow] a
+  /// row; a level the known cards cannot fill pops up why instead.
+  Widget _levelKeys(S s) {
+    final keys = <Widget>[
+      for (final (l, level) in AnkirenLevels.all.indexed)
+        Builder(
+          builder: (context) => _Key(
+            semanticLabel: s.ankirenLevelTag(l),
+            chosen: _level == l,
+            fits: level.cards <= _known,
+            onTap: level.cards <= _known
+                ? () => _change(() => _level = l)
+                : () => BalloonPop.show(context, s.ankirenLevelNeeds(l, level.cards, _known),
+                    size: AnkirenSheetLayout.lockBalloon, life: AnkirenSheetLayout.lockBalloonLife),
+            top: Text('$l', style: const TextStyle(fontFamily: Fonts.display, fontSize: AnkirenSheetLayout.keyFont)),
+            bottom: Text(s.ankirenKeyCards(level.perSide),
+                style: const TextStyle(
+                    fontWeight: Weights.black, fontSize: AnkirenSheetLayout.keySubFont, color: Palette.mute)),
           ),
-        ],
+        ),
+      _Key(
+        semanticLabel: s.ankirenCustom,
+        chosen: _level == null,
+        fits: true,
+        onTap: () => _change(() => _level = null),
+        top: Text(s.ankirenCustom,
+            style: const TextStyle(fontWeight: Weights.black, fontSize: AnkirenSheetLayout.keyCustomFont)),
+        bottom: Text(s.other.ankirenCustom.toUpperCase(),
+            style: const TextStyle(fontWeight: Weights.black, fontSize: AnkirenSheetLayout.keyCustomSubFont)),
+      ),
+    ];
+    const perRow = AnkirenSheetLayout.keysPerRow;
+    return Column(children: [
+      for (var row = 0; row < keys.length; row += perRow) ...[
+        if (row > 0) const SizedBox(height: AnkirenSheetLayout.keyGap),
+        Row(children: [
+          for (var i = row; i < row + perRow; i++) ...[
+            if (i > row) const SizedBox(width: AnkirenSheetLayout.keyGap),
+            Expanded(child: i < keys.length ? keys[i] : const SizedBox.shrink()),
+          ],
+        ]),
+      ],
+    ]);
+  }
+}
+
+/// A section's label, with the other language's [sub] in small tracked
+/// capitals.
+class _SheetLabel extends StatelessWidget {
+  const _SheetLabel(this.text, this.sub);
+
+  final String text, sub;
+
+  @override
+  Widget build(BuildContext context) => Text.rich(
+        TextSpan(children: [
+          TextSpan(text: text),
+          const TextSpan(text: ' '),
+          TextSpan(
+            text: sub.toUpperCase(),
+            style: const TextStyle(
+              fontSize: AnkirenSheetLayout.labelSubFont,
+              letterSpacing: AnkirenSheetLayout.labelSubTracking * AnkirenSheetLayout.labelSubFont,
+            ),
+          ),
+        ]),
+        style: const TextStyle(fontWeight: Weights.black, fontSize: AnkirenSheetLayout.labelFont),
       );
 }
 
-/// One choice of the level row: sun-lit when chosen, greyed when the known
-/// cards cannot fill it.
-class _Chip extends StatelessWidget {
-  const _Chip({required this.label, required this.selected, required this.enabled, required this.onTap, this.semanticLabel});
+/// One key of the level keys: Settings' choice colours (sun when [chosen],
+/// desk grey when the known cards do not [fits] it), [top] over [bottom].
+class _Key extends StatelessWidget {
+  const _Key({
+    required this.semanticLabel,
+    required this.chosen,
+    required this.fits,
+    required this.onTap,
+    required this.top,
+    required this.bottom,
+  });
 
-  final String label;
-  final String? semanticLabel;
-  final bool selected, enabled;
+  final String semanticLabel;
+  final bool chosen, fits;
   final VoidCallback onTap;
+  final Widget top, bottom;
 
   @override
-  Widget build(BuildContext context) => Pressable(
-        onTap: onTap,
-        semanticLabel: semanticLabel ?? label,
-        builder: (context, _) => Container(
-          constraints: const BoxConstraints(
-              minWidth: AnkirenSheetLayout.levelChip, minHeight: AnkirenSheetLayout.levelChip),
-          padding: const EdgeInsets.symmetric(horizontal: Gaps.small),
-          decoration: BoxDecoration(
-            color: selected
+  Widget build(BuildContext context) => Semantics(
+        selected: chosen,
+        child: SizedBox(
+          height: AnkirenSheetLayout.keyHeight,
+          child: InkButton(
+            onTap: onTap,
+            color: chosen
                 ? Palette.sun
-                : enabled
+                : fits
                     ? Palette.paper
                     : Palette.desk,
-            border: Border.all(color: Palette.ink, width: selected ? Strokes.button : Strokes.label),
-          ),
-          child: Align(
-            widthFactor: 1,
-            heightFactor: 1,
-            child: Text(
-              label,
-              style: TextStyle(
-                fontFamily: Fonts.display,
-                fontSize: AnkirenSheetLayout.levelChipFont,
-                height: 1,
-                color: enabled ? Palette.ink : Palette.mute,
-              ),
+            border: chosen ? AnkirenSheetLayout.keyChosenBorder : AnkirenSheetLayout.keyBorder,
+            padding: AnkirenSheetLayout.keyPadding,
+            semanticLabel: semanticLabel,
+            child: FittedBox(
+              fit: BoxFit.scaleDown,
+              child: Column(mainAxisSize: MainAxisSize.min, children: [
+                DefaultTextStyle.merge(style: const TextStyle(height: 1), child: top),
+                const SizedBox(height: AnkirenSheetLayout.keyLabelGap),
+                DefaultTextStyle.merge(style: const TextStyle(height: 1), child: bottom),
+              ]),
             ),
           ),
         ),
       );
 }
 
-/// − value +: steps a custom setting through its allowed values; an end
-/// reached disables its button.
+/// A stepper: its [label] at the left, which gives way first, then − value
+/// +; an end reached disables its button.
 class _Stepper extends StatelessWidget {
-  const _Stepper({required this.value, required this.onLess, required this.onMore});
+  const _Stepper({required this.label, required this.value, required this.onLess, required this.onMore});
 
-  final String value;
+  final Widget label, value;
   final VoidCallback? onLess, onMore;
 
   @override
   Widget build(BuildContext context) {
     final s = S.of(context);
-    Widget button(String sign, String label, VoidCallback? onTap) => SizedBox.square(
+    Widget button(String sign, String name, VoidCallback? onTap) => SizedBox.square(
           dimension: AnkirenSheetLayout.stepperButton,
           child: InkButton(
             onTap: onTap,
             color: onTap == null ? Palette.desk : Palette.paper,
             border: Strokes.control,
-            semanticLabel: label,
+            semanticLabel: name,
             child: Text(sign,
-                style: const TextStyle(fontFamily: Fonts.display, fontSize: AnkirenSheetLayout.stepperFont, height: 1)),
+                style: const TextStyle(fontFamily: Fonts.display, fontSize: AnkirenSheetLayout.stepperSignFont, height: 1)),
           ),
         );
     return Row(children: [
+      Expanded(child: label),
+      const SizedBox(width: AnkirenSheetLayout.stepperGap),
       button('−', s.ankirenLess, onLess),
       SizedBox(
         width: AnkirenSheetLayout.stepperValueWidth,
-        child: FittedBox(
-          fit: BoxFit.scaleDown,
-          child: Text(value,
-              style: const TextStyle(fontFamily: Fonts.display, fontSize: AnkirenSheetLayout.stepperFont, height: 1)),
-        ),
+        child: Center(child: FittedBox(fit: BoxFit.scaleDown, child: value)),
       ),
       button('+', s.ankirenMore, onMore),
     ]);
+  }
+}
+
+/// The level a setup scores as, on a sun tag, and the same in the other
+/// language, over a rule.
+class _ScoredAs extends StatelessWidget {
+  const _ScoredAs(this.level);
+
+  final int level;
+
+  @override
+  Widget build(BuildContext context) {
+    final s = S.of(context);
+    return DecoratedBox(
+      decoration: const BoxDecoration(
+        border: Border(top: BorderSide(color: Palette.ink, width: AnkirenSheetLayout.scoredRule)),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.only(top: AnkirenSheetLayout.scoredTop),
+        child: Wrap(
+          spacing: AnkirenSheetLayout.scoredGap,
+          runSpacing: AnkirenSheetLayout.scoredGap,
+          crossAxisAlignment: WrapCrossAlignment.center,
+          children: [
+            DecoratedBox(
+              decoration: BoxDecoration(
+                color: Palette.sun,
+                border: Border.all(color: Palette.ink, width: AnkirenSheetLayout.scoredTagBorder),
+              ),
+              child: Padding(
+                padding: AnkirenSheetLayout.scoredTagPadding,
+                child: NumberedText(
+                  s.ankirenScoredAs,
+                  [level],
+                  style: const TextStyle(fontWeight: Weights.black, fontSize: AnkirenSheetLayout.scoredFont),
+                  numberStyle: const TextStyle(fontFamily: Fonts.display, fontSize: AnkirenSheetLayout.scoredNumber),
+                ),
+              ),
+            ),
+            NumberedText(
+              s.other.ankirenScoredAs.toUpperCase(),
+              [level],
+              style: const TextStyle(fontWeight: Weights.bold, fontSize: AnkirenSheetLayout.scoredFont, color: Palette.mute),
+              numberStyle:
+                  const TextStyle(fontWeight: Weights.bold, fontSize: AnkirenSheetLayout.scoredFont, color: Palette.mute),
+            ),
+          ],
+        ),
+      ),
+    );
   }
 }
