@@ -74,7 +74,9 @@ flutter:
     - assets/svg/map/
     - assets/svg/scenes/
     - assets/svg/tobi/
+    - assets/svg/sidetrips/
     - assets/images/ankiren/
+    - assets/images/sidetrips/
     - assets/sounds/
     - assets/voice/kimariji/
     - assets/fonts/OFL-delagothicone.txt
