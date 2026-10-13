@@ -205,22 +205,21 @@ abstract final class Tones {
     spacing: groundSpacing,
     begin: Alignment.topCenter,
     end: Alignment.bottomCenter,
-    radii: groundRadii,
-    stops: groundStops,
+    radii: [1.3, 0.3, 0, 0.5, 1.3],
+    stops: [0, 0.13, 0.3, 0.6, 1],
   );
 
-  /// The same backdrop in the sea's blue, behind 暗記練's page.
+  /// Home's backdrop in the sea's blue, bare at the top and swelling toward
+  /// the bottom, behind 暗記練's page.
   static const homeSea = GradationSpec(
     dot: Palette.sea,
     spacing: groundSpacing,
     begin: Alignment.topCenter,
     end: Alignment.bottomCenter,
-    radii: groundRadii,
-    stops: groundStops,
+    radii: [0, 0, 0.5, 1.3],
+    stops: [0, 0.3, 0.6, 1],
   );
   static const double groundSpacing = 6;
-  static const groundRadii = [1.3, 0.3, 0.0, 0.5, 1.3];
-  static const groundStops = [0.0, 0.13, 0.3, 0.6, 1.0];
 }
 
 abstract final class Strokes {

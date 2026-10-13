@@ -191,6 +191,8 @@ void main() {
               expect(scroll.position.maxScrollExtent, 0, reason: 'nothing to scroll to');
               final ground = onPage(find.byWidgetPredicate((w) => w is GradationBox && w.spec == Tones.homeSea));
               expect(tester.getSize(ground), phone.size, reason: 'Home\'s dots, in blue, behind the whole page');
+              expect(Tones.homeSea.radiusAt(0), 0, reason: 'no dots at the top');
+              expect(Tones.homeSea.radiusAt(1), greaterThan(0), reason: 'dots at the bottom');
               final games = onPage(find.textContaining(stage == _Stage.placed ? s.ankirenLast5 : s.ankirenPlacementTitle));
               expect(find.ancestor(of: games, matching: find.byType(MangaPanel)), findsWidgets,
                   reason: 'the games sit on a panel, not on the dots');
