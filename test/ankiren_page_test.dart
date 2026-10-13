@@ -185,6 +185,7 @@ void main() {
               expectShown(tester, onPage(find.byType(RankedBurst)), phone);
               expectShown(tester, onPage(find.byType(SideTripFreeButton)), phone);
               expectShown(tester, onPage(find.byType(SideTripRulesButton)), phone);
+              expectShown(tester, onPage(find.text(s.ankirenNextRanked)), phone);
               final scroll = tester.state<ScrollableState>(onPage(find.byType(Scrollable)));
               expect(scroll.position.maxScrollExtent, 0, reason: 'nothing to scroll to');
               if (fontScale == 1) {
@@ -344,7 +345,7 @@ void main() {
   group('renders', skip: Platform.environment['RENDER_SCREENS'] != '1', () {
     Future<void> precacheArt(WidgetTester tester) async {
       await tester.runAsync(() async {
-        final context = tester.element(find.byType(AnkirenPage));
+        final context = tester.element(find.byType(AnkirenPage, skipOffstage: false));
         await precacheImage(const AssetImage(AnkirenPlayLayout.tatami), context);
         for (final e in find.byType(Image).evaluate()) {
           await precacheImage((e.widget as Image).image, e);
@@ -386,6 +387,13 @@ void main() {
                 await tester.pump();
                 await tester.pump(Motion.sheet);
                 await capture(tester, phone, 'rules_${phone.name}_${lang}_$fontScale');
+                await tester.tap(close(S(lang)));
+                await tester.pump();
+                await tester.pump(Motion.sheet * 2);
+                await tester.tap(onPage(find.textContaining(S(lang).history)));
+                await tester.pump();
+                await tester.pump(Motion.route);
+                await capture(tester, phone, 'history_${phone.name}_${lang}_$fontScale');
               }
               await tester.pumpWidget(const SizedBox());
             }
