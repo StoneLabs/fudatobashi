@@ -39,7 +39,6 @@ import 'package:fudatobashi/ui/home/home_screen.dart';
 import 'package:fudatobashi/ui/home/home_widgets.dart';
 import 'package:fudatobashi/ui/manga/manga.dart';
 import 'package:fudatobashi/ui/side_trips/ankiren_page.dart';
-import 'package:fudatobashi/ui/side_trips/ankiren_rules_sheet.dart';
 import 'package:fudatobashi/ui/side_trips/dojo_scene.dart';
 import 'package:fudatobashi/ui/side_trips/side_trip_entry.dart';
 import 'package:fudatobashi/ui/side_trips/side_trips_screen.dart';
@@ -278,7 +277,10 @@ void main() {
               expect(tester.getRect(inHub(find.byType(SingleChildScrollView))).bottom, phone.size.height,
                   reason: 'the sea runs on under the tab bar');
               if (hub == _Hub.locked) {
-                expectShown(tester, inHub(find.text(s.howToPlay)), phone);
+                expect(inHub(find.text(s.howToPlay)), findsNothing, reason: 'no rules while locked');
+                expectShown(tester, inHub(find.textContaining(s.sideTripRemembered)), phone);
+                expectShown(tester, inHub(find.byType(CardPips)).first, phone);
+                expectShown(tester, inHub(find.textContaining(s.sideTripRanked)), phone);
                 expect(inHub(find.byType(PageBurst)), findsNothing);
               } else {
                 expectShown(tester, inHub(find.byType(PageBurst)), phone);
@@ -363,36 +365,6 @@ void main() {
       expect(tester.takeException(), isNull);
       await tester.pumpWidget(const SizedBox());
     });
-
-    testWidgets('locked: the rules open their sheet and close', (tester) async {
-      const s = S('en');
-      final p = await open(tester, _Hub.locked, 'en');
-      await openHub(tester, p, _users);
-      await tester.tap(inHub(find.text(s.howToPlay)));
-      await tester.pump();
-      await tester.pump(Motion.sheet);
-      expect(find.byType(AnkirenRulesSheet), findsOneWidget);
-      expect(tester.takeException(), isNull);
-      await tester.tap(find.bySemanticsLabel(s.close));
-      await tester.pump();
-      await tester.pump(Motion.sheet * 2);
-      expect(find.byType(AnkirenRulesSheet), findsNothing);
-      await tester.pumpWidget(const SizedBox());
-    });
-
-    for (final lang in ['en', 'ja']) {
-      testWidgets('the rules fit at font scale 1.3 on a narrow phone ($lang)', (tester) async {
-        final s = S(lang);
-        final p = await open(tester, _Hub.locked, lang);
-        await openHub(tester, p, _narrow, fontScale: 1.3);
-        await tester.tap(inHub(find.text(s.howToPlay)));
-        await tester.pump();
-        await tester.pump(Motion.sheet);
-        expect(find.byType(AnkirenRulesSheet), findsOneWidget, reason: 'the rules are open while 暗記練 is locked');
-        expect(tester.takeException(), isNull);
-        await tester.pumpWidget(const SizedBox());
-      });
-    }
 
     testWidgets('locked: the bar says what opens it', (tester) async {
       const s = S('en');

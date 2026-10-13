@@ -20,16 +20,15 @@ import 'burst_button.dart';
 /// A side trip's entry on the hub: its head ([SideTripHead]) hanging over
 /// the top of its panel and buttons ([SideTripBody]).
 class SideTripEntryView extends StatelessWidget {
-  const SideTripEntryView(this.entry, {super.key, this.onOpen, required this.onRules});
+  const SideTripEntryView(this.entry, {super.key, this.onOpen});
 
   final SideTripEntry entry;
   final VoidCallback? onOpen;
-  final VoidCallback onRules;
 
   @override
   Widget build(BuildContext context) => _HeadOver(
         head: SideTripHead(entry),
-        body: SideTripBody(entry, onOpen: onOpen, onRules: onRules),
+        body: SideTripBody(entry, onOpen: onOpen),
       );
 }
 
@@ -230,43 +229,32 @@ class _RankStamp extends StatelessWidget {
 /// change and the next ranked game, and the burst that opens the trip's
 /// page ([onOpen]), as does the row above it. Locked: the cards remembered
 /// so far as pips and a grey bar saying how many more open it, where the
-/// burst will be; the rules ([onRules]) under it.
+/// burst will be.
 class SideTripBody extends StatelessWidget {
-  const SideTripBody(this.entry, {super.key, this.onOpen, required this.onRules});
+  const SideTripBody(this.entry, {super.key, this.onOpen});
 
   final SideTripEntry entry;
   final VoidCallback? onOpen;
-  final VoidCallback onRules;
 
   @override
   Widget build(BuildContext context) {
     final lock = entry.lock;
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        MangaPanel(
-          shape: const PanelShape(topLeft: Offset(0, SideTripsLayout.cut)),
-          padding: const EdgeInsets.only(top: SideTripsLayout.overlap),
-          child: lock == null
-              ? Column(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    _StatsRow(entry, onTap: onOpen),
-                    Padding(
-                      padding: SideTripsLayout.burstMargin,
-                      child: PageBurst(onTap: onOpen),
-                    ),
-                  ],
-                )
-              : _LockedRows(lock),
-        ),
-        if (lock != null) ...[
-          const SizedBox(height: SideTripsLayout.rulesTop),
-          SideTripRulesButton(onTap: onRules),
-        ],
-      ],
+    return MangaPanel(
+      shape: const PanelShape(topLeft: Offset(0, SideTripsLayout.cut)),
+      padding: const EdgeInsets.only(top: SideTripsLayout.overlap),
+      child: lock == null
+          ? Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                _StatsRow(entry, onTap: onOpen),
+                Padding(
+                  padding: SideTripsLayout.burstMargin,
+                  child: PageBurst(onTap: onOpen),
+                ),
+              ],
+            )
+          : _LockedRows(lock),
     );
   }
 }

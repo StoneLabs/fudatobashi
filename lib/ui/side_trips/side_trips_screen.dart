@@ -14,7 +14,6 @@ import '../../l10n/strings.dart';
 import '../../state/progress.dart';
 import '../../state/scope.dart';
 import 'ankiren_page.dart';
-import 'ankiren_rules_sheet.dart';
 import '../manga/manga.dart';
 import 'dojo_scene.dart';
 import 'side_trip_entry.dart';
@@ -232,11 +231,7 @@ class _SideTripsScreenState extends State<SideTripsScreen> with TickerProviderSt
 
   Widget _entry(SideTripsHub hub, SideTripIsle isle) => switch (isle.trip) {
         null => const SideTripSoonEntry(),
-        SideTrip.ankiren => SideTripEntryView(
-            hub[SideTrip.ankiren],
-            onOpen: () => openAnkirenPage(context),
-            onRules: () => openAnkirenRules(context),
-          ),
+        SideTrip.ankiren => SideTripEntryView(hub[SideTrip.ankiren], onOpen: () => openAnkirenPage(context)),
       };
 
   /// [isle]'s entry and swell show as far as the crossfade has come to it.

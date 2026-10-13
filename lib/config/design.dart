@@ -2410,9 +2410,7 @@ abstract final class SideTripsLayout {
   static const double lockLineFont = 12;
   static const double lockLineNumber = 14;
 
-  /// Between a locked panel and the rules button under it; and between the
-  /// pair of buttons on the trip's page.
-  static const double rulesTop = 8;
+  /// Between the pair of buttons on the trip's page.
   static const double pairGap = Gaps.panelWide;
 
   static const Size lockBalloon = Size(270, 96);
