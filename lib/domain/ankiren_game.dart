@@ -19,7 +19,7 @@ enum TapResult {
   /// Another card that is still face down.
   wrong,
 
-  /// Nothing: the prompt was not on screen yet, the card was already found,
+  /// Nothing: the prompt was not on screen when the press began, the card was already found,
   /// or the game is not in recall.
   ignored,
 }
@@ -109,10 +109,11 @@ class AnkirenGame extends ChangeNotifier {
   Duration? get revealTs => _revealTs;
 
   /// A tap on [poemId]'s card, its pointer-down time on the pointer-event
-  /// clock.
+  /// clock. A press that began before the prompt was on screen is ignored.
   TapResult tap(int poemId, Duration pointerDownTs) {
     final asked = current;
-    if (asked == null || _revealTs == null || isDone(poemId) || field.sideOf(poemId) == null) {
+    final revealTs = _revealTs;
+    if (asked == null || revealTs == null || pointerDownTs < revealTs || isDone(poemId) || field.sideOf(poemId) == null) {
       return TapResult.ignored;
     }
     if (poemId != asked) {
@@ -120,7 +121,7 @@ class AnkirenGame extends ChangeNotifier {
       notifyListeners();
       return TapResult.wrong;
     }
-    _answer(asked, (pointerDownTs - _revealTs!).inMicroseconds);
+    _answer(asked, (pointerDownTs - revealTs).inMicroseconds);
     _found.add(asked);
     _moveOn();
     return TapResult.right;

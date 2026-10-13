@@ -287,6 +287,16 @@ void main() {
       expect(g.tap(g.prompts[1], t(1700)), TapResult.ignored, reason: 'the next prompt is not on screen yet');
     });
 
+    test('a press that began before the prompt was on screen answers nothing', () {
+      final g = newGame()..startRecall();
+      g.promptRevealed(t(100));
+      expect(g.tap(other(g), t(99)), TapResult.ignored, reason: 'not a wrong tap');
+      expect(g.tap(g.current!, t(50)), TapResult.ignored, reason: 'not a find');
+      expect(g.wrongTaps, 0);
+      expect(g.answers, isEmpty);
+      expect(g.tap(g.current!, t(100)), TapResult.right, reason: 'a press after the reveal counts');
+    });
+
     test('a wrong tap does not move on; the second one reveals the card, which must still be tapped', () {
       final g = newGame()..startRecall();
       g.promptRevealed(t(0));
