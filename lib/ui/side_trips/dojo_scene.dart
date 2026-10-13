@@ -20,14 +20,15 @@ enum GateState { locked, opening, open }
 
 /// The dojo scene at the top of the Side Trips tab
 /// (`research/design/sidetrips_b2.html`): sky and drifting clouds, the sea
-/// with the ring of islands ([DojoRingLayout]) turned [turn] steps, the
-/// torii, and Tobi's boat, under the tab's title. 暗記練's island carries
-/// its banner once it is open; the islands still being built carry a
-/// "coming soon" tag, shown in the two front slots.
+/// with the ring of islands ([DojoRingLayout]) turned [turn] steps, and the
+/// torii, under the tab's title. 暗記練's island carries its banner once it
+/// is open; the islands still being built carry a "coming soon" tag, shown
+/// in the two front slots. Tobi's boat ([DojoBoat]) sails over it, among
+/// the sea's paper layers.
 ///
 /// The torii stands for the island in front: 暗記練's as [gate] says, a
-/// padlocked one for any other. The boat drifts [boat] steps' worth. While
-/// [fade] runs, the islands crossfade from the ring at step [fadeFrom].
+/// padlocked one for any other. While [fade] runs, the islands crossfade
+/// from the ring at step [fadeFrom].
 ///
 /// It fills its box (the screen above the entries), scaled to the box's
 /// width; the near swell crests just above its bottom. A box too short to
@@ -37,14 +38,13 @@ class DojoScene extends StatefulWidget {
   const DojoScene({
     super.key,
     required this.turn,
-    required this.boat,
     required this.fade,
     required this.fadeFrom,
     required this.gate,
     this.onOpened,
   });
 
-  final Animation<double> turn, boat, fade;
+  final Animation<double> turn, fade;
   final int fadeFrom;
   final GateState gate;
 
@@ -116,40 +116,17 @@ class _DojoSceneState extends State<DojoScene> with SingleTickerProviderStateMix
 
   @override
   Widget build(BuildContext context) => LayoutBuilder(builder: (context, box) {
-        final k = box.maxWidth / DojoSceneLayout.width;
-        final swell = box.maxHeight - DojoSceneLayout.crest * k - DojoSceneLayout.crestGap;
-        final lift = (DojoSceneLayout.foreground * k - swell - DojoSceneLayout.hullTrough * k)
-            .clamp(0.0, DojoSceneLayout.maxLift * k);
-        final frame = _Frame(k, lift);
-        final boat = frame.at(DojoSceneLayout.boat.rect);
+        final frame = _Frame.of(box);
         return Stack(
           clipBehavior: Clip.none,
           children: [
             frame.piece(DojoSceneLayout.sky),
-            Positioned.fill(child: RepaintBoundary(child: _Clouds(k))),
+            Positioned.fill(child: RepaintBoundary(child: _Clouds(frame.k))),
             frame.piece(DojoSceneLayout.sea),
             Positioned.fill(
               child: AnimatedBuilder(
                 animation: Listenable.merge([widget.turn, widget.fade, _unlock]),
                 builder: (context, _) => Stack(clipBehavior: Clip.none, children: _ring(frame)),
-              ),
-            ),
-            Positioned.fromRect(
-              rect: boat,
-              child: AnimatedBuilder(
-                animation: widget.boat,
-                builder: (context, child) => Transform.translate(
-                  offset: Offset(-widget.boat.value * DojoRingMotion.boatDrift * k, 0),
-                  child: child,
-                ),
-                child: RepaintBoundary(
-                  child: Sway(
-                    turnDeg: DojoSceneLayout.boatTurnDeg,
-                    lift: DojoSceneLayout.boatLift * k,
-                    period: DojoSceneLayout.boatPeriod,
-                    child: ScenePicture(DojoSceneLayout.boat.asset, size: boat.size),
-                  ),
-                ),
               ),
             ),
             Positioned(
@@ -279,9 +256,54 @@ RingIsleArt _artOf(SideTripIsle isle) => switch (isle) {
       SideTripIsle.lighthouse => DojoRingLayout.lighthouse,
     };
 
+/// Tobi's boat on the dojo scene, filling the same box as [DojoScene]:
+/// rocking on the sea, and drifting [drift] steps' worth as the ring turns.
+class DojoBoat extends StatelessWidget {
+  const DojoBoat({super.key, required this.drift});
+
+  final Animation<double> drift;
+
+  @override
+  Widget build(BuildContext context) => LayoutBuilder(builder: (context, box) {
+        final frame = _Frame.of(box);
+        final rect = frame.at(DojoSceneLayout.boat.rect);
+        return Stack(clipBehavior: Clip.none, children: [
+          Positioned.fromRect(
+            rect: rect,
+            child: AnimatedBuilder(
+              animation: drift,
+              builder: (context, child) => Transform.translate(
+                offset: Offset(-drift.value * DojoRingMotion.boatDrift * frame.k, 0),
+                child: child,
+              ),
+              child: RepaintBoundary(
+                child: Sway(
+                  turnDeg: DojoSceneLayout.boatTurnDeg,
+                  lift: DojoSceneLayout.boatLift * frame.k,
+                  period: DojoSceneLayout.boatPeriod,
+                  child: ScenePicture(DojoSceneLayout.boat.asset, size: rect.size),
+                ),
+              ),
+            ),
+          ),
+        ]);
+      });
+}
+
 /// The scene's frame on screen: [k] dp a unit, lifted by [lift] dp.
 class _Frame {
   const _Frame(this.k, this.lift);
+
+  /// The frame for a scene filling [box]: lifted as far as it takes to
+  /// show the boat's hull above the near swell, within
+  /// [DojoSceneLayout.maxLift].
+  factory _Frame.of(BoxConstraints box) {
+    final k = box.maxWidth / DojoSceneLayout.width;
+    final swell = box.maxHeight - DojoSceneLayout.crest * k - DojoSceneLayout.crestGap;
+    final lift = (DojoSceneLayout.foreground * k - swell - DojoSceneLayout.hullTrough * k)
+        .clamp(0.0, DojoSceneLayout.maxLift * k);
+    return _Frame(k, lift);
+  }
 
   final double k, lift;
 

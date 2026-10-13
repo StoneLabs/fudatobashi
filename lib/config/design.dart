@@ -2065,20 +2065,37 @@ abstract final class DojoSceneLayout {
   static const boat = ScenePiece('$_dir/tobi-boat.webp', Rect.fromLTWH(114, 374, 124, 110));
 
   /// The near swell that carries each island's entry, at its own top
-  /// left. Its crest line runs no deeper than [crest] below its top, and
-  /// sits [crestGap] dp above the entry. Below the picture, its plain
-  /// halftone [fill] (a whole number of dot rows) repeats.
-  static const seaNear = ScenePiece('$_dir/sea-near.webp', Rect.fromLTWH(0, 0, 390, 300));
-  static const double crest = 40;
+  /// left: the front of the sea's paper layers. Its crest line runs no
+  /// deeper than [crest] below its top, and sits [crestGap] dp above the
+  /// entry. Below the picture, its plain halftone [fill] (a whole number of
+  /// dot rows) repeats.
+  static const seaNear = ScenePiece('$_dir/wave-1.webp', Rect.fromLTWH(0, 0, 390, 320));
+  static const double crest = 60;
   static const double crestGap = 2;
-  static const Rect fill = Rect.fromLTWH(0, 150, 390, 150);
+  static const Rect fill = Rect.fromLTWH(0, 170, 390, 150);
+
+  /// The paper layers behind the near swell, back to front, sharing its
+  /// box; Tobi's boat sails between them and the swell. Each repeats
+  /// across the frame, slides [WaveLayer.speed] times as far as the swell
+  /// when the ring turns, and bobs [WaveLayer.bob] units once per
+  /// [WaveLayer.period] (still under reduced motion), redrawn every
+  /// [waveStep].
+  static const backWaves = [
+    WaveLayer(ScenePiece('$_dir/wave-4.webp', Rect.fromLTWH(0, 0, 390, 320)),
+        speed: 0.25, bob: 0.8, period: Duration(milliseconds: 7300)),
+    WaveLayer(ScenePiece('$_dir/wave-3.webp', Rect.fromLTWH(0, 0, 390, 320)),
+        speed: 0.45, bob: 1, period: Duration(milliseconds: 5900)),
+    WaveLayer(ScenePiece('$_dir/wave-2.webp', Rect.fromLTWH(0, 0, 390, 320)),
+        speed: 0.7, bob: 1.2, period: Duration(milliseconds: 4700)),
+  ];
+  static const waveStep = Duration(milliseconds: 40);
 
   /// The bottom of the boat's hull, and how far below the swell's top its
   /// crest line runs under the hull. A screen too short to show the hull
   /// above the swell lifts the scene by up to [maxLift]; beyond that the
   /// swell rises over the boat.
   static const double foreground = 474;
-  static const double hullTrough = 30;
+  static const double hullTrough = 50;
   static const double maxLift = 60;
 
   /// The least of the scene kept above the entry; a screen too short for
@@ -2091,6 +2108,18 @@ abstract final class DojoSceneLayout {
   static const double boatLift = 3;
   static const double boatTurnDeg = 1.5;
   static const boatPeriod = Duration(milliseconds: 3800);
+}
+
+/// One of the sea's paper layers behind the near swell
+/// ([DojoSceneLayout.backWaves]): its [piece], how far it slides for the
+/// swell's every unit ([speed]), and its gentle [bob] up and down, in
+/// units, once per [period].
+@immutable
+class WaveLayer {
+  const WaveLayer(this.piece, {required this.speed, required this.bob, required this.period});
+  final ScenePiece piece;
+  final double speed, bob;
+  final Duration period;
 }
 
 /// A picture that drifts sideways across the scene and round again, [laps]

@@ -16,6 +16,7 @@ import '../../state/scope.dart';
 import '../run/run_launcher.dart';
 import 'ankiren_free_sheet.dart';
 import 'ankiren_rules_sheet.dart';
+import '../manga/manga.dart';
 import 'dojo_scene.dart';
 import 'side_trip_entry.dart';
 
@@ -26,9 +27,10 @@ import 'side_trip_entry.dart';
 /// entry shows comes from the hub ([SideTripsHub]).
 ///
 /// A swipe anywhere turns the ring a step, the swell and the entry riding
-/// under the finger; under reduced motion the islands and entries
-/// crossfade. Screen readers get the island's name and actions to turn
-/// the ring. The tab always comes back with 暗記練 in front.
+/// under the finger and the sea's paper layers behind them sliding slower,
+/// the further back the slower; under reduced motion the islands and
+/// entries crossfade. Screen readers get the island's name and actions to
+/// turn the ring. The tab always comes back with 暗記練 in front.
 ///
 /// The first time the tab shows 暗記練 open after showing it locked, its
 /// torii opens with a snap; once, like the tab chains, and only with
@@ -287,13 +289,14 @@ class _SideTripsScreenState extends State<SideTripsScreen> with TickerProviderSt
                     },
                     child: DojoScene(
                       turn: _turn,
-                      boat: _boat,
                       fade: _fade,
                       fadeFrom: _fadeFrom,
                       gate: _gate(progress, ankiren),
                       onOpened: () => setState(() => _opening.remove(ankiren.trip)),
                     ),
                   ),
+                  boat: DojoBoat(drift: _boat),
+                  backWaves: RepaintBoundary(child: _BackWaves(turn: _turn)),
                   waves: [
                     for (final isle in SideTripRing.isles)
                       FadeTransition(opacity: _shownOf(isle), child: _Swell(leftward: _leftward.contains(isle))),
@@ -355,11 +358,53 @@ class _Swell extends StatelessWidget {
       });
 }
 
+/// The sea's paper layers behind the near swell
+/// ([DojoSceneLayout.backWaves]), back to front, filling the swell's box:
+/// each slides its own share of the way as the ring turns [turn] steps of
+/// the box's width, round and round, and gently bobs; under reduced motion
+/// they stay put.
+class _BackWaves extends StatelessWidget {
+  const _BackWaves({required this.turn});
+
+  final Animation<double> turn;
+
+  @override
+  Widget build(BuildContext context) => LayoutBuilder(builder: (context, box) {
+        final width = box.maxWidth;
+        final k = width / DojoSceneLayout.width;
+        final still = MediaQuery.disableAnimationsOf(context);
+        return IdleLoop(
+          step: DojoSceneLayout.waveStep,
+          builder: (context, elapsed, _) => AnimatedBuilder(
+            animation: turn,
+            builder: (context, _) => Stack(clipBehavior: Clip.none, children: [
+              for (final layer in DojoSceneLayout.backWaves)
+                ..._tiles(layer, k, width, still ? 0 : turn.value, elapsed),
+            ]),
+          ),
+        );
+      });
+
+  /// [layer] across the box, two copies side by side, slid along by
+  /// [turned] steps and bobbed as far as [elapsed] is into its period.
+  List<Widget> _tiles(WaveLayer layer, double k, double width, double turned, Duration elapsed) {
+    final size = layer.piece.rect.size * k;
+    final left = -(layer.speed * turned * width) % width;
+    final phase = (elapsed.inMicroseconds % layer.period.inMicroseconds) / layer.period.inMicroseconds;
+    final top = layer.piece.rect.top * k + layer.bob * k * math.sin(2 * math.pi * phase);
+    return [
+      for (final x in [left - width, left])
+        Positioned(left: x, top: top, child: ScenePicture(layer.piece.asset, size: size)),
+    ];
+  }
+}
+
 /// The hub's layout: each island's entry at the bottom inside [side]
 /// gutters and [bottomGap], its swell cresting [crest] above it, and the
 /// [scene] filling everything above the tallest entry, at least [minScene]
 /// tall. When they need more height than the hub is given, it grows (and
-/// the tab scrolls).
+/// the tab scrolls). The [backWaves] share the showing swell's box, behind
+/// it; the [boat] shares the scene's box, between the two.
 ///
 /// Only the entry of the island in front shows, unless the ring is
 /// between two steps of [turn]: then the two entries ride their swells
@@ -375,10 +420,14 @@ class _HubFrame extends MultiChildRenderObjectWidget {
     required this.fade,
     required this.fadeFrom,
     required Widget scene,
+    required Widget boat,
+    required Widget backWaves,
     required List<Widget> waves,
     required List<Widget> entries,
   }) : super(children: [
           scene,
+          backWaves,
+          boat,
           for (var i = 0; i < entries.length; i++) ...[waves[i], entries[i]],
         ]);
 
@@ -506,6 +555,8 @@ class _RenderHubFrame extends RenderBox
   }
 
   RenderBox get _scene => firstChild!;
+  RenderBox get _backWaves => childAfter(_scene)!;
+  RenderBox get _boat => childAfter(_backWaves)!;
 
   /// The swells and entries, in [SideTripRing.isles] order.
   final List<RenderBox> _waves = [], _entries = [];
@@ -514,7 +565,7 @@ class _RenderHubFrame extends RenderBox
   void performLayout() {
     _waves.clear();
     _entries.clear();
-    for (var child = childAfter(_scene); child != null; child = childAfter(childAfter(child)!)) {
+    for (var child = childAfter(_boat); child != null; child = childAfter(childAfter(child)!)) {
       _waves.add(child);
       _entries.add(childAfter(child)!);
     }
@@ -528,7 +579,8 @@ class _RenderHubFrame extends RenderBox
     final deck = tallest + _bottomGap;
     final height = math.max(constraints.minHeight, _minScene + deck);
     _scene.layout(BoxConstraints.tight(Size(width, height - deck)));
-    for (final wave in _waves) {
+    _boat.layout(BoxConstraints.tight(Size(width, height - deck)));
+    for (final wave in [..._waves, _backWaves]) {
       wave.layout(BoxConstraints.tight(Size(width, deck + _crest)));
     }
     size = constraints.constrain(Size(width, height));
@@ -557,9 +609,16 @@ class _RenderHubFrame extends RenderBox
     return [(isle: out, dx: -f * width, top: top), (isle: coming, dx: (1 - f) * width, top: top)];
   }
 
+  /// Where the back waves' top is now: the showing swells', or under
+  /// reduced motion part of the way from the one fading out to the one
+  /// fading in.
+  double _backTop(List<_Unit> units) =>
+      _fade.value < 1 ? units.first.top + (units.last.top - units.first.top) * _fade.value : units.first.top;
+
   /// Where [child] paints now; off to the right when it does not show.
   Offset _offsetOf(RenderBox child, List<_Unit> units) {
-    if (child == _scene) return Offset.zero;
+    if (child == _scene || child == _boat) return Offset.zero;
+    if (child == _backWaves) return Offset(0, _backTop(units) - _crest);
     final isWave = _waves.contains(child);
     final i = isWave ? _waves.indexOf(child) : _entries.indexOf(child);
     final unit = units.where((u) => u.isle == i).firstOrNull ?? (isle: i, dx: size.width, top: _restTop(i));
@@ -570,8 +629,10 @@ class _RenderHubFrame extends RenderBox
 
   @override
   void paint(PaintingContext context, Offset offset) {
-    context.paintChild(_scene, offset);
     final units = _units;
+    context.paintChild(_scene, offset);
+    context.paintChild(_backWaves, offset + _offsetOf(_backWaves, units));
+    context.paintChild(_boat, offset);
     for (final unit in units) {
       context.paintChild(_waves[unit.isle], offset + _offsetOf(_waves[unit.isle], units));
       context.paintChild(_entries[unit.isle], offset + _offsetOf(_entries[unit.isle], units));

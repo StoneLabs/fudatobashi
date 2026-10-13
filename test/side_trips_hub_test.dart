@@ -217,6 +217,7 @@ void main() {
         DojoSceneLayout.toriiOpen,
         DojoSceneLayout.boat,
         DojoSceneLayout.seaNear,
+        for (final layer in DojoSceneLayout.backWaves) layer.piece,
         DojoRingLayout.nobori,
       ])
         piece.asset,
@@ -480,6 +481,67 @@ void main() {
       await tester.pumpWidget(const SizedBox());
     });
 
+    for (final still in [false, true]) {
+      testWidgets(
+          still
+              ? 'under reduced motion the paper waves stay put'
+              : 'the paper waves slide slower the further back they are, and bob gently', (tester) async {
+        if (still) {
+          tester.platformDispatcher.accessibilityFeaturesTestValue =
+              const FakeAccessibilityFeatures(disableAnimations: true);
+          addTearDown(tester.platformDispatcher.clearAccessibilityFeaturesTestValue);
+        }
+        final p = await open(tester, _Hub.ranked, 'en');
+        await openHub(tester, p, _users);
+        final width = _users.size.width;
+        const layers = DojoSceneLayout.backWaves;
+        expect([for (final layer in layers) layer.speed], orderedEquals([...layers.map((l) => l.speed)]..sort()),
+            reason: 'back to front, each faster than the one behind');
+        expect(layers.last.speed, lessThan(1), reason: 'slower than the near swell');
+        List<Rect> tiles(WaveLayer layer) => [
+              for (var i = 0; i < pictures(layer.piece.asset).evaluate().length; i++)
+                tester.getRect(pictures(layer.piece.asset).at(i)),
+            ];
+        for (final layer in layers) {
+          expect([for (final r in tiles(layer)) r.left], [closeTo(-width, 0.5), closeTo(0, 0.5)],
+              reason: 'two copies side by side, one filling the screen');
+        }
+
+        final tops = [for (final layer in layers) tiles(layer).first.top];
+        await tester.pump(layers.first.period * 0.25);
+        for (final (i, layer) in layers.indexed) {
+          final bob = tiles(layer).first.top - tops[i];
+          expect(bob.abs(), lessThanOrEqualTo(2 * layer.bob * width / DojoSceneLayout.width + 0.01), reason: 'gently');
+          if (still) expect(bob, 0, reason: 'no bob under reduced motion');
+        }
+        if (!still) expect(tiles(layers.first).first.top, isNot(closeTo(tops.first, 0.05)), reason: 'it bobs');
+
+        final gesture = await tester.startGesture(tester.getCenter(inHub(find.byType(DojoScene))));
+        await gesture.moveBy(const Offset(-20, 0));
+        await gesture.moveBy(Offset(-0.4 * width, 0));
+        await tester.pump();
+        final turn = turnOf(tester);
+        final swells = [
+          for (var i = 0; i < pictures(DojoSceneLayout.seaNear.asset).evaluate().length; i++)
+            tester.getRect(pictures(DojoSceneLayout.seaNear.asset).at(i)).left,
+        ];
+        for (final layer in layers) {
+          final slid = still ? 0.0 : -layer.speed * turn * width;
+          for (final r in tiles(layer)) {
+            final copies = (r.left - slid) / width;
+            expect(copies - copies.round(), closeTo(0, 0.5 / width),
+                reason: '${layer.piece.asset} slides ${layer.speed} of the way, its copies a screen apart');
+          }
+        }
+        if (!still) expect(swells, contains(closeTo(-turn * width, 0.5)), reason: 'the near swell rides the finger');
+        await gesture.up();
+        await tester.pump();
+        await tester.pump(const Duration(seconds: 2));
+        expect(tester.takeException(), isNull);
+        await tester.pumpWidget(const SizedBox());
+      });
+    }
+
     testWidgets('a swipe that starts on the burst turns the ring and starts no game', (tester) async {
       final p = await open(tester, _Hub.ranked, 'en');
       await openHub(tester, p, _users);
@@ -524,7 +586,7 @@ void main() {
     testWidgets('the boat drifts with the turn, then springs back', (tester) async {
       final p = await open(tester, _Hub.ranked, 'en');
       await openHub(tester, p, _users);
-      double drift() => tester.widget<DojoScene>(find.byType(DojoScene)).boat.value;
+      double drift() => tester.widget<DojoBoat>(find.byType(DojoBoat)).drift.value;
       final gesture = await tester.startGesture(tester.getCenter(inHub(find.byType(DojoScene))));
       await gesture.moveBy(const Offset(-20, 0));
       await gesture.moveBy(const Offset(-220, 0));
@@ -595,7 +657,7 @@ void main() {
       addTearDown(tester.platformDispatcher.clearAccessibilityFeaturesTestValue);
       final p = await open(tester, _Hub.ranked, 'en');
       await openHub(tester, p, _users);
-      double drift() => tester.widget<DojoScene>(find.byType(DojoScene)).boat.value;
+      double drift() => tester.widget<DojoBoat>(find.byType(DojoBoat)).drift.value;
       final body = tester.getRect(inHub(find.byType(SideTripBody)));
 
       final gesture = await tester.startGesture(tester.getCenter(inHub(find.byType(DojoScene))));
