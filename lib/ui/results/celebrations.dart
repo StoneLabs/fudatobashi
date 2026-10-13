@@ -1,8 +1,10 @@
 import '../../config/config.dart';
 import '../../data/fuda_sets.dart';
 import '../../domain/rating.dart';
+import '../../domain/side_trips.dart';
 import '../../domain/xp.dart';
 import '../../state/progress.dart';
+import '../../state/side_trips.dart';
 
 /// One celebration page's data. A new card is introduced during the run
 /// ([introductionOf]); the rest follow it ([celebrationsFor]).
@@ -36,13 +38,16 @@ class IslandCompleteCelebration extends Celebration {
 }
 
 class RankUpCelebration extends Celebration {
-  const RankUpCelebration(this.before, this.after, this.ratingBefore, this.ratingAfter);
+  const RankUpCelebration(this.before, this.after, this.ratingBefore, this.ratingAfter, {this.trip});
   final RankBand before;
   final RankBand after;
 
   /// Null on the first rated run.
   final double? ratingBefore;
   final double ratingAfter;
+
+  /// The side trip whose own rating ranked up; null for the main rank.
+  final SideTrip? trip;
 }
 
 class GoalUpCelebration extends Celebration {
@@ -65,16 +70,70 @@ class RatingCelebration extends Celebration {
   bool get ranksUp => Rating.bands.indexOf(Rating.bandOf(after)) > Rating.bands.indexOf(Rating.bandOf(before));
 }
 
-/// The XP a tracked run earned, source by source.
+/// The XP a game earned, source by source.
 class XpCelebration extends Celebration {
   const XpCelebration(this.gain);
   final XpGain gain;
 }
 
-/// The XP of a run reached a new level (or several).
+/// The XP of a game reached a new level (or several).
 class LevelUpCelebration extends Celebration {
   const LevelUpCelebration(this.gain);
   final XpGain gain;
+}
+
+/// What a ranked 暗記練 game did to its rating, as its page tells it.
+enum AnkirenRatingMoment {
+  /// A placement game before the last: its slot of ランク判定 is stamped and
+  /// the veiled flag climbs a step; the rating stays hidden.
+  placing,
+
+  /// The last placement game: the veiled flag turns to show the first
+  /// class, and the rating counts up from the start.
+  placed,
+
+  /// The rating rose within its class.
+  up,
+
+  /// The rating, rounded, did not move.
+  held,
+
+  /// The rating fell within its class.
+  down,
+
+  /// The rating broke into a higher class (the rank-up page follows).
+  rankUp,
+
+  /// The rating fell into a lower class.
+  rankDown,
+}
+
+/// A ranked 暗記練 game moved 暗記練's rating from [before] to [after]: the
+/// [game]th ranked game. The first [AnkirenRatingModel.placementGames]
+/// place it, keeping it hidden until the last of them shows the first
+/// class; [placementScores] are their scores so far, this game's last.
+class AnkirenRatingCelebration extends Celebration {
+  const AnkirenRatingCelebration(this.before, this.after, {required this.game, this.placementScores = const []});
+  final double before;
+  final double after;
+  final int game;
+  final List<int> placementScores;
+
+  AnkirenRatingMoment get moment {
+    const placement = AnkirenRatingModel.placementGames;
+    if (game < placement) return AnkirenRatingMoment.placing;
+    if (game == placement) return AnkirenRatingMoment.placed;
+    final from = Rating.bands.indexOf(Rating.bandOf(before));
+    final to = Rating.bands.indexOf(Rating.bandOf(after));
+    if (to > from) return AnkirenRatingMoment.rankUp;
+    if (to < from) return AnkirenRatingMoment.rankDown;
+    final change = after.round() - before.round();
+    return change > 0
+        ? AnkirenRatingMoment.up
+        : change < 0
+            ? AnkirenRatingMoment.down
+            : AnkirenRatingMoment.held;
+  }
 }
 
 /// The pages introducing new card [poemId] right before it first appears:
@@ -89,6 +148,15 @@ List<Celebration> introductionOf(int poemId, {required bool Function(int poemId)
   ];
 }
 
+/// The XP page when [xp] earned anything, and the level-up when it reached
+/// a new level: what every game that gives XP shows.
+List<Celebration> xpCelebrations(XpGain? xp) => [
+      if (xp != null && xp.award.total > 0) ...[
+        XpCelebration(xp),
+        if (xp.levelsGained > 0) LevelUpCelebration(xp),
+      ],
+    ];
+
 /// The pages after a run, in order: island completions, a new speed goal,
 /// graduation, the XP earned and any level it reached, then the rating when
 /// it rose and a rank-up when it reached a new class.
@@ -97,12 +165,8 @@ List<Celebration> celebrationsFor(SessionReport report) {
     for (final i in report.islandsCompleted) IslandCompleteCelebration(i),
     if (report.goalRaised) const GoalUpCelebration(),
     if (report.graduated) const GraduationCelebration(),
+    ...xpCelebrations(report.xp),
   ];
-  final xp = report.xp;
-  if (xp != null && xp.award.total > 0) {
-    list.add(XpCelebration(xp));
-    if (xp.levelsGained > 0) list.add(LevelUpCelebration(xp));
-  }
   final (ratingBefore, ratingAfter) = (report.ratingBefore, report.ratingAfter);
   if (ratingAfter != null) {
     if (ratingBefore != null && ratingAfter.round() - ratingBefore.round() >= RatingScreenTuning.minGain) {
@@ -113,6 +177,22 @@ List<Celebration> celebrationsFor(SessionReport report) {
     if (Rating.bands.indexOf(after) > Rating.bands.indexOf(before)) {
       list.add(RankUpCelebration(before, after, ratingBefore, ratingAfter));
     }
+  }
+  return list;
+}
+
+/// The pages after a 暗記練 game, in order: the XP earned and any level it
+/// reached, then for a ranked game what it did to the rating, and a
+/// rank-up when it broke into a higher class. [placementScores] are the
+/// placement games' scores so far, for a game that is one of them.
+List<Celebration> ankirenCelebrationsFor(AnkirenReport report, {List<int> placementScores = const []}) {
+  final list = xpCelebrations(report.xp);
+  final (before, after) = (report.ratingBefore, report.ratingAfter);
+  if (before == null || after == null) return list;
+  final rating = AnkirenRatingCelebration(before, after, game: report.rankedGames, placementScores: placementScores);
+  list.add(rating);
+  if (rating.moment == AnkirenRatingMoment.rankUp) {
+    list.add(RankUpCelebration(Rating.bandOf(before), Rating.bandOf(after), before, after, trip: SideTrip.ankiren));
   }
   return list;
 }

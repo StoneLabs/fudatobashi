@@ -4088,3 +4088,267 @@ abstract final class AnkirenPageLayout {
   static const double previewMaxCardW = 30;
   static const Color previewGround = Color(0xFF99A083);
 }
+
+/// 暗記練's rating page (`AnkirenRatingOverlay`): its rank flag hoisted up a
+/// flagpole whose height is the class, the bottom its threshold and the
+/// finial the next class's. Over it the reading (the old rating, the new
+/// one counting, the change) or the placement slots; under it what's left
+/// to the next class, with Tobi.
+abstract final class AnkirenRatingLayout {
+  /// A rise, a reveal or a breakthrough: a sea page with a light glow and
+  /// streaks rising; a fall: a calmer, lighter page with neither.
+  static const Color color = Palette.sea;
+  static const Alignment glowAt = Alignment(0.1, -0.1);
+  static const List<Color> glowColors = [Color(0xFFDDF1FF), Color(0xFF7CC4FF), Palette.sea];
+  static const List<double> glowStops = [0, 0.45, 1];
+  static const tone = ToneSpec(dot: Color(0xFF1E86E6), radius: 1.5, spacing: 6);
+  static const double toneAngle = 180;
+  static const List<double> toneStops = [0.55, 1];
+  static const streaks = SpeedLinesSpec(count: 40, seed: 29, fromEdge: true, color: Color(0x73FFFFFF));
+  static const Color calmColor = Palette.shallow;
+  static const List<Color> calmGlowColors = [Palette.paper, Color(0xFFD6EEFF), Palette.shallow];
+  static const calmTone = ToneSpec(dot: Color(0xFF8CCBFA), radius: 1.3, spacing: 6);
+
+  /// The title: display lettering, sun for a rise, paper for a fall.
+  static const double topGap = 4;
+  static const String titleUp = '暗記力UP!!';
+  static const String titleHeld = 'キープ!!';
+  static const String titleDown = 'ドンマイ!';
+  static const String titlePlacing = 'ランク判定';
+  static const String titlePlaced = 'ランク決定!!';
+  static const double titleFont = 72;
+  static const double titleOutline = 9;
+  static const double bandInset = 44;
+  static const double bandFont = 18;
+  static const double bandTracking = 0.24;
+  static const EdgeInsets bandPadding = EdgeInsets.fromLTRB(8, 6, 8, 7);
+  static const double bandTurnDeg = -2;
+  static const double headGap = 10;
+
+  /// The reading: the old rating, an arrow, the new one counting in big
+  /// lettering, and the change slapped on its corner as it lands.
+  static const double readingFont = 56;
+  static const double readingOutline = 9;
+  static const double oldFont = 22;
+  static const double arrowFont = 20;
+  static const double readingGap = 8;
+  static const double changeFont = 20;
+  static const EdgeInsets changePadding = EdgeInsets.fromLTRB(8, 2, 8, 4);
+  static const double changeTurnDeg = -6;
+  static const Offset changeAt = Offset(-6, -14);
+  static const impactBurst = BurstSpec(
+      box: impactSize, center: Offset(150, 70), count: 40, innerMin: 50, innerMax: 70, width: 5, seed: 33);
+  static const Size impactSize = Size(300, 140);
+  static const double impactFromScale = 0.6;
+  static const double impactToScale = 1.3;
+  static const double landPulse = 0.14;
+
+  /// The placement slots: one panel a game, its number over its score, the
+  /// games played stamped done; those to come dashed, the next one marked.
+  static const double slotHeight = 64;
+  static const double slotGap = 8;
+  static const double slotLabelFont = 11;
+  static const double slotLabelTracking = 0.14;
+  static const double slotScoreFont = 24;
+  static const double slotTodoFont = 22;
+  static const double slotBorder = Strokes.control;
+  static const Color slotInk = Color(0xFF6B6B6B);
+
+  /// The stamp overhangs a played slot's top right corner by [stampAt],
+  /// at [stampScale] of its size.
+  static const Offset stampAt = Offset(-7, -9);
+  static const double stampScale = 0.72;
+
+  /// The stage: the flagpole's art (its box in pole units, scaled to the
+  /// stage's height), its centre at [poleAt] of the stage's width.
+  static const String pole = 'assets/images/sidetrips/ui/flagpole.webp';
+  static const Size poleBox = Size(64, 440);
+  static const double poleCentre = 32;
+  static const double poleWidth = 7;
+  static const double poleAt = 0.27;
+
+  /// The cloth's frames, cycled in the wind: their box, where their rings
+  /// meet the pole, and the calm field the class is written in, all in the
+  /// art's own units; on the stage the cloth is [clothScale] times the
+  /// pole's scale.
+  static const List<String> cloth = [
+    'assets/images/sidetrips/ui/rank-cloth-0.webp',
+    'assets/images/sidetrips/ui/rank-cloth-1.webp',
+    'assets/images/sidetrips/ui/rank-cloth-2.webp',
+  ];
+  static const Size clothBox = Size(168, 84);
+  static const double clothPole = 5;
+  static const Rect clothText = Rect.fromLTRB(30, 22, 122, 62);
+  static const double clothScale = 1.25;
+  static const double clothFont = 34;
+  static const double clothSuffixFont = 22;
+  static const String veiled = '?';
+
+  /// The cloth's top travels from [hoistLow] (the floor) to [hoistHigh] (the
+  /// finial: the next class), in pole units, its band clear of the collar
+  /// and the base; the rating sits level with the band's top edge, [bandTop]
+  /// into the cloth's box (art units).
+  static const double hoistHigh = 15;
+  static const double hoistLow = 311;
+  static const double bandTop = 16;
+
+  /// The veiled flag: the cloth drained of colour, with a question mark.
+  static const List<double> veil = [
+    0.33, 0.59, 0.11, 0, 12, //
+    0.33, 0.59, 0.11, 0, 12,
+    0.33, 0.59, 0.11, 0, 12,
+    0, 0, 0, 1, 0,
+  ];
+
+  /// The scale left of the pole: the class's ends, the old rating with an
+  /// arrow, and a class's line crossing the pole; the next class's badge
+  /// at the stage's top right.
+  static const double scaleFont = 13;
+
+  /// An end of the class is left unlabelled when the old rating's mark
+  /// comes this close to it.
+  static const double scaleClear = 22;
+  static const double tickLength = 8;
+  static const double tickStroke = 2;
+  static const double oldMarkFont = 15;
+  static const double oldArrow = 9;
+  static const double oldArrowGap = 4;
+  static const double lineReach = 26;
+  static const double lineStroke = 2.5;
+  static const double lineDash = 5;
+  static const double badgeFont = 22;
+  static const double badgeSuffixFont = 13;
+  static const double lineBadgeFont = 15;
+  static const double lineBadgeSuffixFont = 10;
+
+  /// The flag lands with バサッ!! over its fly end, kept on the page: its
+  /// right edge [landSfxAt] in from the fly's (or the page's), and up from
+  /// the cloth's top; or hanging from the cloth's bottom when the flag
+  /// flies higher than [sfxBelowFrom] of the pole (ジャン!! too).
+  static const String landSfx = 'バサッ!!';
+  static const double landSfxFont = 26;
+  static const int landSfxSeed = 18;
+  static const double landSfxTurnDeg = 8;
+  static const Offset landSfxAt = Offset(4, -34);
+  static const double sfxBelowFrom = 0.55;
+
+  /// The reveal: a white flash, ジャン!! over the flag ([revealSfxAt] of the
+  /// way along it) and a burst behind it.
+  static const double revealSfxAt = 0.4;
+  static const String revealSfx = 'ジャン!!';
+  static const double revealSfxFont = 38;
+  static const int revealSfxSeed = 21;
+  static const double revealSfxTurnDeg = -8;
+  static const revealBurst = BurstSpec(
+      box: revealSize, center: Offset(170, 170), count: 52, innerMin: 70, innerMax: 100, width: 5, seed: 37);
+  static const Size revealSize = Size(340, 340);
+  static const double revealFromScale = 0.5;
+  static const double revealToScale = 1.4;
+
+  /// The suspense before a reveal or a breakthrough: the page darkens and
+  /// the title dims; on a breakthrough the flag strains against the finial.
+  static const double darkness = 0.6;
+  static const double dimTo = 0.35;
+  static const double strainPush = 7;
+  static const double strainJitter = 2;
+  static const int rumbleSeed = 61;
+  static const Color flash = Palette.paper;
+
+  /// What's left to the next class, with Tobi at its right end.
+  static const double stripGap = 10;
+  static const EdgeInsets stripPadding = EdgeInsets.fromLTRB(12, 8, 70, 9);
+  static const double stripFont = 16;
+  static const double stripNumberFont = 24;
+  static const Placement tobi = Placement(right: -2, bottom: 2, size: Size(64, 76));
+
+  static const double actionHeight = 62;
+  static const double ctaFont = 20;
+  static const double ctaSubFont = 13;
+}
+
+/// The 暗記練 rating page's timeline. The flag moves from [moveAt]: it
+/// climbs, or sinks more slowly, and lands; on a breakthrough it strains
+/// against the finial and the page flashes into the rank-up; on the last
+/// placement game a drumroll ends in the reveal and the rating counts up.
+abstract final class AnkirenRatingMotion {
+  static const title = EntranceSpec(Entrances.slam,
+      duration: Duration(milliseconds: 500), delay: Duration(milliseconds: 100), curve: Entrances.springy);
+  static const calmTitle =
+      EntranceSpec(Entrances.up, duration: Duration(milliseconds: 500), delay: Duration(milliseconds: 100), curve: Entrances.glide);
+  static const band =
+      EntranceSpec(Entrances.pop, duration: Duration(milliseconds: 350), delay: Duration(milliseconds: 350));
+  static const head = EntranceSpec(Entrances.pop,
+      duration: Duration(milliseconds: 350), delay: Duration(milliseconds: 450), curve: Entrances.springy);
+  static const stage = EntranceSpec(Entrances.up,
+      duration: Duration(milliseconds: 400), delay: Duration(milliseconds: 400), curve: Entrances.glide);
+  static const strip = EntranceSpec(Entrances.up,
+      duration: Duration(milliseconds: 400), delay: Duration(milliseconds: 650), curve: Entrances.glide);
+
+  static const moveAt = Duration(milliseconds: 1000);
+  static const climb = Duration(milliseconds: 1300);
+  static const climbToTop = Duration(milliseconds: 1100);
+  static const sink = Duration(milliseconds: 1700);
+  static const Curve climbCurve = Curves.easeOutCubic;
+  static const Curve sinkCurve = Curves.easeInOutCubic;
+
+  /// The cloth flutters a frame every [flutter]; a class it sinks into
+  /// fades in over [relabel].
+  static const flutter = Duration(milliseconds: 170);
+  static const relabel = Duration(milliseconds: 300);
+
+  /// A ratchet click each time the rating goes up, at most this often.
+  static const tickStep = Duration(milliseconds: 60);
+
+  /// Landing: the reading pulses with a burst, the change and バサッ!! pop
+  /// on, then the button.
+  static const landPulse = Duration(milliseconds: 380);
+  static const burst = Duration(milliseconds: 450);
+  static const change = Duration(milliseconds: 400);
+  static const changeAfter = Duration(milliseconds: 80);
+  static const sfx = Duration(milliseconds: 400);
+  static const tobi = Duration(milliseconds: 400);
+  static const jolt = Duration(milliseconds: 300);
+  static const double joltReach = 6;
+  static const int joltSteps = 9;
+  static const int joltSeed = 67;
+  static const actionsAfter = Duration(milliseconds: 250);
+  static const actions = Duration(milliseconds: 400);
+
+  /// Placement: this game's slot pops in at [slotAt] and is stamped done at
+  /// [stampAt]; the veiled flag climbs its step meanwhile.
+  static const slotAt = Duration(milliseconds: 700);
+  static const slot = Duration(milliseconds: 350);
+  static const stampAt = Duration(milliseconds: 1150);
+  static const stamp = Duration(milliseconds: 300);
+
+  /// The drumroll before the reveal, with a heartbeat at each of [beats]
+  /// after the flag stops; the reveal flashes white over [flashIn], holds,
+  /// and fades over [flashOut], and the rating counts up over [count].
+  static const List<Duration> beats = [
+    Duration(milliseconds: 150),
+    Duration(milliseconds: 600),
+    Duration(milliseconds: 980),
+    Duration(milliseconds: 1280),
+  ];
+  static const drumroll = Duration(milliseconds: 1500);
+  static const beatPulse = Duration(milliseconds: 220);
+  static const double beatScale = 0.03;
+  static const flashIn = Duration(milliseconds: 110);
+  static const flashHold = Duration(milliseconds: 60);
+  static const flashOut = Duration(milliseconds: 420);
+  static const countAfter = Duration(milliseconds: 250);
+  static const count = Duration(milliseconds: 1100);
+  static const Curve countCurve = Curves.easeOutCubic;
+
+  /// A breakthrough: the flag strains against the finial with heartbeats,
+  /// then the page flashes into the rank-up.
+  static const strain = Duration(milliseconds: 1000);
+  static const List<Duration> strainBeats = [Duration.zero, Duration(milliseconds: 420), Duration(milliseconds: 760)];
+  static const strainPeriod = Duration(milliseconds: 140);
+  static const rumbleStep = Duration(milliseconds: 40);
+  static const Curve darken = Curves.easeIn;
+
+  static const double hopHeight = 10;
+  static const hopPeriod = Duration(milliseconds: 1000);
+  static const double hopAirShare = 0.4;
+}

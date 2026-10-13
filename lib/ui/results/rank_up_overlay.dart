@@ -5,6 +5,8 @@ import 'package:flutter/widgets.dart';
 
 import '../../config/design.dart';
 import '../../domain/rating.dart';
+import '../../domain/side_trips.dart';
+import '../../l10n/ankiren_strings.dart';
 import '../../l10n/results_strings.dart';
 import '../../l10n/stats_strings.dart';
 import '../../l10n/strings.dart';
@@ -17,7 +19,8 @@ import 'celebrations.dart';
 /// across the gutter. The old class is struck off and stamped CLEAR on the
 /// left page, the new one slams down on the right with a jolt, Tobi cheers,
 /// the rating counts up, and the next class's 100-card time shows how far
-/// is left to go.
+/// is left to go. A side trip's own rank (`RankUpCelebration.trip`) says
+/// whose rank it is on its band and shows only the points left.
 class RankUpOverlay extends StatelessWidget {
   const RankUpOverlay({super.key, required this.data, required this.onNext});
   final RankUpCelebration data;
@@ -60,7 +63,7 @@ class RankUpOverlay extends StatelessWidget {
             const SizedBox(height: RankUpLayout.bandGap),
             Entrance(
               RankUpMotion.band,
-              child: CelebrationBand(s.rankUpBand,
+              child: CelebrationBand(_band(s, data.trip),
                   inset: RankUpLayout.bandInset,
                   fontSize: RankUpLayout.bandFont,
                   tracking: RankUpLayout.bandTracking,
@@ -78,7 +81,7 @@ class RankUpOverlay extends StatelessWidget {
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: Gaps.gutter),
               child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-                Entrance(RankUpMotion.next, child: _NextClass(rating: data.ratingAfter)),
+                Entrance(RankUpMotion.next, child: _NextClass(rating: data.ratingAfter, timed: data.trip == null)),
                 const SizedBox(height: RankUpLayout.sectionGap),
                 Entrance(
                   RankUpMotion.actions,
@@ -100,6 +103,11 @@ class RankUpOverlay extends StatelessWidget {
     );
   }
 }
+
+String _band(S s, SideTrip? trip) => switch (trip) {
+      null => s.rankUpBand,
+      SideTrip.ankiren => s.ankirenRankUpBand,
+    };
 
 /// The two pages and the gutter between them: sea tone and speed lines on
 /// the left, sun glow and boiling focus lines on the right, sliding in from
@@ -374,10 +382,12 @@ class _RatingCount extends StatelessWidget {
 
 /// What's next: the next class, the 100-card time it asks for, and a bar
 /// filling up to how far the player already is toward it (or the top of the
-/// ladder).
+/// ladder). A rating that is not [timed] (a side trip's) shows the points
+/// left instead of the time.
 class _NextClass extends StatelessWidget {
-  const _NextClass({required this.rating});
+  const _NextClass({required this.rating, required this.timed});
   final double rating;
+  final bool timed;
 
   @override
   Widget build(BuildContext context) {
@@ -407,28 +417,42 @@ class _NextClass extends StatelessWidget {
             ] else ...[
               InkTag(s.nextClassBand, fontSize: RankUpLayout.nextTagFont),
               const SizedBox(height: Gaps.tight),
-              NumberedText(
-                s.nextClassTarget,
-                [_seconds(next.maxSeconds!)],
-                style: bold.copyWith(fontSize: RankUpLayout.nextTargetFont),
-                numberStyle: number,
-              ),
+              if (timed)
+                NumberedText(
+                  s.nextClassTarget,
+                  [_seconds(next.maxSeconds!)],
+                  style: bold.copyWith(fontSize: RankUpLayout.nextTargetFont),
+                  numberStyle: number,
+                )
+              else
+                FittedBox(
+                  fit: BoxFit.scaleDown,
+                  alignment: Alignment.centerLeft,
+                  child: NumberedText(
+                    s.ratingToNext(next.label),
+                    [(next.minRating - rating).ceil()],
+                    style: bold.copyWith(fontSize: RankUpLayout.nextTargetFont),
+                    numberStyle: number,
+                  ),
+                ),
               const SizedBox(height: RankUpLayout.barGap),
               EntranceBuilder(
                 RankUpMotion.fill,
                 builder: (context, t, _) => _Bar((rating - floor) / (next.minRating - floor) * t),
               ),
-              const SizedBox(height: RankUpLayout.barGap),
-              FittedBox(
-                fit: BoxFit.scaleDown,
-                alignment: Alignment.centerLeft,
-                child: NumberedText(
-                  s.nextClassPace,
-                  [Rating.toSeconds(rating).toStringAsFixed(1), (next.minRating - rating).ceil()],
-                  style: bold.copyWith(fontSize: RankUpLayout.nextNoteFont, fontWeight: Weights.bold),
-                  numberStyle: number,
+              if (timed) ...[
+                const SizedBox(height: RankUpLayout.barGap),
+                FittedBox(
+                  fit: BoxFit.scaleDown,
+                  alignment: Alignment.centerLeft,
+                  child: NumberedText(
+                    s.nextClassPace,
+                    [Rating.toSeconds(rating).toStringAsFixed(1), (next.minRating - rating).ceil()],
+                    style: bold.copyWith(fontSize: RankUpLayout.nextNoteFont, fontWeight: Weights.bold),
+                    numberStyle: number,
+                  ),
                 ),
-              ),
+              ],
             ],
           ]),
         ),

@@ -87,4 +87,23 @@ extension AnkirenStrings on S {
 
   /// The field preview, for screen readers.
   String ankirenPreviewLabel(int perSide) => f('ankirenPreviewLabel', [perSide]);
+
+  /// The rating page's band; on the last placement game's, and over the
+  /// rank-up after a breakthrough.
+  String get ankirenRatingBand => t('ankirenRatingBand');
+  String get ankirenRankBand => t('ankirenRankBand');
+  String get ankirenRankUpBand => t('ankirenRankUpBand');
+
+  /// A placement game's slot on the rating page: "GAME 2".
+  String ankirenSlot(int game) => f('ankirenSlot', [game]);
+
+  /// The placement games still to play before the first class shows, `{0}`
+  /// marking how many.
+  String ankirenPlacementLeft(int games) => t(games == 1 ? 'ankirenPlacementLeftOne' : 'ankirenPlacementLeftOther');
+
+  /// The last placement game's line before its class shows.
+  String get ankirenRankIs => t('ankirenRankIs');
+
+  /// The rating page's button after a game that lowered the rating.
+  String get ankirenNextTime => t('ankirenNextTime');
 }

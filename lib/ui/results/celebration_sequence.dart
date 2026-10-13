@@ -3,6 +3,7 @@ import 'package:flutter/widgets.dart';
 import '../../config/config.dart';
 import '../../config/design.dart';
 import '../../state/scope.dart';
+import '../ankiren/ankiren_rating_overlay.dart';
 import '../sound/sounds.dart';
 import 'celebration_overlays.dart';
 import 'celebrations.dart';
@@ -17,7 +18,8 @@ import 'xp_overlay.dart';
 /// Celebration [pages] one after another over an opaque backdrop: the
 /// sequence fades in, cross-fades between pages, and after the last one
 /// fades out and lets go of the screen, calling [onDone] once it is fully
-/// gone (play resumes only then).
+/// gone (play resumes only then). Every game that celebrates plays its
+/// pages through it: a main run's, and a 暗記練 game's.
 class CelebrationSequence extends StatefulWidget {
   const CelebrationSequence({super.key, required this.pages, required this.onDone});
 
@@ -95,7 +97,12 @@ class _CelebrationSequenceState extends State<CelebrationSequence> with SingleTi
   Widget _transition(Widget child, Animation<double> animation) {
     final i = (child.key! as ValueKey<int>).value;
     final before = i > 0 ? widget.pages[i - 1] : null;
-    return before is RatingCelebration && before.ranksUp ? child : FadeTransition(opacity: animation, child: child);
+    final cut = switch (before) {
+      RatingCelebration() => before.ranksUp,
+      AnkirenRatingCelebration() => before.moment == AnkirenRatingMoment.rankUp,
+      _ => false,
+    };
+    return cut ? child : FadeTransition(opacity: animation, child: child);
   }
 
   Widget _page(Celebration c, VoidCallback onNext) {
@@ -115,6 +122,7 @@ class _CelebrationSequenceState extends State<CelebrationSequence> with SingleTi
       XpCelebration() => XpOverlay(gain: c.gain, onNext: onNext),
       LevelUpCelebration() => LevelUpOverlay(gain: c.gain, onNext: onNext),
       RatingCelebration() => RatingOverlay(data: c, onNext: onNext),
+      AnkirenRatingCelebration() => AnkirenRatingOverlay(data: c, onNext: onNext),
     };
   }
 }
@@ -136,4 +144,5 @@ List<(Sfx, Duration)> _soundsOf(Celebration c) => switch (c) {
       XpCelebration() => XpTimeline(c.gain).sounds,
       LevelUpCelebration() => const [(Sfx.stamp, LevelUpMotion.impactAt), (Sfx.levelUp, LevelUpMotion.impactAt)],
       RatingCelebration() => RatingTimeline(c).sounds,
+      AnkirenRatingCelebration() => AnkirenRatingTimeline(c).sounds,
     };

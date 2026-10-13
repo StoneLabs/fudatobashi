@@ -208,7 +208,7 @@ void main() {
     expect(r.bottom, lessThanOrEqualTo(bar.top), reason: '$f');
   }
 
-  test('every picture in assets/images/sidetrips is art the hub or its rules use', () {
+  test('every picture in assets/images/sidetrips is art the hub, its rules or the rating page use', () {
     final used = {
       for (final piece in [
         DojoSceneLayout.sky,
@@ -228,6 +228,8 @@ void main() {
       AnkirenRulesLayout.memorise,
       AnkirenRulesLayout.flip,
       AnkirenRulesLayout.take,
+      AnkirenRatingLayout.pole,
+      ...AnkirenRatingLayout.cloth,
     };
     final files = Directory('assets/images/sidetrips').listSync(recursive: true).whereType<File>();
     expect({for (final f in files) f.path}, used);

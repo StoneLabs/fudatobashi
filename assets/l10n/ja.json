@@ -630,5 +630,13 @@
   "ankirenScoreLevel": "高い​レベルほど​高得点",
   "ankirenPreviewLabel": "場：片陣{0}枚、裏向き",
   "ankirenMarkPoints": "pt",
-  "ankirenMarkLevel": "Lv"
+  "ankirenMarkLevel": "Lv",
+  "ankirenRatingBand": "暗記練 レーティング",
+  "ankirenRankBand": "暗記練のランク",
+  "ankirenRankUpBand": "暗記練 RANK UP",
+  "ankirenSlot": "{0}戦目",
+  "ankirenPlacementLeftOne": "あと{0}戦でランク決定!",
+  "ankirenPlacementLeftOther": "あと{0}戦でランク決定!",
+  "ankirenRankIs": "あなたのランクは…",
+  "ankirenNextTime": "次こそ!"
 }

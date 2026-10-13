@@ -414,11 +414,20 @@ class _StatsRow extends StatelessWidget {
 }
 
 /// A ranked game's change to the rating: ▲ on ink, ▼ on paper (± when
-/// none).
+/// none), at the hub's size unless given another.
 class RatingChangeTag extends StatelessWidget {
-  const RatingChangeTag(this.change, {super.key});
+  const RatingChangeTag(
+    this.change, {
+    super.key,
+    this.fontSize = SideTripsLayout.deltaFont,
+    this.padding = SideTripsLayout.deltaPadding,
+    this.border = Strokes.label,
+  });
 
   final int change;
+  final double fontSize;
+  final EdgeInsets padding;
+  final double border;
 
   @override
   Widget build(BuildContext context) {
@@ -426,16 +435,16 @@ class RatingChangeTag extends StatelessWidget {
     return DecoratedBox(
       decoration: BoxDecoration(
         color: up ? Palette.ink : Palette.paper,
-        border: up ? null : Border.all(color: Palette.ink, width: Strokes.label),
+        border: up ? null : Border.all(color: Palette.ink, width: border),
       ),
       child: Padding(
-        padding: SideTripsLayout.deltaPadding,
+        padding: padding,
         child: Text(
           '${up ? '▲' : change < 0 ? '▼' : '±'}${change.abs()}',
           semanticsLabel: up ? '+$change' : '$change',
           style: TextStyle(
             fontFamily: Fonts.display,
-            fontSize: SideTripsLayout.deltaFont,
+            fontSize: fontSize,
             height: 1,
             color: up ? Palette.paper : Palette.ink,
           ),
