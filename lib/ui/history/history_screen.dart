@@ -176,11 +176,12 @@ class _Record {
         bestScore = entries
             .whereType<_TripEntry>()
             .map((entry) => entry.run.score)
+            .nonNulls
             .fold<int?>(null, (best, score) => best == null || score > best ? score : best);
 
   final int runs, cards, days;
 
-  /// The best side-trip score among them, if any.
+  /// The best side-trip score among them, if any (custom games have none).
   final int? bestScore;
 }
 
@@ -401,13 +402,13 @@ class _Segment extends StatelessWidget {
 
 /// A run's panel: its tag (shrunk rather than cut when it is too long) and
 /// date (under the tag when both don't fit on one line) over its
-/// "{n} cards · {m} misses" line, and its result on the right.
+/// "{n} cards · {m} misses" line, and its result, if any, on the right.
 class _RunPanel extends StatelessWidget {
   const _RunPanel({required this.tag, required this.at, required this.cards, required this.misses, required this.result});
   final String tag;
   final DateTime at;
   final int cards, misses;
-  final Widget result;
+  final Widget? result;
 
   @override
   Widget build(BuildContext context) {
@@ -443,8 +444,7 @@ class _RunPanel extends StatelessWidget {
               ],
             ),
           ),
-          const SizedBox(width: Gaps.panel),
-          result,
+          if (result case final result?) ...[const SizedBox(width: Gaps.panel), result],
         ],
       ),
     );
@@ -477,7 +477,8 @@ class _SessionRow extends StatelessWidget {
 }
 
 /// A side-trip game: the trip, ranked or free at its level (or a custom
-/// setup), its misses (cards not found with the first tap), and its score.
+/// setup), its misses (cards not found with the first tap), and its score
+/// (none for a custom setup).
 class _TripRow extends StatelessWidget {
   const _TripRow(this.run);
   final SideTripRun run;
@@ -486,7 +487,7 @@ class _TripRow extends StatelessWidget {
   Widget build(BuildContext context) {
     final s = S.of(context);
     final trip = SideTrip.values.asNameMap()[run.game];
-    final level = run.level;
+    final level = run.level, score = run.score;
     final mode = switch ((run.ranked, level)) {
       (true, final int level) => s.sideTripRankedLevel(level),
       (true, null) => s.sideTripRanked,
@@ -498,12 +499,14 @@ class _TripRow extends StatelessWidget {
       at: run.startedAt,
       cards: run.cardCount,
       misses: ProgressScope.of(context).sideTrips.missesIn(run),
-      result: NumberedText(
-        s.historyScoreTemplate,
-        [run.score],
-        style: const TextStyle(fontWeight: Weights.black, fontSize: TypeScale.small),
-        numberStyle: const TextStyle(fontFamily: Fonts.display, fontSize: HistoryLayout.rowTimeFont, height: 1),
-      ),
+      result: score == null
+          ? null
+          : NumberedText(
+              s.historyScoreTemplate,
+              [score],
+              style: const TextStyle(fontWeight: Weights.black, fontSize: TypeScale.small),
+              numberStyle: const TextStyle(fontFamily: Fonts.display, fontSize: HistoryLayout.rowTimeFont, height: 1),
+            ),
     );
   }
 }

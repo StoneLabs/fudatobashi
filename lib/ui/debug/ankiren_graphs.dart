@@ -27,14 +27,11 @@ class _AnkirenTimeUsedGraphState extends State<AnkirenTimeUsedGraph> {
   double _responseMs = AnkirenToolsTuning.responseStart.inMilliseconds.toDouble();
   double _used = AnkirenToolsTuning.timeUsedStart.inSeconds.toDouble();
 
-  int _total(int level, int usedSeconds) {
-    final setup = AnkirenSetup.forLevel(level);
-    return AnkirenScore.firstTryTotal(
-      setup,
-      responseMs: _responseMs,
-      timeLeft: setup.memorise - Duration(seconds: usedSeconds),
-    );
-  }
+  int _total(int level, int usedSeconds) => AnkirenScore.firstTryTotal(
+        level,
+        responseMs: _responseMs,
+        timeLeft: AnkirenLevels.of(level).memorise - Duration(seconds: usedSeconds),
+      );
 
   @override
   Widget build(BuildContext context) {
@@ -125,7 +122,7 @@ class _AnkirenCardTimeGraphState extends State<AnkirenCardTimeGraph> {
               Offset(
                 ms / 1000,
                 AnkirenScore.firstTryTotal(
-                  AnkirenSetup.forLevel(l),
+                  l,
                   responseMs: ms.toDouble(),
                   timeLeft: timeLeft,
                 ).toDouble(),

@@ -808,15 +808,17 @@ void main() {
       final page = find.byType(Scrollable).first;
       String kv(String key) => tester.widget<DebugKV>(find.byWidgetPredicate((w) => w is DebugKV && w.k == key)).v;
 
-      expect(kv('per card'), '${AnkirenTuning.firstTry + AnkirenScore.speedBonus(1000000)}');
-      Finder wrongTaps(String label) =>
-          find.descendant(of: find.byType(SegmentedButton<int>), matching: find.text(label));
-      await tester.ensureVisible(find.byType(SegmentedButton<int>));
+      final full = AnkirenTuning.firstTry + AnkirenScore.speedBonus(1000000);
+      expect(kv('per card'), '$full');
+      Finder firstTap(String label) =>
+          find.descendant(of: find.byType(SegmentedButton<TapProximity?>), matching: find.text(label));
+      await tester.ensureVisible(find.byType(SegmentedButton<TapProximity?>));
       await tester.pump();
-      await tester.tap(wrongTaps('1'));
+      await tester.tap(firstTap(TapProximity.row.name));
       await tester.pump();
-      expect(kv('per card'), '${AnkirenTuning.secondTry}');
-      await tester.tap(wrongTaps('shown'));
+      expect(kv('per card'),
+          '${(full * (AnkirenTuning.firstTapCredit[TapProximity.row]! + AnkirenTuning.secondTapShare)).round()}');
+      await tester.tap(firstTap('shown'));
       await tester.pump();
       expect(kv('per card'), '0');
 

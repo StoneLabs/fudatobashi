@@ -19,7 +19,7 @@ enum XpSource {
   island,
   graduation,
 
-  /// 暗記練: cards found with the first tap, and after a wrong tap.
+  /// 暗記練: cards found with the first tap, and with the second.
   firstTap,
   secondTap,
 

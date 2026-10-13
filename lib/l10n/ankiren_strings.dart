@@ -26,6 +26,12 @@ extension AnkirenStrings on S {
   String get ankirenScoreLabel => t('ankirenScoreLabel');
   String ankirenScoreOf(int max) => f('ankirenScoreOf', [max]);
   String ankirenEarlyBonus(int points) => f('ankirenEarlyBonus', [points]);
+
+  /// A custom game's results, which have no score: the cards found out of
+  /// those asked, and the cards missed.
+  String get ankirenFoundLabel => t('ankirenFoundLabel');
+  String ankirenFoundOf(int cards) => f('ankirenFoundOf', [cards]);
+  String ankirenMissed(int n) => f('ankirenMissed', [n]);
   String get ankirenFirstTryLabel => t('ankirenFirstTryLabel');
 
   /// Every wrong tap of a game (お手つき).
@@ -40,6 +46,7 @@ extension AnkirenStrings on S {
   String ankirenNextLevel(int level) => f('ankirenNextLevel', [level]);
   String ankirenPlacement(int game, int of) => f('ankirenPlacement', [game, of]);
   String get ankirenFreeNote => t('ankirenFreeNote');
+  String get ankirenCustomNote => t('ankirenCustomNote');
   String get ankirenAgainSub => t('ankirenAgainSub');
   String get ankirenDoneSub => t('ankirenDoneSub');
 
@@ -51,10 +58,9 @@ extension AnkirenStrings on S {
   String get ankirenLevelRow => t('ankirenLevelRow');
   String get ankirenCustom => t('ankirenCustom');
   String ankirenLevelNeeds(int level, int cards, int known) => f('ankirenLevelNeeds', [level, cards, known]);
-  String get ankirenScoredAs => t('ankirenScoredAs');
 
-  /// The level a setup scores as and a field's cards per side ("7×2"), as
-  /// templates; and the cards on a level key.
+  /// A field's cards per side ("7×2"), as a template; and the cards on a
+  /// level key.
   String get ankirenPerSideCount => t('ankirenPerSideCount');
   String ankirenKeyCards(int perSide) => f('ankirenKeyCards', [perSide]);
   String get ankirenPerSide => t('ankirenPerSide');

@@ -19,6 +19,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:fudatobashi/config/config.dart';
 import 'package:fudatobashi/config/design.dart';
+import 'package:fudatobashi/domain/ankiren_field.dart';
 import 'package:fudatobashi/data/fuda_sets.dart';
 import 'package:fudatobashi/data/islands.dart';
 import 'package:fudatobashi/data/poem.dart';
@@ -100,7 +101,8 @@ XpGain _ankirenGain({int into = 150}) => XpGain(
       before: XpCurve.reach(7) + into,
       award: XpAward([
         XpPart(XpSource.firstTap, 12, 12 * AnkirenXp.cardXp(3)),
-        XpPart(XpSource.secondTap, 3, 3 * (AnkirenXp.cardXp(3) * AnkirenXpTuning.secondTapShare).round()),
+        XpPart(XpSource.secondTap, 3,
+            3 * (AnkirenXp.cardXp(3) * AnkirenTuning.firstTapCredit[TapProximity.row]!).round()),
         const XpPart(XpSource.missed, 2, 2 * AnkirenXpTuning.perMiss),
         const XpPart(XpSource.speed, 12, 310),
         const XpPart(XpSource.clear, 1, AnkirenXpTuning.clear),
@@ -448,6 +450,24 @@ void main() {
       final page = tester.widget<AnkirenRatingOverlay>(find.byType(AnkirenRatingOverlay));
       expect(page.data.moment, AnkirenRatingMoment.placed);
       expect(page.data.placementScores, [for (final r in p.sideTrips.runs) r.score]);
+      await tester.pumpWidget(const SizedBox());
+    });
+
+    testWidgets('a custom game: the cards found and missed in place of a score, and no XP', (tester) async {
+      const s = S('en');
+      final p = await open(tester, 'en');
+      const custom = AnkirenSetup.custom(perSide: 4, memorise: Duration(minutes: 1));
+      final report = await results(tester, p, custom, endAfter: 6);
+      await tester.pump(ResultsLayout.overlayStagger * 2);
+      expect(report.xp!.award.parts, isEmpty);
+      expect(find.byType(CelebrationSequence), findsNothing, reason: 'nothing earned, nothing to celebrate');
+      expect([s.endedEarly, s.ankirenFoundOf(8), s.ankirenMissed(2), s.ankirenCustomNote].map(find.text),
+          everyElement(findsOneWidget));
+      expect(find.text(s.ankirenScoreLabel), findsNothing);
+      await tester.pumpWidget(const SizedBox());
+
+      await results(tester, p, custom);
+      expect([s.ankirenFoundLabel, s.ankirenMissed(0)].map(find.text), everyElement(findsOneWidget));
       await tester.pumpWidget(const SizedBox());
     });
 

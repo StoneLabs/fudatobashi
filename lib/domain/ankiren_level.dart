@@ -1,5 +1,3 @@
-import 'dart:math' as math;
-
 import '../config/config.dart';
 
 /// One 暗記練 difficulty level: how many cards each side of the field holds
@@ -56,18 +54,12 @@ class AnkirenSetup {
   final int perSide;
   final Duration memorise;
 
-  /// The level preset played, or null for a custom setup.
+  /// The level preset played, or null for a custom setup, which is not
+  /// scored.
   final int? level;
   final bool ranked;
 
   int get cards => 2 * perSide;
-
-  /// The level this setup scores as: its own, or for a custom setup the
-  /// hardest level it is at least as hard as (as many cards a side or more,
-  /// as long to memorise or less), or level 0.
-  int get scoredLevel =>
-      level ??
-      math.max(0, AnkirenLevels.all.lastIndexWhere((l) => perSide >= l.perSide && memorise <= l.memorise));
 
   /// Deals a beginner's field (see [AnkirenLevel.allInMiddle]).
   bool get allInMiddle => level != null && AnkirenLevels.of(level!).allInMiddle;

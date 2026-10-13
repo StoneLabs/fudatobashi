@@ -3,6 +3,8 @@ import 'package:flutter/material.dart';
 import '../../config/config.dart';
 import '../../config/design.dart';
 import '../../config/vector_art.dart';
+import '../../domain/ankiren_field.dart';
+import '../../domain/ankiren_score.dart';
 import '../../l10n/side_trip_strings.dart';
 import '../../l10n/strings.dart';
 import '../../state/scope.dart';
@@ -27,7 +29,8 @@ Future<void> openAnkirenRules(BuildContext context) {
 }
 
 /// The game's three steps in pictures with a line on each, then what a
-/// wrong tap, giving up and leaving do, and how a game scores. Every line
+/// wrong tap, giving up and leaving do, and how a game scores, with the
+/// numbers from [AnkirenTuning]. Every line
 /// has the other language's under it. It closes with ×, a tap outside or
 /// Back.
 class AnkirenRulesSheet extends StatelessWidget {
@@ -43,7 +46,11 @@ class AnkirenRulesSheet extends StatelessWidget {
       (AnkirenRulesLayout.take, s.ankirenStepTake, s.ankirenStepTakeLine, o.ankirenStepTakeLine),
     ];
     const reveal = AnkirenTuning.revealAfterWrong;
-    const first = AnkirenTuning.firstTry, speed = AnkirenTuning.speedMax, second = AnkirenTuning.secondTry;
+    const first = AnkirenTuning.firstTry, speed = AnkirenTuning.speedMax;
+    final near = [
+      for (final p in TapProximity.values.skip(1))
+        _factor(AnkirenScore.credit(found: true, wrongTaps: 1, firstTap: p)),
+    ];
     final early = _factor(1 + AnkirenTuning.earlyBonus);
     return AnkirenSheet(
       title: s.howToPlay,
@@ -63,8 +70,9 @@ class AnkirenRulesSheet extends StatelessWidget {
         ]),
         SettingsSection(title: s.ankirenScoring, sub: o.ankirenScoring.toUpperCase(), children: [
           _RuleList([
-            (_Mark.text(Palette.paper, s.ankirenMarkPoints), s.ankirenScoreFind(first, speed, second),
-                o.ankirenScoreFind(first, speed, second)),
+            (_Mark.text(Palette.paper, s.ankirenMarkPoints), s.ankirenScoreFind(first, speed),
+                o.ankirenScoreFind(first, speed)),
+            (const _Mark.text(Palette.paper, '×'), s.ankirenScoreNear(near), o.ankirenScoreNear(near)),
             (_Mark.icon(Palette.sun, IconArt.history), s.ankirenScoreEarly(early), o.ankirenScoreEarly(early)),
             (_Mark.text(Palette.paper, s.ankirenMarkLevel), s.ankirenScoreLevel, o.ankirenScoreLevel),
           ]),
@@ -73,8 +81,11 @@ class AnkirenRulesSheet extends StatelessWidget {
     );
   }
 
-  /// A multiplier as the rules print it: "1.5", or "2" when whole.
-  static String _factor(double x) => x == x.roundToDouble() ? '${x.round()}' : '$x';
+  /// A multiplier as the rules print it: "0.25", or "2" when whole.
+  static String _factor(double x) {
+    final rounded = double.parse(x.toStringAsFixed(AnkirenRulesLayout.shareDecimals));
+    return rounded == rounded.roundToDouble() ? '${rounded.round()}' : '$rounded';
+  }
 }
 
 /// One step of the game: its picture, its number and [name], then its

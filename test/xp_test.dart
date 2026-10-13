@@ -7,7 +7,9 @@ import 'package:fudatobashi/config/config.dart';
 import 'package:fudatobashi/data/fuda_sets.dart';
 import 'package:fudatobashi/data/poem.dart';
 import 'package:fudatobashi/db/database.dart';
+import 'package:fudatobashi/domain/ankiren_field.dart';
 import 'package:fudatobashi/domain/ankiren_level.dart';
+import 'package:fudatobashi/domain/ankiren_score.dart';
 import 'package:fudatobashi/domain/ankiren_xp.dart';
 import 'package:fudatobashi/domain/card_stats.dart';
 import 'package:fudatobashi/domain/play_session.dart';
@@ -228,17 +230,24 @@ void main() {
 
   group('暗記練 games', () {
     var nextRun = 1;
-    AnkirenXpAnswer first(int ms) => (wrongTaps: 0, responseUs: ms * 1000);
-    const second = (wrongTaps: 1, responseUs: 2000000);
-    const shown = (wrongTaps: AnkirenTuning.revealAfterWrong, responseUs: 3000000);
-    const givenUp = (wrongTaps: 0, responseUs: null);
+    AnkirenXpAnswer first(int ms) =>
+        (wrongTaps: 0, responseUs: ms * 1000, firstTap: TapProximity.card, firstTapUs: ms * 1000);
+    AnkirenXpAnswer second(TapProximity place, {int ms = 300}) =>
+        (wrongTaps: 1, responseUs: 2000000, firstTap: place, firstTapUs: ms * 1000);
+    const shown = (
+      wrongTaps: AnkirenTuning.revealAfterWrong,
+      responseUs: 3000000,
+      firstTap: TapProximity.neighbour,
+      firstTapUs: 100000,
+    );
+    const givenUp = (wrongTaps: 0, responseUs: null, firstTap: null, firstTapUs: null);
+    double share(TapProximity place) => AnkirenScore.credit(found: true, wrongTaps: 1, firstTap: place);
     AnkirenXpRun game(
       List<AnkirenXpAnswer> answers, {
       bool ranked = false,
       bool completed = true,
-      int level = 2,
-      String setup = 'level 2',
-      int score = 500,
+      int? level = 2,
+      int? score = 500,
       DateTime? at,
     }) =>
         AnkirenXpRun(
@@ -247,7 +256,6 @@ void main() {
           ranked: ranked,
           completed: completed,
           level: level,
-          setup: setup,
           score: score,
           answers: answers,
         );
@@ -263,21 +271,41 @@ void main() {
 
     test('a ranked game played to the end: finds, misses, speed, the clear and the ranked bonus', () {
       final gain = XpLedger().addAnkiren(game(
-        [first(100), first(100), (wrongTaps: 0, responseUs: 0), second, shown, givenUp],
+        [first(100), first(100), first(0), second(TapProximity.neighbour, ms: 100), shown, givenUp],
         ranked: true,
       ));
       final card = AnkirenXp.cardXp(2);
+      final near = share(TapProximity.neighbour);
       expect(parts(gain), {
         XpSource.firstTap: (3, 3 * card),
-        XpSource.secondTap: (1, (card * AnkirenXpTuning.secondTapShare).round()),
+        XpSource.secondTap: (1, (card * near).round()),
         XpSource.missed: (2, 2 * AnkirenXpTuning.perMiss),
-        XpSource.speed: (2, 2 * AnkirenXpTuning.speedMax),
+        XpSource.speed: (3, 2 * AnkirenXpTuning.speedMax + (AnkirenXpTuning.speedMax * near).round()),
         XpSource.clear: (1, AnkirenXpTuning.clear),
         XpSource.ranked: (1, AnkirenXpTuning.ranked),
       });
       expect(gain.award.parts.map((p) => p.source).toList(),
           [XpSource.firstTap, XpSource.secondTap, XpSource.missed, XpSource.speed, XpSource.clear, XpSource.ranked],
           reason: 'listed in the order the XP page shows them');
+    });
+
+    test('a find with the second tap earns its share by the first tap, for the card and its speed', () {
+      final card = AnkirenXp.cardXp(2), speed = AnkirenXp.speedXp(300000);
+      for (final place in TapProximity.values.skip(1)) {
+        final gain = XpLedger().addAnkiren(game([second(place)], completed: false));
+        expect(parts(gain), {
+          XpSource.secondTap: (1, (card * share(place)).round()),
+          XpSource.speed: (1, (speed * share(place)).round()),
+        }, reason: place.name);
+      }
+      expect(parts(XpLedger().addAnkiren(game([shown]))).keys, [XpSource.missed, XpSource.clear],
+          reason: 'shown before it was found, however near the first tap');
+    });
+
+    test('a custom game earns nothing and races nobody', () {
+      final ledger = XpLedger();
+      expect(ledger.addAnkiren(game([first(100)], level: null, score: null)).award.parts, isEmpty);
+      expect(parts(ledger.addAnkiren(game([first(100)], score: 10))).containsKey(XpSource.best), isFalse);
     });
 
     test('free play earns the same finds without the ranked bonus; ended early, only its finds', () {
@@ -304,17 +332,17 @@ void main() {
           reason: 'not even the placement bonus');
     });
 
-    test('a personal best beats every earlier score of the same setup, in a game played to the end', () {
+    test('a personal best beats every earlier score of the same level, in a game played to the end', () {
       final ledger = XpLedger();
-      bool best(int score, {String setup = 'level 2', bool completed = true}) =>
-          parts(ledger.addAnkiren(game([first(500)], score: score, setup: setup, completed: completed)))
+      bool best(int score, {int level = 2, bool completed = true}) =>
+          parts(ledger.addAnkiren(game([first(500)], score: score, level: level, completed: completed)))
               .containsKey(XpSource.best);
       expect(best(400), isFalse, reason: 'the first game sets the record');
       expect(best(380), isFalse);
       expect(best(900, completed: false), isFalse, reason: 'a game ended early races nobody');
       expect(best(420), isTrue);
       expect(best(410), isFalse, reason: 'the ended game did not raise the record');
-      expect(best(100, setup: 'custom 3 × 60000 ms'), isFalse, reason: 'another setup races itself');
+      expect(best(100, level: 3), isFalse, reason: 'another level races itself');
     });
 
     test('the ledger adds runs and 暗記練 games up in the order played; the daily bonus stays with runs', () {
@@ -351,7 +379,7 @@ void main() {
       expect(parts(free).keys, isNot(contains(XpSource.ranked)));
 
       final custom = await record(const AnkirenSetup.custom(perSide: 4, memorise: Duration(minutes: 1)));
-      expect(parts(custom)[XpSource.firstTap]!.$2, 8 * AnkirenXp.cardXp(1), reason: 'scored as the level it matches');
+      expect(custom.award.parts, isEmpty, reason: 'custom games are not scored');
 
       final ended = await record(AnkirenSetup.forLevel(1), endAfter: 2);
       expect(parts(ended).keys, [XpSource.firstTap, XpSource.speed]);

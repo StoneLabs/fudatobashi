@@ -31,26 +31,16 @@ abstract final class XpHistory {
     );
   }
 
-  /// 暗記練 game [run] of [trips]. It scores as its level preset, or a
-  /// custom setup as the level it matches, and races the games of the same
-  /// preset or custom setup.
-  static AnkirenXpRun ankirenRunOf(SideTrips trips, SideTripRun run) {
-    final meta = jsonDecode(run.meta) as Map<String, dynamic>;
-    final perSide = (meta['perSide'] as num?)?.toInt() ?? 0;
-    final memoriseMs = (meta['memoriseMs'] as num?)?.toInt() ?? 0;
-    final level = run.level;
-    return AnkirenXpRun(
-      runId: run.id,
-      startedAt: run.startedAt,
-      ranked: run.ranked,
-      completed: run.completed,
-      level: level?.clamp(0, AnkirenLevels.top) ??
-          AnkirenSetup.custom(perSide: perSide, memorise: Duration(milliseconds: memoriseMs)).scoredLevel,
-      setup: level != null ? 'level $level' : 'custom $perSide × $memoriseMs ms',
-      score: run.score,
-      answers: trips.answersOf(run),
-    );
-  }
+  /// 暗記練 game [run] of [trips].
+  static AnkirenXpRun ankirenRunOf(SideTrips trips, SideTripRun run) => AnkirenXpRun(
+        runId: run.id,
+        startedAt: run.startedAt,
+        ranked: run.ranked,
+        completed: run.completed,
+        level: run.level?.clamp(0, AnkirenLevels.top),
+        score: run.score,
+        answers: trips.answersOf(run),
+      );
 
   /// Session [s] of [progress] with its attempts, looked up at the end of
   /// each card's log (for a run just recorded).

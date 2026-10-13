@@ -191,8 +191,8 @@ void main() {
           startedAt: DateTime.now(),
           ranked: true,
           cardCount: 6,
-          score: 900,
-          maxScore: 1200,
+          score: const Value(900),
+          maxScore: const Value(1200),
           completed: true,
           rating: const Value(812),
           performance: const Value(900)));

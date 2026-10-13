@@ -53,6 +53,7 @@ class AnkirenGame extends ChangeNotifier {
   final Set<int> _givenUp = {};
   int _wrongTaps = 0;
   Duration? _revealTs;
+  (TapProximity, int)? _firstTap;
   bool _endedEarly = false;
 
   /// Every card was asked and found or given up (false for a game ended
@@ -75,12 +76,23 @@ class AnkirenGame extends ChangeNotifier {
   /// Found or given up: its card is face up for good.
   bool isDone(int poemId) => isFound(poemId) || isGivenUp(poemId);
 
-  AnkirenScore get score => AnkirenScore(
-        answers,
-        prompts: prompts.length,
-        timeLeft: timeLeft,
-        factor: AnkirenScore.factorFor(setup),
-      );
+  /// Null for a custom setup: it is not scored.
+  AnkirenScore? get score {
+    final level = setup.level;
+    return level == null
+        ? null
+        : AnkirenScore(answers, prompts: prompts.length, timeLeft: timeLeft, factor: AnkirenScore.factorFor(level));
+  }
+
+  /// Cards found with the first tap.
+  int get firstTries => answers.where((a) => a.firstTry).length;
+
+  /// Mean response time of the first-tap finds with a valid time, ms; null
+  /// when there are none.
+  double? get averageFirstTryMs {
+    final timed = [for (final a in answers) if (a.firstTry && a.validTime) a.responseUs! / 1000];
+    return timed.isEmpty ? null : timed.reduce((a, b) => a + b) / timed.length;
+  }
 
   /// How long the field was memorised: all of its time unless the player was
   /// ready sooner.
@@ -116,6 +128,7 @@ class AnkirenGame extends ChangeNotifier {
     if (asked == null || revealTs == null || pointerDownTs < revealTs || isDone(poemId) || field.sideOf(poemId) == null) {
       return TapResult.ignored;
     }
+    _firstTap ??= (field.proximity(asked, poemId), (pointerDownTs - revealTs).inMicroseconds);
     if (poemId != asked) {
       _wrongTaps++;
       notifyListeners();
@@ -162,8 +175,11 @@ class AnkirenGame extends ChangeNotifier {
       wrongTaps: _wrongTaps,
       responseUs: responseUs,
       at: _clock(),
+      firstTap: _firstTap?.$1,
+      firstTapUs: _firstTap?.$2,
     ));
     _wrongTaps = 0;
     _revealTs = null;
+    _firstTap = null;
   }
 }

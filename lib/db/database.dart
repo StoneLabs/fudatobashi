@@ -107,8 +107,11 @@ class SideTripRuns extends Table {
 
   /// Prompts asked.
   IntColumn get cardCount => integer()();
-  IntColumn get score => integer()();
-  IntColumn get maxScore => integer()();
+
+  /// The score and the most the game could score; null for a custom setup,
+  /// which is not scored.
+  IntColumn get score => integer().nullable()();
+  IntColumn get maxScore => integer().nullable()();
 
   /// Played to the last prompt (false for a game ended early).
   BoolColumn get completed => boolean()();
@@ -136,6 +139,11 @@ class SideTripAnswers extends Table {
   /// Prompt → the tap on its card, µs; null when it was never found.
   IntColumn get responseUs => integer().nullable()();
   DateTimeColumn get at => dateTime()();
+
+  /// Where the first tap while it was asked landed (`TapProximity.index`),
+  /// and prompt → that tap, µs; null when no card was tapped.
+  IntColumn get firstTap => integer().nullable()();
+  IntColumn get firstTapUs => integer().nullable()();
 }
 
 @DriftDatabase(tables: [Sessions, Attempts, Items, RatingPoints, KeyValues, SideTripRuns, SideTripAnswers])

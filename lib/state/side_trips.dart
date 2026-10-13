@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:drift/drift.dart';
 
 import '../db/database.dart';
+import '../domain/ankiren_field.dart';
 import '../domain/ankiren_game.dart';
 import '../domain/ankiren_level.dart';
 import '../domain/ankiren_rating.dart';
@@ -35,7 +36,13 @@ class SideTrips {
         .get();
     final answers = <int, List<AnkirenXpAnswer>>{};
     for (final a in rows) {
-      (answers[a.runId] ??= []).add((wrongTaps: a.wrongTaps, responseUs: a.responseUs));
+      final firstTap = a.firstTap;
+      (answers[a.runId] ??= []).add((
+        wrongTaps: a.wrongTaps,
+        responseUs: a.responseUs,
+        firstTap: firstTap == null ? null : TapProximity.values.elementAtOrNull(firstTap),
+        firstTapUs: a.firstTapUs,
+      ));
     }
     return SideTrips._(runs, answers);
   }
@@ -92,7 +99,7 @@ class SideTrips {
       games: runsOf(trip).length,
       results: [
         for (final (i, r) in runs.indexed)
-          SideTripResult(score: r.score, ratingChange: rated[i] - (i > 0 ? rated[i - 1] : start), level: r.level ?? 0),
+          SideTripResult(score: r.score!, ratingChange: rated[i] - (i > 0 ? rated[i - 1] : start), level: r.level ?? 0),
       ],
     );
   }
@@ -116,7 +123,7 @@ class SideTrips {
     double? performance, after;
     if (before != null) {
       final gamesSoFar = rankedGames(trip);
-      performance = AnkirenRating.performance(setup.level!, score.fraction,
+      performance = AnkirenRating.performance(setup.level!, score!.fraction,
           placement: AnkirenRating.isPlacement(gamesSoFar));
       after = AnkirenRating.update(before, performance, gamesSoFar);
     }
@@ -128,8 +135,8 @@ class SideTrips {
             ranked: setup.ranked,
             level: Value(setup.level),
             cardCount: game.prompts.length,
-            score: score.total,
-            maxScore: score.max,
+            score: Value(score?.total),
+            maxScore: Value(score?.max),
             completed: game.completed,
             rating: Value(after),
             performance: Value(performance),
@@ -150,12 +157,17 @@ class SideTrips {
                 wrongTaps: a.wrongTaps,
                 responseUs: Value(a.responseUs),
                 at: a.at,
+                firstTap: Value(a.firstTap?.index),
+                firstTapUs: Value(a.firstTapUs),
               ),
           ]));
       return id;
     });
     _runs.add(await (db.select(db.sideTripRuns)..where((r) => r.id.equals(runId))).getSingle());
-    _answers[runId] = [for (final a in game.answers) (wrongTaps: a.wrongTaps, responseUs: a.responseUs)];
+    _answers[runId] = [
+      for (final a in game.answers)
+        (wrongTaps: a.wrongTaps, responseUs: a.responseUs, firstTap: a.firstTap, firstTapUs: a.firstTapUs),
+    ];
 
     return AnkirenReport(ratingBefore: before, ratingAfter: after, rankedGames: setup.ranked ? rankedGames(trip) : 0);
   }

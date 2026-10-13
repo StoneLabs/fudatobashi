@@ -2459,9 +2459,9 @@ class $SideTripRunsTable extends SideTripRuns
   late final GeneratedColumn<int> score = GeneratedColumn<int>(
     'score',
     aliasedName,
-    false,
+    true,
     type: DriftSqlType.int,
-    requiredDuringInsert: true,
+    requiredDuringInsert: false,
   );
   static const VerificationMeta _maxScoreMeta = const VerificationMeta(
     'maxScore',
@@ -2470,9 +2470,9 @@ class $SideTripRunsTable extends SideTripRuns
   late final GeneratedColumn<int> maxScore = GeneratedColumn<int>(
     'max_score',
     aliasedName,
-    false,
+    true,
     type: DriftSqlType.int,
-    requiredDuringInsert: true,
+    requiredDuringInsert: false,
   );
   static const VerificationMeta _completedMeta = const VerificationMeta(
     'completed',
@@ -2591,16 +2591,12 @@ class $SideTripRunsTable extends SideTripRuns
         _scoreMeta,
         score.isAcceptableOrUnknown(data['score']!, _scoreMeta),
       );
-    } else if (isInserting) {
-      context.missing(_scoreMeta);
     }
     if (data.containsKey('max_score')) {
       context.handle(
         _maxScoreMeta,
         maxScore.isAcceptableOrUnknown(data['max_score']!, _maxScoreMeta),
       );
-    } else if (isInserting) {
-      context.missing(_maxScoreMeta);
     }
     if (data.containsKey('completed')) {
       context.handle(
@@ -2667,11 +2663,11 @@ class $SideTripRunsTable extends SideTripRuns
       score: attachedDatabase.typeMapping.read(
         DriftSqlType.int,
         data['${effectivePrefix}score'],
-      )!,
+      ),
       maxScore: attachedDatabase.typeMapping.read(
         DriftSqlType.int,
         data['${effectivePrefix}max_score'],
-      )!,
+      ),
       completed: attachedDatabase.typeMapping.read(
         DriftSqlType.bool,
         data['${effectivePrefix}completed'],
@@ -2710,8 +2706,11 @@ class SideTripRun extends DataClass implements Insertable<SideTripRun> {
 
   /// Prompts asked.
   final int cardCount;
-  final int score;
-  final int maxScore;
+
+  /// The score and the most the game could score; null for a custom setup,
+  /// which is not scored.
+  final int? score;
+  final int? maxScore;
 
   /// Played to the last prompt (false for a game ended early).
   final bool completed;
@@ -2730,8 +2729,8 @@ class SideTripRun extends DataClass implements Insertable<SideTripRun> {
     required this.ranked,
     this.level,
     required this.cardCount,
-    required this.score,
-    required this.maxScore,
+    this.score,
+    this.maxScore,
     required this.completed,
     this.rating,
     this.performance,
@@ -2748,8 +2747,12 @@ class SideTripRun extends DataClass implements Insertable<SideTripRun> {
       map['level'] = Variable<int>(level);
     }
     map['card_count'] = Variable<int>(cardCount);
-    map['score'] = Variable<int>(score);
-    map['max_score'] = Variable<int>(maxScore);
+    if (!nullToAbsent || score != null) {
+      map['score'] = Variable<int>(score);
+    }
+    if (!nullToAbsent || maxScore != null) {
+      map['max_score'] = Variable<int>(maxScore);
+    }
     map['completed'] = Variable<bool>(completed);
     if (!nullToAbsent || rating != null) {
       map['rating'] = Variable<double>(rating);
@@ -2771,8 +2774,12 @@ class SideTripRun extends DataClass implements Insertable<SideTripRun> {
           ? const Value.absent()
           : Value(level),
       cardCount: Value(cardCount),
-      score: Value(score),
-      maxScore: Value(maxScore),
+      score: score == null && nullToAbsent
+          ? const Value.absent()
+          : Value(score),
+      maxScore: maxScore == null && nullToAbsent
+          ? const Value.absent()
+          : Value(maxScore),
       completed: Value(completed),
       rating: rating == null && nullToAbsent
           ? const Value.absent()
@@ -2796,8 +2803,8 @@ class SideTripRun extends DataClass implements Insertable<SideTripRun> {
       ranked: serializer.fromJson<bool>(json['ranked']),
       level: serializer.fromJson<int?>(json['level']),
       cardCount: serializer.fromJson<int>(json['cardCount']),
-      score: serializer.fromJson<int>(json['score']),
-      maxScore: serializer.fromJson<int>(json['maxScore']),
+      score: serializer.fromJson<int?>(json['score']),
+      maxScore: serializer.fromJson<int?>(json['maxScore']),
       completed: serializer.fromJson<bool>(json['completed']),
       rating: serializer.fromJson<double?>(json['rating']),
       performance: serializer.fromJson<double?>(json['performance']),
@@ -2814,8 +2821,8 @@ class SideTripRun extends DataClass implements Insertable<SideTripRun> {
       'ranked': serializer.toJson<bool>(ranked),
       'level': serializer.toJson<int?>(level),
       'cardCount': serializer.toJson<int>(cardCount),
-      'score': serializer.toJson<int>(score),
-      'maxScore': serializer.toJson<int>(maxScore),
+      'score': serializer.toJson<int?>(score),
+      'maxScore': serializer.toJson<int?>(maxScore),
       'completed': serializer.toJson<bool>(completed),
       'rating': serializer.toJson<double?>(rating),
       'performance': serializer.toJson<double?>(performance),
@@ -2830,8 +2837,8 @@ class SideTripRun extends DataClass implements Insertable<SideTripRun> {
     bool? ranked,
     Value<int?> level = const Value.absent(),
     int? cardCount,
-    int? score,
-    int? maxScore,
+    Value<int?> score = const Value.absent(),
+    Value<int?> maxScore = const Value.absent(),
     bool? completed,
     Value<double?> rating = const Value.absent(),
     Value<double?> performance = const Value.absent(),
@@ -2843,8 +2850,8 @@ class SideTripRun extends DataClass implements Insertable<SideTripRun> {
     ranked: ranked ?? this.ranked,
     level: level.present ? level.value : this.level,
     cardCount: cardCount ?? this.cardCount,
-    score: score ?? this.score,
-    maxScore: maxScore ?? this.maxScore,
+    score: score.present ? score.value : this.score,
+    maxScore: maxScore.present ? maxScore.value : this.maxScore,
     completed: completed ?? this.completed,
     rating: rating.present ? rating.value : this.rating,
     performance: performance.present ? performance.value : this.performance,
@@ -2928,8 +2935,8 @@ class SideTripRunsCompanion extends UpdateCompanion<SideTripRun> {
   final Value<bool> ranked;
   final Value<int?> level;
   final Value<int> cardCount;
-  final Value<int> score;
-  final Value<int> maxScore;
+  final Value<int?> score;
+  final Value<int?> maxScore;
   final Value<bool> completed;
   final Value<double?> rating;
   final Value<double?> performance;
@@ -2955,8 +2962,8 @@ class SideTripRunsCompanion extends UpdateCompanion<SideTripRun> {
     required bool ranked,
     this.level = const Value.absent(),
     required int cardCount,
-    required int score,
-    required int maxScore,
+    this.score = const Value.absent(),
+    this.maxScore = const Value.absent(),
     required bool completed,
     this.rating = const Value.absent(),
     this.performance = const Value.absent(),
@@ -2965,8 +2972,6 @@ class SideTripRunsCompanion extends UpdateCompanion<SideTripRun> {
        startedAt = Value(startedAt),
        ranked = Value(ranked),
        cardCount = Value(cardCount),
-       score = Value(score),
-       maxScore = Value(maxScore),
        completed = Value(completed);
   static Insertable<SideTripRun> custom({
     Expression<int>? id,
@@ -3005,8 +3010,8 @@ class SideTripRunsCompanion extends UpdateCompanion<SideTripRun> {
     Value<bool>? ranked,
     Value<int?>? level,
     Value<int>? cardCount,
-    Value<int>? score,
-    Value<int>? maxScore,
+    Value<int?>? score,
+    Value<int?>? maxScore,
     Value<bool>? completed,
     Value<double?>? rating,
     Value<double?>? performance,
@@ -3170,6 +3175,28 @@ class $SideTripAnswersTable extends SideTripAnswers
     type: DriftSqlType.dateTime,
     requiredDuringInsert: true,
   );
+  static const VerificationMeta _firstTapMeta = const VerificationMeta(
+    'firstTap',
+  );
+  @override
+  late final GeneratedColumn<int> firstTap = GeneratedColumn<int>(
+    'first_tap',
+    aliasedName,
+    true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _firstTapUsMeta = const VerificationMeta(
+    'firstTapUs',
+  );
+  @override
+  late final GeneratedColumn<int> firstTapUs = GeneratedColumn<int>(
+    'first_tap_us',
+    aliasedName,
+    true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+  );
   @override
   List<GeneratedColumn> get $columns => [
     id,
@@ -3179,6 +3206,8 @@ class $SideTripAnswersTable extends SideTripAnswers
     wrongTaps,
     responseUs,
     at,
+    firstTap,
+    firstTapUs,
   ];
   @override
   String get aliasedName => _alias ?? actualTableName;
@@ -3238,6 +3267,21 @@ class $SideTripAnswersTable extends SideTripAnswers
     } else if (isInserting) {
       context.missing(_atMeta);
     }
+    if (data.containsKey('first_tap')) {
+      context.handle(
+        _firstTapMeta,
+        firstTap.isAcceptableOrUnknown(data['first_tap']!, _firstTapMeta),
+      );
+    }
+    if (data.containsKey('first_tap_us')) {
+      context.handle(
+        _firstTapUsMeta,
+        firstTapUs.isAcceptableOrUnknown(
+          data['first_tap_us']!,
+          _firstTapUsMeta,
+        ),
+      );
+    }
     return context;
   }
 
@@ -3275,6 +3319,14 @@ class $SideTripAnswersTable extends SideTripAnswers
         DriftSqlType.dateTime,
         data['${effectivePrefix}at'],
       )!,
+      firstTap: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}first_tap'],
+      ),
+      firstTapUs: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}first_tap_us'],
+      ),
     );
   }
 
@@ -3297,6 +3349,11 @@ class SideTripAnswerRow extends DataClass
   /// Prompt → the tap on its card, µs; null when it was never found.
   final int? responseUs;
   final DateTime at;
+
+  /// Where the first tap while it was asked landed (`TapProximity.index`),
+  /// and prompt → that tap, µs; null when no card was tapped.
+  final int? firstTap;
+  final int? firstTapUs;
   const SideTripAnswerRow({
     required this.id,
     required this.runId,
@@ -3305,6 +3362,8 @@ class SideTripAnswerRow extends DataClass
     required this.wrongTaps,
     this.responseUs,
     required this.at,
+    this.firstTap,
+    this.firstTapUs,
   });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
@@ -3318,6 +3377,12 @@ class SideTripAnswerRow extends DataClass
       map['response_us'] = Variable<int>(responseUs);
     }
     map['at'] = Variable<DateTime>(at);
+    if (!nullToAbsent || firstTap != null) {
+      map['first_tap'] = Variable<int>(firstTap);
+    }
+    if (!nullToAbsent || firstTapUs != null) {
+      map['first_tap_us'] = Variable<int>(firstTapUs);
+    }
     return map;
   }
 
@@ -3332,6 +3397,12 @@ class SideTripAnswerRow extends DataClass
           ? const Value.absent()
           : Value(responseUs),
       at: Value(at),
+      firstTap: firstTap == null && nullToAbsent
+          ? const Value.absent()
+          : Value(firstTap),
+      firstTapUs: firstTapUs == null && nullToAbsent
+          ? const Value.absent()
+          : Value(firstTapUs),
     );
   }
 
@@ -3348,6 +3419,8 @@ class SideTripAnswerRow extends DataClass
       wrongTaps: serializer.fromJson<int>(json['wrongTaps']),
       responseUs: serializer.fromJson<int?>(json['responseUs']),
       at: serializer.fromJson<DateTime>(json['at']),
+      firstTap: serializer.fromJson<int?>(json['firstTap']),
+      firstTapUs: serializer.fromJson<int?>(json['firstTapUs']),
     );
   }
   @override
@@ -3361,6 +3434,8 @@ class SideTripAnswerRow extends DataClass
       'wrongTaps': serializer.toJson<int>(wrongTaps),
       'responseUs': serializer.toJson<int?>(responseUs),
       'at': serializer.toJson<DateTime>(at),
+      'firstTap': serializer.toJson<int?>(firstTap),
+      'firstTapUs': serializer.toJson<int?>(firstTapUs),
     };
   }
 
@@ -3372,6 +3447,8 @@ class SideTripAnswerRow extends DataClass
     int? wrongTaps,
     Value<int?> responseUs = const Value.absent(),
     DateTime? at,
+    Value<int?> firstTap = const Value.absent(),
+    Value<int?> firstTapUs = const Value.absent(),
   }) => SideTripAnswerRow(
     id: id ?? this.id,
     runId: runId ?? this.runId,
@@ -3380,6 +3457,8 @@ class SideTripAnswerRow extends DataClass
     wrongTaps: wrongTaps ?? this.wrongTaps,
     responseUs: responseUs.present ? responseUs.value : this.responseUs,
     at: at ?? this.at,
+    firstTap: firstTap.present ? firstTap.value : this.firstTap,
+    firstTapUs: firstTapUs.present ? firstTapUs.value : this.firstTapUs,
   );
   SideTripAnswerRow copyWithCompanion(SideTripAnswersCompanion data) {
     return SideTripAnswerRow(
@@ -3392,6 +3471,10 @@ class SideTripAnswerRow extends DataClass
           ? data.responseUs.value
           : this.responseUs,
       at: data.at.present ? data.at.value : this.at,
+      firstTap: data.firstTap.present ? data.firstTap.value : this.firstTap,
+      firstTapUs: data.firstTapUs.present
+          ? data.firstTapUs.value
+          : this.firstTapUs,
     );
   }
 
@@ -3404,14 +3487,25 @@ class SideTripAnswerRow extends DataClass
           ..write('poemId: $poemId, ')
           ..write('wrongTaps: $wrongTaps, ')
           ..write('responseUs: $responseUs, ')
-          ..write('at: $at')
+          ..write('at: $at, ')
+          ..write('firstTap: $firstTap, ')
+          ..write('firstTapUs: $firstTapUs')
           ..write(')'))
         .toString();
   }
 
   @override
-  int get hashCode =>
-      Object.hash(id, runId, seq, poemId, wrongTaps, responseUs, at);
+  int get hashCode => Object.hash(
+    id,
+    runId,
+    seq,
+    poemId,
+    wrongTaps,
+    responseUs,
+    at,
+    firstTap,
+    firstTapUs,
+  );
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
@@ -3422,7 +3516,9 @@ class SideTripAnswerRow extends DataClass
           other.poemId == this.poemId &&
           other.wrongTaps == this.wrongTaps &&
           other.responseUs == this.responseUs &&
-          other.at == this.at);
+          other.at == this.at &&
+          other.firstTap == this.firstTap &&
+          other.firstTapUs == this.firstTapUs);
 }
 
 class SideTripAnswersCompanion extends UpdateCompanion<SideTripAnswerRow> {
@@ -3433,6 +3529,8 @@ class SideTripAnswersCompanion extends UpdateCompanion<SideTripAnswerRow> {
   final Value<int> wrongTaps;
   final Value<int?> responseUs;
   final Value<DateTime> at;
+  final Value<int?> firstTap;
+  final Value<int?> firstTapUs;
   const SideTripAnswersCompanion({
     this.id = const Value.absent(),
     this.runId = const Value.absent(),
@@ -3441,6 +3539,8 @@ class SideTripAnswersCompanion extends UpdateCompanion<SideTripAnswerRow> {
     this.wrongTaps = const Value.absent(),
     this.responseUs = const Value.absent(),
     this.at = const Value.absent(),
+    this.firstTap = const Value.absent(),
+    this.firstTapUs = const Value.absent(),
   });
   SideTripAnswersCompanion.insert({
     this.id = const Value.absent(),
@@ -3450,6 +3550,8 @@ class SideTripAnswersCompanion extends UpdateCompanion<SideTripAnswerRow> {
     required int wrongTaps,
     this.responseUs = const Value.absent(),
     required DateTime at,
+    this.firstTap = const Value.absent(),
+    this.firstTapUs = const Value.absent(),
   }) : runId = Value(runId),
        seq = Value(seq),
        poemId = Value(poemId),
@@ -3463,6 +3565,8 @@ class SideTripAnswersCompanion extends UpdateCompanion<SideTripAnswerRow> {
     Expression<int>? wrongTaps,
     Expression<int>? responseUs,
     Expression<DateTime>? at,
+    Expression<int>? firstTap,
+    Expression<int>? firstTapUs,
   }) {
     return RawValuesInsertable({
       if (id != null) 'id': id,
@@ -3472,6 +3576,8 @@ class SideTripAnswersCompanion extends UpdateCompanion<SideTripAnswerRow> {
       if (wrongTaps != null) 'wrong_taps': wrongTaps,
       if (responseUs != null) 'response_us': responseUs,
       if (at != null) 'at': at,
+      if (firstTap != null) 'first_tap': firstTap,
+      if (firstTapUs != null) 'first_tap_us': firstTapUs,
     });
   }
 
@@ -3483,6 +3589,8 @@ class SideTripAnswersCompanion extends UpdateCompanion<SideTripAnswerRow> {
     Value<int>? wrongTaps,
     Value<int?>? responseUs,
     Value<DateTime>? at,
+    Value<int?>? firstTap,
+    Value<int?>? firstTapUs,
   }) {
     return SideTripAnswersCompanion(
       id: id ?? this.id,
@@ -3492,6 +3600,8 @@ class SideTripAnswersCompanion extends UpdateCompanion<SideTripAnswerRow> {
       wrongTaps: wrongTaps ?? this.wrongTaps,
       responseUs: responseUs ?? this.responseUs,
       at: at ?? this.at,
+      firstTap: firstTap ?? this.firstTap,
+      firstTapUs: firstTapUs ?? this.firstTapUs,
     );
   }
 
@@ -3519,6 +3629,12 @@ class SideTripAnswersCompanion extends UpdateCompanion<SideTripAnswerRow> {
     if (at.present) {
       map['at'] = Variable<DateTime>(at.value);
     }
+    if (firstTap.present) {
+      map['first_tap'] = Variable<int>(firstTap.value);
+    }
+    if (firstTapUs.present) {
+      map['first_tap_us'] = Variable<int>(firstTapUs.value);
+    }
     return map;
   }
 
@@ -3531,7 +3647,9 @@ class SideTripAnswersCompanion extends UpdateCompanion<SideTripAnswerRow> {
           ..write('poemId: $poemId, ')
           ..write('wrongTaps: $wrongTaps, ')
           ..write('responseUs: $responseUs, ')
-          ..write('at: $at')
+          ..write('at: $at, ')
+          ..write('firstTap: $firstTap, ')
+          ..write('firstTapUs: $firstTapUs')
           ..write(')'))
         .toString();
   }
@@ -5000,8 +5118,8 @@ typedef $$SideTripRunsTableCreateCompanionBuilder =
       required bool ranked,
       Value<int?> level,
       required int cardCount,
-      required int score,
-      required int maxScore,
+      Value<int?> score,
+      Value<int?> maxScore,
       required bool completed,
       Value<double?> rating,
       Value<double?> performance,
@@ -5015,8 +5133,8 @@ typedef $$SideTripRunsTableUpdateCompanionBuilder =
       Value<bool> ranked,
       Value<int?> level,
       Value<int> cardCount,
-      Value<int> score,
-      Value<int> maxScore,
+      Value<int?> score,
+      Value<int?> maxScore,
       Value<bool> completed,
       Value<double?> rating,
       Value<double?> performance,
@@ -5320,8 +5438,8 @@ class $$SideTripRunsTableTableManager
                 Value<bool> ranked = const Value.absent(),
                 Value<int?> level = const Value.absent(),
                 Value<int> cardCount = const Value.absent(),
-                Value<int> score = const Value.absent(),
-                Value<int> maxScore = const Value.absent(),
+                Value<int?> score = const Value.absent(),
+                Value<int?> maxScore = const Value.absent(),
                 Value<bool> completed = const Value.absent(),
                 Value<double?> rating = const Value.absent(),
                 Value<double?> performance = const Value.absent(),
@@ -5348,8 +5466,8 @@ class $$SideTripRunsTableTableManager
                 required bool ranked,
                 Value<int?> level = const Value.absent(),
                 required int cardCount,
-                required int score,
-                required int maxScore,
+                Value<int?> score = const Value.absent(),
+                Value<int?> maxScore = const Value.absent(),
                 required bool completed,
                 Value<double?> rating = const Value.absent(),
                 Value<double?> performance = const Value.absent(),
@@ -5435,6 +5553,8 @@ typedef $$SideTripAnswersTableCreateCompanionBuilder =
       required int wrongTaps,
       Value<int?> responseUs,
       required DateTime at,
+      Value<int?> firstTap,
+      Value<int?> firstTapUs,
     });
 typedef $$SideTripAnswersTableUpdateCompanionBuilder =
     SideTripAnswersCompanion Function({
@@ -5445,6 +5565,8 @@ typedef $$SideTripAnswersTableUpdateCompanionBuilder =
       Value<int> wrongTaps,
       Value<int?> responseUs,
       Value<DateTime> at,
+      Value<int?> firstTap,
+      Value<int?> firstTapUs,
     });
 
 final class $$SideTripAnswersTableReferences
@@ -5517,6 +5639,16 @@ class $$SideTripAnswersTableFilterComposer
     builder: (column) => ColumnFilters(column),
   );
 
+  ColumnFilters<int> get firstTap => $composableBuilder(
+    column: $table.firstTap,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get firstTapUs => $composableBuilder(
+    column: $table.firstTapUs,
+    builder: (column) => ColumnFilters(column),
+  );
+
   $$SideTripRunsTableFilterComposer get runId {
     final $$SideTripRunsTableFilterComposer composer = $composerBuilder(
       composer: this,
@@ -5580,6 +5712,16 @@ class $$SideTripAnswersTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<int> get firstTap => $composableBuilder(
+    column: $table.firstTap,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get firstTapUs => $composableBuilder(
+    column: $table.firstTapUs,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   $$SideTripRunsTableOrderingComposer get runId {
     final $$SideTripRunsTableOrderingComposer composer = $composerBuilder(
       composer: this,
@@ -5632,6 +5774,14 @@ class $$SideTripAnswersTableAnnotationComposer
 
   GeneratedColumn<DateTime> get at =>
       $composableBuilder(column: $table.at, builder: (column) => column);
+
+  GeneratedColumn<int> get firstTap =>
+      $composableBuilder(column: $table.firstTap, builder: (column) => column);
+
+  GeneratedColumn<int> get firstTapUs => $composableBuilder(
+    column: $table.firstTapUs,
+    builder: (column) => column,
+  );
 
   $$SideTripRunsTableAnnotationComposer get runId {
     final $$SideTripRunsTableAnnotationComposer composer = $composerBuilder(
@@ -5694,6 +5844,8 @@ class $$SideTripAnswersTableTableManager
                 Value<int> wrongTaps = const Value.absent(),
                 Value<int?> responseUs = const Value.absent(),
                 Value<DateTime> at = const Value.absent(),
+                Value<int?> firstTap = const Value.absent(),
+                Value<int?> firstTapUs = const Value.absent(),
               }) => SideTripAnswersCompanion(
                 id: id,
                 runId: runId,
@@ -5702,6 +5854,8 @@ class $$SideTripAnswersTableTableManager
                 wrongTaps: wrongTaps,
                 responseUs: responseUs,
                 at: at,
+                firstTap: firstTap,
+                firstTapUs: firstTapUs,
               ),
           createCompanionCallback:
               ({
@@ -5712,6 +5866,8 @@ class $$SideTripAnswersTableTableManager
                 required int wrongTaps,
                 Value<int?> responseUs = const Value.absent(),
                 required DateTime at,
+                Value<int?> firstTap = const Value.absent(),
+                Value<int?> firstTapUs = const Value.absent(),
               }) => SideTripAnswersCompanion.insert(
                 id: id,
                 runId: runId,
@@ -5720,6 +5876,8 @@ class $$SideTripAnswersTableTableManager
                 wrongTaps: wrongTaps,
                 responseUs: responseUs,
                 at: at,
+                firstTap: firstTap,
+                firstTapUs: firstTapUs,
               ),
           withReferenceMapper: (p0) => p0
               .map(

@@ -7,6 +7,7 @@ import 'package:fudatobashi/config/config.dart';
 import 'package:fudatobashi/data/fuda_sets.dart';
 import 'package:fudatobashi/data/poem.dart';
 import 'package:fudatobashi/db/database.dart';
+import 'package:fudatobashi/domain/ankiren_field.dart';
 import 'package:fudatobashi/domain/ankiren_level.dart';
 import 'package:fudatobashi/domain/ankiren_rating.dart';
 import 'package:fudatobashi/domain/card_stats.dart';
@@ -47,7 +48,7 @@ void main() {
         AnkirenRating.start, AnkirenRating.performance(0, 1, placement: true), 0);
     final stored = p.sideTrips.runs.single;
     expect([stored.ranked, stored.level, stored.completed, stored.cardCount, stored.score, stored.maxScore],
-        [true, 0, true, perfect.prompts.length, perfect.score.total, perfect.score.max]);
+        [true, 0, true, perfect.prompts.length, perfect.score!.total, perfect.score!.max]);
     expect([stored.rating, stored.performance], [placed, AnkirenRating.performance(0, 1, placement: true)]);
     expect([first.ratingBefore, first.ratingAfter], [AnkirenRating.start, placed]);
     expect(
@@ -93,7 +94,7 @@ void main() {
       final played = playAnkiren(AnkirenSetup.forLevel(level, ranked: true), seed: game, ms: 3000);
       final report = await p.recordAnkiren(played, startedAt: startedAt);
       final placing = game < AnkirenRatingModel.placementGames;
-      final perf = AnkirenRating.performance(level, played.score.fraction, placement: placing);
+      final perf = AnkirenRating.performance(level, played.score!.fraction, placement: placing);
       final k = placing ? AnkirenRatingModel.placementK : AnkirenRatingModel.establishedK;
       expect(report.ratingAfter, closeTo(report.ratingBefore! + k * (perf - report.ratingBefore!), 1e-9));
       ratings.add(report.ratingAfter!);
@@ -117,6 +118,29 @@ void main() {
     expect(p.sideTrips.missesIn(run), cards - 3);
     expect(run.meta, contains('"layout":"v2"'));
     expect(run.meta, contains('"perSide":${AnkirenLevels.of(1).perSide}'));
+    await db.close();
+  });
+
+  test('each answer keeps where its first tap landed; a custom game is stored without a score', () async {
+    final db = AppDatabase(NativeDatabase.memory());
+    final p = await allKnown(db);
+    final free = playAnkiren(AnkirenSetup.forLevel(2), wrongAt: {0});
+    await p.recordAnkiren(free, startedAt: startedAt);
+    final rows = await db.select(db.sideTripAnswers).get();
+    expect([for (final r in rows) (r.firstTap, r.firstTapUs)],
+        [for (final a in free.answers) (a.firstTap!.index, a.firstTapUs)]);
+    expect(rows.first.firstTap, isNot(TapProximity.card.index), reason: 'the first prompt began with a wrong tap');
+    expect([for (final r in rows.skip(1)) r.firstTapUs], [for (final r in rows.skip(1)) r.responseUs]);
+    final again = await Progress.open(db);
+    expect([for (final a in again.sideTrips.answersOf(again.sideTrips.runs.single)) (a.firstTap, a.firstTapUs)],
+        [for (final a in free.answers) (a.firstTap, a.firstTapUs)]);
+
+    final custom = await p.recordAnkiren(
+        playAnkiren(const AnkirenSetup.custom(perSide: 4, memorise: Duration(minutes: 1))),
+        startedAt: startedAt);
+    final run = p.sideTrips.runs.last;
+    expect([run.level, run.score, run.maxScore, run.rating, run.performance], [null, null, null, null, null]);
+    expect(custom.xp!.award.parts, isEmpty);
     await db.close();
   });
 

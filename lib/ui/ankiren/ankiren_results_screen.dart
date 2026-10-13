@@ -24,8 +24,9 @@ import '../results/celebrations.dart';
 import '../run/run_launcher.dart';
 import '../sound/sounds.dart';
 
-/// 暗記練's results: the score on a sunburst, the cards found with the first
-/// tap and their average time, and for a ranked game how the rating moved
+/// 暗記練's results: the score on a sunburst (for a custom game, which is not
+/// scored, the cards found and missed), the cards found with the first tap
+/// and their average time, and for a ranked game how the rating moved
 /// and the level the next one plays; then Again (the same way: ranked reads
 /// its level afresh, free play replays the setup) or Done. A recorded game's
 /// celebrations play over it first, each tap-anywhere-to-skip: the XP it
@@ -96,7 +97,9 @@ class _AnkirenResultsScreenState extends State<AnkirenResultsScreen> {
     final setup = game.setup;
     final score = game.score;
     final report = widget.report;
-    final avgMs = score.averageFirstTryMs;
+    final avgMs = game.averageFirstTryMs;
+    final found = game.answers.where((a) => a.found).length;
+    final asked = game.prompts.length;
     final level = setup.level;
     final tag = [
       SideTrip.ankiren.label,
@@ -128,21 +131,28 @@ class _AnkirenResultsScreenState extends State<AnkirenResultsScreen> {
                 Expanded(
                   child: SingleChildScrollView(
                     child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-                      _ScorePanel(
-                        total: score.total,
-                        max: score.max,
-                        early: score.early,
-                        completed: game.completed,
-                        fraction: score.fraction,
-                      ),
+                      if (score == null)
+                        _SplashPanel(
+                          label: game.completed ? s.ankirenFoundLabel : s.endedEarly,
+                          big: found,
+                          lines: [s.ankirenFoundOf(asked), s.ankirenMissed(asked - found)],
+                          cheer: found == asked,
+                        )
+                      else
+                        _SplashPanel(
+                          label: game.completed ? s.ankirenScoreLabel : s.endedEarly,
+                          big: score.total,
+                          lines: [s.ankirenScoreOf(score.max), if (score.early > 0) s.ankirenEarlyBonus(score.early)],
+                          cheer: score.fraction >= AnkirenRatingModel.par,
+                        ),
                       const SizedBox(height: Gaps.panel),
                       IntrinsicHeight(
                         child: Row(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
                           Expanded(
                             child: _Stat(
                               label: s.ankirenFirstTryLabel,
-                              big: '${score.firstTries}',
-                              unit: '/ ${game.prompts.length}',
+                              big: '${game.firstTries}',
+                              unit: '/ $asked',
                               note: s.ankirenWrongTaps(game.answers.fold(0, (n, a) => n + a.wrongTaps)),
                             ),
                           ),
@@ -164,7 +174,7 @@ class _AnkirenResultsScreenState extends State<AnkirenResultsScreen> {
                         const SizedBox(height: Gaps.panel),
                         DashedBox(
                           padding: ResultsLayout.notePadding,
-                          child: Text.rich(Phrases.span(s.ankirenFreeNote),
+                          child: Text.rich(Phrases.span(score == null ? s.ankirenCustomNote : s.ankirenFreeNote),
                               style: const TextStyle(fontWeight: Weights.bold, fontSize: AnkirenResultsLayout.noteFont)),
                         ),
                       ],
@@ -215,26 +225,19 @@ class _AnkirenResultsScreenState extends State<AnkirenResultsScreen> {
   }
 }
 
-/// The score on a sunburst, out of the most the game could give, with Tobi
-/// cheering a game at or above par.
-class _ScorePanel extends StatelessWidget {
-  const _ScorePanel({
-    required this.total,
-    required this.max,
-    required this.early,
-    required this.completed,
-    required this.fraction,
-  });
+/// A [big] number on a sunburst, its [label] over it and its [lines] under
+/// it, with Tobi cheering when [cheer]: a game at or above par, or a custom
+/// game with every card found.
+class _SplashPanel extends StatelessWidget {
+  const _SplashPanel({required this.label, required this.big, required this.lines, required this.cheer});
 
-  /// The score, the best one without being ready early, and what being
-  /// ready early added.
-  final int total, max, early;
-  final bool completed;
-  final double fraction;
+  final String label;
+  final int big;
+  final List<String> lines;
+  final bool cheer;
 
   @override
   Widget build(BuildContext context) {
-    final s = S.of(context);
     return Stack(clipBehavior: Clip.none, children: [
       MangaPanel(
         shape: const PanelShape(bottomRight: Offset(0, ResultsLayout.splashCut)),
@@ -247,7 +250,7 @@ class _ScorePanel extends StatelessWidget {
           constraints: const BoxConstraints(minHeight: AnkirenResultsLayout.splashMinHeight),
           child: Center(
             child: Column(mainAxisSize: MainAxisSize.min, children: [
-              Text(completed ? s.ankirenScoreLabel : s.endedEarly,
+              Text(label,
                   style: const TextStyle(
                       fontWeight: Weights.black,
                       fontSize: ResultsLayout.splashLabelFont,
@@ -255,17 +258,16 @@ class _ScorePanel extends StatelessWidget {
               const SizedBox(height: Gaps.small),
               FittedBox(
                 fit: BoxFit.scaleDown,
-                child: OutlinedText('$total',
+                child: OutlinedText('$big',
                     style: const TextStyle(fontFamily: Fonts.display, fontSize: AnkirenResultsLayout.scoreFont, height: 1),
                     outlineWidth: AnkirenResultsLayout.scoreOutline),
               ),
               const SizedBox(height: Gaps.tight),
-              Text(s.ankirenScoreOf(max),
-                  style: const TextStyle(fontWeight: Weights.black, fontSize: AnkirenResultsLayout.scoreOfFont)),
-              if (early > 0)
-                Text(s.ankirenEarlyBonus(early),
+              for (final (i, line) in lines.indexed)
+                Text(line,
                     textAlign: TextAlign.center,
-                    style: const TextStyle(fontWeight: Weights.bold, fontSize: AnkirenResultsLayout.scoreOfFont)),
+                    style: TextStyle(
+                        fontWeight: i == 0 ? Weights.black : Weights.bold, fontSize: AnkirenResultsLayout.scoreOfFont)),
             ]),
           ),
         ),
@@ -275,7 +277,7 @@ class _ScorePanel extends StatelessWidget {
         bottom: Gaps.inner,
         width: AnkirenResultsLayout.tobi.width,
         height: AnkirenResultsLayout.tobi.height,
-        child: Tobi(pose: fraction >= AnkirenRatingModel.par ? TobiPose.cheering : TobiPose.tryHard),
+        child: Tobi(pose: cheer ? TobiPose.cheering : TobiPose.tryHard),
       ),
     ]);
   }

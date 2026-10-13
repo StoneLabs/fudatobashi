@@ -22,6 +22,7 @@ import 'package:fudatobashi/data/fuda_sets.dart';
 import 'package:fudatobashi/data/islands.dart';
 import 'package:fudatobashi/data/poem.dart';
 import 'package:fudatobashi/db/database.dart';
+import 'package:fudatobashi/domain/ankiren_field.dart';
 import 'package:fudatobashi/domain/ankiren_level.dart';
 import 'package:fudatobashi/domain/ankiren_rating.dart';
 import 'package:fudatobashi/domain/side_trips.dart';
@@ -245,6 +246,32 @@ void main() {
   });
 
   group('acts', () {
+    for (final lang in ['en', 'ja']) {
+      testWidgets('the rules score a find by its first tap, with the numbers from the tuning ($lang)', (tester) async {
+        final s = S(lang);
+        final p = await open(tester, _Stage.placed, lang);
+        await showPage(tester, p, _users);
+        await tester.tap(onPage(find.byType(SideTripRulesButton)));
+        await tester.pump();
+        await tester.pump(Motion.sheet);
+        final rules = find.byType(AnkirenRulesSheet);
+        String shown(Text t) => Phrases.spoken(t.textSpan?.toPlainText() ?? t.data ?? '').replaceAll('\u2060', '');
+        final lines = [
+          for (final t in tester.widgetList<Text>(find.descendant(of: rules, matching: find.byType(Text)))) shown(t),
+        ];
+        bool listed(String line) => lines.any((l) => l.contains(Phrases.spoken(line)));
+        final shares = [
+          for (final p in TapProximity.values.skip(1))
+            '${((AnkirenTuning.firstTapCredit[p]! + AnkirenTuning.secondTapShare) * 100).round() / 100}',
+        ];
+        expect(listed(s.ankirenScoreFind(AnkirenTuning.firstTry, AnkirenTuning.speedMax)), isTrue);
+        expect(listed(s.ankirenScoreNear(shares)), isTrue);
+        expect(listed(s.ankirenScoreLevel), isTrue, reason: 'custom games are not scored');
+        expect(lines.where((l) => l.contains('×0.')), hasLength(1), reason: 'the shares, in one line');
+        await tester.pumpWidget(const SizedBox());
+      });
+    }
+
     testWidgets('ranked starts at the level the rating sets, with no level to pick', (tester) async {
       final p = await open(tester, _Stage.placed, 'en');
       final entry = p.sideTripsHub()[SideTrip.ankiren];
@@ -288,8 +315,8 @@ void main() {
       await tester.pump();
       final custom = AnkirenSetup.custom(perSide: preset.perSide + 1, memorise: preset.memorise);
       expect(p.settings.ankiren.freeSetup, custom, reason: 'a stepper turns the level into a custom setup');
-      expect(custom.scoredLevel, level);
-      expect(inSheet(numbered(s.ankirenScoredAs, level)), findsOneWidget);
+      expect(inSheet(find.textContaining(RegExp('Scored as|採点'))), findsNothing,
+          reason: 'a custom setup is not scored');
 
       await tester.tap(inSheet(find.text(s.freeStart)));
       await tester.pump();

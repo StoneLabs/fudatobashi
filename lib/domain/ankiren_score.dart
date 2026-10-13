@@ -13,6 +13,8 @@ class AnkirenAnswer {
     required this.wrongTaps,
     required this.responseUs,
     required this.at,
+    this.firstTap,
+    this.firstTapUs,
   });
 
   final int poemId;
@@ -29,21 +31,31 @@ class AnkirenAnswer {
   /// When it was found or given up, or when the game ended without it.
   final DateTime at;
 
+  /// Where the first tap while it was asked landed, and that tap's time
+  /// after the prompt in microseconds, as measured; null when no card was
+  /// tapped.
+  final TapProximity? firstTap;
+  final int? firstTapUs;
+
   bool get found => responseUs != null;
   bool get validTime => responseUs != null && Attempt.isValidTime(responseUs!);
   bool get firstTry => found && wrongTaps == 0;
 
   /// The card had to be shown ([AnkirenTuning.revealAfterWrong] wrong taps).
   bool get revealed => wrongTaps >= AnkirenTuning.revealAfterWrong;
+
+  /// See [AnkirenScore.credit].
+  double get credit => AnkirenScore.credit(found: found, wrongTaps: wrongTaps, firstTap: firstTap);
 }
 
-/// A 暗記練 game's score. Every field card is asked once, and earns:
-/// - found with the first tap: [AnkirenTuning.firstTry] plus a speed bonus
-///   of up to [AnkirenTuning.speedMax] ([speedBonus]); a time that is no
-///   measurement (see [Attempt.isValidTime]) earns no bonus;
-/// - found after one wrong tap: [AnkirenTuning.secondTry], no bonus;
-/// - shown after [AnkirenTuning.revealAfterWrong] wrong taps, given up
-///   ("don't know"), or never found: nothing.
+/// A 暗記練 game's score; custom games are not scored. Every field card is
+/// asked once, and earns [AnkirenTuning.firstTry] points plus a speed bonus
+/// of up to [AnkirenTuning.speedMax] ([speedBonus]) for the time of the
+/// prompt's first tap, times its [credit]: all of them when the first
+/// tap finds it, a share by how near the first tap landed when the next one
+/// finds it, and nothing when it had to be shown, was given up ("don't
+/// know") or was never found. A time that is no measurement (see
+/// [Attempt.isValidTime]) earns no bonus.
 ///
 /// These [recall] points, out of [maxRecall] (every card first try at full
 /// speed), make the [fraction] that drives the rating. The score shown is
@@ -53,9 +65,7 @@ class AnkirenAnswer {
 class AnkirenScore {
   AnkirenScore(List<AnkirenAnswer> answers, {required int prompts, this.timeLeft = 0, this.factor = 1})
       : recall = answers.fold(0, (sum, a) => sum + points(a)),
-        maxRecall = maxFor(prompts),
-        firstTries = answers.where((a) => a.firstTry).length,
-        averageFirstTryMs = _averageMs(answers.where((a) => a.firstTry && a.validTime));
+        maxRecall = maxFor(prompts);
 
   final int recall;
   final int maxRecall;
@@ -65,48 +75,48 @@ class AnkirenScore {
   final double timeLeft;
   final double factor;
 
-  /// Cards found with the first tap.
-  final int firstTries;
-
-  /// Mean response time of the first-try finds with a valid time, ms; null
-  /// when there are none.
-  final double? averageFirstTryMs;
-
   double get fraction => maxRecall == 0 ? 0 : recall / maxRecall;
 
   int get total => totalOf(recall, timeLeft, factor);
   int get max => (maxRecall * factor).round();
   int get early => total - (recall * factor).round();
 
-  /// How much a game of [setup] counts: [AnkirenTuning.levelFactor] once for
-  /// every level below the top, from the level it scores as
-  /// ([AnkirenSetup.scoredLevel]).
-  static double factorFor(AnkirenSetup setup) =>
-      math.pow(AnkirenTuning.levelFactor, AnkirenLevels.top - setup.scoredLevel).toDouble();
+  /// How much a game at [level] counts: [AnkirenTuning.levelFactor] once for
+  /// every level below the top.
+  static double factorFor(int level) => math.pow(AnkirenTuning.levelFactor, AnkirenLevels.top - level).toDouble();
 
   /// The score of [recall] points with [timeLeft] of the memorise time unused
   /// (as a share) at a level [factor].
   static int totalOf(int recall, double timeLeft, double factor) =>
       (recall * (1 + AnkirenTuning.earlyBonus * timeLeft) * factor).round();
 
-  /// A game of [setup] where every card is found with its first tap
+  /// A game at [level] where every card is found with its first tap
   /// [responseMs] after its prompt, and the player was ready with [timeLeft]
   /// of the memorise time to spare (at most all of it).
-  static int firstTryTotal(AnkirenSetup setup, {required double responseMs, required Duration timeLeft}) {
+  static int firstTryTotal(int level, {required double responseMs, required Duration timeLeft}) {
+    final setup = AnkirenLevels.of(level);
     final share = (timeLeft.inMicroseconds / setup.memorise.inMicroseconds).clamp(0.0, 1.0);
     final perCard = AnkirenTuning.firstTry + speedBonus((responseMs * 1000).round());
-    return totalOf(setup.cards * perCard, share, factorFor(setup));
+    return totalOf(setup.cards * perCard, share, factorFor(level));
   }
 
   static int maxFor(int prompts) => prompts * (AnkirenTuning.firstTry + AnkirenTuning.speedMax);
 
+  /// The share of a first-tap find's points a card earns when it was
+  /// [found] before it was shown: by where the first tap while it was asked
+  /// landed ([AnkirenTuning.firstTapCredit]), plus
+  /// [AnkirenTuning.secondTapShare] when it took a second tap. Else nothing.
+  static double credit({required bool found, required int wrongTaps, required TapProximity? firstTap}) =>
+      found && wrongTaps < AnkirenTuning.revealAfterWrong
+          ? (AnkirenTuning.firstTapCredit[firstTap] ?? 0) + (wrongTaps > 0 ? AnkirenTuning.secondTapShare : 0)
+          : 0;
+
   static int points(AnkirenAnswer a) {
-    if (!a.found || a.revealed) return 0;
-    if (a.wrongTaps > 0) return AnkirenTuning.secondTry;
-    return AnkirenTuning.firstTry + speedBonus(a.responseUs!);
+    final credit = a.credit;
+    return credit == 0 ? 0 : ((AnkirenTuning.firstTry + speedBonus(a.firstTapUs!)) * credit).round();
   }
 
-  /// The bonus for a first-try find [responseUs] after its prompt, rounded
+  /// The bonus for a first tap [responseUs] after its prompt, rounded
   /// [speedShare] of [AnkirenTuning.speedMax].
   static int speedBonus(int responseUs) =>
       Attempt.isValidTime(responseUs) ? (AnkirenTuning.speedMax * speedShare(responseUs / 1000)).round() : 0;
@@ -123,7 +133,4 @@ class AnkirenScore {
     final bottom = logistic(AnkirenTuning.speedNone.inMilliseconds.toDouble());
     return ((logistic(ms) - bottom) / (top - bottom)).clamp(0.0, 1.0);
   }
-
-  static double? _averageMs(Iterable<AnkirenAnswer> timed) =>
-      timed.isEmpty ? null : timed.fold(0.0, (sum, a) => sum + a.responseUs! / 1000) / timed.length;
 }

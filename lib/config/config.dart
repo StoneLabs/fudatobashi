@@ -785,9 +785,9 @@ abstract final class CelebrationPreviewTuning {
   /// reaching no new level, or [ankirenLevelInto] in and reaching one.
   static const List<(XpSource, int, int)> ankirenXp = [
     (XpSource.firstTap, 12, 960),
-    (XpSource.secondTap, 3, 120),
+    (XpSource.secondTap, 3, 100),
     (XpSource.missed, 1, 2),
-    (XpSource.speed, 12, 290),
+    (XpSource.speed, 15, 320),
     (XpSource.clear, 1, 20),
     (XpSource.ranked, 1, 50),
     (XpSource.best, 1, 200),
@@ -1020,10 +1020,27 @@ abstract final class AnkirenTuning {
   /// Wrong taps on one prompt after which its card is shown.
   static const int revealAfterWrong = 2;
 
-  /// Points per prompt (see `AnkirenScore`).
+  /// Points per prompt (see `AnkirenScore`): a find with the first tap earns
+  /// [firstTry] plus a speed bonus of up to [speedMax].
   static const int firstTry = 100;
-  static const int secondTry = 50;
   static const int speedMax = 100;
+
+  /// The share of those points a find earns, speed bonus and all, by where
+  /// the first tap while it was asked landed. A find with the second tap
+  /// adds [secondTapShare] to its first tap's share; a card shown or given
+  /// up earns nothing.
+  static const Map<TapProximity, double> firstTapCredit = {
+    TapProximity.card: 1,
+    TapProximity.neighbour: 0.6,
+    TapProximity.row: 0.4,
+    TapProximity.quadrant: 0.25,
+    TapProximity.side: 0.15,
+    TapProximity.otherSide: 0,
+  };
+
+  /// Kept small, so a find with the second tap after a first tap next to the
+  /// card still earns less than one with the first.
+  static const double secondTapShare = 0.1;
 
   /// Being ready before the memorise time is up multiplies the points by up
   /// to 1 + [earlyBonus], in proportion to the share of the time left.
@@ -1100,8 +1117,8 @@ abstract final class AnkirenRatingModel {
   static const List<double> levelRatings = [400, 650, 900, 1150, 1400, 1650, 1900, 2150, 2400, 2650, 2900];
 
   /// Performance points per unit of score fraction above or below [par]. A
-  /// game at par finds about 70% of the cards first try in 1.5 s, and 15%
-  /// after a wrong tap.
+  /// game at par finds about 70% of the cards with the first tap, in 1.5 s,
+  /// and 10% with the second after a first tap as quick in their row.
   static const double weight = 1000;
   static const double par = 0.53;
 
@@ -1121,15 +1138,13 @@ abstract final class AnkirenRatingModel {
 /// some 800). Derived from the recorded games, like [XpTuning].
 abstract final class AnkirenXpTuning {
   /// A card found with the first tap at level 0, and what each level above
-  /// adds (a custom setup counts as the level it scores as).
+  /// adds. A card found later earns its share
+  /// ([AnkirenTuning.firstTapCredit]) of this and of its speed bonus.
   static const int firstTap = 70;
   static const int firstTapPerLevel = 5;
 
-  /// A card found after a wrong tap, before it is shown: this share of a
-  /// first-tap find.
-  static const double secondTapShare = 0.5;
-
-  /// The speed bonus of a first-tap find: `AnkirenScore.speedShare` of this.
+  /// The speed bonus for the time of the first tap: `AnkirenScore.speedShare`
+  /// of this.
   static const int speedMax = 40;
 
   /// Each card shown, given up or never found, in a game played to the end.

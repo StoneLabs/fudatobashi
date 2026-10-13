@@ -60,41 +60,52 @@ class _PointsCalculator extends StatefulWidget {
 class _PointsCalculatorState extends State<_PointsCalculator> {
   int _level = AnkirenLevels.top;
   double _responseMs = AnkirenToolsTuning.responseStart.inMilliseconds.toDouble();
-  int _wrongTaps = 0;
-  double _timeLeft = 0;
 
-  static const _wrongLabels = ['0', '1', 'shown'];
+  /// Where the first tap landed; null for a card that had to be shown.
+  TapProximity? _firstTap = TapProximity.card;
+  double _timeLeft = 0;
 
   int get _memoriseSeconds => AnkirenLevels.of(_level).memorise.inSeconds;
 
   @override
   Widget build(BuildContext context) {
+    final firstTap = _firstTap;
+    final tapUs = (_responseMs * 1000).round();
     final answer = AnkirenAnswer(
       poemId: 0,
       side: FieldSide.own,
-      wrongTaps: _wrongTaps == 2 ? AnkirenTuning.revealAfterWrong : _wrongTaps,
-      responseUs: (_responseMs * 1000).round(),
+      wrongTaps: switch (firstTap) {
+        null => AnkirenTuning.revealAfterWrong,
+        TapProximity.card => 0,
+        _ => 1,
+      },
+      responseUs: tapUs,
       at: DateTime.now(),
+      firstTap: firstTap ?? TapProximity.neighbour,
+      firstTapUs: tapUs,
     );
     final share = _timeLeft.clamp(0, _memoriseSeconds) / _memoriseSeconds;
     final early = 1 + AnkirenTuning.earlyBonus * share;
-    final factor = AnkirenScore.factorFor(AnkirenSetup.forLevel(_level));
+    final factor = AnkirenScore.factorFor(_level);
     final points = AnkirenScore.points(answer);
-    final firstTry = _wrongTaps == 0;
+    final credited = answer.credit > 0;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         DebugLevelChips(level: _level, onChanged: (l) => setState(() => _level = l)),
-        DebugResponseSlider(label: 'response', ms: _responseMs, onChanged: (v) => setState(() => _responseMs = v)),
+        DebugResponseSlider(label: 'first tap', ms: _responseMs, onChanged: (v) => setState(() => _responseMs = v)),
         Wrap(
           crossAxisAlignment: WrapCrossAlignment.center,
           children: [
-            Text('wrong taps ', style: debugMono),
-            SegmentedButton<int>(
+            Text('first tap on ', style: debugMono),
+            SegmentedButton<TapProximity?>(
               showSelectedIcon: false,
-              segments: [for (final (i, l) in _wrongLabels.indexed) ButtonSegment(value: i, label: Text(l))],
-              selected: {_wrongTaps},
-              onSelectionChanged: (s) => setState(() => _wrongTaps = s.first),
+              segments: [
+                for (final p in TapProximity.values) ButtonSegment(value: p, label: Text(p.name)),
+                const ButtonSegment(value: null, label: Text('shown')),
+              ],
+              selected: {firstTap},
+              onSelectionChanged: (s) => setState(() => _firstTap = s.first),
             ),
           ],
         ),
@@ -110,7 +121,7 @@ class _PointsCalculatorState extends State<_PointsCalculator> {
         const SizedBox(height: AnkirenToolsStyle.gap),
         SizedBox(
           height: AnkirenToolsStyle.chartHeight,
-          child: CustomPaint(painter: _BonusPainter(_responseMs, firstTry)),
+          child: CustomPaint(painter: _BonusPainter(_responseMs, credited)),
         ),
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -119,10 +130,8 @@ class _PointsCalculatorState extends State<_PointsCalculator> {
           ],
         ),
         const SizedBox(height: AnkirenToolsStyle.gap),
-        DebugKV(
-          'speed bonus',
-          firstTry ? '${AnkirenScore.speedBonus(answer.responseUs!)} / ${AnkirenTuning.speedMax}' : '—',
-        ),
+        DebugKV('speed bonus', '${AnkirenScore.speedBonus(tapUs)} / ${AnkirenTuning.speedMax}'),
+        DebugKV('first tap ×', answer.credit.toStringAsFixed(2)),
         DebugKV('per card', '$points'),
         DebugKV('early ×', early.toStringAsFixed(3)),
         DebugKV('level ×', factor.toStringAsFixed(3)),
@@ -355,7 +364,7 @@ class _LevelTable extends StatelessWidget {
                   : AnkirenDealer.mayHaveMiddle(l.perSide)
                   ? '≤${AnkirenDealer.maxMiddle(l.perSide)}'
                   : '—',
-              AnkirenScore.factorFor(AnkirenSetup.forLevel(i)).toStringAsFixed(3),
+              AnkirenScore.factorFor(i).toStringAsFixed(3),
               AnkirenRatingModel.levelRatings[i].toStringAsFixed(0),
             ]),
         ],

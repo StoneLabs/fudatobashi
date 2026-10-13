@@ -2421,6 +2421,10 @@ abstract final class AnkirenRulesLayout {
   static const String flip = 'assets/images/sidetrips/ankiren/howto-flip.webp';
   static const String take = 'assets/images/sidetrips/ankiren/howto-take.webp';
 
+  /// The scoring rules print a share of the points to this many decimal
+  /// places at most.
+  static const int shareDecimals = 2;
+
   /// A step: its picture on desk grey, then its number and name, then its
   /// line.
   static const double pictureHeight = 90;
@@ -3943,8 +3947,7 @@ abstract final class AnkirenResultsLayout {
 
 /// 暗記練's sheets (`ankiren_free_sheet.dart`, `ankiren_rules_sheet.dart`):
 /// free practice's floating panel, its top edge tilted, a head with the
-/// close button, and for free play the level keys, the steppers and the
-/// level the setup scores as.
+/// close button, and for free play the level keys and the steppers.
 abstract final class AnkirenSheetLayout {
   static const EdgeInsets padding = EdgeInsets.fromLTRB(14, 22, 14, 14);
   static const double gap = 12;
@@ -3984,15 +3987,6 @@ abstract final class AnkirenSheetLayout {
   static const double stepperValueWidth = 84;
   static const double stepperValueFont = 24;
   static const double stepperUnitFont = 12;
-
-  /// The level the setup scores as, over a rule.
-  static const double scoredRule = Strokes.label;
-  static const double scoredTop = 9;
-  static const EdgeInsets scoredTagPadding = EdgeInsets.fromLTRB(7, 2, 7, 3);
-  static const double scoredTagBorder = Strokes.label;
-  static const double scoredFont = 12;
-  static const double scoredNumber = 14;
-  static const double scoredGap = 8;
 
   static const Size lockBalloon = Size(280, 96);
   static const Duration lockBalloonLife = Duration(milliseconds: 2800);

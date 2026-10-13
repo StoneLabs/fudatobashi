@@ -84,11 +84,12 @@ void main() {
     await fresh.close();
 
     final run = await db.into(db.sideTripRuns).insert(SideTripRunsCompanion.insert(
-        game: 'ankiren', startedAt: DateTime(2026, 10, 12), ranked: true, cardCount: 8, score: 900, maxScore: 1200,
-        completed: true));
+        game: 'ankiren', startedAt: DateTime(2026, 10, 12), ranked: false, cardCount: 8, completed: true));
     await db.into(db.sideTripAnswers).insert(SideTripAnswersCompanion.insert(
         runId: run, seq: 0, poemId: 12, wrongTaps: 1, at: DateTime(2026, 10, 12)));
-    expect((await db.select(db.sideTripAnswers).getSingle()).responseUs, isNull);
+    expect((await db.select(db.sideTripRuns).getSingle()).score, isNull, reason: 'a custom game has no score');
+    final answer = await db.select(db.sideTripAnswers).getSingle();
+    expect([answer.responseUs, answer.firstTap, answer.firstTapUs], [null, null, null]);
     await db.close();
   });
 

@@ -33,8 +33,8 @@ Future<void> openAnkirenFree(BuildContext context) async {
 /// One set of controls for a free game: a level key fills in its cards and
 /// memorise time (a level the known cards cannot fill says why instead),
 /// and touching a stepper makes the setup custom, from what the steppers
-/// showed. The custom key brings back the last custom setup. Under them,
-/// the level the setup scores as; then the start burst.
+/// showed. The custom key brings back the last custom setup, which is not
+/// scored. Then the start burst.
 class AnkirenFreeSheet extends StatefulWidget {
   const AnkirenFreeSheet({super.key});
 
@@ -134,7 +134,6 @@ class _AnkirenFreeSheetState extends State<AnkirenFreeSheet> {
           onLess: memorise > 0 ? () => _stepCustom(() => _memoriseIndex--) : null,
           onMore: memorise < _memorise.length - 1 ? () => _stepCustom(() => _memoriseIndex++) : null,
         ),
-        _ScoredAs(setup.scoredLevel),
       ],
       footer: BurstButton(
         title: s.freeStart,
@@ -294,55 +293,5 @@ class _Stepper extends StatelessWidget {
       ),
       button('+', s.ankirenMore, onMore),
     ]);
-  }
-}
-
-/// The level a setup scores as, on a sun tag, and the same in the other
-/// language, over a rule.
-class _ScoredAs extends StatelessWidget {
-  const _ScoredAs(this.level);
-
-  final int level;
-
-  @override
-  Widget build(BuildContext context) {
-    final s = S.of(context);
-    return DecoratedBox(
-      decoration: const BoxDecoration(
-        border: Border(top: BorderSide(color: Palette.ink, width: AnkirenSheetLayout.scoredRule)),
-      ),
-      child: Padding(
-        padding: const EdgeInsets.only(top: AnkirenSheetLayout.scoredTop),
-        child: Wrap(
-          spacing: AnkirenSheetLayout.scoredGap,
-          runSpacing: AnkirenSheetLayout.scoredGap,
-          crossAxisAlignment: WrapCrossAlignment.center,
-          children: [
-            DecoratedBox(
-              decoration: BoxDecoration(
-                color: Palette.sun,
-                border: Border.all(color: Palette.ink, width: AnkirenSheetLayout.scoredTagBorder),
-              ),
-              child: Padding(
-                padding: AnkirenSheetLayout.scoredTagPadding,
-                child: NumberedText(
-                  s.ankirenScoredAs,
-                  [level],
-                  style: const TextStyle(fontWeight: Weights.black, fontSize: AnkirenSheetLayout.scoredFont),
-                  numberStyle: const TextStyle(fontFamily: Fonts.display, fontSize: AnkirenSheetLayout.scoredNumber),
-                ),
-              ),
-            ),
-            NumberedText(
-              s.other.ankirenScoredAs.toUpperCase(),
-              [level],
-              style: const TextStyle(fontWeight: Weights.bold, fontSize: AnkirenSheetLayout.scoredFont, color: Palette.mute),
-              numberStyle:
-                  const TextStyle(fontWeight: Weights.bold, fontSize: AnkirenSheetLayout.scoredFont, color: Palette.mute),
-            ),
-          ],
-        ),
-      ),
-    );
   }
 }

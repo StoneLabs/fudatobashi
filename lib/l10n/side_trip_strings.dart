@@ -88,8 +88,12 @@ extension SideTripStrings on S {
   String get ankirenRuleDontKnow => t('ankirenRuleDontKnow');
   String get ankirenRuleLeave => t('ankirenRuleLeave');
   String get ankirenScoring => t('ankirenScoring');
-  String ankirenScoreFind(int firstTry, int speed, int secondTry) =>
-      f('ankirenScoreFind', [firstTry, speed, secondTry]);
+  String ankirenScoreFind(int firstTry, int speed) => f('ankirenScoreFind', [firstTry, speed]);
+
+  /// A find with the second tap: its share of the points by where the first
+  /// tap landed, from next to the card to the other side ([shares], nearest
+  /// first).
+  String ankirenScoreNear(List<String> shares) => f('ankirenScoreNear', shares);
   String ankirenScoreEarly(String factor) => f('ankirenScoreEarly', [factor]);
   String get ankirenScoreLevel => t('ankirenScoreLevel');
 

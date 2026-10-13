@@ -1,5 +1,4 @@
 import 'dart:io';
-import 'dart:math' as math;
 import 'dart:ui' as ui;
 
 import 'package:drift/drift.dart' show driftRuntimeOptions;
@@ -184,8 +183,9 @@ void main() {
         expect(find.text(line(AnkirenLevels.of(0).cards, 1)), findsOneWidget,
             reason: 'one card found after a wrong tap');
         expect(find.text(line(6, 2)), findsOneWidget, reason: 'ended with two cards never found');
-        expect(find.text(score(ranked.score.total)), findsOneWidget);
-        expect(find.text(score(custom.score.total)), findsOneWidget);
+        expect(find.text(score(ranked.score!.total)), findsOneWidget);
+        expect(find.byWidgetPredicate((w) => w is NumberedText && w.template == s.historyScoreTemplate),
+            findsOneWidget, reason: 'a custom game has no score');
         expect(record(), {
           s.historyRunsLabel: '4',
           s.historyCardsLabel: '${3 + 2 + AnkirenLevels.of(0).cards + 6}',
@@ -206,7 +206,7 @@ void main() {
         expect(record(), {
           s.historyRunsLabel: '2',
           s.historyCardsLabel: '${AnkirenLevels.of(0).cards + 6}',
-          s.historyBestLabel: '${math.max(ranked.score.total, custom.score.total)}',
+          s.historyBestLabel: '${ranked.score!.total}',
         });
         await filter(s.training);
         expect([for (final e in tester.widgetList<InkTag>(tags())) e.text], [s.training]);
