@@ -287,7 +287,10 @@ class _Stepper extends StatelessWidget {
       button('−', s.ankirenLess, onLess),
       SizedBox(
         width: AnkirenSheetLayout.stepperValueWidth,
-        child: Center(child: FittedBox(fit: BoxFit.scaleDown, child: value)),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: AnkirenSheetLayout.stepperGap),
+          child: Center(child: FittedBox(fit: BoxFit.scaleDown, child: value)),
+        ),
       ),
       button('+', s.ankirenMore, onMore),
     ]);
