@@ -424,6 +424,62 @@ void main() {
       await tester.pumpWidget(const SizedBox());
     });
 
+    testWidgets('between the front and the left an island shows twice, out past the left edge on the near arm '
+        'as its blue twin comes in on the far arm, both under the finger, either way', (tester) async {
+      final p = await open(tester, _Hub.ranked, 'en');
+      await openHub(tester, p, _users);
+      final width = _users.size.width;
+      const ankiren = DojoRingLayout.ankiren;
+      Rect? rectOf(String asset) => pictures(asset).evaluate().isEmpty ? null : tester.getRect(pictures(asset));
+      final front = rectOf(ankiren.colour)!;
+      final left = rectOf(DojoRingLayout.lighthouse.haze)!;
+      expect(rectOf(ankiren.haze), isNull, reason: 'at rest each island shows once');
+      expect(rectOf(DojoRingLayout.lighthouse.colour), isNull);
+
+      // Drags to [turns] steps from [from], and the island's colour and blue
+      // pictures then.
+      Future<List<(Rect, Rect)>> drag(int from, List<double> turns) async {
+        final gesture = await tester.startGesture(tester.getCenter(inHub(find.byType(DojoScene))));
+        final way = turns.first > from ? -1.0 : 1.0;
+        await gesture.moveBy(Offset(way * 20, 0));
+        final seen = <(Rect, Rect)>[];
+        for (final turn in turns) {
+          await gesture.moveBy(Offset(-(turn - turnOf(tester)) * width, 0));
+          await tester.pump();
+          expect(turnOf(tester), closeTo(turn, 0.01));
+          seen.add((rectOf(ankiren.colour)!, rectOf(ankiren.haze)!));
+        }
+        await gesture.up();
+        await tester.pump();
+        await tester.pump(const Duration(seconds: 2));
+        return seen;
+      }
+
+      final out = await drag(0, [0.3, 0.7]);
+      for (final (near, far) in out) {
+        expect(near.left, lessThan(front.left), reason: 'leaving to the left');
+        expect(near.width, greaterThan(front.width), reason: 'growing a little as it passes');
+        expect(far.left, lessThan(0), reason: 'coming in from beyond the left edge');
+        expect(far.width, lessThan(left.width * 1.01));
+      }
+      expect(out[1].$1.right, lessThan(out[0].$1.right), reason: 'the colour island follows the finger out');
+      expect(out[1].$2.left, greaterThan(out[0].$2.left), reason: 'its twin follows the finger in');
+      expect(out[1].$1.left, lessThan(-front.width / 2), reason: 'well past the left edge');
+      expect(turnOf(tester), 1);
+      expect(rectOf(ankiren.colour), isNull);
+      expect(rectOf(ankiren.haze), left, reason: 'it rests in the left slot');
+
+      final back = await drag(1, [0.7, 0.3]);
+      expect(back[1].$1.left, greaterThan(back[0].$1.left), reason: 'the colour island comes back in');
+      expect(back[1].$2.left, lessThan(back[0].$2.left), reason: 'its twin leaves');
+      expect(back[0].$1.left, closeTo(out[1].$1.left, 0.5), reason: 'the same track both ways');
+      expect(turnOf(tester), 0);
+      expect(rectOf(ankiren.colour), front);
+      expect(rectOf(ankiren.haze), isNull);
+      expect(tester.takeException(), isNull);
+      await tester.pumpWidget(const SizedBox());
+    });
+
     testWidgets('a swipe that starts on the burst turns the ring and starts no game', (tester) async {
       final p = await open(tester, _Hub.ranked, 'en');
       await openHub(tester, p, _users);

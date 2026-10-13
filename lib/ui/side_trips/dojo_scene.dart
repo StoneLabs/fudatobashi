@@ -174,14 +174,14 @@ class _DojoSceneState extends State<DojoScene> with SingleTickerProviderStateMix
     final front = SideTripRing.frontAt(fade < 1 / 2 ? widget.fadeFrom : turn.round());
     return [
       for (final ring in shown)
-        for (final (isle, spec) in _placed(ring.turn))
-          _Isle(isle, spec, frame, key: ValueKey((ring.leaving, isle)), opacity: ring.opacity, raised: _raised),
+        for (final (isle, arm, spec) in _placed(ring.turn))
+          _Isle(isle, spec, frame, key: ValueKey((ring.leaving, isle, arm)), opacity: ring.opacity, raised: _raised),
       _torii(frame, front == SideTripIsle.ankiren ? widget.gate : GateState.locked),
       for (final ring in shown)
-        for (final (isle, spec) in _placed(ring.turn))
+        for (final (isle, arm, spec) in _placed(ring.turn))
           if (isle.comingSoon && spec.label * ring.opacity > 0)
             Positioned.fill(
-              key: ValueKey((ring.leaving, isle, 'tag')),
+              key: ValueKey((ring.leaving, isle, arm, 'tag')),
               child: CustomSingleChildLayout(
                 delegate: _TagAnchor(frame.onCanvas(spec, spec.tag), spec.tagAlign),
                 child: ExcludeSemantics(
@@ -192,16 +192,28 @@ class _DojoSceneState extends State<DojoScene> with SingleTickerProviderStateMix
     ];
   }
 
-  /// Each island where the ring at [turn] puts it, deepest first.
-  static List<(SideTripIsle, RingSlotSpec)> _placed(double turn) => [
-        for (final isle in SideTripRing.isles) (isle, _specAt(SideTripRing.place(isle, turn))),
-      ]..sort((a, b) => a.$2.depth.compareTo(b.$2.depth));
+  /// Each island where the ring at [turn] puts it, with which of its
+  /// places it is (see [_specsAt]), deepest first.
+  static List<(SideTripIsle, int, RingSlotSpec)> _placed(double turn) => [
+        for (final isle in SideTripRing.isles)
+          for (final (arm, spec) in _specsAt(SideTripRing.place(isle, turn)).indexed) (isle, arm, spec),
+      ]..sort((a, b) => a.$3.depth.compareTo(b.$3.depth));
 
-  /// The slot at [place] round the ring, or part of the way between two.
-  static RingSlotSpec _specAt(double place) {
+  /// Where an island [place] round the ring shows: at a slot, or part of
+  /// the way between two; between the left slot and the front, on the
+  /// track's near and far arms at once ([DojoRingLayout.near]).
+  static List<RingSlotSpec> _specsAt(double place) {
     const slots = DojoRingLayout.slots;
     final from = place.floor();
-    return RingSlotSpec.lerp(slots[from % slots.length], slots[(from + 1) % slots.length], place - from);
+    final t = place - from;
+    if (from % slots.length == RingSlot.left.index && t > 0) {
+      final out = 1 - t;
+      return [
+        DojoRingLayout.near.at(slots[RingSlot.front.index], out),
+        DojoRingLayout.far.at(slots[RingSlot.left.index], 1 - out),
+      ];
+    }
+    return [RingSlotSpec.lerp(slots[from % slots.length], slots[(from + 1) % slots.length], t)];
   }
 
   /// The torii standing [state]: padlocked, opening (the padlocked one

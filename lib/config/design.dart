@@ -2133,6 +2133,33 @@ class RingSlotSpec {
       );
 }
 
+/// One arm of the ring's track beyond the screen's left edge, run along
+/// from a slot (at 0) to [exit] (at 1), out of sight: the island's foot
+/// on the curve from the slot's toward [bend] and on to [exit]'s; the rest
+/// part of the way between the slot's and [exit]'s.
+@immutable
+class RingArmSpec {
+  const RingArmSpec({required this.exit, required this.bend});
+  final RingSlotSpec exit;
+  final Offset bend;
+
+  /// [t] of the way along the arm from [slot].
+  RingSlotSpec at(RingSlotSpec slot, double t) {
+    final spec = RingSlotSpec.lerp(slot, exit, t);
+    final u = 1 - t;
+    final foot = slot.foot * (u * u) + bend * (2 * u * t) + exit.foot * (t * t);
+    return RingSlotSpec(
+      foot: foot,
+      scale: spec.scale,
+      haze: spec.haze,
+      label: spec.label,
+      tag: spec.tag,
+      tagAlign: spec.tagAlign,
+      depth: spec.depth,
+    );
+  }
+}
+
 /// One island of the ring: its picture in [colour] and the same drawing in
 /// blue [haze], both filling the island canvas.
 @immutable
@@ -2148,6 +2175,13 @@ class RingIsleArt {
 /// island between two slots is part of the way between the two. In front
 /// its tag hangs in the water under its left end; elsewhere it floats over
 /// the island, clear of the one in front.
+///
+/// The track is a parabola opening to the left, its tip near the right
+/// slot: its [near] arm runs on from the front and its [far] arm from the
+/// left slot, both past the screen's left edge. An island between the
+/// front and the left slot shows on both at once, the same share of the
+/// way out along one as in along the other: leaving the front past the
+/// viewer, growing a little, as its blue twin comes into the left slot.
 abstract final class DojoRingLayout {
   static const _dir = 'assets/images/sidetrips/islands';
   static const Size canvas = Size(370, 226);
@@ -2165,6 +2199,17 @@ abstract final class DojoRingLayout {
   ];
   static const _under = Offset(36, 231);
   static const _over = Offset(185, -4);
+
+  static const near = RingArmSpec(
+    exit: RingSlotSpec(
+        foot: Offset(-212, 422), scale: 1.12, haze: 0, label: 0, tag: _under, tagAlign: Alignment.topLeft, depth: 4),
+    bend: Offset(-21.5, 422),
+  );
+  static const far = RingArmSpec(
+    exit: RingSlotSpec(
+        foot: Offset(-28, 199), scale: 0.12, haze: 1, label: 0, tag: _over, tagAlign: Alignment.bottomCenter, depth: 1),
+    bend: Offset(1, 200),
+  );
 
   static const ankiren = RingIsleArt('$_dir/ankiren.webp', '$_dir/ankiren-haze.webp');
   static const building = RingIsleArt('$_dir/construction.webp', '$_dir/construction-haze.webp');
