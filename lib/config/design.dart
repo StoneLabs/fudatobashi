@@ -3111,6 +3111,27 @@ abstract final class SettingsLayout {
   static const double disabledOpacity = 0.4;
 }
 
+/// Settings' "Day starts at" sheet: the title, the hours in a grid (the
+/// chosen one sun-lit and tilted), and a note on when a change applies.
+abstract final class DayStartPickerLayout {
+  static const double cut = 12;
+  static const EdgeInsets padding = EdgeInsets.fromLTRB(19, 25, 19, 19);
+  static const double title = 22;
+  static const double sub = 13;
+  static const double subGap = 3;
+  static const double gridGap = 12;
+  static const int columns = 5;
+  static const double cellGap = 7;
+  static const double cellHeight = 38;
+  static const double cellFont = 15;
+  static const EdgeInsets cellPadding = EdgeInsets.symmetric(horizontal: 4);
+  static const double selectedTurnDeg = -2;
+  static const double noteGap = 12;
+  static const double note = 12.5;
+  static const double noteLineHeight = 1.35;
+  static const Color barrier = Color(0x8C141414);
+}
+
 abstract final class CreditsLayout {
   static const double chevron = 16;
   static const double rowSubtitleGap = 2;

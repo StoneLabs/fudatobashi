@@ -31,15 +31,17 @@ import '../results/celebrations.dart';
 import '../run/run_launcher.dart';
 import '../tour/tour_overlay.dart';
 import 'credits_screen.dart';
+import 'day_start_sheet.dart';
 import 'hold_warning_screen.dart';
 import 'language_screen.dart';
 import 'settings_rows.dart';
 import 'side_trip_settings_screen.dart';
 
-/// Settings, in sections: Language; Learning (mode, pace, the don't-know
-/// input); Play; Sound; Accessibility; Side Trips (a page per side trip);
-/// About, whose version row hides the 10-tap developer-mode unlock; Data
-/// (Reset all data); and, once developer mode is unlocked, Developer.
+/// Settings, in sections: Language; Learning (mode, pace, day start, the
+/// don't-know input); Play; Sound; Accessibility; Side Trips (a page per
+/// side trip); About, whose version row hides the 10-tap developer-mode
+/// unlock; Data (Reset all data); and, once developer mode is unlocked,
+/// Developer.
 class SettingsScreen extends StatelessWidget {
   const SettingsScreen({super.key});
 
@@ -225,8 +227,9 @@ class SettingsScreen extends StatelessWidget {
   }
 }
 
-/// Learning mode, the journey's pace (journey only) and how a card is
-/// marked "don't know" during play ("off" only in all-known mode).
+/// Learning mode, the journey's pace and the hour its day starts at
+/// (journey only), and how a card is marked "don't know" during play ("off"
+/// only in all-known mode).
 class _LearningSection extends StatelessWidget {
   const _LearningSection();
 
@@ -261,6 +264,16 @@ class _LearningSection extends StatelessWidget {
               SettingsOption(s.paceSprint, selected: pace == LearningPace.sprint, onTap: () => progress.setLearningPace(LearningPace.sprint)),
             ],
           ),
+        if (mode == LearningMode.journey)
+          SettingsGroup(children: [
+            SettingsTapRow(
+              title: s.dayStart,
+              note: s.dayStartNote,
+              value: s.hourOfDay(progress.settings.dayStartHour),
+              opensPage: true,
+              onTap: () => pickDayStart(context),
+            ),
+          ]),
         SettingsChoices(
           label: SettingsLabel(title: s.dontKnowInput, note: s.dontKnowInputNote),
           options: [

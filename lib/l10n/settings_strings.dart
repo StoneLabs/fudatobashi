@@ -17,6 +17,10 @@ extension SettingsStrings on S {
   String get paceMonth => t('paceMonth');
   String get paceSprint => t('paceSprint');
   String get paceNote => t('paceNote');
+  String get dayStart => t('dayStart');
+  String get dayStartNote => t('dayStartNote');
+  String get dayStartChange => t('dayStartChange');
+  String hourOfDay(int hour) => f('hourOfDay', [hour]);
   String get cardEffects => t('cardEffects');
   String get cardEffectsNote => t('cardEffectsNote');
   String get vibration => t('vibration');
