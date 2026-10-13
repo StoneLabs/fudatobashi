@@ -166,8 +166,8 @@ void main() {
       expect(set.doneKeys, {k(1)});
       expect(set.misses, 1);
       final bar = set.bar;
-      expect((bar.reviews, bar.reviewsDone, bar.fresh, bar.freshDone), (4, 3, 4, 1));
-      expect((bar.extra, bar.extraDone), (1, 1));
+      expect((bar.reviews, bar.reviewsDone, bar.fresh, bar.freshDone), (4, 4, 4, 1));
+      expect((bar.extra, bar.extraDone), (1, 0), reason: "the miss's extra look is still to come");
       expect((bar.total, bar.done), (9, 5));
     });
 

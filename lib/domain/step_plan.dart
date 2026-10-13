@@ -42,8 +42,9 @@ class CardSteps {
   /// Looks beyond [base], the cost of its misses.
   int get extra => total - base;
 
-  /// Looks so far toward [base] (right answers), and the rest of them.
-  int get baseLooks => math.min(correct, base);
+  /// Looks so far toward [base], and those beyond it: the first [base]
+  /// looks count as the card's own, so the looks a miss adds come last.
+  int get baseLooks => math.min(looks, base);
   int get extraLooks => looks - baseLooks;
 
   void record({required bool miss}) {
