@@ -15,13 +15,10 @@ extension HomeStrings on S {
   String get now => t('now');
   String get nextChip => t('nextChip');
   String get learnedOf => t('learnedOf');
-  String get reviewsAndNew => t('reviewsAndNew');
   String get reviewsDue => t('reviewsDue');
   String get slowToBeat => t('slowToBeat');
   String get caughtUp => t('caughtUp');
-  String finishIsland(String island) => f('finishIsland', [island]);
   String get letsGo => t('letsGo');
-  String get keepGoing => t('homeKeepGoing');
   String get ratingLabel => t('ratingLabel');
   String get toNextBand => t('toNextBand');
   String get topBand => t('topBand');
@@ -45,4 +42,27 @@ extension HomeStrings on S {
   String get learnAheadLocked => t('learnAheadLocked');
   String learnAheadShaky(int n) => f(n == 1 ? 'learnAheadShakyOne' : 'learnAheadShakyOther', [n]);
   String get learnAheadPending => t('learnAheadPending');
+
+  String get todayLabel => t('todayLabel');
+  String get todayCardsInRun => t('todayCardsInRun');
+  String todayReviews(int cards, int looks) => f('todayReviews', [cards, looks]);
+  String get todayNoReviews => t('todayNoReviews');
+  String todayNew(int cards, int looks) => f('todayNew', [cards, looks]);
+  String get todayNoNew => t('todayNoNew');
+  String get todayNewPaused => t('todayNewPaused');
+  String get todayMisses => t('todayMisses');
+  String get todayDone => t('todayDone');
+  String get todayDoneOf => t('todayDoneOf');
+
+  /// The 本日完了 hanko of a done day: Japanese lettering in every language.
+  String get dayDoneStamp => '本日完了';
+
+  /// A week stamp's weekday, for [DateTime.weekday] (1 is Monday).
+  String weekdayLetter(int weekday) => t('weekdayLetters').split(' ')[weekday - 1];
+
+  String get heroTodaySet => t('heroTodaySet');
+  String get heroKeepItUp => t('heroKeepItUp');
+  String get heroKeepGoing => t('heroKeepGoing');
+  String get todayLeft => t('todayLeft');
+  String get todayDoneExtra => t('todayDoneExtra');
 }

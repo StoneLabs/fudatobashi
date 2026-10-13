@@ -855,6 +855,76 @@ abstract final class HomeLayout {
   static const double untrackedGap = 4;
 }
 
+/// Journey Home's today box (`TodayBox`): today's set as one bar, in the
+/// slanted panel between the map and the hero. Its height is fixed, so the
+/// map keeps its size; text that grows with the font scale shrinks to fit.
+abstract final class TodayBoxLayout {
+  static const double height = 137.6;
+  static const double headerHeight = 38;
+  static const double barHeight = 22;
+  static const double legendHeight = 29;
+  static const double sectionGap = 7;
+
+  /// The largest font scale its text follows: as much as a legend row holds.
+  static const double maxTextScale = legendRow / legendFont;
+
+  /// "Today:", the total in looks and "cards in one run". The two labels
+  /// shrink (down to [minLabelScale]) before the whole line does.
+  static const double labelFont = 12.5;
+  static const double labelLineHeight = 1.08;
+  static const double number = 36;
+  static const double numberLineHeight = 38 / 36;
+  static const double headerGap = 7;
+  static const double todayGap = 5;
+  static const double minLabelScale = 0.75;
+
+  /// Segments are split by hairlines and never narrower than [minSegment].
+  static const double barBorder = Strokes.control;
+  static const double barSeparator = Strokes.hairline;
+  static const double minSegment = 5;
+
+  /// The legend: two rows of two cells, each a swatch, a label and a number.
+  static const double legendRow = 14;
+  static const double legendColumnGap = 12;
+  static const double legendFont = 12;
+  static const double legendNumber = 13.5;
+  static const double valueGap = 4;
+  static const double swatch = 11;
+  static const double swatchBorder = 1.8;
+  static const double swatchGap = 5;
+
+  /// Diagonal sun and paper stripes of the paused new cards' swatch.
+  static const double hatch = 2;
+  static const Color pausedText = Color(0xFF666666);
+
+  /// Week stamps: circles with their weekday under them. The ring sizes are
+  /// shares of the circle.
+  static const double stamp = 15;
+  static const double stampGap = 4;
+  static const double stampBorder = 0.12;
+  static const double missedBorder = 0.1;
+  static const double todayRing = 0.15;
+  static const double todayRingOuter = 0.24;
+  static const double check = 11;
+  static const double checkStroke = 4.4;
+  static const double weekdayGap = 2.5;
+  static const double weekdayFont = 8.5;
+  static const double weekdayHeight = 9;
+
+  /// The 本日完了 hanko of a done day, centred over the bar: its centre this
+  /// far below the top of the inside, a paper face and a double rule.
+  static const double doneStampCenter = 56;
+  static const double doneStampFont = 25;
+  static const double doneStampTracking = 0.06;
+  static const double doneStampTurn = -7;
+  static const double doneStampBorder = Strokes.button;
+  static const double doneStampRule = 2;
+  static const double doneStampInnerRule = 1.6;
+  static const double doneStampPaper = 0.86;
+  static const double doneStampRuleOpacity = 0.92;
+  static const EdgeInsets doneStampPadding = EdgeInsets.fromLTRB(13, 6, 13, 8);
+}
+
 /// The Stats screen (spec phone 6): the archipelago map, its legend, and the
 /// slowest-island panel.
 abstract final class StatsLayout {

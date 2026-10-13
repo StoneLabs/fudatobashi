@@ -1,3 +1,4 @@
+import 'package:flutter/scheduler.dart';
 import 'package:flutter/widgets.dart';
 
 import '../../config/design.dart';
@@ -5,50 +6,70 @@ import '../../data/islands.dart';
 import '../../data/poem.dart';
 import '../../l10n/home_strings.dart';
 import '../../l10n/strings.dart';
+import '../../state/progress.dart';
 import '../../state/scope.dart';
 import '../islands/island_map.dart';
 import '../manga/manga.dart';
 import '../tour/tour_anchor.dart';
 import 'home_screen.dart';
-import 'home_widgets.dart';
 import 'journey_state.dart';
-import 'learn_ahead_button.dart';
+import 'today_box.dart';
 import 'training_hero.dart';
 
 /// Home in journey mode (spec phone 2): the archipelago map as the progress
-/// bar, the current island's cards, and the Training hero.
-class JourneyHome extends StatelessWidget {
+/// bar, today's set, and the Training hero. A new day's set is built when
+/// Home finds it missing.
+class JourneyHome extends StatefulWidget {
   const JourneyHome({super.key});
+
+  @override
+  State<JourneyHome> createState() => _JourneyHomeState();
+}
+
+class _JourneyHomeState extends State<JourneyHome> {
+  bool _refreshing = false;
+
+  void _watchToday(Progress progress) {
+    if (!progress.todayStale || _refreshing) return;
+    _refreshing = true;
+    SchedulerBinding.instance.addPostFrameCallback((_) async {
+      await progress.refreshToday();
+      _refreshing = false;
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
     final progress = ProgressScope.of(context);
     final s = S.of(context);
     final journey = JourneyState.of(progress);
-    final due = progress.dueCount();
-    final narration = due == 0
-        ? Text(s.caughtUp)
-        : NumberedText(
-            s.reviewsAndNew,
-            [due, progress.freshCount],
-            numberStyle: const TextStyle(fontFamily: Fonts.display, fontSize: NarrationStyle.number),
-          );
+    _watchToday(progress);
+    final set = progress.todaySet();
+    final bar = set?.bar;
+    const number = TextStyle(fontFamily: Fonts.display, fontSize: NarrationStyle.number);
+    final left = bar == null ? 0 : bar.total - bar.done;
+    final narration = set != null && set.done
+        ? NumberedText(s.todayDoneExtra, [progress.trainer.config.sessionLength], numberStyle: number)
+        : left == 0
+            ? Text(s.caughtUp)
+            : NumberedText(s.todayLeft, [left], numberStyle: number);
+    final balloon = set != null && set.done
+        ? s.heroKeepGoing
+        : (bar?.done ?? 0) > 0
+            ? s.heroKeepItUp
+            : s.heroTodaySet;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         Expanded(child: TourAnchor(TourSpot.map, child: _JourneyMap(journey))),
         const SizedBox(height: Gaps.panel),
-        TourAnchor(TourSpot.islandPlan, child: _IslandProgress(journey)),
+        TourAnchor(TourSpot.islandPlan, child: TodayBox(set: set, week: progress.weekStamps())),
         const SizedBox(height: Gaps.panel),
         SizedBox(
           height: HomeLayout.journeyHeroHeight,
           child: TourAnchor(
             TourSpot.training,
-            child: TrainingHero(
-              size: HeroSize.compact,
-              narration: narration,
-              balloon: journey.finished ? s.keepGoing : s.finishIsland(journey.island.name),
-            ),
+            child: TrainingHero(size: HeroSize.compact, narration: narration, balloon: balloon),
           ),
         ),
         const SizedBox(height: Gaps.section),
@@ -204,105 +225,4 @@ class _Fog extends StatelessWidget {
           ),
         ),
       );
-}
-
-class _IslandProgress extends StatelessWidget {
-  const _IslandProgress(this.journey);
-  final JourneyState journey;
-
-  @override
-  Widget build(BuildContext context) {
-    final s = S.of(context);
-    final progress = ProgressScope.of(context);
-    final now = DateTime.now();
-    final pace = progress.paceStatus(now);
-    final island = journey.island;
-    final shape = archipelago.islands[journey.current];
-    // Its top and bottom edges run parallel to the map's slanted bottom and
-    // the hero's slanted top, so both gutters are even.
-    return MangaPanel(
-      shape: const PanelShape(
-        topLeft: Offset(0, HomeLayout.mapCut),
-        bottomRight: Offset(0, HomeLayout.journeyHeroCut),
-      ),
-      padding: HomeLayout.progressPadding + const EdgeInsets.only(top: HomeLayout.mapCut, bottom: HomeLayout.journeyHeroCut),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.center,
-            children: [
-              Text(island.name,
-                  style: const TextStyle(fontFamily: Fonts.display, fontSize: HomeLayout.islandTitle, height: 1)),
-              const SizedBox(width: Gaps.panel),
-              DecoratedBox(
-                decoration: BoxDecoration(
-                  color: Palette.pink,
-                  border: Border.all(color: Palette.ink, width: Strokes.label),
-                ),
-                child: Padding(
-                  padding: HomeLayout.nowPadding,
-                  child: Text(
-                    s.now,
-                    style: const TextStyle(
-                      fontSize: HomeLayout.nowFont,
-                      fontWeight: Weights.black,
-                      letterSpacing: TagStyle.tracking * HomeLayout.nowFont,
-                    ),
-                  ),
-                ),
-              ),
-              const SizedBox(width: Gaps.panel),
-              Expanded(
-                child: Align(
-                  alignment: Alignment.centerRight,
-                  child: FittedBox(
-                    fit: BoxFit.scaleDown,
-                    child: NumberedText(
-                      s.learnedOf,
-                      [island.unlocked, island.total],
-                      style: const TextStyle(fontSize: HomeLayout.learnedFont, fontWeight: Weights.black),
-                      numberStyle: const TextStyle(
-                          fontFamily: Fonts.display, fontWeight: Weights.regular, fontSize: HomeLayout.learnedNumber),
-                    ),
-                  ),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: HomeLayout.pipTop),
-          CardPips([
-            for (final site in shape.sites)
-              journey.unlocked.contains(site.poemId)
-                  ? PipState.learned
-                  : journey.upNext.contains(site.poemId)
-                      ? PipState.next
-                      : PipState.locked,
-          ]..sort((a, b) => a.index.compareTo(b.index))),
-          const SizedBox(height: HomeLayout.pipsSpeedGap),
-          Row(children: [
-            Expanded(
-              child: Align(
-                alignment: Alignment.centerLeft,
-                child: FittedBox(
-                  fit: BoxFit.scaleDown,
-                  alignment: Alignment.centerLeft,
-                  child: TodaysPlanTag(
-                    newToday: pace.newToday,
-                    newQuota: pace.newCardsQuota,
-                    reviewsToday: progress.dueCount(DateTime(now.year, now.month, now.day + 1)),
-                  ),
-                ),
-              ),
-            ),
-            if (progress.canLearnMore) ...[
-              const SizedBox(width: Gaps.panel),
-              const Flexible(child: LearnAheadButton()),
-            ],
-          ]),
-        ],
-      ),
-    );
-  }
 }

@@ -207,6 +207,17 @@ void main() {
     await tester.pump(const Duration(milliseconds: 500));
   }
 
+  // Learn ahead's button on its own, over an empty screen: it left Home
+  // with the island box.
+  Widget learnAheadAlone(Progress p) => ProgressScope(
+        progress: p,
+        child: MaterialApp(
+          theme: buildMangaTheme(),
+          builder: (context, child) => DefaultTextStyle(style: Theme.of(context).textTheme.bodyMedium!, child: child!),
+          home: const Scaffold(body: Center(child: LearnAheadButton())),
+        ),
+      );
+
   // A card's kimariji heading (new-card page, card detail) as one unit: the
   // tag over the kimariji, the kana under it in romaji only, and the speaker,
   // a full touch target, right after it and level with it; nothing cut off.
@@ -400,12 +411,12 @@ void main() {
       });
     }
 
-    testWidgets('home, journey: Learn ahead is locked while cards are shaky, and a tap says why ($lang)', (tester) async {
+    testWidgets('journey: Learn ahead is locked while cards are shaky, and a tap says why ($lang)', (tester) async {
       tester.platformDispatcher.textScaleFactorTestValue = 1.2;
       addTearDown(tester.platformDispatcher.clearTextScaleFactorTestValue);
       final p = await open(tester, mode: LearningMode.journey, ja: ja, journeyCards: 3);
       await tester.binding.setSurfaceSize(_phone);
-      await tester.pumpWidget(RepaintBoundary(key: const ValueKey('screen'), child: FudatobashiApp(progress: p)));
+      await tester.pumpWidget(RepaintBoundary(key: const ValueKey('screen'), child: learnAheadAlone(p)));
       await tester.pump(const Duration(milliseconds: 500));
       final ahead = p.learnAhead();
       final unlocked = p.trainer.unlocked.length;
@@ -464,7 +475,7 @@ void main() {
       await tester.pumpWidget(const SizedBox());
     });
 
-    testWidgets('home, journey: Learn ahead opens once every card is well remembered, and plays the next batch ($lang)',
+    testWidgets('journey: Learn ahead opens once every card is well remembered, and plays the next batch ($lang)',
         (tester) async {
       final p = await open(tester, mode: LearningMode.journey, ja: ja, journeyCards: 12);
       final ids = [for (final s in p.trainer.unlocked) s.key.poemId];
@@ -482,7 +493,7 @@ void main() {
       });
       expect(p.learnAhead().lock, LearnAheadLock.none, reason: 'all well remembered, ahead of day 0\'s pace');
       await tester.binding.setSurfaceSize(_phone);
-      await tester.pumpWidget(RepaintBoundary(key: const ValueKey('screen'), child: FudatobashiApp(progress: p)));
+      await tester.pumpWidget(RepaintBoundary(key: const ValueKey('screen'), child: learnAheadAlone(p)));
       await tester.pump(const Duration(milliseconds: 500));
       await _capture(tester, 'learn_ahead_open_$lang');
       final next = p.trainer.nextBatch(poems, fudaSets);
@@ -565,22 +576,6 @@ void main() {
     await show(tester, p, 'journey_due_en');
   });
 
-  // Reproduces "BOTTOM OVERFLOWED BY 4.0 PIXELS" on the journey island
-  // progress panel (`_IslandProgress` in `journey_home.dart`): the on-device
-  // repro used a system font scale of 1.1 (a common, not even large,
-  // accessibility setting), which the default test scale of 1.0 never
-  // exercises. The fix must size the panel to its own content instead of a
-  // fixed-height guess, so it holds at any font scale.
-  testWidgets('home, journey (en): island progress panel holds at a larger font scale', (tester) async {
-    tester.platformDispatcher.textScaleFactorTestValue = 1.1;
-    addTearDown(tester.platformDispatcher.clearTextScaleFactorTestValue);
-    final p = await open(tester, mode: LearningMode.journey, journeyCards: 27);
-    final ids = [for (final isl in archipelago.islands) ...fudaSets['initial:${isl.name}'].poemIds];
-    await makeSomeDue(tester, p, ids.take(10).toList());
-    expect(p.knownCardSpeedMs, isNotNull);
-    await show(tester, p, 'journey_due_scaled_en');
-  });
-
   testWidgets('home, all known (en): due reviews and known speed render cleanly', (tester) async {
     final p = await open(tester, mode: LearningMode.allKnown);
     final ids = [for (final isl in archipelago.islands) ...fudaSets['initial:${isl.name}'].poemIds];
@@ -591,10 +586,10 @@ void main() {
   });
 
   // Reproduces "BOTTOM OVERFLOWED BY 3.8 PIXELS" on the Home rating panel
-  // (`_RankRow` in `known_home.dart`), found on the same device and for the
-  // same reason as the journey progress panel above: a fixed-height guess
-  // sized before the known-speed row existed, too short once the system font
-  // scale is bumped.
+  // (`_RankRow` in `known_home.dart`), found on the phone at a system font
+  // scale of 1.1 (a common, not even large, accessibility setting): a
+  // fixed-height guess sized before the known-speed row existed, too short
+  // once the system font scale is bumped.
   testWidgets('home, all known (en): rating panel holds at a larger font scale', (tester) async {
     tester.platformDispatcher.textScaleFactorTestValue = 1.1;
     addTearDown(tester.platformDispatcher.clearTextScaleFactorTestValue);
@@ -1367,7 +1362,7 @@ void main() {
     }
   }
 
-  testWidgets('results (journey): no Learn ahead button, it lives on Home', (tester) async {
+  testWidgets('results (journey): no Learn ahead button', (tester) async {
     final p = await open(tester, mode: LearningMode.journey);
     const config = PlayConfig(mode: PlayMode.training);
     late SessionReport report;
