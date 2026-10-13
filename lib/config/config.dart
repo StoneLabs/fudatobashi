@@ -290,6 +290,49 @@ abstract final class LearnAheadTuning {
   static const double maxRecentMissRate = 0.2;
 }
 
+/// Journey's today's set (`TodaySet`) and the runs that play it (`StepPlan`):
+/// every card in the set needs a few looks today, counted in cards rather
+/// than minutes, and a miss brings a card back until it is answered right a
+/// few times in a row. The day starts at a local hour of the player's choice.
+abstract final class TodaySetTuning {
+  static const int defaultDayStartHour = 4;
+  static const int firstDayStartHour = 0;
+  static const int lastDayStartHour = 9;
+
+  /// Moving the day start later never makes a day shorter than this.
+  static const Duration shortestDay = Duration(hours: 12);
+
+  /// Correct looks a card needs today: a due review, and a new card.
+  static const int reviewLooks = 2;
+  static const int newLooks = 4;
+
+  /// After a miss, correct answers in a row that settle the card for today.
+  static const int relearnLooks = 2;
+
+  /// Cards shown before a card comes back: after a new card's 1st, 2nd and
+  /// 3rd correct look (the last repeats), after a review's correct look,
+  /// after a miss and then each correct look in a row (the last repeats),
+  /// and between the picks of one card in a batch of 30.
+  static const List<int> newGaps = [3, 8, 20];
+  static const List<int> reviewGaps = [20];
+  static const List<int> relearnGaps = [4, 12];
+  static const int batchGap = 4;
+
+  /// A new card's first look comes at least this many cards after the
+  /// previous new card's, while reviews are left to show in between.
+  static const int newSpacing = 4;
+
+  /// The morning's guess at the extra looks misses will add: the recent miss
+  /// rate over this many training swipes (this rate without any), times the
+  /// set's looks, at least [missGuessMin].
+  static const int missGuessWindow = 200;
+  static const double missGuessDefault = 1 / 12;
+  static const int missGuessMin = 1;
+
+  /// Days on Home's week stamps.
+  static const int weekDays = 7;
+}
+
 /// Free practice (始める): locked in journey mode until this many cards are
 /// well remembered at once (`Trainer.wellRemembered`); from then on it stays
 /// open for good.
