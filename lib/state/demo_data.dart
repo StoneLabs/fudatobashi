@@ -26,18 +26,20 @@ Future<void> seedDemoData(
   int days = DemoDataTuning.days,
   int seed = DemoDataTuning.seed,
 }) async {
-  await progress.resetProgress();
-  await progress.updateTrainerConfig(
-    progress.trainer.config.copyWith(learningMode: LearningMode.journey, pace: pace, reverseMode: ReverseMode.afterMastery),
-  );
-  final sim = JourneySimulator(progress, seed: seed, learner: learner);
-  final today = DateTime.now();
-  progress.trainer.fuzzing = false;
+  progress.simulating = true;
   try {
-    await _simulate(progress, sim, today, pace, days, onProgress);
+    await progress.resetProgress();
+    await progress.updateTrainerConfig(
+      progress.trainer.config.copyWith(learningMode: LearningMode.journey, pace: pace, reverseMode: ReverseMode.afterMastery),
+    );
+    final sim = JourneySimulator(progress, seed: seed, learner: learner);
+    progress.trainer.fuzzing = false;
+    await _simulate(progress, sim, DateTime.now(), pace, days, onProgress);
   } finally {
     progress.trainer.fuzzing = true;
+    progress.simulating = false;
   }
+  await progress.refreshToday();
   onProgress?.call(days, days, 1);
 }
 

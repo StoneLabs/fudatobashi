@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io';
 
 import 'package:drift/drift.dart' show driftRuntimeOptions;
@@ -197,9 +198,15 @@ void main() {
     await seedDemoData(progress, onProgress: (day, total, fraction) {
       days.add(day);
       lastFraction = fraction;
+      // Home stays open while the Simulation page seeds.
+      if (progress.todayStale) unawaited(progress.refreshToday());
     });
     expect(days, {for (var d = 1; d <= DemoDataTuning.days; d++) d});
     expect(lastFraction, 1);
+    final today = progress.todaySet()!;
+    expect(today.reviews, greaterThan(0), reason: "today's set is built from the seeded history");
+    expect(progress.weekStamps().where((s) => s.done || s.missed), hasLength(TodaySetTuning.weekDays - 1),
+        reason: 'every seeded day had a set of its own');
     final upright = progress.trainer.unlocked.where((s) => !s.key.inverted).length;
     expect(upright, inInclusiveRange(30, 90));
     expect(progress.islands.where((i) => i.reached).length, greaterThanOrEqualTo(3));

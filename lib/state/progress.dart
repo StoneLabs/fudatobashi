@@ -485,7 +485,12 @@ class Progress extends ChangeNotifier {
 
   /// Today's set is missing or from an earlier day ([refreshToday] builds
   /// it).
-  bool get todayStale => !_allKnown && todaySet() == null;
+  bool get todayStale => !simulating && !_allKnown && todaySet() == null;
+
+  /// A simulation is replaying past days through this progress (dev
+  /// mode's demo data): nothing may build today's set meanwhile, or the
+  /// replayed days would come after it and find no set of their own.
+  bool simulating = false;
 
   /// Stores the day [now] falls in, if it is new.
   Future<DayRow> _storeDay(DateTime now) async {
