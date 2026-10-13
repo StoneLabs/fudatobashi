@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 import '../../config/config.dart';
 import '../../config/design.dart';
@@ -54,8 +55,10 @@ class _AnkirenResultsScreenState extends State<AnkirenResultsScreen> {
     _celebrations = report == null ? const [] : ankirenCelebrationsFor(report, placementScores: _placementScores(report));
     if (_celebrations.isNotEmpty) {
       // Kept silent (the game already faded the music out) until the
-      // celebration, which has its own jingles, is done.
+      // celebration, which has its own jingles, is done; and upright, as
+      // its pages are laid out for, after a game played in landscape too.
       music.leaveMenu();
+      unawaited(SystemChrome.setPreferredOrientations(const [DeviceOrientation.portraitUp]));
       _timer = Timer(ResultsLayout.overlayStagger, () {
         if (mounted) setState(() => _celebrating = true);
       });
@@ -67,8 +70,14 @@ class _AnkirenResultsScreenState extends State<AnkirenResultsScreen> {
   @override
   void dispose() {
     _timer?.cancel();
+    if (_celebrations.isNotEmpty && !_celebrated) _releaseOrientation();
     super.dispose();
   }
+
+  /// The celebration has played to its end.
+  bool _celebrated = false;
+
+  static void _releaseOrientation() => unawaited(SystemChrome.setPreferredOrientations(const []));
 
   /// The placement games' scores so far, when [report]'s game is one of
   /// them.
@@ -191,8 +200,12 @@ class _AnkirenResultsScreenState extends State<AnkirenResultsScreen> {
               child: CelebrationSequence(
                 pages: _celebrations,
                 onDone: () {
-                  setState(() => _celebrating = false);
+                  setState(() {
+                    _celebrating = false;
+                    _celebrated = true;
+                  });
                   music.enterMenu();
+                  _releaseOrientation();
                 },
               ),
             ),

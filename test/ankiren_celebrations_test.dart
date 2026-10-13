@@ -438,6 +438,27 @@ void main() {
       await tester.pumpWidget(const SizedBox());
     });
 
+    testWidgets('the pages play upright, even after a game in landscape, and let go once done', (tester) async {
+      final requests = <List<String>>[];
+      tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(SystemChannels.platform, (call) async {
+        if (call.method == 'SystemChrome.setPreferredOrientations') requests.add([...call.arguments as List]);
+        return null;
+      });
+      addTearDown(() => tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(SystemChannels.platform, null));
+      final p = await open(tester, 'en');
+      final report = await results(tester, p, AnkirenSetup.forLevel(1));
+      expect(requests, [
+        ['DeviceOrientation.portraitUp'],
+      ]);
+      await tester.pump(ResultsLayout.overlayStagger);
+      await pastXp(tester, report);
+      await tester.pump(ResultsLayout.overlayFade);
+      await tester.pump();
+      expect(find.byType(CelebrationSequence), findsNothing);
+      expect(requests.last, isEmpty, reason: 'free to turn again');
+      await tester.pumpWidget(const SizedBox());
+    });
+
     testWidgets('a forfeit earns no XP: only the rating page plays', (tester) async {
       final p = await open(tester, 'en');
       final report = await results(tester, p, AnkirenSetup.forLevel(0, ranked: true), endAfter: 1);

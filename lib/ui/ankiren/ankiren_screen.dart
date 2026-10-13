@@ -103,7 +103,8 @@ class _AnkirenScreenState extends State<AnkirenScreen> {
 
   bool _ending = false;
 
-  /// Set when handing off to Results, which then owns the music.
+  /// Set when handing off to Results, which then owns the music and the
+  /// orientation.
   bool _wentToResults = false;
 
   bool get _landscape => _options.layout == AnkirenLayout.landscape;
@@ -138,9 +139,11 @@ class _AnkirenScreenState extends State<AnkirenScreen> {
     _clock?.cancel();
     _pause?.cancel();
     _left.dispose();
-    if (--_live == 0) {
+    // Results let go of the orientation and own the music once handed
+    // over to.
+    if (--_live == 0 && !_wentToResults) {
       _releaseOrientation();
-      if (!_wentToResults) music.enterMenu();
+      music.enterMenu();
     }
     _leave();
     super.dispose();
