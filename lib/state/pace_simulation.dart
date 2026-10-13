@@ -89,21 +89,17 @@ class SimulatedDay {
 /// record) on a throwaway in-memory database. Every random source is seeded
 /// and FSRS's interval fuzz is off, so a rerun replays exactly.
 class PaceSimulation {
-  PaceSimulation._(this.progress, this.pace, this._start, this._rounds, this._wholeSets, LearnerKind learner, int seed) {
+  PaceSimulation._(this.progress, this.pace, this._start, LearnerKind learner, int seed) {
     _sim = JourneySimulator(progress, seed: seed, learner: learner, onAnswer: _onAnswer);
   }
 
-  /// Starts a journey on the local day of [start] (by default today), with
-  /// [roundsPerDay] training rounds a day (by default the pace's routine),
-  /// each round of today's set a round's length unless the learner plays
-  /// [wholeSets] (see [JourneySimulator.day]).
+  /// Starts a journey on the local day of [start] (by default today). Each
+  /// day plays today's set until it is done (see [JourneySimulator.finishSet]).
   static Future<PaceSimulation> open({
     required LearnerKind learner,
     required LearningPace pace,
     int seed = SimulationTuning.seed,
     DateTime? start,
-    int? roundsPerDay,
-    bool wholeSets = false,
   }) async {
     final progress = await Progress.open(AppDatabase(NativeDatabase.memory()));
     await progress.updateTrainerConfig(TrainerConfig(pace: pace));
@@ -113,8 +109,6 @@ class PaceSimulation {
       progress,
       pace,
       DateTime(from.year, from.month, from.day),
-      roundsPerDay ?? pace.profile.dailyRounds,
-      wholeSets,
       learner,
       seed,
     );
@@ -123,8 +117,6 @@ class PaceSimulation {
   final Progress progress;
   final LearningPace pace;
   final DateTime _start;
-  final int _rounds;
-  final bool _wholeSets;
   late final JourneySimulator _sim;
   var _day = 0;
 
@@ -188,7 +180,7 @@ class PaceSimulation {
     _seenToday.clear();
     _metToday.clear();
     _missedSameDay.clear();
-    await _sim.day(date, rounds: _rounds, wholeSets: _wholeSets);
+    await _sim.finishSet(date);
     final set = progress.todaySet(date.add(const Duration(hours: SimulationTuning.setCheckHour)));
     _day++;
     return SimulatedDay(

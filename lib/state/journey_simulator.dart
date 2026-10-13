@@ -74,6 +74,19 @@ class JourneySimulator {
     }
   }
 
+  /// Plays today's set on the local day [date] until it is done, then stops.
+  /// Each sitting plays what is left of the set whole; the next one starts
+  /// [SimulationTuning.sittingGap] after the last ended.
+  Future<void> finishSet(DateTime date) async {
+    var start = DateTime(date.year, date.month, date.day, SyntheticLearnerTuning.firstRoundHour,
+        rng.nextInt(SyntheticLearnerTuning.roundStartJitterMinutes));
+    for (var i = 0; i < SimulationTuning.maxSittingsPerDay; i++) {
+      final end = await trainingRound(start);
+      if (progress.todaySet(end)?.done ?? true) return;
+      start = end.add(SimulationTuning.sittingGap);
+    }
+  }
+
   /// One training round from [start] ([learnAhead]: after "Learn ahead"),
   /// ended after [setSwipes] swipes if it plays today's set. Returns when it
   /// ended.
