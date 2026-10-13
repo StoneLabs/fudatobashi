@@ -65,3 +65,26 @@ class MangaRoute<T> extends PageRoute<T> {
     );
   }
 }
+
+/// Slides a sheet up from the bottom over the screen, dimmed by
+/// [barrierColor]; a tap on the dim ([barrierLabel] to screen readers)
+/// closes it.
+Future<T?> showMangaSheet<T>(
+  BuildContext context, {
+  required WidgetBuilder builder,
+  required Color barrierColor,
+  required String barrierLabel,
+}) =>
+    showGeneralDialog<T>(
+      context: context,
+      barrierDismissible: true,
+      barrierLabel: barrierLabel,
+      barrierColor: barrierColor,
+      transitionDuration: Motion.sheet,
+      pageBuilder: (context, _, _) => builder(context),
+      transitionBuilder: (context, animation, _, child) => SlideTransition(
+        position: Tween(begin: const Offset(0, 1), end: Offset.zero)
+            .animate(CurvedAnimation(parent: animation, curve: Motion.routeCurve)),
+        child: child,
+      ),
+    );

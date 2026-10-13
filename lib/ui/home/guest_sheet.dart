@@ -9,20 +9,11 @@ import 'home_widgets.dart';
 
 /// Asks before a guest run (which records nothing) and starts it on yes.
 Future<void> confirmGuestRun(BuildContext context) async {
-  final ok = await showGeneralDialog<bool>(
-    context: context,
-    barrierDismissible: true,
-    barrierLabel: S.of(context).cancel,
+  final ok = await showMangaSheet<bool>(
+    context,
     barrierColor: GuestSheetStyle.barrier,
-    transitionDuration: Motion.sheet,
-    pageBuilder: (_, _, _) => const _GuestSheet(),
-    transitionBuilder: (context, animation, _, child) {
-      final t = CurvedAnimation(parent: animation, curve: Motion.routeCurve);
-      return SlideTransition(
-        position: Tween(begin: const Offset(0, 1), end: Offset.zero).animate(t),
-        child: child,
-      );
-    },
+    barrierLabel: S.of(context).cancel,
+    builder: (_) => const _GuestSheet(),
   );
   if (ok == true && context.mounted) {
     await startGuest(context);

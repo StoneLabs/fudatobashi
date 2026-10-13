@@ -20,20 +20,11 @@ import 'look_alike_picker.dart';
 /// button. The setup is stored as it changes, so it is there next time.
 /// Callers show the lock instead while `Progress.freePractice` is closed.
 Future<void> openFreePractice(BuildContext context) async {
-  final start = await showGeneralDialog<bool>(
-    context: context,
-    barrierDismissible: true,
-    barrierLabel: S.of(context).cancel,
+  final start = await showMangaSheet<bool>(
+    context,
     barrierColor: FreePracticeLayout.barrier,
-    transitionDuration: Motion.sheet,
-    pageBuilder: (_, _, _) => const FreePracticeSheet(),
-    transitionBuilder: (context, animation, _, child) {
-      final t = CurvedAnimation(parent: animation, curve: Motion.routeCurve);
-      return SlideTransition(
-        position: Tween(begin: const Offset(0, 1), end: Offset.zero).animate(t),
-        child: child,
-      );
-    },
+    barrierLabel: S.of(context).cancel,
+    builder: (_) => const FreePracticeSheet(),
   );
   if (start == true && context.mounted) {
     await startFreePlay(context, ProgressScope.read(context).settings.freePractice);

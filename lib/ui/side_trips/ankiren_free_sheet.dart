@@ -18,20 +18,11 @@ import '../run/run_launcher.dart';
 /// 暗記練's free play: its setup sheet, then the game from its big button.
 /// The setup is stored as it changes, so it is there next time.
 Future<void> openAnkirenFree(BuildContext context) async {
-  final start = await showGeneralDialog<bool>(
-    context: context,
-    barrierDismissible: true,
-    barrierLabel: S.of(context).cancel,
+  final start = await showMangaSheet<bool>(
+    context,
     barrierColor: FreePracticeLayout.barrier,
-    transitionDuration: Motion.sheet,
-    pageBuilder: (_, _, _) => const AnkirenFreeSheet(),
-    transitionBuilder: (context, animation, _, child) {
-      final t = CurvedAnimation(parent: animation, curve: Motion.routeCurve);
-      return SlideTransition(
-        position: Tween(begin: const Offset(0, 1), end: Offset.zero).animate(t),
-        child: child,
-      );
-    },
+    barrierLabel: S.of(context).cancel,
+    builder: (_) => const AnkirenFreeSheet(),
   );
   if (start == true && context.mounted) {
     await startAnkirenFree(context, ProgressScope.read(context).settings.ankiren.freeSetup);
