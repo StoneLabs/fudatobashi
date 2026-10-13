@@ -14,7 +14,6 @@ import '../../l10n/strings.dart';
 import '../../state/progress.dart';
 import '../../state/scope.dart';
 import '../run/run_launcher.dart';
-import 'ankiren_free_sheet.dart';
 import 'ankiren_page.dart';
 import 'ankiren_rules_sheet.dart';
 import '../manga/manga.dart';
@@ -235,7 +234,6 @@ class _SideTripsScreenState extends State<SideTripsScreen> with TickerProviderSt
             hub[SideTrip.ankiren],
             onOpen: () => openAnkirenPage(context),
             onRanked: () => startAnkirenRanked(context),
-            onFree: () => openAnkirenFree(context),
             onRules: () => openAnkirenRules(context),
           ),
       };
@@ -261,57 +259,51 @@ class _SideTripsScreenState extends State<SideTripsScreen> with TickerProviderSt
       onHorizontalDragUpdate: _onDragUpdate,
       onHorizontalDragEnd: _onDragEnd,
       onHorizontalDragCancel: _onDragCancel,
-      // The scene ends on an ink edge, over the tab bar's floor.
       child: ClipRect(
-        child: DecoratedBox(
-          position: DecorationPosition.foreground,
-          decoration:
-              const BoxDecoration(border: Border(bottom: BorderSide(color: Palette.ink, width: Strokes.panel))),
-          child: LayoutBuilder(builder: (context, box) {
-            final k = box.maxWidth / DojoSceneLayout.width;
-            return SingleChildScrollView(
-              physics: const ClampingScrollPhysics(),
-              child: ConstrainedBox(
-                constraints: BoxConstraints(minHeight: box.maxHeight),
-                child: _HubFrame(
-                  minScene: DojoSceneLayout.minHeight * k,
-                  side: math.max(Gaps.gutter, (box.maxWidth - SideTripsLayout.maxWidth) / 2),
-                  bottomGap: SideTripsLayout.bottomGap,
-                  crest: DojoSceneLayout.crest * k + DojoSceneLayout.crestGap,
-                  turn: _turn,
-                  fade: _fade,
-                  fadeFrom: _fadeFrom,
-                  scene: Semantics(
-                    container: true,
-                    liveRegion: true,
-                    label: s.isleName(front),
-                    customSemanticsActions: {
-                      CustomSemanticsAction(label: s.sideTripsNextIsland): () => _stepBy(1),
-                      CustomSemanticsAction(label: s.sideTripsPreviousIsland): () => _stepBy(-1),
-                    },
-                    child: DojoScene(
-                      turn: _turn,
-                      fade: _fade,
-                      fadeFrom: _fadeFrom,
-                      gate: _gate(progress, ankiren),
-                      onOpened: () => setState(() => _opening.remove(ankiren.trip)),
-                    ),
+        child: LayoutBuilder(builder: (context, box) {
+          final k = box.maxWidth / DojoSceneLayout.width;
+          return SingleChildScrollView(
+            physics: const ClampingScrollPhysics(),
+            child: ConstrainedBox(
+              constraints: BoxConstraints(minHeight: box.maxHeight),
+              child: _HubFrame(
+                minScene: DojoSceneLayout.minHeight * k,
+                side: math.max(Gaps.gutter, (box.maxWidth - SideTripsLayout.maxWidth) / 2),
+                bottomGap: SideTripsLayout.bottomGap,
+                crest: DojoSceneLayout.crest * k + DojoSceneLayout.crestGap,
+                turn: _turn,
+                fade: _fade,
+                fadeFrom: _fadeFrom,
+                scene: Semantics(
+                  container: true,
+                  liveRegion: true,
+                  label: s.isleName(front),
+                  customSemanticsActions: {
+                    CustomSemanticsAction(label: s.sideTripsNextIsland): () => _stepBy(1),
+                    CustomSemanticsAction(label: s.sideTripsPreviousIsland): () => _stepBy(-1),
+                  },
+                  child: DojoScene(
+                    turn: _turn,
+                    fade: _fade,
+                    fadeFrom: _fadeFrom,
+                    gate: _gate(progress, ankiren),
+                    onOpened: () => setState(() => _opening.remove(ankiren.trip)),
                   ),
-                  boat: DojoBoat(drift: _boat),
-                  backWaves: RepaintBoundary(child: _BackWaves(turn: _turn)),
-                  waves: [
-                    for (final isle in SideTripRing.isles)
-                      FadeTransition(opacity: _shownOf(isle), child: _Swell(leftward: _leftward.contains(isle))),
-                  ],
-                  entries: [
-                    for (final isle in SideTripRing.isles)
-                      FadeTransition(opacity: _shownOf(isle), child: _entry(hub, isle)),
-                  ],
                 ),
+                boat: DojoBoat(drift: _boat),
+                backWaves: RepaintBoundary(child: _BackWaves(turn: _turn)),
+                waves: [
+                  for (final isle in SideTripRing.isles)
+                    FadeTransition(opacity: _shownOf(isle), child: _Swell(leftward: _leftward.contains(isle))),
+                ],
+                entries: [
+                  for (final isle in SideTripRing.isles)
+                    FadeTransition(opacity: _shownOf(isle), child: _entry(hub, isle)),
+                ],
               ),
-            );
-          }),
-        ),
+            ),
+          );
+        }),
       ),
     );
   }

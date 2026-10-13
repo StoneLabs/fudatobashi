@@ -118,8 +118,9 @@ class _AppShellState extends State<AppShell> {
       },
       child: Scaffold(
         body: Stack(children: [
-          // Under the Side Trips scene, the same tone floors the tab bar.
-          if (tab == AppTab.home || tab == AppTab.sideTrips) const Positioned.fill(child: GradationBox(Tones.home)),
+          if (tab == AppTab.home) const Positioned.fill(child: GradationBox(Tones.home)),
+          // The sea carries on under the Side Trips scene, down to the tab bar.
+          if (tab == AppTab.sideTrips) const Positioned.fill(child: ColoredBox(color: Palette.sea)),
           SafeArea(
             // The Side Trips scene runs up under the status bar.
             top: tab != AppTab.sideTrips,

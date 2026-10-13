@@ -28,6 +28,7 @@ import 'package:fudatobashi/domain/synthetic_learner.dart';
 import 'package:fudatobashi/domain/tab_locks.dart';
 import 'package:fudatobashi/domain/trainer.dart';
 import 'package:fudatobashi/domain/xp.dart';
+import 'package:fudatobashi/l10n/ankiren_strings.dart';
 import 'package:fudatobashi/l10n/credits_strings.dart';
 import 'package:fudatobashi/l10n/free_strings.dart';
 import 'package:fudatobashi/l10n/history_strings.dart';
@@ -2776,15 +2777,20 @@ void main() {
         await tester.pumpWidget(const SizedBox());
       });
 
-      testWidgets('all-known mode opens 暗記練 and its free play, unranked at 入門 ($lang)', (tester) async {
+      testWidgets('all-known mode opens 暗記練 and its page with free play, unranked at 入門 ($lang)', (tester) async {
         final s = S(lang);
         final p = await open(tester, mode: LearningMode.allKnown, ja: ja);
+        await tester.runAsync(
+            () => p.updateSettings(p.settings.copyWith(ankiren: p.settings.ankiren.copyWith(rulesSeen: true))));
         expect(p.sideTripsHub()[SideTrip.ankiren].open, isTrue);
         await openTrips(tester, p);
         expect(inTrips(find.text(Rating.bands.first.label)), findsOneWidget, reason: 'the flag flies 入門');
         expect(inTrips(find.text(s.sideTripUnranked)), findsOneWidget);
         await _capture(tester, 'side_trips_open_$lang');
-        await tester.tap(inTrips(find.text(s.freePlay)));
+        await tester.tap(inTrips(find.text(s.ankirenPageTitle)));
+        await tester.pump();
+        await tester.pump(Motion.route * 2);
+        await tester.tap(find.text(s.freePlay));
         await tester.pump();
         await tester.pump(Motion.sheet);
         expect(find.byType(AnkirenFreeSheet), findsOneWidget, reason: 'open free play shows its setup');
@@ -2859,7 +2865,7 @@ void main() {
       final entry = p.sideTripsHub()[SideTrip.ankiren];
       expect(entry.open, isTrue);
       expect(inTrips(find.byType(RankedBurst)), findsOneWidget);
-      expect(inTrips(find.text(s.sideTripFreeUpTo(entry.maxLevel!))), findsOneWidget);
+      expect(inTrips(find.text(s.ankirenPageTitle)), findsOneWidget);
       await _capture(tester, 'side_trips_ankiren_open');
 
       // Weeks later every card is due, so none is well remembered: the latch

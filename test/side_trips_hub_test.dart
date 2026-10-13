@@ -36,7 +36,6 @@ import 'package:fudatobashi/ui/ankiren/ankiren_screen.dart';
 import 'package:fudatobashi/ui/app.dart';
 import 'package:fudatobashi/ui/home/home_widgets.dart';
 import 'package:fudatobashi/ui/manga/manga.dart';
-import 'package:fudatobashi/ui/side_trips/ankiren_free_sheet.dart';
 import 'package:fudatobashi/ui/side_trips/ankiren_page.dart';
 import 'package:fudatobashi/ui/side_trips/ankiren_rules_sheet.dart';
 import 'package:fudatobashi/ui/side_trips/dojo_scene.dart';
@@ -256,8 +255,15 @@ void main() {
                   greaterThanOrEqualTo(crestBottom(tester, phone)), reason: 'the entry sits under the crest');
               expect(tester.getRect(inHub(find.text(s.sideTripsLettering)).first).top,
                   greaterThanOrEqualTo(_statusBar), reason: 'the title clears the status bar');
-              for (final label in [s.howToPlay, if (hub != _Hub.locked) s.freePlay]) {
-                expectShown(tester, inHub(find.text(label)), phone);
+              if (hub == _Hub.locked) {
+                expectShown(tester, inHub(find.text(s.howToPlay)), phone);
+                expect(inHub(find.text(s.ankirenPageTitle)), findsNothing);
+              } else {
+                expectShown(tester, inHub(find.text(s.ankirenPageTitle)), phone);
+                expectShown(tester, inHub(find.byType(RankedBurst)), phone);
+                expectShown(tester, inHub(find.text(s.ankirenPageSub)), phone);
+                expect(inHub(find.text(s.freePlay)), findsNothing, reason: 'free play and the rules are on the page');
+                expect(inHub(find.text(s.howToPlay)), findsNothing);
               }
 
               switch (hub) {
@@ -269,14 +275,9 @@ void main() {
                   expect([for (final r in rows) ...r.pips].where((p) => p == PipState.learned),
                       hasLength(_lockedCards));
                 case _Hub.open:
-                  expectShown(tester, inHub(find.byType(RankedBurst)), phone);
                   expect(inHub(find.text(s.sideTripUnranked)), findsOneWidget);
-                  expect(inHub(find.text(s.sideTripFreeUpTo(entry.maxLevel!))), findsOneWidget,
-                      reason: 'free play opens with ranked');
                 case _Hub.ranked:
-                  expectShown(tester, inHub(find.byType(RankedBurst)), phone);
                   expect(inHub(find.text('${entry.rating!.round()}')), findsOneWidget);
-                  expect(inHub(find.text(s.sideTripFreeUpTo(entry.maxLevel!))), findsOneWidget);
               }
               await tester.pumpWidget(const SizedBox());
             });
@@ -314,19 +315,24 @@ void main() {
       await tester.pumpWidget(const SizedBox());
     });
 
-    testWidgets('free play opens its setup; the rules open their sheet and close', (tester) async {
+    testWidgets('the button under the panel opens AnkiRen\'s page, with free play and the rules', (tester) async {
       const s = S('en');
       final p = await open(tester, _Hub.ranked, 'en');
       await openHub(tester, p, _users);
-      await tester.tap(inHub(find.text(s.freePlay)));
+      await tester.tap(inHub(find.text(s.ankirenPageTitle)));
       await tester.pump();
-      await tester.pump(Motion.sheet);
-      expect(find.byType(AnkirenFreeSheet), findsOneWidget);
-      await tester.tapAt(const Offset(5, 5));
-      await tester.pump();
-      await tester.pump(Motion.sheet * 2);
-      expect(find.byType(AnkirenFreeSheet), findsNothing);
+      await tester.pump(Motion.route);
+      expect(find.byType(AnkirenPage), findsOneWidget);
+      expect(find.text(s.freePlay), findsOneWidget);
+      expect(find.text(s.howToPlay), findsOneWidget);
+      expect(tester.takeException(), isNull);
+      await tester.pumpWidget(const SizedBox());
+    });
 
+    testWidgets('locked: the rules open their sheet and close', (tester) async {
+      const s = S('en');
+      final p = await open(tester, _Hub.locked, 'en');
+      await openHub(tester, p, _users);
       await tester.tap(inHub(find.text(s.howToPlay)));
       await tester.pump();
       await tester.pump(Motion.sheet);

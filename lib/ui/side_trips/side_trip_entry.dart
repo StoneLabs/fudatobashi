@@ -20,17 +20,16 @@ import 'burst_button.dart';
 /// A side trip's entry on the hub: its head ([SideTripHead]) hanging over
 /// the top of its panel and buttons ([SideTripBody]).
 class SideTripEntryView extends StatelessWidget {
-  const SideTripEntryView(this.entry,
-      {super.key, this.onOpen, required this.onRanked, required this.onFree, required this.onRules});
+  const SideTripEntryView(this.entry, {super.key, this.onOpen, required this.onRanked, required this.onRules});
 
   final SideTripEntry entry;
   final VoidCallback? onOpen;
-  final VoidCallback onRanked, onFree, onRules;
+  final VoidCallback onRanked, onRules;
 
   @override
   Widget build(BuildContext context) => _HeadOver(
         head: SideTripHead(entry),
-        body: SideTripBody(entry, onOpen: onOpen, onRanked: onRanked, onFree: onFree, onRules: onRules),
+        body: SideTripBody(entry, onOpen: onOpen, onRanked: onRanked, onRules: onRules),
       );
 }
 
@@ -224,19 +223,18 @@ class _RankFlag extends StatelessWidget {
       );
 }
 
-/// A side trip's panel on the hub, then Home's button pair. Open: its
+/// A side trip's panel on the hub, then a button under it. Open: its
 /// rating with the last game's change and the next ranked game, a row that
 /// opens the trip's page ([onOpen]), and the burst that starts the game
-/// ([onRanked]); free play ([onFree]) and the rules ([onRules]) under it.
-/// Locked: the cards remembered so far as pips and a grey bar saying how
-/// many more open it, where the burst will be; only the rules under it.
+/// ([onRanked]); a button to the page under it. Locked: the cards
+/// remembered so far as pips and a grey bar saying how many more open it,
+/// where the burst will be; the rules ([onRules]) under it.
 class SideTripBody extends StatelessWidget {
-  const SideTripBody(this.entry,
-      {super.key, this.onOpen, required this.onRanked, required this.onFree, required this.onRules});
+  const SideTripBody(this.entry, {super.key, this.onOpen, required this.onRanked, required this.onRules});
 
   final SideTripEntry entry;
   final VoidCallback? onOpen;
-  final VoidCallback onRanked, onFree, onRules;
+  final VoidCallback onRanked, onRules;
 
   @override
   Widget build(BuildContext context) {
@@ -263,15 +261,8 @@ class SideTripBody extends StatelessWidget {
                 )
               : _LockedRows(lock),
         ),
-        const SizedBox(height: SideTripsLayout.pairTop),
-        if (lock == null)
-          Row(children: [
-            Expanded(child: SideTripFreeButton(entry, onTap: onFree)),
-            const SizedBox(width: SideTripsLayout.pairGap),
-            Expanded(child: rules),
-          ])
-        else
-          rules,
+        const SizedBox(height: SideTripsLayout.buttonTop),
+        if (lock == null) SideTripPageButton(onTap: onOpen) else rules,
       ],
     );
   }
@@ -607,6 +598,28 @@ class SideTripFreeButton extends StatelessWidget {
       title: s.freePlay,
       badge: _Sub(s.other.freePlay),
       sub: maxLevel == null ? s.sideTripFreeSub : s.sideTripFreeUpTo(maxLevel),
+      onTap: onTap,
+    );
+  }
+}
+
+/// The way into the trip's page, in Home's button style, saying what is
+/// there. Left out without [onTap].
+class SideTripPageButton extends StatelessWidget {
+  const SideTripPageButton({super.key, required this.onTap});
+
+  final VoidCallback? onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final s = S.of(context);
+    final onTap = this.onTap;
+    if (onTap == null) return const SizedBox.shrink();
+    return HomeRowButton(
+      icon: IconArt.cards,
+      title: s.ankirenPageTitle,
+      badge: _Sub(s.other.ankirenPageTitle),
+      sub: s.ankirenPageSub,
       onTap: onTap,
     );
   }

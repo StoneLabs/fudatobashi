@@ -66,6 +66,8 @@ extension AnkirenStrings on S {
   /// 暗記練's page: the hub's way in, its last games or placement, and the
   /// next ranked game with why it plays that level.
   String get ankirenOpenPage => t('ankirenOpenPage');
+  String get ankirenPageTitle => t('ankirenPageTitle');
+  String get ankirenPageSub => t('ankirenPageSub');
   String get ankirenLast5 => t('ankirenLast5');
   String get ankirenPlacementTitle => t('ankirenPlacementTitle');
   String get ankirenPlacementCount => t('ankirenPlacementCount');

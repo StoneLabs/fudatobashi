@@ -313,8 +313,11 @@ void main() {
     });
 
     testWidgets('free play opens its sheet, whose custom setup sticks and starts', (tester) async {
-      final p = await open(tester);
+      final p = await open(tester, ankiren: const AnkirenSettings(rulesSeen: true));
       await openHub(tester, p);
+      await tester.tap(find.text(s.ankirenPageTitle));
+      await tester.pump();
+      await tester.pump(Motion.route * 2);
       await tester.tap(find.text(s.freePlay));
       await tester.pump();
       await tester.pump(Motion.sheet);
@@ -746,7 +749,7 @@ void main() {
     for (final lang in ['en', 'ja']) {
       testWidgets('the free-play sheet and a ranked game\'s Results fit ($lang)', (tester) async {
         final t = S(lang);
-        final p = await open(tester, language: lang);
+        final p = await open(tester, language: lang, ankiren: const AnkirenSettings(rulesSeen: true));
         phone(tester, fontScale: 1.3);
         await tester.pumpWidget(RepaintBoundary(key: const ValueKey('screen'), child: FudatobashiApp(progress: p)));
         await tester.pump(const Duration(milliseconds: 500));
@@ -754,8 +757,9 @@ void main() {
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 300));
         expect(tester.takeException(), isNull);
-        await tester.ensureVisible(find.text(t.freePlay));
+        await tester.tap(find.text(t.ankirenPageTitle));
         await tester.pump();
+        await tester.pump(Motion.route * 2);
         await tester.tap(find.text(t.freePlay));
         await tester.pump();
         await tester.pump(Motion.sheet);

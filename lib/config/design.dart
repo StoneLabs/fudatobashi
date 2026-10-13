@@ -2306,7 +2306,7 @@ abstract final class DojoUnlockMotion {
 /// (`research/design/sidetrips_c.html`): its lettering and rank flag
 /// breaking out over the panel's top; the rating and next game and the
 /// ranked burst, or while it is locked the cards still to remember; then
-/// Home's button pair.
+/// a button to the trip's page, or the rules.
 abstract final class SideTripsLayout {
   /// The entry never grows wider than this (a landscape screen).
   static const double maxWidth = 480;
@@ -2400,8 +2400,9 @@ abstract final class SideTripsLayout {
   static const double lockLineFont = 12;
   static const double lockLineNumber = 14;
 
-  /// Between the panel and Home's button pair, and between the two.
-  static const double pairTop = 8;
+  /// Between the panel and the button under it; and between the pair of
+  /// buttons on the trip's page.
+  static const double buttonTop = 8;
   static const double pairGap = Gaps.panelWide;
 
   static const Size lockBalloon = Size(270, 96);
