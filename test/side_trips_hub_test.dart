@@ -37,6 +37,7 @@ import 'package:fudatobashi/ui/app.dart';
 import 'package:fudatobashi/ui/home/home_widgets.dart';
 import 'package:fudatobashi/ui/manga/manga.dart';
 import 'package:fudatobashi/ui/side_trips/ankiren_free_sheet.dart';
+import 'package:fudatobashi/ui/side_trips/ankiren_page.dart';
 import 'package:fudatobashi/ui/side_trips/ankiren_rules_sheet.dart';
 import 'package:fudatobashi/ui/side_trips/dojo_scene.dart';
 import 'package:fudatobashi/ui/side_trips/side_trip_entry.dart';
@@ -296,6 +297,18 @@ void main() {
       await tester.pump(Motion.route);
       final game = tester.widget<AnkirenScreen>(find.byType(AnkirenScreen));
       expect(game.setup, AnkirenSetup.forLevel(level, ranked: true));
+      await tester.pumpWidget(const SizedBox());
+    });
+
+    testWidgets('the stats row opens AnkiRen\'s page', (tester) async {
+      const s = S('en');
+      final p = await open(tester, _Hub.ranked, 'en');
+      await openHub(tester, p, _users);
+      await tester.tap(inHub(find.byWidgetPredicate((w) => w is Pressable && w.semanticLabel == s.ankirenOpenPage)));
+      await tester.pump();
+      await tester.pump(Motion.route);
+      expect(find.byType(AnkirenPage), findsOneWidget);
+      expect(tester.takeException(), isNull);
       await tester.pumpWidget(const SizedBox());
     });
 
