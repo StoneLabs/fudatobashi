@@ -46,16 +46,19 @@ class InkTag extends StatelessWidget {
       );
 }
 
-/// A skewed black banner in display lettering ("TRAINING", "JOURNEY 旅").
+/// A skewed black banner in display lettering ("TRAINING", "JOURNEY 旅"),
+/// then the other language's [sub] in small tracked capitals if given.
 class InkBanner extends StatelessWidget {
-  const InkBanner(this.text, {super.key, this.fontSize = TagStyle.bannerFont});
+  const InkBanner(this.text, {super.key, this.sub, this.fontSize = TagStyle.bannerFont});
 
   final String text;
+  final String? sub;
   final double fontSize;
 
   @override
   Widget build(BuildContext context) {
     final skew = Tilt.tagSkew * math.pi / 180;
+    final sub = this.sub;
     return Transform(
       transform: Matrix4.skewX(skew),
       child: DecoratedBox(
@@ -65,8 +68,22 @@ class InkBanner extends StatelessWidget {
           child: Transform(
             alignment: Alignment.center,
             transform: Matrix4.skewX(-skew),
-            child: Text(
-              text,
+            child: Text.rich(
+              TextSpan(children: [
+                TextSpan(text: text),
+                if (sub != null) ...[
+                  const TextSpan(text: ' '),
+                  TextSpan(
+                    text: sub.toUpperCase(),
+                    style: TextStyle(
+                      fontFamily: Fonts.ui,
+                      fontWeight: Weights.black,
+                      fontSize: fontSize * TagStyle.bannerSubScale,
+                      letterSpacing: TagStyle.bannerTracking * fontSize * TagStyle.bannerSubScale,
+                    ),
+                  ),
+                ],
+              ]),
               maxLines: 1,
               softWrap: false,
               style: TextStyle(

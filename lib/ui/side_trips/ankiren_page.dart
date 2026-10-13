@@ -570,55 +570,13 @@ class _NextGame extends StatelessWidget {
         top: 0,
         child: Align(
           alignment: Alignment.centerLeft,
-          child: FittedBox(fit: BoxFit.scaleDown, child: _Tag(s.ankirenNextRanked, s.other.ankirenNextRanked)),
-        ),
-      ),
-    ]);
-  }
-}
-
-/// A panel's tag: [title] in display type and [sub] in small capitals, on
-/// a skewed ink banner.
-class _Tag extends StatelessWidget {
-  const _Tag(this.title, this.sub);
-
-  final String title, sub;
-
-  @override
-  Widget build(BuildContext context) {
-    final skew = Tilt.tagSkew * math.pi / 180;
-    return Semantics(
-      header: true,
-      child: Transform(
-        transform: Matrix4.skewX(skew),
-        child: DecoratedBox(
-          decoration: const BoxDecoration(color: Palette.ink),
-          child: Padding(
-            padding: AnkirenPageLayout.tagPadding,
-            child: Transform(
-              alignment: Alignment.center,
-              transform: Matrix4.skewX(-skew),
-              child: Row(mainAxisSize: MainAxisSize.min, children: [
-                Text(title,
-                    style: const TextStyle(
-                        fontFamily: Fonts.display, fontSize: AnkirenPageLayout.tagFont, height: 1.1, color: Palette.paper)),
-                const SizedBox(width: AnkirenPageLayout.tagGap),
-                Text(
-                  sub.toUpperCase(),
-                  style: const TextStyle(
-                    fontWeight: Weights.black,
-                    fontSize: AnkirenPageLayout.tagSubFont,
-                    letterSpacing: AnkirenPageLayout.tagSubTracking * AnkirenPageLayout.tagSubFont,
-                    height: 1.1,
-                    color: Palette.paper,
-                  ),
-                ),
-              ]),
-            ),
+          child: FittedBox(
+            fit: BoxFit.scaleDown,
+            child: Semantics(header: true, child: InkBanner(s.ankirenNextRanked, sub: s.other.ankirenNextRanked)),
           ),
         ),
       ),
-    );
+    ]);
   }
 }
 

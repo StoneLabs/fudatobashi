@@ -185,7 +185,7 @@ void main() {
               expectShown(tester, onPage(find.byType(RankedBurst)), phone);
               expectShown(tester, onPage(find.byType(SideTripFreeButton)), phone);
               expectShown(tester, onPage(find.byType(SideTripRulesButton)), phone);
-              expectShown(tester, onPage(find.text(s.ankirenNextRanked)), phone);
+              expectShown(tester, onPage(find.textContaining(s.ankirenNextRanked)), phone);
               final scroll = tester.state<ScrollableState>(onPage(find.byType(Scrollable)));
               expect(scroll.position.maxScrollExtent, 0, reason: 'nothing to scroll to');
               if (fontScale == 1) {

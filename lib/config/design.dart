@@ -493,9 +493,11 @@ abstract final class TagStyle {
   static const EdgeInsets padding = EdgeInsets.fromLTRB(10, 5, 10, 5);
   static const EdgeInsets compactPadding = EdgeInsets.fromLTRB(8, 3, 8, 4);
 
-  /// The skewed display-font banner (TRAINING, WELCOME ABOARD).
+  /// The skewed display-font banner (TRAINING, WELCOME ABOARD), and its
+  /// other-language sub's size as a share of its own.
   static const double bannerFont = 15;
   static const double bannerTracking = 0.16;
+  static const double bannerSubScale = 0.7;
   static const EdgeInsets bannerPadding = EdgeInsets.fromLTRB(12, 5, 11, 6);
 }
 
@@ -4060,11 +4062,6 @@ abstract final class AnkirenPageLayout {
   /// the top edge, then the stats, the hint, the field and the burst.
   static const double tagRise = 13;
   static const double tagLeft = 18;
-  static const EdgeInsets tagPadding = EdgeInsets.fromLTRB(10, 4, 13, 5);
-  static const double tagFont = 15;
-  static const double tagSubFont = 10.5;
-  static const double tagSubTracking = 0.16;
-  static const double tagGap = 7;
   static const EdgeInsets statsPadding = EdgeInsets.fromLTRB(15, 22, 14, 0);
   static const double statFont = 28;
   static const double statUnitFont = 15;
