@@ -1,6 +1,7 @@
 // The 本日完了!! page after the run that finishes today's set: its numbers,
 // its stop-motion entrance and reduced motion, and that it fits 360, 384 and
-// 412 dp phones at text scale 1.0 and 1.3 in English and Japanese.
+// 412 dp phones at text scale 1.0 and 1.3 in English and Japanese; the
+// developer preview row plays it.
 //
 // With RENDER_SCREENS=1 it also renders the page, at rest and mid-entrance,
 // at 1080 × 2340 px with real fonts and art, to .scratchpad/daily_set/renders/.
@@ -28,7 +29,9 @@ import 'package:fudatobashi/state/scope.dart';
 import 'package:fudatobashi/ui/manga/manga.dart';
 import 'package:fudatobashi/ui/results/celebration_chrome.dart';
 import 'package:fudatobashi/ui/results/day_done_overlay.dart';
+import 'package:fudatobashi/ui/settings/settings_screen.dart';
 import 'package:fudatobashi/ui/sound/sounds.dart';
+import 'package:package_info_plus/package_info_plus.dart';
 
 import 'test_l10n.dart';
 import 'test_vector_art.dart';
@@ -269,6 +272,33 @@ void main() {
         }
       }
     }
+  });
+
+  testWidgets("settings, developer: 'Preview today's set done' plays the page and comes back", (tester) async {
+    PackageInfo.setMockInitialValues(
+        appName: 'Fudatobashi', packageName: 'dev.fudatobashi', version: '1.0.0', buildNumber: '1', buildSignature: '');
+    final p = await open(tester, 'en');
+    await tester.runAsync(() => p.updateSettings(p.settings.copyWith(debugMode: true)));
+    await tester.binding.setSurfaceSize(_users.size);
+    addTearDown(() => tester.binding.setSurfaceSize(null));
+    await tester.pumpWidget(ProgressScope(progress: p, child: MaterialApp(theme: buildMangaTheme(), home: const SettingsScreen())));
+    const label = "Preview today's set done";
+    await tester.scrollUntilVisible(find.text(label), 200);
+    await tester.pump(const Duration(seconds: 1));
+    await tester.tap(find.text(label));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 500));
+    expect(find.byType(DayDoneOverlay), findsOneWidget);
+    await tester.pump(DayDoneMotion.length);
+    expect(tester.takeException(), isNull);
+    await tester.tap(find.byType(DayDoneOverlay));
+    for (var i = 0; i < 10; i++) {
+      await tester.pump(const Duration(milliseconds: 100));
+    }
+    expect(find.byType(DayDoneOverlay), findsNothing);
+    expect(find.byType(SettingsScreen), findsOneWidget);
+    expect(p.sessions, isEmpty, reason: 'a preview touches no progress');
+    await tester.pumpWidget(const SizedBox());
   });
 
   group('renders', skip: Platform.environment['RENDER_SCREENS'] != '1', () {

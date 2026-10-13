@@ -9,6 +9,7 @@ import '../../data/poem.dart';
 import '../../domain/ankiren_rating.dart';
 import '../../domain/play_session.dart';
 import '../../domain/rating.dart';
+import '../../domain/today_set.dart';
 import '../../domain/xp.dart';
 import '../../l10n/side_trip_strings.dart';
 import '../../l10n/strings.dart';
@@ -27,8 +28,8 @@ import '../side_trips/dojo_scene.dart';
 /// Plays every celebration in a row without touching any progress: a new
 /// card with its look-alike warning when one applies, then Results for a
 /// personal best that earns the mock's island complete, a new goal,
-/// graduation, its XP and two new levels, and a rating breaking through
-/// into a rank-up.
+/// graduation, today's set done, its XP and two new levels, and a rating
+/// breaking through into a rank-up.
 void previewCelebrations(BuildContext context) {
   final progress = ProgressScope.read(context);
   final withKnownTwin = poems.all.where((p) => !progress.knows(p.id) && fudaSets.tomofuda(p.id).any(progress.knows));
@@ -83,6 +84,29 @@ void previewRatingRankUp(BuildContext context) {
 }
 
 void previewGraduation(BuildContext context) => _previewPages(context, const [GraduationCelebration()]);
+
+void previewDayDone(BuildContext context) => _previewPages(context, [DayDoneCelebration(previewDay())]);
+
+/// The mock's finished day, dated today.
+DayDone previewDay() {
+  final now = DateTime.now();
+  return DayDone(
+    date: DateTime.utc(now.year, now.month, now.day),
+    bar: const SetBar(
+      reviews: CelebrationPreviewTuning.dayReviewLooks,
+      reviewsDone: CelebrationPreviewTuning.dayReviewLooks,
+      fresh: CelebrationPreviewTuning.dayNewLooks,
+      freshDone: CelebrationPreviewTuning.dayNewLooks,
+      extra: CelebrationPreviewTuning.dayExtraLooks,
+      extraDone: CelebrationPreviewTuning.dayExtraLooks,
+    ),
+    rounds: CelebrationPreviewTuning.dayRounds,
+    newCards: CelebrationPreviewTuning.dayNewCards,
+    missesFixed: CelebrationPreviewTuning.dayMisses,
+    goalStreak: CelebrationPreviewTuning.dayStreak,
+    xp: XpTuning.dayDone,
+  );
+}
 
 /// 暗記練's XP page for a ranked game, reaching no new level, or with
 /// [levelUp] reaching one, then the level-up.
@@ -210,6 +234,7 @@ SessionReport _report(int newCard) {
     newCards: [newCard],
     islandsCompleted: const [CelebrationPreviewTuning.island],
     graduated: true,
+    dayDone: previewDay(),
     xp: previewXpGain(),
   );
 }

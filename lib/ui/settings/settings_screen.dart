@@ -440,6 +440,7 @@ class _DeveloperSection extends StatelessWidget {
           SettingsTapRow(title: 'Preview rating', onTap: () => previewRating(context)),
           SettingsTapRow(title: 'Preview rating + rank-up', onTap: () => previewRatingRankUp(context)),
           SettingsTapRow(title: 'Preview graduation', onTap: () => previewGraduation(context)),
+          SettingsTapRow(title: "Preview today's set done", onTap: () => previewDayDone(context)),
           SettingsTapRow(title: 'Preview AnkiRen unlock', onTap: () => previewAnkirenUnlock(context)),
           SettingsTapRow(title: 'Preview Side Trips tab unlock', onTap: () => previewSideTripsTabUnlock(context)),
           SettingsTapRow(

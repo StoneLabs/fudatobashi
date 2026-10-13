@@ -946,6 +946,17 @@ abstract final class CelebrationPreviewTuning {
   static const double ankirenPlacing = 1010;
   static const double ankirenPlaced = 1180;
   static const int ankirenGame = 9;
+
+  /// Today's set done (the mock's day): the bar's looks for reviews, new
+  /// cards and misses, over [dayRounds] runs, with [dayNewCards] new cards,
+  /// [dayMisses] misses fixed and a goal streak of [dayStreak] days.
+  static const int dayReviewLooks = 22;
+  static const int dayNewLooks = 16;
+  static const int dayExtraLooks = 6;
+  static const int dayRounds = 2;
+  static const int dayNewCards = 4;
+  static const int dayMisses = 6;
+  static const int dayStreak = 5;
 }
 
 /// Sound pooling (`lib/ui/sound/sounds.dart`): concurrent, identically
