@@ -1,18 +1,22 @@
 import 'dart:convert';
 
 import '../db/database.dart';
+import '../domain/ankiren_level.dart';
+import '../domain/ankiren_xp.dart';
 import '../domain/card_stats.dart';
+import '../domain/side_trips.dart';
 import '../domain/xp.dart';
 import 'progress.dart';
+import 'side_trips.dart';
 
 /// Experience read off the recorded history: sessions with their attempts,
 /// plus the milestones [noteMilestones] marks on a session (what its swipes
-/// alone can't tell).
+/// alone can't tell), and 暗記練's games with their answers.
 abstract final class XpHistory {
   static const _islandsKey = 'islandsCompleted';
   static const _graduatedKey = 'graduated';
 
-  /// Every recorded run of [progress], oldest first.
+  /// Every recorded game of [progress], oldest first.
   static XpLedger ledgerOf(Progress progress) {
     final bySession = <int, List<(ItemKey, AttemptRec)>>{};
     for (final k in progress.trainer.items.keys) {
@@ -20,7 +24,32 @@ abstract final class XpHistory {
         if (a.sessionId != null) (bySession[a.sessionId!] ??= []).add((k, a));
       }
     }
-    return XpLedger.of([for (final s in progress.sessions) runOf(progress, s, bySession[s.id] ?? const [])]);
+    final trips = progress.sideTrips;
+    return XpLedger.of(
+      [for (final s in progress.sessions) runOf(progress, s, bySession[s.id] ?? const [])],
+      [for (final r in trips.runsOf(SideTrip.ankiren)) ankirenRunOf(trips, r)],
+    );
+  }
+
+  /// 暗記練 game [run] of [trips]. It scores as its level preset, or a
+  /// custom setup as the level it matches, and races the games of the same
+  /// preset or custom setup.
+  static AnkirenXpRun ankirenRunOf(SideTrips trips, SideTripRun run) {
+    final meta = jsonDecode(run.meta) as Map<String, dynamic>;
+    final perSide = (meta['perSide'] as num?)?.toInt() ?? 0;
+    final memoriseMs = (meta['memoriseMs'] as num?)?.toInt() ?? 0;
+    final level = run.level;
+    return AnkirenXpRun(
+      runId: run.id,
+      startedAt: run.startedAt,
+      ranked: run.ranked,
+      completed: run.completed,
+      level: level?.clamp(0, AnkirenLevels.top) ??
+          AnkirenSetup.custom(perSide: perSide, memorise: Duration(milliseconds: memoriseMs)).scoredLevel,
+      setup: level != null ? 'level $level' : 'custom $perSide × $memoriseMs ms',
+      score: run.score,
+      answers: trips.answersOf(run),
+    );
   }
 
   /// Session [s] of [progress] with its attempts, looked up at the end of

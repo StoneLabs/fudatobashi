@@ -1084,6 +1084,38 @@ abstract final class AnkirenRatingModel {
   static const double establishedK = 0.35;
 }
 
+/// Experience from a 暗記練 game (`AnkirenXp`), on [XpTuning]'s scale. Most of
+/// a game is memorising, about 10–18 s a card at every level, so its XP is
+/// paid per card found: a game at par earns about what main runs earn over
+/// the same time (about 5½ XP a second; a level 2 game of about 2 minutes,
+/// some 800). Derived from the recorded games, like [XpTuning].
+abstract final class AnkirenXpTuning {
+  /// A card found with the first tap at level 0, and what each level above
+  /// adds (a custom setup counts as the level it scores as).
+  static const int firstTap = 70;
+  static const int firstTapPerLevel = 5;
+
+  /// A card found after a wrong tap, before it is shown: this share of a
+  /// first-tap find.
+  static const double secondTapShare = 0.5;
+
+  /// The speed bonus of a first-tap find: `AnkirenScore.speedShare` of this.
+  static const int speedMax = 40;
+
+  /// Each card shown, given up or never found, in a game played to the end.
+  static const int perMiss = XpTuning.perMiss;
+
+  /// A game played to the end; a ranked one earns [ranked] on top.
+  static const int clear = XpTuning.clear;
+  static const int ranked = 50;
+
+  /// A completed game scoring higher than every earlier one with its setup.
+  static const int personalBest = XpTuning.personalBest;
+
+  /// The ranked game that finishes placement and reveals the first class.
+  static const int placement = 300;
+}
+
 /// The real 競技かるた field that 暗記練 lays out (`FieldGeometry`), cm.
 abstract final class AnkirenFieldSize {
   /// A torifuda.

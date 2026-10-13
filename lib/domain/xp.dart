@@ -1,10 +1,34 @@
 import 'dart:math' as math;
 
 import '../config/config.dart';
+import 'ankiren_xp.dart';
 import 'play_session.dart';
 
-/// Where a run's experience came from, in the order the XP page lists it.
-enum XpSource { correct, missed, speed, reviews, newCards, clear, daily, best, island, graduation }
+/// Where a game's experience came from: the main game's runs ([XpRun]) and
+/// 暗記練's games ([AnkirenXpRun]) each list their own, sharing those that
+/// mean the same.
+enum XpSource {
+  correct,
+  missed,
+  speed,
+  reviews,
+  newCards,
+  clear,
+  daily,
+  best,
+  island,
+  graduation,
+
+  /// 暗記練: cards found with the first tap, and after a wrong tap.
+  firstTap,
+  secondTap,
+
+  /// 暗記練: a ranked game played to the end.
+  ranked,
+
+  /// 暗記練: the ranked game that finished placement.
+  placement,
+}
 
 /// One swipe of a recorded run, as experience sees it.
 class XpSwipe {
@@ -82,11 +106,12 @@ class XpPart {
   final int xp;
 }
 
-/// The experience one run earned, line by line.
+/// The experience one game earned, line by line.
 class XpAward {
   const XpAward(this.parts);
 
-  /// Only the sources that earned something, in [XpSource] order.
+  /// Only the sources that earned something, in the order the XP page
+  /// lists them.
   final List<XpPart> parts;
 
   int get total => parts.fold(0, (sum, p) => sum + p.xp);
@@ -135,11 +160,11 @@ abstract final class XpCurve {
   }
 }
 
-/// What a run did to the player's experience.
+/// What a game did to the player's experience.
 class XpGain {
   const XpGain({required this.before, required this.award});
 
-  /// Total XP before the run.
+  /// Total XP before the game.
   final int before;
   final XpAward award;
 
@@ -149,24 +174,30 @@ class XpGain {
   int get levelsGained => levelAfter.level - levelBefore.level;
 }
 
-/// Every run's experience, added up oldest first: which cards were already
-/// met, the best time per setup and the streak of days all depend on the
-/// runs before.
+/// Every game's experience, added up oldest first: the main game's runs
+/// ([add]) and 暗記練's games ([addAnkiren]) into one total. Which cards were
+/// already met, the best time per setup and the streak of days depend on
+/// the runs before; 暗記練's bests and placement on its games before
+/// ([AnkirenXp]). The daily bonus and its streak are the main game's.
 class XpLedger {
   XpLedger();
 
-  /// The ledger of [runs], in the order they were played.
-  factory XpLedger.of(Iterable<XpRun> runs) {
+  /// The ledger of [runs] and [ankiren], each game in the order played (a
+  /// run before a 暗記練 game started at the same moment).
+  factory XpLedger.of(Iterable<XpRun> runs, [Iterable<AnkirenXpRun> ankiren = const []]) {
+    final games = [
+      for (final r in runs) (at: r.startedAt, kind: 0, id: r.sessionId, add: (XpLedger l) => l.add(r)),
+      for (final g in ankiren) (at: g.startedAt, kind: 1, id: g.runId, add: (XpLedger l) => l.addAnkiren(g)),
+    ]..sort((a, b) {
+        final t = a.at.compareTo(b.at);
+        if (t != 0) return t;
+        return a.kind != b.kind ? a.kind.compareTo(b.kind) : a.id.compareTo(b.id);
+      });
     final ledger = XpLedger();
-    for (final r in [...runs]..sort(_played)) {
-      ledger.add(r);
+    for (final g in games) {
+      g.add(ledger);
     }
     return ledger;
-  }
-
-  static int _played(XpRun a, XpRun b) {
-    final t = a.startedAt.compareTo(b.startedAt);
-    return t != 0 ? t : a.sessionId.compareTo(b.sessionId);
   }
 
   int _total = 0;
@@ -182,12 +213,23 @@ class XpLedger {
   /// A recorded run already graduated (it happens once).
   bool get graduated => _graduated;
 
-  /// Adds [run], played after every run added so far, and returns what it
+  final _ankiren = AnkirenXp();
+
+  /// Adds [run], played after every game added so far, and returns what it
   /// earned.
   XpGain add(XpRun run) {
-    final gain = XpGain(before: _total, award: _score(run));
-    _total = gain.after;
+    final gain = _gain(_score(run));
     _graduated |= run.graduated;
+    return gain;
+  }
+
+  /// Adds 暗記練 game [game], played after every game added so far, and
+  /// returns what it earned.
+  XpGain addAnkiren(AnkirenXpRun game) => _gain(_ankiren.score(game));
+
+  XpGain _gain(XpAward award) {
+    final gain = XpGain(before: _total, award: award);
+    _total = gain.after;
     return gain;
   }
 

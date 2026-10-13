@@ -6,40 +6,44 @@ import '../db/database.dart';
 import '../domain/ankiren_game.dart';
 import '../domain/ankiren_level.dart';
 import '../domain/ankiren_rating.dart';
+import '../domain/ankiren_xp.dart';
 import '../domain/side_trips.dart';
+import '../domain/xp.dart';
 
 /// What recording a 暗記練 game changed (for its results): 暗記練's rating
-/// before and after a ranked game, both null for free play.
+/// before and after a ranked game, both null for free play; the ranked
+/// games played with it (0 for free play); and the experience it earned.
 class AnkirenReport {
-  const AnkirenReport({required this.ratingBefore, required this.ratingAfter});
+  const AnkirenReport({required this.ratingBefore, required this.ratingAfter, this.rankedGames = 0, this.xp});
 
   final double? ratingBefore;
   final double? ratingAfter;
+  final int rankedGames;
+  final XpGain? xp;
 }
 
 /// The side trips' recorded games (寄り道), in the order they were played,
 /// and what they add up to: each trip's ranked rating, its ranked games and
 /// the hub's standing. Owned by `Progress`, which loads it on start.
 class SideTrips {
-  SideTrips._(this._runs, this._firstTries);
+  SideTrips._(this._runs, this._answers);
 
   static Future<SideTrips> load(AppDatabase db) async {
     final runs = await (db.select(db.sideTripRuns)..orderBy([(r) => OrderingTerm.asc(r.id)])).get();
-    final firstTry = db.sideTripAnswers.wrongTaps.equals(0) & db.sideTripAnswers.responseUs.isNotNull();
-    final count = db.sideTripAnswers.id.count(filter: firstTry);
-    final query = db.selectOnly(db.sideTripAnswers)
-      ..addColumns([db.sideTripAnswers.runId, count])
-      ..groupBy([db.sideTripAnswers.runId]);
-    final firstTries = {
-      for (final row in await query.get()) row.read(db.sideTripAnswers.runId)!: row.read(count)!,
-    };
-    return SideTrips._(runs, firstTries);
+    final rows = await (db.select(db.sideTripAnswers)
+          ..orderBy([(a) => OrderingTerm.asc(a.runId), (a) => OrderingTerm.asc(a.seq)]))
+        .get();
+    final answers = <int, List<AnkirenXpAnswer>>{};
+    for (final a in rows) {
+      (answers[a.runId] ??= []).add((wrongTaps: a.wrongTaps, responseUs: a.responseUs));
+    }
+    return SideTrips._(runs, answers);
   }
 
   final List<SideTripRun> _runs;
 
-  /// Cards found with the first tap, by run id.
-  final Map<int, int> _firstTries;
+  /// Each run's answers, in the order they were asked, by run id.
+  final Map<int, List<AnkirenXpAnswer>> _answers;
 
   /// Every recorded game of every trip, oldest first.
   List<SideTripRun> get runs => List.unmodifiable(_runs);
@@ -56,9 +60,13 @@ class SideTrips {
   /// [trip]'s ranked games so far (placement counts them).
   int rankedGames(SideTrip trip) => _rated(trip).length;
 
+  /// [run]'s answers, one per card asked, in order.
+  List<AnkirenXpAnswer> answersOf(SideTripRun run) => List.unmodifiable(_answers[run.id] ?? const []);
+
   /// The cards of [run] not found with the first tap: found after a wrong
   /// tap, shown, or never found.
-  int missesIn(SideTripRun run) => run.cardCount - (_firstTries[run.id] ?? 0);
+  int missesIn(SideTripRun run) =>
+      run.cardCount - answersOf(run).where((a) => a.wrongTaps == 0 && a.responseUs != null).length;
 
   /// [trip]'s standing on the hub for a player who knows [known] cards: a
   /// ranked level capped by the levels those cards fill, and what each
@@ -147,14 +155,14 @@ class SideTrips {
       return id;
     });
     _runs.add(await (db.select(db.sideTripRuns)..where((r) => r.id.equals(runId))).getSingle());
-    _firstTries[runId] = score.firstTries;
+    _answers[runId] = [for (final a in game.answers) (wrongTaps: a.wrongTaps, responseUs: a.responseUs)];
 
-    return AnkirenReport(ratingBefore: before, ratingAfter: after);
+    return AnkirenReport(ratingBefore: before, ratingAfter: after, rankedGames: setup.ranked ? rankedGames(trip) : 0);
   }
 
   /// Forgets every game, once the caller has deleted them from the database.
   void clear() {
     _runs.clear();
-    _firstTries.clear();
+    _answers.clear();
   }
 }

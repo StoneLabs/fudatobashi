@@ -81,11 +81,15 @@ extension ResultsStrings on S {
         XpSource.best => t('xpSourceBest'),
         XpSource.island => t('xpSourceIsland'),
         XpSource.graduation => t('xpSourceGraduation'),
+        XpSource.firstTap => t('xpSourceFirstTap'),
+        XpSource.secondTap => t('xpSourceSecondTap'),
+        XpSource.ranked => t('xpSourceRanked'),
+        XpSource.placement => t('xpSourcePlacement'),
       };
 
   /// The count beside an XP line, or null where it says nothing.
   String? xpCount(XpPart part) => switch (part.source) {
-        XpSource.clear || XpSource.best || XpSource.graduation => null,
+        XpSource.clear || XpSource.best || XpSource.graduation || XpSource.ranked || XpSource.placement => null,
         XpSource.daily => part.count > 1 ? dayStreak(part.count) : null,
         _ => f('xpCountTimes', [part.count]),
       };

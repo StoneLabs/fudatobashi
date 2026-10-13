@@ -7,12 +7,16 @@ import 'package:fudatobashi/config/config.dart';
 import 'package:fudatobashi/data/fuda_sets.dart';
 import 'package:fudatobashi/data/poem.dart';
 import 'package:fudatobashi/db/database.dart';
+import 'package:fudatobashi/domain/ankiren_level.dart';
+import 'package:fudatobashi/domain/ankiren_xp.dart';
 import 'package:fudatobashi/domain/card_stats.dart';
 import 'package:fudatobashi/domain/play_session.dart';
 import 'package:fudatobashi/domain/trainer.dart';
 import 'package:fudatobashi/domain/xp.dart';
 import 'package:fudatobashi/state/play_config.dart';
 import 'package:fudatobashi/state/progress.dart';
+
+import 'test_ankiren.dart';
 
 void main() {
   poems = Poems.fromJsonString(File('assets/data/poems.json').readAsStringSync());
@@ -218,6 +222,146 @@ void main() {
       final again = await Progress.open(db);
       expect(again.xp.graduated, isTrue);
       expect(again.xp.total, progress.xp.total, reason: 'the graduation bonus is part of the history');
+      await db.close();
+    });
+  });
+
+  group('暗記練 games', () {
+    var nextRun = 1;
+    AnkirenXpAnswer first(int ms) => (wrongTaps: 0, responseUs: ms * 1000);
+    const second = (wrongTaps: 1, responseUs: 2000000);
+    const shown = (wrongTaps: AnkirenTuning.revealAfterWrong, responseUs: 3000000);
+    const givenUp = (wrongTaps: 0, responseUs: null);
+    AnkirenXpRun game(
+      List<AnkirenXpAnswer> answers, {
+      bool ranked = false,
+      bool completed = true,
+      int level = 2,
+      String setup = 'level 2',
+      int score = 500,
+      DateTime? at,
+    }) =>
+        AnkirenXpRun(
+          runId: nextRun++,
+          startedAt: at ?? DateTime(2026, 10, 13, 12),
+          ranked: ranked,
+          completed: completed,
+          level: level,
+          setup: setup,
+          score: score,
+          answers: answers,
+        );
+
+    test('a first tap earns more at higher levels, and its speed bonus falls with the time', () {
+      expect(AnkirenXp.cardXp(0), AnkirenXpTuning.firstTap);
+      expect(AnkirenXp.cardXp(AnkirenLevels.top) - AnkirenXp.cardXp(AnkirenLevels.top - 1), AnkirenXpTuning.firstTapPerLevel);
+      expect(AnkirenXp.speedXp(100000), AnkirenXpTuning.speedMax);
+      expect(AnkirenXp.speedXp(1500000), inExclusiveRange(0, AnkirenXpTuning.speedMax));
+      expect(AnkirenXp.speedXp(5000000), 0);
+      expect(AnkirenXp.speedXp(0), 0, reason: 'no measurement');
+    });
+
+    test('a ranked game played to the end: finds, misses, speed, the clear and the ranked bonus', () {
+      final gain = XpLedger().addAnkiren(game(
+        [first(100), first(100), (wrongTaps: 0, responseUs: 0), second, shown, givenUp],
+        ranked: true,
+      ));
+      final card = AnkirenXp.cardXp(2);
+      expect(parts(gain), {
+        XpSource.firstTap: (3, 3 * card),
+        XpSource.secondTap: (1, (card * AnkirenXpTuning.secondTapShare).round()),
+        XpSource.missed: (2, 2 * AnkirenXpTuning.perMiss),
+        XpSource.speed: (2, 2 * AnkirenXpTuning.speedMax),
+        XpSource.clear: (1, AnkirenXpTuning.clear),
+        XpSource.ranked: (1, AnkirenXpTuning.ranked),
+      });
+      expect(gain.award.parts.map((p) => p.source).toList(),
+          [XpSource.firstTap, XpSource.secondTap, XpSource.missed, XpSource.speed, XpSource.clear, XpSource.ranked],
+          reason: 'listed in the order the XP page shows them');
+    });
+
+    test('free play earns the same finds without the ranked bonus; ended early, only its finds', () {
+      final ledger = XpLedger();
+      final free = ledger.addAnkiren(game([first(100), givenUp]));
+      expect(parts(free).keys, [XpSource.firstTap, XpSource.missed, XpSource.speed, XpSource.clear]);
+      final ended = ledger.addAnkiren(game([first(100), givenUp, givenUp], completed: false));
+      expect(parts(ended).keys, [XpSource.firstTap, XpSource.speed]);
+    });
+
+    test('a forfeit earns nothing, but counts toward placement', () {
+      final ledger = XpLedger();
+      ledger.addAnkiren(game([first(500)], ranked: true));
+      expect(ledger.addAnkiren(game([first(500), givenUp], ranked: true, completed: false)).award.total, 0);
+      final third = ledger.addAnkiren(game([first(500)], ranked: true));
+      expect(parts(third)[XpSource.placement], (1, AnkirenXpTuning.placement), reason: 'the third ranked game places');
+      expect(parts(ledger.addAnkiren(game([first(500)], ranked: true))).containsKey(XpSource.placement), isFalse);
+
+      final forfeited = XpLedger();
+      for (var i = 1; i < AnkirenRatingModel.placementGames; i++) {
+        forfeited.addAnkiren(game([first(500)], ranked: true));
+      }
+      expect(forfeited.addAnkiren(game([first(500)], ranked: true, completed: false)).award.total, 0,
+          reason: 'not even the placement bonus');
+    });
+
+    test('a personal best beats every earlier score of the same setup, in a game played to the end', () {
+      final ledger = XpLedger();
+      bool best(int score, {String setup = 'level 2', bool completed = true}) =>
+          parts(ledger.addAnkiren(game([first(500)], score: score, setup: setup, completed: completed)))
+              .containsKey(XpSource.best);
+      expect(best(400), isFalse, reason: 'the first game sets the record');
+      expect(best(380), isFalse);
+      expect(best(900, completed: false), isFalse, reason: 'a game ended early races nobody');
+      expect(best(420), isTrue);
+      expect(best(410), isFalse, reason: 'the ended game did not raise the record');
+      expect(best(100, setup: 'custom 3 × 60000 ms'), isFalse, reason: 'another setup races itself');
+    });
+
+    test('the ledger adds runs and 暗記練 games up in the order played; the daily bonus stays with runs', () {
+      final morning = game([first(100)], at: DateTime(2026, 9, 1, 8));
+      final noon = run([hit(1, 1200)], at: DateTime(2026, 9, 1, 12));
+      final ledger = XpLedger.of([noon], [morning]);
+      final inOrder = XpLedger();
+      final a = inOrder.addAnkiren(morning);
+      final b = inOrder.add(noon);
+      expect(ledger.total, inOrder.total);
+      expect(b.before, a.after);
+      expect(parts(a).containsKey(XpSource.daily), isFalse);
+      expect(parts(b)[XpSource.daily], (1, XpTuning.daily), reason: 'the first run of the day, after a game');
+    });
+
+    test('recorded games report their XP by kind, and the history adds up to the same after a reload', () async {
+      final db = AppDatabase(NativeDatabase.memory());
+      final progress = await Progress.open(db);
+      await progress.setLearningMode(LearningMode.allKnown);
+      final at = DateTime(2026, 10, 13, 9);
+      Future<XpGain> record(AnkirenSetup setup, {int? endAfter, Set<int> wrongAt = const {}}) async =>
+          (await progress.recordAnkiren(playAnkiren(setup, ms: 600, endAfter: endAfter, wrongAt: wrongAt), startedAt: at))
+              .xp!;
+
+      final ranked = await record(AnkirenSetup.forLevel(1, ranked: true), wrongAt: {0});
+      final cards = AnkirenLevels.of(1).cards;
+      expect(parts(ranked)[XpSource.firstTap], (cards - 1, (cards - 1) * AnkirenXp.cardXp(1)));
+      expect(parts(ranked)[XpSource.secondTap]?.$1, 1);
+      expect(parts(ranked).keys, containsAll([XpSource.speed, XpSource.clear, XpSource.ranked]));
+      expect(ranked.before, 0);
+
+      final free = await record(AnkirenSetup.forLevel(1));
+      expect(free.before, ranked.after);
+      expect(parts(free).keys, isNot(contains(XpSource.ranked)));
+
+      final custom = await record(const AnkirenSetup.custom(perSide: 4, memorise: Duration(minutes: 1)));
+      expect(parts(custom)[XpSource.firstTap]!.$2, 8 * AnkirenXp.cardXp(1), reason: 'scored as the level it matches');
+
+      final ended = await record(AnkirenSetup.forLevel(1), endAfter: 2);
+      expect(parts(ended).keys, [XpSource.firstTap, XpSource.speed]);
+
+      final forfeit = await record(AnkirenSetup.forLevel(1, ranked: true), endAfter: 2);
+      expect(forfeit.award.parts, isEmpty);
+      expect(progress.xp.total, forfeit.after);
+
+      final again = await Progress.open(db);
+      expect(again.xp.total, progress.xp.total);
       await db.close();
     });
   });
