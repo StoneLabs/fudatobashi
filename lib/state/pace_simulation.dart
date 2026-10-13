@@ -47,9 +47,11 @@ class SimulatedDay {
   final int swipes, reviews, misses;
 
   /// Of the misses: cards forgotten since an earlier look the same day,
-  /// taken for a 友札, and slips on a card the learner remembered (the rest
-  /// were forgotten since an earlier day).
+  /// taken for a 友札, and slips on a card the learner remembered.
   final int forgotToday, lookAlikes, slips;
+
+  /// The rest of the misses: cards forgotten since an earlier day.
+  int get forgotEarlier => misses - forgotToday - lookAlikes - slips;
 
   /// Cards met on an earlier day and seen again today for the first time
   /// since, and how many of them were missed.

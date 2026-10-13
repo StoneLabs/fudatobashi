@@ -158,6 +158,12 @@ class _SimulationPageState extends State<SimulationPage> {
         DailySeries('reviews', of((d) => d.reviews), Palette.ink),
       ]),
       _Chart('Recall (share of swipes known)', top: 1, [DailySeries('recall', of((d) => d.recall), Palette.landDeep)]),
+      _Chart('Misses by cause', [
+        DailySeries('forgot today', of((d) => d.forgotToday), Palette.pink),
+        DailySeries('forgot earlier', of((d) => d.forgotEarlier), Palette.seaDeep),
+        DailySeries('友札', of((d) => d.lookAlikes), Palette.violet),
+        DailySeries('slip', of((d) => d.slips), Palette.orange),
+      ]),
       _Chart('Due at the start of the day', [DailySeries('due', of((d) => d.dueAtStart), Palette.violet, bars: true)]),
       _Chart('Rating', [DailySeries('rating', of((d) => d.rating), Palette.pinkDeep)]),
     ];
@@ -173,8 +179,10 @@ class _Summary extends StatelessWidget {
   Widget build(BuildContext context) {
     final reached = days.where((d) => d.unlocked == d.total);
     final last = days.last;
-    final swipes = days.fold(0, (n, d) => n + d.swipes);
-    final misses = days.fold(0, (n, d) => n + d.misses);
+    int sum(int Function(SimulatedDay d) f) => days.fold(0, (n, d) => n + f(d));
+    String share(int part, int whole) => whole == 0 ? '—' : '${(100 * part / whole).round()}%';
+    final swipes = sum((d) => d.swipes);
+    final misses = sum((d) => d.misses);
     Widget line(String k, String v) => Row(children: [
           SizedBox(width: SimulationStyle.labelWidth, child: Text(k, style: _mono.copyWith(color: Palette.mute))),
           Expanded(child: Text(v, style: _mono)),
@@ -184,8 +192,12 @@ class _Summary extends StatelessWidget {
           ? 'not yet: ${last.unlocked} on day ${last.day}'
           : 'day ${reached.first.day} (pace: day ${pace.profile.daysToAll})'),
       line('swipes', '$swipes (${(swipes / days.length).round()} a day)'),
-      line('FSRS reviews', '${days.fold(0, (n, d) => n + d.reviews)}'),
+      line('FSRS reviews', '${sum((d) => d.reviews)} (${(sum((d) => d.reviews) / days.length).round()} a day)'),
       line('recall', '${(100 * (1 - misses / swipes)).toStringAsFixed(1)}%'),
+      line('misses: forgot', '${share(sum((d) => d.forgotToday), misses)} same day, '
+          '${share(sum((d) => d.forgotEarlier), misses)} earlier'),
+      line('misses: other', '${share(sum((d) => d.lookAlikes), misses)} 友札, ${share(sum((d) => d.slips), misses)} slips'),
+      line('new cards, next day', '${share(sum((d) => d.newCardCheckMisses), sum((d) => d.newCardChecks))} missed'),
       line('rating', last.rating?.toStringAsFixed(0) ?? '—'),
     ]);
   }
