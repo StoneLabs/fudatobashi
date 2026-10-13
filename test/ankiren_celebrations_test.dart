@@ -32,6 +32,7 @@ import 'package:fudatobashi/domain/trainer.dart';
 import 'package:fudatobashi/domain/xp.dart';
 import 'package:fudatobashi/l10n/ankiren_strings.dart';
 import 'package:fudatobashi/l10n/results_strings.dart';
+import 'package:fudatobashi/l10n/stats_strings.dart';
 import 'package:fudatobashi/l10n/strings.dart';
 import 'package:fudatobashi/state/progress.dart';
 import 'package:fudatobashi/state/scope.dart';
@@ -302,6 +303,35 @@ void main() {
         });
       }
     }
+
+    testWidgets('the ends of the ladder: 入門 from the start, and the top class without a next one', (tester) async {
+      final top = Rating.bands.last.minRating;
+      final cases = [
+        const AnkirenRatingCelebration(560, 610, game: 5),
+        const AnkirenRatingCelebration(620, 560, game: 5),
+        const AnkirenRatingCelebration(560, 700, game: 3, placementScores: [120, 180, 240]),
+        AnkirenRatingCelebration(top + 40, top + 90, game: 12),
+        AnkirenRatingCelebration(top - 20, top + 30, game: 12),
+      ];
+      for (final lang in ['en', 'ja']) {
+        final p = await open(tester, lang);
+        final s = S(lang);
+        for (final data in cases) {
+          final t = AnkirenRatingTimeline(data);
+          await showPage(tester, p, AnkirenRatingOverlay(data: data, onNext: () {}), _narrow,
+              fontScale: 1.3, settle: t.breaksThrough ? t.strainEnd : t.length);
+          expect(tester.takeException(), isNull, reason: '${data.moment.name} ${data.after}');
+          if (Rating.bandOf(data.after) == Rating.bands.first) {
+            expect(t.track.floor, AnkirenRating.start, reason: '入門 stands on the start');
+          }
+          if (Rating.bandOf(data.after) == Rating.bands.last && !t.breaksThrough) {
+            expect(find.text(s.topClassNote), findsOneWidget);
+            expect(find.text(s.topClassChase), findsOneWidget);
+          }
+          await tester.pumpWidget(const SizedBox());
+        }
+      }
+    });
 
     for (final lang in ['en', 'ja']) {
       testWidgets('the shared XP and level-up pages list 暗記練\'s lines ($lang)', (tester) async {
@@ -654,6 +684,22 @@ void main() {
         });
       }
     }
+
+    testWidgets('ladder_ends', (tester) async {
+      final p = await open(tester, 'en');
+      final top = Rating.bands.last.minRating;
+      final cases = {
+        'novice_up': const AnkirenRatingCelebration(560, 610, game: 5),
+        'novice_placed': const AnkirenRatingCelebration(560, 700, game: 3, placementScores: [120, 180, 240]),
+        'top_up': AnkirenRatingCelebration(top + 40, top + 90, game: 12),
+      };
+      for (final MapEntry(key: name, value: data) in cases.entries) {
+        await showPage(tester, p, AnkirenRatingOverlay(data: data, onNext: () {}), _users,
+            settle: AnkirenRatingTimeline(data).length);
+        await capture(tester, _users, 'ladder_$name');
+        await tester.pumpWidget(const SizedBox());
+      }
+    });
 
     for (final lang in ['en', 'ja']) {
       testWidgets('shared_$lang', (tester) async {
