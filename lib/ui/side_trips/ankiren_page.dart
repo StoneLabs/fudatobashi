@@ -39,7 +39,8 @@ Future<void> openAnkirenPage(BuildContext context) async {
 /// that level, and a preview of its field) and the burst that starts it.
 /// Ranked picks its level from the rating alone; free play, with a level
 /// or setup of the player's own, and the rules are Home's button pair
-/// under it, each a sheet. The first visit opens with the rules.
+/// under it, each a sheet. The first visit opens with the rules. Home's
+/// dotted ground, in the sea's blue, lies behind the panels.
 ///
 /// The field preview is the one part that gives up height. With too
 /// little room for it, the panel closes up over the burst, which stays
@@ -69,44 +70,49 @@ class _AnkirenPageState extends State<AnkirenPage> {
     final entry = ProgressScope.of(context).sideTripsHub()[SideTrip.ankiren];
     const trip = SideTrip.ankiren;
     return Scaffold(
-      body: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: Gaps.gutter),
-          child: CustomScrollView(slivers: [
-            SliverFillRemaining(
-              hasScrollBody: false,
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  const SizedBox(height: HeaderStyle.topGap),
-                  MangaHeader(
-                    title: ScreenTitle(trip.label, sub: s.tripTag(trip)),
-                    actions: [
-                      InkIconButton(icon: IconArt.back, semanticLabel: s.back, onTap: () => Navigator.maybePop(context)),
-                    ],
-                  ),
-                  const SizedBox(height: AnkirenPageLayout.gap),
-                  _RecordStrip(entry),
-                  const SizedBox(height: AnkirenPageLayout.gap),
-                  if (AnkirenRating.isPlacement(entry.results.length))
-                    _Placement(entry.results)
-                  else
-                    _LastGames(entry.results),
-                  const SizedBox(height: AnkirenPageLayout.nextTop),
-                  Expanded(child: Align(alignment: Alignment.bottomCenter, child: _NextGame(entry))),
-                  const SizedBox(height: AnkirenPageLayout.gap),
-                  Row(children: [
-                    Expanded(child: SideTripFreeButton(entry, onTap: () => openAnkirenFree(context))),
-                    const SizedBox(width: SideTripsLayout.pairGap),
-                    Expanded(child: SideTripRulesButton(onTap: () => openAnkirenRules(context))),
-                  ]),
-                  const SizedBox(height: AnkirenPageLayout.bottomGap),
-                ],
+      body: Stack(children: [
+        const Positioned.fill(child: GradationBox(Tones.homeSea)),
+        SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: Gaps.gutter),
+            child: CustomScrollView(slivers: [
+              SliverFillRemaining(
+                hasScrollBody: false,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    const SizedBox(height: HeaderStyle.topGap),
+                    MangaHeader(
+                      title: ScreenTitle(trip.label, sub: s.tripTag(trip)),
+                      actions: [
+                        InkIconButton(icon: IconArt.back, semanticLabel: s.back, onTap: () => Navigator.maybePop(context)),
+                      ],
+                    ),
+                    const SizedBox(height: AnkirenPageLayout.gap),
+                    _RecordStrip(entry),
+                    const SizedBox(height: AnkirenPageLayout.gap),
+                    MangaPanel(
+                      padding: AnkirenPageLayout.gamesPadding,
+                      child: AnkirenRating.isPlacement(entry.results.length)
+                          ? _Placement(entry.results)
+                          : _LastGames(entry.results),
+                    ),
+                    const SizedBox(height: AnkirenPageLayout.nextTop),
+                    Expanded(child: Align(alignment: Alignment.bottomCenter, child: _NextGame(entry))),
+                    const SizedBox(height: AnkirenPageLayout.gap),
+                    Row(children: [
+                      Expanded(child: SideTripFreeButton(entry, onTap: () => openAnkirenFree(context))),
+                      const SizedBox(width: SideTripsLayout.pairGap),
+                      Expanded(child: SideTripRulesButton(onTap: () => openAnkirenRules(context))),
+                    ]),
+                    const SizedBox(height: AnkirenPageLayout.bottomGap),
+                  ],
+                ),
               ),
-            ),
-          ]),
+            ]),
+          ),
         ),
-      ),
+      ]),
     );
   }
 }

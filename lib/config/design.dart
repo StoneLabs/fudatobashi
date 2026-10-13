@@ -202,12 +202,25 @@ abstract final class Tones {
   /// header that fade out down the screen and swell again toward the tab bar.
   static const home = GradationSpec(
     dot: Palette.sun,
-    spacing: 6,
+    spacing: groundSpacing,
     begin: Alignment.topCenter,
     end: Alignment.bottomCenter,
-    radii: [1.3, 0.3, 0, 0.5, 1.3],
-    stops: [0, 0.13, 0.3, 0.6, 1],
+    radii: groundRadii,
+    stops: groundStops,
   );
+
+  /// The same backdrop in the sea's blue, behind 暗記練's page.
+  static const homeSea = GradationSpec(
+    dot: Palette.sea,
+    spacing: groundSpacing,
+    begin: Alignment.topCenter,
+    end: Alignment.bottomCenter,
+    radii: groundRadii,
+    stops: groundStops,
+  );
+  static const double groundSpacing = 6;
+  static const groundRadii = [1.3, 0.3, 0.0, 0.5, 1.3];
+  static const groundStops = [0.0, 0.13, 0.3, 0.6, 1.0];
 }
 
 abstract final class Strokes {
@@ -4022,8 +4035,9 @@ abstract final class AnkirenPageLayout {
   static const double gaugeNumber = 15;
   static const double gaugeGap = 10;
 
-  /// The last games or the placement games: a heading, then a column a
-  /// game, split by light rules.
+  /// The last games or the placement games, in a panel: a heading, then a
+  /// column a game, split by light rules.
+  static const EdgeInsets gamesPadding = EdgeInsets.fromLTRB(10, 6, 10, 6);
   static const int lastGames = 5;
   static const double headFont = 14;
   static const double headGap = 6;

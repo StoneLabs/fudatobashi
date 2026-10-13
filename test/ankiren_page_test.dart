@@ -189,6 +189,11 @@ void main() {
               expectShown(tester, onPage(find.textContaining(s.ankirenNextRanked)), phone);
               final scroll = tester.state<ScrollableState>(onPage(find.byType(Scrollable)));
               expect(scroll.position.maxScrollExtent, 0, reason: 'nothing to scroll to');
+              final ground = onPage(find.byWidgetPredicate((w) => w is GradationBox && w.spec == Tones.homeSea));
+              expect(tester.getSize(ground), phone.size, reason: 'Home\'s dots, in blue, behind the whole page');
+              final games = onPage(find.textContaining(stage == _Stage.placed ? s.ankirenLast5 : s.ankirenPlacementTitle));
+              expect(find.ancestor(of: games, matching: find.byType(MangaPanel)), findsWidgets,
+                  reason: 'the games sit on a panel, not on the dots');
               if (fontScale == 1) {
                 expect(onPage(find.descendant(of: find.byType(AnkirenFieldPreview), matching: find.byType(Stack))),
                     findsOneWidget,
