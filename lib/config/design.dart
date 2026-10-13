@@ -1,3 +1,5 @@
+import 'dart:ui' show lerpDouble;
+
 import 'package:flutter/foundation.dart';
 import 'package:flutter/animation.dart';
 import 'package:flutter/painting.dart';
@@ -2040,47 +2042,48 @@ class ScenePiece {
 /// `research/design/sidetrips_b2.html`): pictures from
 /// `assets/images/sidetrips/`, back to front, in a design frame [width]
 /// units wide whose top is the screen's top, scaled to the screen's width.
+/// The islands stand in a ring (`DojoRingLayout`).
 abstract final class DojoSceneLayout {
   static const double width = 390;
   static const _dir = 'assets/images/sidetrips';
 
   static const sky = ScenePiece('$_dir/sky.webp', Rect.fromLTWH(0, 0, 390, 200));
 
-  /// The far isles on the horizon (y 200): one of [farLeft], a different
-  /// one each day, and Fuji in the middle.
-  static const farLeft = [
-    ScenePiece('$_dir/far-pagoda.webp', Rect.fromLTWH(-2, 150, 68, 50)),
-    ScenePiece('$_dir/far-lighthouse.webp', Rect.fromLTWH(8, 142, 48, 58)),
+  /// The clouds, drifting right across the sky and round again: each
+  /// crosses the frame and its own width [DriftingPiece.laps] times per
+  /// [cloudLoop]. They keep their place when the scene lifts.
+  static const clouds = [
+    DriftingPiece(ScenePiece('$_dir/cloud-small.webp', Rect.fromLTWH(184, 39, 58, 24)), laps: 2),
+    DriftingPiece(ScenePiece('$_dir/cloud-large.webp', Rect.fromLTWH(276, 61, 95, 40)), laps: 1),
   ];
-  static const fuji = ScenePiece('$_dir/far-fuji.webp', Rect.fromLTWH(146, 160, 124, 40));
-  static const sea = ScenePiece('$_dir/sea.webp', Rect.fromLTWH(0, 200, 390, 644));
-  static const construction = ScenePiece('$_dir/far-construction.webp', Rect.fromLTWH(268, 150, 132, 100));
-  static const isle = ScenePiece('$_dir/isle-ankiren.webp', Rect.fromLTWH(-16, 184, 370, 226));
+  static const cloudLoop = Duration(minutes: 6);
+  static const cloudStep = Duration(milliseconds: 50);
 
-  /// 暗記練's banner, up once it is open.
-  static const nobori = ScenePiece('$_dir/nobori-ankiren.webp', Rect.fromLTWH(232, 196, 30, 100));
+  static const sea = ScenePiece('$_dir/sea.webp', Rect.fromLTWH(0, 200, 390, 644));
   static const toriiLocked = ScenePiece('$_dir/torii-locked.webp', Rect.fromLTWH(280, 338, 104, 140));
   static const toriiOpen = ScenePiece('$_dir/torii-open.webp', Rect.fromLTWH(280, 338, 104, 140));
   static const boat = ScenePiece('$_dir/tobi-boat.webp', Rect.fromLTWH(114, 374, 124, 110));
 
-  /// The near swell. Its crest never sits below the panel's top, so the
-  /// panel always floats on it.
-  static const seaNear = ScenePiece('$_dir/sea-near.webp', Rect.fromLTWH(0, 488, 390, 300));
+  /// The near swell that carries each island's entry, at its own top
+  /// left. Its crest line runs no deeper than [crest] below its top, and
+  /// sits [crestGap] dp above the entry. Below the picture, its plain
+  /// halftone [fill] (a whole number of dot rows) repeats.
+  static const seaNear = ScenePiece('$_dir/sea-near.webp', Rect.fromLTWH(0, 0, 390, 300));
+  static const double crest = 40;
+  static const double crestGap = 2;
+  static const Rect fill = Rect.fromLTWH(0, 150, 390, 150);
 
-  /// The bottom of what the panel must leave clear (the boat's foam
-  /// skirt): on a short screen the scene lifts by up to [maxLift] to show
-  /// it, and beyond that the near swell rises over it.
-  static const double foreground = 486;
-  static const double maxLift = 44;
+  /// The bottom of the boat's hull, and how far below the swell's top its
+  /// crest line runs under the hull. A screen too short to show the hull
+  /// above the swell lifts the scene by up to [maxLift]; beyond that the
+  /// swell rises over the boat.
+  static const double foreground = 474;
+  static const double hullTrough = 30;
+  static const double maxLift = 60;
 
-  /// The least of the scene kept above the panel; a screen too short for
-  /// it and the panel scrolls.
+  /// The least of the scene kept above the entry; a screen too short for
+  /// it and the entry scrolls.
   static const double minHeight = 360;
-
-  /// The "coming soon" tags: over Fuji in the mist (where the tag's bottom
-  /// left corner sits) and on the building site (its top left corner).
-  static const Offset mistTag = Offset(162, 154);
-  static const Offset buildingTag = Offset(280, 254);
 
   /// The torii and Tobi's boat bob (and the boat rocks) once per period.
   static const double toriiLift = 2;
@@ -2088,6 +2091,87 @@ abstract final class DojoSceneLayout {
   static const double boatLift = 3;
   static const double boatTurnDeg = 1.5;
   static const boatPeriod = Duration(milliseconds: 3800);
+}
+
+/// A picture that drifts sideways across the scene and round again, [laps]
+/// times per loop.
+@immutable
+class DriftingPiece {
+  const DriftingPiece(this.piece, {required this.laps});
+  final ScenePiece piece;
+  final int laps;
+}
+
+/// Where an island stands in one slot of the ring ([DojoRingLayout]): its
+/// canvas's [DojoRingLayout.foot] at [foot] on the scene, at [scale]; in
+/// colour or blue [haze] (0–1); its label shown by [label] (0–1); and its
+/// [depth], the deepest painted first.
+@immutable
+class RingSlotSpec {
+  const RingSlotSpec({required this.foot, required this.scale, required this.haze, required this.label, required this.depth});
+  final Offset foot;
+  final double scale, haze, label, depth;
+
+  static RingSlotSpec lerp(RingSlotSpec a, RingSlotSpec b, double t) => RingSlotSpec(
+        foot: Offset.lerp(a.foot, b.foot, t)!,
+        scale: lerpDouble(a.scale, b.scale, t)!,
+        haze: lerpDouble(a.haze, b.haze, t)!,
+        label: lerpDouble(a.label, b.label, t)!,
+        depth: lerpDouble(a.depth, b.depth, t)!,
+      );
+}
+
+/// One island of the ring: its picture in [colour] and the same drawing in
+/// blue [haze], both filling the island canvas, and where its "coming
+/// soon" tag hangs from ([tag], its top left corner on the canvas), if it
+/// has one.
+@immutable
+class RingIsleArt {
+  const RingIsleArt(this.colour, this.haze, {this.tag});
+  final String colour, haze;
+  final Offset? tag;
+}
+
+/// The ring of islands on the dojo scene (`SideTripRing`). Every island is
+/// drawn on one [canvas] (units as the scene's) and stands on its
+/// waterline at [foot]; each slot of the ring ([slots], in `RingSlot`
+/// order: front, right, back, left) puts it somewhere on the scene. An
+/// island between two slots is part of the way between the two.
+abstract final class DojoRingLayout {
+  static const _dir = 'assets/images/sidetrips';
+  static const Size canvas = Size(370, 226);
+  static const Offset foot = Offset(185, 213);
+
+  static const slots = [
+    RingSlotSpec(foot: Offset(169, 397), scale: 1, haze: 0, label: 1, depth: 3),
+    RingSlotSpec(foot: Offset(334, 248), scale: 0.36, haze: 0, label: 1, depth: 2),
+    RingSlotSpec(foot: Offset(208, 200), scale: 0.35, haze: 1, label: 0, depth: 0),
+    RingSlotSpec(foot: Offset(36, 201), scale: 0.21, haze: 1, label: 0, depth: 1),
+  ];
+
+  static const ankiren = RingIsleArt('$_dir/isle-ankiren.webp', '$_dir/far-ankiren.webp');
+  static const building = RingIsleArt('$_dir/isle-construction.webp', '$_dir/far-construction.webp', tag: _tag);
+  static const fuji = RingIsleArt('$_dir/isle-fuji.webp', '$_dir/far-fuji.webp', tag: _tag);
+  static const lighthouse = RingIsleArt('$_dir/isle-lighthouse.webp', '$_dir/far-lighthouse.webp', tag: _tag);
+  static const _tag = Offset(36, 231);
+
+  /// 暗記練's banner on its island's grass, once it is open: its label.
+  static const nobori = ScenePiece('$_dir/nobori-ankiren.webp', Rect.fromLTWH(277.2, 56, 30, 100));
+}
+
+/// How the ring of islands turns (`SideTripsScreen`).
+abstract final class DojoRingMotion {
+  /// The settle onto a step, from wherever the swipe let go: critically
+  /// damped, so it clicks into place.
+  static const settle = SpringDescription(mass: 1, stiffness: 420, damping: 41);
+
+  /// Under reduced motion the islands and entries crossfade instead.
+  static const crossfade = Duration(milliseconds: 220);
+
+  /// How far Tobi's boat drifts with a whole step, in scene units, and the
+  /// spring that brings it back once the ring stops.
+  static const double boatDrift = 16;
+  static const boatReturn = SpringDescription(mass: 1, stiffness: 55, damping: 8);
 }
 
 /// The tab's title lettering over the sky, and the scene's "coming soon"
@@ -2103,7 +2187,6 @@ abstract final class DojoSceneStyle {
   static const double tagFont = 11;
   static const double tagLineHeight = 1.2;
   static const double tagBorder = 1.8;
-  static const List<double> tagDash = [4, 3];
   static const EdgeInsets tagPadding = EdgeInsets.fromLTRB(6, 2, 6, 3);
   static const double chipFont = 9.5;
   static const double chipTracking = 0.08;
@@ -2225,6 +2308,14 @@ abstract final class SideTripsLayout {
 
   static const Size lockBalloon = Size(270, 96);
   static const Duration lockBalloonLife = Duration(milliseconds: 2800);
+
+  /// An island still being built: smaller lettering over a small panel
+  /// that says so.
+  static const double soonLetteringFont = 30;
+  static const EdgeInsets soonPadding = EdgeInsets.fromLTRB(14, 4, 14, 12);
+  static const double soonTitleFont = 16;
+  static const double soonLineFont = 13;
+  static const double soonLineGap = 3;
 }
 
 /// 暗記練's rules sheet (遊び方, `ankiren_rules_sheet.dart`): its three

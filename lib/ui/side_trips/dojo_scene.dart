@@ -5,6 +5,7 @@ import 'package:flutter/widgets.dart';
 
 import '../../config/config.dart';
 import '../../config/design.dart';
+import '../../domain/side_trips.dart';
 import '../../l10n/ankiren_strings.dart';
 import '../../l10n/side_trip_strings.dart';
 import '../../l10n/strings.dart';
@@ -18,244 +19,59 @@ import '../sound/sounds.dart';
 enum GateState { locked, opening, open }
 
 /// The dojo scene at the top of the Side Trips tab
-/// (`research/design/sidetrips_b2.html`): sky and sea with the far isles,
-/// 暗記練's island with its torii and banner, Tobi's boat and the near swell,
-/// under the tab's title and the "coming soon" tags.
+/// (`research/design/sidetrips_b2.html`): sky and drifting clouds, the sea
+/// with the ring of islands ([DojoRingLayout]) turned [turn] steps, the
+/// torii, and Tobi's boat, under the tab's title. 暗記練's island carries
+/// its banner once it is open; the islands still being built carry a
+/// "coming soon" tag, shown in the two front slots.
 ///
-/// It fills its box (the screen above the entry), scaled to the box's
-/// width. A box too short to show the boat clear of the entry lifts the
-/// scene, up to [DojoSceneLayout.maxLift]; the sea and the near swell paint
-/// on below the box, under the entry.
-class DojoScene extends StatelessWidget {
-  const DojoScene({super.key, required this.gate, required this.day, this.onOpened});
+/// The torii stands for the island in front: 暗記練's as [gate] says, a
+/// padlocked one for any other. The boat drifts [boat] steps' worth. While
+/// [fade] runs, the islands crossfade from the ring at step [fadeFrom].
+///
+/// It fills its box (the screen above the entries), scaled to the box's
+/// width; the near swell crests just above its bottom. A box too short to
+/// show the boat's hull above the swell lifts the scene, up to
+/// [DojoSceneLayout.maxLift]; the sea paints on below the box.
+class DojoScene extends StatefulWidget {
+  const DojoScene({
+    super.key,
+    required this.turn,
+    required this.boat,
+    required this.fade,
+    required this.fadeFrom,
+    required this.gate,
+    this.onOpened,
+  });
 
+  final Animation<double> turn, boat, fade;
+  final int fadeFrom;
   final GateState gate;
-
-  /// The day of the month: it picks the far isle on the left.
-  final int day;
 
   /// Called once the torii has finished opening.
   final VoidCallback? onOpened;
 
   @override
-  Widget build(BuildContext context) {
-    final s = S.of(context);
-    return LayoutBuilder(builder: (context, box) {
-      final k = box.maxWidth / DojoSceneLayout.width;
-      final lift = (DojoSceneLayout.foreground * k - box.maxHeight).clamp(0.0, DojoSceneLayout.maxLift * k);
-      Rect at(Rect r) => Rect.fromLTWH(r.left * k, r.top * k - lift, r.width * k, r.height * k);
-      Widget piece(ScenePiece p, {Rect? rect}) {
-        final r = rect ?? at(p.rect);
-        return Positioned.fromRect(rect: r, child: ScenePicture(p.asset, size: r.size));
-      }
-
-      final near = at(DojoSceneLayout.seaNear.rect);
-      final boat = at(DojoSceneLayout.boat.rect);
-      const farLeft = DojoSceneLayout.farLeft;
-      return Stack(
-        clipBehavior: Clip.none,
-        children: [
-          piece(DojoSceneLayout.sky),
-          piece(farLeft[day % farLeft.length]),
-          piece(DojoSceneLayout.fuji),
-          piece(DojoSceneLayout.sea),
-          piece(DojoSceneLayout.construction),
-          piece(DojoSceneLayout.isle),
-          Positioned.fill(
-            child: _Gate(
-              state: gate,
-              torii: at(DojoSceneLayout.toriiOpen.rect),
-              banner: at(DojoSceneLayout.nobori.rect),
-              scale: k,
-              onOpened: onOpened,
-            ),
-          ),
-          Positioned.fromRect(
-            rect: boat,
-            child: RepaintBoundary(
-              child: Sway(
-                turnDeg: DojoSceneLayout.boatTurnDeg,
-                lift: DojoSceneLayout.boatLift * k,
-                period: DojoSceneLayout.boatPeriod,
-                child: ScenePicture(DojoSceneLayout.boat.asset, size: boat.size),
-              ),
-            ),
-          ),
-          // The entry always floats on the swell.
-          piece(DojoSceneLayout.seaNear, rect: near.shift(Offset(0, math.min(0.0, box.maxHeight - near.top)))),
-          Positioned.fill(
-            child: CustomSingleChildLayout(
-              delegate: _TagAnchor(DojoSceneLayout.mistTag * k - Offset(0, lift), hangs: false),
-              child: _SoonTag(s.sideTripsMist),
-            ),
-          ),
-          Positioned.fill(
-            child: CustomSingleChildLayout(
-              delegate: _TagAnchor(DojoSceneLayout.buildingTag * k - Offset(0, lift), hangs: true),
-              child: _SoonTag(s.sideTripsBuilding, solid: true),
-            ),
-          ),
-          Positioned(
-            left: DojoSceneStyle.title.dx,
-            top: MediaQuery.paddingOf(context).top + DojoSceneStyle.title.dy,
-            child: const _Title(),
-          ),
-        ],
-      );
-    });
-  }
+  State<DojoScene> createState() => _DojoSceneState();
 }
 
-/// A picture of the scene at [size], decoded no bigger than it shows.
-class ScenePicture extends StatelessWidget {
-  const ScenePicture(this.asset, {super.key, required this.size});
-
-  final String asset;
-  final Size size;
-
-  @override
-  Widget build(BuildContext context) => Image.asset(
-        asset,
-        width: size.width,
-        height: size.height,
-        fit: BoxFit.fill,
-        cacheWidth: (size.width * MediaQuery.devicePixelRatioOf(context)).round(),
-        filterQuality: FilterQuality.medium,
-        gaplessPlayback: true,
-        excludeFromSemantics: true,
-      );
-}
-
-/// 寄り道 lettered over the sky, with its banner.
-class _Title extends StatelessWidget {
-  const _Title();
-
-  @override
-  Widget build(BuildContext context) {
-    final s = S.of(context);
-    return Semantics(
-      header: true,
-      label: s.sideTrips,
-      excludeSemantics: true,
-      child: MediaQuery.withClampedTextScaling(
-        maxScaleFactor: SideTripsLayout.letteringMaxScale,
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            OutlinedText(
-              s.sideTripsLettering,
-              outlineWidth: DojoSceneStyle.titleOutline,
-              style: const TextStyle(
-                  fontFamily: Fonts.display, fontSize: DojoSceneStyle.titleFont, height: TypeScale.displayLineHeight),
-            ),
-            const SizedBox(height: DojoSceneStyle.titleBannerGap),
-            InkBanner(s.sideTripsBanner, fontSize: DojoSceneStyle.titleBannerFont),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-/// A "coming soon" tag on the scene: [label] and a little ink chip saying
-/// soon in the other language, in a dashed paper box, or a [solid] sun one.
-/// Like the scene's lettering, it grows with the system text size only so
-/// far.
-class _SoonTag extends StatelessWidget {
-  const _SoonTag(this.label, {this.solid = false});
-
-  final String label;
-  final bool solid;
-
-  @override
-  Widget build(BuildContext context) {
-    final content = Padding(
-      padding: DojoSceneStyle.tagPadding,
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Text(label, style: const TextStyle(
-              fontWeight: Weights.black, fontSize: DojoSceneStyle.tagFont, height: DojoSceneStyle.tagLineHeight)),
-          const SizedBox(width: DojoSceneStyle.chipGap),
-          InkTag(
-            S.of(context).other.sideTripsSoon.toUpperCase(),
-            fontSize: DojoSceneStyle.chipFont,
-            tracking: DojoSceneStyle.chipTracking,
-            padding: DojoSceneStyle.chipPadding,
-          ),
-        ],
-      ),
-    );
-    return MediaQuery.withClampedTextScaling(
-      maxScaleFactor: SideTripsLayout.letteringMaxScale,
-      child: solid
-          ? DecoratedBox(
-              decoration: BoxDecoration(
-                  color: Palette.sun, border: Border.all(color: Palette.ink, width: DojoSceneStyle.tagBorder)),
-              child: content,
-            )
-          : DashedBox(border: DojoSceneStyle.tagBorder, dash: DojoSceneStyle.tagDash, child: content),
-    );
-  }
-}
-
-/// Puts a tag's bottom left corner (or its top left, when it [hangs]) at
-/// [at], kept inside the screen's gutters.
-class _TagAnchor extends SingleChildLayoutDelegate {
-  _TagAnchor(this.at, {required this.hangs});
-
-  final Offset at;
-  final bool hangs;
-
-  @override
-  BoxConstraints getConstraintsForChild(BoxConstraints constraints) => constraints.loosen();
-
-  @override
-  Offset getPositionForChild(Size size, Size childSize) {
-    final room = math.max(Gaps.gutter, size.width - Gaps.gutter - childSize.width);
-    return Offset(at.dx.clamp(Gaps.gutter, room), hangs ? at.dy : at.dy - childSize.height);
-  }
-
-  @override
-  bool shouldRelayout(_TagAnchor old) => old.at != at || old.hangs != hangs;
-}
-
-/// 暗記練's torii at [torii], and once it is open its banner at [banner],
-/// both on screen. Opening, the padlocked torii rattles, snaps (with the
-/// tab chains' sound, a buzz and a toast) and gives way to the open one as
-/// the banner rises; then [onOpened]. Under reduced motion it simply opens.
-class _Gate extends StatefulWidget {
-  const _Gate({required this.state, required this.torii, required this.banner, required this.scale, this.onOpened});
-
-  final GateState state;
-  final Rect torii, banner;
-
-  /// The scene's scale, for the bob and the banner's rise.
-  final double scale;
-  final VoidCallback? onOpened;
-
-  @override
-  State<_Gate> createState() => _GateState();
-}
-
-class _GateState extends State<_Gate> with SingleTickerProviderStateMixin {
+class _DojoSceneState extends State<DojoScene> with SingleTickerProviderStateMixin {
   late final _unlock = AnimationController(vsync: this, duration: DojoUnlockMotion.unlock)..addListener(_onTick);
   bool _snapped = false;
 
   @override
   void initState() {
     super.initState();
-    if (widget.state == GateState.opening) WidgetsBinding.instance.addPostFrameCallback((_) => _open());
+    if (widget.gate == GateState.opening) WidgetsBinding.instance.addPostFrameCallback((_) => _open());
   }
 
   @override
-  void didUpdateWidget(_Gate old) {
+  void didUpdateWidget(DojoScene old) {
     super.didUpdateWidget(old);
-    if (widget.state == GateState.opening && old.state != GateState.opening) {
+    if (widget.gate == GateState.opening && old.gate != GateState.opening) {
       WidgetsBinding.instance.addPostFrameCallback((_) => _open());
     }
-    if (widget.state == GateState.locked && old.state != GateState.locked) {
+    if (widget.gate == GateState.locked && old.gate != GateState.locked) {
       _unlock.value = 0;
       _snapped = false;
     }
@@ -289,59 +105,370 @@ class _GateState extends State<_Gate> with SingleTickerProviderStateMixin {
     MangaToast.show(context, s.tabUnlocked(s.ankirenName));
   }
 
-  Widget _picture(ScenePiece piece, Rect rect, {double opacity = 1, double scale = 1, Offset shift = Offset.zero}) =>
-      Positioned.fromRect(
-        rect: rect.shift(shift),
-        child: Opacity(
-          opacity: opacity.clamp(0.0, 1.0),
-          child: Transform.scale(
-            scale: scale,
-            alignment: Alignment.bottomCenter,
-            child: ScenePicture(piece.asset, size: rect.size),
-          ),
-        ),
-      );
+  /// How far 暗記練's banner is up: 0 while its torii is padlocked, 1 open.
+  double get _raised => switch (widget.gate) {
+        GateState.locked => 0,
+        GateState.open => 1,
+        GateState.opening => _unlock.value < DojoUnlockMotion.snapAt
+            ? 0
+            : Curves.easeOut.transform((_unlock.value - DojoUnlockMotion.snapAt) / (1 - DojoUnlockMotion.snapAt)),
+      };
 
   @override
-  Widget build(BuildContext context) => switch (widget.state) {
-        GateState.locked => Stack(clipBehavior: Clip.none, children: [
-            _picture(DojoSceneLayout.toriiLocked, widget.torii),
-          ]),
-        GateState.open => Stack(clipBehavior: Clip.none, children: [
-            _picture(DojoSceneLayout.nobori, widget.banner),
+  Widget build(BuildContext context) => LayoutBuilder(builder: (context, box) {
+        final k = box.maxWidth / DojoSceneLayout.width;
+        final swell = box.maxHeight - DojoSceneLayout.crest * k - DojoSceneLayout.crestGap;
+        final lift = (DojoSceneLayout.foreground * k - swell - DojoSceneLayout.hullTrough * k)
+            .clamp(0.0, DojoSceneLayout.maxLift * k);
+        final frame = _Frame(k, lift);
+        final boat = frame.at(DojoSceneLayout.boat.rect);
+        return Stack(
+          clipBehavior: Clip.none,
+          children: [
+            frame.piece(DojoSceneLayout.sky),
+            Positioned.fill(child: RepaintBoundary(child: _Clouds(k))),
+            frame.piece(DojoSceneLayout.sea),
+            Positioned.fill(
+              child: AnimatedBuilder(
+                animation: Listenable.merge([widget.turn, widget.fade, _unlock]),
+                builder: (context, _) => Stack(clipBehavior: Clip.none, children: _ring(frame)),
+              ),
+            ),
             Positioned.fromRect(
-              rect: widget.torii,
-              child: RepaintBoundary(
-                child: Sway(
-                  turnDeg: 0,
-                  lift: DojoSceneLayout.toriiLift * widget.scale,
-                  period: DojoSceneLayout.toriiPeriod,
-                  child: ScenePicture(DojoSceneLayout.toriiOpen.asset, size: widget.torii.size),
+              rect: boat,
+              child: AnimatedBuilder(
+                animation: widget.boat,
+                builder: (context, child) => Transform.translate(
+                  offset: Offset(-widget.boat.value * DojoRingMotion.boatDrift * k, 0),
+                  child: child,
+                ),
+                child: RepaintBoundary(
+                  child: Sway(
+                    turnDeg: DojoSceneLayout.boatTurnDeg,
+                    lift: DojoSceneLayout.boatLift * k,
+                    period: DojoSceneLayout.boatPeriod,
+                    child: ScenePicture(DojoSceneLayout.boat.asset, size: boat.size),
+                  ),
                 ),
               ),
             ),
-          ]),
-        GateState.opening => AnimatedBuilder(animation: _unlock, builder: (context, _) => _opening(_unlock.value)),
-      };
+            Positioned(
+              left: DojoSceneStyle.title.dx,
+              top: MediaQuery.paddingOf(context).top + DojoSceneStyle.title.dy,
+              child: const _Title(),
+            ),
+          ],
+        );
+      });
 
-  /// The opening [t] of the way through: the rattle, then the swap.
-  Widget _opening(double t) {
-    const snapAt = DojoUnlockMotion.snapAt;
-    if (t < snapAt) {
-      final seconds = t * DojoUnlockMotion.unlock.inMicroseconds / Duration.microsecondsPerSecond;
-      final rattle = DojoUnlockMotion.rattle * (t / snapAt) * math.sin(2 * math.pi * DojoUnlockMotion.rattleHz * seconds);
-      return Stack(clipBehavior: Clip.none, children: [
-        _picture(DojoSceneLayout.toriiLocked, widget.torii, shift: Offset(rattle, 0)),
-      ]);
-    }
-    final u = Curves.easeOut.transform((t - snapAt) / (1 - snapAt));
-    const pop = DojoUnlockMotion.pop;
-    return Stack(clipBehavior: Clip.none, children: [
-      _picture(DojoSceneLayout.nobori, widget.banner,
-          opacity: u, shift: Offset(0, DojoUnlockMotion.banner * widget.scale * (1 - u))),
-      // The padlocked torii is gone by halfway; the open one pops in.
-      _picture(DojoSceneLayout.toriiLocked, widget.torii, opacity: 1 - 2 * u, scale: 1 + pop * u),
-      _picture(DojoSceneLayout.toriiOpen, widget.torii, opacity: u, scale: 1 + pop * (1 - u)),
-    ]);
+  /// The islands, back to front, then the torii and the islands' tags: the
+  /// ring at [widget.turn], or while [widget.fade] runs, the ring at
+  /// [widget.fadeFrom] fading out under it fading in.
+  List<Widget> _ring(_Frame frame) {
+    final fade = widget.fade.value;
+    final turn = widget.turn.value;
+    final shown = [
+      if (fade < 1) (turn: widget.fadeFrom.toDouble(), opacity: 1 - fade, leaving: true),
+      (turn: turn, opacity: fade, leaving: false),
+    ];
+    final front = SideTripRing.frontAt(fade < 1 / 2 ? widget.fadeFrom : turn.round());
+    return [
+      for (final ring in shown)
+        for (final (isle, spec) in _placed(ring.turn))
+          _Isle(isle, spec, frame, key: ValueKey((ring.leaving, isle)), opacity: ring.opacity, raised: _raised),
+      _torii(frame, front == SideTripIsle.ankiren ? widget.gate : GateState.locked),
+      for (final ring in shown)
+        for (final (isle, spec) in _placed(ring.turn))
+          if (_artOf(isle).tag case final tag? when spec.label * ring.opacity > 0)
+            Positioned.fill(
+              key: ValueKey((ring.leaving, isle, tag)),
+              child: CustomSingleChildLayout(
+                delegate: _TagAnchor(frame.onCanvas(spec, tag)),
+                child: ExcludeSemantics(
+                  child: Opacity(opacity: spec.label * ring.opacity, child: _SoonTag(S.of(context).sideTripsBuilding)),
+                ),
+              ),
+            ),
+    ];
   }
+
+  /// Each island where the ring at [turn] puts it, deepest first.
+  static List<(SideTripIsle, RingSlotSpec)> _placed(double turn) => [
+        for (final isle in SideTripRing.isles) (isle, _specAt(SideTripRing.place(isle, turn))),
+      ]..sort((a, b) => a.$2.depth.compareTo(b.$2.depth));
+
+  /// The slot at [place] round the ring, or part of the way between two.
+  static RingSlotSpec _specAt(double place) {
+    const slots = DojoRingLayout.slots;
+    final from = place.floor();
+    return RingSlotSpec.lerp(slots[from % slots.length], slots[(from + 1) % slots.length], place - from);
+  }
+
+  /// The torii standing [state]: padlocked, opening (the padlocked one
+  /// rattles, snaps and gives way to the open one popping in) or open,
+  /// bobbing.
+  Widget _torii(_Frame frame, GateState state) {
+    final rect = frame.at(DojoSceneLayout.toriiOpen.rect);
+    Widget picture(ScenePiece piece, {double opacity = 1, double scale = 1, Offset shift = Offset.zero}) =>
+        Positioned.fromRect(
+          rect: rect.shift(shift),
+          child: Opacity(
+            opacity: opacity.clamp(0.0, 1.0),
+            child: Transform.scale(
+              scale: scale,
+              alignment: Alignment.bottomCenter,
+              child: ScenePicture(piece.asset, size: rect.size),
+            ),
+          ),
+        );
+
+    final t = _unlock.value;
+    const snapAt = DojoUnlockMotion.snapAt;
+    const pop = DojoUnlockMotion.pop;
+    final children = switch (state) {
+      GateState.locked => [picture(DojoSceneLayout.toriiLocked)],
+      GateState.open => [
+          Positioned.fromRect(
+            rect: rect,
+            child: RepaintBoundary(
+              child: Sway(
+                turnDeg: 0,
+                lift: DojoSceneLayout.toriiLift * frame.k,
+                period: DojoSceneLayout.toriiPeriod,
+                child: ScenePicture(DojoSceneLayout.toriiOpen.asset, size: rect.size),
+              ),
+            ),
+          ),
+        ],
+      GateState.opening when t < snapAt => [
+          picture(DojoSceneLayout.toriiLocked,
+              shift: Offset(
+                  DojoUnlockMotion.rattle *
+                      (t / snapAt) *
+                      math.sin(2 * math.pi * DojoUnlockMotion.rattleHz * t * DojoUnlockMotion.unlock.inMicroseconds /
+                          Duration.microsecondsPerSecond),
+                  0)),
+        ],
+      // The padlocked torii is gone by halfway; the open one pops in.
+      GateState.opening => [
+          picture(DojoSceneLayout.toriiLocked, opacity: 1 - 2 * _raised, scale: 1 + pop * _raised),
+          picture(DojoSceneLayout.toriiOpen, opacity: _raised, scale: 1 + pop * (1 - _raised)),
+        ],
+    };
+    return Stack(key: const ValueKey('torii'), clipBehavior: Clip.none, children: children);
+  }
+}
+
+/// [isle]'s pictures.
+RingIsleArt _artOf(SideTripIsle isle) => switch (isle) {
+      SideTripIsle.ankiren => DojoRingLayout.ankiren,
+      SideTripIsle.building => DojoRingLayout.building,
+      SideTripIsle.fuji => DojoRingLayout.fuji,
+      SideTripIsle.lighthouse => DojoRingLayout.lighthouse,
+    };
+
+/// The scene's frame on screen: [k] dp a unit, lifted by [lift] dp.
+class _Frame {
+  const _Frame(this.k, this.lift);
+
+  final double k, lift;
+
+  Rect at(Rect r) => Rect.fromLTWH(r.left * k, r.top * k - lift, r.width * k, r.height * k);
+
+  Widget piece(ScenePiece p) {
+    final r = at(p.rect);
+    return Positioned.fromRect(rect: r, child: ScenePicture(p.asset, size: r.size));
+  }
+
+  /// Where [spec] puts the island canvas's top left corner.
+  Offset canvasAt(RingSlotSpec spec) => (spec.foot - DojoRingLayout.foot * spec.scale) * k - Offset(0, lift);
+
+  /// Where [spec] puts the point [p] of the island canvas.
+  Offset onCanvas(RingSlotSpec spec, Offset p) => canvasAt(spec) + p * spec.scale * k;
+}
+
+/// [isle] where [spec] puts it, [opacity] shown: its colour picture with
+/// its haze one over it as far as the slot is hazy; 暗記練's island with
+/// its banner, as far as it is [raised] and its slot shows labels.
+class _Isle extends StatelessWidget {
+  const _Isle(this.isle, this.spec, this.frame, {super.key, required this.opacity, required this.raised});
+
+  final SideTripIsle isle;
+  final RingSlotSpec spec;
+  final _Frame frame;
+  final double opacity, raised;
+
+  @override
+  Widget build(BuildContext context) {
+    final k = frame.k;
+    final art = _artOf(isle);
+    final size = DojoRingLayout.canvas * k;
+    final banner = isle == SideTripIsle.ankiren ? raised * spec.label : 0.0;
+    final nobori = DojoRingLayout.nobori.rect;
+    final at = frame.canvasAt(spec);
+    return Positioned(
+      left: 0,
+      top: 0,
+      child: Opacity(
+        opacity: opacity,
+        child: Transform(
+          transform: Matrix4.diagonal3Values(spec.scale, spec.scale, 1)..setTranslationRaw(at.dx, at.dy, 0),
+          child: SizedBox.fromSize(
+            size: size,
+            child: Stack(clipBehavior: Clip.none, children: [
+              if (spec.haze < 1) ScenePicture(art.colour, size: size),
+              if (spec.haze > 0) Opacity(opacity: spec.haze, child: ScenePicture(art.haze, size: size)),
+              if (banner > 0)
+                Positioned.fromRect(
+                  rect: Rect.fromLTWH(nobori.left * k, (nobori.top + DojoUnlockMotion.banner * (1 - raised)) * k,
+                      nobori.width * k, nobori.height * k),
+                  child: Opacity(
+                    opacity: banner,
+                    child: ScenePicture(DojoRingLayout.nobori.asset, size: nobori.size * k),
+                  ),
+                ),
+            ]),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// The clouds drifting across the sky, round and round; still under
+/// reduced motion.
+class _Clouds extends StatelessWidget {
+  const _Clouds(this.k);
+
+  final double k;
+
+  @override
+  Widget build(BuildContext context) => IdleLoop(
+        step: DojoSceneLayout.cloudStep,
+        builder: (context, elapsed, _) {
+          final loop = (elapsed.inMicroseconds % DojoSceneLayout.cloudLoop.inMicroseconds) /
+              DojoSceneLayout.cloudLoop.inMicroseconds;
+          return Stack(clipBehavior: Clip.none, children: [
+            for (final cloud in DojoSceneLayout.clouds)
+              _cloud(cloud.piece.rect, cloud.piece.asset, loop * cloud.laps),
+          ]);
+        },
+      );
+
+  /// A cloud first at [rect], [laps] of the way round: across the frame
+  /// and its own width, so it is gone on one side before it comes back on
+  /// the other.
+  Widget _cloud(Rect rect, String asset, double laps) {
+    final span = DojoSceneLayout.width + rect.width;
+    final left = (rect.left + rect.width + laps * span) % span - rect.width;
+    final r = Rect.fromLTWH(left * k, rect.top * k, rect.width * k, rect.height * k);
+    return Positioned.fromRect(rect: r, child: ScenePicture(asset, size: r.size));
+  }
+}
+
+/// A picture of the scene at [size], decoded no bigger than it shows.
+class ScenePicture extends StatelessWidget {
+  const ScenePicture(this.asset, {super.key, required this.size});
+
+  final String asset;
+  final Size size;
+
+  @override
+  Widget build(BuildContext context) => Image.asset(
+        asset,
+        width: size.width,
+        height: size.height,
+        fit: BoxFit.fill,
+        cacheWidth: (size.width * MediaQuery.devicePixelRatioOf(context)).round(),
+        filterQuality: FilterQuality.medium,
+        gaplessPlayback: true,
+        excludeFromSemantics: true,
+      );
+}
+
+/// 寄り道 lettered over the sky, with its banner.
+class _Title extends StatelessWidget {
+  const _Title();
+
+  @override
+  Widget build(BuildContext context) {
+    final s = S.of(context);
+    return Semantics(
+      container: true,
+      header: true,
+      label: s.sideTrips,
+      excludeSemantics: true,
+      child: MediaQuery.withClampedTextScaling(
+        maxScaleFactor: SideTripsLayout.letteringMaxScale,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            OutlinedText(
+              s.sideTripsLettering,
+              outlineWidth: DojoSceneStyle.titleOutline,
+              style: const TextStyle(
+                  fontFamily: Fonts.display, fontSize: DojoSceneStyle.titleFont, height: TypeScale.displayLineHeight),
+            ),
+            const SizedBox(height: DojoSceneStyle.titleBannerGap),
+            InkBanner(s.sideTripsBanner, fontSize: DojoSceneStyle.titleBannerFont),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// The "coming soon" tag of an island still being built: [label] and a
+/// little ink chip saying soon in the other language, in a sun box. Like
+/// the scene's lettering, it grows with the system text size only so far.
+class _SoonTag extends StatelessWidget {
+  const _SoonTag(this.label);
+
+  final String label;
+
+  @override
+  Widget build(BuildContext context) => MediaQuery.withClampedTextScaling(
+        maxScaleFactor: SideTripsLayout.letteringMaxScale,
+        child: DecoratedBox(
+          decoration:
+              BoxDecoration(color: Palette.sun, border: Border.all(color: Palette.ink, width: DojoSceneStyle.tagBorder)),
+          child: Padding(
+            padding: DojoSceneStyle.tagPadding,
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(label,
+                    style: const TextStyle(
+                        fontWeight: Weights.black, fontSize: DojoSceneStyle.tagFont, height: DojoSceneStyle.tagLineHeight)),
+                const SizedBox(width: DojoSceneStyle.chipGap),
+                InkTag(
+                  S.of(context).other.sideTripsSoon.toUpperCase(),
+                  fontSize: DojoSceneStyle.chipFont,
+                  tracking: DojoSceneStyle.chipTracking,
+                  padding: DojoSceneStyle.chipPadding,
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
+}
+
+/// Hangs a tag from its top left corner at [at], kept inside the screen's
+/// gutters.
+class _TagAnchor extends SingleChildLayoutDelegate {
+  _TagAnchor(this.at);
+
+  final Offset at;
+
+  @override
+  BoxConstraints getConstraintsForChild(BoxConstraints constraints) => constraints.loosen();
+
+  @override
+  Offset getPositionForChild(Size size, Size childSize) =>
+      Offset(at.dx.clamp(Gaps.gutter, math.max(Gaps.gutter, size.width - Gaps.gutter - childSize.width)), at.dy);
+
+  @override
+  bool shouldRelayout(_TagAnchor old) => old.at != at;
 }

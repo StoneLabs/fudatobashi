@@ -12,10 +12,28 @@ extension SideTripStrings on S {
   String get sideTripsLettering => t('sideTripsLettering');
   String get sideTripsBanner => t('sideTripsBanner');
 
-  /// The scene's "coming soon" tags.
-  String get sideTripsMist => t('sideTripsMist');
+  /// The scene's "coming soon" tag.
   String get sideTripsBuilding => t('sideTripsBuilding');
   String get sideTripsSoon => t('sideTripsSoon');
+
+  /// An island still being built: its lettering (Japanese in every
+  /// language) and banner, and its panel's title and line.
+  String get sideTripsSoonLettering => t('sideTripsSoonLettering');
+  String get sideTripsSoonBanner => t('sideTripsSoonBanner');
+  String get sideTripsSoonTitle => t('sideTripsSoonTitle');
+  String get sideTripsSoonLine => t('sideTripsSoonLine');
+
+  /// [isle]'s name, for screen readers.
+  String isleName(SideTripIsle isle) => switch (isle) {
+        SideTripIsle.ankiren => t('ankirenName'),
+        SideTripIsle.building => t('sideTripsIsleBuilding'),
+        SideTripIsle.fuji => t('sideTripsIsleFuji'),
+        SideTripIsle.lighthouse => t('sideTripsIsleLighthouse'),
+      };
+
+  /// The screen-reader actions that turn the ring of islands.
+  String get sideTripsNextIsland => t('sideTripsNextIsland');
+  String get sideTripsPreviousIsland => t('sideTripsPreviousIsland');
 
   /// The banner under [trip]'s name, what it is, and the tag beside its
   /// lettering on the hub.

@@ -302,6 +302,21 @@ abstract final class SideTripTuning {
   static const int ankirenFreeRemembered = 50;
 }
 
+/// How a swipe turns the Side Trips tab's ring of islands (`SideTripRing`).
+abstract final class SideTripRingTuning {
+  /// A drag across this share of the screen's width turns the ring one
+  /// step, so the entries ride under the finger.
+  static const double dragPerStep = 1;
+
+  /// A release at least this fast, px/s, turns on to the next step in its
+  /// direction; a slower one settles on the nearest.
+  static const double flingSpeed = 320;
+
+  /// Under reduced motion nothing follows the finger: a swipe at least
+  /// this long, px (or a fling), turns the ring a step.
+  static const double stillSwipe = 48;
+}
+
 /// The full-screen warnings before what can't be undone (`HoldWarningScreen`:
 /// Settings' journey → all-known switch, Reset all data): confirming takes a
 /// deliberate hold instead of a tap.

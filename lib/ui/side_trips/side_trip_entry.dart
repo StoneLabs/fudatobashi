@@ -1,5 +1,6 @@
 import 'dart:math' as math;
 
+import 'package:flutter/rendering.dart';
 import 'package:flutter/widgets.dart';
 
 import '../../config/design.dart';
@@ -14,6 +15,22 @@ import '../home/home_screen.dart';
 import '../home/home_widgets.dart';
 import '../manga/manga.dart';
 import '../play/time_format.dart';
+
+/// A side trip's entry on the hub: its head ([SideTripHead]) hanging over
+/// the top of its panel and buttons ([SideTripBody]).
+class SideTripEntryView extends StatelessWidget {
+  const SideTripEntryView(this.entry,
+      {super.key, required this.onRanked, required this.onFree, required this.onRules});
+
+  final SideTripEntry entry;
+  final VoidCallback onRanked, onFree, onRules;
+
+  @override
+  Widget build(BuildContext context) => _HeadOver(
+        head: SideTripHead(entry),
+        body: SideTripBody(entry, onRanked: onRanked, onFree: onFree, onRules: onRules),
+      );
+}
 
 /// A side trip's name lettered on the hub with its tag, and once it is open
 /// its rank flag at the right: the head that breaks out over the top of its
@@ -31,25 +48,8 @@ class SideTripHead extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.end,
           children: [
             Flexible(
-              child: Padding(
-                padding: const EdgeInsets.only(left: SideTripsLayout.headInset, bottom: SideTripsLayout.letteringDrop),
-                child: FittedBox(
-                  fit: BoxFit.scaleDown,
-                  alignment: Alignment.bottomLeft,
-                  child: Row(mainAxisSize: MainAxisSize.min, children: [
-                    OutlinedText(
-                      entry.trip.label,
-                      outlineWidth: SideTripsLayout.letteringOutline,
-                      style: const TextStyle(
-                          fontFamily: Fonts.display,
-                          fontSize: SideTripsLayout.letteringFont,
-                          height: TypeScale.displayLineHeight),
-                    ),
-                    const SizedBox(width: SideTripsLayout.letteringGap),
-                    InkBanner(S.of(context).tripTag(entry.trip), fontSize: SideTripsLayout.bannerFont),
-                  ]),
-                ),
-              ),
+              child: _Lettering(entry.trip.label, S.of(context).tripTag(entry.trip),
+                  fontSize: SideTripsLayout.letteringFont),
             ),
             if (entry.open)
               Padding(
@@ -59,6 +59,129 @@ class SideTripHead extends StatelessWidget {
           ],
         ),
       );
+}
+
+/// A name lettered on the hub, shrinking rather than overflowing, with its
+/// [tag] on an ink banner beside it.
+class _Lettering extends StatelessWidget {
+  const _Lettering(this.text, this.tag, {required this.fontSize});
+
+  final String text, tag;
+  final double fontSize;
+
+  @override
+  Widget build(BuildContext context) => Padding(
+        padding: const EdgeInsets.only(left: SideTripsLayout.headInset, bottom: SideTripsLayout.letteringDrop),
+        child: FittedBox(
+          fit: BoxFit.scaleDown,
+          alignment: Alignment.bottomLeft,
+          child: Row(mainAxisSize: MainAxisSize.min, children: [
+            OutlinedText(
+              text,
+              outlineWidth: SideTripsLayout.letteringOutline,
+              style: TextStyle(fontFamily: Fonts.display, fontSize: fontSize, height: TypeScale.displayLineHeight),
+            ),
+            const SizedBox(width: SideTripsLayout.letteringGap),
+            InkBanner(tag, fontSize: SideTripsLayout.bannerFont),
+          ]),
+        ),
+      );
+}
+
+/// The entry of an island still being built: 近日公開 lettered over a small
+/// panel saying that it is under construction.
+class SideTripSoonEntry extends StatelessWidget {
+  const SideTripSoonEntry({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    final s = S.of(context);
+    return _HeadOver(
+      head: MediaQuery.withClampedTextScaling(
+        maxScaleFactor: SideTripsLayout.letteringMaxScale,
+        child: Align(
+          alignment: Alignment.bottomLeft,
+          child: _Lettering(s.sideTripsSoonLettering, s.sideTripsSoonBanner,
+              fontSize: SideTripsLayout.soonLetteringFont),
+        ),
+      ),
+      body: MangaPanel(
+        shape: const PanelShape(topLeft: Offset(0, SideTripsLayout.cut)),
+        padding: const EdgeInsets.only(top: SideTripsLayout.overlap),
+        child: Padding(
+          padding: SideTripsLayout.soonPadding,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text.rich(
+                TextSpan(children: [
+                  TextSpan(
+                    text: s.sideTripsSoonTitle,
+                    style: const TextStyle(fontFamily: Fonts.display, fontSize: SideTripsLayout.soonTitleFont),
+                  ),
+                  const TextSpan(text: ' '),
+                  TextSpan(
+                    text: s.other.sideTripsSoonTitle.toUpperCase(),
+                    style: const TextStyle(
+                      fontWeight: Weights.black,
+                      fontSize: SideTripsLayout.subFont,
+                      letterSpacing: SideTripsLayout.subTracking * SideTripsLayout.subFont,
+                    ),
+                  ),
+                ]),
+              ),
+              const SizedBox(height: SideTripsLayout.soonLineGap),
+              Text(
+                s.sideTripsSoonLine,
+                style: const TextStyle(fontWeight: Weights.bold, fontSize: SideTripsLayout.soonLineFont),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// [head] hanging [SideTripsLayout.overlap] over the top of [body], and
+/// painted over it.
+class _HeadOver extends MultiChildRenderObjectWidget {
+  _HeadOver({required Widget head, required Widget body}) : super(children: [body, head]);
+
+  @override
+  RenderObject createRenderObject(BuildContext context) => _RenderHeadOver();
+}
+
+class _HeadOverParentData extends ContainerBoxParentData<RenderBox> {}
+
+class _RenderHeadOver extends RenderBox
+    with
+        ContainerRenderObjectMixin<RenderBox, _HeadOverParentData>,
+        RenderBoxContainerDefaultsMixin<RenderBox, _HeadOverParentData> {
+  @override
+  void setupParentData(RenderBox child) {
+    if (child.parentData is! _HeadOverParentData) child.parentData = _HeadOverParentData();
+  }
+
+  @override
+  void performLayout() {
+    final body = firstChild!;
+    final head = childAfter(body)!;
+    final width = BoxConstraints.tightFor(width: constraints.maxWidth);
+    head.layout(width, parentUsesSize: true);
+    body.layout(width, parentUsesSize: true);
+    final top = head.size.height - SideTripsLayout.overlap;
+    (body.parentData! as _HeadOverParentData).offset = Offset(0, top);
+    size = constraints.constrain(Size(constraints.maxWidth, top + body.size.height));
+  }
+
+  @override
+  void paint(PaintingContext context, Offset offset) => defaultPaint(context, offset);
+
+  @override
+  bool hitTestChildren(BoxHitTestResult result, {required Offset position}) =>
+      defaultHitTestChildren(result, position: position);
 }
 
 /// The rank flag planted on the panel's edge, its cloth lettered with the

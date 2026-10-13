@@ -6,6 +6,7 @@
 // With RENDER_SCREENS=1 it also renders the hub at 1080 × 2340 px, with
 // real fonts and art, to .scratchpad/side_trips/.
 import 'dart:io';
+import 'dart:math' as math;
 import 'dart:ui' as ui;
 
 import 'package:drift/drift.dart' show driftRuntimeOptions;
@@ -167,6 +168,32 @@ void main() {
 
   Finder inHub(Finder f) => find.descendant(of: find.byType(SideTripsScreen), matching: f);
 
+  // How far the ring has turned, and the island in front.
+  double turnOf(WidgetTester tester) => tester.widget<DojoScene>(find.byType(DojoScene)).turn.value;
+  SideTripIsle frontOf(WidgetTester tester) => SideTripRing.frontAt(turnOf(tester).round());
+
+  // The lowest the front swell's crest line runs: its picture's top, the
+  // one on screen and highest, plus how deep its crest goes.
+  double crestBottom(WidgetTester tester, _Phone phone) {
+    final tops = [
+      for (final e in inHub(find.byWidgetPredicate(
+              (w) => w is ScenePicture && w.asset == DojoSceneLayout.seaNear.asset)).evaluate())
+        if (tester.getRect(find.byWidget(e.widget).first).left.abs() < 0.5) tester.getRect(find.byWidget(e.widget).first).top,
+    ];
+    return tops.reduce(math.min) + DojoSceneLayout.crest * phone.size.width / DojoSceneLayout.width;
+  }
+
+  // Swipes the ring a step: a finger going left turns it forward.
+  Future<void> swipe(WidgetTester tester, {bool forward = true}) async {
+    await tester.fling(inHub(find.byType(DojoScene)), Offset(forward ? -200 : 200, 0), 1200);
+    await tester.pump();
+    await tester.pump(const Duration(seconds: 2));
+    await tester.pump();
+  }
+
+  Finder pictures(String asset) =>
+      inHub(find.byWidgetPredicate((w) => w is ScenePicture && w.asset == asset));
+
   // [f] shows whole, inside the gutters and above the tab bar.
   void expectShown(WidgetTester tester, Finder f, _Phone phone) {
     final r = tester.getRect(f);
@@ -181,18 +208,17 @@ void main() {
     final used = {
       for (final piece in [
         DojoSceneLayout.sky,
-        ...DojoSceneLayout.farLeft,
-        DojoSceneLayout.fuji,
+        for (final cloud in DojoSceneLayout.clouds) cloud.piece,
         DojoSceneLayout.sea,
-        DojoSceneLayout.construction,
-        DojoSceneLayout.isle,
-        DojoSceneLayout.nobori,
         DojoSceneLayout.toriiLocked,
         DojoSceneLayout.toriiOpen,
         DojoSceneLayout.boat,
         DojoSceneLayout.seaNear,
+        DojoRingLayout.nobori,
       ])
         piece.asset,
+      for (final art in [DojoRingLayout.ankiren, DojoRingLayout.building, DojoRingLayout.fuji, DojoRingLayout.lighthouse])
+        ...[art.colour, art.haze],
       SideTripsLayout.flag,
       AnkirenRulesLayout.memorise,
       AnkirenRulesLayout.flip,
@@ -202,7 +228,7 @@ void main() {
   });
 
   group('fits', () {
-    for (final phone in [_narrow, _wide]) {
+    for (final phone in [_narrow, _users, _wide]) {
       for (final fontScale in [1.0, 1.3]) {
         for (final lang in ['en', 'ja']) {
           for (final hub in _Hub.values) {
@@ -218,6 +244,8 @@ void main() {
               expect(scroll.position.maxScrollExtent, 0, reason: 'the hub fits without scrolling');
               expectShown(tester, inHub(find.byType(SideTripBody)), phone);
               expectShown(tester, inHub(find.byType(SideTripHead)), phone);
+              expect(tester.getRect(inHub(find.byType(SideTripHead))).top,
+                  greaterThanOrEqualTo(crestBottom(tester, phone)), reason: 'the entry sits under the crest');
               expect(tester.getRect(inHub(find.text(s.sideTripsLettering)).first).top,
                   greaterThanOrEqualTo(_statusBar), reason: 'the title clears the status bar');
               for (final label in [s.howToPlay, if (hub != _Hub.locked) s.freePlay]) {
@@ -326,6 +354,231 @@ void main() {
     });
   });
 
+  group('ring', () {
+    testWidgets('a swipe left brings the island on the right to the front, round and round; a swipe right goes back',
+        (tester) async {
+      final p = await open(tester, _Hub.ranked, 'en');
+      await openHub(tester, p, _users);
+      expect(frontOf(tester), SideTripIsle.ankiren);
+      final order = <SideTripIsle>[];
+      for (var i = 0; i < 4; i++) {
+        await swipe(tester);
+        order.add(frontOf(tester));
+      }
+      expect(order, [SideTripIsle.building, SideTripIsle.fuji, SideTripIsle.lighthouse, SideTripIsle.ankiren]);
+      expect(turnOf(tester), 4);
+
+      order.clear();
+      for (var i = 0; i < 5; i++) {
+        await swipe(tester, forward: false);
+        order.add(frontOf(tester));
+      }
+      expect(order, [
+        SideTripIsle.lighthouse,
+        SideTripIsle.fuji,
+        SideTripIsle.building,
+        SideTripIsle.ankiren,
+        SideTripIsle.lighthouse,
+      ]);
+      expect(turnOf(tester), -1);
+      expect(tester.takeException(), isNull);
+      await tester.pumpWidget(const SizedBox());
+    });
+
+    testWidgets('one swipe turns one step, however hard; a short slow one settles back, a long slow one turns',
+        (tester) async {
+      final p = await open(tester, _Hub.ranked, 'en');
+      await openHub(tester, p, _users);
+      await tester.fling(inHub(find.byType(DojoScene)), const Offset(-370, 0), 6000);
+      await tester.pump();
+      await tester.pump(const Duration(seconds: 2));
+      expect(turnOf(tester), 1);
+
+      await tester.timedDrag(inHub(find.byType(DojoScene)), const Offset(-90, 0), const Duration(seconds: 1));
+      await tester.pump();
+      await tester.pump(const Duration(seconds: 2));
+      expect(turnOf(tester), 1, reason: 'not far enough');
+
+      await tester.timedDrag(inHub(find.byType(DojoScene)), const Offset(260, 0), const Duration(seconds: 1));
+      await tester.pump();
+      await tester.pump(const Duration(seconds: 2));
+      expect(turnOf(tester), 0, reason: 'past halfway');
+      await tester.pumpWidget(const SizedBox());
+    });
+
+    testWidgets('the turn follows the finger: the entries ride across on their swells', (tester) async {
+      final p = await open(tester, _Hub.ranked, 'en');
+      await openHub(tester, p, _users);
+      final width = _users.size.width;
+      final gesture = await tester.startGesture(tester.getCenter(inHub(find.byType(DojoScene))));
+      await gesture.moveBy(const Offset(-20, 0));
+      await gesture.moveBy(Offset(-width / 4, 0));
+      await tester.pump();
+      final turn = turnOf(tester);
+      expect(turn, closeTo(0.25 + 20 / width, 0.02));
+      final body = tester.getRect(inHub(find.byType(SideTripBody)));
+      expect(body.left, closeTo(Gaps.gutter - turn * width, 0.5), reason: '暗記練 washes out to the left');
+      expect(tester.getRect(inHub(find.byType(SideTripSoonEntry)).first).left,
+          closeTo(Gaps.gutter + (1 - turn) * width, 0.5), reason: 'the next rolls in from the right');
+      await gesture.up();
+      await tester.pump();
+      await tester.pump(const Duration(seconds: 2));
+      expect(turnOf(tester), 0);
+      await tester.pumpWidget(const SizedBox());
+    });
+
+    testWidgets('a swipe that starts on the burst turns the ring and starts no game', (tester) async {
+      final p = await open(tester, _Hub.ranked, 'en');
+      await openHub(tester, p, _users);
+      await tester.fling(inHub(find.byType(RankedBurst)), const Offset(-200, 0), 1200);
+      await tester.pump();
+      await tester.pump(const Duration(seconds: 2));
+      expect(frontOf(tester), SideTripIsle.building);
+      expect(find.byType(AnkirenScreen), findsNothing);
+      await tester.pumpWidget(const SizedBox());
+    });
+
+    testWidgets('each step: its entry in front, labels on the front and right islands, its torii', (tester) async {
+      const s = S('en');
+      final p = await open(tester, _Hub.ranked, 'en');
+      await openHub(tester, p, _users);
+      int tags() => inHub(find.text(s.sideTripsBuilding)).evaluate().length;
+
+      expect(inHub(find.byType(SideTripBody)).hitTestable(), findsOneWidget);
+      expect(inHub(find.byType(SideTripSoonEntry)).hitTestable(), findsNothing);
+      expect(tags(), 1, reason: 'the building site on the right');
+      expect(pictures(DojoRingLayout.nobori.asset), findsOneWidget, reason: "暗記練's banner is its label");
+      expect(pictures(DojoSceneLayout.toriiOpen.asset), findsOneWidget);
+
+      for (final (front, labels, banner) in [
+        (SideTripIsle.building, 2, false),
+        (SideTripIsle.fuji, 2, false),
+        (SideTripIsle.lighthouse, 1, true),
+      ]) {
+        await swipe(tester);
+        expect(frontOf(tester), front);
+        expect(inHub(find.byType(SideTripSoonEntry)).hitTestable(), findsOneWidget, reason: '$front');
+        expect(inHub(find.byType(SideTripBody)).hitTestable(), findsNothing, reason: '$front');
+        expect(inHub(find.text(s.sideTripsSoonLine)).hitTestable(), findsOneWidget, reason: 'one entry shows');
+        expect(tags(), labels, reason: '$front');
+        expect(pictures(DojoRingLayout.nobori.asset), banner ? findsOneWidget : findsNothing, reason: '$front');
+        expect(pictures(DojoSceneLayout.toriiOpen.asset), findsNothing, reason: 'padlocked for $front');
+        expect(pictures(DojoSceneLayout.toriiLocked.asset), findsOneWidget, reason: '$front');
+      }
+      await tester.pumpWidget(const SizedBox());
+    });
+
+    testWidgets('the boat drifts with the turn, then springs back', (tester) async {
+      final p = await open(tester, _Hub.ranked, 'en');
+      await openHub(tester, p, _users);
+      double drift() => tester.widget<DojoScene>(find.byType(DojoScene)).boat.value;
+      final gesture = await tester.startGesture(tester.getCenter(inHub(find.byType(DojoScene))));
+      await gesture.moveBy(const Offset(-20, 0));
+      await gesture.moveBy(const Offset(-220, 0));
+      await tester.pump();
+      expect(drift(), closeTo(turnOf(tester), 1e-9), reason: 'drifts with the turn: left, as the swipe');
+      await gesture.up();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 600));
+      expect(turnOf(tester), 1);
+      expect(drift(), isNot(closeTo(0, 0.01)), reason: 'still on its way back');
+      await tester.pump(const Duration(seconds: 3));
+      await tester.pump(const Duration(seconds: 3));
+      expect(drift(), closeTo(0, 1e-3));
+      await tester.pumpWidget(const SizedBox());
+    });
+
+    testWidgets('the tab comes back with 暗記練 in front', (tester) async {
+      const s = S('en');
+      final p = await open(tester, _Hub.ranked, 'en');
+      await openHub(tester, p, _users);
+      await swipe(tester);
+      await swipe(tester);
+      expect(frontOf(tester), SideTripIsle.fuji);
+      await tester.tap(find.descendant(of: find.byType(MangaTabBar), matching: find.text(s.home)));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
+      await tester.tap(find.descendant(of: find.byType(MangaTabBar), matching: find.text(s.sideTrips)));
+      await tester.pump();
+      expect(turnOf(tester), 0);
+      expect(inHub(find.byType(SideTripBody)).hitTestable(), findsOneWidget);
+      await tester.pumpWidget(const SizedBox());
+    });
+
+    testWidgets('screen readers hear the island and can turn the ring', (tester) async {
+      const s = S('en');
+      final semantics = tester.ensureSemantics();
+      final p = await open(tester, _Hub.ranked, 'en');
+      await openHub(tester, p, _users);
+      void act(SideTripIsle shown, String action) => tester.semantics.performAction(
+            find.semantics.byLabel(s.isleName(shown)),
+            SemanticsAction.customAction,
+            args: CustomSemanticsAction.getIdentifier(CustomSemanticsAction(label: action)),
+          );
+
+      expect(find.semantics.byLabel(s.isleName(SideTripIsle.ankiren)), findsOne);
+      act(SideTripIsle.ankiren, s.sideTripsNextIsland);
+      await tester.pump();
+      await tester.pump(const Duration(seconds: 2));
+      await tester.pump();
+      expect(frontOf(tester), SideTripIsle.building);
+      expect(find.semantics.byLabel(s.isleName(SideTripIsle.building)), findsOne);
+      act(SideTripIsle.building, s.sideTripsPreviousIsland);
+      await tester.pump();
+      await tester.pump(const Duration(seconds: 2));
+      await tester.pump();
+      act(SideTripIsle.ankiren, s.sideTripsPreviousIsland);
+      await tester.pump();
+      await tester.pump(const Duration(seconds: 2));
+      await tester.pump();
+      expect(frontOf(tester), SideTripIsle.lighthouse);
+      expect(find.semantics.byLabel(s.isleName(SideTripIsle.lighthouse)), findsOne);
+      await tester.pumpWidget(const SizedBox());
+      semantics.dispose();
+    });
+
+    testWidgets('under reduced motion a swipe crossfades to the next island; nothing drifts', (tester) async {
+      tester.platformDispatcher.accessibilityFeaturesTestValue = const FakeAccessibilityFeatures(disableAnimations: true);
+      addTearDown(tester.platformDispatcher.clearAccessibilityFeaturesTestValue);
+      final p = await open(tester, _Hub.ranked, 'en');
+      await openHub(tester, p, _users);
+      double drift() => tester.widget<DojoScene>(find.byType(DojoScene)).boat.value;
+      final body = tester.getRect(inHub(find.byType(SideTripBody)));
+
+      final gesture = await tester.startGesture(tester.getCenter(inHub(find.byType(DojoScene))));
+      await gesture.moveBy(const Offset(-20, 0));
+      await gesture.moveBy(const Offset(-100, 0));
+      await tester.pump();
+      expect(turnOf(tester), 0, reason: 'nothing follows the finger');
+      expect(tester.getRect(inHub(find.byType(SideTripBody))), body);
+      await gesture.up();
+      await tester.pump();
+      expect(turnOf(tester), 1);
+      await tester.pump(DojoRingMotion.crossfade ~/ 2);
+      expect(tester.getRect(inHub(find.byType(SideTripBody))), body, reason: 'fading where it rests');
+      expect(drift(), 0);
+      await tester.pump(DojoRingMotion.crossfade);
+      expect(frontOf(tester), SideTripIsle.building);
+      expect(inHub(find.byType(SideTripSoonEntry)).hitTestable(), findsOneWidget);
+      expect(drift(), 0, reason: 'the boat stays still');
+      expect(tester.takeException(), isNull);
+      await tester.pumpWidget(const SizedBox());
+    });
+
+    testWidgets('every coming-soon entry fits under its crest', (tester) async {
+      for (final (phone, lang, fontScale) in [(_narrow, 'ja', 1.3), (_users, 'en', 1.3), (_wide, 'en', 1.0)]) {
+        final p = await open(tester, _Hub.ranked, lang);
+        await openHub(tester, p, phone, fontScale: fontScale);
+        await swipe(tester);
+        expect(tester.takeException(), isNull);
+        final entry = inHub(find.byType(SideTripSoonEntry)).hitTestable();
+        expectShown(tester, entry, phone);
+        expect(tester.getRect(entry).top, greaterThanOrEqualTo(crestBottom(tester, phone)));
+        await tester.pumpWidget(const SizedBox());
+      }
+    });
+  });
+
   group('unlock moment', () {
     GateState gate(WidgetTester tester) => tester.widget<DojoScene>(find.byType(DojoScene)).gate;
 
@@ -359,6 +612,30 @@ void main() {
       expect(gate(tester), GateState.open);
       await tester.pump(DojoUnlockMotion.unlock);
       expect(heard.played, isNot(contains(Sfx.ratingBreak)), reason: 'latched');
+      await tester.pumpWidget(const SizedBox());
+    });
+
+    testWidgets('暗記練 opening while another island is in front waits until it comes back', (tester) async {
+      final p = await open(tester, _Hub.locked, 'en');
+      await tester.runAsync(() => remember(p, journeyOrder.skip(12).take(11)));
+      await openHub(tester, p, _users);
+      await swipe(tester);
+      expect(frontOf(tester), SideTripIsle.building);
+      await tester.runAsync(() => remember(p, journeyOrder.skip(23).take(2)));
+      await tester.pump();
+      await tester.pump(DojoUnlockMotion.unlock);
+      expect(heard.played, isEmpty);
+      expect(p.sideTripsSeenLocked, {SideTrip.ankiren}, reason: 'not shown yet');
+
+      await swipe(tester, forward: false);
+      expect(frontOf(tester), SideTripIsle.ankiren);
+      expect(gate(tester), GateState.opening);
+      await tester.pump();
+      await tester.pump(DojoUnlockMotion.unlock);
+      expect(heard.played, contains(Sfx.ratingBreak));
+      await tester.pump(DojoUnlockMotion.unlock);
+      await tester.pump();
+      expect(gate(tester), GateState.open);
       await tester.pumpWidget(const SizedBox());
     });
 
@@ -425,6 +702,32 @@ void main() {
         at = next;
         await precacheArt(tester);
         await capture(tester, _users, 'unlock_$t');
+      }
+      await tester.pumpWidget(const SizedBox());
+    });
+
+    testWidgets('ring', (tester) async {
+      final p = await open(tester, _Hub.ranked, 'ja');
+      await openHub(tester, p, _users);
+      await precacheArt(tester);
+      final centre = tester.getCenter(inHub(find.byType(DojoScene)));
+      for (final (name, by) in [('back_half', 0.5), ('fwd_30', -0.3), ('fwd_60', -0.6)]) {
+        final gesture = await tester.startGesture(centre);
+        await gesture.moveBy(Offset(by.sign * 20, 0));
+        await gesture.moveBy(Offset(by * _users.size.width - by.sign * 20, 0));
+        await tester.pump();
+        await precacheArt(tester);
+        await capture(tester, _users, 'ring_$name');
+        await gesture.moveBy(Offset(-by * _users.size.width, 0));
+        await gesture.up();
+        await tester.pump();
+        await tester.pump(const Duration(seconds: 3));
+      }
+      for (var step = 1; step <= 3; step++) {
+        await swipe(tester);
+        await tester.pump(const Duration(seconds: 3));
+        await precacheArt(tester);
+        await capture(tester, _users, 'ring_step$step');
       }
       await tester.pumpWidget(const SizedBox());
     });
