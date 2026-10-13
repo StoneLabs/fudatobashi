@@ -317,7 +317,7 @@ void main() {
       await tester.pump(Motion.sheet);
       expect(find.byType(AnkirenRulesSheet), findsOneWidget);
       expect(tester.takeException(), isNull);
-      await tester.tap(find.text(s.sideTripRulesDone));
+      await tester.tap(find.bySemanticsLabel(s.close));
       await tester.pump();
       await tester.pump(Motion.sheet * 2);
       expect(find.byType(AnkirenRulesSheet), findsNothing);

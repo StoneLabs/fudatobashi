@@ -15,6 +15,7 @@ import '../../state/progress.dart';
 import '../../state/scope.dart';
 import '../run/run_launcher.dart';
 import 'ankiren_free_sheet.dart';
+import 'ankiren_page.dart';
 import 'ankiren_rules_sheet.dart';
 import '../manga/manga.dart';
 import 'dojo_scene.dart';
@@ -232,6 +233,7 @@ class _SideTripsScreenState extends State<SideTripsScreen> with TickerProviderSt
         null => const SideTripSoonEntry(),
         SideTrip.ankiren => SideTripEntryView(
             hub[SideTrip.ankiren],
+            onOpen: () => openAnkirenPage(context),
             onRanked: () => startAnkirenRanked(context),
             onFree: () => openAnkirenFree(context),
             onRules: () => openAnkirenRules(context),
