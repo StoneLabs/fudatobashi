@@ -55,6 +55,50 @@ void main() {
     });
   });
 
+  group('ring', () {
+    test('turns forward and back forever, one island a step, the right one coming to the front', () {
+      expect([for (var t = -5; t <= 5; t++) SideTripRing.frontAt(t)], [
+        SideTripIsle.lighthouse,
+        SideTripIsle.ankiren,
+        SideTripIsle.building,
+        SideTripIsle.fuji,
+        SideTripIsle.lighthouse,
+        SideTripIsle.ankiren,
+        SideTripIsle.building,
+        SideTripIsle.fuji,
+        SideTripIsle.lighthouse,
+        SideTripIsle.ankiren,
+        SideTripIsle.building,
+      ]);
+      expect(SideTripIsle.ankiren.trip, SideTrip.ankiren);
+      expect([for (final isle in SideTripRing.isles) isle.comingSoon], [false, true, true, true]);
+    });
+
+    test('each step moves every island on a slot: right to front, front to left, left to back, back to right', () {
+      Map<SideTripIsle, RingSlot> at(int turn) => {for (final i in SideTripRing.isles) i: SideTripRing.slotOf(i, turn)};
+      expect(at(0), {
+        SideTripIsle.ankiren: RingSlot.front,
+        SideTripIsle.building: RingSlot.right,
+        SideTripIsle.fuji: RingSlot.back,
+        SideTripIsle.lighthouse: RingSlot.left,
+      });
+      for (var turn = -6; turn < 6; turn++) {
+        for (final isle in SideTripRing.isles) {
+          final next = switch (SideTripRing.slotOf(isle, turn)) {
+            RingSlot.right => RingSlot.front,
+            RingSlot.front => RingSlot.left,
+            RingSlot.left => RingSlot.back,
+            RingSlot.back => RingSlot.right,
+          };
+          expect(SideTripRing.slotOf(isle, turn + 1), next, reason: '$isle at $turn');
+        }
+      }
+      expect(SideTripRing.place(SideTripIsle.building, 0.25), 0.75, reason: 'part of the way to the front');
+      expect(SideTripRing.place(SideTripIsle.ankiren, 0.25), 3.75, reason: 'part of the way to the left');
+      expect(SideTripRing.place(SideTripIsle.ankiren, -4.5), 0.5);
+    });
+  });
+
   group('hub', () {
     test('a fresh journey: every trip in order, locked, unranked at 入門, nothing played', () {
       final hub = SideTripsHub.of(allKnown: false, remembered: 3);

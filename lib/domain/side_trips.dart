@@ -15,6 +15,47 @@ enum SideTrip {
   final String label;
 }
 
+/// The islands of the Side Trips tab, in the order of their ring: each side
+/// trip's, then those still being built.
+enum SideTripIsle {
+  ankiren(SideTrip.ankiren),
+  building(null),
+  fuji(null),
+  lighthouse(null);
+
+  const SideTripIsle(this.trip);
+
+  /// The side trip played there; null while it is still being built.
+  final SideTrip? trip;
+
+  bool get comingSoon => trip == null;
+}
+
+/// The four places of the ring of islands, in the order an island passes
+/// them as the ring turns back: it comes to the [front] from the [right],
+/// which it reached from the [back], which it reached from the [left].
+enum RingSlot { front, right, back, left }
+
+/// The ring of islands on the Side Trips tab. It turns like a revolver's
+/// cylinder, a step at a time and round forever either way: each step
+/// forward brings the island on the right to the front, sends the front
+/// one to the left, the left one to the back and the back one to the
+/// right. At turn 0 the first island is in front.
+abstract final class SideTripRing {
+  static const isles = SideTripIsle.values;
+
+  /// The island in front after [turn] steps (back ones count negative).
+  static SideTripIsle frontAt(int turn) => isles[turn % isles.length];
+
+  /// Where [isle] stands after [turn] steps.
+  static RingSlot slotOf(SideTripIsle isle, int turn) => RingSlot.values[place(isle, turn.toDouble()).round()];
+
+  /// How far round the ring [isle] is after [turn] steps, a fraction of
+  /// the way between two slots while the ring turns: from 0 (the front) up
+  /// to the [RingSlot] count, which is the front again.
+  static double place(SideTripIsle isle, double turn) => (isle.index - turn) % isles.length;
+}
+
 /// The two ways into a side trip: its ranked games, which move its own
 /// rating, and free play at any setup.
 enum SideTripMode { ranked, free }
