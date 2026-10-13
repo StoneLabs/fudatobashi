@@ -567,21 +567,36 @@ class Trainer {
     return fresh;
   }
 
-  /// The journey's new cards for today, all at once in the morning: when
-  /// nothing is unlocked yet, or the player is ready, whole batches until
-  /// the pace's target for today or its daily cap is reached.
-  List<ItemKey> unlockForToday(Poems p, FudaSets sets, Map<ItemKey, CardStats> stats, DateTime now) {
-    final fresh = <ItemKey>[];
-    if (unlocked.isNotEmpty && !readiness(p, sets, stats).ready) return fresh;
+  /// The journey's new cards for today, all at once in the morning: whole
+  /// batches until the pace's target for today or its daily cap is reached.
+  /// [recall] is the share of first looks answered right on the last practice
+  /// day (null without one): below [PaceTuning.recallHoldBelow] nothing
+  /// unlocks, below [PaceTuning.recallFullFrom] a share of the batches does.
+  List<ItemKey> unlockForToday(Poems p, FudaSets sets, Map<ItemKey, CardStats> stats, DateTime now,
+      {double? recall}) {
+    final started = unlocked.isNotEmpty;
+    if (started && recall != null && recall < PaceTuning.recallHoldBelow) return const [];
+    final batches = <List<ItemKey>>[];
     while (true) {
       final pace = paceStatus(p, sets, stats, now);
       final hold = pace.hold;
       if (hold != UnlockHold.none && hold != UnlockHold.notReady && pace.unlocked > 0) break;
       final batch = unlockNextBatch(p, sets, now);
       if (batch.isEmpty) break;
-      fresh.addAll(batch);
+      batches.add(batch);
     }
-    return fresh;
+    if (started && recall != null && recall < PaceTuning.recallFullFrom && batches.isNotEmpty) {
+      final keep = math.max(1, (batches.length * PaceTuning.recallReducedShare).floor());
+      for (final batch in batches.skip(keep)) {
+        for (final k in batch) {
+          items[k]!
+            ..unlocked = false
+            ..unlockedAt = null;
+        }
+      }
+      batches.length = keep;
+    }
+    return [for (final b in batches) ...b];
   }
 
   /// All cards unlocked and solid: the goal can tighten.

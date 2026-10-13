@@ -284,6 +284,15 @@ abstract final class PaceTuning {
   /// Share of unlocked upright cards that must be solid before more arrive.
   static const double readySolidFraction = 0.8;
 
+  /// Yesterday's first-look recall below which the morning unlocks no new cards.
+  static const double recallHoldBelow = 0.80;
+
+  /// Recall below which the morning unlocks only a share of the new cards.
+  static const double recallFullFrom = 0.86;
+
+  /// Share of the usual new cards unlocked when recall is in between.
+  static const double recallReducedShare = 0.5;
+
   /// Journey days the debug page's pace table looks ahead of today.
   static const int debugLookaheadDays = 3;
 }
@@ -847,6 +856,12 @@ abstract final class SimulationTuning {
   /// Local hour at which a simulated day's set is looked at (any hour of
   /// the day's practice window).
   static const int setCheckHour = 12;
+
+  /// Time between one simulated sitting's end and the next one's start.
+  static const Duration sittingGap = Duration(hours: 2);
+
+  /// Safety stop on the sittings a simulated day plays to finish its set.
+  static const int maxSittingsPerDay = 20;
 }
 
 /// Dev-mode demo data (`seedDemoData`): a journey player's recent history,
