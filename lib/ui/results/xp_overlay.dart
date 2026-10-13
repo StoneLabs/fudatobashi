@@ -83,9 +83,10 @@ class XpTimeline {
   }
 }
 
-/// The XP page (経験値!!), after every tracked run: the run's XP sources pop
-/// in line by line, each counting into a big total while the level bar fills
-/// with sparks flying off its tip, then the total lands with a jolt.
+/// The XP page (経験値!!), after every game that earns XP (a tracked run, a
+/// 暗記練 game): its XP sources pop in line by line, each counting into a big
+/// total while the level bar fills with sparks flying off its tip, then the
+/// total lands with a jolt.
 class XpOverlay extends StatelessWidget {
   const XpOverlay({super.key, required this.gain, required this.onNext});
   final XpGain gain;
