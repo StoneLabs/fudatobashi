@@ -146,15 +146,19 @@ class _AnkirenScreenState extends State<AnkirenScreen> {
     super.dispose();
   }
 
-  /// The screen is going without End or Results (e.g. the system back
-  /// gesture): nothing more happens on it, and once recall has begun the
-  /// game still counts, recorded without Results.
+  /// A ranked game is on and recall has begun: leaving it is a forfeit.
+  bool get _forfeitable => widget.tracked && widget.setup.ranked && _game.phase == AnkirenPhase.recall;
+
+  /// The screen is going without End or Results: nothing more happens on
+  /// it. A game already played to its end is recorded without Results, a
+  /// ranked one still in recall is forfeited, and anything else (free play
+  /// midway, memorising) records nothing.
   void _leave() {
     if (_ending) return;
     _ending = true;
     _clock?.cancel();
     _pause?.cancel();
-    if (widget.tracked && _game.phase != AnkirenPhase.memorise) {
+    if (widget.tracked && (_game.phase == AnkirenPhase.done || _forfeitable)) {
       _game.end();
       unawaited(_progress.recordAnkiren(_game, startedAt: _startedAt, meta: _meta));
     }
@@ -240,16 +244,35 @@ class _AnkirenScreenState extends State<AnkirenScreen> {
       ? Timer(AnkirenPlayTuning.finishPause, _finish)
       : Timer(AnkirenPlayTuning.promptPause, _showPrompt);
 
-  /// End: before recall nothing has been played, so it just leaves; after,
-  /// the cards not found yet count as missed.
-  void _end() {
+  /// End, or the back gesture: before recall nothing has been played, so it
+  /// just leaves; after, the cards not found yet count as missed, and a
+  /// ranked game asks first, as it is a forfeit.
+  Future<void> _end() async {
     if (_ending) return;
     if (_game.phase == AnkirenPhase.memorise) {
       Navigator.of(context).pop();
       return;
     }
+    if (_forfeitable && !await _confirmLeave()) return;
+    if (_ending || !mounted) return;
     _game.end();
     unawaited(_finish());
+  }
+
+  Future<bool> _confirmLeave() async {
+    final s = S.of(context);
+    final leave = await showDialog<bool>(
+      context: context,
+      builder: (c) => AlertDialog(
+        title: Text(s.ankirenLeaveTitle),
+        content: Text(s.ankirenLeaveNote),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(c, false), child: Text(s.cancel)),
+          FilledButton(onPressed: () => Navigator.pop(c, true), child: Text(s.ankirenLeave)),
+        ],
+      ),
+    );
+    return leave == true;
   }
 
   Future<void> _finish() async {
@@ -296,7 +319,7 @@ class _AnkirenScreenState extends State<AnkirenScreen> {
     final shown = asked ?? last?.poemId;
     final band = AnkirenBand(
       landscape: _landscape,
-      leading: BandButton(icon: IconArt.end, label: s.end, onTap: _ending ? null : _end),
+      leading: BandButton(icon: IconArt.end, label: s.end, onTap: _ending ? null : () => unawaited(_end())),
       center: memorising
           ? MemoriseClock(left: _left, landscape: _landscape)
           : Row(mainAxisSize: MainAxisSize.min, children: [
@@ -337,6 +360,10 @@ class _AnkirenScreenState extends State<AnkirenScreen> {
         ),
       ),
     );
-    return PopScope(onPopInvokedWithResult: (_, _) => _leave(), child: screen);
+    return PopScope(
+      canPop: !_forfeitable,
+      onPopInvokedWithResult: (didPop, _) => didPop ? _leave() : unawaited(_end()),
+      child: screen,
+    );
   }
 }

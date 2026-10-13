@@ -9,6 +9,7 @@ import 'package:drift/drift.dart' show driftRuntimeOptions;
 import 'package:drift/native.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
+import 'package:flutter/scheduler.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:fudatobashi/config/config.dart';
@@ -181,7 +182,10 @@ void main() {
   }
 
   Future<void> take(WidgetTester tester, int poemId) async {
-    await tester.tap(cardOf(poemId), warnIfMissed: false);
+    // Stamped at the current frame, as a finger down after the prompt's reveal.
+    final gesture = await tester.createGesture();
+    await gesture.down(tester.getCenter(cardOf(poemId)), timeStamp: SchedulerBinding.instance.currentSystemFrameTimeStamp);
+    await gesture.up();
     await tester.pump();
   }
 
@@ -428,6 +432,8 @@ void main() {
       await ready(tester);
       await take(tester, asked(tester));
       await tester.tap(find.text(s.end));
+      await tester.pump();
+      await tester.tap(find.text(s.ankirenLeave));
       await toResults(tester);
       expect(find.byType(AnkirenResultsScreen), findsOneWidget);
       expect(find.text(s.endedEarly), findsOneWidget);
@@ -435,13 +441,21 @@ void main() {
       await tester.pumpWidget(const SizedBox());
     });
 
-    testWidgets('the back gesture records a game once recall has begun, and leaves Home in place', (tester) async {
-      Future<void> back() async {
-        await tester.binding.handlePopRoute();
+    testWidgets('the back gesture forfeits a ranked game in recall after asking, and leaves Home in place',
+        (tester) async {
+      Future<void> settle() async {
         await tester.pump();
         await tester.pump(const Duration(seconds: 1));
         await tester.runAsync(() => Future<void>.delayed(const Duration(milliseconds: 100)));
         await tester.pump();
+      }
+
+      Future<void> back() async {
+        await tester.binding.handlePopRoute();
+        await settle();
+      }
+
+      void expectHome() {
         expect(find.byType(AnkirenScreen), findsNothing);
         expect(find.byType(AnkirenResultsScreen), findsNothing);
         expect(find.text(_home), findsOneWidget);
@@ -450,10 +464,30 @@ void main() {
 
       final p = await open(tester);
       await play(tester, p, AnkirenSetup.forLevel(0, ranked: true));
+      await back();
+      expectHome();
+      expect(p.sideTrips.runs, isEmpty, reason: 'leaving in memorise records nothing');
+      await tester.pumpWidget(const SizedBox());
+
+      await play(tester, p, AnkirenSetup.forLevel(0, ranked: true));
       await ready(tester);
       await take(tester, asked(tester));
       await back();
-      expect(p.sideTrips.runs.single.completed, isFalse, reason: 'left mid-game: the rest count as missed');
+      expect(find.text(s.ankirenLeaveNote), findsOneWidget, reason: 'recall: leaving asks first');
+      await tester.tap(find.text(s.cancel));
+      await settle();
+      expect(find.byType(AnkirenScreen), findsOneWidget);
+      expect(p.sideTrips.runs, isEmpty);
+      await tester.binding.handlePopRoute();
+      await settle();
+      await tester.tap(find.text(s.ankirenLeave));
+      await toResults(tester);
+      final run = p.sideTrips.runs.single;
+      expect(run.completed, isFalse);
+      expect(run.score, greaterThan(0), reason: 'the card found counts');
+      expect(run.performance, isNotNull, reason: 'a forfeit is rated like a finished game');
+      expect(run.rating, isNotNull);
+      expect(p.sideTrips.rankedGames(SideTrip.ankiren), 1);
       await tester.pumpWidget(const SizedBox());
 
       await play(tester, p, AnkirenSetup.forLevel(0, ranked: true));
@@ -464,8 +498,25 @@ void main() {
         if (i < total - 1) await next(tester);
       }
       await back();
+      expectHome();
       expect(p.sideTrips.runs, hasLength(2), reason: 'left in the pause before Results');
       expect(p.sideTrips.runs.last.completed, isTrue);
+      await tester.pumpWidget(const SizedBox());
+    });
+
+    testWidgets('free play is left at any time with nothing recorded', (tester) async {
+      final p = await open(tester);
+      await play(tester, p, AnkirenSetup.forLevel(0));
+      await ready(tester);
+      await take(tester, asked(tester));
+      await tester.binding.handlePopRoute();
+      await tester.pump();
+      await tester.pump(const Duration(seconds: 1));
+      await tester.runAsync(() => Future<void>.delayed(const Duration(milliseconds: 100)));
+      await tester.pump();
+      expect(find.text(s.ankirenLeaveNote), findsNothing, reason: 'free play does not ask');
+      expect(find.text(_home), findsOneWidget);
+      expect(p.sideTrips.runs, isEmpty);
       await tester.pumpWidget(const SizedBox());
     });
 
