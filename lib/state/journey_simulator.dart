@@ -1,6 +1,7 @@
 import 'dart:math' as math;
 
 import '../config/config.dart';
+import '../data/fuda_sets.dart';
 import '../data/poem.dart';
 import '../domain/card_stats.dart';
 import '../domain/play_session.dart';
@@ -12,13 +13,22 @@ import 'progress.dart';
 /// current length (training requeues misses, so it can grow).
 typedef CardProgress = void Function(int done, int total);
 
+/// Receives each simulated swipe: the card, when it was answered and the
+/// learner's answer.
+typedef SimulatedAnswer = void Function(ItemKey key, DateTime at, LearnerAnswer answer);
+
 /// Plays simulated rounds through the real path: [Progress.planTraining] →
 /// a [PlaySession] answered by a [SyntheticLearner] → [Progress.recordRun].
 /// Drives the pacing tests and the dev-mode demo data.
 class JourneySimulator {
-  JourneySimulator(this.progress, {required int seed, LearnerKind learner = LearnerKind.average, this.onReport})
-    : rng = math.Random(seed),
-      learner = SyntheticLearner(math.Random(seed + 1), kind: learner);
+  JourneySimulator(
+    this.progress, {
+    required int seed,
+    LearnerKind learner = LearnerKind.average,
+    this.onReport,
+    this.onAnswer,
+  }) : rng = math.Random(seed),
+       learner = SyntheticLearner(math.Random(seed + 1), kind: learner);
 
   final Progress progress;
   final math.Random rng;
@@ -26,6 +36,7 @@ class JourneySimulator {
 
   /// Receives every recorded run's report.
   final void Function(SessionReport report)? onReport;
+  final SimulatedAnswer? onAnswer;
 
   /// Plays [rounds] training rounds spread over the local day [date], then
   /// [freeRounds] free-play runs of [freeCards] cards. [onRound] reports each
@@ -65,7 +76,7 @@ class JourneySimulator {
         ? await progress.learnAheadCards(rng: rng, now: start)
         : await progress.planTraining(rng: rng, now: start);
     if (plan.cards.isEmpty) return start;
-    return _play(plan.cards, const PlayConfig(mode: PlayMode.training), start, onCard: onCard);
+    return _play(plan.cards, const PlayConfig(mode: PlayMode.training), start, newPoems: plan.newPoems, onCard: onCard);
   }
 
   /// A customised free-play round (all 100 cards, cut to [cards]): stored,
@@ -77,23 +88,40 @@ class JourneySimulator {
     return _play(deck, config, start, onCard: onCard);
   }
 
-  Future<DateTime> _play(List<CardRef> cards, PlayConfig config, DateTime start, {CardProgress? onCard}) async {
+  /// Plays [cards] from [start], introducing each of [newPoems] before its
+  /// first swipe and, in training, bringing a missed card back with one 友札
+  /// the player knows, as the play screen does.
+  Future<DateTime> _play(
+    List<CardRef> cards,
+    PlayConfig config,
+    DateTime start, {
+    Set<int> newPoems = const {},
+    CardProgress? onCard,
+  }) async {
     final session = PlaySession(cards);
+    final toIntroduce = {...newPoems};
     var engine = Duration.zero;
     var wall = start;
     while (!session.finished) {
       final card = session.current!;
+      final key = ItemKey(card.poemId, card.inverted);
       session.revealed(engine);
-      final answer = learner.answer(poems[card.poemId], ItemKey(card.poemId, card.inverted), wall);
+      final answer = learner.answer(poems[card.poemId], key, wall, introduced: toIntroduce.remove(card.poemId));
+      onAnswer?.call(key, wall, answer);
       final responseTs = engine + Duration(microseconds: (answer.ms * 1000).round());
       wall = wall.add(Duration(milliseconds: answer.ms.round())).add(SyntheticLearnerTuning.cardGap);
       session.commit(
         responseTs: responseTs,
         commitTs: responseTs + SyntheticLearnerTuning.responseToCommit,
-        outcome: answer.miss ? Outcome.dontKnow : Outcome.known,
+        outcome: answer.missed ? Outcome.dontKnow : Outcome.known,
         at: wall,
       );
-      if (answer.miss && config.mode == PlayMode.training) session.requeue(card);
+      if (answer.missed && config.mode == PlayMode.training) {
+        session.requeue(card);
+        bool knows(int id) => (newPoems.contains(id) && !toIntroduce.contains(id)) || progress.knows(id);
+        final twins = fudaSets.tomofuda(card.poemId).where(knows).toList();
+        if (twins.isNotEmpty) session.requeue(CardRef(twins[rng.nextInt(twins.length)]));
+      }
       engine = responseTs + SyntheticLearnerTuning.responseToCommit + SyntheticLearnerTuning.commitToNextReveal;
       onCard?.call(session.index, session.cards.length);
     }
