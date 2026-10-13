@@ -207,17 +207,6 @@ void main() {
     await tester.pump(const Duration(milliseconds: 500));
   }
 
-  // Learn ahead's button on its own, over an empty screen: it left Home
-  // with the island box.
-  Widget learnAheadAlone(Progress p) => ProgressScope(
-        progress: p,
-        child: MaterialApp(
-          theme: buildMangaTheme(),
-          builder: (context, child) => DefaultTextStyle(style: Theme.of(context).textTheme.bodyMedium!, child: child!),
-          home: const Scaffold(body: Center(child: LearnAheadButton())),
-        ),
-      );
-
   // A card's kimariji heading (new-card page, card detail) as one unit: the
   // tag over the kimariji, the kana under it in romaji only, and the speaker,
   // a full touch target, right after it and level with it; nothing cut off.
@@ -412,12 +401,10 @@ void main() {
     }
 
     testWidgets('journey: Learn ahead is locked while cards are shaky, and a tap says why ($lang)', (tester) async {
-      tester.platformDispatcher.textScaleFactorTestValue = 1.2;
-      addTearDown(tester.platformDispatcher.clearTextScaleFactorTestValue);
       final p = await open(tester, mode: LearningMode.journey, ja: ja, journeyCards: 3);
-      await tester.binding.setSurfaceSize(_phone);
-      await tester.pumpWidget(RepaintBoundary(key: const ValueKey('screen'), child: learnAheadAlone(p)));
-      await tester.pump(const Duration(milliseconds: 500));
+      await onPhone(tester, p, fontScale: 1.2);
+      expect(find.descendant(of: find.byType(TrainingHero), matching: find.byType(LearnAheadButton)), findsOneWidget,
+          reason: "beside the hero's narration");
       final ahead = p.learnAhead();
       final unlocked = p.trainer.unlocked.length;
       expect(ahead.lock, LearnAheadLock.shaky);
@@ -492,9 +479,7 @@ void main() {
         await p.recordRun(session, const PlayConfig(mode: PlayMode.training), DateTime.now());
       });
       expect(p.learnAhead().lock, LearnAheadLock.none, reason: 'all well remembered, ahead of day 0\'s pace');
-      await tester.binding.setSurfaceSize(_phone);
-      await tester.pumpWidget(RepaintBoundary(key: const ValueKey('screen'), child: learnAheadAlone(p)));
-      await tester.pump(const Duration(milliseconds: 500));
+      await onPhone(tester, p, fontScale: 1.0);
       await _capture(tester, 'learn_ahead_open_$lang');
       final next = p.trainer.nextBatch(poems, fudaSets);
       await tester.runAsync(() async {
@@ -506,6 +491,16 @@ void main() {
       expect(find.byType(PlayScreen), findsOneWidget);
       expect(p.trainer.unlocked.where((s) => !s.key.inverted).length, ids.length + next.length);
       expect(p.learnAhead().lock, LearnAheadLock.shaky, reason: 'the new batch still has to be learned');
+      await tester.pumpWidget(const SizedBox());
+    });
+
+    testWidgets('journey: Learn ahead leaves Home once every card is unlocked ($lang)', (tester) async {
+      final p = await open(tester, mode: LearningMode.journey, ja: ja, journeyCards: poems.all.length);
+      expect(p.canLearnMore, isFalse);
+      await onPhone(tester, p, fontScale: 1.0);
+      expect(find.byType(TrainingHero), findsOneWidget);
+      expect(find.byType(LearnAheadButton), findsNothing);
+      expect(tester.takeException(), isNull);
       await tester.pumpWidget(const SizedBox());
     });
 

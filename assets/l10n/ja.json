@@ -165,7 +165,7 @@
   "heroKeepItUp": "その調子!",
   "heroKeepGoing": "まだ\nやる?",
   "todayLeft": "今日はあと{0}枚",
-  "todayDoneExtra": "今日は完了 · 追加は{0}枚ずつ",
+  "todayDoneExtra": "追加は{0}枚ずつ",
   "pauseTitle": "今日の復習は{0}枚",
   "pauseBody": "復習がたまっています。今日は新しい札をお休みして、復習に集中しますか？",
   "pauseNote": "新しい札は明日また出てきます。",

@@ -1,8 +1,9 @@
 // Journey Home's today box and the hero under it, in each state of the day
 // (morning, part done with misses, done, a big day, new cards paused), the
 // week stamps, and the pause sheet: asked once, and yes takes today's new
-// cards out. Home fits phones 360, 384 and 412 dp wide at font scale 1.0
-// and 1.3, in English and Japanese, three-digit days included.
+// cards out. Home, with Learn ahead beside the hero's narration, fits phones
+// 360, 384 and 412 dp wide at font scale 1.0 and 1.3, in English and
+// Japanese, three-digit days included.
 //
 // With RENDER_SCREENS=1 it also renders Home in each state, and the pause
 // sheet, at 2 px per dp to .scratchpad/daily_set/renders/.
@@ -30,6 +31,7 @@ import 'package:fudatobashi/l10n/strings.dart';
 import 'package:fudatobashi/state/play_config.dart';
 import 'package:fudatobashi/state/progress.dart';
 import 'package:fudatobashi/ui/app.dart';
+import 'package:fudatobashi/ui/home/learn_ahead_button.dart';
 import 'package:fudatobashi/ui/home/today_box.dart';
 import 'package:fudatobashi/ui/home/training_hero.dart';
 import 'package:fudatobashi/ui/manga/manga.dart';
@@ -202,6 +204,19 @@ void main() {
       final what = (text.widget as RichText).text.toPlainText();
       expect(inside.contains(r.topLeft) && inside.contains(r.bottomRight), isTrue, reason: '$why: "$what" $r in $box');
     }
+  }
+
+  // Learn ahead sits in the hero beside the narration, which still shows
+  // whole.
+  void expectHeroFits(WidgetTester tester, String why) {
+    final hero = tester.getRect(find.byType(TrainingHero));
+    final narration = tester.getRect(find.byType(NarrationBox));
+    final ahead = tester.getRect(find.byType(LearnAheadButton));
+    expect(hero.contains(ahead.topLeft) && hero.contains(ahead.bottomRight), isTrue, reason: '$why: $ahead in $hero');
+    expect(ahead.left, greaterThan(narration.right), reason: '$why: beside the narration');
+    expect((ahead.center.dy - narration.center.dy).abs(), lessThan(1), reason: '$why: level with the narration');
+    final text = find.descendant(of: find.byType(NarrationBox), matching: find.byType(RichText));
+    expect(tester.renderObject<RenderParagraph>(text).didExceedMaxLines, isFalse, reason: '$why: the narration shows whole');
   }
 
   // The pause sheet and Tobi over it show whole, between the system bars.
@@ -394,6 +409,7 @@ void main() {
               final why = '${day.name} ${phone.name} $lang $fontScale';
               await showHome(tester, p, phone, fontScale: fontScale);
               expectBoxFits(tester, phone, why);
+              expectHeroFits(tester, why);
               if (day == _Day.big) {
                 await tester.pump(Motion.sheet);
                 expectSheetFits(tester, s, phone, why);

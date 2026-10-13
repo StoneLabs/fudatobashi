@@ -11,11 +11,14 @@ enum HeroSize { compact, full }
 /// The 修行 hero panel: title lettering, a narration box with the day's work,
 /// the START TRAINING shout, and Tobi fired up above it.
 class TrainingHero extends StatelessWidget {
-  const TrainingHero({super.key, required this.size, required this.narration, required this.balloon});
+  const TrainingHero({super.key, required this.size, required this.narration, required this.balloon, this.beside});
 
   final HeroSize size;
   final Widget narration;
   final String balloon;
+
+  /// Sits at the right of the narration, under Tobi (journey's Learn ahead).
+  final Widget? beside;
 
   static const _toneFade = ToneLayer(Tones.pink, fadeAngle: Backdrops.heroToneAngle, fadeStops: Backdrops.heroToneStops);
 
@@ -71,7 +74,7 @@ class TrainingHero extends StatelessWidget {
                 ),
                 Padding(
                   padding: EdgeInsets.only(left: narrationLeft, right: padding.right),
-                  child: NarrationBox(
+                  child: _withBeside(NarrationBox(
                     // The compact (journey) panel gives the narration a fixed
                     // height with no room to wrap; clip it to one line rather
                     // than let a long string overflow the panel. The full
@@ -80,7 +83,7 @@ class TrainingHero extends StatelessWidget {
                     child: compact
                         ? DefaultTextStyle.merge(maxLines: 1, overflow: TextOverflow.ellipsis, child: narration)
                         : narration,
-                  ),
+                  )),
                 ),
                 SizedBox(height: compact ? HomeLayout.journeyNarrationGap : HomeLayout.heroNarrationGap),
                 Padding(
@@ -113,6 +116,35 @@ class TrainingHero extends StatelessWidget {
           ),
         ),
       ],
+    );
+  }
+
+  /// The narration takes the width it needs, leaving [beside] at least
+  /// its smallest share of the row; [beside] fills the rest up to its
+  /// largest.
+  Widget _withBeside(Widget box) {
+    final beside = this.beside;
+    if (beside == null) return box;
+    return LayoutBuilder(
+      builder: (context, row) => Row(
+        children: [
+          ConstrainedBox(
+            constraints: BoxConstraints(
+                maxWidth: row.maxWidth * (1 - HomeLayout.heroBesideMinShare) - HomeLayout.heroBesideGap),
+            child: box,
+          ),
+          const SizedBox(width: HomeLayout.heroBesideGap),
+          Expanded(
+            child: Align(
+              alignment: Alignment.centerRight,
+              child: ConstrainedBox(
+                constraints: BoxConstraints(maxWidth: row.maxWidth * HomeLayout.heroBesideMaxShare),
+                child: beside,
+              ),
+            ),
+          ),
+        ],
+      ),
     );
   }
 }

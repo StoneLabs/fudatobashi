@@ -13,6 +13,7 @@ import '../manga/manga.dart';
 import '../tour/tour_anchor.dart';
 import 'home_screen.dart';
 import 'journey_state.dart';
+import 'learn_ahead_button.dart';
 import 'pause_sheet.dart';
 import 'today_box.dart';
 import 'training_hero.dart';
@@ -82,7 +83,12 @@ class _JourneyHomeState extends State<JourneyHome> {
           height: HomeLayout.journeyHeroHeight,
           child: TourAnchor(
             TourSpot.training,
-            child: TrainingHero(size: HeroSize.compact, narration: narration, balloon: balloon),
+            child: TrainingHero(
+              size: HeroSize.compact,
+              narration: narration,
+              balloon: balloon,
+              beside: progress.canLearnMore ? const LearnAheadButton() : null,
+            ),
           ),
         ),
         const SizedBox(height: Gaps.section),

@@ -784,6 +784,12 @@ abstract final class HomeLayout {
   static const double journeyBalloonFont = 13.5;
   static const Alignment journeyBalloonSpeaker = Alignment(1.9, -0.3);
 
+  /// A button beside the hero's narration (journey's Learn ahead): its
+  /// smallest and largest share of the row.
+  static const double heroBesideMinShare = 0.3;
+  static const double heroBesideMaxShare = 0.42;
+  static const double heroBesideGap = 8;
+
   /// Widths of the rating and streak panels on the spec's 358-wide row.
   static const int rankFlex = 250;
   static const int streakFlex = 108;
@@ -2123,8 +2129,8 @@ abstract final class FreePracticeLayout {
   static const Duration lockBalloonLife = Duration(milliseconds: 2800);
 }
 
-/// Home's "Learn ahead" (`LearnAheadButton`) beside today's plan, and the
-/// balloon that says why it is locked.
+/// Home's "Learn ahead" (`LearnAheadButton`) beside the training hero's
+/// narration, and the balloon that says why it is locked.
 abstract final class LearnAheadStyle {
   static const double minHeight = 36;
   static const double font = 13;

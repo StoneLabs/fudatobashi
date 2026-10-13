@@ -165,7 +165,7 @@
   "heroKeepItUp": "Keep it\nup!",
   "heroKeepGoing": "Keep\ngoing?",
   "todayLeft": "{0} left today",
-  "todayDoneExtra": "Done today · extra runs of {0}",
+  "todayDoneExtra": "Extra runs of {0}",
   "pauseTitle": "{0} reviews today",
   "pauseBody": "Reviews have piled up. Want to pause new cards for today and catch up first?",
   "pauseNote": "New cards come back tomorrow.",
