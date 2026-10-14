@@ -138,6 +138,7 @@ class _AppShellState extends State<AppShell> {
       child: Scaffold(
         body: Stack(children: [
           if (tab == AppTab.home) const Positioned.fill(child: GradationBox(Tones.home)),
+          if (tab == AppTab.stats) const Positioned.fill(child: GradationBox(Tones.stats)),
           SafeArea(
             // The Side Trips scene runs up under the status bar.
             top: tab != AppTab.sideTrips,

@@ -4,6 +4,7 @@ import 'dart:ui' as ui;
 import 'package:flutter/widgets.dart';
 
 import '../../config/design.dart';
+import 'seeded_random.dart';
 
 /// Screentone fills. Each pattern is rasterised once per pixel density into a
 /// tiny tile and repeated by an image shader, so a toned area costs one draw.
@@ -101,11 +102,14 @@ abstract final class Gradation {
     final box = Offset.zero & size;
     final begin = spec.begin.withinRect(box);
     final axis = spec.end.withinRect(box) - begin;
-    final dots = <(Offset, double)>[];
+    final colors = [spec.dot, ...spec.mix];
+    final pick = SeededRandom(Tones.gradationMixSeed);
+    final dots = <(Offset, double, int)>[];
     var toned = Rect.zero;
     for (var y = -1.0; y * spec.spacing < size.height + spec.spacing; y++) {
       for (var x = -1.0; x * spec.spacing < size.width + spec.spacing; x++) {
         for (final phase in [spec.phase, spec.phase + 0.5]) {
+          final color = colors.length == 1 ? 0 : (pick.next() * colors.length).floor();
           final c = Offset((x + phase) * spec.spacing, (y + phase) * spec.spacing);
           final d = c - begin;
           final t = (d.dx * axis.dx + d.dy * axis.dy) / axis.distanceSquared;
@@ -113,7 +117,7 @@ abstract final class Gradation {
           if (r < Tones.gradationMinRadius) continue;
           final dot = Rect.fromCircle(center: c, radius: r + Tones.softEdge);
           toned = toned.isEmpty ? dot : toned.expandToInclude(dot);
-          dots.add((c, r + Tones.softEdge));
+          dots.add((c, r + Tones.softEdge, color));
         }
       }
     }
@@ -125,11 +129,14 @@ abstract final class Gradation {
     final canvas = Canvas(rec)
       ..translate(-origin.dx, -origin.dy)
       ..scale(pixelRatio);
-    final paint = Paint()
-      ..color = spec.dot
-      ..isAntiAlias = true;
-    for (final (c, r) in dots) {
-      canvas.drawCircle(c, r, paint);
+    final paints = [
+      for (final color in colors)
+        Paint()
+          ..color = color
+          ..isAntiAlias = true,
+    ];
+    for (final (c, r, color) in dots) {
+      canvas.drawCircle(c, r, paints[color]);
     }
     final picture = rec.endRecording();
     final image = picture.toImageSync(width, height);

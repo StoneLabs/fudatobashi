@@ -113,12 +113,17 @@ class GradationSpec {
     required this.radii,
     this.stops = const [0, 1],
     this.phase = 0.5,
+    this.mix = const [],
   });
 
   final Color dot;
   final double spacing;
   final Alignment begin;
   final Alignment end;
+
+  /// More dot colours, scattered dot by dot among [dot]'s (the seed is
+  /// [Tones.gradationMixSeed]).
+  final List<Color> mix;
 
   /// One radius per stop.
   final List<double> radii;
@@ -143,10 +148,12 @@ class GradationSpec {
       other.end == end &&
       listEquals(other.radii, radii) &&
       listEquals(other.stops, stops) &&
-      other.phase == phase;
+      other.phase == phase &&
+      listEquals(other.mix, mix);
 
   @override
-  int get hashCode => Object.hash(dot, spacing, begin, end, Object.hashAll(radii), Object.hashAll(stops), phase);
+  int get hashCode =>
+      Object.hash(dot, spacing, begin, end, Object.hashAll(radii), Object.hashAll(stops), phase, Object.hashAll(mix));
 }
 
 /// Where an overlay (Tobi, a balloon) sits in its panel: two edges and a size.
@@ -220,6 +227,22 @@ abstract final class Tones {
     stops: [0, 0.3, 0.6, 1],
   );
   static const double groundSpacing = 6;
+
+  /// The Stats tab's backdrop: Home's fade (thick under the header, gone
+  /// before the summary line, swelling again toward the tab bar) in every
+  /// colour of the map's speed dots and more, bigger and further apart.
+  static const stats = GradationSpec(
+    dot: Palette.pink,
+    mix: [Palette.sun, Palette.sea, Palette.land, Palette.orange, Palette.violet],
+    spacing: 9,
+    begin: Alignment.topCenter,
+    end: Alignment.bottomCenter,
+    radii: [2.2, 0.7, 0, 0, 1.2, 2.6],
+    stops: [0, 0.06, 0.09, 0.55, 0.8, 1],
+  );
+
+  /// Picks which colour of a gradation's `mix` each dot takes.
+  static const int gradationMixSeed = 7;
 }
 
 abstract final class Strokes {
