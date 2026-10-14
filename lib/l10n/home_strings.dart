@@ -12,7 +12,6 @@ extension HomeStrings on S {
   String get cardsOf => t('homeCardsOf');
   String islandsAhead(int n) => f(n == 1 ? 'islandsAheadOne' : 'islandsAheadOther', [n]);
   String get allIslandsReached => t('allIslandsReached');
-  String get now => t('now');
   String get nextChip => t('nextChip');
   String get learnedOf => t('learnedOf');
   String get reviewsDue => t('reviewsDue');
@@ -23,8 +22,6 @@ extension HomeStrings on S {
   String get toNextBand => t('toNextBand');
   String get topBand => t('topBand');
   String get knownSpeedLabel => t('knownSpeedLabel');
-  String get newCardsTodayLabel => t('newCardsTodayLabel');
-  String get reviewsTodayLabel => t('reviewsTodayLabel');
   String get streakDays => t('streakDays');
   String get freePlaySub => t('freePlaySub');
   String get nigateSub => t('nigateSub');

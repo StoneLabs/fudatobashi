@@ -772,11 +772,6 @@ abstract final class HomeLayout {
   static const EdgeInsets mapMistPadding = EdgeInsets.fromLTRB(8, 3, 8, 3);
 
   static const EdgeInsets progressPadding = EdgeInsets.fromLTRB(12, 6, 12, 8);
-  static const double islandTitle = 20;
-  static const double nowFont = 12;
-  static const EdgeInsets nowPadding = EdgeInsets.fromLTRB(6, 1, 6, 1);
-  static const double learnedFont = 14;
-  static const double learnedNumber = 18;
   static const double pipWidth = 21;
   static const double pipHeight = 24;
   static const double pipAspect = pipHeight / pipWidth;
@@ -793,9 +788,6 @@ abstract final class HomeLayout {
 
   /// Above the known-card speed under the journey's card pips.
   static const double pipsSpeedGap = 8;
-
-  /// Today's plan beside Learn ahead: two tight lines.
-  static const double planLineHeight = 1.1;
 
   static const double journeyHeroHeight = 206;
   static const double journeyHeroCut = 8;
