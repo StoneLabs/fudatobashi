@@ -1,8 +1,12 @@
+import 'dart:ui';
+
 import '../../data/fuda_sets.dart';
+import '../../data/islands.dart';
 import '../../data/poem.dart';
 import '../../domain/card_stats.dart';
 import '../../domain/trainer.dart';
 import '../../state/progress.dart';
+import '../islands/island_map.dart';
 
 /// Where a beginner is on the island journey.
 class JourneyState {
@@ -44,6 +48,12 @@ class JourneyState {
   IslandProgress get island => islands[current];
   int get cardsUnlocked => unlocked.length;
   int get islandsAhead => islands.length - 1 - current;
+
+  /// The map's route, sailed up to the current island.
+  IslandRoute get route => IslandRoute(current);
+
+  /// Where the boat floats on the map, on the way into the current island.
+  Offset get boat => IslandMap.boatPosition(archipelago.islands, current);
 
   /// Every card unlocked and every island passed.
   bool get finished => islands.every((i) => _passed.contains(i.index));

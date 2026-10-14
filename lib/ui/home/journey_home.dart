@@ -174,8 +174,8 @@ class _JourneyMap extends StatelessWidget {
             IslandMap(
               styles: _styles(s),
               viewport: _viewport(box.biggest),
-              route: IslandRoute(journey.current),
-              boat: IslandMap.boatPosition(archipelago.islands, journey.current),
+              route: journey.route,
+              boat: journey.boat,
               seaSeed: JourneyView.seaSeed,
             ),
             const Positioned(

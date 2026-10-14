@@ -74,6 +74,7 @@ class IslandPlate {
     this.dashed = false,
     this.emphasis = false,
     this.fontSize = MapStyle.plateFont,
+    this.chipMark,
   });
 
   final String name;
@@ -82,9 +83,13 @@ class IslandPlate {
   final Color chipBackground, chipForeground;
   final bool dashed;
 
-  /// A heavier border (the current island).
+  /// A heavier border (the current or selected island).
   final bool emphasis;
   final double fontSize;
+
+  /// A [MapStyle.chipMarkGlyph] after the chip's text in this colour (Stats'
+  /// slowest island).
+  final Color? chipMark;
 
   @override
   bool operator ==(Object other) =>
@@ -97,11 +102,12 @@ class IslandPlate {
       other.chipForeground == chipForeground &&
       other.dashed == dashed &&
       other.emphasis == emphasis &&
-      other.fontSize == fontSize;
+      other.fontSize == fontSize &&
+      other.chipMark == chipMark;
 
   @override
   int get hashCode => Object.hash(
-      name, background, foreground, chip, chipBackground, chipForeground, dashed, emphasis, fontSize);
+      name, background, foreground, chip, chipBackground, chipForeground, dashed, emphasis, fontSize, chipMark);
 }
 
 /// How one island is drawn.
@@ -572,6 +578,13 @@ class _PlateGeometry {
           text: p.chip,
           style: TextStyle(
               fontFamily: Fonts.display, fontSize: fs * MapStyle.chipScale, color: p.chipForeground, height: 1),
+          children: [
+            if (p.chipMark != null)
+              TextSpan(
+                text: MapStyle.chipMarkGlyph,
+                style: TextStyle(fontSize: fs * MapStyle.chipMarkScale, color: p.chipMark),
+              ),
+          ],
         ),
         textDirection: TextDirection.ltr,
       )..layout();

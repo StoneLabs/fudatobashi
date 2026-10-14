@@ -728,6 +728,11 @@ abstract final class MapStyle {
   static const double chipRadius = 3;
   static const double chipStroke = 1.3;
   static const double chipInset = 3;
+
+  /// The mark after a chip's text (`IslandPlate.chipMark`), and its size as
+  /// a share of the plate's font.
+  static const String chipMarkGlyph = '▼';
+  static const double chipMarkScale = 0.7;
   static const double tapSlop = 6;
 }
 
