@@ -210,6 +210,7 @@ void main() {
     final upright = progress.trainer.unlocked.where((s) => !s.key.inverted).length;
     expect(upright, inInclusiveRange(30, 90));
     expect(progress.islands.where((i) => i.reached).length, greaterThanOrEqualTo(3));
+    expect(progress.islands.where((i) => i.complete), isNotEmpty);
     expect(progress.trainer.items.values.where((s) => s.card.state == fsrs.State.review), isNotEmpty);
     expect(progress.ratingPoints, isNotEmpty);
     expect(progress.practiceDays.length, DemoDataTuning.days);

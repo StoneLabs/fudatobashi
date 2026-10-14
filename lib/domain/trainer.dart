@@ -569,13 +569,7 @@ class Trainer {
 
   /// The journey's new cards for today, all at once in the morning: whole
   /// batches until the pace's target for today or its daily cap is reached.
-  /// [recall] is the share of first looks answered right on the last practice
-  /// day (null without one): below [PaceTuning.recallHoldBelow] nothing
-  /// unlocks, below [PaceTuning.recallFullFrom] a share of the batches does.
-  List<ItemKey> unlockForToday(Poems p, FudaSets sets, Map<ItemKey, CardStats> stats, DateTime now,
-      {double? recall}) {
-    final started = unlocked.isNotEmpty;
-    if (started && recall != null && recall < PaceTuning.recallHoldBelow) return const [];
+  List<ItemKey> unlockForToday(Poems p, FudaSets sets, Map<ItemKey, CardStats> stats, DateTime now) {
     final batches = <List<ItemKey>>[];
     while (true) {
       final pace = paceStatus(p, sets, stats, now);
@@ -584,17 +578,6 @@ class Trainer {
       final batch = unlockNextBatch(p, sets, now);
       if (batch.isEmpty) break;
       batches.add(batch);
-    }
-    if (started && recall != null && recall < PaceTuning.recallFullFrom && batches.isNotEmpty) {
-      final keep = math.max(1, (batches.length * PaceTuning.recallReducedShare).floor());
-      for (final batch in batches.skip(keep)) {
-        for (final k in batch) {
-          items[k]!
-            ..unlocked = false
-            ..unlockedAt = null;
-        }
-      }
-      batches.length = keep;
     }
     return [for (final b in batches) ...b];
   }

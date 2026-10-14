@@ -284,15 +284,6 @@ abstract final class PaceTuning {
   /// Share of unlocked upright cards that must be solid before more arrive.
   static const double readySolidFraction = 0.8;
 
-  /// Yesterday's first-look recall below which the morning unlocks no new cards.
-  static const double recallHoldBelow = 0.80;
-
-  /// Recall below which the morning unlocks only a share of the new cards.
-  static const double recallFullFrom = 0.86;
-
-  /// Share of the usual new cards unlocked when recall is in between.
-  static const double recallReducedShare = 0.5;
-
   /// Journey days the debug page's pace table looks ahead of today.
   static const int debugLookaheadDays = 3;
 }

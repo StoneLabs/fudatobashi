@@ -531,7 +531,7 @@ class Progress extends ChangeNotifier {
       if (_today?.window.date != DayWindow.dateOf(day.number)) await _loadToday();
       return const [];
     }
-    final fresh = trainer.unlockForToday(poems, fudaSets, allStats, now, recall: await _lastDayRecall(day.number));
+    final fresh = trainer.unlockForToday(poems, fudaSets, allStats, now);
     if (fresh.isNotEmpty) {
       await _saveItems(fresh);
       _unreported.addAll(fresh);
@@ -568,30 +568,6 @@ class Progress extends ChangeNotifier {
           );
         }
       });
-
-  /// Share of first looks answered right on the last day before [today] that
-  /// had a set, or null when it had none. A first look is a set card's first
-  /// training swipe that day: due or new, so FSRS graded it.
-  Future<double?> _lastDayRecall(int today) async {
-    final built = [
-      for (final d in _days.values)
-        if (d.number < today && d.builtAt != null) d,
-    ]..sort((a, b) => b.number.compareTo(a.number));
-    if (built.isEmpty) return null;
-    final day = built.first;
-    final window = _windowOf(day);
-    final rows = await (db.select(db.dayCards)..where((c) => c.day.equals(day.number))).get();
-    var looks = 0, right = 0;
-    for (final r in rows) {
-      final first = (_log[ItemKey(r.poemId, r.inverted)] ?? const <AttemptRec>[])
-          .where((a) => a.mode == PlayMode.training && window.contains(a.at))
-          .firstOrNull;
-      if (first == null) continue;
-      looks++;
-      if (!first.miss) right++;
-    }
-    return looks == 0 ? null : right / looks;
-  }
 
   /// Loads the latest day's set, if it was built.
   Future<void> _loadToday() async {

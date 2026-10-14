@@ -100,39 +100,39 @@ void main() {
   group('simulated learner', () {
     for (final seed in [1, 2, 3]) {
       test(
-        'month pace, set finished each day: 10-35 after a week, 25-55 after two, 75+ by day 30 (seed $seed)',
+        'month pace, set finished each day: 28-38 after a week, 56-68 after two, all 100 by day 30 (seed $seed)',
         () async {
           final j = await simulate(LearningPace.month, days: 30, seed: seed);
           final unlocked = [for (final d in j.days) d.unlocked];
-          expect(j.after(7), inInclusiveRange(10, 35), reason: '$unlocked');
-          expect(j.after(14), inInclusiveRange(25, 55), reason: '$unlocked');
-          expect(j.after(30), inInclusiveRange(75, 100), reason: '$unlocked');
+          expect(j.after(7), inInclusiveRange(28, 38), reason: '$unlocked');
+          expect(j.after(14), inInclusiveRange(56, 68), reason: '$unlocked');
+          expect(j.after(30), inInclusiveRange(95, 100), reason: '$unlocked');
           for (var i = 1; i < unlocked.length; i++) {
             expect(unlocked[i], greaterThanOrEqualTo(unlocked[i - 1]));
           }
           expect(j.islands.where((i) => i.reached).length, greaterThanOrEqualTo(initialGroups.length - 2));
           expect(j.islands.where((i) => i.complete), isNotEmpty);
           expect(j.newCardsMissedNextTime, inInclusiveRange(0.5, 0.7), reason: 'more than half');
-          expect(j.reviewsPerDay, inInclusiveRange(30, 50));
+          expect(j.reviewsPerDay, inInclusiveRange(45, 65));
           expect(j.mostDue, lessThanOrEqualTo(40), reason: 'no backlog builds up');
           expect(j.days.every((d) => d.dayDone), isTrue, reason: 'every day plays its set to the end');
         },
         timeout: const Timeout(Duration(minutes: 2)),
       );
 
-      test('sprint pace, set finished each day: 45-80 of 100 by day 17 (seed $seed)', () async {
+      test('sprint pace, set finished each day: all 100 by day 17 (seed $seed)', () async {
         final j = await simulate(LearningPace.sprint, days: 17, seed: seed);
-        expect(j.after(17), inInclusiveRange(40, 85), reason: '${[for (final d in j.days) d.unlocked]}');
+        expect(j.after(17), inInclusiveRange(95, 100), reason: '${[for (final d in j.days) d.unlocked]}');
         expect(j.newCardsMissedNextTime, inInclusiveRange(0.4, 0.8));
-        expect(j.reviewsPerDay, inInclusiveRange(22, 55));
-        expect(j.mostDue, lessThanOrEqualTo(50));
+        expect(j.reviewsPerDay, inInclusiveRange(65, 85));
+        expect(j.mostDue, lessThanOrEqualTo(55));
         expect(j.days.every((d) => d.dayDone), isTrue, reason: 'every day plays its set to the end');
       }, timeout: const Timeout(Duration(minutes: 2)));
     }
 
     // The goal is flexible: a capable player on the pace's routine gets there
-    // in time, one who keeps forgetting is held back until their cards are
-    // solid instead of being flooded with new ones.
+    // in time, and one who keeps forgetting still gets the day's new cards
+    // (the pause popup, not the morning, offers to slow down).
     for (final pace in LearningPace.values) {
       final days = pace.profile.daysToAll;
       test('a quick learner on the $pace routine reaches all 100 in time, and forgets few new cards', () async {
@@ -141,10 +141,10 @@ void main() {
         expect(j.newCardsMissedNextTime, inInclusiveRange(0.45, 0.7));
       }, timeout: const Timeout(Duration(minutes: 2)));
 
-      test('a slow, forgetful learner on the $pace routine is held back, not flooded', () async {
+      test('a slow, forgetful learner on the $pace routine still gets the new cards each day', () async {
         final j = await simulate(pace, learner: LearnerKind.slow, days: days, seed: 1);
-        expect(j.after(days), inInclusiveRange(25, 60), reason: '${[for (final d in j.days) d.unlocked]}');
-        expect(j.solidAtEnd, greaterThanOrEqualTo(0.3), reason: 'a third or more of what they have is solid');
+        expect(j.after(days), inInclusiveRange(95, 100), reason: '${[for (final d in j.days) d.unlocked]}');
+        expect(j.solidAtEnd, greaterThanOrEqualTo(0.15), reason: 'a sixth or more of what they have is solid');
         expect(j.newCardsMissedNextTime, greaterThan(0.2));
       }, timeout: const Timeout(Duration(minutes: 2)));
     }
