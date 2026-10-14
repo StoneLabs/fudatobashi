@@ -1,0 +1,16 @@
+{
+  "schemaVersion": 2,
+  "rows": {
+    "attempts": 0,
+    "day_cards": 0,
+    "days": 0,
+    "items": 0,
+    "key_values": 0,
+    "rating_points": 0,
+    "sessions": 0,
+    "side_trip_answers": 0,
+    "side_trip_runs": 0
+  },
+  "unlockedItems": 0,
+  "settings": {}
+}

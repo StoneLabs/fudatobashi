@@ -1,0 +1,19 @@
+{
+  "schemaVersion": 2,
+  "rows": {
+    "attempts": 1228,
+    "day_cards": 476,
+    "days": 15,
+    "items": 112,
+    "key_values": 4,
+    "rating_points": 42,
+    "sessions": 46,
+    "side_trip_answers": 0,
+    "side_trip_runs": 0
+  },
+  "unlockedItems": 100,
+  "settings": {
+    "batchSize": 7,
+    "desiredRetention": 0.85
+  }
+}
