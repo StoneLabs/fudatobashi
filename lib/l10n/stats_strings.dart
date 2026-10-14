@@ -17,13 +17,20 @@ extension StatsStrings on S {
   String legendOver(String lowerS) => f('legendOver', [lowerS]);
   String legendFewTries(int n) => f('legendFewTries', [n]);
 
-  String get slowestIslandTag => t('slowestIslandTag');
-  String get islandLineTemplate => t('islandLineTemplate');
+  String get selectedIslandTag => t('selectedIslandTag');
+  String get slowestIslandNote => t('slowestIslandNote');
+
+  /// "{0}/{1} cards solid", the numbers set in display type by `NumberedText`.
+  String get islandSolidLine => t('islandSolidLine');
   String get tapAnIsland => t('tapAnIsland');
   String get playThisIsland => t('playThisIsland');
   String get playThisIslandLocked => t('playThisIslandLocked');
   String uncoverIslandToPlay(int unlocked, int total) => f('uncoverIslandToPlay', [unlocked, total]);
-  String get noIslandToPractise => t('noIslandToPractise');
+  String get islandDetails => t('islandDetails');
+
+  String get srs => t('srs');
+  String get srsSoonTitle => t('srsSoonTitle');
+  String get srsSoonLine => t('srsSoonLine');
 
   /// A short "Mon D" (EN) / "M月D日" (JA) date, no time (island/card detail's
   /// due dates).

@@ -6,10 +6,12 @@ import '../../config/vector_art.dart';
 import '../../data/islands.dart';
 import '../../data/poem.dart';
 import '../../domain/card_stats.dart' show ItemKey;
+import '../../domain/trainer.dart' show LearningMode;
 import '../../l10n/stats_strings.dart';
 import '../../l10n/strings.dart';
 import '../../state/progress.dart';
 import '../../state/scope.dart';
+import '../home/journey_state.dart';
 import '../islands/island_map.dart';
 import '../manga/manga.dart';
 import '../play/time_format.dart';
@@ -17,6 +19,7 @@ import '../rank/rank_screen.dart';
 import '../run/run_launcher.dart';
 import 'card_list.dart';
 import 'island_screen.dart';
+import 'srs_screen.dart';
 
 enum _Tab { islands, all }
 
@@ -32,6 +35,9 @@ class StatsScreen extends StatefulWidget {
 class _StatsScreenState extends State<StatsScreen> {
   _Tab _tab = _Tab.islands;
 
+  /// The island tapped on the map, if any (see [_IslandsView.picked]).
+  int? _picked;
+
   @override
   Widget build(BuildContext context) {
     final s = S.of(context);
@@ -42,17 +48,17 @@ class _StatsScreenState extends State<StatsScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          MangaHeader(
-            title: ScreenTitle(s.stats, sub: s.other.stats),
-            actions: [
-              _TabToggle(tab: _tab, onChanged: (t) => setState(() => _tab = t)),
-              const _RankButton(),
-            ],
-          ),
-          _Summary(overallMedianMs: data.overallMedianMs, dueToday: progress.dueCount()),
+          MangaHeader(title: ScreenTitle(s.stats, sub: s.other.stats), actions: const [_HeaderLinks()]),
+          Row(children: [
+            Expanded(child: _Summary(overallMedianMs: data.overallMedianMs)),
+            const SizedBox(width: Gaps.section),
+            _TabToggle(tab: _tab, onChanged: (t) => setState(() => _tab = t)),
+          ]),
           const SizedBox(height: Gaps.section),
           Expanded(
-            child: _tab == _Tab.islands ? _IslandsView(data: data) : _AllView(progress: progress),
+            child: _tab == _Tab.islands
+                ? _IslandsView(data: data, picked: _picked, onPick: (i) => setState(() => _picked = i))
+                : _AllView(progress: progress),
           ),
         ],
       ),
@@ -110,60 +116,86 @@ class _SegButton extends StatelessWidget {
       );
 }
 
-/// The compact entry point to the rank ladder screen.
-class _RankButton extends StatelessWidget {
-  const _RankButton();
+/// The rank ladder and the SRS page, as one two-part control.
+class _HeaderLinks extends StatelessWidget {
+  const _HeaderLinks();
 
   @override
   Widget build(BuildContext context) {
     final s = S.of(context);
-    return SizedBox(
+    void open(Widget page) => Navigator.push(context, MangaRoute<void>(builder: (_) => page));
+    return Container(
       height: StatsLayout.segHeight,
-      child: InkButton(
-        onTap: () => Navigator.push(context, MangaRoute<void>(builder: (_) => const RankScreen())),
-        padding: const EdgeInsets.symmetric(horizontal: StatsLayout.segPadding),
-        semanticLabel: s.rank,
-        child: Row(mainAxisSize: MainAxisSize.min, children: [
-          Text(s.rank, style: const TextStyle(fontWeight: Weights.black, fontSize: StatsLayout.segFont)),
-          const SizedBox(width: Gaps.tight),
-          MangaIcon(IconArt.chevron, size: RankLayout.statsEntryIconSize),
-        ]),
-      ),
+      decoration: BoxDecoration(color: Palette.paper, border: Border.all(color: Palette.ink, width: Strokes.button)),
+      child: Row(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+        _HeaderLink(s.rank, onTap: () => open(const RankScreen())),
+        const ColoredBox(color: Palette.ink, child: SizedBox(width: Strokes.button)),
+        _HeaderLink(s.srs, onTap: () => open(const SrsScreen())),
+      ]),
     );
   }
 }
 
-/// "100 cards · median X s · N due today".
+class _HeaderLink extends StatelessWidget {
+  const _HeaderLink(this.label, {required this.onTap});
+  final String label;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) => Pressable(
+        onTap: onTap,
+        semanticLabel: label,
+        drop: 0,
+        scale: 1,
+        turn: 0,
+        builder: (context, pressed) => Stack(fit: StackFit.passthrough, children: [
+          Positioned.fill(
+            child: AnimatedOpacity(
+              opacity: pressed ? Tones.stampOpacity : 0,
+              duration: Motion.stampFade,
+              child: const ToneBox(Tones.stamp),
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: StatsLayout.segPadding),
+            child: Row(mainAxisSize: MainAxisSize.min, children: [
+              Text(label, style: const TextStyle(fontWeight: Weights.black, fontSize: StatsLayout.segFont)),
+              const SizedBox(width: Gaps.tight),
+              MangaIcon(IconArt.chevron, size: RankLayout.statsEntryIconSize),
+            ]),
+          ),
+        ]),
+      );
+}
+
+/// "100 cards · median X s".
 class _Summary extends StatelessWidget {
-  const _Summary({required this.overallMedianMs, required this.dueToday});
+  const _Summary({required this.overallMedianMs});
   final double? overallMedianMs;
-  final int dueToday;
 
   @override
   Widget build(BuildContext context) {
     final s = S.of(context);
     final median = overallMedianMs == null ? '—' : formatChipSeconds(overallMedianMs!);
-    return NumberedText(
-      s.summaryLine,
-      [poems.all.length, median, dueToday],
-      style: const TextStyle(fontWeight: Weights.bold, fontSize: StatsLayout.summaryFont),
-      numberStyle: const TextStyle(
-          fontFamily: Fonts.display, fontWeight: Weights.regular, fontSize: StatsLayout.summaryNumberFont),
+    return FittedBox(
+      fit: BoxFit.scaleDown,
+      alignment: AlignmentDirectional.centerStart,
+      child: NumberedText(
+        s.summaryLine,
+        [poems.all.length, median],
+        style: const TextStyle(fontWeight: Weights.bold, fontSize: StatsLayout.summaryFont),
+        numberStyle: const TextStyle(
+            fontFamily: Fonts.display, fontWeight: Weights.regular, fontSize: StatsLayout.summaryNumberFont),
+      ),
     );
   }
 }
 
 // --------------------------------------------------------------- Islands
 
-/// One island's computed stats, alongside the [IslandStyle] built for it.
+/// One island's computed stats and its cards' marks on the map.
 class _ArchipelagoIsland {
-  const _ArchipelagoIsland({
-    required this.index,
-    required this.name,
-    required this.medianMs,
-    required this.cardCount,
-    required this.dueCount,
-  });
+  const _ArchipelagoIsland({required this.index, required this.name, required this.medianMs, required this.sites});
 
   final int index;
   final String name;
@@ -171,14 +203,15 @@ class _ArchipelagoIsland {
   /// Median of this island's judged cards' own medians, or null when none
   /// yet qualify (see `StatsTuning.mapHollowMinTries`).
   final double? medianMs;
-  final int cardCount;
-  final int dueCount;
+  final Map<int, SiteMark> sites;
+
+  /// [medianMs] as its chip reads ("0.62s"), or a dash.
+  String get speed => medianMs == null ? '—' : '${formatChipSeconds(medianMs!)}s';
 }
 
 class _ArchipelagoData {
-  const _ArchipelagoData({required this.styles, required this.islands, required this.overallMedianMs});
+  const _ArchipelagoData({required this.islands, required this.overallMedianMs});
 
-  final List<IslandStyle> styles;
   final List<_ArchipelagoIsland> islands;
   final double? overallMedianMs;
 
@@ -192,24 +225,40 @@ class _ArchipelagoData {
     return worst;
   }
 
+  /// The map: island [selected] pulses on a pink plate, and the slowest
+  /// island's chip carries a red mark.
+  List<IslandStyle> styles(int selected) {
+    final slowest = this.slowest?.index;
+    return [
+      for (final isl in islands)
+        IslandStyle(
+          sites: isl.sites,
+          pulse: isl.index == selected,
+          plate: IslandPlate(
+            name: isl.name,
+            chip: isl.speed,
+            background: isl.index == selected ? Palette.pink : Palette.paper,
+            emphasis: isl.index == selected,
+            chipMark: isl.index == slowest ? Palette.alarm : null,
+          ),
+        ),
+    ];
+  }
+
   static _ArchipelagoData build(Progress progress) {
-    final now = DateTime.now();
     final trainer = progress.trainer;
-    final styles = <IslandStyle>[];
     final islands = <_ArchipelagoIsland>[];
     final allMedians = <double>[];
 
     for (final isl in archipelago.islands) {
       final sites = <int, SiteMark>{};
       final medians = <double>[];
-      var due = 0;
       for (final site in isl.sites) {
         final key = ItemKey(site.poemId, false);
         if (!trainer.items[key]!.unlocked) {
           sites[site.poemId] = const SiteMark.dot(Palette.desk);
           continue;
         }
-        if (trainer.isDue(key, now)) due++;
         final stats = progress.stats(key);
         // A card can rack up attempts that are all misses, leaving no timed
         // median even past the tries threshold; treat that the same as "too
@@ -223,24 +272,10 @@ class _ArchipelagoData {
         allMedians.add(median);
         sites[site.poemId] = SiteMark.dot(Palette.tiers[SpeedTiers.of(median)]);
       }
-      final islandMedian = _median(medians);
-      styles.add(IslandStyle(
-        sites: sites,
-        plate: IslandPlate(
-          name: isl.name,
-          chip: islandMedian == null ? '—' : '${formatChipSeconds(islandMedian)}s',
-        ),
-      ));
-      islands.add(_ArchipelagoIsland(
-        index: isl.index,
-        name: isl.name,
-        medianMs: islandMedian,
-        cardCount: isl.sites.length,
-        dueCount: due,
-      ));
+      islands.add(_ArchipelagoIsland(index: isl.index, name: isl.name, medianMs: _median(medians), sites: sites));
     }
 
-    return _ArchipelagoData(styles: styles, islands: islands, overallMedianMs: _median(allMedians));
+    return _ArchipelagoData(islands: islands, overallMedianMs: _median(allMedians));
   }
 
   static double? _median(List<double> values) {
@@ -251,14 +286,27 @@ class _ArchipelagoData {
   }
 }
 
+/// The map with Home's route and boat, the speed legend, and the selected
+/// island's panel. Tapping an island selects it; tapping it again opens it.
 class _IslandsView extends StatelessWidget {
-  const _IslandsView({required this.data});
+  const _IslandsView({required this.data, required this.picked, required this.onPick});
   final _ArchipelagoData data;
+
+  /// The island tapped last. Until one is, the slowest is selected, or
+  /// before any island is judged, the journey's current one.
+  final int? picked;
+  final ValueChanged<int> onPick;
 
   @override
   Widget build(BuildContext context) {
-    final s = S.of(context);
-    final slowest = data.slowest;
+    final progress = ProgressScope.of(context);
+    // All-known mode has no journey: the whole route is sailed, and the boat
+    // stays out of it.
+    final journey =
+        progress.trainer.config.learningMode == LearningMode.journey ? JourneyState.of(progress) : null;
+    final slowest = data.slowest?.index;
+    final selected = picked ?? slowest ?? journey?.current ?? 0;
+    void openIsland(int i) => Navigator.push(context, MangaRoute<void>(builder: (_) => IslandScreen(islandIndex: i)));
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
@@ -267,25 +315,23 @@ class _IslandsView extends StatelessWidget {
             shape:
                 const PanelShape(topLeft: Offset(0, StatsLayout.mapCut), bottomRight: Offset(0, StatsLayout.mapCut)),
             child: IslandMap(
-              styles: data.styles,
+              styles: data.styles(selected),
               viewport: Offset.zero & archipelago.size,
               fit: BoxFit.contain,
-              onIslandTap: (i) =>
-                  Navigator.push(context, MangaRoute<void>(builder: (_) => IslandScreen(islandIndex: i))),
+              route: journey?.route ?? IslandRoute(archipelago.islands.length - 1),
+              boat: journey?.boat,
+              onIslandTap: (i) => i == selected ? openIsland(i) : onPick(i),
             ),
           ),
         ),
         const SizedBox(height: Gaps.panel),
         const _Legend(),
         const SizedBox(height: Gaps.panel),
-        if (slowest != null)
-          _SlowestIslandPanel(island: slowest)
-        else
-          DashedBox(
-            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-            child: Text(s.noIslandToPractise,
-                style: const TextStyle(fontWeight: Weights.bold, fontSize: TypeScale.body)),
-          ),
+        _SelectedIslandPanel(
+          island: data.islands[selected],
+          slowest: selected == slowest,
+          onDetails: () => openIsland(selected),
+        ),
       ],
     );
   }
@@ -356,11 +402,16 @@ class _Swatch extends StatelessWidget {
       ]);
 }
 
-/// Tobi's pick of the slowest island, with a shortcut to play it. Tobi and
-/// his balloon keep a column of their own, clear of the text.
-class _SlowestIslandPanel extends StatelessWidget {
-  const _SlowestIslandPanel({required this.island});
+/// The island selected on the map: its name and speed, how many of its
+/// cards are solid, and buttons to play it and open its page. Tobi and his
+/// balloon keep a column of their own, clear of the text.
+class _SelectedIslandPanel extends StatelessWidget {
+  const _SelectedIslandPanel({required this.island, required this.slowest, required this.onDetails});
   final _ArchipelagoIsland island;
+
+  /// The slowest island, noted in red beside the panel's tag.
+  final bool slowest;
+  final VoidCallback onDetails;
 
   @override
   Widget build(BuildContext context) {
@@ -368,6 +419,7 @@ class _SlowestIslandPanel extends StatelessWidget {
     final progress = ProgressScope.of(context);
     final islandProgress = progress.islands[island.index];
     final playable = progress.isIslandPlayable(islandProgress);
+    const buttonFont = TextStyle(fontWeight: Weights.black, fontSize: StatsLayout.playButtonFont);
     return MangaPanel(
       shape: const PanelShape(bottomRight: Offset(0, StatsLayout.focusCut)),
       color: Palette.sunSoft,
@@ -376,7 +428,17 @@ class _SlowestIslandPanel extends StatelessWidget {
       child: Row(crossAxisAlignment: CrossAxisAlignment.end, children: [
         Expanded(
           child: Column(crossAxisAlignment: CrossAxisAlignment.start, mainAxisSize: MainAxisSize.min, children: [
-            FittedBox(fit: BoxFit.scaleDown, alignment: Alignment.centerLeft, child: InkTag(s.slowestIslandTag)),
+            FittedBox(
+              fit: BoxFit.scaleDown,
+              alignment: Alignment.centerLeft,
+              child: Row(mainAxisSize: MainAxisSize.min, children: [
+                InkTag(s.selectedIslandTag),
+                if (slowest) ...[
+                  const SizedBox(width: StatsLayout.focusTagGap),
+                  InkTag('${MapStyle.chipMarkGlyph} ${s.slowestIslandNote}', color: Palette.alarm),
+                ],
+              ]),
+            ),
             const SizedBox(height: StatsLayout.focusGap),
             Row(crossAxisAlignment: CrossAxisAlignment.end, children: [
               Flexible(
@@ -391,14 +453,14 @@ class _SlowestIslandPanel extends StatelessWidget {
               Container(
                 padding: StatsLayout.focusSpeedPadding,
                 decoration: BoxDecoration(border: Border.all(color: Palette.ink, width: Strokes.control)),
-                child: Text('${formatChipSeconds(island.medianMs!)}s',
+                child: Text(island.speed,
                     style: const TextStyle(fontFamily: Fonts.display, fontSize: StatsLayout.focusSpeedFont)),
               ),
             ]),
             const SizedBox(height: StatsLayout.focusGap),
             NumberedText(
-              s.islandLineTemplate,
-              [island.cardCount, island.dueCount],
+              s.islandSolidLine,
+              [islandProgress.solid, islandProgress.total],
               style: const TextStyle(fontWeight: Weights.bold, fontSize: StatsLayout.focusLineFont),
               numberStyle: const TextStyle(
                   fontFamily: Fonts.display, fontWeight: Weights.black, fontSize: StatsLayout.focusLineFont),
@@ -406,25 +468,41 @@ class _SlowestIslandPanel extends StatelessWidget {
             const SizedBox(height: StatsLayout.focusButtonGap),
             ConstrainedBox(
               constraints: const BoxConstraints(minHeight: StatsLayout.playButtonHeight),
-              child: InkButton(
-                color: playable ? Palette.pink : Palette.desk,
-                padding: StatsLayout.playButtonPadding,
-                semanticLabel: playable ? s.playThisIsland : s.playThisIslandLocked,
-                onTap: () => playable
-                    ? startIslandPlay(context, islandProgress.index)
-                    : BalloonPop.show(context, s.uncoverIslandToPlay(islandProgress.unlocked, islandProgress.total),
-                        size: StatsLayout.playButtonBalloon, life: StatsLayout.playButtonBalloonLife),
-                child: FittedBox(
-                  fit: BoxFit.scaleDown,
-                  child: Row(mainAxisSize: MainAxisSize.min, children: [
-                    if (!playable) ...[
-                      MangaIcon(IconArt.lock, size: StatsLayout.playButtonIcon),
-                      const SizedBox(width: StatsLayout.playButtonIconGap),
-                    ],
-                    Text(s.playThisIsland,
-                        style: const TextStyle(fontWeight: Weights.black, fontSize: StatsLayout.playButtonFont)),
-                  ]),
-                ),
+              child: IntrinsicHeight(
+                child: Row(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+                  Expanded(
+                    child: InkButton(
+                      color: playable ? Palette.pink : Palette.desk,
+                      padding: StatsLayout.playButtonPadding,
+                      semanticLabel: playable ? s.playThisIsland : s.playThisIslandLocked,
+                      onTap: () => playable
+                          ? startIslandPlay(context, islandProgress.index)
+                          : BalloonPop.show(
+                              context,
+                              s.uncoverIslandToPlay(islandProgress.unlocked, islandProgress.total),
+                              size: StatsLayout.playButtonBalloon,
+                              life: StatsLayout.playButtonBalloonLife,
+                            ),
+                      child: FittedBox(
+                        fit: BoxFit.scaleDown,
+                        child: Row(mainAxisSize: MainAxisSize.min, children: [
+                          if (!playable) ...[
+                            MangaIcon(IconArt.lock, size: StatsLayout.playButtonIcon),
+                            const SizedBox(width: StatsLayout.playButtonIconGap),
+                          ],
+                          Text(s.playThisIsland, style: buttonFont),
+                        ]),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: StatsLayout.detailsButtonGap),
+                  InkButton(
+                    padding: StatsLayout.detailsButtonPadding,
+                    semanticLabel: s.islandDetails,
+                    onTap: onDetails,
+                    child: Text(s.islandDetails, style: buttonFont),
+                  ),
+                ]),
               ),
             ),
           ]),

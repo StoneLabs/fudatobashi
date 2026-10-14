@@ -977,8 +977,10 @@ abstract final class PauseSheetLayout {
 }
 
 /// The Stats screen (spec phone 6): the archipelago map, its legend, and the
-/// slowest-island panel.
+/// selected-island panel.
 abstract final class StatsLayout {
+  /// The Islands | All switch beside the summary line, and the joined
+  /// Rank | SRS links in the header, a heavy ink rule between the two.
   static const double segHeight = 36;
   static const double segPadding = 12;
   static const double segFont = 13;
@@ -998,8 +1000,9 @@ abstract final class StatsLayout {
   static const double legendSwatchBorder = 1.6;
   static const double legendItemGap = 4;
 
-  /// The slowest-island panel: text on the left, Tobi under his balloon
-  /// (pointing down at him) in a column on the right.
+  /// The selected-island panel: text on the left, Tobi under his balloon
+  /// (pointing down at him) in a column on the right. The red slowest tag
+  /// sits [focusTagGap] after the panel's own tag.
   static const double focusCut = 6;
   static const EdgeInsets focusPadding = EdgeInsets.fromLTRB(14, 12, 10, 12);
   static const double focusGap = 4;
@@ -1008,6 +1011,7 @@ abstract final class StatsLayout {
   static const EdgeInsets focusSpeedPadding = EdgeInsets.fromLTRB(7, 2, 7, 3);
   static const double focusLineFont = 13;
   static const double focusButtonGap = 10;
+  static const double focusTagGap = 6;
   static const Size focusTobi = Size(62, 74);
   static const Size focusBalloon = Size(92, 50);
   static const Alignment focusBalloonSpeaker = Alignment(0.2, 2.2);
@@ -1017,12 +1021,29 @@ abstract final class StatsLayout {
   static const EdgeInsets playButtonPadding = EdgeInsets.symmetric(horizontal: 14);
   static const double playButtonFont = 14;
 
+  /// The Details button after Play, [detailsButtonGap] apart.
+  static const double detailsButtonGap = 6;
+  static const EdgeInsets detailsButtonPadding = EdgeInsets.symmetric(horizontal: 12);
+
   /// Locked (not fully uncovered): the lock icon beside the label, and the
   /// balloon explaining why, sized like Home's "Learn ahead" lock.
   static const double playButtonIcon = 16;
   static const double playButtonIconGap = 5;
   static const Size playButtonBalloon = Size(270, 96);
   static const Duration playButtonBalloonLife = Duration(milliseconds: 2800);
+}
+
+/// The SRS page while it is being built (`SrsScreen`): Side Trips'
+/// construction site over a title and a line.
+abstract final class SrsLayout {
+  static const double artMaxWidth = 320;
+
+  /// The construction site art's width over its height (1110 × 678).
+  static const double artAspect = 1110 / 678;
+  static const double titleGap = 18;
+  static const double titleFont = 30;
+  static const double lineGap = 8;
+  static const double lineFont = 15;
 }
 
 /// The History tab: each run's mode tag, timestamp, card/miss count and

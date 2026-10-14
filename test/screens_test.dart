@@ -95,6 +95,8 @@ import 'package:fudatobashi/ui/side_trips/side_trips_screen.dart';
 import 'package:fudatobashi/ui/sound/sounds.dart';
 import 'package:fudatobashi/ui/stats/card_detail_screen.dart';
 import 'package:fudatobashi/ui/stats/card_list.dart';
+import 'package:fudatobashi/ui/stats/island_screen.dart';
+import 'package:fudatobashi/ui/stats/srs_screen.dart';
 import 'package:fudatobashi/ui/tour/tour_anchor.dart';
 import 'package:fudatobashi/ui/tour/tour_arrows.dart';
 import 'package:fudatobashi/ui/tour/tour_layout.dart';
@@ -598,44 +600,78 @@ void main() {
   for (final ja in [false, true]) {
     final lang = ja ? 'ja' : 'en';
 
-    testWidgets('stats: islands with real dots and medians, then all cards ($lang)', (tester) async {
-      final p = await open(tester, mode: LearningMode.journey, ja: ja, journeyCards: 40);
-      final ids = [for (final isl in archipelago.islands) ...fudaSets['initial:${isl.name}'].poemIds];
+    for (final (width, fontScale) in const [(384.0, 1.0), (360.0, 1.0), (360.0, 1.3)]) {
+      final size = width == _phone.width && fontScale == 1 ? '' : '_${width.round()}${fontScale == 1 ? '' : '_scaled'}';
+      testWidgets('stats: islands with real dots and medians, then all cards ($lang, $width dp, font scale $fontScale)',
+          (tester) async {
+        tester.platformDispatcher.textScaleFactorTestValue = fontScale;
+        addTearDown(tester.platformDispatcher.clearTextScaleFactorTestValue);
+        final p = await open(tester, mode: LearningMode.journey, ja: ja, journeyCards: 40);
+        final ids = [for (final isl in archipelago.islands) ...fudaSets['initial:${isl.name}'].poemIds];
 
-      // A handful of unlocked cards played enough times to clear
-      // `StatsTuning.mapHollowMinTries`, so some dots render in a real speed
-      // colour (not just hollow/locked) and the overall/island medians and
-      // the slowest-island panel have something to show.
-      final trained = ids.take(8).toList();
-      for (var i = 0; i < 6; i++) {
-        await makeSomeDue(tester, p, trained);
-      }
-      expect(p.dueCount(), greaterThan(0));
-      for (final id in trained) {
-        expect(p.stats(ItemKey(id, false)).count, greaterThanOrEqualTo(5));
-      }
+        // A handful of unlocked cards played enough times to clear
+        // `StatsTuning.mapHollowMinTries`, so some dots render in a real speed
+        // colour (not just hollow/locked) and the overall/island medians and
+        // the selected-island panel have something to show.
+        final trained = ids.take(8).toList();
+        for (var i = 0; i < 6; i++) {
+          await makeSomeDue(tester, p, trained);
+        }
+        expect(p.dueCount(), greaterThan(0));
+        for (final id in trained) {
+          expect(p.stats(ItemKey(id, false)).count, greaterThanOrEqualTo(5));
+        }
 
-      await tester.binding.setSurfaceSize(_phone);
-      await tester.pumpWidget(RepaintBoundary(key: const ValueKey('screen'), child: FudatobashiApp(progress: p)));
-      await tester.pump(const Duration(milliseconds: 500));
-      expect(tester.takeException(), isNull);
+        await tester.binding.setSurfaceSize(Size(width, _phone.height));
+        await tester.pumpWidget(RepaintBoundary(key: const ValueKey('screen'), child: FudatobashiApp(progress: p)));
+        await tester.pump(const Duration(milliseconds: 500));
+        expect(tester.takeException(), isNull);
 
-      final s = S(ja ? 'ja' : 'en');
-      await tester.tap(find.text(s.stats));
-      await tester.pump(const Duration(milliseconds: 500));
-      expect(tester.takeException(), isNull);
-      await _capture(tester, 'stats_islands_$lang');
+        final s = S(ja ? 'ja' : 'en');
+        await tester.tap(find.text(s.stats));
+        await tester.pump(const Duration(milliseconds: 500));
+        expect(tester.takeException(), isNull);
+        await _capture(tester, 'stats_islands${size}_$lang');
+        final map = tester.widget<IslandMap>(find.byType(IslandMap));
+        expect(map.route, isNotNull, reason: "Home's route and boat show on Stats too");
+        expect(map.boat, isNotNull);
 
-      // The "All" tab lists every card of every island in one sortable list,
-      // the same rows as an island page.
-      await tester.tap(find.text(s.allTab));
-      await tester.pump(const Duration(milliseconds: 500));
-      expect(tester.takeException(), isNull);
-      expect(find.byType(CardTile), findsWidgets);
-      await _capture(tester, 'stats_all_$lang');
+        // Stats opens on the slowest island, noted as such; picking another
+        // island on the map moves the panel to it and drops the note.
+        final note = find.textContaining(s.slowestIslandNote);
+        expect(note, findsOneWidget);
+        final other = archipelago.islands.last;
+        tester.widget<IslandMap>(find.byType(IslandMap)).onIslandTap!(other.index);
+        await tester.pump(const Duration(milliseconds: 500));
+        expect(find.text(other.name), findsOneWidget);
+        expect(note, findsNothing);
+        expect(tester.takeException(), isNull);
+        await _capture(tester, 'stats_islands_picked${size}_$lang');
 
-      await tester.pumpWidget(const SizedBox());
-    });
+        // SRS opens its page, still under construction.
+        await tester.tap(find.text(s.srs));
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 500));
+        expect(find.byType(SrsScreen), findsOneWidget);
+        expect(find.text(s.srsSoonTitle), findsOneWidget);
+        expect(tester.takeException(), isNull);
+        await _capture(tester, 'stats_srs${size}_$lang');
+        await tester.tap(find.bySemanticsLabel(s.back));
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 500));
+        expect(find.byType(SrsScreen), findsNothing);
+
+        // The "All" tab lists every card of every island in one sortable list,
+        // the same rows as an island page.
+        await tester.tap(find.text(s.allTab));
+        await tester.pump(const Duration(milliseconds: 500));
+        expect(tester.takeException(), isNull);
+        expect(find.byType(CardTile), findsWidgets);
+        await _capture(tester, 'stats_all${size}_$lang');
+
+        await tester.pumpWidget(const SizedBox());
+      });
+    }
   }
 
   // Reproduces the same class of overflow as the island page's card rows
@@ -740,12 +776,12 @@ void main() {
       await tester.pump(const Duration(milliseconds: 500));
       expect(tester.takeException(), isNull);
 
-      // Drive the map's real (wired) tap callback rather than guessing pixel
-      // coordinates on a custom-painted map: island 0 is fully trained above.
-      // A pushed route's page needs two pump cycles before it shows up in the
-      // tree (the first only flushes the navigator's history update).
-      final islandMap = tester.widget<IslandMap>(find.byType(IslandMap));
-      islandMap.onIslandTap!(0);
+      // Island 0, the only one trained above, is the slowest, so Stats opens
+      // with it selected and its Details button opens its page. A pushed
+      // route's page needs two pump cycles before it shows up in the tree
+      // (the first only flushes the navigator's history update).
+      expect(find.text(archipelago.islands[0].name), findsOneWidget);
+      await tester.tap(find.text(s.islandDetails));
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 500));
       expect(tester.takeException(), isNull);
@@ -898,7 +934,7 @@ void main() {
     }
   }
 
-  // Journey mode's "Play this island" (`_SlowestIslandPanel` in
+  // Journey mode's "Play island" (`_SelectedIslandPanel` in
   // stats_screen.dart) must not start a run through cards the island hasn't
   // uncovered yet: locked until every one of its cards is unlocked
   // (`Progress.isIslandPlayable`), open right away in all-known mode.
@@ -990,6 +1026,12 @@ void main() {
       await tester.pump(const Duration(milliseconds: 500));
       await tester.tap(find.text(s.stats));
       await tester.pump(const Duration(milliseconds: 500));
+
+      // No journey in this mode: the whole route is sailed, and no boat.
+      final map = tester.widget<IslandMap>(find.byType(IslandMap));
+      expect(map.route, IslandRoute(archipelago.islands.length - 1));
+      expect(map.boat, isNull);
+      await _capture(tester, 'stats_all_known_$lang');
 
       await tester.runAsync(() async {
         await tester.tap(find.text(s.playThisIsland));
@@ -1137,10 +1179,21 @@ void main() {
     const s = S('en');
     await tester.tap(find.text(s.stats));
     await tester.pump(const Duration(milliseconds: 500));
-    final islandMap = tester.widget<IslandMap>(find.byType(IslandMap));
-    islandMap.onIslandTap!(0);
+    // Drive the map's real (wired) tap callback rather than guessing pixel
+    // coordinates on a custom-painted map. No island is judged yet, so the
+    // journey's current island starts selected: the first tap on island 0
+    // selects it, the second opens its page.
+    final islandMap = find.byType(IslandMap);
+    final name = archipelago.islands[0].name;
+    expect(find.text(name), findsNothing);
+    tester.widget<IslandMap>(islandMap).onIslandTap!(0);
+    await tester.pump();
+    expect(find.text(name), findsOneWidget);
+    expect(find.byType(IslandScreen), findsNothing);
+    tester.widget<IslandMap>(islandMap).onIslandTap!(0);
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 500));
+    expect(find.byType(IslandScreen), findsOneWidget);
     expect(tester.takeException(), isNull);
     await tester.pumpWidget(const SizedBox());
   });
