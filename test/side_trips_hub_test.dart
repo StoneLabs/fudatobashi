@@ -231,6 +231,9 @@ void main() {
     final used = {
       for (final piece in [
         DojoSceneLayout.sky,
+        DojoSceneLayout.sunRays,
+        DojoSceneLayout.sunFace,
+        DojoSceneLayout.sunBlink,
         for (final cloud in DojoSceneLayout.clouds) cloud.piece,
         DojoSceneLayout.sea,
         DojoSceneLayout.toriiLocked,
@@ -735,6 +738,53 @@ void main() {
             expect(later[i], isNot(closeTo(start[i], 1)));
             expect(round[i], closeTo(start[i], 0.5), reason: 'round again after a loop');
           }
+        }
+        await tester.pumpWidget(const SizedBox());
+      });
+
+      testWidgets(still ? 'under reduced motion the sun keeps still, eyes open' : 'the sun bobs, turns its rays and blinks',
+          (tester) async {
+        if (still) {
+          tester.platformDispatcher.accessibilityFeaturesTestValue =
+              const FakeAccessibilityFeatures(disableAnimations: true);
+          addTearDown(tester.platformDispatcher.clearAccessibilityFeaturesTestValue);
+        }
+        final p = await open(tester, _Hub.ranked, 'en');
+        await openHub(tester, p, _users);
+        final order = [for (final e in inHub(find.byType(ScenePicture)).evaluate()) (e.widget as ScenePicture).asset];
+        expect(order.indexOf(DojoSceneLayout.sky.asset), lessThan(order.indexOf(DojoSceneLayout.sunRays.asset)));
+        expect(order.indexOf(DojoSceneLayout.sunRays.asset), lessThan(order.indexOf(DojoSceneLayout.sunFace.asset)));
+        for (final cloud in DojoSceneLayout.clouds) {
+          expect(order.indexOf(DojoSceneLayout.sunBlink.asset), lessThan(order.indexOf(cloud.piece.asset)),
+              reason: 'the clouds pass in front of the sun');
+        }
+        // the open-eyed face, found even while the blink frame hides it
+        final face = find.descendant(
+            of: find.byType(SideTripsScreen),
+            matching: find.byWidgetPredicate((w) => w is ScenePicture && w.asset == DojoSceneLayout.sunFace.asset,
+                skipOffstage: false),
+            skipOffstage: false);
+        final rays = pictures(DojoSceneLayout.sunRays.asset);
+        final start = (face: tester.getCenter(face), rays: tester.getTopLeft(rays));
+        final heights = <double>{};
+        final corners = <Offset>{};
+        var blinked = false;
+        for (var t = Duration.zero; t < DojoSceneLayout.sunPeriod; t += DojoSceneLayout.sunStep) {
+          await tester.pump(DojoSceneLayout.sunStep);
+          heights.add(tester.getCenter(face).dy);
+          corners.add(tester.getTopLeft(rays));
+          blinked |= tester.widget<IndexedStack>(find.ancestor(of: face, matching: find.byType(IndexedStack)).first).index == 1;
+        }
+        if (still) {
+          expect(heights, {start.face.dy});
+          expect(corners, {start.rays});
+          expect(blinked, isFalse);
+        } else {
+          final k = _users.size.width / DojoSceneLayout.width;
+          final bob = heights.reduce(math.max) - heights.reduce(math.min);
+          expect(bob, inInclusiveRange(1, 2 * DojoSceneLayout.sunLift * k + 0.5), reason: 'a little');
+          expect(corners.length, greaterThan(1), reason: 'the rays turn');
+          expect(blinked, isTrue);
         }
         await tester.pumpWidget(const SizedBox());
       });

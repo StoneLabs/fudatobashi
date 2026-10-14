@@ -121,6 +121,7 @@ class _DojoSceneState extends State<DojoScene> with SingleTickerProviderStateMix
           clipBehavior: Clip.none,
           children: [
             frame.piece(DojoSceneLayout.sky),
+            Positioned.fill(child: RepaintBoundary(child: _Sun(frame.k))),
             Positioned.fill(child: RepaintBoundary(child: _Clouds(frame.k))),
             frame.piece(DojoSceneLayout.sea),
             Positioned.fill(
@@ -367,6 +368,61 @@ class _Isle extends StatelessWidget {
       ),
     );
   }
+}
+
+/// The smiling sun behind the clouds: it bobs and rocks a little, its rays
+/// turn slowly and gently swell, and now and then it blinks; still under
+/// reduced motion.
+class _Sun extends StatelessWidget {
+  const _Sun(this.k);
+
+  final double k;
+
+  @override
+  Widget build(BuildContext context) {
+    final rays = _scaled(DojoSceneLayout.sunRays.rect);
+    final face = _scaled(DojoSceneLayout.sunFace.rect);
+    return IdleLoop(
+      step: DojoSceneLayout.sunStep,
+      builder: (context, elapsed, _) {
+        final sway = math.sin(2 * math.pi * _phase(elapsed, DojoSceneLayout.sunPeriod));
+        final pulse = (1 - math.cos(2 * math.pi * _phase(elapsed, DojoSceneLayout.sunRayPulsePeriod))) / 2;
+        final blinking = _phase(elapsed, DojoSceneLayout.sunBlinkEvery) >=
+            1 - DojoSceneLayout.sunBlinkFor.inMicroseconds / DojoSceneLayout.sunBlinkEvery.inMicroseconds;
+        return Transform.translate(
+          offset: Offset(0, -DojoSceneLayout.sunLift * k * sway),
+          child: Stack(clipBehavior: Clip.none, children: [
+            Positioned.fromRect(
+              rect: rays,
+              child: Transform.rotate(
+                angle: 2 * math.pi * _phase(elapsed, DojoSceneLayout.sunRayTurn),
+                child: Transform.scale(
+                  scale: 1 + DojoSceneLayout.sunRayPulse * pulse,
+                  child: ScenePicture(DojoSceneLayout.sunRays.asset, size: rays.size),
+                ),
+              ),
+            ),
+            Positioned.fromRect(
+              rect: face,
+              child: Transform.rotate(
+                angle: DojoSceneLayout.sunTurnDeg * sway * math.pi / 180,
+                child: IndexedStack(index: blinking ? 1 : 0, children: [
+                  ScenePicture(DojoSceneLayout.sunFace.asset, size: face.size),
+                  ScenePicture(DojoSceneLayout.sunBlink.asset, size: face.size),
+                ]),
+              ),
+            ),
+          ]),
+        );
+      },
+    );
+  }
+
+  Rect _scaled(Rect r) => Rect.fromLTWH(r.left * k, r.top * k, r.width * k, r.height * k);
+
+  /// How far [elapsed] is into the current cycle of [period], 0–1.
+  static double _phase(Duration elapsed, Duration period) =>
+      (elapsed.inMicroseconds % period.inMicroseconds) / period.inMicroseconds;
 }
 
 /// The clouds drifting across the sky, round and round; still under

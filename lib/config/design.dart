@@ -2210,6 +2210,29 @@ abstract final class DojoSceneLayout {
 
   static const sky = ScenePiece('$_dir/sky.webp', Rect.fromLTWH(0, 0, 390, 200));
 
+  /// The smiling sun peeking out in the top right corner, behind the
+  /// clouds: its rays, and its face with eyes open or shut ([sunBlink]),
+  /// all centred on the sun. Like the clouds, it keeps its place when the
+  /// scene lifts.
+  static const sunRays = ScenePiece('$_dir/sun-rays.webp', Rect.fromLTWH(284, -14, 128, 128));
+  static const sunFace = ScenePiece('$_dir/sun-face.webp', Rect.fromLTWH(308, 10, 80, 80));
+  static const sunBlink = ScenePiece('$_dir/sun-face-blink.webp', Rect.fromLTWH(308, 10, 80, 80));
+
+  /// The sun bobs [sunLift] units and rocks [sunTurnDeg] either way once per
+  /// [sunPeriod]; its rays turn round once per [sunRayTurn] and swell by up
+  /// to [sunRayPulse] of their size once per [sunRayPulsePeriod]; it shuts
+  /// its eyes for [sunBlinkFor] at the end of every [sunBlinkEvery]. All
+  /// still under reduced motion, redrawn every [sunStep].
+  static const double sunLift = 2;
+  static const double sunTurnDeg = 3;
+  static const sunPeriod = Duration(milliseconds: 6400);
+  static const sunRayTurn = Duration(seconds: 80);
+  static const double sunRayPulse = 0.05;
+  static const sunRayPulsePeriod = Duration(milliseconds: 4200);
+  static const sunBlinkEvery = Duration(milliseconds: 5300);
+  static const sunBlinkFor = Duration(milliseconds: 160);
+  static const sunStep = Duration(milliseconds: 40);
+
   /// The clouds, drifting right across the sky and round again: each
   /// crosses the frame and its own width [DriftingPiece.laps] times per
   /// [cloudLoop]. They keep their place when the scene lifts.
