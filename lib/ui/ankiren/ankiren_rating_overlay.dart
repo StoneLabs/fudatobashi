@@ -211,8 +211,8 @@ Offset _jitter(Duration elapsed, Duration step, int seed, double reach) {
 /// finial the next class's, while the rating counts from the old value to
 /// the new. A rise lands with a jolt, バサッ!!, confetti and the gain; a
 /// fall sinks gently on a calmer page (ドンマイ!), past a class line if it
-/// must; a breakthrough strains against the finial and flashes into the
-/// rank-up. During placement (ランク判定) the rating stays hidden: each game
+/// must (then the rank-down follows); a breakthrough strains against the
+/// finial and flashes into the rank-up. During placement (ランク判定) the rating stays hidden: each game
 /// stamps its slot and the veiled flag climbs a step, and the last one ends
 /// in a drumroll and the reveal of the first class.
 class AnkirenRatingOverlay extends StatefulWidget {
@@ -265,8 +265,8 @@ class _AnkirenRatingOverlayState extends State<AnkirenRatingOverlay> {
       _ => s.ankirenRatingBand,
     };
     final (cta, ctaSub) = switch (t.moment) {
-      AnkirenRatingMoment.down || AnkirenRatingMoment.rankDown => (s.ankirenNextTime, s.other.ankirenNextTime),
-      AnkirenRatingMoment.placing || AnkirenRatingMoment.held => (s.onward, s.other.onward),
+      AnkirenRatingMoment.down => (s.ankirenNextTime, s.other.ankirenNextTime),
+      AnkirenRatingMoment.placing || AnkirenRatingMoment.held || AnkirenRatingMoment.rankDown => (s.onward, s.other.onward),
       _ => (s.ratingCta, s.other.ratingCta),
     };
     final suspense = (t.reveals || t.breaksThrough) && !still;

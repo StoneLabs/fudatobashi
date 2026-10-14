@@ -1,10 +1,10 @@
 // 暗記練's celebrations after a game: the shared XP and level-up pages, the
 // rating page in every moment (placement, the reveal, a rise, a hold, a
-// fall, a breakthrough into the rank-up, a fall into a lower class) and the
-// rank-up for 暗記練's own rank. Each fits phones 360, 384 and 412 dp wide
-// at font scale 1.0 and 1.3, in English and Japanese; the results screen
-// plays them for ranked, free and placement games, and none for the test
-// game.
+// fall, a breakthrough into the rank-up, a fall into a lower class), and
+// 暗記練's own rank-up and rank-down, which play to their end or skip there
+// on a tap. Each fits phones 360, 384 and 412 dp wide at font scale 1.0 and
+// 1.3, in English and Japanese; the results screen plays them for ranked,
+// free and placement games, and none for the test game.
 //
 // With RENDER_SCREENS=1 it also renders the pages at 1080 × 2340 px, with
 // real fonts and art, to .scratchpad/ankiren_celebrations/.
@@ -38,10 +38,12 @@ import 'package:fudatobashi/l10n/strings.dart';
 import 'package:fudatobashi/state/progress.dart';
 import 'package:fudatobashi/state/scope.dart';
 import 'package:fudatobashi/state/side_trips.dart';
+import 'package:fudatobashi/ui/ankiren/ankiren_rank_overlay.dart';
 import 'package:fudatobashi/ui/ankiren/ankiren_rating_overlay.dart';
 import 'package:fudatobashi/ui/ankiren/ankiren_results_screen.dart';
 import 'package:fudatobashi/ui/debug/celebration_preview.dart';
 import 'package:fudatobashi/ui/manga/manga.dart';
+import 'package:fudatobashi/ui/rank/rank_badges.dart';
 import 'package:fudatobashi/ui/results/celebration_chrome.dart';
 import 'package:fudatobashi/ui/results/celebration_sequence.dart';
 import 'package:fudatobashi/ui/results/celebrations.dart';
@@ -94,6 +96,17 @@ final _moments = <AnkirenRatingMoment, AnkirenRatingCelebration>{
   AnkirenRatingMoment.rankUp: AnkirenRatingCelebration(_eLower - 40, _eLower + 22, game: 9),
   AnkirenRatingMoment.rankDown: AnkirenRatingCelebration(_eLower + 18, _eLower - 26, game: 9),
 };
+
+/// 暗記練's own rank-up and rank-down, across the line into E下級.
+final _ranks = {
+  true: AnkirenRankCelebration(_eLower - 40, _eLower + 22),
+  false: AnkirenRankCelebration(_eLower + 18, _eLower - 26),
+};
+
+/// 暗記練's rank-up or rank-down page for [data].
+Widget _rankPage(AnkirenRankCelebration data, {VoidCallback? onNext}) => data.up
+    ? AnkirenRankUpOverlay(data: data, onNext: onNext ?? () {})
+    : AnkirenRankDownOverlay(data: data, onNext: onNext ?? () {});
 
 /// A 暗記練 game's XP: every 暗記練 source, crossing a level from [into]
 /// XP into level 7.
@@ -217,8 +230,9 @@ void main() {
 
     test('a ranked game: the XP, then the rating page in its moment', () {
       AnkirenRatingMoment momentOf(double before, double after, int games) =>
-          (ankirenCelebrationsFor(report(before: before, after: after, games: games, xp: earned)).last
-                  as AnkirenRatingCelebration)
+          ankirenCelebrationsFor(report(before: before, after: after, games: games, xp: earned))
+              .whereType<AnkirenRatingCelebration>()
+              .single
               .moment;
       expect(momentOf(400, 900, 1), AnkirenRatingMoment.placing);
       expect(momentOf(900, 950, 2), AnkirenRatingMoment.placing);
@@ -233,19 +247,28 @@ void main() {
       expect((placement.last as AnkirenRatingCelebration).placementScores, [420]);
     });
 
-    test('a ranked game breaking into a higher class adds 暗記練\'s own rank-up', () {
-      final list = ankirenCelebrationsFor(report(before: _eLower - 10, after: _eLower + 10, games: 7, xp: earned));
-      expect(types(list), [XpCelebration, AnkirenRatingCelebration, RankUpCelebration]);
+    test('a ranked game breaking into another class adds 暗記練\'s own rank-up or rank-down', () {
+      final up = ankirenCelebrationsFor(report(before: _eLower - 10, after: _eLower + 10, games: 7, xp: earned));
+      expect(types(up), [XpCelebration, AnkirenRatingCelebration, AnkirenRankCelebration]);
       expect(
-        list.last,
-        isA<RankUpCelebration>()
-            .having((c) => c.trip, 'trip', SideTrip.ankiren)
-            .having((c) => c.before, 'before', Rating.bands[2])
-            .having((c) => c.after, 'after', Rating.bands[3]),
+        up.last,
+        isA<AnkirenRankCelebration>()
+            .having((c) => c.up, 'up', isTrue)
+            .having((c) => c.from, 'from', Rating.bands[2])
+            .having((c) => c.to, 'to', Rating.bands[3]),
       );
-      expect(types(ankirenCelebrationsFor(report(before: _eLower + 10, after: _eLower - 10, games: 7))),
+      final down = ankirenCelebrationsFor(report(before: _eLower + 10, after: _eLower - 10, games: 7));
+      expect(types(down), [AnkirenRatingCelebration, AnkirenRankCelebration], reason: 'a forfeit earns no XP');
+      expect(
+        down.last,
+        isA<AnkirenRankCelebration>()
+            .having((c) => c.up, 'up', isFalse)
+            .having((c) => c.from, 'from', Rating.bands[3])
+            .having((c) => c.to, 'to', Rating.bands[2]),
+      );
+      expect(types(ankirenCelebrationsFor(report(before: _eLower + 30, after: _eLower + 10, games: 7))),
           [AnkirenRatingCelebration],
-          reason: 'a fall into a lower class has no rank-up, and a forfeit earns no XP');
+          reason: 'a fall within the class has no rank-down');
     });
 
     test('the main run shares the XP pages', () {
@@ -360,25 +383,33 @@ void main() {
         }
       });
 
-      testWidgets('暗記練\'s rank-up names its ladder and the points left ($lang)', (tester) async {
-        final p = await open(tester, lang);
-        final s = S(lang);
-        final (before, after) = (_eLower - 40, _eLower + 22);
-        final data = RankUpCelebration(Rating.bands[2], Rating.bands[3], before, after, trip: SideTrip.ankiren);
-        for (final phone in _phones) {
-          for (final fontScale in [1.0, 1.3]) {
-            await showPage(tester, p, RankUpOverlay(data: data, onNext: () {}), phone,
-                fontScale: fontScale, settle: RankUpMotion.length + const Duration(milliseconds: 100));
-            expect(tester.takeException(), isNull, reason: '${phone.name} dp, $fontScale');
-            expect(find.text(s.ankirenRankUpBand), findsOneWidget);
-            expect(find.text(s.rankUpBand), findsNothing);
-            final points = (Rating.bands[4].minRating - after).ceil();
-            expect(find.byWidgetPredicate((w) => w is NumberedText && w.values.single == points), findsOneWidget);
-            expect(find.text(s.nextClassTarget, findRichText: true), findsNothing, reason: 'no 100-card time');
-            await tester.pumpWidget(const SizedBox());
+      for (final up in [true, false]) {
+        testWidgets('暗記練\'s rank-${up ? 'up' : 'down'} shows both classes, the rating and the points left ($lang)',
+            (tester) async {
+          final p = await open(tester, lang);
+          final s = S(lang);
+          final data = _ranks[up]!;
+          final length = up ? AnkirenRankUpMotion.length : AnkirenRankDownMotion.length;
+          for (final phone in _phones) {
+            for (final fontScale in [1.0, 1.3]) {
+              await showPage(tester, p, _rankPage(data), phone, fontScale: fontScale, settle: length);
+              expect(tester.takeException(), isNull, reason: '${phone.name} dp, $fontScale');
+              expect(find.text(up ? s.ankirenRankUpBand : s.ankirenRankDownBand), findsOneWidget);
+              expect(find.text(s.rankUpBand), findsNothing);
+              expectShown(tester, find.byType(CelebrationCta), phone);
+              expectShown(tester, find.byType(MangaPanel), phone);
+              expectOnScreen(tester, find.byKey(const ValueKey('ankirenRankNew')), phone);
+              expectOnScreen(tester, find.byType(Tobi), phone);
+              expect(find.text(up ? s.ratingCta : s.ankirenNextTime), findsOneWidget);
+              final next = Rating.nextBand(data.after)!;
+              final points = (next.minRating - data.after).ceil();
+              expect(find.byWidgetPredicate((w) => w is NumberedText && w.values.single == points), findsOneWidget);
+              expect(find.text('${data.after.round()}'), findsOneWidget);
+              await tester.pumpWidget(const SizedBox());
+            }
           }
-        }
-      });
+        });
+      }
     }
   });
 
@@ -523,24 +554,72 @@ void main() {
       final data = _moments[AnkirenRatingMoment.rankUp]!;
       final t = AnkirenRatingTimeline(data);
       var done = false;
-      final pages = [
-        data,
-        RankUpCelebration(Rating.bandOf(data.before), Rating.bandOf(data.after), data.before, data.after,
-            trip: SideTrip.ankiren),
-      ];
+      final pages = [data, AnkirenRankCelebration(data.before, data.after)];
       await showPage(tester, p, CelebrationSequence(pages: pages, onDone: () => done = true), _users,
           settle: t.moveEnd + AnkirenRatingMotion.strain ~/ 2);
       expect(heard.played, contains(Sfx.ratingStrain));
-      expect(find.byType(RankUpOverlay), findsNothing);
+      expect(find.byType(AnkirenRankUpOverlay), findsNothing);
       await tester.pump(t.cutAt - t.moveEnd - AnkirenRatingMotion.strain ~/ 2 + const Duration(milliseconds: 20));
       expect(heard.played.last, Sfx.ratingBreak);
-      expect(find.byType(RankUpOverlay), findsOneWidget, reason: 'handed over at the flash');
-      expect(find.text(const S('en').ankirenRankUpBand), findsOneWidget);
-      await tester.pump(RankUpMotion.length);
+      expect(find.byType(AnkirenRankUpOverlay), findsOneWidget, reason: 'handed over at the flash');
+      expect(find.byType(RankUpOverlay), findsNothing, reason: 'not the main rank-up');
+      heard.played.clear();
+      await tester.pump(AnkirenRankUpMotion.slashAt);
+      expect(heard.played, [Sfx.cardFlick], reason: 'the blade');
+      await tester.pump(AnkirenRankUpMotion.impactAt - AnkirenRankUpMotion.slashAt);
+      expect(heard.played, [Sfx.cardFlick, Sfx.stamp, Sfx.rankUp], reason: 'the impact');
+      await tester.pump(AnkirenRankUpMotion.length);
       expect(tester.takeException(), isNull);
       expect(done, isFalse);
       await tester.pumpWidget(const SizedBox());
     });
+
+    for (final up in [true, false]) {
+      final name = up ? 'rank-up' : 'rank-down';
+      final length = up ? AnkirenRankUpMotion.length : AnkirenRankDownMotion.length;
+      final data = _ranks[up]!;
+
+      // The CTA at rest: fully drawn at its own size.
+      void expectAtRest(WidgetTester tester) {
+        final frames = tester.widgetList<EntranceFrame>(
+            find.ancestor(of: find.byType(CelebrationCta), matching: find.byType(EntranceFrame)));
+        expect(frames.map((f) => f.progress), everyElement(1.0), reason: 'the button has come in');
+        final old = find.byWidgetPredicate((w) => w is ClassBadge && w.band == data.from && w.fontSize == AnkirenRankLayout.oldFont);
+        expect(old, findsNothing, reason: 'the old class is gone from the stage');
+        expect(find.byKey(const ValueKey('ankirenRankNew')), findsOneWidget);
+      }
+
+      testWidgets('暗記練\'s $name plays to its end and waits for a tap', (tester) async {
+        final p = await open(tester, 'en');
+        var next = 0;
+        await showPage(tester, p, _rankPage(data, onNext: () => next++), _users);
+        for (var at = Duration.zero; at < length; at += const Duration(milliseconds: 50)) {
+          await tester.pump(const Duration(milliseconds: 50));
+          expect(tester.takeException(), isNull, reason: '${at.inMilliseconds} ms');
+        }
+        await tester.pump(const Duration(milliseconds: 50));
+        expectAtRest(tester);
+        expect(next, 0);
+        await tester.tapAt(const Offset(30, 200));
+        expect(next, 1, reason: 'at rest, a tap moves on');
+        await tester.pumpWidget(const SizedBox());
+      });
+
+      testWidgets('a tap skips 暗記練\'s $name to its end', (tester) async {
+        final p = await open(tester, 'en');
+        var next = 0;
+        await showPage(tester, p, _rankPage(data, onNext: () => next++), _users,
+            settle: const Duration(milliseconds: 300));
+        await tester.tapAt(const Offset(30, 200));
+        await tester.pump();
+        expect(next, 0, reason: 'the first tap only skips');
+        expectAtRest(tester);
+        expect(tester.takeException(), isNull);
+        await tester.tapAt(const Offset(30, 200));
+        expect(next, 1);
+        await tester.pumpWidget(const SizedBox());
+      });
+    }
 
     testWidgets('a fall into a lower class relabels the flag as it sinks past the line', (tester) async {
       final p = await open(tester, 'en');
@@ -558,7 +637,7 @@ void main() {
       expect(heard.played, isEmpty, reason: 'no clicks on the way down');
       await tester.pump(t.length);
       expect(heard.played, [Sfx.ankirenFlip], reason: 'one soft flap as it lands');
-      expect(find.text(const S('en').ankirenNextTime), findsOneWidget);
+      expect(find.text(const S('en').onward), findsOneWidget, reason: 'the rank-down follows');
       await tester.pumpWidget(const SizedBox());
     });
 
@@ -638,15 +717,44 @@ void main() {
       await tester.pumpWidget(const SizedBox());
     });
 
-    testWidgets('every moment of the rating page plays, a breakthrough into the rank-up', (tester) async {
+    testWidgets('every moment of the rating page plays, into the rank-up or rank-down across a class line',
+        (tester) async {
       final p = await open(tester, 'en');
       for (final moment in AnkirenRatingMoment.values) {
         await preview(tester, p, (context) => previewAnkirenRating(context, moment));
         final pages = tester.widget<CelebrationSequence>(find.byType(CelebrationSequence)).pages;
         expect((pages.first as AnkirenRatingCelebration).moment, moment);
-        expect(pages.length, moment == AnkirenRatingMoment.rankUp ? 2 : 1, reason: moment.name);
+        final crosses = moment == AnkirenRatingMoment.rankUp || moment == AnkirenRatingMoment.rankDown;
+        expect(pages.length, crosses ? 2 : 1, reason: moment.name);
         await tester.pump(AnkirenRatingTimeline(pages.first as AnkirenRatingCelebration).length);
         expect(tester.takeException(), isNull, reason: moment.name);
+        await tester.pumpWidget(const SizedBox());
+      }
+    });
+  });
+
+  group('dev previews of the rank pages', () {
+    testWidgets('AnkiRen rank-up and rank-down play on their own', (tester) async {
+      final p = await open(tester, 'en');
+      for (final up in [true, false]) {
+        onPhone(tester, _users, 1);
+        await tester.pumpWidget(app(
+          p,
+          Scaffold(
+            body: Builder(
+              builder: (context) =>
+                  TextButton(onPressed: () => previewAnkirenRank(context, up: up), child: const Text('go')),
+            ),
+          ),
+        ));
+        await tester.tap(find.text('go'));
+        await tester.pump();
+        await tester.pump(Motion.route);
+        final pages = tester.widget<CelebrationSequence>(find.byType(CelebrationSequence)).pages;
+        expect(pages, [isA<AnkirenRankCelebration>().having((c) => c.up, 'up', up)]);
+        expect(find.byType(up ? AnkirenRankUpOverlay : AnkirenRankDownOverlay), findsOneWidget);
+        await tester.pump(up ? AnkirenRankUpMotion.length : AnkirenRankDownMotion.length);
+        expect(tester.takeException(), isNull);
         await tester.pumpWidget(const SizedBox());
       }
     });
@@ -731,19 +839,44 @@ void main() {
         await capture(tester, _narrow, 'xp_${lang}_360_1.3');
         await showPage(tester, p, LevelUpOverlay(gain: gain, onNext: () {}), _users, settle: LevelUpMotion.length);
         await capture(tester, _users, 'level_up_$lang');
-        final data = _moments[AnkirenRatingMoment.rankUp]!;
-        await showPage(
-            tester,
-            p,
-            RankUpOverlay(
-                data: RankUpCelebration(Rating.bandOf(data.before), Rating.bandOf(data.after), data.before, data.after,
-                    trip: SideTrip.ankiren),
-                onNext: () {}),
-            _users,
-            settle: RankUpMotion.length + const Duration(milliseconds: 100));
-        await capture(tester, _users, 'rank_up_$lang');
         await tester.pumpWidget(const SizedBox());
       });
+
+      for (final up in [true, false]) {
+        final name = up ? 'rank_up' : 'rank_down';
+        testWidgets('${name}_$lang', (tester) async {
+          final p = await open(tester, lang);
+          final stops = up
+              ? {
+                  'charge': AnkirenRankUpMotion.slashAt - const Duration(milliseconds: 60),
+                  'slash': AnkirenRankUpMotion.split.delay + const Duration(milliseconds: 60),
+                  'split': AnkirenRankUpMotion.split.delay + const Duration(milliseconds: 180),
+                  'impact': AnkirenRankUpMotion.impactAt + const Duration(milliseconds: 20),
+                  'slam': AnkirenRankUpMotion.impactAt + const Duration(milliseconds: 160),
+                  'end': AnkirenRankUpMotion.length,
+                }
+              : {
+                  'hit': AnkirenRankDownMotion.hitAt + const Duration(milliseconds: 200),
+                  'fall': AnkirenRankDownMotion.landAt - const Duration(milliseconds: 60),
+                  'end': AnkirenRankDownMotion.length,
+                };
+          for (final (phone, fontScale) in [(_users, 1.0), (_narrow, 1.3)]) {
+            final tag = phone == _users ? '' : '_${phone.name}_$fontScale';
+            await showPage(tester, p, _rankPage(_ranks[up]!), phone, fontScale: fontScale);
+            var at = Duration.zero;
+            for (final MapEntry(key: stop, value: until) in stops.entries) {
+              // Played through in steps, as on a phone.
+              while (at < until) {
+                final step = until - at < const Duration(milliseconds: 20) ? until - at : const Duration(milliseconds: 20);
+                await tester.pump(step);
+                at += step;
+              }
+              if (tag.isEmpty || stop == 'end') await capture(tester, phone, '${name}_$lang${tag}_$stop');
+            }
+            await tester.pumpWidget(const SizedBox());
+          }
+        });
+      }
     }
   });
 }

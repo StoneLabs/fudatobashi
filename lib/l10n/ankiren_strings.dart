@@ -95,11 +95,13 @@ extension AnkirenStrings on S {
   /// The field preview, for screen readers.
   String ankirenPreviewLabel(int perSide) => f('ankirenPreviewLabel', [perSide]);
 
-  /// The rating page's band; on the last placement game's, and over the
-  /// rank-up after a breakthrough.
+  /// The rating page's band; on the last placement game's; over 暗記練's
+  /// rank-up after a breakthrough, and over its rank-down after a fall
+  /// into a lower class.
   String get ankirenRatingBand => t('ankirenRatingBand');
   String get ankirenRankBand => t('ankirenRankBand');
   String get ankirenRankUpBand => t('ankirenRankUpBand');
+  String get ankirenRankDownBand => t('ankirenRankDownBand');
 
   /// A placement game's slot on the rating page: "GAME 2".
   String ankirenSlot(int game) => f('ankirenSlot', [game]);

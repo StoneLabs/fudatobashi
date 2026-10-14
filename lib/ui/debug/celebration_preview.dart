@@ -121,7 +121,8 @@ void previewAnkirenXp(BuildContext context, {bool levelUp = false}) {
 }
 
 /// 暗記練's rating page after a ranked game in [moment], then 暗記練's own
-/// rank-up after a breakthrough.
+/// rank-up after a breakthrough, or its rank-down after a fall into a
+/// lower class.
 void previewAnkirenRating(BuildContext context, AnkirenRatingMoment moment) {
   final floor = Rating.bands[CelebrationPreviewTuning.ankirenClass].minRating;
   final into = floor + CelebrationPreviewTuning.ankirenInto;
@@ -142,6 +143,15 @@ void previewAnkirenRating(BuildContext context, AnkirenRatingMoment moment) {
   };
   final report = AnkirenReport(ratingBefore: before, ratingAfter: after, rankedGames: game);
   _previewPages(context, ankirenCelebrationsFor(report, placementScores: scores.take(game).toList()));
+}
+
+/// 暗記練's own rank-up on its own, or with [up] false its rank-down, across
+/// the threshold above `Rating.bands[ankirenClass]`.
+void previewAnkirenRank(BuildContext context, {bool up = true}) {
+  final floor = Rating.bands[CelebrationPreviewTuning.ankirenClass].minRating;
+  const cross = CelebrationPreviewTuning.ankirenCross;
+  final (before, after) = up ? (floor - cross, floor + cross) : (floor + cross, floor - cross);
+  _previewPages(context, [AnkirenRankCelebration(before, after)]);
 }
 
 /// 暗記練's first opening on the Side Trips hub: its torii rattles, the

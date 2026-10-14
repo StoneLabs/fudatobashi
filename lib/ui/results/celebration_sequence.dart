@@ -3,6 +3,7 @@ import 'package:flutter/widgets.dart';
 import '../../config/config.dart';
 import '../../config/design.dart';
 import '../../state/scope.dart';
+import '../ankiren/ankiren_rank_overlay.dart';
 import '../ankiren/ankiren_rating_overlay.dart';
 import '../sound/sounds.dart';
 import 'celebration_overlays.dart';
@@ -125,6 +126,8 @@ class _CelebrationSequenceState extends State<CelebrationSequence> with SingleTi
       LevelUpCelebration() => LevelUpOverlay(gain: c.gain, onNext: onNext),
       RatingCelebration() => RatingOverlay(data: c, onNext: onNext),
       AnkirenRatingCelebration() => AnkirenRatingOverlay(data: c, onNext: onNext),
+      AnkirenRankCelebration() =>
+        c.up ? AnkirenRankUpOverlay(data: c, onNext: onNext) : AnkirenRankDownOverlay(data: c, onNext: onNext),
     };
   }
 }
@@ -148,4 +151,11 @@ List<(Sfx, Duration)> _soundsOf(Celebration c) => switch (c) {
       LevelUpCelebration() => const [(Sfx.stamp, LevelUpMotion.impactAt), (Sfx.levelUp, LevelUpMotion.impactAt)],
       RatingCelebration() => RatingTimeline(c).sounds,
       AnkirenRatingCelebration() => AnkirenRatingTimeline(c).sounds,
+      AnkirenRankCelebration() => c.up
+          ? const [
+              (Sfx.cardFlick, AnkirenRankUpMotion.slashAt),
+              (Sfx.stamp, AnkirenRankUpMotion.impactAt),
+              (Sfx.rankUp, AnkirenRankUpMotion.impactAt),
+            ]
+          : const [(Sfx.ankirenWrong, AnkirenRankDownMotion.hitAt), (Sfx.stamp, AnkirenRankDownMotion.landAt)],
     };

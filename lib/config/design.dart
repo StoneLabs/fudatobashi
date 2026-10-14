@@ -4559,6 +4559,251 @@ abstract final class AnkirenRatingMotion {
   static const double hopAirShare = 0.4;
 }
 
+/// 暗記練's own rank-up and rank-down pages (`AnkirenRankUpOverlay`,
+/// `AnkirenRankDownOverlay`): a stage where the classes are fought out, in
+/// its own units and scaled down to fit, and the result under it.
+abstract final class AnkirenRankLayout {
+  /// The rank-up's charge plays on a black page under a dark tone, white
+  /// focus lines rushing in from [rushFrom] times their size onto
+  /// [lines]' centre (about the stage's). From the impact on, the page is
+  /// sea blue under a sun glow, the same lines boiling.
+  static const Color night = Palette.ink;
+  static const nightTone = ToneSpec(dot: Color(0xFF303030), radius: 1.6, spacing: 6);
+  static const Color color = Palette.sea;
+  static const Alignment glowAt = Alignment(0, -0.18);
+  static const List<Color> glowColors = [Color(0xFFFFF4C2), Color(0xFF8FD0FF), Palette.sea];
+  static const List<double> glowStops = [0, 0.42, 1];
+  static const lines = BurstSpec(
+      box: Size(384, 832),
+      center: Offset(192, 330),
+      count: 170,
+      innerMin: 120,
+      innerMax: 175,
+      width: 4,
+      seed: 41,
+      color: Color(0xE6FFFFFF));
+  static const double rushFrom = 2.4;
+
+  /// The impact frame: the page in negative grey, its contrast pushed
+  /// (brightness weighted 0.299 red, 0.587 green, 0.114 blue, times −2.2,
+  /// about the middle grey).
+  static const List<double> negative = [
+    -0.658, -1.291, -0.251, 0, 408, //
+    -0.658, -1.291, -0.251, 0, 408,
+    -0.658, -1.291, -0.251, 0, 408,
+    0, 0, 0, 1, 0,
+  ];
+
+  /// The band naming the page, and the gaps round the stage.
+  static const double topGap = 8;
+  static const double bandInset = 40;
+  static const double bandFont = 19;
+  static const double bandTracking = 0.2;
+  static const EdgeInsets bandPadding = EdgeInsets.fromLTRB(8, 6, 8, 7);
+  static const double bandTurnDeg = -3;
+  static const double stageGap = 10;
+
+  /// The rank-up's stage: the old class in its middle, the blade's path
+  /// across it, and the new class stamped where the old one stood, onto
+  /// the ink splash, with ドン!! on its corner and Tobi below.
+  static const Size stage = Size(330, 330);
+  static const double oldFont = 56;
+  static const double oldSuffixFont = 30;
+  static const EdgeInsets oldPadding = EdgeInsets.fromLTRB(18, 10, 18, 12);
+  static const double oldBorder = 4;
+  static const double newFont = 64;
+  static const double newSuffixFont = 34;
+  static const EdgeInsets newPadding = EdgeInsets.fromLTRB(20, 12, 20, 14);
+  static const double newBorder = 5;
+  static const double newTurnDeg = -5;
+
+  /// The old class trembles through the charge under ゴゴゴ.
+  static const double trembleReach = 2.5;
+  static const String rumble = 'ゴゴゴ';
+  static const double rumbleFont = 40;
+  static const Offset rumbleAt = Offset(0, 50);
+  static const int rumbleSeed = 13;
+
+  /// The blade: a paper streak round a sun core, [bladeWidth] at its
+  /// widest, cutting from [bladeFrom] to [bladeTo]; ズバッ!! by where it
+  /// starts.
+  static const Offset bladeFrom = Offset(6, 101);
+  static const Offset bladeTo = Offset(324, 229);
+  static const double bladeWidth = 18;
+  static const double bladeCore = 0.42;
+  static const double bladeWidest = 0.7;
+  static const double bladeOutline = 2;
+  static const String slashSfx = 'ズバッ!!';
+  static const double slashFont = 40;
+  static const Offset slashAt = Offset(4, 22);
+  static const double slashTurnDeg = -10;
+  static const int slashSeed = 17;
+
+  /// The halves slide apart along the cut by [splitSlide] and away from it
+  /// by [splitGap], turning [splitTurnDeg] as they fade.
+  static const double splitSlide = 54;
+  static const double splitGap = 16;
+  static const double splitTurnDeg = 8;
+  static const double splitFadeFrom = 0.35;
+
+  static const String splash = 'assets/images/sidetrips/ankiren/rank-splash.webp';
+  static const Size splashSize = Size(360, 280);
+  static const impactBurst = BurstSpec(
+      box: impactSize, center: Offset(200, 160), count: 54, innerMin: 96, innerMax: 120, width: 6, seed: 43);
+  static const Size impactSize = Size(400, 320);
+  static const double impactFromScale = 0.7;
+  static const double impactToScale = 1.35;
+  static const String hitSfx = 'ドン!!';
+  static const double hitFont = 58;
+  static const Offset hitAt = Offset(-6, 26);
+  static const double hitTurnDeg = 10;
+  static const int hitSeed = 29;
+  static const Placement tobi = Placement(right: 4, bottom: 0, size: Size(64, 76));
+
+  /// The rank-down: the calm page of a fall, until ガーン!! drops a shadow
+  /// from the top, [gloomReach] of the page down, with gloom lines (縦線)
+  /// hanging in it.
+  static const List<Color> gloomColors = [Color(0x99141414), Color(0x00141414)];
+  static const double gloomReach = 0.6;
+  static const int gloomCount = 44;
+  static const int gloomSeed = 7;
+  static const double gloomShortest = 0.18;
+  static const double gloomLongest = 0.5;
+  static const double gloomThinnest = 1.2;
+  static const double gloomThickest = 3.4;
+  static const Color gloomLine = Color(0xB3141414);
+
+  /// The rank-down's stage: the old class cracking and falling away, the
+  /// lower class dropping into its place, ガーン!! over them and Tobi
+  /// shocked below.
+  static const Size downStage = Size(330, 300);
+  static const String crack = 'assets/images/sidetrips/ankiren/rank-crack.webp';
+  static const double fallDrop = 170;
+  static const double fallTurnDeg = 18;
+  static const String shockSfx = 'ガーン!!';
+  static const double shockFont = 56;
+  static const double shockTop = 2;
+  static const double shockTurnDeg = -6;
+  static const int shockSeed = 37;
+  static const double tobiTremble = 1.3;
+  static const tobiTrembleStep = Duration(milliseconds: 70);
+
+  /// The result: the old class → the new one, the rating with its change,
+  /// and the points to the next class (to win the lost one back after a
+  /// fall).
+  static const EdgeInsets resultPadding = EdgeInsets.fromLTRB(14, 12, 14, 12);
+  static const double resultGap = 8;
+  static const double resultBadgeFont = 24;
+  static const double resultBadgeSuffixFont = 14;
+  static const double arrowFont = 22;
+  static const double arrowGap = 10;
+  static const double ratingOldFont = 18;
+  static const double ratingFont = 28;
+  static const double changeFont = 17;
+  static const EdgeInsets changePadding = EdgeInsets.fromLTRB(6, 2, 6, 3);
+  static const double nextFont = 15;
+  static const double nextNumberFont = 22;
+
+  static const double actionGap = 10;
+  static const double actionHeight = 62;
+  static const double ctaFont = 20;
+  static const double ctaSubFont = 13;
+}
+
+/// 暗記練's rank-up, cut in at the rating page's white flash: the flash
+/// fades over [flash] as focus lines rush in on the old class, which
+/// trembles; at [slashAt] the blade cuts across it and the halves slide
+/// apart; the new class slams down at [impactAt] with the impact frame,
+/// the splash, ドン!! and a shake; then the band, Tobi, the result and the
+/// button settle in.
+abstract final class AnkirenRankUpMotion {
+  static const flash = EntranceSpec(Entrances.custom, duration: Duration(milliseconds: 180), curve: Curves.easeIn);
+  static const rush = EntranceSpec(Entrances.custom, duration: Duration(milliseconds: 480), curve: Curves.easeOutCubic);
+  static const linesStep = Duration(milliseconds: 60);
+  static const int linesFrames = 3;
+  static const old = EntranceSpec(Entrances.pop,
+      duration: Duration(milliseconds: 260), delay: Duration(milliseconds: 60), curve: Entrances.bouncy);
+  static const rumble = EntranceSpec(EntranceFrom(scale: 0.3),
+      duration: Duration(milliseconds: 200), delay: Duration(milliseconds: 200), curve: StepCurve(3, Entrances.bouncy));
+  static const trembleStep = Duration(milliseconds: 40);
+
+  static const slashAt = Duration(milliseconds: 660);
+  static const slash = Duration(milliseconds: 90);
+  static const slashFade = Duration(milliseconds: 240);
+  static const slashSfx = EntranceSpec(EntranceFrom(scale: 0.3),
+      duration: Duration(milliseconds: 220), delay: Duration(milliseconds: 680), curve: StepCurve(3, Entrances.bouncy));
+  static const split = EntranceSpec(Entrances.custom,
+      duration: Duration(milliseconds: 320), delay: Duration(milliseconds: 750), curve: Curves.easeOutCubic);
+
+  /// The new class drops from high above and lands at [impactAt]; the
+  /// impact frame lasts [impactFrame].
+  static const impactAt = Duration(milliseconds: 1080);
+  static const stamp = EntranceSpec(EntranceFrom(scale: 3, turnDeg: -20, opaqueAt: 0.05),
+      duration: Duration(milliseconds: 110), delay: Duration(milliseconds: 970), curve: Curves.easeIn);
+  static const impactFrame = Duration(milliseconds: 70);
+  static const jolt = EntranceSpec(Entrances.custom, duration: Duration(milliseconds: 400), delay: impactAt, curve: Curves.linear);
+  static const double joltReach = 10;
+  static const int joltSteps = 11;
+  static const int joltSeed = 71;
+  static const splash = EntranceSpec(EntranceFrom(scale: 0.3),
+      duration: Duration(milliseconds: 280), delay: impactAt, curve: Entrances.bouncy);
+  static const burst = EntranceSpec(Entrances.custom, duration: Duration(milliseconds: 450), delay: impactAt, curve: Curves.easeOut);
+  static const hitSfx = EntranceSpec(EntranceFrom(scale: 0.2),
+      duration: Duration(milliseconds: 260), delay: Duration(milliseconds: 1100), curve: StepCurve(3, Entrances.bouncy));
+
+  static const band = EntranceSpec(EntranceFrom(offset: Offset(-300, 0), opaqueAt: 0.3),
+      duration: Duration(milliseconds: 200), delay: Duration(milliseconds: 1340), curve: StepCurve(3));
+  static const tobi = EntranceSpec(EntranceFrom(offset: Offset(0, 30)),
+      duration: Duration(milliseconds: 420), delay: Duration(milliseconds: 1440), curve: StepCurve(4, Entrances.bouncy));
+  static const double hopHeight = 10;
+  static const hopPeriod = Duration(milliseconds: 1000);
+  static const double hopAirShare = 0.4;
+  static const result = EntranceSpec(EntranceFrom(offset: Offset(0, 24)),
+      duration: Duration(milliseconds: 300), delay: Duration(milliseconds: 1540), curve: StepCurve(4));
+  static const actions = EntranceSpec(Entrances.pop,
+      duration: Duration(milliseconds: 400), delay: Duration(milliseconds: 1880), curve: Entrances.springy);
+
+  static Duration get length => actions.end;
+}
+
+/// 暗記練's rank-down, a smaller beat: ガーン!! drops onto the old class at
+/// [hitAt], cracking it with a jolt as the gloom comes down and Tobi
+/// starts in shock; the old class falls away and the lower one drops into
+/// its place at [landAt]; then the result and the button.
+abstract final class AnkirenRankDownMotion {
+  static const band =
+      EntranceSpec(Entrances.up, duration: Duration(milliseconds: 300), curve: Entrances.glide);
+  static const old = EntranceSpec(Entrances.pop,
+      duration: Duration(milliseconds: 300), delay: Duration(milliseconds: 60), curve: Entrances.springy);
+  static const shock = EntranceSpec(EntranceFrom(offset: Offset(0, -90), opaqueAt: 0.3),
+      duration: Duration(milliseconds: 150), delay: Duration(milliseconds: 330), curve: StepCurve(3));
+  static const hitAt = Duration(milliseconds: 480);
+  static const jolt = EntranceSpec(Entrances.custom, duration: Duration(milliseconds: 260), delay: hitAt, curve: Curves.linear);
+  static const double joltReach = 6;
+  static const int joltSteps = 7;
+  static const int joltSeed = 73;
+  static const crack = EntranceSpec(EntranceFrom(scale: 1.3),
+      duration: Duration(milliseconds: 120), delay: hitAt, curve: StepCurve(2));
+  static const gloom = EntranceSpec(Entrances.custom, duration: Duration(milliseconds: 360), delay: hitAt, curve: StepCurve(6));
+  static const tobi = EntranceSpec(EntranceFrom(offset: Offset(0, 30), scale: 0.5),
+      duration: Duration(milliseconds: 300), delay: Duration(milliseconds: 500), curve: StepCurve(3, Entrances.bouncy));
+  static const fall = EntranceSpec(Entrances.custom,
+      duration: Duration(milliseconds: 380), delay: Duration(milliseconds: 760), curve: Curves.easeInCubic);
+  static const landAt = Duration(milliseconds: 1040);
+  static const drop = EntranceSpec(EntranceFrom(offset: Offset(0, -110), opaqueAt: 0.2),
+      duration: Duration(milliseconds: 140), delay: Duration(milliseconds: 900), curve: Curves.easeInCubic);
+  static const thud = EntranceSpec(Entrances.custom, duration: Duration(milliseconds: 200), delay: landAt, curve: Curves.linear);
+  static const double thudReach = 3;
+  static const int thudSteps = 4;
+  static const int thudSeed = 79;
+  static const result = EntranceSpec(EntranceFrom(offset: Offset(0, 24)),
+      duration: Duration(milliseconds: 300), delay: Duration(milliseconds: 1140), curve: StepCurve(4));
+  static const actions = EntranceSpec(Entrances.pop,
+      duration: Duration(milliseconds: 400), delay: Duration(milliseconds: 1340), curve: Entrances.springy);
+
+  static Duration get length => actions.end;
+}
+
 /// [curve] advancing in [count] whole steps, like CSS `steps(count, end)`:
 /// the stop-motion of manga entrances.
 class StepCurve extends Curve {

@@ -466,6 +466,8 @@ class _DeveloperSection extends StatelessWidget {
           SettingsTapRow(title: 'Preview AnkiRen XP + level up', onTap: () => previewAnkirenXp(context, levelUp: true)),
           for (final moment in AnkirenRatingMoment.values)
             SettingsTapRow(title: _ankirenPreviewTitle(moment), onTap: () => previewAnkirenRating(context, moment)),
+          SettingsTapRow(title: 'Preview AnkiRen rank-up', onTap: () => previewAnkirenRank(context)),
+          SettingsTapRow(title: 'Preview AnkiRen rank down', onTap: () => previewAnkirenRank(context, up: false)),
         ]),
         SettingsGroup(children: [
           SettingsTapRow(title: 'Replay tour', onTap: () => replayTour(context)),
@@ -484,7 +486,7 @@ String _ankirenPreviewTitle(AnkirenRatingMoment moment) => switch (moment) {
       AnkirenRatingMoment.held => 'Preview AnkiRen rating held',
       AnkirenRatingMoment.down => 'Preview AnkiRen rating down',
       AnkirenRatingMoment.rankUp => 'Preview AnkiRen rating + rank-up',
-      AnkirenRatingMoment.rankDown => 'Preview AnkiRen class down',
+      AnkirenRatingMoment.rankDown => 'Preview AnkiRen rating + rank down',
     };
 
 /// How far the pointer-event clock is behind the frame clock on this

@@ -15,6 +15,15 @@ class EntranceStage extends StatefulWidget {
   final Duration length;
   final Widget child;
 
+  /// Brings the entrances of the stage around [context] to rest at once (a
+  /// tap skipping them); false when they already were, or there is none.
+  static bool finish(BuildContext context) {
+    final timeline = context.findAncestorStateOfType<_EntranceStageState>()?._timeline;
+    if (timeline == null || timeline.isCompleted) return false;
+    timeline.value = 1;
+    return true;
+  }
+
   @override
   State<EntranceStage> createState() => _EntranceStageState();
 }

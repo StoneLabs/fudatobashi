@@ -1,7 +1,6 @@
 import '../../config/config.dart';
 import '../../data/fuda_sets.dart';
 import '../../domain/rating.dart';
-import '../../domain/side_trips.dart';
 import '../../domain/xp.dart';
 import '../../state/progress.dart';
 import '../../state/side_trips.dart';
@@ -38,16 +37,13 @@ class IslandCompleteCelebration extends Celebration {
 }
 
 class RankUpCelebration extends Celebration {
-  const RankUpCelebration(this.before, this.after, this.ratingBefore, this.ratingAfter, {this.trip});
+  const RankUpCelebration(this.before, this.after, this.ratingBefore, this.ratingAfter);
   final RankBand before;
   final RankBand after;
 
   /// Null on the first rated run.
   final double? ratingBefore;
   final double ratingAfter;
-
-  /// The side trip whose own rating ranked up; null for the main rank.
-  final SideTrip? trip;
 }
 
 class GoalUpCelebration extends Celebration {
@@ -110,7 +106,7 @@ enum AnkirenRatingMoment {
   /// The rating broke into a higher class (the rank-up page follows).
   rankUp,
 
-  /// The rating fell into a lower class.
+  /// The rating fell into a lower class (the rank-down page follows).
   rankDown,
 }
 
@@ -140,6 +136,18 @@ class AnkirenRatingCelebration extends Celebration {
             ? AnkirenRatingMoment.down
             : AnkirenRatingMoment.held;
   }
+}
+
+/// A ranked 暗記練 game moved 暗記練's rating from [before] to [after] into
+/// another class: up into a higher one, or down into a lower one.
+class AnkirenRankCelebration extends Celebration {
+  const AnkirenRankCelebration(this.before, this.after);
+  final double before;
+  final double after;
+
+  RankBand get from => Rating.bandOf(before);
+  RankBand get to => Rating.bandOf(after);
+  bool get up => after > before;
 }
 
 /// The pages introducing new card [poemId] right before it first appears:
@@ -189,17 +197,18 @@ List<Celebration> celebrationsFor(SessionReport report) {
 }
 
 /// The pages after a 暗記練 game, in order: the XP earned and any level it
-/// reached, then for a ranked game what it did to the rating, and a
-/// rank-up when it broke into a higher class. [placementScores] are the
-/// placement games' scores so far, for a game that is one of them.
+/// reached, then for a ranked game what it did to the rating, and 暗記練's
+/// own rank-up or rank-down when it broke into another class.
+/// [placementScores] are the placement games' scores so far, for a game
+/// that is one of them.
 List<Celebration> ankirenCelebrationsFor(AnkirenReport report, {List<int> placementScores = const []}) {
   final list = xpCelebrations(report.xp);
   final (before, after) = (report.ratingBefore, report.ratingAfter);
   if (before == null || after == null) return list;
   final rating = AnkirenRatingCelebration(before, after, game: report.rankedGames, placementScores: placementScores);
   list.add(rating);
-  if (rating.moment == AnkirenRatingMoment.rankUp) {
-    list.add(RankUpCelebration(Rating.bandOf(before), Rating.bandOf(after), before, after, trip: SideTrip.ankiren));
+  if (rating.moment == AnkirenRatingMoment.rankUp || rating.moment == AnkirenRatingMoment.rankDown) {
+    list.add(AnkirenRankCelebration(before, after));
   }
   return list;
 }
