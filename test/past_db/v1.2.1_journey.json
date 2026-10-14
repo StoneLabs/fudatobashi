@@ -1,0 +1,15 @@
+{
+  "schemaVersion": 1,
+  "rows": {
+    "attempts": 1475,
+    "items": 122,
+    "key_values": 4,
+    "rating_points": 42,
+    "sessions": 46
+  },
+  "unlockedItems": 109,
+  "settings": {
+    "batchSize": 7,
+    "desiredRetention": 0.85
+  }
+}
