@@ -34,7 +34,6 @@ import 'package:fudatobashi/domain/trainer.dart';
 import 'package:fudatobashi/domain/xp.dart';
 import 'package:fudatobashi/l10n/ankiren_strings.dart';
 import 'package:fudatobashi/l10n/results_strings.dart';
-import 'package:fudatobashi/l10n/stats_strings.dart';
 import 'package:fudatobashi/l10n/strings.dart';
 import 'package:fudatobashi/state/progress.dart';
 import 'package:fudatobashi/state/scope.dart';
@@ -328,7 +327,6 @@ void main() {
             expect(t.track.floor, AnkirenRating.start, reason: '入門 stands on the start');
           }
           if (Rating.bandOf(data.after) == Rating.bands.last && !t.breaksThrough) {
-            expect(find.text(s.topClassNote), findsOneWidget);
             expect(find.text(s.topClassChase), findsOneWidget);
           }
           await tester.pumpWidget(const SizedBox());

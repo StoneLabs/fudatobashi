@@ -626,7 +626,7 @@ class _TodoSlot extends StatelessWidget {
 /// The flagpole and its flag. The pole's art is scaled to the stage's
 /// height; left of it the scale (the class's ends, the old rating, the
 /// lines of classes the flag passes, or during placement its three steps),
-/// at the top right the next class, and the flag hoisted to the rating.
+/// and the flag hoisted to the rating.
 class _Stage extends StatelessWidget {
   const _Stage(this.timeline);
   final AnkirenRatingTimeline timeline;
@@ -703,7 +703,6 @@ class _Stage extends StatelessWidget {
                 height: cloth.height,
                 child: _Cloth(t.flagBandAt(elapsed), turning: t.reveals ? _turnAt(elapsed) : 0),
               ),
-              if (!veiled) Positioned(right: 0, top: 0, child: popsAtReveal(_NextBadge(t.track.next))),
               if (t.reveals)
                 Positioned(
                   left: clothLeft + cloth.width * AnkirenRatingLayout.revealSfxAt,
@@ -938,34 +937,6 @@ class _LineBadge extends StatelessWidget {
         textColor: style.text,
         fontSize: AnkirenRatingLayout.lineBadgeFont,
         suffixSize: AnkirenRatingLayout.lineBadgeSuffixFont);
-  }
-}
-
-/// The class at the finial, in its rung colours; TOP CLASS at the top of
-/// the ladder.
-class _NextBadge extends StatelessWidget {
-  const _NextBadge(this.band);
-  final RankBand? band;
-
-  @override
-  Widget build(BuildContext context) {
-    final band = this.band;
-    if (band == null) {
-      return Sticker(
-        tilt: 0,
-        color: Palette.ink,
-        padding: RankLayout.badgePadding,
-        child: Text(S.of(context).topClassNote,
-            style: const TextStyle(
-                fontFamily: Fonts.display, fontSize: AnkirenRatingLayout.lineBadgeFont, color: Palette.sun, height: 1)),
-      );
-    }
-    final style = rungStyle(band.id);
-    return ClassBadge(band,
-        color: style.color,
-        textColor: style.text,
-        fontSize: AnkirenRatingLayout.badgeFont,
-        suffixSize: AnkirenRatingLayout.badgeSuffixFont);
   }
 }
 

@@ -4346,8 +4346,7 @@ abstract final class AnkirenRatingLayout {
   ];
 
   /// The scale left of the pole: the class's ends, the old rating with an
-  /// arrow, and a class's line crossing the pole; the next class's badge
-  /// at the stage's top right.
+  /// arrow, and a class's line crossing the pole.
   static const double scaleFont = 13;
 
   /// An end of the class is left unlabelled when the old rating's mark
@@ -4361,8 +4360,6 @@ abstract final class AnkirenRatingLayout {
   static const double lineReach = 26;
   static const double lineStroke = 2.5;
   static const double lineDash = 5;
-  static const double badgeFont = 22;
-  static const double badgeSuffixFont = 13;
   static const double lineBadgeFont = 15;
   static const double lineBadgeSuffixFont = 10;
 
