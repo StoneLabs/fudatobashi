@@ -225,6 +225,7 @@ void main() {
         (tester) async {
       final s = S(ja ? 'ja' : 'en');
       final p = await open(tester, ja: ja);
+      p.rating = Rating.bands[2].minRating;
       onPhone(tester, fontScale: 1.3);
       Future<void> showProfile() async {
         await tester.pumpWidget(RepaintBoundary(

@@ -2027,7 +2027,7 @@ void main() {
     Widget pumped(Progress p) => ProgressScope(progress: p, child: const MaterialApp(home: RankScreen()));
 
     testWidgets('already at A: no NEXT tag and no preview entry, TOP CLASS still shown', (tester) async {
-      final p = await open(tester);
+      final p = await open(tester, mode: LearningMode.allKnown);
       p.rating = Rating.bands.last.minRating + 50;
       await tester.pumpWidget(pumped(p));
       await tester.pump(const Duration(milliseconds: 500));
@@ -2041,7 +2041,8 @@ void main() {
     });
 
     testWidgets('opens scrolled to your rung, with every class ahead locked', (tester) async {
-      final p = await open(tester);
+      final p = await open(tester, mode: LearningMode.allKnown);
+      p.rating = 0;
       await tester.binding.setSurfaceSize(_phone);
       await tester.pumpWidget(pumped(p));
       await tester.pump(const Duration(milliseconds: 500));
@@ -2054,8 +2055,9 @@ void main() {
       await tester.pumpWidget(const SizedBox());
     });
 
-    testWidgets('fresh player: 入門-only ladder renders cleanly', (tester) async {
-      final p = await open(tester);
+    testWidgets('placed at 入門: the ladder renders cleanly', (tester) async {
+      final p = await open(tester, mode: LearningMode.allKnown);
+      p.rating = 0;
       await tester.pumpWidget(pumped(p));
       await tester.pump(const Duration(milliseconds: 500));
       expect(tester.takeException(), isNull);

@@ -858,7 +858,6 @@ abstract final class HomeLayout {
   static const double modeNoteGap = 2;
   static const double modeTitle = 25;
   static const double modeSub = 15;
-  static const double modeNote = 12.5;
   static const Offset modeTextAt = Offset(14, 30);
   static const double modeIcon = 34;
   static const Offset modeIconAt = Offset(150, 30);

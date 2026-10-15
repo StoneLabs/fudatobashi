@@ -14,8 +14,6 @@ extension HomeStrings on S {
   String get allIslandsReached => t('allIslandsReached');
   String get nextChip => t('nextChip');
   String get learnedOf => t('learnedOf');
-  String get reviewsDue => t('reviewsDue');
-  String get slowToBeat => t('slowToBeat');
   String get caughtUp => t('caughtUp');
   String get letsGo => t('letsGo');
   String get ratingLabel => t('ratingLabel');
@@ -25,7 +23,6 @@ extension HomeStrings on S {
   String get streakDays => t('streakDays');
   String get freePlaySub => t('freePlaySub');
   String get nigateSub => t('nigateSub');
-  String get nigateNote => t('nigateNote');
   String get nigateEmpty => t('nigateEmpty');
   String get guestTitle => t('guestTitle');
   String get guestMode => t('guestMode');

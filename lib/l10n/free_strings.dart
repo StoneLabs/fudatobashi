@@ -18,10 +18,6 @@ extension FreeStrings on S {
   String get resetToDefault => t('resetToDefault');
   String get resetToDefaultLabel => t('resetToDefaultLabel');
 
-  /// Home's free-play panel: what the next run is.
-  String get homeFreeCounts => t('homeFreeCounts');
-  String get homeFreeCustom => t('homeFreeCustom');
-
   String get islandsRow => t('islandsRow');
   String get cardsRow => t('cardsRow');
   String get lookAlikesRow => t('lookAlikesRow');
