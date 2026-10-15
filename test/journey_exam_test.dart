@@ -252,6 +252,7 @@ void main() {
             final p = await open(tester, _Stage.open, lang: lang, intro: true);
             await onPhone(tester, p, phone, fontScale: fontScale);
             await tester.pump(const Duration(seconds: 5));
+            await tester.pump(const Duration(milliseconds: 500));
             expect(tester.takeException(), isNull);
             await _capture(tester, 'journey_exam_intro_$tag');
             await tester.pumpWidget(const SizedBox());

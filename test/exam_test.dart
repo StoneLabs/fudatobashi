@@ -286,6 +286,28 @@ void main() {
     await tester.pumpWidget(const SizedBox());
   });
 
+  testWidgets("Tobi's quick card flashes, a slow one has him thinking, and his mistake pops its penalty", (tester) async {
+    final p = await open(tester);
+    await tester.binding.setSurfaceSize(const Size(384, 832));
+    await pumpHome(tester, p);
+    const ms = Duration(milliseconds: 1);
+    final tobi = TobiPace([ms * 600, ms * 4600, ms * 7600, ms * 9000, ms * 12000],
+        beats: const [TobiBeat.quick, TobiBeat.slow, TobiBeat.usual, TobiBeat.usual, TobiBeat.usual], misses: {2});
+    await pushExam(tester, five, tobi);
+    await toGo(tester);
+    await pumpFor(tester, const Duration(milliseconds: 600), step: const Duration(milliseconds: 20));
+    expect(find.text(ExamLayout.quickWord), findsWidgets, reason: 'the quick card flashes');
+    await _capture(tester, 'exam_tobi_quick_en');
+    await pumpFor(tester, const Duration(milliseconds: 1600));
+    expect(find.text(ExamLayout.quickWord), findsNothing);
+    expect(find.text(S('en').examTobiThinking), findsOneWidget, reason: 'the slow card has him thinking');
+    await pumpFor(tester, const Duration(milliseconds: 5600));
+    expect(find.byType(PenaltyLettering), findsOneWidget, reason: 'his mistake');
+    expect(tester.widget<Tobi>(find.descendant(of: find.byType(TobiSide), matching: find.byType(Tobi))).pose, TobiPose.shocked);
+    await _capture(tester, 'exam_tobi_miss_en');
+    await tester.pumpWidget(const SizedBox());
+  });
+
   testWidgets('leaving mid-try asks first, then Tobi wins and the try is used', (tester) async {
     final p = await open(tester);
     await tester.binding.setSurfaceSize(const Size(384, 832));

@@ -87,7 +87,9 @@ class TobiSide extends StatelessWidget {
                       left: deck.left,
                       right: box.maxWidth - deck.right,
                       top: deck.top + deck.height * ExamLayout.tobiPopAt,
-                      child: Center(child: PenaltyLettering(progress: blunder.$2)),
+                      child: Center(
+                          child: Transform.scale(
+                              scale: ExamLayout.tobiPopScale, child: PenaltyLettering(progress: blunder.$2))),
                     ),
                 ]);
               },

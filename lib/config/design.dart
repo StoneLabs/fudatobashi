@@ -4150,11 +4150,13 @@ abstract final class ExamLayout {
   static const double stripVsGap = 10;
 
   /// The "+10 s" that rises toward the player's clock at each miss, and
-  /// over Tobi's deck (this share of the way down it) at each of his.
+  /// over Tobi's deck (this share of the way down it, this much larger) at
+  /// each of his.
   static const double popFont = 20;
   static const double popRise = 26;
   static const double popOutline = 6;
   static const double tobiPopAt = 0.3;
+  static const double tobiPopScale = 1.5;
 
   /// A quick card of Tobi's: a burst behind his deck, reaching this share of
   /// the card's length past it and growing from [quickBurstFrom] of that;
