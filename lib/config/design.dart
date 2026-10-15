@@ -28,6 +28,7 @@ abstract final class Palette {
   static const sun = Color(0xFFFFD83A);
   static const orange = Color(0xFFFF9A2E);
   static const sunSoft = Color(0xFFFFF4BF);
+  static const orangeSoft = Color(0xFFFFE8CF);
   static const violet = Color(0xFF9A5BC2);
   static const violetSoft = Color(0xFFF1E6F7);
   static const violetDeep = Color(0xFF6E2C8C);
@@ -184,6 +185,8 @@ abstract final class Tones {
   static const land = ToneSpec(dot: Color(0xFF8CCB67), radius: 1.5, spacing: 6, background: Palette.landSoft);
   static const sun = ToneSpec(dot: Color(0xFFFFC400), radius: 1.6, spacing: 6, background: Palette.sunSoft);
   static const violet = ToneSpec(dot: Color(0xFFA77CC0), radius: 1.5, spacing: 6, background: Palette.violetSoft);
+  static const pinkSoft = ToneSpec(dot: Color(0xFFFFA3C2), radius: 1.5, spacing: 6, background: Palette.pinkSoft);
+  static const orangeSoft = ToneSpec(dot: Color(0xFFFFB766), radius: 1.5, spacing: 6, background: Palette.orangeSoft);
 
   /// The sea dot pattern with no fill, for a faint wash over paper (Play's
   /// bottom band).
@@ -239,6 +242,31 @@ abstract final class Tones {
     end: Alignment.bottomCenter,
     radii: [2.2, 0.7, 0, 0, 1.2, 2.6],
     stops: [0, 0.06, 0.09, 0.55, 0.8, 1],
+  );
+
+  /// History's backdrop, behind the list: the voyage log's sea, island
+  /// and sun dots, thick along the top and the bottom, leaning to the
+  /// right, and gone behind the middle of the page.
+  static const history = GradationSpec(
+    dot: Palette.sea,
+    mix: [Palette.land, Palette.sea, Palette.sun, Palette.pink],
+    spacing: 8,
+    begin: Alignment(0.6, -1),
+    end: Alignment(-0.6, 1),
+    radii: [1.9, 0.9, 0, 0, 0.8, 1.9],
+    stops: [0, 0.08, 0.19, 0.7, 0.84, 1],
+  );
+
+  /// A run or game page's backdrop: History's dots behind the header only,
+  /// so the long tabs' captions never sit on dots.
+  static const historyPage = GradationSpec(
+    dot: Palette.sea,
+    mix: [Palette.land, Palette.sea, Palette.sun, Palette.pink],
+    spacing: 8,
+    begin: Alignment(0.6, -1),
+    end: Alignment(-0.6, 1),
+    radii: [1.9, 0.9, 0, 0],
+    stops: [0, 0.08, 0.17, 1],
   );
 
   /// Picks which colour of a gradation's `mix` each dot takes.
@@ -818,6 +846,9 @@ abstract final class HomeLayout {
   /// smallest and largest share of the row.
   static const double heroBesideMinShare = 0.3;
   static const double heroBesideMaxShare = 0.42;
+
+  /// How much of the hero's width its title may take, keeping clear of Tobi.
+  static const double heroTitleMaxShare = 0.34;
   static const double heroBesideGap = 8;
 
   /// Widths of the rating and streak panels on the spec's 358-wide row.
@@ -827,13 +858,14 @@ abstract final class HomeLayout {
   static const double rankGap = 12;
   static const double classFont = 32;
   static const double classSuffixFont = 18;
+
+  /// The widest the class sticker grows: a longer English class name scales
+  /// down to fit.
+  static const double classMaxWidth = 96;
   static const double ratingLabelFont = 12;
   static const double ratingLabelTracking = 0.14;
   static const double ratingFont = 26;
   static const double ratingBarWidth = 112;
-
-  /// How much of the hero's width its title may take, keeping clear of Tobi.
-  static const double heroTitleMaxShare = 0.34;
   static const double ratingBarHeight = 12;
   static const double ratingBarGap = 4;
   static const double ratingNoteFont = 12.5;
@@ -843,10 +875,6 @@ abstract final class HomeLayout {
   static const EdgeInsets streakLabelPadding = EdgeInsets.fromLTRB(4, 1, 4, 1);
 
   static const double heroGap = 10;
-
-  /// The widest the class sticker grows: a longer English class name scales
-  /// down to fit.
-  static const double classMaxWidth = 96;
   static const double heroCut = 22;
   static const double heroTitle = 68;
   static const double heroTitleOutline = 12;
@@ -880,6 +908,9 @@ abstract final class HomeLayout {
   static const Offset modeIconAt = Offset(150, 30);
   static const Offset modeBadgeAt = Offset(104, 22);
 
+  /// The space kept between a mode panel's lettering and its corner art.
+  static const double modeCornerGap = 4;
+
   /// The slim guest bar under the known-mode panels.
   static const double guestHeight = 40;
   static const EdgeInsets guestPadding = EdgeInsets.symmetric(horizontal: 12, vertical: 4);
@@ -893,9 +924,6 @@ abstract final class HomeLayout {
   static const double rowSubFont = 12;
   static const double untrackedFont = 12;
   static const double untrackedTracking = 0.08;
-  /// The space kept between a mode panel's lettering and its corner art.
-  static const double modeCornerGap = 4;
-
   static const EdgeInsets untrackedPadding = EdgeInsets.fromLTRB(5, 1, 5, 2);
   static const double untrackedGap = 4;
 }
@@ -1094,17 +1122,46 @@ abstract final class HistoryHeaderLayout {
   static const double segmentFont = 13;
 }
 
+/// One kind of run's colours across History: [accent] marks its list
+/// row's edge, its page's picked tab and section titles, with [onAccent]
+/// for text on it; [tone] fills its headline.
+class KindLook {
+  const KindLook(this.accent, this.tone, {this.onAccent = Palette.ink});
+  final Color accent, onAccent;
+  final ToneSpec tone;
+}
+
+/// The [KindLook] of each kind of run and 暗記練 game, after their kind
+/// tags and Home's mode panels.
+abstract final class HistoryLooks {
+  static const ranked = KindLook(Palette.pink, Tones.pinkSoft);
+  static const exam = KindLook(Palette.sun, Tones.sun);
+  static const free = KindLook(Palette.sea, Tones.sea);
+  static const weak = KindLook(Palette.orange, Tones.orangeSoft);
+  static const training = KindLook(Palette.land, Tones.land);
+  static const ankiren = KindLook(Palette.pink, Tones.pinkSoft);
+}
+
 /// History's run pages and rows: sections, fact grids, result badges.
 abstract final class HistoryRunStyle {
-  static const double sectionGap = 18;
-  static const EdgeInsets headlinePadding = EdgeInsets.fromLTRB(14, 10, 14, 12);
-  static const EdgeInsets chartPadding = EdgeInsets.fromLTRB(10, 10, 10, 10);
-  static const double bigFont = 40;
+  /// The hard ink shadow under History's panels.
+  static const Offset panelShadow = Offset(3, 3);
+
+  /// A section title's marker stripe: where its top and bottom sit as
+  /// shares of the line's height, how far it reaches past the text, and
+  /// its tilt.
+  static const double titleMarkTop = 0.5;
+  static const double titleMarkBottom = 0.94;
+  static const double titleMarkReach = 4;
+  static const double titleMarkSkew = -0.25;
   /// The kind tag and date line under a run page's title, over its tabs.
   static const EdgeInsets tagRowPadding = EdgeInsets.fromLTRB(Gaps.gutter, 0, Gaps.gutter, 9);
   static const double tagRowHeight = 22;
   static const double tagRowFont = 12;
 
+  static const double sectionGap = 18;
+  static const EdgeInsets chartPadding = EdgeInsets.fromLTRB(10, 10, 10, 10);
+  static const double bigFont = 40;
   static const double examTimeFont = 26;
 
   /// A missed card on the Cards tab, and the Practise button.
@@ -1127,6 +1184,7 @@ abstract final class HistoryRunStyle {
   static const double colTime = 42;
   static const double colAt = 50;
   static const Color missRow = Palette.pinkSoft;
+  static const Color missTime = Palette.pinkDeep;
   static const Color headRow = Palette.ink;
   static const int ruleEvery = 10;
   static const double subFont = 11;
@@ -1136,6 +1194,9 @@ abstract final class HistoryRunStyle {
   static const double factFont = 20;
   static const EdgeInsets factPadding = EdgeInsets.fromLTRB(8, 7, 6, 7);
   static const double badgeFont = 10;
+
+  /// The star before a badge worth celebrating, with its space.
+  static const String cheerMark = '★ ';
   static const EdgeInsets badgePadding = EdgeInsets.fromLTRB(5, 2, 5, 2);
 
   /// A run's or game's kind tag (`KindTag`).
@@ -1192,19 +1253,38 @@ abstract final class HistoryFilterStyle {
 
 /// The History list: the 7-day strip (D2), day headers (D4) and rows (D5).
 abstract final class HistoryListStyle {
-  static const EdgeInsets stripPadding = EdgeInsets.fromLTRB(12, 8, 12, 8);
-  static const double dayBox = 28;
-  static const double dayGap = 4;
-  static const double dayDot = 6;
-  static const double dayLetterFont = 9.5;
+  /// The strip's panel, its bottom right corner cut in by [stripCut].
+  static const double stripCut = 14;
+  static const EdgeInsets stripPadding = EdgeInsets.fromLTRB(10, 8, 10 + stripCut, 7);
+  static const double labelGap = 5;
+  static const double dayBox = 24;
+  static const double dayGap = 1;
+  static const double dayDot = 7;
+  static const double dayMarkFont = 13;
+  static const double dayLetterFont = 9;
+
+  /// Today's ring, [todayRingGap] outside its box; every day keeps the room.
+  static const double todayRing = 2.5;
+  static const double todayRingGap = 1.5;
   static const double streakFont = 34;
+  static const Offset streakShadow = Offset(2.5, 2.5);
+  static const double streakLabelFont = 10.5;
+  static const double streakSubFont = 8;
   static const Color dayNone = Palette.paper;
   static const Color daySome = Palette.sun;
   static const Color dayDone = Palette.land;
   static const Color today = Palette.pink;
-  static const double legendBox = 10;
+  static const Color todayText = Palette.pinkDeep;
+  static const double legendGap = 6;
+  static const double legendFont = 9.5;
+  static const Color legendText = rowLineColor;
+  static const double legendBox = 11;
+  static const double headerMark = 14;
+
+  /// A small day square's border thins with its size, down to this share.
+  static const double markMinBorder = 0.6;
   static const double tabGap = 10;
-  static const double dayHeaderFont = 18;
+  static const double dayHeaderFont = 15;
   static const double dayHeaderDateFont = 12.5;
   static const EdgeInsets rowPadding = EdgeInsets.fromLTRB(10, 4, 6, 4);
   static const double rowMinHeight = 40;
@@ -1239,7 +1319,6 @@ abstract final class AnkirenReviewStyle {
   ];
   static const List<Color> tierText = [Palette.ink, Palette.ink, Palette.ink, Palette.ink, Palette.ink, Palette.paper];
 
-  static const Color headlineFill = Palette.pinkSoft;
   static const Color customFill = Color(0xFFF1F0EE);
   static const Color sumFill = Palette.seaSoft;
   static const Color markedRow = Palette.pinkSoft;
@@ -1250,9 +1329,6 @@ abstract final class AnkirenReviewStyle {
   /// A headline's facts share one row while each gets this much (scaled
   /// with the text), else two rows.
   static const double factMinWidth = 72;
-  static const double stampFont = 12;
-  static const double stampSubFont = 8.5;
-  static const EdgeInsets stampPadding = EdgeInsets.fromLTRB(8, 3, 8, 4);
 
   /// The first-tap mix: a row's label column, its bar.
   static const double mixLabelWidth = 96;
@@ -1383,6 +1459,45 @@ abstract final class RunTabsStyle {
   static const double runColumnFlex = 1;
 }
 
+/// A run or game page's headline (`HeadlinePanel`): its cut corner, the
+/// tilted double-ringed stamp (`RunStamp`) and Tobi beside it.
+abstract final class HeadlineStyle {
+  static const double cut = 14;
+  static const EdgeInsets padding = EdgeInsets.fromLTRB(14, 10, 14 + cut, 12);
+  static const double stampTilt = -7;
+  static const double stampMaxScale = 1.15;
+  static const Color stampPaper = Color(0xE6FFFFFF);
+  static const double stampBorder = 2.5;
+  static const double stampRingGap = 1.5;
+  static const double stampRing = 1;
+  static const EdgeInsets stampPadding = EdgeInsets.fromLTRB(7, 4, 7, 4);
+  static const double stampFont = 13;
+  static const double stampSubFont = 7;
+  static const double stampSubTracking = 0.6;
+  static const double tobiGap = 2;
+
+  /// Room left of the stamp, so its tilted corners clear the big number.
+  static const double stampGap = 10;
+
+  /// Tobi's box, at his 84:100 aspect.
+  static const Size tobi = Size(46, 55);
+}
+
+/// History's small count chips (`StatChips`): a coloured bar on top, the
+/// number with an icon, a tracked label, and an ink drop shadow.
+abstract final class StatChipStyle {
+  static const double gap = 7;
+  static const double bar = 5;
+  static const Offset shadow = Offset(2.5, 2.5);
+  static const EdgeInsets padding = EdgeInsets.fromLTRB(7, 5, 6, 7);
+  static const double font = 22;
+  static const double icon = 14;
+  static const double iconStroke = 2.2;
+  static const double labelFont = 8.5;
+  static const double labelHeight = 1.2;
+  static const double labelTracking = 0.8;
+}
+
 /// `SwipeTabs`: the tab row over swiped pages, as a strip of small labels
 /// (a run page's tabs) or as two folder tabs (History's lists).
 abstract final class SwipeTabsStyle {
@@ -1396,9 +1511,14 @@ abstract final class SwipeTabsStyle {
   static const double subTracking = 0.85;
   static const Color folderIdleFill = Color(0xFFF3F1EC);
   static const double folderBar = 4;
-  static const EdgeInsets folderPadding = EdgeInsets.fromLTRB(4, 5, 4, 7);
-  static const double folderFont = 14;
+
+  /// How much lower an unpicked folder tab stands, so the picked one looks
+  /// pulled up in front.
+  static const double folderDrop = 4;
+  static const EdgeInsets folderPadding = EdgeInsets.fromLTRB(4, 6, 4, 7);
+  static const double folderFont = 15;
   static const double folderSubFont = 9.5;
+  static const double folderSubTracking = 1.1;
 }
 
 /// Small charts shared by the island list (a per-card sparkline) and the card
@@ -2939,6 +3059,10 @@ abstract final class SideTripsLayout {
   static const double stampTilt = 10;
   static const double stampFont = 18;
   static const double stampSuffixFont = 13;
+
+  /// The widest the stamp's lettering grows: a longer English class name
+  /// scales down to fit.
+  static const double stampMaxWidth = 54;
   static const double stampGap = 2;
   static const EdgeInsets stampPadding = EdgeInsets.symmetric(horizontal: 7, vertical: 4);
   static const double stampLift = 4;
@@ -2993,10 +3117,6 @@ abstract final class SideTripsLayout {
 
   /// Narrow pips keep a card's shape.
   static const double pipAspect = 1.45;
-
-  /// The widest the stamp's lettering grows: a longer English class name
-  /// scales down to fit.
-  static const double stampMaxWidth = 54;
   static const double lockTop = 8;
   static const double lockMinHeight = 60;
   static const EdgeInsets lockPadding = EdgeInsets.symmetric(horizontal: 14, vertical: 8);

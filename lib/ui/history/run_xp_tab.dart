@@ -27,8 +27,9 @@ class RunXpTab extends StatelessWidget {
   }
 }
 
-/// A run's experience: a line for each source, the total, and the level
-/// bar with the levels gained and the XP to the next level.
+/// A run's experience on a sun-tinted panel: a line for each source, the
+/// total, and the level bar with the levels gained and the XP to the next
+/// level.
 class XpPanel extends StatelessWidget {
   const XpPanel(this.gain, {super.key});
 
@@ -42,7 +43,7 @@ class XpPanel extends StatelessWidget {
     if (gain == null) return HistoryCaption(s.runNoXp);
     final level = gain.levelAfter;
     final from = gain.levelBefore.level;
-    return RunPanel(children: [
+    return RunPanel(color: Palette.sunSoft, children: [
       TrackedLabel(s.runXpLabel, sub: s.sub?.runXpLabel),
       RunBigValue('+${gain.award.total}', unit: s.xpUnit),
       const SizedBox(height: Gaps.small),
@@ -65,7 +66,8 @@ class XpPanel extends StatelessWidget {
             children: [
               Text(s.levelShort(level.level), style: RunTabsStyle.lineStyle),
               if (gain.levelsGained > 0)
-                ResultBadge(gain.levelsGained == 1 ? s.runLevelFrom(from) : s.runLevelsFrom(gain.levelsGained, from)),
+                ResultBadge(gain.levelsGained == 1 ? s.runLevelFrom(from) : s.runLevelsFrom(gain.levelsGained, from),
+                    cheer: true),
             ],
           ),
           Text(s.xpToNext(level.toNext, level.level + 1), style: RunTabsStyle.lineStyle),
@@ -90,6 +92,7 @@ class RunPanel extends StatelessWidget {
           border: RunTabsStyle.panelBorder,
           color: color,
           padding: RunTabsStyle.panelPadding,
+          shadow: HistoryRunStyle.panelShadow,
           child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: children),
         ),
       );

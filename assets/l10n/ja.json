@@ -830,7 +830,7 @@
   "runDifferentCards": "札の数",
   "runCameBack": "もう一度出た",
   "runDueReviews": "復習",
-  "runTrainingNote": "修行は回ごとに枚数が違うので、ほかの回とは比べません。",
+  "runTrainingNote": "修行は毎回枚数が違うため、ほかの回とは比べられません。",
   "runSlowest": "遅い",
   "runFastest": "速い",
   "runMissesTitle": "お手つき",
@@ -1075,5 +1075,6 @@
   "historyDayDoneMark": "完",
   "runExamBeat": "トビに{0}秒差で勝ちました。",
   "runExamBeaten": "トビに{0}秒差で負けました。",
-  "tabAndXp": "& XP"
+  "tabAndXp": "& XP",
+  "legendOverGoal": "目標超え"
 }

@@ -6,6 +6,7 @@ import '../../l10n/ankiren_review_strings.dart';
 import '../../l10n/run_strings.dart';
 import '../../l10n/stats_strings.dart';
 import '../../l10n/strings.dart';
+import '../manga/manga.dart';
 import '../play/time_format.dart';
 import 'ankiren_widgets.dart';
 import 'history_widgets.dart';
@@ -47,7 +48,10 @@ class _ScoredHeadline extends StatelessWidget {
         label: s.ankirenPointsLabel,
         big: '${game.score}',
         of: s.ankirenOfMax(game.maxScore ?? 0),
-        stamp: review.isBest ? AnkirenStamp(s.ankirenBestStamp(level), s.sub?.ankirenBestStamp(level)) : null,
+        stamp: review.isBest
+            ? HeadlineCheer(
+                stamp: RunStamp(s.ankirenBestStamp(level), sub: s.sub?.ankirenBestStamp(level)), pose: TobiPose.cheering)
+            : const HeadlineCheer(pose: TobiPose.relaxed),
         facts: [
           Fact('${game.firstTaps}/${game.cards.length}', s.ankirenFirstTapFact),
           Fact(formatMinutes(game.memorised), s.ankirenMemorisedFact),
@@ -79,8 +83,8 @@ class _CustomHeadline extends StatelessWidget {
         label: s.ankirenRightFirstLabel,
         big: '${game.firstTaps}',
         of: s.ankirenOfMax(game.cards.length),
-        fill: AnkirenReviewStyle.customFill,
-        stamp: AnkirenStamp(s.ankirenNotScored, s.sub?.ankirenNotScored, color: AnkirenReviewStyle.muted),
+        plain: AnkirenReviewStyle.customFill,
+        stamp: RunStamp(s.ankirenNotScored, sub: s.sub?.ankirenNotScored, color: AnkirenReviewStyle.muted),
         facts: [
           Fact('${game.found}/${game.cards.length}', s.ankirenFoundFact),
           Fact(formatMinutes(game.memorised), s.ankirenMemorisedOf(formatMinutes(game.memorise))),

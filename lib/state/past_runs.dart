@@ -252,7 +252,7 @@ extension RunHistory on Progress {
       xp: XpHistory.gainsOf(this).runs[run.id],
       rating: ratingOf(run),
       rankedRuns: ranked,
-      best: _bestOfKind(run),
+      best: bestOfKind(run),
     );
   }
 
@@ -268,11 +268,16 @@ extension RunHistory on Progress {
     );
   }
 
-  bool _bestOfKind(PastRun run) {
+  /// Whether [run] was complete and faster than every earlier complete run
+  /// of its kind, with at least one such run to beat.
+  bool bestOfKind(PastRun run) {
     final time = run.time;
     if (!run.completed || time == null) return false;
-    return !pastRuns.any((r) =>
-        r.sameKind(run) && r.completed && r.startedAt.isBefore(run.startedAt) && (r.time ?? time) < time);
+    final earlier = [
+      for (final r in pastRuns)
+        if (r.sameKind(run) && r.completed && r.startedAt.isBefore(run.startedAt)) r,
+    ];
+    return earlier.isNotEmpty && earlier.every((r) => (r.time ?? time) >= time);
   }
 
   Future<Map<int, List<RunSwipe>>> _swipesOf(List<PastRun> runs) async {

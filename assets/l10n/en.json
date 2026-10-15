@@ -830,7 +830,7 @@
   "runDifferentCards": "Different cards",
   "runCameBack": "Came back again",
   "runDueReviews": "Due reviews",
-  "runTrainingNote": "Training runs differ in size, so nothing here is measured against other runs.",
+  "runTrainingNote": "Training runs differ in size each time. No comparison with other runs is possible.",
   "runSlowest": "Slowest",
   "runFastest": "Fastest",
   "runMissesTitle": "Misses",
@@ -1075,5 +1075,6 @@
   "historyDayDoneMark": "完",
   "runExamBeat": "You beat Tobi by {0} s.",
   "runExamBeaten": "Tobi won by {0} s.",
-  "tabAndXp": "& XP"
+  "tabAndXp": "& XP",
+  "legendOverGoal": "over goal"
 }

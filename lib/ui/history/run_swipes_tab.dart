@@ -160,11 +160,11 @@ class _Row extends StatelessWidget {
         '$number',
         poems[w.poemId].kimariji,
         w.inverted ? '↓' : '↑',
-        '${formatSeconds(w.ms)}${w.miss ? ' ×' : ''}',
+        '${w.miss ? '× ' : ''}${formatSeconds(w.ms)}',
         usual == null ? missingTime : formatSeconds(usual),
         diffText,
         atMs == null ? missingTime : formatTenths(Duration(milliseconds: atMs!.round())),
-      ], style: base, colors: {if (!w.miss) 5: diffColor}),
+      ], style: base, colors: {if (w.miss) 3: HistoryRunStyle.missTime else 5: diffColor}),
     );
   }
 }

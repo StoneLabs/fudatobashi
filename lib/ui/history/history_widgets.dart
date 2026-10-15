@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
 
 import '../../config/design.dart';
@@ -9,6 +11,7 @@ import '../../l10n/side_trip_strings.dart';
 import '../../l10n/strings.dart';
 import '../../state/past_runs.dart';
 import '../../state/play_config.dart';
+import '../manga/manga.dart';
 import '../play/time_format.dart';
 
 /// A run's kind as a coloured tag: Training, Free play, Weak cards, Ranked
@@ -16,6 +19,16 @@ import '../play/time_format.dart';
 class RunKindTag extends StatelessWidget {
   const RunKindTag(this.mode, {super.key});
   final PlayMode mode;
+
+  /// The colours that mark [mode]'s runs beyond the tag: a list row's
+  /// edge, a run page's tabs, titles and headline.
+  static KindLook lookOf(PlayMode mode) => switch (mode) {
+        PlayMode.ranked => HistoryLooks.ranked,
+        PlayMode.exam => HistoryLooks.exam,
+        PlayMode.free || PlayMode.guest => HistoryLooks.free,
+        PlayMode.nigate => HistoryLooks.weak,
+        PlayMode.training => HistoryLooks.training,
+      };
 
   @override
   Widget build(BuildContext context) {
@@ -95,12 +108,15 @@ class AnkirenKindTag extends StatelessWidget {
 /// A small result badge beside a run's kind: a placement, a new class, a
 /// forfeit, who won the exam, a best.
 class ResultBadge extends StatelessWidget {
-  const ResultBadge(this.text, {super.key, this.color = Palette.sun, this.muted = false});
+  const ResultBadge(this.text, {super.key, this.color = Palette.sun, this.muted = false, this.cheer = false});
   final String text;
   final Color color;
 
   /// Drawn as an outline in grey (a forfeit, a loss).
   final bool muted;
+
+  /// Led by a pink star, for something to celebrate (a best, a win).
+  final bool cheer;
 
   @override
   Widget build(BuildContext context) => DecoratedBox(
@@ -110,12 +126,17 @@ class ResultBadge extends StatelessWidget {
         ),
         child: Padding(
           padding: HistoryRunStyle.badgePadding,
-          child: Text(text,
-              maxLines: 1,
-              style: TextStyle(
-                  fontWeight: Weights.black,
-                  fontSize: HistoryRunStyle.badgeFont,
-                  color: muted ? HistoryRunStyle.muted : Palette.ink)),
+          child: DefaultTextStyle.merge(
+            maxLines: 1,
+            style: TextStyle(
+                fontWeight: Weights.black,
+                fontSize: HistoryRunStyle.badgeFont,
+                color: muted ? HistoryRunStyle.muted : Palette.ink),
+            child: Row(mainAxisSize: MainAxisSize.min, children: [
+              if (cheer) const Text(HistoryRunStyle.cheerMark, style: TextStyle(color: Palette.pinkDeep)),
+              Text(text),
+            ]),
+          ),
         ),
       );
 }
@@ -145,8 +166,22 @@ class HistorySection extends StatelessWidget {
       );
 }
 
-/// A section's heading row: the title with its other-language word, and a
-/// note on the right.
+/// The colours of the run or game a page shows ([KindLook]), for the parts
+/// inside it.
+class HistoryLook extends InheritedWidget {
+  const HistoryLook({super.key, required this.look, required super.child});
+  final KindLook look;
+
+  /// The look around [context]; the exam's sun when there is none.
+  static KindLook of(BuildContext context) =>
+      context.dependOnInheritedWidgetOfExactType<HistoryLook>()?.look ?? HistoryLooks.exam;
+
+  @override
+  bool updateShouldNotify(HistoryLook oldWidget) => oldWidget.look != look;
+}
+
+/// A section's heading row: the title over a slanted marker stripe in the
+/// page's colour, with its other-language word, and a note on the right.
 class HistoryHeading extends StatelessWidget {
   const HistoryHeading({super.key, required this.title, this.sub, this.note});
   final String title;
@@ -157,20 +192,53 @@ class HistoryHeading extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.end,
         children: [
           Expanded(
-            child: Text.rich(
-              TextSpan(children: [
-                TextSpan(text: title, style: const TextStyle(fontWeight: Weights.black, fontSize: TypeScale.button)),
-                if (sub != null)
-                  TextSpan(
-                      text: '  $sub',
-                      style: const TextStyle(fontWeight: Weights.black, fontSize: HistoryRunStyle.subFont)),
-              ]),
+            child: Align(
+              alignment: Alignment.centerLeft,
+              child: CustomPaint(
+                painter: _MarkerPainter(HistoryLook.of(context).accent),
+                child: Text.rich(
+                  TextSpan(children: [
+                    TextSpan(text: title, style: const TextStyle(fontWeight: Weights.black, fontSize: TypeScale.button)),
+                    if (sub != null)
+                      TextSpan(
+                          text: '  $sub',
+                          style: const TextStyle(fontWeight: Weights.black, fontSize: HistoryRunStyle.subFont)),
+                  ]),
+                ),
+              ),
             ),
           ),
           if (note case final note?)
             Text(note, style: const TextStyle(fontWeight: Weights.bold, fontSize: HistoryRunStyle.noteFont)),
         ],
       );
+}
+
+/// A marker stroke under the bottom of a title, slanted like the manga
+/// banners.
+class _MarkerPainter extends CustomPainter {
+  const _MarkerPainter(this.color);
+  final Color color;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    const reach = HistoryRunStyle.titleMarkReach;
+    final top = size.height * HistoryRunStyle.titleMarkTop;
+    final bottom = size.height * HistoryRunStyle.titleMarkBottom;
+    final lean = (bottom - top) * HistoryRunStyle.titleMarkSkew;
+    canvas.drawPath(
+      Path()
+        ..moveTo(-reach / 2 - lean, top)
+        ..lineTo(size.width + reach - lean, top)
+        ..lineTo(size.width + reach, bottom)
+        ..lineTo(-reach / 2, bottom)
+        ..close(),
+      Paint()..color = color,
+    );
+  }
+
+  @override
+  bool shouldRepaint(_MarkerPainter old) => old.color != color;
 }
 
 /// A small caption under a chart or a table.
@@ -257,6 +325,162 @@ class _FactCell extends StatelessWidget {
                     fontWeight: Weights.black, fontSize: HistoryRunStyle.labelFont, letterSpacing: HistoryRunStyle.labelTracking)),
           ],
         ),
+      );
+}
+
+/// One count in a [StatChips] row: the number, what it counts, a small
+/// icon and the colour of its bar.
+class StatChip {
+  const StatChip(this.value, this.label, {required this.icon, required this.color, required this.fill});
+  final String value, label;
+  final VectorArt icon;
+
+  /// The bar's colour, and the chip's lighter fill to match.
+  final Color color, fill;
+}
+
+/// A row of small counts side by side, each in its own chip with a
+/// coloured bar along the top, all as tall as the tallest.
+class StatChips extends StatelessWidget {
+  const StatChips(this.chips, {super.key});
+  final List<StatChip> chips;
+
+  @override
+  Widget build(BuildContext context) => IntrinsicHeight(
+        child: Row(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+          for (final (i, c) in chips.indexed) ...[
+            if (i > 0) const SizedBox(width: StatChipStyle.gap),
+            Expanded(child: _Chip(c)),
+          ],
+        ]),
+      );
+}
+
+class _Chip extends StatelessWidget {
+  const _Chip(this.chip);
+  final StatChip chip;
+
+  @override
+  Widget build(BuildContext context) => DecoratedBox(
+        decoration: BoxDecoration(
+          color: chip.fill,
+          border: Border.all(color: Palette.ink, width: Strokes.label),
+          boxShadow: const [BoxShadow(color: Palette.ink, offset: StatChipStyle.shadow)],
+        ),
+        child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+          Container(height: StatChipStyle.bar, color: chip.color),
+          Padding(
+            padding: StatChipStyle.padding,
+            child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+              Row(children: [
+                Expanded(
+                  child: FittedBox(
+                    fit: BoxFit.scaleDown,
+                    alignment: Alignment.centerLeft,
+                    child: Text(chip.value,
+                        maxLines: 1, style: const TextStyle(fontFamily: Fonts.display, fontSize: StatChipStyle.font, height: 1.1)),
+                  ),
+                ),
+                MangaIcon(chip.icon, size: StatChipStyle.icon, strokeWidth: StatChipStyle.iconStroke),
+              ]),
+              const SizedBox(height: Gaps.tight),
+              Text(chip.label.toUpperCase(),
+                  style: const TextStyle(
+                      fontWeight: Weights.black,
+                      fontSize: StatChipStyle.labelFont,
+                      height: StatChipStyle.labelHeight,
+                      letterSpacing: StatChipStyle.labelTracking)),
+            ]),
+          ),
+        ]),
+      );
+}
+
+/// A run or game page's headline: a halftone panel in the page's colour,
+/// cut in at the bottom right like the list's 7-day strip, on a hard
+/// shadow.
+class HeadlinePanel extends StatelessWidget {
+  const HeadlinePanel({super.key, this.plain, required this.child});
+
+  /// A flat fill instead of the page's halftone (a game not scored).
+  final Color? plain;
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    final tone = HistoryLook.of(context).tone;
+    return MangaPanel(
+      shape: const PanelShape(bottomRight: Offset(HeadlineStyle.cut, 0)),
+      tone: plain == null ? tone : null,
+      color: plain ?? tone.background ?? Palette.paper,
+      padding: HeadlineStyle.padding,
+      shadow: HistoryRunStyle.panelShadow,
+      child: child,
+    );
+  }
+}
+
+/// A rubber stamp on a headline, tilted, with a double ring: a best, a
+/// placement, a finished set, a game not scored. [sub] is the small line
+/// under it (the other language in Japanese).
+class RunStamp extends StatelessWidget {
+  const RunStamp(this.text, {super.key, this.sub, this.color = Palette.pinkDeep});
+  final String text;
+  final String? sub;
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) => MediaQuery.withClampedTextScaling(
+        maxScaleFactor: HeadlineStyle.stampMaxScale,
+        child: Transform.rotate(
+          angle: HeadlineStyle.stampTilt * math.pi / 180,
+          child: Container(
+            padding: const EdgeInsets.all(HeadlineStyle.stampRingGap),
+            decoration: BoxDecoration(
+              color: HeadlineStyle.stampPaper,
+              border: Border.all(color: color, width: HeadlineStyle.stampBorder),
+            ),
+            child: Container(
+              padding: HeadlineStyle.stampPadding,
+              decoration: BoxDecoration(border: Border.all(color: color, width: HeadlineStyle.stampRing)),
+              child: Column(mainAxisSize: MainAxisSize.min, children: [
+                Text(text,
+                    maxLines: 1,
+                    style: TextStyle(fontFamily: Fonts.display, fontSize: HeadlineStyle.stampFont, height: 1.1, color: color)),
+                if (sub case final sub?)
+                  Text(sub.toUpperCase(),
+                      maxLines: 1,
+                      style: TextStyle(
+                          fontWeight: Weights.black,
+                          fontSize: HeadlineStyle.stampSubFont,
+                          letterSpacing: HeadlineStyle.stampSubTracking,
+                          height: 1.2,
+                          color: color)),
+              ]),
+            ),
+          ),
+        ),
+      );
+}
+
+/// A headline's corner: a [stamp] beside Tobi in [pose], reacting to the
+/// run (cheering a best, shocked to lose the exam), or the stamp alone.
+class HeadlineCheer extends StatelessWidget {
+  const HeadlineCheer({super.key, this.stamp, this.pose});
+  final Widget? stamp;
+  final TobiPose? pose;
+
+  @override
+  Widget build(BuildContext context) => Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          const SizedBox(width: HeadlineStyle.stampGap),
+          ?stamp,
+          if (pose case final pose?) ...[
+            const SizedBox(width: HeadlineStyle.tobiGap),
+            SizedBox.fromSize(size: HeadlineStyle.tobi, child: Tobi(pose: pose, animate: false)),
+          ],
+        ],
       );
 }
 

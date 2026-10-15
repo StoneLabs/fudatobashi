@@ -55,11 +55,12 @@ class AnkirenGamePage extends StatelessWidget {
     );
     final tabs = review.game.scored ? scoredTabs : customTabs;
     return RunPageFrame(
+      look: HistoryLooks.ankiren,
       title: s.runTabGame,
       titleSub: s.other.runTabGame,
       tag: AnkirenKindTag(ranked: run.ranked, level: run.level),
       line: '${s.sessionDate(run.startedAt)} · ${s.ankirenASide(review.game.perSide)}',
-      body: RunPageTabs(tabs: [for (final tab in tabs) tab.swipeTab(s, review, accent: Palette.pinkDeep)]),
+      body: RunPageTabs(tabs: [for (final tab in tabs) tab.swipeTab(s, review, HistoryLooks.ankiren)]),
     );
   }
 }

@@ -6,6 +6,7 @@ import '../../config/vector_art.dart';
 import '../../data/poem.dart';
 import '../../domain/run_review.dart';
 import '../../l10n/run_strings.dart';
+import '../../l10n/run_tab_strings.dart';
 import '../../l10n/strings.dart';
 import '../../state/past_runs.dart';
 import '../manga/manga.dart';
@@ -44,6 +45,7 @@ class RunCardsTab extends StatelessWidget {
               swipes: cards.slowest,
               numbers: numbers,
               timeColor: HistoryRunStyle.behind,
+              fill: Palette.pinkSoft,
             ),
           ),
           const SizedBox(width: Gaps.panel),
@@ -54,6 +56,7 @@ class RunCardsTab extends StatelessWidget {
               swipes: cards.fastest,
               numbers: numbers,
               timeColor: HistoryRunStyle.ahead,
+              fill: Palette.landSoft,
             ),
           ),
         ],
@@ -65,6 +68,7 @@ class RunCardsTab extends StatelessWidget {
         note: s.runMissesCount(cards.misses.length, detail.run.cards),
         child: MangaPanel(
           padding: HistoryRunStyle.chartPadding,
+          shadow: HistoryRunStyle.panelShadow,
           child: cards.misses.isEmpty
               ? Text(s.runNoMisses, style: const TextStyle(fontWeight: Weights.black, fontSize: TypeScale.body))
               : Wrap(
@@ -147,6 +151,7 @@ Map<RunSwipe, int> cardNumbers(List<RunSwipe> swipes) {
   return numbers;
 }
 
+/// D16: the slowest or fastest cards side by side in a tinted panel.
 class _CardShelf extends StatelessWidget {
   const _CardShelf({
     required this.title,
@@ -154,17 +159,22 @@ class _CardShelf extends StatelessWidget {
     required this.swipes,
     required this.numbers,
     required this.timeColor,
+    required this.fill,
   });
 
   final String title;
   final String? sub;
   final List<RunSwipe> swipes;
   final Map<RunSwipe, int> numbers;
-  final Color timeColor;
+
+  /// The times' colour, and the panel's light tint to match.
+  final Color timeColor, fill;
 
   @override
   Widget build(BuildContext context) => MangaPanel(
+        color: fill,
         padding: HistoryRunStyle.chartPadding,
+        shadow: HistoryRunStyle.panelShadow,
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
@@ -236,14 +246,27 @@ class SwipeSpeedSection extends StatelessWidget {
       note: s.runSpeedNote,
       child: MangaPanel(
         padding: HistoryRunStyle.chartPadding,
+        shadow: HistoryRunStyle.panelShadow,
         child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
           BarChart(
-            bars: [for (final w in swipes) ChartBar(w.ms.clamp(0, double.infinity), color: w.miss ? Palette.pink : Palette.ink)],
+            bars: [
+              for (final w in swipes)
+                ChartBar(w.ms.clamp(0, double.infinity),
+                    color: w.miss
+                        ? Palette.pink
+                        : goal != null && w.ms <= goal
+                            ? RunTabsStyle.paceUnderGoal
+                            : Palette.ink),
+            ],
             guide: goal,
             xLabels: {0: '1', for (var c = step; c <= n; c += step) c - 1: '$c'},
           ),
           ChartLegend([
-            (const LegendMark.box(Palette.ink), s.legendRight),
+            if (goal != null) ...[
+              (const LegendMark.box(RunTabsStyle.paceUnderGoal), s.runPaceUnderGoal),
+              (const LegendMark.box(Palette.ink), s.legendOverGoal),
+            ] else
+              (const LegendMark.box(Palette.ink), s.legendRight),
             (const LegendMark.box(Palette.pink), s.legendMiss),
             if (goal != null) (const LegendMark.line(Palette.sun), s.legendGoal(formatSeconds(goal))),
           ]),
@@ -265,12 +288,14 @@ class TrainingFacts extends StatelessWidget {
     final swipes = [for (final w in detail.swipes) if (!w.undone) w];
     final cards = {for (final w in swipes) (w.poemId, w.inverted)};
     return Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-      FactGrid([
-        Fact('${swipes.length}', s.runSwipesFact),
-        Fact('${cards.length}', s.runDifferentCards),
-        Fact('${swipes.length - cards.length}', s.runCameBack),
-        Fact('${swipes.where((w) => w.graded && !w.miss).length}', s.runDueReviews),
-      ], perRow: 2),
+      StatChips([
+        StatChip('${swipes.length}', s.runSwipesFact, icon: IconArt.arrow, color: Palette.sun, fill: Palette.sunSoft),
+        StatChip('${cards.length}', s.runDifferentCards, icon: IconArt.cards, color: Palette.sea, fill: Palette.seaSoft),
+        StatChip('${swipes.length - cards.length}', s.runCameBack,
+            icon: IconArt.refresh, color: Palette.orange, fill: Palette.orangeSoft),
+        StatChip('${swipes.where((w) => w.graded && !w.miss).length}', s.runDueReviews,
+            icon: IconArt.check, color: Palette.land, fill: Palette.landSoft),
+      ]),
       HistoryCaption(s.runTrainingNote),
     ]);
   }

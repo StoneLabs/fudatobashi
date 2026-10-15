@@ -108,6 +108,7 @@ class _ReplayedField extends StatelessWidget {
           decoration: BoxDecoration(
             color: AnkirenReviewStyle.fieldGround,
             border: Border.all(color: Palette.ink, width: Strokes.label),
+            boxShadow: const [BoxShadow(color: Palette.ink, offset: HistoryRunStyle.panelShadow)],
           ),
           child: SizedBox(
             height: 2 * natural.height * scale + band + 2 * pad,

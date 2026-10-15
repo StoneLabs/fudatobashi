@@ -60,6 +60,7 @@ extension RunStrings on S {
   String get legendAhead => t('legendAhead');
   String get legendTobi => t('legendTobi');
   String get legendRight => t('legendRight');
+  String get legendOverGoal => t('legendOverGoal');
   String legendGoal(Object a0) => f('legendGoal', [a0]);
   String get runSpeedTitle => t('runSpeedTitle');
   String get runSpeedNote => t('runSpeedNote');

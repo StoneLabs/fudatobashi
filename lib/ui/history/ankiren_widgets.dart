@@ -122,16 +122,19 @@ class TierMixBar extends StatelessWidget {
       );
 }
 
-/// A panel of a 暗記練 tab: an ink-ruled box.
+/// A panel of a 暗記練 tab: an ink-ruled box on a hard shadow.
 class ReviewPanel extends StatelessWidget {
   const ReviewPanel({super.key, required this.child, this.fill = Palette.paper});
   final Widget child;
   final Color fill;
 
   @override
-  Widget build(BuildContext context) => DecoratedBox(
-        decoration: BoxDecoration(color: fill, border: Border.all(color: Palette.ink, width: Strokes.label)),
-        child: Padding(padding: AnkirenReviewStyle.panelPadding, child: child),
+  Widget build(BuildContext context) => MangaPanel(
+        border: Strokes.label,
+        color: fill,
+        padding: AnkirenReviewStyle.panelPadding,
+        shadow: HistoryRunStyle.panelShadow,
+        child: child,
       );
 }
 
@@ -191,7 +194,8 @@ class ReviewTable extends StatelessWidget {
 }
 
 /// A game's headline: a tracked [label], the [big] number with [of] beside
-/// it, a [stamp] at the top right, then its [facts].
+/// it, a [stamp] at the top right, then its [facts]; in the page's
+/// halftone unless [plain] gives a flat fill.
 class AnkirenHeadline extends StatelessWidget {
   const AnkirenHeadline({
     super.key,
@@ -200,73 +204,47 @@ class AnkirenHeadline extends StatelessWidget {
     required this.of,
     required this.facts,
     this.stamp,
-    this.fill = AnkirenReviewStyle.headlineFill,
+    this.plain,
   });
 
   final String label, big, of;
   final List<Fact> facts;
   final Widget? stamp;
-  final Color fill;
+  final Color? plain;
 
   @override
-  Widget build(BuildContext context) => DecoratedBox(
-        decoration: BoxDecoration(color: fill, border: Border.all(color: Palette.ink, width: Strokes.label)),
-        child: Padding(
-          padding: HistoryRunStyle.headlinePadding,
-          child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-            Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
-              Expanded(
-                child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                  TrackedLabel(label),
-                  FittedBox(
-                    fit: BoxFit.scaleDown,
-                    alignment: Alignment.centerLeft,
-                    child: Text.rich(TextSpan(children: [
-                      TextSpan(
-                          text: big,
-                          style: const TextStyle(
-                              fontFamily: Fonts.display,
-                              fontSize: HistoryRunStyle.bigFont,
-                              height: TypeScale.displayLineHeight)),
-                      TextSpan(
-                          text: '  $of',
-                          style: const TextStyle(fontWeight: Weights.black, fontSize: TypeScale.body)),
-                    ])),
-                  ),
-                ]),
-              ),
-              ?stamp,
-            ]),
-            const SizedBox(height: Gaps.small),
-            LayoutBuilder(builder: (context, box) {
-              final room = MediaQuery.textScalerOf(context).scale(AnkirenReviewStyle.factMinWidth);
-              final fit = box.maxWidth ~/ room >= facts.length;
-              return FactGrid(facts, perRow: fit ? facts.length : (facts.length + 1) ~/ 2);
-            }),
+  Widget build(BuildContext context) => HeadlinePanel(
+        plain: plain,
+        child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+          Row(children: [
+            Expanded(
+              child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                TrackedLabel(label),
+                FittedBox(
+                  fit: BoxFit.scaleDown,
+                  alignment: Alignment.centerLeft,
+                  child: Text.rich(TextSpan(children: [
+                    TextSpan(
+                        text: big,
+                        style: const TextStyle(
+                            fontFamily: Fonts.display,
+                            fontSize: HistoryRunStyle.bigFont,
+                            height: TypeScale.displayLineHeight)),
+                    TextSpan(
+                        text: '  $of',
+                        style: const TextStyle(fontWeight: Weights.black, fontSize: TypeScale.body)),
+                  ])),
+                ),
+              ]),
+            ),
+            ?stamp,
           ]),
-        ),
-      );
-}
-
-/// A stamp on a headline: a best, or a game not scored, with its
-/// other-language [sub] under it.
-class AnkirenStamp extends StatelessWidget {
-  const AnkirenStamp(this.text, this.sub, {super.key, this.color = Palette.pinkDeep});
-  final String text;
-  final String? sub;
-  final Color color;
-
-  @override
-  Widget build(BuildContext context) => Sticker(
-        color: Palette.paper,
-        borderColor: color,
-        border: Strokes.label,
-        padding: AnkirenReviewStyle.stampPadding,
-        child: Column(mainAxisSize: MainAxisSize.min, children: [
-          Text(text, style: TextStyle(fontWeight: Weights.black, fontSize: AnkirenReviewStyle.stampFont, color: color)),
-          if (sub != null)
-            Text(sub!.toUpperCase(),
-                style: TextStyle(fontWeight: Weights.black, fontSize: AnkirenReviewStyle.stampSubFont, color: color)),
+          const SizedBox(height: Gaps.small),
+          LayoutBuilder(builder: (context, box) {
+            final room = MediaQuery.textScalerOf(context).scale(AnkirenReviewStyle.factMinWidth);
+            final fit = box.maxWidth ~/ room >= facts.length;
+            return FactGrid(facts, perRow: fit ? facts.length : (facts.length + 1) ~/ 2);
+          }),
         ]),
       );
 }

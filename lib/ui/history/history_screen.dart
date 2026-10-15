@@ -27,12 +27,15 @@ import 'run_page.dart';
 Future<void> openTripHistory(BuildContext context, SideTrip trip) =>
     Navigator.of(context).push(MangaRoute<void>(
       builder: (context) => Scaffold(
-        body: SafeArea(
-          child: Padding(
-            padding: const EdgeInsets.only(top: HeaderStyle.topGap),
-            child: HistoryScreen(trip: trip, onBack: () => Navigator.maybePop(context)),
+        body: Stack(children: [
+          const Positioned.fill(child: GradationBox(Tones.history)),
+          SafeArea(
+            child: Padding(
+              padding: const EdgeInsets.only(top: HeaderStyle.topGap),
+              child: HistoryScreen(trip: trip, onBack: () => Navigator.maybePop(context)),
+            ),
           ),
-        ),
+        ]),
       ),
     ));
 
@@ -130,7 +133,8 @@ class _HistoryScreenState extends State<HistoryScreen> {
   }
 }
 
-/// D2: the last 7 days in three colours, today ringed, and the streak.
+/// D2: the last 7 days in three colours on a cut, sun-toned panel, today
+/// ringed, and the streak.
 class _WeekStrip extends StatelessWidget {
   const _WeekStrip({required this.activity, required this.today, required this.streak});
   final Map<DateTime, DayActivity> activity;
@@ -148,34 +152,33 @@ class _WeekStrip extends StatelessWidget {
     final s = S.of(context);
     final days = [for (var i = 6; i >= 0; i--) today.subtract(Duration(days: i))];
     Widget swatch(DayActivity a, String label) => Row(mainAxisSize: MainAxisSize.min, children: [
-          Container(
-            width: HistoryListStyle.legendBox,
-            height: HistoryListStyle.legendBox,
-            decoration: BoxDecoration(color: colorOf(a), border: Border.all(color: Palette.ink, width: 1)),
-          ),
+          _DayMark(a, size: HistoryListStyle.legendBox),
           const SizedBox(width: Gaps.tight),
           Flexible(
-            child: Text(label, style: const TextStyle(fontWeight: Weights.black, fontSize: HistoryRunStyle.labelFont)),
+            child: Text(label,
+                style: const TextStyle(
+                    fontWeight: Weights.black, fontSize: HistoryListStyle.legendFont, color: HistoryListStyle.legendText)),
           ),
         ]);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         MangaPanel(
-          color: Palette.sunSoft,
+          shape: const PanelShape(bottomRight: Offset(HistoryListStyle.stripCut, 0)),
+          tone: Tones.sun,
           padding: HistoryListStyle.stripPadding,
           child: Row(
             children: [
               Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    TrackedLabel(s.historyLast7, sub: s.other.historyLast7),
-                    const SizedBox(height: Gaps.tight),
-                    FittedBox(
-                      fit: BoxFit.scaleDown,
-                      alignment: Alignment.centerLeft,
-                      child: Row(
+                child: FittedBox(
+                  fit: BoxFit.scaleDown,
+                  alignment: Alignment.centerLeft,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      TrackedLabel(s.historyLast7, sub: s.sub?.historyLast7),
+                      const SizedBox(height: HistoryListStyle.labelGap),
+                      Row(
                         children: [
                           for (final d in days) ...[
                             if (d != days.first) const SizedBox(width: HistoryListStyle.dayGap),
@@ -183,22 +186,16 @@ class _WeekStrip extends StatelessWidget {
                           ],
                         ],
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
               ),
-              const SizedBox(width: Gaps.panel),
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.end,
-                children: [
-                  Text('$streak', style: const TextStyle(fontFamily: Fonts.display, fontSize: HistoryListStyle.streakFont, height: 1)),
-                  Text(s.historyStreak, style: const TextStyle(fontWeight: Weights.black, fontSize: HistoryRunStyle.noteFont)),
-                ],
-              ),
+              const SizedBox(width: Gaps.small),
+              _Streak(streak),
             ],
           ),
         ),
-        const SizedBox(height: Gaps.tight),
+        const SizedBox(height: HistoryListStyle.legendGap),
         Wrap(spacing: Gaps.panel, runSpacing: Gaps.tight, children: [
           swatch(DayActivity.none, s.historyNotActive),
           swatch(DayActivity.some, s.historySomeActive),
@@ -209,6 +206,42 @@ class _WeekStrip extends StatelessWidget {
   }
 }
 
+/// The streak: the day count, big, with a pink drop shadow while it runs,
+/// over "days in a row".
+class _Streak extends StatelessWidget {
+  const _Streak(this.days);
+  final int days;
+
+  @override
+  Widget build(BuildContext context) {
+    final s = S.of(context);
+    final going = days > 0;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.end,
+      children: [
+        Text('$days',
+            style: TextStyle(
+              fontFamily: Fonts.display,
+              fontSize: HistoryListStyle.streakFont,
+              height: 1,
+              color: going ? Palette.ink : HistoryRunStyle.muted,
+              shadows: going ? const [Shadow(color: Palette.pink, offset: HistoryListStyle.streakShadow)] : null,
+            )),
+        const SizedBox(height: Gaps.tight),
+        Text(s.historyStreak, style: const TextStyle(fontWeight: Weights.black, fontSize: HistoryListStyle.streakLabelFont)),
+        if (s.sub?.historyStreak case final sub?)
+          Text(sub.toUpperCase(),
+              style: const TextStyle(
+                  fontWeight: Weights.black,
+                  fontSize: HistoryListStyle.streakSubFont,
+                  letterSpacing: HistoryRunStyle.labelTracking)),
+      ],
+    );
+  }
+}
+
+/// One day of the strip: its colour (完 when the set was done, a dot for
+/// some of it) over its weekday letter; today in a pink ring.
 class _DayBox extends StatelessWidget {
   const _DayBox({required this.day, required this.activity, required this.today});
   final DateTime day;
@@ -222,29 +255,54 @@ class _DayBox extends StatelessWidget {
       mainAxisSize: MainAxisSize.min,
       children: [
         Container(
-          width: HistoryListStyle.dayBox,
-          height: HistoryListStyle.dayBox,
-          alignment: Alignment.center,
+          padding: const EdgeInsets.all(HistoryListStyle.todayRingGap),
           decoration: BoxDecoration(
-            color: _WeekStrip.colorOf(activity),
-            border: Border.all(color: today ? HistoryListStyle.today : Palette.ink, width: Strokes.label),
+            border: Border.all(
+                color: today ? HistoryListStyle.today : Colors.transparent, width: HistoryListStyle.todayRing),
           ),
-          child: switch (activity) {
-            DayActivity.done => Text(s.historyDayDoneMark, style: const TextStyle(fontWeight: Weights.black, fontSize: TypeScale.tiny)),
-            DayActivity.some => Container(
-                width: HistoryListStyle.dayDot,
-                height: HistoryListStyle.dayDot,
-                decoration: const BoxDecoration(color: Palette.ink, shape: BoxShape.circle),
-              ),
-            DayActivity.none => null,
-          },
+          child: _DayMark(activity, size: HistoryListStyle.dayBox),
         ),
         Text(s.weekdayLetter(day.weekday),
             style: TextStyle(
                 fontWeight: Weights.black,
                 fontSize: HistoryListStyle.dayLetterFont,
-                color: today ? HistoryListStyle.today : Palette.ink)),
+                height: 1,
+                color: today ? HistoryListStyle.todayText : Palette.ink)),
       ],
+    );
+  }
+}
+
+/// A day's square in its colour, as in the strip: 完 when the set was
+/// done, a dot for some of it, scaled to [size].
+class _DayMark extends StatelessWidget {
+  const _DayMark(this.activity, {required this.size});
+  final DayActivity activity;
+  final double size;
+
+  @override
+  Widget build(BuildContext context) {
+    final s = S.of(context);
+    final scale = size / HistoryListStyle.dayBox;
+    return Container(
+      width: size,
+      height: size,
+      alignment: Alignment.center,
+      decoration: BoxDecoration(
+        color: _WeekStrip.colorOf(activity),
+        border: Border.all(color: Palette.ink, width: Strokes.control * scale.clamp(HistoryListStyle.markMinBorder, 1)),
+      ),
+      child: switch (activity) {
+        DayActivity.done => Text(s.historyDayDoneMark,
+            textScaler: TextScaler.noScaling,
+            style: TextStyle(fontFamily: Fonts.display, fontSize: HistoryListStyle.dayMarkFont * scale, height: 1)),
+        DayActivity.some => Container(
+            width: HistoryListStyle.dayDot * scale,
+            height: HistoryListStyle.dayDot * scale,
+            decoration: const BoxDecoration(color: Palette.ink, shape: BoxShape.circle),
+          ),
+        DayActivity.none => null,
+      },
     );
   }
 }
@@ -271,14 +329,7 @@ class _MainList extends StatelessWidget {
         for (final MapEntry(key: day, value: dayRuns) in days.entries) ...[
           _DayHeader(day: day, today: today, runs: dayRuns, activity: activity[day] ?? DayActivity.some),
           const SizedBox(height: Gaps.small),
-          MangaPanel(
-            child: Column(children: [
-              for (final (i, r) in dayRuns.indexed) ...[
-                if (i > 0) const Divider(height: Strokes.hairline, thickness: Strokes.hairline, color: ChartStyle.grid),
-                _RunRow(r),
-              ],
-            ]),
-          ),
+          _RowsBox([for (final r in dayRuns) _RunRow(r)]),
           const SizedBox(height: Gaps.section),
         ],
       ],
@@ -286,7 +337,24 @@ class _MainList extends StatelessWidget {
   }
 }
 
-/// D4: the day, and how much of it was played.
+/// A list's rows in one ink panel on a hard shadow, split by rules.
+class _RowsBox extends StatelessWidget {
+  const _RowsBox(this.rows);
+  final List<Widget> rows;
+
+  @override
+  Widget build(BuildContext context) => MangaPanel(
+        shadow: HistoryRunStyle.panelShadow,
+        child: Column(children: [
+          for (final (i, row) in rows.indexed) ...[
+            if (i > 0) const Divider(height: Strokes.hairline, thickness: Strokes.hairline, color: ChartStyle.grid),
+            row,
+          ],
+        ]),
+      );
+}
+
+/// D4: the day on an ink banner, and how much of it was played.
 class _DayHeader extends StatelessWidget {
   const _DayHeader({required this.day, required this.today, required this.runs, required this.activity});
   final DateTime day, today;
@@ -305,27 +373,25 @@ class _DayHeader extends StatelessWidget {
                 ? s.historyDaySome
                 : s.historyDayPlayed;
     return Row(
-      crossAxisAlignment: CrossAxisAlignment.end,
       children: [
         Expanded(
-          child: Text.rich(TextSpan(children: [
-            if (day == today)
-              TextSpan(
-                  text: '${s.historyToday}  ',
-                  style: const TextStyle(fontFamily: Fonts.display, fontSize: HistoryListStyle.dayHeaderFont)),
-            TextSpan(
-                text: s.historyDay(day),
-                style: TextStyle(
-                    fontFamily: day == today ? null : Fonts.display,
-                    fontWeight: Weights.black,
-                    fontSize: day == today ? HistoryListStyle.dayHeaderDateFont : HistoryListStyle.dayHeaderFont)),
-          ])),
+          child: Align(
+            alignment: Alignment.centerLeft,
+            child: FittedBox(
+              fit: BoxFit.scaleDown,
+              child: Row(children: [
+                InkBanner(day == today ? s.historyToday : s.historyDay(day), fontSize: HistoryListStyle.dayHeaderFont),
+                if (day == today) ...[
+                  const SizedBox(width: Gaps.small),
+                  Text(s.historyDay(day),
+                      style: const TextStyle(fontWeight: Weights.black, fontSize: HistoryListStyle.dayHeaderDateFont)),
+                ],
+              ]),
+            ),
+          ),
         ),
-        Container(
-          width: HistoryListStyle.legendBox,
-          height: HistoryListStyle.legendBox,
-          decoration: BoxDecoration(color: _WeekStrip.colorOf(activity), border: Border.all(color: Palette.ink, width: 1)),
-        ),
+        const SizedBox(width: Gaps.small),
+        _DayMark(activity, size: HistoryListStyle.headerMark),
         const SizedBox(width: Gaps.tight),
         Text(status, style: const TextStyle(fontWeight: Weights.black, fontSize: HistoryRunStyle.noteFont)),
       ],
@@ -353,7 +419,7 @@ class _ListRow extends StatelessWidget {
   final String value, caption;
   final VoidCallback onTap;
 
-  /// A coloured edge on the left (暗記練's rows).
+  /// A coloured edge on the left: the run's kind, or 暗記練's pink.
   final Color? accent;
 
   @override
@@ -430,11 +496,14 @@ class _RunRow extends StatelessWidget {
     final cards = run.forfeit ? s.historyCardsOf(run.cards, run.planned) : s.historyCards(run.cards);
     final tags = <Widget>[
       RunKindTag(run.mode),
-      if (run.placement) ResultBadge(s.historyPlaced, color: Palette.pinkSoft),
+      if (run.placement) ResultBadge(s.historyPlaced, color: Palette.pinkSoft, cheer: true),
       if (change != null)
-        ResultBadge(change.$2.minRating > change.$1.minRating ? s.historyUpTo(change.$2.label) : s.historyDownTo(change.$2.label)),
+        change.$2.minRating > change.$1.minRating
+            ? ResultBadge(s.historyUpTo(change.$2.label), cheer: true)
+            : ResultBadge(s.historyDownTo(change.$2.label), muted: true),
       if (run.forfeit) ResultBadge(s.historyForfeit, muted: true),
-      if (run.mode == PlayMode.exam) run.passed ? ResultBadge(s.runExamWon) : ResultBadge(s.runExamLost, muted: true),
+      if (run.mode == PlayMode.exam) run.passed ? ResultBadge(s.runExamWon, cheer: true) : ResultBadge(s.runExamLost, muted: true),
+      if (hundred && progress.bestOfKind(run)) ResultBadge(s.historyBest, cheer: true),
     ];
     final ratingText = rating == null
         ? null
@@ -444,6 +513,7 @@ class _RunRow extends StatelessWidget {
     final up = rating != null && (rating.before == null || rating.after >= rating.before!);
     final perCard = run.clock == null || run.cards == 0 ? null : run.clock!.inMilliseconds / run.cards;
     return _ListRow(
+      accent: RunKindTag.lookOf(run.mode).accent,
       when: FittedBox(
         fit: BoxFit.scaleDown,
         alignment: Alignment.centerLeft,
@@ -490,14 +560,7 @@ class _AnkirenList extends StatelessWidget {
     return ListView(
       padding: const EdgeInsets.only(top: Gaps.section, bottom: HistoryListStyle.bottomPad),
       children: [
-        MangaPanel(
-          child: Column(children: [
-            for (final (i, g) in games.indexed) ...[
-              if (i > 0) const Divider(height: Strokes.hairline, thickness: Strokes.hairline, color: ChartStyle.grid),
-              _GameRow(g, all: all),
-            ],
-          ]),
-        ),
+        _RowsBox([for (final g in games) _GameRow(g, all: all)]),
       ],
     );
   }
@@ -528,10 +591,13 @@ class _GameRow extends StatelessWidget {
     return _ListRow(
       accent: Palette.pink,
       when: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        Text(day == today ? s.historyToday : s.historyShortDay(day),
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            style: const TextStyle(fontWeight: Weights.black, fontSize: HistoryListStyle.rowLineFont, height: 1.2)),
+        FittedBox(
+          fit: BoxFit.scaleDown,
+          alignment: Alignment.centerLeft,
+          child: Text(day == today ? s.historyToday : s.historyShortDay(day),
+              maxLines: 1,
+              style: const TextStyle(fontWeight: Weights.black, fontSize: HistoryListStyle.rowLineFont, height: 1.2)),
+        ),
         Text(s.clockTime(game.startedAt),
             style: const TextStyle(
                 fontWeight: Weights.bold, fontSize: HistoryListStyle.rowLineFont, height: 1.2, color: HistoryRunStyle.muted)),
@@ -539,7 +605,7 @@ class _GameRow extends StatelessWidget {
       tags: [
         AnkirenKindTag(ranked: game.ranked, level: game.level),
         if (kind == AnkirenKind.custom) ResultBadge(s.historyNotScored, muted: true),
-        if (best) ResultBadge(s.historyBest),
+        if (best) ResultBadge(s.historyBest, cheer: true),
       ],
       line: Text.rich(TextSpan(children: [
         TextSpan(

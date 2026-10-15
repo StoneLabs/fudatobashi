@@ -531,7 +531,7 @@ void main() {
       await tester.binding.setSurfaceSize(_phone);
       await tester.pumpWidget(RepaintBoundary(key: const ValueKey('screen'), child: FudatobashiApp(progress: p)));
       await tester.pump(const Duration(milliseconds: 500));
-      final backdrop = find.byType(GradationBox);
+      final backdrop = find.byWidgetPredicate((w) => w is GradationBox && w.spec == Tones.home);
       expect(backdrop, findsOneWidget);
       expect(tester.getRect(backdrop), Offset.zero & _phone);
       const s = S('en');

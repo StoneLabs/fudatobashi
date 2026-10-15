@@ -30,9 +30,14 @@ class PageTab<T> {
   final String Function(S s)? sub;
   final Widget Function(T data) build;
 
-  /// This tab for [SwipeTabs], filled in from [data].
-  SwipeTab swipeTab(S s, T data, {Color accent = Palette.ink}) =>
-      SwipeTab(label: label(s), sub: s.sub == null ? null : sub?.call(s) ?? label(s.sub!), accent: accent, builder: (_) => build(data));
+  /// This tab for [SwipeTabs] in [look]'s colours, filled in from [data].
+  SwipeTab swipeTab(S s, T data, KindLook look) => SwipeTab(
+        label: label(s),
+        sub: s.sub == null ? null : sub?.call(s) ?? label(s.sub!),
+        accent: look.accent,
+        onAccent: look.onAccent,
+        builder: (_) => build(data),
+      );
 }
 
 /// A recorded run, tab by tab: the 100-card view for ranked, the exam and
@@ -68,7 +73,9 @@ class _RunPageState extends State<RunPage> {
     final s = S.of(context);
     final run = widget.run;
     final tabs = run.view == RunView.hundred ? RunPage.hundredTabs : RunPage.trainingTabs;
+    final look = RunKindTag.lookOf(run.mode);
     return RunPageFrame(
+      look: look,
       title: s.runTitle,
       titleSub: s.other.runTitle,
       tag: RunKindTag(run.mode),
@@ -83,7 +90,7 @@ class _RunPageState extends State<RunPage> {
                   style: const TextStyle(fontWeight: Weights.bold, fontSize: TypeScale.body)),
             );
           }
-          return RunPageTabs(tabs: [for (final tab in tabs) tab.swipeTab(s, detail)]);
+          return RunPageTabs(tabs: [for (final tab in tabs) tab.swipeTab(s, detail, look)]);
         },
       ),
     );
@@ -101,10 +108,12 @@ class RunPageTabs extends StatelessWidget {
 }
 
 /// A run or game page's frame: the title with a back button, the kind tag
-/// and a line about it, then [body] (the swiped tabs).
+/// and a line about it, then [body] (the swiped tabs), all in [look]'s
+/// colours.
 class RunPageFrame extends StatelessWidget {
   const RunPageFrame({
     super.key,
+    required this.look,
     required this.title,
     required this.titleSub,
     required this.tag,
@@ -112,6 +121,7 @@ class RunPageFrame extends StatelessWidget {
     required this.body,
   });
 
+  final KindLook look;
   final String title, titleSub, line;
   final Widget tag;
   final Widget body;
@@ -119,42 +129,48 @@ class RunPageFrame extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final s = S.of(context);
-    return Scaffold(
-      body: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.only(top: HeaderStyle.topGap),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: Gaps.gutter),
-                child: MangaHeader(
-                  title: ScreenTitle(title, sub: titleSub),
-                  actions: [InkIconButton(icon: IconArt.back, semanticLabel: s.back, onTap: () => Navigator.maybePop(context))],
-                ),
-              ),
-              Padding(
-                padding: HistoryRunStyle.tagRowPadding,
-                child: ConstrainedBox(
-                  constraints: const BoxConstraints(minHeight: HistoryRunStyle.tagRowHeight),
-                  child: Row(
-                    children: [
-                      tag,
-                      const SizedBox(width: Gaps.panel),
-                      Expanded(
-                        child: Text(line,
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: const TextStyle(fontWeight: Weights.black, fontSize: HistoryRunStyle.tagRowFont)),
-                      ),
-                    ],
+    return HistoryLook(
+      look: look,
+      child: Scaffold(
+        body: Stack(children: [
+          const Positioned.fill(child: GradationBox(Tones.historyPage)),
+          SafeArea(
+            child: Padding(
+              padding: const EdgeInsets.only(top: HeaderStyle.topGap),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: Gaps.gutter),
+                    child: MangaHeader(
+                      title: ScreenTitle(title, sub: titleSub),
+                      actions: [InkIconButton(icon: IconArt.back, semanticLabel: s.back, onTap: () => Navigator.maybePop(context))],
+                    ),
                   ),
-                ),
+                  Padding(
+                    padding: HistoryRunStyle.tagRowPadding,
+                    child: ConstrainedBox(
+                      constraints: const BoxConstraints(minHeight: HistoryRunStyle.tagRowHeight),
+                      child: Row(
+                        children: [
+                          tag,
+                          const SizedBox(width: Gaps.panel),
+                          Expanded(
+                            child: Text(line,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: const TextStyle(fontWeight: Weights.black, fontSize: HistoryRunStyle.tagRowFont)),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                  Expanded(child: body),
+                ],
               ),
-              Expanded(child: body),
-            ],
+            ),
           ),
-        ),
+        ]),
       ),
     );
   }

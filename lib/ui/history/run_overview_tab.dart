@@ -3,10 +3,12 @@ import 'package:flutter/material.dart';
 import '../../config/config.dart';
 import '../../config/design.dart';
 import '../../domain/rating.dart';
+import '../../l10n/history_strings.dart';
 import '../../l10n/run_strings.dart';
 import '../../l10n/strings.dart';
 import '../../state/past_runs.dart';
 import '../../state/play_config.dart';
+import '../../state/scope.dart';
 import '../manga/manga.dart';
 import '../play/time_format.dart';
 import 'history_widgets.dart';
@@ -52,14 +54,11 @@ class _HeadlinePanel extends StatelessWidget {
   final List<Widget> children;
 
   @override
-  Widget build(BuildContext context) => MangaPanel(
-        color: Palette.sunSoft,
-        padding: HistoryRunStyle.headlinePadding,
-        child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: children),
-      );
+  Widget build(BuildContext context) =>
+      HeadlinePanel(child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: children));
 }
 
-/// The big number with its label, and a badge on the right.
+/// The big number with its label, and a stamp or Tobi on the right.
 class _BigTime extends StatelessWidget {
   const _BigTime({required this.label, required this.value, this.unit, this.badge});
   final String label, value;
@@ -68,7 +67,7 @@ class _BigTime extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
+        crossAxisAlignment: CrossAxisAlignment.center,
         children: [
           Expanded(
             child: Column(
@@ -123,7 +122,7 @@ class _HundredHeadline extends StatelessWidget {
         _BigTime(
           label: run.scored ? s.runScoredTime : s.runTimeLabel,
           value: runTimeText(run),
-          badge: detail.best ? ResultBadge(s.runFastestKind) : null,
+          badge: _hundredCheer(context),
         ),
         if (run.forfeit) ...[
           const SizedBox(height: Gaps.tight),
@@ -145,6 +144,30 @@ class _HundredHeadline extends StatelessWidget {
           '${rating.before == null ? '' : '${rating.before!.round()} → '}${rating.after.round()} · ${Rating.bandOf(rating.after).label}',
       ]),
     ]);
+  }
+
+  /// Tobi's reaction: a stamp and a cheer for a placement, a class up or
+  /// a best, shock at a forfeit, at ease otherwise.
+  Widget _hundredCheer(BuildContext context) {
+    final s = S.of(context);
+    final run = detail.run;
+    final change = ProgressScope.of(context).classChangeOf(run);
+    final up = change != null && change.$2.minRating > change.$1.minRating;
+    final (text, sub) = run.placement
+        ? (s.historyPlaced, s.sub?.historyPlaced)
+        : up
+            ? (s.historyUpTo(change.$2.label), s.sub?.historyUpTo(change.$2.label))
+            : detail.best
+                ? (s.runFastestKind, s.sub?.runFastestKind)
+                : (null, null);
+    return HeadlineCheer(
+      stamp: text == null ? null : RunStamp(text, sub: sub),
+      pose: text != null
+          ? TobiPose.cheering
+          : run.forfeit
+              ? TobiPose.shocked
+              : TobiPose.relaxed,
+    );
   }
 }
 
@@ -175,15 +198,20 @@ class _ExamHeadline extends StatelessWidget {
         );
     return Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
       _HeadlinePanel(children: [
-        Text.rich(TextSpan(children: [
-          TextSpan(
-              text: run.passed ? s.runExamWon : s.runExamLost,
-              style: const TextStyle(fontFamily: Fonts.display, fontSize: HistoryRunStyle.bigFont, height: 1.1)),
-          if (gap != null)
-            TextSpan(
-                text: '  ${s.runExamBy(formatSeconds(gap.inMilliseconds.toDouble(), 1))}',
-                style: const TextStyle(fontWeight: Weights.black, fontSize: TypeScale.body)),
-        ])),
+        Row(children: [
+          Expanded(
+            child: Text.rich(TextSpan(children: [
+              TextSpan(
+                  text: run.passed ? s.runExamWon : s.runExamLost,
+                  style: const TextStyle(fontFamily: Fonts.display, fontSize: HistoryRunStyle.bigFont, height: 1.1)),
+              if (gap != null)
+                TextSpan(
+                    text: '  ${s.runExamBy(formatSeconds(gap.inMilliseconds.toDouble(), 1))}',
+                    style: const TextStyle(fontWeight: Weights.black, fontSize: TypeScale.body)),
+            ])),
+          ),
+          HeadlineCheer(pose: run.passed ? TobiPose.shocked : TobiPose.fired),
+        ]),
         const SizedBox(height: Gaps.small),
         Row(children: [
           box(s.runTobiTime, tobi, Palette.sun, Palette.ink),
@@ -225,7 +253,9 @@ class _TrainingHeadline extends StatelessWidget {
           label: s.runPerCard,
           value: clock == null || run.cards == 0 ? missingTime : formatSeconds(clock.inMilliseconds / run.cards),
           unit: 's',
-          badge: run.dayDone ? ResultBadge(s.runSetDone, color: Palette.pinkSoft) : null,
+          badge: run.dayDone
+              ? HeadlineCheer(stamp: RunStamp(s.historyDayDone, sub: s.sub?.historyDayDone), pose: TobiPose.cheering)
+              : const HeadlineCheer(pose: TobiPose.relaxed),
         ),
         const SizedBox(height: Gaps.small),
         FactGrid([
@@ -274,6 +304,7 @@ class RunTimeSection extends StatelessWidget {
       fill: true,
       child: MangaPanel(
         padding: HistoryRunStyle.chartPadding,
+        shadow: HistoryRunStyle.panelShadow,
         child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
           Text(summary.isEmpty ? s.runGraphEven : summary,
               style: const TextStyle(fontWeight: Weights.bold, fontSize: TypeScale.small)),
