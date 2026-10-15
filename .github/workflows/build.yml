@@ -6,7 +6,7 @@
 #   - manually via the "Run workflow" button (workflow_dispatch): artifacts only.
 # The build number and version name come from scripts/version.sh, the same helper
 # the local build scripts use: the build number is the commit count, and the name
-# is the pubspec version on a tagged commit, otherwise <version>-beta.<commit count>.
+# is the pubspec version on a tagged commit, otherwise <version>-beta.<commit count>.<short hash>.
 # iOS, macOS and Windows only get the build number (they need a plain version).
 #
 # Android release signing is optional: set these repo secrets to sign with
