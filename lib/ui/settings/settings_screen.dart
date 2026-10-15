@@ -473,31 +473,28 @@ class _DeveloperSection extends StatelessWidget {
         ]),
         SettingsGroup(children: [
           SettingsTapRow(
-            title: 'Exam: open it',
-            note: 'Swipes every card not swiped yet once, in a free-play run',
+            title: 'Unlock the exam',
             onTap: () async {
               await openExamForDev(progress);
               if (context.mounted) MangaToast.show(context, 'Exam open');
             },
           ),
           SettingsTapRow(
-            title: 'Exam: replay intro',
-            note: "Tobi points out the exam strip on Home again, once it's open",
+            title: 'Replay the exam intro',
             onTap: () async {
               await progress.replayExamIntro();
               if (context.mounted) Navigator.of(context).popUntil((r) => r.isFirst);
             },
           ),
           SettingsTapRow(
-            title: 'Exam: clear cooldown',
+            title: 'Reset the exam cooldown',
             onTap: () async {
               await progress.clearExamCooldown();
               if (context.mounted) MangaToast.show(context, 'Exam cooldown cleared');
             },
           ),
           SettingsSwitch(
-            title: 'Exam: fast Tobi',
-            note: 'Tobi plays all 100 cards in ${ExamDevTuning.fastTobiMs ~/ 1000} s, plus his mistakes',
+            title: 'Fast Tobi',
             value: settings.fastTobi,
             onChanged: (v) => progress.updateSettings(settings.copyWith(fastTobi: v)),
           ),
