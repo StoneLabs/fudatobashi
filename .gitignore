@@ -53,6 +53,7 @@ app.*.map.json
 # Android local config and signing
 /android/local.properties
 /android/key.properties
+/.secrets
 *.jks
 *.keystore
 
