@@ -104,7 +104,7 @@ class _PanelPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
     final outer = shape.outer(size);
-    if (shadow != Offset.zero) canvas.drawPath(outer.shift(shadow), Paint()..color = Palette.ink);
+    if (shadow != Offset.zero) canvas.drawPath(outer.shift(shadow), Paint()..color = Palette.inkShadow);
     canvas.drawPath(outer, Paint()..color = Palette.ink);
     final inner = shape.inner(size, border);
     canvas.drawPath(inner, Paint()..color = color);

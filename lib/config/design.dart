@@ -9,6 +9,10 @@ import 'package:flutter/painting.dart';
 
 abstract final class Palette {
   static const ink = Color(0xFF141414);
+
+  /// The hard drop shadow behind panels and chips: ink, lightened so text beside it reads.
+  static const inkShadow = Color(0x66141414);
+
   static const paper = Color(0xFFFFFFFF);
   static const desk = Color(0xFFE4E1DB);
   static const mute = Color(0xFF333333);

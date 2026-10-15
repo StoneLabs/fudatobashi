@@ -368,7 +368,7 @@ class _Chip extends StatelessWidget {
         decoration: BoxDecoration(
           color: chip.fill,
           border: Border.all(color: Palette.ink, width: Strokes.label),
-          boxShadow: const [BoxShadow(color: Palette.ink, offset: StatChipStyle.shadow)],
+          boxShadow: const [BoxShadow(color: Palette.inkShadow, offset: StatChipStyle.shadow)],
         ),
         child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
           Container(height: StatChipStyle.bar, color: chip.color),
@@ -503,7 +503,7 @@ class HistoryButton extends StatelessWidget {
         margin: const EdgeInsets.only(right: HistoryRunStyle.buttonShadow, bottom: HistoryRunStyle.buttonShadow),
         decoration: const BoxDecoration(
           boxShadow: [
-            BoxShadow(color: Palette.ink, offset: Offset(HistoryRunStyle.buttonShadow, HistoryRunStyle.buttonShadow)),
+            BoxShadow(color: Palette.inkShadow, offset: Offset(HistoryRunStyle.buttonShadow, HistoryRunStyle.buttonShadow)),
           ],
         ),
         child: InkButton(
