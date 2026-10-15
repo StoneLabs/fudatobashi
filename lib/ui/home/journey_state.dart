@@ -22,7 +22,8 @@ class JourneyState {
         if (i.unlocked == i.total && (i.complete || p.islandMarked(i.index))) i.index,
     };
     var current = islands.indexWhere((i) => i.unlocked < i.total);
-    if (current < 0) current = islands.indexWhere((i) => !passed.contains(i.index));
+    // Every card is unlocked: nothing is left to sail to, so the boat is at
+    // the last island whatever the earlier islands' solid stats say.
     if (current < 0) current = islands.length - 1;
     final unlocked = {
       for (final id in [for (final i in islands) ...i.poemIds])
