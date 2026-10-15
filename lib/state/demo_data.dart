@@ -11,7 +11,7 @@ typedef SeedProgress = void Function(int day, int totalDays, double fraction);
 
 /// Replaces all progress with a journey player's last [days] days: training
 /// rounds through the real path (unlocks, islands, FSRS, rating) at
-/// [pace]'s daily routine, plus the odd free-play run, so celebrations, due
+/// realistic days (see [JourneySimulator.realisticDay]), plus the odd free-play run, so celebrations, due
 /// cards and Stats have data during development. [learner], [pace], [days]
 /// and [seed] default to the debug page's own Simulation defaults, so a
 /// seeded device (and this file's own test) reliably reaches unlocks, due
@@ -52,16 +52,16 @@ Future<void> _simulate(
   SeedProgress? onProgress,
 ) async {
   for (var d = 0; d < days; d++) {
-    final rounds = pace.profile.dailyRounds;
-    final freeRounds = d % DemoDataTuning.freeRunEvery == DemoDataTuning.freeRunEvery - 1 ? 1 : 0;
-    final runs = rounds + freeRounds;
+    final date = DateTime(today.year, today.month, today.day - days + d);
     onProgress?.call(d + 1, days, 0);
-    await sim.day(
-      DateTime(today.year, today.month, today.day - days + d),
-      rounds: rounds,
-      freeRounds: freeRounds,
-      freeCards: DemoDataTuning.freeCards,
-      onRound: (round, done, cards) => onProgress?.call(d + 1, days, (round + done / cards) / runs),
-    );
+    final runs = await sim.realisticDay(date, onRun: (run, done, cards) {
+      onProgress?.call(d + 1, days, (run + done / cards) / SimulationTuning.runShares.length);
+    });
+    if (runs > 0 && d % DemoDataTuning.freeRunEvery == DemoDataTuning.freeRunEvery - 1) {
+      await sim.freeRound(
+        DateTime(date.year, date.month, date.day, SyntheticLearnerTuning.lastRoundHour),
+        DemoDataTuning.freeCards,
+      );
+    }
   }
 }

@@ -973,13 +973,19 @@ abstract final class SimulationTuning {
 
   /// Safety stop on the sittings a simulated day plays to finish its set.
   static const int maxSittingsPerDay = 20;
+
+  /// Dev-tools simulation: the chance a simulated day is skipped entirely.
+  static const double skipDayShare = 0.2;
+
+  /// Dev-tools simulation: the shares of days played in 1, 2, 3 and 4 runs.
+  static const List<double> runShares = [0.6, 0.2, 0.1, 0.1];
 }
 
 /// Dev-mode demo data (`seedDemoData`): a journey player's recent history,
 /// simulated day by day through the real training path.
 abstract final class DemoDataTuning {
   /// Days simulated, ending yesterday.
-  static const int days = 14;
+  static const int days = 21;
 
   /// A free-play run happens every this many simulated days.
   static const int freeRunEvery = 3;

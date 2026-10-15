@@ -205,15 +205,15 @@ void main() {
     expect(lastFraction, 1);
     final today = progress.todaySet()!;
     expect(today.reviews, greaterThan(0), reason: "today's set is built from the seeded history");
-    expect(progress.weekStamps().where((s) => s.done || s.missed), hasLength(TodaySetTuning.weekDays - 1),
-        reason: 'every seeded day had a set of its own');
+    // A fifth of the days are skipped, so some past days have no finished set.
+    expect(progress.weekStamps().where((s) => s.done), isNotEmpty);
     final upright = progress.trainer.unlocked.where((s) => !s.key.inverted).length;
     expect(upright, inInclusiveRange(30, 90));
     expect(progress.islands.where((i) => i.reached).length, greaterThanOrEqualTo(3));
     expect(progress.islands.where((i) => i.complete), isNotEmpty);
     expect(progress.trainer.items.values.where((s) => s.card.state == fsrs.State.review), isNotEmpty);
     expect(progress.ratingPoints, isEmpty, reason: 'training never moves the rating');
-    expect(progress.practiceDays.length, DemoDataTuning.days);
+    expect(progress.practiceDays.length, inInclusiveRange(DemoDataTuning.days * 0.6, DemoDataTuning.days));
     expect(progress.dueCount(DateTime.now().add(const Duration(days: 1))), greaterThan(0));
     // Free-play runs happened too: recorded for history, but never counted for SRS.
     expect(progress.sessions.where((s) => s.mode == PlayMode.free.name), isNotEmpty);

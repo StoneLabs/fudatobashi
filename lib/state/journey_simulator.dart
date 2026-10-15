@@ -74,29 +74,54 @@ class JourneySimulator {
     }
   }
 
-  /// Plays today's set on the local day [date] until it is done, then stops.
-  /// Each sitting plays what is left of the set whole; the next one starts
-  /// [SimulationTuning.sittingGap] after the last ended.
-  Future<void> finishSet(DateTime date) async {
+  /// Plays today's set on the local day [date] until it is done, then stops,
+  /// in [runs] sittings of roughly equal size (the last takes what is left).
+  /// The next sitting starts [SimulationTuning.sittingGap] after the last
+  /// ended. [onRun] reports each sitting's card progress with its 0-based
+  /// index. Returns the sittings played.
+  Future<int> finishSet(DateTime date, {int runs = 1, void Function(int run, int done, int total)? onRun}) async {
     var start = DateTime(date.year, date.month, date.day, SyntheticLearnerTuning.firstRoundHour,
         rng.nextInt(SyntheticLearnerTuning.roundStartJitterMinutes));
     for (var i = 0; i < SimulationTuning.maxSittingsPerDay; i++) {
-      final end = await trainingRound(start);
-      if (progress.todaySet(end)?.done ?? true) return;
+      final end = await trainingRound(start,
+          splitInto: math.max(1, runs - i), onCard: onRun == null ? null : (done, total) => onRun(i, done, total));
+      if (progress.todaySet(end)?.done ?? true) return i + 1;
       start = end.add(SimulationTuning.sittingGap);
     }
+    return SimulationTuning.maxSittingsPerDay;
+  }
+
+  /// A realistic day for the dev-tools simulation: [SimulationTuning.skipDayShare]
+  /// of days are skipped; otherwise today's set is played to the end in 1 to 4
+  /// sittings by [SimulationTuning.runShares]. Returns the sittings played (0
+  /// when skipped).
+  Future<int> realisticDay(DateTime date, {void Function(int run, int done, int total)? onRun}) async {
+    if (rng.nextDouble() < SimulationTuning.skipDayShare) return 0;
+    var pick = rng.nextDouble() * SimulationTuning.runShares.fold(0.0, (a, b) => a + b);
+    var runs = SimulationTuning.runShares.length;
+    for (var i = 0; i < SimulationTuning.runShares.length; i++) {
+      pick -= SimulationTuning.runShares[i];
+      if (pick < 0) {
+        runs = i + 1;
+        break;
+      }
+    }
+    return finishSet(date, runs: runs, onRun: onRun);
   }
 
   /// One training round from [start] ([learnAhead]: after "Learn ahead"),
-  /// ended after [setSwipes] swipes if it plays today's set. Returns when it
-  /// ended.
-  Future<DateTime> trainingRound(DateTime start, {bool learnAhead = false, CardProgress? onCard, int? setSwipes}) async {
+  /// ended after [setSwipes] swipes if it plays today's set. With
+  /// [splitInto] above 1 it plays its share of the planned cards (one
+  /// [splitInto]th) instead. Returns when it ended.
+  Future<DateTime> trainingRound(DateTime start,
+      {bool learnAhead = false, CardProgress? onCard, int? setSwipes, int splitInto = 1}) async {
     final plan = learnAhead
         ? await progress.learnAheadCards(rng: rng, now: start)
         : await progress.planTraining(rng: rng, now: start);
     if (plan.cards.isEmpty) return start;
+    final share = splitInto > 1 ? (plan.cards.length + splitInto - 1) ~/ splitInto : setSwipes;
     return _play(plan.cards, const PlayConfig(mode: PlayMode.training), start,
-        newPoems: plan.newPoems, planner: plan.planner, maxSwipes: plan.ofSet ? setSwipes : null, onCard: onCard);
+        newPoems: plan.newPoems, planner: plan.planner, maxSwipes: plan.ofSet ? share : null, onCard: onCard);
   }
 
   /// A customised free-play round (all 100 cards, cut to [cards]): stored,
