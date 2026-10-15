@@ -1451,6 +1451,9 @@ class Progress extends ChangeNotifier {
                   _sideTripsTabKey,
                   _sideTripsKey,
                   _sideTripsSeenLockedKey,
+                  _rankedRunningKey,
+                  _examLastTryKey,
+                  _switchBannerClosedKey,
                 ])))
           .go();
     });
@@ -1474,6 +1477,8 @@ class Progress extends ChangeNotifier {
       ..clear()
       ..addAll(Trainer.freshItems());
     trainer.goalLevel = 0;
+    _examLastTry = null;
+    _switchBannerClosed = false;
     _xp = null;
     notifyListeners();
   }
