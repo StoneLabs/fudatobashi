@@ -24,6 +24,7 @@ class ExamLostScreen extends StatefulWidget {
     super.key,
     required this.report,
     required this.tobi,
+    this.tobiMisses = 0,
     required this.clock,
     required this.misses,
     required this.done,
@@ -31,7 +32,10 @@ class ExamLostScreen extends StatefulWidget {
   });
 
   final SessionReport report;
+
+  /// Tobi's time, with [tobiMisses] mistakes' penalties.
   final Duration tobi;
+  final int tobiMisses;
 
   /// The player's clock when the try ended, before penalties.
   final Duration clock;
@@ -110,6 +114,11 @@ class _ExamLostScreenState extends State<ExamLostScreen> {
                       _Stat(
                         label: s.examTobiTime,
                         value: formatRunTime(widget.tobi),
+                        notes: [
+                          if (widget.tobiMisses > 0)
+                            s.examMissesLine(
+                                widget.tobiMisses, widget.tobiMisses * ExamTuning.missPenaltyMs ~/ Duration.millisecondsPerSecond),
+                        ],
                         color: ExamLostLayout.tobiFill,
                         tone: ExamLostLayout.tobiTone,
                       ),

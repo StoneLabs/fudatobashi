@@ -22,6 +22,9 @@ extension ExamStrings on S {
   String examPenaltyPop(int seconds) => f('examPenaltyPop', [seconds]);
   String get examWinShout => t('examWinShout');
   String get examTimeUpShout => t('examTimeUpShout');
+  String get examTobiWinsShout => t('examTobiWinsShout');
+  String get examWaiting => t('examWaiting');
+  String get examTobiThinking => t('examTobiThinking');
   String get examLostTitle => t('examLostTitle');
   String get examTobiTime => t('examTobiTime');
   String get examYourTime => t('examYourTime');

@@ -56,18 +56,48 @@ void main() {
       }
     });
 
-    test("Tobi's cards add up to his time, inside its range", () {
+    test("Tobi's cards and mistakes add up to his time, inside its range", () {
       for (var seed = 0; seed < 20; seed++) {
         final tobi = TobiPace.draw(math.Random(seed));
         expect(tobi.total.inMilliseconds, inInclusiveRange(ExamTuning.tobiMinMs, ExamTuning.tobiMaxMs));
         expect(tobi.cardEnds, hasLength(RankedTuning.cards));
-        expect(tobi.cardEnds.last, tobi.total);
+        expect(tobi.misses.length, lessThanOrEqualTo(ExamTuning.tobiMaxMisses));
+        expect(tobi.total, tobi.finish + const Duration(milliseconds: ExamTuning.missPenaltyMs) * tobi.misses.length);
         for (var i = 1; i < tobi.cardEnds.length; i++) {
           expect(tobi.cardEnds[i], greaterThan(tobi.cardEnds[i - 1]));
         }
         expect(tobi.doneAt(Duration.zero), 0);
-        expect(tobi.doneAt(tobi.total), RankedTuning.cards);
+        expect(tobi.doneAt(tobi.finish), RankedTuning.cards);
+        expect(tobi.timeAt(tobi.finish), tobi.total);
+        expect(tobi.timeAt(tobi.finish + const Duration(minutes: 1)), tobi.total, reason: 'his clock stops as he finishes');
       }
+    });
+
+    test("Tobi's rhythm: bursts of quick cards, the odd slow one, and now and then a mistake", () {
+      var quick = 0, slow = 0, misses = 0;
+      const tries = 200;
+      for (var seed = 0; seed < tries; seed++) {
+        final tobi = TobiPace.draw(math.Random(seed));
+        final pace = tobi.finish.inMicroseconds / RankedTuning.cards;
+        for (var i = 0; i < RankedTuning.cards; i++) {
+          final took = (tobi.cardEnds[i] - tobi.startOf(i)).inMicroseconds;
+          switch (tobi.beatOf(i)) {
+            case TobiBeat.quick:
+              quick++;
+              expect(took, lessThan(pace * 0.5), reason: 'a quick card is plainly quick');
+            case TobiBeat.slow:
+              slow++;
+              expect(took, greaterThan(pace * 2), reason: 'a slow card is plainly slow');
+            case TobiBeat.usual:
+              expect(took, inInclusiveRange(pace * 0.55, pace * 1.5));
+          }
+        }
+        misses += tobi.misses.length;
+      }
+      const cards = tries * RankedTuning.cards;
+      expect(quick / cards, inInclusiveRange(0.12, 0.3));
+      expect(slow / cards, inInclusiveRange(0.06, 0.16));
+      expect(misses / tries, inInclusiveRange(1.0, 3.0));
     });
   });
 

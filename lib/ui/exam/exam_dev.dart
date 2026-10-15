@@ -25,12 +25,13 @@ Future<void> openExamForDev(Progress progress) async {
   await progress.recordRun(run, PlayConfig(mode: PlayMode.free, setIds: const [], cardIds: ids), DateTime.now());
 }
 
-/// [pace] sped up to [ExamDevTuning.fastTobiMs] (developer mode's fast Tobi),
-/// his cards keeping their rhythm.
+/// [pace] sped up so his clock stops at [ExamDevTuning.fastTobiMs]
+/// (developer mode's fast Tobi), his cards keeping their rhythm and his
+/// mistakes.
 TobiPace fastTobi(TobiPace pace) {
-  const total = Duration(milliseconds: ExamDevTuning.fastTobiMs);
-  final share = ExamDevTuning.fastTobiMs / pace.total.inMilliseconds;
+  const finish = Duration(milliseconds: ExamDevTuning.fastTobiMs);
+  final share = ExamDevTuning.fastTobiMs / pace.finish.inMilliseconds;
   final ends = [for (final end in pace.cardEnds) end * share];
-  ends[ends.length - 1] = total;
-  return TobiPace(total, ends);
+  ends[ends.length - 1] = finish;
+  return TobiPace(ends, misses: pace.misses, beats: pace.beats);
 }

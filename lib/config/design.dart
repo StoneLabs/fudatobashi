@@ -4144,10 +4144,46 @@ abstract final class ExamLayout {
   static const double stripVsFont = 16;
   static const double stripVsGap = 10;
 
-  /// The "+10 s" that rises toward the player's clock at each miss.
+  /// The "+10 s" that rises toward the player's clock at each miss, and
+  /// over Tobi's deck (this share of the way down it) at each of his.
   static const double popFont = 20;
   static const double popRise = 26;
   static const double popOutline = 6;
+  static const double tobiPopAt = 0.3;
+
+  /// A quick card of Tobi's: a burst behind his deck, reaching this share of
+  /// the card's length past it and growing from [quickBurstFrom] of that;
+  /// speed lines across his side at the deck's height; and its sound
+  /// lettered over the deck, [quickWordAt] of the way down it.
+  static const BurstSpec quickBurst = BurstSpec(
+      box: Size(200, 200), center: Offset(100, 100), count: 44, innerMin: 34, innerMax: 52, width: 4, seed: 43,
+      color: Palette.sun);
+  static const double quickBurstReach = 0.35;
+  static const double quickBurstFrom = 0.7;
+  static const SpeedLinesSpec quickLines = SpeedLinesSpec(count: 16, seed: 47);
+  static const String quickWord = 'シュッ';
+  static const double quickWordAt = 0.08;
+  static const double quickWordFont = 30;
+  static const double quickWordOutline = 7;
+  static const double quickWordTurnDeg = 8;
+  static const double quickWordFrom = 0.4;
+
+  /// Tobi's "Hmm…" over a slow card: its corner on him (shares of his box,
+  /// from his top left), its tail toward him, and its lettering.
+  static const Offset thinkAt = Offset(0.62, -0.02);
+  static const Alignment thinkSpeaker = Alignment(-1.5, 1.3);
+  static const EdgeInsets thinkPadding = EdgeInsets.symmetric(horizontal: 6, vertical: 3);
+  static const double thinkFont = 13;
+
+  /// "Waiting for Tobi…" over the player's side once they are done.
+  static const double waitWidth = 300;
+  static const double waitCut = 10;
+  static const EdgeInsets waitPadding = EdgeInsets.fromLTRB(16, 12, 16, 14);
+  static const double waitTitleFont = 24;
+  static const double waitTitleGap = 8;
+  static const double waitLabelFont = 13;
+  static const double waitClockFont = 26;
+  static const double waitRowGap = 6;
 
   /// The kimariji chip's row over the player's deck.
   static const EdgeInsets chipRow = EdgeInsets.fromLTRB(Gaps.gutter, 10, Gaps.gutter, 2);
@@ -4213,6 +4249,11 @@ abstract final class ExamMotion {
   /// A card of Tobi's: nudged for this long before it goes, then flying.
   static const Duration reach = Duration(milliseconds: 160);
   static const Duration fly = Duration(milliseconds: 320);
+
+  /// A quick card of his flashes for this long as it goes; a mistake of
+  /// his has him shocked for this long.
+  static const Duration quickFlash = Duration(milliseconds: 420);
+  static const Duration tobiShock = Duration(milliseconds: 1000);
 
   static const Duration penaltyPop = Duration(milliseconds: 900);
 }

@@ -61,30 +61,76 @@ class RankedScore {
   Duration get scored => clock + penalty + forfeitPerCard * cardsLeft;
 }
 
-/// Tobi's side of a graduation exam try: his time, drawn from
-/// [ExamTuning.tobiMinMs]–[ExamTuning.tobiMaxMs], and when each of his
-/// cards goes, jittered around an even pace but adding up to his time.
-class TobiPace {
-  TobiPace(this.total, this.cardEnds) : assert(cardEnds.isNotEmpty);
+/// How one of Tobi's cards goes: at his usual pace, in a burst of quick
+/// ones, or slowly, thinking it over.
+enum TobiBeat { usual, quick, slow }
 
+/// Tobi's side of a graduation exam try: when each of his cards goes, how,
+/// and which of them he gets wrong. His time is his clock when his last
+/// card goes, plus [ExamTuning.missPenaltyMs] for each mistake.
+class TobiPace {
+  TobiPace(this.cardEnds, {this.misses = const {}, this.beats = const []}) : assert(cardEnds.isNotEmpty);
+
+  /// His time drawn from [ExamTuning.tobiMinMs]–[ExamTuning.tobiMaxMs],
+  /// mistakes included, and shared out among his cards in a rhythm: mostly
+  /// his usual pace, with bursts of quick cards and the odd slow one.
   factory TobiPace.draw(math.Random rng, {int cards = RankedTuning.cards}) {
     final totalMs = ExamTuning.tobiMinMs + rng.nextInt(ExamTuning.tobiMaxMs - ExamTuning.tobiMinMs + 1);
-    final weights = [for (var i = 0; i < cards; i++) 1 + ExamTuning.tobiJitter * (rng.nextDouble() * 2 - 1)];
+    final misses = <int>{
+      for (var i = 0; i < cards; i++)
+        if (rng.nextDouble() < ExamTuning.tobiMissChance) i,
+    }.take(ExamTuning.tobiMaxMisses).toSet();
+    final beats = <TobiBeat>[];
+    while (beats.length < cards) {
+      final roll = rng.nextDouble();
+      if (roll < ExamTuning.tobiBurstChance) {
+        final burst = ExamTuning.tobiBurstMin + rng.nextInt(ExamTuning.tobiBurstMax - ExamTuning.tobiBurstMin + 1);
+        beats.addAll(List.filled(math.min(burst, cards - beats.length), TobiBeat.quick));
+      } else {
+        beats.add(roll < ExamTuning.tobiBurstChance + ExamTuning.tobiSlowChance ? TobiBeat.slow : TobiBeat.usual);
+      }
+    }
+    final weights = [
+      for (final beat in beats)
+        switch (beat) {
+          TobiBeat.quick => ExamTuning.tobiQuickWeight,
+          TobiBeat.slow => ExamTuning.tobiSlowWeight,
+          TobiBeat.usual => 1 + ExamTuning.tobiJitter * (rng.nextDouble() * 2 - 1),
+        },
+    ];
     final sum = weights.fold<double>(0, (a, w) => a + w);
+    final clockMs = totalMs - misses.length * ExamTuning.missPenaltyMs;
     var at = 0.0;
     final ends = <Duration>[];
     for (final w in weights) {
-      at += totalMs * w / sum;
+      at += clockMs * w / sum;
       ends.add(Duration(microseconds: (at * 1000).round()));
     }
-    ends[ends.length - 1] = Duration(milliseconds: totalMs);
-    return TobiPace(Duration(milliseconds: totalMs), ends);
+    ends[ends.length - 1] = Duration(milliseconds: clockMs);
+    return TobiPace(ends, misses: misses, beats: beats);
   }
-
-  final Duration total;
 
   /// When each of his cards is swiped away, from the start.
   final List<Duration> cardEnds;
+
+  /// His cards that are mistakes, by index.
+  final Set<int> misses;
+
+  /// How each card goes; any not listed at his usual pace.
+  final List<TobiBeat> beats;
+
+  static const _penalty = Duration(milliseconds: ExamTuning.missPenaltyMs);
+
+  /// When his last card goes and his clock stops.
+  Duration get finish => cardEnds.last;
+
+  /// His time: his clock at [finish] plus his mistakes' penalties.
+  Duration get total => finish + _penalty * misses.length;
+
+  TobiBeat beatOf(int i) => i < beats.length ? beats[i] : TobiBeat.usual;
+
+  /// When card [i] comes up: as the one before it goes.
+  Duration startOf(int i) => i == 0 ? Duration.zero : cardEnds[i - 1];
 
   /// Cards Tobi has swiped by [elapsed].
   int doneAt(Duration elapsed) {
@@ -94,4 +140,11 @@ class TobiPace {
     }
     return n;
   }
+
+  /// His mistakes by [elapsed].
+  int missesAt(Duration elapsed) => misses.where((i) => cardEnds[i] <= elapsed).length;
+
+  /// His time so far at [elapsed]: his clock, stopped at [finish], plus the
+  /// penalties of his mistakes so far. It reaches [total] as he finishes.
+  Duration timeAt(Duration elapsed) => (elapsed < finish ? elapsed : finish) + _penalty * missesAt(elapsed);
 }

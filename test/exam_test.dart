@@ -25,6 +25,7 @@ import 'package:fudatobashi/l10n/strings.dart';
 import 'package:fudatobashi/state/play_config.dart';
 import 'package:fudatobashi/state/progress.dart';
 import 'package:fudatobashi/state/scope.dart';
+import 'package:fudatobashi/ui/exam/exam_board.dart';
 import 'package:fudatobashi/ui/exam/exam_dev.dart';
 import 'package:fudatobashi/ui/exam/exam_lost_screen.dart';
 import 'package:fudatobashi/ui/exam/exam_opening.dart';
@@ -156,12 +157,29 @@ void main() {
     expect(target, findsOneWidget);
   }
 
-  TobiPace even(Duration total, int cards) =>
-      TobiPace(total, [for (var i = 1; i <= cards; i++) total * (i / cards)]);
+  /// Tobi at an even pace, done in [total], his [misses] cards (by index)
+  /// mistakes adding to his time.
+  TobiPace even(Duration total, int cards, {Set<int> misses = const {}}) =>
+      TobiPace([for (var i = 1; i <= cards; i++) total * (i / cards)], misses: misses);
 
   final five = [for (final id in [3, 14, 15, 92, 65]) CardRef(id)];
 
-  testWidgets('beating Tobi passes the exam: misses add time, and Results shows the graduation', (tester) async {
+  /// The player's time with penalties, as the scoreboard holds it once
+  /// they are done.
+  Duration scored(WidgetTester tester) => tester.widget<Scoreboard>(find.byType(Scoreboard)).scored!;
+
+  /// The race's time since GO, held once it is decided.
+  Duration raceTime(WidgetTester tester) => tester.widget<Scoreboard>(find.byType(Scoreboard)).race.value;
+
+  /// Pumps until the race is decided, or [limit] runs out.
+  Future<void> untilShout(WidgetTester tester, {Duration limit = const Duration(minutes: 1)}) async {
+    for (var t = Duration.zero; t < limit && find.byType(ExamShout).evaluate().isEmpty; t += const Duration(milliseconds: 100)) {
+      await tester.pump(const Duration(milliseconds: 100));
+    }
+  }
+
+  testWidgets('finishing first and beating Tobi: the result waits until his time passes yours, then graduates',
+      (tester) async {
     final p = await open(tester);
     await tester.binding.setSurfaceSize(const Size(384, 832));
     await pumpHome(tester, p);
@@ -178,7 +196,18 @@ void main() {
     while (!session.finished) {
       await swipe(tester, session);
     }
-    expect(find.byType(ExamShout), findsOneWidget);
+    await tester.pump(const Duration(milliseconds: 100));
+    final yours = scored(tester);
+    expect(yours, greaterThan(const Duration(seconds: 10)));
+    expect(find.byType(WaitingForTobi), findsOneWidget, reason: 'Tobi plays on');
+    expect(find.text(S('en').examWaiting), findsOneWidget);
+    expect(find.byType(ExamShout), findsNothing);
+
+    await untilShout(tester);
+    final decided = raceTime(tester);
+    expect(decided, greaterThanOrEqualTo(yours), reason: "decided only once Tobi's time passes the player's");
+    expect(decided, lessThan(yours + const Duration(seconds: 1)));
+    expect(find.text(S('en').examWinShout), findsWidgets);
     await pumpFor(tester, const Duration(milliseconds: 400));
     await _capture(tester, 'exam_won_en');
     await until(tester, find.byType(ResultsScreen));
@@ -191,20 +220,58 @@ void main() {
     await tester.pumpWidget(const SizedBox());
   });
 
-  testWidgets("once the player's time with penalties reaches Tobi's, Tobi wins and the next try counts down", (tester) async {
+  testWidgets('finishing first but behind on penalties: Tobi plays on, finishes, and wins', (tester) async {
+    final p = await open(tester);
+    await tester.binding.setSurfaceSize(const Size(384, 832));
+    await pumpHome(tester, p);
+    await pushExam(tester, five, even(const Duration(seconds: 25), five.length));
+    final session = await toGo(tester);
+    for (var undo = 0; undo < 3; undo++) {
+      await swipe(tester, session);
+      await tester.tap(find.text('UNDO'));
+      await tester.pump(const Duration(milliseconds: 16));
+    }
+    while (!session.finished) {
+      await swipe(tester, session);
+    }
+    await tester.pump(const Duration(milliseconds: 100));
+    expect(scored(tester), greaterThan(const Duration(seconds: 25)), reason: 'quicker on the clock, slower with penalties');
+    await pumpFor(tester, const Duration(seconds: 10));
+    expect(find.byType(WaitingForTobi), findsOneWidget);
+    expect(find.byType(ExamShout), findsNothing, reason: 'Tobi has not finished yet');
+    await _capture(tester, 'exam_waiting_en');
+
+    await untilShout(tester);
+    expect(raceTime(tester), greaterThanOrEqualTo(const Duration(seconds: 25)), reason: 'decided as Tobi finishes');
+    expect(find.text(S('en').examTobiWinsShout), findsWidgets);
+    await until(tester, find.byType(ExamLostScreen));
+    expect(p.sessions.last.completed, isTrue);
+    expect(p.graduated, isFalse);
+    await tester.pumpWidget(const SizedBox());
+  });
+
+  testWidgets("Tobi finishing first: play goes on until the player's time with penalties reaches his", (tester) async {
     final p = await open(tester);
     await tester.runAsync(() => p.noteExamStarted(DateTime.now()));
     await tester.binding.setSurfaceSize(const Size(384, 832));
     await pumpHome(tester, p);
-    await pushExam(tester, five, even(const Duration(seconds: 12), five.length));
+    // Done at 12 s, and a mistake of his makes 22 s.
+    await pushExam(tester, five, even(const Duration(seconds: 12), five.length, misses: {1}));
     final session = await toGo(tester);
     await swipe(tester, session);
     await swipe(tester, session);
+    await pumpFor(tester, const Duration(seconds: 5));
+    expect(find.byType(PenaltyLettering), findsOneWidget, reason: "his mistake's penalty pops");
+    await pumpFor(tester, const Duration(seconds: 8));
+    expect(find.byType(ExamShout), findsNothing, reason: 'Tobi is done at 22 s; the player is at 13 s');
+    expect(tester.widget<SwipeDeck>(find.byType(SwipeDeck)).live, isTrue);
+
     await tester.tap(find.text('UNDO'));
-    await pumpFor(tester, const Duration(milliseconds: 300));
-    expect(find.byType(ExamShout), findsNothing);
-    await pumpFor(tester, const Duration(seconds: 2));
-    expect(find.byType(ExamShout), findsOneWidget, reason: '10 s of penalty plus 2 s reach his 12 s');
+    await tester.pump(const Duration(milliseconds: 16));
+    await tester.pump(const Duration(milliseconds: 16));
+    final decided = raceTime(tester);
+    expect(decided, lessThan(const Duration(seconds: 14)), reason: 'the undo takes the player past his 22 s');
+    expect(find.text(S('en').examTimeUpShout), findsWidgets);
     expect(tester.widget<SwipeDeck>(find.byType(SwipeDeck)).live, isFalse, reason: 'play stops right there');
 
     await until(tester, find.byType(ExamLostScreen));
@@ -212,6 +279,7 @@ void main() {
     expect(find.text(s.examLostTitle), findsWidgets);
     expect(find.text(s.examNextTry.toUpperCase()), findsOneWidget);
     expect(find.textContaining(RegExp(r'^5\d:\d\d$')), findsOneWidget, reason: 'the hour counting down');
+    expect(find.text(s.examMissesLine(1, 10)), findsNWidgets(2), reason: "his mistake and the player's");
     expect(p.sessions.last.mode, PlayMode.exam.name);
     expect(p.sessions.last.completed, isFalse);
     expect(p.graduated, isFalse);

@@ -32,9 +32,11 @@ import 'exam_sheets.dart';
 /// It opens on Tobi's よろしくお願いします and a count of three; at GO the
 /// player's first card is revealed and both clocks start. Every miss, card
 /// marked wrong or undone swipe adds [ExamTuning.missPenaltyMs] to the
-/// player's clock. The player loses the moment that clock reaches Tobi's
-/// time, or by leaving, and goes on to [ExamLostScreen]; finishing first
-/// passes the exam, and [ResultsScreen] celebrates the graduation.
+/// player's time, and each of Tobi's mistakes to his. Once Tobi has
+/// finished, the player loses the moment their time reaches his. Once the
+/// player has finished, Tobi plays on: the player wins as his time passes
+/// theirs, and loses if he finishes first. A win goes on to [ResultsScreen]
+/// and its graduation; a loss, or leaving, to [ExamLostScreen].
 class ExamScreen extends StatefulWidget {
   const ExamScreen({super.key, required this.cards, required this.tobi});
 
@@ -45,7 +47,7 @@ class ExamScreen extends StatefulWidget {
   State<ExamScreen> createState() => _ExamScreenState();
 }
 
-enum _Race { opening, on, won, lost }
+enum _Race { opening, on, waiting, won, lost }
 
 class _ExamScreenState extends State<ExamScreen> with SingleTickerProviderStateMixin {
   static const _config = PlayConfig(mode: PlayMode.exam);
@@ -75,6 +77,9 @@ class _ExamScreenState extends State<ExamScreen> with SingleTickerProviderStateM
   _Race _state = _Race.opening;
   DateTime _startedAt = DateTime.now();
   int _misses = 0;
+
+  /// The player's time with penalties, once their last card is in.
+  Duration? _scored;
 
   /// Penalties so far, each one's "+10 s" sent up once.
   int _pops = 0;
@@ -122,7 +127,7 @@ class _ExamScreenState extends State<ExamScreen> with SingleTickerProviderStateM
     switch (_state) {
       case _Race.opening:
         if (elapsed >= ExamMotion.start) _go(elapsed);
-      case _Race.on:
+      case _Race.on || _Race.waiting:
         _race.value = elapsed - _goAt;
         _checkTime();
       case _Race.won || _Race.lost:
@@ -137,9 +142,22 @@ class _ExamScreenState extends State<ExamScreen> with SingleTickerProviderStateM
     setState(() => _state = _Race.on);
   }
 
-  /// The player's clock with penalties has caught up with Tobi's time.
+  /// Ends the race once the board shows who won: while the player plays,
+  /// Tobi wins once he has finished and their time reaches his; once they
+  /// are done, they win as his time passes theirs, and he wins by finishing.
   void _checkTime() {
-    if (_state == _Race.on && _race.value + _penalty >= widget.tobi.total) unawaited(_end(won: false));
+    final t = _race.value;
+    final tobi = widget.tobi;
+    final scored = _scored;
+    if (_state == _Race.on && t >= tobi.finish && t + _penalty >= tobi.total) {
+      unawaited(_end(won: false));
+    } else if (_state == _Race.waiting && scored != null) {
+      if (tobi.timeAt(t) > scored) {
+        unawaited(_end(won: true));
+      } else if (t >= tobi.finish) {
+        unawaited(_end(won: false));
+      }
+    }
   }
 
   void _onSessionChanged() {
@@ -150,21 +168,20 @@ class _ExamScreenState extends State<ExamScreen> with SingleTickerProviderStateM
     }
     _misses = misses;
     if (_session.finished) {
-      unawaited(_finishRun());
+      _finishRun();
     } else {
       _checkTime();
     }
     setState(() {});
   }
 
-  /// The player's last card is in: their time with penalties against Tobi's.
-  Future<void> _finishRun() async {
+  /// The player's last card is in: their time with penalties is set, and
+  /// the race waits on Tobi.
+  void _finishRun() {
     if (_state != _Race.on) return;
-    final total = _session.total;
-    if (total != null) _race.value = total;
-    final won =
-        total != null && RankedScore.of(_session, total, penaltyMs: ExamTuning.missPenaltyMs).scored < widget.tobi.total;
-    await _end(won: won);
+    _scored = RankedScore.of(_session, _session.total ?? _race.value, penaltyMs: ExamTuning.missPenaltyMs).scored;
+    _state = _Race.waiting;
+    _checkTime();
   }
 
   void _onCommitted(Attempt a) {
@@ -178,7 +195,7 @@ class _ExamScreenState extends State<ExamScreen> with SingleTickerProviderStateM
   }
 
   Future<void> _leave() async {
-    if (_ending) return;
+    if (_ending || _state == _Race.waiting) return;
     if (await confirmExamLeave(context) && mounted) await _end(won: false, left: true);
   }
 
@@ -201,7 +218,8 @@ class _ExamScreenState extends State<ExamScreen> with SingleTickerProviderStateM
         : ExamLostScreen(
             report: report,
             tobi: widget.tobi.total,
-            clock: _race.value,
+            tobiMisses: widget.tobi.missesAt(_race.value),
+            clock: _session.total ?? _race.value,
             misses: _misses,
             done: _session.attempts.length,
             total: _session.cards.length,
@@ -210,12 +228,23 @@ class _ExamScreenState extends State<ExamScreen> with SingleTickerProviderStateM
     await Navigator.of(context).pushAndRemoveUntil(MangaRoute<void>(builder: (_) => next), (r) => r.isFirst);
   }
 
-  TobiPose _tobiPose(int done) => switch (_state) {
-        _Race.opening => TobiPose.fired,
-        _Race.on => done >= _session.attempts.length ? TobiPose.fired : TobiPose.tryHard,
-        _Race.won => TobiPose.shocked,
-        _Race.lost => TobiPose.cheering,
-      };
+  /// Tobi at [t]: shocked for a moment after a mistake of his, else fired
+  /// up while ahead and trying hard while behind.
+  TobiPose _tobiPose(Duration t) {
+    final tobi = widget.tobi;
+    final done = tobi.doneAt(t);
+    final blunder = tobi.misses.any((i) => i < done && t - tobi.cardEnds[i] < ExamMotion.tobiShock);
+    return switch (_state) {
+      _Race.opening => TobiPose.fired,
+      _Race.on || _Race.waiting => blunder
+          ? TobiPose.shocked
+          : done >= _session.attempts.length
+              ? TobiPose.fired
+              : TobiPose.tryHard,
+      _Race.won => TobiPose.shocked,
+      _Race.lost => TobiPose.cheering,
+    };
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -246,6 +275,7 @@ class _ExamScreenState extends State<ExamScreen> with SingleTickerProviderStateM
                 done: _session.attempts.length,
                 total: _session.cards.length,
                 penalty: _penalty,
+                scored: _scored,
               ),
               Expanded(
                 flex: ExamLayout.playerFlex,
@@ -288,6 +318,8 @@ class _ExamScreenState extends State<ExamScreen> with SingleTickerProviderStateM
                         ),
                       ),
                       Positioned.fill(child: SfxOverlay(key: _sfxKey)),
+                      if (_state == _Race.waiting)
+                        Positioned.fill(child: WaitingForTobi(pace: widget.tobi, race: _race, scored: _scored!)),
                     ]),
                   ),
                 ]),
@@ -324,7 +356,8 @@ class _ExamScreenState extends State<ExamScreen> with SingleTickerProviderStateM
                       ),
                       const SizedBox(width: PlayLayout.buttonGap),
                       Expanded(
-                        child: ActionRowButton(icon: IconArt.end, label: s.end, sub: 'END', onTap: _ending ? null : _leave),
+                        child: ActionRowButton(
+                            icon: IconArt.end, label: s.end, sub: 'END', onTap: _ending || _state == _Race.waiting ? null : _leave),
                       ),
                     ]),
                   ),
@@ -334,7 +367,8 @@ class _ExamScreenState extends State<ExamScreen> with SingleTickerProviderStateM
           ),
           if (_state == _Race.opening || _state == _Race.on) Positioned.fill(child: ExamOpening(clock: _sinceOpen)),
           if (_state == _Race.won) Positioned.fill(child: ExamShout(s.examWinShout)),
-          if (_state == _Race.lost && !_left) Positioned.fill(child: ExamShout(s.examTimeUpShout)),
+          if (_state == _Race.lost && !_left)
+            Positioned.fill(child: ExamShout(_scored == null ? s.examTimeUpShout : s.examTobiWinsShout)),
         ]),
       ),
     );
