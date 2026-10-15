@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../config/design.dart';
 import '../../db/database.dart' show SideTripRun;
 import '../../domain/ankiren_review.dart';
 import '../../domain/side_trips.dart';
@@ -10,7 +11,6 @@ import '../../l10n/strings.dart';
 import '../../state/scope.dart';
 import '../../state/xp_history.dart';
 import '../manga/manga.dart';
-import '../manga/swipe_tabs.dart';
 import 'ankiren_cards_tab.dart';
 import 'ankiren_field_tab.dart';
 import 'ankiren_overview_tab.dart';
@@ -23,27 +23,24 @@ import 'run_page.dart';
 Future<void> openAnkirenGame(BuildContext context, SideTripRun run) =>
     Navigator.of(context).push(MangaRoute<void>(builder: (_) => AnkirenGamePage(run: run)));
 
-/// One tab of a 暗記練 game page, built from the game's review.
-typedef AnkirenTabSpec = ({String Function(S s) label, Widget Function(AnkirenReview review) build});
-
 /// A recorded 暗記練 game, tab by tab: a scored game's overview, field,
 /// cards, score and taps; a custom game's overview, field and taps.
 class AnkirenGamePage extends StatelessWidget {
   const AnkirenGamePage({super.key, required this.run});
   final SideTripRun run;
 
-  static final List<AnkirenTabSpec> scoredTabs = [
-    (label: (s) => s.runTabOverview, build: AnkirenOverviewTab.new),
-    (label: (s) => s.ankirenTabField, build: AnkirenFieldTab.new),
-    (label: (s) => s.runTabCards, build: AnkirenCardsTab.new),
-    (label: (s) => s.ankirenTabScore, build: AnkirenScoreTab.new),
-    (label: (s) => s.ankirenTabTaps, build: AnkirenTapsTab.new),
+  static final List<PageTab<AnkirenReview>> scoredTabs = [
+    PageTab((s) => s.runTabOverview, AnkirenOverviewTab.new),
+    PageTab((s) => s.ankirenTabField, AnkirenFieldTab.new),
+    PageTab((s) => s.runTabCards, AnkirenCardsTab.new),
+    PageTab((s) => s.ankirenTabScore, AnkirenScoreTab.new, sub: (s) => s.tabAndXp),
+    PageTab((s) => s.ankirenTabTaps, AnkirenTapsTab.new),
   ];
 
-  static final List<AnkirenTabSpec> customTabs = [
-    (label: (s) => s.runTabOverview, build: AnkirenOverviewTab.new),
-    (label: (s) => s.ankirenTabField, build: AnkirenFieldTab.new),
-    (label: (s) => s.ankirenTabTaps, build: AnkirenTapsTab.new),
+  static final List<PageTab<AnkirenReview>> customTabs = [
+    PageTab((s) => s.runTabOverview, AnkirenOverviewTab.new),
+    PageTab((s) => s.ankirenTabField, AnkirenFieldTab.new),
+    PageTab((s) => s.ankirenTabTaps, AnkirenTapsTab.new),
   ];
 
   @override
@@ -62,13 +59,7 @@ class AnkirenGamePage extends StatelessWidget {
       titleSub: s.other.runTabGame,
       tag: AnkirenKindTag(ranked: run.ranked, level: run.level),
       line: '${s.sessionDate(run.startedAt)} · ${s.ankirenASide(review.game.perSide)}',
-      body: SwipeTabs(
-        pager: SwipePagerWords(position: s.pagerPosition, previous: s.pagerPrevious, next: s.pagerNext),
-        tabs: [
-          for (final tab in tabs)
-            SwipeTab(label: tab.label(s), sub: tab.label(s.other), builder: (_) => tab.build(review)),
-        ],
-      ),
+      body: RunPageTabs(tabs: [for (final tab in tabs) tab.swipeTab(s, review, accent: Palette.pinkDeep)]),
     );
   }
 }

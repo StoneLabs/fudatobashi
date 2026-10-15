@@ -770,13 +770,10 @@
   "runTabOverview": "Overview",
   "runTabCards": "Cards",
   "runTabSpeed": "Speed",
-  "runTabRating": "Rating & XP",
+  "runTabRating": "Rating",
   "runTabXp": "XP",
   "runTabSwipes": "Swipes",
   "runTabGame": "Game",
-  "pagerPosition": "{0} of {1}",
-  "pagerPrevious": "Previous page",
-  "pagerNext": "Next page",
   "runExamTag": "Exam",
   "runCardsLine": "{0} cards",
   "runLoading": "Loading…",
@@ -959,7 +956,7 @@
   "runPracticeNoRank": "Practice runs don't change rank.",
   "weekdayShort": "Mon Tue Wed Thu Fri Sat Sun",
   "ankirenTabField": "Field",
-  "ankirenTabScore": "Score & XP",
+  "ankirenTabScore": "Score",
   "ankirenTabTaps": "Taps",
   "ankirenASide": "{0} a side",
   "ankirenPointsLabel": "Points",
@@ -1068,5 +1065,6 @@
   "ankirenSetupFirst": "Your first game with this setup.",
   "historyDayDoneMark": "完",
   "runExamBeat": "You beat Tobi by {0} s.",
-  "runExamBeaten": "Tobi won by {0} s."
+  "runExamBeaten": "Tobi won by {0} s.",
+  "tabAndXp": "& XP"
 }

@@ -26,11 +26,13 @@ class RunSwipesTab extends StatelessWidget {
       SliverPadding(
         padding: const EdgeInsets.fromLTRB(Gaps.gutter, Gaps.section, Gaps.gutter, 0),
         sliver: SliverToBoxAdapter(
-          child: HistorySection(
-            title: s.runSwipesTitle,
-            sub: s.other.runSwipesTitle,
-            note: s.runSwipesCount(rows.length),
-            child: const SizedBox(),
+          child: Padding(
+            padding: const EdgeInsets.only(bottom: Gaps.small),
+            child: HistoryHeading(
+              title: s.runSwipesTitle,
+              sub: s.other.runSwipesTitle,
+              note: s.runSwipesCount(rows.length),
+            ),
           ),
         ),
       ),
@@ -81,27 +83,38 @@ class _Cells extends StatelessWidget {
   ];
 
   @override
-  Widget build(BuildContext context) => Row(
+  Widget build(BuildContext context) {
+    final scale = MediaQuery.textScalerOf(context).scale(1).clamp(1.0, HistoryRunStyle.tableMaxColumnScale);
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: HistoryRunStyle.tableInset),
+      child: Row(
         children: [
           for (final (i, text) in cells.indexed)
             if (_widths[i] case final w?)
-              SizedBox(
-                width: w * MediaQuery.textScalerOf(context).scale(1).clamp(1, 1.15),
-                child: Text(text,
-                    maxLines: 1,
-                    overflow: TextOverflow.clip,
-                    textAlign: i == 0 || i == 2 ? TextAlign.center : TextAlign.right,
-                    style: style?.copyWith(color: colors[i])),
+              Container(
+                width: w * scale,
+                padding: const EdgeInsets.only(left: HistoryRunStyle.cellGap),
+                child: FittedBox(
+                  fit: BoxFit.scaleDown,
+                  alignment: i == 0 || i == 2 ? Alignment.center : Alignment.centerRight,
+                  child: Text(text, maxLines: 1, style: style?.copyWith(color: colors[i])),
+                ),
               )
             else
               Expanded(
                 child: Padding(
                   padding: const EdgeInsets.only(left: Gaps.small),
-                  child: Text(text, maxLines: 1, overflow: TextOverflow.ellipsis, style: style),
+                  child: FittedBox(
+                    fit: BoxFit.scaleDown,
+                    alignment: Alignment.centerLeft,
+                    child: Text(text, maxLines: 1, style: style),
+                  ),
                 ),
               ),
         ],
-      );
+      ),
+    );
+  }
 }
 
 class _Row extends StatelessWidget {
@@ -175,7 +188,7 @@ class _HeadDelegate extends SliverPersistentHeaderDelegate {
       color: HistoryRunStyle.headRow,
       alignment: Alignment.centerLeft,
       child: _Cells(
-        ['#', s.colCard.toUpperCase(), '↕', s.colTime.toUpperCase(), s.colUsual.toUpperCase(), s.colDiff, s.colAt.toUpperCase()],
+        ['#', s.colCard.toUpperCase(), '↑↓', s.colTime.toUpperCase(), s.colUsual.toUpperCase(), s.colDiff, s.colAt.toUpperCase()],
         style: const TextStyle(
             fontWeight: Weights.black,
             fontSize: HistoryRunStyle.labelFont,

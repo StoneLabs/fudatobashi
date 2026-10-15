@@ -106,6 +106,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
           const SizedBox(height: HistoryListStyle.tabGap),
           Expanded(
             child: SwipeTabs(
+              look: SwipeTabsLook.folders,
               initial: _tab,
               onChanged: (i) => setState(() => _tab = i),
               tabs: [
@@ -116,7 +117,8 @@ class _HistoryScreenState extends State<HistoryScreen> {
                 ),
                 SwipeTab(
                   label: s.historyAnkirenTab,
-                  sub: SideTrip.ankiren.name.toUpperCase(),
+                  accent: Palette.pink,
+                  sub: s.other.historyAnkirenTab,
                   builder: (_) => _AnkirenList(games: keptGames(_filter), all: games),
                 ),
               ],
@@ -363,30 +365,45 @@ class _ListRow extends StatelessWidget {
               ? null
               : BoxDecoration(border: Border(left: BorderSide(color: accent!, width: HistoryListStyle.accent))),
           padding: HistoryListStyle.rowPadding,
+          constraints: const BoxConstraints(minHeight: HistoryListStyle.rowMinHeight),
           child: Row(
             children: [
               SizedBox(width: HistoryListStyle.rowClockWidth * MediaQuery.textScalerOf(context).scale(1), child: when),
+              const SizedBox(width: HistoryListStyle.rowGap),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Wrap(spacing: Gaps.tight, runSpacing: Gaps.tight, children: tags),
-                    const SizedBox(height: Gaps.tight),
+                    Wrap(spacing: HistoryListStyle.tagGap, runSpacing: HistoryListStyle.lineGap, children: tags),
+                    const SizedBox(height: HistoryListStyle.lineGap),
                     DefaultTextStyle.merge(
-                      style: const TextStyle(fontWeight: Weights.black, fontSize: HistoryListStyle.rowLineFont),
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                          fontWeight: Weights.bold,
+                          fontSize: HistoryListStyle.rowLineFont,
+                          height: HistoryListStyle.rowLineHeight,
+                          color: HistoryListStyle.rowLineColor),
                       child: line,
                     ),
                   ],
                 ),
               ),
-              const SizedBox(width: Gaps.small),
+              const SizedBox(width: HistoryListStyle.rowGap),
               Column(
                 crossAxisAlignment: CrossAxisAlignment.end,
                 children: [
-                  Text(value, style: const TextStyle(fontFamily: Fonts.display, fontSize: HistoryListStyle.rowValueFont, height: 1.1)),
-                  Text(caption, style: const TextStyle(fontWeight: Weights.black, fontSize: HistoryListStyle.rowCaptionFont)),
+                  Text(value, style: const TextStyle(fontFamily: Fonts.display, fontSize: HistoryListStyle.rowValueFont, height: 1)),
+                  const SizedBox(height: HistoryListStyle.captionGap),
+                  Text(caption,
+                      style: const TextStyle(
+                          fontWeight: Weights.black,
+                          fontSize: HistoryListStyle.rowCaptionFont,
+                          height: 1,
+                          color: HistoryRunStyle.muted)),
                 ],
               ),
+              const SizedBox(width: Gaps.tight),
               SizedBox(
                 width: HistoryListStyle.chevron,
                 child: MangaIcon(IconArt.chevron, size: HistoryListStyle.chevron, color: HistoryRunStyle.muted),
@@ -514,9 +531,10 @@ class _GameRow extends StatelessWidget {
         Text(day == today ? s.historyToday : s.historyShortDay(day),
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
-            style: const TextStyle(fontWeight: Weights.black, fontSize: HistoryListStyle.rowLineFont)),
+            style: const TextStyle(fontWeight: Weights.black, fontSize: HistoryListStyle.rowLineFont, height: 1.2)),
         Text(s.clockTime(game.startedAt),
-            style: const TextStyle(fontWeight: Weights.bold, fontSize: HistoryListStyle.rowLineFont)),
+            style: const TextStyle(
+                fontWeight: Weights.bold, fontSize: HistoryListStyle.rowLineFont, height: 1.2, color: HistoryRunStyle.muted)),
       ]),
       tags: [
         AnkirenKindTag(ranked: game.ranked, level: game.level),

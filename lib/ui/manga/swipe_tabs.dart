@@ -1,53 +1,52 @@
 import 'package:flutter/material.dart';
 
 import '../../config/design.dart';
-import '../../config/vector_art.dart';
-import 'buttons.dart';
 
 /// One page of [SwipeTabs]: its tab's label, a small sub-label under it
 /// (the other language, or a hint), and its contents.
 class SwipeTab {
-  const SwipeTab({required this.label, this.sub, required this.builder});
+  const SwipeTab({required this.label, this.sub, this.accent = Palette.ink, required this.builder});
   final String label;
   final String? sub;
+
+  /// The picked tab's colour: its fill in a [SwipeTabsLook.strip], the bar
+  /// along its top in [SwipeTabsLook.folders].
+  final Color accent;
   final WidgetBuilder builder;
 }
 
-/// Pages side by side under a thin row of tabs: swipe between them, or tap
-/// a tab. With [pager], a bar along the bottom steps through them too: ‹ ›,
-/// the page's name, where it is and a dot for each page.
+/// How [SwipeTabs] draws its tab row.
+enum SwipeTabsLook {
+  /// Small two-line labels over a thick rule, the picked one filled.
+  strip,
+
+  /// Two outlined folder tabs standing on a thick rule, the picked one
+  /// white with a bar along its top.
+  folders,
+}
+
+/// Pages side by side under a row of tabs: swipe between them, or tap a
+/// tab.
 class SwipeTabs extends StatefulWidget {
   const SwipeTabs({
     super.key,
     required this.tabs,
     this.initial = 0,
-    this.pager,
+    this.look = SwipeTabsLook.strip,
+    this.padding = EdgeInsets.zero,
     this.onChanged,
-    this.header,
   });
 
   final List<SwipeTab> tabs;
   final int initial;
+  final SwipeTabsLook look;
 
-  /// The bottom bar's words: "{0} of {1}" and the buttons' labels; null
-  /// for no bottom bar.
-  final SwipePagerWords? pager;
+  /// Around the tab row only; the pages keep the full width.
+  final EdgeInsets padding;
   final ValueChanged<int>? onChanged;
-
-  /// Shown between the tabs and the pages.
-  final Widget? header;
 
   @override
   State<SwipeTabs> createState() => _SwipeTabsState();
-}
-
-/// The words of [SwipeTabs]' bottom bar.
-class SwipePagerWords {
-  const SwipePagerWords({required this.position, required this.previous, required this.next});
-
-  /// "{0} of {1}".
-  final String position;
-  final String previous, next;
 }
 
 class _SwipeTabsState extends State<SwipeTabs> {
@@ -60,170 +59,136 @@ class _SwipeTabsState extends State<SwipeTabs> {
     super.dispose();
   }
 
-  void _go(int i) {
-    if (i < 0 || i >= widget.tabs.length) return;
-    _pages.animateToPage(i, duration: Motion.sheet, curve: Motion.routeCurve);
-  }
+  void _go(int i) => _pages.animateToPage(i, duration: Motion.sheet, curve: Motion.routeCurve);
 
   @override
-  Widget build(BuildContext context) {
-    final pager = widget.pager;
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        _TabRow(tabs: widget.tabs, current: _current, onTap: _go),
-        ?widget.header,
-        Expanded(
-          child: PageView(
-            controller: _pages,
-            onPageChanged: (i) {
-              setState(() => _current = i);
-              widget.onChanged?.call(i);
-            },
-            children: [
-              for (final tab in widget.tabs) Builder(builder: tab.builder),
-            ],
-          ),
-        ),
-        if (pager != null)
-          _PagerBar(
-            words: pager,
-            label: widget.tabs[_current].label,
-            current: _current,
-            count: widget.tabs.length,
-            onGo: _go,
-          ),
-      ],
-    );
-  }
-}
-
-class _TabRow extends StatelessWidget {
-  const _TabRow({required this.tabs, required this.current, required this.onTap});
-  final List<SwipeTab> tabs;
-  final int current;
-  final ValueChanged<int> onTap;
-
-  @override
-  Widget build(BuildContext context) => DecoratedBox(
-        decoration: const BoxDecoration(
-          border: Border(bottom: BorderSide(color: Palette.ink, width: Strokes.control)),
-        ),
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.end,
-          children: [
-            for (final (i, tab) in tabs.indexed)
-              Expanded(
-                child: Semantics(
-                  button: true,
-                  selected: i == current,
-                  child: GestureDetector(
-                    behavior: HitTestBehavior.opaque,
-                    onTap: () => onTap(i),
-                    child: Container(
-                      color: i == current ? Palette.ink : Palette.paper,
-                      padding: SwipeTabsStyle.tabPadding,
-                      child: DefaultTextStyle.merge(
-                        style: TextStyle(color: i == current ? Palette.paper : SwipeTabsStyle.idle),
-                        child: Column(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            FittedBox(
-                              fit: BoxFit.scaleDown,
-                              child: Text(tab.label,
-                                  maxLines: 1,
-                                  style: const TextStyle(fontWeight: Weights.black, fontSize: SwipeTabsStyle.font)),
-                            ),
-                            if (tab.sub case final sub?)
-                              FittedBox(
-                                fit: BoxFit.scaleDown,
-                                child: Text(sub,
-                                    maxLines: 1,
-                                    style: const TextStyle(
-                                        fontWeight: Weights.black,
-                                        fontSize: SwipeTabsStyle.subFont,
-                                        letterSpacing: SwipeTabsStyle.subTracking)),
-                              ),
-                          ],
+  Widget build(BuildContext context) => Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Padding(
+            padding: widget.padding,
+            child: DecoratedBox(
+              decoration: const BoxDecoration(
+                border: Border(bottom: BorderSide(color: Palette.ink, width: SwipeTabsStyle.rule)),
+              ),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  for (final (i, tab) in widget.tabs.indexed)
+                    Expanded(
+                      child: Semantics(
+                        button: true,
+                        selected: i == _current,
+                        child: GestureDetector(
+                          behavior: HitTestBehavior.opaque,
+                          onTap: () => _go(i),
+                          child: switch (widget.look) {
+                            SwipeTabsLook.strip => _StripTab(tab, picked: i == _current),
+                            SwipeTabsLook.folders => _FolderTab(tab, picked: i == _current, first: i == 0),
+                          },
                         ),
                       ),
                     ),
-                  ),
-                ),
+                ],
               ),
-          ],
+            ),
+          ),
+          Expanded(
+            child: PageView(
+              controller: _pages,
+              onPageChanged: (i) {
+                setState(() => _current = i);
+                widget.onChanged?.call(i);
+              },
+              children: [
+                for (final tab in widget.tabs) Builder(builder: tab.builder),
+              ],
+            ),
+          ),
+        ],
+      );
+}
+
+class _StripTab extends StatelessWidget {
+  const _StripTab(this.tab, {required this.picked});
+  final SwipeTab tab;
+  final bool picked;
+
+  @override
+  Widget build(BuildContext context) => Container(
+        color: picked ? tab.accent : null,
+        padding: SwipeTabsStyle.stripPadding,
+        child: DefaultTextStyle.merge(
+          style: TextStyle(color: picked ? Palette.paper : SwipeTabsStyle.idle, height: SwipeTabsStyle.lineHeight),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              FittedBox(
+                fit: BoxFit.scaleDown,
+                child: Text(tab.label,
+                    maxLines: 1, style: const TextStyle(fontWeight: Weights.black, fontSize: SwipeTabsStyle.font)),
+              ),
+              if (tab.sub case final sub?) ...[
+                const SizedBox(height: SwipeTabsStyle.subGap),
+                FittedBox(
+                  fit: BoxFit.scaleDown,
+                  child: Text(sub,
+                      maxLines: 1,
+                      style: const TextStyle(
+                          fontWeight: Weights.black,
+                          fontSize: SwipeTabsStyle.subFont,
+                          letterSpacing: SwipeTabsStyle.subTracking)),
+                ),
+              ],
+            ],
+          ),
         ),
       );
 }
 
-class _PagerBar extends StatelessWidget {
-  const _PagerBar({
-    required this.words,
-    required this.label,
-    required this.current,
-    required this.count,
-    required this.onGo,
-  });
-
-  final SwipePagerWords words;
-  final String label;
-  final int current, count;
-  final ValueChanged<int> onGo;
+class _FolderTab extends StatelessWidget {
+  const _FolderTab(this.tab, {required this.picked, required this.first});
+  final SwipeTab tab;
+  final bool picked, first;
 
   @override
-  Widget build(BuildContext context) => DecoratedBox(
-        decoration: const BoxDecoration(
-          color: Palette.paper,
-          border: Border(top: BorderSide(color: Palette.ink, width: Strokes.control)),
-        ),
-        child: Padding(
-          padding: SwipeTabsStyle.pagerPadding,
-          child: Row(
-            children: [
-              Opacity(
-                opacity: current > 0 ? 1 : ChartStyle.dimOpacity,
-                child: InkIconButton(icon: IconArt.back, semanticLabel: words.previous, onTap: () => onGo(current - 1)),
-              ),
-              Expanded(
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Text(label,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(fontWeight: Weights.black, fontSize: TypeScale.body)),
-                    Text(
-                      words.position.replaceAll('{0}', '${current + 1}').replaceAll('{1}', '$count').toUpperCase(),
-                      style: const TextStyle(
-                          fontWeight: Weights.black,
-                          fontSize: SwipeTabsStyle.subFont,
-                          letterSpacing: SwipeTabsStyle.subTracking),
-                    ),
-                    const SizedBox(height: Gaps.tight),
-                    Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        for (var i = 0; i < count; i++)
-                          Container(
-                            width: SwipeTabsStyle.dot,
-                            height: SwipeTabsStyle.dot,
-                            margin: const EdgeInsets.symmetric(horizontal: SwipeTabsStyle.dotGap / 2),
-                            decoration: BoxDecoration(
-                              color: i == current ? Palette.ink : Palette.paper,
-                              border: Border.all(color: Palette.ink, width: Strokes.hairline),
-                            ),
-                          ),
-                      ],
-                    ),
-                  ],
-                ),
-              ),
-              Opacity(
-                opacity: current < count - 1 ? 1 : ChartStyle.dimOpacity,
-                child: InkIconButton(icon: IconArt.chevron, semanticLabel: words.next, onTap: () => onGo(current + 1)),
-              ),
-            ],
+  Widget build(BuildContext context) {
+    const side = BorderSide(color: Palette.ink, width: SwipeTabsStyle.rule);
+    final color = picked ? Palette.ink : SwipeTabsStyle.idle;
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        color: picked ? Palette.paper : SwipeTabsStyle.folderIdleFill,
+        border: Border(top: side, right: side, left: first ? side : BorderSide.none),
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Container(height: SwipeTabsStyle.folderBar, color: picked ? tab.accent : null),
+          Padding(
+            padding: SwipeTabsStyle.folderPadding,
+            child: Center(child: _label(color)),
           ),
+        ],
+      ),
+    );
+  }
+
+  Widget _label(Color color) => FittedBox(
+        fit: BoxFit.scaleDown,
+        child: Text.rich(
+          TextSpan(children: [
+            TextSpan(text: tab.label, style: const TextStyle(fontWeight: Weights.black, fontSize: SwipeTabsStyle.folderFont)),
+            if (tab.sub case final sub?)
+              TextSpan(
+                  text: '  $sub',
+                  style: const TextStyle(
+                      fontWeight: Weights.black,
+                      fontSize: SwipeTabsStyle.folderSubFont,
+                      letterSpacing: SwipeTabsStyle.subTracking)),
+          ]),
+          maxLines: 1,
+          style: TextStyle(color: color, height: SwipeTabsStyle.lineHeight),
         ),
       );
 }

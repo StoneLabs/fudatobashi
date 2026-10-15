@@ -1090,19 +1090,32 @@ abstract final class HistoryRunStyle {
   static const EdgeInsets headlinePadding = EdgeInsets.fromLTRB(14, 10, 14, 12);
   static const EdgeInsets chartPadding = EdgeInsets.fromLTRB(10, 10, 10, 10);
   static const double bigFont = 40;
+  /// The kind tag and date line under a run page's title, over its tabs.
+  static const EdgeInsets tagRowPadding = EdgeInsets.fromLTRB(Gaps.gutter, 0, Gaps.gutter, 9);
+  static const double tagRowHeight = 22;
+  static const double tagRowFont = 12;
+
   static const double examTimeFont = 26;
 
   /// A missed card on the Cards tab, and the Practise button.
   static const double cardWidth = 52;
-  static const double practiseHeight = 64;
+  static const double practiseHeight = 50;
+  static const double practiseShadow = 3;
+  static const double practiseIcon = 18;
+  static const double practiseFont = 15;
+  static const double practiseSubFont = 11;
+  static const EdgeInsets practisePadding = EdgeInsets.symmetric(horizontal: 12, vertical: 8);
 
   /// The Every swipe table: row height, column widths (the card takes the
   /// rest), a miss row's tint and the rule every ten cards.
   static const double rowHeight = 25;
-  static const double colNumber = 30;
+  static const double tableInset = 4;
+  static const double cellGap = 3;
+  static const double tableMaxColumnScale = 1.15;
+  static const double colNumber = 26;
   static const double colSide = 18;
-  static const double colTime = 44;
-  static const double colAt = 54;
+  static const double colTime = 42;
+  static const double colAt = 50;
   static const Color missRow = Palette.pinkSoft;
   static const Color headRow = Palette.ink;
   static const int ruleEvery = 10;
@@ -1112,8 +1125,14 @@ abstract final class HistoryRunStyle {
   static const double labelTracking = 1.2;
   static const double factFont = 20;
   static const EdgeInsets factPadding = EdgeInsets.fromLTRB(8, 7, 6, 7);
-  static const double badgeFont = 11;
-  static const EdgeInsets badgePadding = EdgeInsets.fromLTRB(5, 1, 5, 2);
+  static const double badgeFont = 10;
+  static const EdgeInsets badgePadding = EdgeInsets.fromLTRB(5, 2, 5, 2);
+
+  /// A run's or game's kind tag (`KindTag`).
+  static const double kindFont = 11;
+  static const double kindTracking = 0.44;
+  static const double kindLineHeight = 1.2;
+  static const EdgeInsets kindPadding = EdgeInsets.fromLTRB(7, 2, 7, 2);
   static const Color muted = Color(0xFF7A766F);
 
   /// Pink for slower than even pace or a miss, green for ahead or right.
@@ -1123,7 +1142,7 @@ abstract final class HistoryRunStyle {
 
 /// History's run charts: the time graph and the bar charts.
 abstract final class RunChartStyle {
-  static const double timeGraphHeight = 260;
+  static const double timeGraphHeight = 230;
   static const double barChartHeight = 130;
   static const double labelFont = 10.5;
   static const double valueFont = 9.5;
@@ -1177,13 +1196,20 @@ abstract final class HistoryListStyle {
   static const double tabGap = 10;
   static const double dayHeaderFont = 18;
   static const double dayHeaderDateFont = 12.5;
-  static const EdgeInsets rowPadding = EdgeInsets.fromLTRB(12, 9, 6, 9);
-  static const double rowClockWidth = 46;
-  static const double rowClockFont = 14;
-  static const double rowValueFont = 22;
+  static const EdgeInsets rowPadding = EdgeInsets.fromLTRB(10, 4, 6, 4);
+  static const double rowMinHeight = 40;
+  static const double rowClockWidth = 44;
+  static const double rowGap = 8;
+  static const double rowClockFont = 13;
+  static const double rowValueFont = 19;
+  static const double captionGap = 2;
   static const double rowCaptionFont = 9.5;
-  static const double rowLineFont = 12;
-  static const double chevron = 16;
+  static const double rowLineFont = 11.5;
+  static const double rowLineHeight = 1.2;
+  static const Color rowLineColor = Color(0xFF56524B);
+  static const double tagGap = 5;
+  static const double lineGap = 2;
+  static const double chevron = 14;
   static const double accent = 5;
   static const double bottomPad = 24;
 }
@@ -1347,16 +1373,22 @@ abstract final class RunTabsStyle {
   static const double runColumnFlex = 1;
 }
 
-/// `SwipeTabs`: the thin tab row over swiped pages, and the bottom pager.
+/// `SwipeTabs`: the tab row over swiped pages, as a strip of small labels
+/// (a run page's tabs) or as two folder tabs (History's lists).
 abstract final class SwipeTabsStyle {
-  static const EdgeInsets tabPadding = EdgeInsets.fromLTRB(4, 6, 4, 5);
-  static const double font = 13;
-  static const double subFont = 9.5;
-  static const double subTracking = 0.8;
-  static const Color idle = Color(0xFF6B6760);
-  static const EdgeInsets pagerPadding = EdgeInsets.fromLTRB(Gaps.gutter, 6, Gaps.gutter, 6);
-  static const double dot = 8;
-  static const double dotGap = 5;
+  static const double rule = Strokes.panel;
+  static const double lineHeight = 1.1;
+  static const Color idle = Color(0xFF6A665E);
+  static const EdgeInsets stripPadding = EdgeInsets.fromLTRB(3, 6, 3, 6);
+  static const double font = 12;
+  static const double subFont = 8.5;
+  static const double subGap = 2;
+  static const double subTracking = 0.85;
+  static const Color folderIdleFill = Color(0xFFF3F1EC);
+  static const double folderBar = 4;
+  static const EdgeInsets folderPadding = EdgeInsets.fromLTRB(4, 5, 4, 7);
+  static const double folderFont = 14;
+  static const double folderSubFont = 9.5;
 }
 
 /// Small charts shared by the island list (a per-card sparkline) and the card

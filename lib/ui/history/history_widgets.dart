@@ -9,7 +9,6 @@ import '../../l10n/side_trip_strings.dart';
 import '../../l10n/strings.dart';
 import '../../state/past_runs.dart';
 import '../../state/play_config.dart';
-import '../manga/manga.dart';
 import '../play/time_format.dart';
 
 /// A run's kind as a coloured tag: Training, Free play, Weak cards, Ranked
@@ -21,15 +20,44 @@ class RunKindTag extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final s = S.of(context);
-    final (color, text) = switch (mode) {
-      PlayMode.ranked => (Palette.pink, Palette.ink),
-      PlayMode.exam => (Palette.ink, Palette.sun),
-      PlayMode.free || PlayMode.guest => (Palette.seaSoft, Palette.ink),
-      PlayMode.nigate => (Palette.sun, Palette.ink),
-      PlayMode.training => (Palette.ink, Palette.paper),
+    final (fill, text, outlined) = switch (mode) {
+      PlayMode.ranked => (Palette.pink, Palette.ink, true),
+      PlayMode.exam => (Palette.ink, Palette.sun, false),
+      PlayMode.free || PlayMode.guest => (Palette.seaSoft, Palette.ink, true),
+      PlayMode.nigate => (Palette.sun, Palette.ink, true),
+      PlayMode.training => (Palette.ink, Palette.paper, false),
     };
-    return InkTag(runKindLabel(s, mode), color: color, textColor: text, padding: TagStyle.compactPadding);
+    return KindTag(runKindLabel(s, mode), fill: fill, textColor: text, edge: outlined ? Palette.ink : null);
   }
+}
+
+/// The small tag a run or game is labelled with in History's lists and at
+/// the top of its page: [fill] behind, an [edge] inside its border if any.
+class KindTag extends StatelessWidget {
+  const KindTag(this.text, {super.key, required this.fill, required this.textColor, this.edge});
+  final String text;
+  final Color fill, textColor;
+  final Color? edge;
+
+  @override
+  Widget build(BuildContext context) => DecoratedBox(
+        decoration: BoxDecoration(
+          color: fill,
+          border: edge == null ? null : Border.all(color: edge!, width: Strokes.label),
+        ),
+        child: Padding(
+          padding: HistoryRunStyle.kindPadding,
+          child: Text(text,
+              maxLines: 1,
+              softWrap: false,
+              style: TextStyle(
+                  fontWeight: Weights.black,
+                  fontSize: HistoryRunStyle.kindFont,
+                  letterSpacing: HistoryRunStyle.kindTracking,
+                  height: HistoryRunStyle.kindLineHeight,
+                  color: textColor)),
+        ),
+      );
 }
 
 /// A run kind's short name, as its tag and the filter show it.
@@ -57,19 +85,10 @@ class AnkirenKindTag extends StatelessWidget {
       (false, final int level) => s.historyFreeLevel(level),
       (false, null) => '${s.freePlay} · ${s.deckCustom}',
     };
-    return DecoratedBox(
-      decoration: BoxDecoration(
-        color: ranked ? Palette.pink : Palette.paper,
-        border: Border.all(color: ranked ? Palette.ink : Palette.pinkDeep, width: Strokes.label),
-      ),
-      child: Padding(
-        padding: TagStyle.compactPadding,
-        child: Text('${SideTrip.ankiren.label} · $mode',
-            maxLines: 1,
-            style: TextStyle(
-                fontWeight: Weights.black, fontSize: TagStyle.font, color: ranked ? Palette.ink : Palette.pinkDeep)),
-      ),
-    );
+    return KindTag('${SideTrip.ankiren.label} · $mode',
+        fill: ranked ? Palette.pink : Palette.paper,
+        textColor: ranked ? Palette.ink : Palette.pinkDeep,
+        edge: ranked ? Palette.ink : Palette.pinkDeep);
   }
 }
 
@@ -87,7 +106,7 @@ class ResultBadge extends StatelessWidget {
   Widget build(BuildContext context) => DecoratedBox(
         decoration: BoxDecoration(
           color: muted ? Palette.paper : color,
-          border: Border.all(color: muted ? HistoryRunStyle.muted : Palette.ink, width: Strokes.hairline),
+          border: Border.all(color: muted ? HistoryRunStyle.muted : Palette.ink, width: Strokes.label),
         ),
         child: Padding(
           padding: HistoryRunStyle.badgePadding,
@@ -115,28 +134,39 @@ class HistorySection extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            Row(
-              crossAxisAlignment: CrossAxisAlignment.end,
-              children: [
-                Expanded(
-                  child: Text.rich(
-                    TextSpan(children: [
-                      TextSpan(text: title, style: const TextStyle(fontWeight: Weights.black, fontSize: TypeScale.button)),
-                      if (sub != null)
-                        TextSpan(
-                            text: '  $sub',
-                            style: const TextStyle(fontWeight: Weights.black, fontSize: HistoryRunStyle.subFont)),
-                    ]),
-                  ),
-                ),
-                if (note case final note?)
-                  Text(note, style: const TextStyle(fontWeight: Weights.bold, fontSize: HistoryRunStyle.noteFont)),
-              ],
-            ),
+            HistoryHeading(title: title, sub: sub, note: note),
             const SizedBox(height: Gaps.small),
             child,
           ],
         ),
+      );
+}
+
+/// A section's heading row: the title with its other-language word, and a
+/// note on the right.
+class HistoryHeading extends StatelessWidget {
+  const HistoryHeading({super.key, required this.title, this.sub, this.note});
+  final String title;
+  final String? sub, note;
+
+  @override
+  Widget build(BuildContext context) => Row(
+        crossAxisAlignment: CrossAxisAlignment.end,
+        children: [
+          Expanded(
+            child: Text.rich(
+              TextSpan(children: [
+                TextSpan(text: title, style: const TextStyle(fontWeight: Weights.black, fontSize: TypeScale.button)),
+                if (sub != null)
+                  TextSpan(
+                      text: '  $sub',
+                      style: const TextStyle(fontWeight: Weights.black, fontSize: HistoryRunStyle.subFont)),
+              ]),
+            ),
+          ),
+          if (note case final note?)
+            Text(note, style: const TextStyle(fontWeight: Weights.bold, fontSize: HistoryRunStyle.noteFont)),
+        ],
       );
 }
 

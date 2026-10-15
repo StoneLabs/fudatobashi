@@ -12,8 +12,8 @@ import '../play/time_format.dart';
 import 'history_widgets.dart';
 import 'run_charts.dart';
 
-/// A run page's Overview: the headline (D12, or D29 for the training view),
-/// the time graph (D13) and the speed chart (D14).
+/// A run page's Overview, one screen tall: the headline (D12, or D29 for
+/// the training view) and the time graph (D13).
 class RunOverviewTab extends StatelessWidget {
   const RunOverviewTab(this.detail, {super.key});
   final RunDetail detail;
@@ -30,8 +30,6 @@ class RunOverviewTab extends StatelessWidget {
         _TrainingHeadline(detail),
       const SizedBox(height: Gaps.section),
       RunTimeSection(detail),
-      SwipeSpeedSection(detail),
-      if (run.view == RunView.training) _TrainingFacts(detail),
     ]);
   }
 }
@@ -285,62 +283,5 @@ class RunTimeSection extends StatelessWidget {
         ]),
       ),
     );
-  }
-}
-
-/// D14: every swipe's time as a bar, misses pink, with the goal.
-class SwipeSpeedSection extends StatelessWidget {
-  const SwipeSpeedSection(this.detail, {super.key});
-  final RunDetail detail;
-
-  @override
-  Widget build(BuildContext context) {
-    final s = S.of(context);
-    final swipes = [for (final w in detail.swipes) if (!w.undone) w];
-    final goal = detail.run.goalMs;
-    final n = swipes.length;
-    final step = RunChartStyle.cardSteps.firstWhere((v) => n / v <= RunChartStyle.maxXTicks, orElse: () => 25);
-    return HistorySection(
-      title: s.runSpeedTitle,
-      sub: s.other.runSpeedTitle,
-      note: s.runSpeedNote,
-      child: MangaPanel(
-        padding: HistoryRunStyle.chartPadding,
-        child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-          BarChart(
-            bars: [for (final w in swipes) ChartBar(w.ms.clamp(0, double.infinity), color: w.miss ? Palette.pink : Palette.ink)],
-            guide: goal,
-            xLabels: {0: '1', for (var c = step; c <= n; c += step) c - 1: '$c'},
-          ),
-          ChartLegend([
-            (const LegendMark.box(Palette.ink), s.legendRight),
-            (const LegendMark.box(Palette.pink), s.legendMiss),
-            if (goal != null) (const LegendMark.line(Palette.sun), s.legendGoal(formatSeconds(goal))),
-          ]),
-        ]),
-      ),
-    );
-  }
-}
-
-/// The training view's counts under its charts.
-class _TrainingFacts extends StatelessWidget {
-  const _TrainingFacts(this.detail);
-  final RunDetail detail;
-
-  @override
-  Widget build(BuildContext context) {
-    final s = S.of(context);
-    final swipes = [for (final w in detail.swipes) if (!w.undone) w];
-    final cards = {for (final w in swipes) (w.poemId, w.inverted)};
-    return Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-      FactGrid([
-        Fact('${swipes.length}', s.runSwipesFact),
-        Fact('${cards.length}', s.runDifferentCards),
-        Fact('${swipes.length - cards.length}', s.runCameBack),
-        Fact('${swipes.where((w) => w.graded && !w.miss).length}', s.runDueReviews),
-      ], perRow: 2),
-      HistoryCaption(s.runTrainingNote),
-    ]);
   }
 }

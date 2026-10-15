@@ -770,13 +770,10 @@
   "runTabOverview": "概要",
   "runTabCards": "札",
   "runTabSpeed": "速さ",
-  "runTabRating": "レートと経験値",
+  "runTabRating": "レート",
   "runTabXp": "経験値",
   "runTabSwipes": "全記録",
   "runTabGame": "暗記練",
-  "pagerPosition": "{0} / {1}",
-  "pagerPrevious": "前のページ",
-  "pagerNext": "次のページ",
   "runExamTag": "卒業試験",
   "runCardsLine": "{0}枚",
   "runLoading": "読み込み中…",
@@ -959,7 +956,7 @@
   "runPracticeNoRank": "練習はランクに影響しません。",
   "weekdayShort": "月 火 水 木 金 土 日",
   "ankirenTabField": "盤面",
-  "ankirenTabScore": "得点と経験値",
+  "ankirenTabScore": "スコア",
   "ankirenTabTaps": "全記録",
   "ankirenASide": "片側{0}枚",
   "ankirenPointsLabel": "得点",
@@ -1068,5 +1065,6 @@
   "ankirenSetupFirst": "この設定で初めての対戦です。",
   "historyDayDoneMark": "完",
   "runExamBeat": "トビに{0}秒差で勝ちました。",
-  "runExamBeaten": "トビに{0}秒差で負けました。"
+  "runExamBeaten": "トビに{0}秒差で負けました。",
+  "tabAndXp": "& XP"
 }

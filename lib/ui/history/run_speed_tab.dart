@@ -450,8 +450,9 @@ class _CellRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     const side = BorderSide(color: Palette.ink, width: Strokes.label);
-    return DecoratedBox(
-      decoration: BoxDecoration(border: ruled ? Border.all(color: Palette.ink, width: Strokes.label) : null),
+    return Container(
+      foregroundDecoration: BoxDecoration(border: ruled ? Border.all(color: Palette.ink, width: Strokes.panel) : null),
+      padding: ruled ? const EdgeInsets.all(Strokes.panel) : EdgeInsets.zero,
       child: IntrinsicHeight(
         child: Row(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
           for (final (i, c) in cells.indexed)
@@ -478,7 +479,6 @@ class _CellRow extends StatelessWidget {
   }
 }
 
-/// [ms] in seconds with a sign, e.g. "+0.08", "−1.96".
 /// [ms] in seconds, or the missing mark.
 String _seconds(double? ms) => ms == null ? missingTime : formatSeconds(ms);
 

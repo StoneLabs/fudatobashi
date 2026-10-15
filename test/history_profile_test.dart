@@ -181,7 +181,7 @@ void main() {
         expect(kinds(), findsNWidgets(2));
         expect(find.byType(CountBadge), findsOneWidget);
 
-        await tester.tap(find.text(s.historyAnkirenTab).first);
+        await tester.tap(find.textContaining(s.historyAnkirenTab, findRichText: true).first);
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 600));
         await tester.pump(const Duration(milliseconds: 300));
@@ -240,14 +240,20 @@ void main() {
           expect(find.byType(RunPage), findsOneWidget);
           expect(find.text(s.runLoading), findsNothing);
           final tabs = mode == PlayMode.training ? RunPage.trainingTabs.length : RunPage.hundredTabs.length;
-          expect(find.text(s.pagerPosition.replaceAll('{0}', '1').replaceAll('{1}', '$tabs').toUpperCase()), findsOneWidget);
+          expect(find.text(s.runTabOverview), findsOneWidget);
+          final tabLabels = [
+            for (final t in mode == PlayMode.training ? RunPage.trainingTabs : RunPage.hundredTabs) t.label(s),
+          ];
           for (var tab = 0; tab < tabs; tab++) {
             expect(tester.takeException(), isNull);
             await _capture(tester, 'run_${mode.name}_${tab}_$shot');
             if (tab == tabs - 1) break;
-            await tester.tap(find.byWidgetPredicate((w) => w is InkIconButton && w.semanticLabel == s.pagerNext));
-            await tester.pump();
-            await tester.pump(const Duration(milliseconds: 600));
+            if (tab.isEven) {
+              await tester.fling(find.byType(PageView), const Offset(-300, 0), 1000);
+            } else {
+              await tester.tap(find.text(tabLabels[tab + 1]));
+            }
+            await tester.pumpAndSettle();
           }
           if (mode == PlayMode.exam) {
             await tester.tap(find.text(s.runTabOverview));

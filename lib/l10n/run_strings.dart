@@ -13,10 +13,8 @@ extension RunStrings on S {
   String get runTabSwipes => t('runTabSwipes');
   String get runTabGame => t('runTabGame');
 
-  /// The bottom pager: "{0} of {1}", and its buttons.
-  String get pagerPosition => t('pagerPosition');
-  String get pagerPrevious => t('pagerPrevious');
-  String get pagerNext => t('pagerNext');
+  /// The line under the Rating and Score tabs.
+  String get tabAndXp => t('tabAndXp');
 
   /// The exam's kind tag.
   String get runExamTag => t('runExamTag');

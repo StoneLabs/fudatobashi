@@ -21,8 +21,19 @@ import 'run_xp_tab.dart';
 Future<void> openRun(BuildContext context, PastRun run) =>
     Navigator.of(context).push(MangaRoute<void>(builder: (_) => RunPage(run: run)));
 
-/// One tab of a run page, built from the run's details.
-typedef RunTabSpec = ({String Function(S s) label, Widget Function(RunDetail detail) build});
+/// One tab of a run or game page: its name, the line under it (its name
+/// in the other language unless [sub] gives one) and its contents, built
+/// from the page's data.
+class PageTab<T> {
+  const PageTab(this.label, this.build, {this.sub});
+  final String Function(S s) label;
+  final String Function(S s)? sub;
+  final Widget Function(T data) build;
+
+  /// This tab for [SwipeTabs], filled in from [data].
+  SwipeTab swipeTab(S s, T data, {Color accent = Palette.ink}) =>
+      SwipeTab(label: label(s), sub: sub?.call(s) ?? label(s.other), accent: accent, builder: (_) => build(data));
+}
 
 /// A recorded run, tab by tab: the 100-card view for ranked, the exam and
 /// 100-card free play, the training view for the rest.
@@ -30,19 +41,19 @@ class RunPage extends StatefulWidget {
   const RunPage({super.key, required this.run});
   final PastRun run;
 
-  static final List<RunTabSpec> hundredTabs = [
-    (label: (s) => s.runTabOverview, build: RunOverviewTab.new),
-    (label: (s) => s.runTabCards, build: RunCardsTab.new),
-    (label: (s) => s.runTabSpeed, build: RunSpeedTab.new),
-    (label: (s) => s.runTabRating, build: RunRatingTab.new),
-    (label: (s) => s.runTabSwipes, build: RunSwipesTab.new),
+  static final List<PageTab<RunDetail>> hundredTabs = [
+    PageTab((s) => s.runTabOverview, RunOverviewTab.new),
+    PageTab((s) => s.runTabCards, RunCardsTab.new),
+    PageTab((s) => s.runTabSpeed, RunSpeedTab.new),
+    PageTab((s) => s.runTabRating, RunRatingTab.new, sub: (s) => s.tabAndXp),
+    PageTab((s) => s.runTabSwipes, RunSwipesTab.new),
   ];
 
-  static final List<RunTabSpec> trainingTabs = [
-    (label: (s) => s.runTabOverview, build: RunOverviewTab.new),
-    (label: (s) => s.runTabCards, build: RunCardsTab.new),
-    (label: (s) => s.runTabXp, build: RunXpTab.new),
-    (label: (s) => s.runTabSwipes, build: RunSwipesTab.new),
+  static final List<PageTab<RunDetail>> trainingTabs = [
+    PageTab((s) => s.runTabOverview, RunOverviewTab.new),
+    PageTab((s) => s.runTabCards, RunCardsTab.new),
+    PageTab((s) => s.runTabXp, RunXpTab.new),
+    PageTab((s) => s.runTabSwipes, RunSwipesTab.new),
   ];
 
   @override
@@ -72,17 +83,21 @@ class _RunPageState extends State<RunPage> {
                   style: const TextStyle(fontWeight: Weights.bold, fontSize: TypeScale.body)),
             );
           }
-          return SwipeTabs(
-            pager: SwipePagerWords(position: s.pagerPosition, previous: s.pagerPrevious, next: s.pagerNext),
-            tabs: [
-              for (final tab in tabs)
-                SwipeTab(label: tab.label(s), sub: tab.label(s.other), builder: (_) => tab.build(detail)),
-            ],
-          );
+          return RunPageTabs(tabs: [for (final tab in tabs) tab.swipeTab(s, detail)]);
         },
       ),
     );
   }
+}
+
+/// A run or game page's swiped tabs, their row inside the gutters.
+class RunPageTabs extends StatelessWidget {
+  const RunPageTabs({super.key, required this.tabs});
+  final List<SwipeTab> tabs;
+
+  @override
+  Widget build(BuildContext context) =>
+      SwipeTabs(padding: const EdgeInsets.symmetric(horizontal: Gaps.gutter), tabs: tabs);
 }
 
 /// A run or game page's frame: the title with a back button, the kind tag
@@ -119,18 +134,21 @@ class RunPageFrame extends StatelessWidget {
                 ),
               ),
               Padding(
-                padding: const EdgeInsets.fromLTRB(Gaps.gutter, 0, Gaps.gutter, Gaps.panel),
-                child: Row(
-                  children: [
-                    tag,
-                    const SizedBox(width: Gaps.panel),
-                    Expanded(
-                      child: Text(line,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: const TextStyle(fontWeight: Weights.black, fontSize: TypeScale.small)),
-                    ),
-                  ],
+                padding: HistoryRunStyle.tagRowPadding,
+                child: ConstrainedBox(
+                  constraints: const BoxConstraints(minHeight: HistoryRunStyle.tagRowHeight),
+                  child: Row(
+                    children: [
+                      tag,
+                      const SizedBox(width: Gaps.panel),
+                      Expanded(
+                        child: Text(line,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: const TextStyle(fontWeight: Weights.black, fontSize: HistoryRunStyle.tagRowFont)),
+                      ),
+                    ],
+                  ),
                 ),
               ),
               Expanded(child: body),
