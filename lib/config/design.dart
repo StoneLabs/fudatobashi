@@ -794,18 +794,18 @@ abstract final class HomeLayout {
   /// Above the known-card speed under the journey's card pips.
   static const double pipsSpeedGap = 8;
 
-  static const double journeyHeroHeight = 206;
+  static const double journeyHeroHeight = 180;
   static const double journeyHeroCut = 8;
   static const double journeyTitle = 52;
   static const double journeyTitleOutline = 11;
   static const EdgeInsets journeyHeroPadding = EdgeInsets.fromLTRB(18, 12, 18, 6);
   static const double journeyNarrationGap = 0;
-  static const double journeyShoutHeight = 58;
+  static const double journeyShoutHeight = 52;
   static const double journeyShoutLeft = 14;
   static const double journeyShoutRight = 18;
   static const journeyShout = ShoutSpec(spikes: 28, outer: 7);
-  static const Placement journeyTobi = Placement(right: 8, top: -16, size: Size(96, 114));
-  static const Placement journeyBalloon = Placement(right: 102, top: 22, size: Size(100, 54));
+  static const Placement journeyTobi = Placement(right: 8, top: -14, size: Size(84, 100));
+  static const Placement journeyBalloon = Placement(right: 90, top: 20, size: Size(96, 50));
   static const double journeyBalloonFont = 13.5;
   static const Alignment journeyBalloonSpeaker = Alignment(1.9, -0.3);
 
@@ -889,11 +889,11 @@ abstract final class HomeLayout {
 /// slanted panel between the map and the hero. Its height is fixed, so the
 /// map keeps its size; text that grows with the font scale shrinks to fit.
 abstract final class TodayBoxLayout {
-  static const double height = 137.6;
-  static const double headerHeight = 38;
+  static const double height = 130.6;
+  static const double headerHeight = 33;
   static const double barHeight = 22;
   static const double legendHeight = 29;
-  static const double sectionGap = 7;
+  static const double sectionGap = 6;
 
   /// The largest font scale its text follows: as much as a legend row holds.
   static const double maxTextScale = legendRow / legendFont;
@@ -902,8 +902,8 @@ abstract final class TodayBoxLayout {
   /// shrink (down to [minLabelScale]) before the whole line does.
   static const double labelFont = 12.5;
   static const double labelLineHeight = 1.08;
-  static const double number = 36;
-  static const double numberLineHeight = 38 / 36;
+  static const double number = 31;
+  static const double numberLineHeight = headerHeight / number;
   static const double headerGap = 7;
   static const double todayGap = 5;
   static const double minLabelScale = 0.75;
@@ -913,12 +913,10 @@ abstract final class TodayBoxLayout {
   static const double barSeparator = Strokes.hairline;
   static const double minSegment = 5;
 
-  /// The legend: two rows of two cells, each a swatch, a label and a number.
+  /// The legend: two rows of two cells, each a swatch and a label.
   static const double legendRow = 14;
   static const double legendColumnGap = 12;
   static const double legendFont = 12;
-  static const double legendNumber = 13.5;
-  static const double valueGap = 4;
   static const double swatch = 11;
   static const double swatchBorder = 1.8;
   static const double swatchGap = 5;
@@ -943,7 +941,7 @@ abstract final class TodayBoxLayout {
 
   /// The 本日完了 hanko of a done day, centred over the bar: its centre this
   /// far below the top of the inside, a paper face and a double rule.
-  static const double doneStampCenter = 56;
+  static const double doneStampCenter = headerHeight + sectionGap + barHeight / 2;
   static const double doneStampFont = 25;
   static const double doneStampTracking = 0.06;
   static const double doneStampTurn = -7;

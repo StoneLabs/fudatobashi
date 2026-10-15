@@ -175,10 +175,11 @@ void main() {
           if (b.color != Palette.ink) b.color,
       ];
 
-  // The legend cell labelled [label] shows [value].
-  void expectCell(WidgetTester tester, String label, String value) {
+  // The legend has a cell labelled [label], with its swatch and no number
+  // after it.
+  void expectCell(WidgetTester tester, String label) {
     final cell = find.ancestor(of: inBox(find.text(label)), matching: find.byType(Row)).first;
-    expect(find.descendant(of: cell, matching: find.text(value, findRichText: true)), findsOneWidget, reason: label);
+    expect(find.descendant(of: cell, matching: find.byType(Text)), findsOneWidget, reason: '$label: the label only');
   }
 
   String balloon(WidgetTester tester) => tester.widget<TrainingHero>(find.byType(TrainingHero)).balloon;
@@ -244,20 +245,19 @@ void main() {
       expect(segments(tester).last, Palette.pink, reason: "the morning's guess at the misses");
       expect(inBox(find.text(s.todayLabel)), findsOneWidget);
       expect(inBox(find.text('${bar.total}')), findsOneWidget);
-      expect(inBox(find.text(s.todayMisses)), findsOneWidget);
-      expect(find.descendant(of: find.ancestor(of: inBox(find.text(s.todayMisses)), matching: find.byType(Row)).first,
-          matching: find.byType(Text)), findsOneWidget, reason: 'no number before the first miss');
+      expectCell(tester, s.todayMisses);
       expect(inBox(find.text('本日完了')), findsNothing);
-      if (set.reviews > 0) expectCell(tester, s.todayReviews(set.reviews, TodaySetTuning.reviewLooks), '${bar.reviews}');
-      if (set.newCards > 0) expectCell(tester, s.todayNew(set.newCards, TodaySetTuning.newLooks), '${bar.fresh}');
-      expectCell(tester, s.todayDone, '0 / ${bar.total}');
+      if (set.reviews > 0) expectCell(tester, s.todayReviews(set.reviews, TodaySetTuning.reviewLooks));
+      if (set.newCards > 0) expectCell(tester, s.todayNew(set.newCards, TodaySetTuning.newLooks));
+      expectCell(tester, s.todayDone);
+      expect(inBox(find.textContaining('/', findRichText: true)), findsNothing, reason: 'no done / total count');
       expect(balloon(tester), s.heroTodaySet);
       expectNarration(tester, s.todayLeft, bar.left);
       expect(bar.left, lessThan(bar.total), reason: "what is left counts no guessed misses, like Play's counter");
       expectBoxFits(tester, _users, 'morning');
     });
 
-    testWidgets('part done with misses: green from the left, and the misses get their number', (tester) async {
+    testWidgets('part done with misses: green from the left', (tester) async {
       final p = await player(tester, _Day.partDone);
       await showHome(tester, p, _users);
       const s = S('en');
@@ -267,8 +267,9 @@ void main() {
       expect(bar.done, inInclusiveRange(10, 14), reason: "14 swipes, a 友札 after a miss may be outside the set");
       expect(segments(tester).first, Palette.land);
       expect(segments(tester), hasLength(greaterThan(1)));
-      expectCell(tester, s.todayMisses, '${bar.extraKnown}');
-      expectCell(tester, s.todayDone, '${bar.done} / ${bar.total}');
+      expectCell(tester, s.todayMisses);
+      expectCell(tester, s.todayDone);
+      expect(inBox(find.textContaining('/', findRichText: true)), findsNothing, reason: 'no done / total count');
       expect(balloon(tester), s.heroKeepItUp);
       expectNarration(tester, s.todayLeft, bar.left);
       expectBoxFits(tester, _users, 'part done');
@@ -278,7 +279,6 @@ void main() {
       final p = await player(tester, _Day.done);
       await showHome(tester, p, _users);
       const s = S('en');
-      final bar = p.todaySet()!.bar;
       expect(segments(tester), [Palette.land]);
       expect(inBox(find.text('本日完了')), findsOneWidget);
       final stamp = tester.getRect(inBox(find.text('本日完了')));
@@ -291,7 +291,7 @@ void main() {
           TodayBoxLayout.sectionGap +
           TodayBoxLayout.barHeight / 2;
       expect(stamp.center.dy, moreOrLessEquals(barMiddle, epsilon: 2), reason: 'over the bar');
-      expectCell(tester, s.todayDone, '${bar.total} / ${bar.total}');
+      expectCell(tester, s.todayDone);
       expect(balloon(tester), s.heroKeepGoing);
       expectNarration(tester, s.todayDoneExtra, p.trainer.config.sessionLength);
       expectBoxFits(tester, _users, 'done');

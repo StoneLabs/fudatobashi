@@ -46,7 +46,6 @@ extension HomeStrings on S {
   String get todayNewPaused => t('todayNewPaused');
   String get todayMisses => t('todayMisses');
   String get todayDone => t('todayDone');
-  String get todayDoneOf => t('todayDoneOf');
 
   /// The 本日完了 hanko of a done day: Japanese lettering in every language.
   String get dayDoneStamp => '本日完了';

@@ -2070,7 +2070,7 @@ void main() {
   // Reproduces "BOTTOM OVERFLOWED BY 13 PIXELS" on the Training banner
   // directly on `TrainingHero`: a long narration (however it got long — many
   // due reviews and new cards, a long locale string, ...) wraps to two lines,
-  // and the journey panel's fixed-height `SizedBox` (206, see
+  // and the journey panel's fixed-height `SizedBox` (see
   // `HomeLayout.journeyHeroHeight`) has no slack for that, since only the
   // title shrinks (`Expanded`) while the narration and shout button are
   // fixed/intrinsic size. The fix must hold for arbitrarily long narration,

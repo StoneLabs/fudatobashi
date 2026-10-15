@@ -13,7 +13,7 @@ import '../manga/manga.dart';
 
 /// Journey Home's today box: today's set as one bar in looks (done green,
 /// then reviews, new cards and the room misses take), a legend with the
-/// numbers, and the week's stamps. A done day gets a solid green bar and the
+/// looks, and the week's stamps. A done day gets a solid green bar and the
 /// 本日完了 hanko. It sits between the map and the hero at a fixed height.
 class TodayBox extends StatelessWidget {
   const TodayBox({super.key, required this.set, required this.week});
@@ -61,7 +61,7 @@ class TodayBox extends StatelessWidget {
                           ]),
                   ),
                   const SizedBox(height: TodayBoxLayout.sectionGap),
-                  SizedBox(height: TodayBoxLayout.legendHeight, child: _Legend(set: set, bar: bar)),
+                  SizedBox(height: TodayBoxLayout.legendHeight, child: _Legend(set: set)),
                 ],
               ),
               if (done)
@@ -297,10 +297,9 @@ class _Bar extends StatelessWidget {
 /// columns: reviews and new cards, then misses and the looks done. All four
 /// labels share one size, the largest at which each fits its column.
 class _Legend extends StatelessWidget {
-  const _Legend({required this.set, required this.bar});
+  const _Legend({required this.set});
 
   final TodaySet? set;
-  final SetBar bar;
 
   static const _label = TextStyle(fontWeight: Weights.bold, fontSize: TodayBoxLayout.legendFont, height: 1);
 
@@ -314,22 +313,18 @@ class _Legend extends StatelessWidget {
     final cells = [
       reviews == 0
           ? _Cell(Palette.paper, s.todayNoReviews, muted: true)
-          : _Cell(Palette.paper, s.todayReviews(reviews, TodaySetTuning.reviewLooks), values: [bar.reviews]),
+          : _Cell(Palette.paper, s.todayReviews(reviews, TodaySetTuning.reviewLooks)),
       fresh > 0
-          ? _Cell(Palette.sun, s.todayNew(fresh, TodaySetTuning.newLooks), values: [bar.fresh])
+          ? _Cell(Palette.sun, s.todayNew(fresh, TodaySetTuning.newLooks))
           : _Cell(Palette.sun, paused ? s.todayNewPaused : s.todayNoNew, muted: true, hatched: paused),
-      _Cell(Palette.pink, s.todayMisses, values: [if ((set?.misses ?? 0) > 0) bar.extraKnown]),
-      _Cell(Palette.land, s.todayDone, values: [bar.done, bar.total], template: s.todayDoneOf),
+      _Cell(Palette.pink, s.todayMisses),
+      _Cell(Palette.land, s.todayDone),
     ];
     return LayoutBuilder(builder: (context, box) {
       final column = (box.maxWidth - TodayBoxLayout.legendColumnGap) / 2;
+      final room = column - TodayBoxLayout.swatch - TodayBoxLayout.swatchGap;
       var scale = 1.0;
       for (final c in cells) {
-        final value = c.valueText;
-        final room = column -
-            TodayBoxLayout.swatch -
-            TodayBoxLayout.swatchGap -
-            (value == null ? 0 : TodayBoxLayout.valueGap + _widthOf(context, value, _Cell.number));
         scale = math.min(scale, room / _widthOf(context, c.label, _label));
       }
       final label = _label.copyWith(fontSize: TodayBoxLayout.legendFont * scale.clamp(TodayBoxLayout.minLabelScale, 1.0));
@@ -349,46 +344,16 @@ class _Legend extends StatelessWidget {
   }
 }
 
-/// A legend cell: its swatch, its label, and its [values] in [template] at
-/// the right.
+/// A legend cell: its swatch and its label.
 class _Cell extends StatelessWidget {
-  const _Cell(
-    this.color,
-    this.label, {
-    this.values = const [],
-    this.template = '{0}',
-    this.muted = false,
-    this.hatched = false,
-    this.labelStyle,
-  });
+  const _Cell(this.color, this.label, {this.muted = false, this.hatched = false, this.labelStyle});
 
   final Color color;
   final String label;
-  final List<int> values;
-  final String template;
   final bool muted, hatched;
   final TextStyle? labelStyle;
 
-  static const number = TextStyle(fontFamily: Fonts.display, fontSize: TodayBoxLayout.legendNumber, height: 1);
-
-  _Cell withLabel(TextStyle style) => _Cell(
-        color,
-        label,
-        values: values,
-        template: template,
-        muted: muted,
-        hatched: hatched,
-        labelStyle: style,
-      );
-
-  String? get valueText {
-    if (values.isEmpty) return null;
-    var text = template;
-    for (final (i, v) in values.indexed) {
-      text = text.replaceAll('{$i}', '$v');
-    }
-    return text;
-  }
+  _Cell withLabel(TextStyle style) => _Cell(color, label, muted: muted, hatched: hatched, labelStyle: style);
 
   @override
   Widget build(BuildContext context) {
@@ -408,13 +373,6 @@ class _Cell extends StatelessWidget {
             ),
           ),
         ),
-        if (values.isNotEmpty) ...[
-          const SizedBox(width: TodayBoxLayout.valueGap),
-          FittedBox(
-            fit: BoxFit.scaleDown,
-            child: NumberedText(template, values, style: _Legend._label, numberStyle: number),
-          ),
-        ],
       ],
     );
   }

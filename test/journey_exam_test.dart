@@ -32,6 +32,7 @@ import 'package:fudatobashi/state/progress.dart';
 import 'package:fudatobashi/ui/app.dart';
 import 'package:fudatobashi/ui/home/exam_strip.dart';
 import 'package:fudatobashi/ui/home/switch_banner.dart';
+import 'package:fudatobashi/ui/home/today_box.dart';
 import 'package:fudatobashi/ui/manga/phrases.dart';
 import 'package:fudatobashi/ui/rank/rank_screen.dart';
 import 'package:fudatobashi/ui/tour/tour_overlay.dart';
@@ -184,7 +185,7 @@ void main() {
       expect(find.byType(TourOverlay), findsOneWidget);
       await tester.pump(const Duration(seconds: 4));
       expect(phrase(s.examIntro), findsOneWidget);
-      await tester.tapAt(const Offset(60, 300));
+      await tester.tapAt(tester.getCenter(find.byType(TodayBox)));
       await tester.runAsync(() => Future<void>.delayed(const Duration(milliseconds: 50)));
       await tester.pump(const Duration(milliseconds: 300));
       expect(find.byType(TourOverlay), findsNothing);
