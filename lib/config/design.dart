@@ -264,6 +264,11 @@ abstract final class Strokes {
 abstract final class Gaps {
   static const double gutter = 16;
   static const double panel = 8;
+
+  /// The journey Home's gaps between the map, today's set and Training:
+  /// a third under [panel], the map taking the height.
+  static const double journeyPanel = 5.36;
+
   static const double panelWide = 10;
   static const double section = 12;
   static const double inner = 12;

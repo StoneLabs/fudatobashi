@@ -94,9 +94,9 @@ class _JourneyHomeState extends State<JourneyHome> {
             ),
           ),
         ),
-        const SizedBox(height: Gaps.panel),
+        const SizedBox(height: Gaps.journeyPanel),
         TourAnchor(TourSpot.islandPlan, child: TodayBox(set: set, week: progress.weekStamps())),
-        const SizedBox(height: Gaps.panel),
+        const SizedBox(height: Gaps.journeyPanel),
         SizedBox(
           height: HomeLayout.journeyHeroHeight,
           child: TourAnchor(
