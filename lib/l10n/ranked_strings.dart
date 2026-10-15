@@ -4,7 +4,7 @@ import 'strings.dart';
 /// Strings of ranked mode (ランク戦) and the graduation exam (卒業試験).
 extension RankedStrings on S {
   /// [band]'s name as the UI shows it: the Japanese class name ("F上級") in
-  /// Japanese, the English one ("F upper") otherwise; [classStem] is that
+  /// Japanese, the English one ("F+") otherwise; [classStem] is that
   /// without the 級 that ends most Japanese names.
   String className(RankBand band) => ja ? band.label : band.labelEn;
   String classStem(RankBand band) => ja ? band.stem : band.labelEn;

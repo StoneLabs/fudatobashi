@@ -40,10 +40,10 @@ class RankBand {
 abstract final class Rating {
   static const bands = [
     RankBand('nyumon', '入門', 'Novice', null),
-    RankBand('F-', 'F下級', 'F lower', RatingModel.fLowerMaxSeconds),
-    RankBand('F+', 'F上級', 'F upper', RatingModel.fUpperMaxSeconds),
-    RankBand('E-', 'E下級', 'E lower', RatingModel.eLowerMaxSeconds),
-    RankBand('E+', 'E上級', 'E upper', RatingModel.eUpperMaxSeconds),
+    RankBand('F-', 'F下級', 'F-', RatingModel.fLowerMaxSeconds),
+    RankBand('F+', 'F上級', 'F+', RatingModel.fUpperMaxSeconds),
+    RankBand('E-', 'E下級', 'E-', RatingModel.eLowerMaxSeconds),
+    RankBand('E+', 'E上級', 'E+', RatingModel.eUpperMaxSeconds),
     RankBand('D', 'D級', 'D', RatingModel.dMaxSeconds),
     RankBand('C', 'C級', 'C', RatingModel.cMaxSeconds),
     RankBand('B', 'B級', 'B', RatingModel.bMaxSeconds),
