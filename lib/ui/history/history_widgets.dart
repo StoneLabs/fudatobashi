@@ -60,15 +60,18 @@ class KindTag extends StatelessWidget {
         ),
         child: Padding(
           padding: HistoryRunStyle.kindPadding,
-          child: Text(text,
-              maxLines: 1,
-              softWrap: false,
-              style: TextStyle(
-                  fontWeight: Weights.black,
-                  fontSize: HistoryRunStyle.kindFont,
-                  letterSpacing: HistoryRunStyle.kindTracking,
-                  height: HistoryRunStyle.kindLineHeight,
-                  color: textColor)),
+          child: FittedBox(
+            fit: BoxFit.scaleDown,
+            child: Text(text,
+                maxLines: 1,
+                softWrap: false,
+                style: TextStyle(
+                    fontWeight: Weights.black,
+                    fontSize: HistoryRunStyle.kindFont,
+                    letterSpacing: HistoryRunStyle.kindTracking,
+                    height: HistoryRunStyle.kindLineHeight,
+                    color: textColor)),
+          ),
         ),
       );
 }

@@ -117,6 +117,13 @@ class _HundredHeadline extends StatelessWidget {
     final misses = run.scoredMisses ?? detail.cards.misses.length;
     final clock = run.clock;
     final avg = clock == null || run.cards == 0 ? null : clock.inMilliseconds / run.cards;
+    final facts = [
+      Fact(avg == null ? missingTime : '${formatSeconds(avg)}s', s.runAvgCard),
+      Fact('$misses', s.runMisses),
+      if (rating != null)
+        Fact(rating.before == null ? '${rating.after.round()}' : ratingChangeText(rating.after - rating.before!), s.runRatingFact),
+      Fact(detail.xp == null ? missingTime : '+${detail.xp!.award.total}', s.runXpFact),
+    ];
     return Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
       _HeadlinePanel(children: [
         _BigTime(
@@ -129,13 +136,7 @@ class _HundredHeadline extends StatelessWidget {
           ResultBadge(s.runForfeitLine(run.cards, run.planned), muted: true),
         ],
         const SizedBox(height: Gaps.small),
-        FactGrid([
-          Fact(avg == null ? missingTime : '${formatSeconds(avg)}s', s.runAvgCard),
-          Fact('$misses', s.runMisses),
-          if (rating != null)
-            Fact(rating.before == null ? '${rating.after.round()}' : ratingChangeText(rating.after - rating.before!), s.runRatingFact),
-          Fact(detail.xp == null ? missingTime : '+${detail.xp!.award.total}', s.runXpFact),
-        ]),
+        FactGrid(facts, perRow: facts.length),
       ]),
       _FactLine([
         if (run.scored && clock != null) s.runClockLine(formatTenths(clock), misses),
@@ -200,15 +201,19 @@ class _ExamHeadline extends StatelessWidget {
       _HeadlinePanel(children: [
         Row(children: [
           Expanded(
-            child: Text.rich(TextSpan(children: [
-              TextSpan(
-                  text: run.passed ? s.runExamWon : s.runExamLost,
-                  style: const TextStyle(fontFamily: Fonts.display, fontSize: HistoryRunStyle.bigFont, height: 1.1)),
-              if (gap != null)
+            child: FittedBox(
+              fit: BoxFit.scaleDown,
+              alignment: Alignment.centerLeft,
+              child: Text.rich(TextSpan(children: [
                 TextSpan(
-                    text: '  ${s.runExamBy(formatSeconds(gap.inMilliseconds.toDouble(), 1))}',
-                    style: const TextStyle(fontWeight: Weights.black, fontSize: TypeScale.body)),
-            ])),
+                    text: run.passed ? s.runExamWon : s.runExamLost,
+                    style: const TextStyle(fontFamily: Fonts.display, fontSize: HistoryRunStyle.bigFont, height: 1.1)),
+                if (gap != null)
+                  TextSpan(
+                      text: '  ${s.runExamBy(formatSeconds(gap.inMilliseconds.toDouble(), 1))}',
+                      style: const TextStyle(fontWeight: Weights.black, fontSize: TypeScale.body)),
+              ])),
+            ),
           ),
           HeadlineCheer(pose: run.passed ? TobiPose.shocked : TobiPose.fired),
         ]),
