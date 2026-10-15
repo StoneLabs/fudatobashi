@@ -55,6 +55,7 @@ class MangaPanel extends StatelessWidget {
     this.tone,
     this.art = const [],
     this.padding = EdgeInsets.zero,
+    this.shadow = Offset.zero,
     this.child,
   });
 
@@ -62,6 +63,10 @@ class MangaPanel extends StatelessWidget {
   final double border;
   final Color color;
   final ToneSpec? tone;
+
+  /// Where a solid ink copy of the panel's outline sits behind it, as a
+  /// hard drop shadow; none at zero.
+  final Offset shadow;
 
   /// Static background layers drawn above [color]/[tone], cached as a bitmap.
   final List<ArtLayer> art;
@@ -72,7 +77,7 @@ class MangaPanel extends StatelessWidget {
   Widget build(BuildContext context) {
     final dpr = MediaQuery.devicePixelRatioOf(context);
     return CustomPaint(
-      painter: _PanelPainter(shape, border, color, tone, dpr),
+      painter: _PanelPainter(shape, border, color, tone, dpr, shadow),
       child: ClipPath(
         clipper: _InnerClipper(shape, border),
         child: Stack(
@@ -88,16 +93,19 @@ class MangaPanel extends StatelessWidget {
 }
 
 class _PanelPainter extends CustomPainter {
-  _PanelPainter(this.shape, this.border, this.color, this.tone, this.pixelRatio);
+  _PanelPainter(this.shape, this.border, this.color, this.tone, this.pixelRatio, this.shadow);
   final PanelShape shape;
   final double border;
   final Color color;
   final ToneSpec? tone;
   final double pixelRatio;
+  final Offset shadow;
 
   @override
   void paint(Canvas canvas, Size size) {
-    canvas.drawPath(shape.outer(size), Paint()..color = Palette.ink);
+    final outer = shape.outer(size);
+    if (shadow != Offset.zero) canvas.drawPath(outer.shift(shadow), Paint()..color = Palette.ink);
+    canvas.drawPath(outer, Paint()..color = Palette.ink);
     final inner = shape.inner(size, border);
     canvas.drawPath(inner, Paint()..color = color);
     if (tone != null) canvas.drawPath(inner, Screentone.paint(tone!, pixelRatio));
@@ -109,7 +117,8 @@ class _PanelPainter extends CustomPainter {
       old.border != border ||
       old.color != color ||
       old.tone != tone ||
-      old.pixelRatio != pixelRatio;
+      old.pixelRatio != pixelRatio ||
+      old.shadow != shadow;
 }
 
 class _InnerClipper extends CustomClipper<Path> {
