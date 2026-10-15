@@ -1,4 +1,4 @@
-package dev.fudatobashi.fudatobashi
+package com.sobadev.fudatobashi
 
 import android.media.AudioManager
 import io.flutter.embedding.android.FlutterActivity

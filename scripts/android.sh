@@ -9,5 +9,5 @@ cp build/app/outputs/flutter-apk/app-release.apk dist/fudatobashi.apk
 echo "Built dist/fudatobashi.apk"
 if [ "$1" = "install" ]; then
   adb install -r dist/fudatobashi.apk
-  adb shell am start -n dev.fudatobashi.fudatobashi/.MainActivity >/dev/null
+  adb shell am start -n com.sobadev.fudatobashi/.MainActivity >/dev/null
 fi
