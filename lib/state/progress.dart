@@ -865,6 +865,21 @@ class Progress extends ChangeNotifier {
     notifyListeners();
   }
 
+  /// Developer mode: as if the exam was never passed. The graduation mark
+  /// leaves every run, so the ledger (graduation XP, levels) rebuilds without
+  /// it, and the exam's intro and cooldown start over.
+  Future<void> debugUndoExamPass() async {
+    for (var i = 0; i < sessions.length; i++) {
+      sessions[i] = await XpHistory.clearGraduated(db, sessions[i]);
+    }
+    _xp = null;
+    _examLastTry = null;
+    _examIntroShown = false;
+    await _drop(_examLastTryKey);
+    await _drop(_examIntroShownKey);
+    notifyListeners();
+  }
+
   /// Developer mode: back to unplaced, so the next ranked run places again.
   Future<void> debugClearRating() async {
     await db.transaction(() async {

@@ -116,4 +116,14 @@ abstract final class XpHistory {
     await db.update(db.sessions).replace(updated);
     return updated;
   }
+
+  /// Removes the graduation mark from session [s], stored and returned as
+  /// the updated session.
+  static Future<Session> clearGraduated(AppDatabase db, Session s) async {
+    final meta = jsonDecode(s.meta) as Map<String, dynamic>;
+    if (!meta.containsKey(_graduatedKey)) return s;
+    final updated = s.copyWith(meta: jsonEncode(meta..remove(_graduatedKey)));
+    await db.update(db.sessions).replace(updated);
+    return updated;
+  }
 }

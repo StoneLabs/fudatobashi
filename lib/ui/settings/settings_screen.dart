@@ -487,6 +487,13 @@ class _DeveloperSection extends StatelessWidget {
             },
           ),
           SettingsTapRow(
+            title: 'Undo exam pass',
+            onTap: () async {
+              await progress.debugUndoExamPass();
+              if (context.mounted) MangaToast.show(context, 'Exam pass undone');
+            },
+          ),
+          SettingsTapRow(
             title: 'Reset the exam cooldown',
             onTap: () async {
               await progress.clearExamCooldown();

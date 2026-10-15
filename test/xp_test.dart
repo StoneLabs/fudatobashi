@@ -227,6 +227,28 @@ void main() {
       expect(again.xp.total, progress.xp.total, reason: 'the graduation bonus is part of the history');
       await db.close();
     });
+
+    test('undoing the exam pass removes graduation, its XP and the cooldown', () async {
+      final db = AppDatabase(NativeDatabase.memory());
+      final progress = await Progress.open(db);
+      await progress.setLearningMode(LearningMode.journey);
+      final all = [for (final p in poems.all) CardRef(p.id)];
+      await progress.recordRun(play(all, 900), const PlayConfig(mode: PlayMode.exam), DateTime.now(), tobi: const Duration(minutes: 4));
+      expect(progress.graduated, isTrue);
+      expect(progress.switchBannerShown, isTrue);
+      final before = progress.xp.total;
+
+      await progress.debugUndoExamPass();
+      expect(progress.graduated, isFalse);
+      expect(progress.exam().passed, isFalse);
+      expect(progress.switchBannerShown, isFalse);
+      expect(progress.xp.total, before - XpTuning.graduation);
+      expect(progress.exam().open, isTrue, reason: 'every card was swiped and the cooldown is gone');
+
+      final again = await Progress.open(db);
+      expect(again.graduated, isFalse);
+      await db.close();
+    });
   });
 
   group('暗記練 games', () {
