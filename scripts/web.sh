@@ -4,7 +4,8 @@
 #   ./scripts/web.sh serve   build and open it at http://localhost:8000
 set -e
 source "$(dirname "$0")/env.sh"
-flutter build web --release
+source "$(dirname "$0")/version.sh"
+flutter build web --release --build-name="$BUILD_NAME" --build-number="$BUILD_NUMBER"
 rm -rf dist/web && cp -r build/web dist/web
 echo "Built dist/web/"
 if [ "$1" = "serve" ]; then

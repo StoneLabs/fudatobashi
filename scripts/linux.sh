@@ -4,7 +4,8 @@
 #   ./scripts/linux.sh run   build and start it
 set -e
 source "$(dirname "$0")/env.sh"
-flutter build linux --release
+source "$(dirname "$0")/version.sh"
+flutter build linux --release --build-name="$BUILD_NAME" --build-number="$BUILD_NUMBER"
 rm -rf dist/linux && cp -r build/linux/x64/release/bundle dist/linux
 echo "Built dist/linux/fudatobashi"
 [ "$1" = "run" ] && ./dist/linux/fudatobashi
