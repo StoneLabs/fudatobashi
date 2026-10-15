@@ -50,14 +50,13 @@ class _RatingPanel extends StatelessWidget {
     final s = S.of(context);
     final before = rating.before?.round(), after = rating.after.round(), played = rating.performance.round();
     final scored = runTimeText(detail.run);
-    final ratedBefore = detail.rankedRuns.indexWhere((r) => r.$1.id == detail.run.id);
-    final share = Rating.share(math.max(0, ratedBefore));
     return RunPanel(children: [
       TrackedLabel(s.rating, sub: s.sub?.rating),
       if (before == null) ...[
         RunBigValue('$after'),
         const SizedBox(height: Gaps.tight),
         Text('${s.runPlacementShout} ${s.runPlacementText(scored, played)}', style: RunTabsStyle.lineStyle),
+        const SizedBox(height: Gaps.small),
       ] else ...[
         Wrap(
           crossAxisAlignment: WrapCrossAlignment.center,
@@ -71,15 +70,10 @@ class _RatingPanel extends StatelessWidget {
           ],
         ),
         const SizedBox(height: Gaps.small),
-        RunValueLine(s.runPlayedLike(scored), '$played'),
-        RunValueLine(s.runShareOfWay, switch (share) {
-          RatingModel.provisionalK => s.runShareHalf,
-          RatingModel.establishedK => s.runShareQuarter,
-          _ => '$share',
-        }),
-        RunValueLine('$before + $share × ($played − $before)', '$after'),
-        if (share == RatingModel.provisionalK) HistoryCaption(s.runShareNote(RatingModel.provisionalSessions)),
       ],
+      RunValueLine(s.runRatingBefore, before == null ? s.rankUnplaced : '$before'),
+      RunValueLine(s.runPlayedLike(scored), '$played'),
+      RunValueLine(s.runNewRating, '$after'),
       const SizedBox(height: Gaps.section),
       _ClassBar(rating.after, before: rating.before),
     ]);

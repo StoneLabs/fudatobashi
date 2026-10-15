@@ -31,8 +31,7 @@ extension RunStrings on S {
   String get runRatingFact => t('runRatingFact');
   String get runXpFact => t('runXpFact');
   String get runRightShare => t('runRightShare');
-  String runClockLine(Object a0, Object a1) => f('runClockLine', [a0, a1]);
-  String runUpsideDown(Object a0) => f('runUpsideDown', [a0]);
+  String runClockLine(Object a0, int misses) => f(misses == 1 ? 'runClockLineOne' : 'runClockLine', [a0, misses]);
   String runTotalLine(Object a0) => f('runTotalLine', [a0]);
   String get runFastestKind => t('runFastestKind');
   String get runSetDone => t('runSetDone');
@@ -44,13 +43,6 @@ extension RunStrings on S {
   String runForfeitLine(Object a0, Object a1) => f('runForfeitLine', [a0, a1]);
   String get runGraphTitle => t('runGraphTitle');
   String get runGraphCards => t('runGraphCards');
-  String runGraphBehind(Object a0, Object a1) => f('runGraphBehind', [a0, a1]);
-  String runGraphAhead(Object a0, Object a1) => f('runGraphAhead', [a0, a1]);
-  String get runGraphEven => t('runGraphEven');
-  String runGraphTobi(Object a0, Object a1) => f('runGraphTobi', [a0, a1]);
-  String runGraphBottomRef(Object a0, Object a1) => f('runGraphBottomRef', [a0, a1]);
-  String runGraphBottomCap(Object a0, Object a1) => f('runGraphBottomCap', [a0, a1]);
-  String get runGraphBottomOwn => t('runGraphBottomOwn');
   String get legendThisRun => t('legendThisRun');
   String get legendEvenPace => t('legendEvenPace');
   String legendLastRuns(Object a0) => f('legendLastRuns', [a0]);

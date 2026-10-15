@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 
-import '../../config/config.dart';
 import '../../config/design.dart';
 import '../../domain/rating.dart';
 import '../../l10n/history_strings.dart';
@@ -140,7 +139,6 @@ class _HundredHeadline extends StatelessWidget {
       ]),
       _FactLine([
         if (run.scored && clock != null) s.runClockLine(formatTenths(clock), misses),
-        s.runUpsideDown(detail.swipes.where((w) => w.inverted && !w.undone).length),
         if (rating != null)
           '${rating.before == null ? '' : '${rating.before!.round()} → '}${rating.after.round()} · ${Rating.bandOf(rating.after).label}',
       ]),
@@ -234,7 +232,6 @@ class _ExamHeadline extends StatelessWidget {
       ]),
       _FactLine([
         if (run.clock case final clock?) s.runClockLine(formatTenths(clock), run.scoredMisses ?? 0),
-        s.runUpsideDown(detail.swipes.where((w) => w.inverted && !w.undone).length),
       ]),
     ]);
   }
@@ -271,14 +268,12 @@ class _TrainingHeadline extends StatelessWidget {
       ]),
       _FactLine([
         if (clock != null) s.runTotalLine(formatTenths(clock)),
-        s.runUpsideDown(detail.swipes.where((w) => w.inverted && !w.undone).length),
       ]),
     ]);
   }
 }
 
-/// D13: the time graph, with its summary line, legend and a note on its
-/// bottom.
+/// D13: the time graph with its legend.
 class RunTimeSection extends StatelessWidget {
   const RunTimeSection(this.detail, {super.key});
   final RunDetail detail;
@@ -288,20 +283,9 @@ class RunTimeSection extends StatelessWidget {
     final s = S.of(context);
     final run = detail.run;
     final t = detail.timeline;
-    final withRefs = run.view == RunView.hundred;
-    final refs = withRefs ? detail.references : const <Never>[];
+    final refs = run.view == RunView.hundred ? detail.references : const <Never>[];
     final bottom = detail.graphBottom;
     final tobi = detail.tobi;
-    String secs(double ms) => formatSeconds(ms, 1);
-    final summary = tobi != null
-        ? s.runGraphTobi(formatTenths(Duration(milliseconds: t.endMs.round())),
-            formatTenths(Duration(milliseconds: tobi.endMs.round())))
-        : [
-            if (t.furthestBehind case final b?) s.runGraphBehind(secs(b.ms), b.card),
-            if (t.furthestAhead case final a?) s.runGraphAhead(secs(a.ms), a.card),
-          ].join(' ');
-    final bottomText = formatMinutes(Duration(milliseconds: bottom.round()));
-    final capped = refs.isNotEmpty && refs.any((r) => r.endMs > bottom);
     return HistorySection(
       title: s.runGraphTitle,
       sub: s.sub?.runGraphTitle,
@@ -311,9 +295,6 @@ class RunTimeSection extends StatelessWidget {
         padding: HistoryRunStyle.chartPadding,
         shadow: HistoryRunStyle.panelShadow,
         child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-          Text(summary.isEmpty ? s.runGraphEven : summary,
-              style: const TextStyle(fontWeight: Weights.bold, fontSize: TypeScale.small)),
-          const SizedBox(height: Gaps.small),
           Expanded(child: RunTimeGraph(run: t, bottomMs: bottom, references: refs, tobi: tobi)),
           ChartLegend([
             (const LegendMark.line(Palette.ink), s.legendThisRun),
@@ -324,11 +305,6 @@ class RunTimeSection extends StatelessWidget {
             (const LegendMark.box(Palette.pinkSoft), s.legendBehind),
             (const LegendMark.box(Palette.landSoft), s.legendAhead),
           ]),
-          HistoryCaption(!withRefs || refs.isEmpty
-              ? s.runGraphBottomOwn
-              : capped
-                  ? s.runGraphBottomCap(bottomText, RunReviewTuning.references)
-                  : s.runGraphBottomRef(bottomText, refs.length)),
         ]),
       ),
     );

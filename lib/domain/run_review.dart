@@ -93,22 +93,6 @@ class RunTimeline {
   /// Where an even pace to the same end would be after [card] cards.
   double evenAt(int card) => cards == 0 ? 0 : endMs * card / cards;
 
-  /// How far behind the even pace the run fell at worst, and at which card;
-  /// null when it never fell behind.
-  ({int card, double ms})? get furthestBehind => _furthest(1);
-
-  /// How far ahead of the even pace it got at best; null when never.
-  ({int card, double ms})? get furthestAhead => _furthest(-1);
-
-  ({int card, double ms})? _furthest(int sign) {
-    ({int card, double ms})? best;
-    for (var i = 1; i < cards; i++) {
-      final gap = sign * (ms[i] - evenAt(i));
-      if (gap > 0 && (best == null || gap > best.ms)) best = (card: i, ms: gap);
-    }
-    return best;
-  }
-
   /// The time graph's bottom: the slowest of [references] (earlier runs of
   /// the same kind), but never past [RunReviewTuning.graphReach] times
   /// this run, so its line fills at least that share of the height. With

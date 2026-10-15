@@ -156,7 +156,8 @@ void main() {
         expect(find.textContaining(s.runThirdsTitle, findRichText: true), findsOneWidget);
         expect(find.text(s.runSwipeTimesPenalty(10)), findsOneWidget);
         await show(tester, p, RunRatingTab(ranked), 'rating_ranked_$shot');
-        expect(find.text(s.runShareOfWay), findsOneWidget);
+        expect(find.text(s.runRatingBefore), findsOneWidget);
+        expect(find.text(s.runNewRating), findsOneWidget);
         expect(find.text(s.runSoFar(3)), findsOneWidget);
         expect(find.text(s.runXpTotal), findsOneWidget);
 
@@ -164,6 +165,7 @@ void main() {
         expect(placement.rating!.before, isNull);
         await show(tester, p, RunRatingTab(placement), 'rating_placement_$shot');
         expect(find.textContaining(s.runPlacementShout), findsOneWidget);
+        expect(find.text(s.rankUnplaced), findsOneWidget);
 
         final forfeit = await detailOf('forfeit');
         expect(forfeit.run.forfeit, isTrue);

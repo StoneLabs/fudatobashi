@@ -19,8 +19,6 @@ void main() {
     expect(t.ms, [0, 2000, 18000]);
     expect(t.missCards, [2]);
     expect(t.evenAt(1), 9000);
-    expect(t.furthestAhead, (card: 1, ms: 7000));
-    expect(t.furthestBehind, isNull);
   });
 
   test('An undone swipe adds its time and miss to the card swiped again after it', () {

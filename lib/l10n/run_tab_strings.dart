@@ -42,10 +42,8 @@ extension RunTabStrings on S {
   String get runMostLost => t('runMostLost');
   String get runNoUsual => t('runNoUsual');
   String runPlayedLike(Object a0) => f('runPlayedLike', [a0]);
-  String get runShareOfWay => t('runShareOfWay');
-  String get runShareHalf => t('runShareHalf');
-  String get runShareQuarter => t('runShareQuarter');
-  String runShareNote(Object a0) => f('runShareNote', [a0]);
+  String get runRatingBefore => t('runRatingBefore');
+  String get runNewRating => t('runNewRating');
   String get runPlacementShout => t('runPlacementShout');
   String runPlacementText(Object a0, Object a1) => f('runPlacementText', [a0, a1]);
   String runClassGap(Object a0, Object a1, Object a2) => f('runClassGap', [a0, a1, a2]);
