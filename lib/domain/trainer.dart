@@ -1,4 +1,3 @@
-import 'dart:convert';
 import 'dart:math' as math;
 
 import 'package:fsrs/fsrs.dart' as fsrs;
@@ -243,22 +242,16 @@ class TrainerConfig {
 
 /// Training state of one item.
 class ItemState {
-  ItemState(this.key, {this.unlocked = false, this.unlockedAt, fsrs.Card? card, this.maskLevel = 0})
+  ItemState(this.key, {this.unlocked = false, this.unlockedAt, fsrs.Card? card})
       : card = card ?? fsrs.Card(cardId: key.id, due: DateTime.utc(2000));
 
   final ItemKey key;
   bool unlocked;
   DateTime? unlockedAt;
   fsrs.Card card;
-  int maskLevel;
 
   /// FSRS has seen at least one review.
   bool get reviewed => card.lastReview != null;
-
-  String get fsrsJson => jsonEncode(card.toMap());
-
-  static fsrs.Card cardFromJson(String s) =>
-      fsrs.Card.fromMap(jsonDecode(s) as Map<String, dynamic>);
 }
 
 /// The spaced-repetition trainer.
@@ -342,13 +335,16 @@ class Trainer {
   }
 
   /// Probability of recall now, using fractional days (FSRS-6 forgetting curve).
-  double retrievability(ItemKey key, DateTime now) {
-    final c = items[key]!.card;
-    if (c.lastReview == null || c.stability == null) return 0;
+  double retrievability(ItemKey key, DateTime now) => recallOf(items[key]!.card, scheduler, now);
+
+  /// [card]'s probability of recall at [now] under [scheduler]; 0 before its
+  /// first review.
+  static double recallOf(fsrs.Card card, fsrs.Scheduler scheduler, DateTime now) {
+    if (card.lastReview == null || card.stability == null) return 0;
     final decay = -scheduler.parameters[20];
     final factor = math.pow(0.9, 1 / decay) - 1;
-    final days = math.max(0, now.toUtc().difference(c.lastReview!).inSeconds / 86400);
-    return math.pow(1 + factor * days / c.stability!, decay).toDouble();
+    final days = math.max(0, now.toUtc().difference(card.lastReview!).inSeconds / 86400);
+    return math.pow(1 + factor * days / card.stability!, decay).toDouble();
   }
 
   bool isDue(ItemKey key, DateTime now) {

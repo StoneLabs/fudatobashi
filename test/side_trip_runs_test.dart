@@ -1,7 +1,7 @@
 import 'dart:io';
 import 'dart:math' as math;
 
-import 'package:drift/drift.dart' show driftRuntimeOptions;
+import 'package:drift/drift.dart' show OrderingTerm, driftRuntimeOptions;
 import 'package:drift/native.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:fudatobashi/config/config.dart';
@@ -50,7 +50,7 @@ void main() {
     final placed = AnkirenRating.update(
         AnkirenRating.start, AnkirenRating.performance(0, 1, placement: true), 0);
     final stored = p.sideTrips.runs.single;
-    expect([stored.ranked, stored.level, stored.completed, stored.cardCount, stored.score, stored.maxScore],
+    expect([stored.ranked, stored.level, stored.completed, p.sideTrips.cardsIn(stored), stored.score, stored.maxScore],
         [true, 0, true, perfect.prompts.length, perfect.score!.total, perfect.score!.max]);
     expect([stored.rating, stored.performance], [placed, AnkirenRating.performance(0, 1, placement: true)]);
     expect([first.ratingBefore, first.ratingAfter], [AnkirenRating.start, placed]);
@@ -80,7 +80,7 @@ void main() {
     expect(p.sideTrips.ratingOf(ankiren), placed, reason: 'free play never moves the rating');
     expect(p.sideTrips.rankedGames(ankiren), 1);
     final run = p.sideTrips.runs.last;
-    expect([run.game, run.ranked, run.level, run.rating, run.performance], ['ankiren', false, 2, null, null]);
+    expect([run.game, run.ranked, run.level, run.rating, run.performance], [SideTrip.ankiren, false, 2, null, null]);
     expect(p.sideTrips.missesIn(run), 2);
 
     final again = await Progress.open(db);
@@ -119,10 +119,23 @@ void main() {
     final cards = AnkirenLevels.of(1).cards;
     expect([for (final a in answers) a.responseUs == null], [for (var i = 0; i < cards; i++) i >= 3]);
     final run = p.sideTrips.runs.single;
-    expect([run.completed, run.cardCount], [false, cards]);
+    expect([run.completed, p.sideTrips.cardsIn(run)], [false, cards]);
+    expect([for (final a in answers) a.gaveUp], everyElement(isFalse), reason: 'the game ended; nothing was given up');
+    expect(run.endedAt, answers.last.at, reason: 'it ended as its last prompt was settled');
     expect(p.sideTrips.missesIn(run), cards - 3);
     expect(run.meta, contains('"layout":"v2"'));
     expect(run.meta, contains('"perSide":${AnkirenLevels.of(1).perSide}'));
+    await db.close();
+  });
+
+  test('a card given up is stored as given up, and never found', () async {
+    final db = AppDatabase(NativeDatabase.memory());
+    final p = await allKnown(db);
+    await p.recordAnkiren(playAnkiren(AnkirenSetup.forLevel(0), giveUpAt: {1}), startedAt: startedAt);
+    final answers = await (db.select(db.sideTripAnswers)..orderBy([(a) => OrderingTerm.asc(a.seq)])).get();
+    expect([for (final a in answers) (a.gaveUp, a.responseUs == null)],
+        [for (var i = 0; i < answers.length; i++) (i == 1, i == 1)]);
+    expect(p.sideTrips.runs.single.day, p.dayAt(startedAt).number);
     await db.close();
   });
 
@@ -132,8 +145,9 @@ void main() {
     final free = playAnkiren(AnkirenSetup.forLevel(2), wrongAt: {0});
     await p.recordAnkiren(free, startedAt: startedAt);
     final rows = await db.select(db.sideTripAnswers).get();
-    expect([for (final r in rows) [r.firstTap, r.firstTapUs, r.secondTap]], [
-      for (final a in free.answers) [a.taps.first.index, a.firstTapUs, a.taps.elementAtOrNull(1)?.index],
+    expect([for (final r in rows) [r.firstTap, r.firstTapCard, r.firstTapUs, r.secondTap, r.secondTapCard]], [
+      for (final a in free.answers)
+        [a.taps.first, a.tapped.first, a.firstTapUs, a.taps.elementAtOrNull(1), a.tapped.elementAtOrNull(1)],
     ]);
     expect([rows.first.firstTap, rows.first.secondTap], isNot(contains(null)), reason: 'a wrong tap, then the card');
     expect(rows.skip(1).map((r) => r.secondTap), everyElement(isNull), reason: 'found with the first tap');

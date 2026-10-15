@@ -5,6 +5,7 @@ import 'package:flutter/foundation.dart';
 import 'package:fsrs/fsrs.dart' as fsrs;
 
 import '../db/database.dart';
+import '../db/fsrs_rows.dart';
 import '../domain/ankiren_rating.dart';
 import '../domain/card_stats.dart';
 import '../domain/play_session.dart';
@@ -54,11 +55,11 @@ abstract final class DbIntegrity {
 
   /// Runs recorded before touch and frame times were put on one clock (see
   /// `PointerClock`) came out at or below zero on iOS and macOS, stored as
-  /// 0 µs, with run totals negative or too short.
+  /// 0 µs, with run clocks negative or too short.
   ///
-  /// * A run whose total is no measurement, or whose every swipe has an
-  ///   impossible time, loses its total (so it is no personal best) and its
-  ///   rating point; the rating is replayed from the points after it.
+  /// * A run whose clock is no measurement, or whose every swipe has an
+  ///   impossible time, loses its clock (so it is no personal best) and its
+  ///   rating; the ratings of the ranked runs after it are replayed.
   /// * A correct swipe with an impossible time loses its FSRS grade (it was
   ///   taken for a lightning-fast answer), and its card's FSRS state is
   ///   replayed from the grades left.
@@ -70,11 +71,11 @@ abstract final class DbIntegrity {
       SELECT EXISTS (
         SELECT 1 FROM attempts WHERE response_us <= 0 AND grade IS NOT NULL AND grade != ?
       ) OR EXISTS (
-        SELECT 1 FROM sessions s
-        WHERE (s.total_us <= 0
-               OR (EXISTS (SELECT 1 FROM attempts a WHERE a.session_id = s.id)
-                   AND NOT EXISTS (SELECT 1 FROM attempts a WHERE a.session_id = s.id AND a.response_us > 0)))
-          AND (s.total_us IS NOT NULL OR EXISTS (SELECT 1 FROM rating_points r WHERE r.session_id = s.id))
+        SELECT 1 FROM runs r
+        WHERE (r.clock_us <= 0
+               OR (EXISTS (SELECT 1 FROM attempts a WHERE a.run_id = r.id)
+                   AND NOT EXISTS (SELECT 1 FROM attempts a WHERE a.run_id = r.id AND a.response_us > 0)))
+          AND (r.clock_us IS NOT NULL OR r.rating IS NOT NULL)
       ) AS found
       """,
       variables: [Variable.withInt(fsrs.Rating.again.value)],
@@ -97,35 +98,28 @@ abstract final class DbIntegrity {
   static Future<void> _runs(AppDatabase db, List<AttemptRow> attempts) async {
     final timed = <int, bool>{};
     for (final a in attempts) {
-      timed[a.sessionId] = (timed[a.sessionId] ?? false) || Attempt.isValidTime(a.responseUs);
+      timed[a.runId] = (timed[a.runId] ?? false) || Attempt.isValidTime(a.responseUs);
     }
+    final runs = await (db.select(db.runs)
+          ..orderBy([(r) => OrderingTerm.asc(r.startedAt), (r) => OrderingTerm.asc(r.id)]))
+        .get();
     final bad = {
-      for (final s in await db.select(db.sessions).get())
-        if ((s.totalUs != null && s.totalUs! <= 0) || timed[s.id] == false) s.id,
+      for (final r in runs)
+        if ((r.clockUs != null && r.clockUs! <= 0) || timed[r.id] == false) r.id,
     };
     if (bad.isEmpty) return;
-    await (db.update(db.sessions)..where((s) => s.id.isIn(bad))).write(const SessionsCompanion(totalUs: Value(null)));
+    await (db.update(db.runs)..where((r) => r.id.isIn(bad)))
+        .write(const RunsCompanion(clockUs: Value(null), rating: Value(null), performance: Value(null)));
 
-    final points = await (db.select(db.ratingPoints)
-          ..orderBy([(r) => OrderingTerm.asc(r.at), (r) => OrderingTerm.asc(r.id)]))
-        .get();
-    final first = points.indexWhere((p) => bad.contains(p.sessionId));
+    final rated = [for (final r in runs) if (r.rating != null) r];
+    final first = rated.indexWhere((r) => bad.contains(r.id));
     if (first < 0) return;
-    var rating = first == 0 ? null : points[first - 1].rating;
+    var rating = first == 0 ? null : rated[first - 1].rating;
     var kept = first;
-    for (final p in points.skip(first)) {
-      if (bad.contains(p.sessionId)) {
-        await (db.delete(db.ratingPoints)..where((r) => r.id.equals(p.id))).go();
-        continue;
-      }
-      rating = Rating.update(rating, p.performance, kept++);
-      await (db.update(db.ratingPoints)..where((r) => r.id.equals(p.id)))
-          .write(RatingPointsCompanion(rating: Value(rating)));
-    }
-    if (rating == null) {
-      await (db.delete(db.keyValues)..where((k) => k.key.equals('rating'))).go();
-    } else {
-      await db.into(db.keyValues).insertOnConflictUpdate(KeyValuesCompanion.insert(key: 'rating', value: '$rating'));
+    for (final r in rated.skip(first)) {
+      if (bad.contains(r.id)) continue;
+      rating = Rating.update(rating, r.performance!, kept++);
+      await (db.update(db.runs)..where((x) => x.id.equals(r.id))).write(RunsCompanion(rating: Value(rating)));
     }
   }
 
@@ -135,22 +129,27 @@ abstract final class DbIntegrity {
         if (a.grade != null && a.grade != fsrs.Rating.again.value && !Attempt.isValidTime(a.responseUs)) a.id,
     };
     if (taken.isEmpty) return;
-    await (db.update(db.attempts)..where((a) => a.id.isIn(taken))).write(const AttemptsCompanion(grade: Value(null)));
+    await (db.update(db.attempts)..where((a) => a.id.isIn(taken))).write(const AttemptsCompanion().withReview(null));
 
     final cards = {
       for (final a in attempts)
         if (taken.contains(a.id)) ItemKey(a.poemId, a.inverted),
     };
     for (final key in cards) {
-      final item = ItemState(key);
+      final stored = await (db.select(db.items)
+            ..where((i) => i.poemId.equals(key.poemId) & i.inverted.equals(key.inverted)))
+          .getSingleOrNull();
+      final item = ItemState(key, unlocked: stored?.unlocked ?? false, unlockedAt: stored?.unlockedAt);
       for (final a in attempts) {
         if (a.grade == null || taken.contains(a.id) || ItemKey(a.poemId, a.inverted) != key) continue;
-        final grade = fsrs.Rating.values.firstWhere((r) => r.value == a.grade);
-        item.card = scheduler.reviewCard(item.card, grade, reviewDateTime: a.at.toUtc()).card;
+        final grade = fsrs.Rating.fromValue(a.grade!);
+        final at = a.at.toUtc();
+        final recall = item.reviewed ? Trainer.recallOf(item.card, scheduler, at) : null;
+        item.card = scheduler.reviewCard(item.card, grade, reviewDateTime: at).card;
+        await (db.update(db.attempts)..where((x) => x.id.equals(a.id)))
+            .write(const AttemptsCompanion().withReview(grade, recall: recall, card: item.card));
       }
-      await (db.update(db.items)
-            ..where((i) => i.poemId.equals(key.poemId) & i.inverted.equals(key.inverted)))
-          .write(ItemsCompanion(fsrs: Value(item.reviewed ? item.fsrsJson : null)));
+      await db.into(db.items).insertOnConflictUpdate(item.row);
     }
   }
 
@@ -177,7 +176,7 @@ abstract final class DbIntegrity {
     final found = await db.customSelect(
       '''
       SELECT EXISTS (
-        SELECT 1 FROM day_cards c WHERE NOT EXISTS (SELECT 1 FROM days d WHERE d.number = c.day)
+        SELECT 1 FROM day_cards c WHERE NOT EXISTS (SELECT 1 FROM days d WHERE d.day = c.day)
       ) AS found
       ''',
     ).getSingle();
@@ -185,7 +184,7 @@ abstract final class DbIntegrity {
   }
 
   static Future<void> _deleteOrphanedDayCards(AppDatabase db) async {
-    final days = db.selectOnly(db.days)..addColumns([db.days.number]);
+    final days = db.selectOnly(db.days)..addColumns([db.days.day]);
     await (db.delete(db.dayCards)..where((c) => c.day.isNotInQuery(days))).go();
   }
 
@@ -219,7 +218,7 @@ abstract final class DbIntegrity {
       final (start, update) = switch (trip) {
         SideTrip.ankiren => (AnkirenRating.start, AnkirenRating.update),
       };
-      final runs = [for (final r in ranked) if (r.game == trip.name) r];
+      final runs = [for (final r in ranked) if (r.game == trip) r];
       final first = runs.indexWhere((r) => !sound(r));
       if (first < 0) continue;
       final kept = [for (final r in runs.take(first)) if (r.rating != null) r];

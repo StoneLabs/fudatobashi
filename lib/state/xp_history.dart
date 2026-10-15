@@ -1,5 +1,3 @@
-import 'dart:convert';
-
 import '../db/database.dart';
 import '../domain/ankiren_level.dart';
 import '../domain/ankiren_xp.dart';
@@ -10,16 +8,12 @@ import 'play_config.dart';
 import 'progress.dart';
 import 'side_trips.dart';
 
-/// Experience read off the recorded history: sessions with their attempts,
-/// plus the milestones [noteMilestones] marks on a session (what its swipes
-/// alone can't tell), and 暗記練's games with their answers.
+/// Experience read off the recorded history: runs with their attempts and
+/// milestones (islands completed, graduation, today's set done), and
+/// 暗記練's games with their answers.
 abstract final class XpHistory {
-  static const _islandsKey = 'islandsCompleted';
-  static const _graduatedKey = 'graduated';
-  static const _dayDoneKey = 'dayDone';
-
-  /// What every recorded game of [progress] earned: the main game's runs by
-  /// session id, 暗記練's games by run id.
+  /// What every recorded game of [progress] earned: the main game's runs and
+  /// 暗記練's games, each by its id.
   static ({Map<int, XpGain> runs, Map<int, XpGain> ankiren}) gainsOf(Progress progress) {
     final runGains = <int, XpGain>{}, gameGains = <int, XpGain>{};
     ledgerOf(progress, ({required ankiren, required id, required gain}) => (ankiren ? gameGains : runGains)[id] = gain);
@@ -29,15 +23,15 @@ abstract final class XpHistory {
   /// Every recorded game of [progress], oldest first.
   static XpLedger ledgerOf(Progress progress,
       [void Function({required bool ankiren, required int id, required XpGain gain})? onGain]) {
-    final bySession = <int, List<(ItemKey, AttemptRec)>>{};
+    final byRun = <int, List<(ItemKey, AttemptRec)>>{};
     for (final k in progress.trainer.items.keys) {
       for (final a in progress.attemptsOf(k)) {
-        if (a.sessionId != null) (bySession[a.sessionId!] ??= []).add((k, a));
+        if (a.runId != null) (byRun[a.runId!] ??= []).add((k, a));
       }
     }
     final trips = progress.sideTrips;
     return XpLedger.of(
-      [for (final s in progress.sessions) runOf(progress, s, bySession[s.id] ?? const [])],
+      [for (final r in progress.runs) runOf(progress, r, byRun[r.id] ?? const [])],
       [for (final r in trips.runsOf(SideTrip.ankiren)) ankirenRunOf(trips, r)],
       onGain,
     );
@@ -54,76 +48,43 @@ abstract final class XpHistory {
         answers: trips.answersOf(run),
       );
 
-  /// Session [s] of [progress] with its attempts, looked up at the end of
-  /// each card's log (for a run just recorded).
-  static XpRun latestRunOf(Progress progress, Session s) {
+  /// Run [r] of [progress] with its attempts, looked up at the end of each
+  /// card's log (for a run just recorded).
+  static XpRun latestRunOf(Progress progress, RunRow r) {
     final attempts = <(ItemKey, AttemptRec)>[];
     for (final k in progress.trainer.items.keys) {
       final log = progress.attemptsOf(k);
       var from = log.length;
-      while (from > 0 && log[from - 1].sessionId == s.id) {
+      while (from > 0 && log[from - 1].runId == r.id) {
         from--;
       }
       attempts.addAll([for (final a in log.skip(from)) (k, a)]);
     }
-    return runOf(progress, s, attempts);
+    return runOf(progress, r, attempts);
   }
 
   /// [attempts] hold each card's in the order played.
-  static XpRun runOf(Progress progress, Session s, List<(ItemKey, AttemptRec)> attempts) {
-    final meta = jsonDecode(s.meta) as Map<String, dynamic>;
-    final config = progress.configOf(s);
-    return XpRun(
-      sessionId: s.id,
-      startedAt: s.startedAt,
-      setup: config.historyKey,
-      completed: s.completed,
-      total: Progress.totalOf(s),
-      goalMs: (meta['goalMs'] as num?)?.toDouble() ?? progress.trainer.goalMs,
-      counts: attempts.any((e) => e.$2.countsForSrs),
-      swipes: [
-        for (final (_, (k, a)) in [...attempts.indexed]..sort((x, y) {
-            final byTime = x.$2.$2.at.compareTo(y.$2.$2.at);
-            return byTime != 0 ? byTime : x.$1.compareTo(y.$1);
-          }))
-          XpSwipe(poemId: k.poemId, correct: !a.miss, clean: a.clean, us: a.us, graded: a.grade != null),
-      ],
-      islands: (meta[_islandsKey] as List?)?.length ?? 0,
-      graduated: meta[_graduatedKey] == true,
-      day: progress.dayOf(s),
-      dayDone: meta[_dayDoneKey] == true,
-      ranked: config.mode == PlayMode.ranked,
-      placement: meta['placement'] == true,
-      exam: config.mode == PlayMode.exam,
-    );
-  }
-
-  /// Marks on session [s] the [islands] it completed, whether it
-  /// [graduated] and whether it finished today's set ([dayDone]), stored and
-  /// returned as the updated session.
-  static Future<Session> noteMilestones(AppDatabase db, Session s,
-      {required List<int> islands, required bool graduated, bool dayDone = false}) async {
-    if (islands.isEmpty && !graduated && !dayDone) return s;
-    final meta = jsonDecode(s.meta) as Map<String, dynamic>;
-    final updated = s.copyWith(
-      meta: jsonEncode({
-        ...meta,
-        if (islands.isNotEmpty) _islandsKey: islands,
-        if (graduated) _graduatedKey: true,
-        if (dayDone) _dayDoneKey: true,
-      }),
-    );
-    await db.update(db.sessions).replace(updated);
-    return updated;
-  }
-
-  /// Removes the graduation mark from session [s], stored and returned as
-  /// the updated session.
-  static Future<Session> clearGraduated(AppDatabase db, Session s) async {
-    final meta = jsonDecode(s.meta) as Map<String, dynamic>;
-    if (!meta.containsKey(_graduatedKey)) return s;
-    final updated = s.copyWith(meta: jsonEncode(meta..remove(_graduatedKey)));
-    await db.update(db.sessions).replace(updated);
-    return updated;
-  }
+  static XpRun runOf(Progress progress, RunRow r, List<(ItemKey, AttemptRec)> attempts) => XpRun(
+        runId: r.id,
+        startedAt: r.startedAt,
+        setup: progress.configOf(r).historyKey,
+        completed: r.completed,
+        total: Progress.totalOf(r),
+        goalMs: r.goalMs.toDouble(),
+        counts: attempts.any((e) => e.$2.countsForSrs),
+        swipes: [
+          for (final (_, (k, a)) in [...attempts.indexed]..sort((x, y) {
+              final byTime = x.$2.$2.at.compareTo(y.$2.$2.at);
+              return byTime != 0 ? byTime : x.$1.compareTo(y.$1);
+            }))
+            XpSwipe(poemId: k.poemId, correct: !a.miss, clean: a.clean, us: a.us, graded: a.grade != null),
+        ],
+        islands: progress.islandsCompletedBy(r.id).length,
+        graduated: r.graduated,
+        day: progress.dayOf(r),
+        dayDone: r.dayDone,
+        ranked: r.mode == PlayMode.ranked,
+        placement: progress.isPlacement(r),
+        exam: r.mode == PlayMode.exam,
+      );
 }

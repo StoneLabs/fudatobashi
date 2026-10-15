@@ -154,7 +154,7 @@ class AnkirenGame extends ChangeNotifier {
   int? giveUp() {
     final asked = current;
     if (asked == null || _revealTs == null) return null;
-    _answer(asked, null);
+    _answer(asked, null, gaveUp: true);
     _givenUp.add(asked);
     _moveOn();
     return asked;
@@ -177,13 +177,14 @@ class AnkirenGame extends ChangeNotifier {
     notifyListeners();
   }
 
-  void _answer(int poemId, int? responseUs) {
+  void _answer(int poemId, int? responseUs, {bool gaveUp = false}) {
     answers.add(AnkirenAnswer(
       poemId: poemId,
       side: field.sideOf(poemId)!,
       wrongTaps: _wrongTaps,
       responseUs: responseUs,
       at: _clock(),
+      gaveUp: gaveUp,
       taps: List.unmodifiable(_taps),
       tapped: List.unmodifiable(_tapped),
       firstTapUs: _firstTapUs,

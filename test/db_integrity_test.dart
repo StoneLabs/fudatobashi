@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'dart:io';
 
 import 'package:drift/drift.dart' hide isNull, isNotNull;
@@ -8,12 +9,14 @@ import 'package:fudatobashi/data/fuda_sets.dart';
 import 'package:fudatobashi/data/islands.dart';
 import 'package:fudatobashi/data/poem.dart';
 import 'package:fudatobashi/db/database.dart';
+import 'package:fudatobashi/db/fsrs_rows.dart';
 import 'package:fudatobashi/domain/ankiren_level.dart';
 import 'package:fudatobashi/domain/ankiren_rating.dart';
 import 'package:fudatobashi/domain/card_stats.dart';
 import 'package:fudatobashi/domain/play_session.dart';
 import 'package:fudatobashi/domain/rating.dart';
 import 'package:fudatobashi/domain/side_trips.dart';
+import 'package:fudatobashi/domain/step_plan.dart';
 import 'package:fudatobashi/domain/trainer.dart';
 import 'package:fudatobashi/state/play_config.dart';
 import 'package:fudatobashi/state/progress.dart';
@@ -36,23 +39,32 @@ void main() {
   final scheduler = Trainer.schedulerFor(const TrainerConfig());
   DateTime day(int d, [int second = 0]) => DateTime(2026, 9, d, 10, 0, second);
 
-  Future<int> run(AppDatabase db, int d, int? totalUs, List<Swipe> swipes) async {
-    final id = await db.into(db.sessions).insert(SessionsCompanion.insert(
+  /// A run on day [d] with its [swipes], ranked when it has a [rating].
+  Future<int> run(AppDatabase db, int d, int? clockUs, List<Swipe> swipes,
+      {double? rating, double? performance}) async {
+    final id = await db.into(db.runs).insert(RunsCompanion.insert(
+          mode: rating == null ? PlayMode.training : PlayMode.ranked,
           startedAt: day(d),
-          mode: PlayMode.training.name,
-          orientation: 0,
-          cardCount: swipes.length,
-          totalUs: Value(totalUs),
+          endedAt: day(d, 59),
+          day: 20260900 + d,
+          allKnown: rating != null,
+          goalMs: 3000,
+          setIds: Value(jsonEncode(rating == null ? const [] : const ['all'])),
+          planned: swipes.length,
+          clockUs: Value(clockUs),
           completed: true,
+          scoredMs: Value(rating == null ? null : 0),
+          rating: Value(rating),
+          performance: Value(performance),
         ));
     for (final (i, (poemId, us, dontKnow, grade)) in swipes.indexed) {
       await db.into(db.attempts).insert(AttemptsCompanion.insert(
-            sessionId: id,
+            runId: id,
             seq: i,
             poemId: poemId,
             inverted: false,
             responseUs: us,
-            outcome: (dontKnow ? Outcome.dontKnow : Outcome.known).index,
+            outcome: dontKnow ? Outcome.dontKnow : Outcome.known,
             deckSize: swipes.length,
             at: day(d, i),
             grade: Value(grade?.value),
@@ -70,23 +82,14 @@ void main() {
     return card;
   }
 
-  Future<void> item(AppDatabase db, int poemId, fsrs.Card card) {
-    final state = ItemState(ItemKey(poemId, false))..card = card;
-    return db.into(db.items).insert(ItemsCompanion.insert(
-          poemId: poemId,
-          inverted: false,
-          unlocked: const Value(true),
-          fsrs: Value(state.fsrsJson),
-        ));
-  }
+  Future<void> item(AppDatabase db, int poemId, fsrs.Card card) =>
+      db.into(db.items).insert((ItemState(ItemKey(poemId, false), unlocked: true, card: card)).row);
 
   /// Every table the repair may write, as text.
   Future<String> dump(AppDatabase db) async => [
-        await db.select(db.sessions).get(),
+        await db.select(db.runs).get(),
         await db.select(db.attempts).get(),
         await db.select(db.items).get(),
-        await db.select(db.ratingPoints).get(),
-        await (db.select(db.keyValues)..where((k) => k.key.equals('rating'))).get(),
       ].join('\n');
 
   /// The tables written to while [action] runs.
@@ -99,17 +102,27 @@ void main() {
     return written;
   }
 
-  test('runs with impossible times lose their totals, rating points and FSRS grades; valid data stays', () async {
+  test('runs with impossible times lose their clocks, ratings and FSRS grades; valid data stays', () async {
     final db = AppDatabase(NativeDatabase.memory());
     const easy = fsrs.Rating.easy, good = fsrs.Rating.good, again = fsrs.Rating.again;
 
-    // A: a good run. B: negative total, every time 0 µs (old iOS). D: a
-    // positive but too short total, every time 0 µs. E: a good run with one
+    // A: a good run. B: negative clock, every time 0 µs (old iOS). D: a
+    // positive but too short clock, every time 0 µs. E: a good run with one
     // 0 µs answer among valid ones (a touch timestamped before the reveal).
-    final a = await run(db, 1, 30000000, [(1, 900000, false, easy), (2, 1200000, false, good), (3, 900000, false, easy)]);
-    final b = await run(db, 3, -126534000000, [(1, 0, false, easy), (4, 0, false, easy), (2, 0, true, again)]);
-    final d = await run(db, 4, 2000000, [(3, 0, false, null)]);
-    final e = await run(db, 5, 40000000, [(5, 1100000, false, good), (6, 0, false, easy)]);
+    // Each is ranked, the rating moved toward its performance.
+    final ratings = <double>[];
+    double rate(double performance) {
+      ratings.add(Rating.update(ratings.lastOrNull, performance, ratings.length));
+      return ratings.last;
+    }
+
+    final a = await run(db, 1, 30000000, [(1, 900000, false, easy), (2, 1200000, false, good), (3, 900000, false, easy)],
+        rating: rate(300), performance: 300);
+    final b = await run(db, 3, -126534000000, [(1, 0, false, easy), (4, 0, false, easy), (2, 0, true, again)],
+        rating: rate(250), performance: 250);
+    final d = await run(db, 4, 2000000, [(3, 0, false, null)], rating: rate(250), performance: 250);
+    final e = await run(db, 5, 40000000, [(5, 1100000, false, good), (6, 0, false, easy)],
+        rating: rate(320), performance: 320);
     await item(db, 1, replay(1, [(easy, 1, 0), (easy, 3, 0)]));
     await item(db, 2, replay(2, [(good, 1, 1), (again, 3, 2)]));
     await item(db, 3, replay(3, [(easy, 1, 2)]));
@@ -117,25 +130,17 @@ void main() {
     await item(db, 5, replay(5, [(good, 5, 0)]));
     await item(db, 6, replay(6, [(easy, 5, 1)]));
 
-    final ratings = <double>[];
-    for (final (session, perf, d) in [(a, 300.0, 1), (b, 250.0, 3), (d, 250.0, 4), (e, 320.0, 5)]) {
-      ratings.add(Rating.update(ratings.lastOrNull, perf, ratings.length));
-      await db.into(db.ratingPoints).insert(RatingPointsCompanion.insert(
-          at: day(d, 59), rating: ratings.last, performance: perf, scoredMs: 0, sessionId: Value(session)));
-    }
-    await db.into(db.keyValues).insert(KeyValuesCompanion.insert(key: 'rating', value: '${ratings.last}'));
-
-    final sessionsBefore = await db.select(db.sessions).get();
+    final runsBefore = {for (final r in await db.select(db.runs).get()) r.id: r};
     final attemptsBefore = await db.select(db.attempts).get();
     final itemsBefore = {for (final i in await db.select(db.items).get()) i.poemId: i};
 
     final p = await Progress.open(db);
 
-    final sessions = {for (final s in await db.select(db.sessions).get()) s.id: s};
-    expect([for (final id in [a, b, d, e]) sessions[id]!.totalUs], [30000000, null, null, 40000000]);
-    expect([sessions[a], sessions[e]], [for (final s in sessionsBefore) if (s.id == a || s.id == e) s]);
-    expect(sessions.values.every((s) => s.completed), isTrue, reason: 'still played to the end');
-    expect(p.bestFor(const PlayConfig(mode: PlayMode.training, setIds: [])), const Duration(seconds: 30));
+    final runs = {for (final r in await db.select(db.runs).get()) r.id: r};
+    expect([for (final id in [a, b, d, e]) runs[id]!.clockUs], [30000000, null, null, 40000000]);
+    expect(runs[a], runsBefore[a]);
+    expect(runs.values.every((r) => r.completed), isTrue, reason: 'still played to the end');
+    expect(p.bestFor(const PlayConfig(mode: PlayMode.ranked)), const Duration(seconds: 30));
 
     final attempts = await db.select(db.attempts).get();
     expect([for (final x in attempts) x.responseUs], [for (final x in attemptsBefore) x.responseUs]);
@@ -146,21 +151,25 @@ void main() {
     for (final id in [2, 3, 5]) {
       expect(items[id], itemsBefore[id], reason: 'card $id had no impossible grade');
     }
-    expect(items[4]!.fsrs, isNull, reason: 'its only review was impossible');
-    expect(items[6]!.fsrs, isNull);
-    final repaired = ItemState.cardFromJson(items[1]!.fsrs!);
+    expect(items[4]!.fsrsState, isNull, reason: 'its only review was impossible');
+    expect(items[6]!.fsrsState, isNull);
+    expect(items[1]!.unlocked, isTrue);
+    final repaired = ItemStateRow.of(items[1]!).card;
     final expected = replay(1, [(easy, 1, 0)]);
     expect(
       [repaired.state, repaired.step, repaired.stability, repaired.difficulty, repaired.lastReview],
       [expected.state, expected.step, expected.stability, expected.difficulty, expected.lastReview],
     );
     expect(p.trainer.items[ItemKey(1, false)]!.card.stability, expected.stability, reason: 'loaded repaired');
+    final ofCard1 = [for (final x in attempts) if (x.poemId == 1) x];
+    expect([for (final x in ofCard1) x.fsrsStability], [expected.stability, null],
+        reason: 'the review left keeps its state after it; the impossible one has none');
+    expect(ofCard1.first.fsrsRecall, isNull, reason: 'the first review has no recall chance before it');
 
-    final points = await db.select(db.ratingPoints).get();
-    expect([for (final x in points) x.sessionId], [a, e]);
-    expect(points.first.rating, ratings.first, reason: 'points before the first bad run are untouched');
-    expect(points.last.rating, Rating.update(ratings.first, 320, 1));
-    expect(p.rating, points.last.rating);
+    expect([for (final id in [a, b, d, e]) runs[id]!.rating != null], [true, false, false, true]);
+    expect(runs[a]!.rating, ratings.first, reason: 'ratings before the first bad run are untouched');
+    expect(runs[e]!.rating, Rating.update(ratings.first, 320, 1));
+    expect(p.rating, runs[e]!.rating);
     expect(p.stats(const ItemKey(6, false)).timed, isEmpty);
 
     // A second run finds nothing and writes nothing.
@@ -174,10 +183,9 @@ void main() {
   test('an install without impossible times is left exactly as it was', () async {
     final db = AppDatabase(NativeDatabase.memory());
     const good = fsrs.Rating.good;
-    final a = await run(db, 1, 30000000, [(1, 900000, false, good), (2, 1200000, true, fsrs.Rating.again)]);
+    await run(db, 1, 30000000, [(1, 900000, false, good), (2, 1200000, true, fsrs.Rating.again)],
+        rating: 300, performance: 300);
     await item(db, 1, replay(1, [(good, 1, 0)]));
-    await db.into(db.ratingPoints).insert(RatingPointsCompanion.insert(
-        at: day(2), rating: 300, performance: 300, scoredMs: 0, sessionId: Value(a)));
     final before = await dump(db);
     expect(await writesDuring(db, () => DbIntegrity.run(db)), isEmpty);
     await Progress.open(db);
@@ -203,18 +211,19 @@ void main() {
       ..clear()
       ..addAll(checks));
     await DbIntegrity.run(db);
-    expect((await db.select(db.sessions).get()).singleWhere((s) => s.id == bad).totalUs, isNull);
+    expect((await db.select(db.runs).get()).singleWhere((r) => r.id == bad).clockUs, isNull);
     await db.close();
   });
 
   group('side trips', () {
     Future<int> trip(AppDatabase db, int d, {bool ranked = true, double? performance, double? rating}) =>
         db.into(db.sideTripRuns).insert(SideTripRunsCompanion.insert(
-              game: SideTrip.ankiren.name,
+              game: SideTrip.ankiren,
               startedAt: day(d),
+              endedAt: day(d, 59),
+              day: 20260900 + d,
               ranked: ranked,
               level: const Value(0),
-              cardCount: 8,
               score: const Value(900),
               maxScore: const Value(1200),
               completed: true,
@@ -275,9 +284,9 @@ void main() {
 
   test('cards of a missing day are deleted; a day with its cards stays', () async {
     final db = AppDatabase(NativeDatabase.memory());
-    await db.into(db.days).insert(DaysCompanion.insert(number: const Value(20261014), startsAt: day(1), endsAt: day(2)));
+    await db.into(db.days).insert(DaysCompanion.insert(day: const Value(20261014), startsAt: day(1), endsAt: day(2)));
     for (final d in [20261014, 20261013]) {
-      await db.into(db.dayCards).insert(DayCardsCompanion.insert(day: d, poemId: 1, inverted: false, kind: 0));
+      await db.into(db.dayCards).insert(DayCardsCompanion.insert(day: d, poemId: 1, inverted: false, kind: StepKind.review));
     }
     await DbIntegrity.run(db);
     expect([for (final c in await db.select(db.dayCards).get()) c.day], [20261014]);

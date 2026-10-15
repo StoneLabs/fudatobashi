@@ -302,7 +302,7 @@ void main() {
     }
     expect(find.byType(DayDoneOverlay), findsNothing);
     expect(find.byType(SettingsScreen), findsOneWidget);
-    expect(p.sessions, isEmpty, reason: 'a preview touches no progress');
+    expect(p.runs, isEmpty, reason: 'a preview touches no progress');
     await tester.pumpWidget(const SizedBox());
   });
 

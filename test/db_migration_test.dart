@@ -3,7 +3,9 @@ import 'dart:io';
 import 'package:drift/drift.dart' hide isNull, isNotNull;
 import 'package:drift/native.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:fsrs/fsrs.dart' as fsrs;
 import 'package:fudatobashi/db/database.dart';
+import 'package:fudatobashi/domain/side_trips.dart';
 import 'package:fudatobashi/migrations/migrations.dart';
 
 /// The schema of version 1 (before the side trips' tables), as that
@@ -61,21 +63,16 @@ void main() {
   test('a version 1 database keeps every row and gains the side trips\' tables', () async {
     final db = v1Install();
 
-    final sessions = await db.select(db.sessions).get();
-    expect([for (final s in sessions) (s.id, s.cardCount, s.totalUs, s.completed, s.meta)],
-        [(1, 2, 30000000, true, '{"maskLevel":0}')]);
+    final runs = await db.select(db.runs).get();
+    expect([for (final r in runs) (r.id, r.planned, r.clockUs, r.completed, r.maskLevel)], [(1, 2, 30000000, true, 0)]);
     final attempts = await db.select(db.attempts).get();
-    expect([for (final a in attempts) (a.sessionId, a.poemId, a.inverted, a.responseUs, a.grade)],
+    expect([for (final a in attempts) (a.runId, a.poemId, a.inverted, a.responseUs, a.grade)],
         [(1, 12, false, 900000, 4), (1, 34, true, 1200000, 1)]);
     final items = await db.select(db.items).get();
-    expect([for (final i in items) (i.poemId, i.unlocked, i.fsrs)], [(12, true, '{"state":2}')]);
-    final points = await db.select(db.ratingPoints).get();
-    expect([for (final r in points) (r.rating, r.sessionId)], [(412.5, 1)]);
-    final values = await db.select(db.keyValues).get();
-    expect([for (final k in values) (k.key, k.value)], [('rating', '412.5')]);
+    expect([for (final i in items) (i.poemId, i.unlocked, i.fsrsState)], [(12, true, fsrs.State.review)]);
 
     final version = await db.customSelect('PRAGMA user_version').getSingle();
-    expect(version.read<int>('user_version'), 2);
+    expect(version.read<int>('user_version'), db.schemaVersion);
     expect(await db.select(db.sideTripRuns).get(), isEmpty);
     expect(await db.select(db.sideTripAnswers).get(), isEmpty);
 
@@ -84,7 +81,12 @@ void main() {
     await fresh.close();
 
     final run = await db.into(db.sideTripRuns).insert(SideTripRunsCompanion.insert(
-        game: 'ankiren', startedAt: DateTime(2026, 10, 12), ranked: false, cardCount: 8, completed: true));
+        game: SideTrip.ankiren,
+        startedAt: DateTime(2026, 10, 12),
+        endedAt: DateTime(2026, 10, 12),
+        day: 20261012,
+        ranked: false,
+        completed: true));
     await db.into(db.sideTripAnswers).insert(SideTripAnswersCompanion.insert(
         runId: run, seq: 0, poemId: 12, wrongTaps: 1, at: DateTime(2026, 10, 12)));
     expect((await db.select(db.sideTripRuns).getSingle()).score, isNull, reason: 'a custom game has no score');
@@ -122,7 +124,7 @@ void main() {
 
     for (var attempt = 0; attempt < 2; attempt++) {
       final db = open();
-      await expectLater(db.select(db.sessions).get(), throwsA(isA<SqliteException>()));
+      await expectLater(db.select(db.runs).get(), throwsA(isA<SqliteException>()));
       await db.close();
     }
     expect(seen.version, 1);

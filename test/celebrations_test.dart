@@ -26,7 +26,7 @@ void main() {
     XpGain? xp,
   }) =>
       SessionReport(
-        sessionId: 1,
+        runId: 1,
         completed: true,
         total: const Duration(seconds: 10),
         attempts: const [],

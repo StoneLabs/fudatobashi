@@ -211,7 +211,7 @@ class SwipeSpeedSection extends StatelessWidget {
                 ChartBar(w.ms.clamp(0, double.infinity),
                     color: w.miss
                         ? Palette.pink
-                        : goal != null && w.ms <= goal
+                        : w.ms <= goal
                             ? RunTabsStyle.paceUnderGoal
                             : Palette.ink),
             ],
@@ -219,13 +219,10 @@ class SwipeSpeedSection extends StatelessWidget {
             xLabels: {0: '1', for (var c = step; c <= n; c += step) c - 1: '$c'},
           ),
           ChartLegend([
-            if (goal != null) ...[
-              (const LegendMark.box(RunTabsStyle.paceUnderGoal), s.runPaceUnderGoal),
-              (const LegendMark.box(Palette.ink), s.legendOverGoal),
-            ] else
-              (const LegendMark.box(Palette.ink), s.legendRight),
+            (const LegendMark.box(RunTabsStyle.paceUnderGoal), s.runPaceUnderGoal),
+            (const LegendMark.box(Palette.ink), s.legendOverGoal),
             (const LegendMark.box(Palette.pink), s.legendMiss),
-            if (goal != null) (const LegendMark.line(Palette.sun), s.legendGoal(formatSeconds(goal))),
+            (const LegendMark.line(Palette.sun), s.legendGoal(formatSeconds(goal))),
           ]),
         ]),
       ),

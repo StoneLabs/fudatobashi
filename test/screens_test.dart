@@ -726,7 +726,7 @@ void main() {
         await p.recordRun(session, setup.config, DateTime.now());
       }
     });
-    expect(p.sessions, isNotEmpty);
+    expect(p.runs, isNotEmpty);
 
     await tester.binding.setSurfaceSize(_phone);
     await tester.pumpWidget(RepaintBoundary(key: const ValueKey('screen'), child: FudatobashiApp(progress: p)));
@@ -1373,7 +1373,7 @@ void main() {
         addTearDown(tester.platformDispatcher.clearTextScaleFactorTestValue);
         final p = await open(tester, mode: LearningMode.allKnown, ja: ja);
         final report = SessionReport(
-          sessionId: null,
+          runId: null,
           completed: true,
           total: const Duration(seconds: 30),
           attempts: [
@@ -1454,7 +1454,7 @@ void main() {
       addTearDown(tester.platformDispatcher.clearTextScaleFactorTestValue);
       final p = await open(tester, mode: LearningMode.allKnown, ja: ja);
       final report = SessionReport(
-        sessionId: null,
+        runId: null,
         completed: true,
         total: const Duration(milliseconds: 14906),
         attempts: [
@@ -1554,7 +1554,7 @@ void main() {
 
     await openPreview('Preview graduation');
     await skip(GraduationOverlay);
-    expect(p.sessions, isEmpty);
+    expect(p.runs, isEmpty);
     expect(p.xp.total, 0);
     expect(p.trainer.config.learningMode, LearningMode.journey, reason: 'a preview never switches modes');
     await tester.pumpWidget(const SizedBox());
@@ -1829,7 +1829,7 @@ void main() {
     expect(p.settings.debugMode, isFalse);
     expect(p.settings.sfxEffects, isTrue, reason: 'every setting back to its default');
     expect(p.trainer.config.learningMode, LearningMode.journey);
-    expect(p.sessions, isEmpty);
+    expect(p.runs, isEmpty);
     expect(p.xp.total, 0);
     final reopened = await tester.runAsync(() => Progress.open(p.db));
     expect(reopened!.settings.languagePicked, isFalse, reason: 'nothing of the old data is left on disk');
@@ -1954,7 +1954,7 @@ void main() {
     expect(find.text('Cards unlocked vs pace target'), findsOneWidget);
     expect(tester.takeException(), isNull);
     expect(p.trainer.unlocked.length, unlocked, reason: "the player's own progress is untouched");
-    expect(p.sessions, isEmpty);
+    expect(p.runs, isEmpty);
     await _capture(tester, 'debug_simulation');
     await tester.scrollUntilVisible(find.text('Seed demo data'), 300);
     expect(find.text('Seed demo data'), findsOneWidget);
@@ -2228,7 +2228,7 @@ void main() {
         await tester.pump(const Duration(milliseconds: 500));
         expect(find.byType(PlayScreen), findsNothing, reason: 'with no attempt, End goes straight back');
         expect(find.byType(ResultsScreen), findsNothing);
-        expect(p.sessions, isEmpty, reason: 'the start card alone records no run');
+        expect(p.runs, isEmpty, reason: 'the start card alone records no run');
         await tester.pumpWidget(const SizedBox());
       });
     }
@@ -3090,7 +3090,7 @@ void main() {
           await tester.pump(const Duration(milliseconds: 100));
           expect(find.byType(TourOverlay), findsNothing);
           expect(p.settings.toured, isTrue);
-          expect(p.sessions, isEmpty, reason: 'the practice round is not recorded');
+          expect(p.runs, isEmpty, reason: 'the practice round is not recorded');
           await tester.pumpWidget(const SizedBox());
         });
       }
@@ -3115,7 +3115,7 @@ void main() {
           await tester.pump(const Duration(milliseconds: 100));
           expect(find.byType(TourOverlay), findsNothing, reason: 'stop $stop');
           expect(p.settings.toJson(), settings.copyWith(toured: true).toJson(), reason: 'only the tour is marked done');
-          expect(p.sessions, isEmpty);
+          expect(p.runs, isEmpty);
           expect(find.byType(HomeScreen), findsOneWidget);
           await tester.pumpWidget(const SizedBox());
         }
@@ -3339,7 +3339,7 @@ void main() {
         await tester.pump(const Duration(milliseconds: 500));
         expect(done, isTrue);
         expect(find.byType(PlayScreen), findsNothing);
-        expect(p.sessions, isEmpty, reason: 'the practice round is never recorded');
+        expect(p.runs, isEmpty, reason: 'the practice round is never recorded');
         expect(p.xp.total, 0);
         await tester.pumpWidget(const SizedBox());
       });
@@ -3651,7 +3651,7 @@ void main() {
       expect(p.placed, isTrue);
       await tester.runAsync(p.debugClearRating);
       expect(p.placed, isFalse);
-      expect(p.ratingPoints, isEmpty);
+      expect(p.ratedRuns, isEmpty);
       expect((await rankedRun(tester, p)).placement, isTrue);
     });
 

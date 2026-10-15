@@ -3,7 +3,7 @@ import 'dart:io';
 import 'dart:math';
 import 'dart:ui' as ui;
 
-import 'package:drift/drift.dart' show driftRuntimeOptions;
+import 'package:drift/drift.dart' show Value, driftRuntimeOptions;
 import 'package:drift/native.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
@@ -116,8 +116,9 @@ void main() {
   }
 
   /// Three ranked games at level 3, the last the best, then a custom game
-  /// after another with the same setup, and an old game without its deal.
-  Future<void> recordGames(Progress p) async {
+  /// after another with the same setup, and an old game without its deal
+  /// or the cards its taps hit; returns [p]'s progress reopened.
+  Future<Progress> recordGames(Progress p) async {
     final ranked = AnkirenSetup.forLevel(3, ranked: true);
     const custom = AnkirenSetup.custom(perSide: 4, memorise: Duration(minutes: 1));
     await p.recordAnkiren(_play(ranked, seed: 3, ms: 1400, near: {0, 2, 5}, shown: {4}), startedAt: day);
@@ -128,15 +129,18 @@ void main() {
     await p.recordAnkiren(_play(custom, seed: 7, early: const Duration(seconds: 2), shown: {3}),
         startedAt: day.add(const Duration(hours: 4)));
     await p.recordAnkiren(_play(AnkirenSetup.forLevel(1), seed: 8), startedAt: day.add(const Duration(hours: 5)),
-        meta: {AnkirenMeta.dealKey: null, AnkirenMeta.tappedKey: null});
+        meta: {AnkirenMeta.dealKey: null});
+    final old = p.sideTrips.runs.last.id;
+    await (p.db.update(p.db.sideTripAnswers)..where((a) => a.runId.equals(old)))
+        .write(const SideTripAnswersCompanion(firstTapCard: Value(null), secondTapCard: Value(null)));
+    return (await Progress.open(p.db))..tabsAlwaysOpen = true;
   }
 
   group('AnkirenReview', () {
     late Progress p;
     late List<AnkirenGameRecord> all;
     setUp(() async {
-      p = await openProgress();
-      await recordGames(p);
+      p = await recordGames(await openProgress());
       final trips = p.sideTrips;
       all = [for (final r in trips.runsOf(SideTrip.ankiren)) trips.recordOf(r)];
     });
@@ -249,8 +253,7 @@ void main() {
           final s = S(lang);
           late Progress p;
           await tester.runAsync(() async {
-            p = await openProgress(ja: ja);
-            await recordGames(p);
+            p = await recordGames(await openProgress(ja: ja));
           });
           final runs = p.sideTrips.runsOf(SideTrip.ankiren).toList();
           final run = runs[2];
@@ -353,8 +356,7 @@ void main() {
       const s = S('en');
       late Progress p;
       await tester.runAsync(() async {
-        p = await openProgress();
-        await recordGames(p);
+        p = await recordGames(await openProgress());
       });
       final run = p.sideTrips.runsOf(SideTrip.ankiren).toList()[2];
       final game = p.sideTrips.recordOf(run);

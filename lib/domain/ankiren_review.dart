@@ -18,9 +18,6 @@ abstract final class AnkirenMeta {
   /// The dealt field (`AnkirenField.toJson`); missing from games recorded
   /// before the deal was kept.
   static const dealKey = 'deal';
-
-  /// For each card asked, in order, the cards its counted taps hit.
-  static const tappedKey = 'tapped';
 }
 
 /// One card of a recorded 暗記練 game and how it was answered (see
@@ -97,20 +94,7 @@ class AnkirenGameRecord {
           final Map<String, dynamic> json => AnkirenField.fromJson(json),
           _ => null,
         },
-        cards = List.unmodifiable([
-          for (final (i, c) in cards.indexed)
-            switch ((meta[AnkirenMeta.tappedKey] as List?)?.elementAtOrNull(i)) {
-              final List<dynamic> hit => AnkirenCardTry(
-                  poemId: c.poemId,
-                  wrongTaps: c.wrongTaps,
-                  responseUs: c.responseUs,
-                  taps: c.taps,
-                  firstTapUs: c.firstTapUs,
-                  tapped: [for (final id in hit) id as int],
-                ),
-              _ => c,
-            },
-        ]);
+        cards = List.unmodifiable(cards);
 
   final int id;
   final DateTime startedAt;

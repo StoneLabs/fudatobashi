@@ -186,11 +186,13 @@ void main() {
       await remember(p, journeyOrder.take(30));
       await db.into(db.keyValues).insertOnConflictUpdate(
           KeyValuesCompanion.insert(key: 'sideTripsUnlocked', value: '["ankiren.ranked"]'));
+      final now = DateTime.now();
       await db.into(db.sideTripRuns).insert(SideTripRunsCompanion.insert(
-          game: ankiren.name,
-          startedAt: DateTime.now(),
+          game: ankiren,
+          startedAt: now,
+          endedAt: now,
+          day: p.dayAt(now).number,
           ranked: true,
-          cardCount: 6,
           score: const Value(900),
           maxScore: const Value(1200),
           completed: true,

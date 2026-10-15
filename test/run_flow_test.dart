@@ -205,7 +205,7 @@ void main() {
     await tester.tap(find.text(S.of(tester.element(find.byType(PlayScreen))).forfeitNo));
     await tester.pump(const Duration(milliseconds: 600));
     expect(find.byType(PlayScreen), findsOneWidget, reason: 'kept playing');
-    expect(p.sessions, isEmpty);
+    expect(p.runs, isEmpty);
 
     await end();
     await tester.tap(find.text(S.of(tester.element(find.byType(PlayScreen))).forfeitYes));
@@ -214,8 +214,8 @@ void main() {
       await tester.pump(ms(50));
     }
     expect(find.byType(ResultsScreen), findsOneWidget);
-    expect(p.sessions.single.mode, PlayMode.ranked.name);
-    expect(p.sessions.single.completed, isFalse);
+    expect(p.runs.single.mode, PlayMode.ranked);
+    expect(p.runs.single.completed, isFalse);
     expect(p.rating, isNotNull, reason: 'a forfeit still places');
     expect(p.rating!, lessThan(Rating.bands[1].minRating), reason: '97 cards left count as slow misses');
     await tester.pumpWidget(const SizedBox());

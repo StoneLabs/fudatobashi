@@ -8,8 +8,10 @@ import 'package:fudatobashi/domain/ankiren_level.dart';
 
 /// A 暗記練 game dealt from all the poems, played out: each card found
 /// [ms] after its prompt, after one wrong tap on another card of its side
-/// for the prompts in [wrongAt]; ended early after [endAfter] prompts.
-AnkirenGame playAnkiren(AnkirenSetup setup, {int seed = 1, int ms = 700, Set<int> wrongAt = const {}, int? endAfter}) {
+/// for the prompts in [wrongAt], or given up for those in [giveUpAt]; ended
+/// early after [endAfter] prompts.
+AnkirenGame playAnkiren(AnkirenSetup setup,
+    {int seed = 1, int ms = 700, Set<int> wrongAt = const {}, Set<int> giveUpAt = const {}, int? endAfter}) {
   final rng = Random(seed);
   final field = AnkirenDealer.ofPoems()
       .deal([for (final p in poems.all) p.id], setup.perSide, rng, allInMiddle: setup.allInMiddle);
@@ -28,7 +30,11 @@ AnkirenGame playAnkiren(AnkirenSetup setup, {int seed = 1, int ms = 700, Set<int
           t + const Duration(milliseconds: 300));
     }
     t += Duration(milliseconds: ms);
-    game.tap(asked, t);
+    if (giveUpAt.contains(i)) {
+      game.giveUp();
+    } else {
+      game.tap(asked, t);
+    }
     t += const Duration(milliseconds: 400);
   }
   return game;

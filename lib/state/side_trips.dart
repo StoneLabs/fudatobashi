@@ -28,43 +28,30 @@ class AnkirenReport {
 /// and what they add up to: each trip's ranked rating, its ranked games and
 /// the hub's standing. Owned by `Progress`, which loads it on start.
 class SideTrips {
-  SideTrips._(this._runs, this._answers, this._poems);
+  SideTrips._(this._runs, this._answers);
 
   static Future<SideTrips> load(AppDatabase db) async {
     final runs = await (db.select(db.sideTripRuns)..orderBy([(r) => OrderingTerm.asc(r.id)])).get();
     final rows = await (db.select(db.sideTripAnswers)
           ..orderBy([(a) => OrderingTerm.asc(a.runId), (a) => OrderingTerm.asc(a.seq)]))
         .get();
-    final answers = <int, List<AnkirenXpAnswer>>{};
-    final poems = <int, List<int>>{};
+    final answers = <int, List<SideTripAnswerRow>>{};
     for (final a in rows) {
-      (poems[a.runId] ??= []).add(a.poemId);
-      (answers[a.runId] ??= []).add((
-        wrongTaps: a.wrongTaps,
-        responseUs: a.responseUs,
-        taps: [
-          for (final place in [a.firstTap, a.secondTap])
-            if (place != null) ?TapProximity.values.elementAtOrNull(place),
-        ],
-        firstTapUs: a.firstTapUs,
-      ));
+      (answers[a.runId] ??= []).add(a);
     }
-    return SideTrips._(runs, answers, poems);
+    return SideTrips._(runs, answers);
   }
 
   final List<SideTripRun> _runs;
 
   /// Each run's answers, in the order they were asked, by run id.
-  final Map<int, List<AnkirenXpAnswer>> _answers;
-
-  /// Each run's cards, in the order they were asked, by run id.
-  final Map<int, List<int>> _poems;
+  final Map<int, List<SideTripAnswerRow>> _answers;
 
   /// Every recorded game of every trip, oldest first.
   List<SideTripRun> get runs => List.unmodifiable(_runs);
 
   /// [trip]'s games, ranked and free, oldest first.
-  Iterable<SideTripRun> runsOf(SideTrip trip) => _runs.where((r) => r.game == trip.name);
+  Iterable<SideTripRun> runsOf(SideTrip trip) => _runs.where((r) => r.game == trip);
 
   /// [trip]'s ranked games that moved its rating, oldest first.
   Iterable<SideTripRun> _rated(SideTrip trip) => runsOf(trip).where((r) => r.ranked && r.rating != null);
@@ -76,42 +63,56 @@ class SideTrips {
   int rankedGames(SideTrip trip) => _rated(trip).length;
 
   /// [run]'s answers, one per card asked, in order.
-  List<AnkirenXpAnswer> answersOf(SideTripRun run) => List.unmodifiable(_answers[run.id] ?? const []);
+  List<AnkirenXpAnswer> answersOf(SideTripRun run) => [
+        for (final a in _answers[run.id] ?? const <SideTripAnswerRow>[])
+          (wrongTaps: a.wrongTaps, responseUs: a.responseUs, taps: _tapsOf(a).taps, firstTapUs: a.firstTapUs),
+      ];
 
   /// [run]'s cards, in the order they were asked.
-  List<int> poemsOf(SideTripRun run) => List.unmodifiable(_poems[run.id] ?? const []);
+  List<int> poemsOf(SideTripRun run) => [for (final a in _answers[run.id] ?? const <SideTripAnswerRow>[]) a.poemId];
 
-  /// [run] as History reviews it.
-  AnkirenGameRecord recordOf(SideTripRun run) {
-    final poems = _poems[run.id] ?? const [];
-    return AnkirenGameRecord(
-      id: run.id,
-      startedAt: run.startedAt,
-      ranked: run.ranked,
-      level: run.level,
-      score: run.score,
-      maxScore: run.maxScore,
-      completed: run.completed,
-      rating: run.rating,
-      performance: run.performance,
-      meta: run.meta,
-      cards: [
-        for (final (i, a) in answersOf(run).indexed)
-          AnkirenCardTry(
-            poemId: poems[i],
-            wrongTaps: a.wrongTaps,
-            responseUs: a.responseUs,
-            taps: a.taps,
-            firstTapUs: a.firstTapUs,
-          ),
-      ],
+  /// Cards asked in [run]: every card of its field.
+  int cardsIn(SideTripRun run) => _answers[run.id]?.length ?? 0;
+
+  /// Where [a]'s counted taps landed and the cards they hit, in order.
+  static ({List<TapProximity> taps, List<int> tapped}) _tapsOf(SideTripAnswerRow a) {
+    final taps = [(a.firstTap, a.firstTapCard), (a.secondTap, a.secondTapCard)];
+    return (
+      taps: [for (final (place, _) in taps) ?place],
+      tapped: [for (final (place, card) in taps) if (place != null) ?card],
     );
   }
+
+  /// [run] as History reviews it.
+  AnkirenGameRecord recordOf(SideTripRun run) => AnkirenGameRecord(
+        id: run.id,
+        startedAt: run.startedAt,
+        ranked: run.ranked,
+        level: run.level,
+        score: run.score,
+        maxScore: run.maxScore,
+        completed: run.completed,
+        rating: run.rating,
+        performance: run.performance,
+        meta: run.meta,
+        cards: [
+          for (final a in _answers[run.id] ?? const <SideTripAnswerRow>[])
+            if (_tapsOf(a) case (:final taps, :final tapped))
+              AnkirenCardTry(
+                poemId: a.poemId,
+                wrongTaps: a.wrongTaps,
+                responseUs: a.responseUs,
+                taps: taps,
+                tapped: tapped,
+                firstTapUs: a.firstTapUs,
+              ),
+        ],
+      );
 
   /// The cards of [run] not found with the first tap: found after a wrong
   /// tap, shown, or never found.
   int missesIn(SideTripRun run) =>
-      run.cardCount - answersOf(run).where((a) => a.wrongTaps == 0 && a.responseUs != null).length;
+      cardsIn(run) - answersOf(run).where((a) => a.wrongTaps == 0 && a.responseUs != null).length;
 
   /// [trip]'s standing on the hub for a player who knows [known] cards: a
   /// ranked level capped by the levels those cards fill, and what each
@@ -143,14 +144,16 @@ class SideTrips {
   }
 
   /// Stores [game], once it is over (see [AnkirenGame.end]), as started at
-  /// [startedAt]: its run and one answer per card asked, in one transaction,
-  /// with [meta] added to the run's own details. A ranked game moves
-  /// 暗記練's rating toward its performance (see [AnkirenRating]), placing
-  /// it during the first ranked games; free play never touches it.
+  /// [startedAt] on practice day [day]: its run and one answer per card
+  /// asked, in one transaction, with [meta] added to the run's own details.
+  /// A ranked game moves 暗記練's rating toward its performance (see
+  /// [AnkirenRating]), placing it during the first ranked games; free play
+  /// never touches it.
   Future<AnkirenReport> recordAnkiren(
     AppDatabase db,
     AnkirenGame game, {
     required DateTime startedAt,
+    required int day,
     Map<String, Object?> meta = const {},
   }) async {
     assert(game.phase == AnkirenPhase.done, 'a game is recorded once it is over');
@@ -168,11 +171,12 @@ class SideTrips {
 
     final runId = await db.transaction(() async {
       final id = await db.into(db.sideTripRuns).insert(SideTripRunsCompanion.insert(
-            game: trip.name,
+            game: trip,
             startedAt: startedAt,
+            endedAt: game.answers.lastOrNull?.at ?? startedAt,
+            day: day,
             ranked: setup.ranked,
             level: Value(setup.level),
-            cardCount: game.prompts.length,
             score: Value(score?.total),
             maxScore: Value(score?.max),
             completed: game.completed,
@@ -184,7 +188,6 @@ class SideTrips {
               AnkirenMeta.middleKey: game.field.own.middleCards.length + game.field.opponent.middleCards.length,
               AnkirenMeta.memorisedKey: game.memorised.inMilliseconds,
               AnkirenMeta.dealKey: game.field.toJson(),
-              AnkirenMeta.tappedKey: [for (final a in game.answers) a.tapped],
               ...meta,
             })),
           ));
@@ -195,21 +198,23 @@ class SideTrips {
                 seq: i,
                 poemId: a.poemId,
                 wrongTaps: a.wrongTaps,
+                gaveUp: Value(a.gaveUp),
                 responseUs: Value(a.responseUs),
                 at: a.at,
-                firstTap: Value(a.taps.elementAtOrNull(0)?.index),
+                firstTap: Value(a.taps.elementAtOrNull(0)),
+                firstTapCard: Value(a.tapped.elementAtOrNull(0)),
                 firstTapUs: Value(a.firstTapUs),
-                secondTap: Value(a.taps.elementAtOrNull(1)?.index),
+                secondTap: Value(a.taps.elementAtOrNull(1)),
+                secondTapCard: Value(a.tapped.elementAtOrNull(1)),
               ),
           ]));
       return id;
     });
     _runs.add(await (db.select(db.sideTripRuns)..where((r) => r.id.equals(runId))).getSingle());
-    _poems[runId] = [for (final a in game.answers) a.poemId];
-    _answers[runId] = [
-      for (final a in game.answers)
-        (wrongTaps: a.wrongTaps, responseUs: a.responseUs, taps: a.taps, firstTapUs: a.firstTapUs),
-    ];
+    _answers[runId] = await (db.select(db.sideTripAnswers)
+          ..where((a) => a.runId.equals(runId))
+          ..orderBy([(a) => OrderingTerm.asc(a.seq)]))
+        .get();
 
     return AnkirenReport(ratingBefore: before, ratingAfter: after, rankedGames: setup.ranked ? rankedGames(trip) : 0);
   }
@@ -218,6 +223,5 @@ class SideTrips {
   void clear() {
     _runs.clear();
     _answers.clear();
-    _poems.clear();
   }
 }

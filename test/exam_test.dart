@@ -211,8 +211,8 @@ void main() {
     await pumpFor(tester, const Duration(milliseconds: 400));
     await _capture(tester, 'exam_won_en');
     await until(tester, find.byType(ResultsScreen));
-    final report = p.sessions.last;
-    expect(report.mode, PlayMode.exam.name);
+    final report = p.runs.last;
+    expect(report.mode, PlayMode.exam);
     expect(report.completed, isTrue);
     expect(p.graduated, isTrue);
     expect(p.exam().passed, isTrue);
@@ -245,7 +245,7 @@ void main() {
     expect(raceTime(tester), greaterThanOrEqualTo(const Duration(seconds: 25)), reason: 'decided as Tobi finishes');
     expect(find.text(S('en').examTobiWinsShout), findsWidgets);
     await until(tester, find.byType(ExamLostScreen));
-    expect(p.sessions.last.completed, isTrue);
+    expect(p.runs.last.completed, isTrue);
     expect(p.graduated, isFalse);
     await tester.pumpWidget(const SizedBox());
   });
@@ -280,8 +280,8 @@ void main() {
     expect(find.text(s.examNextTry.toUpperCase()), findsOneWidget);
     expect(find.textContaining(RegExp(r'^5\d:\d\d$')), findsOneWidget, reason: 'the hour counting down');
     expect(find.text(s.examMissesLine(1, 10)), findsNWidgets(2), reason: "his mistake and the player's");
-    expect(p.sessions.last.mode, PlayMode.exam.name);
-    expect(p.sessions.last.completed, isFalse);
+    expect(p.runs.last.mode, PlayMode.exam);
+    expect(p.runs.last.completed, isFalse);
     expect(p.graduated, isFalse);
     await tester.pumpWidget(const SizedBox());
   });
@@ -335,8 +335,8 @@ void main() {
     await tester.tap(find.text(s.examLeaveYes));
     await until(tester, find.byType(ExamLostScreen));
     expect(find.textContaining(s.examCardsLine(2, RankedTuning.cards)), findsOneWidget, reason: 'how far the try got');
-    expect(p.sessions.last.mode, PlayMode.exam.name);
-    expect(p.sessions.last.completed, isFalse);
+    expect(p.runs.last.mode, PlayMode.exam);
+    expect(p.runs.last.completed, isFalse);
     expect(p.exam().cooldown, isNotNull);
     await tester.pumpWidget(const SizedBox());
   });

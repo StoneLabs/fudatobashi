@@ -9,6 +9,7 @@ import '../config/config.dart';
 import '../data/fuda_sets.dart';
 import '../data/poem.dart';
 import '../db/database.dart';
+import '../db/fsrs_rows.dart';
 import '../domain/ankiren_game.dart';
 import '../domain/card_mask.dart';
 import '../domain/card_stats.dart';
@@ -24,7 +25,6 @@ import '../domain/today_set.dart';
 import '../domain/trainer.dart';
 import '../domain/xp.dart';
 import 'db_integrity.dart';
-import 'past_runs.dart';
 import 'play_config.dart';
 import 'settings.dart';
 import 'side_trips.dart';
@@ -33,7 +33,7 @@ import 'xp_history.dart';
 /// What a finished run changed (for the results screen).
 class SessionReport {
   SessionReport({
-    required this.sessionId,
+    required this.runId,
     required this.completed,
     required this.total,
     required this.attempts,
@@ -52,7 +52,7 @@ class SessionReport {
     this.tobi,
   });
 
-  final int? sessionId;
+  final int? runId;
   final PlayMode mode;
 
   /// A ranked run's or an exam try's time with its penalties (see
@@ -205,24 +205,30 @@ class ExamAccess {
 /// All persistent progress: attempts, training state, rating, history and
 /// settings. Loaded once at startup; the UI listens for changes.
 class Progress extends ChangeNotifier {
-  Progress._(this.db, this.trainer, this._log, this.sessions, this.ratingPoints, this._settings, this.rating,
-      this._islandsCelebrated, this._freePracticeUnlocked, this._tabsSeenLocked, this._sideTripsTabOpened,
-      this._sideTripsOpened, this._sideTripsSeenLocked, this.sideTrips);
+  Progress._(this.db, this.trainer, this._log, this.runs, this._settings, this._islandCompletions,
+      this._freePracticeUnlocked, this._tabsSeenLocked, this._sideTripsTabOpened, this._sideTripsOpened,
+      this._sideTripsSeenLocked, this.sideTrips)
+      : rating = _ratingAfter(runs);
 
   final AppDatabase db;
   final Trainer trainer;
   final Map<ItemKey, List<AttemptRec>> _log;
-  final List<Session> sessions;
-  final List<RatingPoint> ratingPoints;
+
+  /// Every recorded run, oldest first.
+  final List<RunRow> runs;
   AppSettings _settings;
+
+  /// The rating: the latest ranked run's; null before the first (placement).
   double? rating;
   final _statsCache = <ItemKey, CardStats>{};
-  final _missesCache = <int, int>{};
+  Map<int, ({int cards, int misses})>? _runCounts;
 
   /// Unlocked while planning a run and not yet part of a recorded one (for
   /// the islands a run reaches).
   final _unreported = <ItemKey>[];
-  final Set<int> _islandsCelebrated;
+
+  /// The islands counted as complete, by island.
+  final Map<int, IslandCompletionRow> _islandCompletions;
 
   /// Free practice has opened once, so it stays open (see [freePractice]).
   bool _freePracticeUnlocked;
@@ -272,14 +278,8 @@ class Progress extends ChangeNotifier {
 
     final items = Trainer.freshItems();
     for (final r in await db.select(db.items).get()) {
-      final k = ItemKey(r.poemId, r.inverted);
-      items[k] = ItemState(
-        k,
-        unlocked: r.unlocked,
-        unlockedAt: r.unlockedAt,
-        card: r.fsrs == null ? null : ItemState.cardFromJson(r.fsrs!),
-        maskLevel: r.maskLevel,
-      );
+      final item = ItemStateRow.of(r);
+      items[item.key] = item;
     }
     final trainer = Trainer(
       config: TrainerConfig.fromJson(json('trainer')),
@@ -287,32 +287,27 @@ class Progress extends ChangeNotifier {
       goalLevel: int.tryParse(kv['goalLevel'] ?? '') ?? 0,
     );
 
-    final sessions = await (db.select(db.sessions)..orderBy([(s) => OrderingTerm.asc(s.startedAt)])).get();
-    final configOf = {for (final s in sessions) s.id: _configOf(s)};
+    final runs = await (db.select(db.runs)
+          ..orderBy([(r) => OrderingTerm.asc(r.startedAt), (r) => OrderingTerm.asc(r.id)]))
+        .get();
+    final configOf = {for (final r in runs) r.id: _configOf(r)};
 
     final log = <ItemKey, List<AttemptRec>>{};
     final rows = await (db.select(db.attempts)..orderBy([(a) => OrderingTerm.asc(a.at), (a) => OrderingTerm.asc(a.id)])).get();
     for (final a in rows) {
-      (log[ItemKey(a.poemId, a.inverted)] ??= []).add(_rec(a, configOf[a.sessionId] ?? _orphanRun));
+      (log[ItemKey(a.poemId, a.inverted)] ??= []).add(_rec(a, configOf[a.runId] ?? _orphanRun));
     }
-    final points = await (db.select(db.ratingPoints)..orderBy([(r) => OrderingTerm.asc(r.at)])).get();
-    // A rating stored as NaN (from a 0 µs sample, before those stopped
-    // counting as timed) falls back to the last good rating point.
-    final stored = double.tryParse(kv['rating'] ?? '');
-    final rating = stored == null || stored.isFinite ? stored : points.lastOrNull?.rating;
     var settings = AppSettings.fromJson(json('settings'));
     // Players from before the tour existed have found their way around.
-    if (!json('settings').containsKey('toured') && sessions.isNotEmpty) settings = settings.copyWith(toured: true);
+    if (!json('settings').containsKey('toured') && runs.isNotEmpty) settings = settings.copyWith(toured: true);
     trainer.dayStartHour = settings.dayStartHour;
     final progress = Progress._(
       db,
       trainer,
       log,
-      sessions,
-      points,
+      runs,
       settings,
-      rating,
-      {...((jsonDecode(kv['islandsCelebrated'] ?? '[]') as List).cast<int>())},
+      {for (final c in await db.select(db.islandCompletions).get()) c.island: c},
       kv[_freePracticeKey] == 'true',
       {
         for (final name in (jsonDecode(kv[_tabsSeenLockedKey] ?? '[]') as List).cast<String>())
@@ -330,14 +325,14 @@ class Progress extends ChangeNotifier {
       await SideTrips.load(db),
     );
     for (final d in await db.select(db.days).get()) {
-      progress._days[d.number] = d;
+      progress._days[d.day] = d;
     }
+    progress._day = progress._days.values.fold<DayRow?>(null, (a, d) => a == null || d.day > a.day ? d : a);
     progress._examLastTry = DateTime.tryParse(kv[_examLastTryKey] ?? '');
     progress._examIntroShown = kv[_examIntroShownKey] == 'true';
     if (DateTime.tryParse(kv[_rankedRunningKey] ?? '') case final startedAt?) {
       await progress._forfeitUnrecorded(startedAt);
     }
-    progress._day = progress._days.values.fold<DayRow?>(null, (a, d) => a == null || d.number > a.number ? d : a);
     await progress._loadToday();
     if (settings.onboarded && !progress._allKnown) await progress.refreshToday();
     await progress._latchFreePractice(DateTime.now());
@@ -359,15 +354,18 @@ class Progress extends ChangeNotifier {
   static AttemptRec _rec(AttemptRow a, PlayConfig run) => AttemptRec(
         at: a.at,
         us: a.responseUs,
-        miss: a.outcome == Outcome.dontKnow.index || a.wrong || a.undone,
+        miss: a.outcome == Outcome.dontKnow || a.wrong || a.undone,
         clean: !a.tainted && !a.undone,
         deckSize: a.deckSize,
         mode: run.mode,
         countsForSrs: run.countsForSrs,
         maskLevel: a.maskLevel,
         grade: a.grade,
-        sessionId: a.sessionId,
+        runId: a.runId,
+        undone: a.undone,
       );
+
+  static double? _ratingAfter(List<RunRow> runs) => [for (final r in runs) ?r.rating].lastOrNull;
 
   // ---------------------------------------------------------------- reads
 
@@ -389,10 +387,26 @@ class Progress extends ChangeNotifier {
   /// occasional UI use, not the training/rating hot path.
   CardStats displayStats(ItemKey k) => CardStats(_log[k] ?? const []);
 
-  /// Misses (wrong, "don't know" or undone) recorded in one session — for
-  /// the History tab.
-  int missesIn(int sessionId) => _missesCache[sessionId] ??=
-      _log.values.expand((a) => a).where((a) => a.sessionId == sessionId && a.miss).length;
+  /// Misses (wrong, "don't know" or undone) recorded in run [runId].
+  int missesIn(int runId) => _countsOf(runId).misses;
+
+  /// Cards swiped in run [runId], undone swipes left out (a card missed in
+  /// training and swiped again counts twice).
+  int cardsIn(int runId) => _countsOf(runId).cards;
+
+  ({int cards, int misses}) _countsOf(int runId) {
+    final counts = _runCounts ??= () {
+      final byRun = <int, ({int cards, int misses})>{};
+      for (final a in _log.values.expand((a) => a)) {
+        final id = a.runId;
+        if (id == null) continue;
+        final c = byRun[id] ?? (cards: 0, misses: 0);
+        byRun[id] = (cards: c.cards + (a.undone ? 0 : 1), misses: c.misses + (a.miss ? 1 : 0));
+      }
+      return byRun;
+    }();
+    return counts[runId] ?? (cards: 0, misses: 0);
+  }
 
   double get projectedMs => Rating.projectedMs(stats);
 
@@ -448,39 +462,50 @@ class Progress extends ChangeNotifier {
   /// Best completed total for runs with the same setup.
   Duration? bestFor(PlayConfig c) {
     Duration? best;
-    for (final s in sessions) {
-      final total = totalOf(s);
-      if (total == null || _configOf(s).historyKey != c.historyKey) continue;
+    for (final r in runs) {
+      final total = totalOf(r);
+      if (total == null || _configOf(r).historyKey != c.historyKey) continue;
       if (best == null || total < best) best = total;
     }
     return best;
   }
 
-  /// Session [s]'s total time; null when it was ended early or its time is
-  /// no measurement.
-  static Duration? totalOf(Session s) =>
-      s.completed && s.totalUs != null && s.totalUs! > 0 ? Duration(microseconds: s.totalUs!) : null;
+  /// Run [r]'s clock, while it is a measurement.
+  static Duration? clockOf(RunRow r) => switch (r.clockUs) {
+        final int us when us > 0 => Duration(microseconds: us),
+        _ => null,
+      };
 
-  PlayConfig configOf(Session s) => _configOf(s);
+  /// Run [r]'s total time; null when it was ended early or its time is no
+  /// measurement.
+  static Duration? totalOf(RunRow r) => r.completed ? clockOf(r) : null;
 
-  static PlayConfig _configOf(Session s) {
-    final meta = jsonDecode(s.meta) as Map<String, dynamic>;
-    return PlayConfig(
-      mode: PlayMode.values.byName(s.mode),
-      setIds: (jsonDecode(s.setIds) as List).cast<String>(),
-      cardIds: (meta['cardIds'] as List?)?.cast<int>(),
-      maskLevel: meta['maskLevel'] as int? ?? 0,
-    );
-  }
+  PlayConfig configOf(RunRow r) => _configOf(r);
+
+  static PlayConfig _configOf(RunRow r) => PlayConfig(
+        mode: r.mode,
+        setIds: (jsonDecode(r.setIds) as List).cast<String>(),
+        cardIds: r.cardIds == null ? null : (jsonDecode(r.cardIds!) as List).cast<int>(),
+        maskLevel: r.maskLevel,
+      );
 
   /// Days (see [dayOf]) with at least one tracked run.
-  Set<DateTime> get practiceDays => {for (final s in sessions) dayOf(s)};
+  Set<DateTime> get practiceDays => {for (final r in runs) dayOf(r)};
 
-  /// The practice day session [s] was played on (a UTC midnight).
-  DateTime dayOf(Session s) {
-    final day = (jsonDecode(s.meta) as Map<String, dynamic>)[_dayKey] as int?;
-    return day != null ? DayWindow.dateOf(day) : DayWindow.at(s.startedAt, settings.dayStartHour).date;
-  }
+  /// The practice day run [r] was played on (a UTC midnight).
+  DateTime dayOf(RunRow r) => DayWindow.dateOf(r.day);
+
+  /// Ranked runs that moved the rating, oldest first.
+  Iterable<RunRow> get ratedRuns => runs.where((r) => r.rating != null);
+
+  /// The ranked run that placed the player: the first to move the rating.
+  bool isPlacement(RunRow r) => r.rating != null && ratedRuns.first.id == r.id;
+
+  /// The islands journey run [runId] completed (and celebrated).
+  List<int> islandsCompletedBy(int runId) => [
+        for (final c in _islandCompletions.values)
+          if (c.runId == runId) c.island,
+      ]..sort();
 
   /// The very first swipe ever recorded, for My Profile's "first swipe"
   /// line — null with no history yet.
@@ -511,8 +536,6 @@ class Progress extends ChangeNotifier {
 
   // ---------------------------------------------------------------- today
 
-  static const _dayKey = 'day';
-
   /// The practice day [now] falls in (see [DayWindow]): the latest stored
   /// day while it lasts, then the one after it.
   DayWindow dayAt([DateTime? now]) {
@@ -526,7 +549,7 @@ class Progress extends ChangeNotifier {
     return DayWindow.at(now, settings.dayStartHour);
   }
 
-  static DayWindow _windowOf(DayRow d) => DayWindow(DayWindow.dateOf(d.number), d.startsAt, d.endsAt);
+  static DayWindow _windowOf(DayRow d) => DayWindow(DayWindow.dateOf(d.day), d.startsAt, d.endsAt);
 
   /// Journey mode's set for the day [now] falls in, once built (see
   /// [refreshToday]).
@@ -550,7 +573,7 @@ class Progress extends ChangeNotifier {
     final known = _days[w.number];
     if (known != null) return known;
     final row = DayRow(
-      number: w.number,
+      day: w.number,
       startsAt: w.start,
       endsAt: w.end,
       missGuess: 0,
@@ -559,7 +582,7 @@ class Progress extends ChangeNotifier {
     );
     await db.into(db.days).insert(row, mode: InsertMode.insertOrIgnore);
     _days[w.number] = row;
-    if (_day == null || w.number > _day!.number) {
+    if (_day == null || w.number > _day!.day) {
       _day = row;
       _today = null;
     }
@@ -568,8 +591,8 @@ class Progress extends ChangeNotifier {
 
   Future<void> _updateDay(DayRow row) async {
     await db.update(db.days).replace(row);
-    _days[row.number] = row;
-    if (_day?.number == row.number) _day = row;
+    _days[row.day] = row;
+    if (_day?.day == row.day) _day = row;
   }
 
   /// Journey mode: builds the set for the day [now] falls in, the first time
@@ -578,9 +601,9 @@ class Progress extends ChangeNotifier {
   Future<List<ItemKey>> refreshToday([DateTime? now]) async {
     now ??= DateTime.now();
     final day = await _storeDay(now);
-    if (_allKnown || day.number != _day?.number) return const [];
+    if (_allKnown || day.day != _day?.day) return const [];
     if (day.builtAt != null) {
-      if (_today?.window.date != DayWindow.dateOf(day.number)) await _loadToday();
+      if (_today?.window.date != DayWindow.dateOf(day.day)) await _loadToday();
       return const [];
     }
     final fresh = trainer.unlockForToday(poems, fudaSets, allStats, now);
@@ -593,7 +616,7 @@ class Progress extends ChangeNotifier {
       for (final s in trainer.unlocked)
         if (!s.reviewed) s.key: StepKind.newCard else if (s.card.due.isBefore(window.end)) s.key: StepKind.review,
     };
-    await _storeSetCards(day.number, kinds);
+    await _storeSetCards(day.day, kinds);
     final recent = [
       for (final k in trainer.items.keys)
         for (final a in _log[k] ?? const <AttemptRec>[]) if (a.mode == PlayMode.training) a,
@@ -615,7 +638,7 @@ class Progress extends ChangeNotifier {
         for (final e in kinds.entries) {
           b.insert(
             db.dayCards,
-            DayCardsCompanion.insert(day: day, poemId: e.key.poemId, inverted: e.key.inverted, kind: e.value.index),
+            DayCardsCompanion.insert(day: day, poemId: e.key.poemId, inverted: e.key.inverted, kind: e.value),
             mode: InsertMode.insertOrReplace,
           );
         }
@@ -628,8 +651,8 @@ class Progress extends ChangeNotifier {
       _today = null;
       return;
     }
-    final rows = await (db.select(db.dayCards)..where((c) => c.day.equals(day.number))).get();
-    _today = _replay(day, {for (final r in rows) ItemKey(r.poemId, r.inverted): StepKind.values[r.kind]});
+    final rows = await (db.select(db.dayCards)..where((c) => c.day.equals(day.day))).get();
+    _today = _replay(day, {for (final r in rows) ItemKey(r.poemId, r.inverted): r.kind});
   }
 
   /// [day]'s set with its progress, replayed from the day's training swipes.
@@ -686,10 +709,10 @@ class Progress extends ChangeNotifier {
       _unreported.removeWhere(keys.contains);
       await _saveItems(keys);
       await (db.delete(db.dayCards)
-            ..where((c) => c.day.equals(day.number))
-            ..where((c) => c.kind.equals(StepKind.newCard.index)))
+            ..where((c) => c.day.equals(day.day))
+            ..where((c) => c.kind.equalsValue(StepKind.newCard)))
           .go();
-      await _storeSetCards(day.number, {for (final e in set.kinds.entries) if (!keys.contains(e.key)) e.key: e.value});
+      await _storeSetCards(day.day, {for (final e in set.kinds.entries) if (!keys.contains(e.key)) e.key: e.value});
     }
     await _updateDay(day.copyWith(pauseAsked: true, newPaused: _day!.newPaused || pause));
     await _loadToday();
@@ -707,7 +730,7 @@ class Progress extends ChangeNotifier {
   /// done, and which passed without it (since the first day with a set).
   List<WeekStamp> weekStamps([DateTime? now]) {
     final today = dayAt(now).date;
-    final firstSet = _days.values.where((d) => d.builtAt != null).map((d) => d.number).fold<int?>(
+    final firstSet = _days.values.where((d) => d.builtAt != null).map((d) => d.day).fold<int?>(
           null,
           (a, n) => a == null || n < a ? n : a,
         );
@@ -802,7 +825,7 @@ class Progress extends ChangeNotifier {
   bool get placed => rating != null;
 
   /// Ranked runs recorded, forfeits included.
-  int get rankedRuns => sessions.where((s) => s.mode == PlayMode.ranked.name).length;
+  int get rankedRuns => runs.where((r) => r.mode == PlayMode.ranked).length;
 
   /// A ranked run of all 100 cards, shuffled, each either way up at random,
   /// with nothing hidden.
@@ -869,8 +892,9 @@ class Progress extends ChangeNotifier {
   /// leaves every run, so the ledger (graduation XP, levels) rebuilds without
   /// it, and the exam's intro and cooldown start over.
   Future<void> debugUndoExamPass() async {
-    for (var i = 0; i < sessions.length; i++) {
-      sessions[i] = await XpHistory.clearGraduated(db, sessions[i]);
+    await (db.update(db.runs)..where((r) => r.graduated)).write(const RunsCompanion(graduated: Value(false)));
+    for (var i = 0; i < runs.length; i++) {
+      if (runs[i].graduated) runs[i] = runs[i].copyWith(graduated: false);
     }
     _xp = null;
     _examLastTry = null;
@@ -881,13 +905,17 @@ class Progress extends ChangeNotifier {
   }
 
   /// Developer mode: back to unplaced, so the next ranked run places again.
+  /// The ranked runs stay, without their ratings.
   Future<void> debugClearRating() async {
-    await db.transaction(() async {
-      await _drop('rating');
-      await db.delete(db.ratingPoints).go();
-    });
-    ratingPoints.clear();
+    await (db.update(db.runs)..where((r) => r.rating.isNotNull() | r.performance.isNotNull()))
+        .write(const RunsCompanion(rating: Value(null), performance: Value(null)));
+    for (var i = 0; i < runs.length; i++) {
+      if (runs[i].rating != null || runs[i].performance != null) {
+        runs[i] = runs[i].copyWith(rating: const Value(null), performance: const Value(null));
+      }
+    }
     rating = null;
+    _xp = null;
     notifyListeners();
   }
 
@@ -932,7 +960,7 @@ class Progress extends ChangeNotifier {
       await _saveItems(fresh);
       final set = todaySet(now), day = _day;
       if (set != null && !set.done && day != null) {
-        await _storeSetCards(day.number, {...set.kinds, for (final k in fresh) k: StepKind.newCard});
+        await _storeSetCards(day.day, {...set.kinds, for (final k in fresh) k: StepKind.newCard});
         await _loadToday();
       }
       notifyListeners();
@@ -946,7 +974,7 @@ class Progress extends ChangeNotifier {
     if (_allKnown) {
       final picks = trainer.planSession(stats, now, rng);
       final cards = [
-        for (final p in picks) _ref(p.key.poemId, p.key.inverted, trainer.items[p.key]!.maskLevel, rng),
+        for (final p in picks) CardRef(p.key.poemId, inverted: p.key.inverted),
       ];
       return PlannedRun(cards, picks, fresh, const {});
     }
@@ -985,7 +1013,7 @@ class Progress extends ChangeNotifier {
       );
     }
     final refs = <ItemKey, CardRef>{};
-    CardRef ref(ItemKey k) => refs[k] ??= _ref(k.poemId, k.inverted, trainer.items[k]!.maskLevel, rng);
+    CardRef ref(ItemKey k) => refs[k] ??= CardRef(k.poemId, inverted: k.inverted);
     ItemKey keyOf(CardRef c) => ItemKey(c.poemId, c.inverted);
     final keys = plan.cards;
     return PlannedRun(
@@ -1081,9 +1109,9 @@ class Progress extends ChangeNotifier {
       : TabLock.of(
         tab,
         mode: trainer.config.learningMode,
-        rounds: sessions.length,
-        finishedRounds: sessions.where((s) => s.completed).length,
-        islandFinished: _islandsCelebrated.isNotEmpty || islands.any((i) => i.complete),
+        rounds: runs.length,
+        finishedRounds: runs.where((r) => r.completed).length,
+        islandFinished: _islandCompletions.isNotEmpty || islands.any((i) => i.complete),
         remembered: _sideTripsRemembered(DateTime.now()),
         sideTripsLatched: _sideTripsTabOpened,
       );
@@ -1175,8 +1203,7 @@ class Progress extends ChangeNotifier {
   /// one still stuck mid-consolidation) with nothing left to celebrate.
   Future<void> switchToAllKnown() async {
     await setLearningMode(LearningMode.allKnown);
-    _islandsCelebrated.addAll(islands.map((i) => i.index));
-    await _put('islandsCelebrated', jsonEncode(_islandsCelebrated.toList()..sort()));
+    await _markIslands([for (final i in islands) i.index], DateTime.now());
     _unreported.clear();
     notifyListeners();
   }
@@ -1184,32 +1211,32 @@ class Progress extends ChangeNotifier {
   /// Whether island [index]'s completion has already been marked, by a real
   /// completion or [switchToAllKnown]'s silent one: `JourneyState` treats it
   /// as done even before its cards are individually solid.
-  bool islandMarked(int index) => _islandsCelebrated.contains(index);
+  bool islandMarked(int index) => _islandCompletions.containsKey(index);
+
+  /// Counts [islands] as complete from [at], those not already: completed by
+  /// journey run [runId], or marked without one.
+  Future<void> _markIslands(Iterable<int> islands, DateTime at, {int? runId}) async {
+    final rows = [
+      for (final i in islands)
+        if (!_islandCompletions.containsKey(i)) IslandCompletionRow(island: i, at: at, runId: runId),
+    ];
+    if (rows.isEmpty) return;
+    await db.batch((b) => b.insertAll(db.islandCompletions, rows, mode: InsertMode.insertOrIgnore));
+    for (final r in rows) {
+      _islandCompletions[r.island] = r;
+    }
+  }
 
   Future<void> _drop(String k) => (db.delete(db.keyValues)..where((r) => r.key.equals(k))).go();
 
   Future<void> _put(String k, String v) =>
       db.into(db.keyValues).insertOnConflictUpdate(KeyValuesCompanion.insert(key: k, value: v));
 
-  Future<void> _saveItems(Iterable<ItemKey> keys) async {
-    await db.batch((b) {
-      for (final k in keys) {
-        final s = trainer.items[k]!;
-        b.insert(
-          db.items,
-          ItemsCompanion.insert(
-            poemId: k.poemId,
-            inverted: k.inverted,
-            unlocked: Value(s.unlocked),
-            unlockedAt: Value(s.unlockedAt),
-            fsrs: Value(s.reviewed ? s.fsrsJson : null),
-            maskLevel: Value(s.maskLevel),
-          ),
-          mode: InsertMode.insertOrReplace,
-        );
-      }
-    });
-  }
+  Future<void> _saveItems(Iterable<ItemKey> keys) => db.batch((b) {
+        for (final k in keys) {
+          b.insert(db.items, trainer.items[k]!.row, mode: InsertMode.insertOrReplace);
+        }
+      });
 
   /// Stores a finished (or ended early) run and updates training, and for a
   /// ranked run the rating: one left early is a forfeit, recorded even
@@ -1224,7 +1251,7 @@ class Progress extends ChangeNotifier {
     if (config.mode == PlayMode.ranked) await _drop(_rankedRunningKey);
     if (!config.tracked || (run.attempts.isEmpty && config.mode != PlayMode.ranked)) {
       return SessionReport(
-        sessionId: null,
+        runId: null,
         completed: run.finished,
         total: run.total,
         attempts: run.attempts,
@@ -1244,7 +1271,9 @@ class Progress extends ChangeNotifier {
         : RankedScore.of(run, run.total ?? run.elapsed,
             penaltyMs: config.mode == PlayMode.exam ? ExamTuning.missPenaltyMs : RankedTuning.missPenaltyMs);
     final passed = config.mode == PlayMode.exam && run.finished && tobi != null && score!.scored < tobi;
-    final placement = config.mode == PlayMode.ranked && rating == null;
+    final graduated = journey && passed && !ledger.graduated;
+    final before = rating;
+    final rated = config.mode == PlayMode.ranked ? _rated(score!) : null;
     final newCards = config.mode == PlayMode.training && journey
         ? {for (final a in run.attempts) if (!_metBefore(a.card.poemId)) a.card.poemId}.toList()
         : const <int>[];
@@ -1252,35 +1281,35 @@ class Progress extends ChangeNotifier {
       for (final a in run.undone) (a, true),
       for (final a in run.attempts) (a, false),
     ]..sort((x, y) => x.$1.at.compareTo(y.$1.at));
+    final clock = run.total ?? run.elapsed;
 
-    final sessionId = await db.transaction(() async {
-      final id = await db.into(db.sessions).insert(SessionsCompanion.insert(
+    final runId = await db.transaction(() async {
+      final id = await db.into(db.runs).insert(RunsCompanion.insert(
+            mode: config.mode,
             startedAt: startedAt,
-            mode: config.mode.name,
+            endedAt: now!,
+            day: day.day,
+            allKnown: !journey,
             setIds: Value(jsonEncode(config.setIds)),
-            orientation: 0,
-            cardCount: run.attempts.length,
-            totalUs: Value(run.total?.inMicroseconds),
+            cardIds: Value(config.cardIds == null ? null : jsonEncode(config.cardIds)),
+            maskLevel: Value(config.maskLevel),
+            goalMs: trainer.goalMs.round(),
+            planned: run.cards.length,
             completed: run.finished,
-            meta: Value(jsonEncode({
-              'maskLevel': config.maskLevel,
-              'goalMs': trainer.goalMs,
-              if (config.cardIds != null) 'cardIds': config.cardIds,
-              _dayKey: day.number,
-              RunMeta.plannedKey: run.cards.length,
-              RunMeta.clockKey: (run.total ?? run.elapsed).inMilliseconds,
-              if (!journey) RunMeta.allKnownKey: true,
-              if (score != null) ...{'misses': score.misses + score.cardsLeft, 'scoredMs': score.scored.inMilliseconds},
-              if (tobi != null) ...{'tobiMs': tobi.inMilliseconds, 'passed': passed},
-              if (tobiLine != null) RunMeta.tobiLineKey: [for (final t in tobiLine) t.inMilliseconds],
-              if (placement) 'placement': true,
-            })),
+            clockUs: Value(clock > Duration.zero ? clock.inMicroseconds : null),
+            scoredMs: Value(score?.scored.inMilliseconds),
+            rating: Value(rated?.rating),
+            performance: Value(rated?.performance),
+            tobiMs: Value(tobi?.inMilliseconds),
+            tobiLine: Value(tobiLine == null ? null : jsonEncode([for (final t in tobiLine) t.inMilliseconds])),
+            graduated: Value(graduated),
           ));
       final touched = <ItemKey>{};
       final rows = <AttemptsCompanion>[];
       for (var i = 0; i < all.length; i++) {
         final (a, undone) = all[i];
         final key = ItemKey(a.card.poemId, a.card.inverted);
+        final item = trainer.items[key]!;
         final rec = AttemptRec(
           at: a.at,
           us: a.responseUs,
@@ -1290,54 +1319,44 @@ class Progress extends ChangeNotifier {
           mode: config.mode,
           countsForSrs: config.countsForSrs,
           maskLevel: a.card.mask.hidden.isEmpty ? 0 : config.maskLevel,
-          sessionId: id,
+          runId: id,
+          undone: undone,
         );
+        final recall = item.reviewed ? trainer.retrievability(key, a.at) : null;
         // Only a run that counts feeds FSRS; see `PlayConfig.countsForSrs`.
         final grade = !rec.countsForSrs
             ? null
             : journey
                 ? _reviewByDay(key, rec)
                 : trainer.review(key, rec);
-        final stored = AttemptRec(
-          at: rec.at,
-          us: rec.us,
-          miss: rec.miss,
-          clean: rec.clean,
-          deckSize: rec.deckSize,
-          mode: rec.mode,
-          countsForSrs: rec.countsForSrs,
-          maskLevel: rec.maskLevel,
-          grade: grade?.value,
-          sessionId: id,
-        );
-        (_log[key] ??= []).add(stored);
+        (_log[key] ??= []).add(rec.withGrade(grade?.value));
         _statsCache.remove(key);
         touched.add(key);
         rows.add(AttemptsCompanion.insert(
-              sessionId: id,
-              seq: i,
-              poemId: key.poemId,
-              inverted: key.inverted,
-              maskLevel: Value(rec.maskLevel),
-              responseUs: a.responseUs,
-              outcome: a.outcome.index,
-              wrong: Value(a.wrong),
-              tainted: Value(a.tainted),
-              undone: Value(undone),
-              deckSize: a.deckSize,
-              at: a.at,
-              grade: Value(grade?.value),
-            ));
+          runId: id,
+          seq: i,
+          poemId: key.poemId,
+          inverted: key.inverted,
+          maskLevel: Value(rec.maskLevel),
+          outcome: a.outcome,
+          wrong: Value(a.wrong),
+          tainted: Value(a.tainted),
+          undone: Value(undone),
+          deckSize: a.deckSize,
+          at: a.at,
+          revealAtUs: Value(a.revealAtUs),
+          responseUs: a.responseUs,
+          commitUs: Value(a.commitUs),
+        ).withReview(grade, recall: recall, card: item.card));
       }
       await db.batch((b) => b.insertAll(db.attempts, rows));
       await _saveItems(touched);
       return id;
     });
 
-    sessions.add((await (db.select(db.sessions)..where((s) => s.id.equals(sessionId))).getSingle()));
-
-    final before = rating;
-    if (score != null && config.mode == PlayMode.ranked) await _rate(score, sessionId, now);
+    runs.add(await _runRow(runId));
+    _runCounts = null;
+    if (rated != null) rating = rated.rating;
 
     // Unlocks, islands and goal ladder.
     final reachedBefore = {
@@ -1348,14 +1367,8 @@ class Progress extends ChangeNotifier {
     if (config.mode == PlayMode.training) _unreported.clear();
     final after = islands;
     final reached = [for (final i in after) if (i.reached && !reachedBefore.contains(i.index)) i.index];
-    final completed = [
-      for (final i in after)
-        if (i.complete && !_islandsCelebrated.contains(i.index)) i.index,
-    ];
-    if (completed.isNotEmpty) {
-      _islandsCelebrated.addAll(completed);
-      await _put('islandsCelebrated', jsonEncode(_islandsCelebrated.toList()..sort()));
-    }
+    final completed = [for (final i in after) if (i.complete && !islandMarked(i.index)) i.index];
+    await _markIslands(completed, now, runId: journey ? runId : null);
     if (earned.isNotEmpty) await _saveItems(earned);
     var goalRaised = false;
     if (trainer.readyForNextGoal(poems, fudaSets, allStats)) {
@@ -1365,15 +1378,16 @@ class Progress extends ChangeNotifier {
     }
     await _latchFreePractice(now);
     await _latchSideTrips(now);
-    final graduated = journey && passed && !ledger.graduated;
     final dayDone = journey ? await _noteDayDone(config, now) : null;
-    sessions.last = await XpHistory.noteMilestones(db, sessions.last,
-        islands: journey ? completed : const [], graduated: graduated, dayDone: dayDone != null);
-    final xpGain = ledger.add(XpHistory.latestRunOf(this, sessions.last));
+    if (dayDone != null) {
+      await (db.update(db.runs)..where((r) => r.id.equals(runId))).write(const RunsCompanion(dayDone: Value(true)));
+      runs.last = runs.last.copyWith(dayDone: true);
+    }
+    final xpGain = ledger.add(XpHistory.latestRunOf(this, runs.last));
 
     notifyListeners();
     return SessionReport(
-      sessionId: sessionId,
+      runId: runId,
       completed: run.finished,
       total: run.total,
       attempts: run.attempts,
@@ -1393,48 +1407,39 @@ class Progress extends ChangeNotifier {
     );
   }
 
-  /// The rating moves only with a ranked run: toward the performance of its
-  /// scored time, or straight to it for the first (placement).
-  Future<void> _rate(RankedScore score, int sessionId, DateTime now) async {
-    final scoredMs = score.scored.inMilliseconds;
-    final perf = Rating.performance(scoredMs.toDouble());
-    rating = Rating.update(rating, perf, ratingPoints.length);
-    await _put('rating', rating!.toString());
-    await db.into(db.ratingPoints).insert(RatingPointsCompanion.insert(
-          at: now,
-          rating: rating!,
-          performance: perf,
-          scoredMs: scoredMs,
-          sessionId: Value(sessionId),
-        ));
-    ratingPoints.add(RatingPoint(id: 0, at: now, rating: rating!, performance: perf, scoredMs: scoredMs, sessionId: sessionId));
+  Future<RunRow> _runRow(int id) => (db.select(db.runs)..where((r) => r.id.equals(id))).getSingle();
+
+  /// The rating a ranked run with [score] leaves, and the performance of its
+  /// scored time: the rating moves toward it, or straight to it for the
+  /// first (placement).
+  ({double rating, double performance}) _rated(RankedScore score) {
+    final performance = Rating.performance(score.scored.inMilliseconds.toDouble());
+    return (rating: Rating.update(rating, performance, ratedRuns.length), performance: performance);
   }
 
   /// A ranked run that never got recorded (the app closed mid-run) is a
-  /// forfeit with every card a slow miss.
+  /// forfeit with every card a slow miss. When it ended is not known: it is
+  /// stored as ending as it started.
   Future<void> _forfeitUnrecorded(DateTime startedAt) async {
     final score = RankedScore.blank();
-    final placement = rating == null;
-    final id = await db.into(db.sessions).insert(SessionsCompanion.insert(
+    final rated = _rated(score);
+    final day = await _storeDay(startedAt);
+    final id = await db.into(db.runs).insert(RunsCompanion.insert(
+          mode: PlayMode.ranked,
           startedAt: startedAt,
-          mode: PlayMode.ranked.name,
+          endedAt: startedAt,
+          day: day.day,
+          allKnown: true,
           setIds: Value(jsonEncode(const ['all'])),
-          orientation: 0,
-          cardCount: 0,
+          goalMs: trainer.goalMs.round(),
+          planned: RankedTuning.cards,
           completed: false,
-          meta: Value(jsonEncode({
-            'maskLevel': 0,
-            'goalMs': trainer.goalMs,
-            'misses': score.misses + score.cardsLeft,
-            'scoredMs': score.scored.inMilliseconds,
-            if (placement) 'placement': true,
-            RunMeta.plannedKey: RankedTuning.cards,
-            RunMeta.clockKey: 0,
-            RunMeta.allKnownKey: true,
-          })),
+          scoredMs: Value(score.scored.inMilliseconds),
+          rating: Value(rated.rating),
+          performance: Value(rated.performance),
         ));
-    sessions.add(await (db.select(db.sessions)..where((s) => s.id.equals(id))).getSingle());
-    await _rate(score, id, startedAt);
+    runs.add(await _runRow(id));
+    rating = rated.rating;
     await _drop(_rankedRunningKey);
   }
 
@@ -1465,7 +1470,7 @@ class Progress extends ChangeNotifier {
     return DayDone(
       date: date,
       bar: done.bar,
-      rounds: sessions.where((s) => s.mode == PlayMode.training.name && dayOf(s) == date).length,
+      rounds: runs.where((r) => r.mode == PlayMode.training && dayOf(r) == date).length,
       newCards: done.newCards,
       missesFixed: done.misses,
       goalStreak: goalStreak(now),
@@ -1482,7 +1487,8 @@ class Progress extends ChangeNotifier {
     Map<String, Object?> meta = const {},
   }) async {
     final ledger = xp;
-    final report = await sideTrips.recordAnkiren(db, game, startedAt: startedAt, meta: meta);
+    final day = await _storeDay(startedAt);
+    final report = await sideTrips.recordAnkiren(db, game, startedAt: startedAt, day: day.day, meta: meta);
     final gain = ledger.addAnkiren(XpHistory.ankirenRunOf(sideTrips, sideTrips.runs.last));
     notifyListeners();
     return AnkirenReport(
@@ -1497,18 +1503,16 @@ class Progress extends ChangeNotifier {
   Future<void> resetProgress() async {
     await db.transaction(() async {
       await db.delete(db.attempts).go();
-      await db.delete(db.sessions).go();
+      await db.delete(db.islandCompletions).go();
+      await db.delete(db.runs).go();
       await db.delete(db.items).go();
-      await db.delete(db.ratingPoints).go();
       await db.delete(db.sideTripAnswers).go();
       await db.delete(db.sideTripRuns).go();
       await db.delete(db.dayCards).go();
       await db.delete(db.days).go();
       await (db.delete(db.keyValues)
             ..where((k) => k.key.isIn([
-                  'rating',
                   'goalLevel',
-                  'islandsCelebrated',
                   _freePracticeKey,
                   _tabsSeenLockedKey,
                   _sideTripsTabKey,
@@ -1522,10 +1526,10 @@ class Progress extends ChangeNotifier {
     });
     _log.clear();
     _statsCache.clear();
-    sessions.clear();
-    ratingPoints.clear();
+    runs.clear();
+    _runCounts = null;
     rating = null;
-    _islandsCelebrated.clear();
+    _islandCompletions.clear();
     _freePracticeUnlocked = false;
     _tabsSeenLocked.clear();
     _sideTripsTabOpened = false;

@@ -42,7 +42,7 @@ void main() {
       final share = played.where((r) => r == n).length / played.length;
       expect(share, closeTo(SimulationTuning.runShares[n - 1], 0.12), reason: '$n-run days');
     }
-    expect(progress.sessions.length, played.fold<int>(0, (a, b) => a + b), reason: 'every run is a session');
+    expect(progress.runs.length, played.fold<int>(0, (a, b) => a + b), reason: 'every run is a session');
   });
 
   test('a seed replays the same days', () async {

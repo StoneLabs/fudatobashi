@@ -185,7 +185,7 @@ void main() {
       ItemKey key(CardRef r) => ItemKey(r.poemId, r.inverted);
 
       final report = await play(p, [a], counted);
-      expect(report.sessionId, isNotNull);
+      expect(report.runId, isNotNull);
       expect(p.trainer.items[key(a)]!.reviewed, isTrue);
       expect(p.stats(key(a)).seen, isTrue);
       expect(p.rating, isNull, reason: 'only a ranked run moves the rating');
@@ -207,7 +207,7 @@ void main() {
       expect(again.stats(key(a)).seen, isTrue);
       expect(again.stats(key(b)).seen, isFalse);
       expect(again.stats(key(c)).seen, isFalse);
-      expect(again.configOf(again.sessions[1]).cardIds, [b.poemId]);
+      expect(again.configOf(again.runs[1]).cardIds, [b.poemId]);
       await db.close();
     });
 

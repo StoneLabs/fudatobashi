@@ -68,7 +68,7 @@ class XpSwipe {
 /// A recorded run, as experience sees it.
 class XpRun {
   const XpRun({
-    required this.sessionId,
+    required this.runId,
     required this.startedAt,
     required this.setup,
     required this.completed,
@@ -85,7 +85,7 @@ class XpRun {
     this.exam = false,
   });
 
-  final int sessionId;
+  final int runId;
   final DateTime startedAt;
 
   /// Runs with the same setup race each other for a personal best.
@@ -211,7 +211,7 @@ class XpLedger {
 
   /// The ledger of [runs] and [ankiren], each game in the order played (a
   /// run before a 暗記練 game started at the same moment). [onGain] hears
-  /// what each game earned: a run's by its session id, a 暗記練 game's by
+  /// what each game earned: a run's by its id, a 暗記練 game's by
   /// its run id.
   factory XpLedger.of(
     Iterable<XpRun> runs, [
@@ -219,7 +219,7 @@ class XpLedger {
     void Function({required bool ankiren, required int id, required XpGain gain})? onGain,
   ]) {
     final games = [
-      for (final r in runs) (at: r.startedAt, kind: 0, id: r.sessionId, add: (XpLedger l) => l.add(r)),
+      for (final r in runs) (at: r.startedAt, kind: 0, id: r.runId, add: (XpLedger l) => l.add(r)),
       for (final g in ankiren) (at: g.startedAt, kind: 1, id: g.runId, add: (XpLedger l) => l.addAnkiren(g)),
     ]..sort((a, b) {
         final t = a.at.compareTo(b.at);

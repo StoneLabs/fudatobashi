@@ -13,6 +13,7 @@ class AnkirenAnswer {
     required this.wrongTaps,
     required this.responseUs,
     required this.at,
+    this.gaveUp = false,
     this.taps = const [],
     this.tapped = const [],
     this.firstTapUs,
@@ -31,6 +32,10 @@ class AnkirenAnswer {
 
   /// When it was found or given up, or when the game ended without it.
   final DateTime at;
+
+  /// The player gave it up ("don't know"); never found and not given up,
+  /// the game ended first.
+  final bool gaveUp;
 
   /// Where each tap that counts ([AnkirenTuning.tapWeights]) landed, in
   /// order; empty when no card was tapped.

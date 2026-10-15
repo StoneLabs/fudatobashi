@@ -15,6 +15,7 @@ import 'package:fudatobashi/domain/rating.dart';
 import 'package:fudatobashi/domain/trainer.dart';
 import 'package:fudatobashi/domain/xp.dart';
 import 'package:fudatobashi/state/play_config.dart';
+import 'package:fudatobashi/state/past_runs.dart';
 import 'package:fudatobashi/state/progress.dart';
 import 'package:fudatobashi/ui/results/celebrations.dart';
 
@@ -126,6 +127,18 @@ void main() {
 
       final free = await p.recordRun(play(all.take(10).toList(), 500), const PlayConfig(mode: PlayMode.nigate), DateTime.now());
       expect(free.ratingAfter, free.ratingBefore, reason: '苦手 never moves the rating');
+
+      final again = await Progress.open(db);
+      expect(again.rating, p.rating, reason: 'the rating is the latest ranked run\'s');
+      final rated = [
+        for (final r in again.pastRuns.reversed)
+          if (again.ratingOf(r) case final rating?) (placement: r.placement, rating: rating),
+      ];
+      expect([for (final r in rated) r.placement], [true, false]);
+      expect(rated[0].rating.before, isNull);
+      expect(rated[1].rating.before, closeTo(placed, 1e-9));
+      expect(rated[1].rating.performance, closeTo(perf, 1e-9));
+      expect(rated[1].rating.after, closeTo(p.rating!, 1e-9));
       await db.close();
     });
 
@@ -135,11 +148,11 @@ void main() {
       await p.setLearningMode(LearningMode.allKnown);
       await p.noteRankedStarted(DateTime.now());
       final again = await Progress.open(db);
-      expect(again.sessions.single.completed, isFalse);
-      expect(again.sessions.single.mode, PlayMode.ranked.name);
+      expect(again.runs.single.completed, isFalse);
+      expect(again.runs.single.mode, PlayMode.ranked);
       expect(again.rating, closeTo(Rating.performance(RankedScore.blank().scored.inMilliseconds.toDouble()), 1e-6));
       final third = await Progress.open(db);
-      expect(third.sessions, hasLength(1), reason: 'counted once');
+      expect(third.runs, hasLength(1), reason: 'counted once');
       await db.close();
     });
   });

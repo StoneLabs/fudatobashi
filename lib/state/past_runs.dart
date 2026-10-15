@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:math' as math;
 
 import 'package:drift/drift.dart';
 
@@ -6,6 +7,7 @@ import '../config/config.dart';
 import '../db/database.dart';
 import '../domain/card_stats.dart';
 import '../domain/day_window.dart';
+import '../domain/play_session.dart';
 import '../domain/rating.dart';
 import '../domain/run_review.dart';
 import '../domain/side_trips.dart';
@@ -14,50 +16,32 @@ import 'play_config.dart';
 import 'progress.dart';
 import 'xp_history.dart';
 
-/// Keys of a run's stored meta (`Sessions.meta`) that History reads.
-abstract final class RunMeta {
-  /// Cards the run was planned with (more than were swiped when it ended
-  /// early).
-  static const plannedKey = 'planned';
-
-  /// Its clock, ms: the total, or the time so far when it ended early.
-  static const clockKey = 'clockMs';
-
-  /// Played in all-known mode.
-  static const allKnownKey = 'allKnown';
-
-  /// An exam try's Tobi: his time as each card went, ms.
-  static const tobiLineKey = 'tobiLineMs';
-
-  static const missesKey = 'misses';
-  static const scoredKey = 'scoredMs';
-  static const tobiKey = 'tobiMs';
-  static const passedKey = 'passed';
-  static const placementKey = 'placement';
-  static const dayDoneKey = 'dayDone';
-}
-
 /// Which page History opens for a run: the 100-card one, with the time
 /// against earlier runs and the rating, or the training one.
 enum RunView { hundred, training }
 
-/// A recorded run as History shows it, read off its session row.
+/// A recorded run as History shows it: its row, with what its attempts and
+/// the runs before it tell.
 class PastRun {
-  PastRun(this.session, this.config) : _meta = jsonDecode(session.meta) as Map<String, dynamic>;
+  PastRun(this.row, this.config, {required this.cards, required this.misses, required this.placement});
 
-  final Session session;
+  final RunRow row;
   final PlayConfig config;
-  final Map<String, dynamic> _meta;
-
-  int get id => session.id;
-  PlayMode get mode => config.mode;
-  DateTime get startedAt => session.startedAt;
-  bool get completed => session.completed;
 
   /// Cards swiped (a card missed in training and swiped again counts
-  /// twice), and cards planned.
-  int get cards => session.cardCount;
-  int get planned => _meta[RunMeta.plannedKey] as int? ?? cards;
+  /// twice), and the misses among them, each undone swipe counted.
+  final int cards, misses;
+
+  /// The ranked run that placed the player on the ladder.
+  final bool placement;
+
+  int get id => row.id;
+  PlayMode get mode => config.mode;
+  DateTime get startedAt => row.startedAt;
+  bool get completed => row.completed;
+
+  /// Cards planned.
+  int get planned => row.planned;
 
   /// Ranked and the exam: timed with a penalty for each miss.
   bool get scored => mode == PlayMode.ranked || mode == PlayMode.exam;
@@ -71,42 +55,42 @@ class PastRun {
       scored || (mode == PlayMode.free && planned == RankedTuning.cards) ? RunView.hundred : RunView.training;
 
   /// The clock: the total, or the time so far of a run ended early.
-  Duration? get clock => Progress.totalOf(session) ?? _ms(RunMeta.clockKey);
+  Duration? get clock => Progress.clockOf(row);
 
   /// A scored run's time, penalties included.
-  Duration? get scoredTime => _ms(RunMeta.scoredKey);
+  Duration? get scoredTime => _ms(row.scoredMs);
 
   /// The time it is listed and graphed by: the scored time for ranked and
   /// the exam, the clock for the rest.
   Duration? get time => scored ? scoredTime : clock;
 
-  /// Misses counted for the scored time (a forfeit's cards left included).
-  int? get scoredMisses => _meta[RunMeta.missesKey] as int?;
+  /// Misses counted for the scored time, cards left unswiped included.
+  int? get scoredMisses => scored ? misses + math.max(0, planned - cards) : null;
 
   bool get forfeit => mode == PlayMode.ranked && !completed;
-  bool get placement => _meta[RunMeta.placementKey] == true;
-  bool get allKnown => _meta[RunMeta.allKnownKey] == true || mode == PlayMode.ranked;
+  bool get allKnown => row.allKnown;
 
   /// An exam try: Tobi's time, his time as each card went, and whether the
   /// player beat him.
-  Duration? get tobi => _ms(RunMeta.tobiKey);
-  List<double>? get tobiLine => (_meta[RunMeta.tobiLineKey] as List?)?.map((v) => (v as num).toDouble()).toList();
-  bool get passed => _meta[RunMeta.passedKey] == true;
+  Duration? get tobi => _ms(row.tobiMs);
+  List<double>? get tobiLine =>
+      row.tobiLine == null ? null : [for (final v in jsonDecode(row.tobiLine!) as List) (v as num).toDouble()];
+  bool get passed => mode == PlayMode.exam && completed && switch ((scoredTime, tobi)) {
+        (final mine?, final his?) => mine < his,
+        _ => false,
+      };
 
   /// It finished journey mode's set for the day.
-  bool get dayDone => _meta[RunMeta.dayDoneKey] == true;
+  bool get dayDone => row.dayDone;
 
   /// The goal time per card when it was played.
-  double? get goalMs => (_meta['goalMs'] as num?)?.toDouble();
+  double get goalMs => row.goalMs.toDouble();
 
   /// Runs History compares with each other: ranked with ranked, the exam
   /// with the exam, 100-card free play with 100-card free play.
   bool sameKind(PastRun other) => other.mode == mode && other.view == view;
 
-  Duration? _ms(String key) => switch (_meta[key]) {
-        final int ms when ms > 0 => Duration(milliseconds: ms),
-        _ => null,
-      };
+  static Duration? _ms(int? ms) => ms != null && ms > 0 ? Duration(milliseconds: ms) : null;
 }
 
 /// How active a practice day was, for History's last 7 days.
@@ -170,8 +154,10 @@ class RunDetail {
 /// History's reading of [Progress]: runs, days and a run's details.
 extension RunHistory on Progress {
   /// Every recorded run, newest first.
-  List<PastRun> get pastRuns =>
-      [for (final s in sessions) PastRun(s, configOf(s))]..sort((a, b) => b.startedAt.compareTo(a.startedAt));
+  List<PastRun> get pastRuns => [
+        for (final r in runs)
+          PastRun(r, configOf(r), cards: cardsIn(r.id), misses: missesIn(r.id), placement: isPlacement(r)),
+      ]..sort((a, b) => switch (b.startedAt.compareTo(a.startedAt)) { 0 => b.id.compareTo(a.id), final t => t });
 
   /// The 暗記練 games, newest first.
   List<SideTripRun> get ankirenRuns =>
@@ -188,7 +174,7 @@ extension RunHistory on Progress {
     }
 
     for (final run in pastRuns) {
-      final day = dayOf(run.session);
+      final day = dayOf(run.row);
       note(day, run.allKnown || setDoneOn(day) ? DayActivity.done : DayActivity.some);
     }
     for (final run in ankirenRuns) {
@@ -207,10 +193,10 @@ extension RunHistory on Progress {
 
   /// A ranked run's rating, null for any other run.
   RunRating? ratingOf(PastRun run) {
-    for (var i = 0; i < ratingPoints.length; i++) {
-      final p = ratingPoints[i];
-      if (p.sessionId != run.id) continue;
-      return (before: i == 0 ? null : ratingPoints[i - 1].rating, after: p.rating, performance: p.performance);
+    double? before;
+    for (final r in ratedRuns) {
+      if (r.id == run.id) return (before: before, after: r.rating!, performance: r.performance!);
+      before = r.rating;
     }
     return null;
   }
@@ -282,23 +268,23 @@ extension RunHistory on Progress {
 
   Future<Map<int, List<RunSwipe>>> _swipesOf(List<PastRun> runs) async {
     final rows = await (db.select(db.attempts)
-          ..where((a) => a.sessionId.isIn([for (final r in runs) r.id]))
+          ..where((a) => a.runId.isIn([for (final r in runs) r.id]))
           ..orderBy([(a) => OrderingTerm.asc(a.seq)]))
         .get();
-    final bySession = <int, List<RunSwipe>>{};
+    final byRun = <int, List<RunSwipe>>{};
     for (final a in rows) {
-      (bySession[a.sessionId] ??= []).add(RunSwipe(
+      (byRun[a.runId] ??= []).add(RunSwipe(
         poemId: a.poemId,
         inverted: a.inverted,
         us: a.responseUs,
-        miss: a.wrong || a.undone || a.outcome != 0,
+        miss: a.wrong || a.undone || a.outcome == Outcome.dontKnow,
         clean: !a.tainted && !a.undone,
         at: a.at,
         undone: a.undone,
         graded: a.grade != null,
       ));
     }
-    return bySession;
+    return byRun;
   }
 
   Map<int, double> _usualBefore(PastRun run, List<RunSwipe> swipes) {

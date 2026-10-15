@@ -90,7 +90,7 @@ void main() {
           {Duration? tobi}) async {
         final at = day.add(Duration(days: dayN));
         final report = await p.recordRun(session(at), config, at, now: at.add(const Duration(minutes: 5)), tobi: tobi);
-        ids[name] = report.sessionId!;
+        ids[name] = report.runId!;
       }
 
       await run('training', (at) => play(at, all.take(30).toList(), 1800, misses: {4, 20}),

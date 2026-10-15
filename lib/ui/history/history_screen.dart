@@ -68,7 +68,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
     final games = progress.ankirenRuns;
     List<PastRun> keptRuns(HistoryFilter f) => [
           for (final r in runs)
-            if (f.keepsRun(r, progress.dayOf(r.session), today)) r,
+            if (f.keepsRun(r, progress.dayOf(r.row), today)) r,
         ];
     List<SideTripRun> keptGames(HistoryFilter f) => [
           for (final g in games)
@@ -318,10 +318,10 @@ class _MainList extends StatelessWidget {
   Widget build(BuildContext context) {
     final s = S.of(context);
     final progress = ProgressScope.of(context);
-    if (runs.isEmpty) return _Empty(progress.sessions.isEmpty ? s.noRunsYet : s.historyNoMatch);
+    if (runs.isEmpty) return _Empty(progress.runs.isEmpty ? s.noRunsYet : s.historyNoMatch);
     final days = <DateTime, List<PastRun>>{};
     for (final r in runs) {
-      (days[progress.dayOf(r.session)] ??= []).add(r);
+      (days[progress.dayOf(r.row)] ??= []).add(r);
     }
     return ListView(
       padding: const EdgeInsets.only(top: Gaps.section, bottom: HistoryListStyle.bottomPad),
@@ -585,7 +585,8 @@ class _GameRow extends StatelessWidget {
         game.score != null &&
         earlier.where((g) => g.ranked && g.level == game.level).every((g) => (g.score ?? 0) < game.score!);
     final meta = jsonDecode(game.meta) as Map<String, dynamic>;
-    final found = game.cardCount - progress.sideTrips.missesIn(game);
+    final cards = progress.sideTrips.cardsIn(game);
+    final found = cards - progress.sideTrips.missesIn(game);
     final day = progress.dayOfGame(game);
     final today = progress.dayAt().date;
     return _ListRow(
@@ -610,14 +611,14 @@ class _GameRow extends StatelessWidget {
       line: Text.rich(TextSpan(children: [
         TextSpan(
             text: kind == AnkirenKind.custom
-                ? s.historyPerSide(meta[AnkirenMeta.perSideKey] ?? missingTime, game.cardCount)
-                : s.historyCards(game.cardCount)),
+                ? s.historyPerSide(meta[AnkirenMeta.perSideKey] ?? missingTime, cards)
+                : s.historyCards(cards)),
         if (change != null)
           TextSpan(
               text: ' · ${ratingChangeText(change)}',
               style: TextStyle(color: change >= 0 ? HistoryRunStyle.ahead : HistoryRunStyle.behind)),
       ])),
-      value: game.score == null ? '$found/${game.cardCount}' : '${game.score}',
+      value: game.score == null ? '$found/$cards' : '${game.score}',
       caption: game.score == null ? s.historyFirstTapCaption : s.historyPointsCaption,
       onTap: () => openAnkirenGame(context, game),
     );

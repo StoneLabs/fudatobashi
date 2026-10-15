@@ -144,7 +144,7 @@ void main() {
 
     final report = await _results(tester);
     expect(report.total, end - firstReveal);
-    expect(p.sessions.single.totalUs, (end - firstReveal).inMicroseconds);
+    expect(p.runs.single.clockUs, (end - firstReveal).inMicroseconds);
     expect(p.bestFor(config), end - firstReveal);
     expect(report.personalBest, isTrue);
     await tester.pumpWidget(const SizedBox());
@@ -168,8 +168,8 @@ void main() {
     expect(report.completed, isTrue);
     expect(report.total, isNull, reason: 'the last swipe is stamped before the first reveal');
     expect(report.personalBest, isFalse);
-    expect(p.sessions.single.totalUs, isNull);
-    expect(p.sessions.single.completed, isTrue);
+    expect(p.runs.single.clockUs, isNull);
+    expect(p.runs.single.completed, isTrue);
     expect(p.bestFor(config), isNull);
 
     final recs = [for (final a in session.attempts) p.attemptsOf(ItemKey(a.card.poemId, a.card.inverted)).single];

@@ -230,7 +230,7 @@ SessionReport _report(int newCard) {
   final (ratingBefore, ratingAfter) = _rankUpRatings;
   final now = DateTime.now();
   return SessionReport(
-    sessionId: null,
+    runId: null,
     completed: true,
     total: CelebrationPreviewTuning.total,
     attempts: [

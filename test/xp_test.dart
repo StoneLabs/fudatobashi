@@ -41,7 +41,7 @@ void main() {
     bool graduated = false,
   }) =>
       XpRun(
-        sessionId: nextId++,
+        runId: nextId++,
         startedAt: at ?? DateTime(2026, 9, 1, 12),
         setup: setup,
         completed: completed ?? total != null,

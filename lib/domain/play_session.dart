@@ -23,6 +23,8 @@ class Attempt {
     required this.outcome,
     required this.at,
     required this.deckSize,
+    this.revealAtUs,
+    this.commitUs,
     this.tainted = false,
   });
 
@@ -32,6 +34,10 @@ class Attempt {
 
   /// Reveal → response, in microseconds, as measured (see [isValidTime]).
   final int responseUs;
+
+  /// The card's reveal, µs after the run's first reveal (breaks included),
+  /// and reveal → the swipe let go, µs; set by [PlaySession.commit].
+  final int? revealAtUs, commitUs;
   final Outcome outcome;
   final DateTime at;
   final int deckSize;
@@ -155,6 +161,8 @@ class PlaySession extends ChangeNotifier {
       outcome: outcome,
       at: at ?? DateTime.now(),
       deckSize: cards.length,
+      revealAtUs: (_revealTs! - firstRevealTs!).inMicroseconds,
+      commitUs: (commitTs - _revealTs!).inMicroseconds,
       tainted: _redo || _currentTainted,
     );
     attempts.add(attempt);

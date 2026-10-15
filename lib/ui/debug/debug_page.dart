@@ -23,7 +23,7 @@ bool _sameLocalDay(DateTime a, DateTime b) => a.year == b.year && a.month == b.m
 
 /// Training rounds started today, and attempts recorded across all of them.
 (int rounds, int attempts) _today(Progress p, DateTime now) {
-  final rounds = p.sessions.where((s) => _sameLocalDay(s.startedAt.toLocal(), now)).length;
+  final rounds = p.runs.where((r) => _sameLocalDay(r.startedAt.toLocal(), now)).length;
   var attempts = 0;
   for (final k in p.trainer.items.keys) {
     attempts += p.attemptsOf(k).where((a) => _sameLocalDay(a.at.toLocal(), now)).length;
@@ -94,7 +94,7 @@ class _Overview extends StatelessWidget {
       DebugKV('next batch', next.map((id) => poems[id].kimariji).join(' ')),
       DebugKV('due now', '$due'),
       DebugKV('attempts stored', '${stats.values.fold<int>(0, (a, s) => a + s.count)}'),
-      DebugKV('sessions', '${p.sessions.length}'),
+      DebugKV('runs', '${p.runs.length}'),
       DebugKV('streak', '${p.streak} days'),
       const Divider(height: 32),
       Text('Journey pace', style: Theme.of(context).textTheme.titleMedium),
@@ -448,9 +448,8 @@ class _RatingTab extends StatelessWidget {
       DebugKV('band', Rating.bandOf(p.rating ?? perf).label),
       DebugKV('next band', Rating.nextBand(p.rating ?? perf)?.label ?? '—'),
       DebugKV('formula', 'P = 600·log2(1000 s / T), T = ranked time + 10 s a miss; R += K(P−R)'),
-      DebugKV('rating points', '${p.ratingPoints.length}'),
-      if (p.ratingPoints.lastOrNull case final last?)
-        DebugKV('last ranked T (s)', (last.scoredMs / 1000).toStringAsFixed(2)),
+      DebugKV('rated runs', '${p.ratedRuns.length}'),
+      if (p.ratedRuns.lastOrNull?.scoredMs case final ms?) DebugKV('last ranked T (s)', (ms / 1000).toStringAsFixed(2)),
       const Divider(height: 24),
       const Text('Card contributions to T (worst first)', style: _mono),
       for (final (id, ms) in rows)

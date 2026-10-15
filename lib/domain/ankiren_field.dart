@@ -18,8 +18,7 @@ enum FieldRow { lower, middle, upper }
 enum RowPart { left, middle, right }
 
 /// How near a tap lands to the card asked for (see [AnkirenField.proximity]),
-/// nearest first. Stored by index with each answer, so new values only ever
-/// go last.
+/// nearest first. Stored by name with each answer.
 enum TapProximity {
   /// The card itself.
   card,

@@ -1,4 +1,3 @@
-import 'dart:convert';
 import 'dart:io';
 import 'dart:math' as math;
 
@@ -73,8 +72,7 @@ void main() {
       expect((done.rounds, done.newCards, done.missesFixed, done.goalStreak), (1, set.newCards, 0, 1));
       expect(done.xp, XpTuning.dayDone);
       expect(report.xp!.award.parts.where((x) => x.source == XpSource.dayDone).single.xp, XpTuning.dayDone);
-      final meta = jsonDecode(p.sessions.last.meta) as Map<String, dynamic>;
-      expect((meta['day'], meta['dayDone']), (20260901, true));
+      expect((p.runs.last.day, p.runs.last.dayDone), (20260901, true));
       await db.close();
     });
 
@@ -231,7 +229,7 @@ void main() {
     final ledger = XpLedger();
     final award = ledger
         .add(XpRun(
-          sessionId: 1,
+          runId: 1,
           startedAt: day0,
           setup: 'training',
           completed: true,

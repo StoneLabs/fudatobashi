@@ -31,8 +31,8 @@ class ItemKey {
 /// The facts about one stored attempt that statistics need.
 ///
 /// Built fresh in memory from a stored `AttemptRow` (or a run in progress);
-/// not itself persisted. Carries its session's [mode] and whether that
-/// session may feed FSRS and the speed statistics that drive
+/// not itself persisted. Carries its run's [mode] and whether that
+/// run may feed FSRS and the speed statistics that drive
 /// scheduling/unlocks/rating (see [countsForSrs]).
 class AttemptRec {
   const AttemptRec({
@@ -45,7 +45,8 @@ class AttemptRec {
     bool? countsForSrs,
     this.maskLevel = 0,
     this.grade,
-    this.sessionId,
+    this.runId,
+    this.undone = false,
   }) : countsForSrs = countsForSrs ?? mode == PlayMode.training;
 
   final DateTime at;
@@ -58,13 +59,31 @@ class AttemptRec {
   final bool clean;
   final int deckSize;
 
-  /// The play mode of the session this attempt was recorded in.
+  /// The play mode of the run this attempt was recorded in.
   final PlayMode mode;
   final int maskLevel;
   final int? grade;
-  final int? sessionId;
+  final int? runId;
+
+  /// Taken back with ひとつ前 (it is also a [miss]).
+  final bool undone;
 
   double get ms => us / 1000;
+
+  /// This attempt with the FSRS [grade] it was given.
+  AttemptRec withGrade(int? grade) => AttemptRec(
+        at: at,
+        us: us,
+        miss: miss,
+        clean: clean,
+        deckSize: deckSize,
+        mode: mode,
+        countsForSrs: countsForSrs,
+        maskLevel: maskLevel,
+        grade: grade,
+        runId: runId,
+        undone: undone,
+      );
 
   /// Its time is a measurement (see [Attempt.isValidTime]).
   bool get validTime => Attempt.isValidTime(us);
