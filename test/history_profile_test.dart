@@ -29,6 +29,7 @@ import 'package:fudatobashi/ui/profile/profile_screen.dart';
 import 'package:fudatobashi/ui/rank/rank_badges.dart';
 import 'package:fudatobashi/ui/history/history_screen.dart';
 import 'package:fudatobashi/ui/history/history_widgets.dart';
+import 'package:fudatobashi/ui/history/run_overview_tab.dart';
 import 'package:fudatobashi/ui/history/run_page.dart';
 import 'package:fudatobashi/ui/home/home_widgets.dart';
 
@@ -247,6 +248,13 @@ void main() {
           for (var tab = 0; tab < tabs; tab++) {
             expect(tester.takeException(), isNull);
             await _capture(tester, 'run_${mode.name}_${tab}_$shot');
+            if (tab == 0) {
+              final overview = tester.state<ScrollableState>(
+                  find.descendant(of: find.byType(RunOverviewTab), matching: find.byType(Scrollable)).first);
+              final fits = overview.position.maxScrollExtent == 0;
+              debugPrint('overview fit ${mode.name} $shot: ${fits ? 'fits' : 'scrolls ${overview.position.maxScrollExtent.round()}'}');
+              if (phone == _phone && fontScale == 1.0) expect(fits, isTrue, reason: 'Overview is one screen tall');
+            }
             if (tab == tabs - 1) break;
             if (tab.isEven) {
               await tester.fling(find.byType(PageView), const Offset(-300, 0), 1000);

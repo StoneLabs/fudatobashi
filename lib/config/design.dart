@@ -1142,7 +1142,7 @@ abstract final class HistoryRunStyle {
 
 /// History's run charts: the time graph and the bar charts.
 abstract final class RunChartStyle {
-  static const double timeGraphHeight = 230;
+  static const double timeGraphMinHeight = 180;
   static const double barChartHeight = 130;
   static const double labelFont = 10.5;
   static const double valueFont = 9.5;

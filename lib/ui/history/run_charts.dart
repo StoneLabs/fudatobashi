@@ -25,13 +25,12 @@ class RunTimeGraph extends StatelessWidget {
   final List<RunTimeline> references;
   final RunTimeline? tobi;
 
+  /// Takes the height it is given, at least
+  /// [RunChartStyle.timeGraphMinHeight].
   @override
-  Widget build(BuildContext context) => SizedBox(
-        height: RunChartStyle.timeGraphHeight * MediaQuery.textScalerOf(context).scale(1).clamp(1, 1.2),
-        child: CustomPaint(
-          size: Size.infinite,
-          painter: _TimeGraphPainter(this, MediaQuery.textScalerOf(context)),
-        ),
+  Widget build(BuildContext context) => ConstrainedBox(
+        constraints: const BoxConstraints(minHeight: RunChartStyle.timeGraphMinHeight),
+        child: CustomPaint(size: Size.infinite, painter: _TimeGraphPainter(this, MediaQuery.textScalerOf(context))),
       );
 }
 

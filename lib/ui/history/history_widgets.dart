@@ -85,7 +85,7 @@ class AnkirenKindTag extends StatelessWidget {
       (false, final int level) => s.historyFreeLevel(level),
       (false, null) => '${s.freePlay} · ${s.deckCustom}',
     };
-    return KindTag('${SideTrip.ankiren.label} · $mode',
+    return KindTag('${s.tripName(SideTrip.ankiren)} · $mode',
         fill: ranked ? Palette.pink : Palette.paper,
         textColor: ranked ? Palette.ink : Palette.pinkDeep,
         edge: ranked ? Palette.ink : Palette.pinkDeep);
@@ -123,9 +123,12 @@ class ResultBadge extends StatelessWidget {
 /// A titled block of a run page: a heading with its other-language word
 /// and a note on the right, then its contents.
 class HistorySection extends StatelessWidget {
-  const HistorySection({super.key, required this.title, this.sub, this.note, required this.child});
+  const HistorySection({super.key, required this.title, this.sub, this.note, this.fill = false, required this.child});
   final String title;
   final String? sub, note;
+
+  /// [child] takes the rest of the height the section is given.
+  final bool fill;
   final Widget child;
 
   @override
@@ -136,7 +139,7 @@ class HistorySection extends StatelessWidget {
           children: [
             HistoryHeading(title: title, sub: sub, note: note),
             const SizedBox(height: Gaps.small),
-            child,
+            if (fill) Expanded(child: child) else child,
           ],
         ),
       );

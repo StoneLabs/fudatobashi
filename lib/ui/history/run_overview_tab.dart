@@ -13,7 +13,8 @@ import 'history_widgets.dart';
 import 'run_charts.dart';
 
 /// A run page's Overview, one screen tall: the headline (D12, or D29 for
-/// the training view) and the time graph (D13).
+/// the training view) and the time graph (D13), which takes the height
+/// left over.
 class RunOverviewTab extends StatelessWidget {
   const RunOverviewTab(this.detail, {super.key});
   final RunDetail detail;
@@ -21,16 +22,27 @@ class RunOverviewTab extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final run = detail.run;
-    return RunTabList(children: [
-      if (run.mode == PlayMode.exam)
-        _ExamHeadline(detail)
-      else if (run.view == RunView.hundred)
-        _HundredHeadline(detail)
-      else
-        _TrainingHeadline(detail),
-      const SizedBox(height: Gaps.section),
-      RunTimeSection(detail),
-    ]);
+    const padding = EdgeInsets.fromLTRB(Gaps.gutter, Gaps.section, Gaps.gutter, 0);
+    return LayoutBuilder(
+      builder: (context, box) => SingleChildScrollView(
+        padding: padding,
+        child: ConstrainedBox(
+          constraints: BoxConstraints(minHeight: box.maxHeight - padding.vertical),
+          child: IntrinsicHeight(
+            child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+              if (run.mode == PlayMode.exam)
+                _ExamHeadline(detail)
+              else if (run.view == RunView.hundred)
+                _HundredHeadline(detail)
+              else
+                _TrainingHeadline(detail),
+              const SizedBox(height: Gaps.section),
+              Expanded(child: RunTimeSection(detail)),
+            ]),
+          ),
+        ),
+      ),
+    );
   }
 }
 
@@ -257,15 +269,16 @@ class RunTimeSection extends StatelessWidget {
     final capped = refs.isNotEmpty && refs.any((r) => r.endMs > bottom);
     return HistorySection(
       title: s.runGraphTitle,
-      sub: s.other.runGraphTitle,
+      sub: s.sub?.runGraphTitle,
       note: s.runGraphCards,
+      fill: true,
       child: MangaPanel(
         padding: HistoryRunStyle.chartPadding,
         child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
           Text(summary.isEmpty ? s.runGraphEven : summary,
               style: const TextStyle(fontWeight: Weights.bold, fontSize: TypeScale.small)),
           const SizedBox(height: Gaps.small),
-          RunTimeGraph(run: t, bottomMs: bottom, references: refs, tobi: tobi),
+          Expanded(child: RunTimeGraph(run: t, bottomMs: bottom, references: refs, tobi: tobi)),
           ChartLegend([
             (const LegendMark.line(Palette.ink), s.legendThisRun),
             (const LegendMark.line(Palette.ink, dashed: true), s.legendEvenPace),
