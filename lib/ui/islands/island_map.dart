@@ -225,6 +225,12 @@ class IslandMap extends StatefulWidget {
     return Offset.lerp(from, to, MapStyle.boatAlong)!;
   }
 
+  /// The boat's box when it floats at [boat].
+  static Rect boatRect(Offset boat) {
+    final b = MapStyle.boat;
+    return Rect.fromLTWH(boat.dx - b.width / 2, boat.dy - b.height * MapStyle.boatLift, b.width, b.height);
+  }
+
   /// The square the tide rings around [island] reach at their largest.
   static Rect tideReach(IslandShape island) =>
       Rect.fromCircle(center: island.center, radius: (_MapSpec.ringRadius(island) + Tide.stroke / 2) * Tide.scaleTo);
@@ -503,12 +509,7 @@ class _LayerPainter extends CustomPainter {
       if (plate != null) _PlateGeometry.of(plate, isl.label).paint(canvas);
     }
     final boat = spec.boat;
-    if (boat != null) {
-      final b = MapStyle.boat;
-      VectorPainter.paint(canvas, MapArt.boat,
-          Rect.fromLTWH(boat.dx - b.width / 2, boat.dy - b.height * MapStyle.boatLift, b.width, b.height),
-          pixelRatio: ratio);
-    }
+    if (boat != null) VectorPainter.paint(canvas, MapArt.boat, IslandMap.boatRect(boat), pixelRatio: ratio);
   }
 
   void _paintSite(Canvas canvas, SiteMark mark, Offset at, double dotRadius, double ratio) {

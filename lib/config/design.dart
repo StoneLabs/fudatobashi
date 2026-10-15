@@ -772,6 +772,11 @@ abstract final class HomeLayout {
   static const double mapCountTop = 44;
   static const double mapCountFont = 13;
   static const double mapCountNumber = 15;
+
+  /// The count label's line, as a multiple of [mapCountNumber], a little over
+  /// what its fonts need at any text scale: the map keeps the labels' height
+  /// clear above it.
+  static const double mapCountLine = 1.35;
   static const EdgeInsets mapCountPadding = EdgeInsets.fromLTRB(9, 3, 9, 3);
   static const double mapMistFont = 12.5;
   static const EdgeInsets mapMistPadding = EdgeInsets.fromLTRB(8, 3, 8, 3);
@@ -2956,12 +2961,21 @@ abstract final class Bursts {
 
 /// The Home journey map: how much of the archipelago is visible.
 abstract final class JourneyView {
-  /// The current island sits this far down the visible span.
+  /// The current island and the boat sit this far down the part of the box
+  /// the labels leave clear.
   static const double focus = 0.62;
 
   /// Map units below an island's plate anchor that stay in view, so a short
-  /// map raises the current island rather than cut off its plate.
+  /// box raises the current island rather than cut off its plate.
   static const double plateReach = 22;
+
+  /// Sea kept clear under the labels when the map is scrolled to its top,
+  /// and under the map's last plate when it is scrolled to its bottom.
+  static const double labelsGap = 3;
+  static const double bottomGap = HomeLayout.mapCut;
+
+  /// How long the view takes to move to the boat when the boat moves.
+  static const Duration refocus = Duration(milliseconds: 420);
 
   /// Sea seed for the wave squiggles.
   static const int seaSeed = 4;

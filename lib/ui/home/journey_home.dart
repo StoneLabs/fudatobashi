@@ -1,5 +1,3 @@
-import 'dart:math' as math;
-
 import 'package:flutter/scheduler.dart';
 import 'package:flutter/widgets.dart';
 
@@ -15,6 +13,7 @@ import '../manga/manga.dart';
 import '../tour/tour_anchor.dart';
 import 'exam_strip.dart';
 import 'home_screen.dart';
+import 'journey_pan.dart';
 import 'journey_state.dart';
 import 'learn_ahead_button.dart';
 import 'pause_sheet.dart';
@@ -117,7 +116,8 @@ class _JourneyHomeState extends State<JourneyHome> {
 }
 
 /// The islands map, with [footer] along its bottom: the map runs on behind
-/// it while the current island stays in the part above.
+/// it, and the boat and the current island stay in the part above. A drag
+/// pans the map up and down; it stays where it is left until the boat moves.
 class _JourneyMap extends StatelessWidget {
   const _JourneyMap(this.journey, {this.footer});
   final JourneyState journey;
@@ -171,31 +171,15 @@ class _JourneyMap extends StatelessWidget {
     ];
   }
 
-  /// The slice of the map shown in [area]: full width, as tall as its
-  /// aspect allows, with the current island a little below the middle (or
-  /// higher, to keep its plate in view); then [overhang] more below it, at
-  /// the same scale, for the map to run on under the footer.
-  Rect _viewport(Size area, double overhang) {
-    final map = archipelago.size;
-    final h = map.width * area.height / area.width;
-    if (h >= map.height) {
-      final scale = area.height / map.height;
-      final w = area.width / scale;
-      return Rect.fromLTWH((map.width - w) / 2, 0, w, map.height + overhang / scale);
-    }
-    final isl = archipelago.islands[journey.current];
-    final focused = isl.center.dy - h * JourneyView.focus;
-    final top = math.max(focused, isl.label.dy + JourneyView.plateReach - h).clamp(0.0, map.height - h);
-    return Rect.fromLTWH(0, top, map.width, h + overhang * map.width / area.width);
-  }
-
   @override
   Widget build(BuildContext context) {
     final s = S.of(context);
     const count = TextStyle(fontFamily: Fonts.display, fontSize: HomeLayout.mapCountNumber);
     final footer = this.footer;
     final overhang = footer == null ? 0.0 : ExamStripStyle.mapOverhang;
+    final labels = JourneyPan.labelsBottom(MediaQuery.textScalerOf(context));
     final map = LayoutBuilder(builder: (context, box) {
+      final pan = JourneyPan(box: box.biggest, map: archipelago.size, labels: labels, overhang: overhang);
       return Stack(
         fit: StackFit.expand,
         clipBehavior: Clip.none,
@@ -204,13 +188,17 @@ class _JourneyMap extends StatelessWidget {
             left: 0,
             right: 0,
             top: 0,
-            height: box.maxHeight + overhang,
-            child: IslandMap(
-              styles: _styles(s),
-              viewport: _viewport(box.biggest, overhang),
-              route: journey.route,
-              boat: journey.boat,
-              seaSeed: JourneyView.seaSeed,
+            height: pan.frame,
+            child: PanView(
+              height: pan.height,
+              offset: pan.offsetFor(JourneyPan.focuses(archipelago.islands[journey.current], journey.boat)),
+              child: IslandMap(
+                styles: _styles(s),
+                viewport: pan.viewport,
+                route: journey.route,
+                boat: journey.boat,
+                seaSeed: JourneyView.seaSeed,
+              ),
             ),
           ),
           const Positioned(
