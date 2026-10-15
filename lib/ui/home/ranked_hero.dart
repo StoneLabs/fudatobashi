@@ -11,11 +11,11 @@ import '../../state/scope.dart';
 import '../manga/manga.dart';
 import '../run/run_launcher.dart';
 
-/// All-known Home's ランク戦 hero, in the slot journey Home gives 修行: its
-/// lettering and tag (ランク戦 under the RANKED tag in Japanese; in English
-/// RANKED, with ランク戦 as the tag under it), what a ranked run is, where
-/// the rating stands (or that the first run sets it), the START RANKED
-/// shout, and Tobi fired up at the top right.
+/// All-known Home's ランク戦 hero, in the slot journey Home gives 修行: a
+/// tag over its lettering (the RANKED tag over ランク戦 in Japanese, and the
+/// other way around in English), what a ranked run is, where the rating
+/// stands (or that the first run sets it), the START RANKED shout, and Tobi
+/// fired up at the top right.
 class RankedHero extends StatelessWidget {
   const RankedHero({super.key});
 
@@ -43,7 +43,7 @@ class RankedHero extends StatelessWidget {
                     child: Padding(
                       padding: EdgeInsets.only(left: padding.left, right: padding.right),
                       child: CustomMultiChildLayout(
-                        delegate: _PitchLayout(tagBelow: !s.ja),
+                        delegate: _PitchLayout(),
                         children: [
                           LayoutId(
                             id: _Part.tag,
@@ -146,15 +146,12 @@ class _Chips extends StatelessWidget {
 
 enum _Part { tag, title, chips, line }
 
-/// The hero above its shout: the tag and the lettering (the tag over it,
-/// or under it with [tagBelow]), the chips under them, and the rating line
-/// at the foot, with any room to spare above the line. Short of room, the
-/// lettering shrinks first, kept clear of Tobi, then the chips down to
-/// [RankedHeroLayout.titleMin] of it.
+/// The hero above its shout: the tag, the lettering under it, the chips
+/// under that, and the rating line at the foot, with any room to spare
+/// above the line. Short of room, the lettering shrinks first, kept clear
+/// of Tobi, then the chips down to [RankedHeroLayout.titleMin] of it.
 class _PitchLayout extends MultiChildLayoutDelegate {
-  _PitchLayout({required this.tagBelow});
-
-  final bool tagBelow;
+  _PitchLayout();
 
   @override
   void performLayout(Size size) {
@@ -169,16 +166,15 @@ class _PitchLayout extends MultiChildLayoutDelegate {
       BoxConstraints(
           maxWidth: math.max(0.0, size.width - RankedHeroLayout.titleRight), maxHeight: math.max(0.0, room - chips.height)),
     );
-    final head = tag.height + RankedHeroLayout.tagGap;
-    final titleTop = tagBelow ? 0.0 : head;
+    positionChild(_Part.tag, Offset.zero);
+    final titleTop = tag.height + RankedHeroLayout.tagGap;
     positionChild(_Part.title, Offset(0, titleTop));
-    positionChild(_Part.tag, Offset(0, tagBelow ? title.height + RankedHeroLayout.tagGap : 0));
-    positionChild(_Part.chips, Offset(0, titleTop + title.height + (tagBelow ? head : 0) + RankedHeroLayout.titleGap));
+    positionChild(_Part.chips, Offset(0, titleTop + title.height + RankedHeroLayout.titleGap));
     positionChild(_Part.line, Offset(0, size.height - line.height));
   }
 
   @override
-  bool shouldRelayout(_PitchLayout oldDelegate) => oldDelegate.tagBelow != tagBelow;
+  bool shouldRelayout(_PitchLayout oldDelegate) => false;
 }
 
 /// Where the rating stands and how far the next class is; before the first
