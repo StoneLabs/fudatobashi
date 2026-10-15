@@ -497,7 +497,7 @@ class _DeveloperSection extends StatelessWidget {
           ),
           SettingsSwitch(
             title: 'Exam: fast Tobi',
-            note: 'Tobi takes ${ExamDevTuning.fastTobiMs ~/ 1000} s for all 100 cards',
+            note: 'Tobi plays all 100 cards in ${ExamDevTuning.fastTobiMs ~/ 1000} s, plus his mistakes',
             value: settings.fastTobi,
             onChanged: (v) => progress.updateSettings(settings.copyWith(fastTobi: v)),
           ),
