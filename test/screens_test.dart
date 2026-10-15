@@ -58,6 +58,7 @@ import 'package:fudatobashi/ui/free/free_practice_sheet.dart';
 import 'package:fudatobashi/ui/free/island_picker.dart';
 import 'package:fudatobashi/ui/free/look_alike_picker.dart';
 import 'package:fudatobashi/ui/help/help_screen.dart';
+import 'package:fudatobashi/ui/history/history_widgets.dart';
 import 'package:fudatobashi/ui/home/home_screen.dart';
 import 'package:fudatobashi/ui/home/home_widgets.dart';
 import 'package:fudatobashi/ui/home/known_home.dart';
@@ -735,9 +736,7 @@ void main() {
     await tester.tap(find.text(s.history));
     await tester.pump(const Duration(milliseconds: 500));
     expect(tester.takeException(), isNull);
-    for (final label in ['100首', s.deckAllKnown, s.deckCustom, '${s.deckAllKnown} · 隠し字']) {
-      expect(find.text('${s.freePlay} · $label'), findsOneWidget);
-    }
+    expect(find.byWidgetPredicate((w) => w is RunKindTag && w.mode == PlayMode.free), findsNWidgets(4));
     await _capture(tester, 'history_scaled_en');
     await tester.pumpWidget(const SizedBox());
   });

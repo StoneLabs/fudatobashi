@@ -22,6 +22,7 @@ class AnkirenFieldView extends StatefulWidget {
     required this.card,
     required this.band,
     this.overlay,
+    this.bandExtent,
   });
 
   final AnkirenField field;
@@ -38,6 +39,9 @@ class AnkirenFieldView extends StatefulWidget {
   final Widget band;
   final Widget Function(FieldPlacement placement)? overlay;
 
+  /// The [band]'s height when not the play screen's ([bandHeight]).
+  final double? bandExtent;
+
   static double bandHeight({required bool landscape}) =>
       landscape ? AnkirenPlayLayout.bandLandscape : AnkirenPlayLayout.bandPortrait;
 
@@ -45,9 +49,11 @@ class AnkirenFieldView extends StatefulWidget {
   /// padding), as the layout mock scales it: the field and its band fill
   /// the area, a portrait card is at most [AnkirenPlayLayout.maxCardW] wide
   /// and, with [zoom], at least [AnkirenPlayLayout.minTapCardW], however
-  /// wide the field then gets. It always fits the height.
-  static double scaleFor(FieldGeometry geometry, Size area, {required bool landscape, required bool zoom}) {
-    final fitHeight = (area.height - bandHeight(landscape: landscape)) / (2 * geometry.height);
+  /// wide the field then gets. It always fits the height, [band] (the
+  /// play screen's by default) included.
+  static double scaleFor(FieldGeometry geometry, Size area,
+      {required bool landscape, required bool zoom, double? band}) {
+    final fitHeight = (area.height - (band ?? bandHeight(landscape: landscape))) / (2 * geometry.height);
     var s = math.min(area.width / geometry.width, fitHeight);
     if (landscape) return s;
     s = math.min(s, AnkirenPlayLayout.maxCardW / AnkirenFieldSize.cardW);
@@ -82,9 +88,10 @@ class _AnkirenFieldViewState extends State<AnkirenFieldView> {
   @override
   Widget build(BuildContext context) => LayoutBuilder(builder: (context, box) {
         const pad = AnkirenPlayLayout.padding;
-        final bandH = AnkirenFieldView.bandHeight(landscape: widget.landscape);
+        final bandH = widget.bandExtent ?? AnkirenFieldView.bandHeight(landscape: widget.landscape);
         final area = Size(box.maxWidth - 2 * pad, box.maxHeight - 2 * pad);
-        final s = AnkirenFieldView.scaleFor(_natural, area, landscape: widget.landscape, zoom: widget.zoom);
+        final s =
+            AnkirenFieldView.scaleFor(_natural, area, landscape: widget.landscape, zoom: widget.zoom, band: bandH);
         final g = widget.landscape || _natural.width * s >= area.width ? _natural : _widenedTo(area.width / s);
         final width = g.width * s;
         final halfH = g.height * s;

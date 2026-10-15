@@ -1,0 +1,346 @@
+import 'package:flutter/material.dart';
+
+import '../../config/config.dart';
+import '../../config/design.dart';
+import '../../domain/rating.dart';
+import '../../l10n/run_strings.dart';
+import '../../l10n/strings.dart';
+import '../../state/past_runs.dart';
+import '../../state/play_config.dart';
+import '../manga/manga.dart';
+import '../play/time_format.dart';
+import 'history_widgets.dart';
+import 'run_charts.dart';
+
+/// A run page's Overview: the headline (D12, or D29 for the training view),
+/// the time graph (D13) and the speed chart (D14).
+class RunOverviewTab extends StatelessWidget {
+  const RunOverviewTab(this.detail, {super.key});
+  final RunDetail detail;
+
+  @override
+  Widget build(BuildContext context) {
+    final run = detail.run;
+    return RunTabList(children: [
+      if (run.mode == PlayMode.exam)
+        _ExamHeadline(detail)
+      else if (run.view == RunView.hundred)
+        _HundredHeadline(detail)
+      else
+        _TrainingHeadline(detail),
+      const SizedBox(height: Gaps.section),
+      RunTimeSection(detail),
+      SwipeSpeedSection(detail),
+      if (run.view == RunView.training) _TrainingFacts(detail),
+    ]);
+  }
+}
+
+/// The headline's sun-toned panel.
+class _HeadlinePanel extends StatelessWidget {
+  const _HeadlinePanel({required this.children});
+  final List<Widget> children;
+
+  @override
+  Widget build(BuildContext context) => MangaPanel(
+        color: Palette.sunSoft,
+        padding: HistoryRunStyle.headlinePadding,
+        child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: children),
+      );
+}
+
+/// The big number with its label, and a badge on the right.
+class _BigTime extends StatelessWidget {
+  const _BigTime({required this.label, required this.value, this.unit, this.badge});
+  final String label, value;
+  final String? unit;
+  final Widget? badge;
+
+  @override
+  Widget build(BuildContext context) => Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                TrackedLabel(label),
+                FittedBox(
+                  fit: BoxFit.scaleDown,
+                  alignment: Alignment.centerLeft,
+                  child: Text.rich(TextSpan(children: [
+                    TextSpan(text: value, style: const TextStyle(fontFamily: Fonts.display, fontSize: HistoryRunStyle.bigFont, height: 1.1)),
+                    if (unit != null)
+                      TextSpan(text: ' $unit', style: const TextStyle(fontFamily: Fonts.display, fontSize: TypeScale.title)),
+                  ])),
+                ),
+              ],
+            ),
+          ),
+          ?badge,
+        ],
+      );
+}
+
+/// The line under a headline: small facts in a row.
+class _FactLine extends StatelessWidget {
+  const _FactLine(this.parts);
+  final List<String> parts;
+
+  @override
+  Widget build(BuildContext context) => Padding(
+        padding: const EdgeInsets.only(top: Gaps.small),
+        child: Text(parts.join('   '),
+            style: const TextStyle(fontWeight: Weights.black, fontSize: TypeScale.small)),
+      );
+}
+
+/// D12: ranked or 100-card free play.
+class _HundredHeadline extends StatelessWidget {
+  const _HundredHeadline(this.detail);
+  final RunDetail detail;
+
+  @override
+  Widget build(BuildContext context) {
+    final s = S.of(context);
+    final run = detail.run;
+    final rating = detail.rating;
+    final misses = run.scoredMisses ?? detail.cards.misses.length;
+    final clock = run.clock;
+    final avg = clock == null || run.cards == 0 ? null : clock.inMilliseconds / run.cards;
+    return Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+      _HeadlinePanel(children: [
+        _BigTime(
+          label: run.scored ? s.runScoredTime : s.runTimeLabel,
+          value: runTimeText(run),
+          badge: detail.best ? ResultBadge(s.runFastestKind) : null,
+        ),
+        if (run.forfeit) ...[
+          const SizedBox(height: Gaps.tight),
+          ResultBadge(s.runForfeitLine(run.cards, run.planned), muted: true),
+        ],
+        const SizedBox(height: Gaps.small),
+        FactGrid([
+          Fact(avg == null ? missingTime : '${formatSeconds(avg)}s', s.runAvgCard),
+          Fact('$misses', s.runMisses),
+          if (rating != null)
+            Fact(rating.before == null ? '${rating.after.round()}' : ratingChangeText(rating.after - rating.before!), s.runRatingFact),
+          Fact(detail.xp == null ? missingTime : '+${detail.xp!.award.total}', s.runXpFact),
+        ]),
+      ]),
+      _FactLine([
+        if (run.scored && clock != null) s.runClockLine(formatTenths(clock), misses),
+        s.runUpsideDown(detail.swipes.where((w) => w.inverted && !w.undone).length),
+        if (rating != null)
+          '${rating.before == null ? '' : '${rating.before!.round()} → '}${rating.after.round()} · ${Rating.bandOf(rating.after).label}',
+      ]),
+    ]);
+  }
+}
+
+/// D12 for the exam: you against Tobi.
+class _ExamHeadline extends StatelessWidget {
+  const _ExamHeadline(this.detail);
+  final RunDetail detail;
+
+  @override
+  Widget build(BuildContext context) {
+    final s = S.of(context);
+    final run = detail.run;
+    final mine = run.time, tobi = run.tobi;
+    final gap = mine == null || tobi == null ? null : (tobi - mine).abs();
+    Widget box(String label, Duration? t, Color fill, Color border) => Expanded(
+          child: Container(
+            padding: HistoryRunStyle.factPadding,
+            decoration: BoxDecoration(color: fill, border: Border.all(color: border, width: Strokes.control)),
+            child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+              TrackedLabel(label),
+              FittedBox(
+                fit: BoxFit.scaleDown,
+                child: Text(t == null ? missingTime : formatTenths(t),
+                    style: const TextStyle(fontFamily: Fonts.display, fontSize: HistoryRunStyle.examTimeFont)),
+              ),
+            ]),
+          ),
+        );
+    return Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+      _HeadlinePanel(children: [
+        Text.rich(TextSpan(children: [
+          TextSpan(
+              text: run.passed ? s.runExamWon : s.runExamLost,
+              style: const TextStyle(fontFamily: Fonts.display, fontSize: HistoryRunStyle.bigFont, height: 1.1)),
+          if (gap != null)
+            TextSpan(
+                text: '  ${s.runExamBy(formatSeconds(gap.inMilliseconds.toDouble(), 1))}',
+                style: const TextStyle(fontWeight: Weights.black, fontSize: TypeScale.body)),
+        ])),
+        const SizedBox(height: Gaps.small),
+        Row(children: [
+          box(s.runTobiTime, tobi, Palette.sun, Palette.ink),
+          const SizedBox(width: Gaps.small),
+          box(s.runYourTime, mine, Palette.paper, run.passed ? Palette.pink : Palette.ink),
+        ]),
+        const SizedBox(height: Gaps.small),
+        FactGrid([
+          Fact(
+              run.clock == null || run.cards == 0 ? missingTime : '${formatSeconds(run.clock!.inMilliseconds / run.cards)}s',
+              s.runAvgCard),
+          Fact('${run.scoredMisses ?? detail.cards.misses.length}', s.runMisses),
+          Fact(detail.xp == null ? missingTime : '+${detail.xp!.award.total}', s.runXpFact),
+        ], perRow: 3),
+      ]),
+      _FactLine([
+        if (run.clock case final clock?) s.runClockLine(formatTenths(clock), run.scoredMisses ?? 0),
+        s.runUpsideDown(detail.swipes.where((w) => w.inverted && !w.undone).length),
+      ]),
+    ]);
+  }
+}
+
+/// D29: the training view's light headline.
+class _TrainingHeadline extends StatelessWidget {
+  const _TrainingHeadline(this.detail);
+  final RunDetail detail;
+
+  @override
+  Widget build(BuildContext context) {
+    final s = S.of(context);
+    final run = detail.run;
+    final clock = run.clock;
+    final misses = detail.cards.misses.length;
+    final right = run.cards == 0 ? 0 : (100 * (run.cards - misses) / run.cards).round();
+    return Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+      _HeadlinePanel(children: [
+        _BigTime(
+          label: s.runPerCard,
+          value: clock == null || run.cards == 0 ? missingTime : formatSeconds(clock.inMilliseconds / run.cards),
+          unit: 's',
+          badge: run.dayDone ? ResultBadge(s.runSetDone, color: Palette.pinkSoft) : null,
+        ),
+        const SizedBox(height: Gaps.small),
+        FactGrid([
+          Fact('$misses', s.runMisses),
+          Fact('$right%', s.runRightShare),
+          Fact(detail.xp == null ? missingTime : '+${detail.xp!.award.total}', s.runXpFact),
+        ], perRow: 3),
+      ]),
+      _FactLine([
+        if (clock != null) s.runTotalLine(formatTenths(clock)),
+        s.runUpsideDown(detail.swipes.where((w) => w.inverted && !w.undone).length),
+      ]),
+    ]);
+  }
+}
+
+/// D13: the time graph, with its summary line, legend and a note on its
+/// bottom.
+class RunTimeSection extends StatelessWidget {
+  const RunTimeSection(this.detail, {super.key});
+  final RunDetail detail;
+
+  @override
+  Widget build(BuildContext context) {
+    final s = S.of(context);
+    final run = detail.run;
+    final t = detail.timeline;
+    final withRefs = run.view == RunView.hundred;
+    final refs = withRefs ? detail.references : const <Never>[];
+    final bottom = detail.graphBottom;
+    final tobi = detail.tobi;
+    String secs(double ms) => formatSeconds(ms, 1);
+    final summary = tobi != null
+        ? s.runGraphTobi(formatTenths(Duration(milliseconds: t.endMs.round())),
+            formatTenths(Duration(milliseconds: tobi.endMs.round())))
+        : [
+            if (t.furthestBehind case final b?) s.runGraphBehind(secs(b.ms), b.card),
+            if (t.furthestAhead case final a?) s.runGraphAhead(secs(a.ms), a.card),
+          ].join(' ');
+    final bottomText = formatMinutes(Duration(milliseconds: bottom.round()));
+    final capped = refs.isNotEmpty && refs.any((r) => r.endMs > bottom);
+    return HistorySection(
+      title: s.runGraphTitle,
+      sub: s.other.runGraphTitle,
+      note: s.runGraphCards,
+      child: MangaPanel(
+        padding: HistoryRunStyle.chartPadding,
+        child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+          Text(summary.isEmpty ? s.runGraphEven : summary,
+              style: const TextStyle(fontWeight: Weights.bold, fontSize: TypeScale.small)),
+          const SizedBox(height: Gaps.small),
+          RunTimeGraph(run: t, bottomMs: bottom, references: refs, tobi: tobi),
+          ChartLegend([
+            (const LegendMark.line(Palette.ink), s.legendThisRun),
+            (const LegendMark.line(Palette.ink, dashed: true), s.legendEvenPace),
+            if (tobi != null) (const LegendMark.line(Palette.seaDeep), s.legendTobi),
+            if (refs.isNotEmpty) (const LegendMark.line(RunChartStyle.reference), s.legendLastRuns(refs.length)),
+            if (t.missCards.isNotEmpty) (const LegendMark.box(Palette.pink), run.scored ? s.legendMissPenalty : s.legendMiss),
+            (const LegendMark.box(Palette.pinkSoft), s.legendBehind),
+            (const LegendMark.box(Palette.landSoft), s.legendAhead),
+          ]),
+          HistoryCaption(!withRefs || refs.isEmpty
+              ? s.runGraphBottomOwn
+              : capped
+                  ? s.runGraphBottomCap(bottomText, RunReviewTuning.references)
+                  : s.runGraphBottomRef(bottomText, refs.length)),
+        ]),
+      ),
+    );
+  }
+}
+
+/// D14: every swipe's time as a bar, misses pink, with the goal.
+class SwipeSpeedSection extends StatelessWidget {
+  const SwipeSpeedSection(this.detail, {super.key});
+  final RunDetail detail;
+
+  @override
+  Widget build(BuildContext context) {
+    final s = S.of(context);
+    final swipes = [for (final w in detail.swipes) if (!w.undone) w];
+    final goal = detail.run.goalMs;
+    final n = swipes.length;
+    final step = RunChartStyle.cardSteps.firstWhere((v) => n / v <= RunChartStyle.maxXTicks, orElse: () => 25);
+    return HistorySection(
+      title: s.runSpeedTitle,
+      sub: s.other.runSpeedTitle,
+      note: s.runSpeedNote,
+      child: MangaPanel(
+        padding: HistoryRunStyle.chartPadding,
+        child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+          BarChart(
+            bars: [for (final w in swipes) ChartBar(w.ms.clamp(0, double.infinity), color: w.miss ? Palette.pink : Palette.ink)],
+            guide: goal,
+            xLabels: {0: '1', for (var c = step; c <= n; c += step) c - 1: '$c'},
+          ),
+          ChartLegend([
+            (const LegendMark.box(Palette.ink), s.legendRight),
+            (const LegendMark.box(Palette.pink), s.legendMiss),
+            if (goal != null) (const LegendMark.line(Palette.sun), s.legendGoal(formatSeconds(goal))),
+          ]),
+        ]),
+      ),
+    );
+  }
+}
+
+/// The training view's counts under its charts.
+class _TrainingFacts extends StatelessWidget {
+  const _TrainingFacts(this.detail);
+  final RunDetail detail;
+
+  @override
+  Widget build(BuildContext context) {
+    final s = S.of(context);
+    final swipes = [for (final w in detail.swipes) if (!w.undone) w];
+    final cards = {for (final w in swipes) (w.poemId, w.inverted)};
+    return Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+      FactGrid([
+        Fact('${swipes.length}', s.runSwipesFact),
+        Fact('${cards.length}', s.runDifferentCards),
+        Fact('${swipes.length - cards.length}', s.runCameBack),
+        Fact('${swipes.where((w) => w.graded && !w.miss).length}', s.runDueReviews),
+      ], perRow: 2),
+      HistoryCaption(s.runTrainingNote),
+    ]);
+  }
+}

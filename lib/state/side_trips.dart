@@ -7,6 +7,7 @@ import '../domain/ankiren_field.dart';
 import '../domain/ankiren_game.dart';
 import '../domain/ankiren_level.dart';
 import '../domain/ankiren_rating.dart';
+import '../domain/ankiren_review.dart';
 import '../domain/ankiren_xp.dart';
 import '../domain/side_trips.dart';
 import '../domain/xp.dart';
@@ -27,7 +28,7 @@ class AnkirenReport {
 /// and what they add up to: each trip's ranked rating, its ranked games and
 /// the hub's standing. Owned by `Progress`, which loads it on start.
 class SideTrips {
-  SideTrips._(this._runs, this._answers);
+  SideTrips._(this._runs, this._answers, this._poems);
 
   static Future<SideTrips> load(AppDatabase db) async {
     final runs = await (db.select(db.sideTripRuns)..orderBy([(r) => OrderingTerm.asc(r.id)])).get();
@@ -35,7 +36,9 @@ class SideTrips {
           ..orderBy([(a) => OrderingTerm.asc(a.runId), (a) => OrderingTerm.asc(a.seq)]))
         .get();
     final answers = <int, List<AnkirenXpAnswer>>{};
+    final poems = <int, List<int>>{};
     for (final a in rows) {
+      (poems[a.runId] ??= []).add(a.poemId);
       (answers[a.runId] ??= []).add((
         wrongTaps: a.wrongTaps,
         responseUs: a.responseUs,
@@ -46,13 +49,16 @@ class SideTrips {
         firstTapUs: a.firstTapUs,
       ));
     }
-    return SideTrips._(runs, answers);
+    return SideTrips._(runs, answers, poems);
   }
 
   final List<SideTripRun> _runs;
 
   /// Each run's answers, in the order they were asked, by run id.
   final Map<int, List<AnkirenXpAnswer>> _answers;
+
+  /// Each run's cards, in the order they were asked, by run id.
+  final Map<int, List<int>> _poems;
 
   /// Every recorded game of every trip, oldest first.
   List<SideTripRun> get runs => List.unmodifiable(_runs);
@@ -71,6 +77,36 @@ class SideTrips {
 
   /// [run]'s answers, one per card asked, in order.
   List<AnkirenXpAnswer> answersOf(SideTripRun run) => List.unmodifiable(_answers[run.id] ?? const []);
+
+  /// [run]'s cards, in the order they were asked.
+  List<int> poemsOf(SideTripRun run) => List.unmodifiable(_poems[run.id] ?? const []);
+
+  /// [run] as History reviews it.
+  AnkirenGameRecord recordOf(SideTripRun run) {
+    final poems = _poems[run.id] ?? const [];
+    return AnkirenGameRecord(
+      id: run.id,
+      startedAt: run.startedAt,
+      ranked: run.ranked,
+      level: run.level,
+      score: run.score,
+      maxScore: run.maxScore,
+      completed: run.completed,
+      rating: run.rating,
+      performance: run.performance,
+      meta: run.meta,
+      cards: [
+        for (final (i, a) in answersOf(run).indexed)
+          AnkirenCardTry(
+            poemId: poems[i],
+            wrongTaps: a.wrongTaps,
+            responseUs: a.responseUs,
+            taps: a.taps,
+            firstTapUs: a.firstTapUs,
+          ),
+      ],
+    );
+  }
 
   /// The cards of [run] not found with the first tap: found after a wrong
   /// tap, shown, or never found.
@@ -143,10 +179,12 @@ class SideTrips {
             rating: Value(after),
             performance: Value(performance),
             meta: Value(jsonEncode({
-              'perSide': setup.perSide,
-              'memoriseMs': setup.memorise.inMilliseconds,
-              'middle': game.field.own.middleCards.length + game.field.opponent.middleCards.length,
-              'memorisedMs': game.memorised.inMilliseconds,
+              AnkirenMeta.perSideKey: setup.perSide,
+              AnkirenMeta.memoriseKey: setup.memorise.inMilliseconds,
+              AnkirenMeta.middleKey: game.field.own.middleCards.length + game.field.opponent.middleCards.length,
+              AnkirenMeta.memorisedKey: game.memorised.inMilliseconds,
+              AnkirenMeta.dealKey: game.field.toJson(),
+              AnkirenMeta.tappedKey: [for (final a in game.answers) a.tapped],
               ...meta,
             })),
           ));
@@ -167,6 +205,7 @@ class SideTrips {
       return id;
     });
     _runs.add(await (db.select(db.sideTripRuns)..where((r) => r.id.equals(runId))).getSingle());
+    _poems[runId] = [for (final a in game.answers) a.poemId];
     _answers[runId] = [
       for (final a in game.answers)
         (wrongTaps: a.wrongTaps, responseUs: a.responseUs, taps: a.taps, firstTapUs: a.firstTapUs),
@@ -179,5 +218,6 @@ class SideTrips {
   void clear() {
     _runs.clear();
     _answers.clear();
+    _poems.clear();
   }
 }

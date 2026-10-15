@@ -290,7 +290,7 @@ class _LevelBar extends StatelessWidget {
                 child: StageClock(length: timeline.length, builder: (context, elapsed) {
                   final since = _since(timeline.lastLevelUp(elapsed), elapsed);
                   return CustomPaint(
-                    painter: _BarPainter(timeline.levelAt(elapsed).fraction, flash: since == null ? 0 : 1 - since),
+                    painter: XpBarPainter(timeline.levelAt(elapsed).fraction, flash: since == null ? 0 : 1 - since),
                   );
                 }),
               ),
@@ -427,10 +427,11 @@ class _Note extends StatelessWidget {
       );
 }
 
-/// The bar: a paper track, filled [fraction] in pink with a sheen, flashing
-/// sun at a new level ([flash] 1 → 0).
-class _BarPainter extends CustomPainter {
-  const _BarPainter(this.fraction, {required this.flash});
+/// The level bar (the XP page's, and History's run page's): a paper track,
+/// filled [fraction] in pink with a sheen, flashing sun at a new level
+/// ([flash] 1 → 0).
+class XpBarPainter extends CustomPainter {
+  const XpBarPainter(this.fraction, {this.flash = 0});
   final double fraction;
   final double flash;
 
@@ -453,7 +454,7 @@ class _BarPainter extends CustomPainter {
   }
 
   @override
-  bool shouldRepaint(_BarPainter old) => old.fraction != fraction || old.flash != flash;
+  bool shouldRepaint(XpBarPainter old) => old.fraction != fraction || old.flash != flash;
 }
 
 /// Sparks thrown off the tip of the filling bar: one launched every

@@ -147,4 +147,8 @@ class TobiPace {
   /// His time so far at [elapsed]: his clock, stopped at [finish], plus the
   /// penalties of his mistakes so far. It reaches [total] as he finishes.
   Duration timeAt(Duration elapsed) => (elapsed < finish ? elapsed : finish) + _penalty * missesAt(elapsed);
+
+  /// His time as each card goes, penalties included, for History's time
+  /// graph.
+  List<Duration> get line => [for (final end in cardEnds) timeAt(end)];
 }

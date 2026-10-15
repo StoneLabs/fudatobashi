@@ -24,6 +24,7 @@ import '../domain/today_set.dart';
 import '../domain/trainer.dart';
 import '../domain/xp.dart';
 import 'db_integrity.dart';
+import 'past_runs.dart';
 import 'play_config.dart';
 import 'settings.dart';
 import 'side_trips.dart';
@@ -493,11 +494,11 @@ class Progress extends ChangeNotifier {
     return earliest;
   }
 
-  int get streak => _daysInRow(practiceDays.contains);
+  int get streak => daysInRow(practiceDays.contains);
 
   /// Days in a row, up to today (or yesterday while today isn't yet), that
   /// [counts].
-  int _daysInRow(bool Function(DateTime day) counts, [DateTime? now]) {
+  int daysInRow(bool Function(DateTime day) counts, [DateTime? now]) {
     var d = dayAt(now).date;
     if (!counts(d)) d = d.subtract(const Duration(days: 1));
     var n = 0;
@@ -697,7 +698,10 @@ class Progress extends ChangeNotifier {
 
   /// Days in a row with today's set done, up to today (or yesterday while
   /// today's isn't yet).
-  int goalStreak([DateTime? now]) => _daysInRow((d) => _days[DayWindow.numberOf(d)]?.doneAt != null, now);
+  int goalStreak([DateTime? now]) => daysInRow(setDoneOn, now);
+
+  /// Journey mode's set for practice day [day] was done.
+  bool setDoneOn(DateTime day) => _days[DayWindow.numberOf(day)]?.doneAt != null;
 
   /// The last [TodaySetTuning.weekDays] days, today last: whose set was
   /// done, and which passed without it (since the first day with a set).
@@ -1196,9 +1200,9 @@ class Progress extends ChangeNotifier {
   /// ranked run the rating: one left early is a forfeit, recorded even
   /// before its first swipe. Guest runs only produce a report.
   /// [now] is when the run ended (demo-data seeding backdates it); [tobi] is
-  /// Tobi's time in an exam try.
+  /// Tobi's time in an exam try, and [tobiLine] his time as each card went.
   Future<SessionReport> recordRun(PlaySession run, PlayConfig config, DateTime startedAt,
-      {DateTime? now, Duration? tobi}) async {
+      {DateTime? now, Duration? tobi, List<Duration>? tobiLine}) async {
     now ??= DateTime.now();
     final previousBest = bestFor(config);
     lastRun = run;
@@ -1240,7 +1244,7 @@ class Progress extends ChangeNotifier {
             mode: config.mode.name,
             setIds: Value(jsonEncode(config.setIds)),
             orientation: 0,
-            cardCount: run.cards.length,
+            cardCount: run.attempts.length,
             totalUs: Value(run.total?.inMicroseconds),
             completed: run.finished,
             meta: Value(jsonEncode({
@@ -1248,8 +1252,12 @@ class Progress extends ChangeNotifier {
               'goalMs': trainer.goalMs,
               if (config.cardIds != null) 'cardIds': config.cardIds,
               _dayKey: day.number,
+              RunMeta.plannedKey: run.cards.length,
+              RunMeta.clockKey: (run.total ?? run.elapsed).inMilliseconds,
+              if (!journey) RunMeta.allKnownKey: true,
               if (score != null) ...{'misses': score.misses + score.cardsLeft, 'scoredMs': score.scored.inMilliseconds},
               if (tobi != null) ...{'tobiMs': tobi.inMilliseconds, 'passed': passed},
+              if (tobiLine != null) RunMeta.tobiLineKey: [for (final t in tobiLine) t.inMilliseconds],
               if (placement) 'placement': true,
             })),
           ));
@@ -1397,7 +1405,7 @@ class Progress extends ChangeNotifier {
           mode: PlayMode.ranked.name,
           setIds: Value(jsonEncode(const ['all'])),
           orientation: 0,
-          cardCount: RankedTuning.cards,
+          cardCount: 0,
           completed: false,
           meta: Value(jsonEncode({
             'maskLevel': 0,
@@ -1405,6 +1413,9 @@ class Progress extends ChangeNotifier {
             'misses': score.misses + score.cardsLeft,
             'scoredMs': score.scored.inMilliseconds,
             if (placement) 'placement': true,
+            RunMeta.plannedKey: RankedTuning.cards,
+            RunMeta.clockKey: 0,
+            RunMeta.allKnownKey: true,
           })),
         ));
     sessions.add(await (db.select(db.sessions)..where((s) => s.id.equals(id))).getSingle());

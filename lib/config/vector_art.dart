@@ -20,6 +20,7 @@ abstract final class IconArt {
   static late final VectorArt undo;
   static late final VectorArt end;
   static late final VectorArt question;
+  static late final VectorArt filter;
   static late final VectorArt refresh;
   static late final VectorArt lock;
   static late final VectorArt person;

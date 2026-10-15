@@ -14,6 +14,7 @@ class AnkirenAnswer {
     required this.responseUs,
     required this.at,
     this.taps = const [],
+    this.tapped = const [],
     this.firstTapUs,
   });
 
@@ -34,6 +35,9 @@ class AnkirenAnswer {
   /// Where each tap that counts ([AnkirenTuning.tapWeights]) landed, in
   /// order; empty when no card was tapped.
   final List<TapProximity> taps;
+
+  /// The card each of [taps] hit, in the same order.
+  final List<int> tapped;
 
   /// The first tap's time after the prompt in microseconds, as measured;
   /// null when no card was tapped.

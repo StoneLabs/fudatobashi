@@ -7,7 +7,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:fudatobashi/config/design.dart';
 import 'package:fudatobashi/data/fuda_sets.dart';
 import 'package:fudatobashi/data/islands.dart';
 import 'package:fudatobashi/data/poem.dart';
@@ -17,10 +16,9 @@ import 'package:fudatobashi/domain/play_session.dart';
 import 'package:fudatobashi/domain/rating.dart';
 import 'package:fudatobashi/domain/side_trips.dart';
 import 'package:fudatobashi/domain/trainer.dart';
-import 'package:fudatobashi/l10n/free_strings.dart';
 import 'package:fudatobashi/l10n/history_strings.dart';
+import 'package:fudatobashi/l10n/run_strings.dart';
 import 'package:fudatobashi/l10n/side_trip_strings.dart';
-import 'package:fudatobashi/l10n/stats_strings.dart';
 import 'package:fudatobashi/l10n/strings.dart';
 import 'package:fudatobashi/state/play_config.dart';
 import 'package:fudatobashi/state/progress.dart';
@@ -29,6 +27,9 @@ import 'package:fudatobashi/ui/app.dart';
 import 'package:fudatobashi/ui/manga/manga.dart';
 import 'package:fudatobashi/ui/profile/profile_screen.dart';
 import 'package:fudatobashi/ui/rank/rank_badges.dart';
+import 'package:fudatobashi/ui/history/history_screen.dart';
+import 'package:fudatobashi/ui/history/history_widgets.dart';
+import 'package:fudatobashi/ui/history/run_page.dart';
 import 'package:fudatobashi/ui/home/home_widgets.dart';
 
 import 'test_ankiren.dart';
@@ -96,13 +97,18 @@ void main() {
     return p;
   }
 
-  PlaySession swipes(List<int> ids) {
+  // Swipes [ids] in turn, "don't know" at the indexes in [misses], and
+  // stops after [stopAfter] cards when given.
+  PlaySession swipes(List<int> ids, {Set<int> misses = const {}, int? stopAfter}) {
     final session = PlaySession([for (final id in ids) CardRef(id)]);
     var t = const Duration(seconds: 100);
-    while (!session.finished) {
+    while (!session.finished && session.index < (stopAfter ?? ids.length)) {
       session.revealed(t);
-      t += const Duration(milliseconds: 700);
-      session.commit(responseTs: t, commitTs: t + const Duration(milliseconds: 80), outcome: Outcome.known);
+      t += Duration(milliseconds: 700 + 13 * (session.index % 7));
+      session.commit(
+          responseTs: t,
+          commitTs: t + const Duration(milliseconds: 80),
+          outcome: misses.contains(session.index) ? Outcome.dontKnow : Outcome.known);
       t += const Duration(milliseconds: 100);
     }
     return session;
@@ -128,20 +134,24 @@ void main() {
 
     for (final (phone, fontScale) in [(_phone, 1.0), (_phone, 1.3), (_narrowPhone, 1.3)]) {
       final setup = '$lang, ${phone.width.round()} dp, font scale $fontScale';
+      final shot = '${lang}_${phone.width.round()}_${(fontScale * 10).round()}';
 
-      testWidgets('History lists runs and 暗記練 games newest first, sums them up, and its filter narrows both ($setup)',
+      testWidgets('History lists runs by day with their kinds, 暗記練 on its own tab, and the filter narrows them ($setup)',
           (tester) async {
         final s = S(ja ? 'ja' : 'en');
         final p = await open(tester, ja: ja);
-        final ranked = playAnkiren(AnkirenSetup.forLevel(0, ranked: true), wrongAt: {1});
-        final custom =
-            playAnkiren(const AnkirenSetup.custom(perSide: 3, memorise: Duration(seconds: 30)), endAfter: 4);
-        // The 暗記練 games come the next day.
+        final today = p.dayAt().date.add(const Duration(hours: 10));
         await tester.runAsync(() async {
-          await p.recordRun(swipes([1, 2, 3]), const PlayConfig(mode: PlayMode.training), day);
-          await p.recordRun(swipes([4, 5]), const FreePracticeSetup().config, day.add(const Duration(hours: 1)));
-          await p.recordAnkiren(ranked, startedAt: day.add(const Duration(hours: 26)));
-          await p.recordAnkiren(custom, startedAt: day.add(const Duration(hours: 27)));
+          await p.recordRun(swipes([1, 2, 3]), const PlayConfig(mode: PlayMode.training), today.subtract(const Duration(days: 1)));
+          await p.recordRun(swipes([for (var i = 1; i <= 100; i++) i], misses: {4, 40}), const PlayConfig(mode: PlayMode.ranked),
+              today);
+          await p.recordRun(swipes([for (var i = 1; i <= 100; i++) i], stopAfter: 30), const PlayConfig(mode: PlayMode.ranked),
+              today.add(const Duration(hours: 1)));
+          await p.recordRun(swipes([4, 5]), const FreePracticeSetup().config, today.add(const Duration(hours: 2)));
+          await p.recordAnkiren(playAnkiren(AnkirenSetup.forLevel(0, ranked: true), wrongAt: {1}),
+              startedAt: today.add(const Duration(hours: 3)));
+          await p.recordAnkiren(playAnkiren(const AnkirenSetup.custom(perSide: 3, memorise: Duration(seconds: 30)), endAfter: 4),
+              startedAt: today.add(const Duration(hours: 4)));
         });
         onPhone(tester, fontScale: fontScale, size: phone);
         await tester.pumpWidget(RepaintBoundary(key: const ValueKey('screen'), child: FudatobashiApp(progress: p)));
@@ -150,73 +160,102 @@ void main() {
         await tester.pump(const Duration(milliseconds: 500));
         expect(tester.takeException(), isNull);
 
-        Finder tags() => find.descendant(of: find.byType(ListView), matching: find.byType(InkTag));
-        // The filter sits above the list, whose tags may read the same.
-        Finder chip(String label) => find.text(label).first;
-        Future<void> filter(String label) async {
-          await tester.tap(chip(label));
-          await tester.pump(const Duration(milliseconds: 300));
-          expect(tester.takeException(), isNull);
-        }
+        await _capture(tester, 'history_main_$shot');
+        Finder kinds() => find.byType(RunKindTag);
+        expect(kinds(), findsAtLeastNWidgets(3), reason: 'the list builds the rows on screen');
+        expect(find.text(s.historyForfeit), findsOneWidget);
+        expect(find.text(s.historyPlaced), findsOneWidget);
+        expect(find.textContaining(s.historyToday, findRichText: true), findsWidgets);
 
-        // The record strip's stats on show, each label with the number under it.
-        Map<String, String?> record() => {
-              for (final label in [s.historyRunsLabel, s.historyCardsLabel, s.historyDaysLabel, s.historyBestLabel])
-                if (find.text(label).evaluate().isNotEmpty)
-                  label: tester
-                      .widget<Text>(find
-                          .descendant(
-                            of: find.ancestor(of: find.text(label), matching: find.byType(Column)).first,
-                            matching: find.byType(Text),
-                          )
-                          .last)
-                      .data,
-            };
-
-        final rankedTag = '暗記練 · ${s.sideTripRankedLevel(0)}';
-        final customTag = '暗記練 · ${s.freePlay} · ${s.deckCustom}';
-        expect([for (final e in tester.widgetList<InkTag>(tags())) e.text],
-            [customTag, rankedTag, '${s.freePlay} · ${s.deckAllKnown}', s.training]);
-        String line(int cards, int misses) =>
-            s.historyLineTemplate.replaceAll('{0}', '$cards').replaceAll('{1}', '$misses');
-        String score(int points) => s.historyScoreTemplate.replaceAll('{0}', '$points');
-        expect(find.text(line(AnkirenLevels.of(0).cards, 1)), findsOneWidget,
-            reason: 'one card found after a wrong tap');
-        expect(find.text(line(6, 2)), findsOneWidget, reason: 'ended with two cards never found');
-        expect(find.text(score(ranked.score!.total)), findsOneWidget);
-        expect(find.byWidgetPredicate((w) => w is NumberedText && w.template == s.historyScoreTemplate),
-            findsOneWidget, reason: 'a custom game has no score');
-        expect(record(), {
-          s.historyRunsLabel: '4',
-          s.historyCardsLabel: '${3 + 2 + AnkirenLevels.of(0).cards + 6}',
-          s.historyDaysLabel: '2'
-        });
-
-        for (final label in [s.allTab, s.training, s.freePlay, s.weakCards, SideTrip.ankiren.label]) {
-          final rect = tester.getRect(chip(label));
-          expect(rect.left, greaterThanOrEqualTo(Gaps.gutter));
-          expect(rect.right, lessThanOrEqualTo(phone.width - Gaps.gutter), reason: 'the filter wraps into rows');
-        }
-
-        final shot = '${lang}_${phone.width.round()}_$fontScale';
+        await tester.tap(find.byWidgetPredicate((w) => w is InkIconButton && w.semanticLabel == s.historyFilterLabel));
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 400));
         await _capture(tester, 'history_filter_$shot');
-        await filter(SideTrip.ankiren.label);
+        await tester.tap(find.text(s.rankedRun).last);
+        await tester.pump(const Duration(milliseconds: 200));
+        expect(find.text(s.filterShow(2)), findsOneWidget);
+        await tester.tap(find.text(s.filterShow(2)));
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 400));
+        expect(tester.takeException(), isNull);
+        expect(kinds(), findsNWidgets(2));
+        expect(find.byType(CountBadge), findsOneWidget);
+
+        await tester.tap(find.text(s.historyAnkirenTab).first);
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 600));
+        await tester.pump(const Duration(milliseconds: 300));
+        expect(tester.takeException(), isNull);
         await _capture(tester, 'history_ankiren_$shot');
-        expect([for (final e in tester.widgetList<InkTag>(tags())) e.text], [customTag, rankedTag]);
-        expect(record(), {
-          s.historyRunsLabel: '2',
-          s.historyCardsLabel: '${AnkirenLevels.of(0).cards + 6}',
-          s.historyBestLabel: '${ranked.score!.total}',
+        expect(find.byType(AnkirenKindTag), findsNWidgets(2));
+        expect(find.text(s.historyNotScored), findsOneWidget);
+        expect(find.byType(CountBadge), findsNothing, reason: 'the 暗記練 tab has no kinds picked');
+        await tester.pumpWidget(const SizedBox());
+      });
+    }
+
+    for (final (phone, fontScale) in [(_phone, 1.0), (_narrowPhone, 1.3)]) {
+      final shot = '${lang}_${phone.width.round()}_${(fontScale * 10).round()}';
+
+      testWidgets('Each run kind opens its run page, and its tabs page through ($shot)', (tester) async {
+        final s = S(ja ? 'ja' : 'en');
+        final p = await open(tester, ja: ja);
+        final start = p.dayAt().date.add(const Duration(hours: 8));
+        final all = [for (var i = 1; i <= 100; i++) i];
+        final tobi = [for (var i = 1; i <= 100; i++) Duration(milliseconds: 2900 * i)];
+        await tester.runAsync(() async {
+          await p.recordRun(swipes(all, misses: {9, 50}), const PlayConfig(mode: PlayMode.ranked), start);
+          await p.recordRun(swipes(all, misses: {70}), const PlayConfig(mode: PlayMode.ranked),
+              start.add(const Duration(hours: 1)));
+          await p.recordRun(swipes(all, misses: {3}), const FreePracticeSetup().config, start.add(const Duration(hours: 2)));
+          await p.recordRun(swipes(all), const PlayConfig(mode: PlayMode.exam), start.add(const Duration(hours: 3)),
+              tobi: tobi.last, tobiLine: tobi);
+          await p.recordRun(swipes([1, 2, 3, 4, 5, 6], misses: {2}), const PlayConfig(mode: PlayMode.training),
+              start.add(const Duration(hours: 4)));
         });
-        await filter(s.training);
-        expect([for (final e in tester.widgetList<InkTag>(tags())) e.text], [s.training]);
-        expect(record(), {s.historyRunsLabel: '1', s.historyCardsLabel: '3', s.historyDaysLabel: '1'});
-        await filter(s.weakCards);
-        expect(tags(), findsNothing);
-        expect(find.text(s.noRunsYet), findsOneWidget);
-        expect(record(), {s.historyRunsLabel: '0', s.historyCardsLabel: '0', s.historyDaysLabel: '0'});
-        await filter(s.allTab);
-        expect(tags(), findsNWidgets(4));
+        onPhone(tester, fontScale: fontScale, size: phone);
+        for (final mode in [PlayMode.ranked, PlayMode.free, PlayMode.exam, PlayMode.training]) {
+          await tester.pumpWidget(RepaintBoundary(
+            key: const ValueKey('screen'),
+            child: ProgressScope(
+              progress: p,
+              child: MaterialApp(
+                  key: ValueKey(mode),
+                  theme: buildMangaTheme(),
+                  debugShowCheckedModeBanner: false,
+                  home: const Scaffold(body: HistoryScreen())),
+            ),
+          ));
+          await tester.pump(const Duration(milliseconds: 300));
+          await _capture(tester, 'run_list_${mode.name}_$shot');
+          final row = find.byWidgetPredicate((w) => w is RunKindTag && w.mode == mode).first;
+          await tester.dragUntilVisible(row, find.byType(ListView).first, const Offset(0, -200));
+          await tester.pump();
+          await tester.tap(row);
+          await tester.pump();
+          await tester.pump(const Duration(milliseconds: 500));
+          await tester.runAsync(() => Future<void>.delayed(const Duration(milliseconds: 100)));
+          await tester.pump();
+          await tester.pump(const Duration(milliseconds: 100));
+          expect(find.byType(RunPage), findsOneWidget);
+          expect(find.text(s.runLoading), findsNothing);
+          final tabs = mode == PlayMode.training ? RunPage.trainingTabs.length : RunPage.hundredTabs.length;
+          expect(find.text(s.pagerPosition.replaceAll('{0}', '1').replaceAll('{1}', '$tabs').toUpperCase()), findsOneWidget);
+          for (var tab = 0; tab < tabs; tab++) {
+            expect(tester.takeException(), isNull);
+            await _capture(tester, 'run_${mode.name}_${tab}_$shot');
+            if (tab == tabs - 1) break;
+            await tester.tap(find.byWidgetPredicate((w) => w is InkIconButton && w.semanticLabel == s.pagerNext));
+            await tester.pump();
+            await tester.pump(const Duration(milliseconds: 600));
+          }
+          if (mode == PlayMode.exam) {
+            await tester.tap(find.text(s.runTabOverview));
+            await tester.pump();
+            await tester.pump(const Duration(milliseconds: 600));
+            expect(find.text(s.legendTobi), findsOneWidget);
+          }
+        }
         await tester.pumpWidget(const SizedBox());
       });
     }

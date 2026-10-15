@@ -54,6 +54,7 @@ class AnkirenGame extends ChangeNotifier {
   int _wrongTaps = 0;
   Duration? _revealTs;
   final List<TapProximity> _taps = [];
+  final List<int> _tapped = [];
   int? _firstTapUs;
   bool _endedEarly = false;
 
@@ -132,7 +133,10 @@ class AnkirenGame extends ChangeNotifier {
       return TapResult.ignored;
     }
     _firstTapUs ??= (pointerDownTs - revealTs).inMicroseconds;
-    if (_taps.length < AnkirenTuning.tapWeights.length) _taps.add(field.proximity(asked, poemId));
+    if (_taps.length < AnkirenTuning.tapWeights.length) {
+      _taps.add(field.proximity(asked, poemId));
+      _tapped.add(poemId);
+    }
     if (poemId != asked) {
       _wrongTaps++;
       notifyListeners();
@@ -181,11 +185,13 @@ class AnkirenGame extends ChangeNotifier {
       responseUs: responseUs,
       at: _clock(),
       taps: List.unmodifiable(_taps),
+      tapped: List.unmodifiable(_tapped),
       firstTapUs: _firstTapUs,
     ));
     _wrongTaps = 0;
     _revealTs = null;
     _taps.clear();
+    _tapped.clear();
     _firstTapUs = null;
   }
 }

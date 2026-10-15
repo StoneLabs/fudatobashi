@@ -48,6 +48,12 @@ class AnkirenRow {
         middle = List.unmodifiable(middle),
         right = List.unmodifiable(right);
 
+  /// A row stored by [toJson].
+  factory AnkirenRow.fromJson(List<dynamic> json) {
+    List<int> ids(int i) => [for (final id in json[i] as List) id as int];
+    return AnkirenRow(left: ids(0), middle: ids(1), right: ids(2));
+  }
+
   /// The left cluster, from the outer edge inward.
   final List<int> left;
 
@@ -60,6 +66,9 @@ class AnkirenRow {
   /// The row's cards, left to right.
   List<int> get cards => [...left, ...middle, ...right];
   bool get isEmpty => left.isEmpty && middle.isEmpty && right.isEmpty;
+
+  /// The row as JSON: its left, middle and right cards.
+  List<List<int>> toJson() => [left, middle, right];
 }
 
 /// One side's arrangement (定位置), as its owner sees it.
@@ -68,11 +77,18 @@ class AnkirenHalf {
       : assert(rows.length == FieldRow.values.length),
         rows = List.unmodifiable(rows);
 
+  /// A half stored by [toJson].
+  factory AnkirenHalf.fromJson(List<dynamic> json) =>
+      AnkirenHalf([for (final r in json) AnkirenRow.fromJson(r as List)]);
+
   /// Indexed by [FieldRow.index].
   final List<AnkirenRow> rows;
 
   AnkirenRow row(FieldRow r) => rows[r.index];
   List<int> get cards => [for (final r in rows) ...r.cards];
+
+  /// The half as JSON: its rows by [FieldRow.index].
+  List<List<List<int>>> toJson() => [for (final r in rows) r.toJson()];
 
   /// The cards in the open middle (all in one row).
   List<int> get middleCards => [for (final r in rows) ...r.middle];
@@ -102,6 +118,16 @@ class AnkirenHalf {
 /// A dealt 暗記練 field: both halves' arrangements.
 class AnkirenField {
   AnkirenField({required this.own, required this.opponent});
+
+  /// A field stored by [toJson].
+  factory AnkirenField.fromJson(Map<String, dynamic> json) => AnkirenField(
+        own: AnkirenHalf.fromJson(json[FieldSide.own.name] as List),
+        opponent: AnkirenHalf.fromJson(json[FieldSide.opponent.name] as List),
+      );
+
+  /// The field as JSON, to store with a recorded game: each half by
+  /// [FieldSide.name].
+  Map<String, Object> toJson() => {FieldSide.own.name: own.toJson(), FieldSide.opponent.name: opponent.toJson()};
 
   final AnkirenHalf own;
   final AnkirenHalf opponent;

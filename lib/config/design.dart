@@ -1084,6 +1084,281 @@ abstract final class HistoryHeaderLayout {
   static const double segmentFont = 13;
 }
 
+/// History's run pages and rows: sections, fact grids, result badges.
+abstract final class HistoryRunStyle {
+  static const double sectionGap = 18;
+  static const EdgeInsets headlinePadding = EdgeInsets.fromLTRB(14, 10, 14, 12);
+  static const EdgeInsets chartPadding = EdgeInsets.fromLTRB(10, 10, 10, 10);
+  static const double bigFont = 40;
+  static const double examTimeFont = 26;
+
+  /// A missed card on the Cards tab, and the Practise button.
+  static const double cardWidth = 52;
+  static const double practiseHeight = 64;
+
+  /// The Every swipe table: row height, column widths (the card takes the
+  /// rest), a miss row's tint and the rule every ten cards.
+  static const double rowHeight = 25;
+  static const double colNumber = 30;
+  static const double colSide = 18;
+  static const double colTime = 44;
+  static const double colAt = 54;
+  static const Color missRow = Palette.pinkSoft;
+  static const Color headRow = Palette.ink;
+  static const int ruleEvery = 10;
+  static const double subFont = 11;
+  static const double noteFont = 11.5;
+  static const double labelFont = 10;
+  static const double labelTracking = 1.2;
+  static const double factFont = 20;
+  static const EdgeInsets factPadding = EdgeInsets.fromLTRB(8, 7, 6, 7);
+  static const double badgeFont = 11;
+  static const EdgeInsets badgePadding = EdgeInsets.fromLTRB(5, 1, 5, 2);
+  static const Color muted = Color(0xFF7A766F);
+
+  /// Pink for slower than even pace or a miss, green for ahead or right.
+  static const Color behind = Palette.pinkDeep;
+  static const Color ahead = Palette.landDeep;
+}
+
+/// History's run charts: the time graph and the bar charts.
+abstract final class RunChartStyle {
+  static const double timeGraphHeight = 260;
+  static const double barChartHeight = 130;
+  static const double labelFont = 10.5;
+  static const double valueFont = 9.5;
+  static const double labelGap = 4;
+  static const double plotRightPad = 10;
+  static const double plotBottomPad = 8;
+  static const double lineStroke = 2.2;
+  static const double referenceStroke = 1.2;
+  static const Color reference = Color(0xFFBDB9B2);
+  static const double missDot = 3.6;
+  static const double endMark = 6;
+  static const double guideStroke = 2;
+
+  /// Gridline steps to choose from: cards across, ms down, ms up a bar
+  /// chart; the first that gives at most this many ticks.
+  static const List<int> cardSteps = [5, 10, 25, 50, 100];
+  static const int maxXTicks = 5;
+  static const List<int> timeStepsMs = [15000, 30000, 60000, 120000, 300000, 600000];
+  static const List<int> barStepsMs = [500, 1000, 2000, 5000, 10000];
+  static const int maxYTicks = 5;
+
+  /// Bars wider than this get a gap and an outline.
+  static const double wideBar = 8;
+  static const double barGapShare = 0.22;
+  static const double legendBox = 11;
+  static const double legendLine = 18;
+}
+
+/// History's filter sheet (D43).
+abstract final class HistoryFilterStyle {
+  static const Color barrier = Color(0x88000000);
+  static const EdgeInsets padding = EdgeInsets.fromLTRB(Gaps.gutter, 12, Gaps.gutter, Gaps.gutter);
+  static const double chipHeight = 34;
+  static const EdgeInsets chipPadding = EdgeInsets.symmetric(horizontal: 10);
+  static const double showHeight = 56;
+}
+
+/// The History list: the 7-day strip (D2), day headers (D4) and rows (D5).
+abstract final class HistoryListStyle {
+  static const EdgeInsets stripPadding = EdgeInsets.fromLTRB(12, 8, 12, 8);
+  static const double dayBox = 28;
+  static const double dayGap = 4;
+  static const double dayDot = 6;
+  static const double dayLetterFont = 9.5;
+  static const double streakFont = 34;
+  static const Color dayNone = Palette.paper;
+  static const Color daySome = Palette.sun;
+  static const Color dayDone = Palette.land;
+  static const Color today = Palette.pink;
+  static const double legendBox = 10;
+  static const double tabGap = 10;
+  static const double dayHeaderFont = 18;
+  static const double dayHeaderDateFont = 12.5;
+  static const EdgeInsets rowPadding = EdgeInsets.fromLTRB(12, 9, 6, 9);
+  static const double rowClockWidth = 46;
+  static const double rowClockFont = 14;
+  static const double rowValueFont = 22;
+  static const double rowCaptionFont = 9.5;
+  static const double rowLineFont = 12;
+  static const double chevron = 16;
+  static const double accent = 5;
+  static const double bottomPad = 24;
+}
+
+/// History's 暗記練 game page: tier colours, the first-tap mix bars, the
+/// replayed field, the tables and the score sum.
+abstract final class AnkirenReviewStyle {
+  /// Where a tap landed (by `TapProximity.index`, nearest first): fill and
+  /// text.
+  static const List<Color> tierFill = [
+    Palette.land,
+    Palette.sun,
+    Palette.orange,
+    Color(0xFFFFB8CF),
+    Palette.pink,
+    Palette.ink,
+  ];
+  static const List<Color> tierText = [Palette.ink, Palette.ink, Palette.ink, Palette.ink, Palette.ink, Palette.paper];
+
+  static const Color headlineFill = Palette.pinkSoft;
+  static const Color customFill = Color(0xFFF1F0EE);
+  static const Color sumFill = Palette.seaSoft;
+  static const Color markedRow = Palette.pinkSoft;
+  static const Color muted = HistoryRunStyle.muted;
+
+  static const EdgeInsets panelPadding = EdgeInsets.fromLTRB(10, 8, 10, 10);
+
+  /// A headline's facts share one row while each gets this much (scaled
+  /// with the text), else two rows.
+  static const double factMinWidth = 72;
+  static const double stampFont = 12;
+  static const double stampSubFont = 8.5;
+  static const EdgeInsets stampPadding = EdgeInsets.fromLTRB(8, 3, 8, 4);
+
+  /// The first-tap mix: a row's label column, its bar.
+  static const double mixLabelWidth = 96;
+  static const double mixBarHeight = 22;
+  static const double mixFont = 11;
+  static const double mixRowGap = 6;
+
+  static const double chipFont = 10;
+  static const EdgeInsets chipPadding = EdgeInsets.fromLTRB(4, 1, 4, 2);
+
+  /// The memorise bar and its ticks.
+  static const double memoBarHeight = 18;
+  static const double memoTick = 2;
+  static const double memoTickOut = 4;
+
+  /// The replayed field: its band, card words, the highlight round the card
+  /// asked, the arrows from wrong taps and the step's number marker.
+  static const double fieldBand = 18;
+  static const double fieldBandFont = 10;
+  static const double fieldCardFont = 11;
+  static const double fieldCardBorder = 1.2;
+  static const EdgeInsets fieldCardPadding = EdgeInsets.all(2);
+  static const double highlight = 3;
+  static const double arrowStroke = 2.2;
+  static const double arrowHead = 7;
+
+  /// Half the angle of an arrow's head, radians.
+  static const double arrowSpread = 0.45;
+  static const double arrowBend = 0.25;
+  static const Color arrow = Palette.pinkDeep;
+  static const double marker = 18;
+  static const double markerFont = 10;
+  static const Color fieldGround = Color(0xFFEFF5E6);
+  static const double stepFont = 15;
+  static const double stepSubFont = 12;
+  static const double stepButton = 44;
+
+  /// The find-time chart numbers every bar up to [allLabelsUpTo] cards,
+  /// else every [labelEvery]th.
+  static const int allLabelsUpTo = 16;
+  static const int labelEvery = 5;
+
+  /// Tables: header and cell type, and the row padding.
+  static const double headFont = 10;
+  static const double cellFont = 12.5;
+  static const EdgeInsets cellPadding = EdgeInsets.symmetric(horizontal: 3, vertical: 6);
+  static const Color rule = Color(0xFFD8D5CF);
+
+  /// The score sum: big values over small labels.
+  static const double sumFont = 18;
+  static const double sumLabelFont = 9.5;
+  static const double sumSignFont = 14;
+  static const EdgeInsets sumSignPadding = EdgeInsets.symmetric(horizontal: 2);
+
+  /// Each factor's share of the sum's width against the result's 1.
+  static const int termFlex = 2;
+  static const double badgeFont = 16;
+  static const double badgeSuffixFont = 10;
+
+  static const double ratingFont = 26;
+  static const double formulaFont = 12.5;
+  static const double barGap = 8;
+}
+
+/// History's run page: the Speed, Rating and XP tabs' panels, lines, cells
+/// and small charts.
+abstract final class RunTabsStyle {
+  static const double panelBorder = Strokes.label;
+  static const EdgeInsets panelPadding = EdgeInsets.fromLTRB(10, 9, 10, 10);
+  static const EdgeInsets linePadding = EdgeInsets.symmetric(vertical: 4);
+  static const EdgeInsets firstCellPadding = EdgeInsets.fromLTRB(0, 7, 6, 7);
+  static const EdgeInsets tableCellPadding = EdgeInsets.fromLTRB(3, 6, 3, 6);
+  static const Color rule = Color(0xFFC9C5BE);
+
+  static const TextStyle lineStyle = TextStyle(fontWeight: Weights.black, fontSize: 12);
+  static const TextStyle rowStyle = TextStyle(fontWeight: Weights.bold, fontSize: 12);
+  static const TextStyle noteStyle =
+      TextStyle(fontWeight: Weights.bold, fontSize: HistoryRunStyle.noteFont, color: HistoryRunStyle.muted);
+  static const TextStyle headStyle =
+      TextStyle(fontWeight: Weights.black, fontSize: HistoryRunStyle.labelFont, letterSpacing: 0.6);
+  static const TextStyle valueStyle = TextStyle(fontFamily: Fonts.display, fontSize: 12.5);
+  static const TextStyle totalStyle = TextStyle(fontFamily: Fonts.display, fontSize: 16);
+  static const TextStyle bigStyle = TextStyle(fontFamily: Fonts.display, fontSize: 26, height: 1.15);
+  static const TextStyle cellValueStyle = TextStyle(fontFamily: Fonts.display, fontSize: 19, height: 1.2);
+  static const TextStyle headlineStyle = TextStyle(fontFamily: Fonts.display, fontSize: 19, height: 1.25);
+  static const TextStyle chartLabelStyle = TextStyle(
+      fontFamily: Fonts.ui, fontWeight: Weights.black, fontSize: RunChartStyle.labelFont, color: HistoryRunStyle.behind);
+
+  /// The XP level bar.
+  static const double levelBarHeight = 16;
+
+  /// The card strip: its height, how far the fastest stretch's box reaches
+  /// past it, and that box's line.
+  static const double stripHeight = 26;
+  static const double stripBoxReach = 4;
+  static const double stripBoxStroke = 2.2;
+  static const Color paceFast = Palette.landDeep;
+  static const Color paceUnderGoal = Palette.land;
+  static const Color paceSlow = Color(0xFFFFB3CB);
+  static const Color paceMiss = Palette.pink;
+  static const Color paceUnplayed = Color(0xFFE6E3DE);
+
+  /// The 決まり字 length rows: label and bar shares of the row, the bar,
+  /// the value's width at text scale 1, and room past the longest bar.
+  static const int lengthLabelFlex = 4;
+  static const int lengthBarFlex = 6;
+  static const double lengthBarHeight = 12;
+  static const double lengthValueWidth = 48;
+  static const double lengthHeadroom = 1.1;
+
+  /// A "usual" or "before" tick across a bar.
+  static const double tickReach = 3;
+  static const double tickStroke = 2.5;
+
+  /// Between the small cards of the gained and lost rows.
+  static const double tileGap = 6;
+
+  /// The class bar.
+  static const double classBarHeight = 14;
+
+  /// The ranked runs' rating chart and table.
+  static const double ratingChartHeight = 120;
+  static const double ratingChartPad = 0.12;
+  static const double ratingPointInset = 12;
+  static const double ratingLineStroke = 2.2;
+  static const double ratingPoint = 4.5;
+  static const double ratingMineMark = 7;
+  static const double runColumnFlex = 1;
+}
+
+/// `SwipeTabs`: the thin tab row over swiped pages, and the bottom pager.
+abstract final class SwipeTabsStyle {
+  static const EdgeInsets tabPadding = EdgeInsets.fromLTRB(4, 6, 4, 5);
+  static const double font = 13;
+  static const double subFont = 9.5;
+  static const double subTracking = 0.8;
+  static const Color idle = Color(0xFF6B6760);
+  static const EdgeInsets pagerPadding = EdgeInsets.fromLTRB(Gaps.gutter, 6, Gaps.gutter, 6);
+  static const double dot = 8;
+  static const double dotGap = 5;
+}
+
 /// Small charts shared by the island list (a per-card sparkline) and the card
 /// detail screen (the attempt chart).
 abstract final class ChartStyle {

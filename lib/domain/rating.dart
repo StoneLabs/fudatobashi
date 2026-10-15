@@ -84,7 +84,11 @@ abstract final class Rating {
   /// Elo-style smoothing toward the latest performance.
   static double update(double? current, double performance, int sessionsSoFar) {
     if (current == null) return performance;
-    final k = sessionsSoFar < RatingModel.provisionalSessions ? RatingModel.provisionalK : RatingModel.establishedK;
-    return current + k * (performance - current);
+    return current + share(sessionsSoFar) * (performance - current);
   }
+
+  /// The share of the way to its performance a ranked run moves the rating
+  /// after [sessionsSoFar] rated runs.
+  static double share(int sessionsSoFar) =>
+      sessionsSoFar < RatingModel.provisionalSessions ? RatingModel.provisionalK : RatingModel.establishedK;
 }

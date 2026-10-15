@@ -12,6 +12,7 @@ import '../../domain/ranked.dart';
 import '../../l10n/exam_strings.dart';
 import '../../l10n/strings.dart';
 import '../manga/manga.dart';
+import '../play/time_format.dart';
 import '../torifuda/torifuda_painter.dart';
 
 /// Tobi's side of the mat: Tobi, and his deck turned to face him like an
@@ -335,12 +336,7 @@ class RaceClock extends StatelessWidget {
   final TextStyle style;
 
   /// [d] as mm:ss.d.
-  static String format(Duration d) {
-    final tenths = d.inMilliseconds ~/ 100;
-    final m = tenths ~/ 600;
-    final sec = tenths ~/ 10 % 60;
-    return '${m.toString().padLeft(2, '0')}:${sec.toString().padLeft(2, '0')}.${tenths % 10}';
-  }
+  static String format(Duration d) => formatTenths(d, padMinutes: true);
 
   @override
   Widget build(BuildContext context) => Stack(alignment: Alignment.centerRight, children: [

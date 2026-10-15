@@ -20,7 +20,7 @@ final _assetPaths = [
 
 const _iconNames = [
   'home', 'history', 'stats', 'help', 'settings', 'arrow', 'chevron', 'back', 'close', 'undo', 'end', 'question',
-  'refresh', 'lock', 'person', 'cards', 'check', 'speaker',
+  'refresh', 'lock', 'person', 'cards', 'check', 'speaker', 'filter',
 ];
 const _mapNames = ['boat', 'flag', 'star'];
 const _sceneNames = ['welcome-isle', 'far-isle', 'boat-wake', 'surf', 'beginner', 'expert'];
@@ -60,6 +60,7 @@ void installVectorArt(Map<String, String> svg) {
   IconArt.undo = parse('icons/undo');
   IconArt.end = parse('icons/end');
   IconArt.question = parse('icons/question');
+  IconArt.filter = parse('icons/filter');
   IconArt.refresh = parse('icons/refresh');
   IconArt.lock = parse('icons/lock');
   IconArt.person = parse('icons/person');

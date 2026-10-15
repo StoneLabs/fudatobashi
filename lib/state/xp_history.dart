@@ -18,8 +18,17 @@ abstract final class XpHistory {
   static const _graduatedKey = 'graduated';
   static const _dayDoneKey = 'dayDone';
 
+  /// What every recorded game of [progress] earned: the main game's runs by
+  /// session id, 暗記練's games by run id.
+  static ({Map<int, XpGain> runs, Map<int, XpGain> ankiren}) gainsOf(Progress progress) {
+    final runGains = <int, XpGain>{}, gameGains = <int, XpGain>{};
+    ledgerOf(progress, ({required ankiren, required id, required gain}) => (ankiren ? gameGains : runGains)[id] = gain);
+    return (runs: runGains, ankiren: gameGains);
+  }
+
   /// Every recorded game of [progress], oldest first.
-  static XpLedger ledgerOf(Progress progress) {
+  static XpLedger ledgerOf(Progress progress,
+      [void Function({required bool ankiren, required int id, required XpGain gain})? onGain]) {
     final bySession = <int, List<(ItemKey, AttemptRec)>>{};
     for (final k in progress.trainer.items.keys) {
       for (final a in progress.attemptsOf(k)) {
@@ -30,6 +39,7 @@ abstract final class XpHistory {
     return XpLedger.of(
       [for (final s in progress.sessions) runOf(progress, s, bySession[s.id] ?? const [])],
       [for (final r in trips.runsOf(SideTrip.ankiren)) ankirenRunOf(trips, r)],
+      onGain,
     );
   }
 

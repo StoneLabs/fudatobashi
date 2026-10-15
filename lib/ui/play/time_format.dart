@@ -19,3 +19,17 @@ String formatMinutes(Duration d) {
   final seconds = d.inSeconds;
   return '${seconds ~/ 60}:${(seconds % 60).toString().padLeft(2, '0')}';
 }
+
+/// [d] as m:ss.d, e.g. 3:58.4; mm:ss.d with [padMinutes].
+String formatTenths(Duration d, {bool padMinutes = false}) {
+  final tenths = d.inMilliseconds ~/ 100;
+  final m = tenths ~/ 600;
+  final sec = tenths ~/ 10 % 60;
+  return '${padMinutes ? m.toString().padLeft(2, '0') : m}:${sec.toString().padLeft(2, '0')}.${tenths % 10}';
+}
+
+/// [ms] as seconds with [digits] decimals, e.g. "2.95".
+String formatSeconds(double ms, [int digits = 2]) => (ms / 1000).toStringAsFixed(digits);
+
+/// [ms] as signed seconds, e.g. "+0.43" or "−1.96".
+String formatSignedSeconds(double ms, [int digits = 2]) => '${ms < 0 ? '−' : '+'}${formatSeconds(ms.abs(), digits)}';

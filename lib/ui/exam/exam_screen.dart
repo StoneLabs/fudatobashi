@@ -114,7 +114,7 @@ class _ExamScreenState extends State<ExamScreen> with SingleTickerProviderStateM
     if (!_handedOff) music.enterMenu();
     // Safety net for an unexpected pop: the try is still recorded.
     if (!_ending && _session.attempts.isNotEmpty) {
-      unawaited(_progress.recordRun(_session, _config, _startedAt, tobi: widget.tobi.total));
+      unawaited(_progress.recordRun(_session, _config, _startedAt, tobi: widget.tobi.total, tobiLine: widget.tobi.line));
     }
     super.dispose();
   }
@@ -209,7 +209,7 @@ class _ExamScreenState extends State<ExamScreen> with SingleTickerProviderStateM
     setState(() => _state = won ? _Race.won : _Race.lost);
     if (won) playSound(context, Sfx.best);
     final shown = Future<void>.delayed(left ? Duration.zero : (won ? ExamMotion.won : ExamMotion.lost));
-    final report = await _progress.recordRun(_session, _config, _startedAt, tobi: widget.tobi.total);
+    final report = await _progress.recordRun(_session, _config, _startedAt, tobi: widget.tobi.total, tobiLine: widget.tobi.line);
     await shown;
     if (!mounted) return;
     _handedOff = true;

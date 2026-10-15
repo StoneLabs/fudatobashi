@@ -63,6 +63,14 @@ Future<void> startFreePlay(BuildContext context, FreePracticeSetup setup) async 
   await _push(context, progress.freeDeck(run), run);
 }
 
+/// Free play of the cards [poemIds] (those still known), as History's
+/// "Practise these" starts it.
+Future<void> startCardsPlay(BuildContext context, List<int> poemIds) async {
+  final progress = ProgressScope.read(context);
+  final run = PlayConfig(mode: PlayMode.free, cardIds: [...poemIds]..sort());
+  await _push(context, progress.freeDeck(run), run);
+}
+
 /// 苦手: the slowest and shakiest cards.
 Future<void> startNigate(BuildContext context) async {
   const run = PlayConfig(mode: PlayMode.nigate);
