@@ -69,7 +69,7 @@ class DayDoneOverlay extends StatelessWidget {
                   decoration: const BoxDecoration(boxShadow: [BoxShadow(color: Palette.ink, offset: DayDoneLayout.ctaShadow)]),
                   child: CelebrationCta(
                     label: s.xpCta,
-                    sub: s.other.xpCta,
+                    sub: s.sub?.xpCta,
                     onTap: onNext,
                     height: DayDoneLayout.ctaHeight,
                     fontSize: DayDoneLayout.ctaFont,

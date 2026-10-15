@@ -189,7 +189,7 @@ void main() {
     final today = p.dayAt(now);
     await showSettings(tester, p, _users);
     await openSheet(tester, s);
-    expect(find.text(s.other.dayStart), findsOneWidget, reason: 'the other language under the title');
+    expect(find.text(s.other.dayStart), findsNothing, reason: 'an English title has no Japanese under it');
     final picked = TodaySetTuning.defaultDayStartHour;
     for (var h = TodaySetTuning.firstDayStartHour; h <= TodaySetTuning.lastDayStartHour; h++) {
       expect(tester.widget<InkButton>(hourCell(s, h)).color, h == picked ? Palette.sun : Palette.paper);

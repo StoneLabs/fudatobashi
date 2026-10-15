@@ -274,7 +274,7 @@ void main() {
       });
     }
 
-    testWidgets('My Profile shows 暗記練\'s rank under the main one, unranked at 入門 before its first game ($lang)',
+    testWidgets('My Profile shows 暗記練\'s rank under the main one, unranked as a novice before its first game ($lang)',
         (tester) async {
       final s = S(ja ? 'ja' : 'en');
       final p = await open(tester, ja: ja);
@@ -290,7 +290,7 @@ void main() {
       }
 
       await showProfile();
-      expect(find.text(SideTrip.ankiren.label), findsOneWidget);
+      expect(find.text(s.tripName(SideTrip.ankiren)), findsOneWidget);
       expect(find.text(s.sideTripUnranked), findsOneWidget);
       expect(tester.widget<ClassBadge>(find.byType(ClassBadge)).band, Rating.bands.first);
 

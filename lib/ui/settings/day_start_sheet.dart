@@ -52,12 +52,14 @@ class _DayStartSheet extends StatelessWidget {
                     style: const TextStyle(
                         fontFamily: Fonts.display, fontSize: DayStartPickerLayout.title, height: TypeScale.displayLineHeight),
                   ),
-                  const SizedBox(height: DayStartPickerLayout.subGap),
-                  Text(
-                    s.other.dayStart,
-                    style: const TextStyle(
-                        fontWeight: Weights.black, fontSize: DayStartPickerLayout.sub, color: Palette.inkSoft),
-                  ),
+                  if (s.sub != null) ...[
+                    const SizedBox(height: DayStartPickerLayout.subGap),
+                    Text(
+                      s.sub!.dayStart,
+                      style: const TextStyle(
+                          fontWeight: Weights.black, fontSize: DayStartPickerLayout.sub, color: Palette.inkSoft),
+                    ),
+                  ],
                   const SizedBox(height: DayStartPickerLayout.gridGap),
                   for (var first = 0; first < hours.length; first += columns) ...[
                     if (first > 0) const SizedBox(height: DayStartPickerLayout.cellGap),

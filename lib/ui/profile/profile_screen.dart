@@ -159,7 +159,7 @@ class _RankPanel extends StatelessWidget {
                 next == null
                     ? Text(s.topBand, style: bold)
                     : NumberedText(
-                        s.toNextBand.replaceAll('{band}', next.label),
+                        s.toNextBand.replaceAll('{band}', s.className(next)),
                         [(next.minRating - rating).ceil(), next.minRating.round()],
                         style: const TextStyle(fontSize: HomeLayout.ratingNoteFont, fontWeight: Weights.bold),
                         numberStyle: bold,
@@ -271,7 +271,7 @@ class _SideTripRank extends StatelessWidget {
           child: FittedBox(
             fit: BoxFit.scaleDown,
             alignment: Alignment.centerLeft,
-            child: Text(entry.trip.label,
+            child: Text(S.of(context).tripName(entry.trip),
                 style: const TextStyle(fontFamily: Fonts.display, fontSize: ProfileLayout.tripNameFont, height: 1)),
           ),
         ),

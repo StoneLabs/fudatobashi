@@ -531,13 +531,15 @@ class _SoonTag extends StatelessWidget {
                 Text(label,
                     style: const TextStyle(
                         fontWeight: Weights.black, fontSize: DojoSceneStyle.tagFont, height: DojoSceneStyle.tagLineHeight)),
-                const SizedBox(width: DojoSceneStyle.chipGap),
-                InkTag(
-                  S.of(context).other.sideTripsSoon.toUpperCase(),
-                  fontSize: DojoSceneStyle.chipFont,
-                  tracking: DojoSceneStyle.chipTracking,
-                  padding: DojoSceneStyle.chipPadding,
-                ),
+                if (S.of(context).sub != null) ...[
+                  const SizedBox(width: DojoSceneStyle.chipGap),
+                  InkTag(
+                    S.of(context).sub!.sideTripsSoon.toUpperCase(),
+                    fontSize: DojoSceneStyle.chipFont,
+                    tracking: DojoSceneStyle.chipTracking,
+                    padding: DojoSceneStyle.chipPadding,
+                  ),
+                ],
               ],
             ),
           ),

@@ -831,6 +831,9 @@ abstract final class HomeLayout {
   static const double ratingLabelTracking = 0.14;
   static const double ratingFont = 26;
   static const double ratingBarWidth = 112;
+
+  /// How much of the hero's width its title may take, keeping clear of Tobi.
+  static const double heroTitleMaxShare = 0.34;
   static const double ratingBarHeight = 12;
   static const double ratingBarGap = 4;
   static const double ratingNoteFont = 12.5;
@@ -840,6 +843,10 @@ abstract final class HomeLayout {
   static const EdgeInsets streakLabelPadding = EdgeInsets.fromLTRB(4, 1, 4, 1);
 
   static const double heroGap = 10;
+
+  /// The widest the class sticker grows: a longer English class name scales
+  /// down to fit.
+  static const double classMaxWidth = 96;
   static const double heroCut = 22;
   static const double heroTitle = 68;
   static const double heroTitleOutline = 12;
@@ -886,6 +893,9 @@ abstract final class HomeLayout {
   static const double rowSubFont = 12;
   static const double untrackedFont = 12;
   static const double untrackedTracking = 0.08;
+  /// The space kept between a mode panel's lettering and its corner art.
+  static const double modeCornerGap = 4;
+
   static const EdgeInsets untrackedPadding = EdgeInsets.fromLTRB(5, 1, 5, 2);
   static const double untrackedGap = 4;
 }
@@ -2983,6 +2993,10 @@ abstract final class SideTripsLayout {
 
   /// Narrow pips keep a card's shape.
   static const double pipAspect = 1.45;
+
+  /// The widest the stamp's lettering grows: a longer English class name
+  /// scales down to fit.
+  static const double stampMaxWidth = 54;
   static const double lockTop = 8;
   static const double lockMinHeight = 60;
   static const EdgeInsets lockPadding = EdgeInsets.symmetric(horizontal: 14, vertical: 8);
@@ -4935,11 +4949,6 @@ abstract final class AnkirenRatingLayout {
 
   /// The title: display lettering, sun for a rise, paper for a fall.
   static const double topGap = 4;
-  static const String titleUp = '暗記力UP!!';
-  static const String titleHeld = 'キープ!!';
-  static const String titleDown = 'ドンマイ!';
-  static const String titlePlacing = 'ランク判定';
-  static const String titlePlaced = 'ランク決定!!';
   static const double titleFont = 72;
   static const double titleOutline = 9;
   static const double bandInset = 44;

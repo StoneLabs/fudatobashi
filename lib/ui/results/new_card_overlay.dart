@@ -133,7 +133,7 @@ class _NewCardOverlayState extends State<NewCardOverlay> with SingleTickerProvid
                       flex: NewCardLayout.acceptFlex,
                       child: CelebrationCta(
                         label: s.bringItOn,
-                        sub: s.other.bringItOn,
+                        sub: s.sub?.bringItOn,
                         onTap: _accept,
                         height: NewCardLayout.actionHeight,
                         fontSize: NewCardLayout.acceptFont,

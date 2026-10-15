@@ -193,7 +193,7 @@ class _RatingLine extends StatelessWidget {
         ? Text(s.rankedUnplacedLine, style: style.copyWith(fontWeight: Weights.black))
         : next == null
             ? NumberedText(s.rankedRatingTop, [rating.round()], style: style, numberStyle: numbers)
-            : NumberedText(s.rankedRatingLine(next.label), [rating.round(), (next.minRating - rating).ceil()],
+            : NumberedText(s.rankedRatingLine(s.className(next)), [rating.round(), (next.minRating - rating).ceil()],
                 style: style, numberStyle: numbers);
     return Center(child: FittedBox(fit: BoxFit.scaleDown, child: line));
   }

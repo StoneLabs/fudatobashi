@@ -41,6 +41,10 @@ extension SideTripStrings on S {
   String tripBanner(SideTrip trip) => switch (trip) {
         SideTrip.ankiren => t('ankirenBanner'),
       };
+  /// [trip]'s name: 暗記練 in Japanese, "AnkiRen" otherwise.
+  String tripName(SideTrip trip) => switch (trip) {
+        SideTrip.ankiren => t('ankirenName'),
+      };
   String tripTag(SideTrip trip) => switch (trip) {
         SideTrip.ankiren => t('ankirenTag'),
       };

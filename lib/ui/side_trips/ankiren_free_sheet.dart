@@ -108,16 +108,16 @@ class _AnkirenFreeSheetState extends State<AnkirenFreeSheet> {
     final memorise = _nearest(setup.memorise);
     return AnkirenSheet(
       title: s.freePlay,
-      sub: s.other.freePlay,
+      sub: s.sub?.freePlay,
       line: s.ankirenFreeNote,
       body: [
         Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-          _SheetLabel(s.ankirenLevelRow, s.other.ankirenLevelRow),
+          _SheetLabel(s.ankirenLevelRow, s.sub?.ankirenLevelRow),
           const SizedBox(height: AnkirenSheetLayout.labelGap),
           _levelKeys(s),
         ]),
         _Stepper(
-          label: _SheetLabel(s.ankirenPerSide, s.other.ankirenPerSide),
+          label: _SheetLabel(s.ankirenPerSide, s.sub?.ankirenPerSide),
           value: NumberedText(
             s.ankirenPerSideCount,
             [setup.perSide],
@@ -128,7 +128,7 @@ class _AnkirenFreeSheetState extends State<AnkirenFreeSheet> {
           onMore: setup.perSide < _maxPerSide ? () => _stepCustom(() => _perSide++) : null,
         ),
         _Stepper(
-          label: _SheetLabel(s.ankirenMemoriseTime, s.other.ankirenMemoriseTime),
+          label: _SheetLabel(s.ankirenMemoriseTime, s.sub?.ankirenMemoriseTime),
           value: Text(formatMinutes(setup.memorise),
               style: const TextStyle(fontFamily: Fonts.display, fontSize: AnkirenSheetLayout.stepperValueFont)),
           onLess: memorise > 0 ? () => _stepCustom(() => _memoriseIndex--) : null,
@@ -137,7 +137,7 @@ class _AnkirenFreeSheetState extends State<AnkirenFreeSheet> {
       ],
       footer: BurstButton(
         title: s.freeStart,
-        sub: s.other.freeStart.toUpperCase(),
+        sub: s.sub?.freeStart.toUpperCase(),
         onTap: setup.cards <= _known ? _start : null,
       ),
     );
@@ -170,8 +170,10 @@ class _AnkirenFreeSheetState extends State<AnkirenFreeSheet> {
         onTap: () => _change(() => _level = null),
         top: Text(s.ankirenCustom,
             style: const TextStyle(fontWeight: Weights.black, fontSize: AnkirenSheetLayout.keyCustomFont)),
-        bottom: Text(s.other.ankirenCustom.toUpperCase(),
-            style: const TextStyle(fontWeight: Weights.black, fontSize: AnkirenSheetLayout.keyCustomSubFont)),
+        bottom: s.sub == null
+            ? null
+            : Text(s.sub!.ankirenCustom.toUpperCase(),
+                style: const TextStyle(fontWeight: Weights.black, fontSize: AnkirenSheetLayout.keyCustomSubFont)),
       ),
     ];
     const perRow = AnkirenSheetLayout.keysPerRow;
@@ -194,20 +196,23 @@ class _AnkirenFreeSheetState extends State<AnkirenFreeSheet> {
 class _SheetLabel extends StatelessWidget {
   const _SheetLabel(this.text, this.sub);
 
-  final String text, sub;
+  final String text;
+  final String? sub;
 
   @override
   Widget build(BuildContext context) => Text.rich(
         TextSpan(children: [
           Phrases.span(text),
-          const TextSpan(text: ' '),
-          Phrases.span(
-            sub.toUpperCase(),
-            style: const TextStyle(
-              fontSize: AnkirenSheetLayout.labelSubFont,
-              letterSpacing: AnkirenSheetLayout.labelSubTracking * AnkirenSheetLayout.labelSubFont,
+          if (sub != null) ...[
+            const TextSpan(text: ' '),
+            Phrases.span(
+              sub!.toUpperCase(),
+              style: const TextStyle(
+                fontSize: AnkirenSheetLayout.labelSubFont,
+                letterSpacing: AnkirenSheetLayout.labelSubTracking * AnkirenSheetLayout.labelSubFont,
+              ),
             ),
-          ),
+          ],
         ]),
         style: const TextStyle(fontWeight: Weights.black, fontSize: AnkirenSheetLayout.labelFont),
       );
@@ -222,13 +227,14 @@ class _Key extends StatelessWidget {
     required this.fits,
     required this.onTap,
     required this.top,
-    required this.bottom,
+    this.bottom,
   });
 
   final String semanticLabel;
   final bool chosen, fits;
   final VoidCallback onTap;
-  final Widget top, bottom;
+  final Widget top;
+  final Widget? bottom;
 
   @override
   Widget build(BuildContext context) => Semantics(
@@ -249,8 +255,10 @@ class _Key extends StatelessWidget {
               fit: BoxFit.scaleDown,
               child: Column(mainAxisSize: MainAxisSize.min, children: [
                 DefaultTextStyle.merge(style: const TextStyle(height: 1), child: top),
-                const SizedBox(height: AnkirenSheetLayout.keyLabelGap),
-                DefaultTextStyle.merge(style: const TextStyle(height: 1), child: bottom),
+                if (bottom != null) ...[
+                  const SizedBox(height: AnkirenSheetLayout.keyLabelGap),
+                  DefaultTextStyle.merge(style: const TextStyle(height: 1), child: bottom!),
+                ],
               ]),
             ),
           ),

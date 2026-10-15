@@ -12,9 +12,10 @@ import '../manga/manga.dart';
 /// a block at a time, scrolling when the screen is short; then [footer],
 /// which stays in view.
 class AnkirenSheet extends StatelessWidget {
-  const AnkirenSheet({super.key, required this.title, required this.sub, this.line, required this.body, this.footer});
+  const AnkirenSheet({super.key, required this.title, this.sub, this.line, required this.body, this.footer});
 
-  final String title, sub;
+  final String title;
+  final String? sub;
   final String? line;
   final List<Widget> body;
   final Widget? footer;
@@ -46,16 +47,18 @@ class AnkirenSheet extends StatelessWidget {
                           child: Text.rich(
                             TextSpan(children: [
                               Phrases.span(title),
-                              const TextSpan(text: '  '),
-                              Phrases.span(
-                                sub.toUpperCase(),
-                                style: const TextStyle(
-                                  fontFamily: Fonts.ui,
-                                  fontWeight: Weights.black,
-                                  fontSize: AnkirenSheetLayout.titleSubFont,
-                                  letterSpacing: AnkirenSheetLayout.titleSubTracking * AnkirenSheetLayout.titleSubFont,
+                              if (sub != null) ...[
+                                const TextSpan(text: '  '),
+                                Phrases.span(
+                                  sub!.toUpperCase(),
+                                  style: const TextStyle(
+                                    fontFamily: Fonts.ui,
+                                    fontWeight: Weights.black,
+                                    fontSize: AnkirenSheetLayout.titleSubFont,
+                                    letterSpacing: AnkirenSheetLayout.titleSubTracking * AnkirenSheetLayout.titleSubFont,
+                                  ),
                                 ),
-                              ),
+                              ],
                             ]),
                             style: const TextStyle(
                                 fontFamily: Fonts.display,

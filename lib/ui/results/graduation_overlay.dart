@@ -83,7 +83,7 @@ class GraduationOverlay extends StatelessWidget {
                     GraduationMotion.actions,
                     child: CelebrationCta(
                       label: s.graduationCta,
-                      sub: s.other.graduationCta,
+                      sub: s.sub?.graduationCta,
                       onTap: onNext,
                       height: GraduationLayout.actionHeight,
                       fontSize: GraduationLayout.ctaFont,

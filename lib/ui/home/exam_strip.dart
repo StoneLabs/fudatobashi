@@ -82,9 +82,9 @@ class _ExamStripState extends State<ExamStrip> {
                   mainAxisSize: MainAxisSize.min,
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text(
-                      '卒業試験',
-                      style: TextStyle(
+                    Text(
+                      s.examStripLettering,
+                      style: const TextStyle(
                         fontFamily: Fonts.display,
                         fontSize: ExamStripStyle.titleFont,
                         color: Palette.sun,

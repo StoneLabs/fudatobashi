@@ -84,7 +84,7 @@ class RankUpOverlay extends StatelessWidget {
                   RankUpMotion.actions,
                   child: CelebrationCta(
                     label: s.onward,
-                    sub: s.other.onward,
+                    sub: s.sub?.onward,
                     onTap: onNext,
                     height: RankUpLayout.actionHeight,
                     fontSize: RankUpLayout.ctaFont,

@@ -127,7 +127,7 @@ class IslandCompleteOverlay extends StatelessWidget {
                 const SizedBox(height: IslandCompleteLayout.lineGap),
                 CelebrationCta(
                   label: s.setSail,
-                  sub: s.other.setSail,
+                  sub: s.sub?.setSail,
                   onTap: onNext,
                   height: IslandCompleteLayout.actionHeight,
                   fontSize: IslandCompleteLayout.ctaFont,

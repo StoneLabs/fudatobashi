@@ -38,11 +38,11 @@ class AnkirenRulesSheet extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final s = S.of(context);
-    final o = s.other;
+    final o = s.sub;
     final steps = [
-      (AnkirenRulesLayout.memorise, s.ankirenStepMemorise, s.ankirenStepMemoriseLine, o.ankirenStepMemoriseLine),
-      (AnkirenRulesLayout.flip, s.ankirenStepFlip, s.ankirenStepFlipLine, o.ankirenStepFlipLine),
-      (AnkirenRulesLayout.take, s.ankirenStepTake, s.ankirenStepTakeLine, o.ankirenStepTakeLine),
+      (AnkirenRulesLayout.memorise, s.ankirenStepMemorise, s.ankirenStepMemoriseLine, o?.ankirenStepMemoriseLine),
+      (AnkirenRulesLayout.flip, s.ankirenStepFlip, s.ankirenStepFlipLine, o?.ankirenStepFlipLine),
+      (AnkirenRulesLayout.take, s.ankirenStepTake, s.ankirenStepTakeLine, o?.ankirenStepTakeLine),
     ];
     const reveal = AnkirenTuning.revealAfterWrong;
     const first = AnkirenTuning.cardPoints, speed = AnkirenTuning.speedMax;
@@ -50,7 +50,7 @@ class AnkirenRulesSheet extends StatelessWidget {
     final early = _number(1 + AnkirenTuning.earlyBonus);
     return AnkirenSheet(
       title: s.howToPlay,
-      sub: o.howToPlay,
+      sub: o?.howToPlay,
       body: [
         Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
           for (final (i, (picture, name, line, sub)) in steps.indexed) ...[
@@ -59,19 +59,19 @@ class AnkirenRulesSheet extends StatelessWidget {
           ],
         ]),
         _RuleList([
-          _Rule(_Mark.icon(Palette.pinkSoft, IconArt.close), s.ankirenRuleWrong, o.ankirenRuleWrong),
-          _Rule(const _Mark.text(Palette.sun, '$reveal'), s.ankirenRuleReveal(reveal), o.ankirenRuleReveal(reveal)),
-          _Rule(_Mark.icon(Palette.desk, IconArt.question), s.ankirenRuleDontKnow, o.ankirenRuleDontKnow),
-          _Rule(_Mark.icon(Palette.ink, IconArt.end), s.ankirenRuleLeave, o.ankirenRuleLeave),
+          _Rule(_Mark.icon(Palette.pinkSoft, IconArt.close), s.ankirenRuleWrong, o?.ankirenRuleWrong),
+          _Rule(const _Mark.text(Palette.sun, '$reveal'), s.ankirenRuleReveal(reveal), o?.ankirenRuleReveal(reveal)),
+          _Rule(_Mark.icon(Palette.desk, IconArt.question), s.ankirenRuleDontKnow, o?.ankirenRuleDontKnow),
+          _Rule(_Mark.icon(Palette.ink, IconArt.end), s.ankirenRuleLeave, o?.ankirenRuleLeave),
         ]),
-        SettingsSection(title: s.ankirenScoring, sub: o.ankirenScoring.toUpperCase(), children: [
+        SettingsSection(title: s.ankirenScoring, sub: o?.ankirenScoring.toUpperCase(), children: [
           _RuleList([
             _Rule(_Mark.text(Palette.paper, s.ankirenMarkPoints), s.ankirenScoreFind(first, speed),
-                o.ankirenScoreFind(first, speed)),
-            _Rule(_Mark.icon(Palette.paper, IconArt.cards), s.ankirenScoreNear(second), o.ankirenScoreNear(second),
+                o?.ankirenScoreFind(first, speed)),
+            _Rule(_Mark.icon(Palette.paper, IconArt.cards), s.ankirenScoreNear(second), o?.ankirenScoreNear(second),
                 below: const _TierTable()),
-            _Rule(_Mark.icon(Palette.sun, IconArt.history), s.ankirenScoreEarly(early), o.ankirenScoreEarly(early)),
-            _Rule(_Mark.text(Palette.paper, s.ankirenMarkLevel), s.ankirenScoreLevel, o.ankirenScoreLevel),
+            _Rule(_Mark.icon(Palette.sun, IconArt.history), s.ankirenScoreEarly(early), o?.ankirenScoreEarly(early)),
+            _Rule(_Mark.text(Palette.paper, s.ankirenMarkLevel), s.ankirenScoreLevel, o?.ankirenScoreLevel),
           ]),
         ]),
       ],
@@ -95,10 +95,10 @@ class _TierTable extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final s = S.of(context);
-    final o = s.other;
+    final o = s.sub;
     String points(TapProximity place, int tap) => AnkirenRulesSheet._number(
         AnkirenTuning.cardPoints * AnkirenTuning.tapShare[place]! * AnkirenTuning.tapWeights[tap]);
-    Widget name(String line, String sub, {bool head = false, TextAlign align = TextAlign.start}) => Padding(
+    Widget name(String line, String? sub, {bool head = false, TextAlign align = TextAlign.start}) => Padding(
           padding: AnkirenRulesLayout.tierCellPadding,
           child: _Lines(line, sub,
               fontSize: head ? AnkirenRulesLayout.tierHeadFont : AnkirenRulesLayout.tierFont,
@@ -120,13 +120,13 @@ class _TierTable extends StatelessWidget {
       defaultVerticalAlignment: TableCellVerticalAlignment.middle,
       children: [
         TableRow(children: [
-          name(s.ankirenTierPlace, o.ankirenTierPlace, head: true),
-          name(s.ankirenTierFirst, o.ankirenTierFirst, head: true, align: TextAlign.end),
-          name(s.ankirenTierSecond, o.ankirenTierSecond, head: true, align: TextAlign.end),
+          name(s.ankirenTierPlace, o?.ankirenTierPlace, head: true),
+          name(s.ankirenTierFirst, o?.ankirenTierFirst, head: true, align: TextAlign.end),
+          name(s.ankirenTierSecond, o?.ankirenTierSecond, head: true, align: TextAlign.end),
         ]),
         for (final place in TapProximity.values)
           TableRow(decoration: rule, children: [
-            name(s.ankirenTier(place), o.ankirenTier(place)),
+            name(s.ankirenTier(place), o?.ankirenTier(place)),
             value(place == TapProximity.card ? s.ankirenTierSpeed(points(place, firstTap)) : points(place, firstTap)),
             value(points(place, secondTap)),
           ]),
@@ -141,7 +141,8 @@ class _Step extends StatelessWidget {
   const _Step({required this.number, required this.picture, required this.name, required this.line, required this.sub});
 
   final int number;
-  final String picture, name, line, sub;
+  final String picture, name, line;
+  final String? sub;
 
   @override
   Widget build(BuildContext context) => Column(
@@ -199,7 +200,8 @@ class _Lines extends StatelessWidget {
   const _Lines(this.line, this.sub,
       {required this.fontSize, required this.subFontSize, this.weight = Weights.bold, this.align = TextAlign.start});
 
-  final String line, sub;
+  final String line;
+  final String? sub;
   final double fontSize, subFontSize;
   final FontWeight weight;
   final TextAlign align;
@@ -208,9 +210,11 @@ class _Lines extends StatelessWidget {
   Widget build(BuildContext context) => Text.rich(
         TextSpan(children: [
           Phrases.span(line),
-          const TextSpan(text: '\n'),
-          Phrases.span(sub,
-              style: TextStyle(fontWeight: Weights.medium, fontSize: subFontSize, color: Palette.mute)),
+          if (sub != null) ...[
+            const TextSpan(text: '\n'),
+            Phrases.span(sub!,
+                style: TextStyle(fontWeight: Weights.medium, fontSize: subFontSize, color: Palette.mute)),
+          ],
         ]),
         textAlign: align,
         style: TextStyle(fontWeight: weight, fontSize: fontSize, height: AnkirenRulesLayout.lineHeight),
@@ -257,7 +261,8 @@ class _Rule {
   const _Rule(this.mark, this.line, this.sub, {this.below});
 
   final _Mark mark;
-  final String line, sub;
+  final String line;
+  final String? sub;
   final Widget? below;
 }
 

@@ -9,6 +9,7 @@ import '../../domain/ankiren_level.dart';
 import '../../domain/rating.dart';
 import '../../domain/side_trips.dart';
 import '../../l10n/ankiren_strings.dart';
+import '../../l10n/ranked_strings.dart';
 import '../../l10n/side_trip_strings.dart';
 import '../../l10n/strings.dart';
 import '../home/home_screen.dart';
@@ -48,7 +49,7 @@ class SideTripHead extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.end,
           children: [
             Flexible(
-              child: _Lettering(entry.trip.label, S.of(context).tripTag(entry.trip),
+              child: _Lettering(S.of(context).tripName(entry.trip), S.of(context).tripTag(entry.trip),
                   fontSize: SideTripsLayout.letteringFont),
             ),
             if (entry.open)
@@ -79,10 +80,13 @@ class _Lettering extends StatelessWidget {
           fit: BoxFit.scaleDown,
           alignment: Alignment.bottomLeft,
           child: Row(mainAxisSize: MainAxisSize.min, children: [
-            OutlinedText(
-              text,
-              outlineWidth: SideTripsLayout.letteringOutline,
-              style: TextStyle(fontFamily: Fonts.display, fontSize: fontSize, height: TypeScale.displayLineHeight),
+            // The island's own node already says its name.
+            ExcludeSemantics(
+              child: OutlinedText(
+                text,
+                outlineWidth: SideTripsLayout.letteringOutline,
+                style: TextStyle(fontFamily: Fonts.display, fontSize: fontSize, height: TypeScale.displayLineHeight),
+              ),
             ),
             const SizedBox(width: SideTripsLayout.letteringGap),
             InkBanner(tag, fontSize: SideTripsLayout.bannerFont),
@@ -123,15 +127,17 @@ class SideTripSoonEntry extends StatelessWidget {
                     text: s.sideTripsSoonTitle,
                     style: const TextStyle(fontFamily: Fonts.display, fontSize: SideTripsLayout.soonTitleFont),
                   ),
-                  const TextSpan(text: ' '),
-                  TextSpan(
-                    text: s.other.sideTripsSoonTitle.toUpperCase(),
-                    style: const TextStyle(
-                      fontWeight: Weights.black,
-                      fontSize: SideTripsLayout.subFont,
-                      letterSpacing: SideTripsLayout.subTracking * SideTripsLayout.subFont,
+                  if (s.sub != null) ...[
+                    const TextSpan(text: ' '),
+                    TextSpan(
+                      text: s.sub!.sideTripsSoonTitle.toUpperCase(),
+                      style: const TextStyle(
+                        fontWeight: Weights.black,
+                        fontSize: SideTripsLayout.subFont,
+                        letterSpacing: SideTripsLayout.subTracking * SideTripsLayout.subFont,
+                      ),
                     ),
-                  ),
+                  ],
                 ]),
               ),
               const SizedBox(height: SideTripsLayout.soonLineGap),
@@ -204,20 +210,26 @@ class _RankStamp extends StatelessWidget {
           decoration: BoxDecoration(border: Border.all(color: Palette.vermilion, width: Strokes.hairline)),
           child: Padding(
             padding: SideTripsLayout.stampPadding,
-            child: Text.rich(
-              TextSpan(children: [
-                TextSpan(text: band.stem),
-                if (band.stem != band.label)
-                  const TextSpan(
-                      text: RankBand.classSuffix, style: TextStyle(fontSize: SideTripsLayout.stampSuffixFont)),
-              ]),
-              maxLines: 1,
-              softWrap: false,
-              style: const TextStyle(
-                fontFamily: Fonts.display,
-                fontSize: SideTripsLayout.stampFont,
-                height: 1,
-                color: Palette.vermilion,
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: SideTripsLayout.stampMaxWidth),
+              child: FittedBox(
+                fit: BoxFit.scaleDown,
+                child: Text.rich(
+                  TextSpan(children: [
+                    TextSpan(text: S.of(context).classStem(band)),
+                    if (S.of(context).classStem(band) != S.of(context).className(band))
+                      const TextSpan(
+                          text: RankBand.classSuffix, style: TextStyle(fontSize: SideTripsLayout.stampSuffixFont)),
+                  ]),
+                  maxLines: 1,
+                  softWrap: false,
+                  style: const TextStyle(
+                    fontFamily: Fonts.display,
+                    fontSize: SideTripsLayout.stampFont,
+                    height: 1,
+                    color: Palette.vermilion,
+                  ),
+                ),
               ),
             ),
           ),
@@ -263,20 +275,23 @@ class SideTripBody extends StatelessWidget {
 class _Label extends StatelessWidget {
   const _Label(this.text, this.sub);
 
-  final String text, sub;
+  final String text;
+  final String? sub;
 
   @override
   Widget build(BuildContext context) => Text.rich(
         TextSpan(children: [
           TextSpan(text: text),
-          const TextSpan(text: ' '),
-          TextSpan(
-            text: sub.toUpperCase(),
-            style: const TextStyle(
-              fontSize: SideTripsLayout.subFont,
-              letterSpacing: SideTripsLayout.subTracking * SideTripsLayout.subFont,
+          if (sub != null) ...[
+            const TextSpan(text: ' '),
+            TextSpan(
+              text: sub!.toUpperCase(),
+              style: const TextStyle(
+                fontSize: SideTripsLayout.subFont,
+                letterSpacing: SideTripsLayout.subTracking * SideTripsLayout.subFont,
+              ),
             ),
-          ),
+          ],
         ]),
         maxLines: 1,
         softWrap: false,
@@ -337,7 +352,7 @@ class _StatsRow extends StatelessWidget {
                     Flexible(
                       flex: SideTripsLayout.ratingFlex,
                       child: _Stat(
-                        label: _Label(s.rating, s.other.rating),
+                        label: _Label(s.rating, s.sub?.rating),
                         value: rating == null
                             ? Text(s.sideTripUnranked,
                                 style: const TextStyle(
@@ -361,7 +376,7 @@ class _StatsRow extends StatelessWidget {
                       Flexible(
                         flex: SideTripsLayout.nextFlex,
                         child: _Stat(
-                          label: _Label(s.sideTripNextGame, s.other.sideTripNextGame),
+                          label: _Label(s.sideTripNextGame, s.sub?.sideTripNextGame),
                           value: Row(
                             mainAxisSize: MainAxisSize.min,
                             crossAxisAlignment: CrossAxisAlignment.baseline,
@@ -442,7 +457,7 @@ class RankedBurst extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final s = S.of(context);
-    return BurstButton(title: s.sideTripRanked, sub: s.other.sideTripRanked.toUpperCase(), onTap: onTap);
+    return BurstButton(title: s.sideTripRanked, sub: s.sub?.sideTripRanked.toUpperCase(), onTap: onTap);
   }
 }
 
@@ -456,7 +471,7 @@ class PageBurst extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final s = S.of(context);
-    return BurstButton(title: s.ankirenPageTitle, sub: s.other.ankirenPageTitle.toUpperCase(), onTap: onTap);
+    return BurstButton(title: s.ankirenPageTitle, sub: s.sub?.ankirenPageTitle.toUpperCase(), onTap: onTap);
   }
 }
 
@@ -481,7 +496,7 @@ class _LockedRows extends StatelessWidget {
             child: Align(
               alignment: Alignment.centerLeft,
               child: _Stat(
-                label: _Label(s.sideTripRemembered, s.other.sideTripRemembered),
+                label: _Label(s.sideTripRemembered, s.sub?.sideTripRemembered),
                 value: NumberedText(
                   s.sideTripRememberedCount,
                   [lock.remembered, lock.opensAt],
@@ -556,15 +571,17 @@ class _LockBar extends StatelessWidget {
                           text: s.sideTripRanked,
                           style: const TextStyle(fontFamily: Fonts.display, fontSize: SideTripsLayout.lockTitleFont),
                         ),
-                        const TextSpan(text: ' '),
-                        TextSpan(
-                          text: s.other.sideTripRanked.toUpperCase(),
-                          style: const TextStyle(
-                            fontWeight: Weights.black,
-                            fontSize: SideTripsLayout.subFont,
-                            letterSpacing: SideTripsLayout.subTracking * SideTripsLayout.subFont,
+                        if (s.sub != null) ...[
+                          const TextSpan(text: ' '),
+                          TextSpan(
+                            text: s.sub!.sideTripRanked.toUpperCase(),
+                            style: const TextStyle(
+                              fontWeight: Weights.black,
+                              fontSize: SideTripsLayout.subFont,
+                              letterSpacing: SideTripsLayout.subTracking * SideTripsLayout.subFont,
+                            ),
                           ),
-                        ),
+                        ],
                       ])),
                     ),
                     NumberedText(
@@ -598,7 +615,7 @@ class SideTripFreeButton extends StatelessWidget {
     return HomeRowButton(
       icon: IconArt.cards,
       title: s.freePlay,
-      badge: _Sub(s.other.freePlay),
+      badge: s.sub == null ? null : _Sub(s.sub!.freePlay),
       sub: maxLevel == null ? s.sideTripFreeSub : s.sideTripFreeUpTo(maxLevel),
       onTap: onTap,
     );
@@ -614,7 +631,7 @@ class SideTripRulesButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final s = S.of(context);
-    return HomeRowButton(icon: IconArt.help, title: s.howToPlay, sub: s.other.howToPlay.toUpperCase(), onTap: onTap);
+    return HomeRowButton(icon: IconArt.help, title: s.howToPlay, sub: s.sub?.howToPlay.toUpperCase(), onTap: onTap);
   }
 }
 

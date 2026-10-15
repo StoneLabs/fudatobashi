@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:flutter/widgets.dart';
 
 import '../../config/design.dart';
@@ -200,7 +202,7 @@ class _RankRow extends StatelessWidget {
         child: next == null
             ? Text(s.topBand, style: bold)
             : NumberedText(
-                s.toNextBand.replaceAll('{band}', next.label),
+                s.toNextBand.replaceAll('{band}', s.className(next)),
                 [(next.minRating - rating).ceil(), next.minRating.round()],
                 style: const TextStyle(fontSize: HomeLayout.ratingNoteFont, fontWeight: Weights.bold),
                 numberStyle: bold,
@@ -236,7 +238,7 @@ class _ModePanels extends StatelessWidget {
               ),
               tone: Tones.sea,
               fade: Backdrops.freePlayStops,
-              title: '始める',
+              title: s.freePlayLettering,
               sub: s.freePlaySub,
               textLeft: HomeLayout.modeTextAt.dx,
               corner: MangaIcon(IconArt.cards, size: HomeLayout.modeIcon),
@@ -255,7 +257,7 @@ class _ModePanels extends StatelessWidget {
               ),
               tone: Tones.sun,
               fade: Backdrops.nigateStops,
-              title: '苦手',
+              title: s.weakLettering,
               sub: s.nigateSub,
               textLeft: HomeLayout.nigateTextLeft,
               corner: slow > 0 ? CountBadge(slow) : null,
@@ -312,13 +314,14 @@ class _ModePanel extends StatelessWidget {
             stops: [0, ...fade],
           ),
         ],
-        child: Stack(
+        child: LayoutBuilder(builder: (context, panel) => Stack(
           children: [
-            // Large text scales down rather than running off the panel.
+            // Large text scales down rather than running off the panel, and
+            // keeps clear of the corner art.
             Positioned(
               left: textLeft,
               top: HomeLayout.modeTextAt.dy,
-              right: Gaps.inner,
+              right: corner == null ? Gaps.inner : math.max(Gaps.inner, panel.maxWidth - cornerAt.dx + HomeLayout.modeCornerGap),
               bottom: Gaps.small,
               child: LayoutBuilder(
                 builder: (context, box) => FittedBox(
@@ -329,9 +332,14 @@ class _ModePanel extends StatelessWidget {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(title,
-                            style: const TextStyle(
-                                fontFamily: Fonts.display, fontSize: HomeLayout.modeTitle, height: HomeLayout.rowLineHeight)),
+                        FittedBox(
+                          fit: BoxFit.scaleDown,
+                          alignment: Alignment.centerLeft,
+                          child: Text(title,
+                              maxLines: 1,
+                              style: const TextStyle(
+                                  fontFamily: Fonts.display, fontSize: HomeLayout.modeTitle, height: HomeLayout.rowLineHeight)),
+                        ),
                         const SizedBox(height: HomeLayout.modeTitleGap),
                         Text(sub, style: const TextStyle(fontSize: HomeLayout.modeSub, fontWeight: Weights.black)),
                         const SizedBox(height: HomeLayout.modeNoteGap),
@@ -344,7 +352,7 @@ class _ModePanel extends StatelessWidget {
             ),
             if (corner != null) Positioned(left: cornerAt.dx, top: cornerAt.dy, child: corner!),
           ],
-        ),
+        )),
       ),
     );
   }

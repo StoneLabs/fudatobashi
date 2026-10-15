@@ -73,7 +73,7 @@ class SettingsScreen extends StatelessWidget {
                     children: [
                       SettingsSection(
                         title: s.language,
-                        sub: s.other.language,
+                        sub: s.sub?.language,
                         children: const [
                           SettingsGroup(children: [_LanguageRow()]),
                           _KimarijiScriptRow(),
@@ -84,7 +84,7 @@ class SettingsScreen extends StatelessWidget {
                       const SizedBox(height: SettingsLayout.sectionGap),
                       SettingsSection(
                         title: s.sectionPlay,
-                        sub: s.other.sectionPlay,
+                        sub: s.sub?.sectionPlay,
                         children: [
                           SettingsGroup(children: [
                             SettingsSwitch(
@@ -105,7 +105,7 @@ class SettingsScreen extends StatelessWidget {
                       const SizedBox(height: SettingsLayout.sectionGap),
                       SettingsSection(
                         title: s.sectionSound,
-                        sub: s.other.sectionSound,
+                        sub: s.sub?.sectionSound,
                         footnote: s.soundSilentNote,
                         children: [
                           SettingsGroup(children: [
@@ -139,7 +139,7 @@ class SettingsScreen extends StatelessWidget {
                       const SizedBox(height: SettingsLayout.sectionGap),
                       SettingsSection(
                         title: s.sectionAccessibility,
-                        sub: s.other.sectionAccessibility,
+                        sub: s.sub?.sectionAccessibility,
                         children: [
                           SettingsGroup(children: [
                             SettingsSwitch(
@@ -154,7 +154,7 @@ class SettingsScreen extends StatelessWidget {
                       const SizedBox(height: SettingsLayout.sectionGap),
                       SettingsSection(
                         title: s.sideTrips,
-                        sub: s.other.sideTrips,
+                        sub: s.sub?.sideTrips,
                         children: [
                           SettingsGroup(children: [
                             SettingsTapRow(
@@ -169,7 +169,7 @@ class SettingsScreen extends StatelessWidget {
                       const SizedBox(height: SettingsLayout.sectionGap),
                       SettingsSection(
                         title: s.about,
-                        sub: s.other.about,
+                        sub: s.sub?.about,
                         children: [
                           SettingsGroup(children: [
                             const _VersionRow(),
@@ -199,7 +199,7 @@ class SettingsScreen extends StatelessWidget {
                       const SizedBox(height: SettingsLayout.sectionGap),
                       SettingsSection(
                         title: s.sectionData,
-                        sub: s.other.sectionData,
+                        sub: s.sub?.sectionData,
                         children: [
                           SettingsGroup(children: [
                             SettingsTapRow(
@@ -244,7 +244,7 @@ class _LearningSection extends StatelessWidget {
     void setDontKnow(DontKnowInput input) => progress.updateSettings(progress.settings.copyWith(dontKnowInput: input));
     return SettingsSection(
       title: s.sectionLearning,
-      sub: s.other.sectionLearning,
+      sub: s.sub?.sectionLearning,
       children: [
         SettingsChoices(
           label: SettingsLabel(title: s.learningMode, note: s.learningModeNote),
@@ -419,7 +419,7 @@ class _DeveloperSection extends StatelessWidget {
     void open(Widget page) => Navigator.push(context, MangaRoute<void>(builder: (_) => page));
     return SettingsSection(
       title: s.sectionDeveloper,
-      sub: s.other.sectionDeveloper,
+      sub: s.sub?.sectionDeveloper,
       children: [
         SettingsGroup(children: [
           SettingsSwitch(

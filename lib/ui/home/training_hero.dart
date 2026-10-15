@@ -54,20 +54,25 @@ class TrainingHero extends StatelessWidget {
                 Expanded(
                   child: Padding(
                     padding: EdgeInsets.only(left: padding.left),
-                    child: FittedBox(
-                      fit: BoxFit.scaleDown,
-                      alignment: Alignment.topLeft,
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          OutlinedText(
-                            '修行',
-                            outlineWidth: compact ? HomeLayout.journeyTitleOutline : HomeLayout.heroTitleOutline,
-                            style: TextStyle(
-                                fontFamily: Fonts.display, fontSize: titleSize, height: TypeScale.displayLineHeight),
+                    child: LayoutBuilder(
+                      builder: (context, box) => ConstrainedBox(
+                        constraints: BoxConstraints(maxWidth: box.maxWidth * HomeLayout.heroTitleMaxShare),
+                        child: FittedBox(
+                          fit: BoxFit.scaleDown,
+                          alignment: Alignment.topLeft,
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              OutlinedText(
+                                s.trainingLettering,
+                                outlineWidth: compact ? HomeLayout.journeyTitleOutline : HomeLayout.heroTitleOutline,
+                                style: TextStyle(
+                                    fontFamily: Fonts.display, fontSize: titleSize, height: TypeScale.displayLineHeight),
+                              ),
+                              InkBanner(s.trainingBanner),
+                            ],
                           ),
-                          InkBanner(s.trainingBanner),
-                        ],
+                        ),
                       ),
                     ),
                   ),

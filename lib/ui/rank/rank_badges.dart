@@ -4,6 +4,8 @@ import 'package:flutter/widgets.dart';
 
 import '../../config/design.dart';
 import '../../domain/rating.dart';
+import '../../l10n/ranked_strings.dart';
+import '../../l10n/strings.dart';
 import '../manga/manga.dart';
 
 /// Fill, texture and text colour for one class, a step of the ladder's
@@ -42,8 +44,9 @@ class ClassBadge extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    const suffix = '級';
-    final main = band.label.endsWith(suffix) ? band.label.substring(0, band.label.length - 1) : band.label;
+    final s = S.of(context);
+    const suffix = RankBand.classSuffix;
+    final main = s.classStem(band);
     return Sticker(
       tilt: 0,
       color: color,
@@ -52,7 +55,7 @@ class ClassBadge extends StatelessWidget {
       child: Text.rich(
         TextSpan(children: [
           TextSpan(text: main, style: TextStyle(fontSize: fontSize)),
-          if (main != band.label) TextSpan(text: suffix, style: TextStyle(fontSize: suffixSize)),
+          if (main != s.className(band)) TextSpan(text: suffix, style: TextStyle(fontSize: suffixSize)),
         ]),
         style: TextStyle(fontFamily: Fonts.display, height: 1, color: textColor),
       ),

@@ -64,7 +64,7 @@ class HomeRowButton extends StatelessWidget {
     super.key,
     required this.icon,
     required this.title,
-    required this.sub,
+    this.sub,
     required this.onTap,
     this.color = Palette.paper,
     this.displayTitle = false,
@@ -72,7 +72,10 @@ class HomeRowButton extends StatelessWidget {
   });
 
   final VectorArt icon;
-  final String title, sub;
+  final String title;
+
+  /// The line under [title]; none leaves just the title.
+  final String? sub;
   final VoidCallback onTap;
   final Color color;
 
@@ -89,7 +92,7 @@ class HomeRowButton extends StatelessWidget {
         color: color,
         alignment: Alignment.centerLeft,
         padding: const EdgeInsets.symmetric(horizontal: ButtonMetrics.rowPadding),
-        semanticLabel: '$title $sub',
+        semanticLabel: sub == null ? title : '$title $sub',
         child: Row(
           children: [
             MangaIcon(icon, size: ButtonMetrics.rowIcon),
@@ -115,16 +118,17 @@ class HomeRowButton extends StatelessWidget {
                       if (badge != null) ...[const SizedBox(width: HomeLayout.untrackedGap), badge!],
                     ]),
                   ),
-                  FittedBox(
-                    fit: BoxFit.scaleDown,
-                    alignment: Alignment.centerLeft,
-                    child: Text(
-                      sub,
-                      maxLines: 1,
-                      style: const TextStyle(
-                          fontWeight: Weights.bold, fontSize: HomeLayout.rowSubFont, height: HomeLayout.rowLineHeight),
+                  if (sub != null)
+                    FittedBox(
+                      fit: BoxFit.scaleDown,
+                      alignment: Alignment.centerLeft,
+                      child: Text(
+                        sub!,
+                        maxLines: 1,
+                        style: const TextStyle(
+                            fontWeight: Weights.bold, fontSize: HomeLayout.rowSubFont, height: HomeLayout.rowLineHeight),
+                      ),
                     ),
-                  ),
                 ],
               ),
             ),
@@ -171,7 +175,7 @@ class _FreePlayButton extends StatelessWidget {
     final access = ProgressScope.of(context).freePractice();
     return HomeRowButton(
       icon: access.open ? IconArt.cards : IconArt.lock,
-      title: '始める',
+      title: s.freePlayLettering,
       sub: access.open ? s.freePlaySub : s.freeLockedSub(access.needed),
       displayTitle: true,
       color: access.open ? Palette.seaSoft : Palette.desk,

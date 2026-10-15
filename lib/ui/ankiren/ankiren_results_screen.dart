@@ -11,6 +11,7 @@ import '../../domain/rating.dart';
 import '../../domain/side_trips.dart';
 import '../../l10n/ankiren_strings.dart';
 import '../../l10n/home_strings.dart';
+import '../../l10n/ranked_strings.dart';
 import '../../l10n/results_strings.dart';
 import '../../l10n/side_trip_strings.dart';
 import '../../l10n/strings.dart';
@@ -102,7 +103,7 @@ class _AnkirenResultsScreenState extends State<AnkirenResultsScreen> {
     final asked = game.prompts.length;
     final level = setup.level;
     final tag = [
-      SideTrip.ankiren.label,
+      s.tripName(SideTrip.ankiren),
       if (!widget.tracked) s.untracked else if (setup.ranked) s.sideTripRanked else s.freePlay,
       level == null ? s.ankirenCustomTag(setup.perSide, formatMinutes(setup.memorise)) : s.ankirenLevelTag(level),
     ].join(' · ');
@@ -353,7 +354,7 @@ class _RatingPanel extends StatelessWidget {
               style: const TextStyle(
                   fontFamily: Fonts.display, fontSize: ResultsLayout.statBigFont, height: TypeScale.displayLineHeight),
             )),
-            _OneLine(Text('${before.round()} → ${after.round()} · ${band.label}', style: noteStyle)),
+            _OneLine(Text('${before.round()} → ${after.round()} · ${s.className(band)}', style: noteStyle)),
             if (games <= AnkirenRatingModel.placementGames)
               _OneLine(Text(s.ankirenPlacement(games, AnkirenRatingModel.placementGames), style: noteStyle)),
             if (next != null) _OneLine(Text(s.ankirenNextLevel(next), style: noteStyle)),

@@ -132,7 +132,7 @@ class _HoldWarningScreenState extends State<HoldWarningScreen> {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           Row(children: [
-            InkTag(s.other.warning, textColor: Palette.sun),
+            if (s.sub != null) InkTag(s.sub!.warning, textColor: Palette.sun),
             const Spacer(),
             InkIconButton(icon: IconArt.close, semanticLabel: s.cancel, onTap: () => Navigator.of(context).pop(false)),
           ]),

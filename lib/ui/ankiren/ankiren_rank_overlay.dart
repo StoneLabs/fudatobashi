@@ -6,6 +6,7 @@ import 'package:flutter/widgets.dart';
 import '../../config/design.dart';
 import '../../domain/rating.dart';
 import '../../l10n/ankiren_strings.dart';
+import '../../l10n/ranked_strings.dart';
 import '../../l10n/results_strings.dart';
 import '../../l10n/strings.dart';
 import '../manga/manga.dart';
@@ -54,7 +55,7 @@ class AnkirenRankUpOverlay extends StatelessWidget {
                 stage: _UpStage(data),
                 result: AnkirenRankUpMotion.result,
                 actions: AnkirenRankUpMotion.actions,
-                cta: (s.ratingCta, s.other.ratingCta),
+                cta: (s.ratingCta, s.sub?.ratingCta),
                 onNext: onNext,
               ),
             ),
@@ -111,7 +112,7 @@ class AnkirenRankDownOverlay extends StatelessWidget {
                 stage: _DownStage(data),
                 result: AnkirenRankDownMotion.result,
                 actions: AnkirenRankDownMotion.actions,
-                cta: (s.ankirenNextTime, s.other.ankirenNextTime),
+                cta: (s.ankirenNextTime, s.sub?.ankirenNextTime),
                 onNext: onNext,
               ),
             ),
@@ -149,7 +150,7 @@ class _Page extends StatelessWidget {
   final (String, EntranceSpec) band;
   final Widget stage;
   final EntranceSpec result, actions;
-  final (String, String) cta;
+  final (String, String?) cta;
   final VoidCallback onNext;
 
   @override
@@ -733,7 +734,7 @@ class _Result extends StatelessWidget {
               ? Text(s.topClassReached,
                   style: const TextStyle(fontWeight: Weights.black, fontSize: AnkirenRankLayout.nextFont))
               : NumberedText(
-                  s.ratingToNext(next.label),
+                  s.ratingToNext(s.className(next)),
                   [(next.minRating - data.after).ceil()],
                   style: const TextStyle(fontWeight: Weights.black, fontSize: AnkirenRankLayout.nextFont),
                   numberStyle: const TextStyle(

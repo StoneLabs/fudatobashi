@@ -91,12 +91,12 @@ class CelebrationGlow extends StatelessWidget {
 }
 
 /// The celebration's primary button: display lettering, with the same call
-/// in the other language underneath.
+/// in the other language beside it in a Japanese UI.
 class CelebrationCta extends StatelessWidget {
   const CelebrationCta({
     super.key,
     required this.label,
-    required this.sub,
+    this.sub,
     required this.onTap,
     required this.height,
     required this.fontSize,
@@ -104,7 +104,7 @@ class CelebrationCta extends StatelessWidget {
   });
 
   final String label;
-  final String sub;
+  final String? sub;
   final VoidCallback onTap;
   final double height;
   final double fontSize;
@@ -122,8 +122,10 @@ class CelebrationCta extends StatelessWidget {
             child: Row(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.baseline,
                 textBaseline: TextBaseline.alphabetic, children: [
               Text(label, style: TextStyle(fontFamily: Fonts.display, fontSize: fontSize, height: 1)),
-              const SizedBox(width: Gaps.small),
-              Text(sub, style: TextStyle(fontWeight: Weights.black, fontSize: subFontSize, height: 1)),
+              if (sub != null) ...[
+                const SizedBox(width: Gaps.small),
+                Text(sub!, style: TextStyle(fontWeight: Weights.black, fontSize: subFontSize, height: 1)),
+              ],
             ]),
           ),
         ),

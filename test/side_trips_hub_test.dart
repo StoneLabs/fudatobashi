@@ -27,6 +27,7 @@ import 'package:fudatobashi/domain/play_session.dart';
 import 'package:fudatobashi/domain/side_trips.dart';
 import 'package:fudatobashi/domain/trainer.dart';
 import 'package:fudatobashi/l10n/ankiren_strings.dart';
+import 'package:fudatobashi/l10n/ranked_strings.dart';
 import 'package:fudatobashi/l10n/side_trip_strings.dart';
 import 'package:fudatobashi/l10n/strings.dart';
 import 'package:fudatobashi/l10n/tour_strings.dart';
@@ -316,8 +317,8 @@ void main() {
                 expect(stamp, findsNothing, reason: 'no class while locked');
               } else {
                 expect(stamp, findsOneWidget);
-                expect(find.descendant(of: stamp, matching: find.textContaining(entry.band.stem, findRichText: true)),
-                    findsOneWidget, reason: 'the stamp says ${entry.band.label}');
+                expect(find.descendant(of: stamp, matching: find.textContaining(s.classStem(entry.band), findRichText: true)),
+                    findsOneWidget, reason: 'the stamp says ${s.className(entry.band)}');
                 final painted = paintedRect(tester, stamp);
                 expect(painted.left, greaterThan(0), reason: '$painted');
                 expect(painted.right, lessThanOrEqualTo(phone.size.width - _stampMargin), reason: '$painted');

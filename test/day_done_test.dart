@@ -169,9 +169,14 @@ void main() {
       expect(find.text('+1000 XP'), findsNWidgets(2), reason: 'the count over its width keeper');
       final cta = find.byType(CelebrationCta);
       expect(find.descendant(of: cta, matching: find.text(s.xpCta)), findsOneWidget);
-      expect(find.descendant(of: cta, matching: find.text(s.other.xpCta)), findsOneWidget);
-      expect(tester.getSize(find.text(s.xpCta)).height, greaterThan(tester.getSize(find.text(s.other.xpCta)).height),
-          reason: 'the UI language big, the other one as the sub');
+      final beside = find.descendant(of: cta, matching: find.text(s.other.xpCta));
+      if (s.ja) {
+        expect(beside, findsOneWidget);
+        expect(tester.getSize(find.text(s.xpCta)).height, greaterThan(tester.getSize(beside).height),
+            reason: 'the UI language big, the other one as the sub');
+      } else {
+        expect(beside, findsNothing, reason: 'an English button has no Japanese beside it');
+      }
       await tester.tap(cta);
       expect(advanced, isTrue);
       await tester.pumpWidget(const SizedBox());

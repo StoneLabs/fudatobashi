@@ -9,9 +9,10 @@ import '../manga/manga.dart';
 /// in the art's safe box. It keeps the art's own size, or scales down whole
 /// to fit a narrower box.
 class BurstButton extends StatelessWidget {
-  const BurstButton({super.key, required this.title, required this.sub, required this.onTap});
+  const BurstButton({super.key, required this.title, this.sub, required this.onTap});
 
-  final String title, sub;
+  final String title;
+  final String? sub;
   final VoidCallback? onTap;
 
   @override
@@ -27,7 +28,7 @@ class BurstButton extends StatelessWidget {
             drop: 0,
             scale: Press.shoutScale,
             turn: Tilt.pressShout,
-            semanticLabel: '$title $sub',
+            semanticLabel: sub == null ? title : '$title $sub',
             builder: (context, pressed) => Stack(children: [
               VectorArtBox(
                 SideTripArt.burst,
@@ -47,16 +48,18 @@ class BurstButton extends StatelessWidget {
                     children: [
                       Text(title,
                           style: const TextStyle(fontFamily: Fonts.display, fontSize: SideTripsLayout.burstFont, height: 1)),
-                      const SizedBox(width: SideTripsLayout.burstGap),
-                      Text(
-                        sub,
-                        style: const TextStyle(
-                          fontWeight: Weights.black,
-                          fontSize: SideTripsLayout.burstSubFont,
-                          letterSpacing: SideTripsLayout.burstSubTracking * SideTripsLayout.burstSubFont,
-                          height: 1,
+                      if (sub != null) ...[
+                        const SizedBox(width: SideTripsLayout.burstGap),
+                        Text(
+                          sub!,
+                          style: const TextStyle(
+                            fontWeight: Weights.black,
+                            fontSize: SideTripsLayout.burstSubFont,
+                            letterSpacing: SideTripsLayout.burstSubTracking * SideTripsLayout.burstSubFont,
+                            height: 1,
+                          ),
                         ),
-                      ),
+                      ],
                       const SizedBox(width: SideTripsLayout.burstGap),
                       MangaIcon(IconArt.arrow,
                           size: SideTripsLayout.burstIcon, strokeWidth: SideTripsLayout.burstIconStroke),

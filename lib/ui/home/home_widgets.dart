@@ -6,6 +6,7 @@ import '../../config/design.dart';
 import '../../config/vector_art.dart';
 import '../../domain/rating.dart';
 import '../../l10n/home_strings.dart';
+import '../../l10n/ranked_strings.dart';
 import '../../l10n/strings.dart';
 import '../manga/geometry.dart';
 import '../manga/manga.dart';
@@ -131,14 +132,21 @@ class RankSticker extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final s = S.of(context);
     return Sticker(
-      child: Text.rich(
-        TextSpan(children: [
-          TextSpan(text: band.stem, style: const TextStyle(fontSize: HomeLayout.classFont)),
-          if (band.stem != band.label)
-            const TextSpan(text: RankBand.classSuffix, style: TextStyle(fontSize: HomeLayout.classSuffixFont)),
-        ]),
-        style: const TextStyle(fontFamily: Fonts.display, height: 1),
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: HomeLayout.classMaxWidth),
+        child: FittedBox(
+          fit: BoxFit.scaleDown,
+          child: Text.rich(
+            TextSpan(children: [
+              TextSpan(text: s.classStem(band), style: const TextStyle(fontSize: HomeLayout.classFont)),
+              if (s.classStem(band) != s.className(band))
+                const TextSpan(text: RankBand.classSuffix, style: TextStyle(fontSize: HomeLayout.classSuffixFont)),
+            ]),
+            style: const TextStyle(fontFamily: Fonts.display, height: 1),
+          ),
+        ),
       ),
     );
   }

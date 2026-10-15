@@ -9,6 +9,7 @@ import '../../config/design.dart';
 import '../../domain/ankiren_rating.dart';
 import '../../domain/rating.dart';
 import '../../l10n/ankiren_strings.dart';
+import '../../l10n/ranked_strings.dart';
 import '../../l10n/results_strings.dart';
 import '../../l10n/stats_strings.dart';
 import '../../l10n/strings.dart';
@@ -253,11 +254,11 @@ class _AnkirenRatingOverlayState extends State<AnkirenRatingOverlay> {
     final still = MediaQuery.disableAnimationsOf(context);
     final calm = t.sinks;
     final (title, sun) = switch (t.moment) {
-      AnkirenRatingMoment.up || AnkirenRatingMoment.rankUp => (AnkirenRatingLayout.titleUp, true),
-      AnkirenRatingMoment.held => (AnkirenRatingLayout.titleHeld, true),
-      AnkirenRatingMoment.down || AnkirenRatingMoment.rankDown => (AnkirenRatingLayout.titleDown, false),
-      AnkirenRatingMoment.placing => (AnkirenRatingLayout.titlePlacing, false),
-      AnkirenRatingMoment.placed => (AnkirenRatingLayout.titlePlaced, true),
+      AnkirenRatingMoment.up || AnkirenRatingMoment.rankUp => (s.ankirenTitleUp, true),
+      AnkirenRatingMoment.held => (s.ankirenTitleHeld, true),
+      AnkirenRatingMoment.down || AnkirenRatingMoment.rankDown => (s.ankirenTitleDown, false),
+      AnkirenRatingMoment.placing => (s.ankirenTitlePlacing, false),
+      AnkirenRatingMoment.placed => (s.ankirenTitlePlaced, true),
     };
     final band = switch (t.moment) {
       AnkirenRatingMoment.placing => s.ankirenPlacement(t.data.game, AnkirenRatingModel.placementGames).toUpperCase(),
@@ -265,9 +266,9 @@ class _AnkirenRatingOverlayState extends State<AnkirenRatingOverlay> {
       _ => s.ankirenRatingBand,
     };
     final (cta, ctaSub) = switch (t.moment) {
-      AnkirenRatingMoment.down => (s.ankirenNextTime, s.other.ankirenNextTime),
-      AnkirenRatingMoment.placing || AnkirenRatingMoment.held || AnkirenRatingMoment.rankDown => (s.onward, s.other.onward),
-      _ => (s.ratingCta, s.other.ratingCta),
+      AnkirenRatingMoment.down => (s.ankirenNextTime, s.sub?.ankirenNextTime),
+      AnkirenRatingMoment.placing || AnkirenRatingMoment.held || AnkirenRatingMoment.rankDown => (s.onward, s.sub?.onward),
+      _ => (s.ratingCta, s.sub?.ratingCta),
     };
     final suspense = (t.reveals || t.breaksThrough) && !still;
     Widget page = Padding(
@@ -831,8 +832,8 @@ class _Cloth extends StatelessWidget {
         : Text.rich(
             key: ValueKey(band.id),
             TextSpan(children: [
-              TextSpan(text: band.stem),
-              if (band.stem != band.label)
+              TextSpan(text: S.of(context).classStem(band)),
+              if (S.of(context).classStem(band) != S.of(context).className(band))
                 const TextSpan(
                     text: RankBand.classSuffix, style: TextStyle(fontSize: AnkirenRatingLayout.clothSuffixFont)),
             ]),
@@ -971,7 +972,7 @@ class _Strip extends StatelessWidget {
             if (next == null) return Text(s.topClassChase, style: text);
             final points = t.toNextAt(elapsed)!;
             return NumberedText(
-              s.ratingToNext(next.label),
+              s.ratingToNext(s.className(next)),
               [points],
               style: text,
               numberStyle: number.copyWith(color: points == 0 ? Palette.pinkDeep : null),

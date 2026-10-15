@@ -87,7 +87,7 @@ class PlacementOverlay extends StatelessWidget {
                   RankUpMotion.actions,
                   child: CelebrationCta(
                     label: s.ratingCta,
-                    sub: s.other.ratingCta,
+                    sub: s.sub?.ratingCta,
                     onTap: onNext,
                     height: RankUpLayout.actionHeight,
                     fontSize: RankUpLayout.ctaFont,

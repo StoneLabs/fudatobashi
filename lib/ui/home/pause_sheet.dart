@@ -51,12 +51,14 @@ class _PauseSheet extends StatelessWidget {
                         style: const TextStyle(
                             fontFamily: Fonts.display, fontSize: PauseSheetLayout.title, height: TypeScale.displayLineHeight),
                       ),
-                      const SizedBox(height: PauseSheetLayout.subGap),
-                      Text(
-                        s.other.pauseTitle(reviews),
-                        style: const TextStyle(
-                            fontWeight: Weights.black, fontSize: PauseSheetLayout.sub, color: Palette.inkSoft),
-                      ),
+                      if (s.sub != null) ...[
+                        const SizedBox(height: PauseSheetLayout.subGap),
+                        Text(
+                          s.sub!.pauseTitle(reviews),
+                          style: const TextStyle(
+                              fontWeight: Weights.black, fontSize: PauseSheetLayout.sub, color: Palette.inkSoft),
+                        ),
+                      ],
                       const SizedBox(height: PauseSheetLayout.bodyGap),
                       Text(
                         s.pauseBody,
@@ -77,7 +79,7 @@ class _PauseSheet extends StatelessWidget {
                         height: PauseSheetLayout.shoutHeight,
                         child: ShoutButton(
                           label: s.pauseYes,
-                          sub: s.other.pauseYes,
+                          sub: s.sub?.pauseYes,
                           spec: PauseSheetLayout.shout,
                           fontSize: PauseSheetLayout.shoutFont,
                           color: Palette.sun,
@@ -102,12 +104,14 @@ class _PauseSheet extends StatelessWidget {
                               children: [
                                 Text(s.pauseNo,
                                     style: const TextStyle(fontWeight: Weights.black, fontSize: PauseSheetLayout.keepFont)),
-                                const SizedBox(width: PauseSheetLayout.keepSubGap),
-                                Text(s.other.pauseNo,
-                                    style: const TextStyle(
-                                        fontWeight: Weights.black,
-                                        fontSize: PauseSheetLayout.keepSub,
-                                        color: Palette.inkSoft)),
+                                if (s.sub != null) ...[
+                                  const SizedBox(width: PauseSheetLayout.keepSubGap),
+                                  Text(s.sub!.pauseNo,
+                                      style: const TextStyle(
+                                          fontWeight: Weights.black,
+                                          fontSize: PauseSheetLayout.keepSub,
+                                          color: Palette.inkSoft)),
+                                ],
                               ],
                             ),
                           ),

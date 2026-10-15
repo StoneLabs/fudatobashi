@@ -40,7 +40,8 @@ class WelcomePanel extends StatelessWidget {
     required this.other,
   });
 
-  final String title, banner, hello, question, other;
+  final String title, banner, hello, question;
+  final String? other;
 
   @override
   Widget build(BuildContext context) {
@@ -103,15 +104,17 @@ class WelcomePanel extends StatelessWidget {
                 ),
                 const SizedBox(height: OnboardingLayout.balloonGap),
                 _FitLines(question, style: const TextStyle(fontSize: OnboardingLayout.balloonBody)),
-                const SizedBox(height: OnboardingLayout.balloonGap),
-                _FitLines(
-                  other,
-                  style: const TextStyle(
-                    fontSize: OnboardingLayout.balloonSmall,
-                    fontWeight: Weights.bold,
-                    color: Palette.mute,
+                if (other != null) ...[
+                  const SizedBox(height: OnboardingLayout.balloonGap),
+                  _FitLines(
+                    other!,
+                    style: const TextStyle(
+                      fontSize: OnboardingLayout.balloonSmall,
+                      fontWeight: Weights.bold,
+                      color: Palette.mute,
+                    ),
                   ),
-                ),
+                ],
               ],
             ),
           ),
@@ -229,7 +232,8 @@ class ModeChoice extends StatelessWidget {
 class PaceHeader extends StatelessWidget {
   const PaceHeader({super.key, required this.banner, required this.question, required this.other});
 
-  final String banner, question, other;
+  final String banner, question;
+  final String? other;
 
   @override
   Widget build(BuildContext context) {
@@ -261,11 +265,13 @@ class PaceHeader extends StatelessWidget {
               ),
             ),
           ),
-          const SizedBox(height: OnboardingLayout.paceOtherGap),
-          Text(
-            other,
-            style: const TextStyle(fontSize: OnboardingLayout.paceOther, fontWeight: Weights.bold, color: Palette.mute),
-          ),
+          if (other != null) ...[
+            const SizedBox(height: OnboardingLayout.paceOtherGap),
+            Text(
+              other!,
+              style: const TextStyle(fontSize: OnboardingLayout.paceOther, fontWeight: Weights.bold, color: Palette.mute),
+            ),
+          ],
         ],
       ),
     );

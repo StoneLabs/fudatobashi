@@ -12,6 +12,7 @@ import '../../domain/ankiren_rating.dart';
 import '../../domain/rating.dart';
 import '../../domain/side_trips.dart';
 import '../../l10n/ankiren_strings.dart';
+import '../../l10n/ranked_strings.dart';
 import '../../l10n/results_strings.dart';
 import '../../l10n/side_trip_strings.dart';
 import '../../l10n/strings.dart';
@@ -83,7 +84,7 @@ class _AnkirenPageState extends State<AnkirenPage> {
                   children: [
                     const SizedBox(height: HeaderStyle.topGap),
                     MangaHeader(
-                      title: ScreenTitle(trip.label, sub: s.tripTag(trip)),
+                      title: ScreenTitle(s.tripName(trip), sub: s.tripTag(trip)),
                       actions: [
                         InkIconButton(icon: IconArt.back, semanticLabel: s.back, onTap: () => Navigator.maybePop(context)),
                       ],
@@ -123,7 +124,8 @@ class _Label extends StatelessWidget {
   const _Label(this.text, this.sub,
       {this.fontSize = AnkirenPageLayout.labelFont, this.color = Palette.ink, this.underline = false});
 
-  final String text, sub;
+  final String text;
+  final String? sub;
   final double fontSize;
   final Color color;
   final bool underline;
@@ -132,14 +134,16 @@ class _Label extends StatelessWidget {
   Widget build(BuildContext context) => Text.rich(
         TextSpan(children: [
           Phrases.span(text),
-          const TextSpan(text: ' '),
-          Phrases.span(
-            sub.toUpperCase(),
-            style: const TextStyle(
-              fontSize: AnkirenPageLayout.labelFont,
-              letterSpacing: AnkirenPageLayout.labelTracking * AnkirenPageLayout.labelFont,
+          if (sub != null) ...[
+            const TextSpan(text: ' '),
+            Phrases.span(
+              sub!.toUpperCase(),
+              style: const TextStyle(
+                fontSize: AnkirenPageLayout.labelFont,
+                letterSpacing: AnkirenPageLayout.labelTracking * AnkirenPageLayout.labelFont,
+              ),
             ),
-          ),
+          ],
         ]),
         style: TextStyle(
           fontWeight: Weights.black,
@@ -302,11 +306,11 @@ class _RecordStrip extends StatelessWidget {
             padding: AnkirenPageLayout.cellsPadding,
             child: _CellRow(children: [
               _Cell(
-                label: _Label(s.sideTripClass, s.other.sideTripClass),
+                label: _Label(s.sideTripClass, s.sub?.sideTripClass),
                 value: Text.rich(
                   TextSpan(children: [
-                    TextSpan(text: band.stem),
-                    if (band.stem != band.label)
+                    TextSpan(text: s.classStem(band)),
+                    if (s.classStem(band) != s.className(band))
                       const TextSpan(
                           text: RankBand.classSuffix, style: TextStyle(fontSize: AnkirenPageLayout.classSuffixFont)),
                   ]),
@@ -314,7 +318,7 @@ class _RecordStrip extends StatelessWidget {
                 ),
               ),
               _Cell(
-                label: _Label(s.rating, s.other.rating),
+                label: _Label(s.rating, s.sub?.rating),
                 value: Row(mainAxisSize: MainAxisSize.min, children: [
                   Text(rating == null ? s.sideTripUnranked : '${rating.round()}', style: big),
                   if (change != 0) ...[
@@ -338,7 +342,7 @@ class _RecordStrip extends StatelessWidget {
                       fit: BoxFit.scaleDown,
                       alignment: Alignment.centerLeft,
                       child: NumberedText(
-                        s.ratingToNext(next.label),
+                        s.ratingToNext(s.className(next)),
                         [(next.minRating - at).ceil()],
                         style: const TextStyle(fontWeight: Weights.black, fontSize: AnkirenPageLayout.gaugeFont),
                         numberStyle:
@@ -362,7 +366,8 @@ class _RecordStrip extends StatelessWidget {
 class _Heading extends StatelessWidget {
   const _Heading(this.title, this.sub, {required this.trailing});
 
-  final String title, sub;
+  final String title;
+  final String? sub;
   final Widget trailing;
 
   @override
@@ -439,7 +444,7 @@ class _LastGames extends StatelessWidget {
     final s = S.of(context);
     final last = results.reversed.take(AnkirenPageLayout.lastGames).toList();
     return Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-      _Heading(s.ankirenLast5, s.other.ankirenLast5, trailing: const _HistoryLink()),
+      _Heading(s.ankirenLast5, s.sub?.ankirenLast5, trailing: const _HistoryLink()),
       const SizedBox(height: AnkirenPageLayout.headGap),
       _GameRow([
         for (var i = 0; i < AnkirenPageLayout.lastGames; i++)
@@ -465,7 +470,7 @@ class _HistoryLink extends StatelessWidget {
       builder: (context, _) => ConstrainedBox(
         constraints: const BoxConstraints(minHeight: ButtonMetrics.iconButton),
         child: Row(mainAxisSize: MainAxisSize.min, children: [
-          _Label(s.history, s.other.history, fontSize: AnkirenPageLayout.linkFont, underline: true),
+          _Label(s.history, s.sub?.history, fontSize: AnkirenPageLayout.linkFont, underline: true),
           const SizedBox(width: AnkirenPageLayout.linkGap),
           MangaIcon(IconArt.chevron, size: AnkirenPageLayout.linkIcon, strokeWidth: AnkirenPageLayout.linkIconStroke),
         ]),
@@ -488,7 +493,7 @@ class _Placement extends StatelessWidget {
     return Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
       _Heading(
         s.ankirenPlacementTitle,
-        s.other.ankirenPlacementTitle,
+        s.sub?.ankirenPlacementTitle,
         trailing: NumberedText(
           s.ankirenPlacementCount,
           [results.length, games],
@@ -535,7 +540,7 @@ class _Slot extends StatelessWidget {
       ),
       const SizedBox(height: AnkirenPageLayout.gameGap),
       if (next)
-        _Label(s.ankirenPlacementNext, s.other.ankirenPlacementNext, color: AnkirenPageLayout.todo)
+        _Label(s.ankirenPlacementNext, s.sub?.ankirenPlacementNext, color: AnkirenPageLayout.todo)
       else
         const Text('—', style: style),
     ]);
@@ -578,7 +583,7 @@ class _NextGame extends StatelessWidget {
           alignment: Alignment.centerLeft,
           child: FittedBox(
             fit: BoxFit.scaleDown,
-            child: Semantics(header: true, child: InkBanner(s.ankirenNextRanked, sub: s.other.ankirenNextRanked)),
+            child: Semantics(header: true, child: InkBanner(s.ankirenNextRanked, sub: s.sub?.ankirenNextRanked)),
           ),
         ),
       ),
@@ -602,7 +607,7 @@ class _Stats extends StatelessWidget {
       padding: AnkirenPageLayout.statsPadding,
       child: _CellRow(children: [
         _Cell(
-          label: _Label(s.ankirenLevelRow, s.other.ankirenLevelRow),
+          label: _Label(s.ankirenLevelRow, s.sub?.ankirenLevelRow),
           value: NumberedText(
             s.ankirenLevelValue,
             [level],
@@ -611,7 +616,7 @@ class _Stats extends StatelessWidget {
           ),
         ),
         _Cell(
-          label: _Label(s.ankirenCards, s.other.ankirenCards),
+          label: _Label(s.ankirenCards, s.sub?.ankirenCards),
           value: NumberedText(
             s.ankirenPerSideCount,
             [of.perSide],
@@ -620,7 +625,7 @@ class _Stats extends StatelessWidget {
           ),
         ),
         _Cell(
-          label: _Label(s.ankirenMemoriseLabel, s.other.ankirenMemoriseLabel),
+          label: _Label(s.ankirenMemoriseLabel, s.sub?.ankirenMemoriseLabel),
           value: Text(formatMinutes(of.memorise), style: big),
         ),
       ]),
@@ -650,9 +655,9 @@ class _Hint extends StatelessWidget {
             MangaIcon(IconArt.lock,
                 size: AnkirenPageLayout.hintIcon, color: Palette.mute, strokeWidth: AnkirenPageLayout.hintIconStroke),
             const SizedBox(width: AnkirenPageLayout.hintGap),
-            Flexible(child: _Label(s.ankirenCapped, s.other.ankirenCapped, color: Palette.mute)),
+            Flexible(child: _Label(s.ankirenCapped, s.sub?.ankirenCapped, color: Palette.mute)),
           ])
-        : _Label(s.ankirenSetByRating, s.other.ankirenSetByRating, color: Palette.mute);
+        : _Label(s.ankirenSetByRating, s.sub?.ankirenSetByRating, color: Palette.mute);
     final Widget toGo;
     if (capped) {
       toGo = NumberedText(s.ankirenLevelFrom, [level + 1, AnkirenLevels.of(level + 1).cards],

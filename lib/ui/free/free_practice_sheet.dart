@@ -113,7 +113,7 @@ class _FreePracticeSheetState extends State<FreePracticeSheet> {
                               children: [
                                 Row(children: [InkTag(s.freeSheetTag)]),
                                 const SizedBox(height: Gaps.small),
-                                Text('始める',
+                                Text(s.freePlayLettering,
                                     style: const TextStyle(
                                         fontFamily: Fonts.display,
                                         fontSize: FreePracticeLayout.title,

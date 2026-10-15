@@ -7,6 +7,7 @@ import 'package:flutter/widgets.dart';
 import '../../config/config.dart';
 import '../../config/design.dart';
 import '../../domain/rating.dart';
+import '../../l10n/ranked_strings.dart';
 import '../../l10n/results_strings.dart';
 import '../../l10n/stats_strings.dart';
 import '../../l10n/strings.dart';
@@ -222,7 +223,7 @@ class _RatingOverlayState extends State<RatingOverlay> {
                       _pop(t.climbEnd + RatingMotion.actionsAfter, RatingMotion.actions, curve: Entrances.springy),
                       child: CelebrationCta(
                         label: s.ratingCta,
-                        sub: s.other.ratingCta,
+                        sub: s.sub?.ratingCta,
                         onTap: widget.onNext,
                         height: RatingLayout.actionHeight,
                         fontSize: RatingLayout.ctaFont,
@@ -619,7 +620,7 @@ class _ToNext extends StatelessWidget {
               : StageClock(
                   length: t.length,
                   builder: (context, elapsed) => NumberedText(
-                    s.ratingToNext(next.label),
+                    s.ratingToNext(s.className(next)),
                     [t.toNextAt(elapsed)!],
                     style: text,
                     numberStyle: number.copyWith(color: t.toNextAt(elapsed) == 0 ? Palette.pinkDeep : null),

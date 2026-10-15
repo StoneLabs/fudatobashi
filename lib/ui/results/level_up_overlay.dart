@@ -82,7 +82,7 @@ class LevelUpOverlay extends StatelessWidget {
                   LevelUpMotion.actions,
                   child: CelebrationCta(
                     label: s.onward,
-                    sub: s.other.onward,
+                    sub: s.sub?.onward,
                     onTap: onNext,
                     height: LevelUpLayout.actionHeight,
                     fontSize: LevelUpLayout.ctaFont,

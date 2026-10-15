@@ -339,8 +339,10 @@ void main() {
         await showHome(tester, p, _users);
         await tester.pump(Motion.sheet);
         expect(find.text(s.pauseTitle(reviews)), findsOneWidget);
-        expect(find.text(s.other.pauseTitle(reviews)), findsOneWidget, reason: 'the other language under it');
-        expect(find.text(s.other.pauseYes), findsOneWidget);
+        // The other language shows under it in Japanese mode only.
+        final other = s.ja ? findsOneWidget : findsNothing;
+        expect(find.text(s.other.pauseTitle(reviews)), other, reason: 'the other language under it');
+        expect(find.text(s.other.pauseYes), other);
         expectSheetFits(tester, s, _users, lang);
         await tester.runAsync(() => tester.tap(find.text(s.pauseYes)));
         await settle(tester);

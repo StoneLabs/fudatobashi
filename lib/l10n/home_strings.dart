@@ -47,7 +47,8 @@ extension HomeStrings on S {
   String get todayMisses => t('todayMisses');
   String get todayDone => t('todayDone');
 
-  /// The 本日完了 hanko of a done day: Japanese lettering in every language.
+  /// The 本日完了 hanko of a done day: a decorative Japanese stamp in every
+  /// language.
   String get dayDoneStamp => '本日完了';
 
   /// A week stamp's weekday, for [DateTime.weekday] (1 is Monday).

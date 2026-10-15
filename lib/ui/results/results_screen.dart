@@ -577,7 +577,7 @@ class _RatingPanel extends StatelessWidget {
           ])),
           if (after != null && band != null)
             _OneLine(Text(
-                placed ? '${s.ratingFirst} · ${band.label}' : '${before?.round() ?? s.newBadge} → ${after!.round()} · ${band.label}',
+                placed ? '${s.ratingFirst} · ${s.className(band)}' : '${before?.round() ?? s.newBadge} → ${after!.round()} · ${s.className(band)}',
                 style: const TextStyle(fontWeight: Weights.bold, fontSize: ResultsLayout.statNoteFont))),
         ],
       ),

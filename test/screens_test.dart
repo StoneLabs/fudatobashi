@@ -468,7 +468,7 @@ void main() {
       await tester.pump(const Duration(milliseconds: 300));
       expect(tester.widget<MangaTabBar>(find.byType(MangaTabBar)).current, 3);
       expect(find.byType(SideTripsScreen), findsOneWidget);
-      expect(find.byWidgetPredicate((w) => w is OutlinedText && w.text == SideTrip.ankiren.label), findsOneWidget);
+      expect(find.byWidgetPredicate((w) => w is OutlinedText && w.text == S(ja ? 'ja' : 'en').tripName(SideTrip.ankiren)), findsOneWidget);
       await tester.pumpWidget(const SizedBox());
     });
 
@@ -1093,7 +1093,7 @@ void main() {
       expect(access.open, isFalse);
       await onPhone(tester, p, fontScale: 1.1);
       expect(find.text(s.freeLockedSub(access.needed)), findsOneWidget);
-      await tester.tap(find.text('始める'));
+      await tester.tap(find.text(s.freePlayLettering));
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 400));
       expect(find.text(s.freeLockedWhy(access.needed)), findsOneWidget);
@@ -1121,7 +1121,7 @@ void main() {
           expect(tester.takeException(), isNull);
         }
 
-        await tapAndSettle(find.text('始める'));
+        await tapAndSettle(find.text(s.freePlayLettering));
         expect(find.byType(FreePracticeSheet), findsOneWidget);
         expect(inSheet(s.countsTag), findsOneWidget);
         expect(find.text(s.allKnownIslands), findsOneWidget);
@@ -1867,7 +1867,7 @@ void main() {
       expect(tester.takeException(), isNull);
       final s = S(lang);
       expect(find.text(s.warningShout), findsWidgets);
-      expect(find.text(s.other.warning), findsOneWidget);
+      expect(find.text(s.other.warning), s.ja ? findsOneWidget : findsNothing, reason: 'English UI shows no Japanese tag');
       for (final scroll in tester.stateList<ScrollableState>(find.byType(Scrollable))) {
         expect(scroll.position.maxScrollExtent, 0, reason: 'the warning fits without scrolling');
       }
@@ -2556,7 +2556,7 @@ void main() {
               expect(find.text(s.topClassChase), findsOneWidget);
             } else {
               final next = Rating.nextBand(before)!;
-              expect(find.text(s.ratingToNext(next.label).replaceAll('{0}', '${timeline.toNextAt(timeline.length)}')),
+              expect(find.text(s.ratingToNext(s.className(next)).replaceAll('{0}', '${timeline.toNextAt(timeline.length)}')),
                   findsOneWidget, reason: "what's left to the next class");
             }
             await _capture(tester, 'rating_${name}_${lang}_$fontScale');
@@ -2868,7 +2868,7 @@ void main() {
             () => p.updateSettings(p.settings.copyWith(ankiren: p.settings.ankiren.copyWith(rulesSeen: true))));
         expect(p.sideTripsHub()[SideTrip.ankiren].open, isTrue);
         await openTrips(tester, p);
-        expect(inTrips(find.text(Rating.bands.first.label)), findsOneWidget, reason: 'the flag flies 入門');
+        expect(inTrips(find.text(S(lang).className(Rating.bands.first))), findsOneWidget, reason: 'the flag flies the novice class');
         expect(inTrips(find.text(s.sideTripUnranked)), findsOneWidget);
         await _capture(tester, 'side_trips_open_$lang');
         await tester.tap(inTrips(find.byType(PageBurst)));

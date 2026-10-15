@@ -100,6 +100,13 @@ extension AnkirenStrings on S {
   /// into a lower class.
   String get ankirenRatingBand => t('ankirenRatingBand');
   String get ankirenRankBand => t('ankirenRankBand');
+
+  /// The big shout of the AnkiRen rating screen, for how the rating moved.
+  String get ankirenTitleUp => t('ankirenTitleUp');
+  String get ankirenTitleHeld => t('ankirenTitleHeld');
+  String get ankirenTitleDown => t('ankirenTitleDown');
+  String get ankirenTitlePlacing => t('ankirenTitlePlacing');
+  String get ankirenTitlePlaced => t('ankirenTitlePlaced');
   String get ankirenRankUpBand => t('ankirenRankUpBand');
   String get ankirenRankDownBand => t('ankirenRankDownBand');
 

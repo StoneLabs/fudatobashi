@@ -68,7 +68,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                 banner: s.welcomeBanner,
                 hello: s.tobiHello,
                 question: s.howWell,
-                other: s.other.howWellOneLine,
+                other: s.sub?.howWellOneLine,
               ),
             ),
           ),
@@ -114,7 +114,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
       children: [
         SwapPiece(
           order: 0,
-          child: PaceHeader(banner: s.paceBanner, question: s.howFast, other: s.other.howFast),
+          child: PaceHeader(banner: s.paceBanner, question: s.howFast, other: s.sub?.howFast),
         ),
         const SizedBox(height: Gaps.panelWide),
         Expanded(

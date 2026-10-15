@@ -194,7 +194,7 @@ class XpOverlay extends StatelessWidget {
                 _pop(finish + XpMotion.actionsAfter, XpMotion.actions, curve: Entrances.springy),
                 child: CelebrationCta(
                   label: s.xpCta,
-                  sub: s.other.xpCta,
+                  sub: s.sub?.xpCta,
                   onTap: onNext,
                   height: XpLayout.actionHeight,
                   fontSize: XpLayout.ctaFont,

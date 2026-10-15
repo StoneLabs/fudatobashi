@@ -37,6 +37,11 @@ class S {
   /// Japanese, in which case it's English.
   S get other => S(ja ? 'en' : 'ja');
 
+  /// The strings for a small sub-label under or beside a main one: the other
+  /// language in a Japanese UI (English tags), and none otherwise, so an
+  /// English UI never shows Japanese next to the English.
+  S? get sub => ja ? S('en') : null;
+
   String t(String key) => Localization.lookup(code, key);
 
   /// Poem [id]'s kimariji (決まり字), for display: the hiragana reading in
@@ -69,6 +74,13 @@ class S {
   String get guest => t('guest');
   String get rankedRun => t('rankedRun');
   String get examRun => t('examRun');
+
+  /// The big lettering of the Home panels and the exam strip: Japanese in
+  /// Japanese, English otherwise, with the other language as the small tag.
+  String get trainingLettering => t('trainingLettering');
+  String get freePlayLettering => t('freePlayLettering');
+  String get weakLettering => t('weakLettering');
+  String get examStripLettering => t('examStripLettering');
   String get untracked => t('untracked');
   String get guestNote => t('guestNote');
 

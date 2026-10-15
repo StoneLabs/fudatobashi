@@ -7,10 +7,10 @@ import '../manga/manga.dart';
 /// A group of settings under a header: [title] in an ink banner, the
 /// second-language [sub] beside it and a rule running out to the edge.
 class SettingsSection extends StatelessWidget {
-  const SettingsSection({super.key, required this.title, required this.sub, required this.children, this.footnote});
+  const SettingsSection({super.key, required this.title, this.sub, required this.children, this.footnote});
 
   final String title;
-  final String sub;
+  final String? sub;
   final List<Widget> children;
 
   /// A small note under the section's last setting.
@@ -25,19 +25,21 @@ class SettingsSection extends StatelessWidget {
             child: Row(children: [
               const SizedBox(width: SettingsLayout.headerInset),
               InkBanner(title.toUpperCase(), fontSize: SettingsLayout.headerFont),
-              const SizedBox(width: SettingsLayout.headerSubGap),
-              // A long sub gives way (fading out) before the banner does; the
-              // rule takes whatever is left.
-              Flexible(
-                flex: SettingsLayout.headerSubFlex,
-                child: Text(
-                  sub,
-                  maxLines: 1,
-                  softWrap: false,
-                  overflow: TextOverflow.fade,
-                  style: const TextStyle(fontWeight: Weights.black, fontSize: SettingsLayout.headerSubFont),
+              if (sub != null) ...[
+                const SizedBox(width: SettingsLayout.headerSubGap),
+                // A long sub gives way (fading out) before the banner does; the
+                // rule takes whatever is left.
+                Flexible(
+                  flex: SettingsLayout.headerSubFlex,
+                  child: Text(
+                    sub!,
+                    maxLines: 1,
+                    softWrap: false,
+                    overflow: TextOverflow.fade,
+                    style: const TextStyle(fontWeight: Weights.black, fontSize: SettingsLayout.headerSubFont),
+                  ),
                 ),
-              ),
+              ],
               const SizedBox(width: SettingsLayout.headerSubGap),
               const Expanded(
                 child: SizedBox(height: SettingsLayout.headerRule, child: ColoredBox(color: Palette.ink)),
