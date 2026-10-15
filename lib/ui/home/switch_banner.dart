@@ -81,7 +81,7 @@ class SwitchBanner extends StatelessWidget {
 }
 
 /// Asks whether to move to all-known mode now that the exam is passed, and
-/// switches on yes. "Not yet" changes nothing.
+/// switches on yes. A tap on the backdrop closes it, changing nothing.
 Future<void> confirmSwitchToAllKnown(BuildContext context) async {
   final progress = ProgressScope.read(context);
   final ok = await showMangaSheet<bool>(
@@ -101,21 +101,6 @@ class _SwitchSheet extends StatelessWidget {
     final s = S.of(context);
     const body = TextStyle(
         fontSize: SwitchSheetStyle.body, fontWeight: Weights.bold, height: SwitchSheetStyle.lineHeight);
-    Widget point(String text) => Padding(
-          padding: const EdgeInsets.only(top: SwitchSheetStyle.pointGap),
-          child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            Padding(
-              padding: const EdgeInsets.only(
-                  top: (SwitchSheetStyle.body * SwitchSheetStyle.lineHeight - SwitchSheetStyle.bulletSize) / 2),
-              child: const SizedBox.square(
-                dimension: SwitchSheetStyle.bulletSize,
-                child: ColoredBox(color: Palette.ink),
-              ),
-            ),
-            const SizedBox(width: SwitchSheetStyle.bulletGap),
-            Expanded(child: Text.rich(Phrases.span(text), style: body)),
-          ]),
-        );
     return SafeArea(
       child: Align(
         alignment: Alignment.bottomCenter,
@@ -141,9 +126,7 @@ class _SwitchSheet extends StatelessWidget {
                             fontFamily: Fonts.display, fontSize: SwitchSheetStyle.title, height: TypeScale.displayLineHeight),
                       ),
                       const SizedBox(height: Gaps.small),
-                      point(s.switchPointRanked),
-                      point(s.switchPointRank),
-                      point(s.switchPointKeep),
+                      Text.rich(Phrases.span(s.switchBody), style: body),
                       const SizedBox(height: Gaps.section),
                       SizedBox(
                         height: SwitchSheetStyle.shoutHeight,
@@ -152,15 +135,6 @@ class _SwitchSheet extends StatelessWidget {
                           color: Palette.pink,
                           pressedColor: Palette.pinkDeep,
                           onTap: () => Navigator.pop(context, true),
-                        ),
-                      ),
-                      const SizedBox(height: Gaps.panel),
-                      SizedBox(
-                        height: SwitchSheetStyle.plainHeight,
-                        child: InkButton(
-                          onTap: () => Navigator.pop(context, false),
-                          child: Text(s.switchNotYet,
-                              style: const TextStyle(fontWeight: Weights.black, fontSize: TypeScale.button)),
                         ),
                       ),
                       const SizedBox(height: Gaps.small),

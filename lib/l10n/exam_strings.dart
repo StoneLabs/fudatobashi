@@ -6,12 +6,9 @@ extension ExamStrings on S {
   /// The exam's tag: Latin capitals in every language, like the other tags.
   String get examTag => 'GRADUATION EXAM';
   String get examStartTitle => t('examStartTitle');
-  String get examRuleCards => t('examRuleCards');
-  String get examRuleBeat => t('examRuleBeat');
-  String examRulePenalty(int seconds) => f('examRulePenalty', [seconds]);
+  String examStartBody(int seconds) => f('examStartBody', [seconds]);
   String get examRuleTry => t('examRuleTry');
   String get examStart => t('examStart');
-  String get examNotNow => t('examNotNow');
   String get examLeaveTitle => t('examLeaveTitle');
   String get examLeaveBody => t('examLeaveBody');
   String get examLeaveYes => t('examLeaveYes');

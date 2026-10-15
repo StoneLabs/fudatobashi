@@ -4262,10 +4262,6 @@ abstract final class ExamMotion {
 abstract final class ExamSheetStyle {
   static const Color tag = Palette.ink;
   static const Color tagText = Palette.sun;
-  static const double bullet = 7;
-  static const double bulletGap = 9;
-  static const double bulletTop = 6;
-  static const double ruleGap = 5;
 }
 
 /// The page when Tobi wins (`ExamLostScreen`).
@@ -5306,12 +5302,8 @@ abstract final class SwitchSheetStyle {
   static const double title = 24;
   static const double body = 14;
   static const double lineHeight = 1.4;
-  static const double bulletSize = 6;
-  static const double bulletGap = 9;
-  static const double pointGap = 4;
   static const double note = 12;
   static const double shoutHeight = RankedSheetStyle.shoutHeight;
-  static const double plainHeight = RankedSheetStyle.plainHeight;
   static const EdgeInsets padding = RankedSheetStyle.padding;
   static const double cut = RankedSheetStyle.cut;
   static const Placement tobi = RankedSheetStyle.tobi;

@@ -6,8 +6,9 @@ import '../../l10n/exam_strings.dart';
 import '../../l10n/strings.dart';
 import '../manga/manga.dart';
 
-/// Asks before a try at the graduation exam: one try an hour, and a try
-/// left early is still used. True to start.
+/// Asks before a try at the graduation exam, Tobi saying what it is, with
+/// the warning that there is one try an hour and a try left early is still
+/// used. True to start; a tap on the backdrop closes it.
 Future<bool> confirmExamStart(BuildContext context) async {
   final s = S.of(context);
   final ok = await showMangaSheet<bool>(
@@ -16,10 +17,9 @@ Future<bool> confirmExamStart(BuildContext context) async {
     barrierLabel: s.cancel,
     builder: (_) => _ExamSheet(
       title: s.examStartTitle,
-      rules: [s.examRuleCards, s.examRuleBeat, s.examRulePenalty(ExamTuning.missPenaltyMs ~/ 1000)],
+      body: s.examStartBody(ExamTuning.missPenaltyMs ~/ Duration.millisecondsPerSecond),
       warning: s.examRuleTry,
       yes: s.examStart,
-      no: s.examNotNow,
       tobi: TobiPose.fired,
     ),
   );
@@ -35,7 +35,7 @@ Future<bool> confirmExamLeave(BuildContext context) async {
     barrierLabel: s.cancel,
     builder: (_) => _ExamSheet(
       title: s.examLeaveTitle,
-      rules: [s.examLeaveBody],
+      body: s.examLeaveBody,
       yes: s.examLeaveYes,
       no: s.examLeaveNo,
       tobi: TobiPose.shocked,
@@ -45,22 +45,23 @@ Future<bool> confirmExamLeave(BuildContext context) async {
   return ok == true;
 }
 
-/// A sheet of the exam's questions: the exam's tag, a title, the rules as
-/// a list, an optional warning box, and the two answers. [yesIsPlain] puts
-/// the shout on "no", so a quick tap keeps playing.
+/// A sheet of the exam's questions: the exam's tag, a title, a body, an
+/// optional warning box, and the answers:
+/// "yes" alone, or both. [yesIsPlain] puts the shout on "no", so a quick
+/// tap keeps playing.
 class _ExamSheet extends StatelessWidget {
   const _ExamSheet({
     required this.title,
-    required this.rules,
+    required this.body,
     required this.yes,
-    required this.no,
     required this.tobi,
+    this.no,
     this.warning,
     this.yesIsPlain = false,
   });
 
-  final String title, yes, no;
-  final List<String> rules;
+  final String title, body, yes;
+  final String? no;
   final String? warning;
   final TobiPose tobi;
   final bool yesIsPlain;
@@ -84,9 +85,10 @@ class _ExamSheet extends StatelessWidget {
             child: Text(label, style: const TextStyle(fontWeight: Weights.black, fontSize: TypeScale.button)),
           ),
         );
-    const body = TextStyle(
+    const bodyStyle = TextStyle(
         fontSize: RankedSheetStyle.body, fontWeight: Weights.bold, height: RankedSheetStyle.bodyLineHeight);
     final warning = this.warning;
+    final no = this.no;
     return SafeArea(
       child: Align(
         alignment: Alignment.bottomCenter,
@@ -112,20 +114,7 @@ class _ExamSheet extends StatelessWidget {
                             fontFamily: Fonts.display, fontSize: RankedSheetStyle.title, height: TypeScale.displayLineHeight),
                       )),
                       const SizedBox(height: Gaps.small),
-                      for (final (i, rule) in rules.indexed) ...[
-                        if (i > 0) const SizedBox(height: ExamSheetStyle.ruleGap),
-                        rules.length == 1
-                            ? Text.rich(Phrases.span(rule, style: body))
-                            : Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                                const Padding(
-                                  padding: EdgeInsets.only(top: ExamSheetStyle.bulletTop),
-                                  child: SizedBox.square(
-                                      dimension: ExamSheetStyle.bullet, child: ColoredBox(color: Palette.ink)),
-                                ),
-                                const SizedBox(width: ExamSheetStyle.bulletGap),
-                                Expanded(child: Text.rich(Phrases.span(rule, style: body))),
-                              ]),
-                      ],
+                      Text.rich(Phrases.span(body, style: bodyStyle)),
                       if (warning != null) ...[
                         const SizedBox(height: Gaps.section),
                         DecoratedBox(
@@ -141,9 +130,13 @@ class _ExamSheet extends StatelessWidget {
                         ),
                       ],
                       const SizedBox(height: Gaps.section),
-                      if (yesIsPlain) shout(no, false) else shout(yes, true),
-                      const SizedBox(height: Gaps.panel),
-                      if (yesIsPlain) plain(yes, true) else plain(no, false),
+                      if (no == null)
+                        shout(yes, true)
+                      else ...[
+                        if (yesIsPlain) shout(no, false) else shout(yes, true),
+                        const SizedBox(height: Gaps.panel),
+                        if (yesIsPlain) plain(yes, true) else plain(no, false),
+                      ],
                     ],
                   ),
                 ),

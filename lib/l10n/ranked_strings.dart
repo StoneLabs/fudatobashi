@@ -26,11 +26,8 @@ extension RankedStrings on S {
   String get switchBanner => t('switchBanner');
   String get switchTag => t('switchTag');
   String get switchTitle => t('switchTitle');
-  String get switchPointRanked => t('switchPointRanked');
-  String get switchPointRank => t('switchPointRank');
-  String get switchPointKeep => t('switchPointKeep');
+  String get switchBody => t('switchBody');
   String get switchNow => t('switchNow');
-  String get switchNotYet => t('switchNotYet');
   String get switchLater => t('switchLater');
 
   // The rank ladder before there is a rank.

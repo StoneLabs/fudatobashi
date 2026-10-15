@@ -221,7 +221,7 @@ void main() {
   });
 
   group('after passing', () {
-    testWidgets('the banner replaces the strip; its question can wait, or switch', (tester) async {
+    testWidgets('the banner replaces the strip; its question closes on the backdrop, or switches', (tester) async {
       final p = await open(tester, _Stage.passed);
       expect(p.switchBannerShown, isTrue);
       await onPhone(tester, p, _users);
@@ -233,12 +233,13 @@ void main() {
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 500));
       expect(phrase(s.switchTitle), findsOneWidget);
-      await tester.tap(find.text(s.switchNotYet));
+      expect(phrase(s.switchBody), findsOneWidget);
+      await tester.tapAt(const Offset(40, 120));
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 500));
       expect(phrase(s.switchTitle), findsNothing);
       expect(p.trainer.config.learningMode, LearningMode.journey);
-      expect(find.byType(SwitchBanner), findsOneWidget, reason: 'not yet keeps the banner');
+      expect(find.byType(SwitchBanner), findsOneWidget, reason: 'closing it keeps the banner');
 
       await tester.tap(find.byType(SwitchBanner));
       await tester.pump();
