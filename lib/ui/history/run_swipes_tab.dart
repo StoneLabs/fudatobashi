@@ -30,7 +30,7 @@ class RunSwipesTab extends StatelessWidget {
             padding: const EdgeInsets.only(bottom: Gaps.small),
             child: HistoryHeading(
               title: s.runSwipesTitle,
-              sub: s.other.runSwipesTitle,
+              sub: s.sub?.runSwipesTitle,
               note: s.runSwipesCount(rows.length),
             ),
           ),

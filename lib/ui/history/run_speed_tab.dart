@@ -63,7 +63,7 @@ class _Thirds extends StatelessWidget {
         ].join(' · ');
     return HistorySection(
       title: s.runThirdsTitle,
-      sub: s.other.runThirdsTitle,
+      sub: s.sub?.runThirdsTitle,
       child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
         _CellRow([
           for (final t in speed.thirds)
@@ -96,7 +96,7 @@ class _Blocks extends StatelessWidget {
     final mean = speed.meanMs;
     return HistorySection(
       title: s.runPaceTitle(RunSpeedTuning.blockCards),
-      sub: s.other.runPaceTitle(RunSpeedTuning.blockCards),
+      sub: s.sub?.runPaceTitle(RunSpeedTuning.blockCards),
       note: mean == null ? null : s.runAverageNote(formatSeconds(mean)),
       child: RunPanel(gap: false, children: [
         BarChart(
@@ -139,7 +139,7 @@ class _Stretch extends StatelessWidget {
     final goal = speed.goalMs;
     return HistorySection(
       title: s.runStretchTitle,
-      sub: s.other.runStretchTitle,
+      sub: s.sub?.runStretchTitle,
       child: RunPanel(gap: false, children: [
         _CellRow([
           if (fastest != null)
@@ -259,7 +259,7 @@ class _ByKimariji extends StatelessWidget {
         RunTabsStyle.lengthHeadroom;
     return HistorySection(
       title: s.runKimarijiTitle,
-      sub: s.other.runKimarijiTitle,
+      sub: s.sub?.runKimarijiTitle,
       note: s.runKimarijiNote,
       child: RunPanel(gap: false, children: [
         for (final r in rows)
@@ -343,7 +343,7 @@ class _AgainstUsual extends StatelessWidget {
     final gap = a.runMs - a.usualMs;
     return HistorySection(
       title: s.runUsualTitle,
-      sub: s.other.runUsualTitle,
+      sub: s.sub?.runUsualTitle,
       child: a.compared == 0
           ? HistoryCaption(s.runNoUsual)
           : RunPanel(gap: false, children: [

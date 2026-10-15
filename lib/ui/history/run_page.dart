@@ -32,7 +32,7 @@ class PageTab<T> {
 
   /// This tab for [SwipeTabs], filled in from [data].
   SwipeTab swipeTab(S s, T data, {Color accent = Palette.ink}) =>
-      SwipeTab(label: label(s), sub: sub?.call(s) ?? label(s.other), accent: accent, builder: (_) => build(data));
+      SwipeTab(label: label(s), sub: s.sub == null ? null : sub?.call(s) ?? label(s.sub!), accent: accent, builder: (_) => build(data));
 }
 
 /// A recorded run, tab by tab: the 100-card view for ranked, the exam and

@@ -43,7 +43,7 @@ class _AnkirenFieldTabState extends State<AnkirenFieldTab> {
       return RunTabList(children: [
         HistorySection(
           title: s.ankirenFieldTitle,
-          sub: s.other.ankirenFieldTitle,
+          sub: s.sub?.ankirenFieldTitle,
           child: ReviewPanel(child: ReviewTable.cell(s.ankirenFieldMissing)),
         ),
       ]);
@@ -60,7 +60,7 @@ class _AnkirenFieldTabState extends State<AnkirenFieldTab> {
     return RunTabList(children: [
       HistorySection(
         title: s.ankirenFieldTitle,
-        sub: s.other.ankirenFieldTitle,
+        sub: s.sub?.ankirenFieldTitle,
         note: note,
         child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
           _ReplayedField(deal: deal, game: game, step: _step),

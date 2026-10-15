@@ -53,7 +53,7 @@ class _RatingPanel extends StatelessWidget {
     final ratedBefore = detail.rankedRuns.indexWhere((r) => r.$1.id == detail.run.id);
     final share = Rating.share(math.max(0, ratedBefore));
     return RunPanel(children: [
-      TrackedLabel(s.rating, sub: s.other.rating),
+      TrackedLabel(s.rating, sub: s.sub?.rating),
       if (before == null) ...[
         RunBigValue('$after'),
         const SizedBox(height: Gaps.tight),
@@ -187,7 +187,7 @@ class _RankedRuns extends StatelessWidget {
     final verdict = _verdict(s);
     return HistorySection(
       title: s.runRankedTitle,
-      sub: s.other.runRankedTitle,
+      sub: s.sub?.runRankedTitle,
       note: s.runSoFar(runs.length),
       child: RunPanel(gap: false, children: [
         if (runs.length > 1)
@@ -348,7 +348,7 @@ class _NoRank extends StatelessWidget {
       text = s.runFreeNoRank;
     }
     return RunPanel(color: exam ? Palette.paper : Palette.seaSoft, children: [
-      TrackedLabel(exam ? s.examRun : s.freePlay, sub: exam ? s.other.examRun : s.other.freePlay),
+      TrackedLabel(exam ? s.examRun : s.freePlay, sub: exam ? s.sub?.examRun : s.sub?.freePlay),
       Text(s.notForRank, style: RunTabsStyle.headlineStyle),
       const SizedBox(height: Gaps.tight),
       Text(text, style: RunTabsStyle.lineStyle),

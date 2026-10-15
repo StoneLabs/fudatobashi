@@ -252,7 +252,8 @@ class AnkirenHeadline extends StatelessWidget {
 /// other-language [sub] under it.
 class AnkirenStamp extends StatelessWidget {
   const AnkirenStamp(this.text, this.sub, {super.key, this.color = Palette.pinkDeep});
-  final String text, sub;
+  final String text;
+  final String? sub;
   final Color color;
 
   @override
@@ -263,8 +264,9 @@ class AnkirenStamp extends StatelessWidget {
         padding: AnkirenReviewStyle.stampPadding,
         child: Column(mainAxisSize: MainAxisSize.min, children: [
           Text(text, style: TextStyle(fontWeight: Weights.black, fontSize: AnkirenReviewStyle.stampFont, color: color)),
-          Text(sub.toUpperCase(),
-              style: TextStyle(fontWeight: Weights.black, fontSize: AnkirenReviewStyle.stampSubFont, color: color)),
+          if (sub != null)
+            Text(sub!.toUpperCase(),
+                style: TextStyle(fontWeight: Weights.black, fontSize: AnkirenReviewStyle.stampSubFont, color: color)),
         ]),
       );
 }

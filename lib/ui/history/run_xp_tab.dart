@@ -43,7 +43,7 @@ class XpPanel extends StatelessWidget {
     final level = gain.levelAfter;
     final from = gain.levelBefore.level;
     return RunPanel(children: [
-      TrackedLabel(s.runXpLabel, sub: s.other.runXpLabel),
+      TrackedLabel(s.runXpLabel, sub: s.sub?.runXpLabel),
       RunBigValue('+${gain.award.total}', unit: s.xpUnit),
       const SizedBox(height: Gaps.small),
       for (final part in gain.award.parts)

@@ -112,13 +112,14 @@ class _FilterSheetState extends State<_FilterSheet> {
   Widget build(BuildContext context) {
     final s = S.of(context);
     final n = widget.count(_filter);
-    Widget heading(String text, String sub, [String? note]) => Padding(
+    Widget heading(String text, String? sub, [String? note]) => Padding(
           padding: const EdgeInsets.only(top: Gaps.section, bottom: Gaps.small),
           child: Row(children: [
             Expanded(
               child: Text.rich(TextSpan(children: [
                 TextSpan(text: text, style: const TextStyle(fontWeight: Weights.black, fontSize: TypeScale.body)),
-                TextSpan(text: '  $sub', style: const TextStyle(fontWeight: Weights.black, fontSize: HistoryRunStyle.subFont)),
+                if (sub != null)
+                  TextSpan(text: '  $sub', style: const TextStyle(fontWeight: Weights.black, fontSize: HistoryRunStyle.subFont)),
               ])),
             ),
             if (note != null) Text(note, style: const TextStyle(fontWeight: Weights.bold, fontSize: HistoryRunStyle.noteFont)),
@@ -148,7 +149,7 @@ class _FilterSheetState extends State<_FilterSheet> {
                   ),
                   InkIconButton(icon: IconArt.close, semanticLabel: s.cancel, onTap: () => Navigator.pop(context)),
                 ]),
-                heading(s.filterKind, s.other.filterKind, widget.ankiren ? s.filterAnkirenNote : s.filterMainNote),
+                heading(s.filterKind, s.sub?.filterKind, widget.ankiren ? s.filterAnkirenNote : s.filterMainNote),
                 Wrap(
                   spacing: Gaps.small,
                   runSpacing: Gaps.small,
@@ -166,7 +167,7 @@ class _FilterSheetState extends State<_FilterSheet> {
                                 onTap: () => setState(() => _filter = _filter.copyWith(modes: _toggled(_filter.modes, m)))),
                         ],
                 ),
-                heading(s.filterWhen, s.other.filterWhen),
+                heading(s.filterWhen, s.sub?.filterWhen),
                 Row(children: [
                   for (final w in HistoryWhen.values)
                     Expanded(

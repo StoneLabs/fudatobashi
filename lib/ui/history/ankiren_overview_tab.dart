@@ -47,7 +47,7 @@ class _ScoredHeadline extends StatelessWidget {
         label: s.ankirenPointsLabel,
         big: '${game.score}',
         of: s.ankirenOfMax(game.maxScore ?? 0),
-        stamp: review.isBest ? AnkirenStamp(s.ankirenBestStamp(level), s.other.ankirenBestStamp(level)) : null,
+        stamp: review.isBest ? AnkirenStamp(s.ankirenBestStamp(level), s.sub?.ankirenBestStamp(level)) : null,
         facts: [
           Fact('${game.firstTaps}/${game.cards.length}', s.ankirenFirstTapFact),
           Fact(formatMinutes(game.memorised), s.ankirenMemorisedFact),
@@ -80,7 +80,7 @@ class _CustomHeadline extends StatelessWidget {
         big: '${game.firstTaps}',
         of: s.ankirenOfMax(game.cards.length),
         fill: AnkirenReviewStyle.customFill,
-        stamp: AnkirenStamp(s.ankirenNotScored, s.other.ankirenNotScored, color: AnkirenReviewStyle.muted),
+        stamp: AnkirenStamp(s.ankirenNotScored, s.sub?.ankirenNotScored, color: AnkirenReviewStyle.muted),
         facts: [
           Fact('${game.found}/${game.cards.length}', s.ankirenFoundFact),
           Fact(formatMinutes(game.memorised), s.ankirenMemorisedOf(formatMinutes(game.memorise))),
@@ -105,7 +105,7 @@ class _FirstTapMix extends StatelessWidget {
     final last = review.last;
     return HistorySection(
       title: s.ankirenMixTitle,
-      sub: s.other.ankirenMixTitle,
+      sub: s.sub?.ankirenMixTitle,
       child: ReviewPanel(
         child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
           TierMixBar(label: s.ankirenThisGame, sub: s.ankirenCardsCount(game.cards.length), mix: game.mix),
@@ -142,7 +142,7 @@ class _MemoriseTime extends StatelessWidget {
     ].join(' · ');
     return HistorySection(
       title: s.ankirenMemoTitle,
-      sub: s.other.ankirenMemoTitle,
+      sub: s.sub?.ankirenMemoTitle,
       note: s.ankirenMemoAllowed(formatMinutes(allowed)),
       child: ReviewPanel(
         child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
@@ -178,7 +178,7 @@ class _SameSetup extends StatelessWidget {
     final last = review.last;
     return HistorySection(
       title: s.ankirenSetupTitle,
-      sub: s.other.ankirenSetupTitle,
+      sub: s.sub?.ankirenSetupTitle,
       note: s.ankirenSetupNote(game.perSide),
       child: last == null
           ? ReviewPanel(child: ReviewTable.cell(s.ankirenSetupFirst))

@@ -26,7 +26,7 @@ class AnkirenCardsTab extends StatelessWidget {
     return RunTabList(children: [
       HistorySection(
         title: s.ankirenFindTitle,
-        sub: s.other.ankirenFindTitle,
+        sub: s.sub?.ankirenFindTitle,
         note: s.ankirenSeconds,
         child: ReviewPanel(
           child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
@@ -67,7 +67,7 @@ class _AgainstLevel extends StatelessWidget {
     if (peers.isEmpty) {
       return HistorySection(
         title: s.ankirenLevelTitle(level),
-        sub: s.other.ankirenLevelTitle(level),
+        sub: s.sub?.ankirenLevelTitle(level),
         child: ReviewPanel(child: ReviewTable.cell(s.ankirenFirstAtLevel)),
       );
     }
@@ -93,7 +93,7 @@ class _AgainstLevel extends StatelessWidget {
     final gameMedian = game.medianFindMs;
     return HistorySection(
       title: s.ankirenLevelTitle(level),
-      sub: s.other.ankirenLevelTitle(level),
+      sub: s.sub?.ankirenLevelTitle(level),
       note: s.ankirenGames(peers.length),
       child: ReviewPanel(
         child: ReviewTable(
@@ -129,7 +129,7 @@ class _Misplaced extends StatelessWidget {
     final rows = review.misplaced;
     return HistorySection(
       title: s.ankirenMisplacedTitle,
-      sub: s.other.ankirenMisplacedTitle,
+      sub: s.sub?.ankirenMisplacedTitle,
       note: s.ankirenAllGames,
       child: ReviewPanel(
         child: rows.isEmpty

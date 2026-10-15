@@ -134,7 +134,7 @@ class _RatingPanel extends StatelessWidget {
     String r(double v) => '${v.round()}';
     return ReviewPanel(
       child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-        TrackedLabel(s.ankirenRatingHead, sub: s.other.ankirenRatingHead),
+        TrackedLabel(s.ankirenRatingHead, sub: s.sub?.ankirenRatingHead),
         Row(children: [
           Flexible(
             child: FittedBox(

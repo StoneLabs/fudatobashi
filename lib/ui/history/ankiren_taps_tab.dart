@@ -29,7 +29,7 @@ class AnkirenTapsTab extends StatelessWidget {
     return RunTabList(children: [
       HistorySection(
         title: s.ankirenTapsTitle,
-        sub: s.other.ankirenTapsTitle,
+        sub: s.sub?.ankirenTapsTitle,
         note: s.ankirenTapsNote(game.cards.length),
         child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
           ReviewPanel(

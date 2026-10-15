@@ -112,13 +112,13 @@ class _HistoryScreenState extends State<HistoryScreen> {
               tabs: [
                 SwipeTab(
                   label: s.historyMainTab,
-                  sub: s.other.historyMainTab,
+                  sub: s.sub?.historyMainTab,
                   builder: (_) => _MainList(runs: keptRuns(_filter), activity: activity, today: today),
                 ),
                 SwipeTab(
                   label: s.historyAnkirenTab,
                   accent: Palette.pink,
-                  sub: s.other.historyAnkirenTab,
+                  sub: s.sub?.historyAnkirenTab,
                   builder: (_) => _AnkirenList(games: keptGames(_filter), all: games),
                 ),
               ],

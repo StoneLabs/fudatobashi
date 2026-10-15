@@ -40,7 +40,7 @@ class RunCardsTab extends StatelessWidget {
           Expanded(
             child: _CardShelf(
               title: s.runSlowest,
-              sub: s.other.runSlowest,
+              sub: s.sub?.runSlowest,
               swipes: cards.slowest,
               numbers: numbers,
               timeColor: HistoryRunStyle.behind,
@@ -50,7 +50,7 @@ class RunCardsTab extends StatelessWidget {
           Expanded(
             child: _CardShelf(
               title: s.runFastest,
-              sub: s.other.runFastest,
+              sub: s.sub?.runFastest,
               swipes: cards.fastest,
               numbers: numbers,
               timeColor: HistoryRunStyle.ahead,
@@ -61,7 +61,7 @@ class RunCardsTab extends StatelessWidget {
       const SizedBox(height: HistoryRunStyle.sectionGap),
       HistorySection(
         title: s.runMissesTitle,
-        sub: s.other.runMissesTitle,
+        sub: s.sub?.runMissesTitle,
         note: s.runMissesCount(cards.misses.length, detail.run.cards),
         child: MangaPanel(
           padding: HistoryRunStyle.chartPadding,
@@ -156,7 +156,8 @@ class _CardShelf extends StatelessWidget {
     required this.timeColor,
   });
 
-  final String title, sub;
+  final String title;
+  final String? sub;
   final List<RunSwipe> swipes;
   final Map<RunSwipe, int> numbers;
   final Color timeColor;
@@ -231,7 +232,7 @@ class SwipeSpeedSection extends StatelessWidget {
     final step = RunChartStyle.cardSteps.firstWhere((v) => n / v <= RunChartStyle.maxXTicks, orElse: () => 25);
     return HistorySection(
       title: s.runSpeedTitle,
-      sub: s.other.runSpeedTitle,
+      sub: s.sub?.runSpeedTitle,
       note: s.runSpeedNote,
       child: MangaPanel(
         padding: HistoryRunStyle.chartPadding,
