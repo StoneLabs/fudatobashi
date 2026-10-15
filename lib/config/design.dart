@@ -3013,6 +3013,9 @@ abstract final class DojoSceneStyle {
   static const Offset title = Offset(16, 6);
   static const double titleFont = 42;
   static const double titleOutline = 10;
+
+  /// Clear sky kept between the title lettering and the sun.
+  static const double titleSunGap = 6;
   static const double titleBannerFont = 11;
   static const double titleBannerGap = 6;
 

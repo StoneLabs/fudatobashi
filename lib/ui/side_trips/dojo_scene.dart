@@ -133,7 +133,9 @@ class _DojoSceneState extends State<DojoScene> with SingleTickerProviderStateMix
             Positioned(
               left: DojoSceneStyle.title.dx,
               top: MediaQuery.paddingOf(context).top + DojoSceneStyle.title.dy,
-              child: const _Title(),
+              child: _Title(
+                maxWidth: DojoSceneLayout.sunFace.rect.left * frame.k - DojoSceneStyle.title.dx - DojoSceneStyle.titleSunGap,
+              ),
             ),
           ],
         );
@@ -477,8 +479,13 @@ class ScenePicture extends StatelessWidget {
 }
 
 /// 寄り道 lettered over the sky, with its banner.
+///
+/// Lettering wider than the sky left of the sun, [maxWidth], breaks at its
+/// spaces onto stacked lines, and is shrunk only if a line still won't fit.
 class _Title extends StatelessWidget {
-  const _Title();
+  const _Title({required this.maxWidth});
+
+  final double maxWidth;
 
   @override
   Widget build(BuildContext context) {
@@ -490,20 +497,38 @@ class _Title extends StatelessWidget {
       excludeSemantics: true,
       child: MediaQuery.withClampedTextScaling(
         maxScaleFactor: SideTripsLayout.letteringMaxScale,
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            OutlinedText(
-              s.sideTripsLettering,
-              outlineWidth: DojoSceneStyle.titleOutline,
-              style: const TextStyle(
-                  fontFamily: Fonts.display, fontSize: DojoSceneStyle.titleFont, height: TypeScale.displayLineHeight),
-            ),
-            const SizedBox(height: DojoSceneStyle.titleBannerGap),
-            InkBanner(s.sideTripsBanner, fontSize: DojoSceneStyle.titleBannerFont),
-          ],
-        ),
+        child: Builder(builder: (context) {
+          const style = TextStyle(
+              fontFamily: Fonts.display, fontSize: DojoSceneStyle.titleFont, height: TypeScale.displayLineHeight);
+          final scaler = MediaQuery.textScalerOf(context);
+          double widest(String text) => text
+              .split('\n')
+              .map((line) => (TextPainter(
+                      text: TextSpan(text: line, style: style),
+                      textDirection: TextDirection.ltr,
+                      textScaler: scaler)
+                    ..layout())
+                  .width)
+              .reduce(math.max);
+          final one = s.sideTripsLettering;
+          final lettering = widest(one) > maxWidth ? one.replaceAll(' ', '\n') : one;
+          return Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              ConstrainedBox(
+                constraints: BoxConstraints(maxWidth: maxWidth),
+                child: FittedBox(
+                  fit: BoxFit.scaleDown,
+                  alignment: Alignment.topLeft,
+                  child: OutlinedText(lettering, outlineWidth: DojoSceneStyle.titleOutline, style: style),
+                ),
+              ),
+              const SizedBox(height: DojoSceneStyle.titleBannerGap),
+              InkBanner(s.sideTripsBanner, fontSize: DojoSceneStyle.titleBannerFont),
+            ],
+          );
+        }),
       ),
     );
   }

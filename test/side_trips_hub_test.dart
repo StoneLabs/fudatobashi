@@ -278,8 +278,13 @@ void main() {
               expectShown(tester, inHub(find.byType(SideTripHead)), phone);
               expect(tester.getRect(inHub(find.byType(SideTripHead))).top,
                   greaterThanOrEqualTo(crestBottom(tester, phone)), reason: 'the entry sits under the crest');
-              expect(tester.getRect(inHub(find.text(s.sideTripsLettering)).first).top,
-                  greaterThanOrEqualTo(_statusBar), reason: 'the title clears the status bar');
+              final lettering = inHub(find.byWidgetPredicate(
+                  (w) => w is Text && w.data?.replaceAll('\n', ' ') == s.sideTripsLettering)).first;
+              expect(tester.getRect(lettering).top, greaterThanOrEqualTo(_statusBar),
+                  reason: 'the title clears the status bar');
+              expect(tester.getRect(lettering).right,
+                  lessThanOrEqualTo(DojoSceneLayout.sunFace.rect.left * phone.size.width / DojoSceneLayout.width),
+                  reason: 'the title stays clear of the sun');
               expect(tester.getRect(inHub(find.byType(SingleChildScrollView))).bottom, phone.size.height,
                   reason: 'the sea runs on under the tab bar');
               if (hub == _Hub.locked) {
