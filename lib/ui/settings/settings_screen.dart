@@ -25,6 +25,7 @@ import '../debug/debug_page.dart';
 import '../debug/reset_actions.dart';
 import '../debug/simulation_page.dart';
 import '../debug/timing_page.dart';
+import '../exam/exam_dev.dart';
 import '../manga/manga.dart';
 import '../play/pointer_clock.dart';
 import '../results/celebrations.dart';
@@ -452,6 +453,7 @@ class _DeveloperSection extends StatelessWidget {
           SettingsTapRow(title: 'Preview XP + level up', onTap: () => previewXpLevelUp(context)),
           SettingsTapRow(title: 'Preview rating', onTap: () => previewRating(context)),
           SettingsTapRow(title: 'Preview rating + rank-up', onTap: () => previewRatingRankUp(context)),
+          SettingsTapRow(title: 'Preview placement', onTap: () => previewPlacement(context)),
           SettingsTapRow(title: 'Preview graduation', onTap: () => previewGraduation(context)),
           SettingsTapRow(title: "Preview today's set done", onTap: () => previewDayDone(context)),
           SettingsTapRow(title: 'Preview AnkiRen unlock', onTap: () => previewAnkirenUnlock(context)),
@@ -470,9 +472,33 @@ class _DeveloperSection extends StatelessWidget {
           SettingsTapRow(title: 'Preview AnkiRen rank down', onTap: () => previewAnkirenRank(context, up: false)),
         ]),
         SettingsGroup(children: [
+          SettingsTapRow(
+            title: 'Exam: open it',
+            note: 'Swipes every card not swiped yet once, in a free-play run',
+            onTap: () async {
+              await openExamForDev(progress);
+              if (context.mounted) MangaToast.show(context, 'Exam open');
+            },
+          ),
+          SettingsTapRow(
+            title: 'Exam: clear cooldown',
+            onTap: () async {
+              await progress.clearExamCooldown();
+              if (context.mounted) MangaToast.show(context, 'Exam cooldown cleared');
+            },
+          ),
+          SettingsSwitch(
+            title: 'Exam: fast Tobi',
+            note: 'Tobi takes ${ExamDevTuning.fastTobiMs ~/ 1000} s for all 100 cards',
+            value: settings.fastTobi,
+            onChanged: (v) => progress.updateSettings(settings.copyWith(fastTobi: v)),
+          ),
+        ]),
+        SettingsGroup(children: [
           SettingsTapRow(title: 'Replay tour', onTap: () => replayTour(context)),
           SettingsTapRow(title: 'Reset onboarding', onTap: () => confirmResetOnboarding(context)),
           SettingsTapRow(title: 'Reset progress', onTap: () => confirmResetProgress(context)),
+          SettingsTapRow(title: 'Rating: unplace', onTap: progress.debugClearRating),
         ]),
       ],
     );

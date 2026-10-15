@@ -156,6 +156,7 @@ class AppSettings {
     this.toured = DefaultSettings.toured,
     this.playOverlay = DefaultSettings.playOverlay,
     this.showPerformanceOverlay = DefaultSettings.showPerformanceOverlay,
+    this.fastTobi = DefaultSettings.fastTobi,
     this.languagePicked = DefaultSettings.languagePicked,
     this.kimarijiScript = DefaultSettings.kimarijiScript,
     this.accessibilityMode = DefaultSettings.accessibilityMode,
@@ -212,6 +213,9 @@ class AppSettings {
   /// Dev-mode `PerformanceOverlay`.
   final bool showPerformanceOverlay;
 
+  /// Dev mode: Tobi takes `ExamDevTuning.fastTobiMs` in the graduation exam.
+  final bool fastTobi;
+
   /// The player's choice of kimariji script; read it through `kimarijiFor`.
   final KimarijiScript kimarijiScript;
 
@@ -254,6 +258,7 @@ class AppSettings {
         'toured': toured,
         'playOverlay': playOverlay,
         'showPerformanceOverlay': showPerformanceOverlay,
+        'fastTobi': fastTobi,
         'languagePicked': languagePicked,
         'kimarijiScript': kimarijiScript.name,
         'accessibilityMode': accessibilityMode,
@@ -297,6 +302,7 @@ class AppSettings {
       playOverlay: j['playOverlay'] as bool? ?? DefaultSettings.playOverlay,
       showPerformanceOverlay:
           j['showPerformanceOverlay'] as bool? ?? DefaultSettings.showPerformanceOverlay,
+      fastTobi: j['fastTobi'] as bool? ?? DefaultSettings.fastTobi,
       kimarijiScript: KimarijiScript.values.asNameMap()[j['kimarijiScript']] ?? DefaultSettings.kimarijiScript,
       // 暗記練's own zoom switch became this app-wide one.
       accessibilityMode:
@@ -325,6 +331,7 @@ class AppSettings {
     bool? toured,
     bool? playOverlay,
     bool? showPerformanceOverlay,
+    bool? fastTobi,
     bool? languagePicked,
     KimarijiScript? kimarijiScript,
     bool? accessibilityMode,
@@ -350,6 +357,7 @@ class AppSettings {
         toured: toured ?? this.toured,
         playOverlay: playOverlay ?? this.playOverlay,
         showPerformanceOverlay: showPerformanceOverlay ?? this.showPerformanceOverlay,
+        fastTobi: fastTobi ?? this.fastTobi,
         languagePicked: languagePicked ?? this.languagePicked,
         kimarijiScript: kimarijiScript ?? this.kimarijiScript,
         accessibilityMode: accessibilityMode ?? this.accessibilityMode,

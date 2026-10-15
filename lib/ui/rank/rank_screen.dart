@@ -6,10 +6,13 @@ import 'package:flutter/widgets.dart';
 import '../../config/design.dart';
 import '../../config/vector_art.dart';
 import '../../domain/rating.dart';
+import '../../domain/trainer.dart' show LearningMode;
 import '../../l10n/home_strings.dart';
+import '../../l10n/ranked_strings.dart';
 import '../../l10n/stats_strings.dart';
 import '../../l10n/strings.dart';
 import '../../state/scope.dart';
+import '../home/switch_banner.dart';
 import '../manga/manga.dart';
 import 'rank_badges.dart';
 import '../results/celebrations.dart';
@@ -20,17 +23,42 @@ import '../results/rank_up_overlay.dart';
 /// with the player's own rung tagged YOU (and scrolled into view), the next
 /// threshold tagged NEXT (with a rank-up preview alongside it), every class
 /// already passed stamped CLEAR and every one still ahead locked.
+///
+/// Before there is a rank, the ladder has no YOU rung: in all-known mode it
+/// waits for the first ranked run, and in journey mode it is dimmed and
+/// locked behind a card saying how the rank opens up.
 class RankScreen extends StatelessWidget {
   const RankScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
+    final s = S.of(context);
     final progress = ProgressScope.of(context);
-    final rating = progress.currentRating;
-    final band = Rating.bandOf(rating);
-    final next = Rating.nextBand(rating);
-    final bandIndex = Rating.bands.indexOf(band);
+    final locked = progress.trainer.config.learningMode == LearningMode.journey;
+    final rating = locked || !progress.placed ? null : progress.currentRating;
+    final band = rating == null ? null : Rating.bandOf(rating);
+    final next = rating == null ? null : Rating.nextBand(rating);
+    final bandIndex = band == null ? -1 : Rating.bands.indexOf(band);
     final ladder = [for (var i = Rating.bands.length - 1; i >= 0; i--) Rating.bands[i]];
+    final rungs = _Ladder(
+      length: ladder.length,
+      focus: band == null ? ladder.length - 1 : ladder.indexOf(band),
+      rung: (i) {
+        final rungBand = ladder[i];
+        final rungIndex = Rating.bands.indexOf(rungBand);
+        return _Rung(
+          band: rungBand,
+          currentBand: band,
+          rating: rating,
+          nextThreshold: next?.minRating,
+          isYou: rungBand == band,
+          isNext: next != null && rungBand == next,
+          isCleared: band != null && rungIndex < bandIndex,
+          isLocked: locked || (band != null && rungIndex > bandIndex),
+          isTop: rungBand.id == 'A',
+        );
+      },
+    );
 
     return Scaffold(
       body: SafeArea(
@@ -42,27 +70,18 @@ class RankScreen extends StatelessWidget {
               const SizedBox(height: HeaderStyle.topGap),
               _TopBar(rating: rating),
               const SizedBox(height: Gaps.section),
-              Expanded(
-                child: _Ladder(
-                  length: ladder.length,
-                  focus: ladder.indexOf(band),
-                  rung: (i) {
-                    final rungBand = ladder[i];
-                    final rungIndex = Rating.bands.indexOf(rungBand);
-                    return _Rung(
-                      band: rungBand,
-                      currentBand: band,
-                      rating: rating,
-                      nextThreshold: next?.minRating,
-                      isYou: rungBand == band,
-                      isNext: next != null && rungBand == next,
-                      isCleared: rungIndex < bandIndex,
-                      isLocked: rungIndex > bandIndex,
-                      isTop: rungBand.id == 'A',
-                    );
-                  },
+              if (!locked && rating == null) ...[
+                NarrationBox(
+                  child: FittedBox(
+                    fit: BoxFit.scaleDown,
+                    alignment: Alignment.centerLeft,
+                    child: Text(s.rankedUnplacedLine,
+                        style: const TextStyle(fontWeight: Weights.bold, fontSize: RankLockLayout.noteFont)),
+                  ),
                 ),
-              ),
+                const SizedBox(height: Gaps.section),
+              ],
+              Expanded(child: locked ? _LockedLadder(rungs, graduated: progress.graduated) : rungs),
             ],
           ),
         ),
@@ -112,9 +131,85 @@ class _LadderState extends State<_Ladder> {
       });
 }
 
+/// Journey mode's ladder: a faint, locked preview behind a card saying how
+/// the rank opens up. Before the graduation exam that is passing it; after,
+/// the card offers the switch to all-known mode, where ranked runs are.
+class _LockedLadder extends StatelessWidget {
+  const _LockedLadder(this.ladder, {required this.graduated});
+  final Widget ladder;
+  final bool graduated;
+
+  @override
+  Widget build(BuildContext context) {
+    final s = S.of(context);
+    return Stack(
+      fit: StackFit.expand,
+      children: [
+        IgnorePointer(child: Opacity(opacity: RankLockLayout.ladderOpacity, child: ladder)),
+        Center(
+          child: Padding(
+            padding: const EdgeInsets.only(top: RankLockLayout.tobiRoom),
+            child: Stack(
+              clipBehavior: Clip.none,
+              children: [
+                MangaPanel(
+                  shape: const PanelShape(topLeft: Offset(0, RankLockLayout.cardCut)),
+                  padding: RankLockLayout.cardPadding,
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      Row(children: [
+                        MangaIcon(IconArt.lock, size: RankLockLayout.lockIcon),
+                        const SizedBox(width: Gaps.small),
+                        Expanded(
+                          child: Text.rich(
+                            Phrases.span(graduated ? s.rankLockedSwitchTitle : s.rankLockedTitle),
+                            style: const TextStyle(
+                              fontFamily: Fonts.display,
+                              fontSize: RankLockLayout.titleFont,
+                              height: TypeScale.displayLineHeight,
+                            ),
+                          ),
+                        ),
+                      ]),
+                      const SizedBox(height: Gaps.small),
+                      Text.rich(
+                        Phrases.span(graduated ? s.rankLockedSwitchBody : s.rankLockedBody),
+                        style: const TextStyle(
+                          fontSize: RankLockLayout.bodyFont,
+                          fontWeight: Weights.bold,
+                          height: RankLockLayout.bodyLineHeight,
+                        ),
+                      ),
+                      if (graduated) ...[
+                        const SizedBox(height: Gaps.section),
+                        SizedBox(
+                          height: RankLockLayout.buttonHeight,
+                          child: InkButton(
+                            onTap: () => confirmSwitchToAllKnown(context),
+                            child: Text.rich(Phrases.span(s.rankLockedSwitchButton),
+                                style: const TextStyle(fontWeight: Weights.black, fontSize: TypeScale.button)),
+                          ),
+                        ),
+                      ],
+                    ],
+                  ),
+                ),
+                Placed(RankLockLayout.tobi, child: Tobi(pose: graduated ? TobiPose.cheering : TobiPose.pointing)),
+              ],
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+/// The title, and the rating once there is one.
 class _TopBar extends StatelessWidget {
   const _TopBar({required this.rating});
-  final double rating;
+  final double? rating;
 
   @override
   Widget build(BuildContext context) {
@@ -125,25 +220,26 @@ class _TopBar extends StatelessWidget {
           InkIconButton(icon: IconArt.back, semanticLabel: s.back, onTap: () => Navigator.maybePop(context)),
           const SizedBox(width: Gaps.section),
           Expanded(child: ScreenTitle(s.rank, sub: s.other.rank)),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.end,
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text(
-                s.ratingLabel,
-                style: const TextStyle(
-                  fontWeight: Weights.black,
-                  fontSize: RankLayout.ratingLabelFont,
-                  letterSpacing: RankLayout.ratingLabelTracking * RankLayout.ratingLabelFont,
+          if (rating case final rating?)
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.end,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  s.ratingLabel,
+                  style: const TextStyle(
+                    fontWeight: Weights.black,
+                    fontSize: RankLayout.ratingLabelFont,
+                    letterSpacing: RankLayout.ratingLabelTracking * RankLayout.ratingLabelFont,
+                  ),
                 ),
-              ),
-              Text(
-                rating.round().toString(),
-                style: const TextStyle(
-                    fontFamily: Fonts.display, fontSize: RankLayout.ratingFont, height: TypeScale.displayLineHeight),
-              ),
-            ],
-          ),
+                Text(
+                  rating.round().toString(),
+                  style: const TextStyle(
+                      fontFamily: Fonts.display, fontSize: RankLayout.ratingFont, height: TypeScale.displayLineHeight),
+                ),
+              ],
+            ),
         ],
       ),
     );
@@ -164,8 +260,10 @@ class _Rung extends StatelessWidget {
   });
 
   final RankBand band;
-  final RankBand currentBand;
-  final double rating;
+
+  /// Null, as is [rating], while the player has no rank.
+  final RankBand? currentBand;
+  final double? rating;
   final double? nextThreshold;
   final bool isYou, isNext, isCleared, isLocked, isTop;
 
@@ -181,10 +279,10 @@ class _Rung extends StatelessWidget {
           const SizedBox(width: RankLayout.previewGap),
           _PreviewButton(
             label: s.previewRankUp,
-            onTap: () => _openRankUpPreview(context, before: currentBand, after: band, ratingBefore: rating),
+            onTap: () => _openRankUpPreview(context, before: currentBand!, after: band, ratingBefore: rating!),
           ),
         ]),
-      if (isYou) _YouTag(label: s.youTag, rating: rating.round()),
+      if (isYou) _YouTag(label: s.youTag, rating: rating!.round()),
     ];
 
     return SizedBox(
@@ -248,7 +346,7 @@ class _Rung extends StatelessWidget {
                   speaker: RankLayout.balloonSpeaker,
                   child: NumberedText(
                     s.toGoTemplate,
-                    [(nextThreshold! - rating).ceil()],
+                    [(nextThreshold! - rating!).ceil()],
                     style: const TextStyle(fontSize: RankLayout.balloonFont),
                     numberStyle: const TextStyle(fontFamily: Fonts.display, fontSize: RankLayout.balloonFont + 2),
                   ),

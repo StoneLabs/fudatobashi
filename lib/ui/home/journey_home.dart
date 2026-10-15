@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:flutter/scheduler.dart';
 import 'package:flutter/widgets.dart';
 
@@ -11,15 +13,18 @@ import '../../state/scope.dart';
 import '../islands/island_map.dart';
 import '../manga/manga.dart';
 import '../tour/tour_anchor.dart';
+import 'exam_strip.dart';
 import 'home_screen.dart';
 import 'journey_state.dart';
 import 'learn_ahead_button.dart';
 import 'pause_sheet.dart';
+import 'switch_banner.dart';
 import 'today_box.dart';
 import 'training_hero.dart';
 
 /// Home in journey mode (spec phone 2): the archipelago map as the progress
-/// bar, today's set, and the Training hero. A new day's set is built when
+/// bar, with the graduation exam as its last stop (or, once it is passed,
+/// the offer of all-known mode), today's set, and the Training hero. A new day's set is built when
 /// Home finds it missing; the first time Home shows on a day with reviews
 /// piled up, it offers to pause the new cards.
 class JourneyHome extends StatefulWidget {
@@ -75,7 +80,19 @@ class _JourneyHomeState extends State<JourneyHome> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        Expanded(child: TourAnchor(TourSpot.map, child: _JourneyMap(journey))),
+        Expanded(
+          child: TourAnchor(
+            TourSpot.map,
+            child: _JourneyMap(
+              journey,
+              footer: progress.switchBannerShown
+                  ? const SwitchBanner()
+                  : progress.graduated
+                      ? null
+                      : const ExamStrip(),
+            ),
+          ),
+        ),
         const SizedBox(height: Gaps.panel),
         TourAnchor(TourSpot.islandPlan, child: TodayBox(set: set, week: progress.weekStamps())),
         const SizedBox(height: Gaps.panel),
@@ -98,9 +115,12 @@ class _JourneyHomeState extends State<JourneyHome> {
   }
 }
 
+/// The islands map, with [footer] along its bottom: the map runs on behind
+/// it while the current island stays in the part above.
 class _JourneyMap extends StatelessWidget {
-  const _JourneyMap(this.journey);
+  const _JourneyMap(this.journey, {this.footer});
   final JourneyState journey;
+  final Widget? footer;
 
   List<IslandStyle> _styles(S s) {
     final cur = journey.current;
@@ -150,82 +170,101 @@ class _JourneyMap extends StatelessWidget {
     ];
   }
 
-  /// The slice of the map shown: full width, as tall as the panel's aspect
-  /// allows, with the current island a little below the middle.
-  Rect _viewport(Size panel) {
+  /// The slice of the map shown in [area]: full width, as tall as its
+  /// aspect allows, with the current island a little below the middle (or
+  /// higher, to keep its plate in view); then [overhang] more below it, at
+  /// the same scale, for the map to run on under the footer.
+  Rect _viewport(Size area, double overhang) {
     final map = archipelago.size;
-    final h = map.width * panel.height / panel.width;
-    if (h >= map.height) return Offset.zero & map;
-    final c = archipelago.islands[journey.current].center;
-    final top = (c.dy - h * JourneyView.focus).clamp(0.0, map.height - h);
-    return Rect.fromLTWH(0, top, map.width, h);
+    final h = map.width * area.height / area.width;
+    if (h >= map.height) {
+      final scale = area.height / map.height;
+      final w = area.width / scale;
+      return Rect.fromLTWH((map.width - w) / 2, 0, w, map.height + overhang / scale);
+    }
+    final isl = archipelago.islands[journey.current];
+    final focused = isl.center.dy - h * JourneyView.focus;
+    final top = math.max(focused, isl.label.dy + JourneyView.plateReach - h).clamp(0.0, map.height - h);
+    return Rect.fromLTWH(0, top, map.width, h + overhang * map.width / area.width);
   }
 
   @override
   Widget build(BuildContext context) {
     final s = S.of(context);
     const count = TextStyle(fontFamily: Fonts.display, fontSize: HomeLayout.mapCountNumber);
-    return MangaPanel(
-      shape: const PanelShape(bottomRight: Offset(0, HomeLayout.mapCut)),
-      child: LayoutBuilder(builder: (context, box) {
-        return Stack(
-          fit: StackFit.expand,
-          children: [
-            IslandMap(
+    final footer = this.footer;
+    final overhang = footer == null ? 0.0 : ExamStripStyle.mapOverhang;
+    final map = LayoutBuilder(builder: (context, box) {
+      return Stack(
+        fit: StackFit.expand,
+        clipBehavior: Clip.none,
+        children: [
+          Positioned(
+            left: 0,
+            right: 0,
+            top: 0,
+            height: box.maxHeight + overhang,
+            child: IslandMap(
               styles: _styles(s),
-              viewport: _viewport(box.biggest),
+              viewport: _viewport(box.biggest, overhang),
               route: journey.route,
               boat: journey.boat,
               seaSeed: JourneyView.seaSeed,
             ),
-            const Positioned(
-              left: 0,
-              right: 0,
-              top: 0,
-              height: Backdrops.mapFogHeight,
-              child: IgnorePointer(child: _Fog()),
-            ),
-            Positioned(
-              left: HomeLayout.mapLabelInsets.left,
-              top: HomeLayout.mapLabelInsets.top,
-              child: InkBanner(s.journeyBanner, fontSize: HomeLayout.mapBannerFont),
-            ),
-            Positioned(
-              left: HomeLayout.mapLabelInsets.left,
-              top: HomeLayout.mapCountTop,
-              child: DecoratedBox(
-                decoration: BoxDecoration(
-                  color: Palette.paper,
-                  border: Border.all(color: Palette.ink, width: Strokes.label),
-                ),
-                child: Padding(
-                  padding: HomeLayout.mapCountPadding,
-                  child: DefaultTextStyle.merge(
-                    style: const TextStyle(fontSize: HomeLayout.mapCountFont, fontWeight: Weights.bold),
-                    child: Row(mainAxisSize: MainAxisSize.min, children: [
-                      NumberedText(s.islandOf, [journey.current + 1, journey.islands.length], numberStyle: count),
-                      const Text(' · '),
-                      NumberedText(s.cardsOf, [journey.cardsUnlocked, poems.all.length], numberStyle: count),
-                    ]),
-                  ),
+          ),
+          const Positioned(
+            left: 0,
+            right: 0,
+            top: 0,
+            height: Backdrops.mapFogHeight,
+            child: IgnorePointer(child: _Fog()),
+          ),
+          Positioned(
+            left: HomeLayout.mapLabelInsets.left,
+            top: HomeLayout.mapLabelInsets.top,
+            child: InkBanner(s.journeyBanner, fontSize: HomeLayout.mapBannerFont),
+          ),
+          Positioned(
+            left: HomeLayout.mapLabelInsets.left,
+            top: HomeLayout.mapCountTop,
+            child: DecoratedBox(
+              decoration: BoxDecoration(
+                color: Palette.paper,
+                border: Border.all(color: Palette.ink, width: Strokes.label),
+              ),
+              child: Padding(
+                padding: HomeLayout.mapCountPadding,
+                child: DefaultTextStyle.merge(
+                  style: const TextStyle(fontSize: HomeLayout.mapCountFont, fontWeight: Weights.bold),
+                  child: Row(mainAxisSize: MainAxisSize.min, children: [
+                    NumberedText(s.islandOf, [journey.current + 1, journey.islands.length], numberStyle: count),
+                    const Text(' · '),
+                    NumberedText(s.cardsOf, [journey.cardsUnlocked, poems.all.length], numberStyle: count),
+                  ]),
                 ),
               ),
             ),
-            Positioned(
-              right: HomeLayout.mapLabelInsets.right,
-              top: HomeLayout.mapLabelInsets.top + Strokes.label,
-              child: DashedBox(
-                border: Strokes.label,
-                padding: HomeLayout.mapMistPadding,
-                child: Text(
-                  journey.islandsAhead == 0 ? s.allIslandsReached : s.islandsAhead(journey.islandsAhead),
-                  style: const TextStyle(fontSize: HomeLayout.mapMistFont, fontWeight: Weights.black),
-                ),
+          ),
+          Positioned(
+            right: HomeLayout.mapLabelInsets.right,
+            top: HomeLayout.mapLabelInsets.top + Strokes.label,
+            child: DashedBox(
+              border: Strokes.label,
+              padding: HomeLayout.mapMistPadding,
+              child: Text(
+                journey.islandsAhead == 0 ? s.allIslandsReached : s.islandsAhead(journey.islandsAhead),
+                style: const TextStyle(fontSize: HomeLayout.mapMistFont, fontWeight: Weights.black),
               ),
             ),
-          ],
-        );
-      }),
+          ),
+        ],
+      );
+    });
+    return MangaPanel(
+      shape: const PanelShape(bottomRight: Offset(0, HomeLayout.mapCut)),
+      child: footer == null
+          ? map
+          : Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [Expanded(child: map), footer]),
     );
   }
 }

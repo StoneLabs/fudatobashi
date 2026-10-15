@@ -536,6 +536,16 @@ abstract final class ExamTuning {
   static const Duration cooldown = Duration(hours: 1);
 }
 
+/// Developer mode's exam tools (Settings › developer).
+abstract final class ExamDevTuning {
+  /// Tobi's time for the 100 cards with the fast-Tobi switch on, so a win
+  /// can be tried out.
+  static const int fastTobiMs = 60000;
+
+  /// Each card's time in the free-play run that opens the exam.
+  static const int openCardMs = 1200;
+}
+
 /// The rating page after a run (`RatingOverlay`).
 abstract final class RatingScreenTuning {
   /// Shown only when a run raised the displayed (rounded) rating by at
@@ -659,6 +669,7 @@ abstract final class DefaultSettings {
   static const bool toured = false;
   static const bool playOverlay = false;
   static const bool showPerformanceOverlay = false;
+  static const bool fastTobi = false;
   static const KimarijiScript kimarijiScript = KimarijiScript.auto;
   static const bool accessibilityMode = false;
 

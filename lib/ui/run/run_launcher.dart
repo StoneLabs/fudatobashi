@@ -1,7 +1,10 @@
+import 'dart:math' as math;
+
 import 'package:flutter/widgets.dart';
 
 import '../../domain/ankiren_level.dart';
 import '../../domain/play_session.dart';
+import '../../domain/ranked.dart';
 import '../../domain/side_trips.dart';
 import '../../l10n/ankiren_strings.dart';
 import '../../l10n/home_strings.dart';
@@ -10,6 +13,9 @@ import '../../state/play_config.dart';
 import '../../state/scope.dart';
 import '../ankiren/ankiren_screen.dart';
 import '../debug/ankiren_debug_game.dart';
+import '../exam/exam_dev.dart';
+import '../exam/exam_screen.dart';
+import '../exam/exam_sheets.dart';
 import '../manga/manga.dart';
 import '../play/play_screen.dart';
 import 'ranked_sheets.dart';
@@ -80,6 +86,23 @@ Future<void> startRanked(BuildContext context, {bool replace = false}) async {
   );
   final navigator = Navigator.of(context);
   await (replace ? navigator.pushReplacement(route) : navigator.push(route));
+}
+
+/// 卒業試験 (journey mode, once every card has been swiped): asks first,
+/// then uses up the hour's try before it starts, so leaving it early still
+/// counts.
+Future<void> startExam(BuildContext context) async {
+  final progress = ProgressScope.read(context);
+  if (!progress.exam().canStart) return;
+  if (!await confirmExamStart(context) || !context.mounted) return;
+  await progress.noteExamStarted(DateTime.now());
+  if (!context.mounted) return;
+  final settings = progress.settings;
+  final tobi = TobiPace.draw(math.Random());
+  await Navigator.of(context).push(MangaRoute<void>(
+    transition: MangaTransition.zoom,
+    builder: (_) => ExamScreen(cards: progress.rankedDeck(), tobi: settings.debugMode && settings.fastTobi ? fastTobi(tobi) : tobi),
+  ));
 }
 
 /// A guest run of all 100 cards: nothing is recorded.

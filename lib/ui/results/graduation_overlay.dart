@@ -9,10 +9,10 @@ import '../../l10n/strings.dart';
 import '../manga/manga.dart';
 import 'celebration_chrome.dart';
 
-/// Graduation (卒業!!), once the journey's 100th card is learned: the
-/// biggest page of all. Fireworks over a night sky, Tobi flying over the
-/// moon, 100/100 and 皆伝 stamped down, and the word that it's time for a
-/// real かるた会 (the app switches to all-known mode behind it).
+/// Graduation (卒業!!), once the graduation exam is passed: the biggest
+/// page of all. Fireworks over a night sky, Tobi flying over the moon,
+/// 100/100 and 皆伝 stamped down, and the word that it's time for a real
+/// かるた会, with Ranked a switch away on Home.
 class GraduationOverlay extends StatelessWidget {
   const GraduationOverlay({super.key, required this.onNext});
   final VoidCallback onNext;
@@ -271,7 +271,7 @@ class _Stamp extends StatelessWidget {
   }
 }
 
-/// Off to a real かるた会, and the switch to all-known mode.
+/// Off to a real かるた会, and where to switch to Ranked.
 class _Message extends StatelessWidget {
   const _Message();
 

@@ -116,19 +116,21 @@ class _SegButton extends StatelessWidget {
       );
 }
 
-/// The rank ladder and the SRS page, as one two-part control.
+/// The rank ladder and the SRS page, as one two-part control. The ladder
+/// is only a locked preview in journey mode, and its link says so.
 class _HeaderLinks extends StatelessWidget {
   const _HeaderLinks();
 
   @override
   Widget build(BuildContext context) {
     final s = S.of(context);
+    final rankLocked = ProgressScope.of(context).trainer.config.learningMode == LearningMode.journey;
     void open(Widget page) => Navigator.push(context, MangaRoute<void>(builder: (_) => page));
     return Container(
       height: StatsLayout.segHeight,
       decoration: BoxDecoration(color: Palette.paper, border: Border.all(color: Palette.ink, width: Strokes.button)),
       child: Row(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-        _HeaderLink(s.rank, onTap: () => open(const RankScreen())),
+        _HeaderLink(s.rank, locked: rankLocked, onTap: () => open(const RankScreen())),
         const ColoredBox(color: Palette.ink, child: SizedBox(width: Strokes.button)),
         _HeaderLink(s.srs, onTap: () => open(const SrsScreen())),
       ]),
@@ -137,9 +139,10 @@ class _HeaderLinks extends StatelessWidget {
 }
 
 class _HeaderLink extends StatelessWidget {
-  const _HeaderLink(this.label, {required this.onTap});
+  const _HeaderLink(this.label, {required this.onTap, this.locked = false});
   final String label;
   final VoidCallback onTap;
+  final bool locked;
 
   @override
   Widget build(BuildContext context) => Pressable(
@@ -159,6 +162,10 @@ class _HeaderLink extends StatelessWidget {
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: StatsLayout.segPadding),
             child: Row(mainAxisSize: MainAxisSize.min, children: [
+              if (locked) ...[
+                MangaIcon(IconArt.lock, size: RankLayout.statsEntryIconSize),
+                const SizedBox(width: Gaps.tight),
+              ],
               Text(label, style: const TextStyle(fontWeight: Weights.black, fontSize: StatsLayout.segFont)),
               const SizedBox(width: Gaps.tight),
               MangaIcon(IconArt.chevron, size: RankLayout.statsEntryIconSize),
