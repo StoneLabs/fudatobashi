@@ -24,6 +24,7 @@ extension RankedStrings on S {
   String get examIntro => t('examIntro');
   String get examIntroHint => t('examIntroHint');
   String get switchBanner => t('switchBanner');
+  String get switchBannerOpen => t('switchBannerOpen');
   String get switchTag => t('switchTag');
   String get switchTitle => t('switchTitle');
   String get switchBody => t('switchBody');

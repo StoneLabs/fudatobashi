@@ -247,7 +247,7 @@ class Progress extends ChangeNotifier {
   /// When the latest exam try began.
   DateTime? _examLastTry;
   bool _examIntroShown = false;
-  bool _switchBannerClosed = false;
+  bool _switchBannerCollapsed = false;
 
   /// The most recent run, kept in memory for the debug page's timing view.
   PlaySession? lastRun;
@@ -333,7 +333,6 @@ class Progress extends ChangeNotifier {
     }
     progress._examLastTry = DateTime.tryParse(kv[_examLastTryKey] ?? '');
     progress._examIntroShown = kv[_examIntroShownKey] == 'true';
-    progress._switchBannerClosed = kv[_switchBannerClosedKey] == 'true';
     if (DateTime.tryParse(kv[_rankedRunningKey] ?? '') case final startedAt?) {
       await progress._forfeitUnrecorded(startedAt);
     }
@@ -355,7 +354,6 @@ class Progress extends ChangeNotifier {
   static const _rankedRunningKey = 'rankedRunning';
   static const _examLastTryKey = 'examLastTry';
   static const _examIntroShownKey = 'examIntroShown';
-  static const _switchBannerClosedKey = 'switchBannerClosed';
 
   static AttemptRec _rec(AttemptRow a, PlayConfig run) => AttemptRec(
         at: a.at,
@@ -874,13 +872,20 @@ class Progress extends ChangeNotifier {
     notifyListeners();
   }
 
-  /// Journey Home's banner after the exam is passed, offering all-known
-  /// mode, until it is closed.
-  bool get switchBannerShown => !_allKnown && graduated && !_switchBannerClosed;
+  /// Journey Home's banner after the exam is passed, offering all-known mode.
+  bool get switchBannerShown => !_allKnown && graduated;
 
-  Future<void> closeSwitchBanner() async {
-    _switchBannerClosed = true;
-    await _put(_switchBannerClosedKey, 'true');
+  /// Whether the banner is folded into its small button. Kept in memory
+  /// only, so the banner is open again at the next start.
+  bool get switchBannerCollapsed => _switchBannerCollapsed;
+
+  void collapseSwitchBanner() => _setSwitchBannerCollapsed(true);
+
+  void expandSwitchBanner() => _setSwitchBannerCollapsed(false);
+
+  void _setSwitchBannerCollapsed(bool collapsed) {
+    if (_switchBannerCollapsed == collapsed) return;
+    _switchBannerCollapsed = collapsed;
     notifyListeners();
   }
 
@@ -1486,7 +1491,6 @@ class Progress extends ChangeNotifier {
                   _rankedRunningKey,
                   _examLastTryKey,
                   _examIntroShownKey,
-                  _switchBannerClosedKey,
                 ])))
           .go();
     });
@@ -1512,7 +1516,7 @@ class Progress extends ChangeNotifier {
     trainer.goalLevel = 0;
     _examLastTry = null;
     _examIntroShown = false;
-    _switchBannerClosed = false;
+    _switchBannerCollapsed = false;
     _xp = null;
     notifyListeners();
   }

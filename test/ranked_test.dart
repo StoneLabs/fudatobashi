@@ -229,8 +229,16 @@ void main() {
       expect(p.rating, isNull, reason: 'the exam is not a ranked run');
       expect(p.exam().passed, isTrue);
       expect(p.switchBannerShown, isTrue);
-      await p.closeSwitchBanner();
-      expect((await Progress.open(db)).switchBannerShown, isFalse);
+      expect(p.switchBannerCollapsed, isFalse);
+      p.collapseSwitchBanner();
+      expect(p.switchBannerShown, isTrue, reason: 'folding keeps the banner');
+      expect(p.switchBannerCollapsed, isTrue);
+      p.expandSwitchBanner();
+      expect(p.switchBannerCollapsed, isFalse);
+
+      // The flag an earlier build stored when its ✕ hid the banner for good.
+      await db.into(db.keyValues).insertOnConflictUpdate(KeyValuesCompanion.insert(key: 'switchBannerClosed', value: 'true'));
+      expect((await Progress.open(db)).switchBannerShown, isTrue, reason: 'the old flag is not read');
       await db.close();
     });
   });

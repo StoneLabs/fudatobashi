@@ -15,6 +15,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:fudatobashi/config/design.dart' show SwitchBannerStyle;
 import 'package:fudatobashi/data/fuda_sets.dart';
 import 'package:fudatobashi/data/islands.dart';
 import 'package:fudatobashi/data/poem.dart';
@@ -108,10 +109,10 @@ void main() {
   /// while locked; a try 17:50 ago while cooling down; passed with Tobi at
   /// 5:00. Tobi has pointed the open exam out already unless [intro].
   Future<Progress> open(WidgetTester tester, _Stage stage,
-      {String lang = 'en', LearningMode? mode, bool intro = false}) async {
+      {String lang = 'en', LearningMode? mode, bool intro = false, AppDatabase? db}) async {
     late Progress p;
     await tester.runAsync(() async {
-      p = await Progress.open(AppDatabase(NativeDatabase.memory()));
+      p = await Progress.open(db ?? AppDatabase(NativeDatabase.memory()));
       p.tabsAlwaysOpen = true;
       await p.updateSettings(p.settings.copyWith(language: lang, languagePicked: true, toured: true));
       await p.setLearningMode(LearningMode.journey);
@@ -164,6 +165,10 @@ void main() {
     expect(box.right, lessThanOrEqualTo(map.right + 0.5));
     expect(box.bottom, lessThanOrEqualTo(map.bottom + 0.5));
   }
+
+  // What a screen reader would read out right now.
+  List<String> heard(WidgetTester tester) =>
+      [for (final n in tester.semantics.simulatedAccessibilityTraversal()) n.label];
 
   group('exam strip', () {
     testWidgets('hidden until every card is swiped once, with no word from Tobi', (tester) async {
@@ -298,18 +303,68 @@ void main() {
       await tester.pumpWidget(const SizedBox());
     });
 
-    testWidgets('the ✕ puts the banner away, and nothing takes its place', (tester) async {
+    testWidgets('the ✕ folds the banner into a square, which unfolds it', (tester) async {
+      final semantics = tester.ensureSemantics();
       final p = await open(tester, _Stage.passed);
       await onPhone(tester, p, _users);
-      await tester.runAsync(() async {
-        await tester.tap(find.bySemanticsLabel(const S('en').close));
-        await Future<void>.delayed(const Duration(milliseconds: 100));
-      });
+      const s = S('en');
+      final banner = tester.getRect(find.byType(SwitchBanner));
+      final mapBottom = tester.getRect(find.byType(SingleChildScrollView)).bottom;
+      expect(heard(tester), isNot(contains(s.switchBannerOpen)));
+
+      await tester.tap(find.bySemanticsLabel(s.close));
       await tester.pump();
-      expect(p.switchBannerShown, isFalse);
-      expect(find.byType(SwitchBanner), findsNothing);
+      await tester.pump(SwitchBannerStyle.fold);
+      expect(p.switchBannerCollapsed, isTrue);
+      expect(find.byType(SwitchBanner), findsOneWidget);
+      expect(heard(tester), isNot(contains(s.close)));
       expect(find.byType(ExamStrip), findsNothing);
+      expect(tester.getRect(find.byType(SwitchBanner)), banner, reason: 'the banner keeps its room');
+      expect(tester.getRect(find.byType(SingleChildScrollView)).bottom, mapBottom, reason: 'the map above does not move');
+      final square = find.bySemanticsLabel(s.switchBannerOpen);
+      final at = tester.getRect(square);
+      expect(at.size, const Size.square(SwitchBannerStyle.square));
+      expect(at.right, closeTo(banner.right - SwitchBannerStyle.margin.right, 0.5), reason: 'at the right end');
+      expect(at.bottom, closeTo(banner.bottom - SwitchBannerStyle.margin.bottom, 0.5));
+
+      await tester.tapAt(banner.centerLeft + const Offset(20, 0));
+      await tester.pump(const Duration(milliseconds: 500));
+      expect(phrase(s.switchTitle), findsNothing, reason: 'only the square answers while folded');
+
+      await tester.tap(square);
+      await tester.pump();
+      await tester.pump(SwitchBannerStyle.fold);
+      expect(p.switchBannerCollapsed, isFalse);
+      expect(heard(tester), isNot(contains(s.switchBannerOpen)));
+      expect(heard(tester), contains(s.close));
+      expect(tester.getRect(find.byType(SwitchBanner)), banner);
+
+      await tester.tap(find.byType(SwitchBanner));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 500));
+      expect(phrase(s.switchTitle), findsOneWidget, reason: 'unfolded, a tap asks the question again');
       await tester.pumpWidget(const SizedBox());
+      semantics.dispose();
+    });
+
+    testWidgets('a fresh start shows the banner open, even if it was folded', (tester) async {
+      final semantics = tester.ensureSemantics();
+      final db = AppDatabase(NativeDatabase.memory());
+      final p = await open(tester, _Stage.passed, db: db);
+      p.collapseSwitchBanner();
+      await onPhone(tester, p, _users);
+      const s = S('en');
+      expect(heard(tester), contains(s.switchBannerOpen));
+      await tester.pumpWidget(const SizedBox());
+
+      late Progress started;
+      await tester.runAsync(() async => started = await Progress.open(db));
+      await onPhone(tester, started, _users);
+      expect(started.switchBannerCollapsed, isFalse);
+      expect(heard(tester), contains(s.close));
+      expect(heard(tester), isNot(contains(s.switchBannerOpen)));
+      await tester.pumpWidget(const SizedBox());
+      semantics.dispose();
     });
 
     for (final lang in ['en', 'ja']) {
@@ -321,6 +376,15 @@ void main() {
             await onPhone(tester, p, phone, fontScale: fontScale);
             expectInsideMap(tester, find.byType(SwitchBanner));
             await _capture(tester, 'journey_banner_$tag');
+            p.collapseSwitchBanner();
+            await tester.pump();
+            await tester.pump(SwitchBannerStyle.fold);
+            expectInsideMap(tester, find.byType(SwitchBanner));
+            expect(tester.getSize(find.byType(SwitchBanner)).height, greaterThanOrEqualTo(SwitchBannerStyle.square));
+            await _capture(tester, 'journey_banner_folded_$tag');
+            p.expandSwitchBanner();
+            await tester.pump();
+            await tester.pump(SwitchBannerStyle.fold);
             await tester.tap(find.byType(SwitchBanner));
             await tester.pump();
             await tester.pump(const Duration(milliseconds: 500));

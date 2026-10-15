@@ -5302,7 +5302,8 @@ abstract final class ExamStripStyle {
 }
 
 /// Journey Home's banner once the exam is passed (`switch_banner.dart`): a
-/// sun card with a hard shadow over the bottom of the islands map.
+/// sun card with a hard shadow over the bottom of the islands map. Its ✕
+/// folds it into a square button at its right end.
 abstract final class SwitchBannerStyle {
   /// Clear of the map panel's slanted bottom (`HomeLayout.mapCut`), shadow
   /// included.
@@ -5316,8 +5317,24 @@ abstract final class SwitchBannerStyle {
   static const double gap = 8;
   static const double arrowIcon = 16;
   static const double closeIcon = 14;
-  static const double closeTarget = 40;
+
+  /// The folded button's side, and the width of the ✕ it folds into.
+  static const double square = 48;
+  static const double closeTarget = square;
   static const double maxTextScale = 1.15;
+
+  /// The RANKED mark on the folded button: the tag over an arrow.
+  static const double markTagFont = 8.5;
+  static const double markArrow = 14;
+  static const double markGap = 3;
+  static const EdgeInsets markTagPadding = EdgeInsets.fromLTRB(3, 2, 3, 3);
+
+  /// The fold and unfold. The text is gone by the half way point of a fold,
+  /// and the mark comes in over the second half.
+  static const Duration fold = Duration(milliseconds: 240);
+  static const Curve foldCurve = Curves.easeOutCubic;
+  static const Interval textShown = Interval(0.5, 1);
+  static const Interval markHidden = Interval(0, 0.5);
 }
 
 /// The question after passing the exam (`switch_banner.dart`): move to

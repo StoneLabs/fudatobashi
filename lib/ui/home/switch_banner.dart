@@ -1,3 +1,5 @@
+import 'dart:ui' show lerpDouble;
+
 import 'package:flutter/material.dart';
 
 import '../../config/design.dart';
@@ -9,70 +11,181 @@ import '../manga/manga.dart';
 
 /// Journey Home once the exam is passed: a banner over the bottom of the
 /// islands map offering all-known mode. A tap asks first
-/// ([confirmSwitchToAllKnown]); the ✕ puts the banner away for good, since
-/// Settings still offers the switch.
+/// ([confirmSwitchToAllKnown]); the ✕ folds the banner into a square button
+/// at its right end, which unfolds it again. The banner keeps its room while
+/// folded, so the map above it does not move.
 class SwitchBanner extends StatelessWidget {
   const SwitchBanner({super.key});
 
   @override
   Widget build(BuildContext context) {
+    final progress = ProgressScope.of(context);
+    final folded = progress.switchBannerCollapsed;
     final s = S.of(context);
+    final banner = _Banner(onClose: progress.collapseSwitchBanner);
+    final button = Pressable(
+      onTap: progress.expandSwitchBanner,
+      semanticLabel: s.switchBannerOpen,
+      builder: (context, _) => Center(
+        child: ExcludeSemantics(
+          child: MediaQuery.withNoTextScaling(
+            child: Column(mainAxisSize: MainAxisSize.min, children: [
+              InkTag(s.rankedTag,
+                  color: Palette.pink,
+                  fontSize: SwitchBannerStyle.markTagFont,
+                  padding: SwitchBannerStyle.markTagPadding),
+              const SizedBox(height: SwitchBannerStyle.markGap),
+              MangaIcon(IconArt.arrow, size: SwitchBannerStyle.markArrow),
+            ]),
+          ),
+        ),
+      ),
+    );
     return MediaQuery.withClampedTextScaling(
       maxScaleFactor: SwitchBannerStyle.maxTextScale,
       child: Padding(
         padding: SwitchBannerStyle.margin,
-        child: DecoratedBox(
-          decoration: BoxDecoration(
-            color: SwitchBannerStyle.fill,
-            border: Border.all(color: Palette.ink, width: Strokes.control),
-            boxShadow: const [BoxShadow(color: Palette.ink, offset: SwitchBannerStyle.shadow)],
-          ),
-          child: IntrinsicHeight(
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                Expanded(
-                  child: Pressable(
-                    onTap: () => confirmSwitchToAllKnown(context),
-                    semanticLabel: Phrases.spoken(s.switchBanner),
-                    drop: 0,
-                    scale: 1,
-                    turn: 0,
-                    builder: (context, pressed) => Padding(
-                      padding: SwitchBannerStyle.padding,
-                      child: Row(children: [
-                        InkTag(s.rankedTag,
-                            color: Palette.pink, fontSize: SwitchBannerStyle.tagFont, padding: TagStyle.compactPadding),
-                        const SizedBox(width: SwitchBannerStyle.gap),
-                        Expanded(
-                          child: Text.rich(
-                            Phrases.span(s.switchBanner),
-                            style: const TextStyle(
-                              fontWeight: Weights.black,
-                              fontSize: SwitchBannerStyle.font,
-                              height: SwitchBannerStyle.lineHeight,
-                            ),
+        child: TweenAnimationBuilder<double>(
+          tween: Tween(end: folded ? 0 : 1),
+          duration: MediaQuery.disableAnimationsOf(context) ? Duration.zero : SwitchBannerStyle.fold,
+          curve: SwitchBannerStyle.foldCurve,
+          builder: (context, open, _) => Stack(
+            alignment: Alignment.bottomRight,
+            clipBehavior: Clip.none,
+            children: [
+              Positioned.fill(
+                child: LayoutBuilder(
+                  builder: (context, box) {
+                    final size = _foldedSize(box.biggest, open);
+                    return Align(
+                      alignment: Alignment.bottomRight,
+                      child: SizedBox(
+                        width: size.width,
+                        height: size.height,
+                        child: const DecoratedBox(
+                          decoration: BoxDecoration(
+                            color: SwitchBannerStyle.fill,
+                            border: Border.fromBorderSide(BorderSide(color: Palette.ink, width: Strokes.control)),
+                            boxShadow: [BoxShadow(color: Palette.ink, offset: SwitchBannerStyle.shadow)],
                           ),
                         ),
-                        const SizedBox(width: SwitchBannerStyle.gap),
-                        Transform.translate(
-                          offset: Offset(pressed ? Press.buttonDrop : 0, 0),
-                          child: MangaIcon(IconArt.arrow, size: SwitchBannerStyle.arrowIcon),
+                      ),
+                    );
+                  },
+                ),
+              ),
+              IgnorePointer(
+                ignoring: folded,
+                child: ExcludeSemantics(
+                  excluding: folded,
+                  child: ClipRect(
+                    clipper: _FoldClipper(open),
+                    child: Opacity(opacity: SwitchBannerStyle.textShown.transform(open), child: banner),
+                  ),
+                ),
+              ),
+              IgnorePointer(
+                ignoring: !folded,
+                child: ExcludeSemantics(
+                  excluding: !folded,
+                  child: Opacity(
+                    opacity: 1 - SwitchBannerStyle.markHidden.transform(open),
+                    child: SizedBox.square(dimension: SwitchBannerStyle.square, child: button),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// The size of the banner's box at [open], 1 for the banner at [full] size
+/// and 0 for the square button.
+Size _foldedSize(Size full, double open) => Size(
+      lerpDouble(SwitchBannerStyle.square, full.width, open)!,
+      lerpDouble(SwitchBannerStyle.square, full.height, open)!,
+    );
+
+/// Shows what is inside the banner's box as it folds towards its bottom
+/// right corner.
+class _FoldClipper extends CustomClipper<Rect> {
+  const _FoldClipper(this.open);
+
+  final double open;
+
+  @override
+  Rect getClip(Size size) {
+    final box = _foldedSize(size, open);
+    return Rect.fromLTWH(size.width - box.width, size.height - box.height, box.width, box.height)
+        .deflate(Strokes.control);
+  }
+
+  @override
+  bool shouldReclip(_FoldClipper old) => old.open != open;
+}
+
+/// The unfolded banner's lettering, arrow and ✕, at full size inside the
+/// border.
+class _Banner extends StatelessWidget {
+  const _Banner({required this.onClose});
+
+  final VoidCallback onClose;
+
+  @override
+  Widget build(BuildContext context) {
+    final s = S.of(context);
+    return Padding(
+      padding: const EdgeInsets.all(Strokes.control),
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(minHeight: SwitchBannerStyle.square - 2 * Strokes.control),
+        child: IntrinsicHeight(
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Expanded(
+                child: Pressable(
+                  onTap: () => confirmSwitchToAllKnown(context),
+                  semanticLabel: Phrases.spoken(s.switchBanner),
+                  drop: 0,
+                  scale: 1,
+                  turn: 0,
+                  builder: (context, pressed) => Padding(
+                    padding: SwitchBannerStyle.padding,
+                    child: Row(children: [
+                      InkTag(s.rankedTag,
+                          color: Palette.pink, fontSize: SwitchBannerStyle.tagFont, padding: TagStyle.compactPadding),
+                      const SizedBox(width: SwitchBannerStyle.gap),
+                      Expanded(
+                        child: Text.rich(
+                          Phrases.span(s.switchBanner),
+                          style: const TextStyle(
+                            fontWeight: Weights.black,
+                            fontSize: SwitchBannerStyle.font,
+                            height: SwitchBannerStyle.lineHeight,
+                          ),
                         ),
-                      ]),
-                    ),
+                      ),
+                      const SizedBox(width: SwitchBannerStyle.gap),
+                      Transform.translate(
+                        offset: Offset(pressed ? Press.buttonDrop : 0, 0),
+                        child: MangaIcon(IconArt.arrow, size: SwitchBannerStyle.arrowIcon),
+                      ),
+                    ]),
                   ),
                 ),
-                Pressable(
-                  onTap: ProgressScope.read(context).closeSwitchBanner,
-                  semanticLabel: s.close,
-                  builder: (context, _) => SizedBox(
-                    width: SwitchBannerStyle.closeTarget,
-                    child: Center(child: MangaIcon(IconArt.close, size: SwitchBannerStyle.closeIcon)),
-                  ),
+              ),
+              Pressable(
+                onTap: onClose,
+                semanticLabel: s.close,
+                builder: (context, _) => SizedBox(
+                  width: SwitchBannerStyle.closeTarget,
+                  child: Center(child: MangaIcon(IconArt.close, size: SwitchBannerStyle.closeIcon)),
                 ),
-              ],
-            ),
+              ),
+            ],
           ),
         ),
       ),
