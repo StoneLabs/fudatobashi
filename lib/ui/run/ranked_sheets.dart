@@ -103,19 +103,19 @@ class _RankedSheet extends StatelessWidget {
                     children: [
                       Row(children: [InkTag(s.rankedTag, color: Palette.pink)]),
                       const SizedBox(height: Gaps.small),
-                      Text(
+                      Text.rich(Phrases.span(
                         title,
                         style: const TextStyle(
                             fontFamily: Fonts.display, fontSize: RankedSheetStyle.title, height: TypeScale.displayLineHeight),
-                      ),
+                      )),
                       const SizedBox(height: Gaps.small),
-                      Text(
+                      Text.rich(Phrases.span(
                         body,
                         style: const TextStyle(
                             fontSize: RankedSheetStyle.body,
                             fontWeight: Weights.bold,
                             height: RankedSheetStyle.bodyLineHeight),
-                      ),
+                      )),
                       if (warning != null) ...[
                         const SizedBox(height: Gaps.section),
                         DecoratedBox(
@@ -125,8 +125,8 @@ class _RankedSheet extends StatelessWidget {
                           ),
                           child: Padding(
                             padding: RankedSheetStyle.warningPadding,
-                            child: Text(warning,
-                                style: const TextStyle(fontSize: RankedSheetStyle.body, fontWeight: Weights.black)),
+                            child: Text.rich(Phrases.span(warning,
+                                style: const TextStyle(fontSize: RankedSheetStyle.body, fontWeight: Weights.black))),
                           ),
                         ),
                       ],

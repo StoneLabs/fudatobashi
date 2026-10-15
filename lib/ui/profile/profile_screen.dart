@@ -4,16 +4,19 @@ import '../../config/design.dart';
 import '../../config/vector_art.dart';
 import '../../domain/rating.dart';
 import '../../domain/side_trips.dart';
+import '../../domain/trainer.dart';
 import '../../domain/xp.dart';
 import '../../l10n/history_strings.dart';
 import '../../l10n/home_strings.dart';
 import '../../l10n/onboarding_strings.dart';
 import '../../l10n/profile_strings.dart';
+import '../../l10n/ranked_strings.dart';
 import '../../l10n/results_strings.dart';
 import '../../l10n/side_trip_strings.dart';
 import '../../l10n/strings.dart';
 import '../../state/scope.dart';
 import '../home/home_widgets.dart';
+import '../home/ranked_hero.dart';
 import '../manga/manga.dart';
 import '../rank/rank_badges.dart';
 
@@ -29,11 +32,7 @@ class ProfileScreen extends StatelessWidget {
     final s = S.of(context);
     final progress = ProgressScope.of(context);
     final now = DateTime.now();
-    final rating = progress.currentRating;
-    final band = Rating.bandOf(rating);
-    final next = Rating.nextBand(rating);
-    final floor = band.minRating.isFinite ? band.minRating : 0.0;
-    final fraction = next == null ? 1.0 : (rating - floor) / (next.minRating - floor);
+    final rating = progress.rating;
     final learned = progress.knownCards.length;
     final remembered = progress.trainer.wellRememberedCount(progress.allStats, now);
     final firstSwipe = progress.firstSwipeAt;
@@ -60,7 +59,14 @@ class ProfileScreen extends StatelessWidget {
                     children: [
                       _Welcome(s.tobiHello),
                       const SizedBox(height: Gaps.section),
-                      _RankPanel(band: band, rating: rating, fraction: fraction, next: next),
+                      if (rating == null)
+                        _UnrankedPanel(progress.trainer.config.learningMode == LearningMode.allKnown
+                            ? s.rankLockedKnown
+                            : progress.graduated
+                                ? s.rankLockedSwitchTitle
+                                : s.rankLockedTitle)
+                      else
+                        _RankPanel(rating),
                       const SizedBox(height: Gaps.panel),
                       _SideTripRanks(progress.sideTripsHub(now).entries),
                       const SizedBox(height: Gaps.section),
@@ -112,15 +118,16 @@ class _Welcome extends StatelessWidget {
 /// Rank (級 + rating), the same composition as Home's known-mode rank panel
 /// (`_RankRow` in `known_home.dart`), reused here on its own.
 class _RankPanel extends StatelessWidget {
-  const _RankPanel({required this.band, required this.rating, required this.fraction, required this.next});
-  final RankBand band;
+  const _RankPanel(this.rating);
   final double rating;
-  final double fraction;
-  final RankBand? next;
 
   @override
   Widget build(BuildContext context) {
     final s = S.of(context);
+    final band = Rating.bandOf(rating);
+    final next = Rating.nextBand(rating);
+    final floor = band.minRating.isFinite ? band.minRating : 0.0;
+    final fraction = next == null ? 1.0 : (rating - floor) / (next.minRating - floor);
     const bold = TextStyle(fontWeight: Weights.black);
     return MangaPanel(
       padding: const EdgeInsets.all(Gaps.inner),
@@ -152,11 +159,53 @@ class _RankPanel extends StatelessWidget {
                 next == null
                     ? Text(s.topBand, style: bold)
                     : NumberedText(
-                        s.toNextBand.replaceAll('{band}', next!.label),
-                        [(next!.minRating - rating).ceil(), next!.minRating.round()],
+                        s.toNextBand.replaceAll('{band}', next.label),
+                        [(next.minRating - rating).ceil(), next.minRating.round()],
                         style: const TextStyle(fontSize: HomeLayout.ratingNoteFont, fontWeight: Weights.bold),
                         numberStyle: bold,
                       ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// The rank before the first ranked run: a blank sticker, "Unranked", and
+/// [note] on how to get one.
+class _UnrankedPanel extends StatelessWidget {
+  const _UnrankedPanel(this.note);
+  final String note;
+
+  @override
+  Widget build(BuildContext context) {
+    final s = S.of(context);
+    return MangaPanel(
+      padding: const EdgeInsets.all(Gaps.inner),
+      child: Row(
+        children: [
+          const UnrankedSticker(),
+          const SizedBox(width: HomeLayout.rankGap),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  s.ratingLabel,
+                  style: const TextStyle(
+                    fontWeight: Weights.black,
+                    fontSize: HomeLayout.ratingLabelFont,
+                    letterSpacing: HomeLayout.ratingLabelTracking * HomeLayout.ratingLabelFont,
+                  ),
+                ),
+                Text(s.rankUnplaced,
+                    style: const TextStyle(
+                        fontFamily: Fonts.display, fontSize: UnrankedStyle.font, height: TypeScale.displayLineHeight)),
+                const SizedBox(height: HomeLayout.ratingBarGap),
+                Text(note, style: const TextStyle(fontSize: HomeLayout.ratingNoteFont, fontWeight: Weights.bold)),
               ],
             ),
           ),

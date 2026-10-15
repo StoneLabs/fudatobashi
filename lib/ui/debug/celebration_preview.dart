@@ -83,6 +83,12 @@ void previewRatingRankUp(BuildContext context) {
   return (threshold - CelebrationPreviewTuning.rankBelow, threshold + CelebrationPreviewTuning.rankAbove);
 }
 
+/// The first ranked run's placement, into the class "Preview rating"
+/// starts in.
+void previewPlacement(BuildContext context) => _previewPages(context, [
+      PlacementCelebration(Rating.bands[CelebrationPreviewTuning.rankFrom].minRating + CelebrationPreviewTuning.ratingInto),
+    ]);
+
 void previewGraduation(BuildContext context) => _previewPages(context, const [GraduationCelebration()]);
 
 void previewDayDone(BuildContext context) => _previewPages(context, [DayDoneCelebration(previewDay())]);

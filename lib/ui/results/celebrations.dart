@@ -46,6 +46,14 @@ class RankUpCelebration extends Celebration {
   final double ratingAfter;
 }
 
+/// The first ranked run set the rating: the first class it placed into.
+class PlacementCelebration extends Celebration {
+  const PlacementCelebration(this.rating);
+  final double rating;
+
+  RankBand get band => Rating.bandOf(rating);
+}
+
 class GoalUpCelebration extends Celebration {
   const GoalUpCelebration();
 }
@@ -173,7 +181,8 @@ List<Celebration> xpCelebrations(XpGain? xp) => [
 
 /// The pages after a run, in order: island completions, a new speed goal,
 /// graduation, today's set done, the XP earned and any level it reached,
-/// then the rating when it rose and a rank-up when it reached a new class.
+/// then the rating when it rose and a rank-up when it reached a new class;
+/// or, after the first ranked run, the class it placed into instead.
 List<Celebration> celebrationsFor(SessionReport report) {
   final list = <Celebration>[
     for (final i in report.islandsCompleted) IslandCompleteCelebration(i),
@@ -183,7 +192,9 @@ List<Celebration> celebrationsFor(SessionReport report) {
     ...xpCelebrations(report.xp),
   ];
   final (ratingBefore, ratingAfter) = (report.ratingBefore, report.ratingAfter);
-  if (ratingAfter != null) {
+  if (report.placement) {
+    list.add(PlacementCelebration(ratingAfter!));
+  } else if (ratingAfter != null) {
     if (ratingBefore != null && ratingAfter.round() - ratingBefore.round() >= RatingScreenTuning.minGain) {
       list.add(RatingCelebration(ratingBefore, ratingAfter));
     }

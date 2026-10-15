@@ -842,6 +842,17 @@ class Progress extends ChangeNotifier {
     notifyListeners();
   }
 
+  /// Developer mode: back to unplaced, so the next ranked run places again.
+  Future<void> debugClearRating() async {
+    await db.transaction(() async {
+      await _drop('rating');
+      await db.delete(db.ratingPoints).go();
+    });
+    ratingPoints.clear();
+    rating = null;
+    notifyListeners();
+  }
+
   /// Journey Home's banner after the exam is passed, offering all-known
   /// mode, until it is closed.
   bool get switchBannerShown => !_allKnown && graduated && !_switchBannerClosed;

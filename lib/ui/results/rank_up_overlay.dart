@@ -78,7 +78,7 @@ class RankUpOverlay extends StatelessWidget {
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: Gaps.gutter),
               child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-                Entrance(RankUpMotion.next, child: _NextClass(rating: data.ratingAfter)),
+                Entrance(RankUpMotion.next, child: NextClassPanel(rating: data.ratingAfter)),
                 const SizedBox(height: RankUpLayout.sectionGap),
                 Entrance(
                   RankUpMotion.actions,
@@ -374,9 +374,9 @@ class _RatingCount extends StatelessWidget {
 
 /// What's next: the next class, the 100-card time it asks for, and a bar
 /// filling up to how far the player already is toward it (or the top of the
-/// ladder).
-class _NextClass extends StatelessWidget {
-  const _NextClass({required this.rating});
+/// ladder). The placement page shows it too.
+class NextClassPanel extends StatelessWidget {
+  const NextClassPanel({super.key, required this.rating});
   final double rating;
 
   @override

@@ -1,6 +1,7 @@
 // Lays out onboarding and both Home modes in English and Japanese on a
 // phone-sized surface and fails on any layout error. With RENDER_SCREENS=1 it
 // also writes PNGs to build/screens/ for visual checks.
+import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 import 'dart:math' as math;
@@ -37,6 +38,7 @@ import 'package:fudatobashi/l10n/home_strings.dart';
 import 'package:fudatobashi/l10n/language_strings.dart';
 import 'package:fudatobashi/l10n/onboarding_strings.dart';
 import 'package:fudatobashi/l10n/profile_strings.dart';
+import 'package:fudatobashi/l10n/ranked_strings.dart';
 import 'package:fudatobashi/l10n/results_strings.dart';
 import 'package:fudatobashi/l10n/romaji.dart';
 import 'package:fudatobashi/l10n/settings_strings.dart';
@@ -57,7 +59,9 @@ import 'package:fudatobashi/ui/free/island_picker.dart';
 import 'package:fudatobashi/ui/free/look_alike_picker.dart';
 import 'package:fudatobashi/ui/help/help_screen.dart';
 import 'package:fudatobashi/ui/home/home_widgets.dart';
+import 'package:fudatobashi/ui/home/known_home.dart';
 import 'package:fudatobashi/ui/home/learn_ahead_button.dart';
+import 'package:fudatobashi/ui/home/ranked_hero.dart';
 import 'package:fudatobashi/ui/home/training_hero.dart';
 import 'package:fudatobashi/ui/islands/island_map.dart';
 import 'package:fudatobashi/ui/manga/manga.dart';
@@ -78,10 +82,12 @@ import 'package:fudatobashi/ui/results/graduation_overlay.dart';
 import 'package:fudatobashi/ui/results/island_complete_overlay.dart';
 import 'package:fudatobashi/ui/results/level_up_overlay.dart';
 import 'package:fudatobashi/ui/results/new_card_overlay.dart';
+import 'package:fudatobashi/ui/results/placement_overlay.dart';
 import 'package:fudatobashi/ui/results/rank_up_overlay.dart';
 import 'package:fudatobashi/ui/results/rating_overlay.dart';
 import 'package:fudatobashi/ui/results/results_screen.dart';
 import 'package:fudatobashi/ui/results/xp_overlay.dart';
+import 'package:fudatobashi/ui/run/ranked_sheets.dart';
 import 'package:fudatobashi/ui/settings/credits_screen.dart';
 import 'package:fudatobashi/ui/settings/hold_warning_screen.dart';
 import 'package:fudatobashi/ui/settings/language_screen.dart';
@@ -3433,6 +3439,191 @@ void main() {
       expect(find.text(s.firstSwipeOn(s.sessionDate(p.firstSwipeAt!))), findsOneWidget);
       await _capture(tester, 'profile_history_scaled');
       await tester.pumpWidget(const SizedBox());
+    });
+  });
+
+  // ランク戦 on all-known Home (before and after placement), its start and
+  // forfeit sheets, ranked Results (played out and forfeited) and the
+  // placement page, on a narrow and a wide phone at two font scales.
+  group('ranked', () {
+    Future<void> rankedPhone(WidgetTester tester, Widget child, {required double width, required double fontScale}) async {
+      const dpr = 2.8125;
+      const bars = FakeViewPadding(top: 28 * dpr, bottom: 48 * dpr);
+      final size = Size(width, width * _phone.height / _phone.width);
+      tester.view
+        ..devicePixelRatio = dpr
+        ..physicalSize = size * dpr
+        ..padding = bars
+        ..viewPadding = bars;
+      tester.platformDispatcher.textScaleFactorTestValue = fontScale;
+      addTearDown(tester.view.reset);
+      addTearDown(tester.platformDispatcher.clearTextScaleFactorTestValue);
+      await tester.binding.setSurfaceSize(size);
+      await tester.pumpWidget(RepaintBoundary(key: const ValueKey('screen'), child: child));
+      await tester.pump(const Duration(milliseconds: 500));
+    }
+
+    // A ranked run of all 100 cards at [paceMs] a card with [misses] of
+    // them missed, or left after [played] cards (a forfeit).
+    Future<SessionReport> rankedRun(WidgetTester tester, Progress p,
+        {int misses = 7, int paceMs = 2400, int? played}) async {
+      late SessionReport report;
+      await tester.runAsync(() async {
+        final session = PlaySession(p.rankedDeck(rng: math.Random(3)));
+        var t = const Duration(seconds: 100);
+        for (var i = 0; i < (played ?? session.cards.length); i++) {
+          session.revealed(t);
+          t += Duration(milliseconds: paceMs);
+          session.commit(
+              responseTs: t,
+              commitTs: t + const Duration(milliseconds: 80),
+              outcome: i % 13 == 5 && i ~/ 13 < misses ? Outcome.dontKnow : Outcome.known);
+          t += const Duration(milliseconds: 100);
+        }
+        report = await p.recordRun(session, const PlayConfig(mode: PlayMode.ranked), DateTime.now());
+      });
+      return report;
+    }
+
+    for (final ja in [false, true]) {
+      final lang = ja ? 'ja' : 'en';
+      final s = S(lang);
+      for (final width in [360.0, 384.0]) {
+        for (final fontScale in [1.0, 1.3]) {
+          final tag = '${lang}_${width.round()}_$fontScale';
+
+          testWidgets('ranked: all-known Home before placement, the start sheet and the forfeit sheet ($tag)',
+              (tester) async {
+            final p = await open(tester, mode: LearningMode.allKnown, ja: ja);
+            await rankedPhone(tester, FudatobashiApp(progress: p), width: width, fontScale: fontScale);
+            expect(tester.takeException(), isNull);
+            expect(find.byType(RankedHero), findsOneWidget);
+            expect(find.text(s.rankUnplaced), findsOneWidget);
+            expect(find.text(s.rankedUnplacedLine), findsOneWidget);
+            expect(find.text(s.notForRank), findsNWidgets(2));
+            await _capture(tester, 'known_home_unplaced_$tag');
+
+            await tester.tap(find.text(s.shoutRanked));
+            await tester.pump();
+            await tester.pump(const Duration(milliseconds: 600));
+            expect(tester.takeException(), isNull);
+            expect(find.byType(ShoutButton), findsNWidgets(2), reason: "the sheet's Start under the hero's");
+            await _capture(tester, 'ranked_start_sheet_$tag');
+            await tester.tap(find.text(s.back));
+            await tester.pump();
+            await tester.pump(const Duration(milliseconds: 600));
+
+            unawaited(confirmForfeit(tester.element(find.byType(KnownHome))));
+            await tester.pump();
+            await tester.pump(const Duration(milliseconds: 600));
+            expect(tester.takeException(), isNull);
+            expect(find.text(s.forfeitYes), findsOneWidget);
+            await _capture(tester, 'ranked_forfeit_sheet_$tag');
+            await tester.pumpWidget(const SizedBox());
+          });
+
+          testWidgets('ranked: all-known Home once placed ($tag)', (tester) async {
+            final p = await open(tester, mode: LearningMode.allKnown, ja: ja);
+            p.rating = 442;
+            await rankedPhone(tester, FudatobashiApp(progress: p), width: width, fontScale: fontScale);
+            expect(tester.takeException(), isNull);
+            expect(find.text(s.rankUnplaced), findsNothing);
+            expect(find.text('442'), findsOneWidget);
+            await _capture(tester, 'known_home_placed_$tag');
+            await tester.pumpWidget(const SizedBox());
+          });
+
+          testWidgets('ranked: Results after a placement run, then the placement page ($tag)', (tester) async {
+            final p = await open(tester, mode: LearningMode.allKnown, ja: ja);
+            final report = await rankedRun(tester, p);
+            expect(report.placement, isTrue);
+            final pages = celebrationsFor(report);
+            expect(pages.whereType<PlacementCelebration>(), hasLength(1));
+            expect(pages.whereType<RankUpCelebration>(), isEmpty);
+            expect(pages.whereType<RatingCelebration>(), isEmpty);
+            await rankedPhone(
+              tester,
+              ProgressScope(
+                progress: p,
+                child: MaterialApp(
+                    theme: buildMangaTheme(),
+                    home: ResultsScreen(report: report, config: const PlayConfig(mode: PlayMode.ranked))),
+              ),
+              width: width,
+              fontScale: fontScale,
+            );
+            expect(tester.takeException(), isNull);
+            expect(find.text(s.rankedScoredTime.toUpperCase()), findsOneWidget);
+            expect(find.text(s.rankedAgain), findsOneWidget);
+            await _capture(tester, 'ranked_results_placement_$tag');
+
+            await tester.pumpWidget(const SizedBox());
+            await rankedPhone(
+              tester,
+              ProgressScope(
+                progress: p,
+                child: MaterialApp(
+                    theme: buildMangaTheme(),
+                    home: Scaffold(
+                        body: CelebrationSequence(pages: pages.whereType<PlacementCelebration>().toList(), onDone: _noop))),
+              ),
+              width: width,
+              fontScale: fontScale,
+            );
+            await tester.pump(RankUpMotion.length);
+            expect(tester.takeException(), isNull);
+            expect(find.byType(PlacementOverlay), findsOneWidget);
+            await _capture(tester, 'ranked_placement_$tag');
+            await tester.pumpWidget(const SizedBox());
+          });
+
+          testWidgets('ranked: Results after a rated run and after a forfeit ($tag)', (tester) async {
+            final p = await open(tester, mode: LearningMode.allKnown, ja: ja);
+            await rankedRun(tester, p);
+            final report = await rankedRun(tester, p, misses: 2, paceMs: 2000);
+            expect(report.ratingAfter, greaterThan(report.ratingBefore!));
+            Widget results(SessionReport report) => ProgressScope(
+                  progress: p,
+                  child: MaterialApp(
+                      theme: buildMangaTheme(),
+                      home: ResultsScreen(report: report, config: const PlayConfig(mode: PlayMode.ranked))),
+                );
+            await rankedPhone(tester, results(report), width: width, fontScale: fontScale);
+            expect(tester.takeException(), isNull);
+            await _capture(tester, 'ranked_results_$tag');
+
+            await tester.pumpWidget(const SizedBox());
+            final forfeit = await rankedRun(tester, p, played: 37);
+            expect(forfeit.forfeit, isTrue);
+            expect(forfeit.ratingAfter, lessThan(forfeit.ratingBefore!));
+            await rankedPhone(tester, results(forfeit), width: width, fontScale: fontScale);
+            expect(tester.takeException(), isNull);
+            expect(find.text(s.rankedForfeitNote(63)), findsOneWidget);
+            await _capture(tester, 'ranked_results_forfeit_$tag');
+            await tester.pumpWidget(const SizedBox());
+          });
+        }
+      }
+
+      testWidgets('ranked: My Profile shows the rank as unranked until placement ($lang)', (tester) async {
+        final p = await open(tester, mode: LearningMode.allKnown, ja: ja);
+        await rankedPhone(tester, ProgressScope(progress: p, child: MaterialApp(theme: buildMangaTheme(), home: const ProfileScreen())),
+            width: 384, fontScale: 1.0);
+        expect(tester.takeException(), isNull);
+        expect(find.text(s.rankLockedKnown), findsOneWidget);
+        await _capture(tester, 'ranked_profile_unplaced_$lang');
+        await tester.pumpWidget(const SizedBox());
+      });
+    }
+
+    testWidgets('ranked: the developer unplace puts the rating back to none', (tester) async {
+      final p = await open(tester, mode: LearningMode.allKnown);
+      await rankedRun(tester, p);
+      expect(p.placed, isTrue);
+      await tester.runAsync(p.debugClearRating);
+      expect(p.placed, isFalse);
+      expect(p.ratingPoints, isEmpty);
+      expect((await rankedRun(tester, p)).placement, isTrue);
     });
   });
 }

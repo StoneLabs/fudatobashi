@@ -8,8 +8,10 @@ import '../../config/design.dart';
 import '../../config/vector_art.dart';
 import '../../data/poem.dart';
 import '../../domain/play_session.dart';
+import '../../domain/ranked.dart';
 import '../../domain/rating.dart';
 import '../../l10n/free_strings.dart';
+import '../../l10n/ranked_strings.dart';
 import '../../l10n/results_strings.dart';
 import '../../l10n/strings.dart';
 import '../../state/play_config.dart';
@@ -39,7 +41,9 @@ class ResultsScreen extends StatefulWidget {
 
 class _ResultsScreenState extends State<ResultsScreen> {
   late final List<Celebration> _celebrations = celebrationsFor(widget.report);
-  late final bool _personalBest = widget.report.personalBest && widget.report.total != null;
+  // A scored run is judged by its scored time, not its clock.
+  late final bool _personalBest =
+      widget.report.personalBest && widget.report.total != null && widget.report.score == null;
   bool _celebrating = false;
   Timer? _timer;
 
@@ -123,6 +127,10 @@ class _Splash extends StatelessWidget {
           _KnownSpeedNote(ms: progress.knownCardSpeedMs!, weekAgoMs: progress.knownCardSpeedTrendAgo),
         ],
         const SizedBox(height: Gaps.section),
+        if (report.forfeit && report.score != null) ...[
+          _ForfeitNote(report.score!.cardsLeft),
+          const SizedBox(height: Gaps.section),
+        ],
         if (!config.tracked || config.mode == PlayMode.free && !config.countsForSrs) ...[
           DashedBox(
             padding: ResultsLayout.notePadding,
@@ -133,7 +141,10 @@ class _Splash extends StatelessWidget {
         Expanded(
           child: SingleChildScrollView(
             child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-              _TimePanel(report: report),
+              if (report.mode == PlayMode.ranked && report.score != null)
+                _RankedTimePanel(report.score!)
+              else
+                _TimePanel(report: report),
               const SizedBox(height: Gaps.panel),
               IntrinsicHeight(
                 child: Row(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
@@ -180,8 +191,8 @@ class _Splash extends StatelessWidget {
               flex: 2,
               child: ActionRowButton(
                 icon: IconArt.refresh,
-                label: s.keepGoing,
-                sub: s.keepGoingSub,
+                label: config.mode == PlayMode.ranked ? s.rankedAgain : s.keepGoing,
+                sub: config.mode == PlayMode.ranked ? s.rankedAgainSub : s.keepGoingSub,
                 color: Palette.pink,
                 onTap: () => keepGoing(context, config),
               ),
@@ -312,6 +323,84 @@ class _TimePanel extends StatelessWidget {
       ),
     );
   }
+}
+
+/// A ranked run's splash: the scored time its rating used, and how it adds
+/// up from the clock, the misses and (a forfeit) the cards left.
+class _RankedTimePanel extends StatelessWidget {
+  const _RankedTimePanel(this.score);
+  final RankedScore score;
+
+  @override
+  Widget build(BuildContext context) {
+    final s = S.of(context);
+    const row = TextStyle(fontWeight: Weights.bold, fontSize: RankedResultsLayout.rowFont);
+    const number = TextStyle(fontFamily: Fonts.display, fontWeight: Weights.regular);
+    final penaltySeconds = (score.penaltyMs / 1000).round();
+    final paceSeconds = (score.forfeitPerCard.inMilliseconds / 1000).toStringAsFixed(1);
+    Widget line(Widget what, Duration time, {bool add = true}) => Row(children: [
+          Expanded(child: _OneLine(what)),
+          const SizedBox(width: Gaps.small),
+          Text('${add ? '+' : ''}${formatRunTime(time)}', style: row.merge(number)),
+        ]);
+    return MangaPanel(
+      shape: const PanelShape(bottomRight: Offset(0, ResultsLayout.splashCut)),
+      art: const [
+        RadialLayer(center: Backdrops.skyCenter, colors: Backdrops.skyColors, stops: Backdrops.skyStops),
+        BurstLayer(ResultsLayout.splashBurst),
+      ],
+      padding: RankedResultsLayout.splashPadding,
+      child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+        Text(s.rankedScoredTime.toUpperCase(),
+            textAlign: TextAlign.center,
+            style: const TextStyle(
+                fontWeight: Weights.black,
+                fontSize: ResultsLayout.splashLabelFont,
+                letterSpacing: ResultsLayout.splashLabelTracking * ResultsLayout.splashLabelFont)),
+        const SizedBox(height: Gaps.small),
+        FittedBox(fit: BoxFit.scaleDown, child: _RunTime(score.scored)),
+        const SizedBox(height: RankedResultsLayout.sumGap),
+        DecoratedBox(
+          decoration: BoxDecoration(color: Palette.paper, border: Border.all(color: Palette.ink, width: Strokes.label)),
+          child: Padding(
+            padding: RankedResultsLayout.sumPadding,
+            child: DefaultTextStyle.merge(
+              style: row,
+              child: Column(children: [
+                line(Text(s.rankedClockTime), score.clock, add: false),
+                const SizedBox(height: RankedResultsLayout.rowGap),
+                line(NumberedText(s.rankedMisses, [score.misses + score.cardsLeft, penaltySeconds], numberStyle: number),
+                    score.penalty),
+                if (score.cardsLeft > 0) ...[
+                  const SizedBox(height: RankedResultsLayout.rowGap),
+                  line(NumberedText(s.rankedCardsLeft, [score.cardsLeft, paceSeconds], numberStyle: number),
+                      score.forfeitPerCard * score.cardsLeft),
+                ],
+              ]),
+            ),
+          ),
+        ),
+      ]),
+    );
+  }
+}
+
+/// A forfeit says so first: the cards left counted as misses.
+class _ForfeitNote extends StatelessWidget {
+  const _ForfeitNote(this.cardsLeft);
+  final int cardsLeft;
+
+  @override
+  Widget build(BuildContext context) => DecoratedBox(
+        decoration: BoxDecoration(
+          color: RankedResultsLayout.forfeitFill,
+          border: Border.all(color: Palette.ink, width: Strokes.label),
+        ),
+        child: Padding(
+          padding: ResultsLayout.notePadding,
+          child: Text(S.of(context).rankedForfeitNote(cardsLeft), style: const TextStyle(fontWeight: Weights.black)),
+        ),
+      );
 }
 
 /// A run's time, or [missingTime] when it is no measurement.
@@ -451,7 +540,9 @@ class _RatingPanel extends StatelessWidget {
   Widget build(BuildContext context) {
     final s = S.of(context);
     final delta = (before != null && after != null) ? (after! - before!).round() : null;
+    final placed = before == null && after != null;
     final band = after == null ? null : Rating.bandOf(after!);
+    const big = TextStyle(fontFamily: Fonts.display, fontSize: ResultsLayout.statBigFont, height: 1.05);
     return MangaPanel(
       color: Palette.pinkSoft,
       tone: Tones.pink,
@@ -466,12 +557,27 @@ class _RatingPanel extends StatelessWidget {
                   fontWeight: Weights.black,
                   fontSize: ResultsLayout.statLabelFont,
                   letterSpacing: ResultsLayout.statLabelTracking * ResultsLayout.statLabelFont)),
-          _OneLine(Text(
-            delta == null ? '—' : (delta >= 0 ? '+$delta' : '$delta'),
-            style: const TextStyle(fontFamily: Fonts.display, fontSize: ResultsLayout.statBigFont, height: 1.05),
-          )),
+          _OneLine(Row(mainAxisSize: MainAxisSize.min, children: [
+            Text(
+              placed
+                  ? '${after!.round()}'
+                  : delta == null
+                      ? '—'
+                      : (delta >= 0 ? '+$delta' : '$delta'),
+              style: big,
+            ),
+            // Which way the rating went.
+            if (delta != null && delta != 0) ...[
+              const SizedBox(width: RankedResultsLayout.arrowGap),
+              Transform.rotate(
+                angle: (delta > 0 ? -90 : 90) * math.pi / 180,
+                child: MangaIcon(IconArt.chevron, size: RankedResultsLayout.arrow),
+              ),
+            ],
+          ])),
           if (after != null && band != null)
-            _OneLine(Text('${before?.round() ?? s.newBadge} → ${after!.round()} · ${band.label}',
+            _OneLine(Text(
+                placed ? '${s.ratingFirst} · ${band.label}' : '${before?.round() ?? s.newBadge} → ${after!.round()} · ${band.label}',
                 style: const TextStyle(fontWeight: Weights.bold, fontSize: ResultsLayout.statNoteFont))),
         ],
       ),
