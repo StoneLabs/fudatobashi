@@ -16,6 +16,7 @@ import 'package:fudatobashi/domain/trainer.dart';
 import 'package:fudatobashi/domain/xp.dart';
 import 'package:fudatobashi/state/play_config.dart';
 import 'package:fudatobashi/state/progress.dart';
+import 'package:fudatobashi/ui/results/celebrations.dart';
 
 void main() {
   poems = Poems.fromJsonString(File('assets/data/poems.json').readAsStringSync());
@@ -139,6 +140,65 @@ void main() {
       expect(again.rating, closeTo(Rating.performance(RankedScore.blank().scored.inMilliseconds.toDouble()), 1e-6));
       final third = await Progress.open(db);
       expect(third.sessions, hasLength(1), reason: 'counted once');
+      await db.close();
+    });
+  });
+
+  group('level-ups', () {
+    /// The kinds of [report]'s pages after the run, in order.
+    List<Type> pagesOf(SessionReport report) => [for (final c in celebrationsFor(report)) c.runtimeType];
+
+    /// [report]'s XP page, then its level-up page when it gained a level.
+    void expectLevelPages(SessionReport report, String run) {
+      final pages = pagesOf(report);
+      expect(pages, contains(XpCelebration), reason: run);
+      if (report.xp!.levelsGained > 0) {
+        expect(pages.indexOf(LevelUpCelebration), pages.indexOf(XpCelebration) + 1, reason: '$run: level-up right after XP');
+      } else {
+        expect(pages, isNot(contains(LevelUpCelebration)), reason: run);
+      }
+    }
+
+    test('every level gained shows its page: exam tries, the placement run and ranked runs, as after a reload', () async {
+      final db = AppDatabase(NativeDatabase.memory());
+      final p = await Progress.open(db);
+      await p.setLearningMode(LearningMode.journey);
+      await p.recordRun(play(all, 900), PlayConfig(mode: PlayMode.free, setIds: const [], cardIds: [for (final c in all) c.poemId]),
+          DateTime.now());
+      var levels = 0;
+      final exam = <SessionReport>[
+        await p.recordRun(play(all, 3000, misses: 5), const PlayConfig(mode: PlayMode.exam), DateTime.now(),
+            tobi: const Duration(minutes: 4)),
+        await p.recordRun(play(all, 2000), const PlayConfig(mode: PlayMode.exam), DateTime.now(),
+            tobi: const Duration(minutes: 5)),
+      ];
+      expect(exam.map((r) => r.passed), [false, true]);
+      // A lost try's page shows its XP pages alone (`ExamLostScreen`).
+      expect([for (final c in xpCelebrations(exam.first.xp)) c.runtimeType],
+          exam.first.xp!.levelsGained > 0 ? [XpCelebration, LevelUpCelebration] : [XpCelebration]);
+      expectLevelPages(exam.last, 'the exam passed');
+      expect(pagesOf(exam.last).first, GraduationCelebration);
+      for (final r in exam) {
+        levels += r.xp!.levelsGained;
+      }
+
+      await p.switchToAllKnown();
+      const ranked = PlayConfig(mode: PlayMode.ranked);
+      final placement = await p.recordRun(play(all, 1800, misses: 3), ranked, DateTime.now());
+      expect(placement.placement, isTrue);
+      expectLevelPages(placement, 'placement');
+      expect(pagesOf(placement).last, PlacementCelebration, reason: 'the class it placed into comes last');
+      levels += placement.xp!.levelsGained;
+      for (var i = 0; i < 6; i++) {
+        final run = await p.recordRun(play(all, 1500), ranked, DateTime.now());
+        expectLevelPages(run, 'ranked run ${i + 1}');
+        levels += run.xp!.levelsGained;
+      }
+      expect(levels, greaterThan(0), reason: 'some run gained a level');
+
+      // The level after a reload is the level the pages showed.
+      final again = await Progress.open(db);
+      expect(again.xp.total, p.xp.total, reason: 'no level gained silently on the next start');
       await db.close();
     });
   });

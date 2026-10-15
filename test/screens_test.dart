@@ -3655,6 +3655,38 @@ void main() {
       expect(p.ratingPoints, isEmpty);
       expect((await rankedRun(tester, p)).placement, isTrue);
     });
+
+    testWidgets('ranked: after the placement run, its XP and level-up pages play before the placement page',
+        (tester) async {
+      final p = await open(tester, mode: LearningMode.allKnown);
+      final report = await rankedRun(tester, p);
+      expect(report.placement, isTrue);
+      expect(report.xp!.levelsGained, greaterThan(0));
+      await rankedPhone(
+        tester,
+        ProgressScope(
+          progress: p,
+          child: MaterialApp(
+              theme: buildMangaTheme(), home: ResultsScreen(report: report, config: const PlayConfig(mode: PlayMode.ranked))),
+        ),
+        width: 384,
+        fontScale: 1.0,
+      );
+      final shown = <Type>[];
+      for (var i = 0; i < 200 && shown.length < 3; i++) {
+        await tester.pump(const Duration(milliseconds: 100));
+        for (final page in [XpOverlay, LevelUpOverlay, PlacementOverlay]) {
+          if (find.byType(page).evaluate().isNotEmpty && !shown.contains(page)) {
+            shown.add(page);
+            await tester.pump(const Duration(seconds: 4));
+            await tester.tap(find.byType(page));
+          }
+        }
+      }
+      expect(shown, [XpOverlay, LevelUpOverlay, PlacementOverlay]);
+      expect(tester.takeException(), isNull);
+      await tester.pumpWidget(const SizedBox());
+    });
   });
 }
 
