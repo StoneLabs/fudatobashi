@@ -10,6 +10,7 @@ import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:fudatobashi/config/config.dart';
+import 'package:fudatobashi/config/design.dart';
 import 'package:fudatobashi/data/fuda_sets.dart';
 import 'package:fudatobashi/data/islands.dart';
 import 'package:fudatobashi/data/poem.dart';
@@ -289,6 +290,11 @@ void main() {
 
           await tab(s.ankirenTabField, 'field');
           expect(find.textContaining(s.ankirenFieldTitle, findRichText: true), findsOneWidget);
+          expect(find.textContaining(s.ankirenStepCard(1, game.cards.length, '')), findsNothing);
+          await tester.ensureVisible(find.text(s.ankirenStartReview, findRichText: true));
+          await tester.pumpAndSettle();
+          await tester.tap(find.text(s.ankirenStartReview, findRichText: true));
+          await tester.pumpAndSettle();
           expect(find.textContaining(s.ankirenStepCard(1, game.cards.length, '')), findsOneWidget);
           await tester.ensureVisible(find.bySemanticsLabel(s.ankirenStepNext));
           await tester.pumpAndSettle();
@@ -299,6 +305,10 @@ void main() {
           expect(find.textContaining(s.ankirenStepCard(10, game.cards.length, '')), findsOneWidget);
           expect(find.textContaining(s.ankirenShownFound('X').split('X').first), findsOneWidget);
           await _capture(tester, 'ankiren_game_field_shown_$name');
+
+          await tester.tap(find.text(s.ankirenShowAll));
+          await tester.pumpAndSettle();
+          expect(find.text(s.ankirenStartReview, findRichText: true), findsOneWidget);
 
           await tab(s.runTabCards, 'cards');
           expect(find.textContaining(s.ankirenLevelTitle(3), findRichText: true), findsOneWidget);
@@ -338,5 +348,51 @@ void main() {
         });
       }
     }
+
+    testWidgets('the Field shows the whole field, then reviews a tapped card with the others dimmed', (tester) async {
+      const s = S('en');
+      late Progress p;
+      await tester.runAsync(() async {
+        p = await openProgress();
+        await recordGames(p);
+      });
+      final run = p.sideTrips.runsOf(SideTrip.ankiren).toList()[2];
+      final game = p.sideTrips.recordOf(run);
+      onPhone(tester, fontScale: 1.0);
+      await tester.pumpWidget(ProgressScope(
+        progress: p,
+        child: MaterialApp(theme: buildMangaTheme(), home: AnkirenGamePage(run: run)),
+      ));
+      await tester.pump(const Duration(milliseconds: 500));
+      await tester.tap(find.text(s.ankirenTabField).first);
+      await tester.pumpAndSettle();
+
+      final fieldCards = find.byWidgetPredicate((w) => w is AnimatedOpacity && w.duration == AnkirenReviewStyle.dimFade);
+      final dimmed = find.byWidgetPredicate((w) => w is AnimatedOpacity && w.opacity == AnkirenReviewStyle.unrelatedOpacity);
+      final total = fieldCards.evaluate().length;
+      expect(total, game.deal!.cards.length);
+      expect(dimmed, findsNothing, reason: 'nothing is dimmed before the review starts');
+      expect(find.text(s.ankirenStartReview, findRichText: true), findsOneWidget);
+      expect(find.textContaining(s.ankirenStepCard(1, game.cards.length, '')), findsNothing);
+
+      final step = game.cards.indexWhere((c) => c.tapped.any((id) => id != c.poemId));
+      final card = game.cards[step];
+      final context = tester.element(find.byType(AnkirenGamePage));
+      final word = find.text(kimarijiFor(context, card.poemId));
+      await tester.ensureVisible(word);
+      await tester.tap(word);
+      await tester.pumpAndSettle();
+      expect(find.textContaining(s.ankirenStepCard(step + 1, game.cards.length, '')), findsOneWidget);
+      final related = {card.poemId, ...card.tapped};
+      expect(dimmed, findsNWidgets(total - related.length), reason: 'only the card and its wrong taps stay bright');
+
+      await tester.ensureVisible(find.text(s.ankirenShowAll));
+      await tester.tap(find.text(s.ankirenShowAll));
+      await tester.pumpAndSettle();
+      expect(dimmed, findsNothing);
+      expect(find.text(s.ankirenStartReview, findRichText: true), findsOneWidget);
+      await tester.pumpWidget(const SizedBox());
+      await tester.runAsync(() => p.db.close());
+    });
   });
 }

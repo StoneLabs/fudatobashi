@@ -3,12 +3,10 @@ import 'package:flutter/material.dart';
 import '../../config/config.dart';
 import '../../config/design.dart';
 import '../../domain/ankiren_field.dart';
-import '../../domain/ankiren_rating.dart';
 import '../../domain/ankiren_review.dart';
 import '../../l10n/ankiren_review_strings.dart';
 import '../../l10n/strings.dart';
 import '../rank/rank_badges.dart';
-import '../side_trips/side_trip_entry.dart';
 import 'ankiren_widgets.dart';
 import 'history_widgets.dart';
 import 'run_xp_tab.dart';
@@ -114,8 +112,8 @@ class _ScoreSum extends StatelessWidget {
   }
 }
 
-/// D38: the rating before and after, how the game moved it, and the class
-/// it stands in with the way to the next.
+/// D38: the rating before, what this game played like and the rating
+/// after, then the class it stands in with the way to the next.
 class _RatingPanel extends StatelessWidget {
   const _RatingPanel(this.review, {required this.before, required this.after});
   final AnkirenReview review;
@@ -124,53 +122,17 @@ class _RatingPanel extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final s = S.of(context);
-    final game = review.game;
-    final level = game.level!;
-    final played = game.performance ?? after;
-    final next = AnkirenRating.nextLevelAt(level);
+    final played = review.game.performance ?? after;
     final progress = AnkirenReview.classProgress(after);
     final band = progress.next;
-    const text = TextStyle(fontWeight: Weights.bold, fontSize: AnkirenReviewStyle.formulaFont);
     String r(double v) => '${v.round()}';
     return ReviewPanel(
       child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
         TrackedLabel(s.ankirenRatingHead, sub: s.sub?.ankirenRatingHead),
-        Row(children: [
-          Flexible(
-            child: FittedBox(
-              fit: BoxFit.scaleDown,
-              alignment: Alignment.centerLeft,
-              child: Text('${r(before)} → ${r(after)}',
-                  style: const TextStyle(fontFamily: Fonts.display, fontSize: AnkirenReviewStyle.ratingFont)),
-            ),
-          ),
-          const SizedBox(width: Gaps.panel),
-          RatingChangeTag((after - before).round()),
-        ]),
         const SizedBox(height: Gaps.small),
-        DecoratedBox(
-          decoration: BoxDecoration(border: Border.all(color: Palette.ink, width: Strokes.label)),
-          child: Padding(
-            padding: AnkirenReviewStyle.panelPadding,
-            child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-              ColoredBox(
-                color: AnkirenReviewStyle.customFill,
-                child: Padding(
-                  padding: const EdgeInsets.all(Gaps.small),
-                  child: Text('${r(before)} + ${review.k} × (${r(played)} − ${r(before)}) = ${r(after)}',
-                      style: const TextStyle(fontWeight: Weights.black, fontSize: AnkirenReviewStyle.formulaFont)),
-                ),
-              ),
-              const SizedBox(height: Gaps.small),
-              Text(
-                s.ankirenRatingWhy(level, r(AnkirenRatingModel.levelRatings[level]), (game.fraction * 100).round(),
-                    (AnkirenRatingModel.par * 100).round(), r(played)),
-                style: text,
-              ),
-              if (next != null) Text(s.ankirenRatingNext(level + 1, r(next)), style: text),
-            ]),
-          ),
-        ),
+        RunValueLine(s.ankirenPreviousRating, r(before)),
+        RunValueLine(s.ankirenPlayedLike, r(played)),
+        RunValueLine(s.ankirenNewRating, '${r(after)}  ${ratingChangeText(after - before)}', total: true),
         const SizedBox(height: Gaps.panel),
         Row(children: [
           ClassBadge(progress.band,

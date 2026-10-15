@@ -12,7 +12,9 @@ import '../../domain/ankiren_geometry.dart';
 /// the scale [scaleFor] picks. A folded field narrower than the screen opens
 /// its middles up to span it; one too wide for it (zoom) pans sideways as
 /// one, starting centred, while the band stays put. An [overlay] is laid
-/// over the field and pans with it, without taking taps.
+/// over the field and pans with it, without taking taps; with
+/// [overlayOverBand] the band goes under the field so the overlay crosses
+/// it too.
 class AnkirenFieldView extends StatefulWidget {
   const AnkirenFieldView({
     super.key,
@@ -22,6 +24,7 @@ class AnkirenFieldView extends StatefulWidget {
     required this.card,
     required this.band,
     this.overlay,
+    this.overlayOverBand = false,
     this.bandExtent,
   });
 
@@ -38,6 +41,9 @@ class AnkirenFieldView extends StatefulWidget {
   final Widget Function(int poemId, FieldSide side) card;
   final Widget band;
   final Widget Function(FieldPlacement placement)? overlay;
+
+  /// Only for a band that takes no taps: the field would cover it.
+  final bool overlayOverBand;
 
   /// The [band]'s height when not the play screen's ([bandHeight]).
   final double? bandExtent;
@@ -134,10 +140,9 @@ class _AnkirenFieldViewState extends State<AnkirenFieldView> {
         } else {
           placed = Center(child: field);
         }
-        return Stack(children: [
-          Positioned(left: 0, right: 0, top: top, height: height, child: placed),
-          Positioned(left: 0, right: 0, top: top + halfH, height: bandH, child: widget.band),
-        ]);
+        final fieldLayer = Positioned(left: 0, right: 0, top: top, height: height, child: placed);
+        final bandLayer = Positioned(left: 0, right: 0, top: top + halfH, height: bandH, child: widget.band);
+        return Stack(children: widget.overlayOverBand ? [bandLayer, fieldLayer] : [fieldLayer, bandLayer]);
       });
 }
 

@@ -986,7 +986,7 @@
   "ankirenMemoAllowed": "制限 {0}",
   "ankirenMemoUsed": "{0}使用",
   "ankirenMemoEarly": "{0}秒早い",
-  "ankirenMemoPays": "早く始めた分、札点 × {0}。",
+  "ankirenMemoPays": "早く始めたことによる得点倍率：× {0}",
   "ankirenMemoTicks": "目盛り: 同じ設定の過去の対戦 ({0})。",
   "ankirenFieldTitle": "盤面の再現",
   "ankirenFieldNote": "色 = 一手目",
@@ -1037,8 +1037,6 @@
   "ankirenPartSecond": "二手目 (× {0})",
   "ankirenPartSpeed": "速さボーナス (最大{0})",
   "ankirenRatingHead": "暗記練レート",
-  "ankirenRatingWhy": "レベル{0}のレートは{1}。札点の{2}%を取り(基準は{3}%)、この対戦は{4}相当でした。",
-  "ankirenRatingNext": "レート{1}でランク戦はレベル{0}に上がります。",
   "ankirenClassAt": "{1}({2})まであと{0}",
   "ankirenTapsTitle": "全記録",
   "ankirenTapsNote": "{0}枚、出題順",
@@ -1076,5 +1074,12 @@
   "runExamBeat": "トビに{0}秒差で勝ちました。",
   "runExamBeaten": "トビに{0}秒差で負けました。",
   "tabAndXp": "& XP",
-  "legendOverGoal": "目標超え"
+  "legendOverGoal": "目標超え",
+  "ankirenFirstTapLegend": "1回目のタップ",
+  "ankirenSecondTapLegend": "2回目のタップ",
+  "ankirenPreviousRating": "前のレート",
+  "ankirenPlayedLike": "今回の実力",
+  "ankirenNewRating": "新しいレート",
+  "ankirenStartReview": "振り返りを始める",
+  "ankirenShowAll": "全体を見る"
 }

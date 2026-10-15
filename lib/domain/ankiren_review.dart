@@ -226,11 +226,6 @@ class AnkirenReview {
 
   List<AnkirenGameRecord> get _rated => [for (final g in _earlier) if (g.ranked && g.rating != null) g];
 
-  /// How far a ranked game moved the rating toward its performance.
-  double get k => AnkirenRating.isPlacement(_rated.length)
-      ? AnkirenRatingModel.placementK
-      : AnkirenRatingModel.establishedK;
-
   /// The score parts (see [AnkirenScore.pointsOf]): right first taps, near
   /// first taps, second taps and the speed bonus.
   AnkirenScorePart get rightFirst => _part((c) => c.first == TapProximity.card, (c) => c.tapPoints(0));

@@ -986,7 +986,7 @@
   "ankirenMemoAllowed": "allowed {0}",
   "ankirenMemoUsed": "{0} used",
   "ankirenMemoEarly": "{0} s early",
-  "ankirenMemoPays": "Ready early pays: card points × {0}.",
+  "ankirenMemoPays": "Point multiplier due to early start: × {0}",
   "ankirenMemoTicks": "Ticks: your earlier games with this setup ({0}).",
   "ankirenFieldTitle": "The field, replayed",
   "ankirenFieldNote": "colour = first tap",
@@ -1037,8 +1037,6 @@
   "ankirenPartSecond": "Second taps, × {0}",
   "ankirenPartSpeed": "Speed bonus, up to {0}",
   "ankirenRatingHead": "AnkiRen rating",
-  "ankirenRatingWhy": "Level {0} is rated {1}. You got {2}% of the card points against a par of {3}%, so this game played like {4}.",
-  "ankirenRatingNext": "Ranked games move up to level {0} at {1}.",
   "ankirenClassAt": "{0} to {1} at {2}",
   "ankirenTapsTitle": "Every tap",
   "ankirenTapsNote": "{0} cards, in the order asked",
@@ -1076,5 +1074,12 @@
   "runExamBeat": "You beat Tobi by {0} s.",
   "runExamBeaten": "Tobi won by {0} s.",
   "tabAndXp": "& XP",
-  "legendOverGoal": "over goal"
+  "legendOverGoal": "over goal",
+  "ankirenFirstTapLegend": "First tap",
+  "ankirenSecondTapLegend": "Second tap",
+  "ankirenPreviousRating": "Previous rating",
+  "ankirenPlayedLike": "Played like",
+  "ankirenNewRating": "New rating",
+  "ankirenStartReview": "Start review",
+  "ankirenShowAll": "Show all"
 }

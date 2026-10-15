@@ -1164,14 +1164,16 @@ abstract final class HistoryRunStyle {
   static const double bigFont = 40;
   static const double examTimeFont = 26;
 
-  /// A missed card on the Cards tab, and the Practise button.
+  /// A missed card on the Cards tab.
   static const double cardWidth = 52;
-  static const double practiseHeight = 50;
-  static const double practiseShadow = 3;
-  static const double practiseIcon = 18;
-  static const double practiseFont = 15;
-  static const double practiseSubFont = 11;
-  static const EdgeInsets practisePadding = EdgeInsets.symmetric(horizontal: 12, vertical: 8);
+
+  /// `HistoryButton`: Practise these, Start review.
+  static const double buttonHeight = 50;
+  static const double buttonShadow = 3;
+  static const double buttonIcon = 18;
+  static const double buttonFont = 15;
+  static const double buttonSubFont = 11;
+  static const EdgeInsets buttonPadding = EdgeInsets.symmetric(horizontal: 12, vertical: 8);
 
   /// The Every swipe table: row height, column widths (the card takes the
   /// rest), a miss row's tint and the rule every ten cards.
@@ -1345,7 +1347,8 @@ abstract final class AnkirenReviewStyle {
   static const double memoTickOut = 4;
 
   /// The replayed field: its band, card words, the highlight round the card
-  /// asked, the arrows from wrong taps and the step's number marker.
+  /// asked, the arrows from wrong taps (later taps' dashed) and the taps'
+  /// numbered markers, on the field and in their legend.
   static const double fieldBand = 18;
   static const double fieldBandFont = 10;
   static const double fieldCardFont = 11;
@@ -1359,8 +1362,17 @@ abstract final class AnkirenReviewStyle {
   static const double arrowSpread = 0.45;
   static const double arrowBend = 0.25;
   static const Color arrow = Palette.pinkDeep;
-  static const double marker = 18;
-  static const double markerFont = 10;
+  static const List<double> laterTapDash = [5, 3.5];
+  static const double marker = 16;
+  static const double markerFontShare = 0.62;
+  static const double markerRing = 1.6;
+  static const double legendMarker = 13;
+
+  /// A reviewed step's cards that its taps did not touch, faded back.
+  static const double unrelatedOpacity = 0.35;
+  static const Duration dimFade = Duration(milliseconds: 160);
+  static const EdgeInsets showAllPadding = EdgeInsets.fromLTRB(8, 4, 10, 4);
+  static const double showAllIcon = 12;
   static const Color fieldGround = Color(0xFFEFF5E6);
   static const double stepFont = 15;
   static const double stepSubFont = 12;
@@ -1389,7 +1401,6 @@ abstract final class AnkirenReviewStyle {
   static const double badgeSuffixFont = 10;
 
   static const double ratingFont = 26;
-  static const double formulaFont = 12.5;
   static const double barGap = 8;
 }
 

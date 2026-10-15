@@ -484,6 +484,54 @@ class HeadlineCheer extends StatelessWidget {
       );
 }
 
+/// A pink action button on a hard shadow: an icon, the [label] and a
+/// smaller [sub] after it (the Cards tab's Practise, the Field's Start
+/// review).
+class HistoryButton extends StatelessWidget {
+  const HistoryButton({super.key, required this.icon, required this.label, this.sub, required this.onTap});
+  final VectorArt icon;
+  final String label;
+  final String? sub;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) => Container(
+        constraints: const BoxConstraints(minHeight: HistoryRunStyle.buttonHeight),
+        margin: const EdgeInsets.only(right: HistoryRunStyle.buttonShadow, bottom: HistoryRunStyle.buttonShadow),
+        decoration: const BoxDecoration(
+          boxShadow: [
+            BoxShadow(color: Palette.ink, offset: Offset(HistoryRunStyle.buttonShadow, HistoryRunStyle.buttonShadow)),
+          ],
+        ),
+        child: InkButton(
+          onTap: onTap,
+          color: Palette.pink,
+          padding: HistoryRunStyle.buttonPadding,
+          semanticLabel: [label, ?sub].join(', '),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              MangaIcon(icon, size: HistoryRunStyle.buttonIcon),
+              const SizedBox(width: Gaps.panel),
+              Flexible(
+                child: Text.rich(
+                  TextSpan(children: [
+                    TextSpan(text: label, style: const TextStyle(fontSize: HistoryRunStyle.buttonFont)),
+                    if (sub case final sub?)
+                      TextSpan(
+                          text: '  $sub',
+                          style: const TextStyle(fontWeight: Weights.bold, fontSize: HistoryRunStyle.buttonSubFont)),
+                  ]),
+                  textAlign: TextAlign.center,
+                  style: const TextStyle(fontWeight: Weights.black, color: Palette.ink),
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
+}
+
 /// A tracked small-caps label, as over a headline's big number.
 class TrackedLabel extends StatelessWidget {
   const TrackedLabel(this.text, {super.key, this.sub});

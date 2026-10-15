@@ -27,6 +27,10 @@ extension AnkirenReviewStrings on S {
   String ankirenMemoTicks(Object a0) => f('ankirenMemoTicks', [a0]);
   String get ankirenFieldTitle => t('ankirenFieldTitle');
   String get ankirenFieldNote => t('ankirenFieldNote');
+  String get ankirenFirstTapLegend => t('ankirenFirstTapLegend');
+  String get ankirenSecondTapLegend => t('ankirenSecondTapLegend');
+  String get ankirenStartReview => t('ankirenStartReview');
+  String get ankirenShowAll => t('ankirenShowAll');
   String get ankirenTheirSide => t('ankirenTheirSide');
   String get ankirenYourSide => t('ankirenYourSide');
   String ankirenStepCard(Object a0, Object a1, Object a2) => f('ankirenStepCard', [a0, a1, a2]);
@@ -72,9 +76,9 @@ extension AnkirenReviewStrings on S {
   String ankirenPartSecond(Object a0) => f('ankirenPartSecond', [a0]);
   String ankirenPartSpeed(Object a0) => f('ankirenPartSpeed', [a0]);
   String get ankirenRatingHead => t('ankirenRatingHead');
-  String ankirenRatingWhy(Object a0, Object a1, Object a2, Object a3, Object a4) =>
-      f('ankirenRatingWhy', [a0, a1, a2, a3, a4]);
-  String ankirenRatingNext(Object a0, Object a1) => f('ankirenRatingNext', [a0, a1]);
+  String get ankirenPreviousRating => t('ankirenPreviousRating');
+  String get ankirenPlayedLike => t('ankirenPlayedLike');
+  String get ankirenNewRating => t('ankirenNewRating');
   String ankirenClassAt(Object a0, Object a1, Object a2) => f('ankirenClassAt', [a0, a1, a2]);
   String get ankirenTapsTitle => t('ankirenTapsTitle');
   String ankirenTapsNote(Object a0) => f('ankirenTapsNote', [a0]);

@@ -86,7 +86,8 @@ class RunCardsTab extends StatelessWidget {
       ),
       if (practise.isNotEmpty) ...[
         const SizedBox(height: Gaps.panel),
-        _PractiseButton(
+        HistoryButton(
+          icon: IconArt.refresh,
           label: s.runPractise(practise.length),
           sub: s.runPractiseSub,
           onTap: () => startCardsPlay(context, practise),
@@ -95,50 +96,6 @@ class RunCardsTab extends StatelessWidget {
       ],
     ]);
   }
-}
-
-/// D17: a pink button with a hard shadow that starts a practice run of
-/// the missed and slowest cards.
-class _PractiseButton extends StatelessWidget {
-  const _PractiseButton({required this.label, required this.sub, required this.onTap});
-  final String label, sub;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) => Container(
-        constraints: const BoxConstraints(minHeight: HistoryRunStyle.practiseHeight),
-        margin: const EdgeInsets.only(right: HistoryRunStyle.practiseShadow, bottom: HistoryRunStyle.practiseShadow),
-        decoration: const BoxDecoration(
-          boxShadow: [
-            BoxShadow(color: Palette.ink, offset: Offset(HistoryRunStyle.practiseShadow, HistoryRunStyle.practiseShadow)),
-          ],
-        ),
-        child: InkButton(
-          onTap: onTap,
-          color: Palette.pink,
-          padding: HistoryRunStyle.practisePadding,
-          semanticLabel: '$label, $sub',
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              MangaIcon(IconArt.refresh, size: HistoryRunStyle.practiseIcon),
-              const SizedBox(width: Gaps.panel),
-              Flexible(
-                child: Text.rich(
-                  TextSpan(children: [
-                    TextSpan(text: label, style: const TextStyle(fontSize: HistoryRunStyle.practiseFont)),
-                    TextSpan(
-                        text: '  $sub',
-                        style: const TextStyle(fontWeight: Weights.bold, fontSize: HistoryRunStyle.practiseSubFont)),
-                  ]),
-                  textAlign: TextAlign.center,
-                  style: const TextStyle(fontWeight: Weights.black, color: Palette.ink),
-                ),
-              ),
-            ],
-          ),
-        ),
-      );
 }
 
 /// Each swipe's card number in the run (1-based, undone swipes skipped).

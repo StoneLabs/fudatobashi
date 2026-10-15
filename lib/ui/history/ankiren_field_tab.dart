@@ -13,14 +13,17 @@ import '../../domain/ankiren_tomofuda.dart';
 import '../../l10n/ankiren_review_strings.dart';
 import '../../l10n/strings.dart';
 import '../ankiren/ankiren_field_view.dart';
+import '../manga/geometry.dart';
 import '../manga/manga.dart';
 import '../play/time_format.dart';
 import 'ankiren_widgets.dart';
 import 'history_widgets.dart';
+import 'run_charts.dart';
 
 /// A 暗記練 game's Field (D33): the field as dealt, each card coloured by
-/// where its first tap landed, stepped through card by card with arrows
-/// from the cards each wrong tap hit; then how each side went.
+/// where its first tap landed; then, once the review starts (or a card is
+/// tapped), stepped through card by card with the unrelated cards dimmed
+/// and arrows from the cards each wrong tap hit; then how each side went.
 class AnkirenFieldTab extends StatefulWidget {
   const AnkirenFieldTab(this.review, {super.key});
   final AnkirenReview review;
@@ -31,7 +34,12 @@ class AnkirenFieldTab extends StatefulWidget {
 
 class _AnkirenFieldTabState extends State<AnkirenFieldTab> {
   static final _tomofuda = AnkirenTomofuda(poems);
-  int _step = 0;
+
+  /// The card being reviewed; null before the review starts, and after
+  /// Show all, when the whole field shows as dealt.
+  int? _step;
+
+  void _goTo(int? step) => setState(() => _step = step);
 
   @override
   Widget build(BuildContext context) {
@@ -48,9 +56,10 @@ class _AnkirenFieldTabState extends State<AnkirenFieldTab> {
         ),
       ]);
     }
-    final card = game.cards[_step];
-    final firstHit = card.tapped.firstOrNull;
-    final lookAlike = firstHit != null && _tomofuda.of(card.poemId).contains(firstHit);
+    final step = _step;
+    final card = step == null ? null : game.cards[step];
+    final firstHit = card?.tapped.firstOrNull;
+    final lookAlike = card != null && firstHit != null && _tomofuda.of(card.poemId).contains(firstHit);
     final sides = [
       for (final side in [FieldSide.opponent, FieldSide.own])
         if (game.rightFirstOn(side) case final r?)
@@ -63,15 +72,25 @@ class _AnkirenFieldTabState extends State<AnkirenFieldTab> {
         sub: s.sub?.ankirenFieldTitle,
         note: note,
         child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-          _ReplayedField(deal: deal, game: game, step: _step),
-          const TierLegend(),
-          const SizedBox(height: Gaps.panel),
-          _Stepper(
-            step: _step,
-            count: game.cards.length,
-            card: card,
-            onGo: (step) => setState(() => _step = step),
+          _ReplayedField(
+            deal: deal,
+            game: game,
+            step: step,
+            onPick: (id) {
+              final picked = game.cards.indexWhere((c) => c.poemId == id);
+              if (picked >= 0) _goTo(picked);
+            },
           ),
+          const TierLegend(),
+          if (card != null) const _TapLegend(),
+          const SizedBox(height: Gaps.panel),
+          if (step == null || card == null)
+            HistoryButton(icon: IconArt.arrow, label: s.ankirenStartReview, onTap: () => _goTo(0))
+          else ...[
+            _Stepper(step: step, count: game.cards.length, card: card, onGo: _goTo),
+            const SizedBox(height: Gaps.small),
+            Center(child: _ShowAll(onTap: () => _goTo(null))),
+          ],
           if (lookAlike)
             HistoryCaption(s.ankirenLookAlike(kimarijiFor(context, card.poemId), kimarijiFor(context, firstHit))),
           const SizedBox(height: Gaps.panel),
@@ -82,19 +101,23 @@ class _AnkirenFieldTabState extends State<AnkirenFieldTab> {
   }
 }
 
-/// The dealt field, every card in its first tap's colour, the [step]'s
-/// card outlined and numbered, arrows from the cards its wrong taps hit.
+/// The dealt field, every card in its first tap's colour. In a [step],
+/// its card is outlined, its taps numbered with arrows from the wrong
+/// ones, and every card it did not touch dimmed. Tapping a card picks it
+/// ([onPick]).
 class _ReplayedField extends StatelessWidget {
-  const _ReplayedField({required this.deal, required this.game, required this.step});
+  const _ReplayedField({required this.deal, required this.game, required this.step, required this.onPick});
   final AnkirenField deal;
   final AnkirenGameRecord game;
-  final int step;
+  final int? step;
+  final ValueChanged<int> onPick;
 
   @override
   Widget build(BuildContext context) {
     final s = S.of(context);
     final tiers = {for (final c in game.cards) c.poemId: c.first};
-    final card = game.cards[step];
+    final card = step == null ? null : game.cards[step!];
+    final related = card == null ? null : {card.poemId, ...card.tapped};
     return Semantics(
       image: true,
       label: s.ankirenFieldLabel,
@@ -117,9 +140,18 @@ class _ReplayedField extends StatelessWidget {
               landscape: false,
               zoom: false,
               bandExtent: band,
-              card: (id, side) => _FieldCard(id, place: tiers[id], current: id == card.poemId),
+              card: (id, side) => GestureDetector(
+                behavior: HitTestBehavior.opaque,
+                onTap: () => onPick(id),
+                child: AnimatedOpacity(
+                  opacity: related == null || related.contains(id) ? 1 : AnkirenReviewStyle.unrelatedOpacity,
+                  duration: AnkirenReviewStyle.dimFade,
+                  child: _FieldCard(id, place: tiers[id], current: id == card?.poemId),
+                ),
+              ),
               band: _Band(their: s.ankirenTheirSide, yours: s.ankirenYourSide),
-              overlay: (placement) => CustomPaint(painter: _TapArrows(placement, card, step + 1)),
+              overlay: card == null ? null : (placement) => CustomPaint(painter: _TapArrows(placement, card)),
+              overlayOverBand: true,
             ),
           ),
         );
@@ -186,13 +218,13 @@ class _Band extends StatelessWidget {
   }
 }
 
-/// Arrows from the cards [card]'s wrong taps hit to the card itself, and
-/// its [number] at the card's corner.
+/// [card]'s taps across the field: an arrow from each wrong card it hit
+/// to the card itself, solid for the first tap and dashed after, then a
+/// numbered badge on every card it hit, in order, over the arrows.
 class _TapArrows extends CustomPainter {
-  _TapArrows(this.placement, this.card, this.number);
+  _TapArrows(this.placement, this.card);
   final FieldPlacement placement;
   final AnkirenCardTry card;
-  final int number;
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -202,17 +234,18 @@ class _TapArrows extends CustomPainter {
       ..color = AnkirenReviewStyle.arrow
       ..style = PaintingStyle.stroke
       ..strokeWidth = AnkirenReviewStyle.arrowStroke;
-    for (final id in card.tapped.toSet()) {
+    for (final (i, id) in card.tapped.indexed) {
       if (id == card.poemId) continue;
       final from = placement.cardRect(id)?.center;
       if (from == null) continue;
       final to = target.center;
       final d = to - from;
-      final normal = Offset(-d.dy, d.dx) * AnkirenReviewStyle.arrowBend;
+      final normal = Offset(-d.dy, d.dx) * AnkirenReviewStyle.arrowBend * (i.isEven ? 1 : -1);
       final control = from + d / 2 + normal;
-      canvas.drawPath(Path()
+      final shaft = Path()
         ..moveTo(from.dx, from.dy)
-        ..quadraticBezierTo(control.dx, control.dy, to.dx, to.dy), line);
+        ..quadraticBezierTo(control.dx, control.dy, to.dx, to.dy);
+      canvas.drawPath(i == 0 ? shaft : Dashes.of(shaft, AnkirenReviewStyle.laterTapDash), line);
       final back = (control - to).direction;
       const spread = AnkirenReviewStyle.arrowSpread;
       const head = AnkirenReviewStyle.arrowHead;
@@ -224,21 +257,43 @@ class _TapArrows extends CustomPainter {
         line,
       );
     }
-    const r = AnkirenReviewStyle.marker / 2;
-    final centre = target.topRight;
-    canvas.drawCircle(centre, r, Paint()..color = AnkirenReviewStyle.arrow);
-    canvas.drawCircle(centre, r, Paint()
-      ..color = Palette.paper
+    final onCard = <int, int>{};
+    for (final (i, id) in card.tapped.indexed) {
+      final rect = placement.cardRect(id);
+      if (rect == null) continue;
+      final before = onCard.update(id, (n) => n + 1, ifAbsent: () => 0);
+      const r = AnkirenReviewStyle.marker / 2;
+      _TapBadge.draw(canvas, rect.topRight + Offset(-r - before * AnkirenReviewStyle.marker, r), i + 1,
+          size: AnkirenReviewStyle.marker);
+    }
+  }
+
+  @override
+  bool shouldRepaint(_TapArrows old) => old.card != card || old.placement != placement;
+}
+
+/// A tap's number in a circle: the first filled pink, later ones
+/// pink-ringed paper, like their solid and dashed arrows.
+class _TapBadge extends CustomPainter {
+  const _TapBadge(this.number);
+  final int number;
+
+  static void draw(Canvas canvas, Offset centre, int number, {required double size}) {
+    final first = number == 1;
+    final r = size / 2;
+    canvas.drawCircle(centre, r, Paint()..color = first ? AnkirenReviewStyle.arrow : Palette.paper);
+    canvas.drawCircle(centre, r - AnkirenReviewStyle.markerRing / 2, Paint()
+      ..color = first ? Palette.paper : AnkirenReviewStyle.arrow
       ..style = PaintingStyle.stroke
-      ..strokeWidth = Strokes.hairline);
+      ..strokeWidth = first ? Strokes.hairline : AnkirenReviewStyle.markerRing);
     final label = TextPainter(
       text: TextSpan(
         text: '$number',
-        style: const TextStyle(
+        style: TextStyle(
             fontFamily: Fonts.ui,
             fontWeight: Weights.black,
-            fontSize: AnkirenReviewStyle.markerFont,
-            color: Palette.paper),
+            fontSize: size * AnkirenReviewStyle.markerFontShare,
+            color: first ? Palette.paper : AnkirenReviewStyle.arrow),
       ),
       textDirection: TextDirection.ltr,
     )..layout();
@@ -246,7 +301,54 @@ class _TapArrows extends CustomPainter {
   }
 
   @override
-  bool shouldRepaint(_TapArrows old) => old.card != card || old.placement != placement || old.number != number;
+  void paint(Canvas canvas, Size size) => draw(canvas, size.center(Offset.zero), number, size: size.shortestSide);
+
+  @override
+  bool shouldRepaint(_TapBadge old) => old.number != number;
+}
+
+/// What the replay's arrows mean: a solid arrow and badge 1 for the first
+/// tap, dashed and badge 2 for the second.
+class _TapLegend extends StatelessWidget {
+  const _TapLegend();
+
+  @override
+  Widget build(BuildContext context) {
+    final s = S.of(context);
+    Widget mark(int number) => Row(mainAxisSize: MainAxisSize.min, children: [
+          LegendMark.line(AnkirenReviewStyle.arrow, dashed: number > 1),
+          const SizedBox(width: Gaps.tight),
+          SizedBox.square(
+            dimension: AnkirenReviewStyle.legendMarker,
+            child: CustomPaint(painter: _TapBadge(number)),
+          ),
+        ]);
+    return ChartLegend([(mark(1), s.ankirenFirstTapLegend), (mark(2), s.ankirenSecondTapLegend)]);
+  }
+}
+
+/// A small button back from the review to the whole field as dealt.
+class _ShowAll extends StatelessWidget {
+  const _ShowAll({required this.onTap});
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final s = S.of(context);
+    return IntrinsicWidth(
+      child: InkButton(
+        onTap: onTap,
+        border: Strokes.label,
+        padding: AnkirenReviewStyle.showAllPadding,
+        semanticLabel: s.ankirenShowAll,
+        child: Row(mainAxisSize: MainAxisSize.min, children: [
+          MangaIcon(IconArt.close, size: AnkirenReviewStyle.showAllIcon),
+          const SizedBox(width: Gaps.tight),
+          Text(s.ankirenShowAll, style: const TextStyle(fontWeight: Weights.black, fontSize: AnkirenReviewStyle.stepSubFont)),
+        ]),
+      ),
+    );
+  }
 }
 
 /// The step through the cards: back and forward, the card asked and how
