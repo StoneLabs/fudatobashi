@@ -140,6 +140,14 @@ class _SimulationPageState extends State<SimulationPage> {
             onPressed: _running ? null : () => _seedDemoData(pace),
             child: const Text('Seed demo data'),
           ),
+          const SizedBox(height: 8),
+          const Text('Or an all-known player with ranked runs (the learner and days above).', style: _mono),
+          OutlinedButton(
+            onPressed: _running
+                ? null
+                : () => confirmSeedDemoData(context, learner: _learner, pace: pace, days: _days, ranked: true),
+            child: const Text('Seed ranked demo data'),
+          ),
         ]),
       ),
     );

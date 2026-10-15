@@ -14,6 +14,7 @@ import 'package:fudatobashi/domain/ranked.dart';
 import 'package:fudatobashi/domain/rating.dart';
 import 'package:fudatobashi/domain/trainer.dart';
 import 'package:fudatobashi/domain/xp.dart';
+import 'package:fudatobashi/state/demo_data.dart';
 import 'package:fudatobashi/state/play_config.dart';
 import 'package:fudatobashi/state/past_runs.dart';
 import 'package:fudatobashi/state/progress.dart';
@@ -141,6 +142,20 @@ void main() {
       expect(rated[1].rating.after, closeTo(p.rating!, 1e-9));
       await db.close();
     });
+
+    test('the ranked demo seeds an all-known player whose ranked runs make a rating history', () async {
+      final db = AppDatabase(NativeDatabase.memory());
+      final p = await Progress.open(db);
+      await seedRankedDemoData(p, days: 6);
+      expect(p.trainer.config.learningMode, LearningMode.allKnown);
+      final ranked = [for (final r in p.runs) if (r.mode == PlayMode.ranked) r];
+      expect(ranked, hasLength(6 ~/ DemoDataTuning.rankedEvery));
+      expect(ranked.every((r) => r.rating != null && r.performance != null && r.scoredMs != null && r.allKnown), isTrue);
+      expect(p.rating, ranked.last.rating);
+      expect(p.pastRuns.where((r) => r.placement).single.id, ranked.first.id);
+      expect({for (final r in p.runs) r.day}.length, 6, reason: 'training every day');
+      await db.close();
+    }, timeout: const Timeout(Duration(minutes: 2)));
 
     test('a ranked run the app never recorded counts as a forfeit on the next start', () async {
       final db = AppDatabase(NativeDatabase.memory());

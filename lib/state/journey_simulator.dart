@@ -124,6 +124,10 @@ class JourneySimulator {
         newPoems: plan.newPoems, planner: plan.planner, maxSwipes: plan.ofSet ? share : null, onCard: onCard);
   }
 
+  /// A ranked run of all 100 cards from [start] (all-known mode).
+  Future<DateTime> rankedRound(DateTime start, {CardProgress? onCard}) =>
+      _play(progress.rankedDeck(rng: rng), const PlayConfig(mode: PlayMode.ranked), start, onCard: onCard);
+
   /// A customised free-play round (all 100 cards, cut to [cards]): stored,
   /// but it never counts for SRS.
   Future<DateTime> freeRound(DateTime start, int cards, {CardProgress? onCard}) async {

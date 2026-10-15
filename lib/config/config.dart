@@ -994,6 +994,11 @@ abstract final class DemoDataTuning {
   /// Fixed default seed, so seeding the same device twice (and this
   /// feature's own test) reproduces the same journey.
   static const int seed = 1179;
+
+  /// The ranked demo (all-known mode): training rounds a day, and a ranked
+  /// run every this many days.
+  static const int rankedTrainingRounds = 2;
+  static const int rankedEvery = 2;
 }
 
 /// Settings › Developer › "Preview celebrations": the spec mock's numbers.

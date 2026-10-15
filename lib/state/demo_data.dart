@@ -43,6 +43,41 @@ Future<void> seedDemoData(
   onProgress?.call(days, days, 1);
 }
 
+/// Replaces all progress with an all-known player's last [days] days:
+/// [DemoDataTuning.rankedTrainingRounds] training rounds a day and a ranked
+/// run every [DemoDataTuning.rankedEvery] days, through the real path, so
+/// the rating has a history (Stats' rank page, History's ranked runs).
+Future<void> seedRankedDemoData(
+  Progress progress, {
+  SeedProgress? onProgress,
+  LearnerKind learner = LearnerKind.average,
+  int days = DemoDataTuning.days,
+  int seed = DemoDataTuning.seed,
+}) async {
+  progress.simulating = true;
+  try {
+    await progress.resetProgress();
+    await progress.updateTrainerConfig(
+      progress.trainer.config.copyWith(learningMode: LearningMode.allKnown, reverseMode: ReverseMode.mixed),
+    );
+    final sim = JourneySimulator(progress, seed: seed, learner: learner);
+    progress.trainer.fuzzing = false;
+    final today = DateTime.now();
+    for (var d = 0; d < days; d++) {
+      final date = DateTime(today.year, today.month, today.day - days + d);
+      onProgress?.call(d + 1, days, 0);
+      await sim.day(date, rounds: DemoDataTuning.rankedTrainingRounds);
+      if (d % DemoDataTuning.rankedEvery == DemoDataTuning.rankedEvery - 1) {
+        await sim.rankedRound(DateTime(date.year, date.month, date.day, SyntheticLearnerTuning.lastRoundHour));
+      }
+    }
+  } finally {
+    progress.trainer.fuzzing = true;
+    progress.simulating = false;
+  }
+  onProgress?.call(days, days, 1);
+}
+
 Future<void> _simulate(
   Progress progress,
   JourneySimulator sim,
