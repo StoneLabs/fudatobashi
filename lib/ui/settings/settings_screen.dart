@@ -503,7 +503,7 @@ class _DeveloperSection extends StatelessWidget {
           SettingsTapRow(title: 'Replay tour', onTap: () => replayTour(context)),
           SettingsTapRow(title: 'Reset onboarding', onTap: () => confirmResetOnboarding(context)),
           SettingsTapRow(title: 'Reset progress', onTap: () => confirmResetProgress(context)),
-          SettingsTapRow(title: 'Rating: unplace', onTap: progress.debugClearRating),
+          SettingsTapRow(title: 'Delete rank', onTap: progress.debugClearRating),
         ]),
       ],
     );
