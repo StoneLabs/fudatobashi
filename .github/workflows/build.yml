@@ -1,8 +1,13 @@
-# Builds release artifacts for every platform. Triggers only on a version
-# tag push ("git push github vX.Y.Z") or manually via the "Run workflow"
-# button (workflow_dispatch) — never on every push, since the macOS runners
-# used here cost 10x the minutes. On a tag, the built files are also
-# attached to a new GitHub Release.
+# Builds every platform. It runs in three cases:
+#   - a version tag push ("git push github vX.Y.Z"): builds, then attaches the
+#     files to a new GitHub Release;
+#   - every push to main whose Test workflow passed: builds and keeps the files
+#     as workflow artifacts only (30 days). No release, no tag;
+#   - manually via the "Run workflow" button (workflow_dispatch): artifacts only.
+# The build number and version name come from scripts/version.sh, the same helper
+# the local build scripts use: the build number is the commit count, and the name
+# is the pubspec version on a tagged commit, otherwise <version>-beta.<commit count>.
+# iOS, macOS and Windows only get the build number (they need a plain version).
 #
 # Android release signing is optional: set these repo secrets to sign with
 # the real release key instead of falling back to the debug key:
@@ -13,30 +18,59 @@
 # so it's always named …-unsigned.
 name: Build
 
+# The workflow_run trigger starts after the Test workflow finishes on main. Tag
+# runs of Test have the tag as their branch name, so they never match "main".
 on:
   push:
     tags:
       - 'v*'
+  workflow_run:
+    workflows: [Test]
+    types: [completed]
+    branches: [main]
   workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  # A workflow_run starts on main's latest commit, so build the commit that was tested.
+  SOURCE_SHA: ${{ github.event.workflow_run.head_sha || github.sha }}
 
 jobs:
   version:
     name: Resolve version
+    # Only builds a passing Test run of a push to main in this repo (never a pull request, never a fork).
+    if: >-
+      github.event_name != 'workflow_run' ||
+      (github.event.workflow_run.conclusion == 'success' &&
+       github.event.workflow_run.event == 'push' &&
+       github.event.workflow_run.head_repository.full_name == github.repository)
     runs-on: ubuntu-latest
     outputs:
       version: ${{ steps.resolve.outputs.version }}
+      build_name: ${{ steps.resolve.outputs.build_name }}
+      build_number: ${{ steps.resolve.outputs.build_number }}
     steps:
       - uses: actions/checkout@v7
+        with:
+          ref: ${{ env.SOURCE_SHA }}
+          fetch-depth: 0
 
       - id: resolve
         run: |
+          source scripts/version.sh
           if [ "${{ github.ref_type }}" = "tag" ]; then
             version="${GITHUB_REF_NAME#v}"
           else
-            version="$(sed -n 's/^version: *\([^+[:space:]]*\).*/\1/p' pubspec.yaml)"
+            version="$BUILD_NAME"
           fi
-          echo "Resolved version: $version"
-          echo "version=$version" >> "$GITHUB_OUTPUT"
+          echo "Resolved version: $version (app version name $BUILD_NAME, build number $BUILD_NUMBER)"
+          {
+            echo "version=$version"
+            echo "build_name=$BUILD_NAME"
+            echo "build_number=$BUILD_NUMBER"
+          } >> "$GITHUB_OUTPUT"
 
   android:
     name: Android (APK + AAB)
@@ -46,6 +80,8 @@ jobs:
       VERSION: ${{ needs.version.outputs.version }}
     steps:
       - uses: actions/checkout@v7
+        with:
+          ref: ${{ env.SOURCE_SHA }}
 
       - uses: subosito/flutter-action@v2
         with:
@@ -82,8 +118,8 @@ jobs:
           fi
 
       - run: flutter pub get
-      - run: flutter build apk --release
-      - run: flutter build appbundle --release
+      - run: flutter build apk --release --build-name=${{ needs.version.outputs.build_name }} --build-number=${{ needs.version.outputs.build_number }}
+      - run: flutter build appbundle --release --build-name=${{ needs.version.outputs.build_name }} --build-number=${{ needs.version.outputs.build_number }}
 
       - name: Collect artifacts
         run: |
@@ -93,13 +129,11 @@ jobs:
 
       - uses: actions/upload-artifact@v7
         with:
-          name: fudatobashi-${{ needs.version.outputs.version }}-android-apk
-          path: dist/*.apk
-
-      - uses: actions/upload-artifact@v7
-        with:
-          name: fudatobashi-${{ needs.version.outputs.version }}-android-aab
-          path: dist/*.aab
+          name: fudatobashi-${{ needs.version.outputs.version }}-android
+          path: |
+            dist/*.apk
+            dist/*.aab
+          retention-days: 30
 
   ios:
     name: iOS (unsigned IPA)
@@ -109,6 +143,8 @@ jobs:
       VERSION: ${{ needs.version.outputs.version }}
     steps:
       - uses: actions/checkout@v7
+        with:
+          ref: ${{ env.SOURCE_SHA }}
 
       - uses: subosito/flutter-action@v2
         with:
@@ -117,7 +153,7 @@ jobs:
           cache: true
 
       - run: flutter pub get
-      - run: flutter build ios --release --no-codesign
+      - run: flutter build ios --release --no-codesign --build-number=${{ needs.version.outputs.build_number }}
 
       - name: Package IPA
         run: |
@@ -127,8 +163,9 @@ jobs:
 
       - uses: actions/upload-artifact@v7
         with:
-          name: fudatobashi-${{ needs.version.outputs.version }}-ios-ipa
+          name: fudatobashi-${{ needs.version.outputs.version }}-ios
           path: dist/*.ipa
+          retention-days: 30
 
   macos:
     name: macOS (.app)
@@ -138,6 +175,8 @@ jobs:
       VERSION: ${{ needs.version.outputs.version }}
     steps:
       - uses: actions/checkout@v7
+        with:
+          ref: ${{ env.SOURCE_SHA }}
 
       - uses: subosito/flutter-action@v2
         with:
@@ -146,7 +185,7 @@ jobs:
           cache: true
 
       - run: flutter pub get
-      - run: flutter build macos --release
+      - run: flutter build macos --release --build-number=${{ needs.version.outputs.build_number }}
 
       - name: Zip app bundle
         run: |
@@ -159,6 +198,7 @@ jobs:
         with:
           name: fudatobashi-${{ needs.version.outputs.version }}-macos
           path: dist/*.zip
+          retention-days: 30
 
   linux:
     name: Linux (.tar.gz)
@@ -168,6 +208,8 @@ jobs:
       VERSION: ${{ needs.version.outputs.version }}
     steps:
       - uses: actions/checkout@v7
+        with:
+          ref: ${{ env.SOURCE_SHA }}
 
       - uses: subosito/flutter-action@v2
         with:
@@ -183,7 +225,7 @@ jobs:
             libgstreamer1.0-dev libgstreamer-plugins-base1.0-dev
 
       - run: flutter pub get
-      - run: flutter build linux --release
+      - run: flutter build linux --release --build-name=${{ needs.version.outputs.build_name }} --build-number=${{ needs.version.outputs.build_number }}
 
       - name: Package tarball
         run: |
@@ -194,6 +236,7 @@ jobs:
         with:
           name: fudatobashi-${{ needs.version.outputs.version }}-linux
           path: dist/*.tar.gz
+          retention-days: 30
 
   windows:
     name: Windows (Release folder)
@@ -203,6 +246,8 @@ jobs:
       VERSION: ${{ needs.version.outputs.version }}
     steps:
       - uses: actions/checkout@v7
+        with:
+          ref: ${{ env.SOURCE_SHA }}
 
       - uses: subosito/flutter-action@v2
         with:
@@ -211,7 +256,7 @@ jobs:
           cache: true
 
       - run: flutter pub get
-      - run: flutter build windows --release
+      - run: flutter build windows --release --build-number=${{ needs.version.outputs.build_number }}
 
       - name: Zip Release folder
         shell: pwsh
@@ -223,6 +268,7 @@ jobs:
         with:
           name: fudatobashi-${{ needs.version.outputs.version }}-windows
           path: dist/*.zip
+          retention-days: 30
 
   release:
     name: Create GitHub release
