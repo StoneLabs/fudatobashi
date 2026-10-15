@@ -58,6 +58,7 @@ import 'package:fudatobashi/ui/free/free_practice_sheet.dart';
 import 'package:fudatobashi/ui/free/island_picker.dart';
 import 'package:fudatobashi/ui/free/look_alike_picker.dart';
 import 'package:fudatobashi/ui/help/help_screen.dart';
+import 'package:fudatobashi/ui/home/home_screen.dart';
 import 'package:fudatobashi/ui/home/home_widgets.dart';
 import 'package:fudatobashi/ui/home/known_home.dart';
 import 'package:fudatobashi/ui/home/learn_ahead_button.dart';
@@ -3068,6 +3069,7 @@ void main() {
             expect(tester.takeException(), isNull, reason: 'step $i');
             expect(find.byType(TourOverlay), findsOneWidget);
             expect(backButton(), i == 0 ? findsNothing : findsOneWidget, reason: 'back button, step $i');
+            expect(find.text(s.tourSkip), findsOneWidget, reason: 'skip button, step $i');
             final arrows = tester.widget<TourArrows>(find.byType(TourArrows));
             if (target != null) {
               expect(arrows.scribbles, isNotEmpty, reason: 'step $i: ${step.spot!.name} is found');
@@ -3093,6 +3095,32 @@ void main() {
           await tester.pumpWidget(const SizedBox());
         });
       }
+    }
+
+    for (final mode in LearningMode.values) {
+      testWidgets('Skip ends the ${mode.name} tour on any stop, leaving the app as finishing it does', (tester) async {
+        final steps = TourStep.of(mode, tabsLocked: true);
+        for (final stop in [0, steps.length ~/ 2, steps.length - 1]) {
+          final p = await open(tester, mode: mode, journeyCards: 7, tabsLocked: true, toured: false);
+          final settings = p.settings;
+          await onPhone(tester, p, fontScale: 1);
+          final s = S('en');
+          for (var i = 0; i < stop; i++) {
+            final target = await settleStep(tester, steps[i]);
+            if (steps[i].practice) break;
+            await tapStepTarget(tester, target: target, hint: hintFor(s, steps, i));
+          }
+          await settleStep(tester, steps[stop]);
+          await tester.tap(find.text(s.tourSkip));
+          await tester.pump();
+          await tester.pump(const Duration(milliseconds: 100));
+          expect(find.byType(TourOverlay), findsNothing, reason: 'stop $stop');
+          expect(p.settings.toJson(), settings.copyWith(toured: true).toJson(), reason: 'only the tour is marked done');
+          expect(p.sessions, isEmpty);
+          expect(find.byType(HomeScreen), findsOneWidget);
+          await tester.pumpWidget(const SizedBox());
+        }
+      });
     }
 
     testWidgets('a tap before the line finishes typing, or off the target, does nothing; the target works once it is done',
