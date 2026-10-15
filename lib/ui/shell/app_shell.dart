@@ -12,6 +12,7 @@ import '../../state/scope.dart';
 import '../history/history_screen.dart';
 import '../home/home_screen.dart';
 import '../manga/manga.dart';
+import '../run/run_launcher.dart';
 import '../side_trips/side_trips_screen.dart';
 import '../stats/stats_screen.dart';
 import '../tour/tour_anchor.dart';
@@ -29,7 +30,8 @@ enum AppTab { home, history, stats, sideTrips }
 /// Home shows.
 ///
 /// Until the player has taken Tobi's tour of Home (`AppSettings.toured`,
-/// set back to take it again), Home is shown with the tour over it.
+/// set back to take it again), Home is shown with the tour over it. As the
+/// graduation exam first opens, Tobi points Home's exam strip out, once.
 class AppShell extends StatefulWidget {
   const AppShell({super.key});
 
@@ -116,9 +118,17 @@ class _AppShellState extends State<AppShell> {
             : null,
       );
 
+  /// Finishing the tour and skipping it both end it here.
   void _endTour(Progress progress) {
     setState(() => _tab = AppTab.home);
     progress.updateSettings(progress.settings.copyWith(toured: true));
+  }
+
+  /// Tobi's word on the exam strip is done with; a tap on the strip itself
+  /// goes on to [start] the exam.
+  void _endExamIntro(Progress progress, {bool start = false}) {
+    progress.noteExamIntroShown();
+    if (start) startExam(context);
   }
 
   @override
@@ -127,6 +137,7 @@ class _AppShellState extends State<AppShell> {
     final progress = ProgressScope.of(context);
     final touring = !progress.settings.toured;
     final tab = touring ? AppTab.home : _tab;
+    final examIntro = !touring && tab == AppTab.home && progress.examIntroDue;
     final locks = {for (final t in LockedTab.values) t: progress.tabLock(t)};
     _syncLocks(progress, locks);
     final underBar = TabBarStyle.height + 2 * Gaps.section + MediaQuery.paddingOf(context).bottom;
@@ -185,6 +196,17 @@ class _AppShellState extends State<AppShell> {
                 ),
                 keys: _tourKeys,
                 onDone: () => _endTour(progress),
+                onSkip: () => _endTour(progress),
+              ),
+            ),
+          if (examIntro)
+            Positioned.fill(
+              child: TourOverlay(
+                key: const ValueKey(TourSpot.exam),
+                steps: TourStep.examIntro,
+                keys: _tourKeys,
+                onDone: () => _endExamIntro(progress, start: true),
+                onElsewhere: () => _endExamIntro(progress),
               ),
             ),
         ]),

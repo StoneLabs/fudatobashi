@@ -1,8 +1,8 @@
-// Journey Home's graduation exam strip (locked, open, cooling down), the
-// banner that replaces it once the exam is passed and the question behind
-// it, and the rank ladder before there is a rank: what each shows and does,
-// and that each fits 360 and 384 dp phones at text scale 1.0 and 1.3 in
-// English and Japanese.
+// Journey Home's graduation exam strip (hidden until open, open, cooling
+// down) and Tobi pointing it out as it opens, the banner that replaces it
+// once the exam is passed and the question behind it, and the rank ladder
+// before there is a rank: what each shows and does, and that each fits 360
+// and 384 dp phones at text scale 1.0 and 1.3 in English and Japanese.
 //
 // With RENDER_SCREENS=1 it also renders them to build/screens/ (journey_*,
 // rank_*).
@@ -22,6 +22,7 @@ import 'package:fudatobashi/db/database.dart';
 import 'package:fudatobashi/domain/card_stats.dart' show ItemKey;
 import 'package:fudatobashi/domain/play_session.dart';
 import 'package:fudatobashi/domain/trainer.dart';
+import 'package:fudatobashi/l10n/exam_strings.dart';
 import 'package:fudatobashi/l10n/home_strings.dart';
 import 'package:fudatobashi/l10n/ranked_strings.dart';
 import 'package:fudatobashi/l10n/stats_strings.dart';
@@ -33,6 +34,7 @@ import 'package:fudatobashi/ui/home/exam_strip.dart';
 import 'package:fudatobashi/ui/home/switch_banner.dart';
 import 'package:fudatobashi/ui/manga/phrases.dart';
 import 'package:fudatobashi/ui/rank/rank_screen.dart';
+import 'package:fudatobashi/ui/tour/tour_overlay.dart';
 
 import 'test_l10n.dart';
 import 'test_vector_art.dart';
@@ -103,8 +105,9 @@ void main() {
 
   /// A toured journey player 27 cards in, at [stage]: 37 cards never swiped
   /// while locked; a try 17:50 ago while cooling down; passed with Tobi at
-  /// 5:00.
-  Future<Progress> open(WidgetTester tester, _Stage stage, {String lang = 'en', LearningMode? mode}) async {
+  /// 5:00. Tobi has pointed the open exam out already unless [intro].
+  Future<Progress> open(WidgetTester tester, _Stage stage,
+      {String lang = 'en', LearningMode? mode, bool intro = false}) async {
     late Progress p;
     await tester.runAsync(() async {
       p = await Progress.open(AppDatabase(NativeDatabase.memory()));
@@ -119,6 +122,7 @@ void main() {
         await p.recordRun(play(all), const PlayConfig(mode: PlayMode.exam), DateTime.now(), tobi: const Duration(minutes: 5));
       }
       if (mode != null) await p.setLearningMode(mode);
+      if (!intro) await p.noteExamIntroShown();
     });
     final ids = [for (final isl in archipelago.islands) ...fudaSets['initial:${isl.name}'].poemIds];
     for (final id in ids.take(27)) {
@@ -161,18 +165,49 @@ void main() {
   }
 
   group('exam strip', () {
-    testWidgets('locked: says how many cards are left, and a tap says why', (tester) async {
-      final p = await open(tester, _Stage.locked);
+    testWidgets('hidden until every card is swiped once, with no word from Tobi', (tester) async {
+      final p = await open(tester, _Stage.locked, intro: true);
       expect(p.exam().cardsLeft, 37);
+      expect(p.examIntroDue, isFalse);
+      await onPhone(tester, p, _users);
+      expect(find.byType(ExamStrip), findsNothing);
+      expect(find.byType(TourOverlay), findsNothing);
+      await tester.pumpWidget(const SizedBox());
+    });
+
+    testWidgets('as it opens, Tobi points it out once; a tap away closes him', (tester) async {
+      final p = await open(tester, _Stage.open, intro: true);
+      expect(p.examIntroDue, isTrue);
       await onPhone(tester, p, _users);
       const s = S('en');
       expect(find.byType(ExamStrip), findsOneWidget);
-      expect(find.text(s.examSwipeAll), findsOneWidget);
-      expect(find.textContaining('37'), findsWidgets);
-      await tester.tap(find.byType(ExamStrip));
-      await tester.pump(const Duration(milliseconds: 300));
-      expect(find.text(s.examLockedWhy(37)), findsOneWidget);
+      expect(find.byType(TourOverlay), findsOneWidget);
       await tester.pump(const Duration(seconds: 4));
+      expect(phrase(s.examIntro), findsOneWidget);
+      await tester.tapAt(const Offset(60, 300));
+      await tester.runAsync(() => Future<void>.delayed(const Duration(milliseconds: 50)));
+      await tester.pump(const Duration(milliseconds: 300));
+      expect(find.byType(TourOverlay), findsNothing);
+      expect(p.examIntroDue, isFalse, reason: 'shown once');
+      expect(find.text(s.examStart), findsNothing, reason: 'a tap away only closes it');
+
+      await tester.runAsync(p.replayExamIntro);
+      await tester.pump(const Duration(milliseconds: 100));
+      expect(find.byType(TourOverlay), findsOneWidget, reason: "developer mode's replay");
+      await tester.pumpWidget(const SizedBox());
+    });
+
+    testWidgets("a tap on the strip under Tobi's word opens the exam's question", (tester) async {
+      final p = await open(tester, _Stage.open, intro: true);
+      await onPhone(tester, p, _users);
+      await tester.pump(const Duration(seconds: 4));
+      await tester.tap(find.byType(ExamStrip), warnIfMissed: false);
+      await tester.runAsync(() => Future<void>.delayed(const Duration(milliseconds: 50)));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 600));
+      expect(find.byType(TourOverlay), findsNothing);
+      expect(p.examIntroDue, isFalse);
+      expect(find.text(S('en').examStart), findsOneWidget);
       await tester.pumpWidget(const SizedBox());
     });
 
@@ -207,13 +242,19 @@ void main() {
         for (final fontScale in [1.0, 1.3]) {
           final tag = '${lang}_${phone.name}_$fontScale';
           testWidgets('every stage fits ($tag)', (tester) async {
-            for (final stage in [_Stage.locked, _Stage.open, _Stage.cooldown]) {
+            for (final stage in [_Stage.open, _Stage.cooldown]) {
               final p = await open(tester, stage, lang: lang);
               await onPhone(tester, p, phone, fontScale: fontScale);
               expectInsideMap(tester, find.byType(ExamStrip));
               await _capture(tester, 'journey_exam_${stage.name}_$tag');
               await tester.pumpWidget(const SizedBox());
             }
+            final p = await open(tester, _Stage.open, lang: lang, intro: true);
+            await onPhone(tester, p, phone, fontScale: fontScale);
+            await tester.pump(const Duration(seconds: 5));
+            expect(tester.takeException(), isNull);
+            await _capture(tester, 'journey_exam_intro_$tag');
+            await tester.pumpWidget(const SizedBox());
           });
         }
       }

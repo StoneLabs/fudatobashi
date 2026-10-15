@@ -481,6 +481,14 @@ class _DeveloperSection extends StatelessWidget {
             },
           ),
           SettingsTapRow(
+            title: 'Exam: replay intro',
+            note: "Tobi points out the exam strip on Home again, once it's open",
+            onTap: () async {
+              await progress.replayExamIntro();
+              if (context.mounted) Navigator.of(context).popUntil((r) => r.isFirst);
+            },
+          ),
+          SettingsTapRow(
             title: 'Exam: clear cooldown',
             onTap: () async {
               await progress.clearExamCooldown();

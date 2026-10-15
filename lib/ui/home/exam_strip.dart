@@ -14,10 +14,9 @@ import '../play/time_format.dart';
 import '../run/run_launcher.dart';
 
 /// The graduation exam (卒業試験) on journey Home, as the map's last stop: a
-/// black strip along the bottom of the islands map. Its pill says where the
-/// exam stands: how many cards are still to be swiped before it opens, OPEN
-/// (a tap starts it), or a countdown to the next try. A tap while it is shut
-/// says why.
+/// black strip along the bottom of the islands map, shown once the exam is
+/// open. Its pill says where the exam stands: OPEN (a tap starts it), or a
+/// countdown to the next try, which a tap explains.
 class ExamStrip extends StatefulWidget {
   const ExamStrip({super.key});
 
@@ -48,12 +47,9 @@ class _ExamStripState extends State<ExamStrip> {
     final wait = exam.cooldown;
     if (exam.canStart) {
       startExam(context);
-    } else if (!exam.open) {
-      BalloonPop.show(context, s.examLockedWhy(exam.cardsLeft),
-          size: ExamStripStyle.lockBalloon, life: ExamStripStyle.lockBalloonLife);
     } else if (wait != null) {
       BalloonPop.show(context, s.examCooldownWhy(formatMinutes(wait)),
-          size: ExamStripStyle.lockBalloon, life: ExamStripStyle.lockBalloonLife);
+          size: ExamStripStyle.waitBalloon, life: ExamStripStyle.waitBalloonLife);
     }
   }
 
@@ -112,22 +108,15 @@ class _ExamStripState extends State<ExamStrip> {
                       child: Column(
                         mainAxisSize: MainAxisSize.min,
                         crossAxisAlignment: CrossAxisAlignment.start,
-                        children: exam.open
-                            ? [
-                                NumberedText(s.examVsTobi, const [RankedTuning.cards], style: paper, numberStyle: number),
-                                Text(
-                                  wait != null
-                                      ? s.examTryAgainIn
-                                      : s.examPenalty(ExamTuning.missPenaltyMs ~/ Duration.millisecondsPerSecond),
-                                  style: paper,
-                                ),
-                              ]
-                            : [
-                                Text(s.examSwipeAll, style: paper),
-                                NumberedText(s.examToGo, [exam.cardsLeft],
-                                    style: paper.copyWith(color: Palette.sun),
-                                    numberStyle: number.copyWith(color: Palette.sun)),
-                              ],
+                        children: [
+                          NumberedText(s.examVsTobi, const [RankedTuning.cards], style: paper, numberStyle: number),
+                          Text(
+                            wait != null
+                                ? s.examTryAgainIn
+                                : s.examPenalty(ExamTuning.missPenaltyMs ~/ Duration.millisecondsPerSecond),
+                            style: paper,
+                          ),
+                        ],
                       ),
                     ),
                   ),
@@ -149,8 +138,7 @@ class _ExamStripState extends State<ExamStrip> {
   }
 }
 
-/// The strip's state at a glance: a lock, OPEN, or the countdown to the
-/// next try.
+/// The strip's state at a glance: OPEN, or the countdown to the next try.
 class _StatusPill extends StatelessWidget {
   const _StatusPill(this.exam);
   final ExamAccess exam;
@@ -159,29 +147,27 @@ class _StatusPill extends StatelessWidget {
   Widget build(BuildContext context) {
     final s = S.of(context);
     final wait = exam.cooldown;
-    final (fill, content) = !exam.open
-        ? (ExamStripStyle.lockedFill, MangaIcon(IconArt.lock, size: ExamStripStyle.pillIcon))
-        : wait != null
-            ? (
-                ExamStripStyle.waitFill,
-                Text(
-                  formatMinutes(wait),
-                  style: const TextStyle(
-                      fontFamily: Fonts.display, fontSize: ExamStripStyle.pillTime, height: ExamStripStyle.pillLineHeight),
-                ),
-              )
-            : (
-                ExamStripStyle.openFill,
-                Row(mainAxisSize: MainAxisSize.min, children: [
-                  Text(
-                    s.examOpenPill,
-                    style: const TextStyle(
-                        fontWeight: Weights.black, fontSize: ExamStripStyle.pillFont, height: ExamStripStyle.pillLineHeight),
-                  ),
-                  const SizedBox(width: ExamStripStyle.pillIconGap),
-                  MangaIcon(IconArt.arrow, size: ExamStripStyle.pillIcon),
-                ]),
-              );
+    final (fill, content) = wait != null
+        ? (
+            ExamStripStyle.waitFill,
+            Text(
+              formatMinutes(wait),
+              style: const TextStyle(
+                  fontFamily: Fonts.display, fontSize: ExamStripStyle.pillTime, height: ExamStripStyle.pillLineHeight),
+            ),
+          )
+        : (
+            ExamStripStyle.openFill,
+            Row(mainAxisSize: MainAxisSize.min, children: [
+              Text(
+                s.examOpenPill,
+                style: const TextStyle(
+                    fontWeight: Weights.black, fontSize: ExamStripStyle.pillFont, height: ExamStripStyle.pillLineHeight),
+              ),
+              const SizedBox(width: ExamStripStyle.pillIconGap),
+              MangaIcon(IconArt.arrow, size: ExamStripStyle.pillIcon),
+            ]),
+          );
     return DecoratedBox(
       decoration: BoxDecoration(color: fill, border: Border.all(color: Palette.paper, width: Strokes.label)),
       child: ConstrainedBox(

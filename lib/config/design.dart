@@ -1484,6 +1484,11 @@ abstract final class TourStyle {
   static const double font = 15.5;
   static const double hintFont = 11.5;
   static const double hintGap = 5;
+
+  /// The Skip button, beside Back at the top left.
+  static const double skipGap = 8;
+  static const EdgeInsets skipPadding = EdgeInsets.symmetric(horizontal: 14);
+  static const double skipFont = TypeScale.button;
   static const Duration pop = Duration(milliseconds: 380);
   static const double popFrom = 0.6;
 
@@ -5263,14 +5268,14 @@ abstract final class ExamStripStyle {
   static const double pillTime = 15;
   static const double pillIcon = 14;
   static const double pillIconGap = 4;
-  static const Color lockedFill = Palette.desk;
   static const Color openFill = Palette.land;
   static const Color waitFill = Palette.paper;
 
-  /// The countdown's refresh while a try is cooling down.
+  /// The countdown's refresh while a try is cooling down, and Tobi's word
+  /// on why a tap then does not start it.
   static const Duration tick = Duration(seconds: 1);
-  static const Size lockBalloon = Size(270, 96);
-  static const Duration lockBalloonLife = Duration(milliseconds: 2800);
+  static const Size waitBalloon = Size(270, 96);
+  static const Duration waitBalloonLife = Duration(milliseconds: 2800);
 
   /// How far the map keeps going under the strip or the banner below it, so
   /// the sea runs on behind them while the focused island stays above.

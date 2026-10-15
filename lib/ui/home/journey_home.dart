@@ -23,10 +23,11 @@ import 'today_box.dart';
 import 'training_hero.dart';
 
 /// Home in journey mode (spec phone 2): the archipelago map as the progress
-/// bar, with the graduation exam as its last stop (or, once it is passed,
-/// the offer of all-known mode), today's set, and the Training hero. A new day's set is built when
-/// Home finds it missing; the first time Home shows on a day with reviews
-/// piled up, it offers to pause the new cards.
+/// bar, with the graduation exam as its last stop once it opens (or, once
+/// it is passed, the offer of all-known mode), today's set, and the
+/// Training hero. A new day's set is built when Home finds it missing; the
+/// first time Home shows on a day with reviews piled up, it offers to pause
+/// the new cards.
 class JourneyHome extends StatefulWidget {
   const JourneyHome({super.key});
 
@@ -87,9 +88,9 @@ class _JourneyHomeState extends State<JourneyHome> {
               journey,
               footer: progress.switchBannerShown
                   ? const SwitchBanner()
-                  : progress.graduated
+                  : progress.graduated || !progress.exam().open
                       ? null
-                      : const ExamStrip(),
+                      : const TourAnchor(TourSpot.exam, child: ExamStrip()),
             ),
           ),
         ),

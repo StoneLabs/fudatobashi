@@ -246,6 +246,7 @@ class Progress extends ChangeNotifier {
 
   /// When the latest exam try began.
   DateTime? _examLastTry;
+  bool _examIntroShown = false;
   bool _switchBannerClosed = false;
 
   /// The most recent run, kept in memory for the debug page's timing view.
@@ -331,6 +332,7 @@ class Progress extends ChangeNotifier {
       progress._days[d.number] = d;
     }
     progress._examLastTry = DateTime.tryParse(kv[_examLastTryKey] ?? '');
+    progress._examIntroShown = kv[_examIntroShownKey] == 'true';
     progress._switchBannerClosed = kv[_switchBannerClosedKey] == 'true';
     if (DateTime.tryParse(kv[_rankedRunningKey] ?? '') case final startedAt?) {
       await progress._forfeitUnrecorded(startedAt);
@@ -352,6 +354,7 @@ class Progress extends ChangeNotifier {
   static const _sideTripsSeenLockedKey = 'sideTripsSeenLocked';
   static const _rankedRunningKey = 'rankedRunning';
   static const _examLastTryKey = 'examLastTry';
+  static const _examIntroShownKey = 'examIntroShown';
   static const _switchBannerClosedKey = 'switchBannerClosed';
 
   static AttemptRec _rec(AttemptRow a, PlayConfig run) => AttemptRec(
@@ -832,6 +835,24 @@ class Progress extends ChangeNotifier {
   Future<void> noteExamStarted(DateTime at) async {
     _examLastTry = at;
     await _put(_examLastTryKey, at.toIso8601String());
+    notifyListeners();
+  }
+
+  /// Tobi's word on Home pointing at the exam strip, due once, as the exam
+  /// first opens on the journey.
+  bool get examIntroDue => !_allKnown && !graduated && !_examIntroShown && exam().open;
+
+  Future<void> noteExamIntroShown() async {
+    _examIntroShown = true;
+    await _put(_examIntroShownKey, 'true');
+    notifyListeners();
+  }
+
+  /// Developer mode: Tobi's word on the exam strip shows again (once the
+  /// exam is open).
+  Future<void> replayExamIntro() async {
+    _examIntroShown = false;
+    await _drop(_examIntroShownKey);
     notifyListeners();
   }
 
@@ -1464,6 +1485,7 @@ class Progress extends ChangeNotifier {
                   _sideTripsSeenLockedKey,
                   _rankedRunningKey,
                   _examLastTryKey,
+                  _examIntroShownKey,
                   _switchBannerClosedKey,
                 ])))
           .go();
@@ -1489,6 +1511,7 @@ class Progress extends ChangeNotifier {
       ..addAll(Trainer.freshItems());
     trainer.goalLevel = 0;
     _examLastTry = null;
+    _examIntroShown = false;
     _switchBannerClosed = false;
     _xp = null;
     notifyListeners();

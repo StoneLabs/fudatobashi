@@ -13,16 +13,16 @@ extension RankedStrings on S {
   String get forfeitYes => t('forfeitYes');
   String get forfeitNo => t('forfeitNo');
 
-  // Journey Home's exam strip, the banner after passing, and its question.
+  // Journey Home's exam strip and Tobi's word when it opens, the banner
+  // after passing, and its question.
   String get examStripSub => t('examStripSub');
   String get examVsTobi => t('examVsTobi');
   String examPenalty(int seconds) => f('examPenalty', [seconds]);
-  String get examSwipeAll => t('examSwipeAll');
-  String get examToGo => t('examToGo');
-  String examLockedWhy(int n) => f('examLockedWhy', [n]);
   String get examOpenPill => t('examOpenPill');
   String get examTryAgainIn => t('examTryAgainIn');
   String examCooldownWhy(String wait) => f('examCooldownWhy', [wait]);
+  String get examIntro => t('examIntro');
+  String get examIntroHint => t('examIntroHint');
   String get switchBanner => t('switchBanner');
   String get switchTag => t('switchTag');
   String get switchTitle => t('switchTitle');

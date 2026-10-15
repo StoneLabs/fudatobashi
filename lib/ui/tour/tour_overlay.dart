@@ -32,13 +32,19 @@ void replayTour(BuildContext context) {
 /// continue button. Either way the line has to finish typing first. The
 /// practice stop's spot is 修行 itself, so tapping it plays the tutorial
 /// round for real; the tour only ends once that round is won ([onDone]).
-/// The back button and the system back both step back one stop.
+/// The back button and the system back both step back one stop; the skip
+/// button, when there is [onSkip], ends the tour on any stop.
+///
+/// A one-stop scene ([TourStep.examIntro]) passes [onElsewhere] instead: a
+/// tap away from its spot closes it rather than jolting the arrows.
 class TourOverlay extends StatefulWidget {
-  const TourOverlay({super.key, required this.steps, required this.keys, required this.onDone});
+  const TourOverlay({super.key, required this.steps, required this.keys, required this.onDone, this.onSkip, this.onElsewhere});
 
   final List<TourStep> steps;
   final TourKeys keys;
   final VoidCallback onDone;
+  final VoidCallback? onSkip;
+  final VoidCallback? onElsewhere;
 
   @override
   State<TourOverlay> createState() => _TourOverlayState();
@@ -119,8 +125,11 @@ class _TourOverlayState extends State<TourOverlay> {
     // target only moves on through the balloon's continue button.
     void onMiss(TapUpDetails d) {
       if (!ready || step.spot == null) return;
+      final elsewhere = widget.onElsewhere;
       if (_spot != null && _spot!.contains(d.localPosition)) {
         _advance();
+      } else if (elsewhere != null) {
+        elsewhere();
       } else {
         setState(() => _missed++);
       }
@@ -161,11 +170,12 @@ class _TourOverlayState extends State<TourOverlay> {
               child: _TobiSays(
                 text: text,
                 ready: ready,
-                hint: step.practice
-                    ? s.tourTapPractice
-                    : _index == widget.steps.length - 1
-                        ? s.tourTapDone
-                        : s.tourTapHint,
+                hint: step.hint?.call(s) ??
+                    (step.practice
+                        ? s.tourTapPractice
+                        : _index == widget.steps.length - 1
+                            ? s.tourTapDone
+                            : s.tourTapHint),
                 pose: step.pose,
                 tobiLeft: tobiLeft,
                 onTextDone: () => setState(() => _seenTexts.add(text)),
@@ -173,12 +183,25 @@ class _TourOverlayState extends State<TourOverlay> {
               ),
             ),
           ),
-          if (_index > 0)
-            Positioned(
-              left: safe.left + Gaps.gutter,
-              top: safe.top + Gaps.gutter,
-              child: InkIconButton(icon: IconArt.back, onTap: _back, semanticLabel: s.back),
-            ),
+          // Back and Skip sit over the brand title, which no stop spotlights,
+          // clear of the level and Settings buttons on the right.
+          Positioned(
+            left: safe.left + Gaps.gutter,
+            top: safe.top + Gaps.gutter,
+            child: Row(mainAxisSize: MainAxisSize.min, children: [
+              if (_index > 0) InkIconButton(icon: IconArt.back, onTap: _back, semanticLabel: s.back),
+              if (_index > 0 && widget.onSkip != null) const SizedBox(width: TourStyle.skipGap),
+              if (widget.onSkip case final skip?)
+                SizedBox(
+                  height: ButtonMetrics.iconButton,
+                  child: InkButton(
+                    onTap: _practising ? null : skip,
+                    padding: TourStyle.skipPadding,
+                    child: Text(s.tourSkip, style: const TextStyle(fontWeight: Weights.black, fontSize: TourStyle.skipFont)),
+                  ),
+                ),
+            ]),
+          ),
         ]);
       }),
     );
