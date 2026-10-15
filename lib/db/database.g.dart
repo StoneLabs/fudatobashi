@@ -34,11 +34,11 @@ class $SessionsTable extends Sessions with TableInfo<$SessionsTable, Session> {
   );
   static const VerificationMeta _modeMeta = const VerificationMeta('mode');
   @override
-  late final GeneratedColumn<int> mode = GeneratedColumn<int>(
+  late final GeneratedColumn<String> mode = GeneratedColumn<String>(
     'mode',
     aliasedName,
     false,
-    type: DriftSqlType.int,
+    type: DriftSqlType.string,
     requiredDuringInsert: true,
   );
   static const VerificationMeta _setIdsMeta = const VerificationMeta('setIds');
@@ -214,7 +214,7 @@ class $SessionsTable extends Sessions with TableInfo<$SessionsTable, Session> {
         data['${effectivePrefix}started_at'],
       )!,
       mode: attachedDatabase.typeMapping.read(
-        DriftSqlType.int,
+        DriftSqlType.string,
         data['${effectivePrefix}mode'],
       )!,
       setIds: attachedDatabase.typeMapping.read(
@@ -254,8 +254,8 @@ class Session extends DataClass implements Insertable<Session> {
   final int id;
   final DateTime startedAt;
 
-  /// PlayMode index.
-  final int mode;
+  /// `PlayMode.name`: training, free, nigate, ranked or exam.
+  final String mode;
 
   /// JSON list of FudaSet ids that defined the deck (empty for training;
   /// `PlayConfig.knownDeckId` for free practice's default deck). A
@@ -271,7 +271,8 @@ class Session extends DataClass implements Insertable<Session> {
   final int? totalUs;
   final bool completed;
 
-  /// Free-form JSON (mask settings, goal at the time, …).
+  /// Free-form JSON (mask settings, goal at the time, a ranked run's or an
+  /// exam try's misses and scored time, …).
   final String meta;
   const Session({
     required this.id,
@@ -289,7 +290,7 @@ class Session extends DataClass implements Insertable<Session> {
     final map = <String, Expression>{};
     map['id'] = Variable<int>(id);
     map['started_at'] = Variable<DateTime>(startedAt);
-    map['mode'] = Variable<int>(mode);
+    map['mode'] = Variable<String>(mode);
     map['set_ids'] = Variable<String>(setIds);
     map['orientation'] = Variable<int>(orientation);
     map['card_count'] = Variable<int>(cardCount);
@@ -325,7 +326,7 @@ class Session extends DataClass implements Insertable<Session> {
     return Session(
       id: serializer.fromJson<int>(json['id']),
       startedAt: serializer.fromJson<DateTime>(json['startedAt']),
-      mode: serializer.fromJson<int>(json['mode']),
+      mode: serializer.fromJson<String>(json['mode']),
       setIds: serializer.fromJson<String>(json['setIds']),
       orientation: serializer.fromJson<int>(json['orientation']),
       cardCount: serializer.fromJson<int>(json['cardCount']),
@@ -340,7 +341,7 @@ class Session extends DataClass implements Insertable<Session> {
     return <String, dynamic>{
       'id': serializer.toJson<int>(id),
       'startedAt': serializer.toJson<DateTime>(startedAt),
-      'mode': serializer.toJson<int>(mode),
+      'mode': serializer.toJson<String>(mode),
       'setIds': serializer.toJson<String>(setIds),
       'orientation': serializer.toJson<int>(orientation),
       'cardCount': serializer.toJson<int>(cardCount),
@@ -353,7 +354,7 @@ class Session extends DataClass implements Insertable<Session> {
   Session copyWith({
     int? id,
     DateTime? startedAt,
-    int? mode,
+    String? mode,
     String? setIds,
     int? orientation,
     int? cardCount,
@@ -433,7 +434,7 @@ class Session extends DataClass implements Insertable<Session> {
 class SessionsCompanion extends UpdateCompanion<Session> {
   final Value<int> id;
   final Value<DateTime> startedAt;
-  final Value<int> mode;
+  final Value<String> mode;
   final Value<String> setIds;
   final Value<int> orientation;
   final Value<int> cardCount;
@@ -454,7 +455,7 @@ class SessionsCompanion extends UpdateCompanion<Session> {
   SessionsCompanion.insert({
     this.id = const Value.absent(),
     required DateTime startedAt,
-    required int mode,
+    required String mode,
     this.setIds = const Value.absent(),
     required int orientation,
     required int cardCount,
@@ -469,7 +470,7 @@ class SessionsCompanion extends UpdateCompanion<Session> {
   static Insertable<Session> custom({
     Expression<int>? id,
     Expression<DateTime>? startedAt,
-    Expression<int>? mode,
+    Expression<String>? mode,
     Expression<String>? setIds,
     Expression<int>? orientation,
     Expression<int>? cardCount,
@@ -493,7 +494,7 @@ class SessionsCompanion extends UpdateCompanion<Session> {
   SessionsCompanion copyWith({
     Value<int>? id,
     Value<DateTime>? startedAt,
-    Value<int>? mode,
+    Value<String>? mode,
     Value<String>? setIds,
     Value<int>? orientation,
     Value<int>? cardCount,
@@ -524,7 +525,7 @@ class SessionsCompanion extends UpdateCompanion<Session> {
       map['started_at'] = Variable<DateTime>(startedAt.value);
     }
     if (mode.present) {
-      map['mode'] = Variable<int>(mode.value);
+      map['mode'] = Variable<String>(mode.value);
     }
     if (setIds.present) {
       map['set_ids'] = Variable<String>(setIds.value);
@@ -1819,12 +1820,12 @@ class $RatingPointsTable extends RatingPoints
     type: DriftSqlType.double,
     requiredDuringInsert: true,
   );
-  static const VerificationMeta _projectedMsMeta = const VerificationMeta(
-    'projectedMs',
+  static const VerificationMeta _scoredMsMeta = const VerificationMeta(
+    'scoredMs',
   );
   @override
-  late final GeneratedColumn<int> projectedMs = GeneratedColumn<int>(
-    'projected_ms',
+  late final GeneratedColumn<int> scoredMs = GeneratedColumn<int>(
+    'scored_ms',
     aliasedName,
     false,
     type: DriftSqlType.int,
@@ -1847,7 +1848,7 @@ class $RatingPointsTable extends RatingPoints
     at,
     rating,
     performance,
-    projectedMs,
+    scoredMs,
     sessionId,
   ];
   @override
@@ -1889,16 +1890,13 @@ class $RatingPointsTable extends RatingPoints
     } else if (isInserting) {
       context.missing(_performanceMeta);
     }
-    if (data.containsKey('projected_ms')) {
+    if (data.containsKey('scored_ms')) {
       context.handle(
-        _projectedMsMeta,
-        projectedMs.isAcceptableOrUnknown(
-          data['projected_ms']!,
-          _projectedMsMeta,
-        ),
+        _scoredMsMeta,
+        scoredMs.isAcceptableOrUnknown(data['scored_ms']!, _scoredMsMeta),
       );
     } else if (isInserting) {
-      context.missing(_projectedMsMeta);
+      context.missing(_scoredMsMeta);
     }
     if (data.containsKey('session_id')) {
       context.handle(
@@ -1931,9 +1929,9 @@ class $RatingPointsTable extends RatingPoints
         DriftSqlType.double,
         data['${effectivePrefix}performance'],
       )!,
-      projectedMs: attachedDatabase.typeMapping.read(
+      scoredMs: attachedDatabase.typeMapping.read(
         DriftSqlType.int,
-        data['${effectivePrefix}projected_ms'],
+        data['${effectivePrefix}scored_ms'],
       )!,
       sessionId: attachedDatabase.typeMapping.read(
         DriftSqlType.int,
@@ -1954,15 +1952,15 @@ class RatingPoint extends DataClass implements Insertable<RatingPoint> {
   final double rating;
   final double performance;
 
-  /// Projected 100-card time, ms.
-  final int projectedMs;
+  /// The run's scored time (`RankedScore.scored`), ms.
+  final int scoredMs;
   final int? sessionId;
   const RatingPoint({
     required this.id,
     required this.at,
     required this.rating,
     required this.performance,
-    required this.projectedMs,
+    required this.scoredMs,
     this.sessionId,
   });
   @override
@@ -1972,7 +1970,7 @@ class RatingPoint extends DataClass implements Insertable<RatingPoint> {
     map['at'] = Variable<DateTime>(at);
     map['rating'] = Variable<double>(rating);
     map['performance'] = Variable<double>(performance);
-    map['projected_ms'] = Variable<int>(projectedMs);
+    map['scored_ms'] = Variable<int>(scoredMs);
     if (!nullToAbsent || sessionId != null) {
       map['session_id'] = Variable<int>(sessionId);
     }
@@ -1985,7 +1983,7 @@ class RatingPoint extends DataClass implements Insertable<RatingPoint> {
       at: Value(at),
       rating: Value(rating),
       performance: Value(performance),
-      projectedMs: Value(projectedMs),
+      scoredMs: Value(scoredMs),
       sessionId: sessionId == null && nullToAbsent
           ? const Value.absent()
           : Value(sessionId),
@@ -2002,7 +2000,7 @@ class RatingPoint extends DataClass implements Insertable<RatingPoint> {
       at: serializer.fromJson<DateTime>(json['at']),
       rating: serializer.fromJson<double>(json['rating']),
       performance: serializer.fromJson<double>(json['performance']),
-      projectedMs: serializer.fromJson<int>(json['projectedMs']),
+      scoredMs: serializer.fromJson<int>(json['scoredMs']),
       sessionId: serializer.fromJson<int?>(json['sessionId']),
     );
   }
@@ -2014,7 +2012,7 @@ class RatingPoint extends DataClass implements Insertable<RatingPoint> {
       'at': serializer.toJson<DateTime>(at),
       'rating': serializer.toJson<double>(rating),
       'performance': serializer.toJson<double>(performance),
-      'projectedMs': serializer.toJson<int>(projectedMs),
+      'scoredMs': serializer.toJson<int>(scoredMs),
       'sessionId': serializer.toJson<int?>(sessionId),
     };
   }
@@ -2024,14 +2022,14 @@ class RatingPoint extends DataClass implements Insertable<RatingPoint> {
     DateTime? at,
     double? rating,
     double? performance,
-    int? projectedMs,
+    int? scoredMs,
     Value<int?> sessionId = const Value.absent(),
   }) => RatingPoint(
     id: id ?? this.id,
     at: at ?? this.at,
     rating: rating ?? this.rating,
     performance: performance ?? this.performance,
-    projectedMs: projectedMs ?? this.projectedMs,
+    scoredMs: scoredMs ?? this.scoredMs,
     sessionId: sessionId.present ? sessionId.value : this.sessionId,
   );
   RatingPoint copyWithCompanion(RatingPointsCompanion data) {
@@ -2042,9 +2040,7 @@ class RatingPoint extends DataClass implements Insertable<RatingPoint> {
       performance: data.performance.present
           ? data.performance.value
           : this.performance,
-      projectedMs: data.projectedMs.present
-          ? data.projectedMs.value
-          : this.projectedMs,
+      scoredMs: data.scoredMs.present ? data.scoredMs.value : this.scoredMs,
       sessionId: data.sessionId.present ? data.sessionId.value : this.sessionId,
     );
   }
@@ -2056,7 +2052,7 @@ class RatingPoint extends DataClass implements Insertable<RatingPoint> {
           ..write('at: $at, ')
           ..write('rating: $rating, ')
           ..write('performance: $performance, ')
-          ..write('projectedMs: $projectedMs, ')
+          ..write('scoredMs: $scoredMs, ')
           ..write('sessionId: $sessionId')
           ..write(')'))
         .toString();
@@ -2064,7 +2060,7 @@ class RatingPoint extends DataClass implements Insertable<RatingPoint> {
 
   @override
   int get hashCode =>
-      Object.hash(id, at, rating, performance, projectedMs, sessionId);
+      Object.hash(id, at, rating, performance, scoredMs, sessionId);
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
@@ -2073,7 +2069,7 @@ class RatingPoint extends DataClass implements Insertable<RatingPoint> {
           other.at == this.at &&
           other.rating == this.rating &&
           other.performance == this.performance &&
-          other.projectedMs == this.projectedMs &&
+          other.scoredMs == this.scoredMs &&
           other.sessionId == this.sessionId);
 }
 
@@ -2082,14 +2078,14 @@ class RatingPointsCompanion extends UpdateCompanion<RatingPoint> {
   final Value<DateTime> at;
   final Value<double> rating;
   final Value<double> performance;
-  final Value<int> projectedMs;
+  final Value<int> scoredMs;
   final Value<int?> sessionId;
   const RatingPointsCompanion({
     this.id = const Value.absent(),
     this.at = const Value.absent(),
     this.rating = const Value.absent(),
     this.performance = const Value.absent(),
-    this.projectedMs = const Value.absent(),
+    this.scoredMs = const Value.absent(),
     this.sessionId = const Value.absent(),
   });
   RatingPointsCompanion.insert({
@@ -2097,18 +2093,18 @@ class RatingPointsCompanion extends UpdateCompanion<RatingPoint> {
     required DateTime at,
     required double rating,
     required double performance,
-    required int projectedMs,
+    required int scoredMs,
     this.sessionId = const Value.absent(),
   }) : at = Value(at),
        rating = Value(rating),
        performance = Value(performance),
-       projectedMs = Value(projectedMs);
+       scoredMs = Value(scoredMs);
   static Insertable<RatingPoint> custom({
     Expression<int>? id,
     Expression<DateTime>? at,
     Expression<double>? rating,
     Expression<double>? performance,
-    Expression<int>? projectedMs,
+    Expression<int>? scoredMs,
     Expression<int>? sessionId,
   }) {
     return RawValuesInsertable({
@@ -2116,7 +2112,7 @@ class RatingPointsCompanion extends UpdateCompanion<RatingPoint> {
       if (at != null) 'at': at,
       if (rating != null) 'rating': rating,
       if (performance != null) 'performance': performance,
-      if (projectedMs != null) 'projected_ms': projectedMs,
+      if (scoredMs != null) 'scored_ms': scoredMs,
       if (sessionId != null) 'session_id': sessionId,
     });
   }
@@ -2126,7 +2122,7 @@ class RatingPointsCompanion extends UpdateCompanion<RatingPoint> {
     Value<DateTime>? at,
     Value<double>? rating,
     Value<double>? performance,
-    Value<int>? projectedMs,
+    Value<int>? scoredMs,
     Value<int?>? sessionId,
   }) {
     return RatingPointsCompanion(
@@ -2134,7 +2130,7 @@ class RatingPointsCompanion extends UpdateCompanion<RatingPoint> {
       at: at ?? this.at,
       rating: rating ?? this.rating,
       performance: performance ?? this.performance,
-      projectedMs: projectedMs ?? this.projectedMs,
+      scoredMs: scoredMs ?? this.scoredMs,
       sessionId: sessionId ?? this.sessionId,
     );
   }
@@ -2154,8 +2150,8 @@ class RatingPointsCompanion extends UpdateCompanion<RatingPoint> {
     if (performance.present) {
       map['performance'] = Variable<double>(performance.value);
     }
-    if (projectedMs.present) {
-      map['projected_ms'] = Variable<int>(projectedMs.value);
+    if (scoredMs.present) {
+      map['scored_ms'] = Variable<int>(scoredMs.value);
     }
     if (sessionId.present) {
       map['session_id'] = Variable<int>(sessionId.value);
@@ -2170,7 +2166,7 @@ class RatingPointsCompanion extends UpdateCompanion<RatingPoint> {
           ..write('at: $at, ')
           ..write('rating: $rating, ')
           ..write('performance: $performance, ')
-          ..write('projectedMs: $projectedMs, ')
+          ..write('scoredMs: $scoredMs, ')
           ..write('sessionId: $sessionId')
           ..write(')'))
         .toString();
@@ -4555,7 +4551,7 @@ abstract class _$AppDatabase extends GeneratedDatabase {
 typedef $$SessionsTableCreateCompanionBuilder = SessionsCompanion Function({
   Value<int> id,
   required DateTime startedAt,
-  required int mode,
+  required String mode,
   Value<String> setIds,
   required int orientation,
   required int cardCount,
@@ -4566,7 +4562,7 @@ typedef $$SessionsTableCreateCompanionBuilder = SessionsCompanion Function({
 typedef $$SessionsTableUpdateCompanionBuilder = SessionsCompanion Function({
   Value<int> id,
   Value<DateTime> startedAt,
-  Value<int> mode,
+  Value<String> mode,
   Value<String> setIds,
   Value<int> orientation,
   Value<int> cardCount,
@@ -4617,7 +4613,7 @@ class $$SessionsTableFilterComposer
     builder: (column) => ColumnFilters(column),
   );
 
-  ColumnFilters<int> get mode => $composableBuilder(
+  ColumnFilters<String> get mode => $composableBuilder(
     column: $table.mode,
     builder: (column) => ColumnFilters(column),
   );
@@ -4697,7 +4693,7 @@ class $$SessionsTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
-  ColumnOrderings<int> get mode => $composableBuilder(
+  ColumnOrderings<String> get mode => $composableBuilder(
     column: $table.mode,
     builder: (column) => ColumnOrderings(column),
   );
@@ -4748,7 +4744,7 @@ class $$SessionsTableAnnotationComposer
   GeneratedColumn<DateTime> get startedAt =>
       $composableBuilder(column: $table.startedAt, builder: (column) => column);
 
-  GeneratedColumn<int> get mode =>
+  GeneratedColumn<String> get mode =>
       $composableBuilder(column: $table.mode, builder: (column) => column);
 
   GeneratedColumn<String> get setIds =>
@@ -4827,7 +4823,7 @@ class $$SessionsTableTableManager
               ({
                 Value<int> id = const Value.absent(),
                 Value<DateTime> startedAt = const Value.absent(),
-                Value<int> mode = const Value.absent(),
+                Value<String> mode = const Value.absent(),
                 Value<String> setIds = const Value.absent(),
                 Value<int> orientation = const Value.absent(),
                 Value<int> cardCount = const Value.absent(),
@@ -4849,7 +4845,7 @@ class $$SessionsTableTableManager
               ({
                 Value<int> id = const Value.absent(),
                 required DateTime startedAt,
-                required int mode,
+                required String mode,
                 Value<String> setIds = const Value.absent(),
                 required int orientation,
                 required int cardCount,
@@ -5626,7 +5622,7 @@ typedef $$RatingPointsTableCreateCompanionBuilder =
       required DateTime at,
       required double rating,
       required double performance,
-      required int projectedMs,
+      required int scoredMs,
       Value<int?> sessionId,
     });
 typedef $$RatingPointsTableUpdateCompanionBuilder =
@@ -5635,7 +5631,7 @@ typedef $$RatingPointsTableUpdateCompanionBuilder =
       Value<DateTime> at,
       Value<double> rating,
       Value<double> performance,
-      Value<int> projectedMs,
+      Value<int> scoredMs,
       Value<int?> sessionId,
     });
 
@@ -5668,8 +5664,8 @@ class $$RatingPointsTableFilterComposer
     builder: (column) => ColumnFilters(column),
   );
 
-  ColumnFilters<int> get projectedMs => $composableBuilder(
-    column: $table.projectedMs,
+  ColumnFilters<int> get scoredMs => $composableBuilder(
+    column: $table.scoredMs,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -5708,8 +5704,8 @@ class $$RatingPointsTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
-  ColumnOrderings<int> get projectedMs => $composableBuilder(
-    column: $table.projectedMs,
+  ColumnOrderings<int> get scoredMs => $composableBuilder(
+    column: $table.scoredMs,
     builder: (column) => ColumnOrderings(column),
   );
 
@@ -5742,10 +5738,8 @@ class $$RatingPointsTableAnnotationComposer
     builder: (column) => column,
   );
 
-  GeneratedColumn<int> get projectedMs => $composableBuilder(
-    column: $table.projectedMs,
-    builder: (column) => column,
-  );
+  GeneratedColumn<int> get scoredMs =>
+      $composableBuilder(column: $table.scoredMs, builder: (column) => column);
 
   GeneratedColumn<int> get sessionId =>
       $composableBuilder(column: $table.sessionId, builder: (column) => column);
@@ -5786,14 +5780,14 @@ class $$RatingPointsTableTableManager
                 Value<DateTime> at = const Value.absent(),
                 Value<double> rating = const Value.absent(),
                 Value<double> performance = const Value.absent(),
-                Value<int> projectedMs = const Value.absent(),
+                Value<int> scoredMs = const Value.absent(),
                 Value<int?> sessionId = const Value.absent(),
               }) => RatingPointsCompanion(
                 id: id,
                 at: at,
                 rating: rating,
                 performance: performance,
-                projectedMs: projectedMs,
+                scoredMs: scoredMs,
                 sessionId: sessionId,
               ),
           createCompanionCallback:
@@ -5802,14 +5796,14 @@ class $$RatingPointsTableTableManager
                 required DateTime at,
                 required double rating,
                 required double performance,
-                required int projectedMs,
+                required int scoredMs,
                 Value<int?> sessionId = const Value.absent(),
               }) => RatingPointsCompanion.insert(
                 id: id,
                 at: at,
                 rating: rating,
                 performance: performance,
-                projectedMs: projectedMs,
+                scoredMs: scoredMs,
                 sessionId: sessionId,
               ),
           withReferenceMapper: (p0) => p0

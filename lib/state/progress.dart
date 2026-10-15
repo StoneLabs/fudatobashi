@@ -15,6 +15,7 @@ import '../domain/card_stats.dart';
 import '../domain/day_window.dart';
 import '../domain/masking.dart';
 import '../domain/play_session.dart';
+import '../domain/ranked.dart';
 import '../domain/rating.dart';
 import '../domain/side_trips.dart';
 import '../domain/step_plan.dart';
@@ -45,9 +46,29 @@ class SessionReport {
     this.xp,
     this.graduated = false,
     this.dayDone,
+    this.mode = PlayMode.free,
+    this.score,
+    this.tobi,
   });
 
   final int? sessionId;
+  final PlayMode mode;
+
+  /// A ranked run's or an exam try's time with its penalties (see
+  /// [RankedScore]); null for other runs.
+  final RankedScore? score;
+
+  /// Tobi's time in an exam try.
+  final Duration? tobi;
+
+  /// A ranked run left before its last card.
+  bool get forfeit => mode == PlayMode.ranked && !completed;
+
+  /// This ranked run set the first rating.
+  bool get placement => mode == PlayMode.ranked && ratingBefore == null && ratingAfter != null;
+
+  /// An exam try played to the end faster than Tobi.
+  bool get passed => mode == PlayMode.exam && completed && score != null && tobi != null && score!.scored < tobi!;
 
   /// The run was played to its last card.
   final bool completed;
@@ -163,6 +184,23 @@ class FreePracticeAccess {
   int get needed => math.max(0, FreePracticeTuning.unlockRemembered - remembered);
 }
 
+/// The graduation exam's standing (see [Progress.exam]): it opens once
+/// every card has been swiped, then allows one try per
+/// [ExamTuning.cooldown] until it is passed.
+class ExamAccess {
+  const ExamAccess({required this.cardsLeft, required this.cooldown, required this.passed});
+
+  /// Cards never swiped yet.
+  final int cardsLeft;
+
+  /// Time until the next try, while the last one is too recent.
+  final Duration? cooldown;
+  final bool passed;
+
+  bool get open => cardsLeft == 0;
+  bool get canStart => open && cooldown == null && !passed;
+}
+
 /// All persistent progress: attempts, training state, rating, history and
 /// settings. Loaded once at startup; the UI listens for changes.
 class Progress extends ChangeNotifier {
@@ -205,6 +243,10 @@ class Progress extends ChangeNotifier {
 
   /// The side trips' recorded games and ratings.
   final SideTrips sideTrips;
+
+  /// When the latest exam try began.
+  DateTime? _examLastTry;
+  bool _switchBannerClosed = false;
 
   /// The most recent run, kept in memory for the debug page's timing view.
   PlaySession? lastRun;
@@ -288,6 +330,11 @@ class Progress extends ChangeNotifier {
     for (final d in await db.select(db.days).get()) {
       progress._days[d.number] = d;
     }
+    progress._examLastTry = DateTime.tryParse(kv[_examLastTryKey] ?? '');
+    progress._switchBannerClosed = kv[_switchBannerClosedKey] == 'true';
+    if (DateTime.tryParse(kv[_rankedRunningKey] ?? '') case final startedAt?) {
+      await progress._forfeitUnrecorded(startedAt);
+    }
     progress._day = progress._days.values.fold<DayRow?>(null, (a, d) => a == null || d.number > a.number ? d : a);
     await progress._loadToday();
     if (settings.onboarded && !progress._allKnown) await progress.refreshToday();
@@ -303,6 +350,9 @@ class Progress extends ChangeNotifier {
   static const _sideTripsTabKey = 'sideTripsTabUnlocked';
   static const _sideTripsKey = 'sideTripsUnlocked';
   static const _sideTripsSeenLockedKey = 'sideTripsSeenLocked';
+  static const _rankedRunningKey = 'rankedRunning';
+  static const _examLastTryKey = 'examLastTry';
+  static const _switchBannerClosedKey = 'switchBannerClosed';
 
   static AttemptRec _rec(AttemptRow a, PlayConfig run) => AttemptRec(
         at: a.at,
@@ -414,7 +464,7 @@ class Progress extends ChangeNotifier {
   static PlayConfig _configOf(Session s) {
     final meta = jsonDecode(s.meta) as Map<String, dynamic>;
     return PlayConfig(
-      mode: PlayMode.values[s.mode],
+      mode: PlayMode.values.byName(s.mode),
       setIds: (jsonDecode(s.setIds) as List).cast<String>(),
       cardIds: (meta['cardIds'] as List?)?.cast<int>(),
       maskLevel: meta['maskLevel'] as int? ?? 0,
@@ -741,6 +791,67 @@ class Progress extends ChangeNotifier {
   bool get canLearnMore =>
       trainer.config.learningMode == LearningMode.journey && trainer.nextBatch(poems, fudaSets).isNotEmpty;
 
+  // ---------------------------------------------- ranked and the exam
+
+  /// A ranked run has placed the player on the ladder.
+  bool get placed => rating != null;
+
+  /// Ranked runs recorded, forfeits included.
+  int get rankedRuns => sessions.where((s) => s.mode == PlayMode.ranked.name).length;
+
+  /// A ranked run of all 100 cards, shuffled, each either way up at random,
+  /// with nothing hidden.
+  List<CardRef> rankedDeck({math.Random? rng}) {
+    final random = rng ?? math.Random();
+    final ids = [for (final p in poems.all) p.id]..shuffle(random);
+    return [for (final id in ids) CardRef(id, inverted: random.nextBool())];
+  }
+
+  /// Marks a ranked run as under way, so one the app never got to record
+  /// still counts as a forfeit on the next start.
+  Future<void> noteRankedStarted(DateTime at) => _put(_rankedRunningKey, at.toIso8601String());
+
+  /// The graduation exam has been passed (it happens once).
+  bool get graduated => xp.graduated;
+
+  /// Journey mode's graduation exam: whether it is open, and what keeps a
+  /// try from starting now.
+  ExamAccess exam([DateTime? now]) {
+    final left = poems.all.where((p) => attemptsOf(ItemKey(p.id, false)).isEmpty && attemptsOf(ItemKey(p.id, true)).isEmpty);
+    final last = _examLastTry;
+    final wait = last == null ? Duration.zero : last.add(ExamTuning.cooldown).difference(now ?? DateTime.now());
+    return ExamAccess(
+      cardsLeft: left.length,
+      cooldown: wait > Duration.zero ? wait : null,
+      passed: graduated,
+    );
+  }
+
+  /// A try at the exam begins: the next one waits [ExamTuning.cooldown]
+  /// from now, however this one ends.
+  Future<void> noteExamStarted(DateTime at) async {
+    _examLastTry = at;
+    await _put(_examLastTryKey, at.toIso8601String());
+    notifyListeners();
+  }
+
+  /// Developer mode: the next exam try may start right away.
+  Future<void> clearExamCooldown() async {
+    _examLastTry = null;
+    await _drop(_examLastTryKey);
+    notifyListeners();
+  }
+
+  /// Journey Home's banner after the exam is passed, offering all-known
+  /// mode, until it is closed.
+  bool get switchBannerShown => !_allKnown && graduated && !_switchBannerClosed;
+
+  Future<void> closeSwitchBanner() async {
+    _switchBannerClosed = true;
+    await _put(_switchBannerClosedKey, 'true');
+    notifyListeners();
+  }
+
   /// Every card already unlocked: switching journey → all-known has nothing
   /// left to warn about.
   bool get allCardsUnlocked => trainer.nextBatch(poems, fudaSets).isEmpty;
@@ -1019,6 +1130,8 @@ class Progress extends ChangeNotifier {
   /// as done even before its cards are individually solid.
   bool islandMarked(int index) => _islandsCelebrated.contains(index);
 
+  Future<void> _drop(String k) => (db.delete(db.keyValues)..where((r) => r.key.equals(k))).go();
+
   Future<void> _put(String k, String v) =>
       db.into(db.keyValues).insertOnConflictUpdate(KeyValuesCompanion.insert(key: k, value: v));
 
@@ -1042,14 +1155,18 @@ class Progress extends ChangeNotifier {
     });
   }
 
-  /// Stores a finished (or ended early) run and updates training and rating.
-  /// Guest runs only produce a report.
-  /// [now] is when the run ended (demo-data seeding backdates it).
-  Future<SessionReport> recordRun(PlaySession run, PlayConfig config, DateTime startedAt, {DateTime? now}) async {
+  /// Stores a finished (or ended early) run and updates training, and for a
+  /// ranked run the rating: one left early is a forfeit, recorded even
+  /// before its first swipe. Guest runs only produce a report.
+  /// [now] is when the run ended (demo-data seeding backdates it); [tobi] is
+  /// Tobi's time in an exam try.
+  Future<SessionReport> recordRun(PlaySession run, PlayConfig config, DateTime startedAt,
+      {DateTime? now, Duration? tobi}) async {
     now ??= DateTime.now();
     final previousBest = bestFor(config);
     lastRun = run;
-    if (!config.tracked || run.attempts.isEmpty) {
+    if (config.mode == PlayMode.ranked) await _drop(_rankedRunningKey);
+    if (!config.tracked || (run.attempts.isEmpty && config.mode != PlayMode.ranked)) {
       return SessionReport(
         sessionId: null,
         completed: run.finished,
@@ -1059,12 +1176,19 @@ class Progress extends ChangeNotifier {
         ratingBefore: rating,
         ratingAfter: rating,
         goalRaised: false,
+        mode: config.mode,
       );
     }
 
     final ledger = xp;
     final journey = !_allKnown;
     final day = await _storeDay(startedAt);
+    final score = !config.scored
+        ? null
+        : RankedScore.of(run, run.total ?? run.elapsed,
+            penaltyMs: config.mode == PlayMode.exam ? ExamTuning.missPenaltyMs : RankedTuning.missPenaltyMs);
+    final passed = config.mode == PlayMode.exam && run.finished && tobi != null && score!.scored < tobi;
+    final placement = config.mode == PlayMode.ranked && rating == null;
     final newCards = config.mode == PlayMode.training && journey
         ? {for (final a in run.attempts) if (!_metBefore(a.card.poemId)) a.card.poemId}.toList()
         : const <int>[];
@@ -1076,7 +1200,7 @@ class Progress extends ChangeNotifier {
     final sessionId = await db.transaction(() async {
       final id = await db.into(db.sessions).insert(SessionsCompanion.insert(
             startedAt: startedAt,
-            mode: config.mode.index,
+            mode: config.mode.name,
             setIds: Value(jsonEncode(config.setIds)),
             orientation: 0,
             cardCount: run.cards.length,
@@ -1087,6 +1211,9 @@ class Progress extends ChangeNotifier {
               'goalMs': trainer.goalMs,
               if (config.cardIds != null) 'cardIds': config.cardIds,
               _dayKey: day.number,
+              if (score != null) ...{'misses': score.misses + score.cardsLeft, 'scoredMs': score.scored.inMilliseconds},
+              if (tobi != null) ...{'tobiMs': tobi.inMilliseconds, 'passed': passed},
+              if (placement) 'placement': true,
             })),
           ));
       final touched = <ItemKey>{};
@@ -1149,33 +1276,8 @@ class Progress extends ChangeNotifier {
 
     sessions.add((await (db.select(db.sessions)..where((s) => s.id.equals(sessionId))).getSingle()));
 
-    // Rating: only a run that counts moves it. `stats()` already leaves the
-    // others out, so the projected performance would be unchanged anyway —
-    // but re-running the smoothing update would still nudge `rating` another
-    // step toward that same performance, which is exactly the leak
-    // `countsForSrs` is meant to prevent.
     final before = rating;
-    if (config.countsForSrs) {
-      final projected = projectedMs;
-      final perf = Rating.performance(projected);
-      rating = Rating.update(rating, perf, ratingPoints.length);
-      await _put('rating', rating!.toString());
-      await db.into(db.ratingPoints).insert(RatingPointsCompanion.insert(
-            at: now,
-            rating: rating!,
-            performance: perf,
-            projectedMs: projected.round(),
-            sessionId: Value(sessionId),
-          ));
-      ratingPoints.add(RatingPoint(
-        id: 0,
-        at: now,
-        rating: rating!,
-        performance: perf,
-        projectedMs: projected.round(),
-        sessionId: sessionId,
-      ));
-    }
+    if (score != null && config.mode == PlayMode.ranked) await _rate(score, sessionId, now);
 
     // Unlocks, islands and goal ladder.
     final reachedBefore = {
@@ -1203,7 +1305,7 @@ class Progress extends ChangeNotifier {
     }
     await _latchFreePractice(now);
     await _latchSideTrips(now);
-    final graduated = journey && !ledger.graduated && poems.all.every((p) => knows(p.id));
+    final graduated = journey && passed && !ledger.graduated;
     final dayDone = journey ? await _noteDayDone(config, now) : null;
     sessions.last = await XpHistory.noteMilestones(db, sessions.last,
         islands: journey ? completed : const [], graduated: graduated, dayDone: dayDone != null);
@@ -1225,7 +1327,52 @@ class Progress extends ChangeNotifier {
       xp: xpGain,
       graduated: graduated,
       dayDone: dayDone,
+      mode: config.mode,
+      score: score,
+      tobi: tobi,
     );
+  }
+
+  /// The rating moves only with a ranked run: toward the performance of its
+  /// scored time, or straight to it for the first (placement).
+  Future<void> _rate(RankedScore score, int sessionId, DateTime now) async {
+    final scoredMs = score.scored.inMilliseconds;
+    final perf = Rating.performance(scoredMs.toDouble());
+    rating = Rating.update(rating, perf, ratingPoints.length);
+    await _put('rating', rating!.toString());
+    await db.into(db.ratingPoints).insert(RatingPointsCompanion.insert(
+          at: now,
+          rating: rating!,
+          performance: perf,
+          scoredMs: scoredMs,
+          sessionId: Value(sessionId),
+        ));
+    ratingPoints.add(RatingPoint(id: 0, at: now, rating: rating!, performance: perf, scoredMs: scoredMs, sessionId: sessionId));
+  }
+
+  /// A ranked run that never got recorded (the app closed mid-run) is a
+  /// forfeit with every card a slow miss.
+  Future<void> _forfeitUnrecorded(DateTime startedAt) async {
+    final score = RankedScore.blank();
+    final placement = rating == null;
+    final id = await db.into(db.sessions).insert(SessionsCompanion.insert(
+          startedAt: startedAt,
+          mode: PlayMode.ranked.name,
+          setIds: Value(jsonEncode(const ['all'])),
+          orientation: 0,
+          cardCount: RankedTuning.cards,
+          completed: false,
+          meta: Value(jsonEncode({
+            'maskLevel': 0,
+            'goalMs': trainer.goalMs,
+            'misses': score.misses + score.cardsLeft,
+            'scoredMs': score.scored.inMilliseconds,
+            if (placement) 'placement': true,
+          })),
+        ));
+    sessions.add(await (db.select(db.sessions)..where((s) => s.id.equals(id))).getSingle());
+    await _rate(score, id, startedAt);
+    await _drop(_rankedRunningKey);
   }
 
   /// Journey mode's FSRS rule: grades by the day the attempt falls in (see
@@ -1255,7 +1402,7 @@ class Progress extends ChangeNotifier {
     return DayDone(
       date: date,
       bar: done.bar,
-      rounds: sessions.where((s) => s.mode == PlayMode.training.index && dayOf(s) == date).length,
+      rounds: sessions.where((s) => s.mode == PlayMode.training.name && dayOf(s) == date).length,
       newCards: done.newCards,
       missesFixed: done.misses,
       goalStreak: goalStreak(now),

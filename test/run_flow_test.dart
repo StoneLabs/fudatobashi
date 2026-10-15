@@ -11,21 +11,20 @@ import 'package:fudatobashi/data/fuda_sets.dart';
 import 'package:fudatobashi/data/islands.dart';
 import 'package:fudatobashi/data/poem.dart';
 import 'package:fudatobashi/db/database.dart';
+import 'package:fudatobashi/l10n/ranked_strings.dart';
+import 'package:fudatobashi/l10n/strings.dart';
 import 'package:fudatobashi/domain/card_stats.dart';
 import 'package:fudatobashi/domain/play_session.dart';
+import 'package:fudatobashi/domain/rating.dart';
 import 'package:fudatobashi/domain/trainer.dart';
 import 'package:fudatobashi/state/play_config.dart';
 import 'package:fudatobashi/state/progress.dart';
 import 'package:fudatobashi/state/scope.dart';
 import 'package:fudatobashi/ui/play/play_screen.dart';
 import 'package:fudatobashi/ui/play/swipe_deck.dart';
-import 'package:fudatobashi/config/design.dart';
 import 'package:fudatobashi/ui/results/celebration_sequence.dart';
-import 'package:fudatobashi/ui/results/graduation_overlay.dart';
-import 'package:fudatobashi/ui/results/level_up_overlay.dart';
 import 'package:fudatobashi/ui/results/new_card_overlay.dart';
 import 'package:fudatobashi/ui/results/results_screen.dart';
-import 'package:fudatobashi/ui/results/xp_overlay.dart';
 import 'package:fudatobashi/ui/sound/sounds.dart';
 
 import 'test_l10n.dart';
@@ -177,58 +176,48 @@ void main() {
     await tester.pumpWidget(const SizedBox());
   });
 
-  testWidgets('the run that learns the 100th card graduates: all-known mode, then graduation, XP and Results',
-      (tester) async {
+  testWidgets('leaving a ranked run asks first, then records a forfeit that places the rating low', (tester) async {
     late Progress p;
-    final last = poems.all.last.id;
     await tester.runAsync(() async {
       p = await Progress.open(AppDatabase(NativeDatabase.memory()));
-      await p.setLearningMode(LearningMode.journey);
-      for (final poem in poems.all) {
-        p.trainer.items[ItemKey(poem.id, false)]!.unlocked = true;
-      }
-      final met = PlaySession([for (final poem in poems.all) if (poem.id != last) CardRef(poem.id)]);
-      var t = ms(0);
-      for (var i = 0; i < met.cards.length; i++) {
-        met.revealed(t);
-        t += ms(900);
-        met.commit(responseTs: t, commitTs: t, outcome: Outcome.known);
-      }
-      await p.recordRun(met, const PlayConfig(mode: PlayMode.training), DateTime.now());
+      await p.setLearningMode(LearningMode.allKnown);
     });
     await tester.binding.setSurfaceSize(const Size(384, 832));
     await tester.pumpWidget(ProgressScope(
       progress: p,
-      child: MaterialApp(
-        home: PlayScreen(cards: [CardRef(last)], config: const PlayConfig(mode: PlayMode.training), newPoems: const {}),
-      ),
+      child: MaterialApp(home: PlayScreen(cards: p.rankedDeck(), config: const PlayConfig(mode: PlayMode.ranked))),
     ));
     await tester.pump();
     await tester.pump();
     await swipeStartCard(tester);
-    await _swipe(tester, tester.widget<SwipeDeck>(find.byType(SwipeDeck)).session);
+    final session = tester.widget<SwipeDeck>(find.byType(SwipeDeck)).session;
+    for (var i = 0; i < 3; i++) {
+      await _swipe(tester, session);
+    }
+
+    Future<void> end() async {
+      await tester.tap(find.text('END'));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 600));
+    }
+
+    await end();
+    await tester.tap(find.text(S.of(tester.element(find.byType(PlayScreen))).forfeitNo));
+    await tester.pump(const Duration(milliseconds: 600));
+    expect(find.byType(PlayScreen), findsOneWidget, reason: 'kept playing');
+    expect(p.sessions, isEmpty);
+
+    await end();
+    await tester.tap(find.text(S.of(tester.element(find.byType(PlayScreen))).forfeitYes));
     for (var i = 0; i < 20 && find.byType(ResultsScreen).evaluate().isEmpty; i++) {
       await tester.runAsync(() => Future<void>.delayed(ms(20)));
       await tester.pump(ms(50));
     }
     expect(find.byType(ResultsScreen), findsOneWidget);
-    expect(p.trainer.config.learningMode, LearningMode.allKnown, reason: 'switched silently, no warning');
-
-    Future<void> next(Type page) async {
-      for (var i = 0; i < 200 && find.byType(page).evaluate().isEmpty; i++) {
-        await tester.pump(ms(50));
-      }
-      expect(find.byType(page), findsOneWidget);
-      await tester.pump(const Duration(seconds: 4));
-      await tester.tap(find.byType(page));
-      await tester.pump(ResultsLayout.overlayFade);
-    }
-
-    await next(GraduationOverlay);
-    await next(XpOverlay);
-    await next(LevelUpOverlay);
-    await tester.pump(const Duration(seconds: 1));
-    expect(find.byType(CelebrationSequence), findsNothing, reason: 'the Results overview is left');
+    expect(p.sessions.single.mode, PlayMode.ranked.name);
+    expect(p.sessions.single.completed, isFalse);
+    expect(p.rating, isNotNull, reason: 'a forfeit still places');
+    expect(p.rating!, lessThan(Rating.bands[1].minRating), reason: '97 cards left count as slow misses');
     await tester.pumpWidget(const SizedBox());
   });
 

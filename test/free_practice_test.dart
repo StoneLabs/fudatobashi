@@ -159,7 +159,9 @@ void main() {
       expect(const PlayConfig(mode: PlayMode.training).countsForSrs, isTrue);
       expect(const PlayConfig(mode: PlayMode.free).countsForSrs, isFalse, reason: 'all 100, not the known deck');
       expect(const PlayConfig(mode: PlayMode.free, setIds: ['initial:むすめふさほせ']).countsForSrs, isFalse);
-      expect(const PlayConfig(mode: PlayMode.nigate).countsForSrs, isFalse);
+      expect(const PlayConfig(mode: PlayMode.nigate).countsForSrs, isTrue);
+      expect(const PlayConfig(mode: PlayMode.ranked).countsForSrs, isTrue);
+      expect(const PlayConfig(mode: PlayMode.exam).countsForSrs, isFalse);
       expect(const PlayConfig(mode: PlayMode.guest, setIds: [PlayConfig.knownDeckId]).countsForSrs, isFalse);
     });
 
@@ -173,7 +175,7 @@ void main() {
       await db.close();
     });
 
-    test('an uncustomised free run feeds FSRS and the rating; a customised one only History', () async {
+    test('an uncustomised free run feeds FSRS; a customised one only History; neither the rating', () async {
       final db = AppDatabase(NativeDatabase.memory());
       final p = await openIn(db, LearningMode.allKnown);
       final counted = const FreePracticeSetup().config;
@@ -186,8 +188,7 @@ void main() {
       expect(report.sessionId, isNotNull);
       expect(p.trainer.items[key(a)]!.reviewed, isTrue);
       expect(p.stats(key(a)).seen, isTrue);
-      expect(p.rating, isNotNull);
-      expect(report.ratingAfter, isNot(report.ratingBefore));
+      expect(p.rating, isNull, reason: 'only a ranked run moves the rating');
 
       final rating = p.rating;
       final picked = FreePracticeSetup(cardIds: [b.poemId]).config;

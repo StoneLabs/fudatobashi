@@ -67,6 +67,8 @@ class S {
   String get freePlay => t('freePlay');
   String get weakCards => t('weakCards');
   String get guest => t('guest');
+  String get rankedRun => t('rankedRun');
+  String get examRun => t('examRun');
   String get untracked => t('untracked');
   String get guestNote => t('guestNote');
 

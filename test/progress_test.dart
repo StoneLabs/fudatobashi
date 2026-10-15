@@ -47,7 +47,7 @@ void main() {
 
     expect(report.sessionId, isNotNull);
     expect(report.total, isNotNull);
-    expect(report.ratingAfter, isNotNull);
+    expect(report.ratingAfter, isNull, reason: 'only a ranked run moves the rating');
     final k0 = ItemKey(cards[0].poemId, cards[0].inverted);
     expect(progress.stats(k0).seen, isTrue);
     expect(progress.trainer.items[k0]!.reviewed, isTrue);
@@ -99,8 +99,8 @@ void main() {
     expect(progress.trainer.items[key]!.reviewed, isTrue);
     expect(progress.trainer.items[key]!.card.due, isNot(beforeDue));
     expect(progress.stats(key).seen, isTrue);
-    expect(progress.rating, isNotNull);
-    expect(trainingReport.ratingAfter, isNotNull);
+    expect(progress.rating, isNull, reason: 'only a ranked run moves the rating');
+    expect(trainingReport.ratingAfter, isNull);
 
     // Both attempts still show up for history/charts; only the training one
     // counts toward the training-only stats FSRS/scheduling/rating use.
@@ -114,7 +114,7 @@ void main() {
     final db = AppDatabase(NativeDatabase.memory());
     await Progress.open(db);
     await db.into(db.ratingPoints).insert(
-        RatingPointsCompanion.insert(at: DateTime(2026), rating: 812.5, performance: 800, projectedMs: 90000));
+        RatingPointsCompanion.insert(at: DateTime(2026), rating: 812.5, performance: 800, scoredMs: 90000));
     await db.into(db.keyValues).insertOnConflictUpdate(KeyValuesCompanion.insert(key: 'rating', value: 'NaN'));
     final again = await Progress.open(db);
     expect(again.rating, 812.5);
@@ -212,11 +212,11 @@ void main() {
     expect(progress.islands.where((i) => i.reached).length, greaterThanOrEqualTo(3));
     expect(progress.islands.where((i) => i.complete), isNotEmpty);
     expect(progress.trainer.items.values.where((s) => s.card.state == fsrs.State.review), isNotEmpty);
-    expect(progress.ratingPoints, isNotEmpty);
+    expect(progress.ratingPoints, isEmpty, reason: 'training never moves the rating');
     expect(progress.practiceDays.length, DemoDataTuning.days);
     expect(progress.dueCount(DateTime.now().add(const Duration(days: 1))), greaterThan(0));
     // Free-play runs happened too: recorded for history, but never counted for SRS.
-    expect(progress.sessions.where((s) => s.mode == PlayMode.free.index), isNotEmpty);
+    expect(progress.sessions.where((s) => s.mode == PlayMode.free.name), isNotEmpty);
     final allAttempts = progress.trainer.items.keys.fold<int>(0, (n, k) => n + progress.attemptsOf(k).length);
     final trainingAttempts = progress.trainer.items.keys.fold<int>(0, (n, k) => n + progress.stats(k).count);
     expect(allAttempts, greaterThan(trainingAttempts));

@@ -481,18 +481,18 @@ abstract final class RatingModel {
   /// Rating points per doubling of the projected 100-card time (log2 scale).
   static const double pointsPerDoubling = 600;
 
-  /// Reference time (s): performance is 0 at this projected 100-card time.
+  /// Reference time (s): performance is 0 at this 100-card time.
   static const double referenceSeconds = 1000;
 
-  /// Smoothing K while still building confidence (first [provisionalSessions]
-  /// sessions).
+  /// Smoothing K while still building confidence (the first
+  /// [provisionalSessions] ranked runs after placement).
   static const double provisionalK = 0.5;
 
   /// Smoothing K once established.
   static const double establishedK = 0.25;
   static const int provisionalSessions = 10;
 
-  // Rank-band thresholds: projected 100-card time (s) at or below which a
+  // Rank-band thresholds: a ranked run's scored 100-card time (s) at or below which a
   // band is reached (see `Rating.bands`).
   static const double fLowerMaxSeconds = 400;
   static const double fUpperMaxSeconds = 245;
@@ -502,6 +502,38 @@ abstract final class RatingModel {
   static const double cMaxSeconds = 60;
   static const double bMaxSeconds = 52;
   static const double aMaxSeconds = 40;
+}
+
+/// Ranked runs (ランク戦, all-known mode): the only runs that move the
+/// rating (see `RankedScore`).
+abstract final class RankedTuning {
+  /// Cards in a ranked run (and in the graduation exam): every card once.
+  static const int cards = 100;
+
+  /// Added to a run's clock time for each miss or card marked wrong.
+  static const int missPenaltyMs = 10000;
+
+  /// A forfeit counts every card left as a miss that took at least this
+  /// long, or the run's own pace so far when slower.
+  static const double forfeitCardMs = StatsTuning.unknownMs;
+}
+
+/// The graduation exam (卒業試験): the journey's last island, all 100 cards
+/// against Tobi (see `TobiPace`).
+abstract final class ExamTuning {
+  /// Tobi's time for the 100 cards, drawn evenly from this range each try.
+  static const int tobiMinMs = 240000;
+  static const int tobiMaxMs = 330000;
+
+  /// How far each of Tobi's cards may stray from his even pace, as a share
+  /// of it (his cards still add up to his time).
+  static const double tobiJitter = 0.45;
+
+  /// Added to the player's time for each miss or card marked wrong.
+  static const int missPenaltyMs = RankedTuning.missPenaltyMs;
+
+  /// One try per this long, counted from the start of the last try.
+  static const Duration cooldown = Duration(hours: 1);
 }
 
 /// The rating page after a run (`RatingOverlay`).
@@ -554,8 +586,16 @@ abstract final class XpTuning {
   /// Finishing today's set (journey mode), once a day.
   static const int dayDone = 1000;
 
-  /// Learning the 100th card, the end of the journey.
+  /// Passing the graduation exam, the end of the journey.
   static const int graduation = 100000;
+
+  /// A ranked run played to its last card, and on top of it the first one,
+  /// which places the player on the ladder.
+  static const int ranked = 500;
+  static const int placement = 1000;
+
+  /// Every try at the graduation exam.
+  static const int exam = 300;
 
   /// XP from level L to L+1: [levelBase] × √L. Levels come quickly at
   /// first and keep coming: unlike the rank, a level never stalls.

@@ -39,7 +39,7 @@ void main() {
   Future<int> run(AppDatabase db, int d, int? totalUs, List<Swipe> swipes) async {
     final id = await db.into(db.sessions).insert(SessionsCompanion.insert(
           startedAt: day(d),
-          mode: PlayMode.training.index,
+          mode: PlayMode.training.name,
           orientation: 0,
           cardCount: swipes.length,
           totalUs: Value(totalUs),
@@ -121,7 +121,7 @@ void main() {
     for (final (session, perf, d) in [(a, 300.0, 1), (b, 250.0, 3), (d, 250.0, 4), (e, 320.0, 5)]) {
       ratings.add(Rating.update(ratings.lastOrNull, perf, ratings.length));
       await db.into(db.ratingPoints).insert(RatingPointsCompanion.insert(
-          at: day(d, 59), rating: ratings.last, performance: perf, projectedMs: 0, sessionId: Value(session)));
+          at: day(d, 59), rating: ratings.last, performance: perf, scoredMs: 0, sessionId: Value(session)));
     }
     await db.into(db.keyValues).insert(KeyValuesCompanion.insert(key: 'rating', value: '${ratings.last}'));
 
@@ -177,7 +177,7 @@ void main() {
     final a = await run(db, 1, 30000000, [(1, 900000, false, good), (2, 1200000, true, fsrs.Rating.again)]);
     await item(db, 1, replay(1, [(good, 1, 0)]));
     await db.into(db.ratingPoints).insert(RatingPointsCompanion.insert(
-        at: day(2), rating: 300, performance: 300, projectedMs: 0, sessionId: Value(a)));
+        at: day(2), rating: 300, performance: 300, scoredMs: 0, sessionId: Value(a)));
     final before = await dump(db);
     expect(await writesDuring(db, () => DbIntegrity.run(db)), isEmpty);
     await Progress.open(db);

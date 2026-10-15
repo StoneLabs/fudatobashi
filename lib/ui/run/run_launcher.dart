@@ -12,6 +12,7 @@ import '../ankiren/ankiren_screen.dart';
 import '../debug/ankiren_debug_game.dart';
 import '../manga/manga.dart';
 import '../play/play_screen.dart';
+import 'ranked_sheets.dart';
 
 // Entry points for starting a run. Screens call only these; the play and
 // results screens behind them may change without touching the callers.
@@ -67,6 +68,20 @@ Future<void> startNigate(BuildContext context) async {
   await _push(context, deck, run);
 }
 
+/// ランク戦 (all-known mode): asks first, since leaving early is a
+/// forfeit, then plays all 100 cards. [replace] puts it in place of the
+/// current screen (Results' Keep going).
+Future<void> startRanked(BuildContext context, {bool replace = false}) async {
+  if (!await confirmRankedStart(context) || !context.mounted) return;
+  const run = PlayConfig(mode: PlayMode.ranked);
+  final route = MangaRoute<void>(
+    transition: MangaTransition.zoom,
+    builder: (_) => PlayScreen(cards: ProgressScope.read(context).rankedDeck(), config: run),
+  );
+  final navigator = Navigator.of(context);
+  await (replace ? navigator.pushReplacement(route) : navigator.push(route));
+}
+
 /// A guest run of all 100 cards: nothing is recorded.
 Future<void> startGuest(BuildContext context) {
   const run = PlayConfig(mode: PlayMode.guest);
@@ -87,12 +102,14 @@ Future<void> _push(BuildContext context, List<CardRef> cards, PlayConfig config,
 /// grows past Home → Play (this is the only caller that isn't a start*
 /// entry point above).
 Future<void> keepGoing(BuildContext context, PlayConfig config) async {
+  if (config.mode == PlayMode.ranked) return startRanked(context, replace: true);
   final progress = ProgressScope.read(context);
   final planned = config.mode == PlayMode.training ? await progress.planTraining() : null;
   final cards = switch (config.mode) {
     PlayMode.training => planned!.cards,
     PlayMode.nigate => progress.nigateDeck(config),
     PlayMode.free || PlayMode.guest => progress.freeDeck(config),
+    PlayMode.ranked || PlayMode.exam => const <CardRef>[],
   };
   if (!context.mounted) return;
   if (cards.isEmpty) {

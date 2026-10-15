@@ -20,6 +20,7 @@ import '../manga/manga.dart';
 import '../results/celebration_sequence.dart';
 import '../results/celebrations.dart';
 import '../results/results_screen.dart';
+import '../run/ranked_sheets.dart';
 import '../sound/sounds.dart';
 import 'kimariji_chip.dart';
 import 'pointer_clock.dart';
@@ -124,9 +125,9 @@ class _PlayScreenState extends State<PlayScreen> {
   void dispose() {
     _session.removeListener(_onSessionChanged);
     if (!_wentToResults) music.enterMenu();
-    // Safety net for an unexpected pop (e.g. the system back gesture): still
-    // record a partial run, just without showing results for it.
-    if (!_ending && !widget.tutorial && _session.attempts.isNotEmpty) {
+    // Safety net for an unexpected pop: still record a partial run (a ranked
+    // one as a forfeit), just without showing results for it.
+    if (!_ending && !widget.tutorial && (_session.attempts.isNotEmpty || (_ranked && _started))) {
       unawaited(_progress.recordRun(_session, widget.config, _startedAt));
     }
     super.dispose();
@@ -145,7 +146,11 @@ class _PlayScreenState extends State<PlayScreen> {
       _startedAt = DateTime.now();
       _introduceIfNew();
     });
+    if (_ranked) unawaited(_progress.noteRankedStarted(_startedAt));
   }
+
+  /// A ranked run: leaving it once started is a forfeit.
+  bool get _ranked => widget.config.mode == PlayMode.ranked;
 
   /// Stops play for the current card's introduction on its first appearance.
   void _introduceIfNew() {
@@ -233,6 +238,10 @@ class _PlayScreenState extends State<PlayScreen> {
 
   Future<void> _end() async {
     if (_ending) return;
+    if (_ranked && _started && !_session.finished) {
+      if (await confirmForfeit(context) && mounted) await _finish();
+      return;
+    }
     if (_session.attempts.isEmpty) {
       Navigator.of(context).pop();
       return;
@@ -255,8 +264,6 @@ class _PlayScreenState extends State<PlayScreen> {
     }
     final progress = ProgressScope.read(context);
     final report = await progress.recordRun(_session, widget.config, _startedAt);
-    // The journey is over: every card is known, so no warning is needed.
-    if (report.graduated) await progress.switchToAllKnown();
     if (!mounted) return;
     _wentToResults = true;
     Navigator.of(context).pushReplacement(MangaRoute<void>(
@@ -287,7 +294,10 @@ class _PlayScreenState extends State<PlayScreen> {
     return PopScope(
       // Mid-round the tutorial holds you to its gestures; only before the
       // start card is swiped can back leave it.
-      canPop: !widget.tutorial || !_started,
+      canPop: !(widget.tutorial || _ranked) || !_started,
+      onPopInvokedWithResult: (didPop, _) {
+        if (!didPop && _ranked) unawaited(_end());
+      },
       child: Scaffold(
         backgroundColor: Palette.paper,
         body: Stack(children: [

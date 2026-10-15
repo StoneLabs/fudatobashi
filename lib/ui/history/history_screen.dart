@@ -142,7 +142,8 @@ class _Filter {
   /// In the order the filter row shows them.
   static final values = [
     all,
-    for (final mode in [PlayMode.training, PlayMode.free, PlayMode.nigate]) _Filter._(mode: mode),
+    for (final mode in [PlayMode.ranked, PlayMode.training, PlayMode.free, PlayMode.nigate, PlayMode.exam])
+      _Filter._(mode: mode),
     for (final trip in SideTrip.values) _Filter._(trip: trip),
   ];
 
@@ -164,6 +165,8 @@ class _Filter {
         PlayMode.free => s.freePlay,
         PlayMode.nigate => s.weakCards,
         PlayMode.guest => s.guest,
+        PlayMode.ranked => s.rankedRun,
+        PlayMode.exam => s.examRun,
       };
 }
 

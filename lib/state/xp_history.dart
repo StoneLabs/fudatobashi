@@ -6,6 +6,7 @@ import '../domain/ankiren_xp.dart';
 import '../domain/card_stats.dart';
 import '../domain/side_trips.dart';
 import '../domain/xp.dart';
+import 'play_config.dart';
 import 'progress.dart';
 import 'side_trips.dart';
 
@@ -81,6 +82,9 @@ abstract final class XpHistory {
       graduated: meta[_graduatedKey] == true,
       day: progress.dayOf(s),
       dayDone: meta[_dayDoneKey] == true,
+      ranked: config.mode == PlayMode.ranked,
+      placement: meta['placement'] == true,
+      exam: config.mode == PlayMode.exam,
     );
   }
 

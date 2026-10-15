@@ -14,6 +14,13 @@ enum PlayMode {
 
   /// Guest: nothing is recorded.
   guest,
+
+  /// ランク戦: all 100 cards, either way up, the only runs that move the
+  /// rating (all-known mode).
+  ranked,
+
+  /// 卒業試験: all 100 cards against Tobi, the journey's end.
+  exam,
 }
 
 /// How a run is set up.
@@ -46,10 +53,19 @@ class PlayConfig {
   /// Free practice's default deck: every known card.
   bool get isKnownDeck => cardIds == null && setIds.length == 1 && setIds.first == knownDeckId;
 
-  /// Whether the run feeds FSRS, the training statistics and the rating: 修行,
-  /// or free practice left at its default (every known card, no 隠し字). Any
-  /// other free-play deck is stored for History and display only.
-  bool get countsForSrs => mode == PlayMode.training || (mode == PlayMode.free && isKnownDeck && maskLevel == 0);
+  /// Whether the run feeds FSRS and the training statistics: 修行, ランク戦,
+  /// 苦手, or free practice left at its default (every known card, no 隠し字).
+  /// Any other free-play deck, and the exam, are stored for History and
+  /// display only.
+  bool get countsForSrs => switch (mode) {
+        PlayMode.training || PlayMode.ranked || PlayMode.nigate => true,
+        PlayMode.free => isKnownDeck && maskLevel == 0,
+        PlayMode.guest || PlayMode.exam => false,
+      };
+
+  /// All 100 cards against the clock, misses adding time (see
+  /// `RankedScore`).
+  bool get scored => mode == PlayMode.ranked || mode == PlayMode.exam;
 
   /// Runs with the same key count as "the same operation" in history.
   String get historyKey => jsonEncode([mode.index, [...setIds]..sort(), if (cardIds != null) [...cardIds!]..sort(), maskLevel]);

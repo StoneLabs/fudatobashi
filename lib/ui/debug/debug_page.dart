@@ -442,13 +442,15 @@ class _RatingTab extends StatelessWidget {
         (id, Rating.cardExpectedMs(p.stats(ItemKey(id, false)), p.stats(ItemKey(id, true)))),
     ]..sort((a, b) => b.$2.compareTo(a.$2));
     return ListView(padding: const EdgeInsets.all(16), children: [
-      DebugKV('projected 100 (s)', (projected / 1000).toStringAsFixed(2)),
+      DebugKV('projected 100 from card stats (s)', (projected / 1000).toStringAsFixed(2)),
       DebugKV('performance P', perf.toStringAsFixed(1)),
-      DebugKV('rating R', p.rating?.toStringAsFixed(1) ?? '— (no runs yet)'),
+      DebugKV('rating R', p.rating?.toStringAsFixed(1) ?? '— (not placed yet)'),
       DebugKV('band', Rating.bandOf(p.rating ?? perf).label),
       DebugKV('next band', Rating.nextBand(p.rating ?? perf)?.label ?? '—'),
-      DebugKV('formula', 'P = 600·log2(1000 s / T), R += K(P−R)'),
+      DebugKV('formula', 'P = 600·log2(1000 s / T), T = ranked time + 10 s a miss; R += K(P−R)'),
       DebugKV('rating points', '${p.ratingPoints.length}'),
+      if (p.ratingPoints.lastOrNull case final last?)
+        DebugKV('last ranked T (s)', (last.scoredMs / 1000).toStringAsFixed(2)),
       const Divider(height: 24),
       const Text('Card contributions to T (worst first)', style: _mono),
       for (final (id, ms) in rows)

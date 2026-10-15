@@ -111,6 +111,15 @@ class PlaySession extends ChangeNotifier {
     return t > Duration.zero ? t : null;
   }
 
+  /// Time from the first reveal to the latest swipe, less breaks: a run
+  /// ended early's time so far.
+  Duration get elapsed {
+    final last = endTs ?? _lastCommitTs;
+    if (firstRevealTs == null || last == null) return Duration.zero;
+    final t = last - firstRevealTs! - _breaks;
+    return t > Duration.zero ? t : Duration.zero;
+  }
+
   /// Play pauses before the current card for a page in between (a new
   /// card's introduction): the time from the last swipe to this card's
   /// reveal is left out of [total].

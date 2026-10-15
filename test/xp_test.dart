@@ -11,7 +11,6 @@ import 'package:fudatobashi/domain/ankiren_field.dart';
 import 'package:fudatobashi/domain/ankiren_level.dart';
 import 'package:fudatobashi/domain/ankiren_score.dart';
 import 'package:fudatobashi/domain/ankiren_xp.dart';
-import 'package:fudatobashi/domain/card_stats.dart';
 import 'package:fudatobashi/domain/play_session.dart';
 import 'package:fudatobashi/domain/trainer.dart';
 import 'package:fudatobashi/domain/xp.dart';
@@ -202,23 +201,25 @@ void main() {
       await db.close();
     });
 
-    test('the 100th card learned graduates the journey once, even after a reload', () async {
+    test('passing the graduation exam graduates the journey once, even after a reload', () async {
       final db = AppDatabase(NativeDatabase.memory());
       final progress = await Progress.open(db);
       await progress.setLearningMode(LearningMode.journey);
-      for (final p in poems.all) {
-        progress.trainer.items[ItemKey(p.id, false)]!.unlocked = true;
-      }
       final all = [for (final p in poems.all) CardRef(p.id)];
-      final half = await progress.recordRun(
-          play(all.take(99).toList(), 900), const PlayConfig(mode: PlayMode.training), DateTime.now());
-      expect(half.graduated, isFalse);
+      const exam = PlayConfig(mode: PlayMode.exam);
+      const tobi = Duration(minutes: 4);
 
-      final last = await progress.recordRun(play([all.last], 900), const PlayConfig(mode: PlayMode.training), DateTime.now());
-      expect(last.graduated, isTrue);
-      expect(last.xp!.award.parts.map((p) => p.source), contains(XpSource.graduation));
+      final lost = await progress.recordRun(play(all, 2900), exam, DateTime.now(), tobi: tobi);
+      expect(lost.graduated, isFalse, reason: '100 × 3 s is slower than Tobi');
+      expect(lost.xp!.award.parts.map((p) => p.source), contains(XpSource.exam));
 
-      final after = await progress.recordRun(play([all.first], 900), const PlayConfig(mode: PlayMode.training), DateTime.now());
+      final won = await progress.recordRun(play(all, 900), exam, DateTime.now(), tobi: tobi);
+      expect(won.passed, isTrue);
+      expect(won.graduated, isTrue);
+      expect(won.xp!.award.parts.map((p) => p.source), containsAll([XpSource.exam, XpSource.graduation]));
+      expect(progress.trainer.config.learningMode, LearningMode.journey, reason: 'switching is up to the player');
+
+      final after = await progress.recordRun(play(all, 900), exam, DateTime.now(), tobi: tobi);
       expect(after.graduated, isFalse, reason: 'latched');
 
       final again = await Progress.open(db);

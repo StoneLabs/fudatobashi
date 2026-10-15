@@ -229,7 +229,7 @@ void main() {
     expect(days.first.newCardChecks, 0, reason: 'nothing was met on an earlier day');
     expect(days.skip(1).fold(0, (n, d) => n + d.newCardChecks), greaterThan(0));
     expect(days.last.unlocked, days.fold<int>(0, (n, d) => n + d.newCards));
-    expect(days.last.rating, isNotNull);
+    expect(days.last.rating, isNull, reason: 'training never moves the rating');
   }, timeout: const Timeout(Duration(minutes: 1)));
 
   group("Home's Learn ahead", () {

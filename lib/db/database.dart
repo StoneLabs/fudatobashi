@@ -10,8 +10,8 @@ class Sessions extends Table {
   IntColumn get id => integer().autoIncrement()();
   DateTimeColumn get startedAt => dateTime()();
 
-  /// PlayMode index.
-  IntColumn get mode => integer()();
+  /// `PlayMode.name`: training, free, nigate, ranked or exam.
+  TextColumn get mode => text()();
 
   /// JSON list of FudaSet ids that defined the deck (empty for training;
   /// `PlayConfig.knownDeckId` for free practice's default deck). A
@@ -27,7 +27,8 @@ class Sessions extends Table {
   IntColumn get totalUs => integer().nullable()();
   BoolColumn get completed => boolean()();
 
-  /// Free-form JSON (mask settings, goal at the time, …).
+  /// Free-form JSON (mask settings, goal at the time, a ranked run's or an
+  /// exam try's misses and scored time, …).
   TextColumn get meta => text().withDefault(const Constant('{}'))();
 }
 
@@ -71,14 +72,15 @@ class Items extends Table {
   Set<Column> get primaryKey => {poemId, inverted};
 }
 
+/// The rating after each ranked run (see `Rating`).
 class RatingPoints extends Table {
   IntColumn get id => integer().autoIncrement()();
   DateTimeColumn get at => dateTime()();
   RealColumn get rating => real()();
   RealColumn get performance => real()();
 
-  /// Projected 100-card time, ms.
-  IntColumn get projectedMs => integer()();
+  /// The run's scored time (`RankedScore.scored`), ms.
+  IntColumn get scoredMs => integer()();
   IntColumn get sessionId => integer().nullable()();
 }
 
@@ -190,8 +192,10 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase([QueryExecutor? executor]) : super(executor ?? driftDatabase(name: 'fudatobashi'));
 
   /// Raised with each new upgrade step in `lib/migrations/` ([migrationSteps]).
+  /// Version 3 (run modes by name, ratings from ranked runs) has no upgrade
+  /// step yet, so an older database fails to open.
   @override
-  int get schemaVersion => 2;
+  int get schemaVersion => 3;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(

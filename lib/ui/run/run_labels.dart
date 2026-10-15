@@ -11,6 +11,8 @@ String runLabel(S s, PlayConfig c) {
     PlayMode.nigate => s.weakCards,
     PlayMode.free => s.freePlay,
     PlayMode.guest => s.guest,
+    PlayMode.ranked => s.rankedRun,
+    PlayMode.exam => s.examRun,
   };
   if (c.mode != PlayMode.free) return mode;
   final set = c.cardIds == null && c.setIds.length == 1

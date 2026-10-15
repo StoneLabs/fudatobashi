@@ -2105,6 +2105,21 @@ abstract final class GuestSheetStyle {
   static const Color barrier = Color(0x8C141414);
 }
 
+/// The ranked run's questions (`ranked_sheets.dart`): start, and forfeit.
+abstract final class RankedSheetStyle {
+  static const double title = 24;
+  static const double body = 14;
+  static const double bodyLineHeight = 1.45;
+  static const double shoutHeight = 60;
+  static const double plainHeight = 48;
+  static const EdgeInsets padding = EdgeInsets.fromLTRB(20, 22, 20, 20);
+  static const EdgeInsets warningPadding = EdgeInsets.fromLTRB(10, 8, 10, 8);
+  static const Color warningFill = Palette.pinkSoft;
+  static const double cut = 14;
+  static const Placement tobi = Placement(right: 18, top: -64, size: Size(76, 90));
+  static const Color barrier = GuestSheetStyle.barrier;
+}
+
 /// Free practice (始める): its setup sheet (`free_practice_sheet.dart`), the
 /// island / card / 友札 pickers behind it, and the balloon of its lock.
 abstract final class FreePracticeLayout {

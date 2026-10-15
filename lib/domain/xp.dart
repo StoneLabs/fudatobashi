@@ -27,11 +27,16 @@ enum XpSource {
   firstTap,
   nearMiss,
 
-  /// 暗記練: a ranked game played to the end.
+  /// 暗記練's ranked game, or the main game's ranked run (ランク戦), played
+  /// to the end.
   ranked,
 
-  /// 暗記練: the ranked game that finished placement.
+  /// 暗記練: the ranked game that finished placement; the main game: the
+  /// first ranked run, played to the end.
   placement,
+
+  /// A try at the graduation exam.
+  exam,
 }
 
 /// One swipe of a recorded run, as experience sees it.
@@ -75,6 +80,9 @@ class XpRun {
     this.graduated = false,
     this.day,
     this.dayDone = false,
+    this.ranked = false,
+    this.placement = false,
+    this.exam = false,
   });
 
   final int sessionId;
@@ -99,7 +107,7 @@ class XpRun {
   /// Islands the run completed.
   final int islands;
 
-  /// The run learned the journey's last card.
+  /// The run passed the graduation exam.
   final bool graduated;
 
   /// The practice day it was played on (a UTC midnight); by default the
@@ -108,6 +116,12 @@ class XpRun {
 
   /// The run finished today's set.
   final bool dayDone;
+
+  /// A ranked run (ランク戦), and the first one, which placed the player.
+  final bool ranked, placement;
+
+  /// A try at the graduation exam.
+  final bool exam;
 }
 
 /// One line of a run's experience: [count] things (cards, streak days,
@@ -289,6 +303,9 @@ class XpLedger {
         XpPart(XpSource.reviews, reviews, reviews * XpTuning.perReview),
         XpPart(XpSource.newCards, fresh, fresh * XpTuning.perNewCard),
         XpPart(XpSource.clear, 1, run.completed ? XpTuning.clear : 0),
+        XpPart(XpSource.ranked, 1, run.ranked && run.completed ? XpTuning.ranked : 0),
+        XpPart(XpSource.placement, 1, run.placement && run.completed ? XpTuning.placement : 0),
+        XpPart(XpSource.exam, 1, run.exam ? XpTuning.exam : 0),
         XpPart(XpSource.dayDone, 1, run.dayDone ? XpTuning.dayDone : 0),
         XpPart(XpSource.daily, _streak, firstToday ? XpTuning.daily + streakDays * XpTuning.perStreakDay : 0),
         XpPart(XpSource.best, 1, best ? XpTuning.personalBest : 0),
