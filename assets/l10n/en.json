@@ -425,7 +425,7 @@
   "allKnownWarningHold": "Hold {0} s to unlock all 100",
   "warningHolding": "Keep holding… let go to cancel",
   "resetAllData": "Reset all data",
-  "resetAllDataNote": "Erase every run, card, XP and setting and start over.",
+  "resetAllDataNote": "Resets all app data. Backups are not affected.",
   "resetAllWarningTitle": "Everything will be erased",
   "resetAllWarningBody": "Every run, every card's progress, your rating, XP and level, and all your settings are deleted for good. The app starts over as if freshly installed.",
   "resetAllWarningHold": "Hold {0} s to erase everything",
