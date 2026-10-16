@@ -135,7 +135,11 @@ class RestorePage extends StatelessWidget {
             children: [
               const SizedBox(height: HeaderStyle.topGap),
               MangaHeader(
-                title: ScreenTitle(s.restoreBackup, sub: s.sub?.restoreBackup),
+                title: FittedBox(
+                  fit: BoxFit.scaleDown,
+                  alignment: Alignment.centerLeft,
+                  child: ScreenTitle(s.restoreBackup, sub: s.sub?.restoreBackup),
+                ),
                 actions: [
                   InkIconButton(icon: IconArt.back, semanticLabel: s.back, onTap: () => Navigator.maybePop(context)),
                 ],
