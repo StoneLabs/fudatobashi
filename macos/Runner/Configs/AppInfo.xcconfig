@@ -8,7 +8,7 @@
 PRODUCT_NAME = fudatobashi
 
 // The application's bundle identifier
-PRODUCT_BUNDLE_IDENTIFIER = dev.fudatobashi.fudatobashi
+PRODUCT_BUNDLE_IDENTIFIER = com.sobadev.fudatobashi
 
 // The copyright displayed in application information
-PRODUCT_COPYRIGHT = Copyright © 2026 dev.fudatobashi. All rights reserved.
+PRODUCT_COPYRIGHT = Copyright © 2026 com.sobadev. All rights reserved.
