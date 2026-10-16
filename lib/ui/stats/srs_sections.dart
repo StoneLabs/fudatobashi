@@ -106,7 +106,7 @@ class _PaceGauge extends StatelessWidget {
         ),
         ChartLegend([
           (const LegendMark.box(Palette.pink), s.srsKnownCount(known)),
-          (const LegendMark.box(SrsLayout.knownFill), s.srsUnlockedCount(pace.unlocked)),
+          (const LegendMark.box(Palette.pinkSoft), s.srsUnlockedCount(pace.unlocked)),
           (const LegendMark.line(Palette.seaDeep), s.srsPaceToday(pace.target)),
         ]),
       ]),

@@ -1145,10 +1145,11 @@ abstract final class SrsLayout {
   static const double paceStroke = 3;
   static const double trendStroke = 2.2;
 
-  /// The Known cards chart's bands: Known's pink under its line, the lighter
-  /// pink between it and the Unlocked line, and that line's heavier dashes.
-  static const Color knownFill = Color(0xFFFFC6D9);
-  static const Color unlockedFill = Color(0xFFFFEEF3);
+  /// The Known cards chart's bands, in the pace bar's pinks: Known's pink
+  /// (a little see-through) under its line, the pale pink between it and
+  /// the Unlocked line, and that line's heavier dashes.
+  static const Color knownFill = Color(0xB3FF3D7F);
+  static const Color unlockedFill = Palette.pinkSoft;
   static const double unlockedStroke = 2;
   static const List<double> unlockedDash = [8, 4];
   static const List<double> dotDash = [1, 5];
