@@ -1,6 +1,6 @@
-// Tobi's tour of Home: on a stop with a spotlit target, a tap on his balloon
-// ("tap here to continue") moves the tour on, as the target does; the exam
-// intro's balloon still just closes it.
+// Tobi's tour of Home: a tap anywhere (scrim, balloon or target) moves the
+// tour on and never reaches the screen underneath; Skip still skips, and the
+// practice stop still starts the tutorial round.
 import 'dart:io';
 
 import 'package:drift/drift.dart' show driftRuntimeOptions;
@@ -17,6 +17,9 @@ import 'package:fudatobashi/l10n/strings.dart';
 import 'package:fudatobashi/l10n/tour_strings.dart';
 import 'package:fudatobashi/state/progress.dart';
 import 'package:fudatobashi/ui/app.dart';
+import 'package:fudatobashi/ui/home/home_screen.dart';
+import 'package:fudatobashi/ui/manga/tab_bar.dart';
+import 'package:fudatobashi/ui/play/play_screen.dart';
 import 'package:fudatobashi/ui/tour/tour_anchor.dart';
 import 'package:fudatobashi/ui/tour/tour_arrows.dart';
 import 'package:fudatobashi/ui/tour/tour_overlay.dart';
@@ -32,6 +35,83 @@ void main() {
   fudaSets = FudaSets(poems);
   archipelago = Archipelago.fromJsonString(File('assets/data/islands.json').readAsStringSync());
   driftRuntimeOptions.dontWarnAboutMultipleDatabases = true;
+
+  Future<Progress> openTour(WidgetTester tester) async {
+    late Progress p;
+    await tester.runAsync(() async {
+      p = await Progress.open(AppDatabase(NativeDatabase.memory()));
+      p.tabsAlwaysOpen = true;
+      await p.updateSettings(p.settings.copyWith(language: 'en', languagePicked: true, toured: false));
+      await p.setLearningMode(LearningMode.journey);
+    });
+    for (final id in fudaSets['initial:${archipelago.islands.first.name}'].poemIds) {
+      p.trainer.items[ItemKey(id, false)]!.unlocked = true;
+    }
+    tester.view
+      ..devicePixelRatio = 3
+      ..physicalSize = const Size(1080, 2340);
+    addTearDown(tester.view.reset);
+    await tester.pumpWidget(FudatobashiApp(progress: p));
+    await tester.pump(const Duration(milliseconds: 500));
+    return p;
+  }
+
+  Object? arrowsKey(WidgetTester tester) => tester.widget<TourArrows>(find.byType(TourArrows)).key;
+
+  Future<void> typeOut(WidgetTester tester) async {
+    await tester.pump(const Duration(milliseconds: 650));
+    await tester.pump(const Duration(seconds: 6));
+  }
+
+  testWidgets('a tap on an empty scrim area moves the tour on', (tester) async {
+    await openTour(tester);
+    await typeOut(tester);
+    final before = arrowsKey(tester);
+    await tester.tapAt(const Offset(5, 400));
+    await tester.pump(const Duration(milliseconds: 50));
+    expect(arrowsKey(tester), isNot(before));
+    await tester.pumpWidget(const SizedBox());
+  });
+
+  testWidgets('a tap over a nav tab moves the tour on without switching tabs', (tester) async {
+    await openTour(tester);
+    await typeOut(tester);
+    final before = arrowsKey(tester);
+    await tester.tapAt(tester.getCenter(find.byType(MangaTabBar)) + Offset(tester.getSize(find.byType(MangaTabBar)).width * 0.125, 0));
+    await tester.pump(const Duration(milliseconds: 50));
+    expect(arrowsKey(tester), isNot(before));
+    await tester.tap(find.text(const S('en').tourSkip));
+    await tester.pump(const Duration(milliseconds: 700));
+    expect(find.byType(TourOverlay), findsNothing);
+    expect(find.byType(HomeScreen), findsOneWidget);
+    expect(tester.widget<MangaTabBar>(find.byType(MangaTabBar)).current, 0);
+    await tester.pumpWidget(const SizedBox());
+  });
+
+  testWidgets('Skip skips the tour rather than moving it on', (tester) async {
+    await openTour(tester);
+    await typeOut(tester);
+    await tester.tap(find.text(const S('en').tourSkip));
+    await tester.pump(const Duration(milliseconds: 700));
+    expect(find.byType(TourOverlay), findsNothing);
+    await tester.pumpWidget(const SizedBox());
+  });
+
+  testWidgets('a tap anywhere on the practice stop starts the tutorial round', (tester) async {
+    await openTour(tester);
+    final steps = TourStep.of(LearningMode.journey, tabsLocked: false);
+    for (final step in steps) {
+      await typeOut(tester);
+      if (step.practice) break;
+      await tester.tapAt(const Offset(5, 400));
+      await tester.pump(const Duration(milliseconds: 50));
+    }
+    await tester.tapAt(const Offset(5, 400));
+    await tester.pump();
+    await tester.pump(const Duration(seconds: 2));
+    expect(find.byType(PlayScreen), findsOneWidget);
+    await tester.pumpWidget(const SizedBox());
+  });
 
   testWidgets("a tap on Tobi's balloon moves a stop with a target on, like the target", (tester) async {
     late Progress p;

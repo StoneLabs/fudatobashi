@@ -1,5 +1,3 @@
-import 'dart:math' as math;
-
 import 'package:flutter/scheduler.dart';
 import 'package:flutter/widgets.dart';
 
@@ -27,18 +25,17 @@ void replayTour(BuildContext context) {
 /// on each [TourSpot] in turn, a spray of scribbled arrows and a marquee
 /// arrow pointing at it, and Tobi, large, saying what it is.
 ///
-/// A stop moves on once the player taps its spot or Tobi's balloon, whose
-/// hint says so; anywhere else just jolts the arrows. Either way the line
-/// has to finish typing first. The
-/// practice stop's spot is 修行 itself, so tapping it (or the balloon) plays
+/// A stop moves on once the player taps anywhere, the spot and Tobi's
+/// balloon included, after the line has finished typing. The scrim swallows
+/// every tap, so nothing underneath is reached. The
+/// practice stop's spot is 修行 itself, so advancing it plays
 /// the tutorial round for real; the tour only ends once that round is won
 /// ([onDone]).
 /// The back button and the system back both step back one stop; the skip
 /// button, when there is [onSkip], ends the tour on any stop.
 ///
 /// A one-stop scene ([TourStep.examIntro]) passes [onElsewhere] instead: a
-/// tap away from its spot, the balloon included, closes it rather than
-/// jolting the arrows.
+/// tap away from its spot, the balloon included, closes it.
 class TourOverlay extends StatefulWidget {
   const TourOverlay({super.key, required this.steps, required this.keys, required this.onDone, this.onSkip, this.onElsewhere});
 
@@ -59,9 +56,6 @@ class _TourOverlayState extends State<TourOverlay> {
 
   /// The practice round was left before its end.
   bool _practiceLeft = false;
-
-  /// Bumped on a tap that misses the target, to retrigger the nudge.
-  int _missed = 0;
 
   /// Lines shown to the end already: instant if the player comes back to
   /// them with Back.
@@ -122,18 +116,15 @@ class _TourOverlayState extends State<TourOverlay> {
     final ready = _seenTexts.contains(text);
     final safe = MediaQuery.paddingOf(context);
 
-    // A tap that lands on the spotlit target moves the tour on, as the
-    // balloon does; anywhere else on a step with a target just jolts the
-    // arrows.
-    void onMiss(TapUpDetails d) {
-      if (!ready || step.spot == null) return;
+    // A tap anywhere on the scrim moves the tour on, the target included;
+    // the exam intro closes instead, unless the tap is on its target.
+    void onTap(TapUpDetails d) {
+      if (!ready) return;
       final elsewhere = widget.onElsewhere;
-      if (_spot != null && _spot!.contains(d.localPosition)) {
+      if (elsewhere == null || (_spot != null && _spot!.contains(d.localPosition))) {
         _advance();
-      } else if (elsewhere != null) {
-        elsewhere();
       } else {
-        setState(() => _missed++);
+        elsewhere();
       }
     }
 
@@ -146,7 +137,7 @@ class _TourOverlayState extends State<TourOverlay> {
         final layout = TourLayout.of(size: box.biggest, safe: safe, spot: step.spot == null ? null : _spot, seed: _index);
         final tobiLeft = _index.isEven;
         return Stack(children: [
-          Positioned.fill(child: GestureDetector(behavior: HitTestBehavior.opaque, onTapUp: onMiss)),
+          Positioned.fill(child: GestureDetector(behavior: HitTestBehavior.opaque, onTapUp: onTap)),
           // Purely visual: never absorbs a tap meant for the layers below it
           // (a plain CustomPaint otherwise claims its whole box).
           Positioned.fill(
@@ -155,14 +146,11 @@ class _TourOverlayState extends State<TourOverlay> {
             ),
           ),
           Positioned.fill(
-            child: _Nudge(
-              trigger: _missed,
-              child: TourArrows(
-                key: ValueKey(('arrows', _index, layout.hole)),
-                scribbles: layout.scribbles,
-                marquee: layout.marquee,
-                label: s.tourHere,
-              ),
+            child: TourArrows(
+              key: ValueKey(('arrows', _index, layout.hole)),
+              scribbles: layout.scribbles,
+              marquee: layout.marquee,
+              label: s.tourHere,
             ),
           ),
           Positioned.fromRect(
@@ -376,46 +364,6 @@ class _PopIn extends StatelessWidget {
           opacity: t.clamp(0.0, 1.0),
           child: Transform.scale(scale: TourStyle.popFrom + (1 - TourStyle.popFrom) * t, child: child),
         ),
-      );
-}
-
-/// A quick side-to-side jolt of [child] — the tour's "no, THERE!" nudge for
-/// a tap that missed the target — replayed whenever [trigger] changes. A
-/// composited translate, so it costs nothing to paint; skipped under
-/// reduced motion.
-class _Nudge extends StatefulWidget {
-  const _Nudge({required this.trigger, required this.child});
-  final int trigger;
-  final Widget child;
-
-  @override
-  State<_Nudge> createState() => _NudgeState();
-}
-
-class _NudgeState extends State<_Nudge> with SingleTickerProviderStateMixin {
-  late final AnimationController _c = AnimationController(vsync: this, duration: TourStyle.nudgeDuration);
-
-  @override
-  void didUpdateWidget(_Nudge old) {
-    super.didUpdateWidget(old);
-    if (old.trigger != widget.trigger && !MediaQuery.disableAnimationsOf(context)) _c.forward(from: 0);
-  }
-
-  @override
-  void dispose() {
-    _c.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) => AnimatedBuilder(
-        animation: _c,
-        builder: (context, child) {
-          final decay = 1 - _c.value;
-          final shake = math.sin(_c.value * TourStyle.nudgeCycles * 2 * math.pi) * TourStyle.nudgeAmount * decay;
-          return Transform.translate(offset: Offset(shake, 0), child: child);
-        },
-        child: widget.child,
       );
 }
 

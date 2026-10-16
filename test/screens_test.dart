@@ -3252,7 +3252,7 @@ void main() {
       });
     }
 
-    testWidgets('a tap before the line finishes typing, or off the target, does nothing; the target works once it is done',
+    testWidgets('a tap before the line finishes typing does nothing; once it is done, a tap off the target moves on too',
         (tester) async {
       final p = await open(tester, mode: LearningMode.journey, journeyCards: 7, tabsLocked: true, toured: false);
       await onPhone(tester, p, fontScale: 1.0);
@@ -3273,17 +3273,12 @@ void main() {
       expect(tester.widget<TourArrows>(find.byType(TourArrows)).key, before, reason: 'too early');
       expect(find.byType(TourOverlay), findsOneWidget);
 
-      // Off the target, even once it is done: also nothing, just a nudge.
+      // Off the target, once it is done: moves the tour on too.
       await waitForTyping(tester);
       final outside = target.center.dy < _phone.height / 2
           ? Offset(target.center.dx, _phone.height - 40)
           : Offset(target.center.dx, 40);
       await tester.tapAt(outside);
-      await tester.pump(const Duration(milliseconds: 200));
-      expect(tester.widget<TourArrows>(find.byType(TourArrows)).key, before, reason: 'missed the target');
-
-      // The target itself, now that it is done: moves the tour on.
-      await tester.tapAt(target.center);
       await tester.pump(const Duration(milliseconds: 50));
       expect(tester.widget<TourArrows>(find.byType(TourArrows)).key, isNot(before));
       await tester.pumpWidget(const SizedBox());
