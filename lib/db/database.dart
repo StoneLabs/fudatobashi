@@ -292,7 +292,6 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase([QueryExecutor? executor]) : super(executor ?? driftDatabase(name: 'fudatobashi'));
 
   /// Raised with each new upgrade step in `lib/migrations/` ([migrationSteps]).
-  /// Version 3 has no upgrade step yet, so an older database fails to open.
   @override
   int get schemaVersion => 3;
 
