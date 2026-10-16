@@ -71,6 +71,7 @@ flutter:
   assets:
     - assets/data/poems.json
     - assets/data/islands.json
+    - assets/rules/
     - assets/l10n/
     - assets/glyphs/
     - assets/svg/tally.svg
