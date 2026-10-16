@@ -10,10 +10,18 @@ import 'onboarding/onboarding_screen.dart';
 import 'shell/app_shell.dart';
 import 'sound/sounds.dart';
 
+const appTitle = 'Fudatobashi';
+
+/// Text outside a Scaffold (balloons and toasts in the overlay) gets the UI
+/// font, not Material's red "no Material" fallback.
+Widget withUiFont(BuildContext context, Widget? child) =>
+    DefaultTextStyle(style: Theme.of(context).textTheme.bodyMedium!, child: child!);
+
 class FudatobashiApp extends StatefulWidget {
-  const FudatobashiApp({super.key, required this.progress});
+  const FudatobashiApp({super.key, required this.progress, this.navigatorKey});
 
   final Progress progress;
+  final GlobalKey<NavigatorState>? navigatorKey;
 
   @override
   State<FudatobashiApp> createState() => _FudatobashiAppState();
@@ -57,13 +65,12 @@ class _FudatobashiAppState extends State<FudatobashiApp> {
           systemNavigationBarContrastEnforced: false,
         ),
         child: MaterialApp(
-          title: 'Fudatobashi',
+          title: appTitle,
+          navigatorKey: widget.navigatorKey,
           debugShowCheckedModeBanner: false,
           showPerformanceOverlay: widget.progress.settings.showPerformanceOverlay,
           theme: buildMangaTheme(),
-          // Text outside a Scaffold (balloons and toasts in the overlay) gets
-          // the UI font, not Material's red "no Material" fallback.
-          builder: (context, child) => DefaultTextStyle(style: Theme.of(context).textTheme.bodyMedium!, child: child!),
+          builder: withUiFont,
           home: const _FirstLaunchGate(),
         ),
       ),
