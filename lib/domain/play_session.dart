@@ -178,6 +178,17 @@ class PlaySession extends ChangeNotifier {
 
   Duration? get revealTs => _revealTs;
 
+  /// Play stops with the current card on screen (the app hidden, a sheet
+  /// over it): the card is revealed again when play resumes, timed from
+  /// there, and its swipe is left out of time statistics. The run's clock
+  /// keeps going.
+  void interrupt() {
+    if (finished || _revealTs == null) return;
+    _revealTs = null;
+    _currentTainted = true;
+    notifyListeners();
+  }
+
   void commit({
     required Duration responseTs,
     required Duration commitTs,

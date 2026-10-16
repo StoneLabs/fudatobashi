@@ -16,6 +16,7 @@ import '../../state/scope.dart';
 import '../../state/settings.dart';
 import '../manga/manga.dart';
 import '../play/kimariji_chip.dart';
+import '../play/play_hold.dart';
 import '../play/pointer_clock.dart';
 import '../play/sfx_overlay.dart';
 import '../play/swipe_deck.dart';
@@ -49,7 +50,7 @@ class ExamScreen extends StatefulWidget {
 
 enum _Race { opening, on, waiting, won, lost }
 
-class _ExamScreenState extends State<ExamScreen> with SingleTickerProviderStateMixin {
+class _ExamScreenState extends State<ExamScreen> with SingleTickerProviderStateMixin, PlayHold<ExamScreen> {
   static const _config = PlayConfig(mode: PlayMode.exam);
 
   /// The opening's sounds, at their times since the screen opened.
@@ -92,6 +93,9 @@ class _ExamScreenState extends State<ExamScreen> with SingleTickerProviderStateM
 
   /// Kept for [dispose], where the scope can no longer be looked up.
   late final Progress _progress;
+
+  @override
+  PlaySession get heldSession => _session;
 
   Duration get _penalty => Duration(milliseconds: _misses * ExamTuning.missPenaltyMs);
 
@@ -196,7 +200,7 @@ class _ExamScreenState extends State<ExamScreen> with SingleTickerProviderStateM
 
   Future<void> _leave() async {
     if (_ending || _state == _Race.waiting) return;
-    if (await confirmExamLeave(context) && mounted) await _end(won: false, left: true);
+    if (await holdFor(() => confirmExamLeave(context)) && mounted) await _end(won: false, left: true);
   }
 
   /// Stops play where it is, records the try, and after a moment on the
@@ -309,7 +313,7 @@ class _ExamScreenState extends State<ExamScreen> with SingleTickerProviderStateM
                           child: SwipeDeck(
                             key: _deckKey,
                             session: _session,
-                            live: playing,
+                            live: playing && !held,
                             dontKnowInput: dontKnowInput,
                             showNumber: settings.showPoemNumber,
                             haptics: settings.haptics,

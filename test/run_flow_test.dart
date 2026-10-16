@@ -205,6 +205,8 @@ void main() {
     await tester.pump(const Duration(milliseconds: 600));
     expect(find.byType(PlayScreen), findsOneWidget, reason: 'kept playing');
     expect(p.runs, isEmpty);
+    await _swipe(tester, session);
+    expect(session.attempts.last.tainted, isTrue, reason: 'the card under the sheet is shown afresh, out of time statistics');
 
     await end();
     await tester.tap(find.text(S.of(tester.element(find.byType(PlayScreen))).forfeitYes));

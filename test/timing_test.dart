@@ -154,6 +154,52 @@ void main() {
     }, variant: ios);
   });
 
+  test('an interrupted card is timed again from its next reveal and kept out of time statistics', () {
+    final s = PlaySession([const CardRef(1), const CardRef(2)]);
+    s.revealed(ms(0));
+    s.commit(responseTs: ms(500), commitTs: ms(520), outcome: Outcome.known);
+    s.revealed(ms(600));
+    s.interrupt();
+    expect(s.currentRevealed, isFalse);
+    s.revealed(ms(90600));
+    s.commit(responseTs: ms(91400), commitTs: ms(91420), outcome: Outcome.known);
+    expect(s.attempts.last.responseUs, ms(800).inMicroseconds);
+    expect(s.attempts.last.tainted, isTrue);
+    expect(s.attempts.first.tainted, isFalse);
+    expect(s.total, ms(91420), reason: "the run's clock keeps going");
+  });
+
+  testWidgets('time with the app hidden never counts as card time', (tester) async {
+    final p = await _openProgress(tester);
+    const config = PlayConfig(mode: PlayMode.training);
+    final session = await _openPlay(tester, p, config);
+    await _swipeAt(tester, session, session.revealTs! + ms(700));
+    final shown = session.revealTs!;
+
+    for (final state in [AppLifecycleState.inactive, AppLifecycleState.hidden]) {
+      tester.binding.handleAppLifecycleStateChanged(state);
+    }
+    await tester.pump(const Duration(minutes: 2));
+    expect(session.currentRevealed, isFalse, reason: 'no card is timed while the app is away');
+    for (final state in [AppLifecycleState.inactive, AppLifecycleState.resumed]) {
+      tester.binding.handleAppLifecycleStateChanged(state);
+    }
+    await tester.pump();
+    await tester.pump();
+    expect(session.revealTs! - shown, greaterThanOrEqualTo(const Duration(minutes: 2)), reason: 'shown afresh');
+
+    await _swipeAt(tester, session, session.revealTs! + ms(900));
+    final back = session.attempts.last;
+    expect(back.cardUs, ms(900).inMicroseconds);
+    expect(back.tainted, isTrue);
+    for (var i = 0; i < 2; i++) {
+      await _swipeAt(tester, session, session.revealTs! + ms(800));
+    }
+    final report = await _results(tester);
+    expect(report.attempts.where((a) => !a.tainted).map((a) => a.cardUs), everyElement(lessThan(ms(1000).inMicroseconds)));
+    await tester.pumpWidget(const SizedBox());
+  });
+
   testWidgets('iOS: a run is timed on one clock end to end, card by card, in total and as a best', (tester) async {
     final p = await _openProgress(tester);
     const config = PlayConfig(mode: PlayMode.free);

@@ -23,6 +23,7 @@ import '../results/results_screen.dart';
 import '../run/ranked_sheets.dart';
 import '../sound/sounds.dart';
 import 'kimariji_chip.dart';
+import 'play_hold.dart';
 import 'pointer_clock.dart';
 import 'sfx_overlay.dart';
 import '../tour/tutorial_coach.dart';
@@ -75,7 +76,7 @@ class PlayScreen extends StatefulWidget {
   State<PlayScreen> createState() => _PlayScreenState();
 }
 
-class _PlayScreenState extends State<PlayScreen> {
+class _PlayScreenState extends State<PlayScreen> with PlayHold<PlayScreen> {
   late final PlaySession _session = PlaySession(widget.cards, planner: widget.planner);
   DateTime _startedAt = DateTime.now();
   final _sfxKey = GlobalKey<SfxOverlayState>();
@@ -99,6 +100,9 @@ class _PlayScreenState extends State<PlayScreen> {
 
   /// Kept for [dispose], where the scope can no longer be looked up.
   late final Progress _progress;
+
+  @override
+  PlaySession get heldSession => _session;
 
   /// The tutorial's plan, and the move a card just came back for.
   TutorialScript? _script;
@@ -239,7 +243,7 @@ class _PlayScreenState extends State<PlayScreen> {
   Future<void> _end() async {
     if (_ending) return;
     if (_ranked && _started && !_session.finished) {
-      if (await confirmForfeit(context) && mounted) await _finish();
+      if (await holdFor(() => confirmForfeit(context)) && mounted) await _finish();
       return;
     }
     if (_session.attempts.isEmpty) {
@@ -289,7 +293,7 @@ class _PlayScreenState extends State<PlayScreen> {
     final buttonRows = dontKnowButton ? 2 : 1;
     final buttonsBottom =
         PlayLayout.buttonRowHeight * buttonRows + PlayLayout.buttonGap * (buttonRows - 1) + Gaps.section * 2;
-    final live = _started && _intro == null && !_resuming;
+    final live = _started && _intro == null && !_resuming && !held;
 
     return PopScope(
       // Mid-round the tutorial holds you to its gestures; only before the
