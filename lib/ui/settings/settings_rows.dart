@@ -197,6 +197,9 @@ class SettingsSlider extends StatelessWidget {
     required this.title,
     this.note,
     required this.value,
+    this.min = 0,
+    this.max = 1,
+    this.divisions,
     required this.enabled,
     required this.onChanged,
   });
@@ -204,6 +207,8 @@ class SettingsSlider extends StatelessWidget {
   final String title;
   final String? note;
   final double value;
+  final double min, max;
+  final int? divisions;
   final bool enabled;
   final ValueChanged<double> onChanged;
 
@@ -228,6 +233,9 @@ class SettingsSlider extends StatelessWidget {
                 ),
                 child: Slider(
                   value: value,
+                  min: min,
+                  max: max,
+                  divisions: divisions,
                   onChanged: enabled ? onChanged : null,
                   label: '${(value * 100).round()}%',
                 ),

@@ -3967,6 +3967,12 @@ abstract final class Confetti {
 /// running out to the edge; each setting is named, with a one-line note
 /// under its name, and switches and links sit in ink panels split by
 /// hairlines.
+/// Settings › Card size: the live preview card above its slider.
+abstract final class CardSizeLayout {
+  static const double percentFont = 28;
+  static const double percentGap = Gaps.small;
+}
+
 abstract final class SettingsLayout {
   static const double sectionGap = 28;
   static const double headerFont = 16;

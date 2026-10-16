@@ -6,11 +6,11 @@ import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
 
 import '../../config/config.dart';
-import '../../config/torifuda_spec.dart';
 import '../../data/poem.dart';
 import '../../domain/play_session.dart';
 import '../../state/settings.dart';
 import '../torifuda/torifuda_painter.dart';
+import 'card_size.dart';
 import 'pointer_clock.dart';
 import 'swipe_gesture.dart';
 
@@ -359,9 +359,7 @@ class SwipeDeckState extends State<SwipeDeck> with SingleTickerProviderStateMixi
   Widget build(BuildContext context) {
     _scheduleRevealIfNeeded();
     return LayoutBuilder(builder: (context, c) {
-      final maxH = c.maxHeight * SwipeTuning.cardHeightFraction / TorifudaSpec.aspect;
-      final w = math.min(c.maxWidth * SwipeTuning.cardWidthFraction, maxH);
-      _card = Size(w, w * TorifudaSpec.aspect);
+      _card = playCardSize(c.biggest, cardScaleOf(context));
       final center = Offset(c.maxWidth / 2, c.maxHeight / 2);
       final current = _s.current;
       // Under the top card, blank: the card up next, and on a deck of three

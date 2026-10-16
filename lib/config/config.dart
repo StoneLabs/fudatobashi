@@ -62,6 +62,12 @@ abstract final class SwipeTuning {
   /// Card height as a fraction of the available height.
   static const double cardHeightFraction = 0.9;
 
+  /// The player's card size setting, as a share of the full card size: its
+  /// range and step (the slider in Settings › Card size).
+  static const double cardScaleMin = 0.25;
+  static const double cardScaleMax = 1;
+  static const double cardScaleStep = 0.05;
+
   /// Scale of the next card at the start of a drag, growing toward
   /// [nextCardScaleBase] + [nextCardScaleRange] as the drag nears commit.
   static const double nextCardScaleBase = 0.965;
@@ -796,6 +802,7 @@ abstract final class DefaultSettings {
   static const bool sfxEffects = true;
   static const bool music = true;
   static const double musicVolume = 0.5;
+  static const double cardScale = SwipeTuning.cardScaleMax;
   static const bool swipeSound = true;
   static const bool effectSounds = true;
   static const bool showRunningTimer = false;

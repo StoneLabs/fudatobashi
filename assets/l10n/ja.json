@@ -393,6 +393,8 @@
   "dayStartNoteKnown": "この時刻に連続記録の1日が切り替わります。深夜の練習は前の日に数えます。",
   "dayStartChangeKnown": "変更は次の日から。今日の連続記録はそのままです。",
   "hourOfDay": "{0}:00",
+  "cardSize": "札の大きさ",
+  "cardSizeNote": "ドラッグでスワイプする札を小さくできます。100%が最大です。",
   "cardEffects": "演出エフェクト",
   "cardEffectsNote": "速く払うとバシッ！などの文字が飛び出す。",
   "vibration": "振動",

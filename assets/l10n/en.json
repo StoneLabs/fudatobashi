@@ -393,6 +393,8 @@
   "dayStartNoteKnown": "Your streak's days start at this time. Practice after midnight counts for the day before.",
   "dayStartChangeKnown": "A change starts with the next day, so today's streak is safe.",
   "hourOfDay": "{0}:00",
+  "cardSize": "Card size",
+  "cardSizeNote": "Drag to make the swipe cards smaller. 100% is the biggest.",
   "cardEffects": "Card effects",
   "cardEffectsNote": "Lettering like バシッ pops around a fast swipe.",
   "vibration": "Vibration",

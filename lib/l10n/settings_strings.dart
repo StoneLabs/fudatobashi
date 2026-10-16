@@ -23,6 +23,8 @@ extension SettingsStrings on S {
   String get dayStartNoteKnown => t('dayStartNoteKnown');
   String get dayStartChangeKnown => t('dayStartChangeKnown');
   String hourOfDay(int hour) => f('hourOfDay', [hour]);
+  String get cardSize => t('cardSize');
+  String get cardSizeNote => t('cardSizeNote');
   String get cardEffects => t('cardEffects');
   String get cardEffectsNote => t('cardEffectsNote');
   String get vibration => t('vibration');

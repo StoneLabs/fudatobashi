@@ -4,8 +4,8 @@ import 'package:flutter/scheduler.dart';
 import 'package:flutter/widgets.dart';
 
 import '../../config/config.dart';
-import '../../config/torifuda_spec.dart';
 import '../manga/manga.dart';
+import 'card_size.dart';
 
 class _Pop {
   _Pop(this.word, this.color, this.dx, this.above, this.rotationDeg, this.seed, this.start);
@@ -75,12 +75,11 @@ class SfxOverlayState extends State<SfxOverlay> with SingleTickerProviderStateMi
   Widget build(BuildContext context) => IgnorePointer(
         child: LayoutBuilder(builder: (context, c) {
           final box = c.biggest;
-          final maxH = box.height * SwipeTuning.cardHeightFraction / TorifudaSpec.aspect;
-          final w = math.min(box.width * SwipeTuning.cardWidthFraction, maxH);
+          final card = playCardSize(box, cardScaleOf(context));
           final cardRect = Rect.fromCenter(
             center: Offset(box.width / 2, box.height / 2),
-            width: w,
-            height: w * TorifudaSpec.aspect,
+            width: card.width,
+            height: card.height,
           );
           return Stack(children: [for (final p in _pops) _buildPop(p, box, cardRect)]);
         }),

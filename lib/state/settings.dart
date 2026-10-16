@@ -159,6 +159,7 @@ class AppSettings {
     this.languagePicked = DefaultSettings.languagePicked,
     this.kimarijiScript = DefaultSettings.kimarijiScript,
     this.accessibilityMode = DefaultSettings.accessibilityMode,
+    this.cardScale = DefaultSettings.cardScale,
     this.ankiren = DefaultSettings.ankiren,
   });
 
@@ -221,6 +222,10 @@ class AppSettings {
   /// screen. Only 暗記練 reads it so far (its field zooms in and pans).
   final bool accessibilityMode;
 
+  /// How big the swipe cards are, as a share of their full size (see
+  /// `playCardSize`).
+  final double cardScale;
+
   /// 暗記練's options and its free play's last setup.
   final AnkirenSettings ankiren;
 
@@ -259,6 +264,7 @@ class AppSettings {
         'languagePicked': languagePicked,
         'kimarijiScript': kimarijiScript.name,
         'accessibilityMode': accessibilityMode,
+        'cardScale': cardScale,
         'ankiren': ankiren.toJson(),
       };
 
@@ -303,6 +309,8 @@ class AppSettings {
       // 暗記練's own zoom switch became this app-wide one.
       accessibilityMode:
           j['accessibilityMode'] as bool? ?? ankiren?['zoom'] as bool? ?? DefaultSettings.accessibilityMode,
+      cardScale: ((j['cardScale'] as num?)?.toDouble() ?? DefaultSettings.cardScale)
+          .clamp(SwipeTuning.cardScaleMin, SwipeTuning.cardScaleMax),
       ankiren: ankiren == null ? DefaultSettings.ankiren : AnkirenSettings.fromJson(ankiren),
     );
   }
@@ -330,6 +338,7 @@ class AppSettings {
     bool? languagePicked,
     KimarijiScript? kimarijiScript,
     bool? accessibilityMode,
+    double? cardScale,
     AnkirenSettings? ankiren,
   }) =>
       AppSettings(
@@ -355,6 +364,7 @@ class AppSettings {
         languagePicked: languagePicked ?? this.languagePicked,
         kimarijiScript: kimarijiScript ?? this.kimarijiScript,
         accessibilityMode: accessibilityMode ?? this.accessibilityMode,
+        cardScale: cardScale ?? this.cardScale,
         ankiren: ankiren ?? this.ankiren,
       );
 }

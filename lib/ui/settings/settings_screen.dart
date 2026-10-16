@@ -34,6 +34,7 @@ import '../play/pointer_clock.dart';
 import '../results/celebrations.dart';
 import '../run/run_launcher.dart';
 import '../tour/tour_overlay.dart';
+import 'card_size_screen.dart';
 import 'credits_screen.dart';
 import 'data_actions.dart';
 import 'day_start_sheet.dart';
@@ -91,6 +92,13 @@ class SettingsScreen extends StatelessWidget {
                         sub: s.sub?.sectionPlay,
                         children: [
                           SettingsGroup(children: [
+                            SettingsTapRow(
+                              title: s.cardSize,
+                              value: '${(settings.cardScale * 100).round()}%',
+                              opensPage: true,
+                              onTap: () =>
+                                  Navigator.push(context, MangaRoute<void>(builder: (_) => const CardSizeScreen())),
+                            ),
                             SettingsSwitch(
                               title: s.cardEffects,
                               note: s.cardEffectsNote,
