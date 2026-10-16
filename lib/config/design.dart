@@ -1144,6 +1144,13 @@ abstract final class SrsLayout {
   static const double knownStroke = 2.6;
   static const double paceStroke = 3;
   static const double trendStroke = 2.2;
+
+  /// The Known cards chart's bands: Known's pink under its line, the lighter
+  /// pink between it and the Unlocked line, and that line's heavier dashes.
+  static const Color knownFill = Color(0xFFFFC6D9);
+  static const Color unlockedFill = Color(0xFFFFEEF3);
+  static const double unlockedStroke = 2;
+  static const List<double> unlockedDash = [8, 4];
   static const List<double> dotDash = [1, 5];
   static const EdgeInsets calloutPadding = EdgeInsets.fromLTRB(10, 7, 10, 8);
   static const double calloutFont = 22;

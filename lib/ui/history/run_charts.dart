@@ -318,10 +318,14 @@ class ChartLegend extends StatelessWidget {
 class LegendMark extends StatelessWidget {
   const LegendMark.box(this.color, {super.key})
       : line = false,
-        dashed = false;
-  const LegendMark.line(this.color, {super.key, this.dashed = false}) : line = true;
+        dashed = false,
+        background = null;
+  const LegendMark.line(this.color, {super.key, this.dashed = false, this.background}) : line = true;
 
   final Color color;
+
+  /// A fill behind a line mark.
+  final Color? background;
   final bool line, dashed;
 
   @override
@@ -329,7 +333,10 @@ class LegendMark extends StatelessWidget {
       ? SizedBox(
           width: RunChartStyle.legendLine,
           height: RunChartStyle.legendBox,
-          child: CustomPaint(painter: _LegendLinePainter(color, dashed)),
+          child: DecoratedBox(
+            decoration: BoxDecoration(color: background),
+            child: CustomPaint(painter: _LegendLinePainter(color, dashed)),
+          ),
         )
       : Container(
           width: RunChartStyle.legendBox,
