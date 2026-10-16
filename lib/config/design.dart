@@ -3038,6 +3038,13 @@ abstract final class KarutaRulesLayout {
   static const double bodyFont = 15;
   static const double bodyLineHeight = 1.65;
 
+  /// The ink line over the contents, where the intro ends and the rules
+  /// begin, with its space above and below.
+  static const double startRuleHeight = 2;
+  static const Color startRule = Palette.ink;
+  static const double startRuleGapAbove = 22;
+  static const double startRuleGapBelow = 16;
+
   /// The numbers of paragraphs (一, 1) and list entries (（1）) hang in a
   /// column of this width (scaled with the text) or their own.
   static const double labelColumn = 24;

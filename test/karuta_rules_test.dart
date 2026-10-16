@@ -212,6 +212,14 @@ void main() {
         expect(find.text(first), findsOneWidget);
         expect(find.text(s.rulesShowOriginal), s.ja ? findsNothing : findsOneWidget);
 
+        final rule = tester.getRect(find.byKey(startRuleKey));
+        expect(rule.height, greaterThan(0));
+        expect(tester.getTopLeft(find.text(s.rulesContents)).dy, greaterThan(rule.bottom),
+            reason: 'the divider sits directly above the contents');
+        expect(tester.getBottomLeft(find.text(s.rulesDisclaimer)).dy,
+            lessThan(rule.top));
+        await _capture(tester, 'top_$tag');
+
         await tap(find.text(s.rulesOpenPdf));
         expect(launches.single['url'], Links.karutaRules);
         expect(launches.single['useWebView'], isFalse, reason: 'the browser, not a view inside the app');

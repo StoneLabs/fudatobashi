@@ -97,7 +97,13 @@ class _KarutaRulesScreenState extends State<KarutaRulesScreen> {
                             ),
                           ]),
                         ],
-                        const SizedBox(height: KarutaRulesLayout.blockGap),
+                        const SizedBox(height: KarutaRulesLayout.startRuleGapAbove),
+                        const SizedBox(
+                          key: startRuleKey,
+                          height: KarutaRulesLayout.startRuleHeight,
+                          child: ColoredBox(color: KarutaRulesLayout.startRule),
+                        ),
+                        const SizedBox(height: KarutaRulesLayout.startRuleGapBelow),
                         SettingsGroup(children: [
                           SettingsTapRow(
                             title: s.rulesContents,
@@ -143,6 +149,9 @@ class _KarutaRulesScreenState extends State<KarutaRulesScreen> {
     );
   }
 }
+
+/// The line above the contents.
+const startRuleKey = ValueKey('rules-start-rule');
 
 const _sourceStyle = TextStyle(
   fontSize: KarutaRulesLayout.sourceFont,
