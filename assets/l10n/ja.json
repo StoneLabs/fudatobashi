@@ -441,7 +441,7 @@
   "restoreCopiesNote": "コピーはこの端末に残ります。最新の{0}件を保存し、別に移したファイルは削除しません。",
   "copyKindUpdate": "アプリの更新前",
   "copyKindRestore": "バックアップの復元前",
-  "copyKindSetAside": "開けなかったファイル",
+  "copyKindSetAside": "クラッシュ復旧画面からバックアップを読み込む前に作成",
   "restoreDone": "バックアップを復元しました",
   "restoreProblemTitle": "このファイルは復元できません",
   "restoreNotBackup": "札飛ばしのバックアップではありません。何も変更していません。",

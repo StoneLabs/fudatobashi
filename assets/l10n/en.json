@@ -441,7 +441,7 @@
   "restoreCopiesNote": "These copies stay on this device. The app keeps the latest {0}; files set aside are never deleted.",
   "copyKindUpdate": "Before an app update",
   "copyKindRestore": "Before a backup was restored",
-  "copyKindSetAside": "Set aside: it didn't open",
+  "copyKindSetAside": "Created before a backup was loaded from the crash recovery screen.",
   "restoreDone": "Backup restored",
   "restoreProblemTitle": "This file can't be restored",
   "restoreNotBackup": "It isn't a Fudatobashi backup. Nothing was changed.",
