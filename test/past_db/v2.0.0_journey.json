@@ -1,0 +1,19 @@
+{
+  "schemaVersion": 3,
+  "rows": {
+    "attempts": 2177,
+    "day_cards": 667,
+    "days": 16,
+    "island_completions": 2,
+    "items": 135,
+    "key_values": 4,
+    "runs": 30,
+    "side_trip_answers": 0,
+    "side_trip_runs": 0
+  },
+  "unlockedItems": 129,
+  "settings": {
+    "batchSize": 7,
+    "desiredRetention": 0.85
+  }
+}

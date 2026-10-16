@@ -90,6 +90,10 @@ void main() {
   archipelago = Archipelago.fromJsonString(File('assets/data/islands.json').readAsStringSync());
   driftRuntimeOptions.dontWarnAboutMultipleDatabases = true;
 
+  final probe = AppDatabase(NativeDatabase.memory());
+  final currentSchema = probe.schemaVersion;
+  probe.close();
+
   final dumps = Directory('test/past_db')
       .listSync()
       .whereType<File>()
@@ -104,7 +108,11 @@ void main() {
       final file = dump.copySync('${temp.path}/$name');
       final expected = jsonDecode(File(dump.path.replaceAll(RegExp(r'\.sqlite$'), '.json')).readAsStringSync()) as Map<String, dynamic>;
       final before = <String, List<Object?>>{};
+      // A dump made by the current schema is not migrated, so it must come out unchanged: same tables, same rows,
+      // none of the old-schema translations ([_kept], [_renamed], [_notCounted]) apply.
+      final same = expected['schemaVersion'] == currentSchema;
       final db = AppDatabase(NativeDatabase(file, setup: (raw) {
+        if (same) return;
         final old = {for (final r in raw.select("SELECT name FROM sqlite_master WHERE type = 'table'")) r['name']};
         for (final k in _kept) {
           if (old.contains(k.table)) before[k.after] = raw.select(k.before).first.values;
@@ -118,10 +126,14 @@ void main() {
         final tables = {
           for (final r in await db.customSelect("SELECT name FROM sqlite_master WHERE type = 'table'").get()) r.read<String>('name')
         };
-        expect(tables, isNot(anyOf(contains('sessions'), contains('rating_points'))), reason: 'dropped tables');
+        if (same) {
+          expect(tables, containsAll((expected['rows'] as Map<String, dynamic>).keys), reason: 'tables kept');
+        } else {
+          expect(tables, isNot(anyOf(contains('sessions'), contains('rating_points'))), reason: 'dropped tables');
+        }
         for (final entry in (expected['rows'] as Map<String, dynamic>).entries) {
-          if (_notCounted.contains(entry.key)) continue;
-          final table = _renamed[entry.key] ?? entry.key;
+          if (!same && _notCounted.contains(entry.key)) continue;
+          final table = same ? entry.key : _renamed[entry.key] ?? entry.key;
           expect(await count('SELECT COUNT(*) AS c FROM "$table"'), entry.value, reason: 'rows in $table');
         }
         for (final MapEntry(key: sql, value: row) in before.entries) {
@@ -134,7 +146,7 @@ void main() {
               0,
               reason: 'every row of $table lies in its day');
         }
-        expect(await count('SELECT COUNT(*) AS c FROM runs WHERE ended_at < started_at OR rating IS NOT NULL'), 0,
+        expect(await count('SELECT COUNT(*) AS c FROM runs WHERE ended_at < started_at${same ? '' : ' OR rating IS NOT NULL'}'), 0,
             reason: 'run end times and ratings');
         expect(await count('SELECT COUNT(*) AS c FROM items WHERE unlocked = 1'), expected['unlockedItems'], reason: 'unlocked items');
         final trainer = (await db.customSelect("SELECT value FROM key_values WHERE key = 'trainer'").get())
@@ -147,7 +159,7 @@ void main() {
         // The start-up load, after the counts as it writes a few values of its own.
         final progress = await Progress.open(db);
         expect(progress.xp.total > 0, progress.runs.isNotEmpty, reason: 'experience from the old runs');
-        expect(progress.ratedRuns, isEmpty, reason: 'an upgraded player starts unplaced');
+        if (!same) expect(progress.ratedRuns, isEmpty, reason: 'an upgraded player starts unplaced');
       } catch (e, s) {
         fail('Upgrading $name failed: $e\n$s');
       } finally {
