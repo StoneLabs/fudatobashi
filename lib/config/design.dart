@@ -350,6 +350,10 @@ abstract final class TypeScale {
   static const double label = 13;
   static const double button = 15;
   static const double title = 20;
+
+  /// A whole-word heading shrunk to fit its longest word keeps this share
+  /// of the room, as glyph widths don't scale quite in proportion.
+  static const double wordFitShare = 0.98;
 }
 
 /// Tilts and skews, degrees.

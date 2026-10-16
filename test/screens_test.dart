@@ -1437,6 +1437,7 @@ void main() {
           ratingBefore: null,
           ratingAfter: null,
           goalRaised: false,
+          newCards: const [4, 5],
         );
         await tester.binding.setSurfaceSize(_phone);
         await tester.pumpWidget(RepaintBoundary(
@@ -1460,6 +1461,17 @@ void main() {
                   .height;
           expect(paragraph.size.height, closeTo(oneLine, 0.5), reason: '$time wrapped onto more than one line');
         }
+        // The shelves' big headings ("Toughest", "New faces") break only
+        // between words, never inside one ("Toug / hest").
+        final s = S(ja ? 'ja' : 'en');
+        for (final heading in [s.toughestHeading, s.newCardsHeading]) {
+          final paragraph = tester.renderObject<RenderParagraph>(find.text(heading));
+          for (final word in RegExp(r'\S+').allMatches(heading)) {
+            final boxes = paragraph.getBoxesForSelection(TextSelection(baseOffset: word.start, extentOffset: word.end));
+            expect(boxes.map((b) => b.top).toSet(), hasLength(1), reason: '"${word[0]}" of "$heading" broke across lines');
+          }
+        }
+        await _capture(tester, 'results_shelves_${ja ? 'ja' : 'en'}_$scale');
         await tester.pumpWidget(const SizedBox());
       });
     }

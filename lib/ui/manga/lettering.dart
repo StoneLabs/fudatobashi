@@ -137,3 +137,33 @@ class NumberedText extends StatelessWidget {
     return Text.rich(TextSpan(style: style, children: spans), textAlign: textAlign);
   }
 }
+
+/// [text] in [style] that breaks lines only between words: when its longest
+/// word is wider than the room, the whole text shrinks until that word fits
+/// ("Toughest" on one line, never "Toug / hest").
+class WholeWordsText extends StatelessWidget {
+  const WholeWordsText(this.text, {super.key, required this.style});
+
+  final String text;
+  final TextStyle style;
+
+  @override
+  Widget build(BuildContext context) => LayoutBuilder(builder: (context, box) {
+        final full = DefaultTextStyle.of(context).style.merge(style);
+        final size = full.fontSize!;
+        var widest = 0.0;
+        for (final word in text.split(RegExp(r'\s+'))) {
+          final painter = TextPainter(
+            text: TextSpan(text: word, style: full),
+            textDirection: Directionality.of(context),
+            textScaler: MediaQuery.textScalerOf(context),
+            maxLines: 1,
+          )..layout();
+          widest = math.max(widest, painter.width);
+          painter.dispose();
+        }
+        final scale =
+            !box.maxWidth.isFinite || widest <= box.maxWidth ? 1.0 : box.maxWidth / widest * TypeScale.wordFitShare;
+        return Text(text, style: style.copyWith(fontSize: size * scale));
+      });
+}

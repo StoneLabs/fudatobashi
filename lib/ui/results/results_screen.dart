@@ -608,7 +608,7 @@ class _CardShelf extends StatelessWidget {
           SizedBox(
             width: ResultsLayout.toughHeaderWidth,
             child: Column(crossAxisAlignment: CrossAxisAlignment.start, mainAxisSize: MainAxisSize.min, children: [
-              Text(heading, style: const TextStyle(fontFamily: Fonts.display, fontSize: ResultsLayout.toughHeadingFont, height: 1)),
+              WholeWordsText(heading, style: const TextStyle(fontFamily: Fonts.display, fontSize: ResultsLayout.toughHeadingFont, height: 1)),
               const SizedBox(height: Gaps.tight),
               Text(label, style: const TextStyle(fontWeight: Weights.black, fontSize: ResultsLayout.toughLabelFont)),
               const SizedBox(height: Gaps.tight),
