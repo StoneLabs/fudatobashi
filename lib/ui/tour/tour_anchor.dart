@@ -1,8 +1,27 @@
 import 'package:flutter/widgets.dart';
 
-/// The things on Home that Tobi's tour points at, and the exam strip he
-/// points at once it opens.
-enum TourSpot { brand, training, map, islandPlan, rank, modes, guest, level, tabs, settings, exam }
+/// The things on Home that Tobi's tour points at, the exam strip he points
+/// at once it opens, and the parts of the play screen and the new card
+/// screen he points at in the practice round and on the first real card.
+enum TourSpot {
+  brand,
+  training,
+  map,
+  islandPlan,
+  rank,
+  modes,
+  guest,
+  level,
+  tabs,
+  settings,
+  exam,
+  newCard,
+  newCardVoice,
+  newCardInfo,
+  newCardAccept,
+  dontKnow,
+  undo,
+}
 
 /// One [GlobalKey] per [TourSpot], so the tour can find where each one is
 /// laid out, at any font scale.

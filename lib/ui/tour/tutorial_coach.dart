@@ -19,7 +19,11 @@ enum CoachLine {
   done,
   retryKnow,
   retryHold,
-  retryButton;
+  retryButton,
+
+  /// The tour's first real card (`PlayScreen.firstCard`), once its new card
+  /// screen is gone.
+  firstCard;
 
   String text(S s, String kana) => switch (this) {
         startCard => s.coachStartCard,
@@ -32,11 +36,12 @@ enum CoachLine {
         retryKnow => s.coachRetryKnow,
         retryHold => s.coachRetryHold,
         retryButton => s.coachRetryButton,
+        firstCard => s.coachFirstCard(kana),
       };
 
   TobiPose get pose => switch (this) {
         startCard => TobiPose.waving,
-        knowIt || dontKnowOff => TobiPose.pointing,
+        knowIt || dontKnowOff || firstCard => TobiPose.pointing,
         dontKnowHold || dontKnowButton => TobiPose.relaxed,
         fast => TobiPose.fired,
         done => TobiPose.cheering,
@@ -52,6 +57,11 @@ class TutorialScript {
   const TutorialScript(this.input);
 
   final DontKnowInput input;
+
+  /// Card [index] has just left the right way, and Tobi now stops the
+  /// round to say when to mark a card forgotten and how to fix a wrong
+  /// swipe: before the card that practises it, unless marking is off.
+  bool explainsForgettingAfter(int index) => index == 0 && input != DontKnowInput.off;
 
   /// How card [index] has to leave, or null for any way.
   Outcome? expected(int index) => switch (index) {

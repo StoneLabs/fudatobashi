@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/scheduler.dart';
 import 'package:flutter/widgets.dart';
 
@@ -9,6 +11,8 @@ import '../../l10n/tour_strings.dart';
 import '../../state/scope.dart';
 import '../manga/manga.dart';
 import '../play/play_screen.dart';
+import '../sound/sounds.dart';
+import 'first_card.dart';
 import 'tour_anchor.dart';
 import 'tour_arrows.dart';
 import 'tour_layout.dart';
@@ -29,8 +33,10 @@ void replayTour(BuildContext context) {
 /// balloon included, after the line has finished typing. The scrim swallows
 /// every tap, so nothing underneath is reached. The
 /// practice stop's spot is 修行 itself, so advancing it plays
-/// the tutorial round for real; the tour only ends once that round is won
-/// ([onDone]).
+/// the tutorial round for real, and the first card stop the first real
+/// card ([playFirstCard]); the tour only ends once both are done
+/// ([onDone]). A stop with a [TourStep.voice] has the reader read it out
+/// as it shows.
 /// The back button and the system back both step back one stop; the skip
 /// button, when there is [onSkip], ends the tour on any stop.
 ///
@@ -63,6 +69,26 @@ class _TourOverlayState extends State<TourOverlay> {
 
   TourStep get _step => widget.steps[_index];
 
+  @override
+  void initState() {
+    super.initState();
+    _read();
+  }
+
+  /// The reader reads out the stop's card, if it has one.
+  void _read() {
+    if (_step.voice case final poemId?) unawaited(sounds.playKimarijiVoice(poemId));
+  }
+
+  void _go(int index) {
+    setState(() {
+      _index = index;
+      _spot = null;
+      _practiceLeft = false;
+    });
+    _read();
+  }
+
   /// Where the current spot is laid out, checked after every frame this
   /// builds, so the spotlight follows the real layout.
   void _measure() {
@@ -75,11 +101,16 @@ class _TourOverlayState extends State<TourOverlay> {
 
   Future<void> _advance() async {
     if (_practising) return;
-    if (_step.practice) {
+    if (_step.playsRound) {
       _practising = true;
-      final done = await Navigator.of(context).push<bool>(
-        MangaRoute(transition: MangaTransition.zoom, builder: (_) => PlayScreen.tutorial()),
-      );
+      final done = _step.practice
+          ? await Navigator.of(context).push<bool>(
+              MangaRoute(
+                transition: MangaTransition.zoom,
+                builder: (_) => PlayScreen.tutorial(onSkip: widget.onSkip),
+              ),
+            )
+          : await playFirstCard(context, onSkip: widget.onSkip);
       _practising = false;
       if (!mounted) return;
       if (done != true) {
@@ -91,20 +122,12 @@ class _TourOverlayState extends State<TourOverlay> {
       widget.onDone();
       return;
     }
-    setState(() {
-      _index++;
-      _spot = null;
-      _practiceLeft = false;
-    });
+    _go(_index + 1);
   }
 
   void _back() {
     if (_index == 0 || _practising) return;
-    setState(() {
-      _index--;
-      _spot = null;
-      _practiceLeft = false;
-    });
+    _go(_index - 1);
   }
 
   @override
@@ -112,7 +135,11 @@ class _TourOverlayState extends State<TourOverlay> {
     SchedulerBinding.instance.addPostFrameCallback((_) => _measure());
     final s = S.of(context);
     final step = _step;
-    final text = _practiceLeft ? s.tourPracticeAgain : step.line(s);
+    final text = !_practiceLeft
+        ? step.line(s)
+        : step.firstCard
+            ? s.tourFirstCardAgain
+            : s.tourPracticeAgain;
     final ready = _seenTexts.contains(text);
     final safe = MediaQuery.paddingOf(context);
 
@@ -161,7 +188,7 @@ class _TourOverlayState extends State<TourOverlay> {
                 text: text,
                 ready: ready,
                 hint: step.hint?.call(s) ??
-                    (step.practice
+                    (step.playsRound
                         ? s.tourTapPractice
                         : _index == widget.steps.length - 1
                             ? s.tourTapDone

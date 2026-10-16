@@ -3109,6 +3109,9 @@ void main() {
   });
 
   group('Tour', () {
+    // The first real card's reader clip is asked for, never played.
+    setUp(() => sounds = _HeardSounds());
+    tearDown(() => sounds = Sounds());
     const safe = EdgeInsets.only(top: 28, bottom: 48);
     final area = Rect.fromLTRB(Gaps.gutter, 28 + Gaps.gutter, _phone.width - Gaps.gutter, _phone.height - 48 - Gaps.gutter);
     const spots = {
@@ -3148,7 +3151,7 @@ void main() {
       }
     });
 
-    Future<void> playTutorial(WidgetTester tester) async {
+    Future<void> playTutorial(WidgetTester tester, {String? shot}) async {
       Future<void> drag(Offset by, {Duration hold = Duration.zero}) async {
         final g = await tester.startGesture(const Offset(192, 300));
         for (var i = 0; i < 4; i++) {
@@ -3162,6 +3165,24 @@ void main() {
 
       await drag(const Offset(40, 0));
       await drag(const Offset(40, 0));
+      // Before ス, Tobi stops the round: when to mark a card forgotten, and
+      // Undo to fix a wrong swipe.
+      await tester.pump(TutorialTuning.forgetPause);
+      for (final (i, step) in TourStep.forgetting(DontKnowInput.hold).indexed) {
+        await tester.pump(const Duration(milliseconds: 650));
+        await tester.pump(const Duration(seconds: 6));
+        await tester.pump(const Duration(milliseconds: 500));
+        final s = S.of(tester.element(find.byType(TourOverlay).last));
+        String bare(String text) => text.replaceAll('\u2060', '').replaceAll('\u200b', '');
+        expect(find.byWidgetPredicate((w) => w is RichText && bare(w.text.toPlainText()) == bare(step.line(s))),
+            findsOneWidget,
+            reason: 'forgetting stop $i');
+        expect(tester.takeException(), isNull);
+        if (shot != null) await _capture(tester, '${shot}_forget_$i');
+        await tester.tapAt(const Offset(5, 420));
+        await tester.pump();
+      }
+      await tester.pump(const Duration(milliseconds: 400));
       await drag(const Offset(0, 25), hold: SwipeTuning.dontKnowHoldDwell + const Duration(milliseconds: 50));
       await drag(const Offset(40, 0));
       await tester.pump(TutorialTuning.doneLinger);
@@ -3197,7 +3218,64 @@ void main() {
     Finder coachBackButton() => find.descendant(of: find.byType(TutorialCoach), matching: backIcon());
 
     String hintFor(S s, List<TourStep> steps, int i) =>
-        steps[i].practice ? s.tourTapPractice : i == steps.length - 1 ? s.tourTapDone : s.tourTapHint;
+        steps[i].playsRound ? s.tourTapPractice : i == steps.length - 1 ? s.tourTapDone : s.tourTapHint;
+
+    // Checks a stop of the first real card and moves it on: its spot is
+    // found, the arrows keep off it, nothing overflows.
+    Future<void> firstCardStop(WidgetTester tester, TourStep step, String shot) async {
+      final target = await settleStep(tester, step);
+      expect(tester.takeException(), isNull, reason: shot);
+      final arrows = tester.widget<TourArrows>(find.byType(TourArrows));
+      if (target != null) {
+        expect(arrows.scribbles, isNotEmpty, reason: '$shot: ${step.spot!.name} is found');
+        for (final sc in arrows.scribbles) {
+          expect(Rect.fromPoints(sc.tail, sc.tip).overlaps(target), isFalse, reason: shot);
+        }
+      }
+      await waitForTyping(tester);
+      await tester.pump(const Duration(milliseconds: 500));
+      expect(tester.takeException(), isNull, reason: shot);
+      await _capture(tester, shot);
+      if (target != null) {
+        await tester.tapAt(target.center);
+      } else {
+        await tester.tap(find.text(S.of(tester.element(find.byType(TourOverlay))).tourTapHint));
+      }
+      await tester.pump();
+    }
+
+    // The tour's first real card, once its 修行 is tapped: Tobi's stops on
+    // the new card screen, the swipe, then his stops on being honest, and
+    // back to Home. [shot] prefixes the captures.
+    Future<void> playFirstCard(WidgetTester tester, Progress p, {required String shot}) async {
+      Future<void> settleDb(bool Function() done) async {
+        for (var i = 0; i < 60 && !done(); i++) {
+          await tester.runAsync(() => Future<void>.delayed(const Duration(milliseconds: 20)));
+          await tester.pump(const Duration(milliseconds: 50));
+        }
+      }
+
+      await settleDb(() => find.byType(PlayScreen).evaluate().isNotEmpty);
+      await tester.pump(const Duration(seconds: 1));
+      await _capture(tester, '${shot}_start');
+      final centre = tester.getCenter(find.byType(SwipeDeck));
+      await swipeStartCard(tester, from: centre);
+      await tester.pump(TourTuning.newCardSettle);
+      for (final (i, step) in TourStep.newCard('').indexed) {
+        await firstCardStop(tester, step, '${shot}_new_$i');
+      }
+      await tester.pump(const Duration(milliseconds: 500));
+      expect(find.byType(NewCardOverlay), findsNothing);
+      await _capture(tester, '${shot}_swipe');
+      await swipeStartCard(tester, from: centre);
+      await settleDb(() => find.byType(TourOverlay).evaluate().isNotEmpty);
+      final input = p.settings.dontKnowInputFor(LearningMode.journey);
+      for (final (i, step) in TourStep.honesty(input).indexed) {
+        await firstCardStop(tester, step, '${shot}_honest_$i');
+      }
+      await tester.pump(const Duration(milliseconds: 800));
+      expect(find.byType(PlayScreen), findsNothing);
+    }
 
     for (final mode in LearningMode.values) {
       for (final ja in [false, true]) {
@@ -3232,11 +3310,13 @@ void main() {
               await playTutorial(tester);
               expect(find.byType(PlayScreen), findsNothing);
             }
+            if (step.firstCard) await playFirstCard(tester, p, shot: 'tour_first_card_$lang');
           }
           await tester.pump(const Duration(milliseconds: 100));
           expect(find.byType(TourOverlay), findsNothing);
           expect(p.settings.toured, isTrue);
-          expect(p.runs, isEmpty, reason: 'the practice round is not recorded');
+          expect(p.runs, hasLength(mode == LearningMode.journey ? 1 : 0),
+              reason: 'the practice round is not recorded; the first real card is');
           await tester.pumpWidget(const SizedBox());
         });
       }
@@ -3299,6 +3379,38 @@ void main() {
       expect(tester.widget<TourArrows>(find.byType(TourArrows)).key, isNot(before));
       await tester.pumpWidget(const SizedBox());
     });
+
+    for (final (width, lang) in [(384.0, 'en'), (360.0, 'en'), (360.0, 'ja')]) {
+      testWidgets("the first real card's stops fit at $width dp, text scale 1.3 ($lang)", (tester) async {
+        final p = await open(tester, mode: LearningMode.journey, ja: lang == 'ja', tabsLocked: true, toured: false);
+        final size = Size(width, _phone.height * width / _phone.width);
+        tester.view
+          ..devicePixelRatio = 3
+          ..physicalSize = size * 3;
+        tester.platformDispatcher.textScaleFactorTestValue = 1.3;
+        addTearDown(tester.view.reset);
+        addTearDown(tester.platformDispatcher.clearTextScaleFactorTestValue);
+        await tester.binding.setSurfaceSize(size);
+        await tester.pumpWidget(RepaintBoundary(key: const ValueKey('screen'), child: FudatobashiApp(progress: p)));
+        await tester.pump(const Duration(milliseconds: 500));
+        final s = S(lang);
+        final steps = TourStep.of(LearningMode.journey, tabsLocked: true);
+        for (final (i, step) in steps.indexed) {
+          final target = await settleStep(tester, step);
+          await tapStepTarget(tester, target: target, hint: hintFor(s, steps, i));
+          if (step.practice) {
+            await tester.pump(const Duration(milliseconds: 500));
+            await playTutorial(tester, shot: 'tour_tutorial_${width.round()}_13_$lang');
+          }
+          if (step.firstCard) {
+            await playFirstCard(tester, p, shot: 'tour_first_card_${width.round()}_13_$lang');
+            break;
+          }
+        }
+        expect(p.runs, hasLength(1));
+        await tester.pumpWidget(const SizedBox());
+      });
+    }
 
     testWidgets('Back steps the tour back one stop, is gone on the first, and a stop it already finished shows instantly',
         (tester) async {
@@ -3403,6 +3515,9 @@ void main() {
       expect(at(hold, 1, retried: Outcome.known), CoachLine.retryHold);
       expect(at(button, 1, retried: Outcome.known), CoachLine.retryButton);
       expect(hold.line(started: true, index: 3, finished: true), CoachLine.done);
+      expect([for (var i = 0; i < 3; i++) hold.explainsForgettingAfter(i)], [true, false, false]);
+      expect(button.explainsForgettingAfter(0), isTrue);
+      expect(off.explainsForgettingAfter(0), isFalse, reason: 'nothing to mark with');
     });
 
     for (final ja in [false, true]) {
@@ -3468,6 +3583,17 @@ void main() {
         expect((session.index, line()), (0, CoachLine.retryKnow), reason: '"don\'t remember" on the first card');
         await flick();
         expect((session.index, line()), (1, CoachLine.dontKnowHold));
+        // Tobi stops the round once here: when to mark a card forgotten,
+        // then Undo for a wrong swipe.
+        await tester.pump(TutorialTuning.forgetPause);
+        for (var i = 0; i < TourStep.forgetting(DontKnowInput.hold).length; i++) {
+          expect(find.byType(TourOverlay), findsOneWidget, reason: 'forgetting stop $i');
+          await tester.pump(const Duration(seconds: 7));
+          await tester.tapAt(const Offset(5, 420));
+          await tester.pump();
+        }
+        await tester.pump(const Duration(milliseconds: 400));
+        expect(find.byType(TourOverlay), findsNothing);
         await _capture(tester, 'tutorial_hold_$lang');
         await flick();
         expect((session.index, line()), (1, CoachLine.retryHold), reason: 'a flick where a hold was asked for');
@@ -3835,7 +3961,11 @@ void _noop() {}
 /// Records the sounds asked for instead of playing them.
 class _HeardSounds extends Sounds {
   final played = <Sfx>[];
+  final read = <int>[];
 
   @override
   Future<void> play(Sfx sfx) async => played.add(sfx);
+
+  @override
+  Future<void> playKimarijiVoice(int poemId) async => read.add(poemId);
 }

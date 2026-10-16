@@ -13,6 +13,7 @@ extension TourStrings on S {
   String get coachRetryKnow => t('coachRetryKnow');
   String get coachRetryHold => t('coachRetryHold');
   String get coachRetryButton => t('coachRetryButton');
+  String coachFirstCard(String kana) => f('coachFirstCard', [kana]);
 
   /// Tobi's word on the locked tab [tab] (its label): what opens it.
   String lockReason(String tab, TabLock lock) => switch (lock.needs) {
@@ -47,6 +48,20 @@ extension TourStrings on S {
   String get tourTapPractice => t('tourTapPractice');
   String get tourTapDone => t('tourTapDone');
   String get tourSkip => t('tourSkip');
+  String get tourFirstCard => t('tourFirstCard');
+  String get tourFirstCardAgain => t('tourFirstCardAgain');
+  String get tourNewCard => t('tourNewCard');
+  String get tourReader => t('tourReader');
+  String get tourKimariji => t('tourKimariji');
+  String tourOneSound(String kimariji) => f('tourOneSound', [kimariji]);
+  String get tourAllCards => t('tourAllCards');
+  String get tourHonest => t('tourHonest');
+  String get tourForgotHold => t('tourForgotHold');
+  String get tourForgotButton => t('tourForgotButton');
+  String get tourLearnAll => t('tourLearnAll');
+  String get tourWhyForgetHold => t('tourWhyForgetHold');
+  String get tourWhyForgetButton => t('tourWhyForgetButton');
+  String tourFixSwipe(String undo) => f('tourFixSwipe', [undo]);
   String get tourHere => t('tourHere');
   String get replayTour => t('replayTour');
   String get replayTourNote => t('replayTourNote');

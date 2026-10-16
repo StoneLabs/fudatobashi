@@ -19,6 +19,7 @@ import '../shell/coming_soon.dart';
 import '../shell/kimariji_heading.dart';
 import '../sound/sounds.dart';
 import '../torifuda/torifuda_painter.dart';
+import '../tour/tour_anchor.dart';
 import 'celebration_chrome.dart';
 import 'celebrations.dart';
 
@@ -101,7 +102,7 @@ class _NewCardOverlayState extends State<NewCardOverlay> with SingleTickerProvid
               _Header(shout: s.newCardShout, band: s.newCardBand),
               Expanded(child: _CardStage(poem: poem, flick: _flick)),
               Stack(clipBehavior: Clip.none, children: [
-                Entrance(NewCardMotion.info, child: _InfoPanel(poem: poem)),
+                Entrance(NewCardMotion.info, child: TourAnchor(TourSpot.newCardInfo, child: _InfoPanel(poem: poem))),
                 const Placed(
                   NewCardLayout.exclaim,
                   child: Entrance(
@@ -125,22 +126,25 @@ class _NewCardOverlayState extends State<NewCardOverlay> with SingleTickerProvid
               const SizedBox(height: NewCardLayout.actionsGap),
               Entrance(
                 NewCardMotion.actions,
-                child: IntrinsicHeight(
-                  child: Row(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-                    Expanded(flex: NewCardLayout.learnFlex, child: _LearnButton(label: s.learnAboutCard)),
-                    const SizedBox(width: NewCardLayout.actionsGap),
-                    Expanded(
-                      flex: NewCardLayout.acceptFlex,
-                      child: CelebrationCta(
-                        label: s.bringItOn,
-                        sub: s.sub?.bringItOn,
-                        onTap: _accept,
-                        height: NewCardLayout.actionHeight,
-                        fontSize: NewCardLayout.acceptFont,
-                        subFontSize: NewCardLayout.acceptSubFont,
+                child: TourAnchor(
+                  TourSpot.newCardAccept,
+                  child: IntrinsicHeight(
+                    child: Row(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+                      Expanded(flex: NewCardLayout.learnFlex, child: _LearnButton(label: s.learnAboutCard)),
+                      const SizedBox(width: NewCardLayout.actionsGap),
+                      Expanded(
+                        flex: NewCardLayout.acceptFlex,
+                        child: CelebrationCta(
+                          label: s.bringItOn,
+                          sub: s.sub?.bringItOn,
+                          onTap: _accept,
+                          height: NewCardLayout.actionHeight,
+                          fontSize: NewCardLayout.acceptFont,
+                          subFontSize: NewCardLayout.acceptSubFont,
+                        ),
                       ),
-                    ),
-                  ]),
+                    ]),
+                  ),
                 ),
               ),
               const SizedBox(height: Gaps.section),
@@ -258,30 +262,33 @@ class _CardStage extends StatelessWidget {
           rumble(NewCardLayout.rumbleRight, NewCardLayout.rumbleRightSeed, NewCardLayout.rumbleRightDrop, left: false),
           Positioned.fromRect(
             rect: card,
-            child: _Flick(
-              flick: flick,
-              child: Entrance(
-                NewCardMotion.card,
-                child: Stack(clipBehavior: Clip.none, children: [
-                  Positioned.fill(
-                    child: EntranceBuilder(
-                      NewCardMotion.flyStreakFade,
-                      builder: (context, t, _) => _Streak(NewCardMotion.flyStreak,
-                          opacity: ((1 - t) / (1 - NewCardMotion.flyStreakHold)).clamp(0.0, 1.0)),
-                    ),
-                  ),
-                  Positioned.fill(
-                    child: Sway(
-                      turnDeg: NewCardMotion.swayDeg,
-                      lift: NewCardMotion.swayLift,
-                      period: NewCardMotion.swayPeriod,
-                      child: DecoratedBox(
-                        decoration: const BoxDecoration(boxShadow: [NewCardLayout.cardShadow]),
-                        child: TorifudaCard(poem: poem),
+            child: TourAnchor(
+              TourSpot.newCard,
+              child: _Flick(
+                flick: flick,
+                child: Entrance(
+                  NewCardMotion.card,
+                  child: Stack(clipBehavior: Clip.none, children: [
+                    Positioned.fill(
+                      child: EntranceBuilder(
+                        NewCardMotion.flyStreakFade,
+                        builder: (context, t, _) => _Streak(NewCardMotion.flyStreak,
+                            opacity: ((1 - t) / (1 - NewCardMotion.flyStreakHold)).clamp(0.0, 1.0)),
                       ),
                     ),
-                  ),
-                ]),
+                    Positioned.fill(
+                      child: Sway(
+                        turnDeg: NewCardMotion.swayDeg,
+                        lift: NewCardMotion.swayLift,
+                        period: NewCardMotion.swayPeriod,
+                        child: DecoratedBox(
+                          decoration: const BoxDecoration(boxShadow: [NewCardLayout.cardShadow]),
+                          child: TorifudaCard(poem: poem),
+                        ),
+                      ),
+                    ),
+                  ]),
+                ),
               ),
             ),
           ),
@@ -384,12 +391,15 @@ class _InfoPanel extends StatelessWidget {
       shape: const PanelShape(topLeft: NewCardLayout.infoCut),
       padding: NewCardLayout.infoPadding,
       child: Column(crossAxisAlignment: CrossAxisAlignment.start, mainAxisSize: MainAxisSize.min, children: [
-        KimarijiHeading(
-          poemId: poem.id,
-          fontSize: NewCardLayout.kimarijiFont,
-          kanaFontSize: NewCardLayout.kimarijiKanaFont,
-          color: Palette.pink,
-          outline: NewCardLayout.kimarijiOutline,
+        TourAnchor(
+          TourSpot.newCardVoice,
+          child: KimarijiHeading(
+            poemId: poem.id,
+            fontSize: NewCardLayout.kimarijiFont,
+            kanaFontSize: NewCardLayout.kimarijiKanaFont,
+            color: Palette.pink,
+            outline: NewCardLayout.kimarijiOutline,
+          ),
         ),
         const SizedBox(height: NewCardLayout.metaGap),
         Text.rich(
