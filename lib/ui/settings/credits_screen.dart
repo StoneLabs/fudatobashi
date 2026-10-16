@@ -5,12 +5,15 @@ import '../../config/design.dart';
 import '../../config/licenses.dart';
 import '../../config/vector_art.dart';
 import '../../l10n/credits_strings.dart';
+import '../../l10n/guide_strings.dart';
+import '../../l10n/rules_strings.dart';
 import '../../l10n/strings.dart';
 import '../manga/manga.dart';
 
 /// Attribution for everything third-party this app bundles: fonts, the
-/// pre-rendered torifuda kana, sound effects, the poem dataset, its
-/// inspiration and (via `showLicensePage`) every pub package it depends on.
+/// pre-rendered torifuda kana, sound effects, the poem dataset, the karuta
+/// rules and guide, its inspiration and (via `showLicensePage`) every pub
+/// package it depends on.
 class CreditsScreen extends StatelessWidget {
   const CreditsScreen({super.key});
 
@@ -85,6 +88,16 @@ class CreditsScreen extends StatelessWidget {
                       _Section(
                         title: s.creditsPoemData,
                         children: [NarrationBox(child: Text(s.creditsPoemDataBody))],
+                      ),
+                      const SizedBox(height: Gaps.section),
+                      _Section(
+                        title: s.rulesTitle,
+                        children: [NarrationBox(child: Text(s.creditsRulesBody))],
+                      ),
+                      const SizedBox(height: Gaps.section),
+                      _Section(
+                        title: s.guideTitle,
+                        children: [NarrationBox(child: Text(s.creditsGuideBody))],
                       ),
                       const SizedBox(height: Gaps.section),
                       _Section(

@@ -26,6 +26,10 @@ extension CreditsStrings on S {
   String get creditsPoemData => t('creditsPoemData');
   String get creditsPoemDataBody => t('creditsPoemDataBody');
 
+  /// Where the full karuta rules and the karuta guide in Help come from.
+  String get creditsRulesBody => t('creditsRulesBody');
+  String get creditsGuideBody => t('creditsGuideBody');
+
   String get creditsInspiration => t('creditsInspiration');
   String get creditsInspirationBody => t('creditsInspirationBody');
 
