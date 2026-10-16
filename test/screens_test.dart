@@ -2991,14 +2991,14 @@ void main() {
         await tester.pumpWidget(const SizedBox());
       });
 
-      testWidgets('all-known mode opens 暗記練 and its page with free play, unranked at 入門 ($lang)', (tester) async {
+      testWidgets('all-known mode opens 暗記練 and its page with free play, unranked with no class ($lang)', (tester) async {
         final s = S(lang);
         final p = await open(tester, mode: LearningMode.allKnown, ja: ja);
         await tester.runAsync(
             () => p.updateSettings(p.settings.copyWith(ankiren: p.settings.ankiren.copyWith(rulesSeen: true))));
         expect(p.sideTripsHub()[SideTrip.ankiren].open, isTrue);
         await openTrips(tester, p);
-        expect(inTrips(find.text(S(lang).className(Rating.bands.first))), findsOneWidget, reason: 'the flag flies the novice class');
+        expect(inTrips(find.text(s.className(Rating.bands.first))), findsNothing, reason: 'no class stamp before a ranked game');
         expect(inTrips(find.text(s.sideTripUnranked)), findsOneWidget);
         await _capture(tester, 'side_trips_open_$lang');
         await tester.tap(inTrips(find.byType(PageBurst)));
