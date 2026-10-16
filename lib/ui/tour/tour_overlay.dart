@@ -27,16 +27,18 @@ void replayTour(BuildContext context) {
 /// on each [TourSpot] in turn, a spray of scribbled arrows and a marquee
 /// arrow pointing at it, and Tobi, large, saying what it is.
 ///
-/// A stop with a spot only moves on once the player taps it — anywhere else
-/// just jolts the arrows; a stop with none moves on with the balloon's own
-/// continue button. Either way the line has to finish typing first. The
-/// practice stop's spot is 修行 itself, so tapping it plays the tutorial
-/// round for real; the tour only ends once that round is won ([onDone]).
+/// A stop moves on once the player taps its spot or Tobi's balloon, whose
+/// hint says so; anywhere else just jolts the arrows. Either way the line
+/// has to finish typing first. The
+/// practice stop's spot is 修行 itself, so tapping it (or the balloon) plays
+/// the tutorial round for real; the tour only ends once that round is won
+/// ([onDone]).
 /// The back button and the system back both step back one stop; the skip
 /// button, when there is [onSkip], ends the tour on any stop.
 ///
 /// A one-stop scene ([TourStep.examIntro]) passes [onElsewhere] instead: a
-/// tap away from its spot closes it rather than jolting the arrows.
+/// tap away from its spot, the balloon included, closes it rather than
+/// jolting the arrows.
 class TourOverlay extends StatefulWidget {
   const TourOverlay({super.key, required this.steps, required this.keys, required this.onDone, this.onSkip, this.onElsewhere});
 
@@ -120,9 +122,9 @@ class _TourOverlayState extends State<TourOverlay> {
     final ready = _seenTexts.contains(text);
     final safe = MediaQuery.paddingOf(context);
 
-    // A tap that lands on the spotlit target moves the tour on; anywhere
-    // else on a step with a target just jolts the arrows. A step with no
-    // target only moves on through the balloon's continue button.
+    // A tap that lands on the spotlit target moves the tour on, as the
+    // balloon does; anywhere else on a step with a target just jolts the
+    // arrows.
     void onMiss(TapUpDetails d) {
       if (!ready || step.spot == null) return;
       final elsewhere = widget.onElsewhere;
@@ -179,7 +181,7 @@ class _TourOverlayState extends State<TourOverlay> {
                 pose: step.pose,
                 tobiLeft: tobiLeft,
                 onTextDone: () => setState(() => _seenTexts.add(text)),
-                onContinue: step.spot == null ? _advance : null,
+                onContinue: widget.onElsewhere == null ? _advance : null,
               ),
             ),
           ),
@@ -229,7 +231,7 @@ class _TobiSays extends StatelessWidget {
   final bool tobiLeft;
   final VoidCallback onTextDone;
 
-  /// Null on a step with a spot: it moves on by tapping the spot instead.
+  /// Null when only the spot moves the stop on.
   final VoidCallback? onContinue;
 
   @override
@@ -257,8 +259,7 @@ class _TobiSays extends StatelessWidget {
           _HintRow(hint: hint, ready: ready, dim: onContinue == null),
         ]),
       );
-      // With nothing to tap elsewhere, the whole balloon is the continue
-      // control — not just its hint line.
+      // The whole balloon is the continue control, not just its hint line.
       final bubble = onContinue == null
           ? content
           : Pressable(onTap: ready ? onContinue : null, builder: (context, pressed) => content);
@@ -338,9 +339,8 @@ class _TypingTextState extends State<_TypingText> with SingleTickerProviderState
 }
 
 /// The line's hint: what tapping does, faded in only once the line has
-/// finished typing. Dimmed on a step with a target (the tap that matters is
-/// on the target, not here); at full ink when the whole balloon is the tap
-/// target.
+/// finished typing. At full ink when the balloon itself is a tap target,
+/// dimmed when only the spot is.
 class _HintRow extends StatelessWidget {
   const _HintRow({required this.hint, required this.ready, required this.dim});
 

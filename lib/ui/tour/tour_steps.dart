@@ -6,9 +6,8 @@ import '../manga/manga.dart';
 import 'tour_anchor.dart';
 
 /// One stop of Tobi's tour: what Tobi says, in which pose, and what the
-/// spotlight is on. A stop with a [spot] only moves on once the player taps
-/// it (a miss just jolts the arrows); a stop with none — just Tobi talking —
-/// moves on with the balloon's own continue button instead. The [practice]
+/// spotlight is on. A stop moves on once the player taps its [spot] or
+/// Tobi's balloon (a tap elsewhere just jolts the arrows). The [practice]
 /// stop's spot is the real 修行 button: tapping it starts the tutorial
 /// round for real, and the stop only moves on once that round is won.
 class TourStep {
