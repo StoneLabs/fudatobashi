@@ -14,6 +14,7 @@ import '../../state/progress.dart';
 import '../../state/scope.dart';
 import 'debug_common.dart';
 import 'reset_actions.dart';
+import 'weak_tab.dart';
 
 const _mono = debugMono;
 
@@ -38,7 +39,7 @@ class DebugPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return DefaultTabController(
-      length: 4,
+      length: 5,
       child: Scaffold(
         backgroundColor: Palette.paper,
         appBar: AppBar(
@@ -50,6 +51,7 @@ class DebugPage extends StatelessWidget {
             Tab(text: 'Items'),
             Tab(text: 'Scheduler'),
             Tab(text: 'Rating'),
+            Tab(text: 'Weak'),
           ]),
         ),
         // Edge-to-edge system UI means the bottom system bar/gesture strip
@@ -60,6 +62,7 @@ class DebugPage extends StatelessWidget {
             _Items(),
             _Scheduler(),
             _RatingTab(),
+            WeakTab(),
           ]),
         ),
       ),

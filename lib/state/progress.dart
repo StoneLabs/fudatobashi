@@ -797,17 +797,14 @@ class Progress extends ChangeNotifier {
     return [for (final id in ids) _ref(id, inverted(id), c.maskLevel, random)];
   }
 
-  /// 苦手: a drill of the [WeakTuning.targets] worst weak sides, each with a
-  /// look-alike the player has played (a 友札 the same way up, else its other
-  /// side) and quick cards in between (see [StepPlan.forWeak]). A slow answer
-  /// on a weak side counts as a miss in the plan. Empty with no weak side.
-  ({List<CardRef> cards, PlayConfig config, RunPlanner planner}) weakDrill({math.Random? rng}) {
-    final random = rng ?? math.Random();
+  /// 苦手: the targets, look-alikes, anchors and fillers of a drill (see
+  /// [weakDrill]).
+  WeakPick weakPick(math.Random random) {
     final weak = weakCards;
     final targets = weak.sides.take(WeakTuning.targets).toList()..shuffle(random);
     final played = {for (final e in allStats.entries) if (e.value.seen) e.key};
     final taken = {...targets};
-    final lookAlikes = <ItemKey, ItemKey>{};
+    final lookAlikes = <ItemKey, ({ItemKey key, bool friend})>{};
     for (final t in targets) {
       final twins = [
         for (final id in fudaSets.tomofuda(t.poemId))
@@ -815,16 +812,33 @@ class Progress extends ChangeNotifier {
       ];
       final like = twins.isNotEmpty ? twins[random.nextInt(twins.length)] : t.flipped;
       if (!played.contains(like) || taken.contains(like)) continue;
-      lookAlikes[t] = like;
+      lookAlikes[t] = (key: like, friend: twins.isNotEmpty);
       taken.add(like);
     }
     final quick = [for (final k in weak.quick) if (!taken.contains(k)) k]..shuffle(random);
     final anchors = quick.take(targets.length ~/ WeakTuning.anchorEvery + 1).toList();
-    final plan = StepPlan.forWeak(
+    return WeakPick(
       targets: targets,
       lookAlikes: lookAlikes,
       anchors: anchors,
       fillers: quick.skip(anchors.length).take(WeakTuning.fillers).toList(),
+    );
+  }
+
+  /// 苦手: a drill of the [WeakTuning.targets] worst weak sides, each with a
+  /// look-alike the player has played (a 友札 the same way up, else its other
+  /// side) and quick cards in between (see [StepPlan.forWeak]). A slow answer
+  /// on a weak side counts as a miss in the plan. Empty with no weak side.
+  ({List<CardRef> cards, PlayConfig config, RunPlanner planner}) weakDrill({math.Random? rng}) {
+    final random = rng ?? math.Random();
+    final weak = weakCards;
+    final pick = weakPick(random);
+    final targets = pick.targets;
+    final plan = StepPlan.forWeak(
+      targets: targets,
+      lookAlikes: {for (final e in pick.lookAlikes.entries) e.key: e.value.key},
+      anchors: pick.anchors,
+      fillers: pick.fillers,
       knownBefore: {for (final p in poems.all) if (knows(p.id)) p.id},
       twinsOf: fudaSets.tomofuda,
       seed: random.nextInt(1 << 30),

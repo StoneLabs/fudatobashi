@@ -5,7 +5,7 @@ import 'play_session.dart';
 /// 苦手: the weak sides among the played ones, worst first, and the line an
 /// answer must beat to count as fast (see [WeakTuning]).
 class WeakCards {
-  WeakCards._(this.sides, this.quick, this.usualMs);
+  WeakCards._(this.sides, this.quick, this.usualMs, this.verdicts);
 
   factory WeakCards.of(Map<ItemKey, CardStats> stats) {
     final played = {
@@ -16,8 +16,15 @@ class WeakCards {
     final usual = times.isEmpty ? StatsTuning.unknownMs : times[times.length ~/ 2];
     final line = usual * WeakTuning.lineRatio;
     final expected = {for (final e in played.entries) e.key: e.value.expectedMs()};
-    bool weak(ItemKey k) =>
-        played[k]!.all.reversed.take(WeakTuning.recentMissLooks).any((a) => a.miss) || expected[k]! > line;
+    final verdicts = {
+      for (final k in played.keys)
+        k: WeakVerdict(
+          expectedMs: expected[k]!,
+          recentMisses: [for (final a in played[k]!.all.reversed.take(WeakTuning.recentMissLooks)) a.miss],
+          slow: expected[k]! > line,
+        ),
+    };
+    bool weak(ItemKey k) => verdicts[k]!.weak;
     int worstFirst(ItemKey a, ItemKey b) {
       final by = expected[b]!.compareTo(expected[a]!);
       return by != 0 ? by : a.id.compareTo(b.id);
@@ -27,8 +34,12 @@ class WeakCards {
       [for (final k in played.keys) if (weak(k)) k]..sort(worstFirst),
       [for (final k in played.keys) if (!weak(k) && expected[k]! <= usual) k]..sort((a, b) => a.id.compareTo(b.id)),
       usual,
+      verdicts,
     );
   }
+
+  /// Why each played side is weak or not.
+  final Map<ItemKey, WeakVerdict> verdicts;
 
   /// Weak sides, worst first.
   final List<ItemKey> sides;
@@ -69,6 +80,29 @@ class WeakCards {
     }
     return [for (final s in sides.values) if (targets.contains(s.key) || s.looks.length > 1) s];
   }
+}
+
+/// How a played side was judged: its expected time and latest answers
+/// (newest first) against the line.
+class WeakVerdict {
+  const WeakVerdict({required this.expectedMs, required this.recentMisses, required this.slow});
+  final double expectedMs;
+  final List<bool> recentMisses;
+  final bool slow;
+
+  bool get missed => recentMisses.any((m) => m);
+  bool get weak => missed || slow;
+}
+
+/// The cards picked for a 苦手 drill, before they are ordered.
+class WeakPick {
+  const WeakPick({required this.targets, required this.lookAlikes, required this.anchors, required this.fillers});
+  final List<ItemKey> targets;
+
+  /// Each target's look-alike, and whether it is a 友札 (else its other side).
+  final Map<ItemKey, ({ItemKey key, bool friend})> lookAlikes;
+  final List<ItemKey> anchors;
+  final List<ItemKey> fillers;
 }
 
 /// One side's looks in a 苦手 drill.
