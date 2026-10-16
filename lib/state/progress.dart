@@ -353,7 +353,7 @@ class Progress extends ChangeNotifier {
 
   static AttemptRec _rec(AttemptRow a, PlayConfig run) => AttemptRec(
         at: a.at,
-        us: a.responseUs,
+        us: CardTime.of(a.responseUs, a.commitUs),
         miss: a.outcome == Outcome.dontKnow || a.wrong || a.undone,
         clean: !a.tainted && !a.undone,
         deckSize: a.deckSize,
@@ -1313,7 +1313,7 @@ class Progress extends ChangeNotifier {
         final item = trainer.items[key]!;
         final rec = AttemptRec(
           at: a.at,
-          us: a.responseUs,
+          us: a.cardUs,
           miss: a.isMiss || undone,
           clean: !a.tainted && !undone,
           deckSize: a.deckSize,

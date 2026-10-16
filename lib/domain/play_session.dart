@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:flutter/foundation.dart';
 
 import '../config/config.dart';
@@ -33,6 +35,7 @@ class Attempt {
   final CardRef card;
 
   /// Reveal → response, in microseconds, as measured (see [isValidTime]).
+  /// The card's time is [cardUs].
   final int responseUs;
 
   /// The card's reveal, µs after the run's first reveal (breaks included),
@@ -49,6 +52,11 @@ class Attempt {
 
   bool get validTime => isValidTime(responseUs);
 
+  CardTime get time => CardTime(responseUs, commitUs);
+
+  /// The card's time, µs (see [CardTime.us]).
+  int get cardUs => time.us;
+
   /// Marked wrong afterwards (kimariji chip tap or ひとつ前).
   bool wrong = false;
 
@@ -58,6 +66,33 @@ class Attempt {
 
   /// Counts as a miss for statistics and scheduling.
   bool get isMiss => wrong || outcome == Outcome.dontKnow;
+}
+
+/// How a card's time is counted from a swipe's raw times: the reaction
+/// (reveal → touch) plus any of the swipe (touch → let go) past
+/// [SwipeTuning.gestureBudget], so a finger held down to think still counts.
+@immutable
+class CardTime {
+  const CardTime(this.reactionUs, int? commitUs) : _commitUs = commitUs;
+
+  /// Reveal → response (`Attempt.responseUs`).
+  final int reactionUs;
+
+  /// Reveal → the swipe let go; null for a swipe from before it was kept.
+  final int? _commitUs;
+
+  /// Touch → let go, µs; 0 when unknown.
+  int get gestureUs => _commitUs == null ? 0 : math.max(0, _commitUs - reactionUs);
+
+  /// The part of the swipe past the budget, µs.
+  int get extraUs => math.max(0, gestureUs - SwipeTuning.gestureBudget.inMicroseconds);
+
+  /// The card's time, µs. A reaction that is no measurement (see
+  /// [Attempt.isValidTime]) stays as it is.
+  int get us => Attempt.isValidTime(reactionUs) ? reactionUs + extraUs : reactionUs;
+
+  /// The card's time worked out from a stored swipe's columns.
+  static int of(int responseUs, int? commitUs) => CardTime(responseUs, commitUs).us;
 }
 
 /// Plans the rest of a run from its [swipes] so far, with [next] already on

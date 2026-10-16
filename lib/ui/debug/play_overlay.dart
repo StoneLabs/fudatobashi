@@ -15,9 +15,10 @@ const _mono = TextStyle(
 final _label = _mono.copyWith(color: DebugOverlayStyle.labelColor);
 final _head = _mono.copyWith(color: DebugOverlayStyle.headColor, fontWeight: FontWeight.bold);
 
-/// A small corner readout for dev mode: the last attempt's response time,
-/// outcome and taint, plus a live frame-time summary. Refreshes on its own
-/// timer so it never adds work to the play/swipe frame path.
+/// A small corner readout for dev mode: the last attempt's card time, how
+/// it was counted (see `CardTime`), outcome and taint, plus a live
+/// frame-time summary. Refreshes on its own timer so it never adds work to
+/// the play/swipe frame path.
 class PlayDebugOverlay extends StatefulWidget {
   const PlayDebugOverlay({super.key, required this.session});
 
@@ -48,15 +49,24 @@ class _PlayDebugOverlayState extends State<PlayDebugOverlay> {
   Widget build(BuildContext context) {
     final a = widget.session.lastAttempt;
     final f = FrameStats.instance.summary();
+    final t = a?.time;
     final lines = [
-      if (a == null) 'no attempts yet' else '${(a.responseUs / 1000).toStringAsFixed(1)} ms  ${a.outcome.name}'
-          '${a.tainted ? '  tainted' : ''}${a.wrong ? '  wrong' : ''}',
+      if (a == null || t == null)
+        'no attempts yet'
+      else ...[
+        'card time      ${_ms(t.us)}  ${a.outcome.name}${a.tainted ? '  tainted' : ''}${a.wrong ? '  wrong' : ''}',
+        'reaction       ${_ms(t.reactionUs)}  shown to touch',
+        'swipe          ${_ms(t.gestureUs)}  touch to let go',
+        'thinking added ${_ms(t.extraUs)}  swipe over ${_ms(SwipeTuning.gestureBudget.inMicroseconds)}',
+      ],
       'build ${f.avgBuildMs.toStringAsFixed(1)}  raster ${f.avgRasterMs.toStringAsFixed(1)} ms'
           '  jank ${f.jankPct.toStringAsFixed(0)}%',
     ];
     return DebugReadout(lines);
   }
 }
+
+String _ms(int us) => '${(us / 1000).toStringAsFixed(1)} ms';
 
 /// Dev mode's corner readout: [lines] of monospace on a dark chip, never
 /// taking taps.

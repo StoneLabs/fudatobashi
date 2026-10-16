@@ -291,7 +291,7 @@ class _ExamScreenState extends State<ExamScreen> with SingleTickerProviderStateM
                             alignment: Alignment.centerLeft,
                             child: KimarijiChip(
                               text: last == null ? s.start : kimarijiFor(context, last.card.poemId),
-                              timeMs: last == null || !last.validTime ? null : last.responseUs / 1000,
+                              timeMs: last == null || !last.validTime ? null : last.cardUs / 1000,
                               wrong: last?.isMiss ?? false,
                               onTap: last == null || !playing ? null : _session.togglePreviousWrong,
                             ),

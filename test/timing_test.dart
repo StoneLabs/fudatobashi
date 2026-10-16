@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:fudatobashi/config/config.dart';
 import 'package:fudatobashi/data/fuda_sets.dart';
 import 'package:fudatobashi/data/islands.dart';
 import 'package:fudatobashi/data/poem.dart';
@@ -76,6 +77,32 @@ void main() {
       expect(PointerClock.fromFrame(sleep), sleep);
       expect(PointerClock.offset, Duration.zero);
     }, variant: const TargetPlatformVariant({TargetPlatform.android, TargetPlatform.windows}));
+  });
+
+  group('CardTime', () {
+    final budget = SwipeTuning.gestureBudget.inMicroseconds;
+    CardTime swipe(int reactionMs, int gestureMs) => CardTime(reactionMs * 1000, (reactionMs + gestureMs) * 1000);
+
+    test('a quick flick is the reaction alone', () {
+      final t = swipe(650, 120);
+      expect([t.reactionUs, t.gestureUs, t.extraUs, t.us], [650000, 120000, 0, 650000]);
+    });
+
+    test('a swipe of exactly the budget adds nothing', () {
+      final t = CardTime(650000, 650000 + budget);
+      expect([t.gestureUs, t.extraUs, t.us], [budget, 0, 650000]);
+    });
+
+    test('a long hold adds everything past the budget', () {
+      final t = swipe(650, 2000);
+      expect([t.extraUs, t.us], [2000000 - budget, 650000 + 2000000 - budget]);
+      expect(CardTime.of(650000, 2650000), t.us);
+    });
+
+    test('a swipe stored without its let go, or a reaction that is no measurement, stays as it is', () {
+      expect([CardTime(650000, null).gestureUs, CardTime.of(650000, null)], [0, 650000]);
+      expect(CardTime.of(-3000, 2000000), -3000);
+    });
   });
 
   group('SwipeDeck on iOS', () {
@@ -150,6 +177,33 @@ void main() {
     await tester.pumpWidget(const SizedBox());
   }, variant: TargetPlatformVariant.only(TargetPlatform.iOS));
 
+  testWidgets('a finger held down to think adds the swipe past its budget to the card\'s time', (tester) async {
+    final p = await _openProgress(tester);
+    const config = PlayConfig(mode: PlayMode.training);
+    final session = await _openPlay(tester, p, config);
+
+    final quickTouch = session.revealTs! + ms(700);
+    final quickEnd = await _swipeAt(tester, session, quickTouch);
+    final heldTouch = session.revealTs! + ms(700);
+    final heldEnd = await _swipeAt(tester, session, heldTouch, hold: ms(1500));
+    for (var i = 0; i < 2; i++) {
+      await _swipeAt(tester, session, session.revealTs! + ms(900));
+    }
+    await _results(tester);
+    final [quick, held, ...] = session.attempts;
+    expect([quick.responseUs, held.responseUs], [ms(700).inMicroseconds, ms(700).inMicroseconds]);
+    expect(quickEnd - quickTouch, lessThan(SwipeTuning.gestureBudget));
+    expect(quick.cardUs, quick.responseUs, reason: 'a quick flick costs nothing');
+    final heldUs = (ms(700) + heldEnd - heldTouch - SwipeTuning.gestureBudget).inMicroseconds;
+    expect(held.cardUs, heldUs);
+
+    expect(p.attemptsOf(ItemKey(held.card.poemId, false)).single.us, heldUs);
+    final again = await tester.runAsync(() => Progress.open(p.db));
+    expect(again!.stats(ItemKey(held.card.poemId, false)).timed, [heldUs / 1000], reason: 'recomputed from the stored row');
+    expect(again.stats(ItemKey(quick.card.poemId, false)).timed, [700.0]);
+    await tester.pumpWidget(const SizedBox());
+  });
+
   testWidgets('a touch at or before its reveal is no measurement: not timed, graded, rewarded or totalled',
       (tester) async {
     final p = await _openProgress(tester);
@@ -214,13 +268,16 @@ Future<PlaySession> _openPlay(WidgetTester tester, Progress p, PlayConfig config
 }
 
 /// A known swipe on the current card, touching down at [touch] (a
-/// pointer-clock time) and moving 8 ms per step until it commits. Returns
+/// pointer-clock time), held still for [hold], then moving 8 ms per step
+/// until it commits. Returns
 /// the committing move's time.
-Future<Duration> _swipeAt(WidgetTester tester, PlaySession session, Duration touch) async {
+Future<Duration> _swipeAt(WidgetTester tester, PlaySession session, Duration touch,
+    {Duration hold = Duration.zero}) async {
   final before = session.index;
   final g = await tester.createGesture();
   await g.down(const Offset(192, 360), timeStamp: touch);
-  var t = touch;
+  if (hold > Duration.zero) await tester.pump(hold);
+  var t = touch + hold;
   while (session.index == before) {
     t += const Duration(milliseconds: 8);
     await g.moveBy(const Offset(25, 0), timeStamp: t);

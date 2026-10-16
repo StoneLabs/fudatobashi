@@ -206,14 +206,14 @@ class _PlayScreenState extends State<PlayScreen> {
     final baseline = cardStats.timed.length >= PlaySfxTuning.minCardSamplesForBaseline
         ? cardStats.ewmaMs
         : _sessionAverageMs();
-    return baseline != null && a.responseUs / 1000 <= baseline * PlaySfxTuning.fastRatio;
+    return baseline != null && a.cardUs / 1000 <= baseline * PlaySfxTuning.fastRatio;
   }
 
   double? _sessionAverageMs() {
     final prior =
         _session.attempts.take(_session.attempts.length - 1).where((x) => !x.isMiss && !x.tainted && x.validTime);
     if (prior.isEmpty) return null;
-    return prior.map((x) => x.responseUs / 1000).reduce((a, b) => a + b) / prior.length;
+    return prior.map((x) => x.cardUs / 1000).reduce((a, b) => a + b) / prior.length;
   }
 
   void _toggleWrong() {
@@ -356,7 +356,7 @@ class _PlayScreenState extends State<PlayScreen> {
                         alignment: Alignment.centerLeft,
                         child: KimarijiChip(
                           text: chipText,
-                          timeMs: last == null || !last.validTime ? null : last.responseUs / 1000,
+                          timeMs: last == null || !last.validTime ? null : last.cardUs / 1000,
                           wrong: last?.isMiss ?? false,
                           onTap: last == null ? null : _toggleWrong,
                         ),

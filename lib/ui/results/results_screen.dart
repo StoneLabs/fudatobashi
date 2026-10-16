@@ -108,11 +108,11 @@ class _Splash extends StatelessWidget {
     final attempts = report.attempts;
     final known = attempts.where((a) => !a.isMiss).length;
     final timed = attempts.where((a) => a.validTime);
-    final avgMs = timed.isEmpty ? null : timed.map((a) => a.responseUs / 1000).reduce((a, b) => a + b) / timed.length;
+    final avgMs = timed.isEmpty ? null : timed.map((a) => a.cardUs / 1000).reduce((a, b) => a + b) / timed.length;
     final toughest = [
       for (final a in timed)
         if (!a.tainted && !a.isMiss) a,
-    ]..sort((a, b) => b.responseUs.compareTo(a.responseUs));
+    ]..sort((a, b) => b.cardUs.compareTo(a.cardUs));
 
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: Gaps.gutter),
@@ -653,7 +653,7 @@ class _ToughCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final ms = attempt.responseUs / 1000;
+    final ms = attempt.cardUs / 1000;
     final tier = SpeedTiers.of(ms);
     return SizedBox(
       width: ResultsLayout.toughCardWidth,

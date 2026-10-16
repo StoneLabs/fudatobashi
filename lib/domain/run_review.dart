@@ -19,7 +19,7 @@ class RunSwipe {
   final int poemId;
   final bool inverted;
 
-  /// Reveal → response, µs.
+  /// The card's time, µs (see `CardTime`).
   final int us;
   final bool miss;
 

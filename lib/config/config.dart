@@ -51,6 +51,11 @@ abstract final class SwipeTuning {
   /// response (filters out the hand settling).
   static const double revealMoveSlop = 3;
 
+  /// The swipe itself, from the touch to the let go, is free up to this
+  /// long; anything longer counts towards the card's time (a finger held
+  /// down to think). See `CardTime`.
+  static const Duration gestureBudget = Duration(milliseconds: 300);
+
   /// Card width as a fraction of the available width.
   static const double cardWidthFraction = 0.82;
 

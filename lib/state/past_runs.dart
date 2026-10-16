@@ -278,7 +278,7 @@ extension RunHistory on Progress {
       (byRun[a.runId] ??= []).add(RunSwipe(
         poemId: a.poemId,
         inverted: a.inverted,
-        us: a.responseUs,
+        us: CardTime.of(a.responseUs, a.commitUs),
         miss: a.wrong || a.undone || a.outcome == Outcome.dontKnow,
         clean: !a.tainted && !a.undone,
         at: a.at,
