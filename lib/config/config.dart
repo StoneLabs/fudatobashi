@@ -812,6 +812,9 @@ abstract final class DevModeTuning {
 
   /// Below this many taps left, a countdown toast appears.
   static const int countdownFrom = 3;
+
+  /// Once unlocked, Settings scrolls down to the new Developer section.
+  static const Duration revealScroll = Duration(milliseconds: 450);
 }
 
 /// How one kind of simulated player (`SyntheticLearner`) learns: response

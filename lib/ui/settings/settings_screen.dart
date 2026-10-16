@@ -213,7 +213,7 @@ class SettingsScreen extends StatelessWidget {
                       ),
                       if (settings.debugMode) ...[
                         const SizedBox(height: SettingsLayout.sectionGap),
-                        const _DeveloperSection(),
+                        _DeveloperSection(key: _developerSection),
                       ],
                       const SizedBox(height: SettingsLayout.sectionGap),
                     ],
@@ -389,27 +389,39 @@ class _VersionRowState extends State<_VersionRow> {
     });
   }
 
-  void _onTap() {
+  Future<void> _onTap() async {
     final progress = ProgressScope.read(context);
     if (progress.settings.debugMode) return;
     _taps++;
     final remaining = DevModeTuning.tapsRequired - _taps;
     if (remaining <= 0) {
       _taps = 0;
-      progress.updateSettings(progress.settings.copyWith(debugMode: true));
       MangaToast.show(context, S.of(context).devModeUnlocked);
+      await progress.updateSettings(progress.settings.copyWith(debugMode: true));
+      _scrollToDeveloper();
     } else if (remaining <= DevModeTuning.countdownFrom) {
       MangaToast.show(context, S.of(context).tapsRemaining(remaining));
     }
   }
+
+  /// The Developer section is added at the foot of the page, out of sight
+  /// below this row, so the page scrolls down to it.
+  void _scrollToDeveloper() => WidgetsBinding.instance.addPostFrameCallback((_) {
+        final section = _developerSection.currentContext;
+        if (mounted && section != null) {
+          Scrollable.ensureVisible(section, duration: DevModeTuning.revealScroll, curve: Motion.routeCurve);
+        }
+      });
 
   @override
   Widget build(BuildContext context) =>
       SettingsTapRow(title: S.of(context).version, value: _version ?? '…', onTap: _onTap);
 }
 
+final _developerSection = GlobalKey(debugLabel: 'developer');
+
 class _DeveloperSection extends StatelessWidget {
-  const _DeveloperSection();
+  const _DeveloperSection({super.key});
 
   @override
   Widget build(BuildContext context) {
