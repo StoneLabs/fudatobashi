@@ -1,9 +1,11 @@
-# Builds every platform. It runs in three cases:
+# CI: runs the checks, then builds every platform. The build jobs run in three cases:
 #   - a version tag push ("git push github vX.Y.Z"): builds, then attaches the
 #     files to a new GitHub Release;
-#   - every push to main whose Test workflow passed: builds and keeps the files
-#     as workflow artifacts only (30 days). No release, no tag;
+#   - every push to main: builds and keeps the files as workflow artifacts only
+#     (30 days). No release, no tag;
 #   - manually via the "Run workflow" button (workflow_dispatch): artifacts only.
+# Branch pushes and pull requests only run the checks. The Android .apk and .aab
+# are uploaded unzipped, each as its own artifact named after the file.
 # The build number and version name come from scripts/version.sh, the same helper
 # the local build scripts use: the build number is the commit count, and the name
 # is the pubspec version on a tagged commit, otherwise <version>-dev.<commit count>.<short hash>.
@@ -16,36 +18,38 @@
 # separately), so the built .apk/.aab are named …-GH_SIGNED, or …-debug-signed
 # when the secrets are missing. The iOS build has no Apple certificate at all,
 # so it's always named …-unsigned.
-name: Build
+name: CI
+run-name: ${{ github.event.head_commit.message || github.event.pull_request.title || github.ref_name }}
 
-# The workflow_run trigger starts after the Test workflow finishes on main. Tag
-# runs of Test have the tag as their branch name, so they never match "main".
 on:
   push:
-    tags:
-      - 'v*'
-  workflow_run:
-    workflows: [Test]
-    types: [completed]
-    branches: [main]
+  pull_request:
   workflow_dispatch:
 
 permissions:
   contents: read
 
-env:
-  # A workflow_run starts on main's latest commit, so build the commit that was tested.
-  SOURCE_SHA: ${{ github.event.workflow_run.head_sha || github.sha }}
-
 jobs:
+  test:
+    name: Analyze and test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          flutter-version-file: .fvmrc
+          cache: true
+
+      - run: flutter pub get
+      - run: flutter analyze
+      - run: flutter test
+
   version:
     name: Resolve version
-    # Only builds a passing Test run of a push to main in this repo (never a pull request, never a fork).
-    if: >-
-      github.event_name != 'workflow_run' ||
-      (github.event.workflow_run.conclusion == 'success' &&
-       github.event.workflow_run.event == 'push' &&
-       github.event.workflow_run.head_repository.full_name == github.repository)
+    needs: test
+    if: ${{ needs.test.result == 'success' && (github.event_name == 'workflow_dispatch' || (github.event_name == 'push' && (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/v')))) }}
     runs-on: ubuntu-latest
     outputs:
       version: ${{ steps.resolve.outputs.version }}
@@ -54,7 +58,6 @@ jobs:
     steps:
       - uses: actions/checkout@v7
         with:
-          ref: ${{ env.SOURCE_SHA }}
           fetch-depth: 0
 
       - id: resolve
@@ -80,8 +83,6 @@ jobs:
       VERSION: ${{ needs.version.outputs.version }}
     steps:
       - uses: actions/checkout@v7
-        with:
-          ref: ${{ env.SOURCE_SHA }}
 
       - uses: subosito/flutter-action@v2
         with:
@@ -127,12 +128,17 @@ jobs:
           cp build/app/outputs/flutter-apk/app-release.apk "dist/fudatobashi-$VERSION-$SIGNED_SUFFIX.apk"
           cp build/app/outputs/bundle/release/app-release.aab "dist/fudatobashi-$VERSION-$SIGNED_SUFFIX.aab"
 
+      # archive: false uploads each file as is (no zip); the artifact is named after the file.
       - uses: actions/upload-artifact@v7
         with:
-          name: fudatobashi-${{ needs.version.outputs.version }}-android
-          path: |
-            dist/*.apk
-            dist/*.aab
+          path: dist/*.apk
+          archive: false
+          retention-days: 30
+
+      - uses: actions/upload-artifact@v7
+        with:
+          path: dist/*.aab
+          archive: false
           retention-days: 30
 
   ios:
@@ -143,8 +149,6 @@ jobs:
       VERSION: ${{ needs.version.outputs.version }}
     steps:
       - uses: actions/checkout@v7
-        with:
-          ref: ${{ env.SOURCE_SHA }}
 
       - uses: subosito/flutter-action@v2
         with:
@@ -175,8 +179,6 @@ jobs:
       VERSION: ${{ needs.version.outputs.version }}
     steps:
       - uses: actions/checkout@v7
-        with:
-          ref: ${{ env.SOURCE_SHA }}
 
       - uses: subosito/flutter-action@v2
         with:
@@ -208,8 +210,6 @@ jobs:
       VERSION: ${{ needs.version.outputs.version }}
     steps:
       - uses: actions/checkout@v7
-        with:
-          ref: ${{ env.SOURCE_SHA }}
 
       - uses: subosito/flutter-action@v2
         with:
@@ -246,8 +246,6 @@ jobs:
       VERSION: ${{ needs.version.outputs.version }}
     steps:
       - uses: actions/checkout@v7
-        with:
-          ref: ${{ env.SOURCE_SHA }}
 
       - uses: subosito/flutter-action@v2
         with:
@@ -288,7 +286,8 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          gh release create "${{ github.ref_name }}" dist/*/* \
+          mapfile -t files < <(find dist -type f)
+          gh release create "${{ github.ref_name }}" "${files[@]}" \
             --repo "${{ github.repository }}" \
             --title "Fudatobashi ${{ needs.version.outputs.version }}" \
             --generate-notes
