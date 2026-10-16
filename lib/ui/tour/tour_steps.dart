@@ -55,6 +55,7 @@ class TourStep {
         TourStep((s) => s.tourLevel, TobiPose.pointing, spot: TourSpot.level),
         TourStep((s) => tabsLocked ? s.tourTabs : s.tourTabsOpen, TobiPose.pointing, spot: TourSpot.tabs),
         TourStep((s) => s.tourSettings, TobiPose.pointing, spot: TourSpot.settings),
+        TourStep((s) => s.tourHelp, TobiPose.relaxed, spot: TourSpot.settings),
         TourStep((s) => mode == LearningMode.journey ? s.tourTraining : s.tourRanked, TobiPose.tryHard,
             spot: TourSpot.training, practice: true),
         if (mode == LearningMode.journey)
