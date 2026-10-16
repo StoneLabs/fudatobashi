@@ -167,8 +167,7 @@ class _TableRow extends StatelessWidget {
     final low = row.recall != null && row.recall! < SrsTuning.lowRecall;
     final stability = switch (row.stability) {
       null => missingTime,
-      final v when v < SrsLayout.stabilityFloor => s.srsStabilityDays('<${SrsLayout.stabilityFloor}'),
-      final v => s.srsStabilityDays(v.toStringAsFixed(1)),
+      final v => s.srsStabilityDays(formatStability(v)),
     };
     final values = [
       stability,

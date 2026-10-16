@@ -498,7 +498,7 @@ class _MemoryPanel extends StatelessWidget {
           _MemRow(
             _StatTile(
                 label: s.stabilityLabel,
-                value: card.stability?.toStringAsFixed(1) ?? '—',
+                value: switch (card.stability) { final v? => formatStability(v), null => missingTime },
                 suffix: card.stability == null ? null : s.stabilityUnit),
             _StatTile(
                 label: s.difficultyLabel,

@@ -1,3 +1,5 @@
+import '../../config/design.dart';
+
 /// Stands in for a time that is missing or no measurement.
 const missingTime = '—';
 
@@ -33,3 +35,9 @@ String formatSeconds(double ms, [int digits = 2]) => (ms / 1000).toStringAsFixed
 
 /// [ms] as signed seconds, e.g. "+0.43" or "−1.96".
 String formatSignedSeconds(double ms, [int digits = 2]) => '${ms < 0 ? '−' : '+'}${formatSeconds(ms.abs(), digits)}';
+
+/// An FSRS stability in days to one decimal; one under
+/// [SrsLayout.stabilityFloor] reads "<0.1", since "0.0" would look like
+/// none at all.
+String formatStability(double days) =>
+    days < SrsLayout.stabilityFloor ? '<${SrsLayout.stabilityFloor}' : days.toStringAsFixed(1);

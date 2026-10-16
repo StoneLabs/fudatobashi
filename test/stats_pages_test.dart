@@ -7,12 +7,14 @@ import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:fsrs/fsrs.dart' as fsrs;
 import 'package:fudatobashi/config/vector_art.dart';
 import 'package:fudatobashi/data/fuda_sets.dart';
 import 'package:fudatobashi/data/islands.dart';
 import 'package:fudatobashi/data/poem.dart';
 import 'package:fudatobashi/db/database.dart';
 import 'package:fudatobashi/domain/card_stats.dart';
+import 'package:fudatobashi/domain/trainer.dart';
 import 'package:fudatobashi/l10n/history_strings.dart';
 import 'package:fudatobashi/l10n/home_strings.dart';
 import 'package:fudatobashi/l10n/ranked_strings.dart';
@@ -22,13 +24,16 @@ import 'package:fudatobashi/l10n/strings.dart';
 import 'package:fudatobashi/state/demo_data.dart';
 import 'package:fudatobashi/state/past_runs.dart';
 import 'package:fudatobashi/state/progress.dart';
+import 'package:fudatobashi/state/scope.dart';
 import 'package:fudatobashi/state/stats_history.dart';
 import 'package:fudatobashi/ui/app.dart';
 import 'package:fudatobashi/ui/history/run_page.dart';
 import 'package:fudatobashi/ui/home/today_box.dart';
 import 'package:fudatobashi/ui/manga/manga.dart';
+import 'package:fudatobashi/ui/play/time_format.dart';
 import 'package:fudatobashi/ui/rank/rank_screen.dart';
 import 'package:fudatobashi/ui/rank/ranked_runs.dart';
+import 'package:fudatobashi/ui/stats/card_detail_screen.dart';
 import 'package:fudatobashi/ui/stats/practice_calendar.dart';
 import 'package:fudatobashi/ui/stats/srs_screen.dart';
 
@@ -254,5 +259,28 @@ void main() {
       expect(stages, hasLength(poems.all.length));
     }
     expect(p.knownOn(p.playedDays()).last, p.knownCount());
+  });
+
+  test('a stability under a tenth of a day reads <0.1, not 0.0', () {
+    expect([formatStability(0.012), formatStability(0.1), formatStability(7.64)], ['<0.1', '0.1', '7.6']);
+  });
+
+  testWidgets("a card missed again and again shows its stability as under a tenth of a day", (tester) async {
+    late Progress p;
+    await tester.runAsync(() async => p = await Progress.open(AppDatabase(NativeDatabase.memory())));
+    const key = ItemKey(87, false);
+    final now = DateTime.now().toUtc();
+    p.trainer.items[key]!
+      ..unlocked = true
+      ..card = fsrs.Card(
+          cardId: key.id, state: fsrs.State.relearning, step: 0, stability: 0.012, difficulty: 9.7,
+          due: now.add(const Duration(minutes: 10)), lastReview: now);
+    await tester.binding.setSurfaceSize(const Size(384, 1600));
+    await tester.pumpWidget(ProgressScope(progress: p, child: const MaterialApp(home: CardDetailScreen(itemKey: key))));
+    await tester.pump(const Duration(milliseconds: 500));
+    final stability = find.ancestor(of: find.text(const S('en').stabilityLabel), matching: find.byType(Column)).first;
+    expect(find.descendant(of: stability, matching: find.textContaining('<0.1', findRichText: true)), findsOneWidget);
+    expect(find.descendant(of: stability, matching: find.textContaining('0.0', findRichText: true)), findsNothing);
+    await tester.pumpWidget(const SizedBox());
   });
 }
