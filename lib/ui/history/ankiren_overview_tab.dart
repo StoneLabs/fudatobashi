@@ -61,7 +61,7 @@ class _ScoredHeadline extends StatelessWidget {
       ),
       UnderLine([
         if (review.isBest && best != null) s.ankirenUpFrom(best.score!),
-        if (after != null) s.ankirenClassLine(AnkirenReview.classProgress(after).band.label),
+        if (after != null) s.ankirenClassLine(AnkirenReview.classProgress(after).band),
       ]),
     ]);
   }

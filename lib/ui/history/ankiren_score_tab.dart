@@ -147,7 +147,7 @@ class _RatingPanel extends StatelessWidget {
         if (band != null)
           Padding(
             padding: const EdgeInsets.only(top: Gaps.tight),
-            child: Text(s.ankirenClassAt((band.minRating - after).ceil(), band.label, r(band.minRating)),
+            child: Text(s.ankirenClassAt((band.minRating - after).ceil(), band, r(band.minRating)),
                 textAlign: TextAlign.center,
                 style: const TextStyle(fontWeight: Weights.black, fontSize: HistoryRunStyle.noteFont)),
           ),

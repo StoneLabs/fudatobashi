@@ -1,3 +1,5 @@
+import '../domain/rating.dart';
+import 'ranked_strings.dart';
 import 'strings.dart';
 
 /// Month abbreviations for `HistoryStrings.sessionDate` (no `intl` in this
@@ -64,8 +66,8 @@ extension HistoryStrings on S {
   String get historyPlaced => t('historyPlaced');
   String get historyForfeit => t('historyForfeit');
   String get historyBest => t('historyBest');
-  String historyUpTo(Object a0) => f('historyUpTo', [a0]);
-  String historyDownTo(Object a0) => f('historyDownTo', [a0]);
+  String historyUpTo(RankBand band) => f('historyUpTo', [className(band)]);
+  String historyDownTo(RankBand band) => f('historyDownTo', [className(band)]);
   String get historyAnkirenCustom => t('historyAnkirenCustom');
   String get historyNotScored => t('historyNotScored');
   String historyPerSide(Object a0, Object a1) => f('historyPerSide', [a0, a1]);

@@ -102,15 +102,15 @@ class _ClassBar extends StatelessWidget {
       ),
       const SizedBox(height: Gaps.small),
       Row(children: [
-        ResultBadge(band.label, color: Palette.paper),
+        ResultBadge(s.className(band), color: Palette.paper),
         Expanded(
           child: Text(
-            next == null ? s.topClassNote : s.runClassGap((hi - rating).ceil(), next.label, hi.round()),
+            next == null ? s.topClassNote : s.runClassGap((hi - rating).ceil(), next, hi.round()),
             textAlign: TextAlign.center,
             style: RunTabsStyle.noteStyle.copyWith(color: Palette.ink),
           ),
         ),
-        if (next != null) ResultBadge(next.label, muted: true),
+        if (next != null) ResultBadge(s.className(next), muted: true),
       ]),
     ]);
   }

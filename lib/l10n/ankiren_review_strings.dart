@@ -1,4 +1,6 @@
 import '../domain/ankiren_field.dart';
+import '../domain/rating.dart';
+import 'ranked_strings.dart';
 import 'strings.dart';
 
 /// Strings of History's 暗記練 game page.
@@ -13,7 +15,7 @@ extension AnkirenReviewStrings on S {
   String get ankirenFirstTapFact => t('ankirenFirstTapFact');
   String get ankirenMemorisedFact => t('ankirenMemorisedFact');
   String ankirenUpFrom(Object a0) => f('ankirenUpFrom', [a0]);
-  String ankirenClassLine(Object a0) => f('ankirenClassLine', [a0]);
+  String ankirenClassLine(RankBand band) => f('ankirenClassLine', [className(band)]);
   String get ankirenMixTitle => t('ankirenMixTitle');
   String get ankirenThisGame => t('ankirenThisGame');
   String ankirenCardsCount(Object a0) => f('ankirenCardsCount', [a0]);
@@ -79,7 +81,7 @@ extension AnkirenReviewStrings on S {
   String get ankirenPreviousRating => t('ankirenPreviousRating');
   String get ankirenPlayedLike => t('ankirenPlayedLike');
   String get ankirenNewRating => t('ankirenNewRating');
-  String ankirenClassAt(Object a0, Object a1, Object a2) => f('ankirenClassAt', [a0, a1, a2]);
+  String ankirenClassAt(Object a0, RankBand band, Object a2) => f('ankirenClassAt', [a0, className(band), a2]);
   String get ankirenTapsTitle => t('ankirenTapsTitle');
   String ankirenTapsNote(Object a0) => f('ankirenTapsNote', [a0]);
   String get ankirenColNumber => t('ankirenColNumber');

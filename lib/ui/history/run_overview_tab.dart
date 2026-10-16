@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../../config/design.dart';
 import '../../domain/rating.dart';
 import '../../l10n/history_strings.dart';
+import '../../l10n/ranked_strings.dart';
 import '../../l10n/run_strings.dart';
 import '../../l10n/strings.dart';
 import '../../state/past_runs.dart';
@@ -140,7 +141,7 @@ class _HundredHeadline extends StatelessWidget {
       _FactLine([
         if (run.scored && !run.forfeit && clock != null) s.runClockLine(formatTenths(clock), misses),
         if (rating != null)
-          '${rating.before == null ? '' : '${rating.before!.round()} → '}${rating.after.round()} · ${Rating.bandOf(rating.after).label}',
+          '${rating.before == null ? '' : '${rating.before!.round()} → '}${rating.after.round()} · ${s.className(Rating.bandOf(rating.after))}',
       ]),
     ]);
   }
@@ -155,7 +156,7 @@ class _HundredHeadline extends StatelessWidget {
     final (text, sub) = run.placement
         ? (s.historyPlaced, s.sub?.historyPlaced)
         : up
-            ? (s.historyUpTo(change.$2.label), s.sub?.historyUpTo(change.$2.label))
+            ? (s.historyUpTo(change.$2), s.sub?.historyUpTo(change.$2))
             : detail.best
                 ? (s.runFastestKind, s.sub?.runFastestKind)
                 : (null, null);

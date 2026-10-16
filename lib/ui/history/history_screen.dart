@@ -507,8 +507,8 @@ class _RunRow extends StatelessWidget {
       if (run.placement) ResultBadge(s.historyPlaced, color: Palette.pinkSoft, cheer: true),
       if (change != null)
         change.$2.minRating > change.$1.minRating
-            ? ResultBadge(s.historyUpTo(change.$2.label), cheer: true)
-            : ResultBadge(s.historyDownTo(change.$2.label), muted: true),
+            ? ResultBadge(s.historyUpTo(change.$2), cheer: true)
+            : ResultBadge(s.historyDownTo(change.$2), muted: true),
       if (run.mode == PlayMode.exam) run.passed ? ResultBadge(s.runExamWon, cheer: true) : ResultBadge(s.runExamLost, muted: true),
       if (hundred && progress.bestOfKind(run)) ResultBadge(s.historyBest, cheer: true),
     ];

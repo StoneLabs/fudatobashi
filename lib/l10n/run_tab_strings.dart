@@ -1,3 +1,5 @@
+import '../domain/rating.dart';
+import 'ranked_strings.dart';
 import 'strings.dart';
 
 /// Strings of a run page's Speed, Rating and XP tabs.
@@ -46,7 +48,7 @@ extension RunTabStrings on S {
   String get runNewRating => t('runNewRating');
   String get runPlacementShout => t('runPlacementShout');
   String runPlacementText(Object a0, Object a1) => f('runPlacementText', [a0, a1]);
-  String runClassGap(Object a0, Object a1, Object a2) => f('runClassGap', [a0, a1, a2]);
+  String runClassGap(Object a0, RankBand next, Object a2) => f('runClassGap', [a0, className(next), a2]);
   String runPlacementForfeitText(Object a0) => f('runPlacementForfeitText', [a0]);
   String runForfeitText(Object a0) => f('runForfeitText', [a0]);
   String get runRankedTitle => t('runRankedTitle');

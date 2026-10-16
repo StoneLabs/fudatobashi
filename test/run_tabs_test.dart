@@ -12,6 +12,7 @@ import 'package:fudatobashi/data/islands.dart';
 import 'package:fudatobashi/data/poem.dart';
 import 'package:fudatobashi/db/database.dart';
 import 'package:fudatobashi/domain/play_session.dart';
+import 'package:fudatobashi/domain/rating.dart';
 import 'package:fudatobashi/domain/trainer.dart';
 import 'package:fudatobashi/config/config.dart';
 import 'package:fudatobashi/l10n/history_strings.dart';
@@ -177,6 +178,10 @@ void main() {
         expect(forfeit.rating!.performance, RankedTuning.forfeitPerformance);
         expect(forfeit.run.time, isNull, reason: 'a forfeit has no scored time');
         await show(tester, p, RunRatingTab(forfeit), 'rating_forfeit_$shot');
+        expect(find.text(s.className(Rating.bandOf(forfeit.rating!.after))), findsOneWidget, reason: 'the class badge');
+        if (!ja) {
+          expect(find.textContaining(RegExp('[入級]'), findRichText: true), findsNothing, reason: 'English class names');
+        }
         expect(find.text(s.runForfeitText(37)), findsOneWidget);
         expect(find.text(s.historyForfeit), findsOneWidget, reason: "the table's scored column");
         expect(find.text('${RankedTuning.forfeitPerformance.round()}'), findsWidgets);
