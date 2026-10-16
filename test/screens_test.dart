@@ -43,6 +43,7 @@ import 'package:fudatobashi/l10n/results_strings.dart';
 import 'package:fudatobashi/l10n/romaji.dart';
 import 'package:fudatobashi/l10n/settings_strings.dart';
 import 'package:fudatobashi/l10n/side_trip_strings.dart';
+import 'package:fudatobashi/l10n/srs_strings.dart';
 import 'package:fudatobashi/l10n/stats_strings.dart';
 import 'package:fudatobashi/l10n/strings.dart';
 import 'package:fudatobashi/l10n/tour_strings.dart';
@@ -656,12 +657,12 @@ void main() {
         expect(tester.takeException(), isNull);
         await _capture(tester, 'stats_islands_picked${size}_$lang');
 
-        // SRS opens its page, still under construction.
+        // SRS opens its page.
         await tester.tap(find.text(s.srs));
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 500));
         expect(find.byType(SrsScreen), findsOneWidget);
-        expect(find.text(s.srsSoonTitle), findsOneWidget);
+        expect(find.text(s.srsBasic), findsOneWidget);
         expect(tester.takeException(), isNull);
         await _capture(tester, 'stats_srs${size}_$lang');
         await tester.tap(find.bySemanticsLabel(s.back));
@@ -1232,6 +1233,8 @@ void main() {
       await tester.pump(const Duration(milliseconds: 500));
       expect(tester.takeException(), isNull);
       expect(find.byType(RankScreen), findsOneWidget);
+      await tester.dragUntilVisible(find.text(s.previewRankUp), find.byType(Scrollable).first, const Offset(0, -200));
+      await tester.pump(const Duration(milliseconds: 500));
       await _capture(tester, 'rank_ladder_$lang');
 
       await tester.tap(find.text(s.previewRankUp));
@@ -2040,15 +2043,15 @@ void main() {
       expect(find.text(s.youTag), findsOneWidget);
     });
 
-    testWidgets('opens scrolled to your rung, with every class ahead locked', (tester) async {
+    testWidgets('your rung at the bottom, with every class ahead locked', (tester) async {
       final p = await open(tester, mode: LearningMode.allKnown);
       p.rating = 0;
       await tester.binding.setSurfaceSize(_phone);
       await tester.pumpWidget(pumped(p));
       await tester.pump(const Duration(milliseconds: 500));
       expect(tester.takeException(), isNull);
-      expect(tester.widget<ListView>(find.byType(ListView)).controller!.offset, greaterThan(0),
-          reason: '入門 is the bottom rung');
+      await tester.dragUntilVisible(find.text(const S('en').youTag), find.byType(Scrollable).first, const Offset(0, -200));
+      await tester.pump(const Duration(milliseconds: 500));
       expect(tester.getRect(find.text(const S('en').youTag)).bottom, lessThan(_phone.height));
       final locks = find.byWidgetPredicate((w) => w is MangaIcon && w.art == IconArt.lock);
       expect(locks, findsWidgets);

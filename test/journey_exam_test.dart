@@ -414,21 +414,32 @@ void main() {
       for (final phone in [_narrow, _users]) {
         for (final fontScale in [1.0, 1.3]) {
           final tag = '${lang}_${phone.name}_$fontScale';
-          testWidgets('journey: locked until the exam, then offers the switch ($tag)', (tester) async {
+          testWidgets('journey: Rank is locked until the exam, then says to switch ($tag)', (tester) async {
             final s = S(lang);
+            Future<void> tapRank() async {
+              await tester.tap(find.text(s.stats));
+              await tester.pump(const Duration(milliseconds: 500));
+              await tester.tap(find.text(s.rank));
+              await tester.pump();
+              await tester.pump(const Duration(milliseconds: 500));
+              expect(tester.takeException(), isNull);
+              expect(find.byType(RankScreen), findsNothing);
+            }
+
             final p = await open(tester, _Stage.open, lang: lang);
             await onPhone(tester, p, phone, fontScale: fontScale);
-            await openLadder(tester, p, lang);
-            expect(phrase(s.rankLockedTitle), findsOneWidget);
-            expect(find.text(s.youTag), findsNothing);
+            await tapRank();
+            expect(find.text(s.rankLockedTitle), findsOneWidget);
             await _capture(tester, 'rank_locked_$tag');
+            await tester.pump(const Duration(seconds: 4));
             await tester.pumpWidget(const SizedBox());
 
             final passed = await open(tester, _Stage.passed, lang: lang);
             await onPhone(tester, passed, phone, fontScale: fontScale);
-            await openLadder(tester, passed, lang);
-            expect(phrase(s.rankLockedSwitchButton), findsOneWidget);
+            await tapRank();
+            expect(find.text(s.rankLockedSwitchBody), findsOneWidget);
             await _capture(tester, 'rank_locked_graduated_$tag');
+            await tester.pump(const Duration(seconds: 4));
             await tester.pumpWidget(const SizedBox());
           });
 
