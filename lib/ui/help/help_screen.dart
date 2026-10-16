@@ -3,15 +3,17 @@ import 'package:flutter/material.dart';
 import '../../config/design.dart';
 import '../../config/vector_art.dart';
 import '../../l10n/guide_strings.dart';
+import '../../l10n/rules_strings.dart';
 import '../../l10n/strings.dart';
 import '../../l10n/tour_strings.dart';
 import '../manga/manga.dart';
 import '../settings/settings_rows.dart';
 import '../tour/tour_overlay.dart';
 import 'karuta_guide_screen.dart';
+import 'karuta_rules_screen.dart';
 
-/// Help (opened from Home's "?" button): Tobi's tour of Home again, and
-/// the guide to how karuta works.
+/// Help (opened from Home's "?" button): Tobi's tour of Home again, the
+/// guide to how karuta works and the full competition rules.
 class HelpScreen extends StatelessWidget {
   const HelpScreen({super.key});
 
@@ -40,6 +42,12 @@ class HelpScreen extends StatelessWidget {
                   note: s.guideRowNote,
                   opensPage: true,
                   onTap: () => Navigator.of(context).push(MangaRoute<void>(builder: (_) => const KarutaGuideScreen())),
+                ),
+                SettingsTapRow(
+                  title: s.rulesTitle,
+                  note: s.rulesRowNote,
+                  opensPage: true,
+                  onTap: () => Navigator.of(context).push(MangaRoute<void>(builder: (_) => const KarutaRulesScreen())),
                 ),
               ]),
             ],

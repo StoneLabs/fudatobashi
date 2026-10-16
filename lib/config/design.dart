@@ -2999,6 +2999,73 @@ abstract final class KarutaGuideLayout {
   static const EdgeInsets stampPadding = EdgeInsets.fromLTRB(6, 2, 6, 3);
 }
 
+/// The full karuta rules (`KarutaRulesScreen`): where they come from on
+/// top, then every chapter in an ink band and every article under its
+/// number tag, numbered paragraphs hanging from their numbers.
+abstract final class KarutaRulesLayout {
+  static const double bottomPad = 32;
+  static const double blockGap = 12;
+  static const double sourceFont = 14;
+  static const double sourceLineHeight = 1.5;
+
+  /// Scrolling to a chapter picked from the contents.
+  static const Duration jump = Duration(milliseconds: 420);
+
+  /// The document's title over the association's name.
+  static const double titleGap = 26;
+  static const double titleFont = 22;
+  static const double authorFont = 13;
+  static const double authorGap = 6;
+
+  /// A chapter's band: its number in sun, its title in paper.
+  static const double chapterGap = 26;
+  static const EdgeInsets bandPadding = EdgeInsets.fromLTRB(12, 9, 12, 9);
+  static const double chapterNumberFont = 13;
+  static const double chapterNumberTracking = 0.08;
+  static const double chapterTitleFont = 17;
+  static const double bandGap = 10;
+
+  /// An article: its number tag and title, then its text; a thin rule
+  /// between articles.
+  static const double articlePad = 16;
+  static const double articleTitleFont = 16.5;
+  static const double articleTagFont = 12.5;
+  static const double headingGap = 10;
+  static const double headingTextGap = 8;
+  static const double ruleHeight = 1;
+  static const Color rule = Palette.desk;
+
+  static const double bodyFont = 15;
+  static const double bodyLineHeight = 1.65;
+
+  /// The numbers of paragraphs (一, 1) and list entries (（1）) hang in a
+  /// column of this width (scaled with the text) or their own.
+  static const double labelColumn = 24;
+  static const double listLabelGap = 4;
+  static const double entryGap = 8;
+
+  /// Supplementary notes: under a 補足 pill, set in from a desk-grey rule.
+  static const double notesGap = 8;
+  static const double notesRule = 2.5;
+  static const double notesIndent = 10;
+  static const double notesLabelGap = 6;
+  static const double noteFont = 13.5;
+  static const double noteLineHeight = 1.6;
+  static const double noteGap = 4;
+  static const double markGap = 4;
+  static const String pointMark = '○';
+  static const String remarkMark = '※';
+
+  /// A dated notice (通達) a paragraph or note ends with.
+  static const double noticeFont = 12;
+  static const double noticeGap = 2;
+
+  /// The lines after the last article, and the closing note on the source.
+  static const double closingGap = 22;
+  static const double footnoteGap = 26;
+  static const double footnoteFont = TypeScale.small;
+}
+
 /// One picture of a scene: its asset (a lossless 3× render) and where it
 /// sits, in the scene's design units (the picture's pixel size ÷ 3).
 @immutable

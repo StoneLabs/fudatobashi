@@ -1284,5 +1284,16 @@
   "guideAppTitle": "札飛ばしでできること",
   "guideApp1": "このアプリは、かるたでいちばん大事なところを鍛えます。札が出たら決まり字を言って、できるだけ速くスワイプ。1枚ごとにタイムを計ります。",
   "guideApp2": "旅では新しい札が少しずつ増え、忘れかけた札がちょうどいいころに戻ってきます。100枚覚えたら卒業試験。合格するとランク戦が開き、速さでランクが決まります。",
-  "guideAppTobi": "ボクがずっと一緒だよ。修行で待ってるね！"
+  "guideAppTobi": "ボクがずっと一緒だよ。修行で待ってるね！",
+  "rulesTitle": "競技規程の全文",
+  "rulesRowNote": "全日本かるた協会の競技規程を、そのまま全文掲載。",
+  "rulesSource": "一般社団法人全日本かるた協会の「競技規程細則」です。平成20年9月施行、最終更新日は令和2年5月26日です。",
+  "rulesOpenPdf": "原本のPDFを開く",
+  "rulesDisclaimer": "以下は、協会が公開している規程の原文そのままです。",
+  "rulesDisclaimerShort": "出典：一般社団法人全日本かるた協会「競技規程細則」",
+  "rulesShowOriginal": "日本語の原文を表示",
+  "rulesShowOriginalNote": "協会が定めたままの規程。",
+  "rulesContents": "目次",
+  "rulesContentsShow": "開く",
+  "rulesContentsHide": "閉じる"
 }
