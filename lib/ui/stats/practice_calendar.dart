@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:flutter/widgets.dart';
 
 import '../../config/config.dart';
@@ -22,9 +24,10 @@ Future<void> openPracticeCalendar(BuildContext context) =>
 /// How much a day was practised, as the calendar shades it.
 enum _Shade { none, little, usual, lot }
 
-/// The practice calendar: the streaks on top, then every month from this
-/// one back to the first day of play, each day shaded by how much it was
-/// practised, ticked when its set was finished, today ringed.
+/// The practice calendar: the streaks on top, then the months with this one
+/// at the bottom, the start of next month below it and earlier months
+/// scrolling up without end, each day shaded by how much it was practised,
+/// ticked when its set was finished, today ringed.
 class PracticeCalendarScreen extends StatelessWidget {
   const PracticeCalendarScreen({super.key});
 
@@ -34,39 +37,50 @@ class PracticeCalendarScreen extends StatelessWidget {
     final progress = ProgressScope.of(context);
     final log = progress.practiceLog;
     final today = progress.dayAt().date;
-    final first = log.keys.fold(today, (a, b) => b.isBefore(a) ? b : a);
-    final months = [
-      for (var m = DateTime.utc(today.year, today.month); !m.isBefore(DateTime.utc(first.year, first.month));
-          m = DateTime.utc(m.year, m.month - 1))
-        m,
-    ];
     final journey = progress.trainer.config.learningMode == LearningMode.journey;
     return StatsPage(
       title: s.calendarTitle,
       sub: s.other.calendarTitle,
-      body: StatsPageList(children: [
-        FactGrid([
-          Fact('${progress.activeStreak()}', s.calStreak),
-          Fact('${progress.bestStreak}', s.calBest),
-          journey
-              ? Fact('${log.values.where((d) => d.setDone).length}', s.calSets)
-              : Fact('${log.values.where((d) => d.active).length}', s.calDays),
-        ], perRow: 3, fill: Palette.pinkSoft),
-        ChartLegend([
-          (const _ShadeSwatch(_Shade.little), s.calLittle),
-          (const _ShadeSwatch(_Shade.usual), s.calUsual),
-          (const _ShadeSwatch(_Shade.lot), s.calLot),
-          if (journey) (const _Tick(size: RunChartStyle.legendBox), s.calSetDone),
-        ]),
-        for (final m in months) _Month(month: m, log: log, today: today),
+      body: Column(children: [
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: Gaps.gutter),
+          child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+            FactGrid([
+              Fact('${progress.activeStreak()}', s.calStreak),
+              Fact('${progress.bestStreak}', s.calBest),
+              journey
+                  ? Fact('${log.values.where((d) => d.setDone).length}', s.calSets)
+                  : Fact('${log.values.where((d) => d.active).length}', s.calDays),
+            ], perRow: 3, fill: Palette.pinkSoft),
+            ChartLegend([
+              (const _ShadeSwatch(_Shade.little), s.calLittle),
+              (const _ShadeSwatch(_Shade.usual), s.calUsual),
+              (const _ShadeSwatch(_Shade.lot), s.calLot),
+              if (journey) (const _Tick(size: RunChartStyle.legendBox), s.calSetDone),
+            ]),
+          ]),
+        ),
+        Expanded(
+          child: ListView.builder(
+            reverse: true,
+            padding: const EdgeInsets.fromLTRB(Gaps.gutter, 0, Gaps.gutter, StatsPageLayout.bottomPad),
+            itemBuilder: (_, i) => _Month(
+              month: DateTime.utc(today.year, today.month - i + 1),
+              log: log,
+              today: today,
+              maxWeeks: i == 0 ? CalendarLayout.nextMonthRows : null,
+            ),
+          ),
+        ),
       ]),
     );
   }
 }
 
 class _Month extends StatelessWidget {
-  const _Month({required this.month, required this.log, required this.today});
+  const _Month({required this.month, required this.log, required this.today, this.maxWeeks});
   final DateTime month;
+  final int? maxWeeks;
   final Map<DateTime, PracticeDay> log;
   final DateTime today;
 
@@ -75,7 +89,8 @@ class _Month extends StatelessWidget {
     final s = S.of(context);
     final lead = month.weekday - DateTime.monday;
     final length = DateTime.utc(month.year, month.month + 1, 0).day;
-    final weeks = ((lead + length) / DateTime.daysPerWeek).ceil();
+    final all = ((lead + length) / DateTime.daysPerWeek).ceil();
+    final weeks = maxWeeks == null ? all : math.min(all, maxWeeks!);
     return Padding(
       padding: const EdgeInsets.only(top: CalendarLayout.monthGap),
       child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [

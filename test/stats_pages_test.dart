@@ -175,7 +175,20 @@ void main() {
           await tap(tester, find.text(s.history));
           await tap(tester, find.text(s.historyStreak));
           expect(find.byType(PracticeCalendarScreen), findsOneWidget);
-          expect(find.text(s.monthTitle(today), findRichText: true), findsOneWidget);
+          Finder title(DateTime m) => find.text(s.monthTitle(m), findRichText: true);
+          final thisMonth = DateTime.utc(today.year, today.month);
+          final next = DateTime.utc(today.year, today.month + 1);
+          expect(title(thisMonth), findsOneWidget);
+          expect(title(next), findsOneWidget, reason: 'next month starts below this one');
+          expect(tester.getTopLeft(title(next)).dy, greaterThan(tester.getTopLeft(title(thisMonth)).dy));
+          final list = find.byType(Scrollable).first;
+          for (var i = 0; i < 14; i++) {
+            await tester.drag(list, const Offset(0, 600));
+            await tester.pump(const Duration(milliseconds: 500));
+            expect(tester.takeException(), isNull);
+            if (i == 0) expect(title(DateTime.utc(today.year, today.month - 1)), findsOneWidget);
+          }
+          expect(title(thisMonth), findsNothing, reason: 'scrolled far above it');
           await tester.pumpWidget(const SizedBox());
         });
 

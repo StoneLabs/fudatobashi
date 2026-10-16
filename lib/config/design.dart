@@ -1187,6 +1187,9 @@ abstract final class SrsLayout {
 /// days, today ringed in sun and ink, a finished set's tick.
 abstract final class CalendarLayout {
   static const double monthGap = 18;
+
+  /// Week rows of next month shown under this one.
+  static const int nextMonthRows = 2;
   static const double cellGap = 4;
   static const double cellHeight = 40;
   static const EdgeInsets numberPadding = EdgeInsets.fromLTRB(3, 2, 2, 0);
