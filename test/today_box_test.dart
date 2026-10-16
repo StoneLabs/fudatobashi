@@ -275,7 +275,7 @@ void main() {
       expectBoxFits(tester, _users, 'part done');
     });
 
-    testWidgets('done: a solid green bar under the 本日完了 hanko, and runs of 30 after', (tester) async {
+    testWidgets('done: a solid green bar under the 本日完了 hanko, no legend, and runs of 30 after', (tester) async {
       final p = await player(tester, _Day.done);
       await showHome(tester, p, _users);
       const s = S('en');
@@ -284,14 +284,17 @@ void main() {
       final stamp = tester.getRect(inBox(find.text('本日完了')));
       final box = tester.getRect(find.byType(TodayBox));
       expect(stamp.center.dx, moreOrLessEquals(box.center.dx, epsilon: 1));
-      final barMiddle = box.top +
-          HomeLayout.progressPadding.top +
-          HomeLayout.mapCut +
-          TodayBoxLayout.headerHeight +
-          TodayBoxLayout.sectionGap +
-          TodayBoxLayout.barHeight / 2;
-      expect(stamp.center.dy, moreOrLessEquals(barMiddle, epsilon: 2), reason: 'over the bar');
-      expectCell(tester, s.todayDone);
+      final barTop =
+          box.top + HomeLayout.progressPadding.top + HomeLayout.mapCut + TodayBoxLayout.headerHeight + TodayBoxLayout.sectionGap;
+      final legendBottom = barTop + TodayBoxLayout.barHeight + TodayBoxLayout.sectionGap + TodayBoxLayout.legendHeight;
+      expect(stamp.center.dy, moreOrLessEquals((barTop + legendBottom) / 2, epsilon: 2), reason: 'over the bar');
+      final header = tester.getRect(inBox(find.text(s.todayCardsInRun)));
+      final hanko = tester.getRect(find.ancestor(of: inBox(find.text('本日完了')), matching: find.byType(Transform)).first);
+      final tilt = hanko.width / 2 * math.sin(-TodayBoxLayout.doneStampTurn * math.pi / 180);
+      expect(hanko.top - tilt, greaterThan(header.bottom), reason: 'clear of the header');
+      for (final label in [s.todayDone, s.todayMisses, s.todayNoReviews]) {
+        expect(inBox(find.text(label)), findsNothing, reason: 'no legend under the hanko: $label');
+      }
       expect(balloon(tester), s.heroKeepGoing);
       expectNarration(tester, s.todayDoneExtra, p.trainer.config.sessionLength);
       expectBoxFits(tester, _users, 'done');

@@ -15,7 +15,7 @@ import '../stats/practice_calendar.dart';
 /// Journey Home's today box: today's set as one bar in looks (done green,
 /// then reviews, new cards and the room misses take), a legend with the
 /// looks, and the week's stamps. A done day gets a solid green bar and the
-/// 本日完了 hanko. It sits between the map and the hero at a fixed height.
+/// 本日完了 hanko, with no legend under it. It sits between the map and the hero at a fixed height.
 class TodayBox extends StatelessWidget {
   const TodayBox({super.key, required this.set, required this.week});
 
@@ -62,7 +62,8 @@ class TodayBox extends StatelessWidget {
                           ]),
                   ),
                   const SizedBox(height: TodayBoxLayout.sectionGap),
-                  SizedBox(height: TodayBoxLayout.legendHeight, child: _Legend(set: set)),
+                  // A done day's hanko takes the legend's place: the bar is all green.
+                  SizedBox(height: TodayBoxLayout.legendHeight, child: done ? null : _Legend(set: set)),
                 ],
               ),
               if (done)

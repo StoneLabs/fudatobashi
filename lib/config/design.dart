@@ -1009,9 +1009,10 @@ abstract final class TodayBoxLayout {
   static const double weekdayFont = 8.5;
   static const double weekdayHeight = 9;
 
-  /// The 本日完了 hanko of a done day, centred over the bar: its centre this
+  /// The 本日完了 hanko of a done day, centred over the bar and the legend's
+  /// room (a done day has no legend), clear of the header: its centre this
   /// far below the top of the inside, a paper face and a double rule.
-  static const double doneStampCenter = headerHeight + sectionGap + barHeight / 2;
+  static const double doneStampCenter = headerHeight + sectionGap + (barHeight + sectionGap + legendHeight) / 2;
   static const double doneStampFont = 25;
   static const double doneStampTracking = 0.06;
   static const double doneStampTurn = -7;
