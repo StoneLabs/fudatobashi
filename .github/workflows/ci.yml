@@ -274,6 +274,7 @@ jobs:
       - uses: actions/download-artifact@v8
         with:
           path: dist
+          skip-decompress: true
 
       - name: Create release
         env:
