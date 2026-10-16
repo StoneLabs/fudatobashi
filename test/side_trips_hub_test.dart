@@ -47,6 +47,7 @@ import 'package:fudatobashi/ui/sound/sounds.dart';
 
 import 'test_ankiren.dart';
 import 'test_l10n.dart';
+import 'test_tabs.dart';
 import 'test_vector_art.dart';
 
 /// A phone: its size in dp and its pixels per dp (both 1080 × 2340 px),
@@ -170,7 +171,7 @@ void main() {
     addTearDown(tester.platformDispatcher.clearTextScaleFactorTestValue);
     await tester.pumpWidget(RepaintBoundary(key: const ValueKey('screen'), child: FudatobashiApp(progress: p)));
     await tester.pump(const Duration(milliseconds: 500));
-    await tester.tap(find.descendant(of: find.byType(MangaTabBar), matching: find.text(S(p.settings.language).sideTrips)));
+    await tester.tap(tabButton(S(p.settings.language).sideTrips));
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 300));
   }
@@ -649,10 +650,10 @@ void main() {
       await swipe(tester);
       await swipe(tester);
       expect(frontOf(tester), SideTripIsle.fuji);
-      await tester.tap(find.descendant(of: find.byType(MangaTabBar), matching: find.text(s.home)));
+      await tester.tap(tabButton(s.home));
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 300));
-      await tester.tap(find.descendant(of: find.byType(MangaTabBar), matching: find.text(s.sideTrips)));
+      await tester.tap(tabButton(s.sideTrips));
       await tester.pump();
       expect(turnOf(tester), 0);
       expect(inHub(find.byType(SideTripBody)).hitTestable(), findsOneWidget);

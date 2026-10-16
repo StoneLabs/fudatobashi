@@ -117,6 +117,7 @@ import 'package:package_info_plus/package_info_plus.dart';
 
 import 'test_l10n.dart';
 import 'test_play.dart';
+import 'test_tabs.dart';
 import 'test_vector_art.dart';
 
 const _phone = Size(384, 832);
@@ -444,7 +445,7 @@ void main() {
       expect(wheel.left - help.right, moreOrLessEquals(HeaderStyle.actionGap), reason: 'directly left of the wheel');
       expect(help.center.dy, moreOrLessEquals(wheel.center.dy));
       expect(help.left, greaterThan(tester.getRect(find.byType(LevelButton)).right), reason: 'LV · ? · ⚙');
-      expect(find.descendant(of: find.byType(MangaTabBar), matching: find.text(S(lang).help)), findsNothing,
+      expect(tabButton(S(lang).help), findsNothing,
           reason: 'Help left the tab bar');
 
       await tester.tap(find.byType(HelpButton));
@@ -463,10 +464,25 @@ void main() {
       await tester.pumpWidget(const SizedBox());
     });
 
+    testWidgets('the tab bar shows icons only but keeps each name ($lang)', (tester) async {
+      final p = await open(tester, mode: LearningMode.allKnown, ja: ja);
+      await onPhone(tester, p, fontScale: 1.3);
+      final s = S(lang);
+      final bar = find.byType(MangaTabBar);
+      for (final name in [s.home, s.history, s.stats, s.sideTrips]) {
+        expect(find.descendant(of: bar, matching: find.text(name)), findsNothing);
+        expect(tabButton(name), findsOneWidget);
+        expect(find.descendant(of: bar, matching: find.bySemanticsLabel(name)), findsOneWidget);
+        expect(tester.getSize(tabButton(name)).height, greaterThanOrEqualTo(48));
+      }
+      expect(tester.takeException(), isNull);
+      await tester.pumpWidget(const SizedBox());
+    });
+
     testWidgets('the Side Trips tab opens ($lang)', (tester) async {
       final p = await open(tester, mode: LearningMode.allKnown, ja: ja);
       await onPhone(tester, p, fontScale: 1.1);
-      await tester.tap(find.descendant(of: find.byType(MangaTabBar), matching: find.text(ja ? '寄り道' : 'Side Trips')));
+      await tester.tap(tabButton(ja ? '寄り道' : 'Side Trips'));
       await tester.pump(const Duration(milliseconds: 300));
       expect(tester.widget<MangaTabBar>(find.byType(MangaTabBar)).current, 3);
       expect(find.byType(SideTripsScreen), findsOneWidget);
@@ -537,10 +553,10 @@ void main() {
       expect(backdrop, findsOneWidget);
       expect(tester.getRect(backdrop), Offset.zero & _phone);
       const s = S('en');
-      await tester.tap(find.text(s.history));
+      await tester.tap(tabButton(s.history));
       await tester.pump(const Duration(milliseconds: 300));
       expect(backdrop, findsNothing);
-      await tester.tap(find.text(s.home));
+      await tester.tap(tabButton(s.home));
       await tester.pump(const Duration(milliseconds: 300));
       expect(backdrop, findsOneWidget);
       await tester.pumpWidget(const SizedBox());
@@ -684,7 +700,7 @@ void main() {
         expect(tester.takeException(), isNull);
 
         final s = S(ja ? 'ja' : 'en');
-        await tester.tap(find.text(s.stats));
+        await tester.tap(tabButton(s.stats));
         await tester.pump(const Duration(milliseconds: 500));
         expect(tester.takeException(), isNull);
         await _capture(tester, 'stats_islands${size}_$lang');
@@ -772,7 +788,7 @@ void main() {
     await tester.pumpWidget(RepaintBoundary(key: const ValueKey('screen'), child: FudatobashiApp(progress: p)));
     await tester.pump(const Duration(milliseconds: 500));
     const s = S('en');
-    await tester.tap(find.text(s.stats));
+    await tester.tap(tabButton(s.stats));
     await tester.pump(const Duration(milliseconds: 500));
     await tester.tap(find.text(s.allTab));
     await tester.pump(const Duration(milliseconds: 500));
@@ -811,7 +827,7 @@ void main() {
     await tester.pump(const Duration(milliseconds: 500));
 
     const s = S('en');
-    await tester.tap(find.text(s.history));
+    await tester.tap(tabButton(s.history));
     await tester.pump(const Duration(milliseconds: 500));
     expect(tester.takeException(), isNull);
     expect(find.byWidgetPredicate((w) => w is RunKindTag && w.mode == PlayMode.free), findsNWidgets(4));
@@ -856,7 +872,7 @@ void main() {
       expect(tester.takeException(), isNull);
 
       final s = S(ja ? 'ja' : 'en');
-      await tester.tap(find.text(s.stats));
+      await tester.tap(tabButton(s.stats));
       await tester.pump(const Duration(milliseconds: 500));
       expect(tester.takeException(), isNull);
 
@@ -1049,7 +1065,7 @@ void main() {
       await tester.binding.setSurfaceSize(_phone);
       await tester.pumpWidget(RepaintBoundary(key: const ValueKey('screen'), child: FudatobashiApp(progress: p)));
       await tester.pump(const Duration(milliseconds: 500));
-      await tester.tap(find.text(s.stats));
+      await tester.tap(tabButton(s.stats));
       await tester.pump(const Duration(milliseconds: 500));
       expect(tester.takeException(), isNull);
 
@@ -1080,7 +1096,7 @@ void main() {
       await tester.binding.setSurfaceSize(_phone);
       await tester.pumpWidget(RepaintBoundary(key: const ValueKey('screen'), child: FudatobashiApp(progress: p)));
       await tester.pump(const Duration(milliseconds: 500));
-      await tester.tap(find.text(s.stats));
+      await tester.tap(tabButton(s.stats));
       await tester.pump(const Duration(milliseconds: 500));
 
       await tester.runAsync(() async {
@@ -1108,7 +1124,7 @@ void main() {
       await tester.binding.setSurfaceSize(_phone);
       await tester.pumpWidget(RepaintBoundary(key: const ValueKey('screen'), child: FudatobashiApp(progress: p)));
       await tester.pump(const Duration(milliseconds: 500));
-      await tester.tap(find.text(s.stats));
+      await tester.tap(tabButton(s.stats));
       await tester.pump(const Duration(milliseconds: 500));
 
       // No journey in this mode: the whole route is sailed, and no boat.
@@ -1150,7 +1166,7 @@ void main() {
       await tester.binding.setSurfaceSize(_phone);
       await tester.pumpWidget(RepaintBoundary(key: const ValueKey('screen'), child: FudatobashiApp(progress: p)));
       await tester.pump(const Duration(milliseconds: 500));
-      await tester.tap(find.text(s.stats));
+      await tester.tap(tabButton(s.stats));
       await tester.pump(const Duration(milliseconds: 500));
       expect(tester.takeException(), isNull);
       await _capture(tester, 'island_play_locked_scaled_$lang');
@@ -1261,7 +1277,7 @@ void main() {
     await tester.pumpWidget(RepaintBoundary(key: const ValueKey('screen'), child: FudatobashiApp(progress: p)));
     await tester.pump(const Duration(milliseconds: 500));
     const s = S('en');
-    await tester.tap(find.text(s.stats));
+    await tester.tap(tabButton(s.stats));
     await tester.pump(const Duration(milliseconds: 500));
     // Drive the map's real (wired) tap callback rather than guessing pixel
     // coordinates on a custom-painted map. No island is judged yet, so the
@@ -1299,7 +1315,7 @@ void main() {
       expect(tester.takeException(), isNull);
 
       final s = S(ja ? 'ja' : 'en');
-      await tester.tap(find.text(s.stats));
+      await tester.tap(tabButton(s.stats));
       await tester.pump(const Duration(milliseconds: 500));
       expect(tester.takeException(), isNull);
 
@@ -1348,7 +1364,7 @@ void main() {
     await tester.pumpWidget(RepaintBoundary(key: const ValueKey('screen'), child: FudatobashiApp(progress: p)));
     await tester.pump(const Duration(milliseconds: 500));
     const s = S('en');
-    await tester.tap(find.text(s.stats));
+    await tester.tap(tabButton(s.stats));
     await tester.pump(const Duration(milliseconds: 500));
     await tester.tap(find.text(s.rank));
     await tester.pump();
@@ -2846,7 +2862,7 @@ void main() {
           await p.recordRun(run, const PlayConfig(mode: PlayMode.free), DateTime.now());
         });
 
-    Finder tab(String label) => find.descendant(of: find.byType(MangaTabBar), matching: find.text(label));
+    Finder tab(String label) => tabButton(label);
 
     testWidgets('a new player finds History and Stats in chains, Tobi says what opens them, and each breaks free once',
         (tester) async {
@@ -2937,7 +2953,7 @@ void main() {
 
     Future<void> openTrips(WidgetTester tester, Progress p, {double fontScale = 1.1}) async {
       await onPhone(tester, p, fontScale: fontScale);
-      await tester.tap(find.descendant(of: find.byType(MangaTabBar), matching: find.text(S(p.settings.language).sideTrips)));
+      await tester.tap(tabButton(S(p.settings.language).sideTrips));
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 300));
       expect(tester.takeException(), isNull);
@@ -3035,7 +3051,7 @@ void main() {
       await onPhone(tester, p, fontScale: 1.1);
       Finder chains() => find.byKey(const ValueKey(LockedTab.sideTrips));
       expect(chains(), findsOneWidget);
-      await tester.tap(find.descendant(of: find.byType(MangaTabBar), matching: find.text(s.sideTrips)));
+      await tester.tap(tabButton(s.sideTrips));
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 400));
       expect(find.text(s.lockReason(s.sideTrips, const TabLock(TabUnlock.rememberedCards, opens))), findsOneWidget);

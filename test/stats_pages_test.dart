@@ -38,6 +38,7 @@ import 'package:fudatobashi/ui/stats/srs_details_screen.dart';
 import 'package:fudatobashi/ui/stats/srs_screen.dart';
 
 import 'test_l10n.dart';
+import 'test_tabs.dart';
 import 'test_vector_art.dart';
 
 Future<void> _loadFont(String family, List<String> files) async {
@@ -140,7 +141,7 @@ void main() {
         testWidgets('journey: locked Rank, the SRS page and its FSRS details ($tag)', (tester) async {
           final p = await seeded(tester, lang, ranked: false);
           await onPhone(tester, p, size, fontScale);
-          await tap(tester, find.text(s.stats));
+          await tap(tester, tabButton(s.stats));
           final rank = find.text(s.rank);
           expect(rank, findsOneWidget);
           expect(find.text(s.srs), findsOneWidget);
@@ -185,7 +186,7 @@ void main() {
           await back(tester, s);
           expect(find.byType(PracticeCalendarScreen), findsNothing);
 
-          await tap(tester, find.text(s.history));
+          await tap(tester, tabButton(s.history));
           await tap(tester, find.text(s.historyStreak(p.activeStreak())));
           expect(find.byType(PracticeCalendarScreen), findsOneWidget);
           Finder title(DateTime m) => find.text(s.monthTitle(m), findRichText: true);
@@ -214,7 +215,7 @@ void main() {
           expect(find.byType(PracticeCalendarScreen), findsOneWidget);
           await back(tester, s);
 
-          await tap(tester, find.text(s.stats));
+          await tap(tester, tabButton(s.stats));
           expect(find.text(s.srs), findsNothing);
           await tap(tester, find.text(s.rank));
           expect(find.byType(RankScreen), findsOneWidget);
@@ -234,7 +235,7 @@ void main() {
       final p = await seeded(tester, lang, ranked: true, play: false);
       expect(p.placed, isFalse);
       await onPhone(tester, p, _phones.last, 1.3);
-      await tap(tester, find.text(s.stats));
+      await tap(tester, tabButton(s.stats));
       await tap(tester, find.text(s.rank));
       expect(find.text(s.rankedUnplacedLine), findsOneWidget);
       expect(find.byType(RatingChart), findsNothing);
@@ -250,7 +251,7 @@ void main() {
     final p = await seeded(tester, 'en', ranked: true);
     await onPhone(tester, p, _phones.first, 1);
     const s = S('en');
-    await tap(tester, find.text(s.stats));
+    await tap(tester, tabButton(s.stats));
     await tap(tester, find.text(s.rank));
     await tester.dragUntilVisible(find.byType(RankedRunsTable), find.byType(Scrollable).first, const Offset(0, -300));
     await tester.pump(const Duration(milliseconds: 500));

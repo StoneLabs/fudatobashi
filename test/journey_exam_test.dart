@@ -39,6 +39,7 @@ import 'package:fudatobashi/ui/rank/rank_screen.dart';
 import 'package:fudatobashi/ui/tour/tour_overlay.dart';
 
 import 'test_l10n.dart';
+import 'test_tabs.dart';
 import 'test_vector_art.dart';
 
 /// A phone: its size in dp and its pixels per dp, with a 28 dp status bar
@@ -401,7 +402,7 @@ void main() {
   group('rank ladder before there is a rank', () {
     Future<void> openLadder(WidgetTester tester, Progress p, String lang) async {
       final s = S(lang);
-      await tester.tap(find.text(s.stats));
+      await tester.tap(tabButton(s.stats));
       await tester.pump(const Duration(milliseconds: 500));
       await tester.tap(find.text(s.rank));
       await tester.pump();
@@ -417,7 +418,7 @@ void main() {
           testWidgets('journey: Rank is locked until the exam, then says to switch ($tag)', (tester) async {
             final s = S(lang);
             Future<void> tapRank() async {
-              await tester.tap(find.text(s.stats));
+              await tester.tap(tabButton(s.stats));
               await tester.pump(const Duration(milliseconds: 500));
               await tester.tap(find.text(s.rank));
               await tester.pump();
