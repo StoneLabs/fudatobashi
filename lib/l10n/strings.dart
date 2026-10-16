@@ -57,6 +57,10 @@ class S {
   /// The speaker button after a card's kimariji.
   String get kimarijiPlayLabel => t('kimarijiPlayLabel');
 
+  /// [key] for a count of [n]: `${key}One` when [n] is 1, for the
+  /// singular ("1 card"); a language without one repeats the plural text.
+  String countKey(String key, int n) => n == 1 ? '${key}One' : key;
+
   /// Fills `{0}`, `{1}` … in the template at [key] with [args].
   String f(String key, List<Object> args) {
     var out = t(key);
@@ -117,7 +121,7 @@ class S {
   String get rating => t('rating');
 
   // Misc
-  String cardsCount(int n) => f('cardsCount', [n]);
+  String cardsCount(int n) => f(countKey('cardsCount', n), [n]);
   String dueCount(int n) => f('dueCount', [n]);
   String dayStreak(int n) => f('dayStreak', [n]);
   String toNext(int points, String band) => f('toNext', [points, band]);

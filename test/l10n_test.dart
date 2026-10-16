@@ -5,7 +5,12 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:fudatobashi/data/poem.dart';
 import 'package:fudatobashi/l10n/localization.dart';
 import 'package:fudatobashi/l10n/romaji.dart';
+import 'package:fudatobashi/l10n/history_strings.dart';
+import 'package:fudatobashi/l10n/run_tab_strings.dart';
+import 'package:fudatobashi/l10n/srs_strings.dart';
 import 'package:fudatobashi/l10n/strings.dart';
+
+import 'test_l10n.dart';
 
 /// `{0}`, `{1}` … or a named slot like `{band}`.
 final _placeholder = RegExp(r'\{[a-zA-Z0-9]+\}');
@@ -114,6 +119,23 @@ void main() {
       expect(const S('en').other.code, 'ja');
       expect(const S('ja').other.code, 'en');
       expect(const S('xx').other.code, 'ja');
+    });
+  });
+
+  // "1 cards", "1 days in a row", "STREAK 1 days": a count of one reads in
+  // the singular, and a range of one card is that card.
+  group('counts', () {
+    setUpAll(loadTestL10n);
+    const s = S('en');
+
+    test('one and many', () {
+      expect([s.cardsCount(1), s.cardsCount(2)], ['1 card', '2 cards']);
+      expect([s.historyStreak(1), s.historyStreak(3)], ['day in a row', 'days in a row']);
+      expect([s.srsDaysUnit(1), s.srsDaysUnit(0)], ['day', 'days']);
+      expect([s.historyCards(1), s.historyMissesShort(1)], ['1 card', '1 miss']);
+      expect(s.runSideLine(1, 1), '1 card · 1 miss');
+      expect(s.runSideLine(4, 2), '4 cards · 2 misses');
+      expect([s.runCardsRange(3, 3), s.runCardsRange(1, 3)], ['Card 3', 'Cards 1–3']);
     });
   });
 }

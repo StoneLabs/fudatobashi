@@ -18,7 +18,7 @@ extension RunStrings on S {
 
   /// The exam's kind tag.
   String get runExamTag => t('runExamTag');
-  String runCardsLine(int cards) => f('runCardsLine', [cards]);
+  String runCardsLine(int cards) => f(countKey('runCardsLine', cards), [cards]);
   String get runLoading => t('runLoading');
 
   /// The Overview tab: headline facts, the time graph and its legend, the
@@ -72,7 +72,7 @@ extension RunStrings on S {
   String get runPractiseSub => t('runPractiseSub');
   String get runPractiseNote => t('runPractiseNote');
   String get runSwipesTitle => t('runSwipesTitle');
-  String runSwipesCount(Object a0) => f('runSwipesCount', [a0]);
+  String runSwipesCount(int n) => f(countKey('runSwipesCount', n), [n]);
   String get colCard => t('colCard');
   String get colTime => t('colTime');
   String get colUsual => t('colUsual');

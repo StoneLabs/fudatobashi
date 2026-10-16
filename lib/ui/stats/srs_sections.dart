@@ -68,7 +68,7 @@ class SrsGlance extends StatelessWidget {
             child: Row(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
               cell(s.srsKnown, s.sub?.srsKnown, '$known', '/${poems.all.length}'),
               rule,
-              cell(s.srsStreak, s.sub?.srsStreak, '${progress.activeStreak()}', ' ${s.srsDaysUnit}',
+              cell(s.srsStreak, s.sub?.srsStreak, '${progress.activeStreak()}', ' ${s.srsDaysUnit(progress.activeStreak())}',
                   onTap: () => openPracticeCalendar(context)),
               rule,
               cell(s.srsRemembered, s.sub?.srsRemembered, recall == null ? '—' : '${(recall * 100).round()}', '%'),

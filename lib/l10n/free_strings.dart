@@ -5,7 +5,7 @@ import 'strings.dart';
 extension FreeStrings on S {
   String get freeSheetTag => t('freeSheetTag');
   String get freeStart => t('freeStart');
-  String get deckCount => t('deckCount');
+  String deckCount(int n) => t(countKey('deckCount', n));
   String get freeLocked => t('freeLocked');
   String freeLockedSub(int n) => f('freeLockedSub', [n]);
   String freeLockedWhy(int n) => f(n == 1 ? 'freeLockedWhyOne' : 'freeLockedWhyOther', [n]);

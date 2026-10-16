@@ -39,7 +39,7 @@ extension HomeStrings on S {
 
   String get todayLabel => t('todayLabel');
   String get todayCardsInRun => t('todayCardsInRun');
-  String todayReviews(int cards, int looks) => f('todayReviews', [cards, looks]);
+  String todayReviews(int cards, int looks) => f(countKey('todayReviews', cards), [cards, looks]);
   String get todayNoReviews => t('todayNoReviews');
   String todayNew(int cards, int looks) => f('todayNew', [cards, looks]);
   String get todayNoNew => t('todayNoNew');

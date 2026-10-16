@@ -177,7 +177,7 @@ void main() {
           expect(find.byType(PracticeCalendarScreen), findsNothing);
 
           await tap(tester, find.text(s.history));
-          await tap(tester, find.text(s.historyStreak));
+          await tap(tester, find.text(s.historyStreak(p.activeStreak())));
           expect(find.byType(PracticeCalendarScreen), findsOneWidget);
           Finder title(DateTime m) => find.text(s.monthTitle(m), findRichText: true);
           final thisMonth = DateTime.utc(today.year, today.month);

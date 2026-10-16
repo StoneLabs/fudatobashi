@@ -7,6 +7,10 @@ To add a UI language:
 4. Add "<code>" to languages.json.
 5. Rebuild the app.
 
+A key ending in "One" (e.g. cardsCountOne next to cardsCount) is the text
+for a count of exactly 1, the singular in English ("1 card"). A language
+without a singular form repeats the other text there.
+
 kimariji001–kimariji100 are a special case: one per poem (by its id, zero-
 padded to 3 digits), for each card's kimariji (決まり字). These are
 READINGS, not spellings — how the card actually sounds in competitive

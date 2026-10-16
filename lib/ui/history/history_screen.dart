@@ -236,8 +236,8 @@ class _Streak extends StatelessWidget {
               shadows: going ? const [Shadow(color: Palette.pink, offset: HistoryListStyle.streakShadow)] : null,
             )),
         const SizedBox(height: Gaps.tight),
-        Text(s.historyStreak, style: const TextStyle(fontWeight: Weights.black, fontSize: HistoryListStyle.streakLabelFont)),
-        if (s.sub?.historyStreak case final sub?)
+        Text(s.historyStreak(days), style: const TextStyle(fontWeight: Weights.black, fontSize: HistoryListStyle.streakLabelFont)),
+        if (s.sub?.historyStreak(days) case final sub?)
           Text(sub.toUpperCase(),
               style: const TextStyle(
                   fontWeight: Weights.black,

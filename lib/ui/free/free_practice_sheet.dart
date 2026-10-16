@@ -120,7 +120,7 @@ class _FreePracticeSheetState extends State<FreePracticeSheet> {
                                         height: TypeScale.displayLineHeight)),
                                 const SizedBox(height: FreePracticeLayout.titleGap),
                                 NumberedText(
-                                  s.deckCount,
+                                  s.deckCount(_deck.count),
                                   [_deck.count],
                                   style: const TextStyle(
                                       fontWeight: Weights.black, fontSize: FreePracticeLayout.deckFont),

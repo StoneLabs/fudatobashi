@@ -16,14 +16,14 @@ extension SrsStrings on S {
   String get srsKnown => t('srsKnown');
   String get srsStreak => t('srsStreak');
   String get srsRemembered => t('srsRemembered');
-  String get srsDaysUnit => t('srsDaysUnit');
+  String srsDaysUnit(int days) => t(countKey('srsDaysUnit', days));
   String srsPaceDay(int day, int of) => f('srsPaceDay', [day, of]);
   String srsKnownCount(int n) => f('srsKnownCount', [n]);
   String srsUnlockedCount(int n) => f('srsUnlockedCount', [n]);
   String srsPaceToday(int n) => f('srsPaceToday', [n]);
 
   String get srsKnownTitle => t('srsKnownTitle');
-  String srsGainIn(int n, int days) => f('srsGainIn', [n, days]);
+  String srsGainIn(int n, int days) => f(countKey('srsGainIn', days), [n, days]);
   String get srsLegendKnown => t('srsLegendKnown');
   String get srsLegendUnlocked => t('srsLegendUnlocked');
   String get srsLegendPace => t('srsLegendPace');
@@ -96,7 +96,7 @@ extension SrsStrings on S {
   String get calUsual => t('calUsual');
   String get calLot => t('calLot');
   String get calSetDone => t('calSetDone');
-  String calDaySwipes(int n) => f('calDaySwipes', [n]);
+  String calDaySwipes(int n) => f(countKey('calDaySwipes', n), [n]);
 
   /// A practice [day] (a UTC midnight) as "Oct 14" / "10月14日".
   String dayDate(DateTime day) => ja ? '${day.month}月${day.day}日' : '${_months[day.month - 1].substring(0, 3)} ${day.day}';

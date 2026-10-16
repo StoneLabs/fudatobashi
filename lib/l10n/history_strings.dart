@@ -42,7 +42,7 @@ extension HistoryStrings on S {
   String get historyAnkirenTab => t('historyAnkirenTab');
   String get historyFilterLabel => t('historyFilterLabel');
   String get historyLast7 => t('historyLast7');
-  String get historyStreak => t('historyStreak');
+  String historyStreak(int days) => t(countKey('historyStreak', days));
   String get historyNotActive => t('historyNotActive');
   String get historySomeActive => t('historySomeActive');
   String get historyDoneActive => t('historyDoneActive');
@@ -57,9 +57,9 @@ extension HistoryStrings on S {
   String get historyYourTimeCaption => t('historyYourTimeCaption');
   String get historyPointsCaption => t('historyPointsCaption');
   String get historyFirstTapCaption => t('historyFirstTapCaption');
-  String historyCards(Object a0) => f('historyCards', [a0]);
+  String historyCards(int n) => f(countKey('historyCards', n), [n]);
   String historyCardsOf(Object a0, Object a1) => f('historyCardsOf', [a0, a1]);
-  String historyMissesShort(Object a0) => f('historyMissesShort', [a0]);
+  String historyMissesShort(int n) => f(countKey('historyMissesShort', n), [n]);
   String historyMissedShort(Object a0) => f('historyMissedShort', [a0]);
   String historyFirstRating(Object a0) => f('historyFirstRating', [a0]);
   String historyTobiTime(Object a0) => f('historyTobiTime', [a0]);

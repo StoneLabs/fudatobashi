@@ -4,9 +4,10 @@ import 'strings.dart';
 
 /// Strings of a run page's Speed, Rating and XP tabs.
 extension RunTabStrings on S {
-  String runSpeedForfeit(Object a0) => f('runSpeedForfeit', [a0]);
+  String runSpeedForfeit(int cards) => f(countKey('runSpeedForfeit', cards), [cards]);
   String get runThirdsTitle => t('runThirdsTitle');
-  String runCardsRange(Object a0, Object a1) => f('runCardsRange', [a0, a1]);
+  /// "Cards 4–6", or "Card 3" when the range is one card.
+  String runCardsRange(int from, int to) => from == to ? f('runCardAt', [from]) : f('runCardsRange', [from, to]);
   String get runSlowestThird => t('runSlowestThird');
   String get runFastestThird => t('runFastestThird');
   String get runSlowStart => t('runSlowStart');
@@ -20,7 +21,7 @@ extension RunTabStrings on S {
   String runFastestRow(Object a0) => f('runFastestRow', [a0]);
   String runStretchLine(Object a0, Object a1, Object a2) => f('runStretchLine', [a0, a1, a2]);
   String runUnderGoalRow(Object a0) => f('runUnderGoalRow', [a0]);
-  String runNoMissRange(Object a0, Object a1) => f('runNoMissRange', [a0, a1]);
+  String runNoMissRange(int from, int to) => from == to ? f('runNoMissAt', [from]) : f('runNoMissRange', [from, to]);
   String get runNone => t('runNone');
   String get runPaceFast => t('runPaceFast');
   String get runPaceUnderGoal => t('runPaceUnderGoal');
@@ -28,7 +29,8 @@ extension RunTabStrings on S {
   String runPaceFastestRow(Object a0) => f('runPaceFastestRow', [a0]);
   String get runUpright => t('runUpright');
   String get runUpsideDownSide => t('runUpsideDownSide');
-  String runSideLine(Object a0, Object a1) => f('runSideLine', [a0, a1]);
+  String runSideLine(int cards, int misses) =>
+      f('runSideLine', [cardsCount(cards), f(countKey('runSideMisses', misses), [misses])]);
   String runUpsideCost(Object a0) => f('runUpsideCost', [a0]);
   String runUpsideGain(Object a0) => f('runUpsideGain', [a0]);
   String get runKimarijiTitle => t('runKimarijiTitle');
