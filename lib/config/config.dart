@@ -364,14 +364,6 @@ abstract final class TodaySetTuning {
   static const int weekDays = 7;
 }
 
-/// Free practice (始める): locked in journey mode until this many cards are
-/// well remembered at once (`Trainer.wellRemembered`); from then on it stays
-/// open for good.
-abstract final class FreePracticeTuning {
-  static const int unlockRemembered = 50;
-}
-
-/// When the side trips (寄り道, `SideTripUnlocks`) open in journey mode: once
 /// 苦手 (`WeakCards`, `StepPlan.forWeak`): which card sides are weak, and the
 /// drill that works on them. A side is weak when it was missed lately or its
 /// expected time is over [lineRatio] × the player's usual card time (the
@@ -405,6 +397,14 @@ abstract final class WeakTuning {
   static const int maxSwipes = 40;
 }
 
+/// Free practice (始める): locked in journey mode until this many cards are
+/// well remembered at once (`Trainer.wellRemembered`); from then on it stays
+/// open for good.
+abstract final class FreePracticeTuning {
+  static const int unlockRemembered = 50;
+}
+
+/// When the side trips (寄り道, `SideTripUnlocks`) open in journey mode: once
 /// this many cards are well remembered at once, free practice's counter;
 /// from then on they stay open for good. All-known mode opens them all.
 abstract final class SideTripTuning {
@@ -746,6 +746,9 @@ abstract final class XpTuning {
 
   /// A completed run faster than the best before it with the same setup.
   static const int personalBest = 200;
+
+  /// A weak side cleared in a 苦手 drill (it has no personal best).
+  static const int weakCleared = 15;
   static const int perIsland = 10000;
 
   /// Finishing today's set (journey mode), once a day.
@@ -754,9 +757,6 @@ abstract final class XpTuning {
   /// Passing the graduation exam, the end of the journey.
   static const int graduation = 100000;
 
-
-  /// A weak side cleared in a 苦手 drill (it has no personal best).
-  static const int weakCleared = 15;
   /// A ranked run played to its last card, and on top of it the first one,
   /// which places the player on the ladder.
   static const int ranked = 500;
