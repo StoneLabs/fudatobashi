@@ -11,14 +11,6 @@
 # the local build scripts use: the build number is the commit count, and the name
 # is the pubspec version on a tagged commit, otherwise <version>-dev.<commit count>.<short hash>.
 # iOS, macOS and Windows only get the build number (they need a plain version).
-#
-# Android release signing is optional: set these repo secrets to sign with
-# the real release key instead of falling back to the debug key:
-#   ANDROID_KEYSTORE_BASE64, ANDROID_KEYSTORE_PASSWORD, ANDROID_KEY_ALIAS, ANDROID_KEY_PASSWORD
-# That key is a GitHub-only signing key (the Play Store release will be signed
-# separately), so the built .apk/.aab are named …-GH_SIGNED, or …-debug-signed
-# when the secrets are missing. The iOS build has no Apple certificate at all,
-# so it's always named …-unsigned.
 name: CI
 run-name: ${{ github.event.head_commit.message || github.event.pull_request.title || github.ref_name }}
 
