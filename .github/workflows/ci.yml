@@ -5,7 +5,8 @@
 #     (30 days). No release, no tag;
 #   - manually via the "Run workflow" button (workflow_dispatch): artifacts only.
 # Branch pushes and pull requests only run the checks. The Android .apk and .aab
-# are uploaded unzipped, each as its own artifact named after the file.
+# are uploaded unzipped, each as its own artifact named after the file; every
+# other platform is packed into one file first and uploaded the same way.
 # The build number and version name come from scripts/version.sh, the same helper
 # the local build scripts use: the build number is the commit count, and the name
 # is the pubspec version on a tagged commit, otherwise <version>-dev.<commit count>.<short hash>.
@@ -167,8 +168,8 @@ jobs:
 
       - uses: actions/upload-artifact@v7
         with:
-          name: fudatobashi-${{ needs.version.outputs.version }}-ios
           path: dist/*.ipa
+          archive: false
           retention-days: 30
 
   macos:
@@ -198,8 +199,8 @@ jobs:
 
       - uses: actions/upload-artifact@v7
         with:
-          name: fudatobashi-${{ needs.version.outputs.version }}-macos
           path: dist/*.zip
+          archive: false
           retention-days: 30
 
   linux:
@@ -234,8 +235,8 @@ jobs:
 
       - uses: actions/upload-artifact@v7
         with:
-          name: fudatobashi-${{ needs.version.outputs.version }}-linux
           path: dist/*.tar.gz
+          archive: false
           retention-days: 30
 
   windows:
@@ -264,8 +265,8 @@ jobs:
 
       - uses: actions/upload-artifact@v7
         with:
-          name: fudatobashi-${{ needs.version.outputs.version }}-windows
           path: dist/*.zip
+          archive: false
           retention-days: 30
 
   release:
