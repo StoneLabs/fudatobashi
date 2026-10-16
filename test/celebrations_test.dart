@@ -1,12 +1,16 @@
 import 'dart:io';
 
+import 'package:flutter/services.dart';
+import 'package:flutter/widgets.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:fudatobashi/config/config.dart';
+import 'package:fudatobashi/config/design.dart';
 import 'package:fudatobashi/data/fuda_sets.dart';
 import 'package:fudatobashi/data/poem.dart';
 import 'package:fudatobashi/domain/today_set.dart';
 import 'package:fudatobashi/domain/xp.dart';
 import 'package:fudatobashi/state/progress.dart';
+import 'package:fudatobashi/ui/results/celebration_chrome.dart';
 import 'package:fudatobashi/ui/results/celebrations.dart';
 
 import 'test_vector_art.dart';
@@ -171,4 +175,26 @@ void main() {
   test('no rank-up celebration when the band does not change', () {
     expect(celebrationsFor(report(ratingBefore: 1250, ratingAfter: 1260)).whereType<RankUpCelebration>(), isEmpty);
   });
+
+  // A celebration's art (sunburst, confetti) used to run under the status
+  // bar, where the clock and icons got lost in it: the bar now sits on the
+  // page's plain colour, with icons that read on it.
+  for (final (name, color, dark) in [('sun', Palette.sun, true), ('deep sea', Palette.seaDeep, false)]) {
+    testWidgets('a celebration keeps the status bar readable ($name page)', (tester) async {
+      const statusBar = 28.0;
+      await tester.pumpWidget(Directionality(
+        textDirection: TextDirection.ltr,
+        child: MediaQuery(
+          data: const MediaQueryData(size: Size(384, 832), padding: EdgeInsets.only(top: statusBar)),
+          child: CelebrationChrome(color: color, onNext: () {}, child: const SizedBox()),
+        ),
+      ));
+      final style = tester.widget<AnnotatedRegion<SystemUiOverlayStyle>>(find.byType(AnnotatedRegion<SystemUiOverlayStyle>));
+      expect(style.value.statusBarIconBrightness, dark ? Brightness.dark : Brightness.light);
+      final scrim = find.byWidgetPredicate((w) =>
+          w is DecoratedBox && w.decoration is BoxDecoration && (w.decoration as BoxDecoration).gradient?.colors.first == color);
+      expect(tester.getRect(scrim).top, 0);
+      expect(tester.getRect(scrim).height, statusBar + ResultsLayout.statusScrimFade);
+    });
+  }
 }

@@ -2214,6 +2214,10 @@ abstract final class ResultsLayout {
   /// Tobi stands just above a celebration's pinned CTA.
   static const double tobiAboveCta = PlayLayout.buttonRowHeight + Gaps.section * 2;
 
+  /// A celebration's colour covers its art under the status bar, then fades
+  /// out over this much, so the clock and icons stay readable.
+  static const double statusScrimFade = 18;
+
   static const Duration overlayFade = Duration(milliseconds: 220);
   static const Duration overlayStagger = Duration(milliseconds: 500);
 }

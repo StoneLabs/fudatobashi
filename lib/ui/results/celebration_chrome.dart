@@ -1,6 +1,8 @@
 import 'dart:math' as math;
 
+import 'package:flutter/material.dart' show ThemeData;
 import 'package:flutter/rendering.dart' show OverflowBoxFit;
+import 'package:flutter/services.dart' show SystemUiOverlayStyle;
 import 'package:flutter/widgets.dart';
 
 import '../../config/design.dart';
@@ -9,7 +11,8 @@ import '../manga/manga.dart';
 /// Full-screen page shared by every celebration: a colour, full-bleed art
 /// and [backdrop] behind the safe area, and tap-anywhere-to-continue. A
 /// [cta] adds the primary button pinned to the bottom; without one the page
-/// lays out its own actions in [child].
+/// lays out its own actions in [child]. The status bar sits on plain
+/// [color], with icons that read on it.
 class CelebrationChrome extends StatelessWidget {
   const CelebrationChrome({
     super.key,
@@ -29,7 +32,12 @@ class CelebrationChrome extends StatelessWidget {
   final List<Widget> backdrop;
 
   @override
-  Widget build(BuildContext context) => GestureDetector(
+  Widget build(BuildContext context) {
+    final statusBar = MediaQuery.paddingOf(context).top;
+    final dark = ThemeData.estimateBrightnessForColor(color) == Brightness.dark;
+    return AnnotatedRegion<SystemUiOverlayStyle>(
+      value: dark ? SystemUiOverlayStyle.light : SystemUiOverlayStyle.dark,
+      child: GestureDetector(
         behavior: HitTestBehavior.opaque,
         onTap: onNext,
         child: ColoredBox(
@@ -37,6 +45,25 @@ class CelebrationChrome extends StatelessWidget {
           child: Stack(fit: StackFit.expand, children: [
             if (art.isNotEmpty) StaticArt(art),
             ...backdrop,
+            if (statusBar > 0)
+              Positioned(
+                top: 0,
+                left: 0,
+                right: 0,
+                height: statusBar + ResultsLayout.statusScrimFade,
+                child: IgnorePointer(
+                  child: DecoratedBox(
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        begin: Alignment.topCenter,
+                        end: Alignment.bottomCenter,
+                        colors: [color, color, color.withValues(alpha: 0)],
+                        stops: [0, statusBar / (statusBar + ResultsLayout.statusScrimFade), 1],
+                      ),
+                    ),
+                  ),
+                ),
+              ),
             SafeArea(
               child: Stack(fit: StackFit.expand, children: [
                 child,
@@ -58,7 +85,9 @@ class CelebrationChrome extends StatelessWidget {
             ),
           ]),
         ),
-      );
+      ),
+    );
+  }
 }
 
 /// A soft radial flash of light, [size] across, centred at [at] of the page
