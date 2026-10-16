@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 
 import '../../config/config.dart';
 import '../../config/design.dart';
+import '../../domain/trainer.dart';
 import '../../l10n/settings_strings.dart';
 import '../../l10n/strings.dart';
 import '../../state/scope.dart';
@@ -17,16 +18,22 @@ Future<void> pickDayStart(BuildContext context) async {
     context,
     barrierColor: DayStartPickerLayout.barrier,
     barrierLabel: S.of(context).cancel,
-    builder: (_) => _DayStartSheet(selected: progress.settings.dayStartHour),
+    builder: (_) => _DayStartSheet(
+      selected: progress.settings.dayStartHour,
+      allKnown: progress.trainer.config.learningMode == LearningMode.allKnown,
+    ),
   );
   if (hour == null || hour == progress.settings.dayStartHour) return;
   await progress.updateSettings(progress.settings.copyWith(dayStartHour: hour));
 }
 
 class _DayStartSheet extends StatelessWidget {
-  const _DayStartSheet({required this.selected});
+  const _DayStartSheet({required this.selected, required this.allKnown});
 
   final int selected;
+
+  /// All-known mode, which has a streak and no daily set.
+  final bool allKnown;
 
   @override
   Widget build(BuildContext context) {
@@ -76,7 +83,7 @@ class _DayStartSheet extends StatelessWidget {
                   ],
                   const SizedBox(height: DayStartPickerLayout.noteGap),
                   Text(
-                    s.dayStartChange,
+                    allKnown ? s.dayStartChangeKnown : s.dayStartChange,
                     style: const TextStyle(
                       fontWeight: Weights.bold,
                       fontSize: DayStartPickerLayout.note,

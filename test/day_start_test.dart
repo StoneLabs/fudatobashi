@@ -1,4 +1,4 @@
-// Settings' "Day starts at" row (journey mode only) and the hour sheet it
+// Settings' "Day starts at" row (both modes) and the hour sheet it
 // opens: it shows the hour in use, a picked hour is stored and takes effect
 // from the next day start, and closing the sheet keeps the hour. The
 // Learning section and the sheet fit phones 360, 384 and 412 dp wide at
@@ -162,7 +162,7 @@ void main() {
     expectInside(tester, find.descendant(of: sheetPanel(s), matching: find.byType(RichText)), sheet, why);
   }
 
-  testWidgets('journey mode shows the row with the hour in use; all-known mode has none', (tester) async {
+  testWidgets('both modes show the row with the hour in use, all-known mode with its streak note', (tester) async {
     const s = S('en');
     final journey = await player(tester);
     await showSettings(tester, journey, _users);
@@ -178,7 +178,14 @@ void main() {
     final known = await player(tester, mode: LearningMode.allKnown);
     await showSettings(tester, known, _users);
     expect(find.text(s.learningMode), findsOneWidget);
-    expect(find.text(s.dayStart), findsNothing);
+    expect(find.text(s.pace), findsNothing);
+    expect(find.descendant(of: dayStartRow(s), matching: find.text(s.dayStartNoteKnown)), findsOneWidget,
+        reason: 'it still sets when the streak day turns over');
+    await openSheet(tester, s);
+    expect(find.text(s.dayStartChangeKnown), findsOneWidget);
+    await tester.tap(find.ancestor(of: find.text(s.hourOfDay(6)), matching: find.byType(InkButton)));
+    await settle(tester);
+    expect(known.settings.dayStartHour, 6);
     await tester.pumpWidget(const SizedBox());
   });
 

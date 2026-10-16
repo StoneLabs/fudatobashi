@@ -228,9 +228,9 @@ class SettingsScreen extends StatelessWidget {
   }
 }
 
-/// Learning mode, the journey's pace and the hour its day starts at
-/// (journey only), and how a card is marked "don't know" during play ("off"
-/// only in all-known mode).
+/// Learning mode, the journey's pace (journey only), the hour the day starts
+/// at (today's set and the streak go by it), and how a card is marked
+/// "don't know" during play ("off" only in all-known mode).
 class _LearningSection extends StatelessWidget {
   const _LearningSection();
 
@@ -265,16 +265,15 @@ class _LearningSection extends StatelessWidget {
               SettingsOption(s.paceSprint, selected: pace == LearningPace.sprint, onTap: () => progress.setLearningPace(LearningPace.sprint)),
             ],
           ),
-        if (mode == LearningMode.journey)
-          SettingsGroup(children: [
-            SettingsTapRow(
-              title: s.dayStart,
-              note: s.dayStartNote,
-              value: s.hourOfDay(progress.settings.dayStartHour),
-              opensPage: true,
-              onTap: () => pickDayStart(context),
-            ),
-          ]),
+        SettingsGroup(children: [
+          SettingsTapRow(
+            title: s.dayStart,
+            note: mode == LearningMode.journey ? s.dayStartNote : s.dayStartNoteKnown,
+            value: s.hourOfDay(progress.settings.dayStartHour),
+            opensPage: true,
+            onTap: () => pickDayStart(context),
+          ),
+        ]),
         SettingsChoices(
           label: SettingsLabel(title: s.dontKnowInput, note: s.dontKnowInputNote),
           options: [

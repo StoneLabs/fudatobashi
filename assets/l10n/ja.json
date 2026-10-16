@@ -373,6 +373,8 @@
   "dayStart": "1日の始まり",
   "dayStartNote": "この時刻に今日のセットが新しくなります。深夜の練習は前の日に数えます。",
   "dayStartChange": "変更は次の日から。今日のセットとスタンプはそのままです。",
+  "dayStartNoteKnown": "この時刻に連続記録の1日が切り替わります。深夜の練習は前の日に数えます。",
+  "dayStartChangeKnown": "変更は次の日から。今日の連続記録はそのままです。",
   "hourOfDay": "{0}:00",
   "cardEffects": "演出エフェクト",
   "cardEffectsNote": "速く払うとバシッ！などの文字が飛び出す。",

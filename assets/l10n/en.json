@@ -373,6 +373,8 @@
   "dayStart": "Day starts at",
   "dayStartNote": "Today's set starts fresh at this time. Practice after midnight counts for the day before.",
   "dayStartChange": "A change starts with the next day, so today's set and stamp are safe.",
+  "dayStartNoteKnown": "Your streak's days start at this time. Practice after midnight counts for the day before.",
+  "dayStartChangeKnown": "A change starts with the next day, so today's streak is safe.",
   "hourOfDay": "{0}:00",
   "cardEffects": "Card effects",
   "cardEffectsNote": "Lettering like バシッ pops around a fast swipe.",

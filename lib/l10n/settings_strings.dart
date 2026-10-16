@@ -20,6 +20,8 @@ extension SettingsStrings on S {
   String get dayStart => t('dayStart');
   String get dayStartNote => t('dayStartNote');
   String get dayStartChange => t('dayStartChange');
+  String get dayStartNoteKnown => t('dayStartNoteKnown');
+  String get dayStartChangeKnown => t('dayStartChangeKnown');
   String hourOfDay(int hour) => f('hourOfDay', [hour]);
   String get cardEffects => t('cardEffects');
   String get cardEffectsNote => t('cardEffectsNote');
