@@ -4,14 +4,15 @@ import '../config/config.dart';
 import 'card_stats.dart';
 
 /// How a card's looks are spaced: a due review or a new card of today's
-/// set, or a card picked for a batch of 30.
-enum StepKind { review, newCard, batch }
+/// set, a card picked for a batch of 30, or a weak side in a 苦手 drill.
+enum StepKind { review, newCard, batch, weak }
 
 /// What one card still needs, Anki-style but counted in looks: [base]
 /// correct looks, and after any miss [TodaySetTuning.relearnLooks] correct
-/// in a row. Once settled, later looks change nothing.
+/// in a row (a weak side: [base] in a row, whatever came before), and no more
+/// than [maxLooks] looks when given. Once settled, later looks change nothing.
 class CardSteps {
-  CardSteps(this.kind, this.base);
+  CardSteps(this.kind, this.base, {this.maxLooks});
 
   /// A card of today's set: a due review or a new card.
   factory CardSteps.forSet(StepKind kind) =>
@@ -19,11 +20,12 @@ class CardSteps {
 
   final StepKind kind;
   final int base;
+  final int? maxLooks;
   int looks = 0, correct = 0, streak = 0;
   bool missed = false;
   bool done = false;
 
-  CardSteps copy() => CardSteps(kind, base)
+  CardSteps copy() => CardSteps(kind, base, maxLooks: maxLooks)
     ..looks = looks
     ..correct = correct
     ..streak = streak
@@ -31,10 +33,15 @@ class CardSteps {
     ..done = done;
 
   /// Correct answers in a row that settle the card.
-  int get need => missed ? TodaySetTuning.relearnLooks : base;
+  int get need => missed && kind != StepKind.weak ? TodaySetTuning.relearnLooks : base;
 
   /// Looks still to come if every answer is right.
-  int get remaining => done ? 0 : math.max(0, math.max(base - correct, need - streak));
+  int get remaining {
+    if (done) return 0;
+    final left = math.max(0, math.max(base - correct, need - streak));
+    final cap = maxLooks;
+    return cap == null ? left : math.min(left, cap - looks);
+  }
 
   /// Every look the card takes, those to come included.
   int get total => looks + remaining;
@@ -57,15 +64,16 @@ class CardSteps {
       correct++;
       streak++;
     }
-    done = correct >= base && streak >= need;
+    done = (correct >= base && streak >= need) || (maxLooks != null && looks >= maxLooks!);
   }
 
   /// Cards shown before the card comes back after its latest look.
   int gapAfter({required bool miss}) {
     int step(List<int> gaps, int i) => gaps[i.clamp(0, gaps.length - 1)];
-    if (miss) return TodaySetTuning.relearnGaps.first;
-    if (missed) return step(TodaySetTuning.relearnGaps, streak);
     return switch (kind) {
+      StepKind.weak => step(WeakTuning.gaps, miss ? 0 : streak),
+      _ when miss => TodaySetTuning.relearnGaps.first,
+      _ when missed => step(TodaySetTuning.relearnGaps, streak),
       StepKind.newCard => step(TodaySetTuning.newGaps, correct - 1),
       StepKind.review => step(TodaySetTuning.reviewGaps, correct - 1),
       StepKind.batch => TodaySetTuning.batchGap,
@@ -96,6 +104,7 @@ class StepPlan {
     required this.knownBefore,
     required this.twinsOf,
     this.seed = 0,
+    this.fillGaps = false,
   });
 
   /// Today's set: [start] holds each card not settled yet. Cards looked at
@@ -155,6 +164,51 @@ class StepPlan {
     );
   }
 
+  /// 苦手: each of [targets] needs [WeakTuning.clearLooks] fast answers in a
+  /// row, at most [WeakTuning.maxLooks] looks (the caller counts a slow
+  /// answer as a miss). The drill opens with a quick card from [anchors],
+  /// puts each target's look-alike from [lookAlikes] right after it, and
+  /// another quick card after every [WeakTuning.anchorEvery] targets; each
+  /// of those needs one look. [fillers] are shown rather than a weak side
+  /// coming back before its gap.
+  factory StepPlan.forWeak({
+    required List<ItemKey> targets,
+    required Map<ItemKey, ItemKey> lookAlikes,
+    required List<ItemKey> anchors,
+    required List<ItemKey> fillers,
+    required Set<int> knownBefore,
+    required Iterable<int> Function(int poemId) twinsOf,
+    int seed = 0,
+  }) {
+    final order = <ItemKey>[];
+    final quick = anchors.iterator;
+    void add(ItemKey? k) {
+      if (k != null && !order.contains(k) && !targets.contains(k)) order.add(k);
+    }
+
+    void anchor() => add(quick.moveNext() ? quick.current : null);
+    anchor();
+    for (final (i, t) in targets.indexed) {
+      order.add(t);
+      add(lookAlikes[t]);
+      if ((i + 1) % WeakTuning.anchorEvery == 0) anchor();
+    }
+    return StepPlan(
+      start: {
+        for (final k in order)
+          k: targets.contains(k)
+              ? CardSteps(StepKind.weak, WeakTuning.clearLooks, maxLooks: WeakTuning.maxLooks)
+              : CardSteps(StepKind.batch, 1),
+      },
+      order: order,
+      fillers: fillers,
+      knownBefore: knownBefore,
+      twinsOf: twinsOf,
+      seed: seed,
+      fillGaps: true,
+    );
+  }
+
   /// Each card's state as the run starts.
   final Map<ItemKey, CardSteps> start;
 
@@ -169,6 +223,10 @@ class StepPlan {
   final Set<int> knownBefore;
   final Iterable<int> Function(int poemId) twinsOf;
   final int seed;
+
+  /// A filler waits in between rather than a card coming back early, and
+  /// each filler is shown once.
+  final bool fillGaps;
 
   /// The cards of the run, in order, before its first swipe.
   List<ItemKey> get cards => upcoming(const []);
@@ -255,10 +313,14 @@ class StepPlan {
       }
       return (first, false);
     }
+    final others = [
+      for (final k in fillers)
+        if (k != last && !(fillGaps && (live[k]?.started ?? false))) k,
+    ];
     final early = earliest(ready: false);
-    if (early != null) return (early, false);
-    if (last == null || (live[last]?.steps.remaining ?? 0) == 0) return null;
-    final others = [for (final k in fillers) if (k != last) k];
-    return others.isEmpty ? (last, false) : (others[(seed + pos) % others.length], true);
+    if (early != null && (!fillGaps || others.isEmpty)) return (early, false);
+    if (early == null && (last == null || (live[last]?.steps.remaining ?? 0) == 0)) return null;
+    if (others.isNotEmpty) return (others[(seed + pos) % others.length], true);
+    return (last!, false);
   }
 }

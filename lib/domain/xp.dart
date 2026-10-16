@@ -37,6 +37,9 @@ enum XpSource {
 
   /// A try at the graduation exam.
   exam,
+
+  /// 苦手: weak sides cleared in the drill.
+  weakCleared,
 }
 
 /// One swipe of a recorded run, as experience sees it.
@@ -83,6 +86,8 @@ class XpRun {
     this.ranked = false,
     this.placement = false,
     this.exam = false,
+    this.weak = false,
+    this.weakCleared = 0,
   });
 
   final int runId;
@@ -122,6 +127,11 @@ class XpRun {
 
   /// A try at the graduation exam.
   final bool exam;
+
+  /// A 苦手 drill (no personal best: its cards differ run to run), and the
+  /// weak sides it cleared.
+  final bool weak;
+  final int weakCleared;
 }
 
 /// One line of a run's experience: [count] things (cards, streak days,
@@ -298,8 +308,8 @@ class XpLedger {
 
     final total = run.total;
     final previous = _best[run.setup];
-    final best = total != null && previous != null && total < previous;
-    if (total != null && (previous == null || total < previous)) _best[run.setup] = total;
+    final best = !run.weak && total != null && previous != null && total < previous;
+    if (!run.weak && total != null && (previous == null || total < previous)) _best[run.setup] = total;
 
     final streakDays = (_streak - 1).clamp(0, XpTuning.streakCapDays);
     return XpAward([
@@ -316,6 +326,7 @@ class XpLedger {
         XpPart(XpSource.dayDone, 1, run.dayDone ? XpTuning.dayDone : 0),
         XpPart(XpSource.daily, _streak, firstToday ? XpTuning.daily + streakDays * XpTuning.perStreakDay : 0),
         XpPart(XpSource.best, 1, best ? XpTuning.personalBest : 0),
+        XpPart(XpSource.weakCleared, run.weakCleared, run.weakCleared * XpTuning.weakCleared),
         XpPart(XpSource.island, run.islands, run.islands * XpTuning.perIsland),
         XpPart(XpSource.graduation, 1, run.graduated ? XpTuning.graduation : 0),
       ])

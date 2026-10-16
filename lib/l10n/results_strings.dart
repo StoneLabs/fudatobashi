@@ -20,6 +20,19 @@ extension ResultsStrings on S {
 
   String get avgPerCardLabel => t('avgPerCardLabel');
   String knownOf(int known, int total) => f('knownOf', [known, total]);
+
+  String get weakClearedLabel => t('weakClearedLabel');
+  String get weakClearedNote => t('weakClearedNote');
+  String get weakLeftLabel => t('weakLeftLabel');
+  String weakLeftWas(int before) => f('weakLeftWas', [before]);
+  String get weakClearedHeading => t('weakClearedHeading');
+  String get weakClearedShelf => t('weakClearedShelf');
+  String weakClearedShelfNote(String seconds) => f('weakClearedShelfNote', [seconds]);
+  String get weakStillHeading => t('weakStillHeading');
+  String get weakStillShelf => t('weakStillShelf');
+  String get weakStillShelfNote => t('weakStillShelfNote');
+  String weakFirstLook(String seconds) => f('weakFirstLook', [seconds]);
+  String get weakFirstMiss => t('weakFirstMiss');
   String get knownSpeedNote => t('knownSpeedNote');
 
   String get newCardShout => t('newCardShout');
@@ -87,6 +100,7 @@ extension ResultsStrings on S {
         XpSource.ranked => t('xpSourceRanked'),
         XpSource.placement => t('xpSourcePlacement'),
         XpSource.exam => t('xpSourceExam'),
+        XpSource.weakCleared => t('xpSourceWeakCleared'),
       };
 
   /// The count beside an XP line, or null where it says nothing.

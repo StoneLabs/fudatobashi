@@ -6,7 +6,7 @@ enum PlayMode {
   /// 始める: free practice, a deck once through (tracked).
   free,
 
-  /// 苦手: the slowest / shakiest cards (tracked).
+  /// 苦手: a drill of the weak sides, missed lately or slow (tracked).
   nigate,
 
   /// 修行: spaced-repetition training (tracked).
@@ -30,6 +30,8 @@ class PlayConfig {
     this.setIds = const ['all'],
     this.cardIds,
     this.maskLevel = 0,
+    this.goalMs,
+    this.targets = const [],
   });
 
   /// Free practice's default deck: every card the player knows, whatever that
@@ -48,6 +50,13 @@ class PlayConfig {
   /// 隠し字 level (0 = off).
   final int maskLevel;
 
+  /// The run's own goal time per card, in place of the trainer's (苦手: the
+  /// line an answer must beat).
+  final int? goalMs;
+
+  /// 苦手: the weak sides the drill works on (`ItemKey.id`s).
+  final List<int> targets;
+
   bool get tracked => mode != PlayMode.guest;
 
   /// Free practice's default deck: every known card.
@@ -56,12 +65,17 @@ class PlayConfig {
   /// Whether the run feeds FSRS and the training statistics: 修行, ランク戦,
   /// 苦手, or free practice left at its default (every known card, no 隠し字).
   /// Any other free-play deck, and the exam, are stored for History and
-  /// display only.
+  /// display only. 苦手 grades only its misses (see [gradesCorrect]).
   bool get countsForSrs => switch (mode) {
         PlayMode.training || PlayMode.ranked || PlayMode.nigate => true,
         PlayMode.free => isKnownDeck && maskLevel == 0,
         PlayMode.guest || PlayMode.exam => false,
       };
+
+  /// A correct answer may be an FSRS review (when due). Not in 苦手: like
+  /// 修行's extra cards, its correct answers are short-term recall, which
+  /// would stretch the intervals; only a miss is graded.
+  bool get gradesCorrect => mode != PlayMode.nigate;
 
   /// All 100 cards against the clock, misses adding time (see
   /// `RankedScore`).
@@ -70,13 +84,22 @@ class PlayConfig {
   /// Runs with the same key count as "the same operation" in history.
   String get historyKey => jsonEncode([mode.index, [...setIds]..sort(), if (cardIds != null) [...cardIds!]..sort(), maskLevel]);
 
-  Map<String, Object?> toJson() => {'mode': mode.name, 'setIds': setIds, 'cardIds': cardIds, 'maskLevel': maskLevel};
+  Map<String, Object?> toJson() => {
+        'mode': mode.name,
+        'setIds': setIds,
+        'cardIds': cardIds,
+        'maskLevel': maskLevel,
+        if (goalMs != null) 'goalMs': goalMs,
+        if (targets.isNotEmpty) 'targets': targets,
+      };
 
   factory PlayConfig.fromJson(Map<String, dynamic> j) => PlayConfig(
         mode: PlayMode.values.byName(j['mode'] as String),
         setIds: (j['setIds'] as List).cast<String>(),
         cardIds: (j['cardIds'] as List?)?.cast<int>(),
         maskLevel: j['maskLevel'] as int? ?? 0,
+        goalMs: j['goalMs'] as int?,
+        targets: (j['targets'] as List?)?.cast<int>() ?? const [],
       );
 }
 

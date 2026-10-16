@@ -26,7 +26,7 @@ class KnownHome extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final slow = ProgressScope.of(context).slowCount;
+    final slow = ProgressScope.of(context).weakCards.cards;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [

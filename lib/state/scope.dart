@@ -10,13 +10,7 @@ class ProgressScope extends InheritedNotifier<Progress> {
   static Progress of(BuildContext context) =>
       context.dependOnInheritedWidgetOfExactType<ProgressScope>()!.notifier!;
 
-  /// Null outside the app's data (the recovery screen).
-  static Progress? maybeOf(BuildContext context) =>
-      context.dependOnInheritedWidgetOfExactType<ProgressScope>()?.notifier;
-
   /// Reads without subscribing to changes.
   static Progress read(BuildContext context) =>
       context.getInheritedWidgetOfExactType<ProgressScope>()!.notifier!;
-
-  static Progress? maybeRead(BuildContext context) => context.getInheritedWidgetOfExactType<ProgressScope>()?.notifier;
 }

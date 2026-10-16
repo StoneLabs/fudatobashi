@@ -3,6 +3,7 @@ import '../domain/ankiren_level.dart';
 import '../domain/ankiren_xp.dart';
 import '../domain/card_stats.dart';
 import '../domain/side_trips.dart';
+import '../domain/weak_cards.dart';
 import '../domain/xp.dart';
 import 'play_config.dart';
 import 'progress.dart';
@@ -86,5 +87,16 @@ abstract final class XpHistory {
         ranked: r.mode == PlayMode.ranked,
         placement: progress.isPlacement(r),
         exam: r.mode == PlayMode.exam,
+        weak: r.mode == PlayMode.nigate,
+        weakCleared: r.mode == PlayMode.nigate ? _cleared(attempts, r.goalMs.toDouble()) : 0,
       );
+
+  /// The sides a 苦手 drill cleared: its last looks fast under [lineMs].
+  static int _cleared(List<(ItemKey, AttemptRec)> attempts, double lineMs) {
+    final looks = <ItemKey, List<bool>>{};
+    for (final (k, a) in attempts) {
+      (looks[k] ??= []).add(WeakCards.fast(miss: a.miss, clean: a.clean, us: a.us, lineMs: lineMs));
+    }
+    return looks.values.where(WeakCards.cleared).length;
+  }
 }

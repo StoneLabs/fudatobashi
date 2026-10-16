@@ -2173,6 +2173,9 @@ abstract final class ResultsLayout {
   static const double splashLabelTracking = 0.2;
   static const double splashTimeFont = 48;
   static const double splashTimeOutline = 11;
+
+  /// 苦手's splash: the cleared count instead of the time.
+  static const EdgeInsets clearedPadding = EdgeInsets.symmetric(horizontal: 14, vertical: 18);
   static const double splashPartialFont = 28;
   static const double splashSumFont = 13;
   static const EdgeInsets splashSumPadding = EdgeInsets.fromLTRB(9, 3, 9, 4);
@@ -5952,27 +5955,4 @@ abstract final class RankLockLayout {
   /// Room left above the card for Tobi.
   static const double tobiRoom = 56;
   static const double noteFont = 13.5;
-}
-
-/// The plain message sheet about the data (`showDataProblem`: a backup that
-/// can't be restored or saved).
-abstract final class DataSheetLayout {
-  static const EdgeInsets padding = EdgeInsets.fromLTRB(19, 22, 19, 19);
-  static const double title = 22;
-  static const double body = 14;
-  static const double lineHeight = 1.4;
-  static const double gap = 14;
-  static const Color barrier = DayStartPickerLayout.barrier;
-}
-
-/// The recovery screen (`RecoveryScreen`): shown when the data won't open.
-abstract final class RecoveryLayout {
-  static const Size tobi = Size(84, 100);
-  static const double bodyFont = 14;
-  static const double bodyLineHeight = 1.45;
-  static const double errorFont = 11.5;
-  static const double errorLineHeight = 1.35;
-  static const EdgeInsets errorPadding = EdgeInsets.all(10);
-  static const double errorMaxHeight = 180;
-  static const String errorFamily = 'monospace';
 }

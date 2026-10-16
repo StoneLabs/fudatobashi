@@ -71,15 +71,17 @@ Future<void> startCardsPlay(BuildContext context, List<int> poemIds) async {
   await _push(context, progress.freeDeck(run), run);
 }
 
-/// 苦手: the slowest and shakiest cards.
+/// 苦手: a drill of the weak cards, missed lately or slow (see
+/// `Progress.weakDrill`).
 Future<void> startNigate(BuildContext context) async {
-  const run = PlayConfig(mode: PlayMode.nigate);
-  final deck = ProgressScope.read(context).nigateDeck(run);
-  if (deck.isEmpty) {
-    MangaToast.show(context, S.of(context).nigateEmpty);
+  final progress = ProgressScope.read(context);
+  final drill = progress.weakDrill();
+  if (drill.cards.isEmpty) {
+    final s = S.of(context);
+    MangaToast.show(context, progress.allStats.values.any((st) => st.seen) ? s.nigateNone : s.nigateEmpty);
     return;
   }
-  await _push(context, deck, run);
+  await _push(context, drill.cards, drill.config, planner: drill.planner);
 }
 
 /// ランク戦 (all-known mode): asks first, since leaving early is a
@@ -128,17 +130,18 @@ Future<void> _push(BuildContext context, List<CardRef> cards, PlayConfig config,
   ));
 }
 
-/// Results' "Keep going": training plans the next round, other modes
-/// reshuffle the same deck. Replaces Results in place, so the stack never
+/// Results' "Keep going": training plans the next round, 苦手 the next
+/// drill, other modes reshuffle the same deck. Replaces Results in place, so the stack never
 /// grows past Home → Play (this is the only caller that isn't a start*
 /// entry point above).
 Future<void> keepGoing(BuildContext context, PlayConfig config) async {
   if (config.mode == PlayMode.ranked) return startRanked(context, replace: true);
   final progress = ProgressScope.read(context);
   final planned = config.mode == PlayMode.training ? await progress.planTraining() : null;
+  final drill = config.mode == PlayMode.nigate ? progress.weakDrill() : null;
   final cards = switch (config.mode) {
     PlayMode.training => planned!.cards,
-    PlayMode.nigate => progress.nigateDeck(config),
+    PlayMode.nigate => drill!.cards,
     PlayMode.free || PlayMode.guest => progress.freeDeck(config),
     PlayMode.ranked || PlayMode.exam => const <CardRef>[],
   };
@@ -149,8 +152,11 @@ Future<void> keepGoing(BuildContext context, PlayConfig config) async {
   }
   Navigator.of(context).pushReplacement(MangaRoute<void>(
     transition: MangaTransition.zoom,
-    builder: (_) =>
-        PlayScreen(cards: cards, config: config, newPoems: planned?.newPoems ?? const {}, planner: planned?.planner),
+    builder: (_) => PlayScreen(
+        cards: cards,
+        config: drill?.config ?? config,
+        newPoems: planned?.newPoems ?? const {},
+        planner: planned?.planner ?? drill?.planner),
   ));
 }
 

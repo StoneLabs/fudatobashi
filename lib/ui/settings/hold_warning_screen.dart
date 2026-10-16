@@ -9,7 +9,6 @@ import 'package:flutter/services.dart';
 import '../../config/config.dart';
 import '../../config/design.dart';
 import '../../config/vector_art.dart';
-import '../../l10n/data_strings.dart';
 import '../../l10n/settings_strings.dart';
 import '../../l10n/strings.dart';
 import '../../state/scope.dart';
@@ -50,26 +49,6 @@ class HoldWarningScreen extends StatefulWidget {
           icon: IconArt.refresh,
         );
 
-  /// Before a backup replaces the current data.
-  HoldWarningScreen.restore(S s, {Key? key})
-      : this(
-          key: key,
-          headline: s.restoreWarningTitle,
-          body: s.restoreWarningBody,
-          holdLabel: s.restoreWarningHold(HoldWarningTuning.holdDuration.inSeconds),
-          icon: IconArt.refresh,
-        );
-
-  /// Before the recovery screen's Start fresh sets the data file aside.
-  HoldWarningScreen.startFresh(S s, {Key? key})
-      : this(
-          key: key,
-          headline: s.startFreshWarningTitle,
-          body: s.startFreshWarningBody,
-          holdLabel: s.startFreshWarningHold(HoldWarningTuning.holdDuration.inSeconds),
-          icon: IconArt.refresh,
-        );
-
   /// What can't be undone, on an ink slab under 警告!!.
   final String headline;
   final String body;
@@ -85,7 +64,7 @@ class HoldWarningScreen extends StatefulWidget {
 class _HoldWarningScreenState extends State<HoldWarningScreen> {
   /// How far the hold has armed it, 0–1.
   final _armed = ValueNotifier<double>(0);
-  late final bool _haptics = ProgressScope.maybeRead(context)?.settings.haptics ?? DefaultSettings.haptics;
+  late final bool _haptics = ProgressScope.read(context).settings.haptics;
 
   @override
   void initState() {

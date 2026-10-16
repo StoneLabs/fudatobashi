@@ -92,10 +92,11 @@ class AttemptRec {
   /// an impossible one would poison the EWMA and, through it, the rating).
   bool get timed => clean && !miss && validTime;
 
-  /// Only attempts of a run that counts (`PlayConfig.countsForSrs`: 修行, or
-  /// free practice at its default) feed FSRS and speed statistics; other free
-  /// play and 苦手 runs are stored and shown to the player but never affect
-  /// scheduling, unlocks or rating. Defaults to "a 修行 attempt".
+  /// Only attempts of a run that counts (`PlayConfig.countsForSrs`: 修行,
+  /// ランク戦, 苦手, or free practice at its default) feed FSRS and speed
+  /// statistics; other free play and the exam are stored and shown to the
+  /// player but never affect scheduling, unlocks or rating. Defaults to "a
+  /// 修行 attempt".
   final bool countsForSrs;
 }
 

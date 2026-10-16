@@ -23,6 +23,7 @@ import '../domain/step_plan.dart';
 import '../domain/tab_locks.dart';
 import '../domain/today_set.dart';
 import '../domain/trainer.dart';
+import '../domain/weak_cards.dart';
 import '../domain/xp.dart';
 import 'db_integrity.dart';
 import 'play_config.dart';
@@ -51,6 +52,8 @@ class SessionReport {
     this.mode = PlayMode.free,
     this.score,
     this.tobi,
+    this.weakBefore,
+    this.weakAfter,
   });
 
   final int? runId;
@@ -62,6 +65,9 @@ class SessionReport {
 
   /// Tobi's time in an exam try.
   final Duration? tobi;
+
+  /// 苦手: cards with a weak side before and after the drill.
+  final int? weakBefore, weakAfter;
 
   /// A ranked run left before its last card.
   bool get forfeit => mode == PlayMode.ranked && !completed;
@@ -104,7 +110,9 @@ class SessionReport {
   /// This run finished today's set (journey mode).
   final DayDone? dayDone;
 
-  bool get personalBest => total != null && (previousBest == null || total! < previousBest!);
+  /// 苦手 drills differ run to run, so they have none.
+  bool get personalBest =>
+      mode != PlayMode.nigate && total != null && (previousBest == null || total! < previousBest!);
 }
 
 /// Today's set as the run that finished it saw it.
@@ -374,9 +382,10 @@ class Progress extends ChangeNotifier {
   // ---------------------------------------------------------------- reads
 
   /// Training view of a card's statistics: the one the trainer's scheduler,
-  /// FSRS unlocking and the displayed rating are built from. Only runs that
-  /// count (修行, and free practice at its default) feed it; customised free
-  /// play and 苦手 never do (see [AttemptRec.countsForSrs]).
+  /// FSRS unlocking, 苦手 and the displayed rating are built from. Only runs
+  /// that count (修行, ランク戦, 苦手, and free practice at its default) feed
+  /// it; customised free play and the exam never do (see
+  /// [PlayConfig.countsForSrs]).
   CardStats stats(ItemKey k) =>
       _statsCache[k] ??= CardStats([for (final a in _log[k] ?? const []) if (a.countsForSrs) a]);
 
@@ -436,11 +445,8 @@ class Progress extends ChangeNotifier {
   /// Unlocked items never played yet.
   int get freshCount => trainer.unlocked.where((s) => !stats(s.key).seen).length;
 
-  /// Played items still slower than the current goal (misses count as slow).
-  int get slowCount => trainer.unlocked.where((s) {
-        final st = stats(s.key);
-        return st.seen && st.expectedMs() > trainer.goalMs;
-      }).length;
+  /// 苦手's weak sides (Home's 苦手 badge counts their cards).
+  WeakCards get weakCards => WeakCards.of(allStats);
 
   /// Average (training-only) EWMA response time over unlocked upright items,
   /// as of [asOf]. Early on, only a handful of cards are unlocked, so rank and
@@ -791,13 +797,62 @@ class Progress extends ChangeNotifier {
     return [for (final id in ids) _ref(id, inverted(id), c.maskLevel, random)];
   }
 
-  /// 苦手: the cards with the worst expected time (misses count as slow).
-  List<CardRef> nigateDeck(PlayConfig c, {math.Random? rng}) {
-    rng ??= math.Random();
-    final seen = [for (final k in trainer.items.keys) if (stats(k).seen) k]
-      ..sort((a, b) => stats(b).expectedMs().compareTo(stats(a).expectedMs()));
-    final keys = seen.take(settings.nigateCount).toList()..shuffle(rng);
-    return [for (final k in keys) _ref(k.poemId, k.inverted, c.maskLevel, rng)];
+  /// 苦手: a drill of the [WeakTuning.targets] worst weak sides, each with a
+  /// look-alike the player has played (a 友札 the same way up, else its other
+  /// side) and quick cards in between (see [StepPlan.forWeak]). A slow answer
+  /// on a weak side counts as a miss in the plan. Empty with no weak side.
+  ({List<CardRef> cards, PlayConfig config, RunPlanner planner}) weakDrill({math.Random? rng}) {
+    final random = rng ?? math.Random();
+    final weak = weakCards;
+    final targets = weak.sides.take(WeakTuning.targets).toList()..shuffle(random);
+    final played = {for (final e in allStats.entries) if (e.value.seen) e.key};
+    final taken = {...targets};
+    final lookAlikes = <ItemKey, ItemKey>{};
+    for (final t in targets) {
+      final twins = [
+        for (final id in fudaSets.tomofuda(t.poemId))
+          if (played.contains(ItemKey(id, t.inverted)) && !taken.contains(ItemKey(id, t.inverted))) ItemKey(id, t.inverted),
+      ];
+      final like = twins.isNotEmpty ? twins[random.nextInt(twins.length)] : t.flipped;
+      if (!played.contains(like) || taken.contains(like)) continue;
+      lookAlikes[t] = like;
+      taken.add(like);
+    }
+    final quick = [for (final k in weak.quick) if (!taken.contains(k)) k]..shuffle(random);
+    final anchors = quick.take(targets.length ~/ WeakTuning.anchorEvery + 1).toList();
+    final plan = StepPlan.forWeak(
+      targets: targets,
+      lookAlikes: lookAlikes,
+      anchors: anchors,
+      fillers: quick.skip(anchors.length).take(WeakTuning.fillers).toList(),
+      knownBefore: {for (final p in poems.all) if (knows(p.id)) p.id},
+      twinsOf: fudaSets.tomofuda,
+      seed: random.nextInt(1 << 30),
+    );
+    final config = PlayConfig(
+      mode: PlayMode.nigate,
+      goalMs: weak.lineMs.round(),
+      targets: [for (final t in targets) t.id],
+    );
+    final refs = <ItemKey, CardRef>{};
+    CardRef ref(ItemKey k) => refs[k] ??= CardRef(k.poemId, inverted: k.inverted);
+    ItemKey keyOf(CardRef c) => ItemKey(c.poemId, c.inverted);
+    final aims = {...targets};
+    bool again(Attempt a) =>
+        a.isMiss ||
+        (aims.contains(keyOf(a.card)) &&
+            !WeakCards.fast(miss: false, clean: !a.tainted, us: a.cardUs, lineMs: weak.lineMs));
+    List<CardRef> upTo(Iterable<ItemKey> keys, int swiped) =>
+        [for (final k in keys.take(math.max(0, WeakTuning.maxSwipes - swiped))) ref(k)];
+    return (
+      cards: targets.isEmpty ? const [] : upTo(plan.cards, 0),
+      config: config,
+      planner: (swipes, next) => upTo(
+            plan.upcoming([for (final a in swipes) (keyOf(a.card), again(a))],
+                next: next == null ? null : keyOf(next)),
+            swipes.length + (next == null ? 0 : 1),
+          ),
+    );
   }
 
   /// Readiness for new cards (journey mode).
@@ -1285,6 +1340,7 @@ class Progress extends ChangeNotifier {
       {DateTime? now, Duration? tobi, List<Duration>? tobiLine}) async {
     now ??= DateTime.now();
     final previousBest = bestFor(config);
+    final weakBefore = config.mode == PlayMode.nigate ? weakCards.cards : null;
     lastRun = run;
     await _journalSaved;
     if (!config.tracked || (run.attempts.isEmpty && config.mode != PlayMode.ranked)) {
@@ -1333,7 +1389,7 @@ class Progress extends ChangeNotifier {
             setIds: Value(jsonEncode(config.setIds)),
             cardIds: Value(config.cardIds == null ? null : jsonEncode(config.cardIds)),
             maskLevel: Value(config.maskLevel),
-            goalMs: trainer.goalMs.round(),
+            goalMs: config.goalMs ?? trainer.goalMs.round(),
             planned: run.cards.length,
             completed: run.finished,
             clockUs: Value(clock > Duration.zero ? clock.inMicroseconds : null),
@@ -1363,8 +1419,9 @@ class Progress extends ChangeNotifier {
           undone: undone,
         );
         final recall = item.reviewed ? trainer.retrievability(key, a.at) : null;
-        // Only a run that counts feeds FSRS; see `PlayConfig.countsForSrs`.
-        final grade = !rec.countsForSrs
+        // Only a run that counts feeds FSRS; see `PlayConfig.countsForSrs`
+        // and `PlayConfig.gradesCorrect`.
+        final grade = !rec.countsForSrs || (!config.gradesCorrect && !rec.miss)
             ? null
             : journey
                 ? _reviewByDay(key, rec)
@@ -1445,6 +1502,8 @@ class Progress extends ChangeNotifier {
       mode: config.mode,
       score: score,
       tobi: tobi,
+      weakBefore: weakBefore,
+      weakAfter: weakBefore == null ? null : weakCards.cards,
     );
   }
 

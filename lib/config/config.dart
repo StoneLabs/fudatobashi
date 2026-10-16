@@ -354,6 +354,39 @@ abstract final class FreePracticeTuning {
 }
 
 /// When the side trips (寄り道, `SideTripUnlocks`) open in journey mode: once
+/// 苦手 (`WeakCards`, `StepPlan.forWeak`): which card sides are weak, and the
+/// drill that works on them. A side is weak when it was missed lately or its
+/// expected time is over [lineRatio] × the player's usual card time (the
+/// median of every played side's), so a player who knows every card still
+/// has weak ones: the slow ones.
+abstract final class WeakTuning {
+  static const double lineRatio = 1.25;
+
+  /// A miss among a side's latest this many attempts makes it weak.
+  static const int recentMissLooks = 3;
+
+  /// Weak sides a drill works on, worst first.
+  static const int targets = 8;
+
+  /// Answers in a row under the line that clear a weak side, and the most
+  /// looks it gets in one drill before it is left for the next one.
+  static const int clearLooks = 2;
+  static const int maxLooks = 4;
+
+  /// Cards shown before a weak side comes back: after a miss or a slow
+  /// answer, then after each fast one in a row (the last repeats).
+  static const List<int> gaps = [3, 6];
+
+  /// One quick card the player already does well comes after every this
+  /// many weak sides, and [fillers] of them wait in between when every weak
+  /// side left still has to wait its gap.
+  static const int anchorEvery = 2;
+  static const int fillers = 12;
+
+  /// A drill ends after this many swipes at most.
+  static const int maxSwipes = 40;
+}
+
 /// this many cards are well remembered at once, free practice's counter;
 /// from then on they stay open for good. All-known mode opens them all.
 abstract final class SideTripTuning {
@@ -703,6 +736,9 @@ abstract final class XpTuning {
   /// Passing the graduation exam, the end of the journey.
   static const int graduation = 100000;
 
+
+  /// A weak side cleared in a 苦手 drill (it has no personal best).
+  static const int weakCleared = 15;
   /// A ranked run played to its last card, and on top of it the first one,
   /// which places the player on the ladder.
   static const int ranked = 500;
@@ -764,9 +800,6 @@ abstract final class DefaultSettings {
   static const bool effectSounds = true;
   static const bool showRunningTimer = false;
   static const FreePracticeSetup freePractice = FreePracticeSetup();
-
-  /// 苦手 deck size: how many of the slowest/shakiest cards it draws from.
-  static const int nigateCount = 10;
   static const MaskStyle maskStyle = MaskStyle.scramble;
   static const bool debugMode = false;
   static const bool onboarded = false;
@@ -858,47 +891,6 @@ class LearnerProfile {
   /// S × ([SyntheticLearnerTuning.massedGrowth] + recallGrowth ×
   /// (e^([SyntheticLearnerTuning.spacingGrowth] × (1 − R)) − 1)), so a recall
   /// after a long gap does far more than one minutes later.
-/// The data file on disk (`DataStore`): its backups, the copies the app
-/// makes of it on its own, and how long opening it may take at start.
-abstract final class DataFileTuning {
-  /// The database is `<name>.sqlite` in the app's documents folder.
-  static const String databaseName = 'fudatobashi';
-  static const String extension = '.sqlite';
-
-  /// A backup's default file name is this, then `yyMMdd-HHmm` local time.
-  static const String exportPrefix = 'fudatobashi_backup_';
-
-  /// The app-private folder (in the app support folder) that holds the
-  /// automatic copies and the files set aside.
-  static const String backupsFolder = 'backups';
-
-  /// Automatic copies (before an update, before a restore) kept; older ones
-  /// are deleted. Files set aside after a failed start are never deleted.
-  static const int keptCopies = 5;
-
-  /// Opening and upgrading the data at start; longer counts as a failure.
-  static const Duration openTimeout = Duration(seconds: 45);
-
-  /// Letting go of data that failed to open; the file is moved on after it.
-  static const Duration closeTimeout = Duration(seconds: 5);
-
-  /// Developer mode's "Fail the next start" leaves this file in the app
-  /// support folder; the next start removes it and fails on purpose.
-  static const String failNextStartFile = 'fail_next_start';
-}
-
-/// The local crash log (`CrashLog`): uncaught errors, newest last. It never
-/// leaves the device.
-abstract final class CrashLogTuning {
-  static const String fileName = 'crash_log.txt';
-
-  /// The log is cut from the front to stay under this many characters.
-  static const int maxChars = 64 * 1024;
-
-  /// Lines of each error's stack trace kept.
-  static const int stackLines = 30;
-}
-
   final double recallGrowth;
 
   /// How differently single cards stick: the σ of a log-normal factor on

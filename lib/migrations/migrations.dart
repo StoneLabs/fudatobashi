@@ -19,20 +19,3 @@ Future<void> migrate(Migrator m, int from, int to) => m.database.transaction(() 
         await migrationSteps[version - 1](m);
       }
     });
-
-/// The schema version [migrationSteps] lead up to (`AppDatabase.schemaVersion`).
-int get latestSchemaVersion => migrationSteps.length + 1;
-
-/// The tables a database of each schema version has (a backup is checked
-/// against them before it is restored).
-const Map<int, Set<String>> schemaTables = {
-  1: {'sessions', 'attempts', 'items', 'rating_points', 'key_values'},
-  2: {
-    'sessions', 'attempts', 'items', 'rating_points', 'key_values',
-    'side_trip_runs', 'side_trip_answers', 'days', 'day_cards',
-  },
-  3: {
-    'runs', 'attempts', 'items', 'island_completions', 'key_values',
-    'side_trip_runs', 'side_trip_answers', 'days', 'day_cards',
-  },
-};

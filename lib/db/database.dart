@@ -43,7 +43,8 @@ class Runs extends Table {
   /// 隠し字 level (0 = off).
   IntColumn get maskLevel => integer().withDefault(const Constant(0))();
 
-  /// The goal time per card when it was played, ms.
+  /// The goal time per card when it was played, ms (苦手: the line its
+  /// answers had to beat).
   IntColumn get goalMs => integer()();
 
   /// Cards it was planned with (more than were swiped when it ended early).
@@ -289,11 +290,7 @@ class DayCards extends Table {
 @DriftDatabase(
     tables: [Runs, Attempts, Items, IslandCompletions, KeyValues, SideTripRuns, SideTripAnswers, Days, DayCards])
 class AppDatabase extends _$AppDatabase {
-  AppDatabase([QueryExecutor? executor, this.beforeUpgrade]) : super(executor ?? driftDatabase(name: 'fudatobashi'));
-
-  /// Runs before an upgrade from schema version `from`, while the database
-  /// is still as that version left it (the start's safety copy).
-  final Future<void> Function(AppDatabase db, int from)? beforeUpgrade;
+  AppDatabase([QueryExecutor? executor]) : super(executor ?? driftDatabase(name: 'fudatobashi'));
 
   /// Raised with each new upgrade step in `lib/migrations/` ([migrationSteps]).
   @override
@@ -302,20 +299,6 @@ class AppDatabase extends _$AppDatabase {
   @override
   MigrationStrategy get migration => MigrationStrategy(
         onCreate: (m) => m.createAll(),
-        onUpgrade: (m, from, to) async {
-          // A newer app's data would otherwise be stamped with this version.
-          if (from > to) throw NewerDatabaseException(from);
-          await beforeUpgrade?.call(this, from);
-          await migrate(m, from, to);
-        },
+        onUpgrade: migrate,
       );
-}
-
-/// The database was written by a newer version of the app.
-class NewerDatabaseException implements Exception {
-  const NewerDatabaseException(this.version);
-  final int version;
-
-  @override
-  String toString() => 'The database has schema version $version, newer than this app knows.';
 }

@@ -24,6 +24,7 @@ extension HomeStrings on S {
   String get freePlaySub => t('freePlaySub');
   String get nigateSub => t('nigateSub');
   String get nigateEmpty => t('nigateEmpty');
+  String get nigateNone => t('nigateNone');
   String get guestTitle => t('guestTitle');
   String get guestMode => t('guestMode');
   String get untrackedTag => t('untrackedTag');

@@ -7,9 +7,11 @@ import '../../config/config.dart';
 import '../../config/design.dart';
 import '../../config/vector_art.dart';
 import '../../data/poem.dart';
+import '../../domain/card_stats.dart';
 import '../../domain/play_session.dart';
 import '../../domain/ranked.dart';
 import '../../domain/rating.dart';
+import '../../domain/weak_cards.dart';
 import '../../l10n/free_strings.dart';
 import '../../l10n/history_strings.dart';
 import '../../l10n/ranked_strings.dart';
@@ -113,6 +115,12 @@ class _Splash extends StatelessWidget {
       for (final a in timed)
         if (!a.tainted && !a.isMiss) a,
     ]..sort((a, b) => b.cardUs.compareTo(a.cardUs));
+    final lineMs = config.mode == PlayMode.nigate ? config.goalMs?.toDouble() : null;
+    final drill = lineMs == null
+        ? null
+        : WeakCards.drill(attempts, {for (final id in config.targets) ItemKey.fromId(id)}, lineMs);
+    final cleared = [for (final d in drill ?? const <WeakSide>[]) if (d.cleared) d];
+    final still = [for (final d in drill ?? const <WeakSide>[]) if (!d.cleared) d];
 
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: Gaps.gutter),
@@ -144,6 +152,8 @@ class _Splash extends StatelessWidget {
             child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
               if (report.mode == PlayMode.ranked && report.score != null)
                 _RankedTimePanel(report.score!, forfeit: report.forfeit)
+              else if (drill != null)
+                _ClearedPanel(cleared: cleared.length, of: drill.length)
               else
                 _TimePanel(report: report),
               const SizedBox(height: Gaps.panel),
@@ -158,7 +168,16 @@ class _Splash extends StatelessWidget {
                     ),
                   ),
                   const SizedBox(width: Gaps.panel),
-                  Expanded(child: _RatingPanel(before: report.ratingBefore, after: report.ratingAfter)),
+                  Expanded(
+                    child: drill != null && report.weakAfter != null
+                        ? _StatPanel(
+                            label: s.weakLeftLabel,
+                            big: '${report.weakAfter}',
+                            unit: null,
+                            note: s.weakLeftWas(report.weakBefore ?? report.weakAfter!),
+                          )
+                        : _RatingPanel(before: report.ratingBefore, after: report.ratingAfter),
+                  ),
                 ]),
               ),
               if (report.newCards.isNotEmpty) ...[
@@ -170,7 +189,25 @@ class _Splash extends StatelessWidget {
                   cards: [for (final id in report.newCards) _NewCard(id)],
                 ),
               ],
-              if (toughest.isNotEmpty) ...[
+              if (cleared.isNotEmpty) ...[
+                const SizedBox(height: Gaps.panel),
+                _CardShelf(
+                  heading: s.weakClearedHeading,
+                  label: s.weakClearedShelf,
+                  note: s.weakClearedShelfNote(formatSeconds(lineMs!, 2)),
+                  cards: [for (final d in cleared) _WeakCard(d)],
+                ),
+              ],
+              if (still.isNotEmpty) ...[
+                const SizedBox(height: Gaps.panel),
+                _CardShelf(
+                  heading: s.weakStillHeading,
+                  label: s.weakStillShelf,
+                  note: s.weakStillShelfNote,
+                  cards: [for (final d in still) _WeakCard(d)],
+                ),
+              ],
+              if (drill == null && toughest.isNotEmpty) ...[
                 const SizedBox(height: Gaps.panel),
                 _CardShelf(
                   heading: s.toughestHeading,
@@ -377,6 +414,43 @@ class _RankedTimePanel extends StatelessWidget {
             ),
           ),
         ],
+      ]),
+    );
+  }
+}
+
+/// A 苦手 drill's splash: the weak sides it cleared, of those it worked on.
+class _ClearedPanel extends StatelessWidget {
+  const _ClearedPanel({required this.cleared, required this.of});
+  final int cleared, of;
+
+  @override
+  Widget build(BuildContext context) {
+    final s = S.of(context);
+    return MangaPanel(
+      shape: const PanelShape(bottomRight: Offset(0, ResultsLayout.splashCut)),
+      art: const [
+        RadialLayer(center: Backdrops.skyCenter, colors: Backdrops.skyColors, stops: Backdrops.skyStops),
+        BurstLayer(ResultsLayout.splashBurst),
+      ],
+      padding: ResultsLayout.clearedPadding,
+      child: Column(children: [
+        Text(s.weakClearedLabel.toUpperCase(),
+            style: const TextStyle(
+                fontWeight: Weights.black,
+                fontSize: ResultsLayout.splashLabelFont,
+                letterSpacing: ResultsLayout.splashLabelTracking * ResultsLayout.splashLabelFont)),
+        const SizedBox(height: Gaps.small),
+        FittedBox(
+          fit: BoxFit.scaleDown,
+          child: OutlinedText('$cleared / $of',
+              style: const TextStyle(fontFamily: Fonts.display, fontSize: ResultsLayout.splashTimeFont, height: 1),
+              outlineWidth: ResultsLayout.splashTimeOutline),
+        ),
+        const SizedBox(height: Gaps.small),
+        Text(s.weakClearedNote,
+            textAlign: TextAlign.center,
+            style: const TextStyle(fontWeight: Weights.bold, fontSize: ResultsLayout.statNoteFont)),
       ]),
     );
   }
@@ -645,6 +719,54 @@ class _NewCard extends StatelessWidget {
               style: const TextStyle(fontWeight: Weights.black, fontSize: ResultsLayout.toughKimarijiFont)),
         ]),
       );
+}
+
+/// A weak side of the drill: its best time, coloured by speed (× when it
+/// was never answered right), and how its first look went.
+class _WeakCard extends StatelessWidget {
+  const _WeakCard(this.side);
+  final WeakSide side;
+
+  @override
+  Widget build(BuildContext context) {
+    final s = S.of(context);
+    final best = side.bestMs;
+    final tier = best == null ? null : SpeedTiers.of(best);
+    final first = side.looks.first;
+    return SizedBox(
+      width: ResultsLayout.toughCardWidth,
+      child: Column(mainAxisSize: MainAxisSize.min, children: [
+        TorifudaCard(poem: poems[side.key.poemId], inverted: side.key.inverted),
+        const SizedBox(height: Gaps.tight),
+        DecoratedBox(
+          decoration: BoxDecoration(
+              color: tier == null ? Palette.paper : Palette.tiers[tier],
+              border: Border.all(color: Palette.ink, width: Strokes.control)),
+          child: Padding(
+            padding: ResultsLayout.toughTimePadding,
+            child: _OneLine(Text(
+              best == null ? '×' : '${formatSeconds(best, 3)}s',
+              softWrap: false,
+              maxLines: 1,
+              style: TextStyle(
+                  fontFamily: Fonts.display,
+                  fontSize: ResultsLayout.toughTimeFont,
+                  color: tier == null ? Palette.ink : Palette.tierText[tier],
+                  height: 1),
+            )),
+          ),
+        ),
+        const SizedBox(height: Gaps.tight),
+        Text(kimarijiFor(context, side.key.poemId),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: const TextStyle(fontWeight: Weights.black, fontSize: ResultsLayout.toughKimarijiFont)),
+        _OneLine(Text(first.miss ? s.weakFirstMiss : s.weakFirstLook(formatSeconds(first.ms, 2)),
+            maxLines: 1,
+            style: const TextStyle(fontWeight: Weights.bold, fontSize: ResultsLayout.toughNoteFont, color: Palette.inkSoft))),
+      ]),
+    );
+  }
 }
 
 class _ToughCard extends StatelessWidget {

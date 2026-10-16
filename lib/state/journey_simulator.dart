@@ -143,13 +143,11 @@ class JourneySimulator {
   Future<DateTime> rankedRound(DateTime start, {CardProgress? onCard}) =>
       _play(progress.rankedDeck(rng: rng), const PlayConfig(mode: PlayMode.ranked), start, onCard: onCard);
 
-  /// A 苦手 round of the slowest, shakiest cards from [start] (see
-  /// [Progress.nigateDeck]).
+  /// A 苦手 drill from [start] (see [Progress.weakDrill]).
   Future<DateTime> weakRound(DateTime start, {CardProgress? onCard}) async {
-    const config = PlayConfig(mode: PlayMode.nigate);
-    final deck = progress.nigateDeck(config, rng: rng);
-    if (deck.isEmpty) return start;
-    return _play(deck, config, start, onCard: onCard);
+    final drill = progress.weakDrill(rng: rng);
+    if (drill.cards.isEmpty) return start;
+    return _play(drill.cards, drill.config, start, planner: drill.planner, onCard: onCard);
   }
 
   /// A customised free-play round (all 100 cards, cut to [cards]): stored,

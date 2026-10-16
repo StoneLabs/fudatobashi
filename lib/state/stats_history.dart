@@ -6,6 +6,7 @@ import '../config/config.dart';
 import '../data/islands.dart';
 import '../domain/card_stats.dart';
 import '../domain/day_window.dart';
+import 'play_config.dart';
 import 'progress.dart';
 
 /// How well a card is remembered, from not started to mastered.
@@ -154,7 +155,7 @@ extension StatsHistory on Progress {
     final dayOfRun = {for (final r in runs) r.id: r.day};
     final goalOn = <int, double>{};
     for (final r in runs) {
-      goalOn[r.day] = r.goalMs.toDouble();
+      if (r.mode != PlayMode.nigate) goalOn[r.day] = r.goalMs.toDouble();
     }
     final numbers = [for (final d in days) DayWindow.numberOf(d)];
     var goal = trainer.goalMs;

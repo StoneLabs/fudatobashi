@@ -2,7 +2,6 @@ import 'dart:ui' show PlatformDispatcher;
 
 import 'package:flutter/widgets.dart';
 
-import '../config/config.dart';
 import '../data/poem.dart';
 import '../state/scope.dart';
 import '../state/settings.dart';
@@ -24,11 +23,9 @@ class S {
   /// The language in use, e.g. `'en'` or `'ja'`.
   final String code;
 
-  /// The language setting's, or the device's without the app's data (the
-  /// recovery screen).
   static S of(BuildContext context) => S(
         Localization.resolve(
-          ProgressScope.maybeOf(context)?.settings.language ?? DefaultSettings.language,
+          ProgressScope.of(context).settings.language,
           PlatformDispatcher.instance.locale.languageCode,
         ),
       );

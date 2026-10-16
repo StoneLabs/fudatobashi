@@ -635,7 +635,7 @@ void main() {
       final ids = [for (final isl in archipelago.islands) ...fudaSets['initial:${isl.name}'].poemIds];
       final cards = [
         for (final inverted in [false, true])
-          for (final id in ids.take(55)) CardRef(id, inverted: inverted),
+          for (final id in ids) CardRef(id, inverted: inverted),
       ];
       await tester.runAsync(() async {
         final session = PlaySession(cards);
@@ -648,7 +648,7 @@ void main() {
         }
         await p.recordRun(session, const PlayConfig(mode: PlayMode.training), DateTime.now());
       });
-      expect(p.slowCount, greaterThanOrEqualTo(100));
+      expect(p.weakCards.cards, 100);
       final size = Size(width, _phone.height);
       await tester.binding.setSurfaceSize(size);
       await tester.pumpWidget(RepaintBoundary(key: const ValueKey('screen'), child: FudatobashiApp(progress: p)));
