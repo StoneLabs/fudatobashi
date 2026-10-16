@@ -2112,6 +2112,8 @@ void main() {
     expect(find.byType(CreditsScreen), findsOneWidget);
     expect(find.text(s.creditsFonts), findsOneWidget);
     expect(find.text('Dela Gothic One'), findsOneWidget);
+    expect(find.text(s.creditsRulesBody), findsOneWidget, reason: 'the full rules in Help, with thanks');
+    expect(find.text(s.creditsGuideBody), findsOneWidget, reason: 'the karuta guide in Help, with thanks');
 
     // Opening a font's full license text exercises the asset-loading path
     // (assets/fonts/*.txt must be declared in pubspec.yaml to be reachable).
