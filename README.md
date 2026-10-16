@@ -8,7 +8,7 @@ A 札落とし trainer for competitive karuta with SRS.<br>
 Say the kimariji and flick the card away, as fast as you can.
 
 [![Latest release](https://img.shields.io/github/v/release/StoneLabs/fudatobashi)](https://github.com/StoneLabs/fudatobashi/releases/latest)
-![GitHub Actions Workflow Status](https://img.shields.io/github/actions/workflow/status/StoneLabs/fudatobashi/test.yml)
+[![CI](https://img.shields.io/github/actions/workflow/status/StoneLabs/fudatobashi/ci.yml?branch=main)](https://github.com/StoneLabs/fudatobashi/actions/workflows/ci.yml)
 [![License Unlicense](https://img.shields.io/badge/license-Unlicense-blue.svg)](LICENSE)
 ![GitHub Downloads (all assets, all releases)](https://img.shields.io/github/downloads/StoneLabs/fudatobashi/total)
 ![GitHub Repo stars](https://img.shields.io/github/stars/StoneLabs/fudatobashi?style=flat)
