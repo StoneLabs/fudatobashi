@@ -180,8 +180,15 @@ class DataStore extends ChangeNotifier {
   Future<void> restore(File backup) async {
     checkBackup(backup);
     final current = await _setCurrentAside();
-    await _place(backup);
-    final next = await _open(copyBeforeUpgrade: false);
+    DataState next;
+    try {
+      await _place(backup);
+      next = await _open(copyBeforeUpgrade: false);
+    } catch (e) {
+      next = DataFailed('$e');
+    }
+    // Only now: the backup may be the oldest copy in the folder.
+    folder.prune();
     if (next is DataFailed) {
       if (current != null) {
         await _place(current);
@@ -213,7 +220,6 @@ class DataStore extends ChangeNotifier {
       final copy = folder.newFile(CopyKind.restore);
       await _snapshot(progress.db, copy);
       await progress.db.close();
-      folder.prune();
       return copy;
     }
     return _moveAside();

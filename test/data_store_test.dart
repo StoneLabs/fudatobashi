@@ -187,6 +187,22 @@ void main() {
       expect(aside.existsSync(), isTrue, reason: 'files set aside are never pruned');
     });
 
+    test('the oldest copy in a full backups folder can be restored', () async {
+      await store.start();
+      await opened().updateSettings(opened().settings.copyWith(language: 'ja'));
+      await store.backUp();
+      final dir = store.paths.backups..createSync(recursive: true);
+      final oldest = File('${dir.path}/update_250101-120000.sqlite')..writeAsBytesSync(dialogs.saved.single.$2);
+      for (var day = 2; day <= DataFileTuning.keptCopies; day++) {
+        File('${dir.path}/update_2501${day.toString().padLeft(2, '0')}-120000.sqlite').writeAsStringSync('$day');
+      }
+      await opened().resetAllData();
+      await store.restore(oldest);
+      expect(store.state, isA<DataOpened>());
+      expect(opened().settings.language, 'ja');
+      expect(store.copies(), hasLength(DataFileTuning.keptCopies));
+    });
+
     test('data from a newer app fails to open instead of being stamped with this version', () async {
       sqliteFile('documents/fudatobashi.sqlite', version: 4, sql: ['CREATE TABLE runs (id INTEGER)']);
       await store.start();
