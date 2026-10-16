@@ -894,6 +894,9 @@ abstract final class HomeLayout {
   static const double streakGap = 4;
   static const EdgeInsets streakLabelPadding = EdgeInsets.fromLTRB(4, 1, 4, 1);
 
+  /// Above and below the streak box's lines, clear of its border.
+  static const double streakPadY = 6;
+
   static const double heroGap = 10;
   static const double heroCut = 22;
   static const double heroTitle = 68;
@@ -930,6 +933,10 @@ abstract final class HomeLayout {
 
   /// The space kept between a mode panel's lettering and its corner art.
   static const double modeCornerGap = 4;
+
+  /// The least room kept between a mode panel's corner art and its right
+  /// edge (border included).
+  static const double modeCornerInset = 7;
 
   /// The slim guest bar under the known-mode panels.
   static const double guestHeight = 40;

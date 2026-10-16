@@ -606,6 +606,52 @@ void main() {
     await show(tester, p, 'known_due_scaled_en');
   });
 
+  // A three-digit 苦手 count stayed at its two-digit spot and ran off the
+  // panel's right edge, and an unranked rating box left the streak box too
+  // short for its "1 swipe keeps it" line.
+  for (final (width, fontScale) in const [(384.0, 1.0), (360.0, 1.3)]) {
+    testWidgets('home, all known: a three-digit 苦手 count and the streak box fit ($width dp, font scale $fontScale)',
+        (tester) async {
+      tester.platformDispatcher.textScaleFactorTestValue = fontScale;
+      addTearDown(tester.platformDispatcher.clearTextScaleFactorTestValue);
+      final p = await open(tester, mode: LearningMode.allKnown);
+      final ids = [for (final isl in archipelago.islands) ...fudaSets['initial:${isl.name}'].poemIds];
+      final cards = [
+        for (final inverted in [false, true])
+          for (final id in ids.take(55)) CardRef(id, inverted: inverted),
+      ];
+      await tester.runAsync(() async {
+        final session = PlaySession(cards);
+        var t = const Duration(seconds: 100);
+        for (final _ in cards) {
+          session.revealed(t);
+          t += const Duration(milliseconds: 500);
+          session.commit(responseTs: t, commitTs: t + const Duration(milliseconds: 80), outcome: Outcome.dontKnow);
+          t += const Duration(milliseconds: 100);
+        }
+        await p.recordRun(session, const PlayConfig(mode: PlayMode.training), DateTime.now());
+      });
+      expect(p.slowCount, greaterThanOrEqualTo(100));
+      final size = Size(width, _phone.height);
+      await tester.binding.setSurfaceSize(size);
+      await tester.pumpWidget(RepaintBoundary(key: const ValueKey('screen'), child: FudatobashiApp(progress: p)));
+      await tester.pump(const Duration(milliseconds: 500));
+      expect(tester.takeException(), isNull);
+      await _capture(tester, 'known_weak_${width.round()}${fontScale == 1 ? '' : '_scaled'}');
+      final badge = tester.getRect(find.byType(CountBadge));
+      expect(badge.right, lessThanOrEqualTo(width - Gaps.gutter - Strokes.panel), reason: 'inside the 苦手 panel');
+      final title = tester.getRect(find.text(const S('en').weakLettering));
+      expect(title.right, lessThanOrEqualTo(badge.left), reason: 'the lettering keeps clear of the badge');
+      final streak = tester.getRect(find.ancestor(of: find.byType(TallyMarks), matching: find.byType(MangaPanel)).first);
+      final inside = streak.deflate(Strokes.panel);
+      for (final text in [find.text(const S('en').streakKeep), find.byType(TallyMarks)]) {
+        final r = tester.getRect(text);
+        expect(inside.contains(r.topCenter) && inside.contains(r.bottomCenter), isTrue, reason: '$text $r in $streak');
+      }
+      await tester.pumpWidget(const SizedBox());
+    });
+  }
+
   for (final ja in [false, true]) {
     final lang = ja ? 'ja' : 'en';
 

@@ -142,7 +142,7 @@ class _RankRow extends StatelessWidget {
                 shape: const PanelShape(topLeft: Offset(HomeLayout.rankSlant, 0)),
                 color: Palette.seaSoft,
                 tone: Tones.sea,
-                padding: const EdgeInsets.symmetric(horizontal: HomeLayout.rankSlant),
+                padding: const EdgeInsets.symmetric(horizontal: HomeLayout.rankSlant, vertical: HomeLayout.streakPadY),
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
@@ -319,15 +319,13 @@ class _ModePanel extends StatelessWidget {
             stops: [0, ...fade],
           ),
         ],
-        child: LayoutBuilder(builder: (context, panel) => Stack(
+        child: CustomMultiChildLayout(
+          delegate: _ModeLayout(textLeft: textLeft, cornerAt: corner == null ? null : cornerAt),
           children: [
             // Large text scales down rather than running off the panel, and
             // keeps clear of the corner art.
-            Positioned(
-              left: textLeft,
-              top: HomeLayout.modeTextAt.dy,
-              right: corner == null ? Gaps.inner : math.max(Gaps.inner, panel.maxWidth - cornerAt.dx + HomeLayout.modeCornerGap),
-              bottom: Gaps.small,
+            LayoutId(
+              id: _ModeSlot.text,
               child: LayoutBuilder(
                 builder: (context, box) => FittedBox(
                   fit: BoxFit.scaleDown,
@@ -355,12 +353,44 @@ class _ModePanel extends StatelessWidget {
                 ),
               ),
             ),
-            if (corner != null) Positioned(left: cornerAt.dx, top: cornerAt.dy, child: corner!),
+            if (corner != null) LayoutId(id: _ModeSlot.corner, child: corner!),
           ],
-        )),
+        ),
       ),
     );
   }
+}
+
+enum _ModeSlot { text, corner }
+
+/// A mode panel's lettering and its corner art: the corner sits at
+/// [cornerAt], moved left as far as a wider one (a three-digit 苦手 count)
+/// needs to stay inside the panel, and the lettering keeps clear of it.
+class _ModeLayout extends MultiChildLayoutDelegate {
+  _ModeLayout({required this.textLeft, required this.cornerAt});
+  final double textLeft;
+  final Offset? cornerAt;
+
+  @override
+  void performLayout(Size size) {
+    var textRight = size.width - Gaps.inner;
+    final at = cornerAt;
+    if (at != null && hasChild(_ModeSlot.corner)) {
+      final corner = layoutChild(_ModeSlot.corner, const BoxConstraints());
+      final x = math.min(at.dx, size.width - HomeLayout.modeCornerInset - corner.width);
+      positionChild(_ModeSlot.corner, Offset(x, at.dy));
+      textRight = math.min(textRight, x - HomeLayout.modeCornerGap);
+    }
+    final top = HomeLayout.modeTextAt.dy;
+    layoutChild(
+      _ModeSlot.text,
+      BoxConstraints.tight(Size(math.max(0, textRight - textLeft), math.max(0, size.height - top - Gaps.small))),
+    );
+    positionChild(_ModeSlot.text, Offset(textLeft, top));
+  }
+
+  @override
+  bool shouldRelayout(_ModeLayout old) => old.textLeft != textLeft || old.cornerAt != cornerAt;
 }
 
 /// Guest mode as a slim bar; the sheet it opens explains what it means.
