@@ -289,7 +289,11 @@ class DayCards extends Table {
 @DriftDatabase(
     tables: [Runs, Attempts, Items, IslandCompletions, KeyValues, SideTripRuns, SideTripAnswers, Days, DayCards])
 class AppDatabase extends _$AppDatabase {
-  AppDatabase([QueryExecutor? executor]) : super(executor ?? driftDatabase(name: 'fudatobashi'));
+  AppDatabase([QueryExecutor? executor, this.beforeUpgrade]) : super(executor ?? driftDatabase(name: 'fudatobashi'));
+
+  /// Runs before an upgrade from schema version `from`, while the database
+  /// is still as that version left it (the start's safety copy).
+  final Future<void> Function(AppDatabase db, int from)? beforeUpgrade;
 
   /// Raised with each new upgrade step in `lib/migrations/` ([migrationSteps]).
   @override
@@ -298,6 +302,20 @@ class AppDatabase extends _$AppDatabase {
   @override
   MigrationStrategy get migration => MigrationStrategy(
         onCreate: (m) => m.createAll(),
-        onUpgrade: migrate,
+        onUpgrade: (m, from, to) async {
+          // A newer app's data would otherwise be stamped with this version.
+          if (from > to) throw NewerDatabaseException(from);
+          await beforeUpgrade?.call(this, from);
+          await migrate(m, from, to);
+        },
       );
+}
+
+/// The database was written by a newer version of the app.
+class NewerDatabaseException implements Exception {
+  const NewerDatabaseException(this.version);
+  final int version;
+
+  @override
+  String toString() => 'The database has schema version $version, newer than this app knows.';
 }

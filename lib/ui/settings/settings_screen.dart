@@ -11,16 +11,19 @@ import '../../config/vector_art.dart';
 import '../../domain/trainer.dart';
 import '../../l10n/ankiren_strings.dart';
 import '../../l10n/credits_strings.dart';
+import '../../l10n/data_strings.dart';
 import '../../l10n/language_strings.dart';
 import '../../l10n/localization.dart';
 import '../../l10n/settings_strings.dart';
 import '../../l10n/side_trip_strings.dart';
 import '../../l10n/strings.dart';
+import '../../state/crash_log.dart';
 import '../../state/progress.dart';
 import '../../state/scope.dart';
 import '../../state/settings.dart';
 import '../debug/ankiren_tools_page.dart';
 import '../debug/celebration_preview.dart';
+import '../debug/crash_log_page.dart';
 import '../debug/debug_page.dart';
 import '../debug/reset_actions.dart';
 import '../debug/simulation_page.dart';
@@ -32,6 +35,7 @@ import '../results/celebrations.dart';
 import '../run/run_launcher.dart';
 import '../tour/tour_overlay.dart';
 import 'credits_screen.dart';
+import 'data_actions.dart';
 import 'day_start_sheet.dart';
 import 'hold_warning_screen.dart';
 import 'language_screen.dart';
@@ -41,8 +45,8 @@ import 'side_trip_settings_screen.dart';
 /// Settings, in sections: Language; Learning (mode, pace, day start, the
 /// don't-know input); Play; Sound; Accessibility; Side Trips (a page per
 /// side trip); About, whose version row hides the 10-tap developer-mode
-/// unlock; Data (Reset all data); and, once developer mode is unlocked,
-/// Developer.
+/// unlock; Data (Back up data, Restore from a backup, Reset all data); and,
+/// once developer mode is unlocked, Developer.
 class SettingsScreen extends StatelessWidget {
   const SettingsScreen({super.key});
 
@@ -201,6 +205,21 @@ class SettingsScreen extends StatelessWidget {
                         title: s.sectionData,
                         sub: s.sub?.sectionData,
                         children: [
+                          if (DataStoreScope.maybeOf(context) case final store?)
+                            SettingsGroup(children: [
+                              SettingsTapRow(
+                                title: s.backUpData,
+                                note: s.backUpDataNote,
+                                onTap: () => saveDataCopy(context, store.backUp),
+                              ),
+                              SettingsTapRow(
+                                title: s.restoreBackup,
+                                note: s.restoreBackupNote,
+                                opensPage: true,
+                                onTap: () => Navigator.push(context,
+                                    MangaRoute<void>(builder: (_) => RestorePage(store: store, confirm: true))),
+                              ),
+                            ]),
                           SettingsGroup(children: [
                             SettingsTapRow(
                               title: s.resetAllData,
@@ -522,6 +541,19 @@ class _DeveloperSection extends StatelessWidget {
           SettingsTapRow(title: 'Reset onboarding', onTap: () => confirmResetOnboarding(context)),
           SettingsTapRow(title: 'Reset progress', onTap: () => confirmResetProgress(context)),
           SettingsTapRow(title: 'Delete rank', onTap: progress.debugClearRating),
+        ]),
+        SettingsGroup(children: [
+          if (CrashLog.instance case final log?)
+            SettingsTapRow(title: 'Crash log', opensPage: true, onTap: () => open(CrashLogPage(log: log))),
+          if (DataStoreScope.maybeOf(context) case final store?)
+            SettingsTapRow(
+              title: 'Fail the next start',
+              note: 'Shows the recovery screen once, next time the app starts.',
+              onTap: () async {
+                await store.failNextStart();
+                if (context.mounted) MangaToast.show(context, 'Close and reopen the app');
+              },
+            ),
         ]),
       ],
     );

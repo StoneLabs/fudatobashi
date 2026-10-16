@@ -5953,3 +5953,26 @@ abstract final class RankLockLayout {
   static const double tobiRoom = 56;
   static const double noteFont = 13.5;
 }
+
+/// The plain message sheet about the data (`showDataProblem`: a backup that
+/// can't be restored or saved).
+abstract final class DataSheetLayout {
+  static const EdgeInsets padding = EdgeInsets.fromLTRB(19, 22, 19, 19);
+  static const double title = 22;
+  static const double body = 14;
+  static const double lineHeight = 1.4;
+  static const double gap = 14;
+  static const Color barrier = DayStartPickerLayout.barrier;
+}
+
+/// The recovery screen (`RecoveryScreen`): shown when the data won't open.
+abstract final class RecoveryLayout {
+  static const Size tobi = Size(84, 100);
+  static const double bodyFont = 14;
+  static const double bodyLineHeight = 1.45;
+  static const double errorFont = 11.5;
+  static const double errorLineHeight = 1.35;
+  static const EdgeInsets errorPadding = EdgeInsets.all(10);
+  static const double errorMaxHeight = 180;
+  static const String errorFamily = 'monospace';
+}

@@ -13,8 +13,11 @@ import 'data/islands.dart';
 import 'data/poem.dart';
 import 'db/database.dart';
 import 'l10n/localization.dart';
+import 'state/crash_log.dart';
+import 'state/data_store.dart';
 import 'state/progress.dart';
 import 'ui/app.dart';
+import 'ui/app_root.dart';
 import 'ui/debug/frame_stats.dart';
 import 'ui/play/pointer_clock.dart';
 import 'ui/sound/sounds.dart';
@@ -33,8 +36,17 @@ void _registerBundledLicenses() {
   });
 }
 
-Future<void> main() async {
+/// Everything runs in one guarded zone, so an uncaught error lands in the
+/// crash log; data that won't open lands on the recovery screen.
+void main() => runZonedGuarded(_start, (error, stack) {
+      debugPrint('$error\n$stack');
+      CrashLog.instance?.record(error, stack);
+    });
+
+Future<void> _start() async {
   WidgetsFlutterBinding.ensureInitialized();
+  final paths = kIsWeb ? null : await DataPaths.resolve();
+  if (paths != null) CrashLog(paths.crashLog).install();
   PointerClock.start();
   _registerBundledLicenses();
   if (!kIsWeb && Platform.isAndroid) {
@@ -48,11 +60,16 @@ Future<void> main() async {
   poems = await Poems.load();
   fudaSets = FudaSets(poems);
   archipelago = await Archipelago.load();
-  final progress = await Progress.open(AppDatabase());
   await GlyphAtlas.load();
   await loadVectorArt();
   FrameStats.instance.start();
-  runApp(FudatobashiApp(progress: progress));
+  if (paths == null) {
+    runApp(FudatobashiApp(progress: await Progress.open(AppDatabase())));
+  } else {
+    final store = DataStore(paths, dialogs: SystemFileDialogs(paths.temp));
+    await store.start();
+    runApp(AppRoot(store: store));
+  }
   // Loaded in the background: the first celebration is at least a run away.
   unawaited(sounds.load());
   unawaited(music.load());
