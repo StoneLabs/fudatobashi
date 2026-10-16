@@ -1124,7 +1124,7 @@ abstract final class StatsPageLayout {
 
 /// The SRS page (`SrsScreen`) and its sections.
 abstract final class SrsLayout {
-  /// The Basic | Pro and Upright | Upside-down switches.
+  /// The Upright | Upside-down switches.
   static const double toggleHeight = 30;
   static const EdgeInsets togglePadding = EdgeInsets.symmetric(horizontal: 9);
   static const double toggleFont = 12;

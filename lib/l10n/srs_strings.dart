@@ -9,8 +9,8 @@ const _months = [
 /// Strings of the SRS page, the practice calendar and the rank page.
 extension SrsStrings on S {
   String get srsTitle => t('srsTitle');
-  String get srsBasic => t('srsBasic');
-  String get srsPro => t('srsPro');
+  String get srsDetailsButton => t('srsDetailsButton');
+  String get srsDetailsTitle => t('srsDetailsTitle');
   String get srsNoData => t('srsNoData');
 
   String get srsKnown => t('srsKnown');

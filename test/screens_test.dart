@@ -739,7 +739,7 @@ void main() {
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 500));
         expect(find.byType(SrsScreen), findsOneWidget);
-        expect(find.text(s.srsBasic), findsOneWidget);
+        expect(find.textContaining(s.srsTitle, findRichText: true), findsOneWidget);
         expect(tester.takeException(), isNull);
         await _capture(tester, 'stats_srs${size}_$lang');
         await tester.tap(find.bySemanticsLabel(s.back));

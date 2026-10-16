@@ -34,6 +34,7 @@ import 'package:fudatobashi/ui/rank/rank_screen.dart';
 import 'package:fudatobashi/ui/rank/ranked_runs.dart';
 import 'package:fudatobashi/ui/stats/card_detail_screen.dart';
 import 'package:fudatobashi/ui/stats/practice_calendar.dart';
+import 'package:fudatobashi/ui/stats/srs_details_screen.dart';
 import 'package:fudatobashi/ui/stats/srs_screen.dart';
 
 import 'test_l10n.dart';
@@ -61,8 +62,8 @@ Future<void> _capture(WidgetTester tester, String name) async {
 
 const _phones = [Size(384, 832), Size(360, 780)];
 
-/// The Stats header's links, the rank page, the SRS page with its Pro
-/// table, and the practice calendar from History and Home, after a seeded
+/// The Stats header's links, the rank page, the SRS page with its FSRS
+/// details, and the practice calendar from History and Home, after a seeded
 /// journey and a seeded all-known player with ranked runs, on two phones at
 /// two font scales in both languages.
 void main() {
@@ -136,7 +137,7 @@ void main() {
       for (final fontScale in [1.0, 1.3]) {
         final tag = '${lang}_${size.width.round()}_$fontScale';
 
-        testWidgets('journey: locked Rank, the SRS page and its Pro table ($tag)', (tester) async {
+        testWidgets('journey: locked Rank, the SRS page and its FSRS details ($tag)', (tester) async {
           final p = await seeded(tester, lang, ranked: false);
           await onPhone(tester, p, size, fontScale);
           await tap(tester, find.text(s.stats));
@@ -154,14 +155,22 @@ void main() {
           expect(find.byType(SrsScreen), findsOneWidget);
           await scrollThrough(tester, 'srs_$tag');
 
-          await tap(tester, find.text(s.srsPro));
+          final button = find.textContaining(s.srsDetailsButton, findRichText: true);
+          expect(button, findsOneWidget, reason: 'the last thing on the page');
+          expect(find.byType(SrsCardTable), findsNothing);
+          await tap(tester, button);
+          expect(find.byType(SrsDetailsScreen), findsOneWidget);
           expect(find.byType(SrsCardTable), findsOneWidget);
+          expect(find.textContaining(s.srsDetailsTitle, findRichText: true), findsOneWidget);
           expect(find.text('${s.srsColRecall} ▲'), findsOneWidget);
-          await _capture(tester, 'srs_pro_$tag');
+          await _capture(tester, 'srs_details_$tag');
           await tap(tester, find.text(s.srsColLapses));
           expect(find.text('${s.srsColLapses} ▲'), findsOneWidget);
           await tap(tester, find.text('${s.srsColLapses} ▲'));
           expect(find.text('${s.srsColLapses} ▼'), findsOneWidget);
+          await back(tester, s);
+          expect(find.byType(SrsDetailsScreen), findsNothing);
+          expect(find.byType(SrsScreen), findsOneWidget);
           await tester.pumpWidget(const SizedBox());
         });
 
