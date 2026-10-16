@@ -105,6 +105,19 @@ class Poems {
     return null;
   }
 
+  /// [p]'s kimariji while only [left] are still to be read: the fewest
+  /// first sounds no other poem of [left] starts with, as [Poem.kimariji]
+  /// writes them. With all 100 left it is [Poem.kimariji] itself.
+  String kimarijiAmong(Poem p, Iterable<Poem> left) {
+    final reading = p.kamiReading;
+    var n = 1;
+    while (n < reading.length &&
+        left.any((q) => q.id != p.id && q.kamiReading.startsWith(reading.substring(0, n)))) {
+      n++;
+    }
+    return p.kimariji.length >= n ? p.kimariji.substring(0, n) : reading.substring(0, n);
+  }
+
   Poem byKimariji(String k) {
     final p = _byKimariji[k];
     if (p == null) throw ArgumentError('Unknown kimariji: $k');
