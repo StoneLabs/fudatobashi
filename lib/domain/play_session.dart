@@ -108,6 +108,23 @@ class PlaySession extends ChangeNotifier {
         cards = [...cards],
         initialLength = cards.length;
 
+  /// A run cut short, brought back as it stood: its queue, [attempts] and
+  /// [undone] swipes, and [elapsed], its time so far. Nothing more is played
+  /// on it.
+  PlaySession.restored(List<CardRef> cards,
+      {required List<Attempt> attempts, required List<Attempt> undone, required Duration elapsed})
+      : cards = [...cards],
+        initialLength = cards.length,
+        planner = null {
+    this.attempts.addAll(attempts);
+    this.undone.addAll(undone);
+    swipes.addAll([...attempts, ...undone]..sort((a, b) => a.at.compareTo(b.at)));
+    index = attempts.length;
+    firstRevealTs = Duration.zero;
+    _lastCommitTs = elapsed;
+    if (finished) endTs = elapsed;
+  }
+
   /// The queue. Training may grow it with [requeue], or its [planner]
   /// replans what comes after the card on screen at every swipe and
   /// correction.

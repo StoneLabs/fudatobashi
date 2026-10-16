@@ -69,6 +69,15 @@ class PlayConfig {
 
   /// Runs with the same key count as "the same operation" in history.
   String get historyKey => jsonEncode([mode.index, [...setIds]..sort(), if (cardIds != null) [...cardIds!]..sort(), maskLevel]);
+
+  Map<String, Object?> toJson() => {'mode': mode.name, 'setIds': setIds, 'cardIds': cardIds, 'maskLevel': maskLevel};
+
+  factory PlayConfig.fromJson(Map<String, dynamic> j) => PlayConfig(
+        mode: PlayMode.values.byName(j['mode'] as String),
+        setIds: (j['setIds'] as List).cast<String>(),
+        cardIds: (j['cardIds'] as List?)?.cast<int>(),
+        maskLevel: j['maskLevel'] as int? ?? 0,
+      );
 }
 
 /// Free practice's remembered setup: the deck and 隠し字. Left at its default

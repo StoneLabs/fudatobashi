@@ -138,6 +138,7 @@ class _PlayScreenState extends State<PlayScreen> with PlayHold<PlayScreen> {
   }
 
   void _onSessionChanged() {
+    if (_started) _journal();
     if (_session.finished && !_ending) unawaited(_finish());
     _introduceIfNew();
     setState(() {});
@@ -150,8 +151,10 @@ class _PlayScreenState extends State<PlayScreen> with PlayHold<PlayScreen> {
       _startedAt = DateTime.now();
       _introduceIfNew();
     });
-    if (_ranked) unawaited(_progress.noteRankedStarted(_startedAt));
+    _journal();
   }
+
+  void _journal() => unawaited(_progress.journalRun(_session, widget.config, _startedAt));
 
   /// A ranked run: leaving it once started is a forfeit.
   bool get _ranked => widget.config.mode == PlayMode.ranked;

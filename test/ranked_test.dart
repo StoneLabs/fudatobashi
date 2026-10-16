@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io';
 import 'dart:math' as math;
 
@@ -9,6 +10,7 @@ import 'package:fudatobashi/data/fuda_sets.dart';
 import 'package:fudatobashi/data/islands.dart';
 import 'package:fudatobashi/data/poem.dart';
 import 'package:fudatobashi/db/database.dart';
+import 'package:fudatobashi/domain/card_stats.dart';
 import 'package:fudatobashi/domain/play_session.dart';
 import 'package:fudatobashi/domain/ranked.dart';
 import 'package:fudatobashi/domain/rating.dart';
@@ -208,19 +210,85 @@ void main() {
       await db.close();
     }, timeout: const Timeout(Duration(minutes: 2)));
 
-    test('a ranked run the app never recorded counts as a forfeit on the next start', () async {
+    test('a ranked run the app never recorded counts as a forfeit on the next start, with its swipes', () async {
       final db = AppDatabase(NativeDatabase.memory());
       final p = await Progress.open(db);
       await p.setLearningMode(LearningMode.allKnown);
-      await p.noteRankedStarted(DateTime.now());
+      const config = PlayConfig(mode: PlayMode.ranked);
+      final run = PlaySession(all);
+      await p.journalRun(run, config, DateTime.now());
+      var t = const Duration(seconds: 100);
+      for (var i = 0; i < 5; i++) {
+        run.revealed(t);
+        t += const Duration(milliseconds: 1200);
+        run.commit(responseTs: t, commitTs: t, outcome: i == 0 ? Outcome.dontKnow : Outcome.known);
+        await p.journalRun(run, config, DateTime.now());
+      }
+      run.undo();
+      await p.journalRun(run, config, DateTime.now());
+
       final again = await Progress.open(db);
-      expect(again.runs.single.completed, isFalse);
-      expect(again.runs.single.mode, PlayMode.ranked);
-      expect(again.runs.single.performance, RankedTuning.forfeitPerformance);
-      expect(again.runs.single.scoredMs, isNull, reason: 'a forfeit has no scored time');
+      final row = again.runs.single;
+      expect([row.mode, row.completed, row.planned], [PlayMode.ranked, false, RankedTuning.cards]);
+      expect(row.performance, RankedTuning.forfeitPerformance);
+      expect(row.scoredMs, isNull, reason: 'a forfeit has no scored time');
       expect(again.rating, RankedTuning.forfeitPerformance, reason: 'it placed the rating');
+      expect(again.cardsIn(row.id), 4, reason: 'the swipes made before the app closed are kept');
+      expect(again.missesIn(row.id), 2, reason: 'the miss, and the swipe undone');
+      expect(again.pastRuns.single.cards, 4, reason: 'History says where it stopped');
+      expect(again.attemptsOf(ItemKey(all.first.poemId, false)).single.miss, isTrue);
       final third = await Progress.open(db);
       expect(third.runs, hasLength(1), reason: 'counted once');
+      await db.close();
+    });
+
+    test('a ranked run closed before its first swipe is still a forfeit at card 0', () async {
+      final db = AppDatabase(NativeDatabase.memory());
+      final p = await Progress.open(db);
+      await p.setLearningMode(LearningMode.allKnown);
+      await p.journalRun(PlaySession(all), const PlayConfig(mode: PlayMode.ranked), DateTime.now());
+      final again = await Progress.open(db);
+      expect(again.runs.single.completed, isFalse);
+      expect(again.cardsIn(again.runs.single.id), 0);
+      expect(again.rating, RankedTuning.forfeitPerformance);
+      await db.close();
+    });
+
+    test('a training run or an exam try the app never recorded is recorded with its swipes', () async {
+      final db = AppDatabase(NativeDatabase.memory());
+      final p = await Progress.open(db);
+      await p.setLearningMode(LearningMode.journey);
+      final cards = [for (final s in p.trainer.unlocked.take(6)) CardRef(s.key.poemId)];
+      final training = play(cards, 900, misses: 1, stopAfter: 3);
+      await p.journalRun(training, const PlayConfig(mode: PlayMode.training), DateTime.now());
+      var again = await Progress.open(db);
+      expect(again.runs.single.mode, PlayMode.training);
+      expect(again.runs.single.completed, isFalse);
+      expect(again.cardsIn(again.runs.single.id), 3);
+      expect(again.runs.single.clockUs, training.elapsed.inMicroseconds);
+
+      final tobi = TobiPace.draw(math.Random(1));
+      final exam = play(all, 1500, stopAfter: 7);
+      await again.journalRun(exam, const PlayConfig(mode: PlayMode.exam), DateTime.now(), tobi: tobi.total, tobiLine: tobi.line);
+      again = await Progress.open(db);
+      final row = again.runs.last;
+      expect([row.mode, row.completed, row.tobiMs], [PlayMode.exam, false, tobi.total.inMilliseconds]);
+      expect(again.cardsIn(row.id), 7);
+      expect(again.graduated, isFalse);
+      expect((await Progress.open(db)).runs, hasLength(2), reason: 'each counted once');
+      await db.close();
+    });
+
+    test('a run recorded as it ends leaves nothing for the next start', () async {
+      final db = AppDatabase(NativeDatabase.memory());
+      final p = await Progress.open(db);
+      await p.setLearningMode(LearningMode.allKnown);
+      const config = PlayConfig(mode: PlayMode.ranked);
+      final run = play(all, 1000);
+      unawaited(p.journalRun(run, config, DateTime.now()));
+      await p.recordRun(run, config, DateTime.now());
+      unawaited(p.journalRun(run, config, DateTime.now()));
+      expect((await Progress.open(db)).runs, hasLength(1));
       await db.close();
     });
   });

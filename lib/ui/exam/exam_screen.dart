@@ -165,6 +165,7 @@ class _ExamScreenState extends State<ExamScreen> with SingleTickerProviderStateM
   }
 
   void _onSessionChanged() {
+    unawaited(_progress.journalRun(_session, _config, _startedAt, tobi: widget.tobi.total, tobiLine: widget.tobi.line));
     final misses = RankedScore.missesOf(_session);
     if (misses > _misses) {
       _pops++;

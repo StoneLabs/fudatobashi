@@ -222,6 +222,36 @@ void main() {
     await tester.pumpWidget(const SizedBox());
   });
 
+  testWidgets('a ranked run the app is killed in is recorded on the next start with the swipes made', (tester) async {
+    late Progress p;
+    await tester.runAsync(() async {
+      p = await Progress.open(AppDatabase(NativeDatabase.memory()));
+      await p.setLearningMode(LearningMode.allKnown);
+    });
+    await tester.binding.setSurfaceSize(const Size(384, 832));
+    await tester.pumpWidget(ProgressScope(
+      progress: p,
+      child: MaterialApp(home: PlayScreen(cards: p.rankedDeck(), config: const PlayConfig(mode: PlayMode.ranked))),
+    ));
+    await tester.pump();
+    await tester.pump();
+    await swipeStartCard(tester);
+    final session = tester.widget<SwipeDeck>(find.byType(SwipeDeck)).session;
+    for (var i = 0; i < 5; i++) {
+      await _swipe(tester, session);
+    }
+    for (var i = 0; i < 5; i++) {
+      await tester.runAsync(() => Future<void>.delayed(ms(20)));
+      await tester.pump();
+    }
+    final relaunched = await tester.runAsync(() => Progress.open(p.db));
+    final row = relaunched!.runs.single;
+    expect([row.mode, row.completed], [PlayMode.ranked, false]);
+    expect(relaunched.cardsIn(row.id), 5);
+    expect(relaunched.rating, RankedTuning.forfeitPerformance);
+    await tester.pumpWidget(const SizedBox());
+  });
+
   testWidgets('a snap-back drag plays no footstep, a committed swipe plays exactly one', (tester) async {
     final heard = _HeardSounds();
     sounds = heard;

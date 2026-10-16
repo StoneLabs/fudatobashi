@@ -26,6 +26,7 @@ import '../domain/trainer.dart';
 import '../domain/xp.dart';
 import 'db_integrity.dart';
 import 'play_config.dart';
+import 'run_journal.dart';
 import 'settings.dart';
 import 'side_trips.dart';
 import 'xp_history.dart';
@@ -259,6 +260,11 @@ class Progress extends ChangeNotifier {
   /// The most recent run, kept in memory for the debug page's timing view.
   PlaySession? lastRun;
 
+  /// The run under way's latest journal not saved yet, and the saving of
+  /// the ones before it (see [journalRun]).
+  (PlaySession, String)? _journalNext;
+  Future<void> _journalSaved = Future.value();
+
   /// Every stored practice day by number, the latest of them, and its set
   /// (journey mode, once built).
   final _days = <int, DayRow>{};
@@ -330,10 +336,8 @@ class Progress extends ChangeNotifier {
     progress._day = progress._days.values.fold<DayRow?>(null, (a, d) => a == null || d.day > a.day ? d : a);
     progress._examLastTry = DateTime.tryParse(kv[_examLastTryKey] ?? '');
     progress._examIntroShown = kv[_examIntroShownKey] == 'true';
-    if (DateTime.tryParse(kv[_rankedRunningKey] ?? '') case final startedAt?) {
-      await progress._forfeitUnrecorded(startedAt);
-    }
     await progress._loadToday();
+    if (kv[_runJournalKey] case final journal?) await progress._recordJournal(journal);
     if (settings.onboarded && !progress._allKnown) await progress.refreshToday();
     await progress._latchFreePractice(DateTime.now());
     await progress._latchSideTrips(DateTime.now());
@@ -347,7 +351,7 @@ class Progress extends ChangeNotifier {
   static const _sideTripsTabKey = 'sideTripsTabUnlocked';
   static const _sideTripsKey = 'sideTripsUnlocked';
   static const _sideTripsSeenLockedKey = 'sideTripsSeenLocked';
-  static const _rankedRunningKey = 'rankedRunning';
+  static const _runJournalKey = 'runJournal';
   static const _examLastTryKey = 'examLastTry';
   static const _examIntroShownKey = 'examIntroShown';
 
@@ -835,9 +839,43 @@ class Progress extends ChangeNotifier {
     return [for (final id in ids) CardRef(id, inverted: random.nextBool())];
   }
 
-  /// Marks a ranked run as under way, so one the app never got to record
-  /// still counts as a forfeit on the next start.
-  Future<void> noteRankedStarted(DateTime at) => _put(_rankedRunningKey, at.toIso8601String());
+  /// Saves [run], under way, as it stands now, so that if the app never gets
+  /// to record it (closed or killed mid-run) the next start records it with
+  /// its swipes: a ranked one as a forfeit, even before its first swipe.
+  /// Saves are made one at a time, each of the latest state; once
+  /// [recordRun] has started on the run, it is no longer saved.
+  Future<void> journalRun(PlaySession run, PlayConfig config, DateTime startedAt,
+      {Duration? tobi, List<Duration>? tobiLine}) {
+    if (!config.tracked || identical(run, lastRun)) return _journalSaved;
+    final queued = _journalNext != null;
+    _journalNext = (
+      run,
+      RunJournal(run: run, config: config, startedAt: startedAt, tobi: tobi, tobiLine: tobiLine).encode(),
+    );
+    if (!queued) _journalSaved = _journalSaved.then((_) => _saveJournal());
+    return _journalSaved;
+  }
+
+  Future<void> _saveJournal() async {
+    final next = _journalNext;
+    _journalNext = null;
+    if (next == null || identical(next.$1, lastRun)) return;
+    await _put(_runJournalKey, next.$2);
+  }
+
+  /// Records the run the app was closed in, as its journal left it. When it
+  /// ended is not known: it is stored as ending at its latest swipe.
+  Future<void> _recordJournal(String text) async {
+    final RunJournal journal;
+    try {
+      journal = RunJournal.decode(text);
+    } on Object {
+      await _drop(_runJournalKey);
+      return;
+    }
+    await recordRun(journal.run, journal.config, journal.startedAt,
+        now: journal.lastAt, tobi: journal.tobi, tobiLine: journal.tobiLine);
+  }
 
   /// The graduation exam has been passed (it happens once).
   bool get graduated => xp.graduated;
@@ -1248,8 +1286,9 @@ class Progress extends ChangeNotifier {
     now ??= DateTime.now();
     final previousBest = bestFor(config);
     lastRun = run;
-    if (config.mode == PlayMode.ranked) await _drop(_rankedRunningKey);
+    await _journalSaved;
     if (!config.tracked || (run.attempts.isEmpty && config.mode != PlayMode.ranked)) {
+      await _drop(_runJournalKey);
       return SessionReport(
         runId: null,
         completed: run.finished,
@@ -1352,6 +1391,7 @@ class Progress extends ChangeNotifier {
       }
       await db.batch((b) => b.insertAll(db.attempts, rows));
       await _saveItems(touched);
+      await _drop(_runJournalKey);
       return id;
     });
 
@@ -1417,30 +1457,6 @@ class Progress extends ChangeNotifier {
     final performance =
         score == null ? RankedTuning.forfeitPerformance : Rating.performance(score.scored.inMilliseconds.toDouble());
     return (rating: Rating.update(rating, performance, ratedRuns.length), performance: performance);
-  }
-
-  /// A ranked run that never got recorded (the app closed mid-run) is a
-  /// forfeit. When it ended is not known: it is stored as ending as it
-  /// started.
-  Future<void> _forfeitUnrecorded(DateTime startedAt) async {
-    final rated = _rated(null);
-    final day = await _storeDay(startedAt);
-    final id = await db.into(db.runs).insert(RunsCompanion.insert(
-          mode: PlayMode.ranked,
-          startedAt: startedAt,
-          endedAt: startedAt,
-          day: day.day,
-          allKnown: true,
-          setIds: Value(jsonEncode(const ['all'])),
-          goalMs: trainer.goalMs.round(),
-          planned: RankedTuning.cards,
-          completed: false,
-          rating: Value(rated.rating),
-          performance: Value(rated.performance),
-        ));
-    runs.add(await _runRow(id));
-    rating = rated.rating;
-    await _drop(_rankedRunningKey);
   }
 
   /// Journey mode's FSRS rule: grades by the day the attempt falls in (see
@@ -1518,7 +1534,7 @@ class Progress extends ChangeNotifier {
                   _sideTripsTabKey,
                   _sideTripsKey,
                   _sideTripsSeenLockedKey,
-                  _rankedRunningKey,
+                  _runJournalKey,
                   _examLastTryKey,
                   _examIntroShownKey,
                 ])))
