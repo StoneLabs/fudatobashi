@@ -14,7 +14,6 @@ import 'package:fudatobashi/data/islands.dart';
 import 'package:fudatobashi/data/poem.dart';
 import 'package:fudatobashi/db/database.dart';
 import 'package:fudatobashi/domain/card_stats.dart';
-import 'package:fudatobashi/domain/trainer.dart';
 import 'package:fudatobashi/l10n/history_strings.dart';
 import 'package:fudatobashi/l10n/home_strings.dart';
 import 'package:fudatobashi/l10n/ranked_strings.dart';
