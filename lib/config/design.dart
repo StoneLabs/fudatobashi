@@ -5953,6 +5953,9 @@ abstract final class RankLockLayout {
   static const Placement tobi = Placement(right: 14, top: -62, size: Size(70, 84));
 
   /// Room left above the card for Tobi.
+  static const double tobiRoom = 56;
+  static const double noteFont = 13.5;
+}
 
 /// The plain message sheet about the data (`showDataProblem`: a backup that
 /// can't be restored or saved).
@@ -5975,7 +5978,4 @@ abstract final class RecoveryLayout {
   static const EdgeInsets errorPadding = EdgeInsets.all(10);
   static const double errorMaxHeight = 180;
   static const String errorFamily = 'monospace';
-}
-  static const double tobiRoom = 56;
-  static const double noteFont = 13.5;
 }

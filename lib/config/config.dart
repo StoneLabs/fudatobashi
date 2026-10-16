@@ -850,14 +850,6 @@ abstract final class DevModeTuning {
   static const Duration revealScroll = Duration(milliseconds: 450);
 }
 
-/// How one kind of simulated player (`SyntheticLearner`) learns: response
-/// times, how memories of cards fade and grow, and how it mixes cards up.
-/// Each value notes its source; "guess" marks the ones to calibrate against
-/// real players.
-class LearnerProfile {
-  const LearnerProfile({
-    required this.firstMs,
-    required this.firstPerKanaMs,
 /// The data file on disk (`DataStore`): its backups, the copies the app
 /// makes of it on its own, and how long opening it may take at start.
 abstract final class DataFileTuning {
@@ -899,6 +891,14 @@ abstract final class CrashLogTuning {
   static const int stackLines = 30;
 }
 
+/// How one kind of simulated player (`SyntheticLearner`) learns: response
+/// times, how memories of cards fade and grow, and how it mixes cards up.
+/// Each value notes its source; "guess" marks the ones to calibrate against
+/// real players.
+class LearnerProfile {
+  const LearnerProfile({
+    required this.firstMs,
+    required this.firstPerKanaMs,
     required this.floorMs,
     required this.floorPerKanaMs,
     required this.practiceExponent,

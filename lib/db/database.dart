@@ -310,6 +310,7 @@ class AppDatabase extends _$AppDatabase {
           await migrate(m, from, to);
         },
       );
+}
 
 /// The database was written by a newer version of the app.
 class NewerDatabaseException implements Exception {
@@ -318,5 +319,4 @@ class NewerDatabaseException implements Exception {
 
   @override
   String toString() => 'The database has schema version $version, newer than this app knows.';
-}
 }
