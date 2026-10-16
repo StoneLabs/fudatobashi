@@ -1085,6 +1085,10 @@ abstract final class StatsLayout {
   static const double focusGap = 4;
   static const double focusNameFont = 40;
   static const double focusSpeedFont = 17;
+
+  /// In the speed box until a card of the island has enough tries, as the
+  /// map's legend says it.
+  static const double focusFewTriesFont = 15;
   static const EdgeInsets focusSpeedPadding = EdgeInsets.fromLTRB(7, 2, 7, 3);
   static const double focusLineFont = 13;
   static const double focusButtonGap = 10;

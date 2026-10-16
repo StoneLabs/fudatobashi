@@ -224,8 +224,9 @@ class _ArchipelagoIsland {
   final double? medianMs;
   final Map<int, SiteMark> sites;
 
-  /// [medianMs] as its chip reads ("0.62s"), or a dash.
-  String get speed => medianMs == null ? '—' : '${formatChipSeconds(medianMs!)}s';
+  /// [medianMs] as its chip reads ("0.62s"); null, and no chip, until a
+  /// card has enough tries.
+  String? get speed => medianMs == null ? null : '${formatChipSeconds(medianMs!)}s';
 }
 
 class _ArchipelagoData {
@@ -447,35 +448,48 @@ class _SelectedIslandPanel extends StatelessWidget {
       child: Row(crossAxisAlignment: CrossAxisAlignment.end, children: [
         Expanded(
           child: Column(crossAxisAlignment: CrossAxisAlignment.start, mainAxisSize: MainAxisSize.min, children: [
-            FittedBox(
-              fit: BoxFit.scaleDown,
-              alignment: Alignment.centerLeft,
-              child: Row(mainAxisSize: MainAxisSize.min, children: [
-                InkTag(s.selectedIslandTag),
-                if (slowest) ...[
-                  const SizedBox(width: StatsLayout.focusTagGap),
-                  InkTag('${MapStyle.chipMarkGlyph} ${s.slowestIslandNote}', color: Palette.alarm),
-                ],
-              ]),
+            // One tag's height, also when the slowest note makes the pair
+            // shrink to fit.
+            SizedBox(
+              height: InkTag.heightOf(context),
+              child: FittedBox(
+                fit: BoxFit.scaleDown,
+                alignment: Alignment.centerLeft,
+                child: Row(mainAxisSize: MainAxisSize.min, children: [
+                  InkTag(s.selectedIslandTag),
+                  if (slowest) ...[
+                    const SizedBox(width: StatsLayout.focusTagGap),
+                    InkTag('${MapStyle.chipMarkGlyph} ${s.slowestIslandNote}', color: Palette.alarm),
+                  ],
+                ]),
+              ),
             ),
             const SizedBox(height: StatsLayout.focusGap),
-            Row(crossAxisAlignment: CrossAxisAlignment.end, children: [
-              Flexible(
-                child: FittedBox(
-                  fit: BoxFit.scaleDown,
-                  alignment: Alignment.centerLeft,
-                  child: Text(island.name,
-                      style: const TextStyle(fontFamily: Fonts.display, fontSize: StatsLayout.focusNameFont, height: 1)),
+            // As tall as the name at full size, however much a long one
+            // shrinks, so the panel keeps its height from island to island.
+            ConstrainedBox(
+              constraints: BoxConstraints(minHeight: MediaQuery.textScalerOf(context).scale(StatsLayout.focusNameFont)),
+              child: Row(crossAxisAlignment: CrossAxisAlignment.end, children: [
+                Flexible(
+                  child: FittedBox(
+                    fit: BoxFit.scaleDown,
+                    alignment: Alignment.centerLeft,
+                    child: Text(island.name,
+                        style: const TextStyle(fontFamily: Fonts.display, fontSize: StatsLayout.focusNameFont, height: 1)),
+                  ),
                 ),
-              ),
-              const SizedBox(width: Gaps.small),
-              Container(
-                padding: StatsLayout.focusSpeedPadding,
-                decoration: BoxDecoration(border: Border.all(color: Palette.ink, width: Strokes.control)),
-                child: Text(island.speed,
-                    style: const TextStyle(fontFamily: Fonts.display, fontSize: StatsLayout.focusSpeedFont)),
-              ),
-            ]),
+                const SizedBox(width: Gaps.small),
+                Container(
+                  padding: StatsLayout.focusSpeedPadding,
+                  decoration: BoxDecoration(border: Border.all(color: Palette.ink, width: Strokes.control)),
+                  child: island.speed == null
+                      ? Text(s.legendFewTries(StatsTuning.mapHollowMinTries),
+                          style: const TextStyle(fontWeight: Weights.black, fontSize: StatsLayout.focusFewTriesFont))
+                      : Text(island.speed!,
+                          style: const TextStyle(fontFamily: Fonts.display, fontSize: StatsLayout.focusSpeedFont)),
+                ),
+              ]),
+            ),
             const SizedBox(height: StatsLayout.focusGap),
             NumberedText(
               s.islandSolidLine,

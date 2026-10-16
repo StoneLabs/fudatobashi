@@ -24,6 +24,10 @@ class InkTag extends StatelessWidget {
   final Color color;
   final Color textColor;
 
+  /// A tag's height here at its default size and the font scale in use.
+  static double heightOf(BuildContext context) =>
+      MediaQuery.textScalerOf(context).scale(TagStyle.font) * TagStyle.lineHeight + TagStyle.padding.vertical;
+
   @override
   Widget build(BuildContext context) => DecoratedBox(
         decoration: BoxDecoration(color: color),

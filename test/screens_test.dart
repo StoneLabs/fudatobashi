@@ -695,6 +695,36 @@ void main() {
         // island on the map moves the panel to it and drops the note.
         final note = find.textContaining(s.slowestIslandNote);
         expect(note, findsOneWidget);
+
+        // An island with no card tried enough has no speed chip on the map
+        // (it once read "—"), and the panel says why. The panel keeps its
+        // height whichever island is picked, a long name shrinking inside a
+        // line kept at the full name size.
+        final styles = tester.widget<IslandMap>(find.byType(IslandMap)).styles;
+        expect([for (final st in styles) st.plate?.chip].whereType<String>(), isNot(contains('—')));
+        expect([for (final st in styles) st.plate?.chip].where((c) => c == null), isNotEmpty);
+        final panel = find
+            .ancestor(
+                of: find.byWidgetPredicate((w) => w is InkTag && w.text == s.selectedIslandTag),
+                matching: find.byType(MangaPanel))
+            .first;
+        final height = tester.getSize(panel).height;
+        // Tapping the picked island again opens its page.
+        var picked = styles.indexWhere((st) => st.pulse);
+        for (final isl in archipelago.islands) {
+          if (isl.index == picked) continue;
+          picked = isl.index;
+          tester.widget<IslandMap>(find.byType(IslandMap)).onIslandTap!(isl.index);
+          await tester.pump(const Duration(milliseconds: 500));
+          expect(tester.takeException(), isNull);
+          expect(tester.getSize(panel).height, moreOrLessEquals(height), reason: '${isl.name} changed the panel height');
+        }
+        final untried = archipelago.islands.firstWhere((isl) => styles[isl.index].plate?.chip == null);
+        if (untried.index != picked) tester.widget<IslandMap>(find.byType(IslandMap)).onIslandTap!(untried.index);
+        await tester.pump(const Duration(milliseconds: 500));
+        expect(find.descendant(of: panel, matching: find.text(s.legendFewTries(StatsTuning.mapHollowMinTries))),
+            findsOneWidget);
+
         final other = archipelago.islands.last;
         tester.widget<IslandMap>(find.byType(IslandMap)).onIslandTap!(other.index);
         await tester.pump(const Duration(milliseconds: 500));
