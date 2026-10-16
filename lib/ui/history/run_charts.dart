@@ -191,6 +191,7 @@ class BarChart extends StatelessWidget {
     this.xLabels = const {},
     this.height = RunChartStyle.barChartHeight,
     this.format = _seconds,
+    this.steps = RunChartStyle.barStepsMs,
   });
 
   final List<ChartBar> bars;
@@ -201,6 +202,9 @@ class BarChart extends StatelessWidget {
 
   /// Writes an axis value.
   final String Function(double value) format;
+
+  /// Gridline steps to choose from, in [format]'s unit.
+  final List<int> steps;
 
   static String _seconds(double ms) => formatSeconds(ms, 0);
 
@@ -229,8 +233,7 @@ class _BarPainter extends CustomPainter {
     final bars = chart.bars;
     if (bars.isEmpty) return;
     final top = [for (final b in bars) b.value, chart.guide ?? 0].reduce(math.max);
-    final step = RunChartStyle.barStepsMs.firstWhere((s) => top / s <= RunChartStyle.maxYTicks,
-        orElse: () => RunChartStyle.barStepsMs.last);
+    final step = chart.steps.firstWhere((s) => top / s <= RunChartStyle.maxYTicks, orElse: () => chart.steps.last);
     final hi = ((top / step).ceil() * step).toDouble();
     final widest = _label(chart.format(hi));
     final xRow = chart.xLabels.isEmpty ? 0.0 : _label('0').height + RunChartStyle.labelGap;

@@ -29,8 +29,6 @@ extension StatsStrings on S {
   String get islandDetails => t('islandDetails');
 
   String get srs => t('srs');
-  String get srsSoonTitle => t('srsSoonTitle');
-  String get srsSoonLine => t('srsSoonLine');
 
   /// A short "Mon D" (EN) / "M月D日" (JA) date, no time (island/card detail's
   /// due dates).

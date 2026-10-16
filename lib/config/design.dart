@@ -273,6 +273,22 @@ abstract final class Tones {
     stops: [0, 0.08, 0.17, 1],
   );
 
+  /// A page opened from Stats: the Stats dots behind its header only.
+  static const statsPage = GradationSpec(
+    dot: Palette.pink,
+    mix: [Palette.sun, Palette.sea, Palette.land, Palette.orange, Palette.violet],
+    spacing: 9,
+    begin: Alignment.topCenter,
+    end: Alignment.bottomCenter,
+    radii: [2.2, 0.7, 0, 0],
+    stops: [0, 0.06, 0.09, 1],
+  );
+
+  /// The practice calendar's days: a little, a usual day, a lot.
+  static const calendarLittle = ToneSpec(dot: Palette.pink, radius: 0.9, spacing: 6);
+  static const calendarUsual = ToneSpec(dot: Palette.pink, radius: 1.5, spacing: 6);
+  static const calendarLot = ToneSpec(dot: Palette.pink, radius: 2.1, spacing: 6, background: Palette.pinkSoft);
+
   /// Picks which colour of a gradation's `mix` each dot takes.
   static const int gradationMixSeed = 7;
 }
@@ -1080,19 +1096,109 @@ abstract final class StatsLayout {
   static const double playButtonIconGap = 5;
   static const Size playButtonBalloon = Size(270, 96);
   static const Duration playButtonBalloonLife = Duration(milliseconds: 2800);
+
+  /// Why the header's rank link is locked in journey mode.
+  static const Size rankLockedBalloon = Size(260, 96);
 }
 
-/// The SRS page while it is being built (`SrsScreen`): Side Trips'
-/// construction site over a title and a line.
-abstract final class SrsLayout {
-  static const double artMaxWidth = 320;
+/// A page opened from Stats or Home (`StatsPage`): room under its list.
+abstract final class StatsPageLayout {
+  static const double bottomPad = 24;
+}
 
-  /// The construction site art's width over its height (1110 × 678).
-  static const double artAspect = 1110 / 678;
-  static const double titleGap = 18;
-  static const double titleFont = 30;
-  static const double lineGap = 8;
-  static const double lineFont = 15;
+/// The SRS page (`SrsScreen`) and its sections.
+abstract final class SrsLayout {
+  /// The Basic | Pro and Upright | Upside-down switches.
+  static const double toggleHeight = 30;
+  static const EdgeInsets togglePadding = EdgeInsets.symmetric(horizontal: 9);
+  static const double toggleFont = 12;
+
+  /// #1's strip: three cells over the pace bar.
+  static const EdgeInsets glancePadding = EdgeInsets.fromLTRB(4, 8, 4 + HistoryListStyle.stripCut, 4);
+  static const EdgeInsets glanceCellPadding = EdgeInsets.fromLTRB(8, 0, 6, 4);
+  static const double glanceFont = 24;
+  static const double glanceUnitFont = 12;
+  static const EdgeInsets gaugeMargin = EdgeInsets.fromLTRB(4, 4, 0, 0);
+  static const EdgeInsets gaugePadding = EdgeInsets.fromLTRB(4, 7, 4, 2);
+  static const double gaugeHeight = 14;
+
+  /// The day charts (`DayLineChart`).
+  static const double chartHeight = 170;
+  static const double chartTopPad = 6;
+  static const double chartDot = 3;
+  static const double chartMark = 5;
+  static const List<double> knownTicks = [0, 25, 50, 75, 100];
+  static const double knownStroke = 2.6;
+  static const double paceStroke = 3;
+  static const double trendStroke = 2.2;
+  static const List<double> dotDash = [1, 5];
+  static const EdgeInsets calloutPadding = EdgeInsets.fromLTRB(10, 7, 10, 8);
+  static const double calloutFont = 22;
+
+  /// #3's wall: ten tiles a row at the mock's 1 : 1.22, the kana a share
+  /// of the tile's width, and a sun dot on a mastered tile.
+  static const int wallColumns = 10;
+  static const double wallGap = 3;
+  static const double wallTileAspect = 1 / 1.22;
+  static const double wallFontShare = 0.5;
+  static const double masteredDot = 6;
+  static const double masteredDotInset = 2;
+  static const Color notStartedInk = Color(0xFF9A9A9A);
+
+  /// #4's stacked bars and stage table.
+  static const double stackHeight = 28;
+  static const double stackFont = 11;
+  static const int stackMinLabel = 4;
+  static const double stageSwatchColumn = 22;
+
+  /// #17: the gridline steps in minutes, and the weeks summed under it.
+  static const List<int> minuteSteps = [1, 2, 5, 10, 15, 30, 60];
+  static const int weeks = 3;
+
+  /// #18: the seconds grid's step.
+  static const double speedStepMs = 500;
+
+  /// #19: the small card over each column, and the label column's share.
+  static const double sideCard = 34;
+  static const String sideCardGlyph = 'あ';
+  static const double sideCardFont = 16;
+  static const double sideLabelFlex = 1.4;
+
+  /// #34's table: column shares (card, stability, difficulty, recall,
+  /// next, lapses, time), its cells and the sort arrows.
+  static const List<int> tableFlex = [24, 13, 10, 15, 14, 13, 11];
+  static const EdgeInsets tableCellPadding = EdgeInsets.symmetric(horizontal: 3, vertical: 6);
+  static const EdgeInsets tableEmptyPadding = EdgeInsets.all(12);
+  static const TextStyle tableHeadStyle = TextStyle(fontWeight: Weights.black, fontSize: 10.5, color: Palette.paper);
+  static const TextStyle tableCellStyle = TextStyle(fontWeight: Weights.bold, fontSize: 11.5);
+  static const TextStyle tableCardStyle = TextStyle(fontFamily: Fonts.display, fontSize: 13);
+  static const TextStyle invertedTagStyle =
+      TextStyle(fontWeight: Weights.black, fontSize: 9.5, color: Palette.paper, height: 1.2);
+  static const EdgeInsets invertedTagPadding = EdgeInsets.symmetric(horizontal: 3);
+  static const Color tableShade = Color(0xFFFAF8F4);
+  static const String upArrow = ' ▲';
+  static const String downArrow = ' ▼';
+
+  /// Stabilities under this many days read "<0.1d".
+  static const double stabilityFloor = 0.1;
+}
+
+/// The practice calendar (`PracticeCalendarScreen`): a month's grid of
+/// days, today ringed in sun and ink, a finished set's tick.
+abstract final class CalendarLayout {
+  static const double monthGap = 18;
+  static const double cellGap = 4;
+  static const double cellHeight = 40;
+  static const EdgeInsets numberPadding = EdgeInsets.fromLTRB(3, 2, 2, 0);
+  static const double numberFont = 10.5;
+  static const Color futureInk = Color(0xFF9A9A9A);
+  static const double todayRing = 2.5;
+  static const double todayRingOuter = 4.5;
+  static const double tick = 16;
+  static const double tickInset = 2;
+  static const double tickRim = 1.5;
+  static const double tickIconShare = 0.62;
+  static const double tickStroke = 2.2;
 }
 
 /// The History tab: each run's mode tag, timestamp, card/miss count and
@@ -1471,7 +1577,7 @@ abstract final class RunTabsStyle {
   static const double ratingLineStroke = 2.2;
   static const double ratingPoint = 4.5;
   static const double ratingMineMark = 7;
-  static const double runColumnFlex = 1;
+  static const double runColumnFlex = 1.3;
 }
 
 /// A run or game page's headline (`HeadlinePanel`): its cut corner, the

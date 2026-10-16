@@ -12,6 +12,7 @@ import '../../state/scope.dart';
 import '../manga/manga.dart';
 import '../free/free_practice_sheet.dart';
 import '../rank/rank_screen.dart';
+import '../stats/practice_calendar.dart';
 import '../run/run_launcher.dart';
 import '../tour/tour_anchor.dart';
 import 'guest_sheet.dart';
@@ -134,41 +135,45 @@ class _RankRow extends StatelessWidget {
           ),
           Expanded(
             flex: HomeLayout.streakFlex,
-            child: MangaPanel(
-              shape: const PanelShape(topLeft: Offset(HomeLayout.rankSlant, 0)),
-              color: Palette.seaSoft,
-              tone: Tones.sea,
-              padding: const EdgeInsets.symmetric(horizontal: HomeLayout.rankSlant),
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  TallyMarks(progress.streak),
-                  const SizedBox(height: HomeLayout.streakGap),
-                  FittedBox(
-                    fit: BoxFit.scaleDown,
-                    child: ColoredBox(
-                      color: Palette.paper,
-                      child: Padding(
-                        padding: HomeLayout.streakLabelPadding,
-                        child: NumberedText(
-                          s.streakDays,
-                          [progress.streak],
-                          style: const TextStyle(
-                              fontSize: HomeLayout.streakFont, fontWeight: Weights.black, height: HomeLayout.rowLineHeight),
-                          numberStyle: const TextStyle(
-                              fontFamily: Fonts.display, fontWeight: Weights.regular, fontSize: HomeLayout.streakNumber),
+            child: GestureDetector(
+              behavior: HitTestBehavior.opaque,
+              onTap: () => openPracticeCalendar(context),
+              child: MangaPanel(
+                shape: const PanelShape(topLeft: Offset(HomeLayout.rankSlant, 0)),
+                color: Palette.seaSoft,
+                tone: Tones.sea,
+                padding: const EdgeInsets.symmetric(horizontal: HomeLayout.rankSlant),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    TallyMarks(progress.streak),
+                    const SizedBox(height: HomeLayout.streakGap),
+                    FittedBox(
+                      fit: BoxFit.scaleDown,
+                      child: ColoredBox(
+                        color: Palette.paper,
+                        child: Padding(
+                          padding: HomeLayout.streakLabelPadding,
+                          child: NumberedText(
+                            s.streakDays,
+                            [progress.streak],
+                            style: const TextStyle(
+                                fontSize: HomeLayout.streakFont, fontWeight: Weights.black, height: HomeLayout.rowLineHeight),
+                            numberStyle: const TextStyle(
+                                fontFamily: Fonts.display, fontWeight: Weights.regular, fontSize: HomeLayout.streakNumber),
+                          ),
                         ),
                       ),
                     ),
-                  ),
-                  // One swipe a day keeps it: there is no daily set here.
-                  const SizedBox(height: StreakKeepStyle.gap),
-                  FittedBox(
-                    fit: BoxFit.scaleDown,
-                    child: Text(s.streakKeep,
-                        style: const TextStyle(fontSize: StreakKeepStyle.font, fontWeight: Weights.black)),
-                  ),
-                ],
+                    // One swipe a day keeps it: there is no daily set here.
+                    const SizedBox(height: StreakKeepStyle.gap),
+                    FittedBox(
+                      fit: BoxFit.scaleDown,
+                      child: Text(s.streakKeep,
+                          style: const TextStyle(fontSize: StreakKeepStyle.font, fontWeight: Weights.black)),
+                    ),
+                  ],
+                ),
               ),
             ),
           ),

@@ -20,6 +20,7 @@ import '../manga/swipe_tabs.dart';
 import '../play/time_format.dart';
 import 'ankiren_game_page.dart';
 import 'history_filter.dart';
+import '../stats/practice_calendar.dart';
 import 'history_widgets.dart';
 import 'run_page.dart';
 
@@ -191,7 +192,14 @@ class _WeekStrip extends StatelessWidget {
                 ),
               ),
               const SizedBox(width: Gaps.small),
-              _Streak(streak),
+              Semantics(
+                button: true,
+                child: GestureDetector(
+                  behavior: HitTestBehavior.opaque,
+                  onTap: () => openPracticeCalendar(context),
+                  child: _Streak(streak),
+                ),
+              ),
             ],
           ),
         ),

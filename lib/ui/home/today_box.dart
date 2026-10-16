@@ -10,6 +10,7 @@ import '../../l10n/home_strings.dart';
 import '../../l10n/strings.dart';
 import '../../state/progress.dart';
 import '../manga/manga.dart';
+import '../stats/practice_calendar.dart';
 
 /// Journey Home's today box: today's set as one bar in looks (done green,
 /// then reviews, new cards and the room misses take), a legend with the
@@ -143,7 +144,11 @@ class _Header extends StatelessWidget {
           }),
         ),
         const SizedBox(width: TodayBoxLayout.headerGap),
-        _WeekStamps(week),
+        GestureDetector(
+          behavior: HitTestBehavior.opaque,
+          onTap: () => openPracticeCalendar(context),
+          child: _WeekStamps(week),
+        ),
       ],
     );
   }

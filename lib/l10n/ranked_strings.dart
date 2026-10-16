@@ -40,10 +40,8 @@ extension RankedStrings on S {
 
   // The rank ladder before there is a rank.
   String get rankLockedTitle => t('rankLockedTitle');
-  String get rankLockedBody => t('rankLockedBody');
   String get rankLockedSwitchTitle => t('rankLockedSwitchTitle');
   String get rankLockedSwitchBody => t('rankLockedSwitchBody');
-  String get rankLockedSwitchButton => t('rankLockedSwitchButton');
 
   // All-known Home's ランク戦, ranked Results and the placement page.
   String get rankedChipAll => t('rankedChipAll');

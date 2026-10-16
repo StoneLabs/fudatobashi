@@ -7,6 +7,7 @@ import '../../data/islands.dart';
 import '../../data/poem.dart';
 import '../../domain/card_stats.dart' show ItemKey;
 import '../../domain/trainer.dart' show LearningMode;
+import '../../l10n/ranked_strings.dart';
 import '../../l10n/stats_strings.dart';
 import '../../l10n/strings.dart';
 import '../../state/progress.dart';
@@ -116,23 +117,34 @@ class _SegButton extends StatelessWidget {
       );
 }
 
-/// The rank ladder and the SRS page, as one two-part control. The ladder
-/// is only a locked preview in journey mode, and its link says so.
+/// The links in the header: the rank page in all-known mode; in journey
+/// mode the SRS page, beside a locked rank link whose tap says why.
 class _HeaderLinks extends StatelessWidget {
   const _HeaderLinks();
 
   @override
   Widget build(BuildContext context) {
     final s = S.of(context);
-    final rankLocked = ProgressScope.of(context).trainer.config.learningMode == LearningMode.journey;
+    final progress = ProgressScope.of(context);
     void open(Widget page) => Navigator.push(context, MangaRoute<void>(builder: (_) => page));
+    final journey = progress.trainer.config.learningMode == LearningMode.journey;
     return Container(
       height: StatsLayout.segHeight,
       decoration: BoxDecoration(color: Palette.paper, border: Border.all(color: Palette.ink, width: Strokes.button)),
       child: Row(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-        _HeaderLink(s.rank, locked: rankLocked, onTap: () => open(const RankScreen())),
-        const ColoredBox(color: Palette.ink, child: SizedBox(width: Strokes.button)),
-        _HeaderLink(s.srs, onTap: () => open(const SrsScreen())),
+        if (journey) ...[
+          Builder(
+            builder: (link) => _HeaderLink(
+              s.rank,
+              locked: true,
+              onTap: () => BalloonPop.show(link, progress.graduated ? s.rankLockedSwitchBody : s.rankLockedTitle,
+                  size: StatsLayout.rankLockedBalloon, life: StatsLayout.playButtonBalloonLife),
+            ),
+          ),
+          const ColoredBox(color: Palette.ink, child: SizedBox(width: Strokes.button)),
+          _HeaderLink(s.srs, onTap: () => open(const SrsScreen())),
+        ] else
+          _HeaderLink(s.rank, onTap: () => open(const RankScreen())),
       ]),
     );
   }

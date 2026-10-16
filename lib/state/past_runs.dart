@@ -191,6 +191,13 @@ extension RunHistory on Progress {
     return daysInRow((d) => (days[d] ?? DayActivity.none) != DayActivity.none, now);
   }
 
+  /// Every ranked run with its rating, oldest first.
+  List<(PastRun, RunRating)> get rankedHistory => [
+        for (final r in pastRuns.reversed)
+          if (r.mode == PlayMode.ranked)
+            if (ratingOf(r) case final rating?) (r, rating),
+      ];
+
   /// A ranked run's rating, null for any other run.
   RunRating? ratingOf(PastRun run) {
     double? before;
@@ -222,11 +229,7 @@ extension RunHistory on Progress {
     final mine = swipes[run.id] ?? const [];
     final tobiLine = run.tobiLine;
     final ranked = run.mode == PlayMode.ranked
-        ? [
-            for (final r in pastRuns.reversed)
-              if (r.mode == PlayMode.ranked && !r.startedAt.isAfter(run.startedAt))
-                if (ratingOf(r) case final rating?) (r, rating),
-          ]
+        ? [for (final r in rankedHistory) if (!r.$1.startedAt.isAfter(run.startedAt)) r]
         : const <(PastRun, RunRating)>[];
     return RunDetail(
       run: run,

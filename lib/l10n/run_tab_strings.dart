@@ -55,6 +55,7 @@ extension RunTabStrings on S {
   String get runColScored => t('runColScored');
   String get runColPlayedLike => t('runColPlayedLike');
   String get runColRating => t('runColRating');
+  String get runColChange => t('runColChange');
   String get runTagForfeit => t('runTagForfeit');
   String get runTagPlaced => t('runTagPlaced');
   String get runFastestRanked => t('runFastestRanked');

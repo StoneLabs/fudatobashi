@@ -1,32 +1,34 @@
-import 'dart:math' as math;
-
 import 'package:flutter/material.dart' show Scaffold;
 import 'package:flutter/widgets.dart';
 
 import '../../config/design.dart';
 import '../../config/vector_art.dart';
 import '../../domain/rating.dart';
-import '../../domain/trainer.dart' show LearningMode;
 import '../../l10n/home_strings.dart';
 import '../../l10n/ranked_strings.dart';
+import '../../l10n/run_tab_strings.dart';
+import '../../l10n/srs_strings.dart';
 import '../../l10n/stats_strings.dart';
 import '../../l10n/strings.dart';
+import '../../state/past_runs.dart';
 import '../../state/scope.dart';
-import '../home/switch_banner.dart';
+import '../history/history_widgets.dart';
+import '../history/run_page.dart';
+import '../history/run_xp_tab.dart';
 import '../manga/manga.dart';
-import 'rank_badges.dart';
 import '../results/celebrations.dart';
 import '../results/rank_up_overlay.dart';
+import '../stats/stats_page.dart';
+import 'rank_badges.dart';
+import 'ranked_runs.dart';
 
-/// The rank ladder (spec phone 9): nine class rungs, coloured from white
-/// 入門 up through pink, yellow, green, sea and violet to a solid-ink A級,
-/// with the player's own rung tagged YOU (and scrolled into view), the next
+/// The rank page: the rating over the ranked runs, the class ladder (spec
+/// phone 9) and the latest ranked runs. The ladder's nine class rungs are
+/// coloured from white 入門 up through pink, yellow, green, sea and violet
+/// to a solid-ink A級, with the player's own rung tagged YOU, the next
 /// threshold tagged NEXT (with a rank-up preview alongside it), every class
-/// already passed stamped CLEAR and every one still ahead locked.
-///
-/// Before there is a rank, the ladder has no YOU rung: in all-known mode it
-/// waits for the first ranked run, and in journey mode it is dimmed and
-/// locked behind a card saying how the rank opens up.
+/// already passed stamped CLEAR and every one still ahead locked. Before
+/// the first ranked run there is no YOU rung and no history.
 class RankScreen extends StatelessWidget {
   const RankScreen({super.key});
 
@@ -34,214 +36,91 @@ class RankScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final s = S.of(context);
     final progress = ProgressScope.of(context);
-    final locked = progress.trainer.config.learningMode == LearningMode.journey;
-    final rating = locked || !progress.placed ? null : progress.currentRating;
+    final rating = progress.placed ? progress.currentRating : null;
     final band = rating == null ? null : Rating.bandOf(rating);
     final next = rating == null ? null : Rating.nextBand(rating);
     final bandIndex = band == null ? -1 : Rating.bands.indexOf(band);
-    final ladder = [for (var i = Rating.bands.length - 1; i >= 0; i--) Rating.bands[i]];
-    final rungs = _Ladder(
-      length: ladder.length,
-      focus: band == null ? ladder.length - 1 : ladder.indexOf(band),
-      rung: (i) {
-        final rungBand = ladder[i];
-        final rungIndex = Rating.bands.indexOf(rungBand);
-        return _Rung(
-          band: rungBand,
-          currentBand: band,
-          rating: rating,
-          nextThreshold: next?.minRating,
-          isYou: rungBand == band,
-          isNext: next != null && rungBand == next,
-          isCleared: band != null && rungIndex < bandIndex,
-          isLocked: locked || (band != null && rungIndex > bandIndex),
-          isTop: rungBand.id == 'A',
-        );
-      },
-    );
-
-    return Scaffold(
-      body: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: Gaps.gutter),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              const SizedBox(height: HeaderStyle.topGap),
-              _TopBar(rating: rating),
-              const SizedBox(height: Gaps.section),
-              if (!locked && rating == null) ...[
-                NarrationBox(
-                  child: FittedBox(
-                    fit: BoxFit.scaleDown,
-                    alignment: Alignment.centerLeft,
-                    child: Text(s.rankedUnplacedLine,
-                        style: const TextStyle(fontWeight: Weights.bold, fontSize: RankLockLayout.noteFont)),
-                  ),
-                ),
-                const SizedBox(height: Gaps.section),
-              ],
-              Expanded(child: locked ? _LockedLadder(rungs, graduated: progress.graduated) : rungs),
-            ],
+    final history = progress.rankedHistory;
+    return StatsPage(
+      title: s.rank,
+      sub: s.other.rank,
+      trailing: rating == null ? null : _RatingReadout(rating),
+      body: StatsPageList(children: [
+        if (rating == null) ...[
+          NarrationBox(
+            child: FittedBox(
+              fit: BoxFit.scaleDown,
+              alignment: Alignment.centerLeft,
+              child: Text(s.rankedUnplacedLine,
+                  style: const TextStyle(fontWeight: Weights.bold, fontSize: RankLockLayout.noteFont)),
+            ),
           ),
+          const SizedBox(height: HistoryRunStyle.sectionGap),
+        ],
+        if (history.length > 1)
+          HistorySection(
+            title: s.rankRatingTitle,
+            sub: s.sub?.rankRatingTitle,
+            note: s.runSoFar(history.length),
+            child: RunPanel(gap: false, children: [RatingChart([for (final (_, r) in history) r.after])]),
+          ),
+        HistorySection(
+          title: s.rankClassesTitle,
+          sub: s.sub?.rankClassesTitle,
+          child: Column(children: [
+            for (final (i, rungBand) in Rating.bands.reversed.indexed) ...[
+              if (i > 0) const SizedBox(height: RankLayout.rungGap),
+              _Rung(
+                band: rungBand,
+                currentBand: band,
+                rating: rating,
+                nextThreshold: next?.minRating,
+                isYou: rungBand == band,
+                isNext: next != null && rungBand == next,
+                isCleared: band != null && Rating.bands.indexOf(rungBand) < bandIndex,
+                isLocked: band != null && Rating.bands.indexOf(rungBand) > bandIndex,
+                isTop: rungBand.id == 'A',
+              ),
+            ],
+          ]),
         ),
-      ),
+        if (history.isNotEmpty)
+          HistorySection(
+            title: s.runRankedTitle,
+            sub: s.sub?.runRankedTitle,
+            child: RunPanel(gap: false, children: [RankedRunsTable(history, onOpen: (run) => openRun(context, run))]),
+          ),
+      ]),
     );
   }
 }
 
-/// The rungs in a scrolling list that opens with rung [focus] centred.
-class _Ladder extends StatefulWidget {
-  const _Ladder({required this.length, required this.focus, required this.rung});
-  final int length;
-  final int focus;
-  final Widget Function(int index) rung;
-
-  @override
-  State<_Ladder> createState() => _LadderState();
-}
-
-class _LadderState extends State<_Ladder> {
-  ScrollController? _scroll;
-
-  @override
-  void dispose() {
-    _scroll?.dispose();
-    super.dispose();
-  }
-
-  /// Rungs have a fixed height, so the offset centring [focus] is known
-  /// before the first layout.
-  double _offsetCentring(double viewport) {
-    const step = RankLayout.rungHeight + RankLayout.rungGap;
-    final content = widget.length * step - RankLayout.rungGap;
-    final centred = widget.focus * step - (viewport - RankLayout.rungHeight) / 2;
-    return centred.clamp(0.0, math.max(0.0, content - viewport));
-  }
-
-  @override
-  Widget build(BuildContext context) => LayoutBuilder(builder: (context, box) {
-        _scroll ??= ScrollController(initialScrollOffset: _offsetCentring(box.maxHeight));
-        return ListView.separated(
-          controller: _scroll,
-          itemCount: widget.length,
-          separatorBuilder: (_, _) => const SizedBox(height: RankLayout.rungGap),
-          itemBuilder: (context, i) => widget.rung(i),
-        );
-      });
-}
-
-/// Journey mode's ladder: a faint, locked preview behind a card saying how
-/// the rank opens up. Before the graduation exam that is passing it; after,
-/// the card offers the switch to all-known mode, where ranked runs are.
-class _LockedLadder extends StatelessWidget {
-  const _LockedLadder(this.ladder, {required this.graduated});
-  final Widget ladder;
-  final bool graduated;
+/// The rating, beside the title.
+class _RatingReadout extends StatelessWidget {
+  const _RatingReadout(this.rating);
+  final double rating;
 
   @override
   Widget build(BuildContext context) {
     final s = S.of(context);
-    return Stack(
-      fit: StackFit.expand,
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.end,
+      mainAxisSize: MainAxisSize.min,
       children: [
-        IgnorePointer(child: Opacity(opacity: RankLockLayout.ladderOpacity, child: ladder)),
-        Center(
-          child: Padding(
-            padding: const EdgeInsets.only(top: RankLockLayout.tobiRoom),
-            child: Stack(
-              clipBehavior: Clip.none,
-              children: [
-                MangaPanel(
-                  shape: const PanelShape(topLeft: Offset(0, RankLockLayout.cardCut)),
-                  padding: RankLockLayout.cardPadding,
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      Row(children: [
-                        MangaIcon(IconArt.lock, size: RankLockLayout.lockIcon),
-                        const SizedBox(width: Gaps.small),
-                        Expanded(
-                          child: Text.rich(
-                            Phrases.span(graduated ? s.rankLockedSwitchTitle : s.rankLockedTitle),
-                            style: const TextStyle(
-                              fontFamily: Fonts.display,
-                              fontSize: RankLockLayout.titleFont,
-                              height: TypeScale.displayLineHeight,
-                            ),
-                          ),
-                        ),
-                      ]),
-                      const SizedBox(height: Gaps.small),
-                      Text.rich(
-                        Phrases.span(graduated ? s.rankLockedSwitchBody : s.rankLockedBody),
-                        style: const TextStyle(
-                          fontSize: RankLockLayout.bodyFont,
-                          fontWeight: Weights.bold,
-                          height: RankLockLayout.bodyLineHeight,
-                        ),
-                      ),
-                      if (graduated) ...[
-                        const SizedBox(height: Gaps.section),
-                        SizedBox(
-                          height: RankLockLayout.buttonHeight,
-                          child: InkButton(
-                            onTap: () => confirmSwitchToAllKnown(context),
-                            child: Text.rich(Phrases.span(s.rankLockedSwitchButton),
-                                style: const TextStyle(fontWeight: Weights.black, fontSize: TypeScale.button)),
-                          ),
-                        ),
-                      ],
-                    ],
-                  ),
-                ),
-                Placed(RankLockLayout.tobi, child: Tobi(pose: graduated ? TobiPose.cheering : TobiPose.pointing)),
-              ],
-            ),
+        Text(
+          s.ratingLabel,
+          style: const TextStyle(
+            fontWeight: Weights.black,
+            fontSize: RankLayout.ratingLabelFont,
+            letterSpacing: RankLayout.ratingLabelTracking * RankLayout.ratingLabelFont,
           ),
+        ),
+        Text(
+          rating.round().toString(),
+          style: const TextStyle(
+              fontFamily: Fonts.display, fontSize: RankLayout.ratingFont, height: TypeScale.displayLineHeight),
         ),
       ],
-    );
-  }
-}
-
-/// The title, and the rating once there is one.
-class _TopBar extends StatelessWidget {
-  const _TopBar({required this.rating});
-  final double? rating;
-
-  @override
-  Widget build(BuildContext context) {
-    final s = S.of(context);
-    return IntrinsicHeight(
-      child: Row(
-        children: [
-          InkIconButton(icon: IconArt.back, semanticLabel: s.back, onTap: () => Navigator.maybePop(context)),
-          const SizedBox(width: Gaps.section),
-          Expanded(child: ScreenTitle(s.rank, sub: s.other.rank)),
-          if (rating case final rating?)
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.end,
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text(
-                  s.ratingLabel,
-                  style: const TextStyle(
-                    fontWeight: Weights.black,
-                    fontSize: RankLayout.ratingLabelFont,
-                    letterSpacing: RankLayout.ratingLabelTracking * RankLayout.ratingLabelFont,
-                  ),
-                ),
-                Text(
-                  rating.round().toString(),
-                  style: const TextStyle(
-                      fontFamily: Fonts.display, fontSize: RankLayout.ratingFont, height: TypeScale.displayLineHeight),
-                ),
-              ],
-            ),
-        ],
-      ),
     );
   }
 }

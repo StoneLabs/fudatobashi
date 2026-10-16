@@ -538,6 +538,31 @@ abstract final class RunRatingTuning {
   static const double openSpan = 400;
 }
 
+/// The SRS page (`lib/ui/stats/srs_screen.dart`).
+abstract final class SrsTuning {
+  /// A card swiped fewer times than this is "New".
+  static const int newBelowSwipes = 3;
+
+  /// Days the time and speed charts show, today included.
+  static const int chartDays = 14;
+
+  /// Days the known-cards trend looks back over.
+  static const int trendDays = 7;
+
+  /// A card's typical time: the median of its last this many right swipes.
+  static const int typicalWindow = 10;
+
+  /// A recall chance under this is marked in the card table.
+  static const double lowRecall = 0.8;
+}
+
+/// The practice calendar's shades: swipes in a day for a usual day and
+/// for a lot.
+abstract final class CalendarTuning {
+  static const int usualSwipes = 30;
+  static const int lotSwipes = 100;
+}
+
 /// History's 暗記練 game page (see `AnkirenReview`): the cards it lists as
 /// kept misplacing.
 abstract final class AnkirenReviewTuning {

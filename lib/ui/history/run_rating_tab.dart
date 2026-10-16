@@ -1,11 +1,8 @@
-import 'dart:math' as math;
-
 import 'package:flutter/material.dart';
 
 import '../../config/config.dart';
 import '../../config/design.dart';
 import '../../domain/rating.dart';
-import '../../l10n/history_strings.dart';
 import '../../l10n/ranked_strings.dart';
 import '../../l10n/run_tab_strings.dart';
 import '../../l10n/stats_strings.dart';
@@ -13,6 +10,7 @@ import '../../l10n/strings.dart';
 import '../../state/past_runs.dart';
 import '../../state/play_config.dart';
 import '../play/time_format.dart';
+import '../rank/ranked_runs.dart';
 import 'history_widgets.dart';
 import 'run_xp_tab.dart';
 
@@ -185,48 +183,8 @@ class _RankedRuns extends StatelessWidget {
       note: s.runSoFar(runs.length),
       child: RunPanel(gap: false, children: [
         if (runs.length > 1)
-          SizedBox(
-            height: RunTabsStyle.ratingChartHeight,
-            child: CustomPaint(
-              painter: _RatingChartPainter(
-                [for (final (_, r) in runs) r.after],
-                runs.indexWhere((r) => r.$1.id == me.id),
-                MediaQuery.textScalerOf(context),
-              ),
-            ),
-          ),
-        Table(
-          columnWidths: const {0: FlexColumnWidth(RunTabsStyle.runColumnFlex)},
-          defaultColumnWidth: const IntrinsicColumnWidth(),
-          defaultVerticalAlignment: TableCellVerticalAlignment.middle,
-          children: [
-            TableRow(
-              decoration: const BoxDecoration(border: Border(bottom: BorderSide(width: Strokes.label))),
-              children: [
-                for (final (i, h) in [s.runColRun, s.runColScored, s.runColPlayedLike, s.runColRating].indexed)
-                  _cell(h.toUpperCase(), RunTabsStyle.headStyle, right: i > 0),
-              ],
-            ),
-            for (final (run, rating) in runs.reversed.take(RunRatingTuning.tableRuns))
-              TableRow(
-                decoration: BoxDecoration(
-                  color: run.id == me.id ? Palette.sunSoft : null,
-                  border: const Border(bottom: BorderSide(color: RunTabsStyle.rule)),
-                ),
-                children: [
-                  _cell(
-                    [
-                      s.sessionDate(run.startedAt),
-                      if (run.forfeit) s.runTagForfeit else if (rating.before == null) s.runTagPlaced,
-                    ].join(' · '),
-                    run.id == me.id ? RunTabsStyle.lineStyle : RunTabsStyle.rowStyle,
-                  ),
-                  for (final v in [runTimeText(run), '${rating.performance.round()}', '${rating.after.round()}'])
-                    _cell(v, run.id == me.id ? RunTabsStyle.lineStyle : RunTabsStyle.rowStyle, right: true),
-                ],
-              ),
-          ],
-        ),
+          RatingChart([for (final (_, r) in runs) r.after], mine: runs.indexWhere((r) => r.$1.id == me.id)),
+        RankedRunsTable(runs, highlight: me.id),
         if (verdict != null) ...[
           const SizedBox(height: Gaps.small),
           Text(verdict, style: RunTabsStyle.lineStyle),
@@ -234,11 +192,6 @@ class _RankedRuns extends StatelessWidget {
       ]),
     );
   }
-
-  static Widget _cell(String text, TextStyle style, {bool right = false}) => Padding(
-        padding: RunTabsStyle.tableCellPadding,
-        child: Text(text, textAlign: right ? TextAlign.right : TextAlign.left, style: style),
-      );
 
   /// The run's fastest-yet or highest-rating-yet line, when it is either.
   String? _verdict(S s) {
@@ -249,79 +202,6 @@ class _RankedRuns extends StatelessWidget {
     if (earlier.every((r) => r.$2.after < after)) return s.runBestRating;
     return null;
   }
-}
-
-/// The rating after each ranked run as a line, with a dashed line at each
-/// class threshold in reach; this run is a pink diamond.
-class _RatingChartPainter extends CustomPainter {
-  _RatingChartPainter(this.ratings, this.mine, this.scaler);
-  final List<double> ratings;
-  final int mine;
-  final TextScaler scaler;
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    var lo = ratings.reduce(math.min), hi = ratings.reduce(math.max);
-    if (Rating.bandOf(lo).minRating case final m when m.isFinite) lo = m;
-    if (Rating.nextBand(hi) case final next?) hi = next.minRating;
-    final pad = math.max(1.0, hi - lo) * RunTabsStyle.ratingChartPad;
-    lo -= pad;
-    hi += pad;
-    const inset = RunTabsStyle.ratingPointInset;
-    Offset at(int i, double r) => Offset(
-          inset + (size.width - 2 * inset) * i / (ratings.length - 1),
-          size.height * (hi - r) / (hi - lo),
-        );
-    final classLine = Paint()
-      ..color = HistoryRunStyle.behind
-      ..strokeWidth = Strokes.hairline;
-    for (final band in Rating.bands) {
-      final r = band.minRating;
-      if (!r.isFinite || r < lo || r > hi) continue;
-      final y = at(0, r).dy;
-      for (var x = 0.0; x < size.width; x += Strokes.dash[0] + Strokes.dash[1]) {
-        canvas.drawLine(Offset(x, y), Offset(math.min(size.width, x + Strokes.dash[0]), y), classLine);
-      }
-      final label = TextPainter(
-        text: TextSpan(text: '${band.label} ${r.round()}', style: RunTabsStyle.chartLabelStyle),
-        textDirection: TextDirection.ltr,
-        textScaler: scaler,
-      )..layout();
-      label.paint(canvas, Offset(0, y - label.height));
-    }
-    final line = Path()..moveTo(at(0, ratings[0]).dx, at(0, ratings[0]).dy);
-    for (var i = 1; i < ratings.length; i++) {
-      line.lineTo(at(i, ratings[i]).dx, at(i, ratings[i]).dy);
-    }
-    canvas.drawPath(
-        line,
-        Paint()
-          ..style = PaintingStyle.stroke
-          ..strokeWidth = RunTabsStyle.ratingLineStroke);
-    final ring = Paint()
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = Strokes.hairline;
-    for (final (i, r) in ratings.indexed) {
-      final p = at(i, r);
-      if (i == mine) {
-        const d = RunTabsStyle.ratingMineMark;
-        final diamond = Path()
-          ..moveTo(p.dx, p.dy - d)
-          ..lineTo(p.dx + d, p.dy)
-          ..lineTo(p.dx, p.dy + d)
-          ..lineTo(p.dx - d, p.dy)
-          ..close();
-        canvas.drawPath(diamond, Paint()..color = Palette.pink);
-        canvas.drawPath(diamond, ring);
-      } else {
-        canvas.drawCircle(p, RunTabsStyle.ratingPoint, Paint()..color = Palette.paper);
-        canvas.drawCircle(p, RunTabsStyle.ratingPoint, ring);
-      }
-    }
-  }
-
-  @override
-  bool shouldRepaint(_RatingChartPainter old) => old.ratings != ratings || old.mine != mine || old.scaler != scaler;
 }
 
 /// D26: the exam and 100-card free play don't move the rating; the exam
