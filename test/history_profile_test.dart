@@ -35,7 +35,6 @@ import 'package:fudatobashi/ui/home/home_widgets.dart';
 
 import 'test_ankiren.dart';
 import 'test_l10n.dart';
-import 'test_tabs.dart';
 import 'test_vector_art.dart';
 
 const _phone = Size(384, 832);
@@ -158,7 +157,7 @@ void main() {
         onPhone(tester, fontScale: fontScale, size: phone);
         await tester.pumpWidget(RepaintBoundary(key: const ValueKey('screen'), child: FudatobashiApp(progress: p)));
         await tester.pump(const Duration(milliseconds: 500));
-        await tester.tap(tabButton(s.history));
+        await tester.tap(find.descendant(of: find.byType(MangaTabBar), matching: find.text(s.history)));
         await tester.pump(const Duration(milliseconds: 500));
         expect(tester.takeException(), isNull);
 

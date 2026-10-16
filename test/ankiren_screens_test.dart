@@ -57,7 +57,6 @@ import 'package:fudatobashi/ui/sound/sounds.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 
 import 'test_l10n.dart';
-import 'test_tabs.dart';
 import 'test_vector_art.dart';
 
 const _phone = Size(384, 832);
@@ -290,7 +289,7 @@ void main() {
       phone(tester, fontScale: 1.1);
       await tester.pumpWidget(RepaintBoundary(key: const ValueKey('screen'), child: FudatobashiApp(progress: p)));
       await tester.pump(const Duration(milliseconds: 500));
-      await tester.tap(tabButton(s.sideTrips));
+      await tester.tap(find.descendant(of: find.byType(MangaTabBar), matching: find.text(s.sideTrips)));
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 300));
     }
@@ -807,7 +806,7 @@ void main() {
         phone(tester, fontScale: 1.3);
         await tester.pumpWidget(RepaintBoundary(key: const ValueKey('screen'), child: FudatobashiApp(progress: p)));
         await tester.pump(const Duration(milliseconds: 500));
-        await tester.tap(tabButton(t.sideTrips));
+        await tester.tap(find.descendant(of: find.byType(MangaTabBar), matching: find.text(t.sideTrips)));
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 300));
         expect(tester.takeException(), isNull);

@@ -1,4 +1,3 @@
-import 'package:flutter/material.dart' show Tooltip;
 import 'package:flutter/widgets.dart';
 
 import '../../config/design.dart';
@@ -65,7 +64,21 @@ class _Tile extends StatelessWidget {
   Widget build(BuildContext context) {
     final fg = active ? Palette.paper : Palette.ink;
     final blocked = tab.onBlocked != null;
-    Widget contents = Center(child: MangaIcon(tab.icon, size: TabBarStyle.icon, color: fg));
+    Widget contents = Column(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        MangaIcon(tab.icon, size: TabBarStyle.icon, color: fg),
+        const SizedBox(height: TabBarStyle.iconGap),
+        FittedBox(
+          fit: BoxFit.scaleDown,
+          child: Text(
+            tab.label,
+            maxLines: 1,
+            style: TextStyle(fontSize: TabBarStyle.label, fontWeight: Weights.black, color: fg, height: TabBarStyle.lineHeight),
+          ),
+        ),
+      ],
+    );
     if (blocked) contents = Opacity(opacity: TabBarStyle.blockedOpacity, child: contents);
     return Semantics(
       selected: active,
@@ -74,10 +87,7 @@ class _Tile extends StatelessWidget {
         scale: Press.tabScale,
         turn: 0,
         semanticLabel: tab.label,
-        builder: (context, _) => Tooltip(
-          message: tab.label,
-          excludeFromSemantics: true,
-          child: Stack(clipBehavior: Clip.none, fit: StackFit.expand, children: [
+        builder: (context, _) => Stack(clipBehavior: Clip.none, fit: StackFit.expand, children: [
           AnimatedContainer(
             duration: Motion.tab,
             decoration: BoxDecoration(
@@ -88,7 +98,6 @@ class _Tile extends StatelessWidget {
           ),
           if (tab.cover != null) Positioned.fill(child: tab.cover!),
         ]),
-        ),
       ),
     );
   }

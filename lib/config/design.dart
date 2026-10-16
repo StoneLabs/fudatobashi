@@ -428,11 +428,14 @@ abstract final class CacheLimits {
 }
 
 abstract final class TabBarStyle {
-  static const double height = 52;
+  static const double lineHeight = 1.15;
+  static const double height = 62;
   static const double gap = 8;
-  static const double icon = 28;
+  static const double icon = 21;
+  static const double iconGap = 4;
+  static const double label = 14;
 
-  /// How much of a blocked tile's icon shows through.
+  /// How much of a blocked tile's icon and label shows through.
   static const double blockedOpacity = 0.4;
 }
 
@@ -461,7 +464,7 @@ abstract final class TabLockStyle {
   static const double shackle = 7;
   static const double shackleWidth = 3.4;
   static const double keyhole = 2.6;
-  static const Alignment lockAt = Alignment.center;
+  static const Alignment lockAt = Alignment(0, -0.22);
 
   /// The padlock bobs by [bob] px and rocks by [rockDeg] each [bobPeriod].
   static const Duration bobPeriod = Duration(milliseconds: 1800);
