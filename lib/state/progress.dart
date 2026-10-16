@@ -1273,7 +1273,8 @@ class Progress extends ChangeNotifier {
     final passed = config.mode == PlayMode.exam && run.finished && tobi != null && score!.scored < tobi;
     final graduated = journey && passed && !ledger.graduated;
     final before = rating;
-    final rated = config.mode == PlayMode.ranked ? _rated(score!) : null;
+    final forfeit = config.mode == PlayMode.ranked && !run.finished;
+    final rated = config.mode == PlayMode.ranked ? _rated(forfeit ? null : score) : null;
     final newCards = config.mode == PlayMode.training && journey
         ? {for (final a in run.attempts) if (!_metBefore(a.card.poemId)) a.card.poemId}.toList()
         : const <int>[];
@@ -1297,7 +1298,7 @@ class Progress extends ChangeNotifier {
             planned: run.cards.length,
             completed: run.finished,
             clockUs: Value(clock > Duration.zero ? clock.inMicroseconds : null),
-            scoredMs: Value(score?.scored.inMilliseconds),
+            scoredMs: Value(forfeit ? null : score?.scored.inMilliseconds),
             rating: Value(rated?.rating),
             performance: Value(rated?.performance),
             tobiMs: Value(tobi?.inMilliseconds),
@@ -1410,19 +1411,19 @@ class Progress extends ChangeNotifier {
   Future<RunRow> _runRow(int id) => (db.select(db.runs)..where((r) => r.id.equals(id))).getSingle();
 
   /// The rating a ranked run with [score] leaves, and the performance of its
-  /// scored time: the rating moves toward it, or straight to it for the
-  /// first (placement).
-  ({double rating, double performance}) _rated(RankedScore score) {
-    final performance = Rating.performance(score.scored.inMilliseconds.toDouble());
+  /// scored time (a forfeit, with no [score]: [RankedTuning.forfeitPerformance]):
+  /// the rating moves toward it, or straight to it for the first (placement).
+  ({double rating, double performance}) _rated(RankedScore? score) {
+    final performance =
+        score == null ? RankedTuning.forfeitPerformance : Rating.performance(score.scored.inMilliseconds.toDouble());
     return (rating: Rating.update(rating, performance, ratedRuns.length), performance: performance);
   }
 
   /// A ranked run that never got recorded (the app closed mid-run) is a
-  /// forfeit with every card a slow miss. When it ended is not known: it is
-  /// stored as ending as it started.
+  /// forfeit. When it ended is not known: it is stored as ending as it
+  /// started.
   Future<void> _forfeitUnrecorded(DateTime startedAt) async {
-    final score = RankedScore.blank();
-    final rated = _rated(score);
+    final rated = _rated(null);
     final day = await _storeDay(startedAt);
     final id = await db.into(db.runs).insert(RunsCompanion.insert(
           mode: PlayMode.ranked,
@@ -1434,7 +1435,6 @@ class Progress extends ChangeNotifier {
           goalMs: trainer.goalMs.round(),
           planned: RankedTuning.cards,
           completed: false,
-          scoredMs: Value(score.scored.inMilliseconds),
           rating: Value(rated.rating),
           performance: Value(rated.performance),
         ));

@@ -46,7 +46,7 @@ class RankedRunsTable extends StatelessWidget {
     TableRow row(PastRun run, RunRating rating) {
       final style = run.id == highlight ? RunTabsStyle.lineStyle : RunTabsStyle.rowStyle;
       final change = rating.before == null ? '' : ratingChangeText(rating.after - rating.before!);
-      final tag = run.forfeit ? s.runTagForfeit : rating.before == null ? s.runTagPlaced : null;
+      final tag = rating.before == null ? s.runTagPlaced : null;
       final cells = [
         Padding(
           padding: RunTabsStyle.tableCellPadding,
@@ -55,7 +55,7 @@ class RankedRunsTable extends StatelessWidget {
             if (tag != null) Text(tag, style: RunTabsStyle.noteStyle),
           ]),
         ),
-        for (final v in [runTimeText(run), '${rating.performance.round()}', '${rating.after.round()}'])
+        for (final v in [runTimeText(s, run), '${rating.performance.round()}', '${rating.after.round()}'])
           _cell(v, style),
         _cell(change, style.copyWith(color: _changeColor(rating))),
       ];

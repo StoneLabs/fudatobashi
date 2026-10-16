@@ -15,7 +15,6 @@ import 'package:fudatobashi/l10n/ranked_strings.dart';
 import 'package:fudatobashi/l10n/strings.dart';
 import 'package:fudatobashi/domain/card_stats.dart';
 import 'package:fudatobashi/domain/play_session.dart';
-import 'package:fudatobashi/domain/rating.dart';
 import 'package:fudatobashi/domain/trainer.dart';
 import 'package:fudatobashi/state/play_config.dart';
 import 'package:fudatobashi/state/progress.dart';
@@ -176,7 +175,7 @@ void main() {
     await tester.pumpWidget(const SizedBox());
   });
 
-  testWidgets('leaving a ranked run asks first, then records a forfeit that places the rating low', (tester) async {
+  testWidgets('leaving a ranked run asks first, then records a forfeit that places the rating at 0', (tester) async {
     late Progress p;
     await tester.runAsync(() async {
       p = await Progress.open(AppDatabase(NativeDatabase.memory()));
@@ -217,7 +216,7 @@ void main() {
     expect(p.runs.single.mode, PlayMode.ranked);
     expect(p.runs.single.completed, isFalse);
     expect(p.rating, isNotNull, reason: 'a forfeit still places');
-    expect(p.rating!, lessThan(Rating.bands[1].minRating), reason: '97 cards left count as slow misses');
+    expect(p.rating, RankedTuning.forfeitPerformance, reason: 'a forfeit plays like 0');
     await tester.pumpWidget(const SizedBox());
   });
 

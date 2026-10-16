@@ -49,7 +49,7 @@ void main() {
       expect(score.scored, run.total! + const Duration(milliseconds: 3 * RankedTuning.missPenaltyMs));
     });
 
-    test('a forfeit is never better than missing every card left at the same pace', () {
+    test('a run left early is never scored better than missing every card left at the same pace', () {
       for (final ms in [800, 3000, 9000]) {
         final left = play(all, ms, stopAfter: 40);
         final forfeit = RankedScore.of(left, left.elapsed).scored;
@@ -143,6 +143,57 @@ void main() {
       await db.close();
     });
 
+    test('a forfeit on the first ranked run places the rating at 0, with no scored time', () async {
+      final db = AppDatabase(NativeDatabase.memory());
+      final p = await Progress.open(db);
+      await p.setLearningMode(LearningMode.allKnown);
+      final report = await p.recordRun(play(all, 900, stopAfter: 60), const PlayConfig(mode: PlayMode.ranked), DateTime.now());
+      expect(report.forfeit, isTrue);
+      expect(report.placement, isTrue);
+      expect(p.rating, RankedTuning.forfeitPerformance);
+      final row = p.runs.single;
+      expect(row.performance, RankedTuning.forfeitPerformance);
+      expect(row.scoredMs, isNull);
+      expect(row.clockUs, isNotNull, reason: 'the time played still counts as practice');
+      final past = p.pastRuns.single;
+      expect(past.placement, isTrue);
+      expect(past.time, isNull);
+      expect(p.ratingOf(past), (before: null, after: 0.0, performance: 0.0));
+      await db.close();
+    });
+
+    test('a later forfeit plays like 0 and moves the rating by K, as any ranked run', () async {
+      final db = AppDatabase(NativeDatabase.memory());
+      final p = await Progress.open(db);
+      await p.setLearningMode(LearningMode.allKnown);
+      const ranked = PlayConfig(mode: PlayMode.ranked);
+      Future<void> forfeit(double k) async {
+        final before = p.rating!;
+        final report = await p.recordRun(play(all, 900, stopAfter: 30), ranked, DateTime.now());
+        expect(report.forfeit, isTrue);
+        expect(p.rating, closeTo(before + k * (RankedTuning.forfeitPerformance - before), 1e-9));
+        expect(p.runs.last.performance, RankedTuning.forfeitPerformance);
+      }
+
+      await p.recordRun(play(all, 900), ranked, DateTime.now());
+      await forfeit(RatingModel.provisionalK);
+      while (p.ratedRuns.length < RatingModel.provisionalSessions) {
+        await p.recordRun(play(all, 900), ranked, DateTime.now());
+      }
+      await forfeit(RatingModel.establishedK);
+      expect(p.ratedRuns, hasLength(RatingModel.provisionalSessions + 1), reason: 'forfeits count as runs');
+
+      final again = await Progress.open(db);
+      expect(again.rating, p.rating, reason: 'the same rating after a reload');
+      final history = again.rankedHistory;
+      var replayed = history.first.$2.after;
+      for (final (i, (_, r)) in history.indexed.skip(1)) {
+        replayed = Rating.update(replayed, r.performance, i);
+      }
+      expect(replayed, closeTo(again.rating!, 1e-9), reason: 'replaying the performances gives the same rating');
+      await db.close();
+    });
+
     test('the ranked demo seeds an all-known player whose ranked runs make a rating history', () async {
       final db = AppDatabase(NativeDatabase.memory());
       final p = await Progress.open(db);
@@ -165,7 +216,9 @@ void main() {
       final again = await Progress.open(db);
       expect(again.runs.single.completed, isFalse);
       expect(again.runs.single.mode, PlayMode.ranked);
-      expect(again.rating, closeTo(Rating.performance(RankedScore.blank().scored.inMilliseconds.toDouble()), 1e-6));
+      expect(again.runs.single.performance, RankedTuning.forfeitPerformance);
+      expect(again.runs.single.scoredMs, isNull, reason: 'a forfeit has no scored time');
+      expect(again.rating, RankedTuning.forfeitPerformance, reason: 'it placed the rating');
       final third = await Progress.open(db);
       expect(third.runs, hasLength(1), reason: 'counted once');
       await db.close();

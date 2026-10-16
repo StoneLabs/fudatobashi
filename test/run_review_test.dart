@@ -27,12 +27,6 @@ void main() {
     expect(t.missCards, [1]);
   });
 
-  test("A forfeit's cards left climb evenly to the scored time", () {
-    final t = RunTimeline.of([_swipe(1000)], clockMs: 1000, cardsLeft: 2, endMs: 5000);
-    expect(t.ms, [0, 1000, 3000, 5000]);
-    expect(t.missCards, [2, 3]);
-  });
-
   test('The bottom is the slowest earlier run, but never past twice this run', () {
     const run = RunTimeline([0, 50000, 100000]);
     expect(run.bottomWith(const []), 100000, reason: 'no reference: the run ends in the corner');

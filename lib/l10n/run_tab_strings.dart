@@ -47,8 +47,8 @@ extension RunTabStrings on S {
   String get runPlacementShout => t('runPlacementShout');
   String runPlacementText(Object a0, Object a1) => f('runPlacementText', [a0, a1]);
   String runClassGap(Object a0, Object a1, Object a2) => f('runClassGap', [a0, a1, a2]);
-  String runForfeitSum(Object a0, Object a1, Object a2, Object a3, Object a4, Object a5) => f('runForfeitSum', [a0, a1, a2, a3, a4, a5]);
-  String runForfeitText(Object a0, Object a1) => f('runForfeitText', [a0, a1]);
+  String runPlacementForfeitText(Object a0) => f('runPlacementForfeitText', [a0]);
+  String runForfeitText(Object a0) => f('runForfeitText', [a0]);
   String get runRankedTitle => t('runRankedTitle');
   String runSoFar(Object a0) => f('runSoFar', [a0]);
   String get runColRun => t('runColRun');
@@ -56,7 +56,6 @@ extension RunTabStrings on S {
   String get runColPlayedLike => t('runColPlayedLike');
   String get runColRating => t('runColRating');
   String get runColChange => t('runColChange');
-  String get runTagForfeit => t('runTagForfeit');
   String get runTagPlaced => t('runTagPlaced');
   String get runFastestRanked => t('runFastestRanked');
   String get runBestRating => t('runBestRating');

@@ -561,8 +561,10 @@ class RunTabList extends StatelessWidget {
       );
 }
 
-/// The time a past run is shown by: its scored time or clock, or "—".
-String runTimeText(PastRun run) => switch (run.time) {
+/// The time a past run is shown by: its scored time or clock, "Forfeit"
+/// for a forfeit, which has none, or "—".
+String runTimeText(S s, PastRun run) => switch (run.time) {
+      _ when run.forfeit => s.historyForfeit,
       final t? => formatTenths(t),
       null => missingTime,
     };

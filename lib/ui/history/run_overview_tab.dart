@@ -127,7 +127,7 @@ class _HundredHeadline extends StatelessWidget {
       _HeadlinePanel(children: [
         _BigTime(
           label: run.scored ? s.runScoredTime : s.runTimeLabel,
-          value: runTimeText(run),
+          value: runTimeText(s, run),
           badge: _hundredCheer(context),
         ),
         if (run.forfeit) ...[
@@ -138,7 +138,7 @@ class _HundredHeadline extends StatelessWidget {
         FactGrid(facts, perRow: facts.length),
       ]),
       _FactLine([
-        if (run.scored && clock != null) s.runClockLine(formatTenths(clock), misses),
+        if (run.scored && !run.forfeit && clock != null) s.runClockLine(formatTenths(clock), misses),
         if (rating != null)
           '${rating.before == null ? '' : '${rating.before!.round()} → '}${rating.after.round()} · ${Rating.bandOf(rating.after).label}',
       ]),

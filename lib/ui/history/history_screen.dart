@@ -509,7 +509,6 @@ class _RunRow extends StatelessWidget {
         change.$2.minRating > change.$1.minRating
             ? ResultBadge(s.historyUpTo(change.$2.label), cheer: true)
             : ResultBadge(s.historyDownTo(change.$2.label), muted: true),
-      if (run.forfeit) ResultBadge(s.historyForfeit, muted: true),
       if (run.mode == PlayMode.exam) run.passed ? ResultBadge(s.runExamWon, cheer: true) : ResultBadge(s.runExamLost, muted: true),
       if (hundred && progress.bestOfKind(run)) ResultBadge(s.historyBest, cheer: true),
     ];
@@ -540,14 +539,16 @@ class _RunRow extends StatelessWidget {
               text: ' · $ratingText',
               style: TextStyle(color: up ? HistoryRunStyle.ahead : HistoryRunStyle.behind)),
       ])),
-      value: hundred ? runTimeText(run) : (perCard == null ? missingTime : '${formatSeconds(perCard)}s'),
+      value: hundred ? runTimeText(s, run) : (perCard == null ? missingTime : '${formatSeconds(perCard)}s'),
       caption: !hundred
           ? s.historyPerCardCaption
-          : run.mode == PlayMode.exam
-              ? s.historyYourTimeCaption
-              : run.scored
-                  ? s.historyScoredCaption
-                  : s.historyTimeCaption,
+          : run.forfeit
+              ? ''
+              : run.mode == PlayMode.exam
+                  ? s.historyYourTimeCaption
+                  : run.scored
+                      ? s.historyScoredCaption
+                      : s.historyTimeCaption,
       onTap: () => openRun(context, run),
     );
   }

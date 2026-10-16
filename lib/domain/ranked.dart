@@ -6,10 +6,10 @@ import 'play_session.dart';
 /// The time a ranked run or a graduation exam try is judged by: the clock
 /// time plus a penalty for each miss.
 ///
-/// A forfeit (a ranked run left before its last card) counts every card
-/// left as a miss that took the run's pace so far, or
-/// [RankedTuning.forfeitCardMs] when that is quicker, so leaving is never
-/// better than missing every card left at the same pace.
+/// A run left before its last card counts every card left as a miss that
+/// took the run's pace so far, or [RankedTuning.forfeitCardMs] when that is
+/// quicker. A ranked forfeit is rated without it, at
+/// [RankedTuning.forfeitPerformance].
 class RankedScore {
   const RankedScore({
     required this.clock,
@@ -33,21 +33,12 @@ class RankedScore {
     );
   }
 
-  /// A forfeit with nothing recorded (the app closed mid-run): every card
-  /// a slow miss.
-  factory RankedScore.blank() => RankedScore(
-        clock: Duration.zero,
-        misses: 0,
-        cardsLeft: RankedTuning.cards,
-        forfeitPerCard: Duration(microseconds: (RankedTuning.forfeitCardMs * 1000).round()),
-      );
-
   final Duration clock;
 
   /// Cards missed or marked wrong, an undone swipe each time.
   final int misses;
 
-  /// Cards never swiped (a forfeit), each counted as a miss.
+  /// Cards never swiped (the run left early), each counted as a miss.
   final int cardsLeft;
   final Duration forfeitPerCard;
   final int penaltyMs;
@@ -57,7 +48,7 @@ class RankedScore {
 
   Duration get penalty => Duration(milliseconds: (misses + cardsLeft) * penaltyMs);
 
-  /// The clock, the penalties, and a forfeit's cards left at their pace.
+  /// The clock, the penalties, and the cards left at their pace.
   Duration get scored => clock + penalty + forfeitPerCard * cardsLeft;
 }
 

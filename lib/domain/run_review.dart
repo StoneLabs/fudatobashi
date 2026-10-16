@@ -49,15 +49,8 @@ class RunTimeline {
 
   /// The timeline of [swipes] in the order made, stretched to [clockMs].
   /// Each miss adds [penaltyMs] at its card (an undone swipe at the card
-  /// swiped again after it). A forfeit's [cardsLeft] climb evenly to
-  /// [endMs].
-  factory RunTimeline.of(
-    List<RunSwipe> swipes, {
-    required double clockMs,
-    int penaltyMs = 0,
-    int cardsLeft = 0,
-    double? endMs,
-  }) {
+  /// swiped again after it).
+  factory RunTimeline.of(List<RunSwipe> swipes, {required double clockMs, int penaltyMs = 0}) {
     final swipeMs = swipes.fold<double>(0, (sum, s) => sum + math.max(0, s.ms));
     final stretch = swipeMs > 0 ? clockMs / swipeMs : 0.0;
     final ms = <double>[0];
@@ -72,12 +65,6 @@ class RunTimeline {
       if (missed) missCards.add(ms.length);
       missed = false;
       ms.add(at);
-    }
-    if (cardsLeft > 0) {
-      for (var i = 1; i <= cardsLeft; i++) {
-        missCards.add(ms.length);
-        ms.add(at + ((endMs ?? at) - at) * i / cardsLeft);
-      }
     }
     return RunTimeline(ms, missCards: missCards);
   }

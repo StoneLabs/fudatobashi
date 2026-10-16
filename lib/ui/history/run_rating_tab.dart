@@ -47,13 +47,15 @@ class _RatingPanel extends StatelessWidget {
   Widget build(BuildContext context) {
     final s = S.of(context);
     final before = rating.before?.round(), after = rating.after.round(), played = rating.performance.round();
-    final scored = runTimeText(detail.run);
+    final forfeit = detail.run.forfeit;
+    final scored = runTimeText(s, detail.run);
     return RunPanel(children: [
       TrackedLabel(s.rating, sub: s.sub?.rating),
       if (before == null) ...[
         RunBigValue('$after'),
         const SizedBox(height: Gaps.tight),
-        Text('${s.runPlacementShout} ${s.runPlacementText(scored, played)}', style: RunTabsStyle.lineStyle),
+        Text('${s.runPlacementShout} ${forfeit ? s.runPlacementForfeitText(played) : s.runPlacementText(scored, played)}',
+            style: RunTabsStyle.lineStyle),
         const SizedBox(height: Gaps.small),
       ] else ...[
         Wrap(
@@ -70,7 +72,7 @@ class _RatingPanel extends StatelessWidget {
         const SizedBox(height: Gaps.small),
       ],
       RunValueLine(s.runRatingBefore, before == null ? s.rankUnplaced : '$before'),
-      RunValueLine(s.runPlayedLike(scored), '$played'),
+      RunValueLine(forfeit ? s.runColPlayedLike : s.runPlayedLike(scored), '$played'),
       RunValueLine(s.runNewRating, '$after'),
       const SizedBox(height: Gaps.section),
       _ClassBar(rating.after, before: rating.before),
@@ -140,29 +142,15 @@ class _ClassBarPainter extends CustomPainter {
   bool shouldRepaint(_ClassBarPainter old) => old.fill != fill || old.before != before;
 }
 
-/// A forfeit's scored time as a sum: the clock, a penalty for each miss
-/// (the cards left included) and a slow card for each card left.
+/// A forfeit: where it stopped, and why it plays like 0.
 class _Forfeit extends StatelessWidget {
   const _Forfeit(this.run);
   final PastRun run;
 
   @override
-  Widget build(BuildContext context) {
-    final s = S.of(context);
-    final clock = run.clock ?? Duration.zero, scored = run.scoredTime ?? Duration.zero;
-    final misses = run.scoredMisses ?? 0, left = run.planned - run.cards;
-    final perCardMs =
-        left == 0 ? 0.0 : (scored - clock).inMilliseconds.toDouble() / left - misses * run.penaltyMs / left;
-    return RunPanel(color: Palette.pinkSoft, children: [
-      Text(
-        s.runForfeitSum(formatTenths(clock), misses, run.penaltyMs ~/ 1000, left, formatSeconds(perCardMs, 1),
-            formatTenths(scored)),
-        style: RunTabsStyle.valueStyle,
-      ),
-      const SizedBox(height: Gaps.small),
-      Text(s.runForfeitText(run.cards, formatSeconds(perCardMs, 1)), style: RunTabsStyle.lineStyle),
-    ]);
-  }
+  Widget build(BuildContext context) => RunPanel(color: Palette.pinkSoft, children: [
+        Text(S.of(context).runForfeitText(run.cards), style: RunTabsStyle.lineStyle),
+      ]);
 }
 
 /// D25: the rating over the ranked runs with the class lines, the latest

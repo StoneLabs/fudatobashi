@@ -11,6 +11,7 @@ import '../../domain/play_session.dart';
 import '../../domain/ranked.dart';
 import '../../domain/rating.dart';
 import '../../l10n/free_strings.dart';
+import '../../l10n/history_strings.dart';
 import '../../l10n/ranked_strings.dart';
 import '../../l10n/results_strings.dart';
 import '../../l10n/strings.dart';
@@ -142,7 +143,7 @@ class _Splash extends StatelessWidget {
           child: SingleChildScrollView(
             child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
               if (report.mode == PlayMode.ranked && report.score != null)
-                _RankedTimePanel(report.score!)
+                _RankedTimePanel(report.score!, forfeit: report.forfeit)
               else
                 _TimePanel(report: report),
               const SizedBox(height: Gaps.panel),
@@ -326,10 +327,11 @@ class _TimePanel extends StatelessWidget {
 }
 
 /// A ranked run's splash: the scored time its rating used, and how it adds
-/// up from the clock, the misses and (a forfeit) the cards left.
+/// up from the clock and the misses. A forfeit has no scored time.
 class _RankedTimePanel extends StatelessWidget {
-  const _RankedTimePanel(this.score);
+  const _RankedTimePanel(this.score, {required this.forfeit});
   final RankedScore score;
+  final bool forfeit;
 
   @override
   Widget build(BuildContext context) {
@@ -337,7 +339,6 @@ class _RankedTimePanel extends StatelessWidget {
     const row = TextStyle(fontWeight: Weights.bold, fontSize: RankedResultsLayout.rowFont);
     const number = TextStyle(fontFamily: Fonts.display, fontWeight: Weights.regular);
     final penaltySeconds = (score.penaltyMs / 1000).round();
-    final paceSeconds = (score.forfeitPerCard.inMilliseconds / 1000).toStringAsFixed(1);
     Widget line(Widget what, Duration time, {bool add = true}) => Row(children: [
           Expanded(child: _OneLine(what)),
           const SizedBox(width: Gaps.small),
@@ -358,34 +359,30 @@ class _RankedTimePanel extends StatelessWidget {
                 fontSize: ResultsLayout.splashLabelFont,
                 letterSpacing: ResultsLayout.splashLabelTracking * ResultsLayout.splashLabelFont)),
         const SizedBox(height: Gaps.small),
-        FittedBox(fit: BoxFit.scaleDown, child: _RunTime(score.scored)),
-        const SizedBox(height: RankedResultsLayout.sumGap),
-        DecoratedBox(
-          decoration: BoxDecoration(color: Palette.paper, border: Border.all(color: Palette.ink, width: Strokes.label)),
-          child: Padding(
-            padding: RankedResultsLayout.sumPadding,
-            child: DefaultTextStyle.merge(
-              style: row,
-              child: Column(children: [
-                line(Text(s.rankedClockTime), score.clock, add: false),
-                const SizedBox(height: RankedResultsLayout.rowGap),
-                line(NumberedText(s.rankedMisses, [score.misses + score.cardsLeft, penaltySeconds], numberStyle: number),
-                    score.penalty),
-                if (score.cardsLeft > 0) ...[
+        FittedBox(fit: BoxFit.scaleDown, child: _RunTime(score.scored, instead: forfeit ? s.historyForfeit : null)),
+        if (!forfeit) ...[
+          const SizedBox(height: RankedResultsLayout.sumGap),
+          DecoratedBox(
+            decoration: BoxDecoration(color: Palette.paper, border: Border.all(color: Palette.ink, width: Strokes.label)),
+            child: Padding(
+              padding: RankedResultsLayout.sumPadding,
+              child: DefaultTextStyle.merge(
+                style: row,
+                child: Column(children: [
+                  line(Text(s.rankedClockTime), score.clock, add: false),
                   const SizedBox(height: RankedResultsLayout.rowGap),
-                  line(NumberedText(s.rankedCardsLeft, [score.cardsLeft, paceSeconds], numberStyle: number),
-                      score.forfeitPerCard * score.cardsLeft),
-                ],
-              ]),
+                  line(NumberedText(s.rankedMisses, [score.misses, penaltySeconds], numberStyle: number), score.penalty),
+                ]),
+              ),
             ),
           ),
-        ),
+        ],
       ]),
     );
   }
 }
 
-/// A forfeit says so first: the cards left counted as misses.
+/// A forfeit says so first: the cards left, and that it counts as 0.
 class _ForfeitNote extends StatelessWidget {
   const _ForfeitNote(this.cardsLeft);
   final int cardsLeft;
@@ -403,13 +400,15 @@ class _ForfeitNote extends StatelessWidget {
       );
 }
 
-/// A run's time, or [missingTime] when it is no measurement.
+/// A run's time, or [missingTime] when it is no measurement; [instead]
+/// in its place when given.
 class _RunTime extends StatelessWidget {
-  const _RunTime(this.time);
+  const _RunTime(this.time, {this.instead});
   final Duration? time;
+  final String? instead;
 
   @override
-  Widget build(BuildContext context) => OutlinedText(time == null ? missingTime : formatRunTime(time!),
+  Widget build(BuildContext context) => OutlinedText(instead ?? (time == null ? missingTime : formatRunTime(time!)),
       style: const TextStyle(fontFamily: Fonts.display, fontSize: ResultsLayout.splashTimeFont, height: 1),
       outlineWidth: ResultsLayout.splashTimeOutline);
 }

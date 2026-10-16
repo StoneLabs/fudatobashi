@@ -65,7 +65,6 @@ extension RankedStrings on S {
   String get rankedMisses => t('rankedMisses');
 
   /// "Cards left: {0} × {1} s".
-  String get rankedCardsLeft => t('rankedCardsLeft');
   String rankedForfeitNote(int left) => f(left == 1 ? 'rankedForfeitNoteOne' : 'rankedForfeitNoteOther', [left]);
   String get rankedAgain => t('rankedAgain');
   String get rankedAgainSub => t('rankedAgainSub');

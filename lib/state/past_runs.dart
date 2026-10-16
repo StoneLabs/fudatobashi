@@ -64,8 +64,9 @@ class PastRun {
   /// the exam, the clock for the rest.
   Duration? get time => scored ? scoredTime : clock;
 
-  /// Misses counted for the scored time, cards left unswiped included.
-  int? get scoredMisses => scored ? misses + math.max(0, planned - cards) : null;
+  /// Misses counted for the scored time, cards left unswiped included (a
+  /// forfeit has no scored time: its own misses only).
+  int? get scoredMisses => scored ? misses + (forfeit ? 0 : math.max(0, planned - cards)) : null;
 
   bool get forfeit => mode == PlayMode.ranked && !completed;
   bool get allKnown => row.allKnown;
@@ -252,8 +253,6 @@ extension RunHistory on Progress {
       swipes,
       clockMs: clockMs,
       penaltyMs: run.penaltyMs,
-      cardsLeft: run.forfeit ? run.planned - run.cards : 0,
-      endMs: run.scoredTime?.inMilliseconds.toDouble(),
     );
   }
 
