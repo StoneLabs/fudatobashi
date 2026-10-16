@@ -3235,6 +3235,9 @@ abstract final class SideTripsLayout {
   static const double factsFont = 13.5;
   static const double factsNumber = 15;
 
+  /// The next game's cards and time, on their own line under its level.
+  static const double noteGap = 3;
+
   /// The last game's rating change: ▲ on ink, ▼ on paper.
   static const double deltaFont = 12.5;
   static const EdgeInsets deltaPadding = EdgeInsets.fromLTRB(4, 3, 5, 4);

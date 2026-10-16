@@ -33,9 +33,9 @@ class SideTripEntryView extends StatelessWidget {
       );
 }
 
-/// A side trip's name lettered on the hub with its tag, and once it is open
-/// its rank stamp at the right: the head that breaks out over the top of its
-/// panel ([SideTripBody]).
+/// A side trip's name lettered on the hub with its tag, and once its first
+/// ranked game is played its rank stamp at the right: the head that breaks
+/// out over the top of its panel ([SideTripBody]).
 class SideTripHead extends StatelessWidget {
   const SideTripHead(this.entry, {super.key});
 
@@ -52,7 +52,7 @@ class SideTripHead extends StatelessWidget {
               child: _Lettering(S.of(context).tripName(entry.trip), S.of(context).tripTag(entry.trip),
                   fontSize: SideTripsLayout.letteringFont),
             ),
-            if (entry.open)
+            if (entry.open && entry.ranked)
               Padding(
                 padding: const EdgeInsets.only(bottom: SideTripsLayout.stampLift),
                 child: Transform.translate(
@@ -302,9 +302,10 @@ class _Label extends StatelessWidget {
 
 /// A [label] over its [value], both shrinking rather than overflowing.
 class _Stat extends StatelessWidget {
-  const _Stat({required this.label, required this.value});
+  const _Stat({required this.label, required this.value, this.note});
 
   final Widget label, value;
+  final Widget? note;
 
   @override
   Widget build(BuildContext context) => Column(
@@ -314,6 +315,10 @@ class _Stat extends StatelessWidget {
           FittedBox(fit: BoxFit.scaleDown, alignment: Alignment.centerLeft, child: label),
           const SizedBox(height: SideTripsLayout.labelGap),
           FittedBox(fit: BoxFit.scaleDown, alignment: Alignment.centerLeft, child: value),
+          if (note != null) ...[
+            const SizedBox(height: SideTripsLayout.noteGap),
+            FittedBox(fit: BoxFit.scaleDown, alignment: Alignment.centerLeft, child: note),
+          ],
         ],
       );
 }
@@ -377,21 +382,12 @@ class _StatsRow extends StatelessWidget {
                         flex: SideTripsLayout.nextFlex,
                         child: _Stat(
                           label: _Label(s.sideTripNextGame, s.sub?.sideTripNextGame),
-                          value: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            crossAxisAlignment: CrossAxisAlignment.baseline,
-                            textBaseline: TextBaseline.alphabetic,
-                            children: [
-                              Text(s.ankirenLevelTag(level), style: value),
-                              const SizedBox(width: SideTripsLayout.valueGap),
-                              NumberedText(
-                                s.sideTripNextFacts,
-                                [AnkirenLevels.of(level).perSide, formatMinutes(AnkirenLevels.of(level).memorise)],
-                                style: const TextStyle(fontWeight: Weights.black, fontSize: SideTripsLayout.factsFont),
-                                numberStyle:
-                                    const TextStyle(fontFamily: Fonts.display, fontSize: SideTripsLayout.factsNumber),
-                              ),
-                            ],
+                          value: Text(s.ankirenLevelTag(level), style: value),
+                          note: NumberedText(
+                            s.sideTripNextFacts,
+                            [AnkirenLevels.of(level).perSide, formatMinutes(AnkirenLevels.of(level).memorise)],
+                            style: const TextStyle(fontWeight: Weights.black, fontSize: SideTripsLayout.factsFont),
+                            numberStyle: const TextStyle(fontFamily: Fonts.display, fontSize: SideTripsLayout.factsNumber),
                           ),
                         ),
                       ),

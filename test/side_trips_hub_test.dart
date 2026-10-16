@@ -318,8 +318,8 @@ void main() {
               final stamp = inHub(find.byType(Sticker));
               expect(find.descendant(of: inHub(find.byType(SideTripHead)), matching: find.byType(Image)), findsNothing,
                   reason: 'no flag picture');
-              if (hub == _Hub.locked) {
-                expect(stamp, findsNothing, reason: 'no class while locked');
+              if (hub != _Hub.ranked) {
+                expect(stamp, findsNothing, reason: 'no class while locked or unranked');
               } else {
                 expect(stamp, findsOneWidget);
                 expect(find.descendant(of: stamp, matching: find.textContaining(s.classStem(entry.band), findRichText: true)),
