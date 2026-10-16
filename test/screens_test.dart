@@ -78,6 +78,7 @@ import 'package:fudatobashi/ui/play/start_card.dart';
 import 'package:fudatobashi/ui/play/swipe_deck.dart';
 import 'package:fudatobashi/ui/play/test_card.dart';
 import 'package:fudatobashi/ui/profile/profile_screen.dart';
+import 'package:fudatobashi/ui/rank/rank_badges.dart';
 import 'package:fudatobashi/ui/rank/rank_screen.dart';
 import 'package:fudatobashi/ui/results/celebration_sequence.dart';
 import 'package:fudatobashi/ui/results/celebrations.dart';
@@ -1356,6 +1357,44 @@ void main() {
     expect(find.byType(RankScreen), findsOneWidget);
     await tester.pumpWidget(const SizedBox());
   });
+
+  // The "640 to go" balloon over the YOU rung ran over the rung next to it
+  // and the YOU tag. It and Tobi stay on the player's own rung at every
+  // class.
+  for (final (width, fontScale) in const [(384.0, 1.0), (360.0, 1.3)]) {
+    testWidgets('rank ladder: the to-go balloon stays on the YOU rung ($width dp, font scale $fontScale)', (tester) async {
+      tester.platformDispatcher.textScaleFactorTestValue = fontScale;
+      addTearDown(tester.platformDispatcher.clearTextScaleFactorTestValue);
+      final p = await open(tester, mode: LearningMode.allKnown);
+      await tester.binding.setSurfaceSize(Size(width, _phone.height));
+      for (final band in Rating.bands.take(Rating.bands.length - 1)) {
+        p.rating = (band.minRating.isFinite ? band.minRating : 0) + 5;
+        await tester.pumpWidget(RepaintBoundary(
+          key: const ValueKey('screen'),
+          child: ProgressScope(progress: p, child: MaterialApp(theme: buildMangaTheme(), home: const RankScreen())),
+        ));
+        await tester.pump(const Duration(milliseconds: 500));
+        await tester.dragUntilVisible(find.byType(SpeechBalloon), find.byType(Scrollable).first, const Offset(0, -200));
+        await tester.pump(const Duration(milliseconds: 500));
+        expect(tester.takeException(), isNull);
+        await _capture(tester, 'rank_balloon_${band.id}_${width.round()}${fontScale == 1 ? '' : '_scaled'}');
+        final balloon = tester.getRect(find.byType(SpeechBalloon));
+        final tobi = tester.getRect(find.byType(Tobi));
+        final own = tester.widget(find.ancestor(of: find.byType(SpeechBalloon), matching: find.byType(MangaPanel)).first);
+        final ownRect = tester.getRect(find.byWidget(own));
+        expect(tobi.top >= ownRect.top && tobi.bottom <= ownRect.bottom, isTrue, reason: '${band.labelEn}: Tobi $tobi in $ownRect');
+        for (final rung in find.ancestor(of: find.byType(ClassBadge), matching: find.byType(MangaPanel)).evaluate()) {
+          if (rung.widget == own) continue;
+          final rect = tester.getRect(find.byWidget(rung.widget));
+          expect(balloon.overlaps(rect), isFalse, reason: '${band.labelEn}: the balloon $balloon covers the rung at $rect');
+          expect(tobi.overlaps(rect), isFalse, reason: '${band.labelEn}: Tobi $tobi covers the rung at $rect');
+        }
+        final you = tester.getRect(find.text(const S('en').youTag));
+        expect(balloon.overlaps(you), isFalse, reason: '${band.labelEn}: the balloon covers the YOU tag');
+      }
+      await tester.pumpWidget(const SizedBox());
+    });
+  }
 
   testWidgets('rank ladder: open from the Home rating panel', (tester) async {
     final p = await open(tester, mode: LearningMode.allKnown);

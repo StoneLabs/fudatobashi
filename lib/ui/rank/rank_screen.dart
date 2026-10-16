@@ -161,7 +161,28 @@ class _Rung extends StatelessWidget {
             onTap: () => _openRankUpPreview(context, before: currentBand!, after: band, ratingBefore: rating!),
           ),
         ]),
-      if (isYou) _YouTag(label: s.youTag, rating: rating!.round()),
+      if (isYou)
+        Row(mainAxisSize: MainAxisSize.min, children: [
+          _YouTag(label: s.youTag, rating: rating!.round()),
+          if (nextThreshold != null) ...[
+            const SizedBox(width: RankLayout.balloonGap),
+            SizedBox.fromSize(
+              size: RankLayout.balloonSize,
+              child: SpeechBalloon(
+                speaker: RankLayout.balloonSpeaker,
+                child: FittedBox(
+                  fit: BoxFit.scaleDown,
+                  child: NumberedText(
+                    s.toGoTemplate,
+                    [(nextThreshold! - rating!).ceil()],
+                    style: const TextStyle(fontSize: RankLayout.balloonFont),
+                    numberStyle: const TextStyle(fontFamily: Fonts.display, fontSize: RankLayout.balloonFont + 2),
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ]),
     ];
 
     return SizedBox(
@@ -173,7 +194,7 @@ class _Rung extends StatelessWidget {
             child: MangaPanel(
               color: style.color,
               tone: style.tone,
-              padding: RankLayout.rungPadding,
+              padding: RankLayout.rungPadding + EdgeInsets.only(right: isYou ? RankLayout.tobiRoom : 0),
               child: DefaultTextStyle.merge(
                 style: TextStyle(color: style.text),
                 child: Row(
@@ -183,12 +204,12 @@ class _Rung extends StatelessWidget {
                       const SizedBox(width: RankLayout.lockGap),
                       MangaIcon(IconArt.lock, size: RankLayout.lockIcon, color: style.text),
                     ],
-                    const Spacer(),
+                    const SizedBox(width: RankLayout.markerGap),
                     if (markers.isNotEmpty)
                       // `FittedBox` guards the rare case of two markers
                       // stacking on one rung (A級 that is also the player's
                       // own class): squeezed to fit rather than overflowing.
-                      Flexible(
+                      Expanded(
                         child: FittedBox(
                           fit: BoxFit.scaleDown,
                           alignment: Alignment.centerRight,
@@ -216,22 +237,7 @@ class _Rung extends StatelessWidget {
               bottom: 0,
               child: Center(child: ClearStamp(s.clearStamp)),
             ),
-          if (isYou) ...[
-            const Placed(RankLayout.tobiPlacement, child: Tobi(pose: TobiPose.fired)),
-            if (nextThreshold != null)
-              Placed(
-                RankLayout.balloonPlacement,
-                child: SpeechBalloon(
-                  speaker: RankLayout.balloonSpeaker,
-                  child: NumberedText(
-                    s.toGoTemplate,
-                    [(nextThreshold! - rating!).ceil()],
-                    style: const TextStyle(fontSize: RankLayout.balloonFont),
-                    numberStyle: const TextStyle(fontFamily: Fonts.display, fontSize: RankLayout.balloonFont + 2),
-                  ),
-                ),
-              ),
-          ],
+          if (isYou) const Placed(RankLayout.tobiPlacement, child: Tobi(pose: TobiPose.fired)),
         ],
       ),
     );

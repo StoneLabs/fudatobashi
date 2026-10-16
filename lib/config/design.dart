@@ -1850,8 +1850,16 @@ abstract final class RankLayout {
   static const double stampRadius = 5;
   static const double stampRight = 20;
 
-  static const Placement tobiPlacement = Placement(right: -4, top: -18, size: Size(58, 70));
-  static const Placement balloonPlacement = Placement(right: 50, top: -20, size: Size(96, 46));
+  /// Tobi stands inside the player's rung at its right, the "to go"
+  /// balloon beside the YOU tag speaking from him; neither reaches the
+  /// rungs above or below.
+  static const Placement tobiPlacement = Placement(right: -4, top: (rungHeight - 70) / 2, size: Size(58, 70));
+  static const double tobiRoom = 44;
+  static const Size balloonSize = Size(96, 46);
+  static const double balloonGap = 6;
+
+  /// The least space between a rung's badge and its markers.
+  static const double markerGap = 8;
   static const double balloonFont = 12.5;
   static const Alignment balloonSpeaker = Alignment(1.5, 0.6);
 
