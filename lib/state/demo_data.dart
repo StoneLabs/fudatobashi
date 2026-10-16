@@ -43,10 +43,11 @@ Future<void> seedDemoData(
   onProgress?.call(days, days, 1);
 }
 
-/// Replaces all progress with an all-known player's last [days] days:
-/// [DemoDataTuning.rankedTrainingRounds] training rounds a day and a ranked
-/// run every [DemoDataTuning.rankedEvery] days, through the real path, so
-/// the rating has a history (Stats' rank page, History's ranked runs).
+/// Replaces all progress with an all-known player's last [days] days, as
+/// such a player plays (there is no training in all-known mode): ranked
+/// runs on most days (see [JourneySimulator.rankedDay]), with the odd 苦手
+/// and free-play run after them, through the real path, so the rating has a
+/// history (Stats' rank page, History's ranked runs).
 Future<void> seedRankedDemoData(
   Progress progress, {
   SeedProgress? onProgress,
@@ -66,9 +67,14 @@ Future<void> seedRankedDemoData(
     for (var d = 0; d < days; d++) {
       final date = DateTime(today.year, today.month, today.day - days + d);
       onProgress?.call(d + 1, days, 0);
-      await sim.day(date, rounds: DemoDataTuning.rankedTrainingRounds);
-      if (d % DemoDataTuning.rankedEvery == DemoDataTuning.rankedEvery - 1) {
-        await sim.rankedRound(DateTime(date.year, date.month, date.day, SyntheticLearnerTuning.lastRoundHour));
+      final runs = await sim.rankedDay(date, onRun: (run, done, cards) {
+        onProgress?.call(d + 1, days, (run + done / cards) / DemoDataTuning.rankedRunShares.length);
+      });
+      if (runs == 0) continue;
+      var after = DateTime(date.year, date.month, date.day, DemoDataTuning.practiceHour);
+      if (d % DemoDataTuning.rankedWeakEvery == DemoDataTuning.rankedWeakEvery - 1) after = await sim.weakRound(after);
+      if (d % DemoDataTuning.freeRunEvery == DemoDataTuning.freeRunEvery - 1) {
+        await sim.freeRound(after, DemoDataTuning.freeCards);
       }
     }
   } finally {

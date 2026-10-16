@@ -53,17 +53,8 @@ class JourneySimulator {
     void Function(int round, int done, int total)? onRound,
   }) async {
     final count = rounds + freeRounds;
-    final span =
-        (SyntheticLearnerTuning.lastRoundHour - SyntheticLearnerTuning.firstRoundHour) * Duration.minutesPerHour;
     for (var i = 0; i < count; i++) {
-      final offset = count == 1 ? 0 : span * i ~/ (count - 1);
-      final start = DateTime(
-        date.year,
-        date.month,
-        date.day,
-        SyntheticLearnerTuning.firstRoundHour,
-        offset + rng.nextInt(SyntheticLearnerTuning.roundStartJitterMinutes),
-      );
+      final start = _roundStart(date, i, count);
       void onCard(int done, int total) => onRound?.call(i, done, total);
       if (i < rounds) {
         await trainingRound(start,
@@ -97,16 +88,40 @@ class JourneySimulator {
   /// when skipped).
   Future<int> realisticDay(DateTime date, {void Function(int run, int done, int total)? onRun}) async {
     if (rng.nextDouble() < SimulationTuning.skipDayShare) return 0;
-    var pick = rng.nextDouble() * SimulationTuning.runShares.fold(0.0, (a, b) => a + b);
-    var runs = SimulationTuning.runShares.length;
-    for (var i = 0; i < SimulationTuning.runShares.length; i++) {
-      pick -= SimulationTuning.runShares[i];
-      if (pick < 0) {
-        runs = i + 1;
-        break;
-      }
+    return finishSet(date, runs: _draw(SimulationTuning.runShares), onRun: onRun);
+  }
+
+  /// A realistic all-known day (the ranked demo): [SimulationTuning.skipDayShare]
+  /// of days are skipped; otherwise 1 to 3 ranked runs by
+  /// [DemoDataTuning.rankedRunShares], spread over the day. Returns the runs
+  /// played (0 when skipped).
+  Future<int> rankedDay(DateTime date, {void Function(int run, int done, int total)? onRun}) async {
+    if (rng.nextDouble() < SimulationTuning.skipDayShare) return 0;
+    final runs = _draw(DemoDataTuning.rankedRunShares);
+    for (var i = 0; i < runs; i++) {
+      await rankedRound(_roundStart(date, i, runs), onCard: onRun == null ? null : (done, total) => onRun(i, done, total));
     }
-    return finishSet(date, runs: runs, onRun: onRun);
+    return runs;
+  }
+
+  /// A count from 1 to [shares].length, drawn with these weights.
+  int _draw(List<double> shares) {
+    var pick = rng.nextDouble() * shares.fold(0.0, (a, b) => a + b);
+    for (var i = 0; i < shares.length; i++) {
+      pick -= shares[i];
+      if (pick < 0) return i + 1;
+    }
+    return shares.length;
+  }
+
+  /// When the [i]th of [count] rounds on the local day [date] starts: spread
+  /// evenly over the practice hours, each a little late.
+  DateTime _roundStart(DateTime date, int i, int count) {
+    final span =
+        (SyntheticLearnerTuning.lastRoundHour - SyntheticLearnerTuning.firstRoundHour) * Duration.minutesPerHour;
+    final offset = count == 1 ? 0 : span * i ~/ (count - 1);
+    return DateTime(date.year, date.month, date.day, SyntheticLearnerTuning.firstRoundHour,
+        offset + rng.nextInt(SyntheticLearnerTuning.roundStartJitterMinutes));
   }
 
   /// One training round from [start] ([learnAhead]: after "Learn ahead"),
@@ -127,6 +142,15 @@ class JourneySimulator {
   /// A ranked run of all 100 cards from [start] (all-known mode).
   Future<DateTime> rankedRound(DateTime start, {CardProgress? onCard}) =>
       _play(progress.rankedDeck(rng: rng), const PlayConfig(mode: PlayMode.ranked), start, onCard: onCard);
+
+  /// A 苦手 round of the slowest, shakiest cards from [start] (see
+  /// [Progress.nigateDeck]).
+  Future<DateTime> weakRound(DateTime start, {CardProgress? onCard}) async {
+    const config = PlayConfig(mode: PlayMode.nigate);
+    final deck = progress.nigateDeck(config, rng: rng);
+    if (deck.isEmpty) return start;
+    return _play(deck, config, start, onCard: onCard);
+  }
 
   /// A customised free-play round (all 100 cards, cut to [cards]): stored,
   /// but it never counts for SRS.

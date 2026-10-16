@@ -9,7 +9,7 @@ import '../../state/scope.dart';
 
 /// Confirms, then replaces all progress with synthetic history through the
 /// real recording path: the Simulation page's last journey run, or with
-/// [ranked] an all-known player's training and ranked runs.
+/// [ranked] an all-known player's ranked, Weak cards and free-play runs.
 Future<void> confirmSeedDemoData(
   BuildContext context, {
   required LearnerKind learner,
@@ -21,10 +21,10 @@ Future<void> confirmSeedDemoData(
   final ok = await showDialog<bool>(
     context: context,
     builder: (c) => AlertDialog(
-      title: const Text('Seed demo data?'),
+      title: Text(ranked ? 'Seed ranked demo data?' : 'Seed demo data?'),
       content: Text(ranked
           ? 'Replaces all progress with $days days of an all-known player (${learner.name} learner): '
-              'training rounds every day and a ranked run every other day.'
+              '1 to 3 ranked runs on most days, with some Weak cards and free-play runs.'
           : 'Replaces all progress with the $days-day journey shown above (${learner.name} learner, '
               '${pace.name} pace): training rounds, unlocks, islands and a few free-play runs.'),
       actions: [

@@ -199,14 +199,21 @@ void main() {
     test('the ranked demo seeds an all-known player whose ranked runs make a rating history', () async {
       final db = AppDatabase(NativeDatabase.memory());
       final p = await Progress.open(db);
-      await seedRankedDemoData(p, days: 6);
+      await seedRankedDemoData(p, days: 10);
       expect(p.trainer.config.learningMode, LearningMode.allKnown);
+      expect(p.runs.map((r) => r.mode), everyElement(isIn([PlayMode.ranked, PlayMode.nigate, PlayMode.free])),
+          reason: 'an all-known player has no training');
+      expect(p.runs.map((r) => r.mode), contains(PlayMode.nigate));
       final ranked = [for (final r in p.runs) if (r.mode == PlayMode.ranked) r];
-      expect(ranked, hasLength(6 ~/ DemoDataTuning.rankedEvery));
+      final perDay = <int, int>{};
+      for (final r in ranked) {
+        perDay[r.day] = (perDay[r.day] ?? 0) + 1;
+      }
+      expect(perDay.values, everyElement(inInclusiveRange(1, DemoDataTuning.rankedRunShares.length)));
+      expect(perDay.values.toSet().length, greaterThan(1), reason: 'some days have more ranked runs than others');
       expect(ranked.every((r) => r.rating != null && r.performance != null && r.scoredMs != null && r.allKnown), isTrue);
       expect(p.rating, ranked.last.rating);
       expect(p.pastRuns.where((r) => r.placement).single.id, ranked.first.id);
-      expect({for (final r in p.runs) r.day}.length, 6, reason: 'training every day');
       await db.close();
     }, timeout: const Timeout(Duration(minutes: 2)));
 

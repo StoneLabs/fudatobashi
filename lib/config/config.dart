@@ -1033,10 +1033,15 @@ abstract final class DemoDataTuning {
   /// feature's own test) reproduces the same journey.
   static const int seed = 1179;
 
-  /// The ranked demo (all-known mode): training rounds a day, and a ranked
-  /// run every this many days.
-  static const int rankedTrainingRounds = 2;
-  static const int rankedEvery = 2;
+  /// The ranked demo (all-known mode), which has no training: days are
+  /// skipped at [SimulationTuning.skipDayShare]; the others have 1, 2 or 3
+  /// ranked runs by these shares.
+  static const List<double> rankedRunShares = [0.5, 0.3, 0.2];
+
+  /// Every this many days, a day with ranked runs ends in a 苦手 run at
+  /// [practiceHour] (and every [freeRunEvery] days, in a free-play run).
+  static const int rankedWeakEvery = 2;
+  static const int practiceHour = 22;
 }
 
 /// Settings › Developer › "Preview celebrations": the spec mock's numbers.
