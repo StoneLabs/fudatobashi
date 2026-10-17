@@ -171,25 +171,21 @@ class XpLevel {
   int get toNext => span - into;
 }
 
-/// The level curve: getting through level L takes [XpTuning.levelBase] × √L
-/// XP, so each level asks a little more than the last, ever more gently.
+/// The level curve: level L is reached at [XpTuning.levelScale] ×
+/// (L − 1)^[XpTuning.levelExponent] total XP.
 abstract final class XpCurve {
-  /// XP it takes to get through [level].
-  static int span(int level) => (XpTuning.levelBase * math.sqrt(level)).round();
-
-  /// Total XP at which each level is reached, from level 1, grown as needed.
-  static final _reach = [0, 0];
-
   /// Total XP at which [level] is reached.
-  static int reach(int level) {
-    while (_reach.length <= level) {
-      _reach.add(_reach.last + span(_reach.length - 1));
-    }
-    return _reach[level];
-  }
+  static int reach(int level) =>
+      (XpTuning.levelScale * math.pow(level - 1, XpTuning.levelExponent)).round();
+
+  /// XP it takes to get through [level].
+  static int span(int level) => reach(level + 1) - reach(level);
 
   static XpLevel of(int total) {
-    var level = 1;
+    var level = 1 + math.pow(math.max(total, 0) / XpTuning.levelScale, 1 / XpTuning.levelExponent).floor();
+    while (level > 1 && reach(level) > total) {
+      level--;
+    }
     while (reach(level + 1) <= total) {
       level++;
     }

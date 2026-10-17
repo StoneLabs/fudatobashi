@@ -119,8 +119,9 @@ DayDone previewDay() {
 /// [levelUp] reaching one, then the level-up.
 void previewAnkirenXp(BuildContext context, {bool levelUp = false}) {
   final gain = XpGain(
-    before: XpCurve.reach(CelebrationPreviewTuning.ankirenLevel) +
-        (levelUp ? CelebrationPreviewTuning.ankirenLevelInto : CelebrationPreviewTuning.ankirenRoundInto),
+    before: levelUp
+        ? XpCurve.reach(CelebrationPreviewTuning.ankirenLevel + 1) - CelebrationPreviewTuning.ankirenLevelShort
+        : XpCurve.reach(CelebrationPreviewTuning.ankirenLevel) + CelebrationPreviewTuning.ankirenRoundInto,
     award: XpAward([for (final (source, count, xp) in CelebrationPreviewTuning.ankirenXp) XpPart(source, count, xp)]),
   );
   _previewPages(context, xpCelebrations(gain));
@@ -217,11 +218,12 @@ void _previewPages(BuildContext context, List<Celebration> pages) => Navigator.p
 /// A mock run's XP: every source, reaching two new levels, or with
 /// [levelUp] false a typical round that reaches none.
 XpGain previewXpGain({bool levelUp = true}) {
-  final (lines, into) = levelUp
-      ? (CelebrationPreviewTuning.xp, CelebrationPreviewTuning.levelInto)
-      : (CelebrationPreviewTuning.xpRound, CelebrationPreviewTuning.roundInto);
+  const level = CelebrationPreviewTuning.level;
+  final (lines, before) = levelUp
+      ? (CelebrationPreviewTuning.xp, XpCurve.reach(level + 1) - CelebrationPreviewTuning.levelShort)
+      : (CelebrationPreviewTuning.xpRound, XpCurve.reach(level) + CelebrationPreviewTuning.roundInto);
   return XpGain(
-    before: XpCurve.reach(CelebrationPreviewTuning.level) + into,
+    before: before,
     award: XpAward([for (final (source, count, xp) in lines) XpPart(source, count, xp)]),
   );
 }

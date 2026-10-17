@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'dart:math' as math;
 
 import 'package:drift/drift.dart' show driftRuntimeOptions;
 import 'package:drift/native.dart';
@@ -55,19 +56,27 @@ void main() {
   Map<XpSource, (int, int)> parts(XpGain g) => {for (final p in g.award.parts) p.source: (p.count, p.xp)};
 
   group('the level curve', () {
-    test('a level takes the base times its square root: a little more each time, ever more gently', () {
+    test('level L is reached at the scale times (L - 1) to the exponent: each level asks a little more', () {
       expect(XpCurve.reach(1), 0);
-      expect(XpCurve.reach(2), XpTuning.levelBase.round());
-      expect(XpCurve.span(4), (2 * XpTuning.levelBase).round());
-      expect(XpCurve.span(100), (10 * XpTuning.levelBase).round());
+      expect(XpCurve.reach(2), XpTuning.levelScale.round());
+      expect(XpCurve.reach(11), (XpTuning.levelScale * math.pow(10, XpTuning.levelExponent)).round());
       for (var level = 1; level < 200; level++) {
         expect(XpCurve.reach(level + 1) - XpCurve.reach(level), XpCurve.span(level));
-        expect(XpCurve.span(level + 1), greaterThan(XpCurve.span(level)));
+        expect(XpCurve.span(level + 1), greaterThanOrEqualTo(XpCurve.span(level)), reason: 'never getting easier');
+        expect(XpCurve.span(level), lessThan(2 * XpCurve.span(1)), reason: 'never running away');
       }
-      for (var level = 2; level < 200; level++) {
-        expect(XpCurve.span(level + 1) - XpCurve.span(level),
-            lessThanOrEqualTo(XpCurve.span(level) - XpCurve.span(level - 1) + 1),
-            reason: 'never growing faster (±1 for rounding)');
+    });
+
+    test('a first day of play reaches a low level, graduation about level 60', () {
+      expect(XpCurve.of(17588).level, inInclusiveRange(2, 4), reason: 'first day, 100 swipes (simulated)');
+      expect(XpCurve.of(357360).level, inInclusiveRange(40, 80), reason: 'moderate player, graduation day');
+      expect(XpCurve.of(643743).level, inInclusiveRange(40, 80), reason: 'high player, graduation day');
+    });
+
+    test('every total maps to the level it has reached', () {
+      for (var total = 0; total < 3000000; total += 997) {
+        final l = XpCurve.of(total);
+        expect(XpCurve.reach(l.level) <= total && total < XpCurve.reach(l.level + 1), isTrue, reason: '$total');
       }
     });
 

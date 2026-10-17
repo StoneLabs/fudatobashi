@@ -765,9 +765,12 @@ abstract final class XpTuning {
   /// Every try at the graduation exam.
   static const int exam = 300;
 
-  /// XP from level L to L+1: [levelBase] × √L. Levels come quickly at
-  /// first and keep coming: unlike the rank, a level never stalls.
-  static const double levelBase = 300;
+  /// Total XP to reach level L: [levelScale] × (L − 1)^[levelExponent].
+  /// Fitted on the simulated journeys (research/design): about level 3
+  /// after a first day of 100 swipes and about level 60 at graduation.
+  /// Each level asks a little more than the last, so levels never run away.
+  static const double levelScale = 5500;
+  static const double levelExponent = 1.1;
 }
 
 /// 隠し字 masking: the uniqueness search (`Masking`) and the scramble style's
@@ -1161,8 +1164,8 @@ abstract final class CelebrationPreviewTuning {
   static const total = Duration(milliseconds: 14906);
   static const previousBest = Duration(milliseconds: 15380);
 
-  /// The run's XP, one line per source (count, XP), landing [levelInto]
-  /// XP into [level] before it.
+  /// The run's XP, one line per source (count, XP), starting [levelShort]
+  /// XP short of the level after [level].
   static const List<(XpSource, int, int)> xp = [
     (XpSource.correct, 27, 270),
     (XpSource.missed, 3, 6),
@@ -1172,11 +1175,11 @@ abstract final class CelebrationPreviewTuning {
     (XpSource.clear, 1, 20),
     (XpSource.daily, 5, 90),
     (XpSource.best, 1, 100),
-    (XpSource.island, 1, 300),
+    (XpSource.island, 1, 10000),
     (XpSource.graduation, 1, 1000),
   ];
   static const int level = 7;
-  static const int levelInto = 500;
+  static const int levelShort = 1500;
 
   /// "Preview XP": a typical round's XP, landing [roundInto] XP into
   /// [level] before it and reaching no new level.
@@ -1192,7 +1195,8 @@ abstract final class CelebrationPreviewTuning {
 
   /// "Preview AnkiRen XP": a ranked 暗記練 game's XP, one line per source
   /// (count, XP), landing [ankirenRoundInto] XP into [ankirenLevel] and
-  /// reaching no new level, or [ankirenLevelInto] in and reaching one.
+  /// reaching no new level, or starting [ankirenLevelShort] XP short of the
+  /// next and reaching it.
   static const List<(XpSource, int, int)> ankirenXp = [
     (XpSource.firstTap, 12, 960),
     (XpSource.nearMiss, 3, 100),
@@ -1204,7 +1208,7 @@ abstract final class CelebrationPreviewTuning {
   ];
   static const int ankirenLevel = 40;
   static const int ankirenRoundInto = 60;
-  static const int ankirenLevelInto = 1000;
+  static const int ankirenLevelShort = 1000;
 
   /// 暗記練's rating page: [ankirenInto] points into `Rating.bands[ankirenClass]`
   /// (E下級), moving [ankirenMove]; a breakthrough or a fall crosses its
