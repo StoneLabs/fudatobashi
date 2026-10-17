@@ -32,7 +32,7 @@ void main() {
     test('card 1\'s explanation uses every kind of block an expert needs ($code)', () async {
       final nodes = MarkdownProse.parse(await CardExplanations.load(code, 1));
       final tags = _tags(nodes);
-      for (final tag in ['h2', 'h3', 'p', 'strong', 'em', 'ul', 'ol', 'li', 'blockquote', 'pre', 'img']) {
+      for (final tag in ['h1', 'h2', 'h3', 'p', 'strong', 'em', 'ul', 'ol', 'li', 'blockquote', 'pre', 'img']) {
         expect(tags, contains(tag), reason: tag);
       }
       expect(tags, contains('language-${MarkdownProse.verseFence}'));
@@ -50,11 +50,18 @@ void main() {
     });
   }
 
+  testWidgets('a # heading is a marker heading; text after " | " is its sub', (tester) async {
+    await tester.pumpWidget(const MaterialApp(home: Scaffold(body: MarkdownProse('# 解説 | Explanation\n\ntext'))));
+    expect(find.textContaining('解説', findRichText: true), findsOneWidget);
+    expect(find.textContaining('Explanation', findRichText: true), findsOneWidget, reason: 'the sub after " | "');
+  });
+
   testWidgets('card 1\'s explanation lays out as prose, its verse with furigana', (tester) async {
     final source = File(CardExplanations.asset('en', 1)).readAsStringSync();
     await tester.pumpWidget(MaterialApp(home: Scaffold(body: SingleChildScrollView(child: MarkdownProse(source)))));
     expect(tester.takeException(), isNull);
     expect(find.text('What the poem says'), findsOneWidget);
+    expect(find.text('Explanation'), findsOneWidget, reason: 'the # heading is a marker heading');
     expect(find.byType(RubyText), findsNWidgets(3), reason: 'one per verse line');
     expect(find.byType(Image), findsOneWidget);
     expect(find.text('1.'), findsOneWidget);

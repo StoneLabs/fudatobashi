@@ -4,6 +4,7 @@ import 'package:flutter/widgets.dart';
 import 'package:markdown/markdown.dart' as md;
 
 import '../../config/design.dart';
+import 'marker_heading.dart';
 import 'prose.dart';
 import 'ruby_text.dart';
 
@@ -17,6 +18,9 @@ typedef MarkdownBlockBuilder = Widget Function(md.Element element, MarkdownProse
 /// a line of its own) and poems in a `verse` fence, one line each, with
 /// furigana markup (see [Ruby]). [blocks] maps each block element to its
 /// builder; add an entry there to support another one.
+///
+/// A `# Title` heading is the page's [MarkerHeading] in [accent]; write
+/// `# Title | Sub` to add a sub in the other language.
 class MarkdownProse extends StatelessWidget {
   const MarkdownProse(this.source, {super.key, this.accent = Palette.sun});
 
@@ -29,7 +33,7 @@ class MarkdownProse extends StatelessWidget {
   static const verseFence = 'verse';
 
   static final Map<String, MarkdownBlockBuilder> blocks = {
-    'h1': (e, p) => p._heading(e, MarkdownLayout.h1Font, Fonts.display),
+    'h1': (e, p) => p._marker(e),
     'h2': (e, p) => p._heading(e, MarkdownLayout.h2Font, Fonts.display),
     'h3': (e, p) => p._heading(e, MarkdownLayout.h3Font, null),
     'h4': (e, p) => p._heading(e, MarkdownLayout.h4Font, null),
@@ -53,12 +57,14 @@ class MarkdownProse extends StatelessWidget {
       children: [
         for (final (i, node) in nodes.indexed)
           Padding(
-            padding: EdgeInsets.only(top: i == 0 ? 0 : _gapBefore(node)),
+            padding: EdgeInsets.only(top: i == 0 || _isH1(nodes[i - 1]) ? 0 : _gapBefore(node)),
             child: _block(node),
           ),
       ],
     );
   }
+
+  bool _isH1(md.Node node) => node is md.Element && node.tag == 'h1';
 
   double _gapBefore(md.Node node) => switch (node) {
         md.Element(tag: 'h1') => MarkdownLayout.h1Gap,
@@ -71,6 +77,17 @@ class MarkdownProse extends StatelessWidget {
     if (node is! md.Element) return Text(node.textContent, style: proseStyle);
     final builder = blocks[node.tag];
     return builder != null ? builder(node, this) : Text(node.textContent, style: proseStyle);
+  }
+
+  Widget _marker(md.Element e) {
+    final (title, sub) = switch (e.textContent.split(' | ')) {
+      [final t, final s, ...] => (t.trim(), s.trim()),
+      final parts => (parts.first.trim(), null),
+    };
+    return Padding(
+      padding: const EdgeInsets.only(bottom: MarkdownLayout.markerGap),
+      child: MarkerHeading(title, sub, color: accent),
+    );
   }
 
   Widget _heading(md.Element e, double size, String? family) => Semantics(

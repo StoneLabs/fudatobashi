@@ -154,7 +154,6 @@ class _AboutCardScreenState extends State<AboutCardScreen> {
             const SizedBox(height: AboutCardLayout.partGap),
             _PartHeading(s.aboutPoemPart, o?.aboutPoemPart),
             const SizedBox(height: AboutCardLayout.partBottomGap),
-            heading(s.aboutExplanation, o?.aboutExplanation),
             FutureBuilder<String>(
               future: _explanation,
               builder: (context, snapshot) => switch (snapshot.data) {

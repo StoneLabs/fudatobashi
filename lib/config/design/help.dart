@@ -77,6 +77,9 @@ abstract final class MarkdownLayout {
   static const double h4Font = 14;
   static const double headingLineHeight = 1.3;
 
+  /// The space under a `#` marker heading.
+  static const double markerGap = 10;
+
   /// The space above a block: a heading's, or any other block's.
   static const double h1Gap = 26;
   static const double h2Gap = 22;

@@ -64,7 +64,6 @@ extension CardInfoStrings on S {
   String ladderMore(int n) => f('ladderMore', [n]);
   String get aboutConfused => t('aboutConfused');
   String get aboutPoemPart => t('aboutPoemPart');
-  String get aboutExplanation => t('aboutExplanation');
   String get aboutMyRecord => t('aboutMyRecord');
   String get aboutMyRecordNote => t('aboutMyRecordNote');
   String get aboutPrevious => t('aboutPrevious');
