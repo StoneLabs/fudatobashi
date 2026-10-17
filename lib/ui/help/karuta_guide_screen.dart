@@ -62,41 +62,41 @@ class KarutaGuideScreen extends StatelessWidget {
             Expanded(
               child: ListView(
                 padding: const EdgeInsets.fromLTRB(
-                    Gaps.gutter, Gaps.tight, Gaps.gutter + KarutaGuideLayout.figureShadow, KarutaGuideLayout.bottomPad),
+                    Gaps.gutter, Gaps.tight, Gaps.gutter + KarutaGuideLayout.figureShadow, ProseLayout.bottomPad),
                 children: [
                   const GuideFan(),
                   _Tobi(s.guideIntro, pose: TobiPose.waving),
 
-                  _Chapter(1, s.guidePoemsTitle, o?.guidePoemsTitle),
-                  _Body(s.guidePoems1),
-                  _Body(s.guidePoems2),
+                  ProseChapter(1, s.guidePoemsTitle, o?.guidePoemsTitle),
+                  ProseBody(s.guidePoems1),
+                  ProseBody(s.guidePoems2),
                   _Figure(child: GuidePoemHalves(poem: poems[KarutaGuideExamples.poem])),
-                  _Body(s.guidePoems3),
+                  ProseBody(s.guidePoems3),
 
-                  _Chapter(2, s.guideCardsTitle, o?.guideCardsTitle),
-                  _Body(s.guideCards1),
-                  _Body(s.guideCards2),
+                  ProseChapter(2, s.guideCardsTitle, o?.guideCardsTitle),
+                  ProseBody(s.guideCards1),
+                  ProseBody(s.guideCards2),
                   _Figure(child: GuideTwoCards(poem: poems[KarutaGuideExamples.poem])),
                   _Tobi(s.guideCardsTobi, pose: TobiPose.pointing),
 
-                  _Chapter(3, s.guideMatchTitle, o?.guideMatchTitle),
+                  ProseChapter(3, s.guideMatchTitle, o?.guideMatchTitle),
                   for (final (i, line) in s.guideSteps.indexed) _Step(i + 1, line),
                   const _Figure(child: GuideField()),
                   _Tobi(s.guideMatchTobi, pose: TobiPose.relaxed),
 
-                  _Chapter(4, s.guideFaultTitle, o?.guideFaultTitle),
-                  _Body(s.guideFault1),
-                  _Body(s.guideFault2),
-                  _Body(s.guideFault3),
+                  ProseChapter(4, s.guideFaultTitle, o?.guideFaultTitle),
+                  ProseBody(s.guideFault1),
+                  ProseBody(s.guideFault2),
+                  ProseBody(s.guideFault3),
                   _Tobi(s.guideFaultTobi, pose: TobiPose.shocked),
 
-                  _Chapter(5, s.guideKimarijiTitle, o?.guideKimarijiTitle),
-                  _Body(s.guideKimariji1),
+                  ProseChapter(5, s.guideKimarijiTitle, o?.guideKimarijiTitle),
+                  ProseBody(s.guideKimariji1),
                   _Subhead(s.guideOneTitle),
-                  _Body(s.guideOne(named(KarutaGuideExamples.oneSound, KarutaGuideExamples.oneSound))),
+                  ProseBody(s.guideOne(named(KarutaGuideExamples.oneSound, KarutaGuideExamples.oneSound))),
                   const _Figure(child: GuideOneSoundTiles()),
                   _Subhead(s.guideLongTitle),
-                  _Body(s.guideLong(say(first, phrase), say(second, phrase), say(second, shared.length))),
+                  ProseBody(s.guideLong(say(first, phrase), say(second, phrase), say(second, shared.length))),
                   _Figure(
                     caption: s.guideLongCaption,
                     child: GuideKimarijiRows(rows: [
@@ -105,7 +105,7 @@ class KarutaGuideScreen extends StatelessWidget {
                     ]),
                   ),
                   _Subhead(s.guideChangeTitle),
-                  _Body(s.guideChange(say(first, phrase), say(second, phrase), say(second, shortened.length))),
+                  ProseBody(s.guideChange(say(first, phrase), say(second, phrase), say(second, shortened.length))),
                   _Figure(
                     caption: s.guideChangeCaption,
                     child: GuideKimarijiRows(rows: [
@@ -113,12 +113,12 @@ class KarutaGuideScreen extends StatelessWidget {
                       GuideKimarijiRow(poem: second, kimariji: shortened),
                     ]),
                   ),
-                  _Body(s.guideSix(sixStarts)),
+                  ProseBody(s.guideSix(sixStarts)),
                   _Tobi(s.guideKimarijiTobi, pose: TobiPose.fired),
 
-                  _Chapter(6, s.guideAppTitle, o?.guideAppTitle),
-                  _Body(s.guideApp1),
-                  _Body(s.guideApp2),
+                  ProseChapter(6, s.guideAppTitle, o?.guideAppTitle),
+                  ProseBody(s.guideApp1),
+                  ProseBody(s.guideApp2),
                   _Tobi(s.guideAppTobi, pose: TobiPose.cheering),
                 ],
               ),
@@ -132,63 +132,6 @@ class KarutaGuideScreen extends StatelessWidget {
 
 /// Keeps the characters either side of it on one line.
 const _wordJoiner = '\u2060';
-
-/// A chapter's heading: its [number] in a pink box, the [title] (whole
-/// words, shrinking rather than breaking one), the English [sub] under it
-/// in a Japanese UI, and an ink rule.
-class _Chapter extends StatelessWidget {
-  const _Chapter(this.number, this.title, this.sub);
-
-  final int number;
-  final String title;
-  final String? sub;
-
-  @override
-  Widget build(BuildContext context) => Padding(
-        padding: const EdgeInsets.only(top: KarutaGuideLayout.chapterGap),
-        child: Semantics(
-          header: true,
-          child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-            Row(crossAxisAlignment: CrossAxisAlignment.center, children: [
-              SizedBox.square(
-                dimension: KarutaGuideLayout.numberBox,
-                child: DecoratedBox(
-                  decoration: BoxDecoration(
-                    color: Palette.pink,
-                    border: Border.all(color: Palette.ink, width: Strokes.label),
-                  ),
-                  child: Center(
-                    child: Text('$number',
-                        textScaler: TextScaler.noScaling,
-                        style: const TextStyle(
-                            fontFamily: Fonts.display, fontSize: KarutaGuideLayout.numberFont, color: Palette.paper)),
-                  ),
-                ),
-              ),
-              const SizedBox(width: KarutaGuideLayout.headingGap),
-              Expanded(
-                child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                  WholeWordsText(title,
-                      style: const TextStyle(
-                          fontFamily: Fonts.display,
-                          fontSize: KarutaGuideLayout.headingFont,
-                          height: KarutaGuideLayout.headingLineHeight)),
-                  if (sub case final sub?)
-                    Text(sub.toUpperCase(),
-                        style: const TextStyle(
-                            fontWeight: Weights.black,
-                            fontSize: KarutaGuideLayout.headingSubFont,
-                            letterSpacing: KarutaGuideLayout.headingSubFont * KarutaGuideLayout.headingSubTracking,
-                            color: Palette.inkSoft)),
-                ]),
-              ),
-            ]),
-            const SizedBox(height: KarutaGuideLayout.headingRuleGap),
-            const SizedBox(height: KarutaGuideLayout.headingRule, child: ColoredBox(color: Palette.ink)),
-          ]),
-        ),
-      );
-}
 
 /// A small heading inside a chapter.
 class _Subhead extends StatelessWidget {
@@ -206,26 +149,6 @@ class _Subhead extends StatelessWidget {
             child: InkTag(text.toUpperCase(), fontSize: KarutaGuideLayout.subheadFont),
           ),
         ),
-      );
-}
-
-const _bodyStyle = TextStyle(
-  fontSize: KarutaGuideLayout.bodyFont,
-  fontWeight: Weights.medium,
-  height: KarutaGuideLayout.bodyLineHeight,
-  color: Palette.inkBody,
-);
-
-/// One paragraph.
-class _Body extends StatelessWidget {
-  const _Body(this.text);
-
-  final String text;
-
-  @override
-  Widget build(BuildContext context) => Padding(
-        padding: const EdgeInsets.only(top: KarutaGuideLayout.paragraphGap),
-        child: Text(text, style: _bodyStyle),
       );
 }
 
@@ -253,7 +176,7 @@ class _Step extends StatelessWidget {
             ),
           ),
           const SizedBox(width: KarutaGuideLayout.stepGap),
-          Expanded(child: Text(line, style: _bodyStyle)),
+          Expanded(child: Text(line, style: proseStyle)),
         ]),
       );
 }

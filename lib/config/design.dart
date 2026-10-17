@@ -2901,16 +2901,17 @@ abstract final class KarutaGuideExamples {
   static const int steps = 7;
 }
 
-/// The karuta guide (`KarutaGuideScreen`): its numbered chapters, Tobi's
-/// lines and the pictures.
-abstract final class KarutaGuideLayout {
+/// The text of the Help pages and Contact (`ProseChapter`, `ProseBody`):
+/// numbered chapter headings over body paragraphs, an action row under them.
+abstract final class ProseLayout {
   static const double bottomPad = 32;
   static const double chapterGap = 30;
   static const double paragraphGap = 10;
-  static const double figureGap = 14;
   static const double bodyFont = 15;
   static const double bodyLineHeight = 1.55;
-  static const double subheadFont = 13;
+
+  /// The gap from a paragraph to the link or action rows under it.
+  static const double actionGap = KarutaRulesLayout.blockGap;
 
   /// A chapter's heading: its number in a pink box, the title, then (in
   /// Japanese) its English name, over an ink rule.
@@ -2923,6 +2924,13 @@ abstract final class KarutaGuideLayout {
   static const double headingSubTracking = 0.14;
   static const double headingRule = 3;
   static const double headingRuleGap = 8;
+}
+
+/// The karuta guide (`KarutaGuideScreen`): its numbered chapters, Tobi's
+/// lines and the pictures.
+abstract final class KarutaGuideLayout {
+  static const double figureGap = 14;
+  static const double subheadFont = 13;
 
   /// Tobi beside a balloon.
   static const Size tobi = Size(64, 76);

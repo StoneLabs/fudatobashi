@@ -8,7 +8,6 @@ import '../../config/vector_art.dart';
 import '../../l10n/credits_strings.dart';
 import '../../l10n/strings.dart';
 import '../manga/manga.dart';
-import 'credits_screen.dart';
 import 'settings_rows.dart';
 
 /// "Contact the developer", from About: issues and ideas go to GitHub,
@@ -19,70 +18,66 @@ class ContactScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final s = S.of(context);
+    final o = s.sub;
     final issues = Uri.parse(Links.issues);
     return Scaffold(
       body: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: Gaps.gutter),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              const SizedBox(height: HeaderStyle.topGap),
-              MangaHeader(
-                title: ScreenTitle(s.contactTitle, sub: s.other.contactTitle),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            const SizedBox(height: HeaderStyle.topGap),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: Gaps.gutter),
+              child: MangaHeader(
+                title: FittedBox(
+                  fit: BoxFit.scaleDown,
+                  alignment: Alignment.centerLeft,
+                  child: ScreenTitle(s.contactTitle, sub: s.other.contactTitle),
+                ),
                 actions: [
                   InkIconButton(icon: IconArt.back, semanticLabel: s.back, onTap: () => Navigator.maybePop(context)),
                 ],
               ),
-              const SizedBox(height: Gaps.section),
-              Expanded(
-                child: SingleChildScrollView(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      CreditsSection(
-                        title: s.contactIssues,
-                        children: [
-                          NarrationBox(child: Text(s.contactIssuesBody)),
-                          const SizedBox(height: Gaps.small),
-                          SettingsGroup(children: [
-                            SettingsTapRow(
-                              title: s.contactOpenIssues,
-                              note: '${issues.host}${issues.path}',
-                              opensPage: true,
-                              onTap: () => _open(context, issues, fallback: Links.issues, failed: s.contactBrowserFailed),
-                            ),
-                          ]),
-                        ],
+            ),
+            const SizedBox(height: Gaps.section),
+            Expanded(
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.fromLTRB(Gaps.gutter, Gaps.tight, Gaps.gutter, ProseLayout.bottomPad),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    ProseChapter(1, s.contactIssues, o?.contactIssues, first: true),
+                    ProseBody(s.contactIssuesBody),
+                    const SizedBox(height: ProseLayout.actionGap),
+                    SettingsGroup(children: [
+                      SettingsTapRow(
+                        title: s.contactOpenIssues,
+                        note: '${issues.host}${issues.path}',
+                        opensPage: true,
+                        onTap: () => _open(context, issues, fallback: Links.issues, failed: s.contactBrowserFailed),
                       ),
-                      const SizedBox(height: Gaps.section),
-                      CreditsSection(
-                        title: s.contactEmail,
-                        children: [
-                          NarrationBox(child: Text(s.contactEmailBody)),
-                          const SizedBox(height: Gaps.small),
-                          SettingsGroup(children: [
-                            SettingsTapRow(
-                              title: s.contactCopyEmail,
-                              note: Links.developerEmail,
-                              onTap: () => _copy(context, Links.developerEmail, s.contactEmailCopied),
-                            ),
-                            SettingsTapRow(
-                              title: s.contactWriteEmail,
-                              opensPage: true,
-                              onTap: () => _open(context, Uri.parse(Links.developerMailto),
-                                  fallback: Links.developerEmail, failed: s.contactMailFailed),
-                            ),
-                          ]),
-                        ],
+                    ]),
+                    ProseChapter(2, s.contactEmail, o?.contactEmail),
+                    ProseBody(s.contactEmailBody),
+                    const SizedBox(height: ProseLayout.actionGap),
+                    SettingsGroup(children: [
+                      SettingsTapRow(
+                        title: s.contactCopyEmail,
+                        note: Links.developerEmail,
+                        onTap: () => _copy(context, Links.developerEmail, s.contactEmailCopied),
                       ),
-                      const SizedBox(height: Gaps.section),
-                    ],
-                  ),
+                      SettingsTapRow(
+                        title: s.contactWriteEmail,
+                        opensPage: true,
+                        onTap: () => _open(context, Uri.parse(Links.developerMailto),
+                            fallback: Links.developerEmail, failed: s.contactMailFailed),
+                      ),
+                    ]),
+                  ],
                 ),
               ),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
     );

@@ -21,6 +21,7 @@ export 'panel.dart';
 export 'phrases.dart';
 export 'placed.dart';
 export 'pressable.dart';
+export 'prose.dart';
 export 'routes.dart';
 export 'ruby_text.dart';
 export 'screentone.dart';
