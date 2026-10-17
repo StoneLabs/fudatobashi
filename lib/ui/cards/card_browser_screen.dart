@@ -70,6 +70,7 @@ class _CardBrowserScreenState extends State<CardBrowserScreen> {
                   itemCount: matches.length,
                   itemBuilder: (context, i) => _Row(
                     match: matches[i],
+                    romajiFirst: showRomaji,
                     romaji: showRomaji || matches[i].kind == CardMatchKind.romaji ? romaji.kimariji(matches[i].poem.id) : null,
                     first: i == 0,
                     last: i == matches.length - 1,
@@ -234,12 +235,15 @@ class _TableHeader extends StatelessWidget {
 /// matched second half) under it, its torifuda and a chevron. Stamps when
 /// tapped.
 class _Row extends StatelessWidget {
-  const _Row({required this.match, this.romaji, required this.first, required this.last, required this.onTap});
+  const _Row({required this.match, this.romaji, this.romajiFirst = false, required this.first, required this.last, required this.onTap});
 
   final CardMatch match;
 
   /// The kimariji in romaji, to show under the kana.
   final String? romaji;
+
+  /// Whether the romaji is the big line and the kana the small one.
+  final bool romajiFirst;
   final bool first, last;
   final VoidCallback onTap;
 
@@ -260,6 +264,8 @@ class _Row extends StatelessWidget {
           const SizedBox(width: CardBrowserLayout.tagGap),
           Flexible(child: MarkedText(shimo, style: sub, marked: match.marked)),
         ]),
+      _ when romaji != null && romajiFirst =>
+        MarkedText(poem.kimariji, style: sub, marked: marked(CardMatchKind.kana)),
       _ when romaji != null => MarkedText(romaji, style: sub, marked: marked(CardMatchKind.romaji)),
       _ => null,
     };
@@ -318,12 +324,12 @@ class _Row extends StatelessWidget {
                           FittedBox(
                             fit: BoxFit.scaleDown,
                             alignment: Alignment.centerLeft,
-                            child: MarkedText(poem.kimariji,
+                            child: MarkedText(romaji != null && romajiFirst ? romaji : poem.kimariji,
                                 style: const TextStyle(
                                     fontFamily: Fonts.display,
                                     fontSize: CardBrowserLayout.kimarijiFont,
                                     height: CardBrowserLayout.kimarijiLineHeight),
-                                marked: marked(CardMatchKind.kana)),
+                                marked: marked(romaji != null && romajiFirst ? CardMatchKind.romaji : CardMatchKind.kana)),
                           ),
                           if (under != null) ...[const SizedBox(height: CardBrowserLayout.subGap), under],
                         ],
