@@ -19,6 +19,7 @@ export 'lang_toggle.dart';
 export 'lettering.dart';
 export 'lines.dart';
 export 'link_row.dart';
+export 'markdown_blocks.dart';
 export 'markdown_prose.dart';
 export 'marked_text.dart';
 export 'marker_heading.dart';

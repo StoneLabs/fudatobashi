@@ -72,7 +72,6 @@ flutter:
   assets:
     - assets/data/poems.json
     - assets/data/islands.json
-    - assets/rules/
     - assets/l10n/
     - assets/l10n/en_card_explanations/
     - assets/l10n/ja_card_explanations/

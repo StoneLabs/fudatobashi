@@ -257,8 +257,6 @@ abstract final class KarutaRulesLayout {
   static const double noteLineHeight = 1.6;
   static const double noteGap = 4;
   static const double markGap = 4;
-  static const String pointMark = '○';
-  static const String remarkMark = '※';
 
   /// A dated notice (通達) a paragraph or note ends with.
   static const double noticeFont = 12;

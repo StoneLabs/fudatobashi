@@ -1,7 +1,7 @@
 import 'strings.dart';
 
 /// Strings of the full karuta rules page in Help. The rules themselves
-/// come from `assets/rules/` (see `KarutaRules`).
+/// come from `assets/l10n/` (see `KarutaRules`).
 extension RulesStrings on S {
   String get rulesTitle => t('rulesTitle');
   String get rulesRowNote => t('rulesRowNote');

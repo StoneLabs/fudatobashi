@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:fudatobashi/l10n/card_explanations.dart';
+import 'package:fudatobashi/ui/manga/markdown_blocks.dart';
 import 'package:fudatobashi/ui/manga/markdown_prose.dart';
 import 'package:fudatobashi/ui/manga/ruby_text.dart';
 import 'package:markdown/markdown.dart' as md;
@@ -30,12 +31,12 @@ void main() {
 
   for (final code in ['en', 'ja']) {
     test('card 1\'s explanation uses every kind of block an expert needs ($code)', () async {
-      final nodes = MarkdownProse.parse(await CardExplanations.load(code, 1));
+      final nodes = MarkdownBlocks.parse(await CardExplanations.load(code, 1));
       final tags = _tags(nodes);
       for (final tag in ['h1', 'h2', 'h3', 'p', 'strong', 'em', 'ul', 'ol', 'li', 'blockquote', 'pre', 'img']) {
         expect(tags, contains(tag), reason: tag);
       }
-      expect(tags, contains('language-${MarkdownProse.verseFence}'));
+      expect(tags, contains('language-${MarkdownBlocks.verseFence}'));
       expect(nodes.whereType<md.Element>().where((e) => e.tag == 'h2').length, greaterThan(1));
       final img = [for (final n in nodes) if (n is md.Element && n.tag == 'p') ...?n.children]
           .whereType<md.Element>()
@@ -44,7 +45,7 @@ void main() {
     });
 
     test('a card without an explanation yet says it is coming ($code)', () async {
-      final nodes = MarkdownProse.parse(await CardExplanations.load(code, 20));
+      final nodes = MarkdownBlocks.parse(await CardExplanations.load(code, 20));
       final heading = nodes.whereType<md.Element>().where((e) => e.tag == 'h2').single;
       expect(heading.textContent, code == 'en' ? 'Coming soon' : '準備中');
     });

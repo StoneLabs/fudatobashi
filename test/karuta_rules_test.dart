@@ -1,4 +1,4 @@
-// The full karuta rules in Help: the Japanese asset is the PDF's text, the
+// The full karuta rules in Help: the Japanese Markdown is the PDF's text, the
 // English one has exactly its structure, and the page opens from Help with
 // its source, link and disclaimer, switches to the Japanese original,
 // jumps to a chapter and lays out on two phones (384 dp, and 360 dp at
@@ -36,7 +36,7 @@ import 'test_vector_art.dart';
 
 final _render = Platform.environment['RENDER_SCREENS'] == '1';
 
-KarutaRules _rules(String code) => KarutaRules.fromJsonString(File(KarutaRules.asset(code)).readAsStringSync());
+KarutaRules _rules(String code) => KarutaRules.parse(File(KarutaRules.asset(code)).readAsStringSync());
 
 /// Text as compared with the PDF's: no page footers, no white space.
 String _normalised(String s) => s.replaceAll(RegExp(r'－ \d+ / \d+ －'), '').replaceAll(RegExp(r'\s'), '');
@@ -44,51 +44,44 @@ String _normalised(String s) => s.replaceAll(RegExp(r'－ \d+ / \d+ －'), '').r
 /// The whole document as the PDF prints it, marks and brackets included.
 String _plain(KarutaRules r) {
   final out = StringBuffer('${r.title}${r.author}');
-  void notes(List<RulesNote> notes) {
-    if (notes.isEmpty) return;
-    out.write('【${r.notesLabel}】');
-    for (final n in notes) {
-      out.write(switch (n.kind) { RulesNoteKind.point => '○', RulesNoteKind.remark => '※', RulesNoteKind.notice => '' });
-      out.write('${n.text}${n.notice ?? ''}');
+  for (final line in r.body.split('\n')) {
+    final text = line.replaceFirst(RegExp(r'^> ?'), '');
+    if (text.isEmpty || text == '---') continue;
+    if (text.startsWith('## ')) {
+      final [number, title] = text.substring(3).split(' | ');
+      out.write('$number（$title）');
+    } else if (text.startsWith('# ')) {
+      out.write(text.substring(2).replaceAll(' | ', ''));
+    } else if (line.startsWith('> **')) {
+      out.write('【${text.replaceAll('**', '')}】');
+    } else {
+      out.write(text.replaceAll('*', '').replaceAll(RegExp(r'\\$'), ''));
     }
-  }
-
-  for (final c in r.chapters) {
-    out.write('${c.number}${c.title}');
-    for (final a in c.articles) {
-      out.write('${a.number}（${a.title}）${a.body ?? ''}');
-      for (final e in a.list) {
-        out.write('${e.label}${e.text}');
-      }
-      notes(a.notes);
-      for (final e in a.items) {
-        out.write('${e.label}${e.text}${e.notice ?? ''}');
-        notes(e.notes);
-      }
-    }
-  }
-  out.write(r.closing.enacted);
-  for (final remark in r.closing.remarks) {
-    out.write('※$remark');
   }
   return _normalised(out.toString());
 }
 
-/// Everything but the words: ids, kinds and counts, as nested lists (which
-/// `equals` compares deeply, unlike records holding lists).
-List<Object?> _shape(KarutaRules r) {
-  List<Object?> notes(List<RulesNote> notes) => [for (final n in notes) [n.kind, n.notice != null]];
-  List<Object?> entries(List<RulesEntry> entries) =>
-      [for (final e in entries) [e.id, e.notice != null, notes(e.notes)]];
-  return [
-    for (final c in r.chapters)
-      [
-        c.id,
-        for (final a in c.articles) [a.id, a.body != null, entries(a.list), notes(a.notes), entries(a.items)],
-      ],
-    r.closing.remarks.length,
-  ];
-}
+/// Everything but the words: each block's kind, and a quote's paragraph
+/// count (labels and marks differ between the languages).
+List<Object?> _shape(KarutaRules r) => [
+      for (final block in r.body.trim().split('\n\n'))
+        switch (block) {
+          _ when block.startsWith('## ') => 'article',
+          _ when block.startsWith('# ') => 'chapter',
+          _ when block.startsWith('>') => block.split('\n>\n').length,
+          _ when block.startsWith('**') => 'paragraph',
+          _ when block.startsWith('*') => 'notice',
+          _ => 'text',
+        },
+    ];
+
+final _firstParagraph = RegExp(r'^\*\*.+?\*\* (.+)$', multiLine: true);
+
+/// The text of the first numbered paragraph.
+String _firstText(KarutaRules r) => _firstParagraph.firstMatch(r.body)![1]!.trim();
+
+/// The last ※ remark of the closing.
+String _lastRemark(KarutaRules r) => r.body.trim().split('\n').last.substring(1).trim();
 
 Future<void> _loadFont(String family, List<String> files) async {
   final loader = FontLoader(family);
@@ -136,19 +129,11 @@ void main() {
 
     test('nine chapters and the 28 articles in order', () {
       expect(ja.chapters, hasLength(9));
-      final articles = [for (final c in ja.chapters) ...c.articles];
-      expect([for (final a in articles) a.id], [for (var n = 1; n <= 28; n++) 'art$n']);
+      expect(RegExp(r'^## ', multiLine: true).allMatches(ja.body), hasLength(28));
     });
 
-    test('the English has the same chapters, articles, paragraphs, lists and notes as the Japanese', () {
+    test('the English has the same chapters, articles, paragraphs and notes as the Japanese', () {
       expect(_shape(en), _shape(ja));
-    });
-
-    test('every article has paragraphs or a body, and only a body has a list or notes of its own', () {
-      for (final a in [for (final c in ja.chapters) ...c.articles]) {
-        expect(a.items.isEmpty, a.body != null, reason: a.id);
-        if (a.body == null) expect(a.list.isEmpty && a.notes.isEmpty, isTrue, reason: a.id);
-      }
     });
 
     test('the Japanese text is the PDF\'s, white space aside, in the sampled pages', () {
@@ -205,7 +190,7 @@ void main() {
 
         final ja = _rules(KarutaRules.original), en = _rules(KarutaRules.translation);
         final shown = s.ja ? ja : en;
-        final first = shown.chapters.first.articles.first.items.first.text;
+        final first = _firstText(shown);
         expect(find.text(s.rulesSource), findsOneWidget);
         expect(find.text(s.rulesOpenPdf), findsOneWidget);
         expect(find.text(s.rulesDisclaimer), findsOneWidget);
@@ -256,7 +241,7 @@ void main() {
         }
         expect(reachedEnd, isTrue);
         expect(find.text(s.rulesDisclaimerShort), findsOneWidget);
-        expect(find.text(shown.closing.remarks.last), findsOneWidget);
+        expect(find.text(_lastRemark(shown)), findsOneWidget);
 
         await tap(find.bySemanticsLabel(s.back).last);
         expect(find.byType(KarutaRulesScreen), findsNothing);
@@ -285,21 +270,20 @@ void main() {
 
     const s = S('en');
     final ja = _rules(KarutaRules.original), en = _rules(KarutaRules.translation);
-    String firstText(KarutaRules r) => r.chapters.first.articles.first.items.first.text;
-    expect(find.text(firstText(en)), findsOneWidget);
-    expect(find.text(firstText(ja)), findsNothing);
+    expect(find.text(_firstText(en)), findsOneWidget);
+    expect(find.text(_firstText(ja)), findsNothing);
 
     await tester.tap(find.text(s.rulesShowOriginal));
     await tester.pumpAndSettle();
-    expect(find.text(firstText(ja)), findsOneWidget);
-    expect(find.text(firstText(en)), findsNothing);
+    expect(find.text(_firstText(ja)), findsOneWidget);
+    expect(find.text(_firstText(en)), findsNothing);
     expect(find.text(ja.title), findsOneWidget);
     expect(find.text(s.rulesDisclaimer), findsOneWidget, reason: 'the page around the rules stays English');
     await _capture(tester, 'rules_en_original');
 
     await tester.tap(find.text(s.rulesShowOriginal));
     await tester.pumpAndSettle();
-    expect(find.text(firstText(en)), findsOneWidget);
+    expect(find.text(_firstText(en)), findsOneWidget);
     expect(tester.takeException(), isNull);
     await tester.pumpWidget(const SizedBox());
   });
