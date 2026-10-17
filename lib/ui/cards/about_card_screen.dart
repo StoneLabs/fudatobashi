@@ -501,13 +501,16 @@ class _LookAlikes extends StatelessWidget {
                     const SizedBox(width: AboutCardLayout.lookAlikeCardGap),
                     Expanded(
                       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                        Text(poems[id].kimariji,
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: const TextStyle(
-                                fontFamily: Fonts.display,
-                                fontSize: AboutCardLayout.lookAlikeFont,
-                                height: AboutCardLayout.lookAlikeLineHeight)),
+                        FittedBox(
+                          fit: BoxFit.scaleDown,
+                          alignment: Alignment.centerLeft,
+                          child: Text(poems[id].kimariji,
+                              maxLines: 1,
+                              style: const TextStyle(
+                                  fontFamily: Fonts.display,
+                                  fontSize: AboutCardLayout.lookAlikeFont,
+                                  height: AboutCardLayout.lookAlikeLineHeight)),
+                        ),
                         Text(romaji ? '#$id · ${romajiOf(id)}' : '#$id',
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,

@@ -230,8 +230,9 @@ class _TableHeader extends StatelessWidget {
 }
 
 /// One card in the table: its colour group's strip, its number, its
-/// kimariji with the romaji (or the matched second half) under it, its
-/// torifuda and a chevron. Stamps when tapped.
+/// kimariji (shrinking rather than cut short) with the romaji (or the
+/// matched second half) under it, its torifuda and a chevron. Stamps when
+/// tapped.
 class _Row extends StatelessWidget {
   const _Row({required this.match, this.romaji, required this.first, required this.last, required this.onTap});
 
@@ -314,12 +315,16 @@ class _Row extends StatelessWidget {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          MarkedText(poem.kimariji,
-                              style: const TextStyle(
-                                  fontFamily: Fonts.display,
-                                  fontSize: CardBrowserLayout.kimarijiFont,
-                                  height: CardBrowserLayout.kimarijiLineHeight),
-                              marked: marked(CardMatchKind.kana)),
+                          FittedBox(
+                            fit: BoxFit.scaleDown,
+                            alignment: Alignment.centerLeft,
+                            child: MarkedText(poem.kimariji,
+                                style: const TextStyle(
+                                    fontFamily: Fonts.display,
+                                    fontSize: CardBrowserLayout.kimarijiFont,
+                                    height: CardBrowserLayout.kimarijiLineHeight),
+                                marked: marked(CardMatchKind.kana)),
+                          ),
                           if (under != null) ...[const SizedBox(height: CardBrowserLayout.subGap), under],
                         ],
                       ),
