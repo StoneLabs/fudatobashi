@@ -127,8 +127,14 @@ class _Splash extends StatelessWidget {
       child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
         const SizedBox(height: HeaderStyle.topGap),
         Row(children: [
-          Flexible(child: InkTag('${runLabel(s, config)} · ${s.cardsCount(attempts.length)}')),
-          const Spacer(),
+          Expanded(
+            child: FittedBox(
+              fit: BoxFit.scaleDown,
+              alignment: Alignment.centerLeft,
+              child: InkTag('${runLabel(s, config)} · ${s.cardsCount(attempts.length)}'),
+            ),
+          ),
+          const SizedBox(width: Gaps.small),
           InkIconButton(icon: IconArt.close, semanticLabel: s.home, onTap: onHome),
         ]),
         if (progress.knownCardSpeedMs != null) ...[

@@ -96,6 +96,7 @@ import 'package:fudatobashi/ui/results/rating_overlay.dart';
 import 'package:fudatobashi/ui/results/results_screen.dart';
 import 'package:fudatobashi/ui/results/xp_overlay.dart';
 import 'package:fudatobashi/ui/run/ranked_sheets.dart';
+import 'package:fudatobashi/ui/run/run_labels.dart';
 import 'package:fudatobashi/ui/settings/contact_screen.dart';
 import 'package:fudatobashi/ui/settings/credits_screen.dart';
 import 'package:fudatobashi/ui/settings/hold_warning_screen.dart';
@@ -1601,6 +1602,55 @@ void main() {
           }
         }
         await _capture(tester, 'results_shelves_${ja ? 'ja' : 'en'}_$scale');
+        await tester.pumpWidget(const SizedBox());
+      });
+    }
+  }
+
+  // The run-kind tag in the header names a 苦手 run "Weak cards · N cards",
+  // which must show whole at the narrowest phone and the largest font scale.
+  for (final (width, scale) in [(384.0, 1.0), (360.0, 1.0), (360.0, 1.3)]) {
+    for (final ja in [false, true]) {
+      testWidgets('results: the weak run tag shows whole at ${width.round()} dp, scale $scale (${ja ? 'ja' : 'en'})',
+          (tester) async {
+        tester.platformDispatcher.textScaleFactorTestValue = scale;
+        addTearDown(tester.platformDispatcher.clearTextScaleFactorTestValue);
+        final p = await open(tester, mode: LearningMode.allKnown, ja: ja);
+        final s = S(ja ? 'ja' : 'en');
+        const config = PlayConfig(mode: PlayMode.nigate, goalMs: 800);
+        final report = SessionReport(
+          runId: null,
+          completed: true,
+          total: const Duration(seconds: 30),
+          attempts: [
+            for (var i = 0; i < 20; i++)
+              Attempt(
+                  index: i, card: CardRef(i + 1), responseUs: 900000, outcome: Outcome.known, at: DateTime(2026), deckSize: 20),
+          ],
+          previousBest: null,
+          ratingBefore: null,
+          ratingAfter: null,
+          goalRaised: false,
+          newCards: const [],
+        );
+        await tester.binding.setSurfaceSize(Size(width, _phone.height));
+        await tester.pumpWidget(RepaintBoundary(
+          key: const ValueKey('screen'),
+          child: ProgressScope(
+            progress: p,
+            child: MaterialApp(home: ResultsScreen(report: report, config: config)),
+          ),
+        ));
+        await tester.pump(const Duration(milliseconds: 500));
+        expect(tester.takeException(), isNull);
+        await _capture(tester, 'results_weak_tag_${ja ? 'ja' : 'en'}_${width.round()}_$scale');
+        final label = '${runLabel(s, config)} · ${s.cardsCount(20)}';
+        final paragraph = tester.renderObject<RenderParagraph>(find.text(label));
+        final oneLine =
+            (TextPainter(text: paragraph.text, textDirection: TextDirection.ltr, textScaler: paragraph.textScaler)..layout())
+                .width;
+        expect(paragraph.size.width, greaterThanOrEqualTo(oneLine - 1), reason: '"$label" is cut off');
+        expect(tester.getRect(find.text(label)).right, lessThanOrEqualTo(tester.getRect(find.byType(InkIconButton)).left));
         await tester.pumpWidget(const SizedBox());
       });
     }
