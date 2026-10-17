@@ -1,16 +1,15 @@
 part of '../design.dart';
 
-/// The "Licenses & credits" screen, reached from Settings.
-/// Settings (`SettingsScreen`): sections under ink banners with a rule
-/// running out to the edge; each setting is named, with a one-line note
-/// under its name, and switches and links sit in ink panels split by
-/// hairlines.
 /// Settings › Card size: the live preview card above its slider.
 abstract final class CardSizeLayout {
   static const double percentFont = 28;
   static const double percentGap = Gaps.small;
 }
 
+/// Settings (`SettingsScreen`): sections under ink banners with a rule
+/// running out to the edge; each setting is named, with a one-line note
+/// under its name, and switches and links sit in ink panels split by
+/// hairlines.
 abstract final class SettingsLayout {
   static const double sectionGap = 28;
   static const double headerFont = 16;
@@ -69,6 +68,7 @@ abstract final class DayStartPickerLayout {
   static const Color barrier = Color(0x8C141414);
 }
 
+/// The "Licenses & credits" screen, reached from Settings.
 abstract final class CreditsLayout {
   static const double chevron = 16;
   static const double rowSubtitleGap = 2;
