@@ -196,6 +196,7 @@ details.howto[open] summary::after{content:"−"}
 <header class="top">
   <div class="tag">解説</div>
   <h1>Card explanation editor<small>この札について　解説エディタ</small></h1>
+  <div class="tag" id="langBadge" style="margin-left:auto"></div>
 </header>
 
 <div class="grid">
@@ -212,10 +213,6 @@ details.howto[open] summary::after{content:"−"}
   <section class="editor-col" aria-label="Editor">
     <div class="panel">
       <div class="row">
-        <div class="row langs" role="group" aria-label="Language">
-          <button type="button" class="btn" id="lang-en" aria-pressed="true">English</button>
-          <button type="button" class="btn" id="lang-ja" aria-pressed="false">日本語</button>
-        </div>
         <button type="button" class="btn" id="prev" aria-label="Previous card">&lsaquo;</button>
         <select id="card" aria-label="Card"></select>
         <button type="button" class="btn" id="next" aria-label="Next card">&rsaquo;</button>
@@ -289,13 +286,14 @@ details.howto[open] summary::after{content:"−"}
         <button type="button" class="btn" id="copyAll">Copy all</button>
         <button type="button" class="btn" id="impJson">Import JSON</button>
       </div>
-      <p class="send">Save each .md file under the same name in the folder shown above. Pictures are not inside the .md: send the image files to the developer as well. &ldquo;Download all (.zip)&rdquo; makes one zip with every draft in its folder, plus the pictures you added here. &ldquo;Export JSON&rdquo; and &ldquo;Import JSON&rdquo; move all your drafts to another computer.</p>
+      <p class="send">Save each .md file under the same name in the folder shown above. Pictures are not inside the .md: send the image files to the developer as well. &ldquo;Download all (.zip)&rdquo; makes one zip with every draft in its folder, plus the pictures you added here. &ldquo;Export JSON&rdquo; and &ldquo;Import JSON&rdquo; move your drafts in this language to another computer.</p>
     </div>
 
     <details class="howto" id="cardData">
-      <summary>Card data (optional)　札のデータ</summary>
+      <summary>Settings　設定</summary>
       <div class="in">
-        <p>Paste the file <code>data.csv</code> from <a href="https://github.com/StoneLabs/hyakuninissyu-csv" target="_blank" rel="noopener">github.com/StoneLabs/hyakuninissyu-csv</a> to see each card's kimariji, poem and colour in the preview. It is saved in this browser. Without it everything else still works.</p>
+        <p><label>Language you write in　言語: <select id="langSel"><option value="en">English</option><option value="ja">日本語</option></select></label> Drafts are kept for each language, so you can switch later.</p>
+        <p>Card data (optional): paste the file <code>data.csv</code> from <a href="https://github.com/StoneLabs/hyakuninissyu-csv" target="_blank" rel="noopener">github.com/StoneLabs/hyakuninissyu-csv</a> to see each card's kimariji, poem and colour in the preview. It is saved in this browser. Without it everything else still works.</p>
         <textarea id="csv" rows="4" aria-label="CSV" spellcheck="false" style="width:100%;box-sizing:border-box"></textarea>
         <div class="row" style="margin-top:8px">
           <button type="button" class="btn" id="csvUse">Use pasted CSV</button>
@@ -1156,7 +1154,7 @@ if (typeof module !== 'undefined') module.exports = CardMarkdown;
   const textOfCard = (l, i) => draftOf(l, i) ?? original(l);
   const isEdited = (l, i) => draftOf(l, i) !== undefined;
   const cards = Array.from({ length: CARD_COUNT }, (_, i) => i + 1);
-  const editedList = () => ['en', 'ja'].flatMap((l) => cards.filter((i) => isEdited(l, i)).map((i) => ({ lang: l, n: i })));
+  const editedList = () => cards.filter((i) => isEdited(lang, i)).map((i) => ({ lang, n: i }));
 
   /* ---- the card data, from the StoneLabs CSV ---- */
 
@@ -1462,11 +1460,8 @@ if (typeof module !== 'undefined') module.exports = CardMarkdown;
     const sel = $('#card');
     cards.forEach((i) => { sel.options[i - 1].textContent = cardLabel(i); });
     sel.value = String(n);
-    const count = (l) => cards.filter((i) => isEdited(l, i)).length;
-    $('#lang-en').textContent = `English${count('en') ? ` (${count('en')} edited)` : ''}`;
-    $('#lang-ja').textContent = `日本語${count('ja') ? ` (${count('ja')} edited)` : ''}`;
-    $('#lang-en').setAttribute('aria-pressed', String(lang === 'en'));
-    $('#lang-ja').setAttribute('aria-pressed', String(lang === 'ja'));
+    $('#langBadge').textContent = lang === 'en' ? 'English' : '日本語';
+    $('#langSel').value = lang;
     const edited = editedList();
     $('#editedList').innerHTML = edited.length
       ? 'Edited: ' + edited.map((e) => `<button type="button" class="chip" data-lang="${e.lang}" data-n="${e.n}">${e.lang === 'en' ? 'EN' : 'JA'} ${e.n}</button>`).join('')
@@ -1630,8 +1625,8 @@ if (typeof module !== 'undefined') module.exports = CardMarkdown;
   }
 
   const allDrafts = () => {
-    const out = { en: {}, ja: {} };
-    editedList().forEach((e) => { out[e.lang][pad(e.n)] = draftOf(e.lang, e.n); });
+    const out = { lang, cards: {} };
+    editedList().forEach((e) => { out.cards[pad(e.n)] = draftOf(lang, e.n); });
     return JSON.stringify(out, null, 2);
   };
 
@@ -1652,11 +1647,10 @@ if (typeof module !== 'undefined') module.exports = CardMarkdown;
   function importJson(text) {
     let data;
     try { data = JSON.parse(text); } catch (e) { return alert('That is not a valid JSON file.'); }
+    if (data?.lang !== lang) return alert(`This file is for "${data?.lang}" but you are writing "${lang}". Change the language in Settings first.`);
     const found = [];
-    for (const l of ['en', 'ja']) {
-      for (const [k, v] of Object.entries(data?.[l] ?? {})) {
-        if (typeof v === 'string' && /^\d{1,3}$/.test(k) && +k >= 1 && +k <= CARD_COUNT) found.push([l, +k, v]);
-      }
+    for (const [k, v] of Object.entries(data.cards ?? {})) {
+      if (typeof v === 'string' && /^\d{3}$/.test(k) && +k >= 1 && +k <= CARD_COUNT) found.push([lang, +k, v]);
     }
     if (!found.length) return alert('No card texts found in that file.');
     const clash = found.filter(([l, i, v]) => isEdited(l, i) && draftOf(l, i) !== v).length;
@@ -1709,8 +1703,7 @@ if (typeof module !== 'undefined') module.exports = CardMarkdown;
     sel.addEventListener('change', () => load(lang, +sel.value));
     $('#prev').addEventListener('click', () => load(lang, n === 1 ? 100 : n - 1));
     $('#next').addEventListener('click', () => load(lang, n === 100 ? 1 : n + 1));
-    $('#lang-en').addEventListener('click', () => load('en', n));
-    $('#lang-ja').addEventListener('click', () => load('ja', n));
+    $('#langSel').addEventListener('change', () => load($('#langSel').value, n));
     $('#editedList').addEventListener('click', (e) => { const b = e.target.closest('.chip'); if (b) load(b.dataset.lang, +b.dataset.n); });
     ta.addEventListener('input', onType);
     ta.addEventListener('scroll', () => { hl.scrollTop = ta.scrollTop; });
