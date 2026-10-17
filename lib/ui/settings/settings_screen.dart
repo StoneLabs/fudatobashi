@@ -35,6 +35,7 @@ import '../results/celebrations.dart';
 import '../run/run_launcher.dart';
 import '../tour/tour_overlay.dart';
 import 'card_size_screen.dart';
+import 'contact_screen.dart';
 import 'credits_screen.dart';
 import 'data_actions.dart';
 import 'day_start_sheet.dart';
@@ -204,6 +205,11 @@ class SettingsScreen extends StatelessWidget {
                             SettingsTapRow(
                               title: s.repositoryLink,
                               onTap: () => launchUrl(Uri.parse(Links.repository), mode: LaunchMode.externalApplication),
+                            ),
+                            SettingsTapRow(
+                              title: s.contactDeveloper,
+                              opensPage: true,
+                              onTap: () => Navigator.push(context, MangaRoute<void>(builder: (_) => const ContactScreen())),
                             ),
                           ]),
                         ],

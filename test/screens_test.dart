@@ -92,6 +92,7 @@ import 'package:fudatobashi/ui/results/rating_overlay.dart';
 import 'package:fudatobashi/ui/results/results_screen.dart';
 import 'package:fudatobashi/ui/results/xp_overlay.dart';
 import 'package:fudatobashi/ui/run/ranked_sheets.dart';
+import 'package:fudatobashi/ui/settings/contact_screen.dart';
 import 'package:fudatobashi/ui/settings/credits_screen.dart';
 import 'package:fudatobashi/ui/settings/hold_warning_screen.dart';
 import 'package:fudatobashi/ui/settings/language_screen.dart';
@@ -2154,6 +2155,103 @@ void main() {
       await tester.pumpWidget(const SizedBox());
     }
   });
+
+  testWidgets('settings: Contact the developer opens its page; copy, the issues link and the email all work',
+      (tester) async {
+    PackageInfo.setMockInitialValues(
+        appName: 'Fudatobashi', packageName: 'dev.fudatobashi', version: '1.0.0', buildNumber: '1', buildSignature: '');
+    final copied = <String>[];
+    tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(SystemChannels.platform, (call) async {
+      if (call.method == 'Clipboard.setData') copied.add((call.arguments as Map)['text'] as String);
+      return null;
+    });
+    addTearDown(() => tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(SystemChannels.platform, null));
+    final launches = <String>[];
+    var opens = true;
+    const channel = MethodChannel('plugins.flutter.io/url_launcher');
+    tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(channel, (call) async {
+      if (call.method == 'launch') launches.add((call.arguments as Map)['url'] as String);
+      return opens;
+    });
+    addTearDown(() => tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(channel, null));
+    final p = await open(tester);
+    await tester.binding.setSurfaceSize(_phone);
+    await tester.pumpWidget(ProgressScope(progress: p, child: const MaterialApp(home: SettingsScreen())));
+    await tester.pump();
+    const s = S('en');
+    await tester.scrollUntilVisible(find.text(s.contactDeveloper), 200);
+    expect(tester.getTopLeft(find.text(s.contactDeveloper)).dy, greaterThan(tester.getTopLeft(find.text(s.repositoryLink)).dy),
+        reason: 'right under the source code row');
+    await tester.tap(find.text(s.contactDeveloper));
+    await tester.pumpAndSettle();
+    expect(find.byType(ContactScreen), findsOneWidget);
+    expect(find.text(s.contactIssues), findsOneWidget);
+    expect(find.text(s.contactEmail), findsOneWidget);
+
+    Future<void> tapRow(String title) async {
+      await tester.ensureVisible(find.text(title));
+      await tester.tap(find.text(title));
+      await tester.pump();
+    }
+
+    Future<void> toastGone() => tester.pump(ToastStyle.hold + ToastStyle.fade * 2);
+
+    await tapRow(s.contactCopyEmail);
+    expect(copied, [Links.developerEmail]);
+    expect(find.text(s.contactEmailCopied), findsOneWidget, reason: 'a toast says so');
+    await toastGone();
+
+    await tapRow(s.contactOpenIssues);
+    await tapRow(s.contactWriteEmail);
+    expect(launches, [Links.issues, Links.developerMailto]);
+
+    // No mail app on the device: the address is copied instead.
+    opens = false;
+    await tapRow(s.contactWriteEmail);
+    expect(copied.last, Links.developerEmail);
+    expect(find.text(s.contactMailFailed), findsOneWidget);
+    await toastGone();
+    expect(tester.takeException(), isNull);
+    await tester.pumpWidget(const SizedBox());
+  });
+
+  for (final ja in [false, true]) {
+    final lang = ja ? 'ja' : 'en';
+    for (final (width, fontScale) in const [(384.0, 1.0), (360.0, 1.0), (360.0, 1.3)]) {
+      final size = width == _phone.width && fontScale == 1 ? '' : '_${width.round()}${fontScale == 1 ? '' : '_scaled'}';
+      testWidgets('contact the developer: both sections and their buttons fit ($lang, $width dp, font scale $fontScale)',
+          (tester) async {
+        tester.platformDispatcher.textScaleFactorTestValue = fontScale;
+        addTearDown(tester.platformDispatcher.clearTextScaleFactorTestValue);
+        final p = await open(tester, ja: ja);
+        await tester.binding.setSurfaceSize(Size(width, _phone.height));
+        addTearDown(() => tester.binding.setSurfaceSize(null));
+        await tester.pumpWidget(ProgressScope(
+          progress: p,
+          child: MaterialApp(
+            theme: buildMangaTheme(),
+            home: const RepaintBoundary(key: ValueKey('screen'), child: ContactScreen()),
+          ),
+        ));
+        await tester.pump(const Duration(milliseconds: 300));
+        expect(tester.takeException(), isNull);
+        final s = S(lang);
+        for (final text in [s.contactIssuesBody, s.contactEmailBody, s.contactOpenIssues, s.contactCopyEmail, s.contactWriteEmail]) {
+          expect(find.text(text), findsOneWidget);
+        }
+        await _capture(tester, 'contact${size}_$lang');
+        final scroll = tester.state<ScrollableState>(find.byType(Scrollable)).position;
+        if (scroll.maxScrollExtent > 0) {
+          scroll.jumpTo(scroll.maxScrollExtent);
+          await tester.pump();
+          await _capture(tester, 'contact${size}_${lang}_end');
+        }
+        expect(tester.getRect(find.text(s.contactWriteEmail)).bottom, lessThan(_phone.height),
+            reason: 'the last row scrolls into view');
+        await tester.pumpWidget(const SizedBox());
+      });
+    }
+  }
 
   group('Rank ladder edge cases', () {
     Widget pumped(Progress p) => ProgressScope(progress: p, child: const MaterialApp(home: RankScreen()));

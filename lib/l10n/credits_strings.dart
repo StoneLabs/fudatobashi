@@ -9,6 +9,22 @@ extension CreditsStrings on S {
   /// The About row that opens the source code and issue tracker in the browser.
   String get repositoryLink => t('repositoryLink');
 
+  /// The About row and its page: issues go to GitHub, anything else by email.
+  String get contactDeveloper => t('contactDeveloper');
+  String get contactTitle => t('contactTitle');
+  String get contactIssues => t('contactIssues');
+  String get contactIssuesBody => t('contactIssuesBody');
+  String get contactOpenIssues => t('contactOpenIssues');
+  String get contactEmail => t('contactEmail');
+  String get contactEmailBody => t('contactEmailBody');
+  String get contactCopyEmail => t('contactCopyEmail');
+  String get contactEmailCopied => t('contactEmailCopied');
+  String get contactWriteEmail => t('contactWriteEmail');
+
+  /// Nothing on the device opened the link or the mail; it was copied instead.
+  String get contactBrowserFailed => t('contactBrowserFailed');
+  String get contactMailFailed => t('contactMailFailed');
+
   String get creditsFonts => t('creditsFonts');
 
   String get creditsCardKana => t('creditsCardKana');
