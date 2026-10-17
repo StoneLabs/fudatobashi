@@ -1392,5 +1392,9 @@
   "timerSetTitle": "時間を​設定",
   "timerMinutes": "分",
   "timerSeconds": "秒",
-  "timerEdit": "時間を​変更"
+  "timerEdit": "時間を​変更",
+  "timerNoticeText": "カウントダウン中。​残り{0}分と​終了時に​音が​鳴ります。",
+  "timerNotifyTitle": "タイマーを​通知に​表示",
+  "timerNotifyReason": "タイマーの​動作中は、​残り時間を​通知に​表示できます。​ロック画面や​ほかの​アプリからも​確認できます。​このあと​Androidが​許可を​求めます。",
+  "timerNotifyContinue": "続ける"
 }

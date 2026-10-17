@@ -1392,5 +1392,9 @@
   "timerSetTitle": "Set the time",
   "timerMinutes": "min",
   "timerSeconds": "sec",
-  "timerEdit": "Change the time"
+  "timerEdit": "Change the time",
+  "timerNoticeText": "Counting down. Sounds at {0} minutes left and at the end.",
+  "timerNotifyTitle": "Show the timer in a notification",
+  "timerNotifyReason": "While the timer runs, it can show the time left in a notification, so you can check it on the lock screen or from another app. Android will ask you next.",
+  "timerNotifyContinue": "Continue"
 }

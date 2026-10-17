@@ -9,6 +9,8 @@ import '../../config/design.dart';
 import '../../config/vector_art.dart';
 import '../../l10n/match_timer_strings.dart';
 import '../../l10n/strings.dart';
+import '../../state/match_timer_alerts.dart';
+import '../../state/scope.dart';
 import '../cards/page_frame.dart';
 import '../manga/manga.dart';
 import '../sound/sounds.dart';
@@ -17,7 +19,8 @@ import '../sound/sounds.dart';
 /// round the time left, which can be set before it starts. The ring turns
 /// to the warning colour, with a sound, for the last two minutes, and a
 /// second sound sounds at zero. Time comes from the wall clock, so it stays
-/// right however late a tick lands.
+/// right however late a tick lands, and [MatchTimerAlerts] keeps the screen
+/// on and the sounds coming while it runs.
 class MatchTimerScreen extends StatefulWidget {
   const MatchTimerScreen({super.key, this.now = DateTime.now});
 
@@ -29,6 +32,7 @@ class MatchTimerScreen extends StatefulWidget {
 }
 
 class _MatchTimerScreenState extends State<MatchTimerScreen> {
+  late final _alerts = MatchTimerAlerts(now: widget.now);
   Duration _total = MatchTimerTuning.defaultTime;
   Duration _banked = Duration.zero;
   DateTime? _runningSince;
@@ -46,9 +50,19 @@ class _MatchTimerScreenState extends State<MatchTimerScreen> {
     return left.isNegative ? Duration.zero : left;
   }
 
+  MatchTimerNotice get _notice {
+    final s = S.of(context);
+    return (
+      title: s.matchTimerTitle,
+      text: s.timerNoticeText(MatchTimerTuning.warnAt.inMinutes),
+      channel: s.matchTimerTitle,
+    );
+  }
+
   @override
   void dispose() {
     _ticker?.cancel();
+    _alerts.release();
     super.dispose();
   }
 
@@ -59,6 +73,27 @@ class _MatchTimerScreenState extends State<MatchTimerScreen> {
       _warned = _left <= MatchTimerTuning.warnAt;
     });
     _ticker = Timer.periodic(MatchTimerTuning.tick, (_) => _onTick());
+    unawaited(_startAlerts());
+  }
+
+  /// The timer is already running behind the question, so asking costs the
+  /// match no time.
+  Future<void> _startAlerts() async {
+    await _askForNotificationsOnce();
+    if (mounted && _running) _alerts.run(_left, _notice);
+  }
+
+  Future<void> _askForNotificationsOnce() async {
+    final progress = ProgressScope.read(context);
+    if (progress.settings.timerNotificationsAsked || !await _alerts.needsNotificationPermission() || !mounted) return;
+    unawaited(progress.updateSettings(progress.settings.copyWith(timerNotificationsAsked: true)));
+    final go = await showMangaSheet<bool>(
+      context,
+      barrierColor: MatchTimerLayout.sheetBarrier,
+      barrierLabel: S.of(context).cancel,
+      builder: (_) => const _NotifySheet(),
+    );
+    if (go == true) await _alerts.askNotificationPermission();
   }
 
   void _togglePause() {
@@ -67,13 +102,16 @@ class _MatchTimerScreenState extends State<MatchTimerScreen> {
         _banked = _elapsed;
         _runningSince = null;
       });
+      _alerts.release();
     } else {
       setState(() => _runningSince = widget.now());
+      _alerts.run(_left, _notice);
     }
   }
 
   void _stop() {
     _ticker?.cancel();
+    _alerts.release();
     setState(() {
       _started = false;
       _banked = Duration.zero;
@@ -88,14 +126,18 @@ class _MatchTimerScreenState extends State<MatchTimerScreen> {
     final left = _left;
     if (!_warned && left <= MatchTimerTuning.warnAt) {
       _warned = true;
-      playSound(context, MatchTimerTuning.warnSound);
+      if (MatchTimerTuning.warnAt - left <= MatchTimerTuning.lateSoundGrace) {
+        playSound(context, MatchTimerTuning.warnSound);
+      }
     }
     if (left == Duration.zero) {
+      final overdue = _elapsed - _total;
       _ended = true;
       _ticker?.cancel();
       _banked = _total;
       _runningSince = null;
-      playSound(context, MatchTimerTuning.endSound);
+      _alerts.finish();
+      if (overdue <= MatchTimerTuning.lateSoundGrace) playSound(context, MatchTimerTuning.endSound);
     }
     setState(() {});
   }
@@ -219,6 +261,78 @@ class _RingPainter extends CustomPainter {
   bool shouldRepaint(_RingPainter old) => old.fraction != fraction || old.color != color;
 }
 
+/// A bottom sheet panel: a title over [children].
+class _Sheet extends StatelessWidget {
+  const _Sheet({required this.title, required this.children});
+
+  final String title;
+  final List<Widget> children;
+
+  @override
+  Widget build(BuildContext context) => SafeArea(
+        child: Align(
+          alignment: Alignment.bottomCenter,
+          child: Padding(
+            padding: EdgeInsets.fromLTRB(
+                Gaps.gutter, Gaps.gutter, Gaps.gutter, Gaps.gutter + MediaQuery.viewInsetsOf(context).bottom),
+            child: Material(
+              type: MaterialType.transparency,
+              child: MangaPanel(
+                padding: MatchTimerLayout.sheetPadding,
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    Text(title,
+                        style: const TextStyle(
+                            fontFamily: Fonts.display,
+                            fontSize: MatchTimerLayout.sheetTitle,
+                            height: TypeScale.displayLineHeight)),
+                    const SizedBox(height: MatchTimerLayout.sheetGap),
+                    ...children,
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ),
+      );
+}
+
+class _SheetButton extends StatelessWidget {
+  const _SheetButton({required this.label, required this.onTap});
+
+  final String label;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) => SizedBox(
+        height: MatchTimerLayout.buttonHeight,
+        child: InkButton(
+          onTap: onTap,
+          color: Palette.sun,
+          child: Text(label, style: const TextStyle(fontWeight: Weights.black, fontSize: MatchTimerLayout.buttonFont)),
+        ),
+      );
+}
+
+/// Why the timer would like to show a notification, before Android asks.
+class _NotifySheet extends StatelessWidget {
+  const _NotifySheet();
+
+  @override
+  Widget build(BuildContext context) {
+    final s = S.of(context);
+    return _Sheet(title: s.timerNotifyTitle, children: [
+      Text(s.timerNotifyReason,
+          style: const TextStyle(
+              fontWeight: Weights.bold, fontSize: MatchTimerLayout.sheetBody, height: MatchTimerLayout.sheetLineHeight)),
+      const SizedBox(height: MatchTimerLayout.sheetGap),
+      _SheetButton(label: s.timerNotifyContinue, onTap: () => Navigator.pop(context, true)),
+    ]);
+  }
+}
+
 class _SetTimeSheet extends StatefulWidget {
   const _SetTimeSheet({required this.initial});
 
@@ -249,50 +363,18 @@ class _SetTimeSheetState extends State<_SetTimeSheet> {
   @override
   Widget build(BuildContext context) {
     final s = S.of(context);
-    return SafeArea(
-      child: Align(
-        alignment: Alignment.bottomCenter,
-        child: Padding(
-          padding: EdgeInsets.fromLTRB(Gaps.gutter, Gaps.gutter, Gaps.gutter, Gaps.gutter + MediaQuery.viewInsetsOf(context).bottom),
-          child: Material(
-            type: MaterialType.transparency,
-            child: MangaPanel(
-              padding: MatchTimerLayout.sheetPadding,
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  Text(s.timerSetTitle,
-                      style: const TextStyle(
-                          fontFamily: Fonts.display,
-                          fontSize: MatchTimerLayout.sheetTitle,
-                          height: TypeScale.displayLineHeight)),
-                  const SizedBox(height: MatchTimerLayout.sheetGap),
-                  Row(mainAxisAlignment: MainAxisAlignment.center, crossAxisAlignment: CrossAxisAlignment.start, children: [
-                    _Field(controller: _minutes, label: s.timerMinutes, autofocus: true),
-                    const Padding(
-                      padding: EdgeInsets.symmetric(horizontal: 10),
-                      child: Text(':', style: TextStyle(fontFamily: Fonts.display, fontSize: MatchTimerLayout.colonFont)),
-                    ),
-                    _Field(controller: _seconds, label: s.timerSeconds),
-                  ]),
-                  const SizedBox(height: MatchTimerLayout.sheetGap),
-                  SizedBox(
-                    height: MatchTimerLayout.buttonHeight,
-                    child: InkButton(
-                      onTap: _set,
-                      color: Palette.sun,
-                      child: Text(s.done,
-                          style: const TextStyle(fontWeight: Weights.black, fontSize: MatchTimerLayout.buttonFont)),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
+    return _Sheet(title: s.timerSetTitle, children: [
+      Row(mainAxisAlignment: MainAxisAlignment.center, crossAxisAlignment: CrossAxisAlignment.start, children: [
+        _Field(controller: _minutes, label: s.timerMinutes, autofocus: true),
+        const Padding(
+          padding: EdgeInsets.symmetric(horizontal: 10),
+          child: Text(':', style: TextStyle(fontFamily: Fonts.display, fontSize: MatchTimerLayout.colonFont)),
         ),
-      ),
-    );
+        _Field(controller: _seconds, label: s.timerSeconds),
+      ]),
+      const SizedBox(height: MatchTimerLayout.sheetGap),
+      _SheetButton(label: s.done, onTap: _set),
+    ]);
   }
 }
 

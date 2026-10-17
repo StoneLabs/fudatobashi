@@ -170,6 +170,7 @@ class AppSettings {
     this.kimarijiScript = DefaultSettings.kimarijiScript,
     this.accessibilityMode = DefaultSettings.accessibilityMode,
     this.cardPanelSwiped = DefaultSettings.cardPanelSwiped,
+    this.timerNotificationsAsked = DefaultSettings.timerNotificationsAsked,
     this.soundLadder = DefaultSettings.soundLadder,
     this.cardScale = DefaultSettings.cardScale,
     this.ankiren = DefaultSettings.ankiren,
@@ -238,6 +239,10 @@ class AppSettings {
   /// no longer shows.
   final bool cardPanelSwiped;
 
+  /// The match timer has asked once to show its notification, so it never
+  /// asks again.
+  final bool timerNotificationsAsked;
+
   /// The About pages' choice of sound ladder.
   final SoundLadderMode soundLadder;
 
@@ -284,6 +289,7 @@ class AppSettings {
         'kimarijiScript': kimarijiScript.name,
         'accessibilityMode': accessibilityMode,
         'cardPanelSwiped': cardPanelSwiped,
+        'timerNotificationsAsked': timerNotificationsAsked,
         'soundLadder': soundLadder.name,
         'cardScale': cardScale,
         'ankiren': ankiren.toJson(),
@@ -331,6 +337,7 @@ class AppSettings {
       accessibilityMode:
           j['accessibilityMode'] as bool? ?? ankiren?['zoom'] as bool? ?? DefaultSettings.accessibilityMode,
       cardPanelSwiped: j['cardPanelSwiped'] as bool? ?? DefaultSettings.cardPanelSwiped,
+      timerNotificationsAsked: j['timerNotificationsAsked'] as bool? ?? DefaultSettings.timerNotificationsAsked,
       soundLadder: SoundLadderMode.values.asNameMap()[j['soundLadder']] ?? DefaultSettings.soundLadder,
       cardScale: ((j['cardScale'] as num?)?.toDouble() ?? DefaultSettings.cardScale)
           .clamp(SwipeTuning.cardScaleMin, SwipeTuning.cardScaleMax),
@@ -362,6 +369,7 @@ class AppSettings {
     KimarijiScript? kimarijiScript,
     bool? accessibilityMode,
     bool? cardPanelSwiped,
+    bool? timerNotificationsAsked,
     SoundLadderMode? soundLadder,
     double? cardScale,
     AnkirenSettings? ankiren,
@@ -390,6 +398,7 @@ class AppSettings {
         kimarijiScript: kimarijiScript ?? this.kimarijiScript,
         accessibilityMode: accessibilityMode ?? this.accessibilityMode,
         cardPanelSwiped: cardPanelSwiped ?? this.cardPanelSwiped,
+        timerNotificationsAsked: timerNotificationsAsked ?? this.timerNotificationsAsked,
         soundLadder: soundLadder ?? this.soundLadder,
         cardScale: cardScale ?? this.cardScale,
         ankiren: ankiren ?? this.ankiren,

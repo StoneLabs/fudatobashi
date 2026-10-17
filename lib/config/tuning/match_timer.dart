@@ -13,4 +13,12 @@ abstract final class MatchTimerTuning {
 
   static const Sfx warnSound = Sfx.lookAlike;
   static const Sfx endSound = Sfx.graduation;
+
+  /// A sound whose moment passed longer ago than this (the app was asleep
+  /// in the background, as iOS does) is skipped rather than played late.
+  static const Duration lateSoundGrace = Duration(seconds: 2);
+
+  /// How long Android's background service outlasts the end, so the end
+  /// sound gets to play before the phone may sleep.
+  static const Duration backgroundLinger = Duration(seconds: 5);
 }

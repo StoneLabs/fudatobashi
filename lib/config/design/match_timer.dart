@@ -19,11 +19,13 @@ abstract final class MatchTimerLayout {
   static const double buttonFont = 20;
   static const double sectionGap = 36;
 
-  /// The set-time sheet.
+  /// The set-time and notification sheets.
   static const Color sheetBarrier = Color(0x8C141414);
   static const EdgeInsets sheetPadding = EdgeInsets.all(20);
   static const double sheetTitle = 24;
   static const double sheetGap = 16;
+  static const double sheetBody = 15;
+  static const double sheetLineHeight = 1.45;
   static const double fieldWidth = 96;
   static const double fieldFont = 36;
   static const double fieldLabelFont = 13;
