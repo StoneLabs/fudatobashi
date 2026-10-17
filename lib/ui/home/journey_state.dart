@@ -1,8 +1,7 @@
 import 'dart:ui';
 
-import '../../data/fuda_sets.dart';
+import '../../config/design.dart';
 import '../../data/islands.dart';
-import '../../data/poem.dart';
 import '../../domain/card_stats.dart';
 import '../../domain/trainer.dart';
 import '../../state/progress.dart';
@@ -10,7 +9,7 @@ import '../islands/island_map.dart';
 
 /// Where a beginner is on the island journey.
 class JourneyState {
-  JourneyState._(this.islands, this.current, this.unlocked, this.upNext, this._passed);
+  JourneyState._(this.islands, this.current, this.unlocked, this.played, this._passed);
 
   factory JourneyState.of(Progress p) {
     final islands = p.islands;
@@ -29,7 +28,11 @@ class JourneyState {
       for (final id in [for (final i in islands) ...i.poemIds])
         if (p.trainer.items[ItemKey(id, false)]!.unlocked) id,
     };
-    return JourneyState._(islands, current, unlocked, p.trainer.nextBatch(poems, fudaSets).toSet(), passed);
+    final played = {
+      for (final id in unlocked)
+        if (p.attemptsOf(ItemKey(id, false)).isNotEmpty) id,
+    };
+    return JourneyState._(islands, current, unlocked, played, passed);
   }
 
   final List<IslandProgress> islands;
@@ -40,8 +43,14 @@ class JourneyState {
   /// Poem ids whose upright card is unlocked.
   final Set<int> unlocked;
 
-  /// Poem ids that unlock next.
-  final Set<int> upNext;
+  /// Poem ids whose upright card has been answered in a game.
+  final Set<int> played;
+
+  /// How the map marks a card: white until unlocked, yellow until played.
+  SiteMark markOf(int poemId) {
+    if (!unlocked.contains(poemId)) return const SiteMark.pending();
+    return played.contains(poemId) ? const SiteMark.tree() : const SiteMark.tree(Palette.sun);
+  }
 
   /// Indices of islands already passed (see [JourneyState.of]).
   final Set<int> _passed;

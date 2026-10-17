@@ -30,10 +30,8 @@ enum SiteKind { tree, dot, pending, hollow, flag }
 /// How one card is marked on its island.
 @immutable
 class SiteMark {
-  /// A learned card (journey).
-  const SiteMark.tree()
-      : kind = SiteKind.tree,
-        color = null;
+  /// An unlocked card (journey): green once played, [Palette.sun] while new.
+  const SiteMark.tree([this.color]) : kind = SiteKind.tree;
 
   /// A dot in a speed colour (stats).
   const SiteMark.dot(Color this.color) : kind = SiteKind.dot;
@@ -520,7 +518,7 @@ class _LayerPainter extends CustomPainter {
       ..color = Palette.ink;
     switch (mark.kind) {
       case SiteKind.tree:
-        canvas.drawCircle(at, treeR, Paint()..color = MapStyle.tree);
+        canvas.drawCircle(at, treeR, Paint()..color = mark.color ?? MapStyle.tree);
         canvas.drawCircle(at, treeR, ink(MapStyle.treeStroke));
         canvas.drawCircle(
           at - Offset(treeR * MapStyle.treeHighlightOffset, treeR * MapStyle.treeHighlightOffset),

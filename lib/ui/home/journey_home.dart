@@ -130,20 +130,13 @@ class _JourneyMap extends StatelessWidget {
         if (journey.done(isl.index))
           IslandStyle(
             flag: true,
-            sites: {for (final site in isl.sites) site.poemId: const SiteMark.tree()},
+            sites: {for (final site in isl.sites) site.poemId: journey.markOf(site.poemId)},
             plate: IslandPlate(name: isl.name, background: Palette.land, fontSize: MapStyle.plateFont),
           )
         else if (isl.index == cur)
           IslandStyle(
             pulse: true,
-            sites: {
-              for (final site in isl.sites)
-                site.poemId: journey.unlocked.contains(site.poemId)
-                    ? const SiteMark.tree()
-                    : journey.upNext.contains(site.poemId)
-                        ? const SiteMark.pending(Palette.sun)
-                        : const SiteMark.pending(),
-            },
+            sites: {for (final site in isl.sites) site.poemId: journey.markOf(site.poemId)},
             plate: IslandPlate(
               name: isl.name,
               background: Palette.pink,
@@ -154,7 +147,7 @@ class _JourneyMap extends StatelessWidget {
         else if (isl.index < cur)
           IslandStyle(sites: {
             for (final site in isl.sites)
-              if (journey.unlocked.contains(site.poemId)) site.poemId: const SiteMark.tree(),
+              if (journey.unlocked.contains(site.poemId)) site.poemId: journey.markOf(site.poemId),
           })
         else
           IslandStyle(
