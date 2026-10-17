@@ -46,7 +46,10 @@ class ContactScreen extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    ProseChapter(1, s.contactIssues, o?.contactIssues, first: true),
+                    Padding(
+                      padding: const EdgeInsets.only(bottom: Gaps.small),
+                      child: MarkerHeading(s.contactIssues, o?.contactIssues),
+                    ),
                     ProseBody(s.contactIssuesBody),
                     const SizedBox(height: ProseLayout.actionGap),
                     SettingsGroup(children: [
@@ -57,7 +60,11 @@ class ContactScreen extends StatelessWidget {
                         onTap: () => _open(context, issues, fallback: Links.issues, failed: s.contactBrowserFailed),
                       ),
                     ]),
-                    ProseChapter(2, s.contactEmail, o?.contactEmail),
+                    const SizedBox(height: MarkerHeadingStyle.sectionGap),
+                    Padding(
+                      padding: const EdgeInsets.only(bottom: Gaps.small),
+                      child: MarkerHeading(s.contactEmail, o?.contactEmail),
+                    ),
                     ProseBody(s.contactEmailBody),
                     const SizedBox(height: ProseLayout.actionGap),
                     SettingsGroup(children: [
