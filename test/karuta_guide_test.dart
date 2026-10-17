@@ -14,6 +14,8 @@ import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:fudatobashi/config/design.dart';
+import 'package:fudatobashi/config/torifuda_spec.dart';
+import 'package:fudatobashi/config/yomifuda_spec.dart';
 import 'package:fudatobashi/data/fuda_sets.dart';
 import 'package:fudatobashi/data/islands.dart';
 import 'package:fudatobashi/data/poem.dart';
@@ -26,6 +28,7 @@ import 'package:fudatobashi/ui/app.dart';
 import 'package:fudatobashi/ui/help/help_screen.dart';
 import 'package:fudatobashi/ui/help/karuta_guide_screen.dart';
 import 'package:fudatobashi/ui/shell/header_actions.dart';
+import 'package:fudatobashi/ui/torifuda/card_faces.dart';
 import 'package:fudatobashi/ui/torifuda/glyph_atlas.dart';
 
 import 'test_l10n.dart';
@@ -74,6 +77,7 @@ void main() {
       'ZenKakuGothicNew-Black.ttf',
     ]);
     await _loadFont('Torifuda', ['YujiSyuku-Regular.ttf']);
+    await _loadFont('YujiSyuku', ['YujiSyuku-Regular.ttf']);
   });
 
   group('text', () {
@@ -137,6 +141,8 @@ void main() {
         late Progress p;
         await tester.runAsync(() async {
           if (_render) await GlyphAtlas.load();
+          await CardFaces.load([YomifudaStyle.standard.background, TorifudaStyle.standard.background],
+              read: (a) => File(a).readAsBytes());
           p = await Progress.open(AppDatabase(NativeDatabase.memory()));
           p.tabsAlwaysOpen = true;
           await p.updateSettings(p.settings.copyWith(language: lang, languagePicked: true, toured: true, onboarded: true));

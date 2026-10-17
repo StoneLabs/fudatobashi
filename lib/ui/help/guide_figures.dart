@@ -5,6 +5,7 @@ import 'package:flutter/widgets.dart';
 import '../../config/design.dart';
 import '../../config/torifuda_spec.dart';
 import '../../config/vector_art.dart';
+import '../../config/yomifuda_spec.dart';
 import '../../data/poem.dart';
 import '../../l10n/guide_strings.dart';
 import '../../l10n/romaji.dart';
@@ -12,6 +13,7 @@ import '../../l10n/strings.dart';
 import '../../state/settings.dart';
 import '../manga/manga.dart';
 import '../torifuda/torifuda_painter.dart';
+import '../torifuda/yomifuda_card.dart';
 
 /// The karuta guide's pictures (`KarutaGuideScreen`), drawn from the app's
 /// own cards and lines. They are pictures, so the font scale leaves their
@@ -91,8 +93,8 @@ class GuideTwoCards extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final s = S.of(context);
-    Widget card(Widget picture, String name, String note) => SizedBox(
-          width: KarutaGuideLayout.cardWidth,
+    Widget card(double width, Widget picture, String name, String note) => SizedBox(
+          width: width,
           child: Column(children: [
             MediaQuery.withNoTextScaling(child: picture),
             const SizedBox(height: KarutaGuideLayout.captionGap),
@@ -109,63 +111,14 @@ class GuideTwoCards extends StatelessWidget {
       mainAxisAlignment: MainAxisAlignment.center,
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        card(GuideYomifuda(poem: poem), s.guideYomifuda, s.guideYomifudaNote),
+        card(KarutaGuideLayout.readingCardWidth, YomifudaCard(poem: poem), s.guideYomifuda, s.guideYomifudaNote),
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: KarutaGuideLayout.cardArrowGap)
-              .copyWith(top: KarutaGuideLayout.cardWidth / _cardAspect / 2 - KarutaGuideLayout.cardArrow / 2),
+              .copyWith(top: KarutaGuideLayout.readingCardWidth * YomifudaSpec.aspect / 2 - KarutaGuideLayout.cardArrow / 2),
           child: MangaIcon(IconArt.arrow, size: KarutaGuideLayout.cardArrow),
         ),
-        card(TorifudaCard(poem: poem, showNumber: false), s.guideTorifuda, s.guideTorifudaNote),
+        card(KarutaGuideLayout.cardWidth, TorifudaCard(poem: poem, showNumber: false), s.guideTorifuda, s.guideTorifudaNote),
       ],
-    );
-  }
-}
-
-/// A reading card: the whole poem in columns, right to left, a phrase a
-/// column, and the poet's name last.
-class GuideYomifuda extends StatelessWidget {
-  const GuideYomifuda({super.key, required this.poem});
-
-  final Poem poem;
-
-  @override
-  Widget build(BuildContext context) {
-    final phrases = [...poem.kami.split(Ruby.phraseBreak), ...poem.shimo.split(Ruby.phraseBreak)];
-    Widget column(String text, double size) => Column(
-          children: [
-            for (final ch in text.characters)
-              Text(ch,
-                  style: TextStyle(
-                      fontWeight: Weights.medium,
-                      fontSize: size,
-                      height: KarutaGuideLayout.yomifudaLineHeight,
-                      color: Palette.ink)),
-          ],
-        );
-    return AspectRatio(
-      aspectRatio: _cardAspect,
-      child: DecoratedBox(
-        decoration: BoxDecoration(
-          color: KarutaGuideLayout.yomifudaPaper,
-          border: Border.all(color: KarutaGuideLayout.yomifudaEdge, width: KarutaGuideLayout.yomifudaBorder),
-        ),
-        child: Padding(
-          padding: KarutaGuideLayout.yomifudaPadding,
-          child: FittedBox(
-            child: Row(
-              textDirection: TextDirection.rtl,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                for (final phrase in phrases) ...[
-                  column(phrase, KarutaGuideLayout.yomifudaFont),
-                  const SizedBox(width: KarutaGuideLayout.yomifudaColumnGap),
-                ],
-                column(poem.author, KarutaGuideLayout.yomifudaAuthorFont),
-              ],
-            ),
-          ),
-        ),
-      ),
     );
   }
 }

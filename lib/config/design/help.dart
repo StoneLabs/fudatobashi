@@ -147,16 +147,9 @@ abstract final class KarutaGuideLayout {
 
   /// A reading card and a taking card side by side.
   static const double cardWidth = 92;
+  static const double readingCardWidth = 124;
   static const double cardArrow = 26;
   static const double cardArrowGap = 8;
-  static const Color yomifudaPaper = Color(0xFFF6EFD9);
-  static const Color yomifudaEdge = Palette.goldDeep;
-  static const double yomifudaBorder = 1.5;
-  static const EdgeInsets yomifudaPadding = EdgeInsets.fromLTRB(5, 8, 5, 8);
-  static const double yomifudaFont = 10.5;
-  static const double yomifudaAuthorFont = 7.5;
-  static const double yomifudaLineHeight = 1.08;
-  static const double yomifudaColumnGap = 2;
 
   /// The field: both sides' three rows of cards, the one just read in pink.
   static const List<int> fieldRows = [8, 8, 9];
