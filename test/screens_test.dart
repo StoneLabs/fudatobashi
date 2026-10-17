@@ -33,6 +33,8 @@ import 'package:fudatobashi/domain/xp.dart';
 import 'package:fudatobashi/l10n/ankiren_strings.dart';
 import 'package:fudatobashi/l10n/credits_strings.dart';
 import 'package:fudatobashi/l10n/free_strings.dart';
+import 'package:fudatobashi/l10n/guide_strings.dart';
+import 'package:fudatobashi/l10n/help_strings.dart';
 import 'package:fudatobashi/l10n/history_strings.dart';
 import 'package:fudatobashi/l10n/home_strings.dart';
 import 'package:fudatobashi/l10n/language_strings.dart';
@@ -41,6 +43,7 @@ import 'package:fudatobashi/l10n/profile_strings.dart';
 import 'package:fudatobashi/l10n/ranked_strings.dart';
 import 'package:fudatobashi/l10n/results_strings.dart';
 import 'package:fudatobashi/l10n/romaji.dart';
+import 'package:fudatobashi/l10n/rules_strings.dart';
 import 'package:fudatobashi/l10n/settings_strings.dart';
 import 'package:fudatobashi/l10n/side_trip_strings.dart';
 import 'package:fudatobashi/l10n/srs_strings.dart';
@@ -463,6 +466,39 @@ void main() {
       expect(find.byType(HelpButton), findsOneWidget, reason: 'back on Home');
       await tester.pumpWidget(const SizedBox());
     });
+
+    for (final (width, fontScale) in const [(384.0, 1.0), (360.0, 1.0), (360.0, 1.3)]) {
+      final size = width == _phone.width && fontScale == 1 ? '' : '_${width.round()}${fontScale == 1 ? '' : '_scaled'}';
+      testWidgets('help: the three guides, then Tools with its slot, all on one screen ($lang, $width dp, font scale $fontScale)',
+          (tester) async {
+        tester.platformDispatcher.textScaleFactorTestValue = fontScale;
+        addTearDown(tester.platformDispatcher.clearTextScaleFactorTestValue);
+        final p = await open(tester, ja: ja);
+        await tester.binding.setSurfaceSize(Size(width, _phone.height));
+        addTearDown(() => tester.binding.setSurfaceSize(null));
+        await tester.pumpWidget(ProgressScope(
+          progress: p,
+          child: MaterialApp(
+            theme: buildMangaTheme(),
+            home: const RepaintBoundary(key: ValueKey('screen'), child: HelpScreen()),
+          ),
+        ));
+        await tester.pump(const Duration(milliseconds: 300));
+        expect(tester.takeException(), isNull);
+        await _capture(tester, 'help_page${size}_$lang');
+        final s = S(lang);
+        final guides = [for (final title in [s.replayTour, s.guideTitle, s.rulesTitle]) tester.getRect(find.text(title))];
+        for (final (i, guide) in guides.indexed.skip(1)) {
+          expect(guide.top, greaterThan(guides[i - 1].bottom), reason: 'the guides stack in order');
+        }
+        final tools = tester.getRect(find.widgetWithText(ProseChapter, s.helpTools));
+        final slot = tester.getRect(find.byType(DashedBox));
+        expect(tools.top, greaterThan(tester.getRect(find.text(s.rulesRowNote)).bottom), reason: 'Tools comes after the guides');
+        expect(slot.top, greaterThan(tools.bottom));
+        expect(slot.bottom, lessThanOrEqualTo(_phone.height), reason: 'nothing to scroll for');
+        await tester.pumpWidget(const SizedBox());
+      });
+    }
 
     testWidgets('the Side Trips tab opens ($lang)', (tester) async {
       final p = await open(tester, mode: LearningMode.allKnown, ja: ja);

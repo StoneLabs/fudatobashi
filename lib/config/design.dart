@@ -2881,6 +2881,36 @@ abstract final class LearnAheadStyle {
   static const Duration balloonLife = Duration(milliseconds: 2800);
 }
 
+/// Help (`HelpScreen`): chapters headed like the Help pages', the guides as
+/// entries in display type split by ink rules, and the tools to come in a
+/// dashed slot.
+abstract final class HelpLayout {
+  /// An entry: its title (and, in Japanese, its English name), a note
+  /// under it and an icon at the end.
+  static const double entryPad = 16;
+  static const EdgeInsets entryPadding = EdgeInsets.symmetric(vertical: entryPad);
+  static const double titleFont = 18;
+  static const double titleLineHeight = 1.25;
+  static const double subFont = ProseLayout.headingSubFont;
+  static const double subTracking = ProseLayout.headingSubTracking;
+  static const double noteGap = 4;
+  static const double noteFont = TypeScale.body;
+  static const double noteLineHeight = 1.45;
+  static const double icon = 22;
+  static const double iconGap = 14;
+  static const double rule = Strokes.hairline;
+
+  /// The tools to come: a desk-grey slot with a dashed ink border, the line
+  /// centred in tracked capitals.
+  static const double soonGap = entryPad;
+  static const EdgeInsets soonPadding = EdgeInsets.symmetric(horizontal: 20, vertical: 22);
+  static const Color soonFill = Palette.desk;
+  static const double soonBorder = Strokes.label;
+  static const double soonFont = TypeScale.label;
+  static const double soonTracking = TagStyle.tracking;
+  static const double soonLineHeight = 1.5;
+}
+
 /// The poems the karuta guide (`KarutaGuideScreen`) shows, by id.
 abstract final class KarutaGuideExamples {
   /// The poem split into its halves and shown as both kinds of card.
