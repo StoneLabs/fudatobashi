@@ -185,10 +185,21 @@ class HistoryLook extends InheritedWidget {
 
 /// A section's heading row: the title over a slanted marker stripe in the
 /// page's colour, with its other-language word, and a note on the right.
+/// Outside a run page, [accent] and the font sizes are given.
 class HistoryHeading extends StatelessWidget {
-  const HistoryHeading({super.key, required this.title, this.sub, this.note});
+  const HistoryHeading({
+    super.key,
+    required this.title,
+    this.sub,
+    this.note,
+    this.accent,
+    this.titleFont = TypeScale.button,
+    this.subFont = HistoryRunStyle.subFont,
+  });
   final String title;
   final String? sub, note;
+  final Color? accent;
+  final double titleFont, subFont;
 
   @override
   Widget build(BuildContext context) => Row(
@@ -198,14 +209,14 @@ class HistoryHeading extends StatelessWidget {
             child: Align(
               alignment: Alignment.centerLeft,
               child: CustomPaint(
-                painter: _MarkerPainter(HistoryLook.of(context).accent),
+                painter: _MarkerPainter(accent ?? HistoryLook.of(context).accent),
                 child: Text.rich(
                   TextSpan(children: [
-                    TextSpan(text: title, style: const TextStyle(fontWeight: Weights.black, fontSize: TypeScale.button)),
+                    TextSpan(text: title, style: TextStyle(fontWeight: Weights.black, fontSize: titleFont)),
                     if (sub != null)
                       TextSpan(
                           text: '  $sub',
-                          style: const TextStyle(fontWeight: Weights.black, fontSize: HistoryRunStyle.subFont)),
+                          style: TextStyle(fontWeight: Weights.black, fontSize: subFont)),
                   ]),
                 ),
               ),

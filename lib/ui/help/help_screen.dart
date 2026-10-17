@@ -7,6 +7,7 @@ import '../../l10n/help_strings.dart';
 import '../../l10n/rules_strings.dart';
 import '../../l10n/strings.dart';
 import '../../l10n/tour_strings.dart';
+import '../history/history_widgets.dart';
 import '../manga/manga.dart';
 import '../tour/tour_overlay.dart';
 import 'karuta_guide_screen.dart';
@@ -67,9 +68,10 @@ class HelpScreen extends StatelessWidget {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
-                      ProseChapter(1, s.helpGuides, o?.helpGuides, first: true),
+                      _Heading(s.helpGuides, o?.helpGuides),
                       for (final entry in guides) ...[entry, const _Rule()],
-                      ProseChapter(2, s.helpTools, o?.helpTools),
+                      const SizedBox(height: HelpLayout.sectionGap),
+                      _Heading(s.helpTools, o?.helpTools),
                       const SizedBox(height: HelpLayout.soonGap),
                       _ToolsSoon(s.helpToolsSoon),
                     ],
@@ -147,6 +149,26 @@ class _Entry extends StatelessWidget {
               ]),
             ),
           ],
+        ),
+      );
+}
+
+/// A section heading in the run pages' marker style.
+class _Heading extends StatelessWidget {
+  const _Heading(this.title, this.sub);
+
+  final String title;
+  final String? sub;
+
+  @override
+  Widget build(BuildContext context) => Semantics(
+        header: true,
+        child: HistoryHeading(
+          title: title,
+          sub: sub,
+          accent: HelpLayout.markerColor,
+          titleFont: HelpLayout.headingFont,
+          subFont: HelpLayout.headingSubFont,
         ),
       );
 }

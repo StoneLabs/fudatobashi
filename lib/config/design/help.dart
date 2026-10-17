@@ -4,6 +4,12 @@ part of '../design.dart';
 /// entries in display type split by ink rules, and the tools to come in a
 /// dashed slot.
 abstract final class HelpLayout {
+  /// A section heading: the run pages' marker style at a larger size.
+  static const Color markerColor = Palette.sun;
+  static const double headingFont = 24;
+  static const double headingSubFont = 12;
+  static const double sectionGap = 30;
+
   /// An entry: its title (and, in Japanese, its English name), a note
   /// under it and an icon at the end.
   static const double entryPad = 16;

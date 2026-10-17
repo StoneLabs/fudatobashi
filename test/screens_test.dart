@@ -491,7 +491,7 @@ void main() {
         for (final (i, guide) in guides.indexed.skip(1)) {
           expect(guide.top, greaterThan(guides[i - 1].bottom), reason: 'the guides stack in order');
         }
-        final tools = tester.getRect(find.widgetWithText(ProseChapter, s.helpTools));
+        final tools = tester.getRect(find.byWidgetPredicate((w) => w is HistoryHeading && w.title == s.helpTools));
         final slot = tester.getRect(find.byType(DashedBox));
         expect(tools.top, greaterThan(tester.getRect(find.text(s.rulesRowNote)).bottom), reason: 'Tools comes after the guides');
         expect(slot.top, greaterThan(tools.bottom));
