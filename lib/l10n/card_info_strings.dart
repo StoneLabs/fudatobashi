@@ -69,8 +69,6 @@ extension CardInfoStrings on S {
   String get aboutMyRecordNote => t('aboutMyRecordNote');
   String get aboutPrevious => t('aboutPrevious');
   String get aboutNext => t('aboutNext');
-  String get firstSoundsTitle => t('firstSoundsTitle');
-  String get firstSoundsSoon => t('firstSoundsSoon');
 
   // A card's stats page
   String get statsAboutCard => t('statsAboutCard');

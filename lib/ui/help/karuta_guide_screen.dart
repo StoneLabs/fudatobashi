@@ -65,48 +65,48 @@ class KarutaGuideScreen extends StatelessWidget {
                     Gaps.gutter, Gaps.tight, Gaps.gutter + KarutaGuideLayout.figureShadow, ProseLayout.bottomPad),
                 children: [
                   const GuideFan(),
-                  _Tobi(s.guideIntro, pose: TobiPose.waving),
+                  GuideTobi(s.guideIntro, pose: TobiPose.waving),
 
                   ProseChapter(1, s.guidePoemsTitle, o?.guidePoemsTitle),
                   ProseBody(s.guidePoems1),
                   ProseBody(s.guidePoems2),
-                  _Figure(child: GuidePoemHalves(poem: poems[KarutaGuideExamples.poem])),
+                  GuideFigure(child: GuidePoemHalves(poem: poems[KarutaGuideExamples.poem])),
                   ProseBody(s.guidePoems3),
 
                   ProseChapter(2, s.guideCardsTitle, o?.guideCardsTitle),
                   ProseBody(s.guideCards1),
                   ProseBody(s.guideCards2),
-                  _Figure(child: GuideTwoCards(poem: poems[KarutaGuideExamples.poem])),
-                  _Tobi(s.guideCardsTobi, pose: TobiPose.pointing),
+                  GuideFigure(child: GuideTwoCards(poem: poems[KarutaGuideExamples.poem])),
+                  GuideTobi(s.guideCardsTobi, pose: TobiPose.pointing),
 
                   ProseChapter(3, s.guideMatchTitle, o?.guideMatchTitle),
                   for (final (i, line) in s.guideSteps.indexed) _Step(i + 1, line),
-                  const _Figure(child: GuideField()),
-                  _Tobi(s.guideMatchTobi, pose: TobiPose.relaxed),
+                  const GuideFigure(child: GuideField()),
+                  GuideTobi(s.guideMatchTobi, pose: TobiPose.relaxed),
 
                   ProseChapter(4, s.guideFaultTitle, o?.guideFaultTitle),
                   ProseBody(s.guideFault1),
                   ProseBody(s.guideFault2),
                   ProseBody(s.guideFault3),
-                  _Tobi(s.guideFaultTobi, pose: TobiPose.shocked),
+                  GuideTobi(s.guideFaultTobi, pose: TobiPose.shocked),
 
                   ProseChapter(5, s.guideKimarijiTitle, o?.guideKimarijiTitle),
                   ProseBody(s.guideKimariji1),
-                  _Subhead(s.guideOneTitle),
+                  GuideSubhead(s.guideOneTitle),
                   ProseBody(s.guideOne(named(KarutaGuideExamples.oneSound, KarutaGuideExamples.oneSound))),
-                  const _Figure(child: GuideOneSoundTiles()),
-                  _Subhead(s.guideLongTitle),
+                  const GuideFigure(child: GuideOneSoundTiles()),
+                  GuideSubhead(s.guideLongTitle),
                   ProseBody(s.guideLong(say(first, phrase), say(second, phrase), say(second, shared.length))),
-                  _Figure(
+                  GuideFigure(
                     caption: s.guideLongCaption,
                     child: GuideKimarijiRows(rows: [
                       GuideKimarijiRow(poem: first, kimariji: first.kimariji),
                       GuideKimarijiRow(poem: second, kimariji: second.kimariji),
                     ]),
                   ),
-                  _Subhead(s.guideChangeTitle),
+                  GuideSubhead(s.guideChangeTitle),
                   ProseBody(s.guideChange(say(first, phrase), say(second, phrase), say(second, shortened.length))),
-                  _Figure(
+                  GuideFigure(
                     caption: s.guideChangeCaption,
                     child: GuideKimarijiRows(rows: [
                       GuideKimarijiRow(poem: first, kimariji: first.kimariji, read: true),
@@ -114,12 +114,12 @@ class KarutaGuideScreen extends StatelessWidget {
                     ]),
                   ),
                   ProseBody(s.guideSix(sixStarts)),
-                  _Tobi(s.guideKimarijiTobi, pose: TobiPose.fired),
+                  GuideTobi(s.guideKimarijiTobi, pose: TobiPose.fired),
 
                   ProseChapter(6, s.guideAppTitle, o?.guideAppTitle),
                   ProseBody(s.guideApp1),
                   ProseBody(s.guideApp2),
-                  _Tobi(s.guideAppTobi, pose: TobiPose.cheering),
+                  GuideTobi(s.guideAppTobi, pose: TobiPose.cheering),
                 ],
               ),
             ),
@@ -132,25 +132,6 @@ class KarutaGuideScreen extends StatelessWidget {
 
 /// Keeps the characters either side of it on one line.
 const _wordJoiner = '\u2060';
-
-/// A small heading inside a chapter.
-class _Subhead extends StatelessWidget {
-  const _Subhead(this.text);
-
-  final String text;
-
-  @override
-  Widget build(BuildContext context) => Padding(
-        padding: const EdgeInsets.only(top: KarutaGuideLayout.figureGap),
-        child: Semantics(
-          header: true,
-          child: Align(
-            alignment: Alignment.centerLeft,
-            child: InkTag(text.toUpperCase(), fontSize: KarutaGuideLayout.subheadFont),
-          ),
-        ),
-      );
-}
 
 /// One step of a match: its number in an ink circle, then its line.
 class _Step extends StatelessWidget {
@@ -177,57 +158,6 @@ class _Step extends StatelessWidget {
           ),
           const SizedBox(width: KarutaGuideLayout.stepGap),
           Expanded(child: Text(line, style: proseStyle)),
-        ]),
-      );
-}
-
-/// A picture in a panel with a hard shadow, and its [caption] under it.
-class _Figure extends StatelessWidget {
-  const _Figure({required this.child, this.caption});
-
-  final Widget child;
-  final String? caption;
-
-  @override
-  Widget build(BuildContext context) => Padding(
-        padding: const EdgeInsets.symmetric(vertical: KarutaGuideLayout.figureGap),
-        child: MangaPanel(
-          color: Palette.desk,
-          shadow: const Offset(KarutaGuideLayout.figureShadow, KarutaGuideLayout.figureShadow),
-          padding: KarutaGuideLayout.figurePadding,
-          child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-            child,
-            if (caption case final caption?) ...[
-              const SizedBox(height: KarutaGuideLayout.captionGap),
-              Text(caption,
-                  textAlign: TextAlign.center,
-                  style: const TextStyle(fontWeight: Weights.bold, fontSize: KarutaGuideLayout.captionFont)),
-            ],
-          ]),
-        ),
-      );
-}
-
-/// Tobi saying [line] in a balloon to his right.
-class _Tobi extends StatelessWidget {
-  const _Tobi(this.line, {required this.pose});
-
-  final String line;
-  final TobiPose pose;
-
-  @override
-  Widget build(BuildContext context) => Padding(
-        padding: const EdgeInsets.only(top: KarutaGuideLayout.figureGap),
-        child: Row(crossAxisAlignment: CrossAxisAlignment.end, children: [
-          SizedBox.fromSize(size: KarutaGuideLayout.tobi, child: Tobi(pose: pose)),
-          const SizedBox(width: KarutaGuideLayout.tobiGap),
-          Expanded(
-            child: SpeechBalloon(
-              speaker: KarutaGuideLayout.speakerLeft,
-              padding: KarutaGuideLayout.balloonPadding,
-              child: Text(line, style: const TextStyle(fontSize: KarutaGuideLayout.balloonFont)),
-            ),
-          ),
         ]),
       );
 }

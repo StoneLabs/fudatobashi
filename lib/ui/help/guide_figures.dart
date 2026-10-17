@@ -17,9 +17,86 @@ import '../torifuda/yomifuda_card.dart';
 
 /// The karuta guide's pictures (`KarutaGuideScreen`), drawn from the app's
 /// own cards and lines. They are pictures, so the font scale leaves their
-/// lettering alone; captions and labels around them still follow it.
+/// lettering alone; captions and labels around them still follow it. The
+/// frame they sit in, Tobi's lines and the small headings are here too, for
+/// the pages written like the guide.
 
 const _cardAspect = TorifudaSpec.width / TorifudaSpec.height;
+
+/// A picture in a panel with a hard shadow, and its [caption] under it.
+class GuideFigure extends StatelessWidget {
+  const GuideFigure({super.key, required this.child, this.caption});
+
+  final Widget child;
+  final String? caption;
+
+  @override
+  Widget build(BuildContext context) => Padding(
+        padding: const EdgeInsets.symmetric(vertical: KarutaGuideLayout.figureGap),
+        child: MangaPanel(
+          color: Palette.desk,
+          shadow: const Offset(KarutaGuideLayout.figureShadow, KarutaGuideLayout.figureShadow),
+          padding: KarutaGuideLayout.figurePadding,
+          child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+            child,
+            if (caption case final caption?) ...[
+              const SizedBox(height: KarutaGuideLayout.captionGap),
+              Text(caption,
+                  textAlign: TextAlign.center,
+                  style: const TextStyle(fontWeight: Weights.bold, fontSize: KarutaGuideLayout.captionFont)),
+            ],
+          ]),
+        ),
+      );
+}
+
+/// Tobi saying [line] in a balloon to his right. With [phrases], Japanese
+/// breaks its lines only where the line marks its phrases ([Phrases]).
+class GuideTobi extends StatelessWidget {
+  const GuideTobi(this.line, {super.key, required this.pose, this.phrases = false});
+
+  final String line;
+  final TobiPose pose;
+  final bool phrases;
+
+  @override
+  Widget build(BuildContext context) {
+    const style = TextStyle(fontSize: KarutaGuideLayout.balloonFont);
+    return Padding(
+      padding: const EdgeInsets.only(top: KarutaGuideLayout.figureGap),
+      child: Row(crossAxisAlignment: CrossAxisAlignment.end, children: [
+        SizedBox.fromSize(size: KarutaGuideLayout.tobi, child: Tobi(pose: pose)),
+        const SizedBox(width: KarutaGuideLayout.tobiGap),
+        Expanded(
+          child: SpeechBalloon(
+            speaker: KarutaGuideLayout.speakerLeft,
+            padding: KarutaGuideLayout.balloonPadding,
+            child: phrases ? Text.rich(Phrases.span(line), style: style) : Text(line, style: style),
+          ),
+        ),
+      ]),
+    );
+  }
+}
+
+/// A small heading inside a chapter.
+class GuideSubhead extends StatelessWidget {
+  const GuideSubhead(this.text, {super.key});
+
+  final String text;
+
+  @override
+  Widget build(BuildContext context) => Padding(
+        padding: const EdgeInsets.only(top: KarutaGuideLayout.figureGap),
+        child: Semantics(
+          header: true,
+          child: Align(
+            alignment: Alignment.centerLeft,
+            child: InkTag(text.toUpperCase(), fontSize: KarutaGuideLayout.subheadFont),
+          ),
+        ),
+      );
+}
 
 /// A few taking cards fanned out, to open the guide.
 class GuideFan extends StatelessWidget {

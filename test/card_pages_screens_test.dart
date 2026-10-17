@@ -82,10 +82,20 @@ void main() {
         });
       }
 
-      testWidgets('First sounds and Help ($tag)', (tester) async {
+      testWidgets('First sounds, a screen at a time, and Help ($tag)', (tester) async {
+        await loadCardArt(tester);
         final p = await openPlayer(tester, lang);
         await showPage(tester, p, const FirstSoundsScreen(), size: size, textScale: textScale);
-        await shot(tester, 'first_sounds');
+        final page = find.byType(Scrollable).first;
+        var end = false;
+        for (var i = 0; i < 40 && !end; i++) {
+          await shot(tester, 'first_sounds_${i.toString().padLeft(2, '0')}');
+          final before = tester.state<ScrollableState>(page).position.pixels;
+          await tester.drag(page, Offset(0, -size.height * 0.6));
+          await settle(tester);
+          end = tester.state<ScrollableState>(page).position.pixels == before;
+        }
+        expect(end, isTrue, reason: 'scrolled to the end');
         await showPage(tester, p, const HelpScreen(), size: size, textScale: textScale);
         await shot(tester, 'help');
       });

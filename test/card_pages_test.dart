@@ -148,7 +148,9 @@ void main() {
       await showPage(tester, p, const AboutCardScreen(poemId: 20));
       await tapOn(tester, find.text(_en.aboutReadExplanation));
       expect(find.byType(FirstSoundsScreen), findsOneWidget);
-      expect(find.byType(ComingSoonSlot), findsOneWidget);
+      await tapOn(tester, find.bySemanticsLabel(_en.back).last);
+      expect(find.byType(FirstSoundsScreen), findsNothing);
+      expect(_aboutOf(20), findsOneWidget, reason: 'back returns to the card');
     });
 
     testWidgets('the Taking / Reading switch brings each card forward; the key shows with the reading card',

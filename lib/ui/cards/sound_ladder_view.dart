@@ -100,10 +100,9 @@ class _Origin extends StatelessWidget {
                   fontSize: SoundLadderLayout.originFont,
                   height: SoundLadderLayout.soundLineHeight,
                   color: SoundLadderLayout.kanaColor)),
-          if (kana != null) ...[
+          if (kana case final kana?) ...[
             const WidgetSpan(child: SizedBox(width: SoundLadderLayout.kanaGap)),
-            TextSpan(
-                text: kana,
+            Phrases.span(kana,
                 style: const TextStyle(
                     fontFamily: Fonts.ui,
                     fontWeight: Weights.bold,
@@ -202,8 +201,8 @@ class _Step extends StatelessWidget {
                     ),
                   if (kana != null) ...[
                     const WidgetSpan(child: SizedBox(width: SoundLadderLayout.kanaGap)),
-                    TextSpan(
-                      text: kana,
+                    Phrases.span(
+                      kana,
                       style: const TextStyle(
                           fontFamily: Fonts.ui,
                           fontWeight: Weights.bold,

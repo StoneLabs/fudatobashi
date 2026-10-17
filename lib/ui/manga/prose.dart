@@ -2,6 +2,7 @@ import 'package:flutter/widgets.dart';
 
 import '../../config/design.dart';
 import 'lettering.dart';
+import 'phrases.dart';
 
 /// The text of a paragraph on the Help pages.
 const proseStyle = TextStyle(
@@ -70,15 +71,17 @@ class ProseChapter extends StatelessWidget {
       );
 }
 
-/// One paragraph.
+/// One paragraph. With [phrases], Japanese breaks its lines only where the
+/// text marks its phrases ([Phrases]).
 class ProseBody extends StatelessWidget {
-  const ProseBody(this.text, {super.key});
+  const ProseBody(this.text, {super.key, this.phrases = false});
 
   final String text;
+  final bool phrases;
 
   @override
   Widget build(BuildContext context) => Padding(
         padding: const EdgeInsets.only(top: ProseLayout.paragraphGap),
-        child: Text(text, style: proseStyle),
+        child: phrases ? Text.rich(Phrases.span(text), style: proseStyle) : Text(text, style: proseStyle),
       );
 }
