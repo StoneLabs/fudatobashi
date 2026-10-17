@@ -31,6 +31,7 @@ import 'package:fudatobashi/domain/tab_locks.dart';
 import 'package:fudatobashi/domain/trainer.dart';
 import 'package:fudatobashi/domain/xp.dart';
 import 'package:fudatobashi/l10n/ankiren_strings.dart';
+import 'package:fudatobashi/l10n/card_info_strings.dart';
 import 'package:fudatobashi/l10n/credits_strings.dart';
 import 'package:fudatobashi/l10n/free_strings.dart';
 import 'package:fudatobashi/l10n/guide_strings.dart';
@@ -469,7 +470,7 @@ void main() {
 
     for (final (width, fontScale) in const [(384.0, 1.0), (360.0, 1.0), (360.0, 1.3)]) {
       final size = width == _phone.width && fontScale == 1 ? '' : '_${width.round()}${fontScale == 1 ? '' : '_scaled'}';
-      testWidgets('help: the three guides, then Tools with its slot, all on one screen ($lang, $width dp, font scale $fontScale)',
+      testWidgets('help: the three guides, then Tools with the card browser and its slot ($lang, $width dp, font scale $fontScale)',
           (tester) async {
         tester.platformDispatcher.textScaleFactorTestValue = fontScale;
         addTearDown(tester.platformDispatcher.clearTextScaleFactorTestValue);
@@ -492,10 +493,13 @@ void main() {
           expect(guide.top, greaterThan(guides[i - 1].bottom), reason: 'the guides stack in order');
         }
         final tools = tester.getRect(find.byWidgetPredicate((w) => w is HistoryHeading && w.title == s.helpTools));
+        final browser = tester.getRect(find.text(s.cardBrowserTitle));
         final slot = tester.getRect(find.byType(DashedBox));
         expect(tools.top, greaterThan(tester.getRect(find.text(s.rulesRowNote)).bottom), reason: 'Tools comes after the guides');
-        expect(slot.top, greaterThan(tools.bottom));
-        expect(slot.bottom, lessThanOrEqualTo(_phone.height), reason: 'nothing to scroll for');
+        expect(browser.top, greaterThan(tools.bottom), reason: 'the card browser is the first tool');
+        expect(slot.top, greaterThan(browser.bottom));
+        // Japanese at the larger font is the one setup where Help scrolls.
+        if (!ja || fontScale == 1) expect(slot.bottom, lessThanOrEqualTo(_phone.height), reason: 'nothing to scroll for');
         await tester.pumpWidget(const SizedBox());
       });
     }
