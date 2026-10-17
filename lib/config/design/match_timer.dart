@@ -1,14 +1,7 @@
 part of '../design.dart';
 
-/// The match timer (`MatchTimerScreen`): a dial over its buttons, together
-/// on a dotted desk panel.
+/// The match timer (`MatchTimerScreen`): a dial over its buttons.
 abstract final class MatchTimerLayout {
-  /// The desk panel: the About card's dotted desk under an ink border and
-  /// hard shadow.
-  static const ToneSpec panelTone = AboutCardLayout.panelTone;
-  static const double panelShadow = AboutCardLayout.panelShadow;
-  static const EdgeInsets panelPadding = EdgeInsets.fromLTRB(14, 14, 14, 22);
-
   /// The dial: the ring, its ticks outside it, and the paper face inside.
   static const double dialSize = 304;
   static const double ringStroke = 24;

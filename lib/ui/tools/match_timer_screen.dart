@@ -15,7 +15,7 @@ import '../cards/page_frame.dart';
 import '../manga/manga.dart';
 import '../sound/sounds.dart';
 
-/// The match timer (Help › Tools): a dial on a desk panel whose ring empties
+/// The match timer (Help › Tools): a dial whose ring empties
 /// counter-clockwise round the time left, which can be set before it starts.
 /// The last two minutes of the ring are always red; a sound marks reaching
 /// them, and a second one zero. Time comes from the wall clock, so it stays
@@ -166,12 +166,7 @@ class _MatchTimerScreenState extends State<MatchTimerScreen> {
         child: Center(
           child: FittedBox(
             fit: BoxFit.scaleDown,
-            child: MangaPanel(
-              color: Palette.desk,
-              tone: MatchTimerLayout.panelTone,
-              shadow: const Offset(MatchTimerLayout.panelShadow, MatchTimerLayout.panelShadow),
-              padding: MatchTimerLayout.panelPadding,
-              child: Column(
+            child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   SizedBox.square(
@@ -215,7 +210,6 @@ class _MatchTimerScreenState extends State<MatchTimerScreen> {
                     ]),
                 ],
               ),
-            ),
           ),
         ),
       ),
