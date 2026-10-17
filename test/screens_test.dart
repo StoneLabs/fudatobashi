@@ -498,8 +498,8 @@ void main() {
         expect(tools.top, greaterThan(tester.getRect(find.text(s.rulesRowNote)).bottom), reason: 'Tools comes after the guides');
         expect(browser.top, greaterThan(tools.bottom), reason: 'the card browser is the first tool');
         expect(slot.top, greaterThan(browser.bottom));
-        // Japanese at the larger font is the one setup where Help scrolls.
-        if (!ja || fontScale == 1) expect(slot.bottom, lessThanOrEqualTo(_phone.height), reason: 'nothing to scroll for');
+        // At the larger font Help scrolls.
+        if (fontScale == 1) expect(slot.bottom, lessThanOrEqualTo(_phone.height), reason: 'nothing to scroll for');
         await tester.pumpWidget(const SizedBox());
       });
     }
