@@ -10,7 +10,7 @@ import '../manga/manga.dart';
 
 /// A card's sound ladder (see [SoundLadder]) as a staircase going down to
 /// the right. Each step: a count badge (sun on the top step, ink on a
-/// consonant step), its sound with the part no longer needed faded, a line
+/// consonant step), its sound (in kana-only mode with the part no longer needed faded), a line
 /// on when it is enough, and chips for the cards that join on it, folded
 /// behind "+N more" when there are many. A chip opens that card with
 /// [onOpen].
@@ -58,6 +58,7 @@ class _SoundLadderViewState extends State<SoundLadderView> {
             index: i,
             step: step,
             sound: romaji == null ? SoundLadder.inKana(poem, step) : SoundLadder.inRomaji(poem, romaji, step),
+            showFaded: widget.kanaOnly,
             kana: romaji != null && !step.isConsonant ? poem.kimariji.substring(0, step.kana) : null,
             caption: (sound) => i == 0
                 ? s.ladderTop
@@ -76,6 +77,7 @@ class _Step extends StatelessWidget {
     required this.index,
     required this.step,
     required this.sound,
+    required this.showFaded,
     required this.kana,
     required this.caption,
     required this.unfolded,
@@ -86,6 +88,9 @@ class _Step extends StatelessWidget {
   final int index;
   final LadderStep step;
   final LadderSound sound;
+
+  /// Whether the part no longer needed is drawn faded after the kept part.
+  final bool showFaded;
 
   /// The kana of a romaji sound, shown small after it.
   final String? kana;
@@ -143,7 +148,7 @@ class _Step extends StatelessWidget {
               child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                 Text.rich(TextSpan(style: soundStyle, children: [
                   TextSpan(text: sound.kept),
-                  if (sound.faded.isNotEmpty)
+                  if (showFaded && sound.faded.isNotEmpty)
                     TextSpan(
                       text: sound.faded,
                       style: TextStyle(
