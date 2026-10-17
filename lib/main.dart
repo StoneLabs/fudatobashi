@@ -8,6 +8,7 @@ import 'package:flutter_displaymode/flutter_displaymode.dart';
 
 import 'config/licenses.dart';
 import 'config/vector_art_assets.dart';
+import 'config/yomifuda_spec.dart';
 import 'data/fuda_sets.dart';
 import 'data/islands.dart';
 import 'data/poem.dart';
@@ -21,6 +22,7 @@ import 'ui/app_root.dart';
 import 'ui/debug/frame_stats.dart';
 import 'ui/play/pointer_clock.dart';
 import 'ui/sound/sounds.dart';
+import 'ui/torifuda/card_faces.dart';
 import 'ui/torifuda/glyph_atlas.dart';
 
 /// Bundled font, sound and music licenses, added so they show up in
@@ -61,6 +63,7 @@ Future<void> _start() async {
   fudaSets = FudaSets(poems);
   archipelago = await Archipelago.load();
   await GlyphAtlas.load();
+  await CardFaces.load([YomifudaStyle.standard.background]);
   await loadVectorArt();
   FrameStats.instance.start();
   if (paths == null) {

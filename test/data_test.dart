@@ -57,4 +57,10 @@ void main() {
     final lettering = [...jokaPhrases, jokaTitle, jokaGreeting].join();
     expect(lettering.split('').where((c) => !kept.contains(c)), isEmpty, reason: 'rerun scripts/joka_font.sh');
   });
+
+  test('the reading card font keeps every character the reading cards print', () {
+    final kept = File('tool/yomifuda_font_chars.txt').readAsStringSync();
+    final printed = p.all.expand((poem) => poem.yomifudaColumns).join().replaceAll(RegExp(r'[\[\]|ーｰ]'), '');
+    expect(printed.split('').where((c) => !kept.contains(c)).toSet(), isEmpty, reason: 'rerun scripts/yomifuda_font.sh');
+  });
 }

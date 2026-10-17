@@ -34,8 +34,21 @@ abstract final class IconArt {
   /// A speaker with sound waves (the kimariji readout button).
   static late final VectorArt speaker;
 
+  /// A magnifying glass (the card browser's search).
+  static late final VectorArt search;
+
+  /// Two arrows passing each other (the About page's SWIPE sticker).
+  static late final VectorArt swap;
+
   /// A signpost, its pole broken behind the boards (the Side Trips tab).
   static late final VectorArt sideTrips;
+}
+
+/// Marks printed on the cards.
+abstract final class CardArt {
+  /// The yomifuda's closing stroke after the last sound, tapering to a
+  /// point: the voice fades out. Filled in the current colour.
+  static late final VectorArt yomifudaEnd;
 }
 
 /// Map furniture.

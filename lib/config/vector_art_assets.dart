@@ -16,11 +16,12 @@ final _assetPaths = [
   'tally',
   'sidetrips/burst',
   'sidetrips/icon-sidetrips',
+  'cards/yomifuda-end',
 ];
 
 const _iconNames = [
   'home', 'history', 'stats', 'help', 'settings', 'arrow', 'chevron', 'back', 'close', 'undo', 'end', 'question',
-  'refresh', 'lock', 'person', 'cards', 'check', 'speaker', 'filter',
+  'refresh', 'lock', 'person', 'cards', 'check', 'speaker', 'filter', 'search', 'swap',
 ];
 const _mapNames = ['boat', 'flag', 'star'];
 const _sceneNames = ['welcome-isle', 'far-isle', 'boat-wake', 'surf', 'beginner', 'expert'];
@@ -29,9 +30,9 @@ const _tobiNames = [
 ];
 
 /// Loads every piece of vector art (icons, map furniture, onboarding scenes,
-/// Tobi, the streak tally and the Side Trips burst) from `assets/svg/`. Call
-/// once, before the first frame that draws any of it; synchronous access
-/// afterwards.
+/// Tobi, the streak tally, the Side Trips burst and the card marks) from
+/// `assets/svg/`. Call once, before the first frame that draws any of it;
+/// synchronous access afterwards.
 Future<void> loadVectorArt() async {
   final entries =
       await Future.wait(_assetPaths.map((p) async => MapEntry(p, await rootBundle.loadString('assets/svg/$p.svg'))));
@@ -67,6 +68,8 @@ void installVectorArt(Map<String, String> svg) {
   IconArt.cards = parse('icons/cards');
   IconArt.check = parse('icons/check');
   IconArt.speaker = parse('icons/speaker');
+  IconArt.search = parse('icons/search');
+  IconArt.swap = parse('icons/swap');
   IconArt.sideTrips = parse('sidetrips/icon-sidetrips');
 
   MapArt.boat = parse('map/boat');
@@ -99,4 +102,6 @@ void installVectorArt(Map<String, String> svg) {
   Tally.strokes = SvgArt.strokes(svg['tally']!, debugName: 'assets/svg/tally.svg');
 
   SideTripArt.burst = parse('sidetrips/burst');
+
+  CardArt.yomifudaEnd = parse('cards/yomifuda-end');
 }

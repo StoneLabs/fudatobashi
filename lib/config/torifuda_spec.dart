@@ -97,3 +97,25 @@ abstract final class TorifudaSpec {
   /// Numeral baseline below [badgeCenter], as a fraction of the font size.
   static const double badgeBaselineDy = 0.34;
 }
+
+/// What a torifuda skin swaps: its colours and fonts. The layout stays
+/// [TorifudaSpec]'s.
+class TorifudaStyle {
+  const TorifudaStyle({
+    this.frame = TorifudaSpec.frameColor,
+    this.frameShade = TorifudaSpec.frameShade,
+    this.paper = TorifudaSpec.paperColor,
+    this.paperHighlight = TorifudaSpec.paperHighlight,
+    this.ink = TorifudaSpec.inkColor,
+    this.badge = TorifudaSpec.badgeColor,
+    this.badgeNumeral = TorifudaSpec.badgeNumeralColor,
+    this.fontFamily = TorifudaSpec.fontFamily,
+    this.badgeFontFamily = TorifudaSpec.badgeFontFamily,
+  });
+
+  final Color frame, frameShade, paper, paperHighlight, ink, badge, badgeNumeral;
+  final String fontFamily, badgeFontFamily;
+
+  /// The original app's cards.
+  static const standard = TorifudaStyle();
+}

@@ -19,6 +19,7 @@ class TorifudaCard extends StatelessWidget {
     this.showText = true,
     this.showNumber = true,
     this.mask = CardMask.none,
+    this.style = TorifudaStyle.standard,
   });
 
   final Poem poem;
@@ -29,6 +30,7 @@ class TorifudaCard extends StatelessWidget {
   final bool showText;
   final bool showNumber;
   final CardMask mask;
+  final TorifudaStyle style;
 
   @override
   Widget build(BuildContext context) {
@@ -42,6 +44,7 @@ class TorifudaCard extends StatelessWidget {
             showText: showText,
             showNumber: showNumber,
             mask: mask,
+            style: style,
             devicePixelRatio: MediaQuery.devicePixelRatioOf(context),
           ),
         ),
@@ -57,6 +60,7 @@ class TorifudaPainter extends CustomPainter {
     this.showText = true,
     this.showNumber = true,
     this.mask = CardMask.none,
+    this.style = TorifudaStyle.standard,
     this.devicePixelRatio = 1,
   });
 
@@ -65,6 +69,7 @@ class TorifudaPainter extends CustomPainter {
   final bool showText;
   final bool showNumber;
   final CardMask mask;
+  final TorifudaStyle style;
   final double devicePixelRatio;
 
   @override
@@ -77,37 +82,37 @@ class TorifudaPainter extends CustomPainter {
     }
     canvas.save();
     canvas.scale(s);
-    _paintFrame(canvas);
+    _paintFrame(canvas, style);
     canvas.restore();
     if (showText) {
       // Glyphs are recorded at the final pixel scale so text stays crisp.
       final pictureScale = s * devicePixelRatio;
       canvas.save();
       canvas.scale(1 / devicePixelRatio);
-      canvas.drawPicture(TorifudaGlyphs.picture(poem, mask, pictureScale, showNumber));
+      canvas.drawPicture(TorifudaGlyphs.picture(poem, mask, pictureScale, showNumber, style));
       canvas.restore();
     }
     canvas.restore();
   }
 
-  static void _paintFrame(Canvas canvas) {
+  static void _paintFrame(Canvas canvas, TorifudaStyle style) {
     const paper = TorifudaSpec.paper;
     canvas.drawRect(
       const Rect.fromLTWH(0, 0, TorifudaSpec.width, TorifudaSpec.height),
-      Paint()..color = TorifudaSpec.frameColor,
+      Paint()..color = style.frame,
     );
     canvas.drawRect(
       paper.inflate(TorifudaSpec.frameShadeWidth / 2),
       Paint()
-        ..color = TorifudaSpec.frameShade
+        ..color = style.frameShade
         ..style = PaintingStyle.stroke
         ..strokeWidth = TorifudaSpec.frameShadeWidth,
     );
-    canvas.drawRect(paper, Paint()..color = TorifudaSpec.paperColor);
+    canvas.drawRect(paper, Paint()..color = style.paper);
     canvas.drawRect(
       paper.deflate(TorifudaSpec.paperHighlightInset + TorifudaSpec.paperHighlightWidth / 2),
       Paint()
-        ..color = TorifudaSpec.paperHighlight
+        ..color = style.paperHighlight
         ..style = PaintingStyle.stroke
         ..strokeWidth = TorifudaSpec.paperHighlightWidth,
     );
@@ -120,6 +125,7 @@ class TorifudaPainter extends CustomPainter {
       old.showText != showText ||
       old.showNumber != showNumber ||
       old.mask.key != mask.key ||
+      old.style != style ||
       old.devicePixelRatio != devicePixelRatio;
 }
 
@@ -137,17 +143,18 @@ abstract final class TorifudaGlyphs {
     throw RangeError.index(i, columns.join());
   }
 
-  static ui.Picture picture(Poem poem, CardMask mask, double scale, bool showNumber) {
-    final key = '${poem.id}|${mask.key}|${scale.toStringAsFixed(4)}|$showNumber';
+  static ui.Picture picture(Poem poem, CardMask mask, double scale, bool showNumber,
+      [TorifudaStyle style = TorifudaStyle.standard]) {
+    final key = '${poem.id}|${mask.key}|${scale.toStringAsFixed(4)}|$showNumber|${identityHashCode(style)}';
     final hit = _cache.remove(key);
     if (hit != null) return _cache[key] = hit;
-    final pic = _record(poem, mask, scale, showNumber);
+    final pic = _record(poem, mask, scale, showNumber, style);
     _cache[key] = pic;
     if (_cache.length > CacheLimits.torifudaGlyphs) _cache.remove(_cache.keys.first)?.dispose();
     return pic;
   }
 
-  static ui.Picture _record(Poem poem, CardMask mask, double s, bool showNumber) {
+  static ui.Picture _record(Poem poem, CardMask mask, double s, bool showNumber, TorifudaStyle style) {
     final rec = ui.PictureRecorder();
     final canvas = Canvas(rec);
     final cols = poem.columns;
@@ -157,19 +164,19 @@ abstract final class TorifudaGlyphs {
       for (var r = 0; r < cols[c].length; r++, i++) {
         final center = TorifudaSpec.cellCenter(c, r, cols[c].length) * s;
         if (!mask.hidden.contains(i)) {
-          _drawGlyph(canvas, cols[c][r], center, s);
+          _drawGlyph(canvas, cols[c][r], center, s, style);
         } else {
           switch (mask.style) {
             case MaskStyle.blank:
               break;
             case MaskStyle.scramble:
             case MaskStyle.shape:
-              _drawScrambled(canvas, cols[c][r], center, s, rng);
+              _drawScrambled(canvas, cols[c][r], center, s, rng, style);
           }
         }
       }
     }
-    if (showNumber) _drawBadge(canvas, poem.id, s);
+    if (showNumber) _drawBadge(canvas, poem.id, s, style);
     return rec.endRecording();
   }
 
@@ -189,7 +196,7 @@ abstract final class TorifudaGlyphs {
 
   static const GlyphFit _noFit = (dx: 0, dy: 0, scale: 1);
 
-  static void _drawGlyph(Canvas canvas, String ch, Offset center, double s) {
+  static void _drawGlyph(Canvas canvas, String ch, Offset center, double s, TorifudaStyle style) {
     final fit = TorifudaSpec.glyphFit[ch] ?? _noFit;
     final em = TorifudaSpec.fontSize * s;
     final c = center + Offset(fit.dx, fit.dy) * em;
@@ -203,24 +210,22 @@ abstract final class TorifudaGlyphs {
         img,
         Rect.fromLTWH(0, 0, img.width.toDouble(), img.height.toDouble()),
         Rect.fromCenter(center: c, width: side, height: side),
-        _glyphPaint,
+        Paint()
+          ..filterQuality = FilterQuality.high
+          ..colorFilter = ColorFilter.mode(style.ink, BlendMode.srcIn),
       );
       return;
     }
-    final tp = _layout(ch, fs, TorifudaSpec.fontFamily, TorifudaSpec.inkColor);
+    final tp = _layout(ch, fs, style.fontFamily, style.ink);
     tp.paint(canvas, Offset(c.dx - tp.width / 2, c.dy - tp.height / 2));
     tp.dispose();
   }
 
-  static final _glyphPaint = Paint()
-    ..filterQuality = FilterQuality.high
-    ..colorFilter = const ColorFilter.mode(TorifudaSpec.inkColor, BlendMode.srcIn);
-
   /// Draws [ch] cut into a 3×3 grid of tiles, shuffled and rotated in place.
-  static void _drawScrambled(Canvas canvas, String ch, Offset center, double s, math.Random rng) {
+  static void _drawScrambled(Canvas canvas, String ch, Offset center, double s, math.Random rng, TorifudaStyle style) {
     final box = (TorifudaSpec.fontSize * s * MaskingTuning.scrambleBoxPad).ceilToDouble();
     final rec = ui.PictureRecorder();
-    _drawGlyph(Canvas(rec), ch, Offset(box / 2, box / 2), s);
+    _drawGlyph(Canvas(rec), ch, Offset(box / 2, box / 2), s, style);
     final img = rec.endRecording().toImageSync(box.toInt(), box.toInt());
     final tile = box / 3;
     final order = List<int>.generate(9, (k) => k)..shuffle(rng);
@@ -239,19 +244,19 @@ abstract final class TorifudaGlyphs {
     img.dispose();
   }
 
-  static void _drawBadge(Canvas canvas, int number, double s) {
+  static void _drawBadge(Canvas canvas, int number, double s, TorifudaStyle style) {
     final c = TorifudaSpec.badgeCenter * s;
     canvas.drawCircle(
       c,
       TorifudaSpec.badgeRadius * s,
       Paint()
-        ..color = TorifudaSpec.badgeColor
+        ..color = style.badge
         ..style = PaintingStyle.stroke
         ..strokeWidth = TorifudaSpec.badgeStroke * s,
     );
     final text = '$number';
     final fs = (text.length > 2 ? TorifudaSpec.badgeFontSizeThreeDigits : TorifudaSpec.badgeFontSize) * s;
-    final tp = _layout(text, fs, TorifudaSpec.badgeFontFamily, TorifudaSpec.badgeNumeralColor);
+    final tp = _layout(text, fs, style.badgeFontFamily, style.badgeNumeral);
     final baseline = tp.computeDistanceToActualBaseline(TextBaseline.alphabetic);
     tp.paint(canvas, c + Offset(-tp.width / 2, TorifudaSpec.badgeBaselineDy * fs - baseline));
     tp.dispose();

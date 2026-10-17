@@ -80,6 +80,8 @@ flutter:
     - assets/svg/scenes/
     - assets/svg/tobi/
     - assets/svg/sidetrips/
+    - assets/svg/cards/
+    - assets/cards/yomifuda/
     - assets/images/ankiren/
     - assets/images/sidetrips/scene/
     - assets/images/sidetrips/islands/
@@ -112,6 +114,10 @@ flutter:
     - family: Joka
       fonts:
         - asset: assets/fonts/YujiSyuku-Joka.ttf
+    # Yuji Syuku cut down to the reading cards' text (scripts/yomifuda_font.sh).
+    - family: Yomifuda
+      fonts:
+        - asset: assets/fonts/YujiSyuku-Yomifuda.ttf
     - family: ZenKaku
       fonts:
         - asset: assets/fonts/ZenKakuGothicNew-Regular.ttf
