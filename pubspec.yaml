@@ -84,6 +84,7 @@ flutter:
     - assets/svg/sidetrips/
     - assets/svg/cards/
     - assets/cards/yomifuda/
+    - assets/cards/torifuda/
     - assets/images/ankiren/
     - assets/images/sidetrips/scene/
     - assets/images/sidetrips/islands/

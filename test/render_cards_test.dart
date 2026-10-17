@@ -12,6 +12,7 @@ import 'package:fudatobashi/config/torifuda_spec.dart';
 import 'package:fudatobashi/data/poem.dart';
 import 'package:fudatobashi/domain/card_mask.dart';
 import 'package:fudatobashi/domain/masking.dart';
+import 'package:fudatobashi/ui/torifuda/card_faces.dart';
 import 'package:fudatobashi/ui/torifuda/glyph_atlas.dart';
 import 'package:fudatobashi/ui/torifuda/torifuda_painter.dart';
 
@@ -42,6 +43,7 @@ void main() {
       await _loadFont('Torifuda', 'assets/fonts/YujiSyuku-Regular.ttf');
       await _loadFont('TorifudaNumber', 'assets/fonts/TeXGyreSchola-Regular.otf');
       if (Platform.environment['GLYPHS'] != 'text') await GlyphAtlas.load();
+      await CardFaces.load([TorifudaStyle.standard.background], read: (a) => File(a).readAsBytes());
       // Calibration size: exactly the original artwork's pixel grid.
       for (var id = 1; id <= 100; id++) {
         await _render(p[id], 'calib/fuda${id.toString().padLeft(3, '0')}');

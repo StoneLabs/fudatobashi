@@ -8,6 +8,8 @@ import '../../config/design.dart';
 import '../../config/torifuda_spec.dart';
 import '../../data/poem.dart';
 import '../../domain/card_mask.dart';
+import '../manga/vector.dart';
+import 'card_faces.dart';
 import 'glyph_atlas.dart';
 
 /// A torifuda drawn from vectors at any size.
@@ -80,10 +82,10 @@ class TorifudaPainter extends CustomPainter {
       canvas.translate(size.width, size.height);
       canvas.rotate(math.pi);
     }
-    canvas.save();
-    canvas.scale(s);
-    _paintFrame(canvas, style);
-    canvas.restore();
+    final face = CardFaces.vectorOf(style.background);
+    if (face != null) {
+      VectorPainter.paint(canvas, face, Offset.zero & size, pixelRatio: devicePixelRatio);
+    }
     if (showText) {
       // Glyphs are recorded at the final pixel scale so text stays crisp.
       final pictureScale = s * devicePixelRatio;
@@ -93,29 +95,6 @@ class TorifudaPainter extends CustomPainter {
       canvas.restore();
     }
     canvas.restore();
-  }
-
-  static void _paintFrame(Canvas canvas, TorifudaStyle style) {
-    const paper = TorifudaSpec.paper;
-    canvas.drawRect(
-      const Rect.fromLTWH(0, 0, TorifudaSpec.width, TorifudaSpec.height),
-      Paint()..color = style.frame,
-    );
-    canvas.drawRect(
-      paper.inflate(TorifudaSpec.frameShadeWidth / 2),
-      Paint()
-        ..color = style.frameShade
-        ..style = PaintingStyle.stroke
-        ..strokeWidth = TorifudaSpec.frameShadeWidth,
-    );
-    canvas.drawRect(paper, Paint()..color = style.paper);
-    canvas.drawRect(
-      paper.deflate(TorifudaSpec.paperHighlightInset + TorifudaSpec.paperHighlightWidth / 2),
-      Paint()
-        ..color = style.paperHighlight
-        ..style = PaintingStyle.stroke
-        ..strokeWidth = TorifudaSpec.paperHighlightWidth,
-    );
   }
 
   @override

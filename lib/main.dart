@@ -8,6 +8,7 @@ import 'package:flutter_displaymode/flutter_displaymode.dart';
 
 import 'config/licenses.dart';
 import 'config/vector_art_assets.dart';
+import 'config/torifuda_spec.dart';
 import 'config/yomifuda_spec.dart';
 import 'data/fuda_sets.dart';
 import 'data/islands.dart';
@@ -63,7 +64,7 @@ Future<void> _start() async {
   fudaSets = FudaSets(poems);
   archipelago = await Archipelago.load();
   await GlyphAtlas.load();
-  await CardFaces.load([YomifudaStyle.standard.background]);
+  await CardFaces.load([YomifudaStyle.standard.background, TorifudaStyle.standard.background]);
   await loadVectorArt();
   FrameStats.instance.start();
   if (paths == null) {

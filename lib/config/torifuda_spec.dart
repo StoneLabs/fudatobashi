@@ -11,21 +11,8 @@ abstract final class TorifudaSpec {
   static const double height = 525;
   static const double aspect = height / width;
 
-  // Frame (the green backing paper folded over the edge).
-  static const frameColor = Color(0xFF6A9354);
-
-  /// Band just outside the paper edge, slightly darker than the frame.
-  static const frameShade = Color(0xFF66904F);
-  static const double frameShadeWidth = 1.56;
-
-  // Paper.
-  static const paper = Rect.fromLTRB(17.34, 19.65, 356.7, 505.44);
-  static const paperColor = Color(0xFFEAEAEA);
-
-  /// Band just inside the paper edge, slightly lighter than the paper.
-  static const paperHighlight = Color(0xFFF2EFF4);
-  static const double paperHighlightInset = 0.44;
-  static const double paperHighlightWidth = 0.88;
+  /// The blank card (`tool/card_backgrounds.py`), in the card's units.
+  static const background = 'assets/cards/torifuda/default.svg';
 
   // Glyph grid. Three columns, right to left, split 5 / 5 / rest, all
   // starting at the top row. Each glyph's em box is centred on its cell,
@@ -98,14 +85,11 @@ abstract final class TorifudaSpec {
   static const double badgeBaselineDy = 0.34;
 }
 
-/// What a torifuda skin swaps: its colours and fonts. The layout stays
-/// [TorifudaSpec]'s.
+/// What a torifuda skin swaps: the blank card it is printed on and the
+/// colours and fonts of its text. The layout stays [TorifudaSpec]'s.
 class TorifudaStyle {
   const TorifudaStyle({
-    this.frame = TorifudaSpec.frameColor,
-    this.frameShade = TorifudaSpec.frameShade,
-    this.paper = TorifudaSpec.paperColor,
-    this.paperHighlight = TorifudaSpec.paperHighlight,
+    this.background = TorifudaSpec.background,
     this.ink = TorifudaSpec.inkColor,
     this.badge = TorifudaSpec.badgeColor,
     this.badgeNumeral = TorifudaSpec.badgeNumeralColor,
@@ -113,7 +97,8 @@ class TorifudaStyle {
     this.badgeFontFamily = TorifudaSpec.badgeFontFamily,
   });
 
-  final Color frame, frameShade, paper, paperHighlight, ink, badge, badgeNumeral;
+  final String background;
+  final Color ink, badge, badgeNumeral;
   final String fontFamily, badgeFontFamily;
 
   /// The original app's cards.

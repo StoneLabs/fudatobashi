@@ -37,7 +37,8 @@ import 'vector.dart';
 ///    the paint off) or `currentColor` ([currentInk], the colour the call
 ///    site paints in). A literal colour must name one of [SvgPalette.tokens];
 ///    in debug mode, an unrecognised one asserts, naming the file and the
-///    element, so the art and the palette can't quietly diverge.
+///    element, so the art and the palette can't quietly diverge. Card faces
+///    (`assets/cards/`) are skins and may use any colour.
 ///  * A screentone fill is `fill="url(#tone-<name>)"` for a `<name>` in
 ///    [SvgTones.tokens]. The matching `<pattern id="tone-<name>">` in
 ///    `<defs>` is a real dot screen, generated so editors preview it, and is
@@ -260,7 +261,7 @@ Color _color(String v, {required String file, required String label, required St
   if (v == 'none') return noInk;
   if (v == 'currentColor') return currentInk;
   final c = _hex(v, file);
-  assert(SvgPalette.nameOf(c) != null,
+  assert(file.startsWith('assets/cards/') || SvgPalette.nameOf(c) != null,
       'unrecognised $prop colour "$v" on $label (in $file) — add it to SvgPalette.tokens or use a palette colour');
   return c;
 }

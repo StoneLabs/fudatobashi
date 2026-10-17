@@ -10,6 +10,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:fudatobashi/config/torifuda_spec.dart';
 import 'package:fudatobashi/config/yomifuda_spec.dart';
 import 'package:fudatobashi/data/fuda_sets.dart';
 import 'package:fudatobashi/data/islands.dart';
@@ -63,7 +64,7 @@ Future<void> loadAppFonts() async {
 /// them at startup.
 Future<void> loadCardArt(WidgetTester tester) => tester.runAsync(() async {
       await GlyphAtlas.load();
-      await CardFaces.load([YomifudaStyle.standard.background], read: (a) => File(a).readAsBytes());
+      await CardFaces.load([YomifudaStyle.standard.background, TorifudaStyle.standard.background], read: (a) => File(a).readAsBytes());
     });
 
 /// A player past onboarding, with the UI in [lang].
