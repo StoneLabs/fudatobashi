@@ -1,8 +1,3 @@
----
-title: Detailed Competition Rules
-author: All Japan Karuta Association (general incorporated association)
----
-
 # Chapter 1 | General provisions
 
 ## Article 1 | Method of play

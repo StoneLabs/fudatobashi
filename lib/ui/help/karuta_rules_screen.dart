@@ -71,6 +71,7 @@ class _KarutaRulesScreenState extends State<KarutaRulesScreen> {
                   final loaded = snapshot.data;
                   if (loaded == null) return const SizedBox.shrink();
                   final rules = s.ja || _original ? loaded.first : loaded.last;
+                  final docStrings = s.ja || !_original ? s : s.other;
                   return SingleChildScrollView(
                     padding: const EdgeInsets.fromLTRB(
                         Gaps.gutter, Gaps.tight, Gaps.gutter, KarutaRulesLayout.bottomPad),
@@ -123,11 +124,11 @@ class _KarutaRulesScreenState extends State<KarutaRulesScreen> {
                               SettingsTapRow(title: '${c.number}  ${c.title}', opensPage: true, onTap: () => _jump(i)),
                         ]),
                         const SizedBox(height: KarutaRulesLayout.titleGap),
-                        Text(rules.title,
+                        Text(docStrings.rulesDocTitle,
                             textAlign: TextAlign.center,
                             style: const TextStyle(fontFamily: Fonts.display, fontSize: KarutaRulesLayout.titleFont)),
                         const SizedBox(height: KarutaRulesLayout.authorGap),
-                        Text(rules.author,
+                        Text(docStrings.rulesDocAuthor,
                             textAlign: TextAlign.center,
                             style: const TextStyle(fontWeight: Weights.bold, fontSize: KarutaRulesLayout.authorFont)),
                         MarkdownProse(rules.body, blocks: RulesBlocks(chapterKey: _chapterKey)),

@@ -215,7 +215,7 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.text(_firstText(ja)), findsOneWidget);
     expect(find.text(_firstText(en)), findsNothing);
-    expect(find.text(ja.title), findsOneWidget);
+    expect(find.text(s.other.rulesDocTitle), findsOneWidget);
     expect(find.text(s.rulesDisclaimer), findsOneWidget, reason: 'the page around the rules stays English');
     await _capture(tester, 'rules_en_original');
 
