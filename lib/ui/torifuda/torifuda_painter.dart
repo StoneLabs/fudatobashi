@@ -8,7 +8,6 @@ import '../../config/design.dart';
 import '../../config/torifuda_spec.dart';
 import '../../data/poem.dart';
 import '../../domain/card_mask.dart';
-import '../manga/vector.dart';
 import 'card_faces.dart';
 import 'glyph_atlas.dart';
 
@@ -82,10 +81,7 @@ class TorifudaPainter extends CustomPainter {
       canvas.translate(size.width, size.height);
       canvas.rotate(math.pi);
     }
-    final face = CardFaces.vectorOf(style.background);
-    if (face != null) {
-      VectorPainter.paint(canvas, face, Offset.zero & size, pixelRatio: devicePixelRatio);
-    }
+    CardFaces.paint(canvas, Offset.zero & size, style.background, pixelRatio: devicePixelRatio);
     if (showText) {
       // Glyphs are recorded at the final pixel scale so text stays crisp.
       final pictureScale = s * devicePixelRatio;

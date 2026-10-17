@@ -72,15 +72,7 @@ class YomifudaPainter extends CustomPainter {
 
   @override
   void paint(Canvas canvas, Size size) {
-    final face = CardFaces.of(style.background);
-    if (face != null) {
-      canvas.drawImageRect(
-        face,
-        Rect.fromLTWH(0, 0, face.width.toDouble(), face.height.toDouble()),
-        Offset.zero & size,
-        Paint()..filterQuality = FilterQuality.medium,
-      );
-    }
+    CardFaces.paint(canvas, Offset.zero & size, style.background);
     final em = YomifudaSpec.em * size.width;
     final room = (YomifudaSpec.textBottom - YomifudaSpec.textTop) * size.height;
     final columns = [for (final c in poem.yomifudaColumns) YomifudaToken.parse(c)];
