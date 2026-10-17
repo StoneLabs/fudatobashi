@@ -198,6 +198,10 @@ abstract final class SoundLadderLayout {
   static const double badgeLabelTracking = 0.1;
   static const double badgeLabelGap = 3;
   static const double badgeGap = 10;
+  static const double originFont = 20;
+  static const double originLabelFont = TypeScale.tiny;
+  static const double originLabelGap = 8;
+  static const double originGap = 6;
   static const double soundFont = 26;
   static const double soundLineHeight = 1.1;
   static const double fadedStroke = 1.3;

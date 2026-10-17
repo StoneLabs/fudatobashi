@@ -1364,6 +1364,7 @@
   "aboutLadderKana": "Kana",
   "aboutLadderLead": "Each step down is a shorter sound. It is enough once the other cards on that step have been read.",
   "aboutLadderLeadKana": "Whole kana only. Each step down is one kana shorter.",
+  "ladderKimariji": "Kimariji",
   "ladderTop": "Only this card starts like this, so this is always enough.",
   "ladderStep": "{0} cards start with {1}. Enough once the other {2} are gone:",
   "ladderStepOne": "{0} cards start with {1}. Enough once the other one is gone:",

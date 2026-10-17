@@ -53,6 +53,7 @@ class _SoundLadderViewState extends State<SoundLadderView> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
+        if (!widget.kanaOnly) _Origin(label: s.ladderKimariji, text: romaji ?? poem.kimariji, kana: romaji == null ? null : poem.kimariji),
         for (final (i, step) in steps.indexed)
           _Step(
             index: i,
@@ -70,6 +71,47 @@ class _SoundLadderViewState extends State<SoundLadderView> {
       ],
     );
   }
+}
+
+/// The card's whole kimariji above the top step: where the stairs start.
+class _Origin extends StatelessWidget {
+  const _Origin({required this.label, required this.text, required this.kana});
+
+  final String label;
+  final String text;
+  final String? kana;
+
+  @override
+  Widget build(BuildContext context) => Padding(
+        padding: const EdgeInsets.only(bottom: SoundLadderLayout.originGap),
+        child: Text.rich(TextSpan(children: [
+          TextSpan(
+              text: label,
+              style: const TextStyle(
+                  fontWeight: Weights.black,
+                  fontSize: SoundLadderLayout.originLabelFont,
+                  letterSpacing: SoundLadderLayout.originLabelFont * SoundLadderLayout.badgeLabelTracking,
+                  color: SoundLadderLayout.kanaColor)),
+          const WidgetSpan(child: SizedBox(width: SoundLadderLayout.originLabelGap)),
+          TextSpan(
+              text: text,
+              style: const TextStyle(
+                  fontFamily: Fonts.display,
+                  fontSize: SoundLadderLayout.originFont,
+                  height: SoundLadderLayout.soundLineHeight,
+                  color: SoundLadderLayout.kanaColor)),
+          if (kana != null) ...[
+            const WidgetSpan(child: SizedBox(width: SoundLadderLayout.kanaGap)),
+            TextSpan(
+                text: kana,
+                style: const TextStyle(
+                    fontFamily: Fonts.ui,
+                    fontWeight: Weights.bold,
+                    fontSize: SoundLadderLayout.kanaFont,
+                    color: SoundLadderLayout.kanaColor)),
+          ],
+        ])),
+      );
 }
 
 class _Step extends StatelessWidget {

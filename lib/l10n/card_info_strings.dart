@@ -53,6 +53,7 @@ extension CardInfoStrings on S {
   String get aboutLadderKana => t('aboutLadderKana');
   String get aboutLadderLead => t('aboutLadderLead');
   String get aboutLadderLeadKana => t('aboutLadderLeadKana');
+  String get ladderKimariji => t('ladderKimariji');
   String get ladderTop => t('ladderTop');
 
   /// A step's line: [cards] start with [sound], and the [cards] − 1 others
