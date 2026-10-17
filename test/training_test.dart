@@ -87,5 +87,66 @@ void main() {
       expect(well(slipped), isTrue, reason: 'reviewed, not due yet');
       expect(well(slipped, now.add(const Duration(days: 60))), isFalse, reason: 'its review is due');
     });
+
+    group('learning steps (journey grading by the day)', () {
+      const key = ItemKey(1, false);
+      final start = DateTime.utc(2026, 9, 1, 9);
+      final dayEnd = DateTime.utc(2026, 9, 2, 4);
+      AttemptRec a(DateTime at, {int ms = 900, bool miss = false}) =>
+          AttemptRec(at: at, us: ms * 1000, miss: miss, clean: true, deckSize: 10, mode: PlayMode.training);
+      Trainer fresh() => Trainer(config: const TrainerConfig(), items: Trainer.freshItems())..fuzzing = false;
+      String state(Trainer t) {
+        final c = t.items[key]!.card;
+        return '${c.state.name} ${c.step} ${c.due.toIso8601String()} ${c.stability} ${c.difficulty}';
+      }
+
+      test('an answer before the step is up changes nothing; the next after it graduates the card on Good', () {
+        final t = fresh();
+        expect(t.review(key, a(start), dayEnd: dayEnd), fsrs.Rating.good, reason: 'a new card is always graded');
+        expect(t.items[key]!.card.state, fsrs.State.learning);
+        final waiting = state(t);
+        final early = start.add(const Duration(minutes: 5));
+        expect(t.review(key, a(early), dayEnd: dayEnd, firstToday: false), isNull);
+        expect(state(t), waiting, reason: 'FSRS never saw it');
+        final late = start.add(const Duration(minutes: 11));
+        expect(t.review(key, a(late), dayEnd: dayEnd, firstToday: false), fsrs.Rating.good);
+        expect(t.items[key]!.card.state, fsrs.State.review, reason: 'graduated the same day');
+        expect(t.isDue(key, late), isFalse);
+      });
+
+      test('a missed review relearns, and graduates once its step is up', () {
+        final t = fresh();
+        t.review(key, a(start), dayEnd: dayEnd);
+        t.review(key, a(start.add(const Duration(minutes: 11))), dayEnd: dayEnd, firstToday: false);
+        final review = t.items[key]!.card.due;
+        final day = review.add(const Duration(hours: 1));
+        final end = day.add(const Duration(hours: 12));
+        expect(t.review(key, a(day, miss: true), dayEnd: end), fsrs.Rating.again);
+        expect(t.items[key]!.card.state, fsrs.State.relearning);
+        expect(t.review(key, a(day.add(const Duration(minutes: 2))), dayEnd: end, firstToday: false), isNull);
+        expect(t.review(key, a(day.add(const Duration(minutes: 12))), dayEnd: end, firstToday: false),
+            fsrs.Rating.good);
+        expect(t.items[key]!.card.state, fsrs.State.review);
+      });
+
+      test('a review is graded by its day only once, and a Hard step waits again', () {
+        final t = fresh();
+        t.review(key, a(start), dayEnd: dayEnd);
+        t.review(key, a(start.add(const Duration(minutes: 11))), dayEnd: dayEnd, firstToday: false);
+        final day = t.items[key]!.card.due.subtract(const Duration(hours: 2));
+        final end = day.add(const Duration(hours: 12));
+        expect(t.review(key, a(day), dayEnd: end), fsrs.Rating.good, reason: 'due before the day ends');
+        final after = state(t);
+        expect(t.review(key, a(day.add(const Duration(hours: 3))), dayEnd: end, firstToday: false), isNull);
+        expect(state(t), after);
+
+        final slow = fresh();
+        slow.review(key, a(start, ms: 6000), dayEnd: dayEnd);
+        final step = slow.items[key]!.card;
+        expect((step.state, step.step), (fsrs.State.learning, 0), reason: 'Hard keeps the step');
+        expect(slow.review(key, a(step.due, ms: 6000), dayEnd: dayEnd, firstToday: false), fsrs.Rating.hard);
+        expect(slow.items[key]!.card.state, fsrs.State.learning);
+      });
+    });
   });
 }

@@ -4,6 +4,7 @@ import 'dart:math' as math;
 import 'package:drift/drift.dart' show driftRuntimeOptions;
 import 'package:drift/native.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:fsrs/fsrs.dart' as fsrs;
 import 'package:fudatobashi/config/config.dart';
 import 'package:fudatobashi/data/fuda_sets.dart';
 import 'package:fudatobashi/data/poem.dart';
@@ -113,7 +114,7 @@ void main() {
       await db.close();
     });
 
-    test('FSRS grades only the first look of the day and misses, never the steps', () async {
+    test("FSRS grades a card's first look and its misses, not the looks before its step is up", () async {
       final db = AppDatabase(NativeDatabase.memory());
       final p = await open(db);
       final run = await p.planTraining(rng: math.Random(1), now: day0);
@@ -130,6 +131,72 @@ void main() {
       expect(set.reviews, cards.length, reason: "yesterday's cards are due today");
       expect(next.cards.where((c) => !cards.contains(ItemKey(c.poemId, c.inverted))).length,
           set.newCards * TodaySetTuning.newLooks);
+      await db.close();
+    });
+
+    test('a learning card is graded each time its step is up until it graduates; a review once a day', () async {
+      final db = AppDatabase(NativeDatabase.memory());
+      final p = await open(db);
+      await playRun(p, await p.planTraining(rng: math.Random(1), now: day0), day0);
+      final cards = [for (final s in p.trainer.unlocked) s.key];
+      expect(cards.every((k) => p.trainer.items[k]!.card.state == fsrs.State.learning), isTrue);
+      List<int?> gradesAfter(ItemKey k, DateTime from) => [
+            for (final a in p.attemptsOf(k)) if (!a.at.isBefore(from)) a.grade,
+          ];
+
+      final soon = day0.add(const Duration(minutes: 5));
+      await playRun(p, await p.planTraining(rng: math.Random(2), now: soon), soon);
+      for (final k in cards) {
+        expect(gradesAfter(k, soon).whereType<int>(), isEmpty, reason: '$k: its step is not up yet');
+      }
+
+      final later = day0.add(const Duration(minutes: 30));
+      await playRun(p, await p.planTraining(rng: math.Random(3), now: later), later);
+      final answered = [for (final k in cards) if (gradesAfter(k, later).isNotEmpty) k];
+      expect(answered, isNotEmpty, reason: 'due learning cards come first');
+      for (final k in answered) {
+        expect(gradesAfter(k, later).first, fsrs.Rating.good.value, reason: '$k: its step was up');
+        expect(gradesAfter(k, later).skip(1).whereType<int>(), isEmpty, reason: '$k: graduated, so no more today');
+        expect(p.trainer.items[k]!.card.state, fsrs.State.review);
+        expect(p.trainer.isDue(k, later.add(const Duration(hours: 1))), isFalse);
+      }
+
+      final dues = [for (final k in cards) p.trainer.items[k]!.card.due]..sort();
+      final reviewDay = dues.first.toLocal();
+      final next = await p.planTraining(rng: math.Random(4), now: reviewDay);
+      final set = p.todaySet(reviewDay)!;
+      expect(set.reviews, greaterThan(0));
+      final from = set.window.start;
+      await playRun(p, next, reviewDay);
+      for (final k in set.kinds.keys.where((k) => set.kinds[k] == StepKind.review)) {
+        final looks = gradesAfter(k, from);
+        expect(looks.length, greaterThanOrEqualTo(TodaySetTuning.reviewLooks));
+        expect(looks.whereType<int>(), hasLength(1), reason: '$k: a review is graded once a day');
+      }
+      await db.close();
+    });
+
+    test("a 苦手 drill's right answer on a due review leaves the day's review to 修行", () async {
+      final db = AppDatabase(NativeDatabase.memory());
+      final p = await open(db);
+      await playRun(p, await p.planTraining(rng: math.Random(1), now: day0), day0);
+      final later = day0.add(const Duration(minutes: 30));
+      await playRun(p, await p.planTraining(rng: math.Random(3), now: later), later);
+      final k = [for (final s in p.trainer.unlocked) if (s.card.state == fsrs.State.review) s.key].first;
+      final due = p.trainer.items[k]!.card.due.add(const Duration(minutes: 1));
+      Future<void> answer(PlayConfig config, DateTime at) async {
+        final session = PlaySession([CardRef(k.poemId, inverted: k.inverted)])..revealed(Duration.zero);
+        session.commit(responseTs: const Duration(milliseconds: 900), commitTs: const Duration(milliseconds: 900),
+            outcome: Outcome.known, at: at);
+        await p.recordRun(session, config, at, now: at);
+      }
+
+      await answer(PlayConfig(mode: PlayMode.nigate, goalMs: 1000, targets: [k.id]), due);
+      expect(p.attemptsOf(k).last.grade, isNull, reason: '苦手 grades only misses');
+      await answer(training, due.add(const Duration(hours: 1)));
+      expect(p.attemptsOf(k).last.grade, fsrs.Rating.good.value);
+      await answer(training, due.add(const Duration(hours: 2)));
+      expect(p.attemptsOf(k).last.grade, isNull, reason: 'reviewed once today');
       await db.close();
     });
 

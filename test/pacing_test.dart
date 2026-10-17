@@ -112,7 +112,7 @@ void main() {
           }
           expect(j.islands.where((i) => i.reached).length, greaterThanOrEqualTo(initialGroups.length - 2));
           expect(j.islands.where((i) => i.complete), isNotEmpty);
-          expect(j.newCardsMissedNextTime, inInclusiveRange(0.5, 0.7), reason: 'more than half');
+          expect(j.newCardsMissedNextTime, inInclusiveRange(0.5, 0.75), reason: 'more than half');
           expect(j.reviewsPerDay, inInclusiveRange(45, 65));
           expect(j.mostDue, lessThanOrEqualTo(40), reason: 'no backlog builds up');
           expect(j.days.every((d) => d.dayDone), isTrue, reason: 'every day plays its set to the end');

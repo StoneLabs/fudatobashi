@@ -319,19 +319,27 @@ class Trainer {
   /// answer without a valid time can't be graded either. A miss always counts,
   /// since failing a card is evidence of forgetting.
   ///
-  /// Journey mode grades by the day: given [dayEnd], a card is due when its
-  /// review falls before the day ends, and only the day's first attempt on
-  /// it ([firstToday]) can grade a correct answer, so the looks today's set
-  /// asks for after it are never extra reviews.
+  /// A card in FSRS's learning or relearning steps is due once its step is
+  /// up, so every answer from then on is graded until it graduates, the same
+  /// day if the player keeps at it. Journey mode grades reviews by the day:
+  /// given [dayEnd], a review is due when it falls before the day ends, and
+  /// only while the day has not graded the card yet ([firstToday]), so the
+  /// looks today's set asks for after it are never extra reviews.
   fsrs.Rating? review(ItemKey key, AttemptRec a, {DateTime? dayEnd, bool firstToday = true}) {
     if (!a.miss && !a.timed) return null;
     final s = items[key]!;
-    final dueNow = dayEnd == null ? !s.card.due.isAfter(a.at.toUtc()) : s.card.due.isBefore(dayEnd.toUtc());
-    final due = !s.reviewed || (firstToday && dueNow);
-    if (!due && !a.miss) return null;
+    if (!a.miss && !_gradable(s, a.at.toUtc(), dayEnd: dayEnd, firstToday: firstToday)) return null;
     final g = gradeFor(a);
     s.card = scheduler.reviewCard(s.card, g, reviewDateTime: a.at.toUtc(), reviewDuration: a.us ~/ 1000).card;
     return g;
+  }
+
+  /// Whether a correct answer at [at] is a review of [s] (see [review]).
+  static bool _gradable(ItemState s, DateTime at, {DateTime? dayEnd, required bool firstToday}) {
+    if (!s.reviewed) return true;
+    final c = s.card;
+    if (dayEnd == null || c.state != fsrs.State.review) return !c.due.isAfter(at);
+    return firstToday && c.due.isBefore(dayEnd.toUtc());
   }
 
   /// Probability of recall now, using fractional days (FSRS-6 forgetting curve).

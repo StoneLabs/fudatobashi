@@ -1356,14 +1356,15 @@ class Progress extends ChangeNotifier {
   }
 
   /// Journey mode's FSRS rule: grades by the day the attempt falls in (see
-  /// [Trainer.review]), so only the day's first look at a card, and every
-  /// miss, is a review.
+  /// [Trainer.review]), so a due review is graded once a day, at its first
+  /// answer FSRS takes, while every miss and every learning step that is up
+  /// is graded too.
   fsrs.Rating? _reviewByDay(ItemKey key, AttemptRec a) {
     final window = dayAt(a.at);
     final firstToday = !(_log[key] ?? const <AttemptRec>[])
         .reversed
         .takeWhile((x) => !x.at.isBefore(window.start))
-        .any((x) => x.countsForSrs);
+        .any((x) => x.grade != null);
     return trainer.review(key, a, dayEnd: window.end, firstToday: firstToday);
   }
 
