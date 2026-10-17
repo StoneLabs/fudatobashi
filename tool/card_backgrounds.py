@@ -13,11 +13,11 @@ from PIL import Image, ImageDraw
 
 ROOT = Path(__file__).resolve().parent.parent
 
-# Measured on the photos: the band is 4.2 % of the card's width.
+# Measured on the photos: the band is 4.4 % of the card's width.
 YOMIFUDA_SIZE = (52 * 14, 75 * 14)
-YOMIFUDA_BAND = round(0.042 * YOMIFUDA_SIZE[0])
-YOMIFUDA_BLUE = (0x1A, 0x58, 0xA7)
-YOMIFUDA_PAPER = (0xF9, 0xF9, 0xF8)
+YOMIFUDA_BAND = round(0.044 * YOMIFUDA_SIZE[0])
+YOMIFUDA_BLUE = (0x18, 0x56, 0xA6)
+YOMIFUDA_PAPER = (0xF9, 0xF9, 0xFA)
 
 
 def yomifuda():
