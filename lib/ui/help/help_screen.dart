@@ -2,11 +2,13 @@ import 'package:flutter/material.dart';
 
 import '../../config/design.dart';
 import '../../config/vector_art.dart';
+import '../../l10n/card_info_strings.dart';
 import '../../l10n/guide_strings.dart';
 import '../../l10n/help_strings.dart';
 import '../../l10n/rules_strings.dart';
 import '../../l10n/strings.dart';
 import '../../l10n/tour_strings.dart';
+import '../cards/card_browser_screen.dart';
 import '../manga/manga.dart';
 import '../tour/tour_overlay.dart';
 import 'karuta_guide_screen.dart';
@@ -14,7 +16,7 @@ import 'karuta_rules_screen.dart';
 
 /// Help (opened from Home's "?" button). Guides: Tobi's tour of Home
 /// again, the guide to how karuta works and the full competition rules.
-/// Tools: none yet, a slot says they are coming.
+/// Tools: the card browser, and a slot saying more are coming.
 class HelpScreen extends StatelessWidget {
   const HelpScreen({super.key});
 
@@ -46,6 +48,15 @@ class HelpScreen extends StatelessWidget {
         onTap: () => open(const KarutaRulesScreen()),
       ),
     ];
+    final tools = [
+      _Entry(
+        title: s.cardBrowserTitle,
+        sub: o?.cardBrowserTitle,
+        note: s.cardBrowserNote,
+        icon: IconArt.arrow,
+        onTap: () => open(const CardBrowserScreen()),
+      ),
+    ];
     return Scaffold(
       body: SafeArea(
         child: Padding(
@@ -71,8 +82,9 @@ class HelpScreen extends StatelessWidget {
                       for (final entry in guides) ...[entry, const _Rule()],
                       const SizedBox(height: MarkerHeadingStyle.sectionGap),
                       MarkerHeading(s.helpTools, o?.helpTools),
+                      for (final entry in tools) ...[entry, const _Rule()],
                       const SizedBox(height: HelpLayout.soonGap),
-                      _ToolsSoon(s.helpToolsSoon),
+                      ComingSoonSlot(s.helpToolsSoon),
                     ],
                   ),
                 ),
@@ -85,7 +97,7 @@ class HelpScreen extends StatelessWidget {
   }
 }
 
-/// One guide: its [title] in display type, the English [sub] under it in a
+/// One guide or tool: its [title] in display type, the English [sub] under it in a
 /// Japanese UI, a [note] on what it is, and [icon] at the end. Stamps when
 /// tapped.
 class _Entry extends StatelessWidget {
@@ -158,29 +170,4 @@ class _Rule extends StatelessWidget {
   @override
   Widget build(BuildContext context) =>
       const SizedBox(height: HelpLayout.rule, child: ColoredBox(color: Palette.ink));
-}
-
-/// The tools still to come: [line] centred in a dashed slot.
-class _ToolsSoon extends StatelessWidget {
-  const _ToolsSoon(this.line);
-
-  final String line;
-
-  @override
-  Widget build(BuildContext context) => DashedBox(
-        color: HelpLayout.soonFill,
-        border: HelpLayout.soonBorder,
-        padding: HelpLayout.soonPadding,
-        child: Text.rich(
-          Phrases.span(line),
-          textAlign: TextAlign.center,
-          style: const TextStyle(
-            fontWeight: Weights.black,
-            fontSize: HelpLayout.soonFont,
-            letterSpacing: HelpLayout.soonFont * HelpLayout.soonTracking,
-            height: HelpLayout.soonLineHeight,
-            color: Palette.inkSoft,
-          ),
-        ),
-      );
 }

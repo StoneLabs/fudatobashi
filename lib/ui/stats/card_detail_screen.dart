@@ -9,10 +9,12 @@ import '../../data/islands.dart';
 import '../../data/poem.dart';
 import '../../domain/card_stats.dart';
 import '../../domain/trainer.dart';
+import '../../l10n/card_info_strings.dart';
 import '../../l10n/stats_strings.dart';
 import '../../l10n/strings.dart';
 import '../../state/play_config.dart';
 import '../../state/scope.dart';
+import '../cards/about_card_screen.dart';
 import '../manga/manga.dart';
 import '../play/time_format.dart';
 import '../shell/kimariji_heading.dart';
@@ -26,8 +28,9 @@ import 'stats_charts.dart';
 enum _ModeFilter { training, free, all }
 
 /// A card's own record (spec phone 8): the torifuda with its kimariji, poet
-/// and whole poem, the cards it is easily confused with, TOP SPEED and the
-/// attempt chart with toggleable stat tiles, and its FSRS memory panel.
+/// and whole poem, the cards it is easily confused with, a link to the
+/// card's About page, TOP SPEED and the attempt chart with toggleable stat
+/// tiles, and its FSRS memory panel.
 class CardDetailScreen extends StatefulWidget {
   const CardDetailScreen({super.key, required this.itemKey});
 
@@ -89,6 +92,13 @@ class _CardDetailScreenState extends State<CardDetailScreen> {
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
                       _Header(poem: poem, inverted: _inverted),
+                      const SizedBox(height: Gaps.section),
+                      LinkRow(
+                        title: s.statsAboutCard,
+                        note: s.statsAboutCardNote,
+                        onTap: () => Navigator.of(context)
+                            .push(MangaRoute<void>(builder: (_) => AboutCardScreen(poemId: poem.id))),
+                      ),
                       const SizedBox(height: Gaps.section),
                       _ModeToggle(mode: _mode, onChanged: (m) => setState(() => _mode = m)),
                       const SizedBox(height: Gaps.panel),

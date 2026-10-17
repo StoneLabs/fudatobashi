@@ -13,9 +13,9 @@ import '../../l10n/results_strings.dart';
 import '../../l10n/romaji.dart';
 import '../../l10n/strings.dart';
 import '../../state/settings.dart';
+import '../cards/about_card_screen.dart';
 import '../manga/manga.dart';
 import '../play/sfx_overlay.dart';
-import '../shell/coming_soon.dart';
 import '../shell/kimariji_heading.dart';
 import '../sound/sounds.dart';
 import '../torifuda/torifuda_painter.dart';
@@ -130,7 +130,7 @@ class _NewCardOverlayState extends State<NewCardOverlay> with SingleTickerProvid
                   TourSpot.newCardAccept,
                   child: IntrinsicHeight(
                     child: Row(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-                      Expanded(flex: NewCardLayout.learnFlex, child: _LearnButton(label: s.learnAboutCard)),
+                      Expanded(flex: NewCardLayout.learnFlex, child: _LearnButton(poemId: poem.id, label: s.learnAboutCard)),
                       const SizedBox(width: NewCardLayout.actionsGap),
                       Expanded(
                         flex: NewCardLayout.acceptFlex,
@@ -448,22 +448,21 @@ class _Exclaim extends StatelessWidget {
       );
 }
 
-/// Not built yet: pops a coming-soon balloon.
+/// Opens the card's About page.
 class _LearnButton extends StatelessWidget {
-  const _LearnButton({required this.label});
+  const _LearnButton({required this.poemId, required this.label});
+  final int poemId;
   final String label;
 
   @override
   Widget build(BuildContext context) => ConstrainedBox(
         constraints: const BoxConstraints(minHeight: NewCardLayout.actionHeight),
-        child: Builder(
-          builder: (context) => InkButton(
-            onTap: () => ComingSoonBubble.show(context),
-            padding: const EdgeInsets.symmetric(horizontal: Gaps.inner, vertical: Gaps.small),
-            child: Text(label,
-                textAlign: TextAlign.center,
-                style: const TextStyle(fontWeight: Weights.black, fontSize: NewCardLayout.learnFont, height: 1.2)),
-          ),
+        child: InkButton(
+          onTap: () => Navigator.of(context).push(MangaRoute<void>(builder: (_) => AboutCardScreen(poemId: poemId))),
+          padding: const EdgeInsets.symmetric(horizontal: Gaps.inner, vertical: Gaps.small),
+          child: Text(label,
+              textAlign: TextAlign.center,
+              style: const TextStyle(fontWeight: Weights.black, fontSize: NewCardLayout.learnFont, height: 1.2)),
         ),
       );
 }

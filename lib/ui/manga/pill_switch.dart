@@ -65,8 +65,7 @@ class PillSwitch<T> extends StatelessWidget {
         child: GestureDetector(
           behavior: HitTestBehavior.opaque,
           onTap: on ? null : () => onChanged(choice.value),
-          child: AnimatedContainer(
-            duration: Motion.tab,
+          child: Container(
             color: on ? Palette.ink : Palette.paper,
             constraints: BoxConstraints(minHeight: height - 2 * border),
             padding: EdgeInsets.symmetric(horizontal: padding),

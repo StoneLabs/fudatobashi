@@ -725,6 +725,9 @@ abstract final class MarkerHeadingStyle {
   static const double titleFont = 24;
   static const double subFont = 12;
   static const double sectionGap = 30;
+
+  /// The space above an other-language sub on a line of its own.
+  static const double subLineGap = 4;
 }
 
 /// A feature still to come (`ComingSoonSlot`): a desk-grey slot with a

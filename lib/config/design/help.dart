@@ -1,8 +1,8 @@
 part of '../design.dart';
 
-/// Help (`HelpScreen`): chapters headed like the Help pages', the guides as
-/// entries in display type split by ink rules, and the tools to come in a
-/// dashed slot.
+/// Help (`HelpScreen`): chapters headed like the Help pages', the guides
+/// and tools as entries in display type split by ink rules, and the tools
+/// to come in a dashed slot.
 abstract final class HelpLayout {
   /// An entry: its title (and, in Japanese, its English name), a note
   /// under it and an icon at the end.
@@ -19,15 +19,8 @@ abstract final class HelpLayout {
   static const double iconGap = 14;
   static const double rule = Strokes.hairline;
 
-  /// The tools to come: a desk-grey slot with a dashed ink border, the line
-  /// centred in tracked capitals.
+  /// The gap above the slot for the tools to come.
   static const double soonGap = entryPad;
-  static const EdgeInsets soonPadding = EdgeInsets.symmetric(horizontal: 20, vertical: 22);
-  static const Color soonFill = Palette.desk;
-  static const double soonBorder = Strokes.label;
-  static const double soonFont = TypeScale.label;
-  static const double soonTracking = TagStyle.tracking;
-  static const double soonLineHeight = 1.5;
 }
 
 /// The poems the karuta guide (`KarutaGuideScreen`) shows, by id.

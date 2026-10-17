@@ -49,15 +49,18 @@ abstract final class AboutCardLayout {
   static const double stickerIconGap = 5;
   static const Duration stickerFade = Duration(milliseconds: 200);
 
-  /// The Taking card / Reading card switch under the panel.
+  /// The Taking card / Reading card switch under the panel, [switchHeight]
+  /// tall with its border.
   static const double switchGap = 14;
-  static const double switchHeight = 38;
+  static const double switchHeight = 44;
   static const double switchBorder = Strokes.button;
   static const double switchFont = TypeScale.button;
   static const double switchSubFont = 11;
+  static const double switchPadding = 10;
 
   /// The reading card's key under the switch: a swatch of the card per
-  /// mark, two to a row.
+  /// mark, two to a row. The reading guide's swatch shows [keyGuideText]
+  /// with [keyGuideReading] beside it.
   static const double keyGap = 10;
   static const double keyRowGap = 5;
   static const double keyColumnGap = 12;
@@ -70,6 +73,10 @@ abstract final class AboutCardLayout {
   static const Size keyEnd = Size(7, 18);
   static const double keyLabelGap = 7;
   static const double keyFont = TypeScale.small;
+  static const Color keySwatchPaper = Color(0xFFF9F9F8);
+  static const Color keySwatchEdge = Color(0xFF1A58A7);
+  static const String keyGuideText = 'は';
+  static const String keyGuideReading = 'わ';
 
   /// The kimariji: big, pink in an ink outline, shrinking rather than
   /// wrapping; the speaker after it, the card's number tag at the right.
@@ -78,6 +85,7 @@ abstract final class AboutCardLayout {
   static const double kimarijiOutline = 7;
   static const double kimarijiLineHeight = 1.05;
   static const double numberFont = 18;
+  static const double numberLineHeight = 1.1;
   static const EdgeInsets numberPadding = EdgeInsets.fromLTRB(10, 2, 10, 4);
   static const double numberGap = 12;
   static const double soundsFont = TypeScale.button;
@@ -90,14 +98,18 @@ abstract final class AboutCardLayout {
   static const double poemLineHeight = 1.25;
   static const double romajiFont = 17;
   static const double romajiLineHeight = 1.35;
+
+  /// The gap between verses on a line, em: in kana, then in romaji.
   static const double verseGap = 0.85;
+  static const double romajiVerseGap = 0.7;
   static const double verseRunGap = 2;
   static const EdgeInsets linesPadding = EdgeInsets.only(top: 7, bottom: 12);
   static const double poetFont = 17;
   static const double romajiPoetFont = TypeScale.button;
   static const Color kimariji = Palette.pinkDeep;
 
-  /// A small pill switch (Kana / Romaji, Sounds / Kana).
+  /// A small pill switch (Kana / Romaji, Sounds / Kana), [pillHeight] tall
+  /// with its border.
   static const double pillHeight = 28;
   static const double pillBorder = Strokes.control;
   static const double pillFont = TypeScale.tiny;
@@ -114,7 +126,9 @@ abstract final class AboutCardLayout {
   static const double factFont = TypeScale.button;
   static const double factLineHeight = 1.4;
   static const double chip = 14;
+  static const double chipBorder = Strokes.label;
   static const double chipGap = 6;
+  static const double poetRomajiGap = 8;
 
   /// The row under the ladder's heading: the explanation link and the
   /// ladder switch.
@@ -128,15 +142,19 @@ abstract final class AboutCardLayout {
   static const double leadLineHeight = 1.5;
   static const double leadGap = 10;
 
-  /// The look-alike torifuda: two to a row.
+  /// The look-alike torifuda: two to a row, under a label.
   static const double lookAlikeLabelGap = 14;
   static const double lookAlikeLabelFont = 11.5;
+  static const double lookAlikeLabelBottom = 6;
   static const double lookAlikeGap = 8;
   static const double lookAlikeBorder = Strokes.control;
   static const EdgeInsets lookAlikePadding = EdgeInsets.fromLTRB(5, 5, 6, 5);
   static const double lookAlikeCard = 26;
+  static const double lookAlikeCardGap = 8;
   static const double lookAlikeFont = 15;
+  static const double lookAlikeLineHeight = 1.15;
   static const double lookAlikeSubFont = 11;
+  static const Color lookAlikeSubColor = Color(0xFF5C5A56);
   static const double lookAlikeChevron = 14;
 
   /// "About the poem": a part heading over a heavy rule, a size up from the
@@ -145,21 +163,20 @@ abstract final class AboutCardLayout {
   static const double partRule = 4;
   static const double partRuleGap = 16;
   static const double partFont = 30;
+  static const double partLineHeight = 1.15;
   static const double partSubFont = TypeScale.button;
   static const double partBottomGap = 14;
 
-  /// The link to the card's stats page, and the previous / next cards.
+  /// The link to the card's stats page (`LinkRowStyle`), and the previous
+  /// / next cards.
   static const double linkRowGap = 30;
-  static const EdgeInsets linkRowPadding = EdgeInsets.symmetric(horizontal: 12, vertical: 10);
-  static const double linkRowHeight = 60;
-  static const double linkRowFont = TypeScale.button;
-  static const double linkRowNoteFont = TypeScale.small;
-  static const double linkRowChevron = 16;
   static const double neighbourGap = 10;
   static const double neighbourHeight = 52;
   static const EdgeInsets neighbourPadding = EdgeInsets.symmetric(horizontal: 10, vertical: 6);
   static const double neighbourFont = TypeScale.button;
   static const double neighbourLabelFont = 11;
+  static const double neighbourLabelTracking = 0.08;
+  static const Color neighbourLabelColor = Color(0xFF55534F);
   static const double neighbourChevron = 16;
   static const double neighbourChevronGap = 6;
   static const double bottomPad = 32;
@@ -178,6 +195,7 @@ abstract final class SoundLadderLayout {
   static const double badgeBorder = Strokes.control;
   static const double badgeFont = 20;
   static const double badgeLabelFont = 9;
+  static const double badgeLabelTracking = 0.1;
   static const double badgeLabelGap = 3;
   static const double badgeGap = 10;
   static const double soundFont = 26;
@@ -195,6 +213,7 @@ abstract final class SoundLadderLayout {
   static const double chipBorder = Strokes.label;
   static const EdgeInsets chipPadding = EdgeInsets.fromLTRB(7, 2, 7, 3);
   static const double chipFont = TypeScale.label;
+  static const double chipLineHeight = 1.2;
   static const double chipNumberFont = 10;
   static const double chipNumberGap = 4;
   static const Color chipNumber = Color(0xFF6A6862);

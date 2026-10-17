@@ -2,7 +2,7 @@ part of '../design.dart';
 
 /// The card browser (`CardBrowserScreen`, Help › Tools): a search field
 /// over a ruled table of the cards, each row's 五色 colour on a strip down
-/// its left edge.
+/// its left edge, what the search matched marked (`TextMarkStyle`).
 abstract final class CardBrowserLayout {
   /// The search field: an ink box with the magnifier, the text and a round
   /// clear button; a sun shadow while typing.
@@ -30,8 +30,8 @@ abstract final class CardBrowserLayout {
   static const double headerFont = 11;
   static const double headerTracking = 0.14;
 
-  /// The columns: the number, the kimariji (taking the rest) and a small
-  /// torifuda before the chevron.
+  /// The columns: the number (as wide as the text is scaled), the kimariji
+  /// (taking the rest) and a small torifuda before the chevron.
   static const double numberColumn = 52;
   static const double cardColumn = 70;
   static const double rowLeftPad = 14;
@@ -42,6 +42,7 @@ abstract final class CardBrowserLayout {
   static const double kimarijiFont = 21;
   static const double kimarijiLineHeight = 1.2;
   static const double subFont = TypeScale.small;
+  static const double subLineHeight = 1.3;
   static const Color subColor = Color(0xFF55534F);
   static const double subGap = 1;
   static const double tagFont = 10;
@@ -54,12 +55,6 @@ abstract final class CardBrowserLayout {
   static const double chevron = 16;
   static const double chevronColumn = 22;
 
-  /// Matched text gets a sun marker over its lower part (shares of its
-  /// height).
-  static const Color marker = Palette.sun;
-  static const double markerTop = 0.45;
-  static const double markerBottom = 0.94;
-
   /// No match: a blank card with a question mark, a line on what to try
   /// and a button that clears the search.
   static const EdgeInsets emptyPadding = EdgeInsets.fromLTRB(18, 46, 18, 30);
@@ -71,6 +66,7 @@ abstract final class CardBrowserLayout {
   static const double emptyTitleLineHeight = 1.3;
   static const double emptyTextGap = 8;
   static const double emptyTextFont = TypeScale.body;
+  static const double emptyTextLineHeight = 1.5;
   static const double emptyButtonGap = 16;
   static const double emptyButtonHeight = 44;
   static const EdgeInsets emptyButtonPadding = EdgeInsets.symmetric(horizontal: 16, vertical: 6);
