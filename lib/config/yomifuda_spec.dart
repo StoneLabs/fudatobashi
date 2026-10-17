@@ -2,8 +2,6 @@ import 'dart:ui';
 
 import 'package:flutter/foundation.dart';
 
-import 'design.dart';
-
 /// What a yomifuda skin swaps: the blank card it is printed on and the
 /// colours and fonts of its text.
 @immutable
@@ -14,6 +12,7 @@ class YomifudaStyle {
     required this.kimariji,
     required this.number,
     required this.fontFamily,
+    required this.fontCentre,
     required this.numberFontFamily,
   });
 
@@ -25,62 +24,81 @@ class YomifudaStyle {
   final Color kimariji;
   final Color number;
   final String fontFamily;
+
+  /// How far above its baseline [fontFamily]'s em box is centred, a share
+  /// of its size (its OS/2 typo ascender and descender, halved).
+  final double fontCentre;
   final String numberFontFamily;
 
   /// The competition reading cards of research/yomifuda.
   static const standard = YomifudaStyle(
     background: 'assets/cards/yomifuda/default.png',
-    ink: Color(0xFF161616),
-    kimariji: Color(0xFFCC1C24),
-    number: Color(0xFF2A2A2A),
+    ink: Color(0xFF141414),
+    kimariji: Color(0xFFD21C22),
+    number: Color(0xFF222222),
     fontFamily: 'Yomifuda',
-    numberFontFamily: Fonts.ui,
+    fontCentre: 0.38,
+    numberFontFamily: 'TorifudaNumber',
   );
 }
 
 /// Layout of a yomifuda (読み札), the competition reading card
 /// (research/yomifuda: 52 × 75 mm), measured on the photos. Lengths across
 /// the card are shares of its width, lengths down it shares of its height,
-/// and lengths along a column in em, the size of its characters.
+/// and lengths along a column in em, the pitch of its characters.
 abstract final class YomifudaSpec {
   /// Height over width.
   static const double aspect = 75 / 52;
 
   /// The four columns' centres, right to left: verses 1–2, 3, 4 and 5.
-  static const List<double> columnX = [0.793, 0.582, 0.370, 0.163];
+  static const List<double> columnX = [0.792, 0.582, 0.372, 0.162];
 
   /// The first and third columns hang from [textTop]; the second and the
   /// fourth stand on [textBottom].
-  static const double textTop = 0.088;
-  static const double textBottom = 0.934;
+  static const double textTop = 0.086;
+  static const double textBottom = 0.937;
 
-  /// The characters' size, unless the longest column needs them smaller to
-  /// fit between [textTop] and [textBottom].
-  static const double em = 0.089;
+  /// The characters' pitch down a column. A column too long for the card
+  /// has its characters flattened to fit, as the printed cards do; its held
+  /// sounds and closing stroke keep their length.
+  static const double em = 0.1048;
 
-  /// A character's glyph drawn at this share of its em, centred in it.
-  static const double glyphScale = 1.06;
+  /// A character's glyph: its font size as a share of the em, and how much
+  /// it is widened (the printed kana are rounder than the font's).
+  static const double glyphScale = 1.0;
+  static const double glyphWidth = 1.1;
 
-  /// Furigana: their size, and how far right of the column's centre they
-  /// sit.
-  static const double rubyScale = 0.34;
-  static const double rubyOffset = 0.74;
+  /// Furigana: their font size, the least pitch they pack to, how far right
+  /// of the column's centre they sit, and how much they are thickened (a
+  /// share of their size), as the printed ones are heavier than the text.
+  static const double rubyScale = 0.46;
+  static const double rubyOffset = 0.78;
+  static const double rubyBold = 0.035;
 
-  /// A held sound: a thin line as long as a character (ー) or about half
-  /// one (ｰ), set in from both ends.
-  static const double longStretch = 1.1;
-  static const double shortStretch = 0.62;
-  static const double stretchWidth = 0.055;
-  static const double stretchInset = 0.1;
+  /// A held sound: a thin line about three quarters of a character long
+  /// (ー) or half one (ｰ), running nearly the whole gap it fills, a little
+  /// right of the column's centre.
+  static const double longStretch = 0.77;
+  static const double shortStretch = 0.53;
+  static const double stretchWidth = 0.065;
+  static const double stretchInset = 0.02;
+  static const double stretchOffset = 0.045;
+
+  /// The upper verse's last held sound, at the foot of the second column,
+  /// is printed short whichever mark the reading gives it.
+  static const double upperEndStretch = shortStretch;
 
   /// The closing stroke after the last column, its gap before it and its
   /// length.
-  static const double endGap = 0.35;
-  static const double endLength = 2.1;
+  static const double endGap = 0.17;
+  static const double endLength = 1.8;
 
-  /// The card's number in the bottom right corner: its size, and its right
-  /// and bottom edges' distance from the card's, all shares of the width.
-  static const double numberFont = 0.047;
-  static const double numberRight = 0.062;
-  static const double numberBottom = 0.07;
+  /// The card's number in the bottom right corner: its size, and the
+  /// distance of its right edge and its baseline from the card's right and
+  /// bottom edges, all shares of the width; and how much it is thickened,
+  /// a share of its size.
+  static const double numberFont = 0.053;
+  static const double numberRight = 0.0715;
+  static const double numberBottom = 0.068;
+  static const double numberBold = 0.02;
 }

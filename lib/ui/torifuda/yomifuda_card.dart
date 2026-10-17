@@ -46,9 +46,6 @@ class YomifudaToken {
   /// How many kana of the poem's reading this piece says.
   int get readingLength => isStretch ? 0 : (reading ?? text).length;
 
-  /// The length along the column, em.
-  double get length => isStretch ? stretch : text.length.toDouble();
-
   static final _token = RegExp(r'\[([^|\]]+)\|([^\]]+)\]|.');
 
   /// A column of `Poem.yomifudaColumns` as its pieces, each character of
@@ -84,28 +81,34 @@ class YomifudaPainter extends CustomPainter {
         Paint()..filterQuality = FilterQuality.medium,
       );
     }
-    final columns = [for (final c in poem.yomifudaColumns) YomifudaToken.parse(c)];
-    final endLength = YomifudaSpec.endGap + YomifudaSpec.endLength;
-    double lengthOf(int i) =>
-        columns[i].fold(0.0, (sum, t) => sum + t.length) + (i == columns.length - 1 ? endLength : 0);
+    final em = YomifudaSpec.em * size.width;
     final room = (YomifudaSpec.textBottom - YomifudaSpec.textTop) * size.height;
-    final longest = [for (var i = 0; i < columns.length; i++) lengthOf(i)].reduce(math.max);
-    final em = math.min(YomifudaSpec.em * size.width, room / longest);
+    final columns = [for (final c in poem.yomifudaColumns) YomifudaToken.parse(c)];
+    if (columns[1].lastOrNull case final close? when close.isStretch) {
+      columns[1].last = const YomifudaToken.stretch(YomifudaSpec.upperEndStretch);
+    }
     var red = poem.kimarijiReading.length;
     for (final (i, column) in columns.indexed) {
+      final last = i == columns.length - 1;
+      final chars = column.fold(0, (n, t) => n + t.text.length);
+      final end = last ? YomifudaSpec.endGap + YomifudaSpec.endLength : 0.0;
+      final held = column.fold(0.0, (sum, t) => sum + t.stretch) + end;
+      final pitch = math.min(em, (room - held * em) / chars);
       final x = YomifudaSpec.columnX[i] * size.width;
-      var y = i.isEven ? YomifudaSpec.textTop * size.height : YomifudaSpec.textBottom * size.height - lengthOf(i) * em;
+      var y = i.isEven
+          ? YomifudaSpec.textTop * size.height
+          : YomifudaSpec.textBottom * size.height - chars * pitch - held * em;
       for (final token in column) {
         if (token.isStretch) {
           _stretch(canvas, x, y, token.stretch * em, em);
+          y += token.stretch * em;
         } else {
-          final color = red > 0 ? style.kimariji : style.ink;
+          _run(canvas, token, x, y, em, pitch, red);
           red -= token.readingLength;
-          _run(canvas, token, x, y, em, color);
+          y += token.text.length * pitch;
         }
-        y += token.length * em;
       }
-      if (i == columns.length - 1) {
+      if (last) {
         y += YomifudaSpec.endGap * em;
         final art = CardArt.yomifudaEnd;
         final width = YomifudaSpec.endLength * em * art.box.width / art.box.height;
@@ -116,36 +119,54 @@ class YomifudaPainter extends CustomPainter {
     _number(canvas, size);
   }
 
-  /// [token]'s characters down the column from [top], its reading beside
-  /// them: spread over the run, or packed and centred on it when longer.
-  void _run(Canvas canvas, YomifudaToken token, double x, double top, double em, Color color) {
+  /// [token]'s characters down the column from [top] at [pitch], flattened
+  /// when it is under [em], its reading beside them: spread over the run,
+  /// or packed and centred on it when longer. The first [red] kana it says
+  /// are the kimariji's, and so is each character whose share of the
+  /// reading starts among them.
+  void _run(Canvas canvas, YomifudaToken token, double x, double top, double em, double pitch, int red) {
+    final flat = pitch / em;
+    Color colorOf(bool kimariji) => kimariji ? style.kimariji : style.ink;
+    final said = token.readingLength;
     for (var k = 0; k < token.text.length; k++) {
-      _glyph(canvas, token.text[k], Offset(x, top + (k + 0.5) * em), em * YomifudaSpec.glyphScale, color);
+      _glyph(canvas, token.text[k], Offset(x, top + (k + 0.5) * pitch), em * YomifudaSpec.glyphScale, flat,
+          colorOf(k * said / token.text.length < red));
     }
     final reading = token.reading;
     if (reading == null || reading == token.text) return;
-    final pitch = math.max(token.text.length / reading.length, YomifudaSpec.rubyScale) * em;
-    final start = top + (token.text.length * em - reading.length * pitch) / 2;
+    final step = math.max(token.text.length / reading.length, YomifudaSpec.rubyScale) * pitch;
+    final start = top + (token.text.length * pitch - reading.length * step) / 2;
     final rx = x + YomifudaSpec.rubyOffset * em;
     for (var k = 0; k < reading.length; k++) {
-      _glyph(canvas, reading[k], Offset(rx, start + (k + 0.5) * pitch), em * YomifudaSpec.rubyScale, color);
+      _glyph(canvas, reading[k], Offset(rx, start + (k + 0.5) * step), em * YomifudaSpec.rubyScale, flat,
+          colorOf(k < red),
+          bold: YomifudaSpec.rubyBold);
     }
   }
 
-  void _glyph(Canvas canvas, String ch, Offset center, double size, Color color) {
-    final tp = TextPainter(
-      text: TextSpan(text: ch, style: TextStyle(fontFamily: style.fontFamily, fontSize: size, height: 1, color: color)),
-      textDirection: TextDirection.ltr,
-    )..layout();
-    tp.paint(canvas, center - Offset(tp.width / 2, tp.height / 2));
-    tp.dispose();
+  /// [ch] centred on [center], widened by the spec's glyph width and
+  /// squeezed down the column by [flat]; [bold] thickens its strokes by
+  /// that share of [size].
+  void _glyph(Canvas canvas, String ch, Offset center, double size, double flat, Color color, {double bold = 0}) {
+    canvas
+      ..save()
+      ..translate(center.dx, center.dy)
+      ..scale(YomifudaSpec.glyphWidth, flat);
+    for (final tp in _painters(ch, style.fontFamily, size, color, bold)) {
+      final baseline = tp.computeDistanceToActualBaseline(TextBaseline.alphabetic);
+      tp
+        ..paint(canvas, Offset(-tp.width / 2, style.fontCentre * size - baseline))
+        ..dispose();
+    }
+    canvas.restore();
   }
 
   void _stretch(Canvas canvas, double x, double top, double length, double em) {
     final inset = YomifudaSpec.stretchInset * em;
+    final lineX = x + YomifudaSpec.stretchOffset * em;
     canvas.drawLine(
-      Offset(x, top + inset),
-      Offset(x, top + length - inset),
+      Offset(lineX, top + inset),
+      Offset(lineX, top + length - inset),
       Paint()
         ..color = style.ink
         ..strokeWidth = YomifudaSpec.stretchWidth * em,
@@ -153,23 +174,37 @@ class YomifudaPainter extends CustomPainter {
   }
 
   void _number(Canvas canvas, Size size) {
-    final tp = TextPainter(
-      text: TextSpan(
-        text: '${poem.id}',
-        style: TextStyle(
-            fontFamily: style.numberFontFamily,
-            fontSize: YomifudaSpec.numberFont * size.width,
-            height: 1,
-            color: style.number),
-      ),
-      textDirection: TextDirection.ltr,
-    )..layout();
-    tp.paint(
-      canvas,
-      Offset(size.width * (1 - YomifudaSpec.numberRight) - tp.width,
-          size.height - YomifudaSpec.numberBottom * size.width - tp.height),
-    );
-    tp.dispose();
+    final font = YomifudaSpec.numberFont * size.width;
+    final painters = _painters('${poem.id}', style.numberFontFamily, font, style.number, YomifudaSpec.numberBold);
+    for (final tp in painters) {
+      final baseline = tp.computeDistanceToActualBaseline(TextBaseline.alphabetic);
+      tp
+        ..paint(
+          canvas,
+          Offset(size.width * (1 - YomifudaSpec.numberRight) - tp.width,
+              size.height - YomifudaSpec.numberBottom * size.width - baseline),
+        )
+        ..dispose();
+    }
+  }
+
+  /// [text] laid out to fill, and when [bold] is above 0 also to stroke its
+  /// outline that share of [size] wide over the fill.
+  static List<TextPainter> _painters(String text, String family, double size, Color color, double bold) {
+    TextPainter painter(Paint paint) => TextPainter(
+          text: TextSpan(
+              text: text, style: TextStyle(fontFamily: family, fontSize: size, height: 1, foreground: paint)),
+          textDirection: TextDirection.ltr,
+        )..layout();
+    return [
+      painter(Paint()..color = color),
+      if (bold > 0)
+        painter(Paint()
+          ..color = color
+          ..style = PaintingStyle.stroke
+          ..strokeJoin = StrokeJoin.round
+          ..strokeWidth = bold * size),
+    ];
   }
 
   @override
