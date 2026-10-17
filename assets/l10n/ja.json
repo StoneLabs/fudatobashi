@@ -227,6 +227,7 @@
   "learnAheadShakyOne": "まだ{0}枚あやふや。\n先にしっかり覚えよう！",
   "learnAheadShakyOther": "まだ{0}枚あやふや。\n先にしっかり覚えよう！",
   "learnAheadPending": "今日の新しい札が先。\n修行へGO!",
+  "learnAheadDailyLimit": "今日の新しい札は{0}枚。\n1日の上限だよ。\n続きはまた明日！",
   "todayLabel": "今日は",
   "todayCardsInRun": "枚を\n1回で",
   "todayReviews": "復習 {0}枚×{1}回",

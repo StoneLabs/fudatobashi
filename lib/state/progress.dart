@@ -878,7 +878,7 @@ class Progress extends ChangeNotifier {
   Future<PlannedRun> learnAheadCards({math.Random? rng, DateTime? now}) async {
     now ??= DateTime.now();
     if (!_allKnown) await refreshToday(now);
-    final fresh = trainer.unlockNextBatch(poems, fudaSets, now);
+    final fresh = trainer.unlockAhead(poems, fudaSets, now);
     if (fresh.isNotEmpty) {
       await _saveItems(fresh);
       final set = todaySet(now), day = _day;

@@ -123,7 +123,7 @@ abstract final class PaceTuning {
 /// Home's "Learn ahead" (`Trainer.learnAhead`), for players who learn
 /// faster than their pace: it opens only once the unlocked cards are well
 /// remembered (`Trainer.wellRemembered`) and the pace has no new cards left
-/// for today.
+/// for today, and it brings in no more than [maxNewCardsPerDay] a day.
 abstract final class LearnAheadTuning {
   /// Latest attempts a remembered card is judged over: at most this share of
   /// them missed.
@@ -138,6 +138,9 @@ abstract final class LearnAheadTuning {
   /// Learn ahead opens once at least this share (%) of the unlocked cards
   /// are quick as well as remembered; every one must be remembered.
   static const int minQuickPercent = 90;
+
+  /// New cards a day may bring in all, the morning's and Learn ahead's.
+  static const int maxNewCardsPerDay = 20;
 }
 
 /// Journey's today's set (`TodaySet`) and the runs that play it (`StepPlan`):

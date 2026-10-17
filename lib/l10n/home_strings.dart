@@ -37,6 +37,7 @@ extension HomeStrings on S {
   String get learnAheadLocked => t('learnAheadLocked');
   String learnAheadShaky(int n) => f(n == 1 ? 'learnAheadShakyOne' : 'learnAheadShakyOther', [n]);
   String get learnAheadPending => t('learnAheadPending');
+  String learnAheadDailyLimit(int n) => f('learnAheadDailyLimit', [n]);
 
   String get todayLabel => t('todayLabel');
   String get todayCardsInRun => t('todayCardsInRun');

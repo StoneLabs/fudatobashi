@@ -1,5 +1,6 @@
 import 'package:flutter/widgets.dart';
 
+import '../../config/config.dart';
 import '../../config/design.dart';
 import '../../config/vector_art.dart';
 import '../../domain/trainer.dart';
@@ -10,9 +11,10 @@ import '../manga/manga.dart';
 import '../run/run_launcher.dart';
 
 /// Home's "Learn ahead" (journey): pulls the next batch in ahead of the
-/// pace, for players who learn faster than it. Locked until every card is
-/// well remembered and today's new cards are done (`Progress.learnAhead`);
-/// a locked tap pops a balloon saying what is left.
+/// pace, for players who learn faster than it. Locked until the cards are
+/// well remembered and today's new cards are done, and once the day has had
+/// its most new cards (`Progress.learnAhead`); a locked tap pops a balloon
+/// saying why.
 class LearnAheadButton extends StatelessWidget {
   const LearnAheadButton({super.key});
 
@@ -30,7 +32,8 @@ class LearnAheadButton extends StatelessWidget {
         onTap: () => open
             ? startLearnAhead(context)
             : BalloonPop.show(context, _whyLocked(s, ahead),
-                size: LearnAheadStyle.balloon, life: LearnAheadStyle.balloonLife),
+                size: ahead.lock == LearnAheadLock.dailyLimit ? LearnAheadStyle.limitBalloon : LearnAheadStyle.balloon,
+                life: LearnAheadStyle.balloonLife),
         child: FittedBox(
           fit: BoxFit.scaleDown,
           child: Row(mainAxisSize: MainAxisSize.min, children: [
@@ -51,6 +54,7 @@ class LearnAheadButton extends StatelessWidget {
 
   static String _whyLocked(S s, LearnAhead ahead) => switch (ahead.lock) {
         LearnAheadLock.newCardsPending => s.learnAheadPending,
+        LearnAheadLock.dailyLimit => s.learnAheadDailyLimit(LearnAheadTuning.maxNewCardsPerDay),
         _ => s.learnAheadShaky(ahead.shaky),
       };
 }

@@ -504,6 +504,25 @@ void main() {
       });
     }
 
+    testWidgets('journey: Learn ahead is locked for the day after the most new cards, and a tap says so ($lang)',
+        (tester) async {
+      final p = await open(tester, mode: LearningMode.journey, ja: ja, journeyCards: LearnAheadTuning.maxNewCardsPerDay);
+      final now = DateTime.now();
+      for (final s in p.trainer.unlocked) {
+        s.unlockedAt = now;
+      }
+      await onPhone(tester, p, fontScale: 1.2);
+      expect(p.learnAhead().lock, LearnAheadLock.dailyLimit);
+      await tester.tap(find.byType(LearnAheadButton));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 400));
+      expect(find.text(S(ja ? 'ja' : 'en').learnAheadDailyLimit(LearnAheadTuning.maxNewCardsPerDay)), findsOneWidget);
+      expect(tester.takeException(), isNull);
+      await _capture(tester, 'learn_ahead_daily_limit_$lang');
+      await tester.pump(LearnAheadStyle.balloonLife);
+      await tester.pumpWidget(const SizedBox());
+    });
+
     testWidgets('the Side Trips tab opens ($lang)', (tester) async {
       final p = await open(tester, mode: LearningMode.allKnown, ja: ja);
       await onPhone(tester, p, fontScale: 1.1);

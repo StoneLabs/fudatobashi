@@ -297,6 +297,18 @@ void main() {
       await progress.db.close();
     });
 
+    test('stops at the most new cards a day, the morning ones included, until tomorrow', () async {
+      final progress = await open(LearningPace.month);
+      final day0 = DateTime(2026, 9, 1, 9);
+      await progress.planTraining(now: day0);
+      while ((await progress.learnAheadCards(now: day0)).unlockedBefore.isNotEmpty) {}
+      expect(uprightUnlocked(progress), LearnAheadTuning.maxNewCardsPerDay, reason: 'the last pull is cut short');
+      expect(progress.paceStatus(day0).newToday, LearnAheadTuning.maxNewCardsPerDay);
+      expect(progress.learnAhead(day0).lock, LearnAheadLock.dailyLimit, reason: 'shaky cards or not');
+      expect(progress.learnAhead(day0.add(const Duration(days: 1))).lock, isNot(LearnAheadLock.dailyLimit));
+      await progress.db.close();
+    });
+
     test('has nothing to offer once every card is unlocked', () async {
       final progress = await open(LearningPace.month);
       for (final s in progress.trainer.items.values) {

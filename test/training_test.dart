@@ -185,6 +185,19 @@ void main() {
         expect((ahead().lock, ahead().shaky), (LearnAheadLock.shaky, 1), reason: 'every card must be remembered');
         expect(t.wellRememberedCount(stats, now), 17);
       });
+
+      test('locks for the day once it has had its most new cards, and a pull stops there', () {
+        const most = LearnAheadTuning.maxNewCardsPerDay;
+        final (t, stats) = deck(most - 1, unlockedAt: now);
+        expect(t.learnAhead(p, sets, stats, now, newPending: false).lock, LearnAheadLock.none);
+        expect(t.unlockAhead(p, sets, now), hasLength(1), reason: 'room for one more today');
+        final ahead = t.learnAhead(p, sets, {...stats, for (final s in t.unlocked) s.key: quick()}, now,
+            newPending: false);
+        expect(ahead.lock, LearnAheadLock.dailyLimit);
+        expect(t.unlockAhead(p, sets, now), isEmpty);
+        final tomorrow = now.add(const Duration(days: 1));
+        expect(t.learnAhead(p, sets, stats, tomorrow, newPending: false).lock, isNot(LearnAheadLock.dailyLimit));
+      });
     });
   });
 }

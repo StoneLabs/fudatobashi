@@ -427,6 +427,10 @@ abstract final class LearnAheadStyle {
   static const EdgeInsets padding = EdgeInsets.symmetric(horizontal: 10, vertical: 6);
   static const double iconGap = 5;
   static const Size balloon = Size(270, 96);
+
+  /// The balloon of the longer daily-limit message.
+  static const Size limitBalloon = Size(300, 116);
+
   static const Duration balloonLife = Duration(milliseconds: 2800);
 }
 

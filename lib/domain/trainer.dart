@@ -124,6 +124,10 @@ enum LearnAheadLock {
   /// Every card is unlocked; there is nothing to learn ahead.
   allUnlocked,
 
+  /// Today's new cards, the morning's and those pulled in, have reached
+  /// [LearnAheadTuning.maxNewCardsPerDay].
+  dailyLimit,
+
   /// Some unlocked cards are not well remembered yet (see
   /// [Trainer.learnAhead]).
   shaky,
@@ -470,20 +474,20 @@ class Trainer {
   static int daysBetween(DateTime a, DateTime b, {int dayStartHour = 0}) =>
       DayWindow.at(b, dayStartHour).date.difference(DayWindow.at(a, dayStartHour).date).inDays;
 
-  PaceStatus paceStatus(Poems p, FudaSets sets, Map<ItemKey, CardStats> stats, DateTime now) {
-    final up = _uprightUnlocked.toList();
-    return PaceStatus(
-      pace: config.pace,
-      day: journeyDay(now),
-      unlocked: up.length,
-      total: items.length ~/ 2,
-      newToday: up
-          .where((s) => s.unlockedAt != null && daysBetween(s.unlockedAt!, now, dayStartHour: dayStartHour) == 0)
-          .length,
-      readiness: readiness(p, sets, stats),
-      nextBatch: nextBatch(p, sets),
-    );
-  }
+  PaceStatus paceStatus(Poems p, FudaSets sets, Map<ItemKey, CardStats> stats, DateTime now) => PaceStatus(
+        pace: config.pace,
+        day: journeyDay(now),
+        unlocked: _uprightUnlocked.length,
+        total: items.length ~/ 2,
+        newToday: _newToday(now),
+        readiness: readiness(p, sets, stats),
+        nextBatch: nextBatch(p, sets),
+      );
+
+  /// Upright cards unlocked on [now]'s day, manual pulls included.
+  int _newToday(DateTime now) => _uprightUnlocked
+      .where((s) => s.unlockedAt != null && daysBetween(s.unlockedAt!, now, dayStartHour: dayStartHour) == 0)
+      .length;
 
   /// Remembered: practised, its latest answer correct, at most the odd slip
   /// lately, and no FSRS review or learning step due. More forgiving than
@@ -509,7 +513,7 @@ class Trainer {
 
   /// Home's "Learn ahead": open once every unlocked card is [remembered] and
   /// at least [LearnAheadTuning.minQuickPercent] of them are also [quick],
-  /// and today has no new cards of its own left.
+  /// while today still has room for new cards and none of its own are left.
   /// [newPending]: today's set still has new cards to settle; without a
   /// set, the pace still has new cards for today.
   LearnAhead learnAhead(Poems p, FudaSets sets, Map<ItemKey, CardStats> stats, DateTime now, {bool? newPending}) {
@@ -529,11 +533,13 @@ class Trainer {
     return LearnAhead(
       lock: pace.hold == UnlockHold.allUnlocked
           ? LearnAheadLock.allUnlocked
-          : shaky > 0
-              ? LearnAheadLock.shaky
-              : newPending ?? pace.hold == UnlockHold.none
-                  ? LearnAheadLock.newCardsPending
-                  : LearnAheadLock.none,
+          : pace.newToday >= LearnAheadTuning.maxNewCardsPerDay
+              ? LearnAheadLock.dailyLimit
+              : shaky > 0
+                  ? LearnAheadLock.shaky
+                  : newPending ?? pace.hold == UnlockHold.none
+                      ? LearnAheadLock.newCardsPending
+                      : LearnAheadLock.none,
       unlocked: up.length,
       shaky: shaky,
     );
@@ -556,10 +562,17 @@ class Trainer {
         ],
       ];
 
-  /// Unlocks the next batch now, whatever the pace and readiness say (the
-  /// player's "Learn ahead"). Returns the newly unlocked items.
+  /// Unlocks the next batch now, whatever the pace and readiness say.
+  /// Returns the newly unlocked items.
   List<ItemKey> unlockNextBatch(Poems p, FudaSets sets, DateTime now) =>
       _unlock(_batchKeys(nextBatch(p, sets)), now);
+
+  /// The player's "Learn ahead": [unlockNextBatch], cut short so that [now]'s
+  /// day gets no more than [LearnAheadTuning.maxNewCardsPerDay] new cards.
+  List<ItemKey> unlockAhead(Poems p, FudaSets sets, DateTime now) {
+    final room = math.max(0, LearnAheadTuning.maxNewCardsPerDay - _newToday(now));
+    return _unlock(_batchKeys(nextBatch(p, sets).take(room).toList()), now);
+  }
 
   /// Unlocks what the player has earned. Returns the newly unlocked items
   /// (celebrate these!). Without [batches] the journey's new cards wait for

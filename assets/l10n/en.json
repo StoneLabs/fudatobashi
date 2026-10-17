@@ -227,6 +227,7 @@
   "learnAheadShakyOne": "{0} card is still shaky. Get them solid first!",
   "learnAheadShakyOther": "{0} cards are still shaky. Get them solid first!",
   "learnAheadPending": "Today's new cards come first. Off to Training!",
+  "learnAheadDailyLimit": "You've learned {0} new cards today, the daily maximum. More tomorrow!",
   "todayLabel": "Today:",
   "todayCardsInRun": "cards in\none run",
   "todayReviews": "{0} reviews × {1} looks",
