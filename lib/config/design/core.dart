@@ -726,3 +726,47 @@ abstract final class MarkerHeadingStyle {
   static const double subFont = 12;
   static const double sectionGap = 30;
 }
+
+/// A feature still to come (`ComingSoonSlot`): a desk-grey slot with a
+/// dashed ink border, its line centred in tracked capitals.
+abstract final class ComingSoonStyle {
+  static const EdgeInsets padding = EdgeInsets.symmetric(horizontal: 20, vertical: 22);
+  static const Color fill = Palette.desk;
+  static const double border = Strokes.label;
+  static const double font = TypeScale.label;
+  static const double tracking = TagStyle.tracking;
+  static const double lineHeight = 1.5;
+}
+
+/// A boxed link to another page (`LinkRow`): a bold title over a note, a
+/// chevron at the end.
+abstract final class LinkRowStyle {
+  static const double border = Strokes.button;
+  static const EdgeInsets padding = EdgeInsets.symmetric(horizontal: 12, vertical: 10);
+  static const double minHeight = 60;
+  static const double font = TypeScale.button;
+  static const double noteFont = TypeScale.small;
+  static const double noteLineHeight = 1.3;
+  static const Color note = Color(0xFF4A4844);
+  static const double chevron = 16;
+  static const double chevronGap = 12;
+}
+
+/// Text marked as found (`MarkedText`, the card browser's search): a sun
+/// marker behind the lower part of the matched characters, from [top] to
+/// [bottom] of the line's height.
+abstract final class TextMarkStyle {
+  static const Color color = Palette.sun;
+  static const double top = 0.45;
+  static const double bottom = 0.94;
+
+  /// How far the marker reaches past the characters on each side.
+  static const double reach = 1;
+}
+
+/// A switch between two or more choices (`PillSwitch`): a round-ended ink
+/// box, the chosen one filled ink.
+abstract final class PillSwitchStyle {
+  static const double subGap = 5;
+  static const double subTracking = 0.04;
+}

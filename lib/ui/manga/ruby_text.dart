@@ -49,11 +49,24 @@ abstract final class Ruby {
   static String plain(String markup) => markup.replaceAllMapped(_annotated, (m) => m[1]!);
 }
 
+/// The start of a [RubyText] to set in another [color]: its first [kana]
+/// kana, counting a run with a reading by its reading and taking it whole,
+/// so a kanji is never split.
+typedef RubyHighlight = ({int kana, Color color});
+
 /// Text with furigana: each reading small and centred above its run. Lines
-/// break only between phrases, which sit a full-width space apart, and every
+/// break only between phrases, which sit [phraseGap] em apart, and every
 /// line keeps room for readings, so lines with and without them space evenly.
 class RubyText extends StatelessWidget {
-  const RubyText(this.markup, {super.key, required this.style, this.readingStyle});
+  const RubyText(
+    this.markup, {
+    super.key,
+    required this.style,
+    this.readingStyle,
+    this.highlight,
+    this.phraseGap = 1,
+    this.lineGap = 0,
+  });
 
   /// Furigana markup (see [Ruby]).
   final String markup;
@@ -65,22 +78,45 @@ class RubyText extends StatelessWidget {
   /// Defaults to [style] at [RubyStyle.readingScale] of its size.
   final TextStyle? readingStyle;
 
+  final RubyHighlight? highlight;
+  final double phraseGap;
+
+  /// The space between lines.
+  final double lineGap;
+
   @override
   Widget build(BuildContext context) {
     final fontSize = style.fontSize!;
     final reading =
         readingStyle ?? style.copyWith(fontSize: fontSize * RubyStyle.readingScale, height: RubyStyle.readingHeight);
+    var left = highlight?.kana ?? 0;
+    Widget run(RubyRun run, {bool marked = false}) => marked
+        ? _Run(run,
+            style: style.copyWith(color: highlight!.color), readingStyle: reading.copyWith(color: highlight!.color))
+        : _Run(run, style: style, readingStyle: reading);
+    List<Widget> runs(RubyRun r) {
+      if (left <= 0) return [run(r)];
+      if (r.reading != null || r.base.length <= left) {
+        left -= (r.reading ?? r.base).length;
+        return [run(r, marked: true)];
+      }
+      final cut = left;
+      left = 0;
+      return [run(RubyRun(r.base.substring(0, cut)), marked: true), run(RubyRun(r.base.substring(cut)))];
+    }
+
     return Semantics(
       label: Ruby.plain(markup).replaceAll(Ruby.phraseBreak, ' '),
       excludeSemantics: true,
       child: Wrap(
-        spacing: MediaQuery.textScalerOf(context).scale(fontSize),
+        spacing: MediaQuery.textScalerOf(context).scale(fontSize) * phraseGap,
+        runSpacing: lineGap,
         children: [
           for (final phrase in Ruby.phrases(markup))
             Row(
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.end,
-              children: [for (final run in phrase) _Run(run, style: style, readingStyle: reading)],
+              children: [for (final r in phrase) ...runs(r)],
             ),
         ],
       ),

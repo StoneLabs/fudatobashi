@@ -4,11 +4,14 @@ import '../../config/design.dart';
 import '../history/history_widgets.dart';
 
 /// A section heading in the run pages' marker style, as on Help and credits.
+/// The marker is [MarkerHeadingStyle.color] unless the page gives its own
+/// [color].
 class MarkerHeading extends StatelessWidget {
-  const MarkerHeading(this.title, this.sub, {super.key});
+  const MarkerHeading(this.title, this.sub, {super.key, this.color = MarkerHeadingStyle.color});
 
   final String title;
   final String? sub;
+  final Color color;
 
   @override
   Widget build(BuildContext context) => Semantics(
@@ -16,7 +19,7 @@ class MarkerHeading extends StatelessWidget {
         child: HistoryHeading(
           title: title,
           sub: sub,
-          accent: MarkerHeadingStyle.color,
+          accent: color,
           titleFont: MarkerHeadingStyle.titleFont,
           subFont: MarkerHeadingStyle.subFont,
         ),
