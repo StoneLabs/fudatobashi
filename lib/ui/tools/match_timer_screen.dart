@@ -15,10 +15,10 @@ import '../cards/page_frame.dart';
 import '../manga/manga.dart';
 import '../sound/sounds.dart';
 
-/// The match timer (Help › Tools): a ring that empties counter-clockwise
-/// round the time left, which can be set before it starts. The ring turns
-/// to the warning colour, with a sound, for the last two minutes, and a
-/// second sound sounds at zero. Time comes from the wall clock, so it stays
+/// The match timer (Help › Tools): a dial on a desk panel whose ring empties
+/// counter-clockwise round the time left, which can be set before it starts.
+/// The last two minutes of the ring are always red; a sound marks reaching
+/// them, and a second one zero. Time comes from the wall clock, so it stays
 /// right however late a tick lands, and [MatchTimerAlerts] keeps the screen
 /// on and the sounds coming while it runs.
 class MatchTimerScreen extends StatefulWidget {
@@ -156,61 +156,67 @@ class _MatchTimerScreenState extends State<MatchTimerScreen> {
   Widget build(BuildContext context) {
     final s = S.of(context);
     final left = _left;
-    final warn = left <= MatchTimerTuning.warnAt;
     final seconds = (left.inMilliseconds / 1000).ceil();
     final time = '${(seconds ~/ 60).toString().padLeft(2, '0')}:${(seconds % 60).toString().padLeft(2, '0')}';
-    final fraction = _total.inMilliseconds == 0 ? 0.0 : left.inMilliseconds / _total.inMilliseconds;
     return PageFrame(
       title: s.matchTimerTitle,
       sub: s.other.matchTimerTitle,
-      body: Center(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            SizedBox.square(
-              dimension: MatchTimerLayout.ringSize,
-              child: CustomPaint(
-                painter: _RingPainter(fraction, warn ? MatchTimerLayout.ringWarn : MatchTimerLayout.ringNormal),
-                child: Center(
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      GestureDetector(
-                        behavior: HitTestBehavior.opaque,
-                        onTap: _started ? null : _edit,
-                        child: Semantics(
-                          button: !_started,
-                          label: _started ? null : s.timerEdit,
-                          child: Column(mainAxisSize: MainAxisSize.min, children: [
-                            Text(time,
-                                style: const TextStyle(
-                                    fontFamily: Fonts.display,
-                                    fontSize: MatchTimerLayout.timeFont,
-                                    fontFeatures: [FontFeature.tabularFigures()])),
-                            if (!_started) ...[
-                              const SizedBox(height: MatchTimerLayout.penGap),
-                              MangaIcon(IconArt.pen, size: MatchTimerLayout.penSize),
-                            ],
-                          ]),
+      body: Padding(
+        padding: const EdgeInsets.fromLTRB(Gaps.gutter, 0, Gaps.gutter, Gaps.gutter),
+        child: Center(
+          child: FittedBox(
+            fit: BoxFit.scaleDown,
+            child: MangaPanel(
+              color: Palette.desk,
+              tone: MatchTimerLayout.panelTone,
+              shadow: const Offset(MatchTimerLayout.panelShadow, MatchTimerLayout.panelShadow),
+              padding: MatchTimerLayout.panelPadding,
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  SizedBox.square(
+                    dimension: MatchTimerLayout.dialSize,
+                    child: CustomPaint(
+                      painter: _DialPainter(left: left, total: _total),
+                      child: Center(
+                        child: GestureDetector(
+                          behavior: HitTestBehavior.opaque,
+                          onTap: _started ? null : _edit,
+                          child: Semantics(
+                            button: !_started,
+                            label: _started ? null : s.timerEdit,
+                            child: Column(mainAxisSize: MainAxisSize.min, children: [
+                              Text(time,
+                                  style: const TextStyle(
+                                      fontFamily: Fonts.display,
+                                      fontSize: MatchTimerLayout.timeFont,
+                                      color: Palette.ink,
+                                      fontFeatures: [FontFeature.tabularFigures()])),
+                              if (!_started) ...[
+                                const SizedBox(height: MatchTimerLayout.penGap),
+                                MangaIcon(IconArt.pen, size: MatchTimerLayout.penSize),
+                              ],
+                            ]),
+                          ),
                         ),
                       ),
-                    ],
+                    ),
                   ),
-                ),
+                  const SizedBox(height: MatchTimerLayout.sectionGap),
+                  if (!_started)
+                    _TimerButton(label: s.timerPlay, color: Palette.sun, onTap: _play)
+                  else
+                    Row(mainAxisSize: MainAxisSize.min, children: [
+                      if (!_ended) ...[
+                        _TimerButton(label: _running ? s.timerPause : s.timerResume, onTap: _togglePause),
+                        const SizedBox(width: MatchTimerLayout.buttonGap),
+                      ],
+                      _TimerButton(label: s.timerStop, onTap: _stop),
+                    ]),
+                ],
               ),
             ),
-            const SizedBox(height: MatchTimerLayout.sectionGap),
-            if (!_started)
-              _TimerButton(label: s.timerPlay, color: Palette.sun, onTap: _play)
-            else
-              Row(mainAxisSize: MainAxisSize.min, children: [
-                if (!_ended) ...[
-                  _TimerButton(label: _running ? s.timerPause : s.timerResume, onTap: _togglePause),
-                  const SizedBox(width: MatchTimerLayout.buttonGap),
-                ],
-                _TimerButton(label: s.timerStop, onTap: _stop),
-              ]),
-          ],
+          ),
         ),
       ),
     );
@@ -237,28 +243,65 @@ class _TimerButton extends StatelessWidget {
       );
 }
 
-/// A ring full at [fraction] 1, its arc from 12 o'clock shortening back
-/// towards it: the end retreats counter-clockwise.
-class _RingPainter extends CustomPainter {
-  const _RingPainter(this.fraction, this.color);
+/// The dial: a paper face inside a ring of the time left, with a tick
+/// outside it for every minute of [total] (a longer one every five) from 0
+/// at 12 o'clock. The ring runs clockwise from 12 o'clock to the share of
+/// [total] still [left]; its first stretch, the last [MatchTimerTuning.warnAt]
+/// of the match, is red, the rest blue, so the blue end retreats first.
+class _DialPainter extends CustomPainter {
+  const _DialPainter({required this.left, required this.total});
 
-  final double fraction;
-  final Color color;
+  final Duration left;
+  final Duration total;
+
+  static const _top = -math.pi / 2;
 
   @override
   void paint(Canvas canvas, Size size) {
-    final stroke = MatchTimerLayout.ringStroke;
-    final rect = (Offset.zero & size).deflate(stroke / 2);
-    final paint = Paint()
+    final centre = size.center(Offset.zero);
+    final outer = size.shortestSide / 2 - MatchTimerLayout.tickGap - MatchTimerLayout.majorTick;
+    final inner = outer - MatchTimerLayout.ringStroke;
+    final band = Rect.fromCircle(center: centre, radius: outer - MatchTimerLayout.ringStroke / 2);
+    final ink = Paint()
       ..style = PaintingStyle.stroke
-      ..strokeWidth = stroke
+      ..color = Palette.ink;
+
+    canvas.drawCircle(centre, outer, Paint()..color = Palette.paper);
+    final ring = Paint()
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = MatchTimerLayout.ringStroke
       ..strokeCap = StrokeCap.butt;
-    canvas.drawArc(rect, 0, math.pi * 2, false, paint..color = MatchTimerLayout.track);
-    if (fraction > 0) canvas.drawArc(rect, -math.pi / 2, math.pi * 2 * fraction, false, paint..color = color);
+    canvas.drawArc(band, 0, math.pi * 2, false, ring..color = MatchTimerLayout.track);
+    final totalMs = total.inMilliseconds;
+    if (totalMs > 0) {
+      final leftShare = left.inMilliseconds / totalMs;
+      final warnShare = math.min(MatchTimerTuning.warnAt.inMilliseconds / totalMs, 1.0);
+      // The red is drawn over the whole blue, so the two meet edge to edge
+      // with no track showing through the seam.
+      if (leftShare > 0) {
+        final warnSweep = math.pi * 2 * math.min(leftShare, warnShare);
+        canvas.drawArc(band, _top, math.pi * 2 * leftShare, false, ring..color = MatchTimerLayout.ringNormal);
+        canvas.drawArc(band, _top, warnSweep, false, ring..color = MatchTimerLayout.ringWarn);
+      }
+      final from = outer + MatchTimerLayout.tickGap;
+      for (var minute = 0; minute * Duration.millisecondsPerMinute < totalMs; minute++) {
+        final major = minute % MatchTimerLayout.majorEvery == 0;
+        final angle = _top + math.pi * 2 * minute * Duration.millisecondsPerMinute / totalMs;
+        final along = Offset(math.cos(angle), math.sin(angle));
+        final to = from + (major ? MatchTimerLayout.majorTick : MatchTimerLayout.minorTick);
+        canvas.drawLine(centre + along * from, centre + along * to,
+            ink..strokeWidth = major ? MatchTimerLayout.majorTickWidth : MatchTimerLayout.minorTickWidth);
+      }
+    }
+    // The 12 o'clock line across the band covers the seam where the ring
+    // starts and, when full, ends.
+    canvas.drawLine(centre + Offset(0, -inner), centre + Offset(0, -outer), ink..strokeWidth = MatchTimerLayout.startLine);
+    canvas.drawCircle(centre, outer, ink..strokeWidth = MatchTimerLayout.ringOutline);
+    canvas.drawCircle(centre, inner, ink..strokeWidth = MatchTimerLayout.ringOutline);
   }
 
   @override
-  bool shouldRepaint(_RingPainter old) => old.fraction != fraction || old.color != color;
+  bool shouldRepaint(_DialPainter old) => old.left != left || old.total != total;
 }
 
 /// A bottom sheet panel: a title over [children].

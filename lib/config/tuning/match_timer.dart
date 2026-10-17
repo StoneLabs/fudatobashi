@@ -4,7 +4,8 @@ part of '../config.dart';
 abstract final class MatchTimerTuning {
   static const Duration defaultTime = Duration(minutes: 15);
 
-  /// The ring changes colour, and the warning sounds, when this much is left.
+  /// The warning sounds when this much is left; the ring always shows this
+  /// last stretch in the warning colour.
   static const Duration warnAt = Duration(minutes: 2);
 
   static const Duration tick = Duration(milliseconds: 200);

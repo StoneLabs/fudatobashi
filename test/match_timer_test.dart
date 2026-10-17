@@ -44,14 +44,18 @@ void main() {
     expect(find.text(s.timerPlay), findsOneWidget);
   });
 
-  testWidgets('match timer: the last two minutes, on a fake clock', (tester) async {
+  testWidgets('match timer: running down, on a fake clock', (tester) async {
     final p = await openPlayer(tester, 'en');
     var now = DateTime(2026);
     await showPage(tester, p, MatchTimerScreen(now: () => now));
     await tapOn(tester, find.text(s.timerPlay));
-    now = now.add(const Duration(minutes: 13, seconds: 20));
+    now = now.add(const Duration(minutes: 10));
     await tester.pump(const Duration(milliseconds: 300));
-    expect(find.text('01:40'), findsOneWidget);
+    expect(find.text('05:00'), findsOneWidget);
+    if (_render) await capture(tester, 'match_timer_running');
+    now = now.add(const Duration(minutes: 4));
+    await tester.pump(const Duration(milliseconds: 300));
+    expect(find.text('01:00'), findsOneWidget);
     if (_render) await capture(tester, 'match_timer_warn');
     await tapOn(tester, find.text(s.timerStop));
   });
