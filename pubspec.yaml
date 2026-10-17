@@ -42,6 +42,7 @@ dependencies:
   file_picker: ^13.1.0
   path_provider: ^2.1.6
   sqlite3: ^3.7.1
+  markdown: ^7.3.1
 
 dev_dependencies:
   flutter_test:
@@ -73,6 +74,8 @@ flutter:
     - assets/data/islands.json
     - assets/rules/
     - assets/l10n/
+    - assets/l10n/en_card_explanations/
+    - assets/l10n/ja_card_explanations/
     - assets/glyphs/
     - assets/svg/tally.svg
     - assets/svg/icons/

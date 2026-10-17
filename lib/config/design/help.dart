@@ -75,6 +75,50 @@ abstract final class ProseLayout {
   static const double headingRuleGap = 8;
 }
 
+/// Markdown set as prose (`MarkdownProse`, the card explanations): the body
+/// is [ProseLayout]'s; headings are display type, then bold.
+abstract final class MarkdownLayout {
+  static const double h1Font = 21;
+  static const double h2Font = 18;
+  static const double h3Font = 15.5;
+  static const double h4Font = 14;
+  static const double headingLineHeight = 1.3;
+
+  /// The space above a block: a heading's, or any other block's.
+  static const double h1Gap = 26;
+  static const double h2Gap = 22;
+  static const double h3Gap = 16;
+  static const double blockGap = 10;
+
+  /// A list: its markers in a column of their own, a diamond in the accent
+  /// colour or the item's number.
+  static const double markerColumn = 22;
+  static const double itemGap = 6;
+  static const double diamond = 8;
+  static const double diamondTop = 8;
+  static const double diamondLeft = 3;
+  static const double numberFont = 14;
+  static const double numberLineHeight = 1.4;
+
+  /// A quote: desk grey behind it, an ink rule on its left.
+  static const EdgeInsets quotePadding = EdgeInsets.fromLTRB(14, 10, 14, 10);
+  static const double quoteRule = 5;
+
+  /// A poem in a `verse` fence: its lines with furigana in a ruled box.
+  static const EdgeInsets versePadding = EdgeInsets.fromLTRB(14, 12, 14, 12);
+  static const double verseLineGap = 4;
+  static const TextStyle verseStyle = TextStyle(fontWeight: Weights.bold, fontSize: 17, height: 1.3, color: Palette.ink);
+
+  /// A picture: no taller than this, its caption under it.
+  static const double pictureMaxHeight = 140;
+  static const double captionGap = 6;
+  static const double captionFont = TypeScale.small;
+  static const Color captionColor = Palette.inkSoft;
+
+  /// How much of the accent colour tints emphasised text.
+  static const double highlight = 0.45;
+}
+
 /// The karuta guide (`KarutaGuideScreen`): its numbered chapters, Tobi's
 /// lines and the pictures.
 abstract final class KarutaGuideLayout {

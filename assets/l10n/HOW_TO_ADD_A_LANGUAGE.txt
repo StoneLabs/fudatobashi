@@ -23,3 +23,9 @@ of these are built from (and what scripts/kimariji_voice.py synthesizes
 audio from). A new language should translate the *reading*, e.g. the
 pronunciation in its own script or romanization, not copy en.json's romaji
 as if it were English text.
+
+Each card's explanation on its "About this card" page is a Markdown file,
+en_card_explanations/001.md to 100.md. For a new language, copy that folder
+to <code>_card_explanations/ and translate the files; add the folder to the
+assets list in pubspec.yaml. A card whose file is missing shows the English
+one.
