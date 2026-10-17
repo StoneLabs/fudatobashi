@@ -13,8 +13,7 @@ import 'rules_blocks.dart';
 
 /// "Full karuta rules", from Help: the All Japan Karuta Association's
 /// competition rules, every chapter and article as it stands. Where they
-/// come from and a link to the PDF on top; in English the app's
-/// translation, with a switch to the Japanese original.
+/// come from and a link to the PDF on top; the rules in the app's language.
 class KarutaRulesScreen extends StatefulWidget {
   const KarutaRulesScreen({super.key});
 
@@ -23,9 +22,8 @@ class KarutaRulesScreen extends StatefulWidget {
 }
 
 class _KarutaRulesScreenState extends State<KarutaRulesScreen> {
-  final _loaded = Future.wait([KarutaRules.load(KarutaRules.original), KarutaRules.load(KarutaRules.translation)]);
+  Future<KarutaRules>? _loaded;
   final _chapterKeys = <GlobalKey>[];
-  var _original = false;
   var _contentsOpen = false;
 
   GlobalKey _chapterKey(int index) {
@@ -43,6 +41,7 @@ class _KarutaRulesScreenState extends State<KarutaRulesScreen> {
   @override
   Widget build(BuildContext context) {
     final s = S.of(context);
+    _loaded ??= KarutaRules.load(s.ja ? KarutaRules.original : KarutaRules.translation);
     final pdf = Uri.parse(Links.karutaRules);
     return Scaffold(
       body: SafeArea(
@@ -68,10 +67,8 @@ class _KarutaRulesScreenState extends State<KarutaRulesScreen> {
               child: FutureBuilder(
                 future: _loaded,
                 builder: (context, snapshot) {
-                  final loaded = snapshot.data;
-                  if (loaded == null) return const SizedBox.shrink();
-                  final rules = s.ja || _original ? loaded.first : loaded.last;
-                  final docStrings = s.ja || !_original ? s : s.other;
+                  final rules = snapshot.data;
+                  if (rules == null) return const SizedBox.shrink();
                   return SingleChildScrollView(
                     padding: const EdgeInsets.fromLTRB(
                         Gaps.gutter, Gaps.tight, Gaps.gutter, KarutaRulesLayout.bottomPad),
@@ -95,17 +92,6 @@ class _KarutaRulesScreenState extends State<KarutaRulesScreen> {
                           padding: NarrationStyle.padding,
                           child: Text(s.rulesDisclaimer, style: _sourceStyle.copyWith(fontWeight: Weights.black)),
                         ),
-                        if (!s.ja) ...[
-                          const SizedBox(height: KarutaRulesLayout.blockGap),
-                          SettingsGroup(children: [
-                            SettingsSwitch(
-                              title: s.rulesShowOriginal,
-                              note: s.rulesShowOriginalNote,
-                              value: _original,
-                              onChanged: (on) => setState(() => _original = on),
-                            ),
-                          ]),
-                        ],
                         const SizedBox(height: KarutaRulesLayout.startRuleGapAbove),
                         const SizedBox(
                           key: startRuleKey,
@@ -124,11 +110,11 @@ class _KarutaRulesScreenState extends State<KarutaRulesScreen> {
                               SettingsTapRow(title: '${c.number}  ${c.title}', opensPage: true, onTap: () => _jump(i)),
                         ]),
                         const SizedBox(height: KarutaRulesLayout.titleGap),
-                        Text(docStrings.rulesDocTitle,
+                        Text(s.rulesDocTitle,
                             textAlign: TextAlign.center,
                             style: const TextStyle(fontFamily: Fonts.display, fontSize: KarutaRulesLayout.titleFont)),
                         const SizedBox(height: KarutaRulesLayout.authorGap),
-                        Text(docStrings.rulesDocAuthor,
+                        Text(s.rulesDocAuthor,
                             textAlign: TextAlign.center,
                             style: const TextStyle(fontWeight: Weights.bold, fontSize: KarutaRulesLayout.authorFont)),
                         MarkdownProse(rules.body, blocks: RulesBlocks(chapterKey: _chapterKey)),

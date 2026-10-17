@@ -22,11 +22,9 @@ import 'package:fudatobashi/domain/trainer.dart';
 import 'package:fudatobashi/l10n/rules_strings.dart';
 import 'package:fudatobashi/l10n/strings.dart';
 import 'package:fudatobashi/state/progress.dart';
-import 'package:fudatobashi/state/scope.dart';
 import 'package:fudatobashi/ui/app.dart';
 import 'package:fudatobashi/ui/help/help_screen.dart';
 import 'package:fudatobashi/ui/help/karuta_rules_screen.dart';
-import 'package:fudatobashi/ui/manga/theme.dart';
 import 'package:fudatobashi/ui/shell/header_actions.dart';
 import 'package:fudatobashi/ui/torifuda/glyph_atlas.dart';
 
@@ -133,7 +131,6 @@ void main() {
         expect(find.text(s.rulesOpenPdf), findsOneWidget);
         expect(find.text(s.rulesDisclaimer), findsOneWidget);
         expect(find.text(first), findsOneWidget);
-        expect(find.text(s.rulesShowOriginal), s.ja ? findsNothing : findsOneWidget);
 
         final rule = tester.getRect(find.byKey(startRuleKey));
         expect(rule.height, greaterThan(0));
@@ -188,41 +185,4 @@ void main() {
       });
     }
   }
-
-  testWidgets('in English, the switch shows the Japanese original and back', (tester) async {
-    late Progress p;
-    await tester.runAsync(() async {
-      p = await Progress.open(AppDatabase(NativeDatabase.memory()));
-      await p.updateSettings(p.settings.copyWith(language: 'en', languagePicked: true, toured: true, onboarded: true));
-    });
-    await tester.binding.setSurfaceSize(_phones.first.$1);
-    addTearDown(() => tester.binding.setSurfaceSize(null));
-    await tester.pumpWidget(RepaintBoundary(
-      key: const ValueKey('screen'),
-      child: ProgressScope(
-        progress: p,
-        child: MaterialApp(theme: buildMangaTheme(), debugShowCheckedModeBanner: false, home: const KarutaRulesScreen()),
-      ),
-    ));
-    await tester.pumpAndSettle();
-
-    const s = S('en');
-    final ja = _rules(KarutaRules.original), en = _rules(KarutaRules.translation);
-    expect(find.text(_firstText(en)), findsOneWidget);
-    expect(find.text(_firstText(ja)), findsNothing);
-
-    await tester.tap(find.text(s.rulesShowOriginal));
-    await tester.pumpAndSettle();
-    expect(find.text(_firstText(ja)), findsOneWidget);
-    expect(find.text(_firstText(en)), findsNothing);
-    expect(find.text(s.other.rulesDocTitle), findsOneWidget);
-    expect(find.text(s.rulesDisclaimer), findsOneWidget, reason: 'the page around the rules stays English');
-    await _capture(tester, 'rules_en_original');
-
-    await tester.tap(find.text(s.rulesShowOriginal));
-    await tester.pumpAndSettle();
-    expect(find.text(_firstText(en)), findsOneWidget);
-    expect(tester.takeException(), isNull);
-    await tester.pumpWidget(const SizedBox());
-  });
 }

@@ -11,8 +11,6 @@ extension RulesStrings on S {
   String get rulesOpenPdf => t('rulesOpenPdf');
   String get rulesDisclaimer => t('rulesDisclaimer');
   String get rulesDisclaimerShort => t('rulesDisclaimerShort');
-  String get rulesShowOriginal => t('rulesShowOriginal');
-  String get rulesShowOriginalNote => t('rulesShowOriginalNote');
   String get rulesContents => t('rulesContents');
   String get rulesContentsShow => t('rulesContentsShow');
   String get rulesContentsHide => t('rulesContentsHide');
