@@ -11,22 +11,32 @@ class Poem {
     required this.id,
     required this.author,
     required this.authorKana,
+    required this.authorRomaji,
     required this.kami,
     required this.shimo,
     required this.kamiKana,
     required this.shimoKana,
     required this.kamiReading,
+    required this.shimoReading,
+    required this.versesRomaji,
     required this.torifuda,
     required this.columns,
     required this.kimariji,
+    required this.kimarijiReading,
+    required this.kimarijiShimo,
     required this.kamiRuby,
     required this.shimoRuby,
     required this.color,
+    required this.colorNumber,
+    required this.yomifudaColumns,
   });
 
   final int id;
   final String author;
   final String authorKana;
+
+  /// The poet's name in plain Hepburn romaji, as one word ("Tenjitennou").
+  final String authorRomaji;
 
   /// Upper verse in kanji-kana form, phrases separated by "　".
   final String kami;
@@ -43,6 +53,13 @@ class Poem {
   /// Upper verse as pronounced (modern kana), used for kimariji.
   final String kamiReading;
 
+  /// Lower verse as pronounced (modern kana).
+  final String shimoReading;
+
+  /// Each of the five verses in plain Hepburn romaji of how it is
+  /// pronounced, without word breaks ("akinotano").
+  final List<String> versesRomaji;
+
   /// Text printed on the torifuda: lower verse, historical kana, no dakuten.
   final String torifuda;
 
@@ -52,6 +69,14 @@ class Poem {
   /// Static kimariji (決まり字) in modern kana.
   final String kimariji;
 
+  /// [kimariji] as pronounced: the start of [kamiReading] only this poem
+  /// has (ひとわ for ひとは).
+  final String kimarijiReading;
+
+  /// The kimariji of the lower verse: the start of the torifuda that tells
+  /// it apart from every other torifuda.
+  final String kimarijiShimo;
+
   /// Verses with furigana markup: "[秋|あき]の[田|た]の　…".
   final String kamiRuby;
   final String shimoRuby;
@@ -59,24 +84,43 @@ class Poem {
   /// The poet's name with its reading, in the same markup.
   String get authorRuby => '[$author|$authorKana]';
 
+  /// The five verses in furigana markup, upper verse first.
+  List<String> get versesRuby => [...kamiRuby.split('　'), ...shimoRuby.split('　')];
+
   /// 五色百人一首 colour group (桃, 青, 黄, 緑, 橙).
   final String color;
+
+  /// This card's place, 1–20, in its [color] group.
+  final int colorNumber;
+
+  /// The yomifuda's text as read in competitive karuta (競技読み), in four
+  /// columns right to left: verses 1–2, 3, 4 and 5. Furigana markup, plus
+  /// ー for a long and ｰ for a short held sound; a reading over kana
+  /// (`[は|わ]`) says how to read it.
+  final List<String> yomifudaColumns;
 
   factory Poem.fromJson(Map<String, dynamic> j) => Poem(
         id: j['id'] as int,
         author: j['author'] as String,
         authorKana: j['authorKana'] as String,
+        authorRomaji: j['authorRomaji'] as String,
         kami: j['kami'] as String,
         shimo: j['shimo'] as String,
         kamiKana: j['kamiKana'] as String,
         shimoKana: j['shimoKana'] as String,
         kamiReading: j['kamiReading'] as String,
+        shimoReading: j['shimoReading'] as String,
+        versesRomaji: (j['versesRomaji'] as List).cast<String>(),
         torifuda: j['torifuda'] as String,
         columns: (j['torifudaColumns'] as List).cast<String>(),
         kimariji: j['kimariji'] as String,
+        kimarijiReading: j['kimarijiReading'] as String,
+        kimarijiShimo: j['kimarijiShimo'] as String,
         kamiRuby: j['kamiRuby'] as String,
         shimoRuby: j['shimoRuby'] as String,
         color: j['color'] as String,
+        colorNumber: j['colorNumber'] as int,
+        yomifudaColumns: (j['yomifudaColumns'] as List).cast<String>(),
       );
 
   @override

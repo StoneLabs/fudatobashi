@@ -4,10 +4,13 @@
 //   dart run tool/build_poems.dart            # fetch data.csv from GitHub
 //   dart run tool/build_poems.dart --csv FILE # use a local copy
 //
-// The script validates the data (torifuda text and column split, kimariji
-// uniqueness, standard distributions) and refuses to write on any failure.
+// The script validates the data (torifuda text and column split, reading-card
+// columns, kimariji uniqueness, standard distributions) and refuses to write
+// on any failure.
 import 'dart:convert';
 import 'dart:io';
+
+import 'package:fudatobashi/l10n/romaji.dart';
 
 const csvUrl = 'https://raw.githubusercontent.com/StoneLabs/hyakuninissyu-csv/master/data.csv';
 const outPath = 'assets/data/poems.json';
@@ -47,10 +50,13 @@ Map<String, Object> _poem(Map<String, String> r) {
   final shimoKana = join(['verse_4_hiragana', 'verse_5_hiragana']);
   final kamiKana = join(['verse_1_hiragana', 'verse_2_hiragana', 'verse_3_hiragana']);
   final kimarijiReading = r['kimariji_kami_yomi']!;
+  final versesYomi = [for (var v = 1; v <= 5; v++) r['verse_${v}_hiragana_yomi']!];
+  final authorRomaji = hepburn(r['author_hiragana']!);
   return {
     'id': id,
     'author': r['author_kanji']!,
     'authorKana': r['author_hiragana']!,
+    'authorRomaji': '${authorRomaji[0].toUpperCase()}${authorRomaji.substring(1)}',
     'kami': join(['verse_1_kanji', 'verse_2_kanji', 'verse_3_kanji']),
     'shimo': join(['verse_4_kanji', 'verse_5_kanji']),
     'kamiRuby': join(['verse_1', 'verse_2', 'verse_3']),
@@ -58,12 +64,39 @@ Map<String, Object> _poem(Map<String, String> r) {
     'kamiKana': kamiKana,
     'shimoKana': shimoKana,
     'kamiReading': kamiReading,
+    'shimoReading': versesYomi.skip(3).join(),
+    'versesRomaji': [for (final v in versesYomi) hepburn(v)],
     'torifuda': _stripDakuten(shimoKana.replaceAll('　', '')),
     'torifudaColumns': [r['torifuda_1']!, r['torifuda_2']!, r['torifuda_3']!],
     'kimariji': _conventionalKimariji(kimarijiReading, kamiKana.replaceAll('　', '')),
     'kimarijiReading': kimarijiReading,
+    'kimarijiShimo': r['kimariji_shimo']!,
     'color': r['color']!,
+    'colorNumber': int.parse(r['color_num']!),
+    'yomifudaColumns': [
+      ..._splitReading(r['kyougi_yomi_kami']!, versesYomi[0].length + versesYomi[1].length, id),
+      ..._splitReading(r['kyougi_yomi_shimo']!, versesYomi[3].length, id),
+    ],
   };
+}
+
+/// Furigana markup (`[漢字|かな]`), one character, or a stretch mark.
+final _rubyToken = RegExp(r'\[([^|\]]+)\|([^\]]+)\]|.');
+const _stretchMarks = 'ーｰ';
+
+/// Splits a reading card's half ([kyougi] markup) into its two columns after
+/// the first [at] kana of reading, keeping the stretch marks that follow them
+/// in the first column, as the printed cards do.
+List<String> _splitReading(String kyougi, int at, int id) {
+  var read = 0;
+  for (final m in _rubyToken.allMatches(kyougi)) {
+    if (read == at && !_stretchMarks.contains(m[0]!)) {
+      return [kyougi.substring(0, m.start), kyougi.substring(m.start)];
+    }
+    if (!_stretchMarks.contains(m[0]!)) read += (m[2] ?? m[0]!).length;
+    if (read > at) break;
+  }
+  throw FormatException('#$id: no column break after $at kana of reading in $kyougi');
 }
 
 List<String> _validate(List<Map<String, Object>> poems) {
@@ -81,6 +114,11 @@ List<String> _validate(List<Map<String, Object>> poems) {
     }
     if (!RegExp(r'^[ぁ-ゖ]+$').hasMatch(tori) || _stripDakuten(tori) != tori) {
       errors.add('#$id torifuda must be plain hiragana without dakuten: $tori');
+    }
+    final verses = '${p['kamiRuby']}　${p['shimoRuby']}'.split('　');
+    if (verses.length != 5) errors.add('#$id verses must not contain a full-width space: $verses');
+    for (final romaji in [p['authorRomaji'] as String, ...(p['versesRomaji'] as List).cast<String>()]) {
+      if (!RegExp(r'^[A-Za-z]+$').hasMatch(romaji)) errors.add('#$id romaji has a kana left over: $romaji');
     }
   }
   final readings = [for (final p in poems) p['kamiReading'] as String];

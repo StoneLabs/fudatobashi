@@ -3,6 +3,7 @@
     "id": 1,
     "author": "天智天皇",
     "authorKana": "てんじてんのう",
+    "authorRomaji": "Tenjitennou",
     "kami": "秋の田の　かりほの庵の　苫をあらみ",
     "shimo": "わが衣手は　露にぬれつつ",
     "kamiRuby": "[秋|あき]の[田|た]の　かりほの[庵|いほ]の　[苫|とま]をあらみ",
@@ -10,6 +11,14 @@
     "kamiKana": "あきのたの　かりほのいほの　とまをあらみ",
     "shimoKana": "わがころもでは　つゆにぬれつつ",
     "kamiReading": "あきのたのかりおのいおのとまをあらみ",
+    "shimoReading": "わがころもでわつゆにぬれつつ",
+    "versesRomaji": [
+      "akinotano",
+      "karionoiono",
+      "tomaoarami",
+      "wagakoromodewa",
+      "tsuyuninuretsutsu"
+    ],
     "torifuda": "わかころもてはつゆにぬれつつ",
     "torifudaColumns": [
       "わかころも",
@@ -18,12 +27,21 @@
     ],
     "kimariji": "あきの",
     "kimarijiReading": "あきの",
-    "color": "桃"
+    "kimarijiShimo": "わがころもでは",
+    "color": "桃",
+    "colorNumber": 16,
+    "yomifudaColumns": [
+      "[秋|あき]の[田|た]のーかり[ほ|お]の[庵|いお]のｰ",
+      "[苫|とま]をあらーみー",
+      "わがｰ[衣手|ころもで][は|わ]ー",
+      "[露|つゆ]にぬれーつつ"
+    ]
   },
   {
     "id": 2,
     "author": "持統天皇",
     "authorKana": "じとうてんのう",
+    "authorRomaji": "Jitoutennou",
     "kami": "春過ぎて　夏来にけらし　白妙の",
     "shimo": "衣干すてふ　天の香具山",
     "kamiRuby": "[春|はる][過|す]ぎて　[夏|なつ][来|き]にけらし　[白妙|しろたへ]の",
@@ -31,6 +49,14 @@
     "kamiKana": "はるすぎて　なつきにけらし　しろたへの",
     "shimoKana": "ころもほすてふ　あまのかぐやま",
     "kamiReading": "はるすぎてなつきにけらししろたえの",
+    "shimoReading": "ころもほすちょうあまのかぐやま",
+    "versesRomaji": [
+      "harusugite",
+      "natsukinikerashi",
+      "shirotaeno",
+      "koromohosuchou",
+      "amanokaguyama"
+    ],
     "torifuda": "ころもほすてふあまのかくやま",
     "torifudaColumns": [
       "ころもほす",
@@ -39,12 +65,21 @@
     ],
     "kimariji": "はるす",
     "kimarijiReading": "はるす",
-    "color": "黄"
+    "kimarijiShimo": "ころもほ",
+    "color": "黄",
+    "colorNumber": 1,
+    "yomifudaColumns": [
+      "[春|はる][過|す]ぎてー[夏|なつ][来|き]にけらしｰ",
+      "[白妙|しろたえ]ーのー",
+      "[衣|ころも]ｰほす[てふ|ちょう]ー",
+      "[天|あま]の[香具|かぐ]ー[山|やま]"
+    ]
   },
   {
     "id": 3,
     "author": "柿本人麻呂",
     "authorKana": "かきのもとのひとまろ",
+    "authorRomaji": "Kakinomotonohitomaro",
     "kami": "足曳の　山鳥の尾の　しだり尾の",
     "shimo": "長々し夜を　独りかも寝む",
     "kamiRuby": "[足曳|あしびき]の　[山鳥|やまどり]の[尾|を]の　しだり[尾|を]の",
@@ -52,6 +87,14 @@
     "kamiKana": "あしびきの　やまどりのをの　しだりをの",
     "shimoKana": "ながながしよを　ひとりかもねむ",
     "kamiReading": "あしびきのやまどりのおのしだりおの",
+    "shimoReading": "ながながしよをひとりかもねん",
+    "versesRomaji": [
+      "ashibikino",
+      "yamadorinoono",
+      "shidariono",
+      "naganagashiyoo",
+      "hitorikamonen"
+    ],
     "torifuda": "なかなかしよをひとりかもねむ",
     "torifudaColumns": [
       "なかなかし",
@@ -60,12 +103,21 @@
     ],
     "kimariji": "あし",
     "kimarijiReading": "あし",
-    "color": "青"
+    "kimarijiShimo": "ながな",
+    "color": "青",
+    "colorNumber": 1,
+    "yomifudaColumns": [
+      "あしびきのー[山鳥|やまどり]の[尾|お]のｰ",
+      "しだり[尾|お]ーのー",
+      "ながながしｰ[夜|よ]をー",
+      "ひとりかもー[寝|ね][む|ん]"
+    ]
   },
   {
     "id": 4,
     "author": "山部赤人",
     "authorKana": "やまべのあかひと",
+    "authorRomaji": "Yamabenoakahito",
     "kami": "田子の浦に　うち出でて見れば　白妙の",
     "shimo": "富士の高嶺に　雪は降りつつ",
     "kamiRuby": "[田子|たご]の[浦|うら]に　うち[出|い]でて[見|み]れば　[白妙|しろたへ]の",
@@ -73,6 +125,14 @@
     "kamiKana": "たごのうらに　うちいでてみれば　しろたへの",
     "shimoKana": "ふじのたかねに　ゆきはふりつつ",
     "kamiReading": "たごのうらにうちいでてみればしろたえの",
+    "shimoReading": "ふじのたかねにゆきわふりつつ",
+    "versesRomaji": [
+      "tagonourani",
+      "uchiidetemireba",
+      "shirotaeno",
+      "fujinotakaneni",
+      "yukiwafuritsutsu"
+    ],
     "torifuda": "ふしのたかねにゆきはふりつつ",
     "torifudaColumns": [
       "ふしのたか",
@@ -81,12 +141,21 @@
     ],
     "kimariji": "たご",
     "kimarijiReading": "たご",
-    "color": "桃"
+    "kimarijiShimo": "ふじ",
+    "color": "桃",
+    "colorNumber": 17,
+    "yomifudaColumns": [
+      "[田子|たご]の[浦|うら]にーうち[出|い]でて[見|み]ればｰ",
+      "[白妙|しろたえ]ーのー",
+      "[富士|ふじ]のｰ[高嶺|たかね]にー",
+      "[雪|ゆき][は|わ]ふりーつつ"
+    ]
   },
   {
     "id": 5,
     "author": "猿丸大夫",
     "authorKana": "さるまるだゆう",
+    "authorRomaji": "Sarumarudayuu",
     "kami": "奥山に　紅葉踏み分け　鳴く鹿の",
     "shimo": "声聞く時ぞ　秋は悲しき",
     "kamiRuby": "[奥山|おくやま]に　[紅葉|もみぢ][踏|ふ]み[分|わ]け　[鳴|な]く[鹿|しか]の",
@@ -94,6 +163,14 @@
     "kamiKana": "おくやまに　もみぢふみわけ　なくしかの",
     "shimoKana": "こゑきくときぞ　あきはかなしき",
     "kamiReading": "おくやまにもみじふみわけなくしかの",
+    "shimoReading": "こえきくときぞあきわかなしき",
+    "versesRomaji": [
+      "okuyamani",
+      "momijifumiwake",
+      "nakushikano",
+      "koekikutokizo",
+      "akiwakanashiki"
+    ],
     "torifuda": "こゑきくときそあきはかなしき",
     "torifudaColumns": [
       "こゑきくと",
@@ -102,12 +179,21 @@
     ],
     "kimariji": "おく",
     "kimarijiReading": "おく",
-    "color": "青"
+    "kimarijiShimo": "こゑ",
+    "color": "青",
+    "colorNumber": 4,
+    "yomifudaColumns": [
+      "[奥山|おくやま]にーもみ[ぢ|じ]ふみわけｰ",
+      "[鳴|な]く[鹿|しか]ーのー",
+      "[声|こえ]ｰ[聞|き]くときぞー",
+      "[秋|あき][は|わ][悲|かな]ーしき"
+    ]
   },
   {
     "id": 6,
     "author": "中納言家持",
     "authorKana": "ちゅうなごんやかもち",
+    "authorRomaji": "Chuunagonyakamochi",
     "kami": "鵲の　渡せる橋に　置く霜の",
     "shimo": "白きを見れば　夜ぞ更けにける",
     "kamiRuby": "[鵲|かささぎ]の　[渡|わた]せる[橋|はし]に　[置|お]く[霜|しも]の",
@@ -115,6 +201,14 @@
     "kamiKana": "かささぎの　わたせるはしに　おくしもの",
     "shimoKana": "しろきをみれば　よぞふけにける",
     "kamiReading": "かささぎのわたせるはしにおくしもの",
+    "shimoReading": "しろきをみればよぞふけにける",
+    "versesRomaji": [
+      "kasasagino",
+      "wataseruhashini",
+      "okushimono",
+      "shirokiomireba",
+      "yozofukenikeru"
+    ],
     "torifuda": "しろきをみれはよそふけにける",
     "torifudaColumns": [
       "しろきをみ",
@@ -123,12 +217,21 @@
     ],
     "kimariji": "かさ",
     "kimarijiReading": "かさ",
-    "color": "青"
+    "kimarijiShimo": "しろ",
+    "color": "青",
+    "colorNumber": 7,
+    "yomifudaColumns": [
+      "かささぎのー[渡|わた]せる[橋|はし]にｰ",
+      "おく[霜|しも]ーのー",
+      "[白|しろ]きをｰ[見|み]ればー",
+      "[夜|よ]ぞふけにーける"
+    ]
   },
   {
     "id": 7,
     "author": "安倍仲麿",
     "authorKana": "あべのなかまろ",
+    "authorRomaji": "Abenonakamaro",
     "kami": "天の原　振りさけ見れば　春日なる",
     "shimo": "三笠の山に　出でし月かも",
     "kamiRuby": "[天|あま]の[原|はら]　[振|ふ]りさけ[見|み]れば　[春日|かすが]なる",
@@ -136,6 +239,14 @@
     "kamiKana": "あまのはら　ふりさけみれば　かすがなる",
     "shimoKana": "みかさのやまに　いでしつきかも",
     "kamiReading": "あまのはらふりさけみればかすがなる",
+    "shimoReading": "みかさのやまにいでしつきかも",
+    "versesRomaji": [
+      "amanohara",
+      "furisakemireba",
+      "kasuganaru",
+      "mikasanoyamani",
+      "ideshitsukikamo"
+    ],
     "torifuda": "みかさのやまにいてしつきかも",
     "torifudaColumns": [
       "みかさのや",
@@ -144,12 +255,21 @@
     ],
     "kimariji": "あまの",
     "kimarijiReading": "あまの",
-    "color": "黄"
+    "kimarijiShimo": "みか",
+    "color": "黄",
+    "colorNumber": 2,
+    "yomifudaColumns": [
+      "[天|あま]の[原|はら]ーふりさけ[見|み]ればｰ",
+      "[春日|かすが]ーなるー",
+      "[三笠|みかさ]のｰ[山|やま]にー",
+      "[出|い]でし[月|つき]ーかも"
+    ]
   },
   {
     "id": 8,
     "author": "喜撰法師",
     "authorKana": "きせんほうし",
+    "authorRomaji": "Kisenhoushi",
     "kami": "わが庵は　都のたつみ　鹿ぞ住む",
     "shimo": "世をうぢ山と　人はいふなり",
     "kamiRuby": "わが[庵|いほ]は　[都|みやこ]のたつみ　[鹿|しか]ぞ[住|す]む",
@@ -157,6 +277,14 @@
     "kamiKana": "わがいほは　みやこのたつみ　しかぞすむ",
     "shimoKana": "よをうぢやまと　ひとはいふなり",
     "kamiReading": "わがいおわみやこのたつみしかぞすむ",
+    "shimoReading": "よをうじやまとひとわゆうなり",
+    "versesRomaji": [
+      "wagaiowa",
+      "miyakonotatsumi",
+      "shikazosumu",
+      "yooujiyamato",
+      "hitowayuunari"
+    ],
     "torifuda": "よをうちやまとひとはいふなり",
     "torifudaColumns": [
       "よをうちや",
@@ -165,12 +293,21 @@
     ],
     "kimariji": "わがい",
     "kimarijiReading": "わがい",
-    "color": "緑"
+    "kimarijiShimo": "よをう",
+    "color": "緑",
+    "colorNumber": 1,
+    "yomifudaColumns": [
+      "わが[庵|いお][は|わ]ー[都|みやこ]のたつみｰ",
+      "しかぞーすむー",
+      "[世|よ]をｰう[ぢ|じ][山|やま]とー",
+      "[人|ひと][は|わ][いふ|ゆう]ーなり"
+    ]
   },
   {
     "id": 9,
     "author": "小野小町",
     "authorKana": "おののこまち",
+    "authorRomaji": "Ononokomachi",
     "kami": "花の色は　移りにけりな　いたづらに",
     "shimo": "わが身世に経る　ながめせし間に",
     "kamiRuby": "[花|はな]の[色|いろ]は　[移|うつ]りにけりな　いたづらに",
@@ -178,6 +315,14 @@
     "kamiKana": "はなのいろは　うつりにけりな　いたづらに",
     "shimoKana": "わがみよにふる　ながめせしまに",
     "kamiReading": "はなのいろわうつりにけりないたずらに",
+    "shimoReading": "わがみよにふるながめせしまに",
+    "versesRomaji": [
+      "hananoirowa",
+      "utsurinikerina",
+      "itazurani",
+      "wagamiyonifuru",
+      "nagameseshimani"
+    ],
     "torifuda": "わかみよにふるなかめせしまに",
     "torifudaColumns": [
       "わかみよに",
@@ -186,12 +331,21 @@
     ],
     "kimariji": "はなの",
     "kimarijiReading": "はなの",
-    "color": "緑"
+    "kimarijiShimo": "わがみよ",
+    "color": "緑",
+    "colorNumber": 2,
+    "yomifudaColumns": [
+      "[花|はな]の[色|いろ][は|わ]ーうつりにけりなｰ",
+      "いた[づ|ず]らーにー",
+      "わが[身|み]ｰよにふるー",
+      "ながめせしーまに"
+    ]
   },
   {
     "id": 10,
     "author": "蝉丸",
     "authorKana": "せみまる",
+    "authorRomaji": "Semimaru",
     "kami": "これやこの　行くも帰るも　別れては",
     "shimo": "知るも知らぬも　逢坂の関",
     "kamiRuby": "これやこの　[行|ゆ]くも[帰|かへ]るも　[別|わか]れては",
@@ -199,6 +353,14 @@
     "kamiKana": "これやこの　ゆくもかへるも　わかれては",
     "shimoKana": "しるもしらぬも　あふさかのせき",
     "kamiReading": "これやこのゆくもかえるもわかれてわ",
+    "shimoReading": "しるもしらぬもおうさかのせき",
+    "versesRomaji": [
+      "koreyakono",
+      "yukumokaerumo",
+      "wakaretewa",
+      "shirumoshiranumo",
+      "ousakanoseki"
+    ],
     "torifuda": "しるもしらぬもあふさかのせき",
     "torifudaColumns": [
       "しるもしら",
@@ -207,12 +369,21 @@
     ],
     "kimariji": "これ",
     "kimarijiReading": "これ",
-    "color": "黄"
+    "kimarijiShimo": "しる",
+    "color": "黄",
+    "colorNumber": 3,
+    "yomifudaColumns": [
+      "これやこのー[行|ゆ]くも[帰|かえ]るもｰ",
+      "[別|わか]れてー[は|わ]ー",
+      "[知|し]るもｰ[知|し]らぬもー",
+      "[逢坂|おうさか]のー[関|せき]"
+    ]
   },
   {
     "id": 11,
     "author": "参議篁",
     "authorKana": "さんぎたかむら",
+    "authorRomaji": "Sangitakamura",
     "kami": "わたの原　八十島かけて　漕ぎ出でぬと",
     "shimo": "人には告げよ　あまの釣舟",
     "kamiRuby": "わたの[原|はら]　[八十島|やそしま]かけて　[漕|こ]ぎ[出|い]でぬと",
@@ -220,6 +391,14 @@
     "kamiKana": "わたのはら　やそしまかけて　こぎいでぬと",
     "shimoKana": "ひとにはつげよ　あまのつりぶね",
     "kamiReading": "わたのはらやそしまかけてこぎいでぬと",
+    "shimoReading": "ひとにわつげよあまのつりぶね",
+    "versesRomaji": [
+      "watanohara",
+      "yasoshimakakete",
+      "kogiidenuto",
+      "hitoniwatsugeyo",
+      "amanotsuribune"
+    ],
     "torifuda": "ひとにはつけよあまのつりふね",
     "torifudaColumns": [
       "ひとにはつ",
@@ -228,12 +407,21 @@
     ],
     "kimariji": "わたのはらや",
     "kimarijiReading": "わたのはらや",
-    "color": "緑"
+    "kimarijiShimo": "ひとには",
+    "color": "緑",
+    "colorNumber": 3,
+    "yomifudaColumns": [
+      "わたの[原|はら][八十島|やそしま]かけてー",
+      "[漕|こ]ぎ[出|い]でぬーとー",
+      "[人|ひと]に[は|わ]ｰ[告|つ]げよー",
+      "あまのつりー[舟|ぶね]"
+    ]
   },
   {
     "id": 12,
     "author": "僧正遍昭",
     "authorKana": "そうじょうへんじょう",
+    "authorRomaji": "Soujouhenjou",
     "kami": "天つ風　雲の通ひ路　吹きとぢよ",
     "shimo": "乙女の姿　しばしとどめむ",
     "kamiRuby": "[天|あま]つ[風|かぜ]　[雲|くも]の[通|かよ]ひ[路|ぢ]　[吹|ふ]きとぢよ",
@@ -241,6 +429,14 @@
     "kamiKana": "あまつかぜ　くものかよひぢ　ふきとぢよ",
     "shimoKana": "をとめのすがた　しばしとどめむ",
     "kamiReading": "あまつかぜくものかよいじふきとじよ",
+    "shimoReading": "おとめのすがたしばしとどめん",
+    "versesRomaji": [
+      "amatsukaze",
+      "kumonokayoiji",
+      "fukitojiyo",
+      "otomenosugata",
+      "shibashitodomen"
+    ],
     "torifuda": "をとめのすかたしはしととめむ",
     "torifudaColumns": [
       "をとめのす",
@@ -249,12 +445,21 @@
     ],
     "kimariji": "あまつ",
     "kimarijiReading": "あまつ",
-    "color": "青"
+    "kimarijiShimo": "を",
+    "color": "青",
+    "colorNumber": 10,
+    "yomifudaColumns": [
+      "[天|あま]つ[風|かぜ]ー[雲|くも]のかよ[ひ|い][路|じ]ｰ",
+      "[吹|ふ]きと[ぢ|じ]ーよー",
+      "[を|お]とめのｰ[姿|すがた]ー",
+      "しばしとどーめ[む|ん]"
+    ]
   },
   {
     "id": 13,
     "author": "陽成院",
     "authorKana": "ようぜいいん",
+    "authorRomaji": "Youzeiin",
     "kami": "筑波嶺の　峰より落つる　みなの川",
     "shimo": "恋ぞつもりて　淵となりぬる",
     "kamiRuby": "[筑波嶺|つくばね]の　[峰|みね]より[落|お]つる　みなの[川|がは]",
@@ -262,6 +467,14 @@
     "kamiKana": "つくばねの　みねよりおつる　みなのがは",
     "shimoKana": "こひぞつもりて　ふちとなりぬる",
     "kamiReading": "つくばねのみねよりおつるみなのがわ",
+    "shimoReading": "こいぞつもりてふちとなりぬる",
+    "versesRomaji": [
+      "tsukubaneno",
+      "mineyoriotsuru",
+      "minanogawa",
+      "koizotsumorite",
+      "fuchitonarinuru"
+    ],
     "torifuda": "こひそつもりてふちとなりぬる",
     "torifudaColumns": [
       "こひそつも",
@@ -270,12 +483,21 @@
     ],
     "kimariji": "つく",
     "kimarijiReading": "つく",
-    "color": "桃"
+    "kimarijiShimo": "こひぞ",
+    "color": "桃",
+    "colorNumber": 18,
+    "yomifudaColumns": [
+      "つくばねのー[峰|みね]よりおつるｰ",
+      "みなのー[川|がわ]ー",
+      "こ[ひ|い]ぞｰつもりてー",
+      "[淵|ふち]となりーぬる"
+    ]
   },
   {
     "id": 14,
     "author": "河原左大臣",
     "authorKana": "かわらのさだいじん",
+    "authorRomaji": "Kawaranosadaijin",
     "kami": "陸奥の　しのぶもぢずり　誰ゆゑに",
     "shimo": "乱れそめにし　我ならなくに",
     "kamiRuby": "[陸奥|みちのく]の　しのぶもぢずり　[誰|たれ]ゆゑに",
@@ -283,6 +505,14 @@
     "kamiKana": "みちのくの　しのぶもぢずり　たれゆゑに",
     "shimoKana": "みだれそめにし　われならなくに",
     "kamiReading": "みちのくのしのぶもじずりたれゆえに",
+    "shimoReading": "みだれそめにしわれならなくに",
+    "versesRomaji": [
+      "michinokuno",
+      "shinobumojizuri",
+      "tareyueni",
+      "midaresomenishi",
+      "warenaranakuni"
+    ],
     "torifuda": "みたれそめにしわれならなくに",
     "torifudaColumns": [
       "みたれそめ",
@@ -291,12 +521,21 @@
     ],
     "kimariji": "みち",
     "kimarijiReading": "みち",
-    "color": "青"
+    "kimarijiShimo": "みだれそ",
+    "color": "青",
+    "colorNumber": 13,
+    "yomifudaColumns": [
+      "みちのくのーしのぶも[ぢ|じ]ずりｰ",
+      "[誰|たれ]ゆ[ゑ|え]ーにー",
+      "[乱|みだ]れそめｰにしー",
+      "われならーなくに"
+    ]
   },
   {
     "id": 15,
     "author": "光孝天皇",
     "authorKana": "こうこうてんのう",
+    "authorRomaji": "Koukoutennou",
     "kami": "君がため　春の野に出でて　若菜つむ",
     "shimo": "わが衣手に　雪は降りつつ",
     "kamiRuby": "[君|きみ]がため　[春|はる]の[野|の]に[出|い]でて　[若菜|わかな]つむ",
@@ -304,6 +543,14 @@
     "kamiKana": "きみがため　はるののにいでて　わかなつむ",
     "shimoKana": "わがころもでに　ゆきはふりつつ",
     "kamiReading": "きみがためはるののにいでてわかなつむ",
+    "shimoReading": "わがころもでにゆきわふりつつ",
+    "versesRomaji": [
+      "kimigatame",
+      "harunononiidete",
+      "wakanatsumu",
+      "wagakoromodeni",
+      "yukiwafuritsutsu"
+    ],
     "torifuda": "わかころもてにゆきはふりつつ",
     "torifudaColumns": [
       "わかころも",
@@ -312,12 +559,21 @@
     ],
     "kimariji": "きみがためは",
     "kimarijiReading": "きみがためは",
-    "color": "緑"
+    "kimarijiShimo": "わがころもでに",
+    "color": "緑",
+    "colorNumber": 4,
+    "yomifudaColumns": [
+      "[君|きみ]がため[春|はる]の[野|の]に[出|い]でてー",
+      "[若菜|わかな]ーつむー",
+      "わがｰ[衣手|ころもで]にー",
+      "[雪|ゆき][は|わ][降|ふ]りーつつ"
+    ]
   },
   {
     "id": 16,
     "author": "中納言行平",
     "authorKana": "ちゅうなごんゆきひら",
+    "authorRomaji": "Chuunagonyukihira",
     "kami": "立ち別れ　いなばの山の　峰に生ふる",
     "shimo": "まつとし聞かば　今帰り来む",
     "kamiRuby": "[立|た]ち[別|わか]れ　いなばの[山|やま]の　[峰|みね]に[生|お]ふる",
@@ -325,6 +581,14 @@
     "kamiKana": "たちわかれ　いなばのやまの　みねにおふる",
     "shimoKana": "まつとしきかば　いまかへりこむ",
     "kamiReading": "たちわかれいなばのやまのみねにおうる",
+    "shimoReading": "まつとしきかばいまかえりこん",
+    "versesRomaji": [
+      "tachiwakare",
+      "inabanoyamano",
+      "mineniouru",
+      "matsutoshikikaba",
+      "imakaerikon"
+    ],
     "torifuda": "まつとしきかはいまかへりこむ",
     "torifudaColumns": [
       "まつとしき",
@@ -333,12 +597,21 @@
     ],
     "kimariji": "たち",
     "kimarijiReading": "たち",
-    "color": "桃"
+    "kimarijiShimo": "まつと",
+    "color": "桃",
+    "colorNumber": 13,
+    "yomifudaColumns": [
+      "たち[別|わか]れーいなばの[山|やま]のｰ",
+      "[峰|みね]に[生|お][ふ|う]ーるー",
+      "まつとしｰ[聞|き]かばー",
+      "いま[帰|かえ]りーこ[む|ん]"
+    ]
   },
   {
     "id": 17,
     "author": "在原業平朝臣",
     "authorKana": "ありわらのなりひらあそん",
+    "authorRomaji": "Ariwaranonarihiraason",
     "kami": "千早振る　神代も聞かず　龍田川",
     "shimo": "からくれなゐに　水くくるとは",
     "kamiRuby": "[千早|ちはや][振|ぶ]る　[神代|かみよ]も[聞|き]かず　[龍田川|たつたがは]",
@@ -346,6 +619,14 @@
     "kamiKana": "ちはやぶる　かみよもきかず　たつたがは",
     "shimoKana": "からくれなゐに　みづくくるとは",
     "kamiReading": "ちはやぶるかみよもきかずたつたがわ",
+    "shimoReading": "からくれないにみずくくるとわ",
+    "versesRomaji": [
+      "chihayaburu",
+      "kamiyomokikazu",
+      "tatsutagawa",
+      "karakurenaini",
+      "mizukukurutowa"
+    ],
     "torifuda": "からくれなゐにみつくくるとは",
     "torifudaColumns": [
       "からくれな",
@@ -354,12 +635,21 @@
     ],
     "kimariji": "ちは",
     "kimarijiReading": "ちは",
-    "color": "緑"
+    "kimarijiShimo": "から",
+    "color": "緑",
+    "colorNumber": 5,
+    "yomifudaColumns": [
+      "ちはやぶるー[神代|かみよ]もきかずｰ",
+      "[竜田|たつた]ー[川|がわ]ー",
+      "からｰくれな[ゐ|い]にー",
+      "[水|みず]くくるーと[は|わ]"
+    ]
   },
   {
     "id": 18,
     "author": "藤原敏行朝臣",
     "authorKana": "ふじわらのとしゆきあそん",
+    "authorRomaji": "Fujiwaranotoshiyukiason",
     "kami": "住の江の　岸に寄る波　寄るさへや",
     "shimo": "夢の通ひ路　人目よくらむ",
     "kamiRuby": "[住|すみ]の[江|え]の　[岸|きし]に[寄|よ]る[波|なみ]　[寄|よ]るさへや",
@@ -367,6 +657,14 @@
     "kamiKana": "すみのえの　きしによるなみ　よるさへや",
     "shimoKana": "ゆめのかよひぢ　ひとめよくらむ",
     "kamiReading": "すみのえのきしによるなみよるさえや",
+    "shimoReading": "ゆめのかよいじひとめよくらん",
+    "versesRomaji": [
+      "suminoeno",
+      "kishiniyorunami",
+      "yorusaeya",
+      "yumenokayoiji",
+      "hitomeyokuran"
+    ],
     "torifuda": "ゆめのかよひちひとめよくらむ",
     "torifudaColumns": [
       "ゆめのかよ",
@@ -375,12 +673,21 @@
     ],
     "kimariji": "す",
     "kimarijiReading": "す",
-    "color": "黄"
+    "kimarijiShimo": "ゆめ",
+    "color": "黄",
+    "colorNumber": 4,
+    "yomifudaColumns": [
+      "すみの[江|え]のー[岸|きし]に[寄|よ]る[波|なみ]ｰ",
+      "よるさ[へ|え]ーやー",
+      "[夢|ゆめ]のｰかよ[ひ|い][路|じ]ー",
+      "[人目|ひとめ][避|よ]くーら[む|ん]"
+    ]
   },
   {
     "id": 19,
     "author": "伊勢",
     "authorKana": "いせ",
+    "authorRomaji": "Ise",
     "kami": "難波がた　短き蘆の　ふしの間も",
     "shimo": "逢はでこの世を　すぐしてよとや",
     "kamiRuby": "[難波|なには]がた　[短|みじか]き[蘆|あし]の　ふしの[間|ま]も",
@@ -388,6 +695,14 @@
     "kamiKana": "なにはがた　みじかきあしの　ふしのまも",
     "shimoKana": "あはでこのよを　すぐしてよとや",
     "kamiReading": "なにわがたみじかきあしのふしのまも",
+    "shimoReading": "あわでこのよをすぐしてよとや",
+    "versesRomaji": [
+      "naniwagata",
+      "mijikakiashino",
+      "fushinomamo",
+      "awadekonoyoo",
+      "sugushiteyotoya"
+    ],
     "torifuda": "あはてこのよをすくしてよとや",
     "torifudaColumns": [
       "あはてこの",
@@ -396,12 +711,21 @@
     ],
     "kimariji": "なにわが",
     "kimarijiReading": "なにわが",
-    "color": "橙"
+    "kimarijiShimo": "あはで",
+    "color": "橙",
+    "colorNumber": 13,
+    "yomifudaColumns": [
+      "[難波潟|なにわがた]ー[短|みじか]き[芦|あし]のｰ",
+      "ふしの[間|ま]ーもー",
+      "[逢|あ][は|わ]でｰこの[世|よ]をー",
+      "[過|す]ぐしてよーとや"
+    ]
   },
   {
     "id": 20,
     "author": "元良親王",
     "authorKana": "もとよししんのう",
+    "authorRomaji": "Motoyoshishinnou",
     "kami": "侘びぬれば　今はた同じ　難波なる",
     "shimo": "身をつくしても　逢はむとぞ思ふ",
     "kamiRuby": "[侘|わ]びぬれば　[今|いま]はた[同|おな]じ　[難波|なには]なる",
@@ -409,6 +733,14 @@
     "kamiKana": "わびぬれば　いまはたおなじ　なにはなる",
     "shimoKana": "みをつくしても　あはむとぞおもふ",
     "kamiReading": "わびぬればいまはたおなじなにわなる",
+    "shimoReading": "みをつくしてもあわんとぞおもう",
+    "versesRomaji": [
+      "wabinureba",
+      "imahataonaji",
+      "naniwanaru",
+      "miotsukushitemo",
+      "awantozoomou"
+    ],
     "torifuda": "みをつくしてもあはむとそおもふ",
     "torifudaColumns": [
       "みをつくし",
@@ -417,12 +749,21 @@
     ],
     "kimariji": "わび",
     "kimarijiReading": "わび",
-    "color": "緑"
+    "kimarijiShimo": "みをつくしても",
+    "color": "緑",
+    "colorNumber": 6,
+    "yomifudaColumns": [
+      "わびぬればーいまはたおなじｰ",
+      "[難波|なにわ]ーなるー",
+      "みをｰつくしてもー",
+      "あ[は|わ][む|ん]とぞー[思|おも][ふ|う]"
+    ]
   },
   {
     "id": 21,
     "author": "素性法師",
     "authorKana": "そせいほうし",
+    "authorRomaji": "Soseihoushi",
     "kami": "今来むと　いひしばかりに　長月の",
     "shimo": "有明の月を　待ち出でつるかな",
     "kamiRuby": "[今|いま][来|こ]むと　いひしばかりに　[長月|ながつき]の",
@@ -430,6 +771,14 @@
     "kamiKana": "いまこむと　いひしばかりに　ながつきの",
     "shimoKana": "ありあけのつきを　まちいでつるかな",
     "kamiReading": "いまこんといいしばかりにながつきの",
+    "shimoReading": "ありあけのつきをまちいでつるかな",
+    "versesRomaji": [
+      "imakonto",
+      "iishibakarini",
+      "nagatsukino",
+      "ariakenotsukio",
+      "machiidetsurukana"
+    ],
     "torifuda": "ありあけのつきをまちいてつるかな",
     "torifudaColumns": [
       "ありあけの",
@@ -438,12 +787,21 @@
     ],
     "kimariji": "いまこ",
     "kimarijiReading": "いまこ",
-    "color": "橙"
+    "kimarijiShimo": "あり",
+    "color": "橙",
+    "colorNumber": 7,
+    "yomifudaColumns": [
+      "いま[来|こ][む|ん]とーい[ひ|い]しばかりにｰ",
+      "[長月|ながつき]ーのー",
+      "ありあけのｰ[月|つき]をー",
+      "[待|ま]ち[出|い]でつるーかな"
+    ]
   },
   {
     "id": 22,
     "author": "文屋康秀",
     "authorKana": "ふんやのやすひで",
+    "authorRomaji": "Funyanoyasuhide",
     "kami": "吹くからに　秋の草木の　しをるれば",
     "shimo": "むべ山風を　嵐といふらむ",
     "kamiRuby": "[吹|ふ]くからに　[秋|あき]の[草木|くさき]の　しをるれば",
@@ -451,6 +809,14 @@
     "kamiKana": "ふくからに　あきのくさきの　しをるれば",
     "shimoKana": "むべやまかぜを　あらしといふらむ",
     "kamiReading": "ふくからにあきのくさきのしおるれば",
+    "shimoReading": "むべやまかぜをあらしとゆうらん",
+    "versesRomaji": [
+      "fukukarani",
+      "akinokusakino",
+      "shiorureba",
+      "mubeyamakazeo",
+      "arashitoyuuran"
+    ],
     "torifuda": "むへやまかせをあらしといふらむ",
     "torifudaColumns": [
       "むへやまか",
@@ -459,12 +825,21 @@
     ],
     "kimariji": "ふ",
     "kimarijiReading": "ふ",
-    "color": "桃"
+    "kimarijiShimo": "むべ",
+    "color": "桃",
+    "colorNumber": 14,
+    "yomifudaColumns": [
+      "[吹|ふ]くからにー[秋|あき]の[草木|くさき]のｰ",
+      "し[を|お]るれーばー",
+      "むべｰ[山風|やまかぜ]をー",
+      "[嵐|あらし]と[いふ|ゆう]ーら[む|ん]"
+    ]
   },
   {
     "id": 23,
     "author": "大江千里",
     "authorKana": "おおえのちさと",
+    "authorRomaji": "Ooenochisato",
     "kami": "月見れば　千々に物こそ　悲しけれ",
     "shimo": "わが身一つの　秋にはあらねど",
     "kamiRuby": "[月|つき][見|み]れば　[千々|ちぢ]に[物|もの]こそ　[悲|かな]しけれ",
@@ -472,6 +847,14 @@
     "kamiKana": "つきみれば　ちぢにものこそ　かなしけれ",
     "shimoKana": "わがみひとつの　あきにはあらねど",
     "kamiReading": "つきみればちじにものこそかなしけれ",
+    "shimoReading": "わがみひとつのあきにわあらねど",
+    "versesRomaji": [
+      "tsukimireba",
+      "chijinimonokoso",
+      "kanashikere",
+      "wagamihitotsuno",
+      "akiniwaaranedo"
+    ],
     "torifuda": "わかみひとつのあきにはあらねと",
     "torifudaColumns": [
       "わかみひと",
@@ -480,12 +863,21 @@
     ],
     "kimariji": "つき",
     "kimarijiReading": "つき",
-    "color": "緑"
+    "kimarijiShimo": "わがみひ",
+    "color": "緑",
+    "colorNumber": 7,
+    "yomifudaColumns": [
+      "[月|つき][見|み]ればーち[ぢ|じ]に[物|もの]こそｰ",
+      "[悲|かな]しけーれー",
+      "わが[身|み]ｰひとつのー",
+      "[秋|あき]に[は|わ]あらーねど"
+    ]
   },
   {
     "id": 24,
     "author": "菅家",
     "authorKana": "かんけ",
+    "authorRomaji": "Kanke",
     "kami": "この度は　ぬさも取りあへず　手向け山",
     "shimo": "紅葉の錦　神のまにまに",
     "kamiRuby": "この[度|たび]は　ぬさも[取|と]りあへず　[手向|たむ]け[山|やま]",
@@ -493,6 +885,14 @@
     "kamiKana": "このたびは　ぬさもとりあへず　たむけやま",
     "shimoKana": "もみぢのにしき　かみのまにまに",
     "kamiReading": "このたびわぬさもとりあえずたむけやま",
+    "shimoReading": "もみじのにしきかみのまにまに",
+    "versesRomaji": [
+      "konotabiwa",
+      "nusamotoriaezu",
+      "tamukeyama",
+      "momijinonishiki",
+      "kaminomanimani"
+    ],
     "torifuda": "もみちのにしきかみのまにまに",
     "torifudaColumns": [
       "もみちのに",
@@ -501,12 +901,21 @@
     ],
     "kimariji": "この",
     "kimarijiReading": "この",
-    "color": "青"
+    "kimarijiShimo": "もみ",
+    "color": "青",
+    "colorNumber": 16,
+    "yomifudaColumns": [
+      "このたび[は|わ]ーぬさもとりあ[へ|え]ずｰ",
+      "[手向|たむけ]ー[山|やま]ー",
+      "もみ[ぢ|じ]のｰにしきー",
+      "[神|かみ]のまにーまに"
+    ]
   },
   {
     "id": 25,
     "author": "三条右大臣",
     "authorKana": "さんじょうのうだいじん",
+    "authorRomaji": "Sanjounoudaijin",
     "kami": "名にしおはば　逢ふ坂山の　さねかづら",
     "shimo": "人に知られで　くるよしもがな",
     "kamiRuby": "[名|な]にしおはば　[逢|あ]ふ[坂山|さかやま]の　さねかづら",
@@ -514,6 +923,14 @@
     "kamiKana": "なにしおはば　あふさかやまの　さねかづら",
     "shimoKana": "ひとにしられで　くるよしもがな",
     "kamiReading": "なにしおわばおうさかやまのさねかずら",
+    "shimoReading": "ひとにしられでくるよしもがな",
+    "versesRomaji": [
+      "nanishiowaba",
+      "ousakayamano",
+      "sanekazura",
+      "hitonishirarede",
+      "kuruyoshimogana"
+    ],
     "torifuda": "ひとにしられてくるよしもかな",
     "torifudaColumns": [
       "ひとにしら",
@@ -522,12 +939,21 @@
     ],
     "kimariji": "なにし",
     "kimarijiReading": "なにし",
-    "color": "橙"
+    "kimarijiShimo": "ひとにし",
+    "color": "橙",
+    "colorNumber": 11,
+    "yomifudaColumns": [
+      "なにしお[は|わ]ばー[逢坂山|おうさかやま]のｰ",
+      "さねか[づ|ず]ーらー",
+      "[人|ひと]にｰ[知|し]られでー",
+      "くるよしーもがな"
+    ]
   },
   {
     "id": 26,
     "author": "貞信公",
     "authorKana": "ていしんこう",
+    "authorRomaji": "Teishinkou",
     "kami": "小倉山　峰のもみぢ葉　心あらば",
     "shimo": "今一度の　みゆき待たなむ",
     "kamiRuby": "[小倉山|をぐらやま]　[峰|みね]のもみぢ[葉|ば]　[心|こころ]あらば",
@@ -535,6 +961,14 @@
     "kamiKana": "をぐらやま　みねのもみぢば　こころあらば",
     "shimoKana": "いまひとたびの　みゆきまたなむ",
     "kamiReading": "おぐらやまみねのもみじばこころあらば",
+    "shimoReading": "いまひとたびのみゆきまたなん",
+    "versesRomaji": [
+      "ogurayama",
+      "minenomomijiba",
+      "kokoroaraba",
+      "imahitotabino",
+      "miyukimatanan"
+    ],
     "torifuda": "いまひとたひのみゆきまたなむ",
     "torifudaColumns": [
       "いまひとた",
@@ -543,12 +977,21 @@
     ],
     "kimariji": "おぐ",
     "kimarijiReading": "おぐ",
-    "color": "緑"
+    "kimarijiShimo": "いまひとたびのみ",
+    "color": "緑",
+    "colorNumber": 8,
+    "yomifudaColumns": [
+      "[小倉山|おぐらやま]ー[峰|みね]のもみ[ぢ|じ][葉|ば]ｰ",
+      "[心|こころ]あらーばー",
+      "いまｰひとたびのー",
+      "みゆき[待|ま]たーな[む|ん]"
+    ]
   },
   {
     "id": 27,
     "author": "中納言兼輔",
     "authorKana": "ちゅうなごんかねすけ",
+    "authorRomaji": "Chuunagonkanesuke",
     "kami": "みかの原　わきて流るる　泉川",
     "shimo": "いつ見きとてか　恋しかるらむ",
     "kamiRuby": "みかの[原|はら]　わきて[流|なが]るる　[泉川|いづみがは]",
@@ -556,6 +999,14 @@
     "kamiKana": "みかのはら　わきてながるる　いづみがは",
     "shimoKana": "いつみきとてか　こひしかるらむ",
     "kamiReading": "みかのはらわきてながるるいずみがわ",
+    "shimoReading": "いつみきとてかこいしかるらん",
+    "versesRomaji": [
+      "mikanohara",
+      "wakitenagaruru",
+      "izumigawa",
+      "itsumikitoteka",
+      "koishikaruran"
+    ],
     "torifuda": "いつみきとてかこひしかるらむ",
     "torifudaColumns": [
       "いつみきと",
@@ -564,12 +1015,21 @@
     ],
     "kimariji": "みかの",
     "kimarijiReading": "みかの",
-    "color": "橙"
+    "kimarijiShimo": "いつみ",
+    "color": "橙",
+    "colorNumber": 17,
+    "yomifudaColumns": [
+      "みかの[原|はら]ーわきて[流|なが]るるｰ",
+      "い[づ|ず]みー[川|がわ]ー",
+      "いつ[見|み]きｰとてかー",
+      "[恋|こい]しかるーら[む|ん]"
+    ]
   },
   {
     "id": 28,
     "author": "源宗于朝臣",
     "authorKana": "みなもとのむねゆきあそん",
+    "authorRomaji": "Minamotonomuneyukiason",
     "kami": "山里は　冬ぞ寂しさ　まさりける",
     "shimo": "人目も草も　枯れぬと思へば",
     "kamiRuby": "[山里|やまざと]は　[冬|ふゆ]ぞ[寂|さび]しさ　まさりける",
@@ -577,6 +1037,14 @@
     "kamiKana": "やまざとは　ふゆぞさびしさ　まさりける",
     "shimoKana": "ひとめもくさも　かれぬとおもへば",
     "kamiReading": "やまざとわふゆぞさびしさまさりける",
+    "shimoReading": "ひとめもくさもかれぬとおもえば",
+    "versesRomaji": [
+      "yamazatowa",
+      "fuyuzosabishisa",
+      "masarikeru",
+      "hitomemokusamo",
+      "karenutoomoeba"
+    ],
     "torifuda": "ひとめもくさもかれぬとおもへは",
     "torifudaColumns": [
       "ひとめもく",
@@ -585,12 +1053,21 @@
     ],
     "kimariji": "やまざ",
     "kimarijiReading": "やまざ",
-    "color": "桃"
+    "kimarijiShimo": "ひとめ",
+    "color": "桃",
+    "colorNumber": 15,
+    "yomifudaColumns": [
+      "[山里|やまざと][は|わ]ー[冬|ふゆ]ぞさびしさｰ",
+      "まさりーけるー",
+      "[人|ひと]めもｰ[草|くさ]もー",
+      "かれぬと[思|おも]ー[へ|え]ば"
+    ]
   },
   {
     "id": 29,
     "author": "凡河内躬恒",
     "authorKana": "おおしこうちのみつね",
+    "authorRomaji": "Ooshikouchinomitsune",
     "kami": "心あてに　折らばや折らむ　初霜の",
     "shimo": "置きまどはせる　白菊の花",
     "kamiRuby": "[心|こころ]あてに　[折|を]らばや[折|を]らむ　[初霜|はつしも]の",
@@ -598,6 +1075,14 @@
     "kamiKana": "こころあてに　をらばやをらむ　はつしもの",
     "shimoKana": "おきまどはせる　しらぎくのはな",
     "kamiReading": "こころあてにおらばやおらんはつしもの",
+    "shimoReading": "おきまどわせるしらぎくのはな",
+    "versesRomaji": [
+      "kokoroateni",
+      "orabayaoran",
+      "hatsushimono",
+      "okimadowaseru",
+      "shiragikunohana"
+    ],
     "torifuda": "おきまとはせるしらきくのはな",
     "torifudaColumns": [
       "おきまとは",
@@ -606,12 +1091,21 @@
     ],
     "kimariji": "こころあ",
     "kimarijiReading": "こころあ",
-    "color": "緑"
+    "kimarijiShimo": "お",
+    "color": "緑",
+    "colorNumber": 9,
+    "yomifudaColumns": [
+      "[心|こころ]あてにー[折|お]らばや[折|お]ら[む|ん]ｰ",
+      "[初霜|はつしも]ーのー",
+      "おきｰまど[は|わ]せるー",
+      "[白菊|しらぎく]のー[花|はな]"
+    ]
   },
   {
     "id": 30,
     "author": "壬生忠岑",
     "authorKana": "みぶのただみね",
+    "authorRomaji": "Mibunotadamine",
     "kami": "有明の　つれなく見えし　別れより",
     "shimo": "暁ばかり　憂きものはなし",
     "kamiRuby": "[有明|ありあけ]の　つれなく[見|み]えし　[別|わか]れより",
@@ -619,6 +1113,14 @@
     "kamiKana": "ありあけの　つれなくみえし　わかれより",
     "shimoKana": "あかつきばかり　うきものはなし",
     "kamiReading": "ありあけのつれなくみえしわかれより",
+    "shimoReading": "あかつきばかりうきものわなし",
+    "versesRomaji": [
+      "ariakeno",
+      "tsurenakumieshi",
+      "wakareyori",
+      "akatsukibakari",
+      "ukimonowanashi"
+    ],
     "torifuda": "あかつきはかりうきものはなし",
     "torifudaColumns": [
       "あかつきは",
@@ -627,12 +1129,21 @@
     ],
     "kimariji": "ありあ",
     "kimarijiReading": "ありあ",
-    "color": "青"
+    "kimarijiShimo": "あか",
+    "color": "青",
+    "colorNumber": 2,
+    "yomifudaColumns": [
+      "[有明|ありあけ]のーつれなく[見|み]えしｰ",
+      "[別|わか]れーよりー",
+      "あかつきｰばかりー",
+      "[憂|う]きもの[は|わ]ーなし"
+    ]
   },
   {
     "id": 31,
     "author": "坂上是則",
     "authorKana": "さかのうえのこれのり",
+    "authorRomaji": "Sakanouenokorenori",
     "kami": "朝ぼらけ　有明の月と　見るまでに",
     "shimo": "吉野の里に　降れる白雪",
     "kamiRuby": "[朝|あさ]ぼらけ　[有明|ありあけ]の[月|つき]と　[見|み]るまでに",
@@ -640,6 +1151,14 @@
     "kamiKana": "あさぼらけ　ありあけのつきと　みるまでに",
     "shimoKana": "よしののさとに　ふれるしらゆき",
     "kamiReading": "あさぼらけありあけのつきとみるまでに",
+    "shimoReading": "よしののさとにふれるしらゆき",
+    "versesRomaji": [
+      "asaborake",
+      "ariakenotsukito",
+      "mirumadeni",
+      "yoshinonosatoni",
+      "furerushirayuki"
+    ],
     "torifuda": "よしののさとにふれるしらゆき",
     "torifudaColumns": [
       "よしののさ",
@@ -648,12 +1167,21 @@
     ],
     "kimariji": "あさぼらけあ",
     "kimarijiReading": "あさぼらけあ",
-    "color": "青"
+    "kimarijiShimo": "よし",
+    "color": "青",
+    "colorNumber": 5,
+    "yomifudaColumns": [
+      "[朝|あさ]ぼらけ[有明|ありあけ]の[月|つき]とー",
+      "[見|み]るまでーにー",
+      "[吉野|よしの]のｰ[里|さと]にー",
+      "[降|ふ]れる[白|しら]ー[雪|ゆき]"
+    ]
   },
   {
     "id": 32,
     "author": "春道列樹",
     "authorKana": "はるみちのつらき",
+    "authorRomaji": "Harumichinotsuraki",
     "kami": "山川に　風のかけたる　しがらみは",
     "shimo": "流れもあへぬ　紅葉なりけり",
     "kamiRuby": "[山川|やまがは]に　[風|かぜ]のかけたる　しがらみは",
@@ -661,6 +1189,14 @@
     "kamiKana": "やまがはに　かぜのかけたる　しがらみは",
     "shimoKana": "ながれもあへぬ　もみぢなりけり",
     "kamiReading": "やまがわにかぜのかけたるしがらみわ",
+    "shimoReading": "ながれもあえぬもみじなりけり",
+    "versesRomaji": [
+      "yamagawani",
+      "kazenokaketaru",
+      "shigaramiwa",
+      "nagaremoaenu",
+      "momijinarikeri"
+    ],
     "torifuda": "なかれもあへぬもみちなりけり",
     "torifudaColumns": [
       "なかれもあ",
@@ -669,12 +1205,21 @@
     ],
     "kimariji": "やまが",
     "kimarijiReading": "やまが",
-    "color": "黄"
+    "kimarijiShimo": "ながれ",
+    "color": "黄",
+    "colorNumber": 5,
+    "yomifudaColumns": [
+      "[山川|やまがわ]にー[風|かぜ]のかけたるｰ",
+      "しがらみー[は|わ]ー",
+      "[流|なが]れもｰあ[へ|え]ぬー",
+      "もみ[ぢ|じ]なりーけり"
+    ]
   },
   {
     "id": 33,
     "author": "紀友則",
     "authorKana": "きのとものり",
+    "authorRomaji": "Kinotomonori",
     "kami": "久方の　光のどけき　春の日に",
     "shimo": "しづ心なく　花の散るらむ",
     "kamiRuby": "[久方|ひさかた]の　[光|ひかり]のどけき　[春|はる]の[日|ひ]に",
@@ -682,6 +1227,14 @@
     "kamiKana": "ひさかたの　ひかりのどけき　はるのひに",
     "shimoKana": "しづごころなく　はなのちるらむ",
     "kamiReading": "ひさかたのひかりのどけきはるのひに",
+    "shimoReading": "しずごころなくはなのちるらん",
+    "versesRomaji": [
+      "hisakatano",
+      "hikarinodokeki",
+      "harunohini",
+      "shizugokoronaku",
+      "hananochiruran"
+    ],
     "torifuda": "しつこころなくはなのちるらむ",
     "torifudaColumns": [
       "しつこころ",
@@ -690,12 +1243,21 @@
     ],
     "kimariji": "ひさ",
     "kimarijiReading": "ひさ",
-    "color": "黄"
+    "kimarijiShimo": "しづ",
+    "color": "黄",
+    "colorNumber": 6,
+    "yomifudaColumns": [
+      "ひさかたのー[光|ひかり]のどけきｰ",
+      "[春|はる]の[日|ひ]ーにー",
+      "し[づ|ず][心|ごころ]ｰなくー",
+      "[花|はな]の[散|ち]るーら[む|ん]"
+    ]
   },
   {
     "id": 34,
     "author": "藤原興風",
     "authorKana": "ふじわらのおきかぜ",
+    "authorRomaji": "Fujiwaranookikaze",
     "kami": "誰をかも　知る人にせむ　高砂の",
     "shimo": "松も昔の　友ならなくに",
     "kamiRuby": "[誰|たれ]をかも　[知|し]る[人|ひと]にせむ　[高砂|たかさご]の",
@@ -703,6 +1265,14 @@
     "kamiKana": "たれをかも　しるひとにせむ　たかさごの",
     "shimoKana": "まつもむかしの　ともならなくに",
     "kamiReading": "たれをかもしるひとにせんたかさごの",
+    "shimoReading": "まつもむかしのともならなくに",
+    "versesRomaji": [
+      "tareokamo",
+      "shiruhitonisen",
+      "takasagono",
+      "matsumomukashino",
+      "tomonaranakuni"
+    ],
     "torifuda": "まつもむかしのともならなくに",
     "torifudaColumns": [
       "まつもむか",
@@ -711,12 +1281,21 @@
     ],
     "kimariji": "たれ",
     "kimarijiReading": "たれ",
-    "color": "桃"
+    "kimarijiShimo": "まつも",
+    "color": "桃",
+    "colorNumber": 10,
+    "yomifudaColumns": [
+      "[誰|たれ]をかもー[知|し]る[人|ひと]にせ[む|ん]ｰ",
+      "[高砂|たかさご]ーのー",
+      "[松|まつ]もｰ[昔|むかし]のー",
+      "[友|とも]ならーなくに"
+    ]
   },
   {
     "id": 35,
     "author": "紀貫之",
     "authorKana": "きのつらゆき",
+    "authorRomaji": "Kinotsurayuki",
     "kami": "人はいさ　心も知らず　ふるさとは",
     "shimo": "花ぞ昔の　香に匂ひける",
     "kamiRuby": "[人|ひと]はいさ　[心|こころ]も[知|し]らず　ふるさとは",
@@ -724,6 +1303,14 @@
     "kamiKana": "ひとはいさ　こころもしらず　ふるさとは",
     "shimoKana": "はなぞむかしの　かににほひける",
     "kamiReading": "ひとわいさこころもしらずふるさとわ",
+    "shimoReading": "はなぞむかしのかににおいける",
+    "versesRomaji": [
+      "hitowaisa",
+      "kokoromoshirazu",
+      "furusatowa",
+      "hanazomukashino",
+      "kaninioikeru"
+    ],
     "torifuda": "はなそむかしのかににほひける",
     "torifudaColumns": [
       "はなそむか",
@@ -732,12 +1319,21 @@
     ],
     "kimariji": "ひとは",
     "kimarijiReading": "ひとわ",
-    "color": "緑"
+    "kimarijiShimo": "はなぞ",
+    "color": "緑",
+    "colorNumber": 10,
+    "yomifudaColumns": [
+      "[人|ひと][は|わ]いさー[心|こころ]もしらずｰ",
+      "ふるさとー[は|わ]ー",
+      "[花|はな]ぞｰ[昔|むかし]のー",
+      "[香|か]にに[ほ|お][ひ|い]ーける"
+    ]
   },
   {
     "id": 36,
     "author": "清原深養父",
     "authorKana": "きよはらのふかやぶ",
+    "authorRomaji": "Kiyoharanofukayabu",
     "kami": "夏の夜は　まだ宵ながら　明けぬるを",
     "shimo": "雲のいづこに　月やどるらむ",
     "kamiRuby": "[夏|なつ]の[夜|よ]は　まだ[宵|よひ]ながら　[明|あ]けぬるを",
@@ -745,6 +1341,14 @@
     "kamiKana": "なつのよは　まだよひながら　あけぬるを",
     "shimoKana": "くものいづこに　つきやどるらむ",
     "kamiReading": "なつのよわまだよいながらあけぬるを",
+    "shimoReading": "くものいずこにつきやどるらん",
+    "versesRomaji": [
+      "natsunoyowa",
+      "madayoinagara",
+      "akenuruo",
+      "kumonoizukoni",
+      "tsukiyadoruran"
+    ],
     "torifuda": "くものいつこにつきやとるらむ",
     "torifudaColumns": [
       "くものいつ",
@@ -753,12 +1357,21 @@
     ],
     "kimariji": "なつ",
     "kimarijiReading": "なつ",
-    "color": "緑"
+    "kimarijiShimo": "くもの",
+    "color": "緑",
+    "colorNumber": 11,
+    "yomifudaColumns": [
+      "[夏|なつ]の[夜|よ][は|わ]ーまだ[宵|よい]ながらｰ",
+      "[明|あ]けぬるーをー",
+      "[雲|くも]のｰい[づ|ず]こにー",
+      "[月|つき][宿|やど]るーら[む|ん]"
+    ]
   },
   {
     "id": 37,
     "author": "文屋朝康",
     "authorKana": "ふんやのあさやす",
+    "authorRomaji": "Funyanoasayasu",
     "kami": "白露に　風の吹きしく　秋の野は",
     "shimo": "つらぬきとめぬ　玉ぞ散りける",
     "kamiRuby": "[白露|しらつゆ]に　[風|かぜ]の[吹|ふ]きしく　[秋|あき]の[野|の]は",
@@ -766,6 +1379,14 @@
     "kamiKana": "しらつゆに　かぜのふきしく　あきののは",
     "shimoKana": "つらぬきとめぬ　たまぞちりける",
     "kamiReading": "しらつゆにかぜのふきしくあきののわ",
+    "shimoReading": "つらぬきとめぬたまぞちりける",
+    "versesRomaji": [
+      "shiratsuyuni",
+      "kazenofukishiku",
+      "akinonowa",
+      "tsuranukitomenu",
+      "tamazochirikeru"
+    ],
     "torifuda": "つらぬきとめぬたまそちりける",
     "torifudaColumns": [
       "つらぬきと",
@@ -774,12 +1395,21 @@
     ],
     "kimariji": "しら",
     "kimarijiReading": "しら",
-    "color": "黄"
+    "kimarijiShimo": "つ",
+    "color": "黄",
+    "colorNumber": 7,
+    "yomifudaColumns": [
+      "[白露|しらつゆ]にー[風|かぜ]の[吹|ふ]きしくｰ",
+      "[秋|あき]の[野|の]ー[は|わ]ー",
+      "つらぬきｰとめぬー",
+      "[玉|たま]ぞ[散|ち]りーける"
+    ]
   },
   {
     "id": 38,
     "author": "右近",
     "authorKana": "うこん",
+    "authorRomaji": "Ukon",
     "kami": "忘らるる　身をば思はず　ちかひてし",
     "shimo": "人の命の　惜しくもあるかな",
     "kamiRuby": "[忘|わす]らるる　[身|み]をば[思|おも]はず　ちかひてし",
@@ -787,6 +1417,14 @@
     "kamiKana": "わすらるる　みをばおもはず　ちかひてし",
     "shimoKana": "ひとのいのちの　をしくもあるかな",
     "kamiReading": "わすらるるみをばおもわずちかいてし",
+    "shimoReading": "ひとのいのちのおしくもあるかな",
+    "versesRomaji": [
+      "wasuraruru",
+      "miobaomowazu",
+      "chikaiteshi",
+      "hitonoinochino",
+      "oshikumoarukana"
+    ],
     "torifuda": "ひとのいのちのをしくもあるかな",
     "torifudaColumns": [
       "ひとのいの",
@@ -795,12 +1433,21 @@
     ],
     "kimariji": "わすら",
     "kimarijiReading": "わすら",
-    "color": "緑"
+    "kimarijiShimo": "ひとの",
+    "color": "緑",
+    "colorNumber": 12,
+    "yomifudaColumns": [
+      "[忘|わす]らるるー[身|み]をば[思|おも][は|わ]ずｰ",
+      "ちか[ひ|い]てーしー",
+      "[人|ひと]のｰ[命|いのち]のー",
+      "[惜|お]しくもあるーかな"
+    ]
   },
   {
     "id": 39,
     "author": "参議等",
     "authorKana": "さんぎひとし",
+    "authorRomaji": "Sangihitoshi",
     "kami": "浅茅生の　小野の篠原　しのぶれど",
     "shimo": "あまりてなどか　人の恋しき",
     "kamiRuby": "[浅茅生|あさぢふ]の　[小野|をの]の[篠原|しのはら]　しのぶれど",
@@ -808,6 +1455,14 @@
     "kamiKana": "あさぢふの　をののしのはら　しのぶれど",
     "shimoKana": "あまりてなどか　ひとのこひしき",
     "kamiReading": "あさじうのおののしのはらしのぶれど",
+    "shimoReading": "あまりてなどかひとのこいしき",
+    "versesRomaji": [
+      "asajiuno",
+      "ononoshinohara",
+      "shinoburedo",
+      "amaritenadoka",
+      "hitonokoishiki"
+    ],
     "torifuda": "あまりてなとかひとのこひしき",
     "torifudaColumns": [
       "あまりてな",
@@ -816,12 +1471,21 @@
     ],
     "kimariji": "あさじ",
     "kimarijiReading": "あさじ",
-    "color": "黄"
+    "kimarijiShimo": "あまり",
+    "color": "黄",
+    "colorNumber": 8,
+    "yomifudaColumns": [
+      "[浅茅生|あさじう]のー[小野|おの]の[篠原|しのはら]ｰ",
+      "しのぶれーどー",
+      "あまりてｰなどかー",
+      "[人|ひと]の[恋|こい]ーしき"
+    ]
   },
   {
     "id": 40,
     "author": "平兼盛",
     "authorKana": "たいらのかねもり",
+    "authorRomaji": "Tairanokanemori",
     "kami": "忍ぶれど　色に出でにけり　わが恋は",
     "shimo": "物や思ふと　人の問ふまで",
     "kamiRuby": "[忍|しの]ぶれど　[色|いろ]に[出|い]でにけり　わが[恋|こひ]は",
@@ -829,6 +1493,14 @@
     "kamiKana": "しのぶれど　いろにいでにけり　わがこひは",
     "shimoKana": "ものやおもふと　ひとのとふまで",
     "kamiReading": "しのぶれどいろにいでにけりわがこいわ",
+    "shimoReading": "ものやおもうとひとのとうまで",
+    "versesRomaji": [
+      "shinoburedo",
+      "ironiidenikeri",
+      "wagakoiwa",
+      "monoyaomouto",
+      "hitonotoumade"
+    ],
     "torifuda": "ものやおもふとひとのとふまて",
     "torifudaColumns": [
       "ものやおも",
@@ -837,12 +1509,21 @@
     ],
     "kimariji": "しの",
     "kimarijiReading": "しの",
-    "color": "桃"
+    "kimarijiShimo": "もの",
+    "color": "桃",
+    "colorNumber": 11,
+    "yomifudaColumns": [
+      "しのぶれどー[色|いろ]に[出|い]でにけりｰ",
+      "わが[恋|こい]ー[は|わ]ー",
+      "[物|もの]やｰ[思|おも][ふ|う]とー",
+      "[人|ひと]のと[ふ|う]ーまで"
+    ]
   },
   {
     "id": 41,
     "author": "壬生忠見",
     "authorKana": "みぶのただみ",
+    "authorRomaji": "Mibunotadami",
     "kami": "恋すてふ　わが名はまだき　立ちにけり",
     "shimo": "人知れずこそ　思ひそめしか",
     "kamiRuby": "[恋|こひ]すてふ　わが[名|な]はまだき　[立|た]ちにけり",
@@ -850,6 +1531,14 @@
     "kamiKana": "こひすてふ　わがなはまだき　たちにけり",
     "shimoKana": "ひとしれずこそ　おもひそめしか",
     "kamiReading": "こいすちょうわがなわまだきたちにけり",
+    "shimoReading": "ひとしれずこそおもいそめしか",
+    "versesRomaji": [
+      "koisuchou",
+      "waganawamadaki",
+      "tachinikeri",
+      "hitoshirezukoso",
+      "omoisomeshika"
+    ],
     "torifuda": "ひとしれすこそおもひそめしか",
     "torifudaColumns": [
       "ひとしれす",
@@ -858,12 +1547,21 @@
     ],
     "kimariji": "こい",
     "kimarijiReading": "こい",
-    "color": "緑"
+    "kimarijiShimo": "ひとし",
+    "color": "緑",
+    "colorNumber": 13,
+    "yomifudaColumns": [
+      "[恋|こい]す[てふ|ちょう]ーわが[名|な][は|わ]まだきｰ",
+      "[立|た]ちにーけりー",
+      "[人|ひと]ｰしれずこそー",
+      "[思|おも][ひ|い]そめーしか"
+    ]
   },
   {
     "id": 42,
     "author": "清原元輔",
     "authorKana": "きよはらのもとすけ",
+    "authorRomaji": "Kiyoharanomotosuke",
     "kami": "契りきな　かたみに袖を　しぼりつつ",
     "shimo": "末の松山　波こさじとは",
     "kamiRuby": "[契|ちぎ]りきな　かたみに[袖|そで]を　しぼりつつ",
@@ -871,6 +1569,14 @@
     "kamiKana": "ちぎりきな　かたみにそでを　しぼりつつ",
     "shimoKana": "すゑのまつやま　なみこさじとは",
     "kamiReading": "ちぎりきなかたみにそでをしぼりつつ",
+    "shimoReading": "すえのまつやまなみこさじとわ",
+    "versesRomaji": [
+      "chigirikina",
+      "kataminisodeo",
+      "shiboritsutsu",
+      "suenomatsuyama",
+      "namikosajitowa"
+    ],
     "torifuda": "すゑのまつやまなみこさしとは",
     "torifudaColumns": [
       "すゑのまつ",
@@ -879,12 +1585,21 @@
     ],
     "kimariji": "ちぎりき",
     "kimarijiReading": "ちぎりき",
-    "color": "緑"
+    "kimarijiShimo": "す",
+    "color": "緑",
+    "colorNumber": 14,
+    "yomifudaColumns": [
+      "[契|ちぎ]りきなーかたみに[袖|そで]をｰ",
+      "しぼりーつつー",
+      "[末|すえ]のｰ[松山|まつやま]ー",
+      "[波|なみ]こさじーと[は|わ]"
+    ]
   },
   {
     "id": 43,
     "author": "権中納言敦忠",
     "authorKana": "ごんちゅうなごんあつただ",
+    "authorRomaji": "Gonchuunagonatsutada",
     "kami": "逢ひ見ての　後の心に　くらぶれば",
     "shimo": "昔は物を　思はざりけり",
     "kamiRuby": "[逢|あ]ひ[見|み]ての　[後|のち]の[心|こころ]に　くらぶれば",
@@ -892,6 +1607,14 @@
     "kamiKana": "あひみての　のちのこころに　くらぶれば",
     "shimoKana": "むかしはものを　おもはざりけり",
     "kamiReading": "あいみてののちのこころにくらぶれば",
+    "shimoReading": "むかしわものをおもわざりけり",
+    "versesRomaji": [
+      "aimiteno",
+      "nochinokokoroni",
+      "kurabureba",
+      "mukashiwamonoo",
+      "omowazarikeri"
+    ],
     "torifuda": "むかしはものをおもはさりけり",
     "torifudaColumns": [
       "むかしはも",
@@ -900,12 +1623,21 @@
     ],
     "kimariji": "あい",
     "kimarijiReading": "あい",
-    "color": "橙"
+    "kimarijiShimo": "むか",
+    "color": "橙",
+    "colorNumber": 4,
+    "yomifudaColumns": [
+      "あ[ひ|い]みてのー[後|のち]の[心|こころ]にｰ",
+      "くらぶれーばー",
+      "[昔|むかし][は|わ]ｰ[物|もの]をー",
+      "[思|おも][は|わ]ざりーけり"
+    ]
   },
   {
     "id": 44,
     "author": "中納言朝忠",
     "authorKana": "ちゅうなごんあさただ",
+    "authorRomaji": "Chuunagonasatada",
     "kami": "逢ふ事の　絶えてしなくば　なかなかに",
     "shimo": "人をも身をも　恨みざらまし",
     "kamiRuby": "[逢|あ]ふ[事|こと]の　[絶|た]えてしなくば　なかなかに",
@@ -913,6 +1645,14 @@
     "kamiKana": "あふことの　たえてしなくば　なかなかに",
     "shimoKana": "ひとをもみをも　うらみざらまし",
     "kamiReading": "おおことのたえてしなくばなかなかに",
+    "shimoReading": "ひとをもみをもうらみざらまし",
+    "versesRomaji": [
+      "oukotono",
+      "taeteshinakuba",
+      "nakanakani",
+      "hitoomomiomo",
+      "uramizaramashi"
+    ],
     "torifuda": "ひとをもみをもうらみさらまし",
     "torifudaColumns": [
       "ひとをもみ",
@@ -921,12 +1661,21 @@
     ],
     "kimariji": "おおこ",
     "kimarijiReading": "おおこ",
-    "color": "橙"
+    "kimarijiShimo": "ひとを",
+    "color": "橙",
+    "colorNumber": 5,
+    "yomifudaColumns": [
+      "[逢|お][ふ|う]ことのーたえてしなくばｰ",
+      "なかなかーにー",
+      "[人|ひと]をもｰ[身|み]をもー",
+      "[恨|うら]みざらーまし"
+    ]
   },
   {
     "id": 45,
     "author": "謙徳公",
     "authorKana": "けんとくこう",
+    "authorRomaji": "Kentokukou",
     "kami": "哀れとも　いふべき人は　思ほえで",
     "shimo": "身のいたづらに　なりぬべきかな",
     "kamiRuby": "[哀|あは]れとも　いふべき[人|ひと]は　[思|おも]ほえで",
@@ -934,6 +1683,14 @@
     "kamiKana": "あはれとも　いふべきひとは　おもほえで",
     "shimoKana": "みのいたづらに　なりぬべきかな",
     "kamiReading": "あわれともゆうべきひとわおもおえで",
+    "shimoReading": "みのいたずらになりぬべきかな",
+    "versesRomaji": [
+      "awaretomo",
+      "yuubekihitowa",
+      "omooede",
+      "minoitazurani",
+      "narinubekikana"
+    ],
     "torifuda": "みのいたつらになりぬへきかな",
     "torifudaColumns": [
       "みのいたつ",
@@ -942,12 +1699,21 @@
     ],
     "kimariji": "あわれ",
     "kimarijiReading": "あわれ",
-    "color": "橙"
+    "kimarijiShimo": "みの",
+    "color": "橙",
+    "colorNumber": 3,
+    "yomifudaColumns": [
+      "あ[は|わ]れともー[いふ|ゆう]べき[人|ひと][は|わ]ｰ",
+      "[思|おも][ほ|お]えーでー",
+      "[身|み]のｰいた[づ|ず]らにー",
+      "なりぬべきーかな"
+    ]
   },
   {
     "id": 46,
     "author": "曽禰好忠",
     "authorKana": "そねのよしただ",
+    "authorRomaji": "Sonenoyoshitada",
     "kami": "由良の門を　渡る舟人　かぢを絶え",
     "shimo": "行くへも知らぬ　恋の道かな",
     "kamiRuby": "[由良|ゆら]の[門|と]を　[渡|わた]る[舟人|ふなびと]　かぢを[絶|た]え",
@@ -955,6 +1721,14 @@
     "kamiKana": "ゆらのとを　わたるふなびと　かぢをたえ",
     "shimoKana": "ゆくへもしらぬ　こひのみちかな",
     "kamiReading": "ゆらのとをわたるふなびとかじをたえ",
+    "shimoReading": "ゆくえもしらぬこいのみちかな",
+    "versesRomaji": [
+      "yuranotoo",
+      "watarufunabito",
+      "kajiotae",
+      "yukuemoshiranu",
+      "koinomichikana"
+    ],
     "torifuda": "ゆくへもしらぬこひのみちかな",
     "torifudaColumns": [
       "ゆくへもし",
@@ -963,12 +1737,21 @@
     ],
     "kimariji": "ゆら",
     "kimarijiReading": "ゆら",
-    "color": "黄"
+    "kimarijiShimo": "ゆく",
+    "color": "黄",
+    "colorNumber": 9,
+    "yomifudaColumns": [
+      "[由良|ゆら]のとをーわたる[舟人|ふなびと]ｰ",
+      "か[ぢ|じ]をーたえー",
+      "ゆく[へ|え]もｰしらぬー",
+      "[恋|こい]の[道|みち]ーかな"
+    ]
   },
   {
     "id": 47,
     "author": "恵慶法師",
     "authorKana": "えぎょうほうし",
+    "authorRomaji": "Egyouhoushi",
     "kami": "八重むぐら　しげれる宿の　寂しきに",
     "shimo": "人こそ見えね　秋は来にけり",
     "kamiRuby": "[八重|やへ]むぐら　しげれる[宿|やど]の　[寂|さび]しきに",
@@ -976,6 +1759,14 @@
     "kamiKana": "やへむぐら　しげれるやどの　さびしきに",
     "shimoKana": "ひとこそみえね　あきはきにけり",
     "kamiReading": "やえむぐらしげれるやどのさびしきに",
+    "shimoReading": "ひとこそみえねあきわきにけり",
+    "versesRomaji": [
+      "yaemugura",
+      "shigereruyadono",
+      "sabishikini",
+      "hitokosomiene",
+      "akiwakinikeri"
+    ],
     "torifuda": "ひとこそみえねあきはきにけり",
     "torifudaColumns": [
       "ひとこそみ",
@@ -984,12 +1775,21 @@
     ],
     "kimariji": "やえ",
     "kimarijiReading": "やえ",
-    "color": "黄"
+    "kimarijiShimo": "ひとこそみ",
+    "color": "黄",
+    "colorNumber": 10,
+    "yomifudaColumns": [
+      "[八重葎|やえむぐら]ーしげれる[宿|やど]のｰ",
+      "さびしきーにー",
+      "[人|ひと]こそｰ[見|み]えねー",
+      "[秋|あき][は|わ][来|き]にーけり"
+    ]
   },
   {
     "id": 48,
     "author": "源重之",
     "authorKana": "みなもとのしげゆき",
+    "authorRomaji": "Minamotonoshigeyuki",
     "kami": "風をいたみ　岩打つ波の　おのれのみ",
     "shimo": "くだけて物を　思ふころかな",
     "kamiRuby": "[風|かぜ]をいたみ　[岩|いは][打|う]つ[波|なみ]の　おのれのみ",
@@ -997,6 +1797,14 @@
     "kamiKana": "かぜをいたみ　いはうつなみの　おのれのみ",
     "shimoKana": "くだけてものを　おもふころかな",
     "kamiReading": "かぜをいたみいわうつなみのおのれのみ",
+    "shimoReading": "くだけてものをおもうころかな",
+    "versesRomaji": [
+      "kazeoitami",
+      "iwautsunamino",
+      "onorenomi",
+      "kudaketemonoo",
+      "omoukorokana"
+    ],
     "torifuda": "くたけてものをおもふころかな",
     "torifudaColumns": [
       "くたけても",
@@ -1005,12 +1813,21 @@
     ],
     "kimariji": "かぜを",
     "kimarijiReading": "かぜを",
-    "color": "桃"
+    "kimarijiShimo": "くだ",
+    "color": "桃",
+    "colorNumber": 12,
+    "yomifudaColumns": [
+      "[風|かぜ]をいたみー[岩|いわ]うつ[波|なみ]のｰ",
+      "おのれーのみー",
+      "くだけてｰ[物|もの]をー",
+      "[思|おも][ふ|う]ころーかな"
+    ]
   },
   {
     "id": 49,
     "author": "大中臣能宣朝臣",
     "authorKana": "おおなかとみのよしのぶあそん",
+    "authorRomaji": "Oonakatominoyoshinobuason",
     "kami": "御垣守　衛士のたく火の　夜は燃え",
     "shimo": "昼は消えつつ　物をこそ思へ",
     "kamiRuby": "[御垣守|みかきもり]　[衛士|ゑじ]のたく[火|ひ]の　[夜|よる]は[燃|も]え",
@@ -1018,6 +1835,14 @@
     "kamiKana": "みかきもり　ゑじのたくひの　よるはもえ",
     "shimoKana": "ひるはきえつつ　ものをこそおもへ",
     "kamiReading": "みかきもりえじのたくひのよるわもえ",
+    "shimoReading": "ひるわきえつつものをこそおもえ",
+    "versesRomaji": [
+      "mikakimori",
+      "ejinotakuhino",
+      "yoruwamoe",
+      "hiruwakietsutsu",
+      "monookosoomoe"
+    ],
     "torifuda": "ひるはきえつつものをこそおもへ",
     "torifudaColumns": [
       "ひるはきえ",
@@ -1026,12 +1851,21 @@
     ],
     "kimariji": "みかき",
     "kimarijiReading": "みかき",
-    "color": "橙"
+    "kimarijiShimo": "ひる",
+    "color": "橙",
+    "colorNumber": 16,
+    "yomifudaColumns": [
+      "みかきもりー[衛士|えじ]のたく[火|ひ]のｰ",
+      "[夜|よる][は|わ]ーもえー",
+      "[昼|ひる][は|わ]ｰ[消|き]えつつー",
+      "[物|もの]をこそー[思|おも][へ|え]"
+    ]
   },
   {
     "id": 50,
     "author": "藤原義孝",
     "authorKana": "ふじわらのよしたか",
+    "authorRomaji": "Fujiwaranoyoshitaka",
     "kami": "君がため　惜しからざりし　命さへ",
     "shimo": "長くもがなと　思ひけるかな",
     "kamiRuby": "[君|きみ]がため　[惜|を]しからざりし　[命|いのち]さへ",
@@ -1039,6 +1873,14 @@
     "kamiKana": "きみがため　をしからざりし　いのちさへ",
     "shimoKana": "ながくもがなと　おもひけるかな",
     "kamiReading": "きみがためおしからざりしいのちさえ",
+    "shimoReading": "ながくもがなとおもいけるかな",
+    "versesRomaji": [
+      "kimigatame",
+      "oshikarazarishi",
+      "inochisae",
+      "nagakumoganato",
+      "omoikerukana"
+    ],
     "torifuda": "なかくもかなとおもひけるかな",
     "torifudaColumns": [
       "なかくもか",
@@ -1047,12 +1889,21 @@
     ],
     "kimariji": "きみがためお",
     "kimarijiReading": "きみがためお",
-    "color": "青"
+    "kimarijiShimo": "ながく",
+    "color": "青",
+    "colorNumber": 8,
+    "yomifudaColumns": [
+      "[君|きみ]がため[惜|お]しからざりしー",
+      "[命|いのち]ーさ[へ|え]ー",
+      "[長|なが]くｰもがなとー",
+      "[思|おも][ひ|い]けるーかな"
+    ]
   },
   {
     "id": 51,
     "author": "藤原実方朝臣",
     "authorKana": "ふじわらのさねかたあそん",
+    "authorRomaji": "Fujiwaranosanekataason",
     "kami": "かくとだに　えやは伊吹の　さしも草",
     "shimo": "さしも知らじな　燃ゆる思ひを",
     "kamiRuby": "かくとだに　えやは[伊吹|いぶき]の　さしも[草|ぐさ]",
@@ -1060,6 +1911,14 @@
     "kamiKana": "かくとだに　えやはいぶきの　さしもぐさ",
     "shimoKana": "さしもしらじな　もゆるおもひを",
     "kamiReading": "かくとだにえやわいぶきのさしもぐさ",
+    "shimoReading": "さしもしらじなもゆるおもいを",
+    "versesRomaji": [
+      "kakutodani",
+      "eyawaibukino",
+      "sashimogusa",
+      "sashimoshirajina",
+      "moyuruomoio"
+    ],
     "torifuda": "さしもしらしなもゆるおもひを",
     "torifudaColumns": [
       "さしもしら",
@@ -1068,12 +1927,21 @@
     ],
     "kimariji": "かく",
     "kimarijiReading": "かく",
-    "color": "桃"
+    "kimarijiShimo": "さ",
+    "color": "桃",
+    "colorNumber": 7,
+    "yomifudaColumns": [
+      "かくとだにーえや[は|わ]いぶきのｰ",
+      "さしもー[草|ぐさ]ー",
+      "さしもｰしらじなー",
+      "もゆる[思|おも]ー[ひ|い]を"
+    ]
   },
   {
     "id": 52,
     "author": "藤原道信朝臣",
     "authorKana": "ふじわらのみちのぶあそん",
+    "authorRomaji": "Fujiwaranomichinobuason",
     "kami": "明けぬれば　暮るるものとは　知りながら",
     "shimo": "なほ恨めしき　朝ぼらけかな",
     "kamiRuby": "[明|あ]けぬれば　[暮|く]るるものとは　[知|し]りながら",
@@ -1081,6 +1949,14 @@
     "kamiKana": "あけぬれば　くるるものとは　しりながら",
     "shimoKana": "なほうらめしき　あさぼらけかな",
     "kamiReading": "あけぬればくるるものとわしりながら",
+    "shimoReading": "なおうらめしきあさぼらけかな",
+    "versesRomaji": [
+      "akenureba",
+      "kururumonotowa",
+      "shirinagara",
+      "naourameshiki",
+      "asaborakekana"
+    ],
     "torifuda": "なほうらめしきあさほらけかな",
     "torifudaColumns": [
       "なほうらめ",
@@ -1089,12 +1965,21 @@
     ],
     "kimariji": "あけ",
     "kimarijiReading": "あけ",
-    "color": "橙"
+    "kimarijiShimo": "なほう",
+    "color": "橙",
+    "colorNumber": 1,
+    "yomifudaColumns": [
+      "[明|あ]けぬればー[暮|く]るるものと[は|わ]ｰ",
+      "[知|し]りながーらー",
+      "な[ほ|お]ｰ[恨|うら]めしきー",
+      "[朝|あさ]ぼらけーかな"
+    ]
   },
   {
     "id": 53,
     "author": "右大将道綱母",
     "authorKana": "うだいしょうみちつなのはは",
+    "authorRomaji": "Udaishoumichitsunanohaha",
     "kami": "嘆きつつ　独り寝る夜の　明くる間は",
     "shimo": "いかに久しき　ものとかは知る",
     "kamiRuby": "[嘆|なげ]きつつ　[独|ひと]り[寝|ぬ]る[夜|よ]の　[明|あ]くる[間|ま]は",
@@ -1102,6 +1987,14 @@
     "kamiKana": "なげきつつ　ひとりぬるよの　あくるまは",
     "shimoKana": "いかにひさしき　ものとかはしる",
     "kamiReading": "なげきつつひとりぬるよのあくるまわ",
+    "shimoReading": "いかにひさしきものとかわしる",
+    "versesRomaji": [
+      "nagekitsutsu",
+      "hitorinuruyono",
+      "akurumawa",
+      "ikanihisashiki",
+      "monotokawashiru"
+    ],
     "torifuda": "いかにひさしきものとかはしる",
     "torifudaColumns": [
       "いかにひさ",
@@ -1110,12 +2003,21 @@
     ],
     "kimariji": "なげき",
     "kimarijiReading": "なげき",
-    "color": "橙"
+    "kimarijiShimo": "いか",
+    "color": "橙",
+    "colorNumber": 10,
+    "yomifudaColumns": [
+      "[嘆|なげ]きつつーひとりぬる[夜|よ]のｰ",
+      "[明|あ]くるまー[は|わ]ー",
+      "いかにｰ[久|ひさ]しきー",
+      "ものとか[は|わ]ーしる"
+    ]
   },
   {
     "id": 54,
     "author": "儀同三司母",
     "authorKana": "ぎどうさんしのはは",
+    "authorRomaji": "Gidousanshinohaha",
     "kami": "忘れじの　行く末までは　かたければ",
     "shimo": "今日をかぎりの　命ともがな",
     "kamiRuby": "[忘|わす]れじの　[行|ゆ]く[末|すゑ]までは　かたければ",
@@ -1123,6 +2025,14 @@
     "kamiKana": "わすれじの　ゆくすゑまでは　かたければ",
     "shimoKana": "けふをかぎりの　いのちともがな",
     "kamiReading": "わすれじのゆくすえまでわかたければ",
+    "shimoReading": "きょうをかぎりのいのちともがな",
+    "versesRomaji": [
+      "wasurejino",
+      "yukusuemadewa",
+      "katakereba",
+      "kyouokagirino",
+      "inochitomogana"
+    ],
     "torifuda": "けふをかきりのいのちともかな",
     "torifudaColumns": [
       "けふをかき",
@@ -1131,12 +2041,21 @@
     ],
     "kimariji": "わすれ",
     "kimarijiReading": "わすれ",
-    "color": "緑"
+    "kimarijiShimo": "けふを",
+    "color": "緑",
+    "colorNumber": 15,
+    "yomifudaColumns": [
+      "[忘|わす]れじのーゆくす[ゑ|え]まで[は|わ]ｰ",
+      "かたけれーばー",
+      "[けふ|きょう]をｰかぎりのー",
+      "いのちとーもがな"
+    ]
   },
   {
     "id": 55,
     "author": "大納言公任",
     "authorKana": "だいなごんきんとう",
+    "authorRomaji": "Dainagonkintou",
     "kami": "滝の音は　絶えて久しく　なりぬれど",
     "shimo": "名こそ流れて　なほ聞こえけれ",
     "kamiRuby": "[滝|たき]の[音|おと]は　[絶|た]えて[久|ひさ]しく　なりぬれど",
@@ -1144,6 +2063,14 @@
     "kamiKana": "たきのおとは　たえてひさしく　なりぬれど",
     "shimoKana": "なこそながれて　なほきこえけれ",
     "kamiReading": "たきのおとわたえてひさしくなりぬれど",
+    "shimoReading": "なこそながれてなおきこえけれ",
+    "versesRomaji": [
+      "takinootowa",
+      "taetehisashiku",
+      "narinuredo",
+      "nakosonagarete",
+      "naokikoekere"
+    ],
     "torifuda": "なこそなかれてなほきこえけれ",
     "torifudaColumns": [
       "なこそなか",
@@ -1152,12 +2079,21 @@
     ],
     "kimariji": "たき",
     "kimarijiReading": "たき",
-    "color": "黄"
+    "kimarijiShimo": "なこ",
+    "color": "黄",
+    "colorNumber": 11,
+    "yomifudaColumns": [
+      "[滝|たき]の[音|おと][は|わ]ーたえて[久|ひさ]しくｰ",
+      "なりぬれーどー",
+      "[名|な]こそｰ[流|なが]れてー",
+      "な[ほ|お][聞|き]こえーけれ"
+    ]
   },
   {
     "id": 56,
     "author": "和泉式部",
     "authorKana": "いずみしきぶ",
+    "authorRomaji": "Izumishikibu",
     "kami": "あらざらむ　この世の外の　思ひ出に",
     "shimo": "今一度の　逢ふ事もがな",
     "kamiRuby": "あらざらむ　この[世|よ]の[外|ほか]の　[思|おも]ひ[出|で]に",
@@ -1165,6 +2101,14 @@
     "kamiKana": "あらざらむ　このよのほかの　おもひでに",
     "shimoKana": "いまひとたびの　あふこともがな",
     "kamiReading": "あらざらんこのよのほかのおもいでに",
+    "shimoReading": "いまひとたびのおうこともがな",
+    "versesRomaji": [
+      "arazaran",
+      "konoyonohokano",
+      "omoideni",
+      "imahitotabino",
+      "oukotomogana"
+    ],
     "torifuda": "いまひとたひのあふこともかな",
     "torifudaColumns": [
       "いまひとた",
@@ -1173,12 +2117,21 @@
     ],
     "kimariji": "あらざ",
     "kimarijiReading": "あらざ",
-    "color": "橙"
+    "kimarijiShimo": "いまひとたびのあ",
+    "color": "橙",
+    "colorNumber": 6,
+    "yomifudaColumns": [
+      "あらざら[む|ん]ーこの[世|よ]のほかのｰ",
+      "[思|おも][ひ|い][出|で]ーにー",
+      "[今|いま]ｰひとたびのー",
+      "[あふ|おう]ことーもがな"
+    ]
   },
   {
     "id": 57,
     "author": "紫式部",
     "authorKana": "むらさきしきぶ",
+    "authorRomaji": "Murasakishikibu",
     "kami": "巡り逢ひて　見しやそれとも　わかぬ間に",
     "shimo": "雲がくれにし　夜半の月かな",
     "kamiRuby": "[巡|めぐ]り[逢|あ]ひて　[見|み]しやそれとも　わかぬ[間|ま]に",
@@ -1186,6 +2139,14 @@
     "kamiKana": "めぐりあひて　みしやそれとも　わかぬまに",
     "shimoKana": "くもがくれにし　よはのつきかな",
     "kamiReading": "めぐりあいてみしやそれともわかぬまに",
+    "shimoReading": "くもがくれにしよわのつきかな",
+    "versesRomaji": [
+      "meguriaite",
+      "mishiyasoretomo",
+      "wakanumani",
+      "kumogakurenishi",
+      "yowanotsukikana"
+    ],
     "torifuda": "くもかくれにしよはのつきかな",
     "torifudaColumns": [
       "くもかくれ",
@@ -1194,12 +2155,21 @@
     ],
     "kimariji": "め",
     "kimarijiReading": "め",
-    "color": "青"
+    "kimarijiShimo": "くもが",
+    "color": "青",
+    "colorNumber": 11,
+    "yomifudaColumns": [
+      "めぐりあ[ひ|い]てー[見|み]しやそれともｰ",
+      "わかぬまーにー",
+      "[雲|くも]がくれｰにしー",
+      "[夜半|よわ]の[月|つき]ーかな"
+    ]
   },
   {
     "id": 58,
     "author": "大弐三位",
     "authorKana": "だいにのさんみ",
+    "authorRomaji": "Daininosanmi",
     "kami": "有馬山　猪名の笹原　風吹けば",
     "shimo": "いでそよ人を　忘れやはする",
     "kamiRuby": "[有馬山|ありまやま]　[猪名|ゐな]の[笹原|ささはら]　[風|かぜ][吹|ふ]けば",
@@ -1207,6 +2177,14 @@
     "kamiKana": "ありまやま　ゐなのささはら　かぜふけば",
     "shimoKana": "いでそよひとを　わすれやはする",
     "kamiReading": "ありまやまいなのささはらかぜふけば",
+    "shimoReading": "いでそよひとをわすれやわする",
+    "versesRomaji": [
+      "arimayama",
+      "inanosasahara",
+      "kazefukeba",
+      "idesoyohitoo",
+      "wasureyawasuru"
+    ],
     "torifuda": "いてそよひとをわすれやはする",
     "torifudaColumns": [
       "いてそよひ",
@@ -1215,12 +2193,21 @@
     ],
     "kimariji": "ありま",
     "kimarijiReading": "ありま",
-    "color": "桃"
+    "kimarijiShimo": "いで",
+    "color": "桃",
+    "colorNumber": 8,
+    "yomifudaColumns": [
+      "ありま[山|やま]ー[ゐ|い]なの[笹原|ささはら]ｰ",
+      "[風|かぜ][吹|ふ]けーばー",
+      "いでそよｰ[人|ひと]をー",
+      "[忘|わす]れや[は|わ]ーする"
+    ]
   },
   {
     "id": 59,
     "author": "赤染衛門",
     "authorKana": "あかぞめえもん",
+    "authorRomaji": "Akazomeemon",
     "kami": "安らはで　寝なましものを　さ夜更けて",
     "shimo": "かたぶくまでの　月を見しかな",
     "kamiRuby": "[安|やす]らはで　[寝|ね]なましものを　さ[夜|よ][更|ふ]けて",
@@ -1228,6 +2215,14 @@
     "kamiKana": "やすらはで　ねなましものを　さよふけて",
     "shimoKana": "かたぶくまでの　つきをみしかな",
     "kamiReading": "やすらわでねなましものをさよふけて",
+    "shimoReading": "かたぶくまでのつきをみしかな",
+    "versesRomaji": [
+      "yasurawade",
+      "nenamashimonoo",
+      "sayofukete",
+      "katabukumadeno",
+      "tsukiomishikana"
+    ],
     "torifuda": "かたふくまてのつきをみしかな",
     "torifudaColumns": [
       "かたふくま",
@@ -1236,12 +2231,21 @@
     ],
     "kimariji": "やす",
     "kimarijiReading": "やす",
-    "color": "緑"
+    "kimarijiShimo": "かた",
+    "color": "緑",
+    "colorNumber": 16,
+    "yomifudaColumns": [
+      "やすら[は|わ]でー[寝|ね]なましものをｰ",
+      "さ[夜|よ]ふけーてー",
+      "かたぶくｰまでのー",
+      "[月|つき]をみしーかな"
+    ]
   },
   {
     "id": 60,
     "author": "小式部内侍",
     "authorKana": "こしきぶのないし",
+    "authorRomaji": "Koshikibunonaishi",
     "kami": "大江山　いく野の道の　遠ければ",
     "shimo": "まだふみも見ず　天の橋立",
     "kamiRuby": "[大江山|おほえやま]　いく[野|の]の[道|みち]の　[遠|とほ]ければ",
@@ -1249,6 +2253,14 @@
     "kamiKana": "おほえやま　いくののみちの　とほければ",
     "shimoKana": "まだふみもみず　あまのはしだて",
     "kamiReading": "おおえやまいくののみちのとおければ",
+    "shimoReading": "まだふみもみずあまのはしだて",
+    "versesRomaji": [
+      "ooeyama",
+      "ikunonomichino",
+      "tookereba",
+      "madafumimomizu",
+      "amanohashidate"
+    ],
     "torifuda": "またふみもみすあまのはしたて",
     "torifudaColumns": [
       "またふみも",
@@ -1257,12 +2269,21 @@
     ],
     "kimariji": "おおえ",
     "kimarijiReading": "おおえ",
-    "color": "黄"
+    "kimarijiShimo": "まだ",
+    "color": "黄",
+    "colorNumber": 12,
+    "yomifudaColumns": [
+      "[大江山|おおえやま]ーいく[野|の]の[道|みち]のｰ",
+      "[遠|とお]けれーばー",
+      "まだｰふみも[見|み]ずー",
+      "[天|あま]の[橋|はし]ー[立|だて]"
+    ]
   },
   {
     "id": 61,
     "author": "伊勢大輔",
     "authorKana": "いせのたいふ",
+    "authorRomaji": "Isenotaifu",
     "kami": "いにしへの　奈良の都の　八重桜",
     "shimo": "けふ九重に　匂ひぬるかな",
     "kamiRuby": "いにしへの　[奈良|なら]の[都|みやこ]の　[八重桜|やへざくら]",
@@ -1270,6 +2291,14 @@
     "kamiKana": "いにしへの　ならのみやこの　やへざくら",
     "shimoKana": "けふここのへに　にほひぬるかな",
     "kamiReading": "いにしえのならのみやこのやえざくら",
+    "shimoReading": "きょうここのえににおいぬるかな",
+    "versesRomaji": [
+      "inishieno",
+      "naranomiyakono",
+      "yaezakura",
+      "kyoukokonoeni",
+      "nioinurukana"
+    ],
     "torifuda": "けふここのへににほひぬるかな",
     "torifudaColumns": [
       "けふここの",
@@ -1278,12 +2307,21 @@
     ],
     "kimariji": "いに",
     "kimarijiReading": "いに",
-    "color": "青"
+    "kimarijiShimo": "けふこ",
+    "color": "青",
+    "colorNumber": 14,
+    "yomifudaColumns": [
+      "いにし[へ|え]のー[奈良|なら]の[都|みやこ]のｰ",
+      "[八重|やえ]ざくーらー",
+      "[けふ|きょう]ｰ[九重|ここのえ]にー",
+      "に[ほ|お][ひ|い]ぬるーかな"
+    ]
   },
   {
     "id": 62,
     "author": "清少納言",
     "authorKana": "せいしょうなごん",
+    "authorRomaji": "Seishounagon",
     "kami": "夜をこめて　鳥の空音は　はかるとも",
     "shimo": "世に逢坂の　関は許さじ",
     "kamiRuby": "[夜|よ]をこめて　[鳥|とり]の[空音|そらね]は　はかるとも",
@@ -1291,6 +2329,14 @@
     "kamiKana": "よをこめて　とりのそらねは　はかるとも",
     "shimoKana": "よにあふさかの　せきはゆるさじ",
     "kamiReading": "よをこめてとりのそらねわはかるとも",
+    "shimoReading": "よにおうさかのせきわゆるさじ",
+    "versesRomaji": [
+      "yookomete",
+      "torinosoranewa",
+      "hakarutomo",
+      "yoniousakano",
+      "sekiwayurusaji"
+    ],
     "torifuda": "よにあふさかのせきはゆるさし",
     "torifudaColumns": [
       "よにあふさ",
@@ -1299,12 +2345,21 @@
     ],
     "kimariji": "よを",
     "kimarijiReading": "よを",
-    "color": "青"
+    "kimarijiShimo": "よに",
+    "color": "青",
+    "colorNumber": 17,
+    "yomifudaColumns": [
+      "[夜|よ]をこめてー[鳥|とり]のそらね[は|わ]ｰ",
+      "はかるーともー",
+      "よにｰ[逢坂|おうさか]のー",
+      "[関|せき][は|わ]ゆるーさじ"
+    ]
   },
   {
     "id": 63,
     "author": "左京大夫道雅",
     "authorKana": "さきょうのだいぶみちまさ",
+    "authorRomaji": "Sakyounodaibumichimasa",
     "kami": "今はただ　思ひ絶えなむ　とばかりを",
     "shimo": "人づてならで　いふよしもがな",
     "kamiRuby": "[今|いま]はただ　[思|おも]ひ[絶|た]えなむ　とばかりを",
@@ -1312,6 +2367,14 @@
     "kamiKana": "いまはただ　おもひたえなむ　とばかりを",
     "shimoKana": "ひとづてならで　いふよしもがな",
     "kamiReading": "いまわただおもいたえなんとばかりを",
+    "shimoReading": "ひとずてならでゆうよしもがな",
+    "versesRomaji": [
+      "imawatada",
+      "omoitaenan",
+      "tobakario",
+      "hitozutenarade",
+      "yuuyoshimogana"
+    ],
     "torifuda": "ひとつてならていふよしもかな",
     "torifudaColumns": [
       "ひとつてな",
@@ -1320,12 +2383,21 @@
     ],
     "kimariji": "いまは",
     "kimarijiReading": "いまわ",
-    "color": "橙"
+    "kimarijiShimo": "ひとづ",
+    "color": "橙",
+    "colorNumber": 8,
+    "yomifudaColumns": [
+      "いま[は|わ]ただー[思|おも][ひ|い][絶|た]えな[む|ん]",
+      "とｰばかりーをー",
+      "[人|ひと][づ|ず]てｰならでー",
+      "[言|ゆ][ふ|う]よしーもがな"
+    ]
   },
   {
     "id": 64,
     "author": "権中納言定頼",
     "authorKana": "ごんちゅうなごんさだより",
+    "authorRomaji": "Gonchuunagonsadayori",
     "kami": "朝ぼらけ　宇治の川ぎり　絶え絶えに",
     "shimo": "あらはれ渡る　瀬々の網代木",
     "kamiRuby": "[朝|あさ]ぼらけ　[宇治|うぢ]の[川|かは]ぎり　[絶|た]え[絶|だ]えに",
@@ -1333,6 +2405,14 @@
     "kamiKana": "あさぼらけ　うぢのかはぎり　たえだえに",
     "shimoKana": "あらはれわたる　せぜのあじろぎ",
     "kamiReading": "あさぼらけうじのかわぎりたえだえに",
+    "shimoReading": "あらわれわたるせぜのあじろぎ",
+    "versesRomaji": [
+      "asaborake",
+      "ujinokawagiri",
+      "taedaeni",
+      "arawarewataru",
+      "sezenoajirogi"
+    ],
     "torifuda": "あらはれわたるせせのあしろき",
     "torifudaColumns": [
       "あらはれわ",
@@ -1341,12 +2421,21 @@
     ],
     "kimariji": "あさぼらけう",
     "kimarijiReading": "あさぼらけう",
-    "color": "橙"
+    "kimarijiShimo": "あら",
+    "color": "橙",
+    "colorNumber": 2,
+    "yomifudaColumns": [
+      "[朝|あさ]ぼらけ[宇治|うじ]の[川霧|かわぎり]ー",
+      "[絶|た]え[絶|だ]えーにー",
+      "あら[は|わ]れｰわたるー",
+      "[瀬々|せぜ]のあじーろ[木|ぎ]"
+    ]
   },
   {
     "id": 65,
     "author": "相模",
     "authorKana": "さがみ",
+    "authorRomaji": "Sagami",
     "kami": "恨み侘び　干さぬ袖だに　あるものを",
     "shimo": "恋に朽ちなむ　名こそ惜しけれ",
     "kamiRuby": "[恨|うら]み[侘|わ]び　[干|ほ]さぬ[袖|そで]だに　あるものを",
@@ -1354,6 +2443,14 @@
     "kamiKana": "うらみわび　ほさぬそでだに　あるものを",
     "shimoKana": "こひにくちなむ　なこそをしけれ",
     "kamiReading": "うらみわびほさぬそでだにあるものを",
+    "shimoReading": "こいにくちなんなこそおしけれ",
+    "versesRomaji": [
+      "uramiwabi",
+      "hosanusodedani",
+      "arumonoo",
+      "koinikuchinan",
+      "nakosooshikere"
+    ],
     "torifuda": "こひにくちなむなこそをしけれ",
     "torifudaColumns": [
       "こひにくち",
@@ -1362,12 +2459,21 @@
     ],
     "kimariji": "うら",
     "kimarijiReading": "うら",
-    "color": "桃"
+    "kimarijiShimo": "こひに",
+    "color": "桃",
+    "colorNumber": 9,
+    "yomifudaColumns": [
+      "[恨|うら]みわびーほさぬ[袖|そで]だにｰ",
+      "あるものーをー",
+      "[恋|こい]にｰ[朽|く]ちな[む|ん]ー",
+      "[名|な]こそ[惜|お]しーけれ"
+    ]
   },
   {
     "id": 66,
     "author": "前大僧正行尊",
     "authorKana": "さきのだいそうじょうぎょうそん",
+    "authorRomaji": "Sakinodaisoujougyouson",
     "kami": "もろともに　あはれと思へ　山桜",
     "shimo": "花より外に　知る人もなし",
     "kamiRuby": "もろともに　あはれと[思|おも]へ　[山桜|やまざくら]",
@@ -1375,6 +2481,14 @@
     "kamiKana": "もろともに　あはれとおもへ　やまざくら",
     "shimoKana": "はなよりほかに　しるひともなし",
     "kamiReading": "もろともにあわれとおもえやまざくら",
+    "shimoReading": "はなよりほかにしるひともなし",
+    "versesRomaji": [
+      "morotomoni",
+      "awaretoomoe",
+      "yamazakura",
+      "hanayorihokani",
+      "shiruhitomonashi"
+    ],
     "torifuda": "はなよりほかにしるひともなし",
     "torifudaColumns": [
       "はなよりほ",
@@ -1383,12 +2497,21 @@
     ],
     "kimariji": "もろ",
     "kimarijiReading": "もろ",
-    "color": "桃"
+    "kimarijiShimo": "はなよ",
+    "color": "桃",
+    "colorNumber": 3,
+    "yomifudaColumns": [
+      "もろともにーあ[は|わ]れと[思|おも][へ|え]ｰ",
+      "[山|やま]ざくーらー",
+      "[花|はな]よりｰほかにー",
+      "しる[人|ひと]もーなし"
+    ]
   },
   {
     "id": 67,
     "author": "周防内侍",
     "authorKana": "すおうのないし",
+    "authorRomaji": "Suounonaishi",
     "kami": "春の夜の　夢ばかりなる　手枕に",
     "shimo": "かひなく立たむ　名こそ惜しけれ",
     "kamiRuby": "[春|はる]の[夜|よ]の　[夢|ゆめ]ばかりなる　[手枕|たまくら]に",
@@ -1396,6 +2519,14 @@
     "kamiKana": "はるのよの　ゆめばかりなる　たまくらに",
     "shimoKana": "かひなくたたむ　なこそをしけれ",
     "kamiReading": "はるのよのゆめばかりなるたまくらに",
+    "shimoReading": "かいなくたたんなこそおしけれ",
+    "versesRomaji": [
+      "harunoyono",
+      "yumebakarinaru",
+      "tamakurani",
+      "kainakutatan",
+      "nakosooshikere"
+    ],
     "torifuda": "かひなくたたむなこそをしけれ",
     "torifudaColumns": [
       "かひなくた",
@@ -1404,12 +2535,21 @@
     ],
     "kimariji": "はるの",
     "kimarijiReading": "はるの",
-    "color": "橙"
+    "kimarijiShimo": "かひ",
+    "color": "橙",
+    "colorNumber": 14,
+    "yomifudaColumns": [
+      "[春|はる]の[夜|よ]のーゆめばかりなるｰ",
+      "[手枕|たまくら]ーにー",
+      "か[ひ|い]なくｰたた[む|ん]ー",
+      "[名|な]こそ[を|お]しーけれ"
+    ]
   },
   {
     "id": 68,
     "author": "三条院",
     "authorKana": "さんじょういん",
+    "authorRomaji": "Sanjouin",
     "kami": "心にも　あらで憂き世に　長らへば",
     "shimo": "恋しかるべき　夜半の月かな",
     "kamiRuby": "[心|こころ]にも　あらで[憂|う]き[世|よ]に　[長|なが]らへば",
@@ -1417,6 +2557,14 @@
     "kamiKana": "こころにも　あらでうきよに　ながらへば",
     "shimoKana": "こひしかるべき　よはのつきかな",
     "kamiReading": "こころにもあらでうきよにながらえば",
+    "shimoReading": "こいしかるべきよわのつきかな",
+    "versesRomaji": [
+      "kokoronimo",
+      "aradeukiyoni",
+      "nagaraeba",
+      "koishikarubeki",
+      "yowanotsukikana"
+    ],
     "torifuda": "こひしかるへきよはのつきかな",
     "torifudaColumns": [
       "こひしかる",
@@ -1425,12 +2573,21 @@
     ],
     "kimariji": "こころに",
     "kimarijiReading": "こころに",
-    "color": "緑"
+    "kimarijiShimo": "こひし",
+    "color": "緑",
+    "colorNumber": 17,
+    "yomifudaColumns": [
+      "[心|こころ]にもーあらでうき[世|よ]にｰ",
+      "ながら[へ|え]ーばー",
+      "[恋|こい]しかるｰべきー",
+      "[夜半|よわ]の[月|つき]ーかな"
+    ]
   },
   {
     "id": 69,
     "author": "能因法師",
     "authorKana": "のういんほうし",
+    "authorRomaji": "Nouinhoushi",
     "kami": "嵐吹く　三室の山の　紅葉は",
     "shimo": "龍田の川の　錦なりけり",
     "kamiRuby": "[嵐|あらし][吹|ふ]く　[三室|みむろ]の[山|やま]の　[紅葉|もみぢば]は",
@@ -1438,6 +2595,14 @@
     "kamiKana": "あらしふく　みむろのやまの　もみぢばは",
     "shimoKana": "たつたのかはの　にしきなりけり",
     "kamiReading": "あらしふくみむろのやまのもみじばわ",
+    "shimoReading": "たつたのかわのにしきなりけり",
+    "versesRomaji": [
+      "arashifuku",
+      "mimuronoyamano",
+      "momijibawa",
+      "tatsutanokawano",
+      "nishikinarikeri"
+    ],
     "torifuda": "たつたのかはのにしきなりけり",
     "torifudaColumns": [
       "たつたのか",
@@ -1446,12 +2611,21 @@
     ],
     "kimariji": "あらし",
     "kimarijiReading": "あらし",
-    "color": "青"
+    "kimarijiShimo": "たつ",
+    "color": "青",
+    "colorNumber": 3,
+    "yomifudaColumns": [
+      "あらし[吹|ふ]くー[三室|みむろ]の[山|やま]のｰ",
+      "もみ[ぢ|じ][葉|ば]ー[は|わ]ー",
+      "[竜田|たつた]のｰ[川|かわ]のー",
+      "[錦|にしき]なりーけり"
+    ]
   },
   {
     "id": 70,
     "author": "良暹法師",
     "authorKana": "りょうぜんほうし",
+    "authorRomaji": "Ryouzenhoushi",
     "kami": "寂しさに　宿を立ち出でて　眺むれば",
     "shimo": "いづこも同じ　秋の夕暮",
     "kamiRuby": "[寂|さび]しさに　[宿|やど]を[立|た]ち[出|い]でて　[眺|なが]むれば",
@@ -1459,6 +2633,14 @@
     "kamiKana": "さびしさに　やどをたちいでて　ながむれば",
     "shimoKana": "いづこもおなじ　あきのゆふぐれ",
     "kamiReading": "さびしさにやどをたちいでてながむれば",
+    "shimoReading": "いずこもおなじあきのゆうぐれ",
+    "versesRomaji": [
+      "sabishisani",
+      "yadootachiidete",
+      "nagamureba",
+      "izukomoonaji",
+      "akinoyuugure"
+    ],
     "torifuda": "いつこもおなしあきのゆふくれ",
     "torifudaColumns": [
       "いつこもお",
@@ -1467,12 +2649,21 @@
     ],
     "kimariji": "さ",
     "kimarijiReading": "さ",
-    "color": "青"
+    "kimarijiShimo": "いづこ",
+    "color": "青",
+    "colorNumber": 6,
+    "yomifudaColumns": [
+      "さびしさにー[宿|やど]をたち[出|い]でてｰ",
+      "ながむれーばー",
+      "い[づ|ず]こもｰおなじー",
+      "[秋|あき]の[夕|ゆう]ーぐれ"
+    ]
   },
   {
     "id": 71,
     "author": "大納言経信",
     "authorKana": "だいなごんつねのぶ",
+    "authorRomaji": "Dainagontsunenobu",
     "kami": "夕されば　門田の稲葉　おとづれて",
     "shimo": "蘆のまろやに　秋風ぞふく",
     "kamiRuby": "[夕|ゆふ]されば　[門田|かどた]の[稲葉|いなば]　おとづれて",
@@ -1480,6 +2671,14 @@
     "kamiKana": "ゆふされば　かどたのいなば　おとづれて",
     "shimoKana": "あしのまろやに　あきかぜぞふく",
     "kamiReading": "ゆうさればかどたのいなばおとずれて",
+    "shimoReading": "あしのまろやにあきかぜぞふく",
+    "versesRomaji": [
+      "yuusareba",
+      "kadotanoinaba",
+      "otozurete",
+      "ashinomaroyani",
+      "akikazezofuku"
+    ],
     "torifuda": "あしのまろやにあきかせそふく",
     "torifudaColumns": [
       "あしのまろ",
@@ -1488,12 +2687,21 @@
     ],
     "kimariji": "ゆう",
     "kimarijiReading": "ゆう",
-    "color": "緑"
+    "kimarijiShimo": "あし",
+    "color": "緑",
+    "colorNumber": 18,
+    "yomifudaColumns": [
+      "[夕|ゆう]さればー[門田|かどた]の[稲葉|いなば]ｰ",
+      "おと[づ|ず]れーてー",
+      "[芦|あし]のｰまろやにー",
+      "[秋風|あきかぜ]ぞー[吹|ふ]く"
+    ]
   },
   {
     "id": 72,
     "author": "祐子内親王家紀伊",
     "authorKana": "ゆうしないしんのうけのきい",
+    "authorRomaji": "Yuushinaishinnoukenokii",
     "kami": "音に聞く　高師の浜の　あだ波は",
     "shimo": "かけじや袖の　ぬれもこそすれ",
     "kamiRuby": "[音|おと]に[聞|き]く　[高師|たかし]の[浜|はま]の　あだ[波|なみ]は",
@@ -1501,6 +2709,14 @@
     "kamiKana": "おとにきく　たかしのはまの　あだなみは",
     "shimoKana": "かけじやそでの　ぬれもこそすれ",
     "kamiReading": "おとにきくたかしのはまのあだなみわ",
+    "shimoReading": "かけじやそでのぬれもこそすれ",
+    "versesRomaji": [
+      "otonikiku",
+      "takashinohamano",
+      "adanamiwa",
+      "kakejiyasodeno",
+      "nuremokososure"
+    ],
     "torifuda": "かけしやそてのぬれもこそすれ",
     "torifudaColumns": [
       "かけしやそ",
@@ -1509,12 +2725,21 @@
     ],
     "kimariji": "おと",
     "kimarijiReading": "おと",
-    "color": "桃"
+    "kimarijiShimo": "かけ",
+    "color": "桃",
+    "colorNumber": 4,
+    "yomifudaColumns": [
+      "[音|おと]にきくーたかしの[浜|はま]のｰ",
+      "あだ[波|なみ]ー[は|わ]ー",
+      "かけじやｰ[袖|そで]のー",
+      "ぬれもこそーすれ"
+    ]
   },
   {
     "id": 73,
     "author": "権中納言匡房",
     "authorKana": "ごんちゅうなごんまさふさ",
+    "authorRomaji": "Gonchuunagonmasafusa",
     "kami": "高砂の　尾の上の桜　咲きにけり",
     "shimo": "外山の霞　立たずもあらなむ",
     "kamiRuby": "[高砂|たかさご]の　[尾|を]の[上|へ]の[桜|さくら]　[咲|さ]きにけり",
@@ -1522,6 +2747,14 @@
     "kamiKana": "たかさごの　をのへのさくら　さきにけり",
     "shimoKana": "とやまのかすみ　たたずもあらなむ",
     "kamiReading": "たかさごのおのえのさくらさきにけり",
+    "shimoReading": "とやまのかすみたたずもあらなん",
+    "versesRomaji": [
+      "takasagono",
+      "onoenosakura",
+      "sakinikeri",
+      "toyamanokasumi",
+      "tatazumoaranan"
+    ],
     "torifuda": "とやまのかすみたたすもあらなむ",
     "torifudaColumns": [
       "とやまのか",
@@ -1530,12 +2763,21 @@
     ],
     "kimariji": "たか",
     "kimarijiReading": "たか",
-    "color": "桃"
+    "kimarijiShimo": "と",
+    "color": "桃",
+    "colorNumber": 5,
+    "yomifudaColumns": [
+      "[高砂|たかさご]のー[尾上|おのえ]の[桜|さくら]ｰ",
+      "[咲|さ]きにーけりー",
+      "[外山|とやま]のｰ[霞|かすみ]ー",
+      "たたずもあらーな[む|ん]"
+    ]
   },
   {
     "id": 74,
     "author": "源俊頼朝臣",
     "authorKana": "みなもとのとしよりあそん",
+    "authorRomaji": "Minamotonotoshiyoriason",
     "kami": "憂かりける　人を初瀬の　山おろしよ",
     "shimo": "激しかれとは　祈らぬものを",
     "kamiRuby": "[憂|う]かりける　[人|ひと]を[初瀬|はつせ]の　[山|やま]おろしよ",
@@ -1543,6 +2785,14 @@
     "kamiKana": "うかりける　ひとをはつせの　やまおろしよ",
     "shimoKana": "はげしかれとは　いのらぬものを",
     "kamiReading": "うかりけるひとをはつせのやまおろしよ",
+    "shimoReading": "はげしかれとわいのらぬものを",
+    "versesRomaji": [
+      "ukarikeru",
+      "hitoohatsuseno",
+      "yamaoroshiyo",
+      "hageshikaretowa",
+      "inoranumonoo"
+    ],
     "torifuda": "はけしかれとはいのらぬものを",
     "torifudaColumns": [
       "はけしかれ",
@@ -1551,12 +2801,21 @@
     ],
     "kimariji": "うか",
     "kimarijiReading": "うか",
-    "color": "青"
+    "kimarijiShimo": "はげ",
+    "color": "青",
+    "colorNumber": 9,
+    "yomifudaColumns": [
+      "[憂|う]かりけるー[人|ひと]を[初瀬|はつせ]のｰ",
+      "[山|やま]おろーしー",
+      "はげしかれｰと[は|わ]ー",
+      "[祈|いの]らぬーものを"
+    ]
   },
   {
     "id": 75,
     "author": "藤原基俊",
     "authorKana": "ふじわらのもととし",
+    "authorRomaji": "Fujiwaranomototoshi",
     "kami": "契りおきし　させもが露を　命にて",
     "shimo": "あはれ今年の　秋もいぬめり",
     "kamiRuby": "[契|ちぎ]りおきし　させもが[露|つゆ]を　[命|いのち]にて",
@@ -1564,6 +2823,14 @@
     "kamiKana": "ちぎりおきし　させもがつゆを　いのちにて",
     "shimoKana": "あはれことしの　あきもいぬめり",
     "kamiReading": "ちぎりおきしさせもがつゆをいのちにて",
+    "shimoReading": "あわれことしのあきもいぬめり",
+    "versesRomaji": [
+      "chigiriokishi",
+      "sasemogatsuyuo",
+      "inochinite",
+      "awarekotoshino",
+      "akimoinumeri"
+    ],
     "torifuda": "あはれことしのあきもいぬめり",
     "torifudaColumns": [
       "あはれこと",
@@ -1572,12 +2839,21 @@
     ],
     "kimariji": "ちぎりお",
     "kimarijiReading": "ちぎりお",
-    "color": "青"
+    "kimarijiShimo": "あはれ",
+    "color": "青",
+    "colorNumber": 19,
+    "yomifudaColumns": [
+      "[契|ちぎ]りおきしーさせもが[露|つゆ]をｰ",
+      "いのちにーてー",
+      "あ[は|わ]れｰ[今年|ことし]のー",
+      "[秋|あき]もいぬーめり"
+    ]
   },
   {
     "id": 76,
     "author": "法性寺入道前関白太政大臣",
     "authorKana": "ほっしょうじにゅうどうさきのかんぱくだいじょうだいじん",
+    "authorRomaji": "Hosshoujinyuudousakinokanpakudaijoudaijin",
     "kami": "わたの原　漕ぎ出でて見れば　久方の",
     "shimo": "雲居にまがふ　沖つ白波",
     "kamiRuby": "わたの[原|はら]　[漕|こ]ぎ[出|い]でて[見|み]れば　[久方|ひさかた]の",
@@ -1585,6 +2861,14 @@
     "kamiKana": "わたのはら　こぎいでてみれば　ひさかたの",
     "shimoKana": "くもゐにまがふ　おきつしらなみ",
     "kamiReading": "わたのはらこぎいでてみればひさかたの",
+    "shimoReading": "くもいにまごうおきつしらなみ",
+    "versesRomaji": [
+      "watanohara",
+      "kogiidetemireba",
+      "hisakatano",
+      "kumoinimagou",
+      "okitsushiranami"
+    ],
     "torifuda": "くもゐにまかふおきつしらなみ",
     "torifudaColumns": [
       "くもゐにま",
@@ -1593,12 +2877,21 @@
     ],
     "kimariji": "わたのはらこ",
     "kimarijiReading": "わたのはらこ",
-    "color": "青"
+    "kimarijiShimo": "くもゐ",
+    "color": "青",
+    "colorNumber": 12,
+    "yomifudaColumns": [
+      "わたの[原|はら][漕|こ]ぎ[出|い]でて[見|み]ればー",
+      "[久方|ひさかた]ーのー",
+      "[雲|くも][ゐ|い]にｰま[がふ|ごう]ー",
+      "[沖|おき]つ[白|しら]ー[波|なみ]"
+    ]
   },
   {
     "id": 77,
     "author": "崇徳院",
     "authorKana": "すとくいん",
+    "authorRomaji": "Sutokuin",
     "kami": "瀬を早み　岩にせかるる　滝がはの",
     "shimo": "われても末に　逢はむとぞ思ふ",
     "kamiRuby": "[瀬|せ]を[早|はや]み　[岩|いは]にせかるる　[滝|たき]がはの",
@@ -1606,6 +2899,14 @@
     "kamiKana": "せをはやみ　いはにせかるる　たきがはの",
     "shimoKana": "われてもすゑに　あはむとぞおもふ",
     "kamiReading": "せをはやみいわにせかるるたきがわの",
+    "shimoReading": "われてもすえにあわんとぞおもう",
+    "versesRomaji": [
+      "seohayami",
+      "iwanisekaruru",
+      "takigawano",
+      "waretemosueni",
+      "awantozoomou"
+    ],
     "torifuda": "われてもすゑにあはむとそおもふ",
     "torifudaColumns": [
       "われてもす",
@@ -1614,12 +2915,21 @@
     ],
     "kimariji": "せ",
     "kimarijiReading": "せ",
-    "color": "橙"
+    "kimarijiShimo": "われ",
+    "color": "橙",
+    "colorNumber": 9,
+    "yomifudaColumns": [
+      "[瀬|せ]をはやみー[岩|いわ]にせかるるｰ",
+      "[滝川|たきがわ]ーのー",
+      "われてもｰ[末|すえ]にー",
+      "あ[は|わ][む|ん]とぞー[思|おも][ふ|う]"
+    ]
   },
   {
     "id": 78,
     "author": "源兼昌",
     "authorKana": "みなもとのかねまさ",
+    "authorRomaji": "Minamotonokanemasa",
     "kami": "淡路島　通ふ千鳥の　鳴く声に",
     "shimo": "いく夜寝ざめぬ　須磨の関守",
     "kamiRuby": "[淡路島|あはぢしま]　[通|かよ]ふ[千鳥|ちどり]の　[鳴|な]く[声|こゑ]に",
@@ -1627,6 +2937,14 @@
     "kamiKana": "あはぢしま　かよふちどりの　なくこゑに",
     "shimoKana": "いくよねざめぬ　すまのせきもり",
     "kamiReading": "あわじしまかようちどりのなくこえに",
+    "shimoReading": "いくよねざめぬすまのせきもり",
+    "versesRomaji": [
+      "awajishima",
+      "kayouchidorino",
+      "nakukoeni",
+      "ikuyonezamenu",
+      "sumanosekimori"
+    ],
     "torifuda": "いくよねさめぬすまのせきもり",
     "torifudaColumns": [
       "いくよねさ",
@@ -1635,12 +2953,21 @@
     ],
     "kimariji": "あわじ",
     "kimarijiReading": "あわじ",
-    "color": "黄"
+    "kimarijiShimo": "いく",
+    "color": "黄",
+    "colorNumber": 13,
+    "yomifudaColumns": [
+      "[淡路島|あわじしま]ーかよ[ふ|う][千鳥|ちどり]のｰ",
+      "[鳴|な]く[声|こえ]ーにー",
+      "[幾夜|いくよ]ｰねざめぬー",
+      "[須磨|すま]の[関|せき]ー[守|もり]"
+    ]
   },
   {
     "id": 79,
     "author": "左京大夫顕輔",
     "authorKana": "さきょうのだいぶあきすけ",
+    "authorRomaji": "Sakyounodaibuakisuke",
     "kami": "秋風に　たなびく雲の　絶え間より",
     "shimo": "もれ出づる月の　影のさやけさ",
     "kamiRuby": "[秋風|あきかぜ]に　たなびく[雲|くも]の　[絶|た]え[間|ま]より",
@@ -1648,6 +2975,14 @@
     "kamiKana": "あきかぜに　たなびくくもの　たえまより",
     "shimoKana": "もれいづるつきの　かげのさやけさ",
     "kamiReading": "あきかぜにたなびくくものたえまより",
+    "shimoReading": "もれいずるつきのかげのさやけさ",
+    "versesRomaji": [
+      "akikazeni",
+      "tanabikukumono",
+      "taemayori",
+      "moreizurutsukino",
+      "kagenosayakesa"
+    ],
     "torifuda": "もれいつるつきのかけのさやけさ",
     "torifudaColumns": [
       "もれいつる",
@@ -1656,12 +2991,21 @@
     ],
     "kimariji": "あきか",
     "kimarijiReading": "あきか",
-    "color": "黄"
+    "kimarijiShimo": "もれ",
+    "color": "黄",
+    "colorNumber": 14,
+    "yomifudaColumns": [
+      "[秋風|あきかぜ]にーたなびく[雲|くも]のｰ",
+      "たえ[間|ま]ーよりー",
+      "もれ[出|い][づ|ず]るｰ[月|つき]のー",
+      "[影|かげ]のさやーけさ"
+    ]
   },
   {
     "id": 80,
     "author": "待賢門院堀河",
     "authorKana": "たいけんもんいんのほりかわ",
+    "authorRomaji": "Taikenmoninnohorikawa",
     "kami": "長からむ　心も知らず　黒髪の",
     "shimo": "乱れて今朝は　ものをこそ思へ",
     "kamiRuby": "[長|なが]からむ　[心|こころ]も[知|し]らず　[黒髪|くろかみ]の",
@@ -1669,6 +3013,14 @@
     "kamiKana": "ながからむ　こころもしらず　くろかみの",
     "shimoKana": "みだれてけさは　ものをこそおもへ",
     "kamiReading": "ながからんこころもしらずくろかみの",
+    "shimoReading": "みだれてけさわものをこそおもえ",
+    "versesRomaji": [
+      "nagakaran",
+      "kokoromoshirazu",
+      "kurokamino",
+      "midaretekesawa",
+      "monookosoomoe"
+    ],
     "torifuda": "みたれてけさはものをこそおもへ",
     "torifudaColumns": [
       "みたれてけ",
@@ -1677,12 +3029,21 @@
     ],
     "kimariji": "ながか",
     "kimarijiReading": "ながか",
-    "color": "桃"
+    "kimarijiShimo": "みだれて",
+    "color": "桃",
+    "colorNumber": 6,
+    "yomifudaColumns": [
+      "[長|なが]から[む|ん]ー[心|こころ]もしらずｰ",
+      "[黒髪|くろかみ]ーのー",
+      "みだれてｰ[今朝|けさ][は|わ]ー",
+      "[物|もの]をこそー[思|おも][へ|え]"
+    ]
   },
   {
     "id": 81,
     "author": "後徳大寺左大臣",
     "authorKana": "ごとくだいじのさだいじん",
+    "authorRomaji": "Gotokudaijinosadaijin",
     "kami": "ほととぎす　鳴きつる方を　ながむれば",
     "shimo": "ただ有明の　月ぞ残れる",
     "kamiRuby": "ほととぎす　[鳴|な]きつる[方|かた]を　ながむれば",
@@ -1690,6 +3051,14 @@
     "kamiKana": "ほととぎす　なきつるかたを　ながむれば",
     "shimoKana": "ただありあけの　つきぞのこれる",
     "kamiReading": "ほととぎすなきつるかたをながむれば",
+    "shimoReading": "ただありあけのつきぞのこれる",
+    "versesRomaji": [
+      "hototogisu",
+      "nakitsurukatao",
+      "nagamureba",
+      "tadaariakeno",
+      "tsukizonokoreru"
+    ],
     "torifuda": "たたありあけのつきそのこれる",
     "torifudaColumns": [
       "たたありあ",
@@ -1698,12 +3067,21 @@
     ],
     "kimariji": "ほ",
     "kimarijiReading": "ほ",
-    "color": "黄"
+    "kimarijiShimo": "ただ",
+    "color": "黄",
+    "colorNumber": 15,
+    "yomifudaColumns": [
+      "ほととぎすー[鳴|な]きつる[方|かた]をｰ",
+      "ながむれーばー",
+      "ただｰありあけのー",
+      "[月|つき]ぞ[残|のこ]ーれる"
+    ]
   },
   {
     "id": 82,
     "author": "道因法師",
     "authorKana": "どういんほうし",
+    "authorRomaji": "Douinhoushi",
     "kami": "思ひ侘び　さても命は　あるものを",
     "shimo": "憂きに堪へぬは　涙なりけり",
     "kamiRuby": "[思|おも]ひ[侘|わ]び　さても[命|いのち]は　あるものを",
@@ -1711,6 +3089,14 @@
     "kamiKana": "おもひわび　さてもいのちは　あるものを",
     "shimoKana": "うきにたへぬは　なみだなりけり",
     "kamiReading": "おもいわびさてもいのちわあるものを",
+    "shimoReading": "うきにたえぬわなみだなりけり",
+    "versesRomaji": [
+      "omoiwabi",
+      "satemoinochiwa",
+      "arumonoo",
+      "ukinitaenuwa",
+      "namidanarikeri"
+    ],
     "torifuda": "うきにたへぬはなみたなりけり",
     "torifudaColumns": [
       "うきにたへ",
@@ -1719,12 +3105,21 @@
     ],
     "kimariji": "おも",
     "kimarijiReading": "おも",
-    "color": "青"
+    "kimarijiShimo": "うき",
+    "color": "青",
+    "colorNumber": 20,
+    "yomifudaColumns": [
+      "[思|おも][ひ|い]わびーさても[命|いのち][は|わ]ｰ",
+      "あるものーをー",
+      "[憂|う]きにｰた[へ|え]ぬ[は|わ]ー",
+      "[涙|なみだ]なりーけり"
+    ]
   },
   {
     "id": 83,
     "author": "皇太后宮大夫俊成",
     "authorKana": "こうたいごうぐうのだいぶしゅんぜい",
+    "authorRomaji": "Koutaigouguunodaibushunzei",
     "kami": "世の中よ　道こそなけれ　思ひ入る",
     "shimo": "山の奥にも　鹿ぞ鳴くなる",
     "kamiRuby": "[世|よ]の[中|なか]よ　[道|みち]こそなけれ　[思|おも]ひ[入|い]る",
@@ -1732,6 +3127,14 @@
     "kamiKana": "よのなかよ　みちこそなけれ　おもひいる",
     "shimoKana": "やまのおくにも　しかぞなくなる",
     "kamiReading": "よのなかよみちこそなけれおもいいる",
+    "shimoReading": "やまのおくにもしかぞなくなる",
+    "versesRomaji": [
+      "yononakayo",
+      "michikosonakere",
+      "omoiiru",
+      "yamanookunimo",
+      "shikazonakunaru"
+    ],
     "torifuda": "やまのおくにもしかそなくなる",
     "torifudaColumns": [
       "やまのおく",
@@ -1740,12 +3143,21 @@
     ],
     "kimariji": "よのなかよ",
     "kimarijiReading": "よのなかよ",
-    "color": "桃"
+    "kimarijiShimo": "やま",
+    "color": "桃",
+    "colorNumber": 19,
+    "yomifudaColumns": [
+      "[世|よ]の[中|なか]よー[道|みち]こそなけれｰ",
+      "[思|おも][ひ|い]ー[入|い]るー",
+      "[山|やま]のｰ[奥|おく]にもー",
+      "[鹿|しか]ぞ[鳴|な]くーなる"
+    ]
   },
   {
     "id": 84,
     "author": "藤原清輔朝臣",
     "authorKana": "ふじわらのきよすけあそん",
+    "authorRomaji": "Fujiwaranokiyosukeason",
     "kami": "長らへば　またこの頃や　忍ばれむ",
     "shimo": "憂しと見し世ぞ　今は恋しき",
     "kamiRuby": "[長|なが]らへば　またこの[頃|ごろ]や　[忍|しの]ばれむ",
@@ -1753,6 +3165,14 @@
     "kamiKana": "ながらへば　またこのごろや　しのばれむ",
     "shimoKana": "うしとみしよぞ　いまはこひしき",
     "kamiReading": "ながらえばまたこのごろやしのばれん",
+    "shimoReading": "うしとみしよぞいまわこいしき",
+    "versesRomaji": [
+      "nagaraeba",
+      "matakonogoroya",
+      "shinobaren",
+      "ushitomishiyozo",
+      "imawakoishiki"
+    ],
     "torifuda": "うしとみしよそいまはこひしき",
     "torifudaColumns": [
       "うしとみし",
@@ -1761,12 +3181,21 @@
     ],
     "kimariji": "ながら",
     "kimarijiReading": "ながら",
-    "color": "桃"
+    "kimarijiShimo": "うし",
+    "color": "桃",
+    "colorNumber": 20,
+    "yomifudaColumns": [
+      "ながら[へ|え]ばーまたこのごろやｰ",
+      "しのばれー[む|ん]ー",
+      "[憂|う]しとｰ[見|み]し[世|よ]ぞー",
+      "[今|いま][は|わ][恋|こい]ーしき"
+    ]
   },
   {
     "id": 85,
     "author": "俊恵法師",
     "authorKana": "しゅんえほうし",
+    "authorRomaji": "Shunehoushi",
     "kami": "夜もすがら　物思ふころは　明けやらで",
     "shimo": "ねやの隙さへ　つれなかりけり",
     "kamiRuby": "[夜|よ]もすがら　[物|もの][思|おも]ふころは　[明|あ]けやらで",
@@ -1774,6 +3203,14 @@
     "kamiKana": "よもすがら　ものおもふころは　あけやらで",
     "shimoKana": "ねやのひまさへ　つれなかりけり",
     "kamiReading": "よもすがらものおもうころわあけやらで",
+    "shimoReading": "ねやのひまさえつれなかりけり",
+    "versesRomaji": [
+      "yomosugara",
+      "monoomoukorowa",
+      "akeyarade",
+      "neyanohimasae",
+      "tsurenakarikeri"
+    ],
     "torifuda": "ねやのひまさへつれなかりけり",
     "torifudaColumns": [
       "ねやのひま",
@@ -1782,12 +3219,21 @@
     ],
     "kimariji": "よも",
     "kimarijiReading": "よも",
-    "color": "黄"
+    "kimarijiShimo": "ね",
+    "color": "黄",
+    "colorNumber": 19,
+    "yomifudaColumns": [
+      "[夜|よ]もすがらー[物|もの][思|おも][ふ|う]ころ[は|わ]ｰ",
+      "[明|あ]けやらーでー",
+      "[閨|ねや]のｰひまさ[へ|え]ー",
+      "つれなかりーけり"
+    ]
   },
   {
     "id": 86,
     "author": "西行法師",
     "authorKana": "さいぎょうほうし",
+    "authorRomaji": "Saigyouhoushi",
     "kami": "嘆けとて　月やはものを　思はする",
     "shimo": "かこち顔なる　わが涙かな",
     "kamiRuby": "[嘆|なげ]けとて　[月|つき]やはものを　[思|おも]はする",
@@ -1795,6 +3241,14 @@
     "kamiKana": "なげけとて　つきやはものを　おもはする",
     "shimoKana": "かこちがほなる　わがなみだかな",
     "kamiReading": "なげけとてつきやわものをおもわする",
+    "shimoReading": "かこちがおなるわがなみだかな",
+    "versesRomaji": [
+      "nageketote",
+      "tsukiyawamonoo",
+      "omowasuru",
+      "kakochigaonaru",
+      "waganamidakana"
+    ],
     "torifuda": "かこちかほなるわかなみたかな",
     "torifudaColumns": [
       "かこちかほ",
@@ -1803,12 +3257,21 @@
     ],
     "kimariji": "なげけ",
     "kimarijiReading": "なげけ",
-    "color": "桃"
+    "kimarijiShimo": "かこ",
+    "color": "桃",
+    "colorNumber": 1,
+    "yomifudaColumns": [
+      "[嘆|なげ]けとてー[月|つき]や[は|わ][物|もの]をｰ",
+      "[思|おも][は|わ]ーするー",
+      "かこち[顔|がお]ｰなるー",
+      "わが[涙|なみだ]ーかな"
+    ]
   },
   {
     "id": 87,
     "author": "寂蓮法師",
     "authorKana": "じゃくれんほうし",
+    "authorRomaji": "Jakurenhoushi",
     "kami": "村雨の　露もまだ干ぬ　まきの葉に",
     "shimo": "霧立ちのぼる　秋の夕暮れ",
     "kamiRuby": "[村雨|むらさめ]の　[露|つゆ]もまだ[干|ひ]ぬ　まきの[葉|は]に",
@@ -1816,6 +3279,14 @@
     "kamiKana": "むらさめの　つゆもまだひぬ　まきのはに",
     "shimoKana": "きりたちのぼる　あきのゆふぐれ",
     "kamiReading": "むらさめのつゆもまだひぬまきのはに",
+    "shimoReading": "きりたちのぼるあきのゆうぐれ",
+    "versesRomaji": [
+      "murasameno",
+      "tsuyumomadahinu",
+      "makinohani",
+      "kiritachinoboru",
+      "akinoyuugure"
+    ],
     "torifuda": "きりたちのほるあきのゆふくれ",
     "torifudaColumns": [
       "きりたちの",
@@ -1824,12 +3295,21 @@
     ],
     "kimariji": "む",
     "kimarijiReading": "む",
-    "color": "黄"
+    "kimarijiShimo": "き",
+    "color": "黄",
+    "colorNumber": 16,
+    "yomifudaColumns": [
+      "[村雨|むらさめ]のー[露|つゆ]もまだ[干|ひ]ぬｰ",
+      "まきの[葉|は]ーにー",
+      "[霧|きり]ｰたちのぼるー",
+      "[秋|あき]の[夕|ゆう]ーぐれ"
+    ]
   },
   {
     "id": 88,
     "author": "皇嘉門院別当",
     "authorKana": "こうかもんいんのべっとう",
+    "authorRomaji": "Koukamoninnobettou",
     "kami": "難波江の　蘆のかり寝の　ひと夜ゆゑ",
     "shimo": "身を尽くしてや　恋ひわたるべき",
     "kamiRuby": "[難波江|なにはえ]の　[蘆|あし]のかり[寝|ね]の　ひと[夜|よ]ゆゑ",
@@ -1837,6 +3317,14 @@
     "kamiKana": "なにはえの　あしのかりねの　ひとよゆゑ",
     "shimoKana": "みをつくしてや　こひわたるべき",
     "kamiReading": "なにわえのあしのかりねのひとよゆえ",
+    "shimoReading": "みをつくしてやこいわたるべき",
+    "versesRomaji": [
+      "naniwaeno",
+      "ashinokarineno",
+      "hitoyoyue",
+      "miotsukushiteya",
+      "koiwatarubeki"
+    ],
     "torifuda": "みをつくしてやこひわたるへき",
     "torifudaColumns": [
       "みをつくし",
@@ -1845,12 +3333,21 @@
     ],
     "kimariji": "なにわえ",
     "kimarijiReading": "なにわえ",
-    "color": "橙"
+    "kimarijiShimo": "みをつくしてや",
+    "color": "橙",
+    "colorNumber": 12,
+    "yomifudaColumns": [
+      "[難波江|なにわえ]のー[芦|あし]のかりねのｰ",
+      "ひとよーゆ[ゑ|え]ー",
+      "みをｰつくしてやー",
+      "[恋|こ][ひ|い]わたるーべき"
+    ]
   },
   {
     "id": 89,
     "author": "式子内親王",
     "authorKana": "しきしないしんのう",
+    "authorRomaji": "Shikishinaishinnou",
     "kami": "玉の緒よ　絶えなば絶えね　長らへば",
     "shimo": "忍ぶることの　弱りもぞする",
     "kamiRuby": "[玉|たま]の[緒|を]よ　[絶|た]えなば[絶|た]えね　[長|なが]らへば",
@@ -1858,6 +3355,14 @@
     "kamiKana": "たまのをよ　たえなばたえね　ながらへば",
     "shimoKana": "しのぶることの　よわりもぞする",
     "kamiReading": "たまのおよたえなばたえねながらえば",
+    "shimoReading": "しのぶることのよわりもぞする",
+    "versesRomaji": [
+      "tamanooyo",
+      "taenabataene",
+      "nagaraeba",
+      "shinoburukotono",
+      "yowarimozosuru"
+    ],
     "torifuda": "しのふることのよわりもそする",
     "torifudaColumns": [
       "しのふるこ",
@@ -1866,12 +3371,21 @@
     ],
     "kimariji": "たま",
     "kimarijiReading": "たま",
-    "color": "黄"
+    "kimarijiShimo": "しの",
+    "color": "黄",
+    "colorNumber": 20,
+    "yomifudaColumns": [
+      "[玉|たま]の[を|お]よーたえなばたえねｰ",
+      "ながら[へ|え]ーばー",
+      "[忍|しの]ぶるｰことのー",
+      "[弱|よわ]りもぞーする"
+    ]
   },
   {
     "id": 90,
     "author": "殷富門院大輔",
     "authorKana": "いんぷもんいんのたいふ",
+    "authorRomaji": "Inpumoninnotaifu",
     "kami": "見せばやな　雄島のあまの　袖だにも",
     "shimo": "ぬれにぞぬれし　色は変はらず",
     "kamiRuby": "[見|み]せばやな　[雄島|をじま]のあまの　[袖|そで]だにも",
@@ -1879,6 +3393,14 @@
     "kamiKana": "みせばやな　をじまのあまの　そでだにも",
     "shimoKana": "ぬれにぞぬれし　いろはかはらず",
     "kamiReading": "みせばやなおじまのあまのそでだにも",
+    "shimoReading": "ぬれにぞぬれしいろわかわらず",
+    "versesRomaji": [
+      "misebayana",
+      "ojimanoamano",
+      "sodedanimo",
+      "nurenizonureshi",
+      "irowakawarazu"
+    ],
     "torifuda": "ぬれにそぬれしいろはかはらす",
     "torifudaColumns": [
       "ぬれにそぬ",
@@ -1887,12 +3409,21 @@
     ],
     "kimariji": "みせ",
     "kimarijiReading": "みせ",
-    "color": "橙"
+    "kimarijiShimo": "ぬ",
+    "color": "橙",
+    "colorNumber": 18,
+    "yomifudaColumns": [
+      "[見|み]せばやなー[雄島|おじま]のあまのｰ",
+      "[袖|そで]だにーもー",
+      "ぬれにぞｰぬれしー",
+      "[色|いろ][は|わ]か[は|わ]ーらず"
+    ]
   },
   {
     "id": 91,
     "author": "後京極摂政前太政大臣",
     "authorKana": "ごきょうごくせっしょうさきのだいじょうだいじん",
+    "authorRomaji": "Gokyougokusesshousakinodaijoudaijin",
     "kami": "きりぎりす　鳴くや霜夜の　さむしろに",
     "shimo": "衣かたしき　独りかも寝む",
     "kamiRuby": "きりぎりす　[鳴|な]くや[霜夜|しもよ]の　さむしろに",
@@ -1900,6 +3431,14 @@
     "kamiKana": "きりぎりす　なくやしもよの　さむしろに",
     "shimoKana": "ころもかたしき　ひとりかもねむ",
     "kamiReading": "きりぎりすなくやしもよのさむしろに",
+    "shimoReading": "ころもかたしきひとりかもねん",
+    "versesRomaji": [
+      "kirigirisu",
+      "nakuyashimoyono",
+      "samushironi",
+      "koromokatashiki",
+      "hitorikamonen"
+    ],
     "torifuda": "ころもかたしきひとりかもねむ",
     "torifudaColumns": [
       "ころもかた",
@@ -1908,12 +3447,21 @@
     ],
     "kimariji": "きり",
     "kimarijiReading": "きり",
-    "color": "青"
+    "kimarijiShimo": "ころもか",
+    "color": "青",
+    "colorNumber": 15,
+    "yomifudaColumns": [
+      "きりぎりすー[鳴|な]くや[霜夜|しもよ]のｰ",
+      "さむしろーにー",
+      "[衣|ころも]ｰかたしきー",
+      "ひとりかもー[寝|ね][む|ん]"
+    ]
   },
   {
     "id": 92,
     "author": "二条院讃岐",
     "authorKana": "にじょういんのさぬき",
+    "authorRomaji": "Nijouinnosanuki",
     "kami": "わが袖は　潮干に見えぬ　沖の石の",
     "shimo": "人こそ知らね　かわく間もなし",
     "kamiRuby": "わが[袖|そで]は　[潮干|しほひ]に[見|み]えぬ　[沖|おき]の[石|いし]の",
@@ -1921,6 +3469,14 @@
     "kamiKana": "わがそでは　しほひにみえぬ　おきのいしの",
     "shimoKana": "ひとこそしらね　かわくまもなし",
     "kamiReading": "わがそでわしおひにみえぬおきのいしの",
+    "shimoReading": "ひとこそしらねかわくまもなし",
+    "versesRomaji": [
+      "wagasodewa",
+      "shiohinimienu",
+      "okinoishino",
+      "hitokososhirane",
+      "kawakumamonashi"
+    ],
     "torifuda": "ひとこそしらねかわくまもなし",
     "torifudaColumns": [
       "ひとこそし",
@@ -1929,12 +3485,21 @@
     ],
     "kimariji": "わがそ",
     "kimarijiReading": "わがそ",
-    "color": "緑"
+    "kimarijiShimo": "ひとこそし",
+    "color": "緑",
+    "colorNumber": 19,
+    "yomifudaColumns": [
+      "わが[袖|そで][は|わ]ー[潮干|しおひ]にみえぬｰ",
+      "[沖|おき]の[石|いし]ーのー",
+      "[人|ひと]こそｰしらねー",
+      "かわくまもーなし"
+    ]
   },
   {
     "id": 93,
     "author": "鎌倉右大臣",
     "authorKana": "かまくらのうだいじん",
+    "authorRomaji": "Kamakuranoudaijin",
     "kami": "世の中は　常にもがもな　渚漕ぐ",
     "shimo": "あまの小舟の　綱手悲しも",
     "kamiRuby": "[世|よ]の[中|なか]は　[常|つね]にもがもな　[渚|なぎさ][漕|こ]ぐ",
@@ -1942,6 +3507,14 @@
     "kamiKana": "よのなかは　つねにもがもな　なぎさこぐ",
     "shimoKana": "あまのをぶねの　つなでかなしも",
     "kamiReading": "よのなかわつねにもがもななぎさこぐ",
+    "shimoReading": "あまのおぶねのつなでかなしも",
+    "versesRomaji": [
+      "yononakawa",
+      "tsunenimogamona",
+      "nagisakogu",
+      "amanoobuneno",
+      "tsunadekanashimo"
+    ],
     "torifuda": "あまのをふねのつなてかなしも",
     "torifudaColumns": [
       "あまのをふ",
@@ -1950,12 +3523,21 @@
     ],
     "kimariji": "よのなかは",
     "kimarijiReading": "よのなかわ",
-    "color": "緑"
+    "kimarijiShimo": "あまの",
+    "color": "緑",
+    "colorNumber": 20,
+    "yomifudaColumns": [
+      "[世|よ]の[中|なか][は|わ]ーつねにもがもなｰ",
+      "なぎさー[漕|こ]ぐー",
+      "あまのｰ[小舟|おぶね]のー",
+      "[綱手|つなで]かなーしも"
+    ]
   },
   {
     "id": 94,
     "author": "参議雅経",
     "authorKana": "さんぎまさつね",
+    "authorRomaji": "Sangimasatsune",
     "kami": "み吉野の　山の秋風　さ夜更けて",
     "shimo": "ふるさと寒く　衣うつなり",
     "kamiRuby": "み[吉野|よしの]の　[山|やま]の[秋風|あきかぜ]　さ[夜|よ][更|ふ]けて",
@@ -1963,6 +3545,14 @@
     "kamiKana": "みよしのの　やまのあきかぜ　さよふけて",
     "shimoKana": "ふるさとさむく　ころもうつなり",
     "kamiReading": "みよしののやまのあきかぜさよふけて",
+    "shimoReading": "ふるさとさむくころもうつなり",
+    "versesRomaji": [
+      "miyoshinono",
+      "yamanoakikaze",
+      "sayofukete",
+      "furusatosamuku",
+      "koromoutsunari"
+    ],
     "torifuda": "ふるさとさむくころもうつなり",
     "torifudaColumns": [
       "ふるさとさ",
@@ -1971,12 +3561,21 @@
     ],
     "kimariji": "みよ",
     "kimarijiReading": "みよ",
-    "color": "黄"
+    "kimarijiShimo": "ふる",
+    "color": "黄",
+    "colorNumber": 17,
+    "yomifudaColumns": [
+      "み[吉野|よしの]のー[山|やま]の[秋風|あきかぜ]ｰ",
+      "さ[夜|よ]ふけーてー",
+      "ふるさとｰ[寒|さむ]くー",
+      "[衣|ころも]うつーなり"
+    ]
   },
   {
     "id": 95,
     "author": "前大僧正慈円",
     "authorKana": "さきのだいそうじょうじえん",
+    "authorRomaji": "Sakinodaisoujoujien",
     "kami": "おほけなく　浮世の民に　おほふかな",
     "shimo": "わがたつ杣に　墨染の袖",
     "kamiRuby": "おほけなく　[浮世|うきよ]の[民|たみ]に　おほふかな",
@@ -1984,6 +3583,14 @@
     "kamiKana": "おほけなく　うきよのたみに　おほふかな",
     "shimoKana": "わがたつそまに　すみぞめのそで",
     "kamiReading": "おおけなくうきよのたみにおおうかな",
+    "shimoReading": "わがたつそまにすみぞめのそで",
+    "versesRomaji": [
+      "ookenaku",
+      "ukiyonotamini",
+      "ooukana",
+      "wagatatsusomani",
+      "sumizomenosode"
+    ],
     "torifuda": "わかたつそまにすみそめのそて",
     "torifudaColumns": [
       "わかたつそ",
@@ -1992,12 +3599,21 @@
     ],
     "kimariji": "おおけ",
     "kimarijiReading": "おおけ",
-    "color": "橙"
+    "kimarijiShimo": "わがた",
+    "color": "橙",
+    "colorNumber": 19,
+    "yomifudaColumns": [
+      "お[ほ|お]けなくーうき[世|よ]の[民|たみ]にｰ",
+      "お[ほふ|おう]ーかなー",
+      "わがｰ[立|た]つ[杣|そま]にー",
+      "[墨染|すみぞめ]のー[袖|そで]"
+    ]
   },
   {
     "id": 96,
     "author": "入道前太政大臣",
     "authorKana": "にゅうどうさきのだいじょうだいじん",
+    "authorRomaji": "Nyuudousakinodaijoudaijin",
     "kami": "花さそふ　嵐の庭の　雪ならで",
     "shimo": "ふりゆくものは　わが身なりけり",
     "kamiRuby": "[花|はな]さそふ　[嵐|あらし]の[庭|には]の　[雪|ゆき]ならで",
@@ -2005,6 +3621,14 @@
     "kamiKana": "はなさそふ　あらしのにはの　ゆきならで",
     "shimoKana": "ふりゆくものは　わがみなりけり",
     "kamiReading": "はなさそうあらしのにわのゆきならで",
+    "shimoReading": "ふりゆくものわわがみなりけり",
+    "versesRomaji": [
+      "hanasasou",
+      "arashinoniwano",
+      "yukinarade",
+      "furiyukumonowa",
+      "wagaminarikeri"
+    ],
     "torifuda": "ふりゆくものはわかみなりけり",
     "torifudaColumns": [
       "ふりゆくも",
@@ -2013,12 +3637,21 @@
     ],
     "kimariji": "はなさ",
     "kimarijiReading": "はなさ",
-    "color": "黄"
+    "kimarijiShimo": "ふり",
+    "color": "黄",
+    "colorNumber": 18,
+    "yomifudaColumns": [
+      "[花|はな]さそ[ふ|う]ー[嵐|あらし]の[庭|にわ]のｰ",
+      "[雪|ゆき]ならーでー",
+      "ふりゆくｰもの[は|わ]ー",
+      "わが[身|み]なりーけり"
+    ]
   },
   {
     "id": 97,
     "author": "権中納言定家",
     "authorKana": "ごんちゅうなごんていか",
+    "authorRomaji": "Gonchuunagonteika",
     "kami": "来ぬ人を　松帆の浦の　夕なぎに",
     "shimo": "焼くや藻塩の　身もこがれつつ",
     "kamiRuby": "[来|こ]ぬ[人|ひと]を　[松帆|まつほ]の[浦|うら]の　[夕|ゆふ]なぎに",
@@ -2026,6 +3659,14 @@
     "kamiKana": "こぬひとを　まつほのうらの　ゆふなぎに",
     "shimoKana": "やくやもしほの　みもこがれつつ",
     "kamiReading": "こぬひとをまつほのうらのゆうなぎに",
+    "shimoReading": "やくやもしおのみもこがれつつ",
+    "versesRomaji": [
+      "konuhitoo",
+      "matsuhonourano",
+      "yuunagini",
+      "yakuyamoshiono",
+      "mimokogaretsutsu"
+    ],
     "torifuda": "やくやもしほのみもこかれつつ",
     "torifudaColumns": [
       "やくやもし",
@@ -2034,12 +3675,21 @@
     ],
     "kimariji": "こぬ",
     "kimarijiReading": "こぬ",
-    "color": "桃"
+    "kimarijiShimo": "やく",
+    "color": "桃",
+    "colorNumber": 2,
+    "yomifudaColumns": [
+      "[来|こ]ぬ[人|ひと]をーまつほの[浦|うら]のｰ",
+      "[夕|ゆう]なぎーにー",
+      "[焼|や]くやｰもし[ほ|お]のー",
+      "[身|み]もこがれーつつ"
+    ]
   },
   {
     "id": 98,
     "author": "従二位家隆",
     "authorKana": "じゅにいいえたか",
+    "authorRomaji": "Juniiietaka",
     "kami": "風そよぐ　奈良の小川の　夕暮れは",
     "shimo": "みそぎぞ夏の　しるしなりける",
     "kamiRuby": "[風|かぜ]そよぐ　[奈良|なら]の[小川|をがは]の　[夕暮|ゆふぐ]れは",
@@ -2047,6 +3697,14 @@
     "kamiKana": "かぜそよぐ　ならのをがはの　ゆふぐれは",
     "shimoKana": "みそぎぞなつの　しるしなりける",
     "kamiReading": "かぜそよぐならのおがわのゆうぐれわ",
+    "shimoReading": "みそぎぞなつのしるしなりける",
+    "versesRomaji": [
+      "kazesoyogu",
+      "naranoogawano",
+      "yuugurewa",
+      "misogizonatsuno",
+      "shirushinarikeru"
+    ],
     "torifuda": "みそきそなつのしるしなりける",
     "torifudaColumns": [
       "みそきそな",
@@ -2055,12 +3713,21 @@
     ],
     "kimariji": "かぜそ",
     "kimarijiReading": "かぜそ",
-    "color": "橙"
+    "kimarijiShimo": "みそ",
+    "color": "橙",
+    "colorNumber": 20,
+    "yomifudaColumns": [
+      "[風|かぜ]そよぐーならの[小川|おがわ]のｰ",
+      "[夕|ゆう]ぐれー[は|わ]ー",
+      "みそぎぞｰ[夏|なつ]のー",
+      "しるしなりーける"
+    ]
   },
   {
     "id": 99,
     "author": "後鳥羽院",
     "authorKana": "ごとばいん",
+    "authorRomaji": "Gotobain",
     "kami": "人も惜し　人も恨めし　味気なく",
     "shimo": "世を思ふ故に　物思ふ身は",
     "kamiRuby": "[人|ひと]も[惜|を]し　[人|ひと]も[恨|うら]めし　[味気|あぢき]なく",
@@ -2068,6 +3735,14 @@
     "kamiKana": "ひともをし　ひともうらめし　あぢきなく",
     "shimoKana": "よをおもふゆゑに　ものおもふみは",
     "kamiReading": "ひともおしひともうらめしあじきなく",
+    "shimoReading": "よをおもうゆえにものおもうみわ",
+    "versesRomaji": [
+      "hitomooshi",
+      "hitomourameshi",
+      "ajikinaku",
+      "yooomouyueni",
+      "monoomoumiwa"
+    ],
     "torifuda": "よをおもふゆゑにものおもふみは",
     "torifudaColumns": [
       "よをおもふ",
@@ -2076,12 +3751,21 @@
     ],
     "kimariji": "ひとも",
     "kimarijiReading": "ひとも",
-    "color": "橙"
+    "kimarijiShimo": "よをお",
+    "color": "橙",
+    "colorNumber": 15,
+    "yomifudaColumns": [
+      "[人|ひと]も[を|お]しー[人|ひと]もうらめしｰ",
+      "あ[ぢ|じ]きなーくー",
+      "[世|よ]をｰ[思|おも][ふ|う]ゆ[ゑ|え]にー",
+      "[物|もの][思|おも][ふ|う]ー[身|み][は|わ]"
+    ]
   },
   {
     "id": 100,
     "author": "順徳院",
     "authorKana": "じゅんとくいん",
+    "authorRomaji": "Juntokuin",
     "kami": "百敷や　古き軒端の　しのぶにも",
     "shimo": "なほあまりある　昔なりけり",
     "kamiRuby": "[百敷|ももしき]や　[古|ふる]き[軒端|のきば]の　しのぶにも",
@@ -2089,6 +3773,14 @@
     "kamiKana": "ももしきや　ふるきのきばの　しのぶにも",
     "shimoKana": "なほあまりある　むかしなりけり",
     "kamiReading": "ももしきやふるきのきばのしのぶにも",
+    "shimoReading": "なおあまりあるむかしなりけり",
+    "versesRomaji": [
+      "momoshikiya",
+      "furukinokibano",
+      "shinobunimo",
+      "naoamariaru",
+      "mukashinarikeri"
+    ],
     "torifuda": "なほあまりあるむかしなりけり",
     "torifudaColumns": [
       "なほあまり",
@@ -2097,6 +3789,14 @@
     ],
     "kimariji": "もも",
     "kimarijiReading": "もも",
-    "color": "青"
+    "kimarijiShimo": "なほあ",
+    "color": "青",
+    "colorNumber": 18,
+    "yomifudaColumns": [
+      "ももしきやー[古|ふる]き[軒端|のきば]のｰ",
+      "しのぶにーもー",
+      "な[ほ|お]ｰあまりあるー",
+      "[昔|むかし]なりーけり"
+    ]
   }
 ]
