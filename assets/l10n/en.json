@@ -1381,5 +1381,15 @@
   "firstSoundsTitle": "First sounds",
   "firstSoundsSoon": "AN EXPLANATION OF THE SOUND LADDER\nIS ON ITS WAY, STAY TUNED!",
   "statsAboutCard": "About this card",
-  "statsAboutCardNote": "The poem, both cards and its first sounds"
+  "statsAboutCardNote": "The poem, both cards and its first sounds",
+  "matchTimerTitle": "Match timer",
+  "matchTimerNote": "A countdown for a match, with a warning at 2 minutes.",
+  "timerPlay": "Play",
+  "timerPause": "Pause",
+  "timerResume": "Resume",
+  "timerStop": "Stop",
+  "timerSetTitle": "Set the time",
+  "timerMinutes": "min",
+  "timerSeconds": "sec",
+  "timerEdit": "Change the time"
 }

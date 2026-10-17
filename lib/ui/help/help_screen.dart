@@ -5,18 +5,20 @@ import '../../config/vector_art.dart';
 import '../../l10n/card_info_strings.dart';
 import '../../l10n/guide_strings.dart';
 import '../../l10n/help_strings.dart';
+import '../../l10n/match_timer_strings.dart';
 import '../../l10n/rules_strings.dart';
 import '../../l10n/strings.dart';
 import '../../l10n/tour_strings.dart';
 import '../cards/card_browser_screen.dart';
 import '../manga/manga.dart';
+import '../tools/match_timer_screen.dart';
 import '../tour/tour_overlay.dart';
 import 'karuta_guide_screen.dart';
 import 'karuta_rules_screen.dart';
 
 /// Help (opened from Home's "?" button). Guides: Tobi's tour of Home
 /// again, the guide to how karuta works and the full competition rules.
-/// Tools: the card browser, and a slot saying more are coming.
+/// Tools: the card browser, the match timer, and a slot saying more are coming.
 class HelpScreen extends StatelessWidget {
   const HelpScreen({super.key});
 
@@ -55,6 +57,13 @@ class HelpScreen extends StatelessWidget {
         note: s.cardBrowserNote,
         icon: IconArt.arrow,
         onTap: () => open(const CardBrowserScreen()),
+      ),
+      _Entry(
+        title: s.matchTimerTitle,
+        sub: o?.matchTimerTitle,
+        note: s.matchTimerNote,
+        icon: IconArt.arrow,
+        onTap: () => open(const MatchTimerScreen()),
       ),
     ];
     return Scaffold(

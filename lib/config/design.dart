@@ -25,3 +25,4 @@ part 'design/settings.dart';
 part 'design/debug.dart';
 part 'design/card_browser.dart';
 part 'design/about_card.dart';
+part 'design/match_timer.dart';

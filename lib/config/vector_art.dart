@@ -40,6 +40,9 @@ abstract final class IconArt {
   /// Two arrows passing each other (the About page's SWIPE sticker).
   static late final VectorArt swap;
 
+  /// A pen (marks the match timer's time as editable).
+  static late final VectorArt pen;
+
   /// A signpost, its pole broken behind the boards (the Side Trips tab).
   static late final VectorArt sideTrips;
 }

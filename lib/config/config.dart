@@ -30,3 +30,4 @@ part 'tuning/simulation.dart';
 part 'tuning/sound.dart';
 part 'tuning/ankiren.dart';
 part 'tuning/about_card.dart';
+part 'tuning/match_timer.dart';

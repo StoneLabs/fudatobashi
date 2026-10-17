@@ -1381,5 +1381,15 @@
   "firstSoundsTitle": "最初の音",
   "firstSoundsSoon": "決まり字の​変化の​説明は​準備中です。\nお楽しみに！",
   "statsAboutCard": "この札について",
-  "statsAboutCardNote": "歌、​取り札と​読み札、​最初の音"
+  "statsAboutCardNote": "歌、​取り札と​読み札、​最初の音",
+  "matchTimerTitle": "試合タイマー",
+  "matchTimerNote": "試合用の​カウントダウン。​残り2分で​知らせます。",
+  "timerPlay": "スタート",
+  "timerPause": "一時停止",
+  "timerResume": "再開",
+  "timerStop": "ストップ",
+  "timerSetTitle": "時間を​設定",
+  "timerMinutes": "分",
+  "timerSeconds": "秒",
+  "timerEdit": "時間を​変更"
 }
