@@ -181,7 +181,7 @@ class _RatingOverlayState extends State<RatingOverlay> {
           child: _Rumble(
             t,
             child: Jolt(
-              _at(t.impactAt, RatingMotion.jolt),
+              stretchAt(t.impactAt, RatingMotion.jolt),
               reach: RatingMotion.joltReach,
               steps: RatingMotion.joltSteps,
               seed: RatingMotion.joltSeed,
@@ -220,7 +220,7 @@ class _RatingOverlayState extends State<RatingOverlay> {
                   if (!t.ranksUp || still) ...[
                     const SizedBox(height: RatingLayout.stripGap),
                     Entrance(
-                      _pop(t.climbEnd + RatingMotion.actionsAfter, RatingMotion.actions, curve: Entrances.springy),
+                      popAt(t.climbEnd + RatingMotion.actionsAfter, RatingMotion.actions, curve: Entrances.springy),
                       child: CelebrationCta(
                         label: s.ratingCta,
                         sub: s.sub?.ratingCta,
@@ -243,19 +243,6 @@ class _RatingOverlayState extends State<RatingOverlay> {
   }
 }
 
-/// A custom-drawn stretch of [length] starting [delay] into the page.
-EntranceSpec _at(Duration delay, Duration length, {Curve curve = Curves.linear}) =>
-    EntranceSpec(Entrances.custom, duration: length, delay: delay, curve: curve);
-
-EntranceSpec _pop(Duration delay, Duration length, {Curve curve = Entrances.bouncy}) =>
-    EntranceSpec(Entrances.pop, duration: length, delay: delay, curve: curve);
-
-/// A fresh random offset within ±[reach] px each [step] of [elapsed].
-Offset _jitter(Duration elapsed, Duration step, int seed, double reach) {
-  final r = SeededRandom(seed + elapsed.inMicroseconds ~/ step.inMicroseconds);
-  return Offset(r.next() * 2 - 1, r.next() * 2 - 1) * reach;
-}
-
 /// The gauge: the next class over its gate on top, the tower of cells, the
 /// current class below, the track's ends and the old rating on the left,
 /// and the needle's tag climbing on the right.
@@ -275,7 +262,7 @@ class _Gauge extends StatelessWidget {
         double yOf(double rating) => inner.bottom - inner.height * track.fractionOf(rating);
         final beforeY = yOf(t.data.before);
         final leftOfTower = box.maxWidth - tower.left + RatingLayout.scaleGap;
-        final landed = _at(t.climbEnd, RatingMotion.burst, curve: Curves.easeOut);
+        final landed = stretchAt(t.climbEnd, RatingMotion.burst, curve: Curves.easeOut);
         final resting = t.ranksUp && MediaQuery.disableAnimationsOf(context);
 
         Widget onLeft(double y, Widget child) =>
@@ -289,20 +276,20 @@ class _Gauge extends StatelessWidget {
             // At rest under reduced motion a rank-up holds the beat of
             // silence, the break left to the rank-up page.
             final elapsed = resting ? t.breakAt - const Duration(microseconds: 1) : at;
-            final strain = t.ranksUp ? _progress(elapsed, t.climbEnd, RatingMotion.strain) : 0.0;
+            final strain = t.ranksUp ? progressIn(elapsed, t.climbEnd, RatingMotion.strain) : 0.0;
             final straining = strain > 0 && strain < 1;
             final push = straining
                 ? strain * (0.5 + 0.5 * math.sin(2 * math.pi * elapsed.inMicroseconds / RatingMotion.strainPeriod.inMicroseconds))
                 : (t.ranksUp && elapsed >= t.strainEnd ? 1.0 : 0.0);
-            final shatter = t.ranksUp ? _progress(elapsed, t.breakAt, RatingMotion.shatter) : 0.0;
-            final leap = Curves.easeOut.transform(t.ranksUp ? _progress(elapsed, t.breakAt, RatingMotion.leap) : 0);
+            final shatter = t.ranksUp ? progressIn(elapsed, t.breakAt, RatingMotion.shatter) : 0.0;
+            final leap = Curves.easeOut.transform(t.ranksUp ? progressIn(elapsed, t.breakAt, RatingMotion.leap) : 0);
             final climbing = elapsed > RatingMotion.climbAt && elapsed < t.climbEnd;
             // The cell at the needle flickers as it climbs and blinks
             // faster, overloaded, while it strains.
             final flicker = (climbing && elapsed.inMicroseconds ~/ RatingMotion.flicker.inMicroseconds % 2 == 0) ||
                 (straining && elapsed.inMicroseconds ~/ RatingMotion.overload.inMicroseconds % 2 == 0);
             var needleY = yOf(t.ratingAt(elapsed)) - RatingLayout.strainPush * push - RatingLayout.leap * leap;
-            if (straining) needleY += _jitter(elapsed, RatingMotion.rumbleStep, RatingLayout.rumbleSeed, RatingLayout.strainJitter).dy;
+            if (straining) needleY += jitterAt(elapsed, RatingMotion.rumbleStep, RatingLayout.rumbleSeed, RatingLayout.strainJitter).dy;
             final beat = _beatAt(elapsed);
 
             return Transform.scale(
@@ -315,7 +302,7 @@ class _Gauge extends StatelessWidget {
                     width: 0,
                     height: 0,
                     child: ImpactBurst(
-                      _at(t.breakAt, RatingMotion.burst, curve: Curves.easeOut),
+                      stretchAt(t.breakAt, RatingMotion.burst, curve: Curves.easeOut),
                       burst: RatingLayout.breakBurst,
                       size: RatingLayout.breakSize,
                       fromScale: RatingLayout.impactFromScale,
@@ -337,7 +324,7 @@ class _Gauge extends StatelessWidget {
                       lit: track.fractionOf(t.ratingAt(elapsed)),
                       before: track.fractionOf(t.data.before),
                       glow: flicker ? 1 : 0,
-                      surge: t.ranksUp ? 0 : _progress(elapsed, t.climbEnd, RatingMotion.surge),
+                      surge: t.ranksUp ? 0 : progressIn(elapsed, t.climbEnd, RatingMotion.surge),
                       bow: RatingLayout.gateBow * push,
                       crack: ((strain - RatingLayout.crackFrom) / (1 - RatingLayout.crackFrom)).clamp(0.0, 1.0),
                       shatter: shatter,
@@ -378,7 +365,7 @@ class _Gauge extends StatelessWidget {
                     left: tower.right + RatingLayout.hushAt.dx,
                     top: tower.top + RatingLayout.hushAt.dy,
                     child: Entrance(
-                      _pop(t.strainEnd + RatingMotion.hushPop, RatingMotion.hushIn),
+                      popAt(t.strainEnd + RatingMotion.hushPop, RatingMotion.hushIn),
                       child: Transform.rotate(
                         angle: RatingLayout.hushTurnDeg * math.pi / 180,
                         child: const OutlinedText(
@@ -395,7 +382,7 @@ class _Gauge extends StatelessWidget {
                   centred(
                     top: 0,
                     child: Entrance(
-                      _pop(t.breakAt, RatingMotion.sfx),
+                      popAt(t.breakAt, RatingMotion.sfx),
                       child: Transform.rotate(
                         angle: RatingLayout.breakSfxTurnDeg * math.pi / 180,
                         child: const SfxText(RatingLayout.breakSfx,
@@ -415,16 +402,12 @@ class _Gauge extends StatelessWidget {
     if (!timeline.ranksUp) return 0;
     var pulse = 0.0;
     for (final beat in RatingMotion.beats) {
-      final t = _progress(elapsed, timeline.climbEnd + beat, RatingMotion.beatPulse);
+      final t = progressIn(elapsed, timeline.climbEnd + beat, RatingMotion.beatPulse);
       if (t > 0 && t < 1) pulse = math.sin(math.pi * t);
     }
     return pulse;
   }
 }
-
-/// How far [elapsed] is into a stretch of [length] from [start], 0–1.
-double _progress(Duration elapsed, Duration start, Duration length) =>
-    ((elapsed - start).inMicroseconds / length.inMicroseconds).clamp(0.0, 1.0);
 
 /// A class badge at one end of the track, in its rung colour; the top of
 /// the ladder (no next class) shows TOP CLASS instead.
@@ -530,7 +513,7 @@ class _Needle extends StatelessWidget {
           ),
         ),
         EntranceBuilder(
-          _at(t.climbEnd, RatingMotion.landPulse),
+          stretchAt(t.climbEnd, RatingMotion.landPulse),
           child: tag,
           builder: (context, p, child) => Transform.scale(scale: 1 + RatingLayout.landPulse * math.sin(math.pi * p), child: child),
         ),
@@ -538,7 +521,7 @@ class _Needle extends StatelessWidget {
           left: RatingLayout.landSfxAt.dx,
           top: RatingLayout.landSfxAt.dy,
           child: Entrance(
-            _pop(t.climbEnd, RatingMotion.sfx),
+            popAt(t.climbEnd, RatingMotion.sfx),
             child: Transform.rotate(
               angle: RatingLayout.landSfxTurnDeg * math.pi / 180,
               child: const SfxText(RatingLayout.landSfx,
@@ -553,7 +536,7 @@ class _Needle extends StatelessWidget {
           right: 0,
           bottom: -RatingLayout.gainDrop,
           child: Entrance(
-            _pop(t.climbEnd + RatingMotion.gainAfter, RatingMotion.gain),
+            popAt(t.climbEnd + RatingMotion.gainAfter, RatingMotion.gain),
             child: Transform.rotate(
               angle: RatingLayout.gainTurnDeg * math.pi / 180,
               child: DecoratedBox(
@@ -636,7 +619,7 @@ class _ToNext extends StatelessWidget {
             if (elapsed < t.climbEnd) return const Tobi(pose: TobiPose.tryHard);
             if (!t.ranksUp) {
               return Entrance(
-                _pop(t.climbEnd, RatingMotion.tobi),
+                popAt(t.climbEnd, RatingMotion.tobi),
                 child: const Hop(
                   height: RatingMotion.hopHeight,
                   period: RatingMotion.hopPeriod,
@@ -646,7 +629,7 @@ class _ToNext extends StatelessWidget {
               );
             }
             return Transform.translate(
-              offset: Offset(_jitter(elapsed, RatingMotion.rumbleStep, RatingLayout.rumbleSeed, RatingLayout.tobiTremble).dx, 0),
+              offset: Offset(jitterAt(elapsed, RatingMotion.rumbleStep, RatingLayout.rumbleSeed, RatingLayout.tobiTremble).dx, 0),
               child: const Tobi(pose: TobiPose.shocked),
             );
           },
@@ -688,7 +671,7 @@ class _Rumble extends StatelessWidget {
           builder: (context, t, child) => t <= 0 || t >= 1
               ? child!
               : Transform.translate(
-                  offset: _jitter(RatingMotion.strain * t, RatingMotion.rumbleStep, RatingLayout.rumbleSeed, RatingLayout.rumbleReach * t),
+                  offset: jitterAt(RatingMotion.strain * t, RatingMotion.rumbleStep, RatingLayout.rumbleSeed, RatingLayout.rumbleReach * t),
                   child: child,
                 ),
         );
@@ -734,7 +717,7 @@ class _RumbleLettering extends StatelessWidget {
               builder: (context, t, child) => t <= 0 || t >= 1
                   ? const SizedBox.shrink()
                   : Transform.translate(
-                      offset: _jitter(RatingMotion.strain * t, RatingMotion.rumbleStep, seed, RatingLayout.rumbleShake),
+                      offset: jitterAt(RatingMotion.strain * t, RatingMotion.rumbleStep, seed, RatingLayout.rumbleShake),
                       child: child,
                     ),
             ),
@@ -752,7 +735,7 @@ class _Flash extends StatelessWidget {
   @override
   Widget build(BuildContext context) => IgnorePointer(
         child: EntranceBuilder(
-          _at(timeline.breakAt + RatingMotion.flashAt, RatingMotion.flashIn),
+          stretchAt(timeline.breakAt + RatingMotion.flashAt, RatingMotion.flashIn),
           builder: (context, t, _) =>
               t <= 0 ? const SizedBox.shrink() : ColoredBox(color: RatingLayout.flash.withValues(alpha: t)),
         ),

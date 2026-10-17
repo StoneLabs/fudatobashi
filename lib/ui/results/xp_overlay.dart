@@ -114,12 +114,12 @@ class XpOverlay extends StatelessWidget {
           const CelebrationGlow(
               at: XpLayout.glowAt, size: XpLayout.glowSize, colors: XpLayout.glowColors, stops: XpLayout.glowStops),
           EntranceBuilder(
-            _at(finish, XpMotion.burst),
+            stretchAt(finish, XpMotion.burst),
             builder: (context, t, _) => t > 0 ? const ConfettiRain() : const SizedBox.shrink(),
           ),
         ],
         child: Jolt(
-          _at(finish, XpMotion.jolt),
+          stretchAt(finish, XpMotion.jolt),
           reach: XpMotion.joltReach,
           steps: XpMotion.joltSteps,
           seed: XpMotion.joltSeed,
@@ -161,7 +161,7 @@ class XpOverlay extends StatelessWidget {
                   right: XpLayout.sfxAt.dx,
                   top: XpLayout.sfxAt.dy,
                   child: Entrance(
-                    _pop(finish, XpMotion.sfx),
+                    popAt(finish, XpMotion.sfx),
                     child: Transform.rotate(
                       angle: XpLayout.sfxTurnDeg * math.pi / 180,
                       child: const SfxText(XpLayout.sfx,
@@ -175,7 +175,7 @@ class XpOverlay extends StatelessWidget {
                   width: XpLayout.tobi.size.width,
                   height: XpLayout.tobi.size.height,
                   child: Entrance(
-                    _pop(finish + XpMotion.tobiAfter, XpMotion.tobi),
+                    popAt(finish + XpMotion.tobiAfter, XpMotion.tobi),
                     child: const Hop(
                       height: XpMotion.hopHeight,
                       period: XpMotion.hopPeriod,
@@ -191,7 +191,7 @@ class XpOverlay extends StatelessWidget {
               Expanded(child: _Breakdown(timeline)),
               const SizedBox(height: XpLayout.actionGap),
               Entrance(
-                _pop(finish + XpMotion.actionsAfter, XpMotion.actions, curve: Entrances.springy),
+                popAt(finish + XpMotion.actionsAfter, XpMotion.actions, curve: Entrances.springy),
                 child: CelebrationCta(
                   label: s.xpCta,
                   sub: s.sub?.xpCta,
@@ -210,13 +210,6 @@ class XpOverlay extends StatelessWidget {
   }
 }
 
-/// A custom-drawn stretch of [length] starting [delay] into the page.
-EntranceSpec _at(Duration delay, Duration length, {Curve curve = Curves.linear}) =>
-    EntranceSpec(Entrances.custom, duration: length, delay: delay, curve: curve);
-
-EntranceSpec _pop(Duration delay, Duration length, {Curve curve = Entrances.bouncy}) =>
-    EntranceSpec(Entrances.pop, duration: length, delay: delay, curve: curve);
-
 /// "+482 XP": counts up with the lines, then lands with a pulse and a burst
 /// of focus lines. The box keeps the final width while counting.
 class _Counter extends StatelessWidget {
@@ -233,7 +226,7 @@ class _Counter extends StatelessWidget {
     return Stack(clipBehavior: Clip.none, alignment: Alignment.center, children: [
       Positioned.fill(
         child: ImpactBurst(
-          _at(finish, XpMotion.burst, curve: Curves.easeOut),
+          stretchAt(finish, XpMotion.burst, curve: Curves.easeOut),
           burst: XpLayout.impactBurst,
           size: XpLayout.impactSize,
           fromScale: XpLayout.impactFromScale,
@@ -241,7 +234,7 @@ class _Counter extends StatelessWidget {
         ),
       ),
       EntranceBuilder(
-        _at(finish, XpMotion.finishPulse),
+        stretchAt(finish, XpMotion.finishPulse),
         builder: (context, t, child) =>
             Transform.scale(scale: 1 + XpLayout.finishPulse * math.sin(math.pi * t), child: child),
         child: FittedBox(
@@ -325,7 +318,7 @@ class _LevelBar extends StatelessWidget {
         if (levelUps.isNotEmpty) ...[
           const SizedBox(width: Gaps.small),
           Entrance(
-            _pop(levelUps.first, XpMotion.levelFlash),
+            popAt(levelUps.first, XpMotion.levelFlash),
             child: Transform.rotate(
               angle: XpLayout.flashTurnDeg * math.pi / 180,
               child: InkTag(s.levelUpFlash, fontSize: XpLayout.flashFont, color: Palette.pink, textColor: Palette.ink),
@@ -359,7 +352,7 @@ class _TipLettering extends StatelessWidget {
               left: box.maxWidth * timeline.levelAt(timeline.rowAt(i) + XpMotion.tipWordAt).fraction,
               top: 0,
               child: EntranceBuilder(
-                _at(timeline.rowAt(i) + XpMotion.tipWordAt, XpMotion.tipWord),
+                stretchAt(timeline.rowAt(i) + XpMotion.tipWordAt, XpMotion.tipWord),
                 child: Transform.rotate(
                   angle: XpLayout.tipWordTurnDeg[i % XpLayout.tipWordTurnDeg.length] * math.pi / 180,
                   child: SfxText(

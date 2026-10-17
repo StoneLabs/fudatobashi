@@ -129,10 +129,6 @@ VoidCallback _skipOr(BuildContext stage, VoidCallback onNext) => () {
       if (!EntranceStage.finish(stage)) onNext();
     };
 
-/// How far [elapsed] is into a stretch of [length] from [start], 0–1.
-double _progress(Duration elapsed, Duration start, Duration length) =>
-    ((elapsed - start).inMicroseconds / length.inMicroseconds).clamp(0.0, 1.0);
-
 /// The page: the band naming it, the stage, the result and the button,
 /// each coming in on its own [EntranceSpec].
 class _Page extends StatelessWidget {
@@ -492,8 +488,8 @@ class _Blade extends StatelessWidget {
           length: AnkirenRankUpMotion.length,
           builder: (context, elapsed) {
             const at = AnkirenRankUpMotion.slashAt, cut = AnkirenRankUpMotion.slash;
-            final drawn = _progress(elapsed, at, cut);
-            final fade = _progress(elapsed, at + cut, AnkirenRankUpMotion.slashFade);
+            final drawn = progressIn(elapsed, at, cut);
+            final fade = progressIn(elapsed, at + cut, AnkirenRankUpMotion.slashFade);
             if (drawn <= 0 || fade >= 1) return const SizedBox.shrink();
             return Opacity(opacity: 1 - fade, child: CustomPaint(painter: _BladePainter(drawn)));
           },

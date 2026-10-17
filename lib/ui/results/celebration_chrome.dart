@@ -7,6 +7,7 @@ import 'package:flutter/widgets.dart';
 
 import '../../config/design.dart';
 import '../manga/manga.dart';
+import '../manga/seeded_random.dart';
 
 /// Full-screen page shared by every celebration: a colour, full-bleed art
 /// and [backdrop] behind the safe area, and tap-anywhere-to-continue. A
@@ -223,4 +224,22 @@ class StageClock extends StatelessWidget {
           builder: (context, t, _) => builder(context, length * t),
         ),
       );
+}
+
+/// A custom-drawn stretch of [length] starting [delay] into the page.
+EntranceSpec stretchAt(Duration delay, Duration length, {Curve curve = Curves.linear}) =>
+    EntranceSpec(Entrances.custom, duration: length, delay: delay, curve: curve);
+
+/// A pop of [length] starting [delay] into the page.
+EntranceSpec popAt(Duration delay, Duration length, {Curve curve = Entrances.bouncy}) =>
+    EntranceSpec(Entrances.pop, duration: length, delay: delay, curve: curve);
+
+/// How far [elapsed] is into a stretch of [length] from [start], 0–1.
+double progressIn(Duration elapsed, Duration start, Duration length) =>
+    ((elapsed - start).inMicroseconds / length.inMicroseconds).clamp(0.0, 1.0);
+
+/// A fresh random offset within ±[reach] px each [step] of [elapsed].
+Offset jitterAt(Duration elapsed, Duration step, int seed, double reach) {
+  final r = SeededRandom(seed + elapsed.inMicroseconds ~/ step.inMicroseconds);
+  return Offset(r.next() * 2 - 1, r.next() * 2 - 1) * reach;
 }

@@ -14,7 +14,6 @@ import '../../l10n/results_strings.dart';
 import '../../l10n/stats_strings.dart';
 import '../../l10n/strings.dart';
 import '../manga/manga.dart';
-import '../manga/seeded_random.dart';
 import '../rank/rank_badges.dart';
 import '../results/celebration_chrome.dart';
 import '../results/celebrations.dart';
@@ -107,11 +106,11 @@ class AnkirenRatingTimeline {
   /// class's threshold.
   double ratingAt(Duration elapsed) {
     if (reveals) {
-      final t = AnkirenRatingMotion.countCurve.transform(_progress(elapsed, countAt, AnkirenRatingMotion.count));
+      final t = AnkirenRatingMotion.countCurve.transform(progressIn(elapsed, countAt, AnkirenRatingMotion.count));
       return lerpDouble(track.floor, data.after, t)!;
     }
     final curve = sinks ? AnkirenRatingMotion.sinkCurve : AnkirenRatingMotion.climbCurve;
-    final t = curve.transform(_progress(elapsed, moveAt, moveEnd - moveAt));
+    final t = curve.transform(progressIn(elapsed, moveAt, moveEnd - moveAt));
     return lerpDouble(data.before, breaksThrough ? track.ceiling : data.after, t)!;
   }
 
@@ -121,7 +120,7 @@ class AnkirenRatingTimeline {
   /// finial; veiled, a step of ランク判定 a game.
   double flagAt(Duration elapsed) {
     if (!veiledAt(elapsed)) return track.fractionOf(ratingAt(elapsed));
-    final step = AnkirenRatingMotion.climbCurve.transform(_progress(elapsed, moveAt, moveEnd - moveAt));
+    final step = AnkirenRatingMotion.climbCurve.transform(progressIn(elapsed, moveAt, moveEnd - moveAt));
     return (data.game - 1 + step) / AnkirenRatingModel.placementGames;
   }
 
@@ -188,23 +187,6 @@ class AnkirenRatingTimeline {
     }
     return clicks;
   }
-}
-
-/// How far [elapsed] is into a stretch of [length] from [start], 0–1.
-double _progress(Duration elapsed, Duration start, Duration length) =>
-    ((elapsed - start).inMicroseconds / length.inMicroseconds).clamp(0.0, 1.0);
-
-/// A custom-drawn stretch of [length] starting [delay] into the page.
-EntranceSpec _at(Duration delay, Duration length, {Curve curve = Curves.linear}) =>
-    EntranceSpec(Entrances.custom, duration: length, delay: delay, curve: curve);
-
-EntranceSpec _pop(Duration delay, Duration length, {Curve curve = Entrances.bouncy}) =>
-    EntranceSpec(Entrances.pop, duration: length, delay: delay, curve: curve);
-
-/// A fresh random offset within ±[reach] px each [step] of [elapsed].
-Offset _jitter(Duration elapsed, Duration step, int seed, double reach) {
-  final r = SeededRandom(seed + elapsed.inMicroseconds ~/ step.inMicroseconds);
-  return Offset(r.next() * 2 - 1, r.next() * 2 - 1) * reach;
 }
 
 /// 暗記練's rating page, after a ranked game: its rank flag is hoisted up a
@@ -311,7 +293,7 @@ class _AnkirenRatingOverlayState extends State<AnkirenRatingOverlay> {
         if (!t.breaksThrough || still) ...[
           const SizedBox(height: AnkirenRatingLayout.stripGap),
           Entrance(
-            _pop(t.landAt + AnkirenRatingMotion.actionsAfter, AnkirenRatingMotion.actions, curve: Entrances.springy),
+            popAt(t.landAt + AnkirenRatingMotion.actionsAfter, AnkirenRatingMotion.actions, curve: Entrances.springy),
             child: CelebrationCta(
               label: cta,
               sub: ctaSub,
@@ -327,7 +309,7 @@ class _AnkirenRatingOverlayState extends State<AnkirenRatingOverlay> {
     );
     if (t.lands) {
       page = Jolt(
-        _at(t.landAt, AnkirenRatingMotion.jolt),
+        stretchAt(t.landAt, AnkirenRatingMotion.jolt),
         reach: AnkirenRatingMotion.joltReach,
         steps: AnkirenRatingMotion.joltSteps,
         seed: AnkirenRatingMotion.joltSeed,
@@ -363,7 +345,7 @@ class _AnkirenRatingOverlayState extends State<AnkirenRatingOverlay> {
             if (suspense) _Darkness(t),
             if (t.lands)
               EntranceBuilder(
-                _at(t.reveals ? t.revealAt : t.landAt, AnkirenRatingMotion.burst),
+                stretchAt(t.reveals ? t.revealAt : t.landAt, AnkirenRatingMotion.burst),
                 builder: (context, p, _) => p > 0 ? const ConfettiRain() : const SizedBox.shrink(),
               ),
           ],
@@ -412,7 +394,7 @@ class _Head extends StatelessWidget {
           child: Opacity(opacity: opacity, child: child),
         );
     return EntranceBuilder(
-      _at(t.revealAt, AnkirenRatingMotion.flashOut),
+      stretchAt(t.revealAt, AnkirenRatingMotion.flashOut),
       builder: (context, p, _) => Stack(alignment: Alignment.center, children: [
         fading(1 - p, _Slots(t)),
         fading(p, _Reading(t)),
@@ -451,7 +433,7 @@ class _Reading extends StatelessWidget {
       if (t.lands)
         Positioned.fill(
           child: ImpactBurst(
-            _at(t.landAt, AnkirenRatingMotion.burst, curve: Curves.easeOut),
+            stretchAt(t.landAt, AnkirenRatingMotion.burst, curve: Curves.easeOut),
             burst: AnkirenRatingLayout.impactBurst,
             size: AnkirenRatingLayout.impactSize,
             fromScale: AnkirenRatingLayout.impactFromScale,
@@ -459,7 +441,7 @@ class _Reading extends StatelessWidget {
           ),
         ),
       EntranceBuilder(
-        _at(t.landAt, AnkirenRatingMotion.landPulse),
+        stretchAt(t.landAt, AnkirenRatingMotion.landPulse),
         builder: (context, p, child) => Transform.scale(scale: 1 + pulse * math.sin(math.pi * p), child: child),
         child: Stack(alignment: Alignment.centerRight, children: [
           Opacity(opacity: 0, child: lettering(widest)),
@@ -491,7 +473,7 @@ class _Reading extends StatelessWidget {
               child: Transform.translate(
                 offset: AnkirenRatingLayout.changeAt,
                   child: Entrance(
-                    _pop(t.landAt + AnkirenRatingMotion.changeAfter, AnkirenRatingMotion.change,
+                    popAt(t.landAt + AnkirenRatingMotion.changeAfter, AnkirenRatingMotion.change,
                         curve: t.sinks ? Entrances.settle : Entrances.bouncy),
                     child: Transform.rotate(angle: AnkirenRatingLayout.changeTurnDeg * math.pi / 180, child: tag),
                   ),
@@ -528,11 +510,11 @@ class _Slots extends StatelessWidget {
                 : i < current
                     ? _PlayedSlot(label: s.ankirenSlot(i + 1), score: score(i))
                     : Entrance(
-                        _pop(AnkirenRatingMotion.slotAt, AnkirenRatingMotion.slot),
+                        popAt(AnkirenRatingMotion.slotAt, AnkirenRatingMotion.slot),
                         child: _PlayedSlot(
                           label: s.ankirenSlot(i + 1),
                           score: score(i),
-                          stamp: _pop(AnkirenRatingMotion.stampAt, AnkirenRatingMotion.stamp, curve: Entrances.springy),
+                          stamp: popAt(AnkirenRatingMotion.stampAt, AnkirenRatingMotion.stamp, curve: Entrances.springy),
                         ),
                       ),
           ),
@@ -650,11 +632,11 @@ class _Stage extends StatelessWidget {
               child: FractionalTranslation(translation: const Offset(0, -0.5), child: child),
             );
         Widget popsAtReveal(Widget child) =>
-            t.reveals ? Entrance(_pop(t.revealAt, AnkirenRatingMotion.change), child: child) : child;
+            t.reveals ? Entrance(popAt(t.revealAt, AnkirenRatingMotion.change), child: child) : child;
 
         return _Clock(t, builder: (context, elapsed) {
           final veiled = t.veiledAt(elapsed);
-          final strain = t.breaksThrough ? _progress(elapsed, t.moveEnd, AnkirenRatingMotion.strain) : 0.0;
+          final strain = t.breaksThrough ? progressIn(elapsed, t.moveEnd, AnkirenRatingMotion.strain) : 0.0;
           final flag = t.flagAt(elapsed);
           // Lettering over a flag high on the pole goes under it instead.
           final high = flag > AnkirenRatingLayout.sfxBelowFrom;
@@ -662,7 +644,7 @@ class _Stage extends StatelessWidget {
           if (strain > 0 && strain < 1) {
             final period = AnkirenRatingMotion.strainPeriod.inMicroseconds;
             final push = strain * (0.5 + 0.5 * math.sin(2 * math.pi * elapsed.inMicroseconds / period));
-            final shake = _jitter(elapsed, AnkirenRatingMotion.rumbleStep, AnkirenRatingLayout.rumbleSeed,
+            final shake = jitterAt(elapsed, AnkirenRatingMotion.rumbleStep, AnkirenRatingLayout.rumbleSeed,
                 AnkirenRatingLayout.strainJitter);
             top += shake.dy - AnkirenRatingLayout.strainPush * push;
           }
@@ -690,7 +672,7 @@ class _Stage extends StatelessWidget {
                   width: 0,
                   height: 0,
                   child: ImpactBurst(
-                    _at(t.revealAt, AnkirenRatingMotion.burst, curve: Curves.easeOut),
+                    stretchAt(t.revealAt, AnkirenRatingMotion.burst, curve: Curves.easeOut),
                     burst: AnkirenRatingLayout.revealBurst,
                     size: AnkirenRatingLayout.revealSize,
                     fromScale: AnkirenRatingLayout.revealFromScale,
@@ -711,7 +693,7 @@ class _Stage extends StatelessWidget {
                   child: FractionalTranslation(
                     translation: Offset(-0.5, high ? 0 : -1),
                     child: Entrance(
-                      _pop(t.revealAt, AnkirenRatingMotion.sfx),
+                      popAt(t.revealAt, AnkirenRatingMotion.sfx),
                       child: Transform.rotate(
                         angle: AnkirenRatingLayout.revealSfxTurnDeg * math.pi / 180,
                         child: const SfxText(AnkirenRatingLayout.revealSfx,
@@ -728,7 +710,7 @@ class _Stage extends StatelessWidget {
                   right: math.max(0.0, box.maxWidth - clothLeft - cloth.width) + AnkirenRatingLayout.landSfxAt.dx,
                   top: high ? top + cloth.height : top + AnkirenRatingLayout.landSfxAt.dy,
                   child: Entrance(
-                    _pop(t.landAt, AnkirenRatingMotion.sfx),
+                    popAt(t.landAt, AnkirenRatingMotion.sfx),
                     child: Transform.rotate(
                       angle: AnkirenRatingLayout.landSfxTurnDeg * math.pi / 180,
                       child: const SfxText(AnkirenRatingLayout.landSfx,
@@ -779,7 +761,7 @@ class _Stage extends StatelessWidget {
   /// edge on (at the flash's peak, where it changes), back to 0.
   double _turnAt(Duration elapsed) {
     final half = AnkirenRatingMotion.flashIn + AnkirenRatingMotion.flashHold;
-    final p = _progress(elapsed, timeline.revealAt - half, half * 2);
+    final p = progressIn(elapsed, timeline.revealAt - half, half * 2);
     return p <= 0 || p >= 1 ? 0 : 1 - (2 * p - 1).abs();
   }
 
@@ -793,7 +775,7 @@ class _Stage extends StatelessWidget {
             : const <Duration>[];
     var pulse = 0.0;
     for (final beat in beats) {
-      final p = _progress(elapsed, t.moveEnd + beat, AnkirenRatingMotion.beatPulse);
+      final p = progressIn(elapsed, t.moveEnd + beat, AnkirenRatingMotion.beatPulse);
       if (p > 0 && p < 1) pulse = math.sin(math.pi * p);
     }
     return pulse;
@@ -991,7 +973,7 @@ class _Strip extends StatelessWidget {
             AnkirenRatingMoment.held => const Tobi(pose: TobiPose.waving),
             AnkirenRatingMoment.down || AnkirenRatingMoment.rankDown => const Tobi(pose: TobiPose.relaxed),
             _ => Entrance(
-                _pop(t.landAt, AnkirenRatingMotion.tobi),
+                popAt(t.landAt, AnkirenRatingMotion.tobi),
                 child: const Hop(
                   height: AnkirenRatingMotion.hopHeight,
                   period: AnkirenRatingMotion.hopPeriod,
@@ -1018,7 +1000,7 @@ EntranceSpec _suspense(AnkirenRatingTimeline t) => EntranceSpec(Entrances.custom
 double _darkAt(AnkirenRatingTimeline t, Duration elapsed) {
   if (t.reveals && elapsed >= t.revealAt) return 0;
   final p = _suspense(t);
-  return p.curve.transform(_progress(elapsed, p.delay, p.duration));
+  return p.curve.transform(progressIn(elapsed, p.delay, p.duration));
 }
 
 /// The title and band dimming through the suspense, and back for a reveal.
@@ -1066,9 +1048,9 @@ class _Flash extends StatelessWidget {
           final t = timeline;
           const flashIn = AnkirenRatingMotion.flashIn;
           final peak = t.reveals ? t.revealAt : t.strainEnd + flashIn;
-          final rise = _progress(elapsed, peak - flashIn, flashIn);
+          final rise = progressIn(elapsed, peak - flashIn, flashIn);
           final fall =
-              t.reveals ? _progress(elapsed, peak + AnkirenRatingMotion.flashHold, AnkirenRatingMotion.flashOut) : 0.0;
+              t.reveals ? progressIn(elapsed, peak + AnkirenRatingMotion.flashHold, AnkirenRatingMotion.flashOut) : 0.0;
           final a = rise * (1 - fall);
           return a <= 0 ? const SizedBox.shrink() : ColoredBox(color: AnkirenRatingLayout.flash.withValues(alpha: a));
         }),
