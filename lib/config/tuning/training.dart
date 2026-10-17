@@ -121,13 +121,23 @@ abstract final class PaceTuning {
 }
 
 /// Home's "Learn ahead" (`Trainer.learnAhead`), for players who learn
-/// faster than their pace: it opens only once every unlocked card is well
-/// remembered and the pace has no new cards left for today.
+/// faster than their pace: it opens only once the unlocked cards are well
+/// remembered (`Trainer.wellRemembered`) and the pace has no new cards left
+/// for today.
 abstract final class LearnAheadTuning {
-  /// Latest attempts a well-remembered card is judged over: at most this share
-  /// of them missed, and their median time within the goal.
+  /// Latest attempts a remembered card is judged over: at most this share of
+  /// them missed.
   static const int recentWindow = 5;
   static const double maxRecentMissRate = 0.2;
+
+  /// A quick card's latest this many timed answers take [quickMs] or less on
+  /// average.
+  static const int speedWindow = 3;
+  static const double quickMs = 3000;
+
+  /// Learn ahead opens once at least this share (%) of the unlocked cards
+  /// are quick as well as remembered; every one must be remembered.
+  static const int minQuickPercent = 90;
 }
 
 /// Journey's today's set (`TodaySet`) and the runs that play it (`StepPlan`):

@@ -163,7 +163,7 @@ void main() {
         missGuess: 3,
       );
       expect(set.settled, isFalse);
-      expect(set.doneKeys, {k(1)});
+      expect([for (final e in set.steps.entries) if (e.value.done) e.key], [k(1)]);
       expect(set.misses, 1);
       final bar = set.bar;
       expect((bar.reviews, bar.reviewsDone, bar.fresh, bar.freshDone), (4, 4, 4, 1));

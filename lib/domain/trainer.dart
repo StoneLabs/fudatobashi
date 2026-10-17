@@ -118,14 +118,14 @@ class PaceStatus {
 /// Why Home's "Learn ahead" is locked. It pulls cards in ahead of the
 /// pace, so it waits until the player has nothing left to consolidate.
 enum LearnAheadLock {
-  /// Open: every card is well remembered and today's new cards are done.
+  /// Open: the cards are well remembered and today's new cards are done.
   none,
 
   /// Every card is unlocked; there is nothing to learn ahead.
   allUnlocked,
 
   /// Some unlocked cards are not well remembered yet (see
-  /// [Trainer.wellRemembered]).
+  /// [Trainer.learnAhead]).
   shaky,
 
   /// The pace still has new cards for today; 修行 brings them in.
@@ -141,7 +141,9 @@ class LearnAhead {
   /// Unlocked upright cards.
   final int unlocked;
 
-  /// Of those, the ones not well remembered yet.
+  /// Of those, the ones that keep it locked: each card not
+  /// [Trainer.remembered], and the slow ones beyond the share
+  /// [LearnAheadTuning.minQuickPercent] lets through.
   final int shaky;
 
   bool get open => lock == LearnAheadLock.none;
@@ -483,43 +485,53 @@ class Trainer {
     );
   }
 
-  /// Well remembered: practised, its latest answer correct, at most the odd
-  /// slip lately, quick enough for the goal, and no FSRS review due (one
-  /// [settled] in today's set has had its review). More forgiving than
-  /// [CardStats.solid], which one slip resets, so a whole deck can be well
+  /// Remembered: practised, its latest answer correct, at most the odd slip
+  /// lately, and no FSRS review or learning step due. More forgiving than
+  /// [CardStats.solid], which one slip resets, so a whole deck can be
   /// remembered at once.
-  bool wellRemembered(ItemKey key, CardStats stats, DateTime now, {Set<ItemKey> settled = const {}}) {
-    if (stats.timed.length < StatsTuning.solidMinTimed || stats.all.last.miss) return false;
-    if (isDue(key, now) && !settled.contains(key)) return false;
-    const window = LearnAheadTuning.recentWindow;
-    return stats.missRate(window) <= LearnAheadTuning.maxRecentMissRate && stats.median(window)! <= goalMs;
-  }
+  bool remembered(ItemKey key, CardStats stats, DateTime now) =>
+      stats.timed.length >= StatsTuning.solidMinTimed &&
+      !stats.all.last.miss &&
+      !isDue(key, now) &&
+      stats.missRate(LearnAheadTuning.recentWindow) <= LearnAheadTuning.maxRecentMissRate;
+
+  /// Quick: its latest [LearnAheadTuning.speedWindow] timed answers take
+  /// [LearnAheadTuning.quickMs] or less on average.
+  static bool quick(CardStats stats) =>
+      (stats.mean(LearnAheadTuning.speedWindow) ?? double.infinity) <= LearnAheadTuning.quickMs;
+
+  /// Well remembered: [remembered] and [quick].
+  bool wellRemembered(ItemKey key, CardStats stats, DateTime now) => remembered(key, stats, now) && quick(stats);
 
   /// Unlocked upright cards well remembered right now.
-  int wellRememberedCount(Map<ItemKey, CardStats> stats, DateTime now, {Set<ItemKey> settled = const {}}) =>
-      _uprightUnlocked
-          .where((s) => wellRemembered(s.key, stats[s.key] ?? CardStats.empty, now, settled: settled))
-          .length;
+  int wellRememberedCount(Map<ItemKey, CardStats> stats, DateTime now) =>
+      _uprightUnlocked.where((s) => wellRemembered(s.key, stats[s.key] ?? CardStats.empty, now)).length;
 
+  /// Home's "Learn ahead": open once every unlocked card is [remembered] and
+  /// at least [LearnAheadTuning.minQuickPercent] of them are also [quick],
+  /// and today has no new cards of its own left.
   /// [newPending]: today's set still has new cards to settle; without a
   /// set, the pace still has new cards for today.
-  LearnAhead learnAhead(
-    Poems p,
-    FudaSets sets,
-    Map<ItemKey, CardStats> stats,
-    DateTime now, {
-    Set<ItemKey> settled = const {},
-    bool? newPending,
-  }) {
+  LearnAhead learnAhead(Poems p, FudaSets sets, Map<ItemKey, CardStats> stats, DateTime now, {bool? newPending}) {
     final up = _uprightUnlocked.toList();
-    final shaky = up.length - wellRememberedCount(stats, now, settled: settled);
-    final hold = paceStatus(p, sets, stats, now).hold;
+    var forgotten = 0, slow = 0;
+    for (final s in up) {
+      final st = stats[s.key] ?? CardStats.empty;
+      if (!remembered(s.key, st, now)) {
+        forgotten++;
+      } else if (!quick(st)) {
+        slow++;
+      }
+    }
+    final slowAllowed = up.length * (100 - LearnAheadTuning.minQuickPercent) ~/ 100;
+    final shaky = forgotten + math.max<int>(0, slow - slowAllowed);
+    final pace = paceStatus(p, sets, stats, now);
     return LearnAhead(
-      lock: hold == UnlockHold.allUnlocked
+      lock: pace.hold == UnlockHold.allUnlocked
           ? LearnAheadLock.allUnlocked
           : shaky > 0
               ? LearnAheadLock.shaky
-              : newPending ?? hold == UnlockHold.none
+              : newPending ?? pace.hold == UnlockHold.none
                   ? LearnAheadLock.newCardsPending
                   : LearnAheadLock.none,
       unlocked: up.length,

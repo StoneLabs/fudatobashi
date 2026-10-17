@@ -108,9 +108,6 @@ class TodaySet {
   int get reviews => kinds.values.where((k) => k == StepKind.review).length;
   int get newCards => kinds.values.where((k) => k == StepKind.newCard).length;
 
-  /// Cards settled for today.
-  Set<ItemKey> get doneKeys => {for (final e in steps.entries) if (e.value.done) e.key};
-
   /// New cards not settled yet.
   bool get newPending => steps.entries.any((e) => e.value.kind == StepKind.newCard && !e.value.done);
 

@@ -698,18 +698,11 @@ class Progress extends ChangeNotifier {
   PaceStatus paceStatus([DateTime? now]) => trainer.paceStatus(poems, fudaSets, allStats, now ?? DateTime.now());
 
   /// Whether Home's "Learn ahead" is open, and why not. With today's set,
-  /// it waits for the set's new cards, and a card settled today counts as
-  /// reviewed.
+  /// it waits for the set's new cards.
   LearnAhead learnAhead([DateTime? now]) {
     now ??= DateTime.now();
-    final set = todaySet(now);
-    return trainer.learnAhead(poems, fudaSets, allStats, now,
-        settled: _settled(now), newPending: set?.newPending);
+    return trainer.learnAhead(poems, fudaSets, allStats, now, newPending: todaySet(now)?.newPending);
   }
-
-  /// Cards settled in today's set: reviewed today, though FSRS may still
-  /// hold them in its short learning steps.
-  Set<ItemKey> _settled(DateTime now) => todaySet(now)?.doneKeys ?? const {};
 
   /// Journey mode with cards still locked: "Learn ahead" is on offer.
   bool get canLearnMore =>
@@ -982,7 +975,7 @@ class Progress extends ChangeNotifier {
       return const FreePracticeAccess(open: true, remembered: FreePracticeTuning.unlockRemembered);
     }
     now ??= DateTime.now();
-    final remembered = trainer.wellRememberedCount(allStats, now, settled: _settled(now));
+    final remembered = trainer.wellRememberedCount(allStats, now);
     return FreePracticeAccess(open: remembered >= FreePracticeTuning.unlockRemembered, remembered: remembered);
   }
 
@@ -1012,7 +1005,7 @@ class Progress extends ChangeNotifier {
   int _sideTripsRemembered(DateTime now) =>
       _allKnown || (_sideTripsTabOpened && _sideTripsOpened.containsAll(SideTrip.values))
           ? 0
-          : trainer.wellRememberedCount(allStats, now, settled: _settled(now));
+          : trainer.wellRememberedCount(allStats, now);
 
   /// Stores the side-trip latches for the tab and every trip open now.
   Future<void> _latchSideTrips(DateTime now) async {

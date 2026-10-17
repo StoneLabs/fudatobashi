@@ -81,10 +81,14 @@ void main() {
       expect(CardStats(slipped).solid(t.goalMs), isFalse, reason: 'solid is stricter');
       expect(well([a(900), a(900), a(900), a(900, miss: true)]), isFalse, reason: 'the latest answer missed');
       expect(well([a(900), a(900, miss: true), a(900), a(900, miss: true), a(900)]), isFalse, reason: 'two slips');
-      expect(well([a(3500), a(3500), a(3500)]), isFalse, reason: 'slower than the goal');
+      expect(well([a(3500), a(3500), a(3500)]), isFalse, reason: 'slower than 3 s on average');
+      expect(well([a(1000), a(1000), a(7500)]), isFalse, reason: 'the mean of the last three, not their median');
+      expect(well([a(9000), a(9000), a(1000), a(1000), a(1000)]), isTrue, reason: 'only the last three count');
+      expect(t.remembered(key, CardStats([a(3500), a(3500), a(3500)]), now), isTrue, reason: 'slow, yet remembered');
 
       t.review(key, a(900));
-      expect(well(slipped), isTrue, reason: 'reviewed, not due yet');
+      expect(well(slipped), isTrue, reason: 'reviewed, its learning step not up yet');
+      expect(well(slipped, now.add(const Duration(minutes: 11))), isFalse, reason: 'its learning step is up');
       expect(well(slipped, now.add(const Duration(days: 60))), isFalse, reason: 'its review is due');
     });
 
@@ -146,6 +150,40 @@ void main() {
         expect((step.state, step.step), (fsrs.State.learning, 0), reason: 'Hard keeps the step');
         expect(slow.review(key, a(step.due, ms: 6000), dayEnd: dayEnd, firstToday: false), fsrs.Rating.hard);
         expect(slow.items[key]!.card.state, fsrs.State.learning);
+      });
+    });
+
+    group('Learn ahead', () {
+      final now = DateTime(2026, 9, 1, 12);
+      final ids = Trainer.learningBatches(p, sets, 3).expand((b) => b).toList();
+      AttemptRec a(int ms, {bool miss = false}) =>
+          AttemptRec(at: now, us: ms * 1000, miss: miss, clean: true, deckSize: 10, mode: PlayMode.training);
+      CardStats quick() => CardStats([a(900), a(900), a(900)]);
+      CardStats slow() => CardStats([a(900), a(900), a(9000)]);
+
+      /// A trainer with [n] cards unlocked before today, and their stats.
+      (Trainer, Map<ItemKey, CardStats>) deck(int n, {DateTime? unlockedAt}) {
+        final t = Trainer(config: const TrainerConfig(), items: Trainer.freshItems());
+        for (final id in ids.take(n)) {
+          t.items[ItemKey(id, false)]!
+            ..unlocked = true
+            ..unlockedAt = unlockedAt;
+        }
+        return (t, {for (final id in ids.take(n)) ItemKey(id, false): quick()});
+      }
+
+      test('lets a tenth of the cards be slow, as long as every card is remembered', () {
+        final (t, stats) = deck(20);
+        LearnAhead ahead() => t.learnAhead(p, sets, stats, now, newPending: false);
+        expect(ahead().lock, LearnAheadLock.none);
+        stats[ItemKey(ids[0], false)] = slow();
+        stats[ItemKey(ids[1], false)] = slow();
+        expect((ahead().lock, ahead().shaky), (LearnAheadLock.none, 0), reason: '2 of 20 slow: 90% quick');
+        stats[ItemKey(ids[2], false)] = slow();
+        expect((ahead().lock, ahead().shaky), (LearnAheadLock.shaky, 1), reason: 'one slow card too many');
+        stats[ItemKey(ids[2], false)] = CardStats([a(900), a(900), a(900), a(900, miss: true)]);
+        expect((ahead().lock, ahead().shaky), (LearnAheadLock.shaky, 1), reason: 'every card must be remembered');
+        expect(t.wellRememberedCount(stats, now), 17);
       });
     });
   });
