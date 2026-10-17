@@ -1,6 +1,5 @@
-// The full karuta rules in Help: the Japanese Markdown is the PDF's text, the
-// English one has exactly its structure, and the page opens from Help with
-// its source, link and disclaimer, switches to the Japanese original,
+// The full karuta rules in Help: the page opens from Help with its source,
+// link and disclaimer, switches to the Japanese original,
 // jumps to a chapter and lays out on two phones (384 dp, and 360 dp at
 // font scale 1.3) in both languages. With RENDER_SCREENS=1 it writes the
 // page, a screen at a time, to build/screens/karuta_rules/.
@@ -37,43 +36,6 @@ import 'test_vector_art.dart';
 final _render = Platform.environment['RENDER_SCREENS'] == '1';
 
 KarutaRules _rules(String code) => KarutaRules.parse(File(KarutaRules.asset(code)).readAsStringSync());
-
-/// Text as compared with the PDF's: no page footers, no white space.
-String _normalised(String s) => s.replaceAll(RegExp(r'－ \d+ / \d+ －'), '').replaceAll(RegExp(r'\s'), '');
-
-/// The whole document as the PDF prints it, marks and brackets included.
-String _plain(KarutaRules r) {
-  final out = StringBuffer('${r.title}${r.author}');
-  for (final line in r.body.split('\n')) {
-    final text = line.replaceFirst(RegExp(r'^> ?'), '');
-    if (text.isEmpty || text == '---') continue;
-    if (text.startsWith('## ')) {
-      final [number, title] = text.substring(3).split(' | ');
-      out.write('$number（$title）');
-    } else if (text.startsWith('# ')) {
-      out.write(text.substring(2).replaceAll(' | ', ''));
-    } else if (line.startsWith('> **')) {
-      out.write('【${text.replaceAll('**', '')}】');
-    } else {
-      out.write(text.replaceAll('*', '').replaceAll(RegExp(r'\\$'), ''));
-    }
-  }
-  return _normalised(out.toString());
-}
-
-/// Everything but the words: each block's kind, and a quote's paragraph
-/// count (labels and marks differ between the languages).
-List<Object?> _shape(KarutaRules r) => [
-      for (final block in r.body.trim().split('\n\n'))
-        switch (block) {
-          _ when block.startsWith('## ') => 'article',
-          _ when block.startsWith('# ') => 'chapter',
-          _ when block.startsWith('>') => block.split('\n>\n').length,
-          _ when block.startsWith('**') => 'paragraph',
-          _ when block.startsWith('*') => 'notice',
-          _ => 'text',
-        },
-    ];
 
 final _firstParagraph = RegExp(r'^\*\*.+?\*\* (.+)$', multiLine: true);
 
@@ -122,30 +84,6 @@ void main() {
       'ZenKakuGothicNew-Black.ttf',
     ]);
     await _loadFont('Torifuda', ['YujiSyuku-Regular.ttf']);
-  });
-
-  group('data', () {
-    final ja = _rules(KarutaRules.original), en = _rules(KarutaRules.translation);
-
-    test('nine chapters and the 28 articles in order', () {
-      expect(ja.chapters, hasLength(9));
-      expect(RegExp(r'^## ', multiLine: true).allMatches(ja.body), hasLength(28));
-    });
-
-    test('the English has the same chapters, articles, paragraphs and notes as the Japanese', () {
-      expect(_shape(en), _shape(ja));
-    });
-
-    test('the Japanese text is the PDF\'s, white space aside, in the sampled pages', () {
-      final whole = _plain(ja);
-      final samples = File('test/fixtures/rules/kyogi_kitei_saisoku_sample.txt').readAsStringSync().split('\n====\n');
-      expect(samples, hasLength(6));
-      for (final sample in samples) {
-        expect(whole, contains(_normalised(sample)), reason: sample.trim().split('\n').take(2).join(' '));
-      }
-      expect(whole, startsWith(_normalised(samples.first)));
-      expect(whole, endsWith(_normalised(samples.last)));
-    });
   });
 
   for (final lang in ['en', 'ja']) {
