@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """Converts the card explanations between the editor's JSON and the app's md files.
 
-    python3 tools/about_card_editor/cards_json.py export en [out.json]
-    python3 tools/about_card_editor/cards_json.py import file.json
+    python3 tool/about_card_editor/cards_json.py export en [out.json]
+    python3 tool/about_card_editor/cards_json.py import file.json
 
 JSON: {"lang": "en", "cards": {"001": "...md...", ...}}
 Files: assets/l10n/{lang}_card_explanations/NNN.md

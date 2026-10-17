@@ -38,8 +38,8 @@ Unzip into `assets/l10n/`: the folders `en_card_explanations/` and
 Send a writer the current texts, and take their JSON back, with
 `cards_json.py` (Python 3, standard library only, run from anywhere):
 
-    python3 tools/about_card_editor/cards_json.py export en en.json
-    python3 tools/about_card_editor/cards_json.py import en.json
+    python3 tool/about_card_editor/cards_json.py export en en.json
+    python3 tool/about_card_editor/cards_json.py import en.json
 
 `export` reads all 100 files of one language into
 `{"lang": "en", "cards": {"001": "…", …}}`. `import` writes each card in such a
