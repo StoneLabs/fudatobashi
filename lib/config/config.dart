@@ -2,6 +2,7 @@
 /// This is the one place to look for (and change) a magic number.
 library;
 
+import 'package:flutter/animation.dart';
 import 'package:flutter/painting.dart';
 
 import '../domain/ankiren_field.dart';
@@ -28,3 +29,4 @@ part 'tuning/data.dart';
 part 'tuning/simulation.dart';
 part 'tuning/sound.dart';
 part 'tuning/ankiren.dart';
+part 'tuning/about_card.dart';

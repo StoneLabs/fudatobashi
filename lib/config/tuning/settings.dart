@@ -42,6 +42,8 @@ abstract final class DefaultSettings {
   static const bool fastTobi = false;
   static const KimarijiScript kimarijiScript = KimarijiScript.auto;
   static const bool accessibilityMode = false;
+  static const bool cardPanelSwiped = false;
+  static const SoundLadderMode soundLadder = SoundLadderMode.sounds;
 
   /// 暗記練 (Settings › 寄り道 › 暗記練), and its free play's last setup.
   static const AnkirenSettings ankiren = AnkirenSettings();

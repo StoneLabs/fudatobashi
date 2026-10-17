@@ -12,7 +12,7 @@ Set<String> _tags(List<md.Node> nodes) => {
       for (final n in nodes)
         if (n is md.Element) ...{
           n.tag,
-          if (n.attributes['class'] case final c?) c,
+          ?n.attributes['class'],
           ..._tags(n.children ?? const []),
         },
     };

@@ -37,6 +37,16 @@ extension KimarijiScriptResolution on KimarijiScript {
       this == KimarijiScript.auto ? (uiJapanese ? KimarijiScript.hiragana : KimarijiScript.romaji) : this;
 }
 
+/// How the sound ladder on a card's About page breaks its first sounds
+/// down.
+enum SoundLadderMode {
+  /// Each kana whole, then only its consonant.
+  sounds,
+
+  /// Whole kana only.
+  kana,
+}
+
 /// How 暗記練 lays out its field.
 enum AnkirenLayout {
   /// Portrait, each half folded to its clusters (the open middle closed,
@@ -159,6 +169,8 @@ class AppSettings {
     this.languagePicked = DefaultSettings.languagePicked,
     this.kimarijiScript = DefaultSettings.kimarijiScript,
     this.accessibilityMode = DefaultSettings.accessibilityMode,
+    this.cardPanelSwiped = DefaultSettings.cardPanelSwiped,
+    this.soundLadder = DefaultSettings.soundLadder,
     this.cardScale = DefaultSettings.cardScale,
     this.ankiren = DefaultSettings.ankiren,
   });
@@ -222,6 +234,13 @@ class AppSettings {
   /// screen. Only 暗記練 reads it so far (its field zooms in and pans).
   final bool accessibilityMode;
 
+  /// The card on an About page has been swiped once, so its SWIPE sticker
+  /// no longer shows.
+  final bool cardPanelSwiped;
+
+  /// The About pages' choice of sound ladder.
+  final SoundLadderMode soundLadder;
+
   /// How big the swipe cards are, as a share of their full size (see
   /// `playCardSize`).
   final double cardScale;
@@ -264,6 +283,8 @@ class AppSettings {
         'languagePicked': languagePicked,
         'kimarijiScript': kimarijiScript.name,
         'accessibilityMode': accessibilityMode,
+        'cardPanelSwiped': cardPanelSwiped,
+        'soundLadder': soundLadder.name,
         'cardScale': cardScale,
         'ankiren': ankiren.toJson(),
       };
@@ -309,6 +330,8 @@ class AppSettings {
       // 暗記練's own zoom switch became this app-wide one.
       accessibilityMode:
           j['accessibilityMode'] as bool? ?? ankiren?['zoom'] as bool? ?? DefaultSettings.accessibilityMode,
+      cardPanelSwiped: j['cardPanelSwiped'] as bool? ?? DefaultSettings.cardPanelSwiped,
+      soundLadder: SoundLadderMode.values.asNameMap()[j['soundLadder']] ?? DefaultSettings.soundLadder,
       cardScale: ((j['cardScale'] as num?)?.toDouble() ?? DefaultSettings.cardScale)
           .clamp(SwipeTuning.cardScaleMin, SwipeTuning.cardScaleMax),
       ankiren: ankiren == null ? DefaultSettings.ankiren : AnkirenSettings.fromJson(ankiren),
@@ -338,6 +361,8 @@ class AppSettings {
     bool? languagePicked,
     KimarijiScript? kimarijiScript,
     bool? accessibilityMode,
+    bool? cardPanelSwiped,
+    SoundLadderMode? soundLadder,
     double? cardScale,
     AnkirenSettings? ankiren,
   }) =>
@@ -364,6 +389,8 @@ class AppSettings {
         languagePicked: languagePicked ?? this.languagePicked,
         kimarijiScript: kimarijiScript ?? this.kimarijiScript,
         accessibilityMode: accessibilityMode ?? this.accessibilityMode,
+        cardPanelSwiped: cardPanelSwiped ?? this.cardPanelSwiped,
+        soundLadder: soundLadder ?? this.soundLadder,
         cardScale: cardScale ?? this.cardScale,
         ankiren: ankiren ?? this.ankiren,
       );

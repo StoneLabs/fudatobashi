@@ -124,6 +124,20 @@ void main() {
     });
   });
 
+  group('AppSettings: the About page\'s card swipe and sound ladder', () {
+    test('not swiped yet and the sounds ladder by default', () {
+      expect((AppSettings.fromJson({}).cardPanelSwiped, AppSettings.fromJson({}).soundLadder),
+          (false, SoundLadderMode.sounds));
+    });
+
+    test('both round-trip, and an unknown ladder falls back to sounds', () {
+      final s = AppSettings.fromJson(
+          const AppSettings().copyWith(cardPanelSwiped: true, soundLadder: SoundLadderMode.kana).toJson());
+      expect((s.cardPanelSwiped, s.soundLadder), (true, SoundLadderMode.kana));
+      expect(AppSettings.fromJson({'soundLadder': 'morse'}).soundLadder, SoundLadderMode.sounds);
+    });
+  });
+
   group('AppSettings.accessibilityMode', () {
     test('off by default, round-trips, and copyWith changes only it', () {
       expect(const AppSettings().accessibilityMode, isFalse);

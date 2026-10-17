@@ -23,3 +23,5 @@ part 'design/ankiren.dart';
 part 'design/exam.dart';
 part 'design/settings.dart';
 part 'design/debug.dart';
+part 'design/card_browser.dart';
+part 'design/about_card.dart';
