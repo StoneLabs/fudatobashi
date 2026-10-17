@@ -125,6 +125,8 @@
   "creditsMusicBody": "\"fun bgm 022824\" by syncopika (opengameart.org/content/fun-bgm-022824), converted to AAC (m4a). Licensed under CC BY 3.0 (creativecommons.org/licenses/by/3.0/).",
   "creditsPoemData": "Poem data",
   "creditsPoemDataBody": "Poem text and readings come from StoneLabs' hyakuninissyu-csv (github.com/StoneLabs/hyakuninissyu-csv), released under the Unlicense (public domain). The 百人一首 poems themselves are in the public domain.",
+  "creditsReadingCards": "Reading cards",
+  "creditsReadingCardsBody": "The yomihou karuta card contents are constructed from the StoneLabs/hyakuninissyu-csv dataset on github. The design is inspired by the great product from tengudo.jp. Please support them by buying cards from them at tengudo.jp/100poems/competition/2522.html.",
   "creditsRulesBody": "Official karuta rules (競技規程細則, last updated 26 May 2020) taken from the All Japan Karuta Association (www.karuta.or.jp/static/kitei/20200526-kyougi_saisoku.pdf), who we kindly thank for making them publicly available.",
   "creditsGuideBody": "The explanation of how karuta works is based on the introduction on the All Japan Karuta Association's website (www.karuta.or.jp/karuta/first-time/), rewritten in our own words. We kindly thank them for making it publicly available.",
   "creditsInspiration": "Inspiration",

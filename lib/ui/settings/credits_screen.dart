@@ -20,6 +20,7 @@ class CreditsScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final s = S.of(context);
+    final o = s.sub;
     return Scaffold(
       body: SafeArea(
         child: Padding(
@@ -42,16 +43,19 @@ class CreditsScreen extends StatelessWidget {
                     children: [
                       CreditsSection(
                         title: s.creditsFonts,
+                        sub: o?.creditsFonts,
                         children: [for (final f in fontCredits) _FontRow(credit: f)],
                       ),
-                      const SizedBox(height: Gaps.section),
+                      const SizedBox(height: MarkerHeadingStyle.sectionGap),
                       CreditsSection(
                         title: s.creditsCardKana,
+                        sub: o?.creditsCardKana,
                         children: [NarrationBox(child: Text(s.creditsCardKanaBody))],
                       ),
-                      const SizedBox(height: Gaps.section),
+                      const SizedBox(height: MarkerHeadingStyle.sectionGap),
                       CreditsSection(
                         title: s.creditsSounds,
+                        sub: o?.creditsSounds,
                         children: [
                           NarrationBox(child: Text(s.creditsSoundsBody)),
                           const SizedBox(height: Gaps.small),
@@ -64,9 +68,10 @@ class CreditsScreen extends StatelessWidget {
                           ),
                         ],
                       ),
-                      const SizedBox(height: Gaps.section),
+                      const SizedBox(height: MarkerHeadingStyle.sectionGap),
                       CreditsSection(
                         title: s.creditsMusic,
+                        sub: o?.creditsMusic,
                         children: [
                           NarrationBox(child: Text(s.creditsMusicBody)),
                           const SizedBox(height: Gaps.small),
@@ -79,34 +84,46 @@ class CreditsScreen extends StatelessWidget {
                           ),
                         ],
                       ),
-                      const SizedBox(height: Gaps.section),
+                      const SizedBox(height: MarkerHeadingStyle.sectionGap),
                       CreditsSection(
                         title: s.creditsVoice,
+                        sub: o?.creditsVoice,
                         children: [NarrationBox(child: Text(s.creditsVoiceBody))],
                       ),
-                      const SizedBox(height: Gaps.section),
+                      const SizedBox(height: MarkerHeadingStyle.sectionGap),
                       CreditsSection(
                         title: s.creditsPoemData,
+                        sub: o?.creditsPoemData,
                         children: [NarrationBox(child: Text(s.creditsPoemDataBody))],
                       ),
-                      const SizedBox(height: Gaps.section),
+                      const SizedBox(height: MarkerHeadingStyle.sectionGap),
+                      CreditsSection(
+                        title: s.creditsReadingCards,
+                        sub: o?.creditsReadingCards,
+                        children: [NarrationBox(child: Text(s.creditsReadingCardsBody))],
+                      ),
+                      const SizedBox(height: MarkerHeadingStyle.sectionGap),
                       CreditsSection(
                         title: s.rulesTitle,
+                        sub: o?.rulesTitle,
                         children: [NarrationBox(child: Text(s.creditsRulesBody))],
                       ),
-                      const SizedBox(height: Gaps.section),
+                      const SizedBox(height: MarkerHeadingStyle.sectionGap),
                       CreditsSection(
                         title: s.guideTitle,
+                        sub: o?.guideTitle,
                         children: [NarrationBox(child: Text(s.creditsGuideBody))],
                       ),
-                      const SizedBox(height: Gaps.section),
+                      const SizedBox(height: MarkerHeadingStyle.sectionGap),
                       CreditsSection(
                         title: s.creditsInspiration,
+                        sub: o?.creditsInspiration,
                         children: [NarrationBox(child: Text(s.creditsInspirationBody))],
                       ),
-                      const SizedBox(height: Gaps.section),
+                      const SizedBox(height: MarkerHeadingStyle.sectionGap),
                       CreditsSection(
                         title: s.creditsOpenSource,
+                        sub: o?.creditsOpenSource,
                         children: [
                           NarrationBox(child: Text(s.creditsOpenSourceBody)),
                           const SizedBox(height: Gaps.small),
@@ -129,10 +146,11 @@ class CreditsScreen extends StatelessWidget {
   }
 }
 
-/// A bold heading over its blocks, as on the credits and contact pages.
+/// A marker heading over its blocks.
 class CreditsSection extends StatelessWidget {
-  const CreditsSection({super.key, required this.title, required this.children});
+  const CreditsSection({super.key, required this.title, this.sub, required this.children});
   final String title;
+  final String? sub;
   final List<Widget> children;
 
   @override
@@ -141,7 +159,7 @@ class CreditsSection extends StatelessWidget {
         children: [
           Padding(
             padding: const EdgeInsets.only(bottom: Gaps.small),
-            child: Text(title, style: const TextStyle(fontWeight: Weights.black, fontSize: TypeScale.button)),
+            child: MarkerHeading(title, sub),
           ),
           for (final (i, child) in children.indexed) ...[
             if (i > 0) const SizedBox(height: Gaps.tight),

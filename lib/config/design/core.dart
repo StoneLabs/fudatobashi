@@ -717,3 +717,12 @@ abstract final class TobiStyle {
   /// Width over height of Tobi's box.
   static const double aspect = 84 / 100;
 }
+
+/// A section heading on the Help and credits pages (`MarkerHeading`): the
+/// run pages' marker style at a larger size.
+abstract final class MarkerHeadingStyle {
+  static const Color color = Palette.sun;
+  static const double titleFont = 24;
+  static const double subFont = 12;
+  static const double sectionGap = 30;
+}

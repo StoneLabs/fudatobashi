@@ -17,6 +17,7 @@ export 'labels.dart';
 export 'lang_toggle.dart';
 export 'lettering.dart';
 export 'lines.dart';
+export 'marker_heading.dart';
 export 'panel.dart';
 export 'phrases.dart';
 export 'placed.dart';

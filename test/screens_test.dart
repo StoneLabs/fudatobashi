@@ -2289,6 +2289,37 @@ void main() {
     }
   }
 
+  for (final ja in [false, true]) {
+    final lang = ja ? 'ja' : 'en';
+    for (final (width, fontScale) in const [(384.0, 1.0), (360.0, 1.0), (360.0, 1.3)]) {
+      final size = width == _phone.width && fontScale == 1 ? '' : '_${width.round()}${fontScale == 1 ? '' : '_scaled'}';
+      testWidgets('credits: the headings and the reading-card credit fit ($lang, $width dp, font scale $fontScale)',
+          (tester) async {
+        tester.platformDispatcher.textScaleFactorTestValue = fontScale;
+        addTearDown(tester.platformDispatcher.clearTextScaleFactorTestValue);
+        final p = await open(tester, ja: ja);
+        await tester.binding.setSurfaceSize(Size(width, _phone.height));
+        addTearDown(() => tester.binding.setSurfaceSize(null));
+        await tester.pumpWidget(ProgressScope(
+          progress: p,
+          child: MaterialApp(
+            theme: buildMangaTheme(),
+            home: const RepaintBoundary(key: ValueKey('screen'), child: CreditsScreen()),
+          ),
+        ));
+        await tester.pump(const Duration(milliseconds: 300));
+        expect(tester.takeException(), isNull);
+        final s = S(lang);
+        await _capture(tester, 'credits${size}_$lang');
+        expect(find.text(s.creditsReadingCardsBody, skipOffstage: false), findsOneWidget);
+        await tester.ensureVisible(find.text(s.creditsReadingCardsBody, skipOffstage: false));
+        await tester.pump();
+        await _capture(tester, 'credits${size}_${lang}_cards');
+        await tester.pumpWidget(const SizedBox());
+      });
+    }
+  }
+
   group('Rank ladder edge cases', () {
     Widget pumped(Progress p) => ProgressScope(progress: p, child: const MaterialApp(home: RankScreen()));
 
