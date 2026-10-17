@@ -72,7 +72,7 @@ void main() {
   setUpAll(() async {
     await _loadFont('Dela', ['DelaGothicOne-Regular.ttf']);
     await _loadFont('Reggae', ['ReggaeOne-Regular.ttf']);
-    await _loadFont('Joka', ['YujiSyuku-Joka.ttf']);
+    await _loadFont('YujiSyuku', ['YujiSyuku-Regular.ttf']);
     await _loadFont('ZenKaku', [
       'ZenKakuGothicNew-Regular.ttf',
       'ZenKakuGothicNew-Medium.ttf',

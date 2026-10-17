@@ -43,7 +43,7 @@ void main() {
 
   testWidgets('render reading cards', (tester) async {
     await tester.runAsync(() async {
-      await _loadFont('Yomifuda', 'assets/fonts/YujiSyuku-Yomifuda.ttf');
+      await _loadFont('YujiSyuku', 'assets/fonts/YujiSyuku-Regular.ttf');
       await _loadFont('TorifudaNumber', 'assets/fonts/TeXGyreSchola-Regular.otf');
       await CardFaces.load([YomifudaStyle.standard.background], read: (a) => File(a).readAsBytes());
       for (final poem in p.all) {

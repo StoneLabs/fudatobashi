@@ -55,7 +55,7 @@ Future<void> loadAppFonts() async {
     'ZenKakuGothicNew-Bold.ttf',
     'ZenKakuGothicNew-Black.ttf',
   ]);
-  await _loadFont('Yomifuda', ['YujiSyuku-Yomifuda.ttf']);
+  await _loadFont('YujiSyuku', ['YujiSyuku-Regular.ttf']);
   await _loadFont('TorifudaNumber', ['TeXGyreSchola-Regular.otf']);
 }
 

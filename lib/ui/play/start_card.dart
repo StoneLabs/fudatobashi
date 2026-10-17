@@ -80,7 +80,7 @@ class _Title extends StatelessWidget {
       Text(
         jokaTitle,
         style: TextStyle(
-          fontFamily: Fonts.joka,
+          fontFamily: Fonts.brush,
           fontSize: StartCardStyle.titleFont,
           letterSpacing: StartCardStyle.titleTracking * StartCardStyle.titleFont,
           color: Palette.goldLight,
@@ -101,7 +101,7 @@ class _Poem extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     const style = TextStyle(
-      fontFamily: Fonts.joka,
+      fontFamily: Fonts.brush,
       fontSize: StartCardStyle.jokaFont,
       height: StartCardStyle.jokaLineHeight,
       color: Palette.gold,
@@ -182,7 +182,7 @@ class _Band extends StatelessWidget {
             child: Text(
               jokaGreeting,
               maxLines: 1,
-              style: TextStyle(fontFamily: Fonts.joka, fontSize: StartCardStyle.greetingFont, color: Palette.goldLight, height: 1.15),
+              style: TextStyle(fontFamily: Fonts.brush, fontSize: StartCardStyle.greetingFont, color: Palette.goldLight, height: 1.15),
             ),
           ),
           const SizedBox(height: StartCardStyle.cueGap),

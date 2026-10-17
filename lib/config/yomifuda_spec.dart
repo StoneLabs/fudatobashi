@@ -36,7 +36,7 @@ class YomifudaStyle {
     ink: Color(0xFF141414),
     kimariji: Color(0xFFD21C22),
     number: Color(0xFF222222),
-    fontFamily: 'Yomifuda',
+    fontFamily: 'YujiSyuku',
     fontCentre: 0.38,
     numberFontFamily: 'TorifudaNumber',
   );

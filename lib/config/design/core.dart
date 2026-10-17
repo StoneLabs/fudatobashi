@@ -321,9 +321,8 @@ abstract final class Fonts {
   static const display = 'Dela';
   static const sfx = 'Reggae';
 
-  /// Brush lettering, cut down to the start card's few characters
-  /// (`scripts/joka_font.sh`).
-  static const joka = 'Joka';
+  /// Brush lettering: the start card and the reading cards.
+  static const brush = 'YujiSyuku';
   static const ui = 'ZenKaku';
 }
 
