@@ -1,0 +1,120 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Card Explanation Editor</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Dela+Gothic+One&family=Yuji+Syuku&family=Zen+Kaku+Gothic+New:wght@400;500;700;900&display=swap">
+<link rel="stylesheet" href="editor.css">
+</head>
+<body>
+<header class="top">
+  <div class="tag">解説</div>
+  <h1>Card explanation editor<small>この札について　解説エディタ</small></h1>
+</header>
+
+<div class="grid">
+  <section class="phone-col" aria-label="Preview">
+    <div class="tools">
+      <span class="lbl">Marked kana shown as</span>
+      <div class="seg" id="scriptSeg" role="group"><button type="button" data-s="kana">Kana</button><button type="button" data-s="romaji">Romaji</button></div>
+      <button type="button" class="jump" id="jump">Jump to my text</button>
+    </div>
+    <div id="phoneWrap"><div class="phone"><div class="screen" id="screen"></div></div></div>
+    <p class="note">This is how the page looks in the app. The card at the top is only there so you know which card you are writing about. Dashed boxes mark parts of the real page that are left out here. Your text starts under the &ldquo;About the poem&rdquo; heading. A dotted underline marks kana in { } (editor only).</p>
+  </section>
+
+  <section class="editor-col" aria-label="Editor">
+    <div class="panel">
+      <div class="row">
+        <div class="row langs" role="group" aria-label="Language">
+          <button type="button" class="btn" id="lang-en" aria-pressed="true">English</button>
+          <button type="button" class="btn" id="lang-ja" aria-pressed="false">日本語</button>
+        </div>
+        <button type="button" class="btn" id="prev" aria-label="Previous card">&lsaquo;</button>
+        <select id="card" aria-label="Card"></select>
+        <button type="button" class="btn" id="next" aria-label="Next card">&rsaquo;</button>
+      </div>
+      <div class="row chips" id="editedList"></div>
+    </div>
+
+    <details class="howto" id="howto">
+      <summary>How to write　書き方</summary>
+      <div class="in">
+        <p>Write plain text with a few marks. The phone on the left updates as you type. Leave a blank line between paragraphs.<span class="ja">普通の文章に、いくつかの記号を足して書きます。段落の間は1行空けてください。</span></p>
+        <dl>
+          <dt>First line</dt>
+          <dd>Every file starts with a <code>#</code> heading. It gets the coloured marker. The words after <code> | </code> appear small beside it, in the other language.
+            <code># 解説 | Explanation</code><span class="ja">ファイルの最初は必ず # の見出し。「 | 」の後ろは、もう一方の言語の小さな文字になります。</span></dd>
+          <dt>Headings</dt>
+          <dd><code>## Big heading</code> <code>### Smaller</code> <code>#### Smallest</code></dd>
+          <dt>Bold and highlight</dt>
+          <dd><code>**bold**</code> makes text heavy. <code>*highlight*</code> puts the card's colour behind it.<span class="ja">**太字**　*マーカー*</span></dd>
+          <dt>Lists</dt>
+          <dd><code>- item</code> gives a diamond. <code>1. item</code> gives a number. Keep lists flat, with no lists inside lists.</dd>
+          <dt>Quote</dt>
+          <dd><code>&gt; quoted words</code></dd>
+          <dt>Line</dt>
+          <dd><code>---</code> on its own line, with a blank line above it. (Right under a line of text it turns that text into a heading.)</dd>
+          <dt>Poem lines</dt>
+          <dd>A <code>verse</code> block shows poem lines with furigana. Write <code>[漢字|かな]</code>, one poem line per line, and a full-width space (　) where the line may break.
+            <code>```verse
+[秋|あき]の[田|た]の　かりほの[庵|いほ]の
+```</code><span class="ja">[漢字|かな] でふりがな。1行に1句、区切りは全角スペース。</span></dd>
+          <dt>Kana that can turn into romaji</dt>
+          <dd>Put kana in curly braces, as it is pronounced: <code>The kimariji is {あきの}.</code> Kana mode shows あきの and Romaji mode shows akino. Write <code>{わ}</code> for the particle は. Only the text inside { } changes. It works in headings, lists, quotes, bold and highlight, but not inside a verse block or inside <code>[漢字|かな]</code>. To show a real brace, write <code>\{</code>.<span class="ja">ローマ字にしたいかなは { } で囲み、発音どおりに書きます。</span></dd>
+          <dt>Pictures</dt>
+          <dd><code>![caption](assets/pictures/name.png)</code> alone on its line, with the caption under the picture. Use only letters, digits, - and _ in the file name. Pictures show at most 140 px tall. The image files must be sent to the developer together with the .md files.<span class="ja">画像ファイルは .md と一緒に開発者へ送ってください。</span></dd>
+          <dt>Not supported</dt>
+          <dd>Tables, links, code, nested lists and HTML show as plain text or not at all. The check list under the editor tells you when something will not work.</dd>
+        </dl>
+      </div>
+    </details>
+
+    <div class="panel">
+      <div class="where">File: <code id="folder"></code><code id="fname"></code></div>
+      <div class="status" id="status"></div>
+      <div class="fmt" id="toolbar" role="toolbar" aria-label="Insert">
+        <button type="button" data-f="h1" title="Title with the coloured marker"># Title</button>
+        <button type="button" data-f="h2" title="Big heading">##</button>
+        <button type="button" data-f="h3" title="Smaller heading">###</button>
+        <button type="button" data-f="bold" title="Bold"><b>B</b></button>
+        <button type="button" data-f="em" title="Highlight"><i>I</i></button>
+        <button type="button" data-f="kana" title="Kana that turns into romaji">{ }</button>
+        <button type="button" data-f="ul" title="Bulleted list">&bull; List</button>
+        <button type="button" data-f="ol" title="Numbered list">1. List</button>
+        <button type="button" data-f="quote" title="Quote">&ldquo; Quote</button>
+        <button type="button" data-f="verse" title="Poem lines with furigana">Verse</button>
+        <button type="button" data-f="rule" title="Line">&mdash;</button>
+        <button type="button" data-f="picture" title="Picture">Picture</button>
+      </div>
+      <div class="edwrap">
+        <div class="hl" id="hl" aria-hidden="true"></div>
+        <textarea id="ta" aria-label="Markdown" autocapitalize="off" autocomplete="off" autocorrect="off"></textarea>
+      </div>
+      <ul class="checks" id="checks" hidden></ul>
+      <div class="row" style="margin-top:12px">
+        <button type="button" class="btn primary" id="dlOne">Download</button>
+        <button type="button" class="btn" id="dlAll">Download all edited</button>
+        <button type="button" class="btn" id="copy">Copy</button>
+        <button type="button" class="btn" id="reset">Reset to original</button>
+      </div>
+      <p class="send">Save each .md file under the same name in the folder shown above. Pictures are not inside the .md: send the image files to the developer as well. &ldquo;Download all edited&rdquo; makes one zip with every edited file in its folder, plus the pictures you added here.</p>
+    </div>
+
+    <div class="panel" id="picturesWrap" hidden>
+      <h2>Pictures in this file</h2>
+      <ul id="pictures"></ul>
+    </div>
+  </section>
+</div>
+<input type="file" id="pick" accept="image/*" hidden>
+
+<script src="data.js"></script>
+<script src="romaji.js"></script>
+<script src="markdown.js"></script>
+<script src="editor.js"></script>
+</body>
+</html>

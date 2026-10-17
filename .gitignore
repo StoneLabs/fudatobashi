@@ -75,3 +75,6 @@ app.*.map.json
 # Local planning notes
 /PRODUCT.md
 /NOTES.md
+
+# Made by tools/about_card_editor/build.py
+/tools/about_card_editor/data.js
