@@ -42,10 +42,12 @@ extension CardInfoStrings on S {
   String get aboutTakingKimariji => t('aboutTakingKimariji');
   String get aboutColourGroup => t('aboutColourGroup');
 
-  /// A card's 五色 group: its colour in words, the group's own name, the
-  /// card's place in it and the group's size.
-  String aboutColourValue(String group, int place, int size) =>
-      f('aboutColourValue', [t('colourGroup${_colourKeys[group] ?? group}'), group, place, size]);
+  /// A card's 五色 group: its colour in words and the group's own name.
+  String aboutColourName(String group) =>
+      f('aboutColourName', [t('colourGroup${_colourKeys[group] ?? group}'), group]);
+
+  /// A card's place in its 五色 group and the group's size.
+  String aboutColourPlace(int place, int size) => f('aboutColourPlace', [place, size]);
 
   String get aboutSimilar => t('aboutSimilar');
   String get aboutReadExplanation => t('aboutReadExplanation');

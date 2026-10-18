@@ -359,19 +359,22 @@ class _Facts extends StatelessWidget {
       (s.aboutTakingKimariji, Text(poem.kimarijiShimo, style: value)),
       (
         s.aboutColourGroup,
-        Text.rich(TextSpan(children: [
-          WidgetSpan(
-            alignment: PlaceholderAlignment.middle,
-            child: Container(
-              width: AboutCardLayout.chip,
-              height: AboutCardLayout.chip,
-              margin: const EdgeInsets.only(right: AboutCardLayout.chipGap),
-              decoration: BoxDecoration(
-                  color: group, border: Border.all(color: Palette.ink, width: AboutCardLayout.chipBorder)),
+        Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          Text.rich(TextSpan(children: [
+            WidgetSpan(
+              alignment: PlaceholderAlignment.middle,
+              child: Container(
+                width: AboutCardLayout.chip,
+                height: AboutCardLayout.chip,
+                margin: const EdgeInsets.only(right: AboutCardLayout.chipGap),
+                decoration: BoxDecoration(
+                    color: group, border: Border.all(color: Palette.ink, width: AboutCardLayout.chipBorder)),
+              ),
             ),
-          ),
-          Phrases.span(s.aboutColourValue(poem.color, poem.colorNumber, groupSize)),
-        ]), style: value),
+            Phrases.span(s.aboutColourName(poem.color)),
+          ]), style: value),
+          Text.rich(Phrases.span(s.aboutColourPlace(poem.colorNumber, groupSize)), style: value),
+        ]),
       ),
     ];
     return DecoratedBox(
