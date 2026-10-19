@@ -1,0 +1,18 @@
+{
+  "format": 3,
+  "id": 18,
+  "key": "ariake",
+  "tier": "red",
+  "family": null,
+  "familyOdds": null,
+  "drops": true,
+  "float": [
+    0.0,
+    0.6
+  ],
+  "text": {
+    "ink": "#24222E",
+    "badge": "#8D8796",
+    "numeral": "#9E99A6"
+  }
+}

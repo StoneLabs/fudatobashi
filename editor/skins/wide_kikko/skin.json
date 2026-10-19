@@ -1,0 +1,37 @@
+{
+  "format": 3,
+  "id": 15,
+  "key": "wide_kikko",
+  "tier": "purple",
+  "family": null,
+  "familyOdds": null,
+  "drops": true,
+  "float": [
+    0.0,
+    0.5
+  ],
+  "text": {
+    "ink": "#262626",
+    "badge": "#878C7C",
+    "numeral": "#989C8E"
+  },
+  "pattern": {
+    "x": [
+      0.0,
+      1.0
+    ],
+    "y": [
+      0.0,
+      1.0
+    ],
+    "rotation": [
+      0.0,
+      360.0
+    ],
+    "scale": 1.4609
+  },
+  "badge": [
+    54.3,
+    470.26
+  ]
+}

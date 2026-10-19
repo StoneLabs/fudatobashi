@@ -1,0 +1,18 @@
+{
+  "format": 3,
+  "id": 3,
+  "key": "basic_pink",
+  "tier": "blue",
+  "family": "basic",
+  "familyOdds": 12.5,
+  "drops": true,
+  "float": [
+    0.0,
+    1.0
+  ],
+  "text": {
+    "ink": "#262626",
+    "badge": "#B48091",
+    "numeral": "#BA8E9C"
+  }
+}

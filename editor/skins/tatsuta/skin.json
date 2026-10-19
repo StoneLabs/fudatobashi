@@ -1,0 +1,33 @@
+{
+  "format": 3,
+  "id": 4002,
+  "key": "tatsuta",
+  "tier": "red",
+  "family": null,
+  "familyOdds": null,
+  "drops": true,
+  "float": [
+    0.0,
+    0.08
+  ],
+  "pattern": {
+    "x": [
+      0.45,
+      0.55
+    ],
+    "y": [
+      0.0,
+      1.0
+    ],
+    "rotation": [
+      -90.0,
+      90.0
+    ],
+    "scale": 0.45
+  },
+  "text": {
+    "ink": "#1E1A18",
+    "badge": "#9A7C6C",
+    "numeral": "#9A7C6C"
+  }
+}

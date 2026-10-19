@@ -1,0 +1,10 @@
+[
+  {"key": "standard", "title": "Standard", "ja": "標準", "tier": "none", "ref": "standard"},
+  {"key": "basic_red", "title": "Red", "ja": "紅", "tier": "blue", "ref": "basic_red"},
+  {"key": "washi", "title": "Washi", "ja": "和紙", "tier": "purple", "ref": "washi"},
+  {"key": "seigaiha", "title": "Blue Ocean Waves", "ja": "青海波", "tier": "purple", "ref": "seigaiha"},
+  {"key": "sakura", "title": "Cherry Petals", "ja": "桜吹雪", "tier": "pink", "ref": "sakura"},
+  {"key": "fuji", "title": "Snow on Fuji", "ja": "田子の浦", "tier": "red", "ref": "fuji"},
+  {"key": "nishiki", "title": "Brocade River", "ja": "錦の川", "tier": "gold", "ref": "nishiki"},
+  {"key": "urushi", "title": "Lacquer and Vermilion", "ja": "漆と朱", "tier": "red", "ref": null}
+]

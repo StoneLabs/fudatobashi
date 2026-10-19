@@ -1,0 +1,18 @@
+{
+  "format": 3,
+  "id": 19,
+  "key": "urushi",
+  "tier": "red",
+  "family": null,
+  "familyOdds": null,
+  "drops": true,
+  "float": [
+    0.0,
+    0.6
+  ],
+  "text": {
+    "ink": "#1E1A18",
+    "badge": "#B0402A",
+    "numeral": "#BA5D4A"
+  }
+}

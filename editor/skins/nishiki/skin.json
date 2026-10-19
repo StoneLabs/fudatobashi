@@ -1,0 +1,41 @@
+{
+  "format": 3,
+  "id": 20,
+  "key": "nishiki",
+  "tier": "gold",
+  "family": null,
+  "familyOdds": 100.0,
+  "drops": true,
+  "float": [
+    0.0,
+    0.08
+  ],
+  "text": {
+    "ink": "#262626",
+    "badge": "#9C8A5E",
+    "numeral": "#AB9B73"
+  },
+  "shader": "brocade",
+  "values": {
+    "gold": "#C9A45A",
+    "waterAmount": [
+      1.0,
+      1.0
+    ],
+    "waterSpeed": [
+      8,
+      5
+    ],
+    "waterRelief": 0.25,
+    "leafSpeed": 37,
+    "leafOpacity": 1
+  },
+  "random": {
+    "leafPhase": {
+      "x": [
+        0.0,
+        1.0
+      ]
+    }
+  }
+}

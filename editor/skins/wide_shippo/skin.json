@@ -1,0 +1,37 @@
+{
+  "format": 3,
+  "id": 13,
+  "key": "wide_shippo",
+  "tier": "purple",
+  "family": null,
+  "familyOdds": null,
+  "drops": true,
+  "float": [
+    0.0,
+    0.5
+  ],
+  "text": {
+    "ink": "#262626",
+    "badge": "#8E8297",
+    "numeral": "#A096A8"
+  },
+  "pattern": {
+    "x": [
+      0.0,
+      1.0
+    ],
+    "y": [
+      0.0,
+      1.0
+    ],
+    "rotation": [
+      0.0,
+      360.0
+    ],
+    "scale": 1.4609
+  },
+  "badge": [
+    54.3,
+    470.26
+  ]
+}

@@ -1,0 +1,18 @@
+{
+  "format": 3,
+  "id": 1,
+  "key": "vanilla",
+  "tier": "none",
+  "family": null,
+  "familyOdds": null,
+  "drops": false,
+  "float": [
+    0.0,
+    0.0
+  ],
+  "text": {
+    "ink": "#262626",
+    "badge": "#8A8A8A",
+    "numeral": "#9E9E9E"
+  }
+}
