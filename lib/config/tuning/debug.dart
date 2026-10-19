@@ -19,6 +19,14 @@ abstract final class DebugOverlayStyle {
   static const double tableGap = 16;
 }
 
+/// The full version name shown in Settings on iOS, macOS and Windows, which
+/// only get a plain number from the platform. The build scripts and CI pass it
+/// as `--dart-define=BUILD_NAME=...`.
+abstract final class VersionDefine {
+  static const String key = 'BUILD_NAME';
+  static const String buildName = String.fromEnvironment(key);
+}
+
 /// The hidden developer-mode unlock (tapping the About version).
 abstract final class DevModeTuning {
   static const int tapsRequired = 10;

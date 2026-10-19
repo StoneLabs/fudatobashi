@@ -417,7 +417,10 @@ class _VersionRowState extends State<_VersionRow> {
   void initState() {
     super.initState();
     PackageInfo.fromPlatform().then((info) {
-      if (mounted) setState(() => _version = '${info.version}+${info.buildNumber}');
+      if (mounted) {
+        final name = VersionDefine.buildName.isEmpty ? info.version : VersionDefine.buildName;
+        setState(() => _version = '$name+${info.buildNumber}');
+      }
     });
   }
 

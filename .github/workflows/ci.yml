@@ -10,7 +10,14 @@
 # The build number and version name come from scripts/version.sh, the same helper
 # the local build scripts use: the build number is the commit count, and the name
 # is the pubspec version on a tagged commit, otherwise <version>-dev.<commit count>.<short hash>.
-# iOS, macOS and Windows only get the build number (they need a plain version).
+# iOS, macOS and Windows only get the build number as their platform version
+# (they need a plain one); the full name is passed as --dart-define=BUILD_NAME so
+# the Settings page can still show it.
+# The iOS job also builds an App Store-signed IPA when the secrets IOS_DIST_P12,
+# IOS_DIST_P12_PASSWORD, IOS_PROFILE and APPLE_TEAM_ID exist (otherwise it only
+# makes the unsigned one). The signed IPA is a workflow artifact only: the
+# release job attaches just the unsigned IPA. Nothing is uploaded to App Store
+# Connect; download the "appstore" artifact and upload it by hand with Transporter.
 name: CI
 run-name: ${{ github.event.head_commit.message || github.event.pull_request.title || github.ref_name }}
 
@@ -135,11 +142,17 @@ jobs:
           retention-days: 30
 
   ios:
-    name: iOS (unsigned IPA)
+    name: iOS (unsigned and App Store IPA)
     needs: version
     runs-on: macos-latest
     env:
       VERSION: ${{ needs.version.outputs.version }}
+      BUILD_NAME: ${{ needs.version.outputs.build_name }}
+      BUILD_NUMBER: ${{ needs.version.outputs.build_number }}
+      IOS_DIST_P12: ${{ secrets.IOS_DIST_P12 }}
+      IOS_DIST_P12_PASSWORD: ${{ secrets.IOS_DIST_P12_PASSWORD }}
+      IOS_PROFILE: ${{ secrets.IOS_PROFILE }}
+      APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
     steps:
       - uses: actions/checkout@v7
 
@@ -150,7 +163,7 @@ jobs:
           cache: true
 
       - run: flutter pub get
-      - run: flutter build ios --release --no-codesign --build-number=${{ needs.version.outputs.build_number }}
+      - run: flutter build ios --release --no-codesign --build-number="$BUILD_NUMBER" --dart-define=BUILD_NAME="$BUILD_NAME"
 
       - name: Package IPA
         run: |
@@ -160,9 +173,92 @@ jobs:
 
       - uses: actions/upload-artifact@v7
         with:
-          path: dist/*.ipa
+          path: dist/*-unsigned.ipa
           archive: false
           retention-days: 30
+
+      - name: Install signing certificate and profile
+        if: ${{ env.IOS_DIST_P12 != '' && env.IOS_DIST_P12_PASSWORD != '' && env.IOS_PROFILE != '' && env.APPLE_TEAM_ID != '' }}
+        run: |
+          keychain="$RUNNER_TEMP/signing.keychain-db"
+          keychain_password="$(openssl rand -base64 24)"
+          echo "$IOS_DIST_P12" | base64 -d > "$RUNNER_TEMP/dist.p12"
+          echo "$IOS_PROFILE" | base64 -d > "$RUNNER_TEMP/profile.mobileprovision"
+
+          security create-keychain -p "$keychain_password" "$keychain"
+          security set-keychain-settings -lut 21600 "$keychain"
+          security unlock-keychain -p "$keychain_password" "$keychain"
+          security import "$RUNNER_TEMP/dist.p12" -k "$keychain" -P "$IOS_DIST_P12_PASSWORD" -A -T /usr/bin/codesign
+          security set-key-partition-list -S apple-tool:,apple:,codesign: -s -k "$keychain_password" "$keychain"
+          security list-keychains -d user -s "$keychain" $(security list-keychains -d user | tr -d '"')
+
+          security cms -D -i "$RUNNER_TEMP/profile.mobileprovision" > "$RUNNER_TEMP/profile.plist"
+          profile_name="$(/usr/libexec/PlistBuddy -c 'Print :Name' "$RUNNER_TEMP/profile.plist")"
+          profile_uuid="$(/usr/libexec/PlistBuddy -c 'Print :UUID' "$RUNNER_TEMP/profile.plist")"
+          for dir in "$HOME/Library/MobileDevice/Provisioning Profiles" "$HOME/Library/Developer/Xcode/UserData/Provisioning Profiles"; do
+            mkdir -p "$dir"
+            cp "$RUNNER_TEMP/profile.mobileprovision" "$dir/$profile_uuid.mobileprovision"
+          done
+          echo "Installed profile \"$profile_name\" ($profile_uuid)"
+
+          cat > "$RUNNER_TEMP/ExportOptions.plist" <<PLIST
+          <?xml version="1.0" encoding="UTF-8"?>
+          <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+          <plist version="1.0">
+          <dict>
+            <key>method</key><string>app-store-connect</string>
+            <key>teamID</key><string>$APPLE_TEAM_ID</string>
+            <key>signingStyle</key><string>manual</string>
+            <key>signingCertificate</key><string>Apple Distribution</string>
+            <key>provisioningProfiles</key>
+            <dict>
+              <key>com.sobadev.fudatobashi</key><string>$profile_name</string>
+            </dict>
+            <key>uploadSymbols</key><true/>
+          </dict>
+          </plist>
+          PLIST
+          echo "PROFILE_NAME=$profile_name" >> "$GITHUB_ENV"
+
+      # Manual signing is set on the Runner target only (CI-side edit of the
+      # project file, not committed): the CocoaPods targets reject profiles.
+      - name: Build App Store IPA
+        if: ${{ env.IOS_DIST_P12 != '' && env.IOS_DIST_P12_PASSWORD != '' && env.IOS_PROFILE != '' && env.APPLE_TEAM_ID != '' }}
+        run: |
+          python3 - <<'PY'
+          import os, re
+          path = 'ios/Runner.xcodeproj/project.pbxproj'
+          text = open(path).read()
+          block = re.search(r'97C147071CF9000F007C117D /\* Release \*/ = \{.*?buildSettings = \{\n', text, re.S)
+          settings = (
+              '\t\t\t\tCODE_SIGN_STYLE = Manual;\n'
+              '\t\t\t\tCODE_SIGN_IDENTITY = "Apple Distribution";\n'
+              '\t\t\t\tDEVELOPMENT_TEAM = %s;\n'
+              '\t\t\t\tPROVISIONING_PROFILE_SPECIFIER = "%s";\n'
+              % (os.environ['APPLE_TEAM_ID'], os.environ['PROFILE_NAME'])
+          )
+          open(path, 'w').write(text[:block.end()] + settings + text[block.end():])
+          PY
+          flutter build ipa --release \
+            --build-number="$BUILD_NUMBER" \
+            --dart-define=BUILD_NAME="$BUILD_NAME" \
+            --export-options-plist="$RUNNER_TEMP/ExportOptions.plist"
+          mkdir -p dist
+          cp build/ios/ipa/*.ipa "dist/fudatobashi-$VERSION-appstore.ipa"
+
+      - name: Upload App Store IPA
+        if: ${{ env.IOS_DIST_P12 != '' && env.IOS_DIST_P12_PASSWORD != '' && env.IOS_PROFILE != '' && env.APPLE_TEAM_ID != '' }}
+        uses: actions/upload-artifact@v7
+        with:
+          path: dist/*-appstore.ipa
+          archive: false
+          retention-days: 30
+
+      - name: Remove signing keychain
+        if: always()
+        run: |
+          security delete-keychain "$RUNNER_TEMP/signing.keychain-db" || true
+          rm -f "$RUNNER_TEMP/dist.p12" "$RUNNER_TEMP/profile.mobileprovision"
 
   macos:
     name: macOS (.app)
@@ -180,7 +276,7 @@ jobs:
           cache: true
 
       - run: flutter pub get
-      - run: flutter build macos --release --build-number=${{ needs.version.outputs.build_number }}
+      - run: flutter build macos --release --build-number=${{ needs.version.outputs.build_number }} --dart-define=BUILD_NAME=${{ needs.version.outputs.build_name }}
 
       - name: Zip app bundle
         run: |
@@ -247,7 +343,7 @@ jobs:
           cache: true
 
       - run: flutter pub get
-      - run: flutter build windows --release --build-number=${{ needs.version.outputs.build_number }}
+      - run: flutter build windows --release --build-number=${{ needs.version.outputs.build_number }} "--dart-define=BUILD_NAME=${{ needs.version.outputs.build_name }}"
 
       - name: Zip Release folder
         shell: pwsh
@@ -280,7 +376,8 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          mapfile -t files < <(find dist -type f)
+          # The signed App Store IPA stays a workflow artifact; it is never attached.
+          mapfile -t files < <(find dist -type f ! -name '*-appstore.ipa')
           gh release create "${{ github.ref_name }}" "${files[@]}" \
             --repo "${{ github.repository }}" \
             --title "Fudatobashi ${{ needs.version.outputs.version }}" \

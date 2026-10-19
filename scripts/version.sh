@@ -5,7 +5,8 @@
 #   BUILD_NAME    the pubspec version (1.4.0) on a commit tagged v*, otherwise
 #                 1.4.0-dev.286.abc1234 (commit count and short hash); ".dirty"
 #                 is added when files are uncommitted (1.4.0-dirty on a tag)
-# iOS, macOS and Windows need a plain number, so they only use BUILD_NUMBER.
+# iOS, macOS and Windows need a plain number for the platform version, so they
+# use BUILD_NUMBER there and pass BUILD_NAME as --dart-define for the Settings page.
 root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 BUILD_NUMBER="$(git -C "$root" rev-list --count HEAD)"
 BUILD_NAME="$(sed -n 's/^version: *\([^+[:space:]]*\).*/\1/p' "$root/pubspec.yaml")"
