@@ -42,7 +42,8 @@ extension CardInfoStrings on S {
   String get aboutTakingKimariji => t('aboutTakingKimariji');
   String get aboutColourGroup => t('aboutColourGroup');
 
-  /// A card's 五色 group: its colour in words and the group's own name.
+  /// A card's 五色 group: the group's own name, led by its colour in words
+  /// where the language has one (the colour strings carry their own separator).
   String aboutColourName(String group) =>
       f('aboutColourName', [t('colourGroup${_colourKeys[group] ?? group}'), group]);
 

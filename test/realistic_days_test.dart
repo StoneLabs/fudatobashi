@@ -21,6 +21,7 @@ void main() {
   test('days are skipped, split into runs and finished by the configured shares', () async {
     final progress = await Progress.open(AppDatabase(NativeDatabase.memory()));
     await progress.updateTrainerConfig(progress.trainer.config.copyWith(learningMode: LearningMode.journey));
+    progress.trainer.fuzzing = false;
     final sim = JourneySimulator(progress, seed: 7);
     const days = 150;
     final start = DateTime(2026, 1, 1);
