@@ -15,9 +15,7 @@
 # the Settings page can still show it.
 # The iOS job also builds an App Store-signed IPA when the secrets IOS_DIST_P12,
 # IOS_DIST_P12_PASSWORD, IOS_PROFILE and APPLE_TEAM_ID exist (otherwise it only
-# makes the unsigned one). The signed IPA is a workflow artifact only: the
-# release job attaches just the unsigned IPA. Nothing is uploaded to App Store
-# Connect; download the "appstore" artifact and upload it by hand with Transporter.
+# makes the unsigned one).
 name: CI
 run-name: ${{ github.event.head_commit.message || github.event.pull_request.title || github.ref_name }}
 
@@ -376,8 +374,7 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          # The signed App Store IPA stays a workflow artifact; it is never attached.
-          mapfile -t files < <(find dist -type f ! -name '*-appstore.ipa')
+          mapfile -t files < <(find dist -type f)
           gh release create "${{ github.ref_name }}" "${files[@]}" \
             --repo "${{ github.repository }}" \
             --title "Fudatobashi ${{ needs.version.outputs.version }}" \
