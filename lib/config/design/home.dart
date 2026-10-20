@@ -333,7 +333,7 @@ abstract final class PauseSheetLayout {
 abstract final class Tally {
   static const Size box = Size(70, 32);
 
-  /// Loaded from `assets/svg/tally.svg`, in writing order.
+  /// Loaded from `assets/graphics/tally.svg`, in writing order.
   static late final List<String> strokes;
   static const double glyphAdvance = 38;
 

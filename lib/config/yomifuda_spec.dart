@@ -32,7 +32,7 @@ class YomifudaStyle {
 
   /// The competition reading cards of research/yomifuda.
   static const standard = YomifudaStyle(
-    background: 'assets/cards/yomifuda/default.svg',
+    background: 'assets/graphics/cards/yomifuda/default.svg',
     ink: Color(0xFF141414),
     kimariji: Color(0xFFD21C22),
     number: Color(0xFF222222),

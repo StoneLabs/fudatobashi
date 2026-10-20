@@ -4,7 +4,7 @@ import '../ui/manga/vector.dart';
 import 'design.dart';
 
 /// Tobi the mascot, a torifuda with a hachimaki: a shared body plus one part
-/// per pose, loaded from `assets/svg/tobi/` (see `vector_art_assets.dart`),
+/// per pose, loaded from `assets/graphics/tobi/` (see `vector_art_assets.dart`),
 /// 84 × 100 units; arms and effects may reach outside the box.
 abstract final class TobiArt {
   static const box = Size(84, 100);

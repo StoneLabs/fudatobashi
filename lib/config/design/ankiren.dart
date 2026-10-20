@@ -4,9 +4,9 @@ part of '../design.dart';
 /// in pictures with a line on each, then the rules and the scoring as
 /// lists, each line with the other language's under it.
 abstract final class AnkirenRulesLayout {
-  static const String memorise = 'assets/images/sidetrips/ankiren/howto-memorize.webp';
-  static const String flip = 'assets/images/sidetrips/ankiren/howto-flip.webp';
-  static const String take = 'assets/images/sidetrips/ankiren/howto-take.webp';
+  static const String memorise = 'assets/graphics/sidetrips/ankiren/howto-memorize.webp';
+  static const String flip = 'assets/graphics/sidetrips/ankiren/howto-flip.webp';
+  static const String take = 'assets/graphics/sidetrips/ankiren/howto-take.webp';
 
   /// The scoring rules print a share of the points to this many decimal
   /// places at most.
@@ -110,7 +110,7 @@ abstract final class AnkirenPlayLayout {
 
   /// The tatami behind the field: a seamless tile drawn for [tatamiScale]×
   /// density, on [background] until it loads.
-  static const String tatami = 'assets/images/ankiren/tatami.webp';
+  static const String tatami = 'assets/graphics/ankiren/tatami.webp';
   static const double tatamiScale = 3;
 }
 
@@ -348,7 +348,7 @@ abstract final class AnkirenRatingLayout {
 
   /// The stage: the flagpole's art (its box in pole units, scaled to the
   /// stage's height), its centre at [poleAt] of the stage's width.
-  static const String pole = 'assets/images/sidetrips/ui/flagpole.webp';
+  static const String pole = 'assets/graphics/sidetrips/ui/flagpole.webp';
   static const Size poleBox = Size(64, 440);
   static const double poleCentre = 32;
   static const double poleWidth = 7;
@@ -359,9 +359,9 @@ abstract final class AnkirenRatingLayout {
   /// art's own units; on the stage the cloth is [clothScale] times the
   /// pole's scale.
   static const List<String> cloth = [
-    'assets/images/sidetrips/ui/rank-cloth-0.webp',
-    'assets/images/sidetrips/ui/rank-cloth-1.webp',
-    'assets/images/sidetrips/ui/rank-cloth-2.webp',
+    'assets/graphics/sidetrips/ui/rank-cloth-0.webp',
+    'assets/graphics/sidetrips/ui/rank-cloth-1.webp',
+    'assets/graphics/sidetrips/ui/rank-cloth-2.webp',
   ];
   static const Size clothBox = Size(168, 84);
   static const double clothPole = 5;
@@ -624,7 +624,7 @@ abstract final class AnkirenRankLayout {
   static const double splitTurnDeg = 8;
   static const double splitFadeFrom = 0.35;
 
-  static const String splash = 'assets/images/sidetrips/ankiren/rank-splash.webp';
+  static const String splash = 'assets/graphics/sidetrips/ankiren/rank-splash.webp';
   static const Size splashSize = Size(360, 280);
   static const impactBurst = BurstSpec(
       box: impactSize, center: Offset(200, 160), count: 54, innerMin: 96, innerMax: 120, width: 6, seed: 43);
@@ -655,7 +655,7 @@ abstract final class AnkirenRankLayout {
   /// lower class dropping into its place, ガーン!! over them and Tobi
   /// shocked below.
   static const Size downStage = Size(330, 300);
-  static const String crack = 'assets/images/sidetrips/ankiren/rank-crack.webp';
+  static const String crack = 'assets/graphics/sidetrips/ankiren/rank-crack.webp';
   static const double fallDrop = 170;
   static const double fallTurnDeg = 18;
   static const String shockSfx = 'ガーン!!';

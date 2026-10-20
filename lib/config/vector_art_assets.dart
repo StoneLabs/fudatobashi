@@ -6,7 +6,7 @@ import 'design.dart';
 import 'tobi_art.dart';
 import 'vector_art.dart';
 
-/// Every `.svg` asset the art config loads, as its path under `assets/svg/`
+/// Every `.svg` asset the art config loads, as its path under `assets/graphics/`
 /// without the extension.
 final _assetPaths = [
   for (final n in _iconNames) 'icons/$n',
@@ -31,23 +31,23 @@ const _tobiNames = [
 
 /// Loads every piece of vector art (icons, map furniture, onboarding scenes,
 /// Tobi, the streak tally, the Side Trips burst and the card marks) from
-/// `assets/svg/`. Call once, before the first frame that draws any of it;
+/// `assets/graphics/`. Call once, before the first frame that draws any of it;
 /// synchronous access afterwards.
 Future<void> loadVectorArt() async {
   final entries =
-      await Future.wait(_assetPaths.map((p) async => MapEntry(p, await rootBundle.loadString('assets/svg/$p.svg'))));
+      await Future.wait(_assetPaths.map((p) async => MapEntry(p, await rootBundle.loadString('assets/graphics/$p.svg'))));
   installVectorArt(Map.fromEntries(entries));
 }
 
 /// Loads the same art from files, for tests and tools ([readFile] is
 /// typically `(p) => File(p).readAsStringSync()`), synchronously.
 void loadVectorArtSync(String Function(String path) readFile) =>
-    installVectorArt({for (final p in _assetPaths) p: readFile('assets/svg/$p.svg')});
+    installVectorArt({for (final p in _assetPaths) p: readFile('assets/graphics/$p.svg')});
 
-/// Parses [svg] (each keyed by its path under `assets/svg/`, without the
+/// Parses [svg] (each keyed by its path under `assets/graphics/`, without the
 /// extension, as in [loadVectorArt]) and installs every piece.
 void installVectorArt(Map<String, String> svg) {
-  VectorArt parse(String path) => SvgArt.parse(svg[path]!, debugName: 'assets/svg/$path.svg');
+  VectorArt parse(String path) => SvgArt.parse(svg[path]!, debugName: 'assets/graphics/$path.svg');
 
   IconArt.home = parse('icons/home');
   IconArt.history = parse('icons/history');
@@ -100,7 +100,7 @@ void installVectorArt(Map<String, String> svg) {
   TobiArt.relaxed = parse('tobi/relaxed').shapes;
   TobiArt.relaxedBehind = parse('tobi/relaxed-behind').shapes;
 
-  Tally.strokes = SvgArt.strokes(svg['tally']!, debugName: 'assets/svg/tally.svg');
+  Tally.strokes = SvgArt.strokes(svg['tally']!, debugName: 'assets/graphics/tally.svg');
 
   SideTripArt.burst = parse('sidetrips/burst');
 

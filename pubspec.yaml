@@ -67,20 +67,20 @@ flutter:
     - assets/l10n/en_card_explanations/
     - assets/l10n/ja_card_explanations/
     - assets/glyphs/
-    - assets/svg/tally.svg
-    - assets/svg/icons/
-    - assets/svg/map/
-    - assets/svg/scenes/
-    - assets/svg/tobi/
-    - assets/svg/sidetrips/
-    - assets/svg/cards/
-    - assets/cards/yomifuda/
-    - assets/cards/torifuda/
-    - assets/images/ankiren/
-    - assets/images/sidetrips/scene/
-    - assets/images/sidetrips/islands/
-    - assets/images/sidetrips/ankiren/
-    - assets/images/sidetrips/ui/
+    - assets/graphics/tally.svg
+    - assets/graphics/icons/
+    - assets/graphics/map/
+    - assets/graphics/scenes/
+    - assets/graphics/tobi/
+    - assets/graphics/sidetrips/
+    - assets/graphics/cards/
+    - assets/graphics/cards/yomifuda/
+    - assets/graphics/cards/torifuda/
+    - assets/graphics/ankiren/
+    - assets/graphics/sidetrips/scene/
+    - assets/graphics/sidetrips/islands/
+    - assets/graphics/sidetrips/ankiren/
+    - assets/graphics/sidetrips/ui/
     - assets/sounds/
     - assets/voice/kimariji/
     - assets/fonts/OFL-delagothicone.txt

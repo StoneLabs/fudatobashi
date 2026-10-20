@@ -11,12 +11,12 @@ class ScenePiece {
 
 /// The dojo scene at the top of the Side Trips tab (`DojoScene`,
 /// `research/design/sidetrips_b2.html`): pictures from
-/// `assets/images/sidetrips/scene/`, back to front, in a design frame [width]
+/// `assets/graphics/sidetrips/scene/`, back to front, in a design frame [width]
 /// units wide whose top is the screen's top, scaled to the screen's width.
 /// The islands stand in a ring (`DojoRingLayout`).
 abstract final class DojoSceneLayout {
   static const double width = 390;
-  static const _dir = 'assets/images/sidetrips/scene';
+  static const _dir = 'assets/graphics/sidetrips/scene';
 
   static const sky = ScenePiece('$_dir/sky.webp', Rect.fromLTWH(0, 0, 390, 200));
 
@@ -206,7 +206,7 @@ class RingIsleArt {
 /// way out along one as in along the other: leaving the front past the
 /// viewer, growing a little, as its blue twin comes into the left slot.
 abstract final class DojoRingLayout {
-  static const _dir = 'assets/images/sidetrips/islands';
+  static const _dir = 'assets/graphics/sidetrips/islands';
   static const Size canvas = Size(370, 226);
   static const Offset foot = Offset(185, 213);
 
@@ -240,7 +240,7 @@ abstract final class DojoRingLayout {
   static const lighthouse = RingIsleArt('$_dir/lighthouse.webp', '$_dir/lighthouse-haze.webp');
 
   /// 暗記練's banner on its island's grass, once it is open: its label.
-  static const nobori = ScenePiece('assets/images/sidetrips/ankiren/nobori.webp', Rect.fromLTWH(277.2, 56, 30, 100));
+  static const nobori = ScenePiece('assets/graphics/sidetrips/ankiren/nobori.webp', Rect.fromLTWH(277.2, 56, 30, 100));
 }
 
 /// How the ring of islands turns (`SideTripsScreen`).

@@ -12,7 +12,7 @@ abstract final class TorifudaSpec {
   static const double aspect = height / width;
 
   /// The blank card (`tool/card_backgrounds.py`), in the card's units.
-  static const background = 'assets/cards/torifuda/default.svg';
+  static const background = 'assets/graphics/cards/torifuda/default.svg';
 
   // Glyph grid. Three columns, right to left, split 5 / 5 / rest, all
   // starting at the top row. Each glyph's em box is centred on its cell,

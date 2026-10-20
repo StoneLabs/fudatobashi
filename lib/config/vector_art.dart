@@ -3,7 +3,7 @@ import 'dart:ui';
 import '../ui/manga/vector.dart';
 import 'design.dart';
 
-/// Vector art loaded from `assets/svg/` (see `vector_art_assets.dart`); every
+/// Vector art loaded from `assets/graphics/` (see `vector_art_assets.dart`); every
 /// field below is set once, at startup, before first use.
 
 /// Stroked UI icons (24-unit box unless noted), drawn in the current colour.

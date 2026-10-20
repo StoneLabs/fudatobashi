@@ -2,11 +2,11 @@
 
     python3 tool/card_backgrounds.py
 
-assets/cards/yomifuda/default.svg: the reading card (読み札) of the
+assets/graphics/cards/yomifuda/default.svg: the reading card (読み札) of the
 competition reading set in research/yomifuda, in millimetres (52 x 75):
 a blue band around white paper.
 
-assets/cards/torifuda/default.svg: the taking card (取り札) in the original
+assets/graphics/cards/torifuda/default.svg: the taking card (取り札) in the original
 app's artwork, in its 374 x 525 card units: green backing, a darker band
 just outside the paper, the paper and a lighter band just inside its edge.
 
@@ -61,7 +61,7 @@ def _write_svg(path, size, backing, shapes):
 def yomifuda():
     w, h = YOMIFUDA_SIZE
     paper = _rect((0, 0, w, h), -YOMIFUDA_BAND, fill=YOMIFUDA_PAPER, stroke='none')
-    _write_svg('assets/cards/yomifuda/default.svg', YOMIFUDA_SIZE, YOMIFUDA_BLUE, [paper])
+    _write_svg('assets/graphics/cards/yomifuda/default.svg', YOMIFUDA_SIZE, YOMIFUDA_BLUE, [paper])
 
 
 def torifuda():
@@ -73,7 +73,7 @@ def torifuda():
     highlight = _rect(TORIFUDA_PAPER, -inset, fill='none', stroke=TORIFUDA_HIGHLIGHT,
                       stroke_width=TORIFUDA_HIGHLIGHT_WIDTH, stroke_linejoin='miter')
     paper = _rect(TORIFUDA_PAPER, 0, fill=TORIFUDA_PAPER_COLOUR, stroke='none')
-    _write_svg('assets/cards/torifuda/default.svg', TORIFUDA_SIZE, TORIFUDA_FRAME, [shade, paper, highlight])
+    _write_svg('assets/graphics/cards/torifuda/default.svg', TORIFUDA_SIZE, TORIFUDA_FRAME, [shade, paper, highlight])
 
 
 if __name__ == '__main__':
