@@ -9,10 +9,11 @@
 # other platform is packed into one file first and uploaded the same way.
 # The build number and version name come from scripts/version.sh, the same helper
 # the local build scripts use: the build number is the commit count, and the name
-# is the pubspec version on a tagged commit, otherwise <version>-dev.<commit count>.<short hash>.
-# iOS, macOS and Windows only get the build number as their platform version
-# (they need a plain one); the full name is passed as --dart-define=BUILD_NAME so
-# the Settings page can still show it.
+# is the pubspec version on a tagged commit, otherwise <next patch version>-indev.<commit
+# count>.<short hash>. iOS, macOS and Windows get the plain build_version (X.Y.Z, the
+# pubspec version on a tag, otherwise the next patch) as --build-name, because they
+# need a plain one; the full name is passed as --dart-define=BUILD_NAME so the
+# Settings page can still show it.
 # The iOS job also builds an App Store-signed IPA when the secrets IOS_DIST_P12,
 # IOS_DIST_P12_PASSWORD, IOS_PROFILE and APPLE_TEAM_ID exist (otherwise it only
 # makes the unsigned one).
@@ -52,6 +53,7 @@ jobs:
     outputs:
       version: ${{ steps.resolve.outputs.version }}
       build_name: ${{ steps.resolve.outputs.build_name }}
+      build_version: ${{ steps.resolve.outputs.build_version }}
       build_number: ${{ steps.resolve.outputs.build_number }}
     steps:
       - uses: actions/checkout@v7
@@ -70,6 +72,7 @@ jobs:
           {
             echo "version=$version"
             echo "build_name=$BUILD_NAME"
+            echo "build_version=$BUILD_VERSION"
             echo "build_number=$BUILD_NUMBER"
           } >> "$GITHUB_OUTPUT"
 
@@ -146,6 +149,7 @@ jobs:
     env:
       VERSION: ${{ needs.version.outputs.version }}
       BUILD_NAME: ${{ needs.version.outputs.build_name }}
+      BUILD_VERSION: ${{ needs.version.outputs.build_version }}
       BUILD_NUMBER: ${{ needs.version.outputs.build_number }}
       IOS_DIST_P12: ${{ secrets.IOS_DIST_P12 }}
       IOS_DIST_P12_PASSWORD: ${{ secrets.IOS_DIST_P12_PASSWORD }}
@@ -161,7 +165,7 @@ jobs:
           cache: true
 
       - run: flutter pub get
-      - run: flutter build ios --release --no-codesign --build-number="$BUILD_NUMBER" --dart-define=BUILD_NAME="$BUILD_NAME"
+      - run: flutter build ios --release --no-codesign --build-name="$BUILD_VERSION" --build-number="$BUILD_NUMBER" --dart-define=BUILD_NAME="$BUILD_NAME"
 
       - name: Package IPA
         run: |
@@ -238,6 +242,7 @@ jobs:
           open(path, 'w').write(text[:block.end()] + settings + text[block.end():])
           PY
           flutter build ipa --release \
+            --build-name="$BUILD_VERSION" \
             --build-number="$BUILD_NUMBER" \
             --dart-define=BUILD_NAME="$BUILD_NAME" \
             --export-options-plist="$RUNNER_TEMP/ExportOptions.plist"
@@ -274,7 +279,7 @@ jobs:
           cache: true
 
       - run: flutter pub get
-      - run: flutter build macos --release --build-number=${{ needs.version.outputs.build_number }} --dart-define=BUILD_NAME=${{ needs.version.outputs.build_name }}
+      - run: flutter build macos --release --build-name=${{ needs.version.outputs.build_version }} --build-number=${{ needs.version.outputs.build_number }} --dart-define=BUILD_NAME=${{ needs.version.outputs.build_name }}
 
       - name: Zip app bundle
         run: |
@@ -341,7 +346,7 @@ jobs:
           cache: true
 
       - run: flutter pub get
-      - run: flutter build windows --release --build-number=${{ needs.version.outputs.build_number }} "--dart-define=BUILD_NAME=${{ needs.version.outputs.build_name }}"
+      - run: flutter build windows --release --build-name=${{ needs.version.outputs.build_version }} --build-number=${{ needs.version.outputs.build_number }} "--dart-define=BUILD_NAME=${{ needs.version.outputs.build_name }}"
 
       - name: Zip Release folder
         shell: pwsh
