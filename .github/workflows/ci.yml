@@ -16,7 +16,9 @@
 # Settings page can still show it.
 # The iOS job also builds an App Store-signed IPA when the secrets IOS_DIST_P12,
 # IOS_DIST_P12_PASSWORD, IOS_PROFILE and APPLE_TEAM_ID exist (otherwise it only
-# makes the unsigned one).
+# makes the unsigned one). Build files are named fudatobashi-<version>-signed.apk/.aab/.ipa,
+# -unsigned.ipa (also -unsigned.apk/.aab when the Android secrets are missing), -macos.zip,
+# -windows.zip and -linux.tar.gz.
 name: CI
 run-name: ${{ github.event.head_commit.message || github.event.pull_request.title || github.ref_name }}
 
@@ -113,10 +115,10 @@ jobs:
               echo "keyPassword=$ANDROID_KEY_PASSWORD"
             } > android/key.properties
             echo "Signing release build with the uploaded release key."
-            echo "SIGNED_SUFFIX=GH_SIGNED" >> "$GITHUB_ENV"
+            echo "SIGNED_SUFFIX=signed" >> "$GITHUB_ENV"
           else
-            echo "::warning::Android signing secrets are not set; the release build will use the debug key."
-            echo "SIGNED_SUFFIX=debug-signed" >> "$GITHUB_ENV"
+            echo "::warning::Android signing secrets are not set; the release build uses the debug key and is named -unsigned."
+            echo "SIGNED_SUFFIX=unsigned" >> "$GITHUB_ENV"
           fi
 
       - run: flutter pub get
@@ -247,13 +249,13 @@ jobs:
             --dart-define=BUILD_NAME="$BUILD_NAME" \
             --export-options-plist="$RUNNER_TEMP/ExportOptions.plist"
           mkdir -p dist
-          cp build/ios/ipa/*.ipa "dist/fudatobashi-$VERSION-appstore.ipa"
+          cp build/ios/ipa/*.ipa "dist/fudatobashi-$VERSION-signed.ipa"
 
       - name: Upload App Store IPA
         if: ${{ env.IOS_DIST_P12 != '' && env.IOS_DIST_P12_PASSWORD != '' && env.IOS_PROFILE != '' && env.APPLE_TEAM_ID != '' }}
         uses: actions/upload-artifact@v7
         with:
-          path: dist/*-appstore.ipa
+          path: dist/*-signed.ipa
           archive: false
           retention-days: 30
 
@@ -326,7 +328,7 @@ jobs:
 
       - uses: actions/upload-artifact@v7
         with:
-          path: dist/*.tar.gz
+          path: dist/*-linux.tar.gz
           archive: false
           retention-days: 30
 

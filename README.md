@@ -38,7 +38,7 @@ Get the newest version on the [Releases page](https://github.com/StoneLabs/fudat
 
 | Platform | File ends in | How to install |
 |-|-|-|
-| Android | `-GH_SIGNED.apk` | Open the file on your phone. When Android asks, allow installs from this source. |
+| Android | `-signed.apk` | Open the file on your phone. When Android asks, allow installs from this source. |
 | iOS | `-unsigned.ipa` | The file is not signed. Install it using [Sideloadly](https://sideloadly.io) or another sideloading application. |
 | macOS | `-macos.zip` | Unzip it. The first time, right-click the app and choose Open. |
 | Windows | `-windows.zip` | Unzip it and start `fudatobashi.exe`. If SmartScreen stops it, click More info and then Run anyway. |

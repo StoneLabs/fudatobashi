@@ -25,7 +25,7 @@ trap 'rm -f android/key.properties' EXIT
 
 flutter build appbundle --release --build-name="$BUILD_NAME" --build-number="$BUILD_NUMBER"
 flutter build apk --release --build-name="$BUILD_NAME" --build-number="$BUILD_NUMBER"
-cp build/app/outputs/bundle/release/app-release.aab "dist/fudatobashi-$BUILD_NAME.aab"
-cp build/app/outputs/flutter-apk/app-release.apk "dist/fudatobashi-$BUILD_NAME.apk"
-echo "Built signed dist/fudatobashi-$BUILD_NAME.aab (upload this to Google Play)"
-echo "Built signed dist/fudatobashi-$BUILD_NAME.apk (for sideloading)"
+cp build/app/outputs/bundle/release/app-release.aab "dist/fudatobashi-$BUILD_NAME-signed.aab"
+cp build/app/outputs/flutter-apk/app-release.apk "dist/fudatobashi-$BUILD_NAME-signed.apk"
+echo "Built signed dist/fudatobashi-$BUILD_NAME-signed.aab (upload this to Google Play)"
+echo "Built signed dist/fudatobashi-$BUILD_NAME-signed.apk (for sideloading)"
