@@ -6,7 +6,7 @@ publish_to: 'none' # Remove this line if you wish to publish to pub.dev
 
 # The app version. The build number is not set here: the build scripts and CI
 # pass the git commit count (scripts/version.sh).
-version: 2.1.0
+version: 2.1.1
 
 environment:
   sdk: ^3.13.4
