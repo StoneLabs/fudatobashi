@@ -1,11 +1,9 @@
 import 'dart:io';
 import 'dart:math';
-import 'dart:ui' as ui;
 
 import 'package:drift/drift.dart' show driftRuntimeOptions;
 import 'package:drift/native.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:fudatobashi/data/fuda_sets.dart';
@@ -29,6 +27,7 @@ import 'package:fudatobashi/ui/manga/manga.dart';
 
 import 'test_ankiren.dart';
 import 'test_l10n.dart';
+import 'test_screens.dart';
 import 'test_vector_art.dart';
 
 Future<void> _loadFont(String family, List<String> files) async {
@@ -39,17 +38,8 @@ Future<void> _loadFont(String family, List<String> files) async {
   await loader.load();
 }
 
-Future<void> _capture(WidgetTester tester, String name) async {
-  if (Platform.environment['RENDER_SCREENS'] != '1') return;
-  final boundary = tester.renderObject<RenderRepaintBoundary>(find.byKey(const ValueKey('screen')));
-  await tester.runAsync(() async {
-    final image = await boundary.toImage(pixelRatio: 2);
-    final png = await image.toByteData(format: ui.ImageByteFormat.png);
-    File('build/screens/history_look/$name.png')
-      ..createSync(recursive: true)
-      ..writeAsBytesSync(png!.buffer.asUint8List());
-  });
-}
+/// The user's phone stretched to show each tab's whole contents.
+const _tallPhone = Screen('384', Size(384, 1900), 2.8125);
 
 /// History after a seeded journey with ranked, exam and free runs and
 /// 暗記練 games: the list, then every tab of a ranked run, a training run
@@ -93,7 +83,7 @@ void main() {
 
   for (final ja in [false, true]) {
     final lang = ja ? 'ja' : 'en';
-    for (final (height, tall) in [(832.0, ''), (1900.0, '_tall')]) {
+    for (final (phone, tall) in [(usersPhone, ''), (_tallPhone, '_tall')]) {
       testWidgets('History looks right after a seeded journey ($lang$tall)', (tester) async {
         late Progress p;
         await tester.runAsync(() async {
@@ -122,14 +112,7 @@ void main() {
               playAnkiren(const AnkirenSetup.custom(perSide: 3, memorise: Duration(seconds: 30)), seed: 4),
               startedAt: today.add(const Duration(hours: 7)));
         });
-        const dpr = 2.8125;
-        const bars = FakeViewPadding(top: 28 * dpr, bottom: 48 * dpr);
-        tester.view
-          ..devicePixelRatio = dpr
-          ..physicalSize = Size(384, height) * dpr
-          ..padding = bars
-          ..viewPadding = bars;
-        addTearDown(tester.view.reset);
+        useScreen(tester, phone);
 
         Future<void> show(Widget home) async {
           await tester.pumpWidget(RepaintBoundary(
@@ -157,7 +140,7 @@ void main() {
         Future<void> pageThrough(String name, int tabs) async {
           for (var tab = 0; tab < tabs; tab++) {
             expect(tester.takeException(), isNull);
-            await _capture(tester, '${name}_${tab}_$lang$tall');
+            await captureScreen(tester, 'history_look/$name', lang: lang, variant: 'tab$tab');
             if (tab == tabs - 1) break;
             await tester.fling(find.byType(PageView), const Offset(-300, 0), 1000);
             await tester.pumpAndSettle();
@@ -170,10 +153,10 @@ void main() {
         await tester.tap(find.descendant(of: find.byType(MangaTabBar), matching: find.text(s.history)));
         await tester.pump(const Duration(milliseconds: 500));
         await tester.pump(const Duration(seconds: 1));
-        await _capture(tester, 'list_main_$lang$tall');
+        await captureScreen(tester, 'history_look/list_main', lang: lang);
         await tester.tap(find.textContaining(s.historyAnkirenTab, findRichText: true).first);
         await settle();
-        await _capture(tester, 'list_ankiren_$lang$tall');
+        await captureScreen(tester, 'history_look/list_ankiren', lang: lang);
 
         for (final (mode, name, tabs) in [
           (PlayMode.ranked, 'ranked', RunPage.hundredTabs.length),

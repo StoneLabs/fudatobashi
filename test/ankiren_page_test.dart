@@ -5,15 +5,13 @@
 // of the player's own setup, and the rules open on the first visit and
 // from their button.
 //
-// With RENDER_SCREENS=1 it also renders the page and its sheets at
-// 1080 × 2340 px, with real fonts and art, to .scratchpad/ankiren_page/.
+// With RENDER_SCREENS=1 it also renders the page and its sheets, with real
+// fonts and art, to build/screens/ankiren_page/.
 import 'dart:io';
-import 'dart:ui' as ui;
 
 import 'package:drift/drift.dart' show driftRuntimeOptions;
 import 'package:drift/native.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:fudatobashi/config/config.dart';
@@ -45,16 +43,8 @@ import 'package:fudatobashi/ui/sound/sounds.dart';
 
 import 'test_ankiren.dart';
 import 'test_l10n.dart';
+import 'test_screens.dart';
 import 'test_vector_art.dart';
-
-/// A phone: its size in dp and its pixels per dp (all 1080 × 2340 px),
-/// with a 28 dp status bar and a 48 dp navigation bar.
-typedef _Phone = ({String name, Size size, double dpr});
-
-const _narrow = (name: '360', size: Size(360, 780), dpr: 3.0);
-const _users = (name: '384', size: Size(384, 832), dpr: 2.8125);
-const _wide = (name: '412', size: Size(1080 / 2.625, 2340 / 2.625), dpr: 2.625);
-const _statusBar = 28.0, _navBar = 48.0;
 
 /// Before the first ranked game, one placement game in, and placed (five
 /// ranked games played).
@@ -125,16 +115,8 @@ void main() {
 
   // Shows [p]'s 暗記練 page on [phone] at [fontScale], pushed over an empty
   // screen.
-  Future<void> showPage(WidgetTester tester, Progress p, _Phone phone, {double fontScale = 1}) async {
-    final bars = FakeViewPadding(top: _statusBar * phone.dpr, bottom: _navBar * phone.dpr);
-    tester.view
-      ..devicePixelRatio = phone.dpr
-      ..physicalSize = phone.size * phone.dpr
-      ..padding = bars
-      ..viewPadding = bars;
-    tester.platformDispatcher.textScaleFactorTestValue = fontScale;
-    addTearDown(tester.view.reset);
-    addTearDown(tester.platformDispatcher.clearTextScaleFactorTestValue);
+  Future<void> showPage(WidgetTester tester, Progress p, Screen phone, {double fontScale = 1}) async {
+    useScreen(tester, phone, fontScale: fontScale);
     final navigator = GlobalKey<NavigatorState>();
     await tester.pumpWidget(RepaintBoundary(
       key: const ValueKey('screen'),
@@ -162,16 +144,16 @@ void main() {
   Finder close(S s) => find.byWidgetPredicate((w) => w is InkIconButton && w.semanticLabel == s.close);
 
   // [f] shows whole, inside the gutters, between the system bars.
-  void expectShown(WidgetTester tester, Finder f, _Phone phone) {
+  void expectShown(WidgetTester tester, Finder f, Screen phone) {
     final r = tester.getRect(f);
     expect(r.left, greaterThanOrEqualTo(Gaps.gutter - 0.5), reason: '$f');
     expect(r.right, lessThanOrEqualTo(phone.size.width - Gaps.gutter + 0.5), reason: '$f');
-    expect(r.top, greaterThanOrEqualTo(_statusBar), reason: '$f');
-    expect(r.bottom, lessThanOrEqualTo(phone.size.height - _navBar + 0.5), reason: '$f');
+    expect(r.top, greaterThanOrEqualTo(phone.bars.top), reason: '$f');
+    expect(r.bottom, lessThanOrEqualTo(phone.size.height - phone.bars.bottom + 0.5), reason: '$f');
   }
 
   group('fits', () {
-    for (final phone in [_narrow, _users, _wide]) {
+    for (final phone in [narrowPhone, usersPhone, widePhone]) {
       for (final fontScale in [1.0, 1.3]) {
         for (final lang in ['en', 'ja']) {
           for (final stage in _Stage.values) {
@@ -227,7 +209,7 @@ void main() {
     }
 
     for (final lang in ['en', 'ja']) {
-      for (final phone in [_narrow, _wide]) {
+      for (final phone in [narrowPhone, widePhone]) {
         testWidgets('the sheets fit at font scale 1.3, ${phone.name} dp ($lang)', (tester) async {
           final s = S(lang);
           final p = await open(tester, _Stage.placed, lang);
@@ -257,7 +239,7 @@ void main() {
       testWidgets('the rules explain every tier and both taps, with the tuning\'s numbers ($lang)', (tester) async {
         final s = S(lang);
         final p = await open(tester, _Stage.placed, lang);
-        await showPage(tester, p, _users);
+        await showPage(tester, p, usersPhone);
         await tester.tap(onPage(find.byType(SideTripRulesButton)));
         await tester.pump();
         await tester.pump(Motion.sheet);
@@ -296,7 +278,7 @@ void main() {
       final entry = p.sideTripsHub()[SideTrip.ankiren];
       final level = AnkirenRating.levelFor(entry.rating!, maxLevel: AnkirenLevels.top);
       expect(entry.rankedLevel, level);
-      await showPage(tester, p, _users);
+      await showPage(tester, p, usersPhone);
       expect(onPage(numbered(const S('en').ankirenLevelValue, level)), findsOneWidget, reason: 'the level is a fact');
       await tester.tap(onPage(find.byType(RankedBurst)));
       await tester.pump();
@@ -309,7 +291,7 @@ void main() {
     testWidgets('free play: a level key fills the steppers, a stepper makes it custom, and it starts', (tester) async {
       const s = S('en');
       final p = await open(tester, _Stage.placed, 'en');
-      await showPage(tester, p, _users);
+      await showPage(tester, p, usersPhone);
       await tester.tap(onPage(find.text(s.freePlay)));
       await tester.pump();
       await tester.pump(Motion.sheet);
@@ -350,7 +332,7 @@ void main() {
     testWidgets('the rules open on the first visit only, and from their button; × closes them', (tester) async {
       const s = S('en');
       final p = await open(tester, _Stage.fresh, 'en', rulesSeen: false);
-      await showPage(tester, p, _users);
+      await showPage(tester, p, usersPhone);
       expect(find.byType(AnkirenRulesSheet), findsOneWidget, reason: 'the first visit opens with the rules');
       for (final picture in [AnkirenRulesLayout.memorise, AnkirenRulesLayout.flip, AnkirenRulesLayout.take]) {
         expect(find.byWidgetPredicate((w) => w is Image && w.image == AssetImage(picture)), findsOneWidget);
@@ -363,7 +345,7 @@ void main() {
       expect(find.byType(AnkirenRulesSheet), findsNothing);
       await tester.pumpWidget(const SizedBox());
 
-      await showPage(tester, p, _users);
+      await showPage(tester, p, usersPhone);
       expect(find.byType(AnkirenRulesSheet), findsNothing, reason: 'only the first visit');
       await tester.tap(onPage(find.byType(SideTripRulesButton)));
       await tester.pump();
@@ -375,7 +357,7 @@ void main() {
     testWidgets('History opens on 暗記練\'s games', (tester) async {
       const s = S('en');
       final p = await open(tester, _Stage.placed, 'en');
-      await showPage(tester, p, _users);
+      await showPage(tester, p, usersPhone);
       await tester.tap(onPage(find.textContaining(s.history)));
       await tester.pump();
       await tester.pump(Motion.route);
@@ -388,7 +370,7 @@ void main() {
     });
   });
 
-  group('renders', skip: Platform.environment['RENDER_SCREENS'] != '1', () {
+  group('renders', skip: !renderScreens, () {
     Future<void> precacheArt(WidgetTester tester) async {
       await tester.runAsync(() async {
         final context = tester.element(find.byType(AnkirenPage, skipOffstage: false));
@@ -401,48 +383,41 @@ void main() {
       await tester.pump();
     }
 
-    Future<void> capture(WidgetTester tester, _Phone phone, String name) async {
+    Future<void> capture(WidgetTester tester, String screen, String lang) async {
       await precacheArt(tester);
-      final boundary = tester.renderObject<RenderRepaintBoundary>(find.byKey(const ValueKey('screen')));
-      await tester.runAsync(() async {
-        final image = await boundary.toImage(pixelRatio: phone.dpr);
-        final png = await image.toByteData(format: ui.ImageByteFormat.png);
-        File('.scratchpad/ankiren_page/$name.png')
-          ..createSync(recursive: true)
-          ..writeAsBytesSync(png!.buffer.asUint8List());
-      });
+      await captureScreen(tester, 'ankiren_page/$screen', lang: lang);
     }
 
-    for (final phone in [_narrow, _users, _wide]) {
+    for (final phone in [narrowPhone, usersPhone, widePhone]) {
       for (final lang in ['en', 'ja']) {
         for (final fontScale in [1.0, 1.3]) {
           testWidgets('page_${phone.name}_${lang}_$fontScale', (tester) async {
             for (final stage in _Stage.values) {
               final p = await open(tester, stage, lang);
               await showPage(tester, p, phone, fontScale: fontScale);
-              await capture(tester, phone, '${stage.name}_${phone.name}_${lang}_$fontScale');
+              await capture(tester, stage.name, lang);
               if (stage == _Stage.placed) {
                 await tester.tap(onPage(find.byType(SideTripFreeButton)));
                 await tester.pump();
                 await tester.pump(Motion.sheet);
-                await capture(tester, phone, 'free_${phone.name}_${lang}_$fontScale');
+                await capture(tester, 'free', lang);
                 await tester.tap(close(S(lang)));
                 await tester.pump();
                 await tester.pump(Motion.sheet * 2);
                 await tester.tap(onPage(find.byType(SideTripRulesButton)));
                 await tester.pump();
                 await tester.pump(Motion.sheet);
-                await capture(tester, phone, 'rules_${phone.name}_${lang}_$fontScale');
+                await capture(tester, 'rules', lang);
                 await tester.ensureVisible(find.byType(Table));
                 await tester.pump();
-                await capture(tester, phone, 'scoring_${phone.name}_${lang}_$fontScale');
+                await capture(tester, 'scoring', lang);
                 await tester.tap(close(S(lang)));
                 await tester.pump();
                 await tester.pump(Motion.sheet * 2);
                 await tester.tap(onPage(find.textContaining(S(lang).history)));
                 await tester.pump();
                 await tester.pump(Motion.route);
-                await capture(tester, phone, 'history_${phone.name}_${lang}_$fontScale');
+                await capture(tester, 'history', lang);
               }
               await tester.pumpWidget(const SizedBox());
             }

@@ -3,11 +3,10 @@
 // ranked: everything shows above the tab bar, nothing overflows, and the
 // buttons do what they say. 暗記練's opening shows once.
 //
-// With RENDER_SCREENS=1 it also renders the hub at 1080 × 2340 px, with
-// real fonts and art, to .scratchpad/side_trips/.
+// With RENDER_SCREENS=1 it also renders the hub, with real fonts and art,
+// to build/screens/side_trips/.
 import 'dart:io';
 import 'dart:math' as math;
-import 'dart:ui' as ui;
 
 import 'package:drift/drift.dart' show driftRuntimeOptions;
 import 'package:drift/native.dart';
@@ -47,16 +46,8 @@ import 'package:fudatobashi/ui/sound/sounds.dart';
 
 import 'test_ankiren.dart';
 import 'test_l10n.dart';
+import 'test_screens.dart';
 import 'test_vector_art.dart';
-
-/// A phone: its size in dp and its pixels per dp (both 1080 × 2340 px),
-/// with a 28 dp status bar and a 48 dp navigation bar.
-typedef _Phone = ({String name, Size size, double dpr});
-
-const _narrow = (name: '360', size: Size(360, 780), dpr: 3.0);
-const _wide = (name: '412', size: Size(1080 / 2.625, 2340 / 2.625), dpr: 2.625);
-const _users = (name: '384', size: Size(384, 832), dpr: 2.8125);
-const _statusBar = 28.0, _navBar = 48.0;
 
 /// The least left between the rank stamp, hanging out over the panel's
 /// corner, and the screen's right edge.
@@ -158,16 +149,8 @@ void main() {
   }
 
   // Shows [p]'s app on [phone] at [fontScale], on the Side Trips tab.
-  Future<void> openHub(WidgetTester tester, Progress p, _Phone phone, {double fontScale = 1}) async {
-    final bars = FakeViewPadding(top: _statusBar * phone.dpr, bottom: _navBar * phone.dpr);
-    tester.view
-      ..devicePixelRatio = phone.dpr
-      ..physicalSize = phone.size * phone.dpr
-      ..padding = bars
-      ..viewPadding = bars;
-    tester.platformDispatcher.textScaleFactorTestValue = fontScale;
-    addTearDown(tester.view.reset);
-    addTearDown(tester.platformDispatcher.clearTextScaleFactorTestValue);
+  Future<void> openHub(WidgetTester tester, Progress p, Screen phone, {double fontScale = 1}) async {
+    useScreen(tester, phone, fontScale: fontScale);
     await tester.pumpWidget(RepaintBoundary(key: const ValueKey('screen'), child: FudatobashiApp(progress: p)));
     await tester.pump(const Duration(milliseconds: 500));
     await tester.tap(find.descendant(of: find.byType(MangaTabBar), matching: find.text(S(p.settings.language).sideTrips)));
@@ -183,7 +166,7 @@ void main() {
 
   // The lowest the front swell's crest line runs: its picture's top, the
   // one on screen and highest, plus how deep its crest goes.
-  double crestBottom(WidgetTester tester, _Phone phone) {
+  double crestBottom(WidgetTester tester, Screen phone) {
     final tops = [
       for (final e in inHub(find.byWidgetPredicate(
               (w) => w is ScenePicture && w.asset == DojoSceneLayout.seaNear.asset)).evaluate())
@@ -204,12 +187,12 @@ void main() {
       inHub(find.byWidgetPredicate((w) => w is ScenePicture && w.asset == asset));
 
   // [f] shows whole, inside the gutters and above the tab bar.
-  void expectShown(WidgetTester tester, Finder f, _Phone phone) {
+  void expectShown(WidgetTester tester, Finder f, Screen phone) {
     final r = tester.getRect(f);
     final bar = tester.getRect(find.byType(MangaTabBar));
     expect(r.left, greaterThanOrEqualTo(Gaps.gutter - 0.5), reason: '$f');
     expect(r.right, lessThanOrEqualTo(phone.size.width - Gaps.gutter + 0.5), reason: '$f');
-    expect(r.top, greaterThanOrEqualTo(_statusBar), reason: '$f');
+    expect(r.top, greaterThanOrEqualTo(phone.bars.top), reason: '$f');
     expect(r.bottom, lessThanOrEqualTo(bar.top), reason: '$f');
   }
 
@@ -260,7 +243,7 @@ void main() {
   });
 
   group('fits', () {
-    for (final phone in [_narrow, _users, _wide]) {
+    for (final phone in [narrowPhone, usersPhone, widePhone]) {
       for (final fontScale in [1.0, 1.3]) {
         for (final lang in ['en', 'ja']) {
           for (final hub in _Hub.values) {
@@ -280,7 +263,7 @@ void main() {
                   greaterThanOrEqualTo(crestBottom(tester, phone)), reason: 'the entry sits under the crest');
               final lettering = inHub(find.byWidgetPredicate(
                   (w) => w is Text && w.data?.replaceAll('\n', ' ') == s.sideTripsLettering)).first;
-              expect(tester.getRect(lettering).top, greaterThanOrEqualTo(_statusBar),
+              expect(tester.getRect(lettering).top, greaterThanOrEqualTo(phone.bars.top),
                   reason: 'the title clears the status bar');
               expect(tester.getRect(lettering).right,
                   lessThanOrEqualTo(DojoSceneLayout.sunFace.rect.left * phone.size.width / DojoSceneLayout.width),
@@ -327,7 +310,7 @@ void main() {
                 final painted = paintedRect(tester, stamp);
                 expect(painted.left, greaterThan(0), reason: '$painted');
                 expect(painted.right, lessThanOrEqualTo(phone.size.width - _stampMargin), reason: '$painted');
-                expect(painted.top, greaterThanOrEqualTo(_statusBar), reason: '$painted');
+                expect(painted.top, greaterThanOrEqualTo(phone.bars.top), reason: '$painted');
                 final rows = find.descendant(
                     of: inHub(find.byWidgetPredicate((w) => w is Pressable && w.semanticLabel == s.ankirenOpenPage)),
                     matching: find.byType(RichText));
@@ -351,7 +334,7 @@ void main() {
       addTearDown(
           () => tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(SystemChannels.platform, null));
       final p = await open(tester, _Hub.ranked, 'en');
-      await openHub(tester, p, _users);
+      await openHub(tester, p, usersPhone);
       final level = p.sideTripsHub()[SideTrip.ankiren].rankedLevel!;
       await tester.tap(inHub(find.byType(PageBurst)));
       await tester.pump();
@@ -368,7 +351,7 @@ void main() {
     testWidgets('the stats row opens AnkiRen\'s page too', (tester) async {
       const s = S('en');
       final p = await open(tester, _Hub.ranked, 'en');
-      await openHub(tester, p, _users);
+      await openHub(tester, p, usersPhone);
       await tester.tap(inHub(find.byWidgetPredicate((w) => w is Pressable && w.semanticLabel == s.ankirenOpenPage)));
       await tester.pump();
       await tester.pump(Motion.route);
@@ -380,7 +363,7 @@ void main() {
     testWidgets('locked: the bar says what opens it', (tester) async {
       const s = S('en');
       final locked = await open(tester, _Hub.locked, 'en');
-      await openHub(tester, locked, _users);
+      await openHub(tester, locked, usersPhone);
       await tester.tap(inHub(find.textContaining(s.sideTripRanked)));
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 400));
@@ -395,7 +378,7 @@ void main() {
     testWidgets('a swipe left brings the island on the right to the front, round and round; a swipe right goes back',
         (tester) async {
       final p = await open(tester, _Hub.ranked, 'en');
-      await openHub(tester, p, _users);
+      await openHub(tester, p, usersPhone);
       expect(frontOf(tester), SideTripIsle.ankiren);
       final order = <SideTripIsle>[];
       for (var i = 0; i < 4; i++) {
@@ -425,7 +408,7 @@ void main() {
     testWidgets('one swipe turns one step, however hard; a short slow one settles back, a long slow one turns',
         (tester) async {
       final p = await open(tester, _Hub.ranked, 'en');
-      await openHub(tester, p, _users);
+      await openHub(tester, p, usersPhone);
       await tester.fling(inHub(find.byType(DojoScene)), const Offset(-370, 0), 6000);
       await tester.pump();
       await tester.pump(const Duration(seconds: 2));
@@ -445,8 +428,8 @@ void main() {
 
     testWidgets('the turn follows the finger: the entries ride across on their swells', (tester) async {
       final p = await open(tester, _Hub.ranked, 'en');
-      await openHub(tester, p, _users);
-      final width = _users.size.width;
+      await openHub(tester, p, usersPhone);
+      final width = usersPhone.size.width;
       final gesture = await tester.startGesture(tester.getCenter(inHub(find.byType(DojoScene))));
       await gesture.moveBy(const Offset(-20, 0));
       await gesture.moveBy(Offset(-width / 4, 0));
@@ -467,8 +450,8 @@ void main() {
     testWidgets('between the front and the left an island shows twice, out past the left edge on the near arm '
         'as its blue twin comes in on the far arm, both under the finger, either way', (tester) async {
       final p = await open(tester, _Hub.ranked, 'en');
-      await openHub(tester, p, _users);
-      final width = _users.size.width;
+      await openHub(tester, p, usersPhone);
+      final width = usersPhone.size.width;
       const ankiren = DojoRingLayout.ankiren;
       Rect? rectOf(String asset) => pictures(asset).evaluate().isEmpty ? null : tester.getRect(pictures(asset));
       final front = rectOf(ankiren.colour)!;
@@ -531,8 +514,8 @@ void main() {
           addTearDown(tester.platformDispatcher.clearAccessibilityFeaturesTestValue);
         }
         final p = await open(tester, _Hub.ranked, 'en');
-        await openHub(tester, p, _users);
-        final width = _users.size.width;
+        await openHub(tester, p, usersPhone);
+        final width = usersPhone.size.width;
         const layers = DojoSceneLayout.backWaves;
         expect([for (final layer in layers) layer.speed], orderedEquals([...layers.map((l) => l.speed)]..sort()),
             reason: 'back to front, each faster than the one behind');
@@ -583,7 +566,7 @@ void main() {
 
     testWidgets('a swipe that starts on the burst turns the ring and starts no game', (tester) async {
       final p = await open(tester, _Hub.ranked, 'en');
-      await openHub(tester, p, _users);
+      await openHub(tester, p, usersPhone);
       await tester.fling(inHub(find.byType(PageBurst)), const Offset(-200, 0), 1200);
       await tester.pump();
       await tester.pump(const Duration(seconds: 2));
@@ -595,7 +578,7 @@ void main() {
     testWidgets('each step: its entry in front, labels on the front and right islands, its torii', (tester) async {
       const s = S('en');
       final p = await open(tester, _Hub.ranked, 'en');
-      await openHub(tester, p, _users);
+      await openHub(tester, p, usersPhone);
       int tags() => inHub(find.text(s.sideTripsBuilding)).evaluate().length;
 
       expect(inHub(find.byType(SideTripBody)).hitTestable(), findsOneWidget);
@@ -624,7 +607,7 @@ void main() {
 
     testWidgets('the boat drifts with the turn, then springs back', (tester) async {
       final p = await open(tester, _Hub.ranked, 'en');
-      await openHub(tester, p, _users);
+      await openHub(tester, p, usersPhone);
       double drift() => tester.widget<DojoBoat>(find.byType(DojoBoat)).drift.value;
       final gesture = await tester.startGesture(tester.getCenter(inHub(find.byType(DojoScene))));
       await gesture.moveBy(const Offset(-20, 0));
@@ -645,7 +628,7 @@ void main() {
     testWidgets('the tab comes back with 暗記練 in front', (tester) async {
       const s = S('en');
       final p = await open(tester, _Hub.ranked, 'en');
-      await openHub(tester, p, _users);
+      await openHub(tester, p, usersPhone);
       await swipe(tester);
       await swipe(tester);
       expect(frontOf(tester), SideTripIsle.fuji);
@@ -663,7 +646,7 @@ void main() {
       const s = S('en');
       final semantics = tester.ensureSemantics();
       final p = await open(tester, _Hub.ranked, 'en');
-      await openHub(tester, p, _users);
+      await openHub(tester, p, usersPhone);
       void act(SideTripIsle shown, String action) => tester.semantics.performAction(
             find.semantics.byLabel(s.isleName(shown)),
             SemanticsAction.customAction,
@@ -695,7 +678,7 @@ void main() {
       tester.platformDispatcher.accessibilityFeaturesTestValue = const FakeAccessibilityFeatures(disableAnimations: true);
       addTearDown(tester.platformDispatcher.clearAccessibilityFeaturesTestValue);
       final p = await open(tester, _Hub.ranked, 'en');
-      await openHub(tester, p, _users);
+      await openHub(tester, p, usersPhone);
       double drift() => tester.widget<DojoBoat>(find.byType(DojoBoat)).drift.value;
       final body = tester.getRect(inHub(find.byType(SideTripBody)));
 
@@ -728,7 +711,7 @@ void main() {
           addTearDown(tester.platformDispatcher.clearAccessibilityFeaturesTestValue);
         }
         final p = await open(tester, _Hub.ranked, 'en');
-        await openHub(tester, p, _users);
+        await openHub(tester, p, usersPhone);
         final clouds = [for (final cloud in DojoSceneLayout.clouds) pictures(cloud.piece.asset)];
         List<double> lefts() => [for (final c in clouds) tester.getRect(c).left];
         final start = lefts();
@@ -758,7 +741,7 @@ void main() {
           addTearDown(tester.platformDispatcher.clearAccessibilityFeaturesTestValue);
         }
         final p = await open(tester, _Hub.ranked, 'en');
-        await openHub(tester, p, _users);
+        await openHub(tester, p, usersPhone);
         final order = [for (final e in inHub(find.byType(ScenePicture)).evaluate()) (e.widget as ScenePicture).asset];
         expect(order.indexOf(DojoSceneLayout.sky.asset), lessThan(order.indexOf(DojoSceneLayout.sunRays.asset)));
         expect(order.indexOf(DojoSceneLayout.sunRays.asset), lessThan(order.indexOf(DojoSceneLayout.sunFace.asset)));
@@ -788,7 +771,7 @@ void main() {
           expect(corners, {start.rays});
           expect(blinked, isFalse);
         } else {
-          final k = _users.size.width / DojoSceneLayout.width;
+          final k = usersPhone.size.width / DojoSceneLayout.width;
           final bob = heights.reduce(math.max) - heights.reduce(math.min);
           expect(bob, inInclusiveRange(1, 2 * DojoSceneLayout.sunLift * k + 0.5), reason: 'a little');
           expect(corners.length, greaterThan(1), reason: 'the rays turn');
@@ -799,7 +782,7 @@ void main() {
     }
 
     testWidgets('every coming-soon entry fits under its crest', (tester) async {
-      for (final (phone, lang, fontScale) in [(_narrow, 'ja', 1.3), (_users, 'en', 1.3), (_wide, 'en', 1.0)]) {
+      for (final (phone, lang, fontScale) in [(narrowPhone, 'ja', 1.3), (usersPhone, 'en', 1.3), (widePhone, 'en', 1.0)]) {
         final p = await open(tester, _Hub.ranked, lang);
         await openHub(tester, p, phone, fontScale: fontScale);
         await swipe(tester);
@@ -819,7 +802,7 @@ void main() {
       const s = S('en');
       final p = await open(tester, _Hub.locked, 'en');
       await tester.runAsync(() => remember(p, journeyOrder.skip(_lockedCards).take(11)));
-      await openHub(tester, p, _users);
+      await openHub(tester, p, usersPhone);
       expect(gate(tester), GateState.locked);
       expect(p.sideTripsSeenLocked, {SideTrip.ankiren});
 
@@ -841,7 +824,7 @@ void main() {
       await tester.pumpWidget(const SizedBox());
 
       heard.played.clear();
-      await openHub(tester, p, _users);
+      await openHub(tester, p, usersPhone);
       expect(gate(tester), GateState.open);
       await tester.pump(DojoUnlockMotion.unlock);
       expect(heard.played, isNot(contains(Sfx.ratingBreak)), reason: 'latched');
@@ -851,7 +834,7 @@ void main() {
     testWidgets('暗記練 opening while another island is in front waits until it comes back', (tester) async {
       final p = await open(tester, _Hub.locked, 'en');
       await tester.runAsync(() => remember(p, journeyOrder.skip(_lockedCards).take(11)));
-      await openHub(tester, p, _users);
+      await openHub(tester, p, usersPhone);
       await swipe(tester);
       expect(frontOf(tester), SideTripIsle.building);
       await tester.runAsync(() => remember(p, journeyOrder.skip(_lockedCards + 11).take(2)));
@@ -874,7 +857,7 @@ void main() {
 
     testWidgets('a trip never seen locked just shows open', (tester) async {
       final p = await open(tester, _Hub.open, 'en');
-      await openHub(tester, p, _users);
+      await openHub(tester, p, usersPhone);
       expect(gate(tester), GateState.open);
       expect(p.sideTripsSeenLocked, isEmpty);
       await tester.pumpWidget(const SizedBox());
@@ -885,7 +868,7 @@ void main() {
       await tester.runAsync(() => remember(p, journeyOrder.skip(_lockedCards).take(11)));
       tester.platformDispatcher.accessibilityFeaturesTestValue = const FakeAccessibilityFeatures(disableAnimations: true);
       addTearDown(tester.platformDispatcher.clearAccessibilityFeaturesTestValue);
-      await openHub(tester, p, _users);
+      await openHub(tester, p, usersPhone);
       await tester.runAsync(() => remember(p, journeyOrder.skip(_lockedCards + 11).take(2)));
       for (var i = 0; i < 4; i++) {
         await tester.pump();
@@ -897,7 +880,7 @@ void main() {
     });
   });
 
-  group('renders', skip: Platform.environment['RENDER_SCREENS'] != '1', () {
+  group('renders', skip: !renderScreens, () {
     Future<void> precacheArt(WidgetTester tester) async {
       await tester.runAsync(() async {
         for (final e in find.byType(Image).evaluate()) {
@@ -908,21 +891,10 @@ void main() {
       await tester.pump();
     }
 
-    Future<void> capture(WidgetTester tester, _Phone phone, String name) async {
-      final boundary = tester.renderObject<RenderRepaintBoundary>(find.byKey(const ValueKey('screen')));
-      await tester.runAsync(() async {
-        final image = await boundary.toImage(pixelRatio: phone.dpr);
-        final png = await image.toByteData(format: ui.ImageByteFormat.png);
-        File('.scratchpad/side_trips/$name.png')
-          ..createSync(recursive: true)
-          ..writeAsBytesSync(png!.buffer.asUint8List());
-      });
-    }
-
     testWidgets('unlock', (tester) async {
       final p = await open(tester, _Hub.locked, 'ja');
       await tester.runAsync(() => remember(p, journeyOrder.skip(_lockedCards).take(11)));
-      await openHub(tester, p, _users);
+      await openHub(tester, p, usersPhone);
       await tester.runAsync(() => remember(p, journeyOrder.skip(_lockedCards + 11).take(2)));
       await tester.pump();
       await tester.pump();
@@ -934,24 +906,24 @@ void main() {
         await tester.pump(next - at);
         at = next;
         await precacheArt(tester);
-        await capture(tester, _users, 'unlock_$t');
+        await captureScreen(tester, 'side_trips/unlock', lang: 'ja', variant: 'at${(t * 100).round()}');
       }
       await tester.pumpWidget(const SizedBox());
     });
 
     testWidgets('ring', (tester) async {
       final p = await open(tester, _Hub.ranked, 'ja');
-      await openHub(tester, p, _users);
+      await openHub(tester, p, usersPhone);
       await precacheArt(tester);
       final centre = tester.getCenter(inHub(find.byType(DojoScene)));
       for (final (name, by) in [('back_half', 0.5), ('fwd_30', -0.3), ('fwd_60', -0.6)]) {
         final gesture = await tester.startGesture(centre);
         await gesture.moveBy(Offset(by.sign * 20, 0));
-        await gesture.moveBy(Offset(by * _users.size.width - by.sign * 20, 0));
+        await gesture.moveBy(Offset(by * usersPhone.size.width - by.sign * 20, 0));
         await tester.pump();
         await precacheArt(tester);
-        await capture(tester, _users, 'ring_$name');
-        await gesture.moveBy(Offset(-by * _users.size.width, 0));
+        await captureScreen(tester, 'side_trips/ring_$name', lang: 'ja');
+        await gesture.moveBy(Offset(-by * usersPhone.size.width, 0));
         await gesture.up();
         await tester.pump();
         await tester.pump(const Duration(seconds: 3));
@@ -960,12 +932,12 @@ void main() {
         await swipe(tester);
         await tester.pump(const Duration(seconds: 3));
         await precacheArt(tester);
-        await capture(tester, _users, 'ring_step$step');
+        await captureScreen(tester, 'side_trips/ring', lang: 'ja', variant: 'step$step');
       }
       await tester.pumpWidget(const SizedBox());
     });
 
-    for (final (phone, lang, fontScale) in [(_users, 'ja', 1.0), (_narrow, 'en', 1.3)]) {
+    for (final (phone, lang, fontScale) in [(usersPhone, 'ja', 1.0), (narrowPhone, 'en', 1.3)]) {
       testWidgets('rules_${phone.name}_${lang}_$fontScale', (tester) async {
         final p = await open(tester, _Hub.locked, lang);
         await openHub(tester, p, phone, fontScale: fontScale);
@@ -973,12 +945,12 @@ void main() {
         await tester.pump();
         await tester.pump(Motion.sheet);
         await precacheArt(tester);
-        await capture(tester, phone, 'rules_${phone.name}_${lang}_$fontScale');
+        await captureScreen(tester, 'side_trips/rules', lang: lang);
         await tester.pumpWidget(const SizedBox());
       });
     }
 
-    for (final phone in [_users, _narrow, _wide]) {
+    for (final phone in [usersPhone, narrowPhone, widePhone]) {
       for (final fontScale in [1.0, 1.3]) {
         for (final lang in ['en', 'ja']) {
           for (final hub in _Hub.values) {
@@ -987,7 +959,7 @@ void main() {
               final p = await open(tester, hub, lang);
               await openHub(tester, p, phone, fontScale: fontScale);
               await precacheArt(tester);
-              await capture(tester, phone, name);
+              await captureScreen(tester, 'side_trips/hub_${hub.name}', lang: lang);
               await tester.pumpWidget(const SizedBox());
             });
           }

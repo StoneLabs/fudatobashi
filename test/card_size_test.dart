@@ -3,14 +3,12 @@
 // smaller by the same share (and still swipe) down to the minimum. The page
 // fits 384 × 832 dp and 360 dp wide at font scale 1.3.
 //
-// With RENDER_SCREENS=1 it also renders the page to .scratchpad/card_size/.
+// With RENDER_SCREENS=1 it also renders the page to build/screens/card_size/.
 import 'dart:io';
-import 'dart:ui' as ui;
 
 import 'package:drift/drift.dart' show driftRuntimeOptions;
 import 'package:drift/native.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:fudatobashi/config/config.dart';
@@ -37,13 +35,8 @@ import 'package:fudatobashi/ui/settings/settings_rows.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 
 import 'test_l10n.dart';
+import 'test_screens.dart';
 import 'test_vector_art.dart';
-
-typedef _Phone = ({String name, Size size, double dpr});
-
-const _users = (name: '384', size: Size(384, 832), dpr: 2.8125);
-const _narrow = (name: '360', size: Size(360, 780), dpr: 3.0);
-const _statusBar = 28.0, _navBar = 48.0;
 
 void main() {
   loadTestVectorArt();
@@ -108,16 +101,8 @@ void main() {
     });
   });
 
-  Future<void> openPage(WidgetTester tester, Progress p, _Phone phone, {double fontScale = 1}) async {
-    final bars = FakeViewPadding(top: _statusBar * phone.dpr, bottom: _navBar * phone.dpr);
-    tester.view
-      ..devicePixelRatio = phone.dpr
-      ..physicalSize = phone.size * phone.dpr
-      ..padding = bars
-      ..viewPadding = bars;
-    tester.platformDispatcher.textScaleFactorTestValue = fontScale;
-    addTearDown(tester.view.reset);
-    addTearDown(tester.platformDispatcher.clearTextScaleFactorTestValue);
+  Future<void> openPage(WidgetTester tester, Progress p, Screen phone, {double fontScale = 1}) async {
+    useScreen(tester, phone, fontScale: fontScale);
     await tester.pumpWidget(RepaintBoundary(key: const ValueKey('screen'), child: FudatobashiApp(progress: p)));
     await tester.pump(const Duration(milliseconds: 500));
     await tester.tap(find.byType(SettingsButton));
@@ -138,7 +123,7 @@ void main() {
     await tester.pump();
   }
 
-  for (final (phone, fontScale) in [(_users, 1.0), (_narrow, 1.3)]) {
+  for (final (phone, fontScale) in [(usersPhone, 1.0), (narrowPhone, 1.3)]) {
     for (final lang in ['en', 'ja']) {
       testWidgets('the page shows the card, resizing live under the slider (${phone.name}, $lang, $fontScale)',
           (tester) async {
@@ -169,7 +154,7 @@ void main() {
           final r = tester.getRect(f);
           expect(screen.contains(r.topLeft) && screen.contains(r.bottomRight - const Offset(.1, .1)), isTrue,
               reason: '$f $r');
-          expect(r.bottom, lessThanOrEqualTo(phone.size.height - _navBar + 0.5), reason: '$f');
+          expect(r.bottom, lessThanOrEqualTo(phone.size.height - phone.bars.bottom + 0.5), reason: '$f');
         }
         tester.state<NavigatorState>(find.byType(Navigator).first).pop();
         await tester.pump(Motion.route * 2);
@@ -224,19 +209,12 @@ void main() {
     });
   });
 
-  group('renders', skip: Platform.environment['RENDER_SCREENS'] != '1', () {
+  group('renders', skip: !renderScreens, () {
     for (final (scale, lang) in [(1.0, 'en'), (0.6, 'ja'), (0.25, 'en')]) {
       testWidgets('card_size_${(scale * 100).round()}_$lang', (tester) async {
         final p = await player(tester, lang: lang, scale: scale);
-        await openPage(tester, p, _users);
-        final boundary = tester.renderObject<RenderRepaintBoundary>(find.byKey(const ValueKey('screen')));
-        await tester.runAsync(() async {
-          final image = await boundary.toImage(pixelRatio: 2);
-          final png = await image.toByteData(format: ui.ImageByteFormat.png);
-          File('.scratchpad/card_size/card_size_${(scale * 100).round()}_$lang.png')
-            ..createSync(recursive: true)
-            ..writeAsBytesSync(png!.buffer.asUint8List());
-        });
+        await openPage(tester, p, usersPhone);
+        await captureScreen(tester, 'card_size/card_size', lang: lang, variant: 'size${(scale * 100).round()}');
         await tester.pumpWidget(const SizedBox());
       });
     }

@@ -5,7 +5,6 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 import 'dart:math' as math;
-import 'dart:ui' as ui;
 
 import 'package:drift/drift.dart' show driftRuntimeOptions;
 import 'package:drift/native.dart';
@@ -123,9 +122,10 @@ import 'package:package_info_plus/package_info_plus.dart';
 
 import 'test_l10n.dart';
 import 'test_play.dart';
+import 'test_screens.dart';
 import 'test_vector_art.dart';
 
-const _phone = Size(384, 832);
+final _phone = usersPhone.size;
 
 Future<void> _loadFont(String family, List<String> files) async {
   final loader = FontLoader(family);
@@ -133,18 +133,6 @@ Future<void> _loadFont(String family, List<String> files) async {
     loader.addFont(Future.value(ByteData.sublistView(File('assets/fonts/$f').readAsBytesSync())));
   }
   await loader.load();
-}
-
-Future<void> _capture(WidgetTester tester, String name) async {
-  if (Platform.environment['RENDER_SCREENS'] != '1') return;
-  final boundary = tester.renderObject<RenderRepaintBoundary>(find.byKey(const ValueKey('screen')));
-  await tester.runAsync(() async {
-    final image = await boundary.toImage(pixelRatio: 2);
-    final png = await image.toByteData(format: ui.ImageByteFormat.png);
-    File('build/screens/$name.png')
-      ..createSync(recursive: true)
-      ..writeAsBytesSync(png!.buffer.asUint8List());
-  });
 }
 
 void main() {
@@ -203,23 +191,13 @@ void main() {
     await tester.pumpWidget(RepaintBoundary(key: const ValueKey('screen'), child: FudatobashiApp(progress: p)));
     await tester.pump(const Duration(milliseconds: 500));
     expect(tester.takeException(), isNull);
-    await _capture(tester, name);
+    await captureScreen(tester, name, lang: p.settings.language);
     await tester.pumpWidget(const SizedBox());
   }
 
-  // The user's phone: 384 × 832 at 2.8125 px per dp, with a 28 dp status bar
-  // and a 48 dp navigation bar.
+  // The user's phone, with its system bars.
   Future<void> onPhone(WidgetTester tester, Progress p, {required double fontScale}) async {
-    const dpr = 2.8125;
-    const bars = FakeViewPadding(top: 28 * dpr, bottom: 48 * dpr);
-    tester.view
-      ..devicePixelRatio = dpr
-      ..physicalSize = _phone * dpr
-      ..padding = bars
-      ..viewPadding = bars;
-    tester.platformDispatcher.textScaleFactorTestValue = fontScale;
-    addTearDown(tester.view.reset);
-    addTearDown(tester.platformDispatcher.clearTextScaleFactorTestValue);
+    useScreen(tester, usersPhone, fontScale: fontScale);
     await tester.binding.setSurfaceSize(_phone);
     await tester.pumpWidget(RepaintBoundary(key: const ValueKey('screen'), child: FudatobashiApp(progress: p)));
     await tester.pump(const Duration(milliseconds: 500));
@@ -409,11 +387,11 @@ void main() {
         final p = await open(tester, ja: ja);
         await onPhone(tester, p, fontScale: fontScale);
         expectOnboardingFits(tester);
-        await _capture(tester, 'onboarding_${lang}_$fontScale');
+        await captureScreen(tester, 'onboarding', lang: lang);
         await swapStep(tester, find.text(S(ja ? 'ja' : 'en').beginnerTitle));
         expect(find.byType(PaceChoice), findsNWidgets(2));
         expectOnboardingFits(tester);
-        await _capture(tester, 'onboarding_pace_${lang}_$fontScale');
+        await captureScreen(tester, 'onboarding_pace', lang: lang);
         await tester.pumpWidget(const SizedBox());
       });
     }
@@ -432,7 +410,7 @@ void main() {
       final why = S(ja ? 'ja' : 'en').learnAheadShaky(ahead.shaky);
       expect(find.text(why), findsOneWidget);
       expect(tester.takeException(), isNull);
-      await _capture(tester, 'learn_ahead_locked_$lang');
+      await captureScreen(tester, 'learn_ahead_locked', lang: lang);
       expect(p.trainer.unlocked.length, unlocked, reason: 'a locked tap unlocks nothing');
       await tester.pump(LearnAheadStyle.balloonLife);
       expect(find.text(why), findsNothing);
@@ -443,7 +421,7 @@ void main() {
         (tester) async {
       final p = await open(tester, mode: LearningMode.allKnown, ja: ja);
       await onPhone(tester, p, fontScale: 1.3);
-      await _capture(tester, 'home_header_$lang');
+      await captureScreen(tester, 'home_header', lang: lang);
       final help = tester.getRect(find.byType(HelpButton));
       final wheel = tester.getRect(find.byType(SettingsButton));
       expect(help.size, wheel.size);
@@ -459,7 +437,7 @@ void main() {
       expect(find.byType(HelpScreen), findsOneWidget);
       expect(find.text(S(lang).replayTour), findsOneWidget);
       expect(tester.takeException(), isNull);
-      await _capture(tester, 'help_$lang');
+      await captureScreen(tester, 'help', lang: lang);
       await tester.tap(find.descendant(
           of: find.byType(HelpScreen), matching: find.byWidgetPredicate((w) => w is InkIconButton && w.icon == IconArt.back)));
       await tester.pump();
@@ -470,7 +448,6 @@ void main() {
     });
 
     for (final (width, fontScale) in const [(384.0, 1.0), (360.0, 1.0), (360.0, 1.3)]) {
-      final size = width == _phone.width && fontScale == 1 ? '' : '_${width.round()}${fontScale == 1 ? '' : '_scaled'}';
       testWidgets('help: the three guides, then Tools with the card browser and its slot ($lang, $width dp, font scale $fontScale)',
           (tester) async {
         tester.platformDispatcher.textScaleFactorTestValue = fontScale;
@@ -487,7 +464,7 @@ void main() {
         ));
         await tester.pump(const Duration(milliseconds: 300));
         expect(tester.takeException(), isNull);
-        await _capture(tester, 'help_page${size}_$lang');
+        await captureScreen(tester, 'help_page', lang: lang);
         final s = S(lang);
         final guides = [for (final title in [s.replayTour, s.guideTitle, s.rulesTitle]) tester.getRect(find.text(title))];
         for (final (i, guide) in guides.indexed.skip(1)) {
@@ -519,7 +496,7 @@ void main() {
       await tester.pump(const Duration(milliseconds: 400));
       expect(find.text(S(ja ? 'ja' : 'en').learnAheadDailyLimit(LearnAheadTuning.maxNewCardsPerDay)), findsOneWidget);
       expect(tester.takeException(), isNull);
-      await _capture(tester, 'learn_ahead_daily_limit_$lang');
+      await captureScreen(tester, 'learn_ahead_daily_limit', lang: lang);
       await tester.pump(LearnAheadStyle.balloonLife);
       await tester.pumpWidget(const SizedBox());
     });
@@ -553,7 +530,7 @@ void main() {
       });
       expect(p.learnAhead().lock, LearnAheadLock.none, reason: 'all well remembered, ahead of day 0\'s pace');
       await onPhone(tester, p, fontScale: 1.0);
-      await _capture(tester, 'learn_ahead_open_$lang');
+      await captureScreen(tester, 'learn_ahead_open', lang: lang);
       final next = p.trainer.nextBatch(poems, fudaSets);
       await tester.runAsync(() async {
         await tester.tap(find.byType(LearnAheadButton));
@@ -578,11 +555,11 @@ void main() {
     });
 
     testWidgets('home, journey ($lang)', (tester) async {
-      await show(tester, await open(tester, mode: LearningMode.journey, ja: ja, journeyCards: 27), 'journey_$lang');
+      await show(tester, await open(tester, mode: LearningMode.journey, ja: ja, journeyCards: 27), 'journey');
     });
 
     testWidgets('home, all known ($lang)', (tester) async {
-      await show(tester, await open(tester, mode: LearningMode.allKnown, ja: ja), 'known_$lang');
+      await show(tester, await open(tester, mode: LearningMode.allKnown, ja: ja), 'known');
     });
   }
 
@@ -641,7 +618,7 @@ void main() {
     expect(p.dueCount(), greaterThan(0));
     expect(p.freshCount, greaterThan(0));
     expect(p.knownCardSpeedMs, isNotNull);
-    await show(tester, p, 'journey_due_en');
+    await show(tester, p, 'journey_due');
   });
 
   testWidgets('home, all known (en): due reviews and known speed render cleanly', (tester) async {
@@ -650,7 +627,7 @@ void main() {
     await makeSomeDue(tester, p, ids.take(10).toList());
     expect(p.dueCount(), greaterThan(0));
     expect(p.knownCardSpeedMs, isNotNull);
-    await show(tester, p, 'known_due_en');
+    await show(tester, p, 'known_due');
   });
 
   // Reproduces "BOTTOM OVERFLOWED BY 3.8 PIXELS" on the Home rating panel
@@ -665,7 +642,7 @@ void main() {
     final ids = [for (final isl in archipelago.islands) ...fudaSets['initial:${isl.name}'].poemIds];
     await makeSomeDue(tester, p, ids.take(10).toList());
     expect(p.knownCardSpeedMs, isNotNull);
-    await show(tester, p, 'known_due_scaled_en');
+    await show(tester, p, 'known_due');
   });
 
   // A three-digit 苦手 count stayed at its two-digit spot and ran off the
@@ -699,7 +676,7 @@ void main() {
       await tester.pumpWidget(RepaintBoundary(key: const ValueKey('screen'), child: FudatobashiApp(progress: p)));
       await tester.pump(const Duration(milliseconds: 500));
       expect(tester.takeException(), isNull);
-      await _capture(tester, 'known_weak_${width.round()}${fontScale == 1 ? '' : '_scaled'}');
+      await captureScreen(tester, 'known_weak');
       final badge = tester.getRect(find.byType(CountBadge));
       expect(badge.right, lessThanOrEqualTo(width - Gaps.gutter - Strokes.panel), reason: 'inside the 苦手 panel');
       final title = tester.getRect(find.text(const S('en').weakLettering));
@@ -718,7 +695,6 @@ void main() {
     final lang = ja ? 'ja' : 'en';
 
     for (final (width, fontScale) in const [(384.0, 1.0), (360.0, 1.0), (360.0, 1.3)]) {
-      final size = width == _phone.width && fontScale == 1 ? '' : '_${width.round()}${fontScale == 1 ? '' : '_scaled'}';
       testWidgets('stats: islands with real dots and medians, then all cards ($lang, $width dp, font scale $fontScale)',
           (tester) async {
         tester.platformDispatcher.textScaleFactorTestValue = fontScale;
@@ -748,7 +724,7 @@ void main() {
         await tester.tap(find.text(s.stats));
         await tester.pump(const Duration(milliseconds: 500));
         expect(tester.takeException(), isNull);
-        await _capture(tester, 'stats_islands${size}_$lang');
+        await captureScreen(tester, 'stats_islands', lang: lang);
         final map = tester.widget<IslandMap>(find.byType(IslandMap));
         expect(map.route, isNotNull, reason: "Home's route and boat show on Stats too");
         expect(map.boat, isNotNull);
@@ -793,7 +769,7 @@ void main() {
         expect(find.text(other.name), findsOneWidget);
         expect(note, findsNothing);
         expect(tester.takeException(), isNull);
-        await _capture(tester, 'stats_islands_picked${size}_$lang');
+        await captureScreen(tester, 'stats_islands_picked', lang: lang);
 
         // SRS opens its page.
         await tester.tap(find.text(s.srs));
@@ -802,7 +778,7 @@ void main() {
         expect(find.byType(SrsScreen), findsOneWidget);
         expect(find.textContaining(s.srsTitle, findRichText: true), findsOneWidget);
         expect(tester.takeException(), isNull);
-        await _capture(tester, 'stats_srs${size}_$lang');
+        await captureScreen(tester, 'stats_srs', lang: lang);
         await tester.tap(find.bySemanticsLabel(s.back));
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 500));
@@ -814,7 +790,7 @@ void main() {
         await tester.pump(const Duration(milliseconds: 500));
         expect(tester.takeException(), isNull);
         expect(find.byType(CardTile), findsWidgets);
-        await _capture(tester, 'stats_all${size}_$lang');
+        await captureScreen(tester, 'stats_all', lang: lang);
 
         await tester.pumpWidget(const SizedBox());
       });
@@ -876,7 +852,7 @@ void main() {
     await tester.pump(const Duration(milliseconds: 500));
     expect(tester.takeException(), isNull);
     expect(find.byWidgetPredicate((w) => w is RunKindTag && w.mode == PlayMode.free), findsNWidgets(4));
-    await _capture(tester, 'history_scaled_en');
+    await captureScreen(tester, 'history');
     await tester.pumpWidget(const SizedBox());
   });
 
@@ -930,7 +906,7 @@ void main() {
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 500));
       expect(tester.takeException(), isNull);
-      await _capture(tester, 'island_$lang');
+      await captureScreen(tester, 'island', lang: lang);
 
       // Tap the first rendered card row (every row in this island has real,
       // multi-mode history, so whichever one is first is a valid target).
@@ -938,7 +914,7 @@ void main() {
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 500));
       expect(tester.takeException(), isNull);
-      await _capture(tester, 'card_detail_$lang');
+      await captureScreen(tester, 'card_detail', lang: lang);
 
       // The memory panel's "last review" text (`_MemoryPanel` in
       // `card_detail_screen.dart`) shared its row's flexible space evenly
@@ -955,7 +931,7 @@ void main() {
       await tester.tap(find.text(s.invertedLabel));
       await tester.pump(const Duration(milliseconds: 300));
       expect(tester.takeException(), isNull);
-      await _capture(tester, 'card_detail_inverted_$lang');
+      await captureScreen(tester, 'card_detail_inverted', lang: lang);
 
       await tester.tap(find.text(s.uprightLabel));
       await tester.pump(const Duration(milliseconds: 300));
@@ -1005,7 +981,7 @@ void main() {
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 500));
         expect(tester.takeException(), isNull);
-        await _capture(tester, 'card_detail_history_${lang}_$fontScale');
+        await captureScreen(tester, 'card_detail_history', lang: lang);
         expect(find.byType(KimarijiSpeakerButton), findsOneWidget);
 
         final detail = find.byType(CardDetailScreen);
@@ -1038,7 +1014,7 @@ void main() {
         await tester.drag(find.descendant(of: detail, matching: find.byType(Scrollable)), const Offset(0, -600));
         await tester.pump(const Duration(milliseconds: 500));
         expect(tester.takeException(), isNull);
-        await _capture(tester, 'card_detail_history_memory_${lang}_$fontScale');
+        await captureScreen(tester, 'card_detail_history_memory', lang: lang);
 
         // A look-alike chip opens that card's own page.
         final lookAlike = poems[fudaSets.tomofuda(poemId).first];
@@ -1071,7 +1047,7 @@ void main() {
               MangaRoute<void>(builder: (_) => CardDetailScreen(itemKey: ItemKey(poem.id, false))));
           await tester.pump();
           await tester.pump(const Duration(milliseconds: 500));
-          await _capture(tester, 'card_detail_${kimariji}_${script.name}_$lang');
+          await captureScreen(tester, 'card_detail_${kimariji}_${script.name}', lang: lang);
           expectKimarijiHeading(tester, poem, script);
           await tester.pumpWidget(const SizedBox());
         });
@@ -1121,7 +1097,7 @@ void main() {
       expect(find.text(why), findsOneWidget);
       expect(find.byType(PlayScreen), findsNothing, reason: 'a locked tap starts no run');
       expect(tester.takeException(), isNull);
-      await _capture(tester, 'island_play_locked_$lang');
+      await captureScreen(tester, 'island_play_locked', lang: lang);
       await tester.pump(StatsLayout.playButtonBalloonLife);
       expect(find.text(why), findsNothing);
       await tester.pumpWidget(const SizedBox());
@@ -1176,7 +1152,7 @@ void main() {
       final map = tester.widget<IslandMap>(find.byType(IslandMap));
       expect(map.route, IslandRoute(archipelago.islands.length - 1));
       expect(map.boat, isNull);
-      await _capture(tester, 'stats_all_known_$lang');
+      await captureScreen(tester, 'stats_all_known', lang: lang);
 
       await tester.runAsync(() async {
         await tester.tap(find.text(s.playThisIsland));
@@ -1214,7 +1190,7 @@ void main() {
       await tester.tap(find.text(s.stats));
       await tester.pump(const Duration(milliseconds: 500));
       expect(tester.takeException(), isNull);
-      await _capture(tester, 'island_play_locked_scaled_$lang');
+      await captureScreen(tester, 'island_play_locked', lang: lang);
       await tester.pumpWidget(const SizedBox());
     });
   }
@@ -1238,7 +1214,7 @@ void main() {
       expect(find.text(s.freeLockedWhy(access.needed)), findsOneWidget);
       expect(find.byType(FreePracticeSheet), findsNothing, reason: 'a locked tap opens nothing');
       expect(tester.takeException(), isNull);
-      await _capture(tester, 'free_locked_$lang');
+      await captureScreen(tester, 'free_locked', lang: lang);
       await tester.pump(FreePracticeLayout.lockBalloonLife);
       await tester.pumpWidget(const SizedBox());
     });
@@ -1264,11 +1240,11 @@ void main() {
         expect(find.byType(FreePracticeSheet), findsOneWidget);
         expect(inSheet(s.countsTag), findsOneWidget);
         expect(find.text(s.allKnownIslands), findsOneWidget);
-        await _capture(tester, 'free_sheet_${lang}_$fontScale');
+        await captureScreen(tester, 'free_sheet', lang: lang);
 
         await tapAndSettle(find.text(s.cardsRow));
         expect(find.byType(CardPickerScreen), findsOneWidget);
-        await _capture(tester, 'free_cards_${lang}_$fontScale');
+        await captureScreen(tester, 'free_cards', lang: lang);
         final first = poems[fudaSets['initial:${initialGroups[0]}'].poemIds.first];
         await tapAndSettle(find.text(s.kimariji(first.id)));
         expect(find.text('99/100'), findsOneWidget);
@@ -1277,11 +1253,11 @@ void main() {
         expect(inSheet(s.customTag), findsOneWidget);
         final islands = archipelago.islands.length;
         expect(find.text(s.islandsOf(islands - 1, islands, partly: 1)), findsOneWidget);
-        await _capture(tester, 'free_sheet_custom_${lang}_$fontScale');
+        await captureScreen(tester, 'free_sheet_custom', lang: lang);
 
         await tapAndSettle(find.text(s.islandsRow));
         expect(find.byType(IslandPickerScreen), findsOneWidget);
-        await _capture(tester, 'free_islands_${lang}_$fontScale');
+        await captureScreen(tester, 'free_islands', lang: lang);
         await tapAndSettle(find.text(s.selectNone));
         expect(find.text('0/100'), findsOneWidget);
         await tapAndSettle(find.byType(InkIconButton));
@@ -1291,7 +1267,7 @@ void main() {
         final set = fudaSets.ofKind(FudaSetKind.confusable).first;
         await tapAndSettle(find.text(s.kimariji(set.poemIds.first)));
         expect(find.text('${set.poemIds.length}/100'), findsOneWidget, reason: 'a set tap adds the whole set');
-        await _capture(tester, 'free_look_alikes_${lang}_$fontScale');
+        await captureScreen(tester, 'free_look_alikes', lang: lang);
         await tapAndSettle(find.text(s.done));
         expect(p.settings.freePractice.cardIds, set.poemIds);
 
@@ -1373,7 +1349,7 @@ void main() {
       expect(find.byType(RankScreen), findsOneWidget);
       await tester.dragUntilVisible(find.text(s.previewRankUp), find.byType(Scrollable).first, const Offset(0, -200));
       await tester.pump(const Duration(milliseconds: 500));
-      await _capture(tester, 'rank_ladder_$lang');
+      await captureScreen(tester, 'rank_ladder', lang: lang);
 
       await tester.tap(find.text(s.previewRankUp));
       await tester.pump();
@@ -1385,7 +1361,7 @@ void main() {
       // device regardless of font scale.
       expect(find.textContaining('→'), findsWidgets);
       expect(find.textContaining('β†'), findsNothing);
-      await _capture(tester, 'rank_up_preview_$lang');
+      await captureScreen(tester, 'rank_up_preview', lang: lang);
 
       // Tap-anywhere-to-skip dismisses the preview cleanly.
       await tester.tapAt(const Offset(40, 40));
@@ -1438,7 +1414,7 @@ void main() {
         await tester.dragUntilVisible(find.byType(SpeechBalloon), find.byType(Scrollable).first, const Offset(0, -200));
         await tester.pump(const Duration(milliseconds: 500));
         expect(tester.takeException(), isNull);
-        await _capture(tester, 'rank_balloon_${band.id}_${width.round()}${fontScale == 1 ? '' : '_scaled'}');
+        await captureScreen(tester, 'rank_balloon_${band.id}');
         final balloon = tester.getRect(find.byType(SpeechBalloon));
         final tobi = tester.getRect(find.byType(Tobi));
         final own = tester.widget(find.ancestor(of: find.byType(SpeechBalloon), matching: find.byType(MangaPanel)).first);
@@ -1601,7 +1577,7 @@ void main() {
             expect(boxes.map((b) => b.top).toSet(), hasLength(1), reason: '"${word[0]}" of "$heading" broke across lines');
           }
         }
-        await _capture(tester, 'results_shelves_${ja ? 'ja' : 'en'}_$scale');
+        await captureScreen(tester, 'results_shelves', lang: ja ? 'ja' : 'en');
         await tester.pumpWidget(const SizedBox());
       });
     }
@@ -1643,7 +1619,7 @@ void main() {
         ));
         await tester.pump(const Duration(milliseconds: 500));
         expect(tester.takeException(), isNull);
-        await _capture(tester, 'results_weak_tag_${ja ? 'ja' : 'en'}_${width.round()}_$scale');
+        await captureScreen(tester, 'results_weak_tag', lang: ja ? 'ja' : 'en');
         final label = '${runLabel(s, config)} · ${s.cardsCount(20)}';
         final paragraph = tester.renderObject<RenderParagraph>(find.text(label));
         final oneLine =
@@ -1680,7 +1656,7 @@ void main() {
     await tester.pump(const Duration(milliseconds: 500));
     expect(find.text(const S('en').learnAhead), findsNothing);
     expect(tester.takeException(), isNull);
-    await _capture(tester, 'results_journey');
+    await captureScreen(tester, 'results_journey');
     await tester.pumpWidget(const SizedBox());
   });
 
@@ -1733,7 +1709,7 @@ void main() {
           reason: 'the side-by-side stat panels match in height');
       expect(tester.getSize(find.text('0.620 s', findRichText: true)).height, lessThan(ResultsLayout.statBigFont * 1.3 * 1.5),
           reason: 'the average keeps its unit on the same row');
-      await _capture(tester, 'results_pb_${ja ? 'ja' : 'en'}');
+      await captureScreen(tester, 'results_pb', lang: ja ? 'ja' : 'en');
       await tester.pump(ResultsLayout.overlayStagger);
       await tester.pump();
       expect(find.byType(CelebrationSequence), findsOneWidget);
@@ -1910,7 +1886,7 @@ void main() {
       for (final note in [s.languageNote, s.learningModeNote, s.paceNote, s.dontKnowInputNote, s.cardEffectsNote]) {
         expect(find.text(note), findsOneWidget);
       }
-      await _capture(tester, 'settings_$lang');
+      await captureScreen(tester, 'settings', lang: lang);
       await tester.pumpWidget(const SizedBox());
     });
   }
@@ -2082,16 +2058,7 @@ void main() {
     testWidgets('the all-known warning fits the phone at font scale 1.3, flashing, and arms as it is held ($lang)',
         (tester) async {
       final p = await open(tester, mode: LearningMode.journey, ja: ja);
-      const dpr = 2.8125;
-      const bars = FakeViewPadding(top: 28 * dpr, bottom: 48 * dpr);
-      tester.view
-        ..devicePixelRatio = dpr
-        ..physicalSize = _phone * dpr
-        ..padding = bars
-        ..viewPadding = bars;
-      tester.platformDispatcher.textScaleFactorTestValue = 1.3;
-      addTearDown(tester.view.reset);
-      addTearDown(tester.platformDispatcher.clearTextScaleFactorTestValue);
+      useScreen(tester, usersPhone, fontScale: 1.3);
       await tester.binding.setSurfaceSize(_phone);
       await tester.pumpWidget(ProgressScope(
         progress: p,
@@ -2111,7 +2078,7 @@ void main() {
       for (final scroll in tester.stateList<ScrollableState>(find.byType(Scrollable))) {
         expect(scroll.position.maxScrollExtent, 0, reason: 'the warning fits without scrolling');
       }
-      await _capture(tester, 'all_known_warning_$lang');
+      await captureScreen(tester, 'all_known_warning', lang: lang);
       final before = backdrop();
       await tester.pump(HoldWarningStyle.flashPeriod ~/ 2);
       expect(backdrop(), isNot(before), reason: 'the alarm flashes');
@@ -2125,7 +2092,7 @@ void main() {
       expect(find.text('3'), findsWidgets, reason: 'the dome counts the seconds left');
       expect(find.byWidgetPredicate((w) => w is SfxText && w.text == HoldWarningStyle.sfxArmed), findsOneWidget,
           reason: 'Tobi screams near the end');
-      await _capture(tester, 'all_known_warning_armed_$lang');
+      await captureScreen(tester, 'all_known_warning_armed', lang: lang);
       await hold.up();
       await tester.pump(HoldConfirmStyle.drain);
       await tester.pumpWidget(const SizedBox());
@@ -2218,7 +2185,7 @@ void main() {
     expect(tester.takeException(), isNull);
     expect(p.trainer.unlocked.length, unlocked, reason: "the player's own progress is untouched");
     expect(p.runs, isEmpty);
-    await _capture(tester, 'debug_simulation');
+    await captureScreen(tester, 'debug_simulation');
     await tester.scrollUntilVisible(find.text('Seed demo data'), 300);
     expect(find.text('Seed demo data'), findsOneWidget);
     await tester.pumpWidget(const SizedBox());
@@ -2350,7 +2317,6 @@ void main() {
   for (final ja in [false, true]) {
     final lang = ja ? 'ja' : 'en';
     for (final (width, fontScale) in const [(384.0, 1.0), (360.0, 1.0), (360.0, 1.3)]) {
-      final size = width == _phone.width && fontScale == 1 ? '' : '_${width.round()}${fontScale == 1 ? '' : '_scaled'}';
       testWidgets('contact the developer: both sections and their buttons fit ($lang, $width dp, font scale $fontScale)',
           (tester) async {
         tester.platformDispatcher.textScaleFactorTestValue = fontScale;
@@ -2371,12 +2337,12 @@ void main() {
         for (final text in [s.contactIssuesBody, s.contactEmailBody, s.contactOpenIssues, s.contactCopyEmail, s.contactWriteEmail]) {
           expect(find.text(text), findsOneWidget);
         }
-        await _capture(tester, 'contact${size}_$lang');
+        await captureScreen(tester, 'contact', lang: lang);
         final scroll = tester.state<ScrollableState>(find.byType(Scrollable)).position;
         if (scroll.maxScrollExtent > 0) {
           scroll.jumpTo(scroll.maxScrollExtent);
           await tester.pump();
-          await _capture(tester, 'contact${size}_${lang}_end');
+          await captureScreen(tester, 'contact', lang: lang, variant: 'end');
         }
         expect(tester.getRect(find.text(s.contactWriteEmail)).bottom, lessThan(_phone.height),
             reason: 'the last row scrolls into view');
@@ -2388,7 +2354,6 @@ void main() {
   for (final ja in [false, true]) {
     final lang = ja ? 'ja' : 'en';
     for (final (width, fontScale) in const [(384.0, 1.0), (360.0, 1.0), (360.0, 1.3)]) {
-      final size = width == _phone.width && fontScale == 1 ? '' : '_${width.round()}${fontScale == 1 ? '' : '_scaled'}';
       testWidgets('credits: the headings and the reading-card credit fit ($lang, $width dp, font scale $fontScale)',
           (tester) async {
         tester.platformDispatcher.textScaleFactorTestValue = fontScale;
@@ -2406,11 +2371,11 @@ void main() {
         await tester.pump(const Duration(milliseconds: 300));
         expect(tester.takeException(), isNull);
         final s = S(lang);
-        await _capture(tester, 'credits${size}_$lang');
+        await captureScreen(tester, 'credits', lang: lang);
         expect(find.text(s.creditsReadingCardsBody, skipOffstage: false), findsOneWidget);
         await tester.ensureVisible(find.text(s.creditsReadingCardsBody, skipOffstage: false));
         await tester.pump();
-        await _capture(tester, 'credits${size}_${lang}_cards');
+        await captureScreen(tester, 'credits', lang: lang, variant: 'cards');
         await tester.pumpWidget(const SizedBox());
       });
     }
@@ -2577,7 +2542,7 @@ void main() {
         await tester.tap(find.text(ja ? '覚えてない' : "Don't remember"));
         await tester.pump(const Duration(milliseconds: 50));
         expect(tester.takeException(), isNull);
-        await _capture(tester, 'play_button_${ja ? 'ja' : 'en'}');
+        await captureScreen(tester, 'play_button', lang: ja ? 'ja' : 'en');
         await tester.pump(const Duration(milliseconds: 500));
         await tester.pumpWidget(const SizedBox());
       });
@@ -2611,7 +2576,7 @@ void main() {
         await tester.pump(const Duration(milliseconds: 500));
         expect(find.byType(StartCard), findsOneWidget);
         expect(tester.takeException(), isNull);
-        await _capture(tester, 'play_start_card_${ja ? 'ja' : 'en'}');
+        await captureScreen(tester, 'play_start_card', lang: ja ? 'ja' : 'en');
 
         await swipeStartCard(tester);
         await tester.pump(const Duration(milliseconds: 400));
@@ -2636,7 +2601,7 @@ void main() {
       }
       await tester.pump(SwipeTuning.dontKnowHoldDwell ~/ 2);
       expect(tester.takeException(), isNull);
-      await _capture(tester, 'play_hold');
+      await captureScreen(tester, 'play_hold');
       await g.up();
       await tester.pump(const Duration(milliseconds: 500));
       await tester.pumpWidget(const SizedBox());
@@ -2669,7 +2634,7 @@ void main() {
           NewCardOverlay(data: NewCardCelebration(card, fudaSets.tomofuda(card)), onNext: () => advanced = true),
           const Duration(milliseconds: 1300),
         );
-        await _capture(tester, 'new_card_$lang');
+        await captureScreen(tester, 'new_card', lang: lang);
         expect(find.byType(KimarijiSpeakerButton), findsOneWidget);
         final band = tester.getRect(find.byType(InkTag).first);
         final bang = tester.getRect(find.byWidgetPredicate((w) => w is SfxText && w.text == NewCardLayout.bang));
@@ -2698,7 +2663,7 @@ void main() {
               NewCardOverlay(data: NewCardCelebration(card.id, fudaSets.tomofuda(card.id)), onNext: () {}),
               const Duration(milliseconds: 1300),
             );
-            await _capture(tester, 'new_card_${kimariji}_${script.name}_$lang');
+            await captureScreen(tester, 'new_card_${kimariji}_${script.name}', lang: lang);
             expectKimarijiHeading(tester, card, script);
             final island = archipelago.islands[Trainer.islandOf(card)];
             final sound = card.kimariji.characters.last;
@@ -2724,7 +2689,7 @@ void main() {
           IslandCompleteOverlay(islandIndex: 2, islandsDone: 3, cardsUnlocked: 29, onNext: () {}),
           const Duration(milliseconds: 2300),
         );
-        await _capture(tester, 'island_complete_$lang');
+        await captureScreen(tester, 'island_complete', lang: lang);
         await tester.pumpWidget(const SizedBox());
       });
 
@@ -2737,21 +2702,21 @@ void main() {
         final timeline = XpTimeline(gain);
         var advanced = false;
         await pumpPage(tester, p, XpOverlay(gain: gain, onNext: () => advanced = true), timeline.rowAt(1));
-        await _capture(tester, 'xp_counting_$lang');
+        await captureScreen(tester, 'xp_counting', lang: lang);
         expect(find.text('LV ${gain.levelBefore.level}'), findsOneWidget, reason: 'no new level yet');
 
         final flash = timeline.levelUps.first + const Duration(milliseconds: 80);
         await tester.pump(flash - timeline.rowAt(1));
         expect(tester.takeException(), isNull);
         expect(find.text('LV ${gain.levelBefore.level + 1}'), findsOneWidget);
-        await _capture(tester, 'xp_level_$lang');
+        await captureScreen(tester, 'xp_level', lang: lang);
 
         await tester.pump(timeline.length - flash);
         expect(tester.takeException(), isNull);
         expect(find.text('+${gain.award.total}'), findsWidgets, reason: 'the total has counted up');
         expect(find.text('LEVEL UP!'), findsOneWidget);
         expect(find.text('LV ${gain.levelAfter.level}'), findsOneWidget);
-        await _capture(tester, 'xp_done_$lang');
+        await captureScreen(tester, 'xp_done', lang: lang);
         await tester.tap(find.text(S(ja ? 'ja' : 'en').xpCta));
         expect(advanced, isTrue);
         await tester.pumpWidget(const SizedBox());
@@ -2811,12 +2776,12 @@ void main() {
         await pumpPage(tester, p, XpOverlay(gain: gain, onNext: () {}), const Duration(milliseconds: 16));
         expect(find.text('+${gain.award.total}'), findsWidgets);
         expect(find.text('LV ${gain.levelAfter.level}'), findsOneWidget);
-        await _capture(tester, 'xp_still_$lang');
+        await captureScreen(tester, 'xp_still', lang: lang);
         await pumpPage(tester, p, LevelUpOverlay(gain: gain, onNext: () {}), const Duration(milliseconds: 16));
         expect(find.text(S(ja ? 'ja' : 'en').levelsGained(gain.levelsGained)), findsOneWidget);
         await pumpPage(tester, p, GraduationOverlay(onNext: () {}), const Duration(milliseconds: 16));
         expect(find.text(S(ja ? 'ja' : 'en').graduationKai), findsOneWidget);
-        await _capture(tester, 'graduation_still_$lang');
+        await captureScreen(tester, 'graduation_still', lang: lang);
         await tester.pumpWidget(const SizedBox());
       });
 
@@ -2826,15 +2791,15 @@ void main() {
         final p = await open(tester, ja: ja);
         var advanced = false;
         await pumpPage(tester, p, GraduationOverlay(onNext: () => advanced = true), GraduationMotion.fly.delay);
-        await _capture(tester, 'graduation_fly_$lang');
+        await captureScreen(tester, 'graduation_fly', lang: lang);
         await tester.pump(GraduationMotion.fullImpactAt - GraduationMotion.fly.delay + const Duration(milliseconds: 40));
-        await _capture(tester, 'graduation_stamp_$lang');
+        await captureScreen(tester, 'graduation_stamp', lang: lang);
         await tester.pump(GraduationMotion.length);
         expect(tester.takeException(), isNull);
         final s = S(ja ? 'ja' : 'en');
         expect(find.text(s.graduationKai), findsOneWidget);
         expect(find.text(s.graduationSwitch), findsOneWidget);
-        await _capture(tester, 'graduation_$lang');
+        await captureScreen(tester, 'graduation', lang: lang);
         await tester.tap(find.text(s.graduationCta));
         expect(advanced, isTrue);
         await tester.pumpWidget(const SizedBox());
@@ -2854,12 +2819,12 @@ void main() {
           var advanced = false;
           await pumpPage(tester, p, LevelUpOverlay(gain: gain, onNext: () => advanced = true),
               LevelUpMotion.impactAt + const Duration(milliseconds: 60));
-          await _capture(tester, 'level_up_impact_${levels}_$lang');
+          await captureScreen(tester, 'level_up_impact_$levels', lang: lang);
           await tester.pump(LevelUpMotion.length);
           expect(tester.takeException(), isNull);
           expect(find.text('${11 + levels}'), findsWidgets);
           expect(find.text(S(ja ? 'ja' : 'en').levelsGained(levels)), levels > 1 ? findsOneWidget : findsNothing);
-          await _capture(tester, 'level_up_${levels}_$lang');
+          await captureScreen(tester, 'level_up_$levels', lang: lang);
           await tester.tap(find.text(ja ? '次へ' : 'ONWARD!'));
           expect(advanced, isTrue);
           await tester.pumpWidget(const SizedBox());
@@ -2910,7 +2875,7 @@ void main() {
             RankUpMotion.length + const Duration(milliseconds: 100),
           );
           expect(find.text('${after.round()}'), findsWidgets, reason: 'the rating has counted up to its new value');
-          await _capture(tester, 'rank_up_${Rating.bands[to].id}_$lang');
+          await captureScreen(tester, 'rank_up_${Rating.bands[to].id}', lang: lang);
           await tester.tap(find.text(ja ? '次へ' : 'ONWARD!'));
           expect(advanced, isTrue);
           await tester.pumpWidget(const SizedBox());
@@ -2936,7 +2901,7 @@ void main() {
             var advanced = false;
             final midClimb = RatingMotion.climbAt + (timeline.climbEnd - RatingMotion.climbAt) ~/ 3;
             await pumpPage(tester, p, RatingOverlay(data: data, onNext: () => advanced = true), midClimb);
-            await _capture(tester, 'rating_climb_${name}_${lang}_$fontScale');
+            await captureScreen(tester, 'rating_climb_$name', lang: lang);
             expect(find.text('${timeline.shownAt(midClimb)}'), findsOneWidget, reason: 'counting up');
             expect(find.text('${(before + gain).round()}'), findsNothing);
 
@@ -2952,7 +2917,7 @@ void main() {
               expect(find.text(s.ratingToNext(s.className(next)).replaceAll('{0}', '${timeline.toNextAt(timeline.length)}')),
                   findsOneWidget, reason: "what's left to the next class");
             }
-            await _capture(tester, 'rating_${name}_${lang}_$fontScale');
+            await captureScreen(tester, 'rating_$name', lang: lang);
             await tester.tap(find.text(s.ratingCta));
             expect(advanced, isTrue);
             await tester.pumpWidget(const SizedBox());
@@ -2980,7 +2945,7 @@ void main() {
         Finder sfx(String text) => find.byWidgetPredicate((w) => w is SfxText && w.text == text);
 
         await pumpPage(tester, p, page, timeline.climbEnd + RatingMotion.strain ~/ 2);
-        await _capture(tester, 'rating_strain_$lang');
+        await captureScreen(tester, 'rating_strain', lang: lang);
         expect(find.text('${threshold.round()}'), findsWidgets, reason: 'the needle is held at the gate');
         expect(sfx(RatingLayout.rumble), findsNWidgets(2));
         expect(heard.played.where((s) => s == Sfx.ratingTick), isNotEmpty);
@@ -2989,7 +2954,7 @@ void main() {
         await tester.pump(timeline.strainEnd + RatingMotion.hushPop + RatingMotion.hushIn - (timeline.climbEnd + RatingMotion.strain ~/ 2));
         expect(sfx(RatingLayout.rumble), findsNothing, reason: 'the rumble stops for the beat of silence');
         expect(find.byWidgetPredicate((w) => w is OutlinedText && w.text == RatingLayout.hush), findsOneWidget);
-        await _capture(tester, 'rating_hush_$lang');
+        await captureScreen(tester, 'rating_hush', lang: lang);
         final beforeBreak = heard.played.length;
         await tester.pump(timeline.breakAt - timeline.strainEnd - RatingMotion.hushPop - RatingMotion.hushIn - const Duration(milliseconds: 10));
         expect(heard.played, hasLength(beforeBreak), reason: 'silence until the break');
@@ -2999,7 +2964,7 @@ void main() {
         expect(heard.played.last, Sfx.ratingBreak);
         expect(sfx(RatingLayout.breakSfx), findsOneWidget);
         await tester.pump(RatingMotion.flashAt);
-        await _capture(tester, 'rating_break_$lang');
+        await captureScreen(tester, 'rating_break', lang: lang);
 
         await tester.pump(timeline.cutAt - timeline.breakAt - RatingMotion.flashAt + const Duration(milliseconds: 20));
         expect(find.byType(RankUpOverlay), findsOneWidget, reason: 'the breakthrough hands over by itself');
@@ -3047,7 +3012,7 @@ void main() {
             const Duration(milliseconds: 16));
         expect(find.text('${(before + 26).round()}'), findsOneWidget);
         expect(find.text('+26'), findsOneWidget);
-        await _capture(tester, 'rating_still_$lang');
+        await captureScreen(tester, 'rating_still', lang: lang);
 
         await tester.pumpWidget(const SizedBox());
         final threshold = Rating.bands[3].minRating;
@@ -3055,7 +3020,7 @@ void main() {
         await pumpPage(tester, p, RatingOverlay(data: RatingCelebration(threshold - 30, threshold + 5), onNext: () => advanced = true),
             const Duration(seconds: 6));
         expect(advanced, isFalse, reason: 'no hand-over by itself when nothing moves');
-        await _capture(tester, 'rating_break_still_$lang');
+        await captureScreen(tester, 'rating_break_still', lang: lang);
         await tester.tap(find.text(s.ratingCta));
         expect(advanced, isTrue);
         await tester.pumpWidget(const SizedBox());
@@ -3116,7 +3081,7 @@ void main() {
       final p = await open(tester, mode: LearningMode.allKnown, tabsLocked: true);
       await onPhone(tester, p, fontScale: 1.1);
       expect(find.byType(TabChains), findsNWidgets(2));
-      await _capture(tester, 'tabs_locked');
+      await captureScreen(tester, 'tabs_locked');
 
       await tester.tap(tab('History'));
       await tester.pump();
@@ -3124,7 +3089,7 @@ void main() {
       expect(find.text(S('en').lockReason('History', const TabLock(TabUnlock.rounds, 3))), findsOneWidget);
       expect(tester.widget<MangaTabBar>(find.byType(MangaTabBar)).current, 0, reason: 'a locked tab does not open');
       expect(tester.takeException(), isNull);
-      await _capture(tester, 'tabs_locked_balloon');
+      await captureScreen(tester, 'tabs_locked_balloon');
       await tester.pump(TabLockStyle.balloonLife);
       await tester.runAsync(() async {
         await Future<void>.delayed(const Duration(milliseconds: 50));
@@ -3142,7 +3107,7 @@ void main() {
       await breakFree();
       expect(tester.widgetList<TabChains>(find.byType(TabChains)).where((c) => c.breaking), hasLength(1),
           reason: 'Stats opens after one finished round');
-      await _capture(tester, 'tabs_breaking');
+      await captureScreen(tester, 'tabs_breaking');
       await tester.pump(TabLockStyle.breakTime);
       await tester.pump();
       expect(find.byType(TabChains), findsOneWidget);
@@ -3248,7 +3213,7 @@ void main() {
             hasLength(SideTripTuning.ankirenRemembered));
         expect(inTrips(find.byType(PageBurst)), findsNothing, reason: 'a locked trip shows its lock, not its burst');
         expect(inTrips(find.text(s.freePlay)), findsNothing, reason: 'one lock at a time');
-        await _capture(tester, 'side_trips_locked_$lang');
+        await captureScreen(tester, 'side_trips_locked', lang: lang);
         await expectBalloon(tester, inTrips(find.textContaining(s.sideTripRanked)),
             s.sideTripLockedWhy(SideTripTuning.ankirenRemembered));
         await tester.pumpWidget(const SizedBox());
@@ -3263,7 +3228,7 @@ void main() {
         await openTrips(tester, p);
         expect(inTrips(find.text(s.className(Rating.bands.first))), findsNothing, reason: 'no class stamp before a ranked game');
         expect(inTrips(find.text(s.sideTripUnranked)), findsOneWidget);
-        await _capture(tester, 'side_trips_open_$lang');
+        await captureScreen(tester, 'side_trips_open', lang: lang);
         await tester.tap(inTrips(find.byType(PageBurst)));
         await tester.pump();
         await tester.pump(Motion.route * 2);
@@ -3284,7 +3249,7 @@ void main() {
             expect(entry.left, greaterThanOrEqualTo(Gaps.gutter));
             expect(entry.right, lessThanOrEqualTo(_phone.width - Gaps.gutter));
             expect(entry.bottom, lessThan(bar.top), reason: 'the whole hub shows without scrolling');
-            await _capture(tester, 'side_trips_${mode.name}_${lang}_$fontScale');
+            await captureScreen(tester, 'side_trips_${mode.name}', lang: lang);
             await tester.pumpWidget(const SizedBox());
           });
         }
@@ -3303,7 +3268,7 @@ void main() {
       await tester.pump(const Duration(milliseconds: 400));
       expect(find.text(s.lockReason(s.sideTrips, const TabLock(TabUnlock.rememberedCards, opens))), findsOneWidget);
       expect(tester.widget<MangaTabBar>(find.byType(MangaTabBar)).current, 0, reason: 'a locked tab does not open');
-      await _capture(tester, 'side_trips_tab_locked');
+      await captureScreen(tester, 'side_trips_tab_locked');
       await tester.pump(TabLockStyle.balloonLife);
       await tester.runAsync(() async {
         await Future<void>.delayed(const Duration(milliseconds: 50));
@@ -3343,7 +3308,7 @@ void main() {
       expect(entry.open, isTrue);
       expect(inTrips(find.byType(PageBurst)), findsOneWidget);
       expect(inTrips(find.text(s.ankirenPageTitle)), findsOneWidget);
-      await _capture(tester, 'side_trips_ankiren_open');
+      await captureScreen(tester, 'side_trips_ankiren_open');
 
       // Weeks later every card is due, so none is well remembered: the latch
       // keeps it open.
@@ -3425,7 +3390,7 @@ void main() {
             findsOneWidget,
             reason: 'forgetting stop $i');
         expect(tester.takeException(), isNull);
-        if (shot != null) await _capture(tester, '${shot}_forget_$i');
+        if (shot != null) await captureScreen(tester, '${shot}_forget', lang: s.code, variant: 'step$i');
         await tester.tapAt(const Offset(5, 420));
         await tester.pump();
       }
@@ -3469,20 +3434,21 @@ void main() {
 
     // Checks a stop of the first real card and moves it on: its spot is
     // found, the arrows keep off it, nothing overflows.
-    Future<void> firstCardStop(WidgetTester tester, TourStep step, String shot) async {
+    Future<void> firstCardStop(WidgetTester tester, TourStep step, String shot, int i, String lang) async {
+      final reason = '$shot $i';
       final target = await settleStep(tester, step);
-      expect(tester.takeException(), isNull, reason: shot);
+      expect(tester.takeException(), isNull, reason: reason);
       final arrows = tester.widget<TourArrows>(find.byType(TourArrows));
       if (target != null) {
-        expect(arrows.scribbles, isNotEmpty, reason: '$shot: ${step.spot!.name} is found');
+        expect(arrows.scribbles, isNotEmpty, reason: '$reason: ${step.spot!.name} is found');
         for (final sc in arrows.scribbles) {
-          expect(Rect.fromPoints(sc.tail, sc.tip).overlaps(target), isFalse, reason: shot);
+          expect(Rect.fromPoints(sc.tail, sc.tip).overlaps(target), isFalse, reason: reason);
         }
       }
       await waitForTyping(tester);
       await tester.pump(const Duration(milliseconds: 500));
-      expect(tester.takeException(), isNull, reason: shot);
-      await _capture(tester, shot);
+      expect(tester.takeException(), isNull, reason: reason);
+      await captureScreen(tester, shot, lang: lang, variant: 'step$i');
       if (target != null) {
         await tester.tapAt(target.center);
       } else {
@@ -3504,21 +3470,22 @@ void main() {
 
       await settleDb(() => find.byType(PlayScreen).evaluate().isNotEmpty);
       await tester.pump(const Duration(seconds: 1));
-      await _capture(tester, '${shot}_start');
+      final lang = p.settings.language;
+      await captureScreen(tester, '${shot}_start', lang: lang);
       final centre = tester.getCenter(find.byType(SwipeDeck));
       await swipeStartCard(tester, from: centre);
       await tester.pump(TourTuning.newCardSettle);
       for (final (i, step) in TourStep.newCard('').indexed) {
-        await firstCardStop(tester, step, '${shot}_new_$i');
+        await firstCardStop(tester, step, '${shot}_new', i, lang);
       }
       await tester.pump(const Duration(milliseconds: 500));
       expect(find.byType(NewCardOverlay), findsNothing);
-      await _capture(tester, '${shot}_swipe');
+      await captureScreen(tester, '${shot}_swipe', lang: lang);
       await swipeStartCard(tester, from: centre);
       await settleDb(() => find.byType(TourOverlay).evaluate().isNotEmpty);
       final input = p.settings.dontKnowInputFor(LearningMode.journey);
       for (final (i, step) in TourStep.honesty(input).indexed) {
-        await firstCardStop(tester, step, '${shot}_honest_$i');
+        await firstCardStop(tester, step, '${shot}_honest', i, lang);
       }
       await tester.pump(const Duration(milliseconds: 800));
       expect(find.byType(PlayScreen), findsNothing);
@@ -3549,7 +3516,7 @@ void main() {
             } else {
               expect(arrows.scribbles, isEmpty);
             }
-            await _capture(tester, 'tour_${mode.name}_${i}_$lang');
+            await captureScreen(tester, 'tour_${mode.name}', lang: lang, variant: 'step$i');
             await tapStepTarget(tester, target: target, hint: hintFor(s, steps, i));
             if (step.practice) {
               await tester.pump(const Duration(milliseconds: 500));
@@ -3557,7 +3524,7 @@ void main() {
               await playTutorial(tester);
               expect(find.byType(PlayScreen), findsNothing);
             }
-            if (step.firstCard) await playFirstCard(tester, p, shot: 'tour_first_card_$lang');
+            if (step.firstCard) await playFirstCard(tester, p, shot: 'tour_first_card');
           }
           await tester.pump(const Duration(milliseconds: 100));
           expect(find.byType(TourOverlay), findsNothing);
@@ -3647,10 +3614,10 @@ void main() {
           await tapStepTarget(tester, target: target, hint: hintFor(s, steps, i));
           if (step.practice) {
             await tester.pump(const Duration(milliseconds: 500));
-            await playTutorial(tester, shot: 'tour_tutorial_${width.round()}_13_$lang');
+            await playTutorial(tester, shot: 'tour_tutorial');
           }
           if (step.firstCard) {
-            await playFirstCard(tester, p, shot: 'tour_first_card_${width.round()}_13_$lang');
+            await playFirstCard(tester, p, shot: 'tour_first_card');
             break;
           }
         }
@@ -3733,7 +3700,7 @@ void main() {
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 500));
       expect(tester.takeException(), isNull);
-      await _capture(tester, 'help_replay');
+      await captureScreen(tester, 'help_replay');
       await tester.tap(find.text(const S('en').replayTour));
       await tester.runAsync(() => Future<void>.delayed(const Duration(milliseconds: 50)));
       await tester.pump();
@@ -3819,12 +3786,12 @@ void main() {
 
         expect(line(), CoachLine.startCard);
         expect(tester.takeException(), isNull);
-        await _capture(tester, 'tutorial_start_$lang');
+        await captureScreen(tester, 'tutorial_start', lang: lang);
         await swipeStartCard(tester, from: const Offset(192, 300));
         await tester.pump(const Duration(milliseconds: 400));
         expect(line(), CoachLine.knowIt);
         expect(find.byType(TestCard), findsWidgets);
-        await _capture(tester, 'tutorial_card_$lang');
+        await captureScreen(tester, 'tutorial_card', lang: lang);
 
         await holdDown();
         expect((session.index, line()), (0, CoachLine.retryKnow), reason: '"don\'t remember" on the first card');
@@ -3841,7 +3808,7 @@ void main() {
         }
         await tester.pump(const Duration(milliseconds: 400));
         expect(find.byType(TourOverlay), findsNothing);
-        await _capture(tester, 'tutorial_hold_$lang');
+        await captureScreen(tester, 'tutorial_hold', lang: lang);
         await flick();
         expect((session.index, line()), (1, CoachLine.retryHold), reason: 'a flick where a hold was asked for');
         await holdDown();
@@ -3875,7 +3842,7 @@ void main() {
       expect(tester.takeException(), isNull);
       expect(find.byType(LanguagePickerScreen), findsOneWidget);
       expect(find.byType(OnboardingScreen), findsNothing);
-      await _capture(tester, 'language_picker');
+      await captureScreen(tester, 'language_picker');
 
       await tester.runAsync(() async {
         await tester.tap(find.text('日本語'));
@@ -3947,7 +3914,7 @@ void main() {
         expect(find.descendant(of: profile, matching: find.text(s.levelShort(1))), findsOneWidget);
         expect(find.descendant(of: profile, matching: find.byType(NarrationBox)), findsNothing,
             reason: 'no swipe recorded yet');
-        await _capture(tester, 'profile_${mode.name}');
+        await captureScreen(tester, 'profile_${mode.name}');
         await tester.pumpWidget(const SizedBox());
       });
     }
@@ -3980,7 +3947,7 @@ void main() {
       expect(tester.takeException(), isNull);
       const s = S('en');
       expect(find.text(s.firstSwipeOn(s.sessionDate(p.firstSwipeAt!))), findsOneWidget);
-      await _capture(tester, 'profile_history_scaled');
+      await captureScreen(tester, 'profile_history');
       await tester.pumpWidget(const SizedBox());
     });
   });
@@ -4044,14 +4011,14 @@ void main() {
             expect(find.text(s.rankUnplaced), findsOneWidget);
             expect(find.text(s.rankedUnplacedLine), findsOneWidget);
             expect(find.text(s.notForRank), findsNWidgets(2));
-            await _capture(tester, 'known_home_unplaced_$tag');
+            await captureScreen(tester, 'known_home_unplaced', lang: lang);
 
             await tester.tap(find.text(s.shoutRanked));
             await tester.pump();
             await tester.pump(const Duration(milliseconds: 600));
             expect(tester.takeException(), isNull);
             expect(find.byType(ShoutButton), findsNWidgets(2), reason: "the sheet's Start under the hero's");
-            await _capture(tester, 'ranked_start_sheet_$tag');
+            await captureScreen(tester, 'ranked_start_sheet', lang: lang);
             await tester.tap(find.text(s.back));
             await tester.pump();
             await tester.pump(const Duration(milliseconds: 600));
@@ -4061,7 +4028,7 @@ void main() {
             await tester.pump(const Duration(milliseconds: 600));
             expect(tester.takeException(), isNull);
             expect(find.text(s.forfeitYes), findsOneWidget);
-            await _capture(tester, 'ranked_forfeit_sheet_$tag');
+            await captureScreen(tester, 'ranked_forfeit_sheet', lang: lang);
             await tester.pumpWidget(const SizedBox());
           });
 
@@ -4072,7 +4039,7 @@ void main() {
             expect(tester.takeException(), isNull);
             expect(find.text(s.rankUnplaced), findsNothing);
             expect(find.text('442'), findsOneWidget);
-            await _capture(tester, 'known_home_placed_$tag');
+            await captureScreen(tester, 'known_home_placed', lang: lang);
             await tester.pumpWidget(const SizedBox());
           });
 
@@ -4098,7 +4065,7 @@ void main() {
             expect(tester.takeException(), isNull);
             expect(find.text(s.rankedScoredTime.toUpperCase()), findsOneWidget);
             expect(find.text(s.rankedAgain), findsOneWidget);
-            await _capture(tester, 'ranked_results_placement_$tag');
+            await captureScreen(tester, 'ranked_results_placement', lang: lang);
 
             await tester.pumpWidget(const SizedBox());
             await rankedPhone(
@@ -4116,7 +4083,7 @@ void main() {
             await tester.pump(RankUpMotion.length);
             expect(tester.takeException(), isNull);
             expect(find.byType(PlacementOverlay), findsOneWidget);
-            await _capture(tester, 'ranked_placement_$tag');
+            await captureScreen(tester, 'ranked_placement', lang: lang);
             await tester.pumpWidget(const SizedBox());
           });
 
@@ -4133,7 +4100,7 @@ void main() {
                 );
             await rankedPhone(tester, results(report), width: width, fontScale: fontScale);
             expect(tester.takeException(), isNull);
-            await _capture(tester, 'ranked_results_$tag');
+            await captureScreen(tester, 'ranked_results', lang: lang);
 
             await tester.pumpWidget(const SizedBox());
             final forfeit = await rankedRun(tester, p, played: 37);
@@ -4142,7 +4109,7 @@ void main() {
             await rankedPhone(tester, results(forfeit), width: width, fontScale: fontScale);
             expect(tester.takeException(), isNull);
             expect(find.text(s.rankedForfeitNote(63)), findsOneWidget);
-            await _capture(tester, 'ranked_results_forfeit_$tag');
+            await captureScreen(tester, 'ranked_results_forfeit', lang: lang);
             await tester.pumpWidget(const SizedBox());
           });
         }
@@ -4154,7 +4121,7 @@ void main() {
             width: 384, fontScale: 1.0);
         expect(tester.takeException(), isNull);
         expect(find.text(s.rankLockedKnown), findsOneWidget);
-        await _capture(tester, 'ranked_profile_unplaced_$lang');
+        await captureScreen(tester, 'ranked_profile_unplaced', lang: lang);
         await tester.pumpWidget(const SizedBox());
       });
     }

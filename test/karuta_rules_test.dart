@@ -4,12 +4,10 @@
 // font scale 1.3) in both languages. With RENDER_SCREENS=1 it writes the
 // page, a screen at a time, to build/screens/karuta_rules/.
 import 'dart:io';
-import 'dart:ui' as ui;
 
 import 'package:drift/drift.dart' show driftRuntimeOptions;
 import 'package:drift/native.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:fudatobashi/config/links.dart';
@@ -29,9 +27,8 @@ import 'package:fudatobashi/ui/shell/header_actions.dart';
 import 'package:fudatobashi/ui/torifuda/glyph_atlas.dart';
 
 import 'test_l10n.dart';
+import 'test_screens.dart';
 import 'test_vector_art.dart';
-
-final _render = Platform.environment['RENDER_SCREENS'] == '1';
 
 KarutaRules _rules(String code) => KarutaRules.parse(File(KarutaRules.asset(code)).readAsStringSync());
 
@@ -51,19 +48,7 @@ Future<void> _loadFont(String family, List<String> files) async {
   await loader.load();
 }
 
-Future<void> _capture(WidgetTester tester, String name) async {
-  if (!_render) return;
-  final boundary = tester.renderObject<RenderRepaintBoundary>(find.byKey(const ValueKey('screen')));
-  await tester.runAsync(() async {
-    final image = await boundary.toImage(pixelRatio: 2);
-    final png = await image.toByteData(format: ui.ImageByteFormat.png);
-    File('build/screens/karuta_rules/$name.png')
-      ..createSync(recursive: true)
-      ..writeAsBytesSync(png!.buffer.asUint8List());
-  });
-}
-
-const _phones = [(Size(384, 832), 1.0), (Size(360, 780), 1.3)];
+const _phones = [(usersPhone, 1.0), (narrowPhone, 1.3)];
 
 void main() {
   loadTestVectorArt();
@@ -86,8 +71,9 @@ void main() {
 
   for (final lang in ['en', 'ja']) {
     final s = S(lang);
-    for (final (size, fontScale) in _phones) {
-      final tag = '${lang}_${size.width.round()}_$fontScale';
+    for (final (phone, fontScale) in _phones) {
+      final size = phone.size;
+      final tag = '${lang}_${phone.name}_$fontScale';
       testWidgets('Help opens the rules, which scroll through without overflow ($tag)', (tester) async {
         final launches = <Map<Object?, Object?>>[];
         const channel = MethodChannel('plugins.flutter.io/url_launcher');
@@ -98,7 +84,7 @@ void main() {
         addTearDown(() => tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(channel, null));
         late Progress p;
         await tester.runAsync(() async {
-          if (_render) await GlyphAtlas.load();
+          if (renderScreens) await GlyphAtlas.load();
           p = await Progress.open(AppDatabase(NativeDatabase.memory()));
           p.tabsAlwaysOpen = true;
           await p.updateSettings(p.settings.copyWith(language: lang, languagePicked: true, toured: true, onboarded: true));
@@ -120,7 +106,7 @@ void main() {
 
         await tap(find.byType(HelpButton));
         expect(find.text(s.rulesRowNote), findsOneWidget);
-        await _capture(tester, 'help_$tag');
+        await captureScreen(tester, 'karuta_rules/help', lang: lang);
         await tap(find.text(s.rulesTitle));
         expect(find.byType(KarutaRulesScreen), findsOneWidget);
 
@@ -138,7 +124,7 @@ void main() {
             reason: 'the divider sits directly above the contents');
         expect(tester.getBottomLeft(find.text(s.rulesDisclaimer)).dy,
             lessThan(rule.top));
-        await _capture(tester, 'top_$tag');
+        await captureScreen(tester, 'karuta_rules/top', lang: lang);
 
         await tap(find.text(s.rulesOpenPdf));
         expect(launches.single['url'], Links.karutaRules);
@@ -149,7 +135,7 @@ void main() {
 
         await tester.ensureVisible(find.text(s.rulesContents));
         await tap(find.text(s.rulesContents));
-        await _capture(tester, 'contents_$tag');
+        await captureScreen(tester, 'karuta_rules/contents', lang: lang);
         final last = shown.chapters.last;
         final row = find.text('${last.number}  ${last.title}');
         await tester.ensureVisible(row);
@@ -164,7 +150,7 @@ void main() {
 
         var reachedEnd = false;
         for (var i = 0; i < 200; i++) {
-          await _capture(tester, 'rules_${tag}_${i.toString().padLeft(3, '0')}');
+          await captureScreen(tester, 'karuta_rules/rules', lang: lang, variant: 'step${i.toString().padLeft(3, '0')}');
           final before = offset();
           await tester.drag(list, Offset(0, -size.height * 0.7));
           await tester.pump(const Duration(milliseconds: 500));

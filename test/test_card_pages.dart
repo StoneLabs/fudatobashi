@@ -2,12 +2,10 @@
 // art and data, a fresh player in either language and a phone to show a
 // page on.
 import 'dart:io';
-import 'dart:ui' as ui;
 
 import 'package:drift/drift.dart' show driftRuntimeOptions;
 import 'package:drift/native.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:fudatobashi/config/torifuda_spec.dart';
@@ -24,9 +22,8 @@ import 'package:fudatobashi/ui/torifuda/card_faces.dart';
 import 'package:fudatobashi/ui/torifuda/glyph_atlas.dart';
 
 import 'test_l10n.dart';
+import 'test_screens.dart';
 import 'test_vector_art.dart';
-
-const screenKey = ValueKey('screen');
 
 /// The data every page reads, loaded from the files on disk.
 void loadCardPageData() {
@@ -79,12 +76,12 @@ Future<Progress> openPlayer(WidgetTester tester, String lang) async {
   return p;
 }
 
-/// Shows [page] for [p] on a phone of [size] at [textScale].
+/// Shows [page] for [p] at [screen]'s size and [textScale].
 Future<void> showPage(WidgetTester tester, Progress p, Widget page,
-    {Size size = const Size(384, 832), double textScale = 1}) async {
+    {Screen screen = usersPhone, double textScale = 1}) async {
   tester.platformDispatcher.textScaleFactorTestValue = textScale;
   addTearDown(tester.platformDispatcher.clearTextScaleFactorTestValue);
-  await tester.binding.setSurfaceSize(size);
+  await tester.binding.setSurfaceSize(screen.size);
   addTearDown(() => tester.binding.setSurfaceSize(null));
   await tester.pumpWidget(const SizedBox());
   await tester.pumpWidget(RepaintBoundary(
@@ -112,16 +109,4 @@ Future<void> tapOn(WidgetTester tester, Finder finder) async {
   await tester.pump();
   await tester.tap(finder);
   await settle(tester);
-}
-
-/// Writes what is on screen to build/screens/cards/[name].png.
-Future<void> capture(WidgetTester tester, String name) async {
-  final boundary = tester.renderObject<RenderRepaintBoundary>(find.byKey(screenKey));
-  await tester.runAsync(() async {
-    final image = await boundary.toImage(pixelRatio: 2);
-    final png = await image.toByteData(format: ui.ImageByteFormat.png);
-    File('build/screens/cards/$name.png')
-      ..createSync(recursive: true)
-      ..writeAsBytesSync(png!.buffer.asUint8List());
-  });
 }

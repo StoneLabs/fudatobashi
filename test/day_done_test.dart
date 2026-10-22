@@ -4,14 +4,12 @@
 // developer preview row plays it.
 //
 // With RENDER_SCREENS=1 it also renders the page, at rest and mid-entrance,
-// at 1080 × 2340 px with real fonts and art, to .scratchpad/daily_set/renders/.
+// with real fonts and art, to build/screens/daily_set/.
 import 'dart:io';
-import 'dart:ui' as ui;
 
 import 'package:drift/drift.dart' show driftRuntimeOptions;
 import 'package:drift/native.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:fudatobashi/config/config.dart';
@@ -34,16 +32,8 @@ import 'package:fudatobashi/ui/sound/sounds.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 
 import 'test_l10n.dart';
+import 'test_screens.dart';
 import 'test_vector_art.dart';
-
-/// A phone: its size in dp and its pixels per dp (all 1080 × 2340 px),
-/// with a 28 dp status bar and a 48 dp navigation bar.
-typedef _Phone = ({String name, Size size, double dpr});
-
-const _narrow = (name: '360', size: Size(360, 780), dpr: 3.0);
-const _users = (name: '384', size: Size(384, 832), dpr: 2.8125);
-const _wide = (name: '412', size: Size(1080 / 2.625, 2340 / 2.625), dpr: 2.625);
-const _statusBar = 28.0, _navBar = 48.0;
 
 Future<void> _loadFont(String family, List<String> files) async {
   final loader = FontLoader(family);
@@ -111,7 +101,7 @@ void main() {
   Future<void> showPage(
     WidgetTester tester,
     String lang,
-    _Phone phone, {
+    Screen phone, {
     double fontScale = 1,
     DayDone? day,
     Duration? at,
@@ -119,15 +109,7 @@ void main() {
   }) async {
     final p = await open(tester, lang);
     await tester.pumpWidget(const SizedBox());
-    final bars = FakeViewPadding(top: _statusBar * phone.dpr, bottom: _navBar * phone.dpr);
-    tester.view
-      ..devicePixelRatio = phone.dpr
-      ..physicalSize = phone.size * phone.dpr
-      ..padding = bars
-      ..viewPadding = bars;
-    tester.platformDispatcher.textScaleFactorTestValue = fontScale;
-    addTearDown(tester.view.reset);
-    addTearDown(tester.platformDispatcher.clearTextScaleFactorTestValue);
+    useScreen(tester, phone, fontScale: fontScale);
     await tester.pumpWidget(RepaintBoundary(
       key: const ValueKey('screen'),
       child: ProgressScope(
@@ -155,7 +137,7 @@ void main() {
   for (final lang in ['en', 'ja']) {
     testWidgets('the day in numbers, the hanko with its date, +1000 XP and the button ($lang)', (tester) async {
       var advanced = false;
-      await showPage(tester, lang, _users, onNext: () => advanced = true);
+      await showPage(tester, lang, usersPhone, onNext: () => advanced = true);
       final s = S(lang);
       expect(find.text(DayDoneLayout.title), findsWidgets);
       expect(find.text(s.dayDoneBand), findsOneWidget);
@@ -186,18 +168,18 @@ void main() {
   testWidgets('lines that would read badly change or go: one round, one new card, no misses, a first streak day',
       (tester) async {
     const s = S('en');
-    await showPage(tester, 'en', _users, day: _day(rounds: 1, newCards: 1, fresh: 4, extra: 0, misses: 0, streak: 1));
+    await showPage(tester, 'en', usersPhone, day: _day(rounds: 1, newCards: 1, fresh: 4, extra: 0, misses: 0, streak: 1));
     expect(numbered(s.dayDoneCleared(1), [26, 1]), findsOneWidget);
     expect(find.text('26 cards cleared in 1 round', findRichText: true), findsOneWidget);
     expect(find.text('1 new card met and seen again', findRichText: true), findsOneWidget);
     expect(find.text('No misses', findRichText: true), findsOneWidget);
     expect(find.text('Goal streak starts today', findRichText: true), findsOneWidget);
 
-    await showPage(tester, 'en', _users, day: _day(fresh: 0, newCards: 0));
+    await showPage(tester, 'en', usersPhone, day: _day(fresh: 0, newCards: 0));
     expect(find.byWidgetPredicate((w) => w is NumberedText && w.template == s.dayDoneNew(0)), findsNothing,
         reason: 'no new cards today: no line for them');
 
-    await showPage(tester, 'en', _users, day: _day(reviews: 0, fresh: 0, extra: 0, newCards: 0, misses: 0, rounds: 1));
+    await showPage(tester, 'en', usersPhone, day: _day(reviews: 0, fresh: 0, extra: 0, newCards: 0, misses: 0, rounds: 1));
     expect(find.byType(NumberedText), findsOneWidget, reason: 'an empty set: only the streak');
     expect(tester.takeException(), isNull);
     await tester.pumpWidget(const SizedBox());
@@ -205,7 +187,7 @@ void main() {
 
   testWidgets('enters in steps: the bar sweeps its last bit green, then the hanko slams down and the XP counts up',
       (tester) async {
-    await showPage(tester, 'en', _users, at: DayDoneMotion.sweep.delay);
+    await showPage(tester, 'en', usersPhone, at: DayDoneMotion.sweep.delay);
     expect(sweep(tester), DayDoneLayout.sweepFrom, reason: 'the last bit not green yet');
     expect(opacityOf(tester, find.text(DayDoneLayout.stamp)), 0);
     expect(find.text('+0 XP'), findsOneWidget);
@@ -229,7 +211,7 @@ void main() {
       (tester) async {
     tester.platformDispatcher.accessibilityFeaturesTestValue = const FakeAccessibilityFeatures(disableAnimations: true);
     addTearDown(tester.platformDispatcher.clearAccessibilityFeaturesTestValue);
-    await showPage(tester, 'en', _users, at: Duration.zero);
+    await showPage(tester, 'en', usersPhone, at: Duration.zero);
     expect(sweep(tester), 1);
     expect(opacityOf(tester, find.text(DayDoneLayout.stamp)), 1);
     expect(find.text('+1000 XP'), findsNWidgets(2));
@@ -241,12 +223,12 @@ void main() {
   });
 
   group('fits', () {
-    for (final phone in [_narrow, _users, _wide]) {
+    for (final phone in [narrowPhone, usersPhone, widePhone]) {
       for (final lang in ['en', 'ja']) {
         for (final fontScale in [1.0, 1.3]) {
           testWidgets('${phone.name} dp, $lang, text × $fontScale', (tester) async {
             await showPage(tester, lang, phone, fontScale: fontScale);
-            final safe = Rect.fromLTRB(0, _statusBar, phone.size.width, phone.size.height - _navBar);
+            final safe = Rect.fromLTRB(0, phone.bars.top, phone.size.width, phone.size.height - phone.bars.bottom);
             final cta = tester.getRect(find.byType(CelebrationCta));
             final stats = tester.getRect(find.byType(MangaPanel));
             final title = tester.getRect(find.byType(OutlinedText));
@@ -267,7 +249,7 @@ void main() {
               expect(tester.getRect(find.byType(Tobi)).height, greaterThanOrEqualTo(DayDoneLayout.tobiMinHeight - 0.5),
                   reason: 'Tobi never shrinks to a speck');
             }
-            if (fontScale == 1.0 && phone != _narrow) {
+            if (fontScale == 1.0 && phone != narrowPhone) {
               final tobi = tester.getRect(find.byType(Tobi));
               expect(tobi.width, moreOrLessEquals(DayDoneLayout.tobi.width), reason: 'full size where there is room');
               expect(tobi.height, moreOrLessEquals(DayDoneLayout.tobi.height));
@@ -284,7 +266,7 @@ void main() {
         appName: 'Fudatobashi', packageName: 'dev.fudatobashi', version: '1.0.0', buildNumber: '1', buildSignature: '');
     final p = await open(tester, 'en');
     await tester.runAsync(() => p.updateSettings(p.settings.copyWith(debugMode: true)));
-    await tester.binding.setSurfaceSize(_users.size);
+    await tester.binding.setSurfaceSize(usersPhone.size);
     addTearDown(() => tester.binding.setSurfaceSize(null));
     await tester.pumpWidget(ProgressScope(progress: p, child: MaterialApp(theme: buildMangaTheme(), home: const SettingsScreen())));
     const label = "Preview today's set done";
@@ -306,8 +288,8 @@ void main() {
     await tester.pumpWidget(const SizedBox());
   });
 
-  group('renders', skip: Platform.environment['RENDER_SCREENS'] != '1', () {
-    Future<void> capture(WidgetTester tester, _Phone phone, String name) async {
+  group('renders', skip: !renderScreens, () {
+    Future<void> capture(WidgetTester tester, String name, String lang) async {
       await tester.runAsync(() async {
         final context = tester.element(find.byType(DayDoneOverlay));
         for (final e in find.byType(Image).evaluate()) {
@@ -315,14 +297,7 @@ void main() {
         }
       });
       await tester.pump();
-      final boundary = tester.renderObject<RenderRepaintBoundary>(find.byKey(const ValueKey('screen')));
-      await tester.runAsync(() async {
-        final image = await boundary.toImage(pixelRatio: phone.dpr);
-        final png = await image.toByteData(format: ui.ImageByteFormat.png);
-        File('.scratchpad/daily_set/renders/$name.png')
-          ..createSync(recursive: true)
-          ..writeAsBytesSync(png!.buffer.asUint8List());
-      });
+      await captureScreen(tester, 'daily_set/day_done_$name', lang: lang);
     }
 
     for (final lang in ['en', 'ja']) {
@@ -332,17 +307,17 @@ void main() {
           ('impact', DayDoneMotion.impactAt + const Duration(milliseconds: 40)),
           ('rest', DayDoneMotion.length),
         ]) {
-          await showPage(tester, lang, _users, at: at);
-          await capture(tester, _users, '${name}_${_users.name}_$lang');
+          await showPage(tester, lang, usersPhone, at: at);
+          await capture(tester, name, lang);
         }
-        for (final phone in [_narrow, _wide]) {
+        for (final phone in [narrowPhone, widePhone]) {
           for (final fontScale in [1.0, 1.3]) {
             await showPage(tester, lang, phone, fontScale: fontScale);
-            await capture(tester, phone, 'rest_${phone.name}_${lang}_$fontScale');
+            await capture(tester, 'rest', lang);
           }
         }
-        await showPage(tester, lang, _users, fontScale: 1.3);
-        await capture(tester, _users, 'rest_${_users.name}_${lang}_1.3');
+        await showPage(tester, lang, usersPhone, fontScale: 1.3);
+        await capture(tester, 'rest', lang);
         await tester.pumpWidget(const SizedBox());
       });
     }

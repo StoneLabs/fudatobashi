@@ -1,12 +1,10 @@
 import 'dart:convert';
 import 'dart:io';
 import 'dart:math';
-import 'dart:ui' as ui;
 
 import 'package:drift/drift.dart' show Value, driftRuntimeOptions;
 import 'package:drift/native.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:fudatobashi/config/config.dart';
@@ -35,10 +33,8 @@ import 'package:fudatobashi/ui/history/ankiren_widgets.dart';
 import 'package:fudatobashi/ui/manga/theme.dart';
 
 import 'test_l10n.dart';
+import 'test_screens.dart';
 import 'test_vector_art.dart';
-
-const _phone = Size(384, 832);
-const _narrowPhone = Size(360, 832);
 
 Future<void> _loadFont(String family, List<String> files) async {
   final loader = FontLoader(family);
@@ -46,18 +42,6 @@ Future<void> _loadFont(String family, List<String> files) async {
     loader.addFont(Future.value(ByteData.sublistView(File('assets/fonts/$f').readAsBytesSync())));
   }
   await loader.load();
-}
-
-Future<void> _capture(WidgetTester tester, String name) async {
-  if (Platform.environment['RENDER_SCREENS'] != '1') return;
-  final boundary = tester.renderObject<RenderRepaintBoundary>(find.byKey(const ValueKey('screen')));
-  await tester.runAsync(() async {
-    final image = await boundary.toImage(pixelRatio: 2);
-    final png = await image.toByteData(format: ui.ImageByteFormat.png);
-    File('build/screens/$name.png')
-      ..createSync(recursive: true)
-      ..writeAsBytesSync(png!.buffer.asUint8List());
-  });
 }
 
 /// A 暗記練 game dealt from all the poems and played out: card i found
@@ -230,24 +214,10 @@ void main() {
       ]);
     });
 
-    void onPhone(WidgetTester tester, {required double fontScale, Size size = _phone}) {
-      const dpr = 2.8125;
-      const bars = FakeViewPadding(top: 28 * dpr, bottom: 48 * dpr);
-      tester.view
-        ..devicePixelRatio = dpr
-        ..physicalSize = size * dpr
-        ..padding = bars
-        ..viewPadding = bars;
-      tester.platformDispatcher.textScaleFactorTestValue = fontScale;
-      addTearDown(tester.view.reset);
-      addTearDown(tester.platformDispatcher.clearTextScaleFactorTestValue);
-    }
-
     for (final ja in [false, true]) {
       final lang = ja ? 'ja' : 'en';
-      for (final (phone, fontScale) in [(_phone, 1.0), (_phone, 1.3), (_narrowPhone, 1.0), (_narrowPhone, 1.3)]) {
-        final setup = '$lang, ${phone.width.round()} dp, font scale $fontScale';
-        final name = '${lang}_${phone.width.round()}_${(fontScale * 10).round()}';
+      for (final (phone, fontScale) in [(usersPhone, 1.0), (usersPhone, 1.3), (narrowTallPhone, 1.0), (narrowTallPhone, 1.3)]) {
+        final setup = '$lang, ${phone.name} dp, font scale $fontScale';
 
         testWidgets('a ranked game, tab by tab ($setup)', (tester) async {
           final s = S(lang);
@@ -258,7 +228,7 @@ void main() {
           final runs = p.sideTrips.runsOf(SideTrip.ankiren).toList();
           final run = runs[2];
           final game = p.sideTrips.recordOf(run);
-          onPhone(tester, fontScale: fontScale, size: phone);
+          useScreen(tester, phone, fontScale: fontScale);
           Future<void> show(SideTripRun run) async {
             await tester.pumpWidget(RepaintBoundary(
               key: const ValueKey('screen'),
@@ -275,7 +245,7 @@ void main() {
             await tester.tap(find.text(label).first);
             await tester.pumpAndSettle();
             expect(tester.takeException(), isNull);
-            await _capture(tester, 'ankiren_game_${shot}_$name');
+            await captureScreen(tester, 'ankiren_game_$shot', lang: lang);
           }
 
           await show(run);
@@ -286,10 +256,10 @@ void main() {
           expect(find.textContaining(s.ankirenMixTitle, findRichText: true), findsOneWidget);
           expect(find.text(s.ankirenUsual), findsOneWidget);
           expect(find.byType(TierMixBar), findsNWidgets(2));
-          await _capture(tester, 'ankiren_game_overview_$name');
+          await captureScreen(tester, 'ankiren_game_overview', lang: lang);
           await tester.drag(find.byType(Scrollable).first, const Offset(0, -500));
           await tester.pumpAndSettle();
-          await _capture(tester, 'ankiren_game_overview2_$name');
+          await captureScreen(tester, 'ankiren_game_overview2', lang: lang);
 
           await tab(s.ankirenTabField, 'field');
           expect(find.textContaining(s.ankirenFieldTitle, findRichText: true), findsOneWidget);
@@ -307,7 +277,7 @@ void main() {
           }
           expect(find.textContaining(s.ankirenStepCard(10, game.cards.length, '')), findsOneWidget);
           expect(find.textContaining(s.ankirenShownFound('X').split('X').first), findsOneWidget);
-          await _capture(tester, 'ankiren_game_field_shown_$name');
+          await captureScreen(tester, 'ankiren_game_field_shown', lang: lang);
 
           await tester.tap(find.text(s.ankirenShowAll));
           await tester.pumpAndSettle();
@@ -318,27 +288,27 @@ void main() {
           expect(find.text(s.ankirenColBest), findsOneWidget);
           await tester.drag(find.byType(Scrollable).last, const Offset(0, -500));
           await tester.pumpAndSettle();
-          await _capture(tester, 'ankiren_game_cards2_$name');
+          await captureScreen(tester, 'ankiren_game_cards2', lang: lang);
 
           await tab(s.ankirenTabScore, 'score');
           expect(find.text('${game.recall}'), findsWidgets);
           expect(find.text(s.ankirenRowCardPoints), findsOneWidget);
           await tester.drag(find.byType(Scrollable).last, const Offset(0, -600));
           await tester.pumpAndSettle();
-          await _capture(tester, 'ankiren_game_score2_$name');
+          await captureScreen(tester, 'ankiren_game_score2', lang: lang);
 
           await tab(s.ankirenTabTaps, 'taps');
           expect(find.text(s.ankirenTotal), findsOneWidget);
           expect(find.text(s.ankirenShown), findsOneWidget);
           await tester.drag(find.byType(Scrollable).last, const Offset(0, -600));
           await tester.pumpAndSettle();
-          await _capture(tester, 'ankiren_game_taps2_$name');
+          await captureScreen(tester, 'ankiren_game_taps2', lang: lang);
 
           await show(runs[4]);
           expect(find.text(s.ankirenRightFirstLabel.toUpperCase()), findsOneWidget);
           expect(find.textContaining(s.ankirenSetupTitle, findRichText: true), findsOneWidget);
           expect(find.text(s.ankirenTabScore), findsNothing, reason: 'a custom game has no score');
-          await _capture(tester, 'ankiren_custom_overview_$name');
+          await captureScreen(tester, 'ankiren_custom_overview', lang: lang);
           await tab(s.ankirenTabField, 'custom_field');
           await tab(s.ankirenTabTaps, 'custom_taps');
           expect(find.text(s.ankirenTotal), findsNothing);
@@ -360,7 +330,7 @@ void main() {
       });
       final run = p.sideTrips.runsOf(SideTrip.ankiren).toList()[2];
       final game = p.sideTrips.recordOf(run);
-      onPhone(tester, fontScale: 1.0);
+      useScreen(tester, usersPhone);
       await tester.pumpWidget(ProgressScope(
         progress: p,
         child: MaterialApp(theme: buildMangaTheme(), home: AnkirenGamePage(run: run)),

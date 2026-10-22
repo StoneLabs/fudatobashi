@@ -3,12 +3,10 @@
 // Results. With RENDER_SCREENS=1 it also writes PNGs to build/screens/.
 import 'dart:io';
 import 'dart:math' as math;
-import 'dart:ui' as ui;
 
 import 'package:drift/drift.dart' show driftRuntimeOptions;
 import 'package:drift/native.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/rendering.dart';
 import 'package:flutter/scheduler.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -57,10 +55,9 @@ import 'package:fudatobashi/ui/sound/sounds.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 
 import 'test_l10n.dart';
+import 'test_screens.dart';
 import 'test_vector_art.dart';
 
-const _phone = Size(384, 832);
-const _landscapePhone = Size(832, 384);
 const _home = 'home page';
 
 Future<void> _loadFont(String family, List<String> files) async {
@@ -69,18 +66,6 @@ Future<void> _loadFont(String family, List<String> files) async {
     loader.addFont(Future.value(ByteData.sublistView(File('assets/fonts/$f').readAsBytesSync())));
   }
   await loader.load();
-}
-
-Future<void> _capture(WidgetTester tester, String name) async {
-  if (Platform.environment['RENDER_SCREENS'] != '1') return;
-  final boundary = tester.renderObject<RenderRepaintBoundary>(find.byKey(const ValueKey('screen')));
-  await tester.runAsync(() async {
-    final image = await boundary.toImage(pixelRatio: 2);
-    final png = await image.toByteData(format: ui.ImageByteFormat.png);
-    File('build/screens/$name.png')
-      ..createSync(recursive: true)
-      ..writeAsBytesSync(png!.buffer.asUint8List());
-  });
 }
 
 void main() {
@@ -130,27 +115,10 @@ void main() {
     return p;
   }
 
-  // The user's phone, 384 × 832 at 2.8125 px per dp with its system bars,
-  // turned to [size].
-  void phone(WidgetTester tester, {Size size = _phone, double fontScale = 1}) {
-    const dpr = 2.8125;
-    final bars = size.width < size.height
-        ? const FakeViewPadding(top: 28 * dpr, bottom: 48 * dpr)
-        : const FakeViewPadding(left: 28 * dpr, right: 48 * dpr);
-    tester.view
-      ..devicePixelRatio = dpr
-      ..physicalSize = size * dpr
-      ..padding = bars
-      ..viewPadding = bars;
-    tester.platformDispatcher.textScaleFactorTestValue = fontScale;
-    addTearDown(tester.view.reset);
-    addTearDown(tester.platformDispatcher.clearTextScaleFactorTestValue);
-  }
-
   // A game of [setup] on [p]'s settings, straight on screen.
   Future<void> play(WidgetTester tester, Progress p, AnkirenSetup setup,
-      {Size size = _phone, double fontScale = 1, bool tracked = true, int seed = 1}) async {
-    phone(tester, size: size, fontScale: fontScale);
+      {Screen screen = usersPhone, double fontScale = 1, bool tracked = true, int seed = 1}) async {
+    useScreen(tester, screen, fontScale: fontScale);
     final navigator = GlobalKey<NavigatorState>();
     await tester.pumpWidget(RepaintBoundary(
       key: const ValueKey('screen'),
@@ -216,7 +184,7 @@ void main() {
         PackageInfo.setMockInitialValues(
             appName: 'Fudatobashi', packageName: 'dev.fudatobashi', version: '1.0.0', buildNumber: '1', buildSignature: '');
         final p = await open(tester);
-        phone(tester, fontScale: fontScale);
+        useScreen(tester, usersPhone, fontScale: fontScale);
         await tester.pumpWidget(RepaintBoundary(
           key: const ValueKey('screen'),
           child: ProgressScope(progress: p, child: const MaterialApp(home: SettingsScreen())),
@@ -234,7 +202,7 @@ void main() {
           await tester.scrollUntilVisible(find.text(note), 100, scrollable: page);
           expect(find.text(note), findsOneWidget);
         }
-        await _capture(tester, 'ankiren_settings_$fontScale');
+        await captureScreen(tester, 'ankiren_settings');
 
         Future<void> choose(String label) async {
           await tester.scrollUntilVisible(find.text(label), 100, scrollable: page);
@@ -261,7 +229,7 @@ void main() {
         PackageInfo.setMockInitialValues(
             appName: 'Fudatobashi', packageName: 'dev.fudatobashi', version: '1.0.0', buildNumber: '1', buildSignature: '');
         final p = await open(tester);
-        phone(tester, fontScale: fontScale);
+        useScreen(tester, usersPhone, fontScale: fontScale);
         await tester.pumpWidget(RepaintBoundary(
           key: const ValueKey('screen'),
           child: ProgressScope(progress: p, child: const MaterialApp(home: SettingsScreen())),
@@ -278,7 +246,7 @@ void main() {
         await tester.pump();
         expect(p.settings.accessibilityMode, isTrue);
         expect(tester.takeException(), isNull);
-        await _capture(tester, 'settings_accessibility_$fontScale');
+        await captureScreen(tester, 'settings_accessibility');
         await tester.pumpWidget(const SizedBox());
       });
     }
@@ -286,7 +254,7 @@ void main() {
 
   group('Side Trips hub', () {
     Future<void> openHub(WidgetTester tester, Progress p) async {
-      phone(tester, fontScale: 1.1);
+      useScreen(tester, usersPhone, fontScale: 1.1);
       await tester.pumpWidget(RepaintBoundary(key: const ValueKey('screen'), child: FudatobashiApp(progress: p)));
       await tester.pump(const Duration(milliseconds: 500));
       await tester.tap(find.descendant(of: find.byType(MangaTabBar), matching: find.text(s.sideTrips)));
@@ -330,7 +298,7 @@ void main() {
       await tester.pump(Motion.sheet);
       expect(find.byType(AnkirenFreeSheet), findsOneWidget);
       expect(tester.takeException(), isNull);
-      await _capture(tester, 'ankiren_free_sheet');
+      await captureScreen(tester, 'ankiren_free_sheet');
 
       await tester.runAsync(() async {
         await tester.tap(find.text(s.ankirenCustom));
@@ -365,7 +333,7 @@ void main() {
       expect(cards(tester).every((c) => c.faceUp), isTrue, reason: 'memorise: the field is face up');
       expect(cards(tester).where((c) => c.inverted).length, AnkirenLevels.of(0).perSide,
           reason: "the opponent's cards are upside down");
-      await _capture(tester, 'ankiren_memorise');
+      await captureScreen(tester, 'ankiren_memorise');
 
       await tester.pump(const Duration(seconds: 3));
       final left = AnkirenLevels.of(0).memorise - const Duration(seconds: 3);
@@ -374,7 +342,7 @@ void main() {
       expect(cards(tester).any((c) => c.faceUp), isFalse, reason: 'recall: every card face down');
       expect(heard.played, containsAllInOrder([Sfx.ankirenFlip, Sfx.ankirenRecall]),
           reason: 'the field turns over, then recall starts');
-      await _capture(tester, 'ankiren_recall');
+      await captureScreen(tester, 'ankiren_recall');
 
       final total = AnkirenLevels.of(0).cards;
       for (var i = 0; i < total; i++) {
@@ -395,7 +363,7 @@ void main() {
       expect(find.text(s.ankirenPlacement(1, AnkirenRatingModel.placementGames)), findsOneWidget);
       expect(find.text(s.ankirenNextLevel(p.sideTripsHub()[SideTrip.ankiren].rankedLevel!)), findsOneWidget);
       expect(find.text(s.again), findsOneWidget);
-      await _capture(tester, 'ankiren_results');
+      await captureScreen(tester, 'ankiren_results');
       await tester.pumpWidget(const SizedBox());
     });
 
@@ -412,7 +380,7 @@ void main() {
       expect(card(tester, id).revealed, isFalse);
       expect(heard.played, contains(Sfx.ankirenWrong));
       await tester.pump(AnkirenMotion.wrongFlash ~/ 3);
-      await _capture(tester, 'ankiren_wrong');
+      await captureScreen(tester, 'ankiren_wrong');
       await tester.pump(AnkirenMotion.wrongFlash);
 
       await take(tester, others[1]);
@@ -639,7 +607,7 @@ void main() {
 
     testWidgets('the debug game: its bar switches the level and reseeds at once; its layers toggle', (tester) async {
       final p = await open(tester);
-      phone(tester);
+      useScreen(tester, usersPhone);
       await tester.pumpWidget(RepaintBoundary(
         key: const ValueKey('screen'),
         child: ProgressScope(progress: p, child: MaterialApp(home: AnkirenDebugGame(known: allCards))),
@@ -656,7 +624,7 @@ void main() {
 
       await tapBar('7');
       expect(cards(tester), hasLength(AnkirenLevels.of(7).cards), reason: 'a new field at once');
-      await _capture(tester, 'ankiren_debug_l7');
+      await captureScreen(tester, 'ankiren_debug', variant: 'l7');
       final dealt = {for (final c in cards(tester)) c.poemId};
       await tapBar('reseed');
       expect({for (final c in cards(tester)) c.poemId}, isNot(dealt));
@@ -704,13 +672,13 @@ void main() {
       testWidgets('portrait, level 10, memorise and recall, font scale $fontScale', (tester) async {
         final p = await open(tester);
         await play(tester, p, AnkirenSetup.forLevel(AnkirenLevels.top), fontScale: fontScale, tracked: false);
-        expectLaidOut(tester, _phone);
+        expectLaidOut(tester, usersPhone.size);
         for (final c in find.byType(AnkirenCard).evaluate()) {
           expect(tester.getSize(find.byWidget(c.widget)).width, lessThanOrEqualTo(AnkirenPlayLayout.maxCardW + 0.01));
         }
-        await _capture(tester, 'ankiren_portrait_l10_$fontScale');
+        await captureScreen(tester, 'ankiren_portrait', variant: 'l10');
         await ready(tester);
-        expectLaidOut(tester, _phone);
+        expectLaidOut(tester, usersPhone.size);
         await tester.pumpWidget(const SizedBox());
       });
     }
@@ -720,17 +688,17 @@ void main() {
       final p = await open(tester);
       for (final level in [0, 3, 5]) {
         await play(tester, p, AnkirenSetup.forLevel(level), tracked: false, seed: level);
-        expectLaidOut(tester, _phone);
+        expectLaidOut(tester, usersPhone.size);
         final rects = [for (final c in find.byType(AnkirenCard).evaluate()) tester.getRect(find.byWidget(c.widget))];
         final left = rects.map((r) => r.left).reduce(math.min), right = rects.map((r) => r.right).reduce(math.max);
         if (level == 0) {
           expect(left, greaterThan(AnkirenPlayLayout.padding + 1), reason: "a beginner's row is spread evenly");
         } else {
           expect(left, moreOrLessEquals(AnkirenPlayLayout.padding, epsilon: 0.5), reason: 'level $level');
-          expect(right, moreOrLessEquals(_phone.width - AnkirenPlayLayout.padding, epsilon: 0.5), reason: 'level $level');
+          expect(right, moreOrLessEquals(usersPhone.size.width - AnkirenPlayLayout.padding, epsilon: 0.5), reason: 'level $level');
         }
         expect(rects.first.width, lessThanOrEqualTo(AnkirenPlayLayout.maxCardW + 0.01));
-        await _capture(tester, 'ankiren_spread_l$level');
+        await captureScreen(tester, 'ankiren_spread', variant: 'l$level');
         await tester.pumpWidget(const SizedBox());
       }
     });
@@ -748,17 +716,17 @@ void main() {
           of: find.byType(AnkirenFieldView), matching: find.byType(SingleChildScrollView)));
       final position = pan.controller!.position;
       expect(position.pixels, moreOrLessEquals(position.maxScrollExtent / 2, epsilon: 1), reason: 'starts centred');
-      await _capture(tester, 'ankiren_zoom');
+      await captureScreen(tester, 'ankiren_zoom');
 
       // A drag pans the field and takes no card.
       await ready(tester);
       final id = asked(tester);
-      final before = position.pixels;
+      final before = pan.controller!.position.pixels;
       final onScreen = find.byType(AnkirenCard).evaluate().map((c) => tester.getRect(find.byWidget(c.widget)));
-      final from = onScreen.firstWhere((r) => r.left > 0 && r.right < _phone.width).center;
+      final from = onScreen.firstWhere((r) => r.left > 0 && r.right < usersPhone.size.width).center;
       await tester.dragFrom(from, const Offset(-120, 0));
       await tester.pump();
-      expect(position.pixels, isNot(before));
+      expect(pan.controller!.position.pixels, isNot(before));
       expect(cards(tester).any((c) => c.flash != null), isFalse, reason: 'a drag is no tap');
       expect(card(tester, id).faceUp, isFalse);
       await tester.pumpWidget(const SizedBox());
@@ -772,11 +740,11 @@ void main() {
           return null;
         });
         final p = await open(tester, ankiren: const AnkirenSettings(layout: AnkirenLayout.landscape));
-        await play(tester, p, AnkirenSetup.forLevel(level), size: _landscapePhone, fontScale: 1.3, tracked: false);
-        expectLaidOut(tester, _landscapePhone);
-        await _capture(tester, 'ankiren_landscape_l$level');
+        await play(tester, p, AnkirenSetup.forLevel(level), screen: usersPhoneLandscape, fontScale: 1.3, tracked: false);
+        expectLaidOut(tester, usersPhoneLandscape.size);
+        await captureScreen(tester, 'ankiren_landscape', variant: 'l$level');
         await ready(tester);
-        expectLaidOut(tester, _landscapePhone);
+        expectLaidOut(tester, usersPhoneLandscape.size);
         final orientations = calls.where((c) => c.method == 'SystemChrome.setPreferredOrientations').toList();
         expect(orientations.first.arguments, ['DeviceOrientation.landscapeLeft', 'DeviceOrientation.landscapeRight']);
         await tester.pumpWidget(const SizedBox());
@@ -803,7 +771,7 @@ void main() {
       testWidgets('the free-play sheet and a ranked game\'s Results fit ($lang)', (tester) async {
         final t = S(lang);
         final p = await open(tester, language: lang, ankiren: const AnkirenSettings(rulesSeen: true));
-        phone(tester, fontScale: 1.3);
+        useScreen(tester, usersPhone, fontScale: 1.3);
         await tester.pumpWidget(RepaintBoundary(key: const ValueKey('screen'), child: FudatobashiApp(progress: p)));
         await tester.pump(const Duration(milliseconds: 500));
         await tester.tap(find.descendant(of: find.byType(MangaTabBar), matching: find.text(t.sideTrips)));
@@ -823,7 +791,7 @@ void main() {
         });
         await tester.pump();
         expect(tester.takeException(), isNull);
-        await _capture(tester, 'ankiren_free_sheet_${lang}_1.3');
+        await captureScreen(tester, 'ankiren_free_sheet', lang: lang);
         await tester.pumpWidget(const SizedBox());
 
         await play(tester, p, AnkirenSetup.forLevel(0, ranked: true), fontScale: 1.3);
@@ -839,7 +807,7 @@ void main() {
         await toResults(tester);
         expect(find.byType(AnkirenResultsScreen), findsOneWidget);
         expect(find.byType(ClassBadge), findsOneWidget);
-        await _capture(tester, 'ankiren_results_${lang}_1.3');
+        await captureScreen(tester, 'ankiren_results', lang: lang);
         await tester.pumpWidget(const SizedBox());
       });
     }
@@ -934,7 +902,7 @@ void main() {
 
     testWidgets('the AnkiRen page: levels, points, both graphs, and the middle-card simulator', (tester) async {
       final p = await open(tester);
-      phone(tester);
+      useScreen(tester, usersPhone);
       await tester.pumpWidget(RepaintBoundary(
         key: const ValueKey('screen'),
         child: ProgressScope(progress: p, child: const MaterialApp(home: AnkirenToolsPage())),
@@ -976,7 +944,7 @@ void main() {
       await tester.pump(const Duration(milliseconds: 1));
       expect(kv('level / games'), 'L${AnkirenLevels.top} × ${AnkirenToolsTuning.simulationGames.first}');
       expect(tester.takeException(), isNull);
-      await _capture(tester, 'debug_ankiren_tools');
+      await captureScreen(tester, 'debug_ankiren_tools');
 
       final openGame = find.textContaining('game with middle cards');
       await tester.scrollUntilVisible(openGame, 200, scrollable: page);

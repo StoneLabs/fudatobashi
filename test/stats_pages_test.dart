@@ -1,10 +1,8 @@
 import 'dart:io';
-import 'dart:ui' as ui;
 
 import 'package:drift/drift.dart' show driftRuntimeOptions;
 import 'package:drift/native.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:fsrs/fsrs.dart' as fsrs;
@@ -38,6 +36,7 @@ import 'package:fudatobashi/ui/stats/srs_details_screen.dart';
 import 'package:fudatobashi/ui/stats/srs_screen.dart';
 
 import 'test_l10n.dart';
+import 'test_screens.dart';
 import 'test_vector_art.dart';
 
 Future<void> _loadFont(String family, List<String> files) async {
@@ -48,19 +47,7 @@ Future<void> _loadFont(String family, List<String> files) async {
   await loader.load();
 }
 
-Future<void> _capture(WidgetTester tester, String name) async {
-  if (Platform.environment['RENDER_SCREENS'] != '1') return;
-  final boundary = tester.renderObject<RenderRepaintBoundary>(find.byKey(const ValueKey('screen')));
-  await tester.runAsync(() async {
-    final image = await boundary.toImage(pixelRatio: 2);
-    final png = await image.toByteData(format: ui.ImageByteFormat.png);
-    File('build/screens/stats_pages/$name.png')
-      ..createSync(recursive: true)
-      ..writeAsBytesSync(png!.buffer.asUint8List());
-  });
-}
-
-const _phones = [Size(384, 832), Size(360, 780)];
+const _phones = [usersPhone, narrowPhone];
 
 /// The Stats header's links, the rank page, the SRS page with its FSRS
 /// details, and the practice calendar from History and Home, after a seeded
@@ -97,10 +84,10 @@ void main() {
     return p;
   }
 
-  Future<void> onPhone(WidgetTester tester, Progress p, Size size, double fontScale) async {
+  Future<void> onPhone(WidgetTester tester, Progress p, Screen phone, double fontScale) async {
     tester.platformDispatcher.textScaleFactorTestValue = fontScale;
     addTearDown(tester.platformDispatcher.clearTextScaleFactorTestValue);
-    await tester.binding.setSurfaceSize(size);
+    await tester.binding.setSurfaceSize(phone.size);
     addTearDown(() => tester.binding.setSurfaceSize(null));
     await tester.pumpWidget(RepaintBoundary(key: const ValueKey('screen'), child: FudatobashiApp(progress: p)));
     await tester.pump(const Duration(milliseconds: 500));
@@ -119,10 +106,10 @@ void main() {
   }
 
   // Scrolls the page's list to its end, checking every stretch lays out.
-  Future<void> scrollThrough(WidgetTester tester, String name) async {
+  Future<void> scrollThrough(WidgetTester tester, String name, String lang) async {
     final list = find.byType(Scrollable).first;
     for (var i = 0; i < 12; i++) {
-      await _capture(tester, '${name}_$i');
+      await captureScreen(tester, 'stats_pages/$name', lang: lang, variant: 'step$i');
       final before = tester.state<ScrollableState>(list).position.pixels;
       await tester.drag(list, const Offset(0, -500));
       await tester.pump(const Duration(milliseconds: 500));
@@ -133,13 +120,13 @@ void main() {
 
   for (final lang in ['en', 'ja']) {
     final s = S(lang);
-    for (final size in _phones) {
+    for (final phone in _phones) {
       for (final fontScale in [1.0, 1.3]) {
-        final tag = '${lang}_${size.width.round()}_$fontScale';
+        final tag = '${lang}_${phone.name}_$fontScale';
 
         testWidgets('journey: locked Rank, the SRS page and its FSRS details ($tag)', (tester) async {
           final p = await seeded(tester, lang, ranked: false);
-          await onPhone(tester, p, size, fontScale);
+          await onPhone(tester, p, phone, fontScale);
           await tap(tester, find.text(s.stats));
           final rank = find.text(s.rank);
           expect(rank, findsOneWidget);
@@ -153,7 +140,7 @@ void main() {
 
           await tap(tester, find.text(s.srs));
           expect(find.byType(SrsScreen), findsOneWidget);
-          await scrollThrough(tester, 'srs_$tag');
+          await scrollThrough(tester, 'srs', lang);
 
           final button = find.textContaining(s.srsDetailsButton, findRichText: true);
           expect(button, findsOneWidget, reason: 'the last thing on the page');
@@ -163,7 +150,7 @@ void main() {
           expect(find.byType(SrsCardTable), findsOneWidget);
           expect(find.textContaining(s.srsDetailsTitle, findRichText: true), findsOneWidget);
           expect(find.text('${s.srsColRecall} ▲'), findsOneWidget);
-          await _capture(tester, 'srs_details_$tag');
+          await captureScreen(tester, 'stats_pages/srs_details', lang: lang);
           await tap(tester, find.text(s.srsColLapses));
           expect(find.text('${s.srsColLapses} ▲'), findsOneWidget);
           await tap(tester, find.text('${s.srsColLapses} ▲'));
@@ -176,12 +163,12 @@ void main() {
 
         testWidgets('journey: the calendar opens from History and from Home ($tag)', (tester) async {
           final p = await seeded(tester, lang, ranked: false);
-          await onPhone(tester, p, size, fontScale);
+          await onPhone(tester, p, phone, fontScale);
           final today = p.dayAt().date;
           await tap(tester,
               find.descendant(of: find.byType(TodayBox), matching: find.text(s.weekdayLetter(today.weekday))).first);
           expect(find.byType(PracticeCalendarScreen), findsOneWidget);
-          await scrollThrough(tester, 'calendar_journey_$tag');
+          await scrollThrough(tester, 'calendar_journey', lang);
           await back(tester, s);
           expect(find.byType(PracticeCalendarScreen), findsNothing);
 
@@ -208,7 +195,7 @@ void main() {
         testWidgets('all-known: Rank replaces SRS, with history and the calendar from Home ($tag)', (tester) async {
           final p = await seeded(tester, lang, ranked: true);
           expect(p.rankedHistory, isNotEmpty);
-          await onPhone(tester, p, size, fontScale);
+          await onPhone(tester, p, phone, fontScale);
 
           await tap(tester, find.text(s.streakKeep));
           expect(find.byType(PracticeCalendarScreen), findsOneWidget);
@@ -219,11 +206,11 @@ void main() {
           await tap(tester, find.text(s.rank));
           expect(find.byType(RankScreen), findsOneWidget);
           expect(find.byType(RatingChart), p.rankedHistory.length > 1 ? findsOneWidget : findsNothing);
-          await _capture(tester, 'rank_top_$tag');
+          await captureScreen(tester, 'stats_pages/rank_top', lang: lang);
           await tester.dragUntilVisible(find.text(s.youTag), find.byType(Scrollable).first, const Offset(0, -200));
           await tester.pump(const Duration(milliseconds: 500));
           expect(tester.takeException(), isNull);
-          await scrollThrough(tester, 'rank_$tag');
+          await scrollThrough(tester, 'rank', lang);
           expect(find.byType(RankedRunsTable), findsOneWidget);
           await tester.pumpWidget(const SizedBox());
         });
@@ -239,7 +226,7 @@ void main() {
       expect(find.text(s.rankedUnplacedLine), findsOneWidget);
       expect(find.byType(RatingChart), findsNothing);
       expect(find.byType(RankedRunsTable), findsNothing);
-      await scrollThrough(tester, 'rank_unplaced_$lang');
+      await scrollThrough(tester, 'rank_unplaced', lang);
       expect(find.text(s.youTag), findsNothing);
       expect(find.byType(RankedRunsTable), findsNothing);
       await tester.pumpWidget(const SizedBox());

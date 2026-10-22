@@ -6,15 +6,13 @@
 // 1.3, in English and Japanese; the results screen plays them for ranked,
 // free and placement games, and none for the test game.
 //
-// With RENDER_SCREENS=1 it also renders the pages at 1080 × 2340 px, with
-// real fonts and art, to .scratchpad/ankiren_celebrations/.
+// With RENDER_SCREENS=1 it also renders the pages, with real fonts and art,
+// to build/screens/ankiren_celebrations/.
 import 'dart:io';
-import 'dart:ui' as ui;
 
 import 'package:drift/drift.dart' show driftRuntimeOptions;
 import 'package:drift/native.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:fudatobashi/config/config.dart';
@@ -54,17 +52,10 @@ import 'package:fudatobashi/ui/sound/sounds.dart';
 
 import 'test_ankiren.dart';
 import 'test_l10n.dart';
+import 'test_screens.dart';
 import 'test_vector_art.dart';
 
-/// A phone: its size in dp and its pixels per dp (all 1080 × 2340 px),
-/// with a 28 dp status bar and a 48 dp navigation bar.
-typedef _Phone = ({String name, Size size, double dpr});
-
-const _narrow = (name: '360', size: Size(360, 780), dpr: 3.0);
-const _users = (name: '384', size: Size(384, 832), dpr: 2.8125);
-const _wide = (name: '412', size: Size(1080 / 2.625, 2340 / 2.625), dpr: 2.625);
-const _phones = [_narrow, _users, _wide];
-const _statusBar = 28.0, _navBar = 48.0;
+const _phones = [narrowPhone, usersPhone, widePhone];
 
 Future<void> _loadFont(String family, List<String> files) async {
   final loader = FontLoader(family);
@@ -160,16 +151,8 @@ void main() {
     return p;
   }
 
-  void onPhone(WidgetTester tester, _Phone phone, double fontScale) {
-    final bars = FakeViewPadding(top: _statusBar * phone.dpr, bottom: _navBar * phone.dpr);
-    tester.view
-      ..devicePixelRatio = phone.dpr
-      ..physicalSize = phone.size * phone.dpr
-      ..padding = bars
-      ..viewPadding = bars;
-    tester.platformDispatcher.textScaleFactorTestValue = fontScale;
-    addTearDown(tester.view.reset);
-    addTearDown(tester.platformDispatcher.clearTextScaleFactorTestValue);
+  void onPhone(WidgetTester tester, Screen phone, double fontScale) {
+    useScreen(tester, phone, fontScale: fontScale);
   }
 
   Widget app(Progress p, Widget home, {GlobalKey<NavigatorState>? navigator}) => RepaintBoundary(
@@ -187,7 +170,7 @@ void main() {
       );
 
   // Shows [page] full screen on [phone] at [fontScale], [settle] into it.
-  Future<void> showPage(WidgetTester tester, Progress p, Widget page, _Phone phone,
+  Future<void> showPage(WidgetTester tester, Progress p, Widget page, Screen phone,
       {double fontScale = 1, Duration settle = Duration.zero}) async {
     onPhone(tester, phone, fontScale);
     await tester.pumpWidget(app(p, Scaffold(body: page)));
@@ -195,21 +178,21 @@ void main() {
   }
 
   // [f] shows whole, inside the gutters, between the system bars.
-  void expectShown(WidgetTester tester, Finder f, _Phone phone) {
+  void expectShown(WidgetTester tester, Finder f, Screen phone) {
     final r = tester.getRect(f);
     expect(r.left, greaterThanOrEqualTo(Gaps.gutter - 0.5), reason: '$f');
     expect(r.right, lessThanOrEqualTo(phone.size.width - Gaps.gutter + 0.5), reason: '$f');
-    expect(r.top, greaterThanOrEqualTo(_statusBar - 0.5), reason: '$f');
-    expect(r.bottom, lessThanOrEqualTo(phone.size.height - _navBar + 0.5), reason: '$f');
+    expect(r.top, greaterThanOrEqualTo(phone.bars.top - 0.5), reason: '$f');
+    expect(r.bottom, lessThanOrEqualTo(phone.size.height - phone.bars.bottom + 0.5), reason: '$f');
   }
 
   // [f] shows whole on screen, between the system bars.
-  void expectOnScreen(WidgetTester tester, Finder f, _Phone phone) {
+  void expectOnScreen(WidgetTester tester, Finder f, Screen phone) {
     final r = tester.getRect(f);
     expect(r.left, greaterThanOrEqualTo(0), reason: '$f');
     expect(r.right, lessThanOrEqualTo(phone.size.width), reason: '$f');
-    expect(r.top, greaterThanOrEqualTo(_statusBar - 0.5), reason: '$f');
-    expect(r.bottom, lessThanOrEqualTo(phone.size.height - _navBar + 0.5), reason: '$f');
+    expect(r.top, greaterThanOrEqualTo(phone.bars.top - 0.5), reason: '$f');
+    expect(r.bottom, lessThanOrEqualTo(phone.size.height - phone.bars.bottom + 0.5), reason: '$f');
   }
 
   // The class written on the flag; null for the veiled flag's mark.
@@ -307,7 +290,7 @@ void main() {
             }
           }
           final end = t.breaksThrough ? t.strainEnd : t.length;
-          await showPage(tester, p, AnkirenRatingOverlay(data: data, onNext: () {}), _users, settle: end);
+          await showPage(tester, p, AnkirenRatingOverlay(data: data, onNext: () {}), usersPhone, settle: end);
           switch (moment) {
             case AnkirenRatingMoment.placing:
               expect(cloth(null), findsWidgets, reason: 'the class is not known yet');
@@ -343,7 +326,7 @@ void main() {
         final s = S(lang);
         for (final data in cases) {
           final t = AnkirenRatingTimeline(data);
-          await showPage(tester, p, AnkirenRatingOverlay(data: data, onNext: () {}), _narrow,
+          await showPage(tester, p, AnkirenRatingOverlay(data: data, onNext: () {}), narrowPhone,
               fontScale: 1.3, settle: t.breaksThrough ? t.strainEnd : t.length);
           expect(tester.takeException(), isNull, reason: '${data.moment.name} ${data.after}');
           if (Rating.bandOf(data.after) == Rating.bands.first) {
@@ -424,7 +407,7 @@ void main() {
       } else {
         report = null;
       }
-      onPhone(tester, _users, 1);
+      onPhone(tester, usersPhone, 1);
       await tester.pumpWidget(app(p, AnkirenResultsScreen(game: game, report: report, tracked: tracked)));
       await tester.pump();
       return report ?? const AnkirenReport(ratingBefore: null, ratingAfter: null);
@@ -555,7 +538,7 @@ void main() {
       final t = AnkirenRatingTimeline(data);
       var done = false;
       final pages = [data, AnkirenRankCelebration(data.before, data.after)];
-      await showPage(tester, p, CelebrationSequence(pages: pages, onDone: () => done = true), _users,
+      await showPage(tester, p, CelebrationSequence(pages: pages, onDone: () => done = true), usersPhone,
           settle: t.moveEnd + AnkirenRatingMotion.strain ~/ 2);
       expect(heard.played, contains(Sfx.ratingStrain));
       expect(find.byType(AnkirenRankUpOverlay), findsNothing);
@@ -592,7 +575,7 @@ void main() {
       testWidgets('暗記練\'s $name plays to its end and waits for a tap', (tester) async {
         final p = await open(tester, 'en');
         var next = 0;
-        await showPage(tester, p, _rankPage(data, onNext: () => next++), _users);
+        await showPage(tester, p, _rankPage(data, onNext: () => next++), usersPhone);
         for (var at = Duration.zero; at < length; at += const Duration(milliseconds: 50)) {
           await tester.pump(const Duration(milliseconds: 50));
           expect(tester.takeException(), isNull, reason: '${at.inMilliseconds} ms');
@@ -608,7 +591,7 @@ void main() {
       testWidgets('a tap skips 暗記練\'s $name to its end', (tester) async {
         final p = await open(tester, 'en');
         var next = 0;
-        await showPage(tester, p, _rankPage(data, onNext: () => next++), _users,
+        await showPage(tester, p, _rankPage(data, onNext: () => next++), usersPhone,
             settle: const Duration(milliseconds: 300));
         await tester.tapAt(const Offset(30, 200));
         await tester.pump();
@@ -626,7 +609,7 @@ void main() {
       final data = _moments[AnkirenRatingMoment.rankDown]!;
       final t = AnkirenRatingTimeline(data);
       expect(t.track.lines, [Rating.bands[3]], reason: 'the pole shows the line it sinks past');
-      await showPage(tester, p, CelebrationSequence(pages: [data], onDone: () {}), _users, settle: t.moveAt);
+      await showPage(tester, p, CelebrationSequence(pages: [data], onDone: () {}), usersPhone, settle: t.moveAt);
       expect(cloth(Rating.bands[3]), findsOneWidget);
       var at = t.moveAt;
       while (t.ratingAt(at) >= _eLower) {
@@ -645,7 +628,7 @@ void main() {
       final p = await open(tester, 'en');
       final data = _moments[AnkirenRatingMoment.placed]!;
       final t = AnkirenRatingTimeline(data);
-      await showPage(tester, p, CelebrationSequence(pages: [data], onDone: () {}), _users,
+      await showPage(tester, p, CelebrationSequence(pages: [data], onDone: () {}), usersPhone,
           settle: t.revealAt - const Duration(milliseconds: 20));
       expect(cloth(Rating.bandOf(data.after)), findsNothing, reason: 'still veiled');
       expect(heard.played.where((s) => s == Sfx.ratingStrain), hasLength(AnkirenRatingMotion.beats.length));
@@ -659,7 +642,7 @@ void main() {
       await tester.pumpWidget(const SizedBox());
       heard.played.clear();
       await tester.runAsync(() => p.updateSettings(p.settings.copyWith(effectSounds: false)));
-      await showPage(tester, p, CelebrationSequence(pages: [data], onDone: () {}), _users, settle: t.length);
+      await showPage(tester, p, CelebrationSequence(pages: [data], onDone: () {}), usersPhone, settle: t.length);
       expect(heard.played, isEmpty);
       await tester.pumpWidget(const SizedBox());
     });
@@ -670,7 +653,7 @@ void main() {
       final p = await open(tester, 'en');
       for (final MapEntry(key: moment, value: data) in _moments.entries) {
         var advanced = false;
-        await showPage(tester, p, AnkirenRatingOverlay(data: data, onNext: () => advanced = true), _users,
+        await showPage(tester, p, AnkirenRatingOverlay(data: data, onNext: () => advanced = true), usersPhone,
             settle: const Duration(milliseconds: 16));
         expect(tester.takeException(), isNull);
         final shown = switch (moment) {
@@ -694,7 +677,7 @@ void main() {
   group('dev previews', () {
     // Opens [preview] from a button, on the user's phone.
     Future<void> preview(WidgetTester tester, Progress p, void Function(BuildContext) preview) async {
-      onPhone(tester, _users, 1);
+      onPhone(tester, usersPhone, 1);
       await tester.pumpWidget(app(
         p,
         Scaffold(body: Builder(builder: (context) => TextButton(onPressed: () => preview(context), child: const Text('go')))),
@@ -737,7 +720,7 @@ void main() {
     testWidgets('AnkiRen rank-up and rank-down play on their own', (tester) async {
       final p = await open(tester, 'en');
       for (final up in [true, false]) {
-        onPhone(tester, _users, 1);
+        onPhone(tester, usersPhone, 1);
         await tester.pumpWidget(app(
           p,
           Scaffold(
@@ -760,8 +743,8 @@ void main() {
     });
   });
 
-  group('renders', skip: Platform.environment['RENDER_SCREENS'] != '1', () {
-    Future<void> capture(WidgetTester tester, _Phone phone, String name) async {
+  group('renders', skip: !renderScreens, () {
+    Future<void> capture(WidgetTester tester, String screen, {String lang = 'en', String? variant}) async {
       await tester.runAsync(() async {
         for (final e in find.byType(Image).evaluate()) {
           await precacheImage((e.widget as Image).image, e);
@@ -769,14 +752,7 @@ void main() {
       });
       await tester.pump();
       await tester.pump();
-      final boundary = tester.renderObject<RenderRepaintBoundary>(find.byKey(const ValueKey('screen')));
-      await tester.runAsync(() async {
-        final image = await boundary.toImage(pixelRatio: phone.dpr);
-        final png = await image.toByteData(format: ui.ImageByteFormat.png);
-        File('.scratchpad/ankiren_celebrations/$name.png')
-          ..createSync(recursive: true)
-          ..writeAsBytesSync(png!.buffer.asUint8List());
-      });
+      await captureScreen(tester, 'ankiren_celebrations/$screen', lang: lang, variant: variant);
     }
 
     for (final MapEntry(key: moment, value: data) in _moments.entries) {
@@ -790,10 +766,10 @@ void main() {
             if (t.reveals) 'reveal': t.revealAt + AnkirenRatingMotion.flashHold + AnkirenRatingMotion.flashOut ~/ 3,
             'end': t.breaksThrough ? t.strainEnd - const Duration(milliseconds: 10) : t.length,
           };
-          for (final phone in [_narrow, _users]) {
+          for (final phone in [narrowPhone, usersPhone]) {
             for (final fontScale in [1.0, 1.3]) {
-              if (phone == _narrow && fontScale == 1) continue;
-              final tag = phone == _users && fontScale == 1 ? '' : '_${phone.name}_$fontScale';
+              if (phone == narrowPhone && fontScale == 1) continue;
+              final tag = phone == usersPhone && fontScale == 1 ? '' : '_${phone.name}_$fontScale';
               await showPage(tester, p, AnkirenRatingOverlay(data: data, onNext: () {}), phone, fontScale: fontScale);
               var at = Duration.zero;
               for (final MapEntry(key: stop, value: until) in stops.entries) {
@@ -803,7 +779,7 @@ void main() {
                   await tester.pump(step);
                   at += step;
                 }
-                if (tag.isEmpty || stop == 'end') await capture(tester, phone, 'rating_${moment.name}_$lang${tag}_$stop');
+                if (tag.isEmpty || stop == 'end') await capture(tester, 'rating_${moment.name}', lang: lang, variant: stop);
               }
               await tester.pumpWidget(const SizedBox());
             }
@@ -821,9 +797,9 @@ void main() {
         'top_up': AnkirenRatingCelebration(top + 40, top + 90, game: 12),
       };
       for (final MapEntry(key: name, value: data) in cases.entries) {
-        await showPage(tester, p, AnkirenRatingOverlay(data: data, onNext: () {}), _users,
+        await showPage(tester, p, AnkirenRatingOverlay(data: data, onNext: () {}), usersPhone,
             settle: AnkirenRatingTimeline(data).length);
-        await capture(tester, _users, 'ladder_$name');
+        await capture(tester, 'ladder_$name');
         await tester.pumpWidget(const SizedBox());
       }
     });
@@ -832,13 +808,13 @@ void main() {
       testWidgets('shared_$lang', (tester) async {
         final p = await open(tester, lang);
         final gain = _ankirenGain(into: XpCurve.span(7) - 200);
-        await showPage(tester, p, XpOverlay(gain: gain, onNext: () {}), _users, settle: XpTimeline(gain).length);
-        await capture(tester, _users, 'xp_$lang');
-        await showPage(tester, p, XpOverlay(gain: gain, onNext: () {}), _narrow,
+        await showPage(tester, p, XpOverlay(gain: gain, onNext: () {}), usersPhone, settle: XpTimeline(gain).length);
+        await capture(tester, 'xp', lang: lang);
+        await showPage(tester, p, XpOverlay(gain: gain, onNext: () {}), narrowPhone,
             fontScale: 1.3, settle: XpTimeline(gain).length);
-        await capture(tester, _narrow, 'xp_${lang}_360_1.3');
-        await showPage(tester, p, LevelUpOverlay(gain: gain, onNext: () {}), _users, settle: LevelUpMotion.length);
-        await capture(tester, _users, 'level_up_$lang');
+        await capture(tester, 'xp', lang: lang);
+        await showPage(tester, p, LevelUpOverlay(gain: gain, onNext: () {}), usersPhone, settle: LevelUpMotion.length);
+        await capture(tester, 'level_up', lang: lang);
         await tester.pumpWidget(const SizedBox());
       });
 
@@ -860,8 +836,8 @@ void main() {
                   'fall': AnkirenRankDownMotion.landAt - const Duration(milliseconds: 60),
                   'end': AnkirenRankDownMotion.length,
                 };
-          for (final (phone, fontScale) in [(_users, 1.0), (_narrow, 1.3)]) {
-            final tag = phone == _users ? '' : '_${phone.name}_$fontScale';
+          for (final (phone, fontScale) in [(usersPhone, 1.0), (narrowPhone, 1.3)]) {
+            final tag = phone == usersPhone ? '' : '_${phone.name}_$fontScale';
             await showPage(tester, p, _rankPage(_ranks[up]!), phone, fontScale: fontScale);
             var at = Duration.zero;
             for (final MapEntry(key: stop, value: until) in stops.entries) {
@@ -871,7 +847,7 @@ void main() {
                 await tester.pump(step);
                 at += step;
               }
-              if (tag.isEmpty || stop == 'end') await capture(tester, phone, '${name}_$lang${tag}_$stop');
+              if (tag.isEmpty || stop == 'end') await capture(tester, name, lang: lang, variant: stop);
             }
             await tester.pumpWidget(const SizedBox());
           }

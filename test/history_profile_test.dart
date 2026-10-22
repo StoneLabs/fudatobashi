@@ -1,10 +1,8 @@
 import 'dart:io';
-import 'dart:ui' as ui;
 
 import 'package:drift/drift.dart' show driftRuntimeOptions;
 import 'package:drift/native.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:fudatobashi/data/fuda_sets.dart';
@@ -35,13 +33,8 @@ import 'package:fudatobashi/ui/home/home_widgets.dart';
 
 import 'test_ankiren.dart';
 import 'test_l10n.dart';
+import 'test_screens.dart';
 import 'test_vector_art.dart';
-
-const _phone = Size(384, 832);
-
-/// A narrower phone as tall as the user's, where a large font scale leaves
-/// History's header the least room.
-const _narrowPhone = Size(360, 832);
 
 Future<void> _loadFont(String family, List<String> files) async {
   final loader = FontLoader(family);
@@ -49,18 +42,6 @@ Future<void> _loadFont(String family, List<String> files) async {
     loader.addFont(Future.value(ByteData.sublistView(File('assets/fonts/$f').readAsBytesSync())));
   }
   await loader.load();
-}
-
-Future<void> _capture(WidgetTester tester, String name) async {
-  if (Platform.environment['RENDER_SCREENS'] != '1') return;
-  final boundary = tester.renderObject<RenderRepaintBoundary>(find.byKey(const ValueKey('screen')));
-  await tester.runAsync(() async {
-    final image = await boundary.toImage(pixelRatio: 2);
-    final png = await image.toByteData(format: ui.ImageByteFormat.png);
-    File('build/screens/$name.png')
-      ..createSync(recursive: true)
-      ..writeAsBytesSync(png!.buffer.asUint8List());
-  });
 }
 
 /// History with side-trip games beside the runs, and My Profile's side-trip
@@ -115,27 +96,13 @@ void main() {
     return session;
   }
 
-  // The user's phone: 384 × 832 at 2.8125 px per dp, with a 28 dp status bar
-  // and a 48 dp navigation bar.
-  void onPhone(WidgetTester tester, {required double fontScale, Size size = _phone}) {
-    const dpr = 2.8125;
-    const bars = FakeViewPadding(top: 28 * dpr, bottom: 48 * dpr);
-    tester.view
-      ..devicePixelRatio = dpr
-      ..physicalSize = size * dpr
-      ..padding = bars
-      ..viewPadding = bars;
-    tester.platformDispatcher.textScaleFactorTestValue = fontScale;
-    addTearDown(tester.view.reset);
-    addTearDown(tester.platformDispatcher.clearTextScaleFactorTestValue);
-  }
-
   for (final ja in [false, true]) {
     final lang = ja ? 'ja' : 'en';
 
-    for (final (phone, fontScale) in [(_phone, 1.0), (_phone, 1.3), (_narrowPhone, 1.3)]) {
-      final setup = '$lang, ${phone.width.round()} dp, font scale $fontScale';
-      final shot = '${lang}_${phone.width.round()}_${(fontScale * 10).round()}';
+    // The narrower phone is as tall as the user's: a large font scale leaves
+    // History's header the least room there.
+    for (final (phone, fontScale) in [(usersPhone, 1.0), (usersPhone, 1.3), (narrowTallPhone, 1.3)]) {
+      final setup = '$lang, ${phone.name} dp, font scale $fontScale';
 
       testWidgets('History lists runs by day with their kinds, 暗記練 on its own tab, and the filter narrows them ($setup)',
           (tester) async {
@@ -154,14 +121,14 @@ void main() {
           await p.recordAnkiren(playAnkiren(const AnkirenSetup.custom(perSide: 3, memorise: Duration(seconds: 30)), endAfter: 4),
               startedAt: today.add(const Duration(hours: 4)));
         });
-        onPhone(tester, fontScale: fontScale, size: phone);
+        useScreen(tester, phone, fontScale: fontScale);
         await tester.pumpWidget(RepaintBoundary(key: const ValueKey('screen'), child: FudatobashiApp(progress: p)));
         await tester.pump(const Duration(milliseconds: 500));
         await tester.tap(find.descendant(of: find.byType(MangaTabBar), matching: find.text(s.history)));
         await tester.pump(const Duration(milliseconds: 500));
         expect(tester.takeException(), isNull);
 
-        await _capture(tester, 'history_main_$shot');
+        await captureScreen(tester, 'history_main', lang: lang);
         Finder kinds() => find.byType(RunKindTag);
         expect(kinds(), findsAtLeastNWidgets(3), reason: 'the list builds the rows on screen');
         expect(find.text(s.historyForfeit), findsOneWidget);
@@ -171,7 +138,7 @@ void main() {
         await tester.tap(find.byWidgetPredicate((w) => w is InkIconButton && w.semanticLabel == s.historyFilterLabel));
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 400));
-        await _capture(tester, 'history_filter_$shot');
+        await captureScreen(tester, 'history_filter', lang: lang);
         await tester.tap(find.text(s.rankedRun).last);
         await tester.pump(const Duration(milliseconds: 200));
         expect(find.text(s.filterShow(2)), findsOneWidget);
@@ -187,7 +154,7 @@ void main() {
         await tester.pump(const Duration(milliseconds: 600));
         await tester.pump(const Duration(milliseconds: 300));
         expect(tester.takeException(), isNull);
-        await _capture(tester, 'history_ankiren_$shot');
+        await captureScreen(tester, 'history_ankiren', lang: lang);
         expect(find.byType(AnkirenKindTag), findsNWidgets(2));
         expect(find.text(s.historyNotScored), findsOneWidget);
         expect(find.byType(CountBadge), findsNothing, reason: 'the 暗記練 tab has no kinds picked');
@@ -195,8 +162,8 @@ void main() {
       });
     }
 
-    for (final (phone, fontScale) in [(_phone, 1.0), (_narrowPhone, 1.3)]) {
-      final shot = '${lang}_${phone.width.round()}_${(fontScale * 10).round()}';
+    for (final (phone, fontScale) in [(usersPhone, 1.0), (narrowTallPhone, 1.3)]) {
+      final shot = '${lang}_${phone.name}_${(fontScale * 10).round()}';
 
       testWidgets('Each run kind opens its run page, and its tabs page through ($shot)', (tester) async {
         final s = S(ja ? 'ja' : 'en');
@@ -214,7 +181,7 @@ void main() {
           await p.recordRun(swipes([1, 2, 3, 4, 5, 6], misses: {2}), const PlayConfig(mode: PlayMode.training),
               start.add(const Duration(hours: 4)));
         });
-        onPhone(tester, fontScale: fontScale, size: phone);
+        useScreen(tester, phone, fontScale: fontScale);
         for (final mode in [PlayMode.ranked, PlayMode.free, PlayMode.exam, PlayMode.training]) {
           await tester.pumpWidget(RepaintBoundary(
             key: const ValueKey('screen'),
@@ -228,7 +195,7 @@ void main() {
             ),
           ));
           await tester.pump(const Duration(milliseconds: 300));
-          await _capture(tester, 'run_list_${mode.name}_$shot');
+          await captureScreen(tester, 'run_list_${mode.name}', lang: lang);
           final row = find.byWidgetPredicate((w) => w is RunKindTag && w.mode == mode).first;
           await tester.dragUntilVisible(row, find.byType(ListView).first, const Offset(0, -200));
           await tester.pump();
@@ -247,13 +214,13 @@ void main() {
           ];
           for (var tab = 0; tab < tabs; tab++) {
             expect(tester.takeException(), isNull);
-            await _capture(tester, 'run_${mode.name}_${tab}_$shot');
+            await captureScreen(tester, 'run_${mode.name}', lang: lang, variant: 'tab$tab');
             if (tab == 0) {
               final overview = tester.state<ScrollableState>(
                   find.descendant(of: find.byType(RunOverviewTab), matching: find.byType(Scrollable)).first);
               final fits = overview.position.maxScrollExtent == 0;
               debugPrint('overview fit ${mode.name} $shot: ${fits ? 'fits' : 'scrolls ${overview.position.maxScrollExtent.round()}'}');
-              if (phone == _phone && fontScale == 1.0) expect(fits, isTrue, reason: 'Overview is one screen tall');
+              if (phone == usersPhone && fontScale == 1.0) expect(fits, isTrue, reason: 'Overview is one screen tall');
             }
             if (tab == tabs - 1) break;
             if (tab.isEven) {
@@ -279,7 +246,7 @@ void main() {
       final s = S(ja ? 'ja' : 'en');
       final p = await open(tester, ja: ja);
       p.rating = Rating.bands[2].minRating;
-      onPhone(tester, fontScale: 1.3);
+      useScreen(tester, usersPhone, fontScale: 1.3);
       Future<void> showProfile() async {
         await tester.pumpWidget(RepaintBoundary(
           key: const ValueKey('screen'),
@@ -304,7 +271,7 @@ void main() {
       final badge = tester.getSize(find.byType(ClassBadge));
       final sticker = tester.getSize(find.byType(RankSticker));
       expect(badge.height, lessThan(sticker.height), reason: 'smaller than the main rank');
-      await _capture(tester, 'profile_side_trips_$lang');
+      await captureScreen(tester, 'profile_side_trips', lang: lang);
       await tester.pumpWidget(const SizedBox());
     });
   }

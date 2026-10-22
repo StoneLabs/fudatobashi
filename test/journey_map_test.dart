@@ -3,14 +3,12 @@
 // and of the strip or banner under it wherever the boat is, and a drag pans
 // it up and down and leaves it where it was put.
 //
-// With RENDER_SCREENS=1 it also renders Home to .scratchpad/journey_map/.
+// With RENDER_SCREENS=1 it also renders Home to build/screens/journey_map/.
 import 'dart:io';
-import 'dart:ui' as ui;
 
 import 'package:drift/drift.dart' show driftRuntimeOptions;
 import 'package:drift/native.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:fudatobashi/config/design.dart';
@@ -34,13 +32,8 @@ import 'package:fudatobashi/ui/home/today_box.dart';
 import 'package:fudatobashi/ui/islands/island_map.dart';
 
 import 'test_l10n.dart';
+import 'test_screens.dart';
 import 'test_vector_art.dart';
-
-typedef _Phone = ({String name, Size size, double dpr});
-
-const _narrow = (name: '360', size: Size(360, 780), dpr: 3.0);
-const _users = (name: '384', size: Size(384, 832), dpr: 2.8125);
-const _statusBar = 28.0, _navBar = 48.0;
 
 /// What sits under the map in its panel.
 enum _Footer { none, exam, banner }
@@ -123,16 +116,8 @@ void main() {
     return p;
   }
 
-  Future<void> onPhone(WidgetTester tester, Progress p, _Phone phone, {double fontScale = 1}) async {
-    final bars = FakeViewPadding(top: _statusBar * phone.dpr, bottom: _navBar * phone.dpr);
-    tester.view
-      ..devicePixelRatio = phone.dpr
-      ..physicalSize = phone.size * phone.dpr
-      ..padding = bars
-      ..viewPadding = bars;
-    tester.platformDispatcher.textScaleFactorTestValue = fontScale;
-    addTearDown(tester.view.reset);
-    addTearDown(tester.platformDispatcher.clearTextScaleFactorTestValue);
+  Future<void> onPhone(WidgetTester tester, Progress p, Screen phone, {double fontScale = 1}) async {
+    useScreen(tester, phone, fontScale: fontScale);
     await tester.binding.setSurfaceSize(phone.size);
     await tester.pumpWidget(RepaintBoundary(key: const ValueKey('screen'), child: FudatobashiApp(progress: p)));
     await tester.pump(const Duration(milliseconds: 500));
@@ -235,12 +220,12 @@ void main() {
     testWidgets('the boat is in view at the last island with the exam strip showing', (tester) async {
       final p = await player(tester, archipelago.islands.length - 1, _Footer.exam);
       expect(JourneyState.of(p).current, archipelago.islands.length - 1);
-      await onPhone(tester, p, _users);
+      await onPhone(tester, p, usersPhone);
       expect(find.byType(ExamStrip), findsOneWidget);
       expectBoatClear(tester, p, _Footer.exam, 'last island, strip', roomy: true);
     });
 
-    for (final phone in [_users, _narrow]) {
+    for (final phone in [usersPhone, narrowPhone]) {
       for (final fontScale in [1.0, 1.3]) {
         for (final lang in ['en', 'ja']) {
           testWidgets('the boat is in view at the second, a middle and the last island (${phone.name}, $fontScale, $lang)',
@@ -256,7 +241,7 @@ void main() {
               final p = await player(tester, index, footer, lang: lang);
               await onPhone(tester, p, phone, fontScale: fontScale);
               expect(JourneyState.of(p).current, index);
-              expectBoatClear(tester, p, footer, '${phone.name} $fontScale $lang island $index $footer', roomy: phone == _users);
+              expectBoatClear(tester, p, footer, '${phone.name} $fontScale $lang island $index $footer', roomy: phone == usersPhone);
               await tester.pumpWidget(const SizedBox());
             }
           });
@@ -267,7 +252,7 @@ void main() {
     testWidgets('the labels stay inside the sea kept clear for them, without much to spare', (tester) async {
       for (final fontScale in [1.0, 1.3, 2.0]) {
         final p = await player(tester, 5, _Footer.none);
-        await onPhone(tester, p, _users, fontScale: fontScale);
+        await onPhone(tester, p, usersPhone, fontScale: fontScale);
         final top = tester.getRect(find.byType(SingleChildScrollView)).top;
         final kept = JourneyPan.labelsBottom(TextScaler.linear(fontScale));
         final used = visible(tester, _Footer.none).labelsBottom - top;
@@ -279,7 +264,7 @@ void main() {
 
     testWidgets('a vertical drag pans the map, stops at both ends, and leaves it where it is put', (tester) async {
       final p = await player(tester, 5, _Footer.none);
-      await onPhone(tester, p, _users);
+      await onPhone(tester, p, usersPhone);
       final frame = tester.getRect(find.byType(SingleChildScrollView));
       final today = tester.getRect(find.byType(TodayBox));
       final scroll = tester.state<ScrollableState>(find.byType(Scrollable)).position;
@@ -311,7 +296,7 @@ void main() {
 
     testWidgets('a drag on the strip does not pan the map, and a tap still opens the exam', (tester) async {
       final p = await player(tester, archipelago.islands.length - 1, _Footer.exam);
-      await onPhone(tester, p, _users);
+      await onPhone(tester, p, usersPhone);
       final before = tester.getRect(find.byType(IslandMap));
       await tester.drag(find.byType(ExamStrip), const Offset(0, -40), warnIfMissed: false);
       await tester.pump(const Duration(seconds: 1));
@@ -324,7 +309,7 @@ void main() {
 
     testWidgets('the view goes to the new boat when it moves, and not for other changes', (tester) async {
       final p = await player(tester, 3, _Footer.none);
-      await onPhone(tester, p, _users);
+      await onPhone(tester, p, usersPhone);
       await tester.dragFrom(inMap(tester), const Offset(0, 30));
       await tester.pump(const Duration(seconds: 1));
       final dragged = tester.getRect(find.byType(IslandMap)).top;
@@ -347,20 +332,9 @@ void main() {
     });
   });
 
-  group('renders', skip: Platform.environment['RENDER_SCREENS'] != '1', () {
-    Future<void> capture(WidgetTester tester, String name) async {
-      final boundary = tester.renderObject<RenderRepaintBoundary>(find.byKey(const ValueKey('screen')));
-      await tester.runAsync(() async {
-        final image = await boundary.toImage(pixelRatio: 2);
-        final png = await image.toByteData(format: ui.ImageByteFormat.png);
-        File('.scratchpad/journey_map/renders/$name.png')
-          ..createSync(recursive: true)
-          ..writeAsBytesSync(png!.buffer.asUint8List());
-      });
-    }
-
+  group('renders', skip: !renderScreens, () {
     for (final lang in ['en', 'ja']) {
-      for (final (phone, fontScale) in [(_users, 1.0), (_narrow, 1.3)]) {
+      for (final (phone, fontScale) in [(usersPhone, 1.0), (narrowPhone, 1.3)]) {
         testWidgets('home_${phone.name}_${lang}_$fontScale', (tester) async {
           for (final (index, footer) in [
             (1, _Footer.none),
@@ -371,11 +345,11 @@ void main() {
           ]) {
             final p = await player(tester, index, footer, lang: lang);
             await onPhone(tester, p, phone, fontScale: fontScale);
-            await capture(tester, '${index}_${footer.name}_${phone.name}_${lang}_$fontScale');
+            await captureScreen(tester, 'journey_map/home_${index}_${footer.name}', lang: lang);
             if (index == 10 && footer == _Footer.exam) {
               await tester.dragFrom(inMap(tester), const Offset(0, 90));
               await tester.pump(const Duration(seconds: 1));
-              await capture(tester, '${index}_${footer.name}_dragged_${phone.name}_${lang}_$fontScale');
+              await captureScreen(tester, 'journey_map/home_${index}_${footer.name}_dragged', lang: lang);
             }
             await tester.pumpWidget(const SizedBox());
           }

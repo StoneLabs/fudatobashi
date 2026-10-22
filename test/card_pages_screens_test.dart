@@ -2,8 +2,6 @@
 // on three phones (384 dp, 360 dp, and 360 dp at font scale 1.3) in both
 // languages, failing on any layout error. With RENDER_SCREENS=1 it writes
 // each screen to build/screens/cards/ for visual checks.
-import 'dart:io';
-
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:fudatobashi/l10n/card_info_strings.dart';
@@ -17,10 +15,9 @@ import 'package:fudatobashi/ui/manga/manga.dart';
 import 'package:fudatobashi/ui/torifuda/torifuda_painter.dart';
 
 import 'test_card_pages.dart';
+import 'test_screens.dart';
 
-final _render = Platform.environment['RENDER_SCREENS'] == '1';
-
-const _phones = [(Size(384, 832), 1.0), (Size(360, 780), 1.0), (Size(360, 780), 1.3)];
+const _phones = [(usersPhone, 1.0), (narrowPhone, 1.0), (narrowPhone, 1.3)];
 
 void main() {
   loadCardPageData();
@@ -28,11 +25,11 @@ void main() {
 
   for (final lang in ['en', 'ja']) {
     final s = S(lang);
-    for (final (size, textScale) in _phones) {
-      final tag = '${lang}_${size.width.round()}${textScale == 1 ? '' : '_scaled'}';
-      Future<void> shot(WidgetTester tester, String name) async {
+    for (final (phone, textScale) in _phones) {
+      final tag = '${lang}_${phone.name}${textScale == 1 ? '' : '_scaled'}';
+      Future<void> shot(WidgetTester tester, String name, {String? variant}) async {
         expect(tester.takeException(), isNull);
-        if (_render) await capture(tester, '${name}_$tag');
+        await captureScreen(tester, 'cards/$name', lang: lang, variant: variant);
       }
 
       Future<void> scrollTo(WidgetTester tester, Finder target) async {
@@ -48,7 +45,7 @@ void main() {
       testWidgets('card browser: all cards, a search, no match ($tag)', (tester) async {
         await loadCardArt(tester);
         final p = await openPlayer(tester, lang);
-        await showPage(tester, p, const CardBrowserScreen(), size: size, textScale: textScale);
+        await showPage(tester, p, const CardBrowserScreen(), screen: phone, textScale: textScale);
         await shot(tester, 'browser');
         await tester.enterText(find.byType(TextField), 'わ');
         await settle(tester);
@@ -63,7 +60,7 @@ void main() {
         testWidgets('About #$id: both cards, the ladder and the explanation ($tag)', (tester) async {
           await loadCardArt(tester);
           final p = await openPlayer(tester, lang);
-          await showPage(tester, p, AboutCardScreen(poemId: id), size: size, textScale: textScale);
+          await showPage(tester, p, AboutCardScreen(poemId: id), screen: phone, textScale: textScale);
           await shot(tester, 'about${id}_taking');
           if (id == 1) {
             await tester.tap(find.textContaining(s.aboutReadingCard).first);
@@ -85,18 +82,18 @@ void main() {
       testWidgets('First sounds, a screen at a time, and Help ($tag)', (tester) async {
         await loadCardArt(tester);
         final p = await openPlayer(tester, lang);
-        await showPage(tester, p, const FirstSoundsScreen(), size: size, textScale: textScale);
+        await showPage(tester, p, const FirstSoundsScreen(), screen: phone, textScale: textScale);
         final page = find.byType(Scrollable).first;
         var end = false;
         for (var i = 0; i < 40 && !end; i++) {
-          await shot(tester, 'first_sounds_${i.toString().padLeft(2, '0')}');
+          await shot(tester, 'first_sounds', variant: 'step${i.toString().padLeft(2, '0')}');
           final before = tester.state<ScrollableState>(page).position.pixels;
-          await tester.drag(page, Offset(0, -size.height * 0.6));
+          await tester.drag(page, Offset(0, -phone.size.height * 0.6));
           await settle(tester);
           end = tester.state<ScrollableState>(page).position.pixels == before;
         }
         expect(end, isTrue, reason: 'scrolled to the end');
-        await showPage(tester, p, const HelpScreen(), size: size, textScale: textScale);
+        await showPage(tester, p, const HelpScreen(), screen: phone, textScale: textScale);
         await shot(tester, 'help');
       });
     }

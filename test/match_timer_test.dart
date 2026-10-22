@@ -1,7 +1,5 @@
 // Help lists the match timer; Play shows Pause and Stop, the sheet sets a new
 // time, Stop resets. With RENDER_SCREENS=1 it writes build/screens/cards/.
-import 'dart:io';
-
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:fudatobashi/l10n/match_timer_strings.dart';
@@ -10,8 +8,7 @@ import 'package:fudatobashi/ui/help/help_screen.dart';
 import 'package:fudatobashi/ui/tools/match_timer_screen.dart';
 
 import 'test_card_pages.dart';
-
-final _render = Platform.environment['RENDER_SCREENS'] == '1';
+import 'test_screens.dart';
 
 void main() {
   loadCardPageData();
@@ -25,7 +22,7 @@ void main() {
     await tapOn(tester, find.text(s.matchTimerTitle));
     expect(find.text('15:00'), findsOneWidget);
     expect(find.text(s.timerPlay), findsOneWidget);
-    if (_render) await capture(tester, 'match_timer_idle');
+    await captureScreen(tester, 'cards/match_timer_idle');
 
     await tapOn(tester, find.text('15:00'));
     await tester.enterText(find.byType(TextField).first, '3');
@@ -52,11 +49,11 @@ void main() {
     now = now.add(const Duration(minutes: 10));
     await tester.pump(const Duration(milliseconds: 300));
     expect(find.text('05:00'), findsOneWidget);
-    if (_render) await capture(tester, 'match_timer_running');
+    await captureScreen(tester, 'cards/match_timer_running');
     now = now.add(const Duration(minutes: 4));
     await tester.pump(const Duration(milliseconds: 300));
     expect(find.text('01:00'), findsOneWidget);
-    if (_render) await capture(tester, 'match_timer_warn');
+    await captureScreen(tester, 'cards/match_timer_warn');
     await tapOn(tester, find.text(s.timerStop));
   });
 }

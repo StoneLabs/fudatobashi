@@ -1,10 +1,8 @@
 import 'dart:io';
-import 'dart:ui' as ui;
 
 import 'package:drift/drift.dart' show driftRuntimeOptions;
 import 'package:drift/native.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:fudatobashi/data/fuda_sets.dart';
@@ -32,6 +30,7 @@ import 'package:fudatobashi/ui/manga/theme.dart';
 import 'package:fudatobashi/ui/play/time_format.dart';
 
 import 'test_l10n.dart';
+import 'test_screens.dart';
 import 'test_vector_art.dart';
 
 Future<void> _loadFont(String family, List<String> files) async {
@@ -51,7 +50,6 @@ void main() {
   fudaSets = FudaSets(poems);
   archipelago = Archipelago.fromJsonString(File('assets/data/islands.json').readAsStringSync());
   driftRuntimeOptions.dontWarnAboutMultipleDatabases = true;
-  final render = Platform.environment['RENDER_SCREENS'] == '1';
 
   setUpAll(() async {
     await _loadFont('Dela', ['DelaGothicOne-Regular.ttf']);
@@ -117,13 +115,13 @@ void main() {
     const dpr = 2.0;
     tester.view
       ..devicePixelRatio = dpr
-      ..physicalSize = Size(width, render ? 2400 : 832) * dpr;
+      ..physicalSize = Size(width, renderScreens ? 2400 : 832) * dpr;
     tester.platformDispatcher.textScaleFactorTestValue = fontScale;
     addTearDown(tester.view.reset);
     addTearDown(tester.platformDispatcher.clearTextScaleFactorTestValue);
   }
 
-  Future<void> show(WidgetTester tester, Progress p, Widget tab, String shot) async {
+  Future<void> show(WidgetTester tester, Progress p, Widget tab, String name) async {
     await tester.pumpWidget(ProgressScope(
       progress: p,
       child: MaterialApp(
@@ -131,23 +129,14 @@ void main() {
           home: RepaintBoundary(key: const ValueKey('screen'), child: Scaffold(body: tab))),
     ));
     await tester.pump(const Duration(milliseconds: 300));
-    expect(tester.takeException(), isNull, reason: shot);
-    if (!render) return;
-    final boundary = tester.renderObject<RenderRepaintBoundary>(find.byKey(const ValueKey('screen')));
-    await tester.runAsync(() async {
-      final image = await boundary.toImage(pixelRatio: 1.5);
-      final png = await image.toByteData(format: ui.ImageByteFormat.png);
-      File('build/screens/run_tabs/$shot.png')
-        ..createSync(recursive: true)
-        ..writeAsBytesSync(png!.buffer.asUint8List());
-    });
+    expect(tester.takeException(), isNull, reason: name);
+    await captureScreen(tester, 'run_tabs/$name', lang: p.settings.language);
   }
 
   for (final ja in [false, true]) {
     final lang = ja ? 'ja' : 'en';
     for (final (width, fontScale) in [(384.0, 1.0), (384.0, 1.3), (360.0, 1.3), (360.0, 1.0)]) {
       final setup = '$lang, ${width.round()} dp, font scale $fontScale';
-      final shot = '${lang}_${width.round()}_${(fontScale * 10).round()}';
 
       testWidgets('the Speed, Rating and XP tabs show every kind of run ($setup)', (tester) async {
         final s = S(lang);
@@ -158,10 +147,10 @@ void main() {
 
         final ranked = await detailOf('ranked');
         expect(ranked.rating!.before, isNotNull);
-        await show(tester, p, RunSpeedTab(ranked), 'speed_ranked_$shot');
+        await show(tester, p, RunSpeedTab(ranked), 'speed_ranked');
         expect(find.textContaining(s.runThirdsTitle, findRichText: true), findsOneWidget);
         expect(find.text(s.runSwipeTimesPenalty(10)), findsOneWidget);
-        await show(tester, p, RunRatingTab(ranked), 'rating_ranked_$shot');
+        await show(tester, p, RunRatingTab(ranked), 'rating_ranked');
         expect(find.text(s.runRatingBefore), findsOneWidget);
         expect(find.text(s.runNewRating), findsOneWidget);
         expect(find.text(s.runSoFar(3)), findsOneWidget);
@@ -169,7 +158,7 @@ void main() {
 
         final placement = await detailOf('placement');
         expect(placement.rating!.before, isNull);
-        await show(tester, p, RunRatingTab(placement), 'rating_placement_$shot');
+        await show(tester, p, RunRatingTab(placement), 'rating_placement');
         expect(find.textContaining(s.runPlacementShout), findsOneWidget);
         expect(find.text(s.rankUnplaced), findsOneWidget);
 
@@ -177,7 +166,7 @@ void main() {
         expect(forfeit.run.forfeit, isTrue);
         expect(forfeit.rating!.performance, RankedTuning.forfeitPerformance);
         expect(forfeit.run.time, isNull, reason: 'a forfeit has no scored time');
-        await show(tester, p, RunRatingTab(forfeit), 'rating_forfeit_$shot');
+        await show(tester, p, RunRatingTab(forfeit), 'rating_forfeit');
         expect(find.text(s.className(Rating.bandOf(forfeit.rating!.after))), findsOneWidget, reason: 'the class badge');
         if (!ja) {
           expect(find.textContaining(RegExp('[入級]'), findRichText: true), findsNothing, reason: 'English class names');
@@ -185,28 +174,28 @@ void main() {
         expect(find.text(s.runForfeitText(37)), findsOneWidget);
         expect(find.text(s.historyForfeit), findsOneWidget, reason: "the table's scored column");
         expect(find.text('${RankedTuning.forfeitPerformance.round()}'), findsWidgets);
-        await show(tester, p, RunOverviewTab(forfeit), 'overview_forfeit_$shot');
+        await show(tester, p, RunOverviewTab(forfeit), 'overview_forfeit');
         expect(find.text(s.historyForfeit), findsOneWidget, reason: 'in place of the time');
         expect(find.textContaining(s.runClockLine(formatTenths(forfeit.run.clock!), forfeit.run.scoredMisses!)), findsNothing);
-        await show(tester, p, RunSpeedTab(forfeit), 'speed_forfeit_$shot');
+        await show(tester, p, RunSpeedTab(forfeit), 'speed_forfeit');
         expect(find.text(s.runSpeedForfeit(37)), findsOneWidget);
 
         final free = await detailOf('free');
         expect(free.run.view, RunView.hundred);
-        await show(tester, p, RunSpeedTab(free), 'speed_free_$shot');
+        await show(tester, p, RunSpeedTab(free), 'speed_free');
         expect(find.text(s.runSwipeTimesOnly), findsOneWidget);
-        await show(tester, p, RunRatingTab(free), 'rating_free_$shot');
+        await show(tester, p, RunRatingTab(free), 'rating_free');
         expect(find.text(s.notForRank), findsOneWidget);
         expect(find.text(s.runFreeNoRank), findsOneWidget);
 
         final exam = await detailOf('exam');
         expect(exam.run.passed, isTrue);
-        await show(tester, p, RunRatingTab(exam), 'rating_exam_$shot');
+        await show(tester, p, RunRatingTab(exam), 'rating_exam');
         expect(find.textContaining(s.runExamWonText), findsOneWidget);
 
         final training = await detailOf('training');
         expect(training.run.view, RunView.training);
-        await show(tester, p, RunXpTab(training), 'xp_training_$shot');
+        await show(tester, p, RunXpTab(training), 'xp_training');
         expect(find.text(s.runTrainingNoRank), findsOneWidget);
         expect(find.byType(XpPanel), findsOneWidget);
         await tester.pumpWidget(const SizedBox());

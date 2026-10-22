@@ -7,12 +7,10 @@
 // With RENDER_SCREENS=1 it also renders them to build/screens/ (journey_*,
 // rank_*).
 import 'dart:io';
-import 'dart:ui' as ui;
 
 import 'package:drift/drift.dart' show driftRuntimeOptions;
 import 'package:drift/native.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:fudatobashi/config/design.dart' show SwitchBannerStyle;
@@ -39,15 +37,8 @@ import 'package:fudatobashi/ui/rank/rank_screen.dart';
 import 'package:fudatobashi/ui/tour/tour_overlay.dart';
 
 import 'test_l10n.dart';
+import 'test_screens.dart';
 import 'test_vector_art.dart';
-
-/// A phone: its size in dp and its pixels per dp, with a 28 dp status bar
-/// and a 48 dp navigation bar.
-typedef _Phone = ({String name, Size size, double dpr});
-
-const _narrow = (name: '360', size: Size(360, 780), dpr: 3.0);
-const _users = (name: '384', size: Size(384, 832), dpr: 2.8125);
-const _statusBar = 28.0, _navBar = 48.0;
 
 Future<void> _loadFont(String family, List<String> files) async {
   final loader = FontLoader(family);
@@ -55,18 +46,6 @@ Future<void> _loadFont(String family, List<String> files) async {
     loader.addFont(Future.value(ByteData.sublistView(File('assets/fonts/$f').readAsBytesSync())));
   }
   await loader.load();
-}
-
-Future<void> _capture(WidgetTester tester, String name) async {
-  if (Platform.environment['RENDER_SCREENS'] != '1') return;
-  final boundary = tester.renderObject<RenderRepaintBoundary>(find.byKey(const ValueKey('screen')));
-  await tester.runAsync(() async {
-    final image = await boundary.toImage(pixelRatio: 2);
-    final png = await image.toByteData(format: ui.ImageByteFormat.png);
-    File('build/screens/$name.png')
-      ..createSync(recursive: true)
-      ..writeAsBytesSync(png!.buffer.asUint8List());
-  });
 }
 
 /// Where the exam stands on journey Home.
@@ -135,16 +114,8 @@ void main() {
 
   // [p]'s Home on [phone]. All-known Home has its own layout tests, so
   // [checkHome] false leaves it to them.
-  Future<void> onPhone(WidgetTester tester, Progress p, _Phone phone, {double fontScale = 1, bool checkHome = true}) async {
-    final bars = FakeViewPadding(top: _statusBar * phone.dpr, bottom: _navBar * phone.dpr);
-    tester.view
-      ..devicePixelRatio = phone.dpr
-      ..physicalSize = phone.size * phone.dpr
-      ..padding = bars
-      ..viewPadding = bars;
-    tester.platformDispatcher.textScaleFactorTestValue = fontScale;
-    addTearDown(tester.view.reset);
-    addTearDown(tester.platformDispatcher.clearTextScaleFactorTestValue);
+  Future<void> onPhone(WidgetTester tester, Progress p, Screen phone, {double fontScale = 1, bool checkHome = true}) async {
+    useScreen(tester, phone, fontScale: fontScale);
     await tester.binding.setSurfaceSize(phone.size);
     await tester.pumpWidget(RepaintBoundary(key: const ValueKey('screen'), child: FudatobashiApp(progress: p)));
     await tester.pump(const Duration(milliseconds: 500));
@@ -175,7 +146,7 @@ void main() {
       final p = await open(tester, _Stage.locked, intro: true);
       expect(p.exam().cardsLeft, 37);
       expect(p.examIntroDue, isFalse);
-      await onPhone(tester, p, _users);
+      await onPhone(tester, p, usersPhone);
       expect(find.byType(ExamStrip), findsNothing);
       expect(find.byType(TourOverlay), findsNothing);
       await tester.pumpWidget(const SizedBox());
@@ -184,7 +155,7 @@ void main() {
     testWidgets('as it opens, Tobi points it out once; a tap away closes him', (tester) async {
       final p = await open(tester, _Stage.open, intro: true);
       expect(p.examIntroDue, isTrue);
-      await onPhone(tester, p, _users);
+      await onPhone(tester, p, usersPhone);
       const s = S('en');
       expect(find.byType(ExamStrip), findsOneWidget);
       expect(find.byType(TourOverlay), findsOneWidget);
@@ -205,7 +176,7 @@ void main() {
 
     testWidgets("a tap on the strip under Tobi's word opens the exam's question", (tester) async {
       final p = await open(tester, _Stage.open, intro: true);
-      await onPhone(tester, p, _users);
+      await onPhone(tester, p, usersPhone);
       await tester.pump(const Duration(seconds: 4));
       await tester.tap(find.byType(ExamStrip), warnIfMissed: false);
       await tester.runAsync(() => Future<void>.delayed(const Duration(milliseconds: 50)));
@@ -220,7 +191,7 @@ void main() {
     testWidgets('open: OPEN, with the miss penalty', (tester) async {
       final p = await open(tester, _Stage.open);
       expect(p.exam().canStart, isTrue);
-      await onPhone(tester, p, _users);
+      await onPhone(tester, p, usersPhone);
       const s = S('en');
       expect(find.text(s.examOpenPill), findsOneWidget);
       expect(find.text(s.examPenalty(10)), findsOneWidget);
@@ -229,7 +200,7 @@ void main() {
 
     testWidgets('cooling down: the countdown ticks every second', (tester) async {
       final p = await open(tester, _Stage.cooldown);
-      await onPhone(tester, p, _users);
+      await onPhone(tester, p, usersPhone);
       const s = S('en');
       expect(find.text(s.examTryAgainIn), findsOneWidget);
       String shown() => tester.widgetList<Text>(find.descendant(of: find.byType(ExamStrip), matching: find.byType(Text)))
@@ -244,7 +215,7 @@ void main() {
     });
 
     for (final lang in ['en', 'ja']) {
-      for (final phone in [_narrow, _users]) {
+      for (final phone in [narrowPhone, usersPhone]) {
         for (final fontScale in [1.0, 1.3]) {
           final tag = '${lang}_${phone.name}_$fontScale';
           testWidgets('every stage fits ($tag)', (tester) async {
@@ -252,7 +223,7 @@ void main() {
               final p = await open(tester, stage, lang: lang);
               await onPhone(tester, p, phone, fontScale: fontScale);
               expectInsideMap(tester, find.byType(ExamStrip));
-              await _capture(tester, 'journey_exam_${stage.name}_$tag');
+              await captureScreen(tester, 'journey_exam_${stage.name}', lang: lang);
               await tester.pumpWidget(const SizedBox());
             }
             final p = await open(tester, _Stage.open, lang: lang, intro: true);
@@ -260,7 +231,7 @@ void main() {
             await tester.pump(const Duration(seconds: 5));
             await tester.pump(const Duration(milliseconds: 500));
             expect(tester.takeException(), isNull);
-            await _capture(tester, 'journey_exam_intro_$tag');
+            await captureScreen(tester, 'journey_exam_intro', lang: lang);
             await tester.pumpWidget(const SizedBox());
           });
         }
@@ -272,7 +243,7 @@ void main() {
     testWidgets('the banner replaces the strip; its question closes on the backdrop, or switches', (tester) async {
       final p = await open(tester, _Stage.passed);
       expect(p.switchBannerShown, isTrue);
-      await onPhone(tester, p, _users);
+      await onPhone(tester, p, usersPhone);
       const s = S('en');
       expect(find.byType(ExamStrip), findsNothing);
       expect(find.byType(SwitchBanner), findsOneWidget);
@@ -306,7 +277,7 @@ void main() {
     testWidgets('the ✕ folds the banner into a square, which unfolds it', (tester) async {
       final semantics = tester.ensureSemantics();
       final p = await open(tester, _Stage.passed);
-      await onPhone(tester, p, _users);
+      await onPhone(tester, p, usersPhone);
       const s = S('en');
       final banner = tester.getRect(find.byType(SwitchBanner));
       final mapBottom = tester.getRect(find.byType(SingleChildScrollView)).bottom;
@@ -352,14 +323,14 @@ void main() {
       final db = AppDatabase(NativeDatabase.memory());
       final p = await open(tester, _Stage.passed, db: db);
       p.collapseSwitchBanner();
-      await onPhone(tester, p, _users);
+      await onPhone(tester, p, usersPhone);
       const s = S('en');
       expect(heard(tester), contains(s.switchBannerOpen));
       await tester.pumpWidget(const SizedBox());
 
       late Progress started;
       await tester.runAsync(() async => started = await Progress.open(db));
-      await onPhone(tester, started, _users);
+      await onPhone(tester, started, usersPhone);
       expect(started.switchBannerCollapsed, isFalse);
       expect(heard(tester), contains(s.close));
       expect(heard(tester), isNot(contains(s.switchBannerOpen)));
@@ -368,20 +339,20 @@ void main() {
     });
 
     for (final lang in ['en', 'ja']) {
-      for (final phone in [_narrow, _users]) {
+      for (final phone in [narrowPhone, usersPhone]) {
         for (final fontScale in [1.0, 1.3]) {
           final tag = '${lang}_${phone.name}_$fontScale';
           testWidgets('the banner and its question fit ($tag)', (tester) async {
             final p = await open(tester, _Stage.passed, lang: lang);
             await onPhone(tester, p, phone, fontScale: fontScale);
             expectInsideMap(tester, find.byType(SwitchBanner));
-            await _capture(tester, 'journey_banner_$tag');
+            await captureScreen(tester, 'journey_banner', lang: lang);
             p.collapseSwitchBanner();
             await tester.pump();
             await tester.pump(SwitchBannerStyle.fold);
             expectInsideMap(tester, find.byType(SwitchBanner));
             expect(tester.getSize(find.byType(SwitchBanner)).height, greaterThanOrEqualTo(SwitchBannerStyle.square));
-            await _capture(tester, 'journey_banner_folded_$tag');
+            await captureScreen(tester, 'journey_banner_folded', lang: lang);
             p.expandSwitchBanner();
             await tester.pump();
             await tester.pump(SwitchBannerStyle.fold);
@@ -390,7 +361,7 @@ void main() {
             await tester.pump(const Duration(milliseconds: 500));
             expect(tester.takeException(), isNull);
             expect(phrase(S(lang).switchLater), findsOneWidget);
-            await _capture(tester, 'journey_switch_$tag');
+            await captureScreen(tester, 'journey_switch', lang: lang);
             await tester.pumpWidget(const SizedBox());
           });
         }
@@ -411,7 +382,7 @@ void main() {
     }
 
     for (final lang in ['en', 'ja']) {
-      for (final phone in [_narrow, _users]) {
+      for (final phone in [narrowPhone, usersPhone]) {
         for (final fontScale in [1.0, 1.3]) {
           final tag = '${lang}_${phone.name}_$fontScale';
           testWidgets('journey: Rank is locked until the exam, then says to switch ($tag)', (tester) async {
@@ -430,7 +401,7 @@ void main() {
             await onPhone(tester, p, phone, fontScale: fontScale);
             await tapRank();
             expect(find.text(s.rankLockedTitle), findsOneWidget);
-            await _capture(tester, 'rank_locked_$tag');
+            await captureScreen(tester, 'rank_locked', lang: lang);
             await tester.pump(const Duration(seconds: 4));
             await tester.pumpWidget(const SizedBox());
 
@@ -438,7 +409,7 @@ void main() {
             await onPhone(tester, passed, phone, fontScale: fontScale);
             await tapRank();
             expect(find.text(s.rankLockedSwitchBody), findsOneWidget);
-            await _capture(tester, 'rank_locked_graduated_$tag');
+            await captureScreen(tester, 'rank_locked_graduated', lang: lang);
             await tester.pump(const Duration(seconds: 4));
             await tester.pumpWidget(const SizedBox());
           });
@@ -452,7 +423,7 @@ void main() {
             expect(find.text(s.rankedUnplacedLine), findsOneWidget);
             expect(find.text(s.youTag), findsNothing);
             expect(find.text(s.ratingLabel), findsNothing);
-            await _capture(tester, 'rank_unplaced_$tag');
+            await captureScreen(tester, 'rank_unplaced', lang: lang);
             await tester.pumpWidget(const SizedBox());
           });
         }

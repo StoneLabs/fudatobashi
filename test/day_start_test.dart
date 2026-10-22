@@ -5,14 +5,12 @@
 // font scale 1.0 and 1.3, in English and Japanese.
 //
 // With RENDER_SCREENS=1 it also renders the Learning section and the sheet
-// at 2 px per dp to .scratchpad/daily_set/renders/.
+// to build/screens/daily_set/.
 import 'dart:io';
-import 'dart:ui' as ui;
 
 import 'package:drift/drift.dart' show driftRuntimeOptions;
 import 'package:drift/native.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:fudatobashi/config/config.dart';
@@ -32,16 +30,8 @@ import 'package:fudatobashi/ui/shell/header_actions.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 
 import 'test_l10n.dart';
+import 'test_screens.dart';
 import 'test_vector_art.dart';
-
-/// A phone: its size in dp and its pixels per dp (all 1080 × 2340 px),
-/// with a 28 dp status bar and a 48 dp navigation bar.
-typedef _Phone = ({String name, Size size, double dpr});
-
-const _narrow = (name: '360', size: Size(360, 780), dpr: 3.0);
-const _users = (name: '384', size: Size(384, 832), dpr: 2.8125);
-const _wide = (name: '412', size: Size(1080 / 2.625, 2340 / 2.625), dpr: 2.625);
-const _statusBar = 28.0, _navBar = 48.0;
 
 Future<void> _loadFont(String family, List<String> files) async {
   final loader = FontLoader(family);
@@ -86,16 +76,8 @@ void main() {
 
   // Opens Settings from Home on [phone] at [fontScale], with the Learning
   // section scrolled to the top.
-  Future<void> showSettings(WidgetTester tester, Progress p, _Phone phone, {double fontScale = 1}) async {
-    final bars = FakeViewPadding(top: _statusBar * phone.dpr, bottom: _navBar * phone.dpr);
-    tester.view
-      ..devicePixelRatio = phone.dpr
-      ..physicalSize = phone.size * phone.dpr
-      ..padding = bars
-      ..viewPadding = bars;
-    tester.platformDispatcher.textScaleFactorTestValue = fontScale;
-    addTearDown(tester.view.reset);
-    addTearDown(tester.platformDispatcher.clearTextScaleFactorTestValue);
+  Future<void> showSettings(WidgetTester tester, Progress p, Screen phone, {double fontScale = 1}) async {
+    useScreen(tester, phone, fontScale: fontScale);
     await tester.pumpWidget(RepaintBoundary(key: const ValueKey('screen'), child: FudatobashiApp(progress: p)));
     await tester.pump(const Duration(milliseconds: 500));
     await tester.tap(find.byType(SettingsButton));
@@ -138,7 +120,7 @@ void main() {
   }
 
   // The row's texts sit inside its group, inside the screen.
-  void expectRowFits(WidgetTester tester, S s, _Phone phone, String why) {
+  void expectRowFits(WidgetTester tester, S s, Screen phone, String why) {
     expect(tester.takeException(), isNull, reason: why);
     final group = tester.getRect(find.ancestor(of: dayStartRow(s), matching: find.byType(SettingsGroup)));
     expect(group.left, greaterThanOrEqualTo(0), reason: why);
@@ -147,11 +129,11 @@ void main() {
   }
 
   // The sheet shows whole between the system bars, every hour inside it.
-  void expectSheetFits(WidgetTester tester, S s, _Phone phone, String why) {
+  void expectSheetFits(WidgetTester tester, S s, Screen phone, String why) {
     expect(tester.takeException(), isNull, reason: why);
     final sheet = tester.getRect(sheetPanel(s));
-    expect(sheet.top, greaterThanOrEqualTo(_statusBar), reason: why);
-    expect(sheet.bottom, lessThanOrEqualTo(phone.size.height - _navBar + 0.5), reason: why);
+    expect(sheet.top, greaterThanOrEqualTo(phone.bars.top), reason: why);
+    expect(sheet.bottom, lessThanOrEqualTo(phone.size.height - phone.bars.bottom + 0.5), reason: why);
     expect(sheet.left, greaterThanOrEqualTo(0), reason: why);
     expect(sheet.right, lessThanOrEqualTo(phone.size.width), reason: why);
     for (var h = TodaySetTuning.firstDayStartHour; h <= TodaySetTuning.lastDayStartHour; h++) {
@@ -165,7 +147,7 @@ void main() {
   testWidgets('both modes show the row with the hour in use, all-known mode with its streak note', (tester) async {
     const s = S('en');
     final journey = await player(tester);
-    await showSettings(tester, journey, _users);
+    await showSettings(tester, journey, usersPhone);
     expect(dayStartRow(s), findsOneWidget);
     expect(find.descendant(of: dayStartRow(s), matching: find.text(s.dayStartNote)), findsOneWidget);
     expect(find.descendant(of: dayStartRow(s), matching: find.text(s.hourOfDay(TodaySetTuning.defaultDayStartHour))),
@@ -176,7 +158,7 @@ void main() {
     await tester.pumpWidget(const SizedBox());
 
     final known = await player(tester, mode: LearningMode.allKnown);
-    await showSettings(tester, known, _users);
+    await showSettings(tester, known, usersPhone);
     expect(find.text(s.learningMode), findsOneWidget);
     expect(find.text(s.pace), findsNothing);
     expect(find.descendant(of: dayStartRow(s), matching: find.text(s.dayStartNoteKnown)), findsOneWidget,
@@ -194,7 +176,7 @@ void main() {
     final p = await player(tester);
     final now = DateTime.now();
     final today = p.dayAt(now);
-    await showSettings(tester, p, _users);
+    await showSettings(tester, p, usersPhone);
     await openSheet(tester, s);
     expect(find.text(s.other.dayStart), findsNothing, reason: 'an English title has no Japanese under it');
     final picked = TodaySetTuning.defaultDayStartHour;
@@ -225,7 +207,7 @@ void main() {
   testWidgets('closing the sheet keeps the hour', (tester) async {
     const s = S('en');
     final p = await player(tester);
-    await showSettings(tester, p, _users);
+    await showSettings(tester, p, usersPhone);
     await openSheet(tester, s);
     await tester.tapAt(const Offset(200, 60));
     await settle(tester);
@@ -238,7 +220,7 @@ void main() {
       testWidgets('the row and the sheet ($lang) on every phone and font scale', (tester) async {
         final p = await player(tester, lang: lang);
         final s = S(lang);
-        for (final phone in [_narrow, _users, _wide]) {
+        for (final phone in [narrowPhone, usersPhone, widePhone]) {
           for (final fontScale in [1.0, 1.3]) {
             final why = '${phone.name} $lang $fontScale';
             await showSettings(tester, p, phone, fontScale: fontScale);
@@ -252,27 +234,16 @@ void main() {
     }
   });
 
-  group('renders', skip: Platform.environment['RENDER_SCREENS'] != '1', () {
-    Future<void> capture(WidgetTester tester, String name) async {
-      final boundary = tester.renderObject<RenderRepaintBoundary>(find.byKey(const ValueKey('screen')));
-      await tester.runAsync(() async {
-        final image = await boundary.toImage(pixelRatio: 2);
-        final png = await image.toByteData(format: ui.ImageByteFormat.png);
-        File('.scratchpad/daily_set/renders/$name.png')
-          ..createSync(recursive: true)
-          ..writeAsBytesSync(png!.buffer.asUint8List());
-      });
-    }
-
+  group('renders', skip: !renderScreens, () {
     for (final lang in ['en', 'ja']) {
-      for (final (phone, fontScale) in [(_users, 1.0), (_narrow, 1.3)]) {
+      for (final (phone, fontScale) in [(usersPhone, 1.0), (narrowPhone, 1.3)]) {
         testWidgets('day_start_${phone.name}_${lang}_$fontScale', (tester) async {
           final p = await player(tester, lang: lang);
           final s = S(lang);
           await showSettings(tester, p, phone, fontScale: fontScale);
-          await capture(tester, 'day_start_row_${phone.name}_${lang}_$fontScale');
+          await captureScreen(tester, 'daily_set/day_start_row', lang: lang);
           await openSheet(tester, s);
-          await capture(tester, 'day_start_sheet_${phone.name}_${lang}_$fontScale');
+          await captureScreen(tester, 'daily_set/day_start_sheet', lang: lang);
           await tester.pumpWidget(const SizedBox());
         });
       }

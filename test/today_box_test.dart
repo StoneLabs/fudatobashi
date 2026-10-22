@@ -6,10 +6,9 @@
 // Japanese, three-digit days included.
 //
 // With RENDER_SCREENS=1 it also renders Home in each state, and the pause
-// sheet, at 2 px per dp to .scratchpad/daily_set/renders/.
+// sheet, to build/screens/daily_set/.
 import 'dart:io';
 import 'dart:math' as math;
-import 'dart:ui' as ui;
 
 import 'package:drift/drift.dart' show driftRuntimeOptions;
 import 'package:drift/native.dart';
@@ -37,16 +36,8 @@ import 'package:fudatobashi/ui/home/training_hero.dart';
 import 'package:fudatobashi/ui/manga/manga.dart';
 
 import 'test_l10n.dart';
+import 'test_screens.dart';
 import 'test_vector_art.dart';
-
-/// A phone: its size in dp and its pixels per dp (all 1080 × 2340 px),
-/// with a 28 dp status bar and a 48 dp navigation bar.
-typedef _Phone = ({String name, Size size, double dpr});
-
-const _narrow = (name: '360', size: Size(360, 780), dpr: 3.0);
-const _users = (name: '384', size: Size(384, 832), dpr: 2.8125);
-const _wide = (name: '412', size: Size(1080 / 2.625, 2340 / 2.625), dpr: 2.625);
-const _statusBar = 28.0, _navBar = 48.0;
 
 /// Today's set first thing in the morning, played part way with misses,
 /// done, a day of more reviews than the pace's pause threshold (not asked
@@ -146,16 +137,8 @@ void main() {
   }
 
   // Shows [p]'s Home on [phone] at [fontScale].
-  Future<void> showHome(WidgetTester tester, Progress p, _Phone phone, {double fontScale = 1}) async {
-    final bars = FakeViewPadding(top: _statusBar * phone.dpr, bottom: _navBar * phone.dpr);
-    tester.view
-      ..devicePixelRatio = phone.dpr
-      ..physicalSize = phone.size * phone.dpr
-      ..padding = bars
-      ..viewPadding = bars;
-    tester.platformDispatcher.textScaleFactorTestValue = fontScale;
-    addTearDown(tester.view.reset);
-    addTearDown(tester.platformDispatcher.clearTextScaleFactorTestValue);
+  Future<void> showHome(WidgetTester tester, Progress p, Screen phone, {double fontScale = 1}) async {
+    useScreen(tester, phone, fontScale: fontScale);
     await tester.pumpWidget(RepaintBoundary(key: const ValueKey('screen'), child: FudatobashiApp(progress: p)));
     await tester.pump(const Duration(milliseconds: 500));
   }
@@ -193,7 +176,7 @@ void main() {
 
   // The box keeps its height, everything in it stays inside it, and Home
   // lays out without errors.
-  void expectBoxFits(WidgetTester tester, _Phone phone, String why) {
+  void expectBoxFits(WidgetTester tester, Screen phone, String why) {
     expect(tester.takeException(), isNull, reason: why);
     final box = tester.getRect(find.byType(TodayBox));
     expect(box.height, moreOrLessEquals(TodayBoxLayout.height), reason: why);
@@ -221,13 +204,13 @@ void main() {
   }
 
   // The pause sheet and Tobi over it show whole, between the system bars.
-  void expectSheetFits(WidgetTester tester, S s, _Phone phone, String why) {
+  void expectSheetFits(WidgetTester tester, S s, Screen phone, String why) {
     expect(tester.takeException(), isNull, reason: why);
     final sheet = tester.getRect(find.ancestor(of: find.text(s.pauseBody), matching: find.byType(MangaPanel)));
     final tobi = tester.getRect(find.byWidgetPredicate((w) => w is Tobi && w.pose == TobiPose.relaxed));
     for (final r in [sheet, tobi]) {
-      expect(r.top, greaterThanOrEqualTo(_statusBar), reason: why);
-      expect(r.bottom, lessThanOrEqualTo(phone.size.height - _navBar + 0.5), reason: why);
+      expect(r.top, greaterThanOrEqualTo(phone.bars.top), reason: why);
+      expect(r.bottom, lessThanOrEqualTo(phone.size.height - phone.bars.bottom + 0.5), reason: why);
       expect(r.left, greaterThanOrEqualTo(0), reason: why);
       expect(r.right, lessThanOrEqualTo(phone.size.width), reason: why);
     }
@@ -236,7 +219,7 @@ void main() {
   group('the box', () {
     testWidgets('in the morning: nothing green yet, room for misses, and the hero says what is left', (tester) async {
       final p = await player(tester, _Day.morning);
-      await showHome(tester, p, _users);
+      await showHome(tester, p, usersPhone);
       const s = S('en');
       final set = p.todaySet()!;
       final bar = set.bar;
@@ -254,12 +237,12 @@ void main() {
       expect(balloon(tester), s.heroTodaySet);
       expectNarration(tester, s.todayLeft, bar.left);
       expect(bar.left, lessThan(bar.total), reason: "what is left counts no guessed misses, like Play's counter");
-      expectBoxFits(tester, _users, 'morning');
+      expectBoxFits(tester, usersPhone, 'morning');
     });
 
     testWidgets('part done with misses: green from the left', (tester) async {
       final p = await player(tester, _Day.partDone);
-      await showHome(tester, p, _users);
+      await showHome(tester, p, usersPhone);
       const s = S('en');
       final set = p.todaySet()!;
       final bar = set.bar;
@@ -272,12 +255,12 @@ void main() {
       expect(inBox(find.textContaining('/', findRichText: true)), findsNothing, reason: 'no done / total count');
       expect(balloon(tester), s.heroKeepItUp);
       expectNarration(tester, s.todayLeft, bar.left);
-      expectBoxFits(tester, _users, 'part done');
+      expectBoxFits(tester, usersPhone, 'part done');
     });
 
     testWidgets('done: a solid green bar under the 本日完了 hanko, no legend, and runs of 30 after', (tester) async {
       final p = await player(tester, _Day.done);
-      await showHome(tester, p, _users);
+      await showHome(tester, p, usersPhone);
       const s = S('en');
       expect(segments(tester), [Palette.land]);
       expect(inBox(find.text('本日完了')), findsOneWidget);
@@ -297,13 +280,13 @@ void main() {
       }
       expect(balloon(tester), s.heroKeepGoing);
       expectNarration(tester, s.todayDoneExtra, p.trainer.config.sessionLength);
-      expectBoxFits(tester, _users, 'done');
+      expectBoxFits(tester, usersPhone, 'done');
     });
 
     testWidgets('week stamps: a check for each done day, dashed for the day missed, today ringed', (tester) async {
       for (final day in [_Day.morning, _Day.done]) {
         final p = await player(tester, day);
-        await showHome(tester, p, _users);
+        await showHome(tester, p, usersPhone);
         const s = S('en');
         final week = tester.widget<TodayBox>(find.byType(TodayBox)).week;
         final today = day == _Day.done ? 'v' : 'o';
@@ -320,14 +303,14 @@ void main() {
 
     testWidgets('new cards paused: no yellow part, and the legend says so', (tester) async {
       final p = await player(tester, _Day.paused);
-      await showHome(tester, p, _users);
+      await showHome(tester, p, usersPhone);
       const s = S('en');
       final set = p.todaySet()!;
       expect((set.newPaused, set.newCards), (true, 0));
       expect(segments(tester), isNot(contains(Palette.sun)));
       expect(inBox(find.text(s.todayNewPaused)), findsOneWidget);
       expect(find.text(s.pauseYes), findsNothing, reason: 'already asked');
-      expectBoxFits(tester, _users, 'paused');
+      expectBoxFits(tester, usersPhone, 'paused');
     });
   });
 
@@ -339,14 +322,14 @@ void main() {
         final reviews = p.todaySet()!.reviews;
         expect(p.pauseOffered(), isTrue);
         expect(p.todaySet()!.newCards, isPositive);
-        await showHome(tester, p, _users);
+        await showHome(tester, p, usersPhone);
         await tester.pump(Motion.sheet);
         expect(find.text(s.pauseTitle(reviews)), findsOneWidget);
         // The other language shows under it in Japanese mode only.
         final other = s.ja ? findsOneWidget : findsNothing;
         expect(find.text(s.other.pauseTitle(reviews)), other, reason: 'the other language under it');
         expect(find.text(s.other.pauseYes), other);
-        expectSheetFits(tester, s, _users, lang);
+        expectSheetFits(tester, s, usersPhone, lang);
         await tester.runAsync(() => tester.tap(find.text(s.pauseYes)));
         await settle(tester);
         expect(find.text(s.pauseTitle(reviews)), findsNothing);
@@ -356,7 +339,7 @@ void main() {
         expect(p.pauseOffered(), isFalse);
 
         await tester.pumpWidget(const SizedBox());
-        await showHome(tester, p, _users);
+        await showHome(tester, p, usersPhone);
         await tester.pump(Motion.sheet);
         expect(find.text(s.pauseTitle(reviews)), findsNothing, reason: 'asked once a day');
         await tester.pumpWidget(const SizedBox());
@@ -367,7 +350,7 @@ void main() {
       final p = await player(tester, _Day.big);
       const s = S('en');
       final fresh = p.todaySet()!.newCards;
-      await showHome(tester, p, _users);
+      await showHome(tester, p, usersPhone);
       await tester.pump(Motion.sheet);
       await tester.runAsync(() => tester.tap(find.text(s.pauseNo)));
       await settle(tester);
@@ -380,7 +363,7 @@ void main() {
     testWidgets('not while the tour is on', (tester) async {
       final p = await player(tester, _Day.big);
       await tester.runAsync(() => p.updateSettings(p.settings.copyWith(toured: false)));
-      await showHome(tester, p, _users);
+      await showHome(tester, p, usersPhone);
       await tester.pump(Motion.sheet);
       expect(find.text(const S('en').pauseYes), findsNothing);
       expect(p.pauseOffered(), isTrue);
@@ -394,7 +377,7 @@ void main() {
       await p.updateSettings(p.settings.copyWith(language: 'en', languagePicked: true, toured: true, onboarded: true));
     });
     expect(p.todayStale, isTrue);
-    await showHome(tester, p, _users);
+    await showHome(tester, p, usersPhone);
     await settle(tester);
     expect(p.todayStale, isFalse);
     final set = p.todaySet()!;
@@ -410,7 +393,7 @@ void main() {
           if (day == _Day.big || day == _Day.paused) {
             expect(p.todaySet()!.bar.total, greaterThanOrEqualTo(100), reason: 'a three-digit day');
           }
-          for (final phone in [_narrow, _users, _wide]) {
+          for (final phone in [narrowPhone, usersPhone, widePhone]) {
             for (final fontScale in [1.0, 1.3]) {
               final why = '${day.name} ${phone.name} $lang $fontScale';
               await showHome(tester, p, phone, fontScale: fontScale);
@@ -428,26 +411,15 @@ void main() {
     }
   });
 
-  group('renders', skip: Platform.environment['RENDER_SCREENS'] != '1', () {
-    Future<void> capture(WidgetTester tester, String name) async {
-      final boundary = tester.renderObject<RenderRepaintBoundary>(find.byKey(const ValueKey('screen')));
-      await tester.runAsync(() async {
-        final image = await boundary.toImage(pixelRatio: 2);
-        final png = await image.toByteData(format: ui.ImageByteFormat.png);
-        File('.scratchpad/daily_set/renders/$name.png')
-          ..createSync(recursive: true)
-          ..writeAsBytesSync(png!.buffer.asUint8List());
-      });
-    }
-
+  group('renders', skip: !renderScreens, () {
     for (final lang in ['en', 'ja']) {
-      for (final (phone, fontScale) in [(_users, 1.0), (_narrow, 1.3)]) {
+      for (final (phone, fontScale) in [(usersPhone, 1.0), (narrowPhone, 1.3)]) {
         testWidgets('home_${phone.name}_${lang}_$fontScale', (tester) async {
           for (final day in _Day.values) {
             final p = await player(tester, day, lang: lang);
             await showHome(tester, p, phone, fontScale: fontScale);
             if (day == _Day.big) await tester.pump(Motion.sheet);
-            await capture(tester, '${day == _Day.big ? 'pause_sheet' : day.name}_${phone.name}_${lang}_$fontScale');
+            await captureScreen(tester, 'daily_set/${day == _Day.big ? 'pause_sheet' : 'home_${day.name}'}', lang: lang);
             await tester.pumpWidget(const SizedBox());
           }
         });

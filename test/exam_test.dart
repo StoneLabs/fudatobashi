@@ -3,12 +3,10 @@
 // RENDER_SCREENS=1 it also writes the exam's screens to build/screens/.
 import 'dart:io';
 import 'dart:math' as math;
-import 'dart:ui' as ui;
 
 import 'package:drift/drift.dart' show driftRuntimeOptions;
 import 'package:drift/native.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:fudatobashi/config/config.dart';
@@ -39,6 +37,7 @@ import 'package:fudatobashi/ui/results/results_screen.dart';
 import 'package:fudatobashi/ui/run/run_launcher.dart';
 
 import 'test_l10n.dart';
+import 'test_screens.dart';
 import 'test_vector_art.dart';
 
 Future<void> _loadFont(String family, List<String> files) async {
@@ -47,18 +46,6 @@ Future<void> _loadFont(String family, List<String> files) async {
     loader.addFont(Future.value(ByteData.sublistView(File('assets/fonts/$f').readAsBytesSync())));
   }
   await loader.load();
-}
-
-Future<void> _capture(WidgetTester tester, String name) async {
-  if (Platform.environment['RENDER_SCREENS'] != '1') return;
-  final boundary = tester.renderObject<RenderRepaintBoundary>(find.byKey(const ValueKey('screen')));
-  await tester.runAsync(() async {
-    final image = await boundary.toImage(pixelRatio: 2);
-    final png = await image.toByteData(format: ui.ImageByteFormat.png);
-    File('build/screens/$name.png')
-      ..createSync(recursive: true)
-      ..writeAsBytesSync(png!.buffer.asUint8List());
-  });
 }
 
 void main() {
@@ -181,7 +168,8 @@ void main() {
   testWidgets('finishing first and beating Tobi: the result waits until his time passes yours, then graduates',
       (tester) async {
     final p = await open(tester);
-    await tester.binding.setSurfaceSize(const Size(384, 832));
+    await tester.binding.setSurfaceSize(usersPhone.size);
+    addTearDown(() => tester.binding.setSurfaceSize(null));
     await pumpHome(tester, p);
     await pushExam(tester, five, even(const Duration(minutes: 1), five.length));
     expect(find.byType(ExamOpening), findsOneWidget);
@@ -209,7 +197,7 @@ void main() {
     expect(decided, lessThan(yours + const Duration(seconds: 1)));
     expect(find.text(S('en').examWinShout), findsWidgets);
     await pumpFor(tester, const Duration(milliseconds: 400));
-    await _capture(tester, 'exam_won_en');
+    await captureScreen(tester, 'exam_won');
     await until(tester, find.byType(ResultsScreen));
     final report = p.runs.last;
     expect(report.mode, PlayMode.exam);
@@ -222,7 +210,8 @@ void main() {
 
   testWidgets('finishing first but behind on penalties: Tobi plays on, finishes, and wins', (tester) async {
     final p = await open(tester);
-    await tester.binding.setSurfaceSize(const Size(384, 832));
+    await tester.binding.setSurfaceSize(usersPhone.size);
+    addTearDown(() => tester.binding.setSurfaceSize(null));
     await pumpHome(tester, p);
     await pushExam(tester, five, even(const Duration(seconds: 25), five.length));
     final session = await toGo(tester);
@@ -239,7 +228,7 @@ void main() {
     await pumpFor(tester, const Duration(seconds: 10));
     expect(find.byType(WaitingForTobi), findsOneWidget);
     expect(find.byType(ExamShout), findsNothing, reason: 'Tobi has not finished yet');
-    await _capture(tester, 'exam_waiting_en');
+    await captureScreen(tester, 'exam_waiting');
 
     await untilShout(tester);
     expect(raceTime(tester), greaterThanOrEqualTo(const Duration(seconds: 25)), reason: 'decided as Tobi finishes');
@@ -253,7 +242,8 @@ void main() {
   testWidgets("Tobi finishing first: play goes on until the player's time with penalties reaches his", (tester) async {
     final p = await open(tester);
     await tester.runAsync(() => p.noteExamStarted(DateTime.now()));
-    await tester.binding.setSurfaceSize(const Size(384, 832));
+    await tester.binding.setSurfaceSize(usersPhone.size);
+    addTearDown(() => tester.binding.setSurfaceSize(null));
     await pumpHome(tester, p);
     // Done at 12 s, and a mistake of his makes 22 s.
     await pushExam(tester, five, even(const Duration(seconds: 12), five.length, misses: {1}));
@@ -288,7 +278,8 @@ void main() {
 
   testWidgets("Tobi's quick card flashes, a slow one has him thinking, and his mistake pops its penalty", (tester) async {
     final p = await open(tester);
-    await tester.binding.setSurfaceSize(const Size(384, 832));
+    await tester.binding.setSurfaceSize(usersPhone.size);
+    addTearDown(() => tester.binding.setSurfaceSize(null));
     await pumpHome(tester, p);
     const ms = Duration(milliseconds: 1);
     final tobi = TobiPace([ms * 600, ms * 4600, ms * 7600, ms * 9000, ms * 12000],
@@ -297,20 +288,21 @@ void main() {
     await toGo(tester);
     await pumpFor(tester, const Duration(milliseconds: 600), step: const Duration(milliseconds: 20));
     expect(find.text(ExamLayout.quickWord), findsWidgets, reason: 'the quick card flashes');
-    await _capture(tester, 'exam_tobi_quick_en');
+    await captureScreen(tester, 'exam_tobi_quick');
     await pumpFor(tester, const Duration(milliseconds: 1600));
     expect(find.text(ExamLayout.quickWord), findsNothing);
     expect(find.text(S('en').examTobiThinking), findsOneWidget, reason: 'the slow card has him thinking');
     await pumpFor(tester, const Duration(milliseconds: 5600));
     expect(find.byType(PenaltyLettering), findsOneWidget, reason: 'his mistake');
     expect(tester.widget<Tobi>(find.descendant(of: find.byType(TobiSide), matching: find.byType(Tobi))).pose, TobiPose.shocked);
-    await _capture(tester, 'exam_tobi_miss_en');
+    await captureScreen(tester, 'exam_tobi_miss');
     await tester.pumpWidget(const SizedBox());
   });
 
   testWidgets('leaving mid-try asks first, then Tobi wins and the try is used', (tester) async {
     final p = await open(tester);
-    await tester.binding.setSurfaceSize(const Size(384, 832));
+    await tester.binding.setSurfaceSize(usersPhone.size);
+    addTearDown(() => tester.binding.setSurfaceSize(null));
     await pumpHome(tester, p);
     await tester.tap(find.text('HOME'));
     await pumpFor(tester, const Duration(milliseconds: 600));
@@ -343,21 +335,12 @@ void main() {
 
   group('renders', () {
     for (final ja in [false, true]) {
-      for (final width in [360.0, 384.0]) {
+      for (final phone in [shortNarrowPhone, usersPhone]) {
         for (final scale in [1.0, 1.3]) {
-          final tag = '${ja ? 'ja' : 'en'}_${width.round()}_$scale';
+          final lang = ja ? 'ja' : 'en';
+          final tag = '${lang}_${phone.name}_$scale';
           testWidgets('the exam fits ($tag)', (tester) async {
-            const dpr = 2.8125;
-            const bars = FakeViewPadding(top: 28 * dpr, bottom: 48 * dpr);
-            final size = Size(width, width == 360 ? 740 : 832);
-            tester.view
-              ..devicePixelRatio = dpr
-              ..physicalSize = size * dpr
-              ..padding = bars
-              ..viewPadding = bars;
-            tester.platformDispatcher.textScaleFactorTestValue = scale;
-            addTearDown(tester.view.reset);
-            addTearDown(tester.platformDispatcher.clearTextScaleFactorTestValue);
+            useScreen(tester, phone, fontScale: scale);
 
             final p = await open(tester, ja: ja);
             await tester.runAsync(() => p.noteExamStarted(DateTime.now()));
@@ -366,7 +349,7 @@ void main() {
             confirmExamStart(home);
             await pumpFor(tester, const Duration(milliseconds: 600));
             expect(tester.takeException(), isNull);
-            await _capture(tester, 'exam_start_$tag');
+            await captureScreen(tester, 'exam_start', lang: lang);
             Navigator.of(home).pop();
             await pumpFor(tester, const Duration(milliseconds: 600));
 
@@ -374,12 +357,12 @@ void main() {
             await pushExam(tester, p.rankedDeck(rng: math.Random(7)), tobi);
             await pumpFor(tester, ExamMotion.greeting - const Duration(milliseconds: 500));
             expect(tester.takeException(), isNull);
-            await _capture(tester, 'exam_greeting_$tag');
+            await captureScreen(tester, 'exam_greeting', lang: lang);
             await pumpFor(tester, const Duration(milliseconds: 900));
-            await _capture(tester, 'exam_countdown_$tag');
+            await captureScreen(tester, 'exam_countdown', lang: lang);
 
             final session = await toGo(tester);
-            await _capture(tester, 'exam_go_$tag');
+            await captureScreen(tester, 'exam_go', lang: lang);
             for (var i = 0; i < 6; i++) {
               await pumpFor(tester, const Duration(seconds: 2), step: const Duration(milliseconds: 250));
               await swipe(tester, session);
@@ -387,14 +370,14 @@ void main() {
             await tester.tap(find.text(S(ja ? 'ja' : 'en').undo));
             await pumpFor(tester, const Duration(milliseconds: 200));
             expect(tester.takeException(), isNull);
-            await _capture(tester, 'exam_play_$tag');
+            await captureScreen(tester, 'exam_play', lang: lang);
 
             for (var t = Duration.zero; t < tobi.total && find.byType(ExamShout).evaluate().isEmpty; t += const Duration(seconds: 1)) {
               await tester.pump(const Duration(seconds: 1));
             }
             await pumpFor(tester, const Duration(milliseconds: 400));
             expect(find.byType(ExamShout), findsOneWidget);
-            await _capture(tester, 'exam_timeup_$tag');
+            await captureScreen(tester, 'exam_timeup', lang: lang);
             await until(tester, find.byType(ExamLostScreen));
             for (var i = 0; i < 40 && find.byType(CelebrationSequence).evaluate().isEmpty; i++) {
               await tester.pump(const Duration(milliseconds: 100));
@@ -405,7 +388,7 @@ void main() {
             }
             await pumpFor(tester, const Duration(milliseconds: 600));
             expect(tester.takeException(), isNull);
-            await _capture(tester, 'exam_lost_$tag');
+            await captureScreen(tester, 'exam_lost', lang: lang);
             await tester.pumpWidget(const SizedBox());
           });
         }

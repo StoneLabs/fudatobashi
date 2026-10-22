@@ -5,12 +5,10 @@
 // build/screens/karuta_guide/.
 import 'dart:convert';
 import 'dart:io';
-import 'dart:ui' as ui;
 
 import 'package:drift/drift.dart' show driftRuntimeOptions;
 import 'package:drift/native.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:fudatobashi/config/design.dart';
@@ -32,9 +30,8 @@ import 'package:fudatobashi/ui/torifuda/card_faces.dart';
 import 'package:fudatobashi/ui/torifuda/glyph_atlas.dart';
 
 import 'test_l10n.dart';
+import 'test_screens.dart';
 import 'test_vector_art.dart';
-
-final _render = Platform.environment['RENDER_SCREENS'] == '1';
 
 Future<void> _loadFont(String family, List<String> files) async {
   final loader = FontLoader(family);
@@ -44,19 +41,7 @@ Future<void> _loadFont(String family, List<String> files) async {
   await loader.load();
 }
 
-Future<void> _capture(WidgetTester tester, String name) async {
-  if (!_render) return;
-  final boundary = tester.renderObject<RenderRepaintBoundary>(find.byKey(const ValueKey('screen')));
-  await tester.runAsync(() async {
-    final image = await boundary.toImage(pixelRatio: 2);
-    final png = await image.toByteData(format: ui.ImageByteFormat.png);
-    File('build/screens/karuta_guide/$name.png')
-      ..createSync(recursive: true)
-      ..writeAsBytesSync(png!.buffer.asUint8List());
-  });
-}
-
-const _phones = [(Size(384, 832), 1.0), (Size(360, 780), 1.3)];
+const _phones = [(usersPhone, 1.0), (narrowPhone, 1.3)];
 
 void main() {
   loadTestVectorArt();
@@ -135,12 +120,13 @@ void main() {
 
   for (final lang in ['en', 'ja']) {
     final s = S(lang);
-    for (final (size, fontScale) in _phones) {
-      final tag = '${lang}_${size.width.round()}_$fontScale';
+    for (final (phone, fontScale) in _phones) {
+      final size = phone.size;
+      final tag = '${lang}_${phone.name}_$fontScale';
       testWidgets('Help opens the guide, which scrolls through without overflow ($tag)', (tester) async {
         late Progress p;
         await tester.runAsync(() async {
-          if (_render) await GlyphAtlas.load();
+          if (renderScreens) await GlyphAtlas.load();
           await CardFaces.load([YomifudaStyle.standard.background, TorifudaStyle.standard.background],
               read: (a) => File(a).readAsBytes());
           p = await Progress.open(AppDatabase(NativeDatabase.memory()));
@@ -165,14 +151,14 @@ void main() {
         await tap(find.byType(HelpButton));
         expect(find.byType(HelpScreen), findsOneWidget);
         expect(find.text(s.comingSoon), findsNothing, reason: 'the guide took its place');
-        await _capture(tester, 'help_$tag');
+        await captureScreen(tester, 'karuta_guide/help', lang: lang);
         await tap(find.text(s.guideTitle));
         expect(find.byType(KarutaGuideScreen), findsOneWidget);
 
         final list = find.descendant(of: find.byType(KarutaGuideScreen), matching: find.byType(Scrollable)).first;
         var reachedEnd = false;
         for (var i = 0; i < 40; i++) {
-          await _capture(tester, 'guide_${tag}_${i.toString().padLeft(2, '0')}');
+          await captureScreen(tester, 'karuta_guide/guide', lang: lang, variant: 'step${i.toString().padLeft(2, '0')}');
           final before = tester.state<ScrollableState>(list).position.pixels;
           await tester.drag(list, Offset(0, -size.height * 0.6));
           await tester.pump(const Duration(milliseconds: 500));
