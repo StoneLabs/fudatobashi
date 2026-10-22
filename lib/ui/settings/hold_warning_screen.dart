@@ -123,17 +123,9 @@ class _HoldWarningScreenState extends State<HoldWarningScreen> {
                       children: [
                         EntranceStage(
                           length: HoldWarningStyle.entranceLength,
-                          child: CustomScrollView(
-                            slivers: [
-                              SliverFillRemaining(
-                                hasScrollBody: false,
-                                child: Padding(
-                                  padding: HoldWarningStyle.padding +
-                                      const EdgeInsets.all(HoldWarningStyle.tapeWidth),
-                                  child: _content(context, s, lit),
-                                ),
-                              ),
-                            ],
+                          child: Padding(
+                            padding: HoldWarningStyle.padding + const EdgeInsets.all(HoldWarningStyle.tapeWidth),
+                            child: _content(context, s, lit),
                           ),
                         ),
                         const Positioned.fill(child: IgnorePointer(child: _HazardTape())),
@@ -162,22 +154,36 @@ class _HoldWarningScreenState extends State<HoldWarningScreen> {
           const SizedBox(height: Gaps.small),
           Center(child: Entrance(HoldWarningStyle.headline, child: _Headline(widget.headline))),
           Expanded(
-            child: FittedBox(
-              fit: BoxFit.scaleDown,
-              child: SizedBox.fromSize(
-                size: HoldWarningStyle.tobi,
-                child: _PanickingTobi(armed: _armed, lit: lit),
-              ),
-            ),
-          ),
-          NarrationBox(
-            child: Text(
-              widget.body,
-              textAlign: TextAlign.center,
-              style: const TextStyle(
-                fontWeight: Weights.bold,
-                fontSize: HoldWarningStyle.bodyFont,
-                height: HoldWarningStyle.bodyLineHeight,
+            child: LayoutBuilder(
+              builder: (context, room) => Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Expanded(
+                    child: FittedBox(
+                      fit: BoxFit.scaleDown,
+                      child: SizedBox.fromSize(
+                        size: HoldWarningStyle.tobi,
+                        child: _PanickingTobi(armed: _armed, lit: lit),
+                      ),
+                    ),
+                  ),
+                  ConstrainedBox(
+                    constraints: BoxConstraints(maxHeight: room.maxHeight),
+                    child: NarrationBox(
+                      child: SingleChildScrollView(
+                        child: Text(
+                          widget.body,
+                          textAlign: TextAlign.center,
+                          style: const TextStyle(
+                            fontWeight: Weights.bold,
+                            fontSize: HoldWarningStyle.bodyFont,
+                            height: HoldWarningStyle.bodyLineHeight,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
               ),
             ),
           ),
@@ -198,7 +204,8 @@ class _HoldWarningScreenState extends State<HoldWarningScreen> {
 }
 
 /// 警告!! (or WARNING!!) between two warning lamps, its fill flashing with
-/// the page and the lamps lit in turn.
+/// the page and the lamps lit in turn. It stays at its own size however large
+/// the text is set, to leave room for the message.
 class _Shout extends StatelessWidget {
   const _Shout({required this.text, required this.lit});
   final String text;
@@ -208,21 +215,23 @@ class _Shout extends StatelessWidget {
   Widget build(BuildContext context) => Row(children: [
         _WarningLamp(lit: lit),
         Expanded(
-          child: FittedBox(
-            fit: BoxFit.scaleDown,
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: HoldWarningStyle.shoutOutline / 2),
-              child: Transform.rotate(
-                angle: HoldWarningStyle.shoutTurnDeg * math.pi / 180,
-                child: OutlinedText(
-                  text,
-                  outline: Palette.ink,
-                  outlineWidth: HoldWarningStyle.shoutOutline,
-                  style: TextStyle(
-                    fontFamily: Fonts.display,
-                    fontSize: HoldWarningStyle.shoutFont,
-                    height: TypeScale.displayLineHeight,
-                    color: lit ? HoldWarningStyle.shoutLit : HoldWarningStyle.shoutDim,
+          child: MediaQuery.withNoTextScaling(
+            child: FittedBox(
+              fit: BoxFit.scaleDown,
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: HoldWarningStyle.shoutOutline / 2),
+                child: Transform.rotate(
+                  angle: HoldWarningStyle.shoutTurnDeg * math.pi / 180,
+                  child: OutlinedText(
+                    text,
+                    outline: Palette.ink,
+                    outlineWidth: HoldWarningStyle.shoutOutline,
+                    style: TextStyle(
+                      fontFamily: Fonts.display,
+                      fontSize: HoldWarningStyle.shoutFont,
+                      height: TypeScale.displayLineHeight,
+                      color: lit ? HoldWarningStyle.shoutLit : HoldWarningStyle.shoutDim,
+                    ),
                   ),
                 ),
               ),

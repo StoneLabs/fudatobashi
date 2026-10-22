@@ -2149,12 +2149,35 @@ void main() {
     await tester.pumpWidget(const SizedBox());
   });
 
-  testWidgets('settings: journey → all-known switches immediately once every card is already unlocked',
+  testWidgets('settings: journey → all-known still warns with every card unlocked, until the exam is passed',
       (tester) async {
     PackageInfo.setMockInitialValues(
         appName: 'Fudatobashi', packageName: 'dev.fudatobashi', version: '1.0.0', buildNumber: '1', buildSignature: '');
     final p = await open(tester, mode: LearningMode.journey, journeyCards: 100);
     expect(p.allCardsUnlocked, isTrue);
+    expect(p.graduated, isFalse);
+    await openAllKnownWarning(tester, p);
+    expect(p.trainer.config.learningMode, LearningMode.journey, reason: 'waiting on the hold to confirm');
+    await tester.pumpWidget(const SizedBox());
+  });
+
+  testWidgets('settings: journey → all-known switches immediately once the exam is passed', (tester) async {
+    PackageInfo.setMockInitialValues(
+        appName: 'Fudatobashi', packageName: 'dev.fudatobashi', version: '1.0.0', buildNumber: '1', buildSignature: '');
+    final p = await open(tester, mode: LearningMode.journey);
+    final cards = [for (final poem in poems.all) CardRef(poem.id)];
+    await tester.runAsync(() async {
+      final session = PlaySession(cards);
+      var t = const Duration(seconds: 100);
+      for (final _ in cards) {
+        session.revealed(t);
+        t += const Duration(milliseconds: 500);
+        session.commit(responseTs: t, commitTs: t + const Duration(milliseconds: 80), outcome: Outcome.known);
+        t += const Duration(milliseconds: 100);
+      }
+      await p.recordRun(session, const PlayConfig(mode: PlayMode.exam), DateTime.now(), tobi: const Duration(minutes: 4));
+    });
+    expect(p.graduated, isTrue);
     await tester.binding.setSurfaceSize(_phone);
     await tester.pumpWidget(ProgressScope(progress: p, child: const MaterialApp(home: SettingsScreen())));
     await tester.pump();

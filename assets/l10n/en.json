@@ -426,7 +426,7 @@
   "warning": "WARNING",
   "warningShout": "WARNING!!",
   "allKnownWarningTitle": "This can't be undone",
-  "allKnownWarningBody": "Switching to All 100 known unlocks every card for good. Journey mode will afterwards show every card and island already uncovered and discovered.",
+  "allKnownWarningBody": "Switching to All 100 known unlocks every card and island for good. You can switch back to Journey, but your learning statistics may be affected. We strongly recommend staying in Journey mode until you beat Tobi in the graduation exam. After that, you can safely switch to All 100 known.",
   "allKnownWarningHold": "Hold {0} s to unlock all 100",
   "warningHolding": "Keep holding… let go to cancel",
   "resetAllData": "Reset all data",
