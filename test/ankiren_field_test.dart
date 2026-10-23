@@ -51,7 +51,7 @@ void main() {
     test('the table: a beginner start, growing to a real match, then less time', () {
       expect([for (final l in AnkirenLevels.all) l.perSide], [3, 4, 5, 7, 10, 13, 18, 21, 25, 25, 25]);
       expect([for (final l in AnkirenLevels.all) l.memorise.inSeconds],
-          [90, 90, 150, 240, 360, 360, 600, 720, 900, 720, 480]);
+          [90, 90, 150, 240, 360, 360, 600, 720, 900, 600, 300]);
       expect([for (final l in AnkirenLevels.all) l.allInMiddle], [true, ...List.filled(10, false)]);
       expect(AnkirenLevels.of(8).memorise, const Duration(minutes: 15), reason: "a real match's field and time");
       for (var l = 1; l <= AnkirenLevels.top; l++) {
