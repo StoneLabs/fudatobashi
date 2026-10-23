@@ -55,3 +55,10 @@ abstract final class DefaultSettings {
   static const Duration ankirenCustomMemorise = Duration(minutes: 1);
   static const bool ankirenRulesSeen = false;
 }
+
+/// The orientations the app allows: portrait only. 暗記練's landscape layout
+/// (`AnkirenLayout.landscape`) turns the screen for its game alone and
+/// returns to these after.
+abstract final class OrientationTuning {
+  static const List<DeviceOrientation> app = [DeviceOrientation.portraitUp];
+}

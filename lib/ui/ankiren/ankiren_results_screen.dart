@@ -60,7 +60,7 @@ class _AnkirenResultsScreenState extends State<AnkirenResultsScreen> {
       // celebration, which has its own jingles, is done; and upright, as
       // its pages are laid out for, after a game played in landscape too.
       music.leaveMenu();
-      unawaited(SystemChrome.setPreferredOrientations(const [DeviceOrientation.portraitUp]));
+      unawaited(SystemChrome.setPreferredOrientations(OrientationTuning.app));
       _timer = Timer(ResultsLayout.overlayStagger, () {
         if (mounted) setState(() => _celebrating = true);
       });
@@ -79,7 +79,7 @@ class _AnkirenResultsScreenState extends State<AnkirenResultsScreen> {
   /// The celebration has played to its end.
   bool _celebrated = false;
 
-  static void _releaseOrientation() => unawaited(SystemChrome.setPreferredOrientations(const []));
+  static void _releaseOrientation() => unawaited(SystemChrome.setPreferredOrientations(OrientationTuning.app));
 
   /// The placement games' scores so far, when [report]'s game is one of
   /// them.

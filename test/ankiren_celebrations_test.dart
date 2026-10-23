@@ -518,7 +518,7 @@ void main() {
       await tester.pump(ResultsLayout.overlayFade);
       await tester.pump();
       expect(find.byType(CelebrationSequence), findsNothing);
-      expect(requests.last, isEmpty, reason: 'free to turn again');
+      expect(requests.last, ['DeviceOrientation.portraitUp'], reason: 'back to the app\'s portrait lock');
       await tester.pumpWidget(const SizedBox());
     });
 

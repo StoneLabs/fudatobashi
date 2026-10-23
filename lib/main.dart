@@ -6,6 +6,7 @@ import 'package:flutter/widgets.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_displaymode/flutter_displaymode.dart';
 
+import 'config/config.dart';
 import 'config/licenses.dart';
 import 'config/vector_art_assets.dart';
 import 'config/torifuda_spec.dart';
@@ -52,6 +53,9 @@ Future<void> _start() async {
   if (paths != null) CrashLog(paths.crashLog).install();
   PointerClock.start();
   _registerBundledLicenses();
+  if (!kIsWeb && (Platform.isAndroid || Platform.isIOS)) {
+    await SystemChrome.setPreferredOrientations(OrientationTuning.app);
+  }
   if (!kIsWeb && Platform.isAndroid) {
     // Samsung and others default Flutter apps to 60 Hz.
     try {

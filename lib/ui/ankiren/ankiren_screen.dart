@@ -122,7 +122,7 @@ class _AnkirenScreenState extends State<AnkirenScreen> {
     _game = AnkirenGame(field: field, setup: widget.setup, rng: rng);
     unawaited(SystemChrome.setPreferredOrientations(_landscape
         ? const [DeviceOrientation.landscapeLeft, DeviceOrientation.landscapeRight]
-        : const [DeviceOrientation.portraitUp]));
+        : OrientationTuning.app));
     _live++;
     music.leaveMenu();
     unawaited(PointerClock.sync());
@@ -168,7 +168,7 @@ class _AnkirenScreenState extends State<AnkirenScreen> {
     }
   }
 
-  static void _releaseOrientation() => unawaited(SystemChrome.setPreferredOrientations(const []));
+  static void _releaseOrientation() => unawaited(SystemChrome.setPreferredOrientations(OrientationTuning.app));
 
   Map<String, Object?> get _meta => {'layout': _options.layout.name, 'zoom': _zoom};
 

@@ -749,7 +749,7 @@ void main() {
         expect(orientations.first.arguments, ['DeviceOrientation.landscapeLeft', 'DeviceOrientation.landscapeRight']);
         await tester.pumpWidget(const SizedBox());
         final after = calls.where((c) => c.method == 'SystemChrome.setPreferredOrientations').last;
-        expect(after.arguments, isEmpty, reason: 'leaving lets the app turn freely again');
+        expect(after.arguments, ['DeviceOrientation.portraitUp'], reason: 'leaving returns to the app\'s portrait lock');
         tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(SystemChannels.platform, null);
       });
     }

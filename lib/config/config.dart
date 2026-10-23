@@ -4,6 +4,7 @@ library;
 
 import 'package:flutter/animation.dart';
 import 'package:flutter/painting.dart';
+import 'package:flutter/services.dart' show DeviceOrientation;
 
 import '../domain/ankiren_field.dart';
 import '../domain/ankiren_level.dart';
