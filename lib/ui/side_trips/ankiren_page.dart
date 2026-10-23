@@ -123,16 +123,14 @@ class _AnkirenPageState extends State<AnkirenPage> {
 }
 
 /// [text] in black type, then [sub] (the other language's) in small tracked
-/// capitals, each breaking only between words; [underline]d as a link.
+/// capitals, each breaking only between words.
 class _Label extends StatelessWidget {
-  const _Label(this.text, this.sub,
-      {this.fontSize = AnkirenPageLayout.labelFont, this.color = Palette.ink, this.underline = false});
+  const _Label(this.text, this.sub, {this.fontSize = AnkirenPageLayout.labelFont, this.color = Palette.ink});
 
   final String text;
   final String? sub;
   final double fontSize;
   final Color color;
-  final bool underline;
 
   @override
   Widget build(BuildContext context) => Text.rich(
@@ -154,20 +152,26 @@ class _Label extends StatelessWidget {
           fontSize: fontSize,
           height: AnkirenPageLayout.labelLineHeight,
           color: color,
-          decoration: underline ? TextDecoration.underline : null,
-          decorationThickness: AnkirenPageLayout.linkUnderline,
         ),
       );
 }
 
-/// Cells side by side, split by ink rules: each as wide as it is on one
-/// line, all narrowed in proportion when the row is too narrow for that,
-/// and all as tall as the tallest.
+/// Cells side by side, split by ink rules (none after the first unless
+/// [firstRuled], for a boxed first cell): each as wide as it is on one
+/// line, and all as tall as the tallest. When the row is too narrow for
+/// that, the cells give up width in proportion to what they can spare
+/// before a word would break, and past that all narrow in proportion.
 class _CellRow extends MultiChildRenderObjectWidget {
-  const _CellRow({required super.children});
+  const _CellRow({required super.children, this.firstRuled = true});
+
+  final bool firstRuled;
 
   @override
-  RenderObject createRenderObject(BuildContext context) => _RenderCellRow();
+  RenderObject createRenderObject(BuildContext context) => _RenderCellRow(firstRuled);
+
+  @override
+  void updateRenderObject(BuildContext context, _RenderCellRow renderObject) =>
+      renderObject.firstRuled = firstRuled;
 }
 
 class _CellRowParentData extends ContainerBoxParentData<RenderBox> {}
@@ -176,6 +180,15 @@ class _RenderCellRow extends RenderBox
     with
         ContainerRenderObjectMixin<RenderBox, _CellRowParentData>,
         RenderBoxContainerDefaultsMixin<RenderBox, _CellRowParentData> {
+  _RenderCellRow(this._firstRuled);
+
+  bool _firstRuled;
+  set firstRuled(bool value) {
+    if (value == _firstRuled) return;
+    _firstRuled = value;
+    markNeedsLayout();
+  }
+
   /// The room between two cells, the rule in its middle.
   static const _between = 2 * AnkirenPageLayout.cellGap + Strokes.control;
 
@@ -191,11 +204,18 @@ class _RenderCellRow extends RenderBox
 
   /// Each cell's width in a row [width] wide.
   List<double> _widths(double width) {
-    final natural = [for (final cell in getChildrenAsList()) cell.getMaxIntrinsicWidth(double.infinity)];
+    final cells = getChildrenAsList();
+    final natural = [for (final cell in cells) cell.getMaxIntrinsicWidth(double.infinity)];
     final total = natural.fold(0.0, (sum, w) => sum + w);
     final room = math.max(0.0, width - _gaps);
-    final scale = total > room ? room / total : 1.0;
-    return [for (final w in natural) w * scale];
+    if (total <= room) return natural;
+    final least = [
+      for (final (i, cell) in cells.indexed) math.min(natural[i], cell.getMinIntrinsicWidth(double.infinity)),
+    ];
+    final slack = total - least.fold(0.0, (sum, w) => sum + w);
+    final over = total - room;
+    if (over <= slack) return [for (final (i, w) in natural.indexed) w - (w - least[i]) * over / slack];
+    return [for (final w in natural) w * room / total];
   }
 
   double _tallest(double width, double Function(RenderBox cell, double width) heightOf) {
@@ -234,7 +254,7 @@ class _RenderCellRow extends RenderBox
     var x = 0.0;
     for (final (i, cell) in getChildrenAsList().indexed) {
       if (i > 0) {
-        rules.add(x + AnkirenPageLayout.cellGap);
+        if (i > 1 || _firstRuled) rules.add(x + AnkirenPageLayout.cellGap);
         x += _between;
       }
       cell.layout(BoxConstraints(maxWidth: widths[i], minHeight: height, maxHeight: height));
@@ -260,26 +280,46 @@ class _RenderCellRow extends RenderBox
 }
 
 /// A label over its value, the value on one line, shrinking rather than
-/// overflowing.
+/// overflowing; [inset] from the top and bottom.
 class _Cell extends StatelessWidget {
-  const _Cell({required this.label, required this.value});
+  const _Cell({required this.label, required this.value, this.inset = 0});
 
   final Widget label, value;
+  final double inset;
 
   @override
-  Widget build(BuildContext context) => Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          label,
-          const SizedBox(height: AnkirenPageLayout.labelGap),
-          FittedBox(
-            fit: BoxFit.scaleDown,
-            alignment: Alignment.centerLeft,
-            child: DefaultTextStyle.merge(softWrap: false, child: value),
-          ),
-        ],
+  Widget build(BuildContext context) => Padding(
+        padding: EdgeInsets.symmetric(vertical: inset),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            label,
+            const SizedBox(height: AnkirenPageLayout.labelGap),
+            _Shrinks(
+              child: FittedBox(
+                fit: BoxFit.scaleDown,
+                alignment: Alignment.centerLeft,
+                child: DefaultTextStyle.merge(softWrap: false, child: value),
+              ),
+            ),
+          ],
+        ),
       );
+}
+
+/// [child], which scales down to any width, so it sets no narrowest width
+/// for its cell: there only the label's words count.
+class _Shrinks extends SingleChildRenderObjectWidget {
+  const _Shrinks({required super.child});
+
+  @override
+  RenderObject createRenderObject(BuildContext context) => _RenderShrinks();
+}
+
+class _RenderShrinks extends RenderProxyBox {
+  @override
+  double computeMinIntrinsicWidth(double height) => 0;
 }
 
 /// History's sun-toned strip, for 暗記練: the class and the rating with the
@@ -689,9 +729,9 @@ class _RankedPanel extends StatelessWidget {
 }
 
 /// Free play's next level to clear (the top level again once every level
-/// is cleared): its facts, what clears it (or what the known cards still
-/// lack), the way to every level, a preview of its field, and the burst
-/// that starts it.
+/// is cleared): its facts, the level among them the way to every level,
+/// what clears it (or what the known cards still lack), a preview of its
+/// field, and the burst that starts it.
 class _NextLevelPanel extends StatelessWidget {
   const _NextLevelPanel(this.entry);
 
@@ -724,8 +764,9 @@ class _NextLevelPanel extends StatelessWidget {
   }
 }
 
-/// A level's facts: the level, the cards a side and the memorise time,
-/// split by ink rules; checked once [cleared].
+/// A level's facts: the level, as the button to every level, then the
+/// cards a side and the memorise time, split by an ink rule, their labels
+/// and values in line with the level's; checked once [cleared].
 class _Stats extends StatelessWidget {
   const _Stats(this.setup, {required this.cleared});
 
@@ -742,17 +783,10 @@ class _Stats extends StatelessWidget {
         Expanded(
           child: Align(
             alignment: Alignment.centerLeft,
-            child: _CellRow(children: [
+            child: _CellRow(firstRuled: false, children: [
+              _LevelButton(setup.level!),
               _Cell(
-                label: _Label(s.ankirenLevelRow, s.sub?.ankirenLevelRow),
-                value: NumberedText(
-                  s.ankirenLevelValue,
-                  [setup.level!],
-                  style: const TextStyle(fontFamily: Fonts.display, fontSize: AnkirenPageLayout.statUnitFont, height: 1),
-                  numberStyle: big,
-                ),
-              ),
-              _Cell(
+                inset: AnkirenPageLayout.levelButtonInset,
                 label: _Label(s.ankirenCards, s.sub?.ankirenCards),
                 value: NumberedText(
                   s.ankirenPerSideCount,
@@ -763,6 +797,7 @@ class _Stats extends StatelessWidget {
                 ),
               ),
               _Cell(
+                inset: AnkirenPageLayout.levelButtonInset,
                 label: _Label(s.ankirenMemoriseLabel, s.sub?.ankirenMemoriseLabel),
                 value: Text(formatMinutes(setup.memorise), style: big),
               ),
@@ -775,9 +810,49 @@ class _Stats extends StatelessWidget {
   }
 }
 
+/// The [level]'s cell in a boxed button with a drop mark, a full touch
+/// target tall: it opens free play's menu of every level
+/// ([openAnkirenFree]).
+class _LevelButton extends StatelessWidget {
+  const _LevelButton(this.level);
+
+  final int level;
+
+  @override
+  Widget build(BuildContext context) {
+    final s = S.of(context);
+    return ConstrainedBox(
+      constraints: const BoxConstraints(minHeight: AnkirenPageLayout.levelButtonHeight),
+      child: InkButton(
+        onTap: () => openAnkirenFree(context),
+        border: Strokes.control,
+        padding: const EdgeInsets.symmetric(
+            horizontal: AnkirenPageLayout.levelButtonPadding, vertical: AnkirenPageLayout.levelButtonInset),
+        alignment: Alignment.centerLeft,
+        semanticLabel: s.ankirenAllLevels,
+        child: _Cell(
+          label: _Label(s.ankirenLevelRow, s.sub?.ankirenLevelRow),
+          value: Row(mainAxisSize: MainAxisSize.min, children: [
+            NumberedText(
+              s.ankirenLevelValue,
+              [level],
+              style: const TextStyle(fontFamily: Fonts.display, fontSize: AnkirenPageLayout.statUnitFont, height: 1),
+              numberStyle: const TextStyle(fontFamily: Fonts.display, fontSize: AnkirenPageLayout.statFont, height: 1),
+            ),
+            const SizedBox(width: AnkirenPageLayout.levelMarkGap),
+            const Text(
+              AnkirenPageLayout.levelMark,
+              style: TextStyle(fontSize: AnkirenPageLayout.levelMarkFont, height: 1, color: Palette.ink),
+            ),
+          ]),
+        ),
+      ),
+    );
+  }
+}
+
 /// What clears [setup]'s level (or that every level is, once [allCleared]),
-/// or, when the known cards do not [fits] it, how many it needs; and the
-/// way to every level, beside it or, when there is no room, under it.
+/// or, when the known cards do not [fits] it, how many it needs.
 class _Hint extends StatelessWidget {
   const _Hint(this.setup, {required this.fits, required this.allCleared});
 
@@ -812,37 +887,7 @@ class _Hint extends StatelessWidget {
     }
     return Padding(
       padding: AnkirenPageLayout.hintPadding,
-      child: Wrap(
-        alignment: WrapAlignment.spaceBetween,
-        crossAxisAlignment: WrapCrossAlignment.center,
-        spacing: AnkirenPageLayout.gaugeGap,
-        children: [why, const _LevelsLink()],
-      ),
-    );
-  }
-}
-
-/// Every level, in free play's menu ([openAnkirenFree]): an underlined link
-/// with a chevron, a full touch target tall.
-class _LevelsLink extends StatelessWidget {
-  const _LevelsLink();
-
-  @override
-  Widget build(BuildContext context) {
-    final s = S.of(context);
-    return Pressable(
-      onTap: () => openAnkirenFree(context),
-      scale: 1,
-      turn: 0,
-      semanticLabel: s.ankirenAllLevels,
-      builder: (context, _) => ConstrainedBox(
-        constraints: const BoxConstraints(minHeight: ButtonMetrics.iconButton),
-        child: Row(mainAxisSize: MainAxisSize.min, children: [
-          _Label(s.ankirenAllLevels, null, fontSize: AnkirenPageLayout.linkFont, underline: true),
-          const SizedBox(width: AnkirenPageLayout.linkGap),
-          MangaIcon(IconArt.chevron, size: AnkirenPageLayout.linkIcon, strokeWidth: AnkirenPageLayout.linkIconStroke),
-        ]),
-      ),
+      child: Align(alignment: Alignment.centerLeft, child: why),
     );
   }
 }

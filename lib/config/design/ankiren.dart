@@ -315,11 +315,6 @@ abstract final class AnkirenPageLayout {
   static const int lastGames = 5;
   static const double headFont = 14;
   static const double headGap = 6;
-  static const double linkFont = 12.5;
-  static const double linkIcon = 14;
-  static const double linkIconStroke = 3;
-  static const double linkGap = 3;
-  static const double linkUnderline = 2;
   static const double scoreFont = 17;
   static const double gameLevelFont = 11;
   static const double gameGap = 4;
@@ -338,8 +333,10 @@ abstract final class AnkirenPageLayout {
   /// A page panel: the side trips' cut corner, its tag rising [tagRise]
   /// over the top edge, [tagLeft] in, and the heading beside it inside
   /// [headPadding] ([headGap] from the tag, or under it when the two do not
-  /// fit side by side). Then, in the next level's panel, the stats, the
-  /// hint, the field and the burst.
+  /// fit side by side). Then, in the next level's panel, the stats (the
+  /// level in a box at least [levelButtonHeight] tall, a touch target, with
+  /// [levelMark] after it; every cell's label and value [levelButtonInset]
+  /// in from its top and bottom), the hint, the field and the burst.
   static const double tagRise = 13;
   static const double tagLeft = 18;
   static const EdgeInsets headPadding = EdgeInsets.fromLTRB(tagLeft, 5, tagLeft, 0);
@@ -348,7 +345,13 @@ abstract final class AnkirenPageLayout {
   static const double statUnitFont = 15;
   static const double statSuffixFont = 13;
   static const double statGap = 3;
-  static const EdgeInsets hintPadding = EdgeInsets.fromLTRB(15, 2, 14, 0);
+  static const double levelButtonHeight = 48;
+  static const double levelButtonPadding = 8;
+  static const double levelButtonInset = 4;
+  static const String levelMark = '▼';
+  static const double levelMarkFont = 10;
+  static const double levelMarkGap = 6;
+  static const EdgeInsets hintPadding = EdgeInsets.fromLTRB(15, 8, 14, 2);
   static const double hintFont = 12;
   static const double hintNumber = 14;
   static const double hintIcon = 15;

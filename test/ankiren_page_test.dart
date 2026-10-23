@@ -160,7 +160,7 @@ void main() {
   Finder close(S s) => find.byWidgetPredicate((w) => w is InkIconButton && w.semanticLabel == s.close);
   Finder historyButton(S s) =>
       onPage(find.byWidgetPredicate((w) => w is InkIconButton && w.semanticLabel == s.history));
-  Finder levelsLink(S s) => onPage(find.byWidgetPredicate((w) => w is Pressable && w.semanticLabel == s.ankirenAllLevels));
+  Finder levelButton(S s) => onPage(find.byWidgetPredicate((w) => w is Pressable && w.semanticLabel == s.ankirenAllLevels));
   Finder burst(String title) => find.byWidgetPredicate((w) => w is BurstButton && w.title == title);
 
   // [f] shows whole, inside the gutters, between the system bars.
@@ -209,11 +209,14 @@ void main() {
                 onPage(find.byType(SideTripGuestButton)),
                 onPage(find.byType(SideTripRulesButton)),
                 tag,
+                levelButton(s),
               ]) {
                 await tester.ensureVisible(f);
                 await tester.pump();
                 expectShown(tester, f, phone);
               }
+              expect(tester.getSize(levelButton(s)).height, greaterThanOrEqualTo(AnkirenPageLayout.levelButtonHeight),
+                  reason: 'the level button is a full touch target');
               scroll.position.jumpTo(0);
               await tester.pump();
               final ground = onPage(find.byWidgetPredicate((w) => w is GradationBox && w.spec == Tones.homeSea));
@@ -271,7 +274,7 @@ void main() {
           final s = S(lang);
           final p = await open(tester, _Stage.placed, lang);
           await showPage(tester, p, phone, fontScale: 1.3);
-          for (final opener in [onPage(find.byType(SideTripGuestButton)), levelsLink(s)]) {
+          for (final opener in [onPage(find.byType(SideTripGuestButton)), levelButton(s)]) {
             await tapAndSettle(tester, opener, Motion.sheet);
             expect(find.byType(AnkirenFreeSheet), findsOneWidget);
             expect(tester.takeException(), isNull);
@@ -359,7 +362,7 @@ void main() {
       const s = S('en');
       final p = await open(tester, _Stage.placed, 'en', cleared: AnkirenTuning.customAfterLevel);
       await showPage(tester, p, usersPhone);
-      await tapAndSettle(tester, levelsLink(s), Motion.sheet);
+      await tapAndSettle(tester, levelButton(s), Motion.sheet);
       final sheet = find.byType(AnkirenFreeSheet);
       expect(sheet, findsOneWidget);
       Finder inSheet(Finder f) => find.descendant(of: sheet, matching: f);
@@ -400,7 +403,7 @@ void main() {
       const s = S('en');
       final p = await open(tester, _Stage.locked, 'en');
       await showPage(tester, p, usersPhone);
-      await tapAndSettle(tester, levelsLink(s), Motion.sheet);
+      await tapAndSettle(tester, levelButton(s), Motion.sheet);
       final sheet = find.byType(AnkirenFreeSheet);
       Finder inSheet(Finder f) => find.descendant(of: sheet, matching: f);
       expect(inSheet(find.byType(ClearedCheck)), findsNothing);
@@ -503,7 +506,7 @@ void main() {
               await showPage(tester, p, phone, fontScale: fontScale);
               await capture(tester, stage.name, lang);
               if (stage case _Stage.fresh || _Stage.allCleared) {
-                await tapAndSettle(tester, levelsLink(s), Motion.sheet);
+                await tapAndSettle(tester, levelButton(s), Motion.sheet);
                 await capture(tester, 'free_${stage.name}', lang);
                 await closeSheet(tester, s);
               }

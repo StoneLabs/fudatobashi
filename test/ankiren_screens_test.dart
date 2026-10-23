@@ -314,7 +314,7 @@ void main() {
       await tester.tap(find.text(s.ankirenPageTitle));
       await tester.pump();
       await tester.pump(Motion.route * 2);
-      await tester.tap(find.textContaining(s.ankirenAllLevels, findRichText: true));
+      await tester.tap(find.byWidgetPredicate((w) => w is Pressable && w.semanticLabel == s.ankirenAllLevels));
       await tester.pump();
       await tester.pump(Motion.sheet);
       expect(find.byType(AnkirenFreeSheet), findsOneWidget);
@@ -897,7 +897,7 @@ void main() {
         await tester.tap(find.text(t.ankirenPageTitle));
         await tester.pump();
         await tester.pump(Motion.route * 2);
-        await tester.tap(find.textContaining(t.ankirenAllLevels, findRichText: true));
+        await tester.tap(find.byWidgetPredicate((w) => w is Pressable && w.semanticLabel == t.ankirenAllLevels));
         await tester.pump();
         await tester.pump(Motion.sheet);
         expect(find.byType(AnkirenFreeSheet), findsOneWidget);
