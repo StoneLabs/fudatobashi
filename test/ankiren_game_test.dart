@@ -216,16 +216,24 @@ void main() {
       expect(AnkirenRating.scoreFor(AnkirenRating.performance(a)), closeTo(a, 1e-6));
     });
 
-    test('play starts in 入門, which is also the floor', () {
-      expect(Rating.bandOf(AnkirenRating.start).label, '入門');
-      var r = AnkirenRating.start;
-      final earlier = <double>[];
-      for (var game = 0; game < 30; game++) {
-        final p = AnkirenRating.performance(0);
-        r = AnkirenRating.update(r, p, earlier);
-        earlier.add(p);
-        expect(r, AnkirenRating.start);
+    test('the curve is a line down to the lower anchor, then straight to zero, and never negative', () {
+      final low = AnkirenRating.lowScore;
+      expect(AnkirenRating.performance(0), 0);
+      expect(AnkirenRating.performance(low.round()), closeTo(band('F-'), 1));
+      expect(AnkirenRating.performance(low.round() ~/ 2), closeTo(band('F-') / 2, 1));
+      expect(AnkirenRating.performance(low.round() + 1000) - AnkirenRating.performance(low.round()),
+          closeTo(1000 * AnkirenRating.slope, 1e-6));
+      for (var score = 0; score < 12000; score += 97) {
+        expect(AnkirenRating.performance(score), greaterThanOrEqualTo(0));
+        expect(AnkirenRating.scoreFor(AnkirenRating.performance(score)), closeTo(score, 1e-6));
       }
+    });
+
+    test('play starts in 入門, and a zero-point game rates 0 without any floor', () {
+      expect(Rating.bandOf(AnkirenRating.start).label, '入門');
+      final p = AnkirenRating.performance(0);
+      expect(AnkirenRating.update(AnkirenRating.start, p, const []), 0);
+      expect(AnkirenRating.update(1000, 0, const [1, 2, 3]), closeTo(1000 * (1 - AnkirenRatingModel.establishedK), 1e-9));
     });
 
     test('placement: the rating is the mean of the placement games, then each game moves it K of the way', () {
@@ -244,10 +252,10 @@ void main() {
       }
     });
 
-    test('placement means the games as played, not the floored ratings between them', () {
+    test('placement means the games as played', () {
       const low = 100.0, high = 1300.0;
       final first = AnkirenRating.update(AnkirenRating.start, low, const []);
-      expect(first, AnkirenRating.start);
+      expect(first, low);
       expect(AnkirenRating.update(first, high, const [low]), (low + high) / 2);
     });
 

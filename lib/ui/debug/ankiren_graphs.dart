@@ -13,7 +13,7 @@ import 'debug_common.dart';
 
 /// A ranked game's total over the time each right card took to find, played
 /// in full and ready early with the set time left, with some cards wrong
-/// (first tapped in their row, then found; [AnkirenToolsTuning.wrongCardTaps]),
+/// (earning [AnkirenToolsTuning.wrongCardPoints] each),
 /// which the early finish does not multiply. The class
 /// borders are dashed lines at the scores that reach them.
 class AnkirenRankedGraph extends StatefulWidget {
@@ -30,7 +30,7 @@ class _AnkirenRankedGraphState extends State<AnkirenRankedGraph> {
 
   _Line _line(Color color, Duration timeLeft) {
     final wrong = _wrong.round();
-    final wrongPoints = wrong * AnkirenScore.pointsOf(AnkirenToolsTuning.wrongCardTaps, null);
+    final wrongPoints = wrong * AnkirenToolsTuning.wrongCardPoints;
     final share = timeLeft.inMicroseconds / _setup.memorise.inMicroseconds;
     return _Line(color, [
       for (
@@ -42,7 +42,7 @@ class _AnkirenRankedGraphState extends State<AnkirenRankedGraph> {
           ms / 1000,
           () {
             final right = (_setup.cards - wrong) * (AnkirenTuning.cardPoints + AnkirenScore.speedBonus(ms * 1000));
-            return AnkirenScore.totalOf(right + wrongPoints, right, share).toDouble();
+            return AnkirenScore.totalOf((right + wrongPoints).round(), right, share).toDouble();
           }(),
         ),
     ]);
@@ -73,13 +73,20 @@ class _AnkirenRankedGraphState extends State<AnkirenRankedGraph> {
         SizedBox(
           height: AnkirenToolsStyle.graphHeight,
           child: CustomPaint(
-            painter: _LinesPainter([_line(Palette.mute, Duration.zero), _line(Palette.seaDeep, timeLeft)]),
+            painter: _LinesPainter(
+              [_line(Palette.mute, Duration.zero), _line(Palette.seaDeep, timeLeft)],
+              xMax: AnkirenToolsTuning.responseMax.inSeconds.toDouble(),
+              xTick: AnkirenToolsTuning.responseTick.inSeconds.toDouble(),
+              xLabel: (x) => '${x.round()} s',
+              yMax: AnkirenToolsTuning.graphYMax.toDouble(),
+              classY: (band) => AnkirenRating.scoreFor(band.minRating),
+            ),
           ),
         ),
         Text(
           'x: time of each right card (s) · y: points · grey: played in full · blue: ready early · '
-          'a wrong card = ${AnkirenScore.pointsOf(AnkirenToolsTuning.wrongCardTaps, null)} '
-          '(${AnkirenToolsTuning.wrongCardTaps.map((p) => p.name).join(', then ')}), not multiplied · '
+          'a wrong card ≈ ${AnkirenToolsTuning.wrongCardPoints}: two random taps, '
+          'not multiplied · '
           'dashed: class borders',
           style: debugMono,
         ),
@@ -95,16 +102,72 @@ class _Line {
   final List<Offset> points;
 }
 
+/// A performance by final score graph: the curve of [AnkirenRating], dashed
+/// lines at the class borders' ratings and a dot at each anchor.
+class AnkirenRatingGraph extends StatelessWidget {
+  const AnkirenRatingGraph({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    const xMax = AnkirenToolsTuning.graphYMax;
+    const step = AnkirenToolsTuning.ratingCurveStep;
+    final yMax = (AnkirenRating.performance(xMax) / AnkirenToolsTuning.ratingYRound).ceil() *
+        AnkirenToolsTuning.ratingYRound.toDouble();
+    final curve = _Line(Palette.seaDeep, [
+      for (var score = 0; score <= xMax; score += step) Offset(score.toDouble(), AnkirenRating.performance(score)),
+    ]);
+    final anchors = [
+      for (final id in [AnkirenRatingModel.lowBand, AnkirenRatingModel.highBand])
+        Rating.bands.firstWhere((b) => b.id == id).minRating,
+    ];
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        SizedBox(
+          height: AnkirenToolsStyle.graphHeight,
+          child: CustomPaint(
+            painter: _LinesPainter(
+              [curve],
+              xMax: xMax.toDouble(),
+              xTick: AnkirenToolsTuning.ratingXTick.toDouble(),
+              xLabel: (x) => '${x.round()}',
+              yMax: yMax,
+              classY: (band) => band.minRating,
+              dots: [for (final rating in anchors) Offset(AnkirenRating.scoreFor(rating), rating)],
+            ),
+          ),
+        ),
+        const Text(
+          'x: final score · y: performance · dots: the two anchor games · dashed: class lines',
+          style: debugMono,
+        ),
+      ],
+    );
+  }
+}
+
 class _LinesPainter extends CustomPainter {
-  _LinesPainter(this.lines);
+  _LinesPainter(
+    this.lines, {
+    required this.xMax,
+    required this.xTick,
+    required this.xLabel,
+    required this.yMax,
+    required this.classY,
+    this.dots = const [],
+  });
 
   final List<_Line> lines;
+  final double xMax;
+  final double xTick;
+  final String Function(double) xLabel;
+  final double yMax;
+  final double Function(RankBand) classY;
+  final List<Offset> dots;
 
   @override
   void paint(Canvas canvas, Size size) {
     final plot = AnkirenToolsStyle.graphMargin.deflateRect(Offset.zero & size);
-    final xMax = AnkirenToolsTuning.responseMax.inSeconds.toDouble();
-    const yMax = AnkirenToolsTuning.graphYMax;
     Offset at(Offset p) => Offset(plot.left + plot.width * p.dx / xMax, plot.bottom - plot.height * p.dy / yMax);
     final grid = Paint()..color = Palette.desk;
     const label = TextStyle(fontSize: AnkirenToolsStyle.axisFont, color: Palette.mute, fontFamily: AnkirenDebugStyle.mono);
@@ -121,10 +184,10 @@ class _LinesPainter extends CustomPainter {
           Offset(plot.left - AnkirenToolsStyle.axisLabelGap, y),
           align: Alignment.centerRight);
     }
-    for (var x = 0.0; x <= xMax; x += AnkirenToolsTuning.responseTick.inSeconds) {
+    for (var x = 0.0; x <= xMax; x += xTick) {
       final px = at(Offset(x, 0)).dx;
       canvas.drawLine(Offset(px, plot.top), Offset(px, plot.bottom), grid);
-      text('${x.round()} s', Offset(px, plot.bottom + AnkirenToolsStyle.axisLabelGap), align: Alignment.topCenter);
+      text(xLabel(x), Offset(px, plot.bottom + AnkirenToolsStyle.axisLabelGap), align: Alignment.topCenter);
     }
     _paintClasses(canvas, plot, at, text);
     for (final line in lines) {
@@ -141,9 +204,12 @@ class _LinesPainter extends CustomPainter {
           ..color = line.color,
       );
     }
+    for (final dot in dots) {
+      canvas.drawCircle(at(dot), AnkirenToolsStyle.dotRadius, Paint()..color = Palette.seaDeep);
+    }
   }
 
-  /// A dashed line at the score of each class border that fits, labelled
+  /// A dashed line at each class border that fits, labelled
   /// at the right edge; a label too near the one above moves down.
   void _paintClasses(
     Canvas canvas,
@@ -156,8 +222,7 @@ class _LinesPainter extends CustomPainter {
       ..color = Palette.mute.withValues(alpha: AnkirenToolsStyle.classOpacity);
     final borders = [
       for (final band in Rating.bands.skip(1))
-        if (AnkirenRating.scoreFor(band.minRating) case final score when score <= AnkirenToolsTuning.graphYMax)
-          (band.labelEn, at(Offset(0, score)).dy),
+        if (classY(band) case final value when value <= yMax) (band.labelEn, at(Offset(0, value)).dy),
     ]..sort((a, b) => a.$2.compareTo(b.$2));
     var labelTop = double.negativeInfinity;
     for (final (name, y) in borders) {

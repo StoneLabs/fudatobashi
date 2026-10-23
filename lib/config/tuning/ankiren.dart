@@ -146,15 +146,32 @@ abstract final class AnkirenToolsTuning {
   /// gap between the x axis's labels.
   static const Duration timeLeftStart = Duration(minutes: 5);
 
-  /// A card not found with the first tap is assumed to be first tapped
-  /// in its row and then found with the second tap.
-  static const List<TapProximity> wrongCardTaps = [TapProximity.row, TapProximity.card];
+  /// Where each tap of a wrong card lands, with each quadrant holding a
+  /// quarter of the cards: its own quadrant, the other quadrant of its
+  /// side, the other side.
+  static const double wrongInQuadrant = 0.25;
+  static const double wrongInSide = 0.25;
+  static const double wrongOtherSide = 0.5;
+
+  /// What a wrong card earns in the ranked graph: two taps by that split.
+  static double get wrongCardPoints =>
+      AnkirenTuning.cardPoints *
+      (1 + AnkirenTuning.tapWeights[1]) *
+      (wrongInQuadrant * AnkirenTuning.tapShare[TapProximity.quadrant]! +
+          wrongInSide * AnkirenTuning.tapShare[TapProximity.side]! +
+          wrongOtherSide * AnkirenTuning.tapShare[TapProximity.otherSide]!);
 
   /// The graph's fixed top, in points.
   static const int graphYMax = 12000;
   static const Duration timeLeftStep = Duration(seconds: 10);
   static const Duration responseTick = Duration(seconds: 1);
   static const int yDivisions = 4;
+
+  /// The rating-by-score graph: the score step of its curve, the gap
+  /// between its score ticks, and what its top rounds up to.
+  static const int ratingCurveStep = 100;
+  static const int ratingXTick = 3000;
+  static const int ratingYRound = 1000;
 
   static const List<int> simulationGames = [100, 1000, 5000];
   static const int simulationGamesStart = 1000;
@@ -185,12 +202,13 @@ abstract final class AnkirenPlayTuning {
 
 /// 暗記練's rating (see `AnkirenRating`), on the main rating's scale.
 abstract final class AnkirenRatingModel {
-  /// The rating's floor, where the way to the first class starts before
-  /// any ranked game.
+  /// The rating before any ranked game, where the way to the first class
+  /// starts. It is not a floor: a game can rate below it.
   static const double start = 400;
 
   /// A ranked game's performance is a straight line of its final score F
-  /// (see `AnkirenRating.slope`, `AnkirenRating.zero`), drawn through two
+  /// (see `AnkirenRating.slope`, `AnkirenRating.zero`), down to the lower
+  /// anchor and then to zero points, drawn through two
   /// games with no early finish. The first performs at the [highBand] line:
   /// every card found with the first tap, each [highFirstTap] after its
   /// prompt. The second performs at the [lowBand] line: [lowFirstShare] of

@@ -31,6 +31,7 @@ abstract final class AnkirenToolsStyle {
   /// A class border's dashed line and its label at the plot's right edge;
   /// labels closer than [classLabelHeight] are pushed apart.
   static const double classStroke = 1;
+  static const double dotRadius = 4;
   static const double classDash = 4;
   static const double classDashGap = 3;
   static const double classLabelHeight = 10;
