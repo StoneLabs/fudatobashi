@@ -345,7 +345,6 @@ abstract final class AnkirenPageLayout {
   static const double statFont = 28;
   static const double statUnitFont = 15;
   static const double statSuffixFont = 13;
-  static const double statGap = 3;
   static const double levelButtonHeight = 48;
   static const double levelButtonPadding = 8;
   static const double levelButtonInset = 4;
