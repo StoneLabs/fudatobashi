@@ -1,0 +1,39 @@
+/* Tokens: lib/config/design/core.dart (Palette, Strokes) and the card browser mock. */
+/* The app's own Dela Gothic One, Latin letters only (see README.md):
+   the Google Fonts copy has narrower Latin letters. Kana and kanji come from Google. */
+@font-face{font-family:'Dela Latin';src:url(../fonts/dela-latin.woff2) format('woff2');
+  unicode-range:U+0020-007E,U+00A0-017F,U+2010-2027,U+2030-203A;font-display:block}
+:root{
+  --ink:#141414;--paper:#fff;--desk:#E4E1DB;--ink-soft:#2B2B2B;--ink-body:#1D1D1D;--ink-shadow:rgba(20,20,20,.4);
+  --pink:#FF3D7F;--pink-deep:#E0246A;--sun:#FFD83A;--sun-soft:#FFF4BF;--sea:#2B9BFF;
+  --D:'Dela Latin','Dela Gothic One','Noto Sans CJK JP','Hiragino Sans','Yu Gothic',sans-serif;
+  --ZK:'Zen Kaku Gothic New','Noto Sans CJK JP','Hiragino Sans','Yu Gothic',sans-serif;
+  --Y:'Yuji Syuku','Noto Serif CJK JP','Yu Mincho',serif;
+  --mono:'DejaVu Sans Mono','Noto Sans Mono CJK JP',ui-monospace,Menlo,Consolas,monospace;
+  --accent:#FFD83A;--em:#FFF2B0;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{background:var(--desk)}
+body{font-family:var(--ZK);color:var(--ink);-webkit-font-smoothing:antialiased;line-height:1.5;padding:22px 24px 60px}
+button,select,textarea{font:inherit;color:inherit}
+button{background:none;border:0;cursor:pointer;text-align:inherit}
+code{font-family:var(--mono);font-size:.86em;background:rgba(20,20,20,.08);padding:0 4px}
+[hidden]{display:none!important}
+
+/* page */
+.top{max-width:1320px;margin:0 auto 18px;display:flex;gap:16px;align-items:center;flex-wrap:wrap}
+.top .tag{font-family:var(--D);font-size:26px;line-height:1;border:4px solid var(--ink);background:var(--sun);padding:5px 12px 8px;transform:rotate(-3deg)}
+.top h1{font-family:var(--D);font-weight:400;font-size:24px;line-height:1.15}
+.top h1 small{display:block;font-family:var(--Y);font-size:15px;margin-top:3px}
+.grid{max-width:1320px;margin:0 auto;display:grid;grid-template-columns:auto minmax(420px,1fr);gap:34px;align-items:start}
+.phone-col{position:sticky;top:12px}
+.tools{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin:0 0 10px;font-weight:900;font-size:13px}
+.tools .lbl{letter-spacing:.04em}
+.tools .jump{margin-left:auto;border-bottom:2px solid var(--ink);font-weight:900;font-size:13px;padding:2px 0 1px}
+.note{font-size:12.5px;font-weight:700;color:#4a4844;margin-top:10px;max-width:404px}
+
+/* the app's pill switch (the poem box's Kana / Romaji) */
+.seg{display:inline-flex;border:2.5px solid var(--ink);border-radius:999px;overflow:hidden;background:#fff;flex:none}
+.seg button{font-weight:900;font-size:12px;line-height:1.2;padding:4px 12px 5px;white-space:nowrap}
+.seg button[aria-pressed=true]{background:var(--ink);color:#fff}
+

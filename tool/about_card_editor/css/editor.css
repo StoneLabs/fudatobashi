@@ -1,0 +1,61 @@
+/* the editor */
+.panel{background:#fff;border:3px solid var(--ink);box-shadow:4px 4px 0 var(--ink-shadow);padding:14px 16px;margin-bottom:16px}
+.panel h2{font-family:var(--D);font-weight:400;font-size:17px;margin-bottom:8px}
+.row{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.row+.row{margin-top:10px}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;min-height:38px;padding:5px 14px;border:3px solid var(--ink);background:#fff;font-weight:900;font-size:14px;white-space:nowrap}
+.btn:hover:not(:disabled){background:var(--sun-soft)}
+.btn:active:not(:disabled){transform:translateY(2px)}
+.btn:disabled{opacity:.4;cursor:default}
+.btn.primary{background:var(--sun)}
+.btn.small{min-height:30px;padding:2px 10px;font-size:12.5px;border-width:2.5px}
+.langs .btn[aria-pressed=true]{background:var(--ink);color:#fff}
+select{height:38px;border:3px solid var(--ink);padding:0 8px;font-weight:700;font-size:14px;background:#fff;max-width:100%}
+.chips{font-size:12.5px;font-weight:700;color:#4a4844;display:flex;gap:6px;flex-wrap:wrap;align-items:center}
+.chip{border:2px solid var(--ink);background:var(--sun-soft);padding:0 8px 1px;font-weight:900;font-size:12px}
+.chip:hover{background:var(--sun)}
+.where{font-size:13px;font-weight:700}
+.where code{font-size:12.5px}
+.status{font-size:12.5px;font-weight:700;color:#4a4844}
+.status.edited{color:var(--pink-deep)}
+.fmt{display:flex;gap:5px;flex-wrap:wrap;margin:10px 0 8px}
+.fmt button{border:2px solid var(--ink);background:#fff;font-weight:900;font-size:12.5px;padding:2px 9px 3px;min-width:32px;text-align:center}
+.fmt button:hover{background:var(--sun-soft)}
+.fmt.colours{align-items:center;margin-top:0}
+.fmt-label{font-weight:900;font-size:12.5px}
+.fmt-hint{font-size:12px;font-weight:700;color:#4a4844}
+.swatches{display:inline-flex;gap:5px}
+.fmt .sw{min-width:30px;padding:2px 6px 3px}
+.edwrap .hl mark.attr{background:rgba(43,155,255,.3)}
+.edwrap{position:relative;border:3px solid var(--ink);background:#fff}
+.edwrap textarea,.edwrap .hl{display:block;width:100%;height:min(66vh,640px);min-height:340px;margin:0;padding:12px 14px;border:0;font-family:var(--mono);font-size:14px;line-height:1.65;letter-spacing:0;tab-size:4;white-space:pre-wrap;overflow-wrap:break-word;word-break:normal;overflow-y:scroll;scrollbar-width:thin}
+.edwrap .hl{position:absolute;inset:0;color:transparent;overflow:hidden scroll;pointer-events:none;scrollbar-color:transparent transparent}
+.edwrap .hl mark{background:rgba(255,216,58,.55);color:transparent;border-radius:3px}
+.edwrap textarea{position:relative;background:transparent;resize:vertical;outline:none;color:var(--ink)}
+.edwrap:focus-within{box-shadow:4px 4px 0 var(--sun)}
+.checks{list-style:none;margin-top:10px;font-size:13px;font-weight:700;padding:8px 12px}
+.checks li+li{margin-top:4px}
+.checks.warn{background:#FFE8CF;border:2px solid var(--ink)}
+.checks.warn li::before{content:"! ";font-weight:900;color:var(--pink-deep)}
+.checks.ok{color:#3d6b2b}
+#pictures{list-style:none}
+.picrow{display:flex;gap:10px;align-items:center;padding:8px 6px;border-top:1.5px solid var(--ink)}
+.thumb{flex:none;width:52px;height:52px;border:2px dashed var(--ink);display:grid;place-items:center;font-family:var(--D);background:var(--desk)}
+.thumb img{max-width:100%;max-height:100%}
+.pinfo{flex:1;min-width:0;display:flex;flex-direction:column;font-size:13px}
+.pinfo code{word-break:break-all}
+.pinfo small{font-weight:500;color:#4a4844}
+.send{font-size:13px;font-weight:700;margin-top:8px;background:var(--sun-soft);border:2px solid var(--ink);padding:6px 10px}
+details.howto{border:3px solid var(--ink);background:#fff;margin-bottom:16px;box-shadow:4px 4px 0 var(--ink-shadow)}
+details.howto summary{cursor:pointer;font-family:var(--D);font-size:16px;padding:10px 16px;list-style:none;background:var(--sun)}
+details.howto summary::-webkit-details-marker{display:none}
+details.howto summary::after{content:"+";float:right}
+details.howto[open] summary::after{content:"−"}
+.howto .in{padding:6px 16px 14px;font-size:13.5px}
+.howto dl{display:grid;grid-template-columns:minmax(110px,170px) 1fr;gap:8px 14px;margin-top:8px}
+.howto dt{font-weight:900}
+.howto dd{font-weight:500}
+.howto dd code{white-space:pre-wrap}
+.howto .ja{display:block;color:#4a4844;font-size:12.5px}
+.howto p{margin-top:8px;font-weight:700}
+

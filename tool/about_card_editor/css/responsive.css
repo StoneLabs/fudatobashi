@@ -1,0 +1,7 @@
+@media (max-width:979px){
+  body{padding:14px 12px 50px}
+  .grid{grid-template-columns:minmax(0,1fr);gap:22px}
+  .phone-col{position:static;justify-self:center}
+  .howto dl{grid-template-columns:1fr}
+}
+
