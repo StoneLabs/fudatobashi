@@ -171,6 +171,8 @@ class AppSettings {
     this.accessibilityMode = DefaultSettings.accessibilityMode,
     this.cardPanelSwiped = DefaultSettings.cardPanelSwiped,
     this.timerNotificationsAsked = DefaultSettings.timerNotificationsAsked,
+    this.reminders = DefaultSettings.reminders,
+    this.remindersOffered = DefaultSettings.remindersOffered,
     this.soundLadder = DefaultSettings.soundLadder,
     this.cardScale = DefaultSettings.cardScale,
     this.ankiren = DefaultSettings.ankiren,
@@ -243,6 +245,14 @@ class AppSettings {
   /// asks again.
   final bool timerNotificationsAsked;
 
+  /// The daily training reminders are on (journey mode only; see
+  /// `Reminders`).
+  final bool reminders;
+
+  /// Results has offered the daily reminders once, so it never offers them
+  /// again.
+  final bool remindersOffered;
+
   /// The About pages' choice of sound ladder.
   final SoundLadderMode soundLadder;
 
@@ -290,6 +300,8 @@ class AppSettings {
         'accessibilityMode': accessibilityMode,
         'cardPanelSwiped': cardPanelSwiped,
         'timerNotificationsAsked': timerNotificationsAsked,
+        'reminders': reminders,
+        'remindersOffered': remindersOffered,
         'soundLadder': soundLadder.name,
         'cardScale': cardScale,
         'ankiren': ankiren.toJson(),
@@ -338,6 +350,8 @@ class AppSettings {
           j['accessibilityMode'] as bool? ?? ankiren?['zoom'] as bool? ?? DefaultSettings.accessibilityMode,
       cardPanelSwiped: j['cardPanelSwiped'] as bool? ?? DefaultSettings.cardPanelSwiped,
       timerNotificationsAsked: j['timerNotificationsAsked'] as bool? ?? DefaultSettings.timerNotificationsAsked,
+      reminders: j['reminders'] as bool? ?? DefaultSettings.reminders,
+      remindersOffered: j['remindersOffered'] as bool? ?? DefaultSettings.remindersOffered,
       soundLadder: SoundLadderMode.values.asNameMap()[j['soundLadder']] ?? DefaultSettings.soundLadder,
       cardScale: ((j['cardScale'] as num?)?.toDouble() ?? DefaultSettings.cardScale)
           .clamp(SwipeTuning.cardScaleMin, SwipeTuning.cardScaleMax),
@@ -370,6 +384,8 @@ class AppSettings {
     bool? accessibilityMode,
     bool? cardPanelSwiped,
     bool? timerNotificationsAsked,
+    bool? reminders,
+    bool? remindersOffered,
     SoundLadderMode? soundLadder,
     double? cardScale,
     AnkirenSettings? ankiren,
@@ -399,6 +415,8 @@ class AppSettings {
         accessibilityMode: accessibilityMode ?? this.accessibilityMode,
         cardPanelSwiped: cardPanelSwiped ?? this.cardPanelSwiped,
         timerNotificationsAsked: timerNotificationsAsked ?? this.timerNotificationsAsked,
+        reminders: reminders ?? this.reminders,
+        remindersOffered: remindersOffered ?? this.remindersOffered,
         soundLadder: soundLadder ?? this.soundLadder,
         cardScale: cardScale ?? this.cardScale,
         ankiren: ankiren ?? this.ankiren,

@@ -1,12 +1,11 @@
 import 'package:flutter/material.dart';
 
-import '../../config/design.dart';
 import '../../l10n/home_strings.dart';
 import '../../l10n/strings.dart';
 import '../../migrations/v3_to_v4.dart';
 import '../../state/scope.dart';
-import '../manga/manga.dart';
 import '../side_trips/burst_button.dart';
+import 'tobi_notice.dart';
 
 /// The l10n keys of each notice an upgrade can queue (see `queueNotice`): to
 /// add one, queue its id in the upgrade step and add its pair here.
@@ -43,62 +42,6 @@ class MigrationNotice extends StatelessWidget {
   final VoidCallback onOk;
 
   @override
-  Widget build(BuildContext context) {
-    final s = S.of(context);
-    final tag = FittedBox(fit: BoxFit.scaleDown, child: InkBanner(title, fontSize: MigrationNoticeStyle.tagFont));
-    const padding = MigrationNoticeStyle.panelPadding;
-    return Semantics(
-      scopesRoute: true,
-      explicitChildNodes: true,
-      child: ColoredBox(
-        color: MigrationNoticeStyle.scrim,
-        child: SafeArea(
-          child: Center(
-            child: SingleChildScrollView(
-              padding: MigrationNoticeStyle.margin,
-              child: ConstrainedBox(
-                constraints: const BoxConstraints(maxWidth: MigrationNoticeStyle.maxWidth),
-                child: Stack(clipBehavior: Clip.none, children: [
-                  Padding(
-                    padding: const EdgeInsets.only(top: MigrationNoticeStyle.tagRise),
-                    child: MangaPanel(
-                      shadow: MigrationNoticeStyle.panelShadow,
-                      padding: padding,
-                      child: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-                        Align(
-                          alignment: Alignment.centerLeft,
-                          child: Overhang(
-                              rise: MigrationNoticeStyle.tagRise + padding.top, child: ExcludeSemantics(child: tag)),
-                        ),
-                        const SizedBox(height: MigrationNoticeStyle.gap),
-                        Row(crossAxisAlignment: CrossAxisAlignment.center, children: [
-                          SizedBox.fromSize(size: MigrationNoticeStyle.tobi, child: const Tobi(pose: TobiPose.tryHard)),
-                          const SizedBox(width: MigrationNoticeStyle.gap),
-                          Expanded(
-                            child: Text.rich(Phrases.span(body),
-                                style: const TextStyle(
-                                    fontWeight: Weights.bold,
-                                    fontSize: MigrationNoticeStyle.bodyFont,
-                                    height: MigrationNoticeStyle.bodyLineHeight)),
-                          ),
-                        ]),
-                        const SizedBox(height: MigrationNoticeStyle.gap),
-                        BurstButton(title: s.noticeOk, onTap: onOk),
-                      ]),
-                    ),
-                  ),
-                  Positioned(
-                    left: padding.left,
-                    right: padding.right,
-                    top: 0,
-                    child: Align(alignment: Alignment.centerLeft, child: Semantics(header: true, child: tag)),
-                  ),
-                ]),
-              ),
-            ),
-          ),
-        ),
-      ),
-    );
-  }
+  Widget build(BuildContext context) =>
+      TobiNotice(title: title, body: body, actions: [BurstButton(title: S.of(context).noticeOk, onTap: onOk)]);
 }

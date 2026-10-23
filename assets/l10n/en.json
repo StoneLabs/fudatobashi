@@ -1463,5 +1463,20 @@
   "timerNoticeText": "Counting down. Sounds at {0} minutes left and at the end.",
   "timerNotifyTitle": "Show the timer in a notification",
   "timerNotifyReason": "While the timer runs, it can show the time left in a notification, so you can check it on the lock screen or from another app. Android will ask you next.",
-  "timerNotifyContinue": "Continue"
+  "timerNotifyContinue": "Continue",
+  "reminderOfferTitle": "Don't forget to practise tomorrow!",
+  "reminderOfferBody": "Spaced repetition only works if you keep coming back. Would you like me to send you a reminder tomorrow so you don't forget?",
+  "reminderOfferNote": "You can turn reminders off any time in Settings.",
+  "reminderOfferYes": "Yes, remind me",
+  "reminderOfferNo": "No thanks",
+  "reminderBlockedTitle": "Notifications are off",
+  "reminderBlockedBody": "Fudatobashi isn't allowed to send you notifications, so reminders stay off. To get them, allow notifications for Fudatobashi in your phone's settings, then turn on reminders in Settings › Learning.",
+  "reminderBlockedOpen": "Open phone settings",
+  "remindersSetting": "Enable training reminders?",
+  "remindersSettingNote": "Tobi-kun will send you a reminder each day at midday.",
+  "remindersBlockedWarning": "Notification permissions are not granted. You will not receive notifications.",
+  "reminderNoticeTitle": "Don't forget to come back!",
+  "reminderNoticeBody": "Tobi is waiting with your daily cards!",
+  "reminderChannel": "Training reminders",
+  "reminderChannelNote": "A reminder each day at midday to train your cards."
 }

@@ -165,12 +165,21 @@ class SettingsGroup extends StatelessWidget {
       );
 }
 
-/// A switch with its name and note; tapping anywhere on the row flips it.
+/// A switch with its name and note, and a [warning] under them when it
+/// can't work as set; tapping anywhere on the row flips it.
 class SettingsSwitch extends StatelessWidget {
-  const SettingsSwitch({super.key, required this.title, this.note, required this.value, required this.onChanged});
+  const SettingsSwitch({
+    super.key,
+    required this.title,
+    this.note,
+    this.warning,
+    required this.value,
+    required this.onChanged,
+  });
 
   final String title;
   final String? note;
+  final String? warning;
   final bool value;
   final ValueChanged<bool> onChanged;
 
@@ -181,7 +190,15 @@ class SettingsSwitch extends StatelessWidget {
           onTap: () => onChanged(!value),
           child: _Row(
             children: [
-              Expanded(child: _TitleNote(title: title, note: note)),
+              Expanded(
+                child: Column(crossAxisAlignment: CrossAxisAlignment.start, mainAxisSize: MainAxisSize.min, children: [
+                  _TitleNote(title: title, note: note),
+                  if (warning != null) ...[
+                    const SizedBox(height: SettingsLayout.warningGap),
+                    _Warning(warning!),
+                  ],
+                ]),
+              ),
               Switch(value: value, onChanged: onChanged, activeThumbColor: Palette.pink),
             ],
           ),
@@ -324,6 +341,19 @@ class _Row extends StatelessWidget {
           ]),
         ),
       );
+}
+
+/// A red warning triangle and [text].
+class _Warning extends StatelessWidget {
+  const _Warning(this.text);
+  final String text;
+
+  @override
+  Widget build(BuildContext context) => Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        MangaIcon(IconArt.warning, size: SettingsLayout.warningIcon, color: SettingsLayout.warning),
+        const SizedBox(width: SettingsLayout.warningIconGap),
+        Expanded(child: Text(text, style: _noteStyle.copyWith(color: SettingsLayout.warning))),
+      ]);
 }
 
 class _TitleNote extends StatelessWidget {

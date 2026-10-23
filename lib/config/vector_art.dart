@@ -43,6 +43,9 @@ abstract final class IconArt {
   /// A pen (marks the match timer's time as editable).
   static late final VectorArt pen;
 
+  /// A warning triangle (a setting that can't work as it is).
+  static late final VectorArt warning;
+
   /// A signpost, its pole broken behind the boards (the Side Trips tab).
   static late final VectorArt sideTrips;
 }

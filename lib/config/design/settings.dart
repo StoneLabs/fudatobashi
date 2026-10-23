@@ -29,6 +29,13 @@ abstract final class SettingsLayout {
   static const double noteFont = TypeScale.small;
   static const double noteLineHeight = 1.3;
   static const double noteGap = 2;
+
+  /// A row's warning under its note: why it can't work as it is.
+  static const double warningGap = 6;
+  static const double warningIcon = 18;
+  static const double warningIconGap = 6;
+  static const Color warning = Palette.alarmDeep;
+
   static const EdgeInsets rowPadding = EdgeInsets.symmetric(horizontal: Gaps.inner, vertical: Gaps.small);
   static const double rowGap = Gaps.panelWide;
   static const double rowMinHeight = ButtonMetrics.rowHeight;
@@ -223,10 +230,10 @@ abstract final class RecoveryLayout {
   static const String errorFamily = 'monospace';
 }
 
-/// The notice an upgrade leaves for the player (`migration_notice.dart`): an
-/// ink-dimmed Home, a panel with a title on an ink slab, Tobi with the
-/// message and an OK shout.
-abstract final class MigrationNoticeStyle {
+/// A message from Tobi over an ink-dimmed screen (`TobiNotice`): a panel
+/// with a title tag on its top edge, Tobi with the message, and its
+/// buttons. The notices an upgrade leaves, and the offer of daily reminders.
+abstract final class TobiNoticeStyle {
   static const Color scrim = Color(0xB3141414);
   static const double maxWidth = 380;
   static const EdgeInsets margin = EdgeInsets.symmetric(horizontal: Gaps.gutter, vertical: Gaps.section);
@@ -242,4 +249,13 @@ abstract final class MigrationNoticeStyle {
   static const double bodyFont = 15;
   static const double bodyLineHeight = 1.45;
   static const double gap = 12;
+
+  /// Small print under the message.
+  static const double noteFont = 12.5;
+  static const double noteLineHeight = 1.4;
+
+  /// A plain ink button under the shout, for the other answer.
+  static const double buttonGap = 8;
+  static const double buttonHeight = 48;
+  static const double buttonFont = 15;
 }

@@ -14,11 +14,13 @@ import '../../l10n/credits_strings.dart';
 import '../../l10n/data_strings.dart';
 import '../../l10n/language_strings.dart';
 import '../../l10n/localization.dart';
+import '../../l10n/reminder_strings.dart';
 import '../../l10n/settings_strings.dart';
 import '../../l10n/side_trip_strings.dart';
 import '../../l10n/strings.dart';
 import '../../state/crash_log.dart';
 import '../../state/progress.dart';
+import '../../state/reminders.dart';
 import '../../state/scope.dart';
 import '../../state/settings.dart';
 import '../debug/ankiren_tools_page.dart';
@@ -32,6 +34,7 @@ import '../exam/exam_dev.dart';
 import '../manga/manga.dart';
 import '../play/pointer_clock.dart';
 import '../results/celebrations.dart';
+import '../results/reminder_offer.dart';
 import '../run/run_launcher.dart';
 import '../tour/tour_overlay.dart';
 import 'card_size_screen.dart';
@@ -44,11 +47,11 @@ import 'language_screen.dart';
 import 'settings_rows.dart';
 import 'side_trip_settings_screen.dart';
 
-/// Settings, in sections: Language; Learning (mode, pace, day start, the
-/// don't-know input); Play; Sound; Accessibility; Side Trips (a page per
-/// side trip); About, whose version row hides the 10-tap developer-mode
-/// unlock; Data (Back up data, Restore from a backup, Reset all data); and,
-/// once developer mode is unlocked, Developer.
+/// Settings, in sections: Language; Learning (mode, pace, day start, daily
+/// reminders, the don't-know input); Play; Sound; Accessibility; Side Trips
+/// (a page per side trip); About, whose version row hides the 10-tap
+/// developer-mode unlock; Data (Back up data, Restore from a backup, Reset
+/// all data); and, once developer mode is unlocked, Developer.
 class SettingsScreen extends StatelessWidget {
   const SettingsScreen({super.key});
 
@@ -262,8 +265,9 @@ class SettingsScreen extends StatelessWidget {
 }
 
 /// Learning mode, the journey's pace (journey only), the hour the day starts
-/// at (today's set and the streak go by it), and how a card is marked
-/// "don't know" during play ("off" only in all-known mode).
+/// at (today's set and the streak go by it), the daily reminders (journey
+/// only), and how a card is marked "don't know" during play ("off" only in
+/// all-known mode).
 class _LearningSection extends StatelessWidget {
   const _LearningSection();
 
@@ -306,6 +310,17 @@ class _LearningSection extends StatelessWidget {
             opensPage: true,
             onTap: () => pickDayStart(context),
           ),
+          if (mode == LearningMode.journey)
+            ValueListenableBuilder(
+              valueListenable: reminders.notificationsAllowed,
+              builder: (context, allowed, _) => SettingsSwitch(
+                title: s.remindersSetting,
+                note: s.remindersSettingNote,
+                warning: progress.settings.reminders && !allowed ? s.remindersBlockedWarning : null,
+                value: progress.settings.reminders,
+                onChanged: (on) => _setReminders(context, progress, on),
+              ),
+            ),
         ]),
         SettingsChoices(
           label: SettingsLabel(title: s.dontKnowInput, note: s.dontKnowInputNote),
@@ -339,6 +354,13 @@ Future<void> _chooseLearningMode(BuildContext context, Progress progress, Learni
   final warning = HoldWarningScreen.allKnown(S.of(context));
   final confirmed = await Navigator.of(context).push(MangaRoute<bool>(builder: (_) => warning));
   if (confirmed == true) await progress.switchToAllKnown();
+}
+
+/// Turning the reminders on asks for the permission to notify first;
+/// refused, they stay off and a note says how to allow them.
+Future<void> _setReminders(BuildContext context, Progress progress, bool on) async {
+  if (!on) return reminders.turnOff(progress);
+  if (!await reminders.turnOn(progress) && context.mounted) await showRemindersBlocked(context);
 }
 
 /// Reset all data goes behind the same full-screen warning. Once it is

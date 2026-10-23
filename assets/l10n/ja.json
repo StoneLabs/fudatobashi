@@ -1463,5 +1463,20 @@
   "timerNoticeText": "カウントダウン中。​残り{0}分と​終了時に​音が​鳴ります。",
   "timerNotifyTitle": "タイマーを​通知に​表示",
   "timerNotifyReason": "タイマーの​動作中は、​残り時間を​通知に​表示できます。​ロック画面や​ほかの​アプリからも​確認できます。​このあと​Androidが​許可を​求めます。",
-  "timerNotifyContinue": "続ける"
+  "timerNotifyContinue": "続ける",
+  "reminderOfferTitle": "明日も​練習するのを​忘れないでね！",
+  "reminderOfferBody": "間隔反復は、​続けて​戻ってきてこそ​効果が​あるんだ。​忘れないように、​明日​ボクから​お知らせしようか？",
+  "reminderOfferNote": "お知らせは​設定で​いつでも​オフに​できます。",
+  "reminderOfferYes": "うん、お願い",
+  "reminderOfferNo": "ううん、大丈夫",
+  "reminderBlockedTitle": "通知が​オフに​なっています",
+  "reminderBlockedBody": "札飛ばしの​通知が​許可されていないので、​お知らせは​オフのままです。​受け取るには、​スマホの​設定で​札飛ばしの​通知を​許可してから、​設定の​「学習」で​お知らせを​オンに​してください。",
+  "reminderBlockedOpen": "スマホの​設定を​開く",
+  "remindersSetting": "練習のお知らせを使う？",
+  "remindersSettingNote": "毎日お昼の12時に、トビくんがお知らせします。",
+  "remindersBlockedWarning": "通知が許可されていないため、お知らせは届きません。",
+  "reminderNoticeTitle": "戻ってくるのを忘れないでね！",
+  "reminderNoticeBody": "トビが今日の札を用意して待ってるよ！",
+  "reminderChannel": "練習のお知らせ",
+  "reminderChannelNote": "毎日お昼に、札の練習をお知らせします。"
 }

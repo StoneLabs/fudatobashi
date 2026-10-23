@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 
 import '../config/design.dart';
 import '../state/progress.dart';
+import '../state/reminders.dart';
 import '../state/scope.dart';
 import 'manga/manga.dart';
 import 'onboarding/language_picker_screen.dart';
@@ -33,11 +34,13 @@ class _FudatobashiAppState extends State<FudatobashiApp> {
     super.initState();
     widget.progress.addListener(_onProgressChanged);
     music.applySettings(widget.progress.settings);
+    reminders.attach(widget.progress);
   }
 
   @override
   void dispose() {
     widget.progress.removeListener(_onProgressChanged);
+    reminders.detach(widget.progress);
     super.dispose();
   }
 
