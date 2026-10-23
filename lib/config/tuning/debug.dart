@@ -29,7 +29,7 @@ abstract final class VersionDefine {
 
 /// The hidden developer-mode unlock (tapping the About version).
 abstract final class DevModeTuning {
-  static const int tapsRequired = 10;
+  static const int tapsRequired = 25;
 
   /// Below this many taps left, a countdown toast appears.
   static const int countdownFrom = 3;
