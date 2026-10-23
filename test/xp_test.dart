@@ -318,7 +318,7 @@ void main() {
       final xp = AnkirenXp.cardXp(2);
       expect(parts(gain), {
         XpSource.firstTap: (3, 3 * xp),
-        XpSource.nearMiss: (2, (xp * 0.8).round() + (xp * 0.68).round()),
+        XpSource.nearMiss: (2, (xp * 0.6).round() + (xp * 0.46).round()),
         XpSource.missed: (2, 2 * AnkirenXpTuning.perMiss),
         XpSource.speed: (2, 2 * AnkirenXpTuning.speedMax),
         XpSource.clear: (1, AnkirenXpTuning.clear),
@@ -341,7 +341,7 @@ void main() {
           expect(share, closeTo(AnkirenScore.pointsOf(taps, 100000) / AnkirenTuning.cardPoints, 1e-9),
               reason: 'as the score');
           final gain = XpLedger().addAnkiren(game([answer], completed: false));
-          expect(parts(gain), share == 0 ? isEmpty : {XpSource.nearMiss: (1, (xp * share).round())},
+          expect(parts(gain), share == 0 ? isEmpty : {XpSource.nearMiss: (1, math.max(AnkirenXpTuning.perMiss, (xp * share).round()))},
               reason: taps.map((p) => p.name).join(' then '));
         }
       }
@@ -350,8 +350,9 @@ void main() {
           for (final first in TapProximity.values.skip(1))
             for (final second in TapProximity.values) AnkirenScore.share([first, second]),
         ].where((s) => s > 0).reduce((a, b) => a < b ? a : b);
-        expect((AnkirenXp.cardXp(level) * least).round(), greaterThanOrEqualTo(AnkirenXpTuning.perMiss),
-            reason: 'a near miss never earns less than trying, at level $level');
+        final gain = XpLedger().addAnkiren(game([missed([TapProximity.side, TapProximity.side])], level: level));
+        expect(parts(gain)[XpSource.nearMiss]!.$2, greaterThanOrEqualTo(AnkirenXpTuning.perMiss),
+            reason: 'a near miss never earns less than trying, at level $level (share $least)');
       }
       expect(parts(XpLedger().addAnkiren(game([missed([otherSide, otherSide, card])]))).keys,
           [XpSource.missed, XpSource.clear], reason: 'found on the third tap after two far misses: nothing');

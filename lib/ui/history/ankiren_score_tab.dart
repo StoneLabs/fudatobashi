@@ -33,8 +33,8 @@ class AnkirenScoreTab extends StatelessWidget {
   }
 }
 
-/// D37: card points × being ready early = the score, and the card points
-/// part by part.
+/// D37: first-tap points × being ready early + the other points = the score,
+/// and the card points part by part.
 class _ScoreSum extends StatelessWidget {
   const _ScoreSum(this.review);
   final AnkirenReview review;
@@ -80,9 +80,11 @@ class _ScoreSum extends StatelessWidget {
       ReviewPanel(
         fill: AnkirenReviewStyle.sumFill,
         child: Row(crossAxisAlignment: CrossAxisAlignment.center, children: [
-          term('${game.recall}', s.ankirenEqCardPoints(game.maxRecall)),
+          term('${game.firstRight}', s.ankirenEqFirstRight),
           sign('×'),
           term(game.earlyFactor.toStringAsFixed(2), early > 0 ? s.ankirenEqEarly(early) : s.ankirenEqOnTime),
+          sign('+'),
+          term('${game.recall - game.firstRight}', s.ankirenEqOther),
           sign('='),
           term('${game.score}', s.ankirenEqPoints, result: true),
         ]),

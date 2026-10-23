@@ -79,7 +79,7 @@ void main() {
     test('the tiers fall from the card itself to nothing on the other side; the second tap counts a fifth', () {
       const share = AnkirenTuning.tapShare;
       expect(share.keys, TapProximity.values, reason: 'every place has its share');
-      expect(share.values, [1, 0.6, 0.4, 0.25, 0.15, 0], reason: "the user's tiers");
+      expect(share.values, [1, 0.4, 0.3, 0.15, 0.1, 0], reason: "the user's tiers");
       for (var i = 1; i < TapProximity.values.length; i++) {
         expect(share[TapProximity.values[i]], lessThan(share[TapProximity.values[i - 1]]!));
       }
@@ -89,9 +89,9 @@ void main() {
     });
 
     test('the first tap: the card earns its points and speed; a miss its tier, with no speed', () {
-      expect([for (final p in TapProximity.values) points([p], firstMs: 100)], [150, 60, 40, 25, 15, 0]);
+      expect([for (final p in TapProximity.values) points([p], firstMs: 100)], [150, 40, 30, 15, 10, 0]);
       expect([for (final p in TapProximity.values) points([p], firstMs: 4000)],
-          [100 + AnkirenScore.speedBonus(ms(4000)), 60, 40, 25, 15, 0]);
+          [100 + AnkirenScore.speedBonus(ms(4000)), 40, 30, 15, 10, 0]);
       expect([for (final p in TapProximity.values) AnkirenScore.speedWeight([p])], [1, 0, 0, 0, 0, 0]);
     });
 
@@ -103,11 +103,11 @@ void main() {
           expect(points([first, second], firstMs: 100), expected, reason: 'no speed bonus for a miss');
         }
       }
-      expect(points([neighbour, card]), 60 + 20);
-      expect(points([neighbour, neighbour]), 60 + 12);
-      expect(points([row, card]), 40 + 20);
-      expect(points([quadrant, side]), 25 + 3);
-      expect(points([side, side]), 15 + 3);
+      expect(points([neighbour, card]), 40 + 20);
+      expect(points([neighbour, neighbour]), 40 + 8);
+      expect(points([row, card]), 30 + 20);
+      expect(points([quadrant, side]), 15 + 2);
+      expect(points([side, side]), 10 + 2);
       expect(points([otherSide, card]), 20);
       expect(points([otherSide, otherSide]), 0);
     });
@@ -134,17 +134,17 @@ void main() {
               reason: 'giving up after a tap never beats going on');
         }
       }
-      expect(points([neighbour, card]), 80, reason: 'the best a miss first can do');
+      expect(points([neighbour, card]), 60, reason: 'the best a miss first can do');
     });
 
     test('shown, given up or never found: the taps made still count', () {
       final shown = answer(wrongTaps: 2, us: ms(900), taps: const [neighbour, row], firstUs: ms(200));
       expect(shown.revealed, isTrue);
-      expect(AnkirenScore.points(shown), 60 + 8);
+      expect(AnkirenScore.points(shown), 40 + 6);
       final givenUpAfterOne = answer(wrongTaps: 1, taps: const [quadrant], firstUs: ms(200));
-      expect((givenUpAfterOne.found, AnkirenScore.points(givenUpAfterOne)), (false, 25));
+      expect((givenUpAfterOne.found, AnkirenScore.points(givenUpAfterOne)), (false, 15));
       final givenUpAfterTwo = answer(wrongTaps: 2, taps: const [side, neighbour], firstUs: ms(200));
-      expect(AnkirenScore.points(givenUpAfterTwo), 15 + 12);
+      expect(AnkirenScore.points(givenUpAfterTwo), 10 + 8);
       expect(AnkirenScore.points(answer()), 0, reason: 'given up or never found with no tap');
       expect(answer().found, isFalse);
     });
@@ -159,9 +159,9 @@ void main() {
         answer(),
       ];
       final s = AnkirenScore(answers, prompts: 6);
-      expect(s.total, 150 + 108 + 100 + 45 + 63);
+      expect(s.total, 150 + 108 + 100 + 35 + 42);
       expect(s.max, 6 * 150);
-      expect(s.fraction, closeTo(466 / 900, 1e-12));
+      expect(s.fraction, closeTo(435 / 900, 1e-12));
       expect(AnkirenScore([], prompts: 0).fraction, 0);
     });
   });
@@ -178,6 +178,17 @@ void main() {
       expect(quick.early, quick.total - 278);
       expect(AnkirenScore([], prompts: 2, timeLeft: 1).total, 0, reason: 'nothing found, nothing to multiply');
     });
+
+    test('only cards found with the first tap are multiplied', () {
+      final near = answer(wrongTaps: 1, us: ms(900), taps: const [row, card], firstUs: ms(300));
+      final answers = [found(100), near];
+      final score = AnkirenScore(answers, prompts: 2, timeLeft: 1);
+      final nearPoints = AnkirenScore.points(near);
+      expect((score.recall, score.firstRight), (150 + nearPoints, 150));
+      expect(score.total, (150 * (1 + AnkirenTuning.earlyBonus)).round() + nearPoints);
+      expect(score.early, score.total - score.recall);
+      expect(AnkirenScore.totalOf(score.recall, score.firstRight, 0), score.recall);
+    });
   });
 
   group('rating', () {
@@ -191,11 +202,16 @@ void main() {
       expect(ranked.custom, isFalse);
     });
 
-    test('the anchors: 50 first taps at 0.5 s reach A, 25 at 2.5 s and nothing else reach F-', () {
+    test('the anchors: 50 first taps at 0.5 s reach A, 25 at 2.5 s and 25 row-then-right reach F-', () {
       final a = AnkirenScore.firstTryTotal(ranked, responseMs: 500);
       expect(AnkirenRating.performance(a), closeTo(band('A'), 1));
-      final half = AnkirenScore([for (var i = 0; i < ranked.perSide; i++) found(2500)], prompts: ranked.cards);
-      expect(half.total, (ranked.perSide * (AnkirenTuning.cardPoints + AnkirenScore.speedBonus(ms(2500)))));
+      final half = AnkirenScore([
+        for (var i = 0; i < ranked.perSide; i++) found(2500),
+        for (var i = 0; i < ranked.perSide; i++)
+          answer(wrongTaps: 1, us: ms(3000), taps: const [row, card], firstUs: ms(500)),
+      ], prompts: ranked.cards);
+      expect(half.total,
+          ranked.perSide * (AnkirenTuning.cardPoints + AnkirenScore.speedBonus(ms(2500))) + ranked.perSide * 50);
       expect(AnkirenRating.performance(half.total), closeTo(band('F-'), 1));
       expect(AnkirenRating.scoreFor(AnkirenRating.performance(a)), closeTo(a, 1e-6));
     });
@@ -426,7 +442,7 @@ void main() {
         expect(g.tap(asked, t(400)), TapResult.right);
         final a = g.answers.single;
         expect([a.wrongTaps, a.taps, a.firstTapUs], [1, [neighbour, card], 100 * 1000]);
-        expect(AnkirenScore.points(a), 80, reason: 'neither tap earns a speed bonus');
+        expect(AnkirenScore.points(a), 60, reason: 'neither tap earns a speed bonus');
         return;
       }
     });
@@ -447,7 +463,7 @@ void main() {
         expect(g.tap(asked, t(1200)), TapResult.right);
         final a = g.answers.single;
         expect([a.wrongTaps, a.found, a.taps], [3, true, [neighbour, otherSide]]);
-        expect(AnkirenScore.points(a), 60, reason: 'the shown card and the tap before it add nothing');
+        expect(AnkirenScore.points(a), 40, reason: 'the shown card and the tap before it add nothing');
         return;
       }
     });
@@ -502,19 +518,19 @@ void main() {
 
       final cases = [
         (clustered, 2, [2], [card], 144),
-        (clustered, 2, [1, 2], [neighbour, card], 60 + 20),
-        (clustered, 1, [3, 7], [row, quadrant], 40 + 5),
-        (clustered, 2, [6, 4], [quadrant, side], 25 + 3),
+        (clustered, 2, [1, 2], [neighbour, card], 40 + 20),
+        (clustered, 1, [3, 7], [row, quadrant], 30 + 3),
+        (clustered, 2, [6, 4], [quadrant, side], 15 + 2),
         (clustered, 2, [21, 22], [otherSide, otherSide], 0),
-        (clustered, 2, [10, 2], [side, card], 15 + 20),
-        (clustered, 10, [11, 12], [row, row], 40 + 8),
-        (clustered, 10, [4, 10], [side, card], 15 + 20),
-        (clustered, 10, [23, 9], [otherSide, row], 8),
-        (clustered, 12, [11, 13], [side, neighbour], 15 + 12),
-        (clustered, 22, [21, 23, 22], [neighbour, side], 60 + 3),
-        (beginner, 32, [31, 34], [neighbour, row], 60 + 8),
+        (clustered, 2, [10, 2], [side, card], 10 + 20),
+        (clustered, 10, [11, 12], [row, row], 30 + 6),
+        (clustered, 10, [4, 10], [side, card], 10 + 20),
+        (clustered, 10, [23, 9], [otherSide, row], 6),
+        (clustered, 12, [11, 13], [side, neighbour], 10 + 8),
+        (clustered, 22, [21, 23, 22], [neighbour, side], 40 + 2),
+        (beginner, 32, [31, 34], [neighbour, row], 40 + 6),
         (beginner, 32, [41, 32], [otherSide, card], 20),
-        (beginner, 41, [43], [row], 40),
+        (beginner, 41, [43], [row], 30),
       ];
       for (final (field, asked, taps, places, points) in cases) {
         final a = play(field, asked, taps);

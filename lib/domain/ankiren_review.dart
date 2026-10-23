@@ -142,6 +142,10 @@ class AnkirenGameRecord {
 
   /// The card points, out of [maxRecall], and their share.
   int get recall => cards.fold(0, (sum, c) => sum + c.points);
+
+  /// The part of [recall] from cards found with the first tap, the only part
+  /// being ready early multiplies.
+  int get firstRight => cards.fold(0, (sum, c) => sum + (AnkirenScore.foundFirst(c.taps) ? c.points : 0));
   int get maxRecall => AnkirenScore.maxFor(cards.length);
   double get fraction => maxRecall == 0 ? 0 : recall / maxRecall;
 

@@ -13,7 +13,8 @@ import 'debug_common.dart';
 
 /// A ranked game's total over the time each right card took to find, played
 /// in full and ready early with the set time left, with some cards wrong
-/// ([AnkirenToolsTuning.wrongCardPoints] each, no speed bonus). The class
+/// (first tapped in their row, then found; [AnkirenToolsTuning.wrongCardTaps]),
+/// which the early finish does not multiply. The class
 /// borders are dashed lines at the scores that reach them.
 class AnkirenRankedGraph extends StatefulWidget {
   const AnkirenRankedGraph({super.key});
@@ -29,6 +30,7 @@ class _AnkirenRankedGraphState extends State<AnkirenRankedGraph> {
 
   _Line _line(Color color, Duration timeLeft) {
     final wrong = _wrong.round();
+    final wrongPoints = wrong * AnkirenScore.pointsOf(AnkirenToolsTuning.wrongCardTaps, null);
     final share = timeLeft.inMicroseconds / _setup.memorise.inMicroseconds;
     return _Line(color, [
       for (
@@ -38,11 +40,10 @@ class _AnkirenRankedGraphState extends State<AnkirenRankedGraph> {
       )
         Offset(
           ms / 1000,
-          AnkirenScore.totalOf(
-            (_setup.cards - wrong) * (AnkirenTuning.cardPoints + AnkirenScore.speedBonus(ms * 1000)) +
-                wrong * AnkirenToolsTuning.wrongCardPoints,
-            share,
-          ).toDouble(),
+          () {
+            final right = (_setup.cards - wrong) * (AnkirenTuning.cardPoints + AnkirenScore.speedBonus(ms * 1000));
+            return AnkirenScore.totalOf(right + wrongPoints, right, share).toDouble();
+          }(),
         ),
     ]);
   }
@@ -77,7 +78,9 @@ class _AnkirenRankedGraphState extends State<AnkirenRankedGraph> {
         ),
         Text(
           'x: time of each right card (s) · y: points · grey: played in full · blue: ready early · '
-          'a wrong card = ${AnkirenToolsTuning.wrongCardPoints} · dashed: class borders',
+          'a wrong card = ${AnkirenScore.pointsOf(AnkirenToolsTuning.wrongCardTaps, null)} '
+          '(${AnkirenToolsTuning.wrongCardTaps.map((p) => p.name).join(', then ')}), not multiplied · '
+          'dashed: class borders',
           style: debugMono,
         ),
       ],

@@ -972,7 +972,7 @@ void main() {
         ['TAP 2', 'none'],
         ['SUM', '144 + 0.2 × 0 = 144'],
         ['GAME', '144 / 900'],
-        ['early', '× 1'],
+        ['early', '× 1 on 144 (right first taps)'],
         ['score', '144'],
       ]);
 
@@ -987,22 +987,22 @@ void main() {
       expect(rows(shown).sublist(1, 13), [
         ['result', 'found on tap 4, shown'],
         ['TAP 1', 'neighbour'],
-        ['tier', '0.6'],
+        ['tier', '0.4'],
         ['time', '300 ms'],
         ['speed', '0, not the card'],
-        ['points', '0.6 × 100 = 60'],
+        ['points', '0.4 × 100 = 40'],
         ['TAP 2', 'otherSide'],
         ['tier', '0'],
         ['points', '0 × 100 = 0'],
         ['later', '2 taps, not counted'],
-        ['SUM', '60 + 0.2 × 0 = 60'],
-        ['GAME', '60 / 900'],
+        ['SUM', '40 + 0.2 × 0 = 40'],
+        ['GAME', '40 / 900'],
       ]);
 
       final givenUp = game()..tap(4, ms * 500);
       givenUp.giveUp();
       expect(rows(givenUp)[1], ['result', 'given up after 1 tap']);
-      expect(rows(givenUp).firstWhere((r) => r.first == 'SUM'), ['SUM', '15 + 0.2 × 0 = 15']);
+      expect(rows(givenUp).firstWhere((r) => r.first == 'SUM'), ['SUM', '10 + 0.2 × 0 = 10']);
 
       final untapped = game()..giveUp();
       expect(rows(untapped).sublist(1, 5), [
@@ -1039,7 +1039,7 @@ void main() {
       }
 
       await pick(0, TapProximity.row.name);
-      expect([kv('per card'), kv('speed bonus')], ['40', '0 / ${AnkirenTuning.speedMax}'], reason: 'no second tap yet');
+      expect([kv('per card'), kv('speed bonus')], ['30', '0 / ${AnkirenTuning.speedMax}'], reason: 'no second tap yet');
       await pick(1, TapProximity.card.name);
       expect(kv('per card'), '${AnkirenScore.pointsOf(const [TapProximity.row, TapProximity.card], null)}');
       await pick(0, 'none');

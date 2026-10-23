@@ -99,10 +99,10 @@ abstract final class AnkirenTuning {
   /// asked to the other side.
   static const Map<TapProximity, double> tapShare = {
     TapProximity.card: 1,
-    TapProximity.neighbour: 0.6,
-    TapProximity.row: 0.4,
-    TapProximity.quadrant: 0.25,
-    TapProximity.side: 0.15,
+    TapProximity.neighbour: 0.4,
+    TapProximity.row: 0.3,
+    TapProximity.quadrant: 0.15,
+    TapProximity.side: 0.1,
     TapProximity.otherSide: 0,
   };
 
@@ -112,8 +112,9 @@ abstract final class AnkirenTuning {
   /// right second one earn less than the card found with the first.
   static const List<double> tapWeights = [1, 0.2];
 
-  /// Being ready before the memorise time is up multiplies the points by up
-  /// to 1 + [earlyBonus], in proportion to the share of the time left.
+  /// Being ready before the memorise time is up multiplies the points of the
+  /// cards found with the first tap by up to 1 + [earlyBonus], in proportion
+  /// to the share of the time left. Other cards' points are never multiplied.
   static const double earlyBonus = 0.5;
 
   /// The speed bonus's curve over the response time t: a logistic curve over
@@ -145,9 +146,9 @@ abstract final class AnkirenToolsTuning {
   /// gap between the x axis's labels.
   static const Duration timeLeftStart = Duration(minutes: 5);
 
-  /// What a card not found with the first tap is assumed to earn, flat: a
-  /// first tap next to the card, roughly.
-  static const int wrongCardPoints = 60;
+  /// A card not found with the first tap is assumed to be first tapped
+  /// in its row and then found with the second tap.
+  static const List<TapProximity> wrongCardTaps = [TapProximity.row, TapProximity.card];
 
   /// The graph's fixed top, in points.
   static const int graphYMax = 12000;
@@ -188,13 +189,20 @@ abstract final class AnkirenRatingModel {
   /// any ranked game.
   static const double start = 400;
 
-  /// A ranked game's performance is [slope] × (F − [zero]), F its final
-  /// score (card points times the early-finish multiplier). Two games with
-  /// no early finish anchor it: all 50 cards right with the first tap at
-  /// 0.5 s each performs at the A class line, and 25 right with the first
-  /// tap at 2.5 s each, nothing for the other 25, at the F- line.
-  static const double slope = 0.48319;
-  static const double zero = 1133.5;
+  /// A ranked game's performance is a straight line of its final score F
+  /// (see `AnkirenRating.slope`, `AnkirenRating.zero`), drawn through two
+  /// games with no early finish. The first performs at the [highBand] line:
+  /// every card found with the first tap, each [highFirstTap] after its
+  /// prompt. The second performs at the [lowBand] line: [lowFirstShare] of
+  /// the cards found with the first tap, each [lowFirstTap] after its
+  /// prompt, and each other card first tapped in its row and then found
+  /// with the second tap.
+  static const String highBand = 'A';
+  static const Duration highFirstTap = Duration(milliseconds: 500);
+  static const String lowBand = 'F-';
+  static const Duration lowFirstTap = Duration(milliseconds: 2500);
+  static const double lowFirstShare = 0.5;
+  static const List<TapProximity> lowOtherTaps = [TapProximity.row, TapProximity.card];
 
   /// The rating after each of the first [placementGames] ranked games is
   /// the mean of their performances; each later game moves it

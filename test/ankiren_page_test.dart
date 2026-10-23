@@ -317,10 +317,10 @@ void main() {
             [for (final place in TapProximity.values) Phrases.spoken(s.ankirenTier(place))]);
         expect([for (final r in rows) r.skip(1).toList()], [
           [Phrases.spoken(s.ankirenTierSpeed('100')), '20'],
-          ['60', '12'],
           ['40', '8'],
-          ['25', '5'],
+          ['30', '6'],
           ['15', '3'],
+          ['10', '2'],
           ['0', '0'],
         ]);
         await tester.pumpWidget(const SizedBox());

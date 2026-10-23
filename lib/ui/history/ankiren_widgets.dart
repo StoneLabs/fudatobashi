@@ -53,7 +53,7 @@ class TierChips extends StatelessWidget {
       );
 }
 
-/// A share of a card's points: 1, 0.6, 0.25 or 0.
+/// A share of a card's points: 1, 0.4, 0.15 or 0.
 String shareText(double share) => share == share.roundToDouble() ? '${share.round()}' : '$share';
 
 /// Every tier's colour, name and share of a card's points.

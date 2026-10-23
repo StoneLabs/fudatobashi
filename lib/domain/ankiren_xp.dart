@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import '../config/config.dart';
 import 'ankiren_field.dart';
 import 'ankiren_score.dart';
@@ -51,8 +53,8 @@ class AnkirenXpRun {
 /// games played. Each card earns the
 /// same share of a find's XP (more at a higher level, ranked as
 /// [AnkirenXpTuning.rankedLevel]) as of its points (`AnkirenScore.share`):
-/// all of it when the first tap found it, part when its taps landed near
-/// it; and a find with the first tap a speed bonus for its time. A game
+/// all of it when the first tap found it, part (at least as much as a card
+/// that earned nothing) when its taps landed near it; and a find with the first tap a speed bonus for its time. A game
 /// played to the end pays the cards that earned nothing for trying, adds a
 /// clear (and a ranked one more), a personal best adds its bonus, and the
 /// ranked game that finishes placement adds a one-off bonus. A forfeit and
@@ -96,7 +98,7 @@ class AnkirenXp {
         missed++;
         continue;
       }
-      final xp = (card * share).round();
+      final xp = math.max(AnkirenXpTuning.perMiss, (card * share).round());
       if (a.taps.first == TapProximity.card) {
         first++;
         firstXp += xp;

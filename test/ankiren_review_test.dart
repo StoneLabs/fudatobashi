@@ -155,7 +155,7 @@ void main() {
       expect(review.nearFirst.cards, 3);
       expect(review.secondTaps.cards, 3);
       expect(game.timeLeft, closeTo(48 / AnkirenTuning.rankedMemorise.inSeconds, 1e-9));
-      expect(AnkirenScore.totalOf(game.recall, game.timeLeft), game.score);
+      expect(AnkirenScore.totalOf(game.recall, game.firstRight, game.timeLeft), game.score);
       expect(game.maxRecall, AnkirenScore.maxFor(game.cards.length));
     });
 

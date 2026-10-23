@@ -36,6 +36,10 @@ class AnkirenToolsPage extends StatelessWidget {
           const SizedBox(height: AnkirenToolsStyle.gap),
           const _LevelTable(),
           const Divider(height: 32),
+          Text('Tap points', style: title),
+          const SizedBox(height: AnkirenToolsStyle.gap),
+          const _TapPointsTable(),
+          const Divider(height: 32),
           Text('Ranked points', style: title),
           const _PointsCalculator(),
           const Divider(height: 32),
@@ -48,6 +52,59 @@ class AnkirenToolsPage extends StatelessWidget {
           const Divider(height: 32),
           Text('Middle cards', style: title),
           const _MiddleSimulator(),
+        ],
+      ),
+    );
+  }
+}
+
+/// What a tap earns by where it lands, as the first and as the second tap
+/// (weighted), and a first tap there followed by the right card.
+class _TapPointsTable extends StatelessWidget {
+  const _TapPointsTable();
+
+  static const _names = {
+    TapProximity.card: 'Spot on',
+    TapProximity.neighbour: 'Neighbour',
+    TapProximity.row: 'Same row',
+    TapProximity.quadrant: 'Same quadrant',
+    TapProximity.side: 'Same side',
+    TapProximity.otherSide: 'Other side',
+  };
+
+  static String _points(TapProximity place, int tap) =>
+      _n(AnkirenTuning.cardPoints * AnkirenTuning.tapShare[place]! * AnkirenTuning.tapWeights[tap]);
+
+  static String _n(double x) => x.toStringAsFixed(2).replaceFirst(RegExp(r'\.?0+$'), '');
+
+  @override
+  Widget build(BuildContext context) {
+    TableRow row(List<String> cells, {bool head = false}) => TableRow(
+      children: [
+        for (final c in cells)
+          Padding(
+            padding: const EdgeInsets.only(right: 10, top: 2, bottom: 2),
+            child: Text(c, style: head ? debugMono.copyWith(fontWeight: Weights.black) : debugMono),
+          ),
+      ],
+    );
+    return SingleChildScrollView(
+      scrollDirection: Axis.horizontal,
+      child: Table(
+        defaultColumnWidth: const IntrinsicColumnWidth(),
+        children: [
+          row(['tap on', '1st tap', '2nd tap', '1st+right'], head: true),
+          for (final place in TapProximity.values)
+            row([
+              _names[place]!,
+              place == TapProximity.card
+                  ? '${AnkirenTuning.cardPoints} + 0–${AnkirenTuning.speedMax} speed'
+                  : _points(place, 0),
+              _points(place, 1),
+              place == TapProximity.card
+                  ? '—'
+                  : _n(AnkirenScore.pointsOf([place, TapProximity.card], null).toDouble()),
+            ]),
         ],
       ),
     );
@@ -80,6 +137,7 @@ class _PointsCalculatorState extends State<_PointsCalculator> {
     final share = _timeLeft.clamp(0, _memoriseSeconds) / _memoriseSeconds;
     final early = 1 + AnkirenTuning.earlyBonus * share;
     final points = AnkirenScore.pointsOf(taps, first == null ? null : tapUs);
+    final multiplied = AnkirenScore.foundFirst(taps) ? points : 0;
     final timed = AnkirenScore.speedWeight(taps) > 0;
     Widget picker(String label, TapProximity? selected, ValueChanged<TapProximity?>? onChanged) => Wrap(
           crossAxisAlignment: WrapCrossAlignment.center,
@@ -127,8 +185,8 @@ class _PointsCalculatorState extends State<_PointsCalculator> {
         DebugKV('speed bonus', '${timed ? AnkirenScore.speedBonus(tapUs) : 0} / ${AnkirenTuning.speedMax}'),
         DebugKV('tap share', AnkirenScore.share(taps).toStringAsFixed(2)),
         DebugKV('per card', '$points'),
-        DebugKV('early ×', early.toStringAsFixed(3)),
-        DebugKV('per card × early', '${(points * early).round()}'),
+        DebugKV('early × (right first tap only)', early.toStringAsFixed(3)),
+        DebugKV('per card with early', '${points - multiplied + (multiplied * early).round()}'),
         DebugKV('${_setup.cards} cards, all first taps at this time',
             '${AnkirenScore.firstTryTotal(_setup, responseMs: _responseMs, timeLeft: Duration(seconds: _timeLeft.round()))}'),
       ],
@@ -397,7 +455,7 @@ class _ClassTable extends StatelessWidget {
       final share = timeLeft.inMicroseconds / _setup.memorise.inMicroseconds;
       var finds = 0;
       while (finds < _setup.cards &&
-          AnkirenRating.performance(AnkirenScore.totalOf(finds * AnkirenTuning.cardPoints, share)) < rating) {
+          AnkirenRating.performance(AnkirenScore.totalOf(finds * AnkirenTuning.cardPoints, finds * AnkirenTuning.cardPoints, share)) < rating) {
         finds++;
       }
       return (ms: null, finds: finds);
@@ -434,7 +492,7 @@ class _ClassTable extends StatelessWidget {
     return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
       Text(
         'All ${_setup.cards} right with the first tap at one time each; '
-        'P = ${AnkirenRatingModel.slope}·(F − ${AnkirenRatingModel.zero}). '
+        'P = ${AnkirenRating.slope.toStringAsFixed(4)}·(F − ${AnkirenRating.zero.toStringAsFixed(1)}). '
         'A class reached even at ${AnkirenTuning.speedNone.inSeconds} s shows the finds it needs there.',
         style: debugMono.copyWith(color: Colors.grey),
       ),

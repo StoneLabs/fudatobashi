@@ -65,7 +65,8 @@ extension AnkirenReviewStrings on S {
   String get ankirenColRightFirst => t('ankirenColRightFirst');
   String get ankirenColUsualFirst => t('ankirenColUsualFirst');
   String get ankirenMisplacedNone => t('ankirenMisplacedNone');
-  String ankirenEqCardPoints(Object a0) => f('ankirenEqCardPoints', [a0]);
+  String get ankirenEqFirstRight => t('ankirenEqFirstRight');
+  String get ankirenEqOther => t('ankirenEqOther');
   String ankirenEqEarly(Object a0) => f('ankirenEqEarly', [a0]);
   String get ankirenEqOnTime => t('ankirenEqOnTime');
   String get ankirenEqPoints => t('ankirenEqPoints');

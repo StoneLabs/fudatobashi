@@ -61,15 +61,18 @@ class AnkirenAnswer {
 /// however its prompt ended (found, given up or the game ended).
 ///
 /// These [recall] points are out of [maxRecall] (every card first try at
-/// full speed). The score is them times 1 + [AnkirenTuning.earlyBonus] ×
-/// the share of the memorise time left unused; [max] is the best one without
-/// being ready early, and [early] what being ready early added.
+/// full speed). The [firstRight] part of them, from the cards found with the
+/// first tap, is multiplied by 1 + [AnkirenTuning.earlyBonus] × the share of
+/// the memorise time left unused; the rest never is. [max] is the best score
+/// without being ready early, and [early] what being ready early added.
 class AnkirenScore {
   AnkirenScore(List<AnkirenAnswer> answers, {required int prompts, this.timeLeft = 0})
       : recall = answers.fold(0, (sum, a) => sum + points(a)),
+        firstRight = answers.fold(0, (sum, a) => sum + (foundFirst(a.taps) ? points(a) : 0)),
         maxRecall = maxFor(prompts);
 
   final int recall;
+  final int firstRight;
   final int maxRecall;
 
   /// The share of the memorise time left unused.
@@ -77,13 +80,19 @@ class AnkirenScore {
 
   double get fraction => maxRecall == 0 ? 0 : recall / maxRecall;
 
-  int get total => totalOf(recall, timeLeft);
+  int get total => totalOf(recall, firstRight, timeLeft);
   int get max => maxRecall;
   int get early => total - recall;
 
-  /// The score of [recall] points with [timeLeft] of the memorise time unused
-  /// (as a share).
-  static int totalOf(int recall, double timeLeft) => (recall * (1 + AnkirenTuning.earlyBonus * timeLeft)).round();
+  /// Whether a card with these [taps] was found with the first tap, the only
+  /// kind whose points the early finish multiplies.
+  static bool foundFirst(List<TapProximity> taps) => taps.firstOrNull == TapProximity.card;
+
+  /// The score of [recall] points, [firstRight] of them from cards found
+  /// with the first tap, with [timeLeft] of the memorise time unused (as a
+  /// share).
+  static int totalOf(int recall, int firstRight, double timeLeft) =>
+      recall - firstRight + (firstRight * (1 + AnkirenTuning.earlyBonus * timeLeft)).round();
 
   /// A game with [setup] where every card is found with its first tap
   /// [responseMs] after its prompt, and the player was ready with [timeLeft]
@@ -91,7 +100,7 @@ class AnkirenScore {
   static int firstTryTotal(AnkirenSetup setup, {required double responseMs, Duration timeLeft = Duration.zero}) {
     final share = (timeLeft.inMicroseconds / setup.memorise.inMicroseconds).clamp(0.0, 1.0);
     final perCard = AnkirenTuning.cardPoints + speedBonus((responseMs * 1000).round());
-    return totalOf(setup.cards * perCard, share);
+    return totalOf(setup.cards * perCard, setup.cards * perCard, share);
   }
 
   static int maxFor(int prompts) => prompts * (AnkirenTuning.cardPoints + AnkirenTuning.speedMax);
@@ -120,7 +129,7 @@ class AnkirenScore {
   /// How much a card's speed bonus counts: as much as its first tap when
   /// that found the card, else not at all.
   static double speedWeight(List<TapProximity> taps) =>
-      taps.firstOrNull == TapProximity.card ? AnkirenTuning.tapWeights.first : 0;
+      foundFirst(taps) ? AnkirenTuning.tapWeights.first : 0;
 
   /// The bonus for a first tap [responseUs] after its prompt, rounded
   /// [speedShare] of [AnkirenTuning.speedMax].
