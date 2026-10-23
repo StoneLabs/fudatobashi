@@ -3,10 +3,10 @@
 // before the first ranked game, during placement, after it, and with every
 // level cleared. It fits one screen at font scale 1.0 and scrolls without
 // overflowing at 1.3, ranked is chained until it opens and then starts its
-// one setup, the next level to clear starts from its panel, free play's
-// menu chains the levels not yet open and starts a setup of the player's
-// own, guest mode opens every level, and the rules open on the first visit
-// and from their button.
+// one setup, the next level to clear starts from its panel, the level
+// sheet chains the levels not yet open and puts the setup confirmed on the
+// panel, which starts it, guest mode opens every level and starts its game,
+// and the rules open on the first visit and from their button.
 //
 // With RENDER_SCREENS=1 it also renders the page and its sheets, with real
 // fonts and art, to build/screens/ankiren_page/.
@@ -358,7 +358,8 @@ void main() {
       await tester.pumpWidget(const SizedBox());
     });
 
-    testWidgets('free play: a level key fills the steppers, a stepper makes it custom, and it starts', (tester) async {
+    testWidgets('the level sheet: a level key fills the steppers, a stepper makes it custom, and Confirm puts it on '
+        'the panel, which starts it', (tester) async {
       const s = S('en');
       final p = await open(tester, _Stage.placed, 'en', cleared: AnkirenTuning.customAfterLevel);
       await showPage(tester, p, usersPhone);
@@ -366,36 +367,69 @@ void main() {
       final sheet = find.byType(AnkirenFreeSheet);
       expect(sheet, findsOneWidget);
       Finder inSheet(Finder f) => find.descendant(of: sheet, matching: f);
+      expect(inSheet(find.textContaining(s.ankirenSelectLevel)), findsWidgets);
       expect(inSheet(find.byType(ClearedCheck)), findsNWidgets(AnkirenTuning.customAfterLevel + 1));
       expect(inSheet(find.byType(TabChains)), findsNWidgets(AnkirenLevels.top - AnkirenTuning.customAfterLevel - 1),
           reason: 'the levels past the next one are shut; custom is open');
+      Future<void> tapInSheet(Finder f) async {
+        await tester.runAsync(() async {
+          await tester.tap(inSheet(f));
+          await Future<void>.delayed(const Duration(milliseconds: 50));
+        });
+        await tester.pump();
+      }
+
+      Future<void> confirm() async {
+        await tapInSheet(find.text(s.ankirenConfirm));
+        await tester.pump(Motion.sheet * 2);
+        expect(sheet, findsNothing, reason: 'Confirm closes the sheet');
+      }
 
       const level = 7;
       final preset = AnkirenLevels.of(level);
-      await tester.runAsync(() async {
-        await tester.tap(inSheet(find.text('$level')));
-        await Future<void>.delayed(const Duration(milliseconds: 50));
-      });
-      await tester.pump();
-      expect(p.settings.ankiren.freeSetup, AnkirenSetup.forLevel(level));
+      await tapInSheet(find.text('$level'));
       expect(inSheet(numbered(s.ankirenPerSideCount, preset.perSide)), findsOneWidget, reason: 'the stepper shows it');
+      await confirm();
+      expect(find.byType(AnkirenScreen), findsNothing, reason: 'Confirm only picks the level');
+      expect(onPage(numbered(s.ankirenLevelValue, level)), findsOneWidget);
+      expect(onPage(find.textContaining(s.freePlay)), findsWidgets, reason: 'not the next level to clear');
+      expect(onPage(find.byType(ClearedCheck)), findsOneWidget, reason: 'the level is cleared');
+      expect(onPage(burst(s.ankirenPlayLevel(level))), findsOneWidget);
 
-      await tester.runAsync(() async {
-        await tester.tap(inSheet(find.text('+')).first);
-        await Future<void>.delayed(const Duration(milliseconds: 50));
-      });
-      await tester.pump();
+      await tapAndSettle(tester, levelButton(s), Motion.sheet);
+      expect(inSheet(numbered(s.ankirenPerSideCount, preset.perSide)), findsOneWidget,
+          reason: 'the sheet opens on the level picked');
+      await tapInSheet(find.text('+').first);
       final custom = AnkirenSetup.custom(perSide: preset.perSide + 1, memorise: preset.memorise);
       expect(p.settings.ankiren.freeSetup, custom, reason: 'a stepper turns the level into a custom setup');
+      await confirm();
+      expect(onPage(find.text(s.ankirenCustom)), findsOneWidget);
 
-      await tester.tap(inSheet(find.text(s.freeStart)));
-      await tester.pump();
-      await tester.pump(Motion.sheet);
-      await tester.pump(Motion.route);
+      await tapAndSettle(tester, onPage(burst(s.freeStart)), Motion.route);
       final game = tester.widget<AnkirenScreen>(find.byType(AnkirenScreen));
       expect(game.setup, custom);
       expect(game.setup.ranked, isFalse);
       expect(game.player, AnkirenPlayer.owner);
+      await tester.pumpWidget(const SizedBox());
+    });
+
+    testWidgets('confirming the next level to clear shows it as that again', (tester) async {
+      const s = S('en');
+      final p = await open(tester, _Stage.fresh, 'en');
+      const next = AnkirenTuning.rankedAfterLevel + 1;
+      await showPage(tester, p, usersPhone);
+      final sheet = find.byType(AnkirenFreeSheet);
+      for (final level in [0, next]) {
+        await tapAndSettle(tester, levelButton(s), Motion.sheet);
+        await tester.runAsync(() async {
+          await tester.tap(find.descendant(of: sheet, matching: find.text('$level')));
+          await Future<void>.delayed(const Duration(milliseconds: 50));
+        });
+        await tester.pump();
+        await tapAndSettle(tester, find.descendant(of: sheet, matching: find.text(s.ankirenConfirm)), Motion.sheet * 2);
+        expect(onPage(numbered(s.ankirenLevelValue, level)), findsOneWidget);
+        expect(onPage(find.textContaining(level == next ? s.ankirenNextToClear : s.freePlay)), findsWidgets);
+      }
       await tester.pumpWidget(const SizedBox());
     });
 
@@ -508,7 +542,15 @@ void main() {
               if (stage case _Stage.fresh || _Stage.allCleared) {
                 await tapAndSettle(tester, levelButton(s), Motion.sheet);
                 await capture(tester, 'free_${stage.name}', lang);
-                await closeSheet(tester, s);
+                // A cleared level, or custom once it is open, picked for the panel.
+                final key = stage == _Stage.fresh ? '2' : s.ankirenCustom;
+                await tester.runAsync(() async {
+                  await tester.tap(find.descendant(of: find.byType(AnkirenFreeSheet), matching: find.text(key)));
+                  await Future<void>.delayed(const Duration(milliseconds: 50));
+                });
+                await tester.pump();
+                await tapAndSettle(tester, find.text(s.ankirenConfirm), Motion.sheet * 2);
+                await capture(tester, 'picked_${stage.name}', lang);
               }
               if (stage == _Stage.placed) {
                 await tapAndSettle(tester, onPage(find.byType(SideTripGuestButton)), Motion.sheet);

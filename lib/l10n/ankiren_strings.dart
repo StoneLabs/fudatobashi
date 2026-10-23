@@ -91,9 +91,11 @@ extension AnkirenStrings on S {
   String get ankirenMore => t('ankirenMore');
   String ankirenNeedCards(int n) => f('ankirenNeedCards', [n]);
 
-  /// The free-play menu: how levels open, why a level or the custom setups
-  /// are still shut, the stamp once every level is cleared, and the guest's
-  /// line.
+  /// The free-play menu: its title and burst, how levels open, why a level
+  /// or the custom setups are still shut, the stamp once every level is
+  /// cleared, and the guest's line.
+  String get ankirenSelectLevel => t('ankirenSelectLevel');
+  String get ankirenConfirm => t('ankirenConfirm');
   String ankirenUnlockLine(int strikes) => f('ankirenUnlockLine', [strikes]);
   String ankirenLevelLocked(int clear, int level) => f('ankirenLevelLocked', [clear, level]);
   String ankirenCustomLocked(int clear) => f('ankirenCustomLocked', [clear]);

@@ -835,6 +835,8 @@
   "ankirenGuestMode": "ゲストモード",
   "ankirenGuestButton": "ゲスト",
   "ankirenGuestSub": "記録なし",
+  "ankirenSelectLevel": "レベル選択",
+  "ankirenConfirm": "決定",
   "ankirenUnlockLine": "お手つき​{0}回​未満で​クリアすると​次の​レベルが​開くよ。​「わからない」も​お手つきに​数えるよ。",
   "ankirenLevelLocked": "Lv {0}を​クリアすると​Lv {1}が​開くよ。",
   "ankirenCustomLocked": "Lv {0}を​クリアすると​カスタムが​開くよ。",

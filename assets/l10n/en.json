@@ -835,6 +835,8 @@
   "ankirenGuestMode": "Guest mode",
   "ankirenGuestButton": "Guest mode",
   "ankirenGuestSub": "Nothing is saved",
+  "ankirenSelectLevel": "Select a level",
+  "ankirenConfirm": "Confirm",
   "ankirenUnlockLine": "Clear a level with fewer than {0} strikes to open the next. Each wrong tap or Don't know is a strike.",
   "ankirenLevelLocked": "Clear Lv {0} to open Lv {1}.",
   "ankirenCustomLocked": "Clear Lv {0} to open custom setups.",

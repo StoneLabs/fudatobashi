@@ -12,6 +12,7 @@ import '../../domain/ankiren_rating.dart';
 import '../../domain/rating.dart';
 import '../../domain/side_trips.dart';
 import '../../l10n/ankiren_strings.dart';
+import '../../l10n/free_strings.dart';
 import '../../l10n/ranked_strings.dart';
 import '../../l10n/results_strings.dart';
 import '../../l10n/side_trip_strings.dart';
@@ -41,9 +42,9 @@ Future<void> openAnkirenPage(BuildContext context) async {
 /// way to the next class); ranked, in a panel with its last games (or the
 /// placement games so far), its one setup and the burst that starts it, all
 /// chained up until ranked opens (see [RankedLock]); then free play's next
-/// level to clear, in a larger panel with its facts, what clears it, a
-/// preview of its field, the way to every level ([openAnkirenFree]) and the
-/// burst that starts it. Guest mode
+/// level to clear, or the setup picked instead, in a larger panel with its
+/// facts, what clears it, a preview of its field, the way to the level
+/// sheet ([pickAnkirenFree]) and the burst that starts it. Guest mode
 /// and the rules are Home's button pair under them, each a sheet. The first
 /// visit opens with the rules. Home's dotted ground, in the sea's blue, lies
 /// behind the panels.
@@ -60,6 +61,10 @@ class AnkirenPage extends StatefulWidget {
 }
 
 class _AnkirenPageState extends State<AnkirenPage> {
+  /// The setup picked from the level sheet, kept while the page is open;
+  /// null for the next level to clear.
+  AnkirenSetup? _picked;
+
   @override
   void initState() {
     super.initState();
@@ -103,7 +108,11 @@ class _AnkirenPageState extends State<AnkirenPage> {
                     const SizedBox(height: AnkirenPageLayout.nextTop),
                     _RankedPanel(entry),
                     const SizedBox(height: AnkirenPageLayout.nextTop),
-                    Expanded(child: Align(alignment: Alignment.bottomCenter, child: _NextLevelPanel(entry))),
+                    Expanded(child: Align(alignment: Alignment.bottomCenter, child: _NextLevelPanel(
+                      entry,
+                      picked: _picked,
+                      onPick: (setup) => setState(() => _picked = setup),
+                    ))),
                     const SizedBox(height: AnkirenPageLayout.gap),
                     Row(children: [
                       Expanded(child: SideTripGuestButton(onTap: () => openAnkirenGuest(context))),
@@ -690,33 +699,51 @@ class _RankedPanel extends StatelessWidget {
 }
 
 /// Free play's next level to clear (the top level again once every level
-/// is cleared): its facts, the level among them the way to every level,
-/// what clears it (or what the known cards still lack), a preview of its
-/// field, and the burst that starts it.
+/// is cleared), or the setup [picked] instead under Free play's tag: its
+/// facts, the level among them the way to the level sheet, what clears it
+/// (or that a custom game is not scored, or what the known cards still
+/// lack), a preview of its field, and the burst that starts it. A setup
+/// confirmed in the sheet goes to [onPick], as null when it is the next
+/// level to clear.
 class _NextLevelPanel extends StatelessWidget {
-  const _NextLevelPanel(this.entry);
+  const _NextLevelPanel(this.entry, {required this.picked, required this.onPick});
 
   final SideTripEntry entry;
+  final AnkirenSetup? picked;
+  final ValueChanged<AnkirenSetup?> onPick;
 
   @override
   Widget build(BuildContext context) {
     final s = S.of(context);
     final next = entry.nextLevel;
-    final level = next ?? AnkirenLevels.top;
-    final setup = AnkirenSetup.forLevel(level);
-    final fits = entry.fits(level);
+    final usual = AnkirenSetup.forLevel(next ?? AnkirenLevels.top);
+    final setup = picked ?? usual;
+    final level = setup.level;
+    final fits = level == null || entry.fits(level);
+    final allCleared = picked == null && next == null;
+    String tag(S s) => picked != null
+        ? s.freePlay
+        : allCleared
+            ? s.ankirenAllClearedTitle
+            : s.ankirenNextToClear;
+    String play(S s) => level == null ? s.freeStart : s.ankirenPlayLevel(level);
+    Future<void> pick() async {
+      final chosen = await pickAnkirenFree(context, setup);
+      if (chosen != null && context.mounted) onPick(chosen == usual ? null : chosen);
+    }
+
     return _TaggedPanel(
-      tag: next == null ? s.ankirenAllClearedTitle : s.ankirenNextToClear,
-      sub: next == null ? s.sub?.ankirenAllClearedTitle : s.sub?.ankirenNextToClear,
+      tag: tag(s),
+      sub: s.sub == null ? null : tag(s.sub!),
       child: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-        _Stats(setup),
-        _Hint(setup, fits: fits, allCleared: next == null),
+        _Stats(setup, onLevel: pick),
+        _Hint(setup, fits: fits, allCleared: allCleared, cleared: level != null && entry.ladder.isCleared(level)),
         Flexible(child: AnkirenFieldPreview(setup)),
         Padding(
           padding: AnkirenPageLayout.burstMargin,
           child: BurstButton(
-            title: s.ankirenPlayLevel(level),
-            sub: s.sub?.ankirenPlayLevel(level).toUpperCase(),
+            title: play(s),
+            sub: s.sub == null ? null : play(s.sub!).toUpperCase(),
             onTap: fits ? () => startAnkirenFree(context, setup) : null,
           ),
         ),
@@ -725,13 +752,14 @@ class _NextLevelPanel extends StatelessWidget {
   }
 }
 
-/// A level's facts across the panel: the level, as the button to every
-/// level, then the cards a side and the memorise time, split by an ink
+/// A setup's facts across the panel: the level, as the button that calls
+/// [onLevel], then the cards a side and the memorise time, split by an ink
 /// rule, their labels and values in line with the level's.
 class _Stats extends StatelessWidget {
-  const _Stats(this.setup);
+  const _Stats(this.setup, {required this.onLevel});
 
   final AnkirenSetup setup;
+  final VoidCallback onLevel;
 
   @override
   Widget build(BuildContext context) {
@@ -740,7 +768,7 @@ class _Stats extends StatelessWidget {
     return Padding(
       padding: AnkirenPageLayout.statsPadding,
       child: _CellRow(firstRuled: false, fills: true, children: [
-        _LevelButton(setup.level!),
+        _LevelButton(setup.level, onTap: onLevel),
         _Cell(
           inset: AnkirenPageLayout.levelButtonInset,
           label: _Label(s.ankirenCards, null),
@@ -761,13 +789,13 @@ class _Stats extends StatelessWidget {
   }
 }
 
-/// The [level]'s cell in a boxed button with a drop mark, a full touch
-/// target tall: it opens free play's menu of every level
-/// ([openAnkirenFree]).
+/// The [level]'s cell (Custom when null) in a boxed button with a drop
+/// mark, a full touch target tall, that calls [onTap].
 class _LevelButton extends StatelessWidget {
-  const _LevelButton(this.level);
+  const _LevelButton(this.level, {required this.onTap});
 
-  final int level;
+  final int? level;
+  final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
@@ -775,7 +803,7 @@ class _LevelButton extends StatelessWidget {
     return ConstrainedBox(
       constraints: const BoxConstraints(minHeight: AnkirenPageLayout.levelButtonHeight),
       child: InkButton(
-        onTap: () => openAnkirenFree(context),
+        onTap: onTap,
         border: Strokes.control,
         padding: const EdgeInsets.symmetric(
             horizontal: AnkirenPageLayout.levelButtonPadding, vertical: AnkirenPageLayout.levelButtonInset),
@@ -784,12 +812,16 @@ class _LevelButton extends StatelessWidget {
         child: _Cell(
           label: _Label(s.ankirenLevelRow, null),
           value: Row(mainAxisSize: MainAxisSize.min, children: [
-            NumberedText(
-              s.ankirenLevelValue,
-              [level],
-              style: const TextStyle(fontFamily: Fonts.display, fontSize: AnkirenPageLayout.statUnitFont, height: 1),
-              numberStyle: const TextStyle(fontFamily: Fonts.display, fontSize: AnkirenPageLayout.statFont, height: 1),
-            ),
+            if (level == null)
+              Text(s.ankirenCustom,
+                  style: const TextStyle(fontFamily: Fonts.display, fontSize: AnkirenPageLayout.statUnitFont, height: 1))
+            else
+              NumberedText(
+                s.ankirenLevelValue,
+                [level!],
+                style: const TextStyle(fontFamily: Fonts.display, fontSize: AnkirenPageLayout.statUnitFont, height: 1),
+                numberStyle: const TextStyle(fontFamily: Fonts.display, fontSize: AnkirenPageLayout.statFont, height: 1),
+              ),
             const SizedBox(width: AnkirenPageLayout.levelMarkGap),
             const Text(
               AnkirenPageLayout.levelMark,
@@ -802,14 +834,15 @@ class _LevelButton extends StatelessWidget {
   }
 }
 
-/// What clears [setup]'s level (or that every level is, once [allCleared],
-/// with a checked "Cleared" on the right), or, when the known cards do not
-/// [fits] it, how many it needs.
+/// What clears [setup]'s level (or that every level is, once [allCleared];
+/// or that a custom setup is not scored), with a checked "Cleared" on the
+/// right once it is [cleared]; or, when the known cards do not [fits] it,
+/// how many it needs.
 class _Hint extends StatelessWidget {
-  const _Hint(this.setup, {required this.fits, required this.allCleared});
+  const _Hint(this.setup, {required this.fits, required this.allCleared, required this.cleared});
 
   final AnkirenSetup setup;
-  final bool fits, allCleared;
+  final bool fits, allCleared, cleared;
 
   @override
   Widget build(BuildContext context) {
@@ -828,6 +861,8 @@ class _Hint extends StatelessWidget {
       ]);
     } else if (allCleared) {
       why = Text(s.ankirenAllCleared, style: style);
+    } else if (setup.custom) {
+      why = Text.rich(Phrases.span(s.ankirenCustomNote), style: style);
     } else {
       why = Row(mainAxisSize: MainAxisSize.min, children: [
         const AnkirenStrikes(strikes: 1, count: 1, cardHeight: AnkirenPageLayout.hintCard),
@@ -841,7 +876,7 @@ class _Hint extends StatelessWidget {
       padding: AnkirenPageLayout.hintPadding,
       child: Row(children: [
         Expanded(child: Align(alignment: Alignment.centerLeft, child: why)),
-        if (allCleared) ...[
+        if (cleared) ...[
           const SizedBox(width: AnkirenPageLayout.hintGap),
           const ClearedCheck(size: AnkirenPageLayout.clearedCheck),
           const SizedBox(width: AnkirenPageLayout.hintGap),

@@ -20,17 +20,15 @@ import '../shell/tab_chains.dart';
 import 'ankiren_sheet.dart';
 import 'burst_button.dart';
 
-/// 暗記練's free play: its setup sheet, then the game from its burst. The
-/// setup is stored as it changes, so it is there next time.
-Future<void> openAnkirenFree(BuildContext context) async {
-  final setup = await showMangaSheet<AnkirenSetup>(
-    context,
-    barrierColor: FreePracticeLayout.barrier,
-    barrierLabel: S.of(context).cancel,
-    builder: (_) => const AnkirenFreeSheet(),
-  );
-  if (setup != null && context.mounted) await startAnkirenFree(context, setup);
-}
+/// 暗記練's level sheet, opened on [current]: the setup confirmed, or null
+/// when it is closed. The setup is stored as it changes, which keeps the
+/// custom one for next time.
+Future<AnkirenSetup?> pickAnkirenFree(BuildContext context, AnkirenSetup current) => showMangaSheet<AnkirenSetup>(
+      context,
+      barrierColor: FreePracticeLayout.barrier,
+      barrierLabel: S.of(context).cancel,
+      builder: (_) => AnkirenFreeSheet(initial: current),
+    );
 
 /// Guest mode: the same sheet with every level and the custom setups open
 /// and dealt from all the cards, then a game that records nothing. The
@@ -48,8 +46,8 @@ Future<void> openAnkirenGuest(BuildContext context) async {
 /// One set of controls for a free game: a level key fills in its cards and
 /// memorise time, and touching a stepper makes the setup custom, from what
 /// the steppers showed. The custom key brings back the last custom setup,
-/// which is not scored. Then the start burst, which closes the sheet with
-/// the setup.
+/// which is not scored. Then the burst, Confirm (Start for a [guest]),
+/// which closes the sheet with the setup.
 ///
 /// The owner's levels open one at a time (see [AnkirenLadder]): a level
 /// still shut, and the custom setups until they open, are chained, and say
@@ -58,8 +56,11 @@ Future<void> openAnkirenGuest(BuildContext context) async {
 /// why instead. A [guest] has every level and the custom setups open, dealt
 /// from all the cards, and nothing is stored.
 class AnkirenFreeSheet extends StatefulWidget {
-  const AnkirenFreeSheet({super.key, this.guest = false});
+  const AnkirenFreeSheet({super.key, this.initial, this.guest = false});
 
+  /// The setup it opens on; the last one stored when not given, and a
+  /// guest's last one for a guest.
+  final AnkirenSetup? initial;
   final bool guest;
 
   @override
@@ -94,7 +95,7 @@ class _AnkirenFreeSheetState extends State<AnkirenFreeSheet> {
     _known = widget.guest ? poems.all.length : _progress.knownCards.length;
     _maxPerSide = AnkirenSetup.maxCustomPerSide(_known) ?? AnkirenTuning.customMinPerSide;
     final saved = _progress.settings.ankiren;
-    final last = widget.guest ? _guestSetup ?? AnkirenSetup.forLevel(0) : saved.freeSetup;
+    final last = widget.guest ? _guestSetup ?? AnkirenSetup.forLevel(0) : widget.initial ?? saved.freeSetup;
     final maxLevel = AnkirenLevels.maxLevelFor(_known) ?? 0;
     final level = last.level ?? (_customOpen ? null : ladder!.next ?? AnkirenLevels.top);
     _level = level == null ? null : math.min(math.min(level, ladder?.open ?? level), maxLevel);
@@ -137,7 +138,7 @@ class _AnkirenFreeSheetState extends State<AnkirenFreeSheet> {
         step();
       });
 
-  Future<void> _start() async {
+  Future<void> _confirm() async {
     final setup = _setup;
     await _save();
     if (mounted) Navigator.pop(context, setup);
@@ -151,8 +152,8 @@ class _AnkirenFreeSheetState extends State<AnkirenFreeSheet> {
     final steps = _customOpen;
     final ladder = _ladder;
     return AnkirenSheet(
-      title: widget.guest ? s.ankirenGuestMode : s.freePlay,
-      sub: widget.guest ? s.sub?.ankirenGuestMode : s.sub?.freePlay,
+      title: widget.guest ? s.ankirenGuestMode : s.ankirenSelectLevel,
+      sub: widget.guest ? s.sub?.ankirenGuestMode : s.sub?.ankirenSelectLevel,
       line: widget.guest ? s.ankirenGuestLine : null,
       body: [
         Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
@@ -161,8 +162,9 @@ class _AnkirenFreeSheetState extends State<AnkirenFreeSheet> {
           _levelKeys(s),
         ]),
         if (ladder != null) _UnlockNote(allCleared: ladder.allCleared),
+        // The steppers' labels go without the English, which would wrap them.
         _Stepper(
-          label: _SheetLabel(s.ankirenPerSide, s.sub?.ankirenPerSide),
+          label: _SheetLabel(s.ankirenPerSide, null),
           value: NumberedText(
             s.ankirenPerSideCount,
             [setup.perSide],
@@ -173,7 +175,7 @@ class _AnkirenFreeSheetState extends State<AnkirenFreeSheet> {
           onMore: steps && setup.perSide < _maxPerSide ? () => _stepCustom(() => _perSide++) : null,
         ),
         _Stepper(
-          label: _SheetLabel(s.ankirenMemoriseTime, s.sub?.ankirenMemoriseTime),
+          label: _SheetLabel(s.ankirenMemoriseTime, null),
           value: Text(formatMinutes(setup.memorise),
               style: const TextStyle(fontFamily: Fonts.display, fontSize: AnkirenSheetLayout.stepperValueFont)),
           onLess: steps && memorise > 0 ? () => _stepCustom(() => _memoriseIndex--) : null,
@@ -181,9 +183,9 @@ class _AnkirenFreeSheetState extends State<AnkirenFreeSheet> {
         ),
       ],
       footer: BurstButton(
-        title: s.freeStart,
-        sub: s.sub?.freeStart.toUpperCase(),
-        onTap: setup.cards <= _known ? _start : null,
+        title: widget.guest ? s.freeStart : s.ankirenConfirm,
+        sub: (widget.guest ? s.sub?.freeStart : s.sub?.ankirenConfirm)?.toUpperCase(),
+        onTap: setup.cards <= _known ? _confirm : null,
       ),
     );
   }

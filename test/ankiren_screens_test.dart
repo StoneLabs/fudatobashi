@@ -308,7 +308,7 @@ void main() {
       tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(SystemChannels.platform, null);
     });
 
-    testWidgets('free play opens its sheet, whose custom setup sticks and starts', (tester) async {
+    testWidgets('free play opens its sheet, whose custom setup sticks and starts from the page', (tester) async {
       final p = await open(tester, ankiren: const AnkirenSettings(rulesSeen: true));
       await clearUpTo(tester, p, AnkirenTuning.customAfterLevel);
       await openHub(tester, p);
@@ -338,6 +338,10 @@ void main() {
           AnkirenSetup.custom(perSide: DefaultSettings.ankirenCustomPerSide + 3, memorise: DefaultSettings.ankirenCustomMemorise));
       expect(tester.takeException(), isNull);
 
+      await tester.tap(find.text(s.ankirenConfirm));
+      await tester.pump();
+      await tester.pump(Motion.sheet * 2);
+      expect(find.byType(AnkirenFreeSheet), findsNothing);
       await tester.tap(find.text(s.freeStart));
       await tester.pump();
       await tester.pump(Motion.route);
