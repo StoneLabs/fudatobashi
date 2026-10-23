@@ -13,7 +13,8 @@ import '../../domain/trainer.dart';
 import '../../state/progress.dart';
 import '../../state/scope.dart';
 import 'debug_common.dart';
-import 'reset_actions.dart';
+import '../play/time_format.dart';
+import 'tobi_stats.dart';
 import 'weak_tab.dart';
 
 const _mono = debugMono;
@@ -68,6 +69,24 @@ class DebugPage extends StatelessWidget {
       ),
     );
   }
+}
+
+String _minutes(double ms) => formatMinutes(Duration(milliseconds: ms.round()));
+
+String _card(double ms) => '${formatSeconds(ms)} s';
+
+List<Widget> _tobiExam(bool fast) {
+  final card = TobiExamStats.perCard;
+  const cards = RankedTuning.cards;
+  String total(int ms) => _minutes(ms.toDouble());
+  return [
+    DebugKV('Tobi exam time',
+        '${total(ExamTuning.tobiMinMs)}–${total(ExamTuning.tobiMaxMs)} (evenly spread, mistakes included)'),
+    DebugKV('per card', '${formatSeconds(ExamTuning.tobiMinMs / cards)}–${_card(ExamTuning.tobiMaxMs / cards)} a card'),
+    DebugKV('card to card',
+        '${_card(card.mean)} ± ${_card(card.sd)} (skewed by bursts and slow cards)'),
+    if (fast) DebugKV('fast Tobi on', 'clock ${total(ExamDevTuning.fastTobiMs)}, not the range above'),
+  ];
 }
 
 class _Overview extends StatelessWidget {
@@ -125,6 +144,9 @@ class _Overview extends StatelessWidget {
           style: _mono,
         ),
       const Divider(height: 32),
+      Text('Graduation exam', style: Theme.of(context).textTheme.titleMedium),
+      ..._tobiExam(p.settings.debugMode && p.settings.fastTobi),
+      const Divider(height: 32),
       Text('Knobs', style: Theme.of(context).textTheme.titleMedium),
       _Stepper('unlock batch size', c.batchSize, 1, 8, (v) => p.updateTrainerConfig(c.copyWith(batchSize: v))),
       _Stepper('session length', c.sessionLength, 10, 100,
@@ -144,18 +166,6 @@ class _Overview extends StatelessWidget {
         selected: {c.reverseMode},
         onSelectionChanged: (s) => p.updateTrainerConfig(c.copyWith(reverseMode: s.first)),
       ),
-      const Divider(height: 32),
-      Row(children: [
-        OutlinedButton(
-          onPressed: () => confirmResetOnboarding(context),
-          child: const Text('Reset onboarding'),
-        ),
-        const SizedBox(width: 12),
-        OutlinedButton(
-          onPressed: () => confirmResetProgress(context),
-          child: const Text('Reset progress'),
-        ),
-      ]),
     ]);
   }
 }

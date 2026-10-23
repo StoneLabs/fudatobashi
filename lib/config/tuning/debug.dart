@@ -133,3 +133,10 @@ abstract final class CelebrationPreviewTuning {
   static const int dayMisses = 6;
   static const int dayStreak = 5;
 }
+
+/// The developer page's figures for Tobi's exam time.
+abstract final class DebugTuning {
+  /// Draws of `TobiPace` the average and spread are taken over, from [tobiSeed].
+  static const int tobiSamples = 2000;
+  static const int tobiSeed = 1;
+}
