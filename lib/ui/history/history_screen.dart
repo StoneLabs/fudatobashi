@@ -628,9 +628,9 @@ class _GameRow extends StatelessWidget {
         TextSpan(
             text: switch (kind) {
           AnkirenKind.ranked => s.historyCards(cards),
-          AnkirenKind.free => s.ankirenWrongTaps(strikes),
+          AnkirenKind.free => s.ankirenStrikes(strikes),
           AnkirenKind.custom =>
-            '${s.historyPerSide(meta[AnkirenMeta.perSideKey] ?? missingTime, cards)} · ${s.ankirenWrongTaps(strikes)}',
+            '${s.historyPerSide(meta[AnkirenMeta.perSideKey] ?? missingTime, cards)} · ${s.ankirenStrikes(strikes)}',
         }),
         if (change != null)
           TextSpan(

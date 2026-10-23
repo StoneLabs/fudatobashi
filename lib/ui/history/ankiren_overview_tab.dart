@@ -99,7 +99,7 @@ class _UnscoredHeadline extends StatelessWidget {
           Fact('${game.found}/${game.cards.length}', s.ankirenFoundFact),
           Fact(formatMinutes(game.memorised), s.ankirenMemorisedOf(formatMinutes(game.memorise))),
           Fact(median == null ? missingTime : '${formatSeconds(median)}s', s.ankirenMedianFact),
-          Fact('${game.strikes}', s.ankirenWrongTapsFact),
+          Fact('${game.strikes}', s.ankirenStrikesFact),
           if (xp > 0) Fact('+$xp', s.runXpFact),
         ],
       ),

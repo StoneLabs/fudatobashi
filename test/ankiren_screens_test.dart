@@ -386,7 +386,7 @@ void main() {
       await toResults(tester);
       expect(find.byType(AnkirenResultsScreen), findsOneWidget);
       expect(p.sideTrips.runs.single.level, 0, reason: 'the game was recorded');
-      expect(find.text(s.ankirenWrongTaps(0)), findsOneWidget);
+      expect(find.text(s.ankirenStrikes(0)), findsOneWidget);
       expect(find.text(s.ankirenLevelCleared(0)), findsWidgets, reason: 'played out with no strike');
       expect(find.byType(ClearedCheck), findsOneWidget);
       expect(p.sideTripsHub()[SideTrip.ankiren].ladder.open, 1);
@@ -679,7 +679,7 @@ void main() {
         await toResults(tester);
         expect(find.byType(AnkirenResultsScreen), findsOneWidget);
         expect(find.text(s.ankirenLevelFailed(1)), findsWidgets);
-        expect(find.text(s.ankirenWrongTaps(4)), findsOneWidget);
+        expect(find.text(s.ankirenStrikes(4)), findsOneWidget);
         final run = p.sideTrips.runs.single;
         expect([run.completed, p.sideTrips.strikesIn(run)], [true, 4]);
         expect(p.sideTripsHub()[SideTrip.ankiren].ladder.cleared, isEmpty);

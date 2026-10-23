@@ -180,7 +180,7 @@ class _AnkirenResultsScreenState extends State<AnkirenResultsScreen> {
                               label: s.ankirenFirstTryLabel,
                               big: '${game.firstTries}',
                               unit: '/ $asked',
-                              note: report != null && game.countsStrikes ? null : s.ankirenWrongTaps(game.strikes),
+                              note: report != null && game.countsStrikes ? null : s.ankirenStrikes(game.strikes),
                             ),
                           ),
                           const SizedBox(width: Gaps.panel),
@@ -434,7 +434,7 @@ class _LevelPanel extends StatelessWidget {
       child: Row(children: [
         Expanded(
           child: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.start, children: [
-            _OneLine(Text(s.ankirenWrongTaps(game.strikes),
+            _OneLine(Text(s.ankirenStrikes(game.strikes),
                 style: const TextStyle(fontFamily: Fonts.display, fontSize: AnkirenResultsLayout.levelTitleFont))),
             const SizedBox(height: Gaps.tight),
             for (final line in lines) Text.rich(Phrases.span(line), style: noteStyle),

@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 
 import '../../config/config.dart';
 import '../../config/design.dart';
-import '../../domain/ankiren_field.dart';
 import '../../domain/ankiren_review.dart';
 import '../../l10n/ankiren_review_strings.dart';
 import '../../l10n/strings.dart';
@@ -70,10 +69,6 @@ class _ScoreSum extends StatelessWidget {
           child: Text(text,
               style: const TextStyle(fontWeight: Weights.black, fontSize: AnkirenReviewStyle.sumSignFont)),
         );
-    final shares = [
-      for (final p in TapProximity.values)
-        if (p != TapProximity.card) shareText(AnkirenTuning.tapShare[p]!),
-    ].join(', ');
     ReviewRow part(String label, AnkirenScorePart p) =>
         ReviewRow([ReviewTable.cell(label), ReviewTable.cell('${p.cards}'), ReviewTable.cell('${p.points}')]);
     return Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
@@ -96,7 +91,7 @@ class _ScoreSum extends StatelessWidget {
           widths: const {0: FlexColumnWidth()},
           rows: [
             part(s.ankirenPartRight(AnkirenTuning.cardPoints), review.rightFirst),
-            part(s.ankirenPartNear(shares), review.nearFirst),
+            part(s.ankirenPartNear, review.nearFirst),
             part(s.ankirenPartSecond(shareText(AnkirenTuning.tapWeights.last)), review.secondTaps),
             part(s.ankirenPartSpeed(AnkirenTuning.speedMax), review.speed),
             ReviewRow([

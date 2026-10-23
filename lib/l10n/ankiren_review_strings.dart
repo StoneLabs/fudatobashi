@@ -74,7 +74,7 @@ extension AnkirenReviewStrings on S {
   String get ankirenColCards => t('ankirenColCards');
   String get ankirenColPoints => t('ankirenColPoints');
   String ankirenPartRight(Object a0) => f('ankirenPartRight', [a0]);
-  String ankirenPartNear(Object a0) => f('ankirenPartNear', [a0]);
+  String get ankirenPartNear => t('ankirenPartNear');
   String ankirenPartSecond(Object a0) => f('ankirenPartSecond', [a0]);
   String ankirenPartSpeed(Object a0) => f('ankirenPartSpeed', [a0]);
   String get ankirenRatingHead => t('ankirenRatingHead');
@@ -96,7 +96,7 @@ extension AnkirenReviewStrings on S {
   String get ankirenRightFirstLabel => t('ankirenRightFirstLabel');
   String get ankirenNotScored => t('ankirenNotScored');
   String get ankirenFoundFact => t('ankirenFoundFact');
-  String get ankirenWrongTapsFact => t('ankirenWrongTapsFact');
+  String get ankirenStrikesFact => t('ankirenStrikesFact');
   String ankirenMemorisedOf(Object a0) => f('ankirenMemorisedOf', [a0]);
   String get ankirenMedianFact => t('ankirenMedianFact');
   String get ankirenCustomUnscored => t('ankirenCustomUnscored');

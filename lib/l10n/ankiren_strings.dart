@@ -39,11 +39,11 @@ extension AnkirenStrings on S {
   String ankirenMissed(int n) => f('ankirenMissed', [n]);
   String get ankirenFirstTryLabel => t('ankirenFirstTryLabel');
 
-  /// Every wrong tap of a game (お手つき).
-  String ankirenWrongTaps(int n) => switch (n) {
-        0 => t('ankirenWrongTapsNone'),
-        1 => f('ankirenWrongTapsOne', [n]),
-        _ => f('ankirenWrongTapsOther', [n]),
+  /// A game's strikes: its wrong taps and Don't knows (お手つき).
+  String ankirenStrikes(int n) => switch (n) {
+        0 => t('ankirenStrikesNone'),
+        1 => f('ankirenStrikesOne', [n]),
+        _ => f('ankirenStrikesOther', [n]),
       };
 
   String get ankirenAvgLabel => t('ankirenAvgLabel');
