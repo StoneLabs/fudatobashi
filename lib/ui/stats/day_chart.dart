@@ -39,8 +39,9 @@ class ChartMark {
 }
 
 /// Values per day over gridlines at [ticks] from [lo] to [hi], with day
-/// labels under some days ([xLabels], by index), a dotted rule at [today]
-/// and labelled [marks].
+/// labels under some days ([xLabels], by index; one that would touch
+/// [today]'s or an earlier one is left out), a dotted rule at [today] and
+/// labelled [marks].
 class DayLineChart extends StatelessWidget {
   const DayLineChart({
     super.key,
@@ -103,9 +104,18 @@ class _DayLinePainter extends CustomPainter {
       final l = _label(chart.format(t));
       l.paint(canvas, Offset(plot.left - RunChartStyle.labelGap - l.width, y(t) - l.height / 2));
     }
-    for (final MapEntry(key: i, value: text) in chart.xLabels.entries) {
-      final l = _label(text, color: i == chart.today ? Palette.ink : HistoryRunStyle.muted);
-      l.paint(canvas, Offset((x(i) - l.width / 2).clamp(0.0, size.width - l.width), plot.bottom + RunChartStyle.labelGap));
+    final drawn = <Rect>[];
+    for (final i in [
+      if (chart.xLabels.containsKey(chart.today)) chart.today!,
+      for (final i in chart.xLabels.keys)
+        if (i != chart.today) i,
+    ]) {
+      final l = _label(chart.xLabels[i]!, color: i == chart.today ? Palette.ink : HistoryRunStyle.muted);
+      final at = Offset((x(i) - l.width / 2).clamp(0.0, size.width - l.width), plot.bottom + RunChartStyle.labelGap);
+      final box = (at & l.size).inflate(RunChartStyle.labelGap / 2);
+      if (drawn.any(box.overlaps)) continue;
+      drawn.add(box);
+      l.paint(canvas, at);
     }
     if (chart.today case final t?) {
       final rule = Paint()
