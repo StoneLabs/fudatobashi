@@ -102,8 +102,9 @@ class _Line {
   final List<Offset> points;
 }
 
-/// A performance by final score graph: the curve of [AnkirenRating], dashed
-/// lines at the class borders' ratings and a dot at each anchor.
+/// A performance by final score graph: the line of [AnkirenRating], dashed
+/// lines at the class borders' ratings and a labelled dot at the best
+/// possible score and at the realistic top one.
 class AnkirenRatingGraph extends StatelessWidget {
   const AnkirenRatingGraph({super.key});
 
@@ -116,9 +117,10 @@ class AnkirenRatingGraph extends StatelessWidget {
     final curve = _Line(Palette.seaDeep, [
       for (var score = 0; score <= xMax; score += step) Offset(score.toDouble(), AnkirenRating.performance(score)),
     ]);
-    final anchors = [
-      for (final id in [AnkirenRatingModel.lowBand, AnkirenRatingModel.highBand])
-        Rating.bands.firstWhere((b) => b.id == id).minRating,
+    final best = (AnkirenScore.maxFor(const AnkirenSetup.ranked().cards) * (1 + AnkirenTuning.earlyBonus)).round();
+    final marks = [
+      for (final (name, score) in [('max', best), ('top', AnkirenToolsTuning.realisticTopScore)])
+        (Offset(score.toDouble(), AnkirenRating.performance(score)), '$name $score → ${AnkirenRating.performance(score).round()}'),
     ];
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -133,12 +135,12 @@ class AnkirenRatingGraph extends StatelessWidget {
               xLabel: (x) => '${x.round()}',
               yMax: yMax,
               classY: (band) => band.minRating,
-              dots: [for (final rating in anchors) Offset(AnkirenRating.scoreFor(rating), rating)],
+              dots: marks,
             ),
           ),
         ),
         const Text(
-          'x: final score · y: performance · dots: the two anchor games · dashed: class lines',
+          'x: final score · y: performance · dots: best possible and realistic top (score → rating) · dashed: class lines',
           style: debugMono,
         ),
       ],
@@ -163,7 +165,7 @@ class _LinesPainter extends CustomPainter {
   final String Function(double) xLabel;
   final double yMax;
   final double Function(RankBand) classY;
-  final List<Offset> dots;
+  final List<(Offset, String)> dots;
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -204,8 +206,9 @@ class _LinesPainter extends CustomPainter {
           ..color = line.color,
       );
     }
-    for (final dot in dots) {
+    for (final (dot, name) in dots) {
       canvas.drawCircle(at(dot), AnkirenToolsStyle.dotRadius, Paint()..color = Palette.seaDeep);
+      text(name, at(dot) - const Offset(AnkirenToolsStyle.axisLabelGap, 0), align: Alignment.centerRight);
     }
   }
 

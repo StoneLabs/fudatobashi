@@ -173,6 +173,10 @@ abstract final class AnkirenToolsTuning {
   static const int ratingXTick = 3000;
   static const int ratingYRound = 1000;
 
+  /// A very good player's score, marked on the rating graph beside the best
+  /// possible one.
+  static const int realisticTopScore = 9000;
+
   static const List<int> simulationGames = [100, 1000, 5000];
   static const int simulationGamesStart = 1000;
 
@@ -206,21 +210,9 @@ abstract final class AnkirenRatingModel {
   /// starts. It is not a floor: a game can rate below it.
   static const double start = 400;
 
-  /// A ranked game's performance is a straight line of its final score F
-  /// (see `AnkirenRating.slope`, `AnkirenRating.zero`), down to the lower
-  /// anchor and then to zero points, drawn through two
-  /// games with no early finish. The first performs at the [highBand] line:
-  /// every card found with the first tap, each [highFirstTap] after its
-  /// prompt. The second performs at the [lowBand] line: [lowFirstShare] of
-  /// the cards found with the first tap, each [lowFirstTap] after its
-  /// prompt, and each other card first tapped in its row and then found
-  /// with the second tap.
-  static const String highBand = 'A';
-  static const Duration highFirstTap = Duration(milliseconds: 500);
-  static const String lowBand = 'F-';
-  static const Duration lowFirstTap = Duration(milliseconds: 2500);
-  static const double lowFirstShare = 0.5;
-  static const List<TapProximity> lowOtherTaps = [TapProximity.row, TapProximity.card];
+  /// A ranked game's performance is its final score over this many points
+  /// (see `AnkirenRating.performance`).
+  static const double pointsPerRating = 2;
 
   /// The rating after each of the first [placementGames] ranked games is
   /// the mean of their performances; each later game moves it

@@ -496,7 +496,7 @@ class _ClassTable extends StatelessWidget {
     return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
       Text(
         'All ${_setup.cards} right with the first tap at one time each; '
-        'P = ${AnkirenRating.slope.toStringAsFixed(4)}·(F − ${AnkirenRating.zero.toStringAsFixed(1)}). '
+        'P = F / ${AnkirenRatingModel.pointsPerRating.round()}. '
         'A class reached even at ${AnkirenTuning.speedNone.inSeconds} s shows the finds it needs there.',
         style: debugMono.copyWith(color: Colors.grey),
       ),

@@ -202,31 +202,17 @@ void main() {
       expect(ranked.custom, isFalse);
     });
 
-    test('the anchors: 50 first taps at 0.5 s reach A, 25 at 2.5 s and 25 row-then-right reach F-', () {
-      final a = AnkirenScore.firstTryTotal(ranked, responseMs: 500);
-      expect(AnkirenRating.performance(a), closeTo(band('A'), 1));
-      final half = AnkirenScore([
-        for (var i = 0; i < ranked.perSide; i++) found(2500),
-        for (var i = 0; i < ranked.perSide; i++)
-          answer(wrongTaps: 1, us: ms(3000), taps: const [row, card], firstUs: ms(500)),
-      ], prompts: ranked.cards);
-      expect(half.total,
-          ranked.perSide * (AnkirenTuning.cardPoints + AnkirenScore.speedBonus(ms(2500))) + ranked.perSide * 50);
-      expect(AnkirenRating.performance(half.total), closeTo(band('F-'), 1));
-      expect(AnkirenRating.scoreFor(AnkirenRating.performance(a)), closeTo(a, 1e-6));
-    });
-
-    test('the curve is a line down to the lower anchor, then straight to zero, and never negative', () {
-      final low = AnkirenRating.lowScore;
-      expect(AnkirenRating.performance(0), 0);
-      expect(AnkirenRating.performance(low.round()), closeTo(band('F-'), 1));
-      expect(AnkirenRating.performance(low.round() ~/ 2), closeTo(band('F-') / 2, 1));
-      expect(AnkirenRating.performance(low.round() + 1000) - AnkirenRating.performance(low.round()),
-          closeTo(1000 * AnkirenRating.slope, 1e-6));
+    test('a game rates at half its score, and the score for a rating inverts it', () {
+      expect(AnkirenRating.performance(9000), 4500);
+      expect(AnkirenRating.scoreFor(band('A')), 2 * band('A'));
       for (var score = 0; score < 12000; score += 97) {
-        expect(AnkirenRating.performance(score), greaterThanOrEqualTo(0));
         expect(AnkirenRating.scoreFor(AnkirenRating.performance(score)), closeTo(score, 1e-6));
       }
+    });
+
+    test('a score below zero rates 0, never negative', () {
+      expect(AnkirenRating.performance(0), 0);
+      expect(AnkirenRating.performance(-40), 0);
     });
 
     test('play starts in 入門, and a zero-point game rates 0 without any floor', () {
