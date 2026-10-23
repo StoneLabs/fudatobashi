@@ -59,19 +59,18 @@ extension SideTripStrings on S {
   String get sideTripNextFacts => t('sideTripNextFacts');
   String get sideTripAllClear => t('sideTripAllClear');
 
-  /// A locked trip's cards remembered well so far, out of what opens it (a
-  /// template).
-  String get sideTripRemembered => t('sideTripRemembered');
-  String get sideTripRememberedCount => t('sideTripRememberedCount');
+  /// A locked trip's cards seen so far, out of what opens it (a template).
+  String get sideTripSeen => t('sideTripSeen');
+  String get sideTripSeenCount => t('sideTripSeenCount');
 
-  /// A locked trip in brief: [n] cards still to remember well.
+  /// A locked trip in brief: [n] cards still to see.
   String sideTripLockedSub(int n) => f('sideTripLockedSub', [n]);
 
-  /// The locked ranked bar's line: [n] cards still to remember well (a
+  /// The locked ranked bar's line: [n] cards still to see (a
   /// template, its number set in display type).
   String sideTripLandIn(int n) => t(n == 1 ? 'sideTripLandInOne' : 'sideTripLandInOther');
 
-  /// What opens a trip: remembering [n] more cards well.
+  /// What opens a trip: seeing [n] more cards.
   String sideTripLockedWhy(int n) => f(n == 1 ? 'sideTripLockedOne' : 'sideTripLockedOther', [n]);
 
   /// A trip's class on the main rank's ladder.

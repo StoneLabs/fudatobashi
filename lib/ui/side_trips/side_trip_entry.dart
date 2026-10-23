@@ -239,7 +239,7 @@ class _RankStamp extends StatelessWidget {
 
 /// A side trip's panel on the hub. Open: its rating with the last game's
 /// change and free play's next level to clear, and the burst that opens the
-/// trip's page ([onOpen]), as does the row above it. Locked: the cards remembered
+/// trip's page ([onOpen]), as does the row above it. Locked: the cards seen
 /// so far as pips and a grey bar saying how many more open it, where the
 /// burst will be.
 class SideTripBody extends StatelessWidget {
@@ -472,7 +472,7 @@ class PageBurst extends StatelessWidget {
   }
 }
 
-/// A locked trip: the cards remembered well so far out of what opens it, as
+/// A locked trip: the cards seen so far out of what opens it, as
 /// a count and as rows of pips, and the bar where its ranked burst will be.
 class _LockedRows extends StatelessWidget {
   const _LockedRows(this.lock);
@@ -493,10 +493,10 @@ class _LockedRows extends StatelessWidget {
             child: Align(
               alignment: Alignment.centerLeft,
               child: _Stat(
-                label: _Label(s.sideTripRemembered, s.sub?.sideTripRemembered),
+                label: _Label(s.sideTripSeen, s.sub?.sideTripSeen),
                 value: NumberedText(
-                  s.sideTripRememberedCount,
-                  [lock.remembered, lock.opensAt],
+                  s.sideTripSeenCount,
+                  [lock.counted, lock.opensAt],
                   style: const TextStyle(fontWeight: Weights.black, fontSize: SideTripsLayout.factsFont),
                   numberStyle: const TextStyle(fontFamily: Fonts.display, fontSize: SideTripsLayout.valueFont),
                 ),
@@ -512,7 +512,7 @@ class _LockedRows extends StatelessWidget {
               CardPips(
                 [
                   for (var i = row; i < math.min(row + SideTripsLayout.pipsPerRow, lock.opensAt); i++)
-                    i < lock.remembered ? PipState.learned : PipState.locked,
+                    i < lock.counted ? PipState.learned : PipState.locked,
                 ],
                 gap: SideTripsLayout.pipGap,
                 aspect: SideTripsLayout.pipAspect,

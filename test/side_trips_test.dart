@@ -19,20 +19,20 @@ import 'package:fudatobashi/state/progress.dart';
 
 void main() {
   const ankiren = SideTrip.ankiren;
-  const tabAt = SideTripTuning.tabRemembered, ankirenAt = SideTripTuning.ankirenRemembered;
+  const tabAt = SideTripTuning.tabRemembered, ankirenAt = SideTripTuning.ankirenSeen;
 
   group('unlock rule', () {
-    SideTripLock? lock(int remembered, {bool allKnown = false, Set<SideTrip> latched = const {}}) =>
-        SideTripUnlocks.lockOf(ankiren, allKnown: allKnown, remembered: remembered, latched: latched);
+    SideTripLock? lock(int seen, {bool allKnown = false, Set<SideTrip> latched = const {}}) =>
+        SideTripUnlocks.lockOf(ankiren, allKnown: allKnown, seen: seen, latched: latched);
     SideTripLock? tab(int remembered, {bool allKnown = false, bool latched = false}) =>
         SideTripUnlocks.tabLock(allKnown: allKnown, remembered: remembered, latched: latched);
 
-    test('journey: the tab opens at 25 well-remembered cards, 暗記練 at 50', () {
+    test('journey: the tab opens at 25 well-remembered cards, 暗記練 at 50 seen', () {
       expect([tabAt, ankirenAt], [25, 50]);
       expect(SideTripUnlocks.opensAt(ankiren), ankirenAt);
 
       final shut = tab(18)!;
-      expect([shut.opensAt, shut.remembered, shut.needed], [tabAt, 18, 7]);
+      expect([shut.opensAt, shut.counted, shut.needed], [tabAt, 18, 7]);
       expect(tab(tabAt - 1)?.needed, 1);
       expect(tab(tabAt), isNull);
 
@@ -95,7 +95,7 @@ void main() {
 
   group('hub', () {
     test('a fresh journey: every trip in order, locked, unranked at 入門, nothing played', () {
-      final hub = SideTripsHub.of(allKnown: false, remembered: 3);
+      final hub = SideTripsHub.of(allKnown: false, seen: 3);
       expect(hub.entries.map((e) => e.trip), SideTrip.values);
       final e = hub[SideTrip.ankiren];
       expect([e.open, e.ranked], [false, false]);
@@ -106,18 +106,18 @@ void main() {
       expect(hub.openTrips, isEmpty);
     });
 
-    test('opens 暗記練 at 50, and reports the open trips for the latch', () {
-      expect(SideTripsHub.of(allKnown: false, remembered: ankirenAt - 1).openTrips, isEmpty);
-      expect(SideTripsHub.of(allKnown: false, remembered: ankirenAt).openTrips, {ankiren});
-      expect(SideTripsHub.of(allKnown: false, remembered: 0, latched: {ankiren}).openTrips, {ankiren});
-      expect(SideTripsHub.of(allKnown: true, remembered: 0).openTrips, {...SideTrip.values});
+    test('opens 暗記練 at 50 seen, and reports the open trips for the latch', () {
+      expect(SideTripsHub.of(allKnown: false, seen: ankirenAt - 1).openTrips, isEmpty);
+      expect(SideTripsHub.of(allKnown: false, seen: ankirenAt).openTrips, {ankiren});
+      expect(SideTripsHub.of(allKnown: false, seen: 0, latched: {ankiren}).openTrips, {ankiren});
+      expect(SideTripsHub.of(allKnown: true, seen: 0).openTrips, {...SideTrip.values});
     });
 
     test('a standing carries through, its rating placed on the main ladder', () {
       final rating = Rating.bands[3].minRating + 1;
       final hub = SideTripsHub.of(
         allKnown: true,
-        remembered: 0,
+        seen: 0,
         standings: {
           SideTrip.ankiren: SideTripStanding(rating: rating, ladder: const AnkirenLadder({0, 1, 2, 3, 4}), maxLevel: 9, games: 12),
         },
@@ -170,11 +170,11 @@ void main() {
 
       final later = DateTime.now().add(const Duration(days: 60));
       expect(p.trainer.wellRememberedCount(p.allStats, later), 0, reason: 'every card is due weeks later');
-      expect(p.sideTripsHub(later).openTrips, {ankiren});
+      expect(p.sideTripsHub().openTrips, {ankiren});
       expect(await stored(db, 'sideTripsUnlocked'), '["ankiren"]');
       expect(await stored(db, 'sideTripsTabUnlocked'), 'true');
       final again = await Progress.open(db);
-      expect(again.sideTripsHub(later).openTrips, {ankiren});
+      expect(again.sideTripsHub().openTrips, {ankiren});
       expect(again.tabLock(LockedTab.sideTrips), isNull);
 
       await again.resetProgress();

@@ -58,47 +58,49 @@ abstract final class SideTripRing {
 }
 
 /// What keeps the Side Trips tab or a side trip shut in journey mode: it
-/// opens once [opensAt] cards are well remembered at once, and
-/// [remembered] are now.
+/// opens once [opensAt] cards are counted, and [counted] are now. What
+/// counts depends on the lock: well-remembered cards for the tab, seen
+/// cards for a trip (see [SideTripUnlocks]).
 class SideTripLock {
-  const SideTripLock({required this.opensAt, required this.remembered});
+  const SideTripLock({required this.opensAt, required this.counted});
 
   final int opensAt;
-  final int remembered;
+  final int counted;
 
-  /// Cards still to remember well.
-  int get needed => math.max(0, opensAt - remembered);
+  /// Cards still to count.
+  int get needed => math.max(0, opensAt - counted);
 }
 
-/// When the Side Trips tab and its trips open: in journey mode once enough
-/// cards are well remembered at once (`Trainer.wellRememberedCount`, free
-/// practice's counter, thresholds in [SideTripTuning]), and for good once
-/// they have; in all-known mode right away. A trip opens with its free
+/// When the Side Trips tab and its trips open: in journey mode the tab once
+/// enough cards are well remembered at once (`Trainer.wellRememberedCount`,
+/// free practice's counter) and a trip once enough cards have been seen
+/// (`Progress.knownCards`), thresholds in [SideTripTuning], and for good
+/// once they have; in all-known mode right away. A trip opens with its free
 /// play; its ranked games need more (see [RankedLock]).
 abstract final class SideTripUnlocks {
-  /// Well-remembered cards [trip] needs in journey mode.
+  /// Seen cards [trip] needs in journey mode.
   static int opensAt(SideTrip trip) => switch (trip) {
-        SideTrip.ankiren => SideTripTuning.ankirenRemembered,
+        SideTrip.ankiren => SideTripTuning.ankirenSeen,
       };
 
   /// What keeps the tab shut, or null once it is open: in [allKnown] mode,
   /// or once [latched], it is open whatever the [remembered] count.
   static SideTripLock? tabLock({required bool allKnown, required int remembered, required bool latched}) =>
-      _lock(SideTripTuning.tabRemembered, open: allKnown || latched, remembered: remembered);
+      _lock(SideTripTuning.tabRemembered, open: allKnown || latched, counted: remembered);
 
   /// What keeps [trip] shut, or null once it is open: in [allKnown] mode,
-  /// or once among the [latched] trips, it is open whatever the
-  /// [remembered] count.
+  /// or once among the [latched] trips, it is open whatever the [seen]
+  /// count.
   static SideTripLock? lockOf(
     SideTrip trip, {
     required bool allKnown,
-    required int remembered,
+    required int seen,
     required Set<SideTrip> latched,
   }) =>
-      _lock(opensAt(trip), open: allKnown || latched.contains(trip), remembered: remembered);
+      _lock(opensAt(trip), open: allKnown || latched.contains(trip), counted: seen);
 
-  static SideTripLock? _lock(int opensAt, {required bool open, required int remembered}) =>
-      open || remembered >= opensAt ? null : SideTripLock(opensAt: opensAt, remembered: remembered);
+  static SideTripLock? _lock(int opensAt, {required bool open, required int counted}) =>
+      open || counted >= opensAt ? null : SideTripLock(opensAt: opensAt, counted: counted);
 }
 
 /// What keeps an open trip's ranked games shut: they need the all-known
@@ -210,12 +212,12 @@ class SideTripsHub {
 
   final List<SideTripEntry> entries;
 
-  /// The hub for a player in [allKnown] mode or not, with [remembered]
-  /// cards well remembered now, the [latched] trips open for good, and
-  /// each trip's [standings] (none when missing).
+  /// The hub for a player in [allKnown] mode or not, with [seen] cards seen
+  /// so far, the [latched] trips open for good, and each trip's
+  /// [standings] (none when missing).
   factory SideTripsHub.of({
     required bool allKnown,
-    required int remembered,
+    required int seen,
     Set<SideTrip> latched = const {},
     Map<SideTrip, SideTripStanding> standings = const {},
   }) {
@@ -224,7 +226,7 @@ class SideTripsHub {
       final rating = standing.rating;
       return SideTripEntry(
         trip: trip,
-        lock: SideTripUnlocks.lockOf(trip, allKnown: allKnown, remembered: remembered, latched: latched),
+        lock: SideTripUnlocks.lockOf(trip, allKnown: allKnown, seen: seen, latched: latched),
         rankedLock: RankedLock.of(allKnown: allKnown, ladder: standing.ladder),
         rating: rating,
         ratingChange: standing.ratingChange,

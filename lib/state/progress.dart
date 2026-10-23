@@ -1005,23 +1005,21 @@ class Progress extends ChangeNotifier {
   bool get _allKnown => trainer.config.learningMode == LearningMode.allKnown;
 
   /// The Side Trips tab: each side trip's lock and standing. The trips open
-  /// in all-known mode, and in journey mode as cards are well remembered
-  /// (latched like [freePractice]: a bad day never locks them again).
-  SideTripsHub sideTripsHub([DateTime? now]) => SideTripsHub.of(
+  /// in all-known mode, and in journey mode once enough cards are seen
+  /// (latched: they never lock again).
+  SideTripsHub sideTripsHub() => SideTripsHub.of(
         allKnown: _allKnown,
-        remembered: _sideTripsRemembered(now ?? DateTime.now()),
+        seen: knownCards.length,
         latched: _sideTripsOpened,
         standings: {
           for (final trip in SideTrip.values) trip: sideTrips.standingOf(trip, known: knownCards.length),
         },
       );
 
-  /// Cards well remembered at once, for the side trips' locks; 0 once
-  /// the tab and every trip are open, with no lock left to count toward.
+  /// Cards well remembered at once, for the Side Trips tab's lock; 0 once
+  /// the tab is open, with no lock left to count toward.
   int _sideTripsRemembered(DateTime now) =>
-      _allKnown || (_sideTripsTabOpened && _sideTripsOpened.containsAll(SideTrip.values))
-          ? 0
-          : trainer.wellRememberedCount(allStats, now);
+      _allKnown || _sideTripsTabOpened ? 0 : trainer.wellRememberedCount(allStats, now);
 
   /// Stores the side-trip latches for the tab and every trip open now.
   Future<void> _latchSideTrips(DateTime now) async {
@@ -1031,7 +1029,7 @@ class Progress extends ChangeNotifier {
       _sideTripsTabOpened = true;
       await _put(_sideTripsTabKey, 'true');
     }
-    final open = sideTripsHub(now).openTrips;
+    final open = sideTripsHub().openTrips;
     if (_sideTripsOpened.containsAll(open)) return;
     _sideTripsOpened.addAll(open);
     await _put(_sideTripsKey, jsonEncode([for (final t in _sideTripsOpened) t.name]));

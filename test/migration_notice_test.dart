@@ -134,7 +134,7 @@ void main() {
       final trips = p.sideTrips;
       expect(trips.ratingOf(SideTrip.ankiren), isNull);
       expect(trips.rankedGames(SideTrip.ankiren), 0);
-      final entry = p.sideTripsHub(DateTime.now())[SideTrip.ankiren];
+      final entry = p.sideTripsHub()[SideTrip.ankiren];
       expect([entry.ranked, entry.rating], [false, null]);
       expect(trips.ladderOf(SideTrip.ankiren).cleared, isEmpty, reason: 'everyone starts at Lv 0');
       for (final run in trips.runsOf(SideTrip.ankiren)) {

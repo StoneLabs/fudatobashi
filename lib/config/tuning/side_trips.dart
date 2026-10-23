@@ -1,15 +1,15 @@
 part of '../config.dart';
 
-/// When the side trips (寄り道, `SideTripUnlocks`) open in journey mode: once
-/// this many cards are well remembered at once, free practice's counter;
-/// from then on they stay open for good. All-known mode opens them all.
+/// When the side trips (寄り道, `SideTripUnlocks`) open in journey mode; from
+/// then on they stay open for good. All-known mode opens them all.
 abstract final class SideTripTuning {
-  /// The Side Trips tab.
+  /// The Side Trips tab: this many cards well remembered at once, free
+  /// practice's counter.
   static const int tabRemembered = 25;
 
-  /// 暗記練, its ranked games and free play together; ranked always has
-  /// enough known cards to deal from by then.
-  static const int ankirenRemembered = 50;
+  /// 暗記練's free play: this many cards seen (`Progress.knownCards`); its
+  /// ranked games need more (`RankedLock`).
+  static const int ankirenSeen = 50;
 }
 
 /// How a swipe turns the Side Trips tab's ring of islands (`SideTripRing`).

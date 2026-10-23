@@ -3207,15 +3207,15 @@ void main() {
         final s = S(lang);
         final p = await open(tester, mode: LearningMode.journey, ja: ja, journeyCards: 3);
         final entry = p.sideTripsHub()[SideTrip.ankiren];
-        expect(entry.lock?.needed, SideTripTuning.ankirenRemembered);
+        expect(entry.lock?.needed, SideTripTuning.ankirenSeen);
         await openTrips(tester, p);
         expect([for (final row in tester.widgetList<CardPips>(inTrips(find.byType(CardPips)))) ...row.pips],
-            hasLength(SideTripTuning.ankirenRemembered));
+            hasLength(SideTripTuning.ankirenSeen));
         expect(inTrips(find.byType(PageBurst)), findsNothing, reason: 'a locked trip shows its lock, not its burst');
         expect(inTrips(find.text(s.freePlay)), findsNothing, reason: 'one lock at a time');
         await captureScreen(tester, 'side_trips_locked', lang: lang);
         await expectBalloon(tester, inTrips(find.textContaining(s.sideTripRanked)),
-            s.sideTripLockedWhy(SideTripTuning.ankirenRemembered));
+            s.sideTripLockedWhy(SideTripTuning.ankirenSeen));
         await tester.pumpWidget(const SizedBox());
       });
 
@@ -3287,9 +3287,9 @@ void main() {
       await tester.pumpWidget(const SizedBox());
     });
 
-    testWidgets('暗記練 opens whole at 50 cards remembered well, ranked and free play, and stays open', (tester) async {
+    testWidgets('暗記練 opens whole at 50 cards seen, ranked and free play, and stays open', (tester) async {
       const s = S('en');
-      const tabAt = SideTripTuning.tabRemembered, opens = SideTripTuning.ankirenRemembered;
+      const tabAt = SideTripTuning.tabRemembered, opens = SideTripTuning.ankirenSeen;
       final p = await open(tester, mode: LearningMode.journey);
       await remember(tester, p, journeyOrder.take(tabAt));
       expect(p.sideTripsHub()[SideTrip.ankiren].lock?.needed, opens - tabAt);
@@ -3314,7 +3314,7 @@ void main() {
       // keeps it open.
       final later = DateTime.now().add(const Duration(days: 60));
       expect(p.trainer.wellRememberedCount(p.allStats, later), 0);
-      expect(p.sideTripsHub(later)[SideTrip.ankiren].open, isTrue);
+      expect(p.sideTripsHub()[SideTrip.ankiren].open, isTrue);
       await tester.pump(const Duration(seconds: 3));
       await tester.pumpWidget(const SizedBox());
     });

@@ -53,7 +53,7 @@ import 'test_vector_art.dart';
 /// corner, and the screen's right edge.
 const _stampMargin = 4.0;
 
-/// Cards remembered well on the locked hub: 13 short of 暗記練.
+/// Cards seen on the locked hub: 13 short of 暗記練.
 const _lockedCards = 37;
 
 enum _Hub { locked, open, ranked }
@@ -118,7 +118,7 @@ void main() {
   }
 
   // A player on the journey who has taken the tour, in [lang], with the hub
-  // [hub]: locked (37 cards remembered: the tab is open, 暗記練 is not), open
+  // [hub]: locked (37 cards seen: the tab is open, 暗記練 is not), open
   // (52, unranked) or ranked (60, and two ranked games played).
   // (All-known Home itself overflows a 360 dp phone at font scale 1.3 in
   // Japanese, so these stay on the journey.)
@@ -273,7 +273,7 @@ void main() {
                   reason: 'the sea runs on under the tab bar');
               if (hub == _Hub.locked) {
                 expect(inHub(find.text(s.howToPlay)), findsNothing, reason: 'no rules while locked');
-                expectShown(tester, inHub(find.textContaining(s.sideTripRemembered)), phone);
+                expectShown(tester, inHub(find.textContaining(s.sideTripSeen)), phone);
                 expectShown(tester, inHub(find.byType(CardPips)).first, phone);
                 expectShown(tester, inHub(find.textContaining(s.sideTripRanked)), phone);
                 expect(inHub(find.byType(PageBurst)), findsNothing);
