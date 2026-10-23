@@ -1,7 +1,8 @@
-/* The colour buttons under the toolbar. They wrap the selected words in
-   [words]{.red}, or the selected lines in a ::: {.bg-yellow} box, or in a verse
-   block each selected line in its own span. Choosing the same colour again
-   takes it off. */
+/* The colour buttons under the toolbar, and Align right. Colours wrap the selected
+   words in [words]{.red}, or the selected lines in a ::: {.bg-yellow} box (also
+   inside a quote), or in a verse block each selected line in its own span.
+   Align right fences the lines with ::: {.right}, in text, quotes and verse blocks.
+   Choosing the same thing again takes it off. */
 Editor.colours = (() => {
   const { PALETTE } = Editor.config;
   const { $, esc } = Editor.util;
@@ -14,6 +15,8 @@ Editor.colours = (() => {
   const BOX_CLOSE = /^ {0,3}:{3,}[ \t]*$/;
   const FENCE = /^ {0,3}(?:`{3,}|~{3,})\s*(\S*)/;
   const RUBY_WORDS = /^[^|[\]]+\|[^\]]+$/;
+  const QUOTE = /^ {0,3}>[ \t]?/;
+  const ALIGN_RIGHT = 'right';
   const SAMPLE_WORDS = 'coloured words';
 
   const namesOf = (dotted) => dotted.trim().split(/\s+/).map((c) => c.slice(1));
@@ -106,19 +109,28 @@ Editor.colours = (() => {
     Editor.editing.put(from, to, text, from, from + text.length);
   }
 
-  function applyToBox({ from, to }, name) {
-    const v = ta.value;
-    const lines = v.slice(from, to).split('\n');
+  /* [lines] fenced by ::: {.name}, or unfenced again when they already are. A fence that
+     is there keeps its other classes. */
+  function fenced(lines, name) {
     const open = BOX_OPEN.exec(lines[0]);
     if (open && lines.length > 1 && BOX_CLOSE.test(lines[lines.length - 1])) {
       const names = toggled(namesOf(open[1]), name);
-      const inner = lines.slice(1, -1).join('\n');
-      const text = names.length ? `::: ${bracesOf(names)}\n${inner}\n:::` : inner;
-      return Editor.editing.put(from, to, text, from, from + text.length);
+      const inner = lines.slice(1, -1);
+      return { lines: names.length ? [`::: ${bracesOf(names)}`, ...inner, ':::'] : inner, added: false };
     }
-    const before = from > 0 && lineAt(v, from - 1).trim() !== '' ? '\n' : '';
-    const after = to < v.length && lineAt(v, to + 1).trim() !== '' ? '\n' : '';
-    const text = `::: ${bracesOf([name])}\n${lines.join('\n')}\n:::`;
+    return { lines: [`::: ${bracesOf([name])}`, ...lines, ':::'], added: true };
+  }
+
+  /* The lines get a ::: fence in text, in a quote (every line starts with >) or in a verse block. */
+  function applyToBox({ from, to }, name) {
+    const v = ta.value;
+    const raw = v.slice(from, to).split('\n');
+    const quoted = raw.every((line) => QUOTE.test(line));
+    const { lines, added } = fenced(quoted ? raw.map((line) => line.replace(QUOTE, '')) : raw, name);
+    const text = (quoted ? lines.map((line) => (line ? '> ' + line : '>')) : lines).join('\n');
+    const padded = added && !quoted && fenceAt(from) !== 'verse';
+    const before = padded && from > 0 && lineAt(v, from - 1).trim() !== '' ? '\n' : '';
+    const after = padded && to < v.length && lineAt(v, to + 1).trim() !== '' ? '\n' : '';
     Editor.editing.put(from, to, before + text + after, from + before.length, from + before.length + text.length);
   }
 
@@ -127,6 +139,16 @@ Editor.colours = (() => {
     if (!lines) return applyToWords(name);
     if (fenceAt(lines.from) === 'verse') return applyToVerseLines(lines, name);
     return applyToBox(lines, name);
+  }
+
+  /* The Align right button: the lines the selection touches, in whatever it is in. */
+  function alignRight() {
+    const v = ta.value;
+    const from = v.lastIndexOf('\n', ta.selectionStart - 1) + 1;
+    const last = ta.selectionEnd > ta.selectionStart && v[ta.selectionEnd - 1] === '\n' ? ta.selectionEnd - 1 : ta.selectionEnd;
+    const end = v.indexOf('\n', last);
+    const range = { from, to: end < 0 ? v.length : end };
+    if (v.slice(range.from, range.to).trim()) applyToBox(range, ALIGN_RIGHT);
   }
 
   const swatch = (kind, { name, hex, token }) => {
@@ -148,5 +170,5 @@ Editor.colours = (() => {
     });
   }
 
-  return { wire };
+  return { alignRight, wire };
 })();

@@ -9,10 +9,12 @@
  * Additions:
  * - the kana mark {あきの}: kana the app shows as romaji when its romaji
  *   setting is on. It is an inline node of its own.
+ * - [kanji|ruby], an inline 'ruby' node with a reading, in any text.
  * - classes in braces, which start with a dot: {.right} after a picture,
  *   [words]{.red} as a span and ::: {.bg-yellow} ... ::: as a box. They are
  *   kept as `classes` (names without the dot) and `raw` (the text as typed).
  *   A brace group that follows nothing is an 'orphan' node, shown as typed.
+ *   Needs Editor.config.ALIGN_CLASSES, the classes that only align.
  *
  * Nodes: {t: 'text'} | {kana: 'あきの'} | {tag, attrs?, c?, classes?, raw?}
  * (the same shape as the package's Text and Element, so a test can compare).
@@ -45,11 +47,21 @@ Editor.CardMarkdown = (() => {
   const indentation = (s) => /^[ \t]*/.exec(s)[0].length;
   const dedent = (s, n) => s.slice(Math.min(n, /^ */.exec(s)[0].length));
   const unescapePunct = (s) => s.replace(/\\([!-\/:-@\[-`{-~])/g, '$1');
-  /** A node's text. With [marked], a kana mark keeps its place between KANA_OPEN and KANA_CLOSE. */
+  /** A node's text. With [marked], a kana mark keeps its place between KANA_OPEN and KANA_CLOSE,
+      and a ruby is RUBY_OPEN base RUBY_SPLIT reading RUBY_CLOSE. */
   const KANA_OPEN = '\uE000';
+  const RUBY_OPEN = '\uE002';
+  const RUBY_SPLIT = '\uE003';
+  const RUBY_CLOSE = '\uE004';
   const KANA_CLOSE = '\uE001';
-  const textOf = (n, marked = false) =>
-    n.t ?? (n.kana !== undefined ? (marked ? KANA_OPEN + n.kana + KANA_CLOSE : n.kana) : (n.c || []).map((k) => textOf(k, marked)).join(''));
+  const textOf = (n, marked = false) => {
+    if (n.t !== undefined) return n.t;
+    if (n.kana !== undefined) return marked ? KANA_OPEN + n.kana + KANA_CLOSE : n.kana;
+    const inner = (n.c || []).map((k) => textOf(k, marked)).join('');
+    return marked && n.tag === 'ruby' ? RUBY_OPEN + inner + RUBY_SPLIT + n.reading + RUBY_CLOSE : inner;
+  };
+  /** Marked text as plain text: no marks, and a ruby is its base. */
+  const unmark = (s) => s.replace(new RegExp(`${RUBY_OPEN}(.*?)${RUBY_SPLIT}.*?${RUBY_CLOSE}`, 'g'), '$1').replace(new RegExp(`[${KANA_OPEN}${KANA_CLOSE}]`, 'g'), '');
 
   /* ---- blocks (package:markdown's block_parser and block_syntaxes) ---- */
 
@@ -61,7 +73,7 @@ Editor.CardMarkdown = (() => {
       this.encounteredBlankLine = false;
       this.parent = null;
       this.setextDisabled = false;
-      this.noBox = false;
+      this.noBox = false; // see `box`
       this.current = null;
       this.previous = null;
     }
@@ -130,17 +142,34 @@ Editor.CardMarkdown = (() => {
   };
   const fenceOf = (m) => ({ indent: m[1].length, marker: m[2] ?? m[4], info: (m[3] ?? m[5]).trim() });
 
-  /* ::: {.bg-yellow} ... :::  A box holds ordinary blocks and cannot hold another box.
-     Without a closing line it is not a box: the opening line stays plain text. */
+  /* The class names of an opening ::: {...} line, or null when its braces are not {.names}. */
+  const boxNames = (line) => {
+    CLASS_BRACES.lastIndex = 0;
+    const m = CLASS_BRACES.exec(P.boxOpen.exec(line)[1]);
+    return m && classNames(m);
+  };
+  /* A box with only alignment classes, such as {.right}, draws nothing of its own. */
+  const alignOnly = (names) => names.every((n) => Editor.config.ALIGN_CLASSES.includes(n));
+
+  /* ::: {.bg-yellow} ... :::  A box holds ordinary blocks. Boxes do not nest, except that
+     an alignment-only box may sit inside another box. Without a closing line it is
+     not a box: the opening line stays plain text.
+     p.noBox says what the blocks being parsed may not hold: true is no box at all,
+     'align' is alignment-only boxes only. */
   const box = {
-    canParse: (p) => !p.noBox && P.boxOpen.test(p.cur),
+    canParse: (p) => {
+      if (p.noBox === true || !P.boxOpen.test(p.cur)) return false;
+      if (p.noBox !== 'align') return true;
+      const names = boxNames(p.cur);
+      return !!names && alignOnly(names);
+    },
     canEnd: () => true,
     parse(p) {
       const openLine = p.cur;
       const start = p.pos;
-      const braces = P.boxOpen.exec(openLine)[1];
-      CLASS_BRACES.lastIndex = 0;
-      const match = CLASS_BRACES.exec(braces);
+      const names = boxNames(openLine);
+      const holdsAlign = !!names && !alignOnly(names);
+      let depth = 0;
       p.advance();
       const lines = [];
       let fence = null;
@@ -150,17 +179,20 @@ Editor.CardMarkdown = (() => {
         const mark = m && fenceOf(m);
         if (mark && !fence) fence = mark;
         else if (mark && fence && mark.marker.startsWith(fence.marker) && !mark.info) fence = null;
-        if (!fence && P.boxClose.test(p.cur)) { p.advance(); closed = true; break; }
+        if (!fence && P.boxClose.test(p.cur)) {
+          if (!depth) { p.advance(); closed = true; break; }
+          depth--;
+        } else if (!fence && holdsAlign && P.boxOpen.test(p.cur) && alignOnly(boxNames(p.cur) ?? ['-'])) depth++;
         lines.push(p.cur);
         p.advance();
       }
-      if (!match || !closed) {
+      if (!names || !closed) {
         p.pos = start + 1;
-        return { tag: 'p', c: [{ t: openLine.trim() }], ...(match ? { unclosed: true } : {}) };
+        return { tag: 'p', c: [{ t: openLine.trim() }], ...(names ? { unclosed: true } : {}) };
       }
       const inner = new BlockParser(lines);
-      inner.noBox = true;
-      return { tag: 'div', classes: classNames(match), raw: openLine.trim(), c: inner.parseLines() };
+      inner.noBox = holdsAlign ? 'align' : true;
+      return { tag: 'div', classes: names, raw: openLine.trim(), c: inner.parseLines() };
     },
   };
 
@@ -391,6 +423,9 @@ Editor.CardMarkdown = (() => {
 
   const MARK = /\{(?!\s*\.)([^{}\n]+)\}/y;
   const ORPHAN = /\{\s*\.[^{}\n]*\}/y;
+  /* [kanji|ruby]: exactly one |, something on each side, and no spaces, brackets,
+     braces, backslashes or emphasis marks inside. */
+  const RUBY_TEXT = /^([^|[\]\\{}*_`\s\u3000]+)\|([^|[\]\\{}*_`\s\u3000]+)$/;
   const CODE = /(`+(?!`))((?:.|\n)*?[^`])\1(?!`)/y;
   const AUTOLINK = /<(([a-zA-Z][a-zA-Z\-+.]+):(?:\/\/)?[^\s>]*)>/y;
   const ENTITY = /&(?:([a-z0-9]+)|#([0-9]{1,7})|#x([a-f0-9]{1,6}));/iy;
@@ -595,6 +630,13 @@ Editor.CardMarkdown = (() => {
 
     function closeLink(opener, children) {
       if (opener.char === '[') {
+        const ruby = RUBY_TEXT.exec(source.slice(opener.endPos, pos));
+        if (ruby && source[pos + 1] !== '(') {
+          const braces = bracesAt(pos + 1);
+          if (braces) pos += braces.raw.length;
+          children();
+          return [{ tag: 'ruby', reading: ruby[2], c: [{ t: ruby[1] }], ...(braces ?? {}) }];
+        }
         const braces = bracesAt(pos + 1);
         if (braces) {
           pos += braces.raw.length;
@@ -795,7 +837,7 @@ Editor.CardMarkdown = (() => {
     return splitFloats(inlineInto(new BlockParser(lines).parseLines(), marks));
   }
 
-  return { parse, textOf, KANA_OPEN, KANA_CLOSE };
+  return { parse, textOf, unmark, KANA_OPEN, KANA_CLOSE, RUBY_OPEN, RUBY_SPLIT, RUBY_CLOSE };
 })();
 
 if (typeof module !== 'undefined') module.exports = Editor.CardMarkdown;

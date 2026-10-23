@@ -38,6 +38,8 @@ Editor.config = (() => {
     BLOCK_TAGS: new Set(['h1', 'h2', 'h3', 'h4', 'p', 'ul', 'ol', 'blockquote', 'pre', 'hr', 'div']),
     GAPS: { h1: 26, h2: 22, h3: 16, h4: 16, block: 10, item: 6, quote: 10 },
     FOLDERS: { en: 'assets/l10n/en_card_explanations/', ja: 'assets/l10n/ja_card_explanations/' },
+    /* Pictures written as assets/… are looked up in the repo, this far up from index.html. */
+    REPO_ROOT: '../../',
     /* Developer flag: index.html?sample opens a sample draft with its pictures and
        card data, and saves nothing, so the writer's own drafts are left alone. */
     SAMPLE_MODE: /[?&]sample\b/.test(location.search),
@@ -46,6 +48,8 @@ Editor.config = (() => {
     /* A picture with {.left} or {.right}: its width as a share of the text column,
        its height cap and the gap between it and the text (px). */
     FLOAT: { sides: ['left', 'right'], width: '42%', maxHeight: 180, gap: 12 },
+    /* Classes that only align, on a ::: box or a verse block. */
+    ALIGN_CLASSES: ['right'],
     /* The coloured box made by ::: {.bg-yellow}: padding and border (px). */
     BOX: { padding: '10px 12px', border: 2 },
     WORDS: {

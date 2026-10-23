@@ -66,8 +66,21 @@
 ```</code> Text colours and backgrounds work in verse lines too: <code>[[秋|あき]の]{.red}</code> or <code>[かりほの]{.bg-yellow}</code> (see Text colour below).<span class="ja">[漢字|かな] でふりがな。1行に1句、区切りは全角スペース。色も使えます。</span></dd>
           <dt>Kana that can turn into romaji</dt>
           <dd>Put kana in curly braces, as it is pronounced: <code>The kimariji is {あきの}.</code> Kana mode shows あきの and Romaji mode shows akino. Write <code>{わ}</code> for the particle は. Only the text inside { } changes. It works in headings, lists, quotes, bold and highlight, but not inside a verse block or inside <code>[漢字|かな]</code>. To show a real brace, write <code>\{</code>. Braces that start with a dot, like <code>{.red}</code>, are for colours and pictures instead (see below).<span class="ja">ローマ字にしたいかなは { } で囲み、発音どおりに書きます。</span></dd>
+          <dt>Furigana in text</dt>
+          <dd><code>[秋|あき]の田</code> puts small kana above the kanji, in paragraphs, headings, lists, quotes, boxes and picture captions. It also works inside a colour: <code>[[秋|あき]の田]{.red}</code>, and <code>[秋|あき]{.red}</code> colours just that word. The rule: one <code>|</code> with something on each side, no spaces, no brackets, braces or <code>* _ `</code> inside, and not followed by <code>(</code> (that is a link). So <code>[a | b]</code> stays as written. To show a real <code>[x|y]</code>, write <code>\[x|y]</code>.<span class="ja">[漢字|かな] でふりがな。本文・見出し・リスト・引用・枠の中でも使えます。そのまま表示したいときは \[ と書きます。</span></dd>
+          <dt>Align right</dt>
+          <dd>Put paragraphs between <code>::: {.right}</code> and <code>:::</code> to set them to the right, for example the name under a quote. No box is drawn. It also works inside a quote, with <code>&gt; </code> in front of each line, and with colours: <code>::: {.right .bg-yellow}</code> is a tinted box with right-aligned text. A <code>{.right}</code> block may sit inside a coloured box, but nothing else may be inside a box. In a verse block, the same lines set the verse lines between them to the right.
+            <code>&gt; Quoted words
+&gt; ::: {.right}
+&gt; — Fujiwara no Teika
+&gt; :::</code>
+            <code>```verse
+::: {.right}
+[苫|とま]をあらみ
+:::
+```</code><span class="ja">::: {.right} と ::: の間を右寄せにします。引用（各行の先頭に &gt; ）や詩の中でも同じ書き方です。</span></dd>
           <dt>Pictures</dt>
-          <dd><code>![caption](assets/pictures/name.png)</code> alone on its line, with the caption under the picture. Use only letters, digits, - and _ in the file name. Pictures show at most 140 px tall. The image files must be sent to the developer together with the .md files.<span class="ja">画像ファイルは .md と一緒に開発者へ送ってください。</span></dd>
+          <dd><code>![caption](assets/pictures/name.png)</code> alone on its line, with the caption under the picture. Use only letters, digits, - and _ in the file name. Pictures show at most 140 px tall. A picture that is already in the repo shows by itself in the preview; for a new one, use “Choose image” to preview it. The image files must be sent to the developer together with the .md files.<span class="ja">画像ファイルは .md と一緒に開発者へ送ってください。</span></dd>
           <dt>Picture at the side</dt>
           <dd><code>![caption](assets/pictures/name.png){.right}</code> floats the picture to the right (<code>{.left}</code> for the left). The text under it runs along its side until the picture ends, then goes full width. Put the picture on its own line above the text; a blank line between is normal, but text on the very next line works too. A second side picture starts below the first.<span class="ja">画像を右（{.left} なら左）に寄せ、文章を横に回り込ませます。画像の次の行から文章を書いてください。</span></dd>
           <dt>Text colour</dt>
@@ -75,7 +88,7 @@
           <dt>Highlighter</dt>
           <dd><code>[some words]{.bg-yellow}</code> puts a colour behind the words. Backgrounds: <code data-palette="background"></code> Use both together as <code>[some words]{.red .bg-yellow}</code>.<span class="ja">[言葉]{.bg-yellow}　背景の色（マーカー）。両方は {.red .bg-yellow} のように並べます。</span></dd>
           <dt>Coloured box</dt>
-          <dd>Put one or more paragraphs between a <code>::: {.bg-yellow}</code> line and a line with only <code>:::</code>. The box gets that background, and text colours work inside it too. A box cannot hold another box.
+          <dd>Put one or more paragraphs between a <code>::: {.bg-yellow}</code> line and a line with only <code>:::</code>. The box gets that background, and text colours work inside it too. A box cannot hold another box, except a <code>::: {.right}</code> block.
             <code>::: {.bg-yellow}
 Paragraphs go here.
 :::</code><span class="ja">::: {.bg-yellow} と ::: の間の段落を、色つきの枠で囲みます。</span></dd>
@@ -98,7 +111,9 @@ Paragraphs go here.
         <button type="button" data-f="ul" title="Bulleted list">&bull; List</button>
         <button type="button" data-f="ol" title="Numbered list">1. List</button>
         <button type="button" data-f="quote" title="Quote">&ldquo; Quote</button>
+        <button type="button" data-f="ruby" title="Furigana: [kanji|reading]. Works in text and in verse lines">[漢|か]</button>
         <button type="button" data-f="verse" title="Poem lines with furigana">Verse</button>
+        <button type="button" data-f="alignRight" title="Set the selected lines to the right (text, quote or verse). Click again to undo">Align right</button>
         <button type="button" data-f="rule" title="Line">&mdash;</button>
         <button type="button" data-f="picture" title="Picture">Picture</button>
         <button type="button" data-f="pictureLeft" title="Picture on the left, with the text running along its right side">Picture left</button>

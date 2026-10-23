@@ -12,14 +12,22 @@ Editor.warnings = (() => {
     const code = (pre.c || []).find((k) => k.tag);
     if (code?.attrs?.class !== 'language-verse') return [];
     const notes = [];
-    textOf(code).split('\n').forEach((line) => Editor.verse.runs(line, notes));
+    Editor.verse.lines(textOf(code), notes).forEach((line) => { if (!line.literal) Editor.verse.runs(line.markup, notes); });
     return notes;
   }
 
+  function verseMessage(note, out) {
+    if (note.kind === 'orphan') out.add(orphanMessage(note.raw));
+    else if (note.kind === 'span') checkClasses(note, out);
+    else if (note.kind === 'unclosed') out.add('A ::: block in a verse is never closed. End it with a line that holds only :::.');
+    else if (note.kind === 'stray') out.add('A ::: line in a verse closes nothing. A block starts with ::: {.right}.');
+    else out.add(`Only ${classes.listed(Editor.config.ALIGN_CLASSES)} works in a ::: block inside a verse, not ${note.raw}. For colours, use [words]{.red} in a line.`);
+  }
+
   /* The class names in the braces of a [words]{...} span or a ::: {...} box. */
-  function checkClasses(x, out) {
-    classes.unknownIn(x.classes, classes.COLOUR_CLASSES).forEach((name) =>
-      out.add(`Unknown class .${name} in ${x.raw}. Use one of ${classes.listed(classes.COLOUR_CLASSES)}.`));
+  function checkClasses(x, out, allowed = classes.COLOUR_CLASSES) {
+    classes.unknownIn(x.classes, allowed).forEach((name) =>
+      out.add(`Unknown class .${name} in ${x.raw}. Use one of ${classes.listed(allowed)}.`));
     if (classes.repeats(x.classes)) out.add(`${x.raw} has two text colours or two backgrounds. Only the last of each is used.`);
   }
 
@@ -33,11 +41,12 @@ Editor.warnings = (() => {
         classes.unknownIn(x.classes, FLOAT.sides).forEach((name) => out.add(`A picture only takes ${FLOAT.sides.map((s) => '.' + s).join(' or ')}, not .${name}.`));
         if (FLOAT.sides.every((side) => x.classes.includes(side))) out.add('A picture cannot be both .left and .right.');
       }
-      if (x.tag === 'span' || x.tag === 'div') checkClasses(x, out);
+      if ((x.tag === 'span' || x.tag === 'ruby') && x.classes) checkClasses(x, out);
+      if (x.tag === 'div') checkClasses(x, out, classes.BOX_CLASSES);
       if (x.tag === 'orphan') out.add(orphanMessage(textOf(x)));
-      if (x.tag === 'pre') verseNotes(x).forEach((note) => (note.kind === 'orphan' ? out.add(orphanMessage(note.raw)) : checkClasses(note, out)));
+      if (x.tag === 'pre') verseNotes(x).forEach((note) => verseMessage(note, out));
       if (x.unclosed) out.add('A ::: box is never closed. End it with a line that holds only :::.');
-      else if (x.tag === 'p' && /^[ \t]*:::/m.test(textOf(x))) out.add('This ::: line is not understood. Open a box with ::: {.bg-yellow} and close it with a line that holds only :::. A box cannot sit inside another box.');
+      else if (x.tag === 'p' && /^[ \t]*:::/m.test(textOf(x))) out.add('This ::: line is not understood. Open a box with ::: {.bg-yellow} and close it with a line that holds only :::. A box cannot sit inside another box; only a ::: {.right} block can go inside a coloured box.');
       if (x.tag === 'img' && !/^assets\/[A-Za-z0-9_\-./]+$/.test(x.attrs.src)) out.add(`The picture path "${x.attrs.src}" should start with assets/ and use only letters, digits, - _ . and /.`);
       if (x.tag === 'li' && (x.c || []).some((k) => k.tag === 'ul' || k.tag === 'ol')) out.add('Nested lists do not display well. Keep each list flat.');
       if (x.tag === 'a') out.add('Links are shown as plain text.');

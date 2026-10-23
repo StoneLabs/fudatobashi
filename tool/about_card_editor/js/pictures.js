@@ -1,14 +1,14 @@
 /* The pictures a draft mentions, and the image files chosen to preview them. */
 Editor.pictures = (() => {
   const { $, esc } = Editor.util;
-  const { textOf } = Editor.CardMarkdown;
+  const { unmark } = Editor.CardMarkdown;
   const state = Editor.state;
-  const { imageUrl } = Editor.preview;
+  const { imageUrl, repoUrl } = Editor.preview;
 
   const picturesIn = (nodes) => {
     const found = [];
     const walk = (list) => list.forEach((x) => {
-      if (x.tag === 'img' && !found.some((f) => f.path === x.attrs.src)) found.push({ path: x.attrs.src, caption: textOf({ t: x.attrs.alt || '' }).replace(/[]/g, '') });
+      if (x.tag === 'img' && !found.some((f) => f.path === x.attrs.src)) found.push({ path: x.attrs.src, caption: unmark(x.attrs.alt || '') });
       if (x.c) walk(x.c);
     });
     walk(nodes);
@@ -20,11 +20,17 @@ Editor.pictures = (() => {
     const box = $('#pictures');
     $('#picturesWrap').hidden = !items.length;
     box.innerHTML = items.map(({ path }) => {
+      const attached = state.attached[path];
       const url = imageUrl(path);
-      const status = state.attached[path] ? 'Preview only: send this image file to the developer.'
-        : 'Choose a file to preview it, then send the image file to the developer.';
-      return `<li class="picrow" data-path="${esc(path)}"><span class="thumb">${url ? `<img src="${url}" alt="">` : '?'}</span>` +
-        `<span class="pinfo"><code>${esc(path)}</code><small>${status}</small></span>` +
+      /* The repo file may be there or not; the picture's own load events tell, and the row's CSS shows the matching text. */
+      const status = attached ? '<small>Preview only: send this image file to the developer.</small>'
+        : repoUrl(path)
+          ? '<small class="repo-yes">From the repo: this picture is already there. Choose a file only to preview another one.</small>' +
+            '<small class="repo-no">Not in the repo yet. Choose a file to preview it, then send the image file to the developer.</small>'
+          : '<small>Choose a file to preview it, then send the image file to the developer.</small>';
+      const probe = url && !attached ? ' onload="this.closest(\'.picrow\').classList.add(\'in-repo\')" onerror="this.remove()"' : '';
+      return `<li class="picrow" data-path="${esc(path)}"><span class="thumb">${url ? `<img src="${url}" alt=""${probe}>` : '?'}</span>` +
+        `<span class="pinfo"><code>${esc(path)}</code>${status}</span>` +
         `<button type="button" class="btn small" data-act="pick" data-path="${esc(path)}">Choose image</button>` +
         (state.attached[path] ? `<button type="button" class="btn small" data-act="unpick" data-path="${esc(path)}">Remove</button>` : '') + '</li>';
     }).join('');

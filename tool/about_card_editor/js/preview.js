@@ -4,7 +4,7 @@ Editor.preview = (() => {
   const { BLOCK_TAGS, GAPS } = Editor.config;
   const { $, $$, esc } = Editor.util;
   const { hepburn } = Editor.Romaji;
-  const { parse, textOf, KANA_OPEN, KANA_CLOSE } = Editor.CardMarkdown;
+  const { parse, textOf, unmark, KANA_OPEN, KANA_CLOSE, RUBY_OPEN, RUBY_SPLIT, RUBY_CLOSE } = Editor.CardMarkdown;
   const state = Editor.state;
   const { script } = state;
   const { rubyLine } = Editor.phone;
@@ -12,11 +12,21 @@ Editor.preview = (() => {
   const ta = $('#ta');
 
   const kanaSpan = (kana) => `<span class="km">${esc(script() === 'romaji' ? hepburn(kana) : kana)}</span>`;
+  const rubyHtml = (base, reading) => `<ruby>${esc(base)}<rt>${esc(reading)}</rt></ruby>`;
+  /* Text from textOf(…, true): kana marks and rubies become their elements. */
   const markedHtml = (s) =>
-    s.split(new RegExp(`(${KANA_OPEN}[^${KANA_CLOSE}]*${KANA_CLOSE})`)).map((part) =>
-      part.startsWith(KANA_OPEN) ? kanaSpan(part.slice(1, -1)) : esc(part)).join('');
+    s.split(new RegExp(`(${KANA_OPEN}[^${KANA_CLOSE}]*${KANA_CLOSE}|${RUBY_OPEN}[^${RUBY_CLOSE}]*${RUBY_CLOSE})`)).map((part) => {
+      if (part.startsWith(KANA_OPEN)) return kanaSpan(part.slice(1, -1));
+      if (part.startsWith(RUBY_OPEN)) return rubyHtml(...part.slice(1, -1).split(RUBY_SPLIT));
+      return esc(part);
+    }).join('');
 
-  const imageUrl = (path) => state.attached[path]?.url ?? null;
+  /* A picture the writer chose by hand wins; otherwise a file of that name in the repo. */
+  const repoUrl = (path) => (/^assets\/[A-Za-z0-9_\-./]+$/.test(path) && !path.includes('..') ? Editor.config.REPO_ROOT + path : null);
+  const imageUrl = (path) => state.attached[path]?.url ?? repoUrl(path);
+  const dropHtml = (path) => `<div class="drop" data-path="${esc(path)}" tabindex="0" role="button"><b>Picture preview</b><code>${esc(path)}</code><span>Drop an image here, or tap to choose one, to preview it.</span></div>`;
+  /* A repo picture that does not load turns into the drop box. */
+  const missing = (img) => { img.outerHTML = dropHtml(img.dataset.path); };
 
   function inline(nodes) {
     return nodes.map((c) => {
@@ -26,6 +36,7 @@ Editor.preview = (() => {
       if (c.tag === 'em') return `<em>${inline(c.c)}</em>`;
       if (c.tag === 'br') return '<br>';
       if (c.tag === 'span') return span(c);
+      if (c.tag === 'ruby') return ruby(c);
       return inline(c.c || []);
     }).join('');
   }
@@ -34,6 +45,14 @@ Editor.preview = (() => {
   function span(e) {
     if (classes.unknownIn(e.classes, classes.COLOUR_CLASSES).length) return `[${inline(e.c)}]${esc(e.raw)}`;
     return classes.paint(inline(e.c), classes.colourOf(e.classes));
+  }
+
+  /* [漢字|かな], also with colour braces after it. Unknown class names leave the braces as typed. */
+  function ruby(e) {
+    const html = rubyHtml(textOf(e), e.reading);
+    if (!e.classes) return html;
+    if (classes.unknownIn(e.classes, classes.COLOUR_CLASSES).length) return html + esc(e.raw);
+    return classes.paint(html, classes.colourOf(e.classes));
   }
 
   function markerHeading(e) {
@@ -51,8 +70,8 @@ Editor.preview = (() => {
     const caption = img.attrs.alt || '';
     const url = imageUrl(path);
     const visual = url
-      ? `<img src="${url}" alt="${esc(caption.replace(/[]/g, ''))}">`
-      : `<div class="drop" data-path="${esc(path)}" tabindex="0" role="button"><b>Picture preview</b><code>${esc(path)}</code><span>Drop an image here, or tap to choose one, to preview it.</span></div>`;
+      ? `<img src="${url}" data-path="${esc(path)}" alt="${esc(unmark(caption))}" onerror="Editor.preview.missing(this)">`
+      : dropHtml(path);
     const side = classes.floatSide(img.classes);
     const attrs = side ? ` class="pic float-${side}" style="margin-top:${top}px"` : ' class="pic"';
     return `<div${attrs}>${visual}${caption ? `<div class="cap">${markedHtml(caption)}</div>` : ''}</div>`;
@@ -72,7 +91,7 @@ Editor.preview = (() => {
     const codeEl = (e.c || []).find((k) => k.tag);
     const text = (codeEl ? textOf(codeEl) : textOf(e)).trimEnd();
     if (codeEl?.attrs?.class !== 'language-verse') return `<div class="plainpre">${esc(text)}</div>`;
-    return `<div class="verse">${text.split('\n').map((l) => rubyLine(l)).join('')}</div>`;
+    return `<div class="verse">${Editor.verse.lines(text).map((l) => rubyLine(l.markup, 0, l.align)).join('')}</div>`;
   }
 
   function block(node) {
@@ -96,12 +115,13 @@ Editor.preview = (() => {
 
   /* ::: {.bg-yellow} ... :::  Unknown class names make the ::: lines plain text, as typed. */
   function box(e) {
-    if (classes.unknownIn(e.classes, classes.COLOUR_CLASSES).length) {
+    if (classes.unknownIn(e.classes, classes.BOX_CLASSES).length) {
       return blocks([{ tag: 'p', c: [{ t: e.raw }] }, ...e.c, { tag: 'p', c: [{ t: ':::' }] }]);
     }
     const { text, background } = classes.colourOf(e.classes);
     const style = (text ? `--tc:${text};` : '') + (background ? `background-color:${background}` : '');
-    const cls = [background && 'tbox', text && 'tc'].filter(Boolean).join(' ');
+    const aligned = e.classes.filter((c) => classes.kindOf(c) === 'align').map((c) => 'align-' + c);
+    const cls = [background && 'tbox', text && 'tc', ...aligned].filter(Boolean).join(' ');
     return `<div class="${cls}" style="${style}">${blocks(e.c)}</div>`;
   }
 
@@ -137,5 +157,5 @@ Editor.preview = (() => {
     });
   }
 
-  return { renderMd, fitHeadings, imageUrl };
+  return { renderMd, fitHeadings, imageUrl, repoUrl, missing };
 })();

@@ -45,6 +45,9 @@ select{height:38px;border:3px solid var(--ink);padding:0 8px;font-weight:700;fon
 .pinfo{flex:1;min-width:0;display:flex;flex-direction:column;font-size:13px}
 .pinfo code{word-break:break-all}
 .pinfo small{font-weight:500;color:#4a4844}
+.picrow .repo-yes{display:none}
+.picrow.in-repo .repo-yes{display:block}
+.picrow.in-repo .repo-no{display:none}
 .send{font-size:13px;font-weight:700;margin-top:8px;background:var(--sun-soft);border:2px solid var(--ink);padding:6px 10px}
 details.howto{border:3px solid var(--ink);background:#fff;margin-bottom:16px;box-shadow:4px 4px 0 var(--ink-shadow)}
 details.howto summary{cursor:pointer;font-family:var(--D);font-size:16px;padding:10px 16px;list-style:none;background:var(--sun)}

@@ -1,13 +1,17 @@
 /* What the dotted class names in braces mean: the palette colours and the picture sides. */
 Editor.classes = (() => {
-  const { PALETTE, FLOAT, BOX } = Editor.config;
+  const { PALETTE, FLOAT, BOX, ALIGN_CLASSES } = Editor.config;
   const prefix = PALETTE.backgroundPrefix;
 
   const textColours = new Map(PALETTE.text.map((c) => [c.name, c.hex]));
   const backgrounds = new Map(PALETTE.background.map((c) => [prefix + c.name, c.hex]));
   const COLOUR_CLASSES = [...textColours.keys(), ...backgrounds.keys()];
 
-  const kindOf = (name) => (textColours.has(name) ? 'text' : backgrounds.has(name) ? 'background' : 'other');
+  /* What a ::: box may carry: colours and alignment. */
+  const BOX_CLASSES = [...COLOUR_CLASSES, ...ALIGN_CLASSES];
+
+  const kindOf = (name) => (textColours.has(name) ? 'text' : backgrounds.has(name) ? 'background' : ALIGN_CLASSES.includes(name) ? 'align' : 'other');
+  const isAlignOnly = (classes) => classes.every((c) => ALIGN_CLASSES.includes(c));
   const unknownIn = (classes, allowed) => [...new Set(classes.filter((c) => !allowed.includes(c)))];
   /* When a kind is given twice, the last one wins. */
   const lastOf = (classes, map) => classes.filter((c) => map.has(c)).map((c) => map.get(c)).pop();
@@ -30,5 +34,5 @@ Editor.classes = (() => {
   root.setProperty('--box-padding', BOX.padding);
   root.setProperty('--box-border', BOX.border + 'px');
 
-  return { COLOUR_CLASSES, kindOf, unknownIn, colourOf, repeats, floatSide, paint, listed };
+  return { COLOUR_CLASSES, BOX_CLASSES, isAlignOnly, kindOf, unknownIn, colourOf, repeats, floatSide, paint, listed };
 })();

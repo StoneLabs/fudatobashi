@@ -42,6 +42,8 @@
 .verse .tint{padding:0}
 .tbox{display:flow-root;border:var(--box-border) solid var(--ink);padding:var(--box-padding)}
 .tc{color:var(--tc)}
+.align-right{text-align:right}
+.vl.align-right{justify-content:flex-end}
 .tc .hd,.tc .mh{color:var(--tc)}
 .drop{border:2px dashed var(--ink);background:var(--desk);padding:14px 12px;display:flex;flex-direction:column;gap:4px;align-items:center;cursor:pointer;font-size:12.5px;line-height:1.4;white-space:normal}
 .drop code{word-break:break-all}

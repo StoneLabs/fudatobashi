@@ -72,5 +72,39 @@ Editor.verse = (() => {
     return out;
   }
 
-  return { runs };
+  const BOX_OPEN = /^[ \t]*:{3,}[ \t]*\{\s*((?:\.[^\s{}]+\s*)+)\}[ \t]*$/;
+  const BOX_CLOSE = /^[ \t]*:{3,}[ \t]*$/;
+
+  /* The lines of a verse block as { markup, align?, literal? }. ::: {.right} ... :::
+     sets the lines between to the right; only alignment classes work here. Any other
+     ::: line stays a plain line, as typed (literal), and is noted for the checks. */
+  function lines(text, notes = []) {
+    const src = text.split('\n');
+    const out = [];
+    const plain = (markup) => out.push({ markup, literal: true });
+    for (let i = 0; i < src.length; i++) {
+      const open = BOX_OPEN.exec(src[i]);
+      const close = open ? src.findIndex((l, j) => j > i && BOX_CLOSE.test(l)) : -1;
+      if (!open || close < 0) {
+        if (open) notes.push({ kind: 'unclosed' });
+        else if (BOX_CLOSE.test(src[i])) notes.push({ kind: 'stray' });
+        if (open || BOX_CLOSE.test(src[i])) plain(src[i]); else out.push({ markup: src[i] });
+        continue;
+      }
+      const names = open[1].trim().split(/\s+/).map((c) => c.slice(1));
+      const valid = classes.unknownIn(names, Editor.config.ALIGN_CLASSES).length === 0;
+      if (valid) {
+        src.slice(i + 1, close).forEach((markup) => out.push({ markup, align: names[names.length - 1] }));
+      } else {
+        notes.push({ kind: 'verse-class', classes: names, raw: src[i].trim() });
+        plain(src[i]);
+        src.slice(i + 1, close).forEach((markup) => out.push({ markup }));
+        plain(src[close]);
+      }
+      i = close;
+    }
+    return out;
+  }
+
+  return { runs, lines };
 })();

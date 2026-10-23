@@ -54,6 +54,14 @@ Editor.editing = (() => {
     const picked = selectText ? start + text.indexOf(selectText) : start + text.length;
     put(onBlank ? from : to, to, lead + text + '\n\n', picked, selectText ? picked + selectText.length : picked);
   }
+  /* [漢字|かな]: the selection becomes the kanji, and the reading is selected to type over. */
+  function rubyAround() {
+    const from = ta.selectionStart;
+    const to = ta.selectionEnd;
+    const base = ta.value.slice(from, to) || '漢字';
+    const reading = 'かな';
+    put(from, to, `[${base}|${reading}]`, from + base.length + 2, from + base.length + 2 + reading.length);
+  }
   const FORMATS = {
     h1: () => mapLines((l) => (l.startsWith('# ') ? l.slice(2) : '# ' + l.replace(/^#{1,6}\s+/, ''))),
     h2: () => mapLines((l) => (l.startsWith('## ') ? l.slice(3) : '## ' + l.replace(/^#{1,6}\s+/, ''))),
@@ -64,6 +72,8 @@ Editor.editing = (() => {
     ul: () => mapLines((l) => (l.startsWith('- ') ? l.slice(2) : '- ' + l)),
     ol: () => { let i = 0; mapLines((l) => (/^\d+\.\s/.test(l) ? l.replace(/^\d+\.\s/, '') : `${++i}. ${l}`)); },
     quote: () => mapLines((l) => (l.startsWith('> ') ? l.slice(2) : '> ' + l)),
+    alignRight: () => Editor.colours.alignRight(),
+    ruby: () => rubyAround(),
     verse: () => insertBlock('```verse\n[秋|あき]の[田|た]の　かりほの[庵|いほ]の\n```', '[秋|あき]の[田|た]の　かりほの[庵|いほ]の'),
     rule: () => insertBlock('---'),
     picture: () => insertBlock('![caption](assets/pictures/name.png)', 'caption'),

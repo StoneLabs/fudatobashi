@@ -25,8 +25,8 @@ Editor.phone = (() => {
     return paint(marked ? `<span class="kh">${base}</span>` : base, r.style);
   };
   /* One line of furigana markup. [kimariji] is how many kana at the start are
-     the kimariji (shown in pink). */
-  function rubyLine(markup, kimariji = 0) {
+     the kimariji (shown in pink). [align] is 'right' for a line set to the right. */
+  function rubyLine(markup, kimariji = 0, align = null) {
     let left = kimariji;
     const phrases = phrasesOf(Editor.verse.runs(markup)).map((phrase) => {
       const html = phrase.flatMap((r) => {
@@ -38,7 +38,7 @@ Editor.phone = (() => {
       }).join('');
       return `<span class="ph">${html}</span>`;
     });
-    return `<div class="vl${/\[[^|\]]+\|/.test(markup) ? '' : ' plain'}">${phrases.join('')}</div>`;
+    return `<div class="vl${/\[[^|\]]+\|/.test(markup) ? '' : ' plain'}${align ? ' align-' + align : ''}">${phrases.join('')}</div>`;
   }
 
   function renderPoem(p, romaji) {
