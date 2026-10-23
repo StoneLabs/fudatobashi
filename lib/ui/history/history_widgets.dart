@@ -4,7 +4,6 @@ import 'package:flutter/material.dart';
 
 import '../../config/design.dart';
 import '../../domain/side_trips.dart';
-import '../../l10n/free_strings.dart';
 import '../../l10n/history_strings.dart';
 import '../../l10n/run_strings.dart';
 import '../../l10n/side_trip_strings.dart';
@@ -100,7 +99,7 @@ class AnkirenKindTag extends StatelessWidget {
     final mode = switch ((ranked, level)) {
       (true, _) => s.sideTripRanked,
       (false, final int level) => s.historyFreeLevel(level),
-      (false, null) => '${s.freePlay} · ${s.deckCustom}',
+      (false, null) => s.historyFreeCustom,
     };
     return KindTag(named ? '${s.tripName(SideTrip.ankiren)} · $mode' : mode,
         fill: ranked ? Palette.pink : Palette.paper,

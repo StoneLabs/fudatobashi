@@ -158,20 +158,22 @@ class _Label extends StatelessWidget {
 
 /// Cells side by side, split by ink rules (none after the first unless
 /// [firstRuled], for a boxed first cell): each as wide as it is on one
-/// line, and all as tall as the tallest. When the row is too narrow for
+/// line, the room left shared out evenly when the row [fills] its width,
+/// and all as tall as the tallest. When the row is too narrow for
 /// that, the cells give up width in proportion to what they can spare
 /// before a word would break, and past that all narrow in proportion.
 class _CellRow extends MultiChildRenderObjectWidget {
-  const _CellRow({required super.children, this.firstRuled = true});
+  const _CellRow({required super.children, this.firstRuled = true, this.fills = false});
 
-  final bool firstRuled;
-
-  @override
-  RenderObject createRenderObject(BuildContext context) => _RenderCellRow(firstRuled);
+  final bool firstRuled, fills;
 
   @override
-  void updateRenderObject(BuildContext context, _RenderCellRow renderObject) =>
-      renderObject.firstRuled = firstRuled;
+  RenderObject createRenderObject(BuildContext context) => _RenderCellRow(firstRuled, fills);
+
+  @override
+  void updateRenderObject(BuildContext context, _RenderCellRow renderObject) => renderObject
+    ..firstRuled = firstRuled
+    ..fills = fills;
 }
 
 class _CellRowParentData extends ContainerBoxParentData<RenderBox> {}
@@ -180,12 +182,19 @@ class _RenderCellRow extends RenderBox
     with
         ContainerRenderObjectMixin<RenderBox, _CellRowParentData>,
         RenderBoxContainerDefaultsMixin<RenderBox, _CellRowParentData> {
-  _RenderCellRow(this._firstRuled);
+  _RenderCellRow(this._firstRuled, this._fills);
 
   bool _firstRuled;
   set firstRuled(bool value) {
     if (value == _firstRuled) return;
     _firstRuled = value;
+    markNeedsLayout();
+  }
+
+  bool _fills;
+  set fills(bool value) {
+    if (value == _fills) return;
+    _fills = value;
     markNeedsLayout();
   }
 
@@ -208,7 +217,10 @@ class _RenderCellRow extends RenderBox
     final natural = [for (final cell in cells) cell.getMaxIntrinsicWidth(double.infinity)];
     final total = natural.fold(0.0, (sum, w) => sum + w);
     final room = math.max(0.0, width - _gaps);
-    if (total <= room) return natural;
+    if (total <= room) {
+      if (!_fills || !room.isFinite) return natural;
+      return [for (final w in natural) w + (room - total) / natural.length];
+    }
     final least = [
       for (final (i, cell) in cells.indexed) math.min(natural[i], cell.getMinIntrinsicWidth(double.infinity)),
     ];
@@ -697,7 +709,7 @@ class _NextLevelPanel extends StatelessWidget {
       tag: next == null ? s.ankirenAllClearedTitle : s.ankirenNextToClear,
       sub: next == null ? s.sub?.ankirenAllClearedTitle : s.sub?.ankirenNextToClear,
       child: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-        _Stats(setup, cleared: next == null),
+        _Stats(setup),
         _Hint(setup, fits: fits, allCleared: next == null),
         Flexible(child: AnkirenFieldPreview(setup)),
         Padding(
@@ -713,14 +725,13 @@ class _NextLevelPanel extends StatelessWidget {
   }
 }
 
-/// A level's facts: the level, as the button to every level, then the
-/// cards a side and the memorise time, split by an ink rule, their labels
-/// and values in line with the level's; checked once [cleared].
+/// A level's facts across the panel: the level, as the button to every
+/// level, then the cards a side and the memorise time, split by an ink
+/// rule, their labels and values in line with the level's.
 class _Stats extends StatelessWidget {
-  const _Stats(this.setup, {required this.cleared});
+  const _Stats(this.setup);
 
   final AnkirenSetup setup;
-  final bool cleared;
 
   @override
   Widget build(BuildContext context) {
@@ -728,32 +739,23 @@ class _Stats extends StatelessWidget {
     const big = TextStyle(fontFamily: Fonts.display, fontSize: AnkirenPageLayout.statFont, height: 1);
     return Padding(
       padding: AnkirenPageLayout.statsPadding,
-      child: Row(children: [
-        Expanded(
-          child: Align(
-            alignment: Alignment.centerLeft,
-            child: _CellRow(firstRuled: false, children: [
-              _LevelButton(setup.level!),
-              _Cell(
-                inset: AnkirenPageLayout.levelButtonInset,
-                label: _Label(s.ankirenCards, s.sub?.ankirenCards),
-                value: NumberedText(
-                  s.ankirenPerSideCount,
-                  [setup.perSide],
-                  style:
-                      const TextStyle(fontWeight: Weights.black, fontSize: AnkirenPageLayout.statSuffixFont, height: 1),
-                  numberStyle: big,
-                ),
-              ),
-              _Cell(
-                inset: AnkirenPageLayout.levelButtonInset,
-                label: _Label(s.ankirenMemoriseLabel, s.sub?.ankirenMemoriseLabel),
-                value: Text(formatMinutes(setup.memorise), style: big),
-              ),
-            ]),
+      child: _CellRow(firstRuled: false, fills: true, children: [
+        _LevelButton(setup.level!),
+        _Cell(
+          inset: AnkirenPageLayout.levelButtonInset,
+          label: _Label(s.ankirenCards, null),
+          value: NumberedText(
+            s.ankirenPerSideCount,
+            [setup.perSide],
+            style: const TextStyle(fontWeight: Weights.black, fontSize: AnkirenPageLayout.statSuffixFont, height: 1),
+            numberStyle: big,
           ),
         ),
-        if (cleared) const ClearedCheck(size: AnkirenPageLayout.clearedCheck),
+        _Cell(
+          inset: AnkirenPageLayout.levelButtonInset,
+          label: _Label(s.ankirenMemoriseLabel, null),
+          value: Text(formatMinutes(setup.memorise), style: big),
+        ),
       ]),
     );
   }
@@ -780,7 +782,7 @@ class _LevelButton extends StatelessWidget {
         alignment: Alignment.centerLeft,
         semanticLabel: s.ankirenAllLevels,
         child: _Cell(
-          label: _Label(s.ankirenLevelRow, s.sub?.ankirenLevelRow),
+          label: _Label(s.ankirenLevelRow, null),
           value: Row(mainAxisSize: MainAxisSize.min, children: [
             NumberedText(
               s.ankirenLevelValue,
@@ -800,8 +802,9 @@ class _LevelButton extends StatelessWidget {
   }
 }
 
-/// What clears [setup]'s level (or that every level is, once [allCleared]),
-/// or, when the known cards do not [fits] it, how many it needs.
+/// What clears [setup]'s level (or that every level is, once [allCleared],
+/// with a checked "Cleared" on the right), or, when the known cards do not
+/// [fits] it, how many it needs.
 class _Hint extends StatelessWidget {
   const _Hint(this.setup, {required this.fits, required this.allCleared});
 
@@ -836,7 +839,16 @@ class _Hint extends StatelessWidget {
     }
     return Padding(
       padding: AnkirenPageLayout.hintPadding,
-      child: Align(alignment: Alignment.centerLeft, child: why),
+      child: Row(children: [
+        Expanded(child: Align(alignment: Alignment.centerLeft, child: why)),
+        if (allCleared) ...[
+          const SizedBox(width: AnkirenPageLayout.hintGap),
+          const ClearedCheck(size: AnkirenPageLayout.clearedCheck),
+          const SizedBox(width: AnkirenPageLayout.hintGap),
+          Text(s.ankirenClearedMark,
+              style: const TextStyle(fontWeight: Weights.black, fontSize: AnkirenPageLayout.clearedFont)),
+        ],
+      ]),
     );
   }
 }

@@ -22,6 +22,9 @@ extension HistoryStrings on S {
   /// A free-play side-trip game at a level preset.
   String historyFreeLevel(int level) => f('historyFreeLevel', [level]);
 
+  /// A free-play side-trip game with a setup of the player's own.
+  String get historyFreeCustom => t('historyFreeCustom');
+
   /// The record strip's labels: how many runs are on show, their cards, the
   /// days they were played on, and a side trip's best score.
   String get historyRunsLabel => t('historyRunsLabel');

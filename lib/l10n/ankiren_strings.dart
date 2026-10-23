@@ -110,6 +110,9 @@ extension AnkirenStrings on S {
   String get ankirenPlacementNext => t('ankirenPlacementNext');
   String get ankirenRankedMode => t('ankirenRankedMode');
   String get ankirenCards => t('ankirenCards');
+
+  /// Beside the check on the top level once every level is cleared.
+  String get ankirenClearedMark => t('ankirenClearedMark');
   String get ankirenMemoriseLabel => t('ankirenMemoriseLabel');
   String get ankirenNextToClear => t('ankirenNextToClear');
   String get ankirenAllClearedTitle => t('ankirenAllClearedTitle');

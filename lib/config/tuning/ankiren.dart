@@ -8,7 +8,7 @@ abstract final class AnkirenTuning {
   /// is for beginners: its cards lie spread out in the open middle (see
   /// [AnkirenLevel.allInMiddle]). The field grows to a real match's 25 a side
   /// at level 8, and the last levels cut the memorise time from 15 minutes,
-  /// a real match's, to 8. They open one at a time (see `AnkirenLadder`).
+  /// a real match's, to 5. They open one at a time (see `AnkirenLadder`).
   static const List<AnkirenLevel> levels = [
     AnkirenLevel(3, Duration(minutes: 1, seconds: 30), allInMiddle: true),
     AnkirenLevel(4, Duration(minutes: 1, seconds: 30)),
@@ -19,8 +19,8 @@ abstract final class AnkirenTuning {
     AnkirenLevel(18, Duration(minutes: 10)),
     AnkirenLevel(21, Duration(minutes: 12)),
     AnkirenLevel(25, Duration(minutes: 15)),
-    AnkirenLevel(25, Duration(minutes: 12)),
-    AnkirenLevel(25, Duration(minutes: 8)),
+    AnkirenLevel(25, Duration(minutes: 10)),
+    AnkirenLevel(25, Duration(minutes: 5)),
   ];
 
   /// Ranked games all play a real match's field: [rankedPerSide] cards a

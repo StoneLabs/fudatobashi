@@ -278,9 +278,10 @@ abstract final class AnkirenPageLayout {
   static const Size lockBalloon = Size(280, 96);
   static const Duration lockBalloonLife = Duration(milliseconds: 2800);
 
-  /// The next level's check once every level is cleared, and the struck
-  /// card by what clears a level.
-  static const double clearedCheck = 30;
+  /// The next level's checked "Cleared" once every level is cleared, and
+  /// the struck card by what clears a level.
+  static const double clearedCheck = 20;
+  static const double clearedFont = 13;
   static const double hintCard = 20;
 
   /// Between the page's blocks; above the next game's panel, whose tag
