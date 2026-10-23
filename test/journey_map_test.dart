@@ -99,11 +99,13 @@ void main() {
       if (footer == _Footer.banner) {
         await p.recordRun(play(all), const PlayConfig(mode: PlayMode.exam), DateTime.now(), tobi: const Duration(minutes: 5));
       }
-      await p.noteExamIntroShown();
       if (last) {
         await p.switchToAllKnown();
         await p.setLearningMode(LearningMode.journey);
+        // All-known mode counts the exam as passed; this journey has not.
+        if (footer != _Footer.banner) await p.debugUndoExamPass();
       }
+      await p.noteExamIntroShown();
     });
     if (!last) {
       for (final isl in archipelago.islands.take(index + 1)) {

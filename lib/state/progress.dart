@@ -87,6 +87,7 @@ class Progress extends ChangeNotifier {
   /// When the latest exam try began.
   DateTime? _examLastTry;
   bool _examIntroShown = false;
+  bool _examCounted = false;
 
   /// Notices an upgrade queued that have not been dismissed, in order.
   final List<String> _notices = [];
@@ -171,6 +172,8 @@ class Progress extends ChangeNotifier {
     progress._day = progress._days.values.fold<DayRow?>(null, (a, d) => a == null || d.day > a.day ? d : a);
     progress._examLastTry = DateTime.tryParse(kv[_examLastTryKey] ?? '');
     progress._examIntroShown = kv[_examIntroShownKey] == 'true';
+    progress._examCounted = kv[_examCountedKey] == 'true';
+    if (progress._allKnown) await progress._countExam();
     progress._notices.addAll((jsonDecode(kv[noticesKey] ?? '[]') as List).cast<String>());
     await progress._loadToday();
     if (kv[_runJournalKey] case final journal?) await progress._recordJournal(journal);
@@ -190,6 +193,7 @@ class Progress extends ChangeNotifier {
   static const _runJournalKey = 'runJournal';
   static const _examLastTryKey = 'examLastTry';
   static const _examIntroShownKey = 'examIntroShown';
+  static const _examCountedKey = 'examCounted';
 
   static AttemptRec _rec(AttemptRow a, PlayConfig run) => AttemptRec(
         at: a.at,
@@ -767,8 +771,15 @@ class Progress extends ChangeNotifier {
         now: journal.lastAt, tobi: journal.tobi, tobiLine: journal.tobiLine);
   }
 
-  /// The graduation exam has been passed (it happens once).
-  bool get graduated => xp.graduated;
+  /// The graduation exam has been passed (it happens once), or all-known
+  /// mode was chosen, which counts as passed.
+  bool get graduated => xp.graduated || _examCounted;
+
+  Future<void> _countExam() async {
+    if (_examCounted) return;
+    _examCounted = true;
+    await _put(_examCountedKey, 'true');
+  }
 
   /// Journey mode's graduation exam: whether it is open, and what keeps a
   /// try from starting now.
@@ -838,8 +849,10 @@ class Progress extends ChangeNotifier {
     _xp = null;
     _examLastTry = null;
     _examIntroShown = false;
+    _examCounted = false;
     await _drop(_examLastTryKey);
     await _drop(_examIntroShownKey);
+    await _drop(_examCountedKey);
     notifyListeners();
   }
 
@@ -1128,6 +1141,7 @@ class Progress extends ChangeNotifier {
     ));
     final fresh = trainer.unlockEarned(poems, fudaSets, allStats, DateTime.now(), batches: _allKnown);
     if (fresh.isNotEmpty) await _saveItems(fresh);
+    if (_allKnown) await _countExam();
     await updateSettings(settings.copyWith(onboarded: true));
     if (!_allKnown) await refreshToday();
   }
@@ -1449,6 +1463,7 @@ class Progress extends ChangeNotifier {
                   _runJournalKey,
                   _examLastTryKey,
                   _examIntroShownKey,
+                  _examCountedKey,
                   for (final trip in SideTrip.values) SideTrips.clearedKey(trip),
                 ])))
           .go();
@@ -1475,6 +1490,7 @@ class Progress extends ChangeNotifier {
     trainer.goalLevel = 0;
     _examLastTry = null;
     _examIntroShown = false;
+    _examCounted = false;
     _switchBannerCollapsed = false;
     _xp = null;
     notifyListeners();

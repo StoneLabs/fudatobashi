@@ -210,6 +210,34 @@ void main() {
     await db.close();
   });
 
+  test('all-known mode counts the exam as passed, without graduation XP, and the dev undo clears it', () async {
+    final db = AppDatabase(NativeDatabase.memory());
+    final progress = await Progress.open(db);
+    expect(progress.graduated, isFalse);
+
+    await progress.setLearningMode(LearningMode.allKnown);
+    expect(progress.graduated, isTrue);
+    expect(progress.xp.graduated, isFalse, reason: 'no fake graduation run or XP');
+    expect(progress.runs, isEmpty);
+
+    await progress.setLearningMode(LearningMode.journey);
+    expect(progress.graduated, isTrue, reason: 'it stays passed after switching back');
+    expect((await Progress.open(db)).graduated, isTrue);
+
+    await progress.debugUndoExamPass();
+    expect(progress.graduated, isFalse);
+    await db.close();
+  });
+
+  test('a player already in all-known mode counts as passed when the app opens', () async {
+    final db = AppDatabase(NativeDatabase.memory());
+    final progress = await Progress.open(db);
+    await progress.updateTrainerConfig(progress.trainer.config.copyWith(learningMode: LearningMode.allKnown));
+    expect(progress.graduated, isFalse);
+    expect((await Progress.open(db)).graduated, isTrue);
+    await db.close();
+  });
+
   test('switching journey → all-known → journey unlocks everything for good, with nothing left to celebrate',
       () async {
     final db = AppDatabase(NativeDatabase.memory());
