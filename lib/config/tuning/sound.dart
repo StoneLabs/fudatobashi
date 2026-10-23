@@ -22,12 +22,13 @@ abstract final class SoundTuning {
   static const int ankirenTapPoolSize = 2;
 }
 
-/// Background music (`Music` in `lib/ui/sound/sounds.dart`): a single
-/// looping track, playing only on menu screens (Home and its tabs, Settings,
+/// Background music (`Music` in `lib/ui/sound/sounds.dart`): a looping menu
+/// track, playing only on menu screens (Home and its tabs, Settings,
 /// onboarding, the tour) and faded out for a play/swipe screen and a run's
-/// celebration.
+/// celebration, and a looping track for the final exam.
 abstract final class MusicTuning {
-  static const String asset = 'sounds/bgm_fun_022824.m4a';
+  static const String asset = 'sounds/bgm_fun.m4a';
+  static const String examAsset = 'sounds/bgm_exam.m4a';
 
   /// How long a fade takes either way.
   static const Duration fadeIn = Duration(milliseconds: 900);

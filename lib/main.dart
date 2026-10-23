@@ -35,7 +35,7 @@ void _registerBundledLicenses() {
       yield LicenseEntryWithLineBreaks([font.name], await rootBundle.loadString(font.licenseAsset));
     }
     yield LicenseEntryWithLineBreaks(['Kenney sound effects'], await rootBundle.loadString(soundsLicenseAsset));
-    yield LicenseEntryWithLineBreaks(['fun bgm 022824 (syncopika)'], await rootBundle.loadString(musicLicenseAsset));
+    yield LicenseEntryWithLineBreaks(['fun bgm 022824 (syncopika)', 'high energy bgm (syncopika)'], await rootBundle.loadString(musicLicenseAsset));
   });
 }
 

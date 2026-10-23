@@ -105,6 +105,7 @@ class _ExamScreenState extends State<ExamScreen> with SingleTickerProviderStateM
     _progress = ProgressScope.read(context);
     _session.addListener(_onSessionChanged);
     music.leaveMenu();
+    music.startExam();
     unawaited(PointerClock.sync());
     _ticker.start();
   }
@@ -115,6 +116,7 @@ class _ExamScreenState extends State<ExamScreen> with SingleTickerProviderStateM
     _session.removeListener(_onSessionChanged);
     _sinceOpen.dispose();
     _race.dispose();
+    music.stopExam();
     if (!_handedOff) music.enterMenu();
     // Safety net for an unexpected pop: the try is still recorded.
     if (!_ending && _session.attempts.isNotEmpty) {
@@ -211,6 +213,7 @@ class _ExamScreenState extends State<ExamScreen> with SingleTickerProviderStateM
     _ending = true;
     _left = left;
     _ticker.stop();
+    music.stopExam();
     setState(() => _state = won ? _Race.won : _Race.lost);
     if (won) playSound(context, Sfx.best);
     final shown = Future<void>.delayed(left ? Duration.zero : (won ? ExamMotion.won : ExamMotion.lost));

@@ -159,22 +159,26 @@ class _Pool {
 /// The app's sounds; tests swap in a recorder.
 Sounds sounds = Sounds();
 
-/// The app's background music: a single looping player, entirely separate
-/// from the effect pools above so a swipe never waits on it. Playing only on
-/// menu screens (see [enterMenu]/[leaveMenu]), it fades out for a play/swipe
-/// screen and a run's celebration, and back in once a menu screen is on top
-/// again. [applySettings] applies the Music switch and its volume slider,
+/// The app's background music: two looping players, entirely separate from
+/// the effect pools above so a swipe never waits on them. The menu track
+/// plays only on menu screens (see [enterMenu]/[leaveMenu]), fading out for a
+/// play/swipe screen and a run's celebration, and back in once a menu screen
+/// is on top again. The exam track plays instead of it from [startExam] to
+/// [stopExam]. [applySettings] applies the Music switch and its volume slider,
 /// live. Until [load] (and in tests, which never load) every call here stays
 /// silent, like an unloaded [Sounds].
 class Music with WidgetsBindingObserver {
-  AudioPlayer? _player;
-  Timer? _fadeTimer;
+  final _menuTrack = _Track(MusicTuning.asset);
+  final _examTrack = _Track(MusicTuning.examAsset);
 
   bool _enabled = DefaultSettings.music;
   double _volume = DefaultSettings.musicVolume;
 
   /// False only while a play/swipe screen or a run's celebration is on top.
   bool _wantsMenu = true;
+
+  /// True only while the final exam is on.
+  bool _wantsExam = false;
   bool _backgrounded = false;
   bool _silenced = false;
 
@@ -182,22 +186,13 @@ class Music with WidgetsBindingObserver {
   /// volume) for a volume slider position; see [MusicTuning.volumeExponent].
   static double gainFor(double volume) => pow(volume, MusicTuning.volumeExponent).toDouble();
 
-  /// Preloads the track, looped, at zero volume, then brings it up if the
-  /// app is already showing a menu screen. A track that fails to load stays
-  /// silent for good.
+  /// Preloads the tracks, looped, at zero volume, then brings the menu one up
+  /// if the app is already showing a menu screen. A track that fails to load
+  /// stays silent for good.
   Future<void> load() async {
-    final player = _newPlayer();
-    try {
-      await player.setAudioContext(Sounds._context);
-      await player.setReleaseMode(ReleaseMode.loop);
-      await player.setVolume(0);
-      await player.setSource(AssetSource(MusicTuning.asset));
-    } catch (e) {
-      debugPrint('Music: not loaded ($e)');
-      await player.dispose();
-      return;
-    }
-    _player = player;
+    await _menuTrack.load();
+    await _examTrack.load();
+    if (_menuTrack.player == null && _examTrack.player == null) return;
     _silenced = await Sounds._querySilenced();
     WidgetsBinding.instance.addObserver(this);
     _sync();
@@ -229,12 +224,24 @@ class Music with WidgetsBindingObserver {
     _sync();
   }
 
+  /// The final exam has started: its own track fades in.
+  void startExam() {
+    _wantsExam = true;
+    _sync();
+  }
+
+  /// The exam is over or was left: its track fades out.
+  void stopExam() {
+    _wantsExam = false;
+    _sync();
+  }
+
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (state != AppLifecycleState.resumed) {
       _backgrounded = true;
-      _fadeTimer?.cancel();
-      unawaited(_player?.pause());
+      _menuTrack.pause();
+      _examTrack.pause();
       return;
     }
     _backgrounded = false;
@@ -244,35 +251,71 @@ class Music with WidgetsBindingObserver {
     }());
   }
 
-  /// Brings the player to where [_enabled], [_wantsMenu], [_silenced] and
-  /// [_backgrounded] say it should be: playing at the slider's gain, or
-  /// paused at silence. It fades there, taking over from any fade under way,
-  /// unless [fade] is false.
+  /// Brings each track to where [_enabled], [_wantsMenu], [_wantsExam],
+  /// [_silenced] and [_backgrounded] say it should be: playing at the
+  /// slider's gain, or paused at silence. It fades there, taking over from
+  /// any fade under way, unless [fade] is false.
   void _sync({bool fade = true}) {
-    final player = _player;
-    if (player == null || _backgrounded) return;
-    final target = _enabled && _wantsMenu && !_silenced ? gainFor(_volume) : 0.0;
+    if (_backgrounded) return;
+    final audible = _enabled && !_silenced;
+    final gain = gainFor(_volume);
+    _menuTrack.fadeTo(audible && _wantsMenu && !_wantsExam ? gain : 0, fade: fade);
+    _examTrack.fadeTo(audible && _wantsExam ? gain : 0, fade: fade);
+  }
+}
+
+/// One looping track with its own player and fade.
+class _Track {
+  _Track(this.asset);
+
+  final String asset;
+  AudioPlayer? player;
+  Timer? _fadeTimer;
+
+  Future<void> load() async {
+    final p = _newPlayer();
+    try {
+      await p.setAudioContext(Sounds._context);
+      await p.setReleaseMode(ReleaseMode.loop);
+      await p.setVolume(0);
+      await p.setSource(AssetSource(asset));
+    } catch (e) {
+      debugPrint('Music: $asset not loaded ($e)');
+      await p.dispose();
+      return;
+    }
+    player = p;
+  }
+
+  void pause() {
+    _fadeTimer?.cancel();
+    unawaited(player?.pause());
+  }
+
+  void fadeTo(double target, {required bool fade}) {
+    final p = player;
+    if (p == null) return;
     _fadeTimer?.cancel();
     if (!fade) {
-      unawaited(player.setVolume(target));
-      _settle(player, target);
+      unawaited(p.setVolume(target));
+      _settle(p, target);
       return;
     }
-    final start = player.volume;
+    final start = p.volume;
     if (start == target) {
-      _settle(player, target);
+      _settle(p, target);
       return;
     }
-    if (target > 0) unawaited(player.resume());
+    if (target > 0) unawaited(p.resume());
     const steps = MusicTuning.fadeSteps;
     final stepDuration = (target > start ? MusicTuning.fadeIn : MusicTuning.fadeOut) ~/ steps;
     var step = 0;
     _fadeTimer = Timer.periodic(stepDuration, (timer) {
       step++;
-      unawaited(player.setVolume(step < steps ? start + (target - start) * step / steps : target));
+      unawaited(p.setVolume(step < steps ? start + (target - start) * step / steps : target));
       if (step == steps) {
         timer.cancel();
-        _settle(player, target);
+        _settle(p, target);
       }
     });
   }
