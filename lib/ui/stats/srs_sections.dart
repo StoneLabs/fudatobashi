@@ -6,7 +6,6 @@ import '../../config/config.dart';
 import '../../config/design.dart';
 import '../../data/poem.dart';
 import '../../domain/card_stats.dart';
-import '../../domain/day_window.dart';
 import '../../domain/trainer.dart' show LearningMode;
 import '../../l10n/srs_strings.dart';
 import '../../l10n/strings.dart';
@@ -149,34 +148,26 @@ class SrsKnownOverTime extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final s = S.of(context);
-    final played = progress.playedDays();
-    if (played.isEmpty) return _Empty(title: s.srsKnownTitle, sub: s.sub?.srsKnownTitle);
+    final counted = progress.playedDaysFromZero();
+    if (counted.isEmpty) return _Empty(title: s.srsKnownTitle, sub: s.sub?.srsKnownTitle);
     final total = poems.all.length;
-    final known = progress.knownOn(played);
-    final unlocked = progress.unlockedOn(played);
+    final known = progress.knownOn(counted);
+    final unlocked = progress.unlockedOn(counted);
     final now = known.last;
-    final back = math.min(SrsTuning.trendDays, known.length - 1);
-    final gain = now - known[known.length - 1 - back];
+    final today = counted.length - 1;
+    // The trend spans played days only, so the first day alone sets none.
+    final back = math.min(SrsTuning.trendDays, today - 1);
+    final gain = now - known[today - back];
     final rate = back == 0 ? 0.0 : gain / back;
     final daysLeft = rate > 0 && now < total ? ((total - now) / rate).ceil() : null;
     final ahead = daysLeft == null ? 0 : math.min(daysLeft, SrsTuning.chartDays);
-    final today = played.length - 1;
-    final days = [...played, for (var i = 1; i <= ahead; i++) DateTime.utc(played.last.year, played.last.month, played.last.day + i)];
-    final journey = progress.trainer.config.learningMode == LearningMode.journey;
-    final start = progress.trainer.journeyStart;
-    final startDay = start == null ? null : DayWindow.at(start, progress.settings.dayStartHour).date;
-    final pace = journey && startDay != null
-        ? [
-            for (final d in days)
-              d.isBefore(startDay)
-                  ? null
-                  : progress.trainer.config.pace.targetUnlocked(d.difference(startDay).inDays, total).toDouble(),
-          ]
-        : null;
+    final last = counted.last;
+    final days = [...counted, for (var i = 1; i <= ahead; i++) DateTime.utc(last.year, last.month, last.day + i)];
+    final pace = progress.paceOn(days);
     final trend = [
       for (var i = 0; i < days.length; i++) i < today ? null : math.min(total.toDouble(), now + rate * (i - today)),
     ];
-    final finish = daysLeft == null ? null : DateTime.utc(played.last.year, played.last.month, played.last.day + daysLeft);
+    final finish = daysLeft == null ? null : DateTime.utc(last.year, last.month, last.day + daysLeft);
     return HistorySection(
       title: s.srsKnownTitle,
       sub: s.sub?.srsKnownTitle,
@@ -188,12 +179,16 @@ class SrsKnownOverTime extends StatelessWidget {
           ticks: SrsLayout.knownTicks,
           format: (v) => '${v.round()}',
           today: today,
-          xLabels: {0: s.dayDate(days.first), today: s.srsToday, if (days.length - 1 > today) days.length - 1: s.dayDate(days.last)},
+          // Point 0 is the end of the day before the first played day, which
+          // is the first day's start, so it takes the first day's date.
+          xLabels: {0: s.dayDate(days[1]), today: s.srsToday, if (days.length - 1 > today) days.length - 1: s.dayDate(days.last)},
           lines: [
             ChartLine([for (final v in unlocked) v.toDouble()],
                 fill: SrsLayout.unlockedFill, stroke: SrsLayout.unlockedStroke, dash: SrsLayout.unlockedDash),
             ChartLine([for (final v in known) v.toDouble()], fill: SrsLayout.knownFill, stroke: SrsLayout.knownStroke),
-            if (pace != null) ChartLine(pace, color: Palette.sea, stroke: SrsLayout.paceStroke, dash: SrsLayout.dotDash),
+            if (pace != null)
+              ChartLine([for (final v in pace) v?.toDouble()],
+                  color: Palette.sea, stroke: SrsLayout.paceStroke, dash: SrsLayout.dotDash),
             if (ahead > 0) ChartLine(trend, color: Palette.pinkDeep, stroke: SrsLayout.trendStroke, dash: Strokes.dash),
           ],
           marks: [ChartMark(today, now.toDouble(), s.srsKnownCount(now))],

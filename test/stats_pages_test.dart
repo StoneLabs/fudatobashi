@@ -19,6 +19,7 @@ import 'package:fudatobashi/l10n/srs_strings.dart';
 import 'package:fudatobashi/l10n/stats_strings.dart';
 import 'package:fudatobashi/l10n/strings.dart';
 import 'package:fudatobashi/state/demo_data.dart';
+import 'package:fudatobashi/state/journey_simulator.dart';
 import 'package:fudatobashi/state/past_runs.dart';
 import 'package:fudatobashi/state/progress.dart';
 import 'package:fudatobashi/state/scope.dart';
@@ -254,6 +255,38 @@ void main() {
       expect(stages, hasLength(poems.all.length));
     }
     expect(p.knownOn(p.playedDays()).last, p.knownCount());
+  });
+
+  testWidgets('the known chart counts from zero by the end of the day before the first played day', (tester) async {
+    final p = await seeded(tester, 'en', ranked: false);
+    final played = p.playedDays();
+    final days = p.playedDaysFromZero();
+    expect(days, [played.first.subtract(const Duration(days: 1)), ...played]);
+    expect([p.knownOn(days).first, p.unlockedOn(days).first, p.paceOn(days)!.first], [0, 0, 0]);
+    expect(p.knownOn(days).skip(1), p.knownOn(played));
+    expect(p.unlockedOn(days).skip(1), p.unlockedOn(played));
+  });
+
+  testWidgets('the known chart has no days before play, and two on the first day', (tester) async {
+    late Progress p;
+    await tester.runAsync(() async => p = await Progress.open(AppDatabase(NativeDatabase.memory())));
+    expect(p.playedDaysFromZero(), isEmpty);
+    await tester.runAsync(() async {
+      final today = p.dayAt().date;
+      await JourneySimulator(p, seed: 1).finishSet(DateTime(today.year, today.month, today.day));
+    });
+    final days = p.playedDaysFromZero();
+    expect(days, hasLength(2));
+    expect([p.knownOn(days).first, p.unlockedOn(days).first, p.paceOn(days)!.first], [0, 0, 0]);
+    expect(p.knownOn(days).last, p.knownCount());
+    expect(p.unlockedOn(days).last, greaterThan(0));
+  });
+
+  testWidgets('the known chart has no pace in all-known mode', (tester) async {
+    final p = await seeded(tester, 'en', ranked: true);
+    final days = p.playedDaysFromZero();
+    expect(p.paceOn(days), isNull);
+    expect([p.knownOn(days).first, p.unlockedOn(days).first], [0, 0]);
   });
 
   test('a stability under a tenth of a day reads <0.1, not 0.0', () {

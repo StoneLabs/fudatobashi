@@ -6,6 +6,7 @@ import '../config/config.dart';
 import '../data/islands.dart';
 import '../domain/card_stats.dart';
 import '../domain/day_window.dart';
+import '../domain/trainer.dart' show LearningMode;
 import 'play_config.dart';
 import 'progress.dart';
 
@@ -150,6 +151,16 @@ extension StatsHistory on Progress {
     return lastDays(today.difference(first).inDays + 1, now);
   }
 
+  /// The day before the first day with play, then [playedDays]: counts by
+  /// the end of each start from where they stood before any play. Empty
+  /// before the first play.
+  List<DateTime> playedDaysFromZero([DateTime? now]) {
+    final played = playedDays(now);
+    if (played.isEmpty) return const [];
+    final first = played.first;
+    return [DateTime.utc(first.year, first.month, first.day - 1), ...played];
+  }
+
   /// Upright cards known at the end of each of [days].
   List<int> knownOn(List<DateTime> days) {
     final dayOfRun = {for (final r in runs) r.id: r.day};
@@ -194,6 +205,24 @@ extension StatsHistory on Progress {
         if (trainer.items[ItemKey(id, false)]!.unlockedAt case final at?) DayWindow.at(at, settings.dayStartHour).date,
     ];
     return [for (final d in days) unlocks.where((u) => !u.isAfter(d)).length];
+  }
+
+  /// Upright cards the journey's pace expects unlocked by the end of each of
+  /// [days]: none by the end of the day before its first day, null before
+  /// that. Null outside journey mode and before the first unlock.
+  List<int?>? paceOn(List<DateTime> days) {
+    final start = trainer.journeyStart;
+    if (trainer.config.learningMode != LearningMode.journey || start == null) return null;
+    final first = DayWindow.at(start, settings.dayStartHour).date;
+    final total = trainer.items.length ~/ 2;
+    return [
+      for (final d in days)
+        switch (d.difference(first).inDays) {
+          < -1 => null,
+          -1 => 0,
+          final day => trainer.config.pace.targetUnlocked(day, total),
+        },
+    ];
   }
 
   /// The median time of each of [days]' right swipes, over every card and
