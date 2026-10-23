@@ -5,8 +5,8 @@ part of '../config.dart';
 abstract final class ExamTuning {
   /// Tobi's time for the 100 cards, his mistakes' penalties included, drawn
   /// evenly from this range each try.
-  static const int tobiMinMs = 240000;
-  static const int tobiMaxMs = 330000;
+  static const int tobiMinMs = 210000;
+  static const int tobiMaxMs = 225000;
 
   /// Each of Tobi's cards is at his usual pace, quick, or slow. A usual one
   /// may start a burst of quick cards (this chance, this many of them) or

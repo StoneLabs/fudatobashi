@@ -7,7 +7,9 @@ void main() {
     final a = TobiExamStats.sample(draws: 300, seed: 5);
     final b = TobiExamStats.sample(draws: 300, seed: 5);
     expect(a.mean, b.mean);
-    expect(a.mean, inInclusiveRange(ExamTuning.tobiMinMs / RankedTuning.cards, ExamTuning.tobiMaxMs / RankedTuning.cards));
+    // His drawn time includes his mistakes' penalties; his card times don't.
+    const fewestMs = ExamTuning.tobiMinMs - ExamTuning.tobiMaxMisses * ExamTuning.missPenaltyMs;
+    expect(a.mean, inInclusiveRange(fewestMs / RankedTuning.cards, ExamTuning.tobiMaxMs / RankedTuning.cards));
     expect(a.sd, greaterThan(0));
   });
 }
