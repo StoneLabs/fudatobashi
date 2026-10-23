@@ -310,17 +310,16 @@ class _LearningSection extends StatelessWidget {
             opensPage: true,
             onTap: () => pickDayStart(context),
           ),
-          if (mode == LearningMode.journey)
-            ValueListenableBuilder(
-              valueListenable: reminders.notificationsAllowed,
-              builder: (context, allowed, _) => SettingsSwitch(
-                title: s.remindersSetting,
-                note: s.remindersSettingNote,
-                warning: progress.settings.reminders && !allowed ? s.remindersBlockedWarning : null,
-                value: progress.settings.reminders,
-                onChanged: (on) => _setReminders(context, progress, on),
-              ),
+          ValueListenableBuilder(
+            valueListenable: reminders.notificationsAllowed,
+            builder: (context, allowed, _) => SettingsSwitch(
+              title: s.remindersSetting,
+              note: s.remindersSettingNote,
+              warning: progress.settings.reminders && !allowed ? s.remindersBlockedWarning : null,
+              value: progress.settings.reminders,
+              onChanged: (on) => _setReminders(context, progress, on),
             ),
+          ),
         ]),
         SettingsChoices(
           label: SettingsLabel(title: s.dontKnowInput, note: s.dontKnowInputNote),

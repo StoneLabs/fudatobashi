@@ -395,10 +395,10 @@ void main() {
       }
     }
 
-    testWidgets('all-known mode: no switch', (tester) async {
+    testWidgets('all-known mode: the switch shows too', (tester) async {
       final p = await player(tester, mode: LearningMode.allKnown);
       await showSettings(tester, p);
-      expect(find.text(S(p.settings.language).remindersSetting), findsNothing);
+      expect(find.text(S(p.settings.language).remindersSetting), findsOneWidget);
       await tester.pumpWidget(const SizedBox());
     });
 

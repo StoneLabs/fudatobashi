@@ -38,14 +38,12 @@ void main() {
 
     List<tz.TZDateTime> times(
       tz.TZDateTime now, {
-      LearningMode mode = LearningMode.journey,
       bool enabled = true,
       bool todayDone = false,
       int days = ReminderTuning.days,
     }) =>
         reminderTimes(
           now: now,
-          mode: mode,
           enabled: enabled,
           todayDone: todayDone,
           // Days start at 4:00, so this one ends at 4:00 tomorrow.
@@ -92,16 +90,11 @@ void main() {
       final now = tz.TZDateTime(tokyo, 2026, 10, 21, 2);
       final got = reminderTimes(
         now: now,
-        mode: LearningMode.journey,
         enabled: true,
         todayDone: true,
         dayEnd: tz.TZDateTime(tokyo, 2026, 10, 21, 4),
       );
       expect(got.first, tz.TZDateTime(tokyo, 2026, 10, 21, 12));
-    });
-
-    test('all-known mode: none', () {
-      expect(times(tz.TZDateTime(tokyo, 2026, 10, 20, 9), mode: LearningMode.allKnown), isEmpty);
     });
 
     test('turned off: none', () {
@@ -189,16 +182,13 @@ void main() {
       expect(platform.scheduled.last, isEmpty);
     });
 
-    test('all-known mode cancels them, and back in journey mode they return', () async {
+    test('all-known mode keeps them, every day', () async {
       await service.turnOn(progress);
       await service.idle;
       await progress.switchToAllKnown();
       await service.idle;
-      expect(platform.scheduled.last, isEmpty);
-      expect(progress.settings.reminders, isTrue, reason: 'the setting itself is kept');
-      await progress.setLearningMode(LearningMode.journey);
-      await service.idle;
       expect(platform.scheduled.last, hasLength(ReminderTuning.days));
+      expect(progress.settings.reminders, isTrue);
     });
 
     test('a change that moves no reminder leaves the schedule alone', () async {

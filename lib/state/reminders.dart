@@ -41,7 +41,7 @@ abstract interface class ReminderPlatform {
   Future<void> replace(List<tz.TZDateTime> times, ReminderText text);
 }
 
-/// The daily training reminders: while they are on, in journey mode, a
+/// The daily training reminders: while they are on, a
 /// notification at [ReminderTuning.hour] on each of the next
 /// [ReminderTuning.days] days whose set is not done yet (see
 /// [reminderTimes]). [attach] keeps them in step with the player's
@@ -119,13 +119,11 @@ class Reminders with WidgetsBindingObserver {
 
   Future<void> _sync(Progress progress) async {
     final settings = progress.settings;
-    final mode = progress.trainer.config.learningMode;
     final at = now();
     // Times go unused while reminders are off, so any zone does.
-    final zone = settings.reminders && mode == LearningMode.journey ? await (_zone ??= _platform.zone()) : tz.UTC;
+    final zone = settings.reminders ? await (_zone ??= _platform.zone()) : tz.UTC;
     final times = reminderTimes(
       now: tz.TZDateTime.from(at, zone),
-      mode: mode,
       enabled: settings.reminders,
       todayDone: progress.todaySet(at)?.done ?? false,
       dayEnd: progress.dayAt(at).end,
