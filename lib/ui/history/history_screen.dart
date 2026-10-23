@@ -617,10 +617,12 @@ class _GameRow extends StatelessWidget {
                 fontWeight: Weights.bold, fontSize: HistoryListStyle.rowLineFont, height: 1.2, color: HistoryRunStyle.muted)),
       ]),
       tags: [
-        AnkirenKindTag(ranked: game.ranked, level: game.level),
-        if (kind == AnkirenKind.free)
-          cleared ? ResultBadge(s.historyCleared, color: Palette.landSoft) : ResultBadge(s.historyFailed, muted: true),
-        if (best) ResultBadge(s.historyBest, cheer: true),
+        _TagLine([
+          AnkirenKindTag(ranked: game.ranked, level: game.level, named: false),
+          if (kind == AnkirenKind.free)
+            cleared ? ResultBadge(s.historyCleared, color: Palette.landSoft) : ResultBadge(s.historyFailed, muted: true),
+          if (best) ResultBadge(s.historyBest, cheer: true),
+        ]),
       ],
       line: Text.rich(TextSpan(children: [
         TextSpan(
@@ -640,6 +642,19 @@ class _GameRow extends StatelessWidget {
       onTap: () => openAnkirenGame(context, game),
     );
   }
+}
+
+/// [tags] on one line, the first shrinking to leave room for the rest, so
+/// every 暗記練 row is as tall as the others.
+class _TagLine extends StatelessWidget {
+  const _TagLine(this.tags);
+  final List<Widget> tags;
+
+  @override
+  Widget build(BuildContext context) => Row(mainAxisSize: MainAxisSize.min, children: [
+        Flexible(child: FittedBox(fit: BoxFit.scaleDown, alignment: Alignment.centerLeft, child: tags.first)),
+        for (final tag in tags.skip(1)) ...[const SizedBox(width: HistoryListStyle.tagGap), tag],
+      ]);
 }
 
 class _Empty extends StatelessWidget {

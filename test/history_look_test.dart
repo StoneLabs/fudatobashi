@@ -113,6 +113,10 @@ void main() {
               startedAt: today.add(const Duration(hours: 7)));
           await p.recordAnkiren(playAnkiren(AnkirenSetup.forLevel(0), seed: 5, strikes: true, wrongAt: {1}),
               startedAt: today.add(const Duration(hours: 5)));
+          for (final level in [2, 3, 4]) {
+            await p.recordAnkiren(playAnkiren(AnkirenSetup.forLevel(level), seed: level, strikes: true),
+                startedAt: yesterday.add(Duration(hours: 10 + level)));
+          }
         });
         useScreen(tester, phone);
 
@@ -159,6 +163,11 @@ void main() {
         await tester.tap(find.textContaining(s.historyAnkirenTab, findRichText: true).first);
         await settle();
         await captureScreen(tester, 'history_look/list_ankiren', lang: lang);
+        final kinds = [for (final e in find.byType(AnkirenKindTag).evaluate()) tester.getRect(find.byWidget(e.widget))];
+        for (final badge in find.byType(ResultBadge).evaluate()) {
+          final mid = tester.getRect(find.byWidget(badge.widget)).center.dy;
+          expect(kinds.any((k) => (k.center.dy - mid).abs() < 2), isTrue, reason: 'each badge is on its row\'s tag line');
+        }
 
         for (final (mode, name, tabs) in [
           (PlayMode.ranked, 'ranked', RunPage.hundredTabs.length),

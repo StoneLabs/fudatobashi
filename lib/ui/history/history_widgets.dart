@@ -86,11 +86,13 @@ String runKindLabel(S s, PlayMode mode) => switch (mode) {
     };
 
 /// A 暗記練 game's kind as a tag: ranked in pink, free play outlined, with
-/// its level or "custom".
+/// its level or "custom"; led by the trip's name unless among only its
+/// games ([named] false).
 class AnkirenKindTag extends StatelessWidget {
-  const AnkirenKindTag({super.key, required this.ranked, required this.level});
+  const AnkirenKindTag({super.key, required this.ranked, required this.level, this.named = true});
   final bool ranked;
   final int? level;
+  final bool named;
 
   @override
   Widget build(BuildContext context) {
@@ -100,7 +102,7 @@ class AnkirenKindTag extends StatelessWidget {
       (false, final int level) => s.historyFreeLevel(level),
       (false, null) => '${s.freePlay} · ${s.deckCustom}',
     };
-    return KindTag('${s.tripName(SideTrip.ankiren)} · $mode',
+    return KindTag(named ? '${s.tripName(SideTrip.ankiren)} · $mode' : mode,
         fill: ranked ? Palette.pink : Palette.paper,
         textColor: ranked ? Palette.ink : Palette.pinkDeep,
         edge: ranked ? Palette.ink : Palette.pinkDeep);
