@@ -96,8 +96,7 @@ class AnkirenKindTag extends StatelessWidget {
   Widget build(BuildContext context) {
     final s = S.of(context);
     final mode = switch ((ranked, level)) {
-      (true, final int level) => s.sideTripRankedLevel(level),
-      (true, null) => s.sideTripRanked,
+      (true, _) => s.sideTripRanked,
       (false, final int level) => s.historyFreeLevel(level),
       (false, null) => '${s.freePlay} · ${s.deckCustom}',
     };

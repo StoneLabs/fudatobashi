@@ -22,6 +22,7 @@ import '../manga/manga.dart';
 import '../results/celebration_sequence.dart';
 import '../results/celebrations.dart';
 import '../results/results_screen.dart';
+import '../shell/migration_notice.dart';
 import '../shell/tab_chains.dart';
 import '../side_trips/dojo_scene.dart';
 
@@ -257,3 +258,19 @@ SessionReport _report(int newCard) {
     xp: previewXpGain(),
   );
 }
+
+const _loremTitle = 'Lorem ipsum';
+const _loremBody = 'Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut '
+    'labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco.';
+
+/// Shows the migration notice (see `MigrationNotice`) with placeholder text.
+/// No real notice is queued or marked seen.
+void previewMigrationNotice(BuildContext context) => Navigator.push(
+      context,
+      MangaRoute<void>(
+        builder: (c) => Scaffold(
+          backgroundColor: Palette.paper,
+          body: MigrationNotice(title: _loremTitle, body: _loremBody, onOk: () => Navigator.pop(c)),
+        ),
+      ),
+    );

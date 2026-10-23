@@ -5,231 +5,126 @@ import 'package:flutter/material.dart';
 import '../../config/config.dart';
 import '../../config/design.dart';
 import '../../domain/ankiren_level.dart';
+import '../../domain/ankiren_rating.dart';
+import '../../domain/rating.dart';
 import '../../domain/ankiren_score.dart';
 import '../play/time_format.dart';
 import 'debug_common.dart';
 
-/// One line per level: total points over the time spent memorising before
-/// the player was ready, with every card found by its first tap at the
-/// chosen card time. A level's line ends at its memorise time, where it is
-/// played in full, so a level ended early and a harder one played in full
-/// meet at the same x. The marker at the "ended at" time lists each level's
-/// points there, and which harder levels, played in full within that time,
-/// it must not beat.
-class AnkirenTimeUsedGraph extends StatefulWidget {
-  const AnkirenTimeUsedGraph({super.key});
+/// A ranked game's total over the time each right card took to find, played
+/// in full and ready early with the set time left, with some cards wrong
+/// ([AnkirenToolsTuning.wrongCardPoints] each, no speed bonus). The class
+/// borders are dashed lines at the scores that reach them.
+class AnkirenRankedGraph extends StatefulWidget {
+  const AnkirenRankedGraph({super.key});
 
   @override
-  State<AnkirenTimeUsedGraph> createState() => _AnkirenTimeUsedGraphState();
+  State<AnkirenRankedGraph> createState() => _AnkirenRankedGraphState();
 }
 
-class _AnkirenTimeUsedGraphState extends State<AnkirenTimeUsedGraph> {
-  double _responseMs = AnkirenToolsTuning.responseStart.inMilliseconds.toDouble();
-  double _used = AnkirenToolsTuning.timeUsedStart.inSeconds.toDouble();
+class _AnkirenRankedGraphState extends State<AnkirenRankedGraph> {
+  static const _setup = AnkirenSetup.ranked();
+  double _timeLeft = AnkirenToolsTuning.timeLeftStart.inSeconds.toDouble();
+  double _wrong = 0;
 
-  int _total(int level, int usedSeconds) => AnkirenScore.firstTryTotal(
-        level,
-        responseMs: _responseMs,
-        timeLeft: AnkirenLevels.of(level).memorise - Duration(seconds: usedSeconds),
-      );
-
-  @override
-  Widget build(BuildContext context) {
-    final step = AnkirenToolsTuning.timeLeftStep.inSeconds;
-    final longest = _longestMemorise;
-    final used = _used.round();
-    final lines = [
-      for (var l = 0; l <= AnkirenLevels.top; l++)
-        _Line(l, [
-          for (var s = 0; s <= AnkirenLevels.of(l).memorise.inSeconds; s += step)
-            Offset(s.toDouble(), _total(l, s).toDouble()),
-        ]),
-    ];
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        DebugResponseSlider(label: 'card time', ms: _responseMs, onChanged: (v) => setState(() => _responseMs = v)),
-        DebugSlider(
-          label: 'ended at ${formatMinutes(Duration(seconds: used))}',
-          value: _used,
-          min: 0,
-          max: longest.toDouble(),
-          divisions: longest ~/ step,
-          onChanged: (v) => setState(() => _used = v),
+  _Line _line(Color color, Duration timeLeft) {
+    final wrong = _wrong.round();
+    final share = timeLeft.inMicroseconds / _setup.memorise.inMicroseconds;
+    return _Line(color, [
+      for (
+        var ms = AnkirenToolsTuning.responseMin.inMilliseconds;
+        ms <= AnkirenToolsTuning.responseMax.inMilliseconds;
+        ms += AnkirenToolsTuning.curveStepMs
+      )
+        Offset(
+          ms / 1000,
+          AnkirenScore.totalOf(
+            (_setup.cards - wrong) * (AnkirenTuning.cardPoints + AnkirenScore.speedBonus(ms * 1000)) +
+                wrong * AnkirenToolsTuning.wrongCardPoints,
+            share,
+          ).toDouble(),
         ),
-        _LinesChart(
-          lines: lines,
-          xMax: longest.toDouble(),
-          xTick: AnkirenToolsTuning.timeLeftTick.inSeconds.toDouble(),
-          xLabel: (s) => formatMinutes(Duration(seconds: s.round())),
-          cursor: _used,
-        ),
-        Text('x: time used · y: points · line: level', style: debugMono),
-        const SizedBox(height: AnkirenToolsStyle.gap),
-        for (var l = 0; l <= AnkirenLevels.top; l++)
-          if (AnkirenLevels.of(l).memorise.inSeconds >= used) _readout(l, used),
-      ],
-    );
+    ]);
   }
-
-  /// A level's points when ended at [used] seconds, against the harder levels
-  /// played in full within that time: the best of them, and "!" when this
-  /// level beats it.
-  Widget _readout(int level, int used) {
-    final points = _total(level, used);
-    int? rival;
-    for (var m = level + 1; m <= AnkirenLevels.top; m++) {
-      if (AnkirenLevels.of(m).memorise.inSeconds > used) continue;
-      final full = _total(m, AnkirenLevels.of(m).memorise.inSeconds);
-      if (rival == null || full > _total(rival, AnkirenLevels.of(rival).memorise.inSeconds)) rival = m;
-    }
-    final rivalPoints = rival == null ? null : _total(rival, AnkirenLevels.of(rival).memorise.inSeconds);
-    final beats = rivalPoints != null && points >= rivalPoints;
-    final head = 'L$level ${formatMinutes(AnkirenLevels.of(level).memorise).padLeft(5)}  ${'$points'.padLeft(5)}';
-    return Text(
-      rivalPoints == null
-          ? head
-          : '$head  ${beats ? '!' : '<'}  L$rival ${'$rivalPoints'.padLeft(5)}  ${points - rivalPoints}',
-      style: debugMono,
-    );
-  }
-}
-
-/// One line per level: total points over the card time, when the player was
-/// ready with a set time left (levels with less memorise time have no line).
-class AnkirenCardTimeGraph extends StatefulWidget {
-  const AnkirenCardTimeGraph({super.key});
-
-  @override
-  State<AnkirenCardTimeGraph> createState() => _AnkirenCardTimeGraphState();
-}
-
-class _AnkirenCardTimeGraphState extends State<AnkirenCardTimeGraph> {
-  double _timeLeft = 0;
 
   @override
   Widget build(BuildContext context) {
     final timeLeft = Duration(seconds: _timeLeft.round());
-    final lines = [
-      for (var l = 0; l <= AnkirenLevels.top; l++)
-        if (timeLeft <= AnkirenLevels.of(l).memorise)
-          _Line(l, [
-            for (
-              var ms = AnkirenToolsTuning.responseMin.inMilliseconds;
-              ms <= AnkirenToolsTuning.responseMax.inMilliseconds;
-              ms += AnkirenToolsTuning.curveStepMs
-            )
-              Offset(
-                ms / 1000,
-                AnkirenScore.firstTryTotal(
-                  l,
-                  responseMs: ms.toDouble(),
-                  timeLeft: timeLeft,
-                ).toDouble(),
-              ),
-          ]),
-    ];
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         DebugSlider(
-          label: 'time left ${formatMinutes(timeLeft)}',
+          label: 'time left ${formatMinutes(timeLeft)} of ${formatMinutes(_setup.memorise)}',
           value: _timeLeft,
           min: 0,
-          max: _longestMemorise.toDouble(),
-          divisions: _longestMemorise ~/ AnkirenToolsTuning.timeLeftStep.inSeconds,
+          max: _setup.memorise.inSeconds.toDouble(),
+          divisions: _setup.memorise.inSeconds ~/ AnkirenToolsTuning.timeLeftStep.inSeconds,
           onChanged: (v) => setState(() => _timeLeft = v),
         ),
-        _LinesChart(
-          lines: lines,
-          xMax: AnkirenToolsTuning.responseMax.inSeconds.toDouble(),
-          xTick: AnkirenToolsTuning.responseTick.inSeconds.toDouble(),
-          xLabel: (s) => '${s.round()} s',
+        DebugSlider(
+          label: 'cards wrong ${_wrong.round()} of ${_setup.cards}',
+          value: _wrong,
+          min: 0,
+          max: _setup.cards.toDouble(),
+          divisions: _setup.cards,
+          onChanged: (v) => setState(() => _wrong = v),
         ),
-        Text('x: card time · y: points · line: level', style: debugMono),
+        SizedBox(
+          height: AnkirenToolsStyle.graphHeight,
+          child: CustomPaint(
+            painter: _LinesPainter([_line(Palette.mute, Duration.zero), _line(Palette.seaDeep, timeLeft)]),
+          ),
+        ),
+        Text(
+          'x: time of each right card (s) · y: points · grey: played in full · blue: ready early · '
+          'a wrong card = ${AnkirenToolsTuning.wrongCardPoints} · dashed: class borders',
+          style: debugMono,
+        ),
       ],
     );
   }
 }
 
-/// The longest memorise time of any level, in seconds.
-int get _longestMemorise => AnkirenLevels.all.map((l) => l.memorise.inSeconds).reduce(math.max);
-
-Color _levelColor(int level) => HSLColor.fromAHSL(
-  1,
-  AnkirenToolsStyle.hueStart + (AnkirenToolsStyle.hueEnd - AnkirenToolsStyle.hueStart) * level / AnkirenLevels.top,
-  AnkirenToolsStyle.lineSaturation,
-  AnkirenToolsStyle.lineLightness,
-).toColor();
-
 class _Line {
-  const _Line(this.level, this.points);
+  const _Line(this.color, this.points);
 
-  final int level;
+  final Color color;
   final List<Offset> points;
 }
 
-class _LinesChart extends StatelessWidget {
-  const _LinesChart({required this.lines, required this.xMax, required this.xTick, required this.xLabel, this.cursor});
-
-  final List<_Line> lines;
-  final double xMax;
-  final double xTick;
-  final String Function(double) xLabel;
-
-  /// A vertical marker at this x, with a dot on every line that reaches it.
-  final double? cursor;
-
-  @override
-  Widget build(BuildContext context) => SizedBox(
-    height: AnkirenToolsStyle.graphHeight,
-    child: CustomPaint(painter: _LinesPainter(lines, xMax, xTick, xLabel, cursor)),
-  );
-}
-
 class _LinesPainter extends CustomPainter {
-  _LinesPainter(this.lines, this.xMax, this.xTick, this.xLabel, this.cursor);
+  _LinesPainter(this.lines);
 
   final List<_Line> lines;
-  final double xMax;
-  final double xTick;
-  final String Function(double) xLabel;
-  final double? cursor;
 
   @override
   void paint(Canvas canvas, Size size) {
     final plot = AnkirenToolsStyle.graphMargin.deflateRect(Offset.zero & size);
-    final top = lines.fold(0.0, (m, l) => l.points.fold(m, (m, p) => math.max(m, p.dy)));
-    final yMax = top == 0 ? 1.0 : top;
+    final xMax = AnkirenToolsTuning.responseMax.inSeconds.toDouble();
+    const yMax = AnkirenToolsTuning.graphYMax;
     Offset at(Offset p) => Offset(plot.left + plot.width * p.dx / xMax, plot.bottom - plot.height * p.dy / yMax);
     final grid = Paint()..color = Palette.desk;
     const label = TextStyle(fontSize: AnkirenToolsStyle.axisFont, color: Palette.mute, fontFamily: AnkirenDebugStyle.mono);
 
-    void text(String s, Offset anchor, {required Alignment align, TextStyle style = label}) {
-      final tp = TextPainter(
-        text: TextSpan(text: s, style: style),
-        textDirection: TextDirection.ltr,
-      )..layout();
+    void text(String s, Offset anchor, {required Alignment align}) {
+      final tp = TextPainter(text: TextSpan(text: s, style: label), textDirection: TextDirection.ltr)..layout();
       tp.paint(canvas, anchor - Offset(tp.width * (align.x + 1) / 2, tp.height * (align.y + 1) / 2));
     }
 
     for (var i = 0; i <= AnkirenToolsTuning.yDivisions; i++) {
       final y = plot.bottom - plot.height * i / AnkirenToolsTuning.yDivisions;
       canvas.drawLine(Offset(plot.left, y), Offset(plot.right, y), grid);
-      text(
-        '${(yMax * i / AnkirenToolsTuning.yDivisions).round()}',
-        Offset(plot.left - AnkirenToolsStyle.axisLabelGap, y),
-        align: Alignment.centerRight,
-      );
+      text('${(yMax * i / AnkirenToolsTuning.yDivisions).round()}',
+          Offset(plot.left - AnkirenToolsStyle.axisLabelGap, y),
+          align: Alignment.centerRight);
     }
-    for (var x = 0.0; x <= xMax; x += xTick) {
+    for (var x = 0.0; x <= xMax; x += AnkirenToolsTuning.responseTick.inSeconds) {
       final px = at(Offset(x, 0)).dx;
       canvas.drawLine(Offset(px, plot.top), Offset(px, plot.bottom), grid);
-      text(xLabel(x), Offset(px, plot.bottom + AnkirenToolsStyle.axisLabelGap), align: Alignment.topCenter);
+      text('${x.round()} s', Offset(px, plot.bottom + AnkirenToolsStyle.axisLabelGap), align: Alignment.topCenter);
     }
-
+    _paintClasses(canvas, plot, at, text);
     for (final line in lines) {
-      final color = _levelColor(line.level);
       final path = Path();
       for (final (i, p) in line.points.indexed) {
         final o = at(p);
@@ -240,30 +135,35 @@ class _LinesPainter extends CustomPainter {
         Paint()
           ..style = PaintingStyle.stroke
           ..strokeWidth = AnkirenToolsStyle.lineStroke
-          ..color = color,
-      );
-      text(
-        '${line.level}',
-        at(line.points.last) + const Offset(AnkirenToolsStyle.axisLabelGap, 0),
-        align: Alignment.centerLeft,
-        style: label.copyWith(color: color, fontWeight: Weights.black),
+          ..color = line.color,
       );
     }
+  }
 
-    if (cursor case final x?) {
-      final px = at(Offset(x, 0)).dx;
-      canvas.drawLine(
-        Offset(px, plot.top),
-        Offset(px, plot.bottom),
-        Paint()
-          ..strokeWidth = AnkirenToolsStyle.markerStroke
-          ..color = Palette.ink,
-      );
-      for (final line in lines) {
-        for (final p in line.points.where((p) => p.dx == x)) {
-          canvas.drawCircle(at(p), AnkirenToolsStyle.targetRadius, Paint()..color = _levelColor(line.level));
-        }
+  /// A dashed line at the score of each class border that fits, labelled
+  /// at the right edge; a label too near the one above moves down.
+  void _paintClasses(
+    Canvas canvas,
+    Rect plot,
+    Offset Function(Offset) at,
+    void Function(String, Offset, {required Alignment align}) text,
+  ) {
+    final paint = Paint()
+      ..strokeWidth = AnkirenToolsStyle.classStroke
+      ..color = Palette.mute.withValues(alpha: AnkirenToolsStyle.classOpacity);
+    final borders = [
+      for (final band in Rating.bands.skip(1))
+        if (AnkirenRating.scoreFor(band.minRating) case final score when score <= AnkirenToolsTuning.graphYMax)
+          (band.labelEn, at(Offset(0, score)).dy),
+    ]..sort((a, b) => a.$2.compareTo(b.$2));
+    var labelTop = double.negativeInfinity;
+    for (final (name, y) in borders) {
+      for (var x = plot.left; x < plot.right; x += AnkirenToolsStyle.classDash + AnkirenToolsStyle.classDashGap) {
+        canvas.drawLine(Offset(x, y), Offset(math.min(x + AnkirenToolsStyle.classDash, plot.right), y), paint);
       }
+      final labelY = math.max(y, labelTop + AnkirenToolsStyle.classLabelHeight);
+      labelTop = labelY;
+      text(name, Offset(plot.right + AnkirenToolsStyle.axisLabelGap, labelY), align: Alignment.centerLeft);
     }
   }
 

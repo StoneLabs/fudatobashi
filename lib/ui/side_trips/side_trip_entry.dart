@@ -238,8 +238,8 @@ class _RankStamp extends StatelessWidget {
 }
 
 /// A side trip's panel on the hub. Open: its rating with the last game's
-/// change and the next ranked game, and the burst that opens the trip's
-/// page ([onOpen]), as does the row above it. Locked: the cards remembered
+/// change and free play's next level to clear, and the burst that opens the
+/// trip's page ([onOpen]), as does the row above it. Locked: the cards remembered
 /// so far as pips and a grey bar saying how many more open it, where the
 /// burst will be.
 class SideTripBody extends StatelessWidget {
@@ -323,9 +323,9 @@ class _Stat extends StatelessWidget {
       );
 }
 
-/// The ranked rating and its last change (or "unranked"), and the next
-/// ranked game: its level, cards a side and memorise time; a tap opens the
-/// trip's page ([onTap]).
+/// The ranked rating and its last change (or "unranked"), and free play's
+/// next level to clear: its level, cards a side and memorise time, or that
+/// every level is cleared; a tap opens the trip's page ([onTap]).
 class _StatsRow extends StatelessWidget {
   const _StatsRow(this.entry, {required this.onTap});
 
@@ -337,7 +337,7 @@ class _StatsRow extends StatelessWidget {
     final s = S.of(context);
     final rating = entry.rating;
     final change = entry.ratingChange?.round() ?? 0;
-    final level = entry.rankedLevel;
+    final level = entry.nextLevel;
     const value = TextStyle(fontFamily: Fonts.display, fontSize: SideTripsLayout.valueFont, height: 1);
     return Pressable(
       onTap: onTap,
@@ -371,27 +371,28 @@ class _StatsRow extends StatelessWidget {
                               ]),
                       ),
                     ),
-                    if (level != null) ...[
-                      const SizedBox(width: SideTripsLayout.rowGap),
-                      const Padding(
-                        padding: EdgeInsets.symmetric(vertical: SideTripsLayout.ruleInset),
-                        child: SizedBox(width: SideTripsLayout.ruleWidth, child: ColoredBox(color: Palette.ink)),
+                    const SizedBox(width: SideTripsLayout.rowGap),
+                    const Padding(
+                      padding: EdgeInsets.symmetric(vertical: SideTripsLayout.ruleInset),
+                      child: SizedBox(width: SideTripsLayout.ruleWidth, child: ColoredBox(color: Palette.ink)),
+                    ),
+                    const SizedBox(width: SideTripsLayout.rowGap),
+                    Flexible(
+                      flex: SideTripsLayout.nextFlex,
+                      child: _Stat(
+                        label: _Label(s.sideTripNextLevel, s.sub?.sideTripNextLevel),
+                        value: Text(level == null ? s.sideTripAllClear : s.ankirenLevelTag(level), style: value),
+                        note: level == null
+                            ? null
+                            : NumberedText(
+                                s.sideTripNextFacts,
+                                [AnkirenLevels.of(level).perSide, formatMinutes(AnkirenLevels.of(level).memorise)],
+                                style: const TextStyle(fontWeight: Weights.black, fontSize: SideTripsLayout.factsFont),
+                                numberStyle:
+                                    const TextStyle(fontFamily: Fonts.display, fontSize: SideTripsLayout.factsNumber),
+                              ),
                       ),
-                      const SizedBox(width: SideTripsLayout.rowGap),
-                      Flexible(
-                        flex: SideTripsLayout.nextFlex,
-                        child: _Stat(
-                          label: _Label(s.sideTripNextGame, s.sub?.sideTripNextGame),
-                          value: Text(s.ankirenLevelTag(level), style: value),
-                          note: NumberedText(
-                            s.sideTripNextFacts,
-                            [AnkirenLevels.of(level).perSide, formatMinutes(AnkirenLevels.of(level).memorise)],
-                            style: const TextStyle(fontWeight: Weights.black, fontSize: SideTripsLayout.factsFont),
-                            numberStyle: const TextStyle(fontFamily: Fonts.display, fontSize: SideTripsLayout.factsNumber),
-                          ),
-                        ),
-                      ),
-                    ],
+                    ),
                   ],
                 ),
               ),
@@ -444,11 +445,11 @@ class RatingChangeTag extends StatelessWidget {
   }
 }
 
-/// The ranked shout ([BurstButton]).
+/// The ranked shout ([BurstButton]); grey while ranked is shut.
 class RankedBurst extends StatelessWidget {
   const RankedBurst({super.key, required this.onTap});
 
-  final VoidCallback onTap;
+  final VoidCallback? onTap;
 
   @override
   Widget build(BuildContext context) {
@@ -597,22 +598,20 @@ class _LockBar extends StatelessWidget {
   }
 }
 
-/// Free play, in Home's button style, saying the levels it offers.
-class SideTripFreeButton extends StatelessWidget {
-  const SideTripFreeButton(this.entry, {super.key, required this.onTap});
+/// Guest mode, in Home's button style, saying that it saves nothing.
+class SideTripGuestButton extends StatelessWidget {
+  const SideTripGuestButton({super.key, required this.onTap});
 
-  final SideTripEntry entry;
   final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
     final s = S.of(context);
-    final maxLevel = entry.maxLevel;
     return HomeRowButton(
-      icon: IconArt.cards,
-      title: s.freePlay,
-      badge: s.sub == null ? null : _Sub(s.sub!.freePlay),
-      sub: maxLevel == null ? s.sideTripFreeSub : s.sideTripFreeUpTo(maxLevel),
+      icon: IconArt.person,
+      title: s.ankirenGuestButton,
+      badge: s.sub == null ? null : _Sub(s.sub!.ankirenGuestButton),
+      sub: s.ankirenGuestSub,
       onTap: onTap,
     );
   }

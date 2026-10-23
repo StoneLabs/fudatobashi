@@ -4,11 +4,11 @@ part of '../config.dart';
 /// (`AnkirenSetup`), how a field is dealt (`AnkirenDealer`), and a game's
 /// prompts and points (`AnkirenGame`, `AnkirenScore`).
 abstract final class AnkirenTuning {
-  /// The levels, 0 first: cards per side and memorise time. Level 0 is for
-  /// beginners: its cards lie spread out in the open middle (see
+  /// Free play's levels, 0 first: cards per side and memorise time. Level 0
+  /// is for beginners: its cards lie spread out in the open middle (see
   /// [AnkirenLevel.allInMiddle]). The field grows to a real match's 25 a side
   /// at level 8, and the last levels cut the memorise time from 15 minutes,
-  /// a real match's, to 8. Ranked play moves through them by rating.
+  /// a real match's, to 8. They open one at a time (see `AnkirenLadder`).
   static const List<AnkirenLevel> levels = [
     AnkirenLevel(3, Duration(minutes: 1, seconds: 30), allInMiddle: true),
     AnkirenLevel(4, Duration(minutes: 1, seconds: 30)),
@@ -22,6 +22,19 @@ abstract final class AnkirenTuning {
     AnkirenLevel(25, Duration(minutes: 12)),
     AnkirenLevel(25, Duration(minutes: 8)),
   ];
+
+  /// Ranked games all play a real match's field: [rankedPerSide] cards a
+  /// side and [rankedMemorise] to memorise them.
+  static const int rankedPerSide = 25;
+  static const Duration rankedMemorise = Duration(minutes: 15);
+
+  /// A free-play level is cleared by playing it to the end with fewer than
+  /// [strikesOut] strikes: each wrong tap is one, and so is each "don't
+  /// know". Every level plays to the end. Clearing a level opens the next; clearing [rankedAfterLevel] opens ranked (in
+  /// all-known mode), and [customAfterLevel] the custom setups.
+  static const int strikesOut = 3;
+  static const int rankedAfterLevel = 4;
+  static const int customAfterLevel = 8;
 
   /// A custom free-play setup's cards per side (and at most half the known
   /// cards).
@@ -80,7 +93,7 @@ abstract final class AnkirenTuning {
   /// Points per card (see `AnkirenScore`): a tap on it earns [cardPoints],
   /// and a speed bonus of up to [speedMax] when it was the first tap.
   static const int cardPoints = 100;
-  static const int speedMax = 100;
+  static const int speedMax = 50;
 
   /// The share of [cardPoints] a tap earns by where it lands, from the card
   /// asked to the other side.
@@ -103,23 +116,18 @@ abstract final class AnkirenTuning {
   /// to 1 + [earlyBonus], in proportion to the share of the time left.
   static const double earlyBonus = 0.5;
 
-  /// Each level below the top multiplies the score by [levelFactor] once
-  /// more, so being ready early at a level never beats the next level's
-  /// shorter time played in full (level 9 ended at 8 minutes scores below
-  /// level 10).
-  static const double levelFactor = 0.85;
-
   /// The speed bonus's curve over the response time t: a logistic curve over
   /// ln t, centred on [speedMidpoint] and as steep as [speedSteepness],
   /// stretched to be exactly [speedMax] at [speedFull] and 0 at [speedNone].
-  /// Fitted to [speedTargets]: it gives 100, 88, 72, 56, 16.
+  /// Fitted to [speedTargets]: it gives 50, 44, 36, 28, 8.
   static const Duration speedFull = Duration(milliseconds: 100);
   static const Duration speedNone = Duration(seconds: 5);
   static const Duration speedMidpoint = Duration(milliseconds: 1650);
   static const double speedSteepness = 1.1;
 
-  /// The response times (ms) the curve was fitted to, and their bonus.
-  static const Map<int, int> speedTargets = {100: 100, 300: 90, 600: 75, 1000: 50, 3000: 20};
+  /// The response times (ms) the curve was fitted to, and their share of
+  /// [speedMax].
+  static const Map<int, double> speedTargets = {100: 1, 300: 0.9, 600: 0.75, 1000: 0.5, 3000: 0.2};
 }
 
 /// The developer's 暗記練 tools (`AnkirenToolsPage`): the points calculator's
@@ -133,22 +141,29 @@ abstract final class AnkirenToolsTuning {
   /// The curve is drawn every [curveStepMs] ms.
   static const int curveStepMs = 25;
 
-  /// The total-points graphs: the time-left sliders' step, and the gap
-  /// between the x axis's labels.
+  /// The total-points graph: the time-left slider's start and step, and the
+  /// gap between the x axis's labels.
+  static const Duration timeLeftStart = Duration(minutes: 5);
+
+  /// What a card not found with the first tap is assumed to earn, flat: a
+  /// first tap next to the card, roughly.
+  static const int wrongCardPoints = 60;
+
+  /// The graph's fixed top, in points.
+  static const int graphYMax = 12000;
   static const Duration timeLeftStep = Duration(seconds: 10);
-  static const Duration timeLeftTick = Duration(minutes: 3);
   static const Duration responseTick = Duration(seconds: 1);
   static const int yDivisions = 4;
-
-  /// The time-used graph's marker starts here: a 12:00 level ended at 8:00
-  /// against the 8:00 level played in full.
-  static const Duration timeUsedStart = Duration(minutes: 8);
 
   static const List<int> simulationGames = [100, 1000, 5000];
   static const int simulationGamesStart = 1000;
 
   /// Seeds tried when looking for a game with middle cards.
   static const int seedSearchLimit = 20000;
+
+  /// The developer tools' ranked class table also shows each class for a
+  /// player ready at [classTableReadyAt] of ranked's memorise time.
+  static const Duration classTableReadyAt = Duration(minutes: 10);
 }
 
 /// 暗記練's play screen (`AnkirenScreen`): its pace between prompts.
@@ -169,38 +184,41 @@ abstract final class AnkirenPlayTuning {
 
 /// 暗記練's rating (see `AnkirenRating`), on the main rating's scale.
 abstract final class AnkirenRatingModel {
-  /// Each level's difficulty: a game at [par] holds the rating there. Level
-  /// 0's is the start and the floor (入門).
-  static const List<double> levelRatings = [400, 650, 900, 1150, 1400, 1650, 1900, 2150, 2400, 2650, 2900];
+  /// The rating's floor, where the way to the first class starts before
+  /// any ranked game.
+  static const double start = 400;
 
-  /// Performance points per unit of score fraction above or below [par]. A
-  /// game at par finds about 70% of the cards with the first tap, in 1.5 s,
-  /// 10% with the second after a first tap in their row, and taps twice on
-  /// the right side for the rest.
-  static const double weight = 1000;
-  static const double par = 0.54;
+  /// A ranked game's performance is [slope] × (F − [zero]), F its final
+  /// score (card points times the early-finish multiplier). Two games with
+  /// no early finish anchor it: all 50 cards right with the first tap at
+  /// 0.5 s each performs at the A class line, and 25 right with the first
+  /// tap at 2.5 s each, nothing for the other 25, at the F- line.
+  static const double slope = 0.48319;
+  static const double zero = 1133.5;
 
-  /// Placement: the first [placementGames] ranked games stretch the
-  /// performance by [placementStretch] and move the rating by [placementK]
-  /// of the way to it; later games by [establishedK].
+  /// The rating after each of the first [placementGames] ranked games is
+  /// the mean of their performances; each later game moves it
+  /// [establishedK] of the way to its own.
   static const int placementGames = 3;
-  static const double placementStretch = 2;
-  static const double placementK = 1;
   static const double establishedK = 0.35;
 }
 
 /// Experience from a 暗記練 game (`AnkirenXp`), on [XpTuning]'s scale. Most of
 /// a game is memorising, about 10–18 s a card at every level, so its XP is
-/// paid per card, by what its taps earned: a game at par earns about what
-/// main runs earn over the same time (about 5½ XP a second; a level 2 game
-/// of about 2 minutes, some 800). Derived from the recorded games, like
-/// [XpTuning].
+/// paid per card, by what its taps earned: a game finding about 70% of its
+/// cards with the first tap earns about what main runs earn over the same
+/// time (about 5½ XP a second; a level 2 game of about 2 minutes, some
+/// 800). Derived from the recorded games, like [XpTuning].
 abstract final class AnkirenXpTuning {
   /// A card found with the first tap at level 0, and what each level above
   /// adds. Any other card earns the same share of this as of its points
   /// (`AnkirenScore.share`).
   static const int firstTap = 70;
   static const int firstTapPerLevel = 5;
+
+  /// A ranked game's cards earn what they would at [rankedLevel], the level
+  /// with a real match's field.
+  static const int rankedLevel = 8;
 
   /// The speed bonus for the time of a first tap that found its card:
   /// `AnkirenScore.speedShare` of this.

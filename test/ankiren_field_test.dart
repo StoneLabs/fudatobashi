@@ -77,14 +77,17 @@ void main() {
       expect(AnkirenLevels.maxLevelFor(100), 10);
     });
 
-    test('setups: a preset carries its level, a custom one stays within the known cards', () {
-      final preset = AnkirenSetup.forLevel(4, ranked: true);
+    test('setups: a preset carries its level, ranked has none, a custom one stays within the known cards', () {
+      final preset = AnkirenSetup.forLevel(4);
       expect((preset.perSide, preset.memorise, preset.level, preset.ranked, preset.cards),
-          (10, const Duration(minutes: 6), 4, true, 20));
-      expect(preset, AnkirenSetup.forLevel(4, ranked: true));
-      expect(preset, isNot(AnkirenSetup.forLevel(4)));
+          (10, const Duration(minutes: 6), 4, false, 20));
+      expect(preset, AnkirenSetup.forLevel(4));
+      const ranked = AnkirenSetup.ranked();
+      expect((ranked.perSide, ranked.memorise, ranked.level, ranked.ranked, ranked.custom),
+          (25, const Duration(minutes: 15), null, true, false));
+      expect(ranked, isNot(AnkirenSetup.forLevel(8)), reason: 'level 8 has the same field, but is not ranked');
       const custom = AnkirenSetup.custom(perSide: 7, memorise: Duration(seconds: 40));
-      expect((custom.level, custom.ranked), (null, false));
+      expect((custom.level, custom.ranked, custom.custom), (null, false, true));
 
       expect(AnkirenSetup.maxCustomPerSide(3), isNull);
       expect(AnkirenSetup.maxCustomPerSide(4), 2);

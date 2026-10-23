@@ -9,6 +9,7 @@ import 'package:fudatobashi/data/fuda_sets.dart';
 import 'package:fudatobashi/data/islands.dart';
 import 'package:fudatobashi/data/poem.dart';
 import 'package:fudatobashi/db/database.dart';
+import 'package:fudatobashi/domain/side_trips.dart';
 import 'package:fudatobashi/state/progress.dart';
 
 /// What an upgrade keeps: a query on the old schema's [table], and the one
@@ -91,8 +92,10 @@ void main() {
   driftRuntimeOptions.dontWarnAboutMultipleDatabases = true;
 
   final probe = AppDatabase(NativeDatabase.memory());
-  final currentSchema = probe.schemaVersion;
   probe.close();
+  // Schema 3 laid the tables out as they are now; later steps only change
+  // rows, which the checks below read.
+  const firstCurrentLayout = 3;
 
   final dumps = Directory('test/past_db')
       .listSync()
@@ -108,9 +111,9 @@ void main() {
       final file = dump.copySync('${temp.path}/$name');
       final expected = jsonDecode(File(dump.path.replaceAll(RegExp(r'\.sqlite$'), '.json')).readAsStringSync()) as Map<String, dynamic>;
       final before = <String, List<Object?>>{};
-      // A dump made by the current schema is not migrated, so it must come out unchanged: same tables, same rows,
-      // none of the old-schema translations ([_kept], [_renamed], [_notCounted]) apply.
-      final same = expected['schemaVersion'] == currentSchema;
+      // A dump with the current layout comes out with the same tables and rows: none of the old-layout translations
+      // ([_kept], [_renamed], [_notCounted]) apply.
+      final same = (expected['schemaVersion'] as int) >= firstCurrentLayout;
       final db = AppDatabase(NativeDatabase(file, setup: (raw) {
         if (same) return;
         final old = {for (final r in raw.select("SELECT name FROM sqlite_master WHERE type = 'table'")) r['name']};
@@ -160,6 +163,13 @@ void main() {
         final progress = await Progress.open(db);
         expect(progress.xp.total > 0, progress.runs.isNotEmpty, reason: 'experience from the old runs');
         if (!same) expect(progress.ratedRuns, isEmpty, reason: 'an upgraded player starts unplaced');
+
+        expect(await count('SELECT COUNT(*) AS c FROM side_trip_runs WHERE ranked AND level IS NOT NULL'), 0,
+            reason: 'no ranked 暗記練 game has a level');
+        expect(progress.sideTrips.ratingOf(SideTrip.ankiren), isNull, reason: 'the 暗記練 rank is Unranked');
+        expect(progress.sideTrips.rankedGames(SideTrip.ankiren), 0, reason: 'with its placement at 0');
+        final games = (expected['rows'] as Map<String, dynamic>)['side_trip_runs'] as int? ?? 0;
+        expect(progress.pendingNotice != null, games > 0, reason: 'a player with 暗記練 games is told of the reset');
       } catch (e, s) {
         fail('Upgrading $name failed: $e\n$s');
       } finally {
@@ -168,4 +178,29 @@ void main() {
       }
     });
   }
+
+  test('v2.1.1_ranked, played with 暗記練 before the rework, comes out Unranked, its games free games', () async {
+    final temp = Directory.systemTemp.createTempSync('past_db_');
+    final file = File('test/past_db/v2.1.1_ranked.sqlite').copySync('${temp.path}/dump.sqlite');
+    const game = 'INSERT INTO side_trip_runs (game, started_at, ended_at, day, ranked, level, score, max_score, completed, '
+        'rating, performance, meta) SELECT \'ankiren\', starts_at + 60, starts_at + 120, day, 1, ';
+    final db = AppDatabase(NativeDatabase(file, setup: (raw) {
+      raw.execute("${game}3, 900, 1200, 1, 1500.0, 1500.0, '{}' FROM days LIMIT 1");
+      raw.execute("${game}5, 800, 1200, 1, 1600.0, 1700.0, '{}' FROM days LIMIT 1");
+    }));
+    try {
+      final progress = await Progress.open(db);
+      final trips = progress.sideTrips;
+      final runs = trips.runsOf(SideTrip.ankiren).toList();
+      expect([for (final r in runs) (r.ranked, r.level, r.rating, r.performance)],
+          [(false, 3, null, null), (false, 5, null, null)]);
+      expect(trips.ratingOf(SideTrip.ankiren), isNull);
+      expect(trips.rankedGames(SideTrip.ankiren), 0);
+      expect(trips.ladderOf(SideTrip.ankiren).cleared, isEmpty);
+      expect(progress.pendingNotice, 'ankirenRework');
+    } finally {
+      await db.close();
+      temp.deleteSync(recursive: true);
+    }
+  });
 }

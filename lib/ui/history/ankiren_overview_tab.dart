@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 
 import '../../config/design.dart';
+import '../../domain/ankiren_level.dart';
 import '../../domain/ankiren_review.dart';
 import '../../l10n/ankiren_review_strings.dart';
+import '../../l10n/history_strings.dart';
 import '../../l10n/run_strings.dart';
 import '../../l10n/stats_strings.dart';
 import '../../l10n/strings.dart';
@@ -11,9 +13,10 @@ import '../play/time_format.dart';
 import 'ankiren_widgets.dart';
 import 'history_widgets.dart';
 
-/// A 暗記練 game's Overview: its headline (D30, or D41 for a custom game),
-/// where its first taps landed (D31), then the memorise time (D32) or, for
-/// a custom game, the last game with the same setup (D42).
+/// A ranked 暗記練 game's Overview: its headline (D30, or D41 for a game
+/// without points), where its first taps landed (D31), then the memorise
+/// time (D32) or, for a game without points, the last game with the same
+/// setup (D42).
 class AnkirenOverviewTab extends StatelessWidget {
   const AnkirenOverviewTab(this.review, {super.key});
   final AnkirenReview review;
@@ -22,7 +25,7 @@ class AnkirenOverviewTab extends StatelessWidget {
   Widget build(BuildContext context) {
     final game = review.game;
     return RunTabList(children: [
-      if (game.scored) _ScoredHeadline(review) else _CustomHeadline(review),
+      if (game.scored) _ScoredHeadline(review) else _UnscoredHeadline(review),
       const SizedBox(height: HistoryRunStyle.sectionGap),
       _FirstTapMix(review),
       if (game.scored) _MemoriseTime(review) else _SameSetup(review),
@@ -39,7 +42,6 @@ class _ScoredHeadline extends StatelessWidget {
   Widget build(BuildContext context) {
     final s = S.of(context);
     final game = review.game;
-    final level = game.level!;
     final before = review.ratingBefore, after = game.rating;
     final best = review.bestBefore;
     final xp = review.xp?.award.total ?? 0;
@@ -50,7 +52,8 @@ class _ScoredHeadline extends StatelessWidget {
         of: s.ankirenOfMax(game.maxScore ?? 0),
         stamp: review.isBest
             ? HeadlineCheer(
-                stamp: RunStamp(s.ankirenBestStamp(level), sub: s.sub?.ankirenBestStamp(level)), pose: TobiPose.cheering)
+                stamp: RunStamp(s.ankirenBestRankedStamp, sub: s.sub?.ankirenBestRankedStamp),
+                pose: TobiPose.cheering)
             : const HeadlineCheer(pose: TobiPose.relaxed),
         facts: [
           Fact('${game.firstTaps}/${game.cards.length}', s.ankirenFirstTapFact),
@@ -67,10 +70,11 @@ class _ScoredHeadline extends StatelessWidget {
   }
 }
 
-/// D41: a custom game's first-tap finds, found cards, memorise time and
-/// median find, stamped as not scored.
-class _CustomHeadline extends StatelessWidget {
-  const _CustomHeadline(this.review);
+/// D41: a free or custom game's first-tap finds, found cards, memorise
+/// time, median find and wrong taps, stamped cleared or failed (free) or
+/// not scored (custom).
+class _UnscoredHeadline extends StatelessWidget {
+  const _UnscoredHeadline(this.review);
   final AnkirenReview review;
 
   @override
@@ -78,20 +82,28 @@ class _CustomHeadline extends StatelessWidget {
     final s = S.of(context);
     final game = review.game;
     final median = game.medianFindMs;
+    final cleared = AnkirenLadder.clears(completed: game.completed, strikes: game.strikes);
+    final xp = review.xp?.award.total ?? 0;
     return Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
       AnkirenHeadline(
         label: s.ankirenRightFirstLabel,
         big: '${game.firstTaps}',
         of: s.ankirenOfMax(game.cards.length),
         plain: AnkirenReviewStyle.customFill,
-        stamp: RunStamp(s.ankirenNotScored, sub: s.sub?.ankirenNotScored, color: AnkirenReviewStyle.muted),
+        stamp: game.custom
+            ? RunStamp(s.ankirenNotScored, sub: s.sub?.ankirenNotScored, color: AnkirenReviewStyle.muted)
+            : cleared
+                ? RunStamp(s.historyCleared, sub: s.sub?.historyCleared)
+                : RunStamp(s.historyFailed, sub: s.sub?.historyFailed, color: AnkirenReviewStyle.muted),
         facts: [
           Fact('${game.found}/${game.cards.length}', s.ankirenFoundFact),
           Fact(formatMinutes(game.memorised), s.ankirenMemorisedOf(formatMinutes(game.memorise))),
           Fact(median == null ? missingTime : '${formatSeconds(median)}s', s.ankirenMedianFact),
+          Fact('${game.strikes}', s.ankirenWrongTapsFact),
+          if (xp > 0) Fact('+$xp', s.runXpFact),
         ],
       ),
-      UnderLine([s.ankirenCustomUnscored]),
+      if (game.custom) UnderLine([s.ankirenCustomUnscored]),
     ]);
   }
 }
@@ -113,9 +125,11 @@ class _FirstTapMix extends StatelessWidget {
       child: ReviewPanel(
         child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
           TierMixBar(label: s.ankirenThisGame, sub: s.ankirenCardsCount(game.cards.length), mix: game.mix),
-          if (game.level case final level? when review.peers.isNotEmpty)
+          if (!game.custom && review.peers.isNotEmpty)
             TierMixBar(
-                label: s.ankirenUsual, sub: s.ankirenGamesAtLevel(review.peers.length, level), mix: review.usualMix)
+                label: s.ankirenUsual,
+                sub: s.ankirenGamesAtLevel(review.peers.length, game.level),
+                mix: review.usualMix)
           else if (last != null)
             TierMixBar(label: s.shortDate(last.startedAt), sub: s.ankirenSameSetup, mix: last.mix),
           const TierLegend(),
@@ -183,7 +197,7 @@ class _SameSetup extends StatelessWidget {
     return HistorySection(
       title: s.ankirenSetupTitle,
       sub: s.sub?.ankirenSetupTitle,
-      note: s.ankirenSetupNote(game.perSide),
+      note: game.custom ? s.ankirenSetupNote(game.perSide) : s.historyFreeLevel(game.level!),
       child: last == null
           ? ReviewPanel(child: ReviewTable.cell(s.ankirenSetupFirst))
           : ReviewPanel(child: _sameSetupTable(s, game, last)),

@@ -4323,7 +4323,7 @@ class SideTripRun extends DataClass implements Insertable<SideTripRun> {
   final int day;
   final bool ranked;
 
-  /// The level played; null for a custom setup.
+  /// The free-play level played; null for ranked and custom.
   final int? level;
 
   /// The score and the most the game could score; null for a custom setup,

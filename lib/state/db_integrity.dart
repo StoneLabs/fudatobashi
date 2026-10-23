@@ -188,19 +188,22 @@ abstract final class DbIntegrity {
     await (db.delete(db.dayCards)..where((c) => c.day.isNotInQuery(days))).go();
   }
 
-  /// A ranked side-trip game stores its performance and the trip's rating
-  /// after it, both finite, or neither (its game was dropped from the
-  /// rating). SQLite keeps an infinity, and stores NaN as null.
+  /// A ranked side-trip game has no level, and stores its performance and
+  /// the trip's rating after it, both finite, or neither (its game was
+  /// dropped from the rating). SQLite keeps an infinity, and stores NaN as
+  /// null.
   ///
-  /// From the first ranked game of a trip that breaks this, its ratings are
-  /// replayed from the stored performances in order; a game whose
-  /// performance is no number is dropped from the rating.
+  /// A ranked game with a level becomes a free game at it, without a
+  /// rating. From the first ranked game of a trip that breaks the rest,
+  /// its ratings are replayed from the stored performances in order; a game
+  /// whose performance is no number is dropped from the rating.
   static Future<bool> _hasBrokenSideTripRatings(AppDatabase db) async {
     final found = await db.customSelect(
       '''
       SELECT EXISTS (
         SELECT 1 FROM side_trip_runs
-        WHERE ranked AND ((performance IS NULL) != (rating IS NULL) OR abs(performance) = 9e999 OR abs(rating) = 9e999)
+        WHERE ranked AND (level IS NOT NULL OR (performance IS NULL) != (rating IS NULL)
+                          OR abs(performance) = 9e999 OR abs(rating) = 9e999)
       ) AS found
       ''',
     ).getSingle();
@@ -208,29 +211,36 @@ abstract final class DbIntegrity {
   }
 
   static Future<void> _replaySideTripRatings(AppDatabase db) async {
+    await (db.update(db.sideTripRuns)..where((r) => r.ranked & r.level.isNotNull())).write(
+        const SideTripRunsCompanion(ranked: Value(false), rating: Value(null), performance: Value(null)));
     final ranked = await (db.select(db.sideTripRuns)
           ..where((r) => r.ranked)
           ..orderBy([(r) => OrderingTerm.asc(r.id)]))
         .get();
     bool sound(SideTripRun r) =>
         r.performance == null ? r.rating == null : r.performance!.isFinite && (r.rating?.isFinite ?? false);
+    const dropped = SideTripRunsCompanion(rating: Value(null), performance: Value(null));
     for (final trip in SideTrip.values) {
       final (start, update) = switch (trip) {
         SideTrip.ankiren => (AnkirenRating.start, AnkirenRating.update),
       };
-      final runs = [for (final r in ranked) if (r.game == trip) r];
+      final runs = [
+        for (final r in ranked)
+          if (r.game == trip) r,
+      ];
       final first = runs.indexWhere((r) => !sound(r));
       if (first < 0) continue;
       final kept = [for (final r in runs.take(first)) if (r.rating != null) r];
       var rating = kept.lastOrNull?.rating ?? start;
-      var games = kept.length;
+      final performances = [for (final r in kept) r.performance!];
       for (final r in runs.skip(first)) {
         final performance = r.performance;
         final SideTripRunsCompanion replayed;
         if (performance == null || !performance.isFinite) {
-          replayed = const SideTripRunsCompanion(rating: Value(null), performance: Value(null));
+          replayed = dropped;
         } else {
-          rating = update(rating, performance, games++);
+          rating = update(rating, performance, performances);
+          performances.add(performance);
           replayed = SideTripRunsCompanion(rating: Value(rating));
         }
         await (db.update(db.sideTripRuns)..where((x) => x.id.equals(r.id))).write(replayed);

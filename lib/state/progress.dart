@@ -25,6 +25,7 @@ import '../domain/today_set.dart';
 import '../domain/trainer.dart';
 import '../domain/weak_cards.dart';
 import '../domain/xp.dart';
+import '../migrations/notices.dart';
 import 'db_integrity.dart';
 import 'play_config.dart';
 import 'run_journal.dart';
@@ -86,6 +87,9 @@ class Progress extends ChangeNotifier {
   /// When the latest exam try began.
   DateTime? _examLastTry;
   bool _examIntroShown = false;
+
+  /// Notices an upgrade queued that have not been dismissed, in order.
+  final List<String> _notices = [];
   bool _switchBannerCollapsed = false;
 
   /// The most recent run, kept in memory for the debug page's timing view.
@@ -167,6 +171,7 @@ class Progress extends ChangeNotifier {
     progress._day = progress._days.values.fold<DayRow?>(null, (a, d) => a == null || d.day > a.day ? d : a);
     progress._examLastTry = DateTime.tryParse(kv[_examLastTryKey] ?? '');
     progress._examIntroShown = kv[_examIntroShownKey] == 'true';
+    progress._notices.addAll((jsonDecode(kv[noticesKey] ?? '[]') as List).cast<String>());
     await progress._loadToday();
     if (kv[_runJournalKey] case final journal?) await progress._recordJournal(journal);
     if (settings.onboarded && !progress._allKnown) await progress.refreshToday();
@@ -790,6 +795,17 @@ class Progress extends ChangeNotifier {
   /// first opens on the journey.
   bool get examIntroDue => !_allKnown && !graduated && !_examIntroShown && exam().open;
 
+  /// The first notice an upgrade queued (see `queueNotice`) that has not been
+  /// dismissed; null when there is none.
+  String? get pendingNotice => _notices.firstOrNull;
+
+  /// [id]'s notice has been read: it never shows again.
+  Future<void> dismissNotice(String id) async {
+    _notices.remove(id);
+    await (_notices.isEmpty ? _drop(noticesKey) : _put(noticesKey, jsonEncode(_notices)));
+    notifyListeners();
+  }
+
   Future<void> noteExamIntroShown() async {
     _examIntroShown = true;
     await _put(_examIntroShownKey, 'true');
@@ -1401,8 +1417,16 @@ class Progress extends ChangeNotifier {
       ratingBefore: report.ratingBefore,
       ratingAfter: report.ratingAfter,
       rankedGames: report.rankedGames,
+      ladderBefore: report.ladderBefore,
+      ladderAfter: report.ladderAfter,
       xp: gain,
     );
+  }
+
+  /// Developer tool: marks 暗記練's free levels 0 through [level] cleared.
+  Future<void> clearAnkirenUpTo(int level) async {
+    await sideTrips.clearUpTo(db, SideTrip.ankiren, level);
+    notifyListeners();
   }
 
   /// Deletes everything (settings are kept).
@@ -1427,6 +1451,7 @@ class Progress extends ChangeNotifier {
                   _runJournalKey,
                   _examLastTryKey,
                   _examIntroShownKey,
+                  for (final trip in SideTrip.values) SideTrips.clearedKey(trip),
                 ])))
           .go();
     });
@@ -1462,6 +1487,7 @@ class Progress extends ChangeNotifier {
   /// starts over at the language picker.
   Future<void> resetAllData() async {
     await db.delete(db.keyValues).go();
+    _notices.clear();
     _settings = const AppSettings();
     trainer.updateConfig(const TrainerConfig());
     lastRun = null;

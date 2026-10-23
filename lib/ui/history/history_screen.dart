@@ -5,9 +5,11 @@ import 'package:flutter/material.dart';
 import '../../config/design.dart';
 import '../../config/vector_art.dart';
 import '../../db/database.dart' show SideTripRun;
+import '../../domain/ankiren_level.dart';
 import '../../domain/ankiren_rating.dart';
 import '../../domain/ankiren_review.dart';
 import '../../domain/side_trips.dart';
+import '../../l10n/ankiren_strings.dart';
 import '../../l10n/history_strings.dart';
 import '../../l10n/home_strings.dart';
 import '../../l10n/run_strings.dart';
@@ -592,7 +594,9 @@ class _GameRow extends StatelessWidget {
     final change = game.ranked && rating != null ? rating - (previous?.rating ?? AnkirenRating.start) : null;
     final best = game.ranked &&
         game.score != null &&
-        earlier.where((g) => g.ranked && g.level == game.level).every((g) => (g.score ?? 0) < game.score!);
+        earlier.where((g) => g.ranked).every((g) => (g.score ?? 0) < game.score!);
+    final strikes = progress.sideTrips.strikesIn(game);
+    final cleared = AnkirenLadder.clears(completed: game.completed, strikes: strikes);
     final meta = jsonDecode(game.meta) as Map<String, dynamic>;
     final cards = progress.sideTrips.cardsIn(game);
     final found = cards - progress.sideTrips.missesIn(game);
@@ -614,21 +618,25 @@ class _GameRow extends StatelessWidget {
       ]),
       tags: [
         AnkirenKindTag(ranked: game.ranked, level: game.level),
-        if (kind == AnkirenKind.custom) ResultBadge(s.historyNotScored, muted: true),
+        if (kind == AnkirenKind.free)
+          cleared ? ResultBadge(s.historyCleared, color: Palette.landSoft) : ResultBadge(s.historyFailed, muted: true),
         if (best) ResultBadge(s.historyBest, cheer: true),
       ],
       line: Text.rich(TextSpan(children: [
         TextSpan(
-            text: kind == AnkirenKind.custom
-                ? s.historyPerSide(meta[AnkirenMeta.perSideKey] ?? missingTime, cards)
-                : s.historyCards(cards)),
+            text: switch (kind) {
+          AnkirenKind.ranked => s.historyCards(cards),
+          AnkirenKind.free => s.ankirenWrongTaps(strikes),
+          AnkirenKind.custom =>
+            '${s.historyPerSide(meta[AnkirenMeta.perSideKey] ?? missingTime, cards)} · ${s.ankirenWrongTaps(strikes)}',
+        }),
         if (change != null)
           TextSpan(
               text: ' · ${ratingChangeText(change)}',
               style: TextStyle(color: change >= 0 ? HistoryRunStyle.ahead : HistoryRunStyle.behind)),
       ])),
-      value: game.score == null ? '$found/$cards' : '${game.score}',
-      caption: game.score == null ? s.historyFirstTapCaption : s.historyPointsCaption,
+      value: game.ranked ? '${game.score}' : '$found/$cards',
+      caption: game.ranked ? s.historyPointsCaption : s.historyFirstTapCaption,
       onTap: () => openAnkirenGame(context, game),
     );
   }

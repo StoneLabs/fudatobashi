@@ -18,13 +18,16 @@ import '../../l10n/side_trip_strings.dart';
 import '../../l10n/strings.dart';
 import '../../state/scope.dart';
 import '../ankiren/ankiren_field_preview.dart';
+import '../ankiren/ankiren_strikes.dart';
 import '../history/history_screen.dart';
 import '../home/home_widgets.dart';
 import '../manga/manga.dart';
 import '../play/time_format.dart';
 import '../run/run_launcher.dart';
+import '../shell/tab_chains.dart';
 import 'ankiren_free_sheet.dart';
 import 'ankiren_rules_sheet.dart';
+import 'burst_button.dart';
 import 'side_trip_entry.dart';
 
 /// Opens 暗記練's page ([AnkirenPage]), once 暗記練 is open.
@@ -33,20 +36,22 @@ Future<void> openAnkirenPage(BuildContext context) async {
   await Navigator.of(context).push(MangaRoute<void>(builder: (_) => const AnkirenPage()));
 }
 
-/// 暗記練's page, the hub's panel opened up, on one screen: who the player
-/// is (the class and rating, and the way to the next class), how it has
-/// gone (the last ranked games, or the placement games so far), what is
-/// next (the next ranked game's level, cards and memorise time, why it is
-/// that level, and a preview of its field) and the burst that starts it.
-/// Ranked picks its level from the rating alone; free play, with a level
-/// or setup of the player's own, and the rules are Home's button pair
-/// under it, each a sheet. The first visit opens with the rules. Home's
-/// dotted ground, in the sea's blue, lies behind the panels.
+/// 暗記練's page, the hub's panel opened up, on one screen, with History
+/// beside the back button: who the player is (the class and rating, and the
+/// way to the next class); ranked, in a panel with its last games (or the
+/// placement games so far), its one setup and the burst that starts it, all
+/// chained up until ranked opens (see [RankedLock]); then free play's next
+/// level to clear, in a larger panel with its facts, what clears it, a
+/// preview of its field, the way to every level ([openAnkirenFree]) and the
+/// burst that starts it. Guest mode
+/// and the rules are Home's button pair under them, each a sheet. The first
+/// visit opens with the rules. Home's dotted ground, in the sea's blue, lies
+/// behind the panels.
 ///
 /// The field preview is the one part that gives up height. With too
-/// little room for it, the panel closes up over the burst, which stays
-/// near the thumb, and the room left parts the last games from it. When
-/// even without it the page is taller than the screen, it scrolls.
+/// little room for it, the free-play panel closes up over its burst, which
+/// stays near the thumb. When even without it the page is taller than the
+/// screen, it scrolls.
 class AnkirenPage extends StatefulWidget {
   const AnkirenPage({super.key});
 
@@ -86,23 +91,22 @@ class _AnkirenPageState extends State<AnkirenPage> {
                     MangaHeader(
                       title: ScreenTitle(s.tripName(trip), sub: s.tripTag(trip)),
                       actions: [
+                        InkIconButton(
+                            icon: IconArt.history,
+                            semanticLabel: s.history,
+                            onTap: () => openTripHistory(context, trip)),
                         InkIconButton(icon: IconArt.back, semanticLabel: s.back, onTap: () => Navigator.maybePop(context)),
                       ],
                     ),
                     const SizedBox(height: AnkirenPageLayout.gap),
                     _RecordStrip(entry),
-                    const SizedBox(height: AnkirenPageLayout.gap),
-                    MangaPanel(
-                      padding: AnkirenPageLayout.gamesPadding,
-                      child: AnkirenRating.isPlacement(entry.results.length)
-                          ? _Placement(entry.results)
-                          : _LastGames(entry.results),
-                    ),
                     const SizedBox(height: AnkirenPageLayout.nextTop),
-                    Expanded(child: Align(alignment: Alignment.bottomCenter, child: _NextGame(entry))),
+                    _RankedPanel(entry),
+                    const SizedBox(height: AnkirenPageLayout.nextTop),
+                    Expanded(child: Align(alignment: Alignment.bottomCenter, child: _NextLevelPanel(entry))),
                     const SizedBox(height: AnkirenPageLayout.gap),
                     Row(children: [
-                      Expanded(child: SideTripFreeButton(entry, onTap: () => openAnkirenFree(context))),
+                      Expanded(child: SideTripGuestButton(onTap: () => openAnkirenGuest(context))),
                       const SizedBox(width: SideTripsLayout.pairGap),
                       Expanded(child: SideTripRulesButton(onTap: () => openAnkirenRules(context))),
                     ]),
@@ -361,22 +365,16 @@ class _RecordStrip extends StatelessWidget {
   }
 }
 
-/// A heading: [title] with its other-language [sub], and [trailing] at
-/// the right.
+/// A panel's heading, at the right of its tag, which carries the other
+/// language's words.
 class _Heading extends StatelessWidget {
-  const _Heading(this.title, this.sub, {required this.trailing});
+  const _Heading(this.title);
 
   final String title;
-  final String? sub;
-  final Widget trailing;
 
   @override
-  Widget build(BuildContext context) => Row(children: [
-        Expanded(
-          child: Semantics(header: true, child: _Label(title, sub, fontSize: AnkirenPageLayout.headFont)),
-        ),
-        trailing,
-      ]);
+  Widget build(BuildContext context) =>
+      Semantics(header: true, child: _Label(title, null, fontSize: AnkirenPageLayout.headFont));
 }
 
 /// Games side by side in equal columns, split by light rules.
@@ -400,40 +398,29 @@ class _GameRow extends StatelessWidget {
       );
 }
 
-/// One ranked game: its score, what it did to the rating, and its level,
-/// each on one line, shrinking rather than overflowing.
+/// One ranked game: its score and what it did to the rating, each on one
+/// line, shrinking rather than overflowing.
 class _Game extends StatelessWidget {
   const _Game(this.result);
 
   final SideTripResult result;
 
   @override
-  Widget build(BuildContext context) {
-    final s = S.of(context);
-    return DefaultTextStyle.merge(
-      softWrap: false,
-      child: Column(children: [
-        FittedBox(
-          fit: BoxFit.scaleDown,
-          child: Text('${result.score}',
-              style: const TextStyle(fontFamily: Fonts.display, fontSize: AnkirenPageLayout.scoreFont, height: 1)),
-        ),
-        const SizedBox(height: AnkirenPageLayout.gameGap),
-        FittedBox(fit: BoxFit.scaleDown, child: RatingChangeTag(result.ratingChange.round())),
-        const SizedBox(height: AnkirenPageLayout.gameGap),
-        Text(
-          s.ankirenLevelTag(result.level),
-          maxLines: 1,
-          style: const TextStyle(
-              fontWeight: Weights.black, fontSize: AnkirenPageLayout.gameLevelFont, height: 1, color: Palette.mute),
-        ),
-      ]),
-    );
-  }
+  Widget build(BuildContext context) => DefaultTextStyle.merge(
+        softWrap: false,
+        child: Column(children: [
+          FittedBox(
+            fit: BoxFit.scaleDown,
+            child: Text('${result.score}',
+                style: const TextStyle(fontFamily: Fonts.display, fontSize: AnkirenPageLayout.scoreFont, height: 1)),
+          ),
+          const SizedBox(height: AnkirenPageLayout.gameGap),
+          FittedBox(fit: BoxFit.scaleDown, child: RatingChangeTag(result.ratingChange.round())),
+        ]),
+      );
 }
 
-/// The last ranked games, newest first, with a link to all of them in
-/// History.
+/// The last ranked games, newest first.
 class _LastGames extends StatelessWidget {
   const _LastGames(this.results);
 
@@ -441,41 +428,11 @@ class _LastGames extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final s = S.of(context);
     final last = results.reversed.take(AnkirenPageLayout.lastGames).toList();
-    return Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-      _Heading(s.ankirenLast5, s.sub?.ankirenLast5, trailing: const _HistoryLink()),
-      const SizedBox(height: AnkirenPageLayout.headGap),
-      _GameRow([
-        for (var i = 0; i < AnkirenPageLayout.lastGames; i++)
-          if (i < last.length) _Game(last[i]) else const SizedBox.shrink(),
-      ]),
+    return _GameRow([
+      for (var i = 0; i < AnkirenPageLayout.lastGames; i++)
+        if (i < last.length) _Game(last[i]) else const SizedBox.shrink(),
     ]);
-  }
-}
-
-/// History, showing 暗記練's games: an underlined link with a chevron, a
-/// full touch target tall.
-class _HistoryLink extends StatelessWidget {
-  const _HistoryLink();
-
-  @override
-  Widget build(BuildContext context) {
-    final s = S.of(context);
-    return Pressable(
-      onTap: () => openTripHistory(context, SideTrip.ankiren),
-      scale: 1,
-      turn: 0,
-      semanticLabel: s.history,
-      builder: (context, _) => ConstrainedBox(
-        constraints: const BoxConstraints(minHeight: ButtonMetrics.iconButton),
-        child: Row(mainAxisSize: MainAxisSize.min, children: [
-          _Label(s.history, s.sub?.history, fontSize: AnkirenPageLayout.linkFont, underline: true),
-          const SizedBox(width: AnkirenPageLayout.linkGap),
-          MangaIcon(IconArt.chevron, size: AnkirenPageLayout.linkIcon, strokeWidth: AnkirenPageLayout.linkIconStroke),
-        ]),
-      ),
-    );
   }
 }
 
@@ -487,27 +444,10 @@ class _Placement extends StatelessWidget {
   final List<SideTripResult> results;
 
   @override
-  Widget build(BuildContext context) {
-    final s = S.of(context);
-    const games = AnkirenRatingModel.placementGames;
-    return Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-      _Heading(
-        s.ankirenPlacementTitle,
-        s.sub?.ankirenPlacementTitle,
-        trailing: NumberedText(
-          s.ankirenPlacementCount,
-          [results.length, games],
-          style: const TextStyle(fontWeight: Weights.black, fontSize: AnkirenPageLayout.countFont),
-          numberStyle: const TextStyle(fontFamily: Fonts.display, fontSize: AnkirenPageLayout.countNumber),
-        ),
-      ),
-      const SizedBox(height: AnkirenPageLayout.headGap),
-      _GameRow([
-        for (var i = 0; i < games; i++)
+  Widget build(BuildContext context) => _GameRow([
+        for (var i = 0; i < AnkirenRatingModel.placementGames; i++)
           if (i < results.length) _Game(results[i]) else _Slot(i + 1, next: i == results.length),
-      ]),
-    ]);
-  }
+      ]);
 }
 
 /// A placement game still to play: its [number] in a dashed slot, over
@@ -547,125 +487,328 @@ class _Slot extends StatelessWidget {
   }
 }
 
-/// The next ranked game, in a panel with the side trips' cut corner and a
-/// tag over its top edge: its level, cards and memorise time, why it plays
-/// that level, a preview of its field, and the burst that starts it.
-class _NextGame extends StatelessWidget {
-  const _NextGame(this.entry);
+/// A panel with the side trips' cut corner and [tag] on an ink banner over
+/// its top edge, [heading] at the right beside the tag (or under it when
+/// there is no room beside it), then [child]. With a [cover], the inside is
+/// faded under it.
+class _TaggedPanel extends StatelessWidget {
+  const _TaggedPanel({required this.tag, required this.sub, this.heading, required this.child, this.cover});
+
+  final String tag;
+  final String? sub;
+  final Widget? heading;
+  final Widget child;
+  final Widget? cover;
+
+  @override
+  Widget build(BuildContext context) {
+    final banner = FittedBox(fit: BoxFit.scaleDown, child: InkBanner(tag, sub: sub));
+    const head = AnkirenPageLayout.headPadding;
+    final inside = Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+      Padding(
+        padding: head,
+        child: Wrap(
+          alignment: WrapAlignment.end,
+          crossAxisAlignment: WrapCrossAlignment.end,
+          spacing: AnkirenPageLayout.headGap,
+          runSpacing: AnkirenPageLayout.headGap,
+          children: [
+            _Overhang(rise: AnkirenPageLayout.tagRise + head.top, child: ExcludeSemantics(child: banner)),
+            ?heading,
+          ],
+        ),
+      ),
+      Flexible(child: child),
+    ]);
+    return Stack(clipBehavior: Clip.none, children: [
+      Padding(
+        padding: const EdgeInsets.only(top: AnkirenPageLayout.tagRise),
+        child: MangaPanel(
+          shape: const PanelShape(topLeft: Offset(0, SideTripsLayout.cut)),
+          child: cover == null
+              ? inside
+              : Stack(children: [
+                  IgnorePointer(child: Opacity(opacity: AnkirenPageLayout.lockedOpacity, child: inside)),
+                  Positioned.fill(child: cover!),
+                ]),
+        ),
+      ),
+      Positioned(
+        left: head.left,
+        right: head.right,
+        top: 0,
+        child: Align(alignment: Alignment.centerLeft, child: Semantics(header: true, child: banner)),
+      ),
+    ]);
+  }
+}
+
+/// Room for what of [child] lies below its top [rise], as wide as the
+/// child, showing nothing: what a panel's tag takes of the panel under it.
+class _Overhang extends SingleChildRenderObjectWidget {
+  const _Overhang({required this.rise, required super.child});
+
+  final double rise;
+
+  @override
+  RenderObject createRenderObject(BuildContext context) => _RenderOverhang(rise);
+
+  @override
+  void updateRenderObject(BuildContext context, _RenderOverhang renderObject) => renderObject.rise = rise;
+}
+
+class _RenderOverhang extends RenderProxyBox {
+  _RenderOverhang(this._rise);
+
+  double _rise;
+  set rise(double value) {
+    if (value == _rise) return;
+    _rise = value;
+    markNeedsLayout();
+  }
+
+  double _below(double height) => math.max(0, height - _rise);
+
+  @override
+  double computeMinIntrinsicHeight(double width) => _below(super.computeMinIntrinsicHeight(width));
+
+  @override
+  double computeMaxIntrinsicHeight(double width) => _below(super.computeMaxIntrinsicHeight(width));
+
+  @override
+  Size computeDryLayout(BoxConstraints constraints) {
+    final child = super.computeDryLayout(constraints.loosen());
+    return constraints.constrain(Size(child.width, _below(child.height)));
+  }
+
+  @override
+  void performLayout() {
+    final child = this.child!..layout(constraints.loosen(), parentUsesSize: true);
+    size = constraints.constrain(Size(child.size.width, _below(child.size.height)));
+  }
+
+  @override
+  void paint(PaintingContext context, Offset offset) {}
+
+  @override
+  bool hitTest(BoxHitTestResult result, {required Offset position}) => false;
+}
+
+/// Ranked: the last ranked games (or the placement games so far), its one
+/// setup and the burst that starts it. Until ranked opens the whole panel
+/// is chained up, faded, with what still opens it stuck over the chains;
+/// a tap says it again.
+class _RankedPanel extends StatelessWidget {
+  const _RankedPanel(this.entry);
 
   final SideTripEntry entry;
 
   @override
   Widget build(BuildContext context) {
     final s = S.of(context);
-    final level = entry.rankedLevel ?? 0;
-    return Stack(clipBehavior: Clip.none, children: [
+    final lock = entry.rankedLock;
+    final placement = AnkirenRating.isPlacement(entry.results.length);
+    final heading = _Heading(placement ? s.ankirenPlacementTitle : s.ankirenLast5);
+    final content = Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.stretch, children: [
       Padding(
-        padding: const EdgeInsets.only(top: AnkirenPageLayout.tagRise),
-        child: MangaPanel(
-          shape: const PanelShape(topLeft: Offset(0, SideTripsLayout.cut)),
-          child: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-            _Stats(level),
-            _Hint(entry, level),
-            Flexible(child: AnkirenFieldPreview(level)),
-            Padding(
-              padding: AnkirenPageLayout.burstMargin,
-              child: RankedBurst(onTap: () => startAnkirenRanked(context)),
-            ),
-          ]),
-        ),
+        padding: AnkirenPageLayout.gamesPadding,
+        child: placement ? _Placement(entry.results) : _LastGames(entry.results),
       ),
-      Positioned(
-        left: AnkirenPageLayout.tagLeft,
-        right: AnkirenPageLayout.tagLeft,
-        top: 0,
-        child: Align(
-          alignment: Alignment.centerLeft,
-          child: FittedBox(
-            fit: BoxFit.scaleDown,
-            child: Semantics(header: true, child: InkBanner(s.ankirenNextRanked, sub: s.sub?.ankirenNextRanked)),
+      Padding(
+        padding: AnkirenPageLayout.rankedRowPadding,
+        child: Row(children: [
+          ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: AnkirenPageLayout.factsMaxWidth),
+            child: Text.rich(
+              TextSpan(children: [
+                Phrases.span(
+                  s.ankirenRankedFacts(AnkirenTuning.rankedPerSide, formatMinutes(AnkirenTuning.rankedMemorise)),
+                  style: const TextStyle(fontWeight: Weights.black, color: Palette.ink),
+                ),
+                const TextSpan(text: '\n'),
+                Phrases.span(s.ankirenRankedReal),
+              ]),
+              maxLines: AnkirenPageLayout.factsLines,
+              overflow: TextOverflow.ellipsis,
+              style: const TextStyle(fontWeight: Weights.bold, fontSize: AnkirenPageLayout.hintFont, color: Palette.mute),
+            ),
           ),
-        ),
+          const SizedBox(width: AnkirenPageLayout.rankedRowGap),
+          Expanded(
+            child: SizedBox(
+              height: AnkirenPageLayout.rankedBurst,
+              child: RankedBurst(onTap: lock == null ? () => startAnkirenRanked(context) : null),
+            ),
+          ),
+        ]),
       ),
     ]);
+    if (lock == null) {
+      return _TaggedPanel(tag: s.ankirenRankedMode, sub: s.sub?.ankirenRankedMode, heading: heading, child: content);
+    }
+    final why = s.ankirenRankedLocked(allKnown: lock.allKnown, cleared: lock.cleared, level: RankedLock.level);
+    return Pressable(
+      onTap: () => BalloonPop.show(context, why,
+          size: AnkirenPageLayout.lockBalloon, life: AnkirenPageLayout.lockBalloonLife),
+      scale: 1,
+      turn: 0,
+      semanticLabel: '${s.ankirenRankedMode}: $why',
+      builder: (context, _) => ExcludeSemantics(
+        child: _TaggedPanel(
+          tag: s.ankirenRankedMode,
+          sub: s.sub?.ankirenRankedMode,
+          heading: heading,
+          cover: Stack(children: [
+            const Positioned.fill(child: ClipRect(child: TabChains(scale: AnkirenPageLayout.chainScale))),
+            Positioned(
+              left: AnkirenPageLayout.lockNoteInset,
+              right: AnkirenPageLayout.lockNoteInset,
+              bottom: AnkirenPageLayout.lockNoteBottom,
+              child: Center(
+                child: Sticker(
+                  color: Palette.paper,
+                  tilt: AnkirenPageLayout.lockNoteTilt,
+                  child: Row(mainAxisSize: MainAxisSize.min, children: [
+                    MangaIcon(IconArt.lock,
+                        size: AnkirenPageLayout.hintIcon, strokeWidth: AnkirenPageLayout.hintIconStroke),
+                    const SizedBox(width: AnkirenPageLayout.hintGap),
+                    Flexible(
+                      child: Text.rich(Phrases.span(why),
+                          style: const TextStyle(fontWeight: Weights.black, fontSize: AnkirenPageLayout.lockNoteFont)),
+                    ),
+                  ]),
+                ),
+              ),
+            ),
+          ]),
+          child: content,
+        ),
+      ),
+    );
   }
 }
 
-/// [level]'s facts: the level, the cards a side and the memorise time,
-/// split by ink rules.
-class _Stats extends StatelessWidget {
-  const _Stats(this.level);
+/// Free play's next level to clear (the top level again once every level
+/// is cleared): its facts, what clears it (or what the known cards still
+/// lack), the way to every level, a preview of its field, and the burst
+/// that starts it.
+class _NextLevelPanel extends StatelessWidget {
+  const _NextLevelPanel(this.entry);
 
-  final int level;
+  final SideTripEntry entry;
 
   @override
   Widget build(BuildContext context) {
     final s = S.of(context);
-    final of = AnkirenLevels.of(level);
-    const big = TextStyle(fontFamily: Fonts.display, fontSize: AnkirenPageLayout.statFont, height: 1);
-    return Padding(
-      padding: AnkirenPageLayout.statsPadding,
-      child: _CellRow(children: [
-        _Cell(
-          label: _Label(s.ankirenLevelRow, s.sub?.ankirenLevelRow),
-          value: NumberedText(
-            s.ankirenLevelValue,
-            [level],
-            style: const TextStyle(fontFamily: Fonts.display, fontSize: AnkirenPageLayout.statUnitFont, height: 1),
-            numberStyle: big,
+    final next = entry.nextLevel;
+    final level = next ?? AnkirenLevels.top;
+    final setup = AnkirenSetup.forLevel(level);
+    final fits = entry.fits(level);
+    return _TaggedPanel(
+      tag: next == null ? s.ankirenAllClearedTitle : s.ankirenNextToClear,
+      sub: next == null ? s.sub?.ankirenAllClearedTitle : s.sub?.ankirenNextToClear,
+      child: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+        _Stats(setup, cleared: next == null),
+        _Hint(setup, fits: fits, allCleared: next == null),
+        Flexible(child: AnkirenFieldPreview(setup)),
+        Padding(
+          padding: AnkirenPageLayout.burstMargin,
+          child: BurstButton(
+            title: s.ankirenPlayLevel(level),
+            sub: s.sub?.ankirenPlayLevel(level).toUpperCase(),
+            onTap: fits ? () => startAnkirenFree(context, setup) : null,
           ),
-        ),
-        _Cell(
-          label: _Label(s.ankirenCards, s.sub?.ankirenCards),
-          value: NumberedText(
-            s.ankirenPerSideCount,
-            [of.perSide],
-            style: const TextStyle(fontWeight: Weights.black, fontSize: AnkirenPageLayout.statSuffixFont, height: 1),
-            numberStyle: big,
-          ),
-        ),
-        _Cell(
-          label: _Label(s.ankirenMemoriseLabel, s.sub?.ankirenMemoriseLabel),
-          value: Text(formatMinutes(of.memorise), style: big),
         ),
       ]),
     );
   }
 }
 
-/// Why ranked plays [level]: the rating sets it, with the points still to
-/// go to the next level; or the known cards hold it back, with the cards
-/// the next level needs; or it is the top level.
-class _Hint extends StatelessWidget {
-  const _Hint(this.entry, this.level);
+/// A level's facts: the level, the cards a side and the memorise time,
+/// split by ink rules; checked once [cleared].
+class _Stats extends StatelessWidget {
+  const _Stats(this.setup, {required this.cleared});
 
-  final SideTripEntry entry;
-  final int level;
+  final AnkirenSetup setup;
+  final bool cleared;
 
   @override
   Widget build(BuildContext context) {
     final s = S.of(context);
-    final rating = entry.rating ?? AnkirenRating.start;
-    final capped = AnkirenRating.levelFor(rating, maxLevel: AnkirenLevels.top) > level;
-    final nextAt = AnkirenRating.nextLevelAt(level);
+    const big = TextStyle(fontFamily: Fonts.display, fontSize: AnkirenPageLayout.statFont, height: 1);
+    return Padding(
+      padding: AnkirenPageLayout.statsPadding,
+      child: Row(children: [
+        Expanded(
+          child: Align(
+            alignment: Alignment.centerLeft,
+            child: _CellRow(children: [
+              _Cell(
+                label: _Label(s.ankirenLevelRow, s.sub?.ankirenLevelRow),
+                value: NumberedText(
+                  s.ankirenLevelValue,
+                  [setup.level!],
+                  style: const TextStyle(fontFamily: Fonts.display, fontSize: AnkirenPageLayout.statUnitFont, height: 1),
+                  numberStyle: big,
+                ),
+              ),
+              _Cell(
+                label: _Label(s.ankirenCards, s.sub?.ankirenCards),
+                value: NumberedText(
+                  s.ankirenPerSideCount,
+                  [setup.perSide],
+                  style:
+                      const TextStyle(fontWeight: Weights.black, fontSize: AnkirenPageLayout.statSuffixFont, height: 1),
+                  numberStyle: big,
+                ),
+              ),
+              _Cell(
+                label: _Label(s.ankirenMemoriseLabel, s.sub?.ankirenMemoriseLabel),
+                value: Text(formatMinutes(setup.memorise), style: big),
+              ),
+            ]),
+          ),
+        ),
+        if (cleared) const ClearedCheck(size: AnkirenPageLayout.clearedCheck),
+      ]),
+    );
+  }
+}
+
+/// What clears [setup]'s level (or that every level is, once [allCleared]),
+/// or, when the known cards do not [fits] it, how many it needs; and the
+/// way to every level, beside it or, when there is no room, under it.
+class _Hint extends StatelessWidget {
+  const _Hint(this.setup, {required this.fits, required this.allCleared});
+
+  final AnkirenSetup setup;
+  final bool fits, allCleared;
+
+  @override
+  Widget build(BuildContext context) {
+    final s = S.of(context);
     const style = TextStyle(fontWeight: Weights.bold, fontSize: AnkirenPageLayout.hintFont, color: Palette.mute);
     const number = TextStyle(fontFamily: Fonts.display, fontSize: AnkirenPageLayout.hintNumber, color: Palette.ink);
-    final why = capped
-        ? Row(mainAxisSize: MainAxisSize.min, children: [
-            MangaIcon(IconArt.lock,
-                size: AnkirenPageLayout.hintIcon, color: Palette.mute, strokeWidth: AnkirenPageLayout.hintIconStroke),
-            const SizedBox(width: AnkirenPageLayout.hintGap),
-            Flexible(child: _Label(s.ankirenCapped, s.sub?.ankirenCapped, color: Palette.mute)),
-          ])
-        : _Label(s.ankirenSetByRating, s.sub?.ankirenSetByRating, color: Palette.mute);
-    final Widget toGo;
-    if (capped) {
-      toGo = NumberedText(s.ankirenLevelFrom, [level + 1, AnkirenLevels.of(level + 1).cards],
-          style: style, numberStyle: number);
-    } else if (nextAt == null) {
-      toGo = Text(s.ankirenTopLevel, style: style);
+    final Widget why;
+    if (!fits) {
+      why = Row(mainAxisSize: MainAxisSize.min, children: [
+        MangaIcon(IconArt.lock,
+            size: AnkirenPageLayout.hintIcon, color: Palette.mute, strokeWidth: AnkirenPageLayout.hintIconStroke),
+        const SizedBox(width: AnkirenPageLayout.hintGap),
+        Flexible(
+          child: NumberedText(s.ankirenLevelFrom, [setup.level!, setup.cards], style: style, numberStyle: number),
+        ),
+      ]);
+    } else if (allCleared) {
+      why = Text(s.ankirenAllCleared, style: style);
     } else {
-      toGo = NumberedText(s.ankirenToLevel, [level + 1, (nextAt - rating).ceil()], style: style, numberStyle: number);
+      why = Row(mainAxisSize: MainAxisSize.min, children: [
+        const AnkirenStrikes(strikes: 1, count: 1, cardHeight: AnkirenPageLayout.hintCard),
+        const SizedBox(width: AnkirenPageLayout.hintGap),
+        Flexible(
+          child: NumberedText(s.ankirenClearRule, [AnkirenTuning.strikesOut], style: style, numberStyle: number),
+        ),
+      ]);
     }
     return Padding(
       padding: AnkirenPageLayout.hintPadding,
@@ -673,7 +816,32 @@ class _Hint extends StatelessWidget {
         alignment: WrapAlignment.spaceBetween,
         crossAxisAlignment: WrapCrossAlignment.center,
         spacing: AnkirenPageLayout.gaugeGap,
-        children: [why, toGo],
+        children: [why, const _LevelsLink()],
+      ),
+    );
+  }
+}
+
+/// Every level, in free play's menu ([openAnkirenFree]): an underlined link
+/// with a chevron, a full touch target tall.
+class _LevelsLink extends StatelessWidget {
+  const _LevelsLink();
+
+  @override
+  Widget build(BuildContext context) {
+    final s = S.of(context);
+    return Pressable(
+      onTap: () => openAnkirenFree(context),
+      scale: 1,
+      turn: 0,
+      semanticLabel: s.ankirenAllLevels,
+      builder: (context, _) => ConstrainedBox(
+        constraints: const BoxConstraints(minHeight: ButtonMetrics.iconButton),
+        child: Row(mainAxisSize: MainAxisSize.min, children: [
+          _Label(s.ankirenAllLevels, null, fontSize: AnkirenPageLayout.linkFont, underline: true),
+          const SizedBox(width: AnkirenPageLayout.linkGap),
+          MangaIcon(IconArt.chevron, size: AnkirenPageLayout.linkIcon, strokeWidth: AnkirenPageLayout.linkIconStroke),
+        ]),
       ),
     );
   }

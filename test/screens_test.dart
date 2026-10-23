@@ -3219,7 +3219,7 @@ void main() {
         await tester.pumpWidget(const SizedBox());
       });
 
-      testWidgets('all-known mode opens 暗記練 and its page with free play, unranked with no class ($lang)', (tester) async {
+      testWidgets('all-known mode opens 暗記練 and its page with the levels, unranked with no class ($lang)', (tester) async {
         final s = S(lang);
         final p = await open(tester, mode: LearningMode.allKnown, ja: ja);
         await tester.runAsync(
@@ -3232,10 +3232,10 @@ void main() {
         await tester.tap(inTrips(find.byType(PageBurst)));
         await tester.pump();
         await tester.pump(Motion.route * 2);
-        await tester.tap(find.text(s.freePlay));
+        await tester.tap(find.byWidgetPredicate((w) => w is Pressable && w.semanticLabel == s.ankirenAllLevels));
         await tester.pump();
         await tester.pump(Motion.sheet);
-        expect(find.byType(AnkirenFreeSheet), findsOneWidget, reason: 'open free play shows its setup');
+        expect(find.byType(AnkirenFreeSheet), findsOneWidget, reason: 'the levels open free play\'s setup');
         await tester.pumpWidget(const SizedBox());
       });
 

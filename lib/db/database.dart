@@ -195,11 +195,11 @@ class SideTripRuns extends Table {
   IntColumn get day => integer().references(Days, #day)();
   BoolColumn get ranked => boolean()();
 
-  /// The level played; null for a custom setup.
+  /// The free-play level played; null for ranked and custom.
   IntColumn get level => integer().nullable()();
 
-  /// The score and the most the game could score; null for a custom setup,
-  /// which is not scored.
+  /// The score and the most the game could score; null unless ranked, the
+  /// only kind with points.
   IntColumn get score => integer().nullable()();
   IntColumn get maxScore => integer().nullable()();
 
@@ -298,7 +298,7 @@ class AppDatabase extends _$AppDatabase {
 
   /// Raised with each new upgrade step in `lib/migrations/` ([migrationSteps]).
   @override
-  int get schemaVersion => 3;
+  int get schemaVersion => 4;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(

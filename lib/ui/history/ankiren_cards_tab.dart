@@ -11,7 +11,7 @@ import 'history_widgets.dart';
 import 'run_charts.dart';
 
 /// A scored 暗記練 game's Cards: find times in order (D34), against the
-/// earlier games at its level (D35), and the cards the player keeps
+/// earlier ranked games (D35), and the cards the player keeps
 /// placing wrong (D36).
 class AnkirenCardsTab extends StatelessWidget {
   const AnkirenCardsTab(this.review, {super.key});
@@ -46,18 +46,17 @@ class AnkirenCardsTab extends StatelessWidget {
           ]),
         ),
       ),
-      if (game.level case final level?) _AgainstLevel(review, level),
+      _AgainstRanked(review),
       _Misplaced(review),
     ]);
   }
 }
 
 /// D35: this game against the best, the average and the last of the
-/// earlier games at its level.
-class _AgainstLevel extends StatelessWidget {
-  const _AgainstLevel(this.review, this.level);
+/// earlier ranked games.
+class _AgainstRanked extends StatelessWidget {
+  const _AgainstRanked(this.review);
   final AnkirenReview review;
-  final int level;
 
   @override
   Widget build(BuildContext context) {
@@ -66,9 +65,9 @@ class _AgainstLevel extends StatelessWidget {
     final peers = review.peers;
     if (peers.isEmpty) {
       return HistorySection(
-        title: s.ankirenLevelTitle(level),
-        sub: s.sub?.ankirenLevelTitle(level),
-        child: ReviewPanel(child: ReviewTable.cell(s.ankirenFirstAtLevel)),
+        title: s.ankirenRankedTitle,
+        sub: s.sub?.ankirenRankedTitle,
+        child: ReviewPanel(child: ReviewTable.cell(s.ankirenFirstRanked)),
       );
     }
     final best = review.bestBefore, last = review.last;
@@ -92,8 +91,8 @@ class _AgainstLevel extends StatelessWidget {
     final median = mean((g) => g.medianFindMs), memorised = mean((g) => g.memorised.inMilliseconds);
     final gameMedian = game.medianFindMs;
     return HistorySection(
-      title: s.ankirenLevelTitle(level),
-      sub: s.sub?.ankirenLevelTitle(level),
+      title: s.ankirenRankedTitle,
+      sub: s.sub?.ankirenRankedTitle,
       note: s.ankirenGames(peers.length),
       child: ReviewPanel(
         child: ReviewTable(

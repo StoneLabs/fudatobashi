@@ -22,12 +22,12 @@ import 'package:fudatobashi/data/fuda_sets.dart';
 import 'package:fudatobashi/data/islands.dart';
 import 'package:fudatobashi/data/poem.dart';
 import 'package:fudatobashi/db/database.dart';
+import 'package:fudatobashi/domain/ankiren_game.dart';
 import 'package:fudatobashi/domain/ankiren_level.dart';
 import 'package:fudatobashi/domain/ankiren_rating.dart';
 import 'package:fudatobashi/domain/ankiren_score.dart';
 import 'package:fudatobashi/domain/ankiren_xp.dart';
 import 'package:fudatobashi/domain/rating.dart';
-import 'package:fudatobashi/domain/side_trips.dart';
 import 'package:fudatobashi/domain/trainer.dart';
 import 'package:fudatobashi/domain/xp.dart';
 import 'package:fudatobashi/l10n/ankiren_strings.dart';
@@ -408,7 +408,10 @@ void main() {
         report = null;
       }
       onPhone(tester, usersPhone, 1);
-      await tester.pumpWidget(app(p, AnkirenResultsScreen(game: game, report: report, tracked: tracked)));
+      await tester.pumpWidget(app(
+          p,
+          AnkirenResultsScreen(
+              game: game, report: report, player: tracked ? AnkirenPlayer.owner : AnkirenPlayer.developer)));
       await tester.pump();
       return report ?? const AnkirenReport(ratingBefore: null, ratingAfter: null);
     }
@@ -432,7 +435,7 @@ void main() {
 
     testWidgets('a ranked placement game: its XP, then its slot of ランク判定, then the results', (tester) async {
       final p = await open(tester, 'en');
-      final report = await results(tester, p, AnkirenSetup.forLevel(0, ranked: true));
+      final report = await results(tester, p, const AnkirenSetup.ranked());
       expect(find.byType(CelebrationSequence), findsNothing, reason: 'the results show first');
       await tester.pump(ResultsLayout.overlayStagger);
       expect(find.text(const S('en').xpSource(XpSource.ranked)), findsOneWidget);
@@ -444,7 +447,7 @@ void main() {
       await tester.pump(ResultsLayout.overlayFade);
       await tester.pump();
       expect(find.byType(CelebrationSequence), findsNothing, reason: 'tapped through, as after a run');
-      expect(find.text(const S('en').again), findsOneWidget);
+      expect(find.text(const S('en').ankirenBackToPage), findsOneWidget);
       await tester.pumpWidget(const SizedBox());
     });
 
@@ -452,11 +455,10 @@ void main() {
       final p = await open(tester, 'en');
       await tester.runAsync(() async {
         for (var i = 0; i < AnkirenRatingModel.placementGames - 1; i++) {
-          await p.recordAnkiren(playAnkiren(AnkirenSetup.forLevel(0, ranked: true), ms: 700), startedAt: DateTime.now());
+          await p.recordAnkiren(playAnkiren(const AnkirenSetup.ranked(), ms: 700), startedAt: DateTime.now());
         }
       });
-      final level = p.sideTripsHub()[SideTrip.ankiren].rankedLevel!;
-      final report = await results(tester, p, AnkirenSetup.forLevel(level, ranked: true));
+      final report = await results(tester, p, const AnkirenSetup.ranked());
       await tester.pump(ResultsLayout.overlayStagger);
       expect(find.text(const S('en').xpSource(XpSource.placement)), findsOneWidget, reason: 'placement done');
       await pastXp(tester, report);
@@ -524,7 +526,7 @@ void main() {
 
     testWidgets('a forfeit earns no XP: only the rating page plays', (tester) async {
       final p = await open(tester, 'en');
-      final report = await results(tester, p, AnkirenSetup.forLevel(0, ranked: true), endAfter: 1);
+      final report = await results(tester, p, const AnkirenSetup.ranked(), endAfter: 1);
       expect(report.xp!.award.total, 0);
       await tester.pump(ResultsLayout.overlayStagger);
       expect(find.byType(XpOverlay), findsNothing);

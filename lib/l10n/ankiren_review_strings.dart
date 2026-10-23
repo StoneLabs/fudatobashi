@@ -11,7 +11,7 @@ extension AnkirenReviewStrings on S {
   String ankirenASide(Object a0) => f('ankirenASide', [a0]);
   String get ankirenPointsLabel => t('ankirenPointsLabel');
   String ankirenOfMax(Object a0) => f('ankirenOfMax', [a0]);
-  String ankirenBestStamp(Object a0) => f('ankirenBestStamp', [a0]);
+  String get ankirenBestRankedStamp => t('ankirenBestRankedStamp');
   String get ankirenFirstTapFact => t('ankirenFirstTapFact');
   String get ankirenMemorisedFact => t('ankirenMemorisedFact');
   String ankirenUpFrom(Object a0) => f('ankirenUpFrom', [a0]);
@@ -47,7 +47,7 @@ extension AnkirenReviewStrings on S {
   String get ankirenStepNext => t('ankirenStepNext');
   String get ankirenFindTitle => t('ankirenFindTitle');
   String get ankirenSeconds => t('ankirenSeconds');
-  String ankirenLevelTitle(Object a0) => f('ankirenLevelTitle', [a0]);
+  String get ankirenRankedTitle => t('ankirenRankedTitle');
   String get ankirenColThis => t('ankirenColThis');
   String get ankirenColBest => t('ankirenColBest');
   String get ankirenColAverage => t('ankirenColAverage');
@@ -57,7 +57,7 @@ extension AnkirenReviewStrings on S {
   String get ankirenRowFirstTap => t('ankirenRowFirstTap');
   String get ankirenRowMedian => t('ankirenRowMedian');
   String get ankirenRowMemorised => t('ankirenRowMemorised');
-  String get ankirenFirstAtLevel => t('ankirenFirstAtLevel');
+  String get ankirenFirstRanked => t('ankirenFirstRanked');
   String get ankirenMisplacedTitle => t('ankirenMisplacedTitle');
   String get ankirenAllGames => t('ankirenAllGames');
   String get ankirenColCard => t('ankirenColCard');
@@ -68,7 +68,6 @@ extension AnkirenReviewStrings on S {
   String ankirenEqCardPoints(Object a0) => f('ankirenEqCardPoints', [a0]);
   String ankirenEqEarly(Object a0) => f('ankirenEqEarly', [a0]);
   String get ankirenEqOnTime => t('ankirenEqOnTime');
-  String ankirenEqLevel(Object a0) => f('ankirenEqLevel', [a0]);
   String get ankirenEqPoints => t('ankirenEqPoints');
   String get ankirenColFor => t('ankirenColFor');
   String get ankirenColCards => t('ankirenColCards');
@@ -96,6 +95,7 @@ extension AnkirenReviewStrings on S {
   String get ankirenRightFirstLabel => t('ankirenRightFirstLabel');
   String get ankirenNotScored => t('ankirenNotScored');
   String get ankirenFoundFact => t('ankirenFoundFact');
+  String get ankirenWrongTapsFact => t('ankirenWrongTapsFact');
   String ankirenMemorisedOf(Object a0) => f('ankirenMemorisedOf', [a0]);
   String get ankirenMedianFact => t('ankirenMedianFact');
   String get ankirenCustomUnscored => t('ankirenCustomUnscored');
@@ -109,9 +109,10 @@ extension AnkirenReviewStrings on S {
   String ankirenMemoOf(Object a0, Object a1) => f('ankirenMemoOf', [a0, a1]);
   String get ankirenSetupFirst => t('ankirenSetupFirst');
 
-  /// "{0} games at Lv {1}", and "{0} games".
-  String ankirenGamesAtLevel(int games, int level) =>
-      f(games == 1 ? 'ankirenGamesAtLevelOne' : 'ankirenGamesAtLevelOther', [games, level]);
+  /// "{0} games at Lv {1}" (ranked's without a level), and "{0} games".
+  String ankirenGamesAtLevel(int games, int? level) => level == null
+      ? f(games == 1 ? 'ankirenRankedGamesOne' : 'ankirenRankedGamesOther', [games])
+      : f(games == 1 ? 'ankirenGamesAtLevelOne' : 'ankirenGamesAtLevelOther', [games, level]);
   String ankirenGames(int games) => f(games == 1 ? 'ankirenGamesOne' : 'ankirenGamesOther', [games]);
 
   /// Where a tap landed, in a word or two for a chip.

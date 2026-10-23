@@ -30,10 +30,14 @@ class AnkirenCardTry {
     required this.taps,
     required this.firstTapUs,
     this.tapped = const [],
+    this.gaveUp = false,
   });
 
   final int poemId;
   final int wrongTaps;
+
+  /// The player gave it up ("don't know").
+  final bool gaveUp;
   final int? responseUs;
   final List<TapProximity> taps;
   final int? firstTapUs;
@@ -100,8 +104,10 @@ class AnkirenGameRecord {
   final DateTime startedAt;
   final bool ranked;
 
-  /// The level played and the score; null for a custom setup.
+  /// The free-play level played, null for ranked and custom.
   final int? level;
+
+  /// Ranked games' score and the most it could be; null for any other game.
   final int? score, maxScore;
   final bool completed;
 
@@ -118,7 +124,13 @@ class AnkirenGameRecord {
   /// One per card asked, in order.
   final List<AnkirenCardTry> cards;
 
-  bool get scored => level != null && score != null;
+  /// A ranked game, the only kind whose score is shown.
+  bool get scored => ranked && score != null;
+  bool get custom => level == null && !ranked;
+
+  /// Its wrong taps and cards given up, one strike each.
+  int get strikes => cards.fold(0, (n, c) => n + c.wrongTaps + (c.gaveUp ? 1 : 0));
+
   int get firstTaps => cards.where((c) => c.firstTry).length;
   int get found => cards.where((c) => c.found).length;
 
@@ -139,13 +151,10 @@ class AnkirenGameRecord {
       memorise == Duration.zero ? 0 : (1 - memorised.inMicroseconds / memorise.inMicroseconds).clamp(0.0, 1.0);
   double get earlyFactor => 1 + AnkirenTuning.earlyBonus * timeLeft;
 
-  /// The level's factor (see [AnkirenScore.factorFor]); 1 for a custom setup.
-  double get levelFactor => level == null ? 1 : AnkirenScore.factorFor(level!);
-
-  /// Played with the same setup as [other]: the same level, or both custom
-  /// with as many cards a side.
+  /// Played with the same setup as [other]: the same level, both ranked, or
+  /// both custom with as many cards a side.
   bool sameSetup(AnkirenGameRecord other) =>
-      level != null ? other.level == level : other.level == null && other.perSide == perSide;
+      ranked ? other.ranked : (level != null ? other.level == level : custom && other.custom && other.perSide == perSide);
 
   /// The cards on [side] of [deal] and how many of them were found with the
   /// first tap; null without a deal.
@@ -190,7 +199,7 @@ class AnkirenReview {
   AnkirenGameRecord? get bestBefore {
     AnkirenGameRecord? best;
     for (final g in peers) {
-      if (g.completed && g.score != null && (best == null || g.score! > best.score!)) best = g;
+      if (g.completed && g.scored && (best == null || g.score! > best.score!)) best = g;
     }
     return best;
   }
@@ -204,8 +213,8 @@ class AnkirenReview {
   /// Where the first taps of [peers] landed, all together.
   Map<TapProximity, int> get usualMix => mixOf(peers);
 
-  /// 暗記練's rating before a ranked game: the last earlier ranked game's,
-  /// or the start; null for free play.
+  /// 暗記練's rating before a ranked game: the last earlier one's, or the
+  /// start; null for free play.
   double? get ratingBefore => game.rating == null ? null : _rated.lastOrNull?.rating ?? AnkirenRating.start;
 
   List<AnkirenGameRecord> get _rated => [for (final g in _earlier) if (g.ranked && g.rating != null) g];

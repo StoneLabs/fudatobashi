@@ -116,10 +116,12 @@ void main() {
           await p.recordRun(swipes([for (var i = 1; i <= 100; i++) i], stopAfter: 30), const PlayConfig(mode: PlayMode.ranked),
               today.add(const Duration(hours: 1)));
           await p.recordRun(swipes([4, 5]), const FreePracticeSetup().config, today.add(const Duration(hours: 2)));
-          await p.recordAnkiren(playAnkiren(AnkirenSetup.forLevel(0, ranked: true), wrongAt: {1}),
+          await p.recordAnkiren(playAnkiren(const AnkirenSetup.ranked(), wrongAt: {1}),
               startedAt: today.add(const Duration(hours: 3)));
           await p.recordAnkiren(playAnkiren(const AnkirenSetup.custom(perSide: 3, memorise: Duration(seconds: 30)), endAfter: 4),
               startedAt: today.add(const Duration(hours: 4)));
+          await p.recordAnkiren(playAnkiren(AnkirenSetup.forLevel(3), strikes: true, wrongAt: {1}, endAfter: 4),
+              startedAt: today.add(const Duration(hours: 5)));
         });
         useScreen(tester, phone, fontScale: fontScale);
         await tester.pumpWidget(RepaintBoundary(key: const ValueKey('screen'), child: FudatobashiApp(progress: p)));
@@ -155,8 +157,8 @@ void main() {
         await tester.pump(const Duration(milliseconds: 300));
         expect(tester.takeException(), isNull);
         await captureScreen(tester, 'history_ankiren', lang: lang);
-        expect(find.byType(AnkirenKindTag), findsNWidgets(2));
-        expect(find.text(s.historyNotScored), findsOneWidget);
+        expect(find.byType(AnkirenKindTag), findsNWidgets(3));
+        expect(find.text(s.historyFailed), findsOneWidget, reason: 'the free game ended short');
         expect(find.byType(CountBadge), findsNothing, reason: 'the 暗記練 tab has no kinds picked');
         await tester.pumpWidget(const SizedBox());
       });
@@ -261,7 +263,7 @@ void main() {
       expect(find.text(s.sideTripUnranked), findsOneWidget);
       expect(tester.widget<ClassBadge>(find.byType(ClassBadge)).band, Rating.bands.first);
 
-      await tester.runAsync(() => p.recordAnkiren(playAnkiren(AnkirenSetup.forLevel(0, ranked: true)), startedAt: day));
+      await tester.runAsync(() => p.recordAnkiren(playAnkiren(const AnkirenSetup.ranked()), startedAt: day));
       final rating = p.sideTrips.ratingOf(SideTrip.ankiren)!;
       await showProfile();
       final row = find.ancestor(of: find.byType(ClassBadge), matching: find.byType(Row)).first;

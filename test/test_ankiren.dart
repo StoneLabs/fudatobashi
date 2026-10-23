@@ -9,13 +9,19 @@ import 'package:fudatobashi/domain/ankiren_level.dart';
 /// A 暗記練 game dealt from all the poems, played out: each card found
 /// [ms] after its prompt, after one wrong tap on another card of its side
 /// for the prompts in [wrongAt], or given up for those in [giveUpAt]; ended
-/// early after [endAfter] prompts.
+/// early after [endAfter] prompts. With [strikes] it counts them, as the
+/// owner's free-play level games do.
 AnkirenGame playAnkiren(AnkirenSetup setup,
-    {int seed = 1, int ms = 700, Set<int> wrongAt = const {}, Set<int> giveUpAt = const {}, int? endAfter}) {
+    {int seed = 1,
+    int ms = 700,
+    Set<int> wrongAt = const {},
+    Set<int> giveUpAt = const {},
+    int? endAfter,
+    bool strikes = false}) {
   final rng = Random(seed);
   final field = AnkirenDealer.ofPoems()
       .deal([for (final p in poems.all) p.id], setup.perSide, rng, allInMiddle: setup.allInMiddle);
-  final game = AnkirenGame(field: field, setup: setup, rng: rng)..startRecall();
+  final game = AnkirenGame(field: field, setup: setup, rng: rng, countsStrikes: strikes)..startRecall();
   var t = const Duration(seconds: 100);
   for (var i = 0; game.phase == AnkirenPhase.recall; i++) {
     if (i == endAfter) {
@@ -26,8 +32,9 @@ AnkirenGame playAnkiren(AnkirenSetup setup,
     final asked = game.current!;
     if (wrongAt.contains(i)) {
       final side = field.sideOf(asked);
-      game.tap(field.cards.firstWhere((c) => c != asked && !game.isFound(c) && field.sideOf(c) == side),
+      game.tap(field.cards.firstWhere((c) => c != asked && !game.isDone(c) && field.sideOf(c) == side),
           t + const Duration(milliseconds: 300));
+      if (game.phase != AnkirenPhase.recall) break;
     }
     t += Duration(milliseconds: ms);
     if (giveUpAt.contains(i)) {

@@ -98,6 +98,7 @@ abstract final class SvgPalette {
     'sun': Palette.sun,
     'cardFrame': Palette.cardFrame,
     'cardPaper': Palette.cardPaper,
+    'alarm': Palette.alarm,
     'treeDeep': MapStyle.tree,
     'treeHighlight': MapStyle.treeHighlight,
   };

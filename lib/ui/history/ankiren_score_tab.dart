@@ -11,7 +11,7 @@ import 'ankiren_widgets.dart';
 import 'history_widgets.dart';
 import 'run_xp_tab.dart';
 
-/// A scored 暗記練 game's Score & XP: how the score was made (D37), what it
+/// A ranked 暗記練 game's Score & XP: how the score was made (D37), what it
 /// did to 暗記練's rating and class (D38, ranked games only) and the XP it
 /// earned (D39).
 class AnkirenScoreTab extends StatelessWidget {
@@ -33,8 +33,8 @@ class AnkirenScoreTab extends StatelessWidget {
   }
 }
 
-/// D37: card points × being ready early × the level's factor = the score,
-/// and the card points part by part.
+/// D37: card points × being ready early = the score, and the card points
+/// part by part.
 class _ScoreSum extends StatelessWidget {
   const _ScoreSum(this.review);
   final AnkirenReview review;
@@ -70,7 +70,6 @@ class _ScoreSum extends StatelessWidget {
           child: Text(text,
               style: const TextStyle(fontWeight: Weights.black, fontSize: AnkirenReviewStyle.sumSignFont)),
         );
-    String factor(double f) => f.toStringAsFixed(2);
     final shares = [
       for (final p in TapProximity.values)
         if (p != TapProximity.card) shareText(AnkirenTuning.tapShare[p]!),
@@ -83,9 +82,7 @@ class _ScoreSum extends StatelessWidget {
         child: Row(crossAxisAlignment: CrossAxisAlignment.center, children: [
           term('${game.recall}', s.ankirenEqCardPoints(game.maxRecall)),
           sign('×'),
-          term(factor(game.earlyFactor), early > 0 ? s.ankirenEqEarly(early) : s.ankirenEqOnTime),
-          sign('×'),
-          term(factor(game.levelFactor), s.ankirenEqLevel(game.level!)),
+          term(game.earlyFactor.toStringAsFixed(2), early > 0 ? s.ankirenEqEarly(early) : s.ankirenEqOnTime),
           sign('='),
           term('${game.score}', s.ankirenEqPoints, result: true),
         ]),

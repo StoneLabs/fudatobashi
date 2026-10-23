@@ -11,7 +11,7 @@ import '../../domain/ankiren_level.dart';
 import '../../l10n/ankiren_strings.dart';
 import '../../l10n/strings.dart';
 
-/// [level]'s field as it will lie, face down on the play screen's tatami:
+/// [setup]'s field as it will lie, face down on the play screen's tatami:
 /// its usual shape ([AnkirenDealer.typical]), the opponent's half over a
 /// band and the own half under it, folded and opened up to span the box
 /// like the portrait play screen's, every card as big as the box allows
@@ -20,14 +20,13 @@ import '../../l10n/strings.dart';
 /// shows nothing when that is less than
 /// [AnkirenPageLayout.previewMinHeight].
 class AnkirenFieldPreview extends StatelessWidget {
-  const AnkirenFieldPreview(this.level, {super.key});
+  const AnkirenFieldPreview(this.setup, {super.key});
 
-  final int level;
+  final AnkirenSetup setup;
 
   @override
   Widget build(BuildContext context) {
-    final of = AnkirenLevels.of(level);
-    final field = AnkirenDealer.typical(of.perSide, allInMiddle: of.allInMiddle);
+    final field = AnkirenDealer.typical(setup.perSide, allInMiddle: setup.allInMiddle);
     return _NoIntrinsicSize(
       child: LayoutBuilder(builder: (context, box) {
         const margin = AnkirenPageLayout.previewMargin;
@@ -35,7 +34,7 @@ class AnkirenFieldPreview extends StatelessWidget {
         if (frame.height < AnkirenPageLayout.previewMinHeight) return const SizedBox.shrink();
         return Semantics(
           image: true,
-          label: S.of(context).ankirenPreviewLabel(of.perSide),
+          label: S.of(context).ankirenPreviewLabel(setup.perSide),
           excludeSemantics: true,
           child: Padding(
             padding: margin,

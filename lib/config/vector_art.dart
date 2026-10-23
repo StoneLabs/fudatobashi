@@ -101,3 +101,13 @@ abstract final class SideTripArt {
   /// [SideTripsLayout.burstLabel]; scaled only uniformly.
   static late final VectorArt burst;
 }
+
+/// 暗記練's strikes in free play (`AnkirenStrikes`): a small torifuda face
+/// down for each strike still to come, and for each landed one the card
+/// turned face up with a red slash stamped over it. All three share one
+/// box.
+abstract final class AnkirenArt {
+  static late final VectorArt strikeBack;
+  static late final VectorArt strikeFace;
+  static late final VectorArt strikeSlash;
+}

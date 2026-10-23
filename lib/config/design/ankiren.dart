@@ -30,6 +30,7 @@ abstract final class AnkirenRulesLayout {
   static const double markBorder = Strokes.label;
   static const double markFont = 12;
   static const double markIcon = 17;
+  static const double markStrike = 22;
   static const double markIconStroke = 2.6;
   static const double markGap = 10;
   static const EdgeInsets rowPadding = EdgeInsets.symmetric(vertical: 8);
@@ -92,6 +93,19 @@ abstract final class AnkirenPlayLayout {
 
   /// Each of the band's two control slots, either side of its centre.
   static const double sideSlot = 96;
+
+  /// A free-play level's band also holds its strikes (`AnkirenStrikes`)
+  /// once the cards are face down: in portrait over "don't know", in a band
+  /// [bandPortraitStrikes] tall, the button [strikeButton] tall under cards
+  /// [strikeCardPortrait] tall; in landscape beside it, cards
+  /// [strikeCardLandscape] tall, both slots widened to keep the centre
+  /// centred. The cards stand [strikeGap] apart.
+  static const double bandPortraitStrikes = 96;
+  static const double strikeButton = 44;
+  static const double strikeCardPortrait = 36;
+  static const double strikeCardLandscape = 30;
+  static const double strikeGap = 3;
+  static const double strikeRowGap = 4;
   static const double timerFont = 34;
   static const double timerFontLandscape = 24;
   static const double promptFont = 32;
@@ -116,6 +130,17 @@ abstract final class AnkirenPlayLayout {
 
 /// 暗記練's card animations.
 abstract final class AnkirenMotion {
+  /// A strike landing (`AnkirenStrikes`): its card turns face up over the
+  /// first [strikeFlipShare] of [strike], the slash stamps in, shrinking
+  /// from [strikeStampFrom]× by [strikeStampShare], then the card shakes
+  /// [strikeShakes] times, [strikeShakeReach] px to either side, settling.
+  static const Duration strike = Duration(milliseconds: 620);
+  static const double strikeFlipShare = 0.35;
+  static const double strikeStampShare = 0.7;
+  static const double strikeStampFrom = 1.9;
+  static const int strikeShakes = 3;
+  static const double strikeShakeReach = 3;
+
   /// A card turning over, both halves of the turn.
   static const Duration flip = Duration(milliseconds: 220);
 
@@ -134,14 +159,33 @@ abstract final class AnkirenMotion {
   static const int revealShakeSeed = 7;
 }
 
+/// A cleared free-play level's check (`ClearedCheck`): a paper check on a
+/// green disc, its rim and check sized as shares of the disc.
+abstract final class AnkirenClearStyle {
+  static const Color fill = Palette.landDeep;
+  static const double rimShare = 0.1;
+  static const double iconShare = 0.62;
+  static const double iconStroke = 3.4;
+}
+
 /// 暗記練's results (`AnkirenResultsScreen`).
 abstract final class AnkirenResultsLayout {
+  /// A free-play level's outcome: its title, the cleared check and the
+  /// strikes.
+  static const double levelTitleFont = 22;
+  static const double clearedCheck = 34;
+  static const double strikeCard = 30;
+
   static const double scoreFont = 56;
   static const double scoreOutline = 11;
   static const double scoreOfFont = 15;
   static const EdgeInsets splashPadding = EdgeInsets.symmetric(horizontal: Gaps.inner, vertical: 18);
   static const double splashMinHeight = 190;
   static const Size tobi = Size(64, 76);
+
+  /// The splash's bottom padding when its result is a wide line that must
+  /// stay above Tobi.
+  static const double tobiClearance = 70;
   static const double noteFont = 13;
 }
 
@@ -190,12 +234,55 @@ abstract final class AnkirenSheetLayout {
 
   static const Size lockBalloon = Size(280, 96);
   static const Duration lockBalloonLife = Duration(milliseconds: 2800);
+
+  /// A level still shut: its key faded to [lockedOpacity] under the tab
+  /// lock's chains at [chainScale]. A cleared one: a check [check] across
+  /// on its top right corner, [checkOut] past its edges.
+  static const double lockedOpacity = 0.45;
+  static const double chainScale = 0.6;
+  static const double check = 18;
+  static const double checkOut = 5;
+
+  /// How the levels open, by a struck card [noteCard] tall; once every
+  /// level is cleared, the all-clear stamp instead.
+  static const double noteFont = 12;
+  static const double noteCard = 26;
+  static const double noteGap = 10;
+  static const double stampFont = 15;
+  static const double stampTilt = -4;
 }
 
-/// 暗記練's page (`ankiren_page.dart`): the record strip, the last games or
-/// placement, the next ranked game's panel with a preview of its field and
-/// the ranked burst, then Home's button pair.
+/// 暗記練's page (`ankiren_page.dart`): the record strip, the ranked panel
+/// with the last games or placement and the ranked burst, the next level's
+/// panel with a preview of its field and its burst, then Home's button
+/// pair.
 abstract final class AnkirenPageLayout {
+  /// The ranked panel: under the games, ranked's one setup in up to
+  /// [factsLines] lines at most [factsMaxWidth] wide, beside its burst,
+  /// which shrinks into the rest of the row, at most [rankedBurst] tall.
+  /// Shut, its inside fades to [lockedOpacity] under the tab lock's chains
+  /// at [chainScale], with what opens it on a paper sticker over them,
+  /// [lockNoteBottom] up from the panel's bottom and [lockNoteInset] in
+  /// from its sides.
+  static const EdgeInsets rankedRowPadding = EdgeInsets.fromLTRB(12, 4, 8, 8);
+  static const int factsLines = 3;
+  static const double rankedRowGap = 8;
+  static const double factsMaxWidth = 150;
+  static const double rankedBurst = 44;
+  static const double lockedOpacity = 0.35;
+  static const double chainScale = 1.7;
+  static const double lockNoteInset = 14;
+  static const double lockNoteBottom = 12;
+  static const double lockNoteTilt = -1.5;
+  static const double lockNoteFont = 12.5;
+  static const Size lockBalloon = Size(280, 96);
+  static const Duration lockBalloonLife = Duration(milliseconds: 2800);
+
+  /// The next level's check once every level is cleared, and the struck
+  /// card by what clears a level.
+  static const double clearedCheck = 30;
+  static const double hintCard = 20;
+
   /// Between the page's blocks; above the next game's panel, whose tag
   /// rises [tagRise] over its top edge; and under the pair.
   static const double gap = 12;
@@ -222,14 +309,12 @@ abstract final class AnkirenPageLayout {
   static const double gaugeNumber = 15;
   static const double gaugeGap = 10;
 
-  /// The last games or the placement games, in a panel: a heading, then a
-  /// column a game, split by light rules.
-  static const EdgeInsets gamesPadding = EdgeInsets.fromLTRB(10, 6, 10, 6);
+  /// The last games or the placement games, in a panel under its heading:
+  /// a column a game, split by light rules.
+  static const EdgeInsets gamesPadding = EdgeInsets.fromLTRB(10, 4, 10, 2);
   static const int lastGames = 5;
   static const double headFont = 14;
   static const double headGap = 6;
-  static const double countFont = 12;
-  static const double countNumber = 15;
   static const double linkFont = 12.5;
   static const double linkIcon = 14;
   static const double linkIconStroke = 3;
@@ -250,28 +335,32 @@ abstract final class AnkirenPageLayout {
   static const Color slotInk = Color(0xFF8A8A8A);
   static const Color todo = Color(0xFF6B6B6B);
 
-  /// The next game's panel: the side trips' cut corner, its tag breaking
-  /// the top edge, then the stats, the hint, the field and the burst.
+  /// A page panel: the side trips' cut corner, its tag rising [tagRise]
+  /// over the top edge, [tagLeft] in, and the heading beside it inside
+  /// [headPadding] ([headGap] from the tag, or under it when the two do not
+  /// fit side by side). Then, in the next level's panel, the stats, the
+  /// hint, the field and the burst.
   static const double tagRise = 13;
   static const double tagLeft = 18;
-  static const EdgeInsets statsPadding = EdgeInsets.fromLTRB(15, 22, 14, 0);
+  static const EdgeInsets headPadding = EdgeInsets.fromLTRB(tagLeft, 5, tagLeft, 0);
+  static const EdgeInsets statsPadding = EdgeInsets.fromLTRB(15, 4, 14, 0);
   static const double statFont = 28;
   static const double statUnitFont = 15;
   static const double statSuffixFont = 13;
   static const double statGap = 3;
-  static const EdgeInsets hintPadding = EdgeInsets.fromLTRB(15, 9, 14, 0);
+  static const EdgeInsets hintPadding = EdgeInsets.fromLTRB(15, 2, 14, 0);
   static const double hintFont = 12;
   static const double hintNumber = 14;
   static const double hintIcon = 15;
   static const double hintIconStroke = 2.6;
   static const double hintGap = 4;
-  static const EdgeInsets burstMargin = EdgeInsets.fromLTRB(6, 12, 6, 12);
+  static const EdgeInsets burstMargin = EdgeInsets.fromLTRB(6, 8, 6, 10);
 
   /// The field preview: the next game's shape, face down on the play
   /// screen's tatami, as big as the room left allows, cards at most
   /// [previewMaxCardW] wide; hidden below [previewMinHeight].
-  static const EdgeInsets previewMargin = EdgeInsets.fromLTRB(14, 11, 14, 0);
-  static const double previewMinHeight = 96;
+  static const EdgeInsets previewMargin = EdgeInsets.fromLTRB(14, 4, 14, 0);
+  static const double previewMinHeight = 80;
   static const double previewBorder = Strokes.control;
   static const double previewPadding = 10;
   static const double previewBand = 9;

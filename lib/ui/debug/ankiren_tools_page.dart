@@ -7,8 +7,10 @@ import '../../config/design.dart';
 import '../../data/poem.dart';
 import '../../domain/ankiren_field.dart';
 import '../../domain/ankiren_level.dart';
+import '../../domain/ankiren_rating.dart';
 import '../../domain/ankiren_score.dart';
 import '../../domain/ankiren_tomofuda.dart';
+import '../../domain/rating.dart';
 import '../../state/scope.dart';
 import '../play/time_format.dart';
 import '../run/run_launcher.dart';
@@ -16,8 +18,9 @@ import 'ankiren_debug_game.dart';
 import 'ankiren_graphs.dart';
 import 'debug_common.dart';
 
-/// The developer's 暗記練 tools: the level table, a live points calculator,
-/// total-points graphs across the levels and a middle-card simulator.
+/// The developer's 暗記練 tools: the level table (with ranked's setup as
+/// R), a live points calculator for ranked, ranked's classes as times per
+/// card, a ranked total-points graph and a middle-card simulator.
 class AnkirenToolsPage extends StatelessWidget {
   const AnkirenToolsPage({super.key});
 
@@ -33,14 +36,15 @@ class AnkirenToolsPage extends StatelessWidget {
           const SizedBox(height: AnkirenToolsStyle.gap),
           const _LevelTable(),
           const Divider(height: 32),
-          Text('Points', style: title),
+          Text('Ranked points', style: title),
           const _PointsCalculator(),
           const Divider(height: 32),
-          Text('Total by time used', style: title),
-          const AnkirenTimeUsedGraph(),
+          Text('Ranked classes by time per card', style: title),
+          const SizedBox(height: AnkirenToolsStyle.gap),
+          const _ClassTable(),
           const Divider(height: 32),
-          Text('Total by card time', style: title),
-          const AnkirenCardTimeGraph(),
+          Text('Ranked total by card time', style: title),
+          const AnkirenRankedGraph(),
           const Divider(height: 32),
           Text('Middle cards', style: title),
           const _MiddleSimulator(),
@@ -58,7 +62,7 @@ class _PointsCalculator extends StatefulWidget {
 }
 
 class _PointsCalculatorState extends State<_PointsCalculator> {
-  int _level = AnkirenLevels.top;
+  static const _setup = AnkirenSetup.ranked();
   double _responseMs = AnkirenToolsTuning.responseStart.inMilliseconds.toDouble();
 
   /// Where the first and second taps landed; null for no tap.
@@ -66,7 +70,7 @@ class _PointsCalculatorState extends State<_PointsCalculator> {
   TapProximity? _second;
   double _timeLeft = 0;
 
-  int get _memoriseSeconds => AnkirenLevels.of(_level).memorise.inSeconds;
+  int get _memoriseSeconds => _setup.memorise.inSeconds;
 
   @override
   Widget build(BuildContext context) {
@@ -75,7 +79,6 @@ class _PointsCalculatorState extends State<_PointsCalculator> {
     final tapUs = (_responseMs * 1000).round();
     final share = _timeLeft.clamp(0, _memoriseSeconds) / _memoriseSeconds;
     final early = 1 + AnkirenTuning.earlyBonus * share;
-    final factor = AnkirenScore.factorFor(_level);
     final points = AnkirenScore.pointsOf(taps, first == null ? null : tapUs);
     final timed = AnkirenScore.speedWeight(taps) > 0;
     Widget picker(String label, TapProximity? selected, ValueChanged<TapProximity?>? onChanged) => Wrap(
@@ -96,7 +99,6 @@ class _PointsCalculatorState extends State<_PointsCalculator> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        DebugLevelChips(level: _level, onChanged: (l) => setState(() => _level = l)),
         DebugResponseSlider(label: 'first tap', ms: _responseMs, onChanged: (v) => setState(() => _responseMs = v)),
         picker('tap 1 on', first, (p) => setState(() => _first = p)),
         picker('tap 2 on', taps.length > 1 ? _second : null,
@@ -104,7 +106,7 @@ class _PointsCalculatorState extends State<_PointsCalculator> {
         DebugSlider(
           label:
               'time left ${formatMinutes(Duration(seconds: _timeLeft.round()))}'
-              ' of ${formatMinutes(AnkirenLevels.of(_level).memorise)}  (${(share * 100).round()}%)',
+              ' of ${formatMinutes(_setup.memorise)}  (${(share * 100).round()}%)',
           value: _timeLeft.clamp(0, _memoriseSeconds).toDouble(),
           min: 0,
           max: _memoriseSeconds.toDouble(),
@@ -126,8 +128,9 @@ class _PointsCalculatorState extends State<_PointsCalculator> {
         DebugKV('tap share', AnkirenScore.share(taps).toStringAsFixed(2)),
         DebugKV('per card', '$points'),
         DebugKV('early ×', early.toStringAsFixed(3)),
-        DebugKV('level ×', factor.toStringAsFixed(3)),
-        DebugKV('scored', '${(points * early * factor).round()}'),
+        DebugKV('per card × early', '${(points * early).round()}'),
+        DebugKV('${_setup.cards} cards, all first taps at this time',
+            '${AnkirenScore.firstTryTotal(_setup, responseMs: _responseMs, timeLeft: Duration(seconds: _timeLeft.round()))}'),
       ],
     );
   }
@@ -157,9 +160,9 @@ class _BonusPainter extends CustomPainter {
         ..strokeWidth = AnkirenToolsStyle.curveStroke
         ..color = Palette.seaDeep,
     );
-    for (final MapEntry(key: ms, value: bonus) in AnkirenTuning.speedTargets.entries) {
+    for (final MapEntry(key: ms, value: share) in AnkirenTuning.speedTargets.entries) {
       canvas.drawCircle(
-        at(ms.toDouble(), bonus / AnkirenTuning.speedMax),
+        at(ms.toDouble(), share),
         AnkirenToolsStyle.targetRadius,
         Paint()..color = Palette.pink,
       );
@@ -344,7 +347,7 @@ class _LevelTable extends StatelessWidget {
       child: Table(
         defaultColumnWidth: const IntrinsicColumnWidth(),
         children: [
-          row(['L', '/side', 'time', 's/card', 'mid', '×lvl', 'rate'], head: true),
+          row(['L', '/side', 'time', 's/card', 'mid'], head: true),
           for (final (i, l) in AnkirenLevels.all.indexed)
             row([
               '$i',
@@ -356,11 +359,97 @@ class _LevelTable extends StatelessWidget {
                   : AnkirenDealer.mayHaveMiddle(l.perSide)
                   ? '≤${AnkirenDealer.maxMiddle(l.perSide)}'
                   : '—',
-              AnkirenScore.factorFor(i).toStringAsFixed(3),
-              AnkirenRatingModel.levelRatings[i].toStringAsFixed(0),
             ]),
+          row([
+            'R',
+            '${AnkirenTuning.rankedPerSide}',
+            formatMinutes(AnkirenTuning.rankedMemorise),
+            (AnkirenTuning.rankedMemorise.inMilliseconds / 1000 / (2 * AnkirenTuning.rankedPerSide)).toStringAsFixed(1),
+            AnkirenDealer.mayHaveMiddle(AnkirenTuning.rankedPerSide)
+                ? '≤${AnkirenDealer.maxMiddle(AnkirenTuning.rankedPerSide)}'
+                : '—',
+          ]),
         ],
       ),
     );
+  }
+}
+
+/// 暗記練's ranked classes as average first-tap times: for each class line
+/// (`Rating.bands`), the time per card at which a ranked game with all
+/// its cards right with the first tap reaches it, played to the end of the
+/// memorise time and ready early at [AnkirenToolsTuning.classTableReadyAt].
+/// A class reached even at the slowest timed find shows the first-tap finds
+/// it needs at that time instead. Each class runs from its own line (the
+/// slower bound) to the next one's (the faster).
+class _ClassTable extends StatelessWidget {
+  const _ClassTable();
+
+  static const _setup = AnkirenSetup.ranked();
+
+  /// What reaches [rating] with [timeLeft] to spare: the slowest first-tap
+  /// time in ms, or the first-tap finds at the slowest timed find.
+  static ({int? ms, int finds}) _reach(double rating, Duration timeLeft) {
+    bool reaches(double ms) =>
+        AnkirenRating.performance(AnkirenScore.firstTryTotal(_setup, responseMs: ms, timeLeft: timeLeft)) >= rating;
+    final slowest = AnkirenTuning.speedNone.inMilliseconds.toDouble();
+    if (reaches(slowest)) {
+      final share = timeLeft.inMicroseconds / _setup.memorise.inMicroseconds;
+      var finds = 0;
+      while (finds < _setup.cards &&
+          AnkirenRating.performance(AnkirenScore.totalOf(finds * AnkirenTuning.cardPoints, share)) < rating) {
+        finds++;
+      }
+      return (ms: null, finds: finds);
+    }
+    var fast = AnkirenTuning.speedFull.inMilliseconds, slow = slowest.round();
+    while (slow - fast > 1) {
+      final mid = (fast + slow) ~/ 2;
+      if (reaches(mid.toDouble())) {
+        fast = mid;
+      } else {
+        slow = mid;
+      }
+    }
+    return (ms: fast, finds: _setup.cards);
+  }
+
+  static String _range(({int? ms, int finds}) from, ({int? ms, int finds})? to) {
+    if (from.ms == null) {
+      final most = to == null || to.ms != null ? _setup.cards : to.finds - 1;
+      return most == from.finds ? '$most finds' : '${from.finds}–$most finds';
+    }
+    final slower = (from.ms! / 1000).toStringAsFixed(2);
+    if (to == null) return '≤ $slower s';
+    return '$slower–${((to.ms! + 1) / 1000).toStringAsFixed(2)} s';
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final early = _setup.memorise - AnkirenToolsTuning.classTableReadyAt;
+    final bands = Rating.bands.skip(1).toList();
+    final full = [for (final b in bands) _reach(b.minRating, Duration.zero)];
+    final ready = [for (final b in bands) _reach(b.minRating, early)];
+    String cell(String text, int width) => text.padRight(width);
+    return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+      Text(
+        'All ${_setup.cards} right with the first tap at one time each; '
+        'P = ${AnkirenRatingModel.slope}·(F − ${AnkirenRatingModel.zero}). '
+        'A class reached even at ${AnkirenTuning.speedNone.inSeconds} s shows the finds it needs there.',
+        style: debugMono.copyWith(color: Colors.grey),
+      ),
+      const SizedBox(height: 4),
+      Text('${cell('class', 6)}${cell('line', 6)}${cell('score', 7)}${cell('${formatMinutes(_setup.memorise)} used', 14)}'
+          'ready ${formatMinutes(AnkirenToolsTuning.classTableReadyAt)}',
+          style: debugMono.copyWith(fontWeight: Weights.black)),
+      for (final (i, b) in bands.indexed)
+        Text(
+          '${cell(b.labelEn, 6)}${cell(b.minRating.round().toString(), 6)}'
+          '${cell(AnkirenRating.scoreFor(b.minRating).round().toString(), 7)}'
+          '${cell(_range(full[i], full.elementAtOrNull(i + 1)), 14)}'
+          '${_range(ready[i], ready.elementAtOrNull(i + 1))}',
+          style: debugMono,
+        ),
+    ]);
   }
 }

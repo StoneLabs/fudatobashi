@@ -454,6 +454,14 @@ class _VersionRowState extends State<_VersionRow> {
 
 final _developerSection = GlobalKey(debugLabel: 'developer');
 
+Future<void> _clearAnkirenForRanked(BuildContext context) async {
+  final progress = ProgressScope.read(context);
+  final messenger = ScaffoldMessenger.of(context);
+  await progress.clearAnkirenUpTo(AnkirenTuning.rankedAfterLevel);
+  final note = progress.trainer.config.learningMode == LearningMode.allKnown ? '' : ' · ranked also needs All 100 known';
+  messenger.showSnackBar(SnackBar(content: Text('Lv 0–${AnkirenTuning.rankedAfterLevel} cleared$note')));
+}
+
 class _DeveloperSection extends StatelessWidget {
   const _DeveloperSection({super.key});
 
@@ -490,6 +498,7 @@ class _DeveloperSection extends StatelessWidget {
           SettingsTapRow(title: 'Timing', opensPage: true, onTap: () => open(const TimingPage())),
           SettingsTapRow(title: 'AnkiRen', opensPage: true, onTap: () => open(const AnkirenToolsPage())),
           SettingsTapRow(title: 'Simulation', opensPage: true, onTap: () => open(const SimulationPage())),
+          SettingsTapRow(title: 'Clear ankiren until ranked available', onTap: () => _clearAnkirenForRanked(context)),
           SettingsTapRow(
             title: 'AnkiRen test game',
             onTap: () => startAnkirenTest(context),
@@ -503,6 +512,7 @@ class _DeveloperSection extends StatelessWidget {
           SettingsTapRow(title: 'Preview graduation', onTap: () => previewGraduation(context)),
           SettingsTapRow(title: "Preview today's set done", onTap: () => previewDayDone(context)),
           SettingsTapRow(title: 'Preview AnkiRen unlock', onTap: () => previewAnkirenUnlock(context)),
+          SettingsTapRow(title: 'Preview migration popup', onTap: () => previewMigrationNotice(context)),
           SettingsTapRow(title: 'Preview Side Trips tab unlock', onTap: () => previewSideTripsTabUnlock(context)),
           SettingsTapRow(
             title: 'Preview all-known warning',

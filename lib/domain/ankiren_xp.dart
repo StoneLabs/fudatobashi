@@ -29,10 +29,11 @@ class AnkirenXpRun {
   /// Every card was asked: the game was not ended early.
   final bool completed;
 
-  /// The level preset played and the score; both null for a custom setup,
-  /// which is not scored and earns nothing. Games at the same level race
-  /// each other for a personal best.
+  /// The free-play level played, null for ranked and custom.
   final int? level;
+
+  /// A ranked game's score, which races the earlier ones for a personal
+  /// best; null for any other game, which has none.
   final int? score;
 
   /// One per card, in the order they were asked.
@@ -40,21 +41,28 @@ class AnkirenXpRun {
 
   /// A ranked game left once its cards were face down: it earns nothing.
   bool get forfeit => ranked && !completed;
+
+  /// A custom setup earns nothing.
+  bool get custom => !ranked && level == null;
 }
 
 /// 暗記練's experience rules ([AnkirenXpTuning]), keeping what each game
-/// needs from the games before it: the best score of each level and the
-/// ranked games played. Each card earns the same share of a find's XP
-/// (more at a higher level) as of its points (`AnkirenScore.share`): all of
-/// it when the first tap found it, part when its taps landed near it; and
-/// a find with the first tap a speed bonus for its time. A game played to
-/// the end pays the cards that earned nothing for trying, adds a clear (and
-/// a ranked one more), a personal best adds its bonus, and the ranked game
-/// that finishes placement adds a one-off bonus. A forfeit and a custom
-/// game earn nothing; a free game ended early earns only what its cards
-/// earned.
+/// needs from the games before it: the best ranked score and the ranked
+/// games played. Each card earns the
+/// same share of a find's XP (more at a higher level, ranked as
+/// [AnkirenXpTuning.rankedLevel]) as of its points (`AnkirenScore.share`):
+/// all of it when the first tap found it, part when its taps landed near
+/// it; and a find with the first tap a speed bonus for its time. A game
+/// played to the end pays the cards that earned nothing for trying, adds a
+/// clear (and a ranked one more), a personal best adds its bonus, and the
+/// ranked game that finishes placement adds a one-off bonus. A forfeit and
+/// a custom game earn nothing; a free game ended early earns only what its
+/// cards earned.
 class AnkirenXp {
-  final _best = <int, int>{};
+  /// The best ranked score so far.
+  int? _best;
+
+  /// Ranked games so far.
   int _rankedGames = 0;
 
   /// XP a first-tap find earns at [level].
@@ -68,15 +76,18 @@ class AnkirenXp {
 
   /// What [run], played after every game scored so far, earned.
   XpAward score(AnkirenXpRun run) {
-    final placed = run.ranked && ++_rankedGames == AnkirenRatingModel.placementGames;
     final level = run.level, score = run.score;
-    if (level == null || score == null) return const XpAward([]);
-    final previous = _best[level];
-    final best = run.completed && previous != null && score > previous;
-    if (run.completed && (previous == null || score > previous)) _best[level] = score;
+    final placed = run.ranked && ++_rankedGames == AnkirenRatingModel.placementGames;
+    if (run.custom) return const XpAward([]);
+    var best = false;
+    if (run.completed && score != null) {
+      final previous = _best;
+      best = previous != null && score > previous;
+      if (previous == null || score > previous) _best = score;
+    }
     if (run.forfeit) return const XpAward([]);
 
-    final card = cardXp(level);
+    final card = cardXp(level ?? AnkirenXpTuning.rankedLevel);
     var first = 0, near = 0, missed = 0, fast = 0;
     var firstXp = 0, nearXp = 0, speed = 0;
     for (final a in run.answers) {

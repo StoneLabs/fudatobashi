@@ -56,51 +56,42 @@ class AnkirenAnswer {
   bool get revealed => wrongTaps >= AnkirenTuning.revealAfterWrong;
 }
 
-/// A 暗記練 game's score; custom games are not scored. Every field card is
+/// A 暗記練 game's score, which only ranked games show. Every field card is
 /// asked once and earns [points] for the taps made while it was asked,
 /// however its prompt ended (found, given up or the game ended).
 ///
-/// These [recall] points, out of [maxRecall] (every card first try at full
-/// speed), make the [fraction] that drives the rating. The score shown is
-/// them times 1 + [AnkirenTuning.earlyBonus] × the share of the memorise
-/// time left unused, times the level's [factorFor]; [max] is the best one
-/// without being ready early, and [early] what being ready early added.
+/// These [recall] points are out of [maxRecall] (every card first try at
+/// full speed). The score is them times 1 + [AnkirenTuning.earlyBonus] ×
+/// the share of the memorise time left unused; [max] is the best one without
+/// being ready early, and [early] what being ready early added.
 class AnkirenScore {
-  AnkirenScore(List<AnkirenAnswer> answers, {required int prompts, this.timeLeft = 0, this.factor = 1})
+  AnkirenScore(List<AnkirenAnswer> answers, {required int prompts, this.timeLeft = 0})
       : recall = answers.fold(0, (sum, a) => sum + points(a)),
         maxRecall = maxFor(prompts);
 
   final int recall;
   final int maxRecall;
 
-  /// The share of the memorise time left unused, and the level's
-  /// [factorFor].
+  /// The share of the memorise time left unused.
   final double timeLeft;
-  final double factor;
 
   double get fraction => maxRecall == 0 ? 0 : recall / maxRecall;
 
-  int get total => totalOf(recall, timeLeft, factor);
-  int get max => (maxRecall * factor).round();
-  int get early => total - (recall * factor).round();
-
-  /// How much a game at [level] counts: [AnkirenTuning.levelFactor] once for
-  /// every level below the top.
-  static double factorFor(int level) => math.pow(AnkirenTuning.levelFactor, AnkirenLevels.top - level).toDouble();
+  int get total => totalOf(recall, timeLeft);
+  int get max => maxRecall;
+  int get early => total - recall;
 
   /// The score of [recall] points with [timeLeft] of the memorise time unused
-  /// (as a share) at a level [factor].
-  static int totalOf(int recall, double timeLeft, double factor) =>
-      (recall * (1 + AnkirenTuning.earlyBonus * timeLeft) * factor).round();
+  /// (as a share).
+  static int totalOf(int recall, double timeLeft) => (recall * (1 + AnkirenTuning.earlyBonus * timeLeft)).round();
 
-  /// A game at [level] where every card is found with its first tap
+  /// A game with [setup] where every card is found with its first tap
   /// [responseMs] after its prompt, and the player was ready with [timeLeft]
   /// of the memorise time to spare (at most all of it).
-  static int firstTryTotal(int level, {required double responseMs, required Duration timeLeft}) {
-    final setup = AnkirenLevels.of(level);
+  static int firstTryTotal(AnkirenSetup setup, {required double responseMs, Duration timeLeft = Duration.zero}) {
     final share = (timeLeft.inMicroseconds / setup.memorise.inMicroseconds).clamp(0.0, 1.0);
     final perCard = AnkirenTuning.cardPoints + speedBonus((responseMs * 1000).round());
-    return totalOf(setup.cards * perCard, share, factorFor(level));
+    return totalOf(setup.cards * perCard, share);
   }
 
   static int maxFor(int prompts) => prompts * (AnkirenTuning.cardPoints + AnkirenTuning.speedMax);

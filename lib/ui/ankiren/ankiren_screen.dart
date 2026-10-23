@@ -25,12 +25,15 @@ import 'ankiren_band.dart';
 import 'ankiren_card.dart';
 import 'ankiren_field_view.dart';
 import 'ankiren_results_screen.dart';
+import 'ankiren_strikes.dart';
 
 /// 暗記練's play screen. A field of [setup]'s size is dealt from [known]
 /// and shown face up while its memorise time counts down (or until the
 /// player is ready); then every card turns face down and each is asked for
 /// by its kimariji, in turn, until all are found or given up ("don't know"),
-/// or the game is ended. It ends into [AnkirenResultsScreen].
+/// or the game is ended. The owner's free-play level games count strikes
+/// (see [AnkirenStrikes]): the last one ends the game at once. It ends into
+/// [AnkirenResultsScreen].
 ///
 /// Timing follows the swipe deck's contract: a prompt is revealed at the
 /// vsync of the first frame showing it, on the pointer-event clock
@@ -47,7 +50,7 @@ class AnkirenScreen extends StatefulWidget {
     super.key,
     required this.setup,
     required this.known,
-    this.tracked = true,
+    this.player = AnkirenPlayer.owner,
     this.seed,
     this.overlay,
   });
@@ -57,8 +60,7 @@ class AnkirenScreen extends StatefulWidget {
   /// The cards the field is dealt from.
   final List<int> known;
 
-  /// False for the developer's test game: nothing is recorded.
-  final bool tracked;
+  final AnkirenPlayer player;
 
   /// Seeds the deal and the order of the prompts; random when null.
   final int? seed;
@@ -119,7 +121,12 @@ class _AnkirenScreenState extends State<AnkirenScreen> {
     final rng = math.Random(widget.seed);
     final field =
         AnkirenDealer.ofPoems().deal(widget.known, widget.setup.perSide, rng, allInMiddle: widget.setup.allInMiddle);
-    _game = AnkirenGame(field: field, setup: widget.setup, rng: rng);
+    _game = AnkirenGame(
+      field: field,
+      setup: widget.setup,
+      rng: rng,
+      countsStrikes: widget.player == AnkirenPlayer.owner && widget.setup.level != null,
+    );
     unawaited(SystemChrome.setPreferredOrientations(_landscape
         ? const [DeviceOrientation.landscapeLeft, DeviceOrientation.landscapeRight]
         : OrientationTuning.app));
@@ -151,7 +158,9 @@ class _AnkirenScreenState extends State<AnkirenScreen> {
   }
 
   /// A ranked game is on and recall has begun: leaving it is a forfeit.
-  bool get _forfeitable => widget.tracked && widget.setup.ranked && _game.phase == AnkirenPhase.recall;
+  bool get _forfeitable => _recorded && widget.setup.ranked && _game.phase == AnkirenPhase.recall;
+
+  bool get _recorded => widget.player.recorded;
 
   /// The screen is going without End or Results: nothing more happens on
   /// it. A game already played to its end is recorded without Results, a
@@ -162,7 +171,7 @@ class _AnkirenScreenState extends State<AnkirenScreen> {
     _ending = true;
     _clock?.cancel();
     _pause?.cancel();
-    if (widget.tracked && (_game.phase == AnkirenPhase.done || _forfeitable)) {
+    if (_recorded && (_game.phase == AnkirenPhase.done || _forfeitable)) {
       _game.end();
       unawaited(_progress.recordAnkiren(_game, startedAt: _startedAt, meta: _meta));
     }
@@ -227,10 +236,12 @@ class _AnkirenScreenState extends State<AnkirenScreen> {
   }
 
   /// "Don't know": the card asked for is shown as after the wrong taps, then
-  /// turns face up, and the next one is asked.
+  /// turns face up, and the next one is asked. Where strikes count, it is
+  /// one, and sounds like a wrong tap.
   void _giveUp() {
     final poemId = _game.giveUp();
     if (poemId == null) return;
+    if (_game.countsStrikes) playSound(context, Sfx.ankirenWrong);
     setState(() {
       _promptShown = false;
       _last = (poemId: poemId, state: PromptState.givenUp);
@@ -283,15 +294,14 @@ class _AnkirenScreenState extends State<AnkirenScreen> {
     if (_ending || !mounted) return;
     _ending = true;
     _pause?.cancel();
-    final report =
-        widget.tracked ? await _progress.recordAnkiren(_game, startedAt: _startedAt, meta: _meta) : null;
+    final report = _recorded ? await _progress.recordAnkiren(_game, startedAt: _startedAt, meta: _meta) : null;
     // Left meanwhile: its route is on its way out, and replacing "the
     // current route" would replace the one under it.
     if (!mounted || ModalRoute.isCurrentOf(context) == false) return;
     _wentToResults = true;
     _releaseOrientation();
     unawaited(Navigator.of(context).pushReplacement(MangaRoute<void>(
-      builder: (_) => AnkirenResultsScreen(game: _game, report: report, tracked: widget.tracked),
+      builder: (_) => AnkirenResultsScreen(game: _game, report: report, player: widget.player),
     )));
   }
 
@@ -322,8 +332,12 @@ class _AnkirenScreenState extends State<AnkirenScreen> {
         );
 
     final shown = asked ?? last?.poemId;
+    final dontKnow =
+        BandButton(icon: IconArt.question, label: s.ankirenDontKnow, onTap: asked == null ? null : _giveUp);
+    final strikes = _game.countsStrikes;
     final band = AnkirenBand(
       landscape: _landscape,
+      slot: strikes && _landscape ? AnkirenPlayLayout.sideSlot + _strikesWidth : AnkirenPlayLayout.sideSlot,
       leading: BandButton(icon: IconArt.end, label: s.end, onTap: _ending ? null : () => unawaited(_end())),
       center: memorising
           ? MemoriseClock(left: _left, landscape: _landscape)
@@ -337,9 +351,15 @@ class _AnkirenScreenState extends State<AnkirenScreen> {
               ),
               if (voice && asked != null) KimarijiSpeakerButton(poemId: asked),
             ]),
-      trailing: memorising
-          ? BandButton(icon: IconArt.arrow, label: s.ankirenReady, color: Palette.sun, onTap: () => _startRecall(ready: true))
-          : BandButton(icon: IconArt.question, label: s.ankirenDontKnow, onTap: asked == null ? null : _giveUp),
+      trailing: AnimatedSwitcher(
+        duration: _still ? Duration.zero : AnkirenMotion.flip,
+        child: memorising
+            ? BandButton(
+                icon: IconArt.arrow, label: s.ankirenReady, color: Palette.sun, onTap: () => _startRecall(ready: true))
+            : strikes
+                ? _withStrikes(dontKnow)
+                : dontKnow,
+      ),
     );
 
     final overlay = widget.overlay;
@@ -349,6 +369,7 @@ class _AnkirenScreenState extends State<AnkirenScreen> {
       zoom: _zoom,
       card: card,
       band: band,
+      bandExtent: strikes && !_landscape ? AnkirenPlayLayout.bandPortraitStrikes : null,
       overlay: overlay == null ? null : (placement) => overlay(_game, placement),
     );
     final screen = Scaffold(
@@ -371,6 +392,35 @@ class _AnkirenScreenState extends State<AnkirenScreen> {
       onPopInvokedWithResult: (didPop, _) => didPop ? _leave() : unawaited(_end()),
       child: screen,
     );
+  }
+
+  /// The width of the strikes' row in a landscape band.
+  static double get _strikesWidth {
+    final box = AnkirenArt.strikeBack.box;
+    const out = AnkirenTuning.strikesOut;
+    return AnkirenPlayLayout.bandGap +
+        out * AnkirenPlayLayout.strikeCardLandscape * box.width / box.height +
+        (out - 1) * AnkirenPlayLayout.strikeGap;
+  }
+
+  /// [dontKnow] with the strikes: under them in portrait, beside them in
+  /// landscape.
+  Widget _withStrikes(Widget dontKnow) {
+    final strikes = AnkirenStrikes(
+      strikes: _game.strikes,
+      cardHeight: _landscape ? AnkirenPlayLayout.strikeCardLandscape : AnkirenPlayLayout.strikeCardPortrait,
+    );
+    return _landscape
+        ? Row(mainAxisSize: MainAxisSize.min, children: [
+            strikes,
+            const SizedBox(width: AnkirenPlayLayout.bandGap),
+            dontKnow,
+          ])
+        : Column(mainAxisSize: MainAxisSize.min, children: [
+            strikes,
+            const SizedBox(height: AnkirenPlayLayout.strikeRowGap),
+            SizedBox(height: AnkirenPlayLayout.strikeButton, child: dontKnow),
+          ]);
   }
 
   /// [field] with dev mode's scoring readout in room of its own, above it

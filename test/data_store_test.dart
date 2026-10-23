@@ -140,7 +140,7 @@ void main() {
       await store.restore(backup);
       final progress = opened();
       expect(progress.runs.length, (expected['rows'] as Map)['sessions']);
-      expect((await progress.db.customSelect('PRAGMA user_version').getSingle()).data.values.single, 3);
+      expect((await progress.db.customSelect('PRAGMA user_version').getSingle()).data.values.single, latestSchemaVersion);
     });
 
     test('a file that is no backup, a newer one or another schema is turned away and nothing changes', () async {
@@ -151,7 +151,7 @@ void main() {
         fileIn('notes.txt')..writeAsStringSync('not a database at all'): BackupProblem.notBackup,
         fileIn('damaged.sqlite')..writeAsBytesSync([...ascii.encode('SQLite format 3\u0000'), ...List.filled(200, 7)]):
             BackupProblem.damaged,
-        sqliteFile('newer.sqlite', version: 4, sql: ['CREATE TABLE runs (id INTEGER)']): BackupProblem.tooNew,
+        sqliteFile('newer.sqlite', version: latestSchemaVersion + 1, sql: ['CREATE TABLE runs (id INTEGER)']): BackupProblem.tooNew,
         sqliteFile('other.sqlite', version: 3, sql: ['CREATE TABLE notes (id INTEGER)']): BackupProblem.notBackup,
         sqliteFile('unversioned.sqlite', version: 0, sql: ['CREATE TABLE runs (id INTEGER)']): BackupProblem.notBackup,
       };
@@ -204,11 +204,11 @@ void main() {
     });
 
     test('data from a newer app fails to open instead of being stamped with this version', () async {
-      sqliteFile('documents/fudatobashi.sqlite', version: 4, sql: ['CREATE TABLE runs (id INTEGER)']);
+      sqliteFile('documents/fudatobashi.sqlite', version: latestSchemaVersion + 1, sql: ['CREATE TABLE runs (id INTEGER)']);
       await store.start();
       expect(store.state, isA<DataFailed>());
       final raw = sqlite3.open(store.paths.database.path, mode: OpenMode.readOnly);
-      expect(raw.userVersion, 4);
+      expect(raw.userVersion, latestSchemaVersion + 1);
       raw.close();
     });
 

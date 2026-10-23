@@ -1,6 +1,7 @@
 import 'dart:math' as math;
 
 import '../config/config.dart';
+import 'ankiren_level.dart';
 import 'rating.dart';
 
 /// The side trips (寄り道): games beside the journey that train other
@@ -72,8 +73,8 @@ class SideTripLock {
 /// When the Side Trips tab and its trips open: in journey mode once enough
 /// cards are well remembered at once (`Trainer.wellRememberedCount`, free
 /// practice's counter, thresholds in [SideTripTuning]), and for good once
-/// they have; in all-known mode right away. A trip opens whole, its ranked
-/// games and free play together.
+/// they have; in all-known mode right away. A trip opens with its free
+/// play; its ranked games need more (see [RankedLock]).
 abstract final class SideTripUnlocks {
   /// Well-remembered cards [trip] needs in journey mode.
   static int opensAt(SideTrip trip) => switch (trip) {
@@ -100,27 +101,42 @@ abstract final class SideTripUnlocks {
       open || remembered >= opensAt ? null : SideTripLock(opensAt: opensAt, remembered: remembered);
 }
 
-/// One ranked game of a side trip: its [score], what it did to the rating
-/// ([ratingChange]) and the [level] it was played at.
+/// What keeps an open trip's ranked games shut: they need the all-known
+/// learning mode ([allKnown] false until it is on) and free play's level
+/// [AnkirenTuning.rankedAfterLevel] cleared ([cleared] false until it is).
+class RankedLock {
+  const RankedLock({required this.allKnown, required this.cleared});
+
+  final bool allKnown;
+  final bool cleared;
+
+  /// The free-play level to clear.
+  static int get level => AnkirenTuning.rankedAfterLevel;
+
+  /// What ranked still needs, or null once it is open.
+  static RankedLock? of({required bool allKnown, required AnkirenLadder ladder}) =>
+      allKnown && ladder.rankedReady ? null : RankedLock(allKnown: allKnown, cleared: ladder.rankedReady);
+}
+
+/// One ranked game of a side trip: its [score] and what it did to the
+/// rating ([ratingChange]).
 class SideTripResult {
-  const SideTripResult({required this.score, required this.ratingChange, required this.level});
+  const SideTripResult({required this.score, required this.ratingChange});
 
   final int score;
   final double ratingChange;
-  final int level;
 }
 
 /// A side trip's standing so far, as plain values: its ranked [rating]
 /// and the last ranked game's [ratingChange] (both null until a ranked game
-/// is played), the [rankedLevel] ranked plays at now and the highest level
-/// the known cards allow ([maxLevel]; either null while unknown), the
-/// [games] played, ranked or free, and the ranked ones' [results], oldest
-/// first.
+/// is played), free play's [ladder], the highest level the known cards allow
+/// ([maxLevel]; null while unknown or when none fits), the [games] played,
+/// ranked or free, and the ranked ones' [results], oldest first.
 class SideTripStanding {
   const SideTripStanding({
     this.rating,
     this.ratingChange,
-    this.rankedLevel,
+    this.ladder = AnkirenLadder.none,
     this.maxLevel,
     this.games = 0,
     this.results = const [],
@@ -130,22 +146,23 @@ class SideTripStanding {
 
   final double? rating;
   final double? ratingChange;
-  final int? rankedLevel;
+  final AnkirenLadder ladder;
   final int? maxLevel;
   final int games;
   final List<SideTripResult> results;
 }
 
 /// One island of the Side Trips tab: a [trip], what keeps it shut
-/// ([lock]), and its standing.
+/// ([lock]) or its ranked games ([rankedLock]), and its standing.
 class SideTripEntry {
   const SideTripEntry({
     required this.trip,
     required this.lock,
+    required this.rankedLock,
     required this.rating,
     required this.ratingChange,
     required this.band,
-    required this.rankedLevel,
+    required this.ladder,
     required this.maxLevel,
     required this.games,
     required this.results,
@@ -153,8 +170,11 @@ class SideTripEntry {
 
   final SideTrip trip;
 
-  /// Null once the trip, its ranked games and free play, is open.
+  /// Null once the trip, its free play and its page, is open.
   final SideTripLock? lock;
+
+  /// Null once its ranked games are open too.
+  final RankedLock? rankedLock;
 
   /// The ranked rating, and what the last ranked game did to it; null
   /// until a ranked game is played.
@@ -164,9 +184,9 @@ class SideTripEntry {
   /// The class of [rating] on the main rank's ladder; 入門 before any.
   final RankBand band;
 
-  /// The level a ranked game plays at now, and the highest one the known
-  /// cards allow; null while unknown.
-  final int? rankedLevel;
+  /// Free play's levels cleared and open, and the highest level the known
+  /// cards allow (null while unknown or when none fits).
+  final AnkirenLadder ladder;
   final int? maxLevel;
   final int games;
 
@@ -174,7 +194,13 @@ class SideTripEntry {
   final List<SideTripResult> results;
 
   bool get open => lock == null;
+  bool get rankedOpen => open && rankedLock == null;
   bool get ranked => rating != null;
+
+  /// The free-play level to clear next and whether the known cards fill
+  /// it; null once every level is cleared.
+  int? get nextLevel => ladder.next;
+  bool fits(int level) => maxLevel != null && level <= maxLevel!;
 }
 
 /// The Side Trips tab: every side trip, in [SideTrip] order, with its locks
@@ -199,10 +225,11 @@ class SideTripsHub {
       return SideTripEntry(
         trip: trip,
         lock: SideTripUnlocks.lockOf(trip, allKnown: allKnown, remembered: remembered, latched: latched),
+        rankedLock: RankedLock.of(allKnown: allKnown, ladder: standing.ladder),
         rating: rating,
         ratingChange: standing.ratingChange,
         band: rating == null ? Rating.bands.first : Rating.bandOf(rating),
-        rankedLevel: standing.rankedLevel,
+        ladder: standing.ladder,
         maxLevel: standing.maxLevel,
         games: standing.games,
         results: standing.results,

@@ -7,7 +7,9 @@ import '../../domain/ankiren_field.dart';
 import '../../l10n/side_trip_strings.dart';
 import '../../l10n/strings.dart';
 import '../../state/scope.dart';
+import '../ankiren/ankiren_strikes.dart';
 import '../manga/manga.dart';
+import '../play/time_format.dart';
 import '../settings/settings_rows.dart';
 import 'ankiren_sheet.dart';
 
@@ -28,10 +30,11 @@ Future<void> openAnkirenRules(BuildContext context) {
 }
 
 /// The game's three steps in pictures with a line on each, then what a
-/// wrong tap, giving up and leaving do, and how a game scores, with the
-/// numbers from [AnkirenTuning]: a tap's points by where it lands in a
-/// table. Every line has the other language's under it. It closes with ×,
-/// a tap outside or Back.
+/// wrong tap, giving up and leaving do, how free play's strikes open its
+/// levels, ranked's one setup, and how a game scores, with the numbers from
+/// [AnkirenTuning]: a tap's points by where it lands in a table. Every line
+/// has the other language's under it. It closes with ×, a tap outside or
+/// Back.
 class AnkirenRulesSheet extends StatelessWidget {
   const AnkirenRulesSheet({super.key});
 
@@ -48,6 +51,9 @@ class AnkirenRulesSheet extends StatelessWidget {
     const first = AnkirenTuning.cardPoints, speed = AnkirenTuning.speedMax;
     final second = (AnkirenTuning.tapWeights[1] * 100).round();
     final early = _number(1 + AnkirenTuning.earlyBonus);
+    const strikes = AnkirenTuning.strikesOut;
+    const perSide = AnkirenTuning.rankedPerSide, opensAt = AnkirenTuning.rankedAfterLevel;
+    final memorise = formatMinutes(AnkirenTuning.rankedMemorise);
     return AnkirenSheet(
       title: s.howToPlay,
       sub: o?.howToPlay,
@@ -63,6 +69,9 @@ class AnkirenRulesSheet extends StatelessWidget {
           _Rule(const _Mark.text(Palette.sun, '$reveal'), s.ankirenRuleReveal(reveal), o?.ankirenRuleReveal(reveal)),
           _Rule(_Mark.icon(Palette.desk, IconArt.question), s.ankirenRuleDontKnow, o?.ankirenRuleDontKnow),
           _Rule(_Mark.icon(Palette.ink, IconArt.end), s.ankirenRuleLeave, o?.ankirenRuleLeave),
+          _Rule(const _Mark.art(Palette.pinkSoft), s.ankirenRuleStrikes(strikes), o?.ankirenRuleStrikes(strikes)),
+          _Rule(const _Mark.text(Palette.pink, '${2 * perSide}'), s.ankirenRuleRanked(perSide, memorise, opensAt),
+              o?.ankirenRuleRanked(perSide, memorise, opensAt)),
         ]),
         SettingsSection(title: s.ankirenScoring, sub: o?.ankirenScoring.toUpperCase(), children: [
           _RuleList([
@@ -71,7 +80,7 @@ class AnkirenRulesSheet extends StatelessWidget {
             _Rule(_Mark.icon(Palette.paper, IconArt.cards), s.ankirenScoreNear(second), o?.ankirenScoreNear(second),
                 below: const _TierTable()),
             _Rule(_Mark.icon(Palette.sun, IconArt.history), s.ankirenScoreEarly(early), o?.ankirenScoreEarly(early)),
-            _Rule(_Mark.text(Palette.paper, s.ankirenMarkLevel), s.ankirenScoreLevel, o?.ankirenScoreLevel),
+            _Rule(_Mark.text(Palette.pink, s.ankirenMarkPoints), s.ankirenScoreLevel, o?.ankirenScoreLevel),
           ]),
         ]),
       ],
@@ -224,12 +233,23 @@ class _Lines extends StatelessWidget {
 /// What a list row is marked with: a box of [color] holding an icon, or
 /// short text.
 class _Mark extends StatelessWidget {
-  const _Mark.icon(this.color, VectorArt this.icon) : text = null;
-  const _Mark.text(this.color, String this.text) : icon = null;
+  const _Mark.icon(this.color, VectorArt this.icon)
+      : text = null,
+        strike = false;
+  const _Mark.text(this.color, String this.text)
+      : icon = null,
+        strike = false;
+
+  /// A struck card (see `AnkirenStrikes`).
+  const _Mark.art(this.color)
+      : icon = null,
+        text = null,
+        strike = true;
 
   final Color color;
   final VectorArt? icon;
   final String? text;
+  final bool strike;
 
   @override
   Widget build(BuildContext context) {
@@ -243,14 +263,17 @@ class _Mark extends StatelessWidget {
         color: color,
         border: Border.all(color: Palette.ink, width: AnkirenRulesLayout.markBorder),
       ),
-      child: icon != null
-          ? MangaIcon(icon, size: AnkirenRulesLayout.markIcon, color: ink, strokeWidth: AnkirenRulesLayout.markIconStroke)
-          : FittedBox(
-              fit: BoxFit.scaleDown,
-              child: Text(text!,
-                  style: TextStyle(
-                      fontFamily: Fonts.display, fontSize: AnkirenRulesLayout.markFont, height: 1, color: ink)),
-            ),
+      child: strike
+          ? const AnkirenStrikes(strikes: 1, count: 1, cardHeight: AnkirenRulesLayout.markStrike)
+          : icon != null
+              ? MangaIcon(icon,
+                  size: AnkirenRulesLayout.markIcon, color: ink, strokeWidth: AnkirenRulesLayout.markIconStroke)
+              : FittedBox(
+                  fit: BoxFit.scaleDown,
+                  child: Text(text!,
+                      style: TextStyle(
+                          fontFamily: Fonts.display, fontSize: AnkirenRulesLayout.markFont, height: 1, color: ink)),
+                ),
     );
   }
 }

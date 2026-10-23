@@ -19,11 +19,16 @@ extension AnkirenStrings on S {
   String get ankirenMemorise => t('ankirenMemorise');
   String get ankirenReady => t('ankirenReady');
   String get ankirenDontKnow => t('ankirenDontKnow');
+
+  /// A free-play level's strikes so far, out of those that end it, for
+  /// screen readers.
+  String ankirenStrikesLabel(int strikes, int of) => f('ankirenStrikesLabel', [strikes, of]);
   String get ankirenLeaveTitle => t('ankirenLeaveTitle');
   String get ankirenLeaveNote => t('ankirenLeaveNote');
   String get ankirenLeave => t('ankirenLeave');
 
   String get ankirenScoreLabel => t('ankirenScoreLabel');
+
   String ankirenScoreOf(int max) => f('ankirenScoreOf', [max]);
   String ankirenEarlyBonus(int points) => f('ankirenEarlyBonus', [points]);
 
@@ -43,11 +48,28 @@ extension AnkirenStrings on S {
 
   String get ankirenAvgLabel => t('ankirenAvgLabel');
   String get ankirenAvgNote => t('ankirenAvgNote');
-  String ankirenNextLevel(int level) => f('ankirenNextLevel', [level]);
   String ankirenPlacement(int game, int of) => f('ankirenPlacement', [game, of]);
-  String get ankirenFreeNote => t('ankirenFreeNote');
   String get ankirenCustomNote => t('ankirenCustomNote');
-  String get ankirenAgainSub => t('ankirenAgainSub');
+
+  /// A guest's game (Guest mode): its tag, and Results' note that nothing
+  /// of it was saved.
+  String get ankirenGuest => t('ankirenGuest');
+  String get ankirenGuestNote => t('ankirenGuestNote');
+
+  /// A free-play level game's outcome on Results: cleared, failed on its
+  /// strikes or left before the end; what clears a level ([strikes] end
+  /// it); and what clearing it opened.
+  String ankirenLevelCleared(int level) => f('ankirenLevelCleared', [level]);
+  String ankirenLevelFailed(int level) => f('ankirenLevelFailed', [level]);
+  String ankirenLevelNotCleared(int level) => f('ankirenLevelNotCleared', [level]);
+  String ankirenClearHow(int strikes) => f('ankirenClearHow', [strikes]);
+  String get ankirenAllCleared => t('ankirenAllCleared');
+  String ankirenLevelOpened(int level) => f('ankirenLevelOpened', [level]);
+  String get ankirenCustomOpened => t('ankirenCustomOpened');
+  String get ankirenRankedOpened => t('ankirenRankedOpened');
+  String get ankirenRankedNeedsAllKnown => t('ankirenRankedNeedsAllKnown');
+  String get ankirenBackToPage => t('ankirenBackToPage');
+  String get ankirenBackSub => t('ankirenBackSub');
   String get ankirenDoneSub => t('ankirenDoneSub');
 
   /// A setup's name: its level, or a custom one's cards per side and
@@ -69,24 +91,49 @@ extension AnkirenStrings on S {
   String get ankirenMore => t('ankirenMore');
   String ankirenNeedCards(int n) => f('ankirenNeedCards', [n]);
 
-  /// 暗記練's page: the hub's way in, its last games or placement, and the
-  /// next ranked game with why it plays that level.
+  /// The free-play menu: how levels open, why a level or the custom setups
+  /// are still shut, the stamp once every level is cleared, and the guest's
+  /// line.
+  String ankirenUnlockLine(int strikes) => f('ankirenUnlockLine', [strikes]);
+  String ankirenLevelLocked(int clear, int level) => f('ankirenLevelLocked', [clear, level]);
+  String ankirenCustomLocked(int clear) => f('ankirenCustomLocked', [clear]);
+  String get ankirenAllClearStamp => t('ankirenAllClearStamp');
+  String get ankirenGuestLine => t('ankirenGuestLine');
+
+  /// 暗記練's page: the hub's way in, the ranked panel with its last games
+  /// or placement and what still keeps it shut, the next level to clear,
+  /// and Guest mode.
   String get ankirenOpenPage => t('ankirenOpenPage');
   String get ankirenPageTitle => t('ankirenPageTitle');
   String get ankirenLast5 => t('ankirenLast5');
   String get ankirenPlacementTitle => t('ankirenPlacementTitle');
-  String get ankirenPlacementCount => t('ankirenPlacementCount');
   String get ankirenPlacementNext => t('ankirenPlacementNext');
-  String get ankirenNextRanked => t('ankirenNextRanked');
+  String get ankirenRankedMode => t('ankirenRankedMode');
   String get ankirenCards => t('ankirenCards');
   String get ankirenMemoriseLabel => t('ankirenMemoriseLabel');
-  String get ankirenSetByRating => t('ankirenSetByRating');
-  String get ankirenCapped => t('ankirenCapped');
-  String get ankirenTopLevel => t('ankirenTopLevel');
+  String get ankirenNextToClear => t('ankirenNextToClear');
+  String get ankirenAllClearedTitle => t('ankirenAllClearedTitle');
+  String get ankirenAllLevels => t('ankirenAllLevels');
+  String ankirenPlayLevel(int level) => f('ankirenPlayLevel', [level]);
+  String get ankirenGuestMode => t('ankirenGuestMode');
+  String get ankirenGuestButton => t('ankirenGuestButton');
+  String get ankirenGuestSub => t('ankirenGuestSub');
 
-  /// Templates: the rating points still to go to the next level, and the
-  /// cards a level needs.
-  String get ankirenToLevel => t('ankirenToLevel');
+  /// Ranked's one setup: [perSide] cards a side and the memorise time.
+  String ankirenRankedFacts(int perSide, String memorise) => f('ankirenRankedFacts', [perSide, memorise]);
+  String get ankirenRankedReal => t('ankirenRankedReal');
+
+  /// What still opens ranked: the all-known mode, clearing [level], or
+  /// both.
+  String ankirenRankedLocked({required bool allKnown, required bool cleared, required int level}) => allKnown
+      ? f('ankirenRankedLockedLevel', [level])
+      : cleared
+          ? t('ankirenRankedLockedMode')
+          : f('ankirenRankedLockedBoth', [level]);
+
+  /// Templates: what clears a level ([AnkirenTuning.strikesOut] strikes
+  /// end it), and the cards a level needs.
+  String get ankirenClearRule => t('ankirenClearRule');
   String get ankirenLevelFrom => t('ankirenLevelFrom');
 
   /// The level tag as a template, for its number in display type.

@@ -17,6 +17,8 @@ import 'package:fudatobashi/state/demo_data.dart';
 import 'package:fudatobashi/state/progress.dart';
 import 'package:fudatobashi/ui/home/journey_state.dart';
 
+import 'db_snapshot.dart';
+
 void main() {
   poems = Poems.fromJsonString(File('assets/data/poems.json').readAsStringSync());
   fudaSets = FudaSets(poems);
@@ -174,10 +176,12 @@ void main() {
     final cards = progress.freeDeck(const PlayConfig(mode: PlayMode.guest, setIds: ['initial:むすめふさほせ']));
     expect(cards.length, 7);
     final run = play(cards, [for (var i = 0; i < 7; i++) (800, Outcome.known)]);
+    final before = await dbSnapshot(db);
     final report = await progress.recordRun(run, const PlayConfig(mode: PlayMode.guest), DateTime.now());
     expect(report.runId, isNull);
     expect(await db.select(db.attempts).get(), isEmpty);
     expect(await db.select(db.runs).get(), isEmpty);
+    expect(await dbSnapshot(db), before, reason: 'no row in any table, and key_values as they were');
     expect(progress.rating, isNull);
     await db.close();
   });

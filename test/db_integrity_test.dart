@@ -216,14 +216,14 @@ void main() {
   });
 
   group('side trips', () {
-    Future<int> trip(AppDatabase db, int d, {bool ranked = true, double? performance, double? rating}) =>
+    Future<int> trip(AppDatabase db, int d, {bool ranked = true, int? level, double? performance, double? rating}) =>
         db.into(db.sideTripRuns).insert(SideTripRunsCompanion.insert(
               game: SideTrip.ankiren,
               startedAt: day(d),
               endedAt: day(d, 59),
               day: 20260900 + d,
               ranked: ranked,
-              level: const Value(0),
+              level: Value(ranked ? level : level ?? 0),
               score: const Value(900),
               maxScore: const Value(1200),
               completed: true,
@@ -239,12 +239,13 @@ void main() {
 
     test('answers of a missing game are deleted; ratings that are no number are replayed', () async {
       final db = AppDatabase(NativeDatabase.memory());
-      final placed = AnkirenRating.update(AnkirenRating.start, 1300, 0);
+      final placed = AnkirenRating.update(AnkirenRating.start, 1300, const []);
       final a = await trip(db, 1, performance: 1300, rating: placed);
       final b = await trip(db, 2, performance: double.infinity, rating: double.infinity);
       final c = await trip(db, 3, ranked: false);
-      final d = await trip(db, 4, performance: 1500, rating: double.nan);
-      final e = await trip(db, 5, performance: 1200, rating: 9999);
+      final old = await trip(db, 4, level: 5, performance: 1650, rating: double.nan);
+      final d = await trip(db, 5, performance: 1500, rating: double.nan);
+      final e = await trip(db, 6, performance: 1200, rating: 9999);
       await answer(db, a);
       await answer(db, 99);
       expect((await db.select(db.sideTripRuns).get()).singleWhere((r) => r.id == d).rating, isNull,
@@ -257,9 +258,11 @@ void main() {
       expect([runs[a]!.performance, runs[a]!.rating], [1300, placed], reason: 'games before the first bad one stay');
       expect([runs[b]!.performance, runs[b]!.rating], [null, null], reason: 'no performance: dropped from the rating');
       expect([runs[c]!.performance, runs[c]!.rating], [null, null]);
-      final rd = AnkirenRating.update(placed, 1500, 1);
+      expect([runs[old]!.ranked, runs[old]!.level, runs[old]!.performance, runs[old]!.rating], [false, 5, null, null],
+          reason: 'a ranked game with a level is made a free game, without a rating');
+      final rd = AnkirenRating.update(placed, 1500, const [1300]);
       expect([runs[d]!.performance, runs[d]!.rating], [1500, rd]);
-      expect(runs[e]!.rating, AnkirenRating.update(rd, 1200, 2));
+      expect(runs[e]!.rating, AnkirenRating.update(rd, 1200, const [1300, 1500]));
       expect(p.sideTrips.ratingOf(SideTrip.ankiren), runs[e]!.rating);
       expect(p.sideTrips.rankedGames(SideTrip.ankiren), 3);
 
@@ -273,7 +276,7 @@ void main() {
       final db = AppDatabase(NativeDatabase.memory());
       final p = await Progress.open(db);
       await p.setLearningMode(LearningMode.allKnown);
-      await p.recordAnkiren(playAnkiren(AnkirenSetup.forLevel(0, ranked: true)), startedAt: day(1));
+      await p.recordAnkiren(playAnkiren(const AnkirenSetup.ranked()), startedAt: day(1));
       await p.recordAnkiren(playAnkiren(AnkirenSetup.forLevel(1), endAfter: 2), startedAt: day(2));
       final before = await dumpTrips(db);
       expect(await writesDuring(db, () => DbIntegrity.run(db)), isEmpty);

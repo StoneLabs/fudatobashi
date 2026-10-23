@@ -222,3 +222,24 @@ abstract final class RecoveryLayout {
   static const double errorMaxHeight = 180;
   static const String errorFamily = 'monospace';
 }
+
+/// The notice an upgrade leaves for the player (`migration_notice.dart`): an
+/// ink-dimmed Home, a panel with a title on an ink slab, Tobi with the
+/// message and an OK shout.
+abstract final class MigrationNoticeStyle {
+  static const Color scrim = Color(0xB3141414);
+  static const double maxWidth = 380;
+  static const EdgeInsets margin = EdgeInsets.symmetric(horizontal: Gaps.gutter, vertical: Gaps.section);
+  static const EdgeInsets panelPadding = EdgeInsets.fromLTRB(14, 0, 14, 10);
+  static const Offset panelShadow = Offset(4, 5);
+
+  /// The title's slab runs out of the panel's top, turned a little.
+  static const EdgeInsets slabPadding = EdgeInsets.symmetric(horizontal: 14, vertical: 8);
+  static const double slabTurnDeg = -1.5;
+  static const double titleFont = 26;
+
+  static const Size tobi = Size(78, 94);
+  static const double bodyFont = 15;
+  static const double bodyLineHeight = 1.45;
+  static const double gap = 12;
+}

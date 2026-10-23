@@ -6,6 +6,7 @@ import 'package:flutter/services.dart';
 import '../../config/design.dart';
 import '../../data/poem.dart';
 import '../../domain/ankiren_field.dart';
+import '../../domain/ankiren_game.dart';
 import '../../domain/ankiren_level.dart';
 import '../../domain/ankiren_tomofuda.dart';
 import '../ankiren/ankiren_screen.dart';
@@ -115,7 +116,7 @@ class _AnkirenDebugGameState extends State<AnkirenDebugGame> {
                   key: ValueKey((_level, _seed)),
                   setup: AnkirenSetup.forLevel(_level),
                   known: _deck,
-                  tracked: false,
+                  player: AnkirenPlayer.developer,
                   seed: _seed,
                   overlay: layers.isEmpty
                       ? null

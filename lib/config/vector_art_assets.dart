@@ -17,6 +17,9 @@ final _assetPaths = [
   'sidetrips/burst',
   'sidetrips/icon-sidetrips',
   'cards/yomifuda-end',
+  'ankiren/strike-back',
+  'ankiren/strike-face',
+  'ankiren/strike-slash',
 ];
 
 const _iconNames = [
@@ -30,9 +33,9 @@ const _tobiNames = [
 ];
 
 /// Loads every piece of vector art (icons, map furniture, onboarding scenes,
-/// Tobi, the streak tally, the Side Trips burst and the card marks) from
-/// `assets/graphics/`. Call once, before the first frame that draws any of it;
-/// synchronous access afterwards.
+/// Tobi, the streak tally, the Side Trips burst, the card marks and
+/// 暗記練's strikes) from `assets/graphics/`. Call once, before the first
+/// frame that draws any of it; synchronous access afterwards.
 Future<void> loadVectorArt() async {
   final entries =
       await Future.wait(_assetPaths.map((p) async => MapEntry(p, await rootBundle.loadString('assets/graphics/$p.svg'))));
@@ -105,4 +108,8 @@ void installVectorArt(Map<String, String> svg) {
   SideTripArt.burst = parse('sidetrips/burst');
 
   CardArt.yomifudaEnd = parse('cards/yomifuda-end');
+
+  AnkirenArt.strikeBack = parse('ankiren/strike-back');
+  AnkirenArt.strikeFace = parse('ankiren/strike-face');
+  AnkirenArt.strikeSlash = parse('ankiren/strike-slash');
 }

@@ -18,6 +18,7 @@ import '../stats/stats_screen.dart';
 import '../tour/tour_anchor.dart';
 import '../tour/tour_overlay.dart';
 import '../tour/tour_steps.dart';
+import 'migration_notice.dart';
 import 'tab_chains.dart';
 
 enum AppTab { home, history, stats, sideTrips }
@@ -137,6 +138,7 @@ class _AppShellState extends State<AppShell> {
     final progress = ProgressScope.of(context);
     final touring = !progress.settings.toured;
     final tab = touring ? AppTab.home : _tab;
+    final notice = touring ? null : progress.pendingNotice;
     final examIntro = !touring && tab == AppTab.home && progress.examIntroDue;
     final locks = {for (final t in LockedTab.values) t: progress.tabLock(t)};
     _syncLocks(progress, locks);
@@ -210,6 +212,7 @@ class _AppShellState extends State<AppShell> {
                 onElsewhere: () => _endExamIntro(progress),
               ),
             ),
+          if (notice != null) Positioned.fill(child: MigrationNoticeOverlay(id: notice)),
         ]),
       ),
     );

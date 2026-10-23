@@ -9,15 +9,24 @@ import '../manga/manga.dart';
 import '../play/time_format.dart';
 
 /// 暗記練's centre band, a paper strip between ink rules: [leading] and
-/// [trailing] controls in equal slots either side, so [center] sits in the
-/// middle of the screen, shrinking rather than crowding them.
+/// [trailing] controls in equal slots either side, each [slot] wide, so
+/// [center] sits in the middle of the screen, shrinking rather than
+/// crowding them.
 class AnkirenBand extends StatelessWidget {
-  const AnkirenBand({super.key, required this.landscape, required this.leading, required this.center, this.trailing});
+  const AnkirenBand({
+    super.key,
+    required this.landscape,
+    required this.leading,
+    required this.center,
+    this.trailing,
+    this.slot = AnkirenPlayLayout.sideSlot,
+  });
 
   final bool landscape;
   final Widget leading;
   final Widget center;
   final Widget? trailing;
+  final double slot;
 
   @override
   Widget build(BuildContext context) => DecoratedBox(
@@ -29,12 +38,12 @@ class AnkirenBand extends StatelessWidget {
         child: Padding(
           padding: landscape ? AnkirenPlayLayout.bandPaddingLandscape : AnkirenPlayLayout.bandPadding,
           child: Row(children: [
-            SizedBox(width: AnkirenPlayLayout.sideSlot, child: Align(alignment: Alignment.centerLeft, child: leading)),
+            SizedBox(width: slot, child: Align(alignment: Alignment.centerLeft, child: leading)),
             const SizedBox(width: AnkirenPlayLayout.bandGap),
             Expanded(child: FittedBox(fit: BoxFit.scaleDown, child: center)),
             const SizedBox(width: AnkirenPlayLayout.bandGap),
             SizedBox(
-              width: AnkirenPlayLayout.sideSlot,
+              width: slot,
               child: Align(alignment: Alignment.centerRight, child: trailing ?? const SizedBox.shrink()),
             ),
           ]),

@@ -18,20 +18,23 @@ abstract final class AnkirenToolsStyle {
   static const double targetRadius = 3;
   static const double gap = 8;
 
-  /// The total-points graphs: their height, the margins that hold the axis
-  /// labels, the lines' stroke and label size, and the hues one line per
-  /// level runs through (level 0 at [hueStart], the top level at [hueEnd]).
+  /// The total-points graph: its height, the margins that hold the axis
+  /// labels, and the lines' stroke and label size.
   static const double graphHeight = 240;
-  static const EdgeInsets graphMargin = EdgeInsets.fromLTRB(44, 8, 20, 18);
+  static const EdgeInsets graphMargin = EdgeInsets.fromLTRB(44, 8, 30, 18);
   static const double lineStroke = 1.5;
   static const double axisFont = 10;
 
   /// Between an axis, or a line's end, and its label.
   static const double axisLabelGap = 3;
-  static const double hueStart = 0;
-  static const double hueEnd = 290;
-  static const double lineSaturation = 0.75;
-  static const double lineLightness = 0.42;
+
+  /// A class border's dashed line and its label at the plot's right edge;
+  /// labels closer than [classLabelHeight] are pushed apart.
+  static const double classStroke = 1;
+  static const double classDash = 4;
+  static const double classDashGap = 3;
+  static const double classLabelHeight = 10;
+  static const double classOpacity = 0.7;
 }
 
 /// The developer's 暗記練 test game (`AnkirenDebugGame`): its debug bar and

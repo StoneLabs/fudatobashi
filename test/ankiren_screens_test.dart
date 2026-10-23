@@ -21,6 +21,7 @@ import 'package:fudatobashi/domain/ankiren_game.dart';
 import 'package:fudatobashi/domain/ankiren_geometry.dart';
 import 'package:fudatobashi/domain/ankiren_level.dart';
 import 'package:fudatobashi/domain/ankiren_score.dart';
+import 'package:fudatobashi/domain/rating.dart';
 import 'package:fudatobashi/domain/side_trips.dart';
 import 'package:fudatobashi/domain/trainer.dart';
 import 'package:fudatobashi/l10n/ankiren_strings.dart';
@@ -37,6 +38,7 @@ import 'package:fudatobashi/ui/ankiren/ankiren_card.dart';
 import 'package:fudatobashi/ui/ankiren/ankiren_field_view.dart';
 import 'package:fudatobashi/ui/ankiren/ankiren_results_screen.dart';
 import 'package:fudatobashi/ui/ankiren/ankiren_screen.dart';
+import 'package:fudatobashi/ui/ankiren/ankiren_strikes.dart';
 import 'package:fudatobashi/ui/app.dart';
 import 'package:fudatobashi/ui/debug/ankiren_debug_game.dart';
 import 'package:fudatobashi/ui/debug/ankiren_debug_overlay.dart';
@@ -47,6 +49,7 @@ import 'package:fudatobashi/ui/debug/play_overlay.dart';
 import 'package:fudatobashi/ui/manga/manga.dart';
 import 'package:fudatobashi/ui/play/time_format.dart';
 import 'package:fudatobashi/ui/rank/rank_badges.dart';
+import 'package:fudatobashi/ui/results/celebration_sequence.dart';
 import 'package:fudatobashi/ui/settings/settings_screen.dart';
 import 'package:fudatobashi/ui/settings/side_trip_settings_screen.dart';
 import 'package:fudatobashi/ui/side_trips/ankiren_free_sheet.dart';
@@ -54,11 +57,16 @@ import 'package:fudatobashi/ui/side_trips/side_trip_entry.dart';
 import 'package:fudatobashi/ui/sound/sounds.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 
+import 'db_snapshot.dart';
+import 'test_ankiren.dart';
 import 'test_l10n.dart';
 import 'test_screens.dart';
 import 'test_vector_art.dart';
 
 const _home = 'home page';
+
+/// How long a card takes to find in the games that render Results with times.
+const _findTime = Duration(milliseconds: 800);
 
 Future<void> _loadFont(String family, List<String> files) async {
   final loader = FontLoader(family);
@@ -86,6 +94,7 @@ void main() {
   tearDown(() => sounds = real);
 
   setUpAll(() async {
+    await loadRenderMonoFont();
     await _loadFont('Dela', ['DelaGothicOne-Regular.ttf']);
     await _loadFont('Reggae', ['ReggaeOne-Regular.ttf']);
     await _loadFont('ZenKaku', [
@@ -115,20 +124,27 @@ void main() {
     return p;
   }
 
+  // Records a cleared game at every level up to [level] for [p].
+  Future<void> clearUpTo(WidgetTester tester, Progress p, int level) => tester.runAsync(() async {
+        for (var l = 0; l <= level; l++) {
+          await p.recordAnkiren(playAnkiren(AnkirenSetup.forLevel(l), strikes: true), startedAt: DateTime.now());
+        }
+      });
+
   // A game of [setup] on [p]'s settings, straight on screen.
   Future<void> play(WidgetTester tester, Progress p, AnkirenSetup setup,
-      {Screen screen = usersPhone, double fontScale = 1, bool tracked = true, int seed = 1}) async {
+      {Screen screen = usersPhone, double fontScale = 1, AnkirenPlayer player = AnkirenPlayer.owner, int seed = 1}) async {
     useScreen(tester, screen, fontScale: fontScale);
     final navigator = GlobalKey<NavigatorState>();
     await tester.pumpWidget(RepaintBoundary(
       key: const ValueKey('screen'),
       child: ProgressScope(
         progress: p,
-        child: MaterialApp(navigatorKey: navigator, home: const Scaffold(body: Text(_home))),
+        child: MaterialApp(navigatorKey: navigator, theme: buildMangaTheme(), home: const Scaffold(body: Text(_home))),
       ),
     ));
     navigator.currentState!.push(MaterialPageRoute<void>(
-        builder: (_) => AnkirenScreen(setup: setup, known: allCards, tracked: tracked, seed: seed)));
+        builder: (_) => AnkirenScreen(setup: setup, known: allCards, player: player, seed: seed)));
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 400));
     expect(tester.takeException(), isNull);
@@ -153,7 +169,8 @@ void main() {
     expect(tester.takeException(), isNull);
   }
 
-  Future<void> take(WidgetTester tester, int poemId) async {
+  Future<void> take(WidgetTester tester, int poemId, {Duration think = Duration.zero}) async {
+    if (think > Duration.zero) await tester.pump(think);
     // Stamped at the current frame, as a finger down after the prompt's reveal.
     final gesture = await tester.createGesture();
     await gesture.down(tester.getCenter(cardOf(poemId)), timeStamp: SchedulerBinding.instance.currentSystemFrameTimeStamp);
@@ -262,13 +279,14 @@ void main() {
       await tester.pump(const Duration(milliseconds: 300));
     }
 
-    testWidgets('ranked starts a level-0 game at 入門, portrait', (tester) async {
+    testWidgets('ranked starts its one setup, a real match\'s field, in portrait once it opens', (tester) async {
       final calls = <MethodCall>[];
       tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(SystemChannels.platform, (call) async {
         calls.add(call);
         return null;
       });
       final p = await open(tester, ankiren: const AnkirenSettings(rulesSeen: true));
+      await clearUpTo(tester, p, AnkirenTuning.rankedAfterLevel);
       await openHub(tester, p);
       await tester.tap(find.byType(PageBurst));
       await tester.pump();
@@ -277,8 +295,10 @@ void main() {
       await tester.pump();
       await tester.pump(Motion.route);
       expect(find.byType(AnkirenScreen), findsOneWidget);
-      expect(find.byType(AnkirenCard), findsNWidgets(AnkirenLevels.of(0).cards));
-      expect(find.descendant(of: find.byType(AnkirenScreen), matching: find.text(formatMinutes(AnkirenLevels.of(0).memorise))),
+      expect(find.byType(AnkirenCard), findsNWidgets(2 * AnkirenTuning.rankedPerSide));
+      expect(
+          find.descendant(
+              of: find.byType(AnkirenScreen), matching: find.text(formatMinutes(AnkirenTuning.rankedMemorise))),
           findsOneWidget);
       final orientations = calls.where((c) => c.method == 'SystemChrome.setPreferredOrientations');
       expect(orientations.last.arguments, ['DeviceOrientation.portraitUp'], reason: 'portrait is held while playing');
@@ -289,11 +309,12 @@ void main() {
 
     testWidgets('free play opens its sheet, whose custom setup sticks and starts', (tester) async {
       final p = await open(tester, ankiren: const AnkirenSettings(rulesSeen: true));
+      await clearUpTo(tester, p, AnkirenTuning.customAfterLevel);
       await openHub(tester, p);
       await tester.tap(find.text(s.ankirenPageTitle));
       await tester.pump();
       await tester.pump(Motion.route * 2);
-      await tester.tap(find.text(s.freePlay));
+      await tester.tap(find.textContaining(s.ankirenAllLevels, findRichText: true));
       await tester.pump();
       await tester.pump(Motion.sheet);
       expect(find.byType(AnkirenFreeSheet), findsOneWidget);
@@ -329,7 +350,8 @@ void main() {
   group('A game', () {
     testWidgets('level 0, by taps: memorise, ready, every card found, recorded, then Results', (tester) async {
       final p = await open(tester);
-      await play(tester, p, AnkirenSetup.forLevel(0, ranked: true));
+      await play(tester, p, AnkirenSetup.forLevel(0));
+      expect(find.byType(AnkirenStrikes), findsNothing, reason: 'the strikes show once the cards are face down');
       expect(cards(tester).every((c) => c.faceUp), isTrue, reason: 'memorise: the field is face up');
       expect(cards(tester).where((c) => c.inverted).length, AnkirenLevels.of(0).perSide,
           reason: "the opponent's cards are upside down");
@@ -342,13 +364,14 @@ void main() {
       expect(cards(tester).any((c) => c.faceUp), isFalse, reason: 'recall: every card face down');
       expect(heard.played, containsAllInOrder([Sfx.ankirenFlip, Sfx.ankirenRecall]),
           reason: 'the field turns over, then recall starts');
+      expect(tester.widget<AnkirenStrikes>(find.byType(AnkirenStrikes)).strikes, 0);
       await captureScreen(tester, 'ankiren_recall');
 
       final total = AnkirenLevels.of(0).cards;
       for (var i = 0; i < total; i++) {
         final id = asked(tester);
         expect(card(tester, id).faceUp, isFalse);
-        await take(tester, id);
+        await take(tester, id, think: Duration(milliseconds: 500 + 150 * i));
         expect(card(tester, id).faceUp, isTrue, reason: 'a right tap turns the card up');
         expect(card(tester, id).flash?.kind, CardFeedback.right);
         if (i < total - 1) await next(tester);
@@ -357,19 +380,19 @@ void main() {
       expect(heard.played.where((x) => x == Sfx.ankirenRecall).length, 1);
       await toResults(tester);
       expect(find.byType(AnkirenResultsScreen), findsOneWidget);
-      expect(p.sideTrips.rankedGames(SideTrip.ankiren), 1, reason: 'the ranked game was recorded');
+      expect(p.sideTrips.runs.single.level, 0, reason: 'the game was recorded');
       expect(find.text(s.ankirenWrongTaps(0)), findsOneWidget);
-      expect(find.byType(ClassBadge), findsOneWidget, reason: "a ranked game shows the rating's class");
-      expect(find.text(s.ankirenPlacement(1, AnkirenRatingModel.placementGames)), findsOneWidget);
-      expect(find.text(s.ankirenNextLevel(p.sideTripsHub()[SideTrip.ankiren].rankedLevel!)), findsOneWidget);
-      expect(find.text(s.again), findsOneWidget);
+      expect(find.text(s.ankirenLevelCleared(0)), findsWidgets, reason: 'played out with no strike');
+      expect(find.byType(ClearedCheck), findsOneWidget);
+      expect(p.sideTripsHub()[SideTrip.ankiren].ladder.open, 1);
+      expect(find.text(s.ankirenBackToPage), findsOneWidget);
       await captureScreen(tester, 'ankiren_results');
       await tester.pumpWidget(const SizedBox());
     });
 
     testWidgets('a wrong tap turns nothing over; two reveal the card, which still has to be taken', (tester) async {
       final p = await open(tester);
-      await play(tester, p, AnkirenSetup.forLevel(0), tracked: false);
+      await play(tester, p, AnkirenSetup.forLevel(0), player: AnkirenPlayer.developer);
       await ready(tester);
       final id = asked(tester);
       final others = cards(tester).map((c) => c.poemId).where((x) => x != id).toList();
@@ -397,12 +420,12 @@ void main() {
 
     testWidgets("dev mode's play overlay tells how the last card scored, tap by tap", (tester) async {
       final p = await open(tester);
-      await play(tester, p, AnkirenSetup.forLevel(0), tracked: false);
+      await play(tester, p, AnkirenSetup.forLevel(0), player: AnkirenPlayer.developer);
       expect(find.byType(AnkirenScoreReadout), findsNothing, reason: 'off unless asked for');
       await tester.pumpWidget(const SizedBox());
 
       await tester.runAsync(() => p.updateSettings(p.settings.copyWith(debugMode: true, playOverlay: true)));
-      await play(tester, p, AnkirenSetup.forLevel(0), tracked: false);
+      await play(tester, p, const AnkirenSetup.ranked(), player: AnkirenPlayer.developer);
       expect(find.text('none answered yet'), findsOneWidget);
       await ready(tester);
       final id = asked(tester);
@@ -444,7 +467,7 @@ void main() {
     testWidgets('ending in memorise leaves without recording; ending in recall records and shows Results',
         (tester) async {
       final p = await open(tester);
-      await play(tester, p, AnkirenSetup.forLevel(0, ranked: true));
+      await play(tester, p, const AnkirenSetup.ranked());
       await tester.tap(find.text(s.end));
       await tester.pump();
       await tester.pump(Motion.routeReverse);
@@ -453,7 +476,7 @@ void main() {
       expect(p.sideTrips.runs, isEmpty);
       await tester.pumpWidget(const SizedBox());
 
-      await play(tester, p, AnkirenSetup.forLevel(0, ranked: true));
+      await play(tester, p, const AnkirenSetup.ranked());
       await ready(tester);
       await take(tester, asked(tester));
       await tester.tap(find.text(s.end));
@@ -488,13 +511,13 @@ void main() {
       }
 
       final p = await open(tester);
-      await play(tester, p, AnkirenSetup.forLevel(0, ranked: true));
+      await play(tester, p, const AnkirenSetup.ranked());
       await back();
       expectHome();
       expect(p.sideTrips.runs, isEmpty, reason: 'leaving in memorise records nothing');
       await tester.pumpWidget(const SizedBox());
 
-      await play(tester, p, AnkirenSetup.forLevel(0, ranked: true));
+      await play(tester, p, const AnkirenSetup.ranked());
       await ready(tester);
       await take(tester, asked(tester));
       await back();
@@ -515,9 +538,9 @@ void main() {
       expect(p.sideTrips.rankedGames(SideTrip.ankiren), 1);
       await tester.pumpWidget(const SizedBox());
 
-      await play(tester, p, AnkirenSetup.forLevel(0, ranked: true));
+      await play(tester, p, const AnkirenSetup.ranked());
       await ready(tester);
-      final total = AnkirenLevels.of(0).cards;
+      const total = 2 * AnkirenTuning.rankedPerSide;
       for (var i = 0; i < total; i++) {
         await take(tester, asked(tester));
         if (i < total - 1) await next(tester);
@@ -547,7 +570,7 @@ void main() {
 
     testWidgets('the test game records nothing, and Results offer it again', (tester) async {
       final p = await open(tester);
-      await play(tester, p, AnkirenSetup.forLevel(0), tracked: false);
+      await play(tester, p, AnkirenSetup.forLevel(0), player: AnkirenPlayer.developer);
       await ready(tester);
       for (var i = 0; i < AnkirenLevels.of(0).cards; i++) {
         await take(tester, asked(tester));
@@ -556,18 +579,19 @@ void main() {
       await toResults(tester);
       expect(find.byType(AnkirenResultsScreen), findsOneWidget);
       expect(p.sideTrips.runs, isEmpty);
-      await tester.tap(find.text(s.again));
+      await tester.tap(find.text(s.ankirenBackToPage));
       await tester.pump();
       await tester.pump(Motion.route);
       await tester.pump(Motion.route);
-      expect(find.byType(AnkirenScreen), findsOneWidget);
+      expect(find.byType(AnkirenResultsScreen), findsNothing);
+      expect(find.text(_home), findsOneWidget, reason: 'back to where the game was started from');
       await tester.pumpWidget(const SizedBox());
     });
 
     testWidgets("don't know shows the card like the wrong taps do, turns it up for nothing, and moves on",
         (tester) async {
       final p = await open(tester);
-      await play(tester, p, AnkirenSetup.forLevel(0, ranked: true));
+      await play(tester, p, AnkirenSetup.forLevel(0));
       final giveUp = find.widgetWithText(BandButton, s.ankirenDontKnow);
       expect(giveUp, findsNothing, reason: 'memorise has Ready there instead');
       await ready(tester);
@@ -602,6 +626,97 @@ void main() {
       final given = answers!.singleWhere((a) => a.poemId == id);
       expect((given.responseUs, given.wrongTaps), (null, 0), reason: 'the card given up earns nothing');
       expect(p.sideTrips.missesIn(run), 1);
+      await tester.pumpWidget(const SizedBox());
+    });
+
+    for (final landscape in [false, true]) {
+      final turned = landscape ? 'landscape' : 'portrait';
+      testWidgets('a free level goes on past its third strike, and Results say the level failed ($turned)',
+          (tester) async {
+        final p = await open(tester,
+            ankiren: AnkirenSettings(layout: landscape ? AnkirenLayout.landscape : AnkirenLayout.portrait));
+        await play(tester, p, AnkirenSetup.forLevel(1), screen: landscape ? usersPhoneLandscape : usersPhone);
+        await ready(tester);
+        final shot = landscape ? 'ankiren_strikes_landscape' : 'ankiren_strikes';
+        expect(tester.widget<AnkirenStrikes>(find.byType(AnkirenStrikes)).strikes, 0);
+        await captureScreen(tester, shot, variant: 's0');
+        Future<void> strike() async {
+          final id = asked(tester);
+          await take(tester, cards(tester).map((c) => c.poemId).firstWhere((x) => x != id && !card(tester, x).faceUp));
+        }
+
+        await strike();
+        expect(tester.widget<AnkirenStrikes>(find.byType(AnkirenStrikes)).strikes, 1);
+        await tester.pump(AnkirenMotion.strike ~/ 2);
+        await captureScreen(tester, landscape ? 'ankiren_strike_landing_landscape' : 'ankiren_strike_landing');
+        await tester.pump(AnkirenMotion.strike);
+        await captureScreen(tester, shot, variant: 's1');
+        await tester.tap(find.widgetWithText(BandButton, s.ankirenDontKnow));
+        await tester.pump();
+        expect(tester.widget<AnkirenStrikes>(find.byType(AnkirenStrikes)).strikes, 2, reason: "don't know is a strike");
+        expect(heard.played.where((x) => x == Sfx.ankirenWrong), hasLength(2));
+        await tester.pump(AnkirenMotion.strike);
+        await captureScreen(tester, shot, variant: 's2');
+        await tester.pump(AnkirenPlayTuning.givenUpReveal);
+        await next(tester);
+        await strike();
+        await tester.pump(AnkirenMotion.strike);
+        await captureScreen(tester, shot, variant: 's3');
+        expect(find.byType(AnkirenScreen), findsOneWidget, reason: 'the third strike does not end the game');
+        await strike();
+        await tester.pump(AnkirenMotion.strike);
+        expect(heard.played.where((x) => x == Sfx.ankirenWrong), hasLength(4), reason: 'later strikes still sound');
+        expect(tester.widget<AnkirenStrikes>(find.byType(AnkirenStrikes)).strikes, 4);
+        for (var i = 1; i < AnkirenLevels.of(1).cards; i++) {
+          await take(tester, asked(tester), think: _findTime);
+          await next(tester);
+        }
+        await toResults(tester);
+        expect(find.byType(AnkirenResultsScreen), findsOneWidget);
+        expect(find.text(s.ankirenLevelFailed(1)), findsWidgets);
+        expect(find.text(s.ankirenWrongTaps(4)), findsOneWidget);
+        final run = p.sideTrips.runs.single;
+        expect([run.completed, p.sideTrips.strikesIn(run)], [true, 4]);
+        expect(p.sideTripsHub()[SideTrip.ankiren].ladder.cleared, isEmpty);
+        if (!landscape) await captureScreen(tester, 'ankiren_results_failed');
+        await tester.pumpWidget(const SizedBox());
+      });
+    }
+
+    testWidgets('strikes count only in the owner\'s free-play levels', (tester) async {
+      final p = await open(tester);
+      for (final (setup, player) in [
+        (const AnkirenSetup.ranked(), AnkirenPlayer.owner),
+        (const AnkirenSetup.custom(perSide: 3, memorise: Duration(minutes: 1)), AnkirenPlayer.owner),
+        (AnkirenSetup.forLevel(0), AnkirenPlayer.guest),
+        (AnkirenSetup.forLevel(0), AnkirenPlayer.developer),
+      ]) {
+        await play(tester, p, setup, player: player);
+        await ready(tester);
+        expect(find.byType(AnkirenStrikes), findsNothing, reason: '$setup by ${player.name}');
+        await tester.pumpWidget(const SizedBox());
+      }
+    });
+
+    testWidgets('a guest game records nothing, and its Results say so', (tester) async {
+      final p = await open(tester);
+      final xp = p.xp.total;
+      final before = await tester.runAsync(() => dbSnapshot(p.db));
+      await play(tester, p, AnkirenSetup.forLevel(0), player: AnkirenPlayer.guest);
+      await ready(tester);
+      for (var i = 0; i < AnkirenLevels.of(0).cards; i++) {
+        await take(tester, asked(tester), think: _findTime);
+        await next(tester);
+      }
+      await toResults(tester);
+      expect(find.byType(AnkirenResultsScreen), findsOneWidget);
+      expect(find.textContaining(s.ankirenGuestNote, findRichText: true), findsOneWidget);
+      expect(find.textContaining(s.ankirenGuest), findsWidgets, reason: 'tagged as a guest\'s game');
+      expect(find.byType(CelebrationSequence), findsNothing);
+      expect([p.sideTrips.runs, p.xp.total], [isEmpty, xp]);
+      expect(await tester.runAsync(() => dbSnapshot(p.db)), before,
+          reason: 'no row in any table (games, runs, days, XP), and key_values as they were');
+      await captureScreen(tester, 'ankiren_results_guest');
       await tester.pumpWidget(const SizedBox());
     });
 
@@ -641,7 +756,7 @@ void main() {
 
     testWidgets('opponent cards are always upside down; text-only prompts play no voice', (tester) async {
       final p = await open(tester, ankiren: const AnkirenSettings(prompt: AnkirenPrompt.textOnly));
-      await play(tester, p, AnkirenSetup.forLevel(0), tracked: false);
+      await play(tester, p, AnkirenSetup.forLevel(0), player: AnkirenPlayer.developer);
       expect(cards(tester).where((c) => c.inverted).length, AnkirenLevels.of(0).perSide);
       await ready(tester);
       expect(find.byType(KimarijiSpeakerButton), findsNothing);
@@ -671,7 +786,7 @@ void main() {
     for (final fontScale in [1.1, 1.3]) {
       testWidgets('portrait, level 10, memorise and recall, font scale $fontScale', (tester) async {
         final p = await open(tester);
-        await play(tester, p, AnkirenSetup.forLevel(AnkirenLevels.top), fontScale: fontScale, tracked: false);
+        await play(tester, p, AnkirenSetup.forLevel(AnkirenLevels.top), fontScale: fontScale, player: AnkirenPlayer.developer);
         expectLaidOut(tester, usersPhone.size);
         for (final c in find.byType(AnkirenCard).evaluate()) {
           expect(tester.getSize(find.byWidget(c.widget)).width, lessThanOrEqualTo(AnkirenPlayLayout.maxCardW + 0.01));
@@ -687,7 +802,7 @@ void main() {
         (tester) async {
       final p = await open(tester);
       for (final level in [0, 3, 5]) {
-        await play(tester, p, AnkirenSetup.forLevel(level), tracked: false, seed: level);
+        await play(tester, p, AnkirenSetup.forLevel(level), player: AnkirenPlayer.developer, seed: level);
         expectLaidOut(tester, usersPhone.size);
         final rects = [for (final c in find.byType(AnkirenCard).evaluate()) tester.getRect(find.byWidget(c.widget))];
         final left = rects.map((r) => r.left).reduce(math.min), right = rects.map((r) => r.right).reduce(math.max);
@@ -706,7 +821,7 @@ void main() {
     testWidgets('accessibility mode zooms portrait: cards stay tappable, the field pans, starting centred',
         (tester) async {
       final p = await open(tester, accessibilityMode: true);
-      await play(tester, p, AnkirenSetup.forLevel(AnkirenLevels.top), tracked: false);
+      await play(tester, p, AnkirenSetup.forLevel(AnkirenLevels.top), player: AnkirenPlayer.developer);
       expect(tester.takeException(), isNull);
       for (final c in find.byType(AnkirenCard).evaluate()) {
         expect(tester.getSize(find.byWidget(c.widget)).width,
@@ -740,7 +855,7 @@ void main() {
           return null;
         });
         final p = await open(tester, ankiren: const AnkirenSettings(layout: AnkirenLayout.landscape));
-        await play(tester, p, AnkirenSetup.forLevel(level), screen: usersPhoneLandscape, fontScale: 1.3, tracked: false);
+        await play(tester, p, AnkirenSetup.forLevel(level), screen: usersPhoneLandscape, fontScale: 1.3, player: AnkirenPlayer.developer);
         expectLaidOut(tester, usersPhoneLandscape.size);
         await captureScreen(tester, 'ankiren_landscape', variant: 'l$level');
         await ready(tester);
@@ -771,6 +886,7 @@ void main() {
       testWidgets('the free-play sheet and a ranked game\'s Results fit ($lang)', (tester) async {
         final t = S(lang);
         final p = await open(tester, language: lang, ankiren: const AnkirenSettings(rulesSeen: true));
+        await clearUpTo(tester, p, AnkirenTuning.customAfterLevel);
         useScreen(tester, usersPhone, fontScale: 1.3);
         await tester.pumpWidget(RepaintBoundary(key: const ValueKey('screen'), child: FudatobashiApp(progress: p)));
         await tester.pump(const Duration(milliseconds: 500));
@@ -781,7 +897,7 @@ void main() {
         await tester.tap(find.text(t.ankirenPageTitle));
         await tester.pump();
         await tester.pump(Motion.route * 2);
-        await tester.tap(find.text(t.freePlay));
+        await tester.tap(find.textContaining(t.ankirenAllLevels, findRichText: true));
         await tester.pump();
         await tester.pump(Motion.sheet);
         expect(find.byType(AnkirenFreeSheet), findsOneWidget);
@@ -794,12 +910,12 @@ void main() {
         await captureScreen(tester, 'ankiren_free_sheet', lang: lang);
         await tester.pumpWidget(const SizedBox());
 
-        await play(tester, p, AnkirenSetup.forLevel(0, ranked: true), fontScale: 1.3);
+        await play(tester, p, const AnkirenSetup.ranked(), fontScale: 1.3);
         await tester.tap(find.text(t.ankirenReady));
         await tester.pump();
         await tester.pump(AnkirenMotion.flip + AnkirenPlayTuning.promptPause);
         await tester.pump();
-        final total = AnkirenLevels.of(0).cards;
+        const total = 2 * AnkirenTuning.rankedPerSide;
         for (var i = 0; i < total; i++) {
           await take(tester, asked(tester));
           if (i < total - 1) await next(tester);
@@ -822,12 +938,12 @@ void main() {
         own: AnkirenHalf([r([1, 2, 3], [4]), r([]), r([])]),
         opponent: AnkirenHalf([r([5, 6]), r([]), r([])]),
       );
-      // A game on [field] asking 2 first, at the top level or custom.
+      // A game on [field] asking 2 first, ranked-style or custom.
       AnkirenGame game({bool custom = false}) {
         const memorise = Duration(minutes: 1);
         final setup = custom
             ? const AnkirenSetup.custom(perSide: 3, memorise: memorise)
-            : AnkirenSetup(perSide: 3, memorise: memorise, level: AnkirenLevels.top);
+            : AnkirenSetup(perSide: 3, memorise: memorise, ranked: true);
         for (var seed = 0;; seed++) {
           final g = AnkirenGame(field: field, setup: setup, rng: math.Random(seed));
           if (g.prompts.first == 2) {
@@ -851,14 +967,13 @@ void main() {
         ['time', '300 ms'],
         ['curve', '(300 / 1650) ^ 1.1'],
         ['range', '100 → 5000 ms'],
-        ['speed', '0.88 × 100 = 88'],
-        ['points', '1 × 100 + 88 = 188'],
+        ['speed', '0.88 × 50 = 44'],
+        ['points', '1 × 100 + 44 = 144'],
         ['TAP 2', 'none'],
-        ['SUM', '188 + 0.2 × 0 = 188'],
-        ['GAME', '188 / 1200'],
+        ['SUM', '144 + 0.2 × 0 = 144'],
+        ['GAME', '144 / 900'],
         ['early', '× 1'],
-        ['level', '× 1'],
-        ['score', '188'],
+        ['score', '144'],
       ]);
 
       expect([for (final part in AnkirenScoreReadout.parts(quick)) part.first.label], ['CARD', 'TAP 2'],
@@ -881,7 +996,7 @@ void main() {
         ['points', '0 × 100 = 0'],
         ['later', '2 taps, not counted'],
         ['SUM', '60 + 0.2 × 0 = 60'],
-        ['GAME', '60 / 1200'],
+        ['GAME', '60 / 900'],
       ]);
 
       final givenUp = game()..tap(4, ms * 500);
@@ -897,18 +1012,19 @@ void main() {
         ['SUM', '0 + 0.2 × 0 = 0'],
       ]);
 
-      expect(rows(game(custom: true)..tap(2, ms * 300)).last, ['GAME', 'custom, not scored']);
+      expect(rows(game(custom: true)..tap(2, ms * 300)).last, ['GAME', 'not ranked, no score']);
     });
 
-    testWidgets('the AnkiRen page: levels, points, both graphs, and the middle-card simulator', (tester) async {
+    testWidgets('the AnkiRen page: levels, ranked points, its graph, and the middle-card simulator', (tester) async {
       final p = await open(tester);
       useScreen(tester, usersPhone);
       await tester.pumpWidget(RepaintBoundary(
         key: const ValueKey('screen'),
-        child: ProgressScope(progress: p, child: const MaterialApp(home: AnkirenToolsPage())),
+        child: ProgressScope(progress: p, child: MaterialApp(theme: buildMangaTheme(), home: const AnkirenToolsPage())),
       ));
       await tester.pump();
       final page = find.byType(Scrollable).first;
+      await captureScreen(tester, 'debug_ankiren_top');
       String kv(String key) => tester.widget<DebugKV>(find.byWidgetPredicate((w) => w is DebugKV && w.k == key)).v;
 
       final full = AnkirenTuning.cardPoints + AnkirenScore.speedBonus(1000000);
@@ -929,10 +1045,26 @@ void main() {
       await pick(0, 'none');
       expect(kv('per card'), '0');
 
-      for (final title in ['Total by time used', 'Total by card time', 'Middle cards']) {
-        await tester.scrollUntilVisible(find.text(title), 200, scrollable: page);
-        expect(tester.takeException(), isNull);
+      final classes = find.text('Ranked classes by time per card');
+      await tester.scrollUntilVisible(classes, 200, scrollable: page);
+      await tester.runAsync(() => Scrollable.ensureVisible(tester.element(classes)));
+      await tester.pumpAndSettle();
+      for (final band in Rating.bands.skip(1)) {
+        expect(find.textContaining(RegExp('^${RegExp.escape(band.labelEn)} ')), findsOneWidget, reason: band.labelEn);
       }
+      await captureScreen(tester, 'debug_ankiren_classes');
+
+      await tester.scrollUntilVisible(find.text('Ranked total by card time'), 200, scrollable: page);
+      expect(tester.takeException(), isNull);
+      final wrongLabel = find.textContaining('cards wrong 0 of');
+      await tester.scrollUntilVisible(wrongLabel, 100, scrollable: page);
+      final wrong = find.ancestor(of: wrongLabel, matching: find.byType(Column)).first;
+      await tester.drag(find.descendant(of: wrong, matching: find.byType(Slider)), const Offset(40, 0));
+      await tester.pumpAndSettle();
+      expect(find.textContaining('cards wrong 0 of'), findsNothing, reason: 'the slider moved');
+      await captureScreen(tester, 'debug_ankiren_graph');
+      await tester.scrollUntilVisible(find.text('Middle cards'), 200, scrollable: page);
+      expect(tester.takeException(), isNull);
       final run = find.text('Run L${AnkirenLevels.top}');
       await tester.scrollUntilVisible(run, 200, scrollable: page);
       await tester.ensureVisible(run);
@@ -965,7 +1097,7 @@ void main() {
       tester.platformDispatcher.accessibilityFeaturesTestValue = const FakeAccessibilityFeatures(disableAnimations: true);
       addTearDown(tester.platformDispatcher.clearAccessibilityFeaturesTestValue);
       final p = await open(tester);
-      await play(tester, p, AnkirenSetup.forLevel(0), tracked: false);
+      await play(tester, p, AnkirenSetup.forLevel(0), player: AnkirenPlayer.developer);
       await tester.tap(find.text(s.ankirenReady));
       await tester.pump();
       await tester.pump(AnkirenPlayTuning.promptPause);

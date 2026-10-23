@@ -96,15 +96,14 @@ class AnkirenScoreReadout extends StatelessWidget {
     return taps == 0 ? '$how, no tap' : '$how after ${taps == 1 ? '1 tap' : '$taps taps'}';
   }
 
-  /// The game's points so far, out of the most, and the factors that turn
+  /// The game's points so far, out of the most, and the factor that turns
   /// them into its score.
   static List<DebugRow> _game(AnkirenGame game) {
     final score = game.score;
-    if (score == null) return [_head('GAME', 'custom, not scored')];
+    if (score == null) return [_head('GAME', 'not ranked, no score')];
     return [
       _head('GAME', '${score.recall} / ${score.maxRecall}'),
       _fact('early', '× ${_n(1 + AnkirenTuning.earlyBonus * score.timeLeft)}'),
-      _fact('level', '× ${_n(score.factor)}'),
       _fact('score', '${score.total}'),
     ];
   }

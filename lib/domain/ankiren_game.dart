@@ -11,6 +11,21 @@ import 'ankiren_score.dart';
 /// its cards are asked, or over.
 enum AnkirenPhase { memorise, recall, done }
 
+/// Who plays a 暗記練 game, and so what of it is kept.
+enum AnkirenPlayer {
+  /// The app's own player: the game is recorded, and a free-play level's
+  /// strikes count.
+  owner,
+
+  /// A guest (Guest mode): nothing of the game is recorded anywhere.
+  guest,
+
+  /// The developer's test game: nothing is recorded.
+  developer;
+
+  bool get recorded => this == owner;
+}
+
 /// What a tap on a field card did.
 enum TapResult {
   /// It was the card asked for.
@@ -33,12 +48,17 @@ class AnkirenGame extends ChangeNotifier {
     required this.field,
     required this.setup,
     required math.Random rng,
+    this.countsStrikes = false,
     DateTime Function()? clock,
   })  : prompts = List.unmodifiable(field.cards..shuffle(rng)),
         _clock = clock ?? DateTime.now;
 
   final AnkirenField field;
   final AnkirenSetup setup;
+
+  /// A free-play level game: its [strikes] count, and it clears its level
+  /// with fewer than [AnkirenTuning.strikesOut].
+  final bool countsStrikes;
 
   /// The field's cards in the order they are asked.
   final List<int> prompts;
@@ -62,6 +82,12 @@ class AnkirenGame extends ChangeNotifier {
   /// early).
   bool get completed => phase == AnkirenPhase.done && !_endedEarly;
 
+  /// Wrong taps and cards given up so far, one strike each.
+  int get strikes => answers.fold(_wrongTaps, (n, a) => n + a.wrongTaps + (a.gaveUp ? 1 : 0));
+
+  /// It cleared its level (see `AnkirenLadder.clears`).
+  bool get cleared => countsStrikes && AnkirenLadder.clears(completed: completed, strikes: strikes);
+
   /// The card being asked for, in recall.
   int? get current => phase == AnkirenPhase.recall ? prompts[answers.length] : null;
 
@@ -78,13 +104,8 @@ class AnkirenGame extends ChangeNotifier {
   /// Found or given up: its card is face up for good.
   bool isDone(int poemId) => isFound(poemId) || isGivenUp(poemId);
 
-  /// Null for a custom setup: it is not scored.
-  AnkirenScore? get score {
-    final level = setup.level;
-    return level == null
-        ? null
-        : AnkirenScore(answers, prompts: prompts.length, timeLeft: timeLeft, factor: AnkirenScore.factorFor(level));
-  }
+  /// Null unless ranked: only ranked games have points.
+  AnkirenScore? get score => setup.ranked ? AnkirenScore(answers, prompts: prompts.length, timeLeft: timeLeft) : null;
 
   /// Cards found with the first tap.
   int get firstTries => answers.where((a) => a.firstTry).length;

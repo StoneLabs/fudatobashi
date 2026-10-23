@@ -42,37 +42,21 @@ void main() {
       expect(AnkirenScore.points(found(20000)), AnkirenTuning.cardPoints);
     });
 
-    test('a perfect game: the total follows the card count, the time left and the level', () {
-      int total(int level, {int responseMs = 1000, Duration left = Duration.zero}) =>
-          AnkirenScore.firstTryTotal(level, responseMs: responseMs.toDouble(), timeLeft: left);
-      final top = AnkirenLevels.top;
-      final topTime = AnkirenLevels.of(top).memorise;
-      expect(total(top, responseMs: 100), AnkirenScore.maxFor(AnkirenLevels.of(top).cards));
-      expect(total(top, left: topTime), (total(top) * (1 + AnkirenTuning.earlyBonus)).round());
-      expect(total(top, left: const Duration(days: 1)), total(top, left: topTime));
-      expect(total(top - 1, left: const Duration(minutes: 4)), lessThan(total(top)), reason: 'early < next level');
-    });
-
-    test('a level ended early never beats a harder one played in full within that time', () {
-      int total(int level, Duration used) =>
-          AnkirenScore.firstTryTotal(level, responseMs: 1000, timeLeft: AnkirenLevels.of(level).memorise - used);
-
-      for (var l = 0; l < AnkirenLevels.top; l++) {
-        for (var m = l + 1; m <= AnkirenLevels.top; m++) {
-          final full = total(m, AnkirenLevels.of(m).memorise);
-          for (var s = AnkirenLevels.of(m).memorise.inSeconds; s <= AnkirenLevels.of(l).memorise.inSeconds; s += 10) {
-            expect(total(l, Duration(seconds: s)), lessThan(full), reason: 'level $l ended at ${s}s vs level $m full');
-          }
-        }
-      }
+    test('a perfect game: the total follows the card count and the time left', () {
+      const ranked = AnkirenSetup.ranked();
+      int total({int responseMs = 1000, Duration left = Duration.zero}) =>
+          AnkirenScore.firstTryTotal(ranked, responseMs: responseMs.toDouble(), timeLeft: left);
+      expect(total(responseMs: 100), AnkirenScore.maxFor(ranked.cards));
+      expect(total(left: ranked.memorise), (total() * (1 + AnkirenTuning.earlyBonus)).round());
+      expect(total(left: const Duration(days: 1)), total(left: ranked.memorise));
     });
 
     test('the speed bonus is a smooth sigmoid through the fitted points, 0.1 s to 5 s', () {
       final at = {for (final t in [100, 300, 600, 1000, 3000, 5000]) t: AnkirenScore.speedBonus(ms(t))};
-      expect(at, {100: 100, 300: 88, 600: 72, 1000: 56, 3000: 16, 5000: 0});
+      expect(at, {100: 50, 300: 44, 600: 36, 1000: 28, 3000: 8, 5000: 0});
       // Within reach of the targets it was fitted to.
       for (final MapEntry(key: t, value: v) in AnkirenTuning.speedTargets.entries) {
-        expect(at[t]! - v, inInclusiveRange(-6, 6), reason: '$t ms');
+        expect(AnkirenScore.speedShare(t.toDouble()) - v, inInclusiveRange(-0.06, 0.06), reason: '$t ms');
       }
       // Falling all the way, never in a jump: the share over every ms.
       var last = 1.0;
@@ -105,7 +89,7 @@ void main() {
     });
 
     test('the first tap: the card earns its points and speed; a miss its tier, with no speed', () {
-      expect([for (final p in TapProximity.values) points([p], firstMs: 100)], [200, 60, 40, 25, 15, 0]);
+      expect([for (final p in TapProximity.values) points([p], firstMs: 100)], [150, 60, 40, 25, 15, 0]);
       expect([for (final p in TapProximity.values) points([p], firstMs: 4000)],
           [100 + AnkirenScore.speedBonus(ms(4000)), 60, 40, 25, 15, 0]);
       expect([for (final p in TapProximity.values) AnkirenScore.speedWeight([p])], [1, 0, 0, 0, 0, 0]);
@@ -175,122 +159,85 @@ void main() {
         answer(),
       ];
       final s = AnkirenScore(answers, prompts: 6);
-      expect(s.total, 200 + 116 + 100 + 45 + 63);
-      expect(s.max, 6 * 200);
-      expect(s.fraction, closeTo(524 / 1200, 1e-12));
+      expect(s.total, 150 + 108 + 100 + 45 + 63);
+      expect(s.max, 6 * 150);
+      expect(s.fraction, closeTo(466 / 900, 1e-12));
       expect(AnkirenScore([], prompts: 0).fraction, 0);
     });
   });
 
-  group('score: being ready early and the level', () {
-    test('recall points make the fraction; time left and the level scale the score', () {
+  group('score: being ready early', () {
+    test('recall points make the fraction; time left scales the score', () {
       final answers = [found(100), found(1000)];
       final plain = AnkirenScore(answers, prompts: 2);
-      expect((plain.recall, plain.maxRecall, plain.total, plain.max, plain.early), (356, 400, 356, 400, 0));
-      final quick = AnkirenScore(answers, prompts: 2, timeLeft: 0.5, factor: 0.85);
-      expect(quick.fraction, plain.fraction, reason: 'the rating reads recall only');
-      expect(quick.total, (356 * (1 + AnkirenTuning.earlyBonus * 0.5) * 0.85).round());
-      expect(quick.max, (400 * 0.85).round());
-      expect(quick.early, quick.total - (356 * 0.85).round());
+      expect((plain.recall, plain.maxRecall, plain.total, plain.max, plain.early), (278, 300, 278, 300, 0));
+      final quick = AnkirenScore(answers, prompts: 2, timeLeft: 0.5);
+      expect(quick.fraction, plain.fraction, reason: 'the fraction reads recall only');
+      expect(quick.total, (278 * (1 + AnkirenTuning.earlyBonus * 0.5)).round());
+      expect(quick.max, 300);
+      expect(quick.early, quick.total - 278);
       expect(AnkirenScore([], prompts: 2, timeLeft: 1).total, 0, reason: 'nothing found, nothing to multiply');
-    });
-
-    test('each level below the top counts less', () {
-      expect(AnkirenScore.factorFor(AnkirenLevels.top), 1);
-      for (var l = 1; l <= AnkirenLevels.top; l++) {
-        expect(AnkirenScore.factorFor(l - 1), closeTo(AnkirenScore.factorFor(l) * AnkirenTuning.levelFactor, 1e-12));
-      }
-    });
-
-    test("being ready early at a level never beats the next level's shorter time played in full", () {
-      // The same recall at each: level a ended at level b's memorise time
-      // against level b played to its end.
-      for (var a = 0; a < AnkirenLevels.top; a++) {
-        for (var b = a + 1; b <= AnkirenLevels.top; b++) {
-          final (la, lb) = (AnkirenLevels.of(a), AnkirenLevels.of(b));
-          if (lb.memorise >= la.memorise) continue;
-          final timeLeft = 1 - lb.memorise.inSeconds / la.memorise.inSeconds;
-          final early = la.cards * AnkirenScore.factorFor(a) * (1 + AnkirenTuning.earlyBonus * timeLeft);
-          final full = lb.cards * AnkirenScore.factorFor(b);
-          expect(early, lessThanOrEqualTo(full), reason: 'level $a ended at level $b\'s time');
-        }
-      }
     });
   });
 
   group('rating', () {
-    const ratings = AnkirenRatingModel.levelRatings;
+    const ranked = AnkirenSetup.ranked();
+    double band(String id) => Rating.bands.firstWhere((b) => b.id == id).minRating;
 
-    test('one difficulty per level; play starts at level 0, in 入門', () {
-      expect(ratings.length, AnkirenLevels.all.length);
-      for (var l = 1; l < ratings.length; l++) {
-        expect(ratings[l] - ratings[l - 1], 250);
-      }
-      expect(AnkirenRating.start, ratings.first);
+    test('ranked is one fixed setup, a real match, with no level', () {
+      expect(ranked.perSide, AnkirenTuning.rankedPerSide);
+      expect(ranked.memorise, AnkirenTuning.rankedMemorise);
+      expect(ranked.level, isNull);
+      expect(ranked.custom, isFalse);
+    });
+
+    test('the anchors: 50 first taps at 0.5 s reach A, 25 at 2.5 s and nothing else reach F-', () {
+      final a = AnkirenScore.firstTryTotal(ranked, responseMs: 500);
+      expect(AnkirenRating.performance(a), closeTo(band('A'), 1));
+      final half = AnkirenScore([for (var i = 0; i < ranked.perSide; i++) found(2500)], prompts: ranked.cards);
+      expect(half.total, (ranked.perSide * (AnkirenTuning.cardPoints + AnkirenScore.speedBonus(ms(2500)))));
+      expect(AnkirenRating.performance(half.total), closeTo(band('F-'), 1));
+      expect(AnkirenRating.scoreFor(AnkirenRating.performance(a)), closeTo(a, 1e-6));
+    });
+
+    test('play starts in 入門, which is also the floor', () {
       expect(Rating.bandOf(AnkirenRating.start).label, '入門');
-      expect(AnkirenRating.levelFor(AnkirenRating.start, maxLevel: 10), 0);
-    });
-
-    test('the level is the highest one the rating has reached, capped by the known cards', () {
-      expect(AnkirenRating.levelFor(649, maxLevel: 10), 0);
-      expect(AnkirenRating.levelFor(650, maxLevel: 10), 1);
-      expect(AnkirenRating.levelFor(2899, maxLevel: 10), 9);
-      expect(AnkirenRating.levelFor(2900, maxLevel: 10), 10);
-      expect(AnkirenRating.levelFor(5000, maxLevel: 10), 10);
-      expect(AnkirenRating.levelFor(2000, maxLevel: 4), 4);
-      expect(AnkirenRating.levelFor(100, maxLevel: 4), 0);
-      var last = 0;
-      for (var r = 0.0; r < 3500; r += 1) {
-        final l = AnkirenRating.levelFor(r, maxLevel: 10);
-        expect(l - last, inInclusiveRange(0, 1), reason: 'one step at a time, at $r');
-        last = l;
+      var r = AnkirenRating.start;
+      final earlier = <double>[];
+      for (var game = 0; game < 30; game++) {
+        final p = AnkirenRating.performance(0);
+        r = AnkirenRating.update(r, p, earlier);
+        earlier.add(p);
+        expect(r, AnkirenRating.start);
       }
     });
 
-    test('placement: a perfect player climbs to level 9 in three games', () {
+    test('placement: the rating is the mean of the placement games, then each game moves it K of the way', () {
+      final ps = [1500.0, 2100.0, 1800.0, 2400.0];
       var r = AnkirenRating.start;
-      for (var game = 0; game < AnkirenRatingModel.placementGames; game++) {
-        final level = AnkirenRating.levelFor(r, maxLevel: 10);
-        final p = AnkirenRating.performance(level, 1, placement: AnkirenRating.isPlacement(game));
-        final next = AnkirenRating.update(r, p, game);
-        expect(next, greaterThan(r));
+      for (var game = 0; game < ps.length; game++) {
+        expect(AnkirenRating.isPlacement(game), game < AnkirenRatingModel.placementGames);
+        final next = AnkirenRating.update(r, ps[game], ps.take(game).toList());
+        if (game < AnkirenRatingModel.placementGames) {
+          final placed = ps.take(game + 1);
+          expect(next, closeTo(placed.reduce((a, b) => a + b) / placed.length, 1e-9));
+        } else {
+          expect(next, closeTo(r + AnkirenRatingModel.establishedK * (ps[game] - r), 1e-9));
+        }
         r = next;
       }
-      expect(AnkirenRating.levelFor(r, maxLevel: 10), 9);
-      expect(AnkirenRating.isPlacement(AnkirenRatingModel.placementGames), isFalse);
     });
 
-    test('a game at par holds the level, during placement and after', () {
-      for (var level = 0; level <= 10; level++) {
-        for (final games in [0, 10]) {
-          final placement = AnkirenRating.isPlacement(games);
-          final p = AnkirenRating.performance(level, AnkirenRatingModel.par, placement: placement);
-          expect(AnkirenRating.update(ratings[level], p, games), ratings[level]);
-          var r = ratings[level] + 200;
-          for (var i = 0; i < 20; i++) {
-            r = AnkirenRating.update(r, p, games);
-            expect(AnkirenRating.levelFor(r, maxLevel: 10), level);
-          }
-        }
-      }
-    });
-
-    test('par is the score of the game its tuning describes', () {
-      // 70 cards in 100 found with the first tap in 1.5 s, 10 with the
-      // second after a first tap in their row, and 20 tapped twice
-      // elsewhere on their side.
-      final answers = [
-        for (var i = 0; i < 70; i++) found(1500),
-        for (var i = 0; i < 10; i++) answer(wrongTaps: 1, us: ms(3000), taps: const [row, card], firstUs: ms(1500)),
-        for (var i = 0; i < 20; i++) answer(wrongTaps: 2, taps: const [side, side], firstUs: ms(2000)),
-      ];
-      expect(AnkirenScore(answers, prompts: 100).fraction, closeTo(AnkirenRatingModel.par, 0.005));
+    test('placement means the games as played, not the floored ratings between them', () {
+      const low = 100.0, high = 1300.0;
+      final first = AnkirenRating.update(AnkirenRating.start, low, const []);
+      expect(first, AnkirenRating.start);
+      expect(AnkirenRating.update(first, high, const [low]), (low + high) / 2);
     });
 
     test('near misses rate above giving up, and below finding the card', () {
       double performance(List<AnkirenAnswer> misses) => AnkirenRating.performance(
-          5, AnkirenScore([for (var i = 0; i < 8; i++) found(1500), ...misses], prompts: 10).fraction,
-          placement: false);
+          AnkirenScore([for (var i = 0; i < 8; i++) found(1500), ...misses], prompts: 10).total);
       final givenUp = performance([answer(), answer()]);
       final near = performance([
         answer(wrongTaps: 1, taps: const [neighbour], firstUs: ms(900)),
@@ -303,54 +250,61 @@ void main() {
       expect(givenUp, lessThan(near));
       expect(near, lessThan(secondTap));
       expect(secondTap, lessThan(firstTap));
-      expect(near - givenUp, lessThan(AnkirenRatingModel.levelRatings[1] - AnkirenRatingModel.levelRatings[0]),
-          reason: 'two near misses in ten cards move a game less than a level');
     });
 
-    test('the rating never drops below the start', () {
-      var r = ratings[3];
-      for (var game = 0; game < 30; game++) {
-        final level = AnkirenRating.levelFor(r, maxLevel: 10);
-        final p = AnkirenRating.performance(level, 0, placement: AnkirenRating.isPlacement(game));
-        r = AnkirenRating.update(r, p, game);
-        expect(r, greaterThanOrEqualTo(AnkirenRating.start));
-      }
-      expect(r, AnkirenRating.start);
+    test('being ready early raises the performance', () {
+      final full = AnkirenScore.firstTryTotal(ranked, responseMs: 1000);
+      final early = AnkirenScore.firstTryTotal(ranked, responseMs: 1000, timeLeft: const Duration(minutes: 5));
+      expect(AnkirenRating.performance(early), greaterThan(AnkirenRating.performance(full)));
+    });
+  });
+
+  group('ladder', () {
+    test('level 0 opens first; clearing a level opens the next, and every level below it', () {
+      expect((AnkirenLadder.none.open, AnkirenLadder.none.next), (0, 0));
+      expect(AnkirenLadder.none.isOpen(1), isFalse);
+      const cleared = AnkirenLadder({0, 1, 2});
+      expect((cleared.open, cleared.next, cleared.isCleared(2), cleared.isCleared(3)), (3, 3, true, false));
+      const gap = AnkirenLadder({5});
+      expect((gap.open, gap.isOpen(2), gap.isCleared(2)), (6, true, false), reason: 'a level cleared out of order');
     });
 
-    test('established games move the rating less, and it stays continuous', () {
-      final p = AnkirenRating.performance(5, 0.9, placement: false);
-      final placed = AnkirenRating.update(ratings[5], p, 0) - ratings[5];
-      final established = AnkirenRating.update(ratings[5], p, 10) - ratings[5];
-      expect(established, greaterThan(0));
-      expect(established, lessThan(placed));
-      expect(AnkirenRating.performance(5, 0.9, placement: true) - ratings[5],
-          closeTo(AnkirenRatingModel.placementStretch * (p - ratings[5]), 1e-9));
-      for (var f = 0.0; f < 1; f += 0.01) {
-        final step = AnkirenRating.performance(5, f + 0.001, placement: false) -
-            AnkirenRating.performance(5, f, placement: false);
-        expect(step, inExclusiveRange(0, 2));
-      }
+    test('ranked needs Lv 4 cleared, custom setups Lv 8, and the top level clears them all', () {
+      AnkirenLadder upTo(int level) => AnkirenLadder({for (var l = 0; l <= level; l++) l});
+      expect(upTo(AnkirenTuning.rankedAfterLevel - 1).rankedReady, isFalse);
+      expect(upTo(AnkirenTuning.rankedAfterLevel).rankedReady, isTrue);
+      expect(upTo(AnkirenTuning.customAfterLevel - 1).customOpen, isFalse);
+      expect(upTo(AnkirenTuning.customAfterLevel).customOpen, isTrue);
+      final all = upTo(AnkirenLevels.top);
+      expect((all.allCleared, all.next, all.open), (true, null, AnkirenLevels.top));
+      expect(upTo(AnkirenLevels.top - 1).next, AnkirenLevels.top);
+    });
+
+    test('a game clears its level when played to the end with fewer strikes than end it', () {
+      expect(AnkirenLadder.clears(completed: true, strikes: AnkirenTuning.strikesOut - 1), isTrue);
+      expect(AnkirenLadder.clears(completed: true, strikes: AnkirenTuning.strikesOut), isFalse);
+      expect(AnkirenLadder.clears(completed: false, strikes: 0), isFalse);
     });
   });
 
   group('game', () {
-    /// A game scored like the top level, at [perSide] cards a side.
-    AnkirenGame newGame({int seed = 1, int perSide = 4, bool custom = false}) {
+    /// A ranked-style (scored) game at [perSide] cards a side, or a custom one.
+    AnkirenGame newGame({int seed = 1, int perSide = 4, bool custom = false, bool strikes = false}) {
       final f = dealer.deal(known, perSide, math.Random(seed));
       const memorise = Duration(seconds: 20);
       return AnkirenGame(
         field: f,
         setup: custom
             ? AnkirenSetup.custom(perSide: perSide, memorise: memorise)
-            : AnkirenSetup(perSide: perSide, memorise: memorise, level: AnkirenLevels.top),
+            : AnkirenSetup(perSide: perSide, memorise: memorise, ranked: true),
         rng: math.Random(seed),
+        countsStrikes: strikes,
         clock: () => DateTime(2026, 10, 12),
       );
     }
 
     Duration t(int ms) => Duration(milliseconds: ms);
-    int other(AnkirenGame g) => g.field.cards.firstWhere((c) => c != g.current && !g.isFound(c));
+    int other(AnkirenGame g) => g.field.cards.firstWhere((c) => c != g.current && !g.isDone(c));
 
     test('ready early: the share of the memorise time left counts; out of time, none', () {
       final g = newGame()..startRecall(memorised: const Duration(seconds: 5));
@@ -383,7 +337,7 @@ void main() {
       final a = g.answers.single;
       expect(a.responseUs, 2900 * 1000, reason: 'from the first reveal');
       expect((a.side, a.at), (g.field.sideOf(g.prompts.first), DateTime(2026, 10, 12)));
-      expect(AnkirenScore.points(a), 100 + 17);
+      expect(AnkirenScore.points(a), 100 + 8);
       expect(g.current, g.prompts[1]);
       expect(g.tap(g.prompts[1], t(1700)), TapResult.ignored, reason: 'the next prompt is not on screen yet');
     });
@@ -547,7 +501,7 @@ void main() {
       }
 
       final cases = [
-        (clustered, 2, [2], [card], 188),
+        (clustered, 2, [2], [card], 144),
         (clustered, 2, [1, 2], [neighbour, card], 60 + 20),
         (clustered, 1, [3, 7], [row, quadrant], 40 + 5),
         (clustered, 2, [6, 4], [quadrant, side], 25 + 3),
@@ -595,8 +549,8 @@ void main() {
       }
       expect((g.phase, g.completed, g.current), (AnkirenPhase.done, true, null));
       expect(g.answers.map((a) => a.poemId), g.prompts);
-      expect(g.score!.recall, g.prompts.length * (100 + 77));
-      expect(g.score!.fraction, closeTo(177 / 200, 1e-12));
+      expect(g.score!.recall, g.prompts.length * (100 + 38));
+      expect(g.score!.fraction, closeTo(138 / 150, 1e-12));
       expect(g.tap(g.prompts.first, t(now + 100)), TapResult.ignored);
       expect(notified, 1 + g.prompts.length);
     });
@@ -639,9 +593,47 @@ void main() {
       expect(g.answers.skip(1).every((a) => !a.found && a.responseUs == null), isTrue);
       expect(g.answers[1].wrongTaps, 1, reason: 'the prompt on screen keeps its wrong tap');
       expect(g.answers.skip(2).every((a) => a.taps.isEmpty), isTrue, reason: 'cards never reached');
-      expect(g.score!.recall, 100 + 63 + AnkirenScore.points(g.answers[1]));
+      expect(g.score!.recall, 100 + 32 + AnkirenScore.points(g.answers[1]));
       expect([for (final a in g.answers.skip(2)) AnkirenScore.points(a)], everyElement(0));
       expect(g.tap(g.prompts.last, t(3000)), TapResult.ignored);
+    });
+
+    test('strikes: every wrong tap and every "don\'t know" is one, and a third does not end the game', () {
+      final g = newGame(strikes: true)..startRecall();
+      g.promptRevealed(t(0));
+      g.tap(other(g), t(300));
+      g.tap(other(g), t(600));
+      expect((g.strikes, g.phase), (2, AnkirenPhase.recall), reason: 'two wrong taps on one card are two strikes');
+      g.tap(g.current!, t(900));
+      g.promptRevealed(t(2000));
+      expect(g.giveUp(), isNotNull);
+      expect(AnkirenTuning.strikesOut, 3);
+      expect((g.strikes, g.phase, g.completed, g.cleared), (3, AnkirenPhase.recall, false, false));
+      g.promptRevealed(t(3000));
+      expect(g.tap(other(g), t(3200)), TapResult.wrong, reason: 'play goes on, and counts the strike');
+      expect(g.strikes, 4);
+    });
+
+    test('a level game played to the end with fewer strikes clears it; without strikes counted none does', () {
+      void play(AnkirenGame g, {required int wrong}) {
+        g.startRecall();
+        var now = 0;
+        for (var i = 0; g.phase == AnkirenPhase.recall; i++) {
+          g.promptRevealed(t(now += 1000));
+          if (i < wrong) g.tap(other(g), t(now += 200));
+          g.tap(g.current!, t(now += 300));
+        }
+      }
+
+      final cleared = newGame(strikes: true);
+      play(cleared, wrong: AnkirenTuning.strikesOut - 1);
+      expect((cleared.completed, cleared.strikes, cleared.cleared), (true, AnkirenTuning.strikesOut - 1, true));
+      final failed = newGame(strikes: true);
+      play(failed, wrong: AnkirenTuning.strikesOut);
+      expect((failed.completed, failed.strikes, failed.cleared), (true, AnkirenTuning.strikesOut, false));
+      final free = newGame();
+      play(free, wrong: 5);
+      expect((free.completed, free.strikes, free.cleared), (true, 5, false));
     });
 
     test('ending during memorise leaves every prompt unanswered', () {

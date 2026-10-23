@@ -14,13 +14,22 @@ import '../domain/xp.dart';
 
 /// What recording a 暗記練 game changed (for its results): 暗記練's rating
 /// before and after a ranked game, both null for free play; the ranked
-/// games played with it (0 for free play); and the experience it earned.
+/// games played with it (0 for free play); free play's levels before and
+/// after it; and the experience it earned.
 class AnkirenReport {
-  const AnkirenReport({required this.ratingBefore, required this.ratingAfter, this.rankedGames = 0, this.xp});
+  const AnkirenReport({
+    required this.ratingBefore,
+    required this.ratingAfter,
+    this.rankedGames = 0,
+    this.ladderBefore = AnkirenLadder.none,
+    this.ladderAfter = AnkirenLadder.none,
+    this.xp,
+  });
 
   final double? ratingBefore;
   final double? ratingAfter;
   final int rankedGames;
+  final AnkirenLadder ladderBefore, ladderAfter;
   final XpGain? xp;
 }
 
@@ -28,7 +37,10 @@ class AnkirenReport {
 /// and what they add up to: each trip's ranked rating, its ranked games and
 /// the hub's standing. Owned by `Progress`, which loads it on start.
 class SideTrips {
-  SideTrips._(this._runs, this._answers);
+  SideTrips._(this._runs, this._answers, this._cleared);
+
+  /// The key value that holds [trip]'s cleared levels, a JSON list.
+  static String clearedKey(SideTrip trip) => '${trip.name}Cleared';
 
   static Future<SideTrips> load(AppDatabase db) async {
     final runs = await (db.select(db.sideTripRuns)..orderBy([(r) => OrderingTerm.asc(r.id)])).get();
@@ -39,10 +51,18 @@ class SideTrips {
     for (final a in rows) {
       (answers[a.runId] ??= []).add(a);
     }
-    return SideTrips._(runs, answers);
+    final cleared = <SideTrip, Set<int>>{};
+    for (final trip in SideTrip.values) {
+      final stored = await (db.select(db.keyValues)..where((k) => k.key.equals(clearedKey(trip)))).getSingleOrNull();
+      cleared[trip] = {if (stored != null) ...(jsonDecode(stored.value) as List).cast<int>()};
+    }
+    return SideTrips._(runs, answers, cleared);
   }
 
   final List<SideTripRun> _runs;
+
+  /// The free-play levels each trip's games have cleared, as stored.
+  final Map<SideTrip, Set<int>> _cleared;
 
   /// Each run's answers, in the order they were asked, by run id.
   final Map<int, List<SideTripAnswerRow>> _answers;
@@ -74,6 +94,23 @@ class SideTrips {
   /// Cards asked in [run]: every card of its field.
   int cardsIn(SideTripRun run) => _answers[run.id]?.length ?? 0;
 
+  /// [run]'s wrong taps and cards given up, one strike each.
+  int strikesIn(SideTripRun run) =>
+      (_answers[run.id] ?? const <SideTripAnswerRow>[]).fold(0, (n, a) => n + a.wrongTaps + (a.gaveUp ? 1 : 0));
+
+  /// [trip]'s free-play levels cleared.
+  AnkirenLadder ladderOf(SideTrip trip) => AnkirenLadder({..._cleared[trip]!});
+
+  Future<void> _storeCleared(AppDatabase db, SideTrip trip) => db.into(db.keyValues).insertOnConflictUpdate(
+      KeyValuesCompanion.insert(key: clearedKey(trip), value: jsonEncode(_cleared[trip]!.toList()..sort())));
+
+  /// Marks [trip]'s free-play levels 0 through [level] cleared, without
+  /// playing them (a developer tool).
+  Future<void> clearUpTo(AppDatabase db, SideTrip trip, int level) async {
+    _cleared[trip]!.addAll([for (var l = 0; l <= level; l++) l]);
+    await _storeCleared(db, trip);
+  }
+
   /// Where [a]'s counted taps landed and the cards they hit, in order.
   static ({List<TapProximity> taps, List<int> tapped}) _tapsOf(SideTripAnswerRow a) {
     final taps = [(a.firstTap, a.firstTapCard), (a.secondTap, a.secondTapCard)];
@@ -101,6 +138,7 @@ class SideTrips {
               AnkirenCardTry(
                 poemId: a.poemId,
                 wrongTaps: a.wrongTaps,
+                gaveUp: a.gaveUp,
                 responseUs: a.responseUs,
                 taps: taps,
                 tapped: tapped,
@@ -114,9 +152,9 @@ class SideTrips {
   int missesIn(SideTripRun run) =>
       cardsIn(run) - answersOf(run).where((a) => a.wrongTaps == 0 && a.responseUs != null).length;
 
-  /// [trip]'s standing on the hub for a player who knows [known] cards: a
-  /// ranked level capped by the levels those cards fill, and what each
-  /// ranked game did to the rating (from the start for the first).
+  /// [trip]'s standing on the hub for a player who knows [known] cards:
+  /// its free-play levels, capped by the levels those cards fill, and what
+  /// each ranked game did to the rating (from the start for the first).
   SideTripStanding standingOf(SideTrip trip, {required int known}) {
     final runs = _rated(trip).toList();
     final rated = [for (final r in runs) r.rating!];
@@ -124,21 +162,17 @@ class SideTrips {
     final start = switch (trip) {
       SideTrip.ankiren => AnkirenRating.start,
     };
-    final maxLevel = switch (trip) {
-      SideTrip.ankiren => AnkirenLevels.maxLevelFor(known),
-    };
-    final rankedLevel = switch (trip) {
-      SideTrip.ankiren => maxLevel == null ? null : AnkirenRating.levelFor(rating ?? start, maxLevel: maxLevel),
-    };
     return SideTripStanding(
       rating: rating,
       ratingChange: rating == null ? null : rating - (rated.length > 1 ? rated[rated.length - 2] : start),
-      rankedLevel: rankedLevel,
-      maxLevel: maxLevel,
+      ladder: ladderOf(trip),
+      maxLevel: switch (trip) {
+        SideTrip.ankiren => AnkirenLevels.maxLevelFor(known),
+      },
       games: runsOf(trip).length,
       results: [
         for (final (i, r) in runs.indexed)
-          SideTripResult(score: r.score!, ratingChange: rated[i] - (i > 0 ? rated[i - 1] : start), level: r.level ?? 0),
+          SideTripResult(score: r.score!, ratingChange: rated[i] - (i > 0 ? rated[i - 1] : start)),
       ],
     );
   }
@@ -148,7 +182,7 @@ class SideTrips {
   /// asked, in one transaction, with [meta] added to the run's own details.
   /// A ranked game moves 暗記練's rating toward its performance (see
   /// [AnkirenRating]), placing it during the first ranked games; free play
-  /// never touches it.
+  /// never touches it, and its level games may clear their level.
   Future<AnkirenReport> recordAnkiren(
     AppDatabase db,
     AnkirenGame game, {
@@ -161,12 +195,11 @@ class SideTrips {
     final setup = game.setup;
     final score = game.score;
     final before = setup.ranked ? ratingOf(trip) ?? AnkirenRating.start : null;
+    final ladderBefore = ladderOf(trip);
     double? performance, after;
     if (before != null) {
-      final gamesSoFar = rankedGames(trip);
-      performance = AnkirenRating.performance(setup.level!, score!.fraction,
-          placement: AnkirenRating.isPlacement(gamesSoFar));
-      after = AnkirenRating.update(before, performance, gamesSoFar);
+      performance = AnkirenRating.performance(score!.total);
+      after = AnkirenRating.update(before, performance, [for (final r in _rated(trip)) r.performance!]);
     }
 
     final runId = await db.transaction(() async {
@@ -208,6 +241,8 @@ class SideTrips {
                 secondTapCard: Value(a.tapped.elementAtOrNull(1)),
               ),
           ]));
+      final level = setup.level;
+      if (level != null && game.cleared && _cleared[trip]!.add(level)) await _storeCleared(db, trip);
       return id;
     });
     _runs.add(await (db.select(db.sideTripRuns)..where((r) => r.id.equals(runId))).getSingle());
@@ -216,12 +251,21 @@ class SideTrips {
           ..orderBy([(a) => OrderingTerm.asc(a.seq)]))
         .get();
 
-    return AnkirenReport(ratingBefore: before, ratingAfter: after, rankedGames: setup.ranked ? rankedGames(trip) : 0);
+    return AnkirenReport(
+      ratingBefore: before,
+      ratingAfter: after,
+      rankedGames: setup.ranked ? rankedGames(trip) : 0,
+      ladderBefore: ladderBefore,
+      ladderAfter: ladderOf(trip),
+    );
   }
 
   /// Forgets every game, once the caller has deleted them from the database.
   void clear() {
     _runs.clear();
     _answers.clear();
+    for (final levels in _cleared.values) {
+      levels.clear();
+    }
   }
 }

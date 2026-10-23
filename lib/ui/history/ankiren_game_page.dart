@@ -23,8 +23,8 @@ import 'run_page.dart';
 Future<void> openAnkirenGame(BuildContext context, SideTripRun run) =>
     Navigator.of(context).push(MangaRoute<void>(builder: (_) => AnkirenGamePage(run: run)));
 
-/// A recorded 暗記練 game, tab by tab: a scored game's overview, field,
-/// cards, score and taps; a custom game's overview, field and taps.
+/// A recorded 暗記練 game, tab by tab: a ranked game's overview, field,
+/// cards, score and taps; any other game's overview, field and taps.
 class AnkirenGamePage extends StatelessWidget {
   const AnkirenGamePage({super.key, required this.run});
   final SideTripRun run;
@@ -37,7 +37,7 @@ class AnkirenGamePage extends StatelessWidget {
     PageTab((s) => s.ankirenTabTaps, AnkirenTapsTab.new),
   ];
 
-  static final List<PageTab<AnkirenReview>> customTabs = [
+  static final List<PageTab<AnkirenReview>> unscoredTabs = [
     PageTab((s) => s.runTabOverview, AnkirenOverviewTab.new),
     PageTab((s) => s.ankirenTabField, AnkirenFieldTab.new),
     PageTab((s) => s.ankirenTabTaps, AnkirenTapsTab.new),
@@ -53,7 +53,7 @@ class AnkirenGamePage extends StatelessWidget {
       [for (final r in trips.runsOf(SideTrip.ankiren)) trips.recordOf(r)],
       xp: XpHistory.gainsOf(progress).ankiren[run.id],
     );
-    final tabs = review.game.scored ? scoredTabs : customTabs;
+    final tabs = review.game.scored ? scoredTabs : unscoredTabs;
     return RunPageFrame(
       look: HistoryLooks.ankiren,
       title: s.runTabGame,

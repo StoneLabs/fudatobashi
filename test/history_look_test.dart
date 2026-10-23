@@ -104,13 +104,15 @@ void main() {
               today.add(const Duration(hours: 5)));
           await p.recordRun(swipes(4, 1200, misses: {5, 70}), const PlayConfig(mode: PlayMode.ranked),
               today.add(const Duration(hours: 9)));
-          await p.recordAnkiren(playAnkiren(AnkirenSetup.forLevel(3, ranked: true), seed: 2, ms: 1400, wrongAt: {0, 2}),
+          await p.recordAnkiren(playAnkiren(const AnkirenSetup.ranked(), seed: 2, ms: 1400, wrongAt: {0, 2}),
               startedAt: yesterday.add(const Duration(hours: 8)));
-          await p.recordAnkiren(playAnkiren(AnkirenSetup.forLevel(3, ranked: true), seed: 3, ms: 900, wrongAt: {1}),
+          await p.recordAnkiren(playAnkiren(const AnkirenSetup.ranked(), seed: 3, ms: 900, wrongAt: {1}),
               startedAt: today.add(const Duration(hours: 6)));
           await p.recordAnkiren(
               playAnkiren(const AnkirenSetup.custom(perSide: 3, memorise: Duration(seconds: 30)), seed: 4),
               startedAt: today.add(const Duration(hours: 7)));
+          await p.recordAnkiren(playAnkiren(AnkirenSetup.forLevel(0), seed: 5, strikes: true, wrongAt: {1}),
+              startedAt: today.add(const Duration(hours: 5)));
         });
         useScreen(tester, phone);
 
@@ -179,6 +181,14 @@ void main() {
         await settle();
         expect(find.byType(AnkirenGamePage), findsOneWidget);
         await pageThrough('ankiren', AnkirenGamePage.scoredTabs.length);
+
+        await show(const HistoryScreen());
+        await tester.tap(find.textContaining(s.historyAnkirenTab, findRichText: true).first);
+        await settle();
+        await tester.tap(find.byType(AnkirenKindTag).at(2));
+        await settle();
+        expect(find.byType(AnkirenGamePage), findsOneWidget);
+        await pageThrough('ankiren_free', AnkirenGamePage.unscoredTabs.length);
         await tester.pumpWidget(const SizedBox());
       });
     }

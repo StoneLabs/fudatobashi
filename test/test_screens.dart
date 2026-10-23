@@ -15,6 +15,7 @@ import 'dart:ui' as ui;
 
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 /// A device's screen: its size and system bars in dp, and its pixels per dp.
@@ -64,6 +65,27 @@ const screenKey = ValueKey('screen');
 final renderScreens = Platform.environment['RENDER_SCREENS'] == '1';
 
 final _sizes = Platform.environment['SCREEN_SIZES'] ?? 'phone';
+
+/// The system's monospaced faces that renders of the developer pages use for
+/// their `monospace` text, regular then bold, the first found.
+const _monoFaces = [
+  ['/usr/share/fonts/TTF/DejaVuSansMono.ttf', '/usr/share/fonts/TTF/DejaVuSansMono-Bold.ttf'],
+  ['/usr/share/fonts/liberation/LiberationMono-Regular.ttf', '/usr/share/fonts/liberation/LiberationMono-Bold.ttf'],
+];
+
+/// Loads a monospaced system face as `monospace` for renders, which the
+/// app gets from the phone. Without renders, or with none of [_monoFaces]
+/// installed, the test font stays.
+Future<void> loadRenderMonoFont() async {
+  if (!renderScreens) return;
+  final faces = _monoFaces.where((f) => f.every((path) => File(path).existsSync())).firstOrNull;
+  if (faces == null) return;
+  final loader = FontLoader('monospace');
+  for (final path in faces) {
+    loader.addFont(Future.value(ByteData.sublistView(File(path).readAsBytesSync())));
+  }
+  await loader.load();
+}
 
 /// Each iPad render written so far, so a test looping over phones renders
 /// each iPad screen once.

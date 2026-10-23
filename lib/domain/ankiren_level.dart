@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import '../config/config.dart';
 
 /// One 暗記練 difficulty level: how many cards each side of the field holds
@@ -32,20 +34,19 @@ abstract final class AnkirenLevels {
   }
 }
 
-/// What one 暗記練 game deals: a level preset, or (free play only) a custom
-/// card count and memorise time.
+/// What one 暗記練 game deals: ranked's one setup, or in free play a level
+/// preset or a custom card count and memorise time.
 class AnkirenSetup {
   const AnkirenSetup({required this.perSide, required this.memorise, this.level, this.ranked = false})
-      : assert(!ranked || level != null);
+      : assert(!ranked || level == null);
 
-  /// A level preset; ranked games always play one.
-  AnkirenSetup.forLevel(int level, {bool ranked = false})
-      : this(
-          perSide: AnkirenLevels.of(level).perSide,
-          memorise: AnkirenLevels.of(level).memorise,
-          level: level,
-          ranked: ranked,
-        );
+  /// Ranked's setup, a real match's field; it plays no level.
+  const AnkirenSetup.ranked()
+      : this(perSide: AnkirenTuning.rankedPerSide, memorise: AnkirenTuning.rankedMemorise, ranked: true);
+
+  /// A free-play level preset.
+  AnkirenSetup.forLevel(int level)
+      : this(perSide: AnkirenLevels.of(level).perSide, memorise: AnkirenLevels.of(level).memorise, level: level);
 
   /// A free-play setup outside the level table.
   const AnkirenSetup.custom({required int perSide, required Duration memorise})
@@ -54,10 +55,13 @@ class AnkirenSetup {
   final int perSide;
   final Duration memorise;
 
-  /// The level preset played, or null for a custom setup, which is not
-  /// scored.
+  /// The free-play level preset played; null for ranked and for a custom
+  /// setup.
   final int? level;
   final bool ranked;
+
+  /// A custom setup, which is not scored.
+  bool get custom => level == null && !ranked;
 
   int get cards => 2 * perSide;
 
@@ -90,4 +94,43 @@ class AnkirenSetup {
 
   @override
   int get hashCode => Object.hash(perSide, memorise, level, ranked);
+}
+
+/// Free play's levels as they open (see [AnkirenTuning.strikesOut]): level 0
+/// at first, then each cleared level opens the next, with every level below
+/// it. Clearing [AnkirenTuning.rankedAfterLevel] is what ranked needs from
+/// free play, and clearing [AnkirenTuning.customAfterLevel] opens the custom
+/// setups.
+class AnkirenLadder {
+  const AnkirenLadder(this.cleared);
+
+  static const none = AnkirenLadder({});
+
+  /// The levels cleared so far.
+  final Set<int> cleared;
+
+  /// Whether a game clears its level: played to the end with fewer than
+  /// [AnkirenTuning.strikesOut] [strikes].
+  static bool clears({required bool completed, required int strikes}) =>
+      completed && strikes < AnkirenTuning.strikesOut;
+
+  int get _highest => cleared.isEmpty ? -1 : cleared.reduce(math.max);
+
+  /// The highest open level.
+  int get open => math.min(AnkirenLevels.top, _highest + 1);
+
+  bool isOpen(int level) => level <= open;
+  bool isCleared(int level) => cleared.contains(level);
+
+  /// The top level is cleared: none is left to open.
+  bool get allCleared => _highest == AnkirenLevels.top;
+
+  /// The level to clear next, the highest open one; null once
+  /// [allCleared].
+  int? get next => allCleared ? null : open;
+
+  /// What ranked needs from free play is done.
+  bool get rankedReady => _highest >= AnkirenTuning.rankedAfterLevel;
+
+  bool get customOpen => _highest >= AnkirenTuning.customAfterLevel;
 }

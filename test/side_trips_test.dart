@@ -7,6 +7,7 @@ import 'package:fudatobashi/config/config.dart';
 import 'package:fudatobashi/data/fuda_sets.dart';
 import 'package:fudatobashi/data/poem.dart';
 import 'package:fudatobashi/db/database.dart';
+import 'package:fudatobashi/domain/ankiren_level.dart';
 import 'package:fudatobashi/domain/card_stats.dart';
 import 'package:fudatobashi/domain/play_session.dart';
 import 'package:fudatobashi/domain/rating.dart';
@@ -100,11 +101,12 @@ void main() {
       expect([e.open, e.ranked], [false, false]);
       expect(e.lock?.needed, ankirenAt - 3);
       expect(e.band, Rating.bands.first);
-      expect([e.rating, e.rankedLevel, e.maxLevel, e.games], [null, null, null, 0]);
+      expect([e.rating, e.nextLevel, e.maxLevel, e.games], [null, 0, null, 0]);
+      expect([e.rankedLock!.allKnown, e.rankedLock!.cleared, e.rankedOpen], [false, false, false]);
       expect(hub.openTrips, isEmpty);
     });
 
-    test('opens 暗記練 whole at 50, and reports the open trips for the latch', () {
+    test('opens 暗記練 at 50, and reports the open trips for the latch', () {
       expect(SideTripsHub.of(allKnown: false, remembered: ankirenAt - 1).openTrips, isEmpty);
       expect(SideTripsHub.of(allKnown: false, remembered: ankirenAt).openTrips, {ankiren});
       expect(SideTripsHub.of(allKnown: false, remembered: 0, latched: {ankiren}).openTrips, {ankiren});
@@ -116,12 +118,14 @@ void main() {
       final hub = SideTripsHub.of(
         allKnown: true,
         remembered: 0,
-        standings: {SideTrip.ankiren: SideTripStanding(rating: rating, rankedLevel: 4, maxLevel: 9, games: 12)},
+        standings: {
+          SideTrip.ankiren: SideTripStanding(rating: rating, ladder: const AnkirenLadder({0, 1, 2, 3, 4}), maxLevel: 9, games: 12),
+        },
       );
       final e = hub[SideTrip.ankiren];
       expect(e.ranked, isTrue);
       expect(e.band, Rating.bands[3]);
-      expect([e.rating, e.rankedLevel, e.maxLevel, e.games], [rating, 4, 9, 12]);
+      expect([e.rating, e.nextLevel, e.maxLevel, e.games, e.rankedOpen], [rating, 5, 9, 12, true]);
     });
   });
 

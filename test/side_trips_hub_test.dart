@@ -138,10 +138,11 @@ void main() {
         case _Hub.ranked:
           await p.setLearningMode(LearningMode.journey);
           await remember(p, journeyOrder.take(60));
+          for (var level = 0; level <= AnkirenTuning.rankedAfterLevel; level++) {
+            await p.recordAnkiren(playAnkiren(AnkirenSetup.forLevel(level), strikes: true), startedAt: DateTime.now());
+          }
           for (final ms in [900, 600]) {
-            final level = p.sideTripsHub()[SideTrip.ankiren].rankedLevel!;
-            await p.recordAnkiren(playAnkiren(AnkirenSetup.forLevel(level, ranked: true), ms: ms),
-                startedAt: DateTime.now());
+            await p.recordAnkiren(playAnkiren(const AnkirenSetup.ranked(), ms: ms), startedAt: DateTime.now());
           }
       }
     });
@@ -281,7 +282,7 @@ void main() {
                 expectShown(tester, inHub(find.text(s.ankirenPageTitle)), phone);
                 expect(inHub(find.byType(RankedBurst)), findsNothing, reason: 'ranked starts from the page');
                 expect(inHub(find.byType(SideTripRulesButton)), findsNothing);
-                expect(inHub(find.byType(SideTripFreeButton)), findsNothing);
+                expect(inHub(find.byType(SideTripGuestButton)), findsNothing);
                 expect(inHub(find.byType(HomeRowButton)), findsNothing, reason: 'the burst is the only button');
               }
 
@@ -334,8 +335,9 @@ void main() {
       addTearDown(
           () => tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(SystemChannels.platform, null));
       final p = await open(tester, _Hub.ranked, 'en');
+      await tester.runAsync(() => p.setLearningMode(LearningMode.allKnown));
       await openHub(tester, p, usersPhone);
-      final level = p.sideTripsHub()[SideTrip.ankiren].rankedLevel!;
+      expect(p.sideTripsHub()[SideTrip.ankiren].rankedOpen, isTrue);
       await tester.tap(inHub(find.byType(PageBurst)));
       await tester.pump();
       await tester.pump(Motion.route * 2);
@@ -344,7 +346,7 @@ void main() {
       await tester.pump();
       await tester.pump(Motion.route);
       final game = tester.widget<AnkirenScreen>(find.byType(AnkirenScreen));
-      expect(game.setup, AnkirenSetup.forLevel(level, ranked: true));
+      expect(game.setup, const AnkirenSetup.ranked());
       await tester.pumpWidget(const SizedBox());
     });
 

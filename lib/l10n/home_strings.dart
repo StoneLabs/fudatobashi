@@ -67,4 +67,5 @@ extension HomeStrings on S {
   String get pauseNote => t('pauseNote');
   String get pauseYes => t('pauseYes');
   String get pauseNo => t('pauseNo');
+  String get noticeOk => t('noticeOk');
 }

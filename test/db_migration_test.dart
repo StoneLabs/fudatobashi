@@ -169,7 +169,7 @@ void main() {
 
     final games = await db.select(db.sideTripRuns).get();
     expect([for (final g in games) (g.game, g.endedAt, g.day, g.ranked, g.level, g.score, g.completed, g.meta)], [
-      (SideTrip.ankiren, _at(1790200030), DayWindow.at(_at(1790200000), hour).number, true, 1, 80, true,
+      (SideTrip.ankiren, _at(1790200030), DayWindow.at(_at(1790200000), hour).number, false, 1, null, true,
           '{"perSide":4}'),
       (SideTrip.ankiren, _at(1790300020), DayWindow.at(_at(1790300000), hour).number, false, null, null, false, '{}'),
     ]);
@@ -178,6 +178,10 @@ void main() {
       final w = DayWindow.at(g.startedAt, hour);
       expect((days[g.day]?.startsAt, days[g.day]?.endsAt), (w.start, w.end), reason: 'the day row of game ${g.id}');
     }
+    expect([for (final g in games) (g.rating, g.performance)], [(null, null), (null, null)],
+        reason: 'the ranked game with a level lost its rating');
+    expect([for (final kv in await db.select(db.keyValues).get()) kv.key], containsAll(['migrationNotices']),
+        reason: 'a player with 暗記練 games is told');
     expect([
       for (final a in await db.select(db.sideTripAnswers).get())
         (a.runId, a.gaveUp, a.responseUs, a.firstTap, a.firstTapCard, a.firstTapUs, a.secondTap, a.secondTapCard)

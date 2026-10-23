@@ -2,6 +2,8 @@ import 'dart:math' as math;
 
 import 'package:flutter/widgets.dart';
 
+import '../../data/poem.dart';
+import '../../domain/ankiren_game.dart';
 import '../../domain/ankiren_level.dart';
 import '../../domain/play_session.dart';
 import '../../domain/ranked.dart';
@@ -160,60 +162,55 @@ Future<void> keepGoing(BuildContext context, PlayConfig config) async {
   ));
 }
 
-/// 暗記練's ranked game, at the level its rating has reached (capped by the
-/// known cards). Re-checks the lock and the known cards off [context], like
-/// [startFreePlay]; [replace] puts it in place of the current screen
-/// (Results' Again).
-Future<void> startAnkirenRanked(BuildContext context, {bool replace = false}) async {
+/// 暗記練's ranked game, always [AnkirenSetup.ranked]'s field, once ranked
+/// is open (see [RankedLock]). Re-checks the locks and the known cards off
+/// [context], like [startFreePlay].
+Future<void> startAnkirenRanked(BuildContext context) async {
   final progress = ProgressScope.read(context);
   final entry = progress.sideTripsHub()[SideTrip.ankiren];
-  if (!entry.open) return;
-  final level = entry.rankedLevel;
-  if (level == null) {
-    MangaToast.show(context, S.of(context).ankirenNeedCards(AnkirenLevels.of(0).cards));
-    return;
-  }
-  await _pushAnkiren(context, AnkirenSetup.forLevel(level, ranked: true), progress.knownCards.toList(),
-      replace: replace);
+  const setup = AnkirenSetup.ranked();
+  final known = progress.knownCards.toList();
+  if (!entry.rankedOpen || setup.cards > known.length) return;
+  await _pushAnkiren(context, setup, known);
 }
 
-/// 暗記練's free play at [setup], once 暗記練 is open and the known cards
-/// fill the field.
-Future<void> startAnkirenFree(BuildContext context, AnkirenSetup setup, {bool replace = false}) async {
+/// 暗記練's free play at [setup], once 暗記練 is open, the setup is (a level
+/// opened by clearing the one before, or custom once that opens; see
+/// [AnkirenLadder]) and the known cards fill the field.
+Future<void> startAnkirenFree(BuildContext context, AnkirenSetup setup) async {
   final progress = ProgressScope.read(context);
   final known = progress.knownCards.toList();
-  if (!progress.sideTripsHub()[SideTrip.ankiren].open || setup.ranked) return;
+  final entry = progress.sideTripsHub()[SideTrip.ankiren];
+  final level = setup.level;
+  final open = level == null ? entry.ladder.customOpen : entry.ladder.isOpen(level);
+  if (!entry.open || setup.ranked || !open) return;
   if (setup.cards > known.length) {
     MangaToast.show(context, S.of(context).ankirenNeedCards(setup.cards));
     return;
   }
-  await _pushAnkiren(context, setup, known, replace: replace);
+  await _pushAnkiren(context, setup, known);
+}
+
+/// 暗記練 for a guest at [setup], any level or custom setup, dealt from all
+/// the cards: nothing of it is recorded (see [AnkirenPlayer.guest]).
+Future<void> startAnkirenGuest(BuildContext context, AnkirenSetup setup) async {
+  if (setup.ranked) return;
+  await _pushAnkiren(context, setup, [for (final p in poems.all) p.id], player: AnkirenPlayer.guest);
 }
 
 /// Developer mode's 暗記練 test game ([AnkirenDebugGame]) at [level],
 /// recording nothing, on [seed]'s deal if given.
-Future<void> startAnkirenTest(BuildContext context, {int level = 0, int? seed, bool replace = false}) async {
-  final route = MangaRoute<void>(
+Future<void> startAnkirenTest(BuildContext context, {int level = 0, int? seed}) async {
+  await Navigator.of(context).push(MangaRoute<void>(
     transition: MangaTransition.zoom,
     builder: (_) => AnkirenDebugGame(known: ProgressScope.read(context).knownCards.toList(), level: level, seed: seed),
-  );
-  final navigator = Navigator.of(context);
-  await (replace ? navigator.pushReplacement(route) : navigator.push(route));
+  ));
 }
 
-/// 暗記練 Results' Again: the next game, started the way [setup]'s was.
-Future<void> ankirenAgain(BuildContext context, AnkirenSetup setup, {required bool tracked}) => !tracked
-    ? startAnkirenTest(context, level: setup.level ?? 0, replace: true)
-    : setup.ranked
-        ? startAnkirenRanked(context, replace: true)
-        : startAnkirenFree(context, setup, replace: true);
-
 Future<void> _pushAnkiren(BuildContext context, AnkirenSetup setup, List<int> known,
-    {bool tracked = true, required bool replace}) async {
-  final route = MangaRoute<void>(
+    {AnkirenPlayer player = AnkirenPlayer.owner}) async {
+  await Navigator.of(context).push(MangaRoute<void>(
     transition: MangaTransition.zoom,
-    builder: (_) => AnkirenScreen(setup: setup, known: known, tracked: tracked),
-  );
-  final navigator = Navigator.of(context);
-  await (replace ? navigator.pushReplacement(route) : navigator.push(route));
+    builder: (_) => AnkirenScreen(setup: setup, known: known, player: player),
+  ));
 }

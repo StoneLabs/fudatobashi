@@ -1,9 +1,12 @@
 // 暗記練's page (AnkirenPage) on phones 360, 384 and 412 dp wide, at font
-// scale 1.0 and 1.3, in English and Japanese: before the first ranked
-// game, during placement and after it. It fits one screen without
-// overflowing, ranked starts with no level to pick, free play starts a run
-// of the player's own setup, and the rules open on the first visit and
-// from their button.
+// scale 1.0 and 1.3, in English and Japanese: with ranked still shut,
+// before the first ranked game, during placement, after it, and with every
+// level cleared. It fits one screen at font scale 1.0 and scrolls without
+// overflowing at 1.3, ranked is chained until it opens and then starts its
+// one setup, the next level to clear starts from its panel, free play's
+// menu chains the levels not yet open and starts a setup of the player's
+// own, guest mode opens every level, and the rules open on the first visit
+// and from their button.
 //
 // With RENDER_SCREENS=1 it also renders the page and its sheets, with real
 // fonts and art, to build/screens/ankiren_page/.
@@ -21,8 +24,8 @@ import 'package:fudatobashi/data/islands.dart';
 import 'package:fudatobashi/data/poem.dart';
 import 'package:fudatobashi/db/database.dart';
 import 'package:fudatobashi/domain/ankiren_field.dart';
+import 'package:fudatobashi/domain/ankiren_game.dart';
 import 'package:fudatobashi/domain/ankiren_level.dart';
-import 'package:fudatobashi/domain/ankiren_rating.dart';
 import 'package:fudatobashi/domain/side_trips.dart';
 import 'package:fudatobashi/domain/trainer.dart';
 import 'package:fudatobashi/l10n/ankiren_strings.dart';
@@ -33,11 +36,14 @@ import 'package:fudatobashi/state/progress.dart';
 import 'package:fudatobashi/state/scope.dart';
 import 'package:fudatobashi/ui/ankiren/ankiren_field_preview.dart';
 import 'package:fudatobashi/ui/ankiren/ankiren_screen.dart';
+import 'package:fudatobashi/ui/ankiren/ankiren_strikes.dart';
 import 'package:fudatobashi/ui/history/history_screen.dart';
 import 'package:fudatobashi/ui/manga/manga.dart';
+import 'package:fudatobashi/ui/shell/tab_chains.dart';
 import 'package:fudatobashi/ui/side_trips/ankiren_free_sheet.dart';
 import 'package:fudatobashi/ui/side_trips/ankiren_page.dart';
 import 'package:fudatobashi/ui/side_trips/ankiren_rules_sheet.dart';
+import 'package:fudatobashi/ui/side_trips/burst_button.dart';
 import 'package:fudatobashi/ui/side_trips/side_trip_entry.dart';
 import 'package:fudatobashi/ui/sound/sounds.dart';
 
@@ -46,11 +52,12 @@ import 'test_l10n.dart';
 import 'test_screens.dart';
 import 'test_vector_art.dart';
 
-/// Before the first ranked game, one placement game in, and placed (five
-/// ranked games played).
-enum _Stage { fresh, placing, placed }
+/// Ranked still shut (no level cleared); open but before the first ranked
+/// game; one placement game in; placed (five ranked games played); and
+/// placed with every level cleared.
+enum _Stage { locked, fresh, placing, placed, allCleared }
 
-const _rankedGames = {_Stage.fresh: 0, _Stage.placing: 1, _Stage.placed: 5};
+const _rankedGames = {_Stage.locked: 0, _Stage.fresh: 0, _Stage.placing: 1, _Stage.placed: 5, _Stage.allCleared: 5};
 
 Future<void> _loadFont(String family, List<String> files) async {
   final loader = FontLoader(family);
@@ -92,8 +99,9 @@ void main() {
   });
 
   // An all-known player in [lang] at [stage], who has seen the rules
-  // unless [rulesSeen] is false.
-  Future<Progress> open(WidgetTester tester, _Stage stage, String lang, {bool rulesSeen = true}) async {
+  // unless [rulesSeen] is false, with the levels up to [cleared] cleared
+  // when given instead of the stage's.
+  Future<Progress> open(WidgetTester tester, _Stage stage, String lang, {bool rulesSeen = true, int? cleared}) async {
     late Progress p;
     await tester.runAsync(() async {
       p = await Progress.open(AppDatabase(NativeDatabase.memory()));
@@ -104,9 +112,17 @@ void main() {
         toured: true,
         ankiren: p.settings.ankiren.copyWith(rulesSeen: rulesSeen),
       ));
+      final top = cleared ??
+          switch (stage) {
+            _Stage.locked => -1,
+            _Stage.allCleared => AnkirenLevels.top,
+            _ => AnkirenTuning.rankedAfterLevel,
+          };
+      for (var level = 0; level <= top; level++) {
+        await p.recordAnkiren(playAnkiren(AnkirenSetup.forLevel(level), strikes: true), startedAt: DateTime.now());
+      }
       for (var i = 0; i < _rankedGames[stage]!; i++) {
-        final level = p.sideTripsHub()[SideTrip.ankiren].rankedLevel!;
-        await p.recordAnkiren(playAnkiren(AnkirenSetup.forLevel(level, ranked: true), ms: 500 + 120 * i, seed: i),
+        await p.recordAnkiren(playAnkiren(const AnkirenSetup.ranked(), ms: 500 + 120 * i, seed: i),
             startedAt: DateTime.now());
       }
     });
@@ -142,6 +158,10 @@ void main() {
   Finder numbered(String template, int value) =>
       find.byWidgetPredicate((w) => w is NumberedText && w.template == template && w.values.single == value);
   Finder close(S s) => find.byWidgetPredicate((w) => w is InkIconButton && w.semanticLabel == s.close);
+  Finder historyButton(S s) =>
+      onPage(find.byWidgetPredicate((w) => w is InkIconButton && w.semanticLabel == s.history));
+  Finder levelsLink(S s) => onPage(find.byWidgetPredicate((w) => w is Pressable && w.semanticLabel == s.ankirenAllLevels));
+  Finder burst(String title) => find.byWidgetPredicate((w) => w is BurstButton && w.title == title);
 
   // [f] shows whole, inside the gutters, between the system bars.
   void expectShown(WidgetTester tester, Finder f, Screen phone) {
@@ -150,6 +170,18 @@ void main() {
     expect(r.right, lessThanOrEqualTo(phone.size.width - Gaps.gutter + 0.5), reason: '$f');
     expect(r.top, greaterThanOrEqualTo(phone.bars.top), reason: '$f');
     expect(r.bottom, lessThanOrEqualTo(phone.size.height - phone.bars.bottom + 0.5), reason: '$f');
+  }
+
+  Future<void> tapAndSettle(WidgetTester tester, Finder f, Duration wait) async {
+    await tester.tap(f);
+    await tester.pump();
+    await tester.pump(wait);
+  }
+
+  Future<void> closeSheet(WidgetTester tester, S s) async {
+    await tester.tap(close(s));
+    await tester.pump();
+    await tester.pump(Motion.sheet * 2);
   }
 
   group('fits', () {
@@ -164,18 +196,32 @@ void main() {
               expect(tester.takeException(), isNull);
               expect(find.byType(AnkirenRulesSheet), findsNothing, reason: 'the rules were seen');
 
-              // One screen: the burst and the pair show without scrolling.
-              expectShown(tester, onPage(find.byType(RankedBurst)), phone);
-              expectShown(tester, onPage(find.byType(SideTripFreeButton)), phone);
-              expectShown(tester, onPage(find.byType(SideTripRulesButton)), phone);
-              expectShown(tester, onPage(find.textContaining(s.ankirenNextRanked)), phone);
+              // At font scale 1 the page is one screen: both bursts, the pair and the
+              // next level's tag show without scrolling. Larger type may scroll to them.
+              final allCleared = stage == _Stage.allCleared;
+              // The tag, not its unseen copy that keeps the panel's content clear of it.
+              final tag = onPage(find.textContaining(allCleared ? s.ankirenAllClearedTitle : s.ankirenNextToClear)).last;
               final scroll = tester.state<ScrollableState>(onPage(find.byType(Scrollable)));
-              expect(scroll.position.maxScrollExtent, 0, reason: 'nothing to scroll to');
+              if (fontScale == 1) expect(scroll.position.maxScrollExtent, 0, reason: 'nothing to scroll to');
+              for (final f in [
+                onPage(find.byType(RankedBurst)),
+                onPage(find.byType(BurstButton)).last,
+                onPage(find.byType(SideTripGuestButton)),
+                onPage(find.byType(SideTripRulesButton)),
+                tag,
+              ]) {
+                await tester.ensureVisible(f);
+                await tester.pump();
+                expectShown(tester, f, phone);
+              }
+              scroll.position.jumpTo(0);
+              await tester.pump();
               final ground = onPage(find.byWidgetPredicate((w) => w is GradationBox && w.spec == Tones.homeSea));
               expect(tester.getSize(ground), phone.size, reason: 'Home\'s dots, in blue, behind the whole page');
               expect(Tones.homeSea.radiusAt(0), 0, reason: 'no dots at the top');
               expect(Tones.homeSea.radiusAt(1), greaterThan(0), reason: 'dots at the bottom');
-              final games = onPage(find.textContaining(stage == _Stage.placed ? s.ankirenLast5 : s.ankirenPlacementTitle));
+              final placed = stage == _Stage.placed || allCleared;
+              final games = onPage(find.textContaining(placed ? s.ankirenLast5 : s.ankirenPlacementTitle));
               expect(find.ancestor(of: games, matching: find.byType(MangaPanel)), findsWidgets,
                   reason: 'the games sit on a panel, not on the dots');
               if (fontScale == 1) {
@@ -185,21 +231,32 @@ void main() {
               }
 
               final entry = p.sideTripsHub()[SideTrip.ankiren];
+              final chains = find.ancestor(of: onPage(find.byType(RankedBurst)), matching: find.byType(Stack));
+              final chained = find.descendant(of: chains.first, matching: find.byType(TabChains));
+              expect(chained, stage == _Stage.locked ? findsOneWidget : findsNothing,
+                  reason: 'ranked is chained until it opens');
+              expect(entry.rankedOpen, stage != _Stage.locked);
+              final next = entry.nextLevel;
+              expect(onPage(burst(s.ankirenPlayLevel(next ?? AnkirenLevels.top))), findsOneWidget);
               switch (stage) {
+                case _Stage.locked:
+                  expect(onPage(find.textContaining(s.ankirenPlacementTitle)), findsOneWidget);
+                  expect(next, 0);
                 case _Stage.fresh:
                   expect(onPage(find.text(s.sideTripUnranked)), findsOneWidget);
                   expect(onPage(find.textContaining(s.ankirenPlacementTitle)), findsOneWidget);
-                  expect(entry.rankedLevel, 0);
+                  expect(next, AnkirenTuning.rankedAfterLevel + 1);
                 case _Stage.placing:
                   expect(onPage(find.textContaining(s.ankirenPlacementTitle)), findsOneWidget);
                   expect(onPage(find.text('${entry.results.single.score}')), findsOneWidget);
-                case _Stage.placed:
+                case _Stage.placed || _Stage.allCleared:
                   expect(onPage(find.textContaining(s.ankirenLast5)), findsOneWidget);
                   for (final r in entry.results.reversed.take(AnkirenPageLayout.lastGames)) {
                     expect(onPage(find.text('${r.score}')), findsWidgets);
                   }
                   // The strip's change and one a game.
                   expect(onPage(find.byType(RatingChangeTag)), findsNWidgets(1 + AnkirenPageLayout.lastGames));
+                  expect(next, allCleared ? isNull : AnkirenTuning.rankedAfterLevel + 1);
               }
               await tester.pumpWidget(const SizedBox());
             });
@@ -214,18 +271,14 @@ void main() {
           final s = S(lang);
           final p = await open(tester, _Stage.placed, lang);
           await showPage(tester, p, phone, fontScale: 1.3);
-          await tester.tap(onPage(find.byType(SideTripFreeButton)));
-          await tester.pump();
-          await tester.pump(Motion.sheet);
-          expect(find.byType(AnkirenFreeSheet), findsOneWidget);
-          expect(tester.takeException(), isNull);
-          await tester.tap(close(s));
-          await tester.pump();
-          await tester.pump(Motion.sheet * 2);
-          expect(find.byType(AnkirenFreeSheet), findsNothing);
-          await tester.tap(onPage(find.byType(SideTripRulesButton)));
-          await tester.pump();
-          await tester.pump(Motion.sheet);
+          for (final opener in [onPage(find.byType(SideTripGuestButton)), levelsLink(s)]) {
+            await tapAndSettle(tester, opener, Motion.sheet);
+            expect(find.byType(AnkirenFreeSheet), findsOneWidget);
+            expect(tester.takeException(), isNull);
+            await closeSheet(tester, s);
+            expect(find.byType(AnkirenFreeSheet), findsNothing);
+          }
+          await tapAndSettle(tester, onPage(find.byType(SideTripRulesButton)), Motion.sheet);
           expect(find.byType(AnkirenRulesSheet), findsOneWidget);
           expect(tester.takeException(), isNull);
           await tester.pumpWidget(const SizedBox());
@@ -240,11 +293,9 @@ void main() {
         final s = S(lang);
         final p = await open(tester, _Stage.placed, lang);
         await showPage(tester, p, usersPhone);
-        await tester.tap(onPage(find.byType(SideTripRulesButton)));
-        await tester.pump();
-        await tester.pump(Motion.sheet);
+        await tapAndSettle(tester, onPage(find.byType(SideTripRulesButton)), Motion.sheet);
         final rules = find.byType(AnkirenRulesSheet);
-        String shown(Text t) => Phrases.spoken(t.textSpan?.toPlainText() ?? t.data ?? '').replaceAll('\u2060', '');
+        String shown(Text t) => Phrases.spoken(t.textSpan?.toPlainText() ?? t.data ?? '').replaceAll('⁠', '');
         List<String> texts(Finder of) =>
             [for (final t in tester.widgetList<Text>(find.descendant(of: of, matching: find.byType(Text)))) shown(t)];
         final lines = texts(rules);
@@ -273,31 +324,48 @@ void main() {
       });
     }
 
-    testWidgets('ranked starts at the level the rating sets, with no level to pick', (tester) async {
+    testWidgets('ranked starts its one setup once open, and does nothing while chained', (tester) async {
+      final locked = await open(tester, _Stage.locked, 'en');
+      await showPage(tester, locked, usersPhone);
+      await tapAndSettle(tester, onPage(find.byType(RankedBurst)), Motion.route);
+      expect(find.byType(AnkirenScreen), findsNothing, reason: 'ranked is shut');
+      await tester.pump(AnkirenPageLayout.lockBalloonLife);
+      await tester.pumpWidget(const SizedBox());
+
       final p = await open(tester, _Stage.placed, 'en');
-      final entry = p.sideTripsHub()[SideTrip.ankiren];
-      final level = AnkirenRating.levelFor(entry.rating!, maxLevel: AnkirenLevels.top);
-      expect(entry.rankedLevel, level);
       await showPage(tester, p, usersPhone);
-      expect(onPage(numbered(const S('en').ankirenLevelValue, level)), findsOneWidget, reason: 'the level is a fact');
-      await tester.tap(onPage(find.byType(RankedBurst)));
-      await tester.pump();
-      await tester.pump(Motion.route);
+      await tapAndSettle(tester, onPage(find.byType(RankedBurst)), Motion.route);
       final game = tester.widget<AnkirenScreen>(find.byType(AnkirenScreen));
-      expect(game.setup, AnkirenSetup.forLevel(level, ranked: true));
+      expect(game.setup, const AnkirenSetup.ranked());
+      expect(game.player, AnkirenPlayer.owner);
+      await tester.pumpWidget(const SizedBox());
+    });
+
+    testWidgets('the next level\'s burst starts the next level to clear', (tester) async {
+      const s = S('en');
+      final p = await open(tester, _Stage.fresh, 'en');
+      const next = AnkirenTuning.rankedAfterLevel + 1;
+      expect(p.sideTripsHub()[SideTrip.ankiren].nextLevel, next);
+      await showPage(tester, p, usersPhone);
+      expect(onPage(numbered(s.ankirenLevelValue, next)), findsOneWidget, reason: 'the level is a fact');
+      await tapAndSettle(tester, onPage(burst(s.ankirenPlayLevel(next))), Motion.route);
+      final game = tester.widget<AnkirenScreen>(find.byType(AnkirenScreen));
+      expect(game.setup, AnkirenSetup.forLevel(next));
+      expect(game.player, AnkirenPlayer.owner);
       await tester.pumpWidget(const SizedBox());
     });
 
     testWidgets('free play: a level key fills the steppers, a stepper makes it custom, and it starts', (tester) async {
       const s = S('en');
-      final p = await open(tester, _Stage.placed, 'en');
+      final p = await open(tester, _Stage.placed, 'en', cleared: AnkirenTuning.customAfterLevel);
       await showPage(tester, p, usersPhone);
-      await tester.tap(onPage(find.text(s.freePlay)));
-      await tester.pump();
-      await tester.pump(Motion.sheet);
+      await tapAndSettle(tester, levelsLink(s), Motion.sheet);
       final sheet = find.byType(AnkirenFreeSheet);
       expect(sheet, findsOneWidget);
       Finder inSheet(Finder f) => find.descendant(of: sheet, matching: f);
+      expect(inSheet(find.byType(ClearedCheck)), findsNWidgets(AnkirenTuning.customAfterLevel + 1));
+      expect(inSheet(find.byType(TabChains)), findsNWidgets(AnkirenLevels.top - AnkirenTuning.customAfterLevel - 1),
+          reason: 'the levels past the next one are shut; custom is open');
 
       const level = 7;
       final preset = AnkirenLevels.of(level);
@@ -316,8 +384,6 @@ void main() {
       await tester.pump();
       final custom = AnkirenSetup.custom(perSide: preset.perSide + 1, memorise: preset.memorise);
       expect(p.settings.ankiren.freeSetup, custom, reason: 'a stepper turns the level into a custom setup');
-      expect(inSheet(find.textContaining(RegExp('Scored as|採点'))), findsNothing,
-          reason: 'a custom setup is not scored');
 
       await tester.tap(inSheet(find.text(s.freeStart)));
       await tester.pump();
@@ -326,6 +392,52 @@ void main() {
       final game = tester.widget<AnkirenScreen>(find.byType(AnkirenScreen));
       expect(game.setup, custom);
       expect(game.setup.ranked, isFalse);
+      expect(game.player, AnkirenPlayer.owner);
+      await tester.pumpWidget(const SizedBox());
+    });
+
+    testWidgets('free play chains the levels not yet opened, and custom until its level', (tester) async {
+      const s = S('en');
+      final p = await open(tester, _Stage.locked, 'en');
+      await showPage(tester, p, usersPhone);
+      await tapAndSettle(tester, levelsLink(s), Motion.sheet);
+      final sheet = find.byType(AnkirenFreeSheet);
+      Finder inSheet(Finder f) => find.descendant(of: sheet, matching: f);
+      expect(inSheet(find.byType(ClearedCheck)), findsNothing);
+      expect(inSheet(find.byType(TabChains)), findsNWidgets(AnkirenLevels.top + 1),
+          reason: 'only Lv 0 is open; custom is shut');
+      final before = p.settings.ankiren.freeSetup;
+      await tester.tap(inSheet(find.text('+')).first, warnIfMissed: false);
+      await tester.pump();
+      expect(p.settings.ankiren.freeSetup, before, reason: 'the steppers are shut with custom');
+      await tester.pumpWidget(const SizedBox());
+    });
+
+    testWidgets('guest mode opens every level and custom, and its game records nothing', (tester) async {
+      const s = S('en');
+      final p = await open(tester, _Stage.locked, 'en');
+      final before = p.settings.ankiren.freeSetup;
+      await showPage(tester, p, usersPhone);
+      await tapAndSettle(tester, onPage(find.byType(SideTripGuestButton)), Motion.sheet);
+      final sheet = find.byType(AnkirenFreeSheet);
+      expect(tester.widget<AnkirenFreeSheet>(sheet).guest, isTrue);
+      Finder inSheet(Finder f) => find.descendant(of: sheet, matching: f);
+      expect(inSheet(find.byType(TabChains)), findsNothing, reason: 'every level is open');
+      expect(inSheet(find.byType(ClearedCheck)), findsNothing);
+
+      final top = AnkirenLevels.top;
+      await tester.tap(inSheet(find.text('$top')));
+      await tester.pump();
+      await tester.tap(inSheet(find.text(s.freeStart)));
+      await tester.pump();
+      await tester.pump(Motion.sheet);
+      await tester.pump(Motion.route);
+      final game = tester.widget<AnkirenScreen>(find.byType(AnkirenScreen));
+      expect(game.setup, AnkirenSetup.forLevel(top));
+      expect(game.player, AnkirenPlayer.guest);
+      expect(game.known, hasLength(poems.all.length), reason: 'dealt from all the cards');
+      await tester.runAsync(() => Future<void>.delayed(const Duration(milliseconds: 50)));
+      expect(p.settings.ankiren.freeSetup, before, reason: 'a guest stores nothing');
       await tester.pumpWidget(const SizedBox());
     });
 
@@ -339,17 +451,13 @@ void main() {
       }
       await tester.runAsync(() => Future<void>.delayed(const Duration(milliseconds: 50)));
       expect(p.settings.ankiren.rulesSeen, isTrue);
-      await tester.tap(close(s));
-      await tester.pump();
-      await tester.pump(Motion.sheet * 2);
+      await closeSheet(tester, s);
       expect(find.byType(AnkirenRulesSheet), findsNothing);
       await tester.pumpWidget(const SizedBox());
 
       await showPage(tester, p, usersPhone);
       expect(find.byType(AnkirenRulesSheet), findsNothing, reason: 'only the first visit');
-      await tester.tap(onPage(find.byType(SideTripRulesButton)));
-      await tester.pump();
-      await tester.pump(Motion.sheet);
+      await tapAndSettle(tester, onPage(find.byType(SideTripRulesButton)), Motion.sheet);
       expect(find.byType(AnkirenRulesSheet), findsOneWidget);
       await tester.pumpWidget(const SizedBox());
     });
@@ -358,13 +466,10 @@ void main() {
       const s = S('en');
       final p = await open(tester, _Stage.placed, 'en');
       await showPage(tester, p, usersPhone);
-      await tester.tap(onPage(find.textContaining(s.history)));
-      await tester.pump();
-      await tester.pump(Motion.route);
+      await tapAndSettle(tester, historyButton(s), Motion.route);
       final history = tester.widget<HistoryScreen>(find.byType(HistoryScreen));
       expect(history.trip, SideTrip.ankiren);
-      expect(find.textContaining(s.sideTripRankedLevel(p.sideTripsHub()[SideTrip.ankiren].results.last.level)),
-          findsWidgets);
+      expect(find.textContaining(s.sideTripRanked), findsWidgets);
       expect(tester.takeException(), isNull);
       await tester.pumpWidget(const SizedBox());
     });
@@ -392,31 +497,27 @@ void main() {
       for (final lang in ['en', 'ja']) {
         for (final fontScale in [1.0, 1.3]) {
           testWidgets('page_${phone.name}_${lang}_$fontScale', (tester) async {
+            final s = S(lang);
             for (final stage in _Stage.values) {
               final p = await open(tester, stage, lang);
               await showPage(tester, p, phone, fontScale: fontScale);
               await capture(tester, stage.name, lang);
+              if (stage case _Stage.fresh || _Stage.allCleared) {
+                await tapAndSettle(tester, levelsLink(s), Motion.sheet);
+                await capture(tester, 'free_${stage.name}', lang);
+                await closeSheet(tester, s);
+              }
               if (stage == _Stage.placed) {
-                await tester.tap(onPage(find.byType(SideTripFreeButton)));
-                await tester.pump();
-                await tester.pump(Motion.sheet);
-                await capture(tester, 'free', lang);
-                await tester.tap(close(S(lang)));
-                await tester.pump();
-                await tester.pump(Motion.sheet * 2);
-                await tester.tap(onPage(find.byType(SideTripRulesButton)));
-                await tester.pump();
-                await tester.pump(Motion.sheet);
+                await tapAndSettle(tester, onPage(find.byType(SideTripGuestButton)), Motion.sheet);
+                await capture(tester, 'guest', lang);
+                await closeSheet(tester, s);
+                await tapAndSettle(tester, onPage(find.byType(SideTripRulesButton)), Motion.sheet);
                 await capture(tester, 'rules', lang);
                 await tester.ensureVisible(find.byType(Table));
                 await tester.pump();
                 await capture(tester, 'scoring', lang);
-                await tester.tap(close(S(lang)));
-                await tester.pump();
-                await tester.pump(Motion.sheet * 2);
-                await tester.tap(onPage(find.textContaining(S(lang).history)));
-                await tester.pump();
-                await tester.pump(Motion.route);
+                await closeSheet(tester, s);
+                await tapAndSettle(tester, historyButton(s), Motion.route);
                 await capture(tester, 'history', lang);
               }
               await tester.pumpWidget(const SizedBox());

@@ -51,14 +51,13 @@ extension SideTripStrings on S {
 
   String get sideTripUnranked => t('sideTripUnranked');
   String get sideTripRanked => t('sideTripRanked');
-  String sideTripRankedLevel(int level) => f('sideTripRankedLevel', [level]);
-  String get sideTripFreeSub => t('sideTripFreeSub');
-  String sideTripFreeUpTo(int level) => f('sideTripFreeUpTo', [level]);
 
-  /// The next ranked game, and its facts (a template: cards a side, then
-  /// the time to memorise them).
-  String get sideTripNextGame => t('sideTripNextGame');
+  /// Free play's next level to clear, its facts (a template: cards a side,
+  /// then the time to memorise them), and in its place once every level is
+  /// cleared.
+  String get sideTripNextLevel => t('sideTripNextLevel');
   String get sideTripNextFacts => t('sideTripNextFacts');
+  String get sideTripAllClear => t('sideTripAllClear');
 
   /// A locked trip's cards remembered well so far, out of what opens it (a
   /// template).
@@ -92,6 +91,9 @@ extension SideTripStrings on S {
   String ankirenRuleReveal(int taps) => f('ankirenRuleReveal', [taps]);
   String get ankirenRuleDontKnow => t('ankirenRuleDontKnow');
   String get ankirenRuleLeave => t('ankirenRuleLeave');
+  String ankirenRuleStrikes(int strikes) => f('ankirenRuleStrikes', [strikes]);
+  String ankirenRuleRanked(int perSide, String memorise, int level) =>
+      f('ankirenRuleRanked', [perSide, memorise, level]);
   String get ankirenScoring => t('ankirenScoring');
   String ankirenScoreFind(int firstTry, int speed) => f('ankirenScoreFind', [firstTry, speed]);
 
@@ -119,5 +121,4 @@ extension SideTripStrings on S {
 
   /// The marks on the scoring rows: points, and level.
   String get ankirenMarkPoints => t('ankirenMarkPoints');
-  String get ankirenMarkLevel => t('ankirenMarkLevel');
 }

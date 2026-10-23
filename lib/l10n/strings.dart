@@ -108,7 +108,6 @@ class S {
   String get start => t('start');
   String get undo => t('undo');
   String get end => t('end');
-  String get again => t('again');
   String get done => t('done');
   String get dontRemember => t('dontRemember');
   String get tapToStart => t('tapToStart');

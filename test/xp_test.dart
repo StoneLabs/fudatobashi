@@ -360,7 +360,8 @@ void main() {
     test('a custom game earns nothing and races nobody', () {
       final ledger = XpLedger();
       expect(ledger.addAnkiren(game([first(100)], level: null, score: null)).award.parts, isEmpty);
-      expect(parts(ledger.addAnkiren(game([first(100)], score: 10))).containsKey(XpSource.best), isFalse);
+      expect(parts(ledger.addAnkiren(game([first(100)], ranked: true, level: null, score: 10))).containsKey(XpSource.best),
+          isFalse);
     });
 
     test('free play earns the same without the ranked bonus; ended early, only what its cards earned', () {
@@ -373,31 +374,38 @@ void main() {
 
     test('a forfeit earns nothing, but counts toward placement', () {
       final ledger = XpLedger();
-      ledger.addAnkiren(game([first(500)], ranked: true));
-      expect(ledger.addAnkiren(game([first(500), givenUp], ranked: true, completed: false)).award.total, 0);
-      final third = ledger.addAnkiren(game([first(500)], ranked: true));
+      ledger.addAnkiren(game([first(500)], ranked: true, level: null));
+      expect(ledger.addAnkiren(game([first(500), givenUp], ranked: true, level: null, completed: false)).award.total, 0);
+      final third = ledger.addAnkiren(game([first(500)], ranked: true, level: null));
       expect(parts(third)[XpSource.placement], (1, AnkirenXpTuning.placement), reason: 'the third ranked game places');
-      expect(parts(ledger.addAnkiren(game([first(500)], ranked: true))).containsKey(XpSource.placement), isFalse);
+      expect(parts(ledger.addAnkiren(game([first(500)], ranked: true, level: null))).containsKey(XpSource.placement),
+          isFalse);
 
       final forfeited = XpLedger();
       for (var i = 1; i < AnkirenRatingModel.placementGames; i++) {
-        forfeited.addAnkiren(game([first(500)], ranked: true));
+        forfeited.addAnkiren(game([first(500)], ranked: true, level: null));
       }
-      expect(forfeited.addAnkiren(game([first(500)], ranked: true, completed: false)).award.total, 0,
+      expect(forfeited.addAnkiren(game([first(500)], ranked: true, level: null, completed: false)).award.total, 0,
           reason: 'not even the placement bonus');
     });
 
-    test('a personal best beats every earlier score of the same level, in a game played to the end', () {
+    test('ranked cards earn as their own level', () {
+      final ranked = XpLedger().addAnkiren(game([first(500)], ranked: true, level: null));
+      expect(parts(ranked)[XpSource.firstTap], (1, AnkirenXp.cardXp(AnkirenXpTuning.rankedLevel)));
+    });
+
+    test('a personal best beats every earlier ranked score, in a game played to the end; free games have none', () {
       final ledger = XpLedger();
-      bool best(int score, {int level = 2, bool completed = true}) =>
-          parts(ledger.addAnkiren(game([first(500)], score: score, level: level, completed: completed)))
-              .containsKey(XpSource.best);
+      bool best(int score, {bool ranked = true, bool completed = true}) => parts(ledger.addAnkiren(
+              game([first(500)], score: ranked ? score : null, ranked: ranked, level: ranked ? null : 2, completed: completed)))
+          .containsKey(XpSource.best);
       expect(best(400), isFalse, reason: 'the first game sets the record');
       expect(best(380), isFalse);
       expect(best(900, completed: false), isFalse, reason: 'a game ended early races nobody');
       expect(best(420), isTrue);
       expect(best(410), isFalse, reason: 'the ended game did not raise the record');
-      expect(best(100, level: 3), isFalse, reason: 'another level races itself');
+      expect(best(1000, ranked: false), isFalse, reason: 'a free game has no score');
+      expect(best(430), isTrue, reason: 'and sets no record to beat');
     });
 
     test('the ledger adds runs and 暗記練 games up in the order played; the daily bonus stays with runs', () {
@@ -422,9 +430,9 @@ void main() {
           (await progress.recordAnkiren(playAnkiren(setup, ms: 600, endAfter: endAfter, wrongAt: wrongAt), startedAt: at))
               .xp!;
 
-      final ranked = await record(AnkirenSetup.forLevel(1, ranked: true), wrongAt: {0});
-      final cards = AnkirenLevels.of(1).cards;
-      expect(parts(ranked)[XpSource.firstTap], (cards - 1, (cards - 1) * AnkirenXp.cardXp(1)));
+      final ranked = await record(const AnkirenSetup.ranked(), wrongAt: {0});
+      const cards = 2 * AnkirenTuning.rankedPerSide;
+      expect(parts(ranked)[XpSource.firstTap], (cards - 1, (cards - 1) * AnkirenXp.cardXp(AnkirenXpTuning.rankedLevel)));
       expect(parts(ranked)[XpSource.nearMiss]?.$1, 1);
       expect(parts(ranked).keys, containsAll([XpSource.speed, XpSource.clear, XpSource.ranked]));
       expect(ranked.before, 0);
@@ -439,7 +447,7 @@ void main() {
       final ended = await record(AnkirenSetup.forLevel(1), endAfter: 2);
       expect(parts(ended).keys, [XpSource.firstTap, XpSource.speed]);
 
-      final forfeit = await record(AnkirenSetup.forLevel(1, ranked: true), endAfter: 2);
+      final forfeit = await record(const AnkirenSetup.ranked(), endAfter: 2);
       expect(forfeit.award.parts, isEmpty);
       expect(progress.xp.total, forfeit.after);
 

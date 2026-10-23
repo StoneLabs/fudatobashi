@@ -99,11 +99,11 @@ void main() {
     return p;
   }
 
-  /// Three ranked games at level 3, the last the best, then a custom game
+  /// Three ranked games, the last the best, then a custom game
   /// after another with the same setup, and an old game without its deal
   /// or the cards its taps hit; returns [p]'s progress reopened.
   Future<Progress> recordGames(Progress p) async {
-    final ranked = AnkirenSetup.forLevel(3, ranked: true);
+    const ranked = AnkirenSetup.ranked();
     const custom = AnkirenSetup.custom(perSide: 4, memorise: Duration(minutes: 1));
     await p.recordAnkiren(_play(ranked, seed: 3, ms: 1400, near: {0, 2, 5}, shown: {4}), startedAt: day);
     await p.recordAnkiren(_play(ranked, seed: 4, ms: 1200, near: {1, 3}), startedAt: day.add(const Duration(hours: 1)));
@@ -133,7 +133,7 @@ void main() {
     test('a recorded game keeps its deal and the card each tap hit', () {
       final game = all[2];
       final deal = game.deal!;
-      expect(deal.perSide, AnkirenLevels.of(3).perSide);
+      expect(deal.perSide, AnkirenTuning.rankedPerSide);
       expect({...deal.cards}, {for (final c in game.cards) c.poemId}, reason: 'every card dealt is asked once');
       final shown = game.cards[9];
       expect(shown.shown, isTrue);
@@ -154,8 +154,8 @@ void main() {
       expect(review.rightFirst.cards, game.firstTaps);
       expect(review.nearFirst.cards, 3);
       expect(review.secondTaps.cards, 3);
-      expect(game.timeLeft, closeTo(48 / AnkirenLevels.of(3).memorise.inSeconds, 1e-9));
-      expect(AnkirenScore.totalOf(game.recall, game.timeLeft, game.levelFactor), game.score);
+      expect(game.timeLeft, closeTo(48 / AnkirenTuning.rankedMemorise.inSeconds, 1e-9));
+      expect(AnkirenScore.totalOf(game.recall, game.timeLeft), game.score);
       expect(game.maxRecall, AnkirenScore.maxFor(game.cards.length));
     });
 
@@ -284,7 +284,7 @@ void main() {
           expect(find.text(s.ankirenStartReview, findRichText: true), findsOneWidget);
 
           await tab(s.runTabCards, 'cards');
-          expect(find.textContaining(s.ankirenLevelTitle(3), findRichText: true), findsOneWidget);
+          expect(find.textContaining(s.ankirenRankedTitle, findRichText: true), findsOneWidget);
           expect(find.text(s.ankirenColBest), findsOneWidget);
           await tester.drag(find.byType(Scrollable).last, const Offset(0, -500));
           await tester.pumpAndSettle();

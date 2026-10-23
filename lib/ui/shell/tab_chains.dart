@@ -12,12 +12,14 @@ import '../sound/sounds.dart';
 /// A locked tab's cover: two chains crossed over the tile and a padlock
 /// bobbing over its icon. Once [breaking], the padlock rattles, its shackle
 /// flips open and everything falls away, then [onBroken]; under reduced
-/// motion it simply goes.
+/// motion it simply goes. Over anything else locked, [scale] sizes the
+/// chains and padlock to it.
 class TabChains extends StatefulWidget {
-  const TabChains({super.key, this.breaking = false, this.onBroken});
+  const TabChains({super.key, this.breaking = false, this.onBroken, this.scale = 1});
 
   final bool breaking;
   final VoidCallback? onBroken;
+  final double scale;
 
   @override
   State<TabChains> createState() => _TabChainsState();
@@ -72,13 +74,17 @@ class _TabChainsState extends State<TabChains> with SingleTickerProviderStateMix
           child: AnimatedBuilder(
             animation: _break,
             builder: (context, _) => _break.value > 0
-                ? CustomPaint(size: Size.infinite, painter: _ChainsPainter(breakT: _break.value, bob: 0))
+                ? CustomPaint(
+                    size: Size.infinite,
+                    painter: _ChainsPainter(breakT: _break.value, bob: 0, scale: widget.scale),
+                  )
                 : IdleLoop(
                     builder: (context, elapsed, _) => CustomPaint(
                       size: Size.infinite,
                       painter: _ChainsPainter(
                         breakT: 0,
                         bob: elapsed.inMicroseconds / TabLockStyle.bobPeriod.inMicroseconds * 2 * math.pi,
+                        scale: widget.scale,
                       ),
                     ),
                   ),
@@ -88,13 +94,15 @@ class _TabChainsState extends State<TabChains> with SingleTickerProviderStateMix
 }
 
 class _ChainsPainter extends CustomPainter {
-  _ChainsPainter({required this.breakT, required this.bob});
+  _ChainsPainter({required this.breakT, required this.bob, required this.scale});
 
   /// How far the break has got, 0 (whole) to 1 (gone).
   final double breakT;
 
   /// The idle bob's phase, radians.
   final double bob;
+
+  final double scale;
 
   /// Seconds since the snap, 0 before it.
   double get _fall => math.max(0, breakT - TabLockStyle.snapAt) * TabLockStyle.breakTime.inMicroseconds / 1e6;
@@ -103,6 +111,13 @@ class _ChainsPainter extends CustomPainter {
 
   @override
   void paint(Canvas canvas, Size size) {
+    canvas.save();
+    canvas.scale(scale);
+    _paint(canvas, size / scale);
+    canvas.restore();
+  }
+
+  void _paint(Canvas canvas, Size size) {
     final center = TabLockStyle.lockAt.alongSize(size);
     const reach = TabLockStyle.chainReach;
     for (final (from, to) in [
@@ -221,5 +236,5 @@ class _ChainsPainter extends CustomPainter {
   }
 
   @override
-  bool shouldRepaint(_ChainsPainter old) => old.breakT != breakT || old.bob != bob;
+  bool shouldRepaint(_ChainsPainter old) => old.breakT != breakT || old.bob != bob || old.scale != scale;
 }

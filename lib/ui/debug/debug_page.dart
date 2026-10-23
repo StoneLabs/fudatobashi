@@ -455,10 +455,54 @@ class _RatingTab extends StatelessWidget {
       DebugKV('rated runs', '${p.ratedRuns.length}'),
       if (p.ratedRuns.lastOrNull?.scoredMs case final ms?) DebugKV('last ranked T (s)', (ms / 1000).toStringAsFixed(2)),
       const Divider(height: 24),
+      const _RatingClassTable(),
+      const Divider(height: 24),
       const Text('Card contributions to T (worst first)', style: _mono),
       for (final (id, ms) in rows)
         Text('${id.toString().padLeft(3)} ${poems[id].kimariji.padRight(7, '　')} ${(ms / 1000).toStringAsFixed(3).padLeft(7)} s',
             style: _mono),
+    ]);
+  }
+}
+
+/// The rating's classes as average times per card: each class line
+/// ([RankBand.maxSeconds], a projected 100-card time) shared out over the
+/// [RankedTuning.cards] cards, with the rating it starts at. A class runs
+/// from its own line, which it includes, to the next one's.
+class _RatingClassTable extends StatelessWidget {
+  const _RatingClassTable();
+
+  @override
+  Widget build(BuildContext context) {
+    const bands = Rating.bands;
+    const cards = RankedTuning.cards;
+    String perCard(double seconds) => (seconds / cards).toStringAsFixed(2);
+    String cell(String text, int width) => text.padRight(width);
+    String row(int i) {
+      final b = bands[i];
+      final next = bands.elementAtOrNull(i + 1);
+      final line = b.maxSeconds;
+      if (line == null) {
+        return '${cell(b.labelEn, 8)}${cell('< ${next!.minRating.round()}', 8)}'
+            '${cell('> ${next.maxSeconds!.toStringAsFixed(0)} s', 9)}> ${perCard(next.maxSeconds!)} s';
+      }
+      final time = next?.maxSeconds;
+      return '${cell(b.labelEn, 8)}${cell('${b.minRating.round()}', 8)}${cell('≤ ${line.toStringAsFixed(0)} s', 9)}'
+          '${time == null ? '≤ ${perCard(line)}' : '${perCard(line)}–${perCard(time)}'} s';
+    }
+
+    return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+      Text('Classes by time per card', style: Theme.of(context).textTheme.titleMedium),
+      const SizedBox(height: 4),
+      Text(
+        'Each class line is a projected $cards-card time T, at or under which the class starts; '
+        'per card it is T ÷ $cards. Each class runs from its line to the next one\'s.',
+        style: debugMono.copyWith(color: Colors.grey),
+      ),
+      const SizedBox(height: 4),
+      Text('${cell('class', 8)}${cell('from R', 8)}${cell('T', 9)}per card',
+          style: debugMono.copyWith(fontWeight: Weights.black)),
+      for (var i = 0; i < bands.length; i++) Text(row(i), style: debugMono),
     ]);
   }
 }

@@ -66,10 +66,11 @@ extension HistoryStrings on S {
   String get historyPlaced => t('historyPlaced');
   String get historyForfeit => t('historyForfeit');
   String get historyBest => t('historyBest');
+  String get historyCleared => t('historyCleared');
+  String get historyFailed => t('historyFailed');
   String historyUpTo(RankBand band) => f('historyUpTo', [className(band)]);
   String historyDownTo(RankBand band) => f('historyDownTo', [className(band)]);
   String get historyAnkirenCustom => t('historyAnkirenCustom');
-  String get historyNotScored => t('historyNotScored');
   String historyPerSide(Object a0, Object a1) => f('historyPerSide', [a0, a1]);
   String get historyNoMatch => t('historyNoMatch');
   String get filterTitle => t('filterTitle');

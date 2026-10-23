@@ -20,6 +20,7 @@ import 'package:fudatobashi/domain/side_trips.dart';
 import 'package:fudatobashi/domain/trainer.dart';
 import 'package:fudatobashi/state/play_config.dart';
 import 'package:fudatobashi/state/progress.dart';
+import 'package:fudatobashi/state/side_trips.dart';
 
 import 'test_ankiren.dart';
 
@@ -40,32 +41,23 @@ void main() {
     final db = AppDatabase(NativeDatabase.memory());
     final p = await allKnown(db);
     final fresh = p.sideTripsHub()[ankiren];
-    expect([fresh.rating, fresh.rankedLevel, fresh.maxLevel, fresh.games], [null, 0, AnkirenLevels.top, 0]);
+    expect([fresh.rating, fresh.nextLevel, fresh.maxLevel, fresh.games], [null, 0, AnkirenLevels.top, 0]);
 
     var notified = 0;
     p.addListener(() => notified++);
-    final perfect = playAnkiren(AnkirenSetup.forLevel(0, ranked: true), ms: 100);
+    final perfect = playAnkiren(const AnkirenSetup.ranked(), ms: 100);
     final first = await p.recordAnkiren(perfect, startedAt: startedAt);
     expect(notified, 1);
-    final placed = AnkirenRating.update(
-        AnkirenRating.start, AnkirenRating.performance(0, 1, placement: true), 0);
+    final performance = AnkirenRating.performance(perfect.score!.total);
     final stored = p.sideTrips.runs.single;
     expect([stored.ranked, stored.level, stored.completed, p.sideTrips.cardsIn(stored), stored.score, stored.maxScore],
-        [true, 0, true, perfect.prompts.length, perfect.score!.total, perfect.score!.max]);
-    expect([stored.rating, stored.performance], [placed, AnkirenRating.performance(0, 1, placement: true)]);
-    expect([first.ratingBefore, first.ratingAfter], [AnkirenRating.start, placed]);
-    expect(
-        placed - AnkirenRating.start,
-        closeTo(
-            AnkirenRatingModel.placementK *
-                AnkirenRatingModel.placementStretch *
-                AnkirenRatingModel.weight *
-                (1 - AnkirenRatingModel.par),
-            1e-9),
-        reason: 'placement: K ${AnkirenRatingModel.placementK} of a stretched performance');
+        [true, null, true, perfect.prompts.length, perfect.score!.total, perfect.score!.max]);
+    expect(perfect.prompts.length, 2 * AnkirenTuning.rankedPerSide);
+    expect([stored.rating, stored.performance], [performance, performance], reason: 'the first game places at its own');
+    expect([first.ratingBefore, first.ratingAfter], [AnkirenRating.start, performance]);
     expect(p.sideTrips.missesIn(stored), 0);
-    expect(stored.meta, contains('"perSide":${AnkirenLevels.of(0).perSide}'));
-    expect(Rating.bandOf(placed), isNot(Rating.bandOf(AnkirenRating.start)));
+    expect(stored.meta, contains('"perSide":${AnkirenTuning.rankedPerSide}'));
+    expect(Rating.bandOf(performance).id, 'A', reason: 'every card at 0.1 s');
 
     final answers = await (db.select(db.sideTripAnswers)..where((a) => a.runId.equals(stored.id))).get();
     expect([for (final a in answers) a.poemId], perfect.prompts);
@@ -73,50 +65,129 @@ void main() {
     expect(answers.every((a) => a.wrongTaps == 0 && a.responseUs == 100000), isTrue);
 
     final hub = p.sideTripsHub()[ankiren];
-    expect([hub.rating, hub.rankedLevel, hub.games], [placed, AnkirenRating.levelFor(placed, maxLevel: 10), 1]);
+    expect([hub.rating, hub.games, hub.results.single.score], [performance, 1, perfect.score!.total]);
 
     final free = await p.recordAnkiren(playAnkiren(AnkirenSetup.forLevel(2), wrongAt: {0, 3}), startedAt: startedAt);
     expect([free.ratingBefore, free.ratingAfter], [null, null]);
-    expect(p.sideTrips.ratingOf(ankiren), placed, reason: 'free play never moves the rating');
+    expect(p.sideTrips.ratingOf(ankiren), performance, reason: 'free play never moves the rating');
     expect(p.sideTrips.rankedGames(ankiren), 1);
     final run = p.sideTrips.runs.last;
     expect([run.game, run.ranked, run.level, run.rating, run.performance], [SideTrip.ankiren, false, 2, null, null]);
     expect(p.sideTrips.missesIn(run), 2);
+    expect([run.score, run.maxScore], [null, null], reason: 'only ranked games have points');
 
     final again = await Progress.open(db);
     expect(again.sideTrips.runs, p.sideTrips.runs, reason: 'survives a restart');
     expect(again.sideTrips.missesIn(again.sideTrips.runs.last), 2);
-    expect(again.sideTripsHub()[ankiren].rating, placed);
+    expect(again.sideTripsHub()[ankiren].rating, performance);
     await db.close();
   });
 
-  test('placement moves the rating fully for its games, then by the established K', () async {
+  test('placement is the mean of its games, then the established K moves the rating', () async {
     final db = AppDatabase(NativeDatabase.memory());
     final p = await allKnown(db);
-    final ratings = <double>[];
+    final performances = <double>[];
     for (var game = 0; game <= AnkirenRatingModel.placementGames; game++) {
-      final level = p.sideTripsHub()[ankiren].rankedLevel!;
-      final played = playAnkiren(AnkirenSetup.forLevel(level, ranked: true), seed: game, ms: 3000);
+      final played = playAnkiren(const AnkirenSetup.ranked(), seed: game, ms: 600 + 400 * game);
       final report = await p.recordAnkiren(played, startedAt: startedAt);
-      final placing = game < AnkirenRatingModel.placementGames;
-      final perf = AnkirenRating.performance(level, played.score!.fraction, placement: placing);
-      final k = placing ? AnkirenRatingModel.placementK : AnkirenRatingModel.establishedK;
-      expect(report.ratingAfter, closeTo(report.ratingBefore! + k * (perf - report.ratingBefore!), 1e-9));
-      ratings.add(report.ratingAfter!);
+      final perf = AnkirenRating.performance(played.score!.total);
+      expect(p.sideTrips.runs.last.performance, perf);
+      final expected = game < AnkirenRatingModel.placementGames
+          ? (performances.fold(0.0, (a, b) => a + b) + perf) / (game + 1)
+          : report.ratingBefore! + AnkirenRatingModel.establishedK * (perf - report.ratingBefore!);
+      expect(report.ratingAfter, closeTo(expected, 1e-9));
+      expect(report.rankedGames, game + 1);
+      performances.add(perf);
     }
     expect(p.sideTrips.rankedGames(ankiren), AnkirenRatingModel.placementGames + 1);
-    expect(p.sideTrips.ratingOf(ankiren), ratings.last);
+    await db.close();
+  });
+
+  test('cleared levels are stored, survive a restart and a reset clears them; a game without strikes clears nothing', () async {
+    final db = AppDatabase(NativeDatabase.memory());
+    final p = await allKnown(db);
+    // A game whose strikes were not counted (not the owner's).
+    await p.recordAnkiren(playAnkiren(AnkirenSetup.forLevel(3)), startedAt: startedAt);
+    expect(p.sideTrips.ladderOf(ankiren).cleared, isEmpty);
+    await p.recordAnkiren(playAnkiren(AnkirenSetup.forLevel(0), strikes: true), startedAt: startedAt);
+    await p.recordAnkiren(playAnkiren(AnkirenSetup.forLevel(0), strikes: true), startedAt: startedAt);
+    expect(p.sideTrips.ladderOf(ankiren).cleared, {0});
+    final key = SideTrips.clearedKey(ankiren);
+    expect((await (db.select(db.keyValues)..where((k) => k.key.equals(key))).getSingle()).value, '[0]');
+
+    final again = await Progress.open(db);
+    expect(again.sideTrips.ladderOf(ankiren).cleared, {0});
+    await again.resetProgress();
+    expect(again.sideTrips.ladderOf(ankiren).cleared, isEmpty);
+    expect(await (db.select(db.keyValues)..where((k) => k.key.equals(key))).getSingleOrNull(), isNull);
+    expect((await Progress.open(db)).sideTrips.ladderOf(ankiren).cleared, isEmpty);
+    await db.close();
+  });
+
+  test('levels open as recorded games clear them; a game with three strikes clears nothing', () async {
+    final db = AppDatabase(NativeDatabase.memory());
+    final p = await allKnown(db);
+    AnkirenLadder ladder() => p.sideTripsHub()[ankiren].ladder;
+    expect([ladder().open, ladder().cleared], [0, isEmpty]);
+
+    final out = playAnkiren(AnkirenSetup.forLevel(0), wrongAt: {0, 1, 2}, strikes: true);
+    expect((out.cleared, out.completed), (false, true), reason: 'it plays to the end and fails');
+    final failed = await p.recordAnkiren(out, startedAt: startedAt);
+    expect([failed.ladderBefore.open, failed.ladderAfter.open], [0, 0]);
+    expect([p.sideTrips.runs.single.completed, p.sideTrips.strikesIn(p.sideTrips.runs.single)], [true, 3]);
+
+    final clear = await p.recordAnkiren(
+        playAnkiren(AnkirenSetup.forLevel(0), wrongAt: {0}, giveUpAt: {1}, strikes: true),
+        startedAt: startedAt);
+    expect([clear.ladderBefore.open, clear.ladderAfter.open, ladder().isCleared(0)], [0, 1, true]);
+
+    await p.recordAnkiren(playAnkiren(AnkirenSetup.forLevel(1), endAfter: 2, strikes: true), startedAt: startedAt);
+    expect(ladder().open, 1, reason: 'a game left before the end clears nothing');
+
+    await p.recordAnkiren(playAnkiren(AnkirenSetup.forLevel(1), strikes: true), startedAt: startedAt);
+    expect([ladder().open, ladder().cleared], [2, {0, 1}]);
+    await db.close();
+  });
+
+  test('ranked opens in all-known mode once Lv 4 is cleared; custom setups once Lv 8 is', () async {
+    final db = AppDatabase(NativeDatabase.memory());
+    final p = await allKnown(db);
+    RankedLock? lock() => p.sideTripsHub()[ankiren].rankedLock;
+    expect([lock()!.allKnown, lock()!.cleared], [true, false]);
+    for (var level = 0; level < AnkirenTuning.rankedAfterLevel; level++) {
+      await p.recordAnkiren(playAnkiren(AnkirenSetup.forLevel(level), strikes: true), startedAt: startedAt);
+    }
+    expect(lock(), isNotNull);
+    await p.recordAnkiren(playAnkiren(AnkirenSetup.forLevel(AnkirenTuning.rankedAfterLevel), strikes: true),
+        startedAt: startedAt);
+    expect(lock(), isNull);
+    expect(p.sideTripsHub()[ankiren].rankedOpen, isTrue);
+    expect(p.sideTripsHub()[ankiren].ladder.customOpen, isFalse);
+
+    await p.setLearningMode(LearningMode.journey);
+    expect([lock()!.allKnown, lock()!.cleared], [false, true], reason: 'journey mode shuts ranked again');
+    await db.close();
+  });
+
+  test('the developer button clears the levels ranked needs, stored, and leaves the rest', () async {
+    final db = AppDatabase(NativeDatabase.memory());
+    final p = await allKnown(db);
+    await p.clearAnkirenUpTo(AnkirenTuning.rankedAfterLevel);
+    final hub = p.sideTripsHub()[ankiren];
+    expect([hub.rankedLock, hub.rankedOpen], [isNull, isTrue]);
+    expect([hub.ladder.open, hub.ladder.customOpen], [AnkirenTuning.rankedAfterLevel + 1, isFalse]);
+    expect((await Progress.open(db)).sideTripsHub()[ankiren].rankedLock, isNull, reason: 'stored');
     await db.close();
   });
 
   test('a ranked game ended early counts; its unasked cards are stored as never found', () async {
     final db = AppDatabase(NativeDatabase.memory());
     final p = await allKnown(db);
-    final game = playAnkiren(AnkirenSetup.forLevel(1, ranked: true), endAfter: 3);
+    final game = playAnkiren(const AnkirenSetup.ranked(), endAfter: 3);
     final report = await p.recordAnkiren(game, startedAt: startedAt, meta: {'layout': 'v2'});
     expect(report.ratingAfter, isNotNull);
     final answers = await db.select(db.sideTripAnswers).get();
-    final cards = AnkirenLevels.of(1).cards;
+    const cards = 2 * AnkirenTuning.rankedPerSide;
     expect([for (final a in answers) a.responseUs == null], [for (var i = 0; i < cards; i++) i >= 3]);
     final run = p.sideTrips.runs.single;
     expect([run.completed, p.sideTrips.cardsIn(run)], [false, cards]);
@@ -124,7 +195,7 @@ void main() {
     expect(run.endedAt, answers.last.at, reason: 'it ended as its last prompt was settled');
     expect(p.sideTrips.missesIn(run), cards - 3);
     expect(run.meta, contains('"layout":"v2"'));
-    expect(run.meta, contains('"perSide":${AnkirenLevels.of(1).perSide}'));
+    expect(run.meta, contains('"perSide":${AnkirenTuning.rankedPerSide}'));
     await db.close();
   });
 
@@ -196,28 +267,22 @@ void main() {
   test('a progress reset deletes every side-trip game', () async {
     final db = AppDatabase(NativeDatabase.memory());
     final p = await allKnown(db);
-    await p.recordAnkiren(playAnkiren(AnkirenSetup.forLevel(0, ranked: true)), startedAt: startedAt);
+    await p.recordAnkiren(playAnkiren(const AnkirenSetup.ranked()), startedAt: startedAt);
     await p.resetProgress();
     expect(await db.select(db.sideTripRuns).get(), isEmpty);
     expect(await db.select(db.sideTripAnswers).get(), isEmpty);
     expect(p.sideTrips.runs, isEmpty);
     await p.setLearningMode(LearningMode.allKnown);
     final hub = p.sideTripsHub()[ankiren];
-    expect([hub.rating, hub.rankedLevel, hub.games], [null, 0, 0]);
+    expect([hub.rating, hub.nextLevel, hub.games], [null, 0, 0]);
     await db.close();
   });
 
-  test('the ranked level is capped by the levels the known cards fill', () async {
+  test('the known cards cap the levels a player can fill', () async {
     final db = AppDatabase(NativeDatabase.memory());
     final p = await allKnown(db);
-    await p.recordAnkiren(playAnkiren(AnkirenSetup.forLevel(0, ranked: true)), startedAt: startedAt);
-    final rating = p.sideTrips.ratingOf(ankiren)!;
-    expect(AnkirenRating.levelFor(rating, maxLevel: AnkirenLevels.top), greaterThan(1));
     for (final (known, maxLevel) in [(100, AnkirenLevels.top), (8, 1), (7, 0), (5, null)]) {
-      final standing = p.sideTrips.standingOf(ankiren, known: known);
-      expect([standing.maxLevel, standing.rankedLevel],
-          [maxLevel, maxLevel == null ? null : AnkirenRating.levelFor(rating, maxLevel: maxLevel)],
-          reason: '$known known cards');
+      expect(p.sideTrips.standingOf(ankiren, known: known).maxLevel, maxLevel, reason: '$known known cards');
     }
 
     // The hub counts the cards known in journey mode.
@@ -238,7 +303,8 @@ void main() {
     await journey.recordRun(session, const PlayConfig(mode: PlayMode.training), DateTime.now());
     expect(journey.knownCards, hasLength(10));
     final entry = journey.sideTripsHub()[ankiren];
-    expect([entry.maxLevel, entry.rankedLevel], [AnkirenLevels.maxLevelFor(10), 0]);
+    expect([entry.maxLevel, entry.nextLevel, entry.fits(2), entry.fits(3)],
+        [AnkirenLevels.maxLevelFor(10), 0, true, false]);
     expect(entry.maxLevel, 2);
     await db.close();
     await journey.db.close();

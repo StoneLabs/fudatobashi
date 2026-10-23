@@ -7,6 +7,7 @@ import '../../config/config.dart';
 import '../../config/design.dart';
 import '../../config/vector_art.dart';
 import '../../domain/ankiren_game.dart';
+import '../../domain/ankiren_level.dart';
 import '../../domain/rating.dart';
 import '../../domain/side_trips.dart';
 import '../../l10n/ankiren_strings.dart';
@@ -22,24 +23,25 @@ import '../play/time_format.dart';
 import '../rank/rank_badges.dart';
 import '../results/celebration_sequence.dart';
 import '../results/celebrations.dart';
-import '../run/run_launcher.dart';
 import '../sound/sounds.dart';
+import 'ankiren_strikes.dart';
 
-/// 暗記練's results: the score on a sunburst (for a custom game, which is not
-/// scored, the cards found and missed), the cards found with the first tap
-/// and their average time, and for a ranked game how the rating moved
-/// and the level the next one plays; then Again (the same way: ranked reads
-/// its level afresh, free play replays the setup) or Done. A recorded game's
-/// celebrations play over it first, each tap-anywhere-to-skip: the XP it
-/// earned and any level it reached, then a ranked game's rating page.
+/// 暗記練's results: on a sunburst the score of a ranked game, whether a
+/// free-play level was cleared or failed, or else the cards found and
+/// missed; the cards found with the first tap and their average time; then
+/// for a ranked game how the rating moved, for a free-play level its wrong
+/// taps and what clearing it opened, and for a guest's or custom game that
+/// nothing was saved; then Back to the AnkiRen page or Done (Home). A recorded game's celebrations play
+/// over it first, each tap-anywhere-to-skip: the XP it earned and any level
+/// it reached, then a ranked game's rating page.
 class AnkirenResultsScreen extends StatefulWidget {
-  const AnkirenResultsScreen({super.key, required this.game, required this.report, required this.tracked});
+  const AnkirenResultsScreen({super.key, required this.game, required this.report, required this.player});
 
   final AnkirenGame game;
 
-  /// What was recorded; null for the untracked test game.
+  /// What was recorded; null when nothing was (see [AnkirenPlayer]).
   final AnkirenReport? report;
-  final bool tracked;
+  final AnkirenPlayer player;
 
   @override
   State<AnkirenResultsScreen> createState() => _AnkirenResultsScreenState();
@@ -102,11 +104,24 @@ class _AnkirenResultsScreenState extends State<AnkirenResultsScreen> {
     final found = game.answers.where((a) => a.found).length;
     final asked = game.prompts.length;
     final level = setup.level;
+    final player = widget.player;
     final tag = [
       s.tripName(SideTrip.ankiren),
-      if (!widget.tracked) s.untracked else if (setup.ranked) s.sideTripRanked else s.freePlay,
-      level == null ? s.ankirenCustomTag(setup.perSide, formatMinutes(setup.memorise)) : s.ankirenLevelTag(level),
+      switch (player) {
+        AnkirenPlayer.developer => s.untracked,
+        AnkirenPlayer.guest => s.ankirenGuest,
+        AnkirenPlayer.owner => setup.ranked ? s.sideTripRanked : s.freePlay,
+      },
+      if (level != null)
+        s.ankirenLevelTag(level)
+      else if (setup.custom)
+        s.ankirenCustomTag(setup.perSide, formatMinutes(setup.memorise)),
     ].join(' · ');
+    final ratingUp = report?.ratingAfter == null ? null : report!.ratingAfter! >= report.ratingBefore!;
+    final cheer = ratingUp ??
+        (game.countsStrikes
+            ? game.cleared
+            : AnkirenLadder.clears(completed: game.completed, strikes: game.strikes));
 
     return Scaffold(
       backgroundColor: Palette.paper,
@@ -132,19 +147,30 @@ class _AnkirenResultsScreenState extends State<AnkirenResultsScreen> {
                 Expanded(
                   child: SingleChildScrollView(
                     child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-                      if (score == null)
+                      if (setup.ranked && score != null)
                         _SplashPanel(
-                          label: game.completed ? s.ankirenFoundLabel : s.endedEarly,
-                          big: found,
-                          lines: [s.ankirenFoundOf(asked), s.ankirenMissed(asked - found)],
-                          cheer: found == asked,
+                          label: game.completed ? s.ankirenScoreLabel : s.endedEarly,
+                          big: '${score.total}',
+                          lines: [s.ankirenScoreOf(score.max), if (score.early > 0) s.ankirenEarlyBonus(score.early)],
+                          cheer: cheer,
+                        )
+                      else if (game.countsStrikes && level != null)
+                        _SplashPanel(
+                          big: game.cleared
+                              ? s.ankirenLevelCleared(level)
+                              : game.completed
+                                  ? s.ankirenLevelFailed(level)
+                                  : s.ankirenLevelNotCleared(level),
+                          lines: const [],
+                          cheer: cheer,
+                          clearTobi: true,
                         )
                       else
                         _SplashPanel(
-                          label: game.completed ? s.ankirenScoreLabel : s.endedEarly,
-                          big: score.total,
-                          lines: [s.ankirenScoreOf(score.max), if (score.early > 0) s.ankirenEarlyBonus(score.early)],
-                          cheer: score.fraction >= AnkirenRatingModel.par,
+                          label: game.completed ? s.ankirenFoundLabel : s.endedEarly,
+                          big: '$found',
+                          lines: [s.ankirenFoundOf(asked), s.ankirenMissed(asked - found)],
+                          cheer: cheer,
                         ),
                       const SizedBox(height: Gaps.panel),
                       IntrinsicHeight(
@@ -154,7 +180,7 @@ class _AnkirenResultsScreenState extends State<AnkirenResultsScreen> {
                               label: s.ankirenFirstTryLabel,
                               big: '${game.firstTries}',
                               unit: '/ $asked',
-                              note: s.ankirenWrongTaps(game.answers.fold(0, (n, a) => n + a.wrongTaps)),
+                              note: report != null && game.countsStrikes ? null : s.ankirenWrongTaps(game.strikes),
                             ),
                           ),
                           const SizedBox(width: Gaps.panel),
@@ -171,11 +197,15 @@ class _AnkirenResultsScreenState extends State<AnkirenResultsScreen> {
                       if (report?.ratingAfter != null) ...[
                         const SizedBox(height: Gaps.panel),
                         _RatingPanel(before: report!.ratingBefore!, after: report.ratingAfter!),
-                      ] else if (widget.tracked && !setup.ranked) ...[
+                      ] else if (report != null && game.countsStrikes) ...[
+                        const SizedBox(height: Gaps.panel),
+                        _LevelPanel(game: game, report: report),
+                      ] else if (player != AnkirenPlayer.developer && !setup.ranked) ...[
                         const SizedBox(height: Gaps.panel),
                         DashedBox(
                           padding: ResultsLayout.notePadding,
-                          child: Text.rich(Phrases.span(score == null ? s.ankirenCustomNote : s.ankirenFreeNote),
+                          child: Text.rich(
+                              Phrases.span(player == AnkirenPlayer.guest ? s.ankirenGuestNote : s.ankirenCustomNote),
                               style: const TextStyle(fontWeight: Weights.bold, fontSize: AnkirenResultsLayout.noteFont)),
                         ),
                       ],
@@ -194,10 +224,10 @@ class _AnkirenResultsScreenState extends State<AnkirenResultsScreen> {
                       flex: 2,
                       child: ActionRowButton(
                         icon: IconArt.refresh,
-                        label: s.again,
-                        sub: s.ankirenAgainSub,
+                        label: s.ankirenBackToPage,
+                        sub: s.ankirenBackSub,
                         color: Palette.pink,
-                        onTap: () => ankirenAgain(context, setup, tracked: widget.tracked),
+                        onTap: () => Navigator.of(context).pop(),
                       ),
                     ),
                   ]),
@@ -226,16 +256,20 @@ class _AnkirenResultsScreenState extends State<AnkirenResultsScreen> {
   }
 }
 
-/// A [big] number on a sunburst, its [label] over it and its [lines] under
-/// it, with Tobi cheering when [cheer]: a game at or above par, or a custom
-/// game with every card found.
+/// A [big] result on a sunburst, its [label] over it and its [lines] under
+/// it, with Tobi cheering when [cheer]: a ranked game that held or raised
+/// the rating, or any other played to the end with fewer strikes than end
+/// a free-play level.
 class _SplashPanel extends StatelessWidget {
-  const _SplashPanel({required this.label, required this.big, required this.lines, required this.cheer});
+  const _SplashPanel({this.label, required this.big, required this.lines, required this.cheer, this.clearTobi = false});
 
-  final String label;
-  final int big;
+  final String? label;
+  final String big;
   final List<String> lines;
   final bool cheer;
+
+  /// A long [big] keeps above Tobi.
+  final bool clearTobi;
 
   @override
   Widget build(BuildContext context) {
@@ -246,20 +280,24 @@ class _SplashPanel extends StatelessWidget {
           RadialLayer(center: Backdrops.skyCenter, colors: Backdrops.skyColors, stops: Backdrops.skyStops),
           BurstLayer(ResultsLayout.splashBurst),
         ],
-        padding: AnkirenResultsLayout.splashPadding,
+        padding: clearTobi
+            ? AnkirenResultsLayout.splashPadding.copyWith(bottom: AnkirenResultsLayout.tobiClearance)
+            : AnkirenResultsLayout.splashPadding,
         child: ConstrainedBox(
           constraints: const BoxConstraints(minHeight: AnkirenResultsLayout.splashMinHeight),
           child: Center(
             child: Column(mainAxisSize: MainAxisSize.min, children: [
-              Text(label,
-                  style: const TextStyle(
-                      fontWeight: Weights.black,
-                      fontSize: ResultsLayout.splashLabelFont,
-                      letterSpacing: ResultsLayout.splashLabelTracking * ResultsLayout.splashLabelFont)),
-              const SizedBox(height: Gaps.small),
+              if (label != null) ...[
+                Text(label!,
+                    style: const TextStyle(
+                        fontWeight: Weights.black,
+                        fontSize: ResultsLayout.splashLabelFont,
+                        letterSpacing: ResultsLayout.splashLabelTracking * ResultsLayout.splashLabelFont)),
+                const SizedBox(height: Gaps.small),
+              ],
               FittedBox(
                 fit: BoxFit.scaleDown,
-                child: OutlinedText('$big',
+                child: OutlinedText(big,
                     style: const TextStyle(fontFamily: Fonts.display, fontSize: AnkirenResultsLayout.scoreFont, height: 1),
                     outlineWidth: AnkirenResultsLayout.scoreOutline),
               ),
@@ -286,9 +324,9 @@ class _SplashPanel extends StatelessWidget {
 
 /// A number with its label over it and a note under it.
 class _Stat extends StatelessWidget {
-  const _Stat({required this.label, required this.big, required this.unit, required this.note});
-  final String label, big, note;
-  final String? unit;
+  const _Stat({required this.label, required this.big, required this.unit, this.note});
+  final String label, big;
+  final String? unit, note;
 
   @override
   Widget build(BuildContext context) => MangaPanel(
@@ -315,14 +353,15 @@ class _Stat extends StatelessWidget {
                     text: ' $unit',
                     style: const TextStyle(fontFamily: Fonts.display, fontSize: ResultsLayout.statBigUnitFont, height: 1)),
             ]))),
-            _OneLine(Text(note, style: const TextStyle(fontWeight: Weights.bold, fontSize: ResultsLayout.statNoteFont))),
+            if (note != null)
+              _OneLine(Text(note!, style: const TextStyle(fontWeight: Weights.bold, fontSize: ResultsLayout.statNoteFont))),
           ],
         ),
       );
 }
 
 /// A ranked game's rating change, its class on the main rank's ladder, and
-/// what comes next: a placement game, and the level of the next one.
+/// how far placement has got.
 class _RatingPanel extends StatelessWidget {
   const _RatingPanel({required this.before, required this.after});
   final double before, after;
@@ -335,7 +374,6 @@ class _RatingPanel extends StatelessWidget {
     final band = Rating.bandOf(after);
     final rung = rungStyle(band.id);
     final games = progress.sideTrips.rankedGames(SideTrip.ankiren);
-    final next = progress.sideTripsHub()[SideTrip.ankiren].rankedLevel;
     const noteStyle = TextStyle(fontWeight: Weights.bold, fontSize: ResultsLayout.statNoteFont);
     return MangaPanel(
       color: Palette.pinkSoft,
@@ -357,11 +395,59 @@ class _RatingPanel extends StatelessWidget {
             _OneLine(Text('${before.round()} → ${after.round()} · ${s.className(band)}', style: noteStyle)),
             if (games <= AnkirenRatingModel.placementGames)
               _OneLine(Text(s.ankirenPlacement(games, AnkirenRatingModel.placementGames), style: noteStyle)),
-            if (next != null) _OneLine(Text(s.ankirenNextLevel(next), style: noteStyle)),
           ]),
         ),
         const SizedBox(width: Gaps.panel),
         ClassBadge(band, color: rung.color, textColor: rung.text),
+      ]),
+    );
+  }
+}
+
+/// A free-play level game's wrong taps with what clearing it opened (the
+/// next level, custom setups, ranked or every level), or, when it was not
+/// cleared, what clears it.
+class _LevelPanel extends StatelessWidget {
+  const _LevelPanel({required this.game, required this.report});
+
+  final AnkirenGame game;
+  final AnkirenReport report;
+
+  @override
+  Widget build(BuildContext context) {
+    final s = S.of(context);
+    final before = report.ladderBefore, after = report.ladderAfter;
+    final allKnown = ProgressScope.of(context).sideTripsHub()[SideTrip.ankiren].rankedLock?.allKnown ?? true;
+    final cleared = game.cleared;
+    final lines = [
+      if (!cleared) s.ankirenClearHow(AnkirenTuning.strikesOut),
+      if (after.allCleared && !before.allCleared) s.ankirenAllCleared,
+      if (!after.allCleared && after.open > before.open) s.ankirenLevelOpened(after.open),
+      if (after.customOpen && !before.customOpen) s.ankirenCustomOpened,
+      if (after.rankedReady && !before.rankedReady) allKnown ? s.ankirenRankedOpened : s.ankirenRankedNeedsAllKnown,
+    ];
+    const noteStyle = TextStyle(fontWeight: Weights.bold, fontSize: ResultsLayout.statNoteFont);
+    return MangaPanel(
+      color: cleared ? Palette.landSoft : Palette.pinkSoft,
+      tone: cleared ? Tones.land : Tones.pink,
+      padding: const EdgeInsets.symmetric(horizontal: Gaps.inner, vertical: Gaps.panelWide),
+      child: Row(children: [
+        Expanded(
+          child: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.start, children: [
+            _OneLine(Text(s.ankirenWrongTaps(game.strikes),
+                style: const TextStyle(fontFamily: Fonts.display, fontSize: AnkirenResultsLayout.levelTitleFont))),
+            const SizedBox(height: Gaps.tight),
+            for (final line in lines) Text.rich(Phrases.span(line), style: noteStyle),
+          ]),
+        ),
+        const SizedBox(width: Gaps.panel),
+        Column(mainAxisSize: MainAxisSize.min, children: [
+          if (cleared) ...[
+            const ClearedCheck(size: AnkirenResultsLayout.clearedCheck),
+            const SizedBox(height: Gaps.tight),
+          ],
+          AnkirenStrikes(strikes: game.strikes, cardHeight: AnkirenResultsLayout.strikeCard),
+        ]),
       ]),
     );
   }
