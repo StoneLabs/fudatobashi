@@ -190,7 +190,8 @@ void main() {
           await tester.pump(const Duration(seconds: 1));
           expect(tester.takeException(), isNull);
           expect(find.byType(MigrationNotice), findsOneWidget);
-          expect(find.text(s.t('noticeAnkirenReworkTitle')), findsOneWidget);
+          expect(find.text(s.t('noticeAnkirenReworkTitle')), findsNWidgets(2),
+              reason: 'the tag, and its unseen copy that keeps the panel\'s content clear of it');
           expect(find.textContaining(s.t('noticeAnkirenReworkBody').replaceAll('\u200b', ''), findRichText: true), findsOneWidget);
           await captureScreen(tester, 'migration_notice', lang: lang);
 

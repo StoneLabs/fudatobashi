@@ -553,7 +553,7 @@ class _TaggedPanel extends StatelessWidget {
           spacing: AnkirenPageLayout.headGap,
           runSpacing: AnkirenPageLayout.headGap,
           children: [
-            _Overhang(rise: AnkirenPageLayout.tagRise + head.top, child: ExcludeSemantics(child: banner)),
+            Overhang(rise: AnkirenPageLayout.tagRise + head.top, child: ExcludeSemantics(child: banner)),
             ?heading,
           ],
         ),
@@ -581,57 +581,6 @@ class _TaggedPanel extends StatelessWidget {
       ),
     ]);
   }
-}
-
-/// Room for what of [child] lies below its top [rise], as wide as the
-/// child, showing nothing: what a panel's tag takes of the panel under it.
-class _Overhang extends SingleChildRenderObjectWidget {
-  const _Overhang({required this.rise, required super.child});
-
-  final double rise;
-
-  @override
-  RenderObject createRenderObject(BuildContext context) => _RenderOverhang(rise);
-
-  @override
-  void updateRenderObject(BuildContext context, _RenderOverhang renderObject) => renderObject.rise = rise;
-}
-
-class _RenderOverhang extends RenderProxyBox {
-  _RenderOverhang(this._rise);
-
-  double _rise;
-  set rise(double value) {
-    if (value == _rise) return;
-    _rise = value;
-    markNeedsLayout();
-  }
-
-  double _below(double height) => math.max(0, height - _rise);
-
-  @override
-  double computeMinIntrinsicHeight(double width) => _below(super.computeMinIntrinsicHeight(width));
-
-  @override
-  double computeMaxIntrinsicHeight(double width) => _below(super.computeMaxIntrinsicHeight(width));
-
-  @override
-  Size computeDryLayout(BoxConstraints constraints) {
-    final child = super.computeDryLayout(constraints.loosen());
-    return constraints.constrain(Size(child.width, _below(child.height)));
-  }
-
-  @override
-  void performLayout() {
-    final child = this.child!..layout(constraints.loosen(), parentUsesSize: true);
-    size = constraints.constrain(Size(child.size.width, _below(child.size.height)));
-  }
-
-  @override
-  void paint(PaintingContext context, Offset offset) {}
-
-  @override
-  bool hitTest(BoxHitTestResult result, {required Offset position}) => false;
 }
 
 /// Ranked: the last ranked games (or the placement games so far), its one

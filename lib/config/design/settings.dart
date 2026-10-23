@@ -233,10 +233,10 @@ abstract final class MigrationNoticeStyle {
   static const EdgeInsets panelPadding = EdgeInsets.fromLTRB(14, 0, 14, 10);
   static const Offset panelShadow = Offset(4, 5);
 
-  /// The title's slab runs out of the panel's top, turned a little.
-  static const EdgeInsets slabPadding = EdgeInsets.symmetric(horizontal: 14, vertical: 8);
-  static const double slabTurnDeg = -1.5;
-  static const double titleFont = 26;
+  /// The title's tag rises [tagRise] over the panel's top edge, in line
+  /// with the panel's content.
+  static const double tagRise = 16;
+  static const double tagFont = 18;
 
   static const Size tobi = Size(78, 94);
   static const double bodyFont = 15;

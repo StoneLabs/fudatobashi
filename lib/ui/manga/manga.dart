@@ -23,6 +23,7 @@ export 'markdown_blocks.dart';
 export 'markdown_prose.dart';
 export 'marked_text.dart';
 export 'marker_heading.dart';
+export 'overhang.dart';
 export 'panel.dart';
 export 'phrases.dart';
 export 'pill_switch.dart';

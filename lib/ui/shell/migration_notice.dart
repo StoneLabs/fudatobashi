@@ -1,5 +1,3 @@
-import 'dart:math' as math;
-
 import 'package:flutter/material.dart';
 
 import '../../config/design.dart';
@@ -36,8 +34,8 @@ class MigrationNoticeOverlay extends StatelessWidget {
   }
 }
 
-/// A message from the app: a [title] on an ink slab, Tobi with the [body] and
-/// an OK shout, on a dimmed screen.
+/// A message from the app: a [title] on an ink tag over the panel's top
+/// edge, Tobi with the [body] and an OK shout, on a dimmed screen.
 class MigrationNotice extends StatelessWidget {
   const MigrationNotice({super.key, required this.title, required this.body, required this.onOk});
 
@@ -47,6 +45,8 @@ class MigrationNotice extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final s = S.of(context);
+    final tag = FittedBox(fit: BoxFit.scaleDown, child: InkBanner(title, fontSize: MigrationNoticeStyle.tagFont));
+    const padding = MigrationNoticeStyle.panelPadding;
     return Semantics(
       scopesRoute: true,
       explicitChildNodes: true,
@@ -58,42 +58,42 @@ class MigrationNotice extends StatelessWidget {
               padding: MigrationNoticeStyle.margin,
               child: ConstrainedBox(
                 constraints: const BoxConstraints(maxWidth: MigrationNoticeStyle.maxWidth),
-                child: MangaPanel(
-                  shadow: MigrationNoticeStyle.panelShadow,
-                  padding: MigrationNoticeStyle.panelPadding,
-                  child: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-                    Transform.rotate(
-                      angle: MigrationNoticeStyle.slabTurnDeg * math.pi / 180,
-                      child: ColoredBox(
-                        color: Palette.ink,
-                        child: Padding(
-                          padding: MigrationNoticeStyle.slabPadding,
-                          child: Text(title,
-                              textAlign: TextAlign.center,
-                              style: const TextStyle(
-                                  fontFamily: Fonts.display,
-                                  fontSize: MigrationNoticeStyle.titleFont,
-                                  height: TypeScale.displayLineHeight,
-                                  color: Palette.paper)),
+                child: Stack(clipBehavior: Clip.none, children: [
+                  Padding(
+                    padding: const EdgeInsets.only(top: MigrationNoticeStyle.tagRise),
+                    child: MangaPanel(
+                      shadow: MigrationNoticeStyle.panelShadow,
+                      padding: padding,
+                      child: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+                        Align(
+                          alignment: Alignment.centerLeft,
+                          child: Overhang(
+                              rise: MigrationNoticeStyle.tagRise + padding.top, child: ExcludeSemantics(child: tag)),
                         ),
-                      ),
+                        const SizedBox(height: MigrationNoticeStyle.gap),
+                        Row(crossAxisAlignment: CrossAxisAlignment.center, children: [
+                          SizedBox.fromSize(size: MigrationNoticeStyle.tobi, child: const Tobi(pose: TobiPose.tryHard)),
+                          const SizedBox(width: MigrationNoticeStyle.gap),
+                          Expanded(
+                            child: Text.rich(Phrases.span(body),
+                                style: const TextStyle(
+                                    fontWeight: Weights.bold,
+                                    fontSize: MigrationNoticeStyle.bodyFont,
+                                    height: MigrationNoticeStyle.bodyLineHeight)),
+                          ),
+                        ]),
+                        const SizedBox(height: MigrationNoticeStyle.gap),
+                        BurstButton(title: s.noticeOk, onTap: onOk),
+                      ]),
                     ),
-                    const SizedBox(height: MigrationNoticeStyle.gap),
-                    Row(crossAxisAlignment: CrossAxisAlignment.center, children: [
-                      SizedBox.fromSize(size: MigrationNoticeStyle.tobi, child: const Tobi(pose: TobiPose.tryHard)),
-                      const SizedBox(width: MigrationNoticeStyle.gap),
-                      Expanded(
-                        child: Text.rich(Phrases.span(body),
-                            style: const TextStyle(
-                                fontWeight: Weights.bold,
-                                fontSize: MigrationNoticeStyle.bodyFont,
-                                height: MigrationNoticeStyle.bodyLineHeight)),
-                      ),
-                    ]),
-                    const SizedBox(height: MigrationNoticeStyle.gap),
-                    BurstButton(title: s.noticeOk, onTap: onOk),
-                  ]),
-                ),
+                  ),
+                  Positioned(
+                    left: padding.left,
+                    right: padding.right,
+                    top: 0,
+                    child: Align(alignment: Alignment.centerLeft, child: Semantics(header: true, child: tag)),
+                  ),
+                ]),
               ),
             ),
           ),
