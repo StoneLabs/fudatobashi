@@ -153,7 +153,7 @@ abstract final class ReviewHeroLayout {
 /// The run review's tiles (`TileBand`): the Overview's three, and the
 /// smaller ones of the Speed, Rating and Field tabs.
 abstract final class ReviewTileLayout {
-  static const spec = TileSpec(padding: EdgeInsets.fromLTRB(14, 12, 10, 13), lines: 2);
+  static const spec = TileSpec(padding: EdgeInsets.fromLTRB(14, 12, 8, 13));
   static const small = TileSpec(
     padding: EdgeInsets.fromLTRB(11, 12, 8, 12),
     labelFont: 10,

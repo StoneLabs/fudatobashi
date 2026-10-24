@@ -167,6 +167,11 @@ void main() {
         .stateList<ScrollableState>(find.byType(Scrollable))
         .where((s) => s.position.axis == Axis.vertical && tester.getTopLeft(find.byWidget(s.widget)).dx.abs() < 1)
         .first;
+    final position = scrollable.position;
+    while (text.evaluate().isEmpty && position.pixels < position.maxScrollExtent) {
+      position.jumpTo(math.min(position.pixels + position.viewportDimension / 2, position.maxScrollExtent));
+      await tester.pump();
+    }
     final top = tester.getTopLeft(find.byWidget(scrollable.widget)).dy;
     final at = tester.getTopLeft(text).dy;
     scrollable.position.jumpTo(scrollable.position.pixels + at - top - below);
@@ -252,11 +257,11 @@ void main() {
       final p = await player(tester, mode: LearningMode.allKnown);
       final runs = <PastRun>[];
       for (final (i, (ms, misses)) in [
-        (1050, {8, 57}),
-        (1000, {33}),
-        (1020, {12, 77}),
-        (960, {40}),
-        (880, {70}),
+        (800, {8, 57}),
+        (780, {33}),
+        (790, {12, 77}),
+        (760, {40}),
+        (700, {70}),
       ].indexed) {
         runs.add(await record(tester, p, play(all(seed: i), ms: ms, seed: i, missAt: misses), _ranked,
             at: DateTime(2026, 10, 19 + i, i == 0 ? 20 : 18)));
