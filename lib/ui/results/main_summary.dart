@@ -81,14 +81,8 @@ class _Run {
 
   /// The header's mode, in [t]'s language: on the [sub] line a placement
   /// is a ranked run like any other.
-  String title(S t, {bool sub = false}) => switch (config.mode) {
-        PlayMode.training => t.summaryTraining,
-        PlayMode.free => t.summaryFree,
-        PlayMode.nigate => t.summaryWeak,
-        PlayMode.guest => t.summaryGuest,
-        PlayMode.ranked => report.placement && !sub ? t.summaryPlacement : t.summaryRanked,
-        PlayMode.exam => t.summaryExam,
-      };
+  String title(S t, {bool sub = false}) =>
+      config.mode == PlayMode.ranked && report.placement && !sub ? t.summaryPlacement : modeTitle(t, config.mode);
 
   /// The header's line after the mode: the deck and the cards played.
   List<String> details() {

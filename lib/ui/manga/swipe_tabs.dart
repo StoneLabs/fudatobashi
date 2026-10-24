@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
 
 import '../../config/design.dart';
@@ -15,23 +17,24 @@ class SwipeTab {
   final String label;
   final String? sub;
 
-  /// The picked tab's colour: its fill in a [SwipeTabsLook.strip], the bar
-  /// along its top in [SwipeTabsLook.folders].
+  /// The picked tab's colour: its chip's fill in [SwipeTabsLook.slant], the
+  /// bar along its top in [SwipeTabsLook.folders].
   final Color accent;
 
-  /// The picked tab's lettering on [accent] in a [SwipeTabsLook.strip].
+  /// The picked tab's lettering on [accent] in [SwipeTabsLook.slant].
   final Color onAccent;
   final WidgetBuilder builder;
 }
 
 /// How [SwipeTabs] draws its tab row.
 enum SwipeTabsLook {
-  /// Small two-line labels over a thick rule, the picked one filled.
-  strip,
-
   /// Outlined folder tabs standing on a thick rule, the picked one white
   /// with a bar along its top, pulled up and open into its page.
   folders,
+
+  /// Small labels on a thick rule, the picked one standing on it as a chip
+  /// slanted like the banners, filled with its accent.
+  slant,
 }
 
 /// Pages side by side under a row of tabs: swipe between them, or tap a
@@ -41,7 +44,7 @@ class SwipeTabs extends StatefulWidget {
     super.key,
     required this.tabs,
     this.initial = 0,
-    this.look = SwipeTabsLook.strip,
+    required this.look,
     this.padding = EdgeInsets.zero,
     this.onChanged,
   });
@@ -76,12 +79,8 @@ class _SwipeTabsState extends State<SwipeTabs> {
         children: [
           Padding(
             padding: widget.padding,
-            child: DecoratedBox(
-              decoration: BoxDecoration(
-                border: widget.look == SwipeTabsLook.strip
-                    ? const Border(bottom: BorderSide(color: Palette.ink, width: SwipeTabsStyle.rule))
-                    : null,
-              ),
+            child: _Ruled(
+              look: widget.look,
               child: Row(
                 crossAxisAlignment: CrossAxisAlignment.end,
                 children: [
@@ -94,13 +93,13 @@ class _SwipeTabsState extends State<SwipeTabs> {
                           behavior: HitTestBehavior.opaque,
                           onTap: () => _go(i),
                           child: switch (widget.look) {
-                            SwipeTabsLook.strip => _StripTab(tab, picked: i == _current),
                             SwipeTabsLook.folders => _FolderTab(
                                 tab,
                                 picked: i == _current,
                                 first: i == 0,
                                 beforePicked: i + 1 == _current,
                               ),
+                            SwipeTabsLook.slant => _SlantTab(tab, picked: i == _current),
                           },
                         ),
                       ),
@@ -125,41 +124,89 @@ class _SwipeTabsState extends State<SwipeTabs> {
       );
 }
 
-class _StripTab extends StatelessWidget {
-  const _StripTab(this.tab, {required this.picked});
+/// The tab row's thick rule over the foot of the slanted chip; none under
+/// the folders.
+class _Ruled extends StatelessWidget {
+  const _Ruled({required this.look, required this.child});
+  final SwipeTabsLook look;
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) => switch (look) {
+        SwipeTabsLook.folders => child,
+        SwipeTabsLook.slant => Stack(children: [
+            child,
+            const Positioned(
+              left: 0,
+              right: 0,
+              bottom: 0,
+              height: SwipeTabsStyle.rule,
+              child: ColoredBox(color: Palette.ink),
+            ),
+          ]),
+      };
+}
+
+/// A tab of [SwipeTabsLook.slant]: its label, and when [picked] the
+/// slanted chip behind it.
+class _SlantTab extends StatelessWidget {
+  const _SlantTab(this.tab, {required this.picked});
   final SwipeTab tab;
   final bool picked;
 
   @override
-  Widget build(BuildContext context) => Container(
-        color: picked ? tab.accent : null,
-        padding: SwipeTabsStyle.stripPadding,
-        child: DefaultTextStyle.merge(
-          style: TextStyle(color: picked ? tab.onAccent : SwipeTabsStyle.idle, height: SwipeTabsStyle.lineHeight),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              FittedBox(
-                fit: BoxFit.scaleDown,
-                child: Text(tab.label,
-                    maxLines: 1, style: const TextStyle(fontWeight: Weights.black, fontSize: SwipeTabsStyle.font)),
+  Widget build(BuildContext context) {
+    const side = BorderSide(color: Palette.ink, width: SwipeTabsStyle.chipBorder);
+    final sub = tab.sub;
+    return ConstrainedBox(
+      constraints: const BoxConstraints(minHeight: SwipeTabsStyle.slantHeight),
+      child: Stack(children: [
+        if (picked)
+          Positioned(
+            left: SwipeTabsStyle.chipInset,
+            right: SwipeTabsStyle.chipInset,
+            top: SwipeTabsStyle.chipTop,
+            bottom: 0,
+            child: Transform(
+              alignment: Alignment.center,
+              transform: Matrix4.skewX(Tilt.tagSkew * math.pi / 180),
+              child: DecoratedBox(
+                decoration: BoxDecoration(
+                  color: tab.accent,
+                  border: const Border(top: side, left: side, right: side),
+                ),
               ),
-              if (tab.sub case final sub?) ...[
-                const SizedBox(height: SwipeTabsStyle.subGap),
+            ),
+          ),
+        Padding(
+          padding: SwipeTabsStyle.slantPadding,
+          child: DefaultTextStyle.merge(
+            style: TextStyle(
+              color: picked ? tab.onAccent : SwipeTabsStyle.slantIdle,
+              fontWeight: picked ? Weights.black : Weights.bold,
+              height: SwipeTabsStyle.lineHeight,
+            ),
+            child: Center(
+              child: Column(mainAxisSize: MainAxisSize.min, children: [
                 FittedBox(
                   fit: BoxFit.scaleDown,
-                  child: Text(sub,
-                      maxLines: 1,
-                      style: const TextStyle(
-                          fontWeight: Weights.black,
-                          fontSize: SwipeTabsStyle.subFont,
-                          letterSpacing: SwipeTabsStyle.subTracking)),
+                  child: Text(tab.label, maxLines: 1, style: const TextStyle(fontSize: SwipeTabsStyle.slantFont)),
                 ),
-              ],
-            ],
+                if (sub != null)
+                  FittedBox(
+                    fit: BoxFit.scaleDown,
+                    child: Text(sub,
+                        maxLines: 1,
+                        style: const TextStyle(
+                            fontSize: SwipeTabsStyle.subFont, letterSpacing: SwipeTabsStyle.subTracking)),
+                  ),
+              ]),
+            ),
           ),
         ),
-      );
+      ]),
+    );
+  }
 }
 
 class _FolderTab extends StatelessWidget {

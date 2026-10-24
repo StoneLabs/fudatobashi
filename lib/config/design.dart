@@ -15,6 +15,7 @@ part 'design/stats.dart';
 part 'design/history.dart';
 part 'design/play.dart';
 part 'design/results.dart';
+part 'design/run_review.dart';
 part 'design/celebrations.dart';
 part 'design/onboarding.dart';
 part 'design/help.dart';

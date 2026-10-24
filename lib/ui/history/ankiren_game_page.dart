@@ -7,6 +7,7 @@ import '../../domain/side_trips.dart';
 import '../../l10n/ankiren_review_strings.dart';
 import '../../l10n/history_strings.dart';
 import '../../l10n/run_strings.dart';
+import '../../l10n/side_trip_strings.dart';
 import '../../l10n/strings.dart';
 import '../../state/scope.dart';
 import '../../state/xp_history.dart';
@@ -54,12 +55,11 @@ class AnkirenGamePage extends StatelessWidget {
       xp: XpHistory.gainsOf(progress).ankiren[run.id],
     );
     final tabs = review.game.scored ? scoredTabs : unscoredTabs;
+    final kind = ankirenKindLabel(s, ranked: run.ranked, level: run.level);
     return RunPageFrame(
-      look: HistoryLooks.ankiren,
-      title: s.runTabGame,
-      titleSub: s.other.runTabGame,
-      tag: AnkirenKindTag(ranked: run.ranked, level: run.level),
-      line: '${s.sessionDate(run.startedAt)} · ${s.ankirenASide(review.game.perSide)}',
+      title: s.tripName(SideTrip.ankiren),
+      sub: [s.other.tripName(SideTrip.ankiren), kind, s.sessionDate(run.startedAt), s.ankirenASide(review.game.perSide)]
+          .join(' · '),
       body: RunPageTabs(tabs: [for (final tab in tabs) tab.swipeTab(s, review, HistoryLooks.ankiren)]),
     );
   }

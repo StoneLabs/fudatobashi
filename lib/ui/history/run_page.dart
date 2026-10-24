@@ -5,10 +5,12 @@ import '../../config/vector_art.dart';
 import '../../l10n/history_strings.dart';
 import '../../l10n/run_strings.dart';
 import '../../l10n/strings.dart';
+import '../../l10n/summary_strings.dart';
 import '../../state/past_runs.dart';
 import '../../state/scope.dart';
 import '../manga/manga.dart';
 import '../manga/swipe_tabs.dart';
+import '../run/run_labels.dart';
 import 'history_widgets.dart';
 import 'run_cards_tab.dart';
 import 'run_overview_tab.dart';
@@ -73,13 +75,10 @@ class _RunPageState extends State<RunPage> {
     final s = S.of(context);
     final run = widget.run;
     final tabs = run.view == RunView.hundred ? RunPage.hundredTabs : RunPage.trainingTabs;
-    final look = RunKindTag.lookOf(run.mode);
+    final cards = run.forfeit ? s.summaryCardsOf(run.cards, run.planned) : s.runCardsLine(run.cards);
     return RunPageFrame(
-      look: look,
-      title: s.runTitle,
-      titleSub: s.other.runTitle,
-      tag: RunKindTag(run.mode),
-      line: '${s.sessionDate(run.startedAt)} · ${s.runCardsLine(run.cards)}',
+      title: modeTitle(s, run.mode),
+      sub: [modeTitle(s.other, run.mode), s.sessionDate(run.startedAt), cards].join(' · '),
       body: FutureBuilder<RunDetail>(
         future: _detail,
         builder: (context, snap) {
@@ -90,6 +89,7 @@ class _RunPageState extends State<RunPage> {
                   style: const TextStyle(fontWeight: Weights.bold, fontSize: TypeScale.body)),
             );
           }
+          final look = RunKindTag.lookOf(run.mode);
           return RunPageTabs(tabs: [for (final tab in tabs) tab.swipeTab(s, detail, look)]);
         },
       ),
@@ -97,78 +97,52 @@ class _RunPageState extends State<RunPage> {
   }
 }
 
-/// A run or game page's swiped tabs, their row inside the gutters.
+/// A run or game page's swiped tabs, their row inside the gutters, the
+/// open one in its kind's colour.
 class RunPageTabs extends StatelessWidget {
   const RunPageTabs({super.key, required this.tabs});
   final List<SwipeTab> tabs;
 
   @override
-  Widget build(BuildContext context) =>
-      SwipeTabs(padding: const EdgeInsets.symmetric(horizontal: Gaps.gutter), tabs: tabs);
+  Widget build(BuildContext context) => SwipeTabs(
+        look: SwipeTabsLook.slant,
+        padding: const EdgeInsets.symmetric(horizontal: Gaps.gutter),
+        tabs: tabs,
+      );
 }
 
-/// A run or game page's frame: the title with a back button, the kind tag
-/// and a line about it, then [body] (the swiped tabs), all in [look]'s
-/// colours.
+/// A run or game page's frame, the summary's header on Home's dotted
+/// ground: the [title] over its [sub] line with a back button, then
+/// [body] (the swiped tabs).
 class RunPageFrame extends StatelessWidget {
-  const RunPageFrame({
-    super.key,
-    required this.look,
-    required this.title,
-    required this.titleSub,
-    required this.tag,
-    required this.line,
-    required this.body,
-  });
+  const RunPageFrame({super.key, required this.title, required this.sub, required this.body});
 
-  final KindLook look;
-  final String title, titleSub, line;
-  final Widget tag;
+  final String title, sub;
   final Widget body;
 
   @override
   Widget build(BuildContext context) {
     final s = S.of(context);
-    return HistoryLook(
-      look: look,
-      child: Scaffold(
-        body: Stack(children: [
-          const Positioned.fill(child: GradationBox(Tones.historyPage)),
+    return Scaffold(
+      body: MediaQuery.withClampedTextScaling(
+        maxScaleFactor: ReviewLayout.maxTextScale,
+        child: Stack(children: [
+          const Positioned.fill(child: GradationBox(Tones.home)),
           SafeArea(
-            child: Padding(
-              padding: const EdgeInsets.only(top: HeaderStyle.topGap),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: Gaps.gutter),
-                    child: MangaHeader(
-                      title: ScreenTitle(title, sub: titleSub),
-                      actions: [InkIconButton(icon: IconArt.back, semanticLabel: s.back, onTap: () => Navigator.maybePop(context))],
-                    ),
-                  ),
-                  Padding(
-                    padding: HistoryRunStyle.tagRowPadding,
-                    child: ConstrainedBox(
-                      constraints: const BoxConstraints(minHeight: HistoryRunStyle.tagRowHeight),
-                      child: Row(
-                        children: [
-                          tag,
-                          const SizedBox(width: Gaps.panel),
-                          Expanded(
-                            child: Text(line,
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                                style: const TextStyle(fontWeight: Weights.black, fontSize: HistoryRunStyle.tagRowFont)),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                  Expanded(child: body),
-                ],
+            child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+              const SizedBox(height: HeaderStyle.topGap),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: Gaps.gutter),
+                child: MangaHeader(
+                  title: BrandTitle(title: title, sub: sub.toUpperCase()),
+                  actions: [
+                    InkIconButton(icon: IconArt.back, semanticLabel: s.back, onTap: () => Navigator.maybePop(context)),
+                  ],
+                ),
               ),
-            ),
+              const SizedBox(height: ReviewLayout.headerGap),
+              Expanded(child: body),
+            ]),
           ),
         ]),
       ),

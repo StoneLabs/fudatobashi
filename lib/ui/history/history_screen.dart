@@ -123,7 +123,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
                 ),
                 SwipeTab(
                   label: s.historyAnkirenTab,
-                  accent: Palette.pink,
+                  accent: HistoryLooks.ankiren.accent,
                   sub: s.sub?.historyAnkirenTab,
                   builder: (_) => _AnkirenList(games: keptGames(_filter), all: games),
                 ),
@@ -603,7 +603,7 @@ class _GameRow extends StatelessWidget {
     final day = progress.dayOfGame(game);
     final today = progress.dayAt().date;
     return _ListRow(
-      accent: Palette.pink,
+      accent: HistoryLooks.ankiren.accent,
       when: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
         FittedBox(
           fit: BoxFit.scaleDown,
@@ -618,7 +618,7 @@ class _GameRow extends StatelessWidget {
       ]),
       tags: [
         _TagLine([
-          AnkirenKindTag(ranked: game.ranked, level: game.level, named: false),
+          AnkirenKindTag(ranked: game.ranked, level: game.level),
           if (kind == AnkirenKind.free)
             cleared ? ResultBadge(s.historyCleared, color: Palette.landSoft) : ResultBadge(s.historyFailed, muted: true),
           if (best) ResultBadge(s.historyBest, cheer: true),

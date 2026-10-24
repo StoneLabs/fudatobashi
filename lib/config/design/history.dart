@@ -31,24 +31,22 @@ abstract final class HistoryHeaderLayout {
   static const double segmentFont = 13;
 }
 
-/// One kind of run's colours across History: [accent] marks its list
-/// row's edge, its page's picked tab and section titles, with [onAccent]
-/// for text on it; [tone] fills its headline.
+/// One kind of run's colour, the same wherever a run's kind is shown by
+/// colour: its tag and its row's edge in History's lists, and the open tab
+/// of its page, with [onAccent] for text on it.
 class KindLook {
-  const KindLook(this.accent, this.tone, {this.onAccent = Palette.ink});
+  const KindLook(this.accent, {this.onAccent = Palette.ink});
   final Color accent, onAccent;
-  final ToneSpec tone;
 }
 
-/// The [KindLook] of each kind of run and 暗記練 game, after their kind
-/// tags and Home's mode panels.
+/// The [KindLook] of each kind of run and of 暗記練's games.
 abstract final class HistoryLooks {
-  static const ranked = KindLook(Palette.pink, Tones.pinkSoft);
-  static const exam = KindLook(Palette.sun, Tones.sun);
-  static const free = KindLook(Palette.sea, Tones.sea);
-  static const weak = KindLook(Palette.orange, Tones.orangeSoft);
-  static const training = KindLook(Palette.land, Tones.land);
-  static const ankiren = KindLook(Palette.pink, Tones.pinkSoft);
+  static const ranked = KindLook(Palette.pink);
+  static const exam = KindLook(Palette.sun);
+  static const free = KindLook(Palette.sea);
+  static const weak = KindLook(Palette.orange);
+  static const training = KindLook(Palette.land);
+  static const ankiren = KindLook(Palette.pink);
 }
 
 /// History's run pages and rows: sections, fact grids, result badges.
@@ -57,16 +55,13 @@ abstract final class HistoryRunStyle {
   static const Offset panelShadow = Offset(3, 3);
 
   /// A section title's marker stripe: where its top and bottom sit as
-  /// shares of the line's height, how far it reaches past the text, and
-  /// its tilt.
+  /// shares of the line's height, how far it reaches past the text, its
+  /// tilt and its colour.
   static const double titleMarkTop = 0.5;
   static const double titleMarkBottom = 0.94;
   static const double titleMarkReach = 4;
   static const double titleMarkSkew = -0.25;
-  /// The kind tag and date line under a run page's title, over its tabs.
-  static const EdgeInsets tagRowPadding = EdgeInsets.fromLTRB(Gaps.gutter, 0, Gaps.gutter, 9);
-  static const double tagRowHeight = 22;
-  static const double tagRowFont = 12;
+  static const Color headingMark = Palette.sun;
 
   static const double sectionGap = 18;
   static const EdgeInsets chartPadding = EdgeInsets.fromLTRB(10, 10, 10, 10);
@@ -418,16 +413,13 @@ abstract final class StatChipStyle {
   static const double labelTracking = 0.8;
 }
 
-/// `SwipeTabs`: the tab row over swiped pages, as a strip of small labels
-/// (a run page's tabs) or as two folder tabs (History's lists).
+/// `SwipeTabs`: the tab row over swiped pages, as slanted chips (a run
+/// page's tabs) or as two folder tabs (History's lists).
 abstract final class SwipeTabsStyle {
   static const double rule = Strokes.panel;
   static const double lineHeight = 1.1;
   static const Color idle = Color(0xFF6A665E);
-  static const EdgeInsets stripPadding = EdgeInsets.fromLTRB(3, 6, 3, 6);
-  static const double font = 12;
   static const double subFont = 8.5;
-  static const double subGap = 2;
   static const double subTracking = 0.85;
   static const Color folderIdleFill = Color(0xFFF3F1EC);
   static const double folderBar = 4;
@@ -439,4 +431,14 @@ abstract final class SwipeTabsStyle {
   static const double folderFont = 15;
   static const double folderSubFont = 9.5;
   static const double folderSubTracking = 1.1;
+
+  /// The slanted chip of a run's page: the row's least height, its label,
+  /// and the chip's inset from its tab, its top and its border.
+  static const double slantHeight = 30;
+  static const double slantFont = 13;
+  static const Color slantIdle = Color(0xFF3A3A3A);
+  static const EdgeInsets slantPadding = EdgeInsets.fromLTRB(4, 3, 4, 6);
+  static const double chipInset = 3;
+  static const double chipTop = 1;
+  static const double chipBorder = 2.5;
 }

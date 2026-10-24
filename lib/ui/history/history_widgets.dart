@@ -3,7 +3,6 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 
 import '../../config/design.dart';
-import '../../domain/side_trips.dart';
 import '../../l10n/history_strings.dart';
 import '../../l10n/run_strings.dart';
 import '../../l10n/side_trip_strings.dart';
@@ -13,14 +12,14 @@ import '../../state/play_config.dart';
 import '../manga/manga.dart';
 import '../play/time_format.dart';
 
-/// A run's kind as a coloured tag: Training, Free play, Weak cards, Ranked
-/// or the exam.
+/// A run's kind as a tag in its kind's colour: Training, Free play, Weak
+/// cards, Ranked or the exam.
 class RunKindTag extends StatelessWidget {
   const RunKindTag(this.mode, {super.key});
   final PlayMode mode;
 
-  /// The colours that mark [mode]'s runs beyond the tag: a list row's
-  /// edge, a run page's tabs, titles and headline.
+  /// The colour of [mode]'s runs: their tag, their row's edge and the open
+  /// tab of their page.
   static KindLook lookOf(PlayMode mode) => switch (mode) {
         PlayMode.ranked => HistoryLooks.ranked,
         PlayMode.exam => HistoryLooks.exam,
@@ -30,32 +29,21 @@ class RunKindTag extends StatelessWidget {
       };
 
   @override
-  Widget build(BuildContext context) {
-    final s = S.of(context);
-    final (fill, text, outlined) = switch (mode) {
-      PlayMode.ranked => (Palette.pink, Palette.ink, true),
-      PlayMode.exam => (Palette.ink, Palette.sun, false),
-      PlayMode.free || PlayMode.guest => (Palette.seaSoft, Palette.ink, true),
-      PlayMode.nigate => (Palette.sun, Palette.ink, true),
-      PlayMode.training => (Palette.ink, Palette.paper, false),
-    };
-    return KindTag(runKindLabel(s, mode), fill: fill, textColor: text, edge: outlined ? Palette.ink : null);
-  }
+  Widget build(BuildContext context) => KindTag(runKindLabel(S.of(context), mode), look: lookOf(mode));
 }
 
-/// The small tag a run or game is labelled with in History's lists and at
-/// the top of its page: [fill] behind, an [edge] inside its border if any.
+/// The small tag a run or game is labelled with in History's lists: its
+/// kind's colour inside an ink border.
 class KindTag extends StatelessWidget {
-  const KindTag(this.text, {super.key, required this.fill, required this.textColor, this.edge});
+  const KindTag(this.text, {super.key, required this.look});
   final String text;
-  final Color fill, textColor;
-  final Color? edge;
+  final KindLook look;
 
   @override
   Widget build(BuildContext context) => DecoratedBox(
         decoration: BoxDecoration(
-          color: fill,
-          border: edge == null ? null : Border.all(color: edge!, width: Strokes.label),
+          color: look.accent,
+          border: Border.all(color: Palette.ink, width: Strokes.label),
         ),
         child: Padding(
           padding: HistoryRunStyle.kindPadding,
@@ -69,7 +57,7 @@ class KindTag extends StatelessWidget {
                     fontSize: HistoryRunStyle.kindFont,
                     letterSpacing: HistoryRunStyle.kindTracking,
                     height: HistoryRunStyle.kindLineHeight,
-                    color: textColor)),
+                    color: look.onAccent)),
           ),
         ),
       );
@@ -84,29 +72,24 @@ String runKindLabel(S s, PlayMode mode) => switch (mode) {
       PlayMode.training => s.training,
     };
 
-/// A 暗記練 game's kind as a tag: ranked in pink, free play outlined, with
-/// its level or "custom"; led by the trip's name unless among only its
-/// games ([named] false).
+/// A 暗記練 game's kind as a tag: ranked, or free play at its level or
+/// custom.
 class AnkirenKindTag extends StatelessWidget {
-  const AnkirenKindTag({super.key, required this.ranked, required this.level, this.named = true});
+  const AnkirenKindTag({super.key, required this.ranked, required this.level});
   final bool ranked;
   final int? level;
-  final bool named;
 
   @override
-  Widget build(BuildContext context) {
-    final s = S.of(context);
-    final mode = switch ((ranked, level)) {
+  Widget build(BuildContext context) =>
+      KindTag(ankirenKindLabel(S.of(context), ranked: ranked, level: level), look: HistoryLooks.ankiren);
+}
+
+/// A 暗記練 game's kind: ranked, or free play at its level or custom.
+String ankirenKindLabel(S s, {required bool ranked, required int? level}) => switch ((ranked, level)) {
       (true, _) => s.sideTripRanked,
       (false, final int level) => s.historyFreeLevel(level),
       (false, null) => s.historyFreeCustom,
     };
-    return KindTag(named ? '${s.tripName(SideTrip.ankiren)} · $mode' : mode,
-        fill: ranked ? Palette.pink : Palette.paper,
-        textColor: ranked ? Palette.ink : Palette.pinkDeep,
-        edge: ranked ? Palette.ink : Palette.pinkDeep);
-  }
-}
 
 /// A small result badge beside a run's kind: a placement, a new class, a
 /// forfeit, who won the exam, a best.
@@ -169,36 +152,21 @@ class HistorySection extends StatelessWidget {
       );
 }
 
-/// The colours of the run or game a page shows ([KindLook]), for the parts
-/// inside it.
-class HistoryLook extends InheritedWidget {
-  const HistoryLook({super.key, required this.look, required super.child});
-  final KindLook look;
-
-  /// The look around [context]; the exam's sun when there is none.
-  static KindLook of(BuildContext context) =>
-      context.dependOnInheritedWidgetOfExactType<HistoryLook>()?.look ?? HistoryLooks.exam;
-
-  @override
-  bool updateShouldNotify(HistoryLook oldWidget) => oldWidget.look != look;
-}
-
-/// A section's heading row: the title over a slanted marker stripe in the
-/// page's colour, with its other-language word, and a note on the right.
-/// Outside a run page, [accent] and the font sizes are given.
+/// A section's heading row: the title over a slanted marker stripe in
+/// [accent], with its other-language word, and a note on the right.
 class HistoryHeading extends StatelessWidget {
   const HistoryHeading({
     super.key,
     required this.title,
     this.sub,
     this.note,
-    this.accent,
+    this.accent = HistoryRunStyle.headingMark,
     this.titleFont = TypeScale.button,
     this.subFont = HistoryRunStyle.subFont,
   });
   final String title;
   final String? sub, note;
-  final Color? accent;
+  final Color accent;
   final double titleFont, subFont;
 
   @override
@@ -209,7 +177,7 @@ class HistoryHeading extends StatelessWidget {
             child: Align(
               alignment: Alignment.centerLeft,
               child: CustomPaint(
-                painter: _MarkerPainter(accent ?? HistoryLook.of(context).accent),
+                painter: _MarkerPainter(accent),
                 child: Text.rich(
                   TextSpan(children: [
                     TextSpan(text: title, style: TextStyle(fontWeight: Weights.black, fontSize: titleFont)),
@@ -422,7 +390,7 @@ class HeadlinePanel extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final tone = HistoryLook.of(context).tone;
+    const tone = Tones.sun;
     return MangaPanel(
       shape: const PanelShape(bottomRight: Offset(HeadlineStyle.cut, 0)),
       tone: plain == null ? tone : null,
