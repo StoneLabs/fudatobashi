@@ -30,7 +30,7 @@ according to the flowchar below:
     |
     +-- Training (修行)? ------------ yes --+-- this run finished today's set? --- yes --> [T2] DONE!
     |                                       +-- journey mode and set not done? --- yes --> [T1] N CARDS LEFT
-    |                                       +-- should never happen, since training is journey only ----> [P] THIS RUN
+    |                                       +-- training after the set was already done -> [P] THIS RUN
     |
     +-- Free play, or guest -----------------------------------------------------------> [P] THIS RUN
 
@@ -69,7 +69,7 @@ according to the flowchar below:
  A4  | FOUND: N cards found              | found                           | first tap, strikes, XP     | found (+ guest/custom note)      | BACK TO ANKIREN
 
  * MIDDLE tile in [P]: journey mode = TODAY (cards left in today's set, or done)
-                       all-known mode = STREAK (days in a row) [but this should never occur since training is journey only...)
+                       all-known mode = STREAK (days in a row) 
 
  Focus lines (the burst) only when a goal is reached: T2, W2, E1, A2.
  Practice runs (T1, T2, P, W1, W2) show no time anywhere; timed runs keep their times.
