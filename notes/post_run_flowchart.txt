@@ -1,0 +1,77 @@
+POST-RUN SUMMARY: WHICH ONE SHOWS
+=================================
+
+Code: lib/ui/results/main_summary.dart (content), lib/ui/ankiren/ankiren_results_screen.dart (content)
+
+Every summary has the same layout: header, hero (big word or number on a bar), three tilted tiles,
+a card panel (then Home plus the main continue/retunr button). Only the content of each box changes 
+according to the flowchar below:
+
+
+1. WHICH SUMMARY
+----------------
+
+  Run ends
+    |
+    +-- AnkiRen game? --------------- yes --> see 2. ANKIREN
+    |
+    no (main game)
+    |
+    +-- Ranked? --------------------- yes --+-- quit early? ---------- yes --> [R3] FORFEIT
+    |                                       +-- first ranked run? ---- yes --> [R2] PLACEMENT
+    |                                       +--------------------------------> [R1] RANKED
+    |
+    +-- Graduation exam? ------------ yes --+-- beat Tobi? ----------- yes --> [E1] PASSED!
+    |                                       +--------------------------------> [E2] TOBI WINS
+    |                                          (shown inside the exam-lost screen)
+    |
+    +-- Weak cards drill? ----------- yes --+-- no weak cards left? -- yes --> [W2] CLEAR!
+    |                                       +--------------------------------> [W1] N WEAK LEFT
+    |
+    +-- Training (修行)? ------------ yes --+-- this run finished today's set? --- yes --> [T2] DONE!
+    |                                       +-- journey mode and set not done? --- yes --> [T1] N CARDS LEFT
+    |                                       +-- should never happen, since training is journey only ----> [P] THIS RUN
+    |
+    +-- Free play, or guest -----------------------------------------------------------> [P] THIS RUN
+
+
+2. ANKIREN
+----------
+
+  AnkiRen game ends
+    |
+    +-- ranked (scored)? ------------ yes ------------------------------> [A1] SCORE
+    |
+    +-- free level (strikes count)? - yes --+-- under 3 strikes? -- yes --> [A2] CLEAR!
+    |                                       +-----------------------------> [A3] FAILED
+    |
+    +-- anything else (guest, custom setup) ---------------------------> [A4] FOUND
+
+
+3. Contents by reference number from above
+----------------------
+
+ id  | hero                              | hero bar                        | tiles                      | card panel                       | button
+-----+-----------------------------------+---------------------------------+----------------------------+----------------------------------+------------------
+ T1  | TODAY'S SET: N cards left         | set done / this run / left      | cards, right, XP           | new cards, missed                | KEEP GOING
+ T2  | TODAY'S SET: DONE! (+ 本日完了)    | full green                      | cards, right, LEVEL UP/XP  | new today, streak (week)         | KEEP GOING
+ P   | THIS RUN: N right of M cards      | right / missed                  | cards, MIDDLE*, XP         | missed, slowest                  | KEEP GOING
+ W1  | WEAK CARDS: N weak cards left     | cleared / still weak            | cards, right, XP           | cleared, not yet                 | KEEP GOING
+ W2  | WEAK CARDS: CLEAR!                | full green                      | cards, right, XP           | cleared + "no weak cards left"   | KEEP GOING
+ R1  | SCORED TIME: 03:49.980            | clock (yellow) / miss penalty   | speed, right, rating       | slowest (with times), missed     | RANKED AGAIN
+ R2  | as R1, header "Placement"         | as R1                           | speed, right, first rating | as R1                            | RANKED AGAIN
+ R3  | SCORED TIME: Forfeit (counts as 0)| played (yellow) / cards left    | speed, right, rating drop  | slowest before stopping, missed  | RANKED AGAIN
+ E1  | VS TOBI: PASSED! (your + his time)| clock (yellow) / miss penalty   | speed, right, LEVEL UP/XP  | slowest, missed                  | KEEP GOING
+ E2  | VS TOBI: Tobi wins                | clock (yellow) / miss penalty   | speed, right, next try in  | slowest, missed                  | KEEP GOING
+ A1  | SCORE: N points of 11,250         | finds / early bonus (yellow)    | first tap, avg time, rating| slowest finds, missed            | BACK TO ANKIREN
+ A2  | LEVEL n: CLEAR!                   | found / missed                  | first tap, strikes, opened | not first tap, level track       | BACK TO ANKIREN
+ A3  | LEVEL n: FAILED                   | found / missed                  | first tap, strikes, XP     | not first tap, level track       | BACK TO ANKIREN
+ A4  | FOUND: N cards found              | found                           | first tap, strikes, XP     | found (+ guest/custom note)      | BACK TO ANKIREN
+
+ * MIDDLE tile in [P]: journey mode = TODAY (cards left in today's set, or done)
+                       all-known mode = STREAK (days in a row) [but this should never occur since training is journey only...)
+
+ Focus lines (the burst) only when a goal is reached: T2, W2, E1, A2.
+ Practice runs (T1, T2, P, W1, W2) show no time anywhere; timed runs keep their times.
+ Guest runs (main game and AnkiRen) save nothing: the LV box says UNTRACKED, the XP tile is empty,
+ and the card panel adds a "nothing was saved" note.
