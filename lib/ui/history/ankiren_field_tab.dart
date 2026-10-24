@@ -16,8 +16,9 @@ import '../ankiren/ankiren_field_view.dart';
 import '../manga/geometry.dart';
 import '../manga/manga.dart';
 import '../play/time_format.dart';
+import '../results/run_summary.dart';
 import 'ankiren_widgets.dart';
-import 'history_widgets.dart';
+import 'review_parts.dart';
 import 'run_charts.dart';
 
 /// A 暗記練 game's Field (D33): the field as dealt, each card coloured by
@@ -48,11 +49,12 @@ class _AnkirenFieldTabState extends State<AnkirenFieldTab> {
     final deal = game.deal;
     final note = game.scored ? s.ankirenFieldNote : s.ankirenASide(game.perSide);
     if (deal == null || game.cards.isEmpty) {
-      return RunTabList(children: [
-        HistorySection(
+      return ReviewColumn(children: [
+        ReviewSlab(
           title: s.ankirenFieldTitle,
           sub: s.sub?.ankirenFieldTitle,
-          child: ReviewPanel(child: ReviewTable.cell(s.ankirenFieldMissing)),
+          flatTop: true,
+          child: ReviewText(s.ankirenFieldMissing),
         ),
       ]);
     }
@@ -63,14 +65,20 @@ class _AnkirenFieldTabState extends State<AnkirenFieldTab> {
     final sides = [
       for (final side in [FieldSide.opponent, FieldSide.own])
         if (game.rightFirstOn(side) case final r?)
-          Fact('${r.right}/${r.of}',
-              '${side == FieldSide.own ? s.ankirenYourSide : s.ankirenTheirSide} · ${s.ankirenColRightFirst}'),
+          SummaryTile(
+            label: '${side == FieldSide.own ? s.ankirenYourSide : s.ankirenTheirSide}\n${s.ankirenColRightFirst}'
+                .toUpperCase(),
+            big: TileFigure('${r.right}', unit: '/${r.of}'),
+            note: '',
+            color: Palette.paper,
+          ),
     ];
-    return RunTabList(children: [
-      HistorySection(
+    return ReviewColumn(children: [
+      ReviewSlab(
         title: s.ankirenFieldTitle,
         sub: s.sub?.ankirenFieldTitle,
         note: note,
+        flatTop: true,
         child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
           _ReplayedField(
             deal: deal,
@@ -83,20 +91,22 @@ class _AnkirenFieldTabState extends State<AnkirenFieldTab> {
           ),
           const TierLegend(),
           if (card != null) const _TapLegend(),
-          const SizedBox(height: Gaps.panel),
-          if (step == null || card == null)
-            HistoryButton(icon: IconArt.arrow, label: s.ankirenStartReview, onTap: () => _goTo(0))
-          else ...[
+        ]),
+      ),
+      if (step == null || card == null)
+        ReviewShout(label: s.ankirenStartReview, onTap: () => _goTo(0))
+      else
+        ReviewSlab(
+          child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
             _Stepper(step: step, count: game.cards.length, card: card, onGo: _goTo),
             const SizedBox(height: Gaps.small),
             Center(child: _ShowAll(onTap: () => _goTo(null))),
-          ],
-          if (lookAlike)
-            HistoryCaption(s.ankirenLookAlike(kimarijiFor(context, card.poemId), kimarijiFor(context, firstHit))),
-          const SizedBox(height: Gaps.panel),
-          FactGrid(sides, perRow: sides.length),
-        ]),
-      ),
+          ]),
+        ),
+      if (lookAlike)
+        ReviewCaption(s.ankirenLookAlike(kimarijiFor(context, card.poemId), kimarijiFor(context, firstHit))),
+      if (sides.isNotEmpty)
+        TileBand(sides, spec: ReviewTileLayout.twoLines, minHeight: ReviewTileLayout.sidesHeight),
     ]);
   }
 }
@@ -126,12 +136,11 @@ class _ReplayedField extends StatelessWidget {
         const band = AnkirenReviewStyle.fieldBand;
         final natural = FieldGeometry.of(deal, folded: true);
         final scale = math.min(
-            (box.maxWidth - 2 * pad) / natural.width, AnkirenPlayLayout.maxCardW / AnkirenFieldSize.cardW);
+            (box.maxWidth - 2 * pad) / natural.width, AnkirenReviewStyle.fieldMaxCardW / AnkirenFieldSize.cardW);
         return DecoratedBox(
           decoration: BoxDecoration(
             color: AnkirenReviewStyle.fieldGround,
             border: Border.all(color: Palette.ink, width: Strokes.label),
-            boxShadow: const [BoxShadow(color: Palette.inkShadow, offset: HistoryRunStyle.panelShadow)],
           ),
           child: SizedBox(
             height: 2 * natural.height * scale + band + 2 * pad,
@@ -171,7 +180,7 @@ class _FieldCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final text = kimarijiFor(context, poemId);
-    final kana = text.runes.any((r) => r > _ascii);
+    final kana = text.runes.any((r) => r >= _kanaStart);
     final color = place == null ? Palette.ink : AnkirenReviewStyle.tierText[place!.index];
     final word = Text(kana ? text.split('').join('\n') : text,
         textAlign: TextAlign.center,
@@ -192,7 +201,8 @@ class _FieldCard extends StatelessWidget {
     );
   }
 
-  static const _ascii = 0x7f;
+  /// Where the kana blocks start: romaji, macrons and all, sits below.
+  static const _kanaStart = 0x3040;
 }
 
 /// The band across the field: their side up, yours down.
@@ -219,8 +229,9 @@ class _Band extends StatelessWidget {
 }
 
 /// [card]'s taps across the field: an arrow from each wrong card it hit
-/// to the card itself, solid for the first tap and dashed after, then a
-/// numbered badge on every card it hit, in order, over the arrows.
+/// to the card itself, bowed toward the field's middle, solid for the first
+/// tap and dashed after, then a numbered badge on every card it hit, in
+/// order, over the arrows.
 class _TapArrows extends CustomPainter {
   _TapArrows(this.placement, this.card);
   final FieldPlacement placement;
@@ -234,14 +245,18 @@ class _TapArrows extends CustomPainter {
       ..color = AnkirenReviewStyle.arrow
       ..style = PaintingStyle.stroke
       ..strokeWidth = AnkirenReviewStyle.arrowStroke;
+    final middle = size.center(Offset.zero);
     for (final (i, id) in card.tapped.indexed) {
       if (id == card.poemId) continue;
       final from = placement.cardRect(id)?.center;
       if (from == null) continue;
       final to = target.center;
       final d = to - from;
-      final normal = Offset(-d.dy, d.dx) * AnkirenReviewStyle.arrowBend * (i.isEven ? 1 : -1);
-      final control = from + d / 2 + normal;
+      final normal = Offset(-d.dy, d.dx) * AnkirenReviewStyle.arrowBend;
+      final halfway = from + d / 2;
+      final control = (halfway + normal - middle).distance <= (halfway - normal - middle).distance
+          ? halfway + normal
+          : halfway - normal;
       final shaft = Path()
         ..moveTo(from.dx, from.dy)
         ..quadraticBezierTo(control.dx, control.dy, to.dx, to.dy);
@@ -381,9 +396,11 @@ class _Stepper extends StatelessWidget {
           Text(s.ankirenStepCard(step + 1, count, kimarijiFor(context, card.poemId)),
               textAlign: TextAlign.center,
               style: const TextStyle(fontFamily: Fonts.display, fontSize: AnkirenReviewStyle.stepFont)),
+          const SizedBox(height: AnkirenReviewStyle.stepGap),
           Text('$taps · $outcome',
               textAlign: TextAlign.center,
-              style: const TextStyle(fontWeight: Weights.black, fontSize: AnkirenReviewStyle.stepSubFont)),
+              style: const TextStyle(
+                  fontWeight: Weights.black, fontSize: AnkirenReviewStyle.stepSubFont, height: AnkirenReviewStyle.stepSubHeight)),
         ]),
       ),
       const SizedBox(width: Gaps.small),

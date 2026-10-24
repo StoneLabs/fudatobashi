@@ -18,8 +18,8 @@ abstract final class ReviewLayout {
   static const double heroHeight = 188;
   static const double tileHeight = 88;
 
-  /// The panel that fills an Overview to the floor is never shorter than
-  /// this; on a screen too short for it the whole Overview scrolls.
+  /// The time graph that fills an Overview to the floor is never shorter
+  /// than this; on a screen too short for it the whole Overview scrolls.
   static const double minFillHeight = 230;
 
   /// The largest font scale the page follows: the heroes and tiles have
@@ -103,6 +103,22 @@ abstract final class ReviewHeroLayout {
     stampAt: Offset(122, 122),
     topStampInset: Offset(6, 46),
     bodyWidth: 190,
+  );
+
+  /// 暗記練's Overview hero: a smaller Tobi.
+  static const ankirenMetrics = HeroMetrics(
+    countTop: 52,
+    countFont: 80,
+    wordTop: 54,
+    plainWordTop: 66,
+    plainWordFont: 52,
+    wordWidth: 236,
+    subTop: 108,
+    timeTop: 66,
+    timeFont: 66,
+    tobi: Size(66, 79),
+    stampAt: Offset(122, 122),
+    topStampInset: Offset(0, 16),
   );
 
   /// 暗記練's rating hero: its lines across the whole panel.
@@ -267,6 +283,11 @@ abstract final class ReviewTableStyle {
   static const TextStyle note = TextStyle(fontWeight: Weights.bold, fontSize: 10.5, color: HistoryRunStyle.muted);
   static const EdgeInsets cellPadding = EdgeInsets.symmetric(horizontal: 4, vertical: 5);
   static const EdgeInsets headPadding = EdgeInsets.fromLTRB(4, 0, 4, 5);
+  static const EdgeInsets inkHeadPadding = EdgeInsets.fromLTRB(4, 7, 4, 6);
+
+  /// Before a note column after the numbers.
+  static const double noteGap = 8;
+  static const Color marked = Palette.pinkSoft;
   static const double rule = 1;
   static const Color ruleColor = ChartStyle.grid;
   static const double heavyRule = Strokes.label;

@@ -104,7 +104,7 @@ extension AnkirenReviewStrings on S {
   String ankirenSetupNote(Object a0) => f('ankirenSetupNote', [a0]);
   String ankirenMoreFirst(Object a0) => f('ankirenMoreFirst', [a0]);
   String ankirenFewerFirst(Object a0) => f('ankirenFewerFirst', [a0]);
-  String get ankirenSameFirst => t('ankirenSameFirst');
+  String get ankirenSame => t('ankirenSame');
   String ankirenFaster(Object a0) => f('ankirenFaster', [a0]);
   String ankirenSlower(Object a0) => f('ankirenSlower', [a0]);
   String ankirenMemoOf(Object a0, Object a1) => f('ankirenMemoOf', [a0, a1]);

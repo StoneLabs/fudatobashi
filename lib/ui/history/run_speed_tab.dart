@@ -89,7 +89,7 @@ class RunSpeedTab extends StatelessWidget {
       TileBand([
         tile('↑ ${s.runUpright}', up, Palette.paper),
         tile('↓ ${s.runUpsideDownSide}', down, Palette.seaSoft),
-      ], spec: ReviewTileLayout.spec, height: ReviewTileLayout.sidesHeight),
+      ], spec: ReviewTileLayout.spec, minHeight: ReviewTileLayout.sidesHeight),
       if (cost != null)
         ReviewCaption(cost >= 0 ? s.runUpsideCost(formatSeconds(cost)) : s.runUpsideGain(formatSeconds(-cost))),
     ];
@@ -131,7 +131,7 @@ class _Thirds extends StatelessWidget {
                   ? Palette.landSoft
                   : Palette.paper,
         ),
-    ], spec: ReviewTileLayout.small, height: ReviewTileLayout.thirdsHeight);
+    ], spec: ReviewTileLayout.small, minHeight: ReviewTileLayout.thirdsHeight);
   }
 }
 
@@ -404,7 +404,7 @@ class _UsualTiles extends StatelessWidget {
         note: '${formatSignedSeconds(gap, 1)} s',
         color: gap > 0 ? Palette.pinkSoft : Palette.landSoft,
       ),
-    ], spec: ReviewTileLayout.twoLines, height: ReviewTileLayout.thirdsHeight);
+    ], spec: ReviewTileLayout.twoLines, minHeight: ReviewTileLayout.thirdsHeight);
   }
 
   static Duration _duration(double ms) => Duration(milliseconds: ms.round());

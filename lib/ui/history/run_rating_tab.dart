@@ -123,7 +123,7 @@ class _RatingTiles extends StatelessWidget {
           note: s.reviewPartWay,
           color: after >= before ? Palette.landSoft : Palette.pinkSoft,
         ),
-    ], spec: ReviewTileLayout.small, height: ReviewTileLayout.ratingHeight);
+    ], spec: ReviewTileLayout.small, minHeight: ReviewTileLayout.ratingHeight);
   }
 }
 

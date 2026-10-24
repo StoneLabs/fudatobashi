@@ -14,11 +14,13 @@ import 'history_widgets.dart';
 
 /// A run tab's panels stacked down the page inside the gutters, scrolling
 /// when they are taller than it: [children] [ReviewLayout.gap] apart, then
-/// [fill], which reaches down to the bottom of the page.
+/// [fill], which reaches down to the bottom of the page and is never
+/// shorter than [fillMinHeight] (nor than its contents).
 class ReviewColumn extends StatelessWidget {
-  const ReviewColumn({super.key, required this.children, this.fill});
+  const ReviewColumn({super.key, required this.children, this.fill, this.fillMinHeight = ReviewLayout.minFillHeight});
   final List<Widget> children;
   final Widget? fill;
+  final double fillMinHeight;
 
   @override
   Widget build(BuildContext context) {
@@ -42,7 +44,7 @@ class ReviewColumn extends StatelessWidget {
             child: Padding(
               padding: EdgeInsets.only(top: children.isEmpty ? 0 : ReviewLayout.gap, bottom: ReviewLayout.bottomGap),
               child: ConstrainedBox(
-                constraints: const BoxConstraints(minHeight: ReviewLayout.minFillHeight),
+                constraints: BoxConstraints(minHeight: fillMinHeight),
                 child: fill,
               ),
             ),

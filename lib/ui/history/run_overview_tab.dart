@@ -34,7 +34,7 @@ class RunOverviewTab extends StatelessWidget {
       fill: RunTimeSection(detail),
       children: [
         ReviewHero(hero),
-        TileBand(tiles, spec: ReviewTileLayout.spec, height: ReviewLayout.tileHeight),
+        TileBand(tiles, spec: ReviewTileLayout.spec, minHeight: ReviewLayout.tileHeight),
       ],
     );
   }

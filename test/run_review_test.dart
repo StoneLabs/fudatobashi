@@ -375,12 +375,25 @@ void main() {
     testWidgets('23-27: a ranked game, every tab', (tester) async {
       final p = await player(tester, mode: LearningMode.allKnown);
       const ranked = AnkirenSetup.ranked();
-      await game(tester, p, playAnkiren(ranked, seed: 2, ms: 1200, wrongAt: {0, 2}), DateTime(2026, 10, 20, 11));
-      await game(tester, p, playAnkiren(ranked, seed: 3, ms: 1100, wrongAt: {5}), DateTime(2026, 10, 21, 11));
+      await game(
+          tester,
+          p,
+          playAnkiren(ranked, seed: 2, ms: 3600, spread: 0.3, wrongAt: {0, 2, 6, 11, 14, 17, 23, 30, 36, 38, 41}),
+          DateTime(2026, 10, 20, 11));
+      await game(
+          tester,
+          p,
+          playAnkiren(ranked, seed: 3, ms: 3400, spread: 0.3, wrongAt: {5, 8, 12, 19, 24, 27, 33, 39, 44}),
+          DateTime(2026, 10, 21, 11));
       final run = await game(
           tester,
           p,
-          playAnkiren(ranked, seed: 4, ms: 900, wrongAt: {3, 7, 9}, memorised: const Duration(minutes: 14, seconds: 12)),
+          playAnkiren(ranked,
+              seed: 4,
+              ms: 2600,
+              spread: 0.4,
+              wrongAt: {3, 7, 9, 16, 21, 34, 40},
+              memorised: const Duration(minutes: 14, seconds: 12)),
           DateTime(2026, 10, 22, 11));
       await open(tester, p, AnkirenGamePage(run: run));
       expect(find.text(_s.ankirenMixTitle), findsOneWidget);
@@ -390,6 +403,7 @@ void main() {
       await tester.pump(const Duration(milliseconds: 300));
       for (var i = 0; i < 9; i++) {
         await tester.tap(find.bySemanticsLabel(_s.ankirenStepNext));
+        await tester.pump();
         await tester.pump(const Duration(milliseconds: 300));
       }
       await shot(tester, '24_ankiren_field_step');
@@ -407,9 +421,21 @@ void main() {
 
     testWidgets('28, 31: a free level cleared, its Overview and Field', (tester) async {
       final p = await player(tester, mode: LearningMode.allKnown);
-      await game(tester, p, playAnkiren(AnkirenSetup.forLevel(3), seed: 7, strikes: true, wrongAt: {0, 1, 4}),
+      await game(
+          tester,
+          p,
+          playAnkiren(AnkirenSetup.forLevel(3), seed: 7, ms: 1300, spread: 0.4, strikes: true, wrongAt: {0, 1, 4}),
           DateTime(2026, 10, 23, 9));
-      final run = await game(tester, p, playAnkiren(AnkirenSetup.forLevel(3), seed: 8, strikes: true, wrongAt: {3}),
+      final run = await game(
+          tester,
+          p,
+          playAnkiren(AnkirenSetup.forLevel(3),
+              seed: 8,
+              ms: 1100,
+              spread: 0.4,
+              strikes: true,
+              wrongAt: {3},
+              memorised: const Duration(minutes: 3, seconds: 41)),
           DateTime(2026, 10, 24, 9));
       await open(tester, p, AnkirenGamePage(run: run));
       expect(find.text(_s.historyCleared.toUpperCase()), findsOneWidget);
@@ -421,9 +447,11 @@ void main() {
 
     testWidgets('29: a free level failed', (tester) async {
       final p = await player(tester, mode: LearningMode.allKnown);
-      await game(tester, p, playAnkiren(AnkirenSetup.forLevel(4), seed: 7, strikes: true, wrongAt: {2}),
+      await game(tester, p,
+          playAnkiren(AnkirenSetup.forLevel(4), seed: 7, ms: 1200, spread: 0.4, strikes: true, wrongAt: {2}),
           DateTime(2026, 10, 23, 9));
-      final run = await game(tester, p, playAnkiren(AnkirenSetup.forLevel(4), seed: 9, strikes: true, wrongAt: {2, 5, 9}),
+      final run = await game(tester, p,
+          playAnkiren(AnkirenSetup.forLevel(4), seed: 9, ms: 900, spread: 0.4, strikes: true, wrongAt: {2, 5, 9}),
           DateTime(2026, 10, 24, 9));
       await open(tester, p, AnkirenGamePage(run: run));
       expect(find.text(_s.historyFailed.toUpperCase()), findsOneWidget);
@@ -434,9 +462,10 @@ void main() {
     testWidgets('30: a custom game', (tester) async {
       final p = await player(tester, mode: LearningMode.allKnown);
       const setup = AnkirenSetup.custom(perSide: 6, memorise: Duration(minutes: 2));
-      await game(tester, p, playAnkiren(setup, seed: 5, ms: 1300, wrongAt: {1}), DateTime(2026, 10, 20, 9));
+      await game(tester, p, playAnkiren(setup, seed: 5, ms: 1300, spread: 0.3, wrongAt: {1}), DateTime(2026, 10, 20, 9));
       final run = await game(tester, p,
-          playAnkiren(setup, seed: 6, ms: 1100, wrongAt: {2, 6}, memorised: const Duration(minutes: 1, seconds: 44)),
+          playAnkiren(setup,
+              seed: 6, ms: 1100, spread: 0.3, wrongAt: {2, 6}, memorised: const Duration(minutes: 1, seconds: 44)),
           DateTime(2026, 10, 24, 9));
       await open(tester, p, AnkirenGamePage(run: run));
       expect(find.text(_s.ankirenNotScored.toUpperCase()), findsOneWidget);

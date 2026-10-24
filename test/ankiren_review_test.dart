@@ -30,6 +30,7 @@ import 'package:fudatobashi/state/scope.dart';
 import 'package:fudatobashi/state/xp_history.dart';
 import 'package:fudatobashi/ui/history/ankiren_game_page.dart';
 import 'package:fudatobashi/ui/history/ankiren_widgets.dart';
+import 'package:fudatobashi/ui/play/time_format.dart';
 import 'package:fudatobashi/ui/manga/theme.dart';
 
 import 'test_l10n.dart';
@@ -250,9 +251,9 @@ void main() {
 
           await show(run);
           expect(find.text(s.ankirenPointsLabel.toUpperCase()), findsOneWidget);
-          expect(find.text('${game.firstTaps}/${game.cards.length}'), findsOneWidget);
+          expect(find.text('${game.firstTaps}/${game.cards.length}', findRichText: true), findsOneWidget);
           final xp = XpHistory.gainsOf(p).ankiren[run.id]!.award.total;
-          expect(find.text('+$xp'), findsOneWidget);
+          expect(find.textContaining(groupDigits(xp), findRichText: true), findsOneWidget);
           expect(find.textContaining(s.ankirenMixTitle, findRichText: true), findsOneWidget);
           expect(find.text(s.ankirenUsual), findsOneWidget);
           expect(find.byType(TierMixBar), findsNWidgets(2));
@@ -264,9 +265,9 @@ void main() {
           await tab(s.ankirenTabField, 'field');
           expect(find.textContaining(s.ankirenFieldTitle, findRichText: true), findsOneWidget);
           expect(find.textContaining(s.ankirenStepCard(1, game.cards.length, '')), findsNothing);
-          await tester.ensureVisible(find.text(s.ankirenStartReview, findRichText: true));
+          await tester.ensureVisible(find.text(s.ankirenStartReview.toUpperCase()));
           await tester.pumpAndSettle();
-          await tester.tap(find.text(s.ankirenStartReview, findRichText: true));
+          await tester.tap(find.text(s.ankirenStartReview.toUpperCase()));
           await tester.pumpAndSettle();
           expect(find.textContaining(s.ankirenStepCard(1, game.cards.length, '')), findsOneWidget);
           await tester.ensureVisible(find.bySemanticsLabel(s.ankirenStepNext));
@@ -281,7 +282,7 @@ void main() {
 
           await tester.tap(find.text(s.ankirenShowAll));
           await tester.pumpAndSettle();
-          expect(find.text(s.ankirenStartReview, findRichText: true), findsOneWidget);
+          expect(find.text(s.ankirenStartReview.toUpperCase()), findsOneWidget);
 
           await tab(s.runTabCards, 'cards');
           expect(find.textContaining(s.ankirenRankedTitle, findRichText: true), findsOneWidget);
@@ -305,7 +306,7 @@ void main() {
           await captureScreen(tester, 'ankiren_game_taps2', lang: lang);
 
           await show(runs[4]);
-          expect(find.text(s.ankirenRightFirstLabel.toUpperCase()), findsOneWidget);
+          expect(find.text(s.ankirenFirstTapFact.toUpperCase()), findsOneWidget);
           expect(find.textContaining(s.ankirenSetupTitle, findRichText: true), findsOneWidget);
           expect(find.text(s.ankirenTabScore), findsNothing, reason: 'a custom game has no score');
           await captureScreen(tester, 'ankiren_custom_overview', lang: lang);
@@ -344,7 +345,7 @@ void main() {
       final total = fieldCards.evaluate().length;
       expect(total, game.deal!.cards.length);
       expect(dimmed, findsNothing, reason: 'nothing is dimmed before the review starts');
-      expect(find.text(s.ankirenStartReview, findRichText: true), findsOneWidget);
+      expect(find.text(s.ankirenStartReview.toUpperCase()), findsOneWidget);
       expect(find.textContaining(s.ankirenStepCard(1, game.cards.length, '')), findsNothing);
 
       final step = game.cards.indexWhere((c) => c.tapped.any((id) => id != c.poemId));
@@ -362,7 +363,7 @@ void main() {
       await tester.tap(find.text(s.ankirenShowAll));
       await tester.pumpAndSettle();
       expect(dimmed, findsNothing);
-      expect(find.text(s.ankirenStartReview, findRichText: true), findsOneWidget);
+      expect(find.text(s.ankirenStartReview.toUpperCase()), findsOneWidget);
       await tester.pumpWidget(const SizedBox());
       await tester.runAsync(() => p.db.close());
     });

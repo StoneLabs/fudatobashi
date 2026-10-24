@@ -34,16 +34,20 @@ class BarPart {
 
 /// A label on the hero's bar: at the start of the bar's [part], or with
 /// [end] ending where that part ends. One at the start of a part too narrow
-/// for it sits just past it when the bar's empty rest follows, with no
-/// label of its own; any other label that doesn't fit inside its part, or
-/// beside the ones before it, is left out.
+/// for it runs on over the parts after it with [runOn], or else sits just
+/// past it when the bar's empty rest follows, with no label of its own; any
+/// other label that doesn't fit inside its part, or beside the ones before
+/// it, is left out.
 @immutable
 class BarLabel {
-  const BarLabel(this.text, {this.part = 0, this.end = false});
+  const BarLabel(this.text, {this.part = 0, this.end = false, this.runOn = false, this.color});
 
   final String text;
   final int part;
-  final bool end;
+  final bool end, runOn;
+
+  /// Its text's colour, ink when null.
+  final Color? color;
 }
 
 /// The hero of a summary: [banner] over [body] (a [HeroCount], [HeroWord]
@@ -52,7 +56,7 @@ class BarLabel {
 /// [ticks] (shares of the bar), and Tobi in [pose] standing where the bar's
 /// done part ends, saying [balloon]; no Tobi without a [pose]. A goal
 /// reached brings the focus lines of [burst], and [stamp] lies over the
-/// bar, or at the top right with [stampOnTop].
+/// bar, or at the top right with [stampOnTop]. The panel is [color].
 @immutable
 class SummaryHero {
   const SummaryHero({
@@ -67,6 +71,7 @@ class SummaryHero {
     this.burst,
     this.stamp,
     this.stampOnTop = false,
+    this.color = Palette.paper,
   });
 
   final String banner;
@@ -79,6 +84,7 @@ class SummaryHero {
   final BurstSpec? burst;
   final Widget? stamp;
   final bool stampOnTop;
+  final Color color;
 }
 
 /// One of a summary's three tiles: [label] over [big] (often a
@@ -283,6 +289,7 @@ class HeroPanel extends StatelessWidget {
         final pose = hero.pose;
         return MangaPanel(
           shape: const PanelShape(bottomRight: Offset(0, SummaryLayout.cut)),
+          color: hero.color,
           art: [if (hero.burst case final burst?) BurstLayer(burst)],
           child: Stack(clipBehavior: Clip.none, children: [
             Positioned.fill(child: CustomPaint(painter: _BarPainter(bar, hero.ticks))),
@@ -350,7 +357,13 @@ class HeroPanel extends StatelessWidget {
     for (final label in labels) {
       final w = _widthOf(context, label.text);
       var (lo, hi) = room(label.part);
-      if (!label.end && lo + w > hi && restFree && label.part == rest - 1) (lo, hi) = room(rest);
+      if (!label.end && lo + w > hi) {
+        if (label.runOn) {
+          hi = room(rest).$2;
+        } else if (restFree && label.part == rest - 1) {
+          (lo, hi) = room(rest);
+        }
+      }
       var left = label.end ? hi - w : lo;
       if (!label.end) {
         for (final t in [...taken]..sort((a, b) => a.$1.compareTo(b.$1))) {
@@ -369,7 +382,10 @@ class HeroPanel extends StatelessWidget {
           child: Align(
             alignment: Alignment.centerLeft,
             widthFactor: 1,
-            child: Text(label.text, maxLines: 1, softWrap: false, style: _labelStyle),
+            child: Text(label.text,
+                maxLines: 1,
+                softWrap: false,
+                style: label.color == null ? _labelStyle : _labelStyle.copyWith(color: label.color)),
           ),
         ),
       ));
@@ -627,12 +643,13 @@ class TileFigure extends StatelessWidget {
 
 /// Tiles side by side: slices of one band whose edges rise with the panels
 /// above and below, each [SummaryTile] its label over its figure over its
-/// note, laid out by [spec]; as tall as the tallest, or [height].
+/// note, laid out by [spec]; as tall as the tallest, and at least
+/// [minHeight].
 class TileBand extends StatelessWidget {
-  const TileBand(this.tiles, {super.key, this.spec = SummaryTileLayout.spec, this.height});
+  const TileBand(this.tiles, {super.key, this.spec = SummaryTileLayout.spec, this.minHeight = 0});
   final List<SummaryTile> tiles;
   final TileSpec spec;
-  final double? height;
+  final double minHeight;
 
   @override
   Widget build(BuildContext context) {
@@ -647,31 +664,33 @@ class TileBand extends StatelessWidget {
     Widget lines(String text, TextStyle style) => spec.lines > 1
         ? Text(text, maxLines: spec.lines, overflow: TextOverflow.ellipsis, style: style)
         : _OneLine(Text(text, maxLines: 1, style: style));
-    return SlantRow(
-      cut: SummaryLayout.cut,
-      gap: SummaryLayout.gap,
-      height: height,
-      padding: spec.padding,
-      colors: [
-        for (final (i, tile) in tiles.indexed)
-          tile.color ?? SummaryTileLayout.colors[i % SummaryTileLayout.colors.length],
-      ],
-      children: [
-        for (final tile in tiles)
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              lines(tile.label, label),
-              const SizedBox(height: SummaryTileLayout.rowGap),
-              _OneLine(tile.big),
-              if (tile.note.isNotEmpty) ...[
+    return ConstrainedBox(
+      constraints: BoxConstraints(minHeight: minHeight),
+      child: SlantRow(
+        cut: SummaryLayout.cut,
+        gap: SummaryLayout.gap,
+        padding: spec.padding,
+        colors: [
+          for (final (i, tile) in tiles.indexed)
+            tile.color ?? SummaryTileLayout.colors[i % SummaryTileLayout.colors.length],
+        ],
+        children: [
+          for (final tile in tiles)
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                lines(tile.label, label),
                 const SizedBox(height: SummaryTileLayout.rowGap),
-                lines(tile.note, note),
+                _OneLine(tile.big),
+                if (tile.note.isNotEmpty) ...[
+                  const SizedBox(height: SummaryTileLayout.rowGap),
+                  lines(tile.note, note),
+                ],
               ],
-            ],
-          ),
-      ],
+            ),
+        ],
+      ),
     );
   }
 }

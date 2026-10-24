@@ -33,4 +33,16 @@ extension ReviewStrings on S {
 
   /// The experience panel.
   String get reviewXpSources => t('reviewXpSources');
+
+  /// A 暗記練 game's hero, tiles and score sum.
+  String reviewPointsMade(Object card, Object early) => f('reviewPointsMade', [card, early]);
+  String reviewCardPoints(Object card) => f('reviewCardPoints', [card]);
+  String reviewUpFrom(Object best) => f('reviewUpFrom', [best]);
+  String get reviewRightCardFirst => t('reviewRightCardFirst');
+  String get reviewEveryCard => t('reviewEveryCard');
+  String get reviewFirstTapFinds => t('reviewFirstTapFinds');
+  String get reviewWrongTaps => t('reviewWrongTaps');
+  String reviewUnderClears(int strikes) => f('reviewUnderClears', [strikes]);
+  String reviewMemorisedOf(Object used, Object allowed) => f('reviewMemorisedOf', [used, allowed]);
+  String get reviewSumTitle => t('reviewSumTitle');
 }

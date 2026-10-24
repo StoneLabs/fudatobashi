@@ -234,29 +234,26 @@ abstract final class AnkirenReviewStyle {
   static const List<Color> tierText = [Palette.ink, Palette.ink, Palette.ink, Palette.ink, Palette.ink, Palette.paper];
 
   static const Color customFill = Color(0xFFF1F0EE);
-  static const Color sumFill = Palette.seaSoft;
-  static const Color markedRow = Palette.pinkSoft;
   static const Color muted = HistoryRunStyle.muted;
 
-  static const EdgeInsets panelPadding = EdgeInsets.fromLTRB(10, 8, 10, 10);
-
-  /// A headline's facts share one row while each gets this much (scaled
-  /// with the text), else two rows.
-  static const double factMinWidth = 72;
-
-  /// The first-tap mix: a row's label column, its bar.
+  /// The first-tap mix: a row's label column and type, its bar, the rules
+  /// between the bar's parts and their counts.
   static const double mixLabelWidth = 96;
+  static const double mixLabelFont = 12.5;
+  static const double mixLabelHeight = 1.2;
+  static const double mixSubFont = 10.5;
   static const double mixBarHeight = 22;
-  static const double mixFont = 11;
-  static const double mixRowGap = 6;
+  static const double mixRule = 1.2;
+  static const double mixCountFont = 10;
+  static const double mixRowGap = 10;
 
   static const double chipFont = 10;
   static const EdgeInsets chipPadding = EdgeInsets.fromLTRB(4, 1, 4, 2);
 
   /// The memorise bar and its ticks.
-  static const double memoBarHeight = 18;
-  static const double memoTick = 2;
-  static const double memoTickOut = 4;
+  static const double memoBarHeight = 20;
+  static const double memoTick = 2.5;
+  static const double memoTickOut = 5;
 
   /// The replayed field: its band, card words, the highlight round the card
   /// asked, the arrows from wrong taps (later taps' dashed) and the taps'
@@ -264,7 +261,8 @@ abstract final class AnkirenReviewStyle {
   static const double fieldBand = 18;
   static const double fieldBandFont = 10;
   static const double fieldCardFont = 11;
-  static const double fieldCardBorder = 1.2;
+  static const double fieldCardBorder = 1.5;
+  static const double fieldMaxCardW = 29;
   static const EdgeInsets fieldCardPadding = EdgeInsets.all(2);
   static const double highlight = 3;
   static const double arrowStroke = 2.2;
@@ -286,8 +284,10 @@ abstract final class AnkirenReviewStyle {
   static const EdgeInsets showAllPadding = EdgeInsets.fromLTRB(8, 4, 10, 4);
   static const double showAllIcon = 12;
   static const Color fieldGround = Color(0xFFEFF5E6);
-  static const double stepFont = 15;
-  static const double stepSubFont = 12;
+  static const double stepFont = 16;
+  static const double stepGap = 6;
+  static const double stepSubFont = 11.5;
+  static const double stepSubHeight = 1.3;
   static const double stepButton = 44;
 
   /// The find-time chart numbers every bar up to [allLabelsUpTo] cards,
@@ -301,19 +301,14 @@ abstract final class AnkirenReviewStyle {
   static const EdgeInsets cellPadding = EdgeInsets.symmetric(horizontal: 3, vertical: 6);
   static const Color rule = Color(0xFFD8D5CF);
 
-  /// The score sum: big values over small labels.
+  /// The score sum: big values over small labels, the result boxed.
   static const double sumFont = 18;
   static const double sumLabelFont = 9.5;
-  static const double sumSignFont = 14;
-  static const EdgeInsets sumSignPadding = EdgeInsets.symmetric(horizontal: 2);
-
-  /// Each factor's share of the sum's width against the result's 1.
-  static const int termFlex = 2;
-  static const double badgeFont = 16;
-  static const double badgeSuffixFont = 10;
-
-  static const double ratingFont = 26;
-  static const double barGap = 8;
+  static const double sumSignFont = 16;
+  static const EdgeInsets sumSignPadding = EdgeInsets.fromLTRB(2, 2, 2, 0);
+  static const EdgeInsets termPadding = EdgeInsets.fromLTRB(2, 5, 2, 6);
+  static const EdgeInsets resultPadding = EdgeInsets.fromLTRB(8, 5, 8, 6);
+  static const double termGap = 4;
 }
 
 /// History's run page: the Speed, Rating and XP tabs' panels, lines, cells

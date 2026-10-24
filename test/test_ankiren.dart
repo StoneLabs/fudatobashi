@@ -7,14 +7,15 @@ import 'package:fudatobashi/domain/ankiren_game.dart';
 import 'package:fudatobashi/domain/ankiren_level.dart';
 
 /// A 暗記練 game dealt from all the poems, played out: each card found
-/// [ms] after its prompt, after one wrong tap on another card of its side
-/// for the prompts in [wrongAt], or given up for those in [giveUpAt]; ended
-/// early after [endAfter] prompts. With [strikes] it counts them, as the
-/// owner's free-play level games do. The player is ready after [memorised],
-/// or when the memorise time is up.
+/// [ms] after its prompt, give or take [spread] of it, after one wrong tap
+/// on another card of its side for the prompts in [wrongAt], or given up
+/// for those in [giveUpAt]; ended early after [endAfter] prompts. With
+/// [strikes] it counts them, as the owner's free-play level games do. The
+/// player is ready after [memorised], or when the memorise time is up.
 AnkirenGame playAnkiren(AnkirenSetup setup,
     {int seed = 1,
     int ms = 700,
+    double spread = 0,
     Set<int> wrongAt = const {},
     Set<int> giveUpAt = const {},
     int? endAfter,
@@ -38,7 +39,7 @@ AnkirenGame playAnkiren(AnkirenSetup setup,
           t + const Duration(milliseconds: 300));
       if (game.phase != AnkirenPhase.recall) break;
     }
-    t += Duration(milliseconds: ms);
+    t += Duration(milliseconds: spread == 0 ? ms : (ms * (1 + spread * (2 * rng.nextDouble() - 1))).round());
     if (giveUpAt.contains(i)) {
       game.giveUp();
     } else {
