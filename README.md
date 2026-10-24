@@ -1,6 +1,6 @@
 <div align="center">
 
-<img src="docs/images/logo.png" width="120" alt="The Fudatobashi app icon with Tobi in his pink headband">
+<img src=".github/images/logo.png" width="120" alt="The Fudatobashi app icon with Tobi in his pink headband">
 
 # 札飛ばし Fudatobashi
 
@@ -20,9 +20,9 @@ Say the kimariji and flick the card away, as fast as you can.
 
 <table>
   <tr>
-    <td align="center"><img src="docs/images/home-journey.png" width="250" alt="Home in Journey mode with the Kana Islands map"><br><sub>Journey mode on the Kana Islands</sub></td>
-    <td align="center"><img src="docs/images/swipe.png" width="250" alt="A card flying away to the right after a fast swipe, with the pink word スパッ above it"><br><sub>A card flying away after a fast swipe</sub></td>
-    <td align="center"><img src="docs/images/card-detail.png" width="250" alt="The stats page of the card mu with its speed graph over 34 attempts"><br><sub>Every card has its own speed graph</sub></td>
+    <td align="center"><img src=".github/images/home-journey.png" width="250" alt="Home in Journey mode with the Kana Islands map"><br><sub>Journey mode on the Kana Islands</sub></td>
+    <td align="center"><img src=".github/images/swipe.png" width="250" alt="A card flying away to the right after a fast swipe, with the pink word スパッ above it"><br><sub>A card flying away after a fast swipe</sub></td>
+    <td align="center"><img src=".github/images/card-detail.png" width="250" alt="The stats page of the card mu with its speed graph over 34 attempts"><br><sub>Every card has its own speed graph</sub></td>
   </tr>
 </table>
 
