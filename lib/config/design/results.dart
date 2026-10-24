@@ -48,6 +48,40 @@ abstract final class SummaryLayout {
   static const EdgeInsets untrackedPadding = EdgeInsets.fromLTRB(7, 4, 7, 5);
 }
 
+/// Where a hero's answer, Tobi and stamp sit (`HeroPanel` and its bodies):
+/// the summary's, or the run review's shorter hero's.
+@immutable
+class HeroMetrics {
+  const HeroMetrics({
+    required this.countTop,
+    required this.countFont,
+    required this.wordTop,
+    required this.plainWordTop,
+    required this.plainWordFont,
+    required this.wordWidth,
+    required this.subTop,
+    required this.timeTop,
+    required this.timeFont,
+    required this.tobi,
+    required this.stampAt,
+    this.topStampInset = Offset.zero,
+  });
+
+  final double countTop, countFont;
+
+  /// A word's top, outlined or plain, the plain one's size, the width it
+  /// fits, and the line under it.
+  final double wordTop, plainWordTop, plainWordFont, wordWidth, subTop;
+  final double timeTop, timeFont;
+
+  /// Tobi's box, at his 84:100 aspect.
+  final Size tobi;
+
+  /// A stamp's top left over the bar, or how far one at the top right keeps
+  /// from that corner.
+  final Offset stampAt, topStampInset;
+}
+
 /// The summary's hero (`SummaryHero`): the banner, the big answer, the bar
 /// along its slanted bottom edge, and Tobi standing on the bar.
 abstract final class SummaryHeroLayout {
@@ -66,13 +100,26 @@ abstract final class SummaryHeroLayout {
   static const double labelStart = 14;
   static const double labelInset = 8;
 
+  /// Where the answer, Tobi and the stamp sit in the summary's hero.
+  static const metrics = HeroMetrics(
+    countTop: 72,
+    countFont: 96,
+    wordTop: 62,
+    plainWordTop: 70,
+    plainWordFont: 48,
+    wordWidth: 256,
+    subTop: 126,
+    timeTop: 76,
+    timeFont: 46,
+    tobi: Size(84, 100),
+    stampAt: Offset(124, 170),
+  );
+
   /// The big answer, kept left of Tobi: a count with its label and note
   /// beside it (which take at most [countLabelShare] of the width), a word,
   /// or a time.
   static const double bodyLeft = 11;
   static const double bodyWidth = 240;
-  static const double countTop = 72;
-  static const double countFont = 96;
   static const double countTracking = -0.01;
   static const double countGap = 14;
   static const double countLabelShare = 0.6;
@@ -81,29 +128,26 @@ abstract final class SummaryHeroLayout {
   static const double countNoteGap = 4;
 
   /// A word: outlined for a goal reached, plain and smaller otherwise; as
-  /// big as fits [wordWidth] up to its font size, with a line under it at
-  /// [subTop].
+  /// big as fits the metrics' width up to its font size, with a line under
+  /// it.
   static const double wordInset = 4;
-  static const double wordTop = 62;
-  static const double plainWordTop = 70;
   static const double wordFont = 57;
-  static const double plainWordFont = 48;
-  static const double wordWidth = 256;
   static const double wordOutline = 11;
-  static const double subTop = 126;
   static const double subFont = 13.5;
   static const double subTimeFont = 17;
-  static const double timeTop = 76;
-  static const double timeFont = 46;
 
   /// The milliseconds' size, as a share of the time's.
   static const double timeFractionShare = 0.5;
+
+  /// Marks across the bar (an earlier rating): their line, reaching this
+  /// far above the bar.
+  static const double tick = 3;
+  static const double tickReach = 5;
 
   /// Tobi stands on the bar where its done part ends, but never left of
   /// [tobiMinFront] of its length, so he never walks into the big number,
   /// and never closer than [tobiRightInset] to the right edge. His feet end
   /// [tobiFeet] of the way down his box.
-  static const Size tobi = Size(84, 100);
   static const double tobiMinFront = 0.81;
   static const double tobiRightInset = Strokes.panel + 12;
   static const double tobiFeet = 0.93;
@@ -120,7 +164,6 @@ abstract final class SummaryHeroLayout {
   static const double almostThere = 0.25;
 
   /// The 本日完了 stamp of the run that finished the day's set.
-  static const Offset stampAt = Offset(124, 170);
   static const double stampFont = 23;
 
   /// Focus lines for a goal reached, left out where they would cross the
@@ -150,13 +193,32 @@ abstract final class SummaryHeroLayout {
 /// panels' edges.
 abstract final class SummaryTileLayout {
   static const List<Color> colors = [Palette.seaSoft, Palette.landSoft, Palette.sunSoft];
-  static const EdgeInsets padding = EdgeInsets.fromLTRB(14, 14, 10, 20);
-  static const double labelFont = 11;
-  static const double labelTracking = 0.14;
+  static const spec = TileSpec(padding: EdgeInsets.fromLTRB(14, 14, 10, 20));
   static const double bigFont = 28;
   static const double bigSmallFont = 15;
-  static const double noteFont = 12;
   static const double strikeCard = 28;
+
+  /// The least room between a tile's lines, and their line height when a
+  /// label or note may wrap.
+  static const double rowGap = 4;
+  static const double lineHeight = 1.1;
+}
+
+/// A band of tilted tiles (`TileBand`): the room inside each tile, its
+/// label's and note's type and how many lines each may take.
+@immutable
+class TileSpec {
+  const TileSpec({
+    required this.padding,
+    this.labelFont = 11,
+    this.labelTracking = 0.14,
+    this.noteFont = 12,
+    this.lines = 1,
+  });
+
+  final EdgeInsets padding;
+  final double labelFont, labelTracking, noteFont;
+  final int lines;
 }
 
 /// The summary's card panel (`SummaryRow`): rows of a marker heading with a

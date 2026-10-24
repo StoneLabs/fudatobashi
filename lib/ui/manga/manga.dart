@@ -34,6 +34,7 @@ export 'routes.dart';
 export 'ruby_text.dart';
 export 'screentone.dart';
 export 'shout.dart';
+export 'slant.dart';
 export 'static_art.dart';
 export 'tab_bar.dart';
 export 'theme.dart';

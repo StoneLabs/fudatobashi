@@ -48,9 +48,11 @@ class BarLabel {
 
 /// The hero of a summary: [banner] over [body] (a [HeroCount], [HeroWord]
 /// or [HeroTime]), the [bar] along its slanted bottom edge with its
-/// [labels], and Tobi in [pose] standing where the bar's done part ends,
-/// saying [balloon]. A goal reached brings the focus lines of [burst], and
-/// [stamp] lies over the bar.
+/// [labels] (or, when any of them doesn't fit, its [fallbackLabels]) and
+/// [ticks] (shares of the bar), and Tobi in [pose] standing where the bar's
+/// done part ends, saying [balloon]; no Tobi without a [pose]. A goal
+/// reached brings the focus lines of [burst], and [stamp] lies over the
+/// bar, or at the top right with [stampOnTop].
 @immutable
 class SummaryHero {
   const SummaryHero({
@@ -58,31 +60,37 @@ class SummaryHero {
     required this.body,
     required this.bar,
     this.labels = const [],
+    this.fallbackLabels = const [],
+    this.ticks = const [],
     this.pose = TobiPose.standard,
     this.balloon,
     this.burst,
     this.stamp,
+    this.stampOnTop = false,
   });
 
   final String banner;
   final Widget body;
   final List<BarPart> bar;
-  final List<BarLabel> labels;
-  final TobiPose pose;
+  final List<BarLabel> labels, fallbackLabels;
+  final List<double> ticks;
+  final TobiPose? pose;
   final String? balloon;
   final BurstSpec? burst;
   final Widget? stamp;
+  final bool stampOnTop;
 }
 
 /// One of a summary's three tiles: [label] over [big] (often a
-/// [TileFigure]) over [note].
+/// [TileFigure]) over [note], on [color] or the band's next colour.
 @immutable
 class SummaryTile {
-  const SummaryTile({required this.label, required this.big, required this.note});
+  const SummaryTile({required this.label, required this.big, required this.note, this.color});
 
   final String label;
   final Widget big;
   final String note;
+  final Color? color;
 }
 
 /// The summary every game ends on: the mode as the header's [title] over
@@ -143,8 +151,8 @@ class RunSummary extends StatelessWidget {
                   final body = CustomMultiChildLayout(
                     delegate: _BodyLayout(),
                     children: [
-                      LayoutId(id: _Part.hero, child: _Hero(hero)),
-                      LayoutId(id: _Part.tiles, child: _Tiles(tiles)),
+                      LayoutId(id: _Part.hero, child: HeroPanel(hero)),
+                      LayoutId(id: _Part.tiles, child: TileBand(tiles)),
                       LayoutId(id: _Part.cards, child: _CardPanel(rows)),
                     ],
                   );
@@ -201,15 +209,15 @@ enum _Part { hero, tiles, cards }
 /// each panel's slanted edge [SummaryLayout.gap] from the next one's. On a
 /// screen shorter than [minHeight] they scroll together.
 class _BodyLayout extends MultiChildLayoutDelegate {
-  static const tilesTop = SummaryLayout.heroHeight + SummaryLayout.gap - SummaryLayout.cut;
-  static const cardsTop = tilesTop + SummaryLayout.tileHeight + SummaryLayout.gap;
+  static const tilesTop = SummaryLayout.heroHeight + SummaryLayout.gap;
+  static const cardsTop = tilesTop + SummaryLayout.tileHeight + SummaryLayout.gap - SummaryLayout.cut;
   static const minHeight = cardsTop + SummaryLayout.minCardsHeight;
 
   @override
   void performLayout(Size size) {
     layoutChild(_Part.hero, BoxConstraints.tight(Size(size.width, SummaryLayout.heroHeight)));
     positionChild(_Part.hero, Offset.zero);
-    layoutChild(_Part.tiles, BoxConstraints.tight(Size(size.width, SummaryLayout.tileHeight + SummaryLayout.cut)));
+    layoutChild(_Part.tiles, BoxConstraints.tight(Size(size.width, SummaryLayout.tileHeight)));
     positionChild(_Part.tiles, const Offset(0, tilesTop));
     layoutChild(_Part.cards, BoxConstraints.tight(Size(size.width, math.max(0, size.height - cardsTop))));
     positionChild(_Part.cards, const Offset(0, cardsTop));
@@ -253,27 +261,31 @@ class _BarGeometry {
   }
 }
 
-class _Hero extends StatelessWidget {
-  const _Hero(this.hero);
+/// A [SummaryHero] in a panel with a flat top and a slanted bottom edge,
+/// laid out by [metrics].
+class HeroPanel extends StatelessWidget {
+  const HeroPanel(this.hero, {super.key, this.metrics = SummaryHeroLayout.metrics});
   final SummaryHero hero;
+  final HeroMetrics metrics;
 
   static const _labelStyle = TextStyle(fontWeight: Weights.black, fontSize: SummaryHeroLayout.labelFont, height: 1);
 
   @override
   Widget build(BuildContext context) => LayoutBuilder(builder: (context, box) {
         final bar = _BarGeometry(hero.bar, box.biggest);
-        const tobi = SummaryHeroLayout.tobi;
+        final tobi = metrics.tobi;
         final tobiX = math.min(
           math.max(bar.front, SummaryHeroLayout.tobiMinFront) * bar.size.width,
           bar.size.width - SummaryHeroLayout.tobiRightInset - tobi.width / 2,
         );
         final balloon = hero.balloon;
         final stamp = hero.stamp;
+        final pose = hero.pose;
         return MangaPanel(
           shape: const PanelShape(bottomRight: Offset(0, SummaryLayout.cut)),
           art: [if (hero.burst case final burst?) BurstLayer(burst)],
           child: Stack(clipBehavior: Clip.none, children: [
-            Positioned.fill(child: CustomPaint(painter: _BarPainter(bar))),
+            Positioned.fill(child: CustomPaint(painter: _BarPainter(bar, hero.ticks))),
             ..._labels(context, bar),
             Positioned(
               left: SummaryHeroLayout.bannerAt.dx,
@@ -288,14 +300,17 @@ class _Hero extends StatelessWidget {
               child: hero.body,
             ),
             if (stamp != null)
-              Positioned(left: SummaryHeroLayout.stampAt.dx, top: SummaryHeroLayout.stampAt.dy, child: stamp),
-            Positioned(
-              left: tobiX - tobi.width / 2,
-              top: bar.topAt(tobiX) - tobi.height * SummaryHeroLayout.tobiFeet,
-              width: tobi.width,
-              height: tobi.height,
-              child: Tobi(pose: hero.pose),
-            ),
+              hero.stampOnTop
+                  ? Positioned(right: metrics.topStampInset.dx, top: metrics.topStampInset.dy, child: stamp)
+                  : Positioned(left: metrics.stampAt.dx, top: metrics.stampAt.dy, child: stamp),
+            if (pose != null)
+              Positioned(
+                left: tobiX - tobi.width / 2,
+                top: bar.topAt(tobiX) - tobi.height * SummaryHeroLayout.tobiFeet,
+                width: tobi.width,
+                height: tobi.height,
+                child: Tobi(pose: pose),
+              ),
             if (balloon != null)
               Positioned(
                 left: tobiX + SummaryHeroLayout.balloonLeft,
@@ -312,8 +327,14 @@ class _Hero extends StatelessWidget {
       });
 
   /// The bar's labels, each along the bar's slant and inside a part (see
-  /// [BarLabel]).
+  /// [BarLabel]); the fallback ones when any of them doesn't fit.
   List<Widget> _labels(BuildContext context, _BarGeometry bar) {
+    final placed = _place(context, bar, hero.labels);
+    if (placed.length == hero.labels.length || hero.fallbackLabels.isEmpty) return placed;
+    return _place(context, bar, hero.fallbackLabels);
+  }
+
+  List<Widget> _place(BuildContext context, _BarGeometry bar, List<BarLabel> labels) {
     const start = SummaryHeroLayout.labelStart, inset = SummaryHeroLayout.labelInset;
     final width = bar.size.width;
     (double, double) room(int part) {
@@ -322,11 +343,11 @@ class _Hero extends StatelessWidget {
     }
 
     final rest = bar.parts.length - 1;
-    final restFree = !bar.parts[rest].done && hero.labels.every((l) => l.part != rest);
+    final restFree = !bar.parts[rest].done && labels.every((l) => l.part != rest);
     final taken = <(double, double)>[];
     final placed = <Widget>[];
     bool clashes(double left, double right) => taken.any((t) => left < t.$2 + inset && right + inset > t.$1);
-    for (final label in hero.labels) {
+    for (final label in labels) {
       final w = _widthOf(context, label.text);
       var (lo, hi) = room(label.part);
       if (!label.end && lo + w > hi && restFree && label.part == rest - 1) (lo, hi) = room(rest);
@@ -369,11 +390,12 @@ class _Hero extends StatelessWidget {
   }
 }
 
-/// The bar's parts along the hero's slanted bottom edge, split by rules,
-/// under an ink rule along its top.
+/// The bar's parts along the hero's slanted bottom edge, split by rules and
+/// crossed by its [ticks], under an ink rule along its top.
 class _BarPainter extends CustomPainter {
-  _BarPainter(this.bar);
+  _BarPainter(this.bar, this.ticks);
   final _BarGeometry bar;
+  final List<double> ticks;
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -403,6 +425,13 @@ class _BarPainter extends CustomPainter {
       canvas.drawPath(part.marked ? Dashes.of(rule, SummaryHeroLayout.markedSplit) : rule, split);
     }
     final w = size.width;
+    final tick = Paint()
+      ..color = Palette.ink
+      ..strokeWidth = SummaryHeroLayout.tick;
+    for (final t in ticks) {
+      final x = t * w;
+      canvas.drawLine(Offset(x, bar.topAt(x) - SummaryHeroLayout.tickReach), Offset(x, size.height), tick);
+    }
     canvas.drawPath(
       Polygon.path([
         Offset(0, bar.topAt(0) - SummaryHeroLayout.rule),
@@ -415,23 +444,25 @@ class _BarPainter extends CustomPainter {
   }
 
   @override
-  bool shouldRepaint(_BarPainter old) => old.bar.size != bar.size || old.bar.parts != bar.parts;
+  bool shouldRepaint(_BarPainter old) => old.bar.size != bar.size || old.bar.parts != bar.parts || old.ticks != ticks;
 }
 
 /// A count as the hero's answer: the big [value] with its [label] and
 /// [note] beside it. The number gives way first when they are wide.
 class HeroCount extends StatelessWidget {
-  const HeroCount(this.value, {super.key, required this.label, required this.note});
+  const HeroCount(this.value,
+      {super.key, required this.label, required this.note, this.metrics = SummaryHeroLayout.metrics});
 
   final String value, label, note;
+  final HeroMetrics metrics;
 
   @override
   Widget build(BuildContext context) => Padding(
-        padding: const EdgeInsets.only(top: SummaryHeroLayout.countTop),
+        padding: EdgeInsets.only(top: metrics.countTop),
         child: Align(
           alignment: Alignment.topLeft,
           child: SizedBox(
-            height: SummaryHeroLayout.countFont,
+            height: metrics.countFont,
             child: Row(children: [
               Flexible(
                 child: FittedBox(
@@ -441,10 +472,10 @@ class HeroCount extends StatelessWidget {
                     value,
                     maxLines: 1,
                     textScaler: TextScaler.noScaling,
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontFamily: Fonts.display,
-                      fontSize: SummaryHeroLayout.countFont,
-                      letterSpacing: SummaryHeroLayout.countTracking * SummaryHeroLayout.countFont,
+                      fontSize: metrics.countFont,
+                      letterSpacing: SummaryHeroLayout.countTracking * metrics.countFont,
                       height: 1,
                     ),
                   ),
@@ -478,25 +509,26 @@ class HeroCount extends StatelessWidget {
 /// A word as the hero's answer, outlined for a goal reached and plain
 /// otherwise, with [sub] on a line under it.
 class HeroWord extends StatelessWidget {
-  const HeroWord(this.word, {super.key, this.outlined = false, this.sub});
+  const HeroWord(this.word, {super.key, this.outlined = false, this.sub, this.metrics = SummaryHeroLayout.metrics});
 
   final String word;
   final bool outlined;
   final Widget? sub;
+  final HeroMetrics metrics;
 
   @override
   Widget build(BuildContext context) {
     final style = TextStyle(
       fontFamily: Fonts.display,
-      fontSize: outlined ? SummaryHeroLayout.wordFont : SummaryHeroLayout.plainWordFont,
+      fontSize: outlined ? SummaryHeroLayout.wordFont : metrics.plainWordFont,
       height: 1,
     );
     final sub = this.sub;
     return Stack(clipBehavior: Clip.none, children: [
       Positioned(
         left: SummaryHeroLayout.wordInset,
-        top: outlined ? SummaryHeroLayout.wordTop : SummaryHeroLayout.plainWordTop,
-        width: SummaryHeroLayout.wordWidth,
+        top: outlined ? metrics.wordTop : metrics.plainWordTop,
+        width: metrics.wordWidth,
         child: FittedBox(
           fit: BoxFit.scaleDown,
           alignment: Alignment.topLeft,
@@ -510,7 +542,7 @@ class HeroWord extends StatelessWidget {
       if (sub != null)
         Positioned(
           left: SummaryHeroLayout.wordInset,
-          top: SummaryHeroLayout.subTop,
+          top: metrics.subTop,
           width: SummaryHeroLayout.bodyWidth - SummaryHeroLayout.wordInset,
           child: FittedBox(
             fit: BoxFit.scaleDown,
@@ -525,18 +557,21 @@ class HeroWord extends StatelessWidget {
   }
 }
 
-/// A time as the hero's answer, its milliseconds smaller.
+/// A time as the hero's answer, its milliseconds smaller; with [tenths],
+/// as m:ss.d.
 class HeroTime extends StatelessWidget {
-  const HeroTime(this.time, {super.key});
+  const HeroTime(this.time, {super.key, this.tenths = false, this.metrics = SummaryHeroLayout.metrics});
 
   final Duration time;
+  final bool tenths;
+  final HeroMetrics metrics;
 
   @override
   Widget build(BuildContext context) {
-    final text = formatRunTime(time);
+    final text = tenths ? formatTenths(time) : formatRunTime(time);
     final dot = text.lastIndexOf('.');
     return Padding(
-      padding: const EdgeInsets.only(top: SummaryHeroLayout.timeTop),
+      padding: EdgeInsets.only(top: metrics.timeTop),
       child: Align(
         alignment: Alignment.topLeft,
         child: FittedBox(
@@ -547,15 +582,15 @@ class HeroTime extends StatelessWidget {
               TextSpan(text: text.substring(0, dot)),
               TextSpan(
                 text: text.substring(dot),
-                style: const TextStyle(fontSize: SummaryHeroLayout.timeFont * SummaryHeroLayout.timeFractionShare),
+                style: TextStyle(fontSize: metrics.timeFont * SummaryHeroLayout.timeFractionShare),
               ),
             ]),
             maxLines: 1,
             textScaler: TextScaler.noScaling,
-            style: const TextStyle(
+            style: TextStyle(
               fontFamily: Fonts.display,
-              fontSize: SummaryHeroLayout.timeFont,
-              letterSpacing: SummaryHeroLayout.countTracking * SummaryHeroLayout.timeFont,
+              fontSize: metrics.timeFont,
+              letterSpacing: SummaryHeroLayout.countTracking * metrics.timeFont,
               height: 1,
             ),
           ),
@@ -565,17 +600,19 @@ class HeroTime extends StatelessWidget {
   }
 }
 
-/// A tile's figure: [value] in display type, with a smaller [unit] after it
-/// or [prefix] before it.
+/// A tile's figure: [value] in display type at [size], with a smaller
+/// [unit] after it or [prefix] before it, in [color].
 class TileFigure extends StatelessWidget {
-  const TileFigure(this.value, {super.key, this.unit, this.prefix});
+  const TileFigure(this.value, {super.key, this.unit, this.prefix, this.size = SummaryTileLayout.bigFont, this.color});
 
   final String value;
   final String? unit, prefix;
+  final double size;
+  final Color? color;
 
   @override
   Widget build(BuildContext context) {
-    const small = TextStyle(fontSize: SummaryTileLayout.bigSmallFont);
+    final small = TextStyle(fontSize: size * SummaryTileLayout.bigSmallFont / SummaryTileLayout.bigFont);
     return Text.rich(
       TextSpan(children: [
         if (prefix case final prefix?) TextSpan(text: prefix, style: small),
@@ -583,61 +620,60 @@ class TileFigure extends StatelessWidget {
         if (unit case final unit?) TextSpan(text: unit, style: small),
       ]),
       maxLines: 1,
-      style: const TextStyle(fontFamily: Fonts.display, fontSize: SummaryTileLayout.bigFont, height: 1),
+      style: TextStyle(fontFamily: Fonts.display, fontSize: size, height: 1, color: color),
     );
   }
 }
 
-/// The three tiles: slices of one band whose edges rise with the hero's
-/// bottom and the card panel's top.
-class _Tiles extends StatelessWidget {
-  const _Tiles(this.tiles);
+/// Tiles side by side: slices of one band whose edges rise with the panels
+/// above and below, each [SummaryTile] its label over its figure over its
+/// note, laid out by [spec]; as tall as the tallest, or [height].
+class TileBand extends StatelessWidget {
+  const TileBand(this.tiles, {super.key, this.spec = SummaryTileLayout.spec, this.height});
   final List<SummaryTile> tiles;
+  final TileSpec spec;
+  final double? height;
 
   @override
-  Widget build(BuildContext context) => LayoutBuilder(builder: (context, box) {
-        const gap = SummaryLayout.gap;
-        final w = box.maxWidth;
-        final tw = (w - gap * (tiles.length - 1)) / tiles.length;
-        final slope = SummaryLayout.cut / w;
-        final lift = slope * tw;
-        return Stack(clipBehavior: Clip.none, children: [
-          for (final (i, tile) in tiles.indexed)
-            Positioned(
-              left: i * (tw + gap),
-              top: slope * (w - i * (tw + gap) - tw),
-              width: tw,
-              height: SummaryLayout.tileHeight + lift,
-              child: MangaPanel(
-                shape: PanelShape(topLeft: Offset(0, lift), bottomRight: Offset(0, lift)),
-                color: SummaryTileLayout.colors[i % SummaryTileLayout.colors.length],
-                padding: SummaryTileLayout.padding + EdgeInsets.only(top: lift),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    _OneLine(Text(
-                      tile.label,
-                      maxLines: 1,
-                      style: const TextStyle(
-                        fontWeight: Weights.black,
-                        fontSize: SummaryTileLayout.labelFont,
-                        letterSpacing: SummaryTileLayout.labelTracking * SummaryTileLayout.labelFont,
-                        height: 1,
-                      ),
-                    )),
-                    _OneLine(tile.big),
-                    _OneLine(Text(
-                      tile.note,
-                      maxLines: 1,
-                      style: const TextStyle(fontWeight: Weights.bold, fontSize: SummaryTileLayout.noteFont, height: 1),
-                    )),
-                  ],
-                ),
-              ),
-            ),
-        ]);
-      });
+  Widget build(BuildContext context) {
+    final label = TextStyle(
+      fontWeight: Weights.black,
+      fontSize: spec.labelFont,
+      letterSpacing: spec.labelTracking * spec.labelFont,
+      height: spec.lines > 1 ? SummaryTileLayout.lineHeight : 1,
+    );
+    final note = TextStyle(
+        fontWeight: Weights.bold, fontSize: spec.noteFont, height: spec.lines > 1 ? SummaryTileLayout.lineHeight : 1);
+    Widget lines(String text, TextStyle style) => spec.lines > 1
+        ? Text(text, maxLines: spec.lines, overflow: TextOverflow.ellipsis, style: style)
+        : _OneLine(Text(text, maxLines: 1, style: style));
+    return SlantRow(
+      cut: SummaryLayout.cut,
+      gap: SummaryLayout.gap,
+      height: height,
+      padding: spec.padding,
+      colors: [
+        for (final (i, tile) in tiles.indexed)
+          tile.color ?? SummaryTileLayout.colors[i % SummaryTileLayout.colors.length],
+      ],
+      children: [
+        for (final tile in tiles)
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              lines(tile.label, label),
+              const SizedBox(height: SummaryTileLayout.rowGap),
+              _OneLine(tile.big),
+              if (tile.note.isNotEmpty) ...[
+                const SizedBox(height: SummaryTileLayout.rowGap),
+                lines(tile.note, note),
+              ],
+            ],
+          ),
+      ],
+    );
+  }
 }
 
 /// One line that shrinks rather than wraps.
