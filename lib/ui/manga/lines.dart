@@ -23,6 +23,11 @@ abstract final class FocusLines {
           Offset(size.width - cx, size.height - cy),
         ].map((d) => d.distance).reduce(math.max) +
         LineStyle.focusOverreach;
+    final clear = o.clear;
+    final keepOff = clear == null
+        ? null
+        : Rect.fromLTRB(clear.left * size.width / o.box.width, clear.top * size.height / o.box.height,
+            clear.right * size.width / o.box.width, clear.bottom * size.height / o.box.height);
     final path = Path();
     final step = math.pi * 2 / o.count;
     for (var i = 0; i < o.count; i++) {
@@ -33,13 +38,42 @@ abstract final class FocusLines {
               (r.next() < LineStyle.focusLongChance ? LineStyle.focusLongFactor : 1);
       final hw = (LineStyle.focusBaseWidth + r.next() * o.width * (r.next() < LineStyle.focusThickChance ? 2 : 1)) /
           reach;
+      final start = Offset(cx + math.cos(a) * r0, cy + math.sin(a) * r0);
+      if (keepOff != null && _crosses(keepOff, start, Offset(cx + math.cos(a) * reach, cy + math.sin(a) * reach))) {
+        continue;
+      }
       path
-        ..moveTo(cx + math.cos(a) * r0, cy + math.sin(a) * r0)
+        ..moveTo(start.dx, start.dy)
         ..lineTo(cx + math.cos(a - hw) * reach, cy + math.sin(a - hw) * reach)
         ..lineTo(cx + math.cos(a + hw) * reach, cy + math.sin(a + hw) * reach)
         ..close();
     }
     return path;
+  }
+
+  /// Whether the segment from [a] to [b] passes through [rect] (Liang–Barsky).
+  static bool _crosses(Rect rect, Offset a, Offset b) {
+    final d = b - a;
+    var t0 = 0.0, t1 = 1.0;
+    for (final (p, q) in [
+      (-d.dx, a.dx - rect.left),
+      (d.dx, rect.right - a.dx),
+      (-d.dy, a.dy - rect.top),
+      (d.dy, rect.bottom - a.dy),
+    ]) {
+      if (p == 0) {
+        if (q < 0) return false;
+        continue;
+      }
+      final t = q / p;
+      if (p < 0) {
+        t0 = math.max(t0, t);
+      } else {
+        t1 = math.min(t1, t);
+      }
+      if (t0 > t1) return false;
+    }
+    return true;
   }
 }
 

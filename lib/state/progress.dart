@@ -400,6 +400,19 @@ class Progress extends ChangeNotifier {
     return set != null && set.window.contains(now ?? DateTime.now()) ? set : null;
   }
 
+  /// Today's set as it stood before run [runId], whose swipes are left out.
+  TodaySet? todaySetBefore(int runId, [DateTime? now]) {
+    final set = todaySet(now);
+    final day = _day;
+    return set == null || day == null ? null : _replay(day, set.kinds, without: runId);
+  }
+
+  /// Cards graded by FSRS in the practice day [now] falls in.
+  int reviewedToday([DateTime? now]) {
+    final window = dayAt(now);
+    return _log.values.where((attempts) => attempts.any((a) => a.grade != null && window.contains(a.at))).length;
+  }
+
   /// Today's set is missing or from an earlier day ([refreshToday] builds
   /// it).
   bool get todayStale => !simulating && !_allKnown && todaySet() == null;
@@ -497,8 +510,9 @@ class Progress extends ChangeNotifier {
     _today = _replay(day, {for (final r in rows) ItemKey(r.poemId, r.inverted): r.kind});
   }
 
-  /// [day]'s set with its progress, replayed from the day's training swipes.
-  TodaySet _replay(DayRow day, Map<ItemKey, StepKind> kinds) {
+  /// [day]'s set with its progress, replayed from the day's training swipes,
+  /// leaving out those of run [without].
+  TodaySet _replay(DayRow day, Map<ItemKey, StepKind> kinds, {int? without}) {
     final window = _windowOf(day);
     return TodaySet.replay(
       window: window,
@@ -507,7 +521,7 @@ class Progress extends ChangeNotifier {
         for (final k in kinds.keys)
           k: [
             for (final a in _log[k] ?? const <AttemptRec>[])
-              if (a.mode == PlayMode.training && window.contains(a.at)) a.miss,
+              if (a.mode == PlayMode.training && window.contains(a.at) && (without == null || a.runId != without)) a.miss,
           ],
       },
       missGuess: day.missGuess,
@@ -1198,7 +1212,7 @@ class Progress extends ChangeNotifier {
       {DateTime? now, Duration? tobi, List<Duration>? tobiLine}) async {
     now ??= DateTime.now();
     final previousBest = bestFor(config);
-    final weakBefore = config.mode == PlayMode.nigate ? weakCards.cards : null;
+    final weakBefore = config.mode == PlayMode.nigate ? weakCards.sides.toSet() : null;
     lastRun = run;
     await _journalSaved;
     if (!config.tracked || (run.attempts.isEmpty && config.mode != PlayMode.ranked)) {
@@ -1360,8 +1374,8 @@ class Progress extends ChangeNotifier {
       mode: config.mode,
       score: score,
       tobi: tobi,
-      weakBefore: weakBefore,
-      weakAfter: weakBefore == null ? null : weakCards.cards,
+      weakSidesBefore: weakBefore,
+      weakSidesAfter: weakBefore == null ? null : weakCards.sides.toSet(),
     );
   }
 

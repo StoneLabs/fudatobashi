@@ -17,12 +17,11 @@ import 'package:fudatobashi/domain/xp.dart';
 import 'package:fudatobashi/state/play_config.dart';
 import 'package:fudatobashi/state/progress.dart';
 import 'package:fudatobashi/state/scope.dart';
-import 'package:fudatobashi/ui/manga/manga.dart' show OutlinedText;
 import 'package:fudatobashi/ui/play/play_screen.dart';
 import 'package:fudatobashi/ui/play/pointer_clock.dart';
 import 'package:fudatobashi/ui/play/swipe_deck.dart';
-import 'package:fudatobashi/ui/play/time_format.dart';
 import 'package:fudatobashi/ui/results/results_screen.dart';
+import 'package:fudatobashi/ui/results/run_summary.dart';
 
 import 'test_l10n.dart';
 import 'test_play.dart';
@@ -280,11 +279,8 @@ void main() {
     expect(xp, isNot(contains(XpSource.speed)));
     expect(xp, isNot(contains(XpSource.best)));
 
-    expect(find.text('TOTAL TIME'), findsOneWidget);
-    expect(find.byWidgetPredicate((w) => w is OutlinedText && w.text == missingTime), findsOneWidget,
-        reason: 'no total, shown as a dash');
-    expect(find.text('3.500 s'), findsOneWidget, reason: 'the average is over the timed answer only');
-    expect(find.text('3.500s'), findsOneWidget, reason: 'the only slow card with a time');
+    expect(find.byType(RunSummary), findsOneWidget);
+    expect(find.textContaining(RegExp(r'\d\.\d+ ?s\b')), findsNothing, reason: 'a practice run shows no time');
     expect(find.byWidgetPredicate((w) => w is Text && RegExp(r'^-\d').hasMatch(w.data ?? '')), findsNothing);
     await tester.pumpWidget(const SizedBox());
   });

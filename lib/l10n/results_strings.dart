@@ -4,48 +4,30 @@ import 'strings.dart';
 /// Strings of the results screen and its celebration overlays.
 extension ResultsStrings on S {
   String get keepGoing => t('resultsKeepGoing');
-  String get keepGoingSub => t('keepGoingSub');
-  String get homeSub => t('homeSub');
   String get endedEarly => t('endedEarly');
-  String timeSaved(String seconds) => f('timeSaved', [seconds]);
-  String get firstRecordedRun => t('firstRecordedRun');
   String get guestNotRecorded => t('guestNotRecorded');
 
-  String get newCardsHeading => t('newCardsHeading');
-  String get newCardsLabel => t('newCardsLabel');
-  String get newCardsNote => t('newCardsNote');
-
-  String get toughestHeading => t('toughestHeading');
   String get toughestNote => t('toughestNote');
 
-  String get avgPerCardLabel => t('avgPerCardLabel');
   String knownOf(int known, int total) => f('knownOf', [known, total]);
 
-  String get weakClearedLabel => t('weakClearedLabel');
-  String get weakClearedNote => t('weakClearedNote');
   String get weakLeftLabel => t('weakLeftLabel');
   String weakLeftWas(int before) => f('weakLeftWas', [before]);
   String get weakClearedHeading => t('weakClearedHeading');
-  String get weakClearedShelf => t('weakClearedShelf');
-  String weakClearedShelfNote(String seconds) => f('weakClearedShelfNote', [seconds]);
   String get weakStillHeading => t('weakStillHeading');
-  String get weakStillShelf => t('weakStillShelf');
-  String get weakStillShelfNote => t('weakStillShelfNote');
-  String weakFirstLook(String seconds) => f('weakFirstLook', [seconds]);
-  String get weakFirstMiss => t('weakFirstMiss');
-  String get knownSpeedNote => t('knownSpeedNote');
 
   String get newCardShout => t('newCardShout');
   String get newCardBand => t('newCardBand');
 
   /// Where a card is decided; `{0}` marks where the deciding kana goes.
   String deciderTip(int position, String? twin) {
-    final nth = ja ? '$position音目' : '${_ordinal(position)} sound';
+    final nth = ja ? '$position音目' : '${ordinal(position)} sound';
     if (twin == null) return t('deciderTipNoTwin').replaceAll('{nth}', nth);
     return t('deciderTipTwin').replaceAll('{nth}', nth).replaceAll('{twin}', twin);
   }
 
-  static String _ordinal(int n) => switch (n % 100) {
+  /// [n] as an English ordinal: 1st, 2nd, 3rd, 4th …
+  static String ordinal(int n) => switch (n % 100) {
         11 || 12 || 13 => '${n}th',
         _ => switch (n % 10) { 1 => '${n}st', 2 => '${n}nd', 3 => '${n}rd', _ => '${n}th' },
       };

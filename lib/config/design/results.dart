@@ -1,51 +1,7 @@
 part of '../design.dart';
 
-/// Results (spec phone 5) and its celebration overlays.
+/// Results' celebration overlays, which play over the run summary.
 abstract final class ResultsLayout {
-  static const double topBarHeight = 44;
-
-  /// The dashed "not recorded" / "not counted" note under the top bar.
-  static const EdgeInsets notePadding = EdgeInsets.symmetric(horizontal: 12, vertical: 8);
-  static const double splashHeight = 268;
-  static const double splashCut = 28;
-  static const splashBurst = BurstSpec(
-      box: Size(370, 268), center: Offset(185, 132), count: 170, innerMin: 94, innerMax: 128, width: 4, seed: 5);
-  static const double splashLabelFont = 13;
-  static const double splashLabelTracking = 0.2;
-  static const double splashTimeFont = 48;
-  static const double splashTimeOutline = 11;
-
-  /// 苦手's splash: the cleared count instead of the time.
-  static const EdgeInsets clearedPadding = EdgeInsets.symmetric(horizontal: 14, vertical: 18);
-  static const double splashPartialFont = 28;
-  static const double splashSumFont = 13;
-  static const EdgeInsets splashSumPadding = EdgeInsets.fromLTRB(9, 3, 9, 4);
-
-  static const double statLabelFont = 12;
-  static const double statLabelTracking = 0.16;
-  static const double statBigFont = 32;
-  static const double statBigUnitFont = 17;
-  static const double statNoteFont = 12.5;
-
-  /// The known-card speed note (`_KnownSpeedNote`), under the splash header.
-  static const double knownSpeedNoteFont = 12.5;
-  static const double knownSpeedTrendIcon = 11;
-  static const double knownSpeedGap = 4;
-
-  static const EdgeInsets toughPadding = EdgeInsets.fromLTRB(14, 12, 12, 12);
-  static const double toughHeadingFont = 30;
-  static const double toughLabelFont = 13;
-  static const double toughNoteFont = 12;
-  static const double toughHeaderWidth = 90;
-  static const double toughCardWidth = 68;
-  static const int toughCount = 3;
-  static const double toughTimeFont = 12;
-  static const EdgeInsets toughTimePadding = EdgeInsets.fromLTRB(5, 2, 5, 3);
-  static const double toughKimarijiFont = 12.5;
-
-  static const double actionRowHeight = 58;
-  static const double guestNoteFont = 13;
-
   /// The confusable-siblings heads-up (a 決まり字 look-alike warning).
   static const int confusableMaxSiblings = 2;
   static const double confusableTitleFont = 26;
@@ -68,75 +24,202 @@ abstract final class ResultsLayout {
   static const Duration overlayStagger = Duration(milliseconds: 500);
 }
 
-/// A personal best on the Results splash (`_TimePanel`): the PERSONAL BEST
-/// sticker, ドン!, Tobi, and the previous best with the time saved.
-abstract final class PersonalBestLayout {
-  static const double stickerFont = 14;
-  static const EdgeInsets stickerPadding = EdgeInsets.fromLTRB(10, 4, 10, 5);
-  static const double stickerTilt = -2;
-  static const double stickerGap = 12;
-  static const impactBurst = BurstSpec(
-      box: impactSize, center: Offset(120, 60), count: 36, innerMin: 44, innerMax: 58, width: 4, seed: 41);
-  static const Size impactSize = Size(240, 120);
-  static const double impactFromScale = 0.5;
-  static const double impactToScale = 1.4;
+/// The run summary every game ends on (`run_summary.dart`): a header, the
+/// hero whose bottom edge is a bar, three tilted tiles, the card panel and
+/// the action row, on Home's dotted ground. Like the journey home's panels,
+/// every shared edge rises [cut] over the column.
+abstract final class SummaryLayout {
+  static const double cut = HomeLayout.mapCut;
+  static const double gap = Gaps.panel;
+  static const double headerGap = 6;
+  static const double heroHeight = 244;
+  static const double tileHeight = 104;
 
-  static const double noteGap = 8;
-  static const double noteFont = 13;
-  static const EdgeInsets notePadding = EdgeInsets.fromLTRB(6, 1, 6, 2);
-  static const double gainGap = 4;
-  static const double gainBorder = 2;
-  static const EdgeInsets gainPadding = EdgeInsets.fromLTRB(6, 1, 6, 2);
+  /// The card panel is never shorter than this, room for a line of cards; on
+  /// a screen too short for it (a phone turned on its side) the hero, the
+  /// tiles and the panel scroll.
+  static const double minCardsHeight = 150;
+  static const double actionGap = Gaps.panel;
+  static const double bottomGap = HeaderStyle.topGap;
 
-  static const String sfx = 'ドン!';
-  static const double sfxFont = 44;
-  static const int sfxSeed = 4;
-  static const double sfxTurnDeg = -12;
-  static const Offset sfxAt = Offset(0, 0);
-  static const Placement tobi = Placement(right: 8, bottom: 4, size: Size(58, 70));
+  /// The largest font scale its text follows: the hero and the tiles have
+  /// fixed sizes.
+  static const double maxTextScale = 1.3;
+  static const EdgeInsets untrackedPadding = EdgeInsets.fromLTRB(7, 4, 7, 5);
 }
 
-/// Results after a ranked run: the scored time with its sum (clock, misses,
-/// a forfeit's cards left), a forfeit's note, and the rating's arrow.
-abstract final class RankedResultsLayout {
-  static const EdgeInsets splashPadding = EdgeInsets.fromLTRB(18, 18, 18, 26);
-  static const double sumGap = 12;
-  static const EdgeInsets sumPadding = EdgeInsets.fromLTRB(10, 7, 10, 8);
-  static const double rowFont = 13;
-  static const double rowGap = 3;
-  static const Color forfeitFill = Palette.pinkSoft;
-  static const double arrow = 16;
-  static const double arrowGap = 4;
+/// The summary's hero (`SummaryHero`): the banner, the big answer, the bar
+/// along its slanted bottom edge, and Tobi standing on the bar.
+abstract final class SummaryHeroLayout {
+  static const Offset bannerAt = Offset(14, 14);
+  static const double bannerFont = 14;
+
+  /// The bar over the bottom border: its height, the ink rule along its top,
+  /// the rules between its parts (this run's share of the day dashed), and
+  /// its labels, the first this far from the hero's left edge and the rest
+  /// [labelInset] from their part's edge.
+  static const double bar = 34;
+  static const double rule = 3;
+  static const double split = Strokes.hairline;
+  static const List<double> markedSplit = [3, 2.5];
+  static const double labelFont = 12.5;
+  static const double labelStart = 14;
+  static const double labelInset = 8;
+
+  /// The big answer, kept left of Tobi: a count with its label and note
+  /// beside it (which take at most [countLabelShare] of the width), a word,
+  /// or a time.
+  static const double bodyLeft = 11;
+  static const double bodyWidth = 240;
+  static const double countTop = 72;
+  static const double countFont = 96;
+  static const double countTracking = -0.01;
+  static const double countGap = 14;
+  static const double countLabelShare = 0.6;
+  static const double countLabelFont = 19;
+  static const double countNoteFont = 13.5;
+  static const double countNoteGap = 4;
+
+  /// A word: outlined for a goal reached, plain and smaller otherwise; as
+  /// big as fits [wordWidth] up to its font size, with a line under it at
+  /// [subTop].
+  static const double wordInset = 4;
+  static const double wordTop = 62;
+  static const double plainWordTop = 70;
+  static const double wordFont = 57;
+  static const double plainWordFont = 48;
+  static const double wordWidth = 256;
+  static const double wordOutline = 11;
+  static const double subTop = 126;
+  static const double subFont = 13.5;
+  static const double subTimeFont = 17;
+  static const double timeTop = 76;
+  static const double timeFont = 46;
+
+  /// The milliseconds' size, as a share of the time's.
+  static const double timeFractionShare = 0.5;
+
+  /// Tobi stands on the bar where its done part ends, but never left of
+  /// [tobiMinFront] of its length, so he never walks into the big number,
+  /// and never closer than [tobiRightInset] to the right edge. His feet end
+  /// [tobiFeet] of the way down his box.
+  static const Size tobi = Size(84, 100);
+  static const double tobiMinFront = 0.81;
+  static const double tobiRightInset = Strokes.panel + 12;
+  static const double tobiFeet = 0.93;
+
+  /// His balloon, its left edge this far from his middle.
+  static const double balloonLeft = -85;
+  static const double balloonTop = 30;
+  static const Size balloon = Size(90, 48);
+  static const Alignment balloonSpeaker = Alignment(1.15, 1.75);
+  static const double balloonFont = 13.5;
+
+  /// Tobi says the day is almost done once at most this share of today's
+  /// set is left.
+  static const double almostThere = 0.25;
+
+  /// The 本日完了 stamp of the run that finished the day's set.
+  static const Offset stampAt = Offset(124, 170);
+  static const double stampFont = 23;
+
+  /// Focus lines for a goal reached, left out where they would cross the
+  /// word (and, with [burstWithSub], the line under it).
+  static const burst = BurstSpec(
+      box: Size(352, 244),
+      center: Offset(292, 120),
+      count: 104,
+      innerMin: 62,
+      innerMax: 92,
+      width: 3,
+      seed: 3,
+      clear: Rect.fromLTWH(6, 54, 262, 80));
+  static const burstWithSub = BurstSpec(
+      box: Size(352, 244),
+      center: Offset(292, 120),
+      count: 104,
+      innerMin: 62,
+      innerMax: 92,
+      width: 3,
+      seed: 3,
+      clear: Rect.fromLTWH(6, 54, 248, 106));
 }
 
-/// A personal best: the time ticks down from the previous best, then the
-/// PERSONAL BEST sticker stamps on at [impactAt] with ドン!, a jolt and Tobi.
-abstract final class PersonalBestMotion {
-  static const count = EntranceSpec(Entrances.custom,
-      duration: Duration(milliseconds: 750), delay: Duration(milliseconds: 150), curve: Curves.easeOutCubic);
-  static const sticker = EntranceSpec(Entrances.thump,
-      duration: Duration(milliseconds: 380), delay: Duration(milliseconds: 850), curve: Entrances.springy);
+/// The summary's three tiles (`SummaryTile`): how much was played, how much
+/// was right, and the reward, each a slice of one band rising with the
+/// panels' edges.
+abstract final class SummaryTileLayout {
+  static const List<Color> colors = [Palette.seaSoft, Palette.landSoft, Palette.sunSoft];
+  static const EdgeInsets padding = EdgeInsets.fromLTRB(14, 14, 10, 20);
+  static const double labelFont = 11;
+  static const double labelTracking = 0.14;
+  static const double bigFont = 28;
+  static const double bigSmallFont = 15;
+  static const double noteFont = 12;
+  static const double strikeCard = 28;
+}
 
-  /// When the sticker first lands (a quarter of the way into the springy
-  /// curve).
-  static const impactAt = Duration(milliseconds: 950);
-  static const jolt = EntranceSpec(Entrances.custom, duration: Duration(milliseconds: 280), delay: impactAt, curve: Curves.linear);
-  static const double joltReach = 5;
-  static const int joltSteps = 8;
-  static const int joltSeed = 17;
-  static const burst = EntranceSpec(Entrances.custom, duration: Duration(milliseconds: 420), delay: impactAt, curve: Curves.easeOut);
-  static const sfx = EntranceSpec(Entrances.pop, duration: Duration(milliseconds: 400), delay: impactAt, curve: Entrances.bouncy);
-  static const tobi = EntranceSpec(Entrances.pop,
-      duration: Duration(milliseconds: 400), delay: Duration(milliseconds: 1000), curve: Entrances.bouncy);
-  static const note = EntranceSpec(Entrances.up,
-      duration: Duration(milliseconds: 350), delay: Duration(milliseconds: 1100), curve: Entrances.glide);
-  static const gain = EntranceSpec(Entrances.pop,
-      duration: Duration(milliseconds: 350), delay: Duration(milliseconds: 1300), curve: Entrances.bouncy);
+/// The summary's card panel (`SummaryRow`): rows of a marker heading with a
+/// note beside cards, the week's stamps, the levels or a dashed note,
+/// spread out to fill the panel with dotted rules between them.
+abstract final class SummaryPanelLayout {
+  static const EdgeInsets padding = EdgeInsets.fromLTRB(14, 31, 20, 19);
+  static const double headWidth = 90;
+  static const double headGap = 8;
+  static const double headFont = 15;
+  static const double noteFont = 11.5;
+  static const double noteGap = 4;
+  static const double rowGap = 12;
+  static const double dot = 2;
+  static const double dotStep = 4;
+  static const Color dotColor = Color(0x47141414);
 
-  static Duration get length => gain.end;
+  /// Cards: [perLine] a line, or with more of them [densePerLine] smaller
+  /// ones; past what the row's lines hold, the last place says how many
+  /// more.
+  static const double card = 49;
+  static const double denseCard = 40;
+  static const double cardGap = 8;
+  static const double denseCardGap = 5;
+  static const double cardRunGap = 6;
+  static const int perLine = 4;
+  static const int densePerLine = 5;
+  static const double moreFont = 13;
+  static const double kimarijiFont = 11.5;
+  static const double kimarijiGap = 5;
+  static const double badgeGap = 4;
+  static const double badgeFont = 10.5;
+  static const double tagFont = 10;
+  static const EdgeInsets badgePadding = EdgeInsets.fromLTRB(4, 2, 4, 3);
+  static const double badgeBorder = 2;
+  static const double tailGap = 6;
+  static const double tailFont = 12;
+  static const double noteBoxFont = 12;
+  static const EdgeInsets noteBoxPadding = EdgeInsets.fromLTRB(10, 8, 10, 9);
 
-  /// Afterwards Tobi keeps hopping.
-  static const double hopHeight = 8;
-  static const hopPeriod = Duration(milliseconds: 1300);
-  static const double hopAirShare = 0.35;
+  /// The week's stamps of the streak row.
+  static const double stamp = 18;
+  static const double stampGap = 9;
+
+  /// 暗記練's levels: a square each, cleared, open, failed or still shut.
+  static const double level = 18;
+  static const double levelGap = 2.2;
+  static const double levelFont = 9.5;
+  static const double levelBorder = 2;
+  static const double shutOpacity = 0.5;
+}
+
+/// The summary's action row: Home (or Done) and the shout.
+abstract final class SummaryActionLayout {
+  static const double height = 64;
+  static const Size home = Size(64, 56);
+  static const double homeIcon = 22;
+  static const double homeFont = 12.5;
+  static const double homeGap = 3;
+  static const double gap = 12;
+  static const ShoutSpec shout = HomeLayout.journeyShout;
+  static const double shoutFont = 19;
+
+  /// How far the shout's lettering keeps off its sides, clear of the spikes.
+  static const double shoutInset = 24;
 }

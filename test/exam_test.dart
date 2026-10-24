@@ -20,6 +20,7 @@ import 'package:fudatobashi/domain/ranked.dart';
 import 'package:fudatobashi/domain/trainer.dart';
 import 'package:fudatobashi/l10n/exam_strings.dart';
 import 'package:fudatobashi/l10n/strings.dart';
+import 'package:fudatobashi/l10n/summary_strings.dart';
 import 'package:fudatobashi/state/play_config.dart';
 import 'package:fudatobashi/state/progress.dart';
 import 'package:fudatobashi/state/scope.dart';
@@ -267,9 +268,9 @@ void main() {
     await until(tester, find.byType(ExamLostScreen));
     final s = S('en');
     expect(find.text(s.examLostTitle), findsWidgets);
-    expect(find.text(s.examNextTry.toUpperCase()), findsOneWidget);
+    expect(find.text(s.summaryNextTryLabel), findsOneWidget);
     expect(find.textContaining(RegExp(r'^5\d:\d\d$')), findsOneWidget, reason: 'the hour counting down');
-    expect(find.text(s.examMissesLine(1, 10)), findsNWidgets(2), reason: "his mistake and the player's");
+    expect(find.text(s.summaryMissedPenalty(1, 10)), findsOneWidget, reason: "the player's mistake");
     expect(p.runs.last.mode, PlayMode.exam);
     expect(p.runs.last.completed, isFalse);
     expect(p.graduated, isFalse);
@@ -326,7 +327,7 @@ void main() {
     await pumpFor(tester, const Duration(milliseconds: 600));
     await tester.tap(find.text(s.examLeaveYes));
     await until(tester, find.byType(ExamLostScreen));
-    expect(find.textContaining(s.examCardsLine(2, RankedTuning.cards)), findsOneWidget, reason: 'how far the try got');
+    expect(find.textContaining(s.summaryCardsOf(2, RankedTuning.cards)), findsWidgets, reason: 'how far the try got');
     expect(p.runs.last.mode, PlayMode.exam);
     expect(p.runs.last.completed, isFalse);
     expect(p.exam().cooldown, isNotNull);

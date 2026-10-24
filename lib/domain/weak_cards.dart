@@ -53,7 +53,10 @@ class WeakCards {
   double get lineMs => usualMs * WeakTuning.lineRatio;
 
   /// Cards with a weak side.
-  int get cards => {for (final k in sides) k.poemId}.length;
+  int get cards => cardsOf(sides);
+
+  /// The cards [sides] are sides of.
+  static int cardsOf(Iterable<ItemKey> sides) => {for (final k in sides) k.poemId}.length;
 
   /// An answer under [lineMs]: correct, cleanly timed and fast.
   static bool fast({required bool miss, required bool clean, required int us, required double lineMs}) =>

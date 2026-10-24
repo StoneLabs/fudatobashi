@@ -243,8 +243,8 @@ void main() {
           await tester.pump(const Duration(milliseconds: 500));
           expect(tester.takeException(), isNull);
           final s = S(ja ? 'ja' : 'en');
-          expect(find.text(s.weakClearedLabel.toUpperCase()), findsOneWidget);
-          expect(find.text(s.weakLeftWas(report.weakBefore!)), findsOneWidget);
+          expect(find.text(s.weakLeftLabel), findsOneWidget);
+          expect(find.text(s.weakLeftWas(report.weakBefore!)), report.weakAfter == 0 ? findsNothing : findsOneWidget);
           await tester.pumpWidget(const SizedBox());
         });
       }

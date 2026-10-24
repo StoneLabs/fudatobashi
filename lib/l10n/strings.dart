@@ -114,7 +114,6 @@ class S {
   String get swipeToStart => t('swipeToStart');
 
   // Results
-  String get totalTime => t('totalTime');
   String get perCard => t('perCard');
   String get personalBest => t('personalBest');
   String get previousBest => t('previousBest');

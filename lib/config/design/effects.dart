@@ -58,7 +58,8 @@ abstract final class Backdrops {
 
 /// A focus-line burst: [count] wedges converging on [center] (a point in a
 /// box of [box] size; it scales with the actual box), starting between
-/// [innerMin] and [innerMax] from it.
+/// [innerMin] and [innerMax] from it. A wedge whose middle would cross
+/// [clear] (in the same box) is left out, keeping lettering there free.
 @immutable
 class BurstSpec {
   const BurstSpec({
@@ -70,6 +71,7 @@ class BurstSpec {
     required this.width,
     required this.seed,
     this.color = Palette.ink,
+    this.clear,
   });
 
   final Size box;
@@ -78,6 +80,7 @@ class BurstSpec {
   final double innerMin, innerMax, width;
   final int seed;
   final Color color;
+  final Rect? clear;
 
   /// The same burst drawn with other random lines.
   BurstSpec reseeded(int offset) => BurstSpec(
@@ -88,7 +91,8 @@ class BurstSpec {
       innerMax: innerMax,
       width: width,
       seed: seed + offset,
-      color: color);
+      color: color,
+      clear: clear);
 
   @override
   bool operator ==(Object other) =>
@@ -100,10 +104,11 @@ class BurstSpec {
       other.innerMax == innerMax &&
       other.width == width &&
       other.seed == seed &&
-      other.color == color;
+      other.color == color &&
+      other.clear == clear;
 
   @override
-  int get hashCode => Object.hash(box, center, count, innerMin, innerMax, width, seed, color);
+  int get hashCode => Object.hash(box, center, count, innerMin, innerMax, width, seed, color, clear);
 }
 
 /// A band of horizontal speed lines. Streaks float freely; [fromEdge] lines

@@ -163,28 +163,3 @@ abstract final class ExamSheetStyle {
   static const Color tag = Palette.ink;
   static const Color tagText = Palette.sun;
 }
-
-/// The page when Tobi wins (`ExamLostScreen`).
-abstract final class ExamLostLayout {
-  static const Color bannerFill = Palette.sunSoft;
-  static const ToneSpec bannerTone = Tones.sun;
-  static const EdgeInsets bannerPadding = EdgeInsets.fromLTRB(16, 18, 12, 22);
-  static const double bannerHeight = 168;
-  static const double titleFont = 42;
-  static const double titleOutline = 10;
-  static const Placement tobi = Placement(right: 10, bottom: 14, size: Size(118, 140));
-
-  /// Between the title and Tobi, whose arms reach past his box.
-  static const double titleGap = 12;
-  static const EdgeInsets panelPadding = EdgeInsets.fromLTRB(12, 10, 12, 12);
-  static const double labelFont = 12;
-  static const double labelTracking = 0.12;
-  static const double bigFont = 28;
-  static const double noteFont = 12.5;
-  static const Color tobiFill = Palette.sunSoft;
-  static const ToneSpec tobiTone = Tones.sun;
-  static const Color xpFill = Palette.seaSoft;
-  static const ToneSpec xpTone = Tones.sea;
-  static const Color nextFill = Palette.pinkSoft;
-  static const ToneSpec nextTone = Tones.pink;
-}

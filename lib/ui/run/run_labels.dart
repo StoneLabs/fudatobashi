@@ -15,9 +15,14 @@ String runLabel(S s, PlayConfig c) {
     PlayMode.exam => s.examRun,
   };
   if (c.mode != PlayMode.free) return mode;
+  return [mode, ...freeDeckLabels(s, c)].join(' · ');
+}
+
+/// A free-play run's deck (全部, カスタム, an island) and, when it was on,
+/// hidden kana.
+List<String> freeDeckLabels(S s, PlayConfig c) {
   final set = c.cardIds == null && c.setIds.length == 1
       ? fudaSets.all.where((f) => f.id == c.setIds.first).firstOrNull
       : null;
-  final deck = c.isKnownDeck ? s.deckAllKnown : set?.label ?? s.deckCustom;
-  return [mode, deck, if (c.maskLevel > 0) s.maskRow].join(' · ');
+  return [c.isKnownDeck ? s.deckAllKnown : set?.label ?? s.deckCustom, if (c.maskLevel > 0) s.maskRow];
 }

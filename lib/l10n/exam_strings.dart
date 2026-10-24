@@ -25,10 +25,4 @@ extension ExamStrings on S {
   String get examLostTitle => t('examLostTitle');
   String get examTobiTime => t('examTobiTime');
   String get examYourTime => t('examYourTime');
-  String examMissesLine(int misses, int seconds) =>
-      f(misses == 1 ? 'examMissesLineOne' : 'examMissesLine', [misses, seconds]);
-  String examCardsLine(int done, int total) => f('examCardsLine', [done, total]);
-  String get examXpEarned => t('examXpEarned');
-  String get examNextTry => t('examNextTry');
-  String get examReady => t('examReady');
 }

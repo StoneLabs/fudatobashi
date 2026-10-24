@@ -20,8 +20,8 @@ class SessionReport {
     this.mode = PlayMode.free,
     this.score,
     this.tobi,
-    this.weakBefore,
-    this.weakAfter,
+    this.weakSidesBefore,
+    this.weakSidesAfter,
   });
 
   final int? runId;
@@ -34,8 +34,12 @@ class SessionReport {
   /// Tobi's time in an exam try.
   final Duration? tobi;
 
+  /// 苦手: the weak sides before and after the drill.
+  final Set<ItemKey>? weakSidesBefore, weakSidesAfter;
+
   /// 苦手: cards with a weak side before and after the drill.
-  final int? weakBefore, weakAfter;
+  int? get weakBefore => weakSidesBefore == null ? null : WeakCards.cardsOf(weakSidesBefore!);
+  int? get weakAfter => weakSidesAfter == null ? null : WeakCards.cardsOf(weakSidesAfter!);
 
   /// A ranked run left before its last card.
   bool get forfeit => mode == PlayMode.ranked && !completed;

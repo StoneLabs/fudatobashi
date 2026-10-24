@@ -64,7 +64,8 @@ class AnkirenAnswer {
 /// full speed). The [firstRight] part of them, from the cards found with the
 /// first tap, is multiplied by 1 + [AnkirenTuning.earlyBonus] × the share of
 /// the memorise time left unused; the rest never is. [max] is the best score
-/// without being ready early, and [early] what being ready early added.
+/// possible, every card found first try at full speed by a player ready at
+/// once, and [early] what being ready early added.
 class AnkirenScore {
   AnkirenScore(List<AnkirenAnswer> answers, {required int prompts, this.timeLeft = 0})
       : recall = answers.fold(0, (sum, a) => sum + points(a)),
@@ -81,7 +82,7 @@ class AnkirenScore {
   double get fraction => maxRecall == 0 ? 0 : recall / maxRecall;
 
   int get total => totalOf(recall, firstRight, timeLeft);
-  int get max => maxRecall;
+  int get max => totalOf(maxRecall, maxRecall, 1);
   int get early => total - recall;
 
   /// Whether a card with these [taps] was found with the first tap, the only

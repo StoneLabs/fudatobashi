@@ -30,6 +30,14 @@ String formatTenths(Duration d, {bool padMinutes = false}) {
   return '${padMinutes ? m.toString().padLeft(2, '0') : m}:${sec.toString().padLeft(2, '0')}.${tenths % 10}';
 }
 
+/// [n] with its thousands grouped, e.g. "11,250"; a minus sign before a
+/// negative one.
+String groupDigits(int n) {
+  final digits = n.abs().toString();
+  final grouped = digits.replaceAllMapped(RegExp(r'\B(?=(\d{3})+$)'), (_) => ',');
+  return n < 0 ? '−$grouped' : grouped;
+}
+
 /// [ms] as seconds with [digits] decimals, e.g. "2.95".
 String formatSeconds(double ms, [int digits = 2]) => (ms / 1000).toStringAsFixed(digits);
 

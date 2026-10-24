@@ -26,10 +26,12 @@ import 'package:fudatobashi/domain/side_trips.dart';
 import 'package:fudatobashi/domain/trainer.dart';
 import 'package:fudatobashi/l10n/ankiren_strings.dart';
 import 'package:fudatobashi/l10n/free_strings.dart';
+import 'package:fudatobashi/l10n/home_strings.dart';
 import 'package:fudatobashi/l10n/results_strings.dart';
 import 'package:fudatobashi/l10n/settings_strings.dart';
 import 'package:fudatobashi/l10n/side_trip_strings.dart';
 import 'package:fudatobashi/l10n/strings.dart';
+import 'package:fudatobashi/l10n/summary_strings.dart';
 import 'package:fudatobashi/state/progress.dart';
 import 'package:fudatobashi/state/scope.dart';
 import 'package:fudatobashi/state/settings.dart';
@@ -49,7 +51,6 @@ import 'package:fudatobashi/ui/debug/debug_common.dart';
 import 'package:fudatobashi/ui/debug/play_overlay.dart';
 import 'package:fudatobashi/ui/manga/manga.dart';
 import 'package:fudatobashi/ui/play/time_format.dart';
-import 'package:fudatobashi/ui/rank/rank_badges.dart';
 import 'package:fudatobashi/ui/results/celebration_sequence.dart';
 import 'package:fudatobashi/ui/settings/settings_screen.dart';
 import 'package:fudatobashi/ui/settings/side_trip_settings_screen.dart';
@@ -386,11 +387,11 @@ void main() {
       await toResults(tester);
       expect(find.byType(AnkirenResultsScreen), findsOneWidget);
       expect(p.sideTrips.runs.single.level, 0, reason: 'the game was recorded');
-      expect(find.text(s.ankirenStrikes(0)), findsOneWidget);
-      expect(find.text(s.ankirenLevelCleared(0)), findsWidgets, reason: 'played out with no strike');
-      expect(find.byType(ClearedCheck), findsOneWidget);
+      expect(find.text(s.summaryNone), findsOneWidget, reason: 'no strikes');
+      expect(find.text(s.summaryClear), findsWidgets, reason: 'played out with no strike');
+      expect(find.text(s.summaryLevelOpen(1)), findsOneWidget);
       expect(p.sideTripsHub()[SideTrip.ankiren].ladder.open, 1);
-      expect(find.text(s.ankirenBackToPage), findsOneWidget);
+      expect(find.text(s.ankirenBackToPage.toUpperCase()), findsOneWidget);
       await captureScreen(tester, 'ankiren_results');
       await tester.pumpWidget(const SizedBox());
     });
@@ -489,7 +490,7 @@ void main() {
       await tester.tap(find.text(s.ankirenLeave));
       await toResults(tester);
       expect(find.byType(AnkirenResultsScreen), findsOneWidget);
-      expect(find.text(s.endedEarly), findsOneWidget);
+      expect(find.text(s.endedEarly.toUpperCase()), findsOneWidget);
       expect(p.sideTrips.runs.single.completed, isFalse);
       await tester.pumpWidget(const SizedBox());
     });
@@ -584,7 +585,7 @@ void main() {
       await toResults(tester);
       expect(find.byType(AnkirenResultsScreen), findsOneWidget);
       expect(p.sideTrips.runs, isEmpty);
-      await tester.tap(find.text(s.ankirenBackToPage));
+      await tester.tap(find.text(s.ankirenBackToPage.toUpperCase()));
       await tester.pump();
       await tester.pump(Motion.route);
       await tester.pump(Motion.route);
@@ -678,8 +679,8 @@ void main() {
         }
         await toResults(tester);
         expect(find.byType(AnkirenResultsScreen), findsOneWidget);
-        expect(find.text(s.ankirenLevelFailed(1)), findsWidgets);
-        expect(find.text(s.ankirenStrikes(4)), findsOneWidget);
+        expect(find.text(s.summaryFailed), findsOneWidget);
+        expect(find.text(s.summaryStrikesOf(AnkirenTuning.strikesOut, AnkirenTuning.strikesOut)), findsOneWidget);
         final run = p.sideTrips.runs.single;
         expect([run.completed, p.sideTrips.strikesIn(run)], [true, 4]);
         expect(p.sideTripsHub()[SideTrip.ankiren].ladder.cleared, isEmpty);
@@ -716,7 +717,7 @@ void main() {
       await toResults(tester);
       expect(find.byType(AnkirenResultsScreen), findsOneWidget);
       expect(find.textContaining(s.ankirenGuestNote, findRichText: true), findsOneWidget);
-      expect(find.textContaining(s.ankirenGuest), findsWidgets, reason: 'tagged as a guest\'s game');
+      expect(find.textContaining(s.ankirenGuest.toUpperCase()), findsWidgets, reason: 'tagged as a guest\'s game');
       expect(find.byType(CelebrationSequence), findsNothing);
       expect([p.sideTrips.runs, p.xp.total], [isEmpty, xp]);
       expect(await tester.runAsync(() => dbSnapshot(p.db)), before,
@@ -927,7 +928,7 @@ void main() {
         }
         await toResults(tester);
         expect(find.byType(AnkirenResultsScreen), findsOneWidget);
-        expect(find.byType(ClassBadge), findsOneWidget);
+        expect(find.text(t.ratingLabel), findsOneWidget);
         await captureScreen(tester, 'ankiren_results', lang: lang);
         await tester.pumpWidget(const SizedBox());
       });

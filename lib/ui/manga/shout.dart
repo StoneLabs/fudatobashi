@@ -99,6 +99,7 @@ class ShoutButton extends StatelessWidget {
     this.arrow = true,
     this.sub,
     this.subFontSize = ShoutStyle.subFont,
+    this.inset,
   });
 
   final String label;
@@ -110,6 +111,10 @@ class ShoutButton extends StatelessWidget {
   final bool arrow;
   final String? sub;
   final double subFontSize;
+
+  /// How far the lettering keeps off the sides; by default none, or with a
+  /// [sub], [ShoutStyle.subInset].
+  final double? inset;
 
   @override
   Widget build(BuildContext context) {
@@ -140,7 +145,7 @@ class ShoutButton extends StatelessWidget {
           stroke: pressed ? ShoutStyle.strokePressed : ShoutStyle.stroke,
         ),
         child: Padding(
-          padding: EdgeInsets.symmetric(horizontal: sub == null ? 0 : ShoutStyle.subInset),
+          padding: EdgeInsets.symmetric(horizontal: inset ?? (sub == null ? 0 : ShoutStyle.subInset)),
           child: Center(
             child: Row(
               mainAxisSize: MainAxisSize.min,

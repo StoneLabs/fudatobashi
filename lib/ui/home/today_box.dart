@@ -71,7 +71,7 @@ class TodayBox extends StatelessWidget {
                   left: 0,
                   right: 0,
                   top: TodayBoxLayout.doneStampCenter,
-                  child: FractionalTranslation(translation: Offset(0, -0.5), child: Center(child: _DoneStamp())),
+                  child: FractionalTranslation(translation: Offset(0, -0.5), child: Center(child: DayDoneStamp())),
                 ),
             ],
           ),
@@ -172,7 +172,7 @@ class _WeekStamps extends StatelessWidget {
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                _DayStamp(day),
+                DayStamp(day),
                 const SizedBox(height: TodayBoxLayout.weekdayGap),
                 SizedBox(
                   height: TodayBoxLayout.weekdayHeight,
@@ -199,17 +199,18 @@ class _WeekStamps extends StatelessWidget {
   }
 }
 
-/// A day's circle: checked when its set was done, dashed when it passed
-/// without, ringed in sun and ink when it is today.
-class _DayStamp extends StatelessWidget {
-  const _DayStamp(this.day);
+/// A day's circle, [size] across: checked when its set was done, dashed
+/// when it passed without, ringed in sun and ink when it is today.
+class DayStamp extends StatelessWidget {
+  const DayStamp(this.day, {super.key, this.size = TodayBoxLayout.stamp});
   final WeekStamp day;
+  final double size;
 
   @override
   Widget build(BuildContext context) {
-    const size = TodayBoxLayout.stamp;
+    final size = this.size;
     if (day.missed) {
-      return const DashedBox(
+      return DashedBox(
         border: size * TodayBoxLayout.missedBorder,
         dash: Strokes.fineDash,
         radius: size / 2,
@@ -224,7 +225,7 @@ class _DayStamp extends StatelessWidget {
         color: day.done ? Palette.pink : Palette.paper,
         border: Border.all(color: Palette.ink, width: size * TodayBoxLayout.stampBorder),
         boxShadow: day.today
-            ? const [
+            ? [
                 BoxShadow(color: Palette.ink, spreadRadius: size * TodayBoxLayout.todayRingOuter),
                 BoxShadow(color: Palette.sun, spreadRadius: size * TodayBoxLayout.todayRing),
               ]
@@ -234,7 +235,7 @@ class _DayStamp extends StatelessWidget {
       child: day.done
           ? MangaIcon(
               IconArt.check,
-              size: TodayBoxLayout.check,
+              size: size * TodayBoxLayout.check / TodayBoxLayout.stamp,
               color: Palette.paper,
               strokeWidth: TodayBoxLayout.checkStroke,
             )
@@ -418,8 +419,10 @@ class _Swatch extends StatelessWidget {
 
 /// The 本日完了 hanko: pink-deep lettering on paper, in a border with a thin
 /// paper and pink-deep rule inside it.
-class _DoneStamp extends StatelessWidget {
-  const _DoneStamp();
+class DayDoneStamp extends StatelessWidget {
+  const DayDoneStamp({super.key, this.fontSize = TodayBoxLayout.doneStampFont});
+
+  final double fontSize;
 
   @override
   Widget build(BuildContext context) {
@@ -447,10 +450,10 @@ class _DoneStamp extends StatelessWidget {
             child: Text(
               s.dayDoneStamp,
               maxLines: 1,
-              style: const TextStyle(
+              style: TextStyle(
                 fontFamily: Fonts.display,
-                fontSize: TodayBoxLayout.doneStampFont,
-                letterSpacing: TodayBoxLayout.doneStampTracking * TodayBoxLayout.doneStampFont,
+                fontSize: fontSize,
+                letterSpacing: TodayBoxLayout.doneStampTracking * fontSize,
                 color: Palette.pinkDeep,
                 height: 1,
               ),

@@ -168,27 +168,6 @@ abstract final class AnkirenClearStyle {
   static const double iconStroke = 3.4;
 }
 
-/// 暗記練's results (`AnkirenResultsScreen`).
-abstract final class AnkirenResultsLayout {
-  /// A free-play level's outcome: its title, the cleared check and the
-  /// strikes.
-  static const double levelTitleFont = 22;
-  static const double clearedCheck = 34;
-  static const double strikeCard = 30;
-
-  static const double scoreFont = 56;
-  static const double scoreOutline = 11;
-  static const double scoreOfFont = 15;
-  static const EdgeInsets splashPadding = EdgeInsets.symmetric(horizontal: Gaps.inner, vertical: 18);
-  static const double splashMinHeight = 190;
-  static const Size tobi = Size(64, 76);
-
-  /// The splash's bottom padding when its result is a wide line that must
-  /// stay above Tobi.
-  static const double tobiClearance = 70;
-  static const double noteFont = 13;
-}
-
 /// 暗記練's sheets (`ankiren_free_sheet.dart`, `ankiren_rules_sheet.dart`):
 /// free practice's floating panel, its top edge tilted, a head with the
 /// close button, and for free play the level keys and the steppers.

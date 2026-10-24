@@ -29,14 +29,10 @@ extension AnkirenStrings on S {
 
   String get ankirenScoreLabel => t('ankirenScoreLabel');
 
-  String ankirenScoreOf(int max) => f('ankirenScoreOf', [max]);
-  String ankirenEarlyBonus(int points) => f('ankirenEarlyBonus', [points]);
+  String ankirenScoreOf(String max) => f('ankirenScoreOf', [max]);
 
-  /// A custom game's results, which have no score: the cards found out of
-  /// those asked, and the cards missed.
+  /// The results of a game with no score: the cards found.
   String get ankirenFoundLabel => t('ankirenFoundLabel');
-  String ankirenFoundOf(int cards) => f('ankirenFoundOf', [cards]);
-  String ankirenMissed(int n) => f('ankirenMissed', [n]);
   String get ankirenFirstTryLabel => t('ankirenFirstTryLabel');
 
   /// A game's strikes: its wrong taps and Don't knows (お手つき).
@@ -56,21 +52,13 @@ extension AnkirenStrings on S {
   String get ankirenGuest => t('ankirenGuest');
   String get ankirenGuestNote => t('ankirenGuestNote');
 
-  /// A free-play level game's outcome on Results: cleared, failed on its
-  /// strikes or left before the end; what clears a level ([strikes] end
-  /// it); and what clearing it opened.
-  String ankirenLevelCleared(int level) => f('ankirenLevelCleared', [level]);
-  String ankirenLevelFailed(int level) => f('ankirenLevelFailed', [level]);
   String ankirenLevelNotCleared(int level) => f('ankirenLevelNotCleared', [level]);
   String ankirenClearHow(int strikes) => f('ankirenClearHow', [strikes]);
   String get ankirenAllCleared => t('ankirenAllCleared');
-  String ankirenLevelOpened(int level) => f('ankirenLevelOpened', [level]);
   String get ankirenCustomOpened => t('ankirenCustomOpened');
   String get ankirenRankedOpened => t('ankirenRankedOpened');
   String get ankirenRankedNeedsAllKnown => t('ankirenRankedNeedsAllKnown');
   String get ankirenBackToPage => t('ankirenBackToPage');
-  String get ankirenBackSub => t('ankirenBackSub');
-  String get ankirenDoneSub => t('ankirenDoneSub');
 
   /// A setup's name: its level, or a custom one's cards per side and
   /// memorise time.

@@ -59,15 +59,7 @@ extension RankedStrings on S {
   String get rankUnplaced => t('rankUnplaced');
   String get rankLockedKnown => t('rankLockedKnown');
   String get rankedScoredTime => t('rankedScoredTime');
-  String get rankedClockTime => t('rankedClockTime');
-
-  /// "Misses: {0} × {1} s".
-  String get rankedMisses => t('rankedMisses');
-
-  /// "Cards left: {0} × {1} s".
-  String rankedForfeitNote(int left) => f(left == 1 ? 'rankedForfeitNoteOne' : 'rankedForfeitNoteOther', [left]);
   String get rankedAgain => t('rankedAgain');
-  String get rankedAgainSub => t('rankedAgainSub');
   String get ratingFirst => t('ratingFirst');
   String get placementBand => t('placementBand');
 }

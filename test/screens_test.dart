@@ -23,6 +23,7 @@ import 'package:fudatobashi/db/database.dart';
 import 'package:fudatobashi/domain/card_mask.dart';
 import 'package:fudatobashi/domain/card_stats.dart';
 import 'package:fudatobashi/domain/play_session.dart';
+import 'package:fudatobashi/domain/ranked.dart';
 import 'package:fudatobashi/domain/rating.dart';
 import 'package:fudatobashi/domain/side_trips.dart';
 import 'package:fudatobashi/domain/synthetic_learner.dart';
@@ -49,6 +50,7 @@ import 'package:fudatobashi/l10n/side_trip_strings.dart';
 import 'package:fudatobashi/l10n/srs_strings.dart';
 import 'package:fudatobashi/l10n/stats_strings.dart';
 import 'package:fudatobashi/l10n/strings.dart';
+import 'package:fudatobashi/l10n/summary_strings.dart';
 import 'package:fudatobashi/l10n/tour_strings.dart';
 import 'package:fudatobashi/state/play_config.dart';
 import 'package:fudatobashi/state/progress.dart';
@@ -95,7 +97,6 @@ import 'package:fudatobashi/ui/results/rating_overlay.dart';
 import 'package:fudatobashi/ui/results/results_screen.dart';
 import 'package:fudatobashi/ui/results/xp_overlay.dart';
 import 'package:fudatobashi/ui/run/ranked_sheets.dart';
-import 'package:fudatobashi/ui/run/run_labels.dart';
 import 'package:fudatobashi/ui/settings/contact_screen.dart';
 import 'package:fudatobashi/ui/settings/credits_screen.dart';
 import 'package:fudatobashi/ui/settings/hold_warning_screen.dart';
@@ -1515,14 +1516,14 @@ void main() {
     }
   });
 
-  // Reproduces the toughest-card time badge's seconds overflowing its box and
-  // wrapping mid-number ("0.953s" as "0.95"/"3s") at scale 1.1 on a real
-  // phone (`_ToughCard` in `results_screen.dart`): the badge must stay one
-  // line, shrinking to fit, at any font scale and however long the number.
+  // Reproduces the slowest-card time badge's seconds overflowing its box and
+  // wrapping mid-number ("0.95s" as "0.9"/"5s") at scale 1.1 on a real
+  // phone: the badge must stay one line, shrinking to fit, at any font scale
+  // and however long the number.
   for (final scale in [1.1, 1.3]) {
     for (final ja in [false, true]) {
       testWidgets(
-          'results: toughest-card time badges stay one line at font scale $scale (${ja ? 'ja' : 'en'})',
+          'results: slowest-card time badges stay one line at font scale $scale (${ja ? 'ja' : 'en'})',
           (tester) async {
         tester.platformDispatcher.textScaleFactorTestValue = scale;
         addTearDown(tester.platformDispatcher.clearTextScaleFactorTestValue);
@@ -1533,29 +1534,32 @@ void main() {
           total: const Duration(seconds: 30),
           attempts: [
             Attempt(
-                index: 0, card: const CardRef(1), responseUs: 12345000, outcome: Outcome.known, at: DateTime(2026), deckSize: 3),
+                index: 0, card: const CardRef(1), responseUs: 12345000, outcome: Outcome.known, at: DateTime(2026), deckSize: 4),
             Attempt(
-                index: 1, card: const CardRef(2), responseUs: 1500000, outcome: Outcome.known, at: DateTime(2026), deckSize: 3),
+                index: 1, card: const CardRef(2), responseUs: 1500000, outcome: Outcome.known, at: DateTime(2026), deckSize: 4),
             Attempt(
-                index: 2, card: const CardRef(3), responseUs: 953000, outcome: Outcome.known, at: DateTime(2026), deckSize: 3),
+                index: 2, card: const CardRef(3), responseUs: 953000, outcome: Outcome.known, at: DateTime(2026), deckSize: 4),
+            Attempt(
+                index: 3, card: const CardRef(4), responseUs: 900000, outcome: Outcome.dontKnow, at: DateTime(2026), deckSize: 4),
           ],
           previousBest: const Duration(seconds: 10),
-          ratingBefore: null,
-          ratingAfter: null,
+          ratingBefore: 1000,
+          ratingAfter: 1010,
           goalRaised: false,
-          newCards: const [4, 5],
+          mode: PlayMode.ranked,
+          score: const RankedScore(clock: Duration(seconds: 30), misses: 1),
         );
         await tester.binding.setSurfaceSize(_phone);
         await tester.pumpWidget(RepaintBoundary(
           key: const ValueKey('screen'),
           child: ProgressScope(
             progress: p,
-            child: MaterialApp(home: ResultsScreen(report: report, config: const PlayConfig(mode: PlayMode.training))),
+            child: MaterialApp(home: ResultsScreen(report: report, config: const PlayConfig(mode: PlayMode.ranked))),
           ),
         ));
         await tester.pump(const Duration(milliseconds: 500));
         expect(tester.takeException(), isNull);
-        for (final time in ['12.345s', '1.500s', '0.953s']) {
+        for (final time in ['12.35s', '1.50s', '0.95s']) {
           final finder = find.text(time);
           expect(finder, findsOneWidget, reason: '$time badge');
           final paragraph = tester.renderObject<RenderParagraph>(finder);
@@ -1567,15 +1571,13 @@ void main() {
                   .height;
           expect(paragraph.size.height, closeTo(oneLine, 0.5), reason: '$time wrapped onto more than one line');
         }
-        // The shelves' big headings ("Toughest", "New faces") break only
-        // between words, never inside one ("Toug / hest").
+        // The rows' headings ("Slowest", "Missed") shrink rather than
+        // break across lines.
         final s = S(ja ? 'ja' : 'en');
-        for (final heading in [s.toughestHeading, s.newCardsHeading]) {
+        for (final heading in [s.summarySlowest, s.summaryMissed]) {
           final paragraph = tester.renderObject<RenderParagraph>(find.text(heading));
-          for (final word in RegExp(r'\S+').allMatches(heading)) {
-            final boxes = paragraph.getBoxesForSelection(TextSelection(baseOffset: word.start, extentOffset: word.end));
-            expect(boxes.map((b) => b.top).toSet(), hasLength(1), reason: '"${word[0]}" of "$heading" broke across lines');
-          }
+          final boxes = paragraph.getBoxesForSelection(TextSelection(baseOffset: 0, extentOffset: heading.length));
+          expect(boxes.map((b) => b.top).toSet(), hasLength(1), reason: '"$heading" broke across lines');
         }
         await captureScreen(tester, 'results_shelves', lang: ja ? 'ja' : 'en');
         await tester.pumpWidget(const SizedBox());
@@ -1583,11 +1585,12 @@ void main() {
     }
   }
 
-  // The run-kind tag in the header names a 苦手 run "Weak cards · N cards",
-  // which must show whole at the narrowest phone and the largest font scale.
+  // The header names a 苦手 run "Weak cards" over "苦手 · N CARDS", which
+  // must show whole beside the level at the narrowest phone and the largest
+  // font scale.
   for (final (width, scale) in [(384.0, 1.0), (360.0, 1.0), (360.0, 1.3)]) {
     for (final ja in [false, true]) {
-      testWidgets('results: the weak run tag shows whole at ${width.round()} dp, scale $scale (${ja ? 'ja' : 'en'})',
+      testWidgets('results: the weak run header shows whole at ${width.round()} dp, scale $scale (${ja ? 'ja' : 'en'})',
           (tester) async {
         tester.platformDispatcher.textScaleFactorTestValue = scale;
         addTearDown(tester.platformDispatcher.clearTextScaleFactorTestValue);
@@ -1620,13 +1623,14 @@ void main() {
         await tester.pump(const Duration(milliseconds: 500));
         expect(tester.takeException(), isNull);
         await captureScreen(tester, 'results_weak_tag', lang: ja ? 'ja' : 'en');
-        final label = '${runLabel(s, config)} · ${s.cardsCount(20)}';
-        final paragraph = tester.renderObject<RenderParagraph>(find.text(label));
-        final oneLine =
-            (TextPainter(text: paragraph.text, textDirection: TextDirection.ltr, textScaler: paragraph.textScaler)..layout())
-                .width;
-        expect(paragraph.size.width, greaterThanOrEqualTo(oneLine - 1), reason: '"$label" is cut off');
-        expect(tester.getRect(find.text(label)).right, lessThanOrEqualTo(tester.getRect(find.byType(InkIconButton)).left));
+        for (final label in [s.summaryWeak, '${s.other.summaryWeak} · ${s.cardsCount(20)}'.toUpperCase()]) {
+          final paragraph = tester.renderObject<RenderParagraph>(find.text(label));
+          final oneLine =
+              (TextPainter(text: paragraph.text, textDirection: TextDirection.ltr, textScaler: paragraph.textScaler)..layout())
+                  .width;
+          expect(paragraph.size.width, greaterThanOrEqualTo(oneLine - 1), reason: '"$label" is cut off');
+          expect(tester.getRect(find.text(label)).right, lessThanOrEqualTo(tester.getRect(find.byType(LevelButton)).left));
+        }
         await tester.pumpWidget(const SizedBox());
       });
     }
@@ -1660,11 +1664,10 @@ void main() {
     await tester.pumpWidget(const SizedBox());
   });
 
-  // A personal best plays out on the Results splash before any celebration
-  // page covers it, and the panel (no longer a fixed height) holds the
-  // sticker, the previous best and the time saved at a large font scale.
+  // A practice run's summary shows no time, even a personal best, holds at a
+  // large font scale, and its celebrations come in over it.
   for (final ja in [false, true]) {
-    testWidgets('results: a personal best stamps on before the celebrations, at a large font scale (${ja ? 'ja' : 'en'})',
+    testWidgets('results: a practice run shows no time, then its celebrations, at a large font scale (${ja ? 'ja' : 'en'})',
         (tester) async {
       tester.platformDispatcher.textScaleFactorTestValue = 1.3;
       addTearDown(tester.platformDispatcher.clearTextScaleFactorTestValue);
@@ -1697,19 +1700,13 @@ void main() {
           child: MaterialApp(home: ResultsScreen(report: report, config: const PlayConfig(mode: PlayMode.training))),
         ),
       ));
-      await tester.pump(PersonalBestMotion.length);
+      await tester.pump(const Duration(milliseconds: 300));
       expect(tester.takeException(), isNull);
       final s = S(ja ? 'ja' : 'en');
-      expect(find.text(s.personalBest.toUpperCase()), findsOneWidget);
-      expect(find.text('00:14.906'), findsWidgets, reason: 'the time has ticked down to the new best');
-      expect(find.text(s.timeSaved('0.474')), findsOneWidget);
-      expect(find.byType(CelebrationSequence), findsNothing, reason: 'the island waits for the personal best');
-      Finder panelOf(String label) => find.ancestor(of: find.text(label), matching: find.byType(MangaPanel)).first;
-      expect(tester.getSize(panelOf(s.avgPerCardLabel)).height, tester.getSize(panelOf(s.rating.toUpperCase())).height,
-          reason: 'the side-by-side stat panels match in height');
-      expect(tester.getSize(find.text('0.620 s', findRichText: true)).height, lessThan(ResultsLayout.statBigFont * 1.3 * 1.5),
-          reason: 'the average keeps its unit on the same row');
-      await captureScreen(tester, 'results_pb', lang: ja ? 'ja' : 'en');
+      expect(find.textContaining('00:14'), findsNothing, reason: 'practice shows no time');
+      expect(find.text(s.summaryRightLabel), findsOneWidget);
+      expect(find.byType(CelebrationSequence), findsNothing, reason: 'the summary shows first');
+      await captureScreen(tester, 'results_practice', lang: ja ? 'ja' : 'en');
       await tester.pump(ResultsLayout.overlayStagger);
       await tester.pump();
       expect(find.byType(CelebrationSequence), findsOneWidget);
@@ -4064,7 +4061,7 @@ void main() {
             );
             expect(tester.takeException(), isNull);
             expect(find.text(s.rankedScoredTime.toUpperCase()), findsOneWidget);
-            expect(find.text(s.rankedAgain), findsOneWidget);
+            expect(find.text(s.rankedAgain.toUpperCase()), findsOneWidget);
             await captureScreen(tester, 'ranked_results_placement', lang: lang);
 
             await tester.pumpWidget(const SizedBox());
@@ -4108,7 +4105,8 @@ void main() {
             expect(forfeit.ratingAfter, lessThan(forfeit.ratingBefore!));
             await rankedPhone(tester, results(forfeit), width: width, fontScale: fontScale);
             expect(tester.takeException(), isNull);
-            expect(find.text(s.rankedForfeitNote(63)), findsOneWidget);
+            expect(find.text(s.summaryCountsAsZero), findsOneWidget);
+            expect(find.text(s.summaryLeft(63)), findsOneWidget);
             await captureScreen(tester, 'ranked_results_forfeit', lang: lang);
             await tester.pumpWidget(const SizedBox());
           });

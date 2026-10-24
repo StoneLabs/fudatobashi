@@ -10,18 +10,20 @@ import 'package:fudatobashi/domain/ankiren_level.dart';
 /// [ms] after its prompt, after one wrong tap on another card of its side
 /// for the prompts in [wrongAt], or given up for those in [giveUpAt]; ended
 /// early after [endAfter] prompts. With [strikes] it counts them, as the
-/// owner's free-play level games do.
+/// owner's free-play level games do. The player is ready after [memorised],
+/// or when the memorise time is up.
 AnkirenGame playAnkiren(AnkirenSetup setup,
     {int seed = 1,
     int ms = 700,
     Set<int> wrongAt = const {},
     Set<int> giveUpAt = const {},
     int? endAfter,
-    bool strikes = false}) {
+    bool strikes = false,
+    Duration? memorised}) {
   final rng = Random(seed);
   final field = AnkirenDealer.ofPoems()
       .deal([for (final p in poems.all) p.id], setup.perSide, rng, allInMiddle: setup.allInMiddle);
-  final game = AnkirenGame(field: field, setup: setup, rng: rng, countsStrikes: strikes)..startRecall();
+  final game = AnkirenGame(field: field, setup: setup, rng: rng, countsStrikes: strikes)..startRecall(memorised: memorised);
   var t = const Duration(seconds: 100);
   for (var i = 0; game.phase == AnkirenPhase.recall; i++) {
     if (i == endAfter) {

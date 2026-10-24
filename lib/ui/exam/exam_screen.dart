@@ -223,15 +223,7 @@ class _ExamScreenState extends State<ExamScreen> with SingleTickerProviderStateM
     _handedOff = true;
     final Widget next = report.passed
         ? ResultsScreen(report: report, config: _config)
-        : ExamLostScreen(
-            report: report,
-            tobi: widget.tobi.total,
-            tobiMisses: widget.tobi.missesAt(_race.value),
-            clock: _session.total ?? _race.value,
-            misses: _misses,
-            done: _session.attempts.length,
-            total: _session.cards.length,
-          );
+        : ExamLostScreen(report: report, config: _config);
     // Also closes the leave sheet, if time ran out while it was up.
     await Navigator.of(context).pushAndRemoveUntil(MangaRoute<void>(builder: (_) => next), (r) => r.isFirst);
   }

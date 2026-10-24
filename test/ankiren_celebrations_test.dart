@@ -33,6 +33,7 @@ import 'package:fudatobashi/domain/xp.dart';
 import 'package:fudatobashi/l10n/ankiren_strings.dart';
 import 'package:fudatobashi/l10n/results_strings.dart';
 import 'package:fudatobashi/l10n/strings.dart';
+import 'package:fudatobashi/l10n/summary_strings.dart';
 import 'package:fudatobashi/state/progress.dart';
 import 'package:fudatobashi/state/scope.dart';
 import 'package:fudatobashi/state/side_trips.dart';
@@ -447,7 +448,7 @@ void main() {
       await tester.pump(ResultsLayout.overlayFade);
       await tester.pump();
       expect(find.byType(CelebrationSequence), findsNothing, reason: 'tapped through, as after a run');
-      expect(find.text(const S('en').ankirenBackToPage), findsOneWidget);
+      expect(find.text(const S('en').ankirenBackToPage.toUpperCase()), findsOneWidget);
       await tester.pumpWidget(const SizedBox());
     });
 
@@ -476,13 +477,13 @@ void main() {
       await tester.pump(ResultsLayout.overlayStagger * 2);
       expect(report.xp!.award.parts, isEmpty);
       expect(find.byType(CelebrationSequence), findsNothing, reason: 'nothing earned, nothing to celebrate');
-      expect([s.endedEarly, s.ankirenFoundOf(8), s.ankirenMissed(2), s.ankirenCustomNote].map(find.text),
+      expect([s.endedEarly.toUpperCase(), s.summaryFoundOf(8, 2), s.ankirenCustomNote].map(find.text),
           everyElement(findsOneWidget));
       expect(find.text(s.ankirenScoreLabel), findsNothing);
       await tester.pumpWidget(const SizedBox());
 
       await results(tester, p, custom);
-      expect([s.ankirenFoundLabel, s.ankirenMissed(0)].map(find.text), everyElement(findsOneWidget));
+      expect([s.ankirenFoundLabel, s.summaryFoundOf(8, 0)].map(find.text), everyElement(findsOneWidget));
       await tester.pumpWidget(const SizedBox());
     });
 

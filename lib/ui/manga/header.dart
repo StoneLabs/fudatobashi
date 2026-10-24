@@ -26,10 +26,14 @@ class MangaHeader extends StatelessWidget {
 }
 
 /// The app's logo lettering: 札飛ばし over FUDATOBASHI, shrinking rather
-/// than breaking when the header is tight.
+/// than breaking when the header is tight; or, in its place, another
+/// [title] over its [sub] (a run summary's mode).
 class BrandTitle extends StatelessWidget {
-  const BrandTitle({super.key, required this.sub});
+  const BrandTitle({super.key, required this.sub, this.title = brand});
 
+  static const brand = '札飛ばし';
+
+  final String title;
   final String sub;
 
   @override
@@ -40,9 +44,9 @@ class BrandTitle extends StatelessWidget {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text(
-              '札飛ばし',
-              style: TextStyle(
+            Text(
+              title,
+              style: const TextStyle(
                 fontFamily: Fonts.display,
                 fontSize: HeaderStyle.logo,
                 letterSpacing: HeaderStyle.logoTracking * HeaderStyle.logo,
