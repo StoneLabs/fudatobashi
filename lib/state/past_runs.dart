@@ -148,8 +148,8 @@ class RunDetail {
 
   late final RunCards cards = RunCards(swipes);
 
-  /// The time graph's bottom.
-  double get graphBottom => timeline.bottomWith(run.view == RunView.hundred ? references : const []);
+  /// The time graph's bottom, low enough for the earlier runs and Tobi.
+  double get graphBottom => timeline.bottomWith([if (run.view == RunView.hundred) ...references, ?tobi]);
 }
 
 /// History's reading of [Progress]: runs, days and a run's details.

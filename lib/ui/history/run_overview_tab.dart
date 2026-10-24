@@ -95,11 +95,11 @@ class _Overview {
     final change = progress.classChangeOf(run);
     final up = change != null && change.$2.minRating > change.$1.minRating;
     final stamp = run.placement
-        ? RunStamp(s.historyPlaced, sub: s.sub?.historyPlaced)
+        ? RunStamp(s.historyPlaced, sub: s.sub?.historyPlaced, fontSize: RunStampStyle.heroFont)
         : up
-            ? RunStamp(s.historyUpTo(change.$2), sub: s.sub?.historyUpTo(change.$2))
+            ? RunStamp(s.historyUpTo(change.$2), sub: s.sub?.historyUpTo(change.$2), fontSize: RunStampStyle.heroFont)
             : detail.best
-                ? RunStamp(s.runFastestKind, sub: s.sub?.runFastestKind)
+                ? RunStamp(s.runFastestKind, sub: s.sub?.runFastestKind, fontSize: RunStampStyle.heroFont)
                 : null;
     return SummaryHero(
       banner: s.rankedScoredTime.toUpperCase(),
@@ -146,14 +146,17 @@ class _Overview {
     final mine = run.time, tobi = run.tobi;
     final passed = run.passed;
     final gap = mine == null || tobi == null ? null : s.runExamBy(formatSeconds((tobi - mine).inMilliseconds.abs().toDouble(), 1));
+    const subStyle = TextStyle(fontWeight: Weights.black, fontSize: ReviewHeroLayout.examSubFont);
     final sub = gap == null
         ? null
-        : Text(gap, style: const TextStyle(fontWeight: Weights.black, fontSize: ReviewHeroLayout.examSubFont));
+        : passed
+            ? OutlinedText(gap, style: subStyle, outlineWidth: ReviewHeroLayout.examSubOutline)
+            : Text(gap, style: subStyle);
     return SummaryHero(
       banner: s.examRun.toUpperCase(),
       body: passed
-          ? HeroWord(s.runExamWon.toUpperCase(), outlined: true, sub: sub, metrics: ReviewHeroLayout.metrics)
-          : HeroWord(s.runExamLost, sub: sub, metrics: ReviewHeroLayout.metrics),
+          ? HeroWord(s.runExamWon.toUpperCase(), outlined: true, sub: sub, metrics: ReviewHeroLayout.examMetrics)
+          : HeroWord(s.runExamLost, sub: sub, metrics: ReviewHeroLayout.examMetrics),
       bar: mine == null || tobi == null
           ? const [BarPart(Palette.paper, 1)]
           : _race(mine.inMilliseconds.toDouble(), tobi.inMilliseconds.toDouble(),

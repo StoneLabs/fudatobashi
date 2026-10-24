@@ -406,10 +406,11 @@ class HeadlinePanel extends StatelessWidget {
 /// placement, a level gained, a level cleared or failed, a game not
 /// scored. [sub] is the small line under it.
 class RunStamp extends StatelessWidget {
-  const RunStamp(this.text, {super.key, this.sub, this.color = Palette.pinkDeep});
+  const RunStamp(this.text, {super.key, this.sub, this.color = Palette.pinkDeep, this.fontSize = RunStampStyle.font});
   final String text;
   final String? sub;
   final Color color;
+  final double fontSize;
 
   @override
   Widget build(BuildContext context) => MediaQuery.withClampedTextScaling(
@@ -428,7 +429,7 @@ class RunStamp extends StatelessWidget {
               child: Column(mainAxisSize: MainAxisSize.min, children: [
                 Text(text.toUpperCase(),
                     maxLines: 1,
-                    style: TextStyle(fontFamily: Fonts.display, fontSize: RunStampStyle.font, height: 1, color: color)),
+                    style: TextStyle(fontFamily: Fonts.display, fontSize: fontSize, height: 1, color: color)),
                 if (sub case final sub?) ...[
                   const SizedBox(height: RunStampStyle.subGap),
                   Text(sub.toUpperCase(),

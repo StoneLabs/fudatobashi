@@ -56,13 +56,16 @@ class RunCardsTab extends StatelessWidget {
         child: cards.misses.isEmpty
             ? ReviewText(s.runNoMisses)
             : Wrap(
-                spacing: ReviewCardStyle.gap,
                 runSpacing: ReviewCardStyle.gap,
                 children: [
                   for (final m in cards.misses)
                     SizedBox(
-                      width: ReviewCardStyle.width,
-                      child: SwipeCard(m, number: numbers[m], timeColor: HistoryRunStyle.behind, missed: true),
+                      width: ReviewCardStyle.width + ReviewCardStyle.gap,
+                      child: SwipeCard(m,
+                          number: numbers[m],
+                          timeColor: HistoryRunStyle.behind,
+                          missed: true,
+                          cardWidth: ReviewCardStyle.width),
                     ),
                 ],
               ),
@@ -125,11 +128,16 @@ class _Shelf extends StatelessWidget {
 /// and its number in the run, ↓ when it was upside-down; ringed pink, its
 /// time crossed, when [missed].
 class SwipeCard extends StatelessWidget {
-  const SwipeCard(this.swipe, {super.key, this.number, required this.timeColor, this.missed = false});
+  const SwipeCard(this.swipe,
+      {super.key, this.number, required this.timeColor, this.missed = false, this.cardWidth});
   final RunSwipe swipe;
   final int? number;
   final Color timeColor;
   final bool missed;
+
+  /// The card's width, narrower than the room its time and name may take;
+  /// all of that room when null.
+  final double? cardWidth;
 
   @override
   Widget build(BuildContext context) {
@@ -138,12 +146,15 @@ class SwipeCard extends StatelessWidget {
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
-        DecoratedBox(
-          position: DecorationPosition.foreground,
-          decoration: BoxDecoration(
-            border: missed ? Border.all(color: Palette.pink, width: ReviewCardStyle.missRing) : null,
+        SizedBox(
+          width: cardWidth,
+          child: DecoratedBox(
+            position: DecorationPosition.foreground,
+            decoration: BoxDecoration(
+              border: missed ? Border.all(color: Palette.pink, width: ReviewCardStyle.missRing) : null,
+            ),
+            child: TorifudaCard(poem: poems[swipe.poemId], inverted: swipe.inverted, showNumber: false),
           ),
-          child: TorifudaCard(poem: poems[swipe.poemId], inverted: swipe.inverted, showNumber: false),
         ),
         const SizedBox(height: ReviewCardStyle.chipGap),
         DecoratedBox(

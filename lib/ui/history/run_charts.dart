@@ -199,7 +199,7 @@ class ChartBar {
   final double value;
   final Color color;
 
-  /// Written over the bar.
+  /// Written inside the bar, at its foot.
   final String? label;
 }
 
@@ -260,9 +260,7 @@ class _BarPainter extends CustomPainter {
     final hi = ((top / step).ceil() * step).toDouble();
     final widest = _label(chart.format(hi));
     final xRow = chart.xLabels.isEmpty ? 0.0 : _label('0').height + RunChartStyle.labelGap;
-    final valueRow = bars.any((b) => b.label != null) ? _label('0', RunChartStyle.valueFont).height : 0.0;
-    final plot = Rect.fromLTRB(
-        widest.width + RunChartStyle.labelGap, RunChartStyle.labelGap + valueRow, size.width, size.height - xRow);
+    final plot = Rect.fromLTRB(widest.width + RunChartStyle.labelGap, RunChartStyle.labelGap, size.width, size.height - xRow);
     double y(double v) => plot.bottom - plot.height * v / hi;
     final grid = Paint()
       ..color = ChartStyle.grid
@@ -284,7 +282,7 @@ class _BarPainter extends CustomPainter {
       }
       if (b.label case final text?) {
         final l = _label(text, RunChartStyle.valueFont);
-        l.paint(canvas, Offset(rect.center.dx - l.width / 2, rect.top - l.height));
+        l.paint(canvas, Offset(rect.center.dx - l.width / 2, rect.bottom - RunChartStyle.valueInset - l.height));
       }
       if (chart.xLabels[i] case final text?) {
         final l = _label(text);

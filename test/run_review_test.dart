@@ -263,11 +263,13 @@ void main() {
         (760, {40}),
         (700, {70}),
       ].indexed) {
-        runs.add(await record(tester, p, play(all(seed: i), ms: ms, seed: i, missAt: misses), _ranked,
-            at: DateTime(2026, 10, 19 + i, i == 0 ? 20 : 18)));
+        final at = DateTime(2026, 10, 19 + i, i == 0 ? 20 : 18);
+        runs.add(await record(tester, p, play(all(seed: i), ms: ms, seed: i, missAt: misses, at: at), _ranked, at: at));
       }
-      runs.add(await record(tester, p, play(all(seed: 9), ms: 900, seed: 9, missAt: {11}, stopAfter: 37), _ranked,
-          at: DateTime(2026, 10, 24, 10)));
+      final at = DateTime(2026, 10, 24, 10);
+      runs.add(await record(
+          tester, p, play(all(seed: 9), ms: 900, seed: 9, missAt: {11}, stopAfter: 37, at: at), _ranked,
+          at: at));
       return (p, runs);
     }
 
@@ -326,8 +328,8 @@ void main() {
     final config = PlayConfig(mode: PlayMode.free, setIds: const [], cardIds: [for (final q in poems.all) q.id]);
     late PastRun run;
     for (final (i, ms) in [950, 905, 863].indexed) {
-      run = await record(tester, p, play(all(seed: i), ms: ms, seed: i, missAt: {3 + 40 * i}), config,
-          at: DateTime(2026, 10, 21 + i, 19));
+      final at = DateTime(2026, 10, 21 + i, 19);
+      run = await record(tester, p, play(all(seed: i), ms: ms, seed: i, missAt: {3 + 40 * i}, at: at), config, at: at);
     }
     expect(run.view, RunView.hundred);
     await open(tester, p, RunPage(run: run));

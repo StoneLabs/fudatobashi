@@ -277,12 +277,14 @@ class HeroFigure extends StatelessWidget {
               ],
               if (line case final line?) ...[
                 gap,
-                TextSpan(
-                    text: line,
-                    style: const TextStyle(
-                        fontWeight: Weights.bold,
-                        fontSize: ReviewHeroLayout.figureLineFont,
-                        color: Palette.inkSoft)),
+                WidgetSpan(
+                  alignment: PlaceholderAlignment.middle,
+                  child: Text(line,
+                      style: const TextStyle(
+                          fontWeight: Weights.bold,
+                          fontSize: ReviewHeroLayout.figureLineFont,
+                          color: Palette.inkSoft)),
+                ),
               ],
             ]),
             maxLines: 1,
@@ -321,9 +323,10 @@ class ValueLine extends StatelessWidget {
     final badge = this.badge;
     final row = Padding(
       padding: total ? ValueLineStyle.totalPadding : ValueLineStyle.padding,
-      child: Row(crossAxisAlignment: CrossAxisAlignment.center, children: [
+      child: Row(crossAxisAlignment: CrossAxisAlignment.baseline, textBaseline: TextBaseline.alphabetic, children: [
         Expanded(
-            child: Text(label, style: const TextStyle(fontWeight: Weights.bold, fontSize: ValueLineStyle.font))),
+            child: Text(label,
+                style: const TextStyle(fontWeight: Weights.bold, fontSize: ValueLineStyle.font, height: 1))),
         const SizedBox(width: Gaps.panel),
         Text(value,
             style: TextStyle(
@@ -368,8 +371,19 @@ class ChangeBadge extends StatelessWidget {
   final num change;
 
   @override
-  Widget build(BuildContext context) =>
-      ResultBadge(signedPoints(change), color: change.round() < 0 ? Palette.pink : Palette.land);
+  Widget build(BuildContext context) => Container(
+        height: ChangeBadgeStyle.height,
+        padding: ChangeBadgeStyle.padding,
+        alignment: Alignment.center,
+        decoration: BoxDecoration(
+          color: change.round() < 0 ? Palette.pink : Palette.land,
+          border: Border.all(width: Strokes.label),
+        ),
+        child: Text(signedPoints(change),
+            maxLines: 1,
+            textScaler: TextScaler.noScaling,
+            style: const TextStyle(fontWeight: Weights.black, fontSize: ChangeBadgeStyle.font, height: 1)),
+      );
 }
 
 /// Points gained or lost, as +44 or −1002.
@@ -399,16 +413,18 @@ class XpHero extends StatelessWidget {
     final next = s.xpToNext(level.toNext, level.level + 1);
     return ReviewHero(
       height: ReviewHeroLayout.xpHeight,
-      metrics: ReviewHeroLayout.xpMetrics,
+      metrics: gained ? ReviewHeroLayout.xpUpMetrics : ReviewHeroLayout.xpMetrics,
       SummaryHero(
         banner: s.runXpLabel.toUpperCase(),
         body: HeroFigure('+${groupDigits(gain.award.total)}',
-            unit: s.xpUnit, top: ReviewHeroLayout.xpTop, size: ReviewHeroLayout.xpFont),
+            unit: s.xpUnit,
+            top: gained ? ReviewHeroLayout.xpUpTop : ReviewHeroLayout.xpTop,
+            size: gained ? ReviewHeroLayout.xpUpFont : ReviewHeroLayout.xpFont),
         bar: [BarPart(Palette.pink, level.into), BarPart(Palette.paper, level.toNext)],
         labels: [BarLabel(at), BarLabel(next, part: 1, end: true)],
         fallbackLabels: [BarLabel('$at · $next')],
         pose: gained ? null : TobiPose.standard,
-        stamp: gained ? RunStamp(s.levelUpBand, sub: s.runLevelFrom(gain.levelBefore.level)) : null,
+        stamp: gained ? RunStamp(s.levelUpBand, sub: s.runLevelFrom(gain.levelBefore.level), fontSize: RunStampStyle.xpFont) : null,
         stampOnTop: true,
       ),
     );

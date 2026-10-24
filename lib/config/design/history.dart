@@ -126,6 +126,7 @@ abstract final class RunChartStyle {
   static const double shortBarChartHeight = 84;
   static const double labelFont = 10.5;
   static const double valueFont = 9.5;
+  static const double valueInset = 4;
   static const double labelGap = 4;
   static const double plotRightPad = 10;
   static const double plotBottomPad = 8;

@@ -82,11 +82,13 @@ class RunTimeline {
 
   /// The time graph's bottom: the slowest of [references] (earlier runs of
   /// the same kind), but never past [RunReviewTuning.graphReach] times
-  /// this run, so its line fills at least that share of the height. With
-  /// no references, this run's own end.
+  /// this run at its pace over the longest of them, so its line fills at
+  /// least that share of the height. With no references, this run's own
+  /// end.
   double bottomWith(Iterable<RunTimeline> references) {
     final slowest = references.fold(endMs, (m, r) => math.max(m, r.endMs));
-    return math.min(slowest, endMs * RunReviewTuning.graphReach);
+    final longest = references.fold(cards, (m, r) => math.max(m, r.cards));
+    return math.min(slowest, endMs * longest / math.max(1, cards) * RunReviewTuning.graphReach);
   }
 }
 

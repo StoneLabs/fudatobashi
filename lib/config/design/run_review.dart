@@ -68,7 +68,7 @@ abstract final class ReviewHeroLayout {
     timeFont: 66,
     tobi: Size(80, 95),
     stampAt: Offset(122, 122),
-    topStampInset: Offset(14, 16),
+    topStampInset: Offset(0, 16),
   );
 
   /// The experience hero, its Tobi smaller.
@@ -85,6 +85,24 @@ abstract final class ReviewHeroLayout {
     tobi: Size(70, 83),
     stampAt: Offset(122, 122),
     topStampInset: Offset(22, 48),
+  );
+
+  /// The experience hero of a level gained: the figure smaller, left of
+  /// the stamp.
+  static const xpUpMetrics = HeroMetrics(
+    countTop: 52,
+    countFont: 80,
+    wordTop: 54,
+    plainWordTop: 66,
+    plainWordFont: 52,
+    wordWidth: 236,
+    subTop: 108,
+    timeTop: 66,
+    timeFont: 66,
+    tobi: Size(70, 83),
+    stampAt: Offset(122, 122),
+    topStampInset: Offset(6, 46),
+    bodyWidth: 190,
   );
 
   /// 暗記練's rating hero: its lines across the whole panel.
@@ -111,6 +129,8 @@ abstract final class ReviewHeroLayout {
   static const double pointsFont = 60;
   static const double xpTop = 54;
   static const double xpFont = 46;
+  static const double xpUpTop = 58;
+  static const double xpUpFont = 40;
   static const double figureUnitFont = 17;
   static const double figureLineFont = 12.5;
   static const double figureGap = 10;
@@ -123,37 +143,39 @@ abstract final class ReviewHeroLayout {
   static const double ankirenRatingHeight = 194;
   static const double ankirenLinesTop = 44;
 
-  /// The exam's word and the line under it.
-  static const double examWordFont = 40;
+  /// The exam's hero: a smaller word, the line under it outlined over the
+  /// focus lines, and a smaller Tobi.
+  static const examMetrics = HeroMetrics(
+    countTop: 52,
+    countFont: 80,
+    wordTop: 56,
+    plainWordTop: 58,
+    plainWordFont: 42,
+    wordWidth: 236,
+    subTop: 108,
+    timeTop: 66,
+    timeFont: 66,
+    tobi: Size(72, 86),
+    stampAt: Offset(122, 122),
+  );
   static const double examSubFont = 17;
   static const double examSubOutline = 7;
 
-  /// The focus lines of a goal reached, kept off the word (and the line
-  /// under it).
+  /// The focus lines of a goal reached, behind the outlined word (and
+  /// the line under it).
   static const burst = BurstSpec(
-      box: Size(352, 188),
-      center: Offset(292, 96),
-      count: 104,
-      innerMin: 62,
-      innerMax: 92,
-      width: 3,
-      seed: 3,
-      clear: Rect.fromLTWH(6, 48, 250, 68));
+      box: Size(352, 188), center: Offset(292, 96), count: 104, innerMin: 62, innerMax: 92, width: 3, seed: 3);
   static const burstWithSub = BurstSpec(
-      box: Size(352, 188),
-      center: Offset(300, 92),
-      count: 96,
-      innerMin: 60,
-      innerMax: 88,
-      width: 3,
-      seed: 9,
-      clear: Rect.fromLTWH(6, 48, 236, 86));
+      box: Size(352, 188), center: Offset(300, 92), count: 96, innerMin: 60, innerMax: 88, width: 3, seed: 9);
 }
 
 /// The run review's tiles (`TileBand`): the Overview's three, and the
 /// smaller ones of the Speed, Rating and Field tabs.
 abstract final class ReviewTileLayout {
-  static const spec = TileSpec(padding: EdgeInsets.fromLTRB(14, 12, 8, 13));
+  static const spec = TileSpec(padding: EdgeInsets.fromLTRB(14, 12, 6, 13));
+
+  /// Two wide tiles whose labels may take two lines.
+  static const twoLines = TileSpec(padding: EdgeInsets.fromLTRB(14, 11, 10, 11), lines: 2);
   static const small = TileSpec(
     padding: EdgeInsets.fromLTRB(11, 12, 8, 12),
     labelFont: 10,
@@ -189,9 +211,20 @@ abstract final class RunStampStyle {
   static const double ring = 1.6;
   static const EdgeInsets padding = EdgeInsets.fromLTRB(10, 5, 10, 6);
   static const double font = 15;
+
+  /// On the Overview's hero, and on the experience hero.
+  static const double heroFont = 13;
+  static const double xpFont = 14;
   static const double subFont = 10;
   static const double subTracking = 1.2;
   static const double subGap = 3;
+}
+
+/// A rating's change beside the rating hero's number (`ChangeBadge`).
+abstract final class ChangeBadgeStyle {
+  static const double height = 20;
+  static const EdgeInsets padding = EdgeInsets.symmetric(horizontal: 6);
+  static const double font = 11.5;
 }
 
 /// The run review's lines of a label and its value (`ValueLine`): dotted
@@ -229,12 +262,13 @@ abstract final class ReviewCardStyle {
 /// The run review's tables (`ReviewTable`): a head row in small tracked
 /// capitals over an ink rule, rows on grey rules, a marked row tinted.
 abstract final class ReviewTableStyle {
-  static const double headFont = 9.5;
-  static const double headTracking = 0.95;
-  static const double cellFont = 11.5;
+  static const TextStyle head = TextStyle(fontWeight: Weights.black, fontSize: 9.5, letterSpacing: 0.95, height: 1.1);
+  static const TextStyle cell = TextStyle(fontWeight: Weights.bold, fontSize: 11.5, height: 1.1);
+  static const TextStyle note = TextStyle(fontWeight: Weights.bold, fontSize: 10.5, color: HistoryRunStyle.muted);
   static const EdgeInsets cellPadding = EdgeInsets.symmetric(horizontal: 4, vertical: 5);
   static const EdgeInsets headPadding = EdgeInsets.fromLTRB(4, 0, 4, 5);
   static const double rule = 1;
+  static const Color ruleColor = ChartStyle.grid;
   static const double heavyRule = Strokes.label;
 
   /// A table that is a whole panel: the heading over it, its rows' inset

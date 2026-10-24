@@ -44,25 +44,23 @@ class RankedRunsTable extends StatelessWidget {
   Widget build(BuildContext context) {
     final s = S.of(context);
     TableRow row(PastRun run, RunRating rating) {
-      final style = run.id == highlight ? RunTabsStyle.lineStyle : RunTabsStyle.rowStyle;
+      final mark = run.id == highlight;
       final change = rating.before == null ? '' : ratingChangeText(rating.after - rating.before!);
-      final tag = rating.before == null ? s.runTagPlaced : null;
       final cells = [
-        Padding(
-          padding: RunTabsStyle.tableCellPadding,
-          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            Text(s.shortDate(run.startedAt), style: style),
-            if (tag != null) Text(tag, style: RunTabsStyle.noteStyle),
-          ]),
+        _cell(
+          Text.rich(TextSpan(children: [
+            TextSpan(text: s.shortDate(run.startedAt), style: const TextStyle(fontWeight: Weights.black)),
+            if (rating.before == null) TextSpan(text: ' ${s.runTagPlaced}', style: ReviewTableStyle.note),
+          ])),
+          start: true,
         ),
-        for (final v in [runTimeText(s, run), '${rating.performance.round()}', '${rating.after.round()}'])
-          _cell(v, style),
-        _cell(change, style.copyWith(color: _changeColor(rating))),
+        for (final v in [runTimeText(s, run), '${rating.performance.round()}', '${rating.after.round()}']) _cell(Text(v)),
+        _cell(Text(change, style: TextStyle(fontWeight: Weights.black, color: _changeColor(rating)))),
       ];
       return TableRow(
         decoration: BoxDecoration(
-          color: run.id == highlight ? Palette.sunSoft : null,
-          border: const Border(bottom: BorderSide(color: RunTabsStyle.rule)),
+          color: mark ? Palette.sunSoft : null,
+          border: const Border(top: BorderSide(color: ReviewTableStyle.ruleColor, width: ReviewTableStyle.rule)),
         ),
         children: [
           for (final c in cells)
@@ -73,23 +71,22 @@ class RankedRunsTable extends StatelessWidget {
       );
     }
 
-    return Table(
-      columnWidths: const {0: FlexColumnWidth(RunTabsStyle.runColumnFlex)},
-      defaultColumnWidth: const FlexColumnWidth(),
-      defaultVerticalAlignment: TableCellVerticalAlignment.middle,
-      children: [
-        TableRow(
-          decoration: const BoxDecoration(border: Border(bottom: BorderSide(width: Strokes.label))),
-          children: [
-            for (final (i, h) in [s.runColRun, s.runColScored, s.runColPlayedLike, s.runColRating, s.runColChange].indexed)
-              Padding(
-                padding: RunTabsStyle.tableCellPadding,
-                child: Text(h.toUpperCase(), textAlign: i > 0 ? TextAlign.right : TextAlign.left, style: RunTabsStyle.headStyle),
-              ),
-          ],
-        ),
-        for (final (run, rating) in runs.reversed.take(RunRatingTuning.tableRuns)) row(run, rating),
-      ],
+    return DefaultTextStyle.merge(
+      style: ReviewTableStyle.cell,
+      child: Table(
+        defaultColumnWidth: const IntrinsicColumnWidth(flex: 1),
+        defaultVerticalAlignment: TableCellVerticalAlignment.middle,
+        children: [
+          TableRow(
+            decoration: const BoxDecoration(border: Border(bottom: BorderSide(width: ReviewTableStyle.heavyRule))),
+            children: [
+              for (final (i, h) in [s.runColRun, s.runColScored, s.runColPlayedLike, s.runColRating, s.runColChange].indexed)
+                _cell(Text(h.toUpperCase(), style: ReviewTableStyle.head), start: i == 0, head: true),
+            ],
+          ),
+          for (final (run, rating) in runs.reversed.take(RunRatingTuning.tableRuns)) row(run, rating),
+        ],
+      ),
     );
   }
 
@@ -99,12 +96,14 @@ class RankedRunsTable extends StatelessWidget {
     return change > 0 ? HistoryRunStyle.ahead : change < 0 ? HistoryRunStyle.behind : null;
   }
 
-  static Widget _cell(String text, TextStyle style) => Padding(
-        padding: RunTabsStyle.tableCellPadding,
+  /// A cell on one line, shrunk rather than wrapped: the first column's
+  /// at the start, the rest at the end.
+  static Widget _cell(Text text, {bool start = false, bool head = false}) => Padding(
+        padding: head ? ReviewTableStyle.headPadding : ReviewTableStyle.cellPadding,
         child: FittedBox(
           fit: BoxFit.scaleDown,
-          alignment: Alignment.centerRight,
-          child: Text(text, maxLines: 1, style: style),
+          alignment: start ? Alignment.centerLeft : Alignment.centerRight,
+          child: text,
         ),
       );
 }
@@ -125,26 +124,32 @@ class _RatingChartPainter extends CustomPainter {
     final pad = math.max(1.0, hi - lo) * RunTabsStyle.ratingChartPad;
     lo -= pad;
     hi += pad;
+    final lines = [
+      for (final band in Rating.bands)
+        if (band.minRating case final r when r.isFinite && r >= lo && r <= hi)
+          (
+            r,
+            TextPainter(
+              text: TextSpan(text: '${name(band)} ${r.round()}', style: RunTabsStyle.chartLabelStyle),
+              textDirection: TextDirection.ltr,
+              textScaler: scaler,
+            )..layout(),
+          ),
+    ];
     const inset = RunTabsStyle.ratingPointInset;
+    final left = lines.fold(0.0, (w, l) => math.max(w, l.$2.width)) + inset;
     Offset at(int i, double r) => Offset(
-          inset + (size.width - 2 * inset) * i / (ratings.length - 1),
+          left + (size.width - left - inset) * i / (ratings.length - 1),
           size.height * (hi - r) / (hi - lo),
         );
     final classLine = Paint()
       ..color = HistoryRunStyle.behind
       ..strokeWidth = Strokes.hairline;
-    for (final band in Rating.bands) {
-      final r = band.minRating;
-      if (!r.isFinite || r < lo || r > hi) continue;
+    for (final (r, label) in lines) {
       final y = at(0, r).dy;
       for (var x = 0.0; x < size.width; x += Strokes.dash[0] + Strokes.dash[1]) {
         canvas.drawLine(Offset(x, y), Offset(math.min(size.width, x + Strokes.dash[0]), y), classLine);
       }
-      final label = TextPainter(
-        text: TextSpan(text: '${name(band)} ${r.round()}', style: RunTabsStyle.chartLabelStyle),
-        textDirection: TextDirection.ltr,
-        textScaler: scaler,
-      )..layout();
       label.paint(canvas, Offset(0, y - label.height));
     }
     final line = Path()..moveTo(at(0, ratings[0]).dx, at(0, ratings[0]).dy);

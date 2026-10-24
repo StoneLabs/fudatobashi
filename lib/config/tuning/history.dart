@@ -38,7 +38,7 @@ abstract final class RunReviewTuning {
   static const double graphReach = 2;
 
   /// Earlier runs of the same kind the time graph measures against.
-  static const int references = 10;
+  static const int references = 2;
 
   /// Slowest and fastest cards shown on the Cards tab.
   static const int shownCards = 3;

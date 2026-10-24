@@ -404,7 +404,7 @@ class _UsualTiles extends StatelessWidget {
         note: '${formatSignedSeconds(gap, 1)} s',
         color: gap > 0 ? Palette.pinkSoft : Palette.landSoft,
       ),
-    ], spec: ReviewTileLayout.spec, height: ReviewTileLayout.thirdsHeight);
+    ], spec: ReviewTileLayout.twoLines, height: ReviewTileLayout.thirdsHeight);
   }
 
   static Duration _duration(double ms) => Duration(milliseconds: ms.round());
