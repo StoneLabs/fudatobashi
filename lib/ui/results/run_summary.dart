@@ -296,7 +296,7 @@ class HeroPanel extends StatelessWidget {
               left: SummaryHeroLayout.bodyLeft,
               top: 0,
               bottom: 0,
-              width: SummaryHeroLayout.bodyWidth,
+              width: metrics.bodyWidth,
               child: hero.body,
             ),
             if (stamp != null)

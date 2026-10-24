@@ -14,7 +14,6 @@ import '../../state/progress.dart';
 import '../../state/stats_history.dart';
 import '../history/history_widgets.dart';
 import '../history/run_charts.dart';
-import '../history/run_xp_tab.dart';
 import '../manga/manga.dart';
 import '../play/time_format.dart';
 import 'card_detail_screen.dart';
@@ -172,7 +171,7 @@ class SrsKnownOverTime extends StatelessWidget {
       title: s.srsKnownTitle,
       sub: s.sub?.srsKnownTitle,
       note: s.srsGainIn(gain, back),
-      child: RunPanel(gap: false, children: [
+      child: RunPanel(children: [
         DayLineChart(
           lo: 0,
           hi: total.toDouble(),
@@ -233,7 +232,7 @@ class _Empty extends StatelessWidget {
   Widget build(BuildContext context) => HistorySection(
         title: title,
         sub: sub,
-        child: RunPanel(gap: false, children: [Text(S.of(context).srsNoData, style: RunTabsStyle.noteStyle)]),
+        child: RunPanel(children: [Text(S.of(context).srsNoData, style: RunTabsStyle.noteStyle)]),
       );
 }
 
@@ -288,7 +287,7 @@ class _SrsWallState extends State<SrsWall> {
     return HistorySection(
       title: s.srsWallTitle,
       sub: s.sub?.srsWallTitle,
-      child: RunPanel(gap: false, children: [
+      child: RunPanel(children: [
         Align(
           alignment: Alignment.centerRight,
           child: SrsToggle(
@@ -406,7 +405,7 @@ class SrsStrength extends StatelessWidget {
     return HistorySection(
       title: s.srsStrengthTitle,
       sub: s.sub?.srsStrengthTitle,
-      child: RunPanel(gap: false, children: [
+      child: RunPanel(children: [
         side(s.srsUpright, up),
         side(s.srsUpsideDown, down),
         Table(
@@ -497,7 +496,7 @@ class SrsTimePractised extends StatelessWidget {
       title: s.srsTimeTitle,
       sub: s.sub?.srsTimeTitle,
       note: s.srsTotal(s.srsDuration(total)),
-      child: RunPanel(gap: false, children: [
+      child: RunPanel(children: [
         BarChart(
           bars: [
             for (final (i, m) in minutes.indexed)
@@ -544,7 +543,7 @@ class SrsSpeed extends StatelessWidget {
       title: s.srsSpeedTitle,
       sub: s.sub?.srsSpeedTitle,
       note: s.srsLowerFaster,
-      child: RunPanel(gap: false, children: [
+      child: RunPanel(children: [
         DayLineChart(
           lo: lo,
           hi: hi,
@@ -619,7 +618,7 @@ class SrsSides extends StatelessWidget {
     return HistorySection(
       title: s.srsSidesTitle,
       sub: s.sub?.srsSidesTitle,
-      child: RunPanel(gap: false, children: [
+      child: RunPanel(children: [
         Table(
           columnWidths: const {0: FlexColumnWidth(SrsLayout.sideLabelFlex)},
           defaultVerticalAlignment: TableCellVerticalAlignment.middle,

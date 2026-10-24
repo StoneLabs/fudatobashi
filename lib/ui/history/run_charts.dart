@@ -10,7 +10,9 @@ import '../play/time_format.dart';
 /// down to [bottomMs]. The run's line starts in the top-left corner; a
 /// dashed line runs straight to where it ended (even pace), with the gap
 /// shaded pink where the run was behind it and green where ahead. Earlier
-/// runs ([references]) are faint lines; an exam's [tobi] a blue one.
+/// runs ([references]) are faint lines; an exam's [tobi] a blue one. The
+/// bottom and the run's end are labelled with their times unless
+/// [showTotal] is false.
 class RunTimeGraph extends StatelessWidget {
   const RunTimeGraph({
     super.key,
@@ -18,12 +20,14 @@ class RunTimeGraph extends StatelessWidget {
     required this.bottomMs,
     this.references = const [],
     this.tobi,
+    this.showTotal = true,
   });
 
   final RunTimeline run;
   final double bottomMs;
   final List<RunTimeline> references;
   final RunTimeline? tobi;
+  final bool showTotal;
 
   /// Takes the height it is given, at least
   /// [RunChartStyle.timeGraphMinHeight].
@@ -39,10 +43,22 @@ class _TimeGraphPainter extends CustomPainter {
   final RunTimeGraph graph;
   final TextScaler scaler;
 
-  TextPainter _label(String text, {Color color = Palette.ink, FontWeight weight = Weights.black}) => TextPainter(
+  /// A label in [color], or with [halo] the paper outline drawn under it.
+  TextPainter _label(String text, {Color color = Palette.ink, bool halo = false}) => TextPainter(
         text: TextSpan(
             text: text,
-            style: TextStyle(fontFamily: Fonts.ui, fontSize: RunChartStyle.labelFont, fontWeight: weight, color: color)),
+            style: TextStyle(
+              fontFamily: Fonts.ui,
+              fontSize: RunChartStyle.labelFont,
+              fontWeight: Weights.black,
+              color: halo ? null : color,
+              foreground: halo
+                  ? (Paint()
+                    ..color = Palette.paper
+                    ..style = PaintingStyle.stroke
+                    ..strokeWidth = RunChartStyle.labelHalo)
+                  : null,
+            )),
         textDirection: TextDirection.ltr,
         textScaler: scaler,
       )..layout();
@@ -52,7 +68,7 @@ class _TimeGraphPainter extends CustomPainter {
     final run = graph.run;
     final cards = math.max(1, [run.cards, for (final r in graph.references) r.cards].reduce(math.max));
     final bottom = math.max(1.0, graph.bottomMs);
-    final yLabel = _label(formatMinutes(Duration(milliseconds: bottom.round())));
+    final yLabel = _label(formatMinutes(Duration(milliseconds: (graph.showTotal ? bottom : bottom - 1).round())));
     final left = yLabel.width + RunChartStyle.labelGap;
     final top = _label('0').height + RunChartStyle.labelGap;
     final plot = Rect.fromLTRB(left, top, size.width - RunChartStyle.plotRightPad, size.height - RunChartStyle.plotBottomPad);
@@ -71,7 +87,7 @@ class _TimeGraphPainter extends CustomPainter {
     }
     final yStep = RunChartStyle.timeStepsMs.firstWhere((s) => bottom / s <= RunChartStyle.maxYTicks,
         orElse: () => RunChartStyle.timeStepsMs.last);
-    for (var ms = 0; ms < bottom - yStep / 3; ms += yStep) {
+    for (var ms = 0; ms < bottom - (graph.showTotal ? yStep / 3 : 0); ms += yStep) {
       final y = at(0, ms.toDouble()).dy;
       canvas.drawLine(Offset(plot.left, y), Offset(plot.right, y), grid);
       final l = _label(formatMinutes(Duration(milliseconds: ms)));
@@ -82,8 +98,10 @@ class _TimeGraphPainter extends CustomPainter {
       ..color = HistoryRunStyle.behind
       ..strokeWidth = Strokes.hairline;
     _dashed(canvas, Offset(plot.left, plot.bottom), Offset(plot.right, plot.bottom), bottomPaint);
-    final bl = _label(formatMinutes(Duration(milliseconds: bottom.round())), color: HistoryRunStyle.behind);
-    bl.paint(canvas, Offset(left - RunChartStyle.labelGap - bl.width, plot.bottom - bl.height / 2));
+    if (graph.showTotal) {
+      final bl = _label(formatMinutes(Duration(milliseconds: bottom.round())), color: HistoryRunStyle.behind);
+      bl.paint(canvas, Offset(left - RunChartStyle.labelGap - bl.width, plot.bottom - bl.height / 2));
+    }
     canvas.drawLine(plot.topLeft, plot.bottomLeft, Paint()..strokeWidth = Strokes.label);
     canvas.drawLine(plot.topLeft, plot.topRight, Paint()..strokeWidth = Strokes.label);
 
@@ -142,9 +160,14 @@ class _TimeGraphPainter extends CustomPainter {
       ..style = PaintingStyle.stroke
       ..strokeWidth = Strokes.hairline);
     canvas.restore();
-    final endLabel = _label(formatTenths(Duration(milliseconds: run.endMs.round())));
-    endLabel.paint(canvas,
-        Offset(math.min(end.dx - endLabel.width / 2, plot.right - endLabel.width), end.dy - RunChartStyle.endMark - endLabel.height));
+    if (!graph.showTotal) return;
+    final text = formatTenths(Duration(milliseconds: run.endMs.round()));
+    final halo = _label(text, halo: true);
+    final endLabel = _label(text);
+    final where = Offset(end.dx - RunChartStyle.endMark - RunChartStyle.endLabelGap - endLabel.width,
+        end.dy - RunChartStyle.endMark - endLabel.height / 2);
+    halo.paint(canvas, where);
+    endLabel.paint(canvas, where);
   }
 
   void _line(Canvas canvas, RunTimeline t, Offset Function(int, double) at, Paint paint) {

@@ -3,16 +3,20 @@ import 'package:flutter/material.dart';
 import '../../config/config.dart';
 import '../../config/design.dart';
 import '../../domain/rating.dart';
+import '../../l10n/home_strings.dart';
 import '../../l10n/ranked_strings.dart';
+import '../../l10n/review_strings.dart';
 import '../../l10n/run_tab_strings.dart';
 import '../../l10n/stats_strings.dart';
 import '../../l10n/strings.dart';
 import '../../state/past_runs.dart';
 import '../../state/play_config.dart';
+import '../manga/manga.dart';
 import '../play/time_format.dart';
 import '../rank/ranked_runs.dart';
+import '../results/run_summary.dart';
 import 'history_widgets.dart';
-import 'run_xp_tab.dart';
+import 'review_parts.dart';
 
 /// The 100-card view's Rating and XP tab: how a ranked run moved the
 /// rating and where it sits among the ranked runs (or why the exam and free
@@ -23,138 +27,109 @@ class RunRatingTab extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final s = S.of(context);
     final rating = detail.rating;
-    return RunTabList(children: [
+    final run = detail.run;
+    return ReviewColumn(children: [
       if (rating != null) ...[
-        _RatingPanel(detail, rating),
-        if (detail.run.forfeit) _Forfeit(detail.run),
+        RatingHero(rating, line: rating.before == null ? s.ratingFirst : null, placed: rating.before == null),
+        _RatingTiles(detail, rating),
+        if (run.forfeit)
+          ReviewSlab(
+            color: Palette.pinkSoft,
+            child: Text(s.runForfeitText(run.cards), style: ReviewTextStyle.strong),
+          ),
         _RankedRuns(detail),
       ] else
-        _NoRank(detail.run),
-      XpPanel(detail.xp),
+        _NoRank(run),
+      ...xpParts(s, detail.xp),
     ]);
   }
 }
 
-/// D24: the rating before and after, the sum that moved it, and the class
-/// bar.
-class _RatingPanel extends StatelessWidget {
-  const _RatingPanel(this.detail, this.rating);
+/// A rating as a hero: the number with its change, the class it stands in
+/// as the bar, the rating before as a tick, and the stamp of a [placed]
+/// rating.
+class RatingHero extends StatelessWidget {
+  const RatingHero(this.rating, {super.key, this.line, this.placed = false});
+  final RunRating rating;
+  final String? line;
+  final bool placed;
+
+  @override
+  Widget build(BuildContext context) {
+    final s = S.of(context);
+    final after = rating.after, before = rating.before;
+    final band = Rating.bandOf(after), next = Rating.nextBand(after);
+    final lo = band.minRating.isFinite ? band.minRating : next!.minRating - RunRatingTuning.openSpan;
+    final hi = next?.minRating ?? lo + RunRatingTuning.openSpan;
+    double at(double r) => ((r - lo) / (hi - lo)).clamp(0.0, 1.0);
+    final name = s.className(band);
+    final gap = next == null ? s.topClassNote : s.runClassGap((hi - after).ceil(), next, hi.round());
+    return ReviewHero(
+      height: ReviewHeroLayout.ratingHeight,
+      SummaryHero(
+        banner: s.ratingLabel,
+        body: HeroFigure('${after.round()}', badge: before == null ? null : ChangeBadge(after - before), line: line),
+        bar: [BarPart(Palette.sea, at(after)), BarPart(Palette.paper, 1 - at(after))],
+        ticks: [if (before != null && before >= lo && before <= hi) at(before)],
+        labels: [BarLabel(name), BarLabel(gap, part: 1, end: true)],
+        fallbackLabels: [BarLabel('$name · $gap')],
+        pose: null,
+        stamp: placed ? RunStamp(s.runPlacementShout) : null,
+        stampOnTop: true,
+      ),
+    );
+  }
+}
+
+/// The rating before, what the run played like and the change, as tiles.
+class _RatingTiles extends StatelessWidget {
+  const _RatingTiles(this.detail, this.rating);
   final RunDetail detail;
   final RunRating rating;
 
   @override
   Widget build(BuildContext context) {
     final s = S.of(context);
-    final before = rating.before?.round(), after = rating.after.round(), played = rating.performance.round();
-    final forfeit = detail.run.forfeit;
-    final scored = runTimeText(s, detail.run);
-    return RunPanel(children: [
-      TrackedLabel(s.rating, sub: s.sub?.rating),
-      if (before == null) ...[
-        RunBigValue('$after'),
-        const SizedBox(height: Gaps.tight),
-        Text('${s.runPlacementShout} ${forfeit ? s.runPlacementForfeitText(played) : s.runPlacementText(scored, played)}',
-            style: RunTabsStyle.lineStyle),
-        const SizedBox(height: Gaps.small),
-      ] else ...[
-        Wrap(
-          crossAxisAlignment: WrapCrossAlignment.center,
-          spacing: Gaps.panel,
-          children: [
-            RunBigValue('$before → $after'),
-            ResultBadge(
-              ratingChangeText(after - before),
-              color: after >= before ? Palette.land : Palette.pink,
-            ),
-          ],
-        ),
-        const SizedBox(height: Gaps.small),
-      ],
-      RunValueLine(s.runRatingBefore, before == null ? s.rankUnplaced : '$before'),
-      RunValueLine(forfeit ? s.runColPlayedLike : s.runPlayedLike(scored), '$played'),
-      RunValueLine(s.runNewRating, '$after'),
-      const SizedBox(height: Gaps.section),
-      _ClassBar(rating.after, before: rating.before),
-    ]);
-  }
-}
-
-/// The class the rating is in, as a bar filling toward the next class,
-/// with the rating before marked, and the points still to go.
-class _ClassBar extends StatelessWidget {
-  const _ClassBar(this.rating, {this.before});
-  final double rating;
-  final double? before;
-
-  @override
-  Widget build(BuildContext context) {
-    final s = S.of(context);
-    final band = Rating.bandOf(rating), next = Rating.nextBand(rating);
-    final lo = band.minRating.isFinite ? band.minRating : next!.minRating - RunRatingTuning.openSpan;
-    final hi = next?.minRating ?? lo + RunRatingTuning.openSpan;
-    double at(double r) => ((r - lo) / (hi - lo)).clamp(0.0, 1.0);
-    final was = before;
-    return Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-      SizedBox(
-        height: RunTabsStyle.classBarHeight,
-        child: CustomPaint(painter: _ClassBarPainter(at(rating), was == null || was < lo || was > hi ? null : at(was))),
+    final before = rating.before, after = rating.after;
+    const size = ReviewTileLayout.smallFont;
+    return TileBand([
+      SummaryTile(
+        label: s.reviewBefore.toUpperCase(),
+        big: before == null
+            ? TileFigure(s.rankUnplaced, size: size * SummaryTileLayout.bigSmallFont / SummaryTileLayout.bigFont)
+            : TileFigure('${before.round()}', size: size),
+        note: s.reviewBeforeRun,
+        color: Palette.paper,
       ),
-      const SizedBox(height: Gaps.small),
-      Row(children: [
-        ResultBadge(s.className(band), color: Palette.paper),
-        Expanded(
-          child: Text(
-            next == null ? s.topClassNote : s.runClassGap((hi - rating).ceil(), next, hi.round()),
-            textAlign: TextAlign.center,
-            style: RunTabsStyle.noteStyle.copyWith(color: Palette.ink),
-          ),
+      SummaryTile(
+        label: s.runColPlayedLike.toUpperCase(),
+        big: TileFigure('${rating.performance.round()}', size: size),
+        note: detail.run.forfeit ? s.reviewForfeitZero : s.reviewFromScored(runTimeText(s, detail.run)),
+        color: Palette.seaSoft,
+      ),
+      if (before == null)
+        SummaryTile(
+          label: s.runNewRating.toUpperCase(),
+          big: TileFigure('${after.round()}', size: size),
+          note: s.reviewPlacedHere,
+          color: Palette.sunSoft,
+        )
+      else
+        SummaryTile(
+          label: s.runColChange.toUpperCase(),
+          big: TileFigure(signedPoints(after - before), size: size),
+          note: s.reviewPartWay,
+          color: after >= before ? Palette.landSoft : Palette.pinkSoft,
         ),
-        if (next != null) ResultBadge(s.className(next), muted: true),
-      ]),
-    ]);
+    ], spec: ReviewTileLayout.small, height: ReviewTileLayout.ratingHeight);
   }
 }
 
-class _ClassBarPainter extends CustomPainter {
-  _ClassBarPainter(this.fill, this.before);
-  final double fill;
-  final double? before;
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final rect = Offset.zero & size;
-    canvas.drawRect(rect, Paint()..color = Palette.paper);
-    canvas.drawRect(Rect.fromLTWH(0, 0, size.width * fill, size.height), Paint()..color = Palette.sea);
-    canvas.drawRect(
-        rect.deflate(Strokes.label / 2),
-        Paint()
-          ..style = PaintingStyle.stroke
-          ..strokeWidth = Strokes.label);
-    if (before case final b?) {
-      final x = size.width * b;
-      canvas.drawLine(Offset(x, -RunTabsStyle.tickReach), Offset(x, size.height + RunTabsStyle.tickReach),
-          Paint()..strokeWidth = RunTabsStyle.tickStroke);
-    }
-  }
-
-  @override
-  bool shouldRepaint(_ClassBarPainter old) => old.fill != fill || old.before != before;
-}
-
-/// A forfeit: where it stopped, and why it plays like 0.
-class _Forfeit extends StatelessWidget {
-  const _Forfeit(this.run);
-  final PastRun run;
-
-  @override
-  Widget build(BuildContext context) => RunPanel(color: Palette.pinkSoft, children: [
-        Text(S.of(context).runForfeitText(run.cards), style: RunTabsStyle.lineStyle),
-      ]);
-}
-
-/// D25: the rating over the ranked runs with the class lines, the latest
-/// runs in a table with this one marked, and what stands out about it.
+/// The rating over the ranked runs with the class lines, the latest runs
+/// in a table with this one marked, and what stands out about it; led, for
+/// the placement, by how it placed.
 class _RankedRuns extends StatelessWidget {
   const _RankedRuns(this.detail);
   final RunDetail detail;
@@ -164,18 +139,35 @@ class _RankedRuns extends StatelessWidget {
     final s = S.of(context);
     final runs = detail.rankedRuns;
     final me = detail.run;
+    final rating = detail.rating!;
     final verdict = _verdict(s);
-    return HistorySection(
+    final heading = HistoryHeading(
       title: s.runRankedTitle,
       sub: s.sub?.runRankedTitle,
       note: s.runSoFar(runs.length),
-      child: RunPanel(gap: false, children: [
-        if (runs.length > 1)
+      accent: HistoryRunStyle.headingMark,
+      titleFont: ReviewLayout.headingFont,
+    );
+    final placed = rating.before == null;
+    final scored = runTimeText(s, me);
+    return ReviewSlab(
+      child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+        if (placed) ...[
+          ReviewText(me.forfeit
+              ? s.runPlacementForfeitText(rating.performance.round())
+              : s.runPlacementText(scored, rating.performance.round())),
+          const SizedBox(height: Gaps.section),
+        ],
+        heading,
+        const SizedBox(height: ReviewLayout.headingGap),
+        if (runs.length > 1) ...[
           RatingChart([for (final (_, r) in runs) r.after], mine: runs.indexWhere((r) => r.$1.id == me.id)),
+          const SizedBox(height: Gaps.panel),
+        ],
         RankedRunsTable(runs, highlight: me.id),
         if (verdict != null) ...[
-          const SizedBox(height: Gaps.small),
-          Text(verdict, style: RunTabsStyle.lineStyle),
+          const SizedBox(height: Gaps.panel),
+          Text(verdict, style: ReviewTextStyle.strong),
         ],
       ]),
     );
@@ -192,8 +184,8 @@ class _RankedRuns extends StatelessWidget {
   }
 }
 
-/// D26: the exam and 100-card free play don't move the rating; the exam
-/// says who won.
+/// The exam and 100-card free play don't move the rating; the exam says who
+/// won.
 class _NoRank extends StatelessWidget {
   const _NoRank(this.run);
   final PastRun run;
@@ -209,11 +201,16 @@ class _NoRank extends StatelessWidget {
     } else {
       text = s.runFreeNoRank;
     }
-    return RunPanel(color: exam ? Palette.paper : Palette.seaSoft, children: [
-      TrackedLabel(exam ? s.examRun : s.freePlay, sub: exam ? s.sub?.examRun : s.sub?.freePlay),
-      Text(s.notForRank, style: RunTabsStyle.headlineStyle),
-      const SizedBox(height: Gaps.tight),
-      Text(text, style: RunTabsStyle.lineStyle),
-    ]);
+    return ReviewSlab(
+      flatTop: true,
+      color: exam ? Palette.paper : Palette.seaSoft,
+      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        InkBanner((exam ? s.examRun : s.freePlay).toUpperCase(), fontSize: SummaryHeroLayout.bannerFont),
+        const SizedBox(height: Gaps.panel),
+        Text(s.notForRank, style: ReviewTextStyle.headline),
+        const SizedBox(height: Gaps.small),
+        ReviewText(text),
+      ]),
+    );
   }
 }

@@ -10,8 +10,8 @@ import '../../state/past_runs.dart';
 import '../play/time_format.dart';
 import 'history_widgets.dart';
 
-/// A run page's Every swipe tab (D28): a row per card, under a header that
-/// stays put: its number, kimariji, way up, time, usual time, the
+/// A run page's Swipes tab: one panel of a row per card, under a head row
+/// that stays put: its number, kimariji, way up, time, usual time, the
 /// difference and the time into the run.
 class RunSwipesTab extends StatelessWidget {
   const RunSwipesTab(this.detail, {super.key});
@@ -22,23 +22,26 @@ class RunSwipesTab extends StatelessWidget {
     final s = S.of(context);
     final rows = [for (final w in detail.swipes) if (!w.undone) w];
     final penalty = detail.run.penaltyMs;
+    const side = BorderSide(color: Palette.ink, width: Strokes.panel);
     return CustomScrollView(slivers: [
       SliverPadding(
-        padding: const EdgeInsets.fromLTRB(Gaps.gutter, Gaps.section, Gaps.gutter, 0),
-        sliver: SliverToBoxAdapter(
-          child: Padding(
-            padding: const EdgeInsets.only(bottom: Gaps.small),
-            child: HistoryHeading(
-              title: s.runSwipesTitle,
-              sub: s.sub?.runSwipesTitle,
-              note: s.runSwipesCount(rows.length),
+        padding: const EdgeInsets.fromLTRB(Gaps.gutter, ReviewLayout.topGap, Gaps.gutter, ReviewLayout.bottomGap),
+        sliver: SliverMainAxisGroup(slivers: [
+          SliverToBoxAdapter(
+            child: DecoratedBox(
+              decoration: const BoxDecoration(
+                  color: Palette.paper, border: Border(top: side, left: side, right: side)),
+              child: Padding(
+                padding: ReviewTableStyle.panelHeadPadding,
+                child: HistoryHeading(
+                  title: s.runSwipesTitle,
+                  sub: s.sub?.runSwipesTitle,
+                  note: s.runSwipesCount(rows.length),
+                  titleFont: ReviewLayout.headingFont,
+                ),
+              ),
             ),
           ),
-        ),
-      ),
-      SliverPadding(
-        padding: const EdgeInsets.symmetric(horizontal: Gaps.gutter),
-        sliver: SliverMainAxisGroup(slivers: [
           SliverPersistentHeader(pinned: true, delegate: _HeadDelegate(MediaQuery.textScalerOf(context))),
           SliverList.builder(
             itemCount: rows.length,
@@ -46,21 +49,43 @@ class RunSwipesTab extends StatelessWidget {
               final w = rows[i];
               final usual = detail.usualMs[ItemKey(w.poemId, w.inverted).id];
               final at = i + 1 < detail.timeline.ms.length ? detail.timeline.ms[i + 1] : null;
-              return _Row(
-                number: i + 1,
-                swipe: w,
-                usualMs: usual,
-                atMs: at,
-                penaltyMs: penalty,
-                rule: (i + 1) % HistoryRunStyle.ruleEvery == 0,
+              return _Sides(
+                child: _Row(
+                  number: i + 1,
+                  swipe: w,
+                  usualMs: usual,
+                  atMs: at,
+                  penaltyMs: penalty,
+                  rule: (i + 1) % HistoryRunStyle.ruleEvery == 0,
+                ),
               );
             },
           ),
+          const SliverToBoxAdapter(
+            child: DecoratedBox(
+              decoration: BoxDecoration(color: Palette.paper, border: Border(bottom: side, left: side, right: side)),
+              child: SizedBox(height: ReviewTableStyle.panelFoot),
+            ),
+          ),
         ]),
       ),
-      const SliverToBoxAdapter(child: SizedBox(height: Gaps.gutter)),
     ]);
   }
+}
+
+/// The panel's sides around a row of the table, inset from them.
+class _Sides extends StatelessWidget {
+  const _Sides({required this.child});
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) => DecoratedBox(
+        decoration: const BoxDecoration(
+          color: Palette.paper,
+          border: Border.symmetric(vertical: BorderSide(color: Palette.ink, width: Strokes.panel)),
+        ),
+        child: Padding(padding: ReviewTableStyle.panelInset, child: child),
+      );
 }
 
 /// The table's columns, shared by the header and every row.
@@ -151,8 +176,6 @@ class _Row extends StatelessWidget {
         color: w.miss ? HistoryRunStyle.missRow : null,
         border: Border(
           bottom: BorderSide(color: rule ? Palette.ink : ChartStyle.grid, width: rule ? Strokes.label : 1),
-          left: const BorderSide(color: Palette.ink, width: Strokes.label),
-          right: const BorderSide(color: Palette.ink, width: Strokes.label),
         ),
       ),
       alignment: Alignment.centerLeft,
@@ -184,7 +207,8 @@ class _HeadDelegate extends SliverPersistentHeaderDelegate {
   @override
   Widget build(BuildContext context, double shrinkOffset, bool overlapsContent) {
     final s = S.of(context);
-    return Container(
+    return _Sides(
+      child: Container(
       color: HistoryRunStyle.headRow,
       alignment: Alignment.centerLeft,
       child: _Cells(
@@ -194,6 +218,7 @@ class _HeadDelegate extends SliverPersistentHeaderDelegate {
             fontSize: HistoryRunStyle.labelFont,
             letterSpacing: HistoryRunStyle.labelTracking,
             color: Palette.paper),
+      ),
       ),
     );
   }

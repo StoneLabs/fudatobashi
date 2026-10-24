@@ -402,9 +402,9 @@ class HeadlinePanel extends StatelessWidget {
   }
 }
 
-/// A rubber stamp on a headline, tilted, with a double ring: a best, a
-/// placement, a finished set, a game not scored. [sub] is the small line
-/// under it (the other language in Japanese).
+/// A rubber stamp on a run's hero, tilted, with a double ring: a best, a
+/// placement, a level gained, a level cleared or failed, a game not
+/// scored. [sub] is the small line under it.
 class RunStamp extends StatelessWidget {
   const RunStamp(this.text, {super.key, this.sub, this.color = Palette.pinkDeep});
   final String text;
@@ -413,31 +413,33 @@ class RunStamp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => MediaQuery.withClampedTextScaling(
-        maxScaleFactor: HeadlineStyle.stampMaxScale,
+        maxScaleFactor: RunStampStyle.maxScale,
         child: Transform.rotate(
-          angle: HeadlineStyle.stampTilt * math.pi / 180,
+          angle: RunStampStyle.tilt * math.pi / 180,
           child: Container(
-            padding: const EdgeInsets.all(HeadlineStyle.stampRingGap),
+            padding: const EdgeInsets.all(RunStampStyle.ringGap),
             decoration: BoxDecoration(
-              color: HeadlineStyle.stampPaper,
-              border: Border.all(color: color, width: HeadlineStyle.stampBorder),
+              color: RunStampStyle.paper,
+              border: Border.all(color: color, width: RunStampStyle.border),
             ),
             child: Container(
-              padding: HeadlineStyle.stampPadding,
-              decoration: BoxDecoration(border: Border.all(color: color, width: HeadlineStyle.stampRing)),
+              padding: RunStampStyle.padding,
+              decoration: BoxDecoration(border: Border.all(color: color, width: RunStampStyle.ring)),
               child: Column(mainAxisSize: MainAxisSize.min, children: [
-                Text(text,
+                Text(text.toUpperCase(),
                     maxLines: 1,
-                    style: TextStyle(fontFamily: Fonts.display, fontSize: HeadlineStyle.stampFont, height: 1.1, color: color)),
-                if (sub case final sub?)
+                    style: TextStyle(fontFamily: Fonts.display, fontSize: RunStampStyle.font, height: 1, color: color)),
+                if (sub case final sub?) ...[
+                  const SizedBox(height: RunStampStyle.subGap),
                   Text(sub.toUpperCase(),
                       maxLines: 1,
                       style: TextStyle(
                           fontWeight: Weights.black,
-                          fontSize: HeadlineStyle.stampSubFont,
-                          letterSpacing: HeadlineStyle.stampSubTracking,
-                          height: 1.2,
+                          fontSize: RunStampStyle.subFont,
+                          letterSpacing: RunStampStyle.subTracking,
+                          height: 1,
                           color: color)),
+                ],
               ]),
             ),
           ),
@@ -552,4 +554,18 @@ String runTimeText(S s, PastRun run) => switch (run.time) {
 String ratingChangeText(num change) {
   final n = change.round();
   return '${n > 0 ? '▲' : n < 0 ? '▼' : '±'}${n.abs()}';
+}
+
+/// An ink-bordered panel of History and Stats, its [children] in a column.
+class RunPanel extends StatelessWidget {
+  const RunPanel({super.key, required this.children});
+  final List<Widget> children;
+
+  @override
+  Widget build(BuildContext context) => MangaPanel(
+        border: RunTabsStyle.panelBorder,
+        padding: RunTabsStyle.panelPadding,
+        shadow: HistoryRunStyle.panelShadow,
+        child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: children),
+      );
 }

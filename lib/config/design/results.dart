@@ -65,6 +65,7 @@ class HeroMetrics {
     required this.tobi,
     required this.stampAt,
     this.topStampInset = Offset.zero,
+    this.bodyWidth = SummaryHeroLayout.bodyWidth,
   });
 
   final double countTop, countFont;
@@ -80,6 +81,9 @@ class HeroMetrics {
   /// A stamp's top left over the bar, or how far one at the top right keeps
   /// from that corner.
   final Offset stampAt, topStampInset;
+
+  /// The width the answer takes, left of Tobi.
+  final double bodyWidth;
 }
 
 /// The summary's hero (`SummaryHero`): the banner, the big answer, the bar

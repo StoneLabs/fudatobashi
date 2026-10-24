@@ -7,6 +7,7 @@ import '../../config/vector_art.dart';
 import 'buttons.dart';
 import 'pressable.dart';
 import 'seeded_random.dart';
+import 'vector.dart';
 
 /// Shout outlines, cached per spec and size.
 abstract final class ShoutPath {
@@ -97,6 +98,7 @@ class ShoutButton extends StatelessWidget {
     this.pressedColor = Palette.pinkDeep,
     this.fontSize = ShoutStyle.font,
     this.arrow = true,
+    this.icon,
     this.sub,
     this.subFontSize = ShoutStyle.subFont,
     this.inset,
@@ -109,6 +111,9 @@ class ShoutButton extends StatelessWidget {
   final Color pressedColor;
   final double fontSize;
   final bool arrow;
+
+  /// An icon before the lettering.
+  final VectorArt? icon;
   final String? sub;
   final double subFontSize;
 
@@ -150,6 +155,10 @@ class ShoutButton extends StatelessWidget {
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
+                if (icon case final icon?) ...[
+                  MangaIcon(icon, size: ShoutStyle.icon, strokeWidth: ShoutStyle.iconStroke),
+                  const SizedBox(width: ShoutStyle.gap),
+                ],
                 Flexible(
                   child: FittedBox(
                     fit: BoxFit.scaleDown,

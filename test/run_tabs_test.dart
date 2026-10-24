@@ -25,6 +25,7 @@ import 'package:fudatobashi/state/scope.dart';
 import 'package:fudatobashi/ui/history/run_overview_tab.dart';
 import 'package:fudatobashi/ui/history/run_rating_tab.dart';
 import 'package:fudatobashi/ui/history/run_speed_tab.dart';
+import 'package:fudatobashi/ui/history/review_parts.dart';
 import 'package:fudatobashi/ui/history/run_xp_tab.dart';
 import 'package:fudatobashi/ui/manga/theme.dart';
 import 'package:fudatobashi/ui/play/time_format.dart';
@@ -197,7 +198,7 @@ void main() {
         expect(training.run.view, RunView.training);
         await show(tester, p, RunXpTab(training), 'xp_training');
         expect(find.text(s.runTrainingNoRank), findsOneWidget);
-        expect(find.byType(XpPanel), findsOneWidget);
+        expect(find.byType(XpHero), findsOneWidget);
         await tester.pumpWidget(const SizedBox());
       });
     }

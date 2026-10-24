@@ -121,6 +121,9 @@ abstract final class HistoryRunStyle {
 abstract final class RunChartStyle {
   static const double timeGraphMinHeight = 180;
   static const double barChartHeight = 130;
+
+  /// A training run's speed chart, shorter to leave room for its counts.
+  static const double shortBarChartHeight = 84;
   static const double labelFont = 10.5;
   static const double valueFont = 9.5;
   static const double labelGap = 4;
@@ -131,6 +134,10 @@ abstract final class RunChartStyle {
   static const Color reference = Color(0xFFBDB9B2);
   static const double missDot = 3.6;
   static const double endMark = 6;
+
+  /// The run's end time, left of its mark on a paper halo.
+  static const double endLabelGap = 4;
+  static const double labelHalo = 4;
   static const double guideStroke = 2;
 
   /// Gridline steps to choose from: cards across, ms down, ms up a bar
@@ -348,6 +355,7 @@ abstract final class RunTabsStyle {
 
   /// The 決まり字 length rows: label and bar shares of the row, the bar,
   /// the value's width at text scale 1, and room past the longest bar.
+  static const double lengthRowGap = 6;
   static const int lengthLabelFlex = 4;
   static const int lengthBarFlex = 6;
   static const double lengthBarHeight = 12;

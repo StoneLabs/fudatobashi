@@ -14,7 +14,6 @@ import '../../state/past_runs.dart';
 import '../../state/scope.dart';
 import '../history/history_widgets.dart';
 import '../history/run_page.dart';
-import '../history/run_xp_tab.dart';
 import '../manga/manga.dart';
 import '../results/celebrations.dart';
 import '../results/rank_up_overlay.dart';
@@ -62,7 +61,7 @@ class RankScreen extends StatelessWidget {
             title: s.rankRatingTitle,
             sub: s.sub?.rankRatingTitle,
             note: s.runSoFar(history.length),
-            child: RunPanel(gap: false, children: [RatingChart([for (final (_, r) in history) r.after])]),
+            child: RunPanel(children: [RatingChart([for (final (_, r) in history) r.after])]),
           ),
         HistorySection(
           title: s.rankClassesTitle,
@@ -88,7 +87,7 @@ class RankScreen extends StatelessWidget {
           HistorySection(
             title: s.runRankedTitle,
             sub: s.sub?.runRankedTitle,
-            child: RunPanel(gap: false, children: [RankedRunsTable(history, onOpen: (run) => openRun(context, run))]),
+            child: RunPanel(children: [RankedRunsTable(history, onOpen: (run) => openRun(context, run))]),
           ),
       ]),
     );

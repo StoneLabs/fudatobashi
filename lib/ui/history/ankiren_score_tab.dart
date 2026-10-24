@@ -8,7 +8,7 @@ import '../../l10n/strings.dart';
 import '../rank/rank_badges.dart';
 import 'ankiren_widgets.dart';
 import 'history_widgets.dart';
-import 'run_xp_tab.dart';
+import 'review_parts.dart';
 
 /// A ranked 暗記練 game's Score & XP: how the score was made (D37), what it
 /// did to 暗記練's rating and class (D38, ranked games only) and the XP it
@@ -27,7 +27,7 @@ class AnkirenScoreTab extends StatelessWidget {
         _RatingPanel(review, before: before, after: after),
         const SizedBox(height: HistoryRunStyle.sectionGap),
       ],
-      XpPanel(review.xp?.award.total == 0 ? null : review.xp),
+      ...xpParts(S.of(context), review.xp),
     ]);
   }
 }
@@ -124,9 +124,9 @@ class _RatingPanel extends StatelessWidget {
       child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
         TrackedLabel(s.ankirenRatingHead, sub: s.sub?.ankirenRatingHead),
         const SizedBox(height: Gaps.small),
-        RunValueLine(s.ankirenPreviousRating, r(before)),
-        RunValueLine(s.ankirenPlayedLike, r(played)),
-        RunValueLine(s.ankirenNewRating, '${r(after)}  ${ratingChangeText(after - before)}', total: true),
+        ValueLine(s.ankirenPreviousRating, r(before)),
+        ValueLine(s.ankirenPlayedLike, r(played)),
+        ValueLine(s.ankirenNewRating, '${r(after)}  ${ratingChangeText(after - before)}', total: true),
         const SizedBox(height: Gaps.panel),
         Row(children: [
           ClassBadge(progress.band,
