@@ -646,11 +646,11 @@ void main() {
     await show(tester, p, 'known_due');
   });
 
-  // A three-digit 苦手 count stayed at its two-digit spot and ran off the
-  // panel's right edge, and an unranked rating box left the streak box too
-  // short for its "1 swipe keeps it" line.
+  // A three-digit 苦手 count, and the unranked rating and the streak in the
+  // cards at the rank map's foot, fit on a narrow phone at a large font
+  // scale.
   for (final (width, fontScale) in const [(384.0, 1.0), (360.0, 1.3)]) {
-    testWidgets('home, all known: a three-digit 苦手 count and the streak box fit ($width dp, font scale $fontScale)',
+    testWidgets('home, all known: a three-digit 苦手 count and the streak card fit ($width dp, font scale $fontScale)',
         (tester) async {
       tester.platformDispatcher.textScaleFactorTestValue = fontScale;
       addTearDown(tester.platformDispatcher.clearTextScaleFactorTestValue);
@@ -679,14 +679,18 @@ void main() {
       expect(tester.takeException(), isNull);
       await captureScreen(tester, 'known_weak');
       final badge = tester.getRect(find.byType(CountBadge));
-      expect(badge.right, lessThanOrEqualTo(width - Gaps.gutter - Strokes.panel), reason: 'inside the 苦手 panel');
+      final weak = tester.getRect(find.ancestor(of: find.byType(CountBadge), matching: find.byType(HomeRowButton)));
+      expect(weak.contains(badge.topLeft) && weak.contains(badge.bottomRight), isTrue, reason: 'inside the 苦手 button');
       final title = tester.getRect(find.text(const S('en').weakLettering));
-      expect(title.right, lessThanOrEqualTo(badge.left), reason: 'the lettering keeps clear of the badge');
-      final streak = tester.getRect(find.ancestor(of: find.byType(TallyMarks), matching: find.byType(MangaPanel)).first);
+      expect(title.left, greaterThanOrEqualTo(badge.right), reason: 'the lettering keeps clear of the badge');
+      expect(title.right, lessThanOrEqualTo(weak.right));
+      final card = find.ancestor(of: find.byType(TallyMarks), matching: find.byType(DecoratedBox)).first;
+      final streak = tester.getRect(card);
       final inside = streak.deflate(Strokes.panel);
-      for (final text in [find.text(const S('en').streakKeep), find.byType(TallyMarks)]) {
-        final r = tester.getRect(text);
-        expect(inside.contains(r.topCenter) && inside.contains(r.bottomCenter), isTrue, reason: '$text $r in $streak');
+      final days = find.descendant(of: card, matching: find.byType(NumberedText));
+      for (final part in [days, find.byType(TallyMarks)]) {
+        final r = tester.getRect(part);
+        expect(inside.contains(r.topCenter) && inside.contains(r.bottomCenter), isTrue, reason: '$part $r in $streak');
       }
       await tester.pumpWidget(const SizedBox());
     });
@@ -1434,7 +1438,7 @@ void main() {
     });
   }
 
-  testWidgets('rank ladder: open from the Home rating panel', (tester) async {
+  testWidgets('rank ladder: open from the Home rating card', (tester) async {
     final p = await open(tester, mode: LearningMode.allKnown);
     await tester.binding.setSurfaceSize(_phone);
     await tester.pumpWidget(RepaintBoundary(key: const ValueKey('screen'), child: FudatobashiApp(progress: p)));
@@ -1442,7 +1446,7 @@ void main() {
     expect(tester.takeException(), isNull);
 
     final s = S('en');
-    await tester.tap(find.text(s.ratingLabel));
+    await tester.tap(find.text(s.rankUnplaced));
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 500));
     expect(tester.takeException(), isNull);
@@ -4006,8 +4010,7 @@ void main() {
             expect(tester.takeException(), isNull);
             expect(find.byType(RankedHero), findsOneWidget);
             expect(find.text(s.rankUnplaced), findsOneWidget);
-            expect(find.text(s.rankedUnplacedLine), findsOneWidget);
-            expect(find.text(s.notForRank), findsNWidgets(2));
+            expect(find.text(s.rankFirstRun), findsOneWidget);
             await captureScreen(tester, 'known_home_unplaced', lang: lang);
 
             await tester.tap(find.text(s.shoutRanked));

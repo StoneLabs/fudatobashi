@@ -22,6 +22,10 @@ class TrainingHero extends StatelessWidget {
 
   static const _toneFade = ToneLayer(Tones.pink, fadeAngle: Backdrops.heroToneAngle, fadeStops: Backdrops.heroToneStops);
 
+  /// The compact (journey) panel's backdrop, which all-known Home's ランク戦
+  /// hero shares.
+  static const compactArt = [FillLayer(Palette.paper), BurstLayer(Bursts.journeyHero), _toneFade];
+
   @override
   Widget build(BuildContext context) {
     final s = S.of(context);
@@ -40,7 +44,7 @@ class TrainingHero extends StatelessWidget {
                 ? const PanelShape(topLeft: Offset(0, HomeLayout.journeyHeroCut))
                 : const PanelShape(bottomRight: Offset(0, HomeLayout.heroCut)),
             art: compact
-                ? const [FillLayer(Palette.paper), BurstLayer(Bursts.journeyHero), _toneFade]
+                ? compactArt
                 : const [
                     RadialLayer(center: Backdrops.heroCenter, colors: Backdrops.heroColors, stops: Backdrops.heroStops),
                     BurstLayer(Bursts.hero),

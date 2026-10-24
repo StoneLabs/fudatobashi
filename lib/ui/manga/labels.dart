@@ -106,7 +106,7 @@ class InkBanner extends StatelessWidget {
 }
 
 /// A slightly tilted coloured sticker with a border, ink unless given
-/// another [borderColor].
+/// another [borderColor], and a hard ink [shadow] when given one.
 class Sticker extends StatelessWidget {
   const Sticker({
     super.key,
@@ -116,6 +116,7 @@ class Sticker extends StatelessWidget {
     this.tilt = Tilt.sticker,
     this.padding = StickerStyle.padding,
     this.border = Strokes.control,
+    this.shadow = Offset.zero,
   });
 
   final Widget child;
@@ -125,12 +126,17 @@ class Sticker extends StatelessWidget {
   final double tilt;
   final EdgeInsets padding;
   final double border;
+  final Offset shadow;
 
   @override
   Widget build(BuildContext context) => Transform.rotate(
         angle: tilt * math.pi / 180,
         child: DecoratedBox(
-          decoration: BoxDecoration(color: color, border: Border.all(color: borderColor, width: border)),
+          decoration: BoxDecoration(
+            color: color,
+            border: Border.all(color: borderColor, width: border),
+            boxShadow: [if (shadow != Offset.zero) BoxShadow(color: Palette.ink, offset: shadow)],
+          ),
           child: Padding(padding: padding, child: child),
         ),
       );
@@ -147,15 +153,18 @@ class CountBadge extends StatelessWidget {
   Widget build(BuildContext context) => Container(
         constraints: const BoxConstraints(minWidth: StickerStyle.badgeSize, minHeight: StickerStyle.badgeSize),
         padding: const EdgeInsets.symmetric(horizontal: StickerStyle.badgePadding),
-        alignment: Alignment.center,
         decoration: BoxDecoration(
           color: color,
           border: Border.all(color: Palette.ink, width: Strokes.control),
           borderRadius: BorderRadius.circular(StickerStyle.badgeSize / 2),
         ),
-        child: Text(
-          '$count',
-          style: const TextStyle(fontFamily: Fonts.display, fontSize: StickerStyle.badgeFont, height: 1),
+        child: Center(
+          widthFactor: 1,
+          heightFactor: 1,
+          child: Text(
+            '$count',
+            style: const TextStyle(fontFamily: Fonts.display, fontSize: StickerStyle.badgeFont, height: 1),
+          ),
         ),
       );
 }

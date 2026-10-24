@@ -6,6 +6,9 @@ extension HomeStrings on S {
   /// language rather than translated.
   String get brandSub => 'FUDATOBASHI';
   String get journeyBanner => t('journeyBanner');
+  String get rankBanner => t('rankBanner');
+  String rankClasses(int n) => f('rankClasses', [n]);
+  String get rankFirstRun => t('rankFirstRun');
   String get trainingBanner => t('trainingBanner');
   String get shoutStart => t('shoutStart');
   String get islandOf => t('islandOf');
@@ -26,7 +29,6 @@ extension HomeStrings on S {
   String get nigateEmpty => t('nigateEmpty');
   String get nigateNone => t('nigateNone');
   String get guestTitle => t('guestTitle');
-  String get guestMode => t('guestMode');
   String get untrackedTag => t('untrackedTag');
   String get guestShort => t('guestShort');
   String get guestConfirmTitle => t('guestConfirmTitle');

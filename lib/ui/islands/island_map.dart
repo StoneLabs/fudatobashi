@@ -73,6 +73,7 @@ class IslandPlate {
     this.emphasis = false,
     this.fontSize = MapStyle.plateFont,
     this.chipMark,
+    this.mark,
   });
 
   final String name;
@@ -89,6 +90,9 @@ class IslandPlate {
   /// slowest island).
   final Color? chipMark;
 
+  /// Art at the plate's end (the rank ladder's goal star).
+  final VectorArt? mark;
+
   @override
   bool operator ==(Object other) =>
       other is IslandPlate &&
@@ -101,11 +105,12 @@ class IslandPlate {
       other.dashed == dashed &&
       other.emphasis == emphasis &&
       other.fontSize == fontSize &&
-      other.chipMark == chipMark;
+      other.chipMark == chipMark &&
+      other.mark == mark;
 
   @override
   int get hashCode => Object.hash(
-      name, background, foreground, chip, chipBackground, chipForeground, dashed, emphasis, fontSize, chipMark);
+      name, background, foreground, chip, chipBackground, chipForeground, dashed, emphasis, fontSize, chipMark, mark);
 }
 
 /// How one island is drawn.
@@ -143,18 +148,27 @@ class IslandStyle {
       flag, pulse);
 }
 
-/// The journey route: sailed (pink, dashed) up to island [reached], then
-/// dotted onward through every later island.
+/// The route: sailed (pink, dashed) from the harbour up to island
+/// [reached] (none of them at -1) and on to [stop] when given, then dotted
+/// onward through every later island.
 @immutable
 class IslandRoute {
-  const IslandRoute(this.reached);
+  const IslandRoute(this.reached, {this.harbour = MapStyle.routeStart, this.stop})
+      : assert(reached >= 0 || stop != null, 'a route short of the first island stops somewhere');
   final int reached;
 
-  @override
-  bool operator ==(Object other) => other is IslandRoute && other.reached == reached;
+  /// Where the route starts, relative to the first island's centre.
+  final Offset harbour;
+
+  /// Where the sailed part ends past island [reached], in map units.
+  final Offset? stop;
 
   @override
-  int get hashCode => reached.hashCode;
+  bool operator ==(Object other) =>
+      other is IslandRoute && other.reached == reached && other.harbour == harbour && other.stop == stop;
+
+  @override
+  int get hashCode => Object.hash(reached, harbour, stop);
 }
 
 /// The archipelago map. Shared by the Home journey and Stats: every island is
@@ -174,9 +188,10 @@ class IslandMap extends StatefulWidget {
     this.sea = true,
     this.tideColor = Palette.pink,
     this.onIslandTap,
+    this.chart,
   });
 
-  /// One style per island of [archipelago], in order.
+  /// One style per island of [chart], in order.
   final List<IslandStyle> styles;
   final Rect? viewport;
   final BoxFit fit;
@@ -191,15 +206,8 @@ class IslandMap extends StatefulWidget {
   final Color tideColor;
   final ValueChanged<int>? onIslandTap;
 
-  /// The route's path through [islands] up to [end] (inclusive), starting at
-  /// the harbour below the first island when [fromHarbour].
-  static Path routePath(List<IslandShape> islands, int from, int end, {bool fromHarbour = false}) {
-    final pts = [
-      if (fromHarbour) islands.first.center + MapStyle.routeStart,
-      for (var i = from; i <= end && i < islands.length; i++) islands[i].center,
-    ];
-    return _catmullRom(pts);
-  }
+  /// The islands and their sea, [archipelago] unless given.
+  final Archipelago? chart;
 
   static Path _catmullRom(List<Offset> p) {
     final path = Path();
@@ -269,8 +277,8 @@ class _IslandMapState extends State<IslandMap> with SingleTickerProviderStateMix
   @override
   Widget build(BuildContext context) {
     final dpr = MediaQuery.devicePixelRatioOf(context);
-    final spec = _MapSpec(widget.styles, widget.viewport, widget.fit, widget.route, widget.boat,
-        widget.sea ? widget.seaSeed : null);
+    final spec = _MapSpec(widget.chart ?? archipelago, widget.styles, widget.viewport, widget.fit, widget.route,
+        widget.boat, widget.sea ? widget.seaSeed : null);
     return LayoutBuilder(builder: (context, box) {
       final size = box.biggest;
       final xf = spec.transform(size);
@@ -312,7 +320,8 @@ class _MapTransform {
 }
 
 class _MapSpec {
-  _MapSpec(this.styles, this.viewport, this.fit, this.route, this.boat, this.seaSeed);
+  _MapSpec(this.chart, this.styles, this.viewport, this.fit, this.route, this.boat, this.seaSeed);
+  final Archipelago chart;
   final List<IslandStyle> styles;
   final Rect? viewport;
   final BoxFit fit;
@@ -322,10 +331,20 @@ class _MapSpec {
   /// Null: no sea.
   final int? seaSeed;
 
-  List<IslandShape> get islands => archipelago.islands;
+  List<IslandShape> get islands => chart.islands;
+
+  /// [island]'s coastline in map units.
+  static Path coastOf(IslandShape island) => _coasts[island] ??= island.scale == 1 && island.shift == Offset.zero
+      ? SvgPath.parse(island.pathData)
+      : SvgPath.parse(island.pathData)
+          .transform((Matrix4.identity()
+                ..translateByDouble(island.shift.dx, island.shift.dy, 0, 1)
+                ..scaleByDouble(island.scale, island.scale, 1, 1))
+              .storage);
+  static final _coasts = Expando<Path>();
 
   _MapTransform transform(Size size) {
-    final vp = viewport ?? Offset.zero & archipelago.size;
+    final vp = viewport ?? Offset.zero & chart.size;
     final sx = size.width / vp.width, sy = size.height / vp.height;
     final s = fit == BoxFit.contain ? math.min(sx, sy) : math.max(sx, sy);
     final offset = Offset((size.width - vp.width * s) / 2, (size.height - vp.height * s) / 2) - vp.topLeft * s;
@@ -340,7 +359,7 @@ class _MapSpec {
       }
     }
     for (final isl in islands) {
-      if (SvgPath.parse(isl.pathData).contains(p)) return isl.index;
+      if (coastOf(isl).contains(p)) return isl.index;
     }
     for (final isl in islands) {
       if (isl.bounds.inflate(MapStyle.tapSlop).contains(p)) return isl.index;
@@ -353,6 +372,7 @@ class _MapSpec {
   @override
   bool operator ==(Object other) =>
       other is _MapSpec &&
+      identical(other.chart, chart) &&
       listEquals(other.styles, styles) &&
       other.viewport == viewport &&
       other.fit == fit &&
@@ -361,7 +381,7 @@ class _MapSpec {
       other.seaSeed == seaSeed;
 
   @override
-  int get hashCode => Object.hash(Object.hashAll(styles), viewport, fit, route, boat, seaSeed);
+  int get hashCode => Object.hash(identityHashCode(chart), Object.hashAll(styles), viewport, fit, route, boat, seaSeed);
 }
 
 /// The map's sea: [Tones.mapSea] with white wave squiggles.
@@ -441,7 +461,7 @@ class _LayerPainter extends CustomPainter {
     switch (layer) {
       case _Layer.below:
         if (spec.seaSeed != null) {
-          Sea.paint(canvas, xf.toMap(Offset.zero) & (size / xf.scale), Offset.zero & archipelago.size, ratio,
+          Sea.paint(canvas, xf.toMap(Offset.zero) & (size / xf.scale), Offset.zero & spec.chart.size, ratio,
               spec.seaSeed!);
         }
         _paintRoute(canvas);
@@ -460,9 +480,18 @@ class _LayerPainter extends CustomPainter {
       ..strokeWidth = MapStyle.routeStroke
       ..strokeCap = StrokeCap.round
       ..color = c;
-    final sailed = IslandMap.routePath(islands, 0, route.reached, fromHarbour: true);
+    final reached = route.reached;
+    final stop = route.stop;
+    final sailed = IslandMap._catmullRom([
+      islands.first.center + route.harbour,
+      for (var i = 0; i <= reached; i++) islands[i].center,
+      ?stop,
+    ]);
     canvas.drawPath(Dashes.of(sailed, MapStyle.routeDoneDash), pen(Palette.pink));
-    final ahead = IslandMap.routePath(islands, route.reached, islands.length - 1);
+    final ahead = IslandMap._catmullRom([
+      stop ?? islands[reached].center,
+      for (var i = reached + 1; i < islands.length; i++) islands[i].center,
+    ]);
     canvas.drawPath(Dashes.of(ahead, MapStyle.routeAheadDash), pen(Palette.paper));
   }
 
@@ -471,7 +500,7 @@ class _LayerPainter extends CustomPainter {
     for (final isl in islands) {
       final style = spec.styles[isl.index];
       if (style.look == IslandLook.hidden) continue;
-      final coast = SvgPath.parse(isl.pathData)..fillType = PathFillType.evenOdd;
+      final coast = _MapSpec.coastOf(isl)..fillType = PathFillType.evenOdd;
       if (style.look == IslandLook.land) {
         canvas.drawPath(
           coast,
@@ -504,7 +533,7 @@ class _LayerPainter extends CustomPainter {
     }
     for (final isl in islands) {
       final plate = spec.styles[isl.index].plate;
-      if (plate != null) _PlateGeometry.of(plate, isl.label).paint(canvas);
+      if (plate != null) _PlateGeometry.of(plate, isl.label).paint(canvas, ratio);
     }
     final boat = spec.boat;
     if (boat != null) VectorPainter.paint(canvas, MapArt.boat, IslandMap.boatRect(boat), pixelRatio: ratio);
@@ -590,7 +619,8 @@ class _PlateGeometry {
       chipW = chip.width + MapStyle.chipPad;
     }
     final h = fs + MapStyle.plateExtraHeight;
-    final w = MapStyle.platePad * 2 + name.width + (chip == null ? 0 : MapStyle.chipGap + chipW);
+    final markW = p.mark == null ? 0.0 : MapStyle.chipGap + fs * MapStyle.markScale;
+    final w = MapStyle.platePad * 2 + name.width + (chip == null ? 0 : MapStyle.chipGap + chipW) + markW;
     final rect = Rect.fromCenter(center: at, width: w, height: h);
     final chipRect = chip == null
         ? null
@@ -599,7 +629,7 @@ class _PlateGeometry {
     return _PlateGeometry(p, rect, name, chip, chipRect);
   }
 
-  void paint(Canvas canvas) {
+  void paint(Canvas canvas, double pixelRatio) {
     final rr = RRect.fromRectAndRadius(rect, const Radius.circular(MapStyle.plateRadius));
     canvas.drawRRect(rr, Paint()..color = plate.background);
     final border = Paint()
@@ -620,6 +650,11 @@ class _PlateGeometry {
           ..color = Palette.ink,
       );
       chip!.paint(canvas, chipRect!.center - Offset(chip!.width / 2, chip!.height / 2));
+    }
+    if (plate.mark case final mark?) {
+      final side = plate.fontSize * MapStyle.markScale;
+      final at = Offset(rect.right - MapStyle.platePad - side, rect.center.dy - side / 2);
+      VectorPainter.paint(canvas, mark, at & Size.square(side), pixelRatio: pixelRatio);
     }
   }
 }

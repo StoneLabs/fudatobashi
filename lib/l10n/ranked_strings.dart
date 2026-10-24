@@ -44,18 +44,9 @@ extension RankedStrings on S {
   String get rankLockedSwitchBody => t('rankLockedSwitchBody');
 
   // All-known Home's ランク戦, ranked Results and the placement page.
-  String get rankedChipAll => t('rankedChipAll');
-  String get rankedChipMixed => t('rankedChipMixed');
-  String get rankedChipNoMask => t('rankedChipNoMask');
-  String get rankedChipCounts => t('rankedChipCounts');
-
-  /// "Rating {0} · {1} to {band}": the rating and the points to [band].
-  String rankedRatingLine(String band) => t('rankedRatingLine').replaceAll('{band}', band);
-  String get rankedRatingTop => t('rankedRatingTop');
   String get rankedUnplacedLine => t('rankedUnplacedLine');
   String get shoutRanked => t('shoutRanked');
   String get notForRank => t('notForRank');
-  String get streakKeep => t('streakKeep');
   String get rankUnplaced => t('rankUnplaced');
   String get rankLockedKnown => t('rankLockedKnown');
   String get rankedScoredTime => t('rankedScoredTime');

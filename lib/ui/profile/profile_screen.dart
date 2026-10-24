@@ -16,7 +16,6 @@ import '../../l10n/side_trip_strings.dart';
 import '../../l10n/strings.dart';
 import '../../state/scope.dart';
 import '../home/home_widgets.dart';
-import '../home/ranked_hero.dart';
 import '../manga/manga.dart';
 import '../rank/rank_badges.dart';
 

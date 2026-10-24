@@ -20,6 +20,8 @@ class IslandShape {
     required this.label,
     required this.dotRadius,
     required this.sites,
+    this.scale = 1,
+    this.shift = Offset.zero,
   });
 
   final int index;
@@ -38,6 +40,30 @@ class IslandShape {
   /// Radius of a card dot on this island.
   final double dotRadius;
   final List<IslandSite> sites;
+
+  /// How [pathData] lies on the chart: [scale] times its size, then moved
+  /// by [shift]. The other geometry is in chart units already.
+  final double scale;
+  final Offset shift;
+
+  /// This island's coast [scale] times its size, centred on [at], as island
+  /// [index] of another chart (a class of the rank ladder), with its plate
+  /// at [label].
+  IslandShape placed(int index, Offset at, double scale, {required Offset label}) {
+    Offset map(Offset p) => at + (p - center) * scale;
+    return IslandShape(
+      index: index,
+      name: name,
+      pathData: pathData,
+      center: at,
+      bounds: Rect.fromPoints(map(bounds.topLeft), map(bounds.bottomRight)),
+      label: label,
+      dotRadius: dotRadius * scale,
+      sites: [for (final s in sites) IslandSite(s.poemId, map(s.at))],
+      scale: this.scale * scale,
+      shift: map(shift),
+    );
+  }
 
   factory IslandShape.fromJson(int index, Map<String, dynamic> j) {
     Offset pt(List v) => Offset((v[0] as num).toDouble(), (v[1] as num).toDouble());

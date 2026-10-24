@@ -88,6 +88,9 @@ abstract final class MapStyle {
   /// a share of the plate's font.
   static const String chipMarkGlyph = '▼';
   static const double chipMarkScale = 0.7;
+
+  /// The art at a plate's end (`IslandPlate.mark`), as a share of its font.
+  static const double markScale = 1;
   static const double tapSlop = 6;
 }
 
@@ -121,7 +124,6 @@ abstract final class HomeLayout {
   static const double knownSpeedFont = 12;
   static const double knownSpeedNumber = 14;
   static const double knownSpeedTrendIcon = 11;
-  static const double knownSpeedGap = 4;
 
   /// Above the known-card speed under the journey's card pips.
   static const double pipsSpeedGap = 8;
@@ -150,10 +152,6 @@ abstract final class HomeLayout {
   static const double heroTitleMaxShare = 0.34;
   static const double heroBesideGap = 8;
 
-  /// Widths of the rating and streak panels on the spec's 358-wide row.
-  static const int rankFlex = 250;
-  static const int streakFlex = 108;
-  static const double rankSlant = 10;
   static const double rankGap = 12;
   static const double classFont = 32;
   static const double classSuffixFont = 18;
@@ -168,15 +166,7 @@ abstract final class HomeLayout {
   static const double ratingBarHeight = 12;
   static const double ratingBarGap = 4;
   static const double ratingNoteFont = 12.5;
-  static const double streakNumber = 15;
-  static const double streakFont = 12.5;
-  static const double streakGap = 4;
-  static const EdgeInsets streakLabelPadding = EdgeInsets.fromLTRB(4, 1, 4, 1);
 
-  /// Above and below the streak box's lines, clear of its border.
-  static const double streakPadY = 6;
-
-  static const double heroGap = 10;
   static const double heroCut = 22;
   static const double heroTitle = 68;
   static const double heroTitleOutline = 12;
@@ -192,37 +182,12 @@ abstract final class HomeLayout {
   static const double heroBalloonFont = 14.5;
   static const Alignment heroBalloonSpeaker = Alignment(1.8, -0.5);
 
-  /// The free-play and 苦手 panels under the hero; free play, one of the
-  /// main ways in besides 修行, takes the wider share.
-  static const double modeHeight = 124;
-  static const double modeSlant = 22;
-  static const double modeGutter = 10;
-
-  /// Where the free-play panel ends, as a fraction of the row width.
-  static const double modeSplit = 204 / 358;
-  static const double nigateTextLeft = 16;
-  static const double modeTitleGap = 1;
-  static const double modeNoteGap = 2;
-  static const double modeTitle = 25;
-  static const double modeSub = 15;
-  static const Offset modeTextAt = Offset(14, 30);
-  static const double modeIcon = 34;
-  static const Offset modeIconAt = Offset(150, 30);
-  static const Offset modeBadgeAt = Offset(104, 22);
-
-  /// The space kept between a mode panel's lettering and its corner art.
-  static const double modeCornerGap = 4;
-
-  /// The least room kept between a mode panel's corner art and its right
-  /// edge (border included).
-  static const double modeCornerInset = 7;
-
-  /// The slim guest bar under the known-mode panels.
-  static const double guestHeight = 40;
-  static const EdgeInsets guestPadding = EdgeInsets.symmetric(horizontal: 12, vertical: 4);
-  static const double guestIcon = 20;
-  static const double guestChevron = 16;
-  static const double guestTitle = 14;
+  /// The slim guest bar at the foot of all-known Home.
+  static const double guestHeight = 36;
+  static const EdgeInsets guestPadding = EdgeInsets.symmetric(horizontal: 14, vertical: 4);
+  static const double guestIcon = 24;
+  static const double guestGap = 9;
+  static const double guestTitle = 15;
   static const double guestSub = 12.5;
 
   static const double rowJpFont = 17;
@@ -374,48 +339,141 @@ abstract final class RankedSheetStyle {
   static const Color barrier = GuestSheetStyle.barrier;
 }
 
-/// All-known Home's ランク戦 hero (`ranked_hero.dart`), in the slot and
-/// shape of journey Home's 修行 and sharing its shout: the RANKED tag, the
-/// lettering (kept clear of Tobi), the chips, the rating line, and Tobi
-/// with his balloon at the top right.
+/// All-known Home's ランク戦 hero (`ranked_hero.dart`), as big as journey
+/// Home's 修行 and drawn like it: the lettering over its tag, the START
+/// RANKED shout, and Tobi with his balloon at the top right. Its top edge
+/// slants with the rank map's foot above it.
 abstract final class RankedHeroLayout {
   static const String title = 'ランク戦';
-  static const EdgeInsets padding = EdgeInsets.fromLTRB(20, 14, 18, 30);
-  static const double titleFont = 64;
-  static const double titleOutline = 11;
-  static const double titleRight = 86;
+  static const EdgeInsets padding = EdgeInsets.only(top: 27, bottom: 10);
 
-  /// Short of room, the chips shrink rather than the lettering below this.
-  static const double titleMin = 44;
-  static const double tagGap = 4;
-  static const double titleGap = 6;
-  static const double chipFont = 12.5;
-  static const double chipGap = 5;
-  static const double lineGap = 10;
-  static const double lineFont = 12.5;
-  static const double shoutGap = 8;
-
-  /// Shorter than this, the panel takes journey Home's smaller shout.
-  static const double compactBelow = 300;
-  static const Placement tobi = Placement(right: 10, top: -18, size: Size(98, 116));
-  static const Placement balloon = Placement(right: 96, top: 6, size: Size(84, 44));
-  static const double balloonFont = 13.5;
-  static const Alignment balloonSpeaker = Alignment(1.8, -0.4);
+  /// The lettering keeps clear of Tobi on the right.
+  static const EdgeInsets titlePadding = EdgeInsets.only(left: 14, right: 100);
+  static const double titleFont = 40;
+  static const double titleOutline = 9;
+  static const double bannerFont = 12;
+  static const double bannerGap = 3;
+  static const double shoutHeight = 58;
+  static const double shoutFont = 22;
+  static const EdgeInsets shoutMargin = EdgeInsets.fromLTRB(10, 0, 12, 0);
+  static const Placement balloon = Placement(right: 98, top: 64, size: Size(84, 42));
+  static const double balloonFont = 13;
+  static const Alignment balloonSpeaker = Alignment(1.9, -0.4);
 }
 
-/// The rank before the first ranked run places the player (Home's rank
-/// row, My Profile): a blank sticker and "Unranked" in place of the rating.
+/// The rank before the first ranked run places the player (Home's rating
+/// card, My Profile): a blank sticker and "Unranked" in place of the rating.
 abstract final class UnrankedStyle {
   static const String mark = '?';
   static const Color sticker = Palette.paper;
   static const double font = 20;
 }
 
-/// All-known Home's streak box: the line under the streak saying one swipe
-/// a day keeps it.
-abstract final class StreakKeepStyle {
-  static const double gap = 3;
-  static const double font = 10;
+/// All-known Home (`known_home.dart`): the rank map, the ランク戦 hero, free
+/// play and 苦手 side by side, and the guest bar.
+abstract final class KnownHomeLayout {
+  /// How far the map's foot and the hero's top slant, parallel and
+  /// [heroGap] apart.
+  static const double slant = 18;
+  static const double heroGap = 8;
+  static const double heroHeight = HomeLayout.journeyHeroHeight;
+  static const double buttonsGap = 12;
+  static const double guestGap = 8;
+
+  /// The 苦手 button's mark with nothing weak: a check on a land circle.
+  static const double doneMark = StickerStyle.badgeSize;
+  static const double doneCheck = 20;
+}
+
+/// All-known Home's rank map (`rank_map.dart`): one island per class, each a
+/// journey island's coast, laid out in map units that are dp on a map
+/// [designWidth] wide (a wider or narrower one scales).
+abstract final class RankMapStyle {
+  static const double designWidth = 352;
+
+  /// The journey island (its index in `assets/data/islands.json`) whose
+  /// coast each class takes, Novice to A: smallest to largest.
+  static const List<int> coasts = [4, 5, 6, 0, 7, 8, 9, 1, 2];
+
+  /// Before the first ranked run, the whole ladder in two rows: the first
+  /// [overviewRow] classes left to right along the bottom from
+  /// [overviewLeft], the rest right to left along the top from
+  /// [overviewHighRight], centres [overviewStep] apart, and the rows' island
+  /// bottoms [overviewLow] and [overviewHigh] above the map's foot (the
+  /// cards' top).
+  static const double overviewScale = 0.62;
+  static const int overviewRow = 5;
+  static const double overviewLeft = 72;
+  static const double overviewHighRight = 292;
+  static const double overviewStep = 62;
+  static const double overviewLow = 42;
+  static const double overviewHigh = 98;
+  static const double overviewPlateFont = 11.5;
+  static const double overviewPlateGap = 3;
+
+  /// Where the route starts, from Novice's centre.
+  static const Offset overviewHarbour = Offset(-96, 5);
+
+  /// Once placed, the ladder in one row, the player's class [rowFocus] from
+  /// the map's left ([rowFocusTop] in the top class), with the islands'
+  /// bottoms at [rowLow] and [rowHigh] above the foot in turn.
+  static const double rowScale = 1.2;
+  static const double rowStep = 140;
+  static const double rowFocus = 150;
+  static const double rowFocusTop = 236;
+  static const double rowLow = 36;
+  static const double rowHigh = 52;
+  static const double rowPlateGap = 4;
+
+  /// Where the route starts, from Novice's centre.
+  static const Offset rowHarbour = Offset(-196, 24);
+
+  /// Plates no nearer the map's sides than this, so none is cut in half.
+  static const double plateEdge = 30;
+
+  /// Sea kept clear between the banner over the map and the highest island.
+  static const double labelsGap = 3;
+  static const int seaSeed = 31;
+}
+
+/// The labels over the rank map and the cards at its foot.
+abstract final class RankMapLayout {
+  static const double bannerFont = 17;
+  static const EdgeInsets cornerPadding = EdgeInsets.fromLTRB(9, 3, 8, 3);
+
+  /// The rating and streak cards, clear of the map's slanted foot. Their
+  /// text grows with the font scale up to [maxTextScale], keeping the
+  /// islands above them clear of the labels at the map's top.
+  static const EdgeInsets footMargin = EdgeInsets.fromLTRB(8, 0, 11, 16 + KnownHomeLayout.slant);
+  static const double maxTextScale = 1.15;
+  static const int ratingFlex = 222;
+  static const int streakFlex = 103;
+  static const double cardGap = 8;
+  static const double cardBorder = Strokes.panel;
+  static const Offset cardShadow = Offset(3, 3);
+  static const double cardMinHeight = 74;
+
+  /// The class stamp sticks up out of the rating card's top left, in a
+  /// slot at least [stampSlot] wide before the rating.
+  static const double stampRaise = 15;
+  static const double stampTilt = -6;
+  static const double stampSlot = 66;
+  static const double stampGap = 12;
+  static const EdgeInsets ratingPadding = EdgeInsets.fromLTRB(8, cardBorder, 10, cardBorder);
+  static const double labelFont = 9.5;
+  static const double labelTracking = 0.16;
+  static const double labelGap = 2;
+  static const double ratingFont = 28;
+  static const double unrankedFont = 19;
+  static const double barGap = 3;
+  static const double noteFont = 11.5;
+  static const double noteLineHeight = 1.2;
+
+  static const EdgeInsets streakPadding = EdgeInsets.symmetric(horizontal: 6, vertical: cardBorder);
+  static const double tallyWidth = 58;
+  static const double streakGap = 5;
+  static const double streakFont = 12;
+  static const double streakNumber = 16;
 }
 
 /// Home's "Learn ahead" (`LearnAheadButton`) beside the training hero's

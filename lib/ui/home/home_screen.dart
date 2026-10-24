@@ -58,20 +58,23 @@ class HomeScreen extends StatelessWidget {
   }
 }
 
-/// A compact mode button of the journey home's bottom row.
+/// A compact mode button of the journey home's bottom row: its [icon], or
+/// [leading] in its place (a mark such as the 苦手 count), before its title.
 class HomeRowButton extends StatelessWidget {
   const HomeRowButton({
     super.key,
-    required this.icon,
+    this.icon,
+    this.leading,
     required this.title,
     this.sub,
     required this.onTap,
     this.color = Palette.paper,
     this.displayTitle = false,
     this.badge,
-  });
+  }) : assert((icon == null) != (leading == null), 'an icon or a leading mark');
 
-  final VectorArt icon;
+  final VectorArt? icon;
+  final Widget? leading;
   final String title;
 
   /// The line under [title]; none leaves just the title.
@@ -95,7 +98,7 @@ class HomeRowButton extends StatelessWidget {
         semanticLabel: sub == null ? title : '$title $sub',
         child: Row(
           children: [
-            MangaIcon(icon, size: ButtonMetrics.rowIcon),
+            leading ?? MangaIcon(icon!, size: ButtonMetrics.rowIcon),
             const SizedBox(width: ButtonMetrics.rowGap),
             Expanded(
               child: Column(
@@ -148,7 +151,7 @@ class FreeAndGuestRow extends StatelessWidget {
     final s = S.of(context);
     return Row(
       children: [
-        const Expanded(child: _FreePlayButton()),
+        const Expanded(child: FreePlayButton()),
         const SizedBox(width: Gaps.panelWide),
         Expanded(
           child: HomeRowButton(
@@ -164,10 +167,10 @@ class FreeAndGuestRow extends StatelessWidget {
   }
 }
 
-/// The journey's 始める: opens free practice's setup, or while it is still
-/// locked (`Progress.freePractice`) says how many more cards to remember.
-class _FreePlayButton extends StatelessWidget {
-  const _FreePlayButton();
+/// 始める: opens free practice's setup, or while it is still locked
+/// (`Progress.freePractice`) says how many more cards to remember.
+class FreePlayButton extends StatelessWidget {
+  const FreePlayButton({super.key});
 
   @override
   Widget build(BuildContext context) {

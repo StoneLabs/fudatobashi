@@ -26,6 +26,7 @@ import 'package:fudatobashi/state/scope.dart';
 import 'package:fudatobashi/state/stats_history.dart';
 import 'package:fudatobashi/ui/app.dart';
 import 'package:fudatobashi/ui/history/run_page.dart';
+import 'package:fudatobashi/ui/home/home_widgets.dart';
 import 'package:fudatobashi/ui/home/today_box.dart';
 import 'package:fudatobashi/ui/manga/manga.dart';
 import 'package:fudatobashi/ui/play/time_format.dart';
@@ -198,7 +199,7 @@ void main() {
           expect(p.rankedHistory, isNotEmpty);
           await onPhone(tester, p, phone, fontScale);
 
-          await tap(tester, find.text(s.streakKeep));
+          await tap(tester, find.byType(TallyMarks));
           expect(find.byType(PracticeCalendarScreen), findsOneWidget);
           await back(tester, s);
 

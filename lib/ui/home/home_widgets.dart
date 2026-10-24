@@ -126,14 +126,20 @@ class _TallyPainter extends CustomPainter {
 
 /// The class (級) on a yellow sticker: "F上" big, "級" small.
 class RankSticker extends StatelessWidget {
-  const RankSticker(this.band, {super.key});
+  const RankSticker(this.band, {super.key, this.tilt = Tilt.sticker, this.shadow = Offset.zero});
 
   final RankBand band;
+
+  /// Degrees.
+  final double tilt;
+  final Offset shadow;
 
   @override
   Widget build(BuildContext context) {
     final s = S.of(context);
     return Sticker(
+      tilt: tilt,
+      shadow: shadow,
       child: ConstrainedBox(
         constraints: const BoxConstraints(maxWidth: HomeLayout.classMaxWidth),
         child: FittedBox(
@@ -150,6 +156,25 @@ class RankSticker extends StatelessWidget {
       ),
     );
   }
+}
+
+/// The class sticker before the first ranked run: blank, with a question
+/// mark where the class goes.
+class UnrankedSticker extends StatelessWidget {
+  const UnrankedSticker({super.key, this.tilt = Tilt.sticker, this.shadow = Offset.zero});
+
+  /// Degrees.
+  final double tilt;
+  final Offset shadow;
+
+  @override
+  Widget build(BuildContext context) => Sticker(
+        color: UnrankedStyle.sticker,
+        tilt: tilt,
+        shadow: shadow,
+        child: const Text(UnrankedStyle.mark,
+            style: TextStyle(fontFamily: Fonts.display, fontSize: HomeLayout.classFont, height: 1)),
+      );
 }
 
 /// Progress toward the next class, [width] wide (infinite to fill).

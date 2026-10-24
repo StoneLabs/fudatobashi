@@ -46,10 +46,6 @@ abstract final class Backdrops {
   static const double heroToneAngle = 198;
   static const heroToneStops = [0.46, 0.9];
 
-  static const double freePlayAngle = 100;
-  static const freePlayStops = [0.52, 1.0];
-  static const nigateStops = [0.7, 1.0];
-
   /// A half-white mist over the top of the journey map.
   static const double mapFogHeight = 74;
   static const mapFogStops = [0.0, 0.38, 1.0];
