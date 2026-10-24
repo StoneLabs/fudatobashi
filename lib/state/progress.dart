@@ -407,12 +407,6 @@ class Progress extends ChangeNotifier {
     return set == null || day == null ? null : _replay(day, set.kinds, without: runId);
   }
 
-  /// Cards graded by FSRS in the practice day [now] falls in.
-  int reviewedToday([DateTime? now]) {
-    final window = dayAt(now);
-    return _log.values.where((attempts) => attempts.any((a) => a.grade != null && window.contains(a.at))).length;
-  }
-
   /// Today's set is missing or from an earlier day ([refreshToday] builds
   /// it).
   bool get todayStale => !simulating && !_allKnown && todaySet() == null;

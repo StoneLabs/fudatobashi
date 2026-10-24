@@ -281,7 +281,8 @@ void main() {
       final report = await record(tester, p, play(today, missAt: {7, 30}), config);
       const s = S('en');
       await show(tester, p, ResultsScreen(report: report, config: config), 'results_redo_07_all_known');
-      expect(find.text(s.summaryDueToday), findsOneWidget);
+      expect(find.text(s.summaryThisRun), findsOneWidget);
+      expect(find.text(s.summaryStreakLabel), findsOneWidget);
       await close(tester);
     });
   });

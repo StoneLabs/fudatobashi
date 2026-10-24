@@ -17,7 +17,6 @@ extension SummaryStrings on S {
   // The hero's banners.
   String get summaryTodaysSet => t('summaryTodaysSet');
   String get summaryThisRun => t('summaryThisRun');
-  String get summaryDueToday => t('summaryDueToday');
   String get summaryVsTobi => t('summaryVsTobi');
   String summaryLevel(int level) => f('summaryLevel', [level]);
 
@@ -27,8 +26,6 @@ extension SummaryStrings on S {
   String get summaryRight => t('summaryRight');
   String summaryOfCards(int cards) => f('summaryOfCards', [cards]);
   String summaryWeakLeft(int n) => t(countKey('summaryWeakLeft', n));
-  String summaryDueLeft(int n) => t(countKey('summaryDueLeft', n));
-  String summaryReviewedToday(int n) => f('summaryReviewedToday', [n]);
   String get summaryPoints => t('summaryPoints');
   String summaryFound(int n) => t(countKey('summaryFound', n));
   String summaryFoundOf(int cards, int missed) =>
@@ -50,7 +47,6 @@ extension SummaryStrings on S {
   String summaryClearedOf(int cleared, int of) => f('summaryClearedOf', [cleared, of]);
   String summaryCleared(int n) => f('summaryCleared', [n]);
   String summaryStillWeak(int n) => f('summaryStillWeak', [n]);
-  String summaryReviewedOf(int done, int total) => f('summaryReviewedOf', [done, total]);
   String summaryClock(String time) => f('summaryClock', [time]);
   String summaryMisses(int misses, int seconds) => f(countKey('summaryMisses', misses), [misses, seconds]);
   String summaryPlayed(int n) => f('summaryPlayed', [n]);
@@ -63,7 +59,6 @@ extension SummaryStrings on S {
   String get summaryAlmostThere => t('summaryAlmostThere');
   String get summaryNiceRun => t('summaryNiceRun');
   String get summaryGettingThere => t('summaryGettingThere');
-  String summaryStreakBalloon(int days) => f('summaryStreakBalloon', [days]);
   String get summaryRatingUp => t('summaryRatingUp');
   String get summaryFirstRating => t('summaryFirstRating');
   String get summaryNextTime => t('summaryNextTime');
@@ -112,6 +107,7 @@ extension SummaryStrings on S {
   String get summaryBackLater => t('summaryBackLater');
   String get summaryNewToday => t('summaryNewToday');
   String summaryNewTodayNote(int n) => f(countKey('summaryNewTodayNote', n), [n]);
+  String get summaryStreakLabel => t('summaryStreakLabel');
   String get summaryStreak => t('summaryStreak');
   String summaryStreakNote(int days) => f(countKey('summaryStreakNote', days), [days]);
   String get summarySecondLook => t('summarySecondLook');
@@ -119,7 +115,6 @@ extension SummaryStrings on S {
   String get summaryClearedNote => t('summaryClearedNote');
   String get summaryNotYetNote => t('summaryNotYetNote');
   String get summaryNoWeakLeft => t('summaryNoWeakLeft');
-  String get summaryDueSoon => t('summaryDueSoon');
   String summaryPenaltyEach(int seconds) => f('summaryPenaltyEach', [seconds]);
   String get summaryBeforeStop => t('summaryBeforeStop');
   String get summarySlowestFinds => t('summarySlowestFinds');

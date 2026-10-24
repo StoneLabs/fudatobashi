@@ -31,7 +31,7 @@ import 'run_summary.dart';
 
 /// The summary of a main-game run: of a 修行 run, what is left of today's
 /// set (or, the run that finished it, the day done); of other practice
-/// runs, what was right, the weak cards left or the reviews still due;
+/// runs, what was right or the weak cards left;
 /// of a ranked run its scored time, and of an exam try how it went against
 /// Tobi.
 class MainRunSummary extends StatelessWidget {
@@ -107,7 +107,6 @@ class _Run {
       PlayMode.nigate => _weak(),
       PlayMode.training when report.dayDone != null => _dayDone(),
       PlayMode.training when journey && set != null && !set.done => _todaysSet(set),
-      PlayMode.training || PlayMode.free when !journey => _dueToday(),
       _ => _thisRun(),
     };
   }
@@ -190,34 +189,11 @@ class _Run {
       ),
       [
         _cardsTile(config.isKnownDeck ? s.summaryAllKnownNote : s.summaryThisRunNote),
-        journey ? _todayTile(set) : _rightTile(),
+        journey ? _todayTile(set) : _streakTile(),
         config.tracked ? rewardTile(s, report.xp) : rewardTile(s, null),
       ],
       [
         ...shelfRows([_missedShelf(s.summarySecondLook), _slowShelf()]),
-        ..._unsavedNote(),
-      ],
-    );
-  }
-
-  /// A practice run of all-known mode, which has no daily set: the reviews
-  /// still due today.
-  _Content _dueToday() {
-    final due = progress.dueCount();
-    final reviewed = progress.reviewedToday();
-    final streak = progress.streak;
-    return (
-      SummaryHero(
-        banner: s.summaryDueToday,
-        body: HeroCount('$due', label: s.summaryDueLeft(due), note: s.summaryReviewedToday(reviewed)),
-        bar: [BarPart(Palette.land, reviewed, done: true), BarPart(Palette.paper, due)],
-        labels: [BarLabel(s.summaryReviewedOf(reviewed, reviewed + due))],
-        pose: TobiPose.fired,
-        balloon: streak > 1 ? s.summaryStreakBalloon(streak) : s.summaryNiceRun,
-      ),
-      [_cardsTile(s.summaryThisRunNote), _rightTile(), rewardTile(s, report.xp)],
-      [
-        ...shelfRows([_missedShelf(s.summaryDueSoon), _slowShelf()]),
         ..._unsavedNote(),
       ],
     );
@@ -398,6 +374,11 @@ class _Run {
         big: TileFigure(set == null ? missingTime : set.done ? s.done : '${set.bar.left}'),
         note: set != null && set.done ? s.summarySetDone : s.summaryLeftInSet,
       );
+
+  SummaryTile _streakTile() {
+    final days = progress.streak;
+    return SummaryTile(label: s.summaryStreakLabel, big: TileFigure('$days'), note: s.historyStreak(days));
+  }
 
   SummaryTile _speedTile() {
     final timed = [for (final a in attempts) if (a.validTime) a.cardUs / Duration.microsecondsPerMillisecond];
