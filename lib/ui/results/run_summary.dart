@@ -56,8 +56,8 @@ class BarLabel {
 /// those all do) and [ticks] (shares of the bar), and Tobi in [pose]
 /// standing where the bar's done part ends, saying [balloon]; no Tobi
 /// without a [pose]. A goal reached brings the focus lines of [burst], and
-/// [stamp] lies over the bar, or at the top right with [stampOnTop]. The
-/// panel is [color].
+/// [stamp] lies over the bar, or at the top right with [stampOnTop],
+/// shrinking when it would reach the banner. The panel is [color].
 @immutable
 class SummaryHero {
   const SummaryHero({
@@ -286,8 +286,13 @@ class HeroPanel extends StatelessWidget {
           bar.size.width - SummaryHeroLayout.tobiRightInset - tobi.width / 2,
         );
         final balloon = hero.balloon;
+        final banner = InkBanner(hero.banner, fontSize: SummaryHeroLayout.bannerFont);
         final stamp = hero.stamp;
         final pose = hero.pose;
+        final bodyWidth = math.min(
+          math.min(metrics.bodyWidth, bar.size.width - 2 * SummaryHeroLayout.bodyLeft),
+          pose == null || !metrics.clearOfTobi ? double.infinity : tobiX - tobi.width / 2 - SummaryHeroLayout.bodyLeft,
+        );
         return MangaPanel(
           shape: const PanelShape(bottomRight: Offset(0, SummaryLayout.cut)),
           color: hero.color,
@@ -295,21 +300,40 @@ class HeroPanel extends StatelessWidget {
           child: Stack(clipBehavior: Clip.none, children: [
             Positioned.fill(child: CustomPaint(painter: _BarPainter(bar, hero.ticks))),
             ..._labels(context, bar),
-            Positioned(
-              left: SummaryHeroLayout.bannerAt.dx,
-              top: SummaryHeroLayout.bannerAt.dy,
-              child: InkBanner(hero.banner, fontSize: SummaryHeroLayout.bannerFont),
-            ),
+            if (stamp == null || !hero.stampOnTop)
+              Positioned(
+                left: SummaryHeroLayout.bannerAt.dx,
+                top: SummaryHeroLayout.bannerAt.dy,
+                child: banner,
+              ),
             Positioned(
               left: SummaryHeroLayout.bodyLeft,
               top: 0,
               bottom: 0,
-              width: metrics.bodyWidth,
+              width: bodyWidth,
               child: hero.body,
             ),
             if (stamp != null)
               hero.stampOnTop
-                  ? Positioned(right: metrics.topStampInset.dx, top: metrics.topStampInset.dy, child: stamp)
+                  ? Positioned(
+                      left: SummaryHeroLayout.bannerAt.dx,
+                      top: SummaryHeroLayout.bannerAt.dy,
+                      right: metrics.topStampInset.dx,
+                      child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                        banner,
+                        const SizedBox(width: SummaryHeroLayout.topStampGap),
+                        Expanded(
+                          child: Padding(
+                            padding: EdgeInsets.only(
+                                top: math.max(0, metrics.topStampInset.dy - SummaryHeroLayout.bannerAt.dy)),
+                            child: Align(
+                              alignment: Alignment.topRight,
+                              child: FittedBox(fit: BoxFit.scaleDown, alignment: Alignment.topRight, child: stamp),
+                            ),
+                          ),
+                        ),
+                      ]),
+                    )
                   : Positioned(left: metrics.stampAt.dx, top: metrics.stampAt.dy, child: stamp),
             if (pose != null)
               Positioned(

@@ -66,6 +66,7 @@ class HeroMetrics {
     required this.stampAt,
     this.topStampInset = Offset.zero,
     this.bodyWidth = SummaryHeroLayout.bodyWidth,
+    this.clearOfTobi = true,
   });
 
   final double countTop, countFont;
@@ -82,8 +83,11 @@ class HeroMetrics {
   /// from that corner.
   final Offset stampAt, topStampInset;
 
-  /// The width the answer takes, left of Tobi.
+  /// The width the answer takes at most; it always keeps as far from the
+  /// panel's right edge as from its left, and, when [clearOfTobi], ends
+  /// left of Tobi's box.
   final double bodyWidth;
+  final bool clearOfTobi;
 }
 
 /// The summary's hero (`SummaryHero`): the banner, the big answer, the bar
@@ -117,6 +121,9 @@ abstract final class SummaryHeroLayout {
     timeFont: 46,
     tobi: Size(84, 100),
     stampAt: Offset(124, 170),
+
+    // The summary's bigger answer may run into Tobi's box.
+    clearOfTobi: false,
   );
 
   /// The big answer, kept left of Tobi: a count with its label and note
@@ -142,6 +149,9 @@ abstract final class SummaryHeroLayout {
 
   /// The milliseconds' size, as a share of the time's.
   static const double timeFractionShare = 0.5;
+
+  /// The least room between the banner and a stamp at the top right.
+  static const double topStampGap = 8;
 
   /// Marks across the bar (an earlier rating): their line, reaching this
   /// far above the bar.
