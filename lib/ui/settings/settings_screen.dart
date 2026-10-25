@@ -8,6 +8,7 @@ import '../../config/design.dart';
 import '../../config/licenses.dart';
 import '../../config/links.dart';
 import '../../config/vector_art.dart';
+import '../../domain/ankiren_level.dart';
 import '../../domain/trainer.dart';
 import '../../l10n/ankiren_strings.dart';
 import '../../l10n/credits_strings.dart';
@@ -483,6 +484,12 @@ Future<void> _clearAnkirenForRanked(BuildContext context) async {
   messenger.showSnackBar(SnackBar(content: Text('Lv 0–${AnkirenTuning.rankedAfterLevel} cleared$note')));
 }
 
+Future<void> _clearAnkirenAll(BuildContext context) async {
+  final messenger = ScaffoldMessenger.of(context);
+  await ProgressScope.read(context).clearAnkirenUpTo(AnkirenLevels.top);
+  messenger.showSnackBar(SnackBar(content: Text('Lv 0–${AnkirenLevels.top} cleared')));
+}
+
 class _DeveloperSection extends StatelessWidget {
   const _DeveloperSection({super.key});
 
@@ -520,6 +527,7 @@ class _DeveloperSection extends StatelessWidget {
           SettingsTapRow(title: 'AnkiRen', opensPage: true, onTap: () => open(const AnkirenToolsPage())),
           SettingsTapRow(title: 'Simulation', opensPage: true, onTap: () => open(const SimulationPage())),
           SettingsTapRow(title: 'Clear ankiren until ranked available', onTap: () => _clearAnkirenForRanked(context)),
+          SettingsTapRow(title: 'Clear all ankiren levels', onTap: () => _clearAnkirenAll(context)),
           SettingsTapRow(
             title: 'AnkiRen test game',
             onTap: () => startAnkirenTest(context),
