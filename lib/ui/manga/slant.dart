@@ -113,7 +113,7 @@ class SlantPanel extends StatelessWidget {
 }
 
 /// Panels side by side, slices of one band whose edges rise [cut] over the
-/// band's width, in [colors]; as tall as the tallest, or [height].
+/// band's width, in [colors]; as tall as the tallest.
 class SlantRow extends StatelessWidget {
   const SlantRow({
     super.key,
@@ -122,14 +122,12 @@ class SlantRow extends StatelessWidget {
     this.cut = HomeLayout.mapCut,
     this.gap = Gaps.panel,
     this.padding = EdgeInsets.zero,
-    this.height,
   });
 
   final List<Widget> children;
   final List<Color> colors;
   final double cut, gap;
   final EdgeInsets padding;
-  final double? height;
 
   @override
   Widget build(BuildContext context) => LayoutBuilder(builder: (context, box) {
@@ -156,7 +154,6 @@ class SlantRow extends StatelessWidget {
             ),
           ],
         ]);
-        final height = this.height;
-        return height == null ? IntrinsicHeight(child: row) : SizedBox(height: height, child: row);
+        return IntrinsicHeight(child: row);
       });
 }

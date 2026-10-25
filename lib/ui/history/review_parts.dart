@@ -185,48 +185,51 @@ class CountTile {
 }
 
 /// Small counts side by side as tilted tiles: each number with its icon,
-/// over its label.
+/// over its label; as tall as the tallest, and at least
+/// [ReviewTileLayout.countHeight].
 class CountTiles extends StatelessWidget {
   const CountTiles(this.tiles, {super.key});
   final List<CountTile> tiles;
 
   @override
-  Widget build(BuildContext context) => SlantRow(
-        cut: ReviewLayout.cut,
-        gap: ReviewLayout.gap,
-        height: ReviewTileLayout.countHeight,
-        padding: ReviewTileLayout.countPadding,
-        colors: [for (final t in tiles) t.color],
-        children: [
-          for (final t in tiles)
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                  Expanded(
-                    child: FittedBox(
-                      fit: BoxFit.scaleDown,
-                      alignment: Alignment.centerLeft,
-                      child: Text(t.value,
-                          maxLines: 1,
-                          style: const TextStyle(
-                              fontFamily: Fonts.display, fontSize: ReviewTileLayout.countFont, height: 1)),
+  Widget build(BuildContext context) => ConstrainedBox(
+        constraints: const BoxConstraints(minHeight: ReviewTileLayout.countHeight),
+        child: SlantRow(
+          cut: ReviewLayout.cut,
+          gap: ReviewLayout.gap,
+          padding: ReviewTileLayout.countPadding,
+          colors: [for (final t in tiles) t.color],
+          children: [
+            for (final t in tiles)
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                    Expanded(
+                      child: FittedBox(
+                        fit: BoxFit.scaleDown,
+                        alignment: Alignment.centerLeft,
+                        child: Text(t.value,
+                            maxLines: 1,
+                            style: const TextStyle(
+                                fontFamily: Fonts.display, fontSize: ReviewTileLayout.countFont, height: 1)),
+                      ),
                     ),
-                  ),
-                  MangaIcon(t.icon, size: ReviewTileLayout.countIcon, strokeWidth: ReviewTileLayout.countIconStroke),
-                ]),
-                Text(t.label.toUpperCase(),
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(
-                        fontWeight: Weights.black,
-                        fontSize: ReviewTileLayout.countLabelFont,
-                        letterSpacing: ReviewTileLayout.countLabelTracking * ReviewTileLayout.countLabelFont,
-                        height: ReviewTileLayout.countLabelHeight)),
-              ],
-            ),
-        ],
+                    MangaIcon(t.icon, size: ReviewTileLayout.countIcon, strokeWidth: ReviewTileLayout.countIconStroke),
+                  ]),
+                  Text(t.label.toUpperCase(),
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                          fontWeight: Weights.black,
+                          fontSize: ReviewTileLayout.countLabelFont,
+                          letterSpacing: ReviewTileLayout.countLabelTracking * ReviewTileLayout.countLabelFont,
+                          height: ReviewTileLayout.countLabelHeight)),
+                ],
+              ),
+          ],
+        ),
       );
 }
 

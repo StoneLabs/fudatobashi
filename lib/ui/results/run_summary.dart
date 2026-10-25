@@ -52,11 +52,12 @@ class BarLabel {
 
 /// The hero of a summary: [banner] over [body] (a [HeroCount], [HeroWord]
 /// or [HeroTime]), the [bar] along its slanted bottom edge with its
-/// [labels] (or, when any of them doesn't fit, its [fallbackLabels]) and
-/// [ticks] (shares of the bar), and Tobi in [pose] standing where the bar's
-/// done part ends, saying [balloon]; no Tobi without a [pose]. A goal
-/// reached brings the focus lines of [burst], and [stamp] lies over the
-/// bar, or at the top right with [stampOnTop]. The panel is [color].
+/// [labels] (or, when any of them doesn't fit, its [fallbackLabels] if
+/// those all do) and [ticks] (shares of the bar), and Tobi in [pose]
+/// standing where the bar's done part ends, saying [balloon]; no Tobi
+/// without a [pose]. A goal reached brings the focus lines of [burst], and
+/// [stamp] lies over the bar, or at the top right with [stampOnTop]. The
+/// panel is [color].
 @immutable
 class SummaryHero {
   const SummaryHero({
@@ -334,11 +335,13 @@ class HeroPanel extends StatelessWidget {
       });
 
   /// The bar's labels, each along the bar's slant and inside a part (see
-  /// [BarLabel]); the fallback ones when any of them doesn't fit.
+  /// [BarLabel]); the fallback ones when any of them doesn't fit and those
+  /// all do.
   List<Widget> _labels(BuildContext context, _BarGeometry bar) {
     final placed = _place(context, bar, hero.labels);
     if (placed.length == hero.labels.length || hero.fallbackLabels.isEmpty) return placed;
-    return _place(context, bar, hero.fallbackLabels);
+    final fallback = _place(context, bar, hero.fallbackLabels);
+    return fallback.length == hero.fallbackLabels.length ? fallback : placed;
   }
 
   List<Widget> _place(BuildContext context, _BarGeometry bar, List<BarLabel> labels) {
