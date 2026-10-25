@@ -1,0 +1,16 @@
+{
+  "schemaVersion": 4,
+  "rows": {
+    "attempts": 0,
+    "day_cards": 0,
+    "days": 0,
+    "island_completions": 0,
+    "items": 0,
+    "key_values": 0,
+    "runs": 0,
+    "side_trip_answers": 0,
+    "side_trip_runs": 0
+  },
+  "unlockedItems": 0,
+  "settings": {}
+}
