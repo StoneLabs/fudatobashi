@@ -708,10 +708,10 @@ class TileBand extends StatelessWidget {
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 lines(tile.label, label),
-                const SizedBox(height: SummaryTileLayout.rowGap),
+                SizedBox(height: spec.rowGap),
                 _OneLine(tile.big),
                 if (tile.note.isNotEmpty) ...[
-                  const SizedBox(height: SummaryTileLayout.rowGap),
+                  SizedBox(height: spec.rowGap),
                   lines(tile.note, note),
                 ],
               ],

@@ -207,14 +207,12 @@ abstract final class SummaryHeroLayout {
 /// panels' edges.
 abstract final class SummaryTileLayout {
   static const List<Color> colors = [Palette.seaSoft, Palette.landSoft, Palette.sunSoft];
-  static const spec = TileSpec(padding: EdgeInsets.fromLTRB(14, 14, 10, 20));
+  static const spec = TileSpec(padding: EdgeInsets.fromLTRB(14, 14, 10, 20), rowGap: 0);
   static const double bigFont = 28;
   static const double bigSmallFont = 15;
   static const double strikeCard = 28;
 
-  /// The least room between a tile's lines, and their line height when a
-  /// label or note may wrap.
-  static const double rowGap = 4;
+  /// The line height of a tile's label and note when they may wrap.
   static const double lineHeight = 1.1;
 }
 
@@ -228,11 +226,15 @@ class TileSpec {
     this.labelTracking = 0.14,
     this.noteFont = 12,
     this.lines = 1,
+    this.rowGap = 4,
   });
 
   final EdgeInsets padding;
   final double labelFont, labelTracking, noteFont;
   final int lines;
+
+  /// The least room between a tile's lines.
+  final double rowGap;
 }
 
 /// The summary's card panel (`SummaryRow`): rows of a marker heading with a
