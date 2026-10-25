@@ -60,6 +60,8 @@ class AnkirenGamePage extends StatelessWidget {
       title: s.tripName(SideTrip.ankiren),
       sub: [s.other.tripName(SideTrip.ankiren), kind, s.sessionDate(run.startedAt), s.ankirenASide(review.game.perSide)]
           .join(' · '),
+      shortSub: [s.other.tripName(SideTrip.ankiren), kind, s.sessionDay(run.startedAt), s.ankirenASide(review.game.perSide)]
+          .join(' · '),
       body: RunPageTabs(tabs: [for (final tab in tabs) tab.swipeTab(s, review, HistoryLooks.ankiren)]),
     );
   }

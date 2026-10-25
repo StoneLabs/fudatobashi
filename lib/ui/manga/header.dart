@@ -33,6 +33,19 @@ class BrandTitle extends StatelessWidget {
 
   static const brand = '札飛ばし';
 
+  static const titleStyle = TextStyle(
+    fontFamily: Fonts.display,
+    fontSize: HeaderStyle.logo,
+    letterSpacing: HeaderStyle.logoTracking * HeaderStyle.logo,
+    height: 1,
+  );
+  static const subStyle = TextStyle(
+    fontWeight: Weights.black,
+    fontSize: HeaderStyle.sub,
+    letterSpacing: HeaderStyle.subTracking * HeaderStyle.sub,
+    height: 1,
+  );
+
   final String title;
   final String sub;
 
@@ -44,28 +57,52 @@ class BrandTitle extends StatelessWidget {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(
-              title,
-              style: const TextStyle(
-                fontFamily: Fonts.display,
-                fontSize: HeaderStyle.logo,
-                letterSpacing: HeaderStyle.logoTracking * HeaderStyle.logo,
-                height: 1,
-              ),
-            ),
+            Text(title, style: titleStyle),
             const SizedBox(height: HeaderStyle.subGap),
-            Text(
-              sub,
-              style: const TextStyle(
-                fontWeight: Weights.black,
-                fontSize: HeaderStyle.sub,
-                letterSpacing: HeaderStyle.subTracking * HeaderStyle.sub,
-                height: 1,
-              ),
-            ),
+            Text(sub, style: subStyle),
           ],
         ),
       );
+}
+
+/// A run page's header lettering: the [title] over its [sub] line, which
+/// never shrinks but gives way to [shortSub] and then an ellipsis when the
+/// room is short.
+class RunHeaderTitle extends StatelessWidget {
+  const RunHeaderTitle({super.key, required this.title, required this.sub, required this.shortSub});
+
+  final String title, sub, shortSub;
+
+  @override
+  Widget build(BuildContext context) {
+    final scaler = MediaQuery.textScalerOf(context);
+    return LayoutBuilder(builder: (context, box) {
+      bool fits(String text) {
+        final painter = TextPainter(
+          text: TextSpan(text: text, style: BrandTitle.subStyle),
+          textDirection: Directionality.of(context),
+          textScaler: scaler,
+          maxLines: 1,
+        )..layout();
+        return painter.width <= box.maxWidth;
+      }
+
+      final line = fits(sub) ? sub : shortSub;
+      return Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          FittedBox(
+            fit: BoxFit.scaleDown,
+            alignment: AlignmentDirectional.centerStart,
+            child: Text(title, style: BrandTitle.titleStyle),
+          ),
+          const SizedBox(height: HeaderStyle.subGap),
+          Text(line, style: BrandTitle.subStyle, maxLines: 1, overflow: TextOverflow.ellipsis),
+        ],
+      );
+    });
+  }
 }
 
 /// A screen title in display type with a small second-language label

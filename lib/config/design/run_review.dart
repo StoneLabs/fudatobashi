@@ -11,6 +11,9 @@ abstract final class ReviewLayout {
   static const double gap = Gaps.panel;
   static const double headerGap = SummaryLayout.headerGap;
 
+  /// Between the header's lettering and the back button.
+  static const double headerBackGap = 14;
+
   /// Between the tab row's rule and a tab's first panel, and under its
   /// last.
   static const double topGap = 8;
@@ -102,7 +105,7 @@ abstract final class ReviewHeroLayout {
     tobi: Size(70, 83),
     stampAt: Offset(122, 122),
     topStampInset: Offset(6, 46),
-    bodyWidth: 190,
+    bodyWidth: 164,
   );
 
   /// 暗記練's Overview hero: a smaller Tobi.

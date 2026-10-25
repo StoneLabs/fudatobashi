@@ -18,6 +18,8 @@ import 'package:fudatobashi/db/database.dart';
 import 'package:fudatobashi/domain/ankiren_game.dart';
 import 'package:fudatobashi/domain/ankiren_level.dart';
 import 'package:fudatobashi/domain/card_stats.dart';
+import 'package:fudatobashi/domain/xp.dart';
+import 'package:fudatobashi/ui/history/review_parts.dart';
 import 'package:fudatobashi/domain/play_session.dart';
 import 'package:fudatobashi/domain/trainer.dart';
 import 'package:fudatobashi/l10n/ankiren_review_strings.dart';
@@ -134,8 +136,9 @@ void main() {
       [for (final q in poems.all) CardRef(q.id, inverted: (q.id + seed) % 3 == 0)]..shuffle(math.Random(seed));
 
   // Opens [page] on the user's phone.
-  Future<void> open(WidgetTester tester, Progress p, Widget page) async {
-    useScreen(tester, usersPhone);
+  Future<void> open(WidgetTester tester, Progress p, Widget page,
+      {Screen screen = usersPhone, double fontScale = 1}) async {
+    useScreen(tester, screen, fontScale: fontScale);
     await tester.pumpWidget(RepaintBoundary(
       key: screenKey,
       child: ProgressScope(
@@ -369,6 +372,26 @@ void main() {
       await shot(tester, '21_exam_lost');
       await close(tester);
     });
+  });
+
+  testWidgets('32: a long header line and a level-up XP hero on a narrow phone at 1.3 text', (tester) async {
+    final p = await player(tester);
+    const gain = XpGain(
+        before: 3000000, award: XpAward([XpPart(XpSource.correct, 100, 62000), XpPart(XpSource.speed, 100, 61456)]));
+    expect(gain.levelsGained, greaterThan(0));
+    await open(
+        tester,
+        p,
+        const RunPageFrame(
+          title: '暗記練',
+          sub: '暗記練 · Free · Lv 4 · Oct 24, 09:00 · 10 a side',
+          shortSub: '暗記練 · Free · Lv 4 · Oct 24 · 10 a side',
+          body: Padding(padding: EdgeInsets.all(14), child: XpHero(gain)),
+        ),
+        screen: narrowPhone,
+        fontScale: 1.3);
+    await shot(tester, '32_narrow_header_xp_hero');
+    await close(tester);
   });
 
   group('AnkiRen', () {

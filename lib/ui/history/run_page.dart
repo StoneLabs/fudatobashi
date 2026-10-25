@@ -79,6 +79,7 @@ class _RunPageState extends State<RunPage> {
     return RunPageFrame(
       title: modeTitle(s, run.mode),
       sub: [modeTitle(s.other, run.mode), s.sessionDate(run.startedAt), cards].join(' · '),
+      shortSub: [modeTitle(s.other, run.mode), s.sessionDay(run.startedAt), cards].join(' · '),
       body: FutureBuilder<RunDetail>(
         future: _detail,
         builder: (context, snap) {
@@ -112,12 +113,13 @@ class RunPageTabs extends StatelessWidget {
 }
 
 /// A run or game page's frame, the summary's header on Home's dotted
-/// ground: the [title] over its [sub] line with a back button, then
+/// ground: the [title] over its [sub] line (or [shortSub] when that is
+/// too long) with a back button, then
 /// [body] (the swiped tabs).
 class RunPageFrame extends StatelessWidget {
-  const RunPageFrame({super.key, required this.title, required this.sub, required this.body});
+  const RunPageFrame({super.key, required this.title, required this.sub, required this.shortSub, required this.body});
 
-  final String title, sub;
+  final String title, sub, shortSub;
   final Widget body;
 
   @override
@@ -134,7 +136,10 @@ class RunPageFrame extends StatelessWidget {
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: Gaps.gutter),
                 child: MangaHeader(
-                  title: BrandTitle(title: title, sub: sub.toUpperCase()),
+                  title: Padding(
+                    padding: const EdgeInsetsDirectional.only(end: ReviewLayout.headerBackGap),
+                    child: RunHeaderTitle(title: title, sub: sub.toUpperCase(), shortSub: shortSub.toUpperCase()),
+                  ),
                   actions: [
                     InkIconButton(icon: IconArt.back, semanticLabel: s.back, onTap: () => Navigator.maybePop(context)),
                   ],

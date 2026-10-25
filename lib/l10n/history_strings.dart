@@ -37,7 +37,13 @@ extension HistoryStrings on S {
     final local = at.toLocal();
     final hh = local.hour.toString().padLeft(2, '0');
     final mm = local.minute.toString().padLeft(2, '0');
-    return ja ? '${local.month}月${local.day}日 $hh:$mm' : '${_monthAbbr[local.month - 1]} ${local.day}, $hh:$mm';
+    return ja ? '${sessionDay(at)} $hh:$mm' : '${sessionDay(at)}, $hh:$mm';
+  }
+
+  /// [sessionDate] without the time.
+  String sessionDay(DateTime at) {
+    final local = at.toLocal();
+    return ja ? '${local.month}月${local.day}日' : '${_monthAbbr[local.month - 1]} ${local.day}';
   }
 
   /// The History list, its 7-day strip, rows and filter sheet.
