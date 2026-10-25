@@ -1708,7 +1708,7 @@ void main() {
       expect(tester.takeException(), isNull);
       final s = S(ja ? 'ja' : 'en');
       expect(find.textContaining('00:14'), findsNothing, reason: 'practice shows no time');
-      expect(find.text(s.summaryRightLabel), findsOneWidget);
+      expect(find.text(s.summaryStreakLabel), findsOneWidget, reason: 'all-known practice shows the streak');
       expect(find.byType(CelebrationSequence), findsNothing, reason: 'the summary shows first');
       await captureScreen(tester, 'results_practice', lang: ja ? 'ja' : 'en');
       await tester.pump(ResultsLayout.overlayStagger);
