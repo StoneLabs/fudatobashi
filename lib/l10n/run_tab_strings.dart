@@ -23,6 +23,7 @@ extension RunTabStrings on S {
   String runUnderGoalRow(Object a0) => f('runUnderGoalRow', [a0]);
   String runNoMissRange(int from, int to) => from == to ? f('runNoMissAt', [from]) : f('runNoMissRange', [from, to]);
   String get runNone => t('runNone');
+  String get runNoneThisRun => t('runNoneThisRun');
   String get runPaceFast => t('runPaceFast');
   String get runPaceUnderGoal => t('runPaceUnderGoal');
   String get runPaceSlow => t('runPaceSlow');

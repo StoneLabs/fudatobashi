@@ -1079,6 +1079,7 @@
   "runNoMissRange": "cards {0}–{1}, no miss",
   "runNoMissAt": "card {0}, no miss",
   "runNone": "none",
+  "runNoneThisRun": "None this run",
   "runPaceFast": "fast",
   "runPaceUnderGoal": "under goal",
   "runPaceSlow": "slow",

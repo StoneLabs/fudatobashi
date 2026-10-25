@@ -233,7 +233,7 @@ class _Overview {
     final penalty = run.penaltyMs ~/ Duration.millisecondsPerSecond;
     return SummaryTile(
       label: s.summaryRightLabel,
-      big: TileFigure('${run.planned - missed}', unit: '/${run.planned}'),
+      big: TileFigure('${cards - missed}', unit: '/$cards'),
       note: missed == 0
           ? s.summaryNoMisses
           : penalty > 0

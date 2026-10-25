@@ -448,6 +448,7 @@ class _Diffs extends StatelessWidget {
             Expanded(child: i < diffs.length ? _Diff(diffs[i]) : const SizedBox()),
           ],
         ]),
+        if (diffs.isEmpty) Text(S.of(context).runNoneThisRun, style: ReviewTextStyle.rowNote),
       ]);
 }
 

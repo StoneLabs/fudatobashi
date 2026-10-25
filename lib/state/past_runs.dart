@@ -51,8 +51,9 @@ class PastRun {
         _ => 0,
       };
 
-  RunView get view =>
-      scored || (mode == PlayMode.free && planned == RankedTuning.cards) ? RunView.hundred : RunView.training;
+  RunView get view => scored || (mode == PlayMode.free && completed && cards == RankedTuning.cards)
+      ? RunView.hundred
+      : RunView.training;
 
   /// The clock: the total, or the time so far of a run ended early.
   Duration? get clock => Progress.clockOf(row);

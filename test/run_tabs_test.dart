@@ -133,6 +133,41 @@ void main() {
     await captureScreen(tester, 'run_tabs/$name', lang: p.settings.language);
   }
 
+  testWidgets('a free run planned at 100 but ended early is a practice run and no reference', (tester) async {
+    late Progress p;
+    final ids = <String, int>{};
+    await tester.runAsync(() async {
+      p = await Progress.open(AppDatabase(NativeDatabase.memory()));
+      await p.setLearningMode(LearningMode.allKnown);
+      final config = PlayConfig(mode: PlayMode.free, setIds: const [], cardIds: [for (final c in all) c.poemId]);
+      Future<void> run(String name, int dayN, {int? stopAfter}) async {
+        final at = day.add(Duration(days: dayN));
+        final report = await p.recordRun(play(at, all, 1600, stopAfter: stopAfter), config, at,
+            now: at.add(const Duration(minutes: 5)));
+        ids[name] = report.runId!;
+      }
+
+      await run('full', 0);
+      await run('partial', 1, stopAfter: 7);
+      await run('latest', 2);
+    });
+    PastRun named(String name) => p.pastRuns.firstWhere((r) => r.id == ids[name]);
+    expect(named('partial').planned, RankedTuning.cards);
+    expect(named('partial').view, RunView.training);
+    expect(named('full').view, RunView.hundred);
+
+    final partial = (await tester.runAsync(() => p.loadRunDetail(named('partial'))))!;
+    expect(partial.references, isEmpty);
+    final latest = (await tester.runAsync(() => p.loadRunDetail(named('latest'))))!;
+    expect(latest.run.view, RunView.hundred);
+    expect(latest.references, hasLength(1), reason: 'the full run only, not the partial one');
+
+    onPhone(tester, width: 384, fontScale: 1);
+    await show(tester, p, RunOverviewTab(partial), 'overview_free_partial');
+    expect(find.textContaining('/${RankedTuning.cards}'), findsNothing);
+    await tester.pumpWidget(const SizedBox());
+  });
+
   for (final ja in [false, true]) {
     final lang = ja ? 'ja' : 'en';
     for (final (width, fontScale) in [(384.0, 1.0), (384.0, 1.3), (360.0, 1.3), (360.0, 1.0)]) {
