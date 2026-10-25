@@ -2,8 +2,6 @@ import 'strings.dart';
 
 /// Strings of History's run pages.
 extension RunStrings on S {
-  String get runTitle => t('runTitle');
-
   /// The run page's tabs.
   String get runTabOverview => t('runTabOverview');
   String get runTabCards => t('runTabCards');
@@ -11,7 +9,6 @@ extension RunStrings on S {
   String get runTabRating => t('runTabRating');
   String get runTabXp => t('runTabXp');
   String get runTabSwipes => t('runTabSwipes');
-  String get runTabGame => t('runTabGame');
 
   /// The line under the Rating and Score tabs.
   String get tabAndXp => t('tabAndXp');
@@ -21,25 +18,15 @@ extension RunStrings on S {
   String runCardsLine(int cards) => f(countKey('runCardsLine', cards), [cards]);
   String get runLoading => t('runLoading');
 
-  /// The Overview tab: headline facts, the time graph and its legend, the
-  /// speed chart.
-  String get runScoredTime => t('runScoredTime');
+  /// The Overview tab: the hero and tiles, the time graph and its legend,
+  /// the speed chart.
   String get runTimeLabel => t('runTimeLabel');
   String get runPerCard => t('runPerCard');
-  String get runAvgCard => t('runAvgCard');
-  String get runMisses => t('runMisses');
-  String get runRatingFact => t('runRatingFact');
-  String get runXpFact => t('runXpFact');
-  String get runRightShare => t('runRightShare');
-  String runClockLine(Object a0, int misses) => f(misses == 1 ? 'runClockLineOne' : 'runClockLine', [a0, misses]);
-  String runTotalLine(Object a0) => f('runTotalLine', [a0]);
   String get runFastestKind => t('runFastestKind');
   String get runSetDone => t('runSetDone');
   String get runExamWon => t('runExamWon');
   String get runExamLost => t('runExamLost');
   String runExamBy(Object a0) => f('runExamBy', [a0]);
-  String get runTobiTime => t('runTobiTime');
-  String get runYourTime => t('runYourTime');
   String runForfeitLine(Object a0, Object a1) => f('runForfeitLine', [a0, a1]);
   String get runGraphTitle => t('runGraphTitle');
   String get runGraphCards => t('runGraphCards');
@@ -69,8 +56,6 @@ extension RunStrings on S {
   String runMissesCount(Object a0, Object a1) => f('runMissesCount', [a0, a1]);
   String get runNoMisses => t('runNoMisses');
   String runPractise(Object a0) => f('runPractise', [a0]);
-  String get runPractiseSub => t('runPractiseSub');
-  String get runPractiseNote => t('runPractiseNote');
   String get runSwipesTitle => t('runSwipesTitle');
   String runSwipesCount(int n) => f(countKey('runSwipesCount', n), [n]);
   String get colCard => t('colCard');

@@ -182,8 +182,6 @@ abstract final class Tones {
   static const land = ToneSpec(dot: Color(0xFF8CCB67), radius: 1.5, spacing: 6, background: Palette.landSoft);
   static const sun = ToneSpec(dot: Color(0xFFFFC400), radius: 1.6, spacing: 6, background: Palette.sunSoft);
   static const violet = ToneSpec(dot: Color(0xFFA77CC0), radius: 1.5, spacing: 6, background: Palette.violetSoft);
-  static const pinkSoft = ToneSpec(dot: Color(0xFFFFA3C2), radius: 1.5, spacing: 6, background: Palette.pinkSoft);
-  static const orangeSoft = ToneSpec(dot: Color(0xFFFFB766), radius: 1.5, spacing: 6, background: Palette.orangeSoft);
 
   /// The sea dot pattern with no fill, for a faint wash over paper (Play's
   /// bottom band).
@@ -252,18 +250,6 @@ abstract final class Tones {
     end: Alignment(-0.6, 1),
     radii: [1.9, 0.9, 0, 0, 0.8, 1.9],
     stops: [0, 0.08, 0.19, 0.7, 0.84, 1],
-  );
-
-  /// A run or game page's backdrop: History's dots behind the header only,
-  /// so the long tabs' captions never sit on dots.
-  static const historyPage = GradationSpec(
-    dot: Palette.sea,
-    mix: [Palette.land, Palette.sea, Palette.sun, Palette.pink],
-    spacing: 8,
-    begin: Alignment(0.6, -1),
-    end: Alignment(-0.6, 1),
-    radii: [1.9, 0.9, 0, 0],
-    stops: [0, 0.08, 0.17, 1],
   );
 
   /// A page opened from Stats: the Stats dots behind its header only.

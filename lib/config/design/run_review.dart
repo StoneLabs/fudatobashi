@@ -151,9 +151,6 @@ abstract final class ReviewHeroLayout {
   static const double figureLineFont = 12.5;
   static const double figureGap = 10;
 
-  /// A forfeit's word.
-  static const double forfeitFont = 52;
-
   static const double ratingHeight = 166;
   static const double xpHeight = 150;
   static const double ankirenRatingHeight = 194;

@@ -64,14 +64,8 @@ abstract final class HistoryRunStyle {
   static const Color headingMark = Palette.sun;
 
   static const double sectionGap = 18;
-  static const EdgeInsets chartPadding = EdgeInsets.fromLTRB(10, 10, 10, 10);
-  static const double bigFont = 40;
-  static const double examTimeFont = 26;
 
-  /// A missed card on the Cards tab.
-  static const double cardWidth = 52;
-
-  /// `HistoryButton`: Practise these, Start review.
+  /// `HistoryButton`: an icon, its label and the smaller line after it.
   static const double buttonHeight = 50;
   static const double buttonShadow = 3;
   static const double buttonIcon = 18;
@@ -288,18 +282,11 @@ abstract final class AnkirenReviewStyle {
   static const double stepGap = 6;
   static const double stepSubFont = 11.5;
   static const double stepSubHeight = 1.3;
-  static const double stepButton = 44;
 
   /// The find-time chart numbers every bar up to [allLabelsUpTo] cards,
   /// else every [labelEvery]th.
   static const int allLabelsUpTo = 16;
   static const int labelEvery = 5;
-
-  /// Tables: header and cell type, and the row padding.
-  static const double headFont = 10;
-  static const double cellFont = 12.5;
-  static const EdgeInsets cellPadding = EdgeInsets.symmetric(horizontal: 3, vertical: 6);
-  static const Color rule = Color(0xFFD8D5CF);
 
   /// The score sum: big values over small labels, the result boxed.
   static const double sumFont = 18;
@@ -316,8 +303,6 @@ abstract final class AnkirenReviewStyle {
 abstract final class RunTabsStyle {
   static const double panelBorder = Strokes.label;
   static const EdgeInsets panelPadding = EdgeInsets.fromLTRB(10, 9, 10, 10);
-  static const EdgeInsets linePadding = EdgeInsets.symmetric(vertical: 4);
-  static const EdgeInsets firstCellPadding = EdgeInsets.fromLTRB(0, 7, 6, 7);
   static const EdgeInsets tableCellPadding = EdgeInsets.fromLTRB(3, 6, 3, 6);
   static const Color rule = Color(0xFFC9C5BE);
 
@@ -328,15 +313,9 @@ abstract final class RunTabsStyle {
   static const TextStyle headStyle =
       TextStyle(fontWeight: Weights.black, fontSize: HistoryRunStyle.labelFont, letterSpacing: 0.6);
   static const TextStyle valueStyle = TextStyle(fontFamily: Fonts.display, fontSize: 12.5);
-  static const TextStyle totalStyle = TextStyle(fontFamily: Fonts.display, fontSize: 16);
-  static const TextStyle bigStyle = TextStyle(fontFamily: Fonts.display, fontSize: 26, height: 1.15);
   static const TextStyle cellValueStyle = TextStyle(fontFamily: Fonts.display, fontSize: 19, height: 1.2);
-  static const TextStyle headlineStyle = TextStyle(fontFamily: Fonts.display, fontSize: 19, height: 1.25);
   static const TextStyle chartLabelStyle = TextStyle(
       fontFamily: Fonts.ui, fontWeight: Weights.black, fontSize: RunChartStyle.labelFont, color: HistoryRunStyle.behind);
-
-  /// The XP level bar.
-  static const double levelBarHeight = 16;
 
   /// The card strip: its height, how far the fastest stretch's box reaches
   /// past it, and that box's line.
@@ -365,9 +344,6 @@ abstract final class RunTabsStyle {
   /// Between the small cards of the gained and lost rows.
   static const double tileGap = 6;
 
-  /// The class bar.
-  static const double classBarHeight = 14;
-
   /// The ranked runs' rating chart and table.
   static const double ratingChartHeight = 120;
   static const double ratingChartPad = 0.12;
@@ -375,46 +351,6 @@ abstract final class RunTabsStyle {
   static const double ratingLineStroke = 2.2;
   static const double ratingPoint = 4.5;
   static const double ratingMineMark = 7;
-  static const double runColumnFlex = 1.3;
-}
-
-/// A run or game page's headline (`HeadlinePanel`): its cut corner, the
-/// tilted double-ringed stamp (`RunStamp`) and Tobi beside it.
-abstract final class HeadlineStyle {
-  static const double cut = 14;
-  static const EdgeInsets padding = EdgeInsets.fromLTRB(14, 10, 14 + cut, 12);
-  static const double stampTilt = -7;
-  static const double stampMaxScale = 1.15;
-  static const Color stampPaper = Color(0xE6FFFFFF);
-  static const double stampBorder = 2.5;
-  static const double stampRingGap = 1.5;
-  static const double stampRing = 1;
-  static const EdgeInsets stampPadding = EdgeInsets.fromLTRB(7, 4, 7, 4);
-  static const double stampFont = 13;
-  static const double stampSubFont = 7;
-  static const double stampSubTracking = 0.6;
-  static const double tobiGap = 2;
-
-  /// Room left of the stamp, so its tilted corners clear the big number.
-  static const double stampGap = 10;
-
-  /// Tobi's box, at his 84:100 aspect.
-  static const Size tobi = Size(46, 55);
-}
-
-/// History's small count chips (`StatChips`): a coloured bar on top, the
-/// number with an icon, a tracked label, and an ink drop shadow.
-abstract final class StatChipStyle {
-  static const double gap = 7;
-  static const double bar = 5;
-  static const Offset shadow = Offset(2.5, 2.5);
-  static const EdgeInsets padding = EdgeInsets.fromLTRB(7, 5, 6, 7);
-  static const double font = 22;
-  static const double icon = 14;
-  static const double iconStroke = 2.2;
-  static const double labelFont = 8.5;
-  static const double labelHeight = 1.2;
-  static const double labelTracking = 0.8;
 }
 
 /// `SwipeTabs`: the tab row over swiped pages, as slanted chips (a run

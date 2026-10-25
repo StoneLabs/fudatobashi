@@ -310,98 +310,6 @@ class _FactCell extends StatelessWidget {
       );
 }
 
-/// One count in a [StatChips] row: the number, what it counts, a small
-/// icon and the colour of its bar.
-class StatChip {
-  const StatChip(this.value, this.label, {required this.icon, required this.color, required this.fill});
-  final String value, label;
-  final VectorArt icon;
-
-  /// The bar's colour, and the chip's lighter fill to match.
-  final Color color, fill;
-}
-
-/// A row of small counts side by side, each in its own chip with a
-/// coloured bar along the top, all as tall as the tallest.
-class StatChips extends StatelessWidget {
-  const StatChips(this.chips, {super.key});
-  final List<StatChip> chips;
-
-  @override
-  Widget build(BuildContext context) => IntrinsicHeight(
-        child: Row(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-          for (final (i, c) in chips.indexed) ...[
-            if (i > 0) const SizedBox(width: StatChipStyle.gap),
-            Expanded(child: _Chip(c)),
-          ],
-        ]),
-      );
-}
-
-class _Chip extends StatelessWidget {
-  const _Chip(this.chip);
-  final StatChip chip;
-
-  @override
-  Widget build(BuildContext context) => DecoratedBox(
-        decoration: BoxDecoration(
-          color: chip.fill,
-          border: Border.all(color: Palette.ink, width: Strokes.label),
-          boxShadow: const [BoxShadow(color: Palette.inkShadow, offset: StatChipStyle.shadow)],
-        ),
-        child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-          Container(height: StatChipStyle.bar, color: chip.color),
-          Padding(
-            padding: StatChipStyle.padding,
-            child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-              Row(children: [
-                Expanded(
-                  child: FittedBox(
-                    fit: BoxFit.scaleDown,
-                    alignment: Alignment.centerLeft,
-                    child: Text(chip.value,
-                        maxLines: 1, style: const TextStyle(fontFamily: Fonts.display, fontSize: StatChipStyle.font, height: 1.1)),
-                  ),
-                ),
-                MangaIcon(chip.icon, size: StatChipStyle.icon, strokeWidth: StatChipStyle.iconStroke),
-              ]),
-              const SizedBox(height: Gaps.tight),
-              Text(chip.label.toUpperCase(),
-                  style: const TextStyle(
-                      fontWeight: Weights.black,
-                      fontSize: StatChipStyle.labelFont,
-                      height: StatChipStyle.labelHeight,
-                      letterSpacing: StatChipStyle.labelTracking)),
-            ]),
-          ),
-        ]),
-      );
-}
-
-/// A run or game page's headline: a halftone panel in the page's colour,
-/// cut in at the bottom right like the list's 7-day strip, on a hard
-/// shadow.
-class HeadlinePanel extends StatelessWidget {
-  const HeadlinePanel({super.key, this.plain, required this.child});
-
-  /// A flat fill instead of the page's halftone (a game not scored).
-  final Color? plain;
-  final Widget child;
-
-  @override
-  Widget build(BuildContext context) {
-    const tone = Tones.sun;
-    return MangaPanel(
-      shape: const PanelShape(bottomRight: Offset(HeadlineStyle.cut, 0)),
-      tone: plain == null ? tone : null,
-      color: plain ?? tone.background ?? Palette.paper,
-      padding: HeadlineStyle.padding,
-      shadow: HistoryRunStyle.panelShadow,
-      child: child,
-    );
-  }
-}
-
 /// A rubber stamp on a run's hero, tilted, with a double ring: a best, a
 /// placement, a level gained, a level cleared or failed, a game not
 /// scored. [sub] is the small line under it.
@@ -448,30 +356,8 @@ class RunStamp extends StatelessWidget {
       );
 }
 
-/// A headline's corner: a [stamp] beside Tobi in [pose], reacting to the
-/// run (cheering a best, shocked to lose the exam), or the stamp alone.
-class HeadlineCheer extends StatelessWidget {
-  const HeadlineCheer({super.key, this.stamp, this.pose});
-  final Widget? stamp;
-  final TobiPose? pose;
-
-  @override
-  Widget build(BuildContext context) => Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          const SizedBox(width: HeadlineStyle.stampGap),
-          ?stamp,
-          if (pose case final pose?) ...[
-            const SizedBox(width: HeadlineStyle.tobiGap),
-            SizedBox.fromSize(size: HeadlineStyle.tobi, child: Tobi(pose: pose, animate: false)),
-          ],
-        ],
-      );
-}
-
 /// A pink action button on a hard shadow: an icon, the [label] and a
-/// smaller [sub] after it (the Cards tab's Practise, the Field's Start
-/// review).
+/// smaller [sub] after it (Stats' button to the SRS details).
 class HistoryButton extends StatelessWidget {
   const HistoryButton({super.key, required this.icon, required this.label, this.sub, required this.onTap});
   final VectorArt icon;
@@ -528,18 +414,6 @@ class TrackedLabel extends StatelessWidget {
         [text.toUpperCase(), ?sub].join('  '),
         style: const TextStyle(
             fontWeight: Weights.black, fontSize: HistoryRunStyle.labelFont, letterSpacing: HistoryRunStyle.labelTracking),
-      );
-}
-
-/// A scrolling run tab: its sections with the page gutter.
-class RunTabList extends StatelessWidget {
-  const RunTabList({super.key, required this.children});
-  final List<Widget> children;
-
-  @override
-  Widget build(BuildContext context) => ListView(
-        padding: const EdgeInsets.fromLTRB(Gaps.gutter, Gaps.section, Gaps.gutter, Gaps.gutter),
-        children: children,
       );
 }
 

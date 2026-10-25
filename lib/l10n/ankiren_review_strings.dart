@@ -13,9 +13,6 @@ extension AnkirenReviewStrings on S {
   String ankirenOfMax(Object a0) => f('ankirenOfMax', [a0]);
   String get ankirenBestRankedStamp => t('ankirenBestRankedStamp');
   String get ankirenFirstTapFact => t('ankirenFirstTapFact');
-  String get ankirenMemorisedFact => t('ankirenMemorisedFact');
-  String ankirenUpFrom(Object a0) => f('ankirenUpFrom', [a0]);
-  String ankirenClassLine(RankBand band) => f('ankirenClassLine', [className(band)]);
   String get ankirenMixTitle => t('ankirenMixTitle');
   String get ankirenThisGame => t('ankirenThisGame');
   String ankirenCardsCount(Object a0) => f('ankirenCardsCount', [a0]);
@@ -93,11 +90,9 @@ extension AnkirenReviewStrings on S {
   String get ankirenTotal => t('ankirenTotal');
   String get ankirenTapsCaption => t('ankirenTapsCaption');
   String get ankirenTapsCaptionCustom => t('ankirenTapsCaptionCustom');
-  String get ankirenRightFirstLabel => t('ankirenRightFirstLabel');
   String get ankirenNotScored => t('ankirenNotScored');
   String get ankirenFoundFact => t('ankirenFoundFact');
   String get ankirenStrikesFact => t('ankirenStrikesFact');
-  String ankirenMemorisedOf(Object a0) => f('ankirenMemorisedOf', [a0]);
   String get ankirenMedianFact => t('ankirenMedianFact');
   String get ankirenCustomUnscored => t('ankirenCustomUnscored');
   String get ankirenSetupTitle => t('ankirenSetupTitle');

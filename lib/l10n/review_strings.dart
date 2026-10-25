@@ -40,7 +40,6 @@ extension ReviewStrings on S {
   String reviewUpFrom(Object best) => f('reviewUpFrom', [best]);
   String get reviewRightCardFirst => t('reviewRightCardFirst');
   String get reviewEveryCard => t('reviewEveryCard');
-  String get reviewFirstTapFinds => t('reviewFirstTapFinds');
   String get reviewWrongTaps => t('reviewWrongTaps');
   String reviewUnderClears(int strikes) => f('reviewUnderClears', [strikes]);
   String reviewMemorisedOf(Object used, Object allowed) => f('reviewMemorisedOf', [used, allowed]);

@@ -45,8 +45,6 @@ extension RunTabStrings on S {
   String get runMostGained => t('runMostGained');
   String get runMostLost => t('runMostLost');
   String get runNoUsual => t('runNoUsual');
-  String runPlayedLike(Object a0) => f('runPlayedLike', [a0]);
-  String get runRatingBefore => t('runRatingBefore');
   String get runNewRating => t('runNewRating');
   String get runPlacementShout => t('runPlacementShout');
   String runPlacementText(Object a0, Object a1) => f('runPlacementText', [a0, a1]);
@@ -69,7 +67,6 @@ extension RunTabStrings on S {
   String get runXpLabel => t('runXpLabel');
   String get runXpTotal => t('runXpTotal');
   String runLevelFrom(Object a0) => f('runLevelFrom', [a0]);
-  String runLevelsFrom(Object a0, Object a1) => f('runLevelsFrom', [a0, a1]);
   String get runNoXp => t('runNoXp');
   String get runTrainingNoRank => t('runTrainingNoRank');
   String get runPracticeNoRank => t('runPracticeNoRank');
