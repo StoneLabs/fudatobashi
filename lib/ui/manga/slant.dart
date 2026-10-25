@@ -71,9 +71,25 @@ class RenderLifted extends RenderShiftedBox {
   }
 }
 
-/// A panel in a stack of panels whose shared edges rise [cut] over its
-/// width: its top edge slanted ([slantTop]) or flat, likewise its bottom.
-/// Its place is that of its left side; a slanted top reaches above it.
+/// Gives the [SlantPanel]s, [SlantRow]s and summary heroes under it [cut]
+/// in place of their own; a cut of 0 makes them straight.
+class SlantCut extends InheritedWidget {
+  const SlantCut({super.key, required this.cut, required super.child});
+
+  final double cut;
+
+  /// The cut over [context], else [own].
+  static double of(BuildContext context, double own) =>
+      context.dependOnInheritedWidgetOfExactType<SlantCut>()?.cut ?? own;
+
+  @override
+  bool updateShouldNotify(SlantCut oldWidget) => cut != oldWidget.cut;
+}
+
+/// A panel in a stack of panels whose shared edges rise [cut] (or a
+/// [SlantCut]'s) over its width: its top edge slanted ([slantTop]) or flat,
+/// likewise its bottom. Its place is that of its left side; a slanted top
+/// reaches above it.
 class SlantPanel extends StatelessWidget {
   const SlantPanel({
     super.key,
@@ -97,6 +113,7 @@ class SlantPanel extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final cut = SlantCut.of(context, this.cut);
     final top = slantTop ? cut : 0.0;
     return Lifted(
       extra: top,
@@ -112,8 +129,9 @@ class SlantPanel extends StatelessWidget {
   }
 }
 
-/// Panels side by side, slices of one band whose edges rise [cut] over the
-/// band's width, in [colors]; as tall as the tallest.
+/// Panels side by side, slices of one band whose edges rise [cut] (or a
+/// [SlantCut]'s) over the band's width, in [colors]; as tall as the
+/// tallest.
 class SlantRow extends StatelessWidget {
   const SlantRow({
     super.key,
@@ -134,7 +152,7 @@ class SlantRow extends StatelessWidget {
         final w = box.maxWidth;
         final n = children.length;
         final tw = (w - gap * (n - 1)) / n;
-        final slope = cut / w;
+        final slope = SlantCut.of(context, cut) / w;
         final lift = slope * tw;
         final row = Row(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
           for (final (i, child) in children.indexed) ...[

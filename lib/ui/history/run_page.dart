@@ -25,12 +25,13 @@ Future<void> openRun(BuildContext context, PastRun run) =>
 
 /// One tab of a run or game page: its name, the line under it (its name
 /// in the other language unless [sub] gives one) and its contents, built
-/// from the page's data.
+/// from the page's data, their panels and tiles [cut].
 class PageTab<T> {
-  const PageTab(this.label, this.build, {this.sub});
+  const PageTab(this.label, this.build, {this.sub, this.cut = ReviewLayout.detailCut});
   final String Function(S s) label;
   final String Function(S s)? sub;
   final Widget Function(T data) build;
+  final double cut;
 
   /// This tab for [SwipeTabs] in [look]'s colours, filled in from [data].
   SwipeTab swipeTab(S s, T data, KindLook look) => SwipeTab(
@@ -38,7 +39,7 @@ class PageTab<T> {
         sub: s.sub == null ? null : sub?.call(s) ?? label(s.sub!),
         accent: look.accent,
         onAccent: look.onAccent,
-        builder: (_) => build(data),
+        builder: (_) => SlantCut(cut: cut, child: build(data)),
       );
 }
 
@@ -49,7 +50,7 @@ class RunPage extends StatefulWidget {
   final PastRun run;
 
   static final List<PageTab<RunDetail>> hundredTabs = [
-    PageTab((s) => s.runTabOverview, RunOverviewTab.new),
+    PageTab((s) => s.runTabOverview, RunOverviewTab.new, cut: ReviewLayout.cut),
     PageTab((s) => s.runTabCards, RunCardsTab.new),
     PageTab((s) => s.runTabSpeed, RunSpeedTab.new),
     PageTab((s) => s.runTabRating, RunRatingTab.new, sub: (s) => s.tabAndXp),
@@ -57,7 +58,7 @@ class RunPage extends StatefulWidget {
   ];
 
   static final List<PageTab<RunDetail>> trainingTabs = [
-    PageTab((s) => s.runTabOverview, RunOverviewTab.new),
+    PageTab((s) => s.runTabOverview, RunOverviewTab.new, cut: ReviewLayout.cut),
     PageTab((s) => s.runTabCards, RunCardsTab.new),
     PageTab((s) => s.runTabXp, RunXpTab.new),
     PageTab((s) => s.runTabSwipes, RunSwipesTab.new),

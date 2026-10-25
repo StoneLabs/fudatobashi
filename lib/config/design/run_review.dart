@@ -2,12 +2,13 @@ part of '../design.dart';
 
 /// History's run review (`RunPageFrame` and its tabs), in the summary's
 /// family: its header, a tab row whose open tab is a slanted chip in the
-/// run kind's colour, then heroes, tilted tiles and panels stacked like the
-/// journey home's, every shared edge rising [cut] over the column. Every
-/// Overview is the summary's skeleton: a hero, three tiles, then the rest
-/// down to the floor.
+/// run kind's colour, then heroes, tiles and panels stacked like the
+/// journey home's, every shared edge rising [cut] over the column on the
+/// Overview and [detailCut] on the other tabs. Every Overview is the
+/// summary's skeleton: a hero, three tiles, then the rest down to the floor.
 abstract final class ReviewLayout {
   static const double cut = HomeLayout.mapCut;
+  static const double detailCut = 0;
   static const double gap = Gaps.panel;
   static const double headerGap = SummaryLayout.headerGap;
 
@@ -261,7 +262,7 @@ abstract final class ReviewCardStyle {
   static const double width = 40;
   static const double gap = 10;
 
-  /// The slowest and fastest cards, side by side in two tilted panels.
+  /// The slowest and fastest cards, side by side in two panels.
   static const EdgeInsets shelfPadding = EdgeInsets.fromLTRB(12, 12, 12, 12);
   static const double shelfCardGap = 8;
   static const double chipGap = 5;

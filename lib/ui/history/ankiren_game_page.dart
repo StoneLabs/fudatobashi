@@ -31,7 +31,7 @@ class AnkirenGamePage extends StatelessWidget {
   final SideTripRun run;
 
   static final List<PageTab<AnkirenReview>> scoredTabs = [
-    PageTab((s) => s.runTabOverview, AnkirenOverviewTab.new),
+    PageTab((s) => s.runTabOverview, AnkirenOverviewTab.new, cut: ReviewLayout.cut),
     PageTab((s) => s.ankirenTabField, AnkirenFieldTab.new),
     PageTab((s) => s.runTabCards, AnkirenCardsTab.new),
     PageTab((s) => s.ankirenTabScore, AnkirenScoreTab.new, sub: (s) => s.tabAndXp),
@@ -39,7 +39,7 @@ class AnkirenGamePage extends StatelessWidget {
   ];
 
   static final List<PageTab<AnkirenReview>> unscoredTabs = [
-    PageTab((s) => s.runTabOverview, AnkirenOverviewTab.new),
+    PageTab((s) => s.runTabOverview, AnkirenOverviewTab.new, cut: ReviewLayout.cut),
     PageTab((s) => s.ankirenTabField, AnkirenFieldTab.new),
     PageTab((s) => s.ankirenTabTaps, AnkirenTapsTab.new),
   ];

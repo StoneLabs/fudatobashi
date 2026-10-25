@@ -184,8 +184,8 @@ class CountTile {
   final Color color;
 }
 
-/// Small counts side by side as tilted tiles: each number with its icon,
-/// over its label; as tall as the tallest, and at least
+/// Small counts side by side as tiles of a band ([SlantRow]): each number
+/// with its icon, over its label; as tall as the tallest, and at least
 /// [ReviewTileLayout.countHeight].
 class CountTiles extends StatelessWidget {
   const CountTiles(this.tiles, {super.key});

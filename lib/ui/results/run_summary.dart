@@ -235,10 +235,9 @@ class _BodyLayout extends MultiChildLayoutDelegate {
 }
 
 /// Where the hero's bar and its parts are in a hero of [size]: its top
-/// edge rises with the panel's bottom edge, [SummaryLayout.cut] over the
-/// width.
+/// edge rises with the panel's bottom edge, [cut] over the width.
 class _BarGeometry {
-  _BarGeometry(this.parts, this.size) {
+  _BarGeometry(this.parts, this.size, this.cut) {
     final total = parts.fold<num>(0, (sum, p) => sum + p.units);
     var at = 0.0;
     xs = [0];
@@ -250,11 +249,12 @@ class _BarGeometry {
 
   final List<BarPart> parts;
   final Size size;
+  final double cut;
 
   /// Where each part starts, and the last one ends.
   late final List<double> xs;
 
-  double get slope => SummaryLayout.cut / size.width;
+  double get slope => cut / size.width;
 
   double topAt(double x) => size.height - Strokes.panel - SummaryHeroLayout.bar - slope * x;
 
@@ -268,8 +268,9 @@ class _BarGeometry {
   }
 }
 
-/// A [SummaryHero] in a panel with a flat top and a slanted bottom edge,
-/// laid out by [metrics].
+/// A [SummaryHero] in a panel with a flat top and a bottom edge rising
+/// [SummaryLayout.cut] (or a [SlantCut]'s) over its width, laid out by
+/// [metrics].
 class HeroPanel extends StatelessWidget {
   const HeroPanel(this.hero, {super.key, this.metrics = SummaryHeroLayout.metrics});
   final SummaryHero hero;
@@ -279,7 +280,7 @@ class HeroPanel extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => LayoutBuilder(builder: (context, box) {
-        final bar = _BarGeometry(hero.bar, box.biggest);
+        final bar = _BarGeometry(hero.bar, box.biggest, SlantCut.of(context, SummaryLayout.cut));
         final tobi = metrics.tobi;
         final tobiX = math.min(
           math.max(bar.front, SummaryHeroLayout.tobiMinFront) * bar.size.width,
@@ -294,7 +295,7 @@ class HeroPanel extends StatelessWidget {
           pose == null || !metrics.clearOfTobi ? double.infinity : tobiX - tobi.width / 2 - SummaryHeroLayout.bodyLeft,
         );
         return MangaPanel(
-          shape: const PanelShape(bottomRight: Offset(0, SummaryLayout.cut)),
+          shape: PanelShape(bottomRight: Offset(0, bar.cut)),
           color: hero.color,
           art: [if (hero.burst case final burst?) BurstLayer(burst)],
           child: Stack(clipBehavior: Clip.none, children: [
@@ -487,7 +488,8 @@ class _BarPainter extends CustomPainter {
   }
 
   @override
-  bool shouldRepaint(_BarPainter old) => old.bar.size != bar.size || old.bar.parts != bar.parts || old.ticks != ticks;
+  bool shouldRepaint(_BarPainter old) =>
+      old.bar.size != bar.size || old.bar.cut != bar.cut || old.bar.parts != bar.parts || old.ticks != ticks;
 }
 
 /// A count as the hero's answer: the big [value] with its [label] and
