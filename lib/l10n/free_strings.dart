@@ -57,7 +57,6 @@ extension FreeStrings on S {
   String get legendUnknown => t('legendUnknown');
 
   /// History and Results: which deck a free-play run used.
-  String get deckAllKnown => t('deckAllKnown');
   String get deckCustom => t('deckCustom');
   String get customRunNote => t('customRunNote');
 }

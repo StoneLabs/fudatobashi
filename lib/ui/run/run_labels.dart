@@ -30,11 +30,11 @@ String modeTitle(S t, PlayMode mode) => switch (mode) {
       PlayMode.exam => t.summaryExam,
     };
 
-/// A free-play run's deck (全部, カスタム, an island) and, when it was on,
-/// hidden kana.
+/// A free-play run's deck (カスタム, an island; none for the known cards)
+/// and, when it was on, hidden kana.
 List<String> freeDeckLabels(S s, PlayConfig c) {
   final set = c.cardIds == null && c.setIds.length == 1
       ? fudaSets.all.where((f) => f.id == c.setIds.first).firstOrNull
       : null;
-  return [c.isKnownDeck ? s.deckAllKnown : set?.label ?? s.deckCustom, if (c.maskLevel > 0) s.maskRow];
+  return [if (!c.isKnownDeck) set?.label ?? s.deckCustom, if (c.maskLevel > 0) s.maskRow];
 }

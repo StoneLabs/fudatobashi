@@ -69,7 +69,6 @@ extension SummaryStrings on S {
   // The tiles.
   String get summaryCardsLabel => t('summaryCardsLabel');
   String get summaryThisRunNote => t('summaryThisRunNote');
-  String get summaryAllKnownNote => t('summaryAllKnownNote');
   String get summaryThisDrill => t('summaryThisDrill');
   String get summaryRightLabel => t('summaryRightLabel');
   String get summaryNoMisses => t('summaryNoMisses');

@@ -182,7 +182,7 @@ class _Run {
         balloon: s.summaryNiceRun,
       ),
       [
-        _cardsTile(config.isKnownDeck ? s.summaryAllKnownNote : s.summaryThisRunNote),
+        _cardsTile(s.summaryThisRunNote),
         journey ? _todayTile(set) : _streakTile(),
         config.tracked ? rewardTile(s, report.xp) : rewardTile(s, null),
       ],
