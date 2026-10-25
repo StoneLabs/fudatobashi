@@ -230,6 +230,10 @@ void main() {
           final run = runs[2];
           final game = p.sideTrips.recordOf(run);
           useScreen(tester, phone, fontScale: fontScale);
+          // Tobi idles for ever; with animations off the tabs settle.
+          tester.platformDispatcher.accessibilityFeaturesTestValue =
+              const FakeAccessibilityFeatures(disableAnimations: true);
+          addTearDown(tester.platformDispatcher.clearAccessibilityFeaturesTestValue);
           Future<void> show(SideTripRun run) async {
             await tester.pumpWidget(RepaintBoundary(
               key: const ValueKey('screen'),
@@ -286,7 +290,7 @@ void main() {
 
           await tab(s.runTabCards, 'cards');
           expect(find.textContaining(s.ankirenRankedTitle, findRichText: true), findsOneWidget);
-          expect(find.text(s.ankirenColBest), findsOneWidget);
+          expect(find.text(s.ankirenColBest.toUpperCase()), findsOneWidget);
           await tester.drag(find.byType(Scrollable).last, const Offset(0, -500));
           await tester.pumpAndSettle();
           await captureScreen(tester, 'ankiren_game_cards2', lang: lang);
@@ -306,7 +310,7 @@ void main() {
           await captureScreen(tester, 'ankiren_game_taps2', lang: lang);
 
           await show(runs[4]);
-          expect(find.text(s.ankirenFirstTapFact.toUpperCase()), findsOneWidget);
+          expect(find.text(s.ankirenNotScored.toUpperCase()), findsOneWidget);
           expect(find.textContaining(s.ankirenSetupTitle, findRichText: true), findsOneWidget);
           expect(find.text(s.ankirenTabScore), findsNothing, reason: 'a custom game has no score');
           await captureScreen(tester, 'ankiren_custom_overview', lang: lang);

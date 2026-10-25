@@ -14,8 +14,8 @@ import 'package:fudatobashi/domain/rating.dart';
 import 'package:fudatobashi/domain/trainer.dart';
 import 'package:fudatobashi/config/config.dart';
 import 'package:fudatobashi/l10n/history_strings.dart';
+import 'package:fudatobashi/l10n/review_strings.dart';
 import 'package:fudatobashi/l10n/ranked_strings.dart';
-import 'package:fudatobashi/l10n/run_strings.dart';
 import 'package:fudatobashi/l10n/run_tab_strings.dart';
 import 'package:fudatobashi/l10n/strings.dart';
 import 'package:fudatobashi/state/past_runs.dart';
@@ -28,7 +28,6 @@ import 'package:fudatobashi/ui/history/run_speed_tab.dart';
 import 'package:fudatobashi/ui/history/review_parts.dart';
 import 'package:fudatobashi/ui/history/run_xp_tab.dart';
 import 'package:fudatobashi/ui/manga/theme.dart';
-import 'package:fudatobashi/ui/play/time_format.dart';
 
 import 'test_l10n.dart';
 import 'test_screens.dart';
@@ -152,8 +151,8 @@ void main() {
         expect(find.textContaining(s.runThirdsTitle, findRichText: true), findsOneWidget);
         expect(find.text(s.runSwipeTimesPenalty(10)), findsOneWidget);
         await show(tester, p, RunRatingTab(ranked), 'rating_ranked');
-        expect(find.text(s.runRatingBefore), findsOneWidget);
-        expect(find.text(s.runNewRating), findsOneWidget);
+        expect(find.text(s.reviewBefore.toUpperCase()), findsOneWidget);
+        expect(find.text(s.reviewPartWay), findsOneWidget);
         expect(find.text(s.runSoFar(3)), findsOneWidget);
         expect(find.text(s.runXpTotal), findsOneWidget);
 
@@ -162,6 +161,7 @@ void main() {
         await show(tester, p, RunRatingTab(placement), 'rating_placement');
         expect(find.textContaining(s.runPlacementShout), findsOneWidget);
         expect(find.text(s.rankUnplaced), findsOneWidget);
+        expect(find.text(s.runNewRating.toUpperCase()), findsOneWidget);
 
         final forfeit = await detailOf('forfeit');
         expect(forfeit.run.forfeit, isTrue);
@@ -177,7 +177,6 @@ void main() {
         expect(find.text('${RankedTuning.forfeitPerformance.round()}'), findsWidgets);
         await show(tester, p, RunOverviewTab(forfeit), 'overview_forfeit');
         expect(find.text(s.historyForfeit), findsOneWidget, reason: 'in place of the time');
-        expect(find.textContaining(s.runClockLine(formatTenths(forfeit.run.clock!), forfeit.run.scoredMisses!)), findsNothing);
         await show(tester, p, RunSpeedTab(forfeit), 'speed_forfeit');
         expect(find.text(s.runSpeedForfeit(37)), findsOneWidget);
 

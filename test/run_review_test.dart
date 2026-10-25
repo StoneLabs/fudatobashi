@@ -198,7 +198,7 @@ void main() {
       await open(tester, p, RunPage(run: run));
       expect(find.text(_s.summaryThisRun), findsOneWidget);
       expect(find.text(_s.runGraphTitle), findsOneWidget);
-      expect(find.textContaining(_s.runTotalLine('')), findsNothing, reason: 'practice runs vary in length');
+      expect(find.text(_s.runPerCard.toUpperCase()), findsOneWidget, reason: 'practice runs vary in length');
       await shot(tester, '01_training');
       await tab(tester, _s.runTabCards);
       expect(find.text(_s.runSpeedTitle), findsOneWidget);

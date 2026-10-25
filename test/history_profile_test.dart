@@ -184,6 +184,9 @@ void main() {
               start.add(const Duration(hours: 4)));
         });
         useScreen(tester, phone, fontScale: fontScale);
+        // Tobi idles for ever; with animations off the tabs settle.
+        tester.platformDispatcher.accessibilityFeaturesTestValue = const FakeAccessibilityFeatures(disableAnimations: true);
+        addTearDown(tester.platformDispatcher.clearAccessibilityFeaturesTestValue);
         for (final mode in [PlayMode.ranked, PlayMode.free, PlayMode.exam, PlayMode.training]) {
           await tester.pumpWidget(RepaintBoundary(
             key: const ValueKey('screen'),
