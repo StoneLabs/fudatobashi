@@ -1401,7 +1401,7 @@
   "cardTapHint": "札をタップすると解説へ",
   "cardColumnNumber": "番号",
   "cardColumnKimariji": "決まり字",
-  "cardColumnCard": "取り札",
+  "cardColumnCard": "札",
   "cardShimoTag": "下の句",
   "cardNoneTitle": "「{0}」で​始まる​札は​ありません",
   "cardNoneText": "1〜100の​番号か、​「あき」のように​歌の​最初の​音で​探してください。",
