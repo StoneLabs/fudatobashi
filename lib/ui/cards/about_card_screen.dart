@@ -28,8 +28,9 @@ import 'sound_ladder_view.dart';
 /// before and after it. Section markers take the card's colour group.
 ///
 /// The 序歌's page ([AboutCardScreen.joka], from the card browser) has only
-/// what a reading card alone has: the card, the poem, its facts with a note
-/// on what the 序歌 is, and its explanation, under neutral markers.
+/// what a reading card alone has: the card with its key, the 序歌's name in
+/// the kimariji's place, the poem, its facts and its explanation, under
+/// neutral markers.
 class AboutCardScreen extends StatefulWidget {
   const AboutCardScreen({super.key, required int this.poemId});
 
@@ -46,14 +47,6 @@ class _AboutCardScreenState extends State<AboutCardScreen> {
   CardFace _front = CardFace.taking;
   Future<String>? _explanation;
   String? _explanationCode;
-
-  /// A line of plain text between the page's parts: the ladder's lead, and
-  /// on the 序歌's page what it is.
-  static const _lead = TextStyle(
-      fontWeight: Weights.medium,
-      fontSize: AboutCardLayout.leadFont,
-      height: AboutCardLayout.leadLineHeight,
-      color: Palette.inkSoft);
 
   Poem? get _poem => switch (widget.poemId) {
         final id? => poems[id],
@@ -107,10 +100,7 @@ class _AboutCardScreenState extends State<AboutCardScreen> {
             const SizedBox(height: AboutCardLayout.sectionGap),
             heading(s.aboutFacts, o?.aboutFacts),
             _Facts(poem: waka),
-            if (poem == null) ...[
-              const SizedBox(height: AboutCardLayout.jokaNoteGap),
-              Text.rich(Phrases.span(s.aboutJokaNote), style: _lead),
-            ] else ...[
+            if (poem != null) ...[
               const SizedBox(height: AboutCardLayout.sectionGap),
               heading(s.aboutSimilar, o?.aboutSimilar),
               ..._similar(poem, romaji),
@@ -217,7 +207,11 @@ class _AboutCardScreenState extends State<AboutCardScreen> {
       const SizedBox(height: AboutCardLayout.barGap),
       Text.rich(
         Phrases.span(settings.soundLadder == SoundLadderMode.kana ? s.aboutLadderLeadKana : s.aboutLadderLead),
-        style: _lead,
+        style: const TextStyle(
+            fontWeight: Weights.medium,
+            fontSize: AboutCardLayout.leadFont,
+            height: AboutCardLayout.leadLineHeight,
+            color: Palette.inkSoft),
       ),
       const SizedBox(height: AboutCardLayout.leadGap),
       SoundLadderView(
