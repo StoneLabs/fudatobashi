@@ -93,7 +93,10 @@ Map<String, Object> _poem(Map<String, String> r) {
   };
 }
 
-Map<String, Object> _joka(Map<String, String> r) => {..._verses(r), 'yomifudaColumns': _yomifudaColumns(r)};
+/// The 序歌's poet, verses and reading card; the card's title is the CSV's
+/// number for the row (序歌).
+Map<String, Object> _joka(Map<String, String> r) =>
+    {..._verses(r), 'yomifudaTitle': r['number']!, 'yomifudaColumns': _yomifudaColumns(r)};
 
 /// The five verses as pronounced (modern kana).
 List<String> _versesYomi(Map<String, String> r) => [for (var v = 1; v <= 5; v++) r['verse_${v}_hiragana_yomi']!];

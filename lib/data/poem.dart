@@ -22,6 +22,7 @@ class Waka {
         versesRomaji = (j['versesRomaji'] as List).cast<String>(),
         kamiRuby = j['kamiRuby'] as String,
         shimoRuby = j['shimoRuby'] as String,
+        yomifudaTitle = j['yomifudaTitle'] as String?,
         yomifudaColumns = (j['yomifudaColumns'] as List).cast<String>();
 
   /// The card's number, printed on its reading card; null for a waka that
@@ -65,6 +66,10 @@ class Waka {
 
   /// The five verses in furigana markup, upper verse first.
   List<String> get versesRuby => [...kamiRuby.split('　'), ...shimoRuby.split('　')];
+
+  /// The title its reading card prints in red down the right, as the 序歌's
+  /// does; null for the 100, whose cards have a number instead.
+  final String? yomifudaTitle;
 
   /// The yomifuda's text as read in competitive karuta (競技読み), in four
   /// columns right to left: verses 1–2, 3, 4 and 5. Furigana markup, plus

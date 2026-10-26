@@ -4,6 +4,7 @@
 // Output: build/cards/yomifuda/yomi_NNN.png and yomi_joka.png, 312 × 450
 // (6 px per mm).
 import 'dart:io';
+import 'dart:math' as math;
 import 'dart:ui' as ui;
 
 import 'package:flutter/services.dart';
@@ -46,12 +47,14 @@ void main() {
     }
   });
 
-  testWidgets('render reading cards; the 序歌 has no kimariji, so nothing on it is red', (tester) async {
+  testWidgets('render reading cards; the 序歌 has no kimariji, so only its title is red', (tester) async {
     final joka = Waka.fromJsonString(File(jokaAsset).readAsStringSync());
     final red = YomifudaStyle.standard.kimariji;
     bool isRed(int r, int g, int b) =>
         (r - red.r * 255).abs() < 40 && (g - red.g * 255).abs() < 40 && (b - red.b * 255).abs() < 40;
     final reds = <String, int>{};
+    // Each card's red pixels, the leftmost and rightmost, as x across it.
+    final redSpans = <String, (int, int)>{};
     await tester.runAsync(() async {
       await _loadFont('YujiSyuku', 'assets/fonts/YujiSyuku-Regular.ttf');
       await _loadFont('TorifudaNumber', 'assets/fonts/TeXGyreSchola-Regular.otf');
@@ -66,10 +69,15 @@ void main() {
         final img = await rec.endRecording().toImage(size.width.round(), size.height.round());
         final rgba = (await img.toByteData())!.buffer.asUint8List();
         var count = 0;
+        var (left, right) = (img.width, -1);
         for (var i = 0; i < rgba.length; i += 4) {
-          if (isRed(rgba[i], rgba[i + 1], rgba[i + 2])) count++;
+          if (!isRed(rgba[i], rgba[i + 1], rgba[i + 2])) continue;
+          count++;
+          final x = i ~/ 4 % img.width;
+          (left, right) = (math.min(left, x), math.max(right, x));
         }
         reds[name] = count;
+        redSpans[name] = (left, right);
         final png = await img.toByteData(format: ui.ImageByteFormat.png);
         File('build/cards/yomifuda/yomi_$name.png')
           ..createSync(recursive: true)
@@ -77,7 +85,11 @@ void main() {
       }
     });
     expect(reds['001'], greaterThan(0), reason: 'a card\'s kimariji is red');
-    expect(reds['joka'], 0);
+    expect(reds['joka'], greaterThan(0), reason: 'the 序歌\'s title is red');
+    final (left, right) = redSpans['joka']!;
+    const title = YomifudaSpec.titleX * _width, em = YomifudaSpec.em * _width;
+    expect(left, greaterThan(title - em / 2), reason: 'red only in the title\'s column');
+    expect(right, lessThan(title + em / 2), reason: 'red only in the title\'s column');
   });
 }
 

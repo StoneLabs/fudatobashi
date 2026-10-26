@@ -20,7 +20,7 @@ class YomifudaStyle {
   final String background;
   final Color ink;
 
-  /// The kimariji's colour.
+  /// The kimariji's colour, and a titled card's title's.
   final Color kimariji;
   final Color number;
   final String fontFamily;
@@ -52,6 +52,20 @@ abstract final class YomifudaSpec {
 
   /// The four columns' centres, right to left: verses 1–2, 3, 4 and 5.
   static const List<double> columnX = [0.792, 0.582, 0.372, 0.162];
+
+  /// A titled card (the 序歌's) prints its title in red down a column of its
+  /// own at [titleX]: a little smaller than the poem, not widened like it
+  /// and thickened by [titleBold] (a share of its size), its first
+  /// character's box starting [titleTop] down the card and each next one
+  /// [titlePitch] em further. The poem's columns move left and closer
+  /// together to make room.
+  static const double titleX = 0.848;
+  static const double titleTop = 0.19;
+  static const double titleScale = 0.8;
+  static const double titleWidth = 1;
+  static const double titleBold = 0.03;
+  static const double titlePitch = 3;
+  static const List<double> titledColumnX = [0.657, 0.484, 0.312, 0.141];
 
   /// The first and third columns hang from [textTop]; the second and the
   /// fourth stand on [textBottom].

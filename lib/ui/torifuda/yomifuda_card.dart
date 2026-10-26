@@ -11,7 +11,8 @@ import 'card_faces.dart';
 /// A yomifuda (読み札): the poem as the reader reads it in a match, in four
 /// vertical columns with its kimariji in red, readings beside the kanji,
 /// lines where a sound is held, the closing stroke where the voice fades and
-/// the card's number in the corner. The 序歌 has neither kimariji nor number.
+/// the card's number in the corner. The 序歌 has neither kimariji nor number:
+/// its title runs down the right in red instead.
 class YomifudaCard extends StatelessWidget {
   const YomifudaCard({super.key, required this.poem, this.style = YomifudaStyle.standard});
 
@@ -80,6 +81,8 @@ class YomifudaPainter extends CustomPainter {
     if (columns[1].lastOrNull case final close? when close.isStretch) {
       columns[1].last = const YomifudaToken.stretch(YomifudaSpec.upperEndStretch);
     }
+    final title = poem.yomifudaTitle;
+    final columnX = title == null ? YomifudaSpec.columnX : YomifudaSpec.titledColumnX;
     var red = poem.kimarijiReading?.length ?? 0;
     for (final (i, column) in columns.indexed) {
       final last = i == columns.length - 1;
@@ -87,7 +90,7 @@ class YomifudaPainter extends CustomPainter {
       final end = last ? YomifudaSpec.endGap + YomifudaSpec.endLength : 0.0;
       final held = column.fold(0.0, (sum, t) => sum + t.stretch) + end;
       final pitch = math.min(em, (room - held * em) / chars);
-      final x = YomifudaSpec.columnX[i] * size.width;
+      final x = columnX[i] * size.width;
       var y = i.isEven
           ? YomifudaSpec.textTop * size.height
           : YomifudaSpec.textBottom * size.height - chars * pitch - held * em;
@@ -110,6 +113,18 @@ class YomifudaPainter extends CustomPainter {
       }
     }
     if (poem.id case final id?) _number(canvas, size, id);
+    if (title != null) _title(canvas, size, title, em);
+  }
+
+  /// [title] down its own column right of the poem, in the kimariji's red.
+  void _title(Canvas canvas, Size size, String title, double em) {
+    final x = YomifudaSpec.titleX * size.width;
+    final glyph = YomifudaSpec.titleScale * em;
+    final top = YomifudaSpec.titleTop * size.height + glyph / 2;
+    for (var k = 0; k < title.length; k++) {
+      _glyph(canvas, title[k], Offset(x, top + k * YomifudaSpec.titlePitch * em), glyph, 1, style.kimariji,
+          bold: YomifudaSpec.titleBold, wide: YomifudaSpec.titleWidth);
+    }
   }
 
   /// [token]'s characters down the column from [top] at [pitch], flattened
@@ -137,14 +152,15 @@ class YomifudaPainter extends CustomPainter {
     }
   }
 
-  /// [ch] centred on [center], widened by the spec's glyph width and
-  /// squeezed down the column by [flat]; [bold] thickens its strokes by
-  /// that share of [size].
-  void _glyph(Canvas canvas, String ch, Offset center, double size, double flat, Color color, {double bold = 0}) {
+  /// [ch] centred on [center], widened by [wide] (the spec's glyph width
+  /// unless given) and squeezed down the column by [flat]; [bold] thickens
+  /// its strokes by that share of [size].
+  void _glyph(Canvas canvas, String ch, Offset center, double size, double flat, Color color,
+      {double bold = 0, double wide = YomifudaSpec.glyphWidth}) {
     canvas
       ..save()
       ..translate(center.dx, center.dy)
-      ..scale(YomifudaSpec.glyphWidth, flat);
+      ..scale(wide, flat);
     for (final tp in _painters(ch, style.fontFamily, size, color, bold)) {
       final baseline = tp.computeDistanceToActualBaseline(TextBaseline.alphabetic);
       tp
