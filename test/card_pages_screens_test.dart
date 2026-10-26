@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:fudatobashi/l10n/card_info_strings.dart';
 import 'package:fudatobashi/l10n/strings.dart';
+import 'package:fudatobashi/state/settings.dart';
 import 'package:fudatobashi/ui/cards/about_card_screen.dart';
 import 'package:fudatobashi/ui/cards/card_browser_screen.dart';
 import 'package:fudatobashi/ui/cards/card_panel.dart';
@@ -79,15 +80,20 @@ void main() {
         });
       }
 
-      testWidgets('About the 序歌: its reading card, the poem, its facts and explanation ($tag)', (tester) async {
+      testWidgets('About the 序歌: its reading card and key, its name, the poem, its facts and explanation, '
+          'in English also in kana ($tag)', (tester) async {
         await loadCardArt(tester);
         final p = await openPlayer(tester, lang);
-        await showPage(tester, p, const AboutCardScreen.joka(), screen: phone, textScale: textScale);
-        await shot(tester, 'about_joka');
-        await scrollTo(tester, find.textContaining(s.aboutFacts));
-        await shot(tester, 'about_joka_facts');
-        await scrollTo(tester, find.textContaining(s.aboutPoemPart));
-        await shot(tester, 'about_joka_explanation');
+        for (final kana in [false, if (!s.ja) true]) {
+          final variant = kana ? 'kana' : null;
+          if (kana) await p.updateSettings(p.settings.copyWith(kimarijiScript: KimarijiScript.hiragana));
+          await showPage(tester, p, const AboutCardScreen.joka(), screen: phone, textScale: textScale);
+          await shot(tester, 'about_joka', variant: variant);
+          await scrollTo(tester, find.textContaining(s.aboutFacts));
+          await shot(tester, 'about_joka_facts', variant: variant);
+          await scrollTo(tester, find.textContaining(s.aboutPoemPart));
+          await shot(tester, 'about_joka_explanation', variant: variant);
+        }
       });
 
       testWidgets('First sounds, a screen at a time, and Help ($tag)', (tester) async {
