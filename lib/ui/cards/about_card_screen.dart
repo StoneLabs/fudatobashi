@@ -16,7 +16,6 @@ import '../manga/manga.dart';
 import '../sound/sounds.dart';
 import '../stats/card_detail_screen.dart';
 import '../torifuda/torifuda_painter.dart';
-import '../torifuda/yomifuda_card.dart';
 import 'card_panel.dart';
 import 'first_sounds_screen.dart';
 import 'page_frame.dart';
@@ -99,7 +98,7 @@ class _AboutCardScreenState extends State<AboutCardScreen> {
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             if (poem == null)
-              CardDesk(label: s.aboutReadingCard, children: [CardDesk.card(YomifudaCard(poem: waka))])
+              CardPanel.readingOnly(poem: joka)
             else
               ..._cards(poem, romaji),
             const SizedBox(height: AboutCardLayout.sectionGap),

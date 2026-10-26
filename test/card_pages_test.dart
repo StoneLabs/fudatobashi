@@ -172,8 +172,8 @@ void main() {
       final page = find.byWidgetPredicate((w) => w is AboutCardScreen && w.poemId == null);
       expect(page, findsOneWidget);
       Finder onPage(Finder finder) => find.descendant(of: page, matching: finder, skipOffstage: false);
-      expect(onPage(find.descendant(of: find.byType(CardDesk), matching: find.byType(YomifudaCard))), findsOneWidget);
-      for (final cardOnly in [CardPanel, TorifudaCard, PillSwitch<CardFace>, SoundLadderView, LinkRow]) {
+      expect(onPage(find.descendant(of: find.byType(CardPanel), matching: find.byType(YomifudaCard))), findsOneWidget);
+      for (final cardOnly in [TorifudaCard, PillSwitch<CardFace>, SoundLadderView, LinkRow]) {
         expect(onPage(find.byType(cardOnly, skipOffstage: false)), findsNothing, reason: '$cardOnly');
       }
       for (final text in [_en.aboutFirstHalf, _en.aboutSource, _en.aboutJokaNote, _en.aboutPoemPart]) {
@@ -332,6 +332,47 @@ void main() {
       await settle(tester);
       expect(scroll.position.pixels, greaterThan(100), reason: 'the page scrolled');
       expect(tester.widget<CardPanel>(find.byType(CardPanel)).front, CardFace.taking, reason: 'no swap');
+    });
+
+    testWidgets('the 序歌\'s reading card alone follows the finger, springs back, and comes back after a throw',
+        (tester) async {
+      final p = await openPlayer(tester, 'en');
+      await showPage(tester, p, const AboutCardScreen.joka());
+      final card = _panelCard(YomifudaCard);
+      expect(card, findsOneWidget, reason: 'no card behind it');
+      expect(_panelCard(TorifudaCard), findsNothing);
+      expect(
+          tester.widget<AnimatedOpacity>(find.ancestor(of: find.text(_en.aboutSwipe), matching: find.byType(AnimatedOpacity))).opacity,
+          0,
+          reason: 'no SWIPE sticker: there is no other card');
+      final rest = tester.getCenter(card);
+
+      Future<TestGesture> drag(double by) async {
+        final gesture = await tester.startGesture(tester.getCenter(card));
+        for (var i = 0; i < 4; i++) {
+          await gesture.moveBy(Offset(by / 4, 0));
+          await tester.pump();
+        }
+        return gesture;
+      }
+
+      const short = CardPanelTuning.throwDistance - 10;
+      var gesture = await drag(-short);
+      expect(tester.getCenter(card).dx, moreOrLessEquals(rest.dx - short, epsilon: 1), reason: 'follows 1:1');
+      await gesture.up();
+      await settle(tester);
+      expect(tester.getCenter(card), offsetMoreOrLessEquals(rest, epsilon: 0.5), reason: 'too short: it springs back');
+
+      gesture = await drag(CardPanelTuning.throwDistance + 30);
+      await gesture.up();
+      await tester.pump();
+      await tester.pump(CardPanelTuning.swapDelay - const Duration(milliseconds: 10));
+      expect(tester.getCenter(card).dx, greaterThan(rest.dx + CardPanelTuning.throwTo / 2), reason: 'thrown aside');
+      await settle(tester);
+      expect(card, findsOneWidget);
+      expect(tester.getCenter(card), offsetMoreOrLessEquals(rest, epsilon: 0.5), reason: 'the same card comes back');
+      expect(tester.widget<CardPanel>(find.byType(CardPanel)).front, CardFace.reading);
+      expect(p.settings.cardPanelSwiped, isFalse, reason: 'swiping one card teaches nothing');
     });
   });
 }

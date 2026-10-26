@@ -30,12 +30,30 @@ enum CardFace {
 /// card behind swaps them too. Either way [onSwap] hears the face to bring
 /// forward, and the owner moves it to [front]. A SWIPE sticker sits in the
 /// corner while [sticker] is on.
+///
+/// A waka with no taking card, such as the 序歌, has its reading card alone
+/// ([CardPanel.readingOnly]): it drags the same, and a throw brings it back.
 class CardPanel extends StatefulWidget {
-  const CardPanel({super.key, required this.poem, required this.front, required this.onSwap, required this.sticker});
+  const CardPanel({
+    super.key,
+    required Poem this.poem,
+    required this.front,
+    required ValueChanged<CardFace> this.onSwap,
+    required this.sticker,
+  });
 
-  final Poem poem;
+  /// [poem]'s reading card alone, with no sticker: there is no other card to
+  /// swipe to.
+  const CardPanel.readingOnly({super.key, required this.poem})
+      : front = CardFace.reading,
+        onSwap = null,
+        sticker = false;
+
+  final Waka poem;
   final CardFace front;
-  final ValueChanged<CardFace> onSwap;
+
+  /// Null when the reading card is alone.
+  final ValueChanged<CardFace>? onSwap;
   final bool sticker;
 
   @override
@@ -92,7 +110,7 @@ class _CardPanelState extends State<CardPanel> {
     _swap = Timer(CardPanelTuning.swapDelay, () {
       if (!mounted) return;
       setState(() => _thrown = null);
-      widget.onSwap(widget.front.other);
+      widget.onSwap?.call(widget.front.other);
     });
   }
 
@@ -109,10 +127,16 @@ class _CardPanelState extends State<CardPanel> {
 
   Widget _card(CardFace face) {
     final front = face == widget.front;
-    Widget card = CardDesk.card(switch (face) {
-      CardFace.taking => TorifudaCard(poem: widget.poem),
-      CardFace.reading => YomifudaCard(poem: widget.poem),
-    });
+    Widget card = SizedBox(
+      width: AboutCardLayout.cardWidth,
+      child: DecoratedBox(
+        decoration: const BoxDecoration(boxShadow: [AboutCardLayout.cardShadow]),
+        child: switch (face) {
+          CardFace.taking => TorifudaCard(poem: widget.poem as Poem),
+          CardFace.reading => YomifudaCard(poem: widget.poem),
+        },
+      ),
+    );
     card = front
         ? GestureDetector(
             dragStartBehavior: DragStartBehavior.down,
@@ -122,7 +146,7 @@ class _CardPanelState extends State<CardPanel> {
             onHorizontalDragCancel: _end,
             child: card,
           )
-        : GestureDetector(onTap: _thrown == null ? () => widget.onSwap(face) : null, child: card);
+        : GestureDetector(onTap: _thrown == null ? () => widget.onSwap?.call(face) : null, child: card);
     return TweenAnimationBuilder<_Pose>(
       key: ValueKey(face),
       tween: _PoseTween(end: _poseOf(face)),
@@ -148,60 +172,9 @@ class _CardPanelState extends State<CardPanel> {
   @override
   Widget build(BuildContext context) {
     final s = S.of(context);
-    return CardDesk(
-      label: widget.front == CardFace.taking ? s.aboutTakingCard : s.aboutReadingCard,
-      children: [
-        _card(widget.front.other),
-        _card(widget.front),
-        Positioned(
-          right: AboutCardLayout.stickerInset,
-          bottom: AboutCardLayout.stickerInset,
-          child: IgnorePointer(
-            child: AnimatedOpacity(
-              opacity: widget.sticker ? 1 : 0,
-              duration: AboutCardLayout.stickerFade,
-              child: Sticker(
-                tilt: AboutCardLayout.stickerTurn,
-                padding: AboutCardLayout.stickerPadding,
-                border: AboutCardLayout.stickerBorder,
-                child: Row(mainAxisSize: MainAxisSize.min, children: [
-                  MangaIcon(IconArt.swap,
-                      size: AboutCardLayout.stickerIcon, strokeWidth: AboutCardLayout.stickerIconStroke),
-                  const SizedBox(width: AboutCardLayout.stickerIconGap),
-                  Text(s.aboutSwipe,
-                      style: const TextStyle(
-                          fontWeight: Weights.black,
-                          fontSize: AboutCardLayout.stickerFont,
-                          letterSpacing: AboutCardLayout.stickerFont * AboutCardLayout.stickerTracking)),
-                ]),
-              ),
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-}
-
-/// The dotted desk the About page lays a poem's cards on, [children]
-/// stacked at its centre; [label] says which card is in front.
-class CardDesk extends StatelessWidget {
-  const CardDesk({super.key, required this.label, required this.children});
-
-  final String label;
-  final List<Widget> children;
-
-  /// [face] at the desk's card size, with its shadow.
-  static Widget card(Widget face) => SizedBox(
-        width: AboutCardLayout.cardWidth,
-        child: DecoratedBox(decoration: const BoxDecoration(boxShadow: [AboutCardLayout.cardShadow]), child: face),
-      );
-
-  @override
-  Widget build(BuildContext context) {
     const border = AboutCardLayout.panelBorder;
     return Semantics(
-      label: label,
+      label: widget.front == CardFace.taking ? s.aboutTakingCard : s.aboutReadingCard,
       child: MangaPanel(
         color: Palette.desk,
         tone: AboutCardLayout.panelTone,
@@ -210,7 +183,39 @@ class CardDesk extends StatelessWidget {
         padding: const EdgeInsets.all(border),
         child: SizedBox(
           height: AboutCardLayout.panelHeight - 2 * border,
-          child: Stack(alignment: Alignment.center, clipBehavior: Clip.none, children: children),
+          child: Stack(
+            alignment: Alignment.center,
+            clipBehavior: Clip.none,
+            children: [
+              if (widget.onSwap != null) _card(widget.front.other),
+              _card(widget.front),
+              Positioned(
+                right: AboutCardLayout.stickerInset,
+                bottom: AboutCardLayout.stickerInset,
+                child: IgnorePointer(
+                  child: AnimatedOpacity(
+                    opacity: widget.sticker ? 1 : 0,
+                    duration: AboutCardLayout.stickerFade,
+                    child: Sticker(
+                      tilt: AboutCardLayout.stickerTurn,
+                      padding: AboutCardLayout.stickerPadding,
+                      border: AboutCardLayout.stickerBorder,
+                      child: Row(mainAxisSize: MainAxisSize.min, children: [
+                        MangaIcon(IconArt.swap,
+                            size: AboutCardLayout.stickerIcon, strokeWidth: AboutCardLayout.stickerIconStroke),
+                        const SizedBox(width: AboutCardLayout.stickerIconGap),
+                        Text(s.aboutSwipe,
+                            style: const TextStyle(
+                                fontWeight: Weights.black,
+                                fontSize: AboutCardLayout.stickerFont,
+                                letterSpacing: AboutCardLayout.stickerFont * AboutCardLayout.stickerTracking)),
+                      ]),
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );
