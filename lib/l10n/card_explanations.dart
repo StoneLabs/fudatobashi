@@ -2,13 +2,11 @@ import 'package:flutter/services.dart' show AssetBundle, rootBundle;
 
 /// Each card's explanation (解説) on its About page: one Markdown file per
 /// card and language, `assets/l10n/<code>_card_explanations/NNN.md` (see
-/// `MarkdownProse` for what they may hold), and 000.md for the 序歌. A
-/// language without its own file for a card gets the English one.
+/// `MarkdownProse` for what they may hold), and 000.md for the 序歌
+/// (`jokaNumber`). A language without its own file for a card gets the
+/// English one.
 abstract final class CardExplanations {
   static final _loaded = <String, Future<String>>{};
-
-  /// The 序歌's number here, before card 1.
-  static const int joka = 0;
 
   static String asset(String code, int id) => 'assets/l10n/${code}_card_explanations/${id.toString().padLeft(3, '0')}.md';
 

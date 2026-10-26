@@ -66,7 +66,7 @@ class _AboutCardScreenState extends State<AboutCardScreen> {
     final code = S.of(context).code;
     if (code != _explanationCode) {
       _explanationCode = code;
-      _explanation = CardExplanations.load(code, widget.poemId ?? CardExplanations.joka);
+      _explanation = CardExplanations.load(code, widget.poemId ?? jokaNumber);
     }
   }
 
@@ -98,7 +98,7 @@ class _AboutCardScreenState extends State<AboutCardScreen> {
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             if (poem == null)
-              ..._jokaCard()
+              ..._jokaCard(romaji)
             else
               ..._cards(poem, romaji),
             const SizedBox(height: AboutCardLayout.sectionGap),
@@ -174,15 +174,28 @@ class _AboutCardScreenState extends State<AboutCardScreen> {
             : const SizedBox(width: double.infinity),
       ),
       const SizedBox(height: AboutCardLayout.kimarijiGap),
-      _Kimariji(poem: poem, romaji: romaji),
+      _Kimariji(
+        text: kimarijiFor(context, poem.id),
+        japanese: romaji ? poem.kimariji : null,
+        number: poem.id,
+        speaker: poem.id,
+        sounds: s.aboutSounds(poem.kimariji.length),
+      ),
     ];
   }
 
-  /// The 序歌's reading card alone, so no switch, and its key always.
-  List<Widget> _jokaCard() => [
+  /// The 序歌's reading card alone, so no switch, and its key always; then
+  /// its name where a card has its kimariji.
+  List<Widget> _jokaCard(bool romaji) => [
         CardPanel.readingOnly(poem: joka),
         const SizedBox(height: AboutCardLayout.switchGap),
         ReadingCardKey(poem: joka),
+        const SizedBox(height: AboutCardLayout.kimarijiGap),
+        _Kimariji(
+          text: romaji ? hepburn(jokaTitleKana) : jokaTitle,
+          japanese: romaji ? jokaTitle : null,
+          number: jokaNumber,
+        ),
       ];
 
   /// Under the first sounds' heading: the sound ladder with its bar and
@@ -230,17 +243,26 @@ class _AboutCardScreenState extends State<AboutCardScreen> {
 
 /// The kimariji, big and pink in an ink outline, shrinking rather than
 /// wrapping; the speaker after it and the card's number at the right; how
-/// many sounds it is under it (after its kana, in romaji).
+/// many sounds it is under it (after its kana, in romaji). The 序歌's page
+/// shows its name here the same way, with no speaker or sounds.
 class _Kimariji extends StatelessWidget {
-  const _Kimariji({required this.poem, required this.romaji});
+  const _Kimariji({required this.text, required this.japanese, required this.number, this.speaker, this.sounds});
 
-  final Poem poem;
-  final bool romaji;
+  final String text;
+
+  /// [text] in Japanese when [text] is in romaji; else null.
+  final String? japanese;
+  final int number;
+
+  /// The card whose kimariji the speaker plays; null for no speaker.
+  final int? speaker;
+
+  /// How many sounds the kimariji is; null for none.
+  final String? sounds;
 
   @override
   Widget build(BuildContext context) {
-    final s = S.of(context);
-    final sounds = s.aboutSounds(poem.kimariji.length);
+    final under = [?japanese, ?sounds].join(' · ');
     return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
       Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
         Expanded(
@@ -250,7 +272,7 @@ class _Kimariji extends StatelessWidget {
                 fit: BoxFit.scaleDown,
                 alignment: Alignment.centerLeft,
                 child: OutlinedText(
-                  kimarijiFor(context, poem.id),
+                  text,
                   style: const TextStyle(
                       fontFamily: Fonts.display,
                       fontSize: AboutCardLayout.kimarijiFont,
@@ -261,8 +283,10 @@ class _Kimariji extends StatelessWidget {
                 ),
               ),
             ),
-            const SizedBox(width: AboutCardLayout.numberGap),
-            KimarijiSpeakerButton(poemId: poem.id),
+            if (speaker case final id?) ...[
+              const SizedBox(width: AboutCardLayout.numberGap),
+              KimarijiSpeakerButton(poemId: id),
+            ],
           ]),
         ),
         const SizedBox(width: AboutCardLayout.numberGap),
@@ -270,7 +294,7 @@ class _Kimariji extends StatelessWidget {
           decoration: const BoxDecoration(color: Palette.ink),
           child: Padding(
             padding: AboutCardLayout.numberPadding,
-            child: Text('#${poem.id}',
+            child: Text('#$number',
                 style: const TextStyle(
                     fontFamily: Fonts.display,
                     fontSize: AboutCardLayout.numberFont,
@@ -279,9 +303,10 @@ class _Kimariji extends StatelessWidget {
           ),
         ),
       ]),
-      const SizedBox(height: AboutCardLayout.soundsGap),
-      Text(romaji ? '${poem.kimariji} · $sounds' : sounds,
-          style: const TextStyle(fontWeight: Weights.bold, fontSize: AboutCardLayout.soundsFont)),
+      if (under.isNotEmpty) ...[
+        const SizedBox(height: AboutCardLayout.soundsGap),
+        Text(under, style: const TextStyle(fontWeight: Weights.bold, fontSize: AboutCardLayout.soundsFont)),
+      ],
     ]);
   }
 }

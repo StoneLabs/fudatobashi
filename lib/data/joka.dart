@@ -11,6 +11,9 @@ const jokaTitle = '序歌';
 /// [jokaTitle] as read.
 const jokaTitleKana = 'じょか';
 
+/// The 序歌's number among the cards: it comes before card 1.
+const jokaNumber = 0;
+
 /// What players say with a bow before a match begins.
 const jokaGreeting = 'よろしくお願いします';
 

@@ -25,6 +25,7 @@ import 'package:fudatobashi/ui/help/help_screen.dart';
 import 'package:fudatobashi/ui/manga/manga.dart';
 import 'package:fudatobashi/ui/results/celebrations.dart';
 import 'package:fudatobashi/ui/results/new_card_overlay.dart';
+import 'package:fudatobashi/ui/sound/sounds.dart';
 import 'package:fudatobashi/ui/stats/card_detail_screen.dart';
 import 'package:fudatobashi/ui/torifuda/torifuda_painter.dart';
 import 'package:fudatobashi/ui/torifuda/yomifuda_card.dart';
@@ -38,6 +39,15 @@ Finder _aboutOf(int id) => find.byWidgetPredicate((w) => w is AboutCardScreen &&
 
 /// The front card in the panel: the last of its two cards to paint.
 Finder _panelCard(Type type) => find.descendant(of: find.byType(CardPanel), matching: find.byType(type));
+
+/// The texts of the kimariji block tagged #[number], in order: the
+/// kimariji (outline and fill), the tag, then the line under it if any.
+List<String?> _kimarijiBlock(WidgetTester tester, int number) => [
+      for (final text in tester.widgetList<Text>(find.descendant(
+          of: find.ancestor(of: find.text('#$number'), matching: find.byType(Column)).first,
+          matching: find.byType(Text))))
+        text.data,
+    ];
 
 void main() {
   loadCardPageData();
@@ -204,6 +214,21 @@ void main() {
       }
     });
 
+    for (final script in [KimarijiScript.hiragana, KimarijiScript.romaji]) {
+      testWidgets('its name sits under the key as a card\'s kimariji does, #0, no speaker or sounds (${script.name})',
+          (tester) async {
+        final p = await openPlayer(tester, 'en');
+        await p.updateSettings(p.settings.copyWith(kimarijiScript: script));
+        await showPage(tester, p, const AboutCardScreen.joka());
+        final romaji = script == KimarijiScript.romaji;
+        final name = romaji ? hepburn(jokaTitleKana) : jokaTitle;
+        expect(_kimarijiBlock(tester, jokaNumber), [name, name, '#$jokaNumber', if (romaji) jokaTitle]);
+        expect(find.byType(KimarijiSpeakerButton), findsNothing);
+        expect(tester.getTopLeft(find.text('#$jokaNumber')).dy,
+            greaterThan(tester.getBottomLeft(find.byType(ReadingCardKey)).dy));
+      });
+    }
+
     testWidgets('only its page has the note on what it is', (tester) async {
       final p = await openPlayer(tester, 'en');
       await showPage(tester, p, const AboutCardScreen(poemId: 1));
@@ -212,6 +237,20 @@ void main() {
   });
 
   group('About page', () {
+    for (final script in [KimarijiScript.hiragana, KimarijiScript.romaji]) {
+      testWidgets('the kimariji has its speaker, the card\'s number and its sounds (${script.name})', (tester) async {
+        final p = await openPlayer(tester, 'en');
+        await p.updateSettings(p.settings.copyWith(kimarijiScript: script));
+        await showPage(tester, p, const AboutCardScreen(poemId: 1));
+        final romaji = script == KimarijiScript.romaji;
+        final kimariji = romaji ? _en.kimariji(1) : poems[1].kimariji;
+        final sounds = _en.aboutSounds(poems[1].kimariji.length);
+        expect(_kimarijiBlock(tester, 1),
+            [kimariji, kimariji, '#1', romaji ? '${poems[1].kimariji} · $sounds' : sounds]);
+        expect(find.byType(KimarijiSpeakerButton), findsOneWidget);
+      });
+    }
+
     testWidgets('previous and next replace the page and wrap from 1 to 100', (tester) async {
       final p = await openPlayer(tester, 'en');
       await showPage(tester, p, const AboutCardScreen(poemId: 1));
