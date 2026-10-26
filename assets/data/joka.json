@@ -1,0 +1,26 @@
+{
+  "author": "王仁",
+  "authorKana": "わに",
+  "authorRomaji": "Wani",
+  "kami": "難波津に　咲くやこの花　冬ごもり",
+  "shimo": "今は春べと　咲くやこの花",
+  "kamiRuby": "[難波津|なにはづ]に　[咲|さ]くやこの[花|はな]　[冬|ふゆ]ごもり",
+  "shimoRuby": "[今|いま]は[春|はる]べと　[咲|さ]くやこの[花|はな]",
+  "kamiKana": "なにはづに　さくやこのはな　ふゆごもり",
+  "shimoKana": "いまははるべと　さくやこのはな",
+  "kamiReading": "なにわずにさくやこのはなふゆごもり",
+  "shimoReading": "いまわはるべとさくやこのはな",
+  "versesRomaji": [
+    "naniwazuni",
+    "sakuyakonohana",
+    "fuyugomori",
+    "imawaharubeto",
+    "sakuyakonohana"
+  ],
+  "yomifudaColumns": [
+    "[難波津|なにわず]にー[咲|さ]くやこの[花|はな]ｰ",
+    "[冬|ふゆ]ごもーりー",
+    "[今|いま]をｰ[春|はる]べとー",
+    "[咲|さ]くやこのー[花|はな]"
+  ]
+}

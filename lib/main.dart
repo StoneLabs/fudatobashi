@@ -13,6 +13,7 @@ import 'config/torifuda_spec.dart';
 import 'config/yomifuda_spec.dart';
 import 'data/fuda_sets.dart';
 import 'data/islands.dart';
+import 'data/joka.dart';
 import 'data/poem.dart';
 import 'db/database.dart';
 import 'l10n/localization.dart';
@@ -65,6 +66,7 @@ Future<void> _start() async {
   SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
   await Localization.load();
   poems = await Poems.load();
+  joka = await Waka.load(jokaAsset);
   fudaSets = FudaSets(poems);
   archipelago = await Archipelago.load();
   await GlyphAtlas.load();

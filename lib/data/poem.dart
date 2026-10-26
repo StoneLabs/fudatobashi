@@ -2,36 +2,32 @@ import 'dart:convert';
 
 import 'package:flutter/services.dart' show rootBundle;
 
-/// One of the 100 poems of the Ogura Hyakunin Isshu.
+/// A waka (和歌) as the reader reads it in a match: its poet, its five verses
+/// and its reading card. Each of the 100 poems is a [Poem]; the 序歌 read
+/// before them (`joka`) is a waka alone, with no taking card.
 ///
-/// Generated into assets/data/poems.json by tool/build_poems.dart from
-/// StoneLabs' hyakuninissyu-csv.
-class Poem {
-  const Poem({
-    required this.id,
-    required this.author,
-    required this.authorKana,
-    required this.authorRomaji,
-    required this.kami,
-    required this.shimo,
-    required this.kamiKana,
-    required this.shimoKana,
-    required this.kamiReading,
-    required this.shimoReading,
-    required this.versesRomaji,
-    required this.torifuda,
-    required this.columns,
-    required this.kimariji,
-    required this.kimarijiReading,
-    required this.kimarijiShimo,
-    required this.kamiRuby,
-    required this.shimoRuby,
-    required this.color,
-    required this.colorNumber,
-    required this.yomifudaColumns,
-  });
+/// Generated into assets/data/poems.json and assets/data/joka.json by
+/// tool/build_poems.dart from StoneLabs' hyakuninissyu-csv.
+class Waka {
+  Waka.fromJson(Map<String, dynamic> j)
+      : author = j['author'] as String,
+        authorKana = j['authorKana'] as String,
+        authorRomaji = j['authorRomaji'] as String,
+        kami = j['kami'] as String,
+        shimo = j['shimo'] as String,
+        kamiKana = j['kamiKana'] as String,
+        shimoKana = j['shimoKana'] as String,
+        kamiReading = j['kamiReading'] as String,
+        shimoReading = j['shimoReading'] as String,
+        versesRomaji = (j['versesRomaji'] as List).cast<String>(),
+        kamiRuby = j['kamiRuby'] as String,
+        shimoRuby = j['shimoRuby'] as String,
+        yomifudaColumns = (j['yomifudaColumns'] as List).cast<String>();
 
-  final int id;
+  /// The card's number, printed on its reading card; null for a waka that
+  /// isn't one of the 100.
+  int? get id => null;
+
   final String author;
   final String authorKana;
 
@@ -60,6 +56,48 @@ class Poem {
   /// pronounced, without word breaks ("akinotano").
   final List<String> versesRomaji;
 
+  /// Verses with furigana markup: "[秋|あき]の[田|た]の　…".
+  final String kamiRuby;
+  final String shimoRuby;
+
+  /// The poet's name with its reading, in the same markup.
+  String get authorRuby => '[$author|$authorKana]';
+
+  /// The five verses in furigana markup, upper verse first.
+  List<String> get versesRuby => [...kamiRuby.split('　'), ...shimoRuby.split('　')];
+
+  /// The yomifuda's text as read in competitive karuta (競技読み), in four
+  /// columns right to left: verses 1–2, 3, 4 and 5. Furigana markup, plus
+  /// ー for a long and ｰ for a short held sound; a reading over kana
+  /// (`[は|わ]`) says how to read it.
+  final List<String> yomifudaColumns;
+
+  /// The kimariji as pronounced, printed red on the reading card; null for
+  /// a waka no taking card answers.
+  String? get kimarijiReading => null;
+
+  static Waka fromJsonString(String s) => Waka.fromJson(jsonDecode(s) as Map<String, dynamic>);
+
+  static Future<Waka> load(String asset) async => fromJsonString(await rootBundle.loadString(asset));
+}
+
+/// One of the 100 poems of the Ogura Hyakunin Isshu: a waka with its taking
+/// card, its kimariji and its 五色 colour group.
+class Poem extends Waka {
+  Poem.fromJson(super.j)
+      : id = j['id'] as int,
+        torifuda = j['torifuda'] as String,
+        columns = (j['torifudaColumns'] as List).cast<String>(),
+        kimariji = j['kimariji'] as String,
+        kimarijiReading = j['kimarijiReading'] as String,
+        kimarijiShimo = j['kimarijiShimo'] as String,
+        color = j['color'] as String,
+        colorNumber = j['colorNumber'] as int,
+        super.fromJson();
+
+  @override
+  final int id;
+
   /// Text printed on the torifuda: lower verse, historical kana, no dakuten.
   final String torifuda;
 
@@ -71,57 +109,18 @@ class Poem {
 
   /// [kimariji] as pronounced: the start of [kamiReading] only this poem
   /// has (ひとわ for ひとは).
+  @override
   final String kimarijiReading;
 
   /// The kimariji of the lower verse: the start of the torifuda that tells
   /// it apart from every other torifuda.
   final String kimarijiShimo;
 
-  /// Verses with furigana markup: "[秋|あき]の[田|た]の　…".
-  final String kamiRuby;
-  final String shimoRuby;
-
-  /// The poet's name with its reading, in the same markup.
-  String get authorRuby => '[$author|$authorKana]';
-
-  /// The five verses in furigana markup, upper verse first.
-  List<String> get versesRuby => [...kamiRuby.split('　'), ...shimoRuby.split('　')];
-
   /// 五色百人一首 colour group (桃, 青, 黄, 緑, 橙).
   final String color;
 
   /// This card's place, 1–20, in its [color] group.
   final int colorNumber;
-
-  /// The yomifuda's text as read in competitive karuta (競技読み), in four
-  /// columns right to left: verses 1–2, 3, 4 and 5. Furigana markup, plus
-  /// ー for a long and ｰ for a short held sound; a reading over kana
-  /// (`[は|わ]`) says how to read it.
-  final List<String> yomifudaColumns;
-
-  factory Poem.fromJson(Map<String, dynamic> j) => Poem(
-        id: j['id'] as int,
-        author: j['author'] as String,
-        authorKana: j['authorKana'] as String,
-        authorRomaji: j['authorRomaji'] as String,
-        kami: j['kami'] as String,
-        shimo: j['shimo'] as String,
-        kamiKana: j['kamiKana'] as String,
-        shimoKana: j['shimoKana'] as String,
-        kamiReading: j['kamiReading'] as String,
-        shimoReading: j['shimoReading'] as String,
-        versesRomaji: (j['versesRomaji'] as List).cast<String>(),
-        torifuda: j['torifuda'] as String,
-        columns: (j['torifudaColumns'] as List).cast<String>(),
-        kimariji: j['kimariji'] as String,
-        kimarijiReading: j['kimarijiReading'] as String,
-        kimarijiShimo: j['kimarijiShimo'] as String,
-        kamiRuby: j['kamiRuby'] as String,
-        shimoRuby: j['shimoRuby'] as String,
-        color: j['color'] as String,
-        colorNumber: j['colorNumber'] as int,
-        yomifudaColumns: (j['yomifudaColumns'] as List).cast<String>(),
-      );
 
   @override
   String toString() => 'Poem($id $kimariji)';

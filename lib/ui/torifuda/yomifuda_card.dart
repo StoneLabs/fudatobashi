@@ -10,11 +10,12 @@ import 'card_faces.dart';
 
 /// A yomifuda (読み札): the poem as the reader reads it in a match, in four
 /// vertical columns with its kimariji in red, readings beside the kanji,
-/// lines where a sound is held and the closing stroke where the voice fades.
+/// lines where a sound is held, the closing stroke where the voice fades and
+/// the card's number in the corner. The 序歌 has neither kimariji nor number.
 class YomifudaCard extends StatelessWidget {
   const YomifudaCard({super.key, required this.poem, this.style = YomifudaStyle.standard});
 
-  final Poem poem;
+  final Waka poem;
   final YomifudaStyle style;
 
   @override
@@ -67,7 +68,7 @@ class YomifudaToken {
 class YomifudaPainter extends CustomPainter {
   YomifudaPainter({required this.poem, this.style = YomifudaStyle.standard});
 
-  final Poem poem;
+  final Waka poem;
   final YomifudaStyle style;
 
   @override
@@ -79,7 +80,7 @@ class YomifudaPainter extends CustomPainter {
     if (columns[1].lastOrNull case final close? when close.isStretch) {
       columns[1].last = const YomifudaToken.stretch(YomifudaSpec.upperEndStretch);
     }
-    var red = poem.kimarijiReading.length;
+    var red = poem.kimarijiReading?.length ?? 0;
     for (final (i, column) in columns.indexed) {
       final last = i == columns.length - 1;
       final chars = column.fold(0, (n, t) => n + t.text.length);
@@ -108,7 +109,7 @@ class YomifudaPainter extends CustomPainter {
             color: style.ink);
       }
     }
-    _number(canvas, size);
+    if (poem.id case final id?) _number(canvas, size, id);
   }
 
   /// [token]'s characters down the column from [top] at [pitch], flattened
@@ -165,9 +166,9 @@ class YomifudaPainter extends CustomPainter {
     );
   }
 
-  void _number(Canvas canvas, Size size) {
+  void _number(Canvas canvas, Size size, int id) {
     final font = YomifudaSpec.numberFont * size.width;
-    final painters = _painters('${poem.id}', style.numberFontFamily, font, style.number, YomifudaSpec.numberBold);
+    final painters = _painters('$id', style.numberFontFamily, font, style.number, YomifudaSpec.numberBold);
     for (final tp in painters) {
       final baseline = tp.computeDistanceToActualBaseline(TextBaseline.alphabetic);
       tp
@@ -200,5 +201,5 @@ class YomifudaPainter extends CustomPainter {
   }
 
   @override
-  bool shouldRepaint(YomifudaPainter old) => old.poem.id != poem.id || old.style != style;
+  bool shouldRepaint(YomifudaPainter old) => old.poem != poem || old.style != style;
 }
