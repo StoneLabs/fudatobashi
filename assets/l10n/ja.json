@@ -1403,6 +1403,7 @@
   "cardColumnKimariji": "決まり字",
   "cardColumnCard": "札",
   "cardShimoTag": "下の句",
+  "cardJokaGloss": "",
   "cardNoneTitle": "「{0}」で​始まる​札は​ありません",
   "cardNoneText": "1〜100の​番号か、​「あき」のように​歌の​最初の​音で​探してください。",
   "cardNoneNumberTitle": "{0}番の​札は​ありません",

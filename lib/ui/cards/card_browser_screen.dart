@@ -289,7 +289,8 @@ class _CardRow extends StatelessWidget {
 }
 
 /// The 序歌's row, over card 1's: no number, its name where a kimariji
-/// goes (romaji first when the kimariji are), and its reading card.
+/// goes (romaji first when the kimariji are) with what it is beside it
+/// outside Japanese, and its reading card.
 class _JokaRow extends StatelessWidget {
   const _JokaRow({required this.romajiFirst, required this.onTap});
 
@@ -298,12 +299,18 @@ class _JokaRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final romaji = hepburn(jokaTitleKana);
+    final gloss = S.of(context).cardJokaGloss;
+    final under = [if (romajiFirst) jokaTitle, if (gloss.isNotEmpty) gloss];
     return _Row(
-      label: jokaTitle,
+      label: [jokaTitle, if (gloss.isNotEmpty) gloss].join(' '),
       strip: CardColorGroups.none,
-      title: Text(romajiFirst ? romaji : jokaTitle, style: _Row.titleStyle),
-      under: romajiFirst ? const Text(jokaTitle, style: _Row.sub) : null,
+      title: Text(romajiFirst ? hepburn(jokaTitleKana) : jokaTitle, style: _Row.titleStyle),
+      under: under.isEmpty
+          ? null
+          : Wrap(
+              spacing: CardBrowserLayout.glossGap,
+              children: [for (final text in under) Text(text, style: _Row.sub)],
+            ),
       card: YomifudaCard(poem: joka),
       first: true,
       last: false,

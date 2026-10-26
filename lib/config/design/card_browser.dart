@@ -55,6 +55,9 @@ abstract final class CardBrowserLayout {
   static const double chevron = 16;
   static const double chevronColumn = 22;
 
+  /// On the 序歌's row, the gap between its name and what it is.
+  static const double glossGap = 8;
+
   /// No match: a blank card with a question mark, a line on what to try
   /// and a button that clears the search.
   static const EdgeInsets emptyPadding = EdgeInsets.fromLTRB(18, 46, 18, 30);

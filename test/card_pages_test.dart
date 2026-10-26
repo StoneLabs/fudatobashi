@@ -13,6 +13,7 @@ import 'package:fudatobashi/domain/card_stats.dart';
 import 'package:fudatobashi/domain/sound_ladder.dart';
 import 'package:fudatobashi/l10n/card_info_strings.dart';
 import 'package:fudatobashi/l10n/results_strings.dart';
+import 'package:fudatobashi/l10n/romaji.dart';
 import 'package:fudatobashi/l10n/strings.dart';
 import 'package:fudatobashi/state/settings.dart';
 import 'package:fudatobashi/ui/cards/about_card_screen.dart';
@@ -114,8 +115,10 @@ void main() {
   });
 
   group('序歌', () {
-    Finder row([String label = jokaTitle]) =>
-        find.byWidgetPredicate((w) => w is Semantics && w.properties.label == label);
+    /// A row of the browser by what a screen reader says for it: the 序歌's
+    /// starts with its name.
+    Finder row([String label = jokaTitle]) => find.byWidgetPredicate(
+        (w) => w is Semantics && (w.properties.label?.startsWith(label) ?? false));
 
     testWidgets('sits over card 1 with its reading card while nothing is searched', (tester) async {
       final p = await openPlayer(tester, 'en');
@@ -126,6 +129,27 @@ void main() {
       expect(find.descendant(of: row(), matching: find.byType(TorifudaCard)), findsNothing);
       expect(find.text(_en.cardCountAll(100)), findsOneWidget, reason: 'it is not one of the cards');
     });
+
+    for (final lang in ['en', 'ja']) {
+      for (final script in [KimarijiScript.hiragana, KimarijiScript.romaji]) {
+        testWidgets('its row says what it is beside its name outside Japanese ($lang, ${script.name})',
+            (tester) async {
+          final s = S(lang);
+          final p = await openPlayer(tester, lang);
+          await p.updateSettings(p.settings.copyWith(kimarijiScript: script));
+          await showPage(tester, p, const CardBrowserScreen());
+          final texts = [
+            for (final text in tester.widgetList<Text>(find.descendant(of: row(), matching: find.byType(Text))))
+              text.data,
+          ];
+          expect(texts, [
+            if (script == KimarijiScript.romaji) hepburn(jokaTitleKana),
+            jokaTitle,
+            if (!s.ja) s.cardJokaGloss,
+          ]);
+        });
+      }
+    }
 
     testWidgets('never shows in search results', (tester) async {
       final p = await openPlayer(tester, 'en');

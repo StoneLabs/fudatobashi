@@ -1403,6 +1403,7 @@
   "cardColumnKimariji": "KIMARIJI",
   "cardColumnCard": "CARD",
   "cardShimoTag": "CARD",
+  "cardJokaGloss": "Opening poem",
   "cardNoneTitle": "No card starts with “{0}”",
   "cardNoneText": "Try a number from 1 to 100, or the first sounds of a poem, like あき or aki.",
   "cardNoneNumberTitle": "There's no card {0}",

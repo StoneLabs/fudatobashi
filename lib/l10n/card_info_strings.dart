@@ -17,6 +17,11 @@ extension CardInfoStrings on S {
   String get cardColumnKimariji => t('cardColumnKimariji');
   String get cardColumnCard => t('cardColumnCard');
   String get cardShimoTag => t('cardShimoTag');
+
+  /// What the 序歌 is, beside its name on its row; empty in Japanese, where
+  /// the name says it.
+  String get cardJokaGloss => t('cardJokaGloss');
+
   String cardNoneTitle(String query) => f('cardNoneTitle', [query]);
   String get cardNoneText => t('cardNoneText');
   String cardNoneNumberTitle(String query) => f('cardNoneNumberTitle', [query]);
