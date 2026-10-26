@@ -1,11 +1,13 @@
 // The card browser and a card's About page: how they open (Help, the
 // new-card page, a card's stats page), the search, the previous / next
-// cards, the ladder's chips, the switches and the card panel's swipe.
+// cards, the ladder's chips, the switches and the card panel's swipe; the
+// 序歌's row and page.
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:fudatobashi/config/config.dart';
 import 'package:fudatobashi/config/design.dart';
 import 'package:fudatobashi/data/fuda_sets.dart';
+import 'package:fudatobashi/data/joka.dart';
 import 'package:fudatobashi/data/poem.dart';
 import 'package:fudatobashi/domain/card_stats.dart';
 import 'package:fudatobashi/domain/sound_ladder.dart';
@@ -24,6 +26,7 @@ import 'package:fudatobashi/ui/results/celebrations.dart';
 import 'package:fudatobashi/ui/results/new_card_overlay.dart';
 import 'package:fudatobashi/ui/stats/card_detail_screen.dart';
 import 'package:fudatobashi/ui/torifuda/torifuda_painter.dart';
+import 'package:fudatobashi/ui/torifuda/yomifuda_card.dart';
 
 import 'test_card_pages.dart';
 
@@ -107,6 +110,54 @@ void main() {
       expect(find.text(_en.cardNoneNumberTitle('101')), findsOneWidget);
       await tapOn(tester, find.text(_en.cardSearchClear));
       expect(find.text(_en.cardCountAll(100)), findsOneWidget, reason: 'Clear search shows every card again');
+    });
+  });
+
+  group('序歌', () {
+    Finder row([String label = jokaTitle]) =>
+        find.byWidgetPredicate((w) => w is Semantics && w.properties.label == label);
+
+    testWidgets('sits over card 1 with its reading card while nothing is searched', (tester) async {
+      final p = await openPlayer(tester, 'en');
+      await showPage(tester, p, const CardBrowserScreen());
+      expect(row(), findsOneWidget);
+      expect(tester.getCenter(row()).dy, lessThan(tester.getTopLeft(row('1 ${poems[1].kimariji}')).dy));
+      expect(find.descendant(of: row(), matching: find.byType(YomifudaCard)), findsOneWidget);
+      expect(find.descendant(of: row(), matching: find.byType(TorifudaCard)), findsNothing);
+      expect(find.text(_en.cardCountAll(100)), findsOneWidget, reason: 'it is not one of the cards');
+    });
+
+    testWidgets('never shows in search results', (tester) async {
+      final p = await openPlayer(tester, 'en');
+      await showPage(tester, p, const CardBrowserScreen());
+      for (final query in ['序', '序歌', 'じょか', 'joka', 'なにわ', 'naniwa', 'わに', 'wani', '0', '1']) {
+        await tester.enterText(find.byType(TextField), query);
+        await settle(tester);
+        expect(row(), findsNothing, reason: query);
+      }
+      await tester.enterText(find.byType(TextField), '');
+      await settle(tester);
+      expect(row(), findsOneWidget, reason: 'back once the search is empty');
+    });
+
+    testWidgets('its row opens its page: the reading card alone, the poem, its facts and explanation',
+        (tester) async {
+      final p = await openPlayer(tester, 'en');
+      await showPage(tester, p, const CardBrowserScreen());
+      await tapOn(tester, row());
+      final page = find.byWidgetPredicate((w) => w is AboutCardScreen && w.poemId == null);
+      expect(page, findsOneWidget);
+      Finder onPage(Finder finder) => find.descendant(of: page, matching: finder, skipOffstage: false);
+      expect(onPage(find.descendant(of: find.byType(CardDesk), matching: find.byType(YomifudaCard))), findsOneWidget);
+      for (final cardOnly in [CardPanel, TorifudaCard, PillSwitch<CardFace>, SoundLadderView, LinkRow]) {
+        expect(onPage(find.byType(cardOnly, skipOffstage: false)), findsNothing, reason: '$cardOnly');
+      }
+      for (final text in [_en.aboutFirstHalf, _en.aboutSource, _en.aboutPoemPart]) {
+        expect(onPage(find.text(text, skipOffstage: false)), findsOneWidget, reason: text);
+      }
+      expect(onPage(find.text(_en.aboutPrevious, skipOffstage: false)), findsNothing);
+      await tapOn(tester, find.bySemanticsLabel(_en.back).last);
+      expect(find.byType(CardBrowserScreen), findsOneWidget, reason: 'back returns to the browser');
     });
   });
 

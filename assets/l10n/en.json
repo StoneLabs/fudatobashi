@@ -1426,6 +1426,8 @@
   "aboutPoet": "POET",
   "aboutTakingKimariji": "TAKING-CARD KIMARIJI",
   "aboutColourGroup": "COLOUR GROUP",
+  "aboutSource": "SOURCE",
+  "aboutJokaSource": "Kana preface of the Kokinshu",
   "aboutColourName": "{0}{1}",
   "aboutColourPlace": "card {0} of {1}",
   "colourGroupBlue": "Blue · ",

@@ -12,6 +12,7 @@ import 'package:fudatobashi/config/torifuda_spec.dart';
 import 'package:fudatobashi/config/yomifuda_spec.dart';
 import 'package:fudatobashi/data/fuda_sets.dart';
 import 'package:fudatobashi/data/islands.dart';
+import 'package:fudatobashi/data/joka.dart';
 import 'package:fudatobashi/data/poem.dart';
 import 'package:fudatobashi/db/database.dart';
 import 'package:fudatobashi/state/progress.dart';
@@ -30,6 +31,7 @@ void loadCardPageData() {
   loadTestVectorArt();
   loadTestL10n();
   poems = Poems.fromJsonString(File('assets/data/poems.json').readAsStringSync());
+  joka = Waka.fromJsonString(File(jokaAsset).readAsStringSync());
   fudaSets = FudaSets(poems);
   archipelago = Archipelago.fromJsonString(File('assets/data/islands.json').readAsStringSync());
   driftRuntimeOptions.dontWarnAboutMultipleDatabases = true;

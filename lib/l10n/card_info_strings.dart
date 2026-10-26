@@ -41,6 +41,10 @@ extension CardInfoStrings on S {
   String get aboutPoet => t('aboutPoet');
   String get aboutTakingKimariji => t('aboutTakingKimariji');
   String get aboutColourGroup => t('aboutColourGroup');
+  String get aboutSource => t('aboutSource');
+
+  /// Where the 序歌 comes from, named in the UI's language.
+  String get aboutJokaSource => t('aboutJokaSource');
 
   /// A card's 五色 group: the group's own name, led by its colour in words
   /// where the language has one (the colour strings carry their own separator).

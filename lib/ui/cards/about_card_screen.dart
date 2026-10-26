@@ -3,6 +3,7 @@ import 'package:flutter/widgets.dart';
 import '../../config/design.dart';
 import '../../config/vector_art.dart';
 import '../../data/fuda_sets.dart';
+import '../../data/joka.dart';
 import '../../data/poem.dart';
 import '../../domain/card_stats.dart';
 import '../../l10n/card_explanations.dart';
@@ -15,6 +16,7 @@ import '../manga/manga.dart';
 import '../sound/sounds.dart';
 import '../stats/card_detail_screen.dart';
 import '../torifuda/torifuda_painter.dart';
+import '../torifuda/yomifuda_card.dart';
 import 'card_panel.dart';
 import 'first_sounds_screen.dart';
 import 'page_frame.dart';
@@ -25,10 +27,17 @@ import 'sound_ladder_view.dart';
 /// poem, the card's facts, its sound ladder and look-alike torifuda; then,
 /// under "About the poem", its explanation; then its stats and the cards
 /// before and after it. Section markers take the card's colour group.
+///
+/// The 序歌's page ([AboutCardScreen.joka], from the card browser) has only
+/// what a reading card alone has: the card, the poem, its facts and its
+/// explanation, under neutral markers.
 class AboutCardScreen extends StatefulWidget {
-  const AboutCardScreen({super.key, required this.poemId});
+  const AboutCardScreen({super.key, required int this.poemId});
 
-  final int poemId;
+  const AboutCardScreen.joka({super.key}) : poemId = null;
+
+  /// The card's number; null on the 序歌's page.
+  final int? poemId;
 
   @override
   State<AboutCardScreen> createState() => _AboutCardScreenState();
@@ -39,7 +48,10 @@ class _AboutCardScreenState extends State<AboutCardScreen> {
   Future<String>? _explanation;
   String? _explanationCode;
 
-  Poem get _poem => poems[widget.poemId];
+  Poem? get _poem => switch (widget.poemId) {
+        final id? => poems[id],
+        null => null,
+      };
 
   @override
   void didChangeDependencies() {
@@ -47,7 +59,7 @@ class _AboutCardScreenState extends State<AboutCardScreen> {
     final code = S.of(context).code;
     if (code != _explanationCode) {
       _explanationCode = code;
-      _explanation = CardExplanations.load(code, widget.poemId);
+      _explanation = CardExplanations.load(code, widget.poemId ?? CardExplanations.joka);
     }
   }
 
@@ -64,11 +76,9 @@ class _AboutCardScreenState extends State<AboutCardScreen> {
     final s = S.of(context);
     final o = s.sub;
     final poem = _poem;
-    final group = CardColorGroups.of(poem.color);
-    final settings = ProgressScope.of(context).settings;
+    final Waka waka = poem ?? joka;
+    final group = poem == null ? CardColorGroups.none : CardColorGroups.of(poem.color);
     final romaji = resolvedKimarijiScript(context) == KimarijiScript.romaji;
-    final lookAlikes = fudaSets.tomofuda(poem.id);
-    void openCard(int id) => _open(AboutCardScreen(poemId: id));
     Widget heading(String title, String? sub) => Padding(
           padding: const EdgeInsets.only(bottom: AboutCardLayout.headingGap),
           child: MarkerHeading(title, sub, color: group),
@@ -80,76 +90,20 @@ class _AboutCardScreenState extends State<AboutCardScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            CardPanel(poem: poem, front: _front, onSwap: _swap, sticker: !settings.cardPanelSwiped),
-            const SizedBox(height: AboutCardLayout.switchGap),
-            PillSwitch<CardFace>(
-              choices: [
-                (value: CardFace.taking, label: s.aboutTakingCard, sub: s.ja ? null : s.other.aboutTakingCard),
-                (value: CardFace.reading, label: s.aboutReadingCard, sub: s.ja ? null : s.other.aboutReadingCard),
-              ],
-              selected: _front,
-              onChanged: (face) => setState(() => _front = face),
-              height: AboutCardLayout.switchHeight,
-              border: AboutCardLayout.switchBorder,
-              fontSize: AboutCardLayout.switchFont,
-              subFontSize: AboutCardLayout.switchSubFont,
-              padding: AboutCardLayout.switchPadding,
-              expand: true,
-            ),
-            AnimatedSize(
-              duration: Motion.tab,
-              alignment: Alignment.topCenter,
-              child: _front == CardFace.reading
-                  ? Padding(
-                      padding: const EdgeInsets.only(top: AboutCardLayout.keyGap),
-                      child: ReadingCardKey(poem: poem),
-                    )
-                  : const SizedBox(width: double.infinity),
-            ),
-            const SizedBox(height: AboutCardLayout.kimarijiGap),
-            _Kimariji(poem: poem, romaji: romaji),
+            if (poem == null)
+              CardDesk(label: s.aboutReadingCard, children: [CardDesk.card(YomifudaCard(poem: waka))])
+            else
+              ..._cards(poem, romaji),
             const SizedBox(height: AboutCardLayout.sectionGap),
             heading(s.aboutPoem, o?.aboutPoem),
-            _PoemBox(poem: poem, romaji: romaji),
+            _PoemBox(poem: waka, romaji: romaji),
             const SizedBox(height: AboutCardLayout.sectionGap),
             heading(s.aboutFacts, o?.aboutFacts),
-            _Facts(poem: poem),
-            const SizedBox(height: AboutCardLayout.sectionGap),
-            heading(s.aboutSimilar, o?.aboutSimilar),
-            _LadderBar(
-              mode: settings.soundLadder,
-              onExplain: () => _open(const FirstSoundsScreen()),
-              onMode: (mode) {
-                final progress = ProgressScope.read(context);
-                progress.updateSettings(progress.settings.copyWith(soundLadder: mode));
-              },
-            ),
-            const SizedBox(height: AboutCardLayout.barGap),
-            Text.rich(
-              Phrases.span(settings.soundLadder == SoundLadderMode.kana ? s.aboutLadderLeadKana : s.aboutLadderLead),
-              style: const TextStyle(
-                  fontWeight: Weights.medium,
-                  fontSize: AboutCardLayout.leadFont,
-                  height: AboutCardLayout.leadLineHeight,
-                  color: Palette.inkSoft),
-            ),
-            const SizedBox(height: AboutCardLayout.leadGap),
-            SoundLadderView(
-              poem: poem,
-              kanaOnly: settings.soundLadder == SoundLadderMode.kana,
-              romaji: romaji ? (s.ja ? s.other : s).kimariji(poem.id) : null,
-              onOpen: openCard,
-            ),
-            if (lookAlikes.isNotEmpty) ...[
-              const SizedBox(height: AboutCardLayout.lookAlikeLabelGap),
-              Text(s.aboutConfused,
-                  style: const TextStyle(
-                      fontWeight: Weights.black,
-                      fontSize: AboutCardLayout.lookAlikeLabelFont,
-                      letterSpacing: AboutCardLayout.lookAlikeLabelFont * TagStyle.tracking,
-                      color: Palette.inkSoft)),
-              const SizedBox(height: AboutCardLayout.lookAlikeLabelBottom),
-              _LookAlikes(ids: lookAlikes, romaji: romaji, onOpen: openCard),
+            _Facts(poem: waka),
+            if (poem != null) ...[
+              const SizedBox(height: AboutCardLayout.sectionGap),
+              heading(s.aboutSimilar, o?.aboutSimilar),
+              ..._similar(poem, romaji),
             ],
             const SizedBox(height: AboutCardLayout.partGap),
             _PartHeading(s.aboutPoemPart, o?.aboutPoemPart),
@@ -161,18 +115,103 @@ class _AboutCardScreenState extends State<AboutCardScreen> {
                 null => const SizedBox.shrink(),
               },
             ),
-            const SizedBox(height: AboutCardLayout.linkRowGap),
-            LinkRow(
-              title: s.aboutMyRecord,
-              note: s.aboutMyRecordNote,
-              onTap: () => _open(CardDetailScreen(itemKey: ItemKey(poem.id, false))),
-            ),
-            const SizedBox(height: AboutCardLayout.neighbourGap),
-            _Neighbours(poem: poem),
+            if (poem != null) ...[
+              const SizedBox(height: AboutCardLayout.linkRowGap),
+              LinkRow(
+                title: s.aboutMyRecord,
+                note: s.aboutMyRecordNote,
+                onTap: () => _open(CardDetailScreen(itemKey: ItemKey(poem.id, false))),
+              ),
+              const SizedBox(height: AboutCardLayout.neighbourGap),
+              _Neighbours(poem: poem),
+            ],
           ],
         ),
       ),
     );
+  }
+
+  /// The card's two cards to swipe between, the switch between them, the
+  /// reading card's key and the kimariji.
+  List<Widget> _cards(Poem poem, bool romaji) {
+    final s = S.of(context);
+    final settings = ProgressScope.of(context).settings;
+    return [
+      CardPanel(poem: poem, front: _front, onSwap: _swap, sticker: !settings.cardPanelSwiped),
+      const SizedBox(height: AboutCardLayout.switchGap),
+      PillSwitch<CardFace>(
+        choices: [
+          (value: CardFace.taking, label: s.aboutTakingCard, sub: s.ja ? null : s.other.aboutTakingCard),
+          (value: CardFace.reading, label: s.aboutReadingCard, sub: s.ja ? null : s.other.aboutReadingCard),
+        ],
+        selected: _front,
+        onChanged: (face) => setState(() => _front = face),
+        height: AboutCardLayout.switchHeight,
+        border: AboutCardLayout.switchBorder,
+        fontSize: AboutCardLayout.switchFont,
+        subFontSize: AboutCardLayout.switchSubFont,
+        padding: AboutCardLayout.switchPadding,
+        expand: true,
+      ),
+      AnimatedSize(
+        duration: Motion.tab,
+        alignment: Alignment.topCenter,
+        child: _front == CardFace.reading
+            ? Padding(
+                padding: const EdgeInsets.only(top: AboutCardLayout.keyGap),
+                child: ReadingCardKey(poem: poem),
+              )
+            : const SizedBox(width: double.infinity),
+      ),
+      const SizedBox(height: AboutCardLayout.kimarijiGap),
+      _Kimariji(poem: poem, romaji: romaji),
+    ];
+  }
+
+  /// Under the first sounds' heading: the sound ladder with its bar and
+  /// lead, then the look-alike torifuda.
+  List<Widget> _similar(Poem poem, bool romaji) {
+    final s = S.of(context);
+    final settings = ProgressScope.of(context).settings;
+    final lookAlikes = fudaSets.tomofuda(poem.id);
+    void openCard(int id) => _open(AboutCardScreen(poemId: id));
+    return [
+      _LadderBar(
+        mode: settings.soundLadder,
+        onExplain: () => _open(const FirstSoundsScreen()),
+        onMode: (mode) {
+          final progress = ProgressScope.read(context);
+          progress.updateSettings(progress.settings.copyWith(soundLadder: mode));
+        },
+      ),
+      const SizedBox(height: AboutCardLayout.barGap),
+      Text.rich(
+        Phrases.span(settings.soundLadder == SoundLadderMode.kana ? s.aboutLadderLeadKana : s.aboutLadderLead),
+        style: const TextStyle(
+            fontWeight: Weights.medium,
+            fontSize: AboutCardLayout.leadFont,
+            height: AboutCardLayout.leadLineHeight,
+            color: Palette.inkSoft),
+      ),
+      const SizedBox(height: AboutCardLayout.leadGap),
+      SoundLadderView(
+        poem: poem,
+        kanaOnly: settings.soundLadder == SoundLadderMode.kana,
+        romaji: romaji ? (s.ja ? s.other : s).kimariji(poem.id) : null,
+        onOpen: openCard,
+      ),
+      if (lookAlikes.isNotEmpty) ...[
+        const SizedBox(height: AboutCardLayout.lookAlikeLabelGap),
+        Text(s.aboutConfused,
+            style: const TextStyle(
+                fontWeight: Weights.black,
+                fontSize: AboutCardLayout.lookAlikeLabelFont,
+                letterSpacing: AboutCardLayout.lookAlikeLabelFont * TagStyle.tracking,
+                color: Palette.inkSoft)),
+        const SizedBox(height: AboutCardLayout.lookAlikeLabelBottom),
+        _LookAlikes(ids: lookAlikes, romaji: romaji, onOpen: openCard),
+      ],
+    ];
   }
 }
 
@@ -240,7 +279,7 @@ class _Kimariji extends StatelessWidget {
 class _PoemBox extends StatefulWidget {
   const _PoemBox({required this.poem, required this.romaji});
 
-  final Poem poem;
+  final Waka poem;
   final bool romaji;
 
   @override
@@ -271,7 +310,8 @@ class _PoemBoxState extends State<_PoemBox> {
                       fontSize: AboutCardLayout.poemFont,
                       height: AboutCardLayout.poemLineHeight,
                       color: Palette.ink),
-                  highlight: from == 0 ? (kana: poem.kimariji.length, color: AboutCardLayout.kimariji) : null,
+                  highlight:
+                      from == 0 ? (kana: poem.kimarijiReading?.length ?? 0, color: AboutCardLayout.kimariji) : null,
                   phraseGap: AboutCardLayout.verseGap,
                   lineGap: AboutCardLayout.verseRunGap,
                 ),
@@ -310,13 +350,13 @@ class _PoemBoxState extends State<_PoemBox> {
   }
 
   /// The five verses in romaji, the kimariji's letters in pink.
-  static List<Widget> _romajiVerses(Poem poem) {
+  static List<Widget> _romajiVerses(Waka poem) {
     const style = TextStyle(
         fontWeight: Weights.bold,
         fontSize: AboutCardLayout.romajiFont,
         height: AboutCardLayout.romajiLineHeight,
         color: Palette.ink);
-    var left = hepburn(poem.kimarijiReading).length;
+    var left = hepburn(poem.kimarijiReading ?? '').length;
     final verses = <Widget>[];
     for (final verse in poem.versesRomaji) {
       final cut = left.clamp(0, verse.length);
@@ -330,52 +370,34 @@ class _PoemBoxState extends State<_PoemBox> {
   }
 }
 
-/// The card's facts in an ink-ruled table: the poet, the taking card's
-/// kimariji and its 五色 colour group.
+/// The card's facts in an ink-ruled table: the poet, then the taking card's
+/// kimariji and its 五色 colour group, or for the 序歌 where it comes from.
+/// Outside Japanese the Japanese names have their romaji or English after
+/// them.
 class _Facts extends StatelessWidget {
   const _Facts({required this.poem});
 
-  final Poem poem;
+  final Waka poem;
 
   @override
   Widget build(BuildContext context) {
     final s = S.of(context);
     const value = TextStyle(
         fontWeight: Weights.bold, fontSize: AboutCardLayout.factFont, height: AboutCardLayout.factLineHeight);
-    final group = CardColorGroups.of(poem.color);
-    final groupSize = poems.all.where((p) => p.color == poem.color).length;
-    final rows = [
-      (
-        s.aboutPoet,
-        Wrap(
+    Widget withGloss(Widget japanese, String gloss) => Wrap(
           crossAxisAlignment: WrapCrossAlignment.end,
           spacing: AboutCardLayout.poetRomajiGap,
-          children: [
-            RubyText(poem.authorRuby, style: value),
-            if (!s.ja) Text(poem.authorRomaji, style: value.copyWith(color: AboutCardLayout.mutedText)),
+          children: [japanese, if (!s.ja) Text(gloss, style: value.copyWith(color: AboutCardLayout.mutedText))],
+        );
+    final japanese = s.ja ? s : s.other;
+    final rows = [
+      (s.aboutPoet, withGloss(RubyText(poem.authorRuby, style: value), poem.authorRomaji)),
+      ...switch (poem) {
+        final Poem poem => _cardRows(s, poem, value),
+        _ => [
+            (s.aboutSource, withGloss(Text.rich(Phrases.span(japanese.aboutJokaSource), style: value), s.aboutJokaSource)),
           ],
-        ),
-      ),
-      (s.aboutTakingKimariji, Text(poem.kimarijiShimo, style: value)),
-      (
-        s.aboutColourGroup,
-        Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          Text.rich(TextSpan(children: [
-            WidgetSpan(
-              alignment: PlaceholderAlignment.middle,
-              child: Container(
-                width: AboutCardLayout.chip,
-                height: AboutCardLayout.chip,
-                margin: const EdgeInsets.only(right: AboutCardLayout.chipGap),
-                decoration: BoxDecoration(
-                    color: group, border: Border.all(color: Palette.ink, width: AboutCardLayout.chipBorder)),
-              ),
-            ),
-            Phrases.span(s.aboutColourName(poem.color)),
-          ]), style: value),
-          Text.rich(Phrases.span(s.aboutColourPlace(poem.colorNumber, groupSize)), style: value),
-        ]),
-      ),
+      },
     ];
     return DecoratedBox(
       decoration: BoxDecoration(border: Border.all(color: Palette.ink, width: AboutCardLayout.factsBorder)),
@@ -405,6 +427,35 @@ class _Facts extends StatelessWidget {
         ]),
       ),
     );
+  }
+
+  /// The rows only a card of the hundred has: its taking card's kimariji
+  /// and its colour group.
+  static List<(String, Widget)> _cardRows(S s, Poem poem, TextStyle value) {
+    final group = CardColorGroups.of(poem.color);
+    final groupSize = poems.all.where((p) => p.color == poem.color).length;
+    return [
+      (s.aboutTakingKimariji, Text(poem.kimarijiShimo, style: value)),
+      (
+        s.aboutColourGroup,
+        Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          Text.rich(TextSpan(children: [
+            WidgetSpan(
+              alignment: PlaceholderAlignment.middle,
+              child: Container(
+                width: AboutCardLayout.chip,
+                height: AboutCardLayout.chip,
+                margin: const EdgeInsets.only(right: AboutCardLayout.chipGap),
+                decoration: BoxDecoration(
+                    color: group, border: Border.all(color: Palette.ink, width: AboutCardLayout.chipBorder)),
+              ),
+            ),
+            Phrases.span(s.aboutColourName(poem.color)),
+          ]), style: value),
+          Text.rich(Phrases.span(s.aboutColourPlace(poem.colorNumber, groupSize)), style: value),
+        ]),
+      ),
+    ];
   }
 }
 

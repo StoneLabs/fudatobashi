@@ -11,6 +11,9 @@ abstract final class CardColorGroups {
   };
 
   static Color of(String group) => colors[group] ?? Palette.sun;
+
+  /// The accent of the 序歌, which is in no group.
+  static const Color none = Palette.desk;
 }
 
 /// A card's About page (`AboutCardScreen`): the cards on a desk panel, the

@@ -1,7 +1,7 @@
-// Lays out the card browser, two cards' About pages, First sounds and Help
-// on three phones (384 dp, 360 dp, and 360 dp at font scale 1.3) in both
-// languages, failing on any layout error. With RENDER_SCREENS=1 it writes
-// each screen to build/screens/cards/ for visual checks.
+// Lays out the card browser, two cards' and the 序歌's About pages, First
+// sounds and Help on three phones (384 dp, 360 dp, and 360 dp at font scale
+// 1.3) in both languages, failing on any layout error. With RENDER_SCREENS=1
+// it writes each screen to build/screens/cards/ for visual checks.
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:fudatobashi/l10n/card_info_strings.dart';
@@ -78,6 +78,17 @@ void main() {
           await shot(tester, 'about${id}_end');
         });
       }
+
+      testWidgets('About the 序歌: its reading card, the poem, its facts and explanation ($tag)', (tester) async {
+        await loadCardArt(tester);
+        final p = await openPlayer(tester, lang);
+        await showPage(tester, p, const AboutCardScreen.joka(), screen: phone, textScale: textScale);
+        await shot(tester, 'about_joka');
+        await scrollTo(tester, find.textContaining(s.aboutFacts));
+        await shot(tester, 'about_joka_facts');
+        await scrollTo(tester, find.textContaining(s.aboutPoemPart));
+        await shot(tester, 'about_joka_explanation');
+      });
 
       testWidgets('First sounds, a screen at a time, and Help ($tag)', (tester) async {
         await loadCardArt(tester);

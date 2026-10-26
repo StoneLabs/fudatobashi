@@ -4,20 +4,24 @@ import 'package:flutter/material.dart';
 
 import '../../config/design.dart';
 import '../../config/vector_art.dart';
+import '../../data/joka.dart';
 import '../../data/poem.dart';
 import '../../domain/card_search.dart';
 import '../../l10n/card_info_strings.dart';
+import '../../l10n/romaji.dart';
 import '../../l10n/strings.dart';
 import '../../state/settings.dart';
 import '../manga/manga.dart';
 import '../torifuda/torifuda_painter.dart';
+import '../torifuda/yomifuda_card.dart';
 import 'about_card_screen.dart';
 import 'page_frame.dart';
 
 /// The card browser (Help › Tools): every card in a ruled table of its
 /// number, kimariji and torifuda, searched by number or by its first sounds
 /// (see [CardSearch]), the matched part marked. A row opens the card's
-/// About page.
+/// About page. Over card 1, while nothing is searched, sits the 序歌 with
+/// its reading card.
 class CardBrowserScreen extends StatefulWidget {
   const CardBrowserScreen({super.key});
 
@@ -40,9 +44,9 @@ class _CardBrowserScreenState extends State<CardBrowserScreen> {
     super.dispose();
   }
 
-  void _open(Poem poem) {
+  void _open(AboutCardScreen page) {
     FocusScope.of(context).unfocus();
-    Navigator.of(context).push(MangaRoute<void>(builder: (_) => AboutCardScreen(poemId: poem.id)));
+    Navigator.of(context).push(MangaRoute<void>(builder: (_) => page));
   }
 
   @override
@@ -51,6 +55,7 @@ class _CardBrowserScreenState extends State<CardBrowserScreen> {
     final romaji = s.ja ? s.other : s;
     final matches = CardSearch(poems.all, romajiOf: romaji.kimariji).find(_query.text);
     final showRomaji = resolvedKimarijiScript(context) == KimarijiScript.romaji;
+    final searching = _query.text.trim().isNotEmpty;
     return PageFrame(
       title: s.cardBrowserTitle,
       sub: s.other.cardBrowserTitle,
@@ -64,17 +69,21 @@ class _CardBrowserScreenState extends State<CardBrowserScreen> {
               if (matches.isEmpty)
                 SliverToBoxAdapter(child: _NoMatch(query: _query.text.trim(), onClear: _query.clear))
               else ...[
-                SliverToBoxAdapter(child: _CountLine(found: matches.length, searching: _query.text.trim().isNotEmpty)),
+                SliverToBoxAdapter(child: _CountLine(found: matches.length, searching: searching)),
                 const SliverToBoxAdapter(child: _TableHeader()),
+                if (!searching)
+                  SliverToBoxAdapter(
+                    child: _JokaRow(romajiFirst: showRomaji, onTap: () => _open(const AboutCardScreen.joka())),
+                  ),
                 SliverList.builder(
                   itemCount: matches.length,
-                  itemBuilder: (context, i) => _Row(
+                  itemBuilder: (context, i) => _CardRow(
                     match: matches[i],
                     romajiFirst: showRomaji,
                     romaji: showRomaji || matches[i].kind == CardMatchKind.romaji ? romaji.kimariji(matches[i].poem.id) : null,
-                    first: i == 0,
+                    first: i == 0 && searching,
                     last: i == matches.length - 1,
-                    onTap: () => _open(matches[i].poem),
+                    onTap: () => _open(AboutCardScreen(poemId: matches[i].poem.id)),
                   ),
                 ),
               ],
@@ -231,11 +240,10 @@ class _TableHeader extends StatelessWidget {
 }
 
 /// One card in the table: its colour group's strip, its number, its
-/// kimariji (shrinking rather than cut short) with the romaji (or the
-/// matched second half) under it, its torifuda and a chevron. Stamps when
-/// tapped.
-class _Row extends StatelessWidget {
-  const _Row({required this.match, this.romaji, this.romajiFirst = false, required this.first, required this.last, required this.onTap});
+/// kimariji with the romaji (or the matched second half) under it, and its
+/// torifuda.
+class _CardRow extends StatelessWidget {
+  const _CardRow({required this.match, this.romaji, this.romajiFirst = false, required this.first, required this.last, required this.onTap});
 
   final CardMatch match;
 
@@ -253,25 +261,100 @@ class _Row extends StatelessWidget {
     final poem = match.poem;
     final romaji = this.romaji;
     int marked(CardMatchKind kind) => match.kind == kind ? match.marked : 0;
-    const sub = TextStyle(
-        fontWeight: Weights.bold,
-        fontSize: CardBrowserLayout.subFont,
-        height: CardBrowserLayout.subLineHeight,
-        color: CardBrowserLayout.subColor);
     final under = switch (match) {
       CardMatch(kind: CardMatchKind.shimo, :final shimo?) => Row(children: [
           InkTag(s.cardShimoTag, fontSize: CardBrowserLayout.tagFont, padding: CardBrowserLayout.tagPadding),
           const SizedBox(width: CardBrowserLayout.tagGap),
-          Flexible(child: MarkedText(shimo, style: sub, marked: match.marked)),
+          Flexible(child: MarkedText(shimo, style: _Row.sub, marked: match.marked)),
         ]),
       _ when romaji != null && romajiFirst =>
-        MarkedText(poem.kimariji, style: sub, marked: marked(CardMatchKind.kana)),
-      _ when romaji != null => MarkedText(romaji, style: sub, marked: marked(CardMatchKind.romaji)),
+        MarkedText(poem.kimariji, style: _Row.sub, marked: marked(CardMatchKind.kana)),
+      _ when romaji != null => MarkedText(romaji, style: _Row.sub, marked: marked(CardMatchKind.romaji)),
       _ => null,
     };
+    return _Row(
+      label: '${poem.id} ${poem.kimariji}',
+      strip: CardColorGroups.of(poem.color),
+      number: MarkedText('${poem.id}', style: _Row.numberStyle, marked: marked(CardMatchKind.number)),
+      title: MarkedText(romaji != null && romajiFirst ? romaji : poem.kimariji,
+          style: _Row.titleStyle,
+          marked: marked(romaji != null && romajiFirst ? CardMatchKind.romaji : CardMatchKind.kana)),
+      under: under,
+      card: TorifudaCard(poem: poem),
+      first: first,
+      last: last,
+      onTap: onTap,
+    );
+  }
+}
+
+/// The 序歌's row, over card 1's: no number, its name where a kimariji
+/// goes (romaji first when the kimariji are), and its reading card.
+class _JokaRow extends StatelessWidget {
+  const _JokaRow({required this.romajiFirst, required this.onTap});
+
+  final bool romajiFirst;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final romaji = hepburn(jokaTitleKana);
+    return _Row(
+      label: jokaTitle,
+      strip: CardColorGroups.none,
+      title: Text(romajiFirst ? romaji : jokaTitle, style: _Row.titleStyle),
+      under: romajiFirst ? const Text(jokaTitle, style: _Row.sub) : null,
+      card: YomifudaCard(poem: joka),
+      first: true,
+      last: false,
+      onTap: onTap,
+    );
+  }
+}
+
+/// A row of the table: [strip]'s colour down its left edge, [number],
+/// [title] (shrinking rather than cut short) with [under] under it, a small
+/// [card] and a chevron. Stamps when tapped.
+class _Row extends StatelessWidget {
+  const _Row({
+    required this.label,
+    required this.strip,
+    this.number,
+    required this.title,
+    this.under,
+    required this.card,
+    required this.first,
+    required this.last,
+    required this.onTap,
+  });
+
+  /// What a screen reader says for the row.
+  final String label;
+  final Color strip;
+  final Widget? number;
+  final Widget title;
+  final Widget? under;
+  final Widget card;
+  final bool first, last;
+  final VoidCallback onTap;
+
+  static const numberStyle = TextStyle(fontFamily: Fonts.display, fontSize: CardBrowserLayout.numberFont, height: 1);
+  static const titleStyle = TextStyle(
+      fontFamily: Fonts.display,
+      fontSize: CardBrowserLayout.kimarijiFont,
+      height: CardBrowserLayout.kimarijiLineHeight);
+  static const sub = TextStyle(
+      fontWeight: Weights.bold,
+      fontSize: CardBrowserLayout.subFont,
+      height: CardBrowserLayout.subLineHeight,
+      color: CardBrowserLayout.subColor);
+
+  @override
+  Widget build(BuildContext context) {
+    final under = this.under;
     const rule = BorderSide(color: Palette.ink, width: CardBrowserLayout.tableBorder);
     return Semantics(
-      label: '${poem.id} ${poem.kimariji}',
+      label: label,
       excludeSemantics: true,
       child: Container(
         decoration: BoxDecoration(
@@ -301,7 +384,7 @@ class _Row extends StatelessWidget {
               top: 0,
               bottom: 0,
               width: CardBrowserLayout.strip,
-              child: ColoredBox(color: CardColorGroups.of(poem.color)),
+              child: ColoredBox(color: strip),
             ),
             ConstrainedBox(
               constraints: const BoxConstraints(minHeight: CardBrowserLayout.rowMinHeight),
@@ -310,9 +393,7 @@ class _Row extends StatelessWidget {
                 child: Row(children: [
                   SizedBox(
                     width: MediaQuery.textScalerOf(context).scale(CardBrowserLayout.numberColumn),
-                    child: MarkedText('${poem.id}',
-                        style: const TextStyle(fontFamily: Fonts.display, fontSize: CardBrowserLayout.numberFont, height: 1),
-                        marked: marked(CardMatchKind.number)),
+                    child: number,
                   ),
                   Expanded(
                     child: Padding(
@@ -321,16 +402,7 @@ class _Row extends StatelessWidget {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          FittedBox(
-                            fit: BoxFit.scaleDown,
-                            alignment: Alignment.centerLeft,
-                            child: MarkedText(romaji != null && romajiFirst ? romaji : poem.kimariji,
-                                style: const TextStyle(
-                                    fontFamily: Fonts.display,
-                                    fontSize: CardBrowserLayout.kimarijiFont,
-                                    height: CardBrowserLayout.kimarijiLineHeight),
-                                marked: marked(romaji != null && romajiFirst ? CardMatchKind.romaji : CardMatchKind.kana)),
-                          ),
+                          FittedBox(fit: BoxFit.scaleDown, alignment: Alignment.centerLeft, child: title),
                           if (under != null) ...[const SizedBox(height: CardBrowserLayout.subGap), under],
                         ],
                       ),
@@ -346,7 +418,7 @@ class _Row extends StatelessWidget {
                           decoration: const BoxDecoration(boxShadow: [
                             BoxShadow(color: CardBrowserLayout.cardShadowColor, offset: CardBrowserLayout.cardShadow),
                           ]),
-                          child: TorifudaCard(poem: poem),
+                          child: card,
                         ),
                       ),
                     ),

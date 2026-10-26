@@ -10,9 +10,9 @@ import 'package:fudatobashi/ui/manga/ruby_text.dart';
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
-  test('every card has an explanation in English and Japanese', () {
+  test('every card and the 序歌 have an explanation in English and Japanese', () {
     for (final code in ['en', 'ja']) {
-      for (var id = 1; id <= 100; id++) {
+      for (final id in [CardExplanations.joka, for (var id = 1; id <= 100; id++) id]) {
         expect(File(CardExplanations.asset(code, id)).existsSync(), isTrue, reason: '$code #$id');
       }
     }
