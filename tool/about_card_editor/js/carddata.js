@@ -1,7 +1,7 @@
 /* The card data (kimariji, poem, colour group) read from the StoneLabs CSV,
    which only the preview's card on top needs. */
 Editor.carddata = (() => {
-  const { CARD_COUNT, CSV_URL } = Editor.config;
+  const { CARD_COUNT, JOKA_LABEL, CSV_URL } = Editor.config;
   const { $ } = Editor.util;
   const { hepburn } = Editor.Romaji;
   const state = Editor.state;
@@ -33,8 +33,9 @@ Editor.carddata = (() => {
     const col = (r, name) => r[head.indexOf(name)] ?? '';
     const out = {};
     for (const r of rows) {
-      const num = +col(r, 'number');
-      if (!Number.isInteger(num) || num < 1 || num > CARD_COUNT) continue;
+      const label = col(r, 'number');
+      const num = label === JOKA_LABEL ? 0 : +label;
+      if (!label || !Number.isInteger(num) || num < 0 || num > CARD_COUNT) continue;
       const verse = (i) => col(r, `verse_${i}`);
       const yomi = (i) => col(r, `verse_${i}_hiragana_yomi`);
       out[num] = {

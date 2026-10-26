@@ -4,7 +4,7 @@
     python3 tool/about_card_editor/cards_json.py export en [out.json]
     python3 tool/about_card_editor/cards_json.py import file.json
 
-JSON: {"lang": "en", "cards": {"001": "...md...", ...}}
+JSON: {"lang": "en", "cards": {"000": "...md...", "001": "...md...", ...}}
 Files: assets/l10n/{lang}_card_explanations/NNN.md
 """
 import json
@@ -14,7 +14,7 @@ from pathlib import Path
 
 REPO = Path(__file__).resolve().parents[2]
 LANGS = ('en', 'ja')
-CARDS = [f'{n:03d}' for n in range(1, 101)]
+CARDS = [f'{n:03d}' for n in range(101)]
 
 
 def folder(lang):
@@ -41,7 +41,7 @@ def import_cards(path):
         sys.exit('"cards" must be an object')
     for card, text in cards.items():
         if not re.fullmatch(r'\d{3}', card) or card not in CARDS or not isinstance(text, str):
-            sys.exit(f'bad card entry {card!r}: ids are 001 to 100 and texts are strings')
+            sys.exit(f'bad card entry {card!r}: ids are 000 to 100 and texts are strings')
     for card, text in sorted(cards.items()):
         (folder(lang) / f'{card}.md').write_bytes(text.encode('utf-8'))
         print(f'wrote {folder(lang).relative_to(REPO)}/{card}.md')

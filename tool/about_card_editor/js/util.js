@@ -4,6 +4,7 @@ Editor.util = (() => {
   const $$ = (s, r = document) => [...r.querySelectorAll(s)];
   const esc = (s) => s.replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
   const pad = (n) => String(n).padStart(3, '0');
+  const cardName = (n) => (n ? String(n) : Editor.config.JOKA_LABEL);
 
   /* [hex] blended towards white: t = 1 is the colour itself, t = 0 is white. */
   const mix = (hex, t) => {
@@ -11,5 +12,5 @@ Editor.util = (() => {
     return '#' + c.map((v) => Math.round(255 + (v - 255) * t).toString(16).padStart(2, '0')).join('');
   };
 
-  return { $, $$, esc, pad, mix };
+  return { $, $$, esc, pad, cardName, mix };
 })();

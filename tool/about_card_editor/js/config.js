@@ -34,6 +34,8 @@ Editor.config = (() => {
     TEMPLATES: { en: '# Coming soon', ja: '# 準備中 | Coming soon' },
     CSV_URL: 'https://raw.githubusercontent.com/StoneLabs/hyakuninissyu-csv/master/data.csv',
     CARD_COUNT: 100,
+    /* The 序歌 is card 000, listed before card 1. */
+    JOKA_LABEL: '序歌',
     EMPHASIS_TINT: 0.45,
     BLOCK_TAGS: new Set(['h1', 'h2', 'h3', 'h4', 'p', 'ul', 'ol', 'blockquote', 'pre', 'hr', 'div']),
     GAPS: { h1: 26, h2: 22, h3: 16, h4: 16, block: 10, item: 6, quote: 10 },

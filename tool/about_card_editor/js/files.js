@@ -101,7 +101,7 @@ Editor.files = (() => {
     if (data?.lang !== state.lang) return alert(`This file is for "${data?.lang}" but you are writing "${state.lang}". Change the language in Settings first.`);
     const found = [];
     for (const [k, v] of Object.entries(data.cards ?? {})) {
-      if (typeof v === 'string' && /^\d{3}$/.test(k) && +k >= 1 && +k <= CARD_COUNT) found.push([state.lang, +k, v]);
+      if (typeof v === 'string' && /^\d{3}$/.test(k) && +k >= 0 && +k <= CARD_COUNT) found.push([state.lang, +k, v]);
     }
     if (!found.length) return alert('No card texts found in that file.');
     const clash = found.filter(([l, i, v]) => isEdited(l, i) && draftOf(l, i) !== v).length;

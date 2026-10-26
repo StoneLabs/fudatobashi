@@ -2,7 +2,7 @@
    and the poem box, with the Markdown area inside it. */
 Editor.phone = (() => {
   const { GROUP_COLORS, NEUTRAL_COLOR, EMPHASIS_TINT, WORDS, ICON_BACK } = Editor.config;
-  const { $, esc, mix } = Editor.util;
+  const { $, esc, cardName, mix } = Editor.util;
   const { hepburn } = Editor.Romaji;
   const state = Editor.state;
   const { paint } = Editor.classes;
@@ -75,8 +75,8 @@ Editor.phone = (() => {
       `<div class="app"><div class="hdr"><div class="ttl">${w.title}</div><span class="iconbtn" aria-hidden="true">${ICON_BACK}</span></div>` +
       `<div class="body" id="scr">` +
       (p ? `<div class="refnote">${w.reference}</div>` +
-        `<div class="kmrow"><span class="big">${esc(romaji ? hepburn(p.kimarijiReading) : p.kimariji)}</span><span class="numtag">#${p.n}</span></div>` +
-        renderPoem(p, romaji) : `<div class="refnote">#${state.n}</div>`) +
+        (p.kimariji ? `<div class="kmrow"><span class="big">${esc(romaji ? hepburn(p.kimarijiReading) : p.kimariji)}</span><span class="numtag">#${p.n}</span></div>` : '') +
+        renderPoem(p, romaji) : `<div class="refnote">#${cardName(state.n)}</div>`) +
       omitted(w.omittedTop, 'omit-top') +
       `<h2 class="part" id="part">${w.part}${w.partSub ? `<small>${w.partSub}</small>` : ''}</h2>` +
       `<div class="md" id="md"></div>` +

@@ -1,20 +1,20 @@
 /* The page itself: switching card and language, saving as you type, and starting everything up. */
 Editor.app = (() => {
   const { FOLDERS, STORAGE_KEY } = Editor.config;
-  const { $, pad } = Editor.util;
+  const { $, pad, cardName } = Editor.util;
   const state = Editor.state;
   const { store, key, original, textOfCard, isEdited, cards, editedList, saveSoon } = state;
   const ta = $('#ta');
 
   function refreshControls() {
     const sel = $('#card');
-    cards.forEach((i) => { sel.options[i - 1].textContent = cardLabel(i); });
+    cards.forEach((i) => { sel.options[i].textContent = cardLabel(i); });
     sel.value = String(state.n);
     $('#langBadge').textContent = state.lang === 'en' ? 'English' : '日本語';
     $('#langSel').value = state.lang;
     const edited = editedList();
     $('#editedList').innerHTML = edited.length
-      ? 'Edited: ' + edited.map((e) => `<button type="button" class="chip" data-lang="${e.lang}" data-n="${e.n}">${e.lang === 'en' ? 'EN' : 'JA'} ${e.n}</button>`).join('')
+      ? 'Edited: ' + edited.map((e) => `<button type="button" class="chip" data-lang="${e.lang}" data-n="${e.n}">${e.lang === 'en' ? 'EN' : 'JA'} ${cardName(e.n)}</button>`).join('')
       : 'No drafts yet. Your text is saved in this browser as you type.';
     const mine = isEdited(state.lang, state.n);
     $('#folder').textContent = FOLDERS[state.lang];
@@ -27,7 +27,7 @@ Editor.app = (() => {
     for (const id of ['#dlAll', '#expJson', '#copyAll']) $(id).disabled = !edited.length;
   }
 
-  const cardLabel = (i) => `${i}${state.poems[i] ? ` · ${state.poems[i].kimariji}` : ''}${isEdited(state.lang, i) ? '  ✎ draft' : ''}`;
+  const cardLabel = (i) => `${cardName(i)}${state.poems[i]?.kimariji ? ` · ${state.poems[i].kimariji}` : ''}${isEdited(state.lang, i) ? '  ✎ draft' : ''}`;
 
   function load(newLang, newN) {
     state.lang = newLang;
@@ -61,10 +61,10 @@ Editor.app = (() => {
 
   function init() {
     const sel = $('#card');
-    cards.forEach((i) => sel.add(new Option(String(i), String(i))));
+    cards.forEach((i) => sel.add(new Option(cardName(i), String(i))));
     sel.addEventListener('change', () => load(state.lang, +sel.value));
-    $('#prev').addEventListener('click', () => load(state.lang, state.n === 1 ? 100 : state.n - 1));
-    $('#next').addEventListener('click', () => load(state.lang, state.n === 100 ? 1 : state.n + 1));
+    $('#prev').addEventListener('click', () => load(state.lang, state.n === 0 ? 100 : state.n - 1));
+    $('#next').addEventListener('click', () => load(state.lang, state.n === 100 ? 0 : state.n + 1));
     $('#langSel').addEventListener('change', () => load($('#langSel').value, state.n));
     $('#editedList').addEventListener('click', (e) => { const b = e.target.closest('.chip'); if (b) load(b.dataset.lang, +b.dataset.n); });
     ta.addEventListener('input', onType);
