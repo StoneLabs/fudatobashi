@@ -190,6 +190,20 @@ void main() {
       expect(find.byType(CardBrowserScreen), findsOneWidget, reason: 'back returns to the browser');
     });
 
+    testWidgets('its page always has the reading card\'s key under the panel, its red named as the title',
+        (tester) async {
+      final p = await openPlayer(tester, 'en');
+      await showPage(tester, p, const AboutCardScreen.joka());
+      final key = find.byType(ReadingCardKey);
+      expect(key, findsOneWidget);
+      expect(tester.getTopLeft(key).dy, greaterThan(tester.getBottomLeft(find.byType(CardPanel)).dy));
+      expect(find.descendant(of: key, matching: find.text(_en.aboutKeyTitle)), findsOneWidget);
+      expect(find.descendant(of: key, matching: find.text(_en.aboutKeyKimariji)), findsNothing);
+      for (final mark in [_en.aboutKeyHold, _en.aboutKeyFade, _en.aboutKeyGuide]) {
+        expect(find.descendant(of: key, matching: find.text(mark)), findsOneWidget, reason: mark);
+      }
+    });
+
     testWidgets('only its page has the note on what it is', (tester) async {
       final p = await openPlayer(tester, 'en');
       await showPage(tester, p, const AboutCardScreen(poemId: 1));
@@ -247,6 +261,8 @@ void main() {
       expect(find.byType(ReadingCardKey), findsNothing);
       await tapOn(tester, find.textContaining(_en.aboutReadingCard).first);
       expect(find.byType(ReadingCardKey), findsOneWidget);
+      expect(find.descendant(of: find.byType(ReadingCardKey), matching: find.text(_en.aboutKeyKimariji)), findsOneWidget);
+      expect(find.text(_en.aboutKeyTitle), findsNothing, reason: 'only the 序歌 has a title');
       expect(tester.widget<CardPanel>(find.byType(CardPanel)).front, CardFace.reading);
       expect(p.settings.cardPanelSwiped, isFalse, reason: 'the switch is not a swipe');
       await tapOn(tester, find.textContaining(_en.aboutTakingCard).first);

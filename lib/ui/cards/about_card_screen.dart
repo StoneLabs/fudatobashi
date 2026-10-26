@@ -98,7 +98,7 @@ class _AboutCardScreenState extends State<AboutCardScreen> {
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             if (poem == null)
-              CardPanel.readingOnly(poem: joka)
+              ..._jokaCard()
             else
               ..._cards(poem, romaji),
             const SizedBox(height: AboutCardLayout.sectionGap),
@@ -177,6 +177,13 @@ class _AboutCardScreenState extends State<AboutCardScreen> {
       _Kimariji(poem: poem, romaji: romaji),
     ];
   }
+
+  /// The 序歌's reading card alone, so no switch, and its key always.
+  List<Widget> _jokaCard() => [
+        CardPanel.readingOnly(poem: joka),
+        const SizedBox(height: AboutCardLayout.switchGap),
+        ReadingCardKey(poem: joka),
+      ];
 
   /// Under the first sounds' heading: the sound ladder with its bar and
   /// lead, then the look-alike torifuda.

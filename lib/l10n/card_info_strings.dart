@@ -33,6 +33,10 @@ extension CardInfoStrings on S {
   String get aboutReadingCard => t('aboutReadingCard');
   String get aboutSwipe => t('aboutSwipe');
   String get aboutKeyKimariji => t('aboutKeyKimariji');
+
+  /// The key's red on the 序歌's reading card, which is its title.
+  String get aboutKeyTitle => t('aboutKeyTitle');
+
   String get aboutKeyHold => t('aboutKeyHold');
   String get aboutKeyFade => t('aboutKeyFade');
   String get aboutKeyGuide => t('aboutKeyGuide');

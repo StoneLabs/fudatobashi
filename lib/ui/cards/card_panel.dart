@@ -235,11 +235,12 @@ class _PoseTween extends Tween<_Pose> {
 }
 
 /// The reading card's key, shown while it is in front: a swatch of the card
-/// for each of its marks, two to a row.
+/// for each of its marks, two to a row. The red is the kimariji, or on the
+/// 序歌's card its title.
 class ReadingCardKey extends StatelessWidget {
   const ReadingCardKey({super.key, required this.poem});
 
-  final Poem poem;
+  final Waka poem;
 
   @override
   Widget build(BuildContext context) {
@@ -247,8 +248,12 @@ class ReadingCardKey extends StatelessWidget {
     const card = YomifudaStyle.standard;
     final glyph = TextStyle(
         fontFamily: card.fontFamily, fontSize: AboutCardLayout.keySwatchFont, height: 1, color: card.ink);
+    final (red, redLabel) = switch (poem) {
+      Poem(:final kimariji) => (kimariji, s.aboutKeyKimariji),
+      _ => (poem.yomifudaTitle!, s.aboutKeyTitle),
+    };
     final entries = [
-      (Text(poem.kimariji.substring(0, 1), style: glyph.copyWith(color: card.kimariji)), s.aboutKeyKimariji),
+      (Text(red.substring(0, 1), style: glyph.copyWith(color: card.kimariji)), redLabel),
       (
         SizedBox(
           width: AboutCardLayout.keyDashWidth,
