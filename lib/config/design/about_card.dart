@@ -133,6 +133,9 @@ abstract final class AboutCardLayout {
   static const double chipGap = 6;
   static const double poetRomajiGap = 8;
 
+  /// The 序歌's note on what it is, under its facts table.
+  static const double jokaNoteGap = 12;
+
   /// The row under the ladder's heading: the explanation link and the
   /// ladder switch.
   static const double barGap = 10;

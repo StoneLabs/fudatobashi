@@ -46,6 +46,9 @@ extension CardInfoStrings on S {
   /// Where the 序歌 comes from, named in the UI's language.
   String get aboutJokaSource => t('aboutJokaSource');
 
+  /// What the 序歌 is and how the reader reads it, under its facts.
+  String get aboutJokaNote => t('aboutJokaNote');
+
   /// A card's 五色 group: the group's own name, led by its colour in words
   /// where the language has one (the colour strings carry their own separator).
   String aboutColourName(String group) =>

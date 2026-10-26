@@ -140,7 +140,7 @@ void main() {
       expect(row(), findsOneWidget, reason: 'back once the search is empty');
     });
 
-    testWidgets('its row opens its page: the reading card alone, the poem, its facts and explanation',
+    testWidgets('its row opens its page: the reading card alone, the poem, its facts with a note and explanation',
         (tester) async {
       final p = await openPlayer(tester, 'en');
       await showPage(tester, p, const CardBrowserScreen());
@@ -152,12 +152,24 @@ void main() {
       for (final cardOnly in [CardPanel, TorifudaCard, PillSwitch<CardFace>, SoundLadderView, LinkRow]) {
         expect(onPage(find.byType(cardOnly, skipOffstage: false)), findsNothing, reason: '$cardOnly');
       }
-      for (final text in [_en.aboutFirstHalf, _en.aboutSource, _en.aboutPoemPart]) {
+      for (final text in [_en.aboutFirstHalf, _en.aboutSource, _en.aboutJokaNote, _en.aboutPoemPart]) {
         expect(onPage(find.text(text, skipOffstage: false)), findsOneWidget, reason: text);
       }
+      final note = onPage(find.text(_en.aboutJokaNote, skipOffstage: false));
+      expect(tester.getTopLeft(note).dy,
+          greaterThan(tester.getBottomLeft(onPage(find.text(_en.aboutSource, skipOffstage: false))).dy),
+          reason: 'the note is under the facts');
+      expect(tester.getBottomLeft(note).dy,
+          lessThan(tester.getTopLeft(onPage(find.text(_en.aboutPoemPart, skipOffstage: false))).dy));
       expect(onPage(find.text(_en.aboutPrevious, skipOffstage: false)), findsNothing);
       await tapOn(tester, find.bySemanticsLabel(_en.back).last);
       expect(find.byType(CardBrowserScreen), findsOneWidget, reason: 'back returns to the browser');
+    });
+
+    testWidgets('only its page has the note on what it is', (tester) async {
+      final p = await openPlayer(tester, 'en');
+      await showPage(tester, p, const AboutCardScreen(poemId: 1));
+      expect(find.text(_en.aboutJokaNote, skipOffstage: false), findsNothing);
     });
   });
 

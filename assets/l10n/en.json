@@ -1428,6 +1428,7 @@
   "aboutColourGroup": "COLOUR GROUP",
   "aboutSource": "SOURCE",
   "aboutJokaSource": "Kana preface of the Kokinshu",
+  "aboutJokaNote": "The opening poem is read at the start of a match, before the first card. It isn't one of the 100 poems and has no taking card. It lets the players settle in and get used to the reader's voice and rhythm. The reader reads it through, repeats its second half, and then goes straight into the first half of the first card.",
   "aboutColourName": "{0}{1}",
   "aboutColourPlace": "card {0} of {1}",
   "colourGroupBlue": "Blue · ",
