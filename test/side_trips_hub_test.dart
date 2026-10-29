@@ -229,7 +229,13 @@ void main() {
         DojoRingLayout.nobori,
       ])
         piece.asset,
-      for (final art in [DojoRingLayout.ankiren, DojoRingLayout.building, DojoRingLayout.fuji, DojoRingLayout.lighthouse])
+      for (final art in [
+        DojoRingLayout.ankiren,
+        DojoRingLayout.storehouse,
+        DojoRingLayout.hall,
+        DojoRingLayout.rocks,
+        DojoRingLayout.fort,
+      ])
         ...[art.colour, art.haze],
       AnkirenRulesLayout.memorise,
       AnkirenRulesLayout.flip,
@@ -387,24 +393,26 @@ void main() {
       await openHub(tester, p, usersPhone);
       expect(frontOf(tester), SideTripIsle.ankiren);
       final order = <SideTripIsle>[];
-      for (var i = 0; i < 4; i++) {
+      for (var i = 0; i < 5; i++) {
         await swipe(tester);
         order.add(frontOf(tester));
       }
-      expect(order, [SideTripIsle.building, SideTripIsle.fuji, SideTripIsle.lighthouse, SideTripIsle.ankiren]);
-      expect(turnOf(tester), 4);
+      expect(order,
+          [SideTripIsle.storehouse, SideTripIsle.hall, SideTripIsle.rocks, SideTripIsle.fort, SideTripIsle.ankiren]);
+      expect(turnOf(tester), 5);
 
       order.clear();
-      for (var i = 0; i < 5; i++) {
+      for (var i = 0; i < 6; i++) {
         await swipe(tester, forward: false);
         order.add(frontOf(tester));
       }
       expect(order, [
-        SideTripIsle.lighthouse,
-        SideTripIsle.fuji,
-        SideTripIsle.building,
+        SideTripIsle.fort,
+        SideTripIsle.rocks,
+        SideTripIsle.hall,
+        SideTripIsle.storehouse,
         SideTripIsle.ankiren,
-        SideTripIsle.lighthouse,
+        SideTripIsle.fort,
       ]);
       expect(turnOf(tester), -1);
       expect(tester.takeException(), isNull);
@@ -461,9 +469,9 @@ void main() {
       const ankiren = DojoRingLayout.ankiren;
       Rect? rectOf(String asset) => pictures(asset).evaluate().isEmpty ? null : tester.getRect(pictures(asset));
       final front = rectOf(ankiren.colour)!;
-      final left = rectOf(DojoRingLayout.lighthouse.haze)!;
+      final left = rectOf(DojoRingLayout.fort.haze)!;
       expect(rectOf(ankiren.haze), isNull, reason: 'at rest each island shows once');
-      expect(rectOf(DojoRingLayout.lighthouse.colour), isNull);
+      expect(rectOf(DojoRingLayout.fort.colour), isNull);
 
       // Drags to [turns] steps from [from], and the island's colour and blue
       // pictures then.
@@ -576,7 +584,7 @@ void main() {
       await tester.fling(inHub(find.byType(PageBurst)), const Offset(-200, 0), 1200);
       await tester.pump();
       await tester.pump(const Duration(seconds: 2));
-      expect(frontOf(tester), SideTripIsle.building);
+      expect(frontOf(tester), SideTripIsle.storehouse);
       expect(find.byType(AnkirenScreen), findsNothing);
       await tester.pumpWidget(const SizedBox());
     });
@@ -589,14 +597,15 @@ void main() {
 
       expect(inHub(find.byType(SideTripBody)).hitTestable(), findsOneWidget);
       expect(inHub(find.byType(SideTripSoonEntry)).hitTestable(), findsNothing);
-      expect(tags(), 1, reason: 'the building site on the right');
+      expect(tags(), 1, reason: 'the storehouse on the right');
       expect(pictures(DojoRingLayout.nobori.asset), findsOneWidget, reason: "暗記練's banner is its label");
       expect(pictures(DojoSceneLayout.toriiOpen.asset), findsOneWidget);
 
       for (final (front, labels, banner) in [
-        (SideTripIsle.building, 2, false),
-        (SideTripIsle.fuji, 2, false),
-        (SideTripIsle.lighthouse, 1, true),
+        (SideTripIsle.storehouse, 2, false),
+        (SideTripIsle.hall, 2, false),
+        (SideTripIsle.rocks, 2, false),
+        (SideTripIsle.fort, 1, true),
       ]) {
         await swipe(tester);
         expect(frontOf(tester), front);
@@ -637,7 +646,7 @@ void main() {
       await openHub(tester, p, usersPhone);
       await swipe(tester);
       await swipe(tester);
-      expect(frontOf(tester), SideTripIsle.fuji);
+      expect(frontOf(tester), SideTripIsle.hall);
       await tester.tap(find.descendant(of: find.byType(MangaTabBar), matching: find.text(s.home)));
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 300));
@@ -664,9 +673,9 @@ void main() {
       await tester.pump();
       await tester.pump(const Duration(seconds: 2));
       await tester.pump();
-      expect(frontOf(tester), SideTripIsle.building);
-      expect(find.semantics.byLabel(s.isleName(SideTripIsle.building)), findsOne);
-      act(SideTripIsle.building, s.sideTripsPreviousIsland);
+      expect(frontOf(tester), SideTripIsle.storehouse);
+      expect(find.semantics.byLabel(s.isleName(SideTripIsle.storehouse)), findsOne);
+      act(SideTripIsle.storehouse, s.sideTripsPreviousIsland);
       await tester.pump();
       await tester.pump(const Duration(seconds: 2));
       await tester.pump();
@@ -674,8 +683,8 @@ void main() {
       await tester.pump();
       await tester.pump(const Duration(seconds: 2));
       await tester.pump();
-      expect(frontOf(tester), SideTripIsle.lighthouse);
-      expect(find.semantics.byLabel(s.isleName(SideTripIsle.lighthouse)), findsOne);
+      expect(frontOf(tester), SideTripIsle.fort);
+      expect(find.semantics.byLabel(s.isleName(SideTripIsle.fort)), findsOne);
       await tester.pumpWidget(const SizedBox());
       semantics.dispose();
     });
@@ -701,7 +710,7 @@ void main() {
       expect(tester.getRect(inHub(find.byType(SideTripBody))), body, reason: 'fading where it rests');
       expect(drift(), 0);
       await tester.pump(DojoRingMotion.crossfade);
-      expect(frontOf(tester), SideTripIsle.building);
+      expect(frontOf(tester), SideTripIsle.storehouse);
       expect(inHub(find.byType(SideTripSoonEntry)).hitTestable(), findsOneWidget);
       expect(drift(), 0, reason: 'the boat stays still');
       expect(tester.takeException(), isNull);
@@ -842,7 +851,7 @@ void main() {
       await tester.runAsync(() => remember(p, journeyOrder.skip(_lockedCards).take(11)));
       await openHub(tester, p, usersPhone);
       await swipe(tester);
-      expect(frontOf(tester), SideTripIsle.building);
+      expect(frontOf(tester), SideTripIsle.storehouse);
       await tester.runAsync(() => remember(p, journeyOrder.skip(_lockedCards + 11).take(2)));
       await tester.pump();
       await tester.pump(DojoUnlockMotion.unlock);
@@ -934,7 +943,7 @@ void main() {
         await tester.pump();
         await tester.pump(const Duration(seconds: 3));
       }
-      for (var step = 1; step <= 3; step++) {
+      for (var step = 1; step < SideTripRing.isles.length; step++) {
         await swipe(tester);
         await tester.pump(const Duration(seconds: 3));
         await precacheArt(tester);

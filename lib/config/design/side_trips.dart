@@ -184,7 +184,9 @@ class RingArmSpec {
 }
 
 /// One island of the ring: its picture in [colour] and the same drawing in
-/// blue [haze], both filling the island canvas.
+/// blue [haze], both 3× renders filling the island canvas. Unlike the
+/// scene's pictures they are lossy, as hand-painted texture runs large
+/// lossless.
 @immutable
 class RingIsleArt {
   const RingIsleArt(this.colour, this.haze);
@@ -217,7 +219,9 @@ abstract final class DojoRingLayout {
     RingSlotSpec(
         foot: Offset(334, 248), scale: 0.36, haze: 0, label: 1, tag: _over, tagAlign: Alignment.bottomCenter, depth: 2),
     RingSlotSpec(
-        foot: Offset(208, 200), scale: 0.26, haze: 1, label: 0, tag: _over, tagAlign: Alignment.bottomCenter, depth: 0),
+        foot: Offset(242, 204), scale: 0.25, haze: 1, label: 0, tag: _over, tagAlign: Alignment.bottomCenter, depth: 0.5),
+    RingSlotSpec(
+        foot: Offset(131, 201), scale: 0.21, haze: 1, label: 0, tag: _over, tagAlign: Alignment.bottomCenter, depth: 0),
     RingSlotSpec(
         foot: Offset(30, 201), scale: 0.16, haze: 1, label: 0, tag: _over, tagAlign: Alignment.bottomCenter, depth: 1),
   ];
@@ -236,12 +240,13 @@ abstract final class DojoRingLayout {
   );
 
   static const ankiren = RingIsleArt('$_dir/ankiren.webp', '$_dir/ankiren-haze.webp');
-  static const building = RingIsleArt('$_dir/construction.webp', '$_dir/construction-haze.webp');
-  static const fuji = RingIsleArt('$_dir/fuji.webp', '$_dir/fuji-haze.webp');
-  static const lighthouse = RingIsleArt('$_dir/lighthouse.webp', '$_dir/lighthouse-haze.webp');
+  static const storehouse = RingIsleArt('$_dir/storehouse.webp', '$_dir/storehouse-haze.webp');
+  static const hall = RingIsleArt('$_dir/hall.webp', '$_dir/hall-haze.webp');
+  static const rocks = RingIsleArt('$_dir/rocks.webp', '$_dir/rocks-haze.webp');
+  static const fort = RingIsleArt('$_dir/fort.webp', '$_dir/fort-haze.webp');
 
   /// 暗記練's banner on its island's grass, once it is open: its label.
-  static const nobori = ScenePiece('assets/graphics/sidetrips/ankiren/nobori.webp', Rect.fromLTWH(277.2, 56, 30, 100));
+  static const nobori = ScenePiece('assets/graphics/sidetrips/ankiren/nobori.webp', Rect.fromLTWH(238, 73, 30, 100));
 }
 
 /// How the ring of islands turns (`SideTripsScreen`).

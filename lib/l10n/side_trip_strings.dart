@@ -27,9 +27,10 @@ extension SideTripStrings on S {
   /// [isle]'s name, for screen readers.
   String isleName(SideTripIsle isle) => switch (isle) {
         SideTripIsle.ankiren => t('ankirenName'),
-        SideTripIsle.building => t('sideTripsIsleBuilding'),
-        SideTripIsle.fuji => t('sideTripsIsleFuji'),
-        SideTripIsle.lighthouse => t('sideTripsIsleLighthouse'),
+        SideTripIsle.storehouse => t('sideTripsIsleStorehouse'),
+        SideTripIsle.hall => t('sideTripsIsleHall'),
+        SideTripIsle.rocks => t('sideTripsIsleRocks'),
+        SideTripIsle.fort => t('sideTripsIsleFort'),
       };
 
   /// The screen-reader actions that turn the ring of islands.

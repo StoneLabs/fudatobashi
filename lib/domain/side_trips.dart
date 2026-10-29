@@ -20,9 +20,10 @@ enum SideTrip {
 /// trip's, then those still being built.
 enum SideTripIsle {
   ankiren(SideTrip.ankiren),
-  building(null),
-  fuji(null),
-  lighthouse(null);
+  storehouse(null),
+  hall(null),
+  rocks(null),
+  fort(null);
 
   const SideTripIsle(this.trip);
 

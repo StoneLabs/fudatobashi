@@ -51,21 +51,23 @@ void main() {
 
   group('ring', () {
     test('turns forward and back forever, one island a step, the right one coming to the front', () {
-      expect([for (var t = -5; t <= 5; t++) SideTripRing.frontAt(t)], [
-        SideTripIsle.lighthouse,
+      expect([for (var t = -6; t <= 6; t++) SideTripRing.frontAt(t)], [
+        SideTripIsle.fort,
         SideTripIsle.ankiren,
-        SideTripIsle.building,
-        SideTripIsle.fuji,
-        SideTripIsle.lighthouse,
+        SideTripIsle.storehouse,
+        SideTripIsle.hall,
+        SideTripIsle.rocks,
+        SideTripIsle.fort,
         SideTripIsle.ankiren,
-        SideTripIsle.building,
-        SideTripIsle.fuji,
-        SideTripIsle.lighthouse,
+        SideTripIsle.storehouse,
+        SideTripIsle.hall,
+        SideTripIsle.rocks,
+        SideTripIsle.fort,
         SideTripIsle.ankiren,
-        SideTripIsle.building,
+        SideTripIsle.storehouse,
       ]);
       expect(SideTripIsle.ankiren.trip, SideTrip.ankiren);
-      expect([for (final isle in SideTripRing.isles) isle.comingSoon], [false, true, true, true]);
+      expect([for (final isle in SideTripRing.isles) isle.comingSoon], [false, true, true, true, true]);
     });
 
     test('each step moves every island on a slot: right to front, front to left, then round the back to the right',
@@ -74,9 +76,10 @@ void main() {
       Map<SideTripIsle, int> at(int turn) => {for (final i in SideTripRing.isles) i: SideTripRing.slotOf(i, turn)};
       expect(at(0), {
         SideTripIsle.ankiren: 0,
-        SideTripIsle.building: 1,
-        SideTripIsle.fuji: 2,
-        SideTripIsle.lighthouse: 3,
+        SideTripIsle.storehouse: 1,
+        SideTripIsle.hall: 2,
+        SideTripIsle.rocks: 3,
+        SideTripIsle.fort: 4,
       });
       for (var turn = -6; turn < 6; turn++) {
         for (final isle in SideTripRing.isles) {
@@ -84,9 +87,9 @@ void main() {
           expect(SideTripRing.slotOf(isle, turn + 1), slot == 0 ? n - 1 : slot - 1, reason: '$isle at $turn');
         }
       }
-      expect(SideTripRing.place(SideTripIsle.building, 0.25), 0.75, reason: 'part of the way to the front');
-      expect(SideTripRing.place(SideTripIsle.ankiren, 0.25), 3.75, reason: 'part of the way to the left');
-      expect(SideTripRing.place(SideTripIsle.ankiren, -4.5), 0.5);
+      expect(SideTripRing.place(SideTripIsle.storehouse, 0.25), 0.75, reason: 'part of the way to the front');
+      expect(SideTripRing.place(SideTripIsle.ankiren, 0.25), n - 0.25, reason: 'part of the way to the left');
+      expect(SideTripRing.place(SideTripIsle.ankiren, -n - 0.5), 0.5, reason: 'a lap and a half step back');
     });
   });
 
