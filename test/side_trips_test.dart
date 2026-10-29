@@ -68,23 +68,20 @@ void main() {
       expect([for (final isle in SideTripRing.isles) isle.comingSoon], [false, true, true, true]);
     });
 
-    test('each step moves every island on a slot: right to front, front to left, left to back, back to right', () {
-      Map<SideTripIsle, RingSlot> at(int turn) => {for (final i in SideTripRing.isles) i: SideTripRing.slotOf(i, turn)};
+    test('each step moves every island on a slot: right to front, front to left, then round the back to the right',
+        () {
+      final n = SideTripRing.isles.length;
+      Map<SideTripIsle, int> at(int turn) => {for (final i in SideTripRing.isles) i: SideTripRing.slotOf(i, turn)};
       expect(at(0), {
-        SideTripIsle.ankiren: RingSlot.front,
-        SideTripIsle.building: RingSlot.right,
-        SideTripIsle.fuji: RingSlot.back,
-        SideTripIsle.lighthouse: RingSlot.left,
+        SideTripIsle.ankiren: 0,
+        SideTripIsle.building: 1,
+        SideTripIsle.fuji: 2,
+        SideTripIsle.lighthouse: 3,
       });
       for (var turn = -6; turn < 6; turn++) {
         for (final isle in SideTripRing.isles) {
-          final next = switch (SideTripRing.slotOf(isle, turn)) {
-            RingSlot.right => RingSlot.front,
-            RingSlot.front => RingSlot.left,
-            RingSlot.left => RingSlot.back,
-            RingSlot.back => RingSlot.right,
-          };
-          expect(SideTripRing.slotOf(isle, turn + 1), next, reason: '$isle at $turn');
+          final slot = SideTripRing.slotOf(isle, turn);
+          expect(SideTripRing.slotOf(isle, turn + 1), slot == 0 ? n - 1 : slot - 1, reason: '$isle at $turn');
         }
       }
       expect(SideTripRing.place(SideTripIsle.building, 0.25), 0.75, reason: 'part of the way to the front');

@@ -243,6 +243,10 @@ void main() {
     expect({for (final f in files) f.path}, used);
   });
 
+  test('the ring has a slot for each island', () {
+    expect(DojoRingLayout.slots, hasLength(SideTripRing.isles.length));
+  });
+
   group('fits', () {
     for (final phone in [narrowPhone, usersPhone, widePhone]) {
       for (final fontScale in [1.0, 1.3]) {

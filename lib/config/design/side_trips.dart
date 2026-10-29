@@ -193,11 +193,12 @@ class RingIsleArt {
 
 /// The ring of islands on the dojo scene (`SideTripRing`). Every island is
 /// drawn on one [canvas] (units as the scene's) and stands on its
-/// waterline at [foot]; each slot of the ring ([slots], in `RingSlot`
-/// order: front, right, back, left) puts it somewhere on the scene. An
-/// island between two slots is part of the way between the two. In front
-/// its tag hangs in the water under its left end; elsewhere it floats over
-/// the island, clear of the one in front.
+/// waterline at [foot]; each slot of the ring ([slots], one per island, in
+/// `SideTripRing`'s order: the front, the right, round the back from right
+/// to left, the left) puts it somewhere on the scene. An island between
+/// two slots is part of the way between the two. In front its tag hangs in
+/// the water under its left end; elsewhere it floats over the island,
+/// clear of the one in front.
 ///
 /// The track is a parabola opening to the left, its tip near the right
 /// slot: its [near] arm runs on from the front and its [far] arm from the

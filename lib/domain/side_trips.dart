@@ -32,28 +32,28 @@ enum SideTripIsle {
   bool get comingSoon => trip == null;
 }
 
-/// The four places of the ring of islands, in the order an island passes
-/// them as the ring turns back: it comes to the [front] from the [right],
-/// which it reached from the [back], which it reached from the [left].
-enum RingSlot { front, right, back, left }
-
-/// The ring of islands on the Side Trips tab. It turns like a revolver's
-/// cylinder, a step at a time and round forever either way: each step
-/// forward brings the island on the right to the front, sends the front
-/// one to the left, the left one to the back and the back one to the
-/// right. At turn 0 the first island is in front.
+/// The ring of islands on the Side Trips tab, one slot for each island. It
+/// turns like a revolver's cylinder, a step at a time and round forever
+/// either way: each step forward brings the island on the right to the
+/// front, sends the front one to the left and every other one a slot on
+/// round the back, from the left towards the right. At turn 0 the first
+/// island is in front.
+///
+/// The slots count from the front (0) the way an island goes as the ring
+/// turns back: the right (1), round the back from right to left, and the
+/// left last.
 abstract final class SideTripRing {
   static const isles = SideTripIsle.values;
 
   /// The island in front after [turn] steps (back ones count negative).
   static SideTripIsle frontAt(int turn) => isles[turn % isles.length];
 
-  /// Where [isle] stands after [turn] steps.
-  static RingSlot slotOf(SideTripIsle isle, int turn) => RingSlot.values[place(isle, turn.toDouble()).round()];
+  /// The slot [isle] stands in after [turn] steps.
+  static int slotOf(SideTripIsle isle, int turn) => place(isle, turn.toDouble()).round();
 
   /// How far round the ring [isle] is after [turn] steps, a fraction of
   /// the way between two slots while the ring turns: from 0 (the front) up
-  /// to the [RingSlot] count, which is the front again.
+  /// to the island count, which is the front again.
   static double place(SideTripIsle isle, double turn) => (isle.index - turn) % isles.length;
 }
 

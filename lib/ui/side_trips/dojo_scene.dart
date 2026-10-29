@@ -184,16 +184,16 @@ class _DojoSceneState extends State<DojoScene> with SingleTickerProviderStateMix
   /// track's near and far arms at once ([DojoRingLayout.near]).
   static List<RingSlotSpec> _specsAt(double place) {
     const slots = DojoRingLayout.slots;
-    final from = place.floor();
-    final t = place - from;
-    if (from % slots.length == RingSlot.left.index && t > 0) {
+    final from = place.floor() % slots.length;
+    final t = place - place.floor();
+    if (from == slots.length - 1 && t > 0) {
       final out = 1 - t;
       return [
-        DojoRingLayout.near.at(slots[RingSlot.front.index], out),
-        DojoRingLayout.far.at(slots[RingSlot.left.index], 1 - out),
+        DojoRingLayout.near.at(slots.first, out),
+        DojoRingLayout.far.at(slots.last, 1 - out),
       ];
     }
-    return [RingSlotSpec.lerp(slots[from % slots.length], slots[(from + 1) % slots.length], t)];
+    return [RingSlotSpec.lerp(slots[from], slots[(from + 1) % slots.length], t)];
   }
 
   /// The torii standing [state]: padlocked, opening (the padlocked one
