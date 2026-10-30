@@ -16,7 +16,6 @@ import '../ankiren/ankiren_strikes.dart';
 import '../manga/manga.dart';
 import '../play/time_format.dart';
 import '../run/run_launcher.dart';
-import '../shell/tab_chains.dart';
 import 'ankiren_sheet.dart';
 import 'burst_button.dart';
 
@@ -157,14 +156,14 @@ class _AnkirenFreeSheetState extends State<AnkirenFreeSheet> {
       line: widget.guest ? s.ankirenGuestLine : null,
       body: [
         Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-          _SheetLabel(s.ankirenLevelRow, s.sub?.ankirenLevelRow),
+          SheetLabel(s.ankirenLevelRow, s.sub?.ankirenLevelRow),
           const SizedBox(height: AnkirenSheetLayout.labelGap),
           _levelKeys(s),
         ]),
         if (ladder != null) _UnlockNote(allCleared: ladder.allCleared),
         // The steppers' labels go without the English, which would wrap them.
-        _Stepper(
-          label: _SheetLabel(s.ankirenPerSide, null),
+        SheetStepper(
+          label: SheetLabel(s.ankirenPerSide, null),
           value: NumberedText(
             s.ankirenPerSideCount,
             [setup.perSide],
@@ -174,8 +173,8 @@ class _AnkirenFreeSheetState extends State<AnkirenFreeSheet> {
           onLess: steps && setup.perSide > AnkirenTuning.customMinPerSide ? () => _stepCustom(() => _perSide--) : null,
           onMore: steps && setup.perSide < _maxPerSide ? () => _stepCustom(() => _perSide++) : null,
         ),
-        _Stepper(
-          label: _SheetLabel(s.ankirenMemoriseTime, null),
+        SheetStepper(
+          label: SheetLabel(s.ankirenMemoriseTime, null),
           value: Text(formatMinutes(setup.memorise),
               style: const TextStyle(fontFamily: Fonts.display, fontSize: AnkirenSheetLayout.stepperValueFont)),
           onLess: steps && memorise > 0 ? () => _stepCustom(() => _memoriseIndex--) : null,
@@ -199,7 +198,7 @@ class _AnkirenFreeSheetState extends State<AnkirenFreeSheet> {
     final keys = <Widget>[
       for (final (l, level) in AnkirenLevels.all.indexed)
         Builder(
-          builder: (context) => _Key(
+          builder: (context) => SheetKey(
             semanticLabel: s.ankirenLevelTag(l),
             chosen: _level == l,
             fits: level.cards <= _known,
@@ -217,7 +216,7 @@ class _AnkirenFreeSheetState extends State<AnkirenFreeSheet> {
           ),
         ),
       Builder(
-        builder: (context) => _Key(
+        builder: (context) => SheetKey(
           semanticLabel: s.ankirenCustom,
           chosen: _level == null,
           fits: true,
@@ -276,136 +275,6 @@ class _UnlockNote extends StatelessWidget {
             Phrases.span(allCleared ? s.ankirenAllCleared : s.ankirenUnlockLine(AnkirenTuning.strikesOut)),
             style: style),
       ),
-    ]);
-  }
-}
-
-/// A section's label, with the other language's [sub] in small tracked
-/// capitals, each breaking only between words.
-class _SheetLabel extends StatelessWidget {
-  const _SheetLabel(this.text, this.sub);
-
-  final String text;
-  final String? sub;
-
-  @override
-  Widget build(BuildContext context) => Text.rich(
-        TextSpan(children: [
-          Phrases.span(text),
-          if (sub != null) ...[
-            const TextSpan(text: ' '),
-            Phrases.span(
-              sub!.toUpperCase(),
-              style: const TextStyle(
-                fontSize: AnkirenSheetLayout.labelSubFont,
-                letterSpacing: AnkirenSheetLayout.labelSubTracking * AnkirenSheetLayout.labelSubFont,
-              ),
-            ),
-          ],
-        ]),
-        style: const TextStyle(fontWeight: Weights.black, fontSize: AnkirenSheetLayout.labelFont),
-      );
-}
-
-/// One key of the level keys: Settings' choice colours (sun when [chosen],
-/// desk grey when the known cards do not [fits] it or it is [locked]),
-/// [top] over [bottom]; chained when [locked], checked when [cleared].
-class _Key extends StatelessWidget {
-  const _Key({
-    required this.semanticLabel,
-    required this.chosen,
-    required this.fits,
-    required this.locked,
-    required this.cleared,
-    required this.onTap,
-    required this.top,
-    this.bottom,
-  });
-
-  final String semanticLabel;
-  final bool chosen, fits, locked, cleared;
-  final VoidCallback onTap;
-  final Widget top;
-  final Widget? bottom;
-
-  @override
-  Widget build(BuildContext context) => Semantics(
-        selected: chosen,
-        child: SizedBox(
-          height: AnkirenSheetLayout.keyHeight,
-          child: Stack(clipBehavior: Clip.none, children: [
-            Positioned.fill(
-              child: InkButton(
-                onTap: onTap,
-                color: chosen
-                    ? Palette.sun
-                    : fits && !locked
-                        ? Palette.paper
-                        : Palette.desk,
-                border: chosen ? AnkirenSheetLayout.keyChosenBorder : AnkirenSheetLayout.keyBorder,
-                padding: AnkirenSheetLayout.keyPadding,
-                semanticLabel: semanticLabel,
-                child: Opacity(
-                  opacity: locked ? AnkirenSheetLayout.lockedOpacity : 1,
-                  child: FittedBox(
-                    fit: BoxFit.scaleDown,
-                    child: Column(mainAxisSize: MainAxisSize.min, children: [
-                      DefaultTextStyle.merge(style: const TextStyle(height: 1), child: top),
-                      if (bottom != null) ...[
-                        const SizedBox(height: AnkirenSheetLayout.keyLabelGap),
-                        DefaultTextStyle.merge(style: const TextStyle(height: 1), child: bottom!),
-                      ],
-                    ]),
-                  ),
-                ),
-              ),
-            ),
-            if (locked) const Positioned.fill(child: ClipRect(child: TabChains(scale: AnkirenSheetLayout.chainScale))),
-            if (cleared)
-              const Positioned(
-                right: -AnkirenSheetLayout.checkOut,
-                top: -AnkirenSheetLayout.checkOut,
-                child: ClearedCheck(size: AnkirenSheetLayout.check),
-              ),
-          ]),
-        ),
-      );
-}
-
-/// A stepper: its [label] at the left, which gives way first, then − value
-/// +; an end reached disables its button.
-class _Stepper extends StatelessWidget {
-  const _Stepper({required this.label, required this.value, required this.onLess, required this.onMore});
-
-  final Widget label, value;
-  final VoidCallback? onLess, onMore;
-
-  @override
-  Widget build(BuildContext context) {
-    final s = S.of(context);
-    Widget button(String sign, String name, VoidCallback? onTap) => SizedBox.square(
-          dimension: AnkirenSheetLayout.stepperButton,
-          child: InkButton(
-            onTap: onTap,
-            color: onTap == null ? Palette.desk : Palette.paper,
-            border: Strokes.control,
-            semanticLabel: name,
-            child: Text(sign,
-                style: const TextStyle(fontFamily: Fonts.display, fontSize: AnkirenSheetLayout.stepperSignFont, height: 1)),
-          ),
-        );
-    return Row(children: [
-      Expanded(child: label),
-      const SizedBox(width: AnkirenSheetLayout.stepperGap),
-      button('−', s.ankirenLess, onLess),
-      SizedBox(
-        width: AnkirenSheetLayout.stepperValueWidth,
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: AnkirenSheetLayout.stepperGap),
-          child: Center(child: FittedBox(fit: BoxFit.scaleDown, child: value)),
-        ),
-      ),
-      button('+', s.ankirenMore, onMore),
     ]);
   }
 }

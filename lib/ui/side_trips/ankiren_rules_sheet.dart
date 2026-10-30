@@ -58,29 +58,24 @@ class AnkirenRulesSheet extends StatelessWidget {
       title: s.howToPlay,
       sub: o?.howToPlay,
       body: [
-        Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          for (final (i, (picture, name, line, sub)) in steps.indexed) ...[
-            if (i > 0) const SizedBox(width: AnkirenRulesLayout.stepGap),
-            Expanded(child: _Step(number: i + 1, picture: picture, name: name, line: line, sub: sub)),
-          ],
-        ]),
-        _RuleList([
-          _Rule(_Mark.icon(Palette.pinkSoft, IconArt.close), s.ankirenRuleWrong, o?.ankirenRuleWrong),
-          _Rule(const _Mark.text(Palette.sun, '$reveal'), s.ankirenRuleReveal(reveal), o?.ankirenRuleReveal(reveal)),
-          _Rule(_Mark.icon(Palette.desk, IconArt.question), s.ankirenRuleDontKnow, o?.ankirenRuleDontKnow),
-          _Rule(_Mark.icon(Palette.ink, IconArt.end), s.ankirenRuleLeave, o?.ankirenRuleLeave),
-          _Rule(const _Mark.art(Palette.pinkSoft), s.ankirenRuleStrikes(strikes), o?.ankirenRuleStrikes(strikes)),
-          _Rule(const _Mark.text(Palette.pink, '${2 * perSide}'), s.ankirenRuleRanked(perSide, memorise, opensAt),
+        RulesSteps(steps),
+        RuleList([
+          RuleItem(RuleMark.icon(Palette.pinkSoft, IconArt.close), s.ankirenRuleWrong, o?.ankirenRuleWrong),
+          RuleItem(const RuleMark.text(Palette.sun, '$reveal'), s.ankirenRuleReveal(reveal), o?.ankirenRuleReveal(reveal)),
+          RuleItem(RuleMark.icon(Palette.desk, IconArt.question), s.ankirenRuleDontKnow, o?.ankirenRuleDontKnow),
+          RuleItem(RuleMark.icon(Palette.ink, IconArt.end), s.ankirenRuleLeave, o?.ankirenRuleLeave),
+          RuleItem(const RuleMark.art(Palette.pinkSoft), s.ankirenRuleStrikes(strikes), o?.ankirenRuleStrikes(strikes)),
+          RuleItem(const RuleMark.text(Palette.pink, '${2 * perSide}'), s.ankirenRuleRanked(perSide, memorise, opensAt),
               o?.ankirenRuleRanked(perSide, memorise, opensAt)),
         ]),
         SettingsSection(title: s.ankirenScoring, sub: o?.ankirenScoring.toUpperCase(), children: [
-          _RuleList([
-            _Rule(_Mark.text(Palette.paper, s.ankirenMarkPoints), s.ankirenScoreFind(first, speed),
+          RuleList([
+            RuleItem(RuleMark.text(Palette.paper, s.ankirenMarkPoints), s.ankirenScoreFind(first, speed),
                 o?.ankirenScoreFind(first, speed)),
-            _Rule(_Mark.icon(Palette.paper, IconArt.cards), s.ankirenScoreNear(second), o?.ankirenScoreNear(second),
+            RuleItem(RuleMark.icon(Palette.paper, IconArt.cards), s.ankirenScoreNear(second), o?.ankirenScoreNear(second),
                 below: const _TierTable()),
-            _Rule(_Mark.icon(Palette.sun, IconArt.history), s.ankirenScoreEarly(early), o?.ankirenScoreEarly(early)),
-            _Rule(_Mark.text(Palette.pink, s.ankirenMarkPoints), s.ankirenScoreLevel, o?.ankirenScoreLevel),
+            RuleItem(RuleMark.icon(Palette.sun, IconArt.history), s.ankirenScoreEarly(early), o?.ankirenScoreEarly(early)),
+            RuleItem(RuleMark.text(Palette.pink, s.ankirenMarkPoints), s.ankirenScoreLevel, o?.ankirenScoreLevel),
           ]),
         ]),
       ],
@@ -144,10 +139,27 @@ class _TierTable extends StatelessWidget {
   }
 }
 
+/// A game's steps side by side, numbered: each its picture, its name, and
+/// its line with the other language's under it.
+class RulesSteps extends StatelessWidget {
+  const RulesSteps(this.steps, {super.key});
+
+  /// Each step's picture, name, line and the line in the other language.
+  final List<(String, String, String, String?)> steps;
+
+  @override
+  Widget build(BuildContext context) => Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        for (final (i, (picture, name, line, sub)) in steps.indexed) ...[
+          if (i > 0) const SizedBox(width: AnkirenRulesLayout.stepGap),
+          Expanded(child: RulesStep(number: i + 1, picture: picture, name: name, line: line, sub: sub)),
+        ],
+      ]);
+}
+
 /// One step of the game: its picture, its number and [name], then its
 /// [line] and the other language's [sub] under it.
-class _Step extends StatelessWidget {
-  const _Step({required this.number, required this.picture, required this.name, required this.line, required this.sub});
+class RulesStep extends StatelessWidget {
+  const RulesStep({super.key, required this.number, required this.picture, required this.name, required this.line, required this.sub});
 
   final int number;
   final String picture, name, line;
@@ -232,16 +244,16 @@ class _Lines extends StatelessWidget {
 
 /// What a list row is marked with: a box of [color] holding an icon, or
 /// short text.
-class _Mark extends StatelessWidget {
-  const _Mark.icon(this.color, VectorArt this.icon)
+class RuleMark extends StatelessWidget {
+  const RuleMark.icon(this.color, VectorArt this.icon, {super.key})
       : text = null,
         strike = false;
-  const _Mark.text(this.color, String this.text)
+  const RuleMark.text(this.color, String this.text, {super.key})
       : icon = null,
         strike = false;
 
   /// A struck card (see `AnkirenStrikes`).
-  const _Mark.art(this.color)
+  const RuleMark.art(this.color, {super.key})
       : icon = null,
         text = null,
         strike = true;
@@ -280,20 +292,20 @@ class _Mark extends StatelessWidget {
 
 /// A rule: its [mark], its [line] and the other language's [sub], and what
 /// shows [below] them.
-class _Rule {
-  const _Rule(this.mark, this.line, this.sub, {this.below});
+class RuleItem {
+  const RuleItem(this.mark, this.line, this.sub, {this.below});
 
-  final _Mark mark;
+  final RuleMark mark;
   final String line;
   final String? sub;
   final Widget? below;
 }
 
 /// Rules, one a row, split by light rules.
-class _RuleList extends StatelessWidget {
-  const _RuleList(this.rules);
+class RuleList extends StatelessWidget {
+  const RuleList(this.rules, {super.key});
 
-  final List<_Rule> rules;
+  final List<RuleItem> rules;
 
   @override
   Widget build(BuildContext context) => Column(
