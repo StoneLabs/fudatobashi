@@ -54,7 +54,6 @@ class _GuideScreenState extends State<GuideScreen> {
                   style: ProseStyle.guide,
                   accent: GuideLayout.accent,
                   options: MarkdownOptions(
-                    language: S.of(context).code,
                     romaji: romaji,
                     kanaBesideRomaji: widget.kanaBesideRomaji,
                     phrases: source.contains(Phrases.end),

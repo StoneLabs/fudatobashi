@@ -1,6 +1,6 @@
 // Renders the guides' pictures that are drawn from the app's own cards and
 // widgets to PNGs in build/article_figures/, named as the articles expect
-// them (see `ArticlePictures`): one file each, or a version per language
+// them (the articles name them): one file each, or a version per language
 // and kana setting where the picture differs by them.
 //
 //   ./scripts/article_figures.sh      renders them and converts them to WebP

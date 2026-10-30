@@ -54,19 +54,19 @@
 
 最初の音がほかのどの歌ともかぶらない歌が7首あります。1音目で取れる札で、「{むすめふさほせ}」と覚えます。
 
-![](assets/artworks/articles/karuta_one_sound.webp)
+![](assets/artworks/articles/karuta_one_sound_{{ "romaji" if env.romaji_mode else "hiragana" }}.webp)
 
 ## 同じ音で始まる歌
 
 多くの歌は、始まりの音がほかの歌と同じです。たとえば「{はるすぎて}」と「{はるのよの}」。どちらも「{はる}」で始まるので、3音目まで聞かないとわかりません。
 
-![赤い音で決まる。どちらも3字決まりです。](assets/artworks/articles/karuta_kimariji_long.webp)
+![赤い音で決まる。どちらも3字決まりです。](assets/artworks/articles/karuta_kimariji_long_{{ "romaji" if env.romaji_mode else "hiragana" }}.webp)
 
 ## 決まり字は変わる
 
 札は一度しか読まれません。「{はるすぎて}」が読まれたあと、「{はる}」で始まる札は「{はるのよの}」だけ。もう「{はる}」の2音で取れる、2字決まりの札に変わったのです。
 
-![1枚読まれたから、2音で決まる。](assets/artworks/articles/karuta_kimariji_change.webp)
+![1枚読まれたから、2音で決まる。](assets/artworks/articles/karuta_kimariji_change_{{ "romaji" if env.romaji_mode else "hiragana" }}.ja.webp)
 
 いちばん長いのは6字決まり。「{あさぼらけ}」「{わたのはら}」「{きみがため}」で始まる歌は2首ずつあって、6音目でやっと決まります。
 

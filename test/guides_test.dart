@@ -43,7 +43,6 @@ void main() {
             await tester.runAsync(() async {
               await p.updateSettings(p.settings.copyWith(kimarijiScript: script));
               await Articles.load(lang, article);
-              await ArticlePictures.load();
             });
             await showPage(tester, p, guide(S(lang)), screen: phone, textScale: textScale);
             await tester.runAsync(() => Future<void>.delayed(const Duration(milliseconds: 200)));

@@ -46,15 +46,21 @@ Besides plain Markdown, these files may hold:
 
   ![Caption under the picture](assets/artworks/articles/name.webp)
       A picture, alone on its line, as wide as the text, with the caption
-      under it. Pictures are shared by all languages, so translate only the
-      caption; keep words out of the pictures themselves where you can. A
-      picture may have versions, which the app picks by itself:
-        name.ja.webp          for one language (English stands in for a
-                              language without its own)
-        name_hiragana.webp    for players who read kana
-        name_romaji.webp      for players who read romaji
-        name_romaji.ja.webp   for both at once
-      Always write the plain name (name.webp) in the text.
+      under it. Name the exact file. Pictures are shared by all languages, so
+      translate only the caption; keep words out of the pictures themselves
+      where you can. A picture that differs by the kana setting
+      (name_hiragana.webp, name_romaji.webp) is named with a template, see
+      below. A picture with a version per language (name.en.webp,
+      name.ja.webp) is named with your language's own version.
+
+  {{ "romaji" if env.romaji_mode else "hiragana" }}
+      Every article is a Jinja template before it is read as Markdown. The
+      only thing it knows is env.romaji_mode: true when the player reads
+      kana in romaji. For example:
+        ![Caption](assets/artworks/articles/name_{{ "romaji" if env.romaji_mode else "hiragana" }}.en.webp)
+      A {% if env.romaji_mode %} line of its own, with {% else %} and
+      {% endif %}, shows text only for one setting; those lines leave no
+      blank line. Text is not escaped. An unknown name is an error.
 
   {あきの}
       Kana in curly braces, written as they sound ({わ} for the particle

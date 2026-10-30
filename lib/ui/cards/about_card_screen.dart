@@ -116,8 +116,7 @@ class _AboutCardScreenState extends State<AboutCardScreen> {
                 final source? => MarkdownProse(source,
                     blocks: ProseBlocks(
                         accent: group,
-                        options: MarkdownOptions(
-                            language: s.code, romaji: romaji, phrases: source.contains(Phrases.end)))),
+                        options: MarkdownOptions(romaji: romaji, phrases: source.contains(Phrases.end)))),
                 null => const SizedBox.shrink(),
               },
             ),

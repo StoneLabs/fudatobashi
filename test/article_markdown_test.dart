@@ -6,7 +6,6 @@ import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:fudatobashi/l10n/articles.dart';
 import 'package:fudatobashi/ui/manga/manga.dart';
 
 import 'test_vector_art.dart';
@@ -76,49 +75,20 @@ void main() {
 
   group('pictures', () {
     testWidgets('a picture on a line of its own, its caption under it', (tester) async {
-      await _show(tester, 'Text.\n\n![The red sound decides.](assets/artworks/articles/rows.webp)\n\nMore.',
-          options: const MarkdownOptions(language: 'ja', romaji: true));
+      await _show(tester, 'Text.\n\n![The red sound decides.](assets/artworks/articles/rows.webp)\n\nMore.');
       final picture = tester.widget<ArticlePicture>(find.byType(ArticlePicture));
       expect(picture.src, 'assets/artworks/articles/rows.webp');
       expect(picture.caption, 'The red sound decides.');
-      expect((picture.language, picture.romaji), ('ja', true));
       expect(find.text('The red sound decides.'), findsOneWidget);
     });
 
-    group('the version for the reader', () {
-      const src = 'assets/artworks/articles/rows.webp';
-      String pick(Set<String> files, String language, {bool romaji = false}) =>
-          ArticlePictures.pick(src, {for (final f in files) 'assets/artworks/articles/$f'}, language: language, romaji: romaji)
-              .replaceFirst('assets/artworks/articles/', '');
-
-      test('one file for everyone', () {
-        expect(pick({'rows.webp'}, 'ja', romaji: true), 'rows.webp');
-      });
-
-      test('by language, English for a language without its own', () {
-        const files = {'rows.en.webp', 'rows.ja.webp'};
-        expect(pick(files, 'ja'), 'rows.ja.webp');
-        expect(pick(files, 'en'), 'rows.en.webp');
-        expect(pick(files, 'fr'), 'rows.en.webp');
-      });
-
-      test('by kana setting', () {
-        const files = {'rows_hiragana.webp', 'rows_romaji.webp'};
-        expect(pick(files, 'en'), 'rows_hiragana.webp');
-        expect(pick(files, 'en', romaji: true), 'rows_romaji.webp');
-      });
-
-      test('by both', () {
-        const files = {'rows_hiragana.en.webp', 'rows_hiragana.ja.webp', 'rows_romaji.en.webp', 'rows_romaji.ja.webp'};
-        expect(pick(files, 'ja', romaji: true), 'rows_romaji.ja.webp');
-        expect(pick(files, 'en'), 'rows_hiragana.en.webp');
-        expect(pick(files, 'fr', romaji: true), 'rows_romaji.en.webp');
-      });
-
-      test('the plain file when no version fits, the name as written when there is none', () {
-        expect(pick({'rows.webp', 'rows_romaji.webp'}, 'en'), 'rows.webp');
-        expect(pick({}, 'en'), 'rows.webp');
-      });
+    testWidgets('the template names the picture for the kana setting', (tester) async {
+      const source = '![](assets/artworks/articles/rows_{{ "romaji" if env.romaji_mode else "hiragana" }}.en.webp)';
+      for (final romaji in [false, true]) {
+        await _show(tester, source, options: MarkdownOptions(romaji: romaji));
+        expect(tester.widget<ArticlePicture>(find.byType(ArticlePicture)).src,
+            'assets/artworks/articles/rows_${romaji ? 'romaji' : 'hiragana'}.en.webp');
+      }
     });
   });
 

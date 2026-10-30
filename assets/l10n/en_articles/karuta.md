@@ -54,19 +54,19 @@ Here's the big secret. You don't have to hear the whole poem. Its first few soun
 
 Seven poems start with a sound no other poem starts with. Hear that one sound and you can go. Players remember them as {むすめふさほせ}.
 
-![](assets/artworks/articles/karuta_one_sound.webp)
+![](assets/artworks/articles/karuta_one_sound_{{ "romaji" if env.romaji_mode else "hiragana" }}.webp)
 
 ## When poems start the same
 
 Most poems share their first sounds with another poem. {はるすぎて} and {はるのよの} both start with {はる}, so {はる} isn't enough. You have to wait for the third sound.
 
-![The red sound decides. Both are 3-sound cards.](assets/artworks/articles/karuta_kimariji_long.webp)
+![The red sound decides. Both are 3-sound cards.](assets/artworks/articles/karuta_kimariji_long_{{ "romaji" if env.romaji_mode else "hiragana" }}.webp)
 
 ## Kimariji change as you play
 
 Each card is read only once. After {はるすぎて} has been read, {はるのよの} is the only card left that starts with {はる}. Now {はる} is enough, so it has become a 2-sound card.
 
-![One is gone, so two sounds are enough now.](assets/artworks/articles/karuta_kimariji_change.webp)
+![One is gone, so two sounds are enough now.](assets/artworks/articles/karuta_kimariji_change_{{ "romaji" if env.romaji_mode else "hiragana" }}.en.webp)
 
 The longest kimariji have six sounds. {あさぼらけ}, {わたのはら} and {きみがため} each start two poems, and only the sixth sound tells them apart.
 

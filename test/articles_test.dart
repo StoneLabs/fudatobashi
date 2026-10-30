@@ -1,11 +1,12 @@
 // The article files: every article in every language, every picture an
-// article names in some version, and the about-card editor's idea of where
-// the card files are and which poses Tobi has.
+// article names for either kana setting, and the about-card editor's idea of
+// where the card files are and which poses Tobi has.
 import 'dart:convert';
 import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:fudatobashi/data/joka.dart';
+import 'package:fudatobashi/l10n/article_template.dart';
 import 'package:fudatobashi/l10n/articles.dart';
 import 'package:fudatobashi/l10n/card_explanations.dart';
 import 'package:fudatobashi/ui/manga/tobi.dart';
@@ -29,18 +30,12 @@ void main() {
     }
   });
 
-  test('every picture an article names is in the pictures folder, in some version for every reader', () {
-    final files = {
-      for (final f in Directory(ArticlePictures.folder).existsSync() ? Directory(ArticlePictures.folder).listSync() : <FileSystemEntity>[])
-        f.path,
-    };
+  test('every picture an article names is there, for either kana setting', () {
     for (final code in _languages) {
       for (final file in Directory('assets/l10n/${code}_articles').listSync(recursive: true).whereType<File>()) {
-        for (final src in _pictures(file.readAsStringSync())) {
-          expect(src, startsWith(ArticlePictures.folder), reason: '${file.path}: $src');
-          for (final romaji in [false, true]) {
-            expect(files, contains(ArticlePictures.pick(src, files, language: code, romaji: romaji)),
-                reason: '${file.path}: $src, ${romaji ? 'romaji' : 'kana'}');
+        for (final romaji in [false, true]) {
+          for (final src in _pictures(ArticleTemplate.fill(file.readAsStringSync(), romaji: romaji))) {
+            expect(File(src).existsSync(), isTrue, reason: '${file.path}: $src, ${romaji ? 'romaji' : 'kana'}');
           }
         }
       }

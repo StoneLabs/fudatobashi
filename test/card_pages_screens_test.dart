@@ -101,10 +101,7 @@ void main() {
       testWidgets('First sounds, a screen at a time, and Help ($tag)', (tester) async {
         await loadCardArt(tester);
         final p = await openPlayer(tester, lang);
-        await tester.runAsync(() async {
-          await Articles.load(lang, Articles.kimarijiGuide);
-          await ArticlePictures.load();
-        });
+        await tester.runAsync(() => Articles.load(lang, Articles.kimarijiGuide));
         await showPage(
             tester,
             p,

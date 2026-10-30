@@ -8,13 +8,13 @@
 
 1番は​「{あきの}」、​79番は​「{あきか}」で​始まります。​どちらも​「{あき}」で​始まるので、​「{あき}」だけでは​決まりません。​次の​音で​決まるので、​1番の​決まり字は​「{あきの}」です。
 
-![赤い音で決まる。](assets/artworks/articles/kimariji_pair.webp)
+![赤い音で決まる。](assets/artworks/articles/kimariji_pair_{{ "romaji" if env.romaji_mode else "hiragana" }}.webp)
 
 # 試合中に短くなる | Shorter as the match goes on
 
 札は​一度しか​読まれず、​読まれた​札は​もう​出てきません。​だから​79番​（「{あきか}」）が​読まれたら、​「{あき}」で​始まる​札は​1番だけ。​もう​「{あき}」で​取れます。
 
-![1枚読まれたから、短い音で決まる。](assets/artworks/articles/kimariji_read.webp)
+![1枚読まれたから、短い音で決まる。](assets/artworks/articles/kimariji_read_{{ "romaji" if env.romaji_mode else "hiragana" }}.ja.webp)
 
 この​先も​同じです。​「{あ}」で​始まる​札は​16枚。​ほかの​15枚が​ぜんぶ​読まれたら、​「{あ}」の​1音だけで​取れます。
 
@@ -26,7 +26,7 @@
 
 これが​1番の​階段です。
 
-![](assets/artworks/articles/kimariji_stairs.webp)
+![](assets/artworks/articles/kimariji_stairs_{{ "romaji" if env.romaji_mode else "hiragana" }}.ja.webp)
 
 階段の​上の​「決まり字」は、​その​札の​決まり字​まるごと。​階段は​ここから​始まります。
 
@@ -58,7 +58,7 @@
 
 15番の​いちばん​上の​段は​「{きみがためh-}」。​「{きみがため}」で​始まる​札は​ほかに​50番​（「{きみがためお}」）だけで、​こちらは​母音で​続きます。​だから h が​聞こえたら、​もう​15番に​決まりです。
 
-![](assets/artworks/articles/kimariji_stairs_consonant.webp)
+![](assets/artworks/articles/kimariji_stairs_consonant_{{ "romaji" if env.romaji_mode else "hiragana" }}.ja.webp)
 
 その​下の​「{きm-}」も​同じです。​50番が​読まれたら、​「{きm-}」で​取れます。
 
@@ -74,7 +74,7 @@
 
 もう一度、​1番を​「かなだけ」で​見てみましょう。
 
-![](assets/artworks/articles/kimariji_stairs_whole_kana.webp)
+![](assets/artworks/articles/kimariji_stairs_whole_kana_{{ "romaji" if env.romaji_mode else "hiragana" }}.ja.webp)
 
 選んだ​見せかたは、​どの​札でも​同じです。
 

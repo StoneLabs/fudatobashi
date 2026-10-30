@@ -4,7 +4,7 @@ import 'package:flutter/widgets.dart';
 import 'package:markdown/markdown.dart' as md;
 
 import '../../config/design.dart';
-import '../../l10n/articles.dart';
+import '../../l10n/article_template.dart';
 import '../../l10n/romaji.dart';
 import 'article_picture.dart';
 import 'phrases.dart';
@@ -17,17 +17,14 @@ import 'tobi_line.dart';
 @immutable
 class MarkdownOptions {
   const MarkdownOptions({
-    this.language = Articles.fallback,
     this.romaji = false,
     this.kanaBesideRomaji = false,
     this.phrases = false,
   });
 
-  /// The reader's language, which a picture may have a version for.
-  final String language;
-
   /// Whether the reader reads kana in romaji: a kana mark shows its romaji,
-  /// and a picture its romaji version.
+  /// and the document's template can choose on it (`env.romaji_mode`, see
+  /// [ArticleTemplate]).
   final bool romaji;
 
   /// Whether a kana mark in romaji keeps its kana, on one line, in front of
@@ -102,8 +99,9 @@ abstract class MarkdownBlocks {
         _ => null,
       };
 
-  Widget build(String source) =>
-      Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: layout(parse(source)));
+  Widget build(String source) => Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: layout(parse(ArticleTemplate.fill(source, romaji: options.romaji))));
 
   /// The blocks in order, each with its gap above.
   List<Widget> layout(List<md.Node> nodes) => [
@@ -146,8 +144,6 @@ abstract class MarkdownBlocks {
   Widget picture(md.Element img) => ArticlePicture(
         src: img.attributes['src']!,
         caption: img.attributes['alt'] ?? '',
-        language: options.language,
-        romaji: options.romaji,
       );
 
   Widget list(md.Element e, {required bool ordered}) {

@@ -8,13 +8,13 @@ The first sounds that tell you are the card's kimariji. They are enough because 
 
 Card 1 starts with {あきの} and card 79 with {あきか}. Both start with {あき}, so {あき} is not enough. The next sound tells them apart. That's why the kimariji of card 1 is {あきの}.
 
-![The red sound decides.](assets/artworks/articles/kimariji_pair.webp)
+![The red sound decides.](assets/artworks/articles/kimariji_pair_{{ "romaji" if env.romaji_mode else "hiragana" }}.webp)
 
 # Shorter as the match goes on
 
 Each card is read only once. After that it's out of play. So once card 79 ({あきか}) has been read, card 1 is the only card left that starts with {あき}. Now {あき} is enough.
 
-![One card is gone, so fewer sounds are enough.](assets/artworks/articles/kimariji_read.webp)
+![One card is gone, so fewer sounds are enough.](assets/artworks/articles/kimariji_read_{{ "romaji" if env.romaji_mode else "hiragana" }}.en.webp)
 
 It goes on like this. 16 cards start with {あ}. Once the other 15 have all been read, the single sound {あ} is enough.
 
@@ -26,7 +26,7 @@ The stairs on a card's About page show this step by step. The top step is what y
 
 Here are the stairs of card 1.
 
-![](assets/artworks/articles/kimariji_stairs.webp)
+![](assets/artworks/articles/kimariji_stairs_{{ "romaji" if env.romaji_mode else "hiragana" }}.en.webp)
 
 The Kimariji line above the stairs shows the card's whole kimariji. The stairs start from there.
 
@@ -58,7 +58,7 @@ That's why card 1's top step is {あきn-}. Card 79 has k there, not n.
 
 Card 15's top step is {きみがためh-}. The only other card that starts with {きみがため} is card 50 ({きみがためお}), and it goes on with a vowel. So as soon as you hear the h, it can only be card 15.
 
-![](assets/artworks/articles/kimariji_stairs_consonant.webp)
+![](assets/artworks/articles/kimariji_stairs_consonant_{{ "romaji" if env.romaji_mode else "hiragana" }}.en.webp)
 
 Below it, {きm-} works the same way. Once card 50 has been read, {きm-} is enough.
 
@@ -74,7 +74,7 @@ Kana shows whole kana only, if you prefer to think in kana. The stairs start fro
 
 Here is card 1 again, with Kana.
 
-![](assets/artworks/articles/kimariji_stairs_whole_kana.webp)
+![](assets/artworks/articles/kimariji_stairs_whole_kana_{{ "romaji" if env.romaji_mode else "hiragana" }}.en.webp)
 
 Your choice is kept for every card.
 
