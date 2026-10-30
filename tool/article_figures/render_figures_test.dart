@@ -24,6 +24,7 @@ import '../../test/test_card_pages.dart';
 import 'figure_layout.dart';
 import 'karuta_figures.dart';
 import 'kimariji_figures.dart';
+import 'teiichi_figures.dart';
 
 const _out = 'build/article_figures';
 
@@ -69,6 +70,12 @@ final List<_Figure> _figures = [
     byScript: true,
     build: () => const StairsFigure(FirstSoundsExamples.card, kanaOnly: true),
   ),
+  (name: 'teiichi_side', byLanguage: false, byScript: false, build: () => const TeiichiSideFigure()),
+  (name: 'teiichi_time', byLanguage: false, byScript: false, build: () => const TeiichiTimeFigure()),
+  (name: 'teiichi_first_cards', byLanguage: false, byScript: true, build: () => const TeiichiFirstCardsFigure()),
+  (name: 'teiichi_look_alike', byLanguage: false, byScript: true, build: () => const TeiichiLookAlikeFigure()),
+  (name: 'teiichi_rows', byLanguage: false, byScript: false, build: () => const TeiichiRowsFigure()),
+  (name: 'teiichi_gaps', byLanguage: false, byScript: false, build: () => const TeiichiGapsFigure()),
 ];
 
 const _languages = ['en', 'ja'];
