@@ -9,6 +9,7 @@ import '../../config/licenses.dart';
 import '../../config/links.dart';
 import '../../config/vector_art.dart';
 import '../../domain/ankiren_level.dart';
+import '../../domain/side_trips.dart';
 import '../../domain/trainer.dart';
 import '../../l10n/ankiren_strings.dart';
 import '../../l10n/credits_strings.dart';
@@ -179,6 +180,12 @@ class SettingsScreen extends StatelessWidget {
                               opensPage: true,
                               onTap: () => Navigator.push(
                                   context, MangaRoute<void>(builder: (_) => const AnkirenSettingsScreen())),
+                            ),
+                            SettingsTapRow(
+                              title: s.tripName(SideTrip.teiichi),
+                              opensPage: true,
+                              onTap: () => Navigator.push(
+                                  context, MangaRoute<void>(builder: (_) => const TeiichiSettingsScreen())),
                             ),
                           ]),
                         ],

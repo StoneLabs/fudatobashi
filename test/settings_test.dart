@@ -147,6 +147,15 @@ void main() {
       final wild = AppSettings.fromJson({'teiichiCards': 999, 'teiichiRows': 0});
       expect((wild.teiichiCards, wild.teiichiRows), (25, 1));
     });
+
+    test('the screen turns on its own and the tip shows, by default; both round-trip', () {
+      expect((const AppSettings().teiichiAutoTurn, const AppSettings().teiichiTurnTipOff), (true, false));
+      expect((AppSettings.fromJson(const {}).teiichiAutoTurn, AppSettings.fromJson(const {}).teiichiTurnTipOff),
+          (true, false));
+      final saved = const AppSettings().copyWith(teiichiAutoTurn: false, teiichiTurnTipOff: true);
+      final back = AppSettings.fromJson(saved.toJson());
+      expect((back.teiichiAutoTurn, back.teiichiTurnTipOff), (false, true));
+    });
   });
 
   group('AppSettings.accessibilityMode', () {

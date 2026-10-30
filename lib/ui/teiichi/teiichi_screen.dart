@@ -99,7 +99,7 @@ class _TeiichiScreenState extends State<TeiichiScreen> with AnkirenPlay {
     _rng = math.Random(widget.seed);
     final deck = {...widget.known}.toList()..shuffle(_rng);
     _placing = TeiichiPlacing(widget.setup, deck.take(widget.setup.cards).toList());
-    holdStage(landscape: true);
+    holdStage(_progress.settings.teiichiAutoTurn ? OrientationTuning.landscape : OrientationTuning.any);
     _tick = Timer.periodic(TeiichiPlayTuning.clockTick, (t) => _shown.value = TeiichiPlayTuning.clockTick * t.tick);
   }
 

@@ -34,6 +34,7 @@ import 'package:fudatobashi/ui/app.dart';
 import 'package:fudatobashi/ui/manga/manga.dart';
 import 'package:fudatobashi/ui/play/time_format.dart';
 import 'package:fudatobashi/ui/results/run_summary.dart';
+import 'package:fudatobashi/ui/settings/side_trip_settings_screen.dart';
 import 'package:fudatobashi/ui/side_trips/burst_button.dart';
 import 'package:fudatobashi/ui/side_trips/dojo_scene.dart';
 import 'package:fudatobashi/ui/side_trips/side_trip_entry.dart';
@@ -251,6 +252,25 @@ void main() {
           });
         }
       }
+    }
+  });
+
+  group('settings', () {
+    for (final lang in ['en', 'ja']) {
+      testWidgets('Settings › Side trips › Teiichi turns the screen on its own until switched off ($lang)', (tester) async {
+        final s = S(lang);
+        final p = await open(tester, language: lang);
+        await show(tester, p, () => const TeiichiSettingsScreen());
+        final row = find.text(s.teiichiAutoTurn, findRichText: true);
+        expect(row, findsOneWidget);
+        expect(p.settings.teiichiAutoTurn, isTrue);
+        await captureScreen(tester, 'teiichi/settings', lang: lang);
+        await tester.tap(row);
+        await tester.pump();
+        expect(p.settings.teiichiAutoTurn, isFalse);
+        expect(tester.takeException(), isNull);
+        await tester.pumpWidget(const SizedBox());
+      });
     }
   });
 

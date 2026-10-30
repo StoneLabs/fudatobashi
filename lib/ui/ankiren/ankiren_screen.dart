@@ -88,7 +88,7 @@ class _AnkirenScreenState extends State<AnkirenScreen> with AnkirenPlay {
       rng: rng,
       countsStrikes: widget.player == AnkirenPlayer.owner && widget.setup.level != null,
     );
-    holdStage(landscape: _landscape);
+    holdStage(_landscape ? OrientationTuning.landscape : OrientationTuning.app);
     // Counted by the ticks due, not the ones run: a stalled or suspended app
     // skips ticks, never time.
     _clock = Timer.periodic(AnkirenPlayTuning.clockTick, (timer) {

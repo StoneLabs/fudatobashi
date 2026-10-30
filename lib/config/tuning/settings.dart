@@ -48,6 +48,8 @@ abstract final class DefaultSettings {
   /// 定位置's last custom setup: the usual game's cards and rows.
   static const int teiichiCards = TeiichiTuning.cards;
   static const int teiichiRows = TeiichiTuning.rows;
+  static const bool teiichiAutoTurn = true;
+  static const bool teiichiTurnTipOff = false;
   static const bool timerNotificationsAsked = false;
   static const bool reminders = false;
   static const bool remindersOffered = false;
@@ -64,8 +66,11 @@ abstract final class DefaultSettings {
 }
 
 /// The orientations the app allows: portrait only. 暗記練's landscape layout
-/// (`AnkirenLayout.landscape`) turns the screen for its game alone and
-/// returns to these after.
+/// (`AnkirenLayout.landscape`) and 定位置 turn the screen for their games
+/// alone, to [landscape] (or, 定位置 without its auto turn, to [any]), and
+/// return to these after.
 abstract final class OrientationTuning {
   static const List<DeviceOrientation> app = [DeviceOrientation.portraitUp];
+  static const List<DeviceOrientation> landscape = [DeviceOrientation.landscapeLeft, DeviceOrientation.landscapeRight];
+  static const List<DeviceOrientation> any = [DeviceOrientation.portraitUp, ...landscape];
 }

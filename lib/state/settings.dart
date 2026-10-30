@@ -179,6 +179,8 @@ class AppSettings {
     this.teiichiRulesSeen = DefaultSettings.teiichiRulesSeen,
     this.teiichiCards = DefaultSettings.teiichiCards,
     this.teiichiRows = DefaultSettings.teiichiRows,
+    this.teiichiAutoTurn = DefaultSettings.teiichiAutoTurn,
+    this.teiichiTurnTipOff = DefaultSettings.teiichiTurnTipOff,
   });
 
   /// A language code (e.g. `'ja'`), or `'system'` for the device's language.
@@ -251,6 +253,13 @@ class AppSettings {
   final int teiichiCards;
   final int teiichiRows;
 
+  /// 定位置's game turns the screen sideways; else it follows how the phone
+  /// is held (Settings › 寄り道 › 定位置).
+  final bool teiichiAutoTurn;
+
+  /// The tip to turn the phone, on a portrait game, is not to show again.
+  final bool teiichiTurnTipOff;
+
   /// The match timer has asked once to show its notification, so it never
   /// asks again.
   final bool timerNotificationsAsked;
@@ -318,6 +327,8 @@ class AppSettings {
         'teiichiRulesSeen': teiichiRulesSeen,
         'teiichiCards': teiichiCards,
         'teiichiRows': teiichiRows,
+        'teiichiAutoTurn': teiichiAutoTurn,
+        'teiichiTurnTipOff': teiichiTurnTipOff,
       };
 
   factory AppSettings.fromJson(Map<String, dynamic> j) {
@@ -373,6 +384,8 @@ class AppSettings {
       teiichiCards: (j['teiichiCards'] as int? ?? DefaultSettings.teiichiCards)
           .clamp(TeiichiTuning.minCards, TeiichiTuning.cards),
       teiichiRows: (j['teiichiRows'] as int? ?? DefaultSettings.teiichiRows).clamp(1, TeiichiTuning.rows),
+      teiichiAutoTurn: j['teiichiAutoTurn'] as bool? ?? DefaultSettings.teiichiAutoTurn,
+      teiichiTurnTipOff: j['teiichiTurnTipOff'] as bool? ?? DefaultSettings.teiichiTurnTipOff,
     );
   }
 
@@ -409,6 +422,8 @@ class AppSettings {
     bool? teiichiRulesSeen,
     int? teiichiCards,
     int? teiichiRows,
+    bool? teiichiAutoTurn,
+    bool? teiichiTurnTipOff,
   }) =>
       AppSettings(
         language: language ?? this.language,
@@ -443,5 +458,7 @@ class AppSettings {
         teiichiRulesSeen: teiichiRulesSeen ?? this.teiichiRulesSeen,
         teiichiCards: teiichiCards ?? this.teiichiCards,
         teiichiRows: teiichiRows ?? this.teiichiRows,
+        teiichiAutoTurn: teiichiAutoTurn ?? this.teiichiAutoTurn,
+        teiichiTurnTipOff: teiichiTurnTipOff ?? this.teiichiTurnTipOff,
       );
 }

@@ -73,12 +73,10 @@ mixin AnkirenPlay<W extends StatefulWidget> on State<W> {
   /// The card asked for, once its prompt is on screen.
   int? get asked => _promptShown ? game.current : null;
 
-  /// Holds the screen [landscape] or portrait and keeps the menu music out
-  /// until [releaseStage].
-  void holdStage({required bool landscape}) {
-    unawaited(SystemChrome.setPreferredOrientations(landscape
-        ? const [DeviceOrientation.landscapeLeft, DeviceOrientation.landscapeRight]
-        : OrientationTuning.app));
+  /// Holds the screen in [orientations] and keeps the menu music out until
+  /// [releaseStage].
+  void holdStage(List<DeviceOrientation> orientations) {
+    unawaited(SystemChrome.setPreferredOrientations(orientations));
     _live++;
     music.leaveMenu();
     unawaited(PointerClock.sync());
