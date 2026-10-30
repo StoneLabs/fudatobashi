@@ -35,7 +35,11 @@ Editor.warnings = (() => {
     const out = new Set();
     if (!nodes.length) out.add('The file is empty.');
     else if (nodes[0].tag !== 'h1') out.add('Start the file with a # heading, for example  # 解説 | Explanation');
+    const tobiMarks = new Set();
     const walk = (list) => list.forEach((x) => {
+      const tobi = Editor.tobi.line(x);
+      if (tobi) tobiMarks.add(tobi.mark);
+      if (tobi && !tobi.known) out.add(`Tobi has no pose called ${tobi.pose}, so the app shows him standing. Use one of ${Editor.config.TOBI_POSES.join(', ')}.`);
       if (x.tag === 'p' && x.c.length > 1 && x.c.some((k) => k.tag === 'img')) out.add('A picture only shows when it is alone on its line, with a blank line above and below. Only a picture with {.left} or {.right} may have text on the very next line. Otherwise it is dropped.');
       if (x.tag === 'img' && x.classes) {
         classes.unknownIn(x.classes, FLOAT.sides).forEach((name) => out.add(`A picture only takes ${FLOAT.sides.map((s) => '.' + s).join(' or ')}, not .${name}.`));
@@ -43,7 +47,7 @@ Editor.warnings = (() => {
       }
       if ((x.tag === 'span' || x.tag === 'ruby') && x.classes) checkClasses(x, out);
       if (x.tag === 'div') checkClasses(x, out, classes.BOX_CLASSES);
-      if (x.tag === 'orphan') out.add(orphanMessage(textOf(x)));
+      if (x.tag === 'orphan' && !tobiMarks.has(x)) out.add(orphanMessage(textOf(x)));
       if (x.tag === 'pre') verseNotes(x).forEach((note) => verseMessage(note, out));
       if (x.unclosed) out.add('A ::: box is never closed. End it with a line that holds only :::.');
       else if (x.tag === 'p' && /^[ \t]*:::/m.test(textOf(x))) out.add('This ::: line is not understood. Open a box with ::: {.bg-yellow} and close it with a line that holds only :::. A box cannot sit inside another box; only a ::: {.right} block can go inside a coloured box.');

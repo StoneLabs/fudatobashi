@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:fudatobashi/data/joka.dart';
 import 'package:fudatobashi/l10n/card_explanations.dart';
+import 'package:fudatobashi/ui/manga/article_picture.dart';
 import 'package:fudatobashi/ui/manga/markdown_blocks.dart';
 import 'package:fudatobashi/ui/manga/markdown_prose.dart';
 import 'package:fudatobashi/ui/manga/ruby_text.dart';
@@ -31,7 +32,7 @@ void main() {
     expect(find.text('Section'), findsOneWidget);
     expect(find.text('Explanation'), findsOneWidget, reason: 'the # heading is a marker heading');
     expect(find.byType(RubyText), findsNWidgets(2), reason: 'one per verse line');
-    expect(find.byType(Image), findsOneWidget);
+    expect(find.byType(ArticlePicture), findsOneWidget);
     expect(find.text('1.'), findsOneWidget);
     expect(find.text('2.'), findsOneWidget);
   });

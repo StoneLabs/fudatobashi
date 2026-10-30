@@ -57,6 +57,8 @@
           <dd><code>- item</code> gives a diamond. <code>1. item</code> gives a number. Keep lists flat, with no lists inside lists.</dd>
           <dt>Quote</dt>
           <dd><code>&gt; quoted words</code></dd>
+          <dt>Tobi says</dt>
+          <dd><code>&gt;{.tobi pose=waving} Words</code> shows Tobi saying the words in a speech balloon. The pose is optional (standing when left out): standard, waving, cheering, pointing, relaxed, shocked, try-hard or fired. The preview only names the pose; the app draws Tobi in it.<span class="ja">トビがふきだしで話します。pose は省略できます。</span></dd>
           <dt>Line</dt>
           <dd><code>---</code> on its own line, with a blank line above it. (Right under a line of text it turns that text into a heading.)</dd>
           <dt>Poem lines</dt>
@@ -80,7 +82,7 @@
 :::
 ```</code><span class="ja">::: {.right} と ::: の間を右寄せにします。引用（各行の先頭に &gt; ）や詩の中でも同じ書き方です。</span></dd>
           <dt>Pictures</dt>
-          <dd><code>![caption](assets/pictures/name.png)</code> alone on its line, with the caption under the picture. Use only letters, digits, - and _ in the file name. Pictures show at most 140 px tall. A picture that is already in the repo shows by itself in the preview; for a new one, use “Choose image” to preview it. The image files must be sent to the developer together with the .md files.<span class="ja">画像ファイルは .md と一緒に開発者へ送ってください。</span></dd>
+          <dd><code>![caption](assets/artworks/articles/name.webp)</code> alone on its line, with the caption under the picture. Use only letters, digits, - and _ in the file name. Pictures show as wide as the text. Keep words out of the picture where you can and put them in the caption: pictures are shared by all languages. A picture that is already in the repo shows by itself in the preview; for a new one, use “Choose image” to preview it. The image files must be sent to the developer together with the .md files.<span class="ja">画像ファイルは .md と一緒に開発者へ送ってください。</span></dd>
           <dt>Picture at the side</dt>
           <dd><code>![caption](assets/pictures/name.png){.right}</code> floats the picture to the right (<code>{.left}</code> for the left). The text under it runs along its side until the picture ends, then goes full width. Put the picture on its own line above the text; a blank line between is normal, but text on the very next line works too. A second side picture starts below the first.<span class="ja">画像を右（{.left} なら左）に寄せ、文章を横に回り込ませます。画像の次の行から文章を書いてください。</span></dd>
           <dt>Text colour</dt>
@@ -172,6 +174,7 @@ Paragraphs go here.
 <script src="js/classes.js"></script>
 <script src="js/romaji.js"></script>
 <script src="js/markdown.js"></script>
+<script src="js/tobi.js"></script>
 <script src="js/state.js"></script>
 <script src="js/carddata.js"></script>
 <script src="js/verse.js"></script>

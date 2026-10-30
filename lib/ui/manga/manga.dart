@@ -2,6 +2,7 @@
 library;
 
 export 'action_row.dart';
+export 'article_picture.dart';
 export 'balloon.dart';
 export 'balloon_pop.dart';
 export 'buttons.dart';
@@ -40,4 +41,5 @@ export 'tab_bar.dart';
 export 'theme.dart';
 export 'toast.dart';
 export 'tobi.dart';
+export 'tobi_line.dart';
 export 'vector.dart';

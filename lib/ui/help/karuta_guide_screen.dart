@@ -133,7 +133,7 @@ class KarutaGuideScreen extends StatelessWidget {
 /// Keeps the characters either side of it on one line.
 const _wordJoiner = '\u2060';
 
-/// One step of a match: its number in an ink circle, then its line.
+/// One step of a match, with the space above it.
 class _Step extends StatelessWidget {
   const _Step(this.number, this.line);
 
@@ -142,22 +142,7 @@ class _Step extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Padding(
-        padding: const EdgeInsets.only(top: KarutaGuideLayout.stepRowGap),
-        child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          SizedBox.square(
-            dimension: KarutaGuideLayout.stepNumber,
-            child: DecoratedBox(
-              decoration: const BoxDecoration(color: Palette.ink, shape: BoxShape.circle),
-              child: Center(
-                child: Text('$number',
-                    textScaler: TextScaler.noScaling,
-                    style: const TextStyle(
-                        fontFamily: Fonts.display, fontSize: KarutaGuideLayout.stepNumberFont, color: Palette.paper)),
-              ),
-            ),
-          ),
-          const SizedBox(width: KarutaGuideLayout.stepGap),
-          Expanded(child: Text(line, style: proseStyle)),
-        ]),
+        padding: const EdgeInsets.only(top: GuideLayout.stepGap),
+        child: ProseStep(number, TextSpan(text: line)),
       );
 }

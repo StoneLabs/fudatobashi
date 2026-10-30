@@ -111,7 +111,11 @@ class _AboutCardScreenState extends State<AboutCardScreen> {
             FutureBuilder<String>(
               future: _explanation,
               builder: (context, snapshot) => switch (snapshot.data) {
-                final source? => MarkdownProse(source, accent: group),
+                final source? => MarkdownProse(source,
+                    blocks: ProseBlocks(
+                        accent: group,
+                        options: MarkdownOptions(
+                            language: s.code, romaji: romaji, phrases: source.contains(Phrases.end)))),
                 null => const SizedBox.shrink(),
               },
             ),

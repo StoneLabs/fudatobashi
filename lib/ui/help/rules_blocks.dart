@@ -69,7 +69,7 @@ class RulesBlocks extends MarkdownBlocks {
 
   @override
   Widget heading(md.Element e, int level) {
-    final (title, sub) = MarkdownBlocks.splitHeading(e);
+    final (title, sub) = titleAndSub(e);
     if (level == 2) return _articleHeading(title, sub ?? '');
     return _chapterBand(title, sub ?? '');
   }

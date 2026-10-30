@@ -105,8 +105,7 @@ abstract final class MarkdownLayout {
   static const double verseLineGap = 4;
   static const TextStyle verseStyle = TextStyle(fontWeight: Weights.bold, fontSize: 17, height: 1.3, color: Palette.ink);
 
-  /// A picture: no taller than this, its caption under it.
-  static const double pictureMaxHeight = 140;
+  /// A picture: as wide as the text, its caption under it.
   static const double captionGap = 6;
   static const double captionFont = TypeScale.small;
   static const Color captionColor = Palette.inkSoft;
@@ -115,22 +114,45 @@ abstract final class MarkdownLayout {
   static const double highlight = 0.45;
 }
 
-/// The karuta guide (`KarutaGuideScreen`): its numbered chapters, Tobi's
-/// lines and the pictures.
-abstract final class KarutaGuideLayout {
-  static const double figureGap = 14;
+/// The guides: Markdown set as prose (`ProseBlocks` in `ProseStyle.guide`)
+/// in numbered chapters, with small headings, a match's steps, Tobi's
+/// lines and pictures.
+abstract final class GuideLayout {
+  /// The space above a block. A picture has [pictureGap] below it too.
+  static const double chapterGap = ProseLayout.chapterGap;
+  static const double paragraphGap = ProseLayout.paragraphGap;
+  static const double subheadGap = 14;
+  static const double pictureGap = 14;
+  static const double tobiGap = 14;
+  static const double stepGap = 10;
+
+  /// The room right of the text for a picture's hard shadow.
+  static const double shadowRoom = 4;
+
   static const double subheadFont = 13;
 
-  /// Tobi beside a balloon.
+  /// A step: its number in an ink circle, then its line.
+  static const double stepNumber = 26;
+  static const double stepNumberFont = 13;
+  static const double stepTextGap = 10;
+}
+
+/// Tobi saying a line (`TobiLine`): Tobi, then a balloon to his right.
+abstract final class TobiLineLayout {
   static const Size tobi = Size(64, 76);
-  static const double tobiGap = 6;
+  static const double balloonGap = 6;
   static const Alignment speakerLeft = Alignment(-1.25, 0.7);
   static const EdgeInsets balloonPadding = EdgeInsets.symmetric(horizontal: 4, vertical: 6);
   static const double balloonFont = 14;
+}
+
+/// The karuta guide (`KarutaGuideScreen`): its pictures.
+abstract final class KarutaGuideLayout {
+  static const double figureGap = GuideLayout.pictureGap;
+  static const double figureShadow = GuideLayout.shadowRoom;
 
   /// A picture's panel.
   static const EdgeInsets figurePadding = EdgeInsets.fromLTRB(12, 14, 12, 12);
-  static const double figureShadow = 4;
   static const double captionFont = 12.5;
   static const double captionGap = 6;
 
@@ -164,12 +186,6 @@ abstract final class KarutaGuideLayout {
   static const List<double> fieldLineDash = Strokes.dash;
   static const int fieldReadSide = 0, fieldReadRow = 2, fieldReadCard = 3;
   static const double fieldLegendSwatch = 14;
-
-  /// A match's steps: a numbered circle, then the line.
-  static const double stepNumber = 26;
-  static const double stepNumberFont = 13;
-  static const double stepGap = 10;
-  static const double stepRowGap = 10;
 
   /// Kimariji pictures: kana tiles, an arrow, the card they mean.
   static const double tile = 34;

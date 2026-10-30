@@ -105,12 +105,19 @@ Editor.preview = (() => {
       case 'ul': return list(node, false);
       case 'ol': return list(node, true);
       case 'blockquote':
+        if (Editor.tobi.line(node)) return tobiLine(Editor.tobi.line(node));
         return `<div class="quote">${kids.map((k, i) => `<div style="margin-top:${i ? GAPS.quote : 0}px">${k.tag === 'p' ? `<div class="strongtext">${inline(k.c || [])}</div>` : block(k)}</div>`).join('')}</div>`;
       case 'pre': return fence(node);
       case 'div': return box(node);
       case 'hr': return '<div class="rule"></div>';
       default: return `<div>${esc(textOf(node))}</div>`;
     }
+  }
+
+  /* Tobi saying a line in a balloon; the app shows Tobi himself in the pose named under him. */
+  function tobiLine({ pose, known, words }) {
+    const name = known ? pose ?? 'standard' : 'standard';
+    return `<div class="tobi"><div class="tobi-who">Tobi<span>${esc(name)}</span></div><div class="tobi-says">${inline(words).trim()}</div></div>`;
   }
 
   /* ::: {.bg-yellow} ... :::  Unknown class names make the ::: lines plain text, as typed. */

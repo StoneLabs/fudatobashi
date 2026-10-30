@@ -50,8 +50,7 @@ class GuideFigure extends StatelessWidget {
       );
 }
 
-/// Tobi saying [line] in a balloon to his right. With [phrases], Japanese
-/// breaks its lines only where the line marks its phrases ([Phrases]).
+/// Tobi saying [line], with the space above it.
 class GuideTobi extends StatelessWidget {
   const GuideTobi(this.line, {super.key, required this.pose, this.phrases = false});
 
@@ -60,42 +59,21 @@ class GuideTobi extends StatelessWidget {
   final bool phrases;
 
   @override
-  Widget build(BuildContext context) {
-    const style = TextStyle(fontSize: KarutaGuideLayout.balloonFont);
-    return Padding(
-      padding: const EdgeInsets.only(top: KarutaGuideLayout.figureGap),
-      child: Row(crossAxisAlignment: CrossAxisAlignment.end, children: [
-        SizedBox.fromSize(size: KarutaGuideLayout.tobi, child: Tobi(pose: pose)),
-        const SizedBox(width: KarutaGuideLayout.tobiGap),
-        Expanded(
-          child: SpeechBalloon(
-            speaker: KarutaGuideLayout.speakerLeft,
-            padding: KarutaGuideLayout.balloonPadding,
-            child: BalloonText(line, style: style, phrases: phrases),
-          ),
-        ),
-      ]),
-    );
-  }
+  Widget build(BuildContext context) => Padding(
+        padding: const EdgeInsets.only(top: GuideLayout.tobiGap),
+        child: TobiLine(line, pose: pose, phrases: phrases),
+      );
 }
 
-/// A small heading inside a chapter.
+/// A small heading inside a chapter, with the space above it.
 class GuideSubhead extends StatelessWidget {
   const GuideSubhead(this.text, {super.key});
 
   final String text;
 
   @override
-  Widget build(BuildContext context) => Padding(
-        padding: const EdgeInsets.only(top: KarutaGuideLayout.figureGap),
-        child: Semantics(
-          header: true,
-          child: Align(
-            alignment: Alignment.centerLeft,
-            child: InkTag(text.toUpperCase(), fontSize: KarutaGuideLayout.subheadFont),
-          ),
-        ),
-      );
+  Widget build(BuildContext context) =>
+      Padding(padding: const EdgeInsets.only(top: GuideLayout.subheadGap), child: ProseSubhead(text));
 }
 
 /// A few taking cards fanned out, to open the guide.

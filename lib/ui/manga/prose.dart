@@ -1,6 +1,7 @@
 import 'package:flutter/widgets.dart';
 
 import '../../config/design.dart';
+import 'labels.dart';
 import 'lettering.dart';
 import 'phrases.dart';
 
@@ -84,4 +85,46 @@ class ProseBody extends StatelessWidget {
         padding: const EdgeInsets.only(top: ProseLayout.paragraphGap),
         child: phrases ? Text.rich(Phrases.span(text), style: proseStyle) : Text(text, style: proseStyle),
       );
+}
+
+/// A small heading inside a chapter.
+class ProseSubhead extends StatelessWidget {
+  const ProseSubhead(this.text, {super.key});
+
+  final String text;
+
+  @override
+  Widget build(BuildContext context) => Semantics(
+        header: true,
+        child: Align(
+          alignment: Alignment.centerLeft,
+          child: InkTag(text.toUpperCase(), fontSize: GuideLayout.subheadFont),
+        ),
+      );
+}
+
+/// One step of several: its [number] in an ink circle, then its [line].
+class ProseStep extends StatelessWidget {
+  const ProseStep(this.number, this.line, {super.key});
+
+  final int number;
+  final InlineSpan line;
+
+  @override
+  Widget build(BuildContext context) => Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        SizedBox.square(
+          dimension: GuideLayout.stepNumber,
+          child: DecoratedBox(
+            decoration: const BoxDecoration(color: Palette.ink, shape: BoxShape.circle),
+            child: Center(
+              child: Text('$number',
+                  textScaler: TextScaler.noScaling,
+                  style: const TextStyle(
+                      fontFamily: Fonts.display, fontSize: GuideLayout.stepNumberFont, color: Palette.paper)),
+            ),
+          ),
+        ),
+        const SizedBox(width: GuideLayout.stepTextGap),
+        Expanded(child: Text.rich(line, style: proseStyle)),
+      ]);
 }

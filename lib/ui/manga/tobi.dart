@@ -7,7 +7,22 @@ import '../../config/design.dart';
 import '../../config/tobi_art.dart';
 import 'vector.dart';
 
-enum TobiPose { standard, waving, fired, cheering, pointing, shocked, tryHard, relaxed }
+enum TobiPose {
+  standard,
+  waving,
+  fired,
+  cheering,
+  pointing,
+  shocked,
+  tryHard,
+  relaxed;
+
+  /// The pose's name as its art file has it (`try-hard`).
+  String get fileName => name.replaceAllMapped(RegExp('[A-Z]'), (m) => '-${m[0]!.toLowerCase()}');
+
+  /// The pose whose [fileName] is [name], or null for none.
+  static TobiPose? named(String name) => values.where((p) => p.fileName == name).firstOrNull;
+}
 
 /// Tobi, the mascot. Fills its box (aspect 84:100); arms may reach a little
 /// outside it. Idles with a gentle bob and a blink unless [animate] is false
