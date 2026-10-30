@@ -1,11 +1,13 @@
 // 定位置's rules away from the screen: which games a custom setup allows,
 // where a card may go on the own side and what that moves, where a tap or a
-// drop lands, and the stack and its placing times.
+// drop lands, the stack and its placing times, the page's form, and the
+// field's growth after Done and its portrait layout.
 import 'dart:math' as math;
 
 import 'package:flutter/painting.dart' show Size;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:fudatobashi/config/config.dart';
+import 'package:fudatobashi/config/design.dart';
 import 'package:fudatobashi/domain/ankiren_field.dart';
 import 'package:fudatobashi/domain/ankiren_game.dart';
 import 'package:fudatobashi/domain/ankiren_geometry.dart';
@@ -13,6 +15,8 @@ import 'package:fudatobashi/domain/side_trips.dart';
 import 'package:fudatobashi/domain/teiichi.dart';
 import 'package:fudatobashi/domain/teiichi_placing.dart';
 import 'package:fudatobashi/domain/teiichi_record.dart';
+import 'package:fudatobashi/ui/ankiren/ankiren_field_view.dart';
+import 'package:fudatobashi/ui/teiichi/teiichi_placing_layer.dart';
 import 'package:fudatobashi/ui/teiichi/teiichi_zoom.dart';
 
 void main() {
@@ -390,6 +394,38 @@ void main() {
         opponent: AnkirenHalf.empty(),
       );
       expect(TeiichiZoom.limit(field, area, band), moreOrLessEquals(width / (2.5 * 5.2 - 2 * 0.1 + 10 * pitch)));
+    });
+
+    // The user's phone upright: 372 × 744 dp inside the padding, a band 72
+    // tall.
+    group('on a portrait screen', () {
+      const tall = Size(372, 744);
+      const tallBand = 72.0;
+      final field = fieldWith(lower, l: 5, r: 5);
+      final geometry = FieldGeometry.of(field, folded: false, trueSlots: TeiichiTuning.rowSlots);
+      final scale = AnkirenFieldView.trueScaleFor(geometry, tall, band: tallBand, roomAbove: TeiichiPlayLayout.roomAbove);
+
+      test('a row spans the width: cards about 22 dp wide', () {
+        expect(scale, moreOrLessEquals(372 / width));
+        expect(scale * AnkirenFieldSize.cardW, moreOrLessEquals(22.15, epsilon: 0.01));
+      });
+
+      test('the gaps stop the growth long before the band reaches the top', () {
+        final zoom = TeiichiZoom.limit(field, tall, tallBand);
+        expect(zoom, moreOrLessEquals(width / (2.5 * 5.2 - 2 * 0.1 + 10 * pitch)));
+        expect(zoom, lessThan((744 - tallBand) / (geometry.height * scale)));
+      });
+
+      test('the stack sits just above the band, centred, its top card at its largest', () {
+        final halfH = geometry.height * scale;
+        final bandTop = tall.height - halfH - tallBand;
+        final placement = FieldPlacement(geometry: geometry, scale: scale, ownTop: bandTop + tallBand, bandTop: bandTop);
+        final pile = stackRect(placement);
+        expect(pile.height, TeiichiPlayLayout.stackCardH);
+        expect(pile.width / pile.height, moreOrLessEquals(AnkirenFieldSize.cardW / AnkirenFieldSize.cardH));
+        expect(pile.center.dx, moreOrLessEquals(tall.width / 2));
+        expect(pile.bottom, moreOrLessEquals(bandTop - TeiichiPlayLayout.stackTagRoom - TeiichiPlayLayout.stackMargin));
+      });
     });
   });
 }
