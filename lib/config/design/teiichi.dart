@@ -123,8 +123,7 @@ abstract final class TeiichiPlayLayout {
   static const double zoomMiddleGap = 1.25;
 }
 
-/// 定位置's rules: the placing step's picture, a stand-in until its art is
-/// drawn.
+/// 定位置's rules: the placing step's picture, drawn as 暗記練's are.
 abstract final class TeiichiRulesLayout {
   static const String place = 'assets/graphics/sidetrips/teiichi/howto-place.webp';
 }
