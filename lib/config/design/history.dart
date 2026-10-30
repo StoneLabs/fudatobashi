@@ -39,7 +39,7 @@ class KindLook {
   final Color accent, onAccent;
 }
 
-/// The [KindLook] of each kind of run and of 暗記練's games.
+/// The [KindLook] of each kind of run and of the side trips' games.
 abstract final class HistoryLooks {
   static const ranked = KindLook(Palette.pink);
   static const exam = KindLook(Palette.sun);
@@ -47,6 +47,7 @@ abstract final class HistoryLooks {
   static const weak = KindLook(Palette.orange);
   static const training = KindLook(Palette.land);
   static const ankiren = KindLook(Palette.pink);
+  static const teiichi = KindLook(Palette.sea);
 }
 
 /// History's run pages and rows: sections, fact grids, result badges.
@@ -296,6 +297,24 @@ abstract final class AnkirenReviewStyle {
   static const EdgeInsets termPadding = EdgeInsets.fromLTRB(2, 5, 2, 6);
   static const EdgeInsets resultPadding = EdgeInsets.fromLTRB(8, 5, 8, 6);
   static const double termGap = 4;
+}
+
+/// History's 定位置 game page, on the 暗記練 game page's parts
+/// ([AnkirenReviewStyle]): the layout with each card's place in the
+/// placing order, the placing times chart, and the cards slowest to place,
+/// marked on both.
+abstract final class TeiichiReviewStyle {
+  /// The slowest cards to place shown, and marked in [slowFill].
+  static const int slowest = SummaryPanelLayout.perLine;
+  static const Color slowFill = Palette.pink;
+  static const Color barFill = Palette.ink;
+
+  /// A card's place in the order, at its foot.
+  static const double orderFont = 9;
+
+  /// The chart's gridline steps, ms: a card can sit on the stack for
+  /// minutes.
+  static const List<int> barStepsMs = [1000, 2000, 5000, 10000, 20000, 30000, 60000];
 }
 
 /// History's run page: the Speed, Rating and XP tabs' panels, lines, cells

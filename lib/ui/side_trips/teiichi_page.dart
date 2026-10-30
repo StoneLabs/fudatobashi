@@ -16,6 +16,7 @@ import '../../l10n/side_trip_strings.dart';
 import '../../l10n/strings.dart';
 import '../../l10n/teiichi_strings.dart';
 import '../../state/scope.dart';
+import '../history/history_screen.dart';
 import '../manga/manga.dart';
 import '../play/time_format.dart';
 import '../run/run_launcher.dart';
@@ -32,7 +33,8 @@ Future<void> openTeiichiPage(BuildContext context) async {
   await Navigator.of(context).push(MangaRoute<void>(builder: (_) => const TeiichiPage()));
 }
 
-/// 定位置's page, the hub's panel opened up, on 暗記練's page's frame: the
+/// 定位置's page, the hub's panel opened up, on 暗記練's page's frame, with
+/// History beside the back button: the
 /// form (the average wrong taps and placing time of the last games that
 /// count); ranked, chained up until it comes; the guide's card; practice:
 /// its setup (the cards as the way to the custom game sheet,
@@ -98,6 +100,10 @@ class _TeiichiPageState extends State<TeiichiPage> {
                     MangaHeader(
                       title: ScreenTitle(s.tripName(trip), sub: s.tripTag(trip)),
                       actions: [
+                        InkIconButton(
+                            icon: IconArt.history,
+                            semanticLabel: s.history,
+                            onTap: () => openTripHistory(context, trip)),
                         InkIconButton(icon: IconArt.back, semanticLabel: s.back, onTap: () => Navigator.maybePop(context)),
                       ],
                     ),

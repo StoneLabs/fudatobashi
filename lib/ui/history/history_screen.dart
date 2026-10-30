@@ -9,11 +9,14 @@ import '../../domain/ankiren_level.dart';
 import '../../domain/ankiren_rating.dart';
 import '../../domain/ankiren_review.dart';
 import '../../domain/side_trips.dart';
+import '../../domain/teiichi_review.dart';
 import '../../l10n/ankiren_strings.dart';
 import '../../l10n/history_strings.dart';
 import '../../l10n/home_strings.dart';
+import '../../l10n/results_strings.dart';
 import '../../l10n/run_strings.dart';
 import '../../l10n/strings.dart';
+import '../../l10n/teiichi_review_strings.dart';
 import '../../state/past_runs.dart';
 import '../../state/play_config.dart';
 import '../../state/scope.dart';
@@ -25,6 +28,7 @@ import 'history_filter.dart';
 import '../stats/practice_calendar.dart';
 import 'history_widgets.dart';
 import 'run_page.dart';
+import 'teiichi_game_page.dart';
 
 /// Opens History as a page of its own on [trip]'s tab, with a back button.
 Future<void> openTripHistory(BuildContext context, SideTrip trip) =>
@@ -42,11 +46,11 @@ Future<void> openTripHistory(BuildContext context, SideTrip trip) =>
       ),
     ));
 
-/// The History tab: the last 7 days and the streak (D2) over two swiped
-/// lists (D3), the main game's runs by day and 暗記練's games, narrowed by
-/// the filter sheet (D43). A run opens its own page. On [trip]'s tab at
-/// first if given; as a page of its own the header has a back button
-/// ([onBack]).
+/// The History tab: the last 7 days and the streak (D2) over three swiped
+/// lists (D3), the main game's runs by day, 暗記練's games and 定位置's,
+/// narrowed by the filter sheet (D43). A run opens its own page. On
+/// [trip]'s tab at first if given; as a page of its own the header has a
+/// back button ([onBack]).
 class HistoryScreen extends StatefulWidget {
   const HistoryScreen({super.key, this.trip, this.onBack});
 
@@ -59,7 +63,10 @@ class HistoryScreen extends StatefulWidget {
 
 class _HistoryScreenState extends State<HistoryScreen> {
   var _filter = const HistoryFilter();
-  late var _tab = widget.trip == null ? 0 : 1;
+  late var _list = switch (widget.trip) {
+    final trip? => HistoryList.of(trip),
+    null => HistoryList.main,
+  };
 
   @override
   Widget build(BuildContext context) {
@@ -69,6 +76,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
     final activity = progress.dayActivity;
     final runs = progress.pastRuns;
     final games = progress.ankirenRuns;
+    final placings = progress.teiichiRuns;
     List<PastRun> keptRuns(HistoryFilter f) => [
           for (final r in runs)
             if (f.keepsRun(r, progress.dayOf(r.row), today)) r,
@@ -77,7 +85,16 @@ class _HistoryScreenState extends State<HistoryScreen> {
           for (final g in games)
             if (f.keepsGame(g, progress.dayOfGame(g), today)) g,
         ];
-    final active = _filter.activeOn(ankiren: _tab == 1);
+    List<SideTripRun> keptPlacings(HistoryFilter f) => [
+          for (final g in placings)
+            if (f.keepsPlacing(g, progress.dayOfGame(g), today)) g,
+        ];
+    int kept(HistoryFilter f) => switch (_list) {
+          HistoryList.main => keptRuns(f).length,
+          HistoryList.ankiren => keptGames(f).length,
+          HistoryList.teiichi => keptPlacings(f).length,
+        };
+    final active = _filter.activeOn(_list);
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: Gaps.gutter),
       child: Column(
@@ -93,12 +110,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
                     icon: IconArt.filter,
                     semanticLabel: s.historyFilterLabel,
                     onTap: () async {
-                      final picked = await showHistoryFilter(
-                        context,
-                        filter: _filter,
-                        ankiren: _tab == 1,
-                        count: (f) => _tab == 1 ? keptGames(f).length : keptRuns(f).length,
-                      );
+                      final picked = await showHistoryFilter(context, filter: _filter, list: _list, count: kept);
                       if (picked != null && mounted) setState(() => _filter = picked);
                     },
                   ),
@@ -113,8 +125,8 @@ class _HistoryScreenState extends State<HistoryScreen> {
           Expanded(
             child: SwipeTabs(
               look: SwipeTabsLook.folders,
-              initial: _tab,
-              onChanged: (i) => setState(() => _tab = i),
+              initial: _list.index,
+              onChanged: (i) => setState(() => _list = HistoryList.values[i]),
               tabs: [
                 SwipeTab(
                   label: s.historyMainTab,
@@ -126,6 +138,12 @@ class _HistoryScreenState extends State<HistoryScreen> {
                   accent: HistoryLooks.ankiren.accent,
                   sub: s.sub?.historyAnkirenTab,
                   builder: (_) => _AnkirenList(games: keptGames(_filter), all: games),
+                ),
+                SwipeTab(
+                  label: s.historyTeiichiTab,
+                  accent: HistoryLooks.teiichi.accent,
+                  sub: s.sub?.historyTeiichiTab,
+                  builder: (_) => _TeiichiList(games: keptPlacings(_filter), all: placings),
                 ),
               ],
             ),
@@ -600,22 +618,9 @@ class _GameRow extends StatelessWidget {
     final meta = jsonDecode(game.meta) as Map<String, dynamic>;
     final cards = progress.sideTrips.cardsIn(game);
     final found = cards - progress.sideTrips.missesIn(game);
-    final day = progress.dayOfGame(game);
-    final today = progress.dayAt().date;
     return _ListRow(
       accent: HistoryLooks.ankiren.accent,
-      when: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        FittedBox(
-          fit: BoxFit.scaleDown,
-          alignment: Alignment.centerLeft,
-          child: Text(day == today ? s.historyToday : s.historyShortDay(day),
-              maxLines: 1,
-              style: const TextStyle(fontWeight: Weights.black, fontSize: HistoryListStyle.rowLineFont, height: 1.2)),
-        ),
-        Text(s.clockTime(game.startedAt),
-            style: const TextStyle(
-                fontWeight: Weights.bold, fontSize: HistoryListStyle.rowLineFont, height: 1.2, color: HistoryRunStyle.muted)),
-      ]),
+      when: _GameWhen(game),
       tags: [
         _TagLine([
           AnkirenKindTag(ranked: game.ranked, level: game.level),
@@ -644,8 +649,92 @@ class _GameRow extends StatelessWidget {
   }
 }
 
+/// The 定位置 tab: one game a row, the date in the row.
+class _TeiichiList extends StatelessWidget {
+  const _TeiichiList({required this.games, required this.all});
+  final List<SideTripRun> games;
+
+  /// Every game, newest first, for the bests before each one.
+  final List<SideTripRun> all;
+
+  @override
+  Widget build(BuildContext context) {
+    final s = S.of(context);
+    if (games.isEmpty) return _Empty(all.isEmpty ? s.noRunsYet : s.historyNoMatch);
+    final trips = ProgressScope.of(context).sideTrips;
+    final records = [for (final g in all) trips.teiichiRecordOf(g)];
+    final byId = {for (final r in records) r.id: r};
+    return ListView(
+      padding: const EdgeInsets.only(top: Gaps.section, bottom: HistoryListStyle.bottomPad),
+      children: [
+        _RowsBox([for (final g in games) _PlacingRow(g, review: TeiichiReview(byId[g.id]!, records))]),
+      ],
+    );
+  }
+}
+
+/// A 定位置 game: its kind, whether it set the best placing time or ended
+/// early, its cards (and rows, when custom) and wrong taps, and its
+/// placing time.
+class _PlacingRow extends StatelessWidget {
+  const _PlacingRow(this.run, {required this.review});
+  final SideTripRun run;
+  final TeiichiReview review;
+
+  @override
+  Widget build(BuildContext context) {
+    final s = S.of(context);
+    final game = review.game;
+    final setup = game.setup;
+    return _ListRow(
+      accent: HistoryLooks.teiichi.accent,
+      when: _GameWhen(run),
+      tags: [
+        _TagLine([
+          KindTag(teiichiKindLabel(s, custom: game.custom), look: HistoryLooks.teiichi),
+          if (!game.completed) ResultBadge(s.endedEarly, muted: true),
+          if (review.isBest) ResultBadge(s.historyBest, cheer: true),
+        ]),
+      ],
+      line: Text([
+        game.custom ? s.teiichiSetupLine(setup.cards, setup.rows) : s.historyCards(setup.cards),
+        s.historyWrongTaps(game.wrongTaps),
+      ].join(' · ')),
+      value: formatMinutes(game.placing),
+      caption: s.historyPlacingCaption,
+      onTap: () => openTeiichiGame(context, run),
+    );
+  }
+}
+
+/// A side-trip game's day (Today, or a short date) over its time of day.
+class _GameWhen extends StatelessWidget {
+  const _GameWhen(this.game);
+  final SideTripRun game;
+
+  @override
+  Widget build(BuildContext context) {
+    final s = S.of(context);
+    final progress = ProgressScope.of(context);
+    final day = progress.dayOfGame(game);
+    final today = progress.dayAt().date;
+    return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+      FittedBox(
+        fit: BoxFit.scaleDown,
+        alignment: Alignment.centerLeft,
+        child: Text(day == today ? s.historyToday : s.historyShortDay(day),
+            maxLines: 1,
+            style: const TextStyle(fontWeight: Weights.black, fontSize: HistoryListStyle.rowLineFont, height: 1.2)),
+      ),
+      Text(s.clockTime(game.startedAt),
+          style: const TextStyle(
+              fontWeight: Weights.bold, fontSize: HistoryListStyle.rowLineFont, height: 1.2, color: HistoryRunStyle.muted)),
+    ]);
+  }
+}
+
 /// [tags] on one line, the first shrinking to leave room for the rest, so
-/// every 暗記練 row is as tall as the others.
+/// every side-trip row is as tall as the others.
 class _TagLine extends StatelessWidget {
   const _TagLine(this.tags);
   final List<Widget> tags;

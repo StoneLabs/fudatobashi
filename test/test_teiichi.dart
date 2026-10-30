@@ -14,15 +14,22 @@ TeiichiSpot dealtSpot(TeiichiSetup setup, int i) {
 }
 
 /// A 定位置 game of [setup] laid out from [deck] (poems 1 up by default),
-/// each card [placeMs] on top of the stack, then played: each card found
-/// [findMs] after its prompt, after a wrong tap on another card for the
-/// prompts in [wrongAt]; ended early after [endAfter] prompts.
+/// each card [placeMs] on top of the stack (the ith [placeMsOf] it when
+/// given), then played: each card found [findMs] after its prompt, after a
+/// wrong tap on another card for the prompts in [wrongAt]; ended early
+/// after [endAfter] prompts.
 ({TeiichiPlacing placing, AnkirenGame game}) playTeiichi(TeiichiSetup setup,
-    {List<int>? deck, int placeMs = 1000, int findMs = 800, Set<int> wrongAt = const {}, int? endAfter, int seed = 1}) {
+    {List<int>? deck,
+    int placeMs = 1000,
+    int Function(int i)? placeMsOf,
+    int findMs = 800,
+    Set<int> wrongAt = const {},
+    int? endAfter,
+    int seed = 1}) {
   final placing = TeiichiPlacing(setup, deck ?? [for (var id = 1; id <= setup.cards; id++) id]);
   var at = Duration.zero;
   for (var i = 0; !placing.allPlaced; i++) {
-    at += Duration(milliseconds: placeMs);
+    at += Duration(milliseconds: placeMsOf?.call(i) ?? placeMs);
     placing.placeTop(dealtSpot(setup, i), at);
   }
   placing.finish(at);

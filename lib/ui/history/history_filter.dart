@@ -1,10 +1,15 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
 
 import '../../config/design.dart';
 import '../../config/vector_art.dart';
 import '../../db/database.dart' show SideTripRun;
+import '../../domain/side_trips.dart';
+import '../../domain/teiichi_record.dart';
 import '../../l10n/history_strings.dart';
 import '../../l10n/strings.dart';
+import '../../l10n/teiichi_strings.dart';
 import '../../state/past_runs.dart';
 import '../../state/play_config.dart';
 import '../manga/manga.dart';
@@ -30,6 +35,20 @@ enum HistoryWhen {
       };
 }
 
+/// History's lists, a tab each: the main game's runs, then each side
+/// trip's games.
+enum HistoryList {
+  main,
+  ankiren,
+  teiichi;
+
+  /// [trip]'s list.
+  static HistoryList of(SideTrip trip) => switch (trip) {
+        SideTrip.ankiren => ankiren,
+        SideTrip.teiichi => teiichi,
+      };
+}
+
 /// A 暗記練 game's kind, for the filter.
 enum AnkirenKind {
   ranked,
@@ -49,6 +68,21 @@ enum AnkirenKind {
       };
 }
 
+/// A 定位置 game's kind, for the filter: practice, the usual game, or a
+/// custom one.
+enum TeiichiKind {
+  practice,
+  custom;
+
+  static TeiichiKind of(SideTripRun run) =>
+      (jsonDecode(run.meta) as Map<String, dynamic>)[TeiichiMeta.customKey] == true ? custom : practice;
+
+  String label(S s) => switch (this) {
+        practice => s.teiichiPractice,
+        custom => s.historyAnkirenCustom,
+      };
+}
+
 /// The main game's run kinds the filter offers.
 const historyModes = [PlayMode.training, PlayMode.free, PlayMode.nigate, PlayMode.ranked, PlayMode.exam];
 
@@ -56,15 +90,26 @@ const historyModes = [PlayMode.training, PlayMode.free, PlayMode.nigate, PlayMod
 /// how far back.
 @immutable
 class HistoryFilter {
-  const HistoryFilter({this.modes = const {}, this.games = const {}, this.when = HistoryWhen.all});
+  const HistoryFilter({
+    this.modes = const {},
+    this.games = const {},
+    this.placings = const {},
+    this.when = HistoryWhen.all,
+  });
 
   final Set<PlayMode> modes;
   final Set<AnkirenKind> games;
+  final Set<TeiichiKind> placings;
   final HistoryWhen when;
 
-  /// Choices made on tab [ankiren] (the main game's otherwise), for the
-  /// filter button's count.
-  int activeOn({required bool ankiren}) => (ankiren ? games.length : modes.length) + (when == HistoryWhen.all ? 0 : 1);
+  /// Choices made on [list]'s tab, for the filter button's count.
+  int activeOn(HistoryList list) =>
+      switch (list) {
+        HistoryList.main => modes.length,
+        HistoryList.ankiren => games.length,
+        HistoryList.teiichi => placings.length,
+      } +
+      (when == HistoryWhen.all ? 0 : 1);
 
   bool _recent(DateTime day, DateTime today) => when.days == null || today.difference(day).inDays < when.days!;
 
@@ -74,8 +119,17 @@ class HistoryFilter {
   bool keepsGame(SideTripRun run, DateTime day, DateTime today) =>
       (games.isEmpty || games.contains(AnkirenKind.of(run))) && _recent(day, today);
 
-  HistoryFilter copyWith({Set<PlayMode>? modes, Set<AnkirenKind>? games, HistoryWhen? when}) =>
-      HistoryFilter(modes: modes ?? this.modes, games: games ?? this.games, when: when ?? this.when);
+  bool keepsPlacing(SideTripRun run, DateTime day, DateTime today) =>
+      (placings.isEmpty || placings.contains(TeiichiKind.of(run))) && _recent(day, today);
+
+  HistoryFilter copyWith(
+          {Set<PlayMode>? modes, Set<AnkirenKind>? games, Set<TeiichiKind>? placings, HistoryWhen? when}) =>
+      HistoryFilter(
+        modes: modes ?? this.modes,
+        games: games ?? this.games,
+        placings: placings ?? this.placings,
+        when: when ?? this.when,
+      );
 }
 
 /// The filter sheet (D43): the kinds of the tab on show, and when. It
@@ -83,20 +137,20 @@ class HistoryFilter {
 Future<HistoryFilter?> showHistoryFilter(
   BuildContext context, {
   required HistoryFilter filter,
-  required bool ankiren,
+  required HistoryList list,
   required int Function(HistoryFilter filter) count,
 }) =>
     showMangaSheet<HistoryFilter>(
       context,
       barrierColor: HistoryFilterStyle.barrier,
       barrierLabel: S.of(context).cancel,
-      builder: (_) => _FilterSheet(filter: filter, ankiren: ankiren, count: count),
+      builder: (_) => _FilterSheet(filter: filter, list: list, count: count),
     );
 
 class _FilterSheet extends StatefulWidget {
-  const _FilterSheet({required this.filter, required this.ankiren, required this.count});
+  const _FilterSheet({required this.filter, required this.list, required this.count});
   final HistoryFilter filter;
-  final bool ankiren;
+  final HistoryList list;
   final int Function(HistoryFilter filter) count;
 
   @override
@@ -149,23 +203,39 @@ class _FilterSheetState extends State<_FilterSheet> {
                   ),
                   InkIconButton(icon: IconArt.close, semanticLabel: s.cancel, onTap: () => Navigator.pop(context)),
                 ]),
-                heading(s.filterKind, s.sub?.filterKind, widget.ankiren ? s.filterAnkirenNote : s.filterMainNote),
+                heading(
+                  s.filterKind,
+                  s.sub?.filterKind,
+                  switch (widget.list) {
+                    HistoryList.main => s.filterMainNote,
+                    HistoryList.ankiren => s.filterAnkirenNote,
+                    HistoryList.teiichi => s.filterTeiichiNote,
+                  },
+                ),
                 Wrap(
                   spacing: Gaps.small,
                   runSpacing: Gaps.small,
-                  children: widget.ankiren
-                      ? [
-                          for (final k in AnkirenKind.values)
-                            FilterChipBox(k.label(s),
-                                selected: _filter.games.contains(k),
-                                onTap: () => setState(() => _filter = _filter.copyWith(games: _toggled(_filter.games, k)))),
-                        ]
-                      : [
-                          for (final m in historyModes)
-                            FilterChipBox(runKindLabel(s, m),
-                                selected: _filter.modes.contains(m),
-                                onTap: () => setState(() => _filter = _filter.copyWith(modes: _toggled(_filter.modes, m)))),
-                        ],
+                  children: switch (widget.list) {
+                    HistoryList.main => [
+                        for (final m in historyModes)
+                          FilterChipBox(runKindLabel(s, m),
+                              selected: _filter.modes.contains(m),
+                              onTap: () => setState(() => _filter = _filter.copyWith(modes: _toggled(_filter.modes, m)))),
+                      ],
+                    HistoryList.ankiren => [
+                        for (final k in AnkirenKind.values)
+                          FilterChipBox(k.label(s),
+                              selected: _filter.games.contains(k),
+                              onTap: () => setState(() => _filter = _filter.copyWith(games: _toggled(_filter.games, k)))),
+                      ],
+                    HistoryList.teiichi => [
+                        for (final k in TeiichiKind.values)
+                          FilterChipBox(k.label(s),
+                              selected: _filter.placings.contains(k),
+                              onTap: () =>
+                                  setState(() => _filter = _filter.copyWith(placings: _toggled(_filter.placings, k)))),
+                      ],
+                  },
                 ),
                 heading(s.filterWhen, s.sub?.filterWhen),
                 Row(children: [

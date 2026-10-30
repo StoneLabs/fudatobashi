@@ -7,6 +7,7 @@ import '../../l10n/history_strings.dart';
 import '../../l10n/run_strings.dart';
 import '../../l10n/side_trip_strings.dart';
 import '../../l10n/strings.dart';
+import '../../l10n/teiichi_strings.dart';
 import '../../state/past_runs.dart';
 import '../../state/play_config.dart';
 import '../manga/manga.dart';
@@ -90,6 +91,9 @@ String ankirenKindLabel(S s, {required bool ranked, required int? level}) => swi
       (false, final int level) => s.historyFreeLevel(level),
       (false, null) => s.historyFreeCustom,
     };
+
+/// A 定位置 game's kind: practice, or practice with a custom setup.
+String teiichiKindLabel(S s, {required bool custom}) => custom ? s.historyPracticeCustom : s.teiichiPractice;
 
 /// A small result badge beside a run's kind: a placement, a new class, a
 /// forfeit, who won the exam, a best.

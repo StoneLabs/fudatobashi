@@ -1,0 +1,311 @@
+// 定位置 in History: what a recorded game keeps for its page (the layout,
+// the placing order and times, the games before it), its tab's list and
+// filter, an empty tab, the way in from 定位置's page, and each game's page
+// tab by tab, in English and Japanese. With RENDER_SCREENS=1 it also
+// writes PNGs to build/screens/teiichi_history/.
+import 'dart:io';
+
+import 'package:drift/drift.dart' show driftRuntimeOptions;
+import 'package:drift/native.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:flutter_test/flutter_test.dart';
+import 'package:fudatobashi/config/config.dart';
+import 'package:fudatobashi/config/design.dart';
+import 'package:fudatobashi/config/torifuda_spec.dart';
+import 'package:fudatobashi/data/fuda_sets.dart';
+import 'package:fudatobashi/data/islands.dart';
+import 'package:fudatobashi/data/poem.dart';
+import 'package:fudatobashi/db/database.dart';
+import 'package:fudatobashi/domain/ankiren_field.dart';
+import 'package:fudatobashi/domain/side_trips.dart';
+import 'package:fudatobashi/domain/teiichi.dart';
+import 'package:fudatobashi/domain/teiichi_review.dart';
+import 'package:fudatobashi/domain/trainer.dart';
+import 'package:fudatobashi/l10n/ankiren_review_strings.dart';
+import 'package:fudatobashi/l10n/ankiren_strings.dart';
+import 'package:fudatobashi/l10n/history_strings.dart';
+import 'package:fudatobashi/l10n/results_strings.dart';
+import 'package:fudatobashi/l10n/strings.dart';
+import 'package:fudatobashi/l10n/teiichi_review_strings.dart';
+import 'package:fudatobashi/l10n/teiichi_strings.dart';
+import 'package:fudatobashi/state/past_runs.dart';
+import 'package:fudatobashi/state/progress.dart';
+import 'package:fudatobashi/state/scope.dart';
+import 'package:fudatobashi/ui/history/history_screen.dart';
+import 'package:fudatobashi/ui/history/history_widgets.dart';
+import 'package:fudatobashi/ui/history/teiichi_game_page.dart';
+import 'package:fudatobashi/ui/manga/manga.dart';
+import 'package:fudatobashi/ui/play/time_format.dart';
+import 'package:fudatobashi/ui/side_trips/teiichi_page.dart';
+import 'package:fudatobashi/ui/torifuda/card_faces.dart';
+
+import 'test_l10n.dart';
+import 'test_screens.dart';
+import 'test_teiichi.dart';
+import 'test_vector_art.dart';
+
+Future<void> _loadFont(String family, List<String> files) async {
+  final loader = FontLoader(family);
+  for (final f in files) {
+    loader.addFont(Future.value(ByteData.sublistView(File('assets/fonts/$f').readAsBytesSync())));
+  }
+  await loader.load();
+}
+
+/// The user's phone stretched to show each tab's whole contents.
+const _tallPhone = Screen('384', Size(384, 1500), 2.8125);
+
+/// [n] known cards from [shift] on, the same spread as 定位置's deals.
+List<int> _deck(int n, int shift) => [for (var id = 1; id <= n; id++) (id * 7 + shift) % 100 + 1];
+
+/// Placing times that wander: card i takes [base] ms and up to 3.6 s more.
+int Function(int i) _times(int base) => (i) => base + (i * 37 % 10) * 400;
+
+void main() {
+  loadTestVectorArt();
+  loadTestL10n();
+  poems = Poems.fromJsonString(File('assets/data/poems.json').readAsStringSync());
+  fudaSets = FudaSets(poems);
+  archipelago = Archipelago.fromJsonString(File('assets/data/islands.json').readAsStringSync());
+  driftRuntimeOptions.dontWarnAboutMultipleDatabases = true;
+
+  setUpAll(() async {
+    await _loadFont('Dela', ['DelaGothicOne-Regular.ttf']);
+    await _loadFont('Reggae', ['ReggaeOne-Regular.ttf']);
+    await _loadFont('ZenKaku', [
+      'ZenKakuGothicNew-Regular.ttf',
+      'ZenKakuGothicNew-Medium.ttf',
+      'ZenKakuGothicNew-Bold.ttf',
+      'ZenKakuGothicNew-Black.ttf',
+    ]);
+    if (renderScreens) {
+      await _loadFont('Torifuda', ['YujiSyuku-Regular.ttf']);
+      await _loadFont('TorifudaNumber', ['TeXGyreSchola-Regular.otf']);
+      await CardFaces.load([TorifudaStyle.standard.background], read: (a) => File(a).readAsBytes());
+    }
+  });
+
+  /// An all-known player in [language] with five 定位置 games, oldest first:
+  /// two usual games yesterday, the second the faster; today a custom game
+  /// of 12 cards in 2 rows, a usual game ended early, and a usual game
+  /// slower than the best. With [games] false, none.
+  Future<Progress> open(WidgetTester tester, {String language = 'en', bool games = true}) async {
+    late Progress p;
+    await tester.runAsync(() async {
+      p = await Progress.open(AppDatabase(NativeDatabase.memory()));
+      p.tabsAlwaysOpen = true;
+      await p.setLearningMode(LearningMode.allKnown);
+      await p.updateSettings(
+          p.settings.copyWith(language: language, languagePicked: true, toured: true, teiichiRulesSeen: true));
+      if (!games) return;
+      final today = p.dayAt().date;
+      final yesterday = today.subtract(const Duration(days: 1));
+      Future<void> record(DateTime at, TeiichiSetup setup,
+          {required int base, required int shift, Set<int> wrongAt = const {}, int? endAfter}) async {
+        final played = playTeiichi(setup,
+            deck: _deck(setup.cards, shift), placeMsOf: _times(base), wrongAt: wrongAt, endAfter: endAfter);
+        await p.recordTeiichi(played.placing, played.game, startedAt: at);
+      }
+
+      await record(yesterday.add(const Duration(hours: 10)), TeiichiSetup.usual, base: 2400, shift: 0, wrongAt: {1, 6});
+      await record(yesterday.add(const Duration(hours: 18)), TeiichiSetup.usual, base: 1500, shift: 3, wrongAt: {3});
+      await record(today.add(const Duration(hours: 8)), const TeiichiSetup(cards: 12, rows: 2),
+          base: 1800, shift: 40, wrongAt: {0, 4});
+      await record(today.add(const Duration(hours: 9, minutes: 30)), TeiichiSetup.usual,
+          base: 2200, shift: 9, wrongAt: {2}, endAfter: 15);
+      await record(today.add(const Duration(hours: 12)), TeiichiSetup.usual, base: 1800, shift: 5, wrongAt: {1, 2, 7});
+    });
+    return p;
+  }
+
+  /// [home] on its own in a manga app, for [p], on [screen].
+  Future<void> show(WidgetTester tester, Progress p, Widget home, {Screen screen = usersPhone}) async {
+    useScreen(tester, screen);
+    // Tobi idles for ever; with animations off the tabs settle.
+    tester.platformDispatcher.accessibilityFeaturesTestValue = const FakeAccessibilityFeatures(disableAnimations: true);
+    addTearDown(tester.platformDispatcher.clearAccessibilityFeaturesTestValue);
+    await tester.pumpWidget(RepaintBoundary(
+      key: screenKey,
+      child: ProgressScope(
+        progress: p,
+        child: MaterialApp(
+            key: UniqueKey(), debugShowCheckedModeBanner: false, theme: buildMangaTheme(), home: home),
+      ),
+    ));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 600));
+    expect(tester.takeException(), isNull);
+  }
+
+  /// History from 定位置's page, for [p], on [screen].
+  Future<void> openHistory(WidgetTester tester, Progress p, {Screen screen = usersPhone}) async {
+    await show(tester, p, const TeiichiPage(), screen: screen);
+    final s = S.of(tester.element(find.byType(TeiichiPage)));
+    await tester.tap(find.byWidgetPredicate((w) => w is InkIconButton && w.semanticLabel == s.history));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 600));
+    expect(tester.widget<HistoryScreen>(find.byType(HistoryScreen)).trip, SideTrip.teiichi);
+  }
+
+  group('a recorded game', () {
+    testWidgets('keeps its layout, placing order and times, and is set against the games before it', (tester) async {
+      final p = await open(tester);
+      late Progress reopened;
+      await tester.runAsync(() async => reopened = await Progress.open(p.db));
+      final trips = reopened.sideTrips;
+      final runs = trips.runsOf(SideTrip.teiichi).toList();
+      final all = [for (final r in runs) trips.teiichiRecordOf(r)];
+      expect(all, hasLength(5));
+
+      final first = all.first;
+      expect(first.setup, TeiichiSetup.usual);
+      expect(first.layout.cards.toSet(), _deck(TeiichiTuning.cards, 0).toSet());
+      expect([for (final c in first.placed) c.poemId], _deck(TeiichiTuning.cards, 0), reason: 'in the order placed');
+      expect(first.placed[1].time, Duration(milliseconds: _times(2400)(1)));
+      expect(first.placing, first.placed.fold(Duration.zero, (sum, c) => sum + c.time));
+      expect(first.slowest.first.time, first.placed.map((c) => c.time).reduce((a, b) => a > b ? a : b));
+      expect(first.wrongTaps, 2);
+      expect(first.field.own.cards, first.layout.cards);
+      expect(first.recall.cards, hasLength(TeiichiTuning.cards));
+
+      final reviews = [for (final g in all) TeiichiReview(g, all)];
+      expect(reviews[0].isBest, isTrue, reason: 'the first game that counts');
+      expect(reviews[1].isBest, isTrue);
+      expect(reviews[1].bestBefore, all[0].placing);
+      expect(reviews[2].game.custom, isTrue);
+      expect(reviews[2].isBest, isFalse, reason: 'a custom game never counts');
+      expect(reviews[2].peers, isEmpty);
+      expect(reviews[3].game.completed, isFalse);
+      expect(reviews[3].isBest, isFalse, reason: 'a game ended early never counts');
+      expect(reviews[4].isBest, isFalse);
+      expect(reviews[4].bestBefore, all[1].placing);
+      expect([for (final g in reviews[4].peers) g.id], [all[0].id, all[1].id, all[3].id]);
+      expect(reviews[4].last!.id, all[3].id);
+      expect(reviews[4].recall.game.id, all[4].id);
+      await tester.runAsync(() => p.db.close());
+    });
+  });
+
+  for (final lang in ['en', 'ja']) {
+    final s = S(lang);
+
+    group('History ($lang)', () {
+      testWidgets('定位置\'s page opens History on its tab, its games newest first; the filter narrows them', (tester) async {
+        final p = await open(tester, language: lang);
+        await openHistory(tester, p);
+        final rows = find.byWidgetPredicate((w) => w is KindTag && w.look == HistoryLooks.teiichi);
+        expect(rows, findsNWidgets(5));
+        expect(find.text(s.historyPracticeCustom), findsOneWidget);
+        expect(find.text(s.endedEarly), findsOneWidget);
+        expect(find.text(s.historyBest), findsNWidgets(2));
+        expect(find.text('${s.teiichiSetupLine(12, 2)} · ${s.historyWrongTaps(2)}'), findsOneWidget);
+        expect(find.text('${s.historyCards(25)} · ${s.historyWrongTaps(3)}'), findsOneWidget);
+        final placings = [for (final r in p.teiichiRuns) p.sideTrips.teiichiRecordOf(r).placing];
+        final first = tester.getTopLeft(find.text(formatMinutes(placings.first)));
+        final last = tester.getTopLeft(find.text(formatMinutes(placings.last)));
+        expect(first.dy, lessThan(last.dy), reason: 'newest first');
+        await captureScreen(tester, 'teiichi_history/list', lang: lang);
+
+        await tester.tap(find.byWidgetPredicate((w) => w is InkIconButton && w.semanticLabel == s.historyFilterLabel));
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 400));
+        expect(find.text(s.filterTeiichiNote), findsOneWidget);
+        await tester.tap(find.text(s.historyAnkirenCustom).last);
+        await tester.pump();
+        await tester.pump(Motion.tab);
+        await captureScreen(tester, 'teiichi_history/filter', lang: lang);
+        await tester.tap(find.text(s.filterShowOne));
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 400));
+        expect(tester.takeException(), isNull);
+        expect(rows, findsOneWidget);
+        expect(find.text(s.historyPracticeCustom), findsOneWidget);
+        await tester.pumpWidget(const SizedBox());
+        await tester.runAsync(() => p.db.close());
+      });
+
+      testWidgets('with no games yet the tab says so', (tester) async {
+        final p = await open(tester, language: lang, games: false);
+        await openHistory(tester, p);
+        expect(find.text(s.noRunsYet), findsOneWidget);
+        await captureScreen(tester, 'teiichi_history/empty', lang: lang);
+        await tester.pumpWidget(const SizedBox());
+        await tester.runAsync(() => p.db.close());
+      });
+    });
+
+    group('a game\'s page ($lang)', () {
+      for (final (screen, tall) in [(usersPhone, ''), (_tallPhone, '_tall')]) {
+        testWidgets('a usual game, tab by tab${tall.replaceAll('_', ' ')}', (tester) async {
+          final p = await open(tester, language: lang);
+          final run = p.teiichiRuns.first;
+          final game = p.sideTrips.teiichiRecordOf(run);
+          final best = p.sideTrips.teiichiRecordOf(p.sideTrips.runsOf(SideTrip.teiichi).elementAt(1)).placing;
+          await openHistory(tester, p, screen: screen);
+          await tester.tap(find.text(formatMinutes(game.placing)));
+          await tester.pump();
+          await tester.pump(const Duration(milliseconds: 600));
+          expect(find.byType(TeiichiGamePage), findsOneWidget);
+
+          expect(find.text(s.ankirenFirstTapFact.toUpperCase()), findsWidgets);
+          expect(find.text(s.teiichiBestThen(formatMinutes(best))), findsOneWidget);
+          expect(find.textContaining(s.teiichiSlowestPlace, findRichText: true), findsOneWidget);
+          expect(find.textContaining(s.ankirenSetupTitle, findRichText: true), findsOneWidget);
+          Future<void> next() async {
+            await tester.fling(find.byType(PageView), const Offset(-300, 0), 1000);
+            await tester.pumpAndSettle();
+            expect(tester.takeException(), isNull);
+          }
+
+          await captureScreen(tester, 'teiichi_history/game$tall', lang: lang, variant: 'overview');
+          await next();
+          expect(find.textContaining(s.ankirenFieldTitle, findRichText: true), findsOneWidget);
+          expect(find.textContaining(s.teiichiRowName(FieldRow.upper).toUpperCase()), findsOneWidget);
+          await captureScreen(tester, 'teiichi_history/game$tall', lang: lang, variant: 'field');
+          if (tall.isNotEmpty) {
+            final step = game.recall.cards.indexWhere((c) => c.wrongTaps > 0);
+            await tester.tap(find.text(s.ankirenStartReview.toUpperCase()));
+            await tester.pumpAndSettle();
+            for (var i = 0; i < step; i++) {
+              await tester.tap(find.bySemanticsLabel(s.ankirenStepNext));
+              await tester.pump();
+            }
+            await tester.pumpAndSettle();
+            expect(find.textContaining(s.ankirenStepCard(step + 1, game.recall.cards.length, '')), findsOneWidget);
+            await captureScreen(tester, 'teiichi_history/game$tall', lang: lang, variant: 'field_review');
+          }
+          await next();
+          expect(find.textContaining(s.teiichiLayoutTitle, findRichText: true), findsOneWidget);
+          for (var n = 1; n <= TeiichiTuning.cards; n++) {
+            expect(find.text('$n'), findsWidgets);
+          }
+          await captureScreen(tester, 'teiichi_history/game$tall', lang: lang, variant: 'placing');
+          await next();
+          expect(find.textContaining(s.ankirenTapsTitle, findRichText: true), findsWidgets);
+          expect(find.text(s.teiichiTapsCaption), findsOneWidget);
+          await captureScreen(tester, 'teiichi_history/game$tall', lang: lang, variant: 'taps');
+          await tester.pumpWidget(const SizedBox());
+          await tester.runAsync(() => p.db.close());
+        });
+      }
+
+      testWidgets('a best, a custom game and a game ended early are stamped so', (tester) async {
+        final p = await open(tester, language: lang);
+        final runs = p.sideTrips.runsOf(SideTrip.teiichi).toList();
+        for (final (i, stamp, name) in [
+          (1, s.teiichiBestStamp, 'best'),
+          (2, s.ankirenCustom, 'custom'),
+          (3, s.endedEarly, 'ended'),
+        ]) {
+          await show(tester, p, TeiichiGamePage(run: runs[i]), screen: _tallPhone);
+          expect(find.text(stamp.toUpperCase()), findsOneWidget);
+          await captureScreen(tester, 'teiichi_history/game_tall', lang: lang, variant: name);
+        }
+        expect(find.text(s.teiichiNotCounted), findsOneWidget, reason: 'a game ended early does not count');
+        await tester.pumpWidget(const SizedBox());
+        await tester.runAsync(() => p.db.close());
+      });
+    });
+  }
+}

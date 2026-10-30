@@ -49,6 +49,7 @@ extension HistoryStrings on S {
   /// The History list, its 7-day strip, rows and filter sheet.
   String get historyMainTab => t('historyMainTab');
   String get historyAnkirenTab => t('historyAnkirenTab');
+  String get historyTeiichiTab => t('historyTeiichiTab');
   String get historyFilterLabel => t('historyFilterLabel');
   String get historyLast7 => t('historyLast7');
   String historyStreak(int days) => t(countKey('historyStreak', days));
@@ -66,6 +67,7 @@ extension HistoryStrings on S {
   String get historyYourTimeCaption => t('historyYourTimeCaption');
   String get historyPointsCaption => t('historyPointsCaption');
   String get historyFirstTapCaption => t('historyFirstTapCaption');
+  String get historyPlacingCaption => t('historyPlacingCaption');
   String historyCards(int n) => f(countKey('historyCards', n), [n]);
   String historyCardsOf(Object a0, Object a1) => f('historyCardsOf', [a0, a1]);
   String historyMissesShort(int n) => f(countKey('historyMissesShort', n), [n]);
@@ -81,6 +83,8 @@ extension HistoryStrings on S {
   String historyDownTo(RankBand band) => f('historyDownTo', [className(band)]);
   String get historyAnkirenCustom => t('historyAnkirenCustom');
   String historyPerSide(Object a0, Object a1) => f('historyPerSide', [a0, a1]);
+  String get historyPracticeCustom => t('historyPracticeCustom');
+  String historyWrongTaps(int n) => n == 0 ? t('historyWrongTapsNone') : f(countKey('historyWrongTaps', n), [n]);
   String get historyNoMatch => t('historyNoMatch');
   String get filterTitle => t('filterTitle');
   String get filterReset => t('filterReset');
@@ -88,6 +92,7 @@ extension HistoryStrings on S {
   String get filterWhen => t('filterWhen');
   String get filterMainNote => t('filterMainNote');
   String get filterAnkirenNote => t('filterAnkirenNote');
+  String get filterTeiichiNote => t('filterTeiichiNote');
   String get filterToday => t('filterToday');
   String get filterWeek => t('filterWeek');
   String get filterMonth => t('filterMonth');
