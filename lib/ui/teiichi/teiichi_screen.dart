@@ -22,7 +22,6 @@ import '../ankiren/ankiren_card.dart';
 import '../ankiren/ankiren_field_view.dart';
 import '../ankiren/ankiren_play.dart';
 import '../manga/manga.dart';
-import '../sound/sounds.dart';
 import 'teiichi_placing_layer.dart';
 import 'teiichi_results_screen.dart';
 import 'teiichi_zoom.dart';
@@ -131,7 +130,6 @@ class _TeiichiScreenState extends State<TeiichiScreen> with AnkirenPlay {
   Duration get _now => _clock.elapsed;
 
   void _placed() {
-    playSound(context, Sfx.cardFlick);
     if (_progress.settings.haptics) unawaited(HapticFeedback.selectionClick());
   }
 
