@@ -8,7 +8,8 @@ import '../../domain/ankiren_field.dart';
 import '../../domain/ankiren_geometry.dart';
 import '../ankiren/ankiren_field_view.dart';
 
-/// How far 定位置's field grows once the layout is fixed, for play.
+/// How far 定位置's field grows once the layout is fixed, for play, on a
+/// landscape screen or a portrait one alike.
 ///
 /// The field grows evenly: the bottom row stays on the bottom edge, the
 /// clusters on the edges they start from, so cards grow upward and inward
@@ -23,8 +24,7 @@ abstract final class TeiichiZoom {
   /// [area] to play in (inside its padding) and a band [band] tall.
   static double limit(AnkirenField field, Size area, double band) {
     final geometry = FieldGeometry.of(field, folded: false, trueSlots: TeiichiTuning.rowSlots);
-    final scale = AnkirenFieldView.scaleFor(geometry, area,
-        landscape: true, zoom: false, band: band, roomAbove: TeiichiPlayLayout.roomAbove);
+    final scale = AnkirenFieldView.trueScaleFor(geometry, area, band: band, roomAbove: TeiichiPlayLayout.roomAbove);
     var zoom = (area.height - band) / (geometry.height * scale);
     for (final row in field.own.rows) {
       if (!row.isEmpty) zoom = math.min(zoom, _rowLimit(row, geometry.width));

@@ -60,10 +60,12 @@ abstract final class TeiichiPlayLayout {
   /// The room above the band never gets shorter than this, for the stack.
   static const double roomAbove = 118;
 
-  /// The stack: its top card at most [stackCardH] tall, [stackDepth] cards'
-  /// edges peeking out under it [stackStep] apart, over its count on an ink
-  /// tag that overlaps the card's foot by [stackTagOverlap].
-  static const double stackCardH = 100;
+  /// The stack: its top card as tall as the room above the band allows,
+  /// up to [stackCardH] (so larger in portrait, with room to spare),
+  /// [stackDepth] cards' edges peeking out under it [stackStep] apart, over
+  /// its count on an ink tag that overlaps the card's foot by
+  /// [stackTagOverlap].
+  static const double stackCardH = 180;
   static const double stackMargin = 6;
   static const int stackDepth = 3;
   static const double stackStep = 2.5;
@@ -74,9 +76,11 @@ abstract final class TeiichiPlayLayout {
 
   /// The hint left of the stack, and the note right of it once every card
   /// is placed: paper boxes, [noteGap] from the stack, at most [noteWidth]
-  /// wide.
+  /// wide; above the stack when there is less than [noteMinWidth] beside
+  /// it.
   static const double noteGap = 18;
   static const double noteWidth = 330;
+  static const double noteMinWidth = 200;
   static const double noteFont = 12.5;
   static const double noteIcon = 16;
   static const EdgeInsets notePadding = EdgeInsets.symmetric(horizontal: 10, vertical: 7);
@@ -101,11 +105,12 @@ abstract final class TeiichiPlayLayout {
   static const double landingTagRoom = 26;
   static const EdgeInsets landingTagPadding = EdgeInsets.symmetric(horizontal: 6, vertical: 3);
 
-  /// A dragged card rides above the finger, [dragLift] of a card's height
-  /// up so the finger never hides it, [dragScale] times its size, with an
-  /// ink outline.
-  static const double dragLift = 0.6;
+  /// A dragged card rides above the finger, its foot [dragLift] of its
+  /// height up so the finger never hides it, [dragScale] times its size
+  /// and at least [dragLeastWidth] wide, with an ink outline.
+  static const double dragLift = 0.55;
   static const double dragScale = 1.1;
+  static const double dragLeastWidth = 48;
   static const double dragBorder = 2.5;
 
   /// Cards opening a gap, closing one, or taking a new place.

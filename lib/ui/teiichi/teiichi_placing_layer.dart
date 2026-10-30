@@ -31,13 +31,14 @@ class TeiichiDrag {
 
 /// Where the stack lies in the room above the band of [placement]: its top
 /// card as tall as the room allows, up to [TeiichiPlayLayout.stackCardH],
-/// centred across the field.
+/// centred across the field, just above the band with its count under it.
 Rect stackRect(FieldPlacement placement) {
   final room = placement.roomAbove;
-  final height = math.min(TeiichiPlayLayout.stackCardH,
-      room.height - 2 * TeiichiPlayLayout.stackMargin - TeiichiPlayLayout.stackTagRoom);
+  const margin = TeiichiPlayLayout.stackMargin;
+  const tag = TeiichiPlayLayout.stackTagRoom;
+  final height = math.min(TeiichiPlayLayout.stackCardH, room.height - 2 * margin - tag);
   final width = height * AnkirenFieldSize.cardW / AnkirenFieldSize.cardH;
-  return Rect.fromLTWH(room.center.dx - width / 2, room.top + TeiichiPlayLayout.stackMargin, width, height);
+  return Rect.fromLTWH(room.center.dx - width / 2, room.bottom - margin - tag - height, width, height);
 }
 
 /// The dashed spots a card may go while 定位置's cards are laid out, under
@@ -75,7 +76,8 @@ class TeiichiSpots extends StatelessWidget {
 
 /// What 定位置 draws over its field while the cards are laid out, and the
 /// touches there: the note once every card is placed ([stack], top first,
-/// is empty), and the hint before the first card is placed. The stack and
+/// is empty), and the hint before the first card is placed, right and left
+/// of the stack or, without room beside it, above it. The stack and
 /// the card dragged ([drag]) are [TeiichiRiding]'s, above the band.
 ///
 /// A tap goes to [onTap], and a drag that starts on the stack's top card
@@ -126,7 +128,30 @@ class TeiichiPlacingLayer extends StatelessWidget {
     final pile = stackRect(placement);
     final shown = _shown(stack, drag);
     final room = placement.roomAbove;
-    final noteWidth = math.max(0.0, math.min(TeiichiPlayLayout.noteWidth, pile.left - TeiichiPlayLayout.noteGap));
+    // Either side of the stack when there is room for them there; else
+    // above it.
+    final beside = math.min(TeiichiPlayLayout.noteWidth, pile.left - room.left - TeiichiPlayLayout.noteGap);
+    Widget note(Widget note, {required bool left}) {
+      if (beside >= TeiichiPlayLayout.noteMinWidth) {
+        return Positioned(
+          left: left ? null : pile.right + TeiichiPlayLayout.noteGap,
+          right: left ? room.right - pile.left + TeiichiPlayLayout.noteGap : null,
+          top: room.top,
+          height: room.height,
+          width: beside,
+          child: Align(alignment: left ? Alignment.centerRight : Alignment.centerLeft, child: note),
+        );
+      }
+      final width = math.min(TeiichiPlayLayout.noteWidth, room.width - 2 * TeiichiPlayLayout.noteGap);
+      return Positioned(
+        left: room.center.dx - width / 2,
+        width: width,
+        top: room.top,
+        height: math.max(0.0, pile.top - TeiichiPlayLayout.noteGap - room.top),
+        child: Align(alignment: Alignment.bottomCenter, child: note),
+      );
+    }
+
     return GestureDetector(
       behavior: HitTestBehavior.opaque,
       dragStartBehavior: DragStartBehavior.down,
@@ -139,25 +164,8 @@ class TeiichiPlacingLayer extends StatelessWidget {
       onPanEnd: (_) => onDragEnd(),
       onPanCancel: onDragEnd,
       child: Stack(clipBehavior: Clip.none, children: [
-        if (showHint && noteWidth > 0)
-          Positioned(
-            right: room.width - pile.left + TeiichiPlayLayout.noteGap,
-            top: room.top,
-            height: room.height,
-            width: noteWidth,
-            child: Align(
-              alignment: Alignment.centerRight,
-              child: _Note(text: s.teiichiPlaceHint, icon: IconArt.arrow, turned: true),
-            ),
-          ),
-        if (shown.isEmpty && drag == null && noteWidth > 0)
-          Positioned(
-            left: pile.right + TeiichiPlayLayout.noteGap,
-            top: room.top,
-            height: room.height,
-            width: noteWidth,
-            child: Align(alignment: Alignment.centerLeft, child: _Note(text: s.teiichiAllPlaced(cards.length))),
-          ),
+        if (showHint) note(_Note(text: s.teiichiPlaceHint, icon: IconArt.arrow, turned: true), left: true),
+        if (shown.isEmpty && drag == null) note(_Note(text: s.teiichiAllPlaced(cards.length)), left: false),
       ]),
     );
   }
@@ -170,8 +178,9 @@ List<int> _shown(List<int> stack, TeiichiDrag? drag) => drag != null && drag.fro
 /// What 定位置 draws above the band while the cards are laid out, without
 /// taking touches: the stack with its count ([stack], top first), or its
 /// empty spot once every card is placed, and a card being dragged ([drag]),
-/// riding above the finger, with the name of where it would land
-/// ([landing]) beside it.
+/// riding above the finger, a little larger than the field's cards and
+/// never smaller than [TeiichiPlayLayout.dragLeastWidth], with the name of
+/// where it would land ([landing]) beside it.
 class TeiichiRiding extends StatelessWidget {
   const TeiichiRiding({
     super.key,
@@ -193,17 +202,20 @@ class TeiichiRiding extends StatelessWidget {
     final drag = this.drag;
     final pile = stackRect(placement);
     final shown = _shown(stack, drag);
-    final cardSize = Size(AnkirenFieldSize.cardW, AnkirenFieldSize.cardH) * placement.scale;
     final width = placement.geometry.width * placement.scale;
+    final liftedW = math.max(
+        AnkirenFieldSize.cardW * placement.scale * TeiichiPlayLayout.dragScale, TeiichiPlayLayout.dragLeastWidth);
+    final liftedH = liftedW * AnkirenFieldSize.cardH / AnkirenFieldSize.cardW;
     final lifted = drag == null
         ? null
         : Rect.fromCenter(
-            center: drag.at - Offset(0, cardSize.height * (TeiichiPlayLayout.dragLift + TeiichiPlayLayout.dragScale / 2)),
-            width: cardSize.width * TeiichiPlayLayout.dragScale,
-            height: cardSize.height * TeiichiPlayLayout.dragScale,
+            center: drag.at - Offset(0, liftedH * (TeiichiPlayLayout.dragLift + 0.5)),
+            width: liftedW,
+            height: liftedH,
           );
-    // The name goes left of the card, or right of it near the left edge.
-    final toRight = lifted != null && lifted.left < TeiichiPlayLayout.noteWidth;
+    // The name goes left of the card, or right of it in the left of a
+    // narrow field or near the left edge of a wide one.
+    final toRight = lifted != null && lifted.left < math.min(TeiichiPlayLayout.noteWidth, width / 2);
     return Stack(clipBehavior: Clip.none, children: [
       if (shown.isEmpty)
         Positioned.fromRect(rect: pile, child: const _DashedSpot())

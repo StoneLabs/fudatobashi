@@ -78,8 +78,5 @@ class RemindersBlocked extends StatelessWidget {
 }
 
 /// Shows [RemindersBlocked] over the screen until the player is through.
-Future<void> showRemindersBlocked(BuildContext context) => showGeneralDialog<void>(
-      context: context,
-      barrierColor: Colors.transparent,
-      pageBuilder: (context, _, _) => RemindersBlocked(onOk: () => Navigator.pop(context)),
-    );
+Future<void> showRemindersBlocked(BuildContext context) =>
+    showTobiNotice(context, (context) => RemindersBlocked(onOk: () => Navigator.pop(context)));

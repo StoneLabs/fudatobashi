@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
+import 'package:flutter/scheduler.dart';
 import 'package:flutter/services.dart';
 
 import '../../config/config.dart';
@@ -24,16 +25,25 @@ import '../ankiren/ankiren_play.dart';
 import '../manga/manga.dart';
 import 'teiichi_placing_layer.dart';
 import 'teiichi_results_screen.dart';
+import 'teiichi_turn_tip.dart';
 import 'teiichi_zoom.dart';
 
-/// 定位置's play screen, always landscape on 暗記練's true-scale field
-/// ([AnkirenFieldView]), the own side alone, a row [TeiichiTuning.rowSlots]
-/// pitches across, never rescaled. [setup]'s cards are dealt from [known]
-/// into a face-up stack where the other player's side would be, and laid
-/// out one at a time ([TeiichiPlacing], [TeiichiPlacingLayer]) while the
-/// clock counts up. Done grows the field ([TeiichiZoom]), turns the cards
-/// face down, and the game goes on as 暗記練's does ([AnkirenPlay]), to its
-/// end; wrong taps only count. It ends into [TeiichiResultsScreen].
+/// 定位置's play screen, on 暗記練's true-scale field ([AnkirenFieldView]),
+/// the own side alone across the foot of the screen, a row
+/// [TeiichiTuning.rowSlots] pitches across, never rescaled. [setup]'s cards
+/// are dealt from [known] into a face-up stack where the other player's
+/// side would be, and laid out one at a time ([TeiichiPlacing],
+/// [TeiichiPlacingLayer]) while the clock counts up. Done grows the field
+/// ([TeiichiZoom]), turns the cards face down, and the game goes on as
+/// 暗記練's does ([AnkirenPlay]), to its end; wrong taps only count. It ends
+/// into [TeiichiResultsScreen].
+///
+/// The screen turns sideways for the game, or follows the phone without
+/// the auto turn (`AppSettings.teiichiAutoTurn`); either way it is laid out
+/// for the shape it has. Turned mid-game it keeps everything but a drag
+/// under way, whose card goes back. Laying out on a portrait screen, it
+/// tips the player once a game to turn the phone ([showTeiichiTurnTip]),
+/// the clock stopped meanwhile.
 ///
 /// End while placing leaves without a game, after asking once a card is
 /// placed; once the cards are face down,
@@ -78,6 +88,11 @@ class _TeiichiScreenState extends State<TeiichiScreen> with AnkirenPlay {
   TeiichiDrag? _drag;
   bool _ending = false;
 
+  /// The screen is taller than wide; null until first laid out.
+  bool? _portrait;
+  bool _tipped = false;
+  final _field = GlobalKey();
+
   /// Done is pressed: the field grows, cards still face up, then [_flip].
   bool _zoomed = false;
   Timer? _zoomTimer;
@@ -86,6 +101,9 @@ class _TeiichiScreenState extends State<TeiichiScreen> with AnkirenPlay {
   AnkirenGame get game => _game!;
 
   bool get _placingNow => _game == null;
+
+  /// The cards are being laid out: Done is not pressed yet.
+  bool get _editing => _placingNow && !_zoomed;
 
   /// Cards are placed and the player has not left: leaving throws the
   /// layout away, so it asks first.
@@ -100,7 +118,31 @@ class _TeiichiScreenState extends State<TeiichiScreen> with AnkirenPlay {
     final deck = {...widget.known}.toList()..shuffle(_rng);
     _placing = TeiichiPlacing(widget.setup, deck.take(widget.setup.cards).toList());
     holdStage(_progress.settings.teiichiAutoTurn ? OrientationTuning.landscape : OrientationTuning.any);
-    _tick = Timer.periodic(TeiichiPlayTuning.clockTick, (t) => _shown.value = TeiichiPlayTuning.clockTick * t.tick);
+    _tick = Timer.periodic(TeiichiPlayTuning.clockTick, (_) {
+      if (_clock.isRunning) _shown.value += TeiichiPlayTuning.clockTick;
+    });
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final size = MediaQuery.sizeOf(context);
+    final portrait = size.height > size.width;
+    if (portrait == _portrait) return;
+    if (_portrait != null) _drag = null;
+    _portrait = portrait;
+    if (portrait) SchedulerBinding.instance.addPostFrameCallback((_) => unawaited(_tip()));
+  }
+
+  /// Tobi's tip to turn the phone, once a game, while the cards are laid
+  /// out on a portrait screen; unless the player asked for it no more.
+  Future<void> _tip() async {
+    if (!mounted || _tipped || _ending || !_editing || _portrait != true) return;
+    if (_progress.settings.teiichiTurnTipOff) return;
+    _tipped = true;
+    _clock.stop();
+    await showTeiichiTurnTip(context);
+    if (mounted && _editing) _clock.start();
   }
 
   @override
@@ -183,7 +225,7 @@ class _TeiichiScreenState extends State<TeiichiScreen> with AnkirenPlay {
 
   /// Every card is placed and the player is done: the clock stops, the
   /// field grows, then the cards turn face down and the first prompt
-  /// follows.
+  /// follows, at once when the field has no room to grow.
   void _done() {
     if (!_placing.finish(_now)) return;
     _clock.stop();
@@ -193,8 +235,23 @@ class _TeiichiScreenState extends State<TeiichiScreen> with AnkirenPlay {
       _drag = null;
       _zoomed = true;
     });
-    _zoomTimer = Timer(stillMotion ? Duration.zero : TeiichiPlayLayout.zoomTime, _flip);
+    final grows = _growth() > 1 + _growthTolerance;
+    _zoomTimer = Timer(stillMotion || !grows ? Duration.zero : TeiichiPlayLayout.zoomTime, _flip);
   }
+
+  /// A growth this close to none is none.
+  static const _growthTolerance = 1e-6;
+
+  /// How far the laid-out field grows for play, on the screen as it is.
+  double _growth() {
+    final size = _field.currentContext?.size;
+    if (size == null) return 1;
+    return TeiichiZoom.limit(
+        _laidField(_placing.board), AnkirenFieldView.areaIn(size), AnkirenFieldView.bandHeight(landscape: !_portrait!));
+  }
+
+  /// The field while the cards are laid out: [board] on the own side.
+  static AnkirenField _laidField(TeiichiBoard board) => AnkirenField(own: board.half, opponent: AnkirenHalf.empty());
 
   void _flip() {
     if (!mounted) return;
@@ -257,15 +314,16 @@ class _TeiichiScreenState extends State<TeiichiScreen> with AnkirenPlay {
   Widget build(BuildContext context) {
     final s = S.of(context);
     final showNumber = _progress.settings.showPoemNumber;
+    final landscape = !_portrait!;
     final placingNow = _placingNow;
-    final editing = placingNow && !_zoomed;
+    final editing = _editing;
     final allPlaced = _placing.allPlaced && _drag == null && !_zoomed;
     final band = AnkirenBand(
-      landscape: true,
+      landscape: landscape,
       leading: BandButton(icon: IconArt.end, label: s.end, onTap: _ending ? null : () => unawaited(_end())),
       center: placingNow || (asked == null && game.answers.isEmpty)
-          ? MemoriseClock(left: _shown, landscape: true, label: editing ? s.teiichiPlacing : s.teiichiPlaced)
-          : recallPrompt(landscape: true),
+          ? MemoriseClock(left: _shown, landscape: landscape, label: editing ? s.teiichiPlacing : s.teiichiPlaced)
+          : recallPrompt(landscape: landscape),
       trailing: placingNow
           ? BandButton(
               icon: IconArt.arrow,
@@ -282,8 +340,10 @@ class _TeiichiScreenState extends State<TeiichiScreen> with AnkirenPlay {
       onPopInvokedWithResult: (didPop, _) => didPop ? _leave() : unawaited(_end()),
       child: AnkirenTatami(
         child: AnkirenFieldView(
-          field: placingNow ? AnkirenField(own: shownBoard.half, opponent: AnkirenHalf.empty()) : game.field,
-          landscape: true,
+          key: _field,
+          field: placingNow ? _laidField(shownBoard) : game.field,
+          landscape: landscape,
+          trueScale: true,
           zoom: false,
           trueSlots: TeiichiTuning.rowSlots,
           roomAbove: TeiichiPlayLayout.roomAbove,

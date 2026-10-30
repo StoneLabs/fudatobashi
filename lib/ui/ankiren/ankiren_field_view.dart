@@ -17,13 +17,14 @@ import '../../domain/ankiren_geometry.dart';
 /// it too. A [foreground] is laid over the field and takes its touches,
 /// but not the band's; an [underlay] lies under its cards.
 ///
-/// With a [roomAbove] (landscape only) the field is the own half alone:
-/// the room above the band, where the opponent's half would be, is only as
-/// tall as it needs to be, at least [roomAbove], and the own half takes the
-/// rest of the height. With [move], cards that change place glide there.
-/// With a [growth], once [grown] the true-scale field grows evenly to its
-/// limit: the own half stays on the bottom edge and the clusters on the
-/// sides, so the cards grow upward and inward, the band with them.
+/// With a [roomAbove] (true scale only) the field is the own half alone at
+/// the foot of the screen: the room above the band, where the opponent's
+/// half would be, takes the height the own half leaves, at least
+/// [roomAbove]. With [move], cards that change place glide there. With a
+/// [growth], once [grown] the true-scale field grows evenly to its limit
+/// for the room it has (at once, should that room change shape): the own
+/// half stays on the bottom edge and the clusters on the sides, so the
+/// cards grow upward and inward, the band with them.
 class AnkirenFieldView extends StatefulWidget {
   const AnkirenFieldView({
     super.key,
@@ -43,13 +44,18 @@ class AnkirenFieldView extends StatefulWidget {
     this.move,
     this.growth,
     this.grown = false,
-  }) : assert(roomAbove == null || landscape, 'only a true-scale field has a room above');
+    bool? trueScale,
+  })  : trueScale = trueScale ?? landscape,
+        assert(roomAbove == null || (trueScale ?? landscape), 'only a true-scale field has a room above');
 
   final AnkirenField field;
 
-  /// The true-scale field across a landscape screen; else the folded one,
-  /// portrait.
+  /// A landscape screen, with its thin band; else a portrait one.
   final bool landscape;
+
+  /// The field at true scale, as a landscape screen shows it by default;
+  /// else folded.
+  final bool trueScale;
 
   /// Portrait only: never smaller than [AnkirenPlayLayout.minTapCardW].
   final bool zoom;
@@ -83,22 +89,36 @@ class AnkirenFieldView extends StatefulWidget {
   static double bandHeight({required bool landscape}) =>
       landscape ? AnkirenPlayLayout.bandLandscape : AnkirenPlayLayout.bandPortrait;
 
-  /// Dp per centimetre for [geometry] in [area] (the space inside the
-  /// padding), as the layout mock scales it: the field and its band fill
-  /// the area, a portrait card is at most [AnkirenPlayLayout.maxCardW] wide
-  /// and, with [zoom], at least [AnkirenPlayLayout.minTapCardW], however
-  /// wide the field then gets. It always fits the height, [band] (the
-  /// play screen's by default) included, and the [roomAbove] the own half
-  /// alone leaves above it instead of the opponent's half.
+  /// The room a field view of [size] lays its field out in, inside the
+  /// padding.
+  static Size areaIn(Size size) =>
+      Size(size.width - 2 * AnkirenPlayLayout.padding, size.height - 2 * AnkirenPlayLayout.padding);
+
+  /// Dp per centimetre for [geometry] in [area] (see [areaIn]), as the
+  /// layout mock scales it: the field and its band fill the area, a folded
+  /// card is at most [AnkirenPlayLayout.maxCardW] wide and, with [zoom], at
+  /// least [AnkirenPlayLayout.minTapCardW], however wide the field then
+  /// gets. It always fits the height, [band] (the play screen's by
+  /// default) included. A true-scale field is as [trueScaleFor] scales it.
   static double scaleFor(FieldGeometry geometry, Size area,
-      {required bool landscape, required bool zoom, double? band, double? roomAbove}) {
-    final room = area.height - (band ?? bandHeight(landscape: landscape));
-    final fitHeight = roomAbove == null ? room / (2 * geometry.height) : (room - roomAbove) / geometry.height;
-    var s = math.min(area.width / geometry.width, fitHeight);
-    if (landscape) return s;
+      {required bool landscape, required bool zoom, bool? trueScale, double? band, double? roomAbove}) {
+    final bandH = band ?? bandHeight(landscape: landscape);
+    var s = trueScaleFor(geometry, area, band: bandH, roomAbove: roomAbove);
+    if (trueScale ?? landscape) return s;
+    final fitHeight = (area.height - bandH) / (2 * geometry.height);
     s = math.min(s, AnkirenPlayLayout.maxCardW / AnkirenFieldSize.cardW);
     if (zoom) s = math.max(s, AnkirenPlayLayout.minTapCardW / AnkirenFieldSize.cardW);
     return math.min(s, fitHeight);
+  }
+
+  /// Dp per centimetre for a true-scale [geometry] in [area]: as large as
+  /// it fits across the area and down it, with the [band] and, for the own
+  /// half alone, at least [roomAbove] above it instead of the opponent's
+  /// half.
+  static double trueScaleFor(FieldGeometry geometry, Size area, {required double band, double? roomAbove}) {
+    final room = area.height - band;
+    final fitHeight = roomAbove == null ? room / (2 * geometry.height) : (room - roomAbove) / geometry.height;
+    return math.min(area.width / geometry.width, fitHeight);
   }
 
   @override
@@ -121,12 +141,12 @@ class _AnkirenFieldViewState extends State<AnkirenFieldView> {
   late FieldGeometry _natural = _layOut();
   FieldGeometry? _widened;
 
-  FieldGeometry _layOut() => FieldGeometry.of(widget.field, folded: !widget.landscape, trueSlots: widget.trueSlots);
+  FieldGeometry _layOut() => FieldGeometry.of(widget.field, folded: !widget.trueScale, trueSlots: widget.trueSlots);
 
   @override
   void didUpdateWidget(AnkirenFieldView old) {
     super.didUpdateWidget(old);
-    if (widget.field != old.field || widget.trueSlots != old.trueSlots || widget.landscape != old.landscape) {
+    if (widget.field != old.field || widget.trueSlots != old.trueSlots || widget.trueScale != old.trueScale) {
       _natural = _layOut();
       _widened = null;
     }
@@ -149,19 +169,23 @@ class _AnkirenFieldViewState extends State<AnkirenFieldView> {
 
   @override
   Widget build(BuildContext context) => LayoutBuilder(builder: (context, box) {
-        const pad = AnkirenPlayLayout.padding;
         final bandH = widget.bandExtent ?? AnkirenFieldView.bandHeight(landscape: widget.landscape);
-        final area = Size(box.maxWidth - 2 * pad, box.maxHeight - 2 * pad);
-        final roomAbove = widget.roomAbove;
+        final area = AnkirenFieldView.areaIn(box.biggest);
         final fit = AnkirenFieldView.scaleFor(_natural, area,
-            landscape: widget.landscape, zoom: widget.zoom, band: bandH, roomAbove: roomAbove);
+            landscape: widget.landscape,
+            zoom: widget.zoom,
+            trueScale: widget.trueScale,
+            band: bandH,
+            roomAbove: widget.roomAbove);
         final growth = widget.growth;
         if (growth == null) return _fieldAt(box, area, bandH, fit, 1);
+        // How far grown, 0 to 1, of the way to the limit for this area.
+        final limit = growth.limit(widget.field, area, bandH);
         return TweenAnimationBuilder<double>(
-          tween: Tween(end: widget.grown ? growth.limit(widget.field, area, bandH) : 1),
+          tween: Tween(end: widget.grown ? 1 : 0),
           duration: MediaQuery.disableAnimationsOf(context) ? Duration.zero : growth.duration,
           curve: growth.curve,
-          builder: (context, grow, _) => _fieldAt(box, area, bandH, fit, grow),
+          builder: (context, t, _) => _fieldAt(box, area, bandH, fit, 1 + (limit - 1) * t),
         );
       });
 
@@ -174,7 +198,7 @@ class _AnkirenFieldViewState extends State<AnkirenFieldView> {
     final g = grow != 1
         ? FieldGeometry.of(widget.field,
             folded: false, trueSlots: FieldGeometry.slotsAcross(_natural.width / grow))
-        : widget.landscape || _natural.width * s >= area.width
+        : widget.trueScale || _natural.width * s >= area.width
             ? _natural
             : _widenedTo(area.width / s);
     final width = g.width * s;

@@ -1,7 +1,8 @@
-// 定位置 through its screens on a phone: the hub's entry and the page, the
-// custom game sheet, a whole game laid out by taps and drags on a landscape
-// field and played to its end, and Results; what a game records, and that
-// a guest's records nothing. With RENDER_SCREENS=1 it also writes PNGs to
+// 定位置 through its screens on a phone: the hub's entry and the page, its
+// settings, the custom game sheet, a whole game laid out by taps and drags
+// on a landscape field and on a portrait one, played to its end, turned
+// midway, and Results; what a game records, and that a guest's records
+// nothing. With RENDER_SCREENS=1 it also writes PNGs to
 // build/screens/teiichi/.
 import 'dart:io';
 
@@ -19,10 +20,12 @@ import 'package:fudatobashi/data/poem.dart';
 import 'package:fudatobashi/db/database.dart';
 import 'package:fudatobashi/domain/ankiren_field.dart';
 import 'package:fudatobashi/domain/ankiren_game.dart';
+import 'package:fudatobashi/domain/ankiren_geometry.dart';
 import 'package:fudatobashi/domain/side_trips.dart';
 import 'package:fudatobashi/domain/teiichi.dart';
 import 'package:fudatobashi/domain/trainer.dart';
 import 'package:fudatobashi/l10n/ankiren_strings.dart';
+import 'package:fudatobashi/l10n/home_strings.dart';
 import 'package:fudatobashi/l10n/side_trip_strings.dart';
 import 'package:fudatobashi/l10n/strings.dart';
 import 'package:fudatobashi/l10n/teiichi_strings.dart';
@@ -30,11 +33,13 @@ import 'package:fudatobashi/state/progress.dart';
 import 'package:fudatobashi/state/scope.dart';
 import 'package:fudatobashi/ui/ankiren/ankiren_band.dart';
 import 'package:fudatobashi/ui/ankiren/ankiren_card.dart';
+import 'package:fudatobashi/ui/ankiren/ankiren_field_view.dart';
 import 'package:fudatobashi/ui/app.dart';
 import 'package:fudatobashi/ui/manga/manga.dart';
 import 'package:fudatobashi/ui/play/time_format.dart';
 import 'package:fudatobashi/ui/results/run_summary.dart';
 import 'package:fudatobashi/ui/settings/side_trip_settings_screen.dart';
+import 'package:fudatobashi/ui/shell/tobi_notice.dart';
 import 'package:fudatobashi/ui/side_trips/burst_button.dart';
 import 'package:fudatobashi/ui/side_trips/dojo_scene.dart';
 import 'package:fudatobashi/ui/side_trips/side_trip_entry.dart';
@@ -48,6 +53,7 @@ import 'package:fudatobashi/ui/sound/sounds.dart';
 import 'package:fudatobashi/ui/teiichi/teiichi_placing_layer.dart';
 import 'package:fudatobashi/ui/teiichi/teiichi_results_screen.dart';
 import 'package:fudatobashi/ui/teiichi/teiichi_screen.dart';
+import 'package:fudatobashi/ui/teiichi/teiichi_zoom.dart';
 import 'package:fudatobashi/ui/torifuda/card_faces.dart';
 import 'package:fudatobashi/config/torifuda_spec.dart';
 
@@ -588,6 +594,190 @@ void main() {
       expect(find.text(s.teiichiGuestNote), findsOneWidget);
       await captureScreen(tester, 'teiichi/results_guest');
       expect(await tester.runAsync(() => dbSnapshot(p.db)), before);
+      await tester.pumpWidget(const SizedBox());
+    });
+
+    // The tip to turn the phone, over a portrait game: OK goes on with the
+    // game.
+    Future<void> dismissTip(WidgetTester tester, {bool never = false, S s = s}) async {
+      expect(find.byType(TobiNotice), findsOneWidget);
+      await tester.tap(never ? find.text(s.teiichiTurnNever) : find.text(s.noticeOk));
+      await tester.pump();
+      await tester.pump(Motion.route);
+      expect(find.byType(TobiNotice), findsNothing);
+    }
+
+    testWidgets('portrait: the field across the foot at true scale, the stack over the band, played to the end',
+        (tester) async {
+      final p = await open(tester);
+      const setup = TeiichiSetup.usual;
+      await show(tester, p, () => TeiichiScreen(setup: setup, known: allCards, seed: 3));
+      await dismissTip(tester);
+
+      final placement = layerOf(tester).placement;
+      final cardW = placement.scale * AnkirenFieldSize.cardW;
+      final area = AnkirenFieldView.areaIn(tester.getSize(find.byType(AnkirenFieldView)));
+      expect(placement.geometry.width * placement.scale, moreOrLessEquals(area.width), reason: 'the full width');
+      expect(cardW, moreOrLessEquals(area.width / (TeiichiTuning.rowSlots * FieldGeometry.pitch - AnkirenFieldSize.cardGap) * AnkirenFieldSize.cardW));
+      final own = placement.halfRect(FieldSide.own);
+      expect(own.bottom, moreOrLessEquals(area.height), reason: 'the rows at the foot');
+      expect(placement.ownTop - placement.bandTop, AnkirenPlayLayout.bandPortrait, reason: 'the band just above them');
+      final pile = stackRect(placement);
+      expect(pile.center.dx, moreOrLessEquals(own.center.dx), reason: 'the stack centred');
+      expect(pile.bottom + TeiichiPlayLayout.stackTagRoom + TeiichiPlayLayout.stackMargin,
+          moreOrLessEquals(placement.bandTop), reason: 'just above the band');
+      await captureScreen(tester, 'teiichi/portrait_start');
+
+      await placeRest(tester, setup, upTo: 12);
+      // A drag carries the card above the finger, larger than the field's.
+      final from = tester.getTopLeft(layer()) + stackRect(placement).center;
+      final carry = await tester.startGesture(from);
+      await carry.moveBy(const Offset(0, 20));
+      await tester.pump();
+      await carry.moveTo(spotAt(tester, (spot) => spot == const ClusterEnd(FieldRow.middle, RowPart.right)));
+      await tester.pump();
+      await tester.pump(TeiichiPlayLayout.move);
+      expect(layerOf(tester).drag?.spot, const ClusterEnd(FieldRow.middle, RowPart.right));
+      await captureScreen(tester, 'teiichi/portrait_drag');
+      await carry.up();
+      await tester.pump();
+      await tester.pump(TeiichiPlayLayout.move);
+      await captureScreen(tester, 'teiichi/portrait_mid');
+
+      // Each card takes taps over itself, exactly.
+      for (final MapEntry(key: id, value: r) in layerOf(tester).cards.entries) {
+        final card = find.byWidgetPredicate((w) => w is AnkirenCard && w.poemId == id);
+        expect(tester.getRect(card), rectMoreOrLessEquals(r.shift(tester.getTopLeft(layer())), epsilon: 0.01));
+      }
+
+      await placeRest(tester, setup);
+      await captureScreen(tester, 'teiichi/portrait_done');
+      await tester.tap(find.widgetWithText(BandButton, s.done));
+      await tester.pump();
+      await tester.pump(TeiichiPlayLayout.zoomTime ~/ 2);
+      await tester.pump(TeiichiPlayLayout.zoomTime ~/ 2);
+      final grown = tester.getSize(find.byType(AnkirenCard).first).width;
+      // ignore: avoid_print
+      if (renderScreens) print('portrait card width: ${cardW.toStringAsFixed(1)} dp, grown ${grown.toStringAsFixed(1)} dp');
+      expect(grown, greaterThan(cardW * 1.3), reason: 'the gaps, not the height, stop the growth');
+      await captureScreen(tester, 'teiichi/portrait_zoomed');
+      await tester.pump(AnkirenMotion.flip);
+      await tester.pump(AnkirenPlayTuning.promptPause);
+      await tester.pump();
+      for (var i = 0; i < setup.cards; i++) {
+        if (i == 3) await captureScreen(tester, 'teiichi/portrait_play');
+        await tester.pump(const Duration(milliseconds: 700));
+        await take(tester, asked(tester));
+        await tester.pump(i == setup.cards - 1 ? AnkirenPlayTuning.finishPause : AnkirenPlayTuning.promptPause);
+        await tester.pump();
+      }
+      await tester.runAsync(() => Future<void>.delayed(const Duration(milliseconds: 200)));
+      await tester.pump();
+      await tester.pump(Motion.route);
+      await tester.pump(Motion.route);
+      expect(find.byType(TeiichiResultsScreen), findsOneWidget);
+      expect(p.sideTrips.runsOf(SideTrip.teiichi).single.completed, isTrue);
+      expect(tester.takeException(), isNull);
+      await tester.pumpWidget(const SizedBox());
+    });
+
+    for (final lang in ['en', 'ja']) {
+      testWidgets('the tip stops the clock while it is up, and "Don\'t show again" keeps it away ($lang)',
+          (tester) async {
+        final s = S(lang);
+        final p = await open(tester, language: lang);
+        await show(tester, p, () => TeiichiScreen(setup: TeiichiSetup.usual, known: allCards, seed: 4));
+        final clock = tester.widget<MemoriseClock>(find.byType(MemoriseClock)).left;
+        await tester.pump(const Duration(seconds: 3));
+        expect(clock.value, Duration.zero, reason: 'nothing is laid out while the tip is up');
+        await captureScreen(tester, 'teiichi/portrait_tip', lang: lang);
+        await dismissTip(tester, never: true, s: s);
+        expect(p.settings.teiichiTurnTipOff, isTrue);
+        await tester.pump(const Duration(seconds: 2));
+        expect(clock.value, const Duration(seconds: 2));
+        await tester.pumpWidget(const SizedBox());
+
+        await show(tester, p, () => TeiichiScreen(setup: TeiichiSetup.usual, known: allCards, seed: 4));
+        await tester.pump(Motion.route);
+        expect(find.byType(TobiNotice), findsNothing);
+        expect(tester.takeException(), isNull);
+        await tester.pumpWidget(const SizedBox());
+      });
+    }
+
+    testWidgets('turned mid-game: placed cards, the stack and the clock stay; a drag under way lets go', (tester) async {
+      final p = await open(tester);
+      const setup = TeiichiSetup.usual;
+      await show(tester, p, () => TeiichiScreen(setup: setup, known: allCards, seed: 6), screen: usersPhoneLandscape);
+      await placeRest(tester, setup, upTo: 9);
+      await tester.pump(const Duration(seconds: 4));
+      final placed = {...layerOf(tester).cards.keys};
+      final stack = [...layerOf(tester).stack];
+      final clock = tester.widget<MemoriseClock>(find.byType(MemoriseClock)).left.value;
+
+      final moved = placed.first;
+      final carry = await tester.startGesture(tester.getTopLeft(layer()) + layerOf(tester).cards[moved]!.center);
+      await carry.moveBy(const Offset(0, -20));
+      await tester.pump();
+      await carry.moveBy(const Offset(120, -40));
+      await tester.pump();
+      expect(layerOf(tester).drag?.card, moved);
+
+      useScreen(tester, usersPhone);
+      await tester.pump();
+      await tester.pump(Motion.route);
+      expect(layerOf(tester).drag, isNull, reason: 'the drag is let go');
+      expect({...layerOf(tester).cards.keys}, placed, reason: 'its card back where it was');
+      expect(layerOf(tester).stack, stack);
+      final after = tester.widget<MemoriseClock>(find.byType(MemoriseClock)).left.value;
+      expect(after - clock, lessThanOrEqualTo(TeiichiPlayTuning.clockTick), reason: 'the clock goes on');
+      expect(after, greaterThanOrEqualTo(clock));
+      expect(layerOf(tester).placement.ownTop - layerOf(tester).placement.bandTop, AnkirenPlayLayout.bandPortrait,
+          reason: 'laid out for portrait');
+      await dismissTip(tester);
+      await carry.moveBy(const Offset(-60, 30));
+      await carry.up();
+      await tester.pump();
+      expect({...layerOf(tester).cards.keys}, placed, reason: 'the rest of the old drag does nothing');
+
+      // After Done, the growth follows the screen's new shape.
+      await placeRest(tester, setup);
+      await tester.tap(find.widgetWithText(BandButton, s.done));
+      await tester.pump();
+      await tester.pump(TeiichiPlayLayout.zoomTime);
+      Rect field() => tester.getRect(find.byType(AnkirenFieldView));
+      double grownW() => tester.getSize(find.byType(AnkirenCard).first).width;
+      final board = tester.widget<AnkirenFieldView>(find.byType(AnkirenFieldView)).field;
+      double expected(Screen screen) {
+        final area = AnkirenFieldView.areaIn(field().size);
+        final band = AnkirenFieldView.bandHeight(landscape: screen.size.width > screen.size.height);
+        final geometry = FieldGeometry.of(board, folded: false, trueSlots: TeiichiTuning.rowSlots);
+        final scale = AnkirenFieldView.trueScaleFor(geometry, area, band: band, roomAbove: TeiichiPlayLayout.roomAbove);
+        return scale * TeiichiZoom.limit(board, area, band) * AnkirenFieldSize.cardW;
+      }
+
+      expect(grownW(), moreOrLessEquals(expected(usersPhone), epsilon: 0.01));
+      useScreen(tester, usersPhoneLandscape);
+      await tester.pump();
+      expect(grownW(), moreOrLessEquals(expected(usersPhoneLandscape), epsilon: 0.01), reason: 'at once');
+      expect(tester.takeException(), isNull);
+      await tester.pumpWidget(const SizedBox());
+    });
+
+    testWidgets('a field with no room to grow turns face down at once after Done', (tester) async {
+      final p = await open(tester);
+      const setup = TeiichiSetup(cards: 16, rows: 3);
+      await show(tester, p, () => TeiichiScreen(setup: setup, known: allCards, seed: 7), screen: usersPhoneLandscape);
+      for (var i = 0; i < setup.cards; i++) {
+        final want = ClusterEnd(FieldRow.lower, i.isEven ? RowPart.left : RowPart.right);
+        await tapAt(tester, spotAt(tester, (spot) => spot == want));
+      }
+      await tester.tap(find.widgetWithText(BandButton, s.done));
+      await tester.pump();
+      await tester.pump(Duration.zero);
+      expect(tester.widgetList<AnkirenCard>(find.byType(AnkirenCard)).where((c) => c.faceUp), isEmpty,
+          reason: 'no zoom to wait for');
+      expect(tester.takeException(), isNull);
       await tester.pumpWidget(const SizedBox());
     });
   });

@@ -94,6 +94,14 @@ class TobiNotice extends StatelessWidget {
   }
 }
 
+/// Shows the [TobiNotice] [notice] builds over the screen, as a dialog,
+/// until it pops itself.
+Future<void> showTobiNotice(BuildContext context, WidgetBuilder notice) => showGeneralDialog<void>(
+      context: context,
+      barrierColor: Colors.transparent,
+      pageBuilder: (context, _, _) => Material(type: MaterialType.transparency, child: notice(context)),
+    );
+
 /// The plain ink button of a [TobiNotice], for an answer that isn't its
 /// shout.
 class TobiNoticeButton extends StatelessWidget {
