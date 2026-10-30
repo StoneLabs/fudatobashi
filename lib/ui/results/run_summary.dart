@@ -154,18 +154,19 @@ class RunSummary extends StatelessWidget {
               ),
               const SizedBox(height: SummaryLayout.headerGap),
               Expanded(
-                child: LayoutBuilder(builder: (context, box) {
-                  final body = CustomMultiChildLayout(
-                    delegate: _BodyLayout(),
-                    children: [
-                      LayoutId(id: _Part.hero, child: HeroPanel(hero)),
-                      LayoutId(id: _Part.tiles, child: TileBand(tiles)),
-                      LayoutId(id: _Part.cards, child: _CardPanel(rows)),
-                    ],
-                  );
-                  if (box.maxHeight >= _BodyLayout.minHeight) return body;
-                  return SingleChildScrollView(child: SizedBox(height: _BodyLayout.minHeight, child: body));
-                }),
+                child: LayoutBuilder(
+                  builder: (context, box) => SingleChildScrollView(
+                    child: ConstrainedBox(
+                      constraints: BoxConstraints(minHeight: box.maxHeight),
+                      child: _Body(
+                        cardsHeight: math.max(SummaryLayout.minCardsHeight, box.maxHeight - _Body.cardsTop),
+                        hero: HeroPanel(hero),
+                        tiles: TileBand(tiles),
+                        cards: _CardPanel(rows),
+                      ),
+                    ),
+                  ),
+                ),
               ),
               const SizedBox(height: SummaryLayout.actionGap),
               SizedBox(
@@ -210,28 +211,28 @@ class RunSummary extends StatelessWidget {
   }
 }
 
-enum _Part { hero, tiles, cards }
-
 /// The hero at the top, the tiles under it and the card panel in the rest,
-/// each panel's slanted edge [SummaryLayout.gap] from the next one's. On a
-/// screen shorter than [minHeight] they scroll together.
-class _BodyLayout extends MultiChildLayoutDelegate {
+/// each panel's slanted edge [SummaryLayout.gap] from the next one's. The
+/// card panel is at least [cardsHeight] tall and as tall as its rows need;
+/// when that is more than the screen has, the panels scroll together.
+class _Body extends StatelessWidget {
+  const _Body({required this.cardsHeight, required this.hero, required this.tiles, required this.cards});
+
   static const tilesTop = SummaryLayout.heroHeight + SummaryLayout.gap;
   static const cardsTop = tilesTop + SummaryLayout.tileHeight + SummaryLayout.gap - SummaryLayout.cut;
-  static const minHeight = cardsTop + SummaryLayout.minCardsHeight;
+
+  final double cardsHeight;
+  final Widget hero, tiles, cards;
 
   @override
-  void performLayout(Size size) {
-    layoutChild(_Part.hero, BoxConstraints.tight(Size(size.width, SummaryLayout.heroHeight)));
-    positionChild(_Part.hero, Offset.zero);
-    layoutChild(_Part.tiles, BoxConstraints.tight(Size(size.width, SummaryLayout.tileHeight)));
-    positionChild(_Part.tiles, const Offset(0, tilesTop));
-    layoutChild(_Part.cards, BoxConstraints.tight(Size(size.width, math.max(0, size.height - cardsTop))));
-    positionChild(_Part.cards, const Offset(0, cardsTop));
-  }
-
-  @override
-  bool shouldRelayout(_BodyLayout oldDelegate) => false;
+  Widget build(BuildContext context) => Stack(children: [
+        Positioned(left: 0, right: 0, top: 0, height: SummaryLayout.heroHeight, child: hero),
+        Positioned(left: 0, right: 0, top: tilesTop, height: SummaryLayout.tileHeight, child: tiles),
+        Padding(
+          padding: const EdgeInsets.only(top: cardsTop),
+          child: ConstrainedBox(constraints: BoxConstraints(minHeight: cardsHeight), child: cards),
+        ),
+      ]);
 }
 
 /// Where the hero's bar and its parts are in a hero of [size]: its top
@@ -735,7 +736,7 @@ class _OneLine extends StatelessWidget {
 }
 
 /// The card panel: its rows spread out to fill it, dotted rules between
-/// them; it scrolls when they need more room than it has.
+/// them; it is as tall as they need.
 class _CardPanel extends StatelessWidget {
   const _CardPanel(this.rows);
   final List<Widget> rows;
@@ -745,17 +746,15 @@ class _CardPanel extends StatelessWidget {
         shape: const PanelShape(topLeft: Offset(0, SummaryLayout.cut)),
         padding: SummaryPanelLayout.padding,
         child: LayoutBuilder(
-          builder: (context, box) => SingleChildScrollView(
-            child: ConstrainedBox(
-              constraints: BoxConstraints(minHeight: box.maxHeight),
-              child: IntrinsicHeight(
-                child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-                  for (final (i, row) in rows.indexed) ...[
-                    if (i > 0) const Expanded(child: _RowRule()),
-                    row,
-                  ],
-                ]),
-              ),
+          builder: (context, box) => ConstrainedBox(
+            constraints: BoxConstraints(minHeight: box.minHeight),
+            child: IntrinsicHeight(
+              child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+                for (final (i, row) in rows.indexed) ...[
+                  if (i > 0) const Expanded(child: _RowRule()),
+                  row,
+                ],
+              ]),
             ),
           ),
         ),

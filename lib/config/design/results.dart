@@ -35,9 +35,9 @@ abstract final class SummaryLayout {
   static const double heroHeight = 244;
   static const double tileHeight = 104;
 
-  /// The card panel is never shorter than this, room for a line of cards; on
-  /// a screen too short for it (a phone turned on its side) the hero, the
-  /// tiles and the panel scroll.
+  /// The card panel is never shorter than this, room for a line of cards,
+  /// and is as tall as its rows need; on a screen too short for that the
+  /// hero, the tiles and the panel scroll together.
   static const double minCardsHeight = 150;
   static const double actionGap = Gaps.panel;
   static const double bottomGap = HeaderStyle.topGap;
@@ -241,7 +241,7 @@ class TileSpec {
 /// note beside cards, the week's stamps, the levels or a dashed note,
 /// spread out to fill the panel with dotted rules between them.
 abstract final class SummaryPanelLayout {
-  static const EdgeInsets padding = EdgeInsets.fromLTRB(14, 31, 20, 19);
+  static const EdgeInsets padding = EdgeInsets.fromLTRB(14, 31, 20, 11);
   static const double headWidth = 90;
   static const double headGap = 8;
   static const double headFont = 15;
