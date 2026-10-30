@@ -312,6 +312,9 @@ abstract final class TeiichiReviewStyle {
   /// A card's place in the order, at its foot.
   static const double orderFont = 9;
 
+  /// The widest a card grows on the layout when few are placed.
+  static const double maxCardW = 56;
+
   /// The chart's gridline steps, ms: a card can sit on the stack for
   /// minutes.
   static const List<int> barStepsMs = [1000, 2000, 5000, 10000, 20000, 30000, 60000];

@@ -16,6 +16,7 @@ import '../ankiren/ankiren_field_view.dart';
 import '../manga/geometry.dart';
 import '../manga/manga.dart';
 import '../play/time_format.dart';
+import '../teiichi/teiichi_zoom.dart';
 import '../results/run_summary.dart';
 import 'ankiren_widgets.dart';
 import 'review_parts.dart';
@@ -210,30 +211,50 @@ class ReviewField extends StatelessWidget {
       child: LayoutBuilder(builder: (context, box) {
         const pad = AnkirenPlayLayout.padding;
         const band = AnkirenReviewStyle.fieldBand;
+        final width = box.maxWidth - 2 * pad;
         final natural = FieldGeometry.of(field, folded: !trueScale, trueSlots: trueSlots);
-        final scale = math.min(
-            (box.maxWidth - 2 * pad) / natural.width, AnkirenReviewStyle.fieldMaxCardW / AnkirenFieldSize.cardW);
+        final double slots, scale;
+        if (trueScale) {
+          // As 定位置 shows the side once the cards are down: grown until
+          // its zoom stops, with only the card width capped.
+          final zoom = math.min(
+              TeiichiZoom.limit(field, Size(width, double.infinity), band),
+              TeiichiReviewStyle.maxCardW * natural.width / (width * AnkirenFieldSize.cardW));
+          slots = FieldGeometry.slotsAcross(natural.width / math.max(1, zoom));
+          scale = width / FieldGeometry.of(field, folded: false, trueSlots: slots).width;
+        } else {
+          slots = 0;
+          scale = math.min(width / natural.width, AnkirenReviewStyle.fieldMaxCardW / AnkirenFieldSize.cardW);
+        }
+        final shown = trueScale ? FieldGeometry.of(field, folded: false, trueSlots: slots) : natural;
+        final view = AnkirenFieldView(
+          field: field,
+          landscape: false,
+          trueScale: trueScale,
+          zoom: false,
+          trueSlots: trueScale ? slots : null,
+          roomAbove: trueScale ? 0 : null,
+          bandExtent: band,
+          card: (id, _) => card(id),
+          band: _Band(their: trueScale ? null : s.ankirenTheirSide, yours: s.ankirenYourSide),
+          overlay: overlay,
+          overlayOverBand: true,
+        );
+        final height = (trueScale ? 1 : 2) * shown.height * scale + band;
         return DecoratedBox(
           decoration: BoxDecoration(
             color: AnkirenReviewStyle.fieldGround,
             border: Border.all(color: Palette.ink, width: Strokes.label),
           ),
-          child: SizedBox(
-            height: (trueScale ? 1 : 2) * natural.height * scale + band + 2 * pad,
-            child: AnkirenFieldView(
-              field: field,
-              landscape: false,
-              trueScale: trueScale,
-              zoom: false,
-              trueSlots: trueSlots,
-              roomAbove: trueScale ? 0 : null,
-              bandExtent: band,
-              card: (id, _) => card(id),
-              band: _Band(their: s.ankirenTheirSide, yours: s.ankirenYourSide),
-              overlay: overlay,
-              overlayOverBand: true,
-            ),
-          ),
+          child: trueScale
+              // The view pads its top; the band starts the box instead.
+              ? SizedBox(
+                  height: height + pad,
+                  child: Stack(clipBehavior: Clip.hardEdge, children: [
+                    Positioned(left: 0, right: 0, top: -pad, height: height + 2 * pad, child: view),
+                  ]),
+                )
+              : SizedBox(height: height + 2 * pad, child: view),
         );
       }),
     );
@@ -281,10 +302,11 @@ class FieldWordCard extends StatelessWidget {
   static const _kanaStart = 0x3040;
 }
 
-/// The band across the field: their side up, yours down.
+/// The band across the field: their side up (when it shows), yours down.
 class _Band extends StatelessWidget {
   const _Band({required this.their, required this.yours});
-  final String their, yours;
+  final String? their;
+  final String yours;
 
   @override
   Widget build(BuildContext context) {
@@ -295,8 +317,7 @@ class _Band extends StatelessWidget {
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: Gaps.small),
         child: Row(children: [
-          Text('${their.toUpperCase()} ↑', style: style),
-          const Spacer(),
+          if (their != null) ...[Text('${their!.toUpperCase()} ↑', style: style), const Spacer()],
           Text('${yours.toUpperCase()} ↓', style: style),
         ]),
       ),
