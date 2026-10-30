@@ -31,8 +31,9 @@ Editor.warnings = (() => {
     if (classes.repeats(x.classes)) out.add(`${x.raw} has two text colours or two backgrounds. Only the last of each is used.`);
   }
 
-  function renderChecks(nodes) {
+  function renderChecks(nodes, templateError) {
     const out = new Set();
+    if (templateError) out.add(`The template does not work, so the preview shows the text as written: ${templateError}`);
     if (!nodes.length) out.add('The file is empty.');
     else if (nodes[0].tag !== 'h1') out.add('Start the file with a # heading, for example  # 解説 | Explanation');
     const tobiMarks = new Set();

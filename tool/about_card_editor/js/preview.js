@@ -146,11 +146,12 @@ Editor.preview = (() => {
   }
 
   function renderMd() {
-    const nodes = parse(ta.value);
+    const filled = Editor.template.fill(ta.value, script() === 'romaji');
+    const nodes = parse(filled.text);
     $('#md').innerHTML = blocks(nodes);
     if (!nodes.length) $('#md').innerHTML = '<div class="emptymd">Nothing here yet. Start typing on the right.</div>';
     fitHeadings();
-    Editor.warnings.renderChecks(nodes);
+    Editor.warnings.renderChecks(nodes, filled.error);
     Editor.pictures.renderPictures(nodes);
     Editor.editing.renderHighlight();
   }

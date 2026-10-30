@@ -59,6 +59,8 @@
           <dd><code>&gt; quoted words</code></dd>
           <dt>Tobi says</dt>
           <dd><code>&gt;{.tobi pose=waving} Words</code> shows Tobi saying the words in a speech balloon. The pose is optional (standing when left out): standard, waving, cheering, pointing, relaxed, shocked, try-hard or fired. The preview only names the pose; the app draws Tobi in it.<span class="ja">トビがふきだしで話します。pose は省略できます。</span></dd>
+          <dt>Templates</dt>
+          <dd>The file is a Jinja template before it is Markdown. <code>env.romaji_mode</code> is true in Romaji mode, so one picture can be named for both: <code>![Caption](assets/artworks/articles/name_{{ "romaji" if env.romaji_mode else "hiragana" }}.en.webp)</code>. A line <code>{% if env.romaji_mode %}</code>, <code>{% else %}</code> or <code>{% endif %}</code> on its own leaves no blank line. A mistake in a template shows in the check list.</dd>
           <dt>Line</dt>
           <dd><code>---</code> on its own line, with a blank line above it. (Right under a line of text it turns that text into a heading.)</dd>
           <dt>Poem lines</dt>
@@ -172,6 +174,8 @@ Paragraphs go here.
 <script src="js/config.js"></script>
 <script src="js/util.js"></script>
 <script src="js/classes.js"></script>
+<script src="js/nunjucks.min.js"></script>
+<script src="js/template.js"></script>
 <script src="js/romaji.js"></script>
 <script src="js/markdown.js"></script>
 <script src="js/tobi.js"></script>

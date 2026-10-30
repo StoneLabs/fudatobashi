@@ -68,7 +68,8 @@ Editor.files = (() => {
   async function downloadAll() {
     const files = editedList().map((e) => ({ name: `${FOLDERS[e.lang]}${pad(e.n)}.md`, data: utf8(draftOf(e.lang, e.n)) }));
     const used = new Set();
-    editedList().forEach((e) => Editor.pictures.picturesIn(parse(draftOf(e.lang, e.n))).forEach((p) => used.add(p.path)));
+    editedList().forEach((e) => [false, true].forEach((romaji) =>
+      Editor.pictures.picturesIn(parse(Editor.template.fill(draftOf(e.lang, e.n), romaji).text)).forEach((p) => used.add(p.path))));
     for (const path of used) {
       if (state.attached[path]) files.push({ name: path, data: new Uint8Array(await state.attached[path].file.arrayBuffer()) });
     }
