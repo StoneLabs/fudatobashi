@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
@@ -47,18 +48,31 @@ class TeiichiPage extends StatefulWidget {
 }
 
 class _TeiichiPageState extends State<TeiichiPage> {
-  /// The setup picked from the custom game sheet, kept while the page is
-  /// open; null for the usual game.
+  /// The custom setup, the last one picked in the custom game sheet (kept
+  /// in the settings), fitted to the cards known; null for the usual game.
   TeiichiSetup? _picked;
 
   @override
   void initState() {
     super.initState();
-    if (!ProgressScope.read(context).settings.teiichiRulesSeen) {
+    final progress = ProgressScope.read(context);
+    final settings = progress.settings;
+    final saved = TeiichiSetup(cards: settings.teiichiCards, rows: settings.teiichiRows);
+    if (saved.custom) {
+      final fitted = saved.fitted(progress.knownCards.length);
+      _picked = fitted.custom ? fitted : null;
+    }
+    if (!settings.teiichiRulesSeen) {
       SchedulerBinding.instance.addPostFrameCallback((_) {
         if (mounted) openTeiichiRules(context);
       });
     }
+  }
+
+  void _pick(TeiichiSetup setup) {
+    setState(() => _picked = setup.custom ? setup : null);
+    final progress = ProgressScope.read(context);
+    unawaited(progress.updateSettings(progress.settings.copyWith(teiichiCards: setup.cards, teiichiRows: setup.rows)));
   }
 
   @override
@@ -99,7 +113,7 @@ class _TeiichiPageState extends State<TeiichiPage> {
                     _PracticePanel(
                       entry,
                       picked: _picked,
-                      onPick: (setup) => setState(() => _picked = setup == TeiichiSetup.usual ? null : setup),
+                      onPick: _pick,
                     ),
                     const SizedBox(height: AnkirenPageLayout.bottomGap),
                   ],

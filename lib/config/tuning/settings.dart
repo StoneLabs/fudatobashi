@@ -44,6 +44,10 @@ abstract final class DefaultSettings {
   static const bool accessibilityMode = false;
   static const bool cardPanelSwiped = false;
   static const bool teiichiRulesSeen = false;
+
+  /// 定位置's last custom setup: the usual game's cards and rows.
+  static const int teiichiCards = TeiichiTuning.cards;
+  static const int teiichiRows = TeiichiTuning.rows;
   static const bool timerNotificationsAsked = false;
   static const bool reminders = false;
   static const bool remindersOffered = false;

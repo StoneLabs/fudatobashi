@@ -72,8 +72,9 @@ class _TeiichiSheetState extends State<TeiichiSheet> {
     _known = widget.guest ? poems.all.length : ProgressScope.read(context).knownCards.length;
     _most = TeiichiSetup.maxCards(_known) ?? TeiichiTuning.minCards;
     final last = widget.guest ? _guestSetup ?? TeiichiSetup.usual : widget.initial ?? TeiichiSetup.usual;
-    _cards = last.cards.clamp(TeiichiTuning.minCards, _most);
-    _rows = TeiichiSetup.rowsFor(_cards, last.rows);
+    final fitted = last.fitted(_known);
+    _cards = fitted.cards;
+    _rows = fitted.rows;
   }
 
   TeiichiSetup get _setup => TeiichiSetup(cards: _cards, rows: _rows);
@@ -142,7 +143,11 @@ class _TeiichiSheetState extends State<TeiichiSheet> {
           ]), style: note),
         Text.rich(Phrases.span(s.teiichiBestNote(TeiichiTuning.cards)), style: note),
       ],
-      footer: BurstButton(title: s.freeStart, sub: s.sub?.freeStart.toUpperCase(), onTap: _start),
+      footer: BurstButton(
+        title: widget.guest ? s.freeStart : s.ankirenConfirm,
+        sub: (widget.guest ? s.sub?.freeStart : s.sub?.ankirenConfirm)?.toUpperCase(),
+        onTap: _start,
+      ),
     );
   }
 

@@ -177,6 +177,8 @@ class AppSettings {
     this.cardScale = DefaultSettings.cardScale,
     this.ankiren = DefaultSettings.ankiren,
     this.teiichiRulesSeen = DefaultSettings.teiichiRulesSeen,
+    this.teiichiCards = DefaultSettings.teiichiCards,
+    this.teiichiRows = DefaultSettings.teiichiRows,
   });
 
   /// A language code (e.g. `'ja'`), or `'system'` for the device's language.
@@ -245,6 +247,10 @@ class AppSettings {
   /// 定位置's rules have been shown, so its page no longer opens with them.
   final bool teiichiRulesSeen;
 
+  /// 定位置's last setup picked in its custom game sheet.
+  final int teiichiCards;
+  final int teiichiRows;
+
   /// The match timer has asked once to show its notification, so it never
   /// asks again.
   final bool timerNotificationsAsked;
@@ -310,6 +316,8 @@ class AppSettings {
         'cardScale': cardScale,
         'ankiren': ankiren.toJson(),
         'teiichiRulesSeen': teiichiRulesSeen,
+        'teiichiCards': teiichiCards,
+        'teiichiRows': teiichiRows,
       };
 
   factory AppSettings.fromJson(Map<String, dynamic> j) {
@@ -362,6 +370,9 @@ class AppSettings {
           .clamp(SwipeTuning.cardScaleMin, SwipeTuning.cardScaleMax),
       ankiren: ankiren == null ? DefaultSettings.ankiren : AnkirenSettings.fromJson(ankiren),
       teiichiRulesSeen: j['teiichiRulesSeen'] as bool? ?? DefaultSettings.teiichiRulesSeen,
+      teiichiCards: (j['teiichiCards'] as int? ?? DefaultSettings.teiichiCards)
+          .clamp(TeiichiTuning.minCards, TeiichiTuning.cards),
+      teiichiRows: (j['teiichiRows'] as int? ?? DefaultSettings.teiichiRows).clamp(1, TeiichiTuning.rows),
     );
   }
 
@@ -396,6 +407,8 @@ class AppSettings {
     double? cardScale,
     AnkirenSettings? ankiren,
     bool? teiichiRulesSeen,
+    int? teiichiCards,
+    int? teiichiRows,
   }) =>
       AppSettings(
         language: language ?? this.language,
@@ -428,5 +441,7 @@ class AppSettings {
         cardScale: cardScale ?? this.cardScale,
         ankiren: ankiren ?? this.ankiren,
         teiichiRulesSeen: teiichiRulesSeen ?? this.teiichiRulesSeen,
+        teiichiCards: teiichiCards ?? this.teiichiCards,
+        teiichiRows: teiichiRows ?? this.teiichiRows,
       );
 }

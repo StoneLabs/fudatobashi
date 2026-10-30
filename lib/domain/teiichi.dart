@@ -42,6 +42,13 @@ class TeiichiSetup {
     return rows;
   }
 
+  /// This setup fitted to [known] cards: no more cards than they allow
+  /// (see [maxCards]) and the rows that hold them.
+  TeiichiSetup fitted(int known) {
+    final fittedCards = cards.clamp(TeiichiTuning.minCards, maxCards(known) ?? TeiichiTuning.minCards);
+    return TeiichiSetup(cards: fittedCards, rows: rowsFor(fittedCards, rows));
+  }
+
   /// The largest game [known] cards allow, or null when they allow not even
   /// [TeiichiTuning.minCards].
   static int? maxCards(int known) {
