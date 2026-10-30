@@ -128,7 +128,7 @@ class _AnkirenPageState extends State<AnkirenPage> {
   }
 }
 
-/// History's sun-toned strip, for 暗記練: the class and the rating with the
+/// The page's [StatStrip], for 暗記練: the class and the rating with the
 /// last game's change (unranked before the first), then how many points
 /// the next class is away, with a gauge.
 class _RecordStrip extends StatelessWidget {
@@ -145,68 +145,49 @@ class _RecordStrip extends StatelessWidget {
     final next = Rating.nextBand(at);
     final floor = band.minRating.isFinite ? band.minRating : AnkirenRating.start;
     final change = entry.ratingChange?.round() ?? 0;
-    const big = TextStyle(fontFamily: Fonts.display, fontSize: AnkirenPageLayout.stripFont, height: 1);
-    return MangaPanel(
-      shape: const PanelShape(bottomRight: Offset(AnkirenPageLayout.stripCut, 0)),
-      tone: Tones.sun,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          Padding(
-            padding: AnkirenPageLayout.cellsPadding,
-            child: CellRow(children: [
-              StatCell(
-                label: PanelLabel(s.sideTripClass, s.sub?.sideTripClass),
-                value: Text.rich(
-                  TextSpan(children: [
-                    TextSpan(text: s.classStem(band)),
-                    if (s.classStem(band) != s.className(band))
-                      const TextSpan(
-                          text: RankBand.classSuffix, style: TextStyle(fontSize: AnkirenPageLayout.classSuffixFont)),
-                  ]),
-                  style: big,
+    const big = StatStrip.valueStyle;
+    return StatStrip(
+      cells: [
+        StatCell(
+          label: PanelLabel(s.sideTripClass, s.sub?.sideTripClass),
+          value: Text.rich(
+            TextSpan(children: [
+              TextSpan(text: s.classStem(band)),
+              if (s.classStem(band) != s.className(band))
+                const TextSpan(text: RankBand.classSuffix, style: TextStyle(fontSize: AnkirenPageLayout.classSuffixFont)),
+            ]),
+            style: big,
+          ),
+        ),
+        StatCell(
+          label: PanelLabel(s.rating, s.sub?.rating),
+          value: Row(mainAxisSize: MainAxisSize.min, children: [
+            Text(rating == null ? s.sideTripUnranked : '${rating.round()}', style: big),
+            if (change != 0) ...[
+              const SizedBox(width: AnkirenPageLayout.valueGap),
+              RatingChangeTag(change),
+            ],
+          ]),
+        ),
+      ],
+      foot: next == null
+          ? null
+          : Row(children: [
+              Flexible(
+                child: FittedBox(
+                  fit: BoxFit.scaleDown,
+                  alignment: Alignment.centerLeft,
+                  child: NumberedText(
+                    s.ratingToNext(s.className(next)),
+                    [(next.minRating - at).ceil()],
+                    style: const TextStyle(fontWeight: Weights.black, fontSize: AnkirenPageLayout.gaugeFont),
+                    numberStyle: const TextStyle(fontFamily: Fonts.display, fontSize: AnkirenPageLayout.gaugeNumber),
+                  ),
                 ),
               ),
-              StatCell(
-                label: PanelLabel(s.rating, s.sub?.rating),
-                value: Row(mainAxisSize: MainAxisSize.min, children: [
-                  Text(rating == null ? s.sideTripUnranked : '${rating.round()}', style: big),
-                  if (change != 0) ...[
-                    const SizedBox(width: AnkirenPageLayout.valueGap),
-                    RatingChangeTag(change),
-                  ],
-                ]),
-              ),
+              const SizedBox(width: AnkirenPageLayout.gaugeGap),
+              Expanded(child: RatingBar((at - floor) / (next.minRating - floor), width: double.infinity)),
             ]),
-          ),
-          if (next != null)
-            DecoratedBox(
-              decoration: const BoxDecoration(
-                border: Border(top: BorderSide(color: Palette.ink, width: Strokes.control)),
-              ),
-              child: Padding(
-                padding: AnkirenPageLayout.gaugePadding,
-                child: Row(children: [
-                  Flexible(
-                    child: FittedBox(
-                      fit: BoxFit.scaleDown,
-                      alignment: Alignment.centerLeft,
-                      child: NumberedText(
-                        s.ratingToNext(s.className(next)),
-                        [(next.minRating - at).ceil()],
-                        style: const TextStyle(fontWeight: Weights.black, fontSize: AnkirenPageLayout.gaugeFont),
-                        numberStyle:
-                            const TextStyle(fontFamily: Fonts.display, fontSize: AnkirenPageLayout.gaugeNumber),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: AnkirenPageLayout.gaugeGap),
-                  Expanded(child: RatingBar((at - floor) / (next.minRating - floor), width: double.infinity)),
-                ]),
-              ),
-            ),
-        ],
-      ),
     );
   }
 }

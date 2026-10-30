@@ -1627,5 +1627,15 @@
   "teiichiOpenMiddle": "中央",
   "teiichiNeedCards": "定位置には​覚えた​札が​{0}枚​以上​必要だよ。",
   "teiichiLeaveTitle": "並べるのをやめますか？",
-  "teiichiLeaveNote": "並べた配置は失われます。"
+  "teiichiLeaveNote": "並べた配置は失われます。",
+  "teiichiFormWrongTaps": "お手つき",
+  "teiichiFormPlacing": "並べタイム",
+  "teiichiFormGames": "直近{0}戦の​平均",
+  "teiichiFormGamesOne": "直近{0}戦",
+  "teiichiFormStart": "{0}枚で​1回​遊ぶと​表示されるよ",
+  "teiichiAutoTurn": "画面を​自動で​横向きに​する",
+  "teiichiAutoTurnNote": "対局の​間は​画面を​横向きに​します。​オフに​すると、​スマホの​向きに​合わせます。",
+  "teiichiTurnTitle": "横向きが​おすすめ",
+  "teiichiTurnBody": "スマホを​横向きに​すると、​札が​ずっと​大きく​なります。",
+  "teiichiTurnNever": "今後は​表示しない"
 }

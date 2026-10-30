@@ -221,6 +221,39 @@ class _RenderShrinks extends RenderProxyBox {
   double computeMinIntrinsicWidth(double height) => 0;
 }
 
+/// History's sun-toned strip, heading a side trip's page: [cells] across
+/// it, split by ink rules, each value in [valueStyle] (sharing out the
+/// room left when it [fills] its width, see [CellRow]), then a [foot]
+/// under an ink rule.
+class StatStrip extends StatelessWidget {
+  const StatStrip({super.key, required this.cells, this.fills = false, this.foot});
+
+  final List<Widget> cells;
+  final bool fills;
+  final Widget? foot;
+
+  static const valueStyle = TextStyle(fontFamily: Fonts.display, fontSize: AnkirenPageLayout.stripFont, height: 1);
+
+  @override
+  Widget build(BuildContext context) => MangaPanel(
+        shape: const PanelShape(bottomRight: Offset(AnkirenPageLayout.stripCut, 0)),
+        tone: Tones.sun,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Padding(padding: AnkirenPageLayout.cellsPadding, child: CellRow(fills: fills, children: cells)),
+            if (foot case final foot?)
+              DecoratedBox(
+                decoration: const BoxDecoration(
+                  border: Border(top: BorderSide(color: Palette.ink, width: Strokes.control)),
+                ),
+                child: Padding(padding: AnkirenPageLayout.gaugePadding, child: foot),
+              ),
+          ],
+        ),
+      );
+}
+
 /// A panel with the side trips' cut corner and [tag] on an ink banner over
 /// its top edge, [heading] at the right beside the tag (or under it when
 /// there is no room beside it), then [child]. With a [cover], the inside is

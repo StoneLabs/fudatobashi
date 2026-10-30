@@ -1,35 +1,37 @@
 part of '../design.dart';
 
 /// 定位置's page (`teiichi_page.dart`), on 暗記練's page's frame
-/// ([AnkirenPageLayout]): ranked, still to come, and the guide's card.
+/// ([AnkirenPageLayout]): the form strip, ranked, still to come, and the
+/// guide's card.
 abstract final class TeiichiPageLayout {
-  /// Ranked's chained-up inside is at least this tall, as 暗記練's, its row
-  /// in the middle.
-  static const double rankedHeight = 112;
+  /// Ranked's chained-up inside is at least this tall, its row in the
+  /// middle.
+  static const double rankedHeight = 88;
 
   /// On a screen with room to spare, ranked and the guide's card take
   /// these shares of it.
   static const double rankedShare = 0.4;
   static const double learnShare = 0.6;
 
-  /// The guide's card: its title, line and button at most [learnMeasure]
-  /// wide at the type's size, the same lines on every phone, and Tobi in
-  /// the room beside them, at most [learnTobi] and, with large type, at
-  /// least [learnTobiLeast] wide.
-  static const EdgeInsets learnPadding = EdgeInsets.all(16);
-  static const double learnMeasure = 180;
-  static const Size learnTobi = Size(126, 150);
-  static const double learnTobiLeast = 64;
-  static const double learnTobiGap = 20;
-  static const double learnTitleFont = 22;
-  static const double learnLineFont = 13.5;
-  static const double learnLineHeight = 1.5;
-  static const double learnLineGap = 6;
-  static const double buttonTop = 12;
-  static const double buttonFont = 15;
-  static const double buttonIcon = 16;
-  static const double buttonIconGap = 8;
-  static const EdgeInsets buttonPadding = EdgeInsets.symmetric(horizontal: 14, vertical: 10);
+  /// The guide's card: its title across the top, [learnTitleGap] over its
+  /// line and button, which are at most [learnMeasure] wide at the type's
+  /// size, the same lines on every phone, and Tobi in the room beside
+  /// them, at most [learnTobi] and, with large type, at least
+  /// [learnTobiLeast] wide.
+  static const EdgeInsets learnPadding = EdgeInsets.fromLTRB(14, 12 + SideTripsLayout.cut / 2, 14, 10);
+  static const double learnMeasure = 236;
+  static const Size learnTobi = Size(84, 100);
+  static const double learnTobiLeast = 52;
+  static const double learnTobiGap = 12;
+  static const double learnTitleFont = 18;
+  static const double learnTitleGap = 5;
+  static const double learnLineFont = 12.5;
+  static const double learnLineHeight = 1.36;
+  static const double buttonTop = 8;
+  static const double buttonFont = 14;
+  static const double buttonIcon = 15;
+  static const double buttonIconGap = 6;
+  static const EdgeInsets buttonPadding = EdgeInsets.symmetric(horizontal: 12, vertical: 8);
 
   /// The guide still to come: its line under the header.
   static const double guideLineFont = 15;

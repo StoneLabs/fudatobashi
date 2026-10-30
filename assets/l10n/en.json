@@ -1627,5 +1627,15 @@
   "teiichiOpenMiddle": "OPEN MIDDLE",
   "teiichiNeedCards": "Teiichi needs at least {0} cards you know.",
   "teiichiLeaveTitle": "Leave placing?",
-  "teiichiLeaveNote": "Your layout will be lost."
+  "teiichiLeaveNote": "Your layout will be lost.",
+  "teiichiFormWrongTaps": "Wrong taps",
+  "teiichiFormPlacing": "Placing time",
+  "teiichiFormGames": "Average of your last {0} games",
+  "teiichiFormGamesOne": "From your last game",
+  "teiichiFormStart": "Play a {0}-card game to start",
+  "teiichiAutoTurn": "Auto turn screen",
+  "teiichiAutoTurnNote": "Turns the screen sideways for each game. When off, the game follows how you hold your phone.",
+  "teiichiTurnTitle": "Turn your phone",
+  "teiichiTurnBody": "We recommend turning your phone 90°. The cards are much bigger.",
+  "teiichiTurnNever": "Don't show again"
 }

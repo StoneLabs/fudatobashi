@@ -30,6 +30,12 @@ String formatTenths(Duration d, {bool padMinutes = false}) {
   return '${padMinutes ? m.toString().padLeft(2, '0') : m}:${sec.toString().padLeft(2, '0')}.${tenths % 10}';
 }
 
+/// [x] to one decimal place, a whole number without it, e.g. "1.4", "2".
+String formatAverage(double x) {
+  final tenths = (x * 10).round();
+  return tenths % 10 == 0 ? '${tenths ~/ 10}' : (tenths / 10).toStringAsFixed(1);
+}
+
 /// [n] with its thousands grouped, e.g. "11,250"; a minus sign before a
 /// negative one.
 String groupDigits(int n) {

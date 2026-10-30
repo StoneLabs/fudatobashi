@@ -14,6 +14,13 @@ extension TeiichiStrings on S {
   String get teiichiLastFacts => t('teiichiLastFacts');
   String get teiichiNoGames => t('teiichiNoGames');
 
+  /// The page's form strip: the average wrong taps and placing time, over
+  /// how many games, or how to start it; each a template of its count.
+  String get teiichiFormWrongTaps => t('teiichiFormWrongTaps');
+  String get teiichiFormPlacing => t('teiichiFormPlacing');
+  String teiichiFormGames(int games) => t(countKey('teiichiFormGames', games));
+  String get teiichiFormStart => t('teiichiFormStart');
+
   /// The page: ranked, still to come; practice with its setup; and the
   /// guide's card.
   String teiichiRankedFacts(int cards) => f('teiichiRankedFacts', [cards]);
@@ -52,6 +59,13 @@ extension TeiichiStrings on S {
   String get teiichiPlaced => t('teiichiPlaced');
   String get teiichiLeaveTitle => t('teiichiLeaveTitle');
   String get teiichiLeaveNote => t('teiichiLeaveNote');
+
+  /// Turning the screen: the setting, and the tip on a portrait screen.
+  String get teiichiAutoTurn => t('teiichiAutoTurn');
+  String get teiichiAutoTurnNote => t('teiichiAutoTurnNote');
+  String get teiichiTurnTitle => t('teiichiTurnTitle');
+  String get teiichiTurnBody => t('teiichiTurnBody');
+  String get teiichiTurnNever => t('teiichiTurnNever');
   String teiichiAllPlaced(int cards) => f('teiichiAllPlaced', [cards]);
   String teiichiRowName(FieldRow row) => switch (row) {
         FieldRow.lower => t('teiichiRowLower'),

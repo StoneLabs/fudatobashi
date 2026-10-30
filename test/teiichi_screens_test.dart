@@ -115,7 +115,10 @@ void main() {
       await p.updateSettings(p.settings
           .copyWith(language: language, languagePicked: true, toured: true, teiichiRulesSeen: rulesSeen));
       for (var i = 0; i < games; i++) {
-        final played = playTeiichi(TeiichiSetup.usual, placeMs: 900 + 150 * i, deck: [for (var id = 1; id <= 25; id++) (id * 7 + i) % 100 + 1]);
+        final played = playTeiichi(TeiichiSetup.usual,
+            placeMs: 900 + 150 * i,
+            wrongAt: i == 2 ? {1, 4} : {1},
+            deck: [for (var id = 1; id <= 25; id++) (id * 7 + i) % 100 + 1]);
         await p.recordTeiichi(played.placing, played.game, startedAt: DateTime.now());
       }
     });
@@ -202,8 +205,9 @@ void main() {
     });
   });
 
-  // The page, new and with a game, on the phones at font scales 1 and 1.3:
-  // at 1 it is one screen with practice at its foot; larger type scrolls.
+  // The page, new and with games, on the phones at font scales 1 and 1.3:
+  // at 1 it is one screen with Guest mode and the rules at its foot; larger
+  // type scrolls.
   group('page fits', () {
     final page = find.descendant(of: find.byType(TeiichiPage), matching: find.byType(Scrollable)).first;
     for (final phone in [narrowPhone, usersPhone, widePhone]) {
@@ -211,25 +215,25 @@ void main() {
         for (final lang in ['en', 'ja']) {
           testWidgets('${phone.name} dp, font scale $fontScale ($lang)', (tester) async {
             final s = S(lang);
-            for (final (name, games) in [('page_new', 0), ('page_games', 1)]) {
+            for (final (name, games) in [('page_new', 0), ('page_games', 3)]) {
               final p = await open(tester, games: games, language: lang);
               await show(tester, p, () => const TeiichiPage(), screen: phone, fontScale: fontScale);
               final scroll = tester.state<ScrollableState>(page);
               if (fontScale == 1) expect(scroll.position.maxScrollExtent, 0, reason: 'nothing to scroll to');
               final burst = find.byWidgetPredicate((w) => w is BurstButton && w.title == s.teiichiPlay(TeiichiTuning.cards));
               final blocks = [
+                find.byType(StatStrip),
                 find.byType(RankedBurst),
                 find.text(s.teiichiLearnButton),
-                find.byType(SideTripGuestButton),
                 burst,
+                find.byType(SideTripGuestButton),
               ];
               final tops = [for (final f in blocks) tester.getRect(f).top];
-              expect(tops, orderedEquals([...tops]..sort()), reason: 'ranked, the guide, the pair, practice');
+              expect(tops, orderedEquals([...tops]..sort()), reason: 'the form, ranked, the guide, practice, the pair');
               if (fontScale == 1) {
-                final practice = find.ancestor(of: burst, matching: find.byType(TaggedPanel)).first;
-                expect(tester.getRect(practice).bottom,
+                expect(tester.getRect(find.byType(SideTripGuestButton)).bottom,
                     moreOrLessEquals(phone.size.height - phone.bars.bottom - AnkirenPageLayout.bottomGap, epsilon: 1),
-                    reason: 'practice sits at the foot, in the thumb\'s reach');
+                    reason: 'the pair sits at the foot, as on 暗記練\'s page');
               }
               for (final f in blocks) {
                 await tester.ensureVisible(f);
