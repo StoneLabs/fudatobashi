@@ -6,7 +6,6 @@ import 'dart:math' as math;
 import 'package:flutter/painting.dart' show Size;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:fudatobashi/config/config.dart';
-import 'package:fudatobashi/config/design.dart';
 import 'package:fudatobashi/domain/ankiren_field.dart';
 import 'package:fudatobashi/domain/ankiren_game.dart';
 import 'package:fudatobashi/domain/ankiren_geometry.dart';
