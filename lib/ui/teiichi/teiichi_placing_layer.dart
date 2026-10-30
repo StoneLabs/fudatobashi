@@ -40,12 +40,45 @@ Rect stackRect(FieldPlacement placement) {
   return Rect.fromLTWH(room.center.dx - width / 2, room.top + TeiichiPlayLayout.stackMargin, width, height);
 }
 
+/// The dashed spots a card may go while 定位置's cards are laid out, under
+/// the cards: the cluster ends, and the open middle with its name in its
+/// widest stretch clear of its middle cards ([cards]).
+class TeiichiSpots extends StatelessWidget {
+  const TeiichiSpots({super.key, required this.spots, required this.cards});
+
+  /// Each spot and where it lies, on screen.
+  final List<(TeiichiSpot, Rect)> spots;
+  final Iterable<Rect> cards;
+
+  @override
+  Widget build(BuildContext context) => Stack(children: [
+        for (final (spot, rect) in spots) ...[
+          Positioned.fromRect(rect: rect, child: const _DashedSpot()),
+          if (spot is OpenMiddle)
+            if (_clearest(rect) case final clear?) Positioned.fromRect(rect: clear, child: const _MiddleLabel()),
+        ],
+      ]);
+
+  /// The widest stretch of [spot] no card lies over, if it is wide enough
+  /// for the open middle's name.
+  Rect? _clearest(Rect spot) {
+    final over = [for (final c in cards) if (c.overlaps(spot)) c]..sort((a, b) => a.left.compareTo(b.left));
+    var (from, best) = (spot.left, (spot.left, spot.left));
+    for (final c in [...over, Rect.fromLTWH(spot.right, spot.top, 0, spot.height)]) {
+      if (c.left - from > best.$2 - best.$1) best = (from, c.left);
+      from = c.right > from ? c.right : from;
+    }
+    final width = best.$2 - best.$1;
+    return width < TeiichiPlayLayout.middleLabelRoom ? null : Rect.fromLTRB(best.$1, spot.top, best.$2, spot.bottom);
+  }
+}
+
 /// What 定位置 draws over its field while the cards are laid out, and the
-/// touches there: the dashed spots a card may go ([freeSpots]), the stack
-/// above the band with its count ([stack], top first) or, once every card
-/// is placed, its empty spot and a note; the hint before the first card is
-/// placed; and a card being dragged ([drag]), riding above the finger,
-/// with the name of where it would land over its spot ([landing]).
+/// touches there: the stack above the band with its count ([stack], top
+/// first) or, once every card is placed, its empty spot and a note; the
+/// hint before the first card is placed; and a card being dragged
+/// ([drag]), riding above the finger, with the name of where it would land
+/// ([landing]) beside it.
 ///
 /// A tap goes to [onTap], and a drag that starts on the stack's top card
 /// or a placed card ([cardAt]) to [onDragStart], then [onDrag] and
@@ -56,7 +89,6 @@ class TeiichiPlacingLayer extends StatelessWidget {
     required this.placement,
     required this.stack,
     required this.cards,
-    required this.freeSpots,
     required this.showHint,
     required this.drag,
     required this.landing,
@@ -73,12 +105,11 @@ class TeiichiPlacingLayer extends StatelessWidget {
   /// Every card laid out, on screen.
   final Map<int, Rect> cards;
 
-  final List<(TeiichiSpot, Rect)> freeSpots;
   final bool showHint;
   final TeiichiDrag? drag;
 
-  /// Where [drag] would land, on screen, and what that place is called.
-  final (Rect, String)? landing;
+  /// What the place [drag] would land is called.
+  final String? landing;
   final bool showNumber;
 
   final ValueChanged<Offset> onTap;
@@ -106,6 +137,16 @@ class TeiichiPlacingLayer extends StatelessWidget {
     final room = placement.roomAbove;
     final cardSize = Size(AnkirenFieldSize.cardW, AnkirenFieldSize.cardH) * placement.scale;
     final noteWidth = math.max(0.0, math.min(TeiichiPlayLayout.noteWidth, pile.left - TeiichiPlayLayout.noteGap));
+    final width = placement.geometry.width * placement.scale;
+    final lifted = drag == null
+        ? null
+        : Rect.fromCenter(
+            center: drag.at - Offset(0, cardSize.height * (TeiichiPlayLayout.dragLift + TeiichiPlayLayout.dragScale / 2)),
+            width: cardSize.width * TeiichiPlayLayout.dragScale,
+            height: cardSize.height * TeiichiPlayLayout.dragScale,
+          );
+    // The name goes left of the card, or right of it near the left edge.
+    final toRight = lifted != null && lifted.left < TeiichiPlayLayout.noteWidth;
     return GestureDetector(
       behavior: HitTestBehavior.opaque,
       dragStartBehavior: DragStartBehavior.down,
@@ -118,7 +159,6 @@ class TeiichiPlacingLayer extends StatelessWidget {
       onPanEnd: (_) => onDragEnd(),
       onPanCancel: onDragEnd,
       child: Stack(clipBehavior: Clip.none, children: [
-        for (final (spot, rect) in freeSpots) Positioned.fromRect(rect: rect, child: _DashedSpot(middle: spot is OpenMiddle)),
         if (showHint && noteWidth > 0)
           Positioned(
             right: room.width - pile.left + TeiichiPlayLayout.noteGap,
@@ -131,7 +171,7 @@ class TeiichiPlacingLayer extends StatelessWidget {
             ),
           ),
         if (shown.isEmpty) ...[
-          Positioned.fromRect(rect: pile, child: const _DashedSpot(middle: false)),
+          Positioned.fromRect(rect: pile, child: const _DashedSpot()),
           if (drag == null && noteWidth > 0)
             Positioned(
               left: pile.right + TeiichiPlayLayout.noteGap,
@@ -145,57 +185,53 @@ class TeiichiPlacingLayer extends StatelessWidget {
             rect: pile,
             child: _Stack(cards: shown, showNumber: showNumber),
           ),
-        if (landing case (final rect, final name)?)
-          Positioned(
-            left: rect.center.dx - TeiichiPlayLayout.noteWidth / 2,
-            width: TeiichiPlayLayout.noteWidth,
-            top: rect.top - TeiichiPlayLayout.landingTagRoom,
-            height: TeiichiPlayLayout.landingTagRoom - TeiichiPlayLayout.landingTagGap,
-            child: Align(
-              alignment: Alignment.bottomCenter,
+        if (drag != null) ...[
+          Positioned.fromRect(rect: lifted!, child: IgnorePointer(child: _Lifted(drag.card, showNumber: showNumber))),
+          if (landing case final name?)
+            Positioned(
+              top: lifted.top,
+              height: TeiichiPlayLayout.landingTagRoom,
+              left: toRight ? lifted.right + TeiichiPlayLayout.landingTagGap : null,
+              right: toRight ? null : width - lifted.left + TeiichiPlayLayout.landingTagGap,
               child: _Tag(name, fontSize: TeiichiPlayLayout.landingTagFont),
             ),
-          ),
-        if (drag != null)
-          Positioned(
-            left: drag.at.dx - cardSize.width * TeiichiPlayLayout.dragScale / 2,
-            top: drag.at.dy - cardSize.height * (TeiichiPlayLayout.dragLift + TeiichiPlayLayout.dragScale / 2),
-            width: cardSize.width * TeiichiPlayLayout.dragScale,
-            height: cardSize.height * TeiichiPlayLayout.dragScale,
-            child: IgnorePointer(child: _Lifted(drag.card, showNumber: showNumber)),
-          ),
+        ],
       ]),
     );
   }
 }
 
-/// A dashed spot on the tatami; the open middle's says so.
+/// A dashed spot on the tatami.
 class _DashedSpot extends StatelessWidget {
-  const _DashedSpot({required this.middle});
-
-  final bool middle;
+  const _DashedSpot();
 
   @override
-  Widget build(BuildContext context) => DashedBox(
+  Widget build(BuildContext context) => const DashedBox(
         color: TeiichiPlayLayout.spotFill,
         ink: TeiichiPlayLayout.spotInk,
         border: TeiichiPlayLayout.spotBorder,
-        child: middle
-            ? Center(
-                child: FittedBox(
-                  fit: BoxFit.scaleDown,
-                  child: Text(
-                    S.of(context).teiichiOpenMiddle,
-                    style: const TextStyle(
-                      fontWeight: Weights.black,
-                      fontSize: TeiichiPlayLayout.middleLabelFont,
-                      letterSpacing: TeiichiPlayLayout.middleLabelTracking * TeiichiPlayLayout.middleLabelFont,
-                      color: TeiichiPlayLayout.spotInk,
-                    ),
-                  ),
-                ),
-              )
-            : const SizedBox.expand(),
+        child: SizedBox.expand(),
+      );
+}
+
+/// The open middle's name, centred in its room.
+class _MiddleLabel extends StatelessWidget {
+  const _MiddleLabel();
+
+  @override
+  Widget build(BuildContext context) => Center(
+        child: FittedBox(
+          fit: BoxFit.scaleDown,
+          child: Text(
+            S.of(context).teiichiOpenMiddle,
+            style: const TextStyle(
+              fontWeight: Weights.black,
+              fontSize: TeiichiPlayLayout.middleLabelFont,
+              letterSpacing: TeiichiPlayLayout.middleLabelTracking * TeiichiPlayLayout.middleLabelFont,
+              color: TeiichiPlayLayout.spotInk,
+            ),
+          ),
+        ),
       );
 }
 

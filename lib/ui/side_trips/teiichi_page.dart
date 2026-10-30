@@ -193,18 +193,20 @@ class _LearnCard extends StatelessWidget {
         const SizedBox(height: TeiichiPageLayout.buttonTop),
         Align(
           alignment: Alignment.centerRight,
-          child: InkButton(
-            onTap: () => openTeiichiGuide(context),
-            color: Palette.sun,
-            border: Strokes.control,
-            padding: TeiichiPageLayout.buttonPadding,
-            semanticLabel: s.teiichiLearnButton,
-            child: Row(mainAxisSize: MainAxisSize.min, children: [
-              Text(s.teiichiLearnButton,
-                  style: const TextStyle(fontWeight: Weights.black, fontSize: TeiichiPageLayout.buttonFont)),
-              const SizedBox(width: TeiichiPageLayout.buttonIconGap),
-              MangaIcon(IconArt.arrow, size: TeiichiPageLayout.buttonIcon),
-            ]),
+          child: IntrinsicWidth(
+            child: InkButton(
+              onTap: () => openTeiichiGuide(context),
+              color: Palette.sun,
+              border: Strokes.control,
+              padding: TeiichiPageLayout.buttonPadding,
+              semanticLabel: s.teiichiLearnButton,
+              child: Row(mainAxisSize: MainAxisSize.min, children: [
+                Text(s.teiichiLearnButton,
+                    style: const TextStyle(fontWeight: Weights.black, fontSize: TeiichiPageLayout.buttonFont)),
+                const SizedBox(width: TeiichiPageLayout.buttonIconGap),
+                MangaIcon(IconArt.arrow, size: TeiichiPageLayout.buttonIcon),
+              ]),
+            ),
           ),
         ),
       ]),

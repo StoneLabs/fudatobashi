@@ -15,7 +15,7 @@ import '../../domain/ankiren_geometry.dart';
 /// over the field and pans with it, without taking taps; with
 /// [overlayOverBand] the band goes under the field so the overlay crosses
 /// it too. A [foreground] is laid over the field and takes its touches,
-/// but not the band's.
+/// but not the band's; an [underlay] lies under its cards.
 ///
 /// With a [roomAbove] (landscape only) the field is the own half alone:
 /// the room above the band, where the opponent's half would be, is only as
@@ -32,6 +32,7 @@ class AnkirenFieldView extends StatefulWidget {
     this.overlay,
     this.overlayOverBand = false,
     this.foreground,
+    this.underlay,
     this.bandExtent,
     this.trueSlots,
     this.roomAbove,
@@ -55,6 +56,7 @@ class AnkirenFieldView extends StatefulWidget {
   /// Only for a band that takes no taps: the field would cover it.
   final bool overlayOverBand;
   final Widget Function(FieldPlacement placement)? foreground;
+  final Widget Function(FieldPlacement placement)? underlay;
 
   /// The [band]'s height when not the play screen's ([bandHeight]).
   final double? bandExtent;
@@ -153,10 +155,12 @@ class _AnkirenFieldViewState extends State<AnkirenFieldView> {
             ];
         final overlay = widget.overlay;
         final foreground = widget.foreground;
+        final underlay = widget.underlay;
         final field = SizedBox(
           width: width,
           height: height,
           child: Stack(children: [
+            if (underlay != null) Positioned.fill(child: IgnorePointer(child: underlay(placement))),
             if (roomAbove == null) ...half(FieldSide.opponent),
             ...half(FieldSide.own),
             if (overlay != null) Positioned.fill(child: IgnorePointer(child: overlay(placement))),

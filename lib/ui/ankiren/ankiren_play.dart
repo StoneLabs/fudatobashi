@@ -211,9 +211,13 @@ mixin AnkirenPlay<W extends StatefulWidget> on State<W> {
     ]);
   }
 
-  /// "Don't know", while a prompt is up.
-  Widget dontKnowButton() =>
-      BandButton(icon: IconArt.question, label: S.of(context).ankirenDontKnow, onTap: asked == null ? null : _giveUp);
+  /// "Don't know", while a prompt is up; faded until the first one is.
+  Widget dontKnowButton() => BandButton(
+        icon: IconArt.question,
+        label: S.of(context).ankirenDontKnow,
+        dimmed: asked == null && game.answers.isEmpty,
+        onTap: asked == null ? null : _giveUp,
+      );
 }
 
 /// A play screen's ground: the tatami, inside the safe area.

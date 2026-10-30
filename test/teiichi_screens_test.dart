@@ -245,11 +245,12 @@ void main() {
   group('a game', () {
     Finder layer() => find.byType(TeiichiPlacingLayer);
     TeiichiPlacingLayer layerOf(WidgetTester tester) => tester.widget<TeiichiPlacingLayer>(layer());
+    List<(TeiichiSpot, Rect)> spotsOf(WidgetTester tester) => tester.widget<TeiichiSpots>(find.byType(TeiichiSpots)).spots;
 
     // A free spot's centre on screen.
     Offset spotAt(WidgetTester tester, bool Function(TeiichiSpot spot) which) {
-      final (_, rect) = layerOf(tester).freeSpots.firstWhere((e) => which(e.$1));
-      return tester.getTopLeft(layer()) + rect.center;
+      final (_, rect) = spotsOf(tester).firstWhere((e) => which(e.$1));
+      return tester.getTopLeft(find.byType(TeiichiSpots)) + rect.center;
     }
 
     Future<void> tapAt(WidgetTester tester, Offset at) async {
@@ -286,7 +287,7 @@ void main() {
       const setup = TeiichiSetup.usual;
       await show(tester, p, () => TeiichiScreen(setup: setup, known: allCards, seed: 3), screen: usersPhoneLandscape);
       expect(layerOf(tester).stack, hasLength(setup.cards));
-      expect(layerOf(tester).freeSpots.where((e) => e.$1 is OpenMiddle), hasLength(1));
+      expect(spotsOf(tester).where((e) => e.$1 is OpenMiddle), hasLength(1));
       final done = find.widgetWithText(BandButton, s.done);
       expect(tester.widget<BandButton>(done).onTap, isNull, reason: 'Done waits for every card');
       await captureScreen(tester, 'teiichi/place_start');
@@ -306,6 +307,7 @@ void main() {
       await tester.pump();
       expect(layerOf(tester).drag?.spot, CardSpot(target));
       expect(layerOf(tester).landing, isNotNull);
+      await tester.pump(TeiichiPlayLayout.move);
       await captureScreen(tester, 'teiichi/place_drag');
       await gesture.up();
       await tester.pump();
@@ -320,10 +322,10 @@ void main() {
 
       await tester.tap(done);
       await tester.pump();
-      await tester.pump(AnkirenMotion.flip ~/ 2);
+      await tester.pump(AnkirenMotion.flip);
       expect(find.byType(TeiichiPlacingLayer), findsNothing);
       await captureScreen(tester, 'teiichi/flip');
-      await tester.pump(AnkirenMotion.flip + AnkirenPlayTuning.promptPause);
+      await tester.pump(AnkirenPlayTuning.promptPause);
       await tester.pump();
       expect(find.byType(AnkirenCard), findsNWidgets(setup.cards));
       expect(tester.widgetList<AnkirenCard>(find.byType(AnkirenCard)).where((c) => c.faceUp), isEmpty);
@@ -335,6 +337,7 @@ void main() {
       await captureScreen(tester, 'teiichi/wrong');
       for (var i = 0; i < setup.cards; i++) {
         if (i == 3) await captureScreen(tester, 'teiichi/play');
+        await tester.pump(Duration(milliseconds: 600 + 90 * (i % 7)));
         await take(tester, asked(tester));
         await tester.pump(i == setup.cards - 1 ? AnkirenPlayTuning.finishPause : AnkirenPlayTuning.promptPause);
         await tester.pump();
@@ -366,7 +369,7 @@ void main() {
       final p = await open(tester);
       const setup = TeiichiSetup(cards: 8, rows: 1);
       await show(tester, p, () => TeiichiScreen(setup: setup, known: allCards, seed: 5), screen: usersPhoneLandscape);
-      expect(layerOf(tester).freeSpots.map((e) => e.$1),
+      expect(spotsOf(tester).map((e) => e.$1),
           [const ClusterEnd(FieldRow.lower, RowPart.left), const ClusterEnd(FieldRow.lower, RowPart.right)],
           reason: 'one row: no open middle');
       await placeRest(tester, setup, upTo: 2);

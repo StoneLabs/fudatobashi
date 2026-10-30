@@ -253,6 +253,7 @@ class _TeiichiScreenState extends State<TeiichiScreen> with AnkirenPlay {
               ? _laidCard(poemId, showNumber: showNumber)
               : recallCard(poemId, side, showNumber: showNumber),
           band: band,
+          underlay: placingNow ? _spots : null,
           foreground: placingNow ? (placement) => _layer(placement, shownBoard, showNumber: showNumber) : null,
         ),
       ),
@@ -270,30 +271,40 @@ class _TeiichiScreenState extends State<TeiichiScreen> with AnkirenPlay {
     );
   }
 
+  /// The cards laid out as they show now, on screen.
+  static Map<int, Rect> _laid(FieldPlacement placement) => {
+        for (final MapEntry(key: id, value: r) in placement.geometry.half(FieldSide.own).entries)
+          id: placement.rectOf(FieldSide.own, r),
+      };
+
+  /// The dashed spots the stack's top card, or the card dragged, may go.
+  Widget _spots(FieldPlacement placement) {
+    final drag = _drag;
+    if (_placing.top == null && drag == null) return const SizedBox.shrink();
+    final targets = TeiichiTargets(_placing.board, moving: drag == null || drag.fromStack ? null : drag.card);
+    return TeiichiSpots(
+      spots: [for (final (spot, r) in targets.freeSpots) (spot, placement.rectOf(FieldSide.own, r))],
+      cards: [
+        for (final MapEntry(key: id, value: r) in _laid(placement).entries)
+          if (id != drag?.card) r,
+      ],
+    );
+  }
+
   Widget _layer(FieldPlacement placement, TeiichiBoard shown, {required bool showNumber}) {
     final drag = _drag;
-    final targets = TeiichiTargets(_placing.board, moving: drag == null || drag.fromStack ? null : drag.card);
-    final laid = {
-      for (final MapEntry(key: id, value: r) in placement.geometry.half(FieldSide.own).entries)
-        id: placement.rectOf(FieldSide.own, r),
-    };
-    final landingRect = drag?.spot == null ? null : laid[drag!.card];
-    final (String, Rect)? landing = switch (drag) {
-      TeiichiDrag(onStack: true) => (S.of(context).teiichiStack, stackRect(placement)),
-      TeiichiDrag(:final card) when landingRect != null => (_spotName(shown, card), landingRect),
-      _ => null,
-    };
+    final laid = _laid(placement);
     return TeiichiPlacingLayer(
       placement: placement,
       stack: _placing.stack,
       cards: {for (final MapEntry(key: id, value: r) in laid.entries) if (id != drag?.card) id: r},
-      freeSpots: [
-        if (_placing.top != null || drag != null)
-          for (final (spot, r) in targets.freeSpots) (spot, placement.rectOf(FieldSide.own, r)),
-      ],
       showHint: _placing.order.isEmpty && drag == null,
       drag: drag,
-      landing: landing == null ? null : (landing.$2, landing.$1),
+      landing: switch (drag) {
+        TeiichiDrag(onStack: true) => S.of(context).teiichiStack,
+        TeiichiDrag(:final card, spot: _?) => _spotName(shown, card),
+        _ => null,
+      },
       showNumber: showNumber,
       onTap: (at) => _tap(at, placement),
       onDragStart: (card, {required fromStack, required at}) =>

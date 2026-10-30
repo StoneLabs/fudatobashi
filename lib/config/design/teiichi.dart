@@ -44,7 +44,7 @@ abstract final class TeiichiSheetLayout {
   static const double cardKeyFont = 19;
   static const double rowKeyHeight = 54;
   static const double rowKeyFont = 18;
-  static const double rowKeySubFont = 11;
+  static const double rowKeySubFont = 10.5;
   static const double rowKeyLock = 11;
   static const double rowKeyLockGap = 3;
   static const double noteFont = 12.5;
@@ -87,6 +87,10 @@ abstract final class TeiichiPlayLayout {
   static const double spotBorder = Strokes.label;
   static const double middleLabelFont = 10;
   static const double middleLabelTracking = 0.16;
+
+  /// The open middle shows its name only in a stretch clear of cards at
+  /// least this wide.
+  static const double middleLabelRoom = 60;
 
   /// Where a dragged card would land: sun over its spot, outlined in ink,
   /// with its name on an ink tag above it.
