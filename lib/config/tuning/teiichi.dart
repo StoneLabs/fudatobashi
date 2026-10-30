@@ -35,4 +35,8 @@ abstract final class TeiichiTuning {
 abstract final class TeiichiPlayTuning {
   /// The placing clock's step: it shows whole seconds.
   static const Duration clockTick = Duration(seconds: 1);
+
+  /// The tip to turn the phone waits this long on a portrait screen, so
+  /// that the screen has come in and a turn asked for has landed.
+  static const Duration tipDelay = Duration(seconds: 1);
 }

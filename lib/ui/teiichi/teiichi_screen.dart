@@ -2,7 +2,6 @@ import 'dart:async';
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
-import 'package:flutter/scheduler.dart';
 import 'package:flutter/services.dart';
 
 import '../../config/config.dart';
@@ -88,9 +87,12 @@ class _TeiichiScreenState extends State<TeiichiScreen> with AnkirenPlay {
   TeiichiDrag? _drag;
   bool _ending = false;
 
-  /// The screen is taller than wide; null until first laid out.
+  /// The screen's size, and whether it is taller than wide; null until
+  /// first laid out.
+  Size? _size;
   bool? _portrait;
   bool _tipped = false;
+  Timer? _tipTimer;
   final _field = GlobalKey();
 
   /// Done is pressed: the field grows, cards still face up, then [_flip].
@@ -123,15 +125,20 @@ class _TeiichiScreenState extends State<TeiichiScreen> with AnkirenPlay {
     });
   }
 
+  /// The screen turned, or changed size: a drag under way lets go, as the
+  /// field moves under it, and a portrait screen gets the tip.
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
     final size = MediaQuery.sizeOf(context);
+    if (size == _size) return;
+    if (_size != null) _drag = null;
+    _size = size;
     final portrait = size.height > size.width;
     if (portrait == _portrait) return;
-    if (_portrait != null) _drag = null;
     _portrait = portrait;
-    if (portrait) SchedulerBinding.instance.addPostFrameCallback((_) => unawaited(_tip()));
+    _tipTimer?.cancel();
+    if (portrait) _tipTimer = Timer(TeiichiPlayTuning.tipDelay, () => unawaited(_tip()));
   }
 
   /// Tobi's tip to turn the phone, once a game, while the cards are laid
@@ -149,6 +156,7 @@ class _TeiichiScreenState extends State<TeiichiScreen> with AnkirenPlay {
   void dispose() {
     _tick?.cancel();
     _zoomTimer?.cancel();
+    _tipTimer?.cancel();
     _shown.dispose();
     releaseStage();
     _leave();

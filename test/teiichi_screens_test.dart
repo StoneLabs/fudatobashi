@@ -600,6 +600,8 @@ void main() {
     // The tip to turn the phone, over a portrait game: OK goes on with the
     // game.
     Future<void> dismissTip(WidgetTester tester, {bool never = false, S s = s}) async {
+      await tester.pump(TeiichiPlayTuning.tipDelay);
+      await tester.pump(Motion.route);
       expect(find.byType(TobiNotice), findsOneWidget);
       await tester.tap(never ? find.text(s.teiichiTurnNever) : find.text(s.noticeOk));
       await tester.pump();
@@ -688,16 +690,21 @@ void main() {
         final p = await open(tester, language: lang);
         await show(tester, p, () => TeiichiScreen(setup: TeiichiSetup.usual, known: allCards, seed: 4));
         final clock = tester.widget<MemoriseClock>(find.byType(MemoriseClock)).left;
+        await tester.pump(TeiichiPlayTuning.tipDelay);
+        final before = clock.value;
         await tester.pump(const Duration(seconds: 3));
-        expect(clock.value, Duration.zero, reason: 'nothing is laid out while the tip is up');
+        expect(find.byType(TobiNotice), findsOneWidget);
+        expect(clock.value, before, reason: 'nothing is laid out while the tip is up');
         await captureScreen(tester, 'teiichi/portrait_tip', lang: lang);
         await dismissTip(tester, never: true, s: s);
         expect(p.settings.teiichiTurnTipOff, isTrue);
+        final resumed = clock.value;
         await tester.pump(const Duration(seconds: 2));
-        expect(clock.value, const Duration(seconds: 2));
+        expect(clock.value, resumed + const Duration(seconds: 2), reason: 'the clock goes on once it closes');
         await tester.pumpWidget(const SizedBox());
 
         await show(tester, p, () => TeiichiScreen(setup: TeiichiSetup.usual, known: allCards, seed: 4));
+        await tester.pump(TeiichiPlayTuning.tipDelay);
         await tester.pump(Motion.route);
         expect(find.byType(TobiNotice), findsNothing);
         expect(tester.takeException(), isNull);
