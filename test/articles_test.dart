@@ -12,7 +12,7 @@ import 'package:fudatobashi/ui/manga/tobi.dart';
 
 const _languages = ['en', 'ja'];
 
-const _articles = [Articles.rules, Articles.teiichiGuide];
+const _articles = [Articles.rules, Articles.karutaGuide, Articles.teiichiGuide];
 
 final _cards = [jokaNumber, for (var id = 1; id <= 100; id++) id];
 

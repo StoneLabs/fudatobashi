@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../config/design.dart';
 import '../../config/vector_art.dart';
+import '../../l10n/articles.dart';
 import '../../l10n/card_info_strings.dart';
 import '../../l10n/guide_strings.dart';
 import '../../l10n/help_strings.dart';
@@ -13,7 +14,7 @@ import '../cards/card_browser_screen.dart';
 import '../manga/manga.dart';
 import '../tools/match_timer_screen.dart';
 import '../tour/tour_overlay.dart';
-import 'karuta_guide_screen.dart';
+import 'guide_screen.dart';
 import 'karuta_rules_screen.dart';
 
 /// Help (opened from Home's "?" button). Guides: Tobi's tour of Home
@@ -40,7 +41,8 @@ class HelpScreen extends StatelessWidget {
         sub: o?.guideTitle,
         note: s.guideRowNote,
         icon: IconArt.arrow,
-        onTap: () => open(const KarutaGuideScreen()),
+        onTap: () => open(GuideScreen(
+            article: Articles.karutaGuide, title: s.guideTitle, sub: s.other.guideTitle, kanaBesideRomaji: true)),
       ),
       _Entry(
         title: s.rulesTitle,

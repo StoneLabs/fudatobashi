@@ -73,6 +73,7 @@ flutter:
     - assets/l10n/ja_articles/
     - assets/l10n/ja_articles/card_details/
     - assets/glyphs/
+    - assets/artworks/articles/
     - assets/graphics/tally.svg
     - assets/graphics/icons/
     - assets/graphics/map/

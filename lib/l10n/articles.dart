@@ -10,6 +10,7 @@ abstract final class Articles {
   static const fallback = 'en';
 
   static const rules = 'rules';
+  static const karutaGuide = 'karuta';
   static const teiichiGuide = 'teiichi';
 
   static String asset(String code, String name) => 'assets/l10n/${code}_articles/$name.md';
