@@ -8,7 +8,7 @@ Your side has three rows: the 上段 (top row) by the centre line, the 中段 (m
 
 A 定位置 helps in two ways. You don't have to learn where your own cards are. And your hand learns the way to each spot, so when you hear a card, it already knows where to go.
 
-<!-- picture: your side from where you sit: three rows in a left and a right group, a few cards outlined | caption: Top row by the centre line, bottom row nearest you. The outlined cards sit in the same spot every game. -->
+![Top row by the centre line, bottom row nearest you. The outlined cards sit in the same spot every game.](assets/artworks/articles/teiichi_side.webp)
 
 # Why it saves time
 
@@ -16,7 +16,7 @@ Before a match, you get 15 minutes to remember all 50 cards. The other player's 
 
 A good layout is also fast to put down. You can place all 25 cards in under a minute without stopping to think. Then the 15 minutes are for their side: learn their cards in groups that start with the same sounds, close your eyes to test yourself, and go back over the ones you missed.
 
-<!-- picture: your side beside a small stopwatch short of one full turn; their side beside a large clock with 15 minutes shaded | caption: Under a minute to place your side. All 15 minutes for theirs. -->
+![Under a minute to place your side. All 15 minutes for theirs.](assets/artworks/articles/teiichi_time.webp)
 
 >{.tobi pose=cheering} Half the field memorised before the clock even starts. Nice!
 
@@ -28,7 +28,7 @@ Many players start from the same few habits:
 - **Cards with long kimariji** give you more time, so many players put them at the outer edges. The longest are the six 大山札, which start あさぼらけ, きみがため and わたのはら and need six sounds. Many keep them on their strong-hand side, where they're easy to guard while you wait.
 - **Your favourite cards** often go on your strong-hand side too.
 
-<!-- picture: your side: the seven one-sound cards in the bottom row, on both sides, and the six 大山札 at the outer right edge of the middle and bottom rows. Card faces in kana. | caption: One-sound cards low. 大山札 at the outer edge on the strong-hand side, here the right. -->
+![One-sound cards low. 大山札 at the outer edge on the strong-hand side, here the right.](assets/artworks/articles/teiichi_first_cards_{{ "romaji" if env.romaji_mode else "hiragana" }}.webp)
 
 # Look-alike cards
 
@@ -38,7 +38,7 @@ Many players start from the same few habits:
 - **Keep them together.** Others keep them side by side. It's easier to remember, and you can start moving on the first sounds and take the right card when the deciding sound comes. The downside is that the other player can move early to the same spot.
 - **In between.** Many players split some pairs, but not so many that they can't remember their own side.
 
-<!-- picture: two copies of your side. Left: the two なげ cards side by side. Right: one in each group. Both cards marked in the same colour. Card faces in kana. | caption: Left, together: easy to remember, for you and for the other player. Right, split: harder for both of you. -->
+![Above, together: easy to remember, for you and for the other player. Below, split: harder for both of you.](assets/artworks/articles/teiichi_look_alike_{{ "romaji" if env.romaji_mode else "hiragana" }}.webp)
 
 **If you're starting out:** keep look-alike cards together at first, and split a few once your layout feels easy.
 
@@ -52,7 +52,7 @@ Many players start from the same few habits:
 
 **The open middle.** There's usually a gap between your left and right groups. Some players put a card or two in the middle of the top row, for example one card of a look-alike pair. A card on its own is easy to find, but it's far from both groups, so it's harder to get back to.
 
-<!-- picture: your side from above, shaded by how full each spot usually is: bottom row darkest, top row lightest, right side a little darker. One card alone in the middle of the top row. | caption: Darker means more cards, for a right-handed player. One card sits in the open middle. -->
+![Darker means more cards, for a right-handed player. One card sits in the open middle.](assets/artworks/articles/teiichi_rows.webp)
 
 **If you're starting out:** keep the sides about even, with fewer cards in the top row. You can change the balance later.
 
@@ -63,7 +63,7 @@ Your side changes during a match. When you take a card from their side, you send
 - **Where new cards go.** Some players plan a second spot for their cards, or keep a simple rule like "cards I receive go here". Then you know where a card goes, even one sent on purpose to break up your layout.
 - **Closing gaps.** As your side gets smaller, many players move cards down a row and even out left and right. This keeps their cards close to them and far from the other player.
 
-<!-- picture: three small views of your side: the start, after a few cards have gone, and after the rest have moved down to close the gaps, with arrows | caption: Cards leave, and the rest move down a row to stay close to you. -->
+![Cards leave, and the rest move down a row to stay close to you.](assets/artworks/articles/teiichi_gaps.webp)
 
 >{.tobi pose=relaxed} Someone left? I'll move into the better seat.
 
