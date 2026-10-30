@@ -2,7 +2,6 @@ import 'dart:convert';
 
 import 'package:drift/drift.dart';
 
-import '../config/config.dart';
 import '../db/database.dart';
 import '../domain/ankiren_field.dart';
 import '../domain/ankiren_game.dart';
