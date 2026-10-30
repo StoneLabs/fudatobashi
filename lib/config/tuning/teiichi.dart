@@ -9,6 +9,9 @@ abstract final class TeiichiTuning {
   static const int cards = 25;
   static const int rows = 3;
 
+  /// The page's form averages the last [formGames] games that count.
+  static const int formGames = 5;
+
   /// A custom game's fewest cards, as 暗記練's custom setups' fewest a side.
   static const int minCards = AnkirenTuning.customMinPerSide;
 

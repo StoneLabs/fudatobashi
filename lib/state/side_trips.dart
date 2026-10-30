@@ -183,30 +183,21 @@ class SideTrips {
     );
   }
 
-  /// A 定位置 game's card count, placing time and first-tap finds.
+  /// A 定位置 game's card count, placing time, first-tap finds, wrong taps,
+  /// and whether it was played to the end.
   TeiichiGameFacts teiichiFactsOf(SideTripRun run) {
     final meta = jsonDecode(run.meta) as Map<String, dynamic>;
     return (
       cards: meta[TeiichiMeta.cardsKey] as int,
       placing: Duration(milliseconds: meta[TeiichiMeta.placingKey] as int),
       firstTaps: cardsIn(run) - missesIn(run),
+      wrongTaps: answersOf(run).fold(0, (n, a) => n + a.wrongTaps),
+      completed: run.completed,
     );
   }
 
-  /// 定位置's best placing time, of games of the usual count of cards played
-  /// to the end, and its last game.
-  TeiichiRecord teiichiRecord() {
-    final runs = runsOf(SideTrip.teiichi).toList();
-    final counted = [
-      for (final r in runs)
-        if (r.completed) teiichiFactsOf(r),
-    ].where((f) => f.cards == TeiichiTuning.cards);
-    return TeiichiRecord(
-      best: counted.isEmpty ? null : counted.map((f) => f.placing).reduce((a, b) => a < b ? a : b),
-      last: runs.isEmpty ? null : teiichiFactsOf(runs.last),
-      games: runs.length,
-    );
-  }
+  /// 定位置's record of the games played (see [TeiichiRecord.of]).
+  TeiichiRecord teiichiRecord() => TeiichiRecord.of([for (final r in runsOf(SideTrip.teiichi)) teiichiFactsOf(r)]);
 
   /// Stores [game], once it is over (see [AnkirenGame.end]), as started at
   /// [startedAt] on practice day [day]: its run and one answer per card

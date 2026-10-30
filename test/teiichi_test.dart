@@ -12,6 +12,7 @@ import 'package:fudatobashi/domain/ankiren_geometry.dart';
 import 'package:fudatobashi/domain/side_trips.dart';
 import 'package:fudatobashi/domain/teiichi.dart';
 import 'package:fudatobashi/domain/teiichi_placing.dart';
+import 'package:fudatobashi/domain/teiichi_record.dart';
 import 'package:fudatobashi/ui/teiichi/teiichi_zoom.dart';
 
 void main() {
@@ -289,6 +290,44 @@ void main() {
       expect(game.prompts.toSet(), {5, 6});
       expect(game.phase, AnkirenPhase.memorise);
       expect(game.countsStrikes, isFalse);
+    });
+  });
+
+  // The page's form: the last games that count, averaged.
+  group('the form', () {
+    TeiichiGameFacts game(int placingS, int wrongTaps, {int cards = TeiichiTuning.cards, bool completed = true}) => (
+          cards: cards,
+          placing: Duration(seconds: placingS),
+          firstTaps: cards - wrongTaps,
+          wrongTaps: wrongTaps,
+          completed: completed,
+        );
+
+    test('the last five usual games played to the end, averaged; older, ended and custom games left out', () {
+      final record = TeiichiRecord.of([
+        game(10, 9),
+        game(40, 1),
+        game(41, 2),
+        game(5, 0, completed: false),
+        game(42, 3),
+        game(6, 0, cards: 20),
+        game(43, 4),
+        game(44, 5),
+      ]);
+      expect(record.form, (games: 5, wrongTaps: 3.0, placing: const Duration(seconds: 42)));
+      expect(record.best, const Duration(seconds: 10), reason: 'the best looks at every game that counts');
+      expect(record.games, 8);
+      expect(record.last, game(44, 5));
+    });
+
+    test('fewer than five: what there is', () {
+      final form = TeiichiRecord.of([game(40, 1), game(45, 2)]).form;
+      expect(form, (games: 2, wrongTaps: 1.5, placing: const Duration(milliseconds: 42500)));
+    });
+
+    test('none before the first game that counts', () {
+      expect(TeiichiRecord.of(const []).form, isNull);
+      expect(TeiichiRecord.of([game(30, 0, completed: false), game(20, 0, cards: 12)]).form, isNull);
     });
   });
 

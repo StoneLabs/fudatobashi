@@ -61,8 +61,9 @@ void main() {
     final again = await open(db);
     final record = again.sideTripsHub()[teiichi].placing;
     expect(record.games, 1);
-    expect(record.last, (cards: 12, placing: const Duration(seconds: 18), firstTaps: 11));
+    expect(record.last, (cards: 12, placing: const Duration(seconds: 18), firstTaps: 11, wrongTaps: 1, completed: true));
     expect(record.best, isNull, reason: 'only games of the usual count of cards set a best');
+    expect(record.form, isNull, reason: 'nor the form');
     await db.close();
   });
 
@@ -83,6 +84,8 @@ void main() {
     expect(entry.placing.games, 4);
     expect(entry.games, 4);
     expect(entry.placing.last?.placing, const Duration(milliseconds: TeiichiTuning.cards * 1500));
+    expect(entry.placing.form, (games: 2, wrongTaps: 0.0, placing: const Duration(milliseconds: TeiichiTuning.cards * 1750)),
+        reason: 'the form counts the same games as the best');
     expect(p.sideTripsHub()[SideTrip.ankiren].games, 0, reason: '定位置 games are no 暗記練 games');
     await db.close();
   });
