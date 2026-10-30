@@ -6,18 +6,20 @@ import '../../data/fuda_sets.dart';
 import '../../data/joka.dart';
 import '../../data/poem.dart';
 import '../../domain/card_stats.dart';
+import '../../l10n/articles.dart';
 import '../../l10n/card_explanations.dart';
 import '../../l10n/card_info_strings.dart';
+import '../../l10n/first_sounds_strings.dart';
 import '../../l10n/romaji.dart';
 import '../../l10n/strings.dart';
 import '../../state/scope.dart';
 import '../../state/settings.dart';
+import '../help/guide_screen.dart';
 import '../manga/manga.dart';
 import '../sound/sounds.dart';
 import '../stats/card_detail_screen.dart';
 import '../torifuda/torifuda_painter.dart';
 import 'card_panel.dart';
-import 'first_sounds_screen.dart';
 import 'page_frame.dart';
 import 'sound_ladder_view.dart';
 
@@ -202,7 +204,8 @@ class _AboutCardScreenState extends State<AboutCardScreen> {
     return [
       _LadderBar(
         mode: settings.soundLadder,
-        onExplain: () => _open(const FirstSoundsScreen()),
+        onExplain: () => _open(GuideScreen(
+            article: Articles.kimarijiGuide, title: s.firstSoundsTitle, sub: s.other.firstSoundsTitle)),
         onMode: (mode) {
           final progress = ProgressScope.read(context);
           progress.updateSettings(progress.settings.copyWith(soundLadder: mode));

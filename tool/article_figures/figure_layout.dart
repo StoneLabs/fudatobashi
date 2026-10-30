@@ -7,6 +7,18 @@ import 'package:fudatobashi/config/design.dart';
 abstract final class FigureFile {
   static const double width = 348;
   static const double pixelRatio = 3;
+
+  /// Room enough for the tallest picture.
+  static const double maxHeight = 2000;
+
+  /// The space inside a picture's panel.
+  static const EdgeInsets panelPadding = EdgeInsets.fromLTRB(12, 14, 12, 12);
+}
+
+/// The words a picture holds, by language: the stamp on a card that has
+/// been read.
+abstract final class FigureWords {
+  static const read = {'en': 'Read', 'ja': '読まれた'};
 }
 
 /// The poems the karuta guide's pictures show, by id.
@@ -21,6 +33,36 @@ abstract final class KarutaGuideExamples {
 
   /// The one-sound cards in the order players learn them.
   static const String oneSound = 'むすめふさほせ';
+}
+
+/// The cards the kimariji guide's pictures show, by id.
+abstract final class FirstSoundsExamples {
+  /// The card whose stairs the guide walks down. Its kimariji shares all
+  /// but its last kana with exactly one other card.
+  static const int card = 1;
+
+  /// A card whose top step ends on a consonant because the one other card
+  /// that starts the same way goes on with a vowel.
+  static const int consonant = 15;
+}
+
+/// Kimariji pictures: kana tiles, an arrow, the card they mean.
+abstract final class KimarijiFigureLayout {
+  static const double tile = 34;
+  static const double tileFont = 20;
+  static const double tileGap = 4;
+  static const double tileBorder = Strokes.label;
+  static const double romajiFont = 10.5;
+  static const double romajiGap = 2;
+  static const double card = 66;
+  static const double arrow = 24;
+  static const double arrowGap = 10;
+  static const double rowGap = 14;
+  static const double readOpacity = 0.35;
+  static const double stampFont = 13;
+  static const double stampTurn = -0.22;
+  static const double stampBorder = 2.5;
+  static const EdgeInsets stampPadding = EdgeInsets.fromLTRB(6, 2, 6, 3);
 }
 
 /// The karuta guide's own pictures.

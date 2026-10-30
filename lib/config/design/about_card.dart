@@ -226,20 +226,3 @@ abstract final class SoundLadderLayout {
   static const Color chipNumber = Color(0xFF6A6862);
   static const double moreFont = TypeScale.tiny;
 }
-
-/// The cards First sounds (`FirstSoundsScreen`), the explanation of the
-/// sound ladder, shows, by id. The sounds and cards its text names are read
-/// from these cards' ladders.
-abstract final class FirstSoundsExamples {
-  /// The card whose stairs the page walks down. Its kimariji shares all but
-  /// its last kana with exactly one other card.
-  static const int card = 1;
-
-  /// A card whose top step ends on a consonant because the one other card
-  /// that starts the same way goes on with a vowel.
-  static const int consonant = 15;
-
-  /// A card whose top step ends on sh, and a card with s in that place.
-  static const int sh = 3;
-  static const int s = 39;
-}

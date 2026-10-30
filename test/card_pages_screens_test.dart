@@ -4,13 +4,15 @@
 // it writes each screen to build/screens/cards/ for visual checks.
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:fudatobashi/l10n/articles.dart';
 import 'package:fudatobashi/l10n/card_info_strings.dart';
+import 'package:fudatobashi/l10n/first_sounds_strings.dart';
 import 'package:fudatobashi/l10n/strings.dart';
 import 'package:fudatobashi/state/settings.dart';
 import 'package:fudatobashi/ui/cards/about_card_screen.dart';
 import 'package:fudatobashi/ui/cards/card_browser_screen.dart';
 import 'package:fudatobashi/ui/cards/card_panel.dart';
-import 'package:fudatobashi/ui/cards/first_sounds_screen.dart';
+import 'package:fudatobashi/ui/help/guide_screen.dart';
 import 'package:fudatobashi/ui/help/help_screen.dart';
 import 'package:fudatobashi/ui/manga/manga.dart';
 import 'package:fudatobashi/ui/torifuda/torifuda_painter.dart';
@@ -99,7 +101,18 @@ void main() {
       testWidgets('First sounds, a screen at a time, and Help ($tag)', (tester) async {
         await loadCardArt(tester);
         final p = await openPlayer(tester, lang);
-        await showPage(tester, p, const FirstSoundsScreen(), screen: phone, textScale: textScale);
+        await tester.runAsync(() async {
+          await Articles.load(lang, Articles.kimarijiGuide);
+          await ArticlePictures.load();
+        });
+        await showPage(
+            tester,
+            p,
+            GuideScreen(article: Articles.kimarijiGuide, title: s.firstSoundsTitle, sub: s.other.firstSoundsTitle),
+            screen: phone,
+            textScale: textScale);
+        await tester.runAsync(() => Future<void>.delayed(const Duration(milliseconds: 200)));
+        await settle(tester);
         final page = find.byType(Scrollable).first;
         var end = false;
         for (var i = 0; i < 40 && !end; i++) {

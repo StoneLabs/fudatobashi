@@ -27,6 +27,7 @@ as if it were English text.
 Long texts are Markdown files in one folder per language, <code>_articles/:
   rules.md                 the competition rules
   karuta.md                the guide to how karuta works
+  kimariji.md              the guide to kimariji and the sound stairs
   teiichi.md               the 定位置 guide
   card_details/000.md …    each card's explanation on its "About this card"
   card_details/100.md      page (000 is the 序歌)

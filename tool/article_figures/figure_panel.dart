@@ -2,6 +2,8 @@ import 'package:flutter/widgets.dart';
 import 'package:fudatobashi/config/design.dart';
 import 'package:fudatobashi/ui/manga/manga.dart';
 
+import 'figure_layout.dart';
+
 /// A picture in a desk-grey panel with a hard shadow, the shadow inside
 /// the picture's own width.
 class FigurePanel extends StatelessWidget {
@@ -15,7 +17,7 @@ class FigurePanel extends StatelessWidget {
         child: MangaPanel(
           color: Palette.desk,
           shadow: const Offset(GuideLayout.shadowRoom, GuideLayout.shadowRoom),
-          padding: KarutaGuideLayout.figurePadding,
+          padding: FigureFile.panelPadding,
           child: child,
         ),
       );

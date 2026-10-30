@@ -23,6 +23,7 @@ import 'package:fudatobashi/ui/manga/manga.dart';
 import '../../test/test_card_pages.dart';
 import 'figure_layout.dart';
 import 'karuta_figures.dart';
+import 'kimariji_figures.dart';
 
 const _out = 'build/article_figures';
 
@@ -48,6 +49,26 @@ final List<_Figure> _figures = [
   (name: 'karuta_one_sound', byLanguage: false, byScript: true, build: () => const OneSoundFigure()),
   (name: 'karuta_kimariji_long', byLanguage: false, byScript: true, build: () => const KimarijiLongFigure()),
   (name: 'karuta_kimariji_change', byLanguage: true, byScript: true, build: () => const KimarijiChangeFigure()),
+  (name: 'kimariji_pair', byLanguage: false, byScript: true, build: () => const PairFigure()),
+  (name: 'kimariji_read', byLanguage: true, byScript: true, build: () => const ReadFigure()),
+  (
+    name: 'kimariji_stairs',
+    byLanguage: true,
+    byScript: true,
+    build: () => const StairsFigure(FirstSoundsExamples.card),
+  ),
+  (
+    name: 'kimariji_stairs_consonant',
+    byLanguage: true,
+    byScript: true,
+    build: () => const StairsFigure(FirstSoundsExamples.consonant),
+  ),
+  (
+    name: 'kimariji_stairs_whole_kana',
+    byLanguage: true,
+    byScript: true,
+    build: () => const StairsFigure(FirstSoundsExamples.card, kanaOnly: true),
+  ),
 ];
 
 const _languages = ['en', 'ja'];
@@ -59,6 +80,8 @@ void main() {
 
   for (final figure in _figures) {
     testWidgets(figure.name, (tester) async {
+      await tester.binding.setSurfaceSize(const Size(FigureFile.width, FigureFile.maxHeight));
+      addTearDown(() => tester.binding.setSurfaceSize(null));
       await loadCardArt(tester);
       for (final lang in figure.byLanguage ? _languages : [_languages.first]) {
         for (final script in figure.byScript ? _scripts : [_scripts.first]) {

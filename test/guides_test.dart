@@ -5,6 +5,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:fudatobashi/l10n/articles.dart';
+import 'package:fudatobashi/l10n/first_sounds_strings.dart';
 import 'package:fudatobashi/l10n/guide_strings.dart';
 import 'package:fudatobashi/l10n/strings.dart';
 import 'package:fudatobashi/l10n/teiichi_strings.dart';
@@ -21,6 +22,8 @@ const _phones = [(usersPhone, 1.0), (narrowPhone, 1.3)];
 final _guides = <String, GuideScreen Function(S s)>{
   Articles.karutaGuide: (s) =>
       GuideScreen(article: Articles.karutaGuide, title: s.guideTitle, sub: s.other.guideTitle, kanaBesideRomaji: true),
+  Articles.kimarijiGuide: (s) =>
+      GuideScreen(article: Articles.kimarijiGuide, title: s.firstSoundsTitle, sub: s.other.firstSoundsTitle),
   Articles.teiichiGuide: (s) =>
       GuideScreen(article: Articles.teiichiGuide, title: s.teiichiGuideTitle, sub: s.sub?.teiichiGuideTitle),
 };

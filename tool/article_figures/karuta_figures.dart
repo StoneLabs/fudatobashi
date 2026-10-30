@@ -6,13 +6,13 @@ import 'package:fudatobashi/config/torifuda_spec.dart';
 import 'package:fudatobashi/config/vector_art.dart';
 import 'package:fudatobashi/config/yomifuda_spec.dart';
 import 'package:fudatobashi/data/poem.dart';
-import 'package:fudatobashi/ui/help/guide_figures.dart';
 import 'package:fudatobashi/ui/manga/manga.dart';
 import 'package:fudatobashi/ui/torifuda/torifuda_painter.dart';
 import 'package:fudatobashi/ui/torifuda/yomifuda_card.dart';
 
 import 'figure_layout.dart';
 import 'figure_panel.dart';
+import 'kimariji_rows.dart';
 
 /// The karuta guide's pictures, drawn from the app's own cards. They hold
 /// no words: what they show is named in the captions under them.
@@ -211,11 +211,11 @@ class OneSoundFigure extends StatelessWidget {
   Widget build(BuildContext context) => FigurePanel(
         child: Wrap(
           alignment: WrapAlignment.center,
-          spacing: KarutaGuideLayout.tileGap,
-          runSpacing: KarutaGuideLayout.tileGap,
+          spacing: KimarijiFigureLayout.tileGap,
+          runSpacing: KimarijiFigureLayout.tileGap,
           children: [
             for (final kana in KarutaGuideExamples.oneSound.characters)
-              GuideKanaTile(kana, poems.byKimariji(kana).kamiReading[0], decides: true),
+              KanaTile(kana, poems.byKimariji(kana).kamiReading[0], decides: true),
           ],
         ),
       );
@@ -229,9 +229,9 @@ class KimarijiLongFigure extends StatelessWidget {
   Widget build(BuildContext context) {
     final first = poems[KarutaGuideExamples.readFirst], second = poems[KarutaGuideExamples.shortened];
     return FigurePanel(
-      child: GuideKimarijiRows(rows: [
-        GuideKimarijiRow(poem: first, kimariji: first.kimariji),
-        GuideKimarijiRow(poem: second, kimariji: second.kimariji),
+      child: KimarijiRows(rows: [
+        KimarijiRow(poem: first, kimariji: first.kimariji),
+        KimarijiRow(poem: second, kimariji: second.kimariji),
       ]),
     );
   }
@@ -246,9 +246,9 @@ class KimarijiChangeFigure extends StatelessWidget {
     final first = poems[KarutaGuideExamples.readFirst], second = poems[KarutaGuideExamples.shortened];
     final left = [for (final p in poems.all) if (p.id != first.id) p];
     return FigurePanel(
-      child: GuideKimarijiRows(rows: [
-        GuideKimarijiRow(poem: first, kimariji: first.kimariji, read: true),
-        GuideKimarijiRow(poem: second, kimariji: poems.kimarijiAmong(second, left)),
+      child: KimarijiRows(rows: [
+        KimarijiRow(poem: first, kimariji: first.kimariji, read: true),
+        KimarijiRow(poem: second, kimariji: poems.kimarijiAmong(second, left)),
       ]),
     );
   }

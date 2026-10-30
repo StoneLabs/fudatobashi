@@ -11,6 +11,7 @@ import 'package:fudatobashi/data/joka.dart';
 import 'package:fudatobashi/data/poem.dart';
 import 'package:fudatobashi/domain/card_stats.dart';
 import 'package:fudatobashi/domain/sound_ladder.dart';
+import 'package:fudatobashi/l10n/articles.dart';
 import 'package:fudatobashi/l10n/card_info_strings.dart';
 import 'package:fudatobashi/l10n/results_strings.dart';
 import 'package:fudatobashi/l10n/romaji.dart';
@@ -19,7 +20,7 @@ import 'package:fudatobashi/state/settings.dart';
 import 'package:fudatobashi/ui/cards/about_card_screen.dart';
 import 'package:fudatobashi/ui/cards/card_browser_screen.dart';
 import 'package:fudatobashi/ui/cards/card_panel.dart';
-import 'package:fudatobashi/ui/cards/first_sounds_screen.dart';
+import 'package:fudatobashi/ui/help/guide_screen.dart';
 import 'package:fudatobashi/ui/cards/sound_ladder_view.dart';
 import 'package:fudatobashi/ui/help/help_screen.dart';
 import 'package:fudatobashi/ui/manga/manga.dart';
@@ -276,9 +277,9 @@ void main() {
       final p = await openPlayer(tester, 'en');
       await showPage(tester, p, const AboutCardScreen(poemId: 20));
       await tapOn(tester, find.text(_en.aboutReadExplanation));
-      expect(find.byType(FirstSoundsScreen), findsOneWidget);
+      expect(tester.widget<GuideScreen>(find.byType(GuideScreen)).article, Articles.kimarijiGuide);
       await tapOn(tester, find.bySemanticsLabel(_en.back).last);
-      expect(find.byType(FirstSoundsScreen), findsNothing);
+      expect(find.byType(GuideScreen), findsNothing);
       expect(_aboutOf(20), findsOneWidget, reason: 'back returns to the card');
     });
 

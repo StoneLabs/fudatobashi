@@ -129,34 +129,6 @@ abstract final class TobiLineLayout {
   static const double balloonFont = 14;
 }
 
-/// First sounds' pictures (`guide_figures.dart`).
-abstract final class KarutaGuideLayout {
-  static const double figureGap = GuideLayout.pictureGap;
-  static const double figureShadow = GuideLayout.shadowRoom;
-
-  /// A picture's panel.
-  static const EdgeInsets figurePadding = EdgeInsets.fromLTRB(12, 14, 12, 12);
-  static const double captionFont = 12.5;
-  static const double captionGap = 6;
-
-  /// Kimariji pictures: kana tiles, an arrow, the card they mean.
-  static const double tile = 34;
-  static const double tileFont = 20;
-  static const double tileGap = 4;
-  static const double tileBorder = Strokes.label;
-  static const double romajiFont = 10.5;
-  static const double romajiGap = 2;
-  static const double kimarijiCard = 66;
-  static const double kimarijiArrow = 24;
-  static const double kimarijiArrowGap = 10;
-  static const double kimarijiRowGap = 14;
-  static const double readOpacity = 0.35;
-  static const double stampFont = 13;
-  static const double stampTurn = -0.22;
-  static const double stampBorder = 2.5;
-  static const EdgeInsets stampPadding = EdgeInsets.fromLTRB(6, 2, 6, 3);
-}
-
 /// The full karuta rules (`KarutaRulesScreen`): where they come from on
 /// top, then every chapter in an ink band and every article under its
 /// number tag, numbered paragraphs hanging from their numbers.
