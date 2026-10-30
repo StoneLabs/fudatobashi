@@ -3162,7 +3162,9 @@ void main() {
   });
 
   group('Side Trips', () {
-    Finder inTrips(Finder f) => find.descendant(of: find.byType(SideTripsScreen), matching: f);
+    // The ring builds every island's entry; only the front one paints and takes taps.
+    Finder inTrips(Finder f) => find.descendant(
+        of: find.byWidgetPredicate((w) => w is SideTripEntryView && w.entry.trip == SideTrip.ankiren), matching: f);
 
     Future<void> openTrips(WidgetTester tester, Progress p, {double fontScale = 1.1}) async {
       await onPhone(tester, p, fontScale: fontScale);
@@ -3245,7 +3247,7 @@ void main() {
           testWidgets('the Side Trips tab fits the phone, ${mode.name}, at font scale $fontScale ($lang)', (tester) async {
             final p = await open(tester, mode: mode, ja: ja, journeyCards: 3);
             await openTrips(tester, p, fontScale: fontScale);
-            final entry = tester.getRect(find.byType(SideTripBody));
+            final entry = tester.getRect(inTrips(find.byType(SideTripBody)));
             final bar = tester.getRect(find.byType(MangaTabBar));
             expect(entry.left, greaterThanOrEqualTo(Gaps.gutter));
             expect(entry.right, lessThanOrEqualTo(_phone.width - Gaps.gutter));

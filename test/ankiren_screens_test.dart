@@ -290,7 +290,7 @@ void main() {
       final p = await open(tester, ankiren: const AnkirenSettings(rulesSeen: true));
       await clearUpTo(tester, p, AnkirenTuning.rankedAfterLevel);
       await openHub(tester, p);
-      await tester.tap(find.byType(PageBurst));
+      await tester.tap(find.byWidgetPredicate((w) => w is PageBurst && w.trip == SideTrip.ankiren));
       await tester.pump();
       await tester.pump(Motion.route * 2);
       await tester.tap(find.byType(RankedBurst));
