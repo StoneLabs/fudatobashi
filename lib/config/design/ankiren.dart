@@ -144,6 +144,9 @@ abstract final class AnkirenMotion {
   /// A card turning over, both halves of the turn.
   static const Duration flip = Duration(milliseconds: 220);
 
+  /// A card gliding to a new place on the field.
+  static const Curve moveCurve = Curves.easeOutCubic;
+
   /// A right tap's glow fading out.
   static const Duration rightGlow = Duration(milliseconds: 650);
 
