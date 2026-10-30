@@ -72,7 +72,7 @@ void main() {
       final before = latches(p);
 
       expect(
-        tester.widget<DojoScene>(find.byType(DojoScene)).gate,
+        tester.widget<DojoScene>(find.byType(DojoScene)).gates[SideTrip.ankiren],
         GateState.opening,
       );
       await tester.pump(const Duration(seconds: 5));
