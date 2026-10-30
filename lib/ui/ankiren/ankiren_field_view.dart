@@ -35,6 +35,7 @@ class AnkirenFieldView extends StatefulWidget {
     this.overlay,
     this.overlayOverBand = false,
     this.foreground,
+    this.aboveBand,
     this.underlay,
     this.bandExtent,
     this.trueSlots,
@@ -61,6 +62,11 @@ class AnkirenFieldView extends StatefulWidget {
   /// Only for a band that takes no taps: the field would cover it.
   final bool overlayOverBand;
   final Widget Function(FieldPlacement placement)? foreground;
+
+  /// Laid over the field and the band, taking no touches, where the field
+  /// is (a true-scale field that does not pan): what must paint above the
+  /// band, as a card carried across it.
+  final Widget Function(FieldPlacement placement)? aboveBand;
   final Widget Function(FieldPlacement placement)? underlay;
 
   /// The [band]'s height when not the play screen's ([bandHeight]).
@@ -221,7 +227,19 @@ class _AnkirenFieldViewState extends State<AnkirenFieldView> {
     }
     final fieldLayer = Positioned(left: 0, right: 0, top: top, height: height, child: placed);
     final bandLayer = Positioned(left: 0, right: 0, top: top + aboveH, height: bandH, child: widget.band);
-    return Stack(children: widget.overlayOverBand ? [bandLayer, fieldLayer] : [fieldLayer, bandLayer]);
+    final aboveBand = widget.aboveBand;
+    final risen = aboveBand == null
+        ? null
+        : Positioned(
+            left: 0,
+            right: 0,
+            top: top,
+            height: height,
+            child: IgnorePointer(
+              child: Center(child: SizedBox(width: width, height: height, child: aboveBand(placement))),
+            ),
+          );
+    return Stack(children: [...(widget.overlayOverBand ? [bandLayer, fieldLayer] : [fieldLayer, bandLayer]), ?risen]);
   }
 }
 

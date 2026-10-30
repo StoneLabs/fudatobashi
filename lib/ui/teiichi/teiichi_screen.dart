@@ -298,7 +298,8 @@ class _TeiichiScreenState extends State<TeiichiScreen> with AnkirenPlay {
               : recallCard(poemId, side, showNumber: showNumber),
           band: band,
           underlay: editing ? _spots : null,
-          foreground: editing ? (placement) => _layer(placement, shownBoard, showNumber: showNumber) : null,
+          foreground: editing ? _layer : null,
+          aboveBand: editing ? (placement) => _riding(placement, shownBoard, showNumber: showNumber) : null,
         ),
       ),
     );
@@ -335,7 +336,7 @@ class _TeiichiScreenState extends State<TeiichiScreen> with AnkirenPlay {
     );
   }
 
-  Widget _layer(FieldPlacement placement, TeiichiBoard shown, {required bool showNumber}) {
+  Widget _layer(FieldPlacement placement) {
     final drag = _drag;
     final laid = _laid(placement);
     return TeiichiPlacingLayer(
@@ -344,17 +345,26 @@ class _TeiichiScreenState extends State<TeiichiScreen> with AnkirenPlay {
       cards: {for (final MapEntry(key: id, value: r) in laid.entries) if (id != drag?.card) id: r},
       showHint: _placing.order.isEmpty && drag == null,
       drag: drag,
+      onTap: (at) => _tap(at, placement),
+      onDragStart: (card, {required fromStack, required at}) =>
+          _dragStart(card, fromStack: fromStack, at: at, placement: placement),
+      onDrag: (at) => _dragTo(at, placement),
+      onDragEnd: _dragEnd,
+    );
+  }
+
+  Widget _riding(FieldPlacement placement, TeiichiBoard shown, {required bool showNumber}) {
+    final drag = _drag;
+    return TeiichiRiding(
+      placement: placement,
+      stack: _placing.stack,
+      drag: drag,
       landing: switch (drag) {
         TeiichiDrag(onStack: true) => S.of(context).teiichiStack,
         TeiichiDrag(:final card, spot: _?) => _spotName(shown, card),
         _ => null,
       },
       showNumber: showNumber,
-      onTap: (at) => _tap(at, placement),
-      onDragStart: (card, {required fromStack, required at}) =>
-          _dragStart(card, fromStack: fromStack, at: at, placement: placement),
-      onDrag: (at) => _dragTo(at, placement),
-      onDragEnd: _dragEnd,
     );
   }
 
