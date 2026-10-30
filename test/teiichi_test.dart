@@ -3,14 +3,17 @@
 // drop lands, and the stack and its placing times.
 import 'dart:math' as math;
 
+import 'package:flutter/painting.dart' show Size;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:fudatobashi/config/config.dart';
+import 'package:fudatobashi/config/design.dart';
 import 'package:fudatobashi/domain/ankiren_field.dart';
 import 'package:fudatobashi/domain/ankiren_game.dart';
 import 'package:fudatobashi/domain/ankiren_geometry.dart';
 import 'package:fudatobashi/domain/side_trips.dart';
 import 'package:fudatobashi/domain/teiichi.dart';
 import 'package:fudatobashi/domain/teiichi_placing.dart';
+import 'package:fudatobashi/ui/teiichi/teiichi_zoom.dart';
 
 void main() {
   const upper = FieldRow.upper, middle = FieldRow.middle, lower = FieldRow.lower;
@@ -24,6 +27,17 @@ void main() {
       ]));
 
   List<int> ids(int from, int n) => [for (var i = 0; i < n; i++) from + i];
+
+  group('a setup fitted to the cards known', () {
+    test('the cards are clamped to what is known and the rows go up to hold them', () {
+      expect(const TeiichiSetup(cards: 25, rows: 2).fitted(12), const TeiichiSetup(cards: 12, rows: 2));
+      expect(const TeiichiSetup(cards: 20, rows: 1).fitted(100), const TeiichiSetup(cards: 20, rows: 3));
+      expect(const TeiichiSetup(cards: 8, rows: 1).fitted(100), const TeiichiSetup(cards: 8, rows: 1));
+      expect(const TeiichiSetup(cards: 16, rows: 2).fitted(100), const TeiichiSetup(cards: 16, rows: 2));
+      expect(const TeiichiSetup(cards: 17, rows: 2).fitted(100), const TeiichiSetup(cards: 17, rows: 3));
+      expect(const TeiichiSetup(cards: 25, rows: 3).fitted(1), const TeiichiSetup(cards: TeiichiTuning.minCards, rows: 3));
+    });
+  });
 
   group('the side trip', () {
     test('the storehouse island is 定位置, open like 暗記練 once enough cards are seen', () {
@@ -276,6 +290,68 @@ void main() {
       expect(game.prompts.toSet(), {5, 6});
       expect(game.phase, AnkirenPhase.memorise);
       expect(game.countsStrikes, isFalse);
+    });
+  });
+
+  // How far the field grows after Done, on an area 800 × 340 dp with a band
+  // 40 tall: the band's limit is then 300 / 182, the room under the stack's.
+  group('the zoom after Done', () {
+    const area = Size(800, 340);
+    const band = 40.0;
+    const byBand = 300 / 182;
+    const width = 87.35;
+    const pitch = FieldGeometry.pitch;
+
+    // A field whose own side has [row] holding these cards.
+    AnkirenField fieldWith(FieldRow row, {int l = 0, int m = 0, int r = 0}) => AnkirenField(
+          own: AnkirenHalf([
+            for (final x in FieldRow.values)
+              x == row
+                  ? AnkirenRow(left: ids(1, l), middle: ids(30, m), right: ids(60, r))
+                  : AnkirenRow(left: const [], middle: const [], right: const []),
+          ]),
+          opponent: AnkirenHalf.empty(),
+        );
+
+    test('stopped only by the band: the band reaches the top', () {
+      expect(TeiichiZoom.limit(fieldWith(lower, l: 2, r: 2), area, band), moreOrLessEquals(byBand));
+    });
+
+    test('stopped by a row without middle cards: its clusters keep 2.5 card widths apart', () {
+      final zoom = TeiichiZoom.limit(fieldWith(lower, l: 5, r: 5), area, band);
+      expect(zoom, moreOrLessEquals(width / (2.5 * 5.2 - 2 * 0.1 + 10 * pitch)));
+      expect(zoom, lessThan(byBand));
+      final grown = FieldGeometry.of(fieldWith(lower, l: 5, r: 5),
+          folded: false, trueSlots: FieldGeometry.slotsAcross(width / zoom));
+      final cards = grown.half(FieldSide.own);
+      expect(cards[60]!.x - cards[5]!.right, moreOrLessEquals(2.5 * 5.2));
+    });
+
+    test('stopped by middle cards: they keep 1.25 card widths from either cluster', () {
+      final field = fieldWith(upper, l: 3, m: 2, r: 3);
+      final zoom = TeiichiZoom.limit(field, area, band);
+      expect(zoom, moreOrLessEquals(width / (6 * pitch + 3 * (1.75 * 5.2 - 0.1))));
+      expect(zoom, lessThan(byBand));
+      final cards = FieldGeometry.of(field, folded: false, trueSlots: FieldGeometry.slotsAcross(width / zoom))
+          .half(FieldSide.own);
+      expect(cards[30]!.x - cards[3]!.right, moreOrLessEquals(1.25 * 5.2));
+      expect(cards[60]!.x - cards[31]!.right, moreOrLessEquals(1.25 * 5.2));
+    });
+
+    test('a row already full leaves the scale at 1: it never shrinks', () {
+      expect(TeiichiZoom.limit(fieldWith(lower, l: 8, r: 8), area, band), 1);
+    });
+
+    test('the tightest row sets the limit', () {
+      final field = AnkirenField(
+        own: AnkirenHalf([
+          AnkirenRow(left: ids(1, 5), middle: const [], right: ids(60, 5)),
+          AnkirenRow(left: ids(10, 2), middle: const [], right: ids(70, 2)),
+          AnkirenRow(left: ids(20, 3), middle: ids(30, 2), right: ids(80, 3)),
+        ]),
+        opponent: AnkirenHalf.empty(),
+      );
+      expect(TeiichiZoom.limit(field, area, band), moreOrLessEquals(width / (2.5 * 5.2 - 2 * 0.1 + 10 * pitch)));
     });
   });
 }

@@ -22,6 +22,7 @@ import 'package:fudatobashi/domain/ankiren_game.dart';
 import 'package:fudatobashi/domain/side_trips.dart';
 import 'package:fudatobashi/domain/teiichi.dart';
 import 'package:fudatobashi/domain/trainer.dart';
+import 'package:fudatobashi/l10n/ankiren_strings.dart';
 import 'package:fudatobashi/l10n/free_strings.dart';
 import 'package:fudatobashi/l10n/side_trip_strings.dart';
 import 'package:fudatobashi/l10n/strings.dart';
@@ -33,6 +34,7 @@ import 'package:fudatobashi/ui/ankiren/ankiren_card.dart';
 import 'package:fudatobashi/ui/app.dart';
 import 'package:fudatobashi/ui/manga/manga.dart';
 import 'package:fudatobashi/ui/play/time_format.dart';
+import 'package:fudatobashi/ui/results/run_summary.dart';
 import 'package:fudatobashi/ui/side_trips/burst_button.dart';
 import 'package:fudatobashi/ui/side_trips/dojo_scene.dart';
 import 'package:fudatobashi/ui/side_trips/side_trip_entry.dart';
@@ -277,12 +279,56 @@ void main() {
       expect(find.textContaining(s.teiichiRowsWentUp(3), findRichText: true), findsOneWidget);
       await captureScreen(tester, 'teiichi/custom_20');
 
-      await tap(find.descendant(of: sheet, matching: find.text(s.freeStart)));
+      await tap(find.descendant(of: sheet, matching: find.text(s.ankirenConfirm)));
       await tester.pump(Motion.sheet);
       expect(find.text(s.teiichiPlay(20)), findsOneWidget, reason: 'the page plays the custom game');
+      expect((p.settings.teiichiCards, p.settings.teiichiRows), (20, 3), reason: 'kept in the settings');
+
+      await tester.pumpWidget(const SizedBox());
+      await show(tester, p, () => const TeiichiPage());
+      expect(find.text(s.teiichiPlay(20)), findsOneWidget, reason: 'the page opens on the saved setup');
       expect(tester.takeException(), isNull);
       await tester.pumpWidget(const SizedBox());
     });
+  });
+
+  // Results with both shelves of cards full: every card's kimariji shows in
+  // full, inside the card panel, on the phones at font scales 1 and 1.3.
+  group('results fit', () {
+    for (final phone in [narrowPhone, usersPhone]) {
+      for (final fontScale in [1.0, 1.3]) {
+        testWidgets('${phone.name} dp, font scale $fontScale', (tester) async {
+          final p = await open(tester);
+          final played = playTeiichi(TeiichiSetup.usual, placeMs: 900, wrongAt: {2});
+          await show(
+              tester,
+              p,
+              () => TeiichiResultsScreen(
+                    placing: played.placing,
+                    game: played.game,
+                    player: AnkirenPlayer.owner,
+                    bestBefore: null,
+                  ),
+              screen: phone,
+              fontScale: fontScale);
+          await tester.pump(Motion.route);
+          await captureScreen(tester, 'teiichi/results_fit');
+          final names = {for (final c in poems.all) s.kimariji(c.id)};
+          final labels = find.byWidgetPredicate((w) => w is Text && names.contains(w.data) && w.maxLines == 1);
+          expect(labels, findsNWidgets(2 * SummaryPanelLayout.perLine));
+          await tester.ensureVisible(labels.last);
+          await tester.pump();
+          final panel = tester.getRect(find.ancestor(of: find.byType(SummaryRow).last, matching: find.byType(MangaPanel)).first);
+          for (final label in labels.evaluate()) {
+            final bottom = tester.getRect(find.byWidget(label.widget)).bottom;
+            expect(bottom, lessThanOrEqualTo(panel.bottom - Strokes.panel), reason: 'inside the panel');
+            expect(bottom, lessThanOrEqualTo(phone.size.height - phone.bars.bottom), reason: 'on screen');
+          }
+          expect(tester.takeException(), isNull);
+          await tester.pumpWidget(const SizedBox());
+        });
+      }
+    }
   });
 
   group('a game', () {
@@ -349,7 +395,7 @@ void main() {
       await gesture.moveTo(tester.getTopLeft(layer()) + placed[target]!.center);
       await tester.pump();
       expect(layerOf(tester).drag?.spot, CardSpot(target));
-      expect(layerOf(tester).landing, isNotNull);
+      expect(tester.widget<TeiichiRiding>(find.byType(TeiichiRiding)).landing, isNotNull);
       await tester.pump(TeiichiPlayLayout.move);
       await captureScreen(tester, 'teiichi/place_drag');
       await gesture.up();
@@ -358,6 +404,20 @@ void main() {
       expect(layerOf(tester).drag, isNull);
       await captureScreen(tester, 'teiichi/place_mid');
 
+      // A card carried across the band paints above it.
+      final placement = layerOf(tester).placement;
+      final origin = tester.getTopLeft(layer());
+      final carry = await tester.startGesture(origin + stackRect(placement).center);
+      await carry.moveBy(const Offset(0, 20));
+      await tester.pump();
+      await carry.moveTo(origin + Offset(placement.roomAbove.center.dx + 120, placement.bandTop + 100));
+      await tester.pump();
+      expect(layerOf(tester).drag, isNotNull);
+      await captureScreen(tester, 'teiichi/place_over_band');
+      await carry.up();
+      await tester.pump();
+      await tester.pump(TeiichiPlayLayout.move);
+
       await placeRest(tester, setup);
       expect(layerOf(tester).stack, isEmpty);
       expect(tester.widget<BandButton>(done).onTap, isNotNull);
@@ -365,8 +425,13 @@ void main() {
 
       await tester.tap(done);
       await tester.pump();
-      await tester.pump(AnkirenMotion.flip);
       expect(find.byType(TeiichiPlacingLayer), findsNothing);
+      expect(tester.widgetList<AnkirenCard>(find.byType(AnkirenCard)).every((c) => c.faceUp), isTrue,
+          reason: 'the field grows with its cards still face up');
+      await tester.pump(TeiichiPlayLayout.zoomTime ~/ 2);
+      await tester.pump(TeiichiPlayLayout.zoomTime ~/ 2);
+      await captureScreen(tester, 'teiichi/zoomed');
+      await tester.pump(AnkirenMotion.flip);
       await captureScreen(tester, 'teiichi/flip');
       await tester.pump(AnkirenPlayTuning.promptPause);
       await tester.pump();
@@ -438,8 +503,36 @@ void main() {
       final p = await open(tester);
       await show(tester, p, () => TeiichiScreen(setup: TeiichiSetup.usual, known: allCards, seed: 1),
           screen: usersPhoneLandscape);
+      await tester.tap(find.widgetWithText(BandButton, s.end));
+      await tester.pump();
+      await tester.pump(Motion.route);
+      expect(find.text(_home), findsOneWidget, reason: 'with no card placed it leaves at once');
+      expect(p.sideTrips.runsOf(SideTrip.teiichi), isEmpty);
+      await tester.pumpWidget(const SizedBox());
+    });
+
+    testWidgets('End or Back with cards placed asks first; Cancel stays, Leave goes', (tester) async {
+      final p = await open(tester);
+      await show(tester, p, () => TeiichiScreen(setup: TeiichiSetup.usual, known: allCards, seed: 1),
+          screen: usersPhoneLandscape);
       await placeRest(tester, TeiichiSetup.usual, upTo: 3);
       await tester.tap(find.widgetWithText(BandButton, s.end));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
+      expect(find.text(s.teiichiLeaveTitle), findsOneWidget);
+      expect(find.text(s.teiichiLeaveNote), findsOneWidget);
+      await captureScreen(tester, 'teiichi/leave');
+      await tester.tap(find.text(s.cancel));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
+      expect(find.byType(TeiichiScreen), findsOneWidget);
+      expect(layerOf(tester).cards, hasLength(3), reason: 'the layout is kept');
+
+      await tester.binding.handlePopRoute();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
+      expect(find.text(s.teiichiLeaveTitle), findsOneWidget, reason: 'the Back key asks too');
+      await tester.tap(find.text(s.ankirenLeave));
       await tester.pump();
       await tester.pump(Motion.route);
       expect(find.text(_home), findsOneWidget);
@@ -456,6 +549,7 @@ void main() {
       await placeRest(tester, setup);
       await tester.tap(find.widgetWithText(BandButton, s.done));
       await tester.pump();
+      await tester.pump(TeiichiPlayLayout.zoomTime);
       await tester.pump(AnkirenMotion.flip + AnkirenPlayTuning.promptPause);
       await tester.pump();
       for (var i = 0; i < setup.cards; i++) {

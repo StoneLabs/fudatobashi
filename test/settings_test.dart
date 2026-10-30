@@ -138,6 +138,17 @@ void main() {
     });
   });
 
+  group('AppSettings 定位置 setup', () {
+    test('the usual game by default, round-trips, and stays within what a game allows', () {
+      expect((const AppSettings().teiichiCards, const AppSettings().teiichiRows), (25, 3));
+      final saved = const AppSettings().copyWith(teiichiCards: 12, teiichiRows: 2);
+      final back = AppSettings.fromJson(saved.toJson());
+      expect((back.teiichiCards, back.teiichiRows), (12, 2));
+      final wild = AppSettings.fromJson({'teiichiCards': 999, 'teiichiRows': 0});
+      expect((wild.teiichiCards, wild.teiichiRows), (25, 1));
+    });
+  });
+
   group('AppSettings.accessibilityMode', () {
     test('off by default, round-trips, and copyWith changes only it', () {
       expect(const AppSettings().accessibilityMode, isFalse);
