@@ -52,32 +52,44 @@ class AnkirenBand extends StatelessWidget {
 }
 
 /// A band control: an icon and a word in an ink button as tall as the band
-/// allows, shrinking its contents to fit.
+/// allows, shrinking its contents to fit; faded while [dimmed].
 class BandButton extends StatelessWidget {
-  const BandButton({super.key, required this.icon, required this.label, required this.onTap, this.color = Palette.paper});
+  const BandButton({
+    super.key,
+    required this.icon,
+    required this.label,
+    required this.onTap,
+    this.color = Palette.paper,
+    this.dimmed = false,
+  });
 
   final VectorArt icon;
   final String label;
   final VoidCallback? onTap;
   final Color color;
+  final bool dimmed;
 
   @override
   Widget build(BuildContext context) => SizedBox(
         width: AnkirenPlayLayout.sideSlot,
         height: double.infinity,
-        child: InkButton(
-          onTap: onTap,
-          color: color,
-          border: Strokes.control,
-          padding: AnkirenPlayLayout.controlPadding,
-          semanticLabel: label,
-          child: FittedBox(
-            fit: BoxFit.scaleDown,
-            child: Row(mainAxisSize: MainAxisSize.min, children: [
-              MangaIcon(icon, size: AnkirenPlayLayout.controlIcon),
-              const SizedBox(width: Gaps.tight),
-              Text(label, style: const TextStyle(fontWeight: Weights.black, fontSize: AnkirenPlayLayout.controlFont)),
-            ]),
+        child: Opacity(
+          opacity: dimmed ? AnkirenPlayLayout.dimmedOpacity : 1,
+          child: InkButton(
+            onTap: onTap,
+            color: color,
+            border: Strokes.control,
+            padding: AnkirenPlayLayout.controlPadding,
+            semanticLabel: label,
+            child: FittedBox(
+              fit: BoxFit.scaleDown,
+              child: Row(mainAxisSize: MainAxisSize.min, children: [
+                MangaIcon(icon, size: AnkirenPlayLayout.controlIcon),
+                const SizedBox(width: Gaps.tight),
+                Text(label,
+                    style: const TextStyle(fontWeight: Weights.black, fontSize: AnkirenPlayLayout.controlFont)),
+              ]),
+            ),
           ),
         ),
       );

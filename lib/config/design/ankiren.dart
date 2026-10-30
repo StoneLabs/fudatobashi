@@ -117,6 +117,9 @@ abstract final class AnkirenPlayLayout {
   static const double controlIcon = 18;
   static const EdgeInsets controlPadding = EdgeInsets.symmetric(horizontal: 8);
 
+  /// A band control not open yet.
+  static const double dimmedOpacity = 0.4;
+
   /// The kimariji just found, or just given up, while the next prompt
   /// waits.
   static const Color foundText = Palette.landDeep;

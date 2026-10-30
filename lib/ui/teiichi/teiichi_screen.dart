@@ -233,6 +233,7 @@ class _TeiichiScreenState extends State<TeiichiScreen> with AnkirenPlay {
               icon: IconArt.arrow,
               label: s.done,
               color: allPlaced ? Palette.sun : Palette.paper,
+              dimmed: !allPlaced,
               onTap: allPlaced ? _done : null,
             )
           : dontKnowButton(),
