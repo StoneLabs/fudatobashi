@@ -54,6 +54,17 @@ extension SideTripStrings on S {
         SideTrip.teiichi => t('teiichiTag'),
       };
 
+  /// The burst on [trip]'s hub entry that opens its page, and what its
+  /// stats row says to screen readers.
+  String tripPageTitle(SideTrip trip) => switch (trip) {
+        SideTrip.ankiren => t('ankirenPageTitle'),
+        SideTrip.teiichi => t('teiichiPageTitle'),
+      };
+  String tripOpenPage(SideTrip trip) => switch (trip) {
+        SideTrip.ankiren => t('ankirenOpenPage'),
+        SideTrip.teiichi => t('teiichiOpenPage'),
+      };
+
   String get sideTripUnranked => t('sideTripUnranked');
   String get sideTripRanked => t('sideTripRanked');
 

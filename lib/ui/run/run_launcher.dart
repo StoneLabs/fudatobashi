@@ -8,9 +8,11 @@ import '../../domain/ankiren_level.dart';
 import '../../domain/play_session.dart';
 import '../../domain/ranked.dart';
 import '../../domain/side_trips.dart';
+import '../../domain/teiichi.dart';
 import '../../l10n/ankiren_strings.dart';
 import '../../l10n/home_strings.dart';
 import '../../l10n/strings.dart';
+import '../../l10n/teiichi_strings.dart';
 import '../../state/play_config.dart';
 import '../../state/scope.dart';
 import '../ankiren/ankiren_screen.dart';
@@ -20,6 +22,7 @@ import '../exam/exam_screen.dart';
 import '../exam/exam_sheets.dart';
 import '../manga/manga.dart';
 import '../play/play_screen.dart';
+import '../teiichi/teiichi_screen.dart';
 import 'ranked_sheets.dart';
 
 // Entry points for starting a run. Screens call only these; the play and
@@ -212,5 +215,31 @@ Future<void> _pushAnkiren(BuildContext context, AnkirenSetup setup, List<int> kn
   await Navigator.of(context).push(MangaRoute<void>(
     transition: MangaTransition.zoom,
     builder: (_) => AnkirenScreen(setup: setup, known: known, player: player),
+  ));
+}
+
+/// 定位置 at [setup], once 定位置 is open, laid out from the known cards,
+/// which must hold it.
+Future<void> startTeiichi(BuildContext context, TeiichiSetup setup) async {
+  final progress = ProgressScope.read(context);
+  if (!progress.sideTripsHub()[SideTrip.teiichi].open) return;
+  final known = progress.knownCards.toList();
+  if (setup.cards > known.length) {
+    MangaToast.show(context, S.of(context).teiichiNeedCards(setup.cards));
+    return;
+  }
+  await _pushTeiichi(context, setup, known);
+}
+
+/// 定位置 for a guest at [setup], laid out from all the cards: nothing of it
+/// is recorded (see [AnkirenPlayer.guest]).
+Future<void> startTeiichiGuest(BuildContext context, TeiichiSetup setup) =>
+    _pushTeiichi(context, setup, [for (final p in poems.all) p.id], player: AnkirenPlayer.guest);
+
+Future<void> _pushTeiichi(BuildContext context, TeiichiSetup setup, List<int> known,
+    {AnkirenPlayer player = AnkirenPlayer.owner}) async {
+  await Navigator.of(context).push(MangaRoute<void>(
+    transition: MangaTransition.zoom,
+    builder: (_) => TeiichiScreen(setup: setup, known: known, player: player),
   ));
 }

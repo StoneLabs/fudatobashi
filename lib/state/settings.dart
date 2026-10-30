@@ -176,6 +176,7 @@ class AppSettings {
     this.soundLadder = DefaultSettings.soundLadder,
     this.cardScale = DefaultSettings.cardScale,
     this.ankiren = DefaultSettings.ankiren,
+    this.teiichiRulesSeen = DefaultSettings.teiichiRulesSeen,
   });
 
   /// A language code (e.g. `'ja'`), or `'system'` for the device's language.
@@ -241,6 +242,9 @@ class AppSettings {
   /// no longer shows.
   final bool cardPanelSwiped;
 
+  /// 定位置's rules have been shown, so its page no longer opens with them.
+  final bool teiichiRulesSeen;
+
   /// The match timer has asked once to show its notification, so it never
   /// asks again.
   final bool timerNotificationsAsked;
@@ -305,6 +309,7 @@ class AppSettings {
         'soundLadder': soundLadder.name,
         'cardScale': cardScale,
         'ankiren': ankiren.toJson(),
+        'teiichiRulesSeen': teiichiRulesSeen,
       };
 
   factory AppSettings.fromJson(Map<String, dynamic> j) {
@@ -356,6 +361,7 @@ class AppSettings {
       cardScale: ((j['cardScale'] as num?)?.toDouble() ?? DefaultSettings.cardScale)
           .clamp(SwipeTuning.cardScaleMin, SwipeTuning.cardScaleMax),
       ankiren: ankiren == null ? DefaultSettings.ankiren : AnkirenSettings.fromJson(ankiren),
+      teiichiRulesSeen: j['teiichiRulesSeen'] as bool? ?? DefaultSettings.teiichiRulesSeen,
     );
   }
 
@@ -389,6 +395,7 @@ class AppSettings {
     SoundLadderMode? soundLadder,
     double? cardScale,
     AnkirenSettings? ankiren,
+    bool? teiichiRulesSeen,
   }) =>
       AppSettings(
         language: language ?? this.language,
@@ -420,5 +427,6 @@ class AppSettings {
         soundLadder: soundLadder ?? this.soundLadder,
         cardScale: cardScale ?? this.cardScale,
         ankiren: ankiren ?? this.ankiren,
+        teiichiRulesSeen: teiichiRulesSeen ?? this.teiichiRulesSeen,
       );
 }

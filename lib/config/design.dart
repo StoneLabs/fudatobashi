@@ -21,6 +21,7 @@ part 'design/onboarding.dart';
 part 'design/help.dart';
 part 'design/side_trips.dart';
 part 'design/ankiren.dart';
+part 'design/teiichi.dart';
 part 'design/exam.dart';
 part 'design/settings.dart';
 part 'design/debug.dart';

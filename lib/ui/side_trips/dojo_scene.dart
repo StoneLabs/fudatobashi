@@ -6,7 +6,6 @@ import 'package:flutter/widgets.dart';
 import '../../config/config.dart';
 import '../../config/design.dart';
 import '../../domain/side_trips.dart';
-import '../../l10n/ankiren_strings.dart';
 import '../../l10n/side_trip_strings.dart';
 import '../../l10n/strings.dart';
 import '../../l10n/tour_strings.dart';
@@ -26,9 +25,9 @@ enum GateState { locked, opening, open }
 /// in the two front slots. Tobi's boat ([DojoBoat]) sails over it, among
 /// the sea's paper layers.
 ///
-/// The torii stands for the island in front: 暗記練's as [gate] says, a
-/// padlocked one for any other. While [fade] runs, the islands crossfade
-/// from the ring at step [fadeFrom].
+/// The torii stands for the island in front: its trip's as [gates] says, a
+/// padlocked one for an island still being built. While [fade] runs, the
+/// islands crossfade from the ring at step [fadeFrom].
 ///
 /// It fills its box (the screen above the entries), scaled to the box's
 /// width; the near swell crests just above its bottom. A box too short to
@@ -40,16 +39,18 @@ class DojoScene extends StatefulWidget {
     required this.turn,
     required this.fade,
     required this.fadeFrom,
-    required this.gate,
+    required this.gates,
     this.onOpened,
   });
 
   final Animation<double> turn, fade;
   final int fadeFrom;
-  final GateState gate;
 
-  /// Called once the torii has finished opening.
-  final VoidCallback? onOpened;
+  /// Each trip's torii; padlocked when missing.
+  final Map<SideTrip, GateState> gates;
+
+  /// Called once a trip's torii has finished opening.
+  final ValueChanged<SideTrip>? onOpened;
 
   @override
   State<DojoScene> createState() => _DojoSceneState();
@@ -59,21 +60,26 @@ class _DojoSceneState extends State<DojoScene> with SingleTickerProviderStateMix
   late final _unlock = AnimationController(vsync: this, duration: DojoUnlockMotion.unlock)..addListener(_onTick);
   bool _snapped = false;
 
+  /// The trip whose torii is opening, one at a time.
+  SideTrip? _openingOf(DojoScene scene) =>
+      [for (final MapEntry(key: trip, value: gate) in scene.gates.entries) if (gate == GateState.opening) trip].firstOrNull;
+
+  GateState _gateOf(SideTrip? trip) => trip == null ? GateState.locked : widget.gates[trip] ?? GateState.locked;
+
   @override
   void initState() {
     super.initState();
-    if (widget.gate == GateState.opening) WidgetsBinding.instance.addPostFrameCallback((_) => _open());
+    if (_openingOf(widget) != null) WidgetsBinding.instance.addPostFrameCallback((_) => _open());
   }
 
   @override
   void didUpdateWidget(DojoScene old) {
     super.didUpdateWidget(old);
-    if (widget.gate == GateState.opening && old.gate != GateState.opening) {
-      WidgetsBinding.instance.addPostFrameCallback((_) => _open());
-    }
-    if (widget.gate == GateState.locked && old.gate != GateState.locked) {
+    final opening = _openingOf(widget), was = _openingOf(old);
+    if (opening != null && opening != was) {
       _unlock.value = 0;
       _snapped = false;
+      WidgetsBinding.instance.addPostFrameCallback((_) => _open());
     }
   }
 
@@ -84,13 +90,14 @@ class _DojoSceneState extends State<DojoScene> with SingleTickerProviderStateMix
   }
 
   void _open() {
-    if (!mounted || _unlock.isAnimating || _unlock.isCompleted) return;
+    final trip = _openingOf(widget);
+    if (!mounted || trip == null || _unlock.isAnimating || _unlock.isCompleted) return;
     if (MediaQuery.disableAnimationsOf(context)) {
       _unlock.value = 1;
-      widget.onOpened?.call();
+      widget.onOpened?.call(trip);
       return;
     }
-    _unlock.forward().whenComplete(() => widget.onOpened?.call());
+    _unlock.forward().whenComplete(() => widget.onOpened?.call(trip));
   }
 
   void _onTick() {
@@ -102,11 +109,13 @@ class _DojoSceneState extends State<DojoScene> with SingleTickerProviderStateMix
     playSound(context, Sfx.ratingBreak);
     if (ProgressScope.read(context).settings.haptics) HapticFeedback.heavyImpact();
     final s = S.of(context);
-    MangaToast.show(context, s.tabUnlocked(s.ankirenName));
+    final trip = _openingOf(widget);
+    if (trip != null) MangaToast.show(context, s.tabUnlocked(s.tripName(trip)));
   }
 
-  /// How far 暗記練's banner is up: 0 while its torii is padlocked, 1 open.
-  double get _raised => switch (widget.gate) {
+  /// How far a trip's torii, at [gate], is raised: 0 while padlocked, 1
+  /// open.
+  double _raised(GateState gate) => switch (gate) {
         GateState.locked => 0,
         GateState.open => 1,
         GateState.opening => _unlock.value < DojoUnlockMotion.snapAt
@@ -155,8 +164,9 @@ class _DojoSceneState extends State<DojoScene> with SingleTickerProviderStateMix
     return [
       for (final ring in shown)
         for (final (isle, arm, spec) in _placed(ring.turn))
-          _Isle(isle, spec, frame, key: ValueKey((ring.leaving, isle, arm)), opacity: ring.opacity, raised: _raised),
-      _torii(frame, front == SideTripIsle.ankiren ? widget.gate : GateState.locked),
+          _Isle(isle, spec, frame,
+              key: ValueKey((ring.leaving, isle, arm)), opacity: ring.opacity, raised: _raised(_gateOf(isle.trip))),
+      _torii(frame, _gateOf(front.trip)),
       for (final ring in shown)
         for (final (isle, arm, spec) in _placed(ring.turn))
           if (isle.comingSoon && spec.label * ring.opacity > 0)
@@ -243,8 +253,8 @@ class _DojoSceneState extends State<DojoScene> with SingleTickerProviderStateMix
         ],
       // The padlocked torii is gone by halfway; the open one pops in.
       GateState.opening => [
-          picture(DojoSceneLayout.toriiLocked, opacity: 1 - 2 * _raised, scale: 1 + pop * _raised),
-          picture(DojoSceneLayout.toriiOpen, opacity: _raised, scale: 1 + pop * (1 - _raised)),
+          picture(DojoSceneLayout.toriiLocked, opacity: 1 - 2 * _raised(state), scale: 1 + pop * _raised(state)),
+          picture(DojoSceneLayout.toriiOpen, opacity: _raised(state), scale: 1 + pop * (1 - _raised(state))),
         ],
     };
     return Stack(key: const ValueKey('torii'), clipBehavior: Clip.none, children: children);

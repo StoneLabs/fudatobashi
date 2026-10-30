@@ -14,14 +14,15 @@ import '../../l10n/strings.dart';
 import '../../state/progress.dart';
 import '../../state/scope.dart';
 import 'ankiren_page.dart';
+import 'teiichi_page.dart';
 import '../manga/manga.dart';
 import 'dojo_scene.dart';
 import 'side_trip_entry.dart';
 
 /// The Side Trips tab (寄り道): the dojo scene ([DojoScene]) with its ring of
 /// islands ([SideTripRing]) over the entry of the island in front, carried
-/// on the near swell: 暗記練's ([SideTripEntryView]), or one saying the
-/// island is still being built ([SideTripSoonEntry]). Everything 暗記練's
+/// on the near swell: a trip's ([SideTripEntryView]), or one saying the
+/// island is still being built ([SideTripSoonEntry]). Everything a trip's
 /// entry shows comes from the hub ([SideTripsHub]).
 ///
 /// A swipe anywhere turns the ring a step, the swell and the entry riding
@@ -30,9 +31,9 @@ import 'side_trip_entry.dart';
 /// entries crossfade. Screen readers get the island's name and actions to
 /// turn the ring. The tab always comes back with 暗記練 in front.
 ///
-/// The first time the tab shows 暗記練 open after showing it locked, its
-/// torii opens with a snap; once, like the tab chains, and only with
-/// 暗記練 in front.
+/// The first time the tab shows a trip open after showing it locked, its
+/// torii opens with a snap; once, like the tab chains, and only with the
+/// trip in front.
 class SideTripsScreen extends StatefulWidget {
   const SideTripsScreen({super.key, this.underBar = 0});
 
@@ -197,20 +198,14 @@ class _SideTripsScreenState extends State<SideTripsScreen> with TickerProviderSt
     setState(() => _rest = _step);
   }
 
-  /// While the tab is on screen with 暗記練 in front: remembers the trips it
-  /// shows locked, and starts showing the opening of any seen locked that
-  /// have opened since.
-  void _syncLatch(Progress progress, SideTripsHub hub) {
+  /// While the tab is on screen with [trip] in front: remembers it shown
+  /// locked, or starts showing its opening when it was and has opened
+  /// since.
+  void _syncLatch(Progress progress, SideTripsHub hub, SideTrip trip) {
     if (!TickerMode.valuesOf(context).enabled) return;
     final seen = progress.sideTripsSeenLocked;
-    final locked = [
-      for (final e in hub.entries)
-        if (!e.open) e.trip,
-    ];
-    final opened = [
-      for (final t in seen)
-        if (hub[t].open) t,
-    ];
+    final locked = [if (!hub[trip].open) trip];
+    final opened = [if (seen.contains(trip) && hub[trip].open) trip];
     if (_syncScheduled || (seen.containsAll(locked) && opened.isEmpty)) return;
     _syncScheduled = true;
     SchedulerBinding.instance.addPostFrameCallback((_) {
@@ -230,8 +225,9 @@ class _SideTripsScreenState extends State<SideTripsScreen> with TickerProviderSt
   }
 
   Widget _entry(SideTripsHub hub, SideTripIsle isle) => switch (isle.trip) {
-        null || SideTrip.teiichi => const SideTripSoonEntry(),
+        null => const SideTripSoonEntry(),
         SideTrip.ankiren => SideTripEntryView(hub[SideTrip.ankiren], onOpen: () => openAnkirenPage(context)),
+        SideTrip.teiichi => SideTripEntryView(hub[SideTrip.teiichi], onOpen: () => openTeiichiPage(context)),
       };
 
   /// [isle]'s entry and swell show as far as the crossfade has come to it.
@@ -256,8 +252,8 @@ class _SideTripsScreenState extends State<SideTripsScreen> with TickerProviderSt
     final progress = ProgressScope.of(context);
     final hub = progress.sideTripsHub();
     final front = SideTripRing.frontAt(_rest);
-    if (front == SideTripIsle.ankiren && !_swiping && _fade.isCompleted) _syncLatch(progress, hub);
-    final ankiren = hub[SideTrip.ankiren];
+    final trip = front.trip;
+    if (trip != null && !_swiping && _fade.isCompleted) _syncLatch(progress, hub, trip);
     return GestureDetector(
       behavior: HitTestBehavior.translucent,
       onHorizontalDragStart: _onDragStart,
@@ -291,8 +287,8 @@ class _SideTripsScreenState extends State<SideTripsScreen> with TickerProviderSt
                     turn: _turn,
                     fade: _fade,
                     fadeFrom: _fadeFrom,
-                    gate: _gate(progress, ankiren),
-                    onOpened: () => setState(() => _opening.remove(ankiren.trip)),
+                    gates: {for (final e in hub.entries) e.trip: _gate(progress, e)},
+                    onOpened: (trip) => setState(() => _opening.remove(trip)),
                   ),
                 ),
                 boat: DojoBoat(drift: _boat),

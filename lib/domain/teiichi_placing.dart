@@ -31,6 +31,9 @@ class TeiichiPlacing {
   /// The card to place next; null once every card is placed.
   int? get top => _stack.firstOrNull;
 
+  /// The cards still to place, the top card first.
+  List<int> get stack => List.unmodifiable(_stack);
+
   /// Cards still in the stack.
   int get left => _stack.length;
   bool get allPlaced => _stack.isEmpty;

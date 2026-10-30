@@ -83,12 +83,14 @@ class BandButton extends StatelessWidget {
       );
 }
 
-/// The memorise countdown: the time [left], m:ss, and what it counts.
+/// A clock in the band: the time [left], or so far, m:ss, and what it
+/// counts: [label], memorising when not given.
 class MemoriseClock extends StatelessWidget {
-  const MemoriseClock({super.key, required this.left, required this.landscape});
+  const MemoriseClock({super.key, required this.left, required this.landscape, this.label});
 
   final ValueListenable<Duration> left;
   final bool landscape;
+  final String? label;
 
   @override
   Widget build(BuildContext context) => Row(
@@ -109,7 +111,7 @@ class MemoriseClock extends StatelessWidget {
           ),
           const SizedBox(width: AnkirenPlayLayout.bandGap),
           Text(
-            S.of(context).ankirenMemorise,
+            label ?? S.of(context).ankirenMemorise,
             style: const TextStyle(
               fontWeight: Weights.black,
               fontSize: AnkirenPlayLayout.labelFont,

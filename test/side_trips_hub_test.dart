@@ -597,25 +597,26 @@ void main() {
 
       expect(inHub(find.byType(SideTripBody)).hitTestable(), findsOneWidget);
       expect(inHub(find.byType(SideTripSoonEntry)).hitTestable(), findsNothing);
-      expect(tags(), 1, reason: 'the storehouse on the right');
+      expect(tags(), 0, reason: '定位置 on the right is open');
       expect(pictures(DojoRingLayout.nobori.asset), findsOneWidget, reason: "暗記練's banner is its label");
       expect(pictures(DojoSceneLayout.toriiOpen.asset), findsOneWidget);
 
-      for (final (front, labels, banner) in [
-        (SideTripIsle.storehouse, 2, false),
-        (SideTripIsle.hall, 2, false),
-        (SideTripIsle.rocks, 2, false),
-        (SideTripIsle.fort, 1, true),
+      for (final (front, labels, banner, open) in [
+        (SideTripIsle.storehouse, 1, false, true),
+        (SideTripIsle.hall, 2, false, false),
+        (SideTripIsle.rocks, 2, false, false),
+        (SideTripIsle.fort, 1, true, false),
       ]) {
         await swipe(tester);
         expect(frontOf(tester), front);
-        expect(inHub(find.byType(SideTripSoonEntry)).hitTestable(), findsOneWidget, reason: '$front');
-        expect(inHub(find.byType(SideTripBody)).hitTestable(), findsNothing, reason: '$front');
-        expect(inHub(find.text(s.sideTripsSoonLine)).hitTestable(), findsOneWidget, reason: 'one entry shows');
+        expect(inHub(find.byType(SideTripSoonEntry)).hitTestable(), open ? findsNothing : findsOneWidget,
+            reason: '$front');
+        expect(inHub(find.byType(SideTripBody)).hitTestable(), open ? findsOneWidget : findsNothing, reason: '$front');
+        if (!open) expect(inHub(find.text(s.sideTripsSoonLine)).hitTestable(), findsOneWidget, reason: 'one entry shows');
         expect(tags(), labels, reason: '$front');
         expect(pictures(DojoRingLayout.nobori.asset), banner ? findsOneWidget : findsNothing, reason: '$front');
-        expect(pictures(DojoSceneLayout.toriiOpen.asset), findsNothing, reason: 'padlocked for $front');
-        expect(pictures(DojoSceneLayout.toriiLocked.asset), findsOneWidget, reason: '$front');
+        expect(pictures(DojoSceneLayout.toriiOpen.asset), open ? findsOneWidget : findsNothing, reason: '$front');
+        expect(pictures(DojoSceneLayout.toriiLocked.asset), open ? findsNothing : findsOneWidget, reason: '$front');
       }
       await tester.pumpWidget(const SizedBox());
     });
@@ -801,6 +802,7 @@ void main() {
         final p = await open(tester, _Hub.ranked, lang);
         await openHub(tester, p, phone, fontScale: fontScale);
         await swipe(tester);
+        await swipe(tester);
         expect(tester.takeException(), isNull);
         final entry = inHub(find.byType(SideTripSoonEntry)).hitTestable();
         expectShown(tester, entry, phone);
@@ -811,7 +813,7 @@ void main() {
   });
 
   group('unlock moment', () {
-    GateState gate(WidgetTester tester) => tester.widget<DojoScene>(find.byType(DojoScene)).gate;
+    GateState gate(WidgetTester tester) => tester.widget<DojoScene>(find.byType(DojoScene)).gates[SideTrip.ankiren]!;
 
     testWidgets('暗記練 seen locked opens once, with the chains\' snap and a toast; then it stays open', (tester) async {
       const s = S('en');

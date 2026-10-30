@@ -9,6 +9,7 @@ import '../../data/poem.dart';
 import '../../domain/ankiren_rating.dart';
 import '../../domain/play_session.dart';
 import '../../domain/rating.dart';
+import '../../domain/side_trips.dart';
 import '../../domain/today_set.dart';
 import '../../domain/xp.dart';
 import '../../l10n/side_trip_strings.dart';
@@ -174,7 +175,7 @@ void previewAnkirenUnlock(BuildContext context) => Navigator.push(
             turn: kAlwaysDismissedAnimation,
             fade: kAlwaysCompleteAnimation,
             fadeFrom: 0,
-            gate: GateState.opening,
+            gates: {SideTrip.ankiren: GateState.opening},
           ),
         ),
       ),

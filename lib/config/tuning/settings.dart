@@ -43,6 +43,7 @@ abstract final class DefaultSettings {
   static const KimarijiScript kimarijiScript = KimarijiScript.auto;
   static const bool accessibilityMode = false;
   static const bool cardPanelSwiped = false;
+  static const bool teiichiRulesSeen = false;
   static const bool timerNotificationsAsked = false;
   static const bool reminders = false;
   static const bool remindersOffered = false;

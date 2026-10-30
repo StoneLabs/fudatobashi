@@ -84,6 +84,7 @@ flutter:
     - assets/graphics/sidetrips/scene/
     - assets/graphics/sidetrips/islands/
     - assets/graphics/sidetrips/ankiren/
+    - assets/graphics/sidetrips/teiichi/
     - assets/graphics/sidetrips/ui/
     - assets/sounds/
     - assets/voice/kimariji/
