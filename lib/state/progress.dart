@@ -1068,7 +1068,7 @@ class Progress extends ChangeNotifier {
       : TabLock.of(
         tab,
         mode: trainer.config.learningMode,
-        rounds: runs.length,
+        rounds: runs.length + sideTrips.runs.length,
         finishedRounds: runs.where((r) => r.completed).length,
         islandFinished: _islandCompletions.isNotEmpty || islands.any((i) => i.complete),
         remembered: _sideTripsRemembered(DateTime.now()),

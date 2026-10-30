@@ -7,7 +7,8 @@ enum LockedTab { history, stats, sideTrips }
 
 /// What opens a locked tab.
 enum TabUnlock {
-  /// Playing rounds (any recorded run, finished or ended early).
+  /// Playing rounds (any recorded run, finished or ended early, side-trip
+  /// games included).
   rounds,
 
   /// Playing rounds through to the last card.

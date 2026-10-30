@@ -7,7 +7,9 @@ import 'package:fudatobashi/config/config.dart';
 import 'package:fudatobashi/data/fuda_sets.dart';
 import 'package:fudatobashi/data/poem.dart';
 import 'package:fudatobashi/db/database.dart';
+import 'package:fudatobashi/domain/ankiren_game.dart';
 import 'package:fudatobashi/domain/ankiren_level.dart';
+import 'package:fudatobashi/domain/teiichi.dart';
 import 'package:fudatobashi/domain/card_stats.dart';
 import 'package:fudatobashi/domain/play_session.dart';
 import 'package:fudatobashi/domain/rating.dart';
@@ -16,6 +18,9 @@ import 'package:fudatobashi/domain/tab_locks.dart';
 import 'package:fudatobashi/domain/trainer.dart';
 import 'package:fudatobashi/state/play_config.dart';
 import 'package:fudatobashi/state/progress.dart';
+
+import 'test_ankiren.dart';
+import 'test_teiichi.dart';
 
 void main() {
   const ankiren = SideTrip.ankiren, teiichi = SideTrip.teiichi;
@@ -156,6 +161,40 @@ void main() {
 
     Future<String?> stored(AppDatabase db, String key) async =>
         (await (db.select(db.keyValues)..where((k) => k.key.equals(key))).getSingleOrNull())?.value;
+
+    test('History counts the main rounds and the recorded side-trip games together, ended early or not', () async {
+      final p = await Progress.open(AppDatabase(NativeDatabase.memory()));
+      await p.setLearningMode(LearningMode.allKnown);
+      expect(p.tabLock(LockedTab.history)?.left, 3);
+
+      final teiichiGame = playTeiichi(const TeiichiSetup(cards: 12, rows: 2), endAfter: 3);
+      await p.recordTeiichi(teiichiGame.placing, teiichiGame.game, startedAt: DateTime.now());
+      expect(p.tabLock(LockedTab.history)?.left, 2);
+
+      await p.recordAnkiren(playAnkiren(const AnkirenSetup.ranked()), startedAt: DateTime.now());
+      expect(p.tabLock(LockedTab.history)?.left, 1, reason: 'ranked or free, both count');
+
+      await p.recordAnkiren(playAnkiren(const AnkirenSetup.ranked(), endAfter: 2), startedAt: DateTime.now());
+      expect(p.tabLock(LockedTab.history), isNull);
+      expect(p.tabLock(LockedTab.stats)?.needs, TabUnlock.finishedRounds, reason: 'Stats keeps its own rules');
+    });
+
+    test('History: 1 main round and 2 side-trip games open it', () async {
+      final p = await Progress.open(AppDatabase(NativeDatabase.memory()));
+      await p.setLearningMode(LearningMode.allKnown);
+      await remember(p, journeyOrder.take(1));
+      expect(p.runs.length, 1);
+      expect(p.tabLock(LockedTab.history)?.left, 2);
+      await p.recordAnkiren(playAnkiren(const AnkirenSetup.ranked()), startedAt: DateTime.now());
+      final played = playTeiichi(const TeiichiSetup(cards: 12, rows: 2));
+      await p.recordTeiichi(played.placing, played.game, startedAt: DateTime.now());
+      expect(p.tabLock(LockedTab.history), isNull);
+    });
+
+    test('guest and developer games are never recorded, so they do not count', () {
+      expect(AnkirenPlayer.owner.recorded, isTrue);
+      expect([AnkirenPlayer.guest.recorded, AnkirenPlayer.developer.recorded], [false, false]);
+    });
 
     test('journey: the tab and 定位置 latch open at 25 and 暗記練 at 50; all survive a restart and a bad day, '
         'and a reset locks them again', () async {
