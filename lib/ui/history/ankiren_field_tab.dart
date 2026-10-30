@@ -21,19 +21,55 @@ import 'ankiren_widgets.dart';
 import 'review_parts.dart';
 import 'run_charts.dart';
 
-/// A 暗記練 game's Field (D33): the field as dealt, each card coloured by
-/// where its first tap landed; then, once the review starts (or a card is
-/// tapped), stepped through card by card with the unrelated cards dimmed
-/// and arrows from the cards each wrong tap hit; then how each side went.
-class AnkirenFieldTab extends StatefulWidget {
+/// A 暗記練 game's Field (D33): the field replayed ([FieldReplay]), then how
+/// each side went.
+class AnkirenFieldTab extends StatelessWidget {
   const AnkirenFieldTab(this.review, {super.key});
   final AnkirenReview review;
 
   @override
-  State<AnkirenFieldTab> createState() => _AnkirenFieldTabState();
+  Widget build(BuildContext context) {
+    final s = S.of(context);
+    final game = review.game;
+    return FieldReplay(
+      game: game,
+      deal: game.deal,
+      note: game.scored ? s.ankirenFieldNote : s.ankirenASide(game.perSide),
+      tiles: [
+        for (final side in [FieldSide.opponent, FieldSide.own])
+          if (game.rightFirstOn(side) case final r?)
+            SummaryTile(
+              label: '${side == FieldSide.own ? s.ankirenYourSide : s.ankirenTheirSide}\n${s.ankirenColRightFirst}'
+                  .toUpperCase(),
+              big: TileFigure('${r.right}', unit: '/${r.of}'),
+              note: '',
+              color: Palette.paper,
+            ),
+      ],
+    );
+  }
 }
 
-class _AnkirenFieldTabState extends State<AnkirenFieldTab> {
+/// A recorded game's field as dealt ([deal]), each card coloured by where
+/// its first tap landed; then, once the review starts (or a card is
+/// tapped), stepped through card by card with the unrelated cards dimmed
+/// and arrows from the cards each wrong tap hit; then [tiles]. With
+/// [trueSlots] the field is the own side alone at true scale, as 定位置
+/// lays it out (see [ReviewField]).
+class FieldReplay extends StatefulWidget {
+  const FieldReplay(
+      {super.key, required this.game, required this.deal, this.note, this.tiles = const [], this.trueSlots});
+  final AnkirenGameRecord game;
+  final AnkirenField? deal;
+  final String? note;
+  final List<SummaryTile> tiles;
+  final double? trueSlots;
+
+  @override
+  State<FieldReplay> createState() => _FieldReplayState();
+}
+
+class _FieldReplayState extends State<FieldReplay> {
   static final _tomofuda = AnkirenTomofuda(poems);
 
   /// The card being reviewed; null before the review starts, and after
@@ -45,9 +81,8 @@ class _AnkirenFieldTabState extends State<AnkirenFieldTab> {
   @override
   Widget build(BuildContext context) {
     final s = S.of(context);
-    final game = widget.review.game;
-    final deal = game.deal;
-    final note = game.scored ? s.ankirenFieldNote : s.ankirenASide(game.perSide);
+    final game = widget.game;
+    final deal = widget.deal;
     if (deal == null || game.cards.isEmpty) {
       return ReviewColumn(children: [
         ReviewSlab(
@@ -62,34 +97,29 @@ class _AnkirenFieldTabState extends State<AnkirenFieldTab> {
     final card = step == null ? null : game.cards[step];
     final firstHit = card?.tapped.firstOrNull;
     final lookAlike = card != null && firstHit != null && _tomofuda.of(card.poemId).contains(firstHit);
-    final sides = [
-      for (final side in [FieldSide.opponent, FieldSide.own])
-        if (game.rightFirstOn(side) case final r?)
-          SummaryTile(
-            label: '${side == FieldSide.own ? s.ankirenYourSide : s.ankirenTheirSide}\n${s.ankirenColRightFirst}'
-                .toUpperCase(),
-            big: TileFigure('${r.right}', unit: '/${r.of}'),
-            note: '',
-            color: Palette.paper,
-          ),
-    ];
     return ReviewColumn(children: [
       ReviewSlab(
         title: s.ankirenFieldTitle,
         sub: s.sub?.ankirenFieldTitle,
-        note: note,
+        note: widget.note,
         flatTop: true,
         child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
           _ReplayedField(
             deal: deal,
             game: game,
             step: step,
+            trueSlots: widget.trueSlots,
             onPick: (id) {
               final picked = game.cards.indexWhere((c) => c.poemId == id);
               if (picked >= 0) _goTo(picked);
             },
           ),
-          const TierLegend(),
+          TierLegend(
+            tiers: [
+              for (final place in TapProximity.values)
+                if (place != TapProximity.otherSide || deal.opponent.cards.isNotEmpty) place,
+            ],
+          ),
           if (card != null) const _TapLegend(),
         ]),
       ),
@@ -105,8 +135,8 @@ class _AnkirenFieldTabState extends State<AnkirenFieldTab> {
         ),
       if (lookAlike)
         ReviewCaption(s.ankirenLookAlike(kimarijiFor(context, card.poemId), kimarijiFor(context, firstHit))),
-      if (sides.isNotEmpty)
-        TileBand(sides, spec: ReviewTileLayout.twoLines, minHeight: ReviewTileLayout.sidesHeight),
+      if (widget.tiles.isNotEmpty)
+        TileBand(widget.tiles, spec: ReviewTileLayout.twoLines, minHeight: ReviewTileLayout.sidesHeight),
     ]);
   }
 }
@@ -116,10 +146,12 @@ class _AnkirenFieldTabState extends State<AnkirenFieldTab> {
 /// ones, and every card it did not touch dimmed. Tapping a card picks it
 /// ([onPick]).
 class _ReplayedField extends StatelessWidget {
-  const _ReplayedField({required this.deal, required this.game, required this.step, required this.onPick});
+  const _ReplayedField(
+      {required this.deal, required this.game, required this.step, required this.trueSlots, required this.onPick});
   final AnkirenField deal;
   final AnkirenGameRecord game;
   final int? step;
+  final double? trueSlots;
   final ValueChanged<int> onPick;
 
   @override
@@ -128,13 +160,57 @@ class _ReplayedField extends StatelessWidget {
     final tiers = {for (final c in game.cards) c.poemId: c.first};
     final card = step == null ? null : game.cards[step!];
     final related = card == null ? null : {card.poemId, ...card.tapped};
+    return ReviewField(
+      field: deal,
+      trueSlots: trueSlots,
+      label: s.ankirenFieldLabel,
+      card: (id) {
+        final place = tiers[id];
+        return GestureDetector(
+          behavior: HitTestBehavior.opaque,
+          onTap: () => onPick(id),
+          child: AnimatedOpacity(
+            opacity: related == null || related.contains(id) ? 1 : AnkirenReviewStyle.unrelatedOpacity,
+            duration: AnkirenReviewStyle.dimFade,
+            child: FieldWordCard(
+              id,
+              fill: place == null ? Palette.paper : AnkirenReviewStyle.tierFill[place.index],
+              color: place == null ? Palette.ink : AnkirenReviewStyle.tierText[place.index],
+              current: id == card?.poemId,
+            ),
+          ),
+        );
+      },
+      overlay: card == null ? null : (placement) => CustomPaint(painter: _TapArrows(placement, card)),
+    );
+  }
+}
+
+/// A recorded game's [field] on the review's ground, as wide as it is
+/// given: both halves folded with the band between them, or with
+/// [trueSlots] the own half alone at true scale, its rows that many card
+/// pitches across, under the band. Its cards are [card]'s; an [overlay]
+/// lies over the field and the band.
+class ReviewField extends StatelessWidget {
+  const ReviewField(
+      {super.key, required this.field, required this.label, required this.card, this.overlay, this.trueSlots});
+  final AnkirenField field;
+  final String label;
+  final Widget Function(int poemId) card;
+  final Widget Function(FieldPlacement placement)? overlay;
+  final double? trueSlots;
+
+  @override
+  Widget build(BuildContext context) {
+    final s = S.of(context);
+    final trueScale = trueSlots != null;
     return Semantics(
       image: true,
-      label: s.ankirenFieldLabel,
+      label: label,
       child: LayoutBuilder(builder: (context, box) {
         const pad = AnkirenPlayLayout.padding;
         const band = AnkirenReviewStyle.fieldBand;
-        final natural = FieldGeometry.of(deal, folded: true);
+        final natural = FieldGeometry.of(field, folded: !trueScale, trueSlots: trueSlots);
         final scale = math.min(
             (box.maxWidth - 2 * pad) / natural.width, AnkirenReviewStyle.fieldMaxCardW / AnkirenFieldSize.cardW);
         return DecoratedBox(
@@ -143,23 +219,18 @@ class _ReplayedField extends StatelessWidget {
             border: Border.all(color: Palette.ink, width: Strokes.label),
           ),
           child: SizedBox(
-            height: 2 * natural.height * scale + band + 2 * pad,
+            height: (trueScale ? 1 : 2) * natural.height * scale + band + 2 * pad,
             child: AnkirenFieldView(
-              field: deal,
+              field: field,
               landscape: false,
+              trueScale: trueScale,
               zoom: false,
+              trueSlots: trueSlots,
+              roomAbove: trueScale ? 0 : null,
               bandExtent: band,
-              card: (id, side) => GestureDetector(
-                behavior: HitTestBehavior.opaque,
-                onTap: () => onPick(id),
-                child: AnimatedOpacity(
-                  opacity: related == null || related.contains(id) ? 1 : AnkirenReviewStyle.unrelatedOpacity,
-                  duration: AnkirenReviewStyle.dimFade,
-                  child: _FieldCard(id, place: tiers[id], current: id == card?.poemId),
-                ),
-              ),
+              card: (id, _) => card(id),
               band: _Band(their: s.ankirenTheirSide, yours: s.ankirenYourSide),
-              overlay: card == null ? null : (placement) => CustomPaint(painter: _TapArrows(placement, card)),
+              overlay: overlay,
               overlayOverBand: true,
             ),
           ),
@@ -169,34 +240,39 @@ class _ReplayedField extends StatelessWidget {
   }
 }
 
-/// One card of the replayed field: its kimariji on its first tap's colour
-/// (paper when never tapped), outlined heavier when [current].
-class _FieldCard extends StatelessWidget {
-  const _FieldCard(this.poemId, {required this.place, required this.current});
+/// One card of a reviewed field: its kimariji in [color] on [fill],
+/// outlined heavier when [current], with a [foot] under the word.
+class FieldWordCard extends StatelessWidget {
+  const FieldWordCard(this.poemId,
+      {super.key, required this.fill, required this.color, this.current = false, this.foot});
   final int poemId;
-  final TapProximity? place;
+  final Color fill, color;
   final bool current;
+  final Widget? foot;
 
   @override
   Widget build(BuildContext context) {
     final text = kimarijiFor(context, poemId);
     final kana = text.runes.any((r) => r >= _kanaStart);
-    final color = place == null ? Palette.ink : AnkirenReviewStyle.tierText[place!.index];
     final word = Text(kana ? text.split('').join('\n') : text,
         textAlign: TextAlign.center,
         style: TextStyle(
             fontWeight: Weights.black, fontSize: AnkirenReviewStyle.fieldCardFont, height: 1, color: color));
+    final fitted = Center(
+      child: FittedBox(fit: BoxFit.scaleDown, child: kana ? word : RotatedBox(quarterTurns: 1, child: word)),
+    );
+    final foot = this.foot;
     return DecoratedBox(
       decoration: BoxDecoration(
-        color: place == null ? Palette.paper : AnkirenReviewStyle.tierFill[place!.index],
+        color: fill,
         border: Border.all(
             color: Palette.ink, width: current ? AnkirenReviewStyle.highlight : AnkirenReviewStyle.fieldCardBorder),
       ),
       child: Padding(
         padding: AnkirenReviewStyle.fieldCardPadding,
-        child: Center(
-          child: FittedBox(fit: BoxFit.scaleDown, child: kana ? word : RotatedBox(quarterTurns: 1, child: word)),
-        ),
+        child: foot == null
+            ? fitted
+            : Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [Expanded(child: fitted), foot]),
       ),
     );
   }

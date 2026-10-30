@@ -10,10 +10,11 @@ import 'review_parts.dart';
 
 /// A 暗記練 game's Taps: one panel of every card in the order asked, where
 /// its taps landed, its find time and, for a scored game, its speed bonus
-/// and points.
+/// and points; under it how the points add up, or the [caption] given.
 class AnkirenTapsTab extends StatelessWidget {
-  const AnkirenTapsTab(this.review, {super.key});
+  const AnkirenTapsTab(this.review, {super.key, this.caption});
   final AnkirenReview review;
+  final String? caption;
 
   @override
   Widget build(BuildContext context) {
@@ -74,7 +75,7 @@ class AnkirenTapsTab extends StatelessWidget {
             ],
           ),
           const SizedBox(height: Gaps.panel),
-          Text(scored ? s.ankirenTapsCaption : s.ankirenTapsCaptionCustom, style: ReviewTextStyle.caption),
+          Text(caption ?? (scored ? s.ankirenTapsCaption : s.ankirenTapsCaptionCustom), style: ReviewTextStyle.caption),
         ]),
       ),
       children: const [],

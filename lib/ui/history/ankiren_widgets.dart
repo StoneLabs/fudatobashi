@@ -53,15 +53,16 @@ class TierChips extends StatelessWidget {
 /// A share of a card's points: 1, 0.4, 0.15 or 0.
 String shareText(double share) => share == share.roundToDouble() ? '${share.round()}' : '$share';
 
-/// Every tier's colour and name.
+/// The [tiers]' colours and names, every tier's by default.
 class TierLegend extends StatelessWidget {
-  const TierLegend({super.key});
+  const TierLegend({super.key, this.tiers = TapProximity.values});
+  final List<TapProximity> tiers;
 
   @override
   Widget build(BuildContext context) {
     final s = S.of(context);
     return ChartLegend([
-      for (final place in TapProximity.values)
+      for (final place in tiers)
         (LegendMark.box(AnkirenReviewStyle.tierFill[place.index]), s.ankirenTier(place).replaceAll('\u200b', '')),
     ]);
   }
