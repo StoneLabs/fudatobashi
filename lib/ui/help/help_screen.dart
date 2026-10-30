@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../config/design.dart';
 import '../../config/vector_art.dart';
-import '../../l10n/articles.dart';
+import '../../l10n/all_guides_strings.dart';
 import '../../l10n/card_info_strings.dart';
 import '../../l10n/guide_strings.dart';
 import '../../l10n/help_strings.dart';
@@ -14,11 +14,14 @@ import '../cards/card_browser_screen.dart';
 import '../manga/manga.dart';
 import '../tools/match_timer_screen.dart';
 import '../tour/tour_overlay.dart';
-import 'guide_screen.dart';
+import 'all_guides_screen.dart';
+import 'guide_catalog.dart';
+import 'help_entry.dart';
 import 'karuta_rules_screen.dart';
 
 /// Help (opened from Home's "?" button). Guides: Tobi's tour of Home
-/// again, the guide to how karuta works and the full competition rules.
+/// again, the guide to how karuta works, the full competition rules and the list
+/// of all other guides.
 /// Tools: the card browser, the match timer, and a slot saying more are coming.
 class HelpScreen extends StatelessWidget {
   const HelpScreen({super.key});
@@ -29,38 +32,44 @@ class HelpScreen extends StatelessWidget {
     final o = s.sub;
     void open(Widget page) => Navigator.of(context).push(MangaRoute<void>(builder: (_) => page));
     final guides = [
-      _Entry(
+      HelpEntry(
         title: s.replayTour,
         sub: o?.replayTour,
         note: s.replayTourNote,
         icon: IconArt.refresh,
         onTap: () => replayTour(context),
       ),
-      _Entry(
+      HelpEntry(
         title: s.guideTitle,
         sub: o?.guideTitle,
         note: s.guideRowNote,
         icon: IconArt.arrow,
-        onTap: () => open(GuideScreen(
-            article: Articles.karutaGuide, title: s.guideTitle, sub: s.other.guideTitle, kanaBesideRomaji: true)),
+        onTap: () => Guides.karuta.open(context),
       ),
-      _Entry(
+      HelpEntry(
         title: s.rulesTitle,
         sub: o?.rulesTitle,
         note: s.rulesRowNote,
         icon: IconArt.arrow,
         onTap: () => open(const KarutaRulesScreen()),
       ),
+      HelpEntry(
+        title: s.allGuidesTitle,
+        sub: o?.allGuidesTitle,
+        note: s.allGuidesNote,
+        icon: IconArt.arrow,
+        onTap: () => open(const AllGuidesScreen()),
+      ),
     ];
     final tools = [
-      _Entry(
+      HelpEntry(
         title: s.cardBrowserTitle,
         sub: o?.cardBrowserTitle,
         note: s.cardBrowserNote,
         icon: IconArt.arrow,
         onTap: () => open(const CardBrowserScreen()),
       ),
-      _Entry(
+      HelpEntry(
         title: s.matchTimerTitle,
         sub: o?.matchTimerTitle,
         note: s.matchTimerNote,
@@ -90,10 +99,10 @@ class HelpScreen extends StatelessWidget {
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
                       MarkerHeading(s.helpGuides, o?.helpGuides),
-                      for (final entry in guides) ...[entry, const _Rule()],
+                      for (final entry in guides) ...[entry, const HelpRule()],
                       const SizedBox(height: MarkerHeadingStyle.sectionGap),
                       MarkerHeading(s.helpTools, o?.helpTools),
-                      for (final entry in tools) ...[entry, const _Rule()],
+                      for (final entry in tools) ...[entry, const HelpRule()],
                       const SizedBox(height: HelpLayout.soonGap),
                       ComingSoonSlot(s.helpToolsSoon),
                     ],
@@ -106,79 +115,4 @@ class HelpScreen extends StatelessWidget {
       ),
     );
   }
-}
-
-/// One guide or tool: its [title] in display type, the English [sub] under it in a
-/// Japanese UI, a [note] on what it is, and [icon] at the end. Stamps when
-/// tapped.
-class _Entry extends StatelessWidget {
-  const _Entry({required this.title, this.sub, required this.note, required this.icon, required this.onTap});
-
-  final String title;
-  final String? sub;
-  final String note;
-  final VectorArt icon;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) => Pressable(
-        onTap: onTap,
-        drop: 0,
-        turn: 0,
-        scale: Press.panelScale,
-        builder: (context, pressed) => Stack(
-          fit: StackFit.passthrough,
-          children: [
-            Positioned.fill(
-              child: AnimatedOpacity(
-                opacity: pressed ? Tones.stampOpacity : 0,
-                duration: Motion.stampFade,
-                child: const ToneBox(Tones.stamp),
-              ),
-            ),
-            Padding(
-              padding: HelpLayout.entryPadding,
-              child: Row(children: [
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Text(title,
-                          style: const TextStyle(
-                              fontFamily: Fonts.display,
-                              fontSize: HelpLayout.titleFont,
-                              height: HelpLayout.titleLineHeight)),
-                      if (sub case final sub?)
-                        Text(sub.toUpperCase(),
-                            style: const TextStyle(
-                                fontWeight: Weights.black,
-                                fontSize: HelpLayout.subFont,
-                                letterSpacing: HelpLayout.subFont * HelpLayout.subTracking,
-                                color: Palette.inkSoft)),
-                      const SizedBox(height: HelpLayout.noteGap),
-                      Text.rich(Phrases.span(note),
-                          style: const TextStyle(
-                              fontWeight: Weights.medium,
-                              fontSize: HelpLayout.noteFont,
-                              height: HelpLayout.noteLineHeight,
-                              color: Palette.inkSoft)),
-                    ],
-                  ),
-                ),
-                const SizedBox(width: HelpLayout.iconGap),
-                MangaIcon(icon, size: HelpLayout.icon),
-              ]),
-            ),
-          ],
-        ),
-      );
-}
-
-class _Rule extends StatelessWidget {
-  const _Rule();
-
-  @override
-  Widget build(BuildContext context) =>
-      const SizedBox(height: HelpLayout.rule, child: ColoredBox(color: Palette.ink));
 }
