@@ -1,10 +1,8 @@
-import 'dart:convert';
+import '../l10n/articles.dart';
 
-import 'package:flutter/services.dart' show rootBundle;
-
-/// The All Japan Karuta Association's competition rules (競技規程細則), from
-/// `assets/l10n/<code>_rules.md`: the Japanese original word for word, and
-/// the app's own English translation in exactly the same structure.
+/// The All Japan Karuta Association's competition rules (競技規程細則), the
+/// `rules` article (see `Articles`): the Japanese original word for word,
+/// and the app's own English translation in exactly the same structure.
 ///
 /// Each chapter is a `# Number | Title` heading and each article a
 /// `## Number | Title` one. A paragraph starting with a bold label
@@ -23,7 +21,7 @@ class KarutaRules {
   /// The language codes of the original and of its translation.
   static const original = 'ja', translation = 'en';
 
-  static String asset(String code) => 'assets/l10n/${code}_rules.md';
+  static String asset(String code) => Articles.asset(code, Articles.rules);
 
   static final _chapter = RegExp(r'^# (.+) \| (.+)$', multiLine: true);
 
@@ -34,12 +32,7 @@ class KarutaRules {
     );
   }
 
-  /// Decoded here rather than with `loadString`, which hands a file this
-  /// size to another isolate.
-  static Future<KarutaRules> load(String code) async {
-    final data = await rootBundle.load(asset(code));
-    return parse(utf8.decode(data.buffer.asUint8List(data.offsetInBytes, data.lengthInBytes)));
-  }
+  static Future<KarutaRules> load(String code) async => parse(await Articles.load(code, Articles.rules));
 }
 
 /// A chapter (章), as the contents list it.

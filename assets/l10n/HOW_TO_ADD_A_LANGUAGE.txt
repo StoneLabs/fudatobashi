@@ -24,8 +24,10 @@ audio from). A new language should translate the *reading*, e.g. the
 pronunciation in its own script or romanization, not copy en.json's romaji
 as if it were English text.
 
-Each card's explanation on its "About this card" page is a Markdown file,
-en_card_explanations/001.md to 100.md. For a new language, copy that folder
-to <code>_card_explanations/ and translate the files; add the folder to the
-assets list in pubspec.yaml. A card whose file is missing shows the English
-one.
+Long texts are Markdown files in one folder per language, <code>_articles/:
+  rules.md                 the competition rules
+  card_details/000.md …    each card's explanation on its "About this card"
+  card_details/100.md      page (000 is the 序歌)
+For a new language, copy en_articles/ to <code>_articles/ and translate the
+files; add the folder and its card_details/ folder to the assets list in
+pubspec.yaml. A file that is missing shows the English one.

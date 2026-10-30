@@ -68,8 +68,10 @@ flutter:
     - assets/data/joka.json
     - assets/data/islands.json
     - assets/l10n/
-    - assets/l10n/en_card_explanations/
-    - assets/l10n/ja_card_explanations/
+    - assets/l10n/en_articles/
+    - assets/l10n/en_articles/card_details/
+    - assets/l10n/ja_articles/
+    - assets/l10n/ja_articles/card_details/
     - assets/glyphs/
     - assets/graphics/tally.svg
     - assets/graphics/icons/

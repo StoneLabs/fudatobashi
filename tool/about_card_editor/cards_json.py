@@ -5,7 +5,7 @@
     python3 tool/about_card_editor/cards_json.py import file.json
 
 JSON: {"lang": "en", "cards": {"000": "...md...", "001": "...md...", ...}}
-Files: assets/l10n/{lang}_card_explanations/NNN.md
+Files: assets/l10n/{lang}_articles/card_details/NNN.md
 """
 import json
 import re
@@ -18,7 +18,7 @@ CARDS = [f'{n:03d}' for n in range(101)]
 
 
 def folder(lang):
-    return REPO / 'assets/l10n' / f'{lang}_card_explanations'
+    return REPO / 'assets/l10n' / f'{lang}_articles' / 'card_details'
 
 
 def export_cards(lang, out):

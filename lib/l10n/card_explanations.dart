@@ -1,25 +1,16 @@
-import 'package:flutter/services.dart' show AssetBundle, rootBundle;
+import 'package:flutter/services.dart' show AssetBundle;
 
-/// Each card's explanation (解説) on its About page: one Markdown file per
-/// card and language, `assets/l10n/<code>_card_explanations/NNN.md` (see
-/// `MarkdownProse` for what they may hold), and 000.md for the 序歌
-/// (`jokaNumber`). A language without its own file for a card gets the
-/// English one.
+import 'articles.dart';
+
+/// Each card's explanation (解説) on its About page: one article per card,
+/// `card_details/NNN.md` (see `MarkdownProse` for what they may hold), and
+/// 000.md for the 序歌 (`jokaNumber`).
 abstract final class CardExplanations {
-  static final _loaded = <String, Future<String>>{};
+  static String article(int id) => 'card_details/${id.toString().padLeft(3, '0')}';
 
-  static String asset(String code, int id) => 'assets/l10n/${code}_card_explanations/${id.toString().padLeft(3, '0')}.md';
+  static String asset(String code, int id) => Articles.asset(code, article(id));
 
-  /// Poem [id]'s explanation in [code], read once and kept.
+  /// Poem [id]'s explanation in [code].
   static Future<String> load(String code, int id, {AssetBundle? bundle}) =>
-      _loaded.putIfAbsent('$code/$id', () => _read(code, id, bundle ?? rootBundle));
-
-  static Future<String> _read(String code, int id, AssetBundle bundle) async {
-    try {
-      return await bundle.loadString(asset(code, id));
-    } catch (_) {
-      if (code == 'en') rethrow;
-      return bundle.loadString(asset('en', id));
-    }
-  }
+      Articles.load(code, article(id), bundle: bundle);
 }

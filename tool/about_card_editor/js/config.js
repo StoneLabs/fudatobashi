@@ -39,7 +39,7 @@ Editor.config = (() => {
     EMPHASIS_TINT: 0.45,
     BLOCK_TAGS: new Set(['h1', 'h2', 'h3', 'h4', 'p', 'ul', 'ol', 'blockquote', 'pre', 'hr', 'div']),
     GAPS: { h1: 26, h2: 22, h3: 16, h4: 16, block: 10, item: 6, quote: 10 },
-    FOLDERS: { en: 'assets/l10n/en_card_explanations/', ja: 'assets/l10n/ja_card_explanations/' },
+    FOLDERS: { en: 'assets/l10n/en_articles/card_details/', ja: 'assets/l10n/ja_articles/card_details/' },
     /* Pictures written as assets/… are looked up in the repo, this far up from index.html. */
     REPO_ROOT: '../../',
     /* Developer flag: index.html?sample opens a sample draft with its pictures and
