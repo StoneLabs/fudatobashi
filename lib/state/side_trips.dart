@@ -12,6 +12,7 @@ import '../domain/ankiren_xp.dart';
 import '../domain/side_trips.dart';
 import '../domain/teiichi_placing.dart';
 import '../domain/teiichi_record.dart';
+import '../domain/teiichi_review.dart';
 import '../domain/xp.dart';
 
 /// What recording a 暗記練 game changed (for its results): 暗記練's rating
@@ -39,7 +40,7 @@ class AnkirenReport {
 /// and what they add up to: each trip's ranked rating, its ranked games and
 /// the hub's standing. Owned by `Progress`, which loads it on start.
 class SideTrips {
-  SideTrips._(this._runs, this._answers, this._cleared);
+  SideTrips._(this._runs, this._answers, this._cleared, this._placings);
 
   /// The key value that holds [trip]'s cleared levels, a JSON list.
   static String clearedKey(SideTrip trip) => '${trip.name}Cleared';
@@ -58,7 +59,14 @@ class SideTrips {
       final stored = await (db.select(db.keyValues)..where((k) => k.key.equals(clearedKey(trip)))).getSingleOrNull();
       cleared[trip] = {if (stored != null) ...(jsonDecode(stored.value) as List).cast<int>()};
     }
-    return SideTrips._(runs, answers, cleared);
+    final placed = await (db.select(db.teiichiPlacings)
+          ..orderBy([(p) => OrderingTerm.asc(p.runId), (p) => OrderingTerm.asc(p.seq)]))
+        .get();
+    final placings = <int, List<TeiichiPlacingRow>>{};
+    for (final p in placed) {
+      (placings[p.runId] ??= []).add(p);
+    }
+    return SideTrips._(runs, answers, cleared, placings);
   }
 
   final List<SideTripRun> _runs;
@@ -68,6 +76,9 @@ class SideTrips {
 
   /// Each run's answers, in the order they were asked, by run id.
   final Map<int, List<SideTripAnswerRow>> _answers;
+
+  /// Each 定位置 run's cards, in the order they were placed, by run id.
+  final Map<int, List<TeiichiPlacingRow>> _placings;
 
   /// Every recorded game of every trip, oldest first.
   List<SideTripRun> get runs => List.unmodifiable(_runs);
@@ -195,6 +206,16 @@ class SideTrips {
     );
   }
 
+  /// [run], a 定位置 game, as History reviews it.
+  TeiichiGameRecord teiichiRecordOf(SideTripRun run) => TeiichiGameRecord(
+        recall: recordOf(run),
+        meta: run.meta,
+        placed: [
+          for (final p in _placings[run.id] ?? const <TeiichiPlacingRow>[])
+            (poemId: p.poemId, time: Duration(microseconds: p.placingUs)),
+        ],
+      );
+
   /// 定位置's record of the games played (see [TeiichiRecord.of]).
   TeiichiRecord teiichiRecord() => TeiichiRecord.of([for (final r in runsOf(SideTrip.teiichi)) teiichiFactsOf(r)]);
 
@@ -304,6 +325,10 @@ class SideTrips {
       return id;
     });
     await _loadRun(db, runId);
+    _placings[runId] = await (db.select(db.teiichiPlacings)
+          ..where((p) => p.runId.equals(runId))
+          ..orderBy([(p) => OrderingTerm.asc(p.seq)]))
+        .get();
   }
 
   /// [game]'s answers, one per card asked, as run [runId]'s.
@@ -339,6 +364,7 @@ class SideTrips {
   void clear() {
     _runs.clear();
     _answers.clear();
+    _placings.clear();
     for (final levels in _cleared.values) {
       levels.clear();
     }

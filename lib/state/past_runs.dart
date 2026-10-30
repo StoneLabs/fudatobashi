@@ -165,7 +165,11 @@ extension RunHistory on Progress {
   List<SideTripRun> get ankirenRuns =>
       sideTrips.runsOf(SideTrip.ankiren).toList()..sort((a, b) => b.startedAt.compareTo(a.startedAt));
 
-  /// The practice day a 暗記練 game was played on.
+  /// The 定位置 games, newest first.
+  List<SideTripRun> get teiichiRuns =>
+      sideTrips.runsOf(SideTrip.teiichi).toList()..sort((a, b) => b.startedAt.compareTo(a.startedAt));
+
+  /// The practice day a side-trip game was played on.
   DateTime dayOfGame(SideTripRun run) => DayWindow.at(run.startedAt, settings.dayStartHour).date;
 
   /// Every practice day with play, and how active it was.
