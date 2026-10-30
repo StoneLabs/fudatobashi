@@ -10,15 +10,18 @@ import 'teiichi_record.dart';
 /// karuta's own Japanese whatever the UI language.
 enum SideTrip {
   /// 暗記練: memorise a field of known cards, then take each by its kimariji.
-  ankiren('暗記練'),
+  ankiren('暗記練', hasRanked: true),
 
   /// 定位置: lay known cards out on the own side, then take each by its
   /// kimariji, as in 暗記練.
   teiichi('定位置');
 
-  const SideTrip(this.label);
+  const SideTrip(this.label, {this.hasRanked = false});
 
   final String label;
+
+  /// Whether the trip has a ranked mode yet, and so a rank to show.
+  final bool hasRanked;
 }
 
 /// The islands of the Side Trips tab, in the order of their ring: each side

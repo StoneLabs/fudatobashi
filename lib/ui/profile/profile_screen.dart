@@ -67,7 +67,7 @@ class ProfileScreen extends StatelessWidget {
                       else
                         _RankPanel(rating),
                       const SizedBox(height: Gaps.panel),
-                      _SideTripRanks(progress.sideTripsHub().entries),
+                      _SideTripRanks([for (final e in progress.sideTripsHub().entries) if (e.trip.hasRanked) e]),
                       const SizedBox(height: Gaps.section),
                       Row(
                         children: [
