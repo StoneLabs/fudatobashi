@@ -108,6 +108,15 @@ abstract final class TeiichiPlayLayout {
 
   /// Cards opening a gap, closing one, or taking a new place.
   static const Duration move = Duration(milliseconds: 180);
+
+  /// After Done the field grows for play (`TeiichiZoom`), over [zoomTime],
+  /// until a row without middle cards has only [zoomGap] card widths left
+  /// between its clusters, or a row with middle cards [zoomMiddleGap]
+  /// between a cluster and its middle cards, or the band reaches the top.
+  static const Duration zoomTime = Duration(milliseconds: 400);
+  static const Curve zoomCurve = Curves.easeInOut;
+  static const double zoomGap = 2.5;
+  static const double zoomMiddleGap = 1.25;
 }
 
 /// 定位置's rules: the placing step's picture, a stand-in until its art is

@@ -1625,5 +1625,7 @@
   "teiichiRuleClock": "「完了」まで​時計が​進む。​ベストに​数えるのは​{0}枚の​対局だけ。",
   "teiichiRuleToEnd": "お手つきは​数えるけど、​対局は​最後まで​続く。",
   "teiichiOpenMiddle": "中央",
-  "teiichiNeedCards": "定位置には​覚えた​札が​{0}枚​以上​必要だよ。"
+  "teiichiNeedCards": "定位置には​覚えた​札が​{0}枚​以上​必要だよ。",
+  "teiichiLeaveTitle": "並べるのをやめますか？",
+  "teiichiLeaveNote": "並べた配置は失われます。"
 }

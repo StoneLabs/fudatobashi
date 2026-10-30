@@ -59,6 +59,10 @@ class FieldGeometry {
   Map<int, FieldRect> half(FieldSide side) => _halves[side.index];
 
   static const double pitch = AnkirenFieldSize.cardW + AnkirenFieldSize.cardGap;
+
+  /// The [trueSlots] that make a true-scale row [width] cm across.
+  static double slotsAcross(double width) => (width + AnkirenFieldSize.cardGap) / pitch;
+
   static const double _rowPitch = AnkirenFieldSize.cardH + AnkirenFieldSize.rowGap;
 
   /// [minWidth] (folded only, cm) widens the open middles so the clusters
@@ -89,7 +93,8 @@ class FieldGeometry {
     } else {
       slots = trueSlots ?? AnkirenFieldSize.slots.toDouble();
       final span = slots * pitch - AnkirenFieldSize.cardGap;
-      width = math.max(AnkirenFieldSize.territoryW, span);
+      // Rows of a chosen number of slots are all there is to the field.
+      width = trueSlots == null ? math.max(AnkirenFieldSize.territoryW, span) : span;
       x0 = (width - span) / 2;
     }
 

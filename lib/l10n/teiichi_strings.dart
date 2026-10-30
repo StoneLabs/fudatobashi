@@ -50,6 +50,8 @@ extension TeiichiStrings on S {
   String teiichiLeft(int n) => f('teiichiLeft', [n]);
   String get teiichiPlacing => t('teiichiPlacing');
   String get teiichiPlaced => t('teiichiPlaced');
+  String get teiichiLeaveTitle => t('teiichiLeaveTitle');
+  String get teiichiLeaveNote => t('teiichiLeaveNote');
   String teiichiAllPlaced(int cards) => f('teiichiAllPlaced', [cards]);
   String teiichiRowName(FieldRow row) => switch (row) {
         FieldRow.lower => t('teiichiRowLower'),

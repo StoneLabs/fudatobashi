@@ -1625,5 +1625,7 @@
   "teiichiRuleClock": "The clock runs until you tap Done. Only {0}-card games count for your best time.",
   "teiichiRuleToEnd": "Wrong taps are counted, but the game always goes to the end.",
   "teiichiOpenMiddle": "OPEN MIDDLE",
-  "teiichiNeedCards": "Teiichi needs at least {0} cards you know."
+  "teiichiNeedCards": "Teiichi needs at least {0} cards you know.",
+  "teiichiLeaveTitle": "Leave placing?",
+  "teiichiLeaveNote": "Your layout will be lost."
 }
