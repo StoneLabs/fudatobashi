@@ -588,6 +588,24 @@ abstract final class BalloonStyle {
   static const double tailBend = 0.18;
   static const double tailInset = 4;
   static const double lineHeight = 1.15;
+
+  /// The UI font's line reaches far higher above its glyphs than below, so
+  /// with the theme's even leading the words sit low in it; leading split
+  /// in proportion centres them.
+  static const TextLeadingDistribution leading = TextLeadingDistribution.proportional;
+
+  /// The blank each full-width closing mark keeps right of its ink in the
+  /// UI font's black weight, as a share of the font size. Words that end on
+  /// one drop it, so they centre on their ink rather than the mark's box.
+  static const Map<String, double> closingBlank = {
+    '！': 0.4,
+    '？': 0.22,
+    '。': 0.64,
+    '、': 0.65,
+    '」': 0.62,
+    '』': 0.6,
+    '）': 0.66,
+  };
 }
 
 /// The spiky outline of a shout balloon.

@@ -79,7 +79,7 @@ class TobiSide extends StatelessWidget {
                       child: SpeechBalloon(
                         speaker: ExamLayout.thinkSpeaker,
                         padding: ExamLayout.thinkPadding,
-                        child: Text(S.of(context).examTobiThinking,
+                        child: BalloonText(S.of(context).examTobiThinking,
                             style: const TextStyle(fontWeight: Weights.black, fontSize: ExamLayout.thinkFont)),
                       ),
                     ),

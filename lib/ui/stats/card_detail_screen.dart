@@ -601,7 +601,8 @@ class _SeeYouBanner extends StatelessWidget {
         Expanded(
           child: SpeechBalloon(
             speaker: CardDetailLayout.balloonSpeaker,
-            child: Text(s.seeYouOn(s.shortDate(due)), style: const TextStyle(fontSize: CardDetailLayout.balloonFont)),
+            child: BalloonText(s.seeYouOn(s.shortDate(due)),
+                style: const TextStyle(fontSize: CardDetailLayout.balloonFont)),
           ),
         ),
         const SizedBox(width: Gaps.panel),

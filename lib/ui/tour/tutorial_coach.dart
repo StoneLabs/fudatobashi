@@ -133,8 +133,9 @@ class TutorialCoach extends StatelessWidget {
               key: ValueKey(line),
               speaker: TutorialStyle.speaker,
               padding: TutorialStyle.balloonPadding,
-              child: Text.rich(
-                Phrases.span(line.text(S.of(context), kana)),
+              child: BalloonText(
+                line.text(S.of(context), kana),
+                phrases: true,
                 style: const TextStyle(fontSize: TutorialStyle.font),
               ),
             ),

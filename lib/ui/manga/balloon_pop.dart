@@ -99,7 +99,7 @@ class _BubbleState extends State<_Bubble> with SingleTickerProviderStateMixin {
     Widget said = SpeechBalloon(
       speaker: speaker,
       color: Palette.sun,
-      child: Text(widget.message, style: const TextStyle(fontSize: TypeScale.button)),
+      child: BalloonText(widget.message, style: const TextStyle(fontSize: TypeScale.button)),
     );
     if (tobi != null) {
       said = Row(crossAxisAlignment: CrossAxisAlignment.end, children: [

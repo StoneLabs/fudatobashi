@@ -83,7 +83,7 @@ class RankedHero extends StatelessWidget {
           RankedHeroLayout.balloon,
           child: SpeechBalloon(
             speaker: RankedHeroLayout.balloonSpeaker,
-            child: Text(s.letsGo, style: const TextStyle(fontSize: RankedHeroLayout.balloonFont)),
+            child: BalloonText(s.letsGo, style: const TextStyle(fontSize: RankedHeroLayout.balloonFont)),
           ),
         ),
       ],

@@ -548,7 +548,7 @@ class _SelectedIslandPanel extends StatelessWidget {
               size: StatsLayout.focusBalloon,
               child: SpeechBalloon(
                 speaker: StatsLayout.focusBalloonSpeaker,
-                child: Text(s.tapAnIsland, style: const TextStyle(fontSize: StatsLayout.focusBalloonFont)),
+                child: BalloonText(s.tapAnIsland, style: const TextStyle(fontSize: StatsLayout.focusBalloonFont)),
               ),
             ),
             SizedBox.fromSize(size: StatsLayout.focusTobi, child: const Tobi(pose: TobiPose.pointing)),

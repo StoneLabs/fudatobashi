@@ -4,6 +4,7 @@ import 'package:flutter/rendering.dart';
 import 'package:flutter/widgets.dart';
 
 import '../../config/design.dart';
+import 'phrases.dart';
 
 /// An oval speech balloon whose tail points at [speaker]: a spot relative to
 /// the balloon's box (-1..1 spans the box; the speaker usually sits
@@ -38,10 +39,44 @@ class SpeechBalloon extends StatelessWidget {
         padding: padding,
         child: DefaultTextStyle.merge(
           textAlign: TextAlign.center,
-          style: const TextStyle(fontWeight: Weights.black, height: BalloonStyle.lineHeight, color: Palette.ink),
+          style: const TextStyle(
+              fontWeight: Weights.black,
+              height: BalloonStyle.lineHeight,
+              leadingDistribution: BalloonStyle.leading,
+              color: Palette.ink),
           child: child,
         ),
       ),
+    );
+  }
+}
+
+/// Words for a [SpeechBalloon]. A full-width closing mark that ends them
+/// (see [BalloonStyle.closingBlank]) drops the blank on its right, so the
+/// last line centres on its ink.
+class BalloonText extends StatelessWidget {
+  const BalloonText(this.text, {super.key, this.style, this.phrases = false});
+
+  final String text;
+  final TextStyle? style;
+
+  /// Whether lines break only at phrase ends (see [Phrases]).
+  final bool phrases;
+
+  @override
+  Widget build(BuildContext context) {
+    TextSpan words(String text) => phrases ? Phrases.span(text) : TextSpan(text: text);
+    final cut = text.length - 1;
+    final blank = cut < 0 ? null : BalloonStyle.closingBlank[text.substring(cut)];
+    if (blank == null) return Text.rich(words(text), style: style);
+    final fontSize = DefaultTextStyle.of(context).style.merge(style).fontSize ?? kDefaultFontSize;
+    final trim = blank * MediaQuery.textScalerOf(context).scale(fontSize);
+    return Text.rich(
+      TextSpan(children: [
+        words(text.substring(0, cut)),
+        TextSpan(text: text.substring(cut), style: TextStyle(letterSpacing: -trim)),
+      ]),
+      style: style,
     );
   }
 }

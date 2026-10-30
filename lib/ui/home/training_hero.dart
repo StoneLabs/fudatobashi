@@ -118,7 +118,7 @@ class TrainingHero extends StatelessWidget {
           compact ? HomeLayout.journeyBalloon : HomeLayout.heroBalloon,
           child: SpeechBalloon(
             speaker: compact ? HomeLayout.journeyBalloonSpeaker : HomeLayout.heroBalloonSpeaker,
-            child: Text(
+            child: BalloonText(
               balloon,
               style: TextStyle(fontSize: compact ? HomeLayout.journeyBalloonFont : HomeLayout.heroBalloonFont),
             ),

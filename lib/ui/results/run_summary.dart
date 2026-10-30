@@ -353,7 +353,7 @@ class HeroPanel extends StatelessWidget {
                 height: SummaryHeroLayout.balloon.height,
                 child: SpeechBalloon(
                   speaker: SummaryHeroLayout.balloonSpeaker,
-                  child: Text(balloon, style: const TextStyle(fontSize: SummaryHeroLayout.balloonFont)),
+                  child: BalloonText(balloon, style: const TextStyle(fontSize: SummaryHeroLayout.balloonFont)),
                 ),
               ),
           ]),

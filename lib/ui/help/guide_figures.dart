@@ -71,7 +71,7 @@ class GuideTobi extends StatelessWidget {
           child: SpeechBalloon(
             speaker: KarutaGuideLayout.speakerLeft,
             padding: KarutaGuideLayout.balloonPadding,
-            child: phrases ? Text.rich(Phrases.span(line), style: style) : Text(line, style: style),
+            child: BalloonText(line, style: style, phrases: phrases),
           ),
         ),
       ]),
