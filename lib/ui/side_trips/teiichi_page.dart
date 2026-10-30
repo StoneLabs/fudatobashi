@@ -6,7 +6,6 @@ import '../../config/design.dart';
 import '../../config/vector_art.dart';
 import '../../domain/side_trips.dart';
 import '../../domain/teiichi.dart';
-import '../../domain/teiichi_record.dart';
 import '../../l10n/ankiren_strings.dart';
 import '../../l10n/side_trip_strings.dart';
 import '../../l10n/strings.dart';
@@ -15,7 +14,6 @@ import '../../state/scope.dart';
 import '../home/home_screen.dart';
 import '../manga/manga.dart';
 import '../play/time_format.dart';
-import '../results/run_summary.dart';
 import '../run/run_launcher.dart';
 import 'burst_button.dart';
 import 'side_trip_entry.dart';
@@ -34,11 +32,10 @@ Future<void> openTeiichiPage(BuildContext context) async {
 /// chained up until it comes; the guide's card, in full until the first
 /// game and then a button; practice, its setup (the cards as the way to
 /// the custom game sheet, [pickTeiichiCustom]), the best placing time and
-/// the burst that starts it; Guest mode and the rules, each a sheet; and,
-/// once enough games are saved, the cards slowest to place. The first
-/// visit opens with the rules. Home's dotted ground, in the sea's blue,
-/// lies behind the panels; the page scrolls when it is taller than the
-/// screen.
+/// the burst that starts it; and Guest mode and the rules, each a sheet.
+/// The first visit opens with the rules. Home's dotted ground, in the
+/// sea's blue, lies behind the panels; the page scrolls when it is taller
+/// than the screen.
 class TeiichiPage extends StatefulWidget {
   const TeiichiPage({super.key});
 
@@ -66,7 +63,6 @@ class _TeiichiPageState extends State<TeiichiPage> {
     final s = S.of(context);
     final progress = ProgressScope.of(context);
     final entry = progress.sideTripsHub()[SideTrip.teiichi];
-    final spotless = slowestToPlace(progress.sideTrips.teiichiPlacingTimes());
     const trip = SideTrip.teiichi;
     return Scaffold(
       body: Stack(children: [
@@ -103,10 +99,6 @@ class _TeiichiPageState extends State<TeiichiPage> {
                       const SizedBox(width: SideTripsLayout.pairGap),
                       Expanded(child: SideTripRulesButton(onTap: () => openTeiichiRules(context))),
                     ]),
-                    if (spotless.isNotEmpty) ...[
-                      const SizedBox(height: AnkirenPageLayout.gap + AnkirenPageLayout.tagRise),
-                      _SpotlessPanel(spotless),
-                    ],
                     const Spacer(),
                     const SizedBox(height: AnkirenPageLayout.bottomGap),
                   ],
@@ -310,36 +302,6 @@ class _PracticePanel extends StatelessWidget {
           ),
         ),
       ]),
-    );
-  }
-}
-
-/// The cards slowest to place lately, with their mean placing times, and
-/// what to do about them.
-class _SpotlessPanel extends StatelessWidget {
-  const _SpotlessPanel(this.cards);
-
-  final List<SlowPlacing> cards;
-
-  @override
-  Widget build(BuildContext context) {
-    final s = S.of(context);
-    return TaggedPanel(
-      tag: s.teiichiSpotless,
-      sub: s.sub?.teiichiSpotless,
-      child: Padding(
-        padding: TeiichiPageLayout.spotlessPadding,
-        child: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-          SummaryCards([
-            for (final c in cards) SummaryCard(c.poemId, ms: c.mean.inMicroseconds / Duration.microsecondsPerMillisecond),
-          ]),
-          const SizedBox(height: TeiichiPageLayout.spotlessNoteGap),
-          Text.rich(
-            Phrases.span(s.teiichiSpotlessNote(TeiichiTuning.spotlessRecentGames)),
-            style: const TextStyle(fontWeight: Weights.bold, fontSize: TeiichiPageLayout.spotlessNoteFont),
-          ),
-        ]),
-      ),
     );
   }
 }

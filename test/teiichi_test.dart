@@ -1,7 +1,6 @@
 // 定位置's rules away from the screen: which games a custom setup allows,
 // where a card may go on the own side and what that moves, where a tap or a
-// drop lands, the stack and its placing times, and the cards slowest to
-// place.
+// drop lands, and the stack and its placing times.
 import 'dart:math' as math;
 
 import 'package:flutter_test/flutter_test.dart';
@@ -12,7 +11,6 @@ import 'package:fudatobashi/domain/ankiren_geometry.dart';
 import 'package:fudatobashi/domain/side_trips.dart';
 import 'package:fudatobashi/domain/teiichi.dart';
 import 'package:fudatobashi/domain/teiichi_placing.dart';
-import 'package:fudatobashi/domain/teiichi_record.dart';
 
 void main() {
   const upper = FieldRow.upper, middle = FieldRow.middle, lower = FieldRow.lower;
@@ -278,44 +276,6 @@ void main() {
       expect(game.prompts.toSet(), {5, 6});
       expect(game.phase, AnkirenPhase.memorise);
       expect(game.countsStrikes, isFalse);
-    });
-  });
-
-  group('cards without a spot yet', () {
-    Map<int, Duration> game(Map<int, int> ms) => {for (final e in ms.entries) e.key: Duration(milliseconds: e.value)};
-
-    test('none before enough games are saved', () {
-      final games = [
-        for (var i = 1; i < TeiichiTuning.spotlessAfterGames; i++) game({1: 900, 2: 800, 3: 700, 4: 600}),
-      ];
-      expect(slowestToPlace(games), isEmpty);
-    });
-
-    test('the slowest on average over the recent games, slowest first', () {
-      final old = game({9: 99000});
-      final games = [
-        old,
-        for (var i = 0; i < TeiichiTuning.spotlessRecentGames; i++)
-          game({1: 1000 + 200 * i, 2: 3000, 3: 500, 4: 4000, 5: 100, 6: 2500, 7: 2000}),
-      ];
-      final slow = slowestToPlace(games);
-      expect([for (final s in slow) s.poemId], [4, 2, 6, 7, 1].take(TeiichiTuning.spotlessMost));
-      expect(slow.first.mean, const Duration(milliseconds: 4000));
-      expect(slow.any((s) => s.poemId == 9), isFalse, reason: 'older than the recent games');
-    });
-
-    test('a card counts only the games it was placed in', () {
-      final games = [
-        game({1: 4000, 2: 1000, 3: 1000}),
-        game({2: 1000, 3: 1000}),
-        game({2: 1000, 3: 2000}),
-      ];
-      expect([for (final s in slowestToPlace(games)) s.poemId].first, 1);
-    });
-
-    test('too few cards placed shows none', () {
-      final games = [for (var i = 0; i < TeiichiTuning.spotlessAfterGames; i++) game({1: 900, 2: 800})];
-      expect(slowestToPlace(games), isEmpty);
     });
   });
 }

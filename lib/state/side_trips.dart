@@ -40,7 +40,7 @@ class AnkirenReport {
 /// and what they add up to: each trip's ranked rating, its ranked games and
 /// the hub's standing. Owned by `Progress`, which loads it on start.
 class SideTrips {
-  SideTrips._(this._runs, this._answers, this._placings, this._cleared);
+  SideTrips._(this._runs, this._answers, this._cleared);
 
   /// The key value that holds [trip]'s cleared levels, a JSON list.
   static String clearedKey(SideTrip trip) => '${trip.name}Cleared';
@@ -54,19 +54,12 @@ class SideTrips {
     for (final a in rows) {
       (answers[a.runId] ??= []).add(a);
     }
-    final placed = await (db.select(db.teiichiPlacings)
-          ..orderBy([(p) => OrderingTerm.asc(p.runId), (p) => OrderingTerm.asc(p.seq)]))
-        .get();
-    final placings = <int, List<TeiichiPlacingRow>>{};
-    for (final p in placed) {
-      (placings[p.runId] ??= []).add(p);
-    }
     final cleared = <SideTrip, Set<int>>{};
     for (final trip in SideTrip.values) {
       final stored = await (db.select(db.keyValues)..where((k) => k.key.equals(clearedKey(trip)))).getSingleOrNull();
       cleared[trip] = {if (stored != null) ...(jsonDecode(stored.value) as List).cast<int>()};
     }
-    return SideTrips._(runs, answers, placings, cleared);
+    return SideTrips._(runs, answers, cleared);
   }
 
   final List<SideTripRun> _runs;
@@ -76,9 +69,6 @@ class SideTrips {
 
   /// Each run's answers, in the order they were asked, by run id.
   final Map<int, List<SideTripAnswerRow>> _answers;
-
-  /// Each 定位置 run's cards in the order they were placed, by run id.
-  final Map<int, List<TeiichiPlacingRow>> _placings;
 
   /// Every recorded game of every trip, oldest first.
   List<SideTripRun> get runs => List.unmodifiable(_runs);
@@ -218,15 +208,6 @@ class SideTrips {
     );
   }
 
-  /// Each 定位置 game's placing time of every card, oldest game first.
-  List<Map<int, Duration>> teiichiPlacingTimes() => [
-        for (final r in runsOf(SideTrip.teiichi))
-          {
-            for (final p in _placings[r.id] ?? const <TeiichiPlacingRow>[])
-              p.poemId: Duration(microseconds: p.placingUs),
-          },
-      ];
-
   /// Stores [game], once it is over (see [AnkirenGame.end]), as started at
   /// [startedAt] on practice day [day]: its run and one answer per card
   /// asked, in one transaction, with [meta] added to the run's own details.
@@ -355,25 +336,19 @@ class SideTrips {
               ),
           ]));
 
-  /// Keeps run [runId], just stored, with its answers and placings.
+  /// Keeps run [runId], just stored, with its answers.
   Future<void> _loadRun(AppDatabase db, int runId) async {
     _runs.add(await (db.select(db.sideTripRuns)..where((r) => r.id.equals(runId))).getSingle());
     _answers[runId] = await (db.select(db.sideTripAnswers)
           ..where((a) => a.runId.equals(runId))
           ..orderBy([(a) => OrderingTerm.asc(a.seq)]))
         .get();
-    final placed = await (db.select(db.teiichiPlacings)
-          ..where((p) => p.runId.equals(runId))
-          ..orderBy([(p) => OrderingTerm.asc(p.seq)]))
-        .get();
-    if (placed.isNotEmpty) _placings[runId] = placed;
   }
 
   /// Forgets every game, once the caller has deleted them from the database.
   void clear() {
     _runs.clear();
     _answers.clear();
-    _placings.clear();
     for (final levels in _cleared.values) {
       levels.clear();
     }

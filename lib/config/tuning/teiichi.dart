@@ -25,15 +25,6 @@ abstract final class TeiichiTuning {
   /// The open middle takes taps and drops over this share of the gap
   /// between a row's clusters, in its middle, and over any middle cards.
   static const double openMiddleShare = 1 / 3;
-
-  /// "Cards without a spot yet" shows once [spotlessAfterGames] games are
-  /// saved: the [spotlessMost] cards slowest to place on average over the
-  /// last [spotlessRecentGames] games, and only with at least
-  /// [spotlessLeast] of them.
-  static const int spotlessAfterGames = 3;
-  static const int spotlessRecentGames = 10;
-  static const int spotlessMost = 5;
-  static const int spotlessLeast = 3;
 }
 
 /// 定位置's play screen (`TeiichiScreen`): its clock and the pace of its

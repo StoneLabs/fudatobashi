@@ -14,9 +14,8 @@ extension TeiichiStrings on S {
   String get teiichiLastFacts => t('teiichiLastFacts');
   String get teiichiNoGames => t('teiichiNoGames');
 
-  /// The page: ranked, still to come; practice with its setup; the guide's
-  /// card, full or as a button; and the cards slowest to place over the
-  /// last [games] games.
+  /// The page: ranked, still to come; practice with its setup; and the
+  /// guide's card, full or as a button.
   String teiichiRankedFacts(int cards) => f('teiichiRankedFacts', [cards]);
   String get teiichiRankedSoon => t('teiichiRankedSoon');
   String get teiichiPractice => t('teiichiPractice');
@@ -28,8 +27,6 @@ extension TeiichiStrings on S {
   List<String> get teiichiLearnPoints => [t('teiichiLearnPoint1'), t('teiichiLearnPoint2'), t('teiichiLearnPoint3')];
   String get teiichiLearnButton => t('teiichiLearnButton');
   String get teiichiLearnSub => t('teiichiLearnSub');
-  String get teiichiSpotless => t('teiichiSpotless');
-  String teiichiSpotlessNote(int games) => f('teiichiSpotlessNote', [games]);
   String get teiichiGuideTitle => t('teiichiGuideTitle');
   String get teiichiGuideSoon => t('teiichiGuideSoon');
 

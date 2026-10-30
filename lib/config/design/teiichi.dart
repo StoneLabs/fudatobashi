@@ -2,7 +2,7 @@ part of '../design.dart';
 
 /// 定位置's page (`teiichi_page.dart`), on 暗記練's page's frame
 /// ([AnkirenPageLayout]): the guide's card, full for a new player and a
-/// button once games are played, and the cards still without a spot.
+/// button once games are played.
 abstract final class TeiichiPageLayout {
   /// The guide's full card: Tobi beside its title and line, then its
   /// points, each by a number on an ink disc, then the button to the guide.
@@ -27,11 +27,6 @@ abstract final class TeiichiPageLayout {
   static const double buttonIcon = 16;
   static const double buttonIconGap = 8;
   static const EdgeInsets buttonPadding = EdgeInsets.symmetric(horizontal: 12, vertical: 8);
-
-  /// The cards slow to place: their row, then a note under it.
-  static const EdgeInsets spotlessPadding = EdgeInsets.fromLTRB(14, 8, 14, 12);
-  static const double spotlessNoteGap = 8;
-  static const double spotlessNoteFont = 12.5;
 
   /// The guide still to come: its line under the header.
   static const double guideLineFont = 15;

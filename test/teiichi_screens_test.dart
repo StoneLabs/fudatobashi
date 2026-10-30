@@ -176,7 +176,6 @@ void main() {
       await show(tester, p, () => const TeiichiPage());
       expect(find.text(s.teiichiRankedSoon), findsOneWidget);
       expect(find.text(s.teiichiPlay(TeiichiTuning.cards)), findsOneWidget);
-      expect(find.text(s.teiichiSpotless), findsNothing);
       await tester.scrollUntilVisible(find.text(s.teiichiLearnButton), 200, scrollable: page);
       expect(find.text(s.teiichiLearnButton), findsOneWidget);
       await tester.scrollUntilVisible(find.text(s.teiichiPractice).first, -200, scrollable: page);
@@ -192,14 +191,12 @@ void main() {
       await tester.pumpWidget(const SizedBox());
     });
 
-    testWidgets('with games: the best placing time, the guide as a button, and the cards without a spot', (tester) async {
-      final p = await open(tester, games: TeiichiTuning.spotlessAfterGames);
+    testWidgets('with games: the best placing time and the guide as a button', (tester) async {
+      final p = await open(tester, games: 3);
       await show(tester, p, () => const TeiichiPage());
       final best = p.sideTripsHub()[SideTrip.teiichi].placing.best!;
       expect(best, const Duration(milliseconds: 900 * TeiichiTuning.cards));
       expect(find.text(s.teiichiLearnSub), findsOneWidget);
-      await tester.scrollUntilVisible(find.text(s.teiichiSpotless).first, 200, scrollable: page);
-      expect(find.text(s.teiichiSpotless), findsWidgets);
       await captureScreen(tester, 'teiichi/page_games');
       expect(tester.takeException(), isNull);
       await tester.pumpWidget(const SizedBox());
@@ -354,7 +351,8 @@ void main() {
       final trips = p.sideTrips;
       final run = trips.runsOf(SideTrip.teiichi).single;
       expect(run.completed, isTrue);
-      expect(trips.teiichiPlacingTimes().single.keys.toSet(), hasLength(setup.cards));
+      final placings = await tester.runAsync(() => p.db.select(p.db.teiichiPlacings).get());
+      expect({for (final x in placings!) x.poemId}, hasLength(setup.cards), reason: 'each card\'s placing time is kept');
       expect(trips.teiichiFactsOf(run).firstTaps, setup.cards - 1);
 
       await tester.tap(find.text(s.teiichiPlayAgain.toUpperCase()));

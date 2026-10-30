@@ -59,9 +59,6 @@ void main() {
     expect([for (final x in placings) x.placingUs], everyElement(1500000));
 
     final again = await open(db);
-    expect(again.sideTrips.teiichiPlacingTimes(), [
-      {for (final id in played.placing.order) id: const Duration(milliseconds: 1500)},
-    ]);
     final record = again.sideTripsHub()[teiichi].placing;
     expect(record.games, 1);
     expect(record.last, (cards: 12, placing: const Duration(seconds: 18), firstTaps: 11));
@@ -98,7 +95,6 @@ void main() {
     await p.resetProgress();
     expect(await db.select(db.teiichiPlacings).get(), isEmpty);
     expect(p.sideTripsHub()[teiichi].placing.games, 0);
-    expect(p.sideTrips.teiichiPlacingTimes(), isEmpty);
     await db.close();
   });
 }
