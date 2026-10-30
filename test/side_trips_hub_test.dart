@@ -161,6 +161,11 @@ void main() {
 
   Finder inHub(Finder f) => find.descendant(of: find.byType(SideTripsScreen), matching: f);
 
+  // 暗記練's entry: its body, head and burst (定位置's are built too, beside it).
+  final ankirenBody = find.byWidgetPredicate((w) => w is SideTripBody && w.entry.trip == SideTrip.ankiren);
+  final ankirenHead = find.byWidgetPredicate((w) => w is SideTripHead && w.entry.trip == SideTrip.ankiren);
+  final ankirenBurst = find.byWidgetPredicate((w) => w is PageBurst && w.trip == SideTrip.ankiren);
+
   // How far the ring has turned, and the island in front.
   double turnOf(WidgetTester tester) => tester.widget<DojoScene>(find.byType(DojoScene)).turn.value;
   SideTripIsle frontOf(WidgetTester tester) => SideTripRing.frontAt(turnOf(tester).round());
@@ -240,6 +245,7 @@ void main() {
       AnkirenRulesLayout.memorise,
       AnkirenRulesLayout.flip,
       AnkirenRulesLayout.take,
+      TeiichiRulesLayout.place,
       AnkirenRatingLayout.pole,
       ...AnkirenRatingLayout.cloth,
       AnkirenRankLayout.splash,
@@ -268,9 +274,9 @@ void main() {
 
               final scroll = tester.state<ScrollableState>(inHub(find.byType(Scrollable)));
               expect(scroll.position.maxScrollExtent, 0, reason: 'the hub fits without scrolling');
-              expectShown(tester, inHub(find.byType(SideTripBody)), phone);
-              expectShown(tester, inHub(find.byType(SideTripHead)), phone);
-              expect(tester.getRect(inHub(find.byType(SideTripHead))).top,
+              expectShown(tester, inHub(ankirenBody), phone);
+              expectShown(tester, inHub(ankirenHead), phone);
+              expect(tester.getRect(inHub(ankirenHead)).top,
                   greaterThanOrEqualTo(crestBottom(tester, phone)), reason: 'the entry sits under the crest');
               final lettering = inHub(find.byWidgetPredicate(
                   (w) => w is Text && w.data?.replaceAll('\n', ' ') == s.sideTripsLettering)).first;
@@ -286,9 +292,9 @@ void main() {
                 expectShown(tester, inHub(find.textContaining(s.sideTripSeen)), phone);
                 expectShown(tester, inHub(find.byType(CardPips)).first, phone);
                 expectShown(tester, inHub(find.textContaining(s.sideTripRanked)), phone);
-                expect(inHub(find.byType(PageBurst)), findsNothing);
+                expect(inHub(ankirenBurst), findsNothing);
               } else {
-                expectShown(tester, inHub(find.byType(PageBurst)), phone);
+                expectShown(tester, inHub(ankirenBurst), phone);
                 expectShown(tester, inHub(find.text(s.ankirenPageTitle)), phone);
                 expect(inHub(find.byType(RankedBurst)), findsNothing, reason: 'ranked starts from the page');
                 expect(inHub(find.byType(SideTripRulesButton)), findsNothing);
@@ -310,7 +316,7 @@ void main() {
               }
 
               final stamp = inHub(find.byType(Sticker));
-              expect(find.descendant(of: inHub(find.byType(SideTripHead)), matching: find.byType(Image)), findsNothing,
+              expect(find.descendant(of: inHub(ankirenHead), matching: find.byType(Image)), findsNothing,
                   reason: 'no flag picture');
               if (hub != _Hub.ranked) {
                 expect(stamp, findsNothing, reason: 'no class while locked or unranked');
@@ -348,7 +354,7 @@ void main() {
       await tester.runAsync(() => p.setLearningMode(LearningMode.allKnown));
       await openHub(tester, p, usersPhone);
       expect(p.sideTripsHub()[SideTrip.ankiren].rankedOpen, isTrue);
-      await tester.tap(inHub(find.byType(PageBurst)));
+      await tester.tap(inHub(ankirenBurst));
       await tester.pump();
       await tester.pump(Motion.route * 2);
       expect(find.byType(AnkirenPage), findsOneWidget);
@@ -450,10 +456,11 @@ void main() {
       await tester.pump();
       final turn = turnOf(tester);
       expect(turn, closeTo(0.25 + 20 / width, 0.02));
-      final body = tester.getRect(inHub(find.byType(SideTripBody)));
+      final body = tester.getRect(inHub(ankirenBody));
       expect(body.left, closeTo(Gaps.gutter - turn * width, 0.5), reason: '暗記練 washes out to the left');
-      expect(tester.getRect(inHub(find.byType(SideTripSoonEntry)).first).left,
-          closeTo(Gaps.gutter + (1 - turn) * width, 0.5), reason: 'the next rolls in from the right');
+      final next = find.byWidgetPredicate((w) => w is SideTripBody && w.entry.trip == SideTrip.teiichi);
+      expect(tester.getRect(inHub(next)).left, closeTo(Gaps.gutter + (1 - turn) * width, 0.5),
+          reason: 'the next rolls in from the right');
       await gesture.up();
       await tester.pump();
       await tester.pump(const Duration(seconds: 2));
@@ -581,7 +588,7 @@ void main() {
     testWidgets('a swipe that starts on the burst turns the ring and starts no game', (tester) async {
       final p = await open(tester, _Hub.ranked, 'en');
       await openHub(tester, p, usersPhone);
-      await tester.fling(inHub(find.byType(PageBurst)), const Offset(-200, 0), 1200);
+      await tester.fling(inHub(ankirenBurst), const Offset(-200, 0), 1200);
       await tester.pump();
       await tester.pump(const Duration(seconds: 2));
       expect(frontOf(tester), SideTripIsle.storehouse);
@@ -696,23 +703,23 @@ void main() {
       final p = await open(tester, _Hub.ranked, 'en');
       await openHub(tester, p, usersPhone);
       double drift() => tester.widget<DojoBoat>(find.byType(DojoBoat)).drift.value;
-      final body = tester.getRect(inHub(find.byType(SideTripBody)));
+      final body = tester.getRect(inHub(ankirenBody));
 
       final gesture = await tester.startGesture(tester.getCenter(inHub(find.byType(DojoScene))));
       await gesture.moveBy(const Offset(-20, 0));
       await gesture.moveBy(const Offset(-100, 0));
       await tester.pump();
       expect(turnOf(tester), 0, reason: 'nothing follows the finger');
-      expect(tester.getRect(inHub(find.byType(SideTripBody))), body);
+      expect(tester.getRect(inHub(ankirenBody)), body);
       await gesture.up();
       await tester.pump();
       expect(turnOf(tester), 1);
       await tester.pump(DojoRingMotion.crossfade ~/ 2);
-      expect(tester.getRect(inHub(find.byType(SideTripBody))), body, reason: 'fading where it rests');
+      expect(tester.getRect(inHub(ankirenBody)), body, reason: 'fading where it rests');
       expect(drift(), 0);
       await tester.pump(DojoRingMotion.crossfade);
       expect(frontOf(tester), SideTripIsle.storehouse);
-      expect(inHub(find.byType(SideTripSoonEntry)).hitTestable(), findsOneWidget);
+      expect(inHub(find.byType(SideTripBody)).hitTestable(), findsOneWidget);
       expect(drift(), 0, reason: 'the boat stays still');
       expect(tester.takeException(), isNull);
       await tester.pumpWidget(const SizedBox());
