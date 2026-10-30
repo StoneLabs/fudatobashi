@@ -1,4 +1,7 @@
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 import 'package:flutter/scheduler.dart';
 
 import '../../config/config.dart';
@@ -11,7 +14,6 @@ import '../../l10n/side_trip_strings.dart';
 import '../../l10n/strings.dart';
 import '../../l10n/teiichi_strings.dart';
 import '../../state/scope.dart';
-import '../home/home_screen.dart';
 import '../manga/manga.dart';
 import '../play/time_format.dart';
 import '../run/run_launcher.dart';
@@ -29,13 +31,14 @@ Future<void> openTeiichiPage(BuildContext context) async {
 }
 
 /// 定位置's page, the hub's panel opened up, on 暗記練's page's frame: ranked,
-/// chained up until it comes; the guide's card, in full until the first
-/// game and then a button; practice, its setup (the cards as the way to
-/// the custom game sheet, [pickTeiichiCustom]), the best placing time and
-/// the burst that starts it; and Guest mode and the rules, each a sheet.
-/// The first visit opens with the rules. Home's dotted ground, in the
-/// sea's blue, lies behind the panels; the page scrolls when it is taller
-/// than the screen.
+/// chained up until it comes, and the guide's card at the top; at the foot,
+/// within the thumb's reach, Guest mode and the rules, each a sheet, over
+/// practice: its setup (the cards as the way to the custom game sheet,
+/// [pickTeiichiCustom]), the best placing time and the burst that starts
+/// it. The first visit opens with the rules. Home's dotted ground, in the
+/// sea's blue, lies behind the panels. A taller screen's room to spare goes
+/// to ranked and the guide's card ([_GrowColumn]); the page scrolls when
+/// it is taller than the screen.
 class TeiichiPage extends StatefulWidget {
   const TeiichiPage({super.key});
 
@@ -68,13 +71,12 @@ class _TeiichiPageState extends State<TeiichiPage> {
       body: Stack(children: [
         const Positioned.fill(child: GradationBox(Tones.homeSea)),
         SafeArea(
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: Gaps.gutter),
-            child: CustomScrollView(slivers: [
-              SliverFillRemaining(
-                hasScrollBody: false,
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
+          child: LayoutBuilder(
+            builder: (context, screen) => SingleChildScrollView(
+              padding: const EdgeInsets.symmetric(horizontal: Gaps.gutter),
+              child: ConstrainedBox(
+                constraints: BoxConstraints(minHeight: screen.maxHeight),
+                child: _GrowColumn(
                   children: [
                     const SizedBox(height: HeaderStyle.topGap),
                     MangaHeader(
@@ -84,27 +86,26 @@ class _TeiichiPageState extends State<TeiichiPage> {
                       ],
                     ),
                     const SizedBox(height: AnkirenPageLayout.gap),
-                    const _RankedPanel(),
+                    const _Grows(share: TeiichiPageLayout.rankedShare, child: _RankedPanel()),
                     const SizedBox(height: AnkirenPageLayout.gap),
-                    if (entry.games == 0) const _LearnCard() else const _LearnButton(),
-                    const SizedBox(height: AnkirenPageLayout.gap),
-                    _PracticePanel(
-                      entry,
-                      picked: _picked,
-                      onPick: (setup) => setState(() => _picked = setup == TeiichiSetup.usual ? null : setup),
-                    ),
+                    const _Grows(share: TeiichiPageLayout.learnShare, child: _LearnCard()),
                     const SizedBox(height: AnkirenPageLayout.gap),
                     Row(children: [
                       Expanded(child: SideTripGuestButton(onTap: () => openTeiichiGuest(context))),
                       const SizedBox(width: SideTripsLayout.pairGap),
                       Expanded(child: SideTripRulesButton(onTap: () => openTeiichiRules(context))),
                     ]),
-                    const Spacer(),
+                    const SizedBox(height: AnkirenPageLayout.nextTop),
+                    _PracticePanel(
+                      entry,
+                      picked: _picked,
+                      onPick: (setup) => setState(() => _picked = setup == TeiichiSetup.usual ? null : setup),
+                    ),
                     const SizedBox(height: AnkirenPageLayout.bottomGap),
                   ],
                 ),
               ),
-            ]),
+            ),
           ),
         ),
       ]),
@@ -113,7 +114,8 @@ class _TeiichiPageState extends State<TeiichiPage> {
 }
 
 /// Ranked, still to come: its one setup and the burst that will start it,
-/// chained up, saying so.
+/// in the middle of a panel at least as tall as 暗記練's, chained up,
+/// saying so.
 class _RankedPanel extends StatelessWidget {
   const _RankedPanel();
 
@@ -124,123 +126,88 @@ class _RankedPanel extends StatelessWidget {
       tag: s.ankirenRankedMode,
       sub: s.sub?.ankirenRankedMode,
       why: s.teiichiRankedSoon,
-      child: Padding(
-        padding: const EdgeInsets.only(top: TeiichiPageLayout.rankedTop),
-        child: RankedRow(facts: s.teiichiRankedFacts(TeiichiTuning.cards), line: s.ankirenRankedReal, onTap: null),
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(minHeight: TeiichiPageLayout.rankedHeight),
+        child: Center(
+          child: RankedRow(facts: s.teiichiRankedFacts(TeiichiTuning.cards), line: s.ankirenRankedReal, onTap: null),
+        ),
       ),
     );
   }
 }
 
-/// The guide's card for a player new to 定位置: Tobi, its title and line,
-/// the layout's three main points, and the way to the guide.
+/// The guide's card: its title, its line and the way to the guide, at
+/// most [TeiichiPageLayout.learnMeasure] wide at the type's size, and Tobi
+/// pointing at them from the room beside them, up to
+/// [TeiichiPageLayout.learnTobi]. Larger type takes room from Tobi, down
+/// to [TeiichiPageLayout.learnTobiLeast] wide. Given more height than it
+/// needs, the card keeps them in its middle.
 class _LearnCard extends StatelessWidget {
   const _LearnCard();
 
   @override
   Widget build(BuildContext context) {
     final s = S.of(context);
+    final measure = MediaQuery.textScalerOf(context).scale(TeiichiPageLayout.learnMeasure);
     return MangaPanel(
       shape: const PanelShape(topLeft: Offset(0, SideTripsLayout.cut)),
       padding: TeiichiPageLayout.learnPadding,
-      child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-        Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          SizedBox.fromSize(size: TeiichiPageLayout.learnTobi, child: const Tobi(pose: TobiPose.pointing)),
-          const SizedBox(width: TeiichiPageLayout.learnTobiGap),
-          Expanded(
-            child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-              Semantics(
-                header: true,
-                child: Text.rich(
-                  Phrases.span(s.teiichiLearnTitle),
-                  style: const TextStyle(
-                      fontFamily: Fonts.display,
-                      fontSize: TeiichiPageLayout.learnTitleFont,
-                      height: TypeScale.displayLineHeight),
+      child: LayoutBuilder(
+        builder: (context, box) => Center(
+          child: Row(children: [
+            Expanded(
+              child: Center(
+                child: ConstrainedBox(
+                  constraints: BoxConstraints.loose(TeiichiPageLayout.learnTobi),
+                  child: const AspectRatio(aspectRatio: TobiStyle.aspect, child: Tobi(pose: TobiPose.pointing)),
                 ),
               ),
-              const SizedBox(height: TeiichiPageLayout.learnLineGap),
-              Text.rich(
-                Phrases.span(s.teiichiLearnLine),
-                style: const TextStyle(
-                    fontWeight: Weights.bold,
-                    fontSize: TeiichiPageLayout.learnLineFont,
-                    height: TeiichiPageLayout.learnLineHeight),
-              ),
-            ]),
-          ),
-        ]),
-        const SizedBox(height: TeiichiPageLayout.pointsTop),
-        for (final (i, point) in s.teiichiLearnPoints.indexed) ...[
-          if (i > 0) const SizedBox(height: TeiichiPageLayout.pointGap),
-          Row(children: [
-            _PointNumber(i + 1),
-            const SizedBox(width: TeiichiPageLayout.pointTextGap),
-            Expanded(
-              child: Text.rich(Phrases.span(point),
-                  style: const TextStyle(fontWeight: Weights.bold, fontSize: TeiichiPageLayout.pointFont)),
             ),
-          ]),
-        ],
-        const SizedBox(height: TeiichiPageLayout.buttonTop),
-        Align(
-          alignment: Alignment.centerRight,
-          child: IntrinsicWidth(
-            child: InkButton(
-              onTap: () => openTeiichiGuide(context),
-              color: Palette.sun,
-              border: Strokes.control,
-              padding: TeiichiPageLayout.buttonPadding,
-              semanticLabel: s.teiichiLearnButton,
-              child: Row(mainAxisSize: MainAxisSize.min, children: [
-                Text(s.teiichiLearnButton,
-                    style: const TextStyle(fontWeight: Weights.black, fontSize: TeiichiPageLayout.buttonFont)),
-                const SizedBox(width: TeiichiPageLayout.buttonIconGap),
-                MangaIcon(IconArt.arrow, size: TeiichiPageLayout.buttonIcon),
+            const SizedBox(width: TeiichiPageLayout.learnTobiGap),
+            SizedBox(
+              width: math.min(measure, box.maxWidth - TeiichiPageLayout.learnTobiGap - TeiichiPageLayout.learnTobiLeast),
+              child: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.start, children: [
+                Semantics(
+                  header: true,
+                  child: Text.rich(
+                    Phrases.span(s.teiichiLearnTitle),
+                    style: const TextStyle(
+                        fontFamily: Fonts.display,
+                        fontSize: TeiichiPageLayout.learnTitleFont,
+                        height: TypeScale.displayLineHeight),
+                  ),
+                ),
+                const SizedBox(height: TeiichiPageLayout.learnLineGap),
+                Text.rich(
+                  Phrases.span(s.teiichiLearnLine),
+                  style: const TextStyle(
+                      fontWeight: Weights.bold,
+                      fontSize: TeiichiPageLayout.learnLineFont,
+                      height: TeiichiPageLayout.learnLineHeight),
+                ),
+                const SizedBox(height: TeiichiPageLayout.buttonTop),
+                IntrinsicWidth(
+                  child: InkButton(
+                    onTap: () => openTeiichiGuide(context),
+                    color: Palette.sun,
+                    border: Strokes.control,
+                    padding: TeiichiPageLayout.buttonPadding,
+                    semanticLabel: s.teiichiLearnButton,
+                    child: Row(mainAxisSize: MainAxisSize.min, children: [
+                      Flexible(
+                        child: Text(s.teiichiLearnButton,
+                            style: const TextStyle(fontWeight: Weights.black, fontSize: TeiichiPageLayout.buttonFont)),
+                      ),
+                      const SizedBox(width: TeiichiPageLayout.buttonIconGap),
+                      MangaIcon(IconArt.arrow, size: TeiichiPageLayout.buttonIcon),
+                    ]),
+                  ),
+                ),
               ]),
             ),
-          ),
+          ]),
         ),
-      ]),
-    );
-  }
-}
-
-/// A point's number on an ink disc.
-class _PointNumber extends StatelessWidget {
-  const _PointNumber(this.n);
-
-  final int n;
-
-  @override
-  Widget build(BuildContext context) => SizedBox.square(
-        dimension: TeiichiPageLayout.pointNumber,
-        child: DecoratedBox(
-          decoration: const BoxDecoration(color: Palette.ink, shape: BoxShape.circle),
-          child: Center(
-            child: Text('$n',
-                style: const TextStyle(
-                    fontFamily: Fonts.display,
-                    fontSize: TeiichiPageLayout.pointNumberFont,
-                    height: 1,
-                    color: Palette.paper)),
-          ),
-        ),
-      );
-}
-
-/// The guide, as one of Home's buttons once the player has games.
-class _LearnButton extends StatelessWidget {
-  const _LearnButton();
-
-  @override
-  Widget build(BuildContext context) {
-    final s = S.of(context);
-    return HomeRowButton(
-      icon: IconArt.cards,
-      title: s.teiichiLearnTitle,
-      sub: s.teiichiLearnSub,
-      onTap: () => openTeiichiGuide(context),
+      ),
     );
   }
 }
@@ -304,4 +271,74 @@ class _PracticePanel extends StatelessWidget {
       ]),
     );
   }
+}
+
+/// The page's blocks one under the other across its width, each as tall
+/// as it needs. When that is less than the least height it is given, each
+/// block in a [_Grows] takes its share of the room to spare and fills it,
+/// so the page meets the screen's foot with no gap.
+class _GrowColumn extends MultiChildRenderObjectWidget {
+  const _GrowColumn({required super.children});
+
+  @override
+  RenderObject createRenderObject(BuildContext context) => _RenderGrowColumn();
+}
+
+/// A block of a [_GrowColumn] that takes [share] of the room to spare.
+class _Grows extends ParentDataWidget<_GrowData> {
+  const _Grows({required this.share, required super.child});
+
+  final double share;
+
+  @override
+  void applyParentData(RenderObject renderObject) {
+    final data = renderObject.parentData! as _GrowData;
+    if (data.share == share) return;
+    data.share = share;
+    renderObject.parent?.markNeedsLayout();
+  }
+
+  @override
+  Type get debugTypicalAncestorWidgetClass => _GrowColumn;
+}
+
+class _GrowData extends ContainerBoxParentData<RenderBox> {
+  double share = 0;
+}
+
+class _RenderGrowColumn extends RenderBox
+    with ContainerRenderObjectMixin<RenderBox, _GrowData>, RenderBoxContainerDefaultsMixin<RenderBox, _GrowData> {
+  @override
+  void setupParentData(RenderBox child) {
+    if (child.parentData is! _GrowData) child.parentData = _GrowData();
+  }
+
+  double get _total => getChildrenAsList().fold(0.0, (sum, block) => sum + block.size.height);
+
+  @override
+  void performLayout() {
+    final across = BoxConstraints.tightFor(width: constraints.maxWidth);
+    final blocks = getChildrenAsList();
+    for (final block in blocks) {
+      block.layout(across, parentUsesSize: true);
+    }
+    final room = math.max(0.0, constraints.minHeight - _total);
+    var y = 0.0;
+    for (final block in blocks) {
+      final data = block.parentData! as _GrowData;
+      if (room > 0 && data.share > 0) {
+        block.layout(across.tighten(height: block.size.height + room * data.share), parentUsesSize: true);
+      }
+      data.offset = Offset(0, y);
+      y += block.size.height;
+    }
+    size = constraints.constrain(Size(constraints.maxWidth, y));
+  }
+
+  @override
+  void paint(PaintingContext context, Offset offset) => defaultPaint(context, offset);
+
+  @override
+  bool hitTestChildren(BoxHitTestResult result, {required Offset position}) =>
+      defaultHitTestChildren(result, position: position);
 }

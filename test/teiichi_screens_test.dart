@@ -32,8 +32,11 @@ import 'package:fudatobashi/ui/ankiren/ankiren_band.dart';
 import 'package:fudatobashi/ui/ankiren/ankiren_card.dart';
 import 'package:fudatobashi/ui/app.dart';
 import 'package:fudatobashi/ui/manga/manga.dart';
+import 'package:fudatobashi/ui/play/time_format.dart';
+import 'package:fudatobashi/ui/side_trips/burst_button.dart';
 import 'package:fudatobashi/ui/side_trips/dojo_scene.dart';
 import 'package:fudatobashi/ui/side_trips/side_trip_entry.dart';
+import 'package:fudatobashi/ui/side_trips/side_trip_panels.dart';
 import 'package:fudatobashi/ui/side_trips/side_trips_screen.dart';
 import 'package:fudatobashi/ui/side_trips/teiichi_guide.dart';
 import 'package:fudatobashi/ui/side_trips/teiichi_page.dart';
@@ -118,9 +121,11 @@ void main() {
     return p;
   }
 
-  // [child] over a home page, as its own route, for [p].
-  Future<void> show(WidgetTester tester, Progress p, Widget Function() child, {Screen screen = usersPhone}) async {
-    useScreen(tester, screen);
+  // [child] over a home page, as its own route, for [p], on [screen] at
+  // [fontScale].
+  Future<void> show(WidgetTester tester, Progress p, Widget Function() child,
+      {Screen screen = usersPhone, double fontScale = 1}) async {
+    useScreen(tester, screen, fontScale: fontScale);
     final navigator = GlobalKey<NavigatorState>();
     await tester.pumpWidget(RepaintBoundary(
       key: screenKey,
@@ -140,8 +145,6 @@ void main() {
   }
 
   group('hub and page', () {
-    final page = find.descendant(of: find.byType(TeiichiPage), matching: find.byType(Scrollable)).first;
-
     testWidgets('the storehouse island shows 定位置\'s entry, whose burst opens its page, rules first', (tester) async {
       final p = await open(tester, rulesSeen: false);
       useScreen(tester, usersPhone);
@@ -171,17 +174,11 @@ void main() {
       await tester.pumpWidget(const SizedBox());
     });
 
-    testWidgets('a new player\'s page: ranked chained, the guide\'s card, practice, no slow cards', (tester) async {
+    testWidgets('a new player\'s page: ranked chained, the guide\'s card, practice', (tester) async {
       final p = await open(tester);
       await show(tester, p, () => const TeiichiPage());
       expect(find.text(s.teiichiRankedSoon), findsOneWidget);
       expect(find.text(s.teiichiPlay(TeiichiTuning.cards)), findsOneWidget);
-      await tester.scrollUntilVisible(find.text(s.teiichiLearnButton), 200, scrollable: page);
-      expect(find.text(s.teiichiLearnButton), findsOneWidget);
-      await tester.scrollUntilVisible(find.text(s.teiichiPractice).first, -200, scrollable: page);
-      await captureScreen(tester, 'teiichi/page_new');
-
-      await tester.scrollUntilVisible(find.text(s.teiichiLearnButton), 200, scrollable: page);
       await tester.tap(find.text(s.teiichiLearnButton));
       await tester.pump();
       await tester.pump(Motion.route);
@@ -191,16 +188,65 @@ void main() {
       await tester.pumpWidget(const SizedBox());
     });
 
-    testWidgets('with games: the best placing time and the guide as a button', (tester) async {
+    testWidgets('with games: the best placing time, and the guide\'s card still in full', (tester) async {
       final p = await open(tester, games: 3);
       await show(tester, p, () => const TeiichiPage());
       final best = p.sideTripsHub()[SideTrip.teiichi].placing.best!;
       expect(best, const Duration(milliseconds: 900 * TeiichiTuning.cards));
-      expect(find.text(s.teiichiLearnSub), findsOneWidget);
-      await captureScreen(tester, 'teiichi/page_games');
+      expect(find.text(formatMinutes(best)), findsOneWidget);
+      expect(find.text(s.teiichiLearnLine, findRichText: true), findsOneWidget);
+      expect(find.text(s.teiichiLearnButton), findsOneWidget);
       expect(tester.takeException(), isNull);
       await tester.pumpWidget(const SizedBox());
     });
+  });
+
+  // The page, new and with a game, on the phones at font scales 1 and 1.3:
+  // at 1 it is one screen with practice at its foot; larger type scrolls.
+  group('page fits', () {
+    final page = find.descendant(of: find.byType(TeiichiPage), matching: find.byType(Scrollable)).first;
+    for (final phone in [narrowPhone, usersPhone, widePhone]) {
+      for (final fontScale in [1.0, 1.3]) {
+        for (final lang in ['en', 'ja']) {
+          testWidgets('${phone.name} dp, font scale $fontScale ($lang)', (tester) async {
+            final s = S(lang);
+            for (final (name, games) in [('page_new', 0), ('page_games', 1)]) {
+              final p = await open(tester, games: games, language: lang);
+              await show(tester, p, () => const TeiichiPage(), screen: phone, fontScale: fontScale);
+              final scroll = tester.state<ScrollableState>(page);
+              if (fontScale == 1) expect(scroll.position.maxScrollExtent, 0, reason: 'nothing to scroll to');
+              final burst = find.byWidgetPredicate((w) => w is BurstButton && w.title == s.teiichiPlay(TeiichiTuning.cards));
+              final blocks = [
+                find.byType(RankedBurst),
+                find.text(s.teiichiLearnButton),
+                find.byType(SideTripGuestButton),
+                burst,
+              ];
+              final tops = [for (final f in blocks) tester.getRect(f).top];
+              expect(tops, orderedEquals([...tops]..sort()), reason: 'ranked, the guide, the pair, practice');
+              if (fontScale == 1) {
+                final practice = find.ancestor(of: burst, matching: find.byType(TaggedPanel)).first;
+                expect(tester.getRect(practice).bottom,
+                    moreOrLessEquals(phone.size.height - phone.bars.bottom - AnkirenPageLayout.bottomGap, epsilon: 1),
+                    reason: 'practice sits at the foot, in the thumb\'s reach');
+              }
+              for (final f in blocks) {
+                await tester.ensureVisible(f);
+                await tester.pump();
+                final r = tester.getRect(f);
+                expect(r.top, greaterThanOrEqualTo(phone.bars.top), reason: '$f');
+                expect(r.bottom, lessThanOrEqualTo(phone.size.height - phone.bars.bottom + 0.5), reason: '$f');
+              }
+              scroll.position.jumpTo(0);
+              await tester.pump();
+              expect(tester.takeException(), isNull);
+              await captureScreen(tester, 'teiichi/$name', lang: lang);
+              await tester.pumpWidget(const SizedBox());
+            }
+          });
+        }
+      }
+    }
   });
 
   group('custom game sheet', () {

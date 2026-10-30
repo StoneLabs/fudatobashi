@@ -1,32 +1,35 @@
 part of '../design.dart';
 
 /// 定位置's page (`teiichi_page.dart`), on 暗記練's page's frame
-/// ([AnkirenPageLayout]): the guide's card, full for a new player and a
-/// button once games are played.
+/// ([AnkirenPageLayout]): ranked, still to come, and the guide's card.
 abstract final class TeiichiPageLayout {
-  /// The guide's full card: Tobi beside its title and line, then its
-  /// points, each by a number on an ink disc, then the button to the guide.
-  /// Ranked, still to come: its row under the tag.
-  static const double rankedTop = 8;
+  /// Ranked's chained-up inside is at least this tall, as 暗記練's, its row
+  /// in the middle.
+  static const double rankedHeight = 112;
 
-  static const EdgeInsets learnPadding = EdgeInsets.fromLTRB(14, 14, 14, 12);
-  static const Size learnTobi = Size(64, 76);
-  static const double learnTobiGap = 12;
-  static const double learnTitleFont = 21;
-  static const double learnLineFont = 13;
-  static const double learnLineHeight = 1.45;
+  /// On a screen with room to spare, ranked and the guide's card take
+  /// these shares of it.
+  static const double rankedShare = 0.4;
+  static const double learnShare = 0.6;
+
+  /// The guide's card: its title, line and button at most [learnMeasure]
+  /// wide at the type's size, the same lines on every phone, and Tobi in
+  /// the room beside them, at most [learnTobi] and, with large type, at
+  /// least [learnTobiLeast] wide.
+  static const EdgeInsets learnPadding = EdgeInsets.all(16);
+  static const double learnMeasure = 180;
+  static const Size learnTobi = Size(126, 150);
+  static const double learnTobiLeast = 64;
+  static const double learnTobiGap = 20;
+  static const double learnTitleFont = 22;
+  static const double learnLineFont = 13.5;
+  static const double learnLineHeight = 1.5;
   static const double learnLineGap = 6;
-  static const double pointsTop = 10;
-  static const double pointGap = 6;
-  static const double pointNumber = 20;
-  static const double pointNumberFont = 11;
-  static const double pointTextGap = 10;
-  static const double pointFont = 13.5;
-  static const double buttonTop = 10;
-  static const double buttonFont = 14;
+  static const double buttonTop = 12;
+  static const double buttonFont = 15;
   static const double buttonIcon = 16;
   static const double buttonIconGap = 8;
-  static const EdgeInsets buttonPadding = EdgeInsets.symmetric(horizontal: 12, vertical: 8);
+  static const EdgeInsets buttonPadding = EdgeInsets.symmetric(horizontal: 14, vertical: 10);
 
   /// The guide still to come: its line under the header.
   static const double guideLineFont = 15;
