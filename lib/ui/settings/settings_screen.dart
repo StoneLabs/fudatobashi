@@ -29,6 +29,7 @@ import '../debug/ankiren_tools_page.dart';
 import '../debug/celebration_preview.dart';
 import '../debug/crash_log_page.dart';
 import '../debug/debug_page.dart';
+import '../debug/raw_articles_page.dart';
 import '../debug/reset_actions.dart';
 import '../debug/simulation_page.dart';
 import '../debug/timing_page.dart';
@@ -605,6 +606,7 @@ class _DeveloperSection extends StatelessWidget {
           SettingsTapRow(title: 'Delete rank', onTap: progress.debugClearRating),
         ]),
         SettingsGroup(children: [
+          SettingsTapRow(title: 'Articles (raw)', opensPage: true, onTap: () => open(const RawArticlesPage())),
           if (CrashLog.instance case final log?)
             SettingsTapRow(title: 'Crash log', opensPage: true, onTap: () => open(CrashLogPage(log: log))),
           if (DataStoreScope.maybeOf(context) case final store?)
