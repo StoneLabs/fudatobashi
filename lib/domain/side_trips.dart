@@ -3,13 +3,18 @@ import 'dart:math' as math;
 import '../config/config.dart';
 import 'ankiren_level.dart';
 import 'rating.dart';
+import 'teiichi_record.dart';
 
 /// The side trips (寄り道): games beside the journey that train other
 /// skills, each an island of the Side Trips tab. [label] is its name, in
 /// karuta's own Japanese whatever the UI language.
 enum SideTrip {
   /// 暗記練: memorise a field of known cards, then take each by its kimariji.
-  ankiren('暗記練');
+  ankiren('暗記練'),
+
+  /// 定位置: lay known cards out on the own side, then take each by its
+  /// kimariji, as in 暗記練.
+  teiichi('定位置');
 
   const SideTrip(this.label);
 
@@ -20,7 +25,7 @@ enum SideTrip {
 /// trip's, then those still being built.
 enum SideTripIsle {
   ankiren(SideTrip.ankiren),
-  storehouse(null),
+  storehouse(SideTrip.teiichi),
   hall(null),
   rocks(null),
   fort(null);
@@ -82,6 +87,7 @@ abstract final class SideTripUnlocks {
   /// Seen cards [trip] needs in journey mode.
   static int opensAt(SideTrip trip) => switch (trip) {
         SideTrip.ankiren => SideTripTuning.ankirenSeen,
+        SideTrip.teiichi => SideTripTuning.teiichiSeen,
       };
 
   /// What keeps the tab shut, or null once it is open: in [allKnown] mode,
@@ -134,7 +140,8 @@ class SideTripResult {
 /// and the last ranked game's [ratingChange] (both null until a ranked game
 /// is played), free play's [ladder], the highest level the known cards allow
 /// ([maxLevel]; null while unknown or when none fits), the [games] played,
-/// ranked or free, and the ranked ones' [results], oldest first.
+/// ranked or free, the ranked ones' [results], oldest first, and 定位置's
+/// [placing] record.
 class SideTripStanding {
   const SideTripStanding({
     this.rating,
@@ -143,6 +150,7 @@ class SideTripStanding {
     this.maxLevel,
     this.games = 0,
     this.results = const [],
+    this.placing = TeiichiRecord.none,
   });
 
   static const none = SideTripStanding();
@@ -153,6 +161,7 @@ class SideTripStanding {
   final int? maxLevel;
   final int games;
   final List<SideTripResult> results;
+  final TeiichiRecord placing;
 }
 
 /// One island of the Side Trips tab: a [trip], what keeps it shut
@@ -169,6 +178,7 @@ class SideTripEntry {
     required this.maxLevel,
     required this.games,
     required this.results,
+    this.placing = TeiichiRecord.none,
   });
 
   final SideTrip trip;
@@ -195,6 +205,9 @@ class SideTripEntry {
 
   /// The ranked games that moved the rating, oldest first.
   final List<SideTripResult> results;
+
+  /// 定位置's best placing time and last game.
+  final TeiichiRecord placing;
 
   bool get open => lock == null;
   bool get rankedOpen => open && rankedLock == null;
@@ -236,6 +249,7 @@ class SideTripsHub {
         maxLevel: standing.maxLevel,
         games: standing.games,
         results: standing.results,
+        placing: standing.placing,
       );
     }
 

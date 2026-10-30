@@ -10,6 +10,10 @@ abstract final class SideTripTuning {
   /// 暗記練's free play: this many cards seen (`Progress.knownCards`); its
   /// ranked games need more (`RankedLock`).
   static const int ankirenSeen = 50;
+
+  /// 定位置: this many cards seen, enough for its usual game of
+  /// `TeiichiTuning.cards`.
+  static const int teiichiSeen = 25;
 }
 
 /// How a swipe turns the Side Trips tab's ring of islands (`SideTripRing`).

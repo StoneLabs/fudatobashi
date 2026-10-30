@@ -14,6 +14,14 @@ class FieldRect {
 
   bool overlaps(FieldRect o) => x < o.right && o.x < right && y < o.bottom && o.y < bottom;
 
+  bool contains(double px, double py) => px >= x && px < right && py >= y && py < bottom;
+
+  /// The smallest rectangle around this one and [o].
+  FieldRect union(FieldRect o) {
+    final left = math.min(x, o.x), top = math.min(y, o.y);
+    return FieldRect(left, top, math.max(right, o.right) - left, math.max(bottom, o.bottom) - top);
+  }
+
   /// This rectangle turned 180° within a [width] × [height] area.
   FieldRect turned(double width, double height) => FieldRect(width - right, height - bottom, w, h);
 
@@ -28,28 +36,35 @@ class FieldRect {
 /// its owner's left on the screen's right). Both halves are the same size.
 ///
 /// True scale lays a half out over the real territory's [AnkirenFieldSize.slots]
-/// card slots, all three rows. Folded keeps only the rows some half uses
-/// and is as wide as its widest row with that row's open middle closed to
-/// [AnkirenFieldSize.foldedHole] pitches, or to room for its middle cards
-/// (or as wide as asked, opening the middles up). Either way the left
-/// cluster starts at the half's left edge, the right one ends at its right
-/// edge, and middle cards are spread evenly over their row's open gap.
+/// card slots (or as many as asked), all three rows. Folded keeps only the
+/// rows some half uses and is as wide as its widest row with that row's
+/// open middle closed to [AnkirenFieldSize.foldedHole] pitches, or to room
+/// for its middle cards (or as wide as asked, opening the middles up).
+/// Either way the left cluster starts at the half's left edge, the right one
+/// ends at its right edge, and middle cards are spread evenly over their
+/// row's open gap.
 class FieldGeometry {
-  FieldGeometry._(this.width, this.height, this._halves);
+  FieldGeometry._(this.width, this.height, this.slots, this._x0, this._rows);
 
   final double width;
   final double height;
-  final List<Map<int, FieldRect>> _halves;
+
+  /// How many card pitches (card and gap) a row spans.
+  final double slots;
+  final double _x0;
+  final List<FieldRow> _rows;
+  late final List<Map<int, FieldRect>> _halves;
 
   /// The cards of one half, by poem id.
   Map<int, FieldRect> half(FieldSide side) => _halves[side.index];
 
-  static const double _pitch = AnkirenFieldSize.cardW + AnkirenFieldSize.cardGap;
+  static const double pitch = AnkirenFieldSize.cardW + AnkirenFieldSize.cardGap;
   static const double _rowPitch = AnkirenFieldSize.cardH + AnkirenFieldSize.rowGap;
 
   /// [minWidth] (folded only, cm) widens the open middles so the clusters
-  /// reach out that far.
-  factory FieldGeometry.of(AnkirenField field, {required bool folded, double minWidth = 0}) {
+  /// reach out that far; [trueSlots] (true scale only) is how many card
+  /// pitches a row spans, the territory's own when not given.
+  factory FieldGeometry.of(AnkirenField field, {required bool folded, double minWidth = 0, double? trueSlots}) {
     final halves = [field.own, field.opponent];
     final rowsShown = [
       for (final r in FieldRow.values)
@@ -67,47 +82,62 @@ class FieldGeometry {
               : math.max(AnkirenFieldSize.foldedHole, r.middle.length + 2 * AnkirenFieldSize.middleMargin));
       slots = [
         for (final h in halves) ...h.rows.map(rowSlots),
-        (minWidth + AnkirenFieldSize.cardGap) / _pitch,
+        (minWidth + AnkirenFieldSize.cardGap) / pitch,
       ].reduce(math.max);
       x0 = 0;
-      width = slots * _pitch - AnkirenFieldSize.cardGap;
+      width = slots * pitch - AnkirenFieldSize.cardGap;
     } else {
-      slots = AnkirenFieldSize.slots.toDouble();
-      width = AnkirenFieldSize.territoryW;
-      x0 = (width - slots * _pitch + AnkirenFieldSize.cardGap) / 2;
+      slots = trueSlots ?? AnkirenFieldSize.slots.toDouble();
+      final span = slots * pitch - AnkirenFieldSize.cardGap;
+      width = math.max(AnkirenFieldSize.territoryW, span);
+      x0 = (width - span) / 2;
     }
 
-    Map<int, FieldRect> layOut(AnkirenHalf half, {required bool turned}) {
+    final geometry = FieldGeometry._(width, height, slots, x0, rowsShown);
+    Map<int, FieldRect> layOut(FieldSide side) {
       final rects = <int, FieldRect>{};
-      void put(int poemId, double x, double y) {
-        final r = FieldRect(x, y, AnkirenFieldSize.cardW, AnkirenFieldSize.cardH);
-        rects[poemId] = turned ? r.turned(width, height) : r;
-      }
+      void put(int poemId, FieldRect r) => rects[poemId] = side == FieldSide.opponent ? r.turned(width, height) : r;
 
-      for (final row in FieldRow.values) {
-        final cards = half.row(row);
+      for (final row in rowsShown) {
+        final cards = field.half(side).row(row);
         if (cards.isEmpty) continue;
-        final y = (rowsShown.length - 1 - rowsShown.indexOf(row)) * _rowPitch;
         final rightStart = slots - cards.right.length;
         for (final (j, id) in cards.left.indexed) {
-          put(id, x0 + j * _pitch, y);
+          put(id, geometry.slot(row, j.toDouble())!);
         }
         for (final (j, id) in cards.right.indexed) {
-          put(id, x0 + (rightStart + j) * _pitch, y);
+          put(id, geometry.slot(row, rightStart + j)!);
         }
-        final gapStart = x0 + cards.left.length * _pitch;
-        final gap = x0 + rightStart * _pitch - AnkirenFieldSize.cardGap - gapStart;
-        final step = gap / (cards.middle.length + 1);
+        final (gapStart, gapEnd) = geometry.gapOf(cards);
+        final step = (gapEnd - gapStart) / (cards.middle.length + 1);
+        final top = geometry.rowTop(row)!;
         for (final (i, id) in cards.middle.indexed) {
-          put(id, gapStart + (i + 1) * step - AnkirenFieldSize.cardW / 2, y);
+          put(id, FieldRect(gapStart + (i + 1) * step - AnkirenFieldSize.cardW / 2, top, AnkirenFieldSize.cardW,
+              AnkirenFieldSize.cardH));
         }
       }
       return Map.unmodifiable(rects);
     }
 
-    return FieldGeometry._(width, height, [
-      layOut(field.own, turned: false),
-      layOut(field.opponent, turned: true),
-    ]);
+    return geometry.._halves = [for (final side in FieldSide.values) layOut(side)];
   }
+
+  /// How far down [row] lies in a half as its owner sees it, or null when
+  /// the row is not shown.
+  double? rowTop(FieldRow row) {
+    final i = _rows.indexOf(row);
+    return i < 0 ? null : (_rows.length - 1 - i) * _rowPitch;
+  }
+
+  /// The card place [slot] pitches in from the left edge of a half as its
+  /// owner sees it, in [row]; null when the row is not shown.
+  FieldRect? slot(FieldRow row, double slot) {
+    final top = rowTop(row);
+    return top == null ? null : FieldRect(_x0 + slot * pitch, top, AnkirenFieldSize.cardW, AnkirenFieldSize.cardH);
+  }
+
+  /// Where the open gap between [row]'s clusters starts and ends, across a
+  /// half as its owner sees it.
+  (double, double) gapOf(AnkirenRow row) =>
+      (_x0 + row.left.length * pitch, _x0 + (slots - row.right.length) * pitch - AnkirenFieldSize.cardGap);
 }

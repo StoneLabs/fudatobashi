@@ -80,6 +80,10 @@ class AnkirenHalf {
   factory AnkirenHalf.fromJson(List<dynamic> json) =>
       AnkirenHalf([for (final r in json) AnkirenRow.fromJson(r as List)]);
 
+  /// A half with no cards.
+  factory AnkirenHalf.empty() =>
+      AnkirenHalf([for (final _ in FieldRow.values) AnkirenRow(left: const [], middle: const [], right: const [])]);
+
   /// Indexed by [FieldRow.index].
   final List<AnkirenRow> rows;
 

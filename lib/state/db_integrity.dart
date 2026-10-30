@@ -34,7 +34,7 @@ class IntegrityCheck {
 abstract final class DbIntegrity {
   static final checks = <IntegrityCheck>[
     IntegrityCheck('impossible times', _hasImpossibleTimes, _repairImpossibleTimes),
-    IntegrityCheck('orphaned side-trip answers', _hasOrphanedAnswers, _deleteOrphanedAnswers),
+    IntegrityCheck('orphaned side-trip answers and placings', _hasOrphanedAnswers, _deleteOrphanedAnswers),
     IntegrityCheck('side-trip ratings', _hasBrokenSideTripRatings, _replaySideTripRatings),
     IntegrityCheck('orphaned day cards', _hasOrphanedDayCards, _deleteOrphanedDayCards),
   ];
@@ -153,13 +153,15 @@ abstract final class DbIntegrity {
     }
   }
 
-  /// Answers of a side-trip game that is no longer stored: nothing reads
-  /// them, so they go.
+  /// Answers or placings of a side-trip game that is no longer stored:
+  /// nothing reads them, so they go.
   static Future<bool> _hasOrphanedAnswers(AppDatabase db) async {
     final found = await db.customSelect(
       '''
       SELECT EXISTS (
         SELECT 1 FROM side_trip_answers a WHERE NOT EXISTS (SELECT 1 FROM side_trip_runs r WHERE r.id = a.run_id)
+      ) OR EXISTS (
+        SELECT 1 FROM teiichi_placings p WHERE NOT EXISTS (SELECT 1 FROM side_trip_runs r WHERE r.id = p.run_id)
       ) AS found
       ''',
     ).getSingle();
@@ -169,6 +171,7 @@ abstract final class DbIntegrity {
   static Future<void> _deleteOrphanedAnswers(AppDatabase db) async {
     final runs = db.selectOnly(db.sideTripRuns)..addColumns([db.sideTripRuns.id]);
     await (db.delete(db.sideTripAnswers)..where((a) => a.runId.isNotInQuery(runs))).go();
+    await (db.delete(db.teiichiPlacings)..where((p) => p.runId.isNotInQuery(runs))).go();
   }
 
   /// A card of a day's set whose day is gone.
@@ -221,9 +224,12 @@ abstract final class DbIntegrity {
         r.performance == null ? r.rating == null : r.performance!.isFinite && (r.rating?.isFinite ?? false);
     const dropped = SideTripRunsCompanion(rating: Value(null), performance: Value(null));
     for (final trip in SideTrip.values) {
-      final (start, update) = switch (trip) {
+      final model = switch (trip) {
         SideTrip.ankiren => (AnkirenRating.start, AnkirenRating.update),
+        SideTrip.teiichi => null,
       };
+      if (model == null) continue;
+      final (start, update) = model;
       final runs = [
         for (final r in ranked)
           if (r.game == trip) r,

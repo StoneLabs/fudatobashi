@@ -27,7 +27,7 @@ extension SideTripStrings on S {
   /// [isle]'s name, for screen readers.
   String isleName(SideTripIsle isle) => switch (isle) {
         SideTripIsle.ankiren => t('ankirenName'),
-        SideTripIsle.storehouse => t('sideTripsIsleStorehouse'),
+        SideTripIsle.storehouse => t('teiichiName'),
         SideTripIsle.hall => t('sideTripsIsleHall'),
         SideTripIsle.rocks => t('sideTripsIsleRocks'),
         SideTripIsle.fort => t('sideTripsIsleFort'),
@@ -41,13 +41,17 @@ extension SideTripStrings on S {
   /// the hub.
   String tripBanner(SideTrip trip) => switch (trip) {
         SideTrip.ankiren => t('ankirenBanner'),
+        SideTrip.teiichi => t('teiichiBanner'),
       };
-  /// [trip]'s name: 暗記練 in Japanese, "AnkiRen" otherwise.
+  /// [trip]'s name: 暗記練 or 定位置 in Japanese, "AnkiRen" or "Teiichi"
+  /// otherwise.
   String tripName(SideTrip trip) => switch (trip) {
         SideTrip.ankiren => t('ankirenName'),
+        SideTrip.teiichi => t('teiichiName'),
       };
   String tripTag(SideTrip trip) => switch (trip) {
         SideTrip.ankiren => t('ankirenTag'),
+        SideTrip.teiichi => t('teiichiTag'),
       };
 
   String get sideTripUnranked => t('sideTripUnranked');

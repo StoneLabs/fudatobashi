@@ -250,6 +250,23 @@ class SideTripAnswers extends Table {
   IntColumn get secondTapCard => integer().nullable()();
 }
 
+/// One card of a 定位置 game as it was laid out: the cards in the order they
+/// were placed from the stack, with how long each was on top of it. The
+/// final layout is in the game's meta.
+@DataClassName('TeiichiPlacingRow')
+@TableIndex(name: 'teiichi_placings_run', columns: {#runId})
+class TeiichiPlacings extends Table {
+  IntColumn get id => integer().autoIncrement()();
+  IntColumn get runId => integer().references(SideTripRuns, #id)();
+
+  /// Its place in the placing order.
+  IntColumn get seq => integer()();
+  IntColumn get poemId => integer()();
+
+  /// How long it was on top of the stack, µs, every time it was.
+  IntColumn get placingUs => integer()();
+}
+
 /// One practice day (see `DayWindow`): journey mode's today's set and
 /// whether it was done. Stored the first time the day is needed, and for
 /// every day with a run or a side-trip game.
@@ -287,8 +304,18 @@ class DayCards extends Table {
   Set<Column> get primaryKey => {day, poemId, inverted};
 }
 
-@DriftDatabase(
-    tables: [Runs, Attempts, Items, IslandCompletions, KeyValues, SideTripRuns, SideTripAnswers, Days, DayCards])
+@DriftDatabase(tables: [
+  Runs,
+  Attempts,
+  Items,
+  IslandCompletions,
+  KeyValues,
+  SideTripRuns,
+  SideTripAnswers,
+  TeiichiPlacings,
+  Days,
+  DayCards,
+])
 class AppDatabase extends _$AppDatabase {
   AppDatabase([QueryExecutor? executor, this.beforeUpgrade]) : super(executor ?? driftDatabase(name: 'fudatobashi'));
 
@@ -298,7 +325,7 @@ class AppDatabase extends _$AppDatabase {
 
   /// Raised with each new upgrade step in `lib/migrations/` ([migrationSteps]).
   @override
-  int get schemaVersion => 4;
+  int get schemaVersion => 5;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(

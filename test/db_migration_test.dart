@@ -193,6 +193,42 @@ void main() {
     await db.close();
   });
 
+  test('a version 4 database gains 定位置\'s placings and keeps its side-trip games', () async {
+    final fresh = AppDatabase(NativeDatabase.memory());
+    final latest = await schemaOf(fresh);
+    await fresh.close();
+    final v4 = [
+      for (final MapEntry(key: name, value: sql) in latest.entries)
+        if (!name.startsWith('teiichi_placings') && !name.startsWith('sqlite_')) sql,
+    ];
+    final db = install(4, [
+      ...v4,
+      'INSERT INTO days VALUES (20261012, 1791777600, 1791864000, NULL, 0, 0, 0, NULL)',
+      "INSERT INTO side_trip_runs VALUES (1, 'ankiren', 1791800000, 1791800030, 20261012, 0, 2, NULL, NULL, 1, "
+          "NULL, NULL, '{\"perSide\":4}')",
+      "INSERT INTO side_trip_answers VALUES (1, 1, 0, 12, 0, 0, 900000, 1791800010, 'card', 12, 900000, NULL, NULL)",
+    ]);
+
+    expect([for (final g in await db.select(db.sideTripRuns).get()) (g.id, g.game, g.level, g.meta)],
+        [(1, SideTrip.ankiren, 2, '{"perSide":4}')]);
+    expect([for (final a in await db.select(db.sideTripAnswers).get()) (a.runId, a.poemId, a.firstTap)],
+        [(1, 12, TapProximity.card)]);
+    expect(await db.select(db.teiichiPlacings).get(), isEmpty);
+    expect(await schemaOf(db), latest, reason: 'an upgraded install has a new install\'s schema');
+
+    final run = await db.into(db.sideTripRuns).insert(SideTripRunsCompanion.insert(
+        game: SideTrip.teiichi,
+        startedAt: DateTime(2026, 10, 12),
+        endedAt: DateTime(2026, 10, 12),
+        day: 20261012,
+        ranked: false,
+        completed: true));
+    await db.into(db.teiichiPlacings).insert(TeiichiPlacingsCompanion.insert(runId: run, seq: 0, poemId: 12, placingUs: 1500000));
+    expect([for (final p in await db.select(db.teiichiPlacings).get()) (p.runId, p.seq, p.poemId, p.placingUs)],
+        [(run, 0, 12, 1500000)]);
+    await db.close();
+  });
+
   test('one upgrade step leads from every version to the next, up to the current one', () async {
     final db = AppDatabase(NativeDatabase.memory());
     expect(migrationSteps, hasLength(db.schemaVersion - 1),

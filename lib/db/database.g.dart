@@ -1032,7 +1032,8 @@ class RunRow extends DataClass implements Insertable<RunRow> {
   /// 隠し字 level (0 = off).
   final int maskLevel;
 
-  /// The goal time per card when it was played, ms.
+  /// The goal time per card when it was played, ms (苦手: the line its
+  /// answers had to beat).
   final int goalMs;
 
   /// Cards it was planned with (more than were swiped when it ended early).
@@ -4326,8 +4327,8 @@ class SideTripRun extends DataClass implements Insertable<SideTripRun> {
   /// The free-play level played; null for ranked and custom.
   final int? level;
 
-  /// The score and the most the game could score; null for a custom setup,
-  /// which is not scored.
+  /// The score and the most the game could score; null unless ranked, the
+  /// only kind with points.
   final int? score;
   final int? maxScore;
 
@@ -5536,6 +5537,354 @@ class SideTripAnswersCompanion extends UpdateCompanion<SideTripAnswerRow> {
   }
 }
 
+class $TeiichiPlacingsTable extends TeiichiPlacings
+    with TableInfo<$TeiichiPlacingsTable, TeiichiPlacingRow> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $TeiichiPlacingsTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<int> id = GeneratedColumn<int>(
+    'id',
+    aliasedName,
+    false,
+    hasAutoIncrement: true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'PRIMARY KEY AUTOINCREMENT',
+    ),
+  );
+  static const VerificationMeta _runIdMeta = const VerificationMeta('runId');
+  @override
+  late final GeneratedColumn<int> runId = GeneratedColumn<int>(
+    'run_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'REFERENCES side_trip_runs (id)',
+    ),
+  );
+  static const VerificationMeta _seqMeta = const VerificationMeta('seq');
+  @override
+  late final GeneratedColumn<int> seq = GeneratedColumn<int>(
+    'seq',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _poemIdMeta = const VerificationMeta('poemId');
+  @override
+  late final GeneratedColumn<int> poemId = GeneratedColumn<int>(
+    'poem_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _placingUsMeta = const VerificationMeta(
+    'placingUs',
+  );
+  @override
+  late final GeneratedColumn<int> placingUs = GeneratedColumn<int>(
+    'placing_us',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [id, runId, seq, poemId, placingUs];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'teiichi_placings';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<TeiichiPlacingRow> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    }
+    if (data.containsKey('run_id')) {
+      context.handle(
+        _runIdMeta,
+        runId.isAcceptableOrUnknown(data['run_id']!, _runIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_runIdMeta);
+    }
+    if (data.containsKey('seq')) {
+      context.handle(
+        _seqMeta,
+        seq.isAcceptableOrUnknown(data['seq']!, _seqMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_seqMeta);
+    }
+    if (data.containsKey('poem_id')) {
+      context.handle(
+        _poemIdMeta,
+        poemId.isAcceptableOrUnknown(data['poem_id']!, _poemIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_poemIdMeta);
+    }
+    if (data.containsKey('placing_us')) {
+      context.handle(
+        _placingUsMeta,
+        placingUs.isAcceptableOrUnknown(data['placing_us']!, _placingUsMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_placingUsMeta);
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  TeiichiPlacingRow map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return TeiichiPlacingRow(
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}id'],
+      )!,
+      runId: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}run_id'],
+      )!,
+      seq: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}seq'],
+      )!,
+      poemId: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}poem_id'],
+      )!,
+      placingUs: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}placing_us'],
+      )!,
+    );
+  }
+
+  @override
+  $TeiichiPlacingsTable createAlias(String alias) {
+    return $TeiichiPlacingsTable(attachedDatabase, alias);
+  }
+}
+
+class TeiichiPlacingRow extends DataClass
+    implements Insertable<TeiichiPlacingRow> {
+  final int id;
+  final int runId;
+
+  /// Its place in the placing order.
+  final int seq;
+  final int poemId;
+
+  /// How long it was on top of the stack, µs, every time it was.
+  final int placingUs;
+  const TeiichiPlacingRow({
+    required this.id,
+    required this.runId,
+    required this.seq,
+    required this.poemId,
+    required this.placingUs,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<int>(id);
+    map['run_id'] = Variable<int>(runId);
+    map['seq'] = Variable<int>(seq);
+    map['poem_id'] = Variable<int>(poemId);
+    map['placing_us'] = Variable<int>(placingUs);
+    return map;
+  }
+
+  TeiichiPlacingsCompanion toCompanion(bool nullToAbsent) {
+    return TeiichiPlacingsCompanion(
+      id: Value(id),
+      runId: Value(runId),
+      seq: Value(seq),
+      poemId: Value(poemId),
+      placingUs: Value(placingUs),
+    );
+  }
+
+  factory TeiichiPlacingRow.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return TeiichiPlacingRow(
+      id: serializer.fromJson<int>(json['id']),
+      runId: serializer.fromJson<int>(json['runId']),
+      seq: serializer.fromJson<int>(json['seq']),
+      poemId: serializer.fromJson<int>(json['poemId']),
+      placingUs: serializer.fromJson<int>(json['placingUs']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<int>(id),
+      'runId': serializer.toJson<int>(runId),
+      'seq': serializer.toJson<int>(seq),
+      'poemId': serializer.toJson<int>(poemId),
+      'placingUs': serializer.toJson<int>(placingUs),
+    };
+  }
+
+  TeiichiPlacingRow copyWith({
+    int? id,
+    int? runId,
+    int? seq,
+    int? poemId,
+    int? placingUs,
+  }) => TeiichiPlacingRow(
+    id: id ?? this.id,
+    runId: runId ?? this.runId,
+    seq: seq ?? this.seq,
+    poemId: poemId ?? this.poemId,
+    placingUs: placingUs ?? this.placingUs,
+  );
+  TeiichiPlacingRow copyWithCompanion(TeiichiPlacingsCompanion data) {
+    return TeiichiPlacingRow(
+      id: data.id.present ? data.id.value : this.id,
+      runId: data.runId.present ? data.runId.value : this.runId,
+      seq: data.seq.present ? data.seq.value : this.seq,
+      poemId: data.poemId.present ? data.poemId.value : this.poemId,
+      placingUs: data.placingUs.present ? data.placingUs.value : this.placingUs,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('TeiichiPlacingRow(')
+          ..write('id: $id, ')
+          ..write('runId: $runId, ')
+          ..write('seq: $seq, ')
+          ..write('poemId: $poemId, ')
+          ..write('placingUs: $placingUs')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(id, runId, seq, poemId, placingUs);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is TeiichiPlacingRow &&
+          other.id == this.id &&
+          other.runId == this.runId &&
+          other.seq == this.seq &&
+          other.poemId == this.poemId &&
+          other.placingUs == this.placingUs);
+}
+
+class TeiichiPlacingsCompanion extends UpdateCompanion<TeiichiPlacingRow> {
+  final Value<int> id;
+  final Value<int> runId;
+  final Value<int> seq;
+  final Value<int> poemId;
+  final Value<int> placingUs;
+  const TeiichiPlacingsCompanion({
+    this.id = const Value.absent(),
+    this.runId = const Value.absent(),
+    this.seq = const Value.absent(),
+    this.poemId = const Value.absent(),
+    this.placingUs = const Value.absent(),
+  });
+  TeiichiPlacingsCompanion.insert({
+    this.id = const Value.absent(),
+    required int runId,
+    required int seq,
+    required int poemId,
+    required int placingUs,
+  }) : runId = Value(runId),
+       seq = Value(seq),
+       poemId = Value(poemId),
+       placingUs = Value(placingUs);
+  static Insertable<TeiichiPlacingRow> custom({
+    Expression<int>? id,
+    Expression<int>? runId,
+    Expression<int>? seq,
+    Expression<int>? poemId,
+    Expression<int>? placingUs,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (runId != null) 'run_id': runId,
+      if (seq != null) 'seq': seq,
+      if (poemId != null) 'poem_id': poemId,
+      if (placingUs != null) 'placing_us': placingUs,
+    });
+  }
+
+  TeiichiPlacingsCompanion copyWith({
+    Value<int>? id,
+    Value<int>? runId,
+    Value<int>? seq,
+    Value<int>? poemId,
+    Value<int>? placingUs,
+  }) {
+    return TeiichiPlacingsCompanion(
+      id: id ?? this.id,
+      runId: runId ?? this.runId,
+      seq: seq ?? this.seq,
+      poemId: poemId ?? this.poemId,
+      placingUs: placingUs ?? this.placingUs,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<int>(id.value);
+    }
+    if (runId.present) {
+      map['run_id'] = Variable<int>(runId.value);
+    }
+    if (seq.present) {
+      map['seq'] = Variable<int>(seq.value);
+    }
+    if (poemId.present) {
+      map['poem_id'] = Variable<int>(poemId.value);
+    }
+    if (placingUs.present) {
+      map['placing_us'] = Variable<int>(placingUs.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('TeiichiPlacingsCompanion(')
+          ..write('id: $id, ')
+          ..write('runId: $runId, ')
+          ..write('seq: $seq, ')
+          ..write('poemId: $poemId, ')
+          ..write('placingUs: $placingUs')
+          ..write(')'))
+        .toString();
+  }
+}
+
 class $DayCardsTable extends DayCards
     with TableInfo<$DayCardsTable, DayCardRow> {
   @override
@@ -5872,6 +6221,9 @@ abstract class _$AppDatabase extends GeneratedDatabase {
   late final $SideTripAnswersTable sideTripAnswers = $SideTripAnswersTable(
     this,
   );
+  late final $TeiichiPlacingsTable teiichiPlacings = $TeiichiPlacingsTable(
+    this,
+  );
   late final $DayCardsTable dayCards = $DayCardsTable(this);
   late final Index runsDay = Index(
     'runs_day',
@@ -5897,6 +6249,10 @@ abstract class _$AppDatabase extends GeneratedDatabase {
     'side_trip_answers_run',
     'CREATE INDEX side_trip_answers_run ON side_trip_answers (run_id)',
   );
+  late final Index teiichiPlacingsRun = Index(
+    'teiichi_placings_run',
+    'CREATE INDEX teiichi_placings_run ON teiichi_placings (run_id)',
+  );
   @override
   Iterable<TableInfo<Table, Object?>> get allTables =>
       allSchemaEntities.whereType<TableInfo<Table, Object?>>();
@@ -5910,6 +6266,7 @@ abstract class _$AppDatabase extends GeneratedDatabase {
     keyValues,
     sideTripRuns,
     sideTripAnswers,
+    teiichiPlacings,
     dayCards,
     runsDay,
     runsMode,
@@ -5917,6 +6274,7 @@ abstract class _$AppDatabase extends GeneratedDatabase {
     attemptsItem,
     sideTripRunsDay,
     sideTripAnswersRun,
+    teiichiPlacingsRun,
   ];
 }
 
@@ -8683,6 +9041,26 @@ final class $$SideTripRunsTableReferences
       manager.$state.copyWith(prefetchedData: cache),
     );
   }
+
+  static MultiTypedResultKey<$TeiichiPlacingsTable, List<TeiichiPlacingRow>>
+  _teiichiPlacingsRefsTable(_$AppDatabase db) => MultiTypedResultKey.fromTable(
+    db.teiichiPlacings,
+    aliasName: 'side_trip_runs__id__teiichi_placings__run_id',
+  );
+
+  $$TeiichiPlacingsTableProcessedTableManager get teiichiPlacingsRefs {
+    final manager = $$TeiichiPlacingsTableTableManager(
+      $_db,
+      $_db.teiichiPlacings,
+    ).filter((f) => f.runId.id.sqlEquals($_itemColumn<int>('id')!));
+
+    final cache = $_typedResult.readTableOrNull(
+      _teiichiPlacingsRefsTable($_db),
+    );
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: cache),
+    );
+  }
 }
 
 class $$SideTripRunsTableFilterComposer
@@ -8794,6 +9172,31 @@ class $$SideTripRunsTableFilterComposer
           }) => $$SideTripAnswersTableFilterComposer(
             $db: $db,
             $table: $db.sideTripAnswers,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
+
+  Expression<bool> teiichiPlacingsRefs(
+    Expression<bool> Function($$TeiichiPlacingsTableFilterComposer f) f,
+  ) {
+    final $$TeiichiPlacingsTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.teiichiPlacings,
+      getReferencedColumn: (t) => t.runId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$TeiichiPlacingsTableFilterComposer(
+            $db: $db,
+            $table: $db.teiichiPlacings,
             $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
             joinBuilder: joinBuilder,
             $removeJoinBuilderFromRootComposer:
@@ -8991,6 +9394,31 @@ class $$SideTripRunsTableAnnotationComposer
     );
     return f(composer);
   }
+
+  Expression<T> teiichiPlacingsRefs<T extends Object>(
+    Expression<T> Function($$TeiichiPlacingsTableAnnotationComposer a) f,
+  ) {
+    final $$TeiichiPlacingsTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.teiichiPlacings,
+      getReferencedColumn: (t) => t.runId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$TeiichiPlacingsTableAnnotationComposer(
+            $db: $db,
+            $table: $db.teiichiPlacings,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
 }
 
 class $$SideTripRunsTableTableManager
@@ -9006,7 +9434,11 @@ class $$SideTripRunsTableTableManager
           $$SideTripRunsTableUpdateCompanionBuilder,
           (SideTripRun, $$SideTripRunsTableReferences),
           SideTripRun,
-          PrefetchHooks Function({bool day, bool sideTripAnswersRefs})
+          PrefetchHooks Function({
+            bool day,
+            bool sideTripAnswersRefs,
+            bool teiichiPlacingsRefs,
+          })
         > {
   $$SideTripRunsTableTableManager(_$AppDatabase db, $SideTripRunsTable table)
     : super(
@@ -9087,67 +9519,96 @@ class $$SideTripRunsTableTableManager
                 ),
               )
               .toList(),
-          prefetchHooksCallback: ({day = false, sideTripAnswersRefs = false}) {
-            return PrefetchHooks(
-              db: db,
-              explicitlyWatchedTables: [
-                if (sideTripAnswersRefs) db.sideTripAnswers,
-              ],
-              addJoins:
-                  <
-                    T extends TableManagerState<
-                      dynamic,
-                      dynamic,
-                      dynamic,
-                      dynamic,
-                      dynamic,
-                      dynamic,
-                      dynamic,
-                      dynamic,
-                      dynamic,
-                      dynamic,
-                      dynamic
-                    >
-                  >(state) {
-                    if (day) {
-                      state = state.withJoin(
-                        currentTable: table,
-                        currentColumn: table.day,
-                        referencedTable: $$SideTripRunsTableReferences
-                            ._dayTable(db),
-                        referencedColumn: $$SideTripRunsTableReferences
-                            ._dayTable(db)
-                            .day,
-                      ) as T;
-                    }
+          prefetchHooksCallback:
+              ({
+                day = false,
+                sideTripAnswersRefs = false,
+                teiichiPlacingsRefs = false,
+              }) {
+                return PrefetchHooks(
+                  db: db,
+                  explicitlyWatchedTables: [
+                    if (sideTripAnswersRefs) db.sideTripAnswers,
+                    if (teiichiPlacingsRefs) db.teiichiPlacings,
+                  ],
+                  addJoins:
+                      <
+                        T extends TableManagerState<
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic
+                        >
+                      >(state) {
+                        if (day) {
+                          state = state.withJoin(
+                            currentTable: table,
+                            currentColumn: table.day,
+                            referencedTable: $$SideTripRunsTableReferences
+                                ._dayTable(db),
+                            referencedColumn: $$SideTripRunsTableReferences
+                                ._dayTable(db)
+                                .day,
+                          ) as T;
+                        }
 
-                    return state;
+                        return state;
+                      },
+                  getPrefetchedDataCallback: (items) async {
+                    return [
+                      if (sideTripAnswersRefs)
+                        await $_getPrefetchedData<
+                          SideTripRun,
+                          $SideTripRunsTable,
+                          SideTripAnswerRow
+                        >(
+                          currentTable: table,
+                          referencedTable: $$SideTripRunsTableReferences
+                              ._sideTripAnswersRefsTable(db),
+                          managerFromTypedResult: (p0) =>
+                              $$SideTripRunsTableReferences(
+                                db,
+                                table,
+                                p0,
+                              ).sideTripAnswersRefs,
+                          referencedItemsForCurrentItem: (
+                            item,
+                            referencedItems,
+                          ) => referencedItems.where((e) => e.runId == item.id),
+                          typedResults: items,
+                        ),
+                      if (teiichiPlacingsRefs)
+                        await $_getPrefetchedData<
+                          SideTripRun,
+                          $SideTripRunsTable,
+                          TeiichiPlacingRow
+                        >(
+                          currentTable: table,
+                          referencedTable: $$SideTripRunsTableReferences
+                              ._teiichiPlacingsRefsTable(db),
+                          managerFromTypedResult: (p0) =>
+                              $$SideTripRunsTableReferences(
+                                db,
+                                table,
+                                p0,
+                              ).teiichiPlacingsRefs,
+                          referencedItemsForCurrentItem: (
+                            item,
+                            referencedItems,
+                          ) => referencedItems.where((e) => e.runId == item.id),
+                          typedResults: items,
+                        ),
+                    ];
                   },
-              getPrefetchedDataCallback: (items) async {
-                return [
-                  if (sideTripAnswersRefs)
-                    await $_getPrefetchedData<
-                      SideTripRun,
-                      $SideTripRunsTable,
-                      SideTripAnswerRow
-                    >(
-                      currentTable: table,
-                      referencedTable: $$SideTripRunsTableReferences
-                          ._sideTripAnswersRefsTable(db),
-                      managerFromTypedResult: (p0) =>
-                          $$SideTripRunsTableReferences(
-                            db,
-                            table,
-                            p0,
-                          ).sideTripAnswersRefs,
-                      referencedItemsForCurrentItem: (item, referencedItems) =>
-                          referencedItems.where((e) => e.runId == item.id),
-                      typedResults: items,
-                    ),
-                ];
+                );
               },
-            );
-          },
         ),
       );
 }
@@ -9164,7 +9625,11 @@ typedef $$SideTripRunsTableProcessedTableManager =
       $$SideTripRunsTableUpdateCompanionBuilder,
       (SideTripRun, $$SideTripRunsTableReferences),
       SideTripRun,
-      PrefetchHooks Function({bool day, bool sideTripAnswersRefs})
+      PrefetchHooks Function({
+        bool day,
+        bool sideTripAnswersRefs,
+        bool teiichiPlacingsRefs,
+      })
     >;
 typedef $$SideTripAnswersTableCreateCompanionBuilder =
     SideTripAnswersCompanion Function({
@@ -9648,6 +10113,326 @@ typedef $$SideTripAnswersTableProcessedTableManager =
       SideTripAnswerRow,
       PrefetchHooks Function({bool runId})
     >;
+typedef $$TeiichiPlacingsTableCreateCompanionBuilder =
+    TeiichiPlacingsCompanion Function({
+      Value<int> id,
+      required int runId,
+      required int seq,
+      required int poemId,
+      required int placingUs,
+    });
+typedef $$TeiichiPlacingsTableUpdateCompanionBuilder =
+    TeiichiPlacingsCompanion Function({
+      Value<int> id,
+      Value<int> runId,
+      Value<int> seq,
+      Value<int> poemId,
+      Value<int> placingUs,
+    });
+
+final class $$TeiichiPlacingsTableReferences
+    extends
+        BaseReferences<
+          _$AppDatabase,
+          $TeiichiPlacingsTable,
+          TeiichiPlacingRow
+        > {
+  $$TeiichiPlacingsTableReferences(
+    super.$_db,
+    super.$_table,
+    super.$_typedResult,
+  );
+
+  static $SideTripRunsTable _runIdTable(_$AppDatabase db) => db.sideTripRuns
+      .createAlias('teiichi_placings__run_id__side_trip_runs__id');
+
+  $$SideTripRunsTableProcessedTableManager get runId {
+    final $_column = $_itemColumn<int>('run_id')!;
+
+    final manager = $$SideTripRunsTableTableManager(
+      $_db,
+      $_db.sideTripRuns,
+    ).filter((f) => f.id.sqlEquals($_column));
+    final item = $_typedResult.readTableOrNull(_runIdTable($_db));
+    if (item == null) return manager;
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: [item]),
+    );
+  }
+}
+
+class $$TeiichiPlacingsTableFilterComposer
+    extends Composer<_$AppDatabase, $TeiichiPlacingsTable> {
+  $$TeiichiPlacingsTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<int> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get seq => $composableBuilder(
+    column: $table.seq,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get poemId => $composableBuilder(
+    column: $table.poemId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get placingUs => $composableBuilder(
+    column: $table.placingUs,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  $$SideTripRunsTableFilterComposer get runId {
+    final $$SideTripRunsTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.runId,
+      referencedTable: $db.sideTripRuns,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$SideTripRunsTableFilterComposer(
+            $db: $db,
+            $table: $db.sideTripRuns,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$TeiichiPlacingsTableOrderingComposer
+    extends Composer<_$AppDatabase, $TeiichiPlacingsTable> {
+  $$TeiichiPlacingsTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<int> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get seq => $composableBuilder(
+    column: $table.seq,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get poemId => $composableBuilder(
+    column: $table.poemId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get placingUs => $composableBuilder(
+    column: $table.placingUs,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  $$SideTripRunsTableOrderingComposer get runId {
+    final $$SideTripRunsTableOrderingComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.runId,
+      referencedTable: $db.sideTripRuns,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$SideTripRunsTableOrderingComposer(
+            $db: $db,
+            $table: $db.sideTripRuns,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$TeiichiPlacingsTableAnnotationComposer
+    extends Composer<_$AppDatabase, $TeiichiPlacingsTable> {
+  $$TeiichiPlacingsTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<int> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<int> get seq =>
+      $composableBuilder(column: $table.seq, builder: (column) => column);
+
+  GeneratedColumn<int> get poemId =>
+      $composableBuilder(column: $table.poemId, builder: (column) => column);
+
+  GeneratedColumn<int> get placingUs =>
+      $composableBuilder(column: $table.placingUs, builder: (column) => column);
+
+  $$SideTripRunsTableAnnotationComposer get runId {
+    final $$SideTripRunsTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.runId,
+      referencedTable: $db.sideTripRuns,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$SideTripRunsTableAnnotationComposer(
+            $db: $db,
+            $table: $db.sideTripRuns,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$TeiichiPlacingsTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $TeiichiPlacingsTable,
+          TeiichiPlacingRow,
+          $$TeiichiPlacingsTableFilterComposer,
+          $$TeiichiPlacingsTableOrderingComposer,
+          $$TeiichiPlacingsTableAnnotationComposer,
+          $$TeiichiPlacingsTableCreateCompanionBuilder,
+          $$TeiichiPlacingsTableUpdateCompanionBuilder,
+          (TeiichiPlacingRow, $$TeiichiPlacingsTableReferences),
+          TeiichiPlacingRow,
+          PrefetchHooks Function({bool runId})
+        > {
+  $$TeiichiPlacingsTableTableManager(
+    _$AppDatabase db,
+    $TeiichiPlacingsTable table,
+  ) : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$TeiichiPlacingsTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$TeiichiPlacingsTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$TeiichiPlacingsTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback:
+              ({
+                Value<int> id = const Value.absent(),
+                Value<int> runId = const Value.absent(),
+                Value<int> seq = const Value.absent(),
+                Value<int> poemId = const Value.absent(),
+                Value<int> placingUs = const Value.absent(),
+              }) => TeiichiPlacingsCompanion(
+                id: id,
+                runId: runId,
+                seq: seq,
+                poemId: poemId,
+                placingUs: placingUs,
+              ),
+          createCompanionCallback:
+              ({
+                Value<int> id = const Value.absent(),
+                required int runId,
+                required int seq,
+                required int poemId,
+                required int placingUs,
+              }) => TeiichiPlacingsCompanion.insert(
+                id: id,
+                runId: runId,
+                seq: seq,
+                poemId: poemId,
+                placingUs: placingUs,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map(
+                (e) => (
+                  e.readTable<$TeiichiPlacingsTable, TeiichiPlacingRow>(table),
+                  $$TeiichiPlacingsTableReferences(db, table, e),
+                ),
+              )
+              .toList(),
+          prefetchHooksCallback: ({runId = false}) {
+            return PrefetchHooks(
+              db: db,
+              explicitlyWatchedTables: [],
+              addJoins:
+                  <
+                    T extends TableManagerState<
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic
+                    >
+                  >(state) {
+                    if (runId) {
+                      state = state.withJoin(
+                        currentTable: table,
+                        currentColumn: table.runId,
+                        referencedTable: $$TeiichiPlacingsTableReferences
+                            ._runIdTable(db),
+                        referencedColumn: $$TeiichiPlacingsTableReferences
+                            ._runIdTable(db)
+                            .id,
+                      ) as T;
+                    }
+
+                    return state;
+                  },
+              getPrefetchedDataCallback: (items) async {
+                return [];
+              },
+            );
+          },
+        ),
+      );
+}
+
+typedef $$TeiichiPlacingsTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $TeiichiPlacingsTable,
+      TeiichiPlacingRow,
+      $$TeiichiPlacingsTableFilterComposer,
+      $$TeiichiPlacingsTableOrderingComposer,
+      $$TeiichiPlacingsTableAnnotationComposer,
+      $$TeiichiPlacingsTableCreateCompanionBuilder,
+      $$TeiichiPlacingsTableUpdateCompanionBuilder,
+      (TeiichiPlacingRow, $$TeiichiPlacingsTableReferences),
+      TeiichiPlacingRow,
+      PrefetchHooks Function({bool runId})
+    >;
 typedef $$DayCardsTableCreateCompanionBuilder = DayCardsCompanion Function({
   required int day,
   required int poemId,
@@ -9962,6 +10747,8 @@ class $AppDatabaseManager {
       $$SideTripRunsTableTableManager(_db, _db.sideTripRuns);
   $$SideTripAnswersTableTableManager get sideTripAnswers =>
       $$SideTripAnswersTableTableManager(_db, _db.sideTripAnswers);
+  $$TeiichiPlacingsTableTableManager get teiichiPlacings =>
+      $$TeiichiPlacingsTableTableManager(_db, _db.teiichiPlacings);
   $$DayCardsTableTableManager get dayCards =>
       $$DayCardsTableTableManager(_db, _db.dayCards);
 }

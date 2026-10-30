@@ -21,6 +21,7 @@ import '../domain/rating.dart';
 import '../domain/side_trips.dart';
 import '../domain/step_plan.dart';
 import '../domain/tab_locks.dart';
+import '../domain/teiichi_placing.dart';
 import '../domain/today_set.dart';
 import '../domain/trainer.dart';
 import '../domain/weak_cards.dart';
@@ -1443,6 +1444,13 @@ class Progress extends ChangeNotifier {
     );
   }
 
+  /// Stores a 定位置 game once it is over (see [SideTrips.recordTeiichi]).
+  Future<void> recordTeiichi(TeiichiPlacing placing, AnkirenGame game, {required DateTime startedAt}) async {
+    final day = await _storeDay(startedAt);
+    await sideTrips.recordTeiichi(db, placing, game, startedAt: startedAt, day: day.day);
+    notifyListeners();
+  }
+
   /// Developer tool: marks 暗記練's free levels 0 through [level] cleared.
   Future<void> clearAnkirenUpTo(int level) async {
     await sideTrips.clearUpTo(db, SideTrip.ankiren, level);
@@ -1457,6 +1465,7 @@ class Progress extends ChangeNotifier {
       await db.delete(db.runs).go();
       await db.delete(db.items).go();
       await db.delete(db.sideTripAnswers).go();
+      await db.delete(db.teiichiPlacings).go();
       await db.delete(db.sideTripRuns).go();
       await db.delete(db.dayCards).go();
       await db.delete(db.days).go();

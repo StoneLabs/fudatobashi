@@ -18,8 +18,9 @@ import 'package:fudatobashi/state/play_config.dart';
 import 'package:fudatobashi/state/progress.dart';
 
 void main() {
-  const ankiren = SideTrip.ankiren;
+  const ankiren = SideTrip.ankiren, teiichi = SideTrip.teiichi;
   const tabAt = SideTripTuning.tabRemembered, ankirenAt = SideTripTuning.ankirenSeen;
+  const teiichiAt = SideTripTuning.teiichiSeen;
 
   group('unlock rule', () {
     SideTripLock? lock(int seen, {bool allKnown = false, Set<SideTrip> latched = const {}}) =>
@@ -67,7 +68,8 @@ void main() {
         SideTripIsle.storehouse,
       ]);
       expect(SideTripIsle.ankiren.trip, SideTrip.ankiren);
-      expect([for (final isle in SideTripRing.isles) isle.comingSoon], [false, true, true, true, true]);
+      expect(SideTripIsle.storehouse.trip, SideTrip.teiichi);
+      expect([for (final isle in SideTripRing.isles) isle.comingSoon], [false, false, true, true, true]);
     });
 
     test('each step moves every island on a slot: right to front, front to left, then round the back to the right',
@@ -106,9 +108,10 @@ void main() {
       expect(hub.openTrips, isEmpty);
     });
 
-    test('opens 暗記練 at 50 seen, and reports the open trips for the latch', () {
-      expect(SideTripsHub.of(allKnown: false, seen: ankirenAt - 1).openTrips, isEmpty);
-      expect(SideTripsHub.of(allKnown: false, seen: ankirenAt).openTrips, {ankiren});
+    test('opens 定位置 at 25 seen and 暗記練 at 50, and reports the open trips for the latch', () {
+      expect(SideTripsHub.of(allKnown: false, seen: teiichiAt - 1).openTrips, isEmpty);
+      expect(SideTripsHub.of(allKnown: false, seen: ankirenAt - 1).openTrips, {teiichi});
+      expect(SideTripsHub.of(allKnown: false, seen: ankirenAt).openTrips, {ankiren, teiichi});
       expect(SideTripsHub.of(allKnown: false, seen: 0, latched: {ankiren}).openTrips, {ankiren});
       expect(SideTripsHub.of(allKnown: true, seen: 0).openTrips, {...SideTrip.values});
     });
@@ -154,7 +157,7 @@ void main() {
     Future<String?> stored(AppDatabase db, String key) async =>
         (await (db.select(db.keyValues)..where((k) => k.key.equals(key))).getSingleOrNull())?.value;
 
-    test('journey: the tab latches open at 25 and 暗記練 at 50; both survive a restart and a bad day, '
+    test('journey: the tab and 定位置 latch open at 25 and 暗記練 at 50; all survive a restart and a bad day, '
         'and a reset locks them again', () async {
       final db = AppDatabase(NativeDatabase.memory());
       final p = await Progress.open(db);
@@ -165,16 +168,17 @@ void main() {
       await remember(p, journeyOrder.take(tabAt));
       expect(p.tabLock(LockedTab.sideTrips), isNull);
       expect(p.sideTripsHub()[ankiren].lock?.needed, ankirenAt - tabAt);
+      expect(p.sideTripsHub().openTrips, {teiichi});
       await remember(p, journeyOrder.skip(tabAt).take(ankirenAt - tabAt));
-      expect(p.sideTripsHub().openTrips, {ankiren});
+      expect(p.sideTripsHub().openTrips, {ankiren, teiichi});
 
       final later = DateTime.now().add(const Duration(days: 60));
       expect(p.trainer.wellRememberedCount(p.allStats, later), 0, reason: 'every card is due weeks later');
-      expect(p.sideTripsHub().openTrips, {ankiren});
-      expect(await stored(db, 'sideTripsUnlocked'), '["ankiren"]');
+      expect(p.sideTripsHub().openTrips, {ankiren, teiichi});
+      expect(await stored(db, 'sideTripsUnlocked'), '["teiichi","ankiren"]');
       expect(await stored(db, 'sideTripsTabUnlocked'), 'true');
       final again = await Progress.open(db);
-      expect(again.sideTripsHub().openTrips, {ankiren});
+      expect(again.sideTripsHub().openTrips, {ankiren, teiichi});
       expect(again.tabLock(LockedTab.sideTrips), isNull);
 
       await again.resetProgress();
