@@ -183,6 +183,7 @@ void main() {
       expect([for (final g in reviews[4].peers) g.id], [all[0].id, all[1].id, all[3].id]);
       expect(reviews[4].last!.id, all[3].id);
       expect(reviews[4].recall.game.id, all[4].id);
+      expect(reopened.activeStreak(), 2, reason: 'a day with a 定位置 game is a day played');
       await tester.runAsync(() => p.db.close());
     });
   });

@@ -183,7 +183,7 @@ extension RunHistory on Progress {
       final day = dayOf(run.row);
       note(day, run.allKnown || setDoneOn(day) ? DayActivity.done : DayActivity.some);
     }
-    for (final run in ankirenRuns) {
+    for (final run in sideTrips.runs) {
       final day = dayOfGame(run);
       note(day, setDoneOn(day) ? DayActivity.done : DayActivity.some);
     }
