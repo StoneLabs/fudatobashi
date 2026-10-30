@@ -1631,7 +1631,7 @@
   "teiichiFormWrongTaps": "お手つき",
   "teiichiFormPlacing": "並べタイム",
   "teiichiFormGames": "直近{0}戦の​平均",
-  "teiichiFormGamesOne": "直近{0}戦",
+  "teiichiFormGamesOne": "前回の1戦",
   "teiichiFormStart": "{0}枚で​1回​遊ぶと​表示されるよ",
   "teiichiAutoTurn": "画面を​自動で​横向きに​する",
   "teiichiAutoTurnNote": "対局の​間は​画面を​横向きに​します。​オフに​すると、​スマホの​向きに​合わせます。",
