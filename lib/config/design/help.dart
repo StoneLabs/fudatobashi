@@ -129,6 +129,9 @@ abstract final class GuideLayout {
   /// The room right of the text for a picture's hard shadow.
   static const double shadowRoom = 4;
 
+  /// The colour of list markers and the emphasis highlight.
+  static const Color accent = Palette.pink;
+
   static const double subheadFont = 13;
 
   /// A step: its number in an ink circle, then its line.

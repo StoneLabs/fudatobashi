@@ -4,12 +4,13 @@ import 'package:flutter/services.dart' show AssetBundle, AssetManifest, rootBund
 
 /// The long translated texts, in Markdown: one folder per language,
 /// `assets/l10n/<code>_articles/`, with the rules (`rules.md`), the guides
-/// and each card's explanation (`card_details/NNN.md`). A language without
-/// its own file for an article gets the English one.
+/// (`GuideScreen`) and each card's explanation (`card_details/NNN.md`). A
+/// language without its own file for an article gets the English one.
 abstract final class Articles {
   static const fallback = 'en';
 
   static const rules = 'rules';
+  static const teiichiGuide = 'teiichi';
 
   static String asset(String code, String name) => 'assets/l10n/${code}_articles/$name.md';
 

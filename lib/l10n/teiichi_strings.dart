@@ -33,7 +33,6 @@ extension TeiichiStrings on S {
   String get teiichiLearnLine => t('teiichiLearnLine');
   String get teiichiLearnButton => t('teiichiLearnButton');
   String get teiichiGuideTitle => t('teiichiGuideTitle');
-  String get teiichiGuideSoon => t('teiichiGuideSoon');
 
   /// The custom game sheet: the card count from the known cards, the rows
   /// (each key's count, how many cards it holds or, shut, how few it

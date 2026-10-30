@@ -32,9 +32,6 @@ abstract final class TeiichiPageLayout {
   static const double buttonIcon = 15;
   static const double buttonIconGap = 6;
   static const EdgeInsets buttonPadding = EdgeInsets.symmetric(horizontal: 12, vertical: 8);
-
-  /// The guide still to come: its line under the header.
-  static const double guideLineFont = 15;
 }
 
 /// 定位置's custom game sheet (`teiichi_sheet.dart`), on 暗記練's sheet frame
