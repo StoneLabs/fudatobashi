@@ -28,6 +28,8 @@ This paragraph wraps on the picture's right side instead. It starts on the very 
 > — Fujiwara no Teika
 > :::
 
+>{.tobi pose=waving} Tobi says this line. The kimariji is {あきの}!
+
 ::: {.right}
 Right-aligned [紅葉|もみじ] without a box
 :::
