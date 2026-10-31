@@ -35,6 +35,7 @@ import 'package:fudatobashi/l10n/card_info_strings.dart';
 import 'package:fudatobashi/l10n/credits_strings.dart';
 import 'package:fudatobashi/l10n/free_strings.dart';
 import 'package:fudatobashi/l10n/guide_strings.dart';
+import 'package:fudatobashi/l10n/all_guides_strings.dart';
 import 'package:fudatobashi/l10n/help_strings.dart';
 import 'package:fudatobashi/l10n/history_strings.dart';
 import 'package:fudatobashi/l10n/home_strings.dart';
@@ -449,7 +450,7 @@ void main() {
     });
 
     for (final (width, fontScale) in const [(384.0, 1.0), (360.0, 1.0), (360.0, 1.3)]) {
-      testWidgets('help: the three guides, then Tools with the card browser and its slot ($lang, $width dp, font scale $fontScale)',
+      testWidgets('help: the guides, then Tools with the card browser and its slot ($lang, $width dp, font scale $fontScale)',
           (tester) async {
         tester.platformDispatcher.textScaleFactorTestValue = fontScale;
         addTearDown(tester.platformDispatcher.clearTextScaleFactorTestValue);
@@ -467,18 +468,16 @@ void main() {
         expect(tester.takeException(), isNull);
         await captureScreen(tester, 'help_page', lang: lang);
         final s = S(lang);
-        final guides = [for (final title in [s.replayTour, s.guideTitle, s.rulesTitle]) tester.getRect(find.text(title))];
+        final guides = [for (final title in [s.replayTour, s.guideTitle, s.rulesTitle, s.allGuidesTitle]) tester.getRect(find.text(title))];
         for (final (i, guide) in guides.indexed.skip(1)) {
           expect(guide.top, greaterThan(guides[i - 1].bottom), reason: 'the guides stack in order');
         }
         final tools = tester.getRect(find.byWidgetPredicate((w) => w is HistoryHeading && w.title == s.helpTools));
         final browser = tester.getRect(find.text(s.cardBrowserTitle));
         final slot = tester.getRect(find.byType(DashedBox));
-        expect(tools.top, greaterThan(tester.getRect(find.text(s.rulesRowNote)).bottom), reason: 'Tools comes after the guides');
+        expect(tools.top, greaterThan(guides.last.bottom), reason: 'Tools comes after the guides');
         expect(browser.top, greaterThan(tools.bottom), reason: 'the card browser is the first tool');
         expect(slot.top, greaterThan(browser.bottom));
-        // At the larger font Help scrolls.
-        if (fontScale == 1) expect(slot.bottom, lessThanOrEqualTo(_phone.height), reason: 'nothing to scroll for');
         await tester.pumpWidget(const SizedBox());
       });
     }
