@@ -19,6 +19,17 @@ abstract final class FigureFile {
 /// been read.
 abstract final class FigureWords {
   static const read = {'en': 'Read', 'ja': '読まれた'};
+
+  /// The 定位置 guide's two games, and a side's rows from the centre line
+  /// down.
+  static const games = {
+    'en': ['Game 1', 'Game 2'],
+    'ja': ['1試合目', '2試合目'],
+  };
+  static const rows = {
+    'en': ['Top', 'Middle', 'Bottom'],
+    'ja': ['上段', '中段', '下段'],
+  };
 }
 
 /// The poems the karuta guide's pictures show, by id.
@@ -113,8 +124,21 @@ abstract final class TeiichiGuideExamples {
     ([87, 18, 53, 86, 57], [], [22, 70, 19, 81, 77]),
   ];
 
-  /// The cards outlined in the first picture.
-  static const List<int> outlined = [2, 50, 87, 22];
+  /// Your side in two games, dealt different cards, the ones in [fixed]
+  /// in the same places in both: 上段's second from the right, 中段's
+  /// second from the left, 下段's first from the left and third from the
+  /// right.
+  static const List<(List<int>, List<int>, List<int>)> gameOne = [
+    ([1, 2, 3], [], [4, 5, 43, 6]),
+    ([8, 74, 9, 10], [], [12, 13, 14, 16]),
+    ([87, 18, 20, 21, 23], [], [24, 25, 81, 26, 27]),
+  ];
+  static const List<(List<int>, List<int>, List<int>)> gameTwo = [
+    ([30, 32, 33, 34], [], [35, 43, 36]),
+    ([37, 74, 38], [], [39, 40, 41, 42, 44]),
+    ([87, 45, 46, 47], [], [48, 49, 51, 81, 52, 54]),
+  ];
+  static const List<int> fixed = [43, 74, 87, 81];
 
   /// The one-sound cards over both clusters of 下段, and the six-sound
   /// cards at the right's outer end of 中段 and 下段, each pair one above
@@ -176,23 +200,53 @@ abstract final class TeiichiFigureLayout {
   /// all but touch, as on the tatami, still read as cards.
   static const double cardInset = 0.7;
   static const double cardStroke = KarutaFigureLayout.fieldCardStroke;
-  static const double outlineStroke = 2.5;
   static const List<double> spotDash = Strokes.fineDash;
 
   /// Kana on a card: one as large as this share of its width, a column
   /// of them sharing this share of its height, and two columns this share
-  /// of its width.
+  /// of its width. Romaji goes across it, at most [cardRomajiFont] and
+  /// inside [cardRomajiInset].
   static const double kanaShare = 0.62;
   static const double kanaColumnShare = 0.9;
   static const double kanaTwoColumnShare = 0.84;
+  static const double cardRomajiFont = 11;
+  static const double cardRomajiInset = 1.5;
   static const Color oneSound = Palette.alarm, oneSoundKana = Palette.paper;
   static const Color lookAlike = Palette.pink, lookAlikeKana = Palette.ink;
   static const Color sixSound = Palette.sea, sixSoundKana = Palette.paper;
   static const Color moved = Palette.sun;
 
+  /// The cards in `TeiichiGuideExamples.fixed`, each in its own colour,
+  /// its kimariji on it in the second.
+  static const List<(Color, Color)> fixed = [
+    (Palette.pink, Palette.ink),
+    (Palette.sea, Palette.paper),
+    (Palette.sun, Palette.ink),
+    (Palette.violet, Palette.paper),
+  ];
+
+  /// The rows' names down the open middle of a side, and a game's name in
+  /// an ink tag above it.
+  static const double rowFont = 11;
+  static const double gameFont = 11;
+  static const EdgeInsets gamePadding = EdgeInsets.fromLTRB(6, 2, 6, 3);
+  static const double gameGap = 2;
+
   /// Romaji under 下段's marked cards, at least [romajiSpace] apart.
   static const double romajiGap = 3;
   static const double romajiSpace = 6;
+
+  /// Kimariji too long to go under their cards: in a box at the side's
+  /// right edge, [calloutGap] under the side and its romaji, its tail up
+  /// to the cards, which it shows as chips laid out as the cards lie.
+  static const double calloutGap = 12;
+  static const double calloutFont = 11.5;
+  static const EdgeInsets calloutPadding = EdgeInsets.all(6);
+  static const EdgeInsets chipPadding = EdgeInsets.fromLTRB(7, 3, 7, 4);
+  static const double chipGap = 4;
+  static const double calloutStroke = Strokes.label;
+  static const double calloutTail = 14;
+  static const double calloutTip = 2;
 
   /// A kimariji longer than this goes down the card in two columns.
   static const int kanaColumn = 3;
@@ -214,26 +268,24 @@ abstract final class TeiichiFigureLayout {
   static const double toneSpacing = 5;
   static const List<(double, double)> fullness = [(0.5, 0.72), (0.88, 1.08), (1.22, 1.42)];
 
-  /// Placing time: the sides at this share of the width, a large clock
-  /// beside theirs and a small stopwatch beside yours.
+  /// Memorising time: the sides at this share of the width, and beside
+  /// each the same 15-minute timer, its minutes ticked round the dial, a
+  /// longer tick every [longTickEvery]. The minutes spent on that side
+  /// are filled: [yourMinutes] first, the rest for theirs.
   static const double timeFieldShare = 0.74;
   static const double timeCentre = 0.9;
-  static const double clockSize = 70;
-  static const double watchSize = 34;
-  static const double clockStroke = 2.5;
-  static const double watchStroke = 2;
-  static const int clockTicks = 12;
-  static const double clockTick = 0.16, clockQuarterTick = 0.26;
-  static const double matchMinutes = 15, clockMinutes = 60;
-  static const double placingTurn = 0.86;
+  static const double timerSize = 62;
+  static const double timerStroke = 2.5;
+  static const double tickStroke = 1.8;
+  static const int timerMinutes = 15;
+  static const int yourMinutes = 1;
+  static const int longTickEvery = 5;
+  static const double tick = 0.16, longTick = 0.27;
+  static const double centreDot = 3;
 
-  /// The stopwatch, in its radii: its crown, its button turned
-  /// [watchButtonTurn] round from it, and its time shaded over
-  /// [watchDial] of its face.
-  static const Rect watchCrown = Rect.fromLTRB(-0.3, -1.42, 0.3, -0.9);
-  static const Rect watchButton = Rect.fromLTRB(-0.2, -1.3, 0.2, -0.85);
-  static const double watchButtonTurn = 0.115;
-  static const double watchDial = 0.78;
-  static const double handStroke = 2;
-  static const double handDot = 2.4;
+  /// The timer, in its radii: its crown, and its button turned
+  /// [timerButtonTurn] round from it.
+  static const Rect timerCrown = Rect.fromLTRB(-0.24, -1.3, 0.24, -0.9);
+  static const Rect timerButton = Rect.fromLTRB(-0.16, -1.22, 0.16, -0.88);
+  static const double timerButtonTurn = 0.115;
 }

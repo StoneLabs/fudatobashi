@@ -20,9 +20,9 @@ import 'figure_panel.dart';
 /// the game lays it out once grown for play (`TeiichiZoom`), the centre
 /// line above it. Where a picture compares two sides they come one panel
 /// above the other, so that their cards stay large enough to read on a
-/// phone. They hold no words: what they show is named in the captions,
-/// and only a kimariji short enough to fit under its card gets its
-/// romaji there.
+/// phone. A marked card shows its kimariji; in romaji, that goes under the
+/// card where it fits there, across the card where the picture asks for
+/// it, and else in a box under the side, its tail up to the cards.
 
 typedef _Rows = List<(List<int>, List<int>, List<int>)>;
 
@@ -43,7 +43,19 @@ FieldGeometry _grown(AnkirenHalf own, double slots, [AnkirenHalf? theirs]) => Fi
     folded: false,
     trueSlots: slots);
 
-enum _Mark { outlined, oneSound, sixSound, lookAlike, moved }
+/// How a card stands out: [fill]ed, and its kimariji on it in [face] when
+/// that is set.
+class _Mark {
+  const _Mark(this.fill, [this.face]);
+
+  final Color fill;
+  final Color? face;
+
+  static const oneSound = _Mark(TeiichiFigureLayout.oneSound, TeiichiFigureLayout.oneSoundKana);
+  static const sixSound = _Mark(TeiichiFigureLayout.sixSound, TeiichiFigureLayout.sixSoundKana);
+  static const lookAlike = _Mark(TeiichiFigureLayout.lookAlike, TeiichiFigureLayout.lookAlikeKana);
+  static const moved = _Mark(TeiichiFigureLayout.moved);
+}
 
 /// A side to draw: [half]'s cards, some [marks]ed, the [gone] ones as empty
 /// places, and the cards that moved with where they lay [before].
@@ -57,16 +69,20 @@ class _Side {
 }
 
 /// A side as cards, or with its rows' clusters as blocks in
-/// [TeiichiFigureLayout.fullness]'s screentones.
+/// [TeiichiFigureLayout.fullness]'s screentones. In romaji, its marked
+/// cards' kimariji go [romajiAcross] the cards, or under them, or for the
+/// [callout] cards in a box under the side. [rows] names its rows down
+/// the open middle, 上段 first.
 class _SideView extends StatelessWidget {
-  const _SideView(this.side, {required this.slots, this.blocks = false});
+  const _SideView(this.side,
+      {required this.slots, this.blocks = false, this.romajiAcross = false, this.callout = const {}, this.rows});
 
   final _Side side;
   final double slots;
   final bool blocks;
-
-  static const _kana = {_Mark.oneSound, _Mark.sixSound, _Mark.lookAlike};
-  static const _labelled = {_Mark.oneSound, _Mark.lookAlike};
+  final bool romajiAcross;
+  final Set<int> callout;
+  final List<String>? rows;
 
   @override
   Widget build(BuildContext context) => LayoutBuilder(builder: (context, box) {
@@ -76,20 +92,26 @@ class _SideView extends StatelessWidget {
         Rect place(FieldRect r) =>
             Rect.fromLTWH(r.x * scale, top + r.y * scale, r.w * scale, r.h * scale).deflate(TeiichiFigureLayout.cardInset);
         final cards = {for (final MapEntry(:key, :value) in geometry.half(FieldSide.own).entries) key: place(value)};
-        final kana = {
+        final faces = {
           for (final MapEntry(:key, :value) in side.marks.entries)
-            if (_kana.contains(value)) key: value,
+            if (value.face != null) key: value.face!,
         };
-        final labels = resolvedKimarijiScript(context) == KimarijiScript.romaji
+        final romaji = resolvedKimarijiScript(context) == KimarijiScript.romaji;
+        final labels = romaji && !romajiAcross
             ? _labels(context, {
-                for (final MapEntry(:key, :value) in kana.entries)
-                  if (_labelled.contains(value)) key: cards[key]!,
+                for (final id in faces.keys)
+                  if (!callout.contains(id)) id: cards[id]!,
               })
             : const <(String, Rect)>[];
-        final bottom = labels.fold(top + geometry.height * scale, (b, l) => math.max(b, l.$2.bottom));
+        final under = labels.fold(top + geometry.height * scale, (b, l) => math.max(b, l.$2.bottom));
+        final box_ = callout.isEmpty
+            ? null
+            : _Callout.lay(context, {for (final id in callout) id: cards[id]!},
+                top: under + TeiichiFigureLayout.calloutGap, right: box.maxWidth);
+        final names = rows;
         return SizedBox(
           width: box.maxWidth,
-          height: bottom,
+          height: box_ == null ? under : box_.frame.bottom + TeiichiFigureLayout.calloutStroke / 2,
           child: CustomPaint(
             painter: _SidePainter(
               side: side,
@@ -97,14 +119,44 @@ class _SideView extends StatelessWidget {
               before: {for (final MapEntry(:key, :value) in side.before.entries) key: place(value)},
               blocks: blocks ? _blocks(side.half, cards) : null,
               line: top / 2,
+              callout: box_,
             ),
             child: Stack(children: [
-              for (final MapEntry(key: id, value: mark) in kana.entries)
-                Positioned.fromRect(rect: cards[id]!, child: _CardKana(poems[id].kimariji, mark)),
+              for (final MapEntry(key: id, value: color) in faces.entries)
+                Positioned.fromRect(
+                  rect: cards[id]!,
+                  child: romaji && romajiAcross
+                      ? _CardRomaji(kimarijiFor(context, id), color)
+                      : _CardKana(poems[id].kimariji, color),
+                ),
               for (final (text, rect) in labels)
                 Positioned.fromRect(
                     rect: rect,
                     child: Text(text, maxLines: 1, softWrap: false, style: _romajiStyle)),
+              if (names != null)
+                for (final (name, rect) in _rowNames(side.half, cards, names))
+                  Positioned.fromRect(
+                    rect: rect,
+                    child: Center(
+                        child: FittedBox(fit: BoxFit.scaleDown, child: Text(name, maxLines: 1, style: _rowStyle))),
+                  ),
+              if (box_ != null)
+                for (final (id, rect) in box_.chips)
+                  Positioned.fromRect(
+                    rect: rect,
+                    child: DecoratedBox(
+                      decoration: BoxDecoration(
+                        color: side.marks[id]!.fill,
+                        border: Border.all(color: Palette.ink, width: TeiichiFigureLayout.cardStroke),
+                      ),
+                      child: Center(
+                        child: Text(kimarijiFor(context, id),
+                            maxLines: 1,
+                            softWrap: false,
+                            style: _Callout.style.copyWith(color: side.marks[id]!.face)),
+                      ),
+                    ),
+                  ),
             ]),
           ),
         );
@@ -112,6 +164,8 @@ class _SideView extends StatelessWidget {
 
   static const _romajiStyle =
       TextStyle(fontWeight: Weights.bold, fontSize: KimarijiFigureLayout.romajiFont, height: 1, color: Palette.ink);
+  static const _rowStyle =
+      TextStyle(fontWeight: Weights.black, fontSize: TeiichiFigureLayout.rowFont, height: 1, color: Palette.ink);
 
   /// The romaji kimariji under each of [cards] (all in 下段), pushed apart
   /// where they would run into each other.
@@ -141,6 +195,23 @@ class _SideView extends StatelessWidget {
     return [for (final (i, id) in ids.indexed) (kimarijiFor(context, id), boxes[i])];
   }
 
+  /// [names] by each row, 上段 first, in the room every row leaves open
+  /// between its clusters.
+  static List<(String, Rect)> _rowNames(AnkirenHalf half, Map<int, Rect> cards, List<String> names) {
+    final rows = half.rows.reversed.toList();
+    var from = 0.0, to = double.infinity;
+    for (final row in rows) {
+      for (final id in row.left) {
+        from = math.max(from, cards[id]!.right);
+      }
+      for (final id in row.right) {
+        to = math.min(to, cards[id]!.left);
+      }
+    }
+    Rect across(Rect card) => Rect.fromLTRB(from, card.top, to, card.bottom);
+    return [for (final (i, row) in rows.indexed) (names[i], across(cards[[...row.left, ...row.right].first]!))];
+  }
+
   /// Each row's clusters as blocks, with their screentones' dot radii.
   static List<(Rect, double)> _blocks(AnkirenHalf half, Map<int, Rect> cards) {
     Rect around(List<int> ids) => ids.map((id) => cards[id]!).reduce((a, b) => a.expandToInclude(b));
@@ -153,14 +224,88 @@ class _SideView extends StatelessWidget {
   }
 }
 
+/// A box under a side for cards whose kimariji are too long to go under
+/// them: its [frame], its tail's [tip] by the cards, and a chip for each
+/// card, laid out as the cards lie.
+class _Callout {
+  const _Callout(this.frame, this.tip, this.chips);
+
+  final Rect frame;
+  final Offset tip;
+  final List<(int, Rect)> chips;
+
+  static const style =
+      TextStyle(fontWeight: Weights.black, fontSize: TeiichiFigureLayout.calloutFont, height: 1.1, color: Palette.ink);
+
+  /// The box for [cards], from [top] down, its right edge on [right].
+  static _Callout lay(BuildContext context, Map<int, Rect> cards, {required double top, required double right}) {
+    final font = DefaultTextStyle.of(context).style.merge(style);
+    final ids = cards.keys.toList()
+      ..sort((a, b) => cards[a]!.top == cards[b]!.top
+          ? cards[a]!.left.compareTo(cards[b]!.left)
+          : cards[a]!.top.compareTo(cards[b]!.top));
+    final rows = <List<int>>[];
+    for (final id in ids) {
+      if (rows.isEmpty || cards[id]!.top > cards[rows.last.first]!.center.dy) rows.add([]);
+      rows.last.add(id);
+    }
+    final words = [
+      for (final id in ids)
+        (TextPainter(text: TextSpan(text: kimarijiFor(context, id), style: font), textDirection: TextDirection.ltr)
+              ..layout())
+            .size,
+    ];
+    const pad = TeiichiFigureLayout.chipPadding, inner = TeiichiFigureLayout.calloutPadding;
+    const gap = TeiichiFigureLayout.chipGap;
+    final chip = Size(words.map((s) => s.width).reduce(math.max) + pad.horizontal,
+        words.map((s) => s.height).reduce(math.max) + pad.vertical);
+    final across = rows.map((r) => r.length).reduce(math.max);
+    final width = inner.horizontal + across * chip.width + (across - 1) * gap;
+    final height = inner.vertical + rows.length * chip.height + (rows.length - 1) * gap;
+    final frame = Rect.fromLTWH(right - TeiichiFigureLayout.calloutStroke / 2 - width, top, width, height);
+    final block = ids.map((id) => cards[id]!).reduce((a, b) => a.expandToInclude(b));
+    return _Callout(
+      frame,
+      Offset(block.center.dx, block.bottom + TeiichiFigureLayout.calloutTip),
+      [
+        for (final (r, row) in rows.indexed)
+          for (final (c, id) in row.indexed)
+            (
+              id,
+              Rect.fromLTWH(frame.left + inner.left + (across - row.length + c) * (chip.width + gap),
+                  frame.top + inner.top + r * (chip.height + gap), chip.width, chip.height),
+            ),
+      ],
+    );
+  }
+
+  void paint(Canvas canvas) {
+    const half = TeiichiFigureLayout.calloutTail / 2;
+    final tail = Path()
+      ..moveTo(tip.dx - half, frame.top + TeiichiFigureLayout.calloutStroke)
+      ..lineTo(tip.dx, tip.dy)
+      ..lineTo(tip.dx + half, frame.top + TeiichiFigureLayout.calloutStroke)
+      ..close();
+    final shape = Path.combine(PathOperation.union, Path()..addRect(frame), tail);
+    canvas.drawPath(shape, Paint()..color = Palette.paper);
+    canvas.drawPath(
+        shape,
+        Paint()
+          ..style = PaintingStyle.stroke
+          ..color = Palette.ink
+          ..strokeWidth = TeiichiFigureLayout.calloutStroke
+          ..strokeJoin = StrokeJoin.round);
+  }
+}
+
 /// A marked card's kimariji, down the card as on a real one: in two
 /// columns, the first on the right, when it is longer than
 /// [TeiichiFigureLayout.kanaColumn].
 class _CardKana extends StatelessWidget {
-  const _CardKana(this.kimariji, this.mark);
+  const _CardKana(this.kimariji, this.color);
 
   final String kimariji;
-  final _Mark mark;
+  final Color color;
 
   @override
   Widget build(BuildContext context) => LayoutBuilder(builder: (context, box) {
@@ -170,11 +315,6 @@ class _CardKana extends StatelessWidget {
         final across = columns == 1 ? TeiichiFigureLayout.kanaShare : TeiichiFigureLayout.kanaTwoColumnShare;
         final size = math.min(box.maxWidth * across / columns,
             box.maxHeight * TeiichiFigureLayout.kanaColumnShare / rows);
-        final color = switch (mark) {
-          _Mark.oneSound => TeiichiFigureLayout.oneSoundKana,
-          _Mark.sixSound => TeiichiFigureLayout.sixSoundKana,
-          _ => TeiichiFigureLayout.lookAlikeKana,
-        };
         return Center(
           child: Row(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.start, children: [
             for (var c = columns - 1; c >= 0; c--)
@@ -187,13 +327,43 @@ class _CardKana extends StatelessWidget {
       });
 }
 
+/// A marked card's kimariji in romaji, across the card.
+class _CardRomaji extends StatelessWidget {
+  const _CardRomaji(this.romaji, this.color);
+
+  final String romaji;
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) => Padding(
+        padding: const EdgeInsets.all(TeiichiFigureLayout.cardRomajiInset),
+        child: Center(
+          child: FittedBox(
+            fit: BoxFit.scaleDown,
+            child: Text(romaji,
+                maxLines: 1,
+                softWrap: false,
+                style: TextStyle(
+                    fontWeight: Weights.black, fontSize: TeiichiFigureLayout.cardRomajiFont, height: 1, color: color)),
+          ),
+        ),
+      );
+}
+
 class _SidePainter extends CustomPainter {
-  _SidePainter({required this.side, required this.cards, required this.before, required this.blocks, required this.line});
+  _SidePainter(
+      {required this.side,
+      required this.cards,
+      required this.before,
+      required this.blocks,
+      required this.line,
+      required this.callout});
 
   final _Side side;
   final Map<int, Rect> cards, before;
   final List<(Rect, double)>? blocks;
   final double line;
+  final _Callout? callout;
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -221,6 +391,7 @@ class _SidePainter extends CustomPainter {
     for (final MapEntry(key: id, value: from) in before.entries) {
       _arrow(canvas, from.center, cards[id]!);
     }
+    callout?.paint(canvas);
   }
 
   @override
@@ -236,19 +407,13 @@ void _centreLine(Canvas canvas, double y, double width) {
 }
 
 void _card(Canvas canvas, Rect rect, _Mark? mark) {
-  final fill = switch (mark) {
-    _Mark.oneSound => TeiichiFigureLayout.oneSound,
-    _Mark.sixSound => TeiichiFigureLayout.sixSound,
-    _Mark.lookAlike => TeiichiFigureLayout.lookAlike,
-    _Mark.moved => TeiichiFigureLayout.moved,
-    _ => Palette.paper,
-  };
-  canvas.drawRect(rect, Paint()..color = fill);
-  final edge = Paint()
-    ..style = PaintingStyle.stroke
-    ..color = mark == null ? Palette.cardFrame : Palette.ink
-    ..strokeWidth = mark == _Mark.outlined ? TeiichiFigureLayout.outlineStroke : TeiichiFigureLayout.cardStroke;
-  canvas.drawRect(mark == _Mark.outlined ? rect.deflate(TeiichiFigureLayout.outlineStroke / 2) : rect, edge);
+  canvas.drawRect(rect, Paint()..color = mark?.fill ?? Palette.paper);
+  canvas.drawRect(
+      rect,
+      Paint()
+        ..style = PaintingStyle.stroke
+        ..color = mark == null ? Palette.cardFrame : Palette.ink
+        ..strokeWidth = TeiichiFigureLayout.cardStroke);
 }
 
 /// An empty place where a card lay.
@@ -317,24 +482,58 @@ class _Compare extends StatelessWidget {
   }
 }
 
-/// Your side from where you sit, a few cards outlined.
+/// Your side in two games, one panel above the other, each under its
+/// name: different cards dealt, but a few, each in its own colour, in the
+/// same places in both. The first names its rows down the open middle.
 class TeiichiSideFigure extends StatelessWidget {
   const TeiichiSideFigure({super.key});
 
   @override
   Widget build(BuildContext context) {
-    final half = _half(TeiichiGuideExamples.base);
-    return FigurePanel(
-      child: _SideView(
-        _Side(half, marks: {for (final id in TeiichiGuideExamples.outlined) id: _Mark.outlined}),
-        slots: _slots([half]),
-      ),
-    );
+    final code = S.of(context).code;
+    final halves = [_half(TeiichiGuideExamples.gameOne), _half(TeiichiGuideExamples.gameTwo)];
+    final slots = _slots(halves);
+    final marks = {
+      for (final (i, id) in TeiichiGuideExamples.fixed.indexed)
+        id: _Mark(TeiichiFigureLayout.fixed[i].$1, TeiichiFigureLayout.fixed[i].$2),
+    };
+    return Column(children: [
+      for (final (i, half) in halves.indexed) ...[
+        if (i > 0) const SizedBox(height: TeiichiFigureLayout.panelGap),
+        FigurePanel(
+          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            _GameTag(FigureWords.games[code]![i]),
+            const SizedBox(height: TeiichiFigureLayout.gameGap),
+            _SideView(_Side(half, marks: marks),
+                slots: slots, romajiAcross: true, rows: i == 0 ? FigureWords.rows[code] : null),
+          ]),
+        ),
+      ],
+    ]);
   }
 }
 
+/// A game's name in an ink tag.
+class _GameTag extends StatelessWidget {
+  const _GameTag(this.name);
+
+  final String name;
+
+  @override
+  Widget build(BuildContext context) => DecoratedBox(
+        decoration: const BoxDecoration(color: Palette.ink),
+        child: Padding(
+          padding: TeiichiFigureLayout.gamePadding,
+          child: Text(name,
+              style: const TextStyle(
+                  fontWeight: Weights.black, fontSize: TeiichiFigureLayout.gameFont, height: 1.1, color: Palette.paper)),
+        ),
+      );
+}
+
 /// The one-sound cards low on both sides, and the six-sound cards at the
-/// right's outer end of 中段 and 下段.
+/// right's outer end of 中段 and 下段, their kimariji in a box under the
+/// side.
 class TeiichiFirstCardsFigure extends StatelessWidget {
   const TeiichiFirstCardsFigure({super.key});
 
@@ -348,6 +547,7 @@ class TeiichiFirstCardsFigure extends StatelessWidget {
           for (final id in TeiichiGuideExamples.sixSound) id: _Mark.sixSound,
         }),
         slots: _slots([half]),
+        callout: TeiichiGuideExamples.sixSound.toSet(),
       ),
     );
   }
@@ -410,9 +610,8 @@ class TeiichiGapsFigure extends StatelessWidget {
   }
 }
 
-/// Both sides, theirs above: a large clock with the match's 15 minutes
-/// shaded beside theirs, a small stopwatch short of a full turn beside
-/// yours.
+/// Both sides, theirs above, and beside each the same 15-minute timer:
+/// yours with its first minute filled, theirs with the other 14.
 class TeiichiTimeFigure extends StatelessWidget {
   const TeiichiTimeFigure({super.key});
 
@@ -463,69 +662,39 @@ class _TimePainter extends CustomPainter {
       _card(canvas, rect, null);
     }
     final x = (fieldWidth + size.width) / 2;
-    _clock(canvas, Offset(x, sideHeight / 2));
-    _stopwatch(canvas, Offset(x, sideHeight + centre + sideHeight / 2));
+    const yoursEnd = TeiichiFigureLayout.yourMinutes;
+    _timer(canvas, Offset(x, sideHeight / 2), yoursEnd, TeiichiFigureLayout.timerMinutes);
+    _timer(canvas, Offset(x, sideHeight + centre + sideHeight / 2), 0, yoursEnd);
   }
 
-  /// A clock face with its hours ticked and the match's minutes shaded.
-  void _clock(Canvas canvas, Offset c) {
-    const r = TeiichiFigureLayout.clockSize / 2;
-    canvas.drawCircle(c, r, Paint()..color = Palette.paper);
-    _sector(canvas, c, r - TeiichiFigureLayout.clockStroke / 2,
-        TeiichiFigureLayout.matchMinutes / TeiichiFigureLayout.clockMinutes);
-    final ink = Paint()
-      ..color = Palette.ink
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = TeiichiFigureLayout.clockStroke
-      ..strokeCap = StrokeCap.round;
-    for (var i = 0; i < TeiichiFigureLayout.clockTicks; i++) {
-      final a = 2 * math.pi * i / TeiichiFigureLayout.clockTicks;
-      final dir = Offset(math.sin(a), -math.cos(a));
-      final tick = i % (TeiichiFigureLayout.clockTicks ~/ 4) == 0
-          ? TeiichiFigureLayout.clockQuarterTick
-          : TeiichiFigureLayout.clockTick;
-      canvas.drawLine(c + dir * r * (1 - tick), c + dir * (r - TeiichiFigureLayout.clockStroke), ink..strokeWidth = TeiichiFigureLayout.handStroke);
-    }
-    _hand(canvas, c, r * (1 - TeiichiFigureLayout.clockQuarterTick),
-        TeiichiFigureLayout.matchMinutes / TeiichiFigureLayout.clockMinutes);
-    canvas.drawCircle(c, r - TeiichiFigureLayout.clockStroke / 2, ink..strokeWidth = TeiichiFigureLayout.clockStroke);
-  }
-
-  /// A stopwatch, its time shaded short of one full turn.
-  void _stopwatch(Canvas canvas, Offset c) {
-    const r = TeiichiFigureLayout.watchSize / 2;
-    final ink = Paint()
-      ..color = Palette.ink
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = TeiichiFigureLayout.watchStroke
-      ..strokeJoin = StrokeJoin.round;
-    final fill = Paint()..color = Palette.ink;
+  /// The timer, its minutes [from] up to [to] filled.
+  void _timer(Canvas canvas, Offset c, int from, int to) {
+    const r = TeiichiFigureLayout.timerSize / 2;
+    const minutes = TeiichiFigureLayout.timerMinutes;
+    final solid = Paint()..color = Palette.ink;
     Rect scaled(Rect unit) => Rect.fromLTRB(unit.left * r, unit.top * r, unit.right * r, unit.bottom * r);
     canvas.save();
     canvas.translate(c.dx, c.dy);
-    canvas.drawRect(scaled(TeiichiFigureLayout.watchCrown), fill);
-    canvas.rotate(2 * math.pi * TeiichiFigureLayout.watchButtonTurn);
-    canvas.drawRect(scaled(TeiichiFigureLayout.watchButton), fill);
+    canvas.drawRect(scaled(TeiichiFigureLayout.timerCrown), solid);
+    canvas.rotate(2 * math.pi * TeiichiFigureLayout.timerButtonTurn);
+    canvas.drawRect(scaled(TeiichiFigureLayout.timerButton), solid);
     canvas.restore();
     canvas.drawCircle(c, r, Paint()..color = Palette.paper);
-    _sector(canvas, c, r * TeiichiFigureLayout.watchDial, TeiichiFigureLayout.placingTurn);
-    _hand(canvas, c, r * TeiichiFigureLayout.watchDial, TeiichiFigureLayout.placingTurn);
-    canvas.drawCircle(c, r - TeiichiFigureLayout.watchStroke / 2, ink);
-  }
-
-  void _sector(Canvas canvas, Offset c, double r, double turn) => canvas.drawArc(
-      Rect.fromCircle(center: c, radius: r), -math.pi / 2, 2 * math.pi * turn, true, Paint()..color = Palette.pink);
-
-  void _hand(Canvas canvas, Offset c, double r, double turn) {
-    final a = 2 * math.pi * turn;
-    canvas.drawLine(
-        c,
-        c + Offset(math.sin(a), -math.cos(a)) * r,
-        Paint()
-          ..color = Palette.ink
-          ..strokeWidth = TeiichiFigureLayout.handStroke
-          ..strokeCap = StrokeCap.round);
-    canvas.drawCircle(c, TeiichiFigureLayout.handDot, Paint()..color = Palette.ink);
+    canvas.drawArc(Rect.fromCircle(center: c, radius: r - TeiichiFigureLayout.timerStroke / 2),
+        -math.pi / 2 + 2 * math.pi * from / minutes, 2 * math.pi * (to - from) / minutes, true, Paint()..color = Palette.pink);
+    final ink = Paint()
+      ..color = Palette.ink
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = TeiichiFigureLayout.tickStroke
+      ..strokeCap = StrokeCap.round;
+    for (var m = 0; m < minutes; m++) {
+      final a = 2 * math.pi * m / minutes;
+      final dir = Offset(math.sin(a), -math.cos(a));
+      final tick = m % TeiichiFigureLayout.longTickEvery == 0 ? TeiichiFigureLayout.longTick : TeiichiFigureLayout.tick;
+      canvas.drawLine(c + dir * r * (1 - tick), c + dir * (r - TeiichiFigureLayout.timerStroke), ink);
+    }
+    canvas.drawCircle(c, TeiichiFigureLayout.centreDot, solid);
+    canvas.drawCircle(c, r - TeiichiFigureLayout.timerStroke / 2, ink..strokeWidth = TeiichiFigureLayout.timerStroke);
   }
 
   @override

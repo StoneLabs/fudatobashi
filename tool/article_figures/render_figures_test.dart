@@ -70,7 +70,7 @@ final List<_Figure> _figures = [
     byScript: true,
     build: () => const StairsFigure(FirstSoundsExamples.card, kanaOnly: true),
   ),
-  (name: 'teiichi_side', byLanguage: false, byScript: false, build: () => const TeiichiSideFigure()),
+  (name: 'teiichi_side', byLanguage: true, byScript: true, build: () => const TeiichiSideFigure()),
   (name: 'teiichi_time', byLanguage: false, byScript: false, build: () => const TeiichiTimeFigure()),
   (name: 'teiichi_first_cards', byLanguage: false, byScript: true, build: () => const TeiichiFirstCardsFigure()),
   (name: 'teiichi_look_alike', byLanguage: false, byScript: true, build: () => const TeiichiLookAlikeFigure()),

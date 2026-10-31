@@ -8,15 +8,15 @@ Your side has three rows: the 上段 (top row) by the centre line, the 中段 (m
 
 A 定位置 helps in two ways. You don't have to learn where your own cards are. And your hand learns the way to each spot, so when you hear a card, it already knows where to go.
 
-![Top row by the centre line, bottom row nearest you. The outlined cards sit in the same spot every game.](assets/artworks/articles/teiichi_side.webp)
+![Two games with different cards. The coloured ones go to the same spot both times.](assets/artworks/articles/teiichi_side_{{ "romaji" if env.romaji_mode else "hiragana" }}.en.webp)
 
 # Why it saves time
 
 Before a match, you get 15 minutes to remember all 50 cards. The other player's side is new every game, but yours doesn't have to be. With a good 定位置, your side is memorised the moment it's placed.
 
-A good layout is also fast to put down. You can place all 25 cards in under a minute without stopping to think. Then the 15 minutes are for their side: learn their cards in groups that start with the same sounds, close your eyes to test yourself, and go back over the ones you missed.
+A good layout is also fast to put down. You can place all 25 cards in under a minute without stopping to think. Then the rest of the 15 minutes is for their side: learn their cards in groups that start with the same sounds, close your eyes to test yourself, and go back over the ones you missed.
 
-![Under a minute to place your side. All 15 minutes for theirs.](assets/artworks/articles/teiichi_time.webp)
+![About 1 of the 15 minutes for your side. The other 14 for theirs.](assets/artworks/articles/teiichi_time.webp)
 
 >{.tobi pose=cheering} Half the field memorised before the clock even starts. Nice!
 
