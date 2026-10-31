@@ -77,3 +77,11 @@ abstract final class AnkirenDebugStyle {
   static const Color labelText = Color(0xFFFFFFFF);
   static const EdgeInsets labelPadding = EdgeInsets.symmetric(horizontal: 2, vertical: 1);
 }
+
+/// The developer's からふだ page (`KarafudaDevPage`): its margins, the gap
+/// between its parts, and the mark of a candidate that was picked.
+abstract final class KarafudaDevStyle {
+  static const EdgeInsets padding = EdgeInsets.all(16);
+  static const double gap = 8;
+  static const Color picked = Palette.seaSoft;
+}

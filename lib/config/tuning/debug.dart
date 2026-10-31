@@ -141,3 +141,8 @@ abstract final class DebugTuning {
   static const int tobiSamples = 2000;
   static const int tobiSeed = 1;
 }
+
+/// The developer's からふだ page (`KarafudaDevPage`): the cards on its board.
+abstract final class KarafudaDevTuning {
+  static const int boardCards = 10;
+}

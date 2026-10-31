@@ -4,7 +4,12 @@ import '../../config/config.dart';
 import '../../config/design.dart';
 import '../../domain/ankiren_level.dart';
 
-const debugMono = TextStyle(fontFamily: 'monospace', fontSize: 12, fontFeatures: [FontFeature.tabularFigures()]);
+/// Monospace, its kana and kanji in the app's own face.
+const debugMono = TextStyle(
+    fontFamily: 'monospace',
+    fontFamilyFallback: [Fonts.ui],
+    fontSize: 12,
+    fontFeatures: [FontFeature.tabularFigures()]);
 
 /// A key and its value on one line.
 class DebugKV extends StatelessWidget {

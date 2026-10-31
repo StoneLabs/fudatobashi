@@ -22,6 +22,7 @@ import 'package:fudatobashi/domain/ankiren_game.dart';
 import 'package:fudatobashi/domain/ankiren_geometry.dart';
 import 'package:fudatobashi/domain/ankiren_level.dart';
 import 'package:fudatobashi/domain/ankiren_score.dart';
+import 'package:fudatobashi/domain/karafuda.dart';
 import 'package:fudatobashi/domain/rating.dart';
 import 'package:fudatobashi/domain/side_trips.dart';
 import 'package:fudatobashi/domain/trainer.dart';
@@ -50,6 +51,7 @@ import 'package:fudatobashi/ui/debug/ankiren_score_readout.dart';
 import 'package:fudatobashi/ui/debug/ankiren_tools_page.dart';
 import 'package:fudatobashi/ui/debug/ankiren_graphs.dart';
 import 'package:fudatobashi/ui/debug/debug_common.dart';
+import 'package:fudatobashi/ui/debug/karafuda_page.dart';
 import 'package:fudatobashi/ui/debug/play_overlay.dart';
 import 'package:fudatobashi/ui/manga/manga.dart';
 import 'package:fudatobashi/ui/play/time_format.dart';
@@ -1338,6 +1340,56 @@ void main() {
       await tester.pump(Motion.route);
       await tester.pump(Motion.route);
       expect(find.byType(AnkirenDebugGame), findsOneWidget);
+      expect(tester.takeException(), isNull);
+      await tester.pumpWidget(const SizedBox());
+    });
+
+    testWidgets('the Karafuda page: a board, the からふだ the games\' picker draws for it, and the odds', (tester) async {
+      final p = await open(tester);
+      useScreen(tester, usersPhone);
+      await tester.pumpWidget(RepaintBoundary(
+        key: const ValueKey('screen'),
+        child: ProgressScope(
+            progress: p, child: MaterialApp(theme: buildMangaTheme(), home: const KarafudaDevPage(seed: 5))),
+      ));
+      await tester.pump();
+      expect(tester.takeException(), isNull);
+      // The page's deal and draw, again from the same seed.
+      final rng = math.Random(5);
+      final known = p.knownCards.toList()..sort();
+      const boardCards = KarafudaDevTuning.boardCards;
+      final board = ([...known]..shuffle(rng)).take(boardCards).toList()..sort();
+      final pools = KarafudaPicker.ofPoems.pools(board, known);
+      final count = Karafuda.forAnkiren(boardCards);
+      final picks = KarafudaPicker.draw(pools, count, rng);
+      String name(int id) => '#${'$id'.padLeft(3)} ${poems[id].kimariji}';
+      for (final id in board) {
+        expect(find.text(name(id)), findsOneWidget);
+      }
+      expect(picks, hasLength(count));
+      for (final id in picks) {
+        final friends = pools.friendsOf[id];
+        expect(
+            find.text('${name(id)}  ${friends == null ? 'not 友札' : '友札 of ${friends.map(name).join(', ')}'}'),
+            findsWidgets);
+      }
+      await captureScreen(tester, 'karafuda/dev_page');
+
+      String kv(String key) => tester.widget<DebugKV>(find.byWidgetPredicate((w) => w is DebugKV && w.k == key)).v;
+      final page = find.byType(Scrollable).first;
+      await tester.scrollUntilVisible(find.text('Odds'), 200, scrollable: page);
+      await tester.pump();
+      final odds = KarafudaPicker.odds(pools, count);
+      expect(kv('bias to 友札'), '${AnkirenTuning.karafudaTomofudaShare}');
+      expect([kv('友札 pool'), kv('other pool')], ['${pools.similar.length}', '${pools.rest.length}']);
+      expect(kv('each 友札'), '${(odds.similar * 100).toStringAsFixed(1)}%');
+      expect(kv('each other'), '${(odds.rest * 100).toStringAsFixed(1)}%');
+      await captureScreen(tester, 'karafuda/dev_page', variant: 'odds');
+
+      await tester.scrollUntilVisible(find.text('Reroll board'), -200, scrollable: page);
+      await tester.tap(find.text('Reroll board'));
+      await tester.pump();
+      expect(find.text(name(board.first)), findsNothing, reason: 'another board');
       expect(tester.takeException(), isNull);
       await tester.pumpWidget(const SizedBox());
     });
