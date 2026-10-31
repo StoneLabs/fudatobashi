@@ -191,7 +191,7 @@ class _PointsCalculatorState extends State<_PointsCalculator> {
         DebugKV('per card', '$points'),
         DebugKV('early × (right first tap only)', early.toStringAsFixed(3)),
         DebugKV('per card with early', '${points - multiplied + (multiplied * early).round()}'),
-        DebugKV('${_setup.cards} cards, all first taps at this time',
+        DebugKV('${_setup.calls} calls (${_setup.karafuda} からふだ), all first taps at this time',
             '${AnkirenScore.firstTryTotal(_setup, responseMs: _responseMs, timeLeft: Duration(seconds: _timeLeft.round()))}'),
       ],
     );
@@ -458,7 +458,7 @@ class _ClassTable extends StatelessWidget {
     if (reaches(slowest)) {
       final share = timeLeft.inMicroseconds / _setup.memorise.inMicroseconds;
       var finds = 0;
-      while (finds < _setup.cards &&
+      while (finds < _setup.calls &&
           AnkirenRating.performance(AnkirenScore.totalOf(finds * AnkirenTuning.cardPoints, finds * AnkirenTuning.cardPoints, share)) < rating) {
         finds++;
       }
@@ -473,12 +473,12 @@ class _ClassTable extends StatelessWidget {
         slow = mid;
       }
     }
-    return (ms: fast, finds: _setup.cards);
+    return (ms: fast, finds: _setup.calls);
   }
 
   static String _range(({int? ms, int finds}) from, ({int? ms, int finds})? to) {
     if (from.ms == null) {
-      final most = to == null || to.ms != null ? _setup.cards : to.finds - 1;
+      final most = to == null || to.ms != null ? _setup.calls : to.finds - 1;
       return most == from.finds ? '$most finds' : '${from.finds}–$most finds';
     }
     final slower = (from.ms! / 1000).toStringAsFixed(2);
@@ -495,7 +495,7 @@ class _ClassTable extends StatelessWidget {
     String cell(String text, int width) => text.padRight(width);
     return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
       Text(
-        'All ${_setup.cards} right with the first tap at one time each; '
+        'All ${_setup.calls} calls (${_setup.karafuda} からふだ) right with the first tap at one time each; '
         'P = F / ${AnkirenRatingModel.pointsPerRating.round()}. '
         'A class reached even at ${AnkirenTuning.speedNone.inSeconds} s shows the finds it needs there.',
         style: debugMono.copyWith(color: Colors.grey),

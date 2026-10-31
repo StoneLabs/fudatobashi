@@ -27,6 +27,9 @@ enum XpSource {
   firstTap,
   nearMiss,
 
+  /// 暗記練: the からふだ calls, all they earned as cards would.
+  karafuda,
+
   /// 暗記練's ranked game, or the main game's ranked run (ランク戦), played
   /// to the end.
   ranked,

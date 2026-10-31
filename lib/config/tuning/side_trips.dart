@@ -12,8 +12,8 @@ abstract final class SideTripTuning {
   static const int ankirenSeen = 50;
 
   /// 定位置: this many cards seen, enough for its usual game of
-  /// `TeiichiTuning.cards`.
-  static const int teiichiSeen = 25;
+  /// `TeiichiTuning.cards` and its からふだ.
+  static const int teiichiSeen = TeiichiTuning.cards + TeiichiTuning.karafuda;
 }
 
 /// How a swipe turns the Side Trips tab's ring of islands (`SideTripRing`).

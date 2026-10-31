@@ -75,6 +75,7 @@ class AnkirenSettings {
     this.freeLevel = DefaultSettings.ankirenFreeLevel,
     this.customPerSide = DefaultSettings.ankirenCustomPerSide,
     this.customMemorise = DefaultSettings.ankirenCustomMemorise,
+    this.customKarafuda,
     this.rulesSeen = DefaultSettings.ankirenRulesSeen,
   });
 
@@ -84,9 +85,12 @@ class AnkirenSettings {
   /// Free play's last level preset, or null when its last setup was custom.
   final int? freeLevel;
 
-  /// Free play's custom setup, kept while a preset is chosen.
+  /// Free play's custom setup, kept while a preset is chosen; its からふだ
+  /// as the formula gives its field (`AnkirenSetup.customKarafuda`) while
+  /// null.
   final int customPerSide;
   final Duration customMemorise;
+  final int? customKarafuda;
 
   /// The rules (遊び方) have been shown once, so 暗記練's page no longer
   /// opens with them.
@@ -94,7 +98,11 @@ class AnkirenSettings {
 
   /// Free play's last setup.
   AnkirenSetup get freeSetup => freeLevel == null
-      ? AnkirenSetup.custom(perSide: customPerSide, memorise: customMemorise)
+      ? AnkirenSetup.custom(
+          perSide: customPerSide,
+          memorise: customMemorise,
+          karafuda: customKarafuda ?? AnkirenSetup.customKarafuda(customPerSide),
+        )
       : AnkirenSetup.forLevel(freeLevel!);
 
   /// These settings with [setup] as free play's last one.
@@ -104,6 +112,7 @@ class AnkirenSettings {
         freeLevel: setup.level,
         customPerSide: setup.level == null ? setup.perSide : customPerSide,
         customMemorise: setup.level == null ? setup.memorise : customMemorise,
+        customKarafuda: setup.level == null ? setup.karafuda : customKarafuda,
         rulesSeen: rulesSeen,
       );
 
@@ -113,6 +122,7 @@ class AnkirenSettings {
         'freeLevel': freeLevel,
         'customPerSide': customPerSide,
         'customMemoriseMs': customMemorise.inMilliseconds,
+        'customKarafuda': ?customKarafuda,
         'rulesSeen': rulesSeen,
       };
 
@@ -130,6 +140,7 @@ class AnkirenSettings {
           : Duration(
               milliseconds: memoriseMs.clamp(
                   AnkirenTuning.customMinMemorise.inMilliseconds, AnkirenTuning.customMaxMemorise.inMilliseconds)),
+      customKarafuda: (j['customKarafuda'] as int?)?.clamp(0, 2 * AnkirenTuning.customMaxPerSide),
       rulesSeen: j['rulesSeen'] as bool? ?? DefaultSettings.ankirenRulesSeen,
     );
   }
@@ -140,6 +151,7 @@ class AnkirenSettings {
         freeLevel: freeLevel,
         customPerSide: customPerSide,
         customMemorise: customMemorise,
+        customKarafuda: customKarafuda,
         rulesSeen: rulesSeen ?? this.rulesSeen,
       );
 }
@@ -179,6 +191,7 @@ class AppSettings {
     this.teiichiRulesSeen = DefaultSettings.teiichiRulesSeen,
     this.teiichiCards = DefaultSettings.teiichiCards,
     this.teiichiRows = DefaultSettings.teiichiRows,
+    this.teiichiKarafuda,
     this.teiichiAutoTurn = DefaultSettings.teiichiAutoTurn,
     this.teiichiTurnTipOff = DefaultSettings.teiichiTurnTipOff,
   });
@@ -249,9 +262,11 @@ class AppSettings {
   /// 定位置's rules have been shown, so its page no longer opens with them.
   final bool teiichiRulesSeen;
 
-  /// 定位置's last setup picked in its custom game sheet.
+  /// 定位置's last setup picked in its custom game sheet; its からふだ as
+  /// the formula gives its cards (`Karafuda.forTeiichi`) while null.
   final int teiichiCards;
   final int teiichiRows;
+  final int? teiichiKarafuda;
 
   /// 定位置's game turns the screen sideways; else it follows how the phone
   /// is held (Settings › 寄り道 › 定位置).
@@ -327,6 +342,7 @@ class AppSettings {
         'teiichiRulesSeen': teiichiRulesSeen,
         'teiichiCards': teiichiCards,
         'teiichiRows': teiichiRows,
+        'teiichiKarafuda': ?teiichiKarafuda,
         'teiichiAutoTurn': teiichiAutoTurn,
         'teiichiTurnTipOff': teiichiTurnTipOff,
       };
@@ -384,6 +400,7 @@ class AppSettings {
       teiichiCards: (j['teiichiCards'] as int? ?? DefaultSettings.teiichiCards)
           .clamp(TeiichiTuning.minCards, TeiichiTuning.cards),
       teiichiRows: (j['teiichiRows'] as int? ?? DefaultSettings.teiichiRows).clamp(1, TeiichiTuning.rows),
+      teiichiKarafuda: (j['teiichiKarafuda'] as int?)?.clamp(0, TeiichiTuning.cards),
       teiichiAutoTurn: j['teiichiAutoTurn'] as bool? ?? DefaultSettings.teiichiAutoTurn,
       teiichiTurnTipOff: j['teiichiTurnTipOff'] as bool? ?? DefaultSettings.teiichiTurnTipOff,
     );
@@ -422,6 +439,7 @@ class AppSettings {
     bool? teiichiRulesSeen,
     int? teiichiCards,
     int? teiichiRows,
+    int? teiichiKarafuda,
     bool? teiichiAutoTurn,
     bool? teiichiTurnTipOff,
   }) =>
@@ -458,6 +476,7 @@ class AppSettings {
         teiichiRulesSeen: teiichiRulesSeen ?? this.teiichiRulesSeen,
         teiichiCards: teiichiCards ?? this.teiichiCards,
         teiichiRows: teiichiRows ?? this.teiichiRows,
+        teiichiKarafuda: teiichiKarafuda ?? this.teiichiKarafuda,
         teiichiAutoTurn: teiichiAutoTurn ?? this.teiichiAutoTurn,
         teiichiTurnTipOff: teiichiTurnTipOff ?? this.teiichiTurnTipOff,
       );

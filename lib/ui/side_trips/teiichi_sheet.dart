@@ -4,6 +4,7 @@ import '../../config/config.dart';
 import '../../config/design.dart';
 import '../../config/vector_art.dart';
 import '../../data/poem.dart';
+import '../../domain/karafuda.dart';
 import '../../domain/teiichi.dart';
 import '../../l10n/ankiren_strings.dart';
 import '../../l10n/free_strings.dart';
@@ -77,7 +78,7 @@ class _TeiichiSheetState extends State<TeiichiSheet> {
     _rows = fitted.rows;
   }
 
-  TeiichiSetup get _setup => TeiichiSetup(cards: _cards, rows: _rows);
+  TeiichiSetup get _setup => TeiichiSetup(cards: _cards, rows: _rows, karafuda: Karafuda.forTeiichi(_cards));
 
   void _setCards(int cards) => setState(() {
         final wanted = _rows;

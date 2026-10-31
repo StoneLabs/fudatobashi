@@ -173,13 +173,14 @@ Future<void> startAnkirenRanked(BuildContext context) async {
   final entry = progress.sideTripsHub()[SideTrip.ankiren];
   const setup = AnkirenSetup.ranked();
   final known = progress.knownCards.toList();
-  if (!entry.rankedOpen || setup.cards > known.length) return;
+  if (!entry.rankedOpen || setup.calls > known.length) return;
   await _pushAnkiren(context, setup, known);
 }
 
 /// 暗記練's free play at [setup], once 暗記練 is open, the setup is (a level
 /// opened by clearing the one before, or custom once that opens; see
-/// [AnkirenLadder]) and the known cards fill the field.
+/// [AnkirenLadder]) and the known cards are enough for its field and its
+/// からふだ.
 Future<void> startAnkirenFree(BuildContext context, AnkirenSetup setup) async {
   final progress = ProgressScope.read(context);
   final known = progress.knownCards.toList();
@@ -187,8 +188,8 @@ Future<void> startAnkirenFree(BuildContext context, AnkirenSetup setup) async {
   final level = setup.level;
   final open = level == null ? entry.ladder.customOpen : entry.ladder.isOpen(level);
   if (!entry.open || setup.ranked || !open) return;
-  if (setup.cards > known.length) {
-    MangaToast.show(context, S.of(context).ankirenNeedCards(setup.cards));
+  if (setup.calls > known.length) {
+    MangaToast.show(context, S.of(context).ankirenNeedCards(setup.calls));
     return;
   }
   await _pushAnkiren(context, setup, known);
@@ -219,13 +220,13 @@ Future<void> _pushAnkiren(BuildContext context, AnkirenSetup setup, List<int> kn
 }
 
 /// 定位置 at [setup], once 定位置 is open, laid out from the known cards,
-/// which must hold it.
+/// which must hold it and its からふだ.
 Future<void> startTeiichi(BuildContext context, TeiichiSetup setup) async {
   final progress = ProgressScope.read(context);
   if (!progress.sideTripsHub()[SideTrip.teiichi].open) return;
   final known = progress.knownCards.toList();
-  if (setup.cards > known.length) {
-    MangaToast.show(context, S.of(context).teiichiNeedCards(setup.cards));
+  if (setup.calls > known.length) {
+    MangaToast.show(context, S.of(context).teiichiNeedCards(setup.calls));
     return;
   }
   await _pushTeiichi(context, setup, known);

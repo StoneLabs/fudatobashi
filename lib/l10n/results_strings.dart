@@ -79,6 +79,7 @@ extension ResultsStrings on S {
         XpSource.graduation => t('xpSourceGraduation'),
         XpSource.firstTap => t('xpSourceFirstTap'),
         XpSource.nearMiss => t('xpSourceNearMiss'),
+        XpSource.karafuda => t('xpSourceKarafuda'),
         XpSource.ranked => t('xpSourceRanked'),
         XpSource.placement => t('xpSourcePlacement'),
         XpSource.exam => t('xpSourceExam'),

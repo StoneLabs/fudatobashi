@@ -5,7 +5,8 @@ import 'ankiren_field.dart';
 import 'ankiren_level.dart';
 import 'play_session.dart';
 
-/// One prompt of a 暗記練 game and how it was answered.
+/// One prompt of a 暗記練 game and how it was answered: a field card's, or
+/// a からふだ call's, found when the からふだ button was pressed.
 class AnkirenAnswer {
   const AnkirenAnswer({
     required this.poemId,
@@ -20,12 +21,16 @@ class AnkirenAnswer {
   });
 
   final int poemId;
-  final FieldSide side;
 
-  /// Other cards tapped while this one was asked.
+  /// The card's side; null for a からふだ call.
+  final FieldSide? side;
+
+  /// Wrong taps while this one was asked: other cards, or the からふだ
+  /// button.
   final int wrongTaps;
 
-  /// The prompt's reveal → the tap on its card, in microseconds, as measured
+  /// The prompt's reveal → the tap on its card (or the からふだ button), in
+  /// microseconds, as measured
   /// (see [Attempt.isValidTime]); null when it was never found: given up, or
   /// the game ended first.
   final int? responseUs;
@@ -41,13 +46,15 @@ class AnkirenAnswer {
   /// order; empty when no card was tapped.
   final List<TapProximity> taps;
 
-  /// The card each of [taps] hit, in the same order.
+  /// The card each of [taps] hit, in the same order (`Karafuda.button` for
+  /// the からふだ button).
   final List<int> tapped;
 
   /// The first tap's time after the prompt in microseconds, as measured;
   /// null when no card was tapped.
   final int? firstTapUs;
 
+  bool get karafuda => side == null;
   bool get found => responseUs != null;
   bool get validTime => responseUs != null && Attempt.isValidTime(responseUs!);
   bool get firstTry => found && wrongTaps == 0;
@@ -58,7 +65,8 @@ class AnkirenAnswer {
 
 /// A 暗記練 game's score, which only ranked games show. Every field card is
 /// asked once and earns [points] for the taps made while it was asked,
-/// however its prompt ended (found, given up or the game ended).
+/// however its prompt ended (found, given up or the game ended); so does
+/// every からふだ call, the [karafuda] part of them.
 ///
 /// These [recall] points are out of [maxRecall] (every card first try at
 /// full speed). The [firstRight] part of them, from the cards found with the
@@ -70,10 +78,14 @@ class AnkirenScore {
   AnkirenScore(List<AnkirenAnswer> answers, {required int prompts, this.timeLeft = 0})
       : recall = answers.fold(0, (sum, a) => sum + points(a)),
         firstRight = answers.fold(0, (sum, a) => sum + (foundFirst(a.taps) ? points(a) : 0)),
+        karafuda = answers.fold(0, (sum, a) => sum + (a.karafuda ? points(a) : 0)),
         maxRecall = maxFor(prompts);
 
   final int recall;
   final int firstRight;
+
+  /// The part of [recall] from the からふだ calls.
+  final int karafuda;
   final int maxRecall;
 
   /// The share of the memorise time left unused.
@@ -95,13 +107,13 @@ class AnkirenScore {
   static int totalOf(int recall, int firstRight, double timeLeft) =>
       recall - firstRight + (firstRight * (1 + AnkirenTuning.earlyBonus * timeLeft)).round();
 
-  /// A game with [setup] where every card is found with its first tap
+  /// A game with [setup] where every call is answered with its first tap
   /// [responseMs] after its prompt, and the player was ready with [timeLeft]
   /// of the memorise time to spare (at most all of it).
   static int firstTryTotal(AnkirenSetup setup, {required double responseMs, Duration timeLeft = Duration.zero}) {
     final share = (timeLeft.inMicroseconds / setup.memorise.inMicroseconds).clamp(0.0, 1.0);
     final perCard = AnkirenTuning.cardPoints + speedBonus((responseMs * 1000).round());
-    return totalOf(setup.cards * perCard, setup.cards * perCard, share);
+    return totalOf(setup.calls * perCard, setup.calls * perCard, share);
   }
 
   static int maxFor(int prompts) => prompts * (AnkirenTuning.cardPoints + AnkirenTuning.speedMax);

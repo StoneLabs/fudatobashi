@@ -4,6 +4,7 @@ import '../config/config.dart';
 import 'ankiren_field.dart';
 import 'ankiren_rating.dart';
 import 'ankiren_score.dart';
+import 'karafuda.dart';
 import 'play_session.dart';
 import 'rating.dart';
 import 'xp.dart';
@@ -18,10 +19,18 @@ abstract final class AnkirenMeta {
   /// The dealt field (`AnkirenField.toJson`); missing from games recorded
   /// before the deal was kept.
   static const dealKey = 'deal';
+
+  /// The からふだ called, by id; missing from games without any. 定位置's
+  /// games keep theirs the same way.
+  static const karafudaKey = 'karafuda';
+
+  /// The からふだ a game with these details ([meta], decoded) called.
+  static Set<int> karafudaIn(Map<String, dynamic> meta) => {...?(meta[karafudaKey] as List?)?.cast<int>()};
 }
 
-/// One card of a recorded 暗記練 game and how it was answered (see
-/// `AnkirenAnswer`), with the cards its taps hit when the game kept them.
+/// One call of a recorded 暗記練 game and how it was answered (see
+/// `AnkirenAnswer`): a field card's or a からふだ's, with the cards its taps
+/// hit when the game kept them.
 class AnkirenCardTry {
   const AnkirenCardTry({
     required this.poemId,
@@ -31,10 +40,14 @@ class AnkirenCardTry {
     required this.firstTapUs,
     this.tapped = const [],
     this.gaveUp = false,
+    this.karafuda = false,
   });
 
   final int poemId;
   final int wrongTaps;
+
+  /// A からふだ call, found when the からふだ button was pressed.
+  final bool karafuda;
 
   /// The player gave it up ("don't know").
   final bool gaveUp;
@@ -42,7 +55,8 @@ class AnkirenCardTry {
   final List<TapProximity> taps;
   final int? firstTapUs;
 
-  /// The card each of [taps] hit; empty when not recorded.
+  /// The card each of [taps] hit (`Karafuda.button` for the からふだ
+  /// button); empty when not recorded.
   final List<int> tapped;
 
   TapProximity? get first => taps.firstOrNull;
@@ -69,7 +83,8 @@ class AnkirenCardTry {
 }
 
 /// A recorded 暗記練 game as History reviews it: its setup, its result
-/// and every card asked, with the dealt field when it was kept.
+/// and every call, the field's cards and the からふだ, with the dealt field
+/// when it was kept.
 class AnkirenGameRecord {
   /// A game from its stored run: [meta] is its details' JSON (see
   /// [AnkirenMeta]).
@@ -84,13 +99,13 @@ class AnkirenGameRecord {
     required double? rating,
     required double? performance,
     required String meta,
-    required List<AnkirenCardTry> cards,
+    required List<AnkirenCardTry> calls,
   }) =>
       AnkirenGameRecord._(id, startedAt, ranked, level, score, maxScore, completed, rating, performance,
-          jsonDecode(meta) as Map<String, dynamic>, cards);
+          jsonDecode(meta) as Map<String, dynamic>, calls);
 
   AnkirenGameRecord._(this.id, this.startedAt, this.ranked, this.level, this.score, this.maxScore, this.completed,
-      this.rating, this.performance, Map<String, dynamic> meta, List<AnkirenCardTry> cards)
+      this.rating, this.performance, Map<String, dynamic> meta, List<AnkirenCardTry> calls)
       : perSide = meta[AnkirenMeta.perSideKey] as int? ?? 0,
         memorise = Duration(milliseconds: meta[AnkirenMeta.memoriseKey] as int? ?? 0),
         memorised = Duration(milliseconds: meta[AnkirenMeta.memorisedKey] as int? ?? 0),
@@ -98,7 +113,9 @@ class AnkirenGameRecord {
           final Map<String, dynamic> json => AnkirenField.fromJson(json),
           _ => null,
         },
-        cards = List.unmodifiable(cards);
+        calls = List.unmodifiable(calls),
+        cards = List.unmodifiable([for (final c in calls) if (!c.karafuda) c]),
+        karafuda = List.unmodifiable([for (final c in calls) if (c.karafuda) c]);
 
   final int id;
   final DateTime startedAt;
@@ -121,32 +138,44 @@ class AnkirenGameRecord {
   /// The field as dealt; null for a game recorded before it was kept.
   final AnkirenField? deal;
 
-  /// One per card asked, in order.
+  /// One per field card asked, in order, its からふだ calls left out (see
+  /// [calls]).
   final List<AnkirenCardTry> cards;
+
+  /// Every call in order, the からふだ among the cards, and the からふだ
+  /// alone.
+  final List<AnkirenCardTry> calls;
+  final List<AnkirenCardTry> karafuda;
 
   /// A ranked game, the only kind whose score is shown.
   bool get scored => ranked && score != null;
   bool get custom => level == null && !ranked;
 
-  /// Its wrong taps and cards given up, one strike each.
-  int get strikes => cards.fold(0, (n, c) => n + c.wrongTaps + (c.gaveUp ? 1 : 0));
+  /// Its wrong taps and calls given up, one strike each.
+  int get strikes => calls.fold(0, (n, c) => n + c.wrongTaps + (c.gaveUp ? 1 : 0));
 
   int get firstTaps => cards.where((c) => c.firstTry).length;
   int get found => cards.where((c) => c.found).length;
 
-  /// How many first taps landed where (cards never tapped are left out).
+  /// How its からふだ calls went.
+  KarafudaTally get karafudaTally => KarafudaTally.of([
+        for (final c in calls) (karafuda: c.karafuda, found: c.found, wrongTaps: c.wrongTaps, tapped: c.tapped),
+      ]);
+
+  /// How many first taps on the field cards' calls landed where (cards
+  /// never tapped are left out).
   Map<TapProximity, int> get mix => AnkirenReview.mixOf([this]);
 
-  /// The median find time of the cards found with a valid time, ms.
+  /// The median find time of the field cards found with a valid time, ms.
   double? get medianFindMs => AnkirenReview.median([for (final c in cards) ?c.findMs]);
 
-  /// The card points, out of [maxRecall], and their share.
-  int get recall => cards.fold(0, (sum, c) => sum + c.points);
+  /// The points of every call, out of [maxRecall], and their share.
+  int get recall => calls.fold(0, (sum, c) => sum + c.points);
 
-  /// The part of [recall] from cards found with the first tap, the only part
-  /// being ready early multiplies.
-  int get firstRight => cards.fold(0, (sum, c) => sum + (AnkirenScore.foundFirst(c.taps) ? c.points : 0));
-  int get maxRecall => AnkirenScore.maxFor(cards.length);
+  /// The part of [recall] from calls answered with the first tap, the only
+  /// part being ready early multiplies.
+  int get firstRight => calls.fold(0, (sum, c) => sum + (AnkirenScore.foundFirst(c.taps) ? c.points : 0));
+  int get maxRecall => AnkirenScore.maxFor(calls.length);
   double get fraction => maxRecall == 0 ? 0 : recall / maxRecall;
 
   /// The share of the memorise time left unused, and what it multiplies
@@ -156,9 +185,12 @@ class AnkirenGameRecord {
   double get earlyFactor => 1 + AnkirenTuning.earlyBonus * timeLeft;
 
   /// Played with the same setup as [other]: the same level, both ranked, or
-  /// both custom with as many cards a side.
-  bool sameSetup(AnkirenGameRecord other) =>
-      ranked ? other.ranked : (level != null ? other.level == level : custom && other.custom && other.perSide == perSide);
+  /// both custom with as many cards a side and からふだ.
+  bool sameSetup(AnkirenGameRecord other) => ranked
+      ? other.ranked
+      : (level != null
+          ? other.level == level
+          : custom && other.custom && other.perSide == perSide && other.karafuda.length == karafuda.length);
 
   /// The cards on [side] of [deal] and how many of them were found with the
   /// first tap; null without a deal.
@@ -223,16 +255,19 @@ class AnkirenReview {
 
   List<AnkirenGameRecord> get _rated => [for (final g in _earlier) if (g.ranked && g.rating != null) g];
 
-  /// The score parts (see [AnkirenScore.pointsOf]): right first taps, near
-  /// first taps, second taps and the speed bonus.
-  AnkirenScorePart get rightFirst => _part((c) => c.first == TapProximity.card, (c) => c.tapPoints(0));
+  /// The score parts (see [AnkirenScore.pointsOf]): the field cards' right
+  /// first taps, near first taps, second taps and speed bonus, and all
+  /// that the からふだ calls earned.
+  AnkirenScorePart get rightFirst => _part(game.cards, (c) => c.first == TapProximity.card, (c) => c.tapPoints(0));
   AnkirenScorePart get nearFirst =>
-      _part((c) => c.first != null && c.first != TapProximity.card, (c) => c.tapPoints(0));
-  AnkirenScorePart get secondTaps => _part((c) => c.taps.length > 1, (c) => c.tapPoints(1));
-  AnkirenScorePart get speed => _part((c) => c.speed > 0, (c) => c.speed);
+      _part(game.cards, (c) => c.first != null && c.first != TapProximity.card, (c) => c.tapPoints(0));
+  AnkirenScorePart get secondTaps => _part(game.cards, (c) => c.taps.length > 1, (c) => c.tapPoints(1));
+  AnkirenScorePart get speed => _part(game.cards, (c) => c.speed > 0, (c) => c.speed);
+  AnkirenScorePart get karafuda => _part(game.karafuda, (c) => c.points > 0, (c) => c.points);
 
-  AnkirenScorePart _part(bool Function(AnkirenCardTry) counts, int Function(AnkirenCardTry) points) {
-    final cards = game.cards.where(counts);
+  static AnkirenScorePart _part(
+      List<AnkirenCardTry> calls, bool Function(AnkirenCardTry) counts, int Function(AnkirenCardTry) points) {
+    final cards = calls.where(counts);
     return (cards: cards.length, points: cards.fold(0, (sum, c) => sum + points(c)));
   }
 

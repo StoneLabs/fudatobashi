@@ -1,6 +1,7 @@
 import 'dart:math' as math;
 
 import '../config/config.dart';
+import 'karafuda.dart';
 
 /// One 暗記練 difficulty level: how many cards each side of the field holds
 /// and how long the player may memorise them.
@@ -26,18 +27,25 @@ abstract final class AnkirenLevels {
 
   static AnkirenLevel of(int level) => all[level];
 
-  /// The highest level whose field fits [known] distinct known cards, or null
-  /// when not even level 0 does.
+  /// The からふだ [level] calls: none below [AnkirenTuning.karafudaFromLevel].
+  static int karafudaOf(int level) =>
+      level < AnkirenTuning.karafudaFromLevel ? 0 : Karafuda.forAnkiren(of(level).cards);
+
+  /// The known cards [level] needs: its field's and its からふだ.
+  static int needs(int level) => of(level).cards + karafudaOf(level);
+
+  /// The highest level [known] distinct known cards are enough for (see
+  /// [needs]), or null when not even level 0's.
   static int? maxLevelFor(int known) {
-    final i = all.lastIndexWhere((l) => l.cards <= known);
+    final i = [for (var l = 0; l <= top; l++) needs(l)].lastIndexWhere((n) => n <= known);
     return i < 0 ? null : i;
   }
 }
 
 /// What one 暗記練 game deals: ranked's one setup, or in free play a level
-/// preset or a custom card count and memorise time.
+/// preset or a custom card count, memorise time and からふだ.
 class AnkirenSetup {
-  const AnkirenSetup({required this.perSide, required this.memorise, this.level, this.ranked = false})
+  const AnkirenSetup({required this.perSide, required this.memorise, this.level, this.ranked = false, this._karafuda})
       : assert(!ranked || level == null);
 
   /// Ranked's setup, a real match's field; it plays no level.
@@ -49,11 +57,21 @@ class AnkirenSetup {
       : this(perSide: AnkirenLevels.of(level).perSide, memorise: AnkirenLevels.of(level).memorise, level: level);
 
   /// A free-play setup outside the level table.
-  const AnkirenSetup.custom({required int perSide, required Duration memorise})
-      : this(perSide: perSide, memorise: memorise);
+  const AnkirenSetup.custom({required int perSide, required Duration memorise, int karafuda = 0})
+      : this(perSide: perSide, memorise: memorise, karafuda: karafuda);
 
   final int perSide;
   final Duration memorise;
+  final int? _karafuda;
+
+  /// The からふだ it calls: a custom setup's own, a level's
+  /// ([AnkirenLevels.karafudaOf]), ranked's as a field its size.
+  int get karafuda =>
+      _karafuda ?? (ranked ? Karafuda.forAnkiren(cards) : level == null ? 0 : AnkirenLevels.karafudaOf(level!));
+
+  /// Every call: the field's cards and the からふだ, each a known card, so
+  /// also the known cards the game needs.
+  int get calls => cards + karafuda;
 
   /// The free-play level preset played; null for ranked and for a custom
   /// setup.
@@ -67,6 +85,10 @@ class AnkirenSetup {
 
   /// Deals a beginner's field (see [AnkirenLevel.allInMiddle]).
   bool get allInMiddle => level != null && AnkirenLevels.of(level!).allInMiddle;
+
+  /// The からふだ a custom setup of [perSide] calls unless the player picks
+  /// another count: as many as the formula gives a field its size.
+  static int customKarafuda(int perSide) => Karafuda.forAnkiren(2 * perSide);
 
   /// The largest custom per-side count [known] cards allow, or null when they
   /// allow not even [AnkirenTuning.customMinPerSide].
@@ -90,10 +112,11 @@ class AnkirenSetup {
       other.perSide == perSide &&
       other.memorise == memorise &&
       other.level == level &&
-      other.ranked == ranked;
+      other.ranked == ranked &&
+      other.karafuda == karafuda;
 
   @override
-  int get hashCode => Object.hash(perSide, memorise, level, ranked);
+  int get hashCode => Object.hash(perSide, memorise, level, ranked, karafuda);
 }
 
 /// Free play's levels as they open (see [AnkirenTuning.strikesOut]): level 0

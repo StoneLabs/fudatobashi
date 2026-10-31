@@ -87,6 +87,17 @@ abstract final class AnkirenTuning {
   /// passes any cards over to 下段 and 中段 to keep room for its middle cards.
   static const int rowMax = 9;
 
+  /// からふだ (空札): calls for known cards that are not on the field, as half
+  /// a real match's readings are. From level [karafudaFromLevel] on, and
+  /// in ranked, a game calls [karafudaPer] for every [karafudaPerCards]
+  /// field cards, rounded up (see `Karafuda`), and a level needs as many
+  /// more known cards. Each is drawn from the field cards' 友札 with
+  /// [karafudaTomofudaShare], else from the other known cards.
+  static const int karafudaPer = 15;
+  static const int karafudaPerCards = 50;
+  static const int karafudaFromLevel = 4;
+  static const double karafudaTomofudaShare = 0.7;
+
   /// Wrong taps on one prompt after which its card is shown.
   static const int revealAfterWrong = 2;
 

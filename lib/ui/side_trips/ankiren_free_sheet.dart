@@ -111,7 +111,8 @@ class _AnkirenFreeSheetState extends State<AnkirenFreeSheet> {
   }
 
   AnkirenSetup get _setup => _level == null
-      ? AnkirenSetup.custom(perSide: _perSide, memorise: _memorise[_memoriseIndex])
+      ? AnkirenSetup.custom(
+          perSide: _perSide, memorise: _memorise[_memoriseIndex], karafuda: AnkirenSetup.customKarafuda(_perSide))
       : AnkirenSetup.forLevel(_level!);
 
   Future<void> _save() async {
@@ -184,7 +185,7 @@ class _AnkirenFreeSheetState extends State<AnkirenFreeSheet> {
       footer: BurstButton(
         title: widget.guest ? s.freeStart : s.ankirenConfirm,
         sub: (widget.guest ? s.sub?.freeStart : s.sub?.ankirenConfirm)?.toUpperCase(),
-        onTap: setup.cards <= _known ? _confirm : null,
+        onTap: setup.calls <= _known ? _confirm : null,
       ),
     );
   }
@@ -201,14 +202,14 @@ class _AnkirenFreeSheetState extends State<AnkirenFreeSheet> {
           builder: (context) => SheetKey(
             semanticLabel: s.ankirenLevelTag(l),
             chosen: _level == l,
-            fits: level.cards <= _known,
+            fits: AnkirenLevels.needs(l) <= _known,
             locked: !_isOpen(l),
             cleared: _ladder?.isCleared(l) ?? false,
             onTap: !_isOpen(l)
                 ? () => balloon(context, s.ankirenLevelLocked(l - 1, l))
-                : level.cards <= _known
+                : AnkirenLevels.needs(l) <= _known
                     ? () => _change(() => _level = l)
-                    : () => balloon(context, s.ankirenLevelNeeds(l, level.cards, _known)),
+                    : () => balloon(context, s.ankirenLevelNeeds(l, AnkirenLevels.needs(l), _known)),
             top: Text('$l', style: const TextStyle(fontFamily: Fonts.display, fontSize: AnkirenSheetLayout.keyFont)),
             bottom: Text(s.ankirenKeyCards(level.perSide),
                 style: const TextStyle(

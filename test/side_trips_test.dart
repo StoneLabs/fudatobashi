@@ -196,7 +196,7 @@ void main() {
       expect([AnkirenPlayer.guest.recorded, AnkirenPlayer.developer.recorded], [false, false]);
     });
 
-    test('journey: the tab and 定位置 latch open at 25 and 暗記練 at 50; all survive a restart and a bad day, '
+    test('journey: the tab latches open at 25, 定位置 at 35 and 暗記練 at 50; all survive a restart and a bad day, '
         'and a reset locks them again', () async {
       final db = AppDatabase(NativeDatabase.memory());
       final p = await Progress.open(db);
@@ -207,8 +207,11 @@ void main() {
       await remember(p, journeyOrder.take(tabAt));
       expect(p.tabLock(LockedTab.sideTrips), isNull);
       expect(p.sideTripsHub()[ankiren].lock?.needed, ankirenAt - tabAt);
+      expect(p.sideTripsHub()[teiichi].lock?.needed, teiichiAt - tabAt);
+      expect(p.sideTripsHub().openTrips, isEmpty);
+      await remember(p, journeyOrder.skip(tabAt).take(teiichiAt - tabAt));
       expect(p.sideTripsHub().openTrips, {teiichi});
-      await remember(p, journeyOrder.skip(tabAt).take(ankirenAt - tabAt));
+      await remember(p, journeyOrder.skip(teiichiAt).take(ankirenAt - teiichiAt));
       expect(p.sideTripsHub().openTrips, {ankiren, teiichi});
 
       final later = DateTime.now().add(const Duration(days: 60));

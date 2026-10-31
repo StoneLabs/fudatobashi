@@ -95,19 +95,40 @@ class SideTrips {
   /// [trip]'s ranked games so far (placement counts them).
   int rankedGames(SideTrip trip) => _rated(trip).length;
 
-  /// [run]'s answers, one per card asked, in order.
-  List<AnkirenXpAnswer> answersOf(SideTripRun run) => [
-        for (final a in _answers[run.id] ?? const <SideTripAnswerRow>[])
-          (wrongTaps: a.wrongTaps, responseUs: a.responseUs, taps: _tapsOf(a).taps, firstTapUs: a.firstTapUs),
-      ];
+  /// The からふだ each run called, by run id, read off its meta once.
+  final Map<int, Set<int>> _karafuda = {};
 
-  /// [run]'s cards, in the order they were asked.
-  List<int> poemsOf(SideTripRun run) => [for (final a in _answers[run.id] ?? const <SideTripAnswerRow>[]) a.poemId];
+  Set<int> karafudaOf(SideTripRun run) =>
+      _karafuda[run.id] ??= AnkirenMeta.karafudaIn(jsonDecode(run.meta) as Map<String, dynamic>);
 
-  /// Cards asked in [run]: every card of its field.
-  int cardsIn(SideTripRun run) => _answers[run.id]?.length ?? 0;
+  /// [run]'s answers, one per call, in order.
+  List<AnkirenXpAnswer> answersOf(SideTripRun run) {
+    final karafuda = karafudaOf(run);
+    return [
+      for (final a in _answers[run.id] ?? const <SideTripAnswerRow>[])
+        (
+          wrongTaps: a.wrongTaps,
+          responseUs: a.responseUs,
+          taps: _tapsOf(a).taps,
+          firstTapUs: a.firstTapUs,
+          karafuda: karafuda.contains(a.poemId),
+        ),
+    ];
+  }
 
-  /// [run]'s wrong taps and cards given up, one strike each.
+  /// [run]'s answers to its field's cards, in order: its からふだ left out.
+  Iterable<SideTripAnswerRow> _cardRows(SideTripRun run) {
+    final karafuda = karafudaOf(run);
+    return (_answers[run.id] ?? const <SideTripAnswerRow>[]).where((a) => !karafuda.contains(a.poemId));
+  }
+
+  /// [run]'s field cards, in the order they were asked.
+  List<int> poemsOf(SideTripRun run) => [for (final a in _cardRows(run)) a.poemId];
+
+  /// Cards asked in [run]: every card of its field, its からふだ not counted.
+  int cardsIn(SideTripRun run) => _cardRows(run).length;
+
+  /// [run]'s wrong taps and calls given up, one strike each.
   int strikesIn(SideTripRun run) =>
       (_answers[run.id] ?? const <SideTripAnswerRow>[]).fold(0, (n, a) => n + a.wrongTaps + (a.gaveUp ? 1 : 0));
 
@@ -134,36 +155,40 @@ class SideTrips {
   }
 
   /// [run] as History reviews it.
-  AnkirenGameRecord recordOf(SideTripRun run) => AnkirenGameRecord(
-        id: run.id,
-        startedAt: run.startedAt,
-        ranked: run.ranked,
-        level: run.level,
-        score: run.score,
-        maxScore: run.maxScore,
-        completed: run.completed,
-        rating: run.rating,
-        performance: run.performance,
-        meta: run.meta,
-        cards: [
-          for (final a in _answers[run.id] ?? const <SideTripAnswerRow>[])
-            if (_tapsOf(a) case (:final taps, :final tapped))
-              AnkirenCardTry(
-                poemId: a.poemId,
-                wrongTaps: a.wrongTaps,
-                gaveUp: a.gaveUp,
-                responseUs: a.responseUs,
-                taps: taps,
-                tapped: tapped,
-                firstTapUs: a.firstTapUs,
-              ),
-        ],
-      );
+  AnkirenGameRecord recordOf(SideTripRun run) {
+    final karafuda = karafudaOf(run);
+    return AnkirenGameRecord(
+      id: run.id,
+      startedAt: run.startedAt,
+      ranked: run.ranked,
+      level: run.level,
+      score: run.score,
+      maxScore: run.maxScore,
+      completed: run.completed,
+      rating: run.rating,
+      performance: run.performance,
+      meta: run.meta,
+      calls: [
+        for (final a in _answers[run.id] ?? const <SideTripAnswerRow>[])
+          if (_tapsOf(a) case (:final taps, :final tapped))
+            AnkirenCardTry(
+              poemId: a.poemId,
+              wrongTaps: a.wrongTaps,
+              gaveUp: a.gaveUp,
+              responseUs: a.responseUs,
+              taps: taps,
+              tapped: tapped,
+              firstTapUs: a.firstTapUs,
+              karafuda: karafuda.contains(a.poemId),
+            ),
+      ],
+    );
+  }
 
-  /// The cards of [run] not found with the first tap: found after a wrong
-  /// tap, shown, or never found.
+  /// The field cards of [run] not found with the first tap: found after a
+  /// wrong tap, shown, or never found.
   int missesIn(SideTripRun run) =>
-      cardsIn(run) - answersOf(run).where((a) => a.wrongTaps == 0 && a.responseUs != null).length;
+      cardsIn(run) - _cardRows(run).where((a) => a.wrongTaps == 0 && a.responseUs != null).length;
 
   /// [trip]'s standing on the hub for a player who knows [known] cards:
   /// 暗記練's free-play levels, capped by the levels those cards fill, and
@@ -263,6 +288,7 @@ class SideTrips {
               AnkirenMeta.middleKey: game.field.own.middleCards.length + game.field.opponent.middleCards.length,
               AnkirenMeta.memorisedKey: game.memorised.inMilliseconds,
               AnkirenMeta.dealKey: game.field.toJson(),
+              if (game.karafuda.isNotEmpty) AnkirenMeta.karafudaKey: game.karafuda,
               ...meta,
             })),
           ));
@@ -310,6 +336,7 @@ class SideTrips {
               TeiichiMeta.customKey: setup.custom,
               TeiichiMeta.placingKey: placing.placingTime!.inMilliseconds,
               TeiichiMeta.layoutKey: placing.board.half.toJson(),
+              if (game.karafuda.isNotEmpty) TeiichiMeta.karafudaKey: game.karafuda,
             })),
           ));
       await _storeAnswers(db, id, game);
@@ -365,6 +392,7 @@ class SideTrips {
     _runs.clear();
     _answers.clear();
     _placings.clear();
+    _karafuda.clear();
     for (final levels in _cleared.values) {
       levels.clear();
     }

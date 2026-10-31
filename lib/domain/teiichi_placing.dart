@@ -103,14 +103,15 @@ class TeiichiPlacing {
   }
 
   /// The game that asks for the laid-out cards once done, as 暗記練's: only
-  /// the own side holds cards, they are asked in an order [rng] draws, and
-  /// the placing time is the time to memorise them.
-  AnkirenGame recall(math.Random rng, {DateTime Function()? clock}) {
+  /// the own side holds cards, they and [karafuda] are asked in an order
+  /// [rng] draws, and the placing time is the time to memorise them.
+  AnkirenGame recall(math.Random rng, {List<int> karafuda = const [], DateTime Function()? clock}) {
     assert(done, 'the cards are asked for once they are laid out');
     return AnkirenGame(
       field: AnkirenField(own: board.half, opponent: AnkirenHalf.empty()),
-      setup: AnkirenSetup.custom(perSide: setup.cards, memorise: placingTime!),
+      setup: AnkirenSetup.custom(perSide: setup.cards, memorise: placingTime!, karafuda: karafuda.length),
       rng: rng,
+      karafuda: karafuda,
       clock: clock,
     );
   }

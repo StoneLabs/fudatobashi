@@ -90,7 +90,8 @@ void main() {
       expect(TeiichiSetup.usual.rowsInPlay, [lower, middle, upper]);
       expect([for (var rows = 1; rows <= 3; rows++) TeiichiSetup(cards: 8, rows: rows).openMiddle], [false, false, true]);
       expect(TeiichiSetup.usual.custom, isFalse);
-      expect(const TeiichiSetup(cards: 25, rows: 3).custom, isFalse);
+      expect(const TeiichiSetup(cards: 25, rows: 3, karafuda: TeiichiTuning.karafuda).custom, isFalse);
+      expect(const TeiichiSetup(cards: 25, rows: 3).custom, isTrue, reason: 'without its からふだ');
       expect(const TeiichiSetup(cards: 20, rows: 3).custom, isTrue);
       expect(const TeiichiSetup(cards: 20, rows: 3).full, isFalse);
     });

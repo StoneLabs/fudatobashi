@@ -42,11 +42,11 @@ void main() {
       expect(AnkirenScore.points(found(20000)), AnkirenTuning.cardPoints);
     });
 
-    test('a perfect game: the total follows the card count and the time left', () {
+    test('a perfect game: the total follows the calls, cards and からふだ, and the time left', () {
       const ranked = AnkirenSetup.ranked();
       int total({int responseMs = 1000, Duration left = Duration.zero}) =>
           AnkirenScore.firstTryTotal(ranked, responseMs: responseMs.toDouble(), timeLeft: left);
-      expect(total(responseMs: 100), AnkirenScore.maxFor(ranked.cards));
+      expect(total(responseMs: 100), AnkirenScore.maxFor(ranked.calls));
       expect(total(left: ranked.memorise), (total() * (1 + AnkirenTuning.earlyBonus)).round());
       expect(total(left: const Duration(days: 1)), total(left: ranked.memorise));
     });

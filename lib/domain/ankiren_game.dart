@@ -6,6 +6,7 @@ import '../config/config.dart';
 import 'ankiren_field.dart';
 import 'ankiren_level.dart';
 import 'ankiren_score.dart';
+import 'karafuda.dart';
 
 /// Where a 暗記練 game stands: the field face up to memorise, face down while
 /// its cards are asked, or over.
@@ -26,12 +27,13 @@ enum AnkirenPlayer {
   bool get recorded => this == owner;
 }
 
-/// What a tap on a field card did.
+/// What a tap on a field card, or a press of the からふだ button, did.
 enum TapResult {
-  /// It was the card asked for.
+  /// It was the card asked for, or the からふだ button on a からふだ call.
   right,
 
-  /// Another card that is still face down.
+  /// Another card that is still face down, a card on a からふだ call, or the
+  /// からふだ button on a card's.
   wrong,
 
   /// Nothing: the prompt was not on screen when the press began, the card was already found,
@@ -39,28 +41,36 @@ enum TapResult {
   ignored,
 }
 
-/// State machine of one 暗記練 game: every field card is asked once, in a
-/// random order, until each is found or given up, or the game is ended.
-/// Timestamps are on the pointer-event clock; a prompt's vsync time is put
-/// on it first (see `PointerClock`).
+/// State machine of one 暗記練 game: every field card is asked once, and
+/// each of [karafuda], in a random order that ends on a field card (see
+/// [Karafuda.order]), until each is found or given up, or the game is
+/// ended. A からふだ call is answered with [pressKarafuda]; a tap on a card
+/// meanwhile is wrong, as one on the other side would be, and so is the
+/// press on a card's call. Timestamps are on the pointer-event clock; a
+/// prompt's vsync time is put on it first (see `PointerClock`).
 class AnkirenGame extends ChangeNotifier {
   AnkirenGame({
     required this.field,
     required this.setup,
     required math.Random rng,
+    List<int> karafuda = const [],
     this.countsStrikes = false,
     DateTime Function()? clock,
-  })  : prompts = List.unmodifiable(field.cards..shuffle(rng)),
+  })  : karafuda = List.unmodifiable(karafuda),
+        prompts = List.unmodifiable(Karafuda.order(field.cards, karafuda, rng)),
         _clock = clock ?? DateTime.now;
 
   final AnkirenField field;
   final AnkirenSetup setup;
 
+  /// The からふだ called: known cards not on the field.
+  final List<int> karafuda;
+
   /// A free-play level game: its [strikes] count, and it clears its level
   /// with fewer than [AnkirenTuning.strikesOut].
   final bool countsStrikes;
 
-  /// The field's cards in the order they are asked.
+  /// The field's cards and the からふだ in the order they are asked.
   final List<int> prompts;
   final DateTime Function() _clock;
 
@@ -91,6 +101,12 @@ class AnkirenGame extends ChangeNotifier {
   /// The card being asked for, in recall.
   int? get current => phase == AnkirenPhase.recall ? prompts[answers.length] : null;
 
+  bool isKarafuda(int poemId) => karafuda.contains(poemId);
+
+  /// The answers to the field's cards, and to the からふだ calls.
+  Iterable<AnkirenAnswer> get cardAnswers => answers.where((a) => !a.karafuda);
+  Iterable<AnkirenAnswer> get karafudaAnswers => answers.where((a) => a.karafuda);
+
   /// Wrong taps on the current prompt.
   int get wrongTaps => _wrongTaps;
 
@@ -104,16 +120,21 @@ class AnkirenGame extends ChangeNotifier {
   /// Found or given up: its card is face up for good.
   bool isDone(int poemId) => isFound(poemId) || isGivenUp(poemId);
 
+  /// How the からふだ calls went so far.
+  KarafudaTally get karafudaTally => KarafudaTally.of([
+        for (final a in answers) (karafuda: a.karafuda, found: a.found, wrongTaps: a.wrongTaps, tapped: a.tapped),
+      ]);
+
   /// Null unless ranked: only ranked games have points.
   AnkirenScore? get score => setup.ranked ? AnkirenScore(answers, prompts: prompts.length, timeLeft: timeLeft) : null;
 
-  /// Cards found with the first tap.
-  int get firstTries => answers.where((a) => a.firstTry).length;
+  /// Field cards found with the first tap.
+  int get firstTries => cardAnswers.where((a) => a.firstTry).length;
 
-  /// Mean response time of the first-tap finds with a valid time, ms; null
-  /// when there are none.
+  /// Mean response time of the field cards' first-tap finds with a valid
+  /// time, ms; null when there are none.
   double? get averageFirstTryMs {
-    final timed = [for (final a in answers) if (a.firstTry && a.validTime) a.responseUs! / 1000];
+    final timed = [for (final a in cardAnswers) if (a.firstTry && a.validTime) a.responseUs! / 1000];
     return timed.isEmpty ? null : timed.reduce((a, b) => a + b) / timed.length;
   }
 
@@ -149,16 +170,33 @@ class AnkirenGame extends ChangeNotifier {
   /// ([AnkirenTuning.tapWeights]), a card tapped twice counting twice.
   TapResult tap(int poemId, Duration pointerDownTs) {
     final asked = current;
+    if (asked == null || isDone(poemId) || field.sideOf(poemId) == null) return TapResult.ignored;
+    final place = isKarafuda(asked) ? TapProximity.otherSide : field.proximity(asked, poemId);
+    return _take(poemId, place, pointerDownTs, right: poemId == asked);
+  }
+
+  /// A press of the からふだ button at its pointer-down time: right on a
+  /// からふだ call, which it answers as a tap on its card would; else a wrong
+  /// tap, as one on the other side. Ignored when a [tap] would be.
+  TapResult pressKarafuda(Duration pointerDownTs) {
+    final asked = current;
+    if (asked == null) return TapResult.ignored;
+    final right = isKarafuda(asked);
+    return _take(Karafuda.button, right ? TapProximity.card : TapProximity.otherSide, pointerDownTs, right: right);
+  }
+
+  /// A tap on [target] ([Karafuda.button] for the button), landing at
+  /// [place]; [right] when it answers the call.
+  TapResult _take(int target, TapProximity place, Duration pointerDownTs, {required bool right}) {
+    final asked = current!;
     final revealTs = _revealTs;
-    if (asked == null || revealTs == null || pointerDownTs < revealTs || isDone(poemId) || field.sideOf(poemId) == null) {
-      return TapResult.ignored;
-    }
+    if (revealTs == null || pointerDownTs < revealTs) return TapResult.ignored;
     _firstTapUs ??= (pointerDownTs - revealTs).inMicroseconds;
     if (_taps.length < AnkirenTuning.tapWeights.length) {
-      _taps.add(field.proximity(asked, poemId));
-      _tapped.add(poemId);
+      _taps.add(place);
+      _tapped.add(target);
     }
-    if (poemId != asked) {
+    if (!right) {
       _wrongTaps++;
       notifyListeners();
       return TapResult.wrong;
@@ -201,7 +239,7 @@ class AnkirenGame extends ChangeNotifier {
   void _answer(int poemId, int? responseUs, {bool gaveUp = false}) {
     answers.add(AnkirenAnswer(
       poemId: poemId,
-      side: field.sideOf(poemId)!,
+      side: field.sideOf(poemId),
       wrongTaps: _wrongTaps,
       responseUs: responseUs,
       at: _clock(),

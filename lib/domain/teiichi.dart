@@ -3,16 +3,25 @@ import 'dart:math' as math;
 import '../config/config.dart';
 import 'ankiren_field.dart';
 import 'ankiren_geometry.dart';
+import 'karafuda.dart';
 
-/// One 定位置 game: how many known cards are laid out, and in how many rows.
+/// One 定位置 game: how many known cards are laid out, in how many rows, and
+/// the からふだ called among them.
 class TeiichiSetup {
-  const TeiichiSetup({required this.cards, required this.rows});
+  const TeiichiSetup({required this.cards, required this.rows, this.karafuda = 0});
 
-  /// The usual game: [TeiichiTuning.cards] in all three rows.
-  static const usual = TeiichiSetup(cards: TeiichiTuning.cards, rows: TeiichiTuning.rows);
+  /// The usual game: [TeiichiTuning.cards] in all three rows, with
+  /// [TeiichiTuning.karafuda].
+  static const usual =
+      TeiichiSetup(cards: TeiichiTuning.cards, rows: TeiichiTuning.rows, karafuda: TeiichiTuning.karafuda);
 
   final int cards;
   final int rows;
+  final int karafuda;
+
+  /// Every call: the cards laid out and the からふだ, each a known card, so
+  /// also the known cards the game needs.
+  int get calls => cards + karafuda;
 
   /// Anything but the usual game.
   bool get custom => this != usual;
@@ -43,10 +52,15 @@ class TeiichiSetup {
   }
 
   /// This setup fitted to [known] cards: no more cards than they allow
-  /// (see [maxCards]) and the rows that hold them.
+  /// (see [maxCards]), the rows that hold them, and no more からふだ than
+  /// [Karafuda.customMax].
   TeiichiSetup fitted(int known) {
     final fittedCards = cards.clamp(TeiichiTuning.minCards, maxCards(known) ?? TeiichiTuning.minCards);
-    return TeiichiSetup(cards: fittedCards, rows: rowsFor(fittedCards, rows));
+    return TeiichiSetup(
+      cards: fittedCards,
+      rows: rowsFor(fittedCards, rows),
+      karafuda: karafuda.clamp(0, Karafuda.customMax(fittedCards, known)),
+    );
   }
 
   /// The largest game [known] cards allow, or null when they allow not even
@@ -57,13 +71,14 @@ class TeiichiSetup {
   }
 
   @override
-  bool operator ==(Object other) => other is TeiichiSetup && other.cards == cards && other.rows == rows;
+  bool operator ==(Object other) =>
+      other is TeiichiSetup && other.cards == cards && other.rows == rows && other.karafuda == karafuda;
 
   @override
-  int get hashCode => Object.hash(cards, rows);
+  int get hashCode => Object.hash(cards, rows, karafuda);
 
   @override
-  String toString() => 'TeiichiSetup($cards cards, $rows rows)';
+  String toString() => 'TeiichiSetup($cards cards, $rows rows, $karafuda からふだ)';
 }
 
 /// Where a card goes on the own side while it is laid out (see

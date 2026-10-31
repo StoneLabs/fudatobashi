@@ -8,6 +8,7 @@ import 'package:flutter/scheduler.dart';
 import '../../config/config.dart';
 import '../../config/design.dart';
 import '../../config/vector_art.dart';
+import '../../domain/karafuda.dart';
 import '../../domain/side_trips.dart';
 import '../../domain/teiichi.dart';
 import '../../domain/teiichi_record.dart';
@@ -61,7 +62,11 @@ class _TeiichiPageState extends State<TeiichiPage> {
     super.initState();
     final progress = ProgressScope.read(context);
     final settings = progress.settings;
-    final saved = TeiichiSetup(cards: settings.teiichiCards, rows: settings.teiichiRows);
+    final saved = TeiichiSetup(
+      cards: settings.teiichiCards,
+      rows: settings.teiichiRows,
+      karafuda: settings.teiichiKarafuda ?? Karafuda.forTeiichi(settings.teiichiCards),
+    );
     if (saved.custom) {
       final fitted = saved.fitted(progress.knownCards.length);
       _picked = fitted.custom ? fitted : null;
@@ -76,7 +81,8 @@ class _TeiichiPageState extends State<TeiichiPage> {
   void _pick(TeiichiSetup setup) {
     setState(() => _picked = setup.custom ? setup : null);
     final progress = ProgressScope.read(context);
-    unawaited(progress.updateSettings(progress.settings.copyWith(teiichiCards: setup.cards, teiichiRows: setup.rows)));
+    unawaited(progress.updateSettings(progress.settings
+        .copyWith(teiichiCards: setup.cards, teiichiRows: setup.rows, teiichiKarafuda: setup.karafuda)));
   }
 
   @override

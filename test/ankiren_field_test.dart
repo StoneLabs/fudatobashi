@@ -63,17 +63,18 @@ void main() {
       }
     });
 
-    test('the known cards cap the level: it needs twice its per-side count', () {
+    test('the known cards cap the level: it needs its field and its からふだ', () {
       expect(AnkirenLevels.maxLevelFor(0), isNull);
       expect(AnkirenLevels.maxLevelFor(5), isNull);
       expect(AnkirenLevels.maxLevelFor(6), 0);
       expect(AnkirenLevels.maxLevelFor(7), 0);
       expect(AnkirenLevels.maxLevelFor(8), 1);
-      expect(AnkirenLevels.maxLevelFor(20), 4);
-      expect(AnkirenLevels.maxLevelFor(25), 4, reason: 'level 5 deals 26 cards');
-      expect(AnkirenLevels.maxLevelFor(30), 5);
-      expect(AnkirenLevels.maxLevelFor(49), 7);
-      expect(AnkirenLevels.maxLevelFor(50), 10);
+      expect(AnkirenLevels.maxLevelFor(20), 3, reason: 'level 4 deals 20 cards and calls 6 からふだ');
+      expect(AnkirenLevels.maxLevelFor(26), 4);
+      expect(AnkirenLevels.maxLevelFor(34), 5);
+      expect(AnkirenLevels.maxLevelFor(54), 6);
+      expect(AnkirenLevels.maxLevelFor(64), 7);
+      expect(AnkirenLevels.maxLevelFor(65), 10);
       expect(AnkirenLevels.maxLevelFor(100), 10);
     });
 

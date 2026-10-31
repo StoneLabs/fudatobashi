@@ -493,7 +493,7 @@ class _Hint extends StatelessWidget {
             size: AnkirenPageLayout.hintIcon, color: Palette.mute, strokeWidth: AnkirenPageLayout.hintIconStroke),
         const SizedBox(width: AnkirenPageLayout.hintGap),
         Flexible(
-          child: NumberedText(s.ankirenLevelFrom, [setup.level!, setup.cards], style: style, numberStyle: number),
+          child: NumberedText(s.ankirenLevelFrom, [setup.level!, setup.calls], style: style, numberStyle: number),
         ),
       ]);
     } else if (allCleared) {

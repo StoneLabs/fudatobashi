@@ -9,6 +9,13 @@ abstract final class TeiichiTuning {
   static const int cards = 25;
   static const int rows = 3;
 
+  /// からふだ (see [AnkirenTuning.karafudaPer]): a game calls [karafudaPer]
+  /// for every [karafudaPerCards] cards laid out, rounded up (`Karafuda`),
+  /// so the usual game [karafuda].
+  static const int karafudaPer = 10;
+  static const int karafudaPerCards = 25;
+  static const int karafuda = (cards * karafudaPer + karafudaPerCards - 1) ~/ karafudaPerCards;
+
   /// The page's form averages the last [formGames] games that count.
   static const int formGames = 5;
 

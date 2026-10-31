@@ -264,7 +264,8 @@ void main() {
     var nextRun = 1;
     const card = TapProximity.card, neighbour = TapProximity.neighbour, row = TapProximity.row;
     const otherSide = TapProximity.otherSide;
-    AnkirenXpAnswer first(int ms) => (wrongTaps: 0, responseUs: ms * 1000, taps: const [card], firstTapUs: ms * 1000);
+    AnkirenXpAnswer first(int ms) =>
+        (wrongTaps: 0, responseUs: ms * 1000, taps: const [card], firstTapUs: ms * 1000, karafuda: false);
 
     /// A card whose first tap missed: [taps] made, the first [ms] after its
     /// prompt, found by the last when it is the card.
@@ -273,8 +274,9 @@ void main() {
           responseUs: taps.lastOrNull == card ? 2000000 : null,
           taps: taps,
           firstTapUs: ms * 1000,
+          karafuda: false,
         );
-    const AnkirenXpAnswer givenUp = (wrongTaps: 0, responseUs: null, taps: [], firstTapUs: null);
+    const AnkirenXpAnswer givenUp = (wrongTaps: 0, responseUs: null, taps: [], firstTapUs: null, karafuda: false);
     AnkirenXpRun game(
       List<AnkirenXpAnswer> answers, {
       bool ranked = false,

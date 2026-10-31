@@ -6,11 +6,11 @@ import 'ankiren_score.dart';
 import 'play_session.dart';
 import 'xp.dart';
 
-/// One card of a recorded 暗記練 game: the wrong taps while it was asked,
+/// One call of a recorded 暗記練 game: the wrong taps while it was asked,
 /// the prompt → tap time when it was found (null when it never was), where
-/// each tap that counts landed, and the first one's time (null when no card
-/// was tapped).
-typedef AnkirenXpAnswer = ({int wrongTaps, int? responseUs, List<TapProximity> taps, int? firstTapUs});
+/// each tap that counts landed, the first one's time (null when nothing
+/// was tapped), and whether it was a からふだ call.
+typedef AnkirenXpAnswer = ({int wrongTaps, int? responseUs, List<TapProximity> taps, int? firstTapUs, bool karafuda});
 
 /// A recorded 暗記練 game, as experience sees it.
 class AnkirenXpRun {
@@ -57,7 +57,8 @@ class AnkirenXpRun {
 /// that earned nothing) when its taps landed near it; and a find with the first tap a speed bonus for its time. A game
 /// played to the end pays the cards that earned nothing for trying, adds a
 /// clear (and a ranked one more), a personal best adds its bonus, and the
-/// ranked game that finishes placement adds a one-off bonus. A forfeit and
+/// ranked game that finishes placement adds a one-off bonus. A からふだ call
+/// earns as a card does, all of it on a line of its own. A forfeit and
 /// a custom game earn nothing; a free game ended early earns only what its
 /// cards earned.
 class AnkirenXp {
@@ -90,10 +91,19 @@ class AnkirenXp {
     if (run.forfeit) return const XpAward([]);
 
     final card = cardXp(level ?? AnkirenXpTuning.rankedLevel);
-    var first = 0, near = 0, missed = 0, fast = 0;
-    var firstXp = 0, nearXp = 0, speed = 0;
+    final done = run.completed;
+    var first = 0, near = 0, missed = 0, fast = 0, karafuda = 0;
+    var firstXp = 0, nearXp = 0, speed = 0, karafudaXp = 0;
     for (final a in run.answers) {
       final share = AnkirenScore.share(a.taps);
+      final us = a.firstTapUs;
+      final bonus = share == 0 || us == null ? 0 : (AnkirenScore.speedWeight(a.taps) * speedXp(us)).round();
+      if (a.karafuda) {
+        final xp = share == 0 ? (done ? AnkirenXpTuning.perMiss : 0) : math.max(AnkirenXpTuning.perMiss, (card * share).round());
+        if (xp + bonus > 0) karafuda++;
+        karafudaXp += xp + bonus;
+        continue;
+      }
       if (share == 0) {
         missed++;
         continue;
@@ -106,16 +116,14 @@ class AnkirenXp {
         near++;
         nearXp += xp;
       }
-      final us = a.firstTapUs;
-      final bonus = us == null ? 0 : (AnkirenScore.speedWeight(a.taps) * speedXp(us)).round();
       if (bonus > 0) fast++;
       speed += bonus;
     }
-    final done = run.completed;
     return XpAward([
       for (final p in [
         XpPart(XpSource.firstTap, first, firstXp),
         XpPart(XpSource.nearMiss, near, nearXp),
+        XpPart(XpSource.karafuda, karafuda, karafudaXp),
         XpPart(XpSource.missed, missed, done ? missed * AnkirenXpTuning.perMiss : 0),
         XpPart(XpSource.speed, fast, speed),
         XpPart(XpSource.clear, 1, done ? AnkirenXpTuning.clear : 0),

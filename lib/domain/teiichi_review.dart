@@ -19,17 +19,26 @@ class TeiichiGameRecord {
     final details = jsonDecode(meta) as Map<String, dynamic>;
     return TeiichiGameRecord._(
       recall,
-      TeiichiSetup(cards: details[TeiichiMeta.cardsKey] as int, rows: details[TeiichiMeta.rowsKey] as int),
+      TeiichiSetup(
+        cards: details[TeiichiMeta.cardsKey] as int,
+        rows: details[TeiichiMeta.rowsKey] as int,
+        karafuda: recall.karafuda.length,
+      ),
+      details[TeiichiMeta.customKey] as bool? ?? false,
       Duration(milliseconds: details[TeiichiMeta.placingKey] as int),
       AnkirenHalf.fromJson(details[TeiichiMeta.layoutKey] as List),
       List.unmodifiable(placed),
     );
   }
 
-  TeiichiGameRecord._(this.recall, this.setup, this.placing, this.layout, this.placed);
+  TeiichiGameRecord._(this.recall, this.setup, this.custom, this.placing, this.layout, this.placed);
 
   final AnkirenGameRecord recall;
   final TeiichiSetup setup;
+
+  /// Anything but the usual game of its day: a game recorded before
+  /// からふだ was usual without them.
+  final bool custom;
 
   /// From the deal to done.
   final Duration placing;
@@ -43,14 +52,14 @@ class TeiichiGameRecord {
   int get id => recall.id;
   DateTime get startedAt => recall.startedAt;
   bool get completed => recall.completed;
-  bool get custom => setup.custom;
 
   /// The layout as the field it was played on.
   AnkirenField get field => AnkirenField(own: layout, opponent: AnkirenHalf.empty());
 
-  int get wrongTaps => recall.cards.fold(0, (n, c) => n + c.wrongTaps);
+  /// Every wrong tap, the からふだ calls' among them.
+  int get wrongTaps => recall.calls.fold(0, (n, c) => n + c.wrongTaps);
 
-  /// The cards that took a wrong tap.
+  /// The field cards that took a wrong tap.
   int get wrongCards => recall.cards.where((c) => c.wrongTaps > 0).length;
 
   /// It sets the best placing time and the form (see [TeiichiRecord.counts]).

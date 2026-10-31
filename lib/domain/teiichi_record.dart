@@ -14,6 +14,9 @@ abstract final class TeiichiMeta {
 
   /// The final layout (`AnkirenHalf.toJson`).
   static const layoutKey = 'layout';
+
+  /// The からふだ called, by id, as 暗記練's (`AnkirenMeta.karafudaKey`).
+  static const karafudaKey = 'karafuda';
 }
 
 /// A recorded 定位置 game as its page shows it: its card count, the placing

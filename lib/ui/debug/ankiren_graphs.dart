@@ -41,7 +41,7 @@ class _AnkirenRankedGraphState extends State<AnkirenRankedGraph> {
         Offset(
           ms / 1000,
           () {
-            final right = (_setup.cards - wrong) * (AnkirenTuning.cardPoints + AnkirenScore.speedBonus(ms * 1000));
+            final right = (_setup.calls - wrong) * (AnkirenTuning.cardPoints + AnkirenScore.speedBonus(ms * 1000));
             return AnkirenScore.totalOf((right + wrongPoints).round(), right, share).toDouble();
           }(),
         ),
@@ -63,11 +63,11 @@ class _AnkirenRankedGraphState extends State<AnkirenRankedGraph> {
           onChanged: (v) => setState(() => _timeLeft = v),
         ),
         DebugSlider(
-          label: 'cards wrong ${_wrong.round()} of ${_setup.cards}',
+          label: 'calls wrong ${_wrong.round()} of ${_setup.calls} (からふだ among them)',
           value: _wrong,
           min: 0,
-          max: _setup.cards.toDouble(),
-          divisions: _setup.cards,
+          max: _setup.calls.toDouble(),
+          divisions: _setup.calls,
           onChanged: (v) => setState(() => _wrong = v),
         ),
         SizedBox(
@@ -117,7 +117,7 @@ class AnkirenRatingGraph extends StatelessWidget {
     final curve = _Line(Palette.seaDeep, [
       for (var score = 0; score <= xMax; score += step) Offset(score.toDouble(), AnkirenRating.performance(score)),
     ]);
-    final best = (AnkirenScore.maxFor(const AnkirenSetup.ranked().cards) * (1 + AnkirenTuning.earlyBonus)).round();
+    final best = (AnkirenScore.maxFor(const AnkirenSetup.ranked().calls) * (1 + AnkirenTuning.earlyBonus)).round();
     final marks = [
       for (final (name, score) in [('max', best), ('top', AnkirenToolsTuning.realisticTopScore)])
         (Offset(score.toDouble(), AnkirenRating.performance(score)), '$name $score → ${AnkirenRating.performance(score).round()}'),
