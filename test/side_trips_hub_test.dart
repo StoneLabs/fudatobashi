@@ -87,7 +87,10 @@ void main() {
 
   late _HeardSounds heard;
   final real = sounds;
-  setUp(() => sounds = heard = _HeardSounds());
+  setUp(() {
+    sounds = heard = _HeardSounds();
+    SideTripsScreen.forgetRing();
+  });
   tearDown(() => sounds = real);
 
   setUpAll(() async {
@@ -648,7 +651,7 @@ void main() {
       await tester.pumpWidget(const SizedBox());
     });
 
-    testWidgets('the tab comes back with 暗記練 in front', (tester) async {
+    testWidgets('the tab comes back with the trip it was left on in front, nothing moving', (tester) async {
       const s = S('en');
       final p = await open(tester, _Hub.ranked, 'en');
       await openHub(tester, p, usersPhone);
@@ -660,8 +663,23 @@ void main() {
       await tester.pump(const Duration(milliseconds: 300));
       await tester.tap(find.descendant(of: find.byType(MangaTabBar), matching: find.text(s.sideTrips)));
       await tester.pump();
+      expect(frontOf(tester), SideTripIsle.hall);
+      expect(turnOf(tester), 2);
+      await tester.pump(const Duration(milliseconds: 100));
+      expect(turnOf(tester), 2, reason: 'the ring does not turn on return');
+      expect(inHub(find.byType(SideTripSoonEntry)).hitTestable(), findsOneWidget);
+      await tester.pumpWidget(const SizedBox());
+    });
+
+    testWidgets('a fresh app start has 暗記練 in front', (tester) async {
+      final p = await open(tester, _Hub.ranked, 'en');
+      await openHub(tester, p, usersPhone);
+      await swipe(tester);
+      SideTripsScreen.forgetRing();
+      await tester.pumpWidget(const SizedBox());
+      final q = await open(tester, _Hub.ranked, 'en');
+      await openHub(tester, q, usersPhone);
       expect(turnOf(tester), 0);
-      expect(inHub(find.byType(SideTripBody)).hitTestable(), findsOneWidget);
       await tester.pumpWidget(const SizedBox());
     });
 
@@ -806,6 +824,7 @@ void main() {
 
     testWidgets('every coming-soon entry fits under its crest', (tester) async {
       for (final (phone, lang, fontScale) in [(narrowPhone, 'ja', 1.3), (usersPhone, 'en', 1.3), (widePhone, 'en', 1.0)]) {
+        SideTripsScreen.forgetRing();
         final p = await open(tester, _Hub.ranked, lang);
         await openHub(tester, p, phone, fontScale: fontScale);
         await swipe(tester);

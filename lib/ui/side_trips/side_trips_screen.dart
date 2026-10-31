@@ -40,9 +40,21 @@ class SideTripsScreen extends StatefulWidget {
   /// How far the sea runs on below the screen, under the tab bar.
   final double underBar;
 
+  /// Forgets where the ring was left, as after an app restart.
+  @visibleForTesting
+  static void forgetRing() {
+    _ringStep = 0;
+    _ringLeftward = {};
+  }
+
   @override
   State<SideTripsScreen> createState() => _SideTripsScreenState();
 }
+
+/// The step the ring last rested on and the swells' ways then, kept in
+/// memory so the ring comes back as it was left.
+int _ringStep = 0;
+Set<SideTripIsle> _ringLeftward = {};
 
 class _SideTripsScreenState extends State<SideTripsScreen> with TickerProviderStateMixin {
   /// Trips whose opening is being shown.
@@ -80,7 +92,7 @@ class _SideTripsScreenState extends State<SideTripsScreen> with TickerProviderSt
   void didChangeDependencies() {
     super.didChangeDependencies();
     final shown = TickerMode.valuesOf(context).enabled;
-    if (shown && !_shown) _home();
+    if (shown && !_shown) _restore();
     _shown = shown;
   }
 
@@ -96,16 +108,19 @@ class _SideTripsScreenState extends State<SideTripsScreen> with TickerProviderSt
 
   double get _stepWidth => context.size!.width * SideTripRingTuning.dragPerStep;
 
-  /// The ring at rest with 暗記練 in front.
-  void _home() {
+  /// The ring at rest on the step it last rested on, 暗記練 in front at first.
+  void _restore() {
     _turn.stop();
     _boat.stop();
     _fade.value = 1;
     _swiping = false;
-    _step = _rest = _from = 0;
-    _turn.value = 0;
+    _step = _rest = _from = _ringStep;
+    _turn.value = _ringStep.toDouble();
     _boat.value = 0;
-    _leftward.clear();
+    _boatFrom = 0;
+    _leftward
+      ..clear()
+      ..addAll(_ringLeftward);
   }
 
   /// While a swipe turns the ring, the boat drifts with it and the island
@@ -195,6 +210,8 @@ class _SideTripsScreenState extends State<SideTripsScreen> with TickerProviderSt
 
   void _rested() {
     if (_step != _rest && ProgressScope.read(context).settings.haptics) HapticFeedback.selectionClick();
+    _ringStep = _step;
+    _ringLeftward = {..._leftward};
     setState(() => _rest = _step);
   }
 
