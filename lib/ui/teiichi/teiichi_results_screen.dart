@@ -6,6 +6,7 @@ import '../../domain/ankiren_game.dart';
 import '../../domain/side_trips.dart';
 import '../../domain/teiichi_placing.dart';
 import '../../l10n/ankiren_strings.dart';
+import '../../l10n/karafuda_strings.dart';
 import '../../l10n/results_strings.dart';
 import '../../l10n/side_trip_strings.dart';
 import '../../l10n/strings.dart';
@@ -13,6 +14,7 @@ import '../../l10n/summary_strings.dart';
 import '../../l10n/teiichi_strings.dart';
 import '../manga/manga.dart';
 import '../play/time_format.dart';
+import '../results/karafuda_summary.dart';
 import '../results/run_summary.dart';
 import '../sound/sounds.dart';
 
@@ -51,14 +53,16 @@ class _TeiichiResultsScreenState extends State<TeiichiResultsScreen> {
     final s = S.of(context);
     final game = widget.game;
     final placing = widget.placing;
-    final cards = game.prompts.length;
+    final cards = game.prompts.length - game.karafuda.length;
     final firstTaps = game.firstTries;
-    final found = game.answers.where((a) => a.found).length;
+    final found = game.cardAnswers.where((a) => a.found).length;
     final late = found - firstTaps;
     final missed = cards - found;
     final wrongTaps = game.answers.fold(0, (n, a) => n + a.wrongTaps);
-    final wrongCards = game.answers.where((a) => a.wrongTaps > 0).length;
+    final wrongCards = game.cardAnswers.where((a) => a.wrongTaps > 0).length;
+    final wrongKarafuda = game.karafudaAnswers.where((a) => a.wrongTaps > 0).length;
     final avg = game.averageFirstTryMs;
+    final hasKarafuda = game.karafuda.isNotEmpty;
     const trip = SideTrip.teiichi;
     return Scaffold(
       backgroundColor: Palette.paper,
@@ -97,7 +101,11 @@ class _TeiichiResultsScreenState extends State<TeiichiResultsScreen> {
             SummaryTile(
               label: s.teiichiWrongTaps,
               big: TileFigure('$wrongTaps'),
-              note: wrongTaps == 0 ? s.summaryNone : s.teiichiWrongOn(wrongCards),
+              note: wrongTaps == 0
+                  ? s.summaryNone
+                  : wrongKarafuda > 0
+                      ? s.teiichiWrongOnKarafuda(wrongCards, wrongKarafuda)
+                      : s.teiichiWrongOn(wrongCards),
             ),
             SummaryTile(
               label: s.teiichiAvgFind,
@@ -110,6 +118,10 @@ class _TeiichiResultsScreenState extends State<TeiichiResultsScreen> {
               CardShelf(s.summarySlowest, Palette.shallow, s.summarySlowestFinds, _slowestFinds()),
               CardShelf(s.teiichiSlowestPlace, Palette.pink, s.teiichiSlowestPlaceNote, _slowestPlaced()),
             ]),
+            if (hasKarafuda)
+              KarafudaSummary.row(s, game.karafudaTally, [
+                for (final a in game.karafudaAnswers) (poemId: a.poemId, found: a.found, wrongTaps: a.wrongTaps),
+              ]),
             if (!widget.player.recorded) SummaryNote(s.teiichiGuestNote),
           ],
           home: s.done,
@@ -133,7 +145,7 @@ class _TeiichiResultsScreenState extends State<TeiichiResultsScreen> {
   }
 
   List<SummaryCard> _slowestFinds() {
-    final timed = [for (final a in widget.game.answers) if (a.validTime) a]
+    final timed = [for (final a in widget.game.cardAnswers) if (a.validTime) a]
       ..sort((a, b) => b.responseUs!.compareTo(a.responseUs!));
     return [
       for (final a in timed.take(SummaryPanelLayout.perLine))

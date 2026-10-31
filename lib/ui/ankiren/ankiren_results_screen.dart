@@ -14,6 +14,7 @@ import '../../domain/side_trips.dart';
 import '../../l10n/ankiren_review_strings.dart';
 import '../../l10n/ankiren_strings.dart';
 import '../../l10n/home_strings.dart';
+import '../../l10n/karafuda_strings.dart';
 import '../../l10n/ranked_strings.dart';
 import '../../l10n/results_strings.dart';
 import '../../l10n/side_trip_strings.dart';
@@ -25,6 +26,7 @@ import '../manga/manga.dart';
 import '../play/time_format.dart';
 import '../results/celebration_sequence.dart';
 import '../results/celebrations.dart';
+import '../results/karafuda_summary.dart';
 import '../results/run_summary.dart';
 import '../sound/sounds.dart';
 import 'ankiren_strikes.dart';
@@ -32,8 +34,11 @@ import 'ankiren_strikes.dart';
 /// 暗記練's results, on the run summary: a ranked game's score, a free-play
 /// level cleared or failed, or else the cards found; the first-tap finds,
 /// the strikes (or a ranked game's average time) and the reward; the cards
-/// that were slow, late or missed, a level game's levels and what clearing
-/// opens; then Back to the AnkiRen page or Done (Home). A recorded game's
+/// that were slow, late or missed, how the からふだ went, a level game's
+/// levels and what clearing opens; then Back to the AnkiRen page or Done
+/// (Home). The field's cards are counted apart from the からふだ, which only
+/// their own row and their part of the score show, so a game without any
+/// shows as it always did. A recorded game's
 /// celebrations play over it first, each tap-anywhere-to-skip: the XP it
 /// earned and any level it reached, then a ranked game's rating page.
 class AnkirenResultsScreen extends StatefulWidget {
@@ -149,12 +154,27 @@ class _Game {
   final AnkirenPlayer player;
 
   AnkirenSetup get setup => game.setup;
-  int get asked => game.prompts.length;
-  int get found => game.answers.where((a) => a.found).length;
+
+  /// The field's cards asked, found and missed, the からふだ left out.
+  int get asked => game.prompts.length - game.karafuda.length;
+  int get found => game.cardAnswers.where((a) => a.found).length;
   int get missed => asked - found;
 
   /// Found, but not with the first tap.
-  int get late => game.answers.where((a) => a.found && !a.firstTry).length;
+  int get late => game.cardAnswers.where((a) => a.found && !a.firstTry).length;
+
+  bool get hasKarafuda => game.karafuda.isNotEmpty;
+
+  /// The からふだ row, for a game that called any.
+  List<Widget> _karafudaRow() => [
+        if (hasKarafuda)
+          KarafudaSummary.row(
+            s,
+            game.karafudaTally,
+            [for (final a in game.karafudaAnswers) (poemId: a.poemId, found: a.found, wrongTaps: a.wrongTaps)],
+            points: game.score?.karafuda,
+          ),
+      ];
 
   /// The header's line after the trip: who played, and the setup.
   List<String> details() {
@@ -189,13 +209,15 @@ class _Game {
         banner: game.completed ? s.ankirenScoreLabel : s.endedEarly.toUpperCase(),
         body: HeroCount(groupDigits(score.total), label: s.summaryPoints, note: s.ankirenScoreOf(groupDigits(score.max))),
         bar: [
-          BarPart(Palette.land, score.recall, done: true),
+          BarPart(Palette.land, score.recall - score.karafuda, done: true),
+          if (hasKarafuda) BarPart(KarafudaStyle.bar, score.karafuda, done: true),
           BarPart(Palette.sun, score.early, done: true),
           BarPart(Palette.paper, math.max(0, score.max - score.total)),
         ],
         labels: [
-          BarLabel(s.summaryFinds(groupDigits(score.recall))),
-          if (score.early > 0) BarLabel(s.summaryEarly(groupDigits(score.early)), part: 1),
+          BarLabel(s.summaryFinds(groupDigits(score.recall - score.karafuda))),
+          if (hasKarafuda && score.karafuda > 0) BarLabel(s.karafudaPoints(groupDigits(score.karafuda)), part: 1),
+          if (score.early > 0) BarLabel(s.summaryEarly(groupDigits(score.early)), part: hasKarafuda ? 2 : 1),
         ],
         balloon: after == null
             ? null
@@ -206,10 +228,13 @@ class _Game {
                     : s.summaryNextTime,
       ),
       [_firstTapTile(), _avgTile(), _ratingTile(before, after)],
-      shelfRows([
-        CardShelf(s.summarySlowest, Palette.shallow, s.summarySlowestFinds, _slowest()),
-        CardShelf(s.summaryMissed, Palette.pink, s.summaryNotFound, _notFound()),
-      ]),
+      [
+        ...shelfRows([
+          CardShelf(s.summarySlowest, Palette.shallow, s.summarySlowestFinds, _slowest()),
+          CardShelf(s.summaryMissed, Palette.pink, s.summaryNotFound, _notFound()),
+        ]),
+        ..._karafudaRow(),
+      ],
     );
   }
 
@@ -243,7 +268,7 @@ class _Game {
             ? SummaryTile(label: s.xpUnit, big: TileFigure('+${groupDigits(xp.award.total)}'), note: s.summaryLevelClosed(next))
             : rewardTile(s, xp);
     final notFirst = [
-      for (final a in game.answers)
+      for (final a in game.cardAnswers)
         if (!a.firstTry)
           a.found
               ? SummaryCard(a.poemId, tag: s.summaryTapTag(a.wrongTaps + 1))
@@ -282,6 +307,7 @@ class _Game {
                 note: s.summaryLateMissed(late, missed),
                 child: SummaryCards(notFirst),
               ),
+        ..._karafudaRow(),
         SummaryRow(
           heading: s.summaryLevels,
           accent: Palette.sun,
@@ -322,6 +348,7 @@ class _Game {
           CardShelf(s.ankirenFoundFact, Palette.land, s.summaryAllCards(found), _foundCards()),
           CardShelf(s.summaryMissed, Palette.pink, s.summaryNotFound, _notFound()),
         ]),
+        ..._karafudaRow(),
         if (note != null) SummaryNote(note),
       ],
     );
@@ -376,16 +403,19 @@ class _Game {
     );
   }
 
-  List<SummaryCard> _foundCards() => [for (final a in game.answers) if (a.found) SummaryCard(a.poemId)];
+  List<SummaryCard> _foundCards() => [for (final a in game.cardAnswers) if (a.found) SummaryCard(a.poemId)];
 
   /// The cards never found, given up or not reached before the game ended.
   List<SummaryCard> _notFound() {
     final found = {for (final a in game.answers) if (a.found) a.poemId};
-    return [for (final id in game.prompts) if (!found.contains(id)) SummaryCard(id)];
+    return [
+      for (final id in game.prompts)
+        if (!found.contains(id) && !game.isKarafuda(id)) SummaryCard(id),
+    ];
   }
 
   List<SummaryCard> _slowest() {
-    final timed = [for (final a in game.answers) if (a.validTime) a]..sort((a, b) => b.responseUs!.compareTo(a.responseUs!));
+    final timed = [for (final a in game.cardAnswers) if (a.validTime) a]..sort((a, b) => b.responseUs!.compareTo(a.responseUs!));
     return [
       for (final a in timed.take(SummaryPanelLayout.perLine))
         SummaryCard(a.poemId, ms: a.responseUs! / Duration.microsecondsPerMillisecond),

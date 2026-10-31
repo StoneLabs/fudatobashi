@@ -54,6 +54,7 @@ import 'package:fudatobashi/ui/debug/play_overlay.dart';
 import 'package:fudatobashi/ui/manga/manga.dart';
 import 'package:fudatobashi/ui/play/time_format.dart';
 import 'package:fudatobashi/ui/results/celebration_sequence.dart';
+import 'package:fudatobashi/ui/results/karafuda_summary.dart';
 import 'package:fudatobashi/ui/settings/settings_screen.dart';
 import 'package:fudatobashi/ui/settings/side_trip_settings_screen.dart';
 import 'package:fudatobashi/ui/side_trips/ankiren_free_sheet.dart';
@@ -937,8 +938,43 @@ void main() {
       expect(game.answers.last.karafuda, isFalse);
       await toResults(tester);
       expect(p.sideTrips.runs.single.score, game.score!.total);
+      expect(find.text(KarafudaSummary.note(s, game.karafudaTally, points: game.score!.karafuda)), findsOneWidget);
+      await captureScreen(tester, 'karafuda/results_ranked');
       await tester.pumpWidget(const SizedBox());
     });
+
+    for (final lang in ['en', 'ja']) {
+      testWidgets('a level\'s Results: the cards as before, the からふだ in a row of their own ($lang)', (tester) async {
+        final t = S(lang);
+        final p = await open(tester, language: lang);
+        await play(tester, p, AnkirenSetup.forLevel(4), seed: 2);
+        await ready(tester);
+        final game = gameOn(tester);
+        var pressedOnCard = false, touched = false;
+        for (var i = 0; i < game.prompts.length; i++) {
+          final id = asked(tester);
+          if (!pressedOnCard && tester.any(cardOf(id))) {
+            pressedOnCard = true;
+            await pressKarafuda(tester);
+            await tester.pump(AnkirenMotion.strike);
+          } else if (!touched && !tester.any(cardOf(id))) {
+            touched = true;
+            await take(tester, cards(tester).map((c) => c.poemId).firstWhere((x) => !card(tester, x).faceUp));
+            await tester.pump(AnkirenMotion.strike);
+          }
+          await answer(tester, think: _findTime);
+          if (i < game.prompts.length - 1) await next(tester);
+        }
+        await toResults(tester);
+        expect(find.byType(AnkirenResultsScreen), findsOneWidget);
+        final tally = game.karafudaTally;
+        expect([tally.called, tally.right, tally.late, tally.touched, tally.wrongPresses], [6, 5, 1, 1, 1]);
+        expect(find.text(KarafudaSummary.note(t, tally)), findsOneWidget);
+        expect(find.textContaining(t.summaryFoundCount(20, 20)), findsWidgets, reason: 'the hero counts the cards');
+        await captureScreen(tester, 'karafuda/results_level', lang: lang);
+        await tester.pumpWidget(const SizedBox());
+      });
+    }
 
     testWidgets('a level without からふだ: strikes over End, Don\'t know full height', (tester) async {
       final p = await open(tester);

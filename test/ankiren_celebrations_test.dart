@@ -108,6 +108,7 @@ XpGain _ankirenGain({int into = 150}) => XpGain(
         XpPart(XpSource.firstTap, 12, 12 * AnkirenXp.cardXp(3)),
         XpPart(XpSource.nearMiss, 3,
             3 * (AnkirenXp.cardXp(3) * AnkirenScore.share(const [TapProximity.row, TapProximity.card])).round()),
+        XpPart(XpSource.karafuda, 4, 4 * AnkirenXp.cardXp(3)),
         const XpPart(XpSource.missed, 2, 2 * AnkirenXpTuning.perMiss),
         const XpPart(XpSource.speed, 12, 310),
         const XpPart(XpSource.clear, 1, AnkirenXpTuning.clear),

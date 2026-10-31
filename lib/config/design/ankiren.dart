@@ -860,3 +860,13 @@ abstract final class AnkirenRankDownMotion {
 
   static Duration get length => actions.end;
 }
+
+/// からふだ wherever a game's summary or review shows them: their part of a
+/// score bar ([bar]), the marker of their rows ([accent]), and a tap chip for
+/// the からふだ button ([chip], its text [chipText]).
+abstract final class KarafudaStyle {
+  static const Color bar = Palette.sea;
+  static const Color accent = Palette.sea;
+  static const Color chip = Palette.shallow;
+  static const Color chipText = Palette.ink;
+}

@@ -98,6 +98,7 @@ abstract final class CelebrationPreviewTuning {
   static const List<(XpSource, int, int)> ankirenXp = [
     (XpSource.firstTap, 12, 960),
     (XpSource.nearMiss, 3, 100),
+    (XpSource.karafuda, 4, 320),
     (XpSource.missed, 1, 2),
     (XpSource.speed, 15, 320),
     (XpSource.clear, 1, 20),

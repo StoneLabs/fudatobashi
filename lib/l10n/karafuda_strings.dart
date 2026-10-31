@@ -16,4 +16,22 @@ extension KarafudaStrings on S {
   /// The setup sheets' stepper, and its value at 0.
   String get karafudaStepper => t('karafudaStepper');
   String get karafudaOff => t('karafudaOff');
+
+  /// How many a game called, in a summary's header.
+  String karafudaCount(int n) => f('karafudaCount', [n]);
+
+  /// How a game's からふだ went: right first out of those called, the cards
+  /// tapped on them, and the presses of the button on the cards' calls.
+  String karafudaRightOf(int right, int called) => f('karafudaRightOf', [right, called]);
+  String karafudaTouched(int n) => f(countKey('karafudaTouched', n), [n]);
+  String karafudaPressedOnCards(int n) => f(countKey('karafudaPressedOnCards', n), [n]);
+
+  /// A score bar's からふだ part, in points, and the same in a note.
+  String karafudaPoints(String points) => f('karafudaPoints', [points]);
+  String karafudaPointsNote(String points) => f('karafudaPointsNote', [points]);
+
+  /// 定位置's wrong taps on [cards] field cards' calls and [karafuda] からふだ
+  /// calls.
+  String teiichiWrongOnKarafuda(int cards, int karafuda) =>
+      f(countKey('teiichiWrongOnKarafuda', cards), [cards, karafuda]);
 }

@@ -44,6 +44,7 @@ import 'package:fudatobashi/ui/play/time_format.dart';
 import 'package:fudatobashi/ui/results/run_summary.dart';
 import 'package:fudatobashi/ui/settings/side_trip_settings_screen.dart';
 import 'package:fudatobashi/ui/shell/tobi_notice.dart';
+import 'package:fudatobashi/ui/results/karafuda_summary.dart';
 import 'package:fudatobashi/ui/side_trips/ankiren_sheet.dart';
 import 'package:fudatobashi/ui/side_trips/burst_button.dart';
 import 'package:fudatobashi/ui/side_trips/dojo_scene.dart';
@@ -400,7 +401,7 @@ void main() {
 
     int asked(WidgetTester tester) {
       final text = tester.widget<PromptText>(find.byType(PromptText)).text;
-      return poems.all.firstWhere((p) => s.kimariji(p.id) == text).id;
+      return poems.all.firstWhere((p) => s.kimariji(p.id) == text || p.kimariji == text).id;
     }
 
     Future<void> press(WidgetTester tester, Finder target) async {
@@ -602,6 +603,52 @@ void main() {
       expect(p.sideTrips.runsOf(SideTrip.teiichi), isEmpty);
       await tester.pumpWidget(const SizedBox());
     });
+
+    for (final lang in ['en', 'ja']) {
+      testWidgets('からふだ: wrong taps on them count, and Results show them in a row of their own ($lang)',
+          (tester) async {
+        final p = await open(tester, language: lang);
+        const setup = TeiichiSetup(cards: 8, rows: 1, karafuda: 4);
+        await show(tester, p, () => TeiichiScreen(setup: setup, known: allCards, seed: 2), screen: usersPhoneLandscape);
+        await placeRest(tester, setup);
+        await tester.tap(find.byWidgetPredicate((w) => w is BandButton && w.icon == IconArt.arrow));
+        await tester.pump();
+        await tester.pump(TeiichiPlayLayout.zoomTime);
+        await tester.pump(AnkirenMotion.flip + AnkirenPlayTuning.promptPause);
+        await tester.pump();
+        var pressedOnCard = false, touched = false;
+        for (var i = 0; i < setup.calls; i++) {
+          final id = asked(tester);
+          if (!pressedOnCard && tester.any(cardOf(id))) {
+            pressedOnCard = true;
+            await press(tester, karafudaButton);
+          } else if (!touched && !tester.any(cardOf(id))) {
+            touched = true;
+            await take(tester, tester.widgetList<AnkirenCard>(find.byType(AnkirenCard)).firstWhere((c) => !c.faceUp).poemId);
+          }
+          await tester.pump(const Duration(milliseconds: 700));
+          await answer(tester);
+          await tester.pump(i == setup.calls - 1 ? AnkirenPlayTuning.finishPause : AnkirenPlayTuning.promptPause);
+          await tester.pump();
+        }
+        await tester.runAsync(() => Future<void>.delayed(const Duration(milliseconds: 200)));
+        useScreen(tester, usersPhone);
+        await tester.pump(Motion.route);
+        await tester.pump(Motion.route);
+        expect(find.byType(TeiichiResultsScreen), findsOneWidget);
+        final t = S(lang);
+        expect(find.text(t.teiichiWrongOnKarafuda(1, 1)), findsOneWidget, reason: 'one wrong tap each');
+        expect(find.text(KarafudaSummary.note(t, const KarafudaTally(called: 4, right: 3, late: 1))), findsOneWidget);
+        await captureScreen(tester, 'karafuda/teiichi_results', lang: lang);
+        await tester.drag(find.byType(Scrollable).first, const Offset(0, -500));
+        await tester.pump();
+        await captureScreen(tester, 'karafuda/teiichi_results', lang: lang, variant: 'scrolled');
+        final run = p.sideTrips.runsOf(SideTrip.teiichi).single;
+        expect(p.sideTrips.teiichiFactsOf(run).wrongTaps, 2);
+        expect(p.sideTrips.teiichiFactsOf(run).firstTaps, setup.cards - 1);
+        await tester.pumpWidget(const SizedBox());
+      });
+    }
 
     testWidgets('a guest\'s game writes nothing at all', (tester) async {
       final p = await open(tester);
