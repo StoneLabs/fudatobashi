@@ -6,6 +6,7 @@ import 'dart:io';
 import 'package:drift/drift.dart' show driftRuntimeOptions;
 import 'package:drift/native.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:fudatobashi/data/fuda_sets.dart';
 import 'package:fudatobashi/data/islands.dart';
@@ -27,6 +28,14 @@ import 'test_l10n.dart';
 import 'test_screens.dart';
 import 'test_vector_art.dart';
 
+Future<void> _loadFont(String family, List<String> files) async {
+  final loader = FontLoader(family);
+  for (final f in files) {
+    loader.addFont(Future.value(ByteData.sublistView(File('assets/fonts/$f').readAsBytesSync())));
+  }
+  await loader.load();
+}
+
 void main() {
   loadTestVectorArt();
   loadTestL10n();
@@ -34,6 +43,16 @@ void main() {
   fudaSets = FudaSets(poems);
   archipelago = Archipelago.fromJsonString(File('assets/data/islands.json').readAsStringSync());
   driftRuntimeOptions.dontWarnAboutMultipleDatabases = true;
+
+  setUpAll(() async {
+    await _loadFont('Dela', ['DelaGothicOne-Regular.ttf']);
+    await _loadFont('ZenKaku', [
+      'ZenKakuGothicNew-Regular.ttf',
+      'ZenKakuGothicNew-Medium.ttf',
+      'ZenKakuGothicNew-Bold.ttf',
+      'ZenKakuGothicNew-Black.ttf',
+    ]);
+  });
 
   for (final lang in ['en', 'ja']) {
     final s = S(lang);
