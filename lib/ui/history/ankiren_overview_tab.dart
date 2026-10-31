@@ -68,9 +68,9 @@ class _Overview {
       ? [_firstTapTile(), _ratingTile(), xpTile(s, review.xp)]
       : [_foundTile(), _medianTile(), if (game.custom) _strikesTile() else xpTile(s, review.xp)];
 
-  /// A ranked game: its points, the bar the card points (the finds' and
-  /// the からふだ's apart, when it called any) and what being ready early
-  /// added; a best stamped with the best before.
+  /// A ranked game: its points, the bar the card points and what being
+  /// ready early added (the からふだ's points apart, last, when it called
+  /// any); a best stamped with the best before.
   SummaryHero _points() {
     final score = game.score!, recall = game.recall, early = score - recall;
     final karafuda = game.karafuda.isEmpty ? null : review.karafuda.points;
@@ -86,9 +86,9 @@ class _Overview {
           size: ReviewHeroLayout.pointsFont),
       bar: [
         BarPart(Palette.land, recall - (karafuda ?? 0), done: true),
+        BarPart(Palette.sun, early, done: true),
+        // Last of the points, so their label may run on into the rest.
         if (karafuda != null) BarPart(KarafudaStyle.bar, karafuda, done: true),
-        // Without an early part, the からふだ's label may run on past theirs.
-        if (karafuda == null || early > 0) BarPart(Palette.sun, early, done: true),
         BarPart(Palette.paper, math.max(0, (game.maxScore ?? score) - score)),
       ],
       labels: karafuda == null
@@ -101,8 +101,8 @@ class _Overview {
             ]
           : [
               BarLabel(s.summaryFinds(groupDigits(recall - karafuda))),
-              if (karafuda > 0) BarLabel(s.karafudaPoints(groupDigits(karafuda)), part: 1),
-              if (early > 0) BarLabel(s.summaryEarly(groupDigits(early)), part: 2),
+              if (early > 0) BarLabel(s.summaryEarly(groupDigits(early)), part: 1),
+              if (karafuda > 0) BarLabel(s.karafudaPoints(groupDigits(karafuda)), part: 2),
             ],
       fallbackLabels: [BarLabel(s.reviewCardPoints(groupDigits(recall)))],
       pose: stamp == null ? TobiPose.relaxed : TobiPose.cheering,

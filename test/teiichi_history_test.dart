@@ -365,6 +365,20 @@ void main() {
         await next();
         expect(find.text(s.karafudaCaption), findsOneWidget);
         await captureScreen(tester, 'karafuda/teiichi_history', lang: lang, variant: 'taps');
+
+        // A custom game says its からふだ on its stamp.
+        await tester.runAsync(() async {
+          const setup = TeiichiSetup(cards: 12, rows: 2, karafuda: 3);
+          final deck = _deck(setup.cards, 23);
+          final known = [for (final poem in poems.all) poem.id];
+          final karafuda = KarafudaPicker.ofPoems.pick(deck, known, setup.karafuda, Random(4));
+          final played = playTeiichi(setup, deck: deck, placeMsOf: _times(1500), karafuda: karafuda);
+          await p.recordTeiichi(played.placing, played.game, startedAt: p.dayAt().date.add(const Duration(hours: 15)));
+        });
+        await show(tester, p, TeiichiGamePage(run: p.sideTrips.runsOf(SideTrip.teiichi).last), screen: _tallPhone);
+        expect(find.text(s.ankirenCustom.toUpperCase()), findsOneWidget);
+        expect(find.textContaining(s.karafudaCount(3).toUpperCase(), findRichText: true), findsWidgets);
+        await captureScreen(tester, 'karafuda/teiichi_history', lang: lang, variant: 'custom');
         await tester.pumpWidget(const SizedBox());
         await tester.runAsync(() => p.db.close());
       });

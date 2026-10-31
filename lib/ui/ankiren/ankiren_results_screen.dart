@@ -210,14 +210,15 @@ class _Game {
         body: HeroCount(groupDigits(score.total), label: s.summaryPoints, note: s.ankirenScoreOf(groupDigits(score.max))),
         bar: [
           BarPart(Palette.land, score.recall - score.karafuda, done: true),
-          if (hasKarafuda) BarPart(KarafudaStyle.bar, score.karafuda, done: true),
           BarPart(Palette.sun, score.early, done: true),
+          // Last of the points, so their label may run on into the rest.
+          if (hasKarafuda) BarPart(KarafudaStyle.bar, score.karafuda, done: true),
           BarPart(Palette.paper, math.max(0, score.max - score.total)),
         ],
         labels: [
           BarLabel(s.summaryFinds(groupDigits(score.recall - score.karafuda))),
-          if (hasKarafuda && score.karafuda > 0) BarLabel(s.karafudaPoints(groupDigits(score.karafuda)), part: 1),
-          if (score.early > 0) BarLabel(s.summaryEarly(groupDigits(score.early)), part: hasKarafuda ? 2 : 1),
+          if (score.early > 0) BarLabel(s.summaryEarly(groupDigits(score.early)), part: 1),
+          if (hasKarafuda && score.karafuda > 0) BarLabel(s.karafudaPoints(groupDigits(score.karafuda)), part: 2),
         ],
         balloon: after == null
             ? null

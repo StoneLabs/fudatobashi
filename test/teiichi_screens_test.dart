@@ -605,6 +605,24 @@ void main() {
     });
 
     for (final lang in ['en', 'ja']) {
+      testWidgets('the custom sheet: its からふだ stepper under the cards ($lang)', (tester) async {
+        final p = await open(tester, language: lang);
+        await show(tester, p, () => const Scaffold(body: SizedBox.expand()));
+        const setup = TeiichiSetup(cards: 20, rows: 3, karafuda: 7);
+        showMangaSheet<TeiichiSetup>(tester.element(find.byType(Scaffold).last),
+            barrierColor: FreePracticeLayout.barrier,
+            barrierLabel: 'close',
+            builder: (_) => const TeiichiSheet(initial: setup)).ignore();
+        await tester.pump();
+        await tester.pump(Motion.sheet * 2);
+        final karafuda =
+            find.ancestor(of: find.text(S(lang).karafudaStepper, findRichText: true), matching: find.byType(SheetStepper));
+        expect(find.descendant(of: karafuda, matching: find.text('${setup.karafuda}')), findsOneWidget);
+        expect(tester.takeException(), isNull);
+        await captureScreen(tester, 'karafuda/teiichi_sheet_custom', lang: lang);
+        await tester.pumpWidget(const SizedBox());
+      });
+
       testWidgets('からふだ: wrong taps on them count, and Results show them in a row of their own ($lang)',
           (tester) async {
         final p = await open(tester, language: lang);
@@ -616,6 +634,7 @@ void main() {
         await tester.pump(TeiichiPlayLayout.zoomTime);
         await tester.pump(AnkirenMotion.flip + AnkirenPlayTuning.promptPause);
         await tester.pump();
+        await captureScreen(tester, 'karafuda/teiichi_band', lang: lang);
         var pressedOnCard = false, touched = false;
         for (var i = 0; i < setup.calls; i++) {
           final id = asked(tester);
@@ -844,7 +863,7 @@ void main() {
         final risen = landscape ? TeiichiPlayLayout.karafudaBandLandscape : TeiichiPlayLayout.karafudaBandPortrait;
         final geometry = FieldGeometry.of(board, folded: false, trueSlots: TeiichiTuning.rowSlots);
         final scale = AnkirenFieldView.trueScaleFor(geometry, area, band: band, roomAbove: TeiichiPlayLayout.roomAbove);
-        return scale * TeiichiZoom.limit(board, area, risen) * AnkirenFieldSize.cardW;
+        return scale * TeiichiZoom.limit(board, area, band, risen - band) * AnkirenFieldSize.cardW;
       }
 
       expect(grownW(), moreOrLessEquals(expected(usersPhone), epsilon: 0.01));

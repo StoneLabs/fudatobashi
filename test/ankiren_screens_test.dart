@@ -921,29 +921,31 @@ void main() {
       });
     }
 
-    testWidgets('ranked: End full height, からふだ under Don\'t know; a game ends on a card', (tester) async {
-      final p = await open(tester);
-      await play(tester, p, const AnkirenSetup.ranked(), seed: 4);
-      await ready(tester);
-      expect(find.byType(AnkirenStrikes), findsNothing);
-      expect(tester.getRect(find.byType(AnkirenBand)).height, AnkirenPlayLayout.bandPortraitStrikes);
-      final end = tester.getRect(bandButton(IconArt.end));
-      expect(end.height, greaterThan(1.8 * tester.getRect(karafudaButton()).height), reason: 'End keeps its height');
-      await captureScreen(tester, 'karafuda/ranked');
-      final game = gameOn(tester);
-      expect(game.karafuda, hasLength(const AnkirenSetup.ranked().karafuda));
-      final total = const AnkirenSetup.ranked().calls;
-      for (var i = 0; i < total; i++) {
-        await answer(tester, think: const Duration(milliseconds: 500));
-        if (i < total - 1) await next(tester);
-      }
-      expect(game.answers.last.karafuda, isFalse);
-      await toResults(tester);
-      expect(p.sideTrips.runs.single.score, game.score!.total);
-      expect(find.text(KarafudaSummary.note(s, game.karafudaTally, points: game.score!.karafuda)), findsOneWidget);
-      await captureScreen(tester, 'karafuda/results_ranked');
-      await tester.pumpWidget(const SizedBox());
-    });
+    for (final lang in ['en', 'ja']) {
+      testWidgets('ranked: End full height, からふだ under Don\'t know; a game ends on a card ($lang)', (tester) async {
+        final p = await open(tester, language: lang);
+        await play(tester, p, const AnkirenSetup.ranked(), seed: 4);
+        await ready(tester);
+        expect(find.byType(AnkirenStrikes), findsNothing);
+        expect(tester.getRect(find.byType(AnkirenBand)).height, AnkirenPlayLayout.bandPortraitStrikes);
+        final end = tester.getRect(bandButton(IconArt.end));
+        expect(end.height, greaterThan(1.8 * tester.getRect(karafudaButton()).height), reason: 'End keeps its height');
+        await captureScreen(tester, 'karafuda/ranked', lang: lang);
+        final game = gameOn(tester);
+        expect(game.karafuda, hasLength(const AnkirenSetup.ranked().karafuda));
+        final total = const AnkirenSetup.ranked().calls;
+        for (var i = 0; i < total; i++) {
+          await answer(tester, think: const Duration(milliseconds: 500));
+          if (i < total - 1) await next(tester);
+        }
+        expect(game.answers.last.karafuda, isFalse);
+        await toResults(tester);
+        expect(p.sideTrips.runs.single.score, game.score!.total);
+        expect(find.text(KarafudaSummary.note(S(lang), game.karafudaTally, points: game.score!.karafuda)), findsOneWidget);
+        await captureScreen(tester, 'karafuda/results_ranked', lang: lang);
+        await tester.pumpWidget(const SizedBox());
+      });
+    }
 
     for (final lang in ['en', 'ja']) {
       testWidgets('a level\'s Results: the cards as before, the からふだ in a row of their own ($lang)', (tester) async {
@@ -978,17 +980,45 @@ void main() {
       });
     }
 
-    testWidgets('a level without からふだ: strikes over End, Don\'t know full height', (tester) async {
-      final p = await open(tester);
-      await play(tester, p, AnkirenSetup.forLevel(3));
-      await ready(tester);
-      expect(karafudaButton(), findsNothing);
-      final dontKnow = tester.getRect(bandButton(IconArt.question));
-      final end = tester.getRect(bandButton(IconArt.end));
-      expect(dontKnow.height, greaterThan(1.5 * end.height), reason: 'Don\'t know keeps the full height');
-      await captureScreen(tester, 'karafuda/level_none');
-      await tester.pumpWidget(const SizedBox());
-    });
+    for (final lang in ['en', 'ja']) {
+      testWidgets('a level without からふだ: strikes over End, Don\'t know full height ($lang)', (tester) async {
+        final p = await open(tester, language: lang);
+        await play(tester, p, AnkirenSetup.forLevel(3));
+        await ready(tester);
+        expect(karafudaButton(), findsNothing);
+        final dontKnow = tester.getRect(bandButton(IconArt.question));
+        final end = tester.getRect(bandButton(IconArt.end));
+        expect(dontKnow.height, greaterThan(1.5 * end.height), reason: 'Don\'t know keeps the full height');
+        await captureScreen(tester, 'karafuda/level_none', lang: lang);
+        await tester.pumpWidget(const SizedBox());
+      });
+    }
+
+    for (final lang in ['en', 'ja']) {
+      testWidgets('the custom sheet: its からふだ stepper under the cards ($lang)', (tester) async {
+        final p = await open(tester, language: lang);
+        await clearUpTo(tester, p, AnkirenTuning.customAfterLevel);
+        useScreen(tester, usersPhone);
+        await tester.pumpWidget(RepaintBoundary(
+          key: const ValueKey('screen'),
+          child: ProgressScope(
+              progress: p, child: MaterialApp(theme: buildMangaTheme(), home: const Scaffold(body: SizedBox.expand()))),
+        ));
+        const setup = AnkirenSetup.custom(perSide: 8, memorise: Duration(minutes: 2), karafuda: 5);
+        showMangaSheet<AnkirenSetup>(tester.element(find.byType(Scaffold)),
+            barrierColor: FreePracticeLayout.barrier,
+            barrierLabel: 'close',
+            builder: (_) => const AnkirenFreeSheet(initial: setup)).ignore();
+        await tester.pump();
+        await tester.pump(Motion.sheet * 2);
+        final karafuda =
+            find.ancestor(of: find.text(S(lang).karafudaStepper, findRichText: true), matching: find.byType(SheetStepper));
+        expect(find.descendant(of: karafuda, matching: find.text('${setup.karafuda}')), findsOneWidget);
+        expect(tester.takeException(), isNull);
+        await captureScreen(tester, 'karafuda/free_sheet_custom', lang: lang);
+        await tester.pumpWidget(const SizedBox());
+      });
+    }
 
     for (final level in [3, 4]) {
       testWidgets('landscape level $level: End then strikes on the left, Don\'t know then からふだ on the right',

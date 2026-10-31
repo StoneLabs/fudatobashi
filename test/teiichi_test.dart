@@ -360,6 +360,11 @@ void main() {
       expect(TeiichiZoom.limit(fieldWith(lower, l: 2, r: 2), area, band), moreOrLessEquals(byBand));
     });
 
+    test('a band that rises for からふだ still reaches only the top, at the scale the band alone gives', () {
+      const rise = 20.0;
+      expect(TeiichiZoom.limit(fieldWith(lower, l: 2, r: 2), area, band, rise), moreOrLessEquals((300 - rise) / 182));
+    });
+
     test('stopped by a row without middle cards: its clusters keep 2.5 card widths apart', () {
       final zoom = TeiichiZoom.limit(fieldWith(lower, l: 5, r: 5), area, band);
       expect(zoom, moreOrLessEquals(width / (2.5 * 5.2 - 2 * 0.1 + 10 * pitch)));

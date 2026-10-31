@@ -14,18 +14,22 @@ import '../ankiren/ankiren_field_view.dart';
 /// The field grows evenly: the bottom row stays on the bottom edge, the
 /// clusters on the edges they start from, so cards grow upward and inward
 /// and each row's gap between its clusters closes. It stops at the first of
-/// three limits: the band reaching the top of the area, a row without
+/// three limits: the band, risen as it may be, reaching the top of the
+/// area, a row without
 /// middle cards keeping [TeiichiPlayLayout.zoomGap] card widths between its
 /// clusters, and a row with middle cards keeping
 /// [TeiichiPlayLayout.zoomMiddleGap] between a cluster and its middle
 /// cards. It never shrinks.
 abstract final class TeiichiZoom {
   /// The scale factor, at least 1, for [field]'s own side on a screen with
-  /// [area] to play in (inside its padding) and a band [band] tall.
-  static double limit(AnkirenField field, Size area, double band) {
+  /// [area] to play in (inside its padding) and a band [band] tall, which
+  /// once grown rises [rise] more into the room above: the field keeps the
+  /// scale the band alone gives it, and grows only as far as leaves the
+  /// risen band its room.
+  static double limit(AnkirenField field, Size area, double band, [double rise = 0]) {
     final geometry = FieldGeometry.of(field, folded: false, trueSlots: TeiichiTuning.rowSlots);
     final scale = AnkirenFieldView.trueScaleFor(geometry, area, band: band, roomAbove: TeiichiPlayLayout.roomAbove);
-    var zoom = (area.height - band) / (geometry.height * scale);
+    var zoom = (area.height - band - rise) / (geometry.height * scale);
     for (final row in field.own.rows) {
       if (!row.isEmpty) zoom = math.min(zoom, _rowLimit(row, geometry.width));
     }

@@ -135,8 +135,8 @@ class FieldGrowth {
   const FieldGrowth({required this.limit, required this.duration, required this.curve});
 
   /// The factor the field grows by, at least 1, in an area (inside the
-  /// padding) with a band [band] tall.
-  final double Function(AnkirenField field, Size area, double band) limit;
+  /// padding) with a band [band] tall that rises [rise] more once grown.
+  final double Function(AnkirenField field, Size area, double band, double rise) limit;
   final Duration duration;
   final Curve curve;
 }
@@ -185,7 +185,7 @@ class _AnkirenFieldViewState extends State<AnkirenFieldView> {
         final growth = widget.growth;
         if (growth == null) return _fieldAt(box, area, bandH, fit, 1);
         // How far grown, 0 to 1, of the way to the limit for this area.
-        final limit = growth.limit(widget.field, area, bandH + widget.bandRise);
+        final limit = growth.limit(widget.field, area, bandH, widget.bandRise);
         return TweenAnimationBuilder<double>(
           tween: Tween(end: widget.grown ? 1 : 0),
           duration: MediaQuery.disableAnimationsOf(context) ? Duration.zero : growth.duration,

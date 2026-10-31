@@ -258,7 +258,7 @@ class _TeiichiScreenState extends State<TeiichiScreen> with AnkirenPlay {
     final size = _field.currentContext?.size;
     if (size == null) return 1;
     return TeiichiZoom.limit(_laidField(_placing.board), AnkirenFieldView.areaIn(size),
-        AnkirenFieldView.bandHeight(landscape: !_portrait!) + _bandRise(landscape: !_portrait!, zoomed: true));
+        AnkirenFieldView.bandHeight(landscape: !_portrait!), _bandRise(landscape: !_portrait!, zoomed: true));
   }
 
   /// How much higher the band reaches once Done is pressed ([zoomed]) in a
