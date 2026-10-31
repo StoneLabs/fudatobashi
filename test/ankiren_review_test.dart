@@ -19,17 +19,21 @@ import 'package:fudatobashi/domain/ankiren_level.dart';
 import 'package:fudatobashi/domain/ankiren_rating.dart';
 import 'package:fudatobashi/domain/ankiren_review.dart';
 import 'package:fudatobashi/domain/ankiren_score.dart';
+import 'package:fudatobashi/domain/karafuda.dart';
 import 'package:fudatobashi/domain/rating.dart';
 import 'package:fudatobashi/domain/side_trips.dart';
 import 'package:fudatobashi/domain/trainer.dart';
 import 'package:fudatobashi/l10n/ankiren_review_strings.dart';
+import 'package:fudatobashi/l10n/karafuda_strings.dart';
 import 'package:fudatobashi/l10n/run_strings.dart';
 import 'package:fudatobashi/l10n/strings.dart';
 import 'package:fudatobashi/state/progress.dart';
 import 'package:fudatobashi/state/scope.dart';
 import 'package:fudatobashi/state/xp_history.dart';
+import 'package:fudatobashi/ui/history/ankiren_field_tab.dart';
 import 'package:fudatobashi/ui/history/ankiren_game_page.dart';
 import 'package:fudatobashi/ui/history/ankiren_widgets.dart';
+import 'package:fudatobashi/ui/history/karafuda_panel.dart';
 import 'package:fudatobashi/ui/play/time_format.dart';
 import 'package:fudatobashi/ui/manga/theme.dart';
 
@@ -49,7 +53,12 @@ Future<void> _loadFont(String family, List<String> files) async {
 /// [ms] + a little more for each, ready [early] before the memorise time
 /// is up. The prompts in [near] get one wrong tap on another card of their
 /// side first; those in [shown] a tap on the other side and one more on
-/// their side, so the card is shown.
+/// their side, so the card is shown. With [karafuda] it calls the setup's
+/// からふだ, drawn as a game draws them, each pressed: the [pressed] field
+/// cards first get a press of the からふだ button, and the からふだ in
+/// [karafudaNear] one card tapped first, those in [karafudaShown] two, and
+/// those in [karafudaSkipped] are given up. [near], [shown] and [pressed]
+/// count the field cards' calls, the karafuda sets the からふだ calls.
 AnkirenGame _play(
   AnkirenSetup setup, {
   int seed = 1,
@@ -57,26 +66,55 @@ AnkirenGame _play(
   Duration early = Duration.zero,
   Set<int> near = const {},
   Set<int> shown = const {},
+  bool karafuda = false,
+  Set<int> pressed = const {},
+  Set<int> karafudaNear = const {},
+  Set<int> karafudaShown = const {},
+  Set<int> karafudaSkipped = const {},
 }) {
   final rng = Random(seed);
-  final field = AnkirenDealer.ofPoems()
-      .deal([for (final p in poems.all) p.id], setup.perSide, rng, allInMiddle: setup.allInMiddle);
-  final game = AnkirenGame(field: field, setup: setup, rng: rng)..startRecall(memorised: setup.memorise - early);
+  final all = [for (final p in poems.all) p.id];
+  final field = AnkirenDealer.ofPoems().deal(all, setup.perSide, rng, allInMiddle: setup.allInMiddle);
+  final game = AnkirenGame(
+    field: field,
+    setup: setup,
+    rng: rng,
+    karafuda: karafuda ? KarafudaPicker.ofPoems.pick(field.cards, all, setup.karafuda, rng) : const [],
+  )..startRecall(memorised: setup.memorise - early);
   var t = const Duration(seconds: 100);
+  var card = 0, k = 0;
   for (var i = 0; game.phase == AnkirenPhase.recall; i++) {
     game.promptRevealed(t);
     final asked = game.current!;
     final side = field.sideOf(asked);
     int other(bool sameSide) =>
         field.cards.firstWhere((c) => c != asked && !game.isFound(c) && (field.sideOf(c) == side) == sameSide);
-    if (shown.contains(i)) {
-      game.tap(other(false), t + const Duration(milliseconds: 300));
-      game.tap(other(true), t + const Duration(milliseconds: 600));
-    } else if (near.contains(i)) {
-      game.tap(other(true), t + const Duration(milliseconds: 300));
+    if (side == null) {
+      final open = [for (final c in field.cards) if (!game.isDone(c)) c];
+      final wrong = karafudaShown.contains(k) ? 2 : karafudaNear.contains(k) ? 1 : 0;
+      for (var w = 0; w < wrong; w++) {
+        game.tap(open[w], t + Duration(milliseconds: 300 * (w + 1)));
+      }
+      t += Duration(milliseconds: ms + 150 * (i % 4) + 300 * wrong);
+      if (karafudaSkipped.contains(k)) {
+        game.giveUp();
+      } else {
+        game.pressKarafuda(t);
+      }
+      k++;
+    } else {
+      if (shown.contains(card)) {
+        game.tap(other(false), t + const Duration(milliseconds: 300));
+        game.tap(other(true), t + const Duration(milliseconds: 600));
+      } else if (near.contains(card)) {
+        game.tap(other(true), t + const Duration(milliseconds: 300));
+      } else if (pressed.contains(card)) {
+        game.pressKarafuda(t + const Duration(milliseconds: 300));
+      }
+      t += Duration(milliseconds: ms + 150 * (i % 4) + (shown.contains(card) ? 900 : 0));
+      game.tap(asked, t);
+      card++;
     }
-    t += Duration(milliseconds: ms + 150 * (i % 4) + (shown.contains(i) ? 900 : 0));
-    game.tap(asked, t);
     t += const Duration(milliseconds: 400);
   }
   return game;
@@ -118,6 +156,32 @@ void main() {
     final old = p.sideTrips.runs.last.id;
     await (p.db.update(p.db.sideTripAnswers)..where((a) => a.runId.equals(old)))
         .write(const SideTripAnswersCompanion(firstTapCard: Value(null), secondTapCard: Value(null)));
+    return (await Progress.open(p.db))..tabsAlwaysOpen = true;
+  }
+
+  /// [recordGames]' games, then a ranked game and a level 4 game with
+  /// からふだ: in the ranked one, one からふだ pressed after a card was
+  /// tapped, one shown after two, one given up, and the button pressed on
+  /// a field card's call; in the level game, one pressed late and the
+  /// button pressed once on a card's call. Returns [p]'s progress
+  /// reopened.
+  Future<Progress> recordKarafudaGames(Progress p) async {
+    p = await recordGames(p);
+    await p.recordAnkiren(
+        _play(const AnkirenSetup.ranked(),
+            seed: 9,
+            ms: 1100,
+            karafuda: true,
+            near: {4, 20},
+            shown: {12},
+            pressed: {7},
+            karafudaNear: {1},
+            karafudaShown: {3},
+            karafudaSkipped: {6}),
+        startedAt: day.add(const Duration(hours: 6)));
+    await p.recordAnkiren(
+        _play(AnkirenSetup.forLevel(4), seed: 10, ms: 900, karafuda: true, pressed: {2}, karafudaNear: {0}),
+        startedAt: day.add(const Duration(hours: 7)));
     return (await Progress.open(p.db))..tabsAlwaysOpen = true;
   }
 
@@ -186,6 +250,34 @@ void main() {
       }
       final shares = [for (final r in review.misplaced) r.rightFirst / r.dealt];
       expect(shares, [...shares]..sort());
+    });
+
+    test('a game with からふだ keeps them apart from its cards, and scores them as cards', () async {
+      final q = await recordKarafudaGames(await openProgress());
+      final trips = q.sideTrips;
+      final games = [for (final r in trips.runsOf(SideTrip.ankiren)) trips.recordOf(r)];
+      final ranked = games[games.length - 2];
+      const setup = AnkirenSetup.ranked();
+      expect(ranked.cards, hasLength(setup.cards));
+      expect(ranked.karafuda, hasLength(setup.karafuda));
+      expect(ranked.calls.last.karafuda, isFalse, reason: 'a game never ends on a からふだ');
+      expect(ranked.karafuda.every((c) => ranked.deal!.sideOf(c.poemId) == null), isTrue);
+      final tally = ranked.karafudaTally;
+      expect([tally.called, tally.right, tally.late, tally.missed, tally.touched, tally.wrongPresses], [15, 12, 2, 1, 3, 1]);
+      expect(ranked.medianFindMs, AnkirenReview.median([for (final c in ranked.calls) if (!c.karafuda) ?c.findMs]),
+          reason: 'the find times leave the presses out');
+      expect(ranked.medianPressMs, AnkirenReview.median([for (final c in ranked.karafuda) ?c.findMs]));
+      final review = AnkirenReview(ranked, games);
+      final parts = [review.rightFirst, review.nearFirst, review.secondTaps, review.speed, review.karafuda];
+      expect(parts.fold(0, (sum, p) => sum + p.points), ranked.recall);
+      expect(review.karafuda.cards, 13, reason: 'all but the one shown after two cards and the one given up earned');
+      expect(ranked.maxRecall, AnkirenScore.maxFor(setup.calls));
+      expect(AnkirenScore.totalOf(ranked.recall, ranked.firstRight, ranked.timeLeft), ranked.score);
+      expect(ranked.sameSetup(games[0]), isTrue, reason: 'ranked against ranked');
+      final level = games.last;
+      expect([level.karafuda.length, level.karafudaTally.late, level.karafudaTally.wrongPresses], [6, 1, 1]);
+      expect(level.strikes, 2);
+      await q.db.close();
     });
 
     test('the median, the mean and the class progress', () {
@@ -371,5 +463,132 @@ void main() {
       await tester.pumpWidget(const SizedBox());
       await tester.runAsync(() => p.db.close());
     });
+
+    for (final ja in [false, true]) {
+      final lang = ja ? 'ja' : 'en';
+      for (final (phone, fontScale) in [(usersPhone, 1.0), (narrowTallPhone, 1.3)]) {
+        final setup = '$lang, ${phone.name} dp, font scale $fontScale';
+
+        testWidgets('a game with からふだ, tab by tab ($setup)', (tester) async {
+          final s = S(lang);
+          late Progress p;
+          await tester.runAsync(() async {
+            p = await recordKarafudaGames(await openProgress(ja: ja));
+          });
+          final runs = p.sideTrips.runsOf(SideTrip.ankiren).toList();
+          final run = runs[runs.length - 2];
+          final game = p.sideTrips.recordOf(run);
+          useScreen(tester, phone, fontScale: fontScale);
+          tester.platformDispatcher.accessibilityFeaturesTestValue =
+              const FakeAccessibilityFeatures(disableAnimations: true);
+          addTearDown(tester.platformDispatcher.clearAccessibilityFeaturesTestValue);
+          Future<void> show(SideTripRun run) async {
+            await tester.pumpWidget(RepaintBoundary(
+              key: const ValueKey('screen'),
+              child: ProgressScope(
+                progress: p,
+                child: MaterialApp(key: ValueKey(run.id), theme: buildMangaTheme(), home: AnkirenGamePage(run: run)),
+              ),
+            ));
+            await tester.pump(const Duration(milliseconds: 500));
+            expect(tester.takeException(), isNull);
+          }
+
+          Future<void> shot(String name) => captureScreen(tester, 'karafuda/history_$name', lang: lang);
+          Future<void> tab(String label) async {
+            await tester.tap(find.text(label).first);
+            await tester.pumpAndSettle();
+            expect(tester.takeException(), isNull);
+          }
+
+          Future<void> down(double by) async {
+            await tester.drag(find.byType(Scrollable).last, Offset(0, -by));
+            await tester.pumpAndSettle();
+          }
+
+          await show(run);
+          expect(find.textContaining(s.karafudaCount(game.karafuda.length).toUpperCase(), findRichText: true), findsWidgets,
+              reason: 'the header');
+          expect(find.text('${game.firstTaps}/${game.cards.length}', findRichText: true), findsOneWidget,
+              reason: 'the tiles count the field cards');
+          expect(find.byType(KarafudaPanel), findsOneWidget);
+          final tally = game.karafudaTally;
+          expect(find.text(s.karafudaCalled(tally.called)), findsOneWidget);
+          await shot('overview');
+          await tester.ensureVisible(find.byType(KarafudaPanel));
+          await tester.pumpAndSettle();
+          await shot('overview_karafuda');
+
+          await tab(s.ankirenTabField);
+          await tester.ensureVisible(find.text(s.ankirenStartReview.toUpperCase()));
+          await tester.pumpAndSettle();
+          await tester.tap(find.text(s.ankirenStartReview.toUpperCase()));
+          await tester.pumpAndSettle();
+          final context = tester.element(find.byType(AnkirenGamePage));
+          final first = game.calls.first;
+          expect(
+              find.text(first.karafuda
+                  ? s.karafudaStepKarafuda(1, game.calls.length, kimarijiFor(context, first.poemId))
+                  : s.karafudaStepCall(1, game.calls.length, kimarijiFor(context, first.poemId))),
+              findsOneWidget);
+          final step = game.calls.indexWhere((c) => c.karafuda && c.shown);
+          await tester.ensureVisible(find.bySemanticsLabel(s.ankirenStepNext));
+          await tester.pumpAndSettle();
+          for (var i = 0; i < step; i++) {
+            await tester.tap(find.bySemanticsLabel(s.ankirenStepNext));
+            await tester.pump();
+          }
+          await tester.pumpAndSettle();
+          final karafuda = game.calls[step];
+          final name = kimarijiFor(context, karafuda.poemId);
+          expect(find.text(s.karafudaStepKarafuda(step + 1, game.calls.length, name)), findsOneWidget);
+          expect(find.text(s.karafudaOffField(name)), findsOneWidget);
+          expect(find.textContaining(s.karafudaShownPressed('X').split('X').first), findsOneWidget);
+          final dimmed =
+              find.byWidgetPredicate((w) => w is AnimatedOpacity && w.opacity == AnkirenReviewStyle.unrelatedOpacity);
+          expect(dimmed, findsNWidgets(game.deal!.cards.length - karafuda.tapped.toSet().length),
+              reason: 'only the cards tapped on it stay bright');
+          await tester.ensureVisible(find.byType(ReviewField));
+          await tester.pumpAndSettle();
+          await shot('field_karafuda');
+          final pressed = game.calls.indexWhere((c) => !c.karafuda && c.tapped.contains(Karafuda.button));
+          await tester.ensureVisible(find.bySemanticsLabel(s.ankirenStepNext));
+          await tester.pumpAndSettle();
+          for (var i = step; i != pressed; i += pressed > step ? 1 : -1) {
+            await tester.tap(find.bySemanticsLabel(pressed > step ? s.ankirenStepNext : s.ankirenStepBack));
+            await tester.pump();
+          }
+          await tester.pumpAndSettle();
+          expect(find.textContaining('${s.karafudaChip} → ${s.ankirenChip(TapProximity.card)}'), findsOneWidget,
+              reason: 'the button pressed on a field card\'s call');
+
+          await tab(s.ankirenTabScore);
+          expect(find.text(s.karafudaPart), findsOneWidget);
+          await shot('score');
+          await down(600);
+          await shot('score2');
+
+          await tab(s.ankirenTabTaps);
+          expect(find.textContaining(s.karafudaTapsNote(game.calls.length, game.karafuda.length)), findsOneWidget);
+          expect(find.descendant(of: find.byType(CallName), matching: find.text(s.karafudaChip.toUpperCase())),
+              findsNWidgets(game.karafuda.length),
+              reason: 'each からふだ call named in the table');
+          expect(find.text(s.karafudaCaption), findsOneWidget);
+          await shot('taps');
+          await down(900);
+          await shot('taps2');
+
+          await show(runs.last);
+          expect(find.byType(KarafudaPanel), findsOneWidget);
+          await tester.ensureVisible(find.byType(KarafudaPanel));
+          await tester.pumpAndSettle();
+          await shot('level_overview');
+          await tab(s.ankirenTabTaps);
+          await shot('level_taps');
+          await tester.pumpWidget(const SizedBox());
+          await tester.runAsync(() => p.db.close());
+        });
+      }
+    }
   });
 }

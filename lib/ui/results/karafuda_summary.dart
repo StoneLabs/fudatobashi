@@ -25,7 +25,15 @@ abstract final class KarafudaSummary {
         if (points != null) s.karafudaPointsNote(groupDigits(points)),
       ].join(' · ');
 
-  static Widget row(S s, KarafudaTally tally, Iterable<KarafudaShown> calls, {int? points}) {
+  static Widget row(S s, KarafudaTally tally, Iterable<KarafudaShown> calls, {int? points}) => SummaryRow(
+        heading: s.karafuda,
+        accent: KarafudaStyle.accent,
+        note: note(s, tally, points: points),
+        child: SummaryCards(cards(s, calls)),
+      );
+
+  /// The からふだ not pressed first, tagged, or all of them when none was.
+  static List<SummaryCard> cards(S s, Iterable<KarafudaShown> calls) {
     final wrong = [
       for (final c in calls)
         if (!c.found)
@@ -33,11 +41,6 @@ abstract final class KarafudaSummary {
         else if (c.wrongTaps > 0)
           SummaryCard(c.poemId, tag: s.summaryTapTag(c.wrongTaps + 1)),
     ];
-    return SummaryRow(
-      heading: s.karafuda,
-      accent: KarafudaStyle.accent,
-      note: note(s, tally, points: points),
-      child: SummaryCards(wrong.isNotEmpty ? wrong : [for (final c in calls) SummaryCard(c.poemId)]),
-    );
+    return wrong.isNotEmpty ? wrong : [for (final c in calls) SummaryCard(c.poemId)];
   }
 }

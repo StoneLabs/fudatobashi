@@ -17,7 +17,9 @@ TeiichiSpot dealtSpot(TeiichiSetup setup, int i) {
 /// each card [placeMs] on top of the stack (the ith [placeMsOf] it when
 /// given), then played: each card found [findMs] after its prompt, after a
 /// wrong tap on another card for the prompts in [wrongAt]; ended early
-/// after [endAfter] prompts.
+/// after [endAfter] prompts. Its [karafuda] are called among the cards and
+/// each pressed, the ones in [karafudaWrongAt] (counted among the からふだ
+/// calls) after a tap on a card.
 ({TeiichiPlacing placing, AnkirenGame game}) playTeiichi(TeiichiSetup setup,
     {List<int>? deck,
     int placeMs = 1000,
@@ -25,6 +27,8 @@ TeiichiSpot dealtSpot(TeiichiSetup setup, int i) {
     int findMs = 800,
     Set<int> wrongAt = const {},
     int? endAfter,
+    List<int> karafuda = const [],
+    Set<int> karafudaWrongAt = const {},
     int seed = 1}) {
   final placing = TeiichiPlacing(setup, deck ?? [for (var id = 1; id <= setup.cards; id++) id]);
   var at = Duration.zero;
@@ -33,8 +37,9 @@ TeiichiSpot dealtSpot(TeiichiSetup setup, int i) {
     placing.placeTop(dealtSpot(setup, i), at);
   }
   placing.finish(at);
-  final game = placing.recall(Random(seed))..startRecall(memorised: at);
+  final game = placing.recall(Random(seed), karafuda: karafuda)..startRecall(memorised: at);
   var t = const Duration(seconds: 100);
+  var k = 0;
   for (var i = 0; game.phase == AnkirenPhase.recall; i++) {
     if (i == endAfter) {
       game.end();
@@ -42,11 +47,12 @@ TeiichiSpot dealtSpot(TeiichiSetup setup, int i) {
     }
     game.promptRevealed(t);
     final asked = game.current!;
-    if (wrongAt.contains(i)) {
+    final called = game.isKarafuda(asked);
+    if (called ? karafudaWrongAt.contains(k++) : wrongAt.contains(i)) {
       game.tap(game.field.cards.firstWhere((c) => c != asked && !game.isDone(c)), t + const Duration(milliseconds: 300));
     }
     t += Duration(milliseconds: findMs);
-    game.tap(asked, t);
+    called ? game.pressKarafuda(t) : game.tap(asked, t);
     t += const Duration(milliseconds: 400);
   }
   return (placing: placing, game: game);

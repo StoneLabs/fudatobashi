@@ -2,7 +2,10 @@ import 'package:flutter/material.dart';
 
 import '../../config/design.dart';
 import '../../domain/ankiren_field.dart';
+import '../../domain/ankiren_review.dart';
+import '../../domain/karafuda.dart';
 import '../../l10n/ankiren_review_strings.dart';
+import '../../l10n/karafuda_strings.dart';
 import '../../l10n/side_trip_strings.dart';
 import '../../l10n/strings.dart';
 import 'run_charts.dart';
@@ -13,41 +16,78 @@ class TierChip extends StatelessWidget {
   final TapProximity place;
 
   @override
+  Widget build(BuildContext context) => _Chip(S.of(context).ankirenChip(place),
+      fill: AnkirenReviewStyle.tierFill[place.index], ink: AnkirenReviewStyle.tierText[place.index]);
+}
+
+/// A [text] chip on [fill], in [ink].
+class _Chip extends StatelessWidget {
+  const _Chip(this.text, {required this.fill, required this.ink});
+  final String text;
+  final Color fill, ink;
+
+  @override
   Widget build(BuildContext context) => DecoratedBox(
-        decoration: BoxDecoration(
-          color: AnkirenReviewStyle.tierFill[place.index],
-          border: Border.all(color: Palette.ink, width: Strokes.hairline),
-        ),
+        decoration: BoxDecoration(color: fill, border: Border.all(color: Palette.ink, width: Strokes.hairline)),
         child: Padding(
           padding: AnkirenReviewStyle.chipPadding,
-          child: Text(S.of(context).ankirenChip(place),
-              maxLines: 1,
-              style: TextStyle(
-                  fontWeight: Weights.black,
-                  fontSize: AnkirenReviewStyle.chipFont,
-                  color: AnkirenReviewStyle.tierText[place.index])),
+          child: Text(text,
+              maxLines: 1, style: TextStyle(fontWeight: Weights.black, fontSize: AnkirenReviewStyle.chipFont, color: ink)),
         ),
       );
 }
 
-/// A tap's chips in order, first → second.
+/// A call's taps (see [AnkirenCardTry]) in order, first → second, each in
+/// its tier's colour and named by what it hit: the tier, the からふだ
+/// button, or on a からふだ call a card (a tap on the other side).
 class TierChips extends StatelessWidget {
-  const TierChips(this.taps, {super.key});
-  final List<TapProximity> taps;
+  const TierChips(this.call, {super.key});
+  final AnkirenCardTry call;
 
   @override
-  Widget build(BuildContext context) => Wrap(
-        spacing: Gaps.tight,
-        runSpacing: Gaps.tight,
-        crossAxisAlignment: WrapCrossAlignment.center,
-        children: [
-          for (final (i, place) in taps.indexed) ...[
-            if (i > 0)
-              const Text('→', style: TextStyle(fontWeight: Weights.black, fontSize: AnkirenReviewStyle.chipFont)),
-            TierChip(place),
-          ],
+  Widget build(BuildContext context) {
+    final s = S.of(context);
+    return Wrap(
+      spacing: Gaps.tight,
+      runSpacing: Gaps.tight,
+      crossAxisAlignment: WrapCrossAlignment.center,
+      children: [
+        for (final (i, place) in call.taps.indexed) ...[
+          if (i > 0) const Text('→', style: TextStyle(fontWeight: Weights.black, fontSize: AnkirenReviewStyle.chipFont)),
+          _Chip(name(s, call, i), fill: AnkirenReviewStyle.tierFill[place.index], ink: AnkirenReviewStyle.tierText[place.index]),
         ],
-      );
+      ],
+    );
+  }
+
+  /// What [call]'s tap [i] hit, as its chip names it.
+  static String name(S s, AnkirenCardTry call, int i) => call.tapped.elementAtOrNull(i) == Karafuda.button
+      ? s.karafudaChip
+      : call.karafuda
+          ? s.karafudaChipCard
+          : s.ankirenChip(call.taps[i]);
+
+  /// [call]'s taps as the chips name them, joined by arrows.
+  static String text(S s, AnkirenCardTry call) =>
+      [for (var i = 0; i < call.taps.length; i++) name(s, call, i)].join(' → ');
+}
+
+/// A call's kimariji in a table, and for a からふだ call, which has no place
+/// on the field, a tag under it saying so.
+class CallName extends StatelessWidget {
+  const CallName(this.call, {super.key});
+  final AnkirenCardTry call;
+
+  @override
+  Widget build(BuildContext context) {
+    final name = ReviewTable.cell(kimarijiFor(context, call.poemId), strong: true);
+    if (!call.karafuda) return name;
+    return Column(crossAxisAlignment: CrossAxisAlignment.start, mainAxisSize: MainAxisSize.min, children: [
+      name,
+      Text(S.of(context).karafudaChip.toUpperCase(),
+          maxLines: 1, style: ReviewTableStyle.head.copyWith(color: KarafudaStyle.tag)),
+    ]);
+  }
 }
 
 /// A share of a card's points: 1, 0.4, 0.15 or 0.

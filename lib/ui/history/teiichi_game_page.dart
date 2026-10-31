@@ -27,8 +27,9 @@ import 'teiichi_placing_tab.dart';
 Future<void> openTeiichiGame(BuildContext context, SideTripRun run) =>
     Navigator.of(context).push(MangaRoute<void>(builder: (_) => TeiichiGamePage(run: run)));
 
-/// A recorded 定位置 game, tab by tab: its overview, the cards asked for
-/// replayed on the layout, the placing, and every tap.
+/// A recorded 定位置 game, tab by tab: its overview, the calls replayed on
+/// the layout, the placing, and every tap. Its header names the setup,
+/// with the からふだ it called.
 class TeiichiGamePage extends StatelessWidget {
   const TeiichiGamePage({super.key, required this.run});
   final SideTripRun run;
@@ -51,7 +52,7 @@ class TeiichiGamePage extends StatelessWidget {
     final game = review.game;
     const trip = SideTrip.teiichi;
     final kind = teiichiKindLabel(s, custom: game.custom);
-    final setup = s.teiichiSetupLine(game.setup.cards, game.setup.rows);
+    final setup = teiichiSetupText(s, game.setup);
     return RunPageFrame(
       title: s.tripName(trip),
       sub: [s.other.tripName(trip), kind, s.sessionDate(run.startedAt), setup].join(' · '),
@@ -91,7 +92,7 @@ class _FieldTab extends StatelessWidget {
   }
 }
 
-/// The Taps: 暗記練's table of every card asked ([AnkirenTapsTab]).
+/// The Taps: 暗記練's table of every call ([AnkirenTapsTab]).
 class _TapsTab extends StatelessWidget {
   const _TapsTab(this.review);
   final TeiichiReview review;

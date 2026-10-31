@@ -6,6 +6,7 @@ import '../../domain/ankiren_review.dart';
 import '../../domain/side_trips.dart';
 import '../../l10n/ankiren_review_strings.dart';
 import '../../l10n/history_strings.dart';
+import '../../l10n/karafuda_strings.dart';
 import '../../l10n/run_strings.dart';
 import '../../l10n/side_trip_strings.dart';
 import '../../l10n/strings.dart';
@@ -25,7 +26,8 @@ Future<void> openAnkirenGame(BuildContext context, SideTripRun run) =>
     Navigator.of(context).push(MangaRoute<void>(builder: (_) => AnkirenGamePage(run: run)));
 
 /// A recorded 暗記練 game, tab by tab: a ranked game's overview, field,
-/// cards, score and taps; any other game's overview, field and taps.
+/// cards, score and taps; any other game's overview, field and taps. Its
+/// header names the setup, with the からふだ it called.
 class AnkirenGamePage extends StatelessWidget {
   const AnkirenGamePage({super.key, required this.run});
   final SideTripRun run;
@@ -56,12 +58,12 @@ class AnkirenGamePage extends StatelessWidget {
     );
     final tabs = review.game.scored ? scoredTabs : unscoredTabs;
     final kind = ankirenKindLabel(s, ranked: run.ranked, level: run.level);
+    final karafuda = review.game.karafuda.length;
+    final setup = [s.ankirenASide(review.game.perSide), if (karafuda > 0) s.karafudaCount(karafuda)];
     return RunPageFrame(
       title: s.tripName(SideTrip.ankiren),
-      sub: [s.other.tripName(SideTrip.ankiren), kind, s.sessionDate(run.startedAt), s.ankirenASide(review.game.perSide)]
-          .join(' · '),
-      shortSub: [s.other.tripName(SideTrip.ankiren), kind, s.sessionDay(run.startedAt), s.ankirenASide(review.game.perSide)]
-          .join(' · '),
+      sub: [s.other.tripName(SideTrip.ankiren), kind, s.sessionDate(run.startedAt), ...setup].join(' · '),
+      shortSub: [s.other.tripName(SideTrip.ankiren), kind, s.sessionDay(run.startedAt), ...setup].join(' · '),
       body: RunPageTabs(tabs: [for (final tab in tabs) tab.swipeTab(s, review, HistoryLooks.ankiren)]),
     );
   }

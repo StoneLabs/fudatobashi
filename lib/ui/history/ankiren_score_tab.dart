@@ -4,6 +4,7 @@ import '../../config/config.dart';
 import '../../config/design.dart';
 import '../../domain/ankiren_review.dart';
 import '../../l10n/ankiren_review_strings.dart';
+import '../../l10n/karafuda_strings.dart';
 import '../../l10n/ranked_strings.dart';
 import '../../l10n/review_strings.dart';
 import '../../l10n/strings.dart';
@@ -90,7 +91,8 @@ class _ScoreSum extends StatelessWidget {
   }
 }
 
-/// The card points part by part, and their total.
+/// The card points part by part, the からふだ's apart when the game called
+/// any, and their total over every call.
 class _ScoreParts extends StatelessWidget {
   const _ScoreParts(this.review);
   final AnkirenReview review;
@@ -110,9 +112,10 @@ class _ScoreParts extends StatelessWidget {
           part(s.ankirenPartSpeed(AnkirenTuning.speedMax), review.speed),
           part(s.ankirenPartNear, review.nearFirst),
           part(s.ankirenPartSecond(shareText(AnkirenTuning.tapWeights.last)), review.secondTaps),
+          if (game.karafuda.isNotEmpty) part(s.karafudaPart, review.karafuda),
           ReviewRow([
             ReviewTable.cell(s.ankirenRowCardPoints, strong: true),
-            ReviewTable.cell('${game.cards.length}', strong: true),
+            ReviewTable.cell('${game.calls.length}', strong: true),
             ReviewTable.cell('${game.recall}', strong: true),
           ], total: true),
         ],

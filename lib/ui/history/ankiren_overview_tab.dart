@@ -10,6 +10,7 @@ import '../../l10n/ankiren_review_strings.dart';
 import '../../l10n/ankiren_strings.dart';
 import '../../l10n/history_strings.dart';
 import '../../l10n/home_strings.dart';
+import '../../l10n/karafuda_strings.dart';
 import '../../l10n/ranked_strings.dart';
 import '../../l10n/review_strings.dart';
 import '../../l10n/stats_strings.dart';
@@ -20,12 +21,15 @@ import '../play/time_format.dart';
 import '../results/run_summary.dart';
 import 'ankiren_widgets.dart';
 import 'history_widgets.dart';
+import 'karafuda_panel.dart';
 import 'review_parts.dart';
 
 /// A 暗記練 game's Overview, its summary reopened: a hero (a ranked game's
 /// points, any other game's right first taps), three tiles, where the first
-/// taps landed, then down to the floor the memorise time (ranked) or the
-/// game against the last one with the same setup.
+/// taps landed, how its からふだ went when it called any, then down to the
+/// floor the memorise time (ranked) or the game against the last one with
+/// the same setup. The tiles and the first taps count the field's cards
+/// alone, as the results do.
 class AnkirenOverviewTab extends StatelessWidget {
   const AnkirenOverviewTab(this.review, {super.key});
   final AnkirenReview review;
@@ -42,6 +46,7 @@ class AnkirenOverviewTab extends StatelessWidget {
         ReviewHero(overview.hero(), metrics: ReviewHeroLayout.ankirenMetrics),
         TileBand(overview.tiles(), spec: ReviewTileLayout.spec, minHeight: ReviewLayout.tileHeight),
         _FirstTapMix(review),
+        if (game.karafuda.isNotEmpty) KarafudaPanel(game),
       ],
     );
   }
@@ -63,10 +68,12 @@ class _Overview {
       ? [_firstTapTile(), _ratingTile(), xpTile(s, review.xp)]
       : [_foundTile(), _medianTile(), if (game.custom) _strikesTile() else xpTile(s, review.xp)];
 
-  /// A ranked game: its points, the bar the card points and what being
-  /// ready early added; a best stamped with the best before.
+  /// A ranked game: its points, the bar the card points (the finds' and
+  /// the からふだ's apart, when it called any) and what being ready early
+  /// added; a best stamped with the best before.
   SummaryHero _points() {
     final score = game.score!, recall = game.recall, early = score - recall;
+    final karafuda = game.karafuda.isEmpty ? null : review.karafuda.points;
     final best = review.bestBefore;
     final stamp = review.isBest && best != null
         ? RunStamp(s.ankirenBestRankedStamp, sub: s.reviewUpFrom(best.score!), fontSize: RunStampStyle.heroFont)
@@ -78,17 +85,25 @@ class _Overview {
           top: ReviewHeroLayout.pointsTop,
           size: ReviewHeroLayout.pointsFont),
       bar: [
-        BarPart(Palette.land, recall, done: true),
-        BarPart(Palette.sun, early, done: true),
+        BarPart(Palette.land, recall - (karafuda ?? 0), done: true),
+        if (karafuda != null) BarPart(KarafudaStyle.bar, karafuda, done: true),
+        // Without an early part, the からふだ's label may run on past theirs.
+        if (karafuda == null || early > 0) BarPart(Palette.sun, early, done: true),
         BarPart(Palette.paper, math.max(0, (game.maxScore ?? score) - score)),
       ],
-      labels: [
-        BarLabel(
-            early > 0
-                ? s.reviewPointsMade(groupDigits(recall), groupDigits(early))
-                : s.reviewCardPoints(groupDigits(recall)),
-            runOn: true),
-      ],
+      labels: karafuda == null
+          ? [
+              BarLabel(
+                  early > 0
+                      ? s.reviewPointsMade(groupDigits(recall), groupDigits(early))
+                      : s.reviewCardPoints(groupDigits(recall)),
+                  runOn: true),
+            ]
+          : [
+              BarLabel(s.summaryFinds(groupDigits(recall - karafuda))),
+              if (karafuda > 0) BarLabel(s.karafudaPoints(groupDigits(karafuda)), part: 1),
+              if (early > 0) BarLabel(s.summaryEarly(groupDigits(early)), part: 2),
+            ],
       fallbackLabels: [BarLabel(s.reviewCardPoints(groupDigits(recall)))],
       pose: stamp == null ? TobiPose.relaxed : TobiPose.cheering,
       stamp: stamp,
@@ -274,7 +289,8 @@ class _MemoriseTime extends StatelessWidget {
 }
 
 /// A game without points against the last one with the same setup, or on
-/// its own when it is the first.
+/// its own when it is the first; its からふだ answered first among them when
+/// it called any.
 class _SameSetup extends StatelessWidget {
   const _SameSetup(this.review);
   final AnkirenReview review;
@@ -317,6 +333,12 @@ class _SameSetup extends StatelessWidget {
                 padding: const EdgeInsets.only(left: ReviewTableStyle.noteGap),
                 child: ReviewTable.cell(s.ankirenSetupFirst)),
           ]),
+          if (game.karafuda.isNotEmpty)
+            ReviewRow([
+              ReviewTable.cell(s.karafudaRowFirstTap, strong: true),
+              ReviewTable.cell(_karafuda(game)),
+              const SizedBox(),
+            ]),
           ReviewRow([
             ReviewTable.cell(s.ankirenRowMedian, strong: true),
             ReviewTable.cell(time(now)),
@@ -354,6 +376,7 @@ class _SameSetup extends StatelessWidget {
                   ? s.ankirenFewerFirst(-more)
                   : s.ankirenSame),
         ]),
+        if (game.karafuda.isNotEmpty) _karafudaRow(s, game, last, good: good, note: note),
         ReviewRow([
           ReviewTable.cell(s.ankirenRowMedian, strong: true),
           good(time(now), (faster ?? 0) > 0),
@@ -373,5 +396,24 @@ class _SameSetup extends StatelessWidget {
         ]),
       ],
     );
+  }
+
+  /// [game]'s からふだ answered with the first press, of those called.
+  static String _karafuda(AnkirenGameRecord game) => '${game.karafudaTally.right}/${game.karafudaTally.called}';
+
+  /// [game]'s からふだ answered first against [last]'s.
+  static ReviewRow _karafudaRow(S s, AnkirenGameRecord game, AnkirenGameRecord last,
+      {required Widget Function(String text, bool better) good, required Widget Function(String text) note}) {
+    final more = game.karafudaTally.right - last.karafudaTally.right;
+    return ReviewRow([
+      ReviewTable.cell(s.karafudaRowFirstTap, strong: true),
+      good(_karafuda(game), more > 0),
+      ReviewTable.cell(_karafuda(last)),
+      note(more > 0
+          ? s.ankirenMoreFirst(more)
+          : more < 0
+              ? s.ankirenFewerFirst(-more)
+              : s.ankirenSame),
+    ]);
   }
 }

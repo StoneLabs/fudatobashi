@@ -17,18 +17,45 @@ extension KarafudaStrings on S {
   String get karafudaStepper => t('karafudaStepper');
   String get karafudaOff => t('karafudaOff');
 
-  /// How many a game called, in a summary's header.
+  /// How many a game called, in a game page's header.
   String karafudaCount(int n) => f('karafudaCount', [n]);
 
-  /// How a game's からふだ went: right first out of those called, the cards
-  /// tapped on them, and the presses of the button on the cards' calls.
+  /// How a game's からふだ went: right first out of those called.
   String karafudaRightOf(int right, int called) => f('karafudaRightOf', [right, called]);
-  String karafudaTouched(int n) => f(countKey('karafudaTouched', n), [n]);
-  String karafudaPressedOnCards(int n) => f(countKey('karafudaPressedOnCards', n), [n]);
 
   /// A score bar's からふだ part, in points, and the same in a note.
   String karafudaPoints(String points) => f('karafudaPoints', [points]);
   String karafudaPointsNote(String points) => f('karafudaPointsNote', [points]);
+
+  /// History's からふだ panel: how many were called, its rows and caption.
+  String karafudaCalled(int n) => f('karafudaCalled', [n]);
+  String get karafudaRowRightFirst => t('karafudaRowRightFirst');
+  String get karafudaRowLate => t('karafudaRowLate');
+  String get karafudaRowMissed => t('karafudaRowMissed');
+  String get karafudaRowTouched => t('karafudaRowTouched');
+  String get karafudaRowPressedOnCards => t('karafudaRowPressedOnCards');
+  String get karafudaRowMedian => t('karafudaRowMedian');
+
+  /// The same-setup table's row of the からふだ answered first.
+  String get karafudaRowFirstTap => t('karafudaRowFirstTap');
+  String get karafudaCaption => t('karafudaCaption');
+
+  /// The Field's review, stepping through a game with からふだ call by
+  /// call: a card's step, a からふだ's, and how a からふだ went.
+  String karafudaStepCall(int step, int of, String kimariji) => f('karafudaStepCall', [step, of, kimariji]);
+  String karafudaStepKarafuda(int step, int of, String kimariji) => f('karafudaStepKarafuda', [step, of, kimariji]);
+  String karafudaPressedIn(String seconds) => f('karafudaPressedIn', [seconds]);
+  String karafudaShownPressed(String seconds) => f('karafudaShownPressed', [seconds]);
+  String get karafudaNotPressed => t('karafudaNotPressed');
+  String karafudaOffField(String kimariji) => f('karafudaOffField', [kimariji]);
+
+  /// Where a tap landed: the からふだ button, or a card on a からふだ call.
+  String get karafudaChip => t('karafudaChip');
+  String get karafudaChipCard => t('karafudaChipCard');
+
+  /// The Taps table's note for a game with からふだ, and the Score's part.
+  String karafudaTapsNote(int calls, int karafuda) => f('karafudaTapsNote', [calls, karafuda]);
+  String get karafudaPart => t('karafudaPart');
 
   /// 定位置's wrong taps on [cards] field cards' calls and [karafuda] からふだ
   /// calls.

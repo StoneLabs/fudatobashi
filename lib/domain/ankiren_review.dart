@@ -169,6 +169,10 @@ class AnkirenGameRecord {
   /// The median find time of the field cards found with a valid time, ms.
   double? get medianFindMs => AnkirenReview.median([for (final c in cards) ?c.findMs]);
 
+  /// The median time to press the からふだ button on the からふだ pressed
+  /// with a valid time, ms: kept out of [medianFindMs].
+  double? get medianPressMs => AnkirenReview.median([for (final c in karafuda) ?c.findMs]);
+
   /// The points of every call, out of [maxRecall], and their share.
   int get recall => calls.fold(0, (sum, c) => sum + c.points);
 

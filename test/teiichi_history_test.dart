@@ -4,6 +4,7 @@
 // tab by tab, in English and Japanese. With RENDER_SCREENS=1 it also
 // writes PNGs to build/screens/teiichi_history/.
 import 'dart:io';
+import 'dart:math';
 
 import 'package:drift/drift.dart' show driftRuntimeOptions;
 import 'package:drift/native.dart';
@@ -18,6 +19,8 @@ import 'package:fudatobashi/data/islands.dart';
 import 'package:fudatobashi/data/poem.dart';
 import 'package:fudatobashi/db/database.dart';
 import 'package:fudatobashi/domain/ankiren_field.dart';
+import 'package:fudatobashi/domain/ankiren_review.dart';
+import 'package:fudatobashi/domain/karafuda.dart';
 import 'package:fudatobashi/domain/side_trips.dart';
 import 'package:fudatobashi/domain/teiichi.dart';
 import 'package:fudatobashi/domain/teiichi_review.dart';
@@ -25,6 +28,7 @@ import 'package:fudatobashi/domain/trainer.dart';
 import 'package:fudatobashi/l10n/ankiren_review_strings.dart';
 import 'package:fudatobashi/l10n/ankiren_strings.dart';
 import 'package:fudatobashi/l10n/history_strings.dart';
+import 'package:fudatobashi/l10n/karafuda_strings.dart';
 import 'package:fudatobashi/l10n/results_strings.dart';
 import 'package:fudatobashi/l10n/strings.dart';
 import 'package:fudatobashi/l10n/teiichi_review_strings.dart';
@@ -34,6 +38,7 @@ import 'package:fudatobashi/state/progress.dart';
 import 'package:fudatobashi/state/scope.dart';
 import 'package:fudatobashi/ui/history/history_screen.dart';
 import 'package:fudatobashi/ui/history/history_widgets.dart';
+import 'package:fudatobashi/ui/history/karafuda_panel.dart';
 import 'package:fudatobashi/ui/history/teiichi_game_page.dart';
 import 'package:fudatobashi/ui/manga/manga.dart';
 import 'package:fudatobashi/ui/play/time_format.dart';
@@ -89,7 +94,8 @@ void main() {
   /// An all-known player in [language] with five 定位置 games, oldest first:
   /// two usual games yesterday, the second the faster; today a custom game
   /// of 12 cards in 2 rows, a usual game ended early, and a usual game
-  /// slower than the best. With [games] false, none.
+  /// slower than the best; none calls からふだ, as before they were called.
+  /// With [games] false, none.
   Future<Progress> open(WidgetTester tester, {String language = 'en', bool games = true}) async {
     late Progress p;
     await tester.runAsync(() async {
@@ -159,7 +165,8 @@ void main() {
       expect(all, hasLength(5));
 
       final first = all.first;
-      expect(first.setup, TeiichiSetup.usual);
+      expect(first.setup, const TeiichiSetup(cards: TeiichiTuning.cards, rows: TeiichiTuning.rows));
+      expect(first.custom, isFalse, reason: 'the usual game from before からふだ');
       expect(first.layout.cards.toSet(), _deck(TeiichiTuning.cards, 0).toSet());
       expect([for (final c in first.placed) c.poemId], _deck(TeiichiTuning.cards, 0), reason: 'in the order placed');
       expect(first.placed[1].time, Duration(milliseconds: _times(2400)(1)));
@@ -304,6 +311,60 @@ void main() {
           await captureScreen(tester, 'teiichi_history/game_tall', lang: lang, variant: name);
         }
         expect(find.text(s.teiichiNotCounted), findsOneWidget, reason: 'a game ended early does not count');
+        await tester.pumpWidget(const SizedBox());
+        await tester.runAsync(() => p.db.close());
+      });
+
+      testWidgets('a game with からふだ: counted apart, named in the review and the taps', (tester) async {
+        final p = await open(tester, language: lang);
+        await tester.runAsync(() async {
+          const setup = TeiichiSetup.usual;
+          final deck = _deck(setup.cards, 11);
+          final known = [for (final poem in poems.all) poem.id];
+          final karafuda = KarafudaPicker.ofPoems.pick(deck, known, setup.karafuda, Random(3));
+          final played = playTeiichi(setup,
+              deck: deck, placeMsOf: _times(1700), wrongAt: {4}, karafuda: karafuda, karafudaWrongAt: {1, 6});
+          await p.recordTeiichi(played.placing, played.game, startedAt: p.dayAt().date.add(const Duration(hours: 14)));
+        });
+        final run = p.sideTrips.runsOf(SideTrip.teiichi).last;
+        final game = p.sideTrips.teiichiRecordOf(run);
+        expect(game.setup, TeiichiSetup.usual);
+        expect(game.custom, isFalse);
+        expect(game.recall.cards, hasLength(TeiichiTuning.cards));
+        expect(game.recall.karafuda, hasLength(TeiichiTuning.karafuda));
+        expect(game.wrongTaps, 3, reason: 'the からふだ calls\' among them');
+        expect(game.wrongCards, 1);
+        expect(game.recall.medianFindMs, AnkirenReview.median([for (final c in game.recall.cards) ?c.findMs]));
+
+        await show(tester, p, TeiichiGamePage(run: run), screen: _tallPhone);
+        expect(find.text(s.karafudaCalled(TeiichiTuning.karafuda)), findsOneWidget);
+        expect(find.text(s.karafudaRowFirstTap), findsOneWidget, reason: 'against the same setup');
+        expect(find.text(s.teiichiWrongOnKarafuda(1, 2)), findsOneWidget, reason: 'as the results say it');
+        expect(find.byType(KarafudaPanel), findsOneWidget);
+        await captureScreen(tester, 'karafuda/teiichi_history', lang: lang, variant: 'overview');
+        Future<void> next() async {
+          await tester.fling(find.byType(PageView), const Offset(-300, 0), 1000);
+          await tester.pumpAndSettle();
+          expect(tester.takeException(), isNull);
+        }
+
+        await next();
+        final step = game.recall.calls.indexWhere((c) => c.karafuda && c.wrongTaps > 0);
+        await tester.tap(find.text(s.ankirenStartReview.toUpperCase()));
+        await tester.pumpAndSettle();
+        for (var i = 0; i < step; i++) {
+          await tester.tap(find.bySemanticsLabel(s.ankirenStepNext));
+          await tester.pump();
+        }
+        await tester.pumpAndSettle();
+        final name = kimarijiFor(tester.element(find.byType(TeiichiGamePage)), game.recall.calls[step].poemId);
+        expect(find.text(s.karafudaStepKarafuda(step + 1, game.recall.calls.length, name)), findsOneWidget);
+        expect(find.text(s.karafudaOffField(name)), findsOneWidget);
+        await captureScreen(tester, 'karafuda/teiichi_history', lang: lang, variant: 'field_review');
+        await next();
+        await next();
+        expect(find.text(s.karafudaCaption), findsOneWidget);
+        await captureScreen(tester, 'karafuda/teiichi_history', lang: lang, variant: 'taps');
         await tester.pumpWidget(const SizedBox());
         await tester.runAsync(() => p.db.close());
       });

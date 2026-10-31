@@ -11,6 +11,7 @@ import '../../domain/ankiren_geometry.dart';
 import '../../domain/ankiren_review.dart';
 import '../../domain/ankiren_tomofuda.dart';
 import '../../l10n/ankiren_review_strings.dart';
+import '../../l10n/karafuda_strings.dart';
 import '../../l10n/strings.dart';
 import '../ankiren/ankiren_field_view.dart';
 import '../manga/geometry.dart';
@@ -53,8 +54,9 @@ class AnkirenFieldTab extends StatelessWidget {
 
 /// A recorded game's field as dealt ([deal]), each card coloured by where
 /// its first tap landed; then, once the review starts (or a card is
-/// tapped), stepped through card by card with the unrelated cards dimmed
-/// and arrows from the cards each wrong tap hit; then [tiles]. With
+/// tapped), stepped through call by call with the unrelated cards dimmed
+/// and arrows from the cards each wrong tap hit (a からふだ call, off the
+/// field, only numbers the cards tapped on it); then [tiles]. With
 /// [trueSlots] the field is the own side alone at true scale, as 定位置
 /// lays it out (see [ReviewField]).
 class FieldReplay extends StatefulWidget {
@@ -73,7 +75,7 @@ class FieldReplay extends StatefulWidget {
 class _FieldReplayState extends State<FieldReplay> {
   static final _tomofuda = AnkirenTomofuda(poems);
 
-  /// The card being reviewed; null before the review starts, and after
+  /// The call being reviewed; null before the review starts, and after
   /// Show all, when the whole field shows as dealt.
   int? _step;
 
@@ -95,7 +97,7 @@ class _FieldReplayState extends State<FieldReplay> {
       ]);
     }
     final step = _step;
-    final card = step == null ? null : game.cards[step];
+    final card = step == null ? null : game.calls[step];
     final firstHit = card?.tapped.firstOrNull;
     final lookAlike = card != null && firstHit != null && _tomofuda.of(card.poemId).contains(firstHit);
     return ReviewColumn(children: [
@@ -111,7 +113,7 @@ class _FieldReplayState extends State<FieldReplay> {
             step: step,
             trueSlots: widget.trueSlots,
             onPick: (id) {
-              final picked = game.cards.indexWhere((c) => c.poemId == id);
+              final picked = game.calls.indexWhere((c) => c.poemId == id);
               if (picked >= 0) _goTo(picked);
             },
           ),
@@ -129,11 +131,13 @@ class _FieldReplayState extends State<FieldReplay> {
       else
         ReviewSlab(
           child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-            _Stepper(step: step, count: game.cards.length, card: card, onGo: _goTo),
+            _Stepper(
+                step: step, count: game.calls.length, card: card, calls: game.karafuda.isNotEmpty, onGo: _goTo),
             const SizedBox(height: Gaps.small),
             Center(child: _ShowAll(onTap: () => _goTo(null))),
           ]),
         ),
+      if (card != null && card.karafuda) ReviewCaption(s.karafudaOffField(kimarijiFor(context, card.poemId))),
       if (lookAlike)
         ReviewCaption(s.ankirenLookAlike(kimarijiFor(context, card.poemId), kimarijiFor(context, firstHit))),
       if (widget.tiles.isNotEmpty)
@@ -143,9 +147,9 @@ class _FieldReplayState extends State<FieldReplay> {
 }
 
 /// The dealt field, every card in its first tap's colour. In a [step],
-/// its card is outlined, its taps numbered with arrows from the wrong
-/// ones, and every card it did not touch dimmed. Tapping a card picks it
-/// ([onPick]).
+/// its call's card is outlined, its taps numbered with arrows from the
+/// wrong ones, and every card it did not touch dimmed. Tapping a card picks
+/// its call ([onPick]).
 class _ReplayedField extends StatelessWidget {
   const _ReplayedField(
       {required this.deal, required this.game, required this.step, required this.trueSlots, required this.onPick});
@@ -159,7 +163,7 @@ class _ReplayedField extends StatelessWidget {
   Widget build(BuildContext context) {
     final s = S.of(context);
     final tiers = {for (final c in game.cards) c.poemId: c.first};
-    final card = step == null ? null : game.cards[step!];
+    final card = step == null ? null : game.calls[step!];
     final related = card == null ? null : {card.poemId, ...card.tapped};
     return ReviewField(
       field: deal,
@@ -328,7 +332,8 @@ class _Band extends StatelessWidget {
 /// [card]'s taps across the field: an arrow from each wrong card it hit
 /// to the card itself, bowed toward the field's middle, solid for the first
 /// tap and dashed after, then a numbered badge on every card it hit, in
-/// order, over the arrows.
+/// order, over the arrows. A からふだ call has no card on the field to
+/// point to: only its badges show.
 class _TapArrows extends CustomPainter {
   _TapArrows(this.placement, this.card);
   final FieldPlacement placement;
@@ -337,7 +342,19 @@ class _TapArrows extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
     final target = placement.cardRect(card.poemId);
-    if (target == null) return;
+    if (target != null) _arrows(canvas, size, target);
+    final onCard = <int, int>{};
+    for (final (i, id) in card.tapped.indexed) {
+      final rect = placement.cardRect(id);
+      if (rect == null) continue;
+      final before = onCard.update(id, (n) => n + 1, ifAbsent: () => 0);
+      const r = AnkirenReviewStyle.marker / 2;
+      _TapBadge.draw(canvas, rect.topRight + Offset(-r - before * AnkirenReviewStyle.marker, r), i + 1,
+          size: AnkirenReviewStyle.marker);
+    }
+  }
+
+  void _arrows(Canvas canvas, Size size, Rect target) {
     final line = Paint()
       ..color = AnkirenReviewStyle.arrow
       ..style = PaintingStyle.stroke
@@ -368,15 +385,6 @@ class _TapArrows extends CustomPainter {
           ..lineTo(to.dx + head * math.cos(back - spread), to.dy + head * math.sin(back - spread)),
         line,
       );
-    }
-    final onCard = <int, int>{};
-    for (final (i, id) in card.tapped.indexed) {
-      final rect = placement.cardRect(id);
-      if (rect == null) continue;
-      final before = onCard.update(id, (n) => n + 1, ifAbsent: () => 0);
-      const r = AnkirenReviewStyle.marker / 2;
-      _TapBadge.draw(canvas, rect.topRight + Offset(-r - before * AnkirenReviewStyle.marker, r), i + 1,
-          size: AnkirenReviewStyle.marker);
     }
   }
 
@@ -463,24 +471,36 @@ class _ShowAll extends StatelessWidget {
   }
 }
 
-/// The step through the cards: back and forward, the card asked and how
-/// its taps went.
+/// The step through the cards, or with [calls] through every call, the
+/// からふだ named so: back and forward, the call and how its taps went.
 class _Stepper extends StatelessWidget {
-  const _Stepper({required this.step, required this.count, required this.card, required this.onGo});
+  const _Stepper(
+      {required this.step, required this.count, required this.card, required this.calls, required this.onGo});
   final int step, count;
   final AnkirenCardTry card;
+  final bool calls;
   final ValueChanged<int> onGo;
 
   @override
   Widget build(BuildContext context) {
     final s = S.of(context);
-    final taps = card.taps.isEmpty ? s.ankirenNoTap : [for (final t in card.taps) s.ankirenChip(t)].join(' → ');
+    final taps = card.taps.isEmpty ? s.ankirenNoTap : TierChips.text(s, card);
     final find = card.findMs;
-    final outcome = switch ((card.found, card.shown)) {
-      (false, _) => s.ankirenNotFound,
-      (true, true) => s.ankirenShownFound(find == null ? missingTime : formatSeconds(find)),
-      (true, false) => s.ankirenFoundIn(find == null ? missingTime : formatSeconds(find)),
+    final time = find == null ? missingTime : formatSeconds(find);
+    final outcome = switch ((card.found, card.shown, card.karafuda)) {
+      (false, _, false) => s.ankirenNotFound,
+      (true, true, false) => s.ankirenShownFound(time),
+      (true, false, false) => s.ankirenFoundIn(time),
+      (false, _, true) => s.karafudaNotPressed,
+      (true, true, true) => s.karafudaShownPressed(time),
+      (true, false, true) => s.karafudaPressedIn(time),
     };
+    final kimariji = kimarijiFor(context, card.poemId);
+    final title = !calls
+        ? s.ankirenStepCard(step + 1, count, kimariji)
+        : card.karafuda
+            ? s.karafudaStepKarafuda(step + 1, count, kimariji)
+            : s.karafudaStepCall(step + 1, count, kimariji);
     Widget button(VectorArt icon, String label, int to) => Opacity(
           opacity: to >= 0 && to < count ? 1 : ChartStyle.dimOpacity,
           child: InkIconButton(icon: icon, semanticLabel: label, onTap: to >= 0 && to < count ? () => onGo(to) : null),
@@ -490,7 +510,7 @@ class _Stepper extends StatelessWidget {
       const SizedBox(width: Gaps.small),
       Expanded(
         child: Column(children: [
-          Text(s.ankirenStepCard(step + 1, count, kimarijiFor(context, card.poemId)),
+          Text(title,
               textAlign: TextAlign.center,
               style: const TextStyle(fontFamily: Fonts.display, fontSize: AnkirenReviewStyle.stepFont)),
           const SizedBox(height: AnkirenReviewStyle.stepGap),

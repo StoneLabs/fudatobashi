@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 
 import '../../config/design.dart';
+import '../../domain/teiichi.dart';
 import '../../domain/teiichi_review.dart';
 import '../../l10n/ankiren_review_strings.dart';
 import '../../l10n/ankiren_strings.dart';
+import '../../l10n/karafuda_strings.dart';
 import '../../l10n/results_strings.dart';
 import '../../l10n/review_strings.dart';
 import '../../l10n/stats_strings.dart';
@@ -16,14 +18,22 @@ import '../play/time_format.dart';
 import '../results/run_summary.dart';
 import 'ankiren_widgets.dart';
 import 'history_widgets.dart';
+import 'karafuda_panel.dart';
 import 'review_parts.dart';
+
+/// [setup] in a line: its cards and rows, and its からふだ when it called any.
+String teiichiSetupText(S s, TeiichiSetup setup) => [
+      s.teiichiSetupLine(setup.cards, setup.rows),
+      if (setup.karafuda > 0) s.karafudaCount(setup.karafuda),
+    ].join(' · ');
 
 /// A 定位置 game's Overview, its results reopened: a hero of the cards
 /// found with the first tap, stamped when it ended early, was custom or set
 /// the best placing time; three tiles (the placing time against the best
 /// then, the wrong taps and the median find); the cards slowest to place;
-/// then down to the floor the game against the last one with the same
-/// setup.
+/// how its からふだ went when it called any; then down to the floor the
+/// game against the last one with the same setup. The hero and the median
+/// count the laid-out cards alone, as the results do.
 class TeiichiOverviewTab extends StatelessWidget {
   const TeiichiOverviewTab(this.review, {super.key});
   final TeiichiReview review;
@@ -38,6 +48,7 @@ class TeiichiOverviewTab extends StatelessWidget {
         ReviewHero(_hero(s), metrics: ReviewHeroLayout.ankirenMetrics),
         TileBand(_tiles(s), spec: ReviewTileLayout.spec, minHeight: ReviewLayout.tileHeight),
         if (review.game.placed.isNotEmpty) _SlowestToPlace(review.game),
+        if (review.game.recall.karafuda.isNotEmpty) KarafudaPanel(review.game.recall),
       ],
     );
   }
@@ -50,7 +61,7 @@ class TeiichiOverviewTab extends StatelessWidget {
     final late = recall.found - firstTaps;
     final missed = cards - recall.found;
     final best = review.bestBefore;
-    final setup = s.teiichiSetupLine(game.setup.cards, game.setup.rows);
+    final setup = teiichiSetupText(s, game.setup);
     final stamp = !game.completed
         ? RunStamp(s.endedEarly, sub: game.custom ? s.ankirenCustom : null, color: AnkirenReviewStyle.muted)
         : game.custom
@@ -83,6 +94,7 @@ class TeiichiOverviewTab extends StatelessWidget {
     final game = review.game;
     final best = review.bestBefore;
     final median = game.recall.medianFindMs;
+    final wrongKarafuda = game.recall.karafuda.where((c) => c.wrongTaps > 0).length;
     return [
       SummaryTile(
         label: s.teiichiPlacingLabel,
@@ -98,7 +110,11 @@ class TeiichiOverviewTab extends StatelessWidget {
       SummaryTile(
         label: s.teiichiWrongTaps,
         big: TileFigure('${game.wrongTaps}'),
-        note: game.wrongTaps == 0 ? s.summaryNone : s.teiichiWrongOn(game.wrongCards),
+        note: game.wrongTaps == 0
+            ? s.summaryNone
+            : wrongKarafuda > 0
+                ? s.teiichiWrongOnKarafuda(game.wrongCards, wrongKarafuda)
+                : s.teiichiWrongOn(game.wrongCards),
       ),
       SummaryTile(
         label: s.ankirenMedianFact.toUpperCase(),
@@ -130,7 +146,8 @@ class _SlowestToPlace extends StatelessWidget {
 }
 
 /// The game against the last one with the same setup, or on its own when
-/// it is the first.
+/// it is the first; its からふだ answered first among them when it called
+/// any.
 class _SameSetup extends StatelessWidget {
   const _SameSetup(this.review);
   final TeiichiReview review;
@@ -152,6 +169,8 @@ class _SameSetup extends StatelessWidget {
   static Widget _table(S s, TeiichiGameRecord game, TeiichiGameRecord? last) {
     String time(double? ms) => ms == null ? missingTime : '${formatSeconds(ms)}s';
     String firstTaps(TeiichiGameRecord g) => '${g.recall.firstTaps}/${g.recall.cards.length}';
+    String karafuda(TeiichiGameRecord g) => '${g.recall.karafudaTally.right}/${g.recall.karafudaTally.called}';
+    final karafudaCalled = game.recall.karafuda.isNotEmpty;
     final now = game.recall.medianFindMs;
     Widget note(String text) =>
         Padding(padding: const EdgeInsets.only(left: ReviewTableStyle.noteGap), child: ReviewTable.cell(text));
@@ -170,6 +189,12 @@ class _SameSetup extends StatelessWidget {
             ReviewTable.cell(firstTaps(game)),
             const SizedBox(),
           ]),
+          if (karafudaCalled)
+            ReviewRow([
+              ReviewTable.cell(s.karafudaRowFirstTap, strong: true),
+              ReviewTable.cell(karafuda(game)),
+              const SizedBox(),
+            ]),
           ReviewRow([
             ReviewTable.cell(s.teiichiFormWrongTaps, strong: true),
             ReviewTable.cell('${game.wrongTaps}'),
@@ -186,6 +211,7 @@ class _SameSetup extends StatelessWidget {
     final faster = (last.placing - game.placing).inMilliseconds / Duration.millisecondsPerSecond;
     final quicker = faster.round();
     final more = game.recall.firstTaps - last.recall.firstTaps;
+    final moreKarafuda = game.recall.karafudaTally.right - last.recall.karafudaTally.right;
     final fewer = last.wrongTaps - game.wrongTaps;
     final then = last.recall.medianFindMs;
     final sooner = now == null || then == null ? null : then - now;
@@ -215,6 +241,17 @@ class _SameSetup extends StatelessWidget {
                   ? s.ankirenFewerFirst(-more)
                   : s.ankirenSame),
         ]),
+        if (karafudaCalled)
+          ReviewRow([
+            ReviewTable.cell(s.karafudaRowFirstTap, strong: true),
+            good(karafuda(game), moreKarafuda > 0),
+            ReviewTable.cell(karafuda(last)),
+            note(moreKarafuda > 0
+                ? s.ankirenMoreFirst(moreKarafuda)
+                : moreKarafuda < 0
+                    ? s.ankirenFewerFirst(-moreKarafuda)
+                    : s.ankirenSame),
+          ]),
         ReviewRow([
           ReviewTable.cell(s.teiichiFormWrongTaps, strong: true),
           good('${game.wrongTaps}', fewer > 0),

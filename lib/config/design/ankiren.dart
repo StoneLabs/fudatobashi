@@ -862,11 +862,10 @@ abstract final class AnkirenRankDownMotion {
 }
 
 /// からふだ wherever a game's summary or review shows them: their part of a
-/// score bar ([bar]), the marker of their rows ([accent]), and a tap chip for
-/// the からふだ button ([chip], its text [chipText]).
+/// score bar ([bar]), the marker of their rows and panels ([accent]), and
+/// the tag naming a からふだ call in a table ([tag]).
 abstract final class KarafudaStyle {
   static const Color bar = Palette.sea;
   static const Color accent = Palette.sea;
-  static const Color chip = Palette.shallow;
-  static const Color chipText = Palette.ink;
+  static const Color tag = Palette.seaDeep;
 }
