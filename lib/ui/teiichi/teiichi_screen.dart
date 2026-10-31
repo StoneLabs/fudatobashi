@@ -9,6 +9,7 @@ import '../../config/design.dart';
 import '../../config/vector_art.dart';
 import '../../domain/ankiren_field.dart';
 import '../../domain/ankiren_game.dart';
+import '../../domain/karafuda.dart';
 import '../../domain/side_trips.dart';
 import '../../domain/teiichi.dart';
 import '../../domain/teiichi_placing.dart';
@@ -34,8 +35,10 @@ import 'teiichi_zoom.dart';
 /// side would be, and laid out one at a time ([TeiichiPlacing],
 /// [TeiichiPlacingLayer]) while the clock counts up. Done grows the field
 /// ([TeiichiZoom]), turns the cards face down, and the game goes on as
-/// 暗記練's does ([AnkirenPlay]), to its end; wrong taps only count. It ends
-/// into [TeiichiResultsScreen].
+/// 暗記練's does ([AnkirenPlay]), the setup's からふだ, drawn from the other
+/// known cards ([KarafudaPicker]), among the cards, to its end; wrong taps
+/// only count. With からふだ, the band rises from Done on, for "don't know"
+/// over the からふだ button. It ends into [TeiichiResultsScreen].
 ///
 /// The screen turns sideways for the game, or follows the phone without
 /// the auto turn (`AppSettings.teiichiAutoTurn`); either way it is laid out
@@ -254,8 +257,16 @@ class _TeiichiScreenState extends State<TeiichiScreen> with AnkirenPlay {
   double _growth() {
     final size = _field.currentContext?.size;
     if (size == null) return 1;
-    return TeiichiZoom.limit(
-        _laidField(_placing.board), AnkirenFieldView.areaIn(size), AnkirenFieldView.bandHeight(landscape: !_portrait!));
+    return TeiichiZoom.limit(_laidField(_placing.board), AnkirenFieldView.areaIn(size),
+        AnkirenFieldView.bandHeight(landscape: !_portrait!) + _bandRise(landscape: !_portrait!, zoomed: true));
+  }
+
+  /// How much higher the band reaches once Done is pressed ([zoomed]) in a
+  /// game with からふだ.
+  double _bandRise({required bool landscape, required bool zoomed}) {
+    if (!zoomed || widget.setup.karafuda == 0) return 0;
+    final tall = landscape ? TeiichiPlayLayout.karafudaBandLandscape : TeiichiPlayLayout.karafudaBandPortrait;
+    return tall - AnkirenFieldView.bandHeight(landscape: landscape);
   }
 
   /// The field while the cards are laid out: [board] on the own side.
@@ -263,7 +274,8 @@ class _TeiichiScreenState extends State<TeiichiScreen> with AnkirenPlay {
 
   void _flip() {
     if (!mounted) return;
-    setState(() => _game = _placing.recall(_rng));
+    setState(() => _game = _placing.recall(_rng,
+        karafuda: KarafudaPicker.ofPoems.pick(_placing.board.cards, widget.known, widget.setup.karafuda, _rng)));
     turnFaceDown(memorised: _placing.placingTime);
   }
 
@@ -340,7 +352,9 @@ class _TeiichiScreenState extends State<TeiichiScreen> with AnkirenPlay {
               dimmed: !allPlaced,
               onTap: allPlaced ? _done : null,
             )
-          : dontKnowButton(),
+          : game.karafuda.isEmpty
+              ? dontKnowButton()
+              : StackedControls(top: dontKnowButton(), bottom: karafudaButton()),
     );
     final shownBoard = _shownBoard;
     return PopScope(
@@ -355,6 +369,7 @@ class _TeiichiScreenState extends State<TeiichiScreen> with AnkirenPlay {
           zoom: false,
           trueSlots: TeiichiTuning.rowSlots,
           roomAbove: TeiichiPlayLayout.roomAbove,
+          bandRise: _bandRise(landscape: landscape, zoomed: _zoomed),
           move: _zoomed ? null : (stillMotion ? Duration.zero : TeiichiPlayLayout.move),
           growth: const FieldGrowth(
               limit: TeiichiZoom.limit, duration: TeiichiPlayLayout.zoomTime, curve: TeiichiPlayLayout.zoomCurve),

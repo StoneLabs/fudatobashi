@@ -19,10 +19,8 @@ class CardFlash {
 }
 
 /// One 暗記練 field card: the torifuda face up ([inverted] turns it 180°),
-/// or a plain back face down, turning over whenever [faceUp] changes. A new
-/// [flash] plays on it: a right tap's glow, or a wrong one's red tint and
-/// shake. While [revealed] it rumbles in place (a steady outline under
-/// reduced motion, which also drops the turn and the shake).
+/// or a plain back face down, turning over whenever [faceUp] changes, with
+/// its [flash] and [revealed] shown on it as [TapFeedback] shows them.
 class AnkirenCard extends StatefulWidget {
   const AnkirenCard({
     super.key,
@@ -45,17 +43,75 @@ class AnkirenCard extends StatefulWidget {
   State<AnkirenCard> createState() => _AnkirenCardState();
 }
 
-class _AnkirenCardState extends State<AnkirenCard> with TickerProviderStateMixin {
+class _AnkirenCardState extends State<AnkirenCard> with SingleTickerProviderStateMixin {
   late final _turn = AnimationController(vsync: this, duration: AnkirenMotion.flip, value: 1);
-  late final _flash = AnimationController(vsync: this, value: 1);
 
   @override
   void didUpdateWidget(AnkirenCard old) {
     super.didUpdateWidget(old);
-    final still = MediaQuery.disableAnimationsOf(context);
     if (old.faceUp != widget.faceUp) {
-      still ? _turn.value = 1 : _turn.forward(from: 0);
+      MediaQuery.disableAnimationsOf(context) ? _turn.value = 1 : _turn.forward(from: 0);
     }
+  }
+
+  @override
+  void dispose() {
+    _turn.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final face = TorifudaCard(poem: poems[widget.poemId], inverted: widget.inverted, showNumber: widget.showNumber);
+    const back = DecoratedBox(
+      decoration: BoxDecoration(
+        color: AnkirenPlayLayout.backFill,
+        border: Border.fromBorderSide(
+            BorderSide(color: AnkirenPlayLayout.backBorder, width: AnkirenPlayLayout.backBorderWidth)),
+      ),
+    );
+    return TapFeedback(
+      flash: widget.flash,
+      revealed: widget.revealed,
+      child: AnimatedBuilder(
+        animation: _turn,
+        builder: (context, _) {
+          // The first half of the turn narrows the side that was showing, the
+          // second widens the new one.
+          final t = _turn.value;
+          final showingUp = t < 0.5 ? !widget.faceUp : widget.faceUp;
+          return Transform(
+            alignment: Alignment.center,
+            transform: Matrix4.diagonal3Values((t - 0.5).abs() * 2, 1, 1),
+            child: showingUp ? face : back,
+          );
+        },
+      ),
+    );
+  }
+}
+
+/// What a tap did, on what was tapped ([child]: a field card, or the
+/// からふだ button): a new [flash] plays a right tap's glow, or a wrong one's
+/// red tint and shake; while [revealed] it rumbles in place (a steady
+/// outline under reduced motion, which also drops the shake).
+class TapFeedback extends StatefulWidget {
+  const TapFeedback({super.key, required this.child, this.flash, this.revealed = false});
+
+  final Widget child;
+  final CardFlash? flash;
+  final bool revealed;
+
+  @override
+  State<TapFeedback> createState() => _TapFeedbackState();
+}
+
+class _TapFeedbackState extends State<TapFeedback> with SingleTickerProviderStateMixin {
+  late final _flash = AnimationController(vsync: this, value: 1);
+
+  @override
+  void didUpdateWidget(TapFeedback old) {
+    super.didUpdateWidget(old);
     final flash = widget.flash;
     if (flash != null && flash.serial != old.flash?.serial) {
       _flash.duration = flash.kind == CardFeedback.right ? AnkirenMotion.rightGlow : AnkirenMotion.wrongFlash;
@@ -65,7 +121,6 @@ class _AnkirenCardState extends State<AnkirenCard> with TickerProviderStateMixin
 
   @override
   void dispose() {
-    _turn.dispose();
     _flash.dispose();
     super.dispose();
   }
@@ -73,22 +128,10 @@ class _AnkirenCardState extends State<AnkirenCard> with TickerProviderStateMixin
   @override
   Widget build(BuildContext context) {
     final still = MediaQuery.disableAnimationsOf(context);
-    final face = TorifudaCard(poem: poems[widget.poemId], inverted: widget.inverted, showNumber: widget.showNumber);
-    const back = DecoratedBox(
-      decoration: BoxDecoration(
-        color: AnkirenPlayLayout.backFill,
-        border: Border.fromBorderSide(
-            BorderSide(color: AnkirenPlayLayout.backBorder, width: AnkirenPlayLayout.backBorderWidth)),
-      ),
-    );
-    Widget card = AnimatedBuilder(
-      animation: Listenable.merge([_turn, _flash]),
-      builder: (context, _) {
-        // The first half of the turn narrows the side that was showing, the
-        // second widens the new one.
-        final t = _turn.value;
-        final showingUp = t < 0.5 ? !widget.faceUp : widget.faceUp;
-        final width = (t - 0.5).abs() * 2;
+    Widget shown = AnimatedBuilder(
+      animation: _flash,
+      child: widget.child,
+      builder: (context, child) {
         final f = _flash.value;
         final kind = widget.flash?.kind;
         final fading = f < 1 ? 1 - f : 0.0;
@@ -97,14 +140,15 @@ class _AnkirenCardState extends State<AnkirenCard> with TickerProviderStateMixin
             : 0.0;
         return Transform.translate(
           offset: Offset(shake, 0),
-          child: Stack(fit: StackFit.expand, children: [
-            Transform(
-              alignment: Alignment.center,
-              transform: Matrix4.diagonal3Values(width, 1, 1),
-              child: showingUp ? face : back,
-            ),
+          child: Stack(fit: StackFit.passthrough, children: [
+            child!,
             if (fading > 0 && kind == CardFeedback.wrong) ...[
-              ColoredBox(color: AnkirenPlayLayout.wrongTint.withValues(alpha: AnkirenPlayLayout.wrongTintOpacity * fading)),
+              Positioned.fill(
+                child: IgnorePointer(
+                  child: ColoredBox(
+                      color: AnkirenPlayLayout.wrongTint.withValues(alpha: AnkirenPlayLayout.wrongTintOpacity * fading)),
+                ),
+              ),
               _Outline(AnkirenPlayLayout.wrongTint.withValues(alpha: fading)),
             ],
             if (fading > 0 && kind == CardFeedback.right)
@@ -115,26 +159,30 @@ class _AnkirenCardState extends State<AnkirenCard> with TickerProviderStateMixin
       },
     );
     if (widget.revealed && !still) {
-      card = Shake(
+      shown = Shake(
         reach: AnkirenMotion.revealShakeReach,
         step: AnkirenMotion.revealShakeStep,
         seed: AnkirenMotion.revealShakeSeed,
-        child: card,
+        child: shown,
       );
     }
-    return RepaintBoundary(child: card);
+    return RepaintBoundary(child: shown);
   }
 }
 
-/// A coloured outline over a card.
+/// A coloured outline over a card, in its [Stack].
 class _Outline extends StatelessWidget {
   const _Outline(this.color);
   final Color color;
 
   @override
-  Widget build(BuildContext context) => DecoratedBox(
-        decoration: BoxDecoration(
-          border: Border.fromBorderSide(BorderSide(color: color, width: AnkirenPlayLayout.glowWidth)),
+  Widget build(BuildContext context) => Positioned.fill(
+        child: IgnorePointer(
+          child: DecoratedBox(
+            decoration: BoxDecoration(
+              border: Border.fromBorderSide(BorderSide(color: color, width: AnkirenPlayLayout.glowWidth)),
+            ),
+          ),
         ),
       );
 }

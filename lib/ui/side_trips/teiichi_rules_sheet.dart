@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../../config/config.dart';
 import '../../config/design.dart';
 import '../../config/vector_art.dart';
+import '../../l10n/karafuda_strings.dart';
 import '../../l10n/side_trip_strings.dart';
 import '../../l10n/strings.dart';
 import '../../l10n/teiichi_strings.dart';
@@ -56,6 +57,7 @@ class TeiichiRulesSheet extends StatelessWidget {
           RuleItem(RuleMark.icon(Palette.pinkSoft, IconArt.close), s.ankirenRuleWrong, o?.ankirenRuleWrong),
           RuleItem(const RuleMark.text(Palette.sun, '$reveal'), s.ankirenRuleReveal(reveal), o?.ankirenRuleReveal(reveal)),
           RuleItem(RuleMark.icon(Palette.desk, IconArt.question), s.ankirenRuleDontKnow, o?.ankirenRuleDontKnow),
+          RuleItem(RuleMark.icon(Palette.paper, IconArt.karafuda), s.karafudaRuleTeiichi, o?.karafudaRuleTeiichi),
           RuleItem(RuleMark.icon(Palette.land, IconArt.end), s.teiichiRuleToEnd, o?.teiichiRuleToEnd),
         ]),
       ],

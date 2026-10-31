@@ -9,6 +9,7 @@ import '../../config/vector_art.dart';
 import '../../domain/ankiren_field.dart';
 import '../../domain/ankiren_game.dart';
 import '../../domain/ankiren_level.dart';
+import '../../domain/karafuda.dart';
 import '../../l10n/ankiren_strings.dart';
 import '../../l10n/strings.dart';
 import '../../state/progress.dart';
@@ -25,10 +26,15 @@ import 'ankiren_strikes.dart';
 /// 暗記練's play screen. A field of [setup]'s size is dealt from [known]
 /// and shown face up while its memorise time counts down (or until the
 /// player is ready); then every card turns face down and each is asked for
-/// by its kimariji, in turn ([AnkirenPlay]), until all are found or given
-/// up ("don't know"), or the game is ended. The owner's free-play level
-/// games count strikes (see [AnkirenStrikes]): the last one ends the game
-/// at once. It ends into [AnkirenResultsScreen].
+/// by its kimariji, in turn ([AnkirenPlay]), the setup's からふだ, drawn
+/// from the other known cards ([KarafudaPicker]), among them, until all
+/// are found or given up ("don't know"), or the game is ended. The owner's
+/// free-play level games count strikes (see [AnkirenStrikes]): the last one
+/// ends the game at once. It ends into [AnkirenResultsScreen].
+///
+/// The band has End on the left, with the strikes over it in portrait (beside
+/// it in landscape) once they count, and "don't know" on the right, with the
+/// からふだ button under it (beside it in landscape) in a game with any.
 ///
 /// The screen holds its orientation while it is up: portrait, or landscape
 /// for the true-scale field.
@@ -86,6 +92,7 @@ class _AnkirenScreenState extends State<AnkirenScreen> with AnkirenPlay {
       field: field,
       setup: widget.setup,
       rng: rng,
+      karafuda: KarafudaPicker.ofPoems.pick(field.cards, widget.known, widget.setup.karafuda, rng),
       countsStrikes: widget.player == AnkirenPlayer.owner && widget.setup.level != null,
     );
     holdStage(_landscape ? OrientationTuning.landscape : OrientationTuning.app);
@@ -194,18 +201,21 @@ class _AnkirenScreenState extends State<AnkirenScreen> with AnkirenPlay {
 
     final dontKnow = dontKnowButton();
     final strikes = game.countsStrikes;
+    final karafuda = game.karafuda.isNotEmpty;
+    final end = BandButton(icon: IconArt.end, label: s.end, onTap: _ending ? null : () => unawaited(_end()));
+    final flip = stillMotion ? Duration.zero : AnkirenMotion.flip;
     final band = AnkirenBand(
       landscape: _landscape,
-      slot: strikes && _landscape ? AnkirenPlayLayout.sideSlot + _strikesWidth : AnkirenPlayLayout.sideSlot,
-      leading: BandButton(icon: IconArt.end, label: s.end, onTap: _ending ? null : () => unawaited(_end())),
+      slot: _landscape ? _landscapeSlot(strikes: strikes, karafuda: karafuda) : AnkirenPlayLayout.sideSlot,
+      leading: AnimatedSwitcher(duration: flip, child: strikes && !memorising ? _withStrikes(end) : end),
       center: memorising ? MemoriseClock(left: _left, landscape: _landscape) : recallPrompt(landscape: _landscape),
       trailing: AnimatedSwitcher(
-        duration: stillMotion ? Duration.zero : AnkirenMotion.flip,
+        duration: flip,
         child: memorising
             ? BandButton(
                 icon: IconArt.arrow, label: s.ankirenReady, color: Palette.sun, onTap: () => _startRecall(ready: true))
-            : strikes
-                ? _withStrikes(dontKnow)
+            : karafuda
+                ? _withKarafuda(dontKnow)
                 : dontKnow,
       ),
     );
@@ -217,7 +227,7 @@ class _AnkirenScreenState extends State<AnkirenScreen> with AnkirenPlay {
       zoom: _zoom,
       card: (poemId, side) => recallCard(poemId, side, faceUp: memorising, showNumber: showNumber),
       band: band,
-      bandExtent: strikes && !_landscape ? AnkirenPlayLayout.bandPortraitStrikes : null,
+      bandExtent: (strikes || karafuda) && !_landscape ? AnkirenPlayLayout.bandPortraitStrikes : null,
       overlay: overlay == null ? null : (placement) => overlay(game, placement),
     );
     return PopScope(
@@ -227,34 +237,48 @@ class _AnkirenScreenState extends State<AnkirenScreen> with AnkirenPlay {
     );
   }
 
-  /// The width of the strikes' row in a landscape band.
-  static double get _strikesWidth {
+  /// Each slot of a landscape band, widened for the strikes beside End or
+  /// the からふだ button beside "don't know", whichever is wider, so the
+  /// centre stays centred.
+  static double _landscapeSlot({required bool strikes, required bool karafuda}) {
     final box = AnkirenArt.strikeBack.box;
     const out = AnkirenTuning.strikesOut;
-    return AnkirenPlayLayout.bandGap +
+    final strikesWidth = AnkirenPlayLayout.bandGap +
         out * AnkirenPlayLayout.strikeCardLandscape * box.width / box.height +
         (out - 1) * AnkirenPlayLayout.strikeGap;
+    const karafudaWidth = AnkirenPlayLayout.bandGap + AnkirenPlayLayout.sideSlot;
+    return AnkirenPlayLayout.sideSlot + math.max(strikes ? strikesWidth : 0, karafuda ? karafudaWidth : 0);
   }
 
-  /// [dontKnow] with the strikes: under them in portrait, beside them in
+  /// [end] with the strikes: under them in portrait, beside them in
   /// landscape.
-  Widget _withStrikes(Widget dontKnow) {
+  Widget _withStrikes(Widget end) {
     final strikes = AnkirenStrikes(
       strikes: game.strikes,
       cardHeight: _landscape ? AnkirenPlayLayout.strikeCardLandscape : AnkirenPlayLayout.strikeCardPortrait,
     );
     return _landscape
         ? Row(mainAxisSize: MainAxisSize.min, children: [
-            strikes,
+            end,
             const SizedBox(width: AnkirenPlayLayout.bandGap),
-            dontKnow,
+            strikes,
           ])
         : Column(mainAxisSize: MainAxisSize.min, children: [
             strikes,
             const SizedBox(height: AnkirenPlayLayout.strikeRowGap),
-            SizedBox(height: AnkirenPlayLayout.strikeButton, child: dontKnow),
+            SizedBox(height: AnkirenPlayLayout.strikeButton, child: end),
           ]);
   }
+
+  /// [dontKnow] with the からふだ button: over it in portrait, beside it in
+  /// landscape.
+  Widget _withKarafuda(Widget dontKnow) => _landscape
+      ? Row(mainAxisSize: MainAxisSize.min, children: [
+          dontKnow,
+          const SizedBox(width: AnkirenPlayLayout.bandGap),
+          karafudaButton(),
+        ])
+      : StackedControls(top: dontKnow, bottom: karafudaButton());
 
   /// [field] with dev mode's scoring readout in room of its own, above it
   /// in portrait and beside it in landscape, so it never hides a card.

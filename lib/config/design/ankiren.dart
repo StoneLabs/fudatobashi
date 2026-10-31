@@ -95,11 +95,13 @@ abstract final class AnkirenPlayLayout {
   static const double sideSlot = 96;
 
   /// A free-play level's band also holds its strikes (`AnkirenStrikes`)
-  /// once the cards are face down: in portrait over "don't know", in a band
+  /// once the cards are face down: in portrait over End, in a band
   /// [bandPortraitStrikes] tall, the button [strikeButton] tall under cards
   /// [strikeCardPortrait] tall; in landscape beside it, cards
   /// [strikeCardLandscape] tall, both slots widened to keep the centre
-  /// centred. The cards stand [strikeGap] apart.
+  /// centred. The cards stand [strikeGap] apart. A game with からふだ has
+  /// the same tall band in portrait, "don't know" over the からふだ button,
+  /// [strikeRowGap] apart; in landscape they stand side by side.
   static const double bandPortraitStrikes = 96;
   static const double strikeButton = 44;
   static const double strikeCardPortrait = 36;

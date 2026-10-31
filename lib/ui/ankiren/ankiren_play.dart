@@ -10,7 +10,9 @@ import '../../config/design.dart';
 import '../../config/vector_art.dart';
 import '../../domain/ankiren_field.dart';
 import '../../domain/ankiren_game.dart';
+import '../../domain/karafuda.dart';
 import '../../l10n/ankiren_strings.dart';
+import '../../l10n/karafuda_strings.dart';
 import '../../l10n/strings.dart';
 import '../../state/scope.dart';
 import '../../state/settings.dart';
@@ -26,9 +28,10 @@ typedef _Press = ({int poemId, Duration at, Offset where});
 /// and each card asked for in turn): the screen held in its orientation and
 /// the menu music kept out while it is up ([holdStage]), and the recall
 /// itself: the field turning over ([turnFaceDown]), the prompts, the taps
-/// on the cards ([recallCard]), "don't know" ([dontKnowButton]), and the
-/// band's prompt ([recallPrompt]). Once every card is found or given up it
-/// calls [recallOver].
+/// on the cards ([recallCard]), "don't know" ([dontKnowButton]), the
+/// からふだ button ([karafudaButton]) and the band's prompt
+/// ([recallPrompt]). Once every call is answered or given up it calls
+/// [recallOver].
 ///
 /// Timing follows the swipe deck's contract: a prompt is revealed at the
 /// vsync of the first frame showing it, on the pointer-event clock
@@ -57,7 +60,8 @@ mixin AnkirenPlay<W extends StatefulWidget> on State<W> {
   bool _promptShown = false;
   ({int poemId, PromptState state})? _last;
 
-  /// A card just given up, rumbling until it turns face up.
+  /// A card just given up, rumbling until it turns face up; a からふだ
+  /// given up rumbles the からふだ button.
   int? _givingUp;
 
   final Map<int, CardFlash> _flashes = {};
@@ -127,9 +131,12 @@ mixin AnkirenPlay<W extends StatefulWidget> on State<W> {
     _take(press.poemId, press.at);
   }
 
+  /// A tap on [poemId]'s card, or on the からふだ button ([Karafuda.button]).
   void _take(int poemId, Duration downAt) {
     final haptics = ProgressScope.read(context).settings.haptics;
-    switch (game.tap(poemId, downAt)) {
+    final asked = game.current;
+    final result = poemId == Karafuda.button ? game.pressKarafuda(downAt) : game.tap(poemId, downAt);
+    switch (result) {
       case TapResult.ignored:
         return;
       case TapResult.wrong:
@@ -142,7 +149,7 @@ mixin AnkirenPlay<W extends StatefulWidget> on State<W> {
         setState(() {
           _flashes[poemId] = CardFlash(CardFeedback.right, ++_flashSerial);
           _promptShown = false;
-          _last = (poemId: poemId, state: PromptState.found);
+          _last = (poemId: asked!, state: PromptState.found);
         });
         _next();
     }
@@ -216,6 +223,33 @@ mixin AnkirenPlay<W extends StatefulWidget> on State<W> {
         dimmed: asked == null && game.answers.isEmpty,
         onTap: asked == null ? null : _giveUp,
       );
+
+  /// The からふだ button, for a game with any: it takes presses as a card
+  /// takes taps, timed from the finger going down, and shows what they did
+  /// as a card does (see [TapFeedback]), rumbling once shown after the wrong
+  /// taps on a からふだ call, or given up. Faded until the first prompt is up.
+  Widget karafudaButton() {
+    final asked = this.asked, givingUp = _givingUp;
+    return Listener(
+      behavior: HitTestBehavior.opaque,
+      onPointerDown: (e) => _onDown(Karafuda.button, e),
+      onPointerUp: _onUp,
+      onPointerCancel: (e) => _presses.remove(e.pointer),
+      child: TapFeedback(
+        flash: _flashes[Karafuda.button],
+        revealed: (asked != null && game.isKarafuda(asked) && game.revealed) ||
+            (givingUp != null && game.isKarafuda(givingUp)),
+        child: BandButton(
+          icon: IconArt.karafuda,
+          label: S.of(context).karafuda,
+          dimmed: asked == null && game.answers.isEmpty,
+          // The press itself is taken by the listener, from its pointer
+          // down; this gives the button its pressed look.
+          onTap: asked == null ? null : () {},
+        ),
+      ),
+    );
+  }
 }
 
 /// A play screen's ground: the tatami, inside the safe area.

@@ -26,9 +26,10 @@ class AnkirenDebugGame extends StatefulWidget {
   /// The first deal's seed; random when null.
   final int? seed;
 
-  /// The cards a game at [level] deals from: [known] if they fill it, else all.
+  /// The cards a game at [level] deals from: [known] if they are enough for
+  /// it (see [AnkirenLevels.needs]), else all.
   static List<int> deckFor(List<int> known, int level) =>
-      known.length >= AnkirenLevels.of(level).cards ? known : [for (final p in poems.all) p.id];
+      known.length >= AnkirenLevels.needs(level) ? known : [for (final p in poems.all) p.id];
 
   @override
   State<AnkirenDebugGame> createState() => _AnkirenDebugGameState();

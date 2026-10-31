@@ -400,7 +400,10 @@ void main() {
       expect(inSheet(numbered(s.ankirenPerSideCount, preset.perSide)), findsOneWidget,
           reason: 'the sheet opens on the level picked');
       await tapInSheet(find.text('+').first);
-      final custom = AnkirenSetup.custom(perSide: preset.perSide + 1, memorise: preset.memorise);
+      final custom = AnkirenSetup.custom(
+          perSide: preset.perSide + 1,
+          memorise: preset.memorise,
+          karafuda: AnkirenSetup.customKarafuda(preset.perSide + 1));
       expect(p.settings.ankiren.freeSetup, custom, reason: 'a stepper turns the level into a custom setup');
       await confirm();
       expect(onPage(find.text(s.ankirenCustom)), findsOneWidget);

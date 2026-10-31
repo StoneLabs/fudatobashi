@@ -57,6 +57,13 @@ abstract final class TeiichiPlayLayout {
   /// The room above the band never gets shorter than this, for the stack.
   static const double roomAbove = 118;
 
+  /// A game with からふだ: once Done is pressed the band rises into the room
+  /// above, to [karafudaBandLandscape] tall in landscape and as tall as
+  /// 暗記練's band with strikes in portrait, for "don't know" over the
+  /// からふだ button.
+  static const double karafudaBandLandscape = 80;
+  static const double karafudaBandPortrait = AnkirenPlayLayout.bandPortraitStrikes;
+
   /// The stack: its top card as tall as the room above the band allows,
   /// up to [stackCardH] (so larger in portrait, with room to spare),
   /// [stackDepth] cards' edges peeking out under it [stackStep] apart, over

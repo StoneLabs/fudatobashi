@@ -12,6 +12,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:fudatobashi/config/config.dart';
 import 'package:fudatobashi/config/design.dart';
+import 'package:fudatobashi/config/vector_art.dart';
 import 'package:fudatobashi/data/fuda_sets.dart';
 import 'package:fudatobashi/data/islands.dart';
 import 'package:fudatobashi/data/poem.dart';
@@ -164,7 +165,7 @@ void main() {
 
   // Ready: the field turns face down and the first prompt shows.
   Future<void> ready(WidgetTester tester) async {
-    await tester.tap(find.text(s.ankirenReady));
+    await tester.tap(find.byWidgetPredicate((w) => w is BandButton && w.icon == IconArt.arrow));
     await tester.pump();
     await tester.pump(AnkirenMotion.flip + AnkirenPlayTuning.promptPause);
     await tester.pump();
@@ -178,6 +179,23 @@ void main() {
     await gesture.down(tester.getCenter(cardOf(poemId)), timeStamp: SchedulerBinding.instance.currentSystemFrameTimeStamp);
     await gesture.up();
     await tester.pump();
+  }
+
+  Finder karafudaButton() => find.byWidgetPredicate((w) => w is BandButton && w.icon == IconArt.karafuda);
+
+  Future<void> pressKarafuda(WidgetTester tester, {Duration think = Duration.zero}) async {
+    if (think > Duration.zero) await tester.pump(think);
+    final gesture = await tester.createGesture();
+    await gesture.down(tester.getCenter(karafudaButton()),
+        timeStamp: SchedulerBinding.instance.currentSystemFrameTimeStamp);
+    await gesture.up();
+    await tester.pump();
+  }
+
+  // Answers the call: takes its card, or presses からふだ for a からふだ.
+  Future<void> answer(WidgetTester tester, {Duration think = Duration.zero}) async {
+    final id = asked(tester);
+    await (tester.any(cardOf(id)) ? take(tester, id, think: think) : pressKarafuda(tester, think: think));
   }
 
   // Waits out the pause before the next prompt.
@@ -335,8 +353,13 @@ void main() {
         });
         await tester.pump();
       }
-      expect(p.settings.ankiren.freeSetup,
-          AnkirenSetup.custom(perSide: DefaultSettings.ankirenCustomPerSide + 3, memorise: DefaultSettings.ankirenCustomMemorise));
+      const perSide = DefaultSettings.ankirenCustomPerSide + 3;
+      expect(
+          p.settings.ankiren.freeSetup,
+          AnkirenSetup.custom(
+              perSide: perSide,
+              memorise: DefaultSettings.ankirenCustomMemorise,
+              karafuda: AnkirenSetup.customKarafuda(perSide)));
       expect(tester.takeException(), isNull);
 
       await tester.tap(find.text(s.ankirenConfirm));
@@ -484,7 +507,7 @@ void main() {
 
       await play(tester, p, const AnkirenSetup.ranked());
       await ready(tester);
-      await take(tester, asked(tester));
+      await answer(tester);
       await tester.tap(find.text(s.end));
       await tester.pump();
       await tester.tap(find.text(s.ankirenLeave));
@@ -525,7 +548,7 @@ void main() {
 
       await play(tester, p, const AnkirenSetup.ranked());
       await ready(tester);
-      await take(tester, asked(tester));
+      await answer(tester);
       await back();
       expect(find.text(s.ankirenLeaveNote), findsOneWidget, reason: 'recall: leaving asks first');
       await tester.tap(find.text(s.cancel));
@@ -546,9 +569,9 @@ void main() {
 
       await play(tester, p, const AnkirenSetup.ranked());
       await ready(tester);
-      const total = 2 * AnkirenTuning.rankedPerSide;
+      final total = const AnkirenSetup.ranked().calls;
       for (var i = 0; i < total; i++) {
-        await take(tester, asked(tester));
+        await answer(tester);
         if (i < total - 1) await next(tester);
       }
       await back();
@@ -562,7 +585,7 @@ void main() {
       final p = await open(tester);
       await play(tester, p, AnkirenSetup.forLevel(0));
       await ready(tester);
-      await take(tester, asked(tester));
+      await answer(tester);
       await tester.binding.handlePopRoute();
       await tester.pump();
       await tester.pump(const Duration(seconds: 1));
@@ -579,7 +602,7 @@ void main() {
       await play(tester, p, AnkirenSetup.forLevel(0), player: AnkirenPlayer.developer);
       await ready(tester);
       for (var i = 0; i < AnkirenLevels.of(0).cards; i++) {
-        await take(tester, asked(tester));
+        await answer(tester);
         await next(tester);
       }
       await toResults(tester);
@@ -622,7 +645,7 @@ void main() {
       expect(tester.widget<PromptText>(find.byType(PromptText)).state, PromptState.asked);
 
       for (var i = 1; i < AnkirenLevels.of(0).cards; i++) {
-        await take(tester, asked(tester));
+        await answer(tester);
         await next(tester);
       }
       await toResults(tester);
@@ -674,7 +697,7 @@ void main() {
         expect(heard.played.where((x) => x == Sfx.ankirenWrong), hasLength(4), reason: 'later strikes still sound');
         expect(tester.widget<AnkirenStrikes>(find.byType(AnkirenStrikes)).strikes, 4);
         for (var i = 1; i < AnkirenLevels.of(1).cards; i++) {
-          await take(tester, asked(tester), think: _findTime);
+          await answer(tester, think: _findTime);
           await next(tester);
         }
         await toResults(tester);
@@ -711,7 +734,7 @@ void main() {
       await play(tester, p, AnkirenSetup.forLevel(0), player: AnkirenPlayer.guest);
       await ready(tester);
       for (var i = 0; i < AnkirenLevels.of(0).cards; i++) {
-        await take(tester, asked(tester), think: _findTime);
+        await answer(tester, think: _findTime);
         await next(tester);
       }
       await toResults(tester);
@@ -768,6 +791,152 @@ void main() {
       expect(find.byType(KimarijiSpeakerButton), findsNothing);
       await tester.pumpWidget(const SizedBox());
     });
+  });
+
+  group('からふだ', () {
+    TapFeedback karafudaFeedback(WidgetTester tester) =>
+        tester.widget<TapFeedback>(find.ancestor(of: karafudaButton(), matching: find.byType(TapFeedback)));
+    Finder bandButton(VectorArt icon) => find.byWidgetPredicate((w) => w is BandButton && w.icon == icon);
+    AnkirenGame gameOn(WidgetTester tester) => (tester.state(find.byType(AnkirenScreen)) as dynamic).game as AnkirenGame;
+
+    // Answers the calls until a からふだ is called.
+    Future<int> toKarafuda(WidgetTester tester) async {
+      while (tester.any(cardOf(asked(tester)))) {
+        await answer(tester);
+        await next(tester);
+      }
+      return asked(tester);
+    }
+
+    // Answers the calls until a field card is called.
+    Future<int> toCard(WidgetTester tester) async {
+      while (!tester.any(cardOf(asked(tester)))) {
+        await answer(tester);
+        await next(tester);
+      }
+      return asked(tester);
+    }
+
+    for (final lang in ['en', 'ja']) {
+      testWidgets('a level with からふだ: strikes over End, the button under Don\'t know, pressed like a card ($lang)',
+          (tester) async {
+        final p = await open(tester, language: lang);
+        await play(tester, p, AnkirenSetup.forLevel(4), seed: 2);
+        expect(karafudaButton(), findsNothing, reason: 'not while memorising');
+        await ready(tester);
+        expect(karafudaButton(), findsOneWidget);
+        final band = tester.getRect(find.byType(AnkirenBand));
+        expect(band.height, AnkirenPlayLayout.bandPortraitStrikes);
+        final end = tester.getRect(bandButton(IconArt.end));
+        final strikes = tester.getRect(find.byType(AnkirenStrikes));
+        expect(strikes.bottom, lessThanOrEqualTo(end.top), reason: 'the strikes over End');
+        expect(strikes.center.dx, lessThan(band.center.dx), reason: 'on the left');
+        final dontKnow = tester.getRect(bandButton(IconArt.question));
+        final button = tester.getRect(karafudaButton());
+        expect(dontKnow.bottom, lessThanOrEqualTo(button.top), reason: "Don't know over からふだ");
+        expect(dontKnow.height, button.height);
+        await captureScreen(tester, 'karafuda/level', lang: lang);
+
+        // からふだ on a card's call is a wrong tap and a strike.
+        await toCard(tester);
+        final game = gameOn(tester);
+        final before = game.strikes;
+        await pressKarafuda(tester);
+        expect(game.strikes, before + 1);
+        expect(karafudaFeedback(tester).flash?.kind, CardFeedback.wrong);
+        expect(heard.played.last, Sfx.ankirenWrong);
+        await tester.pump(const Duration(milliseconds: 100));
+        await captureScreen(tester, 'karafuda/wrong_press', lang: lang);
+        await tester.pump(AnkirenMotion.strike);
+        await answer(tester);
+        await next(tester);
+
+        // Cards tapped on a からふだ call are wrong; two show the button.
+        final id = await toKarafuda(tester);
+        Future<void> wrongCard() =>
+            take(tester, cards(tester).map((c) => c.poemId).firstWhere((x) => !card(tester, x).faceUp));
+        await wrongCard();
+        expect(karafudaFeedback(tester).revealed, isFalse);
+        await tester.pump(AnkirenMotion.strike);
+        await wrongCard();
+        expect(karafudaFeedback(tester).revealed, isTrue, reason: 'shown as a card is after two wrong taps');
+        await tester.pump(AnkirenMotion.strike);
+        await captureScreen(tester, 'karafuda/shown', lang: lang);
+        expect(asked(tester), id, reason: 'it still has to be pressed');
+        await pressKarafuda(tester);
+        expect(karafudaFeedback(tester).flash?.kind, CardFeedback.right);
+        expect(tester.widget<PromptText>(find.byType(PromptText)).state, PromptState.found);
+        await tester.pump(const Duration(milliseconds: 100));
+        await captureScreen(tester, 'karafuda/right', lang: lang);
+        await next(tester);
+
+        // Don't know on a からふだ shows the button, and is a strike.
+        await toKarafuda(tester);
+        final strikesBefore = game.strikes;
+        await tester.tap(bandButton(IconArt.question));
+        await tester.pump();
+        expect(game.strikes, strikesBefore + 1);
+        expect(karafudaFeedback(tester).revealed, isTrue);
+        await tester.pump(AnkirenPlayTuning.givenUpReveal);
+        expect(karafudaFeedback(tester).revealed, isFalse);
+        await tester.pumpWidget(const SizedBox());
+      });
+    }
+
+    testWidgets('ranked: End full height, からふだ under Don\'t know; a game ends on a card', (tester) async {
+      final p = await open(tester);
+      await play(tester, p, const AnkirenSetup.ranked(), seed: 4);
+      await ready(tester);
+      expect(find.byType(AnkirenStrikes), findsNothing);
+      expect(tester.getRect(find.byType(AnkirenBand)).height, AnkirenPlayLayout.bandPortraitStrikes);
+      final end = tester.getRect(bandButton(IconArt.end));
+      expect(end.height, greaterThan(1.8 * tester.getRect(karafudaButton()).height), reason: 'End keeps its height');
+      await captureScreen(tester, 'karafuda/ranked');
+      final game = gameOn(tester);
+      expect(game.karafuda, hasLength(const AnkirenSetup.ranked().karafuda));
+      final total = const AnkirenSetup.ranked().calls;
+      for (var i = 0; i < total; i++) {
+        await answer(tester, think: const Duration(milliseconds: 500));
+        if (i < total - 1) await next(tester);
+      }
+      expect(game.answers.last.karafuda, isFalse);
+      await toResults(tester);
+      expect(p.sideTrips.runs.single.score, game.score!.total);
+      await tester.pumpWidget(const SizedBox());
+    });
+
+    testWidgets('a level without からふだ: strikes over End, Don\'t know full height', (tester) async {
+      final p = await open(tester);
+      await play(tester, p, AnkirenSetup.forLevel(3));
+      await ready(tester);
+      expect(karafudaButton(), findsNothing);
+      final dontKnow = tester.getRect(bandButton(IconArt.question));
+      final end = tester.getRect(bandButton(IconArt.end));
+      expect(dontKnow.height, greaterThan(1.5 * end.height), reason: 'Don\'t know keeps the full height');
+      await captureScreen(tester, 'karafuda/level_none');
+      await tester.pumpWidget(const SizedBox());
+    });
+
+    for (final level in [3, 4]) {
+      testWidgets('landscape level $level: End then strikes on the left, Don\'t know then からふだ on the right',
+          (tester) async {
+        final p = await open(tester, ankiren: const AnkirenSettings(layout: AnkirenLayout.landscape));
+        await play(tester, p, AnkirenSetup.forLevel(level), screen: usersPhoneLandscape);
+        await ready(tester);
+        final end = tester.getRect(bandButton(IconArt.end));
+        final strikes = tester.getRect(find.byType(AnkirenStrikes));
+        expect(end.right, lessThanOrEqualTo(strikes.left));
+        if (level >= AnkirenTuning.karafudaFromLevel) {
+          final dontKnow = tester.getRect(bandButton(IconArt.question));
+          expect(dontKnow.right, lessThanOrEqualTo(tester.getRect(karafudaButton()).left));
+        } else {
+          expect(karafudaButton(), findsNothing);
+        }
+        expect(tester.takeException(), isNull);
+        await captureScreen(tester, 'karafuda/landscape', variant: 'l$level');
+        await tester.pumpWidget(const SizedBox());
+      });
+    }
   });
 
   group('Layouts', () {
@@ -921,9 +1090,9 @@ void main() {
         await tester.pump();
         await tester.pump(AnkirenMotion.flip + AnkirenPlayTuning.promptPause);
         await tester.pump();
-        const total = 2 * AnkirenTuning.rankedPerSide;
+        final total = const AnkirenSetup.ranked().calls;
         for (var i = 0; i < total; i++) {
-          await take(tester, asked(tester));
+          await answer(tester);
           if (i < total - 1) await next(tester);
         }
         await toResults(tester);
@@ -1062,12 +1231,12 @@ void main() {
 
       await tester.scrollUntilVisible(find.text('Ranked total by card time'), 200, scrollable: page);
       expect(tester.takeException(), isNull);
-      final wrongLabel = find.textContaining('cards wrong 0 of');
+      final wrongLabel = find.textContaining('calls wrong 0 of');
       await tester.scrollUntilVisible(wrongLabel, 100, scrollable: page);
       final wrong = find.ancestor(of: wrongLabel, matching: find.byType(Column)).first;
       await tester.drag(find.descendant(of: wrong, matching: find.byType(Slider)), const Offset(40, 0));
       await tester.pumpAndSettle();
-      expect(find.textContaining('cards wrong 0 of'), findsNothing, reason: 'the slider moved');
+      expect(find.textContaining('calls wrong 0 of'), findsNothing, reason: 'the slider moved');
       await captureScreen(tester, 'debug_ankiren_graph');
       await tester.scrollUntilVisible(find.text('Rating by score'), 200, scrollable: page);
       await tester.scrollUntilVisible(find.byType(AnkirenRatingGraph), 200, scrollable: page);

@@ -51,6 +51,20 @@ class AnkirenBand extends StatelessWidget {
       );
 }
 
+/// Two band controls, [top] over [bottom], sharing the slot's height.
+class StackedControls extends StatelessWidget {
+  const StackedControls({super.key, required this.top, required this.bottom});
+
+  final Widget top, bottom;
+
+  @override
+  Widget build(BuildContext context) => Column(children: [
+        Expanded(child: top),
+        const SizedBox(height: AnkirenPlayLayout.strikeRowGap),
+        Expanded(child: bottom),
+      ]);
+}
+
 /// A band control: an icon and a word in an ink button as tall as the band
 /// allows, shrinking its contents to fit; faded while [dimmed].
 class BandButton extends StatelessWidget {

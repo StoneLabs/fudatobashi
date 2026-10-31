@@ -14,6 +14,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:fudatobashi/config/config.dart';
 import 'package:fudatobashi/config/design.dart';
+import 'package:fudatobashi/config/vector_art.dart';
 import 'package:fudatobashi/data/fuda_sets.dart';
 import 'package:fudatobashi/data/islands.dart';
 import 'package:fudatobashi/data/poem.dart';
@@ -392,12 +393,21 @@ void main() {
       return poems.all.firstWhere((p) => s.kimariji(p.id) == text).id;
     }
 
-    Future<void> take(WidgetTester tester, int poemId) async {
+    Future<void> press(WidgetTester tester, Finder target) async {
       final gesture = await tester.createGesture();
-      final card = find.byWidgetPredicate((w) => w is AnkirenCard && w.poemId == poemId);
-      await gesture.down(tester.getCenter(card), timeStamp: SchedulerBinding.instance.currentSystemFrameTimeStamp);
+      await gesture.down(tester.getCenter(target), timeStamp: SchedulerBinding.instance.currentSystemFrameTimeStamp);
       await gesture.up();
       await tester.pump();
+    }
+
+    Finder cardOf(int poemId) => find.byWidgetPredicate((w) => w is AnkirenCard && w.poemId == poemId);
+    Future<void> take(WidgetTester tester, int poemId) => press(tester, cardOf(poemId));
+    final karafudaButton = find.byWidgetPredicate((w) => w is BandButton && w.icon == IconArt.karafuda);
+
+    /// Answers the call: its card, or the からふだ button for a からふだ.
+    Future<void> answer(WidgetTester tester) async {
+      final id = asked(tester);
+      await (tester.any(cardOf(id)) ? take(tester, id) : press(tester, karafudaButton));
     }
 
     testWidgets('laid out by taps and a drag, turned face down, played to the end and recorded', (tester) async {
@@ -467,16 +477,28 @@ void main() {
       expect(find.byType(AnkirenCard), findsNWidgets(setup.cards));
       expect(tester.widgetList<AnkirenCard>(find.byType(AnkirenCard)).where((c) => c.faceUp), isEmpty);
 
-      // One wrong tap, then every card found.
-      final wrong = tester.widgetList<AnkirenCard>(find.byType(AnkirenCard)).map((c) => c.poemId).firstWhere((id) => id != asked(tester));
+      expect(karafudaButton, findsOneWidget, reason: 'the usual game calls からふだ');
+      // One wrong tap, then every call answered.
+      final firstAsked = asked(tester);
+      final wrong = tester.widgetList<AnkirenCard>(find.byType(AnkirenCard)).map((c) => c.poemId).firstWhere((id) => id != firstAsked);
       await take(tester, wrong);
       await tester.pump(const Duration(milliseconds: 100));
       await captureScreen(tester, 'teiichi/wrong');
-      for (var i = 0; i < setup.cards; i++) {
+      var karafudaShot = false;
+      for (var i = 0; i < setup.calls; i++) {
         if (i == 3) await captureScreen(tester, 'teiichi/play');
         await tester.pump(Duration(milliseconds: 600 + 90 * (i % 7)));
-        await take(tester, asked(tester));
-        await tester.pump(i == setup.cards - 1 ? AnkirenPlayTuning.finishPause : AnkirenPlayTuning.promptPause);
+        if (!karafudaShot && i > 0 && !tester.any(cardOf(asked(tester)))) {
+          karafudaShot = true;
+          await take(tester, tester.widgetList<AnkirenCard>(find.byType(AnkirenCard)).firstWhere((c) => !c.faceUp).poemId);
+          await tester.pump(const Duration(milliseconds: 100));
+          await captureScreen(tester, 'teiichi/karafuda_wrong');
+          await take(tester, tester.widgetList<AnkirenCard>(find.byType(AnkirenCard)).firstWhere((c) => !c.faceUp).poemId);
+          await tester.pump(const Duration(milliseconds: 100));
+          await captureScreen(tester, 'teiichi/karafuda_shown');
+        }
+        await answer(tester);
+        await tester.pump(i == setup.calls - 1 ? AnkirenPlayTuning.finishPause : AnkirenPlayTuning.promptPause);
         await tester.pump();
       }
       await tester.runAsync(() => Future<void>.delayed(const Duration(milliseconds: 200)));
@@ -493,7 +515,9 @@ void main() {
       expect(run.completed, isTrue);
       final placings = await tester.runAsync(() => p.db.select(p.db.teiichiPlacings).get());
       expect({for (final x in placings!) x.poemId}, hasLength(setup.cards), reason: 'each card\'s placing time is kept');
-      expect(trips.teiichiFactsOf(run).firstTaps, setup.cards - 1);
+      final firstWasCard = trips.recordOf(run).calls.first.poemId == firstAsked && !trips.karafudaOf(run).contains(firstAsked);
+      expect(trips.teiichiFactsOf(run).firstTaps, setup.cards - (firstWasCard ? 1 : 0));
+      expect(trips.karafudaOf(run), hasLength(setup.karafuda));
 
       await tester.tap(find.text(s.teiichiPlayAgain.toUpperCase()));
       await tester.pump();
@@ -666,11 +690,11 @@ void main() {
       await tester.pump(AnkirenMotion.flip);
       await tester.pump(AnkirenPlayTuning.promptPause);
       await tester.pump();
-      for (var i = 0; i < setup.cards; i++) {
+      for (var i = 0; i < setup.calls; i++) {
         if (i == 3) await captureScreen(tester, 'teiichi/portrait_play');
         await tester.pump(const Duration(milliseconds: 700));
-        await take(tester, asked(tester));
-        await tester.pump(i == setup.cards - 1 ? AnkirenPlayTuning.finishPause : AnkirenPlayTuning.promptPause);
+        await answer(tester);
+        await tester.pump(i == setup.calls - 1 ? AnkirenPlayTuning.finishPause : AnkirenPlayTuning.promptPause);
         await tester.pump();
       }
       await tester.runAsync(() => Future<void>.delayed(const Duration(milliseconds: 200)));
@@ -757,10 +781,13 @@ void main() {
       final board = tester.widget<AnkirenFieldView>(find.byType(AnkirenFieldView)).field;
       double expected(Screen screen) {
         final area = AnkirenFieldView.areaIn(field().size);
-        final band = AnkirenFieldView.bandHeight(landscape: screen.size.width > screen.size.height);
+        final landscape = screen.size.width > screen.size.height;
+        final band = AnkirenFieldView.bandHeight(landscape: landscape);
+        // The usual game calls からふだ: its band rises for the からふだ button.
+        final risen = landscape ? TeiichiPlayLayout.karafudaBandLandscape : TeiichiPlayLayout.karafudaBandPortrait;
         final geometry = FieldGeometry.of(board, folded: false, trueSlots: TeiichiTuning.rowSlots);
         final scale = AnkirenFieldView.trueScaleFor(geometry, area, band: band, roomAbove: TeiichiPlayLayout.roomAbove);
-        return scale * TeiichiZoom.limit(board, area, band) * AnkirenFieldSize.cardW;
+        return scale * TeiichiZoom.limit(board, area, risen) * AnkirenFieldSize.cardW;
       }
 
       expect(grownW(), moreOrLessEquals(expected(usersPhone), epsilon: 0.01));

@@ -4,6 +4,8 @@ import '../../config/config.dart';
 import '../../config/design.dart';
 import '../../config/vector_art.dart';
 import '../../domain/ankiren_field.dart';
+import '../../domain/ankiren_level.dart';
+import '../../l10n/karafuda_strings.dart';
 import '../../l10n/side_trip_strings.dart';
 import '../../l10n/strings.dart';
 import '../../state/scope.dart';
@@ -53,6 +55,7 @@ class AnkirenRulesSheet extends StatelessWidget {
     final early = _number(1 + AnkirenTuning.earlyBonus);
     const strikes = AnkirenTuning.strikesOut;
     const perSide = AnkirenTuning.rankedPerSide, opensAt = AnkirenTuning.rankedAfterLevel;
+    const karafudaFrom = AnkirenTuning.karafudaFromLevel, ranked = AnkirenSetup.ranked();
     final memorise = formatMinutes(AnkirenTuning.rankedMemorise);
     return AnkirenSheet(
       title: s.howToPlay,
@@ -65,8 +68,10 @@ class AnkirenRulesSheet extends StatelessWidget {
           RuleItem(RuleMark.icon(Palette.desk, IconArt.question), s.ankirenRuleDontKnow, o?.ankirenRuleDontKnow),
           RuleItem(RuleMark.icon(Palette.ink, IconArt.end), s.ankirenRuleLeave, o?.ankirenRuleLeave),
           RuleItem(const RuleMark.art(Palette.pinkSoft), s.ankirenRuleStrikes(strikes), o?.ankirenRuleStrikes(strikes)),
-          RuleItem(const RuleMark.text(Palette.pink, '${2 * perSide}'), s.ankirenRuleRanked(perSide, memorise, opensAt),
-              o?.ankirenRuleRanked(perSide, memorise, opensAt)),
+          RuleItem(RuleMark.icon(Palette.paper, IconArt.karafuda), s.karafudaRule(karafudaFrom), o?.karafudaRule(karafudaFrom)),
+          RuleItem(const RuleMark.text(Palette.pink, '${2 * perSide}'),
+              s.ankirenRuleRanked(perSide, memorise, opensAt, ranked.karafuda),
+              o?.ankirenRuleRanked(perSide, memorise, opensAt, ranked.karafuda)),
         ]),
         SettingsSection(title: s.ankirenScoring, sub: o?.ankirenScoring.toUpperCase(), children: [
           RuleList([
@@ -74,6 +79,7 @@ class AnkirenRulesSheet extends StatelessWidget {
                 o?.ankirenScoreFind(first, speed)),
             RuleItem(RuleMark.icon(Palette.paper, IconArt.cards), s.ankirenScoreNear(second), o?.ankirenScoreNear(second),
                 below: const _TierTable()),
+            RuleItem(RuleMark.icon(Palette.paper, IconArt.karafuda), s.karafudaScore, o?.karafudaScore),
             RuleItem(RuleMark.icon(Palette.sun, IconArt.history), s.ankirenScoreEarly(early), o?.ankirenScoreEarly(early)),
             RuleItem(RuleMark.text(Palette.pink, s.ankirenMarkPoints), s.ankirenScoreLevel, o?.ankirenScoreLevel),
           ]),

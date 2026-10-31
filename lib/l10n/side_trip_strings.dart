@@ -107,8 +107,8 @@ extension SideTripStrings on S {
   String get ankirenRuleDontKnow => t('ankirenRuleDontKnow');
   String get ankirenRuleLeave => t('ankirenRuleLeave');
   String ankirenRuleStrikes(int strikes) => f('ankirenRuleStrikes', [strikes]);
-  String ankirenRuleRanked(int perSide, String memorise, int level) =>
-      f('ankirenRuleRanked', [perSide, memorise, level]);
+  String ankirenRuleRanked(int perSide, String memorise, int level, int karafuda) =>
+      f('ankirenRuleRanked', [perSide, memorise, level, karafuda]);
   String get ankirenScoring => t('ankirenScoring');
   String ankirenScoreFind(int firstTry, int speed) => f('ankirenScoreFind', [firstTry, speed]);
 

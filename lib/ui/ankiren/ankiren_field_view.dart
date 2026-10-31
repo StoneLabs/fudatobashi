@@ -24,7 +24,9 @@ import '../../domain/ankiren_geometry.dart';
 /// [growth], once [grown] the true-scale field grows evenly to its limit
 /// for the room it has (at once, should that room change shape): the own
 /// half stays on the bottom edge and the clusters on the sides, so the
-/// cards grow upward and inward, the band with them.
+/// cards grow upward and inward, the band with them. A [bandRise] makes the
+/// band that much taller, upward into the room above, without the field
+/// scaling for it; it grows only as far as leaves the band its room.
 class AnkirenFieldView extends StatefulWidget {
   const AnkirenFieldView({
     super.key,
@@ -39,6 +41,7 @@ class AnkirenFieldView extends StatefulWidget {
     this.aboveBand,
     this.underlay,
     this.bandExtent,
+    this.bandRise = 0,
     this.trueSlots,
     this.roomAbove,
     this.move,
@@ -46,7 +49,8 @@ class AnkirenFieldView extends StatefulWidget {
     this.grown = false,
     bool? trueScale,
   })  : trueScale = trueScale ?? landscape,
-        assert(roomAbove == null || (trueScale ?? landscape), 'only a true-scale field has a room above');
+        assert(roomAbove == null || (trueScale ?? landscape), 'only a true-scale field has a room above'),
+        assert(bandRise <= (roomAbove ?? 0), 'the band rises only into a room above');
 
   final AnkirenField field;
 
@@ -77,6 +81,7 @@ class AnkirenFieldView extends StatefulWidget {
 
   /// The [band]'s height when not the play screen's ([bandHeight]).
   final double? bandExtent;
+  final double bandRise;
 
   /// The card pitches a true-scale row spans, when not the territory's
   /// (see [FieldGeometry.of]).
@@ -180,7 +185,7 @@ class _AnkirenFieldViewState extends State<AnkirenFieldView> {
         final growth = widget.growth;
         if (growth == null) return _fieldAt(box, area, bandH, fit, 1);
         // How far grown, 0 to 1, of the way to the limit for this area.
-        final limit = growth.limit(widget.field, area, bandH);
+        final limit = growth.limit(widget.field, area, bandH + widget.bandRise);
         return TweenAnimationBuilder<double>(
           tween: Tween(end: widget.grown ? 1 : 0),
           duration: MediaQuery.disableAnimationsOf(context) ? Duration.zero : growth.duration,
@@ -250,7 +255,8 @@ class _AnkirenFieldViewState extends State<AnkirenFieldView> {
       placed = Center(child: field);
     }
     final fieldLayer = Positioned(left: 0, right: 0, top: top, height: height, child: placed);
-    final bandLayer = Positioned(left: 0, right: 0, top: top + aboveH, height: bandH, child: widget.band);
+    final rise = widget.bandRise;
+    final bandLayer = Positioned(left: 0, right: 0, top: top + aboveH - rise, height: bandH + rise, child: widget.band);
     final aboveBand = widget.aboveBand;
     final risen = aboveBand == null
         ? null
