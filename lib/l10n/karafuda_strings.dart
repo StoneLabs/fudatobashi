@@ -12,4 +12,8 @@ extension KarafudaStrings on S {
   String karafudaRule(int level) => f('karafudaRule', [level]);
   String get karafudaRuleTeiichi => t('karafudaRuleTeiichi');
   String get karafudaScore => t('karafudaScore');
+
+  /// The setup sheets' stepper, and its value at 0.
+  String get karafudaStepper => t('karafudaStepper');
+  String get karafudaOff => t('karafudaOff');
 }

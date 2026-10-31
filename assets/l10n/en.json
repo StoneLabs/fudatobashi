@@ -851,6 +851,8 @@
   "karafudaRule": "From Lv {0}, some calls are karafuda: cards you know that are not on the field, as in a real match. Tap Karafuda for them. A card tapped on a karafuda, or Karafuda tapped on a card, is a wrong tap.",
   "karafudaRuleTeiichi": "Some calls are karafuda: cards you know that are not on the field, as in a real match. Tap Karafuda for them. A card tapped on a karafuda, or Karafuda tapped on a card, is a wrong tap.",
   "karafudaScore": "A karafuda scores as a card does: Karafuda on the first tap earns a right first tap's points, and a card tapped on a karafuda counts as a tap on the other side.",
+  "karafudaStepper": "Karafuda",
+  "karafudaOff": "Off",
   "ankirenStrikesLabel": "Strikes: {0} of {1}",
   "ankirenLeaveTitle": "Leave this game?",
   "ankirenLeaveNote": "Leaving now counts as a loss.",

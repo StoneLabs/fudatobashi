@@ -21,6 +21,7 @@ import 'package:fudatobashi/domain/side_trips.dart';
 import 'package:fudatobashi/domain/teiichi.dart';
 import 'package:fudatobashi/domain/xp.dart';
 import 'package:fudatobashi/state/progress.dart';
+import 'package:fudatobashi/state/settings.dart';
 import 'package:fudatobashi/domain/trainer.dart';
 
 void main() {
@@ -293,6 +294,22 @@ void main() {
       final wrong = award([call(card), call(const [TapProximity.otherSide], karafuda: true)]);
       expect(xp(wrong, XpSource.karafuda), AnkirenXpTuning.perMiss, reason: 'tried, as a missed card');
       expect(award([call(card)]).parts.any((p) => p.source == XpSource.karafuda), isFalse);
+    });
+  });
+
+  group('settings', () {
+    test('custom からふだ are kept, following the formula until set', () {
+      const fresh = AnkirenSettings(customPerSide: 9);
+      expect(fresh.freeLevel, isNotNull);
+      final custom = fresh.withFreeSetup(const AnkirenSetup.custom(perSide: 9, memorise: Duration(minutes: 2), karafuda: 3));
+      expect(AnkirenSettings.fromJson(custom.toJson()).freeSetup.karafuda, 3);
+      final none = fresh.withFreeSetup(const AnkirenSetup.custom(perSide: 9, memorise: Duration(minutes: 2)));
+      expect(AnkirenSettings.fromJson(none.toJson()).freeSetup.karafuda, 0, reason: '0 turns them off');
+      final old = AnkirenSettings.fromJson({...custom.toJson()}..remove('customKarafuda'));
+      expect(old.freeSetup.karafuda, AnkirenSetup.customKarafuda(9), reason: 'settings from before からふだ');
+      const app = AppSettings(teiichiCards: 12, teiichiKarafuda: 2);
+      expect(AppSettings.fromJson(app.toJson()).teiichiKarafuda, 2);
+      expect(AppSettings.fromJson(const AppSettings().toJson()).teiichiKarafuda, isNull);
     });
   });
 

@@ -6,9 +6,11 @@ import '../../config/config.dart';
 import '../../config/design.dart';
 import '../../data/poem.dart';
 import '../../domain/ankiren_level.dart';
+import '../../domain/karafuda.dart';
 import '../../domain/side_trips.dart';
 import '../../l10n/ankiren_strings.dart';
 import '../../l10n/free_strings.dart';
+import '../../l10n/karafuda_strings.dart';
 import '../../l10n/strings.dart';
 import '../../state/progress.dart';
 import '../../state/scope.dart';
@@ -82,6 +84,11 @@ class _AnkirenFreeSheetState extends State<AnkirenFreeSheet> {
   int? _level;
   late int _perSide;
   late int _memoriseIndex;
+  late int _karafuda;
+
+  /// The most からふだ a custom field of [perSide] may call (see
+  /// [Karafuda.customMax]).
+  int _maxKarafuda(int perSide) => Karafuda.customMax(2 * perSide, _known);
 
   bool _isOpen(int level) => _ladder?.isOpen(level) ?? true;
   bool get _customOpen => _ladder?.customOpen ?? true;
@@ -100,6 +107,8 @@ class _AnkirenFreeSheetState extends State<AnkirenFreeSheet> {
     _level = level == null ? null : math.min(math.min(level, ladder?.open ?? level), maxLevel);
     _perSide = (last.custom ? last.perSide : saved.customPerSide).clamp(AnkirenTuning.customMinPerSide, _maxPerSide);
     _memoriseIndex = _nearest(last.custom ? last.memorise : saved.customMemorise);
+    final karafuda = last.custom ? last.karafuda : saved.customKarafuda ?? AnkirenSetup.customKarafuda(_perSide);
+    _karafuda = karafuda.clamp(0, _maxKarafuda(_perSide));
   }
 
   int _nearest(Duration d) {
@@ -111,8 +120,7 @@ class _AnkirenFreeSheetState extends State<AnkirenFreeSheet> {
   }
 
   AnkirenSetup get _setup => _level == null
-      ? AnkirenSetup.custom(
-          perSide: _perSide, memorise: _memorise[_memoriseIndex], karafuda: AnkirenSetup.customKarafuda(_perSide))
+      ? AnkirenSetup.custom(perSide: _perSide, memorise: _memorise[_memoriseIndex], karafuda: _karafuda)
       : AnkirenSetup.forLevel(_level!);
 
   Future<void> _save() async {
@@ -135,7 +143,14 @@ class _AnkirenFreeSheetState extends State<AnkirenFreeSheet> {
         _level = null;
         _perSide = setup.perSide.clamp(AnkirenTuning.customMinPerSide, _maxPerSide);
         _memoriseIndex = _nearest(setup.memorise);
+        _karafuda = setup.karafuda.clamp(0, _maxKarafuda(_perSide));
         step();
+      });
+
+  /// A new card count takes the からふだ the formula gives it.
+  void _stepPerSide(int by) => _stepCustom(() {
+        _perSide += by;
+        _karafuda = AnkirenSetup.customKarafuda(_perSide).clamp(0, _maxKarafuda(_perSide));
       });
 
   Future<void> _confirm() async {
@@ -171,8 +186,18 @@ class _AnkirenFreeSheetState extends State<AnkirenFreeSheet> {
             style: const TextStyle(fontWeight: Weights.black, fontSize: AnkirenSheetLayout.stepperUnitFont),
             numberStyle: const TextStyle(fontFamily: Fonts.display, fontSize: AnkirenSheetLayout.stepperValueFont),
           ),
-          onLess: steps && setup.perSide > AnkirenTuning.customMinPerSide ? () => _stepCustom(() => _perSide--) : null,
-          onMore: steps && setup.perSide < _maxPerSide ? () => _stepCustom(() => _perSide++) : null,
+          onLess: steps && setup.perSide > AnkirenTuning.customMinPerSide ? () => _stepPerSide(-1) : null,
+          onMore: steps && setup.perSide < _maxPerSide ? () => _stepPerSide(1) : null,
+        ),
+        SheetStepper(
+          label: SheetLabel(s.karafudaStepper, null),
+          value: setup.karafuda == 0
+              ? Text(s.karafudaOff,
+                  style: const TextStyle(fontWeight: Weights.black, fontSize: AnkirenSheetLayout.stepperUnitFont))
+              : Text('${setup.karafuda}',
+                  style: const TextStyle(fontFamily: Fonts.display, fontSize: AnkirenSheetLayout.stepperValueFont)),
+          onLess: steps && setup.karafuda > 0 ? () => _stepCustom(() => _karafuda--) : null,
+          onMore: steps && setup.karafuda < _maxKarafuda(setup.perSide) ? () => _stepCustom(() => _karafuda++) : null,
         ),
         SheetStepper(
           label: SheetLabel(s.ankirenMemoriseTime, null),

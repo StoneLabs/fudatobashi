@@ -23,10 +23,12 @@ import 'package:fudatobashi/domain/ankiren_field.dart';
 import 'package:fudatobashi/domain/ankiren_game.dart';
 import 'package:fudatobashi/domain/ankiren_geometry.dart';
 import 'package:fudatobashi/domain/side_trips.dart';
+import 'package:fudatobashi/domain/karafuda.dart';
 import 'package:fudatobashi/domain/teiichi.dart';
 import 'package:fudatobashi/domain/trainer.dart';
 import 'package:fudatobashi/l10n/ankiren_strings.dart';
 import 'package:fudatobashi/l10n/home_strings.dart';
+import 'package:fudatobashi/l10n/karafuda_strings.dart';
 import 'package:fudatobashi/l10n/side_trip_strings.dart';
 import 'package:fudatobashi/l10n/strings.dart';
 import 'package:fudatobashi/l10n/teiichi_strings.dart';
@@ -42,6 +44,7 @@ import 'package:fudatobashi/ui/play/time_format.dart';
 import 'package:fudatobashi/ui/results/run_summary.dart';
 import 'package:fudatobashi/ui/settings/side_trip_settings_screen.dart';
 import 'package:fudatobashi/ui/shell/tobi_notice.dart';
+import 'package:fudatobashi/ui/side_trips/ankiren_sheet.dart';
 import 'package:fudatobashi/ui/side_trips/burst_button.dart';
 import 'package:fudatobashi/ui/side_trips/dojo_scene.dart';
 import 'package:fudatobashi/ui/side_trips/side_trip_entry.dart';
@@ -307,12 +310,19 @@ void main() {
 
       await tap(find.descendant(of: sheet, matching: find.text('20')));
       expect(find.textContaining(s.teiichiRowsWentUp(3), findRichText: true), findsOneWidget);
+      final karafuda = find.ancestor(of: find.text(s.karafudaStepper, findRichText: true), matching: find.byType(SheetStepper));
+      expect(find.descendant(of: karafuda, matching: find.text('${Karafuda.forTeiichi(20)}')), findsOneWidget,
+          reason: 'からふだ follow the formula for the cards');
+      await tap(find.descendant(of: karafuda, matching: find.text('−')));
+      expect(find.descendant(of: karafuda, matching: find.text('${Karafuda.forTeiichi(20) - 1}')), findsOneWidget);
       await captureScreen(tester, 'teiichi/custom_20');
+      await captureScreen(tester, 'karafuda/teiichi_sheet');
 
       await tap(find.descendant(of: sheet, matching: find.text(s.ankirenConfirm)));
       await tester.pump(Motion.sheet);
       expect(find.text(s.teiichiPlay(20)), findsOneWidget, reason: 'the page plays the custom game');
       expect((p.settings.teiichiCards, p.settings.teiichiRows), (20, 3), reason: 'kept in the settings');
+      expect(p.settings.teiichiKarafuda, Karafuda.forTeiichi(20) - 1);
 
       await tester.pumpWidget(const SizedBox());
       await show(tester, p, () => const TeiichiPage());

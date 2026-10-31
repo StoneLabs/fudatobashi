@@ -28,6 +28,7 @@ import 'package:fudatobashi/domain/trainer.dart';
 import 'package:fudatobashi/l10n/ankiren_strings.dart';
 import 'package:fudatobashi/l10n/free_strings.dart';
 import 'package:fudatobashi/l10n/home_strings.dart';
+import 'package:fudatobashi/l10n/karafuda_strings.dart';
 import 'package:fudatobashi/l10n/results_strings.dart';
 import 'package:fudatobashi/l10n/settings_strings.dart';
 import 'package:fudatobashi/l10n/side_trip_strings.dart';
@@ -56,6 +57,7 @@ import 'package:fudatobashi/ui/results/celebration_sequence.dart';
 import 'package:fudatobashi/ui/settings/settings_screen.dart';
 import 'package:fudatobashi/ui/settings/side_trip_settings_screen.dart';
 import 'package:fudatobashi/ui/side_trips/ankiren_free_sheet.dart';
+import 'package:fudatobashi/ui/side_trips/ankiren_sheet.dart';
 import 'package:fudatobashi/ui/side_trips/side_trip_entry.dart';
 import 'package:fudatobashi/ui/sound/sounds.dart';
 import 'package:package_info_plus/package_info_plus.dart';
@@ -361,6 +363,39 @@ void main() {
               memorise: DefaultSettings.ankirenCustomMemorise,
               karafuda: AnkirenSetup.customKarafuda(perSide)));
       expect(tester.takeException(), isNull);
+
+      // からふだ follow the formula until stepped; 0 turns them off.
+      final karafuda = find.ancestor(of: find.text(s.karafudaStepper, findRichText: true), matching: find.byType(SheetStepper));
+      expect(find.descendant(of: karafuda, matching: find.text('${AnkirenSetup.customKarafuda(perSide)}')), findsOneWidget);
+      for (var i = 0; i < AnkirenSetup.customKarafuda(perSide); i++) {
+        await tester.runAsync(() async {
+          await tester.tap(find.descendant(of: karafuda, matching: find.text('−')));
+          await Future<void>.delayed(const Duration(milliseconds: 30));
+        });
+        await tester.pump();
+      }
+      expect(find.descendant(of: karafuda, matching: find.text(s.karafudaOff)), findsOneWidget);
+      expect(p.settings.ankiren.freeSetup.karafuda, 0);
+      await captureScreen(tester, 'karafuda/free_sheet_off');
+      await tester.runAsync(() async {
+        await tester.tap(find.descendant(of: karafuda, matching: find.text('+')));
+        await Future<void>.delayed(const Duration(milliseconds: 30));
+      });
+      await tester.pump();
+      expect(p.settings.ankiren.freeSetup.karafuda, 1);
+      await tester.runAsync(() async {
+        await tester.tap(find.text('+').first);
+        await Future<void>.delayed(const Duration(milliseconds: 30));
+      });
+      await tester.pump();
+      expect(p.settings.ankiren.freeSetup.karafuda, AnkirenSetup.customKarafuda(perSide + 1),
+          reason: 'a new card count takes the formula again');
+      await tester.runAsync(() async {
+        await tester.tap(find.text('−').first);
+        await Future<void>.delayed(const Duration(milliseconds: 30));
+      });
+      await tester.pump();
+      await captureScreen(tester, 'karafuda/free_sheet');
 
       await tester.tap(find.text(s.ankirenConfirm));
       await tester.pump();

@@ -8,6 +8,7 @@ import '../../domain/karafuda.dart';
 import '../../domain/teiichi.dart';
 import '../../l10n/ankiren_strings.dart';
 import '../../l10n/free_strings.dart';
+import '../../l10n/karafuda_strings.dart';
 import '../../l10n/strings.dart';
 import '../../l10n/teiichi_strings.dart';
 import '../../state/scope.dart';
@@ -39,7 +40,9 @@ Future<void> openTeiichiGuest(BuildContext context) async {
 
 /// A custom 定位置 game: its cards, by a quick pick or a stepper, from
 /// [TeiichiTuning.minCards] up to the usual game's, never more than the
-/// known cards (all of them for a [guest]); then its rows. Rows that cannot
+/// known cards (all of them for a [guest]); its からふだ, as many as the
+/// formula gives the cards until stepped, from none up to
+/// [Karafuda.customMax]; then its rows. Rows that cannot
 /// hold the cards are grey, with a padlock and how few they hold; more
 /// cards than the rows hold take more rows, and the sheet says so. Then
 /// what counts for the best placing time, and the burst that starts it.
@@ -63,6 +66,7 @@ class _TeiichiSheetState extends State<TeiichiSheet> {
   late final int _most;
   late int _cards;
   late int _rows;
+  late int _karafuda;
 
   /// The rows the cards just took, when the player chose fewer.
   int? _wentUpFrom;
@@ -76,15 +80,21 @@ class _TeiichiSheetState extends State<TeiichiSheet> {
     final fitted = last.fitted(_known);
     _cards = fitted.cards;
     _rows = fitted.rows;
+    _karafuda = fitted.karafuda;
   }
 
-  TeiichiSetup get _setup => TeiichiSetup(cards: _cards, rows: _rows, karafuda: Karafuda.forTeiichi(_cards));
+  TeiichiSetup get _setup => TeiichiSetup(cards: _cards, rows: _rows, karafuda: _karafuda);
 
+  /// The most からふだ [cards] may call (see [Karafuda.customMax]).
+  int _maxKarafuda(int cards) => Karafuda.customMax(cards, _known);
+
+  /// A new card count takes the からふだ the formula gives it.
   void _setCards(int cards) => setState(() {
         final wanted = _rows;
         _cards = cards;
         _rows = TeiichiSetup.rowsFor(cards, wanted);
         _wentUpFrom = _rows == wanted ? null : wanted;
+        _karafuda = Karafuda.forTeiichi(cards).clamp(0, _maxKarafuda(cards));
       });
 
   void _start() {
@@ -129,6 +139,16 @@ class _TeiichiSheetState extends State<TeiichiSheet> {
               style: const TextStyle(fontFamily: Fonts.display, fontSize: AnkirenSheetLayout.stepperValueFont)),
           onLess: _cards > TeiichiTuning.minCards ? () => _setCards(_cards - 1) : null,
           onMore: _cards < _most ? () => _setCards(_cards + 1) : null,
+        ),
+        SheetStepper(
+          label: SheetLabel(s.karafudaStepper, null),
+          value: _karafuda == 0
+              ? Text(s.karafudaOff,
+                  style: const TextStyle(fontWeight: Weights.black, fontSize: AnkirenSheetLayout.stepperUnitFont))
+              : Text('$_karafuda',
+                  style: const TextStyle(fontFamily: Fonts.display, fontSize: AnkirenSheetLayout.stepperValueFont)),
+          onLess: _karafuda > 0 ? () => setState(() => _karafuda--) : null,
+          onMore: _karafuda < _maxKarafuda(_cards) ? () => setState(() => _karafuda++) : null,
         ),
         Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
           SheetLabel(s.teiichiRows, s.sub?.teiichiRows),
