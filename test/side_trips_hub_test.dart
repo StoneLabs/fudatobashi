@@ -982,9 +982,12 @@ void main() {
 
     for (final (phone, lang, fontScale) in [(usersPhone, 'ja', 1.0), (narrowPhone, 'en', 1.3)]) {
       testWidgets('rules_${phone.name}_${lang}_$fontScale', (tester) async {
-        final p = await open(tester, _Hub.locked, lang);
+        final p = await open(tester, _Hub.open, lang);
         await openHub(tester, p, phone, fontScale: fontScale);
-        await tester.tap(inHub(find.text(S(lang).howToPlay)));
+        await tester.tap(inHub(find.byWidgetPredicate((w) => w is Pressable && w.semanticLabel == S(lang).ankirenOpenPage)));
+        await tester.pump();
+        await tester.pump(Motion.route * 2);
+        await tester.tap(find.text(S(lang).howToPlay));
         await tester.pump();
         await tester.pump(Motion.sheet);
         await precacheArt(tester);
