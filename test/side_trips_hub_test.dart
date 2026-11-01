@@ -672,6 +672,17 @@ void main() {
       await tester.pumpWidget(const SizedBox());
     });
 
+    testWidgets('the hall is lettered with its own name', (tester) async {
+      const s = S('en');
+      final p = await open(tester, _Hub.ranked, 'en');
+      await openHub(tester, p, usersPhone);
+      await swipe(tester);
+      await swipe(tester);
+      expect(inHub(find.text(s.hallName)), findsWidgets);
+      expect(inHub(find.text(s.hallTag)), findsOneWidget);
+      await tester.pumpWidget(const SizedBox());
+    });
+
     testWidgets('a fresh app start has 暗記練 in front', (tester) async {
       final p = await open(tester, _Hub.ranked, 'en');
       await openHub(tester, p, usersPhone);
@@ -980,6 +991,34 @@ void main() {
       }
       await tester.pumpWidget(const SizedBox());
     });
+
+    for (final lang in ['en', 'ja']) {
+      testWidgets('hall_$lang', (tester) async {
+        final p = await open(tester, _Hub.ranked, lang);
+        await openHub(tester, p, usersPhone);
+        for (var step = 0; step < SideTripIsle.hall.index; step++) {
+          await swipe(tester);
+          await tester.pump(const Duration(seconds: 3));
+        }
+        await precacheArt(tester);
+        await captureScreen(tester, 'side_trips/hall', lang: lang);
+        await tester.pumpWidget(const SizedBox());
+      });
+    }
+
+    for (final lang in ['en', 'ja']) {
+      testWidgets('hall_$lang', (tester) async {
+        final p = await open(tester, _Hub.ranked, lang);
+        await openHub(tester, p, usersPhone);
+        for (var step = 0; step < SideTripIsle.hall.index; step++) {
+          await swipe(tester);
+          await tester.pump(const Duration(seconds: 3));
+        }
+        await precacheArt(tester);
+        await captureScreen(tester, 'side_trips/hall', lang: lang);
+        await tester.pumpWidget(const SizedBox());
+      });
+    }
 
     for (final (phone, lang, fontScale) in [(usersPhone, 'ja', 1.0), (narrowPhone, 'en', 1.3)]) {
       testWidgets('rules_${phone.name}_${lang}_$fontScale', (tester) async {

@@ -98,9 +98,12 @@ class _Lettering extends StatelessWidget {
 }
 
 /// The entry of an island still being built: 近日公開 lettered over a small
-/// panel saying that it is under construction.
+/// panel saying that it is under construction. The tournament hall is
+/// lettered with its own name instead.
 class SideTripSoonEntry extends StatelessWidget {
-  const SideTripSoonEntry({super.key});
+  const SideTripSoonEntry({super.key, this.isle});
+
+  final SideTripIsle? isle;
 
   @override
   Widget build(BuildContext context) {
@@ -110,7 +113,9 @@ class SideTripSoonEntry extends StatelessWidget {
         maxScaleFactor: SideTripsLayout.letteringMaxScale,
         child: Align(
           alignment: Alignment.bottomLeft,
-          child: _Lettering(s.sideTripsSoonLettering, s.sideTripsSoonBanner,
+          child: _Lettering(
+              isle == SideTripIsle.hall ? s.hallName : s.sideTripsSoonLettering,
+              isle == SideTripIsle.hall ? s.hallTag : s.sideTripsSoonBanner,
               fontSize: SideTripsLayout.soonLetteringFont),
         ),
       ),

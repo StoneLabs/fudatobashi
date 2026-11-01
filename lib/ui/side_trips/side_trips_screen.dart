@@ -242,7 +242,7 @@ class _SideTripsScreenState extends State<SideTripsScreen> with TickerProviderSt
   }
 
   Widget _entry(SideTripsHub hub, SideTripIsle isle) => switch (isle.trip) {
-        null => const SideTripSoonEntry(),
+        null => SideTripSoonEntry(isle: isle),
         SideTrip.ankiren => SideTripEntryView(hub[SideTrip.ankiren], onOpen: () => openAnkirenPage(context)),
         SideTrip.teiichi => SideTripEntryView(hub[SideTrip.teiichi], onOpen: () => openTeiichiPage(context)),
       };

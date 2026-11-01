@@ -21,6 +21,10 @@ extension SideTripStrings on S {
   /// language) and banner, and its panel's title and line.
   String get sideTripsSoonLettering => t('sideTripsSoonLettering');
   String get sideTripsSoonBanner => t('sideTripsSoonBanner');
+  /// The tournament hall's name and tag: the lettering and banner of its
+  /// entry, like a side trip's.
+  String get hallName => t('hallName');
+  String get hallTag => t('hallTag');
   String get sideTripsSoonTitle => t('sideTripsSoonTitle');
   String get sideTripsSoonLine => t('sideTripsSoonLine');
 
