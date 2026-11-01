@@ -9,30 +9,19 @@ abstract final class TeiichiPageLayout {
   static const double previewHeight = 64;
   static const double previewInset = 6;
 
-  /// On a screen with room to spare, ranked and the guide's card take
-  /// these shares of it.
-  static const double rankedShare = 0.4;
-  static const double learnShare = 0.6;
+  /// On a screen with room to spare, ranked takes this share of it.
+  static const double rankedShare = 1;
 
-  /// The guide's card: its title across the top, [learnTitleGap] over its
-  /// line and button, which are at most [learnMeasure] wide at the type's
-  /// size, the same lines on every phone, and Tobi in the room beside
-  /// them, at most [learnTobi] and, with large type, at least
-  /// [learnTobiLeast] wide.
-  static const EdgeInsets learnPadding = EdgeInsets.fromLTRB(14, 12 + SideTripsLayout.cut / 2, 14, 10);
-  static const double learnMeasure = 236;
-  static const Size learnTobi = Size(84, 100);
-  static const double learnTobiLeast = 52;
-  static const double learnTobiGap = 12;
-  static const double learnTitleFont = 18;
-  static const double learnTitleGap = 5;
-  static const double learnLineFont = 12.5;
-  static const double learnLineHeight = 1.36;
-  static const double buttonTop = 8;
-  static const double buttonFont = 14;
-  static const double buttonIcon = 15;
-  static const double buttonIconGap = 6;
-  static const EdgeInsets buttonPadding = EdgeInsets.symmetric(horizontal: 12, vertical: 8);
+  /// The guide's card, one short row, [learnTop] under ranked: its title,
+  /// [learnGap] before the button.
+  static const double learnTop = 4;
+  static const EdgeInsets learnPadding = EdgeInsets.fromLTRB(14, 4 + SideTripsLayout.cut / 2, 8, 4);
+  static const double learnTitleFont = 16;
+  static const double learnGap = 8;
+  static const double buttonFont = 13;
+  static const double buttonIcon = 14;
+  static const double buttonIconGap = 5;
+  static const EdgeInsets buttonPadding = EdgeInsets.symmetric(horizontal: 10, vertical: 4);
 }
 
 /// 定位置's level sheet (`teiichi_sheet.dart`), on 暗記練's sheet frame

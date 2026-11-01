@@ -37,11 +37,11 @@ Future<void> openTeiichiPage(BuildContext context) async {
 /// 定位置's page, the hub's panel opened up, on 暗記練's page's frame, with
 /// History beside the back button: who the player is (the form, and the
 /// class and rating once there is one); ranked, chained up until it opens
-/// (see [RankedLock]); the guide's card; the next level to clear; and at
+/// (see [RankedLock]); the guide's card, a short row; the next level to clear; and at
 /// the foot, within the thumb's reach, Guest mode and the rules, each a
 /// sheet. The first visit opens with the rules. Home's dotted
 /// ground, in the sea's blue, lies behind the panels. A taller screen's
-/// room to spare goes to ranked and the guide's card ([_GrowColumn]); the
+/// room to spare goes to ranked ([_GrowColumn]); the
 /// page scrolls when it is taller than the screen, as it is on most phones.
 class TeiichiPage extends StatefulWidget {
   const TeiichiPage({super.key});
@@ -104,8 +104,8 @@ class _TeiichiPageState extends State<TeiichiPage> {
                         onStart: () => startTeiichiRanked(context),
                       ),
                     ),
-                    const SizedBox(height: AnkirenPageLayout.gap),
-                    const _Grows(share: TeiichiPageLayout.learnShare, child: _LearnCard()),
+                    const SizedBox(height: TeiichiPageLayout.learnTop),
+                    const _LearnCard(),
                     const SizedBox(height: AnkirenPageLayout.nextTop),
                     _NextLevelPanel(
                       entry,
@@ -171,80 +171,51 @@ class _Banner extends StatelessWidget {
   }
 }
 
-/// The guide's card: its title across the top, then Tobi pointing at its
-/// line and the way to the guide, which are at most
-/// [TeiichiPageLayout.learnMeasure] wide at the type's size, the same lines
-/// on every phone. Tobi takes the room beside them, up to
-/// [TeiichiPageLayout.learnTobi]; larger type takes room from Tobi, down
-/// to [TeiichiPageLayout.learnTobiLeast] wide. Given more height than it
-/// needs, the card keeps them in its middle.
+/// The guide's card, a single short row: its title on one line, shrunk to
+/// fit, and beside it the way to the guide.
 class _LearnCard extends StatelessWidget {
   const _LearnCard();
 
   @override
   Widget build(BuildContext context) {
     final s = S.of(context);
-    final measure = MediaQuery.textScalerOf(context).scale(TeiichiPageLayout.learnMeasure);
     return MangaPanel(
       shape: const PanelShape(topLeft: Offset(0, SideTripsLayout.cut)),
       padding: TeiichiPageLayout.learnPadding,
-      child: LayoutBuilder(
-        builder: (context, box) => Center(
-          child: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.start, children: [
-            Semantics(
+      child: Center(
+        child: Row(children: [
+          Expanded(
+            child: Semantics(
               header: true,
-              child: Text.rich(
-                Phrases.span(s.teiichiLearnTitle),
-                style: const TextStyle(
-                    fontFamily: Fonts.display,
-                    fontSize: TeiichiPageLayout.learnTitleFont,
-                    height: TypeScale.displayLineHeight),
-              ),
-            ),
-            const SizedBox(height: TeiichiPageLayout.learnTitleGap),
-            Row(children: [
-              Expanded(
-                child: Center(
-                  child: ConstrainedBox(
-                    constraints: BoxConstraints.loose(TeiichiPageLayout.learnTobi),
-                    child: const AspectRatio(aspectRatio: TobiStyle.aspect, child: Tobi(pose: TobiPose.pointing)),
-                  ),
+              child: FittedBox(
+                fit: BoxFit.scaleDown,
+                alignment: Alignment.centerLeft,
+                child: Text.rich(
+                  Phrases.span(s.teiichiLearnTitle),
+                  maxLines: 1,
+                  style: const TextStyle(
+                      fontFamily: Fonts.display,
+                      fontSize: TeiichiPageLayout.learnTitleFont,
+                      height: TypeScale.displayLineHeight),
                 ),
               ),
-              const SizedBox(width: TeiichiPageLayout.learnTobiGap),
-              SizedBox(
-                width: math.min(measure, box.maxWidth - TeiichiPageLayout.learnTobiGap - TeiichiPageLayout.learnTobiLeast),
-                child: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.start, children: [
-                  Text.rich(
-                    Phrases.span(s.teiichiLearnLine),
-                    style: const TextStyle(
-                        fontWeight: Weights.bold,
-                        fontSize: TeiichiPageLayout.learnLineFont,
-                        height: TeiichiPageLayout.learnLineHeight),
-                  ),
-                  const SizedBox(height: TeiichiPageLayout.buttonTop),
-                  IntrinsicWidth(
-                    child: InkButton(
-                      onTap: () => openTeiichiGuide(context),
-                      color: Palette.sun,
-                      border: Strokes.control,
-                      padding: TeiichiPageLayout.buttonPadding,
-                      semanticLabel: s.teiichiLearnButton,
-                      child: Row(mainAxisSize: MainAxisSize.min, children: [
-                        Flexible(
-                          child: Text(s.teiichiLearnButton,
-                              style: const TextStyle(fontWeight: Weights.black, fontSize: TeiichiPageLayout.buttonFont)),
-                        ),
-                        const SizedBox(width: TeiichiPageLayout.buttonIconGap),
-                        MangaIcon(IconArt.arrow, size: TeiichiPageLayout.buttonIcon),
-                      ]),
-                    ),
-                  ),
-                ]),
-              ),
+            ),
+          ),
+          const SizedBox(width: TeiichiPageLayout.learnGap),
+          InkButton(
+            onTap: () => openTeiichiGuide(context),
+            color: Palette.sun,
+            border: Strokes.control,
+            padding: TeiichiPageLayout.buttonPadding,
+            semanticLabel: s.teiichiLearnButton,
+            child: Row(mainAxisSize: MainAxisSize.min, children: [
+              Text(s.teiichiLearnButton,
+                  style: const TextStyle(fontWeight: Weights.black, fontSize: TeiichiPageLayout.buttonFont)),
+              const SizedBox(width: TeiichiPageLayout.buttonIconGap),
+              MangaIcon(IconArt.arrow, size: TeiichiPageLayout.buttonIcon),
             ]),
-          ]),
-        ),
+          ),
+        ]),
       ),
     );
   }

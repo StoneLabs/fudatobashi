@@ -211,7 +211,6 @@ void main() {
       await show(tester, p, () => const TeiichiPage());
       final form = p.sideTripsHub()[SideTrip.teiichi].placing.form!;
       expect(find.text(formatMinutes(form.placing)), findsOneWidget);
-      expect(find.text(s.teiichiLearnLine, findRichText: true), findsOneWidget);
       expect(find.text(s.teiichiLearnButton), findsOneWidget);
       expect(tester.takeException(), isNull);
       await tester.pumpWidget(const SizedBox());

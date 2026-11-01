@@ -37,6 +37,7 @@ import 'package:fudatobashi/ui/manga/manga.dart';
 import 'package:fudatobashi/ui/results/celebration_chrome.dart';
 import 'package:fudatobashi/ui/shell/tobi_notice.dart';
 import 'package:fudatobashi/ui/side_trips/ankiren_sheet.dart';
+import 'package:fudatobashi/ui/side_trips/burst_button.dart';
 import 'package:fudatobashi/ui/side_trips/side_trip_entry.dart';
 import 'package:fudatobashi/ui/side_trips/side_trip_panels.dart';
 import 'package:fudatobashi/ui/side_trips/teiichi_page.dart';
@@ -68,6 +69,15 @@ class _Silent extends Sounds {
 
   @override
   Future<void> playKimarijiVoice(int poemId) async {}
+}
+
+/// The Play button and the pair at the foot are on screen as the page opens,
+/// above the navigation bar, for a player at any stage.
+void _expectPlayAndPairVisible(WidgetTester tester) {
+  const bottom = 832.0 - 48;
+  expect(tester.getRect(find.byType(BurstButton).last).bottom, lessThanOrEqualTo(bottom), reason: 'Play');
+  expect(tester.getRect(find.byType(SideTripGuestButton)).bottom, lessThanOrEqualTo(bottom), reason: 'Guest mode');
+  expect(tester.getRect(find.byType(SideTripRulesButton)).bottom, lessThanOrEqualTo(bottom), reason: 'How to play');
 }
 
 void main() {
@@ -157,6 +167,7 @@ void main() {
             s.ankirenRankedLocked(allKnown: true, cleared: false, level: 4));
         expect(find.text(s.ankirenPlayLevel(1)), findsOneWidget);
         expect(tester.takeException(), isNull);
+        _expectPlayAndPairVisible(tester);
         await captureScreen(tester, 'teiichi_ranked/page_new', lang: lang);
         await tester.pumpWidget(const SizedBox());
       });
@@ -167,6 +178,7 @@ void main() {
         expect(find.byType(LockedPanel), findsNothing);
         expect(find.text(s.ankirenPlayLevel(5)), findsOneWidget);
         expect(tester.takeException(), isNull);
+        _expectPlayAndPairVisible(tester);
         await captureScreen(tester, 'teiichi_ranked/page_placement', lang: lang);
         await tester.pumpWidget(const SizedBox());
       });
@@ -178,6 +190,7 @@ void main() {
         expect(find.text('${rating.round()}'), findsOneWidget);
         expect(find.text(s.teiichiFormWrongTaps), findsOneWidget, reason: 'the averages stay');
         expect(tester.takeException(), isNull);
+        _expectPlayAndPairVisible(tester);
         await captureScreen(tester, 'teiichi_ranked/page_rated', lang: lang);
         await tester.pumpWidget(const SizedBox());
       });

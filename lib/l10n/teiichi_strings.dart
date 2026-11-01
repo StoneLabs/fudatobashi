@@ -35,7 +35,6 @@ extension TeiichiStrings on S {
   String get teiichiCustomNote => t('teiichiCustomNote');
   String teiichiPreviewLabel(int cards, int rows) => f('teiichiPreviewLabel', [cards, rows]);
   String get teiichiLearnTitle => t('teiichiLearnTitle');
-  String get teiichiLearnLine => t('teiichiLearnLine');
   String get teiichiLearnButton => t('teiichiLearnButton');
   String get teiichiGuideTitle => t('teiichiGuideTitle');
 
