@@ -246,7 +246,7 @@ void main() {
       });
     }
 
-    testWidgets('My Profile shows 暗記練\'s rank under the main one, unranked as a novice before its first game ($lang)',
+    testWidgets('My Profile shows each trip\'s rank under the main one, unranked as a novice before its first game ($lang)',
         (tester) async {
       final s = S(ja ? 'ja' : 'en');
       final p = await open(tester, ja: ja);
@@ -263,17 +263,18 @@ void main() {
 
       await showProfile();
       expect(find.text(s.tripName(SideTrip.ankiren)), findsOneWidget);
-      expect(find.text(s.sideTripUnranked), findsOneWidget);
-      expect(tester.widget<ClassBadge>(find.byType(ClassBadge)).band, Rating.bands.first);
+      expect(find.text(s.tripName(SideTrip.teiichi)), findsOneWidget);
+      expect(find.text(s.sideTripUnranked), findsNWidgets(SideTrip.values.length));
+      expect(tester.widget<ClassBadge>(find.byType(ClassBadge).first).band, Rating.bands.first);
 
       await tester.runAsync(() => p.recordAnkiren(playAnkiren(const AnkirenSetup.ranked()), startedAt: day));
       final rating = p.sideTrips.ratingOf(SideTrip.ankiren)!;
       await showProfile();
       final row = find.ancestor(of: find.byType(ClassBadge), matching: find.byType(Row)).first;
       expect(find.descendant(of: row, matching: find.text('${rating.round()}')), findsOneWidget);
-      expect(find.text(s.sideTripUnranked), findsNothing);
-      expect(tester.widget<ClassBadge>(find.byType(ClassBadge)).band, Rating.bandOf(rating));
-      final badge = tester.getSize(find.byType(ClassBadge));
+      expect(find.text(s.sideTripUnranked), findsOneWidget, reason: '定位置 has its own rating');
+      expect(tester.widget<ClassBadge>(find.byType(ClassBadge).first).band, Rating.bandOf(rating));
+      final badge = tester.getSize(find.byType(ClassBadge).first);
       final sticker = tester.getSize(find.byType(RankSticker));
       expect(badge.height, lessThan(sticker.height), reason: 'smaller than the main rank');
       await captureScreen(tester, 'profile_side_trips', lang: lang);
