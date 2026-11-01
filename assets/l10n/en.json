@@ -1592,6 +1592,7 @@
   "teiichiNeedCards": "Teiichi needs at least {0} cards you know.",
   "teiichiLeaveTitle": "Leave placing?",
   "teiichiLeaveNote": "Your layout will be lost.",
+  "teiichiNoneLaid": "No card was laid out in this game.",
   "teiichiPreviewLabel": "Your side: {0} cards in {1} rows, face down",
   "teiichiRatingBand": "TEIICHI RATING",
   "teiichiRankBand": "YOUR TEIICHI RANK",

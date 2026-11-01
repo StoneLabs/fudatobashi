@@ -81,6 +81,10 @@ class TeiichiOverviewTab extends StatelessWidget {
     final karafuda = review.recall.karafuda.points;
     final finds = recall.recall - karafuda;
     final bonus = score - recall.recall;
+    final best = review.recall.bestBefore;
+    final stamp = review.recall.isBest && best != null
+        ? RunStamp(s.ankirenBestRankedStamp, sub: s.reviewUpFrom(best.score!), fontSize: RunStampStyle.heroFont)
+        : null;
     return SummaryHero(
       banner: s.ankirenPointsLabel.toUpperCase(),
       body: HeroFigure(groupDigits(score),
@@ -100,7 +104,9 @@ class TeiichiOverviewTab extends StatelessWidget {
         if (karafuda > 0) BarLabel(s.karafudaPoints(groupDigits(karafuda)), part: 2),
       ],
       fallbackLabels: [BarLabel(s.reviewCardPoints(groupDigits(recall.recall)))],
-      pose: TobiPose.relaxed,
+      pose: stamp == null ? TobiPose.relaxed : TobiPose.cheering,
+      stamp: stamp,
+      stampOnTop: true,
     );
   }
 

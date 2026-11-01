@@ -63,7 +63,8 @@ abstract final class TeiichiPlayLayout {
   /// A game with からふだ: once Done is pressed the band rises into the room
   /// above, to [karafudaBandLandscape] tall in landscape and as tall as
   /// 暗記練's band with strikes in portrait, for "don't know" over the
-  /// からふだ button.
+  /// からふだ button. A level without any rises so in portrait alone, for
+  /// the strikes over End.
   static const double karafudaBandLandscape = 80;
   static const double karafudaBandPortrait = AnkirenPlayLayout.bandPortraitStrikes;
 

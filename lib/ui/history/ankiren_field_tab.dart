@@ -76,10 +76,14 @@ class FieldReplay extends StatefulWidget {
     this.tiles = const [],
     this.tilesNote,
     this.trueSlots,
+    this.empty,
   });
   final AnkirenGameRecord game;
   final AnkirenField? deal;
   final String? note, tilesNote;
+
+  /// What to say of a game with no card on its field.
+  final String? empty;
   final List<List<SummaryTile>> tiles;
   final double? trueSlots;
 
@@ -107,7 +111,7 @@ class _FieldReplayState extends State<FieldReplay> {
           title: s.ankirenFieldTitle,
           sub: s.sub?.ankirenFieldTitle,
           flatTop: true,
-          child: ReviewText(s.ankirenFieldMissing),
+          child: ReviewText(deal == null ? s.ankirenFieldMissing : widget.empty ?? s.ankirenFieldMissing),
         ),
       ]);
     }

@@ -113,7 +113,7 @@ class _TeiichiSheetState extends State<TeiichiSheet> {
       rows: settings.teiichiRows,
       karafuda: settings.teiichiKarafuda ?? Karafuda.forTeiichi(settings.teiichiCards),
     );
-    final custom = (last.custom ? last : saved).fitted(_known);
+    final custom = (last.custom ? last : (widget.guest ? TeiichiSetup.usual : saved)).fitted(_known);
     _cards = custom.cards;
     _rows = custom.rows;
     _karafuda = custom.karafuda;

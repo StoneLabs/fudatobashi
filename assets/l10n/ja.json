@@ -1592,6 +1592,7 @@
   "teiichiNeedCards": "定位置には​覚えた​札が​{0}枚​以上​必要だよ。",
   "teiichiLeaveTitle": "並べるのをやめますか？",
   "teiichiLeaveNote": "並べた配置は失われます。",
+  "teiichiNoneLaid": "この対局では札を並べられなかった。",
   "teiichiPreviewLabel": "自陣：{0}枚、{1}段、裏向き",
   "teiichiRatingBand": "定位置 レーティング",
   "teiichiRankBand": "定位置のランク",

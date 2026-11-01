@@ -666,9 +666,9 @@ class _GameRow extends StatelessWidget {
 }
 
 /// A 定位置 game: its kind, how it went (cleared, failed, forfeited or ended
-/// early) and whether it set the best placing time, its cards (and rows,
-/// when custom) with what it did to the rating, its strikes or its wrong
-/// taps, and its score, or else its placing time.
+/// early) and whether it set the best score (ranked) or placing time, its
+/// cards (and rows, when custom) with what it did to the rating, its strikes
+/// or its wrong taps, and its score, or else its placing time.
 class _PlacingRow extends StatelessWidget {
   const _PlacingRow(this.run, {required this.review});
   final SideTripRun run;
@@ -696,7 +696,7 @@ class _PlacingRow extends StatelessWidget {
             ResultBadge(s.historyFailed, muted: true)
           else if (!game.completed)
             ResultBadge(s.endedEarly, muted: true),
-          if (review.isBest) ResultBadge(s.historyBest, cheer: true),
+          if (game.ranked ? review.recall.isBest : review.isBest) ResultBadge(s.historyBest, cheer: true),
         ]),
       ],
       line: Text.rich(TextSpan(children: [

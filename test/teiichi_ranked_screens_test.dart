@@ -22,6 +22,7 @@ import 'package:fudatobashi/domain/teiichi.dart';
 import 'package:fudatobashi/domain/trainer.dart';
 import 'package:fudatobashi/l10n/ankiren_review_strings.dart';
 import 'package:fudatobashi/l10n/ankiren_strings.dart';
+import 'package:fudatobashi/l10n/side_trip_strings.dart';
 import 'package:fudatobashi/l10n/strings.dart';
 import 'package:fudatobashi/l10n/teiichi_review_strings.dart';
 import 'package:fudatobashi/l10n/teiichi_strings.dart';
@@ -463,6 +464,10 @@ void main() {
           await show(tester, p, () => screen);
           await tester.pump(Motion.route);
           await tester.pump(ResultsLayout.overlayStagger);
+          await tester.pump();
+          if (report.rankedGames > AnkirenRatingModel.placementGames) {
+            expect(find.text(s.tripRatingBand(trip)), findsWidgets, reason: 'the rating is its own');
+          }
           await tester.pump(const Duration(seconds: 12));
           await tester.pump(const Duration(seconds: 4));
           // Past the celebrations, tap by tap.
@@ -479,21 +484,21 @@ void main() {
             await captureScreen(tester, 'teiichi_ranked/results_$name', lang: lang, variant: 'scrolled');
           }
 
-          final run = p.sideTrips.runsOf(trip).last;
+          final played = p.sideTrips.runsOf(trip).last;
           await show(tester, p, () => Scaffold(body: SafeArea(child: HistoryScreen(trip: trip, onBack: () {}))));
           await tester.pump(Motion.route);
           await tester.pump(const Duration(seconds: 1));
           expect(tester.takeException(), isNull);
           await captureScreen(tester, 'teiichi_ranked/history_$name', lang: lang);
 
-          await show(tester, p, () => TeiichiGamePage(run: run));
+          await show(tester, p, () => TeiichiGamePage(run: played));
           await tester.pump(Motion.route);
           expect(tester.takeException(), isNull);
           await captureScreen(tester, 'teiichi_ranked/game_${name}_overview', lang: lang);
           final tabs = [
             (S(lang).ankirenTabField, 'field'),
             (S(lang).teiichiTabPlacing, 'placing'),
-            if (run.ranked) (S(lang).ankirenTabScore, 'score'),
+            if (played.ranked) (S(lang).ankirenTabScore, 'score'),
             (S(lang).ankirenTabTaps, 'taps'),
           ];
           for (final (label, tab) in tabs) {
@@ -501,6 +506,7 @@ void main() {
             await tester.pump();
             await tester.pump(const Duration(seconds: 1));
             expect(tester.takeException(), isNull, reason: tab);
+            if (tab == 'field' && name == 'no_cards') expect(find.text(s.teiichiNoneLaid), findsOneWidget);
             await captureScreen(tester, 'teiichi_ranked/game_${name}_$tab', lang: lang);
           }
           expect(s.code, lang);

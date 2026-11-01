@@ -91,6 +91,7 @@ class _FieldTab extends StatelessWidget {
       deal: game.field,
       note: s.ankirenFieldNote,
       trueSlots: TeiichiTuning.rowSlots,
+      empty: s.teiichiNoneLaid,
       tiles: [
         [for (final row in FieldRow.values.reversed) ?tile(s.teiichiRowName(row), game.layout.row(row).cards)],
         [

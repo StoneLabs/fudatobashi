@@ -18,6 +18,9 @@ extension TeiichiReviewStrings on S {
   String teiichiMoreTaps(int n) => f('teiichiMoreTaps', [n]);
   String teiichiFewerTaps(int n) => f('teiichiFewerTaps', [n]);
 
+  /// The Field of a game with no card laid out.
+  String get teiichiNoneLaid => t('teiichiNoneLaid');
+
   /// The Field's tiles of the left and right groups, and what they leave
   /// out.
   String get teiichiGroupLeft => t('teiichiGroupLeft');
