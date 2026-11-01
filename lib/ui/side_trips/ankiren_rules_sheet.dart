@@ -2,14 +2,12 @@ import 'package:flutter/material.dart';
 
 import '../../config/config.dart';
 import '../../config/design.dart';
-import '../../config/vector_art.dart';
 import '../../domain/ankiren_field.dart';
 import '../../domain/ankiren_level.dart';
 import '../../l10n/karafuda_strings.dart';
 import '../../l10n/side_trip_strings.dart';
 import '../../l10n/strings.dart';
 import '../../state/scope.dart';
-import '../ankiren/ankiren_strikes.dart';
 import '../manga/manga.dart';
 import '../play/time_format.dart';
 import '../settings/settings_rows.dart';
@@ -63,12 +61,12 @@ class AnkirenRulesSheet extends StatelessWidget {
       body: [
         RulesSteps(steps),
         RuleList([
-          RuleItem(RuleMark.icon(Palette.pinkSoft, IconArt.close), s.ankirenRuleWrong, o?.ankirenRuleWrong),
+          RuleItem(const RuleMark.image(RuleMarkFiles.wrong), s.ankirenRuleWrong, o?.ankirenRuleWrong),
           RuleItem(const RuleMark.text(Palette.sun, '$reveal'), s.ankirenRuleReveal(reveal), o?.ankirenRuleReveal(reveal)),
-          RuleItem(RuleMark.icon(Palette.desk, IconArt.question), s.ankirenRuleDontKnow, o?.ankirenRuleDontKnow),
-          RuleItem(RuleMark.icon(Palette.ink, IconArt.end), s.ankirenRuleLeave, o?.ankirenRuleLeave),
-          RuleItem(const RuleMark.art(Palette.pinkSoft), s.ankirenRuleStrikes(strikes), o?.ankirenRuleStrikes(strikes)),
-          RuleItem(RuleMark.icon(Palette.paper, IconArt.karafuda), s.karafudaRule(karafudaFrom), o?.karafudaRule(karafudaFrom)),
+          RuleItem(const RuleMark.image(RuleMarkFiles.dontKnow), s.ankirenRuleDontKnow, o?.ankirenRuleDontKnow),
+          RuleItem(const RuleMark.image(RuleMarkFiles.leave), s.ankirenRuleLeave, o?.ankirenRuleLeave),
+          RuleItem(const RuleMark.image(RuleMarkFiles.strikes), s.ankirenRuleStrikes(strikes), o?.ankirenRuleStrikes(strikes)),
+          RuleItem(const RuleMark.image(RuleMarkFiles.karafuda), s.karafudaRule(karafudaFrom), o?.karafudaRule(karafudaFrom)),
           RuleItem(const RuleMark.text(Palette.pink, '${2 * perSide}'),
               s.ankirenRuleRanked(perSide, memorise, opensAt, ranked.karafuda),
               o?.ankirenRuleRanked(perSide, memorise, opensAt, ranked.karafuda)),
@@ -77,10 +75,10 @@ class AnkirenRulesSheet extends StatelessWidget {
           RuleList([
             RuleItem(RuleMark.text(Palette.paper, s.ankirenMarkPoints), s.ankirenScoreFind(first, speed),
                 o?.ankirenScoreFind(first, speed)),
-            RuleItem(RuleMark.icon(Palette.paper, IconArt.cards), s.ankirenScoreNear(second), o?.ankirenScoreNear(second),
+            RuleItem(const RuleMark.image(RuleMarkFiles.cards), s.ankirenScoreNear(second), o?.ankirenScoreNear(second),
                 below: const _TierTable()),
-            RuleItem(RuleMark.icon(Palette.paper, IconArt.karafuda), s.karafudaScore, o?.karafudaScore),
-            RuleItem(RuleMark.icon(Palette.sun, IconArt.history), s.ankirenScoreEarly(early), o?.ankirenScoreEarly(early)),
+            RuleItem(const RuleMark.image(RuleMarkFiles.karafuda), s.karafudaScore, o?.karafudaScore),
+            RuleItem(const RuleMark.image(RuleMarkFiles.early), s.ankirenScoreEarly(early), o?.ankirenScoreEarly(early)),
             RuleItem(RuleMark.text(Palette.pink, s.ankirenMarkPoints), s.ankirenScoreLevel, o?.ankirenScoreLevel),
           ]),
         ]),
@@ -248,31 +246,29 @@ class _Lines extends StatelessWidget {
       );
 }
 
-/// What a list row is marked with: a box of [color] holding an icon, or
-/// short text.
+/// What a list row is marked with: an image of a box holding an icon, or
+/// a box of [color] holding short [text] (numbers that follow the tuning).
 class RuleMark extends StatelessWidget {
-  const RuleMark.icon(this.color, VectorArt this.icon, {super.key})
-      : text = null,
-        strike = false;
-  const RuleMark.text(this.color, String this.text, {super.key})
-      : icon = null,
-        strike = false;
+  const RuleMark.image(String this.asset, {super.key})
+      : color = null,
+        text = null;
+  const RuleMark.text(Color this.color, String this.text, {super.key}) : asset = null;
 
-  /// A struck card (see `AnkirenStrikes`).
-  const RuleMark.art(this.color, {super.key})
-      : icon = null,
-        text = null,
-        strike = true;
-
-  final Color color;
-  final VectorArt? icon;
+  final String? asset;
+  final Color? color;
   final String? text;
-  final bool strike;
 
   @override
   Widget build(BuildContext context) {
-    final ink = color == Palette.ink ? Palette.paper : Palette.ink;
-    final icon = this.icon;
+    final asset = this.asset;
+    if (asset != null) {
+      return Image.asset(asset,
+          width: AnkirenRulesLayout.markBox,
+          height: AnkirenRulesLayout.markBox,
+          filterQuality: FilterQuality.medium,
+          excludeFromSemantics: true);
+    }
+    final color = this.color!;
     return Container(
       width: AnkirenRulesLayout.markBox,
       height: AnkirenRulesLayout.markBox,
@@ -281,17 +277,15 @@ class RuleMark extends StatelessWidget {
         color: color,
         border: Border.all(color: Palette.ink, width: AnkirenRulesLayout.markBorder),
       ),
-      child: strike
-          ? const AnkirenStrikes(strikes: 1, count: 1, cardHeight: AnkirenRulesLayout.markStrike)
-          : icon != null
-              ? MangaIcon(icon,
-                  size: AnkirenRulesLayout.markIcon, color: ink, strokeWidth: AnkirenRulesLayout.markIconStroke)
-              : FittedBox(
-                  fit: BoxFit.scaleDown,
-                  child: Text(text!,
-                      style: TextStyle(
-                          fontFamily: Fonts.display, fontSize: AnkirenRulesLayout.markFont, height: 1, color: ink)),
-                ),
+      child: FittedBox(
+        fit: BoxFit.scaleDown,
+        child: Text(text!,
+            style: TextStyle(
+                fontFamily: Fonts.display,
+                fontSize: AnkirenRulesLayout.markFont,
+                height: 1,
+                color: color == Palette.ink ? Palette.paper : Palette.ink)),
+      ),
     );
   }
 }

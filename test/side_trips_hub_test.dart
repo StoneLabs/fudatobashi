@@ -249,6 +249,7 @@ void main() {
       AnkirenRulesLayout.flip,
       AnkirenRulesLayout.take,
       TeiichiRulesLayout.place,
+      ...RuleMarkFiles.all,
       AnkirenRatingLayout.pole,
       ...AnkirenRatingLayout.cloth,
       AnkirenRankLayout.splash,

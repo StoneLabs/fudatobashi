@@ -4,6 +4,7 @@
 // midway, and Results; what a game records, and that a guest's records
 // nothing. With RENDER_SCREENS=1 it also writes PNGs to
 // build/screens/teiichi/.
+import 'dart:async';
 import 'dart:io';
 
 import 'package:drift/drift.dart' show driftRuntimeOptions;
@@ -215,6 +216,28 @@ void main() {
       expect(tester.takeException(), isNull);
       await tester.pumpWidget(const SizedBox());
     });
+  });
+
+  group('rules sheet renders', skip: !renderScreens, () {
+    for (final lang in ['en', 'ja']) {
+      testWidgets('rules_$lang', (tester) async {
+        final p = await open(tester, language: lang);
+        await show(tester, p, () => const TeiichiPage());
+        unawaited(openTeiichiRules(tester.element(find.byType(TeiichiPage))));
+        await tester.pump();
+        await tester.pump(Motion.sheet * 2);
+        await tester.runAsync(() async {
+          for (final e in find.byType(Image).evaluate()) {
+            await precacheImage((e.widget as Image).image, e);
+          }
+        });
+        await tester.pump();
+        await tester.pump();
+        await captureScreen(tester, 'teiichi/rules_sheet', lang: lang);
+        expect(tester.takeException(), isNull);
+        await tester.pumpWidget(const SizedBox());
+      });
+    }
   });
 
   // The page, new and with games, on the phones at font scales 1 and 1.3:
@@ -613,6 +636,7 @@ void main() {
             barrierColor: FreePracticeLayout.barrier,
             barrierLabel: 'close',
             builder: (_) => const TeiichiSheet(initial: setup)).ignore();
+        await tester.pump();
         await tester.pump();
         await tester.pump(Motion.sheet * 2);
         final karafuda =

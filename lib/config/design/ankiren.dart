@@ -29,9 +29,14 @@ abstract final class AnkirenRulesLayout {
   static const double markBox = 28;
   static const double markBorder = Strokes.label;
   static const double markFont = 12;
+
+  /// What the image marks are drawn with (`tool/rule_marks/`): the icon's
+  /// size and stroke, the struck card's height, the width icon's box.
   static const double markIcon = 17;
   static const double markStrike = 22;
   static const double markIconStroke = 2.6;
+  static const Size markWidthIcon = Size(22, 13);
+  static const double markWidthHead = 3.2;
   static const double markGap = 10;
   static const EdgeInsets rowPadding = EdgeInsets.symmetric(vertical: 8);
   static const double ruleLineFont = 13;
@@ -868,4 +873,23 @@ abstract final class KarafudaStyle {
   static const Color bar = Palette.sea;
   static const Color accent = Palette.sea;
   static const Color tag = Palette.seaDeep;
+}
+
+/// The rule marks as image files (`RuleMark.image`), made by
+/// `./scripts/rule_marks.sh`.
+abstract final class RuleMarkFiles {
+  static const String folder = 'assets/graphics/sidetrips/rules/';
+  static const String wrong = '${folder}mark-wrong.webp';
+  static const String dontKnow = '${folder}mark-dont-know.webp';
+  static const String leave = '${folder}mark-leave.webp';
+  static const String strikes = '${folder}mark-strikes.webp';
+  static const String karafuda = '${folder}mark-karafuda.webp';
+  static const String cards = '${folder}mark-cards.webp';
+  static const String tap = '${folder}mark-tap.webp';
+  static const String early = '${folder}mark-early.webp';
+  static const String clock = '${folder}mark-clock.webp';
+  static const String toEnd = '${folder}mark-to-end.webp';
+  static const String width = '${folder}mark-width.webp';
+
+  static const List<String> all = [wrong, dontKnow, leave, strikes, karafuda, cards, tap, early, clock, toEnd, width];
 }

@@ -90,6 +90,7 @@ flutter:
     - assets/graphics/sidetrips/ankiren/
     - assets/graphics/sidetrips/teiichi/
     - assets/graphics/sidetrips/ui/
+    - assets/graphics/sidetrips/rules/
     - assets/sounds/
     - assets/voice/kimariji/
     - assets/fonts/OFL-delagothicone.txt
