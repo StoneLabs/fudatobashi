@@ -10,6 +10,7 @@ import '../../config/links.dart';
 import '../../config/vector_art.dart';
 import '../../domain/ankiren_level.dart';
 import '../../domain/side_trips.dart';
+import '../../domain/teiichi.dart';
 import '../../domain/trainer.dart';
 import '../../l10n/ankiren_strings.dart';
 import '../../l10n/credits_strings.dart';
@@ -499,6 +500,19 @@ Future<void> _clearAnkirenAll(BuildContext context) async {
   messenger.showSnackBar(SnackBar(content: Text('Lv 0–${AnkirenLevels.top} cleared')));
 }
 
+Future<void> _clearTeiichiUpTo(BuildContext context, int level) async {
+  final progress = ProgressScope.read(context);
+  final messenger = ScaffoldMessenger.of(context);
+  await progress.clearLevelsUpTo(SideTrip.teiichi, level);
+  messenger.showSnackBar(SnackBar(content: Text('Teiichi Lv ${TeiichiLevels.first}–$level cleared')));
+}
+
+Future<void> _resetTeiichiLevels(BuildContext context) async {
+  final messenger = ScaffoldMessenger.of(context);
+  await ProgressScope.read(context).resetLevels(SideTrip.teiichi);
+  messenger.showSnackBar(const SnackBar(content: Text('Teiichi levels reset')));
+}
+
 class _DeveloperSection extends StatelessWidget {
   const _DeveloperSection({super.key});
 
@@ -538,6 +552,12 @@ class _DeveloperSection extends StatelessWidget {
           SettingsTapRow(title: 'Simulation', opensPage: true, onTap: () => open(const SimulationPage())),
           SettingsTapRow(title: 'Clear ankiren until ranked available', onTap: () => _clearAnkirenForRanked(context)),
           SettingsTapRow(title: 'Clear all ankiren levels', onTap: () => _clearAnkirenAll(context)),
+          SettingsTapRow(
+            title: 'Clear teiichi until ranked available',
+            onTap: () => _clearTeiichiUpTo(context, TeiichiTuning.rankedAfterLevel),
+          ),
+          SettingsTapRow(title: 'Clear all teiichi levels', onTap: () => _clearTeiichiUpTo(context, TeiichiLevels.top)),
+          SettingsTapRow(title: 'Reset teiichi levels', onTap: () => _resetTeiichiLevels(context)),
           SettingsTapRow(
             title: 'AnkiRen test game',
             onTap: () => startAnkirenTest(context),
