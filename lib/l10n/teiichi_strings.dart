@@ -21,23 +21,29 @@ extension TeiichiStrings on S {
   String teiichiFormGames(int games) => t(countKey('teiichiFormGames', games));
   String get teiichiFormStart => t('teiichiFormStart');
 
-  /// The page: ranked, still to come; practice with its setup; and the
-  /// guide's card.
-  String teiichiRankedFacts(int cards) => f('teiichiRankedFacts', [cards]);
-  String get teiichiRankedSoon => t('teiichiRankedSoon');
+  /// The page: ranked's setup, and the next level to clear or the setup
+  /// picked instead, with its time limit; the games from before the levels'
+  /// name; and the guide's card.
+  String teiichiRankedFacts(int cards, String limit) => f('teiichiRankedFacts', [cards, limit]);
   String get teiichiPractice => t('teiichiPractice');
   String get teiichiRows => t('teiichiRows');
   String teiichiPlay(int cards) => f('teiichiPlay', [cards]);
-  String get teiichiAllCards => t('teiichiAllCards');
+  String get teiichiLimitLabel => t('teiichiLimitLabel');
+  String get teiichiNoLimit => t('teiichiNoLimit');
+  String teiichiToPlace(String limit) => f('teiichiToPlace', [limit]);
+  String get teiichiCustomNote => t('teiichiCustomNote');
+  String teiichiPreviewLabel(int cards, int rows) => f('teiichiPreviewLabel', [cards, rows]);
   String get teiichiLearnTitle => t('teiichiLearnTitle');
   String get teiichiLearnLine => t('teiichiLearnLine');
   String get teiichiLearnButton => t('teiichiLearnButton');
   String get teiichiGuideTitle => t('teiichiGuideTitle');
 
-  /// The custom game sheet: the card count from the known cards, the rows
-  /// (each key's count, how many cards it holds or, shut, how few it
-  /// needs), the note when the rows had to go up, and what counts for the
-  /// best placing time.
+  /// The level sheet: a level key's cards and how levels open; for a custom
+  /// game the card count from the known cards, the rows (each key's count,
+  /// how many cards it holds or, shut, how few it needs), the note when the
+  /// rows had to go up, and what counts for the best placing time.
+  String teiichiKeyCards(int cards) => f('teiichiKeyCards', [cards]);
+  String teiichiUnlockLine(int strikes) => f('teiichiUnlockLine', [strikes]);
   String get teiichiCustomTitle => t('teiichiCustomTitle');
   String get teiichiFromKnown => t('teiichiFromKnown');
   String get teiichiAnyNumber => t('teiichiAnyNumber');
@@ -50,14 +56,17 @@ extension TeiichiStrings on S {
   String get teiichiGuestLine => t('teiichiGuestLine');
 
   /// The placing screen: the hint, the stack's count, what the band's
-  /// clock counts, where a dragged card would land, and the note once every
-  /// card is placed.
+  /// clock counts, where a dragged card would land, the note once every
+  /// card is placed, and what leaving costs.
   String get teiichiPlaceHint => t('teiichiPlaceHint');
   String teiichiLeft(int n) => f('teiichiLeft', [n]);
   String get teiichiPlacing => t('teiichiPlacing');
+  String get teiichiTimeLeft => t('teiichiTimeLeft');
   String get teiichiPlaced => t('teiichiPlaced');
   String get teiichiLeaveTitle => t('teiichiLeaveTitle');
   String get teiichiLeaveNote => t('teiichiLeaveNote');
+  String get teiichiForfeitTitle => t('teiichiForfeitTitle');
+  String get teiichiForfeitNote => t('teiichiForfeitNote');
 
   /// Turning the screen: the setting, and the tip on a portrait screen.
   String get teiichiAutoTurn => t('teiichiAutoTurn');
@@ -104,12 +113,32 @@ extension TeiichiStrings on S {
   String get teiichiPlayAgain => t('teiichiPlayAgain');
   String get teiichiGuestNote => t('teiichiGuestNote');
 
+  /// A ranked game's results: the placing time where 暗記練 says the top
+  /// score, what it paid on the tile and the bar, what a forfeit counts as,
+  /// and how the score works; and what ranked needs next, and the cards
+  /// never placed, as a level game's results say them.
+  String teiichiPlacedIn(String time) => f('teiichiPlacedIn', [time]);
+  String teiichiBonusNote(int percent) => f('teiichiBonusNote', [percent]);
+  String teiichiBonusBar(String points) => f('teiichiBonusBar', [points]);
+  String get teiichiCountsAsZero => t('teiichiCountsAsZero');
+  String get teiichiScoreNote => t('teiichiScoreNote');
+  String teiichiRankedNext(int level) => f('teiichiRankedNext', [level]);
+  String get teiichiUnplacedTag => t('teiichiUnplacedTag');
+  String teiichiUnplacedNote(int cards) => f(cards == 1 ? 'teiichiUnplacedNoteOne' : 'teiichiUnplacedNote', [cards]);
+
   /// The rules: the placing step, then how placing works, a row's width,
-  /// the clock, and that a game always goes to the end.
+  /// the clock, its limits, that a game always goes to the end, the
+  /// strikes, the custom level, ranked, and leaving it.
   String get teiichiStepPlace => t('teiichiStepPlace');
   String get teiichiStepPlaceLine => t('teiichiStepPlaceLine');
   String get teiichiRuleTap => t('teiichiRuleTap');
   String teiichiRuleRow(String cards) => f('teiichiRuleRow', [cards]);
   String teiichiRuleClock(int cards) => f('teiichiRuleClock', [cards]);
   String get teiichiRuleToEnd => t('teiichiRuleToEnd');
+  String get teiichiRuleLimit => t('teiichiRuleLimit');
+  String teiichiRuleStrikes(int strikes) => f('teiichiRuleStrikes', [strikes]);
+  String teiichiRuleCustom(int clear, int level) => f('teiichiRuleCustom', [clear, level]);
+  String teiichiRuleRanked(int cards, int rows, int karafuda, String limit, int level) =>
+      f('teiichiRuleRanked', [cards, rows, karafuda, limit, level]);
+  String get teiichiRuleLeave => t('teiichiRuleLeave');
 }

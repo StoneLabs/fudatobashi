@@ -138,17 +138,11 @@ extension AnkirenStrings on S {
   /// The rating page's band; on the last placement game's; over 暗記練's
   /// rank-up after a breakthrough, and over its rank-down after a fall
   /// into a lower class.
-  String get ankirenRatingBand => t('ankirenRatingBand');
-  String get ankirenRankBand => t('ankirenRankBand');
-
-  /// The big shout of the AnkiRen rating screen, for how the rating moved.
-  String get ankirenTitleUp => t('ankirenTitleUp');
+  /// The big shout of the rating screen, for how the rating moved.
   String get ankirenTitleHeld => t('ankirenTitleHeld');
   String get ankirenTitleDown => t('ankirenTitleDown');
   String get ankirenTitlePlacing => t('ankirenTitlePlacing');
   String get ankirenTitlePlaced => t('ankirenTitlePlaced');
-  String get ankirenRankUpBand => t('ankirenRankUpBand');
-  String get ankirenRankDownBand => t('ankirenRankDownBand');
 
   /// A placement game's slot on the rating page: "GAME 2".
   String ankirenSlot(int game) => f('ankirenSlot', [game]);

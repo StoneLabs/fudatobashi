@@ -69,6 +69,28 @@ extension SideTripStrings on S {
         SideTrip.teiichi => t('teiichiOpenPage'),
       };
 
+  /// The rating pages' bands, and the shout of a rise.
+  String tripRatingBand(SideTrip trip) => switch (trip) {
+        SideTrip.ankiren => t('ankirenRatingBand'),
+        SideTrip.teiichi => t('teiichiRatingBand'),
+      };
+  String tripRankBand(SideTrip trip) => switch (trip) {
+        SideTrip.ankiren => t('ankirenRankBand'),
+        SideTrip.teiichi => t('teiichiRankBand'),
+      };
+  String tripRankUpBand(SideTrip trip) => switch (trip) {
+        SideTrip.ankiren => t('ankirenRankUpBand'),
+        SideTrip.teiichi => t('teiichiRankUpBand'),
+      };
+  String tripRankDownBand(SideTrip trip) => switch (trip) {
+        SideTrip.ankiren => t('ankirenRankDownBand'),
+        SideTrip.teiichi => t('teiichiRankDownBand'),
+      };
+  String tripTitleUp(SideTrip trip) => switch (trip) {
+        SideTrip.ankiren => t('ankirenTitleUp'),
+        SideTrip.teiichi => t('teiichiTitleUp'),
+      };
+
   String get sideTripUnranked => t('sideTripUnranked');
   String get sideTripRanked => t('sideTripRanked');
 
