@@ -9,6 +9,7 @@ import '../../config/design.dart';
 import '../../domain/ankiren_game.dart';
 import '../../domain/ankiren_level.dart';
 import '../../domain/ankiren_score.dart';
+import '../../domain/level_ladder.dart';
 import '../../domain/rating.dart';
 import '../../domain/side_trips.dart';
 import '../../l10n/ankiren_review_strings.dart';
@@ -47,7 +48,7 @@ class AnkirenResultsScreen extends StatefulWidget {
   final AnkirenGame game;
 
   /// What was recorded; null when nothing was (see [AnkirenPlayer]).
-  final AnkirenReport? report;
+  final SideTripReport? report;
   final AnkirenPlayer player;
 
   @override
@@ -92,7 +93,7 @@ class _AnkirenResultsScreenState extends State<AnkirenResultsScreen> {
 
   /// The placement games' scores so far, when [report]'s game is one of
   /// them.
-  List<int> _placementScores(AnkirenReport report) {
+  List<int> _placementScores(SideTripReport report) {
     if (report.rankedGames > AnkirenRatingModel.placementGames) return const [];
     final results = ProgressScope.read(context).sideTripsHub()[SideTrip.ankiren].results;
     return [for (final r in results.take(report.rankedGames)) r.score];
@@ -150,7 +151,7 @@ class _Game {
 
   final S s;
   final AnkirenGame game;
-  final AnkirenReport? report;
+  final SideTripReport? report;
   final AnkirenPlayer player;
 
   AnkirenSetup get setup => game.setup;
@@ -240,7 +241,7 @@ class _Game {
   }
 
   /// A free-play level game of the owner's, whose strikes count.
-  _Content _level(BuildContext context, int level, AnkirenReport report) {
+  _Content _level(BuildContext context, int level, SideTripReport report) {
     final cleared = game.cleared;
     final before = report.ladderBefore, after = report.ladderAfter;
     final opened = !after.allCleared && after.open > before.open;
@@ -429,7 +430,7 @@ class _Game {
 class _Levels extends StatelessWidget {
   const _Levels({required this.ladder, required this.level, required this.failed});
 
-  final AnkirenLadder ladder;
+  final LevelLadder ladder;
   final int level;
   final bool failed;
 

@@ -1,7 +1,7 @@
 import 'dart:math' as math;
 
 import '../config/config.dart';
-import 'ankiren_level.dart';
+import 'level_ladder.dart';
 import 'rating.dart';
 import 'teiichi_record.dart';
 
@@ -114,20 +114,21 @@ abstract final class SideTripUnlocks {
 }
 
 /// What keeps an open trip's ranked games shut: they need the all-known
-/// learning mode ([allKnown] false until it is on) and free play's level
-/// [AnkirenTuning.rankedAfterLevel] cleared ([cleared] false until it is).
+/// learning mode ([allKnown] false until it is on) and the trip's [level]
+/// cleared ([cleared] false until it is).
 class RankedLock {
-  const RankedLock({required this.allKnown, required this.cleared});
+  const RankedLock({required this.allKnown, required this.cleared, required this.level});
 
   final bool allKnown;
   final bool cleared;
 
-  /// The free-play level to clear.
-  static int get level => AnkirenTuning.rankedAfterLevel;
+  /// The level to clear ([LadderRules.rankedAfter]).
+  final int level;
 
   /// What ranked still needs, or null once it is open.
-  static RankedLock? of({required bool allKnown, required AnkirenLadder ladder}) =>
-      allKnown && ladder.rankedReady ? null : RankedLock(allKnown: allKnown, cleared: ladder.rankedReady);
+  static RankedLock? of({required bool allKnown, required LevelLadder ladder}) => allKnown && ladder.rankedReady
+      ? null
+      : RankedLock(allKnown: allKnown, cleared: ladder.rankedReady, level: ladder.rules.rankedAfter);
 }
 
 /// One ranked game of a side trip: its [score] and what it did to the
@@ -149,7 +150,7 @@ class SideTripStanding {
   const SideTripStanding({
     this.rating,
     this.ratingChange,
-    this.ladder = AnkirenLadder.none,
+    this.ladder = LevelLadder.none,
     this.maxLevel,
     this.games = 0,
     this.results = const [],
@@ -160,7 +161,7 @@ class SideTripStanding {
 
   final double? rating;
   final double? ratingChange;
-  final AnkirenLadder ladder;
+  final LevelLadder ladder;
   final int? maxLevel;
   final int games;
   final List<SideTripResult> results;
@@ -202,7 +203,7 @@ class SideTripEntry {
 
   /// Free play's levels cleared and open, and the highest level the known
   /// cards allow (null while unknown or when none fits).
-  final AnkirenLadder ladder;
+  final LevelLadder ladder;
   final int? maxLevel;
   final int games;
 

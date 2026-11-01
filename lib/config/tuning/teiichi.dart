@@ -37,6 +37,13 @@ abstract final class TeiichiTuning {
   static const double openMiddleShare = 1 / 3;
 }
 
+/// 定位置's rating (`TripRating.teiichi`), by 暗記練's rule
+/// ([AnkirenRatingModel]) and on its scale, but a rating of its own.
+abstract final class TeiichiRatingModel {
+  /// A ranked game's performance is its final score over this many points.
+  static const double pointsPerRating = 2.7;
+}
+
 /// 定位置's play screen (`TeiichiScreen`): its clock and the pace of its
 /// placing.
 abstract final class TeiichiPlayTuning {

@@ -212,7 +212,7 @@ List<Celebration> celebrationsFor(SessionReport report) {
 /// own rank-up or rank-down when it broke into another class.
 /// [placementScores] are the placement games' scores so far, for a game
 /// that is one of them.
-List<Celebration> ankirenCelebrationsFor(AnkirenReport report, {List<int> placementScores = const []}) {
+List<Celebration> ankirenCelebrationsFor(SideTripReport report, {List<int> placementScores = const []}) {
   final list = xpCelebrations(report.xp);
   final (before, after) = (report.ratingBefore, report.ratingAfter);
   if (before == null || after == null) return list;

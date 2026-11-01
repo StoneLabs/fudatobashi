@@ -6,7 +6,7 @@ import 'package:flutter/widgets.dart';
 
 import '../../config/config.dart';
 import '../../config/design.dart';
-import '../../domain/ankiren_rating.dart';
+import '../../domain/trip_rating.dart';
 import '../../domain/rating.dart';
 import '../../l10n/ankiren_strings.dart';
 import '../../l10n/ranked_strings.dart';
@@ -28,7 +28,7 @@ class AnkirenRatingTrack {
   factory AnkirenRatingTrack.span(double low, double high) {
     final bottom = Rating.bandOf(low);
     final next = Rating.nextBand(high);
-    final floor = bottom.minRating.isFinite ? bottom.minRating : AnkirenRating.start;
+    final floor = bottom.minRating.isFinite ? bottom.minRating : TripRating.start;
     final ceiling = next?.minRating ?? math.max(high, Rating.bandOf(high).minRating + RatingScreenTuning.openSpan);
     return AnkirenRatingTrack._(floor, ceiling, next, [
       for (final b in Rating.bands)

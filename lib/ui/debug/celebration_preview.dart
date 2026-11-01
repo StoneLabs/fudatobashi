@@ -6,7 +6,7 @@ import '../../config/design.dart';
 import '../../config/vector_art.dart';
 import '../../data/fuda_sets.dart';
 import '../../data/poem.dart';
-import '../../domain/ankiren_rating.dart';
+import '../../domain/trip_rating.dart';
 import '../../domain/play_session.dart';
 import '../../domain/rating.dart';
 import '../../domain/side_trips.dart';
@@ -138,7 +138,7 @@ void previewAnkirenRating(BuildContext context, AnkirenRatingMoment moment) {
   const move = CelebrationPreviewTuning.ankirenMove, cross = CelebrationPreviewTuning.ankirenCross;
   const scores = CelebrationPreviewTuning.ankirenPlacementScores;
   final (before, after, game) = switch (moment) {
-    AnkirenRatingMoment.placing => (AnkirenRating.start, CelebrationPreviewTuning.ankirenPlacing, 1),
+    AnkirenRatingMoment.placing => (TripRating.start, CelebrationPreviewTuning.ankirenPlacing, 1),
     AnkirenRatingMoment.placed => (
         CelebrationPreviewTuning.ankirenPlacing,
         CelebrationPreviewTuning.ankirenPlaced,
@@ -150,7 +150,7 @@ void previewAnkirenRating(BuildContext context, AnkirenRatingMoment moment) {
     AnkirenRatingMoment.rankUp => (floor - cross, floor + cross, CelebrationPreviewTuning.ankirenGame),
     AnkirenRatingMoment.rankDown => (floor + cross, floor - cross, CelebrationPreviewTuning.ankirenGame),
   };
-  final report = AnkirenReport(ratingBefore: before, ratingAfter: after, rankedGames: game);
+  final report = SideTripReport(ratingBefore: before, ratingAfter: after, rankedGames: game);
   _previewPages(context, ankirenCelebrationsFor(report, placementScores: scores.take(game).toList()));
 }
 

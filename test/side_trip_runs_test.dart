@@ -11,7 +11,8 @@ import 'package:fudatobashi/db/database.dart';
 import 'package:fudatobashi/domain/ankiren_field.dart';
 import 'package:fudatobashi/domain/ankiren_game.dart';
 import 'package:fudatobashi/domain/ankiren_level.dart';
-import 'package:fudatobashi/domain/ankiren_rating.dart';
+import 'package:fudatobashi/domain/level_ladder.dart';
+import 'package:fudatobashi/domain/trip_rating.dart';
 import 'package:fudatobashi/domain/ankiren_score.dart';
 import 'package:fudatobashi/domain/card_stats.dart';
 import 'package:fudatobashi/domain/play_session.dart';
@@ -48,13 +49,13 @@ void main() {
     final perfect = playAnkiren(const AnkirenSetup.ranked(), ms: 100);
     final first = await p.recordAnkiren(perfect, startedAt: startedAt);
     expect(notified, 1);
-    final performance = AnkirenRating.performance(perfect.score!.total);
+    final performance = TripRating.ankiren.performance(perfect.score!.total);
     final stored = p.sideTrips.runs.single;
     expect([stored.ranked, stored.level, stored.completed, p.sideTrips.cardsIn(stored), stored.score, stored.maxScore],
         [true, null, true, perfect.prompts.length, perfect.score!.total, perfect.score!.max]);
     expect(perfect.prompts.length, 2 * AnkirenTuning.rankedPerSide);
     expect([stored.rating, stored.performance], [performance, performance], reason: 'the first game places at its own');
-    expect([first.ratingBefore, first.ratingAfter], [AnkirenRating.start, performance]);
+    expect([first.ratingBefore, first.ratingAfter], [TripRating.start, performance]);
     expect(p.sideTrips.missesIn(stored), 0);
     expect(stored.meta, contains('"perSide":${AnkirenTuning.rankedPerSide}'));
     expect(Rating.bandOf(performance).id, 'A', reason: 'every card at 0.1 s');
@@ -90,7 +91,7 @@ void main() {
     for (var game = 0; game <= AnkirenRatingModel.placementGames; game++) {
       final played = playAnkiren(const AnkirenSetup.ranked(), seed: game, ms: 600 + 400 * game);
       final report = await p.recordAnkiren(played, startedAt: startedAt);
-      final perf = AnkirenRating.performance(played.score!.total);
+      final perf = TripRating.ankiren.performance(played.score!.total);
       expect(p.sideTrips.runs.last.performance, perf);
       final expected = game < AnkirenRatingModel.placementGames
           ? (performances.fold(0.0, (a, b) => a + b) + perf) / (game + 1)
@@ -127,7 +128,7 @@ void main() {
   test('levels open as recorded games clear them; a game with three strikes clears nothing', () async {
     final db = AppDatabase(NativeDatabase.memory());
     final p = await allKnown(db);
-    AnkirenLadder ladder() => p.sideTripsHub()[ankiren].ladder;
+    LevelLadder ladder() => p.sideTripsHub()[ankiren].ladder;
     expect([ladder().open, ladder().cleared], [0, isEmpty]);
 
     final out = playAnkiren(AnkirenSetup.forLevel(0), wrongAt: {0, 1, 2}, strikes: true);

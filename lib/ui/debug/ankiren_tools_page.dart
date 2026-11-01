@@ -7,7 +7,7 @@ import '../../config/design.dart';
 import '../../data/poem.dart';
 import '../../domain/ankiren_field.dart';
 import '../../domain/ankiren_level.dart';
-import '../../domain/ankiren_rating.dart';
+import '../../domain/trip_rating.dart';
 import '../../domain/ankiren_score.dart';
 import '../../domain/ankiren_tomofuda.dart';
 import '../../domain/rating.dart';
@@ -453,13 +453,13 @@ class _ClassTable extends StatelessWidget {
   /// time in ms, or the first-tap finds at the slowest timed find.
   static ({int? ms, int finds}) _reach(double rating, Duration timeLeft) {
     bool reaches(double ms) =>
-        AnkirenRating.performance(AnkirenScore.firstTryTotal(_setup, responseMs: ms, timeLeft: timeLeft)) >= rating;
+        TripRating.ankiren.performance(AnkirenScore.firstTryTotal(_setup, responseMs: ms, timeLeft: timeLeft)) >= rating;
     final slowest = AnkirenTuning.speedNone.inMilliseconds.toDouble();
     if (reaches(slowest)) {
       final share = timeLeft.inMicroseconds / _setup.memorise.inMicroseconds;
       var finds = 0;
       while (finds < _setup.calls &&
-          AnkirenRating.performance(AnkirenScore.totalOf(finds * AnkirenTuning.cardPoints, finds * AnkirenTuning.cardPoints, share)) < rating) {
+          TripRating.ankiren.performance(AnkirenScore.totalOf(finds * AnkirenTuning.cardPoints, finds * AnkirenTuning.cardPoints, share)) < rating) {
         finds++;
       }
       return (ms: null, finds: finds);
@@ -507,7 +507,7 @@ class _ClassTable extends StatelessWidget {
       for (final (i, b) in bands.indexed)
         Text(
           '${cell(b.labelEn, 6)}${cell(b.minRating.round().toString(), 6)}'
-          '${cell(AnkirenRating.scoreFor(b.minRating).round().toString(), 7)}'
+          '${cell(TripRating.ankiren.scoreFor(b.minRating).round().toString(), 7)}'
           '${cell(_range(full[i], full.elementAtOrNull(i + 1)), 14)}'
           '${_range(ready[i], ready.elementAtOrNull(i + 1))}',
           style: debugMono,

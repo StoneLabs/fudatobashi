@@ -11,7 +11,7 @@ import 'package:fudatobashi/data/poem.dart';
 import 'package:fudatobashi/db/database.dart';
 import 'package:fudatobashi/db/fsrs_rows.dart';
 import 'package:fudatobashi/domain/ankiren_level.dart';
-import 'package:fudatobashi/domain/ankiren_rating.dart';
+import 'package:fudatobashi/domain/trip_rating.dart';
 import 'package:fudatobashi/domain/card_stats.dart';
 import 'package:fudatobashi/domain/play_session.dart';
 import 'package:fudatobashi/domain/rating.dart';
@@ -239,7 +239,7 @@ void main() {
 
     test('answers of a missing game are deleted; ratings that are no number are replayed', () async {
       final db = AppDatabase(NativeDatabase.memory());
-      final placed = AnkirenRating.update(AnkirenRating.start, 1300, const []);
+      final placed = TripRating.update(TripRating.start, 1300, const []);
       final a = await trip(db, 1, performance: 1300, rating: placed);
       final b = await trip(db, 2, performance: double.infinity, rating: double.infinity);
       final c = await trip(db, 3, ranked: false);
@@ -260,9 +260,9 @@ void main() {
       expect([runs[c]!.performance, runs[c]!.rating], [null, null]);
       expect([runs[old]!.ranked, runs[old]!.level, runs[old]!.performance, runs[old]!.rating], [false, 5, null, null],
           reason: 'a ranked game with a level is made a free game, without a rating');
-      final rd = AnkirenRating.update(placed, 1500, const [1300]);
+      final rd = TripRating.update(placed, 1500, const [1300]);
       expect([runs[d]!.performance, runs[d]!.rating], [1500, rd]);
-      expect(runs[e]!.rating, AnkirenRating.update(rd, 1200, const [1300, 1500]));
+      expect(runs[e]!.rating, TripRating.update(rd, 1200, const [1300, 1500]));
       expect(p.sideTrips.ratingOf(SideTrip.ankiren), runs[e]!.rating);
       expect(p.sideTrips.rankedGames(SideTrip.ankiren), 3);
 

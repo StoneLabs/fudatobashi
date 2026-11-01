@@ -6,7 +6,7 @@ import 'package:fsrs/fsrs.dart' as fsrs;
 
 import '../db/database.dart';
 import '../db/fsrs_rows.dart';
-import '../domain/ankiren_rating.dart';
+import '../domain/trip_rating.dart';
 import '../domain/card_stats.dart';
 import '../domain/play_session.dart';
 import '../domain/rating.dart';
@@ -224,12 +224,6 @@ abstract final class DbIntegrity {
         r.performance == null ? r.rating == null : r.performance!.isFinite && (r.rating?.isFinite ?? false);
     const dropped = SideTripRunsCompanion(rating: Value(null), performance: Value(null));
     for (final trip in SideTrip.values) {
-      final model = switch (trip) {
-        SideTrip.ankiren => (AnkirenRating.start, AnkirenRating.update),
-        SideTrip.teiichi => null,
-      };
-      if (model == null) continue;
-      final (start, update) = model;
       final runs = [
         for (final r in ranked)
           if (r.game == trip) r,
@@ -237,7 +231,7 @@ abstract final class DbIntegrity {
       final first = runs.indexWhere((r) => !sound(r));
       if (first < 0) continue;
       final kept = [for (final r in runs.take(first)) if (r.rating != null) r];
-      var rating = kept.lastOrNull?.rating ?? start;
+      var rating = kept.lastOrNull?.rating ?? TripRating.start;
       final performances = [for (final r in kept) r.performance!];
       for (final r in runs.skip(first)) {
         final performance = r.performance;
@@ -245,7 +239,7 @@ abstract final class DbIntegrity {
         if (performance == null || !performance.isFinite) {
           replayed = dropped;
         } else {
-          rating = update(rating, performance, performances);
+          rating = TripRating.update(rating, performance, performances);
           performances.add(performance);
           replayed = SideTripRunsCompanion(rating: Value(rating));
         }

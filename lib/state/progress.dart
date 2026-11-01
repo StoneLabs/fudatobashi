@@ -1424,7 +1424,7 @@ class Progress extends ChangeNotifier {
   /// Stores a 暗記練 game once it is over, ranked or free, moves its rating
   /// for a ranked one (see [SideTrips.recordAnkiren]) and adds up the
   /// experience it earned.
-  Future<AnkirenReport> recordAnkiren(
+  Future<SideTripReport> recordAnkiren(
     AnkirenGame game, {
     required DateTime startedAt,
     Map<String, Object?> meta = const {},
@@ -1434,7 +1434,7 @@ class Progress extends ChangeNotifier {
     final report = await sideTrips.recordAnkiren(db, game, startedAt: startedAt, day: day.day, meta: meta);
     final gain = ledger.addAnkiren(XpHistory.ankirenRunOf(sideTrips, sideTrips.runs.last));
     notifyListeners();
-    return AnkirenReport(
+    return SideTripReport(
       ratingBefore: report.ratingBefore,
       ratingAfter: report.ratingAfter,
       rankedGames: report.rankedGames,

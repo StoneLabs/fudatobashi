@@ -24,7 +24,7 @@ import 'package:fudatobashi/data/poem.dart';
 import 'package:fudatobashi/db/database.dart';
 import 'package:fudatobashi/domain/ankiren_game.dart';
 import 'package:fudatobashi/domain/ankiren_level.dart';
-import 'package:fudatobashi/domain/ankiren_rating.dart';
+import 'package:fudatobashi/domain/trip_rating.dart';
 import 'package:fudatobashi/domain/ankiren_score.dart';
 import 'package:fudatobashi/domain/ankiren_xp.dart';
 import 'package:fudatobashi/domain/rating.dart';
@@ -80,7 +80,7 @@ final _eLower = Rating.bands[3].minRating;
 
 /// The rating page's moments, each with its ratings and game.
 final _moments = <AnkirenRatingMoment, AnkirenRatingCelebration>{
-  AnkirenRatingMoment.placing: AnkirenRatingCelebration(AnkirenRating.start, 820, game: 1, placementScores: const [612]),
+  AnkirenRatingMoment.placing: AnkirenRatingCelebration(TripRating.start, 820, game: 1, placementScores: const [612]),
   AnkirenRatingMoment.placed: const AnkirenRatingCelebration(1010, 1180, game: 3, placementScores: [612, 845, 903]),
   AnkirenRatingMoment.up: AnkirenRatingCelebration(_eLower + 60, _eLower + 118, game: 9),
   AnkirenRatingMoment.held: AnkirenRatingCelebration(_eLower + 60, _eLower + 60.2, game: 9),
@@ -201,8 +201,8 @@ void main() {
   Finder cloth(RankBand? band) => find.byKey(ValueKey(band?.id ?? AnkirenRatingLayout.veiled));
 
   group('the pages after a game', () {
-    AnkirenReport report({double? before, double? after, int games = 0, XpGain? xp}) =>
-        AnkirenReport(ratingBefore: before, ratingAfter: after, rankedGames: games, xp: xp);
+    SideTripReport report({double? before, double? after, int games = 0, XpGain? xp}) =>
+        SideTripReport(ratingBefore: before, ratingAfter: after, rankedGames: games, xp: xp);
     final earned = XpGain(before: 0, award: const XpAward([XpPart(XpSource.firstTap, 1, 70)]));
     final levelling = XpGain(before: XpCurve.reach(2) - 10, award: const XpAward([XpPart(XpSource.firstTap, 4, 280)]));
     List<Type> types(List<Celebration> list) => [for (final c in list) c.runtimeType];
@@ -332,7 +332,7 @@ void main() {
               fontScale: 1.3, settle: t.breaksThrough ? t.strainEnd : t.length);
           expect(tester.takeException(), isNull, reason: '${data.moment.name} ${data.after}');
           if (Rating.bandOf(data.after) == Rating.bands.first) {
-            expect(t.track.floor, AnkirenRating.start, reason: '入門 stands on the start');
+            expect(t.track.floor, TripRating.start, reason: '入門 stands on the start');
           }
           if (Rating.bandOf(data.after) == Rating.bands.last && !t.breaksThrough) {
             expect(find.text(s.topClassChase), findsOneWidget);
@@ -400,10 +400,10 @@ void main() {
 
   group('plays', () {
     // Records [game] for [p], then shows its results over an empty screen.
-    Future<AnkirenReport> results(WidgetTester tester, Progress p, AnkirenSetup setup,
+    Future<SideTripReport> results(WidgetTester tester, Progress p, AnkirenSetup setup,
         {bool tracked = true, int? endAfter, int ms = 600}) async {
       final game = playAnkiren(setup, ms: ms, endAfter: endAfter);
-      late AnkirenReport? report;
+      late SideTripReport? report;
       if (tracked) {
         await tester.runAsync(() async => report = await p.recordAnkiren(game, startedAt: DateTime.now()));
       } else {
@@ -415,7 +415,7 @@ void main() {
           AnkirenResultsScreen(
               game: game, report: report, player: tracked ? AnkirenPlayer.owner : AnkirenPlayer.developer)));
       await tester.pump();
-      return report ?? const AnkirenReport(ratingBefore: null, ratingAfter: null);
+      return report ?? const SideTripReport(ratingBefore: null, ratingAfter: null);
     }
 
     Future<void> tapThrough(WidgetTester tester) async {
@@ -426,7 +426,7 @@ void main() {
     }
 
     // Taps past the XP page, and the level-up when [report] reached one.
-    Future<void> pastXp(WidgetTester tester, AnkirenReport report) async {
+    Future<void> pastXp(WidgetTester tester, SideTripReport report) async {
       expect(find.byType(XpOverlay), findsOneWidget);
       await tapThrough(tester);
       if (report.xp!.levelsGained > 0) {

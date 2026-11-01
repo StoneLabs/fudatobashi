@@ -5,8 +5,8 @@ import 'package:flutter/material.dart';
 import '../../config/design.dart';
 import '../../config/vector_art.dart';
 import '../../db/database.dart' show SideTripRun;
-import '../../domain/ankiren_level.dart';
-import '../../domain/ankiren_rating.dart';
+import '../../domain/level_ladder.dart';
+import '../../domain/trip_rating.dart';
 import '../../domain/ankiren_review.dart';
 import '../../domain/side_trips.dart';
 import '../../domain/teiichi_review.dart';
@@ -625,12 +625,12 @@ class _GameRow extends StatelessWidget {
     final earlier = all.where((g) => g.startedAt.isBefore(game.startedAt));
     final previous = earlier.where((g) => g.ranked && g.rating != null).firstOrNull;
     final rating = game.rating;
-    final change = game.ranked && rating != null ? rating - (previous?.rating ?? AnkirenRating.start) : null;
+    final change = game.ranked && rating != null ? rating - (previous?.rating ?? TripRating.start) : null;
     final best = game.ranked &&
         game.score != null &&
         earlier.where((g) => g.ranked).every((g) => (g.score ?? 0) < game.score!);
     final strikes = progress.sideTrips.strikesIn(game);
-    final cleared = AnkirenLadder.clears(completed: game.completed, strikes: strikes);
+    final cleared = LevelLadder.clears(completed: game.completed, strikes: strikes);
     final meta = jsonDecode(game.meta) as Map<String, dynamic>;
     final cards = progress.sideTrips.cardsIn(game);
     final found = cards - progress.sideTrips.missesIn(game);

@@ -5,7 +5,8 @@ import 'package:fudatobashi/config/config.dart';
 import 'package:fudatobashi/domain/ankiren_field.dart';
 import 'package:fudatobashi/domain/ankiren_game.dart';
 import 'package:fudatobashi/domain/ankiren_level.dart';
-import 'package:fudatobashi/domain/ankiren_rating.dart';
+import 'package:fudatobashi/domain/level_ladder.dart';
+import 'package:fudatobashi/domain/trip_rating.dart';
 import 'package:fudatobashi/domain/ankiren_score.dart';
 import 'package:fudatobashi/domain/rating.dart';
 
@@ -205,31 +206,31 @@ void main() {
     });
 
     test('a game rates at half its score, and the score for a rating inverts it', () {
-      expect(AnkirenRating.performance(9000), 4500);
-      expect(AnkirenRating.scoreFor(band('A')), 2 * band('A'));
+      expect(TripRating.ankiren.performance(9000), 4500);
+      expect(TripRating.ankiren.scoreFor(band('A')), 2 * band('A'));
       for (var score = 0; score < 12000; score += 97) {
-        expect(AnkirenRating.scoreFor(AnkirenRating.performance(score)), closeTo(score, 1e-6));
+        expect(TripRating.ankiren.scoreFor(TripRating.ankiren.performance(score)), closeTo(score, 1e-6));
       }
     });
 
     test('a score below zero rates 0, never negative', () {
-      expect(AnkirenRating.performance(0), 0);
-      expect(AnkirenRating.performance(-40), 0);
+      expect(TripRating.ankiren.performance(0), 0);
+      expect(TripRating.ankiren.performance(-40), 0);
     });
 
     test('play starts in 入門, and a zero-point game rates 0 without any floor', () {
-      expect(Rating.bandOf(AnkirenRating.start).label, '入門');
-      final p = AnkirenRating.performance(0);
-      expect(AnkirenRating.update(AnkirenRating.start, p, const []), 0);
-      expect(AnkirenRating.update(1000, 0, const [1, 2, 3]), closeTo(1000 * (1 - AnkirenRatingModel.establishedK), 1e-9));
+      expect(Rating.bandOf(TripRating.start).label, '入門');
+      final p = TripRating.ankiren.performance(0);
+      expect(TripRating.update(TripRating.start, p, const []), 0);
+      expect(TripRating.update(1000, 0, const [1, 2, 3]), closeTo(1000 * (1 - AnkirenRatingModel.establishedK), 1e-9));
     });
 
     test('placement: the rating is the mean of the placement games, then each game moves it K of the way', () {
       final ps = [1500.0, 2100.0, 1800.0, 2400.0];
-      var r = AnkirenRating.start;
+      var r = TripRating.start;
       for (var game = 0; game < ps.length; game++) {
-        expect(AnkirenRating.isPlacement(game), game < AnkirenRatingModel.placementGames);
-        final next = AnkirenRating.update(r, ps[game], ps.take(game).toList());
+        expect(TripRating.isPlacement(game), game < AnkirenRatingModel.placementGames);
+        final next = TripRating.update(r, ps[game], ps.take(game).toList());
         if (game < AnkirenRatingModel.placementGames) {
           final placed = ps.take(game + 1);
           expect(next, closeTo(placed.reduce((a, b) => a + b) / placed.length, 1e-9));
@@ -242,13 +243,13 @@ void main() {
 
     test('placement means the games as played', () {
       const low = 100.0, high = 1300.0;
-      final first = AnkirenRating.update(AnkirenRating.start, low, const []);
+      final first = TripRating.update(TripRating.start, low, const []);
       expect(first, low);
-      expect(AnkirenRating.update(first, high, const [low]), (low + high) / 2);
+      expect(TripRating.update(first, high, const [low]), (low + high) / 2);
     });
 
     test('near misses rate above giving up, and below finding the card', () {
-      double performance(List<AnkirenAnswer> misses) => AnkirenRating.performance(
+      double performance(List<AnkirenAnswer> misses) => TripRating.ankiren.performance(
           AnkirenScore([for (var i = 0; i < 8; i++) found(1500), ...misses], prompts: 10).total);
       final givenUp = performance([answer(), answer()]);
       final near = performance([
@@ -267,22 +268,22 @@ void main() {
     test('being ready early raises the performance', () {
       final full = AnkirenScore.firstTryTotal(ranked, responseMs: 1000);
       final early = AnkirenScore.firstTryTotal(ranked, responseMs: 1000, timeLeft: const Duration(minutes: 5));
-      expect(AnkirenRating.performance(early), greaterThan(AnkirenRating.performance(full)));
+      expect(TripRating.ankiren.performance(early), greaterThan(TripRating.ankiren.performance(full)));
     });
   });
 
   group('ladder', () {
     test('level 0 opens first; clearing a level opens the next, and every level below it', () {
-      expect((AnkirenLadder.none.open, AnkirenLadder.none.next), (0, 0));
-      expect(AnkirenLadder.none.isOpen(1), isFalse);
-      const cleared = AnkirenLadder({0, 1, 2});
+      expect((LevelLadder.none.open, LevelLadder.none.next), (0, 0));
+      expect(LevelLadder.none.isOpen(1), isFalse);
+      const cleared = LevelLadder({0, 1, 2});
       expect((cleared.open, cleared.next, cleared.isCleared(2), cleared.isCleared(3)), (3, 3, true, false));
-      const gap = AnkirenLadder({5});
+      const gap = LevelLadder({5});
       expect((gap.open, gap.isOpen(2), gap.isCleared(2)), (6, true, false), reason: 'a level cleared out of order');
     });
 
     test('ranked needs Lv 4 cleared, custom setups Lv 8, and the top level clears them all', () {
-      AnkirenLadder upTo(int level) => AnkirenLadder({for (var l = 0; l <= level; l++) l});
+      LevelLadder upTo(int level) => LevelLadder({for (var l = 0; l <= level; l++) l});
       expect(upTo(AnkirenTuning.rankedAfterLevel - 1).rankedReady, isFalse);
       expect(upTo(AnkirenTuning.rankedAfterLevel).rankedReady, isTrue);
       expect(upTo(AnkirenTuning.customAfterLevel - 1).customOpen, isFalse);
@@ -293,9 +294,9 @@ void main() {
     });
 
     test('a game clears its level when played to the end with fewer strikes than end it', () {
-      expect(AnkirenLadder.clears(completed: true, strikes: AnkirenTuning.strikesOut - 1), isTrue);
-      expect(AnkirenLadder.clears(completed: true, strikes: AnkirenTuning.strikesOut), isFalse);
-      expect(AnkirenLadder.clears(completed: false, strikes: 0), isFalse);
+      expect(LevelLadder.clears(completed: true, strikes: AnkirenTuning.strikesOut - 1), isTrue);
+      expect(LevelLadder.clears(completed: true, strikes: AnkirenTuning.strikesOut), isFalse);
+      expect(LevelLadder.clears(completed: false, strikes: 0), isFalse);
     });
   });
 

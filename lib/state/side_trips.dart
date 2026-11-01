@@ -6,7 +6,8 @@ import '../db/database.dart';
 import '../domain/ankiren_field.dart';
 import '../domain/ankiren_game.dart';
 import '../domain/ankiren_level.dart';
-import '../domain/ankiren_rating.dart';
+import '../domain/level_ladder.dart';
+import '../domain/trip_rating.dart';
 import '../domain/ankiren_review.dart';
 import '../domain/ankiren_xp.dart';
 import '../domain/side_trips.dart';
@@ -15,24 +16,24 @@ import '../domain/teiichi_record.dart';
 import '../domain/teiichi_review.dart';
 import '../domain/xp.dart';
 
-/// What recording a 暗記練 game changed (for its results): 暗記練's rating
-/// before and after a ranked game, both null for free play; the ranked
-/// games played with it (0 for free play); free play's levels before and
-/// after it; and the experience it earned.
-class AnkirenReport {
-  const AnkirenReport({
+/// What recording a side trip's game changed (for its results): the trip's
+/// rating before and after a ranked game, both null for any other; the
+/// ranked games played with it (0 for any other); the levels before and
+/// after it; and the experience it earned, when it earns any.
+class SideTripReport {
+  const SideTripReport({
     required this.ratingBefore,
     required this.ratingAfter,
     this.rankedGames = 0,
-    this.ladderBefore = AnkirenLadder.none,
-    this.ladderAfter = AnkirenLadder.none,
+    this.ladderBefore = LevelLadder.none,
+    this.ladderAfter = LevelLadder.none,
     this.xp,
   });
 
   final double? ratingBefore;
   final double? ratingAfter;
   final int rankedGames;
-  final AnkirenLadder ladderBefore, ladderAfter;
+  final LevelLadder ladderBefore, ladderAfter;
   final XpGain? xp;
 }
 
@@ -133,7 +134,7 @@ class SideTrips {
       (_answers[run.id] ?? const <SideTripAnswerRow>[]).fold(0, (n, a) => n + a.wrongTaps + (a.gaveUp ? 1 : 0));
 
   /// [trip]'s free-play levels cleared.
-  AnkirenLadder ladderOf(SideTrip trip) => AnkirenLadder({..._cleared[trip]!});
+  LevelLadder ladderOf(SideTrip trip) => LevelLadder({..._cleared[trip]!});
 
   Future<void> _storeCleared(AppDatabase db, SideTrip trip) => db.into(db.keyValues).insertOnConflictUpdate(
       KeyValuesCompanion.insert(key: clearedKey(trip), value: jsonEncode(_cleared[trip]!.toList()..sort())));
@@ -204,7 +205,7 @@ class SideTrips {
     final runs = _rated(trip).toList();
     final rated = [for (final r in runs) r.rating!];
     final rating = rated.lastOrNull;
-    const start = AnkirenRating.start;
+    const start = TripRating.start;
     return SideTripStanding(
       rating: rating,
       ratingChange: rating == null ? null : rating - (rated.length > 1 ? rated[rated.length - 2] : start),
@@ -250,7 +251,7 @@ class SideTrips {
   /// A ranked game moves 暗記練's rating toward its performance (see
   /// [AnkirenRating]), placing it during the first ranked games; free play
   /// never touches it, and its level games may clear their level.
-  Future<AnkirenReport> recordAnkiren(
+  Future<SideTripReport> recordAnkiren(
     AppDatabase db,
     AnkirenGame game, {
     required DateTime startedAt,
@@ -261,12 +262,12 @@ class SideTrips {
     const trip = SideTrip.ankiren;
     final setup = game.setup;
     final score = game.score;
-    final before = setup.ranked ? ratingOf(trip) ?? AnkirenRating.start : null;
+    final before = setup.ranked ? ratingOf(trip) ?? TripRating.start : null;
     final ladderBefore = ladderOf(trip);
     double? performance, after;
     if (before != null) {
-      performance = AnkirenRating.performance(score!.total);
-      after = AnkirenRating.update(before, performance, [for (final r in _rated(trip)) r.performance!]);
+      performance = TripRating.ankiren.performance(score!.total);
+      after = TripRating.update(before, performance, [for (final r in _rated(trip)) r.performance!]);
     }
 
     final runId = await db.transaction(() async {
@@ -299,7 +300,7 @@ class SideTrips {
     });
     await _loadRun(db, runId);
 
-    return AnkirenReport(
+    return SideTripReport(
       ratingBefore: before,
       ratingAfter: after,
       rankedGames: setup.ranked ? rankedGames(trip) : 0,

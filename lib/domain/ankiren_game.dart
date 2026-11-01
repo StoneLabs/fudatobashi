@@ -7,6 +7,7 @@ import 'ankiren_field.dart';
 import 'ankiren_level.dart';
 import 'ankiren_score.dart';
 import 'karafuda.dart';
+import 'level_ladder.dart';
 
 /// Where a 暗記練 game stands: the field face up to memorise, face down while
 /// its cards are asked, or over.
@@ -95,8 +96,8 @@ class AnkirenGame extends ChangeNotifier {
   /// Wrong taps and cards given up so far, one strike each.
   int get strikes => answers.fold(_wrongTaps, (n, a) => n + a.wrongTaps + (a.gaveUp ? 1 : 0));
 
-  /// It cleared its level (see `AnkirenLadder.clears`).
-  bool get cleared => countsStrikes && AnkirenLadder.clears(completed: completed, strikes: strikes);
+  /// It cleared its level (see `LevelLadder.clears`).
+  bool get cleared => countsStrikes && LevelLadder.clears(completed: completed, strikes: strikes);
 
   /// The card being asked for, in recall.
   int? get current => phase == AnkirenPhase.recall ? prompts[answers.length] : null;

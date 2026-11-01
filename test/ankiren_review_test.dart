@@ -16,7 +16,7 @@ import 'package:fudatobashi/db/database.dart';
 import 'package:fudatobashi/domain/ankiren_field.dart';
 import 'package:fudatobashi/domain/ankiren_game.dart';
 import 'package:fudatobashi/domain/ankiren_level.dart';
-import 'package:fudatobashi/domain/ankiren_rating.dart';
+import 'package:fudatobashi/domain/trip_rating.dart';
 import 'package:fudatobashi/domain/ankiren_review.dart';
 import 'package:fudatobashi/domain/ankiren_score.dart';
 import 'package:fudatobashi/domain/karafuda.dart';
@@ -306,7 +306,7 @@ void main() {
       expect(third.bestBefore!.id, best.id);
       expect(third.isBest, all[2].score! > best.score!);
       expect(AnkirenReview(all[0], all).peers, isEmpty);
-      expect(AnkirenReview(all[0], all).ratingBefore, AnkirenRating.start);
+      expect(AnkirenReview(all[0], all).ratingBefore, TripRating.start);
       expect(third.ratingBefore, all[1].rating);
       final mix = third.usualMix;
       expect(mix.values.fold(0, (a, b) => a + b), all[0].cards.length + all[1].cards.length);

@@ -8,7 +8,7 @@ abstract final class AnkirenTuning {
   /// is for beginners: its cards lie spread out in the open middle (see
   /// [AnkirenLevel.allInMiddle]). The field grows to a real match's 25 a side
   /// at level 8, and the last levels cut the memorise time from 15 minutes,
-  /// a real match's, to 5. They open one at a time (see `AnkirenLadder`).
+  /// a real match's, to 5. They open one at a time (see `LevelLadder`).
   static const List<AnkirenLevel> levels = [
     AnkirenLevel(3, Duration(minutes: 1, seconds: 30), allInMiddle: true),
     AnkirenLevel(4, Duration(minutes: 1, seconds: 30)),
@@ -215,14 +215,15 @@ abstract final class AnkirenPlayTuning {
   static const Duration clockTick = Duration(seconds: 1);
 }
 
-/// 暗記練's rating (see `AnkirenRating`), on the main rating's scale.
+/// 暗記練's rating (see `TripRating`), on the main rating's scale. Its
+/// start, placement and K are every trip's.
 abstract final class AnkirenRatingModel {
   /// The rating before any ranked game, where the way to the first class
   /// starts. It is not a floor: a game can rate below it.
   static const double start = 400;
 
   /// A ranked game's performance is its final score over this many points
-  /// (see `AnkirenRating.performance`).
+  /// (see `TripRating.ankiren.performance`).
   static const double pointsPerRating = 2;
 
   /// The rating after each of the first [placementGames] ranked games is

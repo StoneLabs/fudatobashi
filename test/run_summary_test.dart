@@ -344,8 +344,8 @@ void main() {
   });
 
   group('AnkiRen', () {
-    Future<AnkirenReport> recordGame(WidgetTester tester, Progress p, AnkirenGame game) async {
-      late AnkirenReport report;
+    Future<SideTripReport> recordGame(WidgetTester tester, Progress p, AnkirenGame game) async {
+      late SideTripReport report;
       await tester.runAsync(() async => report = await p.recordAnkiren(game, startedAt: DateTime.now()));
       return report;
     }

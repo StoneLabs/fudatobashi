@@ -5,7 +5,7 @@ import 'package:flutter/material.dart';
 import '../../config/config.dart';
 import '../../config/design.dart';
 import '../../domain/ankiren_level.dart';
-import '../../domain/ankiren_rating.dart';
+import '../../domain/trip_rating.dart';
 import '../../domain/rating.dart';
 import '../../domain/ankiren_score.dart';
 import '../play/time_format.dart';
@@ -79,7 +79,7 @@ class _AnkirenRankedGraphState extends State<AnkirenRankedGraph> {
               xTick: AnkirenToolsTuning.responseTick.inSeconds.toDouble(),
               xLabel: (x) => '${x.round()} s',
               yMax: AnkirenToolsTuning.graphYMax.toDouble(),
-              classY: (band) => AnkirenRating.scoreFor(band.minRating),
+              classY: (band) => TripRating.ankiren.scoreFor(band.minRating),
             ),
           ),
         ),
@@ -112,15 +112,15 @@ class AnkirenRatingGraph extends StatelessWidget {
   Widget build(BuildContext context) {
     const xMax = AnkirenToolsTuning.graphYMax;
     const step = AnkirenToolsTuning.ratingCurveStep;
-    final yMax = (AnkirenRating.performance(xMax) / AnkirenToolsTuning.ratingYRound).ceil() *
+    final yMax = (TripRating.ankiren.performance(xMax) / AnkirenToolsTuning.ratingYRound).ceil() *
         AnkirenToolsTuning.ratingYRound.toDouble();
     final curve = _Line(Palette.seaDeep, [
-      for (var score = 0; score <= xMax; score += step) Offset(score.toDouble(), AnkirenRating.performance(score)),
+      for (var score = 0; score <= xMax; score += step) Offset(score.toDouble(), TripRating.ankiren.performance(score)),
     ]);
     final best = (AnkirenScore.maxFor(const AnkirenSetup.ranked().calls) * (1 + AnkirenTuning.earlyBonus)).round();
     final marks = [
       for (final (name, score) in [('max', best), ('top', AnkirenToolsTuning.realisticTopScore)])
-        (Offset(score.toDouble(), AnkirenRating.performance(score)), '$name $score → ${AnkirenRating.performance(score).round()}'),
+        (Offset(score.toDouble(), TripRating.ankiren.performance(score)), '$name $score → ${TripRating.ankiren.performance(score).round()}'),
     ];
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,

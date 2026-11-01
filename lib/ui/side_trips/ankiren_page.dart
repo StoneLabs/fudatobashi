@@ -5,7 +5,7 @@ import '../../config/config.dart';
 import '../../config/design.dart';
 import '../../config/vector_art.dart';
 import '../../domain/ankiren_level.dart';
-import '../../domain/ankiren_rating.dart';
+import '../../domain/trip_rating.dart';
 import '../../domain/rating.dart';
 import '../../domain/side_trips.dart';
 import '../../l10n/ankiren_strings.dart';
@@ -141,9 +141,9 @@ class _RecordStrip extends StatelessWidget {
     final s = S.of(context);
     final band = entry.band;
     final rating = entry.rating;
-    final at = rating ?? AnkirenRating.start;
+    final at = rating ?? TripRating.start;
     final next = Rating.nextBand(at);
-    final floor = band.minRating.isFinite ? band.minRating : AnkirenRating.start;
+    final floor = band.minRating.isFinite ? band.minRating : TripRating.start;
     final change = entry.ratingChange?.round() ?? 0;
     const big = StatStrip.valueStyle;
     return StatStrip(
@@ -327,7 +327,7 @@ class _RankedPanel extends StatelessWidget {
   Widget build(BuildContext context) {
     final s = S.of(context);
     final lock = entry.rankedLock;
-    final placement = AnkirenRating.isPlacement(entry.results.length);
+    final placement = TripRating.isPlacement(entry.results.length);
     final heading = _Heading(placement ? s.ankirenPlacementTitle : s.ankirenLast5);
     final content = Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.stretch, children: [
       Padding(
@@ -347,7 +347,7 @@ class _RankedPanel extends StatelessWidget {
       tag: s.ankirenRankedMode,
       sub: s.sub?.ankirenRankedMode,
       heading: heading,
-      why: s.ankirenRankedLocked(allKnown: lock.allKnown, cleared: lock.cleared, level: RankedLock.level),
+      why: s.ankirenRankedLocked(allKnown: lock.allKnown, cleared: lock.cleared, level: lock.level),
       child: content,
     );
   }

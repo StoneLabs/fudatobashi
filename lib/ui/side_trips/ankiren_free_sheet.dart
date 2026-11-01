@@ -7,6 +7,7 @@ import '../../config/design.dart';
 import '../../data/poem.dart';
 import '../../domain/ankiren_level.dart';
 import '../../domain/karafuda.dart';
+import '../../domain/level_ladder.dart';
 import '../../domain/side_trips.dart';
 import '../../l10n/ankiren_strings.dart';
 import '../../l10n/free_strings.dart';
@@ -50,7 +51,7 @@ Future<void> openAnkirenGuest(BuildContext context) async {
 /// which is not scored. Then the burst, Confirm (Start for a [guest]),
 /// which closes the sheet with the setup.
 ///
-/// The owner's levels open one at a time (see [AnkirenLadder]): a level
+/// The owner's levels open one at a time (see [LevelLadder]): a level
 /// still shut, and the custom setups until they open, are chained, and say
 /// what opens them when tapped; a cleared level has a check, and once every
 /// level is, the sheet says so. A level the known cards cannot fill says
@@ -77,7 +78,7 @@ class _AnkirenFreeSheetState extends State<AnkirenFreeSheet> {
   late final int _maxPerSide;
 
   /// The owner's levels; null for a guest, who has them all.
-  late final AnkirenLadder? _ladder;
+  late final LevelLadder? _ladder;
   final _memorise = AnkirenSetup.memoriseOptions;
 
   /// The level chosen, or null for the custom setup.

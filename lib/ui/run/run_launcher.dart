@@ -179,7 +179,7 @@ Future<void> startAnkirenRanked(BuildContext context) async {
 
 /// 暗記練's free play at [setup], once 暗記練 is open, the setup is (a level
 /// opened by clearing the one before, or custom once that opens; see
-/// [AnkirenLadder]) and the known cards are enough for its field and its
+/// [LevelLadder]) and the known cards are enough for its field and its
 /// からふだ.
 Future<void> startAnkirenFree(BuildContext context, AnkirenSetup setup) async {
   final progress = ProgressScope.read(context);

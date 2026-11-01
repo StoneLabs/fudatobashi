@@ -2,7 +2,7 @@ import 'dart:convert';
 
 import '../config/config.dart';
 import 'ankiren_field.dart';
-import 'ankiren_rating.dart';
+import 'trip_rating.dart';
 import 'ankiren_score.dart';
 import 'karafuda.dart';
 import 'play_session.dart';
@@ -255,7 +255,7 @@ class AnkirenReview {
 
   /// 暗記練's rating before a ranked game: the last earlier one's, or the
   /// start; null for free play.
-  double? get ratingBefore => game.rating == null ? null : _rated.lastOrNull?.rating ?? AnkirenRating.start;
+  double? get ratingBefore => game.rating == null ? null : _rated.lastOrNull?.rating ?? TripRating.start;
 
   List<AnkirenGameRecord> get _rated => [for (final g in _earlier) if (g.ranked && g.rating != null) g];
 
@@ -342,7 +342,7 @@ class AnkirenReview {
   static AnkirenClassProgress classProgress(double rating) {
     final band = Rating.bandOf(rating);
     final next = Rating.nextBand(rating);
-    final floor = band.minRating.isFinite ? band.minRating : AnkirenRating.start;
+    final floor = band.minRating.isFinite ? band.minRating : TripRating.start;
     final fraction = next == null ? 1.0 : ((rating - floor) / (next.minRating - floor)).clamp(0.0, 1.0);
     return (band: band, next: next, fraction: fraction);
   }

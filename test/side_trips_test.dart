@@ -9,6 +9,7 @@ import 'package:fudatobashi/data/poem.dart';
 import 'package:fudatobashi/db/database.dart';
 import 'package:fudatobashi/domain/ankiren_game.dart';
 import 'package:fudatobashi/domain/ankiren_level.dart';
+import 'package:fudatobashi/domain/level_ladder.dart';
 import 'package:fudatobashi/domain/teiichi.dart';
 import 'package:fudatobashi/domain/card_stats.dart';
 import 'package:fudatobashi/domain/play_session.dart';
@@ -127,7 +128,7 @@ void main() {
         allKnown: true,
         seen: 0,
         standings: {
-          SideTrip.ankiren: SideTripStanding(rating: rating, ladder: const AnkirenLadder({0, 1, 2, 3, 4}), maxLevel: 9, games: 12),
+          SideTrip.ankiren: SideTripStanding(rating: rating, ladder: const LevelLadder({0, 1, 2, 3, 4}), maxLevel: 9, games: 12),
         },
       );
       final e = hub[SideTrip.ankiren];

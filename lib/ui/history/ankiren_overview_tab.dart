@@ -4,8 +4,8 @@ import 'package:flutter/material.dart';
 
 import '../../config/config.dart';
 import '../../config/design.dart';
-import '../../domain/ankiren_level.dart';
 import '../../domain/ankiren_review.dart';
+import '../../domain/level_ladder.dart';
 import '../../l10n/ankiren_review_strings.dart';
 import '../../l10n/ankiren_strings.dart';
 import '../../l10n/history_strings.dart';
@@ -116,7 +116,7 @@ class _Overview {
   /// the memorise time used.
   SummaryHero _firstTaps() {
     final level = game.level;
-    final cleared = AnkirenLadder.clears(completed: game.completed, strikes: game.strikes);
+    final cleared = LevelLadder.clears(completed: game.completed, strikes: game.strikes);
     final sub = game.custom ? s.ankirenCustom : level == null ? null : s.ankirenLevelTag(level);
     final stamp = game.custom
         ? RunStamp(s.ankirenNotScored, sub: sub, color: AnkirenReviewStyle.muted)

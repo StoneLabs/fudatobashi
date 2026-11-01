@@ -105,7 +105,12 @@ class AnkirenScore {
   /// with the first tap, with [timeLeft] of the memorise time unused (as a
   /// share).
   static int totalOf(int recall, int firstRight, double timeLeft) =>
-      recall - firstRight + (firstRight * (1 + AnkirenTuning.earlyBonus * timeLeft)).round();
+      multiplied(recall, firstRight, 1 + AnkirenTuning.earlyBonus * timeLeft);
+
+  /// [recall] points with the [firstRight] among them multiplied by
+  /// [factor].
+  static int multiplied(int recall, int firstRight, double factor) =>
+      recall - firstRight + (firstRight * factor).round();
 
   /// A game with [setup] where every call is answered with its first tap
   /// [responseMs] after its prompt, and the player was ready with [timeLeft]

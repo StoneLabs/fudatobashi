@@ -1,5 +1,3 @@
-import 'dart:math' as math;
-
 import '../config/config.dart';
 import 'karafuda.dart';
 
@@ -117,43 +115,4 @@ class AnkirenSetup {
 
   @override
   int get hashCode => Object.hash(perSide, memorise, level, ranked, karafuda);
-}
-
-/// Free play's levels as they open (see [AnkirenTuning.strikesOut]): level 0
-/// at first, then each cleared level opens the next, with every level below
-/// it. Clearing [AnkirenTuning.rankedAfterLevel] is what ranked needs from
-/// free play, and clearing [AnkirenTuning.customAfterLevel] opens the custom
-/// setups.
-class AnkirenLadder {
-  const AnkirenLadder(this.cleared);
-
-  static const none = AnkirenLadder({});
-
-  /// The levels cleared so far.
-  final Set<int> cleared;
-
-  /// Whether a game clears its level: played to the end with fewer than
-  /// [AnkirenTuning.strikesOut] [strikes].
-  static bool clears({required bool completed, required int strikes}) =>
-      completed && strikes < AnkirenTuning.strikesOut;
-
-  int get _highest => cleared.isEmpty ? -1 : cleared.reduce(math.max);
-
-  /// The highest open level.
-  int get open => math.min(AnkirenLevels.top, _highest + 1);
-
-  bool isOpen(int level) => level <= open;
-  bool isCleared(int level) => cleared.contains(level);
-
-  /// The top level is cleared: none is left to open.
-  bool get allCleared => _highest == AnkirenLevels.top;
-
-  /// The level to clear next, the highest open one; null once
-  /// [allCleared].
-  int? get next => allCleared ? null : open;
-
-  /// What ranked needs from free play is done.
-  bool get rankedReady => _highest >= AnkirenTuning.rankedAfterLevel;
-
-  bool get customOpen => _highest >= AnkirenTuning.customAfterLevel;
 }
