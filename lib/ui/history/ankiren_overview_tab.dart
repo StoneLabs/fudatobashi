@@ -9,9 +9,7 @@ import '../../domain/level_ladder.dart';
 import '../../l10n/ankiren_review_strings.dart';
 import '../../l10n/ankiren_strings.dart';
 import '../../l10n/history_strings.dart';
-import '../../l10n/home_strings.dart';
 import '../../l10n/karafuda_strings.dart';
-import '../../l10n/ranked_strings.dart';
 import '../../l10n/review_strings.dart';
 import '../../l10n/stats_strings.dart';
 import '../../l10n/strings.dart';
@@ -65,7 +63,7 @@ class _Overview {
   SummaryHero hero() => game.scored ? _points() : _firstTaps();
 
   List<SummaryTile> tiles() => game.scored
-      ? [_firstTapTile(), _ratingTile(), xpTile(s, review.xp)]
+      ? [_firstTapTile(), ankirenRatingTile(s, review), xpTile(s, review.xp)]
       : [_foundTile(), _medianTile(), if (game.custom) _strikesTile() else xpTile(s, review.xp)];
 
   /// A ranked game: its points, the bar the card points and what being
@@ -161,24 +159,6 @@ class _Overview {
         note: s.reviewRightCardFirst,
         color: Palette.landSoft,
       );
-
-  SummaryTile _ratingTile() {
-    final before = review.ratingBefore, after = game.rating;
-    if (after == null) {
-      return SummaryTile(label: s.ratingLabel, big: const TileFigure(missingTime), note: '', color: Palette.pinkSoft);
-    }
-    final band = s.className(AnkirenReview.classProgress(after).band);
-    if (before == null) {
-      return SummaryTile(
-          label: s.ratingLabel, big: TileFigure('${after.round()}'), note: band, color: Palette.pinkSoft);
-    }
-    return SummaryTile(
-      label: s.ratingLabel,
-      big: TileFigure(signedPoints(after - before)),
-      note: '${before.round()} → ${after.round()} · $band',
-      color: Palette.pinkSoft,
-    );
-  }
 
   SummaryTile _foundTile() {
     final missed = cards - game.found;

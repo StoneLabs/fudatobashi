@@ -22,14 +22,15 @@ import 'history_widgets.dart';
 import 'run_page.dart';
 import 'teiichi_overview_tab.dart';
 import 'teiichi_placing_tab.dart';
+import 'teiichi_score_tab.dart';
 
 /// Opens 定位置 game [run]'s page.
 Future<void> openTeiichiGame(BuildContext context, SideTripRun run) =>
     Navigator.of(context).push(MangaRoute<void>(builder: (_) => TeiichiGamePage(run: run)));
 
 /// A recorded 定位置 game, tab by tab: its overview, the calls replayed on
-/// the layout, the placing, and every tap. Its header names the setup,
-/// with the からふだ it called.
+/// the layout, the placing, a ranked game's score, and every tap. Its
+/// header names the setup, with the からふだ it called.
 class TeiichiGamePage extends StatelessWidget {
   const TeiichiGamePage({super.key, required this.run});
   final SideTripRun run;
@@ -39,6 +40,12 @@ class TeiichiGamePage extends StatelessWidget {
     PageTab((s) => s.ankirenTabField, _FieldTab.new),
     PageTab((s) => s.teiichiTabPlacing, TeiichiPlacingTab.new),
     PageTab((s) => s.ankirenTabTaps, _TapsTab.new),
+  ];
+
+  static final List<PageTab<TeiichiReview>> scoredTabs = [
+    ...tabs.take(tabs.length - 1),
+    PageTab((s) => s.ankirenTabScore, TeiichiScoreTab.new),
+    tabs.last,
   ];
 
   @override
@@ -51,13 +58,15 @@ class TeiichiGamePage extends StatelessWidget {
     );
     final game = review.game;
     const trip = SideTrip.teiichi;
-    final kind = teiichiKindLabel(s, custom: game.custom);
+    final kind = teiichiKindLabel(s, game);
     final setup = teiichiSetupText(s, game.setup);
     return RunPageFrame(
       title: s.tripName(trip),
       sub: [s.other.tripName(trip), kind, s.sessionDate(run.startedAt), setup].join(' · '),
       shortSub: [s.other.tripName(trip), kind, s.sessionDay(run.startedAt)].join(' · '),
-      body: RunPageTabs(tabs: [for (final tab in tabs) tab.swipeTab(s, review, HistoryLooks.teiichi)]),
+      body: RunPageTabs(tabs: [
+        for (final tab in game.ranked ? scoredTabs : tabs) tab.swipeTab(s, review, HistoryLooks.teiichi),
+      ]),
     );
   }
 }

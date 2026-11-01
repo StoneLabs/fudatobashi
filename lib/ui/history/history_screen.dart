@@ -665,9 +665,10 @@ class _GameRow extends StatelessWidget {
   }
 }
 
-/// A 定位置 game: its kind, whether it set the best placing time or ended
-/// early, its cards (and rows, when custom) and wrong taps, and its
-/// placing time.
+/// A 定位置 game: its kind, how it went (cleared, failed, forfeited or ended
+/// early) and whether it set the best placing time, its cards (and rows,
+/// when custom) with what it did to the rating, its strikes or its wrong
+/// taps, and its score, or else its placing time.
 class _PlacingRow extends StatelessWidget {
   const _PlacingRow(this.run, {required this.review});
   final SideTripRun run;
@@ -678,22 +679,39 @@ class _PlacingRow extends StatelessWidget {
     final s = S.of(context);
     final game = review.game;
     final setup = game.setup;
+    final after = run.rating;
+    final change = after == null ? null : after - (review.recall.ratingBefore ?? TripRating.start);
+    final cards = game.custom ? s.teiichiSetupLine(setup.cards, setup.rows) : s.historyCards(setup.cards);
     return _ListRow(
       accent: HistoryLooks.teiichi.accent,
       startedAt: run.startedAt,
       tags: [
         _TagLine([
-          KindTag(teiichiKindLabel(s, custom: game.custom), look: HistoryLooks.teiichi),
-          if (!game.completed) ResultBadge(s.endedEarly, muted: true),
+          KindTag(teiichiKindLabel(s, game), look: HistoryLooks.teiichi),
+          if (game.forfeit)
+            ResultBadge(s.historyForfeit, muted: true)
+          else if (game.cleared)
+            ResultBadge(s.historyCleared, color: Palette.landSoft)
+          else if (game.level != null)
+            ResultBadge(s.historyFailed, muted: true)
+          else if (!game.completed)
+            ResultBadge(s.endedEarly, muted: true),
           if (review.isBest) ResultBadge(s.historyBest, cheer: true),
         ]),
       ],
-      line: Text([
-        game.custom ? s.teiichiSetupLine(setup.cards, setup.rows) : s.historyCards(setup.cards),
-        s.historyWrongTaps(game.wrongTaps),
-      ].join(' · ')),
-      value: formatMinutes(game.placing),
-      caption: s.historyPlacingCaption,
+      line: Text.rich(TextSpan(children: [
+        TextSpan(
+            text: [
+          cards,
+          if (game.level != null) s.ankirenStrikes(game.strikes) else if (!game.ranked) s.historyWrongTaps(game.wrongTaps),
+        ].join(' · ')),
+        if (change != null)
+          TextSpan(
+              text: ' · ${ratingChangeText(change)}',
+              style: TextStyle(color: change >= 0 ? HistoryRunStyle.ahead : HistoryRunStyle.behind)),
+      ])),
+      value: game.ranked ? '${run.score}' : formatMinutes(game.placing),
+      caption: game.ranked ? s.historyPointsCaption : s.historyPlacingCaption,
       onTap: () => openTeiichiGame(context, run),
     );
   }

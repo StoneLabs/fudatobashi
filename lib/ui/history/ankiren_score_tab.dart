@@ -12,9 +12,9 @@ import '../results/run_summary.dart';
 import 'ankiren_widgets.dart';
 import 'review_parts.dart';
 
-/// A ranked 暗記練 game's Score & XP: how the points add up, the card
-/// points part by part, what the game did to 暗記練's rating, and the XP
-/// it earned.
+/// A ranked 暗記練 game's Score & XP: how the points add up ([ScoreSum]),
+/// the card points part by part ([ScoreParts]), what the game did to
+/// 暗記練's rating ([RatingHero]), and the XP it earned.
 class AnkirenScoreTab extends StatelessWidget {
   const AnkirenScoreTab(this.review, {super.key});
   final AnkirenReview review;
@@ -22,25 +22,43 @@ class AnkirenScoreTab extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final before = review.ratingBefore, after = review.game.rating;
+    final s = S.of(context);
+    final game = review.game;
+    final early = (game.memorise - game.memorised).inSeconds;
     return ReviewColumn(children: [
-      _ScoreSum(review),
-      _ScoreParts(review),
-      if (before != null && after != null) _RatingHero(review, before: before, after: after),
-      ...xpParts(S.of(context), review.xp),
+      ScoreSum(
+        firstRight: game.firstRight,
+        factor: game.earlyFactor,
+        factorLabel: early > 0 ? s.ankirenEqEarly(early) : s.ankirenEqOnTime,
+        other: game.recall - game.firstRight,
+        score: game.score!,
+      ),
+      ScoreParts(review),
+      if (before != null && after != null)
+        RatingHero(review, head: s.ankirenRatingHead.toUpperCase(), before: before, after: after),
+      ...xpParts(s, review.xp),
     ]);
   }
 }
 
-/// First-tap points × being ready early + the other points = the points.
-class _ScoreSum extends StatelessWidget {
-  const _ScoreSum(this.review);
-  final AnkirenReview review;
+/// First-tap points × their [factor] + the [other] points = the [score].
+class ScoreSum extends StatelessWidget {
+  const ScoreSum({
+    super.key,
+    required this.firstRight,
+    required this.factor,
+    required this.factorLabel,
+    required this.other,
+    required this.score,
+  });
+
+  final int firstRight, other, score;
+  final double factor;
+  final String factorLabel;
 
   @override
   Widget build(BuildContext context) {
     final s = S.of(context);
-    final game = review.game;
-    final early = (game.memorise - game.memorised).inSeconds;
     Widget term(String value, String label, {bool result = false}) => DecoratedBox(
           decoration: result
               ? BoxDecoration(color: Palette.sun, border: Border.all(color: Palette.ink, width: Strokes.label))
@@ -77,25 +95,24 @@ class _ScoreSum extends StatelessWidget {
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Flexible(child: term('${game.firstRight}', s.ankirenEqFirstRight)),
+            Flexible(child: term('$firstRight', s.ankirenEqFirstRight)),
             sign('×'),
-            Flexible(
-                child:
-                    term(game.earlyFactor.toStringAsFixed(2), early > 0 ? s.ankirenEqEarly(early) : s.ankirenEqOnTime)),
+            Flexible(child: term(factor.toStringAsFixed(2), factorLabel)),
             sign('+'),
-            Flexible(child: term('${game.recall - game.firstRight}', s.ankirenEqOther)),
+            Flexible(child: term('$other', s.ankirenEqOther)),
             sign('='),
-            term('${game.score}', s.ankirenEqPoints, result: true),
+            term('$score', s.ankirenEqPoints, result: true),
           ]),
     );
   }
 }
 
 /// The card points part by part, the からふだ's apart when the game called
-/// any, and their total over every call.
-class _ScoreParts extends StatelessWidget {
-  const _ScoreParts(this.review);
+/// any, any [more] rows of the trip's own, and their total over every call.
+class ScoreParts extends StatelessWidget {
+  const ScoreParts(this.review, {super.key, this.more = const []});
   final AnkirenReview review;
+  final List<(String, AnkirenScorePart)> more;
 
   @override
   Widget build(BuildContext context) {
@@ -113,6 +130,7 @@ class _ScoreParts extends StatelessWidget {
           part(s.ankirenPartNear, review.nearFirst),
           part(s.ankirenPartSecond(shareText(AnkirenTuning.tapWeights.last)), review.secondTaps),
           if (game.karafuda.isNotEmpty) part(s.karafudaPart, review.karafuda),
+          for (final (label, p) in more) part(label, p),
           ReviewRow([
             ReviewTable.cell(s.ankirenRowCardPoints, strong: true),
             ReviewTable.cell('${game.calls.length}', strong: true),
@@ -124,12 +142,13 @@ class _ScoreParts extends StatelessWidget {
   }
 }
 
-/// 暗記練's rating as a hero: the rating before, what this game played like
-/// and the rating after, over the class it stands in as the bar, the
-/// rating before as a tick.
-class _RatingHero extends StatelessWidget {
-  const _RatingHero(this.review, {required this.before, required this.after});
+/// A trip's rating as a hero under its [head]: the rating before, what this
+/// game played like and the rating after, over the class it stands in as
+/// the bar, the rating before as a tick.
+class RatingHero extends StatelessWidget {
+  const RatingHero(this.review, {super.key, required this.head, required this.before, required this.after});
   final AnkirenReview review;
+  final String head;
   final double before, after;
 
   @override
@@ -145,7 +164,7 @@ class _RatingHero extends StatelessWidget {
       height: ReviewHeroLayout.ankirenRatingHeight,
       metrics: ReviewHeroLayout.ankirenRatingMetrics,
       SummaryHero(
-        banner: s.ankirenRatingHead.toUpperCase(),
+        banner: head,
         body: Padding(
           padding: const EdgeInsets.only(top: ReviewHeroLayout.ankirenLinesTop),
           child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [

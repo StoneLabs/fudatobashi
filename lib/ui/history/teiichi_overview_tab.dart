@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
 
+import '../../config/config.dart';
 import '../../config/design.dart';
 import '../../domain/teiichi.dart';
 import '../../domain/teiichi_review.dart';
 import '../../l10n/ankiren_review_strings.dart';
 import '../../l10n/ankiren_strings.dart';
+import '../../l10n/history_strings.dart';
 import '../../l10n/karafuda_strings.dart';
 import '../../l10n/results_strings.dart';
 import '../../l10n/review_strings.dart';
@@ -27,13 +29,15 @@ String teiichiSetupText(S s, TeiichiSetup setup) => [
       if (setup.karafuda > 0) s.karafudaCount(setup.karafuda),
     ].join(' · ');
 
-/// A 定位置 game's Overview, its results reopened: a hero of the cards
-/// found with the first tap, stamped when it ended early, was custom or set
-/// the best placing time; three tiles (the placing time against the best
-/// then, the wrong taps and the median find); the cards slowest to place;
-/// how its からふだ went when it called any; then down to the floor the
-/// game against the last one with the same setup. The hero and the median
-/// count the laid-out cards alone, as the results do.
+/// A 定位置 game's Overview, its results reopened: a ranked game's points or
+/// forfeit, or a hero of the cards found with the first tap, stamped when
+/// it ended early, cleared or failed its level, was custom or set the best
+/// placing time; three tiles (the placing time, and a ranked game's first
+/// taps and rating or else the wrong taps or strikes and the median find);
+/// the cards slowest to place and those never placed; how its からふだ went
+/// when it called any; then down to the floor the game against the last one
+/// with the same setup. The hero and the median count the cards dealt
+/// alone, as the results do.
 class TeiichiOverviewTab extends StatelessWidget {
   const TeiichiOverviewTab(this.review, {super.key});
   final TeiichiReview review;
@@ -48,42 +52,104 @@ class TeiichiOverviewTab extends StatelessWidget {
         ReviewHero(_hero(s), metrics: ReviewHeroLayout.ankirenMetrics),
         TileBand(_tiles(s), spec: ReviewTileLayout.spec, minHeight: ReviewLayout.tileHeight),
         if (review.game.placed.isNotEmpty) _SlowestToPlace(review.game),
+        if (review.game.unplaced.isNotEmpty) _Unplaced(review.game),
         if (review.game.recall.karafuda.isNotEmpty) KarafudaPanel(review.game.recall),
       ],
     );
   }
 
-  SummaryHero _hero(S s) {
+  SummaryHero _hero(S s) => review.game.ranked ? _points(s) : _firstTaps(s);
+
+  /// A ranked game: its points, the placing time where 暗記練 says the top
+  /// score, the bar its finds, what the placing time added and its
+  /// からふだ's points; a forfeit, which counts as 0, saying so.
+  SummaryHero _points(S s) {
     final game = review.game;
     final recall = game.recall;
-    final cards = recall.cards.length;
+    final bar = _foundBar(game);
+    final labels = _foundLabels(s, game);
+    if (game.forfeit) {
+      return SummaryHero(
+        banner: s.ankirenPointsLabel.toUpperCase(),
+        body: HeroWord(s.historyForfeit, metrics: ReviewHeroLayout.metrics),
+        bar: bar,
+        labels: labels,
+        pose: TobiPose.shocked,
+      );
+    }
+    final score = recall.score!;
+    final karafuda = review.recall.karafuda.points;
+    final finds = recall.recall - karafuda;
+    final bonus = score - recall.recall;
+    return SummaryHero(
+      banner: s.ankirenPointsLabel.toUpperCase(),
+      body: HeroFigure(groupDigits(score),
+          unit: s.teiichiPlacedIn(formatMinutes(game.placing)),
+          top: ReviewHeroLayout.pointsTop,
+          size: ReviewHeroLayout.pointsFont),
+      bar: score == 0
+          ? [BarPart(Palette.paper, 1)]
+          : [
+              BarPart(Palette.land, finds, done: true),
+              BarPart(Palette.sun, bonus, done: true),
+              BarPart(KarafudaStyle.bar, karafuda, done: true),
+            ],
+      labels: [
+        if (finds > 0) BarLabel(s.summaryFinds(groupDigits(finds))),
+        if (bonus > 0) BarLabel(s.teiichiBonusBar(groupDigits(bonus)), part: 1),
+        if (karafuda > 0) BarLabel(s.karafudaPoints(groupDigits(karafuda)), part: 2),
+      ],
+      fallbackLabels: [BarLabel(s.reviewCardPoints(groupDigits(recall.recall)))],
+      pose: TobiPose.relaxed,
+    );
+  }
+
+  /// The first-tap finds, the cards found later and the rest, of all dealt.
+  static List<BarPart> _foundBar(TeiichiGameRecord game) => [
+        BarPart(Palette.land, game.recall.firstTaps, done: true),
+        BarPart(Palette.sun, game.recall.found - game.recall.firstTaps, done: true),
+        BarPart(Palette.pink, game.dealt - game.recall.found),
+      ];
+
+  static List<BarLabel> _foundLabels(S s, TeiichiGameRecord game) {
+    final firstTaps = game.recall.firstTaps;
+    final late = game.recall.found - firstTaps;
+    final missed = game.dealt - game.recall.found;
+    return [
+      BarLabel(s.teiichiFirstTapBar(firstTaps)),
+      if (late > 0) BarLabel(s.summaryFoundLate(late), part: 1, end: true),
+      if (missed > 0) BarLabel(s.summaryMissedCount(missed), part: 2, end: true),
+    ];
+  }
+
+  /// Any other game: the cards found with the first tap.
+  SummaryHero _firstTaps(S s) {
+    final game = review.game;
+    final recall = game.recall;
+    final cards = game.dealt;
     final firstTaps = recall.firstTaps;
-    final late = recall.found - firstTaps;
-    final missed = cards - recall.found;
     final best = review.bestBefore;
     final setup = teiichiSetupText(s, game.setup);
+    final level = game.level;
+    final levelTag = level == null ? null : s.ankirenLevelTag(level);
     final stamp = !game.completed
-        ? RunStamp(s.endedEarly, sub: game.custom ? s.ankirenCustom : null, color: AnkirenReviewStyle.muted)
-        : game.custom
-            ? RunStamp(s.ankirenCustom, sub: setup, color: AnkirenReviewStyle.muted)
-            : review.isBest
-                ? RunStamp(s.teiichiBestStamp, sub: best == null ? null : s.teiichiBestWas(formatMinutes(best)))
-                : null;
+        ? RunStamp(s.endedEarly, sub: game.custom ? s.ankirenCustom : levelTag, color: AnkirenReviewStyle.muted)
+        : level != null
+            ? game.cleared
+                ? RunStamp(s.historyCleared, sub: levelTag)
+                : RunStamp(s.historyFailed, sub: levelTag, color: AnkirenReviewStyle.muted)
+            : game.custom
+                ? RunStamp(s.ankirenCustom, sub: setup, color: AnkirenReviewStyle.muted)
+                : review.isBest
+                    ? RunStamp(s.teiichiBestStamp, sub: best == null ? null : s.teiichiBestWas(formatMinutes(best)))
+                    : null;
     return SummaryHero(
       banner: s.ankirenFirstTapFact.toUpperCase(),
       body: HeroCount('$firstTaps',
           label: s.ankirenOfMax(cards), note: s.reviewRightCardFirst, metrics: ReviewHeroLayout.ankirenMetrics),
-      bar: [
-        BarPart(Palette.land, firstTaps, done: true),
-        BarPart(Palette.sun, late, done: true),
-        BarPart(Palette.pink, missed),
-      ],
-      labels: [
-        BarLabel(s.teiichiFirstTapBar(firstTaps)),
-        if (late > 0) BarLabel(s.summaryFoundLate(late), part: 1, end: true),
-        if (missed > 0) BarLabel(s.summaryMissedCount(missed), part: 2, end: true),
-      ],
-      pose: review.isBest || firstTaps == cards ? TobiPose.cheering : TobiPose.standard,
+      bar: _foundBar(game),
+      labels: _foundLabels(s, game),
+      pose: review.isBest || game.cleared || firstTaps == cards ? TobiPose.cheering : TobiPose.standard,
       stamp: stamp,
       stampOnTop: true,
       color: game.custom ? AnkirenReviewStyle.customFill : Palette.paper,
@@ -92,6 +158,22 @@ class TeiichiOverviewTab extends StatelessWidget {
 
   List<SummaryTile> _tiles(S s) {
     final game = review.game;
+    if (game.ranked) {
+      return [
+        SummaryTile(
+          label: s.teiichiPlacingLabel,
+          big: TileFigure(formatMinutes(game.placing)),
+          note: game.forfeit ? s.historyForfeit : s.teiichiBonusNote(((game.scoreFactor - 1) * 100).round()),
+        ),
+        SummaryTile(
+          label: s.ankirenFirstTapFact.toUpperCase(),
+          big: TileFigure('${game.recall.firstTaps}', unit: '/${game.dealt}'),
+          note: s.reviewRightCardFirst,
+          color: Palette.landSoft,
+        ),
+        ankirenRatingTile(s, review.recall),
+      ];
+    }
     final best = review.bestBefore;
     final median = game.recall.medianFindMs;
     final wrongKarafuda = game.recall.karafuda.where((c) => c.wrongTaps > 0).length;
@@ -107,15 +189,22 @@ class TeiichiOverviewTab extends StatelessWidget {
                     ? s.teiichiNoBest
                     : s.teiichiBestThen(formatMinutes(best)),
       ),
-      SummaryTile(
-        label: s.teiichiWrongTaps,
-        big: TileFigure('${game.wrongTaps}'),
-        note: game.wrongTaps == 0
-            ? s.summaryNone
-            : wrongKarafuda > 0
-                ? s.teiichiWrongOnKarafuda(game.wrongCards, wrongKarafuda)
-                : s.teiichiWrongOn(game.wrongCards),
-      ),
+      if (game.level != null)
+        SummaryTile(
+          label: s.ankirenStrikesFact.toUpperCase(),
+          big: TileFigure('${game.strikes}'),
+          note: s.reviewUnderClears(AnkirenTuning.strikesOut),
+        )
+      else
+        SummaryTile(
+          label: s.teiichiWrongTaps,
+          big: TileFigure('${game.wrongTaps}'),
+          note: game.wrongTaps == 0
+              ? s.summaryNone
+              : wrongKarafuda > 0
+                  ? s.teiichiWrongOnKarafuda(game.wrongCards, wrongKarafuda)
+                  : s.teiichiWrongOn(game.wrongCards),
+        ),
       SummaryTile(
         label: s.ankirenMedianFact.toUpperCase(),
         big: median == null ? const TileFigure(missingTime) : TileFigure(formatSeconds(median), unit: ' s'),
@@ -145,6 +234,24 @@ class _SlowestToPlace extends StatelessWidget {
   }
 }
 
+/// The cards never placed, which count as full misses.
+class _Unplaced extends StatelessWidget {
+  const _Unplaced(this.game);
+  final TeiichiGameRecord game;
+
+  @override
+  Widget build(BuildContext context) {
+    final s = S.of(context);
+    return ReviewSlab(
+      title: s.teiichiUnplacedTitle,
+      sub: s.sub?.teiichiUnplacedTitle,
+      note: s.teiichiUnplacedPoints,
+      mark: Palette.pink,
+      child: SummaryCards([for (final id in game.unplaced) SummaryCard(id)]),
+    );
+  }
+}
+
 /// The game against the last one with the same setup, or on its own when
 /// it is the first; its からふだ answered first among them when it called
 /// any.
@@ -168,7 +275,7 @@ class _SameSetup extends StatelessWidget {
 
   static Widget _table(S s, TeiichiGameRecord game, TeiichiGameRecord? last) {
     String time(double? ms) => ms == null ? missingTime : '${formatSeconds(ms)}s';
-    String firstTaps(TeiichiGameRecord g) => '${g.recall.firstTaps}/${g.recall.cards.length}';
+    String firstTaps(TeiichiGameRecord g) => '${g.recall.firstTaps}/${g.dealt}';
     String karafuda(TeiichiGameRecord g) => '${g.recall.karafudaTally.right}/${g.recall.karafudaTally.called}';
     final karafudaCalled = game.recall.karafuda.isNotEmpty;
     final now = game.recall.medianFindMs;

@@ -9,6 +9,7 @@ import '../../domain/side_trips.dart';
 import '../../domain/teiichi_record.dart';
 import '../../l10n/history_strings.dart';
 import '../../l10n/strings.dart';
+import '../../l10n/teiichi_review_strings.dart';
 import '../../l10n/teiichi_strings.dart';
 import '../../state/past_runs.dart';
 import '../../state/play_config.dart';
@@ -68,18 +69,27 @@ enum AnkirenKind {
       };
 }
 
-/// A 定位置 game's kind, for the filter: practice, the usual game, or a
-/// custom one.
+/// A 定位置 game's kind, for the filter: ranked, a level, a custom game, or
+/// the usual game from before the levels.
 enum TeiichiKind {
-  practice,
-  custom;
+  ranked,
+  levels,
+  custom,
+  practice;
 
-  static TeiichiKind of(SideTripRun run) =>
-      (jsonDecode(run.meta) as Map<String, dynamic>)[TeiichiMeta.customKey] == true ? custom : practice;
+  static TeiichiKind of(SideTripRun run) => run.ranked
+      ? ranked
+      : run.level != null
+          ? levels
+          : (jsonDecode(run.meta) as Map<String, dynamic>)[TeiichiMeta.customKey] == true
+              ? custom
+              : practice;
 
   String label(S s) => switch (this) {
-        practice => s.teiichiPractice,
+        ranked => s.filterAnkirenRanked,
+        levels => s.teiichiKindLevels,
         custom => s.historyAnkirenCustom,
+        practice => s.teiichiPractice,
       };
 }
 
