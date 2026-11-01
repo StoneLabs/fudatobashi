@@ -12,6 +12,7 @@ import 'package:fudatobashi/data/poem.dart';
 import 'package:fudatobashi/db/database.dart';
 import 'package:fudatobashi/domain/ankiren_level.dart';
 import 'package:fudatobashi/domain/play_session.dart';
+import 'package:fudatobashi/domain/teiichi.dart';
 import 'package:fudatobashi/l10n/history_strings.dart';
 import 'package:fudatobashi/l10n/strings.dart';
 import 'package:fudatobashi/state/demo_data.dart';
@@ -28,6 +29,7 @@ import 'package:fudatobashi/ui/manga/manga.dart';
 import 'test_ankiren.dart';
 import 'test_l10n.dart';
 import 'test_screens.dart';
+import 'test_teiichi.dart';
 import 'test_vector_art.dart';
 
 Future<void> _loadFont(String family, List<String> files) async {
@@ -113,6 +115,11 @@ void main() {
               startedAt: today.add(const Duration(hours: 7)));
           await p.recordAnkiren(playAnkiren(AnkirenSetup.forLevel(0), seed: 5, strikes: true, wrongAt: {1}),
               startedAt: today.add(const Duration(hours: 5)));
+          for (final (at, base) in [(yesterday.add(const Duration(hours: 11)), 2400), (today.add(const Duration(hours: 8)), 1800)]) {
+            final played = playTeiichi(TeiichiSetup.usual,
+                deck: [for (var id = 1; id <= TeiichiSetup.usual.cards; id++) id], placeMsOf: (i) => base + i * 30);
+            await p.recordTeiichi(played.placing, played.game, startedAt: at);
+          }
           for (final level in [2, 3, 4]) {
             await p.recordAnkiren(playAnkiren(AnkirenSetup.forLevel(level), seed: level, strikes: true),
                 startedAt: yesterday.add(Duration(hours: 10 + level)));
@@ -160,14 +167,26 @@ void main() {
         await tester.pump(const Duration(milliseconds: 500));
         await tester.pump(const Duration(seconds: 1));
         await captureScreen(tester, 'history_look/list_main', lang: lang);
+        void expectDays() {
+          expect(find.text(s.historyToday), findsOneWidget, reason: 'one Today banner, none in the rows');
+          expect(find.text(s.historyDay(p.dayAt().date.subtract(const Duration(days: 1)))), findsOneWidget);
+          expect(find.text(s.historyDay(p.dayAt().date)), findsOneWidget);
+        }
+
+        expectDays();
         await tester.tap(find.textContaining(s.historyAnkirenTab, findRichText: true).first);
         await settle();
+        expectDays();
         await captureScreen(tester, 'history_look/list_ankiren', lang: lang);
         final kinds = [for (final e in find.byType(AnkirenKindTag).evaluate()) tester.getRect(find.byWidget(e.widget))];
         for (final badge in find.byType(ResultBadge).evaluate()) {
           final mid = tester.getRect(find.byWidget(badge.widget)).center.dy;
           expect(kinds.any((k) => (k.center.dy - mid).abs() < 2), isTrue, reason: 'each badge is on its row\'s tag line');
         }
+        await tester.tap(find.textContaining(s.historyTeiichiTab, findRichText: true).first);
+        await settle();
+        expectDays();
+        await captureScreen(tester, 'history_look/list_teiichi', lang: lang);
 
         for (final (mode, name, tabs) in [
           (PlayMode.ranked, 'ranked', RunPage.hundredTabs.length),

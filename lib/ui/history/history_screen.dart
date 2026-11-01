@@ -131,19 +131,40 @@ class _HistoryScreenState extends State<HistoryScreen> {
                 SwipeTab(
                   label: s.historyMainTab,
                   sub: s.sub?.historyMainTab,
-                  builder: (_) => _MainList(runs: keptRuns(_filter), activity: activity, today: today),
+                  builder: (_) => _DayList<PastRun>(
+                    items: keptRuns(_filter),
+                    dayOf: (r) => progress.dayOf(r.row),
+                    rowOf: _RunRow.new,
+                    empty: runs.isEmpty ? s.noRunsYet : s.historyNoMatch,
+                    status: (day, dayRuns) => _MainDayStatus(day: day, runs: dayRuns, activity: activity[day] ?? DayActivity.some),
+                  ),
                 ),
                 SwipeTab(
                   label: s.historyAnkirenTab,
                   accent: HistoryLooks.ankiren.accent,
                   sub: s.sub?.historyAnkirenTab,
-                  builder: (_) => _AnkirenList(games: keptGames(_filter), all: games),
+                  builder: (_) => _DayList<SideTripRun>(
+                    items: keptGames(_filter),
+                    dayOf: progress.dayOfGame,
+                    rowOf: (g) => _GameRow(g, all: games),
+                    empty: games.isEmpty ? s.noRunsYet : s.historyNoMatch,
+                  ),
                 ),
                 SwipeTab(
                   label: s.historyTeiichiTab,
                   accent: HistoryLooks.teiichi.accent,
                   sub: s.sub?.historyTeiichiTab,
-                  builder: (_) => _TeiichiList(games: keptPlacings(_filter), all: placings),
+                  builder: (_) {
+                    final trips = progress.sideTrips;
+                    final records = [for (final g in placings) trips.teiichiRecordOf(g)];
+                    final byId = {for (final r in records) r.id: r};
+                    return _DayList<SideTripRun>(
+                      items: keptPlacings(_filter),
+                      dayOf: progress.dayOfGame,
+                      rowOf: (g) => _PlacingRow(g, review: TeiichiReview(byId[g.id]!, records)),
+                      empty: placings.isEmpty ? s.noRunsYet : s.historyNoMatch,
+                    );
+                  },
                 ),
               ],
             ),
@@ -335,33 +356,60 @@ class _DayMark extends StatelessWidget {
   }
 }
 
-/// The main game's tab: runs grouped by practice day, newest first.
-class _MainList extends StatelessWidget {
-  const _MainList({required this.runs, required this.activity, required this.today});
-  final List<PastRun> runs;
-  final Map<DateTime, DayActivity> activity;
-  final DateTime today;
+/// A tab's entries grouped by practice day, newest first: a day banner
+/// over the day's rows, and [status] (if given) on the banner's right.
+class _DayList<T> extends StatelessWidget {
+  const _DayList({required this.items, required this.dayOf, required this.rowOf, required this.empty, this.status});
+  final List<T> items;
+  final DateTime Function(T) dayOf;
+  final Widget Function(T) rowOf;
+  final String empty;
+  final Widget Function(DateTime day, List<T> items)? status;
 
   @override
   Widget build(BuildContext context) {
-    final s = S.of(context);
-    final progress = ProgressScope.of(context);
-    if (runs.isEmpty) return _Empty(progress.runs.isEmpty ? s.noRunsYet : s.historyNoMatch);
-    final days = <DateTime, List<PastRun>>{};
-    for (final r in runs) {
-      (days[progress.dayOf(r.row)] ??= []).add(r);
+    if (items.isEmpty) return _Empty(empty);
+    final today = ProgressScope.of(context).dayAt().date;
+    final days = <DateTime, List<T>>{};
+    for (final item in items) {
+      (days[dayOf(item)] ??= []).add(item);
     }
     return ListView(
       padding: const EdgeInsets.only(top: Gaps.section, bottom: HistoryListStyle.bottomPad),
       children: [
-        for (final MapEntry(key: day, value: dayRuns) in days.entries) ...[
-          _DayHeader(day: day, today: today, runs: dayRuns, activity: activity[day] ?? DayActivity.some),
+        for (final MapEntry(key: day, value: dayItems) in days.entries) ...[
+          _DayHeader(day: day, today: today, trailing: status?.call(day, dayItems)),
           const SizedBox(height: Gaps.small),
-          _RowsBox([for (final r in dayRuns) _RunRow(r)]),
+          _RowsBox([for (final item in dayItems) rowOf(item)]),
           const SizedBox(height: Gaps.section),
         ],
       ],
     );
+  }
+}
+
+/// The main game's day status: the day's mark and what was played.
+class _MainDayStatus extends StatelessWidget {
+  const _MainDayStatus({required this.day, required this.runs, required this.activity});
+  final DateTime day;
+  final List<PastRun> runs;
+  final DayActivity activity;
+
+  @override
+  Widget build(BuildContext context) {
+    final s = S.of(context);
+    final status = ProgressScope.of(context).setDoneOn(day)
+        ? s.historyDayDone
+        : runs.any((r) => r.allKnown)
+            ? s.historyDayAllKnown
+            : runs.any((r) => r.mode == PlayMode.training)
+                ? s.historyDaySome
+                : s.historyDayPlayed;
+    return Row(mainAxisSize: MainAxisSize.min, children: [
+      _DayMark(activity, size: HistoryListStyle.headerMark),
+      const SizedBox(width: Gaps.tight),
+      Text(status, style: const TextStyle(fontWeight: Weights.black, fontSize: HistoryRunStyle.noteFont)),
+    ]);
   }
 }
 
@@ -382,24 +430,15 @@ class _RowsBox extends StatelessWidget {
       );
 }
 
-/// D4: the day on an ink banner, and how much of it was played.
+/// D4: the day on an ink banner, and [trailing] on its right.
 class _DayHeader extends StatelessWidget {
-  const _DayHeader({required this.day, required this.today, required this.runs, required this.activity});
+  const _DayHeader({required this.day, required this.today, this.trailing});
   final DateTime day, today;
-  final List<PastRun> runs;
-  final DayActivity activity;
+  final Widget? trailing;
 
   @override
   Widget build(BuildContext context) {
     final s = S.of(context);
-    final progress = ProgressScope.of(context);
-    final status = progress.setDoneOn(day)
-        ? s.historyDayDone
-        : runs.any((r) => r.allKnown)
-            ? s.historyDayAllKnown
-            : runs.any((r) => r.mode == PlayMode.training)
-                ? s.historyDaySome
-                : s.historyDayPlayed;
     return Row(
       children: [
         Expanded(
@@ -418,10 +457,7 @@ class _DayHeader extends StatelessWidget {
             ),
           ),
         ),
-        const SizedBox(width: Gaps.small),
-        _DayMark(activity, size: HistoryListStyle.headerMark),
-        const SizedBox(width: Gaps.tight),
-        Text(status, style: const TextStyle(fontWeight: Weights.black, fontSize: HistoryRunStyle.noteFont)),
+        if (trailing case final trailing?) ...[const SizedBox(width: Gaps.small), trailing],
       ],
     );
   }
@@ -432,7 +468,7 @@ class _DayHeader extends StatelessWidget {
 /// chevron; tapping opens the run.
 class _ListRow extends StatelessWidget {
   const _ListRow({
-    required this.when,
+    required this.startedAt,
     required this.tags,
     required this.line,
     required this.value,
@@ -441,7 +477,7 @@ class _ListRow extends StatelessWidget {
     this.accent,
   });
 
-  final Widget when;
+  final DateTime startedAt;
   final List<Widget> tags;
   final Widget line;
   final String value, caption;
@@ -462,7 +498,13 @@ class _ListRow extends StatelessWidget {
           constraints: const BoxConstraints(minHeight: HistoryListStyle.rowMinHeight),
           child: Row(
             children: [
-              SizedBox(width: HistoryListStyle.rowClockWidth * MediaQuery.textScalerOf(context).scale(1), child: when),
+              SizedBox(width: HistoryListStyle.rowClockWidth * MediaQuery.textScalerOf(context).scale(1), child: FittedBox(
+                  fit: BoxFit.scaleDown,
+                  alignment: Alignment.centerLeft,
+                  child: Text(S.of(context).clockTime(startedAt),
+                      style: const TextStyle(fontFamily: Fonts.display, fontSize: HistoryListStyle.rowClockFont)),
+                ),
+              ),
               const SizedBox(width: HistoryListStyle.rowGap),
               Expanded(
                 child: Column(
@@ -541,12 +583,7 @@ class _RunRow extends StatelessWidget {
     final perCard = run.clock == null || run.cards == 0 ? null : run.clock!.inMilliseconds / run.cards;
     return _ListRow(
       accent: RunKindTag.lookOf(run.mode).accent,
-      when: FittedBox(
-        fit: BoxFit.scaleDown,
-        alignment: Alignment.centerLeft,
-        child: Text(s.clockTime(run.startedAt),
-            style: const TextStyle(fontFamily: Fonts.display, fontSize: HistoryListStyle.rowClockFont)),
-      ),
+      startedAt: run.startedAt,
       tags: tags,
       line: Text.rich(TextSpan(children: [
         TextSpan(text: cards),
@@ -570,27 +607,6 @@ class _RunRow extends StatelessWidget {
                       ? s.historyScoredCaption
                       : s.historyTimeCaption,
       onTap: () => openRun(context, run),
-    );
-  }
-}
-
-/// The 暗記練 tab: one game a row, the date in the row.
-class _AnkirenList extends StatelessWidget {
-  const _AnkirenList({required this.games, required this.all});
-  final List<SideTripRun> games;
-
-  /// Every game, newest first, for ratings and bests before each one.
-  final List<SideTripRun> all;
-
-  @override
-  Widget build(BuildContext context) {
-    final s = S.of(context);
-    if (games.isEmpty) return _Empty(all.isEmpty ? s.noRunsYet : s.historyNoMatch);
-    return ListView(
-      padding: const EdgeInsets.only(top: Gaps.section, bottom: HistoryListStyle.bottomPad),
-      children: [
-        _RowsBox([for (final g in games) _GameRow(g, all: all)]),
-      ],
     );
   }
 }
@@ -620,7 +636,7 @@ class _GameRow extends StatelessWidget {
     final found = cards - progress.sideTrips.missesIn(game);
     return _ListRow(
       accent: HistoryLooks.ankiren.accent,
-      when: _GameWhen(game),
+      startedAt: game.startedAt,
       tags: [
         _TagLine([
           AnkirenKindTag(ranked: game.ranked, level: game.level),
@@ -649,30 +665,6 @@ class _GameRow extends StatelessWidget {
   }
 }
 
-/// The 定位置 tab: one game a row, the date in the row.
-class _TeiichiList extends StatelessWidget {
-  const _TeiichiList({required this.games, required this.all});
-  final List<SideTripRun> games;
-
-  /// Every game, newest first, for the bests before each one.
-  final List<SideTripRun> all;
-
-  @override
-  Widget build(BuildContext context) {
-    final s = S.of(context);
-    if (games.isEmpty) return _Empty(all.isEmpty ? s.noRunsYet : s.historyNoMatch);
-    final trips = ProgressScope.of(context).sideTrips;
-    final records = [for (final g in all) trips.teiichiRecordOf(g)];
-    final byId = {for (final r in records) r.id: r};
-    return ListView(
-      padding: const EdgeInsets.only(top: Gaps.section, bottom: HistoryListStyle.bottomPad),
-      children: [
-        _RowsBox([for (final g in games) _PlacingRow(g, review: TeiichiReview(byId[g.id]!, records))]),
-      ],
-    );
-  }
-}
-
 /// A 定位置 game: its kind, whether it set the best placing time or ended
 /// early, its cards (and rows, when custom) and wrong taps, and its
 /// placing time.
@@ -688,7 +680,7 @@ class _PlacingRow extends StatelessWidget {
     final setup = game.setup;
     return _ListRow(
       accent: HistoryLooks.teiichi.accent,
-      when: _GameWhen(run),
+      startedAt: run.startedAt,
       tags: [
         _TagLine([
           KindTag(teiichiKindLabel(s, custom: game.custom), look: HistoryLooks.teiichi),
@@ -704,32 +696,6 @@ class _PlacingRow extends StatelessWidget {
       caption: s.historyPlacingCaption,
       onTap: () => openTeiichiGame(context, run),
     );
-  }
-}
-
-/// A side-trip game's day (Today, or a short date) over its time of day.
-class _GameWhen extends StatelessWidget {
-  const _GameWhen(this.game);
-  final SideTripRun game;
-
-  @override
-  Widget build(BuildContext context) {
-    final s = S.of(context);
-    final progress = ProgressScope.of(context);
-    final day = progress.dayOfGame(game);
-    final today = progress.dayAt().date;
-    return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-      FittedBox(
-        fit: BoxFit.scaleDown,
-        alignment: Alignment.centerLeft,
-        child: Text(day == today ? s.historyToday : s.historyShortDay(day),
-            maxLines: 1,
-            style: const TextStyle(fontWeight: Weights.black, fontSize: HistoryListStyle.rowLineFont, height: 1.2)),
-      ),
-      Text(s.clockTime(game.startedAt),
-          style: const TextStyle(
-              fontWeight: Weights.bold, fontSize: HistoryListStyle.rowLineFont, height: 1.2, color: HistoryRunStyle.muted)),
-    ]);
   }
 }
 
