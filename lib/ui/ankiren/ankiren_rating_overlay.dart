@@ -6,8 +6,8 @@ import 'package:flutter/widgets.dart';
 
 import '../../config/config.dart';
 import '../../config/design.dart';
-import '../../domain/trip_rating.dart';
 import '../../domain/rating.dart';
+import '../../domain/trip_rating.dart';
 import '../../l10n/ankiren_strings.dart';
 import '../../l10n/ranked_strings.dart';
 import '../../l10n/results_strings.dart';

@@ -56,6 +56,7 @@ class AnkirenGame extends ChangeNotifier {
     required math.Random rng,
     List<int> karafuda = const [],
     this.countsStrikes = false,
+    this.startingStrikes = 0,
     DateTime Function()? clock,
   })  : karafuda = List.unmodifiable(karafuda),
         prompts = List.unmodifiable(Karafuda.order(field.cards, karafuda, rng)),
@@ -70,6 +71,9 @@ class AnkirenGame extends ChangeNotifier {
   /// A free-play level game: its [strikes] count, and it clears its level
   /// with fewer than [AnkirenTuning.strikesOut].
   final bool countsStrikes;
+
+  /// The strikes it begins with: 定位置's cards never placed.
+  final int startingStrikes;
 
   /// The field's cards and the からふだ in the order they are asked.
   final List<int> prompts;
@@ -93,8 +97,9 @@ class AnkirenGame extends ChangeNotifier {
   /// early).
   bool get completed => phase == AnkirenPhase.done && !_endedEarly;
 
-  /// Wrong taps and cards given up so far, one strike each.
-  int get strikes => answers.fold(_wrongTaps, (n, a) => n + a.wrongTaps + (a.gaveUp ? 1 : 0));
+  /// [startingStrikes] and the wrong taps and cards given up so far, one
+  /// strike each.
+  int get strikes => answers.fold(startingStrikes + _wrongTaps, (n, a) => n + a.wrongTaps + (a.gaveUp ? 1 : 0));
 
   /// It cleared its level (see `LevelLadder.clears`).
   bool get cleared => countsStrikes && LevelLadder.clears(completed: completed, strikes: strikes);
@@ -147,12 +152,12 @@ class AnkirenGame extends ChangeNotifier {
   /// The share of the memorise time left unused.
   double get timeLeft => (1 - memorised.inMicroseconds / setup.memorise.inMicroseconds).clamp(0.0, 1.0);
 
-  /// Turns the cards face down and asks the first one; [memorised] when the
-  /// player is ready before the time is up.
+  /// Turns the cards face down and asks the first one, if any is to ask;
+  /// [memorised] when the player is ready before the time is up.
   void startRecall({Duration? memorised}) {
     if (phase != AnkirenPhase.memorise) return;
     _memorised = memorised;
-    phase = AnkirenPhase.recall;
+    phase = prompts.isEmpty ? AnkirenPhase.done : AnkirenPhase.recall;
     notifyListeners();
   }
 

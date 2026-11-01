@@ -2,26 +2,32 @@ import 'dart:math' as math;
 
 import '../config/config.dart';
 import 'ankiren_level.dart';
+import 'teiichi.dart';
 
 /// What sets one side trip's ladder of levels apart: where it starts and
 /// ends, and which cleared levels open ranked and the custom setups.
 enum LadderRules {
-  ankiren;
+  ankiren,
+  teiichi;
 
   int get first => switch (this) {
         ankiren => 0,
+        teiichi => TeiichiLevels.first,
       };
 
   int get top => switch (this) {
         ankiren => AnkirenLevels.top,
+        teiichi => TeiichiLevels.top,
       };
 
   int get rankedAfter => switch (this) {
         ankiren => AnkirenTuning.rankedAfterLevel,
+        teiichi => TeiichiTuning.rankedAfterLevel,
       };
 
   int get customAfter => switch (this) {
         ankiren => AnkirenTuning.customAfterLevel,
+        teiichi => TeiichiTuning.customAfterLevel,
       };
 }
 

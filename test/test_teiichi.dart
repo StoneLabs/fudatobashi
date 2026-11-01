@@ -20,7 +20,9 @@ TeiichiSpot dealtSpot(TeiichiSetup setup, int i) {
 /// wrong tap on another card for the prompts in [wrongAt]; ended early
 /// after [endAfter] prompts. Its [karafuda] are called among the cards and
 /// each pressed, the ones in [karafudaWrongAt] (counted among the からふだ
-/// calls) after a tap on a card.
+/// calls) after a tap on a card. With [placeCards], only so many are placed
+/// before the time runs out on the rest. With [strikes] it counts them, as
+/// the owner's level games do.
 ({TeiichiPlacing placing, AnkirenGame game}) playTeiichi(TeiichiSetup setup,
     {List<int>? deck,
     int placeMs = 1000,
@@ -31,15 +33,22 @@ TeiichiSpot dealtSpot(TeiichiSetup setup, int i) {
     int? endAfter,
     List<int> karafuda = const [],
     Set<int> karafudaWrongAt = const {},
+    int? placeCards,
+    bool strikes = false,
     int seed = 1}) {
   final placing = TeiichiPlacing(setup, deck ?? [for (var id = 1; id <= setup.cards; id++) id]);
   var at = Duration.zero;
-  for (var i = 0; !placing.allPlaced; i++) {
+  for (var i = 0; !placing.allPlaced && i != placeCards; i++) {
     at += Duration(milliseconds: placeMsOf?.call(i) ?? placeMs);
     placing.placeTop(spotOf?.call(i) ?? dealtSpot(setup, i), at);
   }
-  placing.finish(at);
-  final game = placing.recall(Random(seed), karafuda: karafuda)..startRecall(memorised: at);
+  if (placing.allPlaced) {
+    placing.finish(at);
+  } else {
+    placing.stop(setup.limit ?? at);
+  }
+  final game = placing.recall(Random(seed), karafuda: karafuda, countsStrikes: strikes)
+    ..startRecall(memorised: placing.placingTime);
   var t = const Duration(seconds: 100);
   var k = 0;
   for (var i = 0; game.phase == AnkirenPhase.recall; i++) {

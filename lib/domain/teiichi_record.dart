@@ -9,7 +9,7 @@ abstract final class TeiichiMeta {
   static const rowsKey = 'rows';
   static const customKey = 'custom';
 
-  /// From the deal to done.
+  /// From the deal to the flip.
   static const placingKey = 'placingMs';
 
   /// The final layout (`AnkirenHalf.toJson`).
@@ -20,9 +20,9 @@ abstract final class TeiichiMeta {
 }
 
 /// A recorded 定位置 game as its page shows it: its card count, the placing
-/// time, the cards found with the first tap, the wrong taps, and whether it
-/// was played to the end.
-typedef TeiichiGameFacts = ({int cards, Duration placing, int firstTaps, int wrongTaps, bool completed});
+/// time, the cards found with the first tap, the wrong taps, whether it was
+/// played to the end, and the cards never placed.
+typedef TeiichiGameFacts = ({int cards, Duration placing, int firstTaps, int wrongTaps, bool completed, int unplaced});
 
 /// How the owner has been doing lately: the [games] averaged, up to
 /// [TeiichiTuning.formGames], their wrong taps and their placing time.
@@ -55,9 +55,10 @@ class TeiichiRecord {
 
   static const none = TeiichiRecord();
 
-  /// A game of the usual count of cards, played to the end: only such
-  /// games set the best placing time and the form.
-  static bool counts(TeiichiGameFacts game) => game.completed && game.cards == TeiichiTuning.cards;
+  /// A game of the usual count of cards, every one placed, played to the
+  /// end: only such games set the best placing time and the form.
+  static bool counts(TeiichiGameFacts game) =>
+      game.completed && game.cards == TeiichiTuning.cards && game.unplaced == 0;
 
   final Duration? best;
 

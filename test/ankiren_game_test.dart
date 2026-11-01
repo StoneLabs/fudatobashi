@@ -5,10 +5,10 @@ import 'package:fudatobashi/config/config.dart';
 import 'package:fudatobashi/domain/ankiren_field.dart';
 import 'package:fudatobashi/domain/ankiren_game.dart';
 import 'package:fudatobashi/domain/ankiren_level.dart';
-import 'package:fudatobashi/domain/level_ladder.dart';
-import 'package:fudatobashi/domain/trip_rating.dart';
 import 'package:fudatobashi/domain/ankiren_score.dart';
+import 'package:fudatobashi/domain/level_ladder.dart';
 import 'package:fudatobashi/domain/rating.dart';
+import 'package:fudatobashi/domain/trip_rating.dart';
 
 void main() {
   final dealer = AnkirenDealer(tomofuda: (_) => const [], kimarijiLength: (id) => 1 + id % 4);

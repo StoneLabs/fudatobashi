@@ -199,7 +199,7 @@ class SideTripRuns extends Table {
   IntColumn get level => integer().nullable()();
 
   /// The score and the most the game could score; null unless ranked, the
-  /// only kind with points.
+  /// only kind with points, and the most for a trip whose score has no top.
   IntColumn get score => integer().nullable()();
   IntColumn get maxScore => integer().nullable()();
 
@@ -211,7 +211,7 @@ class SideTripRuns extends Table {
   RealColumn get rating => real().nullable()();
   RealColumn get performance => real().nullable()();
 
-  /// The trip's own details as JSON (暗記練: `AnkirenMeta`).
+  /// The trip's own details as JSON (`AnkirenMeta`, `TeiichiMeta`).
   TextColumn get meta => text().withDefault(const Constant('{}'))();
 }
 
@@ -250,9 +250,9 @@ class SideTripAnswers extends Table {
   IntColumn get secondTapCard => integer().nullable()();
 }
 
-/// One card of a 定位置 game as it was laid out: the cards in the order they
-/// were placed from the stack, with how long each was on top of it. The
-/// final layout is in the game's meta.
+/// One card dealt to a 定位置 game: the cards in the order they were placed
+/// from the stack, then those never placed, with how long each was on top
+/// of it. The final layout is in the game's meta.
 @DataClassName('TeiichiPlacingRow')
 @TableIndex(name: 'teiichi_placings_run', columns: {#runId})
 class TeiichiPlacings extends Table {
@@ -265,6 +265,10 @@ class TeiichiPlacings extends Table {
 
   /// How long it was on top of the stack, µs, every time it was.
   IntColumn get placingUs => integer()();
+
+  /// It was on the board when the cards flipped; false for a card still in
+  /// the stack when the time ran out or the player left.
+  BoolColumn get placed => boolean().withDefault(const Constant(true))();
 }
 
 /// One practice day (see `DayWindow`): journey mode's today's set and
@@ -325,7 +329,7 @@ class AppDatabase extends _$AppDatabase {
 
   /// Raised with each new upgrade step in `lib/migrations/` ([migrationSteps]).
   @override
-  int get schemaVersion => 5;
+  int get schemaVersion => 6;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(

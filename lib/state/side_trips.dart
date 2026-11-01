@@ -6,14 +6,16 @@ import '../db/database.dart';
 import '../domain/ankiren_field.dart';
 import '../domain/ankiren_game.dart';
 import '../domain/ankiren_level.dart';
-import '../domain/level_ladder.dart';
-import '../domain/trip_rating.dart';
 import '../domain/ankiren_review.dart';
 import '../domain/ankiren_xp.dart';
+import '../domain/level_ladder.dart';
 import '../domain/side_trips.dart';
+import '../domain/teiichi.dart';
 import '../domain/teiichi_placing.dart';
 import '../domain/teiichi_record.dart';
 import '../domain/teiichi_review.dart';
+import '../domain/teiichi_score.dart';
+import '../domain/trip_rating.dart';
 import '../domain/xp.dart';
 
 /// What recording a side trip's game changed (for its results): the trip's
@@ -72,13 +74,14 @@ class SideTrips {
 
   final List<SideTripRun> _runs;
 
-  /// The free-play levels each trip's games have cleared, as stored.
+  /// The levels each trip's games have cleared, as stored.
   final Map<SideTrip, Set<int>> _cleared;
 
   /// Each run's answers, in the order they were asked, by run id.
   final Map<int, List<SideTripAnswerRow>> _answers;
 
-  /// Each 定位置 run's cards, in the order they were placed, by run id.
+  /// Each 定位置 run's cards, those placed in the order they were, then
+  /// those never placed, by run id.
   final Map<int, List<TeiichiPlacingRow>> _placings;
 
   /// Every recorded game of every trip, oldest first.
@@ -133,16 +136,22 @@ class SideTrips {
   int strikesIn(SideTripRun run) =>
       (_answers[run.id] ?? const <SideTripAnswerRow>[]).fold(0, (n, a) => n + a.wrongTaps + (a.gaveUp ? 1 : 0));
 
-  /// [trip]'s free-play levels cleared.
-  LevelLadder ladderOf(SideTrip trip) => LevelLadder({..._cleared[trip]!});
+  /// [trip]'s levels cleared.
+  LevelLadder ladderOf(SideTrip trip) => LevelLadder({..._cleared[trip]!}, trip.ladder);
 
   Future<void> _storeCleared(AppDatabase db, SideTrip trip) => db.into(db.keyValues).insertOnConflictUpdate(
       KeyValuesCompanion.insert(key: clearedKey(trip), value: jsonEncode(_cleared[trip]!.toList()..sort())));
 
-  /// Marks [trip]'s free-play levels 0 through [level] cleared, without
-  /// playing them (a developer tool).
+  /// Marks [trip]'s levels up to [level] cleared, without playing them (a
+  /// developer tool).
   Future<void> clearUpTo(AppDatabase db, SideTrip trip, int level) async {
-    _cleared[trip]!.addAll([for (var l = 0; l <= level; l++) l]);
+    _cleared[trip]!.addAll([for (var l = trip.ladder.first; l <= level; l++) l]);
+    await _storeCleared(db, trip);
+  }
+
+  /// Forgets which of [trip]'s levels are cleared (a developer tool).
+  Future<void> resetLevels(AppDatabase db, SideTrip trip) async {
+    _cleared[trip]!.clear();
     await _storeCleared(db, trip);
   }
 
@@ -191,17 +200,11 @@ class SideTrips {
   int missesIn(SideTripRun run) =>
       cardsIn(run) - _cardRows(run).where((a) => a.wrongTaps == 0 && a.responseUs != null).length;
 
-  /// [trip]'s standing on the hub for a player who knows [known] cards:
-  /// 暗記練's free-play levels, capped by the levels those cards fill, and
-  /// what each ranked game did to the rating (from the start for the
-  /// first); 定位置's placing record.
-  SideTripStanding standingOf(SideTrip trip, {required int known}) => switch (trip) {
-        SideTrip.ankiren => _ankirenStanding(known),
-        SideTrip.teiichi => SideTripStanding(games: runsOf(trip).length, placing: teiichiRecord()),
-      };
-
-  SideTripStanding _ankirenStanding(int known) {
-    const trip = SideTrip.ankiren;
+  /// [trip]'s standing on the hub for a player who knows [known] cards: its
+  /// levels (暗記練's capped by the levels those cards fill), what each
+  /// ranked game did to the rating (from the start for the first), and
+  /// 定位置's placing record.
+  SideTripStanding standingOf(SideTrip trip, {required int known}) {
     final runs = _rated(trip).toList();
     final rated = [for (final r in runs) r.rating!];
     final rating = rated.lastOrNull;
@@ -210,17 +213,21 @@ class SideTrips {
       rating: rating,
       ratingChange: rating == null ? null : rating - (rated.length > 1 ? rated[rated.length - 2] : start),
       ladder: ladderOf(trip),
-      maxLevel: AnkirenLevels.maxLevelFor(known),
+      maxLevel: switch (trip) {
+        SideTrip.ankiren => AnkirenLevels.maxLevelFor(known),
+        SideTrip.teiichi => TeiichiLevels.top,
+      },
       games: runsOf(trip).length,
       results: [
         for (final (i, r) in runs.indexed)
           SideTripResult(score: r.score!, ratingChange: rated[i] - (i > 0 ? rated[i - 1] : start)),
       ],
+      placing: trip == SideTrip.teiichi ? teiichiRecord() : TeiichiRecord.none,
     );
   }
 
   /// A 定位置 game's card count, placing time, first-tap finds, wrong taps,
-  /// and whether it was played to the end.
+  /// whether it was played to the end, and the cards never placed.
   TeiichiGameFacts teiichiFactsOf(SideTripRun run) {
     final meta = jsonDecode(run.meta) as Map<String, dynamic>;
     return (
@@ -229,27 +236,46 @@ class SideTrips {
       firstTaps: cardsIn(run) - missesIn(run),
       wrongTaps: answersOf(run).fold(0, (n, a) => n + a.wrongTaps),
       completed: run.completed,
+      unplaced: (_placings[run.id] ?? const <TeiichiPlacingRow>[]).where((p) => !p.placed).length,
     );
   }
 
   /// [run], a 定位置 game, as History reviews it.
-  TeiichiGameRecord teiichiRecordOf(SideTripRun run) => TeiichiGameRecord(
-        recall: recordOf(run),
-        meta: run.meta,
-        placed: [
-          for (final p in _placings[run.id] ?? const <TeiichiPlacingRow>[])
-            (poemId: p.poemId, time: Duration(microseconds: p.placingUs)),
-        ],
-      );
+  TeiichiGameRecord teiichiRecordOf(SideTripRun run) {
+    final rows = _placings[run.id] ?? const <TeiichiPlacingRow>[];
+    return TeiichiGameRecord(
+      recall: recordOf(run),
+      meta: run.meta,
+      placed: [
+        for (final p in rows)
+          if (p.placed) (poemId: p.poemId, time: Duration(microseconds: p.placingUs)),
+      ],
+      unplaced: [
+        for (final p in rows)
+          if (!p.placed) p.poemId,
+      ],
+    );
+  }
 
   /// 定位置's record of the games played (see [TeiichiRecord.of]).
   TeiichiRecord teiichiRecord() => TeiichiRecord.of([for (final r in runsOf(SideTrip.teiichi)) teiichiFactsOf(r)]);
 
+  /// What a ranked game of [trip] scoring [score] does to its rating:
+  /// [before] it, the game's [performance] and the rating [after] it,
+  /// placing it during the first ranked games (see [TripRating]); all null
+  /// for a game without a score.
+  ({double? before, double? performance, double? after}) _rate(SideTrip trip, int? score) {
+    if (score == null) return (before: null, performance: null, after: null);
+    final before = ratingOf(trip) ?? TripRating.start;
+    final performance = trip.rating.performance(score);
+    final after = TripRating.update(before, performance, [for (final r in _rated(trip)) r.performance!]);
+    return (before: before, performance: performance, after: after);
+  }
+
   /// Stores [game], once it is over (see [AnkirenGame.end]), as started at
   /// [startedAt] on practice day [day]: its run and one answer per card
   /// asked, in one transaction, with [meta] added to the run's own details.
-  /// A ranked game moves 暗記練's rating toward its performance (see
-  /// [AnkirenRating]), placing it during the first ranked games; free play
+  /// A ranked game moves 暗記練's rating toward its performance; free play
   /// never touches it, and its level games may clear their level.
   Future<SideTripReport> recordAnkiren(
     AppDatabase db,
@@ -262,13 +288,8 @@ class SideTrips {
     const trip = SideTrip.ankiren;
     final setup = game.setup;
     final score = game.score;
-    final before = setup.ranked ? ratingOf(trip) ?? TripRating.start : null;
+    final (:before, :performance, :after) = _rate(trip, score?.total);
     final ladderBefore = ladderOf(trip);
-    double? performance, after;
-    if (before != null) {
-      performance = TripRating.ankiren.performance(score!.total);
-      after = TripRating.update(before, performance, [for (final r in _rated(trip)) r.performance!]);
-    }
 
     final runId = await db.transaction(() async {
       final id = await db.into(db.sideTripRuns).insert(SideTripRunsCompanion.insert(
@@ -312,9 +333,13 @@ class SideTrips {
   /// Stores a 定位置 game, once over: [placing], laid out and done, and
   /// [game], its cards asked for, as started at [startedAt] on practice day
   /// [day]. Its run keeps the setup, the placing time and the layout, one
-  /// answer per card asked as 暗記練's do, and one placing per card in the
-  /// order they were placed.
-  Future<void> recordTeiichi(
+  /// answer per card asked as 暗記練's do, and one placing per card dealt,
+  /// those placed in the order they were, then the rest.
+  ///
+  /// A ranked game moves 定位置's rating toward its performance, and one not
+  /// played to the end is a forfeit, scoring 0 whatever its calls earned. A
+  /// level game may clear its level.
+  Future<SideTripReport> recordTeiichi(
     AppDatabase db,
     TeiichiPlacing placing,
     AnkirenGame game, {
@@ -322,15 +347,23 @@ class SideTrips {
     required int day,
   }) async {
     assert(placing.done && game.phase == AnkirenPhase.done, 'a game is recorded once it is over');
+    const trip = SideTrip.teiichi;
     final setup = placing.setup;
+    final score = setup.ranked ? (game.completed ? TeiichiScore(game.answers, placing: placing.placingTime!).total : 0) : null;
+    final (:before, :performance, :after) = _rate(trip, score);
+    final ladderBefore = ladderOf(trip);
     final runId = await db.transaction(() async {
       final id = await db.into(db.sideTripRuns).insert(SideTripRunsCompanion.insert(
-            game: SideTrip.teiichi,
+            game: trip,
             startedAt: startedAt,
-            endedAt: game.answers.lastOrNull?.at ?? startedAt,
+            endedAt: game.answers.lastOrNull?.at ?? startedAt.add(placing.placingTime!),
             day: day,
-            ranked: false,
+            ranked: setup.ranked,
+            level: Value(setup.level),
+            score: Value(score),
             completed: game.completed,
+            rating: Value(after),
+            performance: Value(performance),
             meta: Value(jsonEncode({
               TeiichiMeta.cardsKey: setup.cards,
               TeiichiMeta.rowsKey: setup.rows,
@@ -342,14 +375,17 @@ class SideTrips {
           ));
       await _storeAnswers(db, id, game);
       await db.batch((b) => b.insertAll(db.teiichiPlacings, [
-            for (final (i, poemId) in placing.order.indexed)
+            for (final (i, poemId) in [...placing.order, ...placing.unplaced].indexed)
               TeiichiPlacingsCompanion.insert(
                 runId: id,
                 seq: i,
                 poemId: poemId,
                 placingUs: placing.placingTimeOf(poemId).inMicroseconds,
+                placed: Value(i < placing.order.length),
               ),
           ]));
+      final level = setup.level;
+      if (level != null && game.cleared && _cleared[trip]!.add(level)) await _storeCleared(db, trip);
       return id;
     });
     await _loadRun(db, runId);
@@ -357,6 +393,13 @@ class SideTrips {
           ..where((p) => p.runId.equals(runId))
           ..orderBy([(p) => OrderingTerm.asc(p.seq)]))
         .get();
+    return SideTripReport(
+      ratingBefore: before,
+      ratingAfter: after,
+      rankedGames: setup.ranked ? rankedGames(trip) : 0,
+      ladderBefore: ladderBefore,
+      ladderAfter: ladderOf(trip),
+    );
   }
 
   /// [game]'s answers, one per card asked, as run [runId]'s.

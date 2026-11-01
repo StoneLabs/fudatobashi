@@ -11,16 +11,16 @@ import 'package:fudatobashi/data/poem.dart';
 import 'package:fudatobashi/db/database.dart';
 import 'package:fudatobashi/db/fsrs_rows.dart';
 import 'package:fudatobashi/domain/ankiren_level.dart';
-import 'package:fudatobashi/domain/trip_rating.dart';
 import 'package:fudatobashi/domain/card_stats.dart';
 import 'package:fudatobashi/domain/play_session.dart';
 import 'package:fudatobashi/domain/rating.dart';
 import 'package:fudatobashi/domain/side_trips.dart';
 import 'package:fudatobashi/domain/step_plan.dart';
 import 'package:fudatobashi/domain/trainer.dart';
+import 'package:fudatobashi/domain/trip_rating.dart';
+import 'package:fudatobashi/state/db_integrity.dart';
 import 'package:fudatobashi/state/play_config.dart';
 import 'package:fudatobashi/state/progress.dart';
-import 'package:fudatobashi/state/db_integrity.dart';
 
 import 'test_ankiren.dart';
 

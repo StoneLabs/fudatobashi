@@ -1,11 +1,45 @@
 part of '../config.dart';
 
-/// 定位置 (the layout side trip): its games (`TeiichiSetup`), the room a row
-/// has while placing (`TeiichiBoard`), and what its page shows of the games
-/// played (`SideTrips.teiichiRecord`).
+/// 定位置 (the layout side trip): its levels and games (`TeiichiSetup`), how
+/// a ranked game scores (`TeiichiScore`), the room a row has while placing
+/// (`TeiichiBoard`), and what its page shows of the games played
+/// (`SideTrips.teiichiRecord`).
 abstract final class TeiichiTuning {
+  /// The levels, [firstLevel] first; a limit is placing time only. They
+  /// open one at a time (see `LevelLadder`), and the custom setups are
+  /// [customLevel] on the same scale.
+  static const List<TeiichiLevel> levels = [
+    TeiichiLevel(cards: 4, rows: 1, limit: Duration(minutes: 15)),
+    TeiichiLevel(cards: 8, rows: 2, limit: Duration(minutes: 15)),
+    TeiichiLevel(cards: 12, rows: 2, limit: Duration(minutes: 10)),
+    TeiichiLevel(cards: 16, rows: 3, limit: Duration(minutes: 5), karafuda: 7),
+    TeiichiLevel(cards: 20, rows: 3, limit: Duration(minutes: 3), karafuda: 8),
+    TeiichiLevel(cards: 25, rows: 3, limit: Duration(minutes: 3), karafuda: 10),
+    TeiichiLevel(cards: 25, rows: 3, limit: Duration(minutes: 2, seconds: 30), karafuda: 10),
+    TeiichiLevel(cards: 25, rows: 3, limit: Duration(minutes: 2), karafuda: 10),
+    TeiichiLevel(cards: 25, rows: 3, limit: Duration(minutes: 1, seconds: 30), karafuda: 10),
+  ];
+  static const int firstLevel = 1;
+  static const int customLevel = 10;
+
+  /// Clearing [rankedAfterLevel] opens ranked (in all-known mode), and
+  /// [customAfterLevel] the custom setups, whatever is cleared after it.
+  static const int rankedAfterLevel = 4;
+  static const int customAfterLevel = 6;
+
+  /// Ranked games all lay out the usual game, dealt from all 100 cards, in
+  /// at most [rankedLimit]; then the cards flip.
+  static const Duration rankedLimit = Duration(minutes: 15);
+
+  /// A ranked game's right first taps earn their normal points
+  /// (`AnkirenScore.pointsOf`) times 1 + [bonusPerHalving] for each time
+  /// the placing time halves [halvingClock], in fractions of a halving too.
+  static const double bonusPerHalving = 0.15;
+  static const Duration halvingClock = Duration(minutes: 15);
+
   /// The usual game: a real match's side of [cards] known cards in all
-  /// three rows. Only games of [cards] count for the best placing time.
+  /// three rows. Only games of [cards] with every card placed count for the
+  /// best placing time.
   static const int cards = 25;
   static const int rows = 3;
 
@@ -49,6 +83,9 @@ abstract final class TeiichiRatingModel {
 abstract final class TeiichiPlayTuning {
   /// The placing clock's step: it shows whole seconds.
   static const Duration clockTick = Duration(seconds: 1);
+
+  /// A countdown turns urgent with this much time left.
+  static const Duration lowTime = Duration(seconds: 30);
 
   /// The tip to turn the phone waits this long on a portrait screen, so
   /// that the screen has come in and a turn asked for has landed.

@@ -89,10 +89,6 @@ void main() {
       expect(const TeiichiSetup(cards: 8, rows: 2).rowsInPlay, [lower, middle]);
       expect(TeiichiSetup.usual.rowsInPlay, [lower, middle, upper]);
       expect([for (var rows = 1; rows <= 3; rows++) TeiichiSetup(cards: 8, rows: rows).openMiddle], [false, false, true]);
-      expect(TeiichiSetup.usual.custom, isFalse);
-      expect(const TeiichiSetup(cards: 25, rows: 3, karafuda: TeiichiTuning.karafuda).custom, isFalse);
-      expect(const TeiichiSetup(cards: 25, rows: 3).custom, isTrue, reason: 'without its からふだ');
-      expect(const TeiichiSetup(cards: 20, rows: 3).custom, isTrue);
       expect(const TeiichiSetup(cards: 20, rows: 3).full, isFalse);
     });
   });
@@ -300,12 +296,15 @@ void main() {
 
   // The page's form: the last games that count, averaged.
   group('the form', () {
-    TeiichiGameFacts game(int placingS, int wrongTaps, {int cards = TeiichiTuning.cards, bool completed = true}) => (
+    TeiichiGameFacts game(int placingS, int wrongTaps,
+            {int cards = TeiichiTuning.cards, bool completed = true, int unplaced = 0}) =>
+        (
           cards: cards,
           placing: Duration(seconds: placingS),
           firstTaps: cards - wrongTaps,
           wrongTaps: wrongTaps,
           completed: completed,
+          unplaced: unplaced,
         );
 
     test('the last five usual games played to the end, averaged; older, ended and custom games left out', () {
@@ -316,12 +315,13 @@ void main() {
         game(5, 0, completed: false),
         game(42, 3),
         game(6, 0, cards: 20),
+        game(7, 0, unplaced: 1),
         game(43, 4),
         game(44, 5),
       ]);
       expect(record.form, (games: 5, wrongTaps: 3.0, placing: const Duration(seconds: 42)));
       expect(record.best, const Duration(seconds: 10), reason: 'the best looks at every game that counts');
-      expect(record.games, 8);
+      expect(record.games, 9);
       expect(record.last, game(44, 5));
     });
 

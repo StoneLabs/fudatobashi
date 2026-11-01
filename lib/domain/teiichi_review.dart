@@ -2,20 +2,28 @@ import 'dart:convert';
 
 import 'ankiren_field.dart';
 import 'ankiren_review.dart';
+import 'level_ladder.dart';
 import 'teiichi.dart';
 import 'teiichi_record.dart';
+import 'teiichi_score.dart';
 
 /// A card of a recorded 定位置 game as it was placed: how long it was on top
 /// of the stack, every time it was.
 typedef TeiichiPlaced = ({int poemId, Duration time});
 
 /// A recorded 定位置 game as History reviews it: its setup, the placing
-/// time, the layout as placed, the cards in the order they were placed,
-/// and the cards asked for after, recorded as a 暗記練 game's ([recall]).
+/// time, the layout as placed, the cards in the order they were placed and
+/// those never placed, and the cards asked for after, recorded as a 暗記練
+/// game's ([recall]).
 class TeiichiGameRecord {
   /// A game from its stored run: [meta] is its details' JSON (see
   /// [TeiichiMeta]).
-  factory TeiichiGameRecord({required AnkirenGameRecord recall, required String meta, required List<TeiichiPlaced> placed}) {
+  factory TeiichiGameRecord({
+    required AnkirenGameRecord recall,
+    required String meta,
+    required List<TeiichiPlaced> placed,
+    List<int> unplaced = const [],
+  }) {
     final details = jsonDecode(meta) as Map<String, dynamic>;
     return TeiichiGameRecord._(
       recall,
@@ -23,24 +31,27 @@ class TeiichiGameRecord {
         cards: details[TeiichiMeta.cardsKey] as int,
         rows: details[TeiichiMeta.rowsKey] as int,
         karafuda: recall.karafuda.length,
+        level: recall.level,
+        ranked: recall.ranked,
       ),
       details[TeiichiMeta.customKey] as bool? ?? false,
       Duration(milliseconds: details[TeiichiMeta.placingKey] as int),
       AnkirenHalf.fromJson(details[TeiichiMeta.layoutKey] as List),
       List.unmodifiable(placed),
+      List.unmodifiable(unplaced),
     );
   }
 
-  TeiichiGameRecord._(this.recall, this.setup, this.custom, this.placing, this.layout, this.placed);
+  TeiichiGameRecord._(this.recall, this.setup, this.custom, this.placing, this.layout, this.placed, this.unplaced);
 
   final AnkirenGameRecord recall;
   final TeiichiSetup setup;
 
-  /// Anything but the usual game of its day: a game recorded before
-  /// からふだ was usual without them.
+  /// A custom game; or, from before the levels, anything but the usual
+  /// game of its day, as one without からふだ from before they were usual.
   final bool custom;
 
-  /// From the deal to done.
+  /// From the deal to the flip.
   final Duration placing;
 
   /// The own side as placed.
@@ -49,6 +60,10 @@ class TeiichiGameRecord {
   /// The cards in the order they were placed.
   final List<TeiichiPlaced> placed;
 
+  /// The cards still in the stack when the others flipped: never called,
+  /// and counted as misses with 0 points.
+  final List<int> unplaced;
+
   int get id => recall.id;
   DateTime get startedAt => recall.startedAt;
   bool get completed => recall.completed;
@@ -56,14 +71,33 @@ class TeiichiGameRecord {
   /// The layout as the field it was played on.
   AnkirenField get field => AnkirenField(own: layout, opponent: AnkirenHalf.empty());
 
+  bool get ranked => recall.ranked;
+  int? get level => recall.level;
+
+  /// A ranked game left before its end.
+  bool get forfeit => ranked && !completed;
+
   /// Every wrong tap, the からふだ calls' among them.
   int get wrongTaps => recall.calls.fold(0, (n, c) => n + c.wrongTaps);
+
+  /// Its wrong taps, calls given up and cards never placed, one strike
+  /// each.
+  int get strikes => recall.strikes + unplaced.length;
+
+  /// It cleared its level.
+  bool get cleared => level != null && LevelLadder.clears(completed: completed, strikes: strikes);
+
+  /// Every card dealt, placed or not.
+  int get dealt => recall.cards.length + unplaced.length;
+
+  /// What the placing time multiplied the first-tap points by.
+  double get scoreFactor => TeiichiScore.factorOf(placing);
 
   /// The field cards that took a wrong tap.
   int get wrongCards => recall.cards.where((c) => c.wrongTaps > 0).length;
 
   /// It sets the best placing time and the form (see [TeiichiRecord.counts]).
-  bool get counts => completed && setup.full;
+  bool get counts => completed && setup.full && unplaced.isEmpty;
 
   /// The cards placed, the slowest to place first.
   List<TeiichiPlaced> get slowest => [...placed]..sort((a, b) => b.time.compareTo(a.time));

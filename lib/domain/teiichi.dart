@@ -5,13 +5,63 @@ import 'ankiren_field.dart';
 import 'ankiren_geometry.dart';
 import 'karafuda.dart';
 
-/// One 定位置 game: how many known cards are laid out, in how many rows, and
-/// the からふだ called among them.
-class TeiichiSetup {
-  const TeiichiSetup({required this.cards, required this.rows, this.karafuda = 0});
+/// One 定位置 level: the cards laid out in how many rows, the most time
+/// they may take, and the からふだ called among them.
+class TeiichiLevel {
+  const TeiichiLevel({required this.cards, required this.rows, required this.limit, this.karafuda = 0});
 
-  /// The usual game: [TeiichiTuning.cards] in all three rows, with
-  /// [TeiichiTuning.karafuda].
+  final int cards;
+  final int rows;
+  final Duration limit;
+  final int karafuda;
+}
+
+/// The level table ([TeiichiTuning.levels]), numbered from
+/// [TeiichiTuning.firstLevel].
+abstract final class TeiichiLevels {
+  static List<TeiichiLevel> get all => TeiichiTuning.levels;
+  static int get first => TeiichiTuning.firstLevel;
+  static int get top => first + all.length - 1;
+
+  static TeiichiLevel of(int level) => all[level - first];
+}
+
+/// One 定位置 game: how many known cards are laid out, in how many rows, the
+/// からふだ called among them and the most time placing may take: ranked's
+/// one setup, a level, or in a custom game whatever was picked, with no
+/// limit.
+class TeiichiSetup {
+  const TeiichiSetup({
+    required this.cards,
+    required this.rows,
+    this.karafuda = 0,
+    this.limit,
+    this.level,
+    this.ranked = false,
+  }) : assert(!ranked || level == null);
+
+  /// Ranked's setup, the usual game against the clock.
+  const TeiichiSetup.ranked()
+      : this(
+          cards: TeiichiTuning.cards,
+          rows: TeiichiTuning.rows,
+          karafuda: TeiichiTuning.karafuda,
+          limit: TeiichiTuning.rankedLimit,
+          ranked: true,
+        );
+
+  /// A level of the table.
+  TeiichiSetup.forLevel(int level)
+      : this(
+          cards: TeiichiLevels.of(level).cards,
+          rows: TeiichiLevels.of(level).rows,
+          karafuda: TeiichiLevels.of(level).karafuda,
+          limit: TeiichiLevels.of(level).limit,
+          level: level,
+        );
+
+  /// The custom game a new player's steppers start from:
+  /// [TeiichiTuning.cards] in all three rows, with [TeiichiTuning.karafuda].
   static const usual =
       TeiichiSetup(cards: TeiichiTuning.cards, rows: TeiichiTuning.rows, karafuda: TeiichiTuning.karafuda);
 
@@ -19,14 +69,21 @@ class TeiichiSetup {
   final int rows;
   final int karafuda;
 
+  /// The most placing time; null for no limit.
+  final Duration? limit;
+
+  /// The level played; null for ranked and for a custom game.
+  final int? level;
+  final bool ranked;
+
   /// Every call: the cards laid out and the からふだ, each a known card, so
   /// also the known cards the game needs.
   int get calls => cards + karafuda;
 
-  /// Anything but the usual game.
-  bool get custom => this != usual;
+  /// Neither ranked nor a level.
+  bool get custom => level == null && !ranked;
 
-  /// It counts for the best placing time.
+  /// Enough cards to count for the best placing time.
   bool get full => cards == TeiichiTuning.cards;
 
   /// The rows played, from the player outward as 暗記練 fills them: 下段
@@ -72,13 +129,19 @@ class TeiichiSetup {
 
   @override
   bool operator ==(Object other) =>
-      other is TeiichiSetup && other.cards == cards && other.rows == rows && other.karafuda == karafuda;
+      other is TeiichiSetup &&
+      other.cards == cards &&
+      other.rows == rows &&
+      other.karafuda == karafuda &&
+      other.limit == limit &&
+      other.level == level &&
+      other.ranked == ranked;
 
   @override
-  int get hashCode => Object.hash(cards, rows, karafuda);
+  int get hashCode => Object.hash(cards, rows, karafuda, limit, level, ranked);
 
   @override
-  String toString() => 'TeiichiSetup($cards cards, $rows rows, $karafuda からふだ)';
+  String toString() => 'TeiichiSetup($cards cards, $rows rows, $karafuda からふだ, limit $limit, level $level, ranked $ranked)';
 }
 
 /// Where a card goes on the own side while it is laid out (see

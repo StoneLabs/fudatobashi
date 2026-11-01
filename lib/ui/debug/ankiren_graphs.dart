@@ -5,9 +5,9 @@ import 'package:flutter/material.dart';
 import '../../config/config.dart';
 import '../../config/design.dart';
 import '../../domain/ankiren_level.dart';
-import '../../domain/trip_rating.dart';
-import '../../domain/rating.dart';
 import '../../domain/ankiren_score.dart';
+import '../../domain/rating.dart';
+import '../../domain/trip_rating.dart';
 import '../play/time_format.dart';
 import 'debug_common.dart';
 
@@ -102,7 +102,7 @@ class _Line {
   final List<Offset> points;
 }
 
-/// A performance by final score graph: the line of [AnkirenRating], dashed
+/// A performance by final score graph: the line of [TripRating], dashed
 /// lines at the class borders' ratings and a labelled dot at the best
 /// possible score and at the realistic top one.
 class AnkirenRatingGraph extends StatelessWidget {

@@ -61,7 +61,8 @@ void main() {
     final again = await open(db);
     final record = again.sideTripsHub()[teiichi].placing;
     expect(record.games, 1);
-    expect(record.last, (cards: 12, placing: const Duration(seconds: 18), firstTaps: 11, wrongTaps: 1, completed: true));
+    expect(record.last,
+        (cards: 12, placing: const Duration(seconds: 18), firstTaps: 11, wrongTaps: 1, completed: true, unplaced: 0));
     expect(record.best, isNull, reason: 'only games of the usual count of cards set a best');
     expect(record.form, isNull, reason: 'nor the form');
     await db.close();

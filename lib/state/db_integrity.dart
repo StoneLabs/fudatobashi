@@ -6,12 +6,12 @@ import 'package:fsrs/fsrs.dart' as fsrs;
 
 import '../db/database.dart';
 import '../db/fsrs_rows.dart';
-import '../domain/trip_rating.dart';
 import '../domain/card_stats.dart';
 import '../domain/play_session.dart';
 import '../domain/rating.dart';
 import '../domain/side_trips.dart';
 import '../domain/trainer.dart';
+import '../domain/trip_rating.dart';
 
 /// One independent integrity check: a cheap [detect] that only reads, and a
 /// [repair] that runs, in one transaction, only when something was detected.

@@ -4,24 +4,31 @@ import '../config/config.dart';
 import 'level_ladder.dart';
 import 'rating.dart';
 import 'teiichi_record.dart';
+import 'trip_rating.dart';
 
 /// The side trips (寄り道): games beside the journey that train other
 /// skills, each an island of the Side Trips tab. [label] is its name, in
 /// karuta's own Japanese whatever the UI language.
 enum SideTrip {
   /// 暗記練: memorise a field of known cards, then take each by its kimariji.
-  ankiren('暗記練', hasRanked: true),
+  ankiren('暗記練', LadderRules.ankiren, TripRating.ankiren),
 
   /// 定位置: lay known cards out on the own side, then take each by its
   /// kimariji, as in 暗記練.
-  teiichi('定位置');
+  teiichi('定位置', LadderRules.teiichi, TripRating.teiichi);
 
-  const SideTrip(this.label, {this.hasRanked = false});
+  const SideTrip(this.label, this.ladder, this.rating);
 
   final String label;
 
-  /// Whether the trip has a ranked mode yet, and so a rank to show.
-  final bool hasRanked;
+  /// How its levels open.
+  final LadderRules ladder;
+
+  /// How its ranked games rate.
+  final TripRating rating;
+
+  /// Its levels with none cleared.
+  LevelLadder get noLevels => LevelLadder(const {}, ladder);
 }
 
 /// The islands of the Side Trips tab, in the order of their ring: each side
@@ -157,8 +164,6 @@ class SideTripStanding {
     this.placing = TeiichiRecord.none,
   });
 
-  static const none = SideTripStanding();
-
   final double? rating;
   final double? ratingChange;
   final LevelLadder ladder;
@@ -240,7 +245,7 @@ class SideTripsHub {
     Map<SideTrip, SideTripStanding> standings = const {},
   }) {
     SideTripEntry entry(SideTrip trip) {
-      final standing = standings[trip] ?? SideTripStanding.none;
+      final standing = standings[trip] ?? SideTripStanding(ladder: trip.noLevels);
       final rating = standing.rating;
       return SideTripEntry(
         trip: trip,

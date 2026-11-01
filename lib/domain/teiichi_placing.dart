@@ -8,7 +8,8 @@ import 'teiichi.dart';
 /// Laying out a 定位置 game's cards: they come face up in a stack, and its
 /// top card goes on the board, one at a time, with no skipping. A placed
 /// card can be moved, or taken back on top of the stack. Once every card is
-/// placed the player is done, and the clock stops.
+/// placed the player is done, and the clock stops; or the placing is
+/// stopped short, with the cards left in the stack never to be placed.
 ///
 /// A card's placing time is how long it was on top of the stack, every
 /// time it was. Times are counted from the deal.
@@ -102,16 +103,37 @@ class TeiichiPlacing {
     return true;
   }
 
+  /// The layout is final as it stands [at] the clock's time, whatever is
+  /// still in the stack: the time ran out, or the player left.
+  void stop(Duration at) {
+    if (done) return;
+    _endTurn(at);
+    _doneAt = at;
+  }
+
+  /// The cards never placed, once done.
+  List<int> get unplaced => done ? stack : const [];
+
   /// The game that asks for the laid-out cards once done, as 暗記練's: only
   /// the own side holds cards, they and [karafuda] are asked in an order
-  /// [rng] draws, and the placing time is the time to memorise them.
-  AnkirenGame recall(math.Random rng, {List<int> karafuda = const [], DateTime Function()? clock}) {
+  /// [rng] draws, and the placing time is the time to memorise them. Each
+  /// card left unplaced is a strike from the start; with no card laid out
+  /// nothing is called at all.
+  AnkirenGame recall(
+    math.Random rng, {
+    List<int> karafuda = const [],
+    bool countsStrikes = false,
+    DateTime Function()? clock,
+  }) {
     assert(done, 'the cards are asked for once they are laid out');
+    final called = board.cards.isEmpty ? const <int>[] : karafuda;
     return AnkirenGame(
       field: AnkirenField(own: board.half, opponent: AnkirenHalf.empty()),
-      setup: AnkirenSetup.custom(perSide: setup.cards, memorise: placingTime!, karafuda: karafuda.length),
+      setup: AnkirenSetup.custom(perSide: setup.cards, memorise: placingTime!, karafuda: called.length),
       rng: rng,
-      karafuda: karafuda,
+      karafuda: called,
+      countsStrikes: countsStrikes,
+      startingStrikes: unplaced.length,
       clock: clock,
     );
   }

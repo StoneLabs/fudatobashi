@@ -2,11 +2,11 @@ import 'dart:convert';
 
 import '../config/config.dart';
 import 'ankiren_field.dart';
-import 'trip_rating.dart';
 import 'ankiren_score.dart';
 import 'karafuda.dart';
 import 'play_session.dart';
 import 'rating.dart';
+import 'trip_rating.dart';
 import 'xp.dart';
 
 /// The keys of a recorded 暗記練 game's details (its run's meta JSON).

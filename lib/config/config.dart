@@ -10,6 +10,7 @@ import '../domain/ankiren_field.dart';
 import '../domain/ankiren_level.dart';
 import '../domain/card_mask.dart';
 import '../domain/learning_pace.dart';
+import '../domain/teiichi.dart';
 import '../domain/xp.dart';
 import '../state/play_config.dart';
 import '../state/settings.dart';

@@ -1444,16 +1444,27 @@ class Progress extends ChangeNotifier {
     );
   }
 
-  /// Stores a 定位置 game once it is over (see [SideTrips.recordTeiichi]).
-  Future<void> recordTeiichi(TeiichiPlacing placing, AnkirenGame game, {required DateTime startedAt}) async {
+  /// Stores a 定位置 game once it is over and moves its rating for a ranked
+  /// one (see [SideTrips.recordTeiichi]).
+  Future<SideTripReport> recordTeiichi(TeiichiPlacing placing, AnkirenGame game, {required DateTime startedAt}) async {
     final day = await _storeDay(startedAt);
-    await sideTrips.recordTeiichi(db, placing, game, startedAt: startedAt, day: day.day);
+    final report = await sideTrips.recordTeiichi(db, placing, game, startedAt: startedAt, day: day.day);
     notifyListeners();
+    return report;
   }
 
   /// Developer tool: marks 暗記練's free levels 0 through [level] cleared.
-  Future<void> clearAnkirenUpTo(int level) async {
-    await sideTrips.clearUpTo(db, SideTrip.ankiren, level);
+  Future<void> clearAnkirenUpTo(int level) => clearLevelsUpTo(SideTrip.ankiren, level);
+
+  /// Developer tool: marks [trip]'s levels up to [level] cleared.
+  Future<void> clearLevelsUpTo(SideTrip trip, int level) async {
+    await sideTrips.clearUpTo(db, trip, level);
+    notifyListeners();
+  }
+
+  /// Developer tool: forgets which of [trip]'s levels are cleared.
+  Future<void> resetLevels(SideTrip trip) async {
+    await sideTrips.resetLevels(db, trip);
     notifyListeners();
   }
 
