@@ -219,11 +219,23 @@ Future<void> _pushAnkiren(BuildContext context, AnkirenSetup setup, List<int> kn
   ));
 }
 
-/// 定位置 at [setup], once 定位置 is open, laid out from the known cards,
-/// which must hold it and its からふだ.
+/// 定位置's ranked game, always [TeiichiSetup.ranked]'s, dealt from all the
+/// cards, once ranked is open (see [RankedLock]). Re-checks the lock off
+/// [context], like [startFreePlay].
+Future<void> startTeiichiRanked(BuildContext context) async {
+  if (!ProgressScope.read(context).sideTripsHub()[SideTrip.teiichi].rankedOpen) return;
+  await _pushTeiichi(context, const TeiichiSetup.ranked(), [for (final p in poems.all) p.id]);
+}
+
+/// 定位置 at [setup], once 定位置 is open and the setup is (a level opened by
+/// clearing the one before, or custom once that opens; see [LevelLadder]),
+/// laid out from the known cards, which must hold it and its からふだ.
 Future<void> startTeiichi(BuildContext context, TeiichiSetup setup) async {
   final progress = ProgressScope.read(context);
-  if (!progress.sideTripsHub()[SideTrip.teiichi].open) return;
+  final entry = progress.sideTripsHub()[SideTrip.teiichi];
+  final level = setup.level;
+  final open = level == null ? entry.ladder.customOpen : entry.ladder.isOpen(level);
+  if (!entry.open || setup.ranked || !open) return;
   final known = progress.knownCards.toList();
   if (setup.calls > known.length) {
     MangaToast.show(context, S.of(context).teiichiNeedCards(setup.calls));
@@ -234,8 +246,10 @@ Future<void> startTeiichi(BuildContext context, TeiichiSetup setup) async {
 
 /// 定位置 for a guest at [setup], laid out from all the cards: nothing of it
 /// is recorded (see [AnkirenPlayer.guest]).
-Future<void> startTeiichiGuest(BuildContext context, TeiichiSetup setup) =>
-    _pushTeiichi(context, setup, [for (final p in poems.all) p.id], player: AnkirenPlayer.guest);
+Future<void> startTeiichiGuest(BuildContext context, TeiichiSetup setup) async {
+  if (setup.ranked) return;
+  await _pushTeiichi(context, setup, [for (final p in poems.all) p.id], player: AnkirenPlayer.guest);
+}
 
 Future<void> _pushTeiichi(BuildContext context, TeiichiSetup setup, List<int> known,
     {AnkirenPlayer player = AnkirenPlayer.owner}) async {

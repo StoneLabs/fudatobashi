@@ -33,24 +33,31 @@ import 'teiichi_zoom.dart';
 /// [TeiichiTuning.rowSlots] pitches across, never rescaled. [setup]'s cards
 /// are dealt from [known] into a face-up stack where the other player's
 /// side would be, and laid out one at a time ([TeiichiPlacing],
-/// [TeiichiPlacingLayer]) while the clock counts up. Done grows the field
+/// [TeiichiPlacingLayer]) while the clock counts up, or down from the
+/// setup's limit. Done, or the limit running out, grows the field
 /// ([TeiichiZoom]), turns the cards face down, and the game goes on as
 /// 暗記練's does ([AnkirenPlay]), the setup's からふだ, drawn from the other
-/// known cards ([KarafudaPicker]), among the cards, to its end; wrong taps
-/// only count. With からふだ, the band rises from Done on, for "don't know"
-/// over the からふだ button. It ends into [TeiichiResultsScreen].
+/// known cards ([KarafudaPicker]) but never from the cards left in the
+/// stack, among the cards, to its end; with no card laid out it ends there.
+/// The owner's level games count strikes, each card left in the stack one
+/// from the start (see [AnkirenStrikes]). With からふだ, or strikes on a
+/// portrait screen, the band rises from then on, for "don't know" over the
+/// からふだ button and the strikes over End. It ends into
+/// [TeiichiResultsScreen].
 ///
 /// The screen turns sideways for the game, or follows the phone without
 /// the auto turn (`AppSettings.teiichiAutoTurn`); either way it is laid out
 /// for the shape it has. Turned mid-game it keeps everything but a drag
 /// under way, whose card goes back. Laying out on a portrait screen, it
 /// tips the player once a game to turn the phone ([showTeiichiTurnTip]),
-/// the clock stopped meanwhile.
+/// the clock stopped meanwhile; never in a ranked game, whose placing time
+/// is the real time from the deal to the flip.
 ///
 /// End while placing leaves without a game, after asking once a card is
 /// placed; once the cards are face down,
-/// the cards not found yet count as missed. The owner's games are recorded
-/// once over; a guest's never are.
+/// the cards not found yet count as missed. A ranked game is a forfeit from
+/// the deal on: leaving it asks first, then records it at 0. The owner's
+/// games are recorded once over; a guest's never are.
 class TeiichiScreen extends StatefulWidget {
   const TeiichiScreen({
     super.key,
@@ -82,10 +89,11 @@ class _TeiichiScreenState extends State<TeiichiScreen> with AnkirenPlay {
   final DateTime _startedAt = DateTime.now();
 
   /// Placing times are read off [_clock]; [_shown] is what the band shows,
-  /// whole seconds.
+  /// whole seconds: the time left of a limit, or else the time so far.
   final Stopwatch _clock = Stopwatch()..start();
-  final ValueNotifier<Duration> _shown = ValueNotifier(Duration.zero);
+  late final ValueNotifier<Duration> _shown = ValueNotifier(widget.setup.limit ?? Duration.zero);
   Timer? _tick;
+  int _ticks = 0;
 
   TeiichiDrag? _drag;
   bool _ending = false;
@@ -115,6 +123,12 @@ class _TeiichiScreenState extends State<TeiichiScreen> with AnkirenPlay {
   bool get _layoutAtStake => _placingNow && _placing.order.isNotEmpty;
   bool get _recorded => widget.player.recorded;
 
+  /// The owner's level game: its strikes count.
+  bool get _countsStrikes => widget.player == AnkirenPlayer.owner && widget.setup.level != null;
+
+  /// A ranked game is on: leaving it is a forfeit.
+  bool get _forfeitable => _recorded && widget.setup.ranked && _game?.phase != AnkirenPhase.done;
+
   @override
   void initState() {
     super.initState();
@@ -123,9 +137,22 @@ class _TeiichiScreenState extends State<TeiichiScreen> with AnkirenPlay {
     final deck = {...widget.known}.toList()..shuffle(_rng);
     _placing = TeiichiPlacing(widget.setup, deck.take(widget.setup.cards).toList());
     holdStage(_progress.settings.teiichiAutoTurn ? OrientationTuning.landscape : OrientationTuning.any);
-    _tick = Timer.periodic(TeiichiPlayTuning.clockTick, (_) {
-      if (_clock.isRunning) _shown.value += TeiichiPlayTuning.clockTick;
-    });
+    _tick = Timer.periodic(TeiichiPlayTuning.clockTick, _onTick);
+  }
+
+  /// Counted by the ticks due, not the ones run: a stalled or suspended app
+  /// skips ticks, never time.
+  void _onTick(Timer timer) {
+    final step = TeiichiPlayTuning.clockTick * (timer.tick - _ticks);
+    _ticks = timer.tick;
+    if (!_clock.isRunning) return;
+    if (widget.setup.limit == null) {
+      _shown.value += step;
+      return;
+    }
+    final left = _shown.value - step;
+    _shown.value = left > Duration.zero ? left : Duration.zero;
+    if (left <= Duration.zero) _timeUp();
   }
 
   /// The screen turned, or changed size: a drag under way lets go, as the
@@ -147,7 +174,7 @@ class _TeiichiScreenState extends State<TeiichiScreen> with AnkirenPlay {
   /// Tobi's tip to turn the phone, once a game, while the cards are laid
   /// out on a portrait screen; unless the player asked for it no more.
   Future<void> _tip() async {
-    if (!mounted || _tipped || _ending || !_editing || _portrait != true) return;
+    if (!mounted || _tipped || _ending || !_editing || _portrait != true || widget.setup.ranked) return;
     if (_progress.settings.teiichiTurnTipOff) return;
     _tipped = true;
     _clock.stop();
@@ -167,20 +194,38 @@ class _TeiichiScreenState extends State<TeiichiScreen> with AnkirenPlay {
   }
 
   /// The screen is going without End or Results: a game already played to
-  /// its end is recorded without Results; anything else records nothing.
+  /// its end is recorded without Results, a ranked one still on is
+  /// forfeited, and anything else records nothing.
   void _leave() {
     if (_ending) return;
     _ending = true;
     _tick?.cancel();
     _zoomTimer?.cancel();
     stopRecall();
+    if (_forfeitable) _forfeit();
     final game = _game;
     if (_recorded && game != null && game.phase == AnkirenPhase.done) {
       unawaited(_progress.recordTeiichi(_placing, game, startedAt: _startedAt));
     }
   }
 
+  /// The ranked game ends here: the layout stands as it is, and every call
+  /// not answered yet counts as missed.
+  void _forfeit() {
+    _tick?.cancel();
+    _zoomTimer?.cancel();
+    _placing.stop(_placingTime);
+    _game ??= _placing.recall(_rng);
+    _game!.end();
+  }
+
   Duration get _now => _clock.elapsed;
+
+  /// The placing time now, never past the limit.
+  Duration get _placingTime {
+    final limit = widget.setup.limit;
+    return limit != null && _now > limit ? limit : _now;
+  }
 
   void _placed() {
     if (_progress.settings.haptics) unawaited(HapticFeedback.selectionClick());
@@ -234,11 +279,22 @@ class _TeiichiScreenState extends State<TeiichiScreen> with AnkirenPlay {
     return _placing.board.put(drag.card, spot) ?? _placing.board;
   }
 
-  /// Every card is placed and the player is done: the clock stops, the
-  /// field grows, then the cards turn face down and the first prompt
-  /// follows, at once when the field has no room to grow.
+  /// Every card is placed and the player is done.
   void _done() {
-    if (!_placing.finish(_now)) return;
+    if (_placing.finish(_placingTime)) _laidOut();
+  }
+
+  /// The limit ran out: the layout stands as it is, as if Done was pressed.
+  void _timeUp() {
+    if (_ending || _placing.done) return;
+    _placing.stop(widget.setup.limit!);
+    _laidOut();
+  }
+
+  /// The layout is final: the clock stops, the field grows, then the cards
+  /// turn face down and the first prompt follows, at once when the field
+  /// has no room to grow.
+  void _laidOut() {
     _clock.stop();
     _tick?.cancel();
     _shown.value = _placing.placingTime!;
@@ -261,10 +317,11 @@ class _TeiichiScreenState extends State<TeiichiScreen> with AnkirenPlay {
         AnkirenFieldView.bandHeight(landscape: !_portrait!), _bandRise(landscape: !_portrait!, zoomed: true));
   }
 
-  /// How much higher the band reaches once Done is pressed ([zoomed]) in a
-  /// game with からふだ.
+  /// How much higher the band reaches once the layout is final ([zoomed])
+  /// in a game with からふだ, or with strikes to show on a portrait screen;
+  /// in landscape they fit beside End.
   double _bandRise({required bool landscape, required bool zoomed}) {
-    if (!zoomed || widget.setup.karafuda == 0) return 0;
+    if (!zoomed || (widget.setup.karafuda == 0 && (landscape || !_countsStrikes))) return 0;
     final tall = landscape ? TeiichiPlayLayout.karafudaBandLandscape : TeiichiPlayLayout.karafudaBandPortrait;
     return tall - AnkirenFieldView.bandHeight(landscape: landscape);
   }
@@ -274,19 +331,30 @@ class _TeiichiScreenState extends State<TeiichiScreen> with AnkirenPlay {
 
   void _flip() {
     if (!mounted) return;
+    final left = _placing.unplaced.toSet();
+    final known = [for (final card in widget.known) if (!left.contains(card)) card];
     setState(() => _game = _placing.recall(_rng,
-        karafuda: KarafudaPicker.ofPoems.pick(_placing.board.cards, widget.known, widget.setup.karafuda, _rng)));
+        karafuda: KarafudaPicker.ofPoems.pick(_placing.board.cards, known, widget.setup.karafuda, _rng),
+        countsStrikes: _countsStrikes));
     turnFaceDown(memorised: _placing.placingTime);
+    if (game.phase == AnkirenPhase.done) recallOver();
   }
 
   @override
   void recallOver() => unawaited(_finish());
 
-  /// End, or the back gesture: while placing nothing has been played, so it
-  /// just leaves, asking first once a card is placed; after, the cards not
-  /// found yet count as missed.
+  /// End, or the back gesture: a ranked game is forfeited, after asking.
+  /// Any other game while placing has played nothing, so it just leaves,
+  /// asking first once a card is placed; after, the cards not found yet
+  /// count as missed.
   Future<void> _end() async {
     if (_ending) return;
+    if (_forfeitable) {
+      if (!await _confirmForfeit() || _ending || !mounted || !_forfeitable) return;
+      setState(_forfeit);
+      unawaited(_finish());
+      return;
+    }
     if (_placingNow) {
       if (_layoutAtStake && !await _confirmLeave()) return;
       if (_ending || !mounted) return;
@@ -297,13 +365,23 @@ class _TeiichiScreenState extends State<TeiichiScreen> with AnkirenPlay {
     unawaited(_finish());
   }
 
-  Future<bool> _confirmLeave() async {
+  Future<bool> _confirmLeave() {
+    final s = S.of(context);
+    return _confirm(s.teiichiLeaveTitle, s.teiichiLeaveNote);
+  }
+
+  Future<bool> _confirmForfeit() {
+    final s = S.of(context);
+    return _confirm(s.teiichiForfeitTitle, s.teiichiForfeitNote);
+  }
+
+  Future<bool> _confirm(String title, String note) async {
     final s = S.of(context);
     final leave = await showDialog<bool>(
       context: context,
       builder: (c) => AlertDialog(
-        title: Text(s.teiichiLeaveTitle),
-        content: Text(s.teiichiLeaveNote),
+        title: Text(title),
+        content: Text(note),
         actions: [
           TextButton(onPressed: () => Navigator.pop(c, false), child: Text(s.cancel)),
           FilledButton(onPressed: () => Navigator.pop(c, true), child: Text(s.ankirenLeave)),
@@ -318,15 +396,15 @@ class _TeiichiScreenState extends State<TeiichiScreen> with AnkirenPlay {
     _ending = true;
     stopRecall();
     final bestBefore = _recorded ? _progress.sideTripsHub()[SideTrip.teiichi].placing.best : null;
-    if (_recorded) await _progress.recordTeiichi(_placing, game, startedAt: _startedAt);
+    final report = _recorded ? await _progress.recordTeiichi(_placing, game, startedAt: _startedAt) : null;
     // Left meanwhile: its route is on its way out, and replacing "the
     // current route" would replace the one under it.
     if (!mounted || ModalRoute.isCurrentOf(context) == false) return;
     wentToResults = true;
     AnkirenPlay.releaseOrientation();
     unawaited(Navigator.of(context).pushReplacement(MangaRoute<void>(
-      builder: (_) =>
-          TeiichiResultsScreen(placing: _placing, game: game, player: widget.player, bestBefore: bestBefore),
+      builder: (_) => TeiichiResultsScreen(
+          placing: _placing, game: game, player: widget.player, bestBefore: bestBefore, report: report),
     )));
   }
 
@@ -338,11 +416,26 @@ class _TeiichiScreenState extends State<TeiichiScreen> with AnkirenPlay {
     final placingNow = _placingNow;
     final editing = _editing;
     final allPlaced = _placing.allPlaced && _drag == null && !_zoomed;
+    final limited = widget.setup.limit != null;
+    final strikes = _countsStrikes && !placingNow;
+    final end = BandButton(icon: IconArt.end, label: s.end, onTap: _ending ? null : () => unawaited(_end()));
     final band = AnkirenBand(
       landscape: landscape,
-      leading: BandButton(icon: IconArt.end, label: s.end, onTap: _ending ? null : () => unawaited(_end())),
+      slot: landscape ? AnkirenPlay.landscapeSlot(strikes: strikes, karafuda: false) : AnkirenPlayLayout.sideSlot,
+      leading: AnimatedSwitcher(
+          duration: stillMotion ? Duration.zero : AnkirenMotion.flip,
+          child: strikes ? withStrikes(end, landscape: landscape) : end),
       center: placingNow || (asked == null && game.answers.isEmpty)
-          ? MemoriseClock(left: _shown, landscape: landscape, label: editing ? s.teiichiPlacing : s.teiichiPlaced)
+          ? MemoriseClock(
+              left: _shown,
+              landscape: landscape,
+              label: !editing
+                  ? s.teiichiPlaced
+                  : limited
+                      ? s.teiichiTimeLeft
+                      : s.teiichiPlacing,
+              lowAt: editing && limited ? TeiichiPlayTuning.lowTime : null,
+            )
           : recallPrompt(landscape: landscape),
       trailing: placingNow
           ? BandButton(
@@ -358,7 +451,7 @@ class _TeiichiScreenState extends State<TeiichiScreen> with AnkirenPlay {
     );
     final shownBoard = _shownBoard;
     return PopScope(
-      canPop: !_layoutAtStake,
+      canPop: !_layoutAtStake && !_forfeitable,
       onPopInvokedWithResult: (didPop, _) => didPop ? _leave() : unawaited(_end()),
       child: AnkirenTatami(
         child: AnkirenFieldView(
