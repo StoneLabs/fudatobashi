@@ -21,6 +21,7 @@ import '../domain/rating.dart';
 import '../domain/side_trips.dart';
 import '../domain/step_plan.dart';
 import '../domain/tab_locks.dart';
+import '../domain/teiichi.dart';
 import '../domain/teiichi_placing.dart';
 import '../domain/today_set.dart';
 import '../domain/trainer.dart';
@@ -32,6 +33,7 @@ import 'play_config.dart';
 import 'run_journal.dart';
 import 'settings.dart';
 import 'side_trips.dart';
+import 'teiichi_journal.dart';
 import 'xp_history.dart';
 
 part 'progress_reports.dart';
@@ -178,6 +180,7 @@ class Progress extends ChangeNotifier {
     progress._notices.addAll((jsonDecode(kv[noticesKey] ?? '[]') as List).cast<String>());
     await progress._loadToday();
     if (kv[_runJournalKey] case final journal?) await progress._recordJournal(journal);
+    if (kv[_teiichiJournalKey] case final journal?) await progress._recordTeiichiJournal(journal);
     if (settings.onboarded && !progress._allKnown) await progress.refreshToday();
     await progress._latchFreePractice(DateTime.now());
     await progress._latchSideTrips(DateTime.now());
@@ -192,6 +195,7 @@ class Progress extends ChangeNotifier {
   static const _sideTripsKey = 'sideTripsUnlocked';
   static const _sideTripsSeenLockedKey = 'sideTripsSeenLocked';
   static const _runJournalKey = 'runJournal';
+  static const _teiichiJournalKey = 'teiichiJournal';
   static const _examLastTryKey = 'examLastTry';
   static const _examIntroShownKey = 'examIntroShown';
   static const _examCountedKey = 'examCounted';
@@ -1450,7 +1454,12 @@ class Progress extends ChangeNotifier {
   Future<SideTripReport> recordTeiichi(TeiichiPlacing placing, AnkirenGame game, {required DateTime startedAt}) async {
     final ledger = xp;
     final day = await _storeDay(startedAt);
-    final report = await sideTrips.recordTeiichi(db, placing, game, startedAt: startedAt, day: day.day);
+    await _teiichiJournalSaved;
+    final report = await db.transaction(() async {
+      final report = await sideTrips.recordTeiichi(db, placing, game, startedAt: startedAt, day: day.day);
+      await _drop(_teiichiJournalKey);
+      return report;
+    });
     final gain = ledger.addTrip(SideTrip.teiichi, XpHistory.teiichiRunOf(sideTrips, sideTrips.runs.last));
     notifyListeners();
     return SideTripReport(
@@ -1461,6 +1470,31 @@ class Progress extends ChangeNotifier {
       ladderAfter: report.ladderAfter,
       xp: gain,
     );
+  }
+
+  /// Saves the ranked 定位置 game just dealt, so that if the app never gets
+  /// to record it (closed or killed) the next start records it as a
+  /// forfeit, as the main game's ranked runs are. Recording the game, however
+  /// it ends, clears it.
+  Future<void> journalTeiichi(List<int> deck, DateTime startedAt) {
+    final text = TeiichiJournal(deck: deck, startedAt: startedAt).encode();
+    return _teiichiJournalSaved = _teiichiJournalSaved.then((_) => _put(_teiichiJournalKey, text));
+  }
+
+  Future<void> _teiichiJournalSaved = Future.value();
+
+  /// Records the ranked 定位置 game the app was closed in: a forfeit with
+  /// no card laid out, scoring 0 for the rating.
+  Future<void> _recordTeiichiJournal(String text) async {
+    final TeiichiJournal journal;
+    try {
+      journal = TeiichiJournal.decode(text);
+    } on Object {
+      await _drop(_teiichiJournalKey);
+      return;
+    }
+    final placing = TeiichiPlacing(const TeiichiSetup.ranked(), journal.deck)..stop(Duration.zero);
+    await recordTeiichi(placing, placing.recall(math.Random())..end(), startedAt: journal.startedAt);
   }
 
   /// Developer tool: marks 暗記練's free levels 0 through [level] cleared.
@@ -1499,6 +1533,7 @@ class Progress extends ChangeNotifier {
                   _sideTripsKey,
                   _sideTripsSeenLockedKey,
                   _runJournalKey,
+                  _teiichiJournalKey,
                   _examLastTryKey,
                   _examIntroShownKey,
                   _examCountedKey,

@@ -421,6 +421,8 @@ void main() {
       expect((run.ranked, run.score, run.performance, run.completed), (true, 0, 0, false));
       expect(p.sideTripsHub()[trip].rating, 0);
       await tester.pumpWidget(const SizedBox());
+      final again = (await tester.runAsync(() => Progress.open(p.db)))!;
+      expect(again.sideTrips.runsOf(trip), hasLength(1), reason: 'leaving left no journal to forfeit a second time');
     });
   });
 
