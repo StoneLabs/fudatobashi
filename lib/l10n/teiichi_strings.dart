@@ -45,7 +45,6 @@ extension TeiichiStrings on S {
   /// rows had to go up, and what counts for the best placing time.
   String teiichiKeyCards(int cards) => f('teiichiKeyCards', [cards]);
   String teiichiUnlockLine(int strikes) => f('teiichiUnlockLine', [strikes]);
-  String get teiichiCustomTitle => t('teiichiCustomTitle');
   String get teiichiFromKnown => t('teiichiFromKnown');
   String get teiichiAnyNumber => t('teiichiAnyNumber');
   String teiichiRowsKey(int rows) => f(countKey('teiichiRowsKey', rows), [rows]);
