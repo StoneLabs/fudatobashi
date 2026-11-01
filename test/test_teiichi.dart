@@ -15,7 +15,8 @@ TeiichiSpot dealtSpot(TeiichiSetup setup, int i) {
 
 /// A 定位置 game of [setup] laid out from [deck] (poems 1 up by default),
 /// each card [placeMs] on top of the stack (the ith [placeMsOf] it when
-/// given), then played: each card found [findMs] after its prompt, after a
+/// given) and put at the ith [dealtSpot], or at [spotOf]'s when it names
+/// one, then played: each card found [findMs] after its prompt, after a
 /// wrong tap on another card for the prompts in [wrongAt]; ended early
 /// after [endAfter] prompts. Its [karafuda] are called among the cards and
 /// each pressed, the ones in [karafudaWrongAt] (counted among the からふだ
@@ -24,6 +25,7 @@ TeiichiSpot dealtSpot(TeiichiSetup setup, int i) {
     {List<int>? deck,
     int placeMs = 1000,
     int Function(int i)? placeMsOf,
+    TeiichiSpot? Function(int i)? spotOf,
     int findMs = 800,
     Set<int> wrongAt = const {},
     int? endAfter,
@@ -34,7 +36,7 @@ TeiichiSpot dealtSpot(TeiichiSetup setup, int i) {
   var at = Duration.zero;
   for (var i = 0; !placing.allPlaced; i++) {
     at += Duration(milliseconds: placeMsOf?.call(i) ?? placeMs);
-    placing.placeTop(dealtSpot(setup, i), at);
+    placing.placeTop(spotOf?.call(i) ?? dealtSpot(setup, i), at);
   }
   placing.finish(at);
   final game = placing.recall(Random(seed), karafuda: karafuda)..startRecall(memorised: at);

@@ -41,13 +41,14 @@ extension KarafudaStrings on S {
   String get karafudaCaption => t('karafudaCaption');
 
   /// The Field's review, stepping through a game with からふだ call by
-  /// call: a card's step, a からふだ's, and how a からふだ went.
-  String karafudaStepCall(int step, int of, String kimariji) => f('karafudaStepCall', [step, of, kimariji]);
-  String karafudaStepKarafuda(int step, int of, String kimariji) => f('karafudaStepKarafuda', [step, of, kimariji]);
-  String karafudaPressedIn(String seconds) => f('karafudaPressedIn', [seconds]);
-  String karafudaShownPressed(String seconds) => f('karafudaShownPressed', [seconds]);
+  /// call: the call's count, how a からふだ went (pressed on tap [tap]),
+  /// where it lay, and a card tapped on it.
+  String karafudaStepCall(int step, int of) => f('karafudaStepCall', [step, of]);
+  String karafudaBoxPressedOn(int tap) => f('karafudaBoxPressedOn', [tap]);
+  String karafudaBoxShownPressed(int tap) => f('karafudaBoxShownPressed', [tap]);
   String get karafudaNotPressed => t('karafudaNotPressed');
-  String karafudaOffField(String kimariji) => f('karafudaOffField', [kimariji]);
+  String get karafudaOffField => t('karafudaOffField');
+  String get karafudaBoxCard => t('karafudaBoxCard');
 
   /// Where a tap landed: the からふだ button, or a card on a からふだ call.
   String get karafudaChip => t('karafudaChip');

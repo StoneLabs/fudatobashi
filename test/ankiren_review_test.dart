@@ -37,6 +37,7 @@ import 'package:fudatobashi/ui/history/karafuda_panel.dart';
 import 'package:fudatobashi/ui/play/time_format.dart';
 import 'package:fudatobashi/ui/manga/theme.dart';
 
+import 'test_field_review.dart';
 import 'test_l10n.dart';
 import 'test_screens.dart';
 import 'test_vector_art.dart';
@@ -118,6 +119,79 @@ AnkirenGame _play(
     t += const Duration(milliseconds: 400);
   }
   return game;
+}
+
+/// The cards of [_everyWay]'s field and its からふだ, by the way each is
+/// answered.
+const _firstTap = 12, _late = 15, _shown = 93, _never = 11, _lookAlike = 31, _pressedOnCard = 42;
+const _pressedRight = 50, _tappedFirst = 76, _shownKarafuda = 7, _skipped = 83;
+
+/// A custom game of 6 a side and 4 からふだ that answers every way the
+/// Field's step box shows, on cards with the longest kimariji and their
+/// look-alikes: あまつ and the rest found with the first tap; きみがためは
+/// on the second tap; よのなかは shown and found after three wrong taps;
+/// わたのはらや given up after a wrong tap; あさぼらけあ after a tap on its
+/// look-alike あさぼらけう; なにわが after a press of the からふだ button. Of
+/// the からふだ, きみがためお pressed first; わたのはらこ after a tap on its
+/// look-alike わたのはらや; あまの shown after two taps; よのなかよ given up.
+/// The first deal that asks those with wrong taps in its first half, while
+/// other cards are left to tap, and the look-alikes' calls before them.
+AnkirenGame _everyWay() {
+  const field = [_firstTap, _late, _shown, _never, _lookAlike, 64, _pressedOnCard, 75, 19, 68, 1, 2];
+  const karafuda = [_pressedRight, _tappedFirst, _shownKarafuda, _skipped];
+  const setup = AnkirenSetup.custom(perSide: 6, memorise: Duration(minutes: 1), karafuda: 4);
+  for (var seed = 1;; seed++) {
+    final rng = Random(seed);
+    final deal = AnkirenDealer.ofPoems().deal(field, setup.perSide, rng);
+    final game = AnkirenGame(field: deal, setup: setup, rng: rng, karafuda: karafuda);
+    bool before(int a, int b) => game.prompts.indexOf(a) < game.prompts.indexOf(b);
+    final early = [_late, _shown, _never, _lookAlike, _tappedFirst, _shownKarafuda]
+        .every((c) => game.prompts.indexOf(c) < game.prompts.length / 2);
+    if (!early || !before(_tappedFirst, _never) || !before(_lookAlike, 64)) continue;
+    game.startRecall();
+    var t = const Duration(seconds: 100);
+    while (game.phase == AnkirenPhase.recall) {
+      game.promptRevealed(t);
+      final asked = game.current!;
+      int wrong([int? card]) =>
+          card != null && !game.isDone(card) ? card : deal.cards.firstWhere((c) => c != asked && !game.isDone(c));
+      Duration at(int n) => t + Duration(milliseconds: 450 * n);
+      switch (asked) {
+        case _late:
+          game.tap(wrong(), at(1));
+          game.tap(asked, at(3));
+        case _shown:
+          for (var n = 1; n <= 3; n++) {
+            game.tap(wrong(), at(n));
+          }
+          game.tap(asked, at(5));
+        case _never:
+          game.tap(wrong(), at(1));
+          game.giveUp();
+        case _lookAlike:
+          game.tap(wrong(64), at(1));
+          game.tap(asked, at(3));
+        case _pressedOnCard:
+          game.pressKarafuda(at(1));
+          game.tap(asked, at(2));
+        case _pressedRight:
+          game.pressKarafuda(at(2));
+        case _tappedFirst:
+          game.tap(wrong(_never), at(1));
+          game.pressKarafuda(at(3));
+        case _shownKarafuda:
+          game.tap(wrong(), at(1));
+          game.tap(wrong(), at(2));
+          game.pressKarafuda(at(4));
+        case _skipped:
+          game.giveUp();
+        default:
+          game.tap(asked, at(2));
+      }
+      t += const Duration(seconds: 5);
+    }
+    return game;
+  }
 }
 
 void main() {
@@ -360,20 +434,20 @@ void main() {
 
           await tab(s.ankirenTabField, 'field');
           expect(find.textContaining(s.ankirenFieldTitle, findRichText: true), findsOneWidget);
-          expect(find.textContaining(s.ankirenStepCard(1, game.cards.length, '')), findsNothing);
+          expect(find.text(s.ankirenStepCard(1, game.cards.length).toUpperCase()), findsNothing);
           await tester.ensureVisible(find.text(s.ankirenStartReview.toUpperCase()));
           await tester.pumpAndSettle();
           await tester.tap(find.text(s.ankirenStartReview.toUpperCase()));
           await tester.pumpAndSettle();
-          expect(find.textContaining(s.ankirenStepCard(1, game.cards.length, '')), findsOneWidget);
+          expect(find.text(s.ankirenStepCard(1, game.cards.length).toUpperCase()), findsOneWidget);
           await tester.ensureVisible(find.bySemanticsLabel(s.ankirenStepNext));
           await tester.pumpAndSettle();
           for (var i = 0; i < 9; i++) {
             await tester.tap(find.bySemanticsLabel(s.ankirenStepNext));
             await tester.pump();
           }
-          expect(find.textContaining(s.ankirenStepCard(10, game.cards.length, '')), findsOneWidget);
-          expect(find.textContaining(s.ankirenShownFound('X').split('X').first), findsOneWidget);
+          expect(find.text(s.ankirenStepCard(10, game.cards.length).toUpperCase()), findsOneWidget);
+          expect(find.text(s.ankirenBoxShownFound(game.cards[9].wrongTaps + 1)), findsOneWidget);
           await captureScreen(tester, 'ankiren_game_field_shown', lang: lang);
 
           await tester.tap(find.text(s.ankirenShowAll));
@@ -442,7 +516,7 @@ void main() {
       expect(total, game.deal!.cards.length);
       expect(dimmed, findsNothing, reason: 'nothing is dimmed before the review starts');
       expect(find.text(s.ankirenStartReview.toUpperCase()), findsOneWidget);
-      expect(find.textContaining(s.ankirenStepCard(1, game.cards.length, '')), findsNothing);
+      expect(find.text(s.ankirenStepCard(1, game.cards.length).toUpperCase()), findsNothing);
 
       final step = game.cards.indexWhere((c) => c.tapped.any((id) => id != c.poemId));
       final card = game.cards[step];
@@ -451,7 +525,7 @@ void main() {
       await tester.ensureVisible(word);
       await tester.tap(word);
       await tester.pumpAndSettle();
-      expect(find.textContaining(s.ankirenStepCard(step + 1, game.cards.length, '')), findsOneWidget);
+      expect(find.text(s.ankirenStepCard(step + 1, game.cards.length).toUpperCase()), findsOneWidget);
       final related = {card.poemId, ...card.tapped};
       expect(dimmed, findsNWidgets(total - related.length), reason: 'only the card and its wrong taps stay bright');
 
@@ -525,12 +599,7 @@ void main() {
           await tester.tap(find.text(s.ankirenStartReview.toUpperCase()));
           await tester.pumpAndSettle();
           final context = tester.element(find.byType(AnkirenGamePage));
-          final first = game.calls.first;
-          expect(
-              find.text(first.karafuda
-                  ? s.karafudaStepKarafuda(1, game.calls.length, kimarijiFor(context, first.poemId))
-                  : s.karafudaStepCall(1, game.calls.length, kimarijiFor(context, first.poemId))),
-              findsOneWidget);
+          expect(find.text(s.karafudaStepCall(1, game.calls.length).toUpperCase()), findsOneWidget);
           final step = game.calls.indexWhere((c) => c.karafuda && c.shown);
           await tester.ensureVisible(find.bySemanticsLabel(s.ankirenStepNext));
           await tester.pumpAndSettle();
@@ -541,9 +610,11 @@ void main() {
           await tester.pumpAndSettle();
           final karafuda = game.calls[step];
           final name = kimarijiFor(context, karafuda.poemId);
-          expect(find.text(s.karafudaStepKarafuda(step + 1, game.calls.length, name)), findsOneWidget);
-          expect(find.text(s.karafudaOffField(name)), findsOneWidget);
-          expect(find.textContaining(s.karafudaShownPressed('X').split('X').first), findsOneWidget);
+          expect(find.text(s.karafudaStepCall(step + 1, game.calls.length).toUpperCase()), findsOneWidget);
+          expect(find.text(name), findsOneWidget, reason: 'in the box alone, off the field');
+          expect(find.text(s.karafuda.toUpperCase()), findsOneWidget, reason: 'its tag');
+          expect(find.text(s.karafudaOffField), findsOneWidget);
+          expect(find.text(s.karafudaBoxShownPressed(karafuda.wrongTaps + 1)), findsOneWidget);
           final dimmed =
               find.byWidgetPredicate((w) => w is AnimatedOpacity && w.opacity == AnkirenReviewStyle.unrelatedOpacity);
           expect(dimmed, findsNWidgets(game.deal!.cards.length - karafuda.tapped.toSet().length),
@@ -559,8 +630,8 @@ void main() {
             await tester.pump();
           }
           await tester.pumpAndSettle();
-          expect(find.textContaining('${s.karafudaChip} → ${s.ankirenChip(TapProximity.card)}'), findsOneWidget,
-              reason: 'the button pressed on a field card\'s call');
+          expect(find.text(s.karafuda), findsOneWidget, reason: 'the button pressed on a field card\'s call');
+          expect(find.text(s.ankirenBoxFoundOn(2)), findsOneWidget);
 
           await tab(s.ankirenTabScore);
           expect(find.text(s.karafudaPart), findsOneWidget);
@@ -585,6 +656,70 @@ void main() {
           await shot('level_overview');
           await tab(s.ankirenTabTaps);
           await shot('level_taps');
+          await tester.pumpWidget(const SizedBox());
+          await tester.runAsync(() => p.db.close());
+        });
+      }
+    }
+
+    for (final ja in [false, true]) {
+      final lang = ja ? 'ja' : 'en';
+      for (final (phone, fontScale) in [(usersPhone, 1.0), (usersPhone, 1.3), (narrowTallPhone, 1.3)]) {
+        testWidgets('the step box is as tall for every call ($lang, ${phone.name} dp, font scale $fontScale)',
+            (tester) async {
+          final s = S(lang);
+          late Progress p;
+          await tester.runAsync(() async {
+            p = await openProgress(ja: ja);
+            await p.recordAnkiren(_everyWay(), startedAt: day);
+          });
+          final run = p.sideTrips.runsOf(SideTrip.ankiren).last;
+          final game = p.sideTrips.recordOf(run);
+          useScreen(tester, phone, fontScale: fontScale);
+          tester.platformDispatcher.accessibilityFeaturesTestValue =
+              const FakeAccessibilityFeatures(disableAnimations: true);
+          addTearDown(tester.platformDispatcher.clearAccessibilityFeaturesTestValue);
+          await tester.pumpWidget(RepaintBoundary(
+            key: screenKey,
+            child: ProgressScope(
+              progress: p,
+              child: MaterialApp(theme: buildMangaTheme(), home: AnkirenGamePage(run: run)),
+            ),
+          ));
+          await tester.pump(const Duration(milliseconds: 500));
+          await tester.tap(find.text(s.ankirenTabField).first);
+          await tester.pumpAndSettle();
+          final context = tester.element(find.byType(AnkirenGamePage));
+          int call(int poemId) => game.calls.indexWhere((c) => c.poemId == poemId);
+          await stepThroughReview(tester, s, game.calls.length,
+              screen: 'review_box/ankiren_${phone.name}',
+              lang: lang,
+              shots: {
+                call(_firstTap): '1_first',
+                call(_late): '2_late',
+                call(_pressedRight): '3_karafuda_right',
+                call(_tappedFirst): '4_karafuda_wrong',
+                call(_never): '5_never',
+                call(_shown): '6_shown',
+                call(_lookAlike): '7_look_alike',
+              }, check: (i) {
+            final c = game.calls[i];
+            final result = switch (c.poemId) {
+              _firstTap || _pressedRight => s.ankirenBoxRightFirst,
+              _late || _lookAlike || _pressedOnCard => s.ankirenBoxFoundOn(2),
+              _shown => s.ankirenBoxShownFound(4),
+              _never || _skipped => s.ankirenBoxGaveUp,
+              _tappedFirst => s.karafudaBoxPressedOn(2),
+              _shownKarafuda => s.karafudaBoxShownPressed(3),
+              _ => null,
+            };
+            if (result != null) expect(inStepBox(s, result), findsOneWidget, reason: kimarijiFor(context, c.poemId));
+            expect(inStepBox(s, s.karafudaOffField), c.karafuda ? findsOneWidget : findsNothing);
+            expect(inStepBox(s, s.ankirenLookAlike(kimarijiFor(context, _never))),
+                c.poemId == _tappedFirst ? findsOneWidget : findsNothing);
+            if (c.poemId == _shown) expect(inStepBox(s, s.ankirenBoxMoreTaps(2)), findsOneWidget);
+            if (c.poemId == _skipped) expect(inStepBox(s, s.ankirenBoxNoTaps), findsOneWidget);
+          });
           await tester.pumpWidget(const SizedBox());
           await tester.runAsync(() => p.db.close());
         });

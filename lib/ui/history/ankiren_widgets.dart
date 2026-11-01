@@ -66,10 +66,6 @@ class TierChips extends StatelessWidget {
       : call.karafuda
           ? s.karafudaChipCard
           : s.ankirenChip(call.taps[i]);
-
-  /// [call]'s taps as the chips name them, joined by arrows.
-  static String text(S s, AnkirenCardTry call) =>
-      [for (var i = 0; i < call.taps.length; i++) name(s, call, i)].join(' → ');
 }
 
 /// A call's kimariji in a table, and for a からふだ call, which has no place

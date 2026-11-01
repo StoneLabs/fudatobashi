@@ -42,9 +42,11 @@ import 'package:fudatobashi/ui/history/karafuda_panel.dart';
 import 'package:fudatobashi/ui/history/teiichi_game_page.dart';
 import 'package:fudatobashi/ui/manga/manga.dart';
 import 'package:fudatobashi/ui/play/time_format.dart';
+import 'package:fudatobashi/ui/results/run_summary.dart';
 import 'package:fudatobashi/ui/side_trips/teiichi_page.dart';
 import 'package:fudatobashi/ui/torifuda/card_faces.dart';
 
+import 'test_field_review.dart';
 import 'test_l10n.dart';
 import 'test_screens.dart';
 import 'test_teiichi.dart';
@@ -125,9 +127,10 @@ void main() {
     return p;
   }
 
-  /// [home] on its own in a manga app, for [p], on [screen].
-  Future<void> show(WidgetTester tester, Progress p, Widget home, {Screen screen = usersPhone}) async {
-    useScreen(tester, screen);
+  /// [home] on its own in a manga app, for [p], on [screen] at [fontScale].
+  Future<void> show(WidgetTester tester, Progress p, Widget home,
+      {Screen screen = usersPhone, double fontScale = 1}) async {
+    useScreen(tester, screen, fontScale: fontScale);
     // Tobi idles for ever; with animations off the tabs settle.
     tester.platformDispatcher.accessibilityFeaturesTestValue = const FakeAccessibilityFeatures(disableAnimations: true);
     addTearDown(tester.platformDispatcher.clearAccessibilityFeaturesTestValue);
@@ -280,7 +283,7 @@ void main() {
               await tester.pump();
             }
             await tester.pumpAndSettle();
-            expect(find.textContaining(s.ankirenStepCard(step + 1, game.recall.cards.length, '')), findsOneWidget);
+            expect(find.text(s.ankirenStepCard(step + 1, game.recall.cards.length).toUpperCase()), findsOneWidget);
             await captureScreen(tester, 'teiichi_history/game$tall', lang: lang, variant: 'field_review');
           }
           await next();
@@ -358,8 +361,9 @@ void main() {
         }
         await tester.pumpAndSettle();
         final name = kimarijiFor(tester.element(find.byType(TeiichiGamePage)), game.recall.calls[step].poemId);
-        expect(find.text(s.karafudaStepKarafuda(step + 1, game.recall.calls.length, name)), findsOneWidget);
-        expect(find.text(s.karafudaOffField(name)), findsOneWidget);
+        expect(find.text(s.karafudaStepCall(step + 1, game.recall.calls.length).toUpperCase()), findsOneWidget);
+        expect(find.text(name), findsOneWidget);
+        expect(find.text(s.karafudaOffField), findsOneWidget);
         await captureScreen(tester, 'karafuda/teiichi_history', lang: lang, variant: 'field_review');
         await next();
         await next();
@@ -382,6 +386,83 @@ void main() {
         await tester.pumpWidget(const SizedBox());
         await tester.runAsync(() => p.db.close());
       });
+
+      for (final (screen, fontScale) in [(usersPhone, 1.0), (usersPhone, 1.3), (narrowTallPhone, 1.3)]) {
+        testWidgets(
+            'the step box is as tall for every call, and the groups are counted (${screen.name} dp, '
+            'font scale $fontScale)', (tester) async {
+          // Two cards in the open middle; wrong taps on the first calls that
+          // are cards, a card tapped on the second からふだ, and the game
+          // ended on the last call, so that card is never found.
+          final p = await open(tester, language: lang, games: false);
+          await tester.runAsync(() async {
+            const setup = TeiichiSetup.usual;
+            final deck = _deck(setup.cards, 17);
+            final known = [for (final poem in poems.all) poem.id];
+            final karafuda = KarafudaPicker.ofPoems.pick(deck, known, setup.karafuda, Random(5));
+            final played = playTeiichi(setup,
+                deck: deck,
+                placeMsOf: _times(1600),
+                spotOf: (i) => i < 2 ? const OpenMiddle(AnkirenTuning.middleRow, 0) : null,
+                wrongAt: {1, 2, 3, 4},
+                karafuda: karafuda,
+                karafudaWrongAt: {1},
+                endAfter: setup.calls - 1);
+            await p.recordTeiichi(played.placing, played.game, startedAt: p.dayAt().date.add(const Duration(hours: 9)));
+          });
+          final run = p.sideTrips.runsOf(SideTrip.teiichi).last;
+          final game = p.sideTrips.teiichiRecordOf(run);
+          final layout = game.layout;
+          final left = [for (final r in layout.rows) ...r.left];
+          final right = [for (final r in layout.rows) ...r.right];
+          expect(layout.middleCards, hasLength(2));
+          expect(left.length + right.length + layout.middleCards.length, TeiichiTuning.cards);
+          final rightFirst = {for (final c in game.recall.cards) if (c.firstTry) c.poemId};
+
+          await show(tester, p, TeiichiGamePage(run: run), screen: screen, fontScale: fontScale);
+          await tester.tap(find.text(s.ankirenTabField).first);
+          await tester.pumpAndSettle();
+          final bands = [for (final b in tester.widgetList<TileBand>(find.byType(TileBand))) b.tiles];
+          expect(bands, hasLength(2), reason: 'the rows, then the groups');
+          for (final (i, (name, cards)) in [(s.teiichiGroupLeft, left), (s.teiichiGroupRight, right)].indexed) {
+            final tile = bands[1][i];
+            expect(tile.label, '$name\n${s.ankirenColRightFirst}'.toUpperCase());
+            final figure = tile.big as TileFigure;
+            expect([figure.value, figure.unit], ['${cards.where(rightFirst.contains).length}', '/${cards.length}']);
+          }
+          expect(find.text(s.teiichiMiddleNeither), findsOneWidget);
+          await tester.ensureVisible(find.text(s.teiichiMiddleNeither));
+          await tester.pumpAndSettle();
+          await captureScreen(tester, 'review_box/teiichi_${screen.name}', lang: lang, variant: '0_tiles');
+
+          final calls = game.recall.calls;
+          int first(bool Function(AnkirenCardTry c) test) => calls.indexWhere(test);
+          await stepThroughReview(tester, s, calls.length,
+              screen: 'review_box/teiichi_${screen.name}',
+              lang: lang,
+              shots: {
+                first((c) => !c.karafuda && c.firstTry): '1_first',
+                first((c) => !c.karafuda && c.found && c.wrongTaps > 0): '2_late',
+                first((c) => c.karafuda && c.firstTry): '3_karafuda_right',
+                first((c) => c.karafuda && c.wrongTaps > 0): '4_karafuda_wrong',
+                calls.length - 1: '5_never',
+              }, check: (i) {
+            final c = calls[i];
+            if (c.karafuda) {
+              expect(inStepBox(s, s.karafudaOffField), findsOneWidget);
+            } else {
+              final at = layout.placeOf(c.poemId)!;
+              expect(inStepBox(s, s.teiichiSpotName(at.row, at.part)), findsOneWidget);
+            }
+            if (i == calls.length - 1) {
+              expect(inStepBox(s, s.ankirenNotFound), findsOneWidget);
+              expect(inStepBox(s, s.ankirenBoxNoTaps), findsOneWidget);
+            }
+          });
+          await tester.pumpWidget(const SizedBox());
+          await tester.runAsync(() => p.db.close());
+        });
+      }
     });
   }
 }

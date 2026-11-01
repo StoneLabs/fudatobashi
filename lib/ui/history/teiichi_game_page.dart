@@ -63,7 +63,8 @@ class TeiichiGamePage extends StatelessWidget {
 }
 
 /// The Field: the cards asked for replayed on the layout at true scale
-/// ([FieldReplay]), then how each row went, top to bottom.
+/// ([FieldReplay]), then how each row went, top to bottom, and each group,
+/// left and right. Cards in the open middle are in neither group.
 class _FieldTab extends StatelessWidget {
   const _FieldTab(this.review);
   final TeiichiReview review;
@@ -72,22 +73,23 @@ class _FieldTab extends StatelessWidget {
   Widget build(BuildContext context) {
     final s = S.of(context);
     final game = review.game;
+    final rows = game.layout.rows;
     final rightFirst = {for (final c in game.recall.cards) if (c.firstTry) c.poemId};
+    SummaryTile? tile(String name, List<int> cards) =>
+        cards.isEmpty ? null : rightFirstTile(s, name, cards.where(rightFirst.contains).length, cards.length);
     return FieldReplay(
       game: game.recall,
       deal: game.field,
       note: s.ankirenFieldNote,
       trueSlots: TeiichiTuning.rowSlots,
       tiles: [
-        for (final row in FieldRow.values.reversed)
-          if (game.layout.row(row).cards case final cards when cards.isNotEmpty)
-            SummaryTile(
-              label: '${s.teiichiRowName(row)}\n${s.ankirenColRightFirst}'.toUpperCase(),
-              big: TileFigure('${cards.where(rightFirst.contains).length}', unit: '/${cards.length}'),
-              note: '',
-              color: Palette.paper,
-            ),
+        [for (final row in FieldRow.values.reversed) ?tile(s.teiichiRowName(row), game.layout.row(row).cards)],
+        [
+          ?tile(s.teiichiGroupLeft, [for (final r in rows) ...r.left]),
+          ?tile(s.teiichiGroupRight, [for (final r in rows) ...r.right]),
+        ],
       ],
+      tilesNote: game.layout.middleCards.isEmpty ? null : s.teiichiMiddleNeither,
     );
   }
 }

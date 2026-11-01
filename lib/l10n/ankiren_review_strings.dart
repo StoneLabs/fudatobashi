@@ -32,13 +32,26 @@ extension AnkirenReviewStrings on S {
   String get ankirenShowAll => t('ankirenShowAll');
   String get ankirenTheirSide => t('ankirenTheirSide');
   String get ankirenYourSide => t('ankirenYourSide');
-  String ankirenStepCard(Object a0, Object a1, Object a2) => f('ankirenStepCard', [a0, a1, a2]);
-  String ankirenFoundIn(Object a0) => f('ankirenFoundIn', [a0]);
-  String ankirenShownFound(Object a0) => f('ankirenShownFound', [a0]);
-  String get ankirenNotFound => t('ankirenNotFound');
   String get ankirenNoTap => t('ankirenNoTap');
   String get ankirenFieldMissing => t('ankirenFieldMissing');
-  String ankirenLookAlike(Object a0, Object a1) => f('ankirenLookAlike', [a0, a1]);
+
+  /// The Field's review box, a card at a time: its count, its rows' labels,
+  /// how the card went (found on tap [tap]), its time, the taps past the
+  /// two kept, and a look-alike its first tap hit.
+  String ankirenStepCard(int step, int of) => f('ankirenStepCard', [step, of]);
+  String get ankirenBoxPlace => t('ankirenBoxPlace');
+  String get ankirenBoxTaps => t('ankirenBoxTaps');
+  String get ankirenBoxResult => t('ankirenBoxResult');
+  String get ankirenBoxTime => t('ankirenBoxTime');
+  String get ankirenBoxRightFirst => t('ankirenBoxRightFirst');
+  String ankirenBoxFoundOn(int tap) => f('ankirenBoxFoundOn', [tap]);
+  String ankirenBoxShownFound(int tap) => f('ankirenBoxShownFound', [tap]);
+  String get ankirenNotFound => t('ankirenNotFound');
+  String get ankirenBoxGaveUp => t('ankirenBoxGaveUp');
+  String ankirenBoxSeconds(String seconds) => f('ankirenBoxSeconds', [seconds]);
+  String ankirenBoxMoreTaps(int n) => f('ankirenBoxMoreTaps', [n]);
+  String get ankirenBoxNoTaps => t('ankirenBoxNoTaps');
+  String ankirenLookAlike(String kimariji) => f('ankirenLookAlike', [kimariji]);
   String get ankirenFieldLabel => t('ankirenFieldLabel');
   String get ankirenStepBack => t('ankirenStepBack');
   String get ankirenStepNext => t('ankirenStepNext');

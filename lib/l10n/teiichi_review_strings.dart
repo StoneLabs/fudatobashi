@@ -18,6 +18,12 @@ extension TeiichiReviewStrings on S {
   String teiichiMoreTaps(int n) => f('teiichiMoreTaps', [n]);
   String teiichiFewerTaps(int n) => f('teiichiFewerTaps', [n]);
 
+  /// The Field's tiles of the left and right groups, and what they leave
+  /// out.
+  String get teiichiGroupLeft => t('teiichiGroupLeft');
+  String get teiichiGroupRight => t('teiichiGroupRight');
+  String get teiichiMiddleNeither => t('teiichiMiddleNeither');
+
   /// Placing: the layout numbered in the order placed, and the placing
   /// times.
   String get teiichiLayoutTitle => t('teiichiLayoutTitle');

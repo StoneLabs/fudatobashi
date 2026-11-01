@@ -278,11 +278,40 @@ abstract final class AnkirenReviewStyle {
   static const Duration dimFade = Duration(milliseconds: 160);
   static const EdgeInsets showAllPadding = EdgeInsets.fromLTRB(8, 4, 10, 4);
   static const double showAllIcon = 12;
+  static const double showAllFont = 11.5;
   static const Color fieldGround = Color(0xFFEFF5E6);
-  static const double stepFont = 16;
-  static const double stepGap = 6;
-  static const double stepSubFont = 11.5;
-  static const double stepSubHeight = 1.3;
+
+  /// The review's step box, as tall for every call: each line has a slot
+  /// of its own and shrinks what does not fit across. The call's count,
+  /// then its kimariji at a fixed size with a からふだ tag; a table of
+  /// labels and values, its taps as numbered chips; a line for a
+  /// look-alike; then the buttons.
+  static const double stepCountGap = 3;
+  static const double stepWordFont = 26;
+  static const double stepWordLine = 32;
+  static const double stepTagFont = 10;
+  static const double stepTagTracking = 0.08;
+  static const EdgeInsets stepTagPadding = EdgeInsets.fromLTRB(5, 2, 5, 2);
+  static const double stepTagGap = 8;
+  static const Color stepTagFill = Palette.seaSoft;
+  static const double stepTableGap = 10;
+  static const double stepLabelFont = 10;
+  static const double stepLabelTracking = 0.1;
+  static const double stepLabelGap = 14;
+  static const double stepValueFont = 13.5;
+  static const double stepChipFont = 11.5;
+  static const double stepChipHeight = 1.2;
+  static const EdgeInsets stepChipPadding = EdgeInsets.fromLTRB(5, 1, 5, 2);
+  static const double stepBadgeGap = 3;
+  static const double stepChipGap = 10;
+  static const double stepNoteFont = 11.5;
+  static const double stepButtonsGap = 8;
+
+  /// The step box's slots and marks that grow with the font scale.
+  static const double stepCountLine = 13;
+  static const double stepRowLine = 22;
+  static const double stepBadge = 15;
+  static const double stepNoteLine = 17;
 
   /// The find-time chart numbers every bar up to [allLabelsUpTo] cards,
   /// else every [labelEvery]th.
