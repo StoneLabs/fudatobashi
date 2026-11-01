@@ -1609,7 +1609,7 @@
   "teiichiForfeitTitle": "Leave this ranked game?",
   "teiichiForfeitNote": "Leaving now is a forfeit: this game counts as 0 for your rating.",
   "teiichiPlacedIn": "placed in {0}",
-  "teiichiScoreNote": "Every call scores as in 暗記練. Cards found with the first tap earn +15% for each halving of 15 minutes you placed in.",
+  "teiichiScoreNote": "Every call scores as in 暗記練. Cards found with the first tap earn +{0}% for each halving of {1} minutes you placed in.",
   "teiichiBonusNote": "+{0}% first-tap bonus",
   "teiichiBonusBar": "+{0} placing",
   "teiichiCountsAsZero": "The game counts as 0",

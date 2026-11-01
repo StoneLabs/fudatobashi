@@ -1,3 +1,4 @@
+import '../config/config.dart';
 import '../domain/ankiren_field.dart';
 import 'strings.dart';
 
@@ -121,7 +122,10 @@ extension TeiichiStrings on S {
   String teiichiBonusNote(int percent) => f('teiichiBonusNote', [percent]);
   String teiichiBonusBar(String points) => f('teiichiBonusBar', [points]);
   String get teiichiCountsAsZero => t('teiichiCountsAsZero');
-  String get teiichiScoreNote => t('teiichiScoreNote');
+  String get teiichiScoreNote => f('teiichiScoreNote', [
+        (TeiichiTuning.bonusPerHalving * 100).round(),
+        TeiichiTuning.halvingClock.inMinutes,
+      ]);
   String teiichiRankedNext(int level) => f('teiichiRankedNext', [level]);
   String get teiichiUnplacedTag => t('teiichiUnplacedTag');
   String teiichiUnplacedNote(int cards) => f(cards == 1 ? 'teiichiUnplacedNoteOne' : 'teiichiUnplacedNote', [cards]);

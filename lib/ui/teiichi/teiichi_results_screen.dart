@@ -146,14 +146,13 @@ class _Game extends TripSummary {
             ],
             balloon: balloon,
           );
-    final percent = ((score.factor - 1) * 100).round();
     return (
       hero,
       [
         SummaryTile(
           label: s.teiichiPlacingLabel,
           big: TileFigure(formatMinutes(placingTime)),
-          note: forfeit ? s.historyForfeit : s.teiichiBonusNote(percent),
+          note: forfeit ? s.historyForfeit : s.teiichiBonusNote(TeiichiScore.bonusPercent(placingTime)),
         ),
         firstTapTile(),
         ratingTile(before, after),

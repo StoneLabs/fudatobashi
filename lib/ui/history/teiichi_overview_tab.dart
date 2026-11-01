@@ -169,7 +169,7 @@ class TeiichiOverviewTab extends StatelessWidget {
         SummaryTile(
           label: s.teiichiPlacingLabel,
           big: TileFigure(formatMinutes(game.placing)),
-          note: game.forfeit ? s.historyForfeit : s.teiichiBonusNote(((game.scoreFactor - 1) * 100).round()),
+          note: game.forfeit ? s.historyForfeit : s.teiichiBonusNote(game.bonusPercent),
         ),
         SummaryTile(
           label: s.ankirenFirstTapFact.toUpperCase(),

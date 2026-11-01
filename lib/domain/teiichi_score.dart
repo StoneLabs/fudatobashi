@@ -39,4 +39,7 @@ class TeiichiScore {
 
   /// What [placing] multiplies the first-tap points by.
   static double factorOf(Duration placing) => 1 + TeiichiTuning.bonusPerHalving * halvings(placing);
+
+  /// What [placing] adds to the first-tap points, as a whole percentage.
+  static int bonusPercent(Duration placing) => ((factorOf(placing) - 1) * 100).round();
 }

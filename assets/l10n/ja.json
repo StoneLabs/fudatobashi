@@ -1609,7 +1609,7 @@
   "teiichiForfeitTitle": "ランク戦を抜ける？",
   "teiichiForfeitNote": "今抜けると棄権になり、レートでは0点の扱いになります。",
   "teiichiPlacedIn": "並べ {0}",
-  "teiichiScoreNote": "札の点は暗記練と同じ。一手目で取った札に、並べの速さでボーナス。15分が半分になるごとに +15%",
+  "teiichiScoreNote": "札の点は暗記練と同じ。一手目で取った札に、並べの速さでボーナス。{1}分が半分になるごとに +{0}%",
   "teiichiBonusNote": "一手目 +{0}%",
   "teiichiBonusBar": "並べ +{0}",
   "teiichiCountsAsZero": "0点として数えます",

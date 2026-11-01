@@ -216,9 +216,10 @@ void main() {
   });
 
   group('side trips', () {
-    Future<int> trip(AppDatabase db, int d, {bool ranked = true, int? level, double? performance, double? rating}) =>
+    Future<int> trip(AppDatabase db, int d,
+            {SideTrip game = SideTrip.ankiren, bool ranked = true, int? level, double? performance, double? rating}) =>
         db.into(db.sideTripRuns).insert(SideTripRunsCompanion.insert(
-              game: SideTrip.ankiren,
+              game: game,
               startedAt: day(d),
               endedAt: day(d, 59),
               day: 20260900 + d,
@@ -269,6 +270,21 @@ void main() {
       final repaired = await dumpTrips(db);
       expect(await writesDuring(db, () => DbIntegrity.run(db)), isEmpty);
       expect(await dumpTrips(db), repaired);
+      await db.close();
+    });
+
+    test('定位置\'s ratings are replayed too, apart from 暗記練\'s', () async {
+      final db = AppDatabase(NativeDatabase.memory());
+      const teiichi = SideTrip.teiichi;
+      await trip(db, 1, performance: 2000, rating: 2000);
+      final a = await trip(db, 2, game: teiichi, performance: 1000, rating: 1000);
+      final b = await trip(db, 3, game: teiichi, performance: 1600, rating: double.infinity);
+
+      await DbIntegrity.run(db);
+
+      final runs = {for (final r in await db.select(db.sideTripRuns).get()) r.id: r};
+      expect(runs[a]!.rating, 1000);
+      expect(runs[b]!.rating, TripRating.update(1000, 1600, const [1000]));
       await db.close();
     });
 

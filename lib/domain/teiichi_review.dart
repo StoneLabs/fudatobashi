@@ -90,8 +90,10 @@ class TeiichiGameRecord {
   /// Every card dealt, placed or not.
   int get dealt => recall.cards.length + unplaced.length;
 
-  /// What the placing time multiplied the first-tap points by.
+  /// What the placing time multiplied the first-tap points by, and added
+  /// to them as a whole percentage.
   double get scoreFactor => TeiichiScore.factorOf(placing);
+  int get bonusPercent => TeiichiScore.bonusPercent(placing);
 
   /// The field cards that took a wrong tap.
   int get wrongCards => recall.cards.where((c) => c.wrongTaps > 0).length;
