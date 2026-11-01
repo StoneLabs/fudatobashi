@@ -191,11 +191,12 @@ void main() {
       await tester.pumpWidget(const SizedBox());
     });
 
-    testWidgets('a new player\'s page: ranked chained, the guide\'s card, practice', (tester) async {
+    testWidgets('a new player\'s page: ranked chained, the guide\'s card, level 1', (tester) async {
       final p = await open(tester);
       await show(tester, p, () => const TeiichiPage());
-      expect(find.text(s.teiichiRankedSoon), findsOneWidget);
-      expect(find.text(s.teiichiPlay(TeiichiTuning.cards)), findsOneWidget);
+      expect(find.text(s.ankirenRankedLocked(allKnown: true, cleared: false, level: TeiichiTuning.rankedAfterLevel)),
+          findsOneWidget);
+      expect(find.text(s.ankirenPlayLevel(TeiichiLevels.first)), findsOneWidget);
       await tester.tap(find.text(s.teiichiLearnButton));
       await tester.pump();
       await tester.pump(Motion.route);
@@ -205,12 +206,11 @@ void main() {
       await tester.pumpWidget(const SizedBox());
     });
 
-    testWidgets('with games: the best placing time, and the guide\'s card still in full', (tester) async {
+    testWidgets('with games: the averages, and the guide\'s card still in full', (tester) async {
       final p = await open(tester, games: 3);
       await show(tester, p, () => const TeiichiPage());
-      final best = p.sideTripsHub()[SideTrip.teiichi].placing.best!;
-      expect(best, const Duration(milliseconds: 900 * TeiichiTuning.cards));
-      expect(find.text(formatMinutes(best)), findsOneWidget);
+      final form = p.sideTripsHub()[SideTrip.teiichi].placing.form!;
+      expect(find.text(formatMinutes(form.placing)), findsOneWidget);
       expect(find.text(s.teiichiLearnLine, findRichText: true), findsOneWidget);
       expect(find.text(s.teiichiLearnButton), findsOneWidget);
       expect(tester.takeException(), isNull);
@@ -241,8 +241,8 @@ void main() {
   });
 
   // The page, new and with games, on the phones at font scales 1 and 1.3:
-  // at 1 it is one screen with Guest mode and the rules at its foot; larger
-  // type scrolls.
+  // the panels in their order, each reached by scrolling, the burst of the
+  // next level on screen as it opens for a new player at font scale 1.
   group('page fits', () {
     final page = find.descendant(of: find.byType(TeiichiPage), matching: find.byType(Scrollable)).first;
     for (final phone in [narrowPhone, usersPhone, widePhone]) {
@@ -254,8 +254,7 @@ void main() {
               final p = await open(tester, games: games, language: lang);
               await show(tester, p, () => const TeiichiPage(), screen: phone, fontScale: fontScale);
               final scroll = tester.state<ScrollableState>(page);
-              if (fontScale == 1) expect(scroll.position.maxScrollExtent, 0, reason: 'nothing to scroll to');
-              final burst = find.byWidgetPredicate((w) => w is BurstButton && w.title == s.teiichiPlay(TeiichiTuning.cards));
+              final burst = find.byWidgetPredicate((w) => w is BurstButton && w.title == s.ankirenPlayLevel(TeiichiLevels.first));
               final blocks = [
                 find.byType(StatStrip),
                 find.byType(RankedBurst),
@@ -264,11 +263,10 @@ void main() {
                 find.byType(SideTripGuestButton),
               ];
               final tops = [for (final f in blocks) tester.getRect(f).top];
-              expect(tops, orderedEquals([...tops]..sort()), reason: 'the form, ranked, the guide, practice, the pair');
-              if (fontScale == 1) {
-                expect(tester.getRect(find.byType(SideTripGuestButton)).bottom,
-                    moreOrLessEquals(phone.size.height - phone.bars.bottom - AnkirenPageLayout.bottomGap, epsilon: 1),
-                    reason: 'the pair sits at the foot, as on 暗記練\'s page');
+              expect(tops, orderedEquals([...tops]..sort()), reason: 'the form, ranked, the guide, the next level, the pair');
+              if (fontScale == 1 && games == 0 && phone != narrowPhone) {
+                expect(tester.getRect(burst).bottom, lessThanOrEqualTo(phone.size.height - phone.bars.bottom),
+                    reason: 'the next level starts without a scroll');
               }
               for (final f in blocks) {
                 await tester.ensureVisible(f);
@@ -311,11 +309,14 @@ void main() {
   group('custom game sheet', () {
     testWidgets('rows hold their share of the cards: fewer are locked, and more cards raise them', (tester) async {
       final p = await open(tester);
+      await tester.runAsync(() => p.clearLevelsUpTo(SideTrip.teiichi, TeiichiTuning.customAfterLevel));
       await show(tester, p, () => const TeiichiPage());
-      await tester.tap(find.byWidgetPredicate((w) => w is Pressable && w.semanticLabel == s.teiichiAllCards));
+      await tester.tap(find.byWidgetPredicate((w) => w is Pressable && w.semanticLabel == s.ankirenAllLevels));
       await tester.pump();
       await tester.pump(Motion.sheet);
       expect(find.byType(TeiichiSheet), findsOneWidget);
+      await tester.tap(find.byWidgetPredicate((w) => w is Pressable && w.semanticLabel == s.ankirenCustom));
+      await tester.pump();
       expect(find.textContaining('100', findRichText: true), findsWidgets, reason: 'from the cards known');
 
       Future<void> tap(Finder f) async {
@@ -350,7 +351,12 @@ void main() {
 
       await tester.pumpWidget(const SizedBox());
       await show(tester, p, () => const TeiichiPage());
-      expect(find.text(s.teiichiPlay(20)), findsOneWidget, reason: 'the page opens on the saved setup');
+      await tester.tap(find.byWidgetPredicate((w) => w is Pressable && w.semanticLabel == s.ankirenAllLevels));
+      await tester.pump();
+      await tester.pump(Motion.sheet);
+      await tester.tap(find.byWidgetPredicate((w) => w is Pressable && w.semanticLabel == s.ankirenCustom));
+      await tester.pump();
+      expect(find.descendant(of: sheet, matching: find.text('20')), findsWidgets, reason: 'the sheet keeps the setup');
       expect(tester.takeException(), isNull);
       await tester.pumpWidget(const SizedBox());
     });
@@ -630,6 +636,7 @@ void main() {
     for (final lang in ['en', 'ja']) {
       testWidgets('the custom sheet: its からふだ stepper under the cards ($lang)', (tester) async {
         final p = await open(tester, language: lang);
+        await tester.runAsync(() => p.clearLevelsUpTo(SideTrip.teiichi, TeiichiTuning.customAfterLevel));
         await show(tester, p, () => const Scaffold(body: SizedBox.expand()));
         const setup = TeiichiSetup(cards: 20, rows: 3, karafuda: 7);
         showMangaSheet<TeiichiSetup>(tester.element(find.byType(Scaffold).last),

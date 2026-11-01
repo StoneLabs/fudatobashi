@@ -93,11 +93,21 @@ void main() {
     }
   });
 
-  /// An all-known player in [language] with five 定位置 games, oldest first:
-  /// two usual games yesterday, the second the faster; today a custom game
-  /// of 12 cards in 2 rows, a usual game ended early, and a usual game
-  /// slower than the best; none calls からふだ, as before they were called.
-  /// With [games] false, none.
+  /// Makes the 25-card games stored so far the usual games of the days
+  /// before the levels, and reopens the player's progress on them.
+  Future<Progress> fromBeforeTheLevels(Progress p) async {
+    await p.db.customStatement("UPDATE side_trip_runs SET meta = json_set(meta, '\$.custom', json('false')) "
+        "WHERE json_extract(meta, '\$.cards') = 25");
+    final again = await Progress.open(p.db);
+    again.tabsAlwaysOpen = true;
+    return again;
+  }
+
+  /// An all-known player in [language] with five 定位置 games from before the
+  /// levels, oldest first: two usual games yesterday, the second the faster;
+  /// today a custom game of 12 cards in 2 rows, a usual game ended early,
+  /// and a usual game slower than the best; none calls からふだ, as before
+  /// they were called. With [games] false, none.
   Future<Progress> open(WidgetTester tester, {String language = 'en', bool games = true}) async {
     late Progress p;
     await tester.runAsync(() async {
@@ -123,6 +133,7 @@ void main() {
       await record(today.add(const Duration(hours: 9, minutes: 30)), TeiichiSetup.usual,
           base: 2200, shift: 9, wrongAt: {2}, endAfter: 15);
       await record(today.add(const Duration(hours: 12)), TeiichiSetup.usual, base: 1800, shift: 5, wrongAt: {1, 2, 7});
+      p = await fromBeforeTheLevels(p);
     });
     return p;
   }
@@ -332,7 +343,6 @@ void main() {
         final run = p.sideTrips.runsOf(SideTrip.teiichi).last;
         final game = p.sideTrips.teiichiRecordOf(run);
         expect(game.setup, TeiichiSetup.usual);
-        expect(game.custom, isFalse);
         expect(game.recall.cards, hasLength(TeiichiTuning.cards));
         expect(game.recall.karafuda, hasLength(TeiichiTuning.karafuda));
         expect(game.wrongTaps, 3, reason: 'the からふだ calls\' among them');

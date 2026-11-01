@@ -132,7 +132,7 @@ void main() {
         call([TapProximity.otherSide, TapProximity.card]),
         call([], found: false),
       ];
-      expect([for (final a in answers) AnkirenScore.points(a)].toSet(), {122, 60, 30, 20, 0});
+      expect({for (final a in answers) AnkirenScore.points(a)}, {122, 60, 30, 20, 0});
       final score = TeiichiScore(answers, placing: const Duration(minutes: 1, seconds: 52));
       expect(score.firstRight, 3294);
       expect(score.recall, 3614);
