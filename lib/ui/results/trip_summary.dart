@@ -181,6 +181,25 @@ class TripSummary {
     );
   }
 
+  /// A level game's reward tile: the level it opened, else the XP it
+  /// earned, saying the next level (at most [top]) is still closed when a
+  /// failed game left it so.
+  SummaryTile levelRewardTile(int level, SideTripReport report, {required int top}) {
+    final xp = report.xp, after = report.ladderAfter;
+    final next = level + 1;
+    if (!after.allCleared && after.open > report.ladderBefore.open) {
+      return SummaryTile(
+        label: s.summaryOpenedLabel,
+        big: levelFigure(s, after.open),
+        note: s.summaryXpGained(groupDigits(xp?.award.total ?? 0)),
+      );
+    }
+    if (!game.cleared && xp != null && xp.levelsGained == 0 && next <= top && !after.isOpen(next)) {
+      return SummaryTile(label: s.xpUnit, big: TileFigure('+${groupDigits(xp.award.total)}'), note: s.summaryLevelClosed(next));
+    }
+    return rewardTile(s, xp);
+  }
+
   SummaryTile firstTapTile() => SummaryTile(
         label: s.ankirenFirstTryLabel,
         big: TileFigure('${game.firstTries}', unit: '/$asked'),

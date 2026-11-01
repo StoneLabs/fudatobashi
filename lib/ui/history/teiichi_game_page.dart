@@ -14,6 +14,7 @@ import '../../l10n/strings.dart';
 import '../../l10n/teiichi_review_strings.dart';
 import '../../l10n/teiichi_strings.dart';
 import '../../state/scope.dart';
+import '../../state/xp_history.dart';
 import '../manga/manga.dart';
 import '../results/run_summary.dart';
 import 'ankiren_field_tab.dart';
@@ -44,17 +45,19 @@ class TeiichiGamePage extends StatelessWidget {
 
   static final List<PageTab<TeiichiReview>> scoredTabs = [
     ...tabs.take(tabs.length - 1),
-    PageTab((s) => s.ankirenTabScore, TeiichiScoreTab.new),
+    PageTab((s) => s.ankirenTabScore, TeiichiScoreTab.new, sub: (s) => s.tabAndXp),
     tabs.last,
   ];
 
   @override
   Widget build(BuildContext context) {
     final s = S.of(context);
-    final trips = ProgressScope.of(context).sideTrips;
+    final progress = ProgressScope.of(context);
+    final trips = progress.sideTrips;
     final review = TeiichiReview(
       trips.teiichiRecordOf(run),
       [for (final r in trips.runsOf(SideTrip.teiichi)) trips.teiichiRecordOf(r)],
+      xp: XpHistory.gainsOf(progress).teiichi[run.id],
     );
     final game = review.game;
     const trip = SideTrip.teiichi;

@@ -466,6 +466,12 @@ void main() {
           await tester.pump(ResultsLayout.overlayStagger);
           await tester.pump();
           if (report.rankedGames > AnkirenRatingModel.placementGames) {
+            // The XP page plays first; the rating page follows it.
+            for (var i = 0; i < 4 && !tester.any(find.text(s.tripRatingBand(trip))); i++) {
+              await tester.tap(find.byType(CelebrationCta).first);
+              await tester.pump();
+              await tester.pump(const Duration(seconds: 6));
+            }
             expect(find.text(s.tripRatingBand(trip)), findsWidgets, reason: 'the rating is its own');
           }
           await tester.pump(const Duration(seconds: 12));

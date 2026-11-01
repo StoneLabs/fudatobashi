@@ -14,7 +14,7 @@ import 'review_parts.dart';
 /// A ranked 定位置 game's Score: how the points add up, with the placing
 /// time's factor where 暗記練's has being ready early, or that a forfeit
 /// counts as 0; the card points part by part, the cards never placed among
-/// them; and what the game did to 定位置's rating.
+/// them; what the game did to 定位置's rating; and the XP it earned.
 class TeiichiScoreTab extends StatelessWidget {
   const TeiichiScoreTab(this.review, {super.key});
   final TeiichiReview review;
@@ -47,6 +47,7 @@ class TeiichiScoreTab extends StatelessWidget {
       ]),
       if (before != null && after != null)
         RatingHero(recall, head: s.tripRatingBand(SideTrip.teiichi), before: before, after: after),
+      ...xpParts(s, review.xp),
     ]);
   }
 }

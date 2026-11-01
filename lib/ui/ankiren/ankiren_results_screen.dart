@@ -140,7 +140,6 @@ class _Game extends TripSummary {
   _Content _level(BuildContext context, int level, SideTripReport report) {
     final cleared = game.cleared;
     final before = report.ladderBefore, after = report.ladderAfter;
-    final opened = !after.allCleared && after.open > before.open;
     final allKnown = ProgressScope.of(context).sideTripsHub()[SideTrip.ankiren].rankedLock?.allKnown ?? true;
     const out = AnkirenTuning.strikesOut;
     final note = cleared
@@ -154,20 +153,9 @@ class _Game extends TripSummary {
                     ? null
                     : s.summaryRankedNext(AnkirenTuning.rankedAfterLevel)
         : s.ankirenClearHow(out);
-    final xp = report.xp;
-    final next = level + 1;
-    final SummaryTile reward = opened
-        ? SummaryTile(
-            label: s.summaryOpenedLabel,
-            big: levelFigure(s, after.open),
-            note: s.summaryXpGained(groupDigits(xp?.award.total ?? 0)),
-          )
-        : !cleared && xp != null && xp.levelsGained == 0 && next <= AnkirenLevels.top && !after.isOpen(next)
-            ? SummaryTile(label: s.xpUnit, big: TileFigure('+${groupDigits(xp.award.total)}'), note: s.summaryLevelClosed(next))
-            : rewardTile(s, xp);
     return (
       levelHero(level),
-      [firstTapTile(), strikesTile(), reward],
+      [firstTapTile(), strikesTile(), levelRewardTile(level, report, top: AnkirenLevels.top)],
       [
         firstTapsRow(),
         ...karafudaRow(points: game.score?.karafuda),

@@ -3,6 +3,7 @@ import 'dart:math' as math;
 import '../config/config.dart';
 import 'ankiren_xp.dart';
 import 'play_session.dart';
+import 'side_trips.dart';
 
 /// Where a game's experience came from: the main game's runs ([XpRun]) and
 /// 暗記練's games ([AnkirenXpRun]) each list their own, sharing those that
@@ -211,25 +212,28 @@ class XpGain {
 }
 
 /// Every game's experience, added up oldest first: the main game's runs
-/// ([add]) and 暗記練's games ([addAnkiren]) into one total. Which cards were
-/// already met, the best time per setup and the streak of days depend on
-/// the runs before; 暗記練's bests and placement on its games before
-/// ([AnkirenXp]). The daily bonus and its streak are the main game's.
+/// ([add]) and the side trips' games ([addTrip]) into one total. Which
+/// cards were already met, the best time per setup and the streak of days
+/// depend on the runs before; a side trip's bests and placement on its own
+/// games before ([AnkirenXp]), each trip keeping its own. The daily bonus
+/// and its streak are the main game's.
 class XpLedger {
   XpLedger();
 
-  /// The ledger of [runs] and [ankiren], each game in the order played (a
-  /// run before a 暗記練 game started at the same moment). [onGain] hears
-  /// what each game earned: a run's by its id, a 暗記練 game's by
-  /// its run id.
+  /// The ledger of [runs], [ankiren] and [teiichi], each game in the order
+  /// played (a run before a trip's game started at the same moment).
+  /// [onGain] hears what each game earned: a run's with a null `trip`, by
+  /// its id; a trip's game's with its trip, by its run id.
   factory XpLedger.of(
     Iterable<XpRun> runs, [
     Iterable<AnkirenXpRun> ankiren = const [],
-    void Function({required bool ankiren, required int id, required XpGain gain})? onGain,
+    Iterable<AnkirenXpRun> teiichi = const [],
+    void Function({required SideTrip? trip, required int id, required XpGain gain})? onGain,
   ]) {
     final games = [
-      for (final r in runs) (at: r.startedAt, kind: 0, id: r.runId, add: (XpLedger l) => l.add(r)),
-      for (final g in ankiren) (at: g.startedAt, kind: 1, id: g.runId, add: (XpLedger l) => l.addAnkiren(g)),
+      for (final r in runs) (at: r.startedAt, kind: 0, trip: null as SideTrip?, id: r.runId, add: (XpLedger l) => l.add(r)),
+      for (final (trip, list) in [(SideTrip.ankiren, ankiren), (SideTrip.teiichi, teiichi)])
+        for (final g in list) (at: g.startedAt, kind: 1 + trip.index, trip: trip, id: g.runId, add: (XpLedger l) => l.addTrip(trip, g)),
     ]..sort((a, b) {
         final t = a.at.compareTo(b.at);
         if (t != 0) return t;
@@ -238,7 +242,7 @@ class XpLedger {
     final ledger = XpLedger();
     for (final g in games) {
       final gain = g.add(ledger);
-      onGain?.call(ankiren: g.kind == 1, id: g.id, gain: gain);
+      onGain?.call(trip: g.trip, id: g.id, gain: gain);
     }
     return ledger;
   }
@@ -256,7 +260,7 @@ class XpLedger {
   /// A recorded run already graduated (it happens once).
   bool get graduated => _graduated;
 
-  final _ankiren = AnkirenXp();
+  final _trips = {for (final trip in SideTrip.values) trip: AnkirenXp()};
 
   /// Adds [run], played after every game added so far, and returns what it
   /// earned.
@@ -266,9 +270,12 @@ class XpLedger {
     return gain;
   }
 
-  /// Adds 暗記練 game [game], played after every game added so far, and
+  /// Adds [trip]'s game [game], played after every game added so far, and
   /// returns what it earned.
-  XpGain addAnkiren(AnkirenXpRun game) => _gain(_ankiren.score(game));
+  XpGain addTrip(SideTrip trip, AnkirenXpRun game) => _gain(_trips[trip]!.score(game));
+
+  /// Adds 暗記練 game [game] (see [addTrip]).
+  XpGain addAnkiren(AnkirenXpRun game) => addTrip(SideTrip.ankiren, game);
 
   XpGain _gain(XpAward award) {
     final gain = XpGain(before: _total, award: award);

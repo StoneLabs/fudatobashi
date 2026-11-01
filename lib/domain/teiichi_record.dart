@@ -17,6 +17,10 @@ abstract final class TeiichiMeta {
 
   /// The からふだ called, by id, as 暗記練's (`AnkirenMeta.karafudaKey`).
   static const karafudaKey = 'karafuda';
+
+  /// Present in a game recorded while 定位置 earned experience; the games
+  /// before it earned none.
+  static const xpKey = 'xp';
 }
 
 /// A recorded 定位置 game as its page shows it: its card count, the placing

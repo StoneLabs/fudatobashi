@@ -173,7 +173,6 @@ class _Game extends TripSummary {
   _Content _level(BuildContext context, int level, SideTripReport report) {
     final cleared = game.cleared;
     final before = report.ladderBefore, after = report.ladderAfter;
-    final opened = !after.allCleared && after.open > before.open;
     final allKnown = ProgressScope.of(context).sideTripsHub()[SideTrip.teiichi].rankedLock?.allKnown ?? true;
     final note = cleared
         ? after.rankedReady && !before.rankedReady
@@ -188,17 +187,7 @@ class _Game extends TripSummary {
         : s.ankirenClearHow(AnkirenTuning.strikesOut);
     return (
       levelHero(level),
-      [
-        firstTapTile(),
-        strikesTile(),
-        opened
-            ? SummaryTile(
-                label: s.summaryOpenedLabel,
-                big: levelFigure(s, after.open),
-                note: s.teiichiPlacedIn(formatMinutes(placingTime)),
-              )
-            : _placingTile(),
-      ],
+      [firstTapTile(), strikesTile(), levelRewardTile(level, report, top: TeiichiLevels.top)],
       [
         firstTapsRow(),
         ...karafudaRow(),

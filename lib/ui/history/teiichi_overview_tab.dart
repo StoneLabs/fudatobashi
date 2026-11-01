@@ -33,7 +33,8 @@ String teiichiSetupText(S s, TeiichiSetup setup) => [
 /// forfeit, or a hero of the cards found with the first tap, stamped when
 /// it ended early, cleared or failed its level, was custom or set the best
 /// placing time; three tiles (the placing time, and a ranked game's first
-/// taps and rating or else the wrong taps or strikes and the median find);
+/// taps and rating, or else the wrong taps or strikes and the median find,
+/// a level game's XP in place of the median);
 /// the cards slowest to place and those never placed; how its からふだ went
 /// when it called any; then down to the floor the game against the last one
 /// with the same setup. The hero and the median count the cards dealt
@@ -211,11 +212,14 @@ class TeiichiOverviewTab extends StatelessWidget {
                   ? s.teiichiWrongOnKarafuda(game.wrongCards, wrongKarafuda)
                   : s.teiichiWrongOn(game.wrongCards),
         ),
-      SummaryTile(
-        label: s.ankirenMedianFact.toUpperCase(),
-        big: median == null ? const TileFigure(missingTime) : TileFigure(formatSeconds(median), unit: ' s'),
-        note: s.summaryFound(game.recall.found),
-      ),
+      if (game.level != null)
+        xpTile(s, review.xp)
+      else
+        SummaryTile(
+          label: s.ankirenMedianFact.toUpperCase(),
+          big: median == null ? const TileFigure(missingTime) : TileFigure(formatSeconds(median), unit: ' s'),
+          note: s.summaryFound(game.recall.found),
+        ),
     ];
   }
 }

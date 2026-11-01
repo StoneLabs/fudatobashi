@@ -6,6 +6,7 @@ import 'level_ladder.dart';
 import 'teiichi.dart';
 import 'teiichi_record.dart';
 import 'teiichi_score.dart';
+import 'xp.dart';
 
 /// A card of a recorded 定位置 game as it was placed: how long it was on top
 /// of the stack, every time it was.
@@ -109,11 +110,14 @@ class TeiichiGameRecord {
 }
 
 /// One 定位置 [game] against the games recorded before it ([all] holds every
-/// recorded game, this one among them).
+/// recorded game, this one among them), with the [xp] it earned; null for a
+/// game that earned none to show.
 class TeiichiReview {
-  TeiichiReview(this.game, List<TeiichiGameRecord> all) : _earlier = [for (final g in all) if (g.id < game.id) g];
+  TeiichiReview(this.game, List<TeiichiGameRecord> all, {this.xp})
+      : _earlier = [for (final g in all) if (g.id < game.id) g];
 
   final TeiichiGameRecord game;
+  final XpGain? xp;
   final List<TeiichiGameRecord> _earlier;
 
   /// The earlier games with the same setup, oldest first.

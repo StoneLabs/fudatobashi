@@ -12,7 +12,7 @@ import 'xp.dart';
 /// was tapped), and whether it was a からふだ call.
 typedef AnkirenXpAnswer = ({int wrongTaps, int? responseUs, List<TapProximity> taps, int? firstTapUs, bool karafuda});
 
-/// A recorded 暗記練 game, as experience sees it.
+/// A recorded 暗記練 or 定位置 game, as experience sees it.
 class AnkirenXpRun {
   const AnkirenXpRun({
     required this.runId,

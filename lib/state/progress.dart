@@ -1444,13 +1444,23 @@ class Progress extends ChangeNotifier {
     );
   }
 
-  /// Stores a 定位置 game once it is over and moves its rating for a ranked
-  /// one (see [SideTrips.recordTeiichi]).
+  /// Stores a 定位置 game once it is over, moves its rating for a ranked
+  /// one (see [SideTrips.recordTeiichi]) and adds up the experience it
+  /// earned, as 暗記練's.
   Future<SideTripReport> recordTeiichi(TeiichiPlacing placing, AnkirenGame game, {required DateTime startedAt}) async {
+    final ledger = xp;
     final day = await _storeDay(startedAt);
     final report = await sideTrips.recordTeiichi(db, placing, game, startedAt: startedAt, day: day.day);
+    final gain = ledger.addTrip(SideTrip.teiichi, XpHistory.teiichiRunOf(sideTrips, sideTrips.runs.last));
     notifyListeners();
-    return report;
+    return SideTripReport(
+      ratingBefore: report.ratingBefore,
+      ratingAfter: report.ratingAfter,
+      rankedGames: report.rankedGames,
+      ladderBefore: report.ladderBefore,
+      ladderAfter: report.ladderAfter,
+      xp: gain,
+    );
   }
 
   /// Developer tool: marks 暗記練's free levels 0 through [level] cleared.
