@@ -1,12 +1,13 @@
 part of '../design.dart';
 
 /// 定位置's page (`teiichi_page.dart`), on 暗記練's page's frame
-/// ([AnkirenPageLayout]): the form strip, ranked, still to come, and the
-/// guide's card.
+/// ([AnkirenPageLayout]): the banner, ranked, the guide's card and the next
+/// level to clear.
 abstract final class TeiichiPageLayout {
-  /// Ranked's chained-up inside is at least this tall, its row in the
-  /// middle.
-  static const double rankedHeight = 88;
+  /// The next level's preview of its side of the field: its rows at most
+  /// this tall, this far inside its frame.
+  static const double previewHeight = 64;
+  static const double previewInset = 6;
 
   /// On a screen with room to spare, ranked and the guide's card take
   /// these shares of it.
@@ -34,10 +35,12 @@ abstract final class TeiichiPageLayout {
   static const EdgeInsets buttonPadding = EdgeInsets.symmetric(horizontal: 12, vertical: 8);
 }
 
-/// 定位置's custom game sheet (`teiichi_sheet.dart`), on 暗記練's sheet frame
-/// ([AnkirenSheetLayout]): the card count's keys, then the rows' keys, each
-/// its count over what it holds, and the notes under them.
+/// 定位置's level sheet (`teiichi_sheet.dart`), on 暗記練's sheet frame
+/// ([AnkirenSheetLayout]): the level keys, [keysPerRow] a row; then for a
+/// custom game the card count's keys, the rows' keys, each its count over
+/// what it holds, and the notes under them.
 abstract final class TeiichiSheetLayout {
+  static const int keysPerRow = 5;
   static const double cardKeyFont = 19;
   static const double rowKeyHeight = 54;
   static const double rowKeyFont = 18;

@@ -278,6 +278,23 @@ class TeiichiBoard {
     return fits(row) ? base._with(at, row) : null;
   }
 
+  /// [setup]'s usual shape, for a preview: its cards shared out over the
+  /// rows in play, the rows nearest the player first, half left and half
+  /// right. Its cards are numbered from 0, not poems.
+  static TeiichiBoard typical(TeiichiSetup setup) {
+    var next = 0;
+    List<int> take(int n) => [for (var i = 0; i < n; i++) next++];
+    final rows = setup.rowsInPlay;
+    AnkirenRow row(FieldRow at) {
+      final i = rows.indexOf(at);
+      if (i < 0) return AnkirenRow(left: const [], middle: const [], right: const []);
+      final cards = setup.cards ~/ rows.length + (i < setup.cards % rows.length ? 1 : 0);
+      return AnkirenRow(left: take((cards + 1) ~/ 2), middle: const [], right: take(cards ~/ 2));
+    }
+
+    return TeiichiBoard(setup, AnkirenHalf([for (final r in FieldRow.values) row(r)]));
+  }
+
   /// [spot] would take a card not on the board, or [card] moved there.
   bool takes(TeiichiSpot spot, {int? card}) => put(card ?? _anyCard, spot) != null;
 

@@ -1,4 +1,3 @@
-import 'dart:async';
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
@@ -8,25 +7,26 @@ import 'package:flutter/scheduler.dart';
 import '../../config/config.dart';
 import '../../config/design.dart';
 import '../../config/vector_art.dart';
-import '../../domain/karafuda.dart';
 import '../../domain/side_trips.dart';
 import '../../domain/teiichi.dart';
-import '../../domain/teiichi_record.dart';
 import '../../l10n/ankiren_strings.dart';
 import '../../l10n/side_trip_strings.dart';
 import '../../l10n/strings.dart';
 import '../../l10n/teiichi_strings.dart';
 import '../../state/scope.dart';
+import '../ankiren/ankiren_strikes.dart';
 import '../history/history_screen.dart';
 import '../manga/manga.dart';
 import '../play/time_format.dart';
 import '../run/run_launcher.dart';
+import '../teiichi/teiichi_field_preview.dart';
 import 'burst_button.dart';
 import 'side_trip_entry.dart';
 import 'side_trip_panels.dart';
 import 'teiichi_guide.dart';
 import 'teiichi_rules_sheet.dart';
 import 'teiichi_sheet.dart';
+import 'trip_record_panels.dart';
 
 /// Opens 定位置's page ([TeiichiPage]), once 定位置 is open.
 Future<void> openTeiichiPage(BuildContext context) async {
@@ -35,16 +35,14 @@ Future<void> openTeiichiPage(BuildContext context) async {
 }
 
 /// 定位置's page, the hub's panel opened up, on 暗記練's page's frame, with
-/// History beside the back button: the
-/// form (the average wrong taps and placing time of the last games that
-/// count); ranked, chained up until it comes; the guide's card; practice:
-/// its setup (the cards as the way to the custom game sheet,
-/// [pickTeiichiCustom]), the best placing time and the burst that starts
-/// it; and at the foot, within the thumb's reach, Guest mode and the rules,
-/// each a sheet. The first visit opens with the rules. Home's dotted
+/// History beside the back button: who the player is (the form, and the
+/// class and rating once there is one); ranked, chained up until it opens
+/// (see [RankedLock]); the guide's card; the next level to clear; and at
+/// the foot, within the thumb's reach, Guest mode and the rules, each a
+/// sheet. The first visit opens with the rules. Home's dotted
 /// ground, in the sea's blue, lies behind the panels. A taller screen's
 /// room to spare goes to ranked and the guide's card ([_GrowColumn]); the
-/// page scrolls when it is taller than the screen.
+/// page scrolls when it is taller than the screen, as it is on most phones.
 class TeiichiPage extends StatefulWidget {
   const TeiichiPage({super.key});
 
@@ -53,36 +51,18 @@ class TeiichiPage extends StatefulWidget {
 }
 
 class _TeiichiPageState extends State<TeiichiPage> {
-  /// The custom setup, the last one picked in the custom game sheet (kept
-  /// in the settings), fitted to the cards known; null for the usual game.
+  /// The setup picked from the level sheet, kept while the page is open;
+  /// null for the next level to clear.
   TeiichiSetup? _picked;
 
   @override
   void initState() {
     super.initState();
-    final progress = ProgressScope.read(context);
-    final settings = progress.settings;
-    final saved = TeiichiSetup(
-      cards: settings.teiichiCards,
-      rows: settings.teiichiRows,
-      karafuda: settings.teiichiKarafuda ?? Karafuda.forTeiichi(settings.teiichiCards),
-    );
-    if (saved.custom) {
-      final fitted = saved.fitted(progress.knownCards.length);
-      _picked = fitted.custom ? fitted : null;
-    }
-    if (!settings.teiichiRulesSeen) {
+    if (!ProgressScope.read(context).settings.teiichiRulesSeen) {
       SchedulerBinding.instance.addPostFrameCallback((_) {
         if (mounted) openTeiichiRules(context);
       });
     }
-  }
-
-  void _pick(TeiichiSetup setup) {
-    setState(() => _picked = setup.custom ? setup : null);
-    final progress = ProgressScope.read(context);
-    unawaited(progress.updateSettings(progress.settings
-        .copyWith(teiichiCards: setup.cards, teiichiRows: setup.rows, teiichiKarafuda: setup.karafuda)));
   }
 
   @override
@@ -114,16 +94,23 @@ class _TeiichiPageState extends State<TeiichiPage> {
                       ],
                     ),
                     const SizedBox(height: AnkirenPageLayout.gap),
-                    _FormStrip(entry.placing.form),
+                    _Banner(entry),
                     const SizedBox(height: AnkirenPageLayout.nextTop),
-                    const _Grows(share: TeiichiPageLayout.rankedShare, child: _RankedPanel()),
+                    _Grows(
+                      share: TeiichiPageLayout.rankedShare,
+                      child: RankedPanel(
+                        entry,
+                        facts: s.teiichiRankedFacts(TeiichiTuning.cards, formatMinutes(TeiichiTuning.rankedLimit)),
+                        onStart: () => startTeiichiRanked(context),
+                      ),
+                    ),
                     const SizedBox(height: AnkirenPageLayout.gap),
                     const _Grows(share: TeiichiPageLayout.learnShare, child: _LearnCard()),
                     const SizedBox(height: AnkirenPageLayout.nextTop),
-                    _PracticePanel(
+                    _NextLevelPanel(
                       entry,
                       picked: _picked,
-                      onPick: _pick,
+                      onPick: (setup) => setState(() => _picked = setup),
                     ),
                     const SizedBox(height: AnkirenPageLayout.gap),
                     Row(children: [
@@ -144,65 +131,43 @@ class _TeiichiPageState extends State<TeiichiPage> {
 }
 
 /// The page's [StatStrip], for 定位置: the average wrong taps and placing
-/// time of the last games that count ([form]), over how many games; dashes,
-/// and the game to play to start it, before the first. Its labels go
-/// without the other language's, which would wrap them.
-class _FormStrip extends StatelessWidget {
-  const _FormStrip(this.form);
+/// time of the last games that count, over how many games; dashes, and the
+/// game to play to start it, before the first. Once the player has a rating
+/// its class, rating and way to the next class come first ([RecordStrip]).
+/// The labels go without the other language's, which would wrap them.
+class _Banner extends StatelessWidget {
+  const _Banner(this.entry);
 
-  final TeiichiForm? form;
+  final SideTripEntry entry;
 
   @override
   Widget build(BuildContext context) {
     final s = S.of(context);
-    final form = this.form;
+    final form = entry.placing.form;
     const big = StatStrip.valueStyle;
-    return StatStrip(
-      fills: true,
-      cells: [
-        StatCell(
-          label: PanelLabel(s.teiichiFormWrongTaps, null),
-          value: Text(form == null ? missingTime : formatAverage(form.wrongTaps), style: big),
-        ),
-        StatCell(
-          label: PanelLabel(s.teiichiFormPlacing, null),
-          value: Text(form == null ? missingTime : formatMinutes(form.placing), style: big),
-        ),
-      ],
-      foot: FittedBox(
-        fit: BoxFit.scaleDown,
-        alignment: Alignment.centerLeft,
-        child: NumberedText(
-          form == null ? s.teiichiFormStart : s.teiichiFormGames(form.games),
-          [form?.games ?? TeiichiTuning.cards],
-          style: const TextStyle(fontWeight: Weights.black, fontSize: AnkirenPageLayout.gaugeFont),
-          numberStyle: const TextStyle(fontFamily: Fonts.display, fontSize: AnkirenPageLayout.gaugeNumber),
-        ),
+    final cells = [
+      StatCell(
+        label: PanelLabel(s.teiichiFormWrongTaps, null),
+        value: Text(form == null ? missingTime : formatAverage(form.wrongTaps), style: big),
+      ),
+      StatCell(
+        label: PanelLabel(s.teiichiFormPlacing, null),
+        value: Text(form == null ? missingTime : formatMinutes(form.placing), style: big),
+      ),
+    ];
+    final foot = FittedBox(
+      fit: BoxFit.scaleDown,
+      alignment: Alignment.centerLeft,
+      child: NumberedText(
+        form == null ? s.teiichiFormStart : s.teiichiFormGames(form.games),
+        [form?.games ?? TeiichiTuning.cards],
+        style: const TextStyle(fontWeight: Weights.black, fontSize: AnkirenPageLayout.gaugeFont),
+        numberStyle: const TextStyle(fontFamily: Fonts.display, fontSize: AnkirenPageLayout.gaugeNumber),
       ),
     );
-  }
-}
-
-/// Ranked, still to come: its one setup and the burst that will start it,
-/// in the middle of a panel at least as tall as 暗記練's, chained up,
-/// saying so.
-class _RankedPanel extends StatelessWidget {
-  const _RankedPanel();
-
-  @override
-  Widget build(BuildContext context) {
-    final s = S.of(context);
-    return LockedPanel(
-      tag: s.ankirenRankedMode,
-      sub: s.sub?.ankirenRankedMode,
-      why: s.teiichiRankedSoon,
-      child: ConstrainedBox(
-        constraints: const BoxConstraints(minHeight: TeiichiPageLayout.rankedHeight),
-        child: Center(
-          child: RankedRow(facts: s.teiichiRankedFacts(TeiichiTuning.cards), line: s.ankirenRankedReal, onTap: null),
-        ),
-      ),
-    );
+    return entry.ranked
+        ? RecordStrip(entry, more: cells, moreFoot: foot)
+        : StatStrip(fills: true, cells: cells, foot: foot);
   }
 }
 
@@ -285,54 +250,45 @@ class _LearnCard extends StatelessWidget {
   }
 }
 
-/// Practice: the usual game, or the setup [picked] instead: the cards as
-/// the button to the custom game sheet, the rows and the best placing time
-/// across the panel, then the burst that starts it. A setup confirmed in
-/// the sheet goes to [onPick].
-class _PracticePanel extends StatelessWidget {
-  const _PracticePanel(this.entry, {required this.picked, required this.onPick});
+/// The next level to clear (the top level again once every level is
+/// cleared), or the setup [picked] instead: its facts, the level among them
+/// the way to the level sheet ([pickTeiichiLevel]), what clears it (or that
+/// a custom game is not scored), a preview of its side of the field, and
+/// the burst that starts it. A setup confirmed in the sheet goes to
+/// [onPick], as null when it is the next level to clear.
+class _NextLevelPanel extends StatelessWidget {
+  const _NextLevelPanel(this.entry, {required this.picked, required this.onPick});
 
   final SideTripEntry entry;
   final TeiichiSetup? picked;
-  final ValueChanged<TeiichiSetup> onPick;
+  final ValueChanged<TeiichiSetup?> onPick;
 
   @override
   Widget build(BuildContext context) {
     final s = S.of(context);
-    final setup = picked ?? TeiichiSetup.usual;
-    final best = entry.placing.best;
-    const big = TextStyle(fontFamily: Fonts.display, fontSize: AnkirenPageLayout.statFont, height: 1);
-    String play(S s) => s.teiichiPlay(setup.cards);
+    final next = entry.nextLevel;
+    final usual = TeiichiSetup.forLevel(next ?? TeiichiLevels.top);
+    final setup = picked ?? usual;
+    final level = setup.level;
+    final allCleared = picked == null && next == null;
+    String tag(S s) => picked != null
+        ? (level == null ? s.ankirenCustom : s.ankirenLevelRow)
+        : allCleared
+            ? s.ankirenAllClearedTitle
+            : s.ankirenNextToClear;
+    String play(S s) => level == null ? s.teiichiPlay(setup.cards) : s.ankirenPlayLevel(level);
     Future<void> pick() async {
-      final chosen = await pickTeiichiCustom(context, setup);
-      if (chosen != null && context.mounted) onPick(chosen);
+      final chosen = await pickTeiichiLevel(context, setup);
+      if (chosen != null && context.mounted) onPick(chosen == usual ? null : chosen);
     }
 
     return TaggedPanel(
-      tag: s.teiichiPractice,
-      sub: s.sub?.teiichiPractice,
+      tag: tag(s),
+      sub: s.sub == null ? null : tag(s.sub!),
       child: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-        Padding(
-          padding: AnkirenPageLayout.statsPadding,
-          child: CellRow(firstRuled: false, fills: true, children: [
-            DropCellButton(
-              onTap: pick,
-              semanticLabel: s.teiichiAllCards,
-              label: PanelLabel(s.ankirenCards, null),
-              value: Text('${setup.cards}', style: big),
-            ),
-            StatCell(
-              inset: AnkirenPageLayout.levelButtonInset,
-              label: PanelLabel(s.teiichiRows, null),
-              value: Text('${setup.rows}', style: big),
-            ),
-            StatCell(
-              inset: AnkirenPageLayout.levelButtonInset,
-              label: PanelLabel(s.teiichiBestPlacing, null),
-              value: Text(best == null ? missingTime : formatMinutes(best), style: big),
-            ),
-          ]),
-        ),
+        _Stats(setup, onLevel: pick),
+        _Hint(setup, allCleared: allCleared, cleared: level != null && entry.ladder.isCleared(level)),
+        TeiichiFieldPreview(setup),
         Padding(
           padding: AnkirenPageLayout.burstMargin,
           child: BurstButton(
@@ -341,6 +297,96 @@ class _PracticePanel extends StatelessWidget {
             onTap: () => startTeiichi(context, setup),
           ),
         ),
+      ]),
+    );
+  }
+}
+
+/// A setup's facts across the panel: the level, as the button that calls
+/// [onLevel], then the cards, the rows and the most time, split by an ink
+/// rule, their labels and values in line with the level's.
+class _Stats extends StatelessWidget {
+  const _Stats(this.setup, {required this.onLevel});
+
+  final TeiichiSetup setup;
+  final VoidCallback onLevel;
+
+  @override
+  Widget build(BuildContext context) {
+    final s = S.of(context);
+    final limit = setup.limit;
+    const big = TextStyle(fontFamily: Fonts.display, fontSize: AnkirenPageLayout.statFont, height: 1);
+    const unit = TextStyle(fontFamily: Fonts.display, fontSize: AnkirenPageLayout.statUnitFont, height: 1);
+    return Padding(
+      padding: AnkirenPageLayout.statsPadding,
+      child: CellRow(firstRuled: false, fills: true, children: [
+        DropCellButton(
+          onTap: onLevel,
+          semanticLabel: s.ankirenAllLevels,
+          label: PanelLabel(s.ankirenLevelRow, null),
+          value: NumberedText(
+            s.ankirenLevelValue,
+            [setup.level ?? TeiichiTuning.customLevel],
+            style: unit,
+            numberStyle: big,
+          ),
+        ),
+        StatCell(
+          inset: AnkirenPageLayout.levelButtonInset,
+          label: PanelLabel(s.ankirenCards, null),
+          value: Text('${setup.cards}', style: big),
+        ),
+        StatCell(
+          inset: AnkirenPageLayout.levelButtonInset,
+          label: PanelLabel(s.teiichiRows, null),
+          value: Text('${setup.rows}', style: big),
+        ),
+        StatCell(
+          inset: AnkirenPageLayout.levelButtonInset,
+          label: PanelLabel(s.teiichiLimitLabel, null),
+          value: limit == null ? Text(s.teiichiNoLimit, style: unit) : Text(formatMinutes(limit), style: big),
+        ),
+      ]),
+    );
+  }
+}
+
+/// What clears [setup]'s level (or that every level is, once [allCleared];
+/// or that a custom game is not scored), with a checked "Cleared" on the
+/// right once it is [cleared].
+class _Hint extends StatelessWidget {
+  const _Hint(this.setup, {required this.allCleared, required this.cleared});
+
+  final TeiichiSetup setup;
+  final bool allCleared, cleared;
+
+  @override
+  Widget build(BuildContext context) {
+    final s = S.of(context);
+    const style = TextStyle(fontWeight: Weights.bold, fontSize: AnkirenPageLayout.hintFont, color: Palette.mute);
+    const number = TextStyle(fontFamily: Fonts.display, fontSize: AnkirenPageLayout.hintNumber, color: Palette.ink);
+    final Widget why = allCleared
+        ? Text(s.ankirenAllCleared, style: style)
+        : setup.custom
+            ? Text.rich(Phrases.span(s.teiichiCustomNote), style: style)
+            : Row(mainAxisSize: MainAxisSize.min, children: [
+                const AnkirenStrikes(strikes: 1, count: 1, cardHeight: AnkirenPageLayout.hintCard),
+                const SizedBox(width: AnkirenPageLayout.hintGap),
+                Flexible(
+                  child: NumberedText(s.ankirenClearRule, [AnkirenTuning.strikesOut], style: style, numberStyle: number),
+                ),
+              ]);
+    return Padding(
+      padding: AnkirenPageLayout.hintPadding,
+      child: Row(children: [
+        Expanded(child: Align(alignment: Alignment.centerLeft, child: why)),
+        if (cleared) ...[
+          const SizedBox(width: AnkirenPageLayout.hintGap),
+          const ClearedCheck(size: AnkirenPageLayout.clearedCheck),
+          const SizedBox(width: AnkirenPageLayout.hintGap),
+          Text(s.ankirenClearedMark,
+              style: const TextStyle(fontWeight: Weights.black, fontSize: AnkirenPageLayout.clearedFont)),
+        ],
       ]),
     );
   }
