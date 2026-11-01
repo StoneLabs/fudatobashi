@@ -27,11 +27,13 @@ import 'package:fudatobashi/domain/ankiren_level.dart';
 import 'package:fudatobashi/domain/ankiren_score.dart';
 import 'package:fudatobashi/domain/ankiren_xp.dart';
 import 'package:fudatobashi/domain/rating.dart';
+import 'package:fudatobashi/domain/side_trips.dart';
 import 'package:fudatobashi/domain/trainer.dart';
 import 'package:fudatobashi/domain/trip_rating.dart';
 import 'package:fudatobashi/domain/xp.dart';
 import 'package:fudatobashi/l10n/ankiren_strings.dart';
 import 'package:fudatobashi/l10n/results_strings.dart';
+import 'package:fudatobashi/l10n/side_trip_strings.dart';
 import 'package:fudatobashi/l10n/strings.dart';
 import 'package:fudatobashi/l10n/summary_strings.dart';
 import 'package:fudatobashi/state/progress.dart';
@@ -379,7 +381,7 @@ void main() {
             for (final fontScale in [1.0, 1.3]) {
               await showPage(tester, p, _rankPage(data), phone, fontScale: fontScale, settle: length);
               expect(tester.takeException(), isNull, reason: '${phone.name} dp, $fontScale');
-              expect(find.text(up ? s.ankirenRankUpBand : s.ankirenRankDownBand), findsOneWidget);
+              expect(find.text(up ? s.tripRankUpBand(SideTrip.ankiren) : s.tripRankDownBand(SideTrip.ankiren)), findsOneWidget);
               expect(find.text(s.rankUpBand), findsNothing);
               expectShown(tester, find.byType(CelebrationCta), phone);
               expectShown(tester, find.byType(MangaPanel), phone);

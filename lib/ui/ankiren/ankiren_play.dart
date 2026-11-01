@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:math' as math;
 
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
@@ -20,6 +21,7 @@ import '../play/pointer_clock.dart';
 import '../sound/sounds.dart';
 import 'ankiren_band.dart';
 import 'ankiren_card.dart';
+import 'ankiren_strikes.dart';
 
 /// A finger on a card, until it lifts.
 typedef _Press = ({int poemId, Duration at, Offset where});
@@ -97,6 +99,39 @@ mixin AnkirenPlay<W extends StatefulWidget> on State<W> {
   }
 
   static void releaseOrientation() => unawaited(SystemChrome.setPreferredOrientations(OrientationTuning.app));
+
+  /// Each slot of a landscape band, widened for the strikes beside End or
+  /// the からふだ button beside "don't know", whichever is wider, so the
+  /// centre stays centred.
+  static double landscapeSlot({required bool strikes, required bool karafuda}) {
+    final box = AnkirenArt.strikeBack.box;
+    const out = AnkirenTuning.strikesOut;
+    final strikesWidth = AnkirenPlayLayout.bandGap +
+        out * AnkirenPlayLayout.strikeCardLandscape * box.width / box.height +
+        (out - 1) * AnkirenPlayLayout.strikeGap;
+    const karafudaWidth = AnkirenPlayLayout.bandGap + AnkirenPlayLayout.sideSlot;
+    return AnkirenPlayLayout.sideSlot + math.max(strikes ? strikesWidth : 0, karafuda ? karafudaWidth : 0);
+  }
+
+  /// [end] with the strikes: under them in portrait, beside them in
+  /// [landscape].
+  Widget withStrikes(Widget end, {required bool landscape}) {
+    final strikes = AnkirenStrikes(
+      strikes: game.strikes,
+      cardHeight: landscape ? AnkirenPlayLayout.strikeCardLandscape : AnkirenPlayLayout.strikeCardPortrait,
+    );
+    return landscape
+        ? Row(mainAxisSize: MainAxisSize.min, children: [
+            end,
+            const SizedBox(width: AnkirenPlayLayout.bandGap),
+            strikes,
+          ])
+        : Column(mainAxisSize: MainAxisSize.min, children: [
+            strikes,
+            const SizedBox(height: AnkirenPlayLayout.strikeRowGap),
+            SizedBox(height: AnkirenPlayLayout.strikeButton, child: end),
+          ]);
+  }
 
   /// Nothing more of the recall happens.
   void stopRecall() => _pause?.cancel();

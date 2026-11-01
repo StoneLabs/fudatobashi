@@ -11,6 +11,7 @@ import '../../domain/trip_rating.dart';
 import '../../l10n/ankiren_strings.dart';
 import '../../l10n/ranked_strings.dart';
 import '../../l10n/results_strings.dart';
+import '../../l10n/side_trip_strings.dart';
 import '../../l10n/stats_strings.dart';
 import '../../l10n/strings.dart';
 import '../manga/manga.dart';
@@ -236,7 +237,7 @@ class _AnkirenRatingOverlayState extends State<AnkirenRatingOverlay> {
     final still = MediaQuery.disableAnimationsOf(context);
     final calm = t.sinks;
     final (title, sun) = switch (t.moment) {
-      AnkirenRatingMoment.up || AnkirenRatingMoment.rankUp => (s.ankirenTitleUp, true),
+      AnkirenRatingMoment.up || AnkirenRatingMoment.rankUp => (s.tripTitleUp(t.data.trip), true),
       AnkirenRatingMoment.held => (s.ankirenTitleHeld, true),
       AnkirenRatingMoment.down || AnkirenRatingMoment.rankDown => (s.ankirenTitleDown, false),
       AnkirenRatingMoment.placing => (s.ankirenTitlePlacing, false),
@@ -244,8 +245,8 @@ class _AnkirenRatingOverlayState extends State<AnkirenRatingOverlay> {
     };
     final band = switch (t.moment) {
       AnkirenRatingMoment.placing => s.ankirenPlacement(t.data.game, AnkirenRatingModel.placementGames).toUpperCase(),
-      AnkirenRatingMoment.placed => s.ankirenRankBand,
-      _ => s.ankirenRatingBand,
+      AnkirenRatingMoment.placed => s.tripRankBand(t.data.trip),
+      _ => s.tripRatingBand(t.data.trip),
     };
     final (cta, ctaSub) = switch (t.moment) {
       AnkirenRatingMoment.down => (s.ankirenNextTime, s.sub?.ankirenNextTime),

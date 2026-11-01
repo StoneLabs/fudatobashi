@@ -5,20 +5,15 @@ import '../../config/config.dart';
 import '../../config/design.dart';
 import '../../config/vector_art.dart';
 import '../../domain/ankiren_level.dart';
-import '../../domain/rating.dart';
 import '../../domain/side_trips.dart';
-import '../../domain/trip_rating.dart';
 import '../../l10n/ankiren_strings.dart';
 import '../../l10n/free_strings.dart';
-import '../../l10n/ranked_strings.dart';
-import '../../l10n/results_strings.dart';
 import '../../l10n/side_trip_strings.dart';
 import '../../l10n/strings.dart';
 import '../../state/scope.dart';
 import '../ankiren/ankiren_field_preview.dart';
 import '../ankiren/ankiren_strikes.dart';
 import '../history/history_screen.dart';
-import '../home/home_widgets.dart';
 import '../manga/manga.dart';
 import '../play/time_format.dart';
 import '../run/run_launcher.dart';
@@ -27,6 +22,7 @@ import 'ankiren_rules_sheet.dart';
 import 'burst_button.dart';
 import 'side_trip_entry.dart';
 import 'side_trip_panels.dart';
+import 'trip_record_panels.dart';
 
 /// Opens 暗記練's page ([AnkirenPage]), once 暗記練 is open.
 Future<void> openAnkirenPage(BuildContext context) async {
@@ -101,9 +97,13 @@ class _AnkirenPageState extends State<AnkirenPage> {
                       ],
                     ),
                     const SizedBox(height: AnkirenPageLayout.gap),
-                    _RecordStrip(entry),
+                    RecordStrip(entry),
                     const SizedBox(height: AnkirenPageLayout.nextTop),
-                    _RankedPanel(entry),
+                    RankedPanel(
+                      entry,
+                      facts: s.ankirenRankedFacts(AnkirenTuning.rankedPerSide, formatMinutes(AnkirenTuning.rankedMemorise)),
+                      onStart: () => startAnkirenRanked(context),
+                    ),
                     const SizedBox(height: AnkirenPageLayout.nextTop),
                     Expanded(child: Align(alignment: Alignment.bottomCenter, child: _NextLevelPanel(
                       entry,
@@ -124,231 +124,6 @@ class _AnkirenPageState extends State<AnkirenPage> {
           ),
         ),
       ]),
-    );
-  }
-}
-
-/// The page's [StatStrip], for 暗記練: the class and the rating with the
-/// last game's change (unranked before the first), then how many points
-/// the next class is away, with a gauge.
-class _RecordStrip extends StatelessWidget {
-  const _RecordStrip(this.entry);
-
-  final SideTripEntry entry;
-
-  @override
-  Widget build(BuildContext context) {
-    final s = S.of(context);
-    final band = entry.band;
-    final rating = entry.rating;
-    final at = rating ?? TripRating.start;
-    final next = Rating.nextBand(at);
-    final floor = band.minRating.isFinite ? band.minRating : TripRating.start;
-    final change = entry.ratingChange?.round() ?? 0;
-    const big = StatStrip.valueStyle;
-    return StatStrip(
-      cells: [
-        StatCell(
-          label: PanelLabel(s.sideTripClass, s.sub?.sideTripClass),
-          value: Text.rich(
-            TextSpan(children: [
-              TextSpan(text: s.classStem(band)),
-              if (s.classStem(band) != s.className(band))
-                const TextSpan(text: RankBand.classSuffix, style: TextStyle(fontSize: AnkirenPageLayout.classSuffixFont)),
-            ]),
-            style: big,
-          ),
-        ),
-        StatCell(
-          label: PanelLabel(s.rating, s.sub?.rating),
-          value: Row(mainAxisSize: MainAxisSize.min, children: [
-            Text(rating == null ? s.sideTripUnranked : '${rating.round()}', style: big),
-            if (change != 0) ...[
-              const SizedBox(width: AnkirenPageLayout.valueGap),
-              RatingChangeTag(change),
-            ],
-          ]),
-        ),
-      ],
-      foot: next == null
-          ? null
-          : Row(children: [
-              Flexible(
-                child: FittedBox(
-                  fit: BoxFit.scaleDown,
-                  alignment: Alignment.centerLeft,
-                  child: NumberedText(
-                    s.ratingToNext(s.className(next)),
-                    [(next.minRating - at).ceil()],
-                    style: const TextStyle(fontWeight: Weights.black, fontSize: AnkirenPageLayout.gaugeFont),
-                    numberStyle: const TextStyle(fontFamily: Fonts.display, fontSize: AnkirenPageLayout.gaugeNumber),
-                  ),
-                ),
-              ),
-              const SizedBox(width: AnkirenPageLayout.gaugeGap),
-              Expanded(child: RatingBar((at - floor) / (next.minRating - floor), width: double.infinity)),
-            ]),
-    );
-  }
-}
-
-/// A panel's heading, at the right of its tag, which carries the other
-/// language's words.
-class _Heading extends StatelessWidget {
-  const _Heading(this.title);
-
-  final String title;
-
-  @override
-  Widget build(BuildContext context) =>
-      Semantics(header: true, child: PanelLabel(title, null, fontSize: AnkirenPageLayout.headFont));
-}
-
-/// Games side by side in equal columns, split by light rules.
-class _GameRow extends StatelessWidget {
-  const _GameRow(this.cells);
-
-  final List<Widget> cells;
-
-  @override
-  Widget build(BuildContext context) => IntrinsicHeight(
-        child: Row(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-          for (final (i, cell) in cells.indexed) ...[
-            if (i > 0)
-              const SizedBox(
-                width: AnkirenPageLayout.lightRuleWidth,
-                child: ColoredBox(color: AnkirenPageLayout.lightRule),
-              ),
-            Expanded(child: Padding(padding: AnkirenPageLayout.gamePadding, child: cell)),
-          ],
-        ]),
-      );
-}
-
-/// One ranked game: its score and what it did to the rating, each on one
-/// line, shrinking rather than overflowing.
-class _Game extends StatelessWidget {
-  const _Game(this.result);
-
-  final SideTripResult result;
-
-  @override
-  Widget build(BuildContext context) => DefaultTextStyle.merge(
-        softWrap: false,
-        child: Column(children: [
-          FittedBox(
-            fit: BoxFit.scaleDown,
-            child: Text('${result.score}',
-                style: const TextStyle(fontFamily: Fonts.display, fontSize: AnkirenPageLayout.scoreFont, height: 1)),
-          ),
-          const SizedBox(height: AnkirenPageLayout.gameGap),
-          FittedBox(fit: BoxFit.scaleDown, child: RatingChangeTag(result.ratingChange.round())),
-        ]),
-      );
-}
-
-/// The last ranked games, newest first.
-class _LastGames extends StatelessWidget {
-  const _LastGames(this.results);
-
-  final List<SideTripResult> results;
-
-  @override
-  Widget build(BuildContext context) {
-    final last = results.reversed.take(AnkirenPageLayout.lastGames).toList();
-    return _GameRow([
-      for (var i = 0; i < AnkirenPageLayout.lastGames; i++)
-        if (i < last.length) _Game(last[i]) else const SizedBox.shrink(),
-    ]);
-  }
-}
-
-/// The placement games ([AnkirenRatingModel.placementGames]): those played,
-/// then dashed slots for the rest, the next one marked.
-class _Placement extends StatelessWidget {
-  const _Placement(this.results);
-
-  final List<SideTripResult> results;
-
-  @override
-  Widget build(BuildContext context) => _GameRow([
-        for (var i = 0; i < AnkirenRatingModel.placementGames; i++)
-          if (i < results.length) _Game(results[i]) else _Slot(i + 1, next: i == results.length),
-      ]);
-}
-
-/// A placement game still to play: its [number] in a dashed slot, over
-/// "next" for the [next] one.
-class _Slot extends StatelessWidget {
-  const _Slot(this.number, {required this.next});
-
-  final int number;
-  final bool next;
-
-  @override
-  Widget build(BuildContext context) {
-    final s = S.of(context);
-    const style = TextStyle(fontWeight: Weights.black, fontSize: AnkirenPageLayout.gameLevelFont, height: 1);
-    return Column(mainAxisAlignment: MainAxisAlignment.center, children: [
-      SizedBox.square(
-        dimension: AnkirenPageLayout.slot,
-        child: DashedBox(
-          ink: AnkirenPageLayout.slotInk,
-          border: AnkirenPageLayout.slotBorder,
-          child: Center(
-            child: Text('$number',
-                style: const TextStyle(
-                    fontFamily: Fonts.display,
-                    fontSize: AnkirenPageLayout.slotFont,
-                    height: 1,
-                    color: AnkirenPageLayout.todo)),
-          ),
-        ),
-      ),
-      const SizedBox(height: AnkirenPageLayout.gameGap),
-      if (next)
-        PanelLabel(s.ankirenPlacementNext, s.sub?.ankirenPlacementNext, color: AnkirenPageLayout.todo)
-      else
-        const Text('—', style: style),
-    ]);
-  }
-}
-
-/// Ranked: the last ranked games (or the placement games so far), its one
-/// setup and the burst that starts it. Until ranked opens the whole panel
-/// is chained up, faded, with what still opens it stuck over the chains;
-/// a tap says it again.
-class _RankedPanel extends StatelessWidget {
-  const _RankedPanel(this.entry);
-
-  final SideTripEntry entry;
-
-  @override
-  Widget build(BuildContext context) {
-    final s = S.of(context);
-    final lock = entry.rankedLock;
-    final placement = TripRating.isPlacement(entry.results.length);
-    final heading = _Heading(placement ? s.ankirenPlacementTitle : s.ankirenLast5);
-    final content = Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-      Padding(
-        padding: AnkirenPageLayout.gamesPadding,
-        child: placement ? _Placement(entry.results) : _LastGames(entry.results),
-      ),
-      RankedRow(
-        facts: s.ankirenRankedFacts(AnkirenTuning.rankedPerSide, formatMinutes(AnkirenTuning.rankedMemorise)),
-        line: s.ankirenRankedReal,
-        onTap: lock == null ? () => startAnkirenRanked(context) : null,
-      ),
-    ]);
-    if (lock == null) {
-      return TaggedPanel(tag: s.ankirenRankedMode, sub: s.sub?.ankirenRankedMode, heading: heading, child: content);
-    }
-    return LockedPanel(
-      tag: s.ankirenRankedMode,
-      sub: s.sub?.ankirenRankedMode,
-      heading: heading,
-      why: s.ankirenRankedLocked(allKnown: lock.allKnown, cleared: lock.cleared, level: lock.level),
-      child: content,
     );
   }
 }

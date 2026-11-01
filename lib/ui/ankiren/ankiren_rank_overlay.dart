@@ -8,6 +8,7 @@ import '../../domain/rating.dart';
 import '../../l10n/ankiren_strings.dart';
 import '../../l10n/ranked_strings.dart';
 import '../../l10n/results_strings.dart';
+import '../../l10n/side_trip_strings.dart';
 import '../../l10n/strings.dart';
 import '../manga/manga.dart';
 import '../manga/seeded_random.dart';
@@ -51,7 +52,7 @@ class AnkirenRankUpOverlay extends StatelessWidget {
               seed: AnkirenRankUpMotion.joltSeed,
               child: _Page(
                 data: data,
-                band: (s.ankirenRankUpBand, AnkirenRankUpMotion.band),
+                band: (s.tripRankUpBand(data.trip), AnkirenRankUpMotion.band),
                 stage: _UpStage(data),
                 result: AnkirenRankUpMotion.result,
                 actions: AnkirenRankUpMotion.actions,
@@ -108,7 +109,7 @@ class AnkirenRankDownOverlay extends StatelessWidget {
               seed: AnkirenRankDownMotion.thudSeed,
               child: _Page(
                 data: data,
-                band: (s.ankirenRankDownBand, AnkirenRankDownMotion.band),
+                band: (s.tripRankDownBand(data.trip), AnkirenRankDownMotion.band),
                 stage: _DownStage(data),
                 result: AnkirenRankDownMotion.result,
                 actions: AnkirenRankDownMotion.actions,

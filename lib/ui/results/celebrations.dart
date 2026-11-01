@@ -1,6 +1,7 @@
 import '../../config/config.dart';
 import '../../data/fuda_sets.dart';
 import '../../domain/rating.dart';
+import '../../domain/side_trips.dart';
 import '../../domain/xp.dart';
 import '../../state/progress.dart';
 import '../../state/side_trips.dart';
@@ -118,16 +119,18 @@ enum AnkirenRatingMoment {
   rankDown,
 }
 
-/// A ranked 暗記練 game moved 暗記練's rating from [before] to [after]: the
-/// [game]th ranked game. The first [AnkirenRatingModel.placementGames]
+/// A ranked side-trip game moved [trip]'s rating from [before] to [after]:
+/// the [game]th ranked game. The first [AnkirenRatingModel.placementGames]
 /// place it, keeping it hidden until the last of them shows the first
 /// class; [placementScores] are their scores so far, this game's last.
 class AnkirenRatingCelebration extends Celebration {
-  const AnkirenRatingCelebration(this.before, this.after, {required this.game, this.placementScores = const []});
+  const AnkirenRatingCelebration(this.before, this.after,
+      {required this.game, this.placementScores = const [], this.trip = SideTrip.ankiren});
   final double before;
   final double after;
   final int game;
   final List<int> placementScores;
+  final SideTrip trip;
 
   AnkirenRatingMoment get moment {
     const placement = AnkirenRatingModel.placementGames;
@@ -146,12 +149,13 @@ class AnkirenRatingCelebration extends Celebration {
   }
 }
 
-/// A ranked 暗記練 game moved 暗記練's rating from [before] to [after] into
-/// another class: up into a higher one, or down into a lower one.
+/// A ranked side-trip game moved [trip]'s rating from [before] to [after]
+/// into another class: up into a higher one, or down into a lower one.
 class AnkirenRankCelebration extends Celebration {
-  const AnkirenRankCelebration(this.before, this.after);
+  const AnkirenRankCelebration(this.before, this.after, {this.trip = SideTrip.ankiren});
   final double before;
   final double after;
+  final SideTrip trip;
 
   RankBand get from => Rating.bandOf(before);
   RankBand get to => Rating.bandOf(after);
@@ -207,19 +211,21 @@ List<Celebration> celebrationsFor(SessionReport report) {
   return list;
 }
 
-/// The pages after a 暗記練 game, in order: the XP earned and any level it
-/// reached, then for a ranked game what it did to the rating, and 暗記練's
-/// own rank-up or rank-down when it broke into another class.
+/// The pages after a game of [trip], in order: the XP earned and any level
+/// it reached, then for a ranked game what it did to the rating, and the
+/// trip's own rank-up or rank-down when it broke into another class.
 /// [placementScores] are the placement games' scores so far, for a game
 /// that is one of them.
-List<Celebration> ankirenCelebrationsFor(SideTripReport report, {List<int> placementScores = const []}) {
+List<Celebration> ankirenCelebrationsFor(SideTripReport report,
+    {List<int> placementScores = const [], SideTrip trip = SideTrip.ankiren}) {
   final list = xpCelebrations(report.xp);
   final (before, after) = (report.ratingBefore, report.ratingAfter);
   if (before == null || after == null) return list;
-  final rating = AnkirenRatingCelebration(before, after, game: report.rankedGames, placementScores: placementScores);
+  final rating =
+      AnkirenRatingCelebration(before, after, game: report.rankedGames, placementScores: placementScores, trip: trip);
   list.add(rating);
   if (rating.moment == AnkirenRatingMoment.rankUp || rating.moment == AnkirenRatingMoment.rankDown) {
-    list.add(AnkirenRankCelebration(before, after));
+    list.add(AnkirenRankCelebration(before, after, trip: trip));
   }
   return list;
 }

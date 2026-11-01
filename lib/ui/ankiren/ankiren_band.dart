@@ -110,13 +110,15 @@ class BandButton extends StatelessWidget {
 }
 
 /// A clock in the band: the time [left], or so far, m:ss, and what it
-/// counts: [label], memorising when not given.
+/// counts: [label], memorising when not given. With [lowAt] a countdown
+/// turns urgent once that little is left.
 class MemoriseClock extends StatelessWidget {
-  const MemoriseClock({super.key, required this.left, required this.landscape, this.label});
+  const MemoriseClock({super.key, required this.left, required this.landscape, this.label, this.lowAt});
 
   final ValueListenable<Duration> left;
   final bool landscape;
   final String? label;
+  final Duration? lowAt;
 
   @override
   Widget build(BuildContext context) => Row(
@@ -130,6 +132,7 @@ class MemoriseClock extends StatelessWidget {
               style: TextStyle(
                 fontFamily: Fonts.display,
                 height: 1,
+                color: lowAt != null && left <= lowAt! ? AnkirenPlayLayout.lowTimeText : null,
                 fontSize: landscape ? AnkirenPlayLayout.timerFontLandscape : AnkirenPlayLayout.timerFont,
                 fontFeatures: const [FontFeature.tabularFigures()],
               ),

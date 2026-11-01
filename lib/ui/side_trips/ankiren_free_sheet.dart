@@ -15,7 +15,6 @@ import '../../l10n/karafuda_strings.dart';
 import '../../l10n/strings.dart';
 import '../../state/progress.dart';
 import '../../state/scope.dart';
-import '../ankiren/ankiren_strikes.dart';
 import '../manga/manga.dart';
 import '../play/time_format.dart';
 import '../run/run_launcher.dart';
@@ -177,7 +176,11 @@ class _AnkirenFreeSheetState extends State<AnkirenFreeSheet> {
           const SizedBox(height: AnkirenSheetLayout.labelGap),
           _levelKeys(s),
         ]),
-        if (ladder != null) _UnlockNote(allCleared: ladder.allCleared),
+        if (ladder != null)
+          SheetUnlockNote(
+            allCleared: ladder.allCleared,
+            line: s.ankirenUnlockLine(AnkirenTuning.strikesOut),
+          ),
         // The steppers' labels go without the English, which would wrap them.
         SheetStepper(
           label: SheetLabel(s.ankirenPerSide, null),
@@ -261,47 +264,6 @@ class _AnkirenFreeSheetState extends State<AnkirenFreeSheet> {
         ),
       ),
     ];
-    const perRow = AnkirenSheetLayout.keysPerRow;
-    return Column(children: [
-      for (var row = 0; row < keys.length; row += perRow) ...[
-        if (row > 0) const SizedBox(height: AnkirenSheetLayout.keyGap),
-        Row(children: [
-          for (var i = row; i < row + perRow; i++) ...[
-            if (i > row) const SizedBox(width: AnkirenSheetLayout.keyGap),
-            Expanded(child: i < keys.length ? keys[i] : const SizedBox.shrink()),
-          ],
-        ]),
-      ],
-    ]);
-  }
-}
-
-/// How the levels open, by a struck card; or, once every level is
-/// cleared, the all-clear stamp and a cheer.
-class _UnlockNote extends StatelessWidget {
-  const _UnlockNote({required this.allCleared});
-
-  final bool allCleared;
-
-  @override
-  Widget build(BuildContext context) {
-    final s = S.of(context);
-    const style = TextStyle(fontWeight: Weights.bold, fontSize: AnkirenSheetLayout.noteFont);
-    return Row(children: [
-      if (allCleared)
-        Sticker(
-          tilt: AnkirenSheetLayout.stampTilt,
-          child: Text(s.ankirenAllClearStamp,
-              style: const TextStyle(fontFamily: Fonts.display, fontSize: AnkirenSheetLayout.stampFont, height: 1)),
-        )
-      else
-        const AnkirenStrikes(strikes: 1, count: 1, cardHeight: AnkirenSheetLayout.noteCard),
-      const SizedBox(width: AnkirenSheetLayout.noteGap),
-      Expanded(
-        child: Text.rich(
-            Phrases.span(allCleared ? s.ankirenAllCleared : s.ankirenUnlockLine(AnkirenTuning.strikesOut)),
-            style: style),
-      ),
-    ]);
+    return SheetKeyGrid(keys);
   }
 }

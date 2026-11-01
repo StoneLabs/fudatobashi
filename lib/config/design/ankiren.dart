@@ -131,6 +131,7 @@ abstract final class AnkirenPlayLayout {
   /// waits.
   static const Color foundText = Palette.landDeep;
   static const Color givenUpText = Palette.violetDeep;
+  static const Color lowTimeText = Palette.pinkDeep;
 
   /// The tatami behind the field: a seamless tile drawn for [tatamiScale]×
   /// density, on [background] until it loads.
