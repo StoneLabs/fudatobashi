@@ -674,7 +674,8 @@ class TileFigure extends StatelessWidget {
 /// Tiles side by side: slices of one band whose edges rise with the panels
 /// above and below, each [SummaryTile] its label over its figure over its
 /// note, laid out by [spec]; as tall as the tallest, and at least
-/// [minHeight].
+/// [minHeight]. A label already broken into [spec]'s lines keeps them,
+/// shrunk together when one is too wide.
 class TileBand extends StatelessWidget {
   const TileBand(this.tiles, {super.key, this.spec = SummaryTileLayout.spec, this.minHeight = 0});
   final List<SummaryTile> tiles;
@@ -694,6 +695,13 @@ class TileBand extends StatelessWidget {
     Widget lines(String text, TextStyle style) => spec.lines > 1
         ? Text(text, maxLines: spec.lines, overflow: TextOverflow.ellipsis, style: style)
         : _OneLine(Text(text, maxLines: 1, style: style));
+    Widget labelLines(String text) => switch (text.split('\n')) {
+          final parts when spec.lines > 1 && parts.length == spec.lines => _OneLine(Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [for (final part in parts) Text(part, maxLines: 1, style: label)])),
+          _ => lines(text, label),
+        };
     return ConstrainedBox(
       constraints: BoxConstraints(minHeight: minHeight),
       child: SlantRow(
@@ -710,7 +718,7 @@ class TileBand extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                lines(tile.label, label),
+                labelLines(tile.label),
                 SizedBox(height: spec.rowGap),
                 _OneLine(tile.big),
                 if (tile.note.isNotEmpty) ...[
