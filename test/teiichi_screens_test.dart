@@ -43,6 +43,7 @@ import 'package:fudatobashi/ui/help/guide_screen.dart';
 import 'package:fudatobashi/ui/manga/manga.dart';
 import 'package:fudatobashi/ui/play/time_format.dart';
 import 'package:fudatobashi/ui/results/run_summary.dart';
+import 'package:fudatobashi/ui/settings/settings_rows.dart';
 import 'package:fudatobashi/ui/settings/side_trip_settings_screen.dart';
 import 'package:fudatobashi/ui/shell/tobi_notice.dart';
 import 'package:fudatobashi/ui/results/karafuda_summary.dart';
@@ -221,25 +222,38 @@ void main() {
     });
   });
 
+  // The rules from their top, then scrolled to the scoring's head and to
+  // its end.
   group('rules sheet renders', skip: !renderScreens, () {
-    for (final lang in ['en', 'ja']) {
-      testWidgets('rules_$lang', (tester) async {
-        final p = await open(tester, language: lang);
-        await show(tester, p, () => const TeiichiPage());
-        unawaited(openTeiichiRules(tester.element(find.byType(TeiichiPage))));
-        await tester.pump();
-        await tester.pump(Motion.sheet * 2);
-        await tester.runAsync(() async {
-          for (final e in find.byType(Image).evaluate()) {
-            await precacheImage((e.widget as Image).image, e);
-          }
-        });
-        await tester.pump();
-        await tester.pump();
-        await captureScreen(tester, 'teiichi/rules_sheet', lang: lang);
-        expect(tester.takeException(), isNull);
-        await tester.pumpWidget(const SizedBox());
-      });
+    for (final phone in [narrowPhone, usersPhone, widePhone]) {
+      for (final lang in ['en', 'ja']) {
+        for (final fontScale in [1.0, 1.3]) {
+          testWidgets('rules_${phone.name}_${lang}_$fontScale', (tester) async {
+            final p = await open(tester, language: lang);
+            await show(tester, p, () => const TeiichiPage(), screen: phone, fontScale: fontScale);
+            unawaited(openTeiichiRules(tester.element(find.byType(TeiichiPage))));
+            await tester.pump();
+            await tester.pump(Motion.sheet * 2);
+            await tester.runAsync(() async {
+              for (final e in find.byType(Image).evaluate()) {
+                await precacheImage((e.widget as Image).image, e);
+              }
+            });
+            await tester.pump();
+            await tester.pump();
+            await captureScreen(tester, 'teiichi/rules_sheet', lang: lang);
+            final sheet = find.byType(TeiichiRulesSheet);
+            await tester.ensureVisible(find.descendant(of: sheet, matching: find.byType(SettingsSection)));
+            await tester.pump();
+            await captureScreen(tester, 'teiichi/scoring', lang: lang);
+            await tester.ensureVisible(find.descendant(of: sheet, matching: find.byType(Table)).last);
+            await tester.pump();
+            await captureScreen(tester, 'teiichi/scoring', lang: lang, variant: 'end');
+            expect(tester.takeException(), isNull);
+            await tester.pumpWidget(const SizedBox());
+          });
+        }
+      }
     }
   });
 

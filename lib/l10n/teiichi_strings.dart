@@ -133,4 +133,16 @@ extension TeiichiStrings on S {
   String teiichiRuleRanked(int cards, int rows, int karafuda, String limit, int level) =>
       f('teiichiRuleRanked', [cards, rows, karafuda, limit, level]);
   String get teiichiRuleLeave => t('teiichiRuleLeave');
+
+  /// The rules' scoring, after 暗記練's call points: the placing bonus,
+  /// its table's heads and a placing time's bonus, and the cards never
+  /// placed.
+  String get teiichiScorePlacing => f('teiichiScorePlacing', [
+        (TeiichiTuning.bonusPerHalving * 100).round(),
+        TeiichiTuning.halvingClock.inMinutes,
+      ]);
+  String get teiichiBonusTime => t('teiichiBonusTime');
+  String get teiichiBonusHead => t('teiichiBonusHead');
+  String teiichiBonusPercent(int percent) => f('teiichiBonusPercent', [percent]);
+  String get teiichiScoreUnplaced => t('teiichiScoreUnplaced');
 }

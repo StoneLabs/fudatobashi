@@ -122,7 +122,16 @@ abstract final class TeiichiPlayLayout {
   static const double zoomMiddleGap = 1.25;
 }
 
-/// 定位置's rules: the placing step's picture, drawn as 暗記練's are.
+/// 定位置's rules: the placing step's picture, drawn as 暗記練's are, and
+/// the placing times the scoring's bonus table prices, slowest first.
 abstract final class TeiichiRulesLayout {
   static const String place = 'assets/graphics/sidetrips/teiichi/howto-place.webp';
+  static const List<Duration> bonusTimes = [
+    Duration(minutes: 15),
+    Duration(minutes: 7, seconds: 30),
+    Duration(minutes: 3),
+    Duration(minutes: 1, seconds: 30),
+    Duration(minutes: 1),
+    Duration(seconds: 30),
+  ];
 }

@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../../config/config.dart';
 import '../../config/design.dart';
 import '../../domain/teiichi.dart';
+import '../../domain/teiichi_score.dart';
 import '../../l10n/ankiren_strings.dart';
 import '../../l10n/karafuda_strings.dart';
 import '../../l10n/side_trip_strings.dart';
@@ -11,6 +12,7 @@ import '../../l10n/teiichi_strings.dart';
 import '../../state/scope.dart';
 import '../manga/manga.dart';
 import '../play/time_format.dart';
+import '../settings/settings_rows.dart';
 import 'ankiren_rules_sheet.dart';
 import 'ankiren_sheet.dart';
 
@@ -32,9 +34,12 @@ Future<void> openTeiichiRules(BuildContext context) {
 /// The game's three steps in pictures, as 暗記練's rules show them (placing,
 /// then 暗記練's flip and take), then how placing works, a row's width, the
 /// clock and what counts for the best time, the time limits, how the cards
-/// are asked for, and how the levels, the custom level and ranked work, with
-/// the numbers from [TeiichiTuning] and [AnkirenTuning]. Every line has the
-/// other language's under it.
+/// are asked for, how the levels, the custom level and ranked work, and
+/// leaving; then how a ranked game scores: each call as in 暗記練
+/// ([AnkirenRulesSheet.callScoring]), the placing bonus with a table of what
+/// some placing times add, and the cards never placed. The numbers come
+/// from [TeiichiTuning] and [AnkirenTuning]. Every line has the other
+/// language's under it.
 class TeiichiRulesSheet extends StatelessWidget {
   const TeiichiRulesSheet({super.key});
 
@@ -74,8 +79,35 @@ class TeiichiRulesSheet extends StatelessWidget {
               s.teiichiRuleRanked(ranked.cards, ranked.rows, ranked.karafuda, limit, rankedAfter),
               o?.teiichiRuleRanked(ranked.cards, ranked.rows, ranked.karafuda, limit, rankedAfter)),
           RuleItem(const RuleMark.image(RuleMarkFiles.leave), s.teiichiRuleLeave, o?.teiichiRuleLeave),
-          RuleItem(RuleMark.text(Palette.paper, s.ankirenMarkPoints), s.teiichiScoreNote, o?.teiichiScoreNote),
         ]),
+        SettingsSection(title: s.ankirenScoring, sub: o?.ankirenScoring.toUpperCase(), children: [
+          RuleList([
+            ...AnkirenRulesSheet.callScoring(s),
+            RuleItem(const RuleMark.image(RuleMarkFiles.early), s.teiichiScorePlacing, o?.teiichiScorePlacing,
+                below: const _BonusTable()),
+            RuleItem(const RuleMark.image(RuleMarkFiles.clock), s.teiichiScoreUnplaced, o?.teiichiScoreUnplaced),
+            RuleItem(RuleMark.text(Palette.pink, s.ankirenMarkPoints), s.ankirenScoreLevel, o?.ankirenScoreLevel),
+          ]),
+        ]),
+      ],
+    );
+  }
+}
+
+/// What placing in each of [TeiichiRulesLayout.bonusTimes] adds to the
+/// points of the cards found with the first tap ([TeiichiScore.factorOf]).
+class _BonusTable extends StatelessWidget {
+  const _BonusTable();
+
+  @override
+  Widget build(BuildContext context) {
+    final s = S.of(context);
+    final o = s.sub;
+    return RulesTable(
+      heads: [(s.teiichiBonusTime, o?.teiichiBonusTime), (s.teiichiBonusHead, o?.teiichiBonusHead)],
+      rows: [
+        for (final time in TeiichiRulesLayout.bonusTimes)
+          ((formatMinutes(time), null), [s.teiichiBonusPercent(TeiichiScore.bonusPercent(time))]),
       ],
     );
   }
