@@ -1,7 +1,7 @@
 import 'package:drift/drift.dart';
 
-/// Schema 4 → 5: 定位置's games keep where each card was placed from the
-/// stack, and how long that took.
+/// Schema 4 → 5: 定位置's games keep every card dealt, in the order they
+/// were placed from the stack, and how long each took.
 Future<void> v4ToV5(Migrator m) async {
   for (final sql in v5Tables) {
     await m.database.customStatement(sql);
