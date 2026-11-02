@@ -208,8 +208,12 @@ class _TeiichiSheetState extends State<TeiichiSheet> {
           onTap: _customOpen
               ? () => setState(() => _level = null)
               : () => balloon(context, s.ankirenCustomLocked(TeiichiTuning.customAfterLevel)),
-          top: const Text('${TeiichiTuning.customLevel}', style: number),
-          bottom: Text(s.ankirenCustom, style: sub),
+          top: Text(s.ankirenCustom,
+              style: const TextStyle(fontWeight: Weights.black, fontSize: AnkirenSheetLayout.keyCustomFont)),
+          bottom: s.sub == null
+              ? null
+              : Text(s.sub!.ankirenCustom.toUpperCase(),
+                  style: const TextStyle(fontWeight: Weights.black, fontSize: AnkirenSheetLayout.keyCustomSubFont)),
         ),
       ),
     ], perRow: TeiichiSheetLayout.keysPerRow);

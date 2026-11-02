@@ -1616,7 +1616,7 @@
   "teiichiUnplacedNoteOne": "{0} card wasn't placed in time. It counts as a miss with 0 points.",
   "teiichiRuleLimit": "Levels and ranked have a time limit. When it runs out the cards flip as if you tapped Done. Cards still in the stack are never called and count as misses.",
   "teiichiRuleStrikes": "In levels, each wrong tap, Don't know or unplaced card is a strike. Play a level to the end with fewer than {0} strikes to clear it and open the next.",
-  "teiichiRuleCustom": "Lv {1} is custom: pick the cards, rows and karafuda, with no time limit. It opens once you clear Lv {0}, and isn't scored.",
+  "teiichiRuleCustom": "Custom lets you pick the cards, rows and karafuda, with no time limit. It opens once you clear Lv {0}, and isn't scored.",
   "teiichiRuleRanked": "Ranked is always {0} cards in {1} rows and {2} karafuda, dealt from all 100 cards, with {3} at most to place. It opens in All 100 known mode once you clear Lv {4}.",
   "teiichiRuleLeave": "In ranked, leaving at any time after the deal counts as 0 for your rating.",
   "teiichiKindLevels": "Levels",

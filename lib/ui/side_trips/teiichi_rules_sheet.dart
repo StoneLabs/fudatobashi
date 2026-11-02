@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../../config/config.dart';
 import '../../config/design.dart';
 import '../../domain/teiichi.dart';
+import '../../l10n/ankiren_strings.dart';
 import '../../l10n/karafuda_strings.dart';
 import '../../l10n/side_trip_strings.dart';
 import '../../l10n/strings.dart';
@@ -43,7 +44,7 @@ class TeiichiRulesSheet extends StatelessWidget {
     final o = s.sub;
     const reveal = AnkirenTuning.revealAfterWrong, cards = TeiichiTuning.cards;
     const strikes = AnkirenTuning.strikesOut, ranked = TeiichiSetup.ranked();
-    const customAfter = TeiichiTuning.customAfterLevel, custom = TeiichiTuning.customLevel;
+    const customAfter = TeiichiTuning.customAfterLevel;
     const rankedAfter = TeiichiTuning.rankedAfterLevel;
     final limit = formatMinutes(ranked.limit!);
     final row = '${TeiichiTuning.rowSlots}';
@@ -67,8 +68,8 @@ class TeiichiRulesSheet extends StatelessWidget {
           RuleItem(const RuleMark.image(RuleMarkFiles.karafuda), s.karafudaRuleTeiichi, o?.karafudaRuleTeiichi),
           RuleItem(const RuleMark.image(RuleMarkFiles.toEnd), s.teiichiRuleToEnd, o?.teiichiRuleToEnd),
           RuleItem(const RuleMark.image(RuleMarkFiles.strikes), s.teiichiRuleStrikes(strikes), o?.teiichiRuleStrikes(strikes)),
-          RuleItem(const RuleMark.text(Palette.sun, '$custom'), s.teiichiRuleCustom(customAfter, custom),
-              o?.teiichiRuleCustom(customAfter, custom)),
+          RuleItem(RuleMark.text(Palette.sun, s.ankirenCustom), s.teiichiRuleCustom(customAfter),
+              o?.teiichiRuleCustom(customAfter)),
           RuleItem(const RuleMark.text(Palette.pink, '$cards'),
               s.teiichiRuleRanked(ranked.cards, ranked.rows, ranked.karafuda, limit, rankedAfter),
               o?.teiichiRuleRanked(ranked.cards, ranked.rows, ranked.karafuda, limit, rankedAfter)),

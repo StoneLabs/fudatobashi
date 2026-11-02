@@ -80,7 +80,7 @@ void main() {
   test('a level game, which is never journalled, gives no forfeit on a restart', () async {
     final db = AppDatabase(NativeDatabase.memory());
     final first = await open(db);
-    final played = playTeiichi(TeiichiSetup.forLevel(1), strikes: true);
+    final played = playTeiichi(TeiichiSetup.forLevel(0), strikes: true);
     await first.recordTeiichi(played.placing, played.game, startedAt: dealt);
     expect(games(await open(db)), hasLength(1));
     await db.close();

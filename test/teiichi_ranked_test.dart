@@ -53,9 +53,9 @@ void main() {
       p.recordTeiichi(played.placing, played.game, startedAt: DateTime.now());
 
   group('the level table', () {
-    test('levels 1 to 9 as decided, numbered from 1', () {
-      expect(TeiichiLevels.first, 1);
-      expect(TeiichiLevels.top, 9);
+    test('levels 0 to 8 as decided, numbered from 0', () {
+      expect(TeiichiLevels.first, 0);
+      expect(TeiichiLevels.top, 8);
       expect([
         for (var l = TeiichiLevels.first; l <= TeiichiLevels.top; l++)
           if (TeiichiSetup.forLevel(l) case final s) (s.cards, s.rows, s.limit!.inSeconds, s.karafuda),
@@ -93,33 +93,33 @@ void main() {
   group('the ladder', () {
     LevelLadder cleared(Set<int> levels) => LevelLadder(levels, LadderRules.teiichi);
 
-    test('level 1 is open at first, and each level cleared opens the next', () {
+    test('level 0 is open at first, and each level cleared opens the next', () {
       final none = teiichi.noLevels;
-      expect((none.open, none.next), (1, 1));
-      expect(none.isOpen(2), isFalse);
-      expect(cleared({1}).next, 2);
-      expect(cleared({1, 2, 3}).open, 4);
+      expect((none.open, none.next), (0, 0));
+      expect(none.isOpen(1), isFalse);
+      expect(cleared({0}).next, 1);
+      expect(cleared({0, 1, 2}).open, 3);
     });
 
-    test('ranked needs level 4 and custom level 6, whatever is cleared after it', () {
-      expect(cleared({1, 2, 3}).rankedReady, isFalse);
-      expect(cleared({1, 2, 3, 4}).rankedReady, isTrue);
-      expect(cleared({1, 2, 3, 4, 5}).customOpen, isFalse);
-      expect(cleared({1, 2, 3, 4, 5, 6}).customOpen, isTrue);
-      expect(cleared({1, 2, 3, 4, 5, 6}).allCleared, isFalse);
+    test('ranked needs level 3 and custom level 5, whatever is cleared after it', () {
+      expect(cleared({0, 1, 2}).rankedReady, isFalse);
+      expect(cleared({0, 1, 2, 3}).rankedReady, isTrue);
+      expect(cleared({0, 1, 2, 3, 4}).customOpen, isFalse);
+      expect(cleared({0, 1, 2, 3, 4, 5}).customOpen, isTrue);
+      expect(cleared({0, 1, 2, 3, 4, 5}).allCleared, isFalse);
     });
 
-    test('once level 9 is cleared none is left to clear', () {
-      final all = cleared({for (var l = 1; l <= 9; l++) l});
-      expect((all.allCleared, all.next, all.open), (true, null, 9));
+    test('once level 8 is cleared none is left to clear', () {
+      final all = cleared({for (var l = 0; l <= 8; l++) l});
+      expect((all.allCleared, all.next, all.open), (true, null, 8));
     });
 
-    test('ranked stays shut until all-known mode and level 4, each on its own', () {
-      final shut = RankedLock.of(allKnown: false, ladder: cleared({1, 2, 3}))!;
-      expect((shut.allKnown, shut.cleared, shut.level), (false, false, 4));
-      expect(RankedLock.of(allKnown: true, ladder: cleared({1, 2, 3}))!.cleared, isFalse);
-      expect(RankedLock.of(allKnown: false, ladder: cleared({1, 2, 3, 4}))!.allKnown, isFalse);
-      expect(RankedLock.of(allKnown: true, ladder: cleared({1, 2, 3, 4})), isNull);
+    test('ranked stays shut until all-known mode and level 3, each on its own', () {
+      final shut = RankedLock.of(allKnown: false, ladder: cleared({0, 1, 2}))!;
+      expect((shut.allKnown, shut.cleared, shut.level), (false, false, 3));
+      expect(RankedLock.of(allKnown: true, ladder: cleared({0, 1, 2}))!.cleared, isFalse);
+      expect(RankedLock.of(allKnown: false, ladder: cleared({0, 1, 2, 3}))!.allKnown, isFalse);
+      expect(RankedLock.of(allKnown: true, ladder: cleared({0, 1, 2, 3})), isNull);
     });
   });
 
@@ -191,7 +191,7 @@ void main() {
     }
 
     test('the cards flip as they lie, and those left in the stack are unplaced', () {
-      final setup = TeiichiSetup.forLevel(1);
+      final setup = TeiichiSetup.forLevel(0);
       final placing = placed(setup, 2)..stop(setup.limit!);
       expect(placing.done, isTrue);
       expect(placing.placingTime, setup.limit);
@@ -200,18 +200,18 @@ void main() {
     });
 
     test('nothing is unplaced until the placing is over', () {
-      final placing = placed(TeiichiSetup.forLevel(1), 2);
+      final placing = placed(TeiichiSetup.forLevel(0), 2);
       expect(placing.unplaced, isEmpty);
     });
 
     test('the top card keeps the time it was on top', () {
-      final placing = placed(TeiichiSetup.forLevel(1), 1)..stop(const Duration(seconds: 7));
+      final placing = placed(TeiichiSetup.forLevel(0), 1)..stop(const Duration(seconds: 7));
       expect(placing.placingTimeOf(2), const Duration(seconds: 6));
       expect(placing.placingTimes.keys, [1]);
     });
 
     test('unplaced cards are never called, and each is a strike from the start', () {
-      final setup = TeiichiSetup.forLevel(2);
+      final setup = TeiichiSetup.forLevel(1);
       final placing = placed(setup, 6)..stop(setup.limit!);
       final game = placing.recall(Random(1), countsStrikes: true);
       expect(game.prompts.toSet(), {1, 2, 3, 4, 5, 6});
@@ -219,7 +219,7 @@ void main() {
     });
 
     test('a game still ends on a laid-out card, with its からふだ among fewer calls', () {
-      final setup = TeiichiSetup.forLevel(4);
+      final setup = TeiichiSetup.forLevel(3);
       for (var seed = 0; seed < 40; seed++) {
         final placing = placed(setup, 1)..stop(setup.limit!);
         final game = placing.recall(Random(seed), karafuda: [90, 91, 92, 93, 94, 95, 96]);
@@ -229,7 +229,7 @@ void main() {
     });
 
     test('with no card placed nothing is called and the game is over at once, played to its end', () {
-      final setup = TeiichiSetup.forLevel(4);
+      final setup = TeiichiSetup.forLevel(3);
       final placing = placed(setup, 0)..stop(setup.limit!);
       final game = placing.recall(Random(1), karafuda: [90, 91], countsStrikes: true)..startRecall();
       expect(game.prompts, isEmpty);
@@ -243,14 +243,14 @@ void main() {
     test('a level game with fewer than 3 strikes clears its level and opens the next', () async {
       final db = AppDatabase(NativeDatabase.memory());
       final p = await open(db);
-      final report = await record(p, playTeiichi(TeiichiSetup.forLevel(1), strikes: true, wrongAt: {0, 1}));
-      expect(report.ladderBefore.isCleared(1), isFalse);
-      expect(report.ladderAfter.isCleared(1), isTrue);
-      expect(p.sideTripsHub()[teiichi].nextLevel, 2);
+      final report = await record(p, playTeiichi(TeiichiSetup.forLevel(0), strikes: true, wrongAt: {0, 1}));
+      expect(report.ladderBefore.isCleared(0), isFalse);
+      expect(report.ladderAfter.isCleared(0), isTrue);
+      expect(p.sideTripsHub()[teiichi].nextLevel, 1);
       expect((report.ratingBefore, report.ratingAfter), (null, null));
 
       final again = await open(db);
-      expect(again.sideTripsHub()[teiichi].ladder.cleared, {1}, reason: 'it comes back on load');
+      expect(again.sideTripsHub()[teiichi].ladder.cleared, {0}, reason: 'it comes back on load');
       expect(again.sideTripsHub()[SideTrip.ankiren].ladder.cleared, isEmpty, reason: '暗記練 has its own');
       await db.close();
     });
@@ -258,7 +258,7 @@ void main() {
     test('3 strikes fail a level, played to its end', () async {
       final db = AppDatabase(NativeDatabase.memory());
       final p = await open(db);
-      final played = playTeiichi(TeiichiSetup.forLevel(1), strikes: true, wrongAt: {0, 1, 2});
+      final played = playTeiichi(TeiichiSetup.forLevel(0), strikes: true, wrongAt: {0, 1, 2});
       expect(played.game.completed, isTrue);
       await record(p, played);
       expect(p.sideTripsHub()[teiichi].ladder.cleared, isEmpty);
@@ -268,13 +268,13 @@ void main() {
     test('unplaced cards are strikes: 3 of them fail the level', () async {
       final db = AppDatabase(NativeDatabase.memory());
       final p = await open(db);
-      final setup = TeiichiSetup.forLevel(2);
+      final setup = TeiichiSetup.forLevel(1);
       await record(p, playTeiichi(setup, strikes: true, placeCards: 5));
       expect(p.sideTripsHub()[teiichi].ladder.cleared, isEmpty);
       await record(p, playTeiichi(setup, strikes: true, placeCards: 6, wrongAt: {0}));
       expect(p.sideTripsHub()[teiichi].ladder.cleared, isEmpty, reason: 'two unplaced and a wrong tap');
       await record(p, playTeiichi(setup, strikes: true, placeCards: 6));
-      expect(p.sideTripsHub()[teiichi].ladder.cleared, {2});
+      expect(p.sideTripsHub()[teiichi].ladder.cleared, {1});
       await db.close();
     });
 
@@ -378,7 +378,7 @@ void main() {
     test('unplaced cards are kept apart, in stack order, with their time on top, and come back on load', () async {
       final db = AppDatabase(NativeDatabase.memory());
       final p = await open(db);
-      final setup = TeiichiSetup.forLevel(2);
+      final setup = TeiichiSetup.forLevel(1);
       await record(p, playTeiichi(setup, strikes: true, placeCards: 5, placeMs: 2000, deck: [11, 12, 13, 14, 15, 16, 17, 18]));
       final rows = await (db.select(db.teiichiPlacings)..orderBy([(x) => OrderingTerm.asc(x.seq)])).get();
       expect([for (final r in rows) r.placed], [true, true, true, true, true, false, false, false]);
@@ -389,14 +389,14 @@ void main() {
       final game = again.sideTrips.teiichiRecordOf(again.sideTrips.runsOf(teiichi).single);
       expect(game.placed, hasLength(5));
       expect(game.unplaced, [16, 17, 18]);
-      expect((game.dealt, game.strikes, game.level, game.cleared), (8, 3, 2, false));
+      expect((game.dealt, game.strikes, game.level, game.cleared), (8, 3, 1, false));
       await db.close();
     });
 
     test('a game with unplaced cards sets no best and no form', () async {
       final db = AppDatabase(NativeDatabase.memory());
       final p = await open(db);
-      await record(p, playTeiichi(TeiichiSetup.forLevel(9), strikes: true, placeCards: 24, placeMs: 100));
+      await record(p, playTeiichi(TeiichiSetup.forLevel(8), strikes: true, placeCards: 24, placeMs: 100));
       final facts = p.sideTripsHub()[teiichi].placing;
       expect(facts.best, isNull);
       expect(facts.form, isNull);
@@ -407,7 +407,7 @@ void main() {
     test('a progress reset forgets the rating and the levels', () async {
       final db = AppDatabase(NativeDatabase.memory());
       final p = await open(db);
-      await record(p, playTeiichi(TeiichiSetup.forLevel(1), strikes: true));
+      await record(p, playTeiichi(TeiichiSetup.forLevel(0), strikes: true));
       await record(p, playTeiichi(const TeiichiSetup.ranked()));
       await p.resetProgress();
       final entry = p.sideTripsHub()[teiichi];
@@ -423,7 +423,7 @@ void main() {
       final db = AppDatabase(NativeDatabase.memory());
       final p = await open(db);
       await p.clearLevelsUpTo(teiichi, TeiichiTuning.rankedAfterLevel);
-      expect(p.sideTripsHub()[teiichi].ladder.cleared, {1, 2, 3, 4});
+      expect(p.sideTripsHub()[teiichi].ladder.cleared, {0, 1, 2, 3});
       expect(p.sideTripsHub()[teiichi].rankedOpen, isTrue);
       await p.resetLevels(teiichi);
       expect(p.sideTripsHub()[teiichi].ladder.cleared, isEmpty);

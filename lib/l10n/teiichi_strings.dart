@@ -138,7 +138,7 @@ extension TeiichiStrings on S {
   String get teiichiRuleToEnd => t('teiichiRuleToEnd');
   String get teiichiRuleLimit => t('teiichiRuleLimit');
   String teiichiRuleStrikes(int strikes) => f('teiichiRuleStrikes', [strikes]);
-  String teiichiRuleCustom(int clear, int level) => f('teiichiRuleCustom', [clear, level]);
+  String teiichiRuleCustom(int clear) => f('teiichiRuleCustom', [clear]);
   String teiichiRuleRanked(int cards, int rows, int karafuda, String limit, int level) =>
       f('teiichiRuleRanked', [cards, rows, karafuda, limit, level]);
   String get teiichiRuleLeave => t('teiichiRuleLeave');

@@ -159,13 +159,13 @@ void main() {
     for (final lang in ['en', 'ja']) {
       final s = S(lang);
 
-      testWidgets('new: ranked chained, level 1 next ($lang)', (tester) async {
+      testWidgets('new: ranked chained, level 0 next ($lang)', (tester) async {
         final p = await open(tester, language: lang);
         await show(tester, p, () => const TeiichiPage());
         expect(find.byType(LockedPanel), findsOneWidget);
         expect(tester.widget<LockedPanel>(find.byType(LockedPanel)).why,
-            s.ankirenRankedLocked(allKnown: true, cleared: false, level: 4));
-        expect(find.text(s.ankirenPlayLevel(1)), findsOneWidget);
+            s.ankirenRankedLocked(allKnown: true, cleared: false, level: 3));
+        expect(find.text(s.ankirenPlayLevel(0)), findsOneWidget);
         expect(tester.takeException(), isNull);
         _expectPlayAndPairVisible(tester);
         await captureScreen(tester, 'teiichi_ranked/page_new', lang: lang);
@@ -173,10 +173,10 @@ void main() {
       });
 
       testWidgets('ranked open, placement games so far ($lang)', (tester) async {
-        final p = await open(tester, cleared: 4, ranked: 1, language: lang);
+        final p = await open(tester, cleared: 3, ranked: 1, language: lang);
         await show(tester, p, () => const TeiichiPage());
         expect(find.byType(LockedPanel), findsNothing);
-        expect(find.text(s.ankirenPlayLevel(5)), findsOneWidget);
+        expect(find.text(s.ankirenPlayLevel(4)), findsOneWidget);
         expect(tester.takeException(), isNull);
         _expectPlayAndPairVisible(tester);
         await captureScreen(tester, 'teiichi_ranked/page_placement', lang: lang);
@@ -184,7 +184,7 @@ void main() {
       });
 
       testWidgets('with a rating: class and rating beside the averages ($lang)', (tester) async {
-        final p = await open(tester, cleared: 6, ranked: 5, language: lang);
+        final p = await open(tester, cleared: 5, ranked: 5, language: lang);
         await show(tester, p, () => const TeiichiPage());
         final rating = p.sideTripsHub()[trip].rating!;
         expect(find.text('${rating.round()}'), findsOneWidget);
@@ -197,12 +197,12 @@ void main() {
     }
 
     testWidgets('outside all-known mode ranked says so', (tester) async {
-      final p = await open(tester, cleared: 4);
+      final p = await open(tester, cleared: 3);
       await tester.runAsync(() => p.setLearningMode(LearningMode.journey));
       await show(tester, p, () => const TeiichiPage());
       const s = S('en');
       expect(tester.widget<LockedPanel>(find.byType(LockedPanel)).why,
-          s.ankirenRankedLocked(allKnown: false, cleared: true, level: 4));
+          s.ankirenRankedLocked(allKnown: false, cleared: true, level: 3));
       expect(tester.takeException(), isNull);
       await tester.pumpWidget(const SizedBox());
     });
@@ -219,27 +219,27 @@ void main() {
         expect(find.byType(TeiichiSheet), findsOneWidget);
       }
 
-      testWidgets('shut levels chained, cleared ones checked, custom shut before level 6 ($lang)', (tester) async {
-        final p = await open(tester, cleared: 3, language: lang);
+      testWidgets('shut levels chained, cleared ones checked, custom shut before level 5 ($lang)', (tester) async {
+        final p = await open(tester, cleared: 2, language: lang);
         await show(tester, p, () => const TeiichiPage());
         await openSheet(tester);
         await captureScreen(tester, 'teiichi_ranked/sheet', lang: lang);
-        await tester.tap(find.byWidgetPredicate((w) => w is Pressable && w.semanticLabel == s.ankirenLevelTag(6)));
+        await tester.tap(find.byWidgetPredicate((w) => w is Pressable && w.semanticLabel == s.ankirenLevelTag(5)));
         await tester.pump();
-        expect(find.text(s.ankirenLevelLocked(5, 6)), findsOneWidget);
+        expect(find.text(s.ankirenLevelLocked(4, 5)), findsOneWidget);
         await tester.pump(AnkirenSheetLayout.lockBalloonLife);
         await tester.pump(const Duration(seconds: 1));
         await tester.tap(find.byWidgetPredicate((w) => w is Pressable && w.semanticLabel == s.ankirenCustom));
         await tester.pump();
-        expect(find.text(s.ankirenCustomLocked(6)), findsOneWidget);
+        expect(find.text(s.ankirenCustomLocked(5)), findsOneWidget);
         await tester.pump(AnkirenSheetLayout.lockBalloonLife);
         await tester.pump(const Duration(seconds: 1));
         expect(tester.takeException(), isNull);
         await tester.pumpWidget(const SizedBox());
       });
 
-      testWidgets('level 10 opens with level 6, its steppers keep today\'s custom game ($lang)', (tester) async {
-        final p = await open(tester, cleared: 6, language: lang);
+      testWidgets('custom opens with level 5, its steppers keep today\'s custom game ($lang)', (tester) async {
+        final p = await open(tester, cleared: 5, language: lang);
         await show(tester, p, () => const TeiichiPage());
         await openSheet(tester);
         await tester.tap(find.byWidgetPredicate((w) => w is Pressable && w.semanticLabel == s.ankirenCustom));
@@ -260,9 +260,9 @@ void main() {
         await tester.pump(Motion.sheet);
         expect(find.byType(TeiichiSheet), findsOneWidget);
         await captureScreen(tester, 'teiichi_ranked/sheet_guest', lang: lang);
-        await tester.tap(find.byWidgetPredicate((w) => w is Pressable && w.semanticLabel == s.ankirenLevelTag(9)));
+        await tester.tap(find.byWidgetPredicate((w) => w is Pressable && w.semanticLabel == s.ankirenLevelTag(8)));
         await tester.pump();
-        expect(find.text(s.ankirenLevelLocked(8, 9)), findsNothing);
+        expect(find.text(s.ankirenLevelLocked(7, 8)), findsNothing);
         expect(tester.takeException(), isNull);
         await tester.pumpWidget(const SizedBox());
       });
@@ -289,7 +289,7 @@ void main() {
         testWidgets('a level counts down, the cards flip at the limit, unplaced cards strike ($name, $lang)', (tester) async {
           final p = await open(tester, language: lang);
           await tester.runAsync(() => p.updateSettings(p.settings.copyWith(teiichiTurnTipOff: true)));
-          final setup = TeiichiSetup.forLevel(1);
+          final setup = TeiichiSetup.forLevel(0);
           await show(tester, p, () => TeiichiScreen(setup: setup, known: allCards, seed: 3), screen: screen);
           expect(clock(tester), setup.limit, reason: 'the time left, not the time so far');
           await tester.pump(const Duration(seconds: 3));
@@ -323,7 +323,7 @@ void main() {
 
     testWidgets('a level with からふだ shows the strikes beside End and both controls ($usersPhoneLandscape)', (tester) async {
       final p = await open(tester, cleared: 3);
-      final setup = TeiichiSetup.forLevel(4);
+      final setup = TeiichiSetup.forLevel(3);
       await show(tester, p, () => TeiichiScreen(setup: setup, known: allCards, seed: 3), screen: usersPhoneLandscape);
       for (var i = 0; i < setup.cards - 1; i++) {
         await placeOne(tester, dealtSpot(setup, i));
@@ -346,7 +346,7 @@ void main() {
 
     testWidgets('with no card placed the game ends at once, at Results', (tester) async {
       final p = await open(tester, cleared: 3);
-      final setup = TeiichiSetup.forLevel(1);
+      final setup = TeiichiSetup.forLevel(0);
       await show(tester, p, () => TeiichiScreen(setup: setup, known: allCards, seed: 3), screen: usersPhoneLandscape);
       await tester.pump(setup.limit!);
       await tester.pump();
@@ -373,7 +373,7 @@ void main() {
 
     testWidgets('a guest\'s level keeps the limit, shows no strikes and writes nothing', (tester) async {
       final p = await open(tester);
-      final setup = TeiichiSetup.forLevel(1);
+      final setup = TeiichiSetup.forLevel(0);
       await show(tester, p, () => TeiichiScreen(setup: setup, known: allCards, player: AnkirenPlayer.guest, seed: 3),
           screen: usersPhoneLandscape);
       expect(clock(tester), setup.limit);
@@ -445,8 +445,8 @@ void main() {
           'ranked_unplaced' => (setup: const TeiichiSetup.ranked(), placeMs: 30000, placeCards: 21, endAfter: null, wrongAt: const {2}),
           'forfeit' => (setup: const TeiichiSetup.ranked(), placeMs: 3000, placeCards: null, endAfter: 12, wrongAt: const {1}),
           'no_cards' => (setup: const TeiichiSetup.ranked(), placeMs: 3000, placeCards: 0, endAfter: null, wrongAt: const {}),
-          'level_clear' => (setup: TeiichiSetup.forLevel(2), placeMs: 2000, placeCards: null, endAfter: null, wrongAt: const {1}),
-          'level_fail' => (setup: TeiichiSetup.forLevel(4), placeMs: 2000, placeCards: 13, endAfter: null, wrongAt: const {2}),
+          'level_clear' => (setup: TeiichiSetup.forLevel(1), placeMs: 2000, placeCards: null, endAfter: null, wrongAt: const {1}),
+          'level_fail' => (setup: TeiichiSetup.forLevel(3), placeMs: 2000, placeCards: 13, endAfter: null, wrongAt: const {2}),
           _ => throw ArgumentError(name),
         };
 

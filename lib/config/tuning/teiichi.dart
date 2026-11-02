@@ -6,8 +6,7 @@ part of '../config.dart';
 /// (`SideTrips.teiichiRecord`).
 abstract final class TeiichiTuning {
   /// The levels, [firstLevel] first; a limit is placing time only. They
-  /// open one at a time (see `LevelLadder`), and the custom setups are
-  /// [customLevel] on the same scale.
+  /// open one at a time (see `LevelLadder`).
   static const List<TeiichiLevel> levels = [
     TeiichiLevel(cards: 4, rows: 1, limit: Duration(minutes: 15)),
     TeiichiLevel(cards: 8, rows: 2, limit: Duration(minutes: 15)),
@@ -19,13 +18,12 @@ abstract final class TeiichiTuning {
     TeiichiLevel(cards: 25, rows: 3, limit: Duration(minutes: 2), karafuda: 10),
     TeiichiLevel(cards: 25, rows: 3, limit: Duration(minutes: 1, seconds: 30), karafuda: 10),
   ];
-  static const int firstLevel = 1;
-  static const int customLevel = 10;
+  static const int firstLevel = 0;
 
   /// Clearing [rankedAfterLevel] opens ranked (in all-known mode), and
   /// [customAfterLevel] the custom setups, whatever is cleared after it.
-  static const int rankedAfterLevel = 4;
-  static const int customAfterLevel = 6;
+  static const int rankedAfterLevel = 3;
+  static const int customAfterLevel = 5;
 
   /// Ranked games all lay out the usual game, dealt from all 100 cards, in
   /// at most [rankedLimit]; then the cards flip.

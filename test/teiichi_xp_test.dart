@@ -41,7 +41,7 @@ void main() {
   test('a level game earns what the same game earns in 暗記練, and it comes back on load', () async {
     final db = AppDatabase(NativeDatabase.memory());
     final p = await open(db);
-    final report = await record(p, playTeiichi(TeiichiSetup.forLevel(2), strikes: true, wrongAt: {1}));
+    final report = await record(p, playTeiichi(TeiichiSetup.forLevel(1), strikes: true, wrongAt: {1}));
     final xp = report.xp!;
     expect(xp.award.total, greaterThan(0));
     expect(xp.award.parts.map((x) => x.source), contains(XpSource.clear));
@@ -57,7 +57,7 @@ void main() {
   test('a game ended early earns only what its cards earned, and no clear', () async {
     final db = AppDatabase(NativeDatabase.memory());
     final p = await open(db);
-    final report = await record(p, playTeiichi(TeiichiSetup.forLevel(2), strikes: true, endAfter: 3));
+    final report = await record(p, playTeiichi(TeiichiSetup.forLevel(1), strikes: true, endAfter: 3));
     expect(report.xp!.award.total, greaterThan(0));
     expect(report.xp!.award.parts.map((x) => x.source), isNot(contains(XpSource.clear)));
     await db.close();
@@ -66,8 +66,8 @@ void main() {
   test('cards never placed are never called, so they earn nothing', () async {
     final db = AppDatabase(NativeDatabase.memory());
     final p = await open(db);
-    final all = await record(p, playTeiichi(TeiichiSetup.forLevel(2), strikes: true));
-    final some = await record(p, playTeiichi(TeiichiSetup.forLevel(2), strikes: true, placeCards: 4));
+    final all = await record(p, playTeiichi(TeiichiSetup.forLevel(1), strikes: true));
+    final some = await record(p, playTeiichi(TeiichiSetup.forLevel(1), strikes: true, placeCards: 4));
     final perCard = all.xp!.award.parts.firstWhere((x) => x.source == XpSource.firstTap);
     final fewer = some.xp!.award.parts.firstWhere((x) => x.source == XpSource.firstTap);
     expect(perCard.count, 8);

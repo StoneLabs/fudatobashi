@@ -295,12 +295,9 @@ class _Stats extends StatelessWidget {
           onTap: onLevel,
           semanticLabel: s.ankirenAllLevels,
           label: PanelLabel(s.ankirenLevelRow, null),
-          value: NumberedText(
-            s.ankirenLevelValue,
-            [setup.level ?? TeiichiTuning.customLevel],
-            style: unit,
-            numberStyle: big,
-          ),
+          value: setup.level == null
+              ? Text(s.ankirenCustom, style: unit)
+              : NumberedText(s.ankirenLevelValue, [setup.level!], style: unit, numberStyle: big),
         ),
         StatCell(
           inset: AnkirenPageLayout.levelButtonInset,
