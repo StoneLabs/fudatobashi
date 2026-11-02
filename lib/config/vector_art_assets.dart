@@ -15,16 +15,16 @@ final _assetPaths = [
   for (final n in _tobiNames) 'tobi/$n',
   'tally',
   'sidetrips/burst',
-  'sidetrips/icon-sidetrips',
   'cards/yomifuda-end',
-  'ankiren/strike-back',
-  'ankiren/strike-face',
-  'ankiren/strike-slash',
+  'sidetrips/play/strike-back',
+  'sidetrips/play/strike-face',
+  'sidetrips/play/strike-slash',
 ];
 
 const _iconNames = [
   'home', 'history', 'stats', 'help', 'settings', 'arrow', 'chevron', 'back', 'close', 'undo', 'end', 'question',
   'refresh', 'lock', 'person', 'cards', 'check', 'speaker', 'filter', 'search', 'swap', 'pen', 'warning', 'karafuda',
+  'sidetrips',
 ];
 const _mapNames = ['boat', 'flag', 'star'];
 const _sceneNames = ['welcome-isle', 'far-isle', 'boat-wake', 'surf', 'beginner', 'expert'];
@@ -33,8 +33,8 @@ const _tobiNames = [
 ];
 
 /// Loads every piece of vector art (icons, map furniture, onboarding scenes,
-/// Tobi, the streak tally, the Side Trips burst, the card marks and
-/// 暗記練's strikes) from `assets/graphics/`. Call once, before the first
+/// Tobi, the streak tally, the Side Trips burst, the card marks and the
+/// side trips' strikes) from `assets/graphics/`. Call once, before the first
 /// frame that draws any of it; synchronous access afterwards.
 Future<void> loadVectorArt() async {
   final entries =
@@ -76,7 +76,7 @@ void installVectorArt(Map<String, String> svg) {
   IconArt.swap = parse('icons/swap');
   IconArt.pen = parse('icons/pen');
   IconArt.warning = parse('icons/warning');
-  IconArt.sideTrips = parse('sidetrips/icon-sidetrips');
+  IconArt.sideTrips = parse('icons/sidetrips');
 
   MapArt.boat = parse('map/boat');
   MapArt.flag = parse('map/flag');
@@ -111,7 +111,7 @@ void installVectorArt(Map<String, String> svg) {
 
   CardArt.yomifudaEnd = parse('cards/yomifuda-end');
 
-  AnkirenArt.strikeBack = parse('ankiren/strike-back');
-  AnkirenArt.strikeFace = parse('ankiren/strike-face');
-  AnkirenArt.strikeSlash = parse('ankiren/strike-slash');
+  AnkirenArt.strikeBack = parse('sidetrips/play/strike-back');
+  AnkirenArt.strikeFace = parse('sidetrips/play/strike-face');
+  AnkirenArt.strikeSlash = parse('sidetrips/play/strike-slash');
 }

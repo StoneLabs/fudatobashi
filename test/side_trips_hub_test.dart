@@ -220,7 +220,7 @@ void main() {
     );
   }
 
-  test('every image in assets/graphics/sidetrips is art the hub, its rules or the rating and rank pages use (bar the shelved fort)', () {
+  test('every image in assets/graphics/sidetrips is art the hub, its rules, the play screens or the rating and rank pages use (bar the shelved fort)', () {
     final used = {
       for (final piece in [
         DojoSceneLayout.sky,
@@ -255,6 +255,7 @@ void main() {
       ...AnkirenRatingLayout.cloth,
       AnkirenRankLayout.splash,
       AnkirenRankLayout.crack,
+      AnkirenPlayLayout.tatami,
     };
     final files = Directory('assets/graphics/sidetrips').listSync(recursive: true).whereType<File>().where((f) => f.path.endsWith('.webp'));
     const shelved = {'assets/graphics/sidetrips/islands/fort.webp', 'assets/graphics/sidetrips/islands/fort-haze.webp'};

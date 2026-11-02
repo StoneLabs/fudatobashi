@@ -84,11 +84,11 @@ flutter:
     - assets/graphics/cards/
     - assets/graphics/cards/yomifuda/
     - assets/graphics/cards/torifuda/
-    - assets/graphics/ankiren/
     - assets/graphics/sidetrips/scene/
     - assets/graphics/sidetrips/islands/
     - assets/graphics/sidetrips/ankiren/
     - assets/graphics/sidetrips/teiichi/
+    - assets/graphics/sidetrips/play/
     - assets/graphics/sidetrips/ui/
     - assets/graphics/sidetrips/rules/
     - assets/sounds/

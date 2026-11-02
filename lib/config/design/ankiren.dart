@@ -135,7 +135,7 @@ abstract final class AnkirenPlayLayout {
 
   /// The tatami behind the field: a seamless tile drawn for [tatamiScale]×
   /// density, on [background] until it loads.
-  static const String tatami = 'assets/graphics/ankiren/tatami.webp';
+  static const String tatami = 'assets/graphics/sidetrips/play/tatami.webp';
   static const double tatamiScale = 3;
 }
 
@@ -706,7 +706,7 @@ abstract final class AnkirenRankLayout {
   static const double splitTurnDeg = 8;
   static const double splitFadeFrom = 0.35;
 
-  static const String splash = 'assets/graphics/sidetrips/ankiren/rank-splash.webp';
+  static const String splash = 'assets/graphics/sidetrips/ui/rank-splash.webp';
   static const Size splashSize = Size(360, 280);
   static const impactBurst = BurstSpec(
       box: impactSize, center: Offset(200, 160), count: 54, innerMin: 96, innerMax: 120, width: 6, seed: 43);
@@ -737,7 +737,7 @@ abstract final class AnkirenRankLayout {
   /// lower class dropping into its place, ガーン!! over them and Tobi
   /// shocked below.
   static const Size downStage = Size(330, 300);
-  static const String crack = 'assets/graphics/sidetrips/ankiren/rank-crack.webp';
+  static const String crack = 'assets/graphics/sidetrips/ui/rank-crack.webp';
   static const double fallDrop = 170;
   static const double fallTurnDeg = 18;
   static const String shockSfx = 'ガーン!!';
