@@ -17,9 +17,14 @@ import 'package:fudatobashi/data/islands.dart';
 import 'package:fudatobashi/data/poem.dart';
 import 'package:fudatobashi/db/database.dart';
 import 'package:fudatobashi/domain/ankiren_game.dart';
+import 'package:fudatobashi/domain/ankiren_score.dart';
+import 'package:fudatobashi/domain/level_ladder.dart';
+import 'package:fudatobashi/domain/rating.dart';
 import 'package:fudatobashi/domain/side_trips.dart';
 import 'package:fudatobashi/domain/teiichi.dart';
+import 'package:fudatobashi/domain/teiichi_score.dart';
 import 'package:fudatobashi/domain/trainer.dart';
+import 'package:fudatobashi/domain/trip_rating.dart';
 import 'package:fudatobashi/l10n/ankiren_review_strings.dart';
 import 'package:fudatobashi/l10n/ankiren_strings.dart';
 import 'package:fudatobashi/l10n/ranked_strings.dart';
@@ -32,11 +37,15 @@ import 'package:fudatobashi/state/scope.dart';
 import 'package:fudatobashi/state/side_trips.dart';
 import 'package:fudatobashi/ui/ankiren/ankiren_band.dart';
 import 'package:fudatobashi/ui/ankiren/ankiren_strikes.dart';
+import 'package:fudatobashi/ui/debug/ankiren_graphs.dart';
+import 'package:fudatobashi/ui/debug/debug_common.dart';
 import 'package:fudatobashi/ui/debug/teiichi_score_readout.dart';
+import 'package:fudatobashi/ui/debug/teiichi_tools_page.dart';
 import 'package:fudatobashi/ui/history/history_screen.dart';
 import 'package:fudatobashi/ui/home/home_widgets.dart';
 import 'package:fudatobashi/ui/history/teiichi_game_page.dart';
 import 'package:fudatobashi/ui/manga/manga.dart';
+import 'package:fudatobashi/ui/play/time_format.dart';
 import 'package:fudatobashi/ui/results/celebration_chrome.dart';
 import 'package:fudatobashi/ui/shell/tobi_notice.dart';
 import 'package:fudatobashi/ui/side_trips/ankiren_sheet.dart';
@@ -121,6 +130,7 @@ void main() {
       'ZenKakuGothicNew-Bold.ttf',
       'ZenKakuGothicNew-Black.ttf',
     ]);
+    await loadRenderMonoFont();
     if (renderScreens) {
       await _loadFont('Torifuda', ['YujiSyuku-Regular.ttf']);
       await _loadFont('TorifudaNumber', ['TeXGyreSchola-Regular.otf']);
@@ -636,5 +646,64 @@ void main() {
         });
       }
     }
+  });
+
+  group('the developer page', () {
+    testWidgets('levels, tap points, the placing bonus, ranked points, classes by placing time and the rating',
+        (tester) async {
+      final p = await open(tester);
+      await show(tester, p, () => const TeiichiToolsPage());
+      expect(tester.takeException(), isNull);
+      final page = find.byType(Scrollable).first;
+      String kv(String key) => tester.widget<DebugKV>(find.byWidgetPredicate((w) => w is DebugKV && w.k == key)).v;
+      Future<void> scrollTo(Finder target) async {
+        await tester.scrollUntilVisible(target, 200, scrollable: page);
+        await tester.pumpAndSettle();
+      }
+
+      const rules = LadderRules.teiichi;
+      expect(find.text('L${rules.rankedAfter + 1} + ranked'), findsOneWidget);
+      expect(find.text('L${rules.customAfter + 1} + custom'), findsOneWidget);
+      expect(find.text(formatMinutes(TeiichiTuning.rankedLimit)), findsWidgets);
+      await captureScreen(tester, 'teiichi_ranked/debug_top');
+
+      await scrollTo(find.text('Placing bonus'));
+      final tap = TeiichiToolsTuning.bonusTap;
+      final plain = AnkirenTuning.cardPoints + AnkirenScore.speedBonus(tap.inMicroseconds);
+      for (final placing in TeiichiToolsTuning.bonusTimes) {
+        final earned = TeiichiScore.firstTryTotal(1, responseMs: tap.inMilliseconds.toDouble(), placing: placing);
+        expect(find.text('$earned (+${earned - plain})'), findsOneWidget, reason: formatMinutes(placing));
+      }
+      await captureScreen(tester, 'teiichi_ranked/debug_bonus');
+
+      const ranked = TeiichiSetup.ranked();
+      final start = TeiichiScore.firstTryTotal(ranked.calls,
+          responseMs: AnkirenToolsTuning.responseStart.inMilliseconds.toDouble(),
+          placing: TeiichiToolsTuning.placingStart);
+      final rightSlider = find.descendant(
+          of: find.byWidgetPredicate((w) => w is DebugSlider && w.label.startsWith('right first taps ${ranked.calls} of')),
+          matching: find.byType(Slider));
+      await scrollTo(rightSlider);
+      expect(kv('score'), '$start');
+      expect(kv('class'), Rating.bandOf(TripRating.teiichi.performance(start)).labelEn);
+      await captureScreen(tester, 'teiichi_ranked/debug_points');
+      await tester.drag(rightSlider, const Offset(-1000, 0));
+      await tester.pumpAndSettle();
+      expect([kv('score'), kv('class')], ['0', Rating.bands.first.labelEn], reason: 'no call right, nothing earned');
+
+      await scrollTo(find.text('Ranked classes by placing time'));
+      await scrollTo(find.text(Rating.bands.last.labelEn));
+      for (final band in Rating.bands.skip(1)) {
+        expect(find.text(band.labelEn), findsOneWidget, reason: band.labelEn);
+        expect(find.text('${TripRating.teiichi.scoreFor(band.minRating).round()}'), findsOneWidget, reason: band.labelEn);
+      }
+      await captureScreen(tester, 'teiichi_ranked/debug_classes');
+
+      await scrollTo(find.byType(TripRatingGraph));
+      expect(tester.widget<TripRatingGraph>(find.byType(TripRatingGraph)).rating, TripRating.teiichi);
+      await captureScreen(tester, 'teiichi_ranked/debug_rating');
+      expect(tester.takeException(), isNull);
+      await tester.pumpWidget(const SizedBox());
+    });
   });
 }

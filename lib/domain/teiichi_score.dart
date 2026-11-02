@@ -42,4 +42,12 @@ class TeiichiScore {
 
   /// What [placing] adds to the first-tap points, as a whole percentage.
   static int bonusPercent(Duration placing) => ((factorOf(placing) - 1) * 100).round();
+
+  /// A ranked game placed in [placing] where [calls] calls are answered
+  /// with the first tap [responseMs] after their prompt, and any other
+  /// earns nothing.
+  static int firstTryTotal(int calls, {required double responseMs, required Duration placing}) {
+    final points = calls * (AnkirenTuning.cardPoints + AnkirenScore.speedBonus((responseMs * 1000).round()));
+    return AnkirenScore.multiplied(points, points, factorOf(placing));
+  }
 }

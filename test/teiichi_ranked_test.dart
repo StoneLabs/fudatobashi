@@ -164,6 +164,20 @@ void main() {
       expect(score.bonus, score.total - score.recall);
     });
 
+    test('a game with every call right first scores as firstTryTotal reckons it, and fewer right ones less', () {
+      const setup = TeiichiSetup.ranked();
+      final played = playTeiichi(setup,
+          placeMs: 7000, findMs: 800, karafuda: [for (var id = 80; id < 80 + setup.karafuda; id++) id]);
+      final placing = played.placing.placingTime!;
+      final score = TeiichiScore(played.game.answers, placing: placing);
+      expect([score.firstRight, played.game.answers.length], [score.recall, setup.calls]);
+      expect(TeiichiScore.firstTryTotal(setup.calls, responseMs: 800, placing: placing), score.total);
+      expect(TeiichiScore.firstTryTotal(setup.calls - 1, responseMs: 800, placing: placing), lessThan(score.total));
+      expect(TeiichiScore.firstTryTotal(1, responseMs: 800, placing: TeiichiTuning.halvingClock),
+          AnkirenTuning.cardPoints + AnkirenScore.speedBonus(800000),
+          reason: 'no bonus at the clock itself');
+    });
+
     test('a right press of the からふだ button counts as a right first tap', () {
       final karafuda = AnkirenAnswer(
           poemId: 2, side: null, wrongTaps: 0, responseUs: 900000, at: clock, taps: const [TapProximity.card], firstTapUs: 900000);

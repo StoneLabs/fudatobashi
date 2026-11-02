@@ -34,6 +34,7 @@ import '../debug/karafuda_page.dart';
 import '../debug/raw_articles_page.dart';
 import '../debug/reset_actions.dart';
 import '../debug/simulation_page.dart';
+import '../debug/teiichi_tools_page.dart';
 import '../debug/timing_page.dart';
 import '../exam/exam_dev.dart';
 import '../manga/manga.dart';
@@ -548,6 +549,7 @@ class _DeveloperSection extends StatelessWidget {
           SettingsTapRow(title: 'SRS Debug Info', opensPage: true, onTap: () => open(const DebugPage())),
           SettingsTapRow(title: 'Timing', opensPage: true, onTap: () => open(const TimingPage())),
           SettingsTapRow(title: 'AnkiRen', opensPage: true, onTap: () => open(const AnkirenToolsPage())),
+          SettingsTapRow(title: 'Teiichi', opensPage: true, onTap: () => open(const TeiichiToolsPage())),
           SettingsTapRow(title: 'Karafuda', opensPage: true, onTap: () => open(const KarafudaDevPage())),
           SettingsTapRow(title: 'Simulation', opensPage: true, onTap: () => open(const SimulationPage())),
           SettingsTapRow(title: 'Clear ankiren until ranked available', onTap: () => _clearAnkirenForRanked(context)),

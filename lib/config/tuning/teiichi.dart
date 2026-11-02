@@ -76,6 +76,52 @@ abstract final class TeiichiRatingModel {
   static const double pointsPerRating = 2.7;
 }
 
+/// The developer's 定位置 tools (`TeiichiToolsPage`): the placing times of
+/// its bonus table, its ranked calculator's placing slider, the tap times
+/// its class table tries, and its rating graph's range and dots.
+abstract final class TeiichiToolsTuning {
+  /// The bonus table's placing times, fastest first, each priced on one
+  /// right first tap [bonusTap] after its prompt.
+  static const List<Duration> bonusTimes = [
+    Duration(seconds: 30),
+    Duration(seconds: 45),
+    Duration(minutes: 1),
+    Duration(minutes: 1, seconds: 30),
+    Duration(minutes: 2),
+    Duration(minutes: 3),
+    Duration(minutes: 5),
+    Duration(minutes: 7, seconds: 30),
+    Duration(minutes: 10),
+    Duration(minutes: 15),
+  ];
+  static const Duration bonusTap = Duration(seconds: 1);
+
+  /// The ranked calculator's placing slider: where it starts, and its step.
+  static const Duration placingStart = Duration(minutes: 3);
+  static const Duration placingStep = Duration(seconds: 5);
+
+  /// The class table: every call right with the first tap at each of
+  /// [classTapTimes], the slowest placing time that reaches each class, to
+  /// [classPlacingStep].
+  static const List<Duration> classTapTimes = [
+    Duration(milliseconds: 100),
+    Duration(milliseconds: 600),
+    Duration(seconds: 1),
+    Duration(seconds: 2),
+  ];
+  static const Duration classPlacingStep = Duration(seconds: 1);
+
+  /// The rating-by-score graph: its top score and the gap between its score
+  /// ticks, and its dots, each a ranked game placed in [placing] with every
+  /// call right with the first tap [tap] after its prompt.
+  static const int ratingXMax = 9000;
+  static const int ratingXTick = 3000;
+  static const List<({Duration placing, Duration tap})> ratingDots = [
+    (placing: Duration(minutes: 1, seconds: 30), tap: Duration(milliseconds: 100)),
+    (placing: Duration(minutes: 3), tap: Duration(seconds: 1)),
+  ];
+}
+
 /// 定位置's play screen (`TeiichiScreen`): its clock and the pace of its
 /// placing.
 abstract final class TeiichiPlayTuning {
