@@ -48,8 +48,6 @@ class AnkirenRulesSheet extends StatelessWidget {
       (AnkirenRulesLayout.take, s.ankirenStepTake, s.ankirenStepTakeLine, o?.ankirenStepTakeLine),
     ];
     const reveal = AnkirenTuning.revealAfterWrong;
-    const first = AnkirenTuning.cardPoints, speed = AnkirenTuning.speedMax;
-    final second = (AnkirenTuning.tapWeights[1] * 100).round();
     final early = _number(1 + AnkirenTuning.earlyBonus);
     const strikes = AnkirenTuning.strikesOut;
     const perSide = AnkirenTuning.rankedPerSide, opensAt = AnkirenTuning.rankedAfterLevel;
@@ -73,17 +71,29 @@ class AnkirenRulesSheet extends StatelessWidget {
         ]),
         SettingsSection(title: s.ankirenScoring, sub: o?.ankirenScoring.toUpperCase(), children: [
           RuleList([
-            RuleItem(RuleMark.text(Palette.paper, s.ankirenMarkPoints), s.ankirenScoreFind(first, speed),
-                o?.ankirenScoreFind(first, speed)),
-            RuleItem(const RuleMark.image(RuleMarkFiles.cards), s.ankirenScoreNear(second), o?.ankirenScoreNear(second),
-                below: const _TierTable()),
-            RuleItem(const RuleMark.image(RuleMarkFiles.karafuda), s.karafudaScore, o?.karafudaScore),
+            ...callScoring(s),
             RuleItem(const RuleMark.image(RuleMarkFiles.early), s.ankirenScoreEarly(early), o?.ankirenScoreEarly(early)),
             RuleItem(RuleMark.text(Palette.pink, s.ankirenMarkPoints), s.ankirenScoreLevel, o?.ankirenScoreLevel),
           ]),
         ]),
       ],
     );
+  }
+
+  /// How each call scores, in 暗記練 and in 定位置: a right first tap with
+  /// its speed bonus, a tap that misses by where it lands (the tier table),
+  /// and a からふだ.
+  static List<RuleItem> callScoring(S s) {
+    final o = s.sub;
+    const first = AnkirenTuning.cardPoints, speed = AnkirenTuning.speedMax;
+    final second = (AnkirenTuning.tapWeights[1] * 100).round();
+    return [
+      RuleItem(RuleMark.text(Palette.paper, s.ankirenMarkPoints), s.ankirenScoreFind(first, speed),
+          o?.ankirenScoreFind(first, speed)),
+      RuleItem(const RuleMark.image(RuleMarkFiles.cards), s.ankirenScoreNear(second), o?.ankirenScoreNear(second),
+          below: const _TierTable()),
+      RuleItem(const RuleMark.image(RuleMarkFiles.karafuda), s.karafudaScore, o?.karafudaScore),
+    ];
   }
 
   /// A number as the rules print it: "0.25", or "2" when whole.
@@ -95,8 +105,7 @@ class AnkirenRulesSheet extends StatelessWidget {
 
 /// What a tap earns by where it lands, nearest first: as the first tap (on
 /// the card, plus its speed bonus) and as the second, weighted
-/// ([AnkirenTuning.tapWeights]). Every name has the other language's under
-/// it.
+/// ([AnkirenTuning.tapWeights]).
 class _TierTable extends StatelessWidget {
   const _TierTable();
 
@@ -106,6 +115,41 @@ class _TierTable extends StatelessWidget {
     final o = s.sub;
     String points(TapProximity place, int tap) => AnkirenRulesSheet._number(
         AnkirenTuning.cardPoints * AnkirenTuning.tapShare[place]! * AnkirenTuning.tapWeights[tap]);
+    const firstTap = 0, secondTap = 1;
+    return RulesTable(
+      heads: [
+        (s.ankirenTierPlace, o?.ankirenTierPlace),
+        (s.ankirenTierFirst, o?.ankirenTierFirst),
+        (s.ankirenTierSecond, o?.ankirenTierSecond),
+      ],
+      rows: [
+        for (final place in TapProximity.values)
+          (
+            (s.ankirenTier(place), o?.ankirenTier(place)),
+            [
+              place == TapProximity.card ? s.ankirenTierSpeed(points(place, firstTap)) : points(place, firstTap),
+              points(place, secondTap),
+            ],
+          ),
+      ],
+    );
+  }
+}
+
+/// A table under a rule's line: a row of heads, then a row each split by
+/// light rules, its name first and its values set to the right. Every head
+/// and name has the other language's under it.
+class RulesTable extends StatelessWidget {
+  const RulesTable({super.key, required this.heads, required this.rows});
+
+  /// Each column's head, and the head in the other language.
+  final List<(String, String?)> heads;
+
+  /// Each row's name, the name in the other language, and its values.
+  final List<((String, String?), List<String>)> rows;
+
+  @override
+  Widget build(BuildContext context) {
     Widget name(String line, String? sub, {bool head = false, TextAlign align = TextAlign.start}) => Padding(
           padding: AnkirenRulesLayout.tierCellPadding,
           child: _Lines(line, sub,
@@ -122,22 +166,16 @@ class _TierTable extends StatelessWidget {
     const rule = BoxDecoration(
       border: Border(top: BorderSide(color: AnkirenPageLayout.lightRule, width: AnkirenPageLayout.lightRuleWidth)),
     );
-    const firstTap = 0, secondTap = 1;
     return Table(
-      columnWidths: const {1: IntrinsicColumnWidth(), 2: IntrinsicColumnWidth()},
+      columnWidths: {for (var i = 1; i < heads.length; i++) i: const IntrinsicColumnWidth()},
       defaultVerticalAlignment: TableCellVerticalAlignment.middle,
       children: [
         TableRow(children: [
-          name(s.ankirenTierPlace, o?.ankirenTierPlace, head: true),
-          name(s.ankirenTierFirst, o?.ankirenTierFirst, head: true, align: TextAlign.end),
-          name(s.ankirenTierSecond, o?.ankirenTierSecond, head: true, align: TextAlign.end),
+          for (final (i, (line, sub)) in heads.indexed)
+            name(line, sub, head: true, align: i == 0 ? TextAlign.start : TextAlign.end),
         ]),
-        for (final place in TapProximity.values)
-          TableRow(decoration: rule, children: [
-            name(s.ankirenTier(place), o?.ankirenTier(place)),
-            value(place == TapProximity.card ? s.ankirenTierSpeed(points(place, firstTap)) : points(place, firstTap)),
-            value(points(place, secondTap)),
-          ]),
+        for (final ((line, sub), values) in rows)
+          TableRow(decoration: rule, children: [name(line, sub), for (final v in values) value(v)]),
       ],
     );
   }
