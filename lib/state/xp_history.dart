@@ -10,8 +10,8 @@ import 'progress.dart';
 import 'side_trips.dart';
 
 /// Experience read off the recorded history: runs with their attempts and
-/// milestones (islands completed, graduation, today's set done), and
-/// 暗記練's games with their answers.
+/// milestones (islands completed, graduation, today's set done), and the
+/// side trips' games with their answers.
 abstract final class XpHistory {
   /// What every recorded game of [progress] earned: the main game's runs,
   /// 暗記練's games and 定位置's, each by its id.
