@@ -35,7 +35,6 @@ class TeiichiGameRecord {
         level: recall.level,
         ranked: recall.ranked,
       ),
-      details[TeiichiMeta.customKey] as bool? ?? false,
       Duration(milliseconds: details[TeiichiMeta.placingKey] as int),
       AnkirenHalf.fromJson(details[TeiichiMeta.layoutKey] as List),
       List.unmodifiable(placed),
@@ -43,14 +42,13 @@ class TeiichiGameRecord {
     );
   }
 
-  TeiichiGameRecord._(this.recall, this.setup, this.custom, this.placing, this.layout, this.placed, this.unplaced);
+  TeiichiGameRecord._(this.recall, this.setup, this.placing, this.layout, this.placed, this.unplaced);
 
   final AnkirenGameRecord recall;
   final TeiichiSetup setup;
 
-  /// A custom game; or, from before the levels, anything but the usual
-  /// game of its day, as one without からふだ from before they were usual.
-  final bool custom;
+  /// A custom game.
+  bool get custom => setup.custom;
 
   /// From the deal to the flip.
   final Duration placing;
@@ -110,8 +108,8 @@ class TeiichiGameRecord {
 }
 
 /// One 定位置 [game] against the games recorded before it ([all] holds every
-/// recorded game, this one among them), with the [xp] it earned; null for a
-/// game that earned none to show.
+/// recorded game, this one among them), with the [xp] it earned; null where
+/// no experience is wanted (a list row).
 class TeiichiReview {
   TeiichiReview(this.game, List<TeiichiGameRecord> all, {this.xp})
       : _earlier = [for (final g in all) if (g.id < game.id) g];

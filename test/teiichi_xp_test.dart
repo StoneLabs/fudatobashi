@@ -1,9 +1,8 @@
 // 定位置 earns experience by 暗記練's rules: level and ranked games only, the
-// cards never placed earn nothing, and the games from before it earn none.
-import 'dart:convert';
+// cards never placed earn nothing.
 import 'dart:io';
 
-import 'package:drift/drift.dart' show Value, driftRuntimeOptions;
+import 'package:drift/drift.dart' show driftRuntimeOptions;
 import 'package:drift/native.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:fudatobashi/data/fuda_sets.dart';
@@ -12,7 +11,6 @@ import 'package:fudatobashi/db/database.dart';
 import 'package:fudatobashi/domain/ankiren_game.dart';
 import 'package:fudatobashi/domain/teiichi.dart';
 import 'package:fudatobashi/domain/teiichi_placing.dart';
-import 'package:fudatobashi/domain/teiichi_record.dart';
 import 'package:fudatobashi/domain/trainer.dart';
 import 'package:fudatobashi/domain/xp.dart';
 import 'package:fudatobashi/state/progress.dart';
@@ -94,20 +92,6 @@ void main() {
     expect(sources, containsAll([XpSource.clear, XpSource.ranked]));
     final forfeit = await record(p, playTeiichi(const TeiichiSetup.ranked(), endAfter: 5));
     expect(forfeit.xp!.award.total, 0);
-    await db.close();
-  });
-
-  test('games recorded before 定位置 earned experience earn none afterwards', () async {
-    final db = AppDatabase(NativeDatabase.memory());
-    final p = await open(db);
-    await record(p, playTeiichi(TeiichiSetup.forLevel(2), strikes: true));
-    final run = await db.select(db.sideTripRuns).getSingle();
-    final meta = jsonDecode(run.meta) as Map<String, dynamic>..remove(TeiichiMeta.xpKey);
-    await (db.update(db.sideTripRuns)..where((r) => r.id.equals(run.id)))
-        .write(SideTripRunsCompanion(meta: Value(jsonEncode(meta))));
-    final again = await open(db);
-    expect(again.xp.total, 0);
-    expect(XpHistory.gainsOf(again).teiichi, isEmpty);
     await db.close();
   });
 }

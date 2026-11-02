@@ -105,9 +105,6 @@ class SideTrips {
   Set<int> karafudaOf(SideTripRun run) =>
       _karafuda[run.id] ??= AnkirenMeta.karafudaIn(jsonDecode(run.meta) as Map<String, dynamic>);
 
-  /// [run], a 定位置 game, was recorded when 定位置 earned experience.
-  bool earnsXp(SideTripRun run) => (jsonDecode(run.meta) as Map<String, dynamic>).containsKey(TeiichiMeta.xpKey);
-
   /// [run]'s answers, one per call, in order.
   List<AnkirenXpAnswer> answersOf(SideTripRun run) {
     final karafuda = karafudaOf(run);
@@ -370,11 +367,9 @@ class SideTrips {
             meta: Value(jsonEncode({
               TeiichiMeta.cardsKey: setup.cards,
               TeiichiMeta.rowsKey: setup.rows,
-              TeiichiMeta.customKey: setup.custom,
               TeiichiMeta.placingKey: placing.placingTime!.inMilliseconds,
               TeiichiMeta.layoutKey: placing.board.half.toJson(),
               if (game.karafuda.isNotEmpty) TeiichiMeta.karafudaKey: game.karafuda,
-              TeiichiMeta.xpKey: true,
             })),
           ));
       await _storeAnswers(db, id, game);

@@ -1,4 +1,3 @@
-import 'dart:convert';
 
 import 'package:flutter/material.dart';
 
@@ -6,11 +5,9 @@ import '../../config/design.dart';
 import '../../config/vector_art.dart';
 import '../../db/database.dart' show SideTripRun;
 import '../../domain/side_trips.dart';
-import '../../domain/teiichi_record.dart';
 import '../../l10n/history_strings.dart';
 import '../../l10n/strings.dart';
 import '../../l10n/teiichi_review_strings.dart';
-import '../../l10n/teiichi_strings.dart';
 import '../../state/past_runs.dart';
 import '../../state/play_config.dart';
 import '../manga/manga.dart';
@@ -69,27 +66,22 @@ enum AnkirenKind {
       };
 }
 
-/// A 定位置 game's kind, for the filter: ranked, a level, a custom game, or
-/// the usual game from before the levels.
+/// A 定位置 game's kind, for the filter: ranked, a level or a custom game.
 enum TeiichiKind {
   ranked,
   levels,
-  custom,
-  practice;
+  custom;
 
   static TeiichiKind of(SideTripRun run) => run.ranked
       ? ranked
       : run.level != null
           ? levels
-          : (jsonDecode(run.meta) as Map<String, dynamic>)[TeiichiMeta.customKey] == true
-              ? custom
-              : practice;
+          : custom;
 
   String label(S s) => switch (this) {
         ranked => s.filterAnkirenRanked,
         levels => s.teiichiKindLevels,
         custom => s.historyAnkirenCustom,
-        practice => s.teiichiPractice,
       };
 }
 

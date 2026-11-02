@@ -135,7 +135,6 @@ class TeiichiOverviewTab extends StatelessWidget {
     final recall = game.recall;
     final cards = game.dealt;
     final firstTaps = recall.firstTaps;
-    final best = review.bestBefore;
     final setup = teiichiSetupText(s, game.setup);
     final level = game.level;
     final levelTag = level == null ? null : s.ankirenLevelTag(level);
@@ -145,11 +144,7 @@ class TeiichiOverviewTab extends StatelessWidget {
             ? game.cleared
                 ? RunStamp(s.historyCleared, sub: levelTag)
                 : RunStamp(s.historyFailed, sub: levelTag, color: AnkirenReviewStyle.muted)
-            : game.custom
-                ? RunStamp(s.ankirenCustom, sub: setup, color: AnkirenReviewStyle.muted)
-                : review.isBest
-                    ? RunStamp(s.teiichiBestStamp, sub: best == null ? null : s.teiichiBestWas(formatMinutes(best)))
-                    : null;
+            : RunStamp(s.ankirenCustom, sub: setup, color: AnkirenReviewStyle.muted);
     return SummaryHero(
       banner: s.ankirenFirstTapFact.toUpperCase(),
       body: HeroCount('$firstTaps',
@@ -213,7 +208,7 @@ class TeiichiOverviewTab extends StatelessWidget {
                   : s.teiichiWrongOn(game.wrongCards),
         ),
       if (game.level != null)
-        xpTile(s, review.xp)
+        xpTile(s, review.xp!)
       else
         SummaryTile(
           label: s.ankirenMedianFact.toUpperCase(),

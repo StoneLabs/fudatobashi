@@ -26,7 +26,6 @@ extension TeiichiStrings on S {
   /// picked instead, with its time limit; the games from before the levels'
   /// name; and the guide's card.
   String teiichiRankedFacts(int cards, String limit) => f('teiichiRankedFacts', [cards, limit]);
-  String get teiichiPractice => t('teiichiPractice');
   String get teiichiRows => t('teiichiRows');
   String teiichiPlay(int cards) => f('teiichiPlay', [cards]);
   String get teiichiLimitLabel => t('teiichiLimitLabel');

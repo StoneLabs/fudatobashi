@@ -44,7 +44,6 @@ void main() {
     final meta = jsonDecode(run.meta) as Map<String, dynamic>;
     expect(meta[TeiichiMeta.cardsKey], 12);
     expect(meta[TeiichiMeta.rowsKey], 2);
-    expect(meta[TeiichiMeta.customKey], isTrue);
     expect(meta[TeiichiMeta.placingKey], 12 * 1500);
     expect(AnkirenHalf.fromJson(meta[TeiichiMeta.layoutKey] as List).cards, played.placing.board.cards);
 

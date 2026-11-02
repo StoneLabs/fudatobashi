@@ -40,7 +40,7 @@ abstract final class XpHistory {
     return XpLedger.of(
       [for (final r in progress.runs) runOf(progress, r, byRun[r.id] ?? const [])],
       [for (final r in trips.runsOf(SideTrip.ankiren)) ankirenRunOf(trips, r)],
-      [for (final r in trips.runsOf(SideTrip.teiichi)) if (trips.earnsXp(r)) teiichiRunOf(trips, r)],
+      [for (final r in trips.runsOf(SideTrip.teiichi)) teiichiRunOf(trips, r)],
       onGain,
     );
   }

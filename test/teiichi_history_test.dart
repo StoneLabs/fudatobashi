@@ -63,6 +63,9 @@ Future<void> _loadFont(String family, List<String> files) async {
 /// The user's phone stretched to show each tab's whole contents.
 const _tallPhone = Screen('384', Size(384, 1500), 2.8125);
 
+/// The level game of the usual 25 cards.
+final _full = TeiichiSetup.forLevel(TeiichiTuning.customAfterLevel);
+
 /// [n] known cards from [shift] on, the same spread as 定位置's deals.
 List<int> _deck(int n, int shift) => [for (var id = 1; id <= n; id++) (id * 7 + shift) % 100 + 1];
 
@@ -93,21 +96,10 @@ void main() {
     }
   });
 
-  /// Makes the 25-card games stored so far the usual games of the days
-  /// before the levels, and reopens the player's progress on them.
-  Future<Progress> fromBeforeTheLevels(Progress p) async {
-    await p.db.customStatement("UPDATE side_trip_runs SET meta = json_set(meta, '\$.custom', json('false')) "
-        "WHERE json_extract(meta, '\$.cards') = 25");
-    final again = await Progress.open(p.db);
-    again.tabsAlwaysOpen = true;
-    return again;
-  }
-
-  /// An all-known player in [language] with five 定位置 games from before the
-  /// levels, oldest first: two usual games yesterday, the second the faster;
-  /// today a custom game of 12 cards in 2 rows, a usual game ended early,
-  /// and a usual game slower than the best; none calls からふだ, as before
-  /// they were called. With [games] false, none.
+  /// An all-known player in [language] with five 定位置 games, oldest first:
+  /// two 25-card level games yesterday, the second the faster; today a custom
+  /// game of 12 cards in 2 rows, a 25-card level game ended early, and one
+  /// slower than the best. With [games] false, none.
   Future<Progress> open(WidgetTester tester, {String language = 'en', bool games = true}) async {
     late Progress p;
     await tester.runAsync(() async {
@@ -126,14 +118,13 @@ void main() {
         await p.recordTeiichi(played.placing, played.game, startedAt: at);
       }
 
-      await record(yesterday.add(const Duration(hours: 10)), TeiichiSetup.usual, base: 2400, shift: 0, wrongAt: {1, 6});
-      await record(yesterday.add(const Duration(hours: 18)), TeiichiSetup.usual, base: 1500, shift: 3, wrongAt: {3});
+      await record(yesterday.add(const Duration(hours: 10)), _full, base: 2400, shift: 0, wrongAt: {1, 6});
+      await record(yesterday.add(const Duration(hours: 18)), _full, base: 1500, shift: 3, wrongAt: {3});
       await record(today.add(const Duration(hours: 8)), const TeiichiSetup(cards: 12, rows: 2),
           base: 1800, shift: 40, wrongAt: {0, 4});
-      await record(today.add(const Duration(hours: 9, minutes: 30)), TeiichiSetup.usual,
+      await record(today.add(const Duration(hours: 9, minutes: 30)), _full,
           base: 2200, shift: 9, wrongAt: {2}, endAfter: 15);
-      await record(today.add(const Duration(hours: 12)), TeiichiSetup.usual, base: 1800, shift: 5, wrongAt: {1, 2, 7});
-      p = await fromBeforeTheLevels(p);
+      await record(today.add(const Duration(hours: 12)), _full, base: 1800, shift: 5, wrongAt: {1, 2, 7});
     });
     return p;
   }
@@ -179,8 +170,8 @@ void main() {
       expect(all, hasLength(5));
 
       final first = all.first;
-      expect(first.setup, const TeiichiSetup(cards: TeiichiTuning.cards, rows: TeiichiTuning.rows));
-      expect(first.custom, isFalse, reason: 'the usual game from before からふだ');
+      expect((first.setup.cards, first.setup.rows, first.setup.level), (_full.cards, _full.rows, _full.level));
+      expect(first.custom, isFalse);
       expect(first.layout.cards.toSet(), _deck(TeiichiTuning.cards, 0).toSet());
       expect([for (final c in first.placed) c.poemId], _deck(TeiichiTuning.cards, 0), reason: 'in the order placed');
       expect(first.placed[1].time, Duration(milliseconds: _times(2400)(1)));
@@ -219,10 +210,10 @@ void main() {
         final rows = find.byWidgetPredicate((w) => w is KindTag && w.look == HistoryLooks.teiichi);
         expect(rows, findsNWidgets(5));
         expect(find.text(s.historyPracticeCustom), findsOneWidget);
-        expect(find.text(s.endedEarly), findsOneWidget);
+        expect(find.text(s.historyFailed), findsWidgets);
         expect(find.text(s.historyBest), findsNWidgets(2));
         expect(find.text('${s.teiichiSetupLine(12, 2)} · ${s.historyWrongTaps(2)}'), findsOneWidget);
-        expect(find.text('${s.historyCards(25)} · ${s.historyWrongTaps(3)}'), findsOneWidget);
+        expect(find.textContaining(s.historyCards(25)), findsNWidgets(4));
         final placings = [for (final r in p.teiichiRuns) p.sideTrips.teiichiRecordOf(r).placing];
         final first = tester.getTopLeft(find.text(formatMinutes(placings.first)));
         final last = tester.getTopLeft(find.text(formatMinutes(placings.last)));
@@ -312,11 +303,10 @@ void main() {
         });
       }
 
-      testWidgets('a best, a custom game and a game ended early are stamped so', (tester) async {
+      testWidgets('a custom game and a game ended early are stamped so', (tester) async {
         final p = await open(tester, language: lang);
         final runs = p.sideTrips.runsOf(SideTrip.teiichi).toList();
         for (final (i, stamp, name) in [
-          (1, s.teiichiBestStamp, 'best'),
           (2, s.ankirenCustom, 'custom'),
           (3, s.endedEarly, 'ended'),
         ]) {
@@ -325,6 +315,8 @@ void main() {
           await captureScreen(tester, 'teiichi_history/game_tall', lang: lang, variant: name);
         }
         expect(find.text(s.teiichiNotCounted), findsOneWidget, reason: 'a game ended early does not count');
+        await show(tester, p, TeiichiGamePage(run: runs[1]), screen: _tallPhone);
+        expect(find.text(s.teiichiNewBest), findsOneWidget);
         await tester.pumpWidget(const SizedBox());
         await tester.runAsync(() => p.db.close());
       });

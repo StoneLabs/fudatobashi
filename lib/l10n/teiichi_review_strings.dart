@@ -11,8 +11,6 @@ extension TeiichiReviewStrings on S {
   /// The Overview: a best placing time's stamp and the best it beat, the
   /// best when the game was played, a game that does not count for it, and
   /// wrong taps against the last game.
-  String get teiichiBestStamp => t('teiichiBestStamp');
-  String teiichiBestWas(String time) => f('teiichiBestWas', [time]);
   String teiichiBestThen(String time) => f('teiichiBestThen', [time]);
   String get teiichiNotCounted => t('teiichiNotCounted');
   String teiichiMoreTaps(int n) => f('teiichiMoreTaps', [n]);
