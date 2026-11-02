@@ -385,7 +385,7 @@ class SideTrips {
                 seq: i,
                 poemId: poemId,
                 placingUs: placing.placingTimeOf(poemId).inMicroseconds,
-                placed: Value(i < placing.order.length),
+                placed: i < placing.order.length,
               ),
           ]));
       final level = setup.level;

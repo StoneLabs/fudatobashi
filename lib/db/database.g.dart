@@ -5604,11 +5604,10 @@ class $TeiichiPlacingsTable extends TeiichiPlacings
     aliasedName,
     false,
     type: DriftSqlType.bool,
-    requiredDuringInsert: false,
+    requiredDuringInsert: true,
     defaultConstraints: GeneratedColumn.constraintIsAlways(
       'CHECK ("placed" IN (0, 1))',
     ),
-    defaultValue: const Constant(true),
   );
   @override
   List<GeneratedColumn> get $columns => [
@@ -5671,6 +5670,8 @@ class $TeiichiPlacingsTable extends TeiichiPlacings
         _placedMeta,
         placed.isAcceptableOrUnknown(data['placed']!, _placedMeta),
       );
+    } else if (isInserting) {
+      context.missing(_placedMeta);
     }
     return context;
   }
@@ -5861,11 +5862,12 @@ class TeiichiPlacingsCompanion extends UpdateCompanion<TeiichiPlacingRow> {
     required int seq,
     required int poemId,
     required int placingUs,
-    this.placed = const Value.absent(),
+    required bool placed,
   }) : runId = Value(runId),
        seq = Value(seq),
        poemId = Value(poemId),
-       placingUs = Value(placingUs);
+       placingUs = Value(placingUs),
+       placed = Value(placed);
   static Insertable<TeiichiPlacingRow> custom({
     Expression<int>? id,
     Expression<int>? runId,
@@ -10175,7 +10177,7 @@ typedef $$TeiichiPlacingsTableCreateCompanionBuilder =
       required int seq,
       required int poemId,
       required int placingUs,
-      Value<bool> placed,
+      required bool placed,
     });
 typedef $$TeiichiPlacingsTableUpdateCompanionBuilder =
     TeiichiPlacingsCompanion Function({
@@ -10433,7 +10435,7 @@ class $$TeiichiPlacingsTableTableManager
                 required int seq,
                 required int poemId,
                 required int placingUs,
-                Value<bool> placed = const Value.absent(),
+                required bool placed,
               }) => TeiichiPlacingsCompanion.insert(
                 id: id,
                 runId: runId,

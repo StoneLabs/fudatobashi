@@ -268,7 +268,7 @@ class TeiichiPlacings extends Table {
 
   /// It was on the board when the cards flipped; false for a card still in
   /// the stack when the time ran out or the player left.
-  BoolColumn get placed => boolean().withDefault(const Constant(true))();
+  BoolColumn get placed => boolean()();
 }
 
 /// One practice day (see `DayWindow`): journey mode's today's set and
@@ -329,7 +329,7 @@ class AppDatabase extends _$AppDatabase {
 
   /// Raised with each new upgrade step in `lib/migrations/` ([migrationSteps]).
   @override
-  int get schemaVersion => 6;
+  int get schemaVersion => 5;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(

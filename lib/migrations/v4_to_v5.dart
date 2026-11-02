@@ -12,6 +12,7 @@ Future<void> v4ToV5(Migrator m) async {
 const v5Tables = [
   'CREATE TABLE "teiichi_placings" ("id" INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT, '
       '"run_id" INTEGER NOT NULL REFERENCES side_trip_runs (id), "seq" INTEGER NOT NULL, '
-      '"poem_id" INTEGER NOT NULL, "placing_us" INTEGER NOT NULL)',
+      '"poem_id" INTEGER NOT NULL, "placing_us" INTEGER NOT NULL, '
+      '"placed" INTEGER NOT NULL CHECK ("placed" IN (0, 1)))',
   'CREATE INDEX teiichi_placings_run ON teiichi_placings (run_id)',
 ];

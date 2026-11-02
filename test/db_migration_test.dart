@@ -223,38 +223,12 @@ void main() {
         day: 20261012,
         ranked: false,
         completed: true));
-    await db.into(db.teiichiPlacings).insert(TeiichiPlacingsCompanion.insert(runId: run, seq: 0, poemId: 12, placingUs: 1500000));
-    expect([for (final p in await db.select(db.teiichiPlacings).get()) (p.runId, p.seq, p.poemId, p.placingUs)],
-        [(run, 0, 12, 1500000)]);
-    await db.close();
-  });
-
-  test('a version 5 database counts every card stored as placed, and can keep cards left unplaced', () async {
-    final fresh = AppDatabase(NativeDatabase.memory());
-    final latest = await schemaOf(fresh);
-    await fresh.close();
-    const withoutPlaced = ', "placed" INTEGER NOT NULL DEFAULT 1 CHECK ("placed" IN (0, 1))';
-    expect(latest['teiichi_placings'], contains(withoutPlaced));
-    final v5 = [
-      for (final MapEntry(key: name, value: sql) in latest.entries)
-        if (!name.startsWith('sqlite_')) sql.replaceFirst(withoutPlaced, ''),
-    ];
-    final db = install(5, [
-      ...v5,
-      'INSERT INTO days VALUES (20261030, 1793332800, 1793419200, NULL, 0, 0, 0, NULL)',
-      "INSERT INTO side_trip_runs VALUES (1, 'teiichi', 1793340000, 1793340300, 20261030, 0, NULL, NULL, NULL, 1, "
-          "NULL, NULL, '{\"cards\":2,\"rows\":1,\"custom\":true,\"placingMs\":3000,\"layout\":[]}')",
-      'INSERT INTO teiichi_placings VALUES (1, 1, 0, 12, 1500000)',
-      'INSERT INTO teiichi_placings VALUES (2, 1, 1, 34, 1500000)',
-    ]);
-
-    expect([for (final p in await db.select(db.teiichiPlacings).get()) (p.runId, p.seq, p.poemId, p.placingUs, p.placed)],
-        [(1, 0, 12, 1500000, true), (1, 1, 34, 1500000, true)]);
-    expect(await schemaOf(db), latest, reason: 'an upgraded install has a new install\'s schema');
-
     await db.into(db.teiichiPlacings).insert(TeiichiPlacingsCompanion.insert(
-        runId: 1, seq: 2, poemId: 56, placingUs: 0, placed: const Value(false)));
-    expect((await db.select(db.teiichiPlacings).get()).last.placed, isFalse);
+        runId: run, seq: 0, poemId: 12, placingUs: 1500000, placed: true));
+    await db.into(db.teiichiPlacings).insert(TeiichiPlacingsCompanion.insert(
+        runId: run, seq: 1, poemId: 56, placingUs: 0, placed: false));
+    expect([for (final p in await db.select(db.teiichiPlacings).get()) (p.runId, p.seq, p.poemId, p.placingUs, p.placed)],
+        [(run, 0, 12, 1500000, true), (run, 1, 56, 0, false)]);
     await db.close();
   });
 
