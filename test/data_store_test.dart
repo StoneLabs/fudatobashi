@@ -62,6 +62,15 @@ void main() {
     expect(schemaTables[latestSchemaVersion], {for (final t in db.allTables) t.actualTableName});
   });
 
+  test('a backup made by each shipped version passes the check at its own schema version', () {
+    final dumps = Directory('test/past_db').listSync().whereType<File>().where((f) => f.path.endsWith('.sqlite'));
+    expect(dumps, isNotEmpty);
+    for (final dump in dumps) {
+      final info = jsonDecode(File(dump.path.replaceAll(RegExp(r'\.sqlite$'), '.json')).readAsStringSync());
+      expect(checkBackup(dump), (info as Map<String, dynamic>)['schemaVersion'], reason: dump.path);
+    }
+  });
+
   test('the crash log keeps errors newest last, under its cap', () async {
     final log = CrashLog(File('${Directory.systemTemp.createTempSync('crash_log_').path}/crash.txt'));
     await log.record(StateError('first'), StackTrace.current);
