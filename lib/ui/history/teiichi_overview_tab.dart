@@ -83,9 +83,10 @@ class TeiichiOverviewTab extends StatelessWidget {
     final finds = recall.recall - karafuda;
     final bonus = score - recall.recall;
     final best = review.recall.bestBefore;
-    final stamp = review.recall.isBest && best != null
+    final bestScore = review.recall.isBest && best != null
         ? RunStamp(s.ankirenBestRankedStamp, sub: s.reviewUpFrom(best.score!), fontSize: RunStampStyle.heroFont)
         : null;
+    final stamp = _stacked([?bestScore, ?_bestTime(s)]);
     return SummaryHero(
       banner: s.ankirenPointsLabel.toUpperCase(),
       body: HeroFigure(groupDigits(score),
@@ -110,6 +111,27 @@ class TeiichiOverviewTab extends StatelessWidget {
       stampOnTop: true,
     );
   }
+
+  /// The stamp for a game that beat the best placing time, with the best
+  /// it beat; null for any other game.
+  RunStamp? _bestTime(S s) {
+    if (!review.isBest) return null;
+    final best = review.bestBefore;
+    return RunStamp(s.teiichiBestStamp,
+        sub: best == null ? null : s.teiichiBestWas(formatMinutes(best)), fontSize: RunStampStyle.heroFont);
+  }
+
+  /// [stamps] side by side, the first on the left; null for none.
+  static Widget? _stacked(List<RunStamp> stamps) => stamps.isEmpty
+      ? null
+      : stamps.length == 1
+          ? stamps.single
+          : Row(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.start, children: [
+              for (final (i, stamp) in stamps.indexed) ...[
+                if (i > 0) const SizedBox(width: RunStampStyle.stackGap),
+                stamp,
+              ],
+            ]);
 
   /// The first-tap finds, the cards found later and the rest, of all dealt.
   static List<BarPart> _foundBar(TeiichiGameRecord game) => [
@@ -138,7 +160,7 @@ class TeiichiOverviewTab extends StatelessWidget {
     final setup = teiichiSetupText(s, game.setup);
     final level = game.level;
     final levelTag = level == null ? null : s.ankirenLevelTag(level);
-    final stamp = !game.completed
+    final outcome = !game.completed
         ? RunStamp(s.endedEarly, sub: game.custom ? s.ankirenCustom : levelTag, color: AnkirenReviewStyle.muted)
         : level != null
             ? game.cleared
@@ -152,7 +174,7 @@ class TeiichiOverviewTab extends StatelessWidget {
       bar: _foundBar(game),
       labels: _foundLabels(s, game),
       pose: review.isBest || game.cleared || firstTaps == cards ? TobiPose.cheering : TobiPose.standard,
-      stamp: stamp,
+      stamp: _stacked([outcome, ?_bestTime(s)]),
       stampOnTop: true,
       color: game.custom ? AnkirenReviewStyle.customFill : Palette.paper,
     );

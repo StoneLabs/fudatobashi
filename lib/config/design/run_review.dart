@@ -235,6 +235,9 @@ abstract final class RunStampStyle {
   static const double subFont = 10;
   static const double subTracking = 1.2;
   static const double subGap = 3;
+
+  /// Between stamps side by side on one hero.
+  static const double stackGap = 8;
 }
 
 /// A rating's change beside the rating hero's number (`ChangeBadge`).

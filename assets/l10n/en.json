@@ -1638,6 +1638,8 @@
   "teiichiTabPlacing": "Placing",
   "teiichiSetupLine": "{0} cards · {1} rows",
   "teiichiSetupLineOne": "{0} cards · {1} row",
+  "teiichiBestStamp": "Best time",
+  "teiichiBestWas": "was {0}",
   "teiichiBestThen": "best then {0}",
   "teiichiNotCounted": "doesn't count",
   "teiichiMoreTaps": "{0} more",
