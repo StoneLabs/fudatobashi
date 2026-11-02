@@ -248,6 +248,8 @@ void main() {
       AnkirenRulesLayout.flip,
       AnkirenRulesLayout.take,
       TeiichiRulesLayout.place,
+      TeiichiRulesLayout.flip,
+      TeiichiRulesLayout.take,
       ...RuleMarkFiles.all,
       AnkirenRatingLayout.pole,
       ...AnkirenRatingLayout.cloth,

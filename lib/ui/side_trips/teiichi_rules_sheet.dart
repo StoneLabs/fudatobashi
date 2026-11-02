@@ -59,8 +59,8 @@ class TeiichiRulesSheet extends StatelessWidget {
       body: [
         RulesSteps([
           (TeiichiRulesLayout.place, s.teiichiStepPlace, s.teiichiStepPlaceLine, o?.teiichiStepPlaceLine),
-          (AnkirenRulesLayout.flip, s.ankirenStepFlip, s.ankirenStepFlipLine, o?.ankirenStepFlipLine),
-          (AnkirenRulesLayout.take, s.ankirenStepTake, s.ankirenStepTakeLine, o?.ankirenStepTakeLine),
+          (TeiichiRulesLayout.flip, s.ankirenStepFlip, s.ankirenStepFlipLine, o?.ankirenStepFlipLine),
+          (TeiichiRulesLayout.take, s.ankirenStepTake, s.ankirenStepTakeLine, o?.ankirenStepTakeLine),
         ]),
         RuleList([
           RuleItem(const RuleMark.image(RuleMarkFiles.tap), s.teiichiRuleTap, o?.teiichiRuleTap),
