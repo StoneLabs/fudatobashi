@@ -1,0 +1,20 @@
+{
+  "schemaVersion": 5,
+  "rows": {
+    "attempts": 2194,
+    "day_cards": 749,
+    "days": 18,
+    "island_completions": 2,
+    "items": 141,
+    "key_values": 4,
+    "runs": 36,
+    "side_trip_answers": 0,
+    "side_trip_runs": 0,
+    "teiichi_placings": 0
+  },
+  "unlockedItems": 136,
+  "settings": {
+    "batchSize": 7,
+    "desiredRetention": 0.85
+  }
+}
