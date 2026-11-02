@@ -59,23 +59,23 @@ void main() {
   group('ring', () {
     test('turns forward and back forever, one island a step, the right one coming to the front', () {
       expect([for (var t = -6; t <= 6; t++) SideTripRing.frontAt(t)], [
-        SideTripIsle.fort,
+        SideTripIsle.hall,
+        SideTripIsle.rocks,
         SideTripIsle.ankiren,
         SideTripIsle.storehouse,
         SideTripIsle.hall,
         SideTripIsle.rocks,
-        SideTripIsle.fort,
         SideTripIsle.ankiren,
         SideTripIsle.storehouse,
         SideTripIsle.hall,
         SideTripIsle.rocks,
-        SideTripIsle.fort,
         SideTripIsle.ankiren,
         SideTripIsle.storehouse,
+        SideTripIsle.hall,
       ]);
       expect(SideTripIsle.ankiren.trip, SideTrip.ankiren);
       expect(SideTripIsle.storehouse.trip, SideTrip.teiichi);
-      expect([for (final isle in SideTripRing.isles) isle.comingSoon], [false, false, true, true, true]);
+      expect([for (final isle in SideTripRing.isles) isle.comingSoon], [false, false, true, true]);
     });
 
     test('each step moves every island on a slot: right to front, front to left, then round the back to the right',
@@ -87,7 +87,6 @@ void main() {
         SideTripIsle.storehouse: 1,
         SideTripIsle.hall: 2,
         SideTripIsle.rocks: 3,
-        SideTripIsle.fort: 4,
       });
       for (var turn = -6; turn < 6; turn++) {
         for (final isle in SideTripRing.isles) {

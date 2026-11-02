@@ -34,7 +34,6 @@ extension SideTripStrings on S {
         SideTripIsle.storehouse => t('teiichiName'),
         SideTripIsle.hall => t('sideTripsIsleHall'),
         SideTripIsle.rocks => t('sideTripsIsleRocks'),
-        SideTripIsle.fort => t('sideTripsIsleFort'),
       };
 
   /// The screen-reader actions that turn the ring of islands.

@@ -37,8 +37,7 @@ enum SideTripIsle {
   ankiren(SideTrip.ankiren),
   storehouse(SideTrip.teiichi),
   hall(null),
-  rocks(null),
-  fort(null);
+  rocks(null);
 
   const SideTripIsle(this.trip);
 

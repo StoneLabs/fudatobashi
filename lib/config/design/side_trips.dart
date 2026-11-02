@@ -219,9 +219,7 @@ abstract final class DojoRingLayout {
     RingSlotSpec(
         foot: Offset(334, 248), scale: 0.36, haze: 0, label: 1, tag: _over, tagAlign: Alignment.bottomCenter, depth: 2),
     RingSlotSpec(
-        foot: Offset(242, 204), scale: 0.25, haze: 1, label: 0, tag: _over, tagAlign: Alignment.bottomCenter, depth: 0.5),
-    RingSlotSpec(
-        foot: Offset(131, 201), scale: 0.21, haze: 1, label: 0, tag: _over, tagAlign: Alignment.bottomCenter, depth: 0),
+        foot: Offset(176, 203), scale: 0.23, haze: 1, label: 0, tag: _over, tagAlign: Alignment.bottomCenter, depth: 0),
     RingSlotSpec(
         foot: Offset(30, 201), scale: 0.16, haze: 1, label: 0, tag: _over, tagAlign: Alignment.bottomCenter, depth: 1),
   ];
@@ -243,7 +241,6 @@ abstract final class DojoRingLayout {
   static const storehouse = RingIsleArt('$_dir/storehouse.webp', '$_dir/storehouse-haze.webp');
   static const hall = RingIsleArt('$_dir/hall.webp', '$_dir/hall-haze.webp');
   static const rocks = RingIsleArt('$_dir/rocks.webp', '$_dir/rocks-haze.webp');
-  static const fort = RingIsleArt('$_dir/fort.webp', '$_dir/fort-haze.webp');
 
   /// 暗記練's banner on its island's grass, once it is open: its label.
   static const nobori = ScenePiece('assets/graphics/sidetrips/ankiren/nobori.webp', Rect.fromLTWH(238, 73, 30, 100));

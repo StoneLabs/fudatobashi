@@ -267,7 +267,6 @@ RingIsleArt _artOf(SideTripIsle isle) => switch (isle) {
       SideTripIsle.storehouse => DojoRingLayout.storehouse,
       SideTripIsle.hall => DojoRingLayout.hall,
       SideTripIsle.rocks => DojoRingLayout.rocks,
-      SideTripIsle.fort => DojoRingLayout.fort,
     };
 
 /// Tobi's boat on the dojo scene, filling the same box as [DojoScene]:

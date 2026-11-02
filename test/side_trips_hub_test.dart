@@ -220,7 +220,7 @@ void main() {
     );
   }
 
-  test('every image in assets/graphics/sidetrips is art the hub, its rules or the rating and rank pages use', () {
+  test('every image in assets/graphics/sidetrips is art the hub, its rules or the rating and rank pages use (bar the shelved fort)', () {
     final used = {
       for (final piece in [
         DojoSceneLayout.sky,
@@ -242,7 +242,6 @@ void main() {
         DojoRingLayout.storehouse,
         DojoRingLayout.hall,
         DojoRingLayout.rocks,
-        DojoRingLayout.fort,
       ])
         ...[art.colour, art.haze],
       AnkirenRulesLayout.memorise,
@@ -256,7 +255,8 @@ void main() {
       AnkirenRankLayout.crack,
     };
     final files = Directory('assets/graphics/sidetrips').listSync(recursive: true).whereType<File>().where((f) => f.path.endsWith('.webp'));
-    expect({for (final f in files) f.path}, used);
+    const shelved = {'assets/graphics/sidetrips/islands/fort.webp', 'assets/graphics/sidetrips/islands/fort-haze.webp'};
+    expect({for (final f in files) f.path}.difference(shelved), used);
   });
 
   test('the ring has a slot for each island', () {
@@ -403,26 +403,25 @@ void main() {
       await openHub(tester, p, usersPhone);
       expect(frontOf(tester), SideTripIsle.ankiren);
       final order = <SideTripIsle>[];
-      for (var i = 0; i < 5; i++) {
+      for (var i = 0; i < 4; i++) {
         await swipe(tester);
         order.add(frontOf(tester));
       }
       expect(order,
-          [SideTripIsle.storehouse, SideTripIsle.hall, SideTripIsle.rocks, SideTripIsle.fort, SideTripIsle.ankiren]);
-      expect(turnOf(tester), 5);
+          [SideTripIsle.storehouse, SideTripIsle.hall, SideTripIsle.rocks, SideTripIsle.ankiren]);
+      expect(turnOf(tester), 4);
 
       order.clear();
-      for (var i = 0; i < 6; i++) {
+      for (var i = 0; i < 5; i++) {
         await swipe(tester, forward: false);
         order.add(frontOf(tester));
       }
       expect(order, [
-        SideTripIsle.fort,
         SideTripIsle.rocks,
         SideTripIsle.hall,
         SideTripIsle.storehouse,
         SideTripIsle.ankiren,
-        SideTripIsle.fort,
+        SideTripIsle.rocks,
       ]);
       expect(turnOf(tester), -1);
       expect(tester.takeException(), isNull);
@@ -480,9 +479,9 @@ void main() {
       const ankiren = DojoRingLayout.ankiren;
       Rect? rectOf(String asset) => pictures(asset).evaluate().isEmpty ? null : tester.getRect(pictures(asset));
       final front = rectOf(ankiren.colour)!;
-      final left = rectOf(DojoRingLayout.fort.haze)!;
+      final left = rectOf(DojoRingLayout.rocks.haze)!;
       expect(rectOf(ankiren.haze), isNull, reason: 'at rest each island shows once');
-      expect(rectOf(DojoRingLayout.fort.colour), isNull);
+      expect(rectOf(DojoRingLayout.rocks.colour), isNull);
 
       // Drags to [turns] steps from [from], and the island's colour and blue
       // pictures then.
@@ -615,8 +614,7 @@ void main() {
       for (final (front, labels, banner, open) in [
         (SideTripIsle.storehouse, 1, false, true),
         (SideTripIsle.hall, 2, false, false),
-        (SideTripIsle.rocks, 2, false, false),
-        (SideTripIsle.fort, 1, true, false),
+        (SideTripIsle.rocks, 1, true, false),
       ]) {
         await swipe(tester);
         expect(frontOf(tester), front);
@@ -721,8 +719,8 @@ void main() {
       await tester.pump();
       await tester.pump(const Duration(seconds: 2));
       await tester.pump();
-      expect(frontOf(tester), SideTripIsle.fort);
-      expect(find.semantics.byLabel(s.isleName(SideTripIsle.fort)), findsOne);
+      expect(frontOf(tester), SideTripIsle.rocks);
+      expect(find.semantics.byLabel(s.isleName(SideTripIsle.rocks)), findsOne);
       await tester.pumpWidget(const SizedBox());
       semantics.dispose();
     });
