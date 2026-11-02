@@ -17,6 +17,7 @@ import '../run/run_launcher.dart';
 import 'ankiren_debug_game.dart';
 import 'ankiren_graphs.dart';
 import 'debug_common.dart';
+import 'tap_points_table.dart';
 
 /// The developer's 暗記練 tools: the level table (with ranked's setup as
 /// R), a live points calculator for ranked, ranked's classes as times per
@@ -30,85 +31,41 @@ class AnkirenToolsPage extends StatelessWidget {
     return DebugScaffold(
       title: 'AnkiRen',
       child: ListView(
-        padding: const EdgeInsets.all(16),
+        padding: AnkirenToolsStyle.padding,
         children: [
           Text('Levels', style: title),
           const SizedBox(height: AnkirenToolsStyle.gap),
           const _LevelTable(),
-          const Divider(height: 32),
+          const Divider(height: AnkirenToolsStyle.sectionGap),
           Text('Tap points', style: title),
           const SizedBox(height: AnkirenToolsStyle.gap),
-          const _TapPointsTable(),
-          const Divider(height: 32),
+          const TapPointsTable(),
+          const Divider(height: AnkirenToolsStyle.sectionGap),
           Text('Ranked points', style: title),
           const _PointsCalculator(),
-          const Divider(height: 32),
+          const Divider(height: AnkirenToolsStyle.sectionGap),
           Text('Ranked classes by time per card', style: title),
           const SizedBox(height: AnkirenToolsStyle.gap),
           const _ClassTable(),
-          const Divider(height: 32),
+          const Divider(height: AnkirenToolsStyle.sectionGap),
           Text('Ranked total by card time', style: title),
           const AnkirenRankedGraph(),
-          const Divider(height: 32),
+          const Divider(height: AnkirenToolsStyle.sectionGap),
           Text('Rating by score', style: title),
           const SizedBox(height: AnkirenToolsStyle.gap),
-          const AnkirenRatingGraph(),
-          const Divider(height: 32),
+          TripRatingGraph(
+            rating: TripRating.ankiren,
+            xMax: AnkirenToolsTuning.graphYMax,
+            xTick: AnkirenToolsTuning.ratingXTick,
+            dots: [
+              ('max', (AnkirenScore.maxFor(const AnkirenSetup.ranked().calls) * (1 + AnkirenTuning.earlyBonus)).round()),
+              ('top', AnkirenToolsTuning.realisticTopScore),
+            ],
+            dotsAre: 'best possible and realistic top',
+          ),
+          const Divider(height: AnkirenToolsStyle.sectionGap),
           Text('Middle cards', style: title),
           const _MiddleSimulator(),
-        ],
-      ),
-    );
-  }
-}
-
-/// What a tap earns by where it lands, as the first and as the second tap
-/// (weighted), and a first tap there followed by the right card.
-class _TapPointsTable extends StatelessWidget {
-  const _TapPointsTable();
-
-  static const _names = {
-    TapProximity.card: 'Spot on',
-    TapProximity.neighbour: 'Neighbour',
-    TapProximity.row: 'Same row',
-    TapProximity.quadrant: 'Same quadrant',
-    TapProximity.side: 'Same side',
-    TapProximity.otherSide: 'Other side',
-  };
-
-  static String _points(TapProximity place, int tap) =>
-      _n(AnkirenTuning.cardPoints * AnkirenTuning.tapShare[place]! * AnkirenTuning.tapWeights[tap]);
-
-  static String _n(double x) => x.toStringAsFixed(2).replaceFirst(RegExp(r'\.?0+$'), '');
-
-  @override
-  Widget build(BuildContext context) {
-    TableRow row(List<String> cells, {bool head = false}) => TableRow(
-      children: [
-        for (final c in cells)
-          Padding(
-            padding: const EdgeInsets.only(right: 10, top: 2, bottom: 2),
-            child: Text(c, style: head ? debugMono.copyWith(fontWeight: Weights.black) : debugMono),
-          ),
-      ],
-    );
-    return SingleChildScrollView(
-      scrollDirection: Axis.horizontal,
-      child: Table(
-        defaultColumnWidth: const IntrinsicColumnWidth(),
-        children: [
-          row(['tap on', '1st tap', '2nd tap', '1st+right'], head: true),
-          for (final place in TapProximity.values)
-            row([
-              _names[place]!,
-              place == TapProximity.card
-                  ? '${AnkirenTuning.cardPoints} + 0–${AnkirenTuning.speedMax} speed'
-                  : _points(place, 0),
-              _points(place, 1),
-              place == TapProximity.card
-                  ? '—'
-                  : _n(AnkirenScore.pointsOf([place, TapProximity.card], null).toDouble()),
-            ]),
         ],
       ),
     );
@@ -394,47 +351,30 @@ class _LevelTable extends StatelessWidget {
   const _LevelTable();
 
   @override
-  Widget build(BuildContext context) {
-    TableRow row(List<String> cells, {bool head = false}) => TableRow(
-      children: [
-        for (final c in cells)
-          Padding(
-            padding: const EdgeInsets.only(right: 10, top: 2, bottom: 2),
-            child: Text(c, style: head ? debugMono.copyWith(fontWeight: Weights.black) : debugMono),
-          ),
-      ],
-    );
-    return SingleChildScrollView(
-      scrollDirection: Axis.horizontal,
-      child: Table(
-        defaultColumnWidth: const IntrinsicColumnWidth(),
-        children: [
-          row(['L', '/side', 'time', 's/card', 'mid'], head: true),
-          for (final (i, l) in AnkirenLevels.all.indexed)
-            row([
-              '$i',
-              '${l.perSide}',
-              formatMinutes(l.memorise),
-              (l.memorise.inMilliseconds / 1000 / l.cards).toStringAsFixed(1),
-              l.allInMiddle
-                  ? 'all'
-                  : AnkirenDealer.mayHaveMiddle(l.perSide)
-                  ? '≤${AnkirenDealer.maxMiddle(l.perSide)}'
-                  : '—',
-            ]),
-          row([
-            'R',
-            '${AnkirenTuning.rankedPerSide}',
-            formatMinutes(AnkirenTuning.rankedMemorise),
-            (AnkirenTuning.rankedMemorise.inMilliseconds / 1000 / (2 * AnkirenTuning.rankedPerSide)).toStringAsFixed(1),
-            AnkirenDealer.mayHaveMiddle(AnkirenTuning.rankedPerSide)
-                ? '≤${AnkirenDealer.maxMiddle(AnkirenTuning.rankedPerSide)}'
-                : '—',
-          ]),
+  Widget build(BuildContext context) => DebugGrid([
+        ['L', '/side', 'time', 's/card', 'mid'],
+        for (final (i, l) in AnkirenLevels.all.indexed)
+          [
+            '$i',
+            '${l.perSide}',
+            formatMinutes(l.memorise),
+            (l.memorise.inMilliseconds / 1000 / l.cards).toStringAsFixed(1),
+            l.allInMiddle
+                ? 'all'
+                : AnkirenDealer.mayHaveMiddle(l.perSide)
+                    ? '≤${AnkirenDealer.maxMiddle(l.perSide)}'
+                    : '—',
+          ],
+        [
+          'R',
+          '${AnkirenTuning.rankedPerSide}',
+          formatMinutes(AnkirenTuning.rankedMemorise),
+          (AnkirenTuning.rankedMemorise.inMilliseconds / 1000 / (2 * AnkirenTuning.rankedPerSide)).toStringAsFixed(1),
+          AnkirenDealer.mayHaveMiddle(AnkirenTuning.rankedPerSide)
+              ? '≤${AnkirenDealer.maxMiddle(AnkirenTuning.rankedPerSide)}'
+              : '—',
         ],
-      ),
-    );
-  }
+      ]);
 }
 
 /// 暗記練's ranked classes as average first-tap times: for each class line

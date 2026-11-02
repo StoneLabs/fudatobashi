@@ -1342,7 +1342,7 @@ void main() {
       expect(find.textContaining('calls wrong 0 of'), findsNothing, reason: 'the slider moved');
       await captureScreen(tester, 'debug_ankiren_graph');
       await tester.scrollUntilVisible(find.text('Rating by score'), 200, scrollable: page);
-      await tester.scrollUntilVisible(find.byType(AnkirenRatingGraph), 200, scrollable: page);
+      await tester.scrollUntilVisible(find.byType(TripRatingGraph), 200, scrollable: page);
       await tester.pump();
       expect(tester.takeException(), isNull);
       await captureScreen(tester, 'debug_ankiren_rating');

@@ -32,6 +32,34 @@ class DebugKV extends StatelessWidget {
   );
 }
 
+/// A table of [rows] of text, the first its head in bold, each column as
+/// wide as its widest cell; it scrolls sideways should it not fit.
+class DebugGrid extends StatelessWidget {
+  const DebugGrid(this.rows, {super.key});
+
+  final List<List<String>> rows;
+
+  @override
+  Widget build(BuildContext context) => SingleChildScrollView(
+    scrollDirection: Axis.horizontal,
+    child: Table(
+      defaultColumnWidth: const IntrinsicColumnWidth(),
+      children: [
+        for (final (i, cells) in rows.indexed)
+          TableRow(
+            children: [
+              for (final c in cells)
+                Padding(
+                  padding: AnkirenToolsStyle.cellPadding,
+                  child: Text(c, style: i == 0 ? debugMono.copyWith(fontWeight: Weights.black) : debugMono),
+                ),
+            ],
+          ),
+      ],
+    ),
+  );
+}
+
 /// A developer sub-page: the app bar and the safe area every debug page shares.
 class DebugScaffold extends StatelessWidget {
   const DebugScaffold({super.key, required this.title, required this.child});

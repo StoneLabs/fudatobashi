@@ -102,25 +102,39 @@ class _Line {
   final List<Offset> points;
 }
 
-/// A performance by final score graph: the line of [TripRating], dashed
-/// lines at the class borders' ratings and a labelled dot at the best
-/// possible score and at the realistic top one.
-class AnkirenRatingGraph extends StatelessWidget {
-  const AnkirenRatingGraph({super.key});
+/// A side trip's performance by final score: the line of [rating] up to
+/// [xMax] points, ticked every [xTick], dashed lines at the class borders'
+/// ratings and a labelled dot at each of [dots], which [dotsAre] names in
+/// the caption.
+class TripRatingGraph extends StatelessWidget {
+  const TripRatingGraph({
+    super.key,
+    required this.rating,
+    required this.xMax,
+    required this.xTick,
+    required this.dots,
+    required this.dotsAre,
+  });
+
+  final TripRating rating;
+  final int xMax;
+  final int xTick;
+
+  /// Each dot's name and score.
+  final List<(String, int)> dots;
+  final String dotsAre;
 
   @override
   Widget build(BuildContext context) {
-    const xMax = AnkirenToolsTuning.graphYMax;
     const step = AnkirenToolsTuning.ratingCurveStep;
-    final yMax = (TripRating.ankiren.performance(xMax) / AnkirenToolsTuning.ratingYRound).ceil() *
-        AnkirenToolsTuning.ratingYRound.toDouble();
+    final yMax =
+        (rating.performance(xMax) / AnkirenToolsTuning.ratingYRound).ceil() * AnkirenToolsTuning.ratingYRound.toDouble();
     final curve = _Line(Palette.seaDeep, [
-      for (var score = 0; score <= xMax; score += step) Offset(score.toDouble(), TripRating.ankiren.performance(score)),
+      for (var score = 0; score <= xMax; score += step) Offset(score.toDouble(), rating.performance(score)),
     ]);
-    final best = (AnkirenScore.maxFor(const AnkirenSetup.ranked().calls) * (1 + AnkirenTuning.earlyBonus)).round();
     final marks = [
-      for (final (name, score) in [('max', best), ('top', AnkirenToolsTuning.realisticTopScore)])
-        (Offset(score.toDouble(), TripRating.ankiren.performance(score)), '$name $score → ${TripRating.ankiren.performance(score).round()}'),
+      for (final (name, score) in dots)
+        (Offset(score.toDouble(), rating.performance(score)), '$name $score → ${rating.performance(score).round()}'),
     ];
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -131,7 +145,7 @@ class AnkirenRatingGraph extends StatelessWidget {
             painter: _LinesPainter(
               [curve],
               xMax: xMax.toDouble(),
-              xTick: AnkirenToolsTuning.ratingXTick.toDouble(),
+              xTick: xTick.toDouble(),
               xLabel: (x) => '${x.round()}',
               yMax: yMax,
               classY: (band) => band.minRating,
@@ -139,8 +153,8 @@ class AnkirenRatingGraph extends StatelessWidget {
             ),
           ),
         ),
-        const Text(
-          'x: final score · y: performance · dots: best possible and realistic top (score → rating) · dashed: class lines',
+        Text(
+          'x: final score · y: performance · dots: $dotsAre (score → rating) · dashed: class lines',
           style: debugMono,
         ),
       ],

@@ -9,9 +9,17 @@ abstract final class SimulationStyle {
   static const double swatch = 10;
 }
 
-/// The developer's 暗記練 tools page (`AnkirenToolsPage`): its charts and
+/// The developer's side-trip tools pages (`AnkirenToolsPage`,
+/// `TeiichiToolsPage`): their margins, sections, tables, charts and
 /// spacing.
 abstract final class AnkirenToolsStyle {
+  static const EdgeInsets padding = EdgeInsets.all(16);
+  static const double sectionGap = 32;
+
+  /// A table cell's room (`DebugGrid`): before the next column, and above
+  /// and below.
+  static const EdgeInsets cellPadding = EdgeInsets.only(right: 10, top: 2, bottom: 2);
+
   static const double chartHeight = 120;
   static const double curveStroke = 2;
   static const double markerStroke = 1.5;
