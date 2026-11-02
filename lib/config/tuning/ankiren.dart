@@ -225,7 +225,7 @@ abstract final class AnkirenRatingModel {
   /// A ranked game's performance is its final score over [pointsPerRating]
   /// (see `TripRating.ankiren.performance`): a game of [anchorScore] points
   /// performs at [anchorRating].
-  static const int anchorScore = 11000;
+  static const int anchorScore = 10000;
   static const int anchorRating = 2800;
   static const double pointsPerRating = anchorScore / anchorRating;
 
