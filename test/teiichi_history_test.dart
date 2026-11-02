@@ -210,8 +210,10 @@ void main() {
         final rows = find.byWidgetPredicate((w) => w is KindTag && w.look == HistoryLooks.teiichi);
         expect(rows, findsNWidgets(5));
         expect(find.text(s.historyPracticeCustom), findsOneWidget);
+        expect(find.text(s.endedEarly), findsOneWidget, reason: 'a level game ended early is not called failed');
         expect(find.text(s.historyFailed), findsWidgets);
-        expect(find.text(s.historyBest), findsNWidgets(2));
+        expect(find.text(s.teiichiBestStamp), findsNWidgets(2));
+        expect(find.text(s.historyBest), findsNothing, reason: 'no ranked game, so no best score');
         expect(find.text('${s.teiichiSetupLine(12, 2)} · ${s.historyWrongTaps(2)}'), findsOneWidget);
         expect(find.textContaining(s.historyCards(25)), findsNWidgets(4));
         final placings = [for (final r in p.teiichiRuns) p.sideTrips.teiichiRecordOf(r).placing];
@@ -315,8 +317,28 @@ void main() {
           await captureScreen(tester, 'teiichi_history/game_tall', lang: lang, variant: name);
         }
         expect(find.text(s.teiichiNotCounted), findsOneWidget, reason: 'a game ended early does not count');
+        expect(find.text(s.historyFailed.toUpperCase()), findsNothing);
+        expect(find.text(s.teiichiBestStamp.toUpperCase()), findsNothing, reason: 'an unplaced card never sets the best');
         await show(tester, p, TeiichiGamePage(run: runs[1]), screen: _tallPhone);
         expect(find.text(s.teiichiNewBest), findsOneWidget);
+        await tester.pumpWidget(const SizedBox());
+        await tester.runAsync(() => p.db.close());
+      });
+
+      testWidgets('a level game that beats the best time is stamped with it beside its own stamp', (tester) async {
+        final p = await open(tester, language: lang);
+        final runs = p.sideTrips.runsOf(SideTrip.teiichi).toList();
+        final game = p.sideTrips.teiichiRecordOf(runs[1]);
+        expect(game.level, isNotNull);
+        await show(tester, p, TeiichiGamePage(run: runs[1]), screen: _tallPhone);
+        expect(find.text(s.teiichiBestStamp.toUpperCase()), findsOneWidget);
+        final was = p.sideTrips.teiichiRecordOf(runs[0]).placing;
+        expect(find.text(s.teiichiBestWas(formatMinutes(was)).toUpperCase()), findsOneWidget);
+        final own = game.cleared ? s.historyCleared : s.historyFailed;
+        expect(find.text(own.toUpperCase()), findsOneWidget, reason: 'its level stamp stays');
+        await captureScreen(tester, 'teiichi_history/game_tall', lang: lang, variant: 'best_time');
+        await show(tester, p, TeiichiGamePage(run: runs[4]), screen: _tallPhone);
+        expect(find.text(s.teiichiBestStamp.toUpperCase()), findsNothing, reason: 'slower than the best');
         await tester.pumpWidget(const SizedBox());
         await tester.runAsync(() => p.db.close());
       });
