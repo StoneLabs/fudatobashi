@@ -1,6 +1,7 @@
 import 'dart:math' as math;
 
 import '../config/config.dart';
+import 'ankiren_review.dart';
 
 /// The keys of a recorded 定位置 game's details (its run's meta). The cards
 /// dealt, in placing order with their times, are kept card by card in their
@@ -15,8 +16,9 @@ abstract final class TeiichiMeta {
   /// for the screen they were played on.
   static const boardKey = 'board';
 
-  /// The からふだ called, by id, as 暗記練's (`AnkirenMeta.karafudaKey`).
-  static const karafudaKey = 'karafuda';
+  /// The からふだ called, by id, as 暗記練's, so that
+  /// [AnkirenMeta.karafudaIn] reads them.
+  static const karafudaKey = AnkirenMeta.karafudaKey;
 }
 
 /// A recorded 定位置 game as its page shows it: its card count, the placing
