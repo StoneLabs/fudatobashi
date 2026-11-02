@@ -223,8 +223,10 @@ abstract final class AnkirenRatingModel {
   static const double start = 400;
 
   /// A ranked game's performance is its final score over this many points
-  /// (see `TripRating.ankiren.performance`).
-  static const double pointsPerRating = 2;
+  /// (see `TripRating.ankiren.performance`). A ranked game has 65 calls
+  /// (50 without the からふだ), so its scores run about 65/50 above those of
+  /// a 50-call game at the same skill: 2 * 65 / 50 = 2.6.
+  static const double pointsPerRating = 2.6;
 
   /// The rating after each of the first [placementGames] ranked games is
   /// the mean of their performances; each later game moves it

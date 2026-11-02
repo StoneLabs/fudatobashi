@@ -205,9 +205,10 @@ void main() {
       expect(ranked.custom, isFalse);
     });
 
-    test('a game rates at half its score, and the score for a rating inverts it', () {
-      expect(TripRating.ankiren.performance(9000), 4500);
-      expect(TripRating.ankiren.scoreFor(band('A')), 2 * band('A'));
+    test('a game rates at its score over the points per rating, and the score for a rating inverts it', () {
+      const per = AnkirenRatingModel.pointsPerRating;
+      expect(TripRating.ankiren.performance(9000), closeTo(9000 / per, 1e-9));
+      expect(TripRating.ankiren.scoreFor(band('A')), closeTo(per * band('A'), 1e-9));
       for (var score = 0; score < 12000; score += 97) {
         expect(TripRating.ankiren.scoreFor(TripRating.ankiren.performance(score)), closeTo(score, 1e-6));
       }
