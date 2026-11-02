@@ -5,27 +5,18 @@ import 'strings.dart';
 /// Strings of 定位置: its entry on the hub, its page, the custom game sheet,
 /// the placing screen, results, and its rules and guide.
 extension TeiichiStrings on S {
-  /// The hub's entry: its burst, its screen-reader line, and the best and
-  /// last games (the last one's facts a template: first-tap finds of the
-  /// cards).
+  /// The hub's entry: its burst and its screen-reader line.
   String get teiichiPageTitle => t('teiichiPageTitle');
   String get teiichiOpenPage => t('teiichiOpenPage');
-  String get teiichiBestPlacing => t('teiichiBestPlacing');
-  String get teiichiLastGame => t('teiichiLastGame');
-  String get teiichiLastFacts => t('teiichiLastFacts');
-  String get teiichiNoGames => t('teiichiNoGames');
 
   /// The page's form strip: the average wrong taps and placing time, over
-  /// how many games, or how to start it; each a template of its count.
+  /// how many games; the count is a template.
   String get teiichiFormWrongTaps => t('teiichiFormWrongTaps');
   String get teiichiFormPlacing => t('teiichiFormPlacing');
   String teiichiFormGames(int games) => t(countKey('teiichiFormGames', games));
-  String get teiichiFormStart => t('teiichiFormStart');
 
-  /// The page: ranked's setup, and the next level to clear or the setup
-  /// picked instead, with its time limit; the games from before the levels'
-  /// name; and the guide's card.
-  String teiichiRankedFacts(int cards, String limit) => f('teiichiRankedFacts', [cards, limit]);
+  /// The page: the next level to clear or the setup picked instead, with its
+  /// time limit; and the guide's card.
   String get teiichiRows => t('teiichiRows');
   String teiichiPlay(int cards) => f('teiichiPlay', [cards]);
   String get teiichiLimitLabel => t('teiichiLimitLabel');

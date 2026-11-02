@@ -6,7 +6,7 @@ part of '../design.dart';
 abstract final class TeiichiPageLayout {
   /// The next level's preview of its side of the field: its rows at most
   /// this tall, this far inside its frame.
-  static const double previewHeight = 64;
+  static const double previewHeight = 54;
   static const double previewInset = 6;
 
   /// On a screen with room to spare, ranked takes this share of it.
@@ -15,7 +15,7 @@ abstract final class TeiichiPageLayout {
   /// The guide's card, one short row, [learnTop] under ranked: its title,
   /// [learnGap] before the button.
   static const double learnTop = 4;
-  static const EdgeInsets learnPadding = EdgeInsets.fromLTRB(14, 4 + SideTripsLayout.cut / 2, 8, 4);
+  static const EdgeInsets learnPadding = EdgeInsets.fromLTRB(14, 4, 8, 4);
   static const double learnTitleFont = 16;
   static const double learnGap = 8;
   static const double buttonFont = 13;

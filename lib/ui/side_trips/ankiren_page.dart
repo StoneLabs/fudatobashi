@@ -101,7 +101,6 @@ class _AnkirenPageState extends State<AnkirenPage> {
                     const SizedBox(height: AnkirenPageLayout.nextTop),
                     RankedPanel(
                       entry,
-                      facts: s.ankirenRankedFacts(AnkirenTuning.rankedPerSide, formatMinutes(AnkirenTuning.rankedMemorise)),
                       onStart: () => startAnkirenRanked(context),
                     ),
                     const SizedBox(height: AnkirenPageLayout.nextTop),
@@ -173,7 +172,6 @@ class _NextLevelPanel extends StatelessWidget {
           padding: AnkirenPageLayout.burstMargin,
           child: BurstButton(
             title: play(s),
-            sub: s.sub == null ? null : play(s.sub!).toUpperCase(),
             onTap: fits ? () => startAnkirenFree(context, setup) : null,
           ),
         ),

@@ -18,7 +18,9 @@ import 'side_trip_panels.dart';
 /// A trip page's [StatStrip], for a player of [entry]'s standing: the class
 /// and the rating with the last game's change (unranked before the first),
 /// then how many points the next class is away, with a gauge; and any
-/// [more] cells and [moreFoot] line of the trip's own.
+/// [more] cells and [moreFoot] line of the trip's own. While the rating is
+/// still being placed there is no class yet: its box says so, and the gauge
+/// keeps its room but is hidden.
 class RecordStrip extends StatelessWidget {
   const RecordStrip(this.entry, {super.key, this.more = const [], this.moreFoot});
 
@@ -36,8 +38,9 @@ class RecordStrip extends StatelessWidget {
     final floor = band.minRating.isFinite ? band.minRating : TripRating.start;
     final change = entry.ratingChange?.round() ?? 0;
     final moreFoot = this.moreFoot;
+    final placement = TripRating.isPlacement(entry.results.length);
     const big = StatStrip.valueStyle;
-    final gauge = next == null
+    final bar = next == null
         ? null
         : Row(children: [
             Flexible(
@@ -55,19 +58,25 @@ class RecordStrip extends StatelessWidget {
             const SizedBox(width: AnkirenPageLayout.gaugeGap),
             Expanded(child: RatingBar((at - floor) / (next.minRating - floor), width: double.infinity)),
           ]);
+    final gauge = bar == null || !placement
+        ? bar
+        : Visibility(visible: false, maintainSize: true, maintainAnimation: true, maintainState: true, child: bar);
     return StatStrip(
       fills: more.isNotEmpty,
       cells: [
         StatCell(
           label: PanelLabel(s.sideTripClass, more.isEmpty ? s.sub?.sideTripClass : null),
-          value: Text.rich(
-            TextSpan(children: [
-              TextSpan(text: s.classStem(band)),
-              if (s.classStem(band) != s.className(band))
-                const TextSpan(text: RankBand.classSuffix, style: TextStyle(fontSize: AnkirenPageLayout.classSuffixFont)),
-            ]),
-            style: big,
-          ),
+          value: placement
+              ? const Text(AnkirenPageLayout.placementClass, style: big)
+              : Text.rich(
+                  TextSpan(children: [
+                    TextSpan(text: s.classStem(band)),
+                    if (s.classStem(band) != s.className(band))
+                      const TextSpan(
+                          text: RankBand.classSuffix, style: TextStyle(fontSize: AnkirenPageLayout.classSuffixFont)),
+                  ]),
+                  style: big,
+                ),
         ),
         StatCell(
           label: PanelLabel(s.rating, more.isEmpty ? s.sub?.rating : null),
@@ -215,14 +224,13 @@ class _Slot extends StatelessWidget {
 }
 
 /// A trip's ranked panel: the last ranked games (or the placement games so
-/// far), its one setup's [facts] and the burst that starts it ([onStart]).
+/// far) and the burst that starts it ([onStart]).
 /// Until ranked opens the whole panel is chained up, faded, with what still
 /// opens it stuck over the chains; a tap says it again.
 class RankedPanel extends StatelessWidget {
-  const RankedPanel(this.entry, {super.key, required this.facts, required this.onStart});
+  const RankedPanel(this.entry, {super.key, required this.onStart});
 
   final SideTripEntry entry;
-  final String facts;
   final VoidCallback onStart;
 
   @override
@@ -236,7 +244,7 @@ class RankedPanel extends StatelessWidget {
         padding: AnkirenPageLayout.gamesPadding,
         child: placement ? _Placement(entry.results) : _LastGames(entry.results),
       ),
-      RankedRow(facts: facts, line: s.ankirenRankedReal, onTap: lock == null ? onStart : null),
+      RankedRow(onTap: lock == null ? onStart : null),
     ]);
     if (lock == null) {
       return TaggedPanel(tag: s.ankirenRankedMode, sub: s.sub?.ankirenRankedMode, heading: heading, child: content);

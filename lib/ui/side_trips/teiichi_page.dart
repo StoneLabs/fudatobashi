@@ -100,7 +100,6 @@ class _TeiichiPageState extends State<TeiichiPage> {
                       share: TeiichiPageLayout.rankedShare,
                       child: RankedPanel(
                         entry,
-                        facts: s.teiichiRankedFacts(TeiichiTuning.cards, formatMinutes(TeiichiTuning.rankedLimit)),
                         onStart: () => startTeiichiRanked(context),
                       ),
                     ),
@@ -130,11 +129,10 @@ class _TeiichiPageState extends State<TeiichiPage> {
   }
 }
 
-/// The page's [StatStrip], for 定位置: the average wrong taps and placing
-/// time of the last games that count, over how many games; dashes, and the
-/// game to play to start it, before the first. Once the player has a rating
-/// its class, rating and way to the next class come first ([RecordStrip]).
-/// The labels go without the other language's, which would wrap them.
+/// The page's [RecordStrip], for 定位置: the class and rating, and the
+/// average wrong taps and placing time of the last games that count, over
+/// how many games; dashes before the first. The labels go without the other
+/// language's, which would wrap them.
 class _Banner extends StatelessWidget {
   const _Banner(this.entry);
 
@@ -145,29 +143,31 @@ class _Banner extends StatelessWidget {
     final s = S.of(context);
     final form = entry.placing.form;
     const big = StatStrip.valueStyle;
-    final cells = [
-      StatCell(
-        label: PanelLabel(s.teiichiFormWrongTaps, null),
-        value: Text(form == null ? missingTime : formatAverage(form.wrongTaps), style: big),
-      ),
-      StatCell(
-        label: PanelLabel(s.teiichiFormPlacing, null),
-        value: Text(form == null ? missingTime : formatMinutes(form.placing), style: big),
-      ),
-    ];
-    final foot = FittedBox(
-      fit: BoxFit.scaleDown,
-      alignment: Alignment.centerLeft,
-      child: NumberedText(
-        form == null ? s.teiichiFormStart : s.teiichiFormGames(form.games),
-        [form?.games ?? TeiichiTuning.cards],
-        style: const TextStyle(fontWeight: Weights.black, fontSize: AnkirenPageLayout.gaugeFont),
-        numberStyle: const TextStyle(fontFamily: Fonts.display, fontSize: AnkirenPageLayout.gaugeNumber),
-      ),
+    return RecordStrip(
+      entry,
+      more: [
+        StatCell(
+          label: PanelLabel(s.teiichiFormWrongTaps, null),
+          value: Text(form == null ? missingTime : formatAverage(form.wrongTaps), style: big),
+        ),
+        StatCell(
+          label: PanelLabel(s.teiichiFormPlacing, null),
+          value: Text(form == null ? missingTime : formatMinutes(form.placing), style: big),
+        ),
+      ],
+      moreFoot: form == null
+          ? null
+          : FittedBox(
+              fit: BoxFit.scaleDown,
+              alignment: Alignment.centerLeft,
+              child: NumberedText(
+                s.teiichiFormGames(form.games),
+                [form.games],
+                style: const TextStyle(fontWeight: Weights.black, fontSize: AnkirenPageLayout.gaugeFont),
+                numberStyle: const TextStyle(fontFamily: Fonts.display, fontSize: AnkirenPageLayout.gaugeNumber),
+              ),
+            ),
     );
-    return entry.ranked
-        ? RecordStrip(entry, more: cells, moreFoot: foot)
-        : StatStrip(fills: true, cells: cells, foot: foot);
   }
 }
 
@@ -180,7 +180,6 @@ class _LearnCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final s = S.of(context);
     return MangaPanel(
-      shape: const PanelShape(topLeft: Offset(0, SideTripsLayout.cut)),
       padding: TeiichiPageLayout.learnPadding,
       child: Center(
         child: Row(children: [
@@ -264,7 +263,6 @@ class _NextLevelPanel extends StatelessWidget {
           padding: AnkirenPageLayout.burstMargin,
           child: BurstButton(
             title: play(s),
-            sub: s.sub == null ? null : play(s.sub!).toUpperCase(),
             onTap: () => startTeiichi(context, setup),
           ),
         ),

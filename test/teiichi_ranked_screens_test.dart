@@ -22,6 +22,7 @@ import 'package:fudatobashi/domain/teiichi.dart';
 import 'package:fudatobashi/domain/trainer.dart';
 import 'package:fudatobashi/l10n/ankiren_review_strings.dart';
 import 'package:fudatobashi/l10n/ankiren_strings.dart';
+import 'package:fudatobashi/l10n/ranked_strings.dart';
 import 'package:fudatobashi/l10n/side_trip_strings.dart';
 import 'package:fudatobashi/l10n/strings.dart';
 import 'package:fudatobashi/l10n/teiichi_review_strings.dart';
@@ -32,6 +33,7 @@ import 'package:fudatobashi/state/side_trips.dart';
 import 'package:fudatobashi/ui/ankiren/ankiren_band.dart';
 import 'package:fudatobashi/ui/ankiren/ankiren_strikes.dart';
 import 'package:fudatobashi/ui/history/history_screen.dart';
+import 'package:fudatobashi/ui/home/home_widgets.dart';
 import 'package:fudatobashi/ui/history/teiichi_game_page.dart';
 import 'package:fudatobashi/ui/manga/manga.dart';
 import 'package:fudatobashi/ui/results/celebration_chrome.dart';
@@ -78,6 +80,21 @@ void _expectPlayAndPairVisible(WidgetTester tester) {
   expect(tester.getRect(find.byType(BurstButton).last).bottom, lessThanOrEqualTo(bottom), reason: 'Play');
   expect(tester.getRect(find.byType(SideTripGuestButton)).bottom, lessThanOrEqualTo(bottom), reason: 'Guest mode');
   expect(tester.getRect(find.byType(SideTripRulesButton)).bottom, lessThanOrEqualTo(bottom), reason: 'How to play');
+}
+
+/// The banner's class box says "???" and hides the line to the next class
+/// (keeping its room) while the rating is placed, and shows both once
+/// [rated].
+void _expectClassBox(WidgetTester tester, S s, SideTripEntry entry, {required bool rated}) {
+  expect(find.text(AnkirenPageLayout.placementClass), rated ? findsNothing : findsOneWidget);
+  if (rated) {
+    expect(find.textContaining(s.classStem(entry.band), findRichText: true), findsWidgets);
+  }
+  final bar = find.byType(RatingBar, skipOffstage: false);
+  expect(bar, findsOneWidget);
+  expect(tester.getSize(bar).height, greaterThan(0), reason: 'the line to the next class keeps its room');
+  expect(find.ancestor(of: bar, matching: find.byWidgetPredicate((w) => w is Visibility && !w.visible)),
+      rated ? findsNothing : findsOneWidget);
 }
 
 void main() {
@@ -168,6 +185,7 @@ void main() {
         expect(find.text(s.ankirenPlayLevel(0)), findsOneWidget);
         expect(tester.takeException(), isNull);
         _expectPlayAndPairVisible(tester);
+        _expectClassBox(tester, s, p.sideTripsHub()[trip], rated: false);
         await captureScreen(tester, 'teiichi_ranked/page_new', lang: lang);
         await tester.pumpWidget(const SizedBox());
       });
@@ -179,6 +197,7 @@ void main() {
         expect(find.text(s.ankirenPlayLevel(4)), findsOneWidget);
         expect(tester.takeException(), isNull);
         _expectPlayAndPairVisible(tester);
+        _expectClassBox(tester, s, p.sideTripsHub()[trip], rated: false);
         await captureScreen(tester, 'teiichi_ranked/page_placement', lang: lang);
         await tester.pumpWidget(const SizedBox());
       });
@@ -191,6 +210,7 @@ void main() {
         expect(find.text(s.teiichiFormWrongTaps), findsOneWidget, reason: 'the averages stay');
         expect(tester.takeException(), isNull);
         _expectPlayAndPairVisible(tester);
+        _expectClassBox(tester, s, p.sideTripsHub()[trip], rated: true);
         await captureScreen(tester, 'teiichi_ranked/page_rated', lang: lang);
         await tester.pumpWidget(const SizedBox());
       });

@@ -314,9 +314,9 @@ void main() {
                   expect([for (final r in rows) ...r.pips].where((p) => p == PipState.learned),
                       hasLength(_lockedCards));
                 case _Hub.open:
-                  expect(inHub(find.text(s.sideTripUnranked)), findsOneWidget);
+                  expect(find.descendant(of: inHub(ankirenBody), matching: find.text(s.sideTripUnranked)), findsOneWidget);
                 case _Hub.ranked:
-                  expect(inHub(find.text('${entry.rating!.round()}')), findsOneWidget);
+                  expect(find.descendant(of: inHub(ankirenBody), matching: find.text('${entry.rating!.round()}')), findsOneWidget);
               }
 
               final stamp = inHub(find.byType(Sticker));

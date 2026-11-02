@@ -362,37 +362,17 @@ class LockedPanel extends StatelessWidget {
       );
 }
 
-/// A ranked panel's bottom row: its one setup's [facts] over a [line] about
-/// it, beside the ranked burst, which shrinks into the rest of the row and
-/// is grey without an [onTap].
+/// A ranked panel's bottom row: the ranked burst across its width, grey
+/// without an [onTap].
 class RankedRow extends StatelessWidget {
-  const RankedRow({super.key, required this.facts, required this.line, required this.onTap});
+  const RankedRow({super.key, required this.onTap});
 
-  final String facts, line;
   final VoidCallback? onTap;
 
   @override
   Widget build(BuildContext context) => Padding(
         padding: AnkirenPageLayout.rankedRowPadding,
-        child: Row(children: [
-          ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: AnkirenPageLayout.factsMaxWidth),
-            child: Text.rich(
-              TextSpan(children: [
-                Phrases.span(facts, style: const TextStyle(fontWeight: Weights.black, color: Palette.ink)),
-                const TextSpan(text: '\n'),
-                Phrases.span(line),
-              ]),
-              maxLines: AnkirenPageLayout.factsLines,
-              overflow: TextOverflow.ellipsis,
-              style: const TextStyle(fontWeight: Weights.bold, fontSize: AnkirenPageLayout.hintFont, color: Palette.mute),
-            ),
-          ),
-          const SizedBox(width: AnkirenPageLayout.rankedRowGap),
-          Expanded(
-            child: SizedBox(height: AnkirenPageLayout.rankedBurst, child: RankedBurst(onTap: onTap)),
-          ),
-        ]),
+        child: RankedBurst(onTap: onTap),
       );
 }
 

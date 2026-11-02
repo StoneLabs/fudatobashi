@@ -250,18 +250,15 @@ abstract final class AnkirenSheetLayout {
 /// panel with a preview of its field and its burst, then Home's button
 /// pair.
 abstract final class AnkirenPageLayout {
-  /// The ranked panel: under the games, ranked's one setup in up to
-  /// [factsLines] lines at most [factsMaxWidth] wide, beside its burst,
-  /// which shrinks into the rest of the row, at most [rankedBurst] tall.
+  /// What the class box says while the rating is being placed.
+  static const String placementClass = '???';
+
+  /// The ranked panel: under the games, its burst across the row.
   /// Shut, its inside fades to [lockedOpacity] under the tab lock's chains
   /// at [chainScale], with what opens it on a paper sticker over them,
   /// [lockNoteBottom] up from the panel's bottom and [lockNoteInset] in
   /// from its sides.
-  static const EdgeInsets rankedRowPadding = EdgeInsets.fromLTRB(12, 4, 8, 8);
-  static const int factsLines = 3;
-  static const double rankedRowGap = 8;
-  static const double factsMaxWidth = 150;
-  static const double rankedBurst = 44;
+  static const EdgeInsets rankedRowPadding = EdgeInsets.fromLTRB(6, 2, 6, 6);
   static const double lockedOpacity = 0.35;
   static const double chainScale = 1.7;
   static const double lockNoteInset = 14;

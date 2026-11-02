@@ -26,10 +26,13 @@ import 'package:fudatobashi/db/database.dart';
 import 'package:fudatobashi/domain/ankiren_field.dart';
 import 'package:fudatobashi/domain/ankiren_game.dart';
 import 'package:fudatobashi/domain/ankiren_level.dart';
+import 'package:fudatobashi/domain/rating.dart';
 import 'package:fudatobashi/domain/side_trips.dart';
+import 'package:fudatobashi/domain/trip_rating.dart';
 import 'package:fudatobashi/domain/trainer.dart';
 import 'package:fudatobashi/l10n/ankiren_strings.dart';
 import 'package:fudatobashi/l10n/free_strings.dart';
+import 'package:fudatobashi/l10n/ranked_strings.dart';
 import 'package:fudatobashi/l10n/side_trip_strings.dart';
 import 'package:fudatobashi/l10n/strings.dart';
 import 'package:fudatobashi/state/progress.dart';
@@ -38,6 +41,7 @@ import 'package:fudatobashi/ui/ankiren/ankiren_field_preview.dart';
 import 'package:fudatobashi/ui/ankiren/ankiren_screen.dart';
 import 'package:fudatobashi/ui/ankiren/ankiren_strikes.dart';
 import 'package:fudatobashi/ui/history/history_screen.dart';
+import 'package:fudatobashi/ui/home/home_widgets.dart';
 import 'package:fudatobashi/ui/manga/manga.dart';
 import 'package:fudatobashi/ui/shell/tab_chains.dart';
 import 'package:fudatobashi/ui/side_trips/ankiren_free_sheet.dart';
@@ -241,6 +245,20 @@ void main() {
               expect(entry.rankedOpen, stage != _Stage.locked);
               final next = entry.nextLevel;
               expect(onPage(burst(s.ankirenPlayLevel(next ?? AnkirenLevels.top))), findsOneWidget);
+              final rating = stage == _Stage.placed || allCleared;
+              expect(onPage(find.text(AnkirenPageLayout.placementClass)), rating ? findsNothing : findsOneWidget,
+                  reason: 'no class while the rating is placed');
+              if (rating) {
+                expect(onPage(find.textContaining(s.classStem(entry.band), findRichText: true)), findsWidgets);
+              }
+              if (Rating.nextBand(entry.rating ?? TripRating.start) != null) {
+                final bar = onPage(find.byType(RatingBar, skipOffstage: false));
+                expect(bar, findsOneWidget);
+                expect(tester.getSize(bar).height, greaterThan(0), reason: 'the line to the next class keeps its room');
+                expect(find.ancestor(of: bar, matching: find.byWidgetPredicate((w) => w is Visibility && !w.visible)),
+                    rating ? findsNothing : findsOneWidget,
+                    reason: 'hidden while placing');
+              }
               switch (stage) {
                 case _Stage.locked:
                   expect(onPage(find.textContaining(s.ankirenPlacementTitle)), findsOneWidget);

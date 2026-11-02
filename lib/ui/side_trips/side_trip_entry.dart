@@ -3,21 +3,17 @@ import 'dart:math' as math;
 import 'package:flutter/rendering.dart';
 import 'package:flutter/widgets.dart';
 
-import '../../config/config.dart';
 import '../../config/design.dart';
 import '../../config/vector_art.dart';
-import '../../domain/ankiren_level.dart';
 import '../../domain/rating.dart';
 import '../../domain/side_trips.dart';
 import '../../l10n/ankiren_strings.dart';
 import '../../l10n/ranked_strings.dart';
 import '../../l10n/side_trip_strings.dart';
 import '../../l10n/strings.dart';
-import '../../l10n/teiichi_strings.dart';
 import '../home/home_screen.dart';
 import '../home/home_widgets.dart';
 import '../manga/manga.dart';
-import '../play/time_format.dart';
 import 'burst_button.dart';
 
 /// A side trip's entry on the hub: its head ([SideTripHead]) hanging over
@@ -244,9 +240,8 @@ class _RankStamp extends StatelessWidget {
       );
 }
 
-/// A side trip's panel on the hub. Open: its standing (暗記練's rating with
-/// the last game's change and free play's next level to clear; 定位置's best
-/// placing time and last game), and the burst that opens the trip's page
+/// A side trip's panel on the hub. Open: its standing (the rating with the
+/// last game's change and free play's next level to clear), and the burst that opens the trip's page
 /// ([onOpen]), as does the row above it. Locked: the cards seen so far as
 /// pips and a grey bar saying how many more open it, where the burst will
 /// be.
@@ -270,10 +265,7 @@ class SideTripBody extends StatelessWidget {
                 _StatsRow(
                   entry,
                   onTap: onOpen,
-                  children: switch (entry.trip) {
-                    SideTrip.ankiren => _ankirenStats(context, entry),
-                    SideTrip.teiichi => _teiichiStats(context, entry),
-                  },
+                  children: _stats(context, entry),
                 ),
                 Padding(
                   padding: SideTripsLayout.burstMargin,
@@ -286,9 +278,8 @@ class SideTripBody extends StatelessWidget {
   }
 
   /// The ranked rating and its last change (or "unranked"), and free play's
-  /// next level to clear: its level, cards a side and memorise time, or that
-  /// every level is cleared.
-  static (Widget, Widget) _ankirenStats(BuildContext context, SideTripEntry entry) {
+  /// next level to clear (or that every level is cleared).
+  static (Widget, Widget) _stats(BuildContext context, SideTripEntry entry) {
     final s = S.of(context);
     final rating = entry.rating;
     final change = entry.ratingChange?.round() ?? 0;
@@ -296,7 +287,7 @@ class SideTripBody extends StatelessWidget {
     const value = TextStyle(fontFamily: Fonts.display, fontSize: SideTripsLayout.valueFont, height: 1);
     return (
       _Stat(
-        label: _Label(s.rating, s.sub?.rating),
+        label: _Label(s.rating),
         value: rating == null
             ? Text(s.sideTripUnranked,
                 style: const TextStyle(fontFamily: Fonts.display, fontSize: SideTripsLayout.unrankedFont, height: 1))
@@ -309,40 +300,8 @@ class SideTripBody extends StatelessWidget {
               ]),
       ),
       _Stat(
-        label: _Label(s.sideTripNextLevel, s.sub?.sideTripNextLevel),
+        label: _Label(s.sideTripNextLevel),
         value: Text(level == null ? s.sideTripAllClear : s.ankirenLevelTag(level), style: value),
-        note: level == null
-            ? null
-            : NumberedText(
-                s.sideTripNextFacts,
-                [AnkirenLevels.of(level).perSide, formatMinutes(AnkirenLevels.of(level).memorise)],
-                style: const TextStyle(fontWeight: Weights.black, fontSize: SideTripsLayout.factsFont),
-                numberStyle: const TextStyle(fontFamily: Fonts.display, fontSize: SideTripsLayout.factsNumber),
-              ),
-      ),
-    );
-  }
-
-  /// The best placing time of a usual game, and the last game's placing
-  /// time with its first-tap finds; a dash for each until there is one.
-  static (Widget, Widget) _teiichiStats(BuildContext context, SideTripEntry entry) {
-    final s = S.of(context);
-    final best = entry.placing.best, last = entry.placing.last;
-    const value = TextStyle(fontFamily: Fonts.display, fontSize: SideTripsLayout.valueFont, height: 1);
-    const note = TextStyle(fontWeight: Weights.black, fontSize: SideTripsLayout.factsFont);
-    const number = TextStyle(fontFamily: Fonts.display, fontSize: SideTripsLayout.factsNumber);
-    return (
-      _Stat(
-        label: _Label(s.teiichiBestPlacing, s.sub?.teiichiBestPlacing),
-        value: Text(best == null ? missingTime : formatMinutes(best), style: value),
-        note: Text(s.cardsCount(TeiichiTuning.cards), style: note),
-      ),
-      _Stat(
-        label: _Label(s.teiichiLastGame, s.sub?.teiichiLastGame),
-        value: Text(last == null ? missingTime : formatMinutes(last.placing), style: value),
-        note: last == null
-            ? Text(s.teiichiNoGames, style: note)
-            : NumberedText(s.teiichiLastFacts, [last.firstTaps, last.cards], style: note, numberStyle: number),
       ),
     );
   }
@@ -350,7 +309,7 @@ class SideTripBody extends StatelessWidget {
 
 /// A row's label, with the same in the other language as its sub-label.
 class _Label extends StatelessWidget {
-  const _Label(this.text, this.sub);
+  const _Label(this.text, [this.sub]);
 
   final String text;
   final String? sub;
@@ -379,10 +338,9 @@ class _Label extends StatelessWidget {
 
 /// A [label] over its [value], both shrinking rather than overflowing.
 class _Stat extends StatelessWidget {
-  const _Stat({required this.label, required this.value, this.note});
+  const _Stat({required this.label, required this.value});
 
   final Widget label, value;
-  final Widget? note;
 
   @override
   Widget build(BuildContext context) => Column(
@@ -392,10 +350,6 @@ class _Stat extends StatelessWidget {
           FittedBox(fit: BoxFit.scaleDown, alignment: Alignment.centerLeft, child: label),
           const SizedBox(height: SideTripsLayout.labelGap),
           FittedBox(fit: BoxFit.scaleDown, alignment: Alignment.centerLeft, child: value),
-          if (note != null) ...[
-            const SizedBox(height: SideTripsLayout.noteGap),
-            FittedBox(fit: BoxFit.scaleDown, alignment: Alignment.centerLeft, child: note),
-          ],
         ],
       );
 }
@@ -493,7 +447,7 @@ class RankedBurst extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final s = S.of(context);
-    return BurstButton(title: s.sideTripRanked, sub: s.sub?.sideTripRanked.toUpperCase(), onTap: onTap);
+    return BurstButton(title: s.sideTripRanked, onTap: onTap);
   }
 }
 
@@ -508,7 +462,7 @@ class PageBurst extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final s = S.of(context);
-    return BurstButton(title: s.tripPageTitle(trip), sub: s.sub?.tripPageTitle(trip).toUpperCase(), onTap: onTap);
+    return BurstButton(title: s.tripPageTitle(trip), onTap: onTap);
   }
 }
 

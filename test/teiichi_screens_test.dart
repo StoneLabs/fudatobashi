@@ -175,7 +175,7 @@ void main() {
       await tester.pump(const Duration(seconds: 2));
       final burst = find.byWidgetPredicate((w) => w is PageBurst && w.trip == SideTrip.teiichi);
       expect(burst.hitTestable(), findsOneWidget);
-      expect(find.descendant(of: find.byType(SideTripsScreen), matching: find.text(s.teiichiBestPlacing)).hitTestable(),
+      expect(find.descendant(of: find.byType(SideTripsScreen), matching: find.text(s.rating)).hitTestable(),
           findsOneWidget);
       await captureScreen(tester, 'teiichi/hub');
 

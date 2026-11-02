@@ -113,8 +113,6 @@ extension AnkirenStrings on S {
   String get ankirenGuestSub => t('ankirenGuestSub');
 
   /// Ranked's one setup: [perSide] cards a side and the memorise time.
-  String ankirenRankedFacts(int perSide, String memorise) => f('ankirenRankedFacts', [perSide, memorise]);
-  String get ankirenRankedReal => t('ankirenRankedReal');
 
   /// What still opens ranked: the all-known mode, clearing [level], or
   /// both.

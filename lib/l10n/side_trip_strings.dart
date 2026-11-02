@@ -98,7 +98,6 @@ extension SideTripStrings on S {
   /// then the time to memorise them), and in its place once every level is
   /// cleared.
   String get sideTripNextLevel => t('sideTripNextLevel');
-  String get sideTripNextFacts => t('sideTripNextFacts');
   String get sideTripAllClear => t('sideTripAllClear');
 
   /// A locked trip's cards seen so far, out of what opens it (a template).
