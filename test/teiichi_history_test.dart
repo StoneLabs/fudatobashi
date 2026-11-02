@@ -107,7 +107,11 @@ void main() {
       p.tabsAlwaysOpen = true;
       await p.setLearningMode(LearningMode.allKnown);
       await p.updateSettings(
-          p.settings.copyWith(language: language, languagePicked: true, toured: true, teiichiRulesSeen: true));
+          p.settings.copyWith(
+              language: language,
+              languagePicked: true,
+              toured: true,
+              teiichi: p.settings.teiichi.copyWith(rulesSeen: true)));
       if (!games) return;
       final today = p.dayAt().date;
       final yesterday = today.subtract(const Duration(days: 1));

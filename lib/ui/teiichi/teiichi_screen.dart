@@ -48,7 +48,7 @@ import 'teiichi_zoom.dart';
 /// [TeiichiResultsScreen].
 ///
 /// The screen turns sideways for the game, or follows the phone without
-/// the auto turn (`AppSettings.teiichiAutoTurn`); either way it is laid out
+/// the auto turn (`TeiichiSettings.autoTurn`); either way it is laid out
 /// for the shape it has. Turned mid-game it keeps everything but a drag
 /// under way, whose card goes back. Laying out on a portrait screen, it
 /// tips the player once a game to turn the phone ([showTeiichiTurnTip]),
@@ -145,7 +145,7 @@ class _TeiichiScreenState extends State<TeiichiScreen> with AnkirenPlay {
     final deck = {...widget.known}.toList()..shuffle(_rng);
     _deal = deck.take(widget.setup.cards).toList();
     _placing = TeiichiPlacing(widget.setup, _deal);
-    holdStage(_progress.settings.teiichiAutoTurn ? OrientationTuning.landscape : OrientationTuning.any);
+    holdStage(_progress.settings.teiichi.autoTurn ? OrientationTuning.landscape : OrientationTuning.any);
     _tick = Timer.periodic(TeiichiPlayTuning.clockTick, _onTick);
   }
 
@@ -184,7 +184,7 @@ class _TeiichiScreenState extends State<TeiichiScreen> with AnkirenPlay {
   /// out on a portrait screen; unless the player asked for it no more.
   Future<void> _tip() async {
     if (!mounted || _tipped || _ending || !_editing || _portrait != true || widget.setup.ranked) return;
-    if (_progress.settings.teiichiTurnTipOff) return;
+    if (_progress.settings.teiichi.turnTipOff) return;
     _tipped = true;
     _clock.stop();
     await showTeiichiTurnTip(context);

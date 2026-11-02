@@ -43,13 +43,6 @@ abstract final class DefaultSettings {
   static const KimarijiScript kimarijiScript = KimarijiScript.auto;
   static const bool accessibilityMode = false;
   static const bool cardPanelSwiped = false;
-  static const bool teiichiRulesSeen = false;
-
-  /// 定位置's last custom setup: the usual game's cards and rows.
-  static const int teiichiCards = TeiichiTuning.cards;
-  static const int teiichiRows = TeiichiTuning.rows;
-  static const bool teiichiAutoTurn = true;
-  static const bool teiichiTurnTipOff = false;
   static const bool timerNotificationsAsked = false;
   static const bool reminders = false;
   static const bool remindersOffered = false;
@@ -63,6 +56,15 @@ abstract final class DefaultSettings {
   static const int ankirenCustomPerSide = 8;
   static const Duration ankirenCustomMemorise = Duration(minutes: 1);
   static const bool ankirenRulesSeen = false;
+
+  /// 定位置 (Settings › 寄り道 › 定位置), and its custom game's last setup:
+  /// the usual game's cards and rows.
+  static const TeiichiSettings teiichi = TeiichiSettings();
+  static const bool teiichiRulesSeen = false;
+  static const int teiichiCustomCards = TeiichiTuning.cards;
+  static const int teiichiCustomRows = TeiichiTuning.rows;
+  static const bool teiichiAutoTurn = true;
+  static const bool teiichiTurnTipOff = false;
 }
 
 /// The orientations the app allows: portrait only. 暗記練's landscape layout

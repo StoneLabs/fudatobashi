@@ -307,9 +307,9 @@ void main() {
       expect(AnkirenSettings.fromJson(none.toJson()).freeSetup.karafuda, 0, reason: '0 turns them off');
       final old = AnkirenSettings.fromJson({...custom.toJson()}..remove('customKarafuda'));
       expect(old.freeSetup.karafuda, AnkirenSetup.customKarafuda(9), reason: 'unset, it follows the formula');
-      const app = AppSettings(teiichiCards: 12, teiichiKarafuda: 2);
-      expect(AppSettings.fromJson(app.toJson()).teiichiKarafuda, 2);
-      expect(AppSettings.fromJson(const AppSettings().toJson()).teiichiKarafuda, isNull);
+      const app = AppSettings(teiichi: TeiichiSettings(customCards: 12, customKarafuda: 2));
+      expect(AppSettings.fromJson(app.toJson()).teiichi.customKarafuda, 2);
+      expect(AppSettings.fromJson(const AppSettings().toJson()).teiichi.customKarafuda, isNull);
     });
   });
 

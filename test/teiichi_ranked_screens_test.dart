@@ -137,7 +137,11 @@ void main() {
       p.tabsAlwaysOpen = true;
       await p.setLearningMode(LearningMode.allKnown);
       await p.updateSettings(
-          p.settings.copyWith(language: language, languagePicked: true, toured: true, teiichiRulesSeen: true));
+          p.settings.copyWith(
+              language: language,
+              languagePicked: true,
+              toured: true,
+              teiichi: p.settings.teiichi.copyWith(rulesSeen: true)));
       if (cleared != null) await p.clearLevelsUpTo(trip, cleared);
       for (var i = 0; i < ranked; i++) {
         final played = playTeiichi(const TeiichiSetup.ranked(),
@@ -309,7 +313,7 @@ void main() {
 
         testWidgets('a level counts down, the cards flip at the limit, unplaced cards strike ($name, $lang)', (tester) async {
           final p = await open(tester, language: lang);
-          await tester.runAsync(() => p.updateSettings(p.settings.copyWith(teiichiTurnTipOff: true)));
+          await tester.runAsync(() => p.updateSettings(p.settings.copyWith(teiichi: p.settings.teiichi.copyWith(turnTipOff: true))));
           final setup = TeiichiSetup.forLevel(0);
           await show(tester, p, () => TeiichiScreen(setup: setup, known: allCards, seed: 3), screen: screen);
           expect(clock(tester), setup.limit, reason: 'the time left, not the time so far');
@@ -346,7 +350,8 @@ void main() {
       testWidgets('the dev readout shows with dev mode and the overlay on, placing and after the flip ($name)', (tester) async {
         final p = await open(tester);
         await tester.runAsync(() => p.updateSettings(
-            p.settings.copyWith(teiichiTurnTipOff: true, debugMode: true, playOverlay: true)));
+            p.settings.copyWith(
+            teiichi: p.settings.teiichi.copyWith(turnTipOff: true), debugMode: true, playOverlay: true)));
         final setup = TeiichiSetup.forLevel(0);
         await show(tester, p, () => TeiichiScreen(setup: setup, known: allCards, seed: 3), screen: screen);
         expect(find.byType(TeiichiScoreReadout), findsOneWidget);
@@ -373,7 +378,8 @@ void main() {
       testWidgets('the dev readout is not shown with $name', (tester) async {
         final p = await open(tester);
         await tester.runAsync(() => p.updateSettings(
-            p.settings.copyWith(teiichiTurnTipOff: true, debugMode: debugMode, playOverlay: overlay)));
+            p.settings.copyWith(
+            teiichi: p.settings.teiichi.copyWith(turnTipOff: true), debugMode: debugMode, playOverlay: overlay)));
         await show(tester, p, () => TeiichiScreen(setup: TeiichiSetup.forLevel(0), known: allCards, seed: 3),
             screen: usersPhoneLandscape);
         expect(find.byType(TeiichiScoreReadout), findsNothing);

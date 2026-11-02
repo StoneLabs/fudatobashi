@@ -107,11 +107,11 @@ class _TeiichiSheetState extends State<TeiichiSheet> {
         ? _guestSetup ?? TeiichiSetup.forLevel(TeiichiLevels.first)
         : widget.initial ?? TeiichiSetup.forLevel(next);
     _level = last.level ?? (_customOpen ? null : next);
-    final settings = _progress.settings;
+    final settings = _progress.settings.teiichi;
     final saved = TeiichiSetup(
-      cards: settings.teiichiCards,
-      rows: settings.teiichiRows,
-      karafuda: settings.teiichiKarafuda ?? Karafuda.forTeiichi(settings.teiichiCards),
+      cards: settings.customCards,
+      rows: settings.customRows,
+      karafuda: settings.customKarafuda ?? Karafuda.forTeiichi(settings.customCards),
     );
     final custom = (last.custom ? last : (widget.guest ? TeiichiSetup.usual : saved)).fitted(_known);
     _cards = custom.cards;
@@ -140,8 +140,10 @@ class _TeiichiSheetState extends State<TeiichiSheet> {
     if (widget.guest) {
       _guestSetup = setup;
     } else if (setup.custom) {
-      unawaited(_progress.updateSettings(_progress.settings
-          .copyWith(teiichiCards: setup.cards, teiichiRows: setup.rows, teiichiKarafuda: setup.karafuda)));
+      final settings = _progress.settings;
+      unawaited(_progress.updateSettings(settings.copyWith(
+          teiichi: settings.teiichi
+              .copyWith(customCards: setup.cards, customRows: setup.rows, customKarafuda: setup.karafuda))));
     }
     Navigator.pop(context, setup);
   }

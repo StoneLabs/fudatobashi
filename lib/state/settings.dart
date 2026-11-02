@@ -156,6 +156,71 @@ class AnkirenSettings {
       );
 }
 
+/// 定位置's options (Settings › 寄り道 › 定位置) and its custom game's last
+/// setup.
+class TeiichiSettings {
+  const TeiichiSettings({
+    this.rulesSeen = DefaultSettings.teiichiRulesSeen,
+    this.customCards = DefaultSettings.teiichiCustomCards,
+    this.customRows = DefaultSettings.teiichiCustomRows,
+    this.customKarafuda,
+    this.autoTurn = DefaultSettings.teiichiAutoTurn,
+    this.turnTipOff = DefaultSettings.teiichiTurnTipOff,
+  });
+
+  /// The rules have been shown, so 定位置's page no longer opens with them.
+  final bool rulesSeen;
+
+  /// The custom game's last setup; its からふだ as the formula gives its
+  /// cards (`Karafuda.forTeiichi`) while null.
+  final int customCards;
+  final int customRows;
+  final int? customKarafuda;
+
+  /// The game turns the screen sideways; else it follows how the phone is
+  /// held.
+  final bool autoTurn;
+
+  /// The tip to turn the phone, on a portrait game, is not to show again.
+  final bool turnTipOff;
+
+  Map<String, Object?> toJson() => {
+        'rulesSeen': rulesSeen,
+        'customCards': customCards,
+        'customRows': customRows,
+        'customKarafuda': ?customKarafuda,
+        'autoTurn': autoTurn,
+        'turnTipOff': turnTipOff,
+      };
+
+  factory TeiichiSettings.fromJson(Map<String, dynamic> j) => TeiichiSettings(
+        rulesSeen: j['rulesSeen'] as bool? ?? DefaultSettings.teiichiRulesSeen,
+        customCards: (j['customCards'] as int? ?? DefaultSettings.teiichiCustomCards)
+            .clamp(TeiichiTuning.minCards, TeiichiTuning.cards),
+        customRows: (j['customRows'] as int? ?? DefaultSettings.teiichiCustomRows).clamp(1, TeiichiTuning.rows),
+        customKarafuda: (j['customKarafuda'] as int?)?.clamp(0, TeiichiTuning.cards),
+        autoTurn: j['autoTurn'] as bool? ?? DefaultSettings.teiichiAutoTurn,
+        turnTipOff: j['turnTipOff'] as bool? ?? DefaultSettings.teiichiTurnTipOff,
+      );
+
+  TeiichiSettings copyWith({
+    bool? rulesSeen,
+    int? customCards,
+    int? customRows,
+    int? customKarafuda,
+    bool? autoTurn,
+    bool? turnTipOff,
+  }) =>
+      TeiichiSettings(
+        rulesSeen: rulesSeen ?? this.rulesSeen,
+        customCards: customCards ?? this.customCards,
+        customRows: customRows ?? this.customRows,
+        customKarafuda: customKarafuda ?? this.customKarafuda,
+        autoTurn: autoTurn ?? this.autoTurn,
+        turnTipOff: turnTipOff ?? this.turnTipOff,
+      );
+}
+
 /// User preferences (persisted as JSON).
 class AppSettings {
   const AppSettings({
@@ -188,12 +253,7 @@ class AppSettings {
     this.soundLadder = DefaultSettings.soundLadder,
     this.cardScale = DefaultSettings.cardScale,
     this.ankiren = DefaultSettings.ankiren,
-    this.teiichiRulesSeen = DefaultSettings.teiichiRulesSeen,
-    this.teiichiCards = DefaultSettings.teiichiCards,
-    this.teiichiRows = DefaultSettings.teiichiRows,
-    this.teiichiKarafuda,
-    this.teiichiAutoTurn = DefaultSettings.teiichiAutoTurn,
-    this.teiichiTurnTipOff = DefaultSettings.teiichiTurnTipOff,
+    this.teiichi = DefaultSettings.teiichi,
   });
 
   /// A language code (e.g. `'ja'`), or `'system'` for the device's language.
@@ -259,22 +319,6 @@ class AppSettings {
   /// no longer shows.
   final bool cardPanelSwiped;
 
-  /// 定位置's rules have been shown, so its page no longer opens with them.
-  final bool teiichiRulesSeen;
-
-  /// 定位置's last setup picked in its custom game sheet; its からふだ as
-  /// the formula gives its cards (`Karafuda.forTeiichi`) while null.
-  final int teiichiCards;
-  final int teiichiRows;
-  final int? teiichiKarafuda;
-
-  /// 定位置's game turns the screen sideways; else it follows how the phone
-  /// is held (Settings › 寄り道 › 定位置).
-  final bool teiichiAutoTurn;
-
-  /// The tip to turn the phone, on a portrait game, is not to show again.
-  final bool teiichiTurnTipOff;
-
   /// The match timer has asked once to show its notification, so it never
   /// asks again.
   final bool timerNotificationsAsked;
@@ -296,6 +340,9 @@ class AppSettings {
 
   /// 暗記練's options and its free play's last setup.
   final AnkirenSettings ankiren;
+
+  /// 定位置's options and its custom game's last setup.
+  final TeiichiSettings teiichi;
 
   /// Whether sounds of [category] are switched on.
   bool plays(SoundCategory category) => switch (category) {
@@ -339,12 +386,7 @@ class AppSettings {
         'soundLadder': soundLadder.name,
         'cardScale': cardScale,
         'ankiren': ankiren.toJson(),
-        'teiichiRulesSeen': teiichiRulesSeen,
-        'teiichiCards': teiichiCards,
-        'teiichiRows': teiichiRows,
-        'teiichiKarafuda': ?teiichiKarafuda,
-        'teiichiAutoTurn': teiichiAutoTurn,
-        'teiichiTurnTipOff': teiichiTurnTipOff,
+        'teiichi': teiichi.toJson(),
       };
 
   factory AppSettings.fromJson(Map<String, dynamic> j) {
@@ -396,13 +438,9 @@ class AppSettings {
       cardScale: ((j['cardScale'] as num?)?.toDouble() ?? DefaultSettings.cardScale)
           .clamp(SwipeTuning.cardScaleMin, SwipeTuning.cardScaleMax),
       ankiren: ankiren == null ? DefaultSettings.ankiren : AnkirenSettings.fromJson(ankiren),
-      teiichiRulesSeen: j['teiichiRulesSeen'] as bool? ?? DefaultSettings.teiichiRulesSeen,
-      teiichiCards: (j['teiichiCards'] as int? ?? DefaultSettings.teiichiCards)
-          .clamp(TeiichiTuning.minCards, TeiichiTuning.cards),
-      teiichiRows: (j['teiichiRows'] as int? ?? DefaultSettings.teiichiRows).clamp(1, TeiichiTuning.rows),
-      teiichiKarafuda: (j['teiichiKarafuda'] as int?)?.clamp(0, TeiichiTuning.cards),
-      teiichiAutoTurn: j['teiichiAutoTurn'] as bool? ?? DefaultSettings.teiichiAutoTurn,
-      teiichiTurnTipOff: j['teiichiTurnTipOff'] as bool? ?? DefaultSettings.teiichiTurnTipOff,
+      teiichi: j['teiichi'] is Map
+          ? TeiichiSettings.fromJson((j['teiichi'] as Map).cast<String, dynamic>())
+          : DefaultSettings.teiichi,
     );
   }
 
@@ -436,12 +474,7 @@ class AppSettings {
     SoundLadderMode? soundLadder,
     double? cardScale,
     AnkirenSettings? ankiren,
-    bool? teiichiRulesSeen,
-    int? teiichiCards,
-    int? teiichiRows,
-    int? teiichiKarafuda,
-    bool? teiichiAutoTurn,
-    bool? teiichiTurnTipOff,
+    TeiichiSettings? teiichi,
   }) =>
       AppSettings(
         language: language ?? this.language,
@@ -473,11 +506,6 @@ class AppSettings {
         soundLadder: soundLadder ?? this.soundLadder,
         cardScale: cardScale ?? this.cardScale,
         ankiren: ankiren ?? this.ankiren,
-        teiichiRulesSeen: teiichiRulesSeen ?? this.teiichiRulesSeen,
-        teiichiCards: teiichiCards ?? this.teiichiCards,
-        teiichiRows: teiichiRows ?? this.teiichiRows,
-        teiichiKarafuda: teiichiKarafuda ?? this.teiichiKarafuda,
-        teiichiAutoTurn: teiichiAutoTurn ?? this.teiichiAutoTurn,
-        teiichiTurnTipOff: teiichiTurnTipOff ?? this.teiichiTurnTipOff,
+        teiichi: teiichi ?? this.teiichi,
       );
 }

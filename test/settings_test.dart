@@ -140,21 +140,25 @@ void main() {
 
   group('AppSettings 定位置 setup', () {
     test('the usual game by default, round-trips, and stays within what a game allows', () {
-      expect((const AppSettings().teiichiCards, const AppSettings().teiichiRows), (25, 3));
-      final saved = const AppSettings().copyWith(teiichiCards: 12, teiichiRows: 2);
+      const fresh = AppSettings();
+      expect((fresh.teiichi.customCards, fresh.teiichi.customRows), (25, 3));
+      final saved = fresh.copyWith(teiichi: fresh.teiichi.copyWith(customCards: 12, customRows: 2));
       final back = AppSettings.fromJson(saved.toJson());
-      expect((back.teiichiCards, back.teiichiRows), (12, 2));
-      final wild = AppSettings.fromJson({'teiichiCards': 999, 'teiichiRows': 0});
-      expect((wild.teiichiCards, wild.teiichiRows), (25, 1));
+      expect((back.teiichi.customCards, back.teiichi.customRows), (12, 2));
+      final wild = AppSettings.fromJson({
+        'teiichi': {'customCards': 999, 'customRows': 0}
+      });
+      expect((wild.teiichi.customCards, wild.teiichi.customRows), (25, 1));
     });
 
     test('the screen turns on its own and the tip shows, by default; both round-trip', () {
-      expect((const AppSettings().teiichiAutoTurn, const AppSettings().teiichiTurnTipOff), (true, false));
-      expect((AppSettings.fromJson(const {}).teiichiAutoTurn, AppSettings.fromJson(const {}).teiichiTurnTipOff),
-          (true, false));
-      final saved = const AppSettings().copyWith(teiichiAutoTurn: false, teiichiTurnTipOff: true);
-      final back = AppSettings.fromJson(saved.toJson());
-      expect((back.teiichiAutoTurn, back.teiichiTurnTipOff), (false, true));
+      const fresh = AppSettings();
+      expect((fresh.teiichi.autoTurn, fresh.teiichi.turnTipOff), (true, false));
+      final empty = AppSettings.fromJson(const {}).teiichi;
+      expect((empty.autoTurn, empty.turnTipOff), (true, false));
+      final saved = fresh.copyWith(teiichi: fresh.teiichi.copyWith(autoTurn: false, turnTipOff: true));
+      final back = AppSettings.fromJson(saved.toJson()).teiichi;
+      expect((back.autoTurn, back.turnTipOff), (false, true));
     });
   });
 

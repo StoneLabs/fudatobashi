@@ -18,8 +18,8 @@ import 'ankiren_sheet.dart';
 /// no longer opens with them.
 Future<void> openTeiichiRules(BuildContext context) {
   final progress = ProgressScope.read(context);
-  if (!progress.settings.teiichiRulesSeen) {
-    progress.updateSettings(progress.settings.copyWith(teiichiRulesSeen: true));
+  if (!progress.settings.teiichi.rulesSeen) {
+    progress.updateSettings(progress.settings.copyWith(teiichi: progress.settings.teiichi.copyWith(rulesSeen: true)));
   }
   return showMangaSheet<void>(
     context,

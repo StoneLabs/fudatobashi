@@ -68,8 +68,8 @@ class TeiichiSettingsScreen extends StatelessWidget {
         SettingsSwitch(
           title: s.teiichiAutoTurn,
           note: s.teiichiAutoTurnNote,
-          value: settings.teiichiAutoTurn,
-          onChanged: (v) => progress.updateSettings(settings.copyWith(teiichiAutoTurn: v)),
+          value: settings.teiichi.autoTurn,
+          onChanged: (v) => progress.updateSettings(settings.copyWith(teiichi: settings.teiichi.copyWith(autoTurn: v))),
         ),
       ]),
     ]);

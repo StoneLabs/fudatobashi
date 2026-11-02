@@ -126,7 +126,11 @@ void main() {
       p.tabsAlwaysOpen = true;
       await p.setLearningMode(LearningMode.allKnown);
       await p.updateSettings(p.settings
-          .copyWith(language: language, languagePicked: true, toured: true, teiichiRulesSeen: rulesSeen));
+          .copyWith(
+              language: language,
+              languagePicked: true,
+              toured: true,
+              teiichi: p.settings.teiichi.copyWith(rulesSeen: rulesSeen)));
       for (var i = 0; i < games; i++) {
         final played = playTeiichi(TeiichiSetup.usual,
             placeMs: 900 + 150 * i,
@@ -185,7 +189,7 @@ void main() {
       expect(find.byType(TeiichiPage), findsOneWidget);
       await tester.pump(Motion.sheet);
       expect(find.byType(TeiichiRulesSheet), findsOneWidget, reason: 'the first visit opens with the rules');
-      expect(p.settings.teiichiRulesSeen, isTrue);
+      expect(p.settings.teiichi.rulesSeen, isTrue);
       await captureScreen(tester, 'teiichi/rules');
       expect(tester.takeException(), isNull);
       await tester.pumpWidget(const SizedBox());
@@ -294,11 +298,11 @@ void main() {
         await show(tester, p, () => const TeiichiSettingsScreen());
         final row = find.text(s.teiichiAutoTurn, findRichText: true);
         expect(row, findsOneWidget);
-        expect(p.settings.teiichiAutoTurn, isTrue);
+        expect(p.settings.teiichi.autoTurn, isTrue);
         await captureScreen(tester, 'teiichi/settings', lang: lang);
         await tester.tap(row);
         await tester.pump();
-        expect(p.settings.teiichiAutoTurn, isFalse);
+        expect(p.settings.teiichi.autoTurn, isFalse);
         expect(tester.takeException(), isNull);
         await tester.pumpWidget(const SizedBox());
       });
@@ -345,8 +349,8 @@ void main() {
       await tap(find.descendant(of: sheet, matching: find.text(s.ankirenConfirm)));
       await tester.pump(Motion.sheet);
       expect(find.text(s.teiichiPlay(20)), findsOneWidget, reason: 'the page plays the custom game');
-      expect((p.settings.teiichiCards, p.settings.teiichiRows), (20, 3), reason: 'kept in the settings');
-      expect(p.settings.teiichiKarafuda, Karafuda.forTeiichi(20) - 1);
+      expect((p.settings.teiichi.customCards, p.settings.teiichi.customRows), (20, 3), reason: 'kept in the settings');
+      expect(p.settings.teiichi.customKarafuda, Karafuda.forTeiichi(20) - 1);
 
       await tester.pumpWidget(const SizedBox());
       await show(tester, p, () => const TeiichiPage());
@@ -827,7 +831,7 @@ void main() {
         expect(clock.value, before, reason: 'nothing is laid out while the tip is up');
         await captureScreen(tester, 'teiichi/portrait_tip', lang: lang);
         await dismissTip(tester, never: true, s: s);
-        expect(p.settings.teiichiTurnTipOff, isTrue);
+        expect(p.settings.teiichi.turnTipOff, isTrue);
         final resumed = clock.value;
         await tester.pump(const Duration(seconds: 2));
         expect(clock.value, resumed + const Duration(seconds: 2), reason: 'the clock goes on once it closes');

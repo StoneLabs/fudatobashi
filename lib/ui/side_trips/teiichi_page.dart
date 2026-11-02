@@ -58,7 +58,7 @@ class _TeiichiPageState extends State<TeiichiPage> {
   @override
   void initState() {
     super.initState();
-    if (!ProgressScope.read(context).settings.teiichiRulesSeen) {
+    if (!ProgressScope.read(context).settings.teiichi.rulesSeen) {
       SchedulerBinding.instance.addPostFrameCallback((_) {
         if (mounted) openTeiichiRules(context);
       });

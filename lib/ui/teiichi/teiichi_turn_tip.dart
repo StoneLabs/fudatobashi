@@ -12,13 +12,13 @@ import '../side_trips/burst_button.dart';
 
 /// Tobi's tip on a portrait 定位置 game: turned sideways, the phone shows
 /// the cards much bigger. It closes with OK, or with "Don't show again",
-/// which keeps it from showing again (`AppSettings.teiichiTurnTipOff`).
+/// which keeps it from showing again (`TeiichiSettings.turnTipOff`).
 Future<void> showTeiichiTurnTip(BuildContext context) {
   final progress = ProgressScope.read(context);
   return showTobiNotice(context, (context) {
     final s = S.of(context);
     void close({required bool never}) {
-      if (never) unawaited(progress.updateSettings(progress.settings.copyWith(teiichiTurnTipOff: true)));
+      if (never) unawaited(progress.updateSettings(progress.settings.copyWith(teiichi: progress.settings.teiichi.copyWith(turnTipOff: true))));
       Navigator.pop(context);
     }
 
