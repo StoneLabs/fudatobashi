@@ -604,7 +604,6 @@ class SideTripGuestButton extends StatelessWidget {
     return HomeRowButton(
       icon: IconArt.person,
       title: s.ankirenGuestButton,
-      badge: s.sub == null ? null : _Sub(s.sub!.ankirenGuestButton),
       sub: s.ankirenGuestSub,
       onTap: onTap,
     );
@@ -622,22 +621,4 @@ class SideTripRulesButton extends StatelessWidget {
     final s = S.of(context);
     return HomeRowButton(icon: IconArt.help, title: s.howToPlay, sub: s.sub?.howToPlay.toUpperCase(), onTap: onTap);
   }
-}
-
-/// A button title's other-language sub-label, in small tracked capitals.
-class _Sub extends StatelessWidget {
-  const _Sub(this.text);
-
-  final String text;
-
-  @override
-  Widget build(BuildContext context) => Text(
-        text.toUpperCase(),
-        maxLines: 1,
-        style: const TextStyle(
-          fontWeight: Weights.black,
-          fontSize: SideTripsLayout.subFont,
-          letterSpacing: SideTripsLayout.subTracking * SideTripsLayout.subFont,
-        ),
-      );
 }
