@@ -108,12 +108,6 @@ extension HistoryStrings on S {
     return ja ? '${day.month}月${day.day}日($weekday)' : '$weekday ${day.day} ${_monthAbbr[day.month - 1]}';
   }
 
-  /// A 暗記練 row's short date: "Wed 14" (EN) / "14日(水)" (JA).
-  String historyShortDay(DateTime day) {
-    final weekday = t('weekdayShort').split(' ')[day.weekday - 1];
-    return ja ? '${day.day}日($weekday)' : '$weekday ${day.day}';
-  }
-
   /// The 7-day strip's mark on a day whose set was done.
   String get historyDayDoneMark => t('historyDayDoneMark');
 

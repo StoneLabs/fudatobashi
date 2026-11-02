@@ -64,9 +64,6 @@ class Waka {
   /// The poet's name with its reading, in the same markup.
   String get authorRuby => '[$author|$authorKana]';
 
-  /// The five verses in furigana markup, upper verse first.
-  List<String> get versesRuby => [...kamiRuby.split('　'), ...shimoRuby.split('　')];
-
   /// The title its reading card prints in red down the right, as the 序歌's
   /// does; null for the 100, whose cards have a number instead.
   final String? yomifudaTitle;

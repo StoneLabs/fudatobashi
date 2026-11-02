@@ -51,7 +51,6 @@ abstract final class ProseLayout {
 /// Markdown set as prose (`MarkdownProse`, the card explanations): the body
 /// is [ProseLayout]'s; headings are display type, then bold.
 abstract final class MarkdownLayout {
-  static const double h1Font = 21;
   static const double h2Font = 18;
   static const double h3Font = 15.5;
   static const double h4Font = 14;

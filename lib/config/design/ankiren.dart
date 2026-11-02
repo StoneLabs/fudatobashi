@@ -289,7 +289,7 @@ abstract final class AnkirenPageLayout {
 
   /// The record strip (History's): the class and the rating split by an
   /// ink rule, over the gauge to the next class.
-  static const double stripCut = HistoryHeaderLayout.stripCut;
+  static const double stripCut = HistoryListStyle.stripCut;
   static const EdgeInsets cellsPadding = EdgeInsets.fromLTRB(14, 9, 14 + stripCut, 8);
   static const double cellGap = 12;
   static const double stripFont = 26;

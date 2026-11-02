@@ -45,7 +45,6 @@ abstract final class Palette {
   static const goldLight = Color(0xFFF7E4A3);
   static const goldDeep = Color(0xFF8E6B26);
   static const vermilion = Color(0xFFD13A22);
-  static const vermilionDeep = Color(0xFF8F2012);
 
   /// Speed tiers, fastest first (see [SpeedTiers]).
   static const tiers = [sun, orange, pink, violetDeep];

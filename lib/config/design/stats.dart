@@ -304,8 +304,6 @@ abstract final class CardDetailLayout {
   static const double lookAlikeKimarijiFont = 17;
   static const double lookAlikeChevron = 14;
 
-  static const double modeFont = 13;
-
   static const EdgeInsets chartPadding = EdgeInsets.fromLTRB(4, 6, 4, 4);
   static const EdgeInsets chartEmptyPadding = EdgeInsets.symmetric(vertical: 40);
 
@@ -385,21 +383,8 @@ abstract final class RankLayout {
   static const double statsEntryIconSize = 14;
 }
 
-/// The rank ladder before there is a rank (`rank_screen.dart`): locked in
-/// journey mode, waiting for the first ranked run in all-known mode.
+/// The rank ladder before there is a rank (`rank_screen.dart`): the line
+/// waiting for the first ranked run.
 abstract final class RankLockLayout {
-  /// The locked ladder shows through this faintly behind its card.
-  static const double ladderOpacity = 0.32;
-  static const EdgeInsets cardPadding = EdgeInsets.fromLTRB(18, 18, 18, 18);
-  static const double cardCut = 12;
-  static const double titleFont = 20;
-  static const double bodyFont = 14;
-  static const double bodyLineHeight = 1.45;
-  static const double lockIcon = 22;
-  static const double buttonHeight = 48;
-  static const Placement tobi = Placement(right: 14, top: -62, size: Size(70, 84));
-
-  /// Room left above the card for Tobi.
-  static const double tobiRoom = 56;
   static const double noteFont = 13.5;
 }

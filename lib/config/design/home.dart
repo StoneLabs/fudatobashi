@@ -70,7 +70,6 @@ abstract final class MapStyle {
   /// How far along the last sailed leg the boat floats.
   static const double boatAlong = 0.5;
   static const double plateFont = 14;
-  static const double plateFontLong = 13;
   static const double platePad = 6;
   static const double plateExtraHeight = 9;
   static const double plateRadius = 4;
@@ -116,7 +115,6 @@ abstract final class HomeLayout {
   static const double pipHeight = 24;
   static const double pipAspect = pipHeight / pipWidth;
   static const double pipGap = 6;
-  static const double pipTop = 8;
   static const double pipRadius = 3;
   static const double pipInset = 3;
 
@@ -124,9 +122,6 @@ abstract final class HomeLayout {
   static const double knownSpeedFont = 12;
   static const double knownSpeedNumber = 14;
   static const double knownSpeedTrendIcon = 11;
-
-  /// Above the known-card speed under the journey's card pips.
-  static const double pipsSpeedGap = 8;
 
   static const double journeyHeroHeight = 180;
   static const double journeyHeroCut = 8;

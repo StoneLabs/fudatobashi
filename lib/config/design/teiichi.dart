@@ -100,7 +100,6 @@ abstract final class TeiichiPlayLayout {
   static const double landingTagFont = 11.5;
   static const double landingTagGap = 4;
   static const double landingTagRoom = 26;
-  static const EdgeInsets landingTagPadding = EdgeInsets.symmetric(horizontal: 6, vertical: 3);
 
   /// A dragged card rides above the finger, its foot [dragLift] of its
   /// height up so the finger never hides it, [dragScale] times its size
