@@ -14,6 +14,7 @@ import 'package:fudatobashi/domain/step_plan.dart';
 import 'package:fudatobashi/migrations/migrations.dart';
 import 'package:fudatobashi/migrations/v1_to_v2.dart';
 import 'package:fudatobashi/state/play_config.dart';
+import 'package:sqlite3/sqlite3.dart' show OpenMode, sqlite3;
 
 /// The schema of version 1 (before the side trips' tables), as that
 /// version's `AppDatabase` created it.
@@ -193,14 +194,17 @@ void main() {
     await db.close();
   });
 
-  test('a version 4 database gains 定位置\'s placings and keeps its side-trip games', () async {
+  test('a version 4 database (v2.2.0) gains 定位置\'s placings and keeps its side-trip games', () async {
     final fresh = AppDatabase(NativeDatabase.memory());
     final latest = await schemaOf(fresh);
     await fresh.close();
+    final release = sqlite3.open('test/past_db/v2.2.0_fresh.sqlite', mode: OpenMode.readOnly);
     final v4 = [
-      for (final MapEntry(key: name, value: sql) in latest.entries)
-        if (!name.startsWith('teiichi_placings') && !name.startsWith('sqlite_')) sql,
+      for (final row in release.select("SELECT sql FROM sqlite_master WHERE sql IS NOT NULL AND name NOT LIKE 'sqlite_%' "
+          'ORDER BY rowid'))
+        row['sql'] as String,
     ];
+    release.close();
     final db = install(4, [
       ...v4,
       'INSERT INTO days VALUES (20261012, 1791777600, 1791864000, NULL, 0, 0, 0, NULL)',
