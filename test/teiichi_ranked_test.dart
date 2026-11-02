@@ -177,7 +177,8 @@ void main() {
       expect(TripRating.teiichi.performance(2700), closeTo(1000, 1e-9));
       expect(TripRating.teiichi.performance(0), 0);
       expect(TripRating.teiichi.performance(-5), 0);
-      expect(TripRating.ankiren.performance(2700), 1350, reason: '暗記練 keeps its own');
+      expect(TripRating.ankiren.performance(2700), closeTo(2700 / AnkirenRatingModel.pointsPerRating, 1e-9),
+          reason: '暗記練 keeps its own');
     });
   });
 
