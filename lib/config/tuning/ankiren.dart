@@ -126,7 +126,7 @@ abstract final class AnkirenTuning {
   /// Being ready before the memorise time is up multiplies the points of the
   /// cards found with the first tap by up to 1 + [earlyBonus], in proportion
   /// to the share of the time left. Other cards' points are never multiplied.
-  static const double earlyBonus = 0.5;
+  static const double earlyBonus = 0.4;
 
   /// The speed bonus's curve over the response time t: a logistic curve over
   /// ln t, centred on [speedMidpoint] and as steep as [speedSteepness],

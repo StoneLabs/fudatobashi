@@ -162,7 +162,7 @@ void main() {
       final s = AnkirenScore(answers, prompts: 6);
       expect(s.total, 150 + 108 + 100 + 35 + 42);
       expect(s.maxRecall, 6 * 150);
-      expect(s.max, 6 * 150 * 1.5, reason: 'every card first try at full speed, ready at once');
+      expect(s.max, (6 * 150 * (1 + AnkirenTuning.earlyBonus)).round(), reason: 'every card first try at full speed, ready at once');
       expect(s.fraction, closeTo(435 / 900, 1e-12));
       expect(AnkirenScore([], prompts: 0).fraction, 0);
     });
@@ -172,7 +172,8 @@ void main() {
     test('recall points make the fraction; time left scales the score', () {
       final answers = [found(100), found(1000)];
       final plain = AnkirenScore(answers, prompts: 2);
-      expect((plain.recall, plain.maxRecall, plain.total, plain.max, plain.early), (278, 300, 278, 450, 0),
+      expect((plain.recall, plain.maxRecall, plain.total, plain.max, plain.early),
+          (278, 300, 278, (300 * (1 + AnkirenTuning.earlyBonus)).round(), 0),
           reason: 'the max is every card first try at full speed, ready at once');
       final quick = AnkirenScore(answers, prompts: 2, timeLeft: 0.5);
       expect(quick.fraction, plain.fraction, reason: 'the fraction reads recall only');

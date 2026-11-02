@@ -370,7 +370,7 @@ void main() {
       await show(tester, p, AnkirenResultsScreen(game: game, report: report, player: AnkirenPlayer.owner),
           'results_redo_13_ankiren_ranked');
       expect(find.text(s.ankirenScoreLabel), findsOneWidget);
-      expect(find.text(s.ankirenScoreOf(groupDigits(11250))), findsOneWidget, reason: '50 cards × 150 points × 1.5');
+      expect(find.text(s.ankirenScoreOf(groupDigits(score.max))), findsOneWidget, reason: 'out of the best score possible');
       expect(find.text(s.summaryEarly(groupDigits(score.early))), findsOneWidget);
       await close(tester);
     });
