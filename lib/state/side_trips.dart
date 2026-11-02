@@ -230,14 +230,15 @@ class SideTrips {
   /// whether it was played to the end, and the cards never placed.
   TeiichiGameFacts teiichiFactsOf(SideTripRun run) {
     final meta = jsonDecode(run.meta) as Map<String, dynamic>;
-    final laid = AnkirenHalf.fromJson(meta[TeiichiMeta.layoutKey] as List).cards.toSet();
+    final laid = AnkirenHalf.fromJson(meta[TeiichiMeta.boardKey] as List).cards.toSet();
+    final dealt = _placings[run.id] ?? const <TeiichiPlacingRow>[];
     return (
-      cards: meta[TeiichiMeta.cardsKey] as int,
+      cards: dealt.length,
       placing: Duration(milliseconds: meta[TeiichiMeta.placingKey] as int),
       firstTaps: cardsIn(run) - missesIn(run),
       wrongTaps: answersOf(run).fold(0, (n, a) => n + a.wrongTaps),
       completed: run.completed,
-      unplaced: (_placings[run.id] ?? const <TeiichiPlacingRow>[]).where((p) => !laid.contains(p.poemId)).length,
+      unplaced: dealt.where((p) => !laid.contains(p.poemId)).length,
     );
   }
 
@@ -326,7 +327,7 @@ class SideTrips {
 
   /// Stores a 定位置 game, once over: [placing], laid out and done, and
   /// [game], its cards asked for, as started at [startedAt] on practice day
-  /// [day]. Its run keeps the setup, the placing time and the layout, one
+  /// [day]. Its run keeps the rows, the placing time and the layout, one
   /// answer per card asked as 暗記練's do, and one placing per card dealt,
   /// those placed in the order they were, then the rest.
   ///
@@ -359,10 +360,9 @@ class SideTrips {
             rating: Value(after),
             performance: Value(performance),
             meta: Value(jsonEncode({
-              TeiichiMeta.cardsKey: setup.cards,
               TeiichiMeta.rowsKey: setup.rows,
               TeiichiMeta.placingKey: placing.placingTime!.inMilliseconds,
-              TeiichiMeta.layoutKey: placing.board.half.toJson(),
+              TeiichiMeta.boardKey: placing.board.half.toJson(),
               if (game.karafuda.isNotEmpty) TeiichiMeta.karafudaKey: game.karafuda,
             })),
           ));

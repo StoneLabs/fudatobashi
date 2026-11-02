@@ -2,17 +2,18 @@ import 'dart:math' as math;
 
 import '../config/config.dart';
 
-/// The keys of a recorded 定位置 game's details (its run's meta). The placing
-/// order and times are kept card by card in their own table.
+/// The keys of a recorded 定位置 game's details (its run's meta). The cards
+/// dealt, in placing order with their times, are kept card by card in their
+/// own table.
 abstract final class TeiichiMeta {
-  static const cardsKey = 'cards';
   static const rowsKey = 'rows';
 
   /// From the deal to the flip.
   static const placingKey = 'placingMs';
 
-  /// The final layout (`AnkirenHalf.toJson`).
-  static const layoutKey = 'layout';
+  /// The final layout (`AnkirenHalf.toJson`); 暗記練's games use `layout`
+  /// for the screen they were played on.
+  static const boardKey = 'board';
 
   /// The からふだ called, by id, as 暗記練's (`AnkirenMeta.karafudaKey`).
   static const karafudaKey = 'karafuda';

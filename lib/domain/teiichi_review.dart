@@ -26,12 +26,12 @@ class TeiichiGameRecord {
     required List<TeiichiPlaced> dealt,
   }) {
     final details = jsonDecode(meta) as Map<String, dynamic>;
-    final layout = AnkirenHalf.fromJson(details[TeiichiMeta.layoutKey] as List);
+    final layout = AnkirenHalf.fromJson(details[TeiichiMeta.boardKey] as List);
     final laid = layout.cards.toSet();
     return TeiichiGameRecord._(
       recall,
       TeiichiSetup(
-        cards: details[TeiichiMeta.cardsKey] as int,
+        cards: dealt.length,
         rows: details[TeiichiMeta.rowsKey] as int,
         karafuda: recall.karafuda.length,
         level: recall.level,

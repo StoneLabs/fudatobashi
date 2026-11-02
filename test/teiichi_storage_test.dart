@@ -42,10 +42,9 @@ void main() {
     final run = await db.select(db.sideTripRuns).getSingle();
     expect([run.game, run.ranked, run.level, run.score, run.rating, run.completed], [teiichi, false, null, null, null, true]);
     final meta = jsonDecode(run.meta) as Map<String, dynamic>;
-    expect(meta[TeiichiMeta.cardsKey], 12);
     expect(meta[TeiichiMeta.rowsKey], 2);
     expect(meta[TeiichiMeta.placingKey], 12 * 1500);
-    expect(AnkirenHalf.fromJson(meta[TeiichiMeta.layoutKey] as List).cards, played.placing.board.cards);
+    expect(AnkirenHalf.fromJson(meta[TeiichiMeta.boardKey] as List).cards, played.placing.board.cards);
 
     final answers = await (db.select(db.sideTripAnswers)..orderBy([(a) => OrderingTerm.asc(a.seq)])).get();
     expect([for (final a in answers) a.poemId], played.game.prompts);
