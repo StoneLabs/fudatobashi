@@ -234,7 +234,6 @@ void main() {
         DojoSceneLayout.boat,
         DojoSceneLayout.seaNear,
         for (final layer in DojoSceneLayout.backWaves) layer.piece,
-        DojoRingLayout.nobori,
       ])
         piece.asset,
       for (final art in [
@@ -611,13 +610,12 @@ void main() {
       expect(inHub(find.byType(SideTripBody)).hitTestable(), findsOneWidget);
       expect(inHub(find.byType(SideTripSoonEntry)).hitTestable(), findsNothing);
       expect(tags(), 0, reason: '定位置 on the right is open');
-      expect(pictures(DojoRingLayout.nobori.asset), findsOneWidget, reason: "暗記練's banner is its label");
       expect(pictures(DojoSceneLayout.toriiOpen.asset), findsOneWidget);
 
-      for (final (front, labels, banner, open) in [
-        (SideTripIsle.storehouse, 1, false, true),
-        (SideTripIsle.hall, 2, false, false),
-        (SideTripIsle.rocks, 1, true, false),
+      for (final (front, labels, open) in [
+        (SideTripIsle.storehouse, 1, true),
+        (SideTripIsle.hall, 2, false),
+        (SideTripIsle.rocks, 1, false),
       ]) {
         await swipe(tester);
         expect(frontOf(tester), front);
@@ -626,7 +624,6 @@ void main() {
         expect(inHub(find.byType(SideTripBody)).hitTestable(), open ? findsOneWidget : findsNothing, reason: '$front');
         if (!open) expect(inHub(find.text(s.sideTripsSoonLine)).hitTestable(), findsOneWidget, reason: 'one entry shows');
         expect(tags(), labels, reason: '$front');
-        expect(pictures(DojoRingLayout.nobori.asset), banner ? findsOneWidget : findsNothing, reason: '$front');
         expect(pictures(DojoSceneLayout.toriiOpen.asset), open ? findsOneWidget : findsNothing, reason: '$front');
         expect(pictures(DojoSceneLayout.toriiLocked.asset), open ? findsNothing : findsOneWidget, reason: '$front');
       }

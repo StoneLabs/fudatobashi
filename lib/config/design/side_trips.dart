@@ -241,9 +241,6 @@ abstract final class DojoRingLayout {
   static const storehouse = RingIsleArt('$_dir/storehouse.webp', '$_dir/storehouse-haze.webp');
   static const hall = RingIsleArt('$_dir/hall.webp', '$_dir/hall-haze.webp');
   static const rocks = RingIsleArt('$_dir/rocks.webp', '$_dir/rocks-haze.webp');
-
-  /// 暗記練's banner on its island's grass, once it is open: its label.
-  static const nobori = ScenePiece('assets/graphics/sidetrips/ankiren/nobori.webp', Rect.fromLTWH(238, 73, 30, 100));
 }
 
 /// How the ring of islands turns (`SideTripsScreen`).
@@ -286,7 +283,7 @@ abstract final class DojoSceneStyle {
 
 /// The unlock moment, once, when 暗記練 first opens on the hub: the
 /// padlocked torii rattles, snaps at [snapAt] of [unlock], and gives way to
-/// the open one popping in while the banner rises.
+/// the open one popping in.
 abstract final class DojoUnlockMotion {
   static const unlock = Duration(milliseconds: 1100);
   static const double snapAt = 0.45;
@@ -295,9 +292,6 @@ abstract final class DojoUnlockMotion {
 
   /// The torii's swell at the swap, a share of its size.
   static const double pop = 0.14;
-
-  /// How far the banner rises into place, in scene units.
-  static const double banner = 24;
 }
 
 /// The Side Trips tab's entry for 暗記練 under the dojo scene

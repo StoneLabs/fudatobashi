@@ -20,9 +20,8 @@ enum GateState { locked, opening, open }
 /// The dojo scene at the top of the Side Trips tab
 /// (`research/design/sidetrips_b2.html`): sky and drifting clouds, the sea
 /// with the ring of islands ([DojoRingLayout]) turned [turn] steps, and the
-/// torii, under the tab's title. 暗記練's island carries its banner once it
-/// is open; the islands still being built carry a "coming soon" tag, shown
-/// in the two front slots. Tobi's boat ([DojoBoat]) sails over it, among
+/// torii, under the tab's title. The islands still being built carry a
+/// "coming soon" tag, shown in the two front slots. Tobi's boat ([DojoBoat]) sails over it, among
 /// the sea's paper layers.
 ///
 /// The torii stands for the island in front: its trip's as [gates] says, a
@@ -164,8 +163,7 @@ class _DojoSceneState extends State<DojoScene> with SingleTickerProviderStateMix
     return [
       for (final ring in shown)
         for (final (isle, arm, spec) in _placed(ring.turn))
-          _Isle(isle, spec, frame,
-              key: ValueKey((ring.leaving, isle, arm)), opacity: ring.opacity, raised: _raised(_gateOf(isle.trip))),
+          _Isle(isle, spec, frame, key: ValueKey((ring.leaving, isle, arm)), opacity: ring.opacity),
       _torii(frame, _gateOf(front.trip)),
       for (final ring in shown)
         for (final (isle, arm, spec) in _placed(ring.turn))
@@ -335,23 +333,20 @@ class _Frame {
 }
 
 /// [isle] where [spec] puts it, [opacity] shown: its colour picture with
-/// its haze one over it as far as the slot is hazy; 暗記練's island with
-/// its banner, as far as it is [raised] and its slot shows labels.
+/// its haze one over it as far as the slot is hazy.
 class _Isle extends StatelessWidget {
-  const _Isle(this.isle, this.spec, this.frame, {super.key, required this.opacity, required this.raised});
+  const _Isle(this.isle, this.spec, this.frame, {super.key, required this.opacity});
 
   final SideTripIsle isle;
   final RingSlotSpec spec;
   final _Frame frame;
-  final double opacity, raised;
+  final double opacity;
 
   @override
   Widget build(BuildContext context) {
     final k = frame.k;
     final art = _artOf(isle);
     final size = DojoRingLayout.canvas * k;
-    final banner = isle == SideTripIsle.ankiren ? raised * spec.label : 0.0;
-    final nobori = DojoRingLayout.nobori.rect;
     final at = frame.canvasAt(spec);
     return Positioned(
       left: 0,
@@ -365,15 +360,6 @@ class _Isle extends StatelessWidget {
             child: Stack(clipBehavior: Clip.none, children: [
               if (spec.haze < 1) ScenePicture(art.colour, size: size),
               if (spec.haze > 0) Opacity(opacity: spec.haze, child: ScenePicture(art.haze, size: size)),
-              if (banner > 0)
-                Positioned.fromRect(
-                  rect: Rect.fromLTWH(nobori.left * k, (nobori.top + DojoUnlockMotion.banner * (1 - raised)) * k,
-                      nobori.width * k, nobori.height * k),
-                  child: Opacity(
-                    opacity: banner,
-                    child: ScenePicture(DojoRingLayout.nobori.asset, size: nobori.size * k),
-                  ),
-                ),
             ]),
           ),
         ),
