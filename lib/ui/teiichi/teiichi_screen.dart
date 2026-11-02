@@ -22,6 +22,8 @@ import '../ankiren/ankiren_band.dart';
 import '../ankiren/ankiren_card.dart';
 import '../ankiren/ankiren_field_view.dart';
 import '../ankiren/ankiren_play.dart';
+import '../debug/readout_frame.dart';
+import '../debug/teiichi_score_readout.dart';
 import '../manga/manga.dart';
 import 'teiichi_placing_layer.dart';
 import 'teiichi_results_screen.dart';
@@ -413,7 +415,8 @@ class _TeiichiScreenState extends State<TeiichiScreen> with AnkirenPlay {
   Widget build(BuildContext context) {
     final s = S.of(context);
     final showNumber = _progress.settings.showPoemNumber;
-    final landscape = !_portrait!;
+    final portrait = _portrait!;
+    final landscape = !portrait;
     final placingNow = _placingNow;
     final editing = _editing;
     final allPlaced = _placing.allPlaced && _drag == null && !_zoomed;
@@ -451,31 +454,46 @@ class _TeiichiScreenState extends State<TeiichiScreen> with AnkirenPlay {
               : StackedControls(top: dontKnowButton(), bottom: karafudaButton()),
     );
     final shownBoard = _shownBoard;
+    final field = AnkirenFieldView(
+      key: _field,
+      field: placingNow ? _laidField(shownBoard) : game.field,
+      landscape: landscape,
+      trueScale: true,
+      zoom: false,
+      trueSlots: TeiichiTuning.rowSlots,
+      roomAbove: TeiichiPlayLayout.roomAbove,
+      bandRise: _bandRise(landscape: landscape, zoomed: _zoomed),
+      move: _zoomed ? null : (stillMotion ? Duration.zero : TeiichiPlayLayout.move),
+      growth: const FieldGrowth(
+          limit: TeiichiZoom.limit, duration: TeiichiPlayLayout.zoomTime, curve: TeiichiPlayLayout.zoomCurve),
+      grown: _zoomed,
+      card: (poemId, side) => placingNow
+          ? _laidCard(poemId, showNumber: showNumber)
+          : recallCard(poemId, side, showNumber: showNumber),
+      band: band,
+      underlay: editing ? _spots : null,
+      foreground: editing ? _layer : null,
+      aboveBand: editing ? (placement) => _riding(placement, shownBoard, showNumber: showNumber) : null,
+    );
+    final settings = _progress.settings;
     return PopScope(
       canPop: !_layoutAtStake && !_forfeitable,
       onPopInvokedWithResult: (didPop, _) => didPop ? _leave() : unawaited(_end()),
       child: AnkirenTatami(
-        child: AnkirenFieldView(
-          key: _field,
-          field: placingNow ? _laidField(shownBoard) : game.field,
-          landscape: landscape,
-          trueScale: true,
-          zoom: false,
-          trueSlots: TeiichiTuning.rowSlots,
-          roomAbove: TeiichiPlayLayout.roomAbove,
-          bandRise: _bandRise(landscape: landscape, zoomed: _zoomed),
-          move: _zoomed ? null : (stillMotion ? Duration.zero : TeiichiPlayLayout.move),
-          growth: const FieldGrowth(
-              limit: TeiichiZoom.limit, duration: TeiichiPlayLayout.zoomTime, curve: TeiichiPlayLayout.zoomCurve),
-          grown: _zoomed,
-          card: (poemId, side) => placingNow
-              ? _laidCard(poemId, showNumber: showNumber)
-              : recallCard(poemId, side, showNumber: showNumber),
-          band: band,
-          underlay: editing ? _spots : null,
-          foreground: editing ? _layer : null,
-          aboveBand: editing ? (placement) => _riding(placement, shownBoard, showNumber: showNumber) : null,
-        ),
+        child: settings.debugMode && settings.playOverlay
+            ? ReadoutFrame(
+                readout: TeiichiScoreReadout(
+                  setup: widget.setup,
+                  placing: _placing,
+                  ticks: _shown,
+                  placingTime: () => _placingTime,
+                  game: _game,
+                  split: portrait,
+                ),
+                landscape: landscape,
+                child: field,
+              )
+            : field,
       ),
     );
   }

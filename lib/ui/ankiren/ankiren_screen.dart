@@ -17,6 +17,7 @@ import '../../state/scope.dart';
 import '../../state/settings.dart';
 import '../manga/manga.dart';
 import '../debug/ankiren_score_readout.dart';
+import '../debug/readout_frame.dart';
 import 'ankiren_band.dart';
 import 'ankiren_field_view.dart';
 import 'ankiren_play.dart';
@@ -233,7 +234,11 @@ class _AnkirenScreenState extends State<AnkirenScreen> with AnkirenPlay {
     return PopScope(
       canPop: !_forfeitable,
       onPopInvokedWithResult: (didPop, _) => didPop ? _leave() : unawaited(_end()),
-      child: AnkirenTatami(child: settings.debugMode && settings.playOverlay ? _withReadout(field) : field),
+      child: AnkirenTatami(
+        child: settings.debugMode && settings.playOverlay
+            ? ReadoutFrame(readout: AnkirenScoreReadout(game: game, split: !_landscape), landscape: _landscape, child: field)
+            : field,
+      ),
     );
   }
 
@@ -246,29 +251,4 @@ class _AnkirenScreenState extends State<AnkirenScreen> with AnkirenPlay {
           karafudaButton(),
         ])
       : StackedControls(top: dontKnow, bottom: karafudaButton());
-
-  /// [field] with dev mode's scoring readout in room of its own, above it
-  /// in portrait and beside it in landscape, so it never hides a card.
-  Widget _withReadout(Widget field) {
-    final readout = Padding(
-      padding: const EdgeInsets.fromLTRB(Gaps.section, Gaps.small, Gaps.section, 0),
-      child: Align(
-        alignment: Alignment.topLeft,
-        child: FittedBox(
-          fit: BoxFit.scaleDown,
-          alignment: Alignment.topLeft,
-          child: AnkirenScoreReadout(game: game, split: !_landscape),
-        ),
-      ),
-    );
-    return _landscape
-        ? Row(children: [
-            SizedBox(width: AnkirenPlayLayout.readoutColumn, child: readout),
-            Expanded(child: field),
-          ])
-        : Column(children: [
-            SizedBox(height: AnkirenPlayLayout.readoutStrip, child: readout),
-            Expanded(child: field),
-          ]);
-  }
 }

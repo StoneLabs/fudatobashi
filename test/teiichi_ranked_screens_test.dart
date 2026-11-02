@@ -32,6 +32,7 @@ import 'package:fudatobashi/state/scope.dart';
 import 'package:fudatobashi/state/side_trips.dart';
 import 'package:fudatobashi/ui/ankiren/ankiren_band.dart';
 import 'package:fudatobashi/ui/ankiren/ankiren_strikes.dart';
+import 'package:fudatobashi/ui/debug/teiichi_score_readout.dart';
 import 'package:fudatobashi/ui/history/history_screen.dart';
 import 'package:fudatobashi/ui/home/home_widgets.dart';
 import 'package:fudatobashi/ui/history/teiichi_game_page.dart';
@@ -339,6 +340,45 @@ void main() {
           await tester.pumpWidget(const SizedBox());
         });
       }
+    }
+
+    for (final (name, screen) in [('landscape', usersPhoneLandscape), ('portrait', usersPhone)]) {
+      testWidgets('the dev readout shows with dev mode and the overlay on, placing and after the flip ($name)', (tester) async {
+        final p = await open(tester);
+        await tester.runAsync(() => p.updateSettings(
+            p.settings.copyWith(teiichiTurnTipOff: true, debugMode: true, playOverlay: true)));
+        final setup = TeiichiSetup.forLevel(0);
+        await show(tester, p, () => TeiichiScreen(setup: setup, known: allCards, seed: 3), screen: screen);
+        expect(find.byType(TeiichiScoreReadout), findsOneWidget);
+        expect(find.text('PLACING'), findsOneWidget);
+        expect(find.text('halvings'), findsOneWidget);
+        await tester.pump(const Duration(seconds: 3));
+        await placeOne(tester, dealtSpot(setup, 0));
+        await captureScreen(tester, 'teiichi_ranked/readout_placing', variant: name);
+        await tester.pump(setup.limit!);
+        await tester.pump();
+        await tester.pump(TeiichiPlayLayout.zoomTime);
+        await tester.pump(AnkirenMotion.flip + AnkirenPlayTuning.promptPause);
+        await tester.pump();
+        expect(find.text('PLACING'), findsNothing);
+        expect(find.text('GAME'), findsOneWidget);
+        expect(find.text('applied'), findsOneWidget);
+        await captureScreen(tester, 'teiichi_ranked/readout_recall', variant: name);
+        expect(tester.takeException(), isNull);
+        await tester.pumpWidget(const SizedBox());
+      });
+    }
+
+    for (final (name, debugMode, overlay) in [('overlay off', true, false), ('dev mode off', false, true)]) {
+      testWidgets('the dev readout is not shown with $name', (tester) async {
+        final p = await open(tester);
+        await tester.runAsync(() => p.updateSettings(
+            p.settings.copyWith(teiichiTurnTipOff: true, debugMode: debugMode, playOverlay: overlay)));
+        await show(tester, p, () => TeiichiScreen(setup: TeiichiSetup.forLevel(0), known: allCards, seed: 3),
+            screen: usersPhoneLandscape);
+        expect(find.byType(TeiichiScoreReadout), findsNothing);
+        await tester.pumpWidget(const SizedBox());
+      });
     }
 
     testWidgets('a level with からふだ shows the strikes beside End and both controls ($usersPhoneLandscape)', (tester) async {
