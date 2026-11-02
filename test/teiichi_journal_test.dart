@@ -33,7 +33,7 @@ void main() {
 
   List<SideTripRun> games(Progress p) => p.sideTrips.runsOf(SideTrip.teiichi).toList();
 
-  test('a ranked game killed after the deal is one forfeit at 0 on the next start, counting for the rating', () async {
+  test('a ranked game killed after its first card is one forfeit at 0 on the next start, counting for the rating', () async {
     final db = AppDatabase(NativeDatabase.memory());
     final first = await open(db);
     await first.journalTeiichi(deck, dealt);
@@ -63,7 +63,7 @@ void main() {
     await db.close();
   });
 
-  test('a ranked game forfeited in the app is one forfeit, not two', () async {
+  test('a ranked game forfeited in the app after a card is one forfeit, not two', () async {
     final db = AppDatabase(NativeDatabase.memory());
     final first = await open(db);
     await first.journalTeiichi(deck, dealt);

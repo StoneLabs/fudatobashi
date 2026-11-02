@@ -86,6 +86,7 @@ class TeiichiScreen extends StatefulWidget {
 class _TeiichiScreenState extends State<TeiichiScreen> with AnkirenPlay {
   late final Progress _progress;
   late final math.Random _rng;
+  late final List<int> _deal;
   late final TeiichiPlacing _placing;
   AnkirenGame? _game;
   final DateTime _startedAt = DateTime.now();
@@ -128,8 +129,13 @@ class _TeiichiScreenState extends State<TeiichiScreen> with AnkirenPlay {
   /// The owner's level game: its strikes count.
   bool get _countsStrikes => widget.player == AnkirenPlayer.owner && widget.setup.level != null;
 
-  /// A ranked game is on: leaving it is a forfeit.
-  bool get _forfeitable => _recorded && widget.setup.ranked && _game?.phase != AnkirenPhase.done;
+  /// A card has been placed: from then on leaving a ranked game is a
+  /// forfeit, and the game is journalled.
+  bool _cardPlaced = false;
+
+  /// A ranked game is on and has a card placed: leaving it is a forfeit.
+  /// Before the first card leaving saves nothing.
+  bool get _forfeitable => _cardPlaced && _recorded && widget.setup.ranked && _game?.phase != AnkirenPhase.done;
 
   @override
   void initState() {
@@ -137,8 +143,8 @@ class _TeiichiScreenState extends State<TeiichiScreen> with AnkirenPlay {
     _progress = ProgressScope.read(context);
     _rng = math.Random(widget.seed);
     final deck = {...widget.known}.toList()..shuffle(_rng);
-    _placing = TeiichiPlacing(widget.setup, deck.take(widget.setup.cards).toList());
-    if (_forfeitable) unawaited(_progress.journalTeiichi(_placing.stack, _startedAt));
+    _deal = deck.take(widget.setup.cards).toList();
+    _placing = TeiichiPlacing(widget.setup, _deal);
     holdStage(_progress.settings.teiichiAutoTurn ? OrientationTuning.landscape : OrientationTuning.any);
     _tick = Timer.periodic(TeiichiPlayTuning.clockTick, _onTick);
   }
@@ -231,6 +237,10 @@ class _TeiichiScreenState extends State<TeiichiScreen> with AnkirenPlay {
   }
 
   void _placed() {
+    if (!_cardPlaced) {
+      _cardPlaced = true;
+      if (_forfeitable) unawaited(_progress.journalTeiichi(_deal, _startedAt));
+    }
     if (_progress.settings.haptics) unawaited(HapticFeedback.selectionClick());
   }
 

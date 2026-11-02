@@ -1,9 +1,9 @@
 import 'dart:convert';
 
-/// A ranked 定位置 game under way, saved from the deal so that a game the
-/// app never got to record (it was closed or killed) is recorded on the next
-/// start as a forfeit (see `Progress.journalTeiichi`). Only the deal is
-/// kept: the forfeit lays no card out.
+/// A ranked 定位置 game under way, saved when its first card is placed so
+/// that a game the app never got to record (it was closed or killed) is
+/// recorded on the next start as a forfeit (see `Progress.journalTeiichi`).
+/// Only the deal is kept: the forfeit lays no card out.
 class TeiichiJournal {
   const TeiichiJournal({required this.deck, required this.startedAt});
 

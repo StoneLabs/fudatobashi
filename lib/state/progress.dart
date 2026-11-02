@@ -1472,7 +1472,8 @@ class Progress extends ChangeNotifier {
     );
   }
 
-  /// Saves the ranked 定位置 game just dealt, so that if the app never gets
+  /// Saves the ranked 定位置 game once its first card is placed (a game left
+  /// before that saves nothing), so that if the app never gets
   /// to record it (closed or killed) the next start records it as a
   /// forfeit, as the main game's ranked runs are. Recording the game, however
   /// it ends, clears it.

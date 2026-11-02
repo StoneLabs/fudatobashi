@@ -464,6 +464,7 @@ void main() {
       const setup = TeiichiSetup.ranked();
       const s = S('en');
       await show(tester, p, () => TeiichiScreen(setup: setup, known: allCards, seed: 3), screen: usersPhoneLandscape);
+      await placeOne(tester, dealtSpot(setup, 0));
       await tester.tap(band(s, s.end));
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 300));
@@ -496,6 +497,40 @@ void main() {
       await tester.pumpWidget(const SizedBox());
       final again = (await tester.runAsync(() => Progress.open(p.db)))!;
       expect(again.sideTrips.runsOf(trip), hasLength(1), reason: 'leaving left no journal to forfeit a second time');
+    });
+
+    testWidgets('leaving ranked before any card is placed saves nothing and asks nothing', (tester) async {
+      final p = await open(tester);
+      const setup = TeiichiSetup.ranked();
+      const s = S('en');
+      await show(tester, p, () => TeiichiScreen(setup: setup, known: allCards, seed: 3), screen: usersPhoneLandscape);
+      await tester.tap(band(s, s.end));
+      await tester.pump();
+      await tester.pump(Motion.route);
+      await tester.pump(Motion.route);
+      expect(find.text(s.teiichiForfeitTitle), findsNothing);
+      expect(find.text(s.teiichiLeaveTitle), findsNothing);
+      expect(find.byType(TeiichiScreen), findsNothing);
+      await tester.runAsync(() => Future<void>.delayed(const Duration(milliseconds: 200)));
+      expect(p.sideTrips.runsOf(trip), isEmpty);
+      final again = (await tester.runAsync(() => Progress.open(p.db)))!;
+      expect(again.sideTrips.runsOf(trip), isEmpty);
+      await tester.pumpWidget(const SizedBox());
+    });
+
+    testWidgets('a ranked game killed before a card is placed leaves no forfeit; after one, exactly one', (tester) async {
+      final p = await open(tester);
+      const setup = TeiichiSetup.ranked();
+      await show(tester, p, () => TeiichiScreen(setup: setup, known: allCards, seed: 3), screen: usersPhoneLandscape);
+      var restarted = (await tester.runAsync(() => Progress.open(p.db)))!;
+      expect(restarted.sideTrips.runsOf(trip), isEmpty, reason: 'killed at the deal');
+
+      await placeOne(tester, dealtSpot(setup, 0));
+      await tester.runAsync(() => Future<void>.delayed(const Duration(milliseconds: 100)));
+      restarted = (await tester.runAsync(() => Progress.open(p.db)))!;
+      expect(restarted.sideTrips.runsOf(trip), hasLength(1), reason: 'killed after one card');
+      expect(restarted.sideTrips.teiichiRecordOf(restarted.sideTrips.runsOf(trip).single).forfeit, isTrue);
+      await tester.pumpWidget(const SizedBox());
     });
   });
 
