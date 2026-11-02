@@ -262,7 +262,7 @@ class _ClassTable extends StatelessWidget {
         Text(
           'All ${_ranked.calls} calls (${_ranked.karafuda} からふだ) right with the first tap at the time heading '
           'each column: the slowest placing that reaches the class, "any" even at ${formatMinutes(_ranked.limit!)}. '
-          'P = F / ${TeiichiRatingModel.pointsPerRating}.',
+          'P = F × ${TeiichiRatingModel.anchorRating} / ${TeiichiRatingModel.anchorScore}.',
           style: _note,
         ),
         const SizedBox(height: AnkirenToolsStyle.gap),

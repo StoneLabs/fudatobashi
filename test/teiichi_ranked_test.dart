@@ -137,7 +137,7 @@ void main() {
       expect(score.firstRight, 3294);
       expect(score.recall, 3614);
       expect(score.total, 5099);
-      expect(TripRating.teiichi.performance(score.total), closeTo(1888.5, 0.05));
+      expect(TripRating.teiichi.performance(score.total), closeTo(5099 * TeiichiRatingModel.anchorRating / TeiichiRatingModel.anchorScore, 1e-9));
     });
 
     test('each halving of the 15 minutes earns 15%, fractions of one too', () {
@@ -187,12 +187,13 @@ void main() {
       expect(score.total, greaterThan(score.recall));
     });
 
-    test('points scale 2.70 to the rating, and a game never performs below 0', () {
-      expect(TripRating.teiichi.performance(2700), closeTo(1000, 1e-9));
+    test('a game of the anchor score performs at the anchor rating, and never below 0', () {
+      expect(TripRating.teiichi.performance(TeiichiRatingModel.anchorScore),
+          closeTo(TeiichiRatingModel.anchorRating, 1e-9));
+      expect(TripRating.ankiren.performance(AnkirenRatingModel.anchorScore),
+          closeTo(AnkirenRatingModel.anchorRating, 1e-9));
       expect(TripRating.teiichi.performance(0), 0);
       expect(TripRating.teiichi.performance(-5), 0);
-      expect(TripRating.ankiren.performance(2700), closeTo(2700 / AnkirenRatingModel.pointsPerRating, 1e-9),
-          reason: '暗記練 keeps its own');
     });
   });
 

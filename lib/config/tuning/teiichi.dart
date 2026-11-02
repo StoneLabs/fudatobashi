@@ -72,8 +72,12 @@ abstract final class TeiichiTuning {
 /// 定位置's rating (`TripRating.teiichi`), by 暗記練's rule
 /// ([AnkirenRatingModel]) and on its scale, but a rating of its own.
 abstract final class TeiichiRatingModel {
-  /// A ranked game's performance is its final score over this many points.
-  static const double pointsPerRating = 2.7;
+  /// A ranked game's performance is its final score over [pointsPerRating]
+  /// (see `TripRating.teiichi.performance`): a game of [anchorScore] points
+  /// performs at [anchorRating].
+  static const int anchorScore = 7300;
+  static const int anchorRating = 2800;
+  static const double pointsPerRating = anchorScore / anchorRating;
 }
 
 /// The developer's 定位置 tools (`TeiichiToolsPage`): the placing times of

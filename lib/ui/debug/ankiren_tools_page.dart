@@ -436,7 +436,7 @@ class _ClassTable extends StatelessWidget {
     return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
       Text(
         'All ${_setup.calls} calls (${_setup.karafuda} からふだ) right with the first tap at one time each; '
-        'P = F / ${AnkirenRatingModel.pointsPerRating}. '
+        'P = F × ${AnkirenRatingModel.anchorRating} / ${AnkirenRatingModel.anchorScore}. '
         'A class reached even at ${AnkirenTuning.speedNone.inSeconds} s shows the finds it needs there.',
         style: debugMono.copyWith(color: Colors.grey),
       ),
