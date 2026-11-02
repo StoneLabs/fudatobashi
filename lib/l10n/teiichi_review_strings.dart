@@ -38,10 +38,8 @@ extension TeiichiReviewStrings on S {
   /// Taps: what its marked rows are.
   String get teiichiTapsCaption => t('teiichiTapsCaption');
 
-  /// The level games' name in the filter, and the Score: the cards never
-  /// placed and what they earn, what a forfeit counts as, and the placing
-  /// time in the sum.
-  String get teiichiKindLevels => t('teiichiKindLevels');
+  /// The Score: the cards never placed and what they earn, what a forfeit
+  /// counts as, and the placing time in the sum.
   String get teiichiPartUnplaced => t('teiichiPartUnplaced');
   String get teiichiUnplacedTitle => t('teiichiUnplacedTitle');
   String get teiichiUnplacedPoints => t('teiichiUnplacedPoints');

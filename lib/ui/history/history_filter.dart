@@ -7,7 +7,6 @@ import '../../db/database.dart' show SideTripRun;
 import '../../domain/side_trips.dart';
 import '../../l10n/history_strings.dart';
 import '../../l10n/strings.dart';
-import '../../l10n/teiichi_review_strings.dart';
 import '../../state/past_runs.dart';
 import '../../state/play_config.dart';
 import '../manga/manga.dart';
@@ -50,18 +49,18 @@ enum HistoryList {
 /// A 暗記練 game's kind, for the filter.
 enum AnkirenKind {
   ranked,
-  free,
+  levels,
   custom;
 
   static AnkirenKind of(SideTripRun run) => run.ranked
       ? ranked
       : run.level == null
           ? custom
-          : free;
+          : levels;
 
   String label(S s) => switch (this) {
         ranked => s.filterAnkirenRanked,
-        free => s.filterAnkirenFree,
+        levels => s.filterLevels,
         custom => s.historyAnkirenCustom,
       };
 }
@@ -80,7 +79,7 @@ enum TeiichiKind {
 
   String label(S s) => switch (this) {
         ranked => s.filterAnkirenRanked,
-        levels => s.teiichiKindLevels,
+        levels => s.filterLevels,
         custom => s.historyAnkirenCustom,
       };
 }

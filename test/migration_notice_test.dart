@@ -138,7 +138,7 @@ void main() {
       expect([entry.ranked, entry.rating], [false, null]);
       expect(trips.ladderOf(SideTrip.ankiren).cleared, isEmpty, reason: 'everyone starts at Lv 0');
       for (final run in trips.runsOf(SideTrip.ankiren)) {
-        expect(AnkirenKind.of(run), AnkirenKind.free);
+        expect(AnkirenKind.of(run), AnkirenKind.levels);
         expect(trips.recordOf(run).scored, isFalse);
       }
       expect(p.pendingNotice, ankirenReworkNotice);

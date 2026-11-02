@@ -611,7 +611,7 @@ class _RunRow extends StatelessWidget {
   }
 }
 
-/// D9: a 暗記練 game, ranked, free at a level or custom.
+/// D9: a 暗記練 game, ranked, at a level or custom.
 class _GameRow extends StatelessWidget {
   const _GameRow(this.game, {required this.all});
   final SideTripRun game;
@@ -640,7 +640,7 @@ class _GameRow extends StatelessWidget {
       tags: [
         _TagLine([
           AnkirenKindTag(ranked: game.ranked, level: game.level),
-          if (kind == AnkirenKind.free)
+          if (kind == AnkirenKind.levels)
             cleared ? ResultBadge(s.historyCleared, color: Palette.landSoft) : ResultBadge(s.historyFailed, muted: true),
           if (best) ResultBadge(s.historyBest, cheer: true),
         ]),
@@ -649,7 +649,7 @@ class _GameRow extends StatelessWidget {
         TextSpan(
             text: switch (kind) {
           AnkirenKind.ranked => s.historyCards(cards),
-          AnkirenKind.free => s.ankirenStrikes(strikes),
+          AnkirenKind.levels => s.ankirenStrikes(strikes),
           AnkirenKind.custom =>
             '${s.historyPerSide(meta[AnkirenMeta.perSideKey] ?? missingTime, cards)} · ${s.ankirenStrikes(strikes)}',
         }),

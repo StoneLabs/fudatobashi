@@ -100,7 +100,7 @@ extension HistoryStrings on S {
   String filterShow(Object a0) => f('filterShow', [a0]);
   String get filterShowOne => t('filterShowOne');
   String get filterAnkirenRanked => t('filterAnkirenRanked');
-  String get filterAnkirenFree => t('filterAnkirenFree');
+  String get filterLevels => t('filterLevels');
 
   /// A day header's date: "Thu 15 Oct" (EN) / "10月15日(木)" (JA).
   String historyDay(DateTime day) {
