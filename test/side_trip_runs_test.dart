@@ -46,7 +46,7 @@ void main() {
 
     var notified = 0;
     p.addListener(() => notified++);
-    final perfect = playAnkiren(const AnkirenSetup.ranked(), ms: 100);
+    final perfect = playAnkiren(const AnkirenSetup.ranked(), ms: 100, memorised: Duration.zero);
     final first = await p.recordAnkiren(perfect, startedAt: startedAt);
     expect(notified, 1);
     final performance = TripRating.ankiren.performance(perfect.score!.total);
@@ -58,7 +58,7 @@ void main() {
     expect([first.ratingBefore, first.ratingAfter], [TripRating.start, performance]);
     expect(p.sideTrips.missesIn(stored), 0);
     expect(stored.meta, contains('"perSide":${AnkirenTuning.rankedPerSide}'));
-    expect(Rating.bandOf(performance).id, 'A', reason: 'every card at 0.1 s');
+    expect(Rating.bandOf(performance).id, 'A', reason: 'every card at 0.1 s, ready at once: the best game there is');
 
     final answers = await (db.select(db.sideTripAnswers)..where((a) => a.runId.equals(stored.id))).get();
     expect([for (final a in answers) a.poemId], perfect.prompts);
