@@ -228,11 +228,11 @@ void main() {
         ranked: false,
         completed: true));
     await db.into(db.teiichiPlacings).insert(TeiichiPlacingsCompanion.insert(
-        runId: run, seq: 0, poemId: 12, placingUs: 1500000, placed: true));
+        runId: run, seq: 0, poemId: 12, placingUs: 1500000));
     await db.into(db.teiichiPlacings).insert(TeiichiPlacingsCompanion.insert(
-        runId: run, seq: 1, poemId: 56, placingUs: 0, placed: false));
-    expect([for (final p in await db.select(db.teiichiPlacings).get()) (p.runId, p.seq, p.poemId, p.placingUs, p.placed)],
-        [(run, 0, 12, 1500000, true), (run, 1, 56, 0, false)]);
+        runId: run, seq: 1, poemId: 56, placingUs: 0));
+    expect([for (final p in await db.select(db.teiichiPlacings).get()) (p.runId, p.seq, p.poemId, p.placingUs)],
+        [(run, 0, 12, 1500000), (run, 1, 56, 0)]);
     await db.close();
   });
 

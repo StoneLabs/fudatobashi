@@ -382,7 +382,6 @@ void main() {
       final setup = TeiichiSetup.forLevel(1);
       await record(p, playTeiichi(setup, strikes: true, placeCards: 5, placeMs: 2000, deck: [11, 12, 13, 14, 15, 16, 17, 18]));
       final rows = await (db.select(db.teiichiPlacings)..orderBy([(x) => OrderingTerm.asc(x.seq)])).get();
-      expect([for (final r in rows) r.placed], [true, true, true, true, true, false, false, false]);
       expect([for (final r in rows) r.poemId], [11, 12, 13, 14, 15, 16, 17, 18]);
       expect(rows[5].placingUs, greaterThan(0), reason: 'the card on top when the time ran out');
 

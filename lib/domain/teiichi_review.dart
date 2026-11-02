@@ -8,8 +8,8 @@ import 'teiichi_record.dart';
 import 'teiichi_score.dart';
 import 'xp.dart';
 
-/// A card of a recorded 定位置 game as it was placed: how long it was on top
-/// of the stack, every time it was.
+/// A card dealt to a recorded 定位置 game: how long it was on top of the
+/// stack, every time it was.
 typedef TeiichiPlaced = ({int poemId, Duration time});
 
 /// A recorded 定位置 game as History reviews it: its setup, the placing
@@ -18,14 +18,16 @@ typedef TeiichiPlaced = ({int poemId, Duration time});
 /// game's ([recall]).
 class TeiichiGameRecord {
   /// A game from its stored run: [meta] is its details' JSON (see
-  /// [TeiichiMeta]).
+  /// [TeiichiMeta]), and [dealt] every card dealt, in the order they were
+  /// placed, then those never placed, which are not on its layout.
   factory TeiichiGameRecord({
     required AnkirenGameRecord recall,
     required String meta,
-    required List<TeiichiPlaced> placed,
-    List<int> unplaced = const [],
+    required List<TeiichiPlaced> dealt,
   }) {
     final details = jsonDecode(meta) as Map<String, dynamic>;
+    final layout = AnkirenHalf.fromJson(details[TeiichiMeta.layoutKey] as List);
+    final laid = layout.cards.toSet();
     return TeiichiGameRecord._(
       recall,
       TeiichiSetup(
@@ -36,9 +38,9 @@ class TeiichiGameRecord {
         ranked: recall.ranked,
       ),
       Duration(milliseconds: details[TeiichiMeta.placingKey] as int),
-      AnkirenHalf.fromJson(details[TeiichiMeta.layoutKey] as List),
-      List.unmodifiable(placed),
-      List.unmodifiable(unplaced),
+      layout,
+      List.unmodifiable([for (final c in dealt) if (laid.contains(c.poemId)) c]),
+      List.unmodifiable([for (final c in dealt) if (!laid.contains(c.poemId)) c.poemId]),
     );
   }
 

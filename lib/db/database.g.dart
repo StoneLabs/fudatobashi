@@ -5597,27 +5597,8 @@ class $TeiichiPlacingsTable extends TeiichiPlacings
     type: DriftSqlType.int,
     requiredDuringInsert: true,
   );
-  static const VerificationMeta _placedMeta = const VerificationMeta('placed');
   @override
-  late final GeneratedColumn<bool> placed = GeneratedColumn<bool>(
-    'placed',
-    aliasedName,
-    false,
-    type: DriftSqlType.bool,
-    requiredDuringInsert: true,
-    defaultConstraints: GeneratedColumn.constraintIsAlways(
-      'CHECK ("placed" IN (0, 1))',
-    ),
-  );
-  @override
-  List<GeneratedColumn> get $columns => [
-    id,
-    runId,
-    seq,
-    poemId,
-    placingUs,
-    placed,
-  ];
+  List<GeneratedColumn> get $columns => [id, runId, seq, poemId, placingUs];
   @override
   String get aliasedName => _alias ?? actualTableName;
   @override
@@ -5665,14 +5646,6 @@ class $TeiichiPlacingsTable extends TeiichiPlacings
     } else if (isInserting) {
       context.missing(_placingUsMeta);
     }
-    if (data.containsKey('placed')) {
-      context.handle(
-        _placedMeta,
-        placed.isAcceptableOrUnknown(data['placed']!, _placedMeta),
-      );
-    } else if (isInserting) {
-      context.missing(_placedMeta);
-    }
     return context;
   }
 
@@ -5702,10 +5675,6 @@ class $TeiichiPlacingsTable extends TeiichiPlacings
         DriftSqlType.int,
         data['${effectivePrefix}placing_us'],
       )!,
-      placed: attachedDatabase.typeMapping.read(
-        DriftSqlType.bool,
-        data['${effectivePrefix}placed'],
-      )!,
     );
   }
 
@@ -5726,17 +5695,12 @@ class TeiichiPlacingRow extends DataClass
 
   /// How long it was on top of the stack, µs, every time it was.
   final int placingUs;
-
-  /// It was on the board when the cards flipped; false for a card still in
-  /// the stack when the time ran out or the player left.
-  final bool placed;
   const TeiichiPlacingRow({
     required this.id,
     required this.runId,
     required this.seq,
     required this.poemId,
     required this.placingUs,
-    required this.placed,
   });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
@@ -5746,7 +5710,6 @@ class TeiichiPlacingRow extends DataClass
     map['seq'] = Variable<int>(seq);
     map['poem_id'] = Variable<int>(poemId);
     map['placing_us'] = Variable<int>(placingUs);
-    map['placed'] = Variable<bool>(placed);
     return map;
   }
 
@@ -5757,7 +5720,6 @@ class TeiichiPlacingRow extends DataClass
       seq: Value(seq),
       poemId: Value(poemId),
       placingUs: Value(placingUs),
-      placed: Value(placed),
     );
   }
 
@@ -5772,7 +5734,6 @@ class TeiichiPlacingRow extends DataClass
       seq: serializer.fromJson<int>(json['seq']),
       poemId: serializer.fromJson<int>(json['poemId']),
       placingUs: serializer.fromJson<int>(json['placingUs']),
-      placed: serializer.fromJson<bool>(json['placed']),
     );
   }
   @override
@@ -5784,7 +5745,6 @@ class TeiichiPlacingRow extends DataClass
       'seq': serializer.toJson<int>(seq),
       'poemId': serializer.toJson<int>(poemId),
       'placingUs': serializer.toJson<int>(placingUs),
-      'placed': serializer.toJson<bool>(placed),
     };
   }
 
@@ -5794,14 +5754,12 @@ class TeiichiPlacingRow extends DataClass
     int? seq,
     int? poemId,
     int? placingUs,
-    bool? placed,
   }) => TeiichiPlacingRow(
     id: id ?? this.id,
     runId: runId ?? this.runId,
     seq: seq ?? this.seq,
     poemId: poemId ?? this.poemId,
     placingUs: placingUs ?? this.placingUs,
-    placed: placed ?? this.placed,
   );
   TeiichiPlacingRow copyWithCompanion(TeiichiPlacingsCompanion data) {
     return TeiichiPlacingRow(
@@ -5810,7 +5768,6 @@ class TeiichiPlacingRow extends DataClass
       seq: data.seq.present ? data.seq.value : this.seq,
       poemId: data.poemId.present ? data.poemId.value : this.poemId,
       placingUs: data.placingUs.present ? data.placingUs.value : this.placingUs,
-      placed: data.placed.present ? data.placed.value : this.placed,
     );
   }
 
@@ -5821,14 +5778,13 @@ class TeiichiPlacingRow extends DataClass
           ..write('runId: $runId, ')
           ..write('seq: $seq, ')
           ..write('poemId: $poemId, ')
-          ..write('placingUs: $placingUs, ')
-          ..write('placed: $placed')
+          ..write('placingUs: $placingUs')
           ..write(')'))
         .toString();
   }
 
   @override
-  int get hashCode => Object.hash(id, runId, seq, poemId, placingUs, placed);
+  int get hashCode => Object.hash(id, runId, seq, poemId, placingUs);
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
@@ -5837,8 +5793,7 @@ class TeiichiPlacingRow extends DataClass
           other.runId == this.runId &&
           other.seq == this.seq &&
           other.poemId == this.poemId &&
-          other.placingUs == this.placingUs &&
-          other.placed == this.placed);
+          other.placingUs == this.placingUs);
 }
 
 class TeiichiPlacingsCompanion extends UpdateCompanion<TeiichiPlacingRow> {
@@ -5847,14 +5802,12 @@ class TeiichiPlacingsCompanion extends UpdateCompanion<TeiichiPlacingRow> {
   final Value<int> seq;
   final Value<int> poemId;
   final Value<int> placingUs;
-  final Value<bool> placed;
   const TeiichiPlacingsCompanion({
     this.id = const Value.absent(),
     this.runId = const Value.absent(),
     this.seq = const Value.absent(),
     this.poemId = const Value.absent(),
     this.placingUs = const Value.absent(),
-    this.placed = const Value.absent(),
   });
   TeiichiPlacingsCompanion.insert({
     this.id = const Value.absent(),
@@ -5862,19 +5815,16 @@ class TeiichiPlacingsCompanion extends UpdateCompanion<TeiichiPlacingRow> {
     required int seq,
     required int poemId,
     required int placingUs,
-    required bool placed,
   }) : runId = Value(runId),
        seq = Value(seq),
        poemId = Value(poemId),
-       placingUs = Value(placingUs),
-       placed = Value(placed);
+       placingUs = Value(placingUs);
   static Insertable<TeiichiPlacingRow> custom({
     Expression<int>? id,
     Expression<int>? runId,
     Expression<int>? seq,
     Expression<int>? poemId,
     Expression<int>? placingUs,
-    Expression<bool>? placed,
   }) {
     return RawValuesInsertable({
       if (id != null) 'id': id,
@@ -5882,7 +5832,6 @@ class TeiichiPlacingsCompanion extends UpdateCompanion<TeiichiPlacingRow> {
       if (seq != null) 'seq': seq,
       if (poemId != null) 'poem_id': poemId,
       if (placingUs != null) 'placing_us': placingUs,
-      if (placed != null) 'placed': placed,
     });
   }
 
@@ -5892,7 +5841,6 @@ class TeiichiPlacingsCompanion extends UpdateCompanion<TeiichiPlacingRow> {
     Value<int>? seq,
     Value<int>? poemId,
     Value<int>? placingUs,
-    Value<bool>? placed,
   }) {
     return TeiichiPlacingsCompanion(
       id: id ?? this.id,
@@ -5900,7 +5848,6 @@ class TeiichiPlacingsCompanion extends UpdateCompanion<TeiichiPlacingRow> {
       seq: seq ?? this.seq,
       poemId: poemId ?? this.poemId,
       placingUs: placingUs ?? this.placingUs,
-      placed: placed ?? this.placed,
     );
   }
 
@@ -5922,9 +5869,6 @@ class TeiichiPlacingsCompanion extends UpdateCompanion<TeiichiPlacingRow> {
     if (placingUs.present) {
       map['placing_us'] = Variable<int>(placingUs.value);
     }
-    if (placed.present) {
-      map['placed'] = Variable<bool>(placed.value);
-    }
     return map;
   }
 
@@ -5935,8 +5879,7 @@ class TeiichiPlacingsCompanion extends UpdateCompanion<TeiichiPlacingRow> {
           ..write('runId: $runId, ')
           ..write('seq: $seq, ')
           ..write('poemId: $poemId, ')
-          ..write('placingUs: $placingUs, ')
-          ..write('placed: $placed')
+          ..write('placingUs: $placingUs')
           ..write(')'))
         .toString();
   }
@@ -10177,7 +10120,6 @@ typedef $$TeiichiPlacingsTableCreateCompanionBuilder =
       required int seq,
       required int poemId,
       required int placingUs,
-      required bool placed,
     });
 typedef $$TeiichiPlacingsTableUpdateCompanionBuilder =
     TeiichiPlacingsCompanion Function({
@@ -10186,7 +10128,6 @@ typedef $$TeiichiPlacingsTableUpdateCompanionBuilder =
       Value<int> seq,
       Value<int> poemId,
       Value<int> placingUs,
-      Value<bool> placed,
     });
 
 final class $$TeiichiPlacingsTableReferences
@@ -10249,11 +10190,6 @@ class $$TeiichiPlacingsTableFilterComposer
     builder: (column) => ColumnFilters(column),
   );
 
-  ColumnFilters<bool> get placed => $composableBuilder(
-    column: $table.placed,
-    builder: (column) => ColumnFilters(column),
-  );
-
   $$SideTripRunsTableFilterComposer get runId {
     final $$SideTripRunsTableFilterComposer composer = $composerBuilder(
       composer: this,
@@ -10307,11 +10243,6 @@ class $$TeiichiPlacingsTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
-  ColumnOrderings<bool> get placed => $composableBuilder(
-    column: $table.placed,
-    builder: (column) => ColumnOrderings(column),
-  );
-
   $$SideTripRunsTableOrderingComposer get runId {
     final $$SideTripRunsTableOrderingComposer composer = $composerBuilder(
       composer: this,
@@ -10356,9 +10287,6 @@ class $$TeiichiPlacingsTableAnnotationComposer
 
   GeneratedColumn<int> get placingUs =>
       $composableBuilder(column: $table.placingUs, builder: (column) => column);
-
-  GeneratedColumn<bool> get placed =>
-      $composableBuilder(column: $table.placed, builder: (column) => column);
 
   $$SideTripRunsTableAnnotationComposer get runId {
     final $$SideTripRunsTableAnnotationComposer composer = $composerBuilder(
@@ -10419,14 +10347,12 @@ class $$TeiichiPlacingsTableTableManager
                 Value<int> seq = const Value.absent(),
                 Value<int> poemId = const Value.absent(),
                 Value<int> placingUs = const Value.absent(),
-                Value<bool> placed = const Value.absent(),
               }) => TeiichiPlacingsCompanion(
                 id: id,
                 runId: runId,
                 seq: seq,
                 poemId: poemId,
                 placingUs: placingUs,
-                placed: placed,
               ),
           createCompanionCallback:
               ({
@@ -10435,14 +10361,12 @@ class $$TeiichiPlacingsTableTableManager
                 required int seq,
                 required int poemId,
                 required int placingUs,
-                required bool placed,
               }) => TeiichiPlacingsCompanion.insert(
                 id: id,
                 runId: runId,
                 seq: seq,
                 poemId: poemId,
                 placingUs: placingUs,
-                placed: placed,
               ),
           withReferenceMapper: (p0) => p0
               .map(

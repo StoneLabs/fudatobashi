@@ -252,7 +252,8 @@ class SideTripAnswers extends Table {
 
 /// One card dealt to a 定位置 game: the cards in the order they were placed
 /// from the stack, then those never placed, with how long each was on top
-/// of it. The final layout is in the game's meta.
+/// of it. The final layout is in the game's meta: a card not on it was
+/// still in the stack when the time ran out or the player left.
 @DataClassName('TeiichiPlacingRow')
 @TableIndex(name: 'teiichi_placings_run', columns: {#runId})
 class TeiichiPlacings extends Table {
@@ -265,10 +266,6 @@ class TeiichiPlacings extends Table {
 
   /// How long it was on top of the stack, µs, every time it was.
   IntColumn get placingUs => integer()();
-
-  /// It was on the board when the cards flipped; false for a card still in
-  /// the stack when the time ran out or the player left.
-  BoolColumn get placed => boolean()();
 }
 
 /// One practice day (see `DayWindow`): journey mode's today's set and

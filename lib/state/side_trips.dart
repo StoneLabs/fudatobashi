@@ -230,32 +230,26 @@ class SideTrips {
   /// whether it was played to the end, and the cards never placed.
   TeiichiGameFacts teiichiFactsOf(SideTripRun run) {
     final meta = jsonDecode(run.meta) as Map<String, dynamic>;
+    final laid = AnkirenHalf.fromJson(meta[TeiichiMeta.layoutKey] as List).cards.toSet();
     return (
       cards: meta[TeiichiMeta.cardsKey] as int,
       placing: Duration(milliseconds: meta[TeiichiMeta.placingKey] as int),
       firstTaps: cardsIn(run) - missesIn(run),
       wrongTaps: answersOf(run).fold(0, (n, a) => n + a.wrongTaps),
       completed: run.completed,
-      unplaced: (_placings[run.id] ?? const <TeiichiPlacingRow>[]).where((p) => !p.placed).length,
+      unplaced: (_placings[run.id] ?? const <TeiichiPlacingRow>[]).where((p) => !laid.contains(p.poemId)).length,
     );
   }
 
   /// [run], a 定位置 game, as History reviews it.
-  TeiichiGameRecord teiichiRecordOf(SideTripRun run) {
-    final rows = _placings[run.id] ?? const <TeiichiPlacingRow>[];
-    return TeiichiGameRecord(
-      recall: recordOf(run),
-      meta: run.meta,
-      placed: [
-        for (final p in rows)
-          if (p.placed) (poemId: p.poemId, time: Duration(microseconds: p.placingUs)),
-      ],
-      unplaced: [
-        for (final p in rows)
-          if (!p.placed) p.poemId,
-      ],
-    );
-  }
+  TeiichiGameRecord teiichiRecordOf(SideTripRun run) => TeiichiGameRecord(
+        recall: recordOf(run),
+        meta: run.meta,
+        dealt: [
+          for (final p in _placings[run.id] ?? const <TeiichiPlacingRow>[])
+            (poemId: p.poemId, time: Duration(microseconds: p.placingUs)),
+        ],
+      );
 
   /// 定位置's record of the games played (see [TeiichiRecord.of]).
   TeiichiRecord teiichiRecord() => TeiichiRecord.of([for (final r in runsOf(SideTrip.teiichi)) teiichiFactsOf(r)]);
@@ -380,7 +374,6 @@ class SideTrips {
                 seq: i,
                 poemId: poemId,
                 placingUs: placing.placingTimeOf(poemId).inMicroseconds,
-                placed: i < placing.order.length,
               ),
           ]));
       final level = setup.level;
