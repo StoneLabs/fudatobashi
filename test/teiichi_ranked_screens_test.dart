@@ -155,7 +155,7 @@ void main() {
       if (cleared != null) await p.clearLevelsUpTo(trip, cleared);
       for (var i = 0; i < ranked; i++) {
         final played = playTeiichi(const TeiichiSetup.ranked(),
-            placeMs: 3000 - 400 * i,
+            placeMs: 6000 - 400 * i,
             wrongAt: i.isEven ? {1, 4} : {1},
             karafuda: [80, 81, 82, 83, 84, 85, 86, 87, 88, 89],
             deck: [for (var id = 1; id <= 25; id++) (id * 7 + i) % 79 + 1]);
