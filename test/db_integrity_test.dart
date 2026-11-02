@@ -273,6 +273,19 @@ void main() {
       await db.close();
     });
 
+    test('定位置 placings of a missing game are deleted, and only those', () async {
+      final db = AppDatabase(NativeDatabase.memory());
+      final kept = await trip(db, 1, game: SideTrip.teiichi, ranked: false);
+      for (final runId in [kept, 99]) {
+        await db.into(db.teiichiPlacings).insert(TeiichiPlacingsCompanion.insert(runId: runId, seq: 0, poemId: 1, placingUs: 900000));
+      }
+
+      await DbIntegrity.run(db);
+
+      expect([for (final x in await db.select(db.teiichiPlacings).get()) x.runId], [kept]);
+      await db.close();
+    });
+
     test('定位置\'s ratings are replayed too, apart from 暗記練\'s', () async {
       final db = AppDatabase(NativeDatabase.memory());
       const teiichi = SideTrip.teiichi;
