@@ -75,7 +75,7 @@ abstract final class TeiichiRatingModel {
   /// A ranked game's performance is its final score over [pointsPerRating]
   /// (see `TripRating.teiichi.performance`): a game of [anchorScore] points
   /// performs at [anchorRating].
-  static const int anchorScore = 7300;
+  static const int anchorScore = 7100;
   static const int anchorRating = 2800;
   static const double pointsPerRating = anchorScore / anchorRating;
 }
