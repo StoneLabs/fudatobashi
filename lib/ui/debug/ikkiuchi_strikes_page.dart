@@ -254,14 +254,15 @@ class IkkiuchiStrikesPageState extends State<IkkiuchiStrikesPage> with SingleTic
                 ],
               ),
               const SizedBox(height: IkkiuchiToolsStyle.controlSpacing),
-              Row(children: [
-                for (final move in IkkiuchiMove.values) ...[
-                  if (move != IkkiuchiMove.values.first) const SizedBox(width: IkkiuchiToolsStyle.controlSpacing),
-                  _chip(_moveNames[move]!, _moves.contains(move), () => setState(() => _toggle(move))),
+              Wrap(
+                spacing: IkkiuchiToolsStyle.controlSpacing,
+                runSpacing: IkkiuchiToolsStyle.controlSpacing,
+                children: [
+                  for (final move in IkkiuchiMove.values)
+                    _chip(_moveNames[move]!, _moves.contains(move), () => setState(() => _toggle(move))),
+                  _chip('auto reset', _autoReset, () => setState(() => _autoReset = !_autoReset)),
                 ],
-                const SizedBox(width: IkkiuchiToolsStyle.controlSpacing),
-                _chip('auto reset', _autoReset, () => setState(() => _autoReset = !_autoReset)),
-              ]),
+              ),
             ]),
           ),
         ],
