@@ -1,5 +1,5 @@
-// 一騎打ち's developer pages, Tobi's curves, his layout and his strikes,
-// opened from Settings' developer section. With RENDER_SCREENS=1 it writes
+// 一騎打ち's developer pages, Tobi's curves, his layout, his strikes and the
+// field, opened from Settings' developer section. With RENDER_SCREENS=1 it writes
 // their PNGs to build/screens/ikkiuchi/.
 import 'dart:io';
 import 'dart:math' as math;
@@ -27,6 +27,7 @@ import 'package:fudatobashi/state/progress.dart';
 import 'package:fudatobashi/state/scope.dart';
 import 'package:fudatobashi/state/settings.dart';
 import 'package:fudatobashi/ui/debug/ikkiuchi_curves_page.dart';
+import 'package:fudatobashi/ui/debug/ikkiuchi_field_page.dart';
 import 'package:fudatobashi/ui/debug/ikkiuchi_graphs.dart';
 import 'package:fudatobashi/ui/debug/ikkiuchi_layout_page.dart';
 import 'package:fudatobashi/ui/debug/ikkiuchi_rating_header.dart';
@@ -142,6 +143,7 @@ void main() {
       ("Comp - Tobi's curves", IkkiuchiCurvesPage),
       ("Comp - Tobi's layout", IkkiuchiLayoutPage),
       ("Comp - Tobi's strikes", IkkiuchiStrikesPage),
+      ('Comp - Field', IkkiuchiFieldPage),
     ]) {
       await tester.scrollUntilVisible(find.text(label), 200);
       await tester.pump(const Duration(seconds: 1));
@@ -304,6 +306,18 @@ void main() {
     await tester.pumpWidget(const SizedBox());
   });
 
+  // Renders the page on show once its board's tatami has loaded.
+  Future<void> capture(WidgetTester tester, String name) async {
+    if (!renderScreens) return;
+    await tester.runAsync(() async {
+      final context = tester.element(find.byType(IkkiuchiBoardView));
+      await precacheImage(const AssetImage(IkkiuchiBoardStyle.tatami), context);
+    });
+    await tester.pump();
+    await tester.pump();
+    await captureScreen(tester, 'ikkiuchi/$name');
+  }
+
   group("Tobi's strikes", () {
     const frame = Duration(milliseconds: 16);
     IkkiuchiBoardScene scene(WidgetTester tester) =>
@@ -340,18 +354,6 @@ void main() {
     }
 
     bool moveOn(WidgetTester tester, String name) => tester.widget<ChoiceChip>(find.widgetWithText(ChoiceChip, name)).selected;
-
-    // Renders the page once the tatami has loaded.
-    Future<void> capture(WidgetTester tester, String name) async {
-      if (!renderScreens) return;
-      await tester.runAsync(() async {
-        final context = tester.element(find.byType(IkkiuchiStrikesPage));
-        await precacheImage(const AssetImage(IkkiuchiBoardStyle.tatami), context);
-      });
-      await tester.pump();
-      await tester.pump();
-      await captureScreen(tester, 'ikkiuchi/$name');
-    }
 
     testWidgets('New seed deals a new board; a fixed seed deals the same', (tester) async {
       final p = await open(tester);
@@ -556,6 +558,176 @@ void main() {
       await capture(tester, 'strikes_fault');
       expect(s.board.faults.keys, contains(touched));
       expect(s.board.cards.card(touched).taken, isFalse, reason: 'a touch takes nothing');
+      expect(tester.takeException(), isNull);
+      await tester.pumpWidget(const SizedBox());
+    });
+  });
+
+  group('The field', () {
+    const frame = Duration(milliseconds: 16);
+    IkkiuchiBoardScene scene(WidgetTester tester) =>
+        tester.state<IkkiuchiFieldPageState>(find.byType(IkkiuchiFieldPage)).scene!;
+    List<int> ids(IkkiuchiBoardScene s) => [for (final c in s.board.cards.cards) c.id];
+
+    // Where board dp [at] is on the screen, through any turn of the board.
+    Offset onScreen(WidgetTester tester, Vec at) =>
+        tester.renderObject<RenderBox>(find.byType(IkkiuchiBoardView)).localToGlobal(Offset(at.x, at.y));
+
+    // The screen's rect around [box] on the board.
+    Rect rectOnScreen(WidgetTester tester, CardBox box) {
+      final corners = [for (final c in box.corners) onScreen(tester, c)];
+      return Rect.fromPoints(
+        Offset(corners.map((c) => c.dx).reduce(math.min), corners.map((c) => c.dy).reduce(math.min)),
+        Offset(corners.map((c) => c.dx).reduce(math.max), corners.map((c) => c.dy).reduce(math.max)),
+      );
+    }
+
+    // Every system UI mode the page asks for, in order.
+    List<String> watchBars(WidgetTester tester) {
+      final modes = <String>[];
+      final messenger = tester.binding.defaultBinaryMessenger;
+      messenger.setMockMethodCallHandler(SystemChannels.platform, (call) async {
+        if (call.method == 'SystemChrome.setEnabledSystemUIMode') modes.add(call.arguments as String);
+        return null;
+      });
+      addTearDown(() => messenger.setMockMethodCallHandler(SystemChannels.platform, null));
+      return modes;
+    }
+
+    testWidgets('fills the screen with Tobi and both sides, a card marked and read, the bars hidden while open',
+        (tester) async {
+      final p = await open(tester);
+      final bars = watchBars(tester);
+      for (final landscape in [false, true]) {
+        await show(tester, p, IkkiuchiFieldPage(seed: 3, landscape: landscape));
+        await tester.pump(frame);
+        expect(tester.takeException(), isNull);
+        expect(find.byType(AppBar), findsNothing);
+        final s = scene(tester);
+        final why = landscape ? 'landscape' : 'portrait';
+        expect(s.layout.landscape, landscape);
+        expect(tester.getSize(find.byType(IkkiuchiBoardView)), landscape ? usersPhone.size.flipped : usersPhone.size,
+            reason: '$why: the board is the whole screen');
+        expect(find.byType(RotatedBox), landscape ? findsOneWidget : findsNothing);
+        for (final side in IkkiuchiSide.values) {
+          expect(s.board.cards.cards.where((c) => c.side == side), hasLength(IkkiuchiToolsTuning.dealPerSide),
+              reason: '$why: ${side.name}');
+        }
+        final tobi = s.layout.tobi;
+        final tops = s.layout.cards.map((c) => c.box.centre.y - c.box.hh);
+        expect(tobi.origin.y, greaterThanOrEqualTo(0), reason: '$why: Tobi on the board');
+        if (!landscape) expect(tobi.feet.y, lessThan(tops.reduce(math.min)), reason: 'Tobi stands above his side');
+        final marked = s.marked;
+        expect(s.board.field.keys, contains(marked));
+        expect(s.kimariji, poems[marked!].kimariji, reason: '$why: the band reads the marked card');
+        for (final label in ['Ro', 'Ra']) {
+          final button = tester.getRect(find.text(label));
+          for (final c in s.layout.cards) {
+            expect(button.overlaps(rectOnScreen(tester, c.box)), isFalse, reason: '$why: $label clear of card ${c.id}');
+          }
+        }
+        await capture(tester, 'field_$why');
+      }
+      expect(bars, ['SystemUiMode.immersiveSticky', 'SystemUiMode.edgeToEdge', 'SystemUiMode.immersiveSticky']);
+      await tester.pumpWidget(const SizedBox());
+      expect(bars.last, 'SystemUiMode.edgeToEdge', reason: 'the bars come back on leaving');
+    });
+
+    testWidgets('Ra deals anew and Ro turns the board', (tester) async {
+      final p = await open(tester);
+      await show(tester, p, const IkkiuchiFieldPage(seed: 3));
+      await tester.pump(frame);
+      final first = ids(scene(tester));
+      var changed = false;
+      for (var i = 0; i < 5 && !changed; i++) {
+        await tester.tap(find.text('Ra'));
+        await tester.pump(frame);
+        changed = ids(scene(tester)).toString() != first.toString();
+      }
+      expect(changed, isTrue);
+      expect(scene(tester).marked, isNotNull, reason: 'a new deal marks a card');
+      expect(scene(tester).layout.landscape, isFalse);
+      await tester.tap(find.text('Ro'));
+      await tester.pump(frame);
+      expect(scene(tester).layout.landscape, isTrue);
+      expect(find.byType(RotatedBox), findsOneWidget, reason: 'only the board turns');
+      expect(tester.getSize(find.byType(IkkiuchiBoardView)), usersPhone.size.flipped);
+      await tester.tap(find.text('Ro'));
+      await tester.pump(frame);
+      expect(scene(tester).layout.landscape, isFalse);
+      expect(tester.takeException(), isNull);
+      await tester.pumpWidget(const SizedBox());
+    });
+
+    testWidgets('a swipe knocks cards about; after the wait they glide home and another card is marked',
+        (tester) async {
+      final p = await open(tester);
+      // Swipes from the band through the player's card nearest it, three
+      // cards' heights on, rendering [name] halfway.
+      Future<IkkiuchiCard> swipe(String name) async {
+        final s = scene(tester);
+        final player = s.board.cards.cards.where((c) => c.side == IkkiuchiSide.player).toList()
+          ..sort((a, b) => a.home.centre.y.compareTo(b.home.centre.y));
+        final card = player.first;
+        final reach = card.home.hh + IkkiuchiPhysicsTuning.finger * s.layout.cardW;
+        final from = card.home.centre - Vec(0, reach + s.layout.band.height / 4);
+        final gesture = await tester.startGesture(onScreen(tester, from));
+        await tester.pump(frame);
+        const moves = 8;
+        for (var i = 1; i <= moves; i++) {
+          await gesture.moveTo(onScreen(tester, from + Vec(0, 6 * card.home.hh * i / moves)));
+          await tester.pump(frame);
+          if (i == moves ~/ 2) await capture(tester, name);
+        }
+        await gesture.up();
+        await tester.pump(frame);
+        expect(card.movedFrom(card.home, dp: 2, radians: 0.02), isTrue, reason: '$name: the swipe knocked it');
+        return card;
+      }
+
+      // Every card on its spot and at rest. The sim keeps positions in
+      // single floats, as when the board was set out.
+      bool allHome(IkkiuchiBoardScene s) => s.board.cards.cards.every((c) =>
+          c.onBoard &&
+          c.velocity.length < 1e-6 &&
+          c.spin.abs() < 1e-6 &&
+          c.box.centre.distanceTo(c.home.centre) < 1e-3 &&
+          turnBetween(c.box.angle, c.home.angle).abs() < 1e-6);
+
+      await show(tester, p, const IkkiuchiFieldPage(seed: 3));
+      await tester.pump(frame);
+      final s = scene(tester);
+      final marked = s.marked;
+      final card = await swipe('field_swipe');
+      expect(s.board.cards.fingerOn, isFalse, reason: 'the finger leaves the board as it lifts');
+
+      // A touch in the band during the wait starts it again.
+      const wait = IkkiuchiToolsTuning.fieldWait, glide = IkkiuchiToolsTuning.fieldGlide;
+      await tester.pump(wait * 0.6);
+      await tester.tapAt(onScreen(tester, Vec(s.layout.band.left + s.layout.cardW, s.layout.band.center.dy)));
+      await tester.pump(wait * 0.6);
+      expect(s.board.cards.gliding, isFalse, reason: 'still waiting');
+      expect(card.movedFrom(card.home, dp: 2, radians: 0.02), isTrue);
+      expect(s.marked, marked);
+      await tester.pump(wait * 0.5);
+      expect(s.board.cards.gliding, isTrue, reason: 'on the way home once the wait is over');
+      await tester.pump(glide);
+      await tester.pump(frame);
+      expect(s.board.cards.gliding, isFalse);
+      expect(allHome(s), isTrue, reason: 'every card back on its spot');
+      expect(s.marked, isNot(marked), reason: 'another card marked');
+      expect(s.kimariji, poems[s.marked!].kimariji);
+
+      // The same in landscape, where the board lies turned under the finger.
+      await tester.tap(find.text('Ro'));
+      await tester.pump(frame);
+      final turned = scene(tester);
+      expect(turned.layout.landscape, isTrue);
+      await swipe('field_swipe_landscape');
+      await tester.pump(wait);
+      await tester.pump(glide);
+      await tester.pump(frame);
+      expect(allHome(turned), isTrue);
       expect(tester.takeException(), isNull);
       await tester.pumpWidget(const SizedBox());
     });

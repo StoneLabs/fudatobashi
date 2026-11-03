@@ -374,11 +374,16 @@ void main() {
         cards.step();
       }
       expect(cards.gliding, isFalse);
-      // The sim keeps positions in single floats, as when the board was set out.
+      // Set down anew, a card lies at rest at home, though the sim wakes it
+      // for a while. It keeps positions in single floats, as when the board
+      // was set out.
+      for (var i = 0; i < 60; i++) {
+        cards.step();
+      }
       for (final c in [gone, knocked, still]) {
         expect(c.box.centre.distanceTo(c.home.centre), lessThan(1e-3), reason: 'card ${c.id} home');
         expect(turnBetween(c.box.angle, c.home.angle).abs(), lessThan(1e-6), reason: 'card ${c.id} turned home');
-        expect(c.still, isTrue);
+        expect((c.velocity.length, c.spin), (0, 0), reason: 'card ${c.id} at rest');
         expect(c.onBoard, isTrue);
       }
       cards.moveFinger(const Vec(160, 600), const Vec(170, 600));
