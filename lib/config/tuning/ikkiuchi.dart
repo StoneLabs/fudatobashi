@@ -527,8 +527,8 @@ abstract final class IkkiuchiPhysicsTuning {
 /// deviations the curves page gives each value's range at, the layout
 /// page's choice of cards a side and the seeds it starts from, the full
 /// fields the strikes and field pages deal, the strikes page's slow motion
-/// speeds and its reset once a strike is over, and the field page's return
-/// of the cards after a swipe.
+/// speeds and its reset once a strike is over, and the field page's system
+/// bars.
 abstract final class IkkiuchiToolsTuning {
   static const double ratingStart = 1600;
   static const double ratingStep = 50;

@@ -110,7 +110,7 @@ abstract final class TeiichiPlayLayout {
   static const double dragBorder = 2.5;
 
   /// The placing's look, from the values above; the cards under the
-  /// stack's top one show as 暗記練's card backs.
+  /// stack's top one show as card backs.
   static const placing = PlacingLook(
     spotInk: spotInk,
     spotFill: spotFill,
