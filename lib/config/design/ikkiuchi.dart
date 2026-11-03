@@ -55,14 +55,15 @@ abstract final class IkkiuchiBoardStyle {
   static const double shakeRateX = 0.9;
   static const double shakeRateY = 1.3;
 
-  /// Speed lines behind a card sliding faster than [streakMinSpeed] dp/s:
-  /// as long as its speed times [streakPerSpeed], at most [streakMax],
-  /// inked fully [streakFullOver] dp/s over the least. Each line is
-  /// (across the card as a share of its reach, length share, width).
-  static const double streakMinSpeed = 700;
-  static const double streakMax = 90;
+  /// Speed lines behind a card sliding faster than [streakMinSpeed] card
+  /// widths a second: as long as its speed times [streakPerSpeed] seconds,
+  /// at most [streakMax] card widths, inked fully [streakFullOver] card
+  /// widths a second over the least. Each line is (across the card as a
+  /// share of its reach, length share, width).
+  static const double streakMinSpeed = 19.5;
+  static const double streakMax = 2.5;
   static const double streakPerSpeed = 0.035;
-  static const double streakFullOver = 900;
+  static const double streakFullOver = 25;
   static const double streakBack = 4;
   static const List<(double, double, double)> streaks = [(-0.85, 1, 2.2), (0, 0.7, 1.6), (0.85, 0.9, 2.2), (0.45, 0.5, 1.2)];
 

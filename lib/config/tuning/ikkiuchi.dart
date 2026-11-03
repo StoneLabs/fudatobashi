@@ -145,8 +145,10 @@ typedef IkkiuchiSpring = ({double decay, double waves});
 
 /// Tobi's arm in a strike (`IkkiuchiStrike`): how the hand's path bends the
 /// arm, when the fist touches, and how the follow-through and the way home
-/// go. Lengths are dp unless they say Tobi units (his art's units, k dp
-/// each); times are the move's own ms unless they say screen ms.
+/// go. Lengths are card widths (a card's width on the board), so a strike
+/// plays alike at any card size, unless they say Tobi units (his art's
+/// units, k dp each) or dp; times are the move's own ms unless they say
+/// screen ms.
 abstract final class IkkiuchiArmTuning {
   /// Points along the arm's curve; more while it is wound into loops.
   static const int samples = 28;
@@ -161,9 +163,9 @@ abstract final class IkkiuchiArmTuning {
   static const double waveLength = 1.6;
   static const double wavePeriod = 170;
 
-  /// The fist's radius in Tobi units, and how near its centre a card counts
-  /// as touched, in fist radii.
-  static const double fist = 4.6;
+  /// The fist's radius, and how near its centre a card counts as touched,
+  /// in fist radii.
+  static const double fist = 0.22;
   static const double touch = 1.2;
 
   /// The point between his feet his body squashes and turns about, Tobi units.
@@ -172,17 +174,17 @@ abstract final class IkkiuchiArmTuning {
   /// A card more than [sideDeadZone] left or right of his middle is struck
   /// with the arm on that side; a nearer one by its id. He leans toward a
   /// card more than [leanDeadZone] from his middle, else toward his arm.
-  static const double sideDeadZone = 4;
-  static const double leanDeadZone = 12;
+  static const double sideDeadZone = 0.11;
+  static const double leanDeadZone = 0.33;
 
   /// The hand keeps [screenMargin] inside the board's edges, the smear's
   /// arc [arcMargin]; the row sweep stops [rowExitInset] short of the edge.
-  static const double screenMargin = 16;
-  static const double arcMargin = 10;
-  static const double rowExitInset = 10;
+  static const double screenMargin = 0.44;
+  static const double arcMargin = 0.28;
+  static const double rowExitInset = 0.28;
 
   /// How far past its resting place the hand may fly on its way home.
-  static const double overshootCap = 46;
+  static const double overshootCap = 1.3;
 
   /// A strike plays its move faster or slower so the hit comes at its reach
   /// time; after the hit the follow-through and the way home go at the same
@@ -205,7 +207,7 @@ abstract final class IkkiuchiArmTuning {
   /// less time, by the square root of the share left, at least [brakeMin].
   /// The path is searched in [brakeSamples] steps, then halved
   /// [brakeRefine] times.
-  static const double clearance = 8;
+  static const double clearance = 0.22;
   static const double brakeMin = 0.45;
   static const int brakeSamples = 64;
   static const int brakeRefine = 12;
@@ -241,18 +243,19 @@ abstract final class IkkiuchiWhipTuning {
   static const double windBack = 16;
   static const double windOut = 12;
 
-  /// The swing's curve bows out by [bow] of the reach, at least [bowMin],
-  /// from [bowAt] along the way to the card; it eases in by [outPower].
+  /// The swing's curve bows out by [bow] of the reach, at least [bowMin]
+  /// card widths, from [bowAt] along the way to the card; it eases in by
+  /// [outPower].
   static const double bowAt = 0.45;
   static const double bow = 0.42;
-  static const double bowMin = 70;
+  static const double bowMin = 1.95;
   static const double outPower = 1.7;
 
   /// The follow-through runs on [followShare] of the reach, within
-  /// [followMin]..[followMax].
+  /// [followMin]..[followMax] card widths.
   static const double followShare = 0.16;
-  static const double followMin = 30;
-  static const double followMax = 80;
+  static const double followMin = 0.83;
+  static const double followMax = 2.2;
   static const IkkiuchiSpring home = (decay: 4.6, waves: 2.6);
 
   /// The arm's lag in each phase (at rest, wind-up, out, follow-through,
@@ -305,12 +308,12 @@ abstract final class IkkiuchiCoilTuning {
 
   /// The lunge lands [landOut] outside the card and [landBack] short of it;
   /// the sweep crosses to [sweepOut] past its other side and [sweepOn] on;
-  /// the hit comes [hitInto] into the sweep. Tobi units.
-  static const double landOut = 18;
-  static const double landBack = 4;
-  static const double sweepOut = 34;
-  static const double sweepOn = 8;
-  static const double hitInto = 18;
+  /// the hit comes [hitInto] into the sweep. Card widths.
+  static const double landOut = 0.85;
+  static const double landBack = 0.2;
+  static const double sweepOut = 1.6;
+  static const double sweepOn = 0.38;
+  static const double hitInto = 0.85;
 
   /// The way home overshoots by this much (a back-out ease).
   static const double homeOvershoot = 1.6;
@@ -348,12 +351,12 @@ abstract final class IkkiuchiSmearTuning {
   static const double hitStop = 90;
 
   /// The arc is half an ellipse about the middle of the way to the card:
-  /// it bows out by [bow] of the reach, at least [bowMin] Tobi units and
-  /// [edgeRoom] dp short of the board's edge. It starts [overhead] radians
-  /// past straight back and eases in by [arcPower].
+  /// it bows out by [bow] of the reach, at least [bowMin] and [edgeRoom]
+  /// short of the board's edge, in card widths. It starts [overhead]
+  /// radians past straight back and eases in by [arcPower].
   static const double bow = 0.55;
-  static const double bowMin = 24;
-  static const double edgeRoom = 14;
+  static const double bowMin = 1.15;
+  static const double edgeRoom = 0.39;
   static const double overhead = 0.35;
   static const double arcPower = 2.1;
 
@@ -398,14 +401,14 @@ abstract final class IkkiuchiSweepTuning {
   /// The hit comes this long into the sweep.
   static const double hitInto = 3;
 
-  /// The sweep starts [inside] dp in from the card's inner edge; the
-  /// approach bows in from [bow] of the reach (at most [bowMax]) along the
-  /// row and [rise] dp above it, easing in by [approachPower]. The lift
+  /// The sweep starts [inside] in from the card's inner edge; the approach
+  /// bows in from [bow] of the reach (at most [bowMax]) along the row and
+  /// [rise] above it, easing in by [approachPower]; card widths. The lift
   /// draws the hand back by [liftBack] and up by [liftUp] Tobi units.
-  static const double inside = 5;
+  static const double inside = 0.14;
   static const double bow = 0.5;
-  static const double bowMax = 120;
-  static const double rise = 6;
+  static const double bowMax = 3.3;
+  static const double rise = 0.17;
   static const double approachPower = 1.35;
   static const double liftBack = 6;
   static const double liftUp = 3;
@@ -429,11 +432,14 @@ abstract final class IkkiuchiSweepTuning {
 }
 
 /// The cards on the board as rigid bodies (`IkkiuchiCards`, Forge2D): no
-/// gravity, the tatami's friction as damping. Speeds are dp/s.
+/// gravity, the tatami's friction as damping. Lengths are card widths (a
+/// card's width on the board) and speeds card widths a second, so the
+/// cards move alike at any card size.
 abstract final class IkkiuchiPhysicsTuning {
-  /// One step of the sim in seconds, and how many dp make a metre in it.
+  /// One step of the sim in seconds, and how many metres a card's width
+  /// is in it.
   static const double step = 1 / 240;
-  static const double dpPerMetre = 50;
+  static const double cardMetres = 0.72;
 
   /// The tatami slows a sliding card's speed and spin by these shares per
   /// second; the taken card, flying, by [launchDamping].
@@ -452,8 +458,8 @@ abstract final class IkkiuchiPhysicsTuning {
   /// kick of [hitSpinKick] rad/s, and spins [sweepSpin] rad/s off a sweep.
   /// No card spins faster than [maxSpin] rad/s.
   static const double hitBoost = 1.2;
-  static const double hitMin = 1800;
-  static const double hitMax = 3600;
+  static const double hitMin = 50;
+  static const double hitMax = 100;
   static const double hitForward = 0.15;
   static const double hitSpin = 0.32;
   static const double hitSpinKick = 6;
@@ -462,17 +468,17 @@ abstract final class IkkiuchiPhysicsTuning {
 
   /// The taken card lands, and fades from the field, once it slows under
   /// [landSpeed]; it fades over [fadeMs].
-  static const double landSpeed = 120;
+  static const double landSpeed = 3.3;
   static const double fadeMs = 220;
 
   /// The fist pushes the cards it meets as if never faster than [pushMax],
   /// bouncing them [fistRestitution]; never toward the side without the
   /// called card.
-  static const double pushMax = 1800;
+  static const double pushMax = 50;
   static const double fistRestitution = 0.3;
 
   /// A card this far past the board's edge is gone.
-  static const double offBoard = 240;
+  static const double offBoard = 6.7;
 }
 
 /// The developer's 一騎打ち pages (`IkkiuchiCurvesPage`,

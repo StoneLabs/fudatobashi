@@ -11,7 +11,7 @@ enum IkkiuchiSide { tobi, player }
 
 /// One card on the board, as the sim has it.
 class IkkiuchiCard {
-  IkkiuchiCard._(this.id, this.side, this.home, this._body);
+  IkkiuchiCard._(this.id, this.side, this.home, this._body, this._sim);
 
   final int id;
   final IkkiuchiSide side;
@@ -21,6 +21,7 @@ class IkkiuchiCard {
 
   box2d.Body? _body;
   CardBox? _last;
+  final IkkiuchiCards _sim;
 
   /// Whether Tobi took it: it flies off and fades.
   bool taken = false;
@@ -38,11 +39,11 @@ class IkkiuchiCard {
   CardBox get box {
     final b = _body;
     if (b == null) return _last ?? home;
-    return home.movedTo(IkkiuchiCards._dp(b.position), b.angle);
+    return home.movedTo(_sim._dp(b.position), b.angle);
   }
 
   /// Its speed and spin now, dp/s and rad/s.
-  Vec get velocity => _body == null ? Vec.zero : IkkiuchiCards._dp(_body!.linearVelocity);
+  Vec get velocity => _body == null ? Vec.zero : _sim._dp(_body!.linearVelocity);
   double get spin => _body?.angularVelocity ?? 0;
 
   /// Whether it has moved from [home] by more than [dp] or [radians].
@@ -60,12 +61,17 @@ class IkkiuchiCard {
 /// band), no card crosses into the other half: it stops there, under the
 /// band. Fixed steps of [IkkiuchiPhysicsTuning.step], so the same steps
 /// always give the same board.
+///
+/// The world is measured in cards: a card [cardW] dp wide is
+/// [IkkiuchiPhysicsTuning.cardMetres] across in it, so the cards move alike
+/// at any size.
 class IkkiuchiCards {
-  IkkiuchiCards(Iterable<({int id, IkkiuchiSide side, CardBox box})> cards, {required this.board, double? centreLine})
+  IkkiuchiCards(Iterable<({int id, IkkiuchiSide side, CardBox box})> cards,
+      {required this.board, required this.cardW, double? centreLine})
       : _world = box2d.World(box2d.Vector2.zero()) {
     _world.setContactListener(_listener);
     if (centreLine != null) {
-      const off = IkkiuchiPhysicsTuning.offBoard;
+      final off = IkkiuchiPhysicsTuning.offBoard * cardW;
       _world.createBody(box2d.BodyDef()).createFixture(box2d.FixtureDef(
             box2d.EdgeShape()..set(_m(Vec(-off, centreLine)), _m(Vec(board.x + off, centreLine))),
             restitution: IkkiuchiPhysicsTuning.restitution,
@@ -90,7 +96,7 @@ class IkkiuchiCards {
         restitution: IkkiuchiPhysicsTuning.restitution,
         filter: _filter(_cardBit, _cardBit | _flyingBit | _fistBit | _lineBit),
       ));
-      final card = IkkiuchiCard._(c.id, c.side, c.box, body);
+      final card = IkkiuchiCard._(c.id, c.side, c.box, body, this);
       body.userData = card;
       this.cards.add(card);
     }
@@ -98,6 +104,9 @@ class IkkiuchiCards {
 
   /// The board's size; a card well past its edge is gone.
   final Vec board;
+
+  /// A card's width on the board, dp.
+  final double cardW;
   final List<IkkiuchiCard> cards = [];
   final box2d.World _world;
   late final _listener = _FistListener(this);
@@ -114,10 +123,10 @@ class IkkiuchiCards {
     ..categoryBits = category
     ..maskBits = mask;
 
-  static double _metres(double dp) => dp / IkkiuchiPhysicsTuning.dpPerMetre;
-  static box2d.Vector2 _m(Vec p) => box2d.Vector2(_metres(p.x), _metres(p.y));
-  static Vec _dp(box2d.Vector2 v) =>
-      Vec(v.x * IkkiuchiPhysicsTuning.dpPerMetre, v.y * IkkiuchiPhysicsTuning.dpPerMetre);
+  late final double _dpPerMetre = cardW / IkkiuchiPhysicsTuning.cardMetres;
+  double _metres(double dp) => dp / _dpPerMetre;
+  box2d.Vector2 _m(Vec p) => box2d.Vector2(_metres(p.x), _metres(p.y));
+  Vec _dp(box2d.Vector2 v) => Vec(v.x * _dpPerMetre, v.y * _dpPerMetre);
 
   IkkiuchiCard card(int id) => cards.firstWhere((c) => c.id == id);
 
@@ -163,6 +172,9 @@ class IkkiuchiCards {
 
   bool get fistOn => _fist != null;
 
+  /// The fastest a card the fist pushes may go, dp/s.
+  double get pushCap => IkkiuchiPhysicsTuning.pushMax * cardW * (1 + IkkiuchiPhysicsTuning.fistRestitution);
+
   /// One step of the sim.
   void step() {
     _pushed.clear();
@@ -170,7 +182,7 @@ class IkkiuchiCards {
     fistTouched
       ..clear()
       ..addAll(_pushed);
-    const cap = IkkiuchiPhysicsTuning.pushMax * (1 + IkkiuchiPhysicsTuning.fistRestitution);
+    final cap = pushCap;
     for (final card in _pushed) {
       final body = card._body;
       if (body == null || card.taken) continue;
@@ -186,9 +198,9 @@ class IkkiuchiCards {
       final w = body.angularVelocity;
       if (w.abs() > IkkiuchiPhysicsTuning.maxSpin) body.angularVelocity = w.sign * IkkiuchiPhysicsTuning.maxSpin;
       final at = card.box.centre;
-      const off = IkkiuchiPhysicsTuning.offBoard;
+      final off = IkkiuchiPhysicsTuning.offBoard * cardW;
       final gone = at.x < -off || at.y < -off || at.x > board.x + off || at.y > board.y + off;
-      final landed = card.taken && _dp(body.linearVelocity).length < IkkiuchiPhysicsTuning.landSpeed;
+      final landed = card.taken && _dp(body.linearVelocity).length < IkkiuchiPhysicsTuning.landSpeed * cardW;
       if (gone || landed) _remove(card, shown: gone ? 0 : card.shown);
     }
     for (final card in cards) {

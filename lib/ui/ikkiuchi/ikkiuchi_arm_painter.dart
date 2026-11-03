@@ -29,7 +29,7 @@ abstract final class IkkiuchiArmPainter {
     final hand = points.last;
     final vel = strike.handVelocity(tau);
     final stretch = math.min(vel.length / IkkiuchiArmStyle.fistStretchSpeed, IkkiuchiArmStyle.fistStretchMax);
-    final r = IkkiuchiArmTuning.fist * k * scale;
+    final r = strike.fist * scale;
     final oval = Rect.fromCenter(
         center: Offset.zero, width: 2 * r * (1 + stretch), height: 2 * r / (1 + stretch * IkkiuchiArmStyle.fistNarrow));
     canvas
@@ -88,7 +88,7 @@ abstract final class IkkiuchiArmPainter {
     final ink = ((top - IkkiuchiArmStyle.windMinSpeed) / (IkkiuchiArmStyle.windFullSpeed - IkkiuchiArmStyle.windMinSpeed))
         .clamp(0.0, 1.0);
     if (ink <= 0) return;
-    final r = IkkiuchiArmTuning.fist * k;
+    final r = strike.fist;
     final offsets = sweep
         ? [
             -(cardHalf + IkkiuchiArmStyle.sweepGap),

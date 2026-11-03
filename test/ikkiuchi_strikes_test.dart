@@ -57,6 +57,7 @@ void main() {
       targetId: card,
       tobi: board.tobi,
       board: board.size,
+      cardW: board.cards.cardW,
       away: dead == IkkiuchiSide.tobi ? const Vec(0, 1) : const Vec(0, -1),
       wrong: [
         for (final c in board.cards.cards)
@@ -150,7 +151,7 @@ void main() {
                 final s = IkkiuchiStrike(move, setup);
                 for (var t = s.liveFrom; t <= s.liveUntil; t += 0.5) {
                   final gap = gapToCards(setup.wrong, s.handAtTime(t)) - s.touch;
-                  expect(gap, greaterThanOrEqualTo(IkkiuchiArmTuning.clearance - 0.01),
+                  expect(gap, greaterThanOrEqualTo(IkkiuchiArmTuning.clearance * b.cards.cardW - 0.01),
                       reason: '$rating seed $seed ${side.name} ${move.name} at $t');
                 }
               }
@@ -166,7 +167,7 @@ void main() {
       final cards = IkkiuchiCards([
         (id: 1, side: IkkiuchiSide.player, box: const CardBox(Vec(200, 600), 19, 27)),
         (id: 2, side: IkkiuchiSide.player, box: const CardBox(Vec(240, 600), 19, 27)),
-      ], board: const Vec(384, 832));
+      ], board: const Vec(384, 832), cardW: 38);
       expect(cards.settled, isTrue, reason: 'laid out still');
       cards.launch(cards.card(1), const Vec(-3000, 400), 4);
       for (var i = 0; i < 600; i++) {
@@ -181,7 +182,7 @@ void main() {
       final cards = IkkiuchiCards([
         (id: 1, side: IkkiuchiSide.player, box: const CardBox(Vec(200, 600), 19, 27)),
         (id: 2, side: IkkiuchiSide.tobi, box: const CardBox(Vec(200, 300), 19, 27, math.pi)),
-      ], board: const Vec(384, 832), centreLine: 450);
+      ], board: const Vec(384, 832), cardW: 38, centreLine: 450);
       cards.launch(cards.card(1), const Vec(0, -3000), 0);
       for (var i = 0; i < 600; i++) {
         cards.step();
@@ -192,7 +193,7 @@ void main() {
     test('a taken card that stops on the field fades from it', () {
       final cards = IkkiuchiCards([
         (id: 1, side: IkkiuchiSide.player, box: const CardBox(Vec(200, 600), 19, 27)),
-      ], board: const Vec(384, 832));
+      ], board: const Vec(384, 832), cardW: 38);
       cards.launch(cards.card(1), const Vec(150, 0), 0);
       for (var i = 0; i < 240; i++) {
         cards.step();
@@ -359,7 +360,6 @@ void main() {
   test('clean strikes make no accidental faults and push nothing on the way home', () {
     const strikesPerCase = 4;
     var strikes = 0, accidental = 0, homePushes = 0, tobiMoved = 0, overCap = 0;
-    const cap = IkkiuchiPhysicsTuning.pushMax * (1 + IkkiuchiPhysicsTuning.fistRestitution);
     final rows = <String>[];
     for (final landscape in [false, true]) {
       for (final rating in ratings) {
@@ -388,7 +388,7 @@ void main() {
               final t = run.at(board.now);
               if (t > run.strike.liveUntil + step && board.cards.fistOn) homePushes++;
               for (final c in board.cards.fistTouched) {
-                if (!c.taken && c.velocity.length > cap * 1.001) overCap++;
+                if (!c.taken && c.velocity.length > board.cards.pushCap * 1.001) overCap++;
               }
               if (side == IkkiuchiSide.player && home == null && t > run.strike.liveUntil) {
                 home = {

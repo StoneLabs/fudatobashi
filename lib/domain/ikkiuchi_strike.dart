@@ -15,6 +15,7 @@ class IkkiuchiStrikeSetup {
     required this.targetId,
     required this.tobi,
     required this.board,
+    required this.cardW,
     required this.away,
     this.wrong = const [],
     this.reachMs,
@@ -31,6 +32,10 @@ class IkkiuchiStrikeSetup {
 
   /// The board's size; the hand never leaves it.
   final Vec board;
+
+  /// A card's width on the board, dp: the unit of the strike's lengths
+  /// that aren't Tobi's own.
+  final double cardW;
 
   /// Points from the side without the called card toward the called card's
   /// side: the follow-through never goes against it.
@@ -69,12 +74,13 @@ class IkkiuchiStrike {
   IkkiuchiStrike(this.move, this.setup) {
     final tobi = setup.tobi;
     final card = setup.target;
-    final k = tobi.k;
+    final k = tobi.k, u = setup.cardW;
     final off = card.centre.x - tobi.centreX;
+    final sideDeadZone = IkkiuchiArmTuning.sideDeadZone * u;
     side = setup.side ??
-        (off < -IkkiuchiArmTuning.sideDeadZone
+        (off < -sideDeadZone
             ? ArmSide.left
-            : off > IkkiuchiArmTuning.sideDeadZone
+            : off > sideDeadZone
                 ? ArmSide.right
                 : (setup.targetId.isOdd ? ArmSide.left : ArmSide.right));
     final sgn = side.sign;
@@ -91,7 +97,7 @@ class IkkiuchiStrike {
     var n = f.perp;
     if (n.x * sgn < 0) n = -n;
     final e = card.reachAlong(n);
-    final rowX = off.abs() > IkkiuchiArmTuning.sideDeadZone ? off.sign : sgn;
+    final rowX = off.abs() > sideDeadZone ? off.sign : sgn;
     final reachMs = setup.reachMs == null ? null : math.max(IkkiuchiTuning.reachFloorMs, setup.reachMs!);
     _geo = _Geo(
       shoulder: shoulder,
@@ -103,15 +109,16 @@ class IkkiuchiStrike {
       f: f,
       d: reach.length,
       k: k,
-      lean: off.abs() > IkkiuchiArmTuning.leanDeadZone ? off.sign : sgn,
+      u: u,
+      lean: off.abs() > IkkiuchiArmTuning.leanDeadZone * u ? off.sign : sgn,
       side: sgn,
       board: setup.board,
       row: Vec(rowX, 0),
       rowHalf: card.hw,
-      rowExitX: rowX > 0 ? setup.board.x - IkkiuchiArmTuning.rowExitInset : IkkiuchiArmTuning.rowExitInset,
+      rowExitX: rowX > 0 ? setup.board.x - IkkiuchiArmTuning.rowExitInset * u : IkkiuchiArmTuning.rowExitInset * u,
       reachMs: reachMs,
       away: setup.away,
-      touch: touchRadius(k),
+      touch: IkkiuchiArmTuning.fist * u * IkkiuchiArmTuning.touch,
       wrong: setup.wrong,
       body0: lead == null ? TobiBody.rest : lead.strike.bodyAt(lead.at),
     );
@@ -133,7 +140,9 @@ class IkkiuchiStrike {
         : _pre.clamp(IkkiuchiArmTuning.afterPace.min, IkkiuchiArmTuning.afterPace.max).toDouble();
     hitAt = _plan.tc * _pre;
     end = hitAt + hitStop + (_plan.end - _plan.tc) * _post;
-    _fistEnd = rig.arm(setup.endFace, side).fist / IkkiuchiArmTuning.fist;
+    fist = IkkiuchiArmTuning.fist * u;
+    _fistStart = lead == null ? rig.arm(TobiFace.reaching, side).fist * k / fist : 1;
+    _fistEnd = rig.arm(setup.endFace, side).fist * k / fist;
   }
 
   final IkkiuchiMove move;
@@ -150,11 +159,10 @@ class IkkiuchiStrike {
 
   late final _Geo _geo;
   late final _Plan _plan;
-  late final double _pre, _post, _fistEnd;
+  late final double _pre, _post, _fistStart, _fistEnd;
 
-  /// How near a card the fist's centre touches it, at [k] dp a Tobi unit.
-  static double touchRadius(double k) => IkkiuchiArmTuning.fist * k * IkkiuchiArmTuning.touch;
-
+  /// The fist's radius, dp, and how near a card its centre touches it.
+  late final double fist;
   double get touch => _geo.touch;
 
   /// Where the hand meets the card: the edge it comes at, or for the row
@@ -234,12 +242,14 @@ class IkkiuchiStrike {
   TobiFace faceAt(double t) =>
       t < liveFrom + IkkiuchiArmTuning.faceAfterHit ? TobiFace.reaching : setup.endFace;
 
-  /// The fist's size at move time [tau], as a share of its own: it turns
-  /// into the end pose's hand at the very end.
+  /// The fist's size at move time [tau], as a share of [fist]: it grows
+  /// out of his pose's fist at the very start and turns into the end
+  /// pose's hand at the very end.
   double fistScale(double tau) {
     const settle = IkkiuchiArmTuning.fistSettle;
+    final grown = _fistStart + (1 - _fistStart) * (tau / settle).clamp(0.0, 1.0);
     final p = ((tau - (_plan.end - settle)) / settle).clamp(0.0, 1.0);
-    return 1 + (_fistEnd - 1) * p;
+    return grown + (_fistEnd - grown) * p;
   }
 
   /// The arm's curve at move time [tau] from the shoulder [s]: the hand's
@@ -276,8 +286,8 @@ class IkkiuchiStrike {
 /// A strike's geometry: [shoulder] and the resting hand [h0] (or where a
 /// strike cut in on had it), [hEnd] the end pose's hand, the card's centre
 /// [target], the [edge] the hand meets, [n] outward square to the reach,
-/// [f] toward the card, [d] the reach, [k] dp a Tobi unit, [lean] the way
-/// his body leans, [side] his arm's sign, the [row] way and its half card
+/// [f] toward the card, [d] the reach, [k] dp a Tobi unit, [u] dp a card
+/// width, [lean] the way his body leans, [side] his arm's sign, the [row] way and its half card
 /// [rowHalf] and exit, and [body0] his body at the start.
 class _Geo {
   _Geo({
@@ -290,6 +300,7 @@ class _Geo {
     required this.f,
     required this.d,
     required this.k,
+    required this.u,
     required this.lean,
     required this.side,
     required this.board,
@@ -304,16 +315,16 @@ class _Geo {
   });
 
   final Vec shoulder, h0, hEnd, target, edge, n, f, board, row, away;
-  final double d, k, lean, side, rowHalf, rowExitX, touch;
+  final double d, k, u, lean, side, rowHalf, rowExitX, touch;
   final double? reachMs;
   final List<CardBox> wrong;
   final TobiBody body0;
 
   TobiBody pose(IkkiuchiBodyPose p, [double? way]) => TobiBody.of(p, way ?? lean, k);
 
-  /// [p] moved inside the board, [margin] in from its edges.
-  Vec onBoard(Vec p, [double margin = IkkiuchiArmTuning.screenMargin]) =>
-      Vec(p.x.clamp(margin, board.x - margin), p.y.clamp(margin, board.y - margin));
+  /// [p] moved inside the board, [margin] card widths in from its edges.
+  Vec onBoard(Vec p, [double margin = IkkiuchiArmTuning.screenMargin]) => Vec(
+      p.x.clamp(margin * u, board.x - margin * u), p.y.clamp(margin * u, board.y - margin * u));
 
   /// How far from [p] along [dir] the board's edge is.
   double roomAlong(Vec p, Vec dir) {
@@ -332,7 +343,7 @@ class _Geo {
   Vec returnHand(Vec from, Vec home, double g) {
     final span = from - home;
     final dist = span.length;
-    final gg = g < 0 && dist > 0 ? g * math.min(1, IkkiuchiArmTuning.overshootCap / dist) : g;
+    final gg = g < 0 && dist > 0 ? g * math.min(1, IkkiuchiArmTuning.overshootCap * u / dist) : g;
     return home + span * gg;
   }
 
@@ -373,7 +384,7 @@ class _Geo {
   /// within [IkkiuchiArmTuning.clearance] of a card in [wrong].
   double _clearRun(Vec Function(double s) path) {
     if (wrong.isEmpty) return 1;
-    bool clear(double s) => gapToCards(wrong, path(s)) - touch >= IkkiuchiArmTuning.clearance;
+    bool clear(double s) => gapToCards(wrong, path(s)) - touch >= IkkiuchiArmTuning.clearance * u;
     if (!clear(0)) return 0;
     const n = IkkiuchiArmTuning.brakeSamples;
     for (var i = 1; i <= n; i++) {
@@ -486,11 +497,11 @@ _Plan _whip(_Geo c) {
   const tw = _W.windUp, to = _W.out, tr = _W.back;
   const tc = tw + to;
   final hw = c.h0 + c.f * (-_W.windBack * k) + c.n * (_W.windOut * k);
-  final q = c.onBoard(hw.lerp(c.edge, _W.bowAt) + c.n * math.max(_W.bow * c.d, _W.bowMin));
+  final q = c.onBoard(hw.lerp(c.edge, _W.bowAt) + c.n * math.max(_W.bow * c.d, _W.bowMin * c.u));
   final fol = c.follow(
     from: c.edge,
     dir: (c.edge - q).unit,
-    length: (_W.followShare * c.d).clamp(_W.followMin, _W.followMax),
+    length: (_W.followShare * c.d).clamp(_W.followMin * c.u, _W.followMax * c.u),
     dur: _W.follow,
     tc: tc,
   );
@@ -549,10 +560,11 @@ _Plan _coilLunge(_Geo c) {
   }
 
   final hc = coilAt(1);
-  final land = c.target + c.n * (c.edge.distanceTo(c.target) + _B.landOut * k) + c.f * (-_B.landBack * k);
-  final past = c.target + c.n * (-(c.edge.distanceTo(c.target) + _B.sweepOut * k)) + c.f * (_B.sweepOn * k);
+  final u = c.u;
+  final land = c.target + c.n * (c.edge.distanceTo(c.target) + _B.landOut * u) + c.f * (-_B.landBack * u);
+  final past = c.target + c.n * (-(c.edge.distanceTo(c.target) + _B.sweepOut * u)) + c.f * (_B.sweepOn * u);
   // The sweep across the card: up to the hit, then its follow-through.
-  final qc = math.min(1.0, _B.hitInto * k / land.distanceTo(past));
+  final qc = math.min(1.0, _B.hitInto * u / land.distanceTo(past));
   final pc = 1 - math.pow(1 - qc, 1 / 3).toDouble();
   final tc = tco + th + tl + pc * ts;
   final hit = land.lerp(past, qc);
@@ -608,7 +620,7 @@ _Plan _smear(_Geo c) {
   const tc = ta + tar;
   final mid = c.shoulder.lerp(c.edge, 0.5);
   final a = c.edge.distanceTo(mid);
-  final b = math.max(_C.bowMin * k, math.min(_C.bow * c.d, c.roomAlong(mid, c.n) - _C.edgeRoom));
+  final b = math.max(_C.bowMin * c.u, math.min(_C.bow * c.d, c.roomAlong(mid, c.n) - _C.edgeRoom * c.u));
   const th0 = math.pi + _C.overhead, th1 = 0.0;
   Vec ellipse(double th) => mid + c.f * (a * math.cos(th)) + c.n * (b * math.sin(th));
   final drawn = ellipse(th0);
@@ -660,9 +672,9 @@ _Plan _sweep(_Geo c) {
   final k = c.k;
   const ta = _D.lift, tap = _D.approach, tr = _D.back;
   final row = c.row;
-  final inner = Vec(c.target.x - row.x * (c.rowHalf + _D.inside), c.target.y);
+  final inner = Vec(c.target.x - row.x * (c.rowHalf + _D.inside * c.u), c.target.y);
   final lifted = c.h0 + c.f * (-_D.liftBack * k) + Vec(0, -_D.liftUp * k);
-  final q = c.onBoard(Vec(inner.x - row.x * math.min(_D.bow * c.d, _D.bowMax), inner.y - _D.rise));
+  final q = c.onBoard(Vec(inner.x - row.x * math.min(_D.bow * c.d, _D.bowMax * c.u), inner.y - _D.rise * c.u));
   const tc = ta + tap + _D.hitInto;
   // The sweep runs along the row to the board's edge, at any speed.
   final fol = c.follow(

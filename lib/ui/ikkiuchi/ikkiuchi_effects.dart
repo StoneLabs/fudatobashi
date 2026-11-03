@@ -140,15 +140,16 @@ abstract final class IkkiuchiEffects {
   /// Speed lines behind a card [box] sliding at [velocity]: tapered ink
   /// streaks trailing from its back, longer the faster it goes.
   static void paintStreaks(Canvas canvas, CardBox box, Vec velocity) {
-    final speed = velocity.length;
-    if (speed < IkkiuchiBoardStyle.streakMinSpeed) return;
+    final u = 2 * box.hw;
+    final speed = velocity.length, least = IkkiuchiBoardStyle.streakMinSpeed * u;
+    if (speed < least) return;
     final dir = velocity * (1 / speed);
     final nrm = dir.perp;
-    final length = math.min(IkkiuchiBoardStyle.streakMax, speed * IkkiuchiBoardStyle.streakPerSpeed);
+    final length = math.min(IkkiuchiBoardStyle.streakMax * u, speed * IkkiuchiBoardStyle.streakPerSpeed);
     final reach = box.reachAlong(nrm), back = box.reachAlong(dir);
     final paint = Paint()
-      ..color = IkkiuchiArmStyle.ink.withValues(
-          alpha: ((speed - IkkiuchiBoardStyle.streakMinSpeed) / IkkiuchiBoardStyle.streakFullOver).clamp(0.0, 1.0));
+      ..color = IkkiuchiArmStyle.ink
+          .withValues(alpha: ((speed - least) / (IkkiuchiBoardStyle.streakFullOver * u)).clamp(0.0, 1.0));
     for (final (across, share, width) in IkkiuchiBoardStyle.streaks) {
       final start = box.centre + nrm * (across * reach) + dir * (-back - IkkiuchiBoardStyle.streakBack);
       final end = start + dir * (-length * share);

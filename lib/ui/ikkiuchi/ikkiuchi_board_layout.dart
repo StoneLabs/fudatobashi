@@ -89,7 +89,8 @@ class IkkiuchiBoardLayout {
   final List<({int id, IkkiuchiSide side, CardBox box})> cards;
 
   /// The board set out on this layout, no card crossing the middle of the band.
-  IkkiuchiBoard board() => IkkiuchiBoard(tobi: tobi, size: size, cards: cards, centreLine: band.center.dy);
+  IkkiuchiBoard board() =>
+      IkkiuchiBoard(tobi: tobi, size: size, cards: cards, cardW: 2 * cards.first.box.hw, centreLine: band.center.dy);
 
   /// [cards] laid out as a side of [rows] rows at random, in a shape drawn
   /// as Tobi's starting side's is ([IkkiuchiLayout.drawShape]).
