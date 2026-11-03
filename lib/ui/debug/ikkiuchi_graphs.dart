@@ -1,14 +1,19 @@
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 import '../../config/config.dart';
 import '../../config/design.dart';
+import '../../domain/rating.dart';
+import '../../domain/tuning_curve.dart';
+import '../manga/toast.dart';
 import 'debug_common.dart';
 import 'ikkiuchi_values.dart';
 
-/// [value]'s curve against Tobi's rating under its [graph]'s title: the
-/// rating marked, his form's reach around it shaded, the curve's anchors
+/// [value]'s curve against Tobi's rating under its [graph]'s title, with an
+/// Export button for a curve of its own: the rating marked, his form's
+/// reach around it shaded, the class thresholds dotted, the curve's anchors
 /// ringed. A chance per group also draws its share of games with any group
 /// kept together, under a legend for the two lines.
 class IkkiuchiCurveGraph extends StatelessWidget {
@@ -22,7 +27,7 @@ class IkkiuchiCurveGraph extends StatelessWidget {
   Widget build(BuildContext context) => Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          _GraphTitle(graph),
+          _GraphTitle(graph, value.curve),
           if (value.anyInGame != null)
             const Wrap(spacing: IkkiuchiCurvesStyle.legendSpacing, children: [
               _LineKey(IkkiuchiCurvesStyle.line, ikkiuchiPerGroup),
@@ -53,7 +58,8 @@ class _LineKey extends StatelessWidget {
 
 /// [shares], adding up to the whole at every rating, as bands stacked from
 /// the first up, under the [graph]'s title and a legend: the rating marked
-/// and each share there labelled beside it.
+/// and each share there labelled beside it, the class thresholds dotted.
+/// Its Export button copies the curve of the share that has one.
 class IkkiuchiSharesGraph extends StatelessWidget {
   const IkkiuchiSharesGraph(this.shares, this.graph, this.rating, {super.key});
 
@@ -67,7 +73,7 @@ class IkkiuchiSharesGraph extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        _GraphTitle(graph),
+        _GraphTitle(graph, shares.map((s) => s.curve).nonNulls.firstOrNull),
         const SizedBox(height: IkkiuchiToolsStyle.gap),
         Wrap(
           spacing: IkkiuchiCurvesStyle.legendSpacing,
@@ -93,10 +99,13 @@ class IkkiuchiSharesGraph extends StatelessWidget {
   }
 }
 
+/// A graph's title and note, and with a [curve] a button that copies it as
+/// Dart for the config.
 class _GraphTitle extends StatelessWidget {
-  const _GraphTitle(this.graph);
+  const _GraphTitle(this.graph, this.curve);
 
   final IkkiuchiGraph graph;
+  final TuningCurve? curve;
 
   @override
   Widget build(BuildContext context) => Padding(
@@ -104,8 +113,27 @@ class _GraphTitle extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(graph.title,
-                style: const TextStyle(fontSize: IkkiuchiCurvesStyle.titleFont, fontWeight: Weights.bold)),
+            Row(children: [
+              Expanded(
+                child: Text(graph.title,
+                    style: const TextStyle(fontSize: IkkiuchiCurvesStyle.titleFont, fontWeight: Weights.bold)),
+              ),
+              if (curve case final curve?)
+                TextButton(
+                  style: TextButton.styleFrom(
+                    padding: IkkiuchiCurvesStyle.exportPadding,
+                    minimumSize: Size.zero,
+                    tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                    foregroundColor: IkkiuchiCurvesStyle.exportText,
+                  ),
+                  onPressed: () async {
+                    await Clipboard.setData(ClipboardData(text: curve.toDart()));
+                    if (context.mounted) MangaToast.show(context, 'Copied');
+                  },
+                  child: const Text('Export',
+                      style: TextStyle(fontSize: IkkiuchiCurvesStyle.exportFont, fontWeight: Weights.bold)),
+                ),
+            ]),
             Text(graph.note,
                 style: const TextStyle(fontSize: IkkiuchiCurvesStyle.smallFont, color: IkkiuchiToolsStyle.soft)),
           ],
@@ -114,7 +142,8 @@ class _GraphTitle extends StatelessWidget {
 }
 
 /// What both graphs share: the plot inside its margins over the curves'
-/// ratings, its axes, labels and pills, and the marker at [rating].
+/// ratings, its axes, labels and pills, the class thresholds, and the
+/// marker at [rating].
 abstract class _RatingPlot extends CustomPainter {
   _RatingPlot(this.rating);
 
@@ -163,6 +192,23 @@ abstract class _RatingPlot extends CustomPainter {
     ..color = color
     ..strokeWidth = IkkiuchiCurvesStyle.gridStroke;
 
+  /// A dotted line of [color] up through the plot at each rating class's
+  /// threshold within the curves' ratings.
+  static void rankLines(Canvas canvas, Rect plot, Color color) {
+    final dot = Paint()
+      ..color = color
+      ..strokeWidth = IkkiuchiCurvesStyle.rankStroke;
+    const step = IkkiuchiCurvesStyle.rankDot + IkkiuchiCurvesStyle.rankDotGap;
+    for (final band in Rating.bands) {
+      final r = band.minRating;
+      if (r <= min || r >= max) continue;
+      final x = xAt(plot, r);
+      for (var y = plot.top; y < plot.bottom; y += step) {
+        canvas.drawLine(Offset(x, y), Offset(x, math.min(y + IkkiuchiCurvesStyle.rankDot, plot.bottom)), dot);
+      }
+    }
+  }
+
   /// The marker's line at [x] down the plot, over a paper [halo] when
   /// given.
   static void markerLine(Canvas canvas, Rect plot, double x, {double? halo}) {
@@ -208,9 +254,9 @@ abstract class _RatingPlot extends CustomPainter {
       debugMono.copyWith(fontSize: IkkiuchiCurvesStyle.numberFont, fontWeight: Weights.bold, color: color);
 }
 
-/// One value's curve: his form's reach shaded, grid and axes, a floor
-/// dashed, the curve over a wash, its anchors ringed, and the marker with
-/// the value on a pill above the plot.
+/// One value's curve: his form's reach shaded, grid and axes, the class
+/// thresholds dotted, a floor dashed, the curve over a wash, its anchors
+/// ringed, and the marker with the value on a pill above the plot.
 class _CurvePainter extends _RatingPlot {
   _CurvePainter(this.value, this.floor, super.rating);
 
@@ -240,6 +286,7 @@ class _CurvePainter extends _RatingPlot {
     final grid = _RatingPlot.gridPaint(IkkiuchiCurvesStyle.grid);
     _RatingPlot.valueAxis(canvas, plot, top, value.unit.axis, grid: grid);
     _RatingPlot.ratingAxis(canvas, plot, grid: grid);
+    _RatingPlot.rankLines(canvas, plot, IkkiuchiCurvesStyle.rankLine);
 
     if (floor case final floor?) {
       final y = at(_RatingPlot.min, floor).dy;
@@ -330,9 +377,9 @@ void _anchors(Canvas canvas, List<Offset> at) {
 }
 
 /// The shares stacked: a band for each over 0 to 100%, paper gaps between
-/// them and paper grid lines over them, the anchors of a share's own curve
-/// ringed on its band's top, and at the marker each share's value on a
-/// pill beside it, tied to its band's middle.
+/// them and paper grid lines and class thresholds over them, the anchors of
+/// a share's own curve ringed on its band's top, and at the marker each
+/// share's value on a pill beside it, tied to its band's middle.
 class _SharesPainter extends _RatingPlot {
   _SharesPainter(this.shares, super.rating);
 
@@ -368,6 +415,7 @@ class _SharesPainter extends _RatingPlot {
       final y = plot.bottom - plot.height * i / IkkiuchiCurvesStyle.valueDivisions;
       canvas.drawLine(Offset(plot.left, y), Offset(plot.right, y), grid);
     }
+    _RatingPlot.rankLines(canvas, plot, IkkiuchiCurvesStyle.rankLineOnShares);
     _RatingPlot.valueAxis(canvas, plot, 1, IkkiuchiUnit.percent.axis);
     _RatingPlot.ratingAxis(canvas, plot);
     for (final (i, share) in shares.indexed) {

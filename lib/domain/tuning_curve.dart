@@ -50,6 +50,21 @@ class TuningCurve {
     return anchors.last.$2;
   }
 
+  /// The curve as Dart source, its numbers in their shortest form, e.g.
+  /// `TuningCurve.log([(0, 3400), (3600, 180)], slopes: [(1600, -1.2)])`;
+  /// the slopes only when there are some.
+  String toDart() {
+    String number(double v) {
+      if (v == 0) return '0';
+      final s = v.toString();
+      return s.endsWith('.0') ? s.substring(0, s.length - 2) : s;
+    }
+
+    String pairs(List<(double, double)> list) => '[${list.map((p) => '(${number(p.$1)}, ${number(p.$2)})').join(', ')}]';
+    final name = scale == CurveScale.log ? 'TuningCurve.log' : 'TuningCurve';
+    return '$name(${pairs(anchors)}${slopes.isEmpty ? '' : ', slopes: ${pairs(slopes)}'})';
+  }
+
   /// The slope at each point: its set one, or else its automatic one.
   List<double> _pointSlopes() {
     assert(slopes.every((s) => anchors.any((a) => a.$1 == s.$1)), 'a slope at no point: $slopes');

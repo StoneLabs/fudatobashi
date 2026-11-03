@@ -97,25 +97,36 @@ abstract final class KarafudaDevStyle {
 
 /// The developer's 一騎打ち pages (`IkkiuchiCurvesPage`,
 /// `IkkiuchiLayoutPage`): margins and gaps; the rating header pinned over
-/// each page, its rating and its slider's track and thumb; and the layout's
-/// field, its ground, its card pitch within [minPitch] and [maxPitch] dp
-/// (scrolling sideways past the page's width), a home not on Tobi's side
-/// dimmed, a tint for each first sound and a band for each look-alike
-/// family.
+/// each page, its rating, its slider's track and thumb, and the rating
+/// classes under the slider; and the layout's field, its ground, its card
+/// pitch within [minPitch] and [maxPitch] dp (scrolling sideways past the
+/// page's width), a home not on Tobi's side dimmed, a tint for each first
+/// sound and a band for each look-alike family.
 abstract final class IkkiuchiToolsStyle {
   static const EdgeInsets padding = EdgeInsets.all(16);
   static const double gap = 8;
   static const double sectionGap = 32;
 
-  static const EdgeInsets headerPadding = EdgeInsets.fromLTRB(16, 10, 16, 2);
+  static const EdgeInsets headerPadding = EdgeInsets.fromLTRB(16, 10, 16, 8);
   static const double ratingFont = 24;
   static const double sliderTrack = 6;
   static const double sliderThumb = 10;
   static const double sliderOverlay = 18;
-  static const EdgeInsets sliderPadding = EdgeInsets.symmetric(horizontal: 10, vertical: 16);
+  static const EdgeInsets sliderPadding = EdgeInsets.fromLTRB(10, 16, 10, 6);
   static const Color sliderActive = Palette.ink;
   static const Color sliderInactive = Palette.inkShadow;
   static const Color headerRule = Palette.desk;
+
+  /// The rating classes under the slider: a segment for each, [rankGap]
+  /// apart, its name in [rankFont], the class at the rating inked.
+  static const double rankHeight = 16;
+  static const double rankFont = 10;
+  static const double rankGap = 1;
+  static const double rankLabelPadding = 1;
+  static const Color rankFill = Palette.desk;
+  static const Color rankText = soft;
+  static const Color rankOnFill = Palette.ink;
+  static const Color rankOnText = Palette.paper;
 
   /// Secondary text: notes, axis labels, the head of a table.
   static const Color soft = Color(0xFF6A6862);
@@ -217,6 +228,19 @@ abstract final class IkkiuchiCurvesStyle {
   static const List<double> axisSteps = [1, 2, 2.5, 5, 10];
   static const Color grid = Palette.desk;
   static const double gridStroke = 1;
+
+  /// A graph's Export button, right of its title.
+  static const double exportFont = 12;
+  static const EdgeInsets exportPadding = EdgeInsets.symmetric(horizontal: 8, vertical: 4);
+  static const Color exportText = Palette.seaDeep;
+
+  /// A faint dotted line up through each graph at each rating class's
+  /// threshold, paler on the stacked shares.
+  static const Color rankLine = Color(0x40141414);
+  static const Color rankLineOnShares = Color(0x80FFFFFF);
+  static const double rankStroke = 1;
+  static const double rankDot = 2;
+  static const double rankDotGap = 2;
 
   /// A curve: its line and the wash under it, its anchors as rings, a
   /// floor's dashes, and his form's reach around the chosen rating, each

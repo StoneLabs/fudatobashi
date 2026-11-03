@@ -2,6 +2,7 @@ import 'dart:math' as math;
 
 import '../../config/config.dart';
 import '../../domain/ikkiuchi_tobi.dart';
+import '../../domain/tuning_curve.dart';
 import '../play/time_format.dart';
 import 'ikkiuchi_groups_dealt.dart';
 
@@ -85,16 +86,18 @@ String _wholePercent(double share) => '${(share * 100).round()}';
 /// one he draws per card also spreads from card to card around that value,
 /// its median. A fixed value is the same at every rating and never random.
 class IkkiuchiValue {
-  /// A value read from his curves at his rating: [anchors] are its curve's,
-  /// for a value with one of its own; [drawSpread] is the standard
-  /// deviation of the log of his draw on each card, for a value he draws
-  /// per card (log-normal); [anyInGame] is, for a chance per group, the
-  /// share of games with at least one group kept together.
+  /// A value read from his curves at his rating: [curve] is its own in the
+  /// config, for a value read straight from one, and otherwise [anchors]
+  /// are the points of the curve it is worked out from; [drawSpread] is the
+  /// standard deviation of the log of his draw on each card, for a value he
+  /// draws per card (log-normal); [anyInGame] is, for a chance per group,
+  /// the share of games with at least one group kept together.
   const IkkiuchiValue(
     this.name,
     this.unit,
     double Function(IkkiuchiTobi tobi) read, {
-    this.anchors = const [],
+    this.curve,
+    this._anchors = const [],
     this.drawSpread,
     this.anyInGame,
     this.graph,
@@ -104,14 +107,16 @@ class IkkiuchiValue {
   const IkkiuchiValue.fixed(this.name, this.unit, double value)
       : _fixed = value,
         _read = null,
-        anchors = const [],
+        curve = null,
+        _anchors = const [],
         drawSpread = null,
         anyInGame = null,
         graph = null;
 
   final String name;
   final IkkiuchiUnit unit;
-  final List<(double, double)> anchors;
+  final TuningCurve? curve;
+  final List<(double, double)> _anchors;
   final double Function(IkkiuchiTobi tobi)? drawSpread;
   final IkkiuchiValue? anyInGame;
   final IkkiuchiGraph? graph;
@@ -119,6 +124,9 @@ class IkkiuchiValue {
   final double? _fixed;
 
   bool get isFixed => _read == null;
+
+  /// The points its graph rings.
+  List<(double, double)> get anchors => curve?.anchors ?? _anchors;
 
   double at(double rating) => _fixed ?? _read!(IkkiuchiTobi(rating));
 
@@ -173,16 +181,16 @@ class IkkiuchiValueGroup {
 final ikkiuchiValueGroups = [
   IkkiuchiValueGroup('Timing', [
     IkkiuchiValue('take time', IkkiuchiUnit.ms, (t) => t.takeMs,
-        anchors: IkkiuchiTuning.takeMs.anchors,
+        curve: IkkiuchiTuning.takeMs,
         drawSpread: (t) => t.takeSpread,
         graph: const IkkiuchiGraph('Take time', 'Median time from the end of the deciding sound until his hand hits the card, '
             'for a card at average arm distance. Interpolated on a log scale.')),
     IkkiuchiValue('take spread', IkkiuchiUnit.plain, (t) => t.takeSpread,
-        anchors: IkkiuchiTuning.takeSpread.anchors,
+        curve: IkkiuchiTuning.takeSpread,
         graph: const IkkiuchiGraph('Take spread', 'How much his take time varies from card to card (standard deviation '
             'of its log). Lower is more consistent.')),
     IkkiuchiValue('search time', IkkiuchiUnit.ms, (t) => t.searchMs,
-        anchors: IkkiuchiTuning.searchMs.anchors,
+        curve: IkkiuchiTuning.searchMs,
         drawSpread: (_) => IkkiuchiTuning.searchSpread,
         graph: const IkkiuchiGraph('Search time', "Median extra time he needs when he doesn't know where the card is. "
             'Interpolated on a log scale.')),
@@ -190,11 +198,11 @@ final ikkiuchiValueGroups = [
   ]),
   IkkiuchiValueGroup('Mistakes', [
     IkkiuchiValue('blank chance', IkkiuchiUnit.percent, (t) => t.blankChance,
-        anchors: IkkiuchiTuning.blankChance.anchors,
+        curve: IkkiuchiTuning.blankChance,
         graph: const IkkiuchiGraph('Blank chance', "Chance per read that he doesn't know where the card is and has to "
             'search for it.')),
     IkkiuchiValue('look-alike pull', IkkiuchiUnit.percent, (t) => t.lookAlikePull,
-        anchors: IkkiuchiTuning.lookAlikePull.anchors,
+        curve: IkkiuchiTuning.lookAlikePull,
         graph: const IkkiuchiGraph('Look-alike pull', 'Chance per read that he goes for a look-alike of the called card first, '
             'when one is on the field.')),
     IkkiuchiValue('stray touch', IkkiuchiUnit.percent, (t) => t.strayChance,
@@ -207,25 +215,25 @@ final ikkiuchiValueGroups = [
   ]),
   IkkiuchiValueGroup('Placing', [
     IkkiuchiValue('placing time', IkkiuchiUnit.minutes, (t) => t.placingSeconds,
-        anchors: IkkiuchiTuning.placingSeconds.anchors,
+        curve: IkkiuchiTuning.placingSeconds,
         graph: const IkkiuchiGraph('Placing time', 'Time he takes to lay out his side before the match. '
             'Interpolated on a log scale.')),
     IkkiuchiValue('sound grouping', IkkiuchiUnit.percent, (t) => t.soundGrouping,
-        anchors: IkkiuchiLayoutTuning.soundGrouping.anchors,
+        curve: IkkiuchiLayoutTuning.soundGrouping,
         anyInGame: IkkiuchiValue(ikkiuchiAnyInGame, IkkiuchiUnit.percent,
             (t) => ikkiuchiSoundsDealt.anyKept(t.soundGrouping)),
         graph: const IkkiuchiGraph('Sound grouping', 'Chance that each first-sound group is placed together. Red line: '
             'chance that a game has at least one such group ($_gameDeal, only groups with two or more '
             'of his cards count).')),
     IkkiuchiValue('友札 together', IkkiuchiUnit.percent, (t) => t.tomofudaGrouping,
-        anchors: IkkiuchiLayoutTuning.tomofudaGrouping.anchors,
+        curve: IkkiuchiLayoutTuning.tomofudaGrouping,
         anyInGame: IkkiuchiValue(ikkiuchiAnyInGame, IkkiuchiUnit.percent,
             (t) => ikkiuchiFamiliesDealt.anyKept(t.tomofudaGrouping)),
         graph: const IkkiuchiGraph('友札 together', 'Chance that each 友札 family is placed side by side. Red line: '
             'chance that a game has at least one such family ($_gameDeal, only families with two or '
             'more of his cards count).')),
     IkkiuchiValue('smart send', IkkiuchiUnit.percent, (t) => t.smartSend,
-        anchors: IkkiuchiTuning.smartSend.anchors,
+        curve: IkkiuchiTuning.smartSend,
         graph: const IkkiuchiGraph('Smart send', 'Chance that he sends one card of a look-alike pair and keeps the other. '
             'Otherwise he sends a random card.')),
   ]),
@@ -233,18 +241,18 @@ final ikkiuchiValueGroups = [
     'Arm',
     [
       IkkiuchiValue('arm swing', IkkiuchiUnit.ms, (t) => t.armMs,
-          anchors: IkkiuchiTuning.armMs.anchors,
+          curve: IkkiuchiTuning.armMs,
           graph: const IkkiuchiGraph('Arm swing', 'Time his arm takes to reach a card at average distance. '
               'Part of the take time. Interpolated on a log scale.')),
       IkkiuchiValue('reach to hit', IkkiuchiUnit.ms, (t) => t.reachMs,
-          anchors: IkkiuchiTuning.reachMs.anchors,
+          curve: IkkiuchiTuning.reachMs,
           graph: IkkiuchiGraph('Reach to hit', 'Length of the strike animation, from the start of the reach to '
               'the hit. Red dashed line: the ${IkkiuchiTuning.reachFloorMs.round()} ms minimum.',
               floor: IkkiuchiTuning.reachFloorMs)),
       const IkkiuchiValue.fixed('reach floor', IkkiuchiUnit.ms, IkkiuchiTuning.reachFloorMs),
     ],
     shares: [
-      IkkiuchiValue('sweep', IkkiuchiUnit.percent, (t) => t.moves.sweep, anchors: IkkiuchiTuning.sweepShare.anchors),
+      IkkiuchiValue('sweep', IkkiuchiUnit.percent, (t) => t.moves.sweep, curve: IkkiuchiTuning.sweepShare),
       IkkiuchiValue('whip', IkkiuchiUnit.percent, (t) => t.moves.whip),
       IkkiuchiValue('coil and lunge', IkkiuchiUnit.percent, (t) => t.moves.coilLunge),
       IkkiuchiValue('smear', IkkiuchiUnit.percent, (t) => t.moves.smear),

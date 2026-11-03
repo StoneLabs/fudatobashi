@@ -128,4 +128,27 @@ void main() {
       expect(() => TuningCurve(const [(0, 1), (10, 2)], slopes: const [(5, 1)]).at(3), throwsA(isA<AssertionError>()));
     });
   });
+
+  group('as Dart', () {
+    test('is the expression that makes it, its numbers shortest', () {
+      expect(const TuningCurve.log([(0, 3400), (400, 2900), (3600, 180)]).toDart(),
+          'TuningCurve.log([(0, 3400), (400, 2900), (3600, 180)])');
+      expect(const TuningCurve([(0, 0.034), (1800, 287.5), (3600, -0.5)]).toDart(),
+          'TuningCurve([(0, 0.034), (1800, 287.5), (3600, -0.5)])');
+      expect(const TuningCurve.log([(-0.0, 0.0003), (1e21, 2e-7)]).toDart(), 'TuningCurve.log([(0, 0.0003), (1e+21, 2e-7)])');
+    });
+
+    test('names its slopes only when it has some', () {
+      expect(const TuningCurve([(0, 3400), (1600, 1300), (3600, 180)], slopes: [(1600, -1.2)]).toDart(),
+          'TuningCurve([(0, 3400), (1600, 1300), (3600, 180)], slopes: [(1600, -1.2)])');
+      expect(const TuningCurve.log([(0, 10), (100, 1)], slopes: [(0, -0.02), (100, 0)]).toDart(),
+          'TuningCurve.log([(0, 10), (100, 1)], slopes: [(0, -0.02), (100, 0)])');
+    });
+
+    test('reads back as the same curve', () {
+      const c = TuningCurve([(0, 1 / 3), (1234.5, 0.1 + 0.2)]);
+      final numbers = RegExp(r'-?[\d.]+(e[-+]?\d+)?').allMatches(c.toDart()).map((m) => double.parse(m[0]!)).toList();
+      expect(numbers, [0, 1 / 3, 1234.5, 0.1 + 0.2]);
+    });
+  });
 }

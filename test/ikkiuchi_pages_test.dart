@@ -22,12 +22,14 @@ import 'package:fudatobashi/domain/ikkiuchi_layout.dart';
 import 'package:fudatobashi/domain/ikkiuchi_read.dart';
 import 'package:fudatobashi/domain/ikkiuchi_strike.dart';
 import 'package:fudatobashi/domain/ikkiuchi_tobi.dart';
+import 'package:fudatobashi/domain/rating.dart';
 import 'package:fudatobashi/state/progress.dart';
 import 'package:fudatobashi/state/scope.dart';
 import 'package:fudatobashi/state/settings.dart';
 import 'package:fudatobashi/ui/debug/ikkiuchi_curves_page.dart';
 import 'package:fudatobashi/ui/debug/ikkiuchi_graphs.dart';
 import 'package:fudatobashi/ui/debug/ikkiuchi_layout_page.dart';
+import 'package:fudatobashi/ui/debug/ikkiuchi_rating_header.dart';
 import 'package:fudatobashi/ui/debug/ikkiuchi_strikes_page.dart';
 import 'package:fudatobashi/ui/debug/ikkiuchi_values.dart';
 import 'package:fudatobashi/ui/history/ankiren_field_tab.dart';
@@ -178,6 +180,49 @@ void main() {
       expect(tester.takeException(), isNull);
       expect(find.byType(IkkiuchiSharesGraph), findsOneWidget);
     }
+    await tester.pumpWidget(const SizedBox());
+  });
+
+  testWidgets("Tobi's curves: the classes under the slider, and Export copies a curve as Dart", (tester) async {
+    final copied = <String>[];
+    tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(SystemChannels.platform, (call) async {
+      if (call.method == 'Clipboard.setData') copied.add((call.arguments as Map)['text'] as String);
+      return null;
+    });
+    addTearDown(() => tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(SystemChannels.platform, null));
+    final p = await open(tester);
+    await show(tester, p, const IkkiuchiCurvesPage(rating: 1700));
+
+    final header = find.byType(IkkiuchiRatingHeader);
+    for (final name in ['入門', 'F下級', 'F上級', 'D級', 'A級']) {
+      expect(find.descendant(of: header, matching: find.text(name)), findsOneWidget, reason: name);
+    }
+    final on = tester.widget<Text>(find.descendant(of: header, matching: find.textContaining(Rating.bandOf(1700).stem)));
+    expect(on.style?.fontWeight, Weights.bold, reason: 'the class at 1700 stands out');
+
+    final list = find.byType(Scrollable).first;
+    for (final (title, curve) in [
+      ('Take time', IkkiuchiTuning.takeMs),
+      ('Arm moves', IkkiuchiTuning.sweepShare),
+    ]) {
+      await tester.scrollUntilVisible(find.text(title), 300, scrollable: list);
+      final export = find.descendant(
+        of: find.ancestor(of: find.text(title), matching: find.byType(Row)).first,
+        matching: find.text('Export'),
+      );
+      await tester.tap(export);
+      await tester.pump();
+      expect(copied.last, curve.toDart(), reason: title);
+    }
+    await tester.scrollUntilVisible(find.text('Stray touch'), -300, scrollable: list);
+    expect(
+      find.descendant(
+          of: find.ancestor(of: find.text('Stray touch'), matching: find.byType(Row)).first,
+          matching: find.text('Export')),
+      findsNothing,
+      reason: 'a curve worked out from another has none of its own to export',
+    );
+    await tester.pump(ToastStyle.hold + ToastStyle.fade);
     await tester.pumpWidget(const SizedBox());
   });
 
