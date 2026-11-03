@@ -379,6 +379,23 @@ void main() {
       expect(s.note, contains('reach'));
       expect(s.board.cards.card(card).taken, isTrue);
       expect(s.board.faults, isEmpty);
+
+      // The next tap sets the board out again first, and reads the card
+      // under the finger there: the taken card, back at its spot.
+      await tapBoard(tester, s.board.cards.card(card).home.centre);
+      expect(s.board.field, hasLength(2 * IkkiuchiToolsTuning.strikesPerSide), reason: 'a fresh board');
+      expect(s.board.read?.called, card, reason: 'the card under the finger on the fresh board');
+      for (var i = 0; i < 200 && s.board.active == null; i++) {
+        await tester.pump(const Duration(milliseconds: 10));
+      }
+      expect(s.board.active, isNotNull, reason: 'he strikes');
+      final struck = s.board;
+      final next = s.layout.cards.firstWhere((c) => c.id != card && c.side == IkkiuchiSide.tobi).id;
+      await tapBoard(tester, s.board.cards.card(next).home.centre);
+      expect(s.board, isNot(same(struck)), reason: 'a tap during a strike cancels it');
+      expect(s.board.read?.called, next);
+      expect(s.board.runs, isEmpty, reason: 'his new strike is still to come');
+      expect(s.board.field, hasLength(2 * IkkiuchiToolsTuning.strikesPerSide));
       await tester.tap(find.text('Reset'));
       await tester.pump(frame);
       expect(scene(tester).board.field, hasLength(2 * IkkiuchiToolsTuning.strikesPerSide), reason: 'Reset sets out the board again');

@@ -7,6 +7,7 @@ import 'package:flutter/scheduler.dart';
 import '../../config/config.dart';
 import '../../config/design.dart';
 import '../../data/poem.dart';
+import '../../domain/ikkiuchi_board.dart';
 import '../../domain/ikkiuchi_geometry.dart';
 import '../../domain/ikkiuchi_layout.dart';
 import '../../domain/ikkiuchi_read.dart';
@@ -35,7 +36,8 @@ enum IkkiuchiTapMode {
 /// laid out by his own layout at the rating chosen, the player's at random.
 /// A tap on the board reads the card under it (or the nearest), and Tobi
 /// strikes at it with real card physics: taken cards leave, knocked cards
-/// stay where they land until the board resets. Nothing is stored.
+/// stay where they land until the board resets, which the next read does
+/// first. Nothing is stored.
 class IkkiuchiStrikesPage extends StatefulWidget {
   const IkkiuchiStrikesPage({super.key, this.rating = IkkiuchiToolsTuning.ratingStart, this.seed, this.landscape = false});
 
@@ -143,10 +145,18 @@ class IkkiuchiStrikesPageState extends State<IkkiuchiStrikesPage> with SingleTic
     _idleSince = null;
   }
 
-  /// Reads [poemId]: on the field, or a からふだ.
-  void _call(int poemId) {
+  /// Reads the card [pick] chooses on the board as it was set out: a board
+  /// called on since is reset first, cancelling any strike still playing.
+  void _read(int? Function(IkkiuchiBoard board) pick) {
+    if (_called) _reset();
     final scene = _scene;
-    if (scene == null || scene.board.busy) return;
+    if (scene == null) return;
+    final poemId = pick(scene.board);
+    if (poemId != null) _call(scene, poemId);
+  }
+
+  /// Reads [poemId]: on the field, or a からふだ.
+  void _call(IkkiuchiBoardScene scene, int poemId) {
     final board = scene.board;
     final field = board.field;
     final read = IkkiuchiRead.decide(
@@ -169,31 +179,27 @@ class IkkiuchiStrikesPageState extends State<IkkiuchiStrikesPage> with SingleTic
   }
 
   /// The card under [at] (board dp), or the nearest.
-  void _tapAt(Offset at) {
-    final scene = _scene;
-    if (scene == null) return;
-    final p = Vec(at.dx, at.dy);
-    final field = scene.board.field.entries.toList();
-    if (field.isEmpty) return;
-    field.sort((a, b) => a.value.gapTo(p).compareTo(b.value.gapTo(p)));
-    _call(field.first.key);
-  }
+  void _tapAt(Offset at) => _read((board) {
+        final p = Vec(at.dx, at.dy);
+        final field = board.field.entries.toList();
+        if (field.isEmpty) return null;
+        field.sort((a, b) => a.value.gapTo(p).compareTo(b.value.gapTo(p)));
+        return field.first.key;
+      });
 
-  void _random() {
-    final ids = (_scene?.board.field.keys.toList() ?? [])..sort();
-    if (ids.isNotEmpty) _call(ids[_rng.nextInt(ids.length)]);
-  }
+  void _random() => _read((board) {
+        final ids = board.field.keys.toList()..sort();
+        return ids.isEmpty ? null : ids[_rng.nextInt(ids.length)];
+      });
 
-  void _karafuda() {
-    final scene = _scene;
-    if (scene == null) return;
-    final onField = scene.board.field.keys.toSet();
-    final away = [
-      for (final p in poems.all)
-        if (!onField.contains(p.id)) p.id,
-    ];
-    _call(away[_rng.nextInt(away.length)]);
-  }
+  void _karafuda() => _read((board) {
+        final onField = board.field.keys.toSet();
+        final away = [
+          for (final p in poems.all)
+            if (!onField.contains(p.id)) p.id,
+        ];
+        return away[_rng.nextInt(away.length)];
+      });
 
   /// What Tobi did on the last call, for the band.
   String _readout() {
