@@ -4,7 +4,7 @@ part of '../config.dart';
 /// from his rating through these curves (`IkkiuchiTobi`). Each curve is
 /// anchor points (rating, value), joined by a smooth curve that passes
 /// through each point and never overshoots, times smoothed on a log scale,
-/// and held flat past both ends (`IkkiuchiCurve`).
+/// and held flat past both ends (`TuningCurve`).
 /// Times count from the end of the called card's deciding sound in its
 /// voice clip.
 abstract final class IkkiuchiTuning {
@@ -16,31 +16,31 @@ abstract final class IkkiuchiTuning {
   /// ms: reaction plus swing. 400 at 2800 is a sharp reaction and a quick
   /// swing; 180 at 3600 is about the fastest that still reads as reacting
   /// to the sound rather than guessing.
-  static const takeMs = IkkiuchiCurve.log([
+  static const takeMs = TuningCurve.log([
     (0, 3400), (400, 2900), (800, 2350), (1200, 1800), (1600, 1300), (2000, 880),
     (2400, 600), (2800, 400), (3200, 260), (3400, 215), (3600, 180),
   ]);
 
   /// The card-to-card spread of [takeMs]: the standard deviation of its
   /// natural log (a log-normal draw). A strong Tobi is steadier.
-  static const takeSpread = IkkiuchiCurve([(0, 0.55), (1200, 0.5), (2400, 0.42), (3600, 0.35)]);
+  static const takeSpread = TuningCurve([(0, 0.55), (1200, 0.5), (2400, 0.42), (3600, 0.35)]);
 
   /// The chance per field card read that he doesn't know its spot at once
   /// and has to look for it (a blank).
-  static const blankChance = IkkiuchiCurve([
+  static const blankChance = TuningCurve([
     (0, 0.97), (400, 0.95), (600, 0.84), (800, 0.71), (1200, 0.48), (1600, 0.29),
     (2000, 0.13), (2400, 0.04), (2800, 0.015), (3200, 0.006), (3400, 0.004), (3600, 0.003),
   ]);
 
   /// What a blank adds to [takeMs]: a log-normal draw with this median, ms,
   /// and [searchSpread].
-  static const searchMs = IkkiuchiCurve.log([(0, 4500), (1600, 3000), (3600, 1500)]);
+  static const searchMs = TuningCurve.log([(0, 4500), (1600, 3000), (3600, 1500)]);
   static const double searchSpread = 0.5;
 
   /// The chance per call that he goes for a look-alike of the called card
   /// first, when one is on the field: a 友札, on which he goes one kana
   /// early, or a card whose torifuda looks alike.
-  static const lookAlikePull = IkkiuchiCurve([
+  static const lookAlikePull = TuningCurve([
     (0, 0.3), (800, 0.22), (1600, 0.14), (2400, 0.07), (2800, 0.035), (3600, 0.008),
   ]);
 
@@ -53,22 +53,22 @@ abstract final class IkkiuchiTuning {
 
   /// His arm's swing at the average distance, ms: part of [takeMs]. A card
   /// at distance d takes swing × (1 + [armDistanceWeight] × (d / mean − 1)).
-  static const armMs = IkkiuchiCurve.log([(0, 330), (1600, 220), (2800, 150), (3600, 100)]);
+  static const armMs = TuningCurve.log([(0, 330), (1600, 220), (2800, 150), (3600, 100)]);
   static const double armDistanceWeight = 0.5;
 
   /// The take's animation, from the start of his reach to the hit, ms. No
   /// hit's reach is ever shorter than [reachFloorMs], even when a quick
   /// take squeezes it.
-  static const reachMs = IkkiuchiCurve([(0, 1000), (1800, 287.5), (3600, 150)]);
+  static const reachMs = TuningCurve([(0, 1000), (1800, 287.5), (3600, 150)]);
   static const double reachFloorMs = 130;
 
   /// The chance a 送り札 he sends splits a look-alike pair (its look-alike
   /// stays on his side); otherwise he sends a random card.
-  static const smartSend = IkkiuchiCurve([(0, 0), (800, 0), (2000, 0.5), (2800, 0.85), (3600, 0.95)]);
+  static const smartSend = TuningCurve([(0, 0), (800, 0), (2000, 0.5), (2800, 0.85), (3600, 0.95)]);
 
   /// How long he takes to lay out his side before the match, while the
   /// player lays out theirs, in seconds.
-  static const placingSeconds = IkkiuchiCurve.log([
+  static const placingSeconds = TuningCurve.log([
     (0, 100), (1000, 78), (1800, 55), (2400, 39), (2786, 30), (3600, 24),
   ]);
 
@@ -77,7 +77,7 @@ abstract final class IkkiuchiTuning {
   /// by [wildMoves]. A move changes only the look and how the cards fly:
   /// it is picked after his time is set, its animation is fitted into his
   /// reach, and the cards it knocks never count as touches.
-  static const sweepShare = IkkiuchiCurve([
+  static const sweepShare = TuningCurve([
     (0, 0), (800, 0.05), (1600, 0.2), (2400, 0.45), (2800, 0.6), (3600, 0.75),
   ]);
   static const ({double whip, double coilLunge, double smear}) wildMoves = (whip: 0.4, coilLunge: 0.35, smear: 0.25);
@@ -97,10 +97,10 @@ abstract final class IkkiuchiLayoutTuning {
   ///   one-sound cards as one group) lies together, its 友札 side by side.
   /// - [tomofudaGrouping]: a family of look-alikes (友札) lies side by side
   ///   when its sound group doesn't. A family he splits is spread apart.
-  static const soundGrouping = IkkiuchiCurve([
+  static const soundGrouping = TuningCurve([
     (0, 1), (1200, 0.31), (2000, 0.1), (2600, 0.034), (3000, 0.016), (3600, 0.0047),
   ]);
-  static const tomofudaGrouping = IkkiuchiCurve([
+  static const tomofudaGrouping = TuningCurve([
     (0, 1), (1200, 0.81), (2000, 0.28), (2600, 0.127), (3000, 0.06), (3600, 0.0175),
   ]);
 
