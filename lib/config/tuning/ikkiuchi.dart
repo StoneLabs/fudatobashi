@@ -2,8 +2,9 @@ part of '../config.dart';
 
 /// 一騎打ち (a full match against Tobi): every value Tobi plays with comes
 /// from his rating through these curves (`IkkiuchiTobi`). Each curve is
-/// anchor points (rating, value), read with straight lines between them,
-/// times on a log scale, and held flat past both ends (`IkkiuchiCurve`).
+/// anchor points (rating, value), joined by a smooth curve that passes
+/// through each point and never overshoots, times smoothed on a log scale,
+/// and held flat past both ends (`IkkiuchiCurve`).
 /// Times count from the end of the called card's deciding sound in its
 /// voice clip.
 abstract final class IkkiuchiTuning {

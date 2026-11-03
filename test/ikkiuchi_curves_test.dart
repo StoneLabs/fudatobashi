@@ -18,14 +18,47 @@ void main() {
       expect(log.at(2000), 10);
     });
 
-    test('reads plain anchors in straight lines', () {
-      expect(plain.at(500), closeTo(15, 1e-9));
-      expect(plain.at(2500), closeTo(5, 1e-9));
+    test('never overshoots on a falling, a rising or a plateau stretch', () {
+      void checkWithin(IkkiuchiCurve c) {
+        for (var i = 1; i < c.anchors.length; i++) {
+          final (r0, v0) = c.anchors[i - 1];
+          final (r1, v1) = c.anchors[i];
+          final lo = math.min(v0, v1), hi = math.max(v0, v1);
+          double? last;
+          for (var r = r0; r <= r1; r += (r1 - r0) / 50) {
+            final v = c.at(r);
+            expect(v, inInclusiveRange(lo - 1e-9, hi + 1e-9), reason: 'at $r');
+            if (last != null && v1 < v0) expect(v, lessThanOrEqualTo(last + 1e-9), reason: 'at $r');
+            if (last != null && v1 > v0) expect(v, greaterThanOrEqualTo(last - 1e-9), reason: 'at $r');
+            last = v;
+          }
+        }
+      }
+
+      checkWithin(const IkkiuchiCurve([(0, 100), (500, 90), (1000, 20), (2000, 10), (3000, 0)]));
+      checkWithin(const IkkiuchiCurve([(0, 0), (500, 5), (1000, 80), (2000, 90), (3000, 100)]));
+      checkWithin(const IkkiuchiCurve.log([(0, 3000), (1000, 500), (2000, 400), (3000, 100)]));
+      const plateau = IkkiuchiCurve([(0, 0), (1000, 50), (2000, 50), (3000, 80)]);
+      for (var r = 1000.0; r <= 2000; r += 50) {
+        expect(plateau.at(r), closeTo(50, 1e-9), reason: 'at $r');
+      }
     });
 
-    test('reads log anchors straight on a log scale', () {
+    test('two anchors are a straight line', () {
+      const line = IkkiuchiCurve([(0, 10), (1000, 30)]);
+      for (var r = 0.0; r <= 1000; r += 125) {
+        expect(line.at(r), closeTo(10 + 20 * r / 1000, 1e-9));
+      }
+    });
+
+    test('a log curve reads straight on a log scale between two anchors', () {
       expect(log.at(1000), closeTo(100, 1e-9));
       expect(log.at(500), closeTo(1000 * math.pow(0.01, 0.25), 1e-9));
+    });
+
+    test('a log curve with evenly falling anchors gives the midpoint of the logs', () {
+      const c = IkkiuchiCurve.log([(0, 1000), (1000, 100), (2000, 10)]);
+      expect(c.at(500), closeTo(math.sqrt(1000 * 100), 1e-6));
     });
 
     test('is held flat past its ends', () {
@@ -89,7 +122,7 @@ void main() {
       }
     });
 
-    test('his reach falls straight between its ends, and no hit goes under the floor', () {
+    test('his reach is a straight line between its ends, and no hit goes under the floor', () {
       const reach = IkkiuchiTuning.reachMs;
       final (r0, v0) = reach.anchors.first;
       final (r1, v1) = reach.anchors.last;
