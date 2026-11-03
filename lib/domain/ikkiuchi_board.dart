@@ -44,10 +44,10 @@ class IkkiuchiTobiPose {
   final ArmSide arm;
 }
 
-/// The 一騎打ち board while Tobi strikes: the cards (`IkkiuchiCards`), his
-/// strikes on each call, and the faults his fist makes. It runs in fixed
-/// steps of the card sim, so the same calls at the same steps always give
-/// the same board.
+/// The 一騎打ち board in play: the cards (`IkkiuchiCards`), Tobi's strikes
+/// on each call and the faults his fist makes, and the player's finger. It
+/// runs in fixed steps of the card sim, so the same calls at the same steps
+/// always give the same board.
 ///
 /// By the rules only his fist counts: touching a card on the side without
 /// the called card is a fault, and so is touching any card on a からふだ;
@@ -155,13 +155,45 @@ class IkkiuchiBoard {
     ));
   }
 
+  /// Where the player's finger is (dp) while it is down, and where its
+  /// pusher is in the sim; whether it has lifted.
+  Vec? _fingerTo, _fingerAt;
+  bool _lifted = false;
+
+  /// The player's finger is down at [at] (dp). From the next [advance] it
+  /// pushes the cards there; each new place it is moved to is reached over
+  /// the steps of the next advance, evenly, so it strikes them at the
+  /// finger's own speed.
+  void touch(Vec at) {
+    if (_lifted) _takeFingerOff();
+    _fingerTo = at;
+  }
+
+  /// The finger lifts: it leaves the board once at the last place it touched.
+  void lift() => _lifted = _fingerTo != null;
+
+  void _takeFingerOff() {
+    cards.moveFinger(null, null);
+    _fingerTo = _fingerAt = null;
+    _lifted = false;
+  }
+
   /// Runs the board on by [ms], in whole steps.
   void advance(double ms) {
     _carry += ms;
-    while (_carry >= stepMs) {
+    var steps = 0;
+    for (var left = _carry; left >= stepMs; left -= stepMs) {
+      steps++;
+    }
+    final to = _fingerTo, from = _fingerAt ?? to;
+    for (var i = 1; i <= steps; i++) {
       _carry -= stepMs;
+      if (from != null && to != null) cards.moveFinger(from.lerp(to, (i - 1) / steps), from.lerp(to, i / steps));
       _step();
     }
+    if (steps == 0 || to == null) return;
+    _fingerAt = to;
+    if (_lifted) _takeFingerOff();
   }
 
   /// His face, body and striking arm now; null between strikes.

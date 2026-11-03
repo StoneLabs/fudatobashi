@@ -11,7 +11,7 @@ enum IkkiuchiSide { tobi, player }
 
 /// One card on the board, as the sim has it.
 class IkkiuchiCard {
-  IkkiuchiCard._(this.id, this.side, this.home, this._body, this._sim);
+  IkkiuchiCard._(this.id, this.side, this.home, this._sim);
 
   final int id;
   final IkkiuchiSide side;
@@ -57,10 +57,11 @@ class IkkiuchiCard {
 /// the tatami's friction as damping, resting cards asleep. Tobi's fist is a
 /// kinematic body that exists only while it is live; the cards it pushes
 /// are held to [IkkiuchiPhysicsTuning.pushMax] and never go toward the side
-/// without the called card. With a [centreLine] (the y of the middle of the
-/// band), no card crosses into the other half: it stops there, under the
-/// band. Fixed steps of [IkkiuchiPhysicsTuning.step], so the same steps
-/// always give the same board.
+/// without the called card. The player's finger is another, while it is
+/// down. With a [centreLine] (the y of the middle of the band), no card
+/// crosses into the other half: it stops there, under the band. Fixed steps
+/// of [IkkiuchiPhysicsTuning.step], so the same steps always give the same
+/// board.
 ///
 /// The world is measured in cards: a card [cardW] dp wide is
 /// [IkkiuchiPhysicsTuning.cardMetres] across in it, so the cards move alike
@@ -79,27 +80,34 @@ class IkkiuchiCards {
           ));
     }
     for (final c in cards) {
-      final body = _world.createBody(box2d.BodyDef(
-        type: box2d.BodyType.dynamic,
-        position: _m(c.box.centre),
-        angle: c.box.angle,
-        linearDamping: IkkiuchiPhysicsTuning.damping,
-        angularDamping: IkkiuchiPhysicsTuning.spinDamping,
-        isAwake: false,
-      ));
-      final shape = box2d.PolygonShape()
-        ..setAsBoxXY(_metres(c.box.hw) - box2d.polygonRadius, _metres(c.box.hh) - box2d.polygonRadius);
-      body.createFixture(box2d.FixtureDef(
-        shape,
-        density: IkkiuchiPhysicsTuning.density,
-        friction: IkkiuchiPhysicsTuning.friction,
-        restitution: IkkiuchiPhysicsTuning.restitution,
-        filter: _filter(_cardBit, _cardBit | _flyingBit | _fistBit | _lineBit),
-      ));
-      final card = IkkiuchiCard._(c.id, c.side, c.box, body, this);
-      body.userData = card;
+      final card = IkkiuchiCard._(c.id, c.side, c.box, this);
+      card._body = _bodyAtHome(card);
       this.cards.add(card);
     }
+  }
+
+  /// [card]'s body, lying asleep at its home.
+  box2d.Body _bodyAtHome(IkkiuchiCard card) {
+    final home = card.home;
+    final body = _world.createBody(box2d.BodyDef(
+      type: box2d.BodyType.dynamic,
+      position: _m(home.centre),
+      angle: home.angle,
+      linearDamping: IkkiuchiPhysicsTuning.damping,
+      angularDamping: IkkiuchiPhysicsTuning.spinDamping,
+      isAwake: false,
+    ));
+    final shape = box2d.PolygonShape()
+      ..setAsBoxXY(_metres(home.hw) - box2d.polygonRadius, _metres(home.hh) - box2d.polygonRadius);
+    body.createFixture(box2d.FixtureDef(
+      shape,
+      density: IkkiuchiPhysicsTuning.density,
+      friction: IkkiuchiPhysicsTuning.friction,
+      restitution: IkkiuchiPhysicsTuning.restitution,
+      filter: _filter(_cardBit, _cardBit | _flyingBit | _fistBit | _fingerBit | _lineBit),
+    ));
+    body.userData = card;
+    return body;
   }
 
   /// The board's size; a card well past its edge is gone.
@@ -110,14 +118,14 @@ class IkkiuchiCards {
   final List<IkkiuchiCard> cards = [];
   final box2d.World _world;
   late final _listener = _FistListener(this);
-  box2d.Body? _fist;
+  box2d.Body? _fist, _finger;
   Vec _keep = Vec.zero;
   final Set<IkkiuchiCard> _pushed = {};
 
   /// Every card the fist touched in the last step.
   final Set<IkkiuchiCard> fistTouched = {};
 
-  static const _cardBit = 0x0001, _flyingBit = 0x0002, _fistBit = 0x0004, _lineBit = 0x0008;
+  static const _cardBit = 0x0001, _flyingBit = 0x0002, _fistBit = 0x0004, _lineBit = 0x0008, _fingerBit = 0x0010;
 
   static box2d.Filter _filter(int category, int mask) => box2d.Filter()
     ..categoryBits = category
@@ -151,26 +159,41 @@ class IkkiuchiCards {
   /// [radius]; the cards it pushes never go against [keep]. Null takes it
   /// off the board.
   void moveFist(Vec? from, Vec? to, {required double radius, required Vec keep}) {
-    if (from == null || to == null) {
-      final fist = _fist;
-      if (fist != null) _world.destroyBody(fist);
-      _fist = null;
-      return;
-    }
     _keep = keep;
-    var fist = _fist;
-    if (fist == null) {
-      fist = _fist = _world.createBody(box2d.BodyDef(type: box2d.BodyType.kinematic, position: _m(from)));
-      fist.createFixture(box2d.FixtureDef(
-        box2d.CircleShape(radius: _metres(radius)),
-        restitution: IkkiuchiPhysicsTuning.fistRestitution,
-        filter: _filter(_fistBit, _cardBit),
-      ));
-    }
-    fist.linearVelocity = (_m(to)..sub(fist.position))..scale(1 / IkkiuchiPhysicsTuning.step);
+    _fist = _push(_fist, from, to,
+        radius: radius, category: _fistBit, restitution: IkkiuchiPhysicsTuning.fistRestitution);
   }
 
   bool get fistOn => _fist != null;
+
+  /// The player's finger over the next step: from [from] to [to] (dp), a
+  /// circle of [IkkiuchiPhysicsTuning.finger]. Null takes it off the board.
+  void moveFinger(Vec? from, Vec? to) =>
+      _finger = _push(_finger, from, to, radius: IkkiuchiPhysicsTuning.finger * cardW, category: _fingerBit);
+
+  bool get fingerOn => _finger != null;
+
+  /// [pusher] over the next step: a kinematic circle of [radius] from [from]
+  /// to [to] (dp), set down at [from] if it is not on the board yet. It
+  /// moves at the speed of that way, so it strikes the cards as hard as it
+  /// moves, and the sim sweeps it along the whole way (continuous
+  /// collision), so a fast stroke never passes through a card. Null [from]
+  /// or [to] takes it off the board.
+  box2d.Body? _push(box2d.Body? pusher, Vec? from, Vec? to,
+      {required double radius, required int category, double? restitution}) {
+    if (from == null || to == null) {
+      if (pusher != null) _world.destroyBody(pusher);
+      return null;
+    }
+    final body = pusher ?? _world.createBody(box2d.BodyDef(type: box2d.BodyType.kinematic, position: _m(from)));
+    if (pusher == null) {
+      final fixture = box2d.FixtureDef(box2d.CircleShape(radius: _metres(radius)), filter: _filter(category, _cardBit));
+      if (restitution != null) fixture.restitution = restitution;
+      body.createFixture(fixture);
+    }
+    body.linearVelocity = (_m(to)..sub(body.position))..scale(1 / IkkiuchiPhysicsTuning.step);
+    return body;
+  }
 
   /// The fastest a card the fist pushes may go, dp/s.
   double get pushCap => IkkiuchiPhysicsTuning.pushMax * cardW * (1 + IkkiuchiPhysicsTuning.fistRestitution);

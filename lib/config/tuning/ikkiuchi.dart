@@ -489,6 +489,9 @@ abstract final class IkkiuchiPhysicsTuning {
 
   /// A card this far past the board's edge is gone.
   static const double offBoard = 6.7;
+
+  /// The player's finger pushes the cards as a circle of this radius.
+  static const double finger = 0.3;
 }
 
 /// The developer's 一騎打ち pages (`IkkiuchiCurvesPage`,

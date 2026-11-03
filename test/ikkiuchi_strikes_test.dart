@@ -299,6 +299,38 @@ void main() {
       expect(cards.card(1).onBoard, isFalse);
     });
 
+    test("the finger strikes a card it passes in one step, and the board takes it off once it lifts", () {
+      // The stroke goes from wholly left of the card to wholly right of it
+      // in one step, so only a sweep along its way meets the card.
+      const cardW = 38.0, y = 600.0;
+      final cards = IkkiuchiCards([
+        (id: 1, side: IkkiuchiSide.player, box: const CardBox(Vec(200, y), cardW / 2, 27)),
+      ], board: const Vec(384, 832), cardW: cardW);
+      final r = IkkiuchiPhysicsTuning.finger * cardW;
+      cards.moveFinger(Vec(200 - cardW / 2 - r - 8, y), Vec(200 + cardW / 2 + r + 8, y));
+      cards.step();
+      expect(cards.fingerOn, isTrue);
+      cards.moveFinger(null, null);
+      for (var i = 0; i < 10; i++) {
+        cards.step();
+      }
+      expect(cards.fingerOn, isFalse);
+      expect(cards.card(1).box.centre.x, greaterThan(200 + cardW / 2), reason: 'knocked on, not passed through');
+
+      final board = boardFor(1, 2000);
+      final card = board.cards.cards.firstWhere((c) => c.side == IkkiuchiSide.player);
+      final at = card.home.centre + Vec(0, -card.home.hh - r - 2);
+      board.touch(at);
+      expect(board.cards.fingerOn, isFalse, reason: 'on the board from the next advance');
+      board.advance(step);
+      expect(board.cards.fingerOn, isTrue);
+      board.touch(at + Vec(0, 2 * card.home.hh));
+      board.lift();
+      board.advance(step * 4);
+      expect(board.cards.fingerOn, isFalse, reason: 'off once it reached where it lifted');
+      expect(card.movedFrom(card.home, dp: 1, radians: 0.01), isTrue, reason: 'it pushed the card it went through');
+    });
+
     test('is the same for the same calls at the same steps', () {
       List<CardBox> run() {
         final board = boardFor(4, 1600);
