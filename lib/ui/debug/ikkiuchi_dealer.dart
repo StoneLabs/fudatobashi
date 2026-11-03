@@ -13,7 +13,7 @@ import '../ikkiuchi/ikkiuchi_tobi_art.dart';
 
 /// Deals the full 一騎打ち fields of the developer's pages, and keeps the
 /// board scene of the one shown. A deal's seed shuffles the deck and gives
-/// each side [IkkiuchiToolsTuning.dealPerSide] cards; Tobi's layout lays
+/// each side [IkkiuchiToolsTuning.dealPerSide] cards, or the [perSide] asked; Tobi's layout lays
 /// out both sides, his at his rating and the player's at one drawn from the
 /// seed. The scene is set out afresh when the board's size, its layout, the
 /// rating or the seed changes; the cards' faces are drawn once for them all.
@@ -23,7 +23,7 @@ class IkkiuchiDealer {
   final _rig = IkkiuchiTobiArt.rig();
   IkkiuchiCardFaces? _faces;
   IkkiuchiBoardScene? _scene;
-  ({Size size, bool landscape, double rating, int seed})? _key;
+  ({Size size, bool landscape, double rating, int seed, int perSide})? _key;
 
   /// The board as drawn now.
   IkkiuchiBoardScene? get scene => _scene;
@@ -47,15 +47,16 @@ class IkkiuchiDealer {
     required bool landscape,
     required double rating,
     required int seed,
+    int perSide = IkkiuchiToolsTuning.dealPerSide,
     ValueChanged<IkkiuchiBoardScene>? onNew,
   }) {
     final size = landscape ? room.flipped : room;
-    final key = (size: size, landscape: landscape, rating: rating, seed: seed);
+    final key = (size: size, landscape: landscape, rating: rating, seed: seed, perSide: perSide);
     final old = _scene;
     if (old != null && key == _key) return old;
     _faces ??= IkkiuchiCardFaces(showNumber: ProgressScope.of(context).settings.showPoemNumber);
     final deck = [for (final p in poems.all) p.id]..shuffle(math.Random(seed));
-    const perSide = IkkiuchiToolsTuning.dealPerSide, rows = IkkiuchiToolsTuning.dealRows;
+    const rows = IkkiuchiToolsTuning.dealRows;
     final own = deck.sublist(0, perSide), others = deck.sublist(perSide, 2 * perSide);
     final playerSeed = seed + IkkiuchiToolsTuning.playerSeedOffset;
     final board = IkkiuchiBoardLayout.of(

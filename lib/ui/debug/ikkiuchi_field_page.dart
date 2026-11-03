@@ -20,8 +20,8 @@ import 'ikkiuchi_dealer.dart';
 /// and the player's finger pushes the cards about with the board's
 /// physics; there are no takes, faults or scores. A while after the finger
 /// lifts, every card it stirred glides home and another card is marked.
-/// "Ro" turns the board's layout between portrait and landscape, "Ra" deals
-/// anew, and the system back leaves.
+/// "R" turns the board's layout between portrait and landscape, a number
+/// deals anew with that many cards a side, and the system back leaves.
 class IkkiuchiFieldPage extends StatefulWidget {
   const IkkiuchiFieldPage({super.key, this.seed, this.landscape = false});
 
@@ -40,6 +40,7 @@ class IkkiuchiFieldPageState extends State<IkkiuchiFieldPage> with SingleTickerP
   late int _seed = widget.seed ?? _randomSeed();
   late var _rng = math.Random(_seed);
   late bool _landscape = widget.landscape;
+  int _perSide = IkkiuchiToolsTuning.dealPerSide;
   late final Ticker _ticker = createTicker(_tick);
   Duration _last = Duration.zero;
 
@@ -73,7 +74,8 @@ class IkkiuchiFieldPageState extends State<IkkiuchiFieldPage> with SingleTickerP
 
   static int _randomSeed() => math.Random().nextInt(IkkiuchiToolsTuning.seeds);
 
-  void _deal() => setState(() {
+  void _deal(int perSide) => setState(() {
+        _perSide = perSide;
         _seed = _randomSeed();
         _rng = math.Random(_seed);
       });
@@ -84,7 +86,9 @@ class IkkiuchiFieldPageState extends State<IkkiuchiFieldPage> with SingleTickerP
   IkkiuchiBoardScene _sceneFor(Size room) => _dealer.sceneFor(context, room,
       landscape: _landscape,
       rating: IkkiuchiDealer.drawnRating(_seed + IkkiuchiToolsTuning.tobiSeedOffset),
-      seed: _seed, onNew: (scene) {
+      seed: _seed,
+      perSide: _perSide,
+      onNew: (scene) {
         _finger = null;
         _wait = null;
         _returning = false;
@@ -159,7 +163,7 @@ class IkkiuchiFieldPageState extends State<IkkiuchiFieldPage> with SingleTickerP
         }),
       );
 
-  /// "Ro" and "Ra" over the board: at the screen's top right in portrait;
+  /// "R" and the numbers over the board: at the screen's top right in portrait;
   /// in landscape, where the cards reach every corner, at the top end of
   /// the band, which runs down the middle of the screen. Both keep below a
   /// cutout at the screen's top.
@@ -167,9 +171,11 @@ class IkkiuchiFieldPageState extends State<IkkiuchiFieldPage> with SingleTickerP
     const size = IkkiuchiToolsStyle.fieldButton, inset = IkkiuchiToolsStyle.fieldButtonInset;
     final top = MediaQuery.paddingOf(context).top + inset;
     final column = Column(mainAxisSize: MainAxisSize.min, children: [
-      _button('Ro', _turn),
-      const SizedBox(height: IkkiuchiToolsStyle.fieldButtonGap),
-      _button('Ra', _deal),
+      _button('R', _turn),
+      for (final n in IkkiuchiToolsTuning.fieldCounts) ...[
+        const SizedBox(height: IkkiuchiToolsStyle.fieldButtonGap),
+        _button('$n', () => _deal(n)),
+      ],
     ]);
     if (!_landscape) return Positioned(top: top, right: inset, child: column);
     // The board lies turned a quarter turn clockwise: its y runs from the

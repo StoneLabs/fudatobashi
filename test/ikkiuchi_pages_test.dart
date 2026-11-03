@@ -620,7 +620,7 @@ void main() {
         final marked = s.marked;
         expect(s.board.field.keys, contains(marked));
         expect(s.kimariji, poems[marked!].kimariji, reason: '$why: the band reads the marked card');
-        for (final label in ['Ro', 'Ra']) {
+        for (final label in ['R', ...IkkiuchiToolsTuning.fieldCounts.map((n) => '$n')]) {
           final button = tester.getRect(find.text(label));
           for (final c in s.layout.cards) {
             expect(button.overlaps(rectOnScreen(tester, c.box)), isFalse, reason: '$why: $label clear of card ${c.id}');
@@ -633,26 +633,38 @@ void main() {
       expect(bars.last, 'SystemUiMode.edgeToEdge', reason: 'the bars come back on leaving');
     });
 
-    testWidgets('Ra deals anew and Ro turns the board', (tester) async {
+    testWidgets('a number deals anew with that many cards a side and R turns the board', (tester) async {
       final p = await open(tester);
       await show(tester, p, const IkkiuchiFieldPage(seed: 3));
       await tester.pump(frame);
       final first = ids(scene(tester));
-      var changed = false;
-      for (var i = 0; i < 5 && !changed; i++) {
-        await tester.tap(find.text('Ra'));
+      expect(first, hasLength(2 * IkkiuchiToolsTuning.dealPerSide));
+      for (final n in IkkiuchiToolsTuning.fieldCounts) {
+        await tester.tap(find.text('$n'));
         await tester.pump(frame);
-        changed = ids(scene(tester)).toString() != first.toString();
+        for (final side in IkkiuchiSide.values) {
+          expect(scene(tester).board.cards.cards.where((c) => c.side == side), hasLength(n), reason: '$n: ${side.name}');
+        }
       }
-      expect(changed, isTrue);
+      await tester.tap(find.text('10'));
+      await tester.pump(frame);
+      expect(ids(scene(tester)).toString(), isNot(first.toString()));
+      await tester.tap(find.text('5'));
+      await tester.pump(frame);
+      await capture(tester, 'field_5_portrait');
+      await tester.tap(find.text('R'));
+      await tester.pump(frame);
+      await capture(tester, 'field_5_landscape');
+      await tester.tap(find.text('R'));
+      await tester.pump(frame);
       expect(scene(tester).marked, isNotNull, reason: 'a new deal marks a card');
       expect(scene(tester).layout.landscape, isFalse);
-      await tester.tap(find.text('Ro'));
+      await tester.tap(find.text('R'));
       await tester.pump(frame);
       expect(scene(tester).layout.landscape, isTrue);
       expect(find.byType(RotatedBox), findsOneWidget, reason: 'only the board turns');
       expect(tester.getSize(find.byType(IkkiuchiBoardView)), usersPhone.size.flipped);
-      await tester.tap(find.text('Ro'));
+      await tester.tap(find.text('R'));
       await tester.pump(frame);
       expect(scene(tester).layout.landscape, isFalse);
       expect(tester.takeException(), isNull);
@@ -719,7 +731,7 @@ void main() {
       expect(s.kimariji, poems[s.marked!].kimariji);
 
       // The same in landscape, where the board lies turned under the finger.
-      await tester.tap(find.text('Ro'));
+      await tester.tap(find.text('R'));
       await tester.pump(frame);
       final turned = scene(tester);
       expect(turned.layout.landscape, isTrue);

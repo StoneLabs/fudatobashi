@@ -530,6 +530,9 @@ abstract final class IkkiuchiToolsTuning {
   static const int dealPerSide = 25;
   static const int dealRows = 3;
 
+  /// The field page's buttons for a new deal: the cards a side each deals.
+  static const List<int> fieldCounts = [5, 10, 15, 20, 25];
+
   /// The strikes page: its slow motion speeds, and how long after a strike
   /// ends, all cards still, the board resets.
   static const List<double> slowMotion = [1, 0.5, 0.25, 0.1];
