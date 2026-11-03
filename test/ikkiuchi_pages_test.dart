@@ -19,7 +19,9 @@ import 'package:fudatobashi/state/progress.dart';
 import 'package:fudatobashi/state/scope.dart';
 import 'package:fudatobashi/state/settings.dart';
 import 'package:fudatobashi/ui/debug/ikkiuchi_curves_page.dart';
+import 'package:fudatobashi/ui/debug/ikkiuchi_graphs.dart';
 import 'package:fudatobashi/ui/debug/ikkiuchi_layout_page.dart';
+import 'package:fudatobashi/ui/debug/ikkiuchi_values.dart';
 import 'package:fudatobashi/ui/history/ankiren_field_tab.dart';
 import 'package:fudatobashi/ui/manga/theme.dart';
 import 'package:fudatobashi/ui/settings/settings_screen.dart';
@@ -123,20 +125,25 @@ void main() {
     await tester.pumpWidget(const SizedBox());
   });
 
-  testWidgets("Tobi's curves: his values at the slider's rating and a graph of each", (tester) async {
+  testWidgets("Tobi's curves: his values and their ranges at the slider's rating, and a graph of each",
+      (tester) async {
     final p = await open(tester);
-    for (final rating in [0.0, 1600.0, 3600.0]) {
+    final take = ikkiuchiValueGroups.expand((g) => g.rows).firstWhere((v) => v.name == 'take time');
+    for (final rating in [0.0, 1700.0, 3600.0]) {
       await show(tester, p, IkkiuchiCurvesPage(rating: rating));
       expect(tester.takeException(), isNull);
       final r = rating.round();
       expect(find.text('rating $r'), findsOneWidget);
       expect(find.text('at $r'), findsOneWidget);
-      final takeMs = IkkiuchiTobi(rating).takeMs;
-      final take = takeMs >= 1000 ? '${(takeMs / 1000).toStringAsFixed(2)} s' : '${takeMs.round()} ms';
-      expect(find.text(take), findsWidgets, reason: 'take time at $r');
+      expect(find.text(take.unit.format(IkkiuchiTobi(rating).takeMs)), findsWidgets, reason: 'take time at $r');
+      for (final s in IkkiuchiToolsTuning.sigmas) {
+        expect(find.text(take.matchRangeText(rating, s)), findsWidgets, reason: 'take time per match, $s sd');
+        expect(find.text(take.cardRangeText(rating, s)), findsWidgets, reason: 'take time per card, $s sd');
+      }
+      expect(find.text(ikkiuchiNoRange), findsWidgets, reason: 'fixed values');
       await captureDown(tester, 'ikkiuchi/curves_$r');
-      expect(find.byType(CustomPaint), findsWidgets);
-      expect(find.text('友札 together: chance a match keeps look-alikes side by side'), findsOneWidget);
+      expect(tester.takeException(), isNull);
+      expect(find.byType(IkkiuchiSharesGraph), findsOneWidget);
     }
     await tester.pumpWidget(const SizedBox());
   });

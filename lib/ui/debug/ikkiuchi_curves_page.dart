@@ -1,16 +1,16 @@
-import 'dart:math' as math;
-
 import 'package:flutter/material.dart';
 
 import '../../config/config.dart';
 import '../../config/design.dart';
-import '../../domain/ikkiuchi_tobi.dart';
-import '../play/time_format.dart';
 import 'debug_common.dart';
+import 'ikkiuchi_graphs.dart';
+import 'ikkiuchi_rating_header.dart';
+import 'ikkiuchi_values.dart';
 
-/// The developer's view of Tobi's curves (一騎打ち): a table of every value
-/// he plays with at the rating the slider picks, then a graph of each
-/// against his rating, its anchors dotted and that rating marked.
+/// The developer's view of Tobi's curves (一騎打ち): every value he plays
+/// with at the rating the slider picks, by group, with the ranges his form
+/// and his own draws give it; the rules that never change; then a graph of
+/// each value against his rating, the shares of his arm moves stacked.
 class IkkiuchiCurvesPage extends StatefulWidget {
   const IkkiuchiCurvesPage({super.key, this.rating = IkkiuchiToolsTuning.ratingStart});
 
@@ -27,56 +27,46 @@ class _IkkiuchiCurvesPageState extends State<IkkiuchiCurvesPage> {
   @override
   Widget build(BuildContext context) {
     final title = Theme.of(context).textTheme.titleMedium;
-    final tobi = IkkiuchiTobi(_rating);
-    final moves = tobi.moves;
-    const fixed = IkkiuchiTuning.wildMoves;
+    const gap = SizedBox(height: IkkiuchiToolsStyle.gap);
+    const section = SizedBox(height: IkkiuchiToolsStyle.sectionGap);
     return DebugScaffold(
       title: "Tobi's curves",
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Padding(
-            padding: IkkiuchiToolsStyle.padding.copyWith(bottom: 0),
-            child: DebugSlider(
-              label: 'rating ${_rating.round()}',
-              value: _rating,
-              min: IkkiuchiTuning.ratingMin,
-              max: IkkiuchiTuning.ratingMax,
-              divisions: (IkkiuchiTuning.ratingMax - IkkiuchiTuning.ratingMin) ~/ IkkiuchiToolsTuning.ratingStep,
-              onChanged: (v) => setState(() => _rating = v),
-            ),
+          IkkiuchiRatingHeader(
+            rating: _rating,
+            note: 'form ±${IkkiuchiTuning.formSd.round()} a match',
+            onChanged: (v) => setState(() => _rating = v),
           ),
           Expanded(
             child: ListView(
               padding: IkkiuchiToolsStyle.padding,
               children: [
                 Text('At ${_rating.round()}', style: title),
-                const SizedBox(height: IkkiuchiToolsStyle.gap),
-                DebugGrid([
-                  ['value', 'at ${_rating.round()}'],
-                  for (final c in _curves) [c.name, c.format(c.value(tobi))],
-                  ['whip', _percent(moves.whip)],
-                  ['coil and lunge', _percent(moves.coilLunge)],
-                  ['smear', _percent(moves.smear)],
-                ]),
-                const SizedBox(height: IkkiuchiToolsStyle.gap),
-                Text('Fixed values', style: title),
-                DebugKV('search spread', '${IkkiuchiTuning.searchSpread} (sd of log)'),
-                DebugKV('stray touch', '${_percent(IkkiuchiTuning.strayShare)} of the pull'),
-                DebugKV('correction', '${IkkiuchiTuning.correction.inMilliseconds} ms after a wrong touch'),
-                DebugKV('arm by distance', 'swing × (1 + ${IkkiuchiTuning.armDistanceWeight} × (d / mean − 1))'),
-                DebugKV('reach floor', _ms(IkkiuchiTuning.reachFloorMs)),
-                DebugKV('wild moves', 'whip ${_percent(fixed.whip)} · coil and lunge ${_percent(fixed.coilLunge)} · '
-                    'smear ${_percent(fixed.smear)} of what the sweep leaves'),
-                DebugKV('form', 'sd ${IkkiuchiTuning.formSd.round()} rating points a match'),
-                for (final c in _curves) ...[
-                  const Divider(height: IkkiuchiToolsStyle.sectionGap),
-                  Text(c.title, style: title),
-                  const SizedBox(height: IkkiuchiToolsStyle.gap),
-                  SizedBox(
-                    height: IkkiuchiToolsStyle.graphHeight,
-                    child: CustomPaint(painter: _CurveGraph(c, _rating)),
-                  ),
+                gap,
+                _ValuesTable(_rating),
+                gap,
+                Text(_rangesNote, style: _small),
+                section,
+                Text('Fixed rules', style: title),
+                gap,
+                const _FixedRules(),
+                section,
+                Text('By rating', style: title),
+                for (final group in ikkiuchiValueGroups) ...[
+                  gap,
+                  _GroupBand(group.name),
+                  for (final value in group.values)
+                    if (value.graph case final graph?) ...[
+                      const SizedBox(height: IkkiuchiCurvesStyle.graphGap),
+                      IkkiuchiCurveGraph(value, graph, _rating),
+                    ],
+                  if (group.sharesGraph case final graph?) ...[
+                    const SizedBox(height: IkkiuchiCurvesStyle.graphGap),
+                    IkkiuchiSharesGraph(group.shares, graph, _rating),
+                  ],
+                  gap,
                 ],
               ],
             ),
@@ -87,156 +77,161 @@ class _IkkiuchiCurvesPageState extends State<IkkiuchiCurvesPage> {
   }
 }
 
-/// One of Tobi's curves: its [name] in the table and [title] over its
-/// graph, its [anchors], its value at a rating, how its values read, and
-/// a [floor] no value goes under.
-class _Curve {
-  const _Curve(this.name, this.title, this.anchors, this.value, this.format, {this.floor});
+// Small notes in the UI face, its missing glyphs (σ) from monospace.
+final _small = TextStyle(
+  fontSize: IkkiuchiCurvesStyle.smallFont,
+  color: IkkiuchiToolsStyle.soft,
+  fontFamilyFallback: [?debugMono.fontFamily],
+);
+final _number = debugMono.copyWith(fontSize: IkkiuchiCurvesStyle.numberFont);
+
+final _sigmaNames = [for (final s in IkkiuchiToolsTuning.sigmas) '$sσ'];
+
+final _rangesNote = '${_sigmaNames.join(', ')}: per match from his form (rating '
+    '${[for (final s in IkkiuchiToolsTuning.sigmas) '±${(s * IkkiuchiTuning.formSd).round()}'].join(', ')}); '
+    'per card from his own draw, median × e^±σ; $ikkiuchiNoRange: fixed.';
+
+/// A group's name on a band across the page, in tracked capitals.
+class _GroupBand extends StatelessWidget {
+  const _GroupBand(this.name);
 
   final String name;
-  final String title;
-  final List<(double, double)> anchors;
-  final double Function(IkkiuchiTobi tobi) value;
-  final String Function(double value) format;
-  final double? floor;
+
+  @override
+  Widget build(BuildContext context) => Container(
+        color: IkkiuchiCurvesStyle.groupFill,
+        padding: IkkiuchiCurvesStyle.groupPadding,
+        child: _GroupName(name),
+      );
 }
 
-final _curves = [
-  _Curve('take time (median)', 'Take time, median (log scale)', IkkiuchiTuning.takeMs.anchors, (t) => t.takeMs, _ms),
-  _Curve('take spread', 'Take spread, sd of the log', IkkiuchiTuning.takeSpread.anchors, (t) => t.takeSpread,
-      _plain),
-  _Curve('blank chance', 'Blank chance per card read', IkkiuchiTuning.blankChance.anchors, (t) => t.blankChance,
-      _percent),
-  _Curve('search time (median)', 'Search time after a blank, median (log scale)', IkkiuchiTuning.searchMs.anchors,
-      (t) => t.searchMs, _ms),
-  _Curve('look-alike pull', 'Look-alike pull per call', IkkiuchiTuning.lookAlikePull.anchors,
-      (t) => t.lookAlikePull, _percent),
-  _Curve(
-      'stray touch',
-      'Stray touch on a からふだ with no look-alike (a share of the pull)',
-      [for (final (r, v) in IkkiuchiTuning.lookAlikePull.anchors) (r, v * IkkiuchiTuning.strayShare)],
-      (t) => t.strayChance,
-      _percent),
-  _Curve('arm swing', 'Arm swing at the average distance (log scale)', IkkiuchiTuning.armMs.anchors,
-      (t) => t.armMs, _ms),
-  _Curve('reach to hit', 'Reach to hit, the take animation (red: floor)', IkkiuchiTuning.reachMs.anchors,
-      (t) => t.reachMs, _ms,
-      floor: IkkiuchiTuning.reachFloorMs),
-  _Curve('smart send', 'Smart send: a 送り札 that splits look-alikes', IkkiuchiTuning.smartSend.anchors,
-      (t) => t.smartSend, _percent),
-  _Curve('placing time', 'Time to lay out his side (log scale)', IkkiuchiTuning.placingSeconds.anchors,
-      (t) => t.placingSeconds, _minutes),
-  _Curve('sound grouping', 'Sound grouping: chance a match keeps first-sound groups together',
-      IkkiuchiLayoutTuning.soundGrouping.anchors, (t) => t.soundGrouping, _percent),
-  _Curve('友札 together', '友札 together: chance a match keeps look-alikes side by side',
-      IkkiuchiLayoutTuning.tomofudaGrouping.anchors, (t) => t.tomofudaGrouping, _percent),
-  _Curve('sweep', 'Sweep (払い) share of his arm moves; the wild moves split the rest',
-      IkkiuchiTuning.sweepShare.anchors, (t) => t.moves.sweep, _percent),
-];
+class _GroupName extends StatelessWidget {
+  const _GroupName(this.name);
 
-String _ms(double ms) => ms >= Duration.millisecondsPerSecond
-    ? '${(ms / Duration.millisecondsPerSecond).toStringAsFixed(2)} s'
-    : '${ms.round()} ms';
+  final String name;
 
-String _percent(double share) {
-  final percent = share * 100;
-  return '${percent.toStringAsFixed(percent > 0 && percent < 10 ? 1 : 0)}%';
+  @override
+  Widget build(BuildContext context) => Text(
+        name.toUpperCase(),
+        style: const TextStyle(
+          fontSize: IkkiuchiCurvesStyle.smallFont,
+          fontWeight: Weights.bold,
+          letterSpacing: IkkiuchiCurvesStyle.groupTracking,
+        ),
+      );
 }
 
-String _plain(double value) => value.toStringAsFixed(2);
+/// Each value at [rating] by group, with its ranges at each of
+/// [IkkiuchiToolsTuning.sigmas]: from his form on its own row, and from his
+/// draws on a per-card row under a value he draws per card.
+class _ValuesTable extends StatelessWidget {
+  const _ValuesTable(this.rating);
 
-String _minutes(double seconds) =>
-    formatMinutes(Duration(milliseconds: (seconds * Duration.millisecondsPerSecond).round()));
-
-/// [curve] against the rating: grid lines with their values, the curve,
-/// its anchors, its floor dashed, and the [rating] marked with its value.
-class _CurveGraph extends CustomPainter {
-  _CurveGraph(this.curve, this.rating);
-
-  final _Curve curve;
   final double rating;
 
-  static const _min = IkkiuchiTuning.ratingMin, _max = IkkiuchiTuning.ratingMax;
-
   @override
-  void paint(Canvas canvas, Size size) {
-    const style = IkkiuchiToolsStyle.graphMargin;
-    final plot = style.deflateRect(Offset.zero & size);
-    final points = [
-      for (var r = _min; r <= _max; r += IkkiuchiToolsTuning.curveStep) Offset(r, curve.value(IkkiuchiTobi(r))),
-    ];
-    final top = _axisTop([for (final p in points) p.dy, for (final (_, v) in curve.anchors) v].reduce(math.max));
-    Offset at(Offset p) =>
-        Offset(plot.left + plot.width * (p.dx - _min) / (_max - _min), plot.bottom - plot.height * p.dy / top);
-    final label = debugMono.copyWith(fontSize: IkkiuchiToolsStyle.axisFont, color: Palette.mute);
-    void text(String s, Offset anchor, Alignment align, {TextStyle? style}) {
-      final span = TextSpan(text: s, style: style ?? label);
-      final tp = TextPainter(text: span, textDirection: TextDirection.ltr)..layout();
-      tp.paint(canvas, anchor - Offset(tp.width * (align.x + 1) / 2, tp.height * (align.y + 1) / 2));
-    }
+  Widget build(BuildContext context) {
+    const sigmas = IkkiuchiToolsTuning.sigmas;
+    const edge = IkkiuchiCurvesStyle.groupPadding;
+    const name = TextStyle(fontSize: IkkiuchiCurvesStyle.nameFont);
 
-    final grid = Paint()..color = IkkiuchiToolsStyle.grid;
-    const gap = IkkiuchiToolsStyle.axisLabelGap;
-    for (var i = 0; i <= IkkiuchiToolsStyle.valueDivisions; i++) {
-      final value = top * i / IkkiuchiToolsStyle.valueDivisions;
-      final y = at(Offset(_min, value)).dy;
-      canvas.drawLine(Offset(plot.left, y), Offset(plot.right, y), grid);
-      text(curve.format(value), Offset(plot.left - gap, y), Alignment.centerRight);
-    }
-    for (var r = _min; r <= _max; r += IkkiuchiToolsTuning.ratingTick) {
-      final x = at(Offset(r, 0)).dx;
-      canvas.drawLine(Offset(x, plot.top), Offset(x, plot.bottom), grid);
-      text('${r.round()}', Offset(x, plot.bottom + gap), Alignment.topCenter);
-    }
+    // A cell in column [column] of the [columns], its text at the right
+    // but in the first.
+    Widget cell(int column, String text, TextStyle style, {double indent = 0}) => Padding(
+          padding: IkkiuchiCurvesStyle.rowPadding.copyWith(
+            left: column == 0 ? edge.left + indent : IkkiuchiCurvesStyle.columnGap,
+            right: column == sigmas.length + 1 ? edge.right : 0,
+          ),
+          child: Text(text, style: style, textAlign: column == 0 ? TextAlign.start : TextAlign.end),
+        );
+    TableRow row(List<(String, TextStyle)> cells, {double indent = 0}) => TableRow(children: [
+          for (final (i, (text, style)) in cells.indexed) cell(i, text, style, indent: indent),
+        ]);
 
-    if (curve.floor case final floor?) {
-      final y = at(Offset(_min, floor)).dy;
-      final dash = Paint()
-        ..color = IkkiuchiToolsStyle.floor
-        ..strokeWidth = IkkiuchiToolsStyle.markerStroke;
-      for (var x = plot.left; x < plot.right; x += IkkiuchiToolsStyle.floorDash + IkkiuchiToolsStyle.floorDashGap) {
-        canvas.drawLine(Offset(x, y), Offset(math.min(x + IkkiuchiToolsStyle.floorDash, plot.right), y), dash);
-      }
-    }
-
-    final path = Path();
-    for (final (i, p) in points.indexed) {
-      final o = at(p);
-      i == 0 ? path.moveTo(o.dx, o.dy) : path.lineTo(o.dx, o.dy);
-    }
-    canvas.drawPath(
-      path,
-      Paint()
-        ..style = PaintingStyle.stroke
-        ..strokeWidth = IkkiuchiToolsStyle.lineStroke
-        ..color = IkkiuchiToolsStyle.line,
+    return Table(
+      columnWidths: const {0: FlexColumnWidth()},
+      defaultColumnWidth: const IntrinsicColumnWidth(),
+      defaultVerticalAlignment: TableCellVerticalAlignment.baseline,
+      textBaseline: TextBaseline.alphabetic,
+      children: [
+        row([('', _small), ('at ${rating.round()}', _small), for (final s in _sigmaNames) (s, _small)]),
+        for (final group in ikkiuchiValueGroups) ...[
+          TableRow(
+            decoration: const BoxDecoration(color: IkkiuchiCurvesStyle.groupFill),
+            children: [
+              Padding(padding: edge, child: _GroupName(group.name)),
+              for (var i = 0; i <= sigmas.length; i++) const SizedBox(),
+            ],
+          ),
+          for (final value in group.rows) ...[
+            row([
+              (value.name, name),
+              (value.unit.format(value.at(rating)), _number),
+              for (final s in sigmas) (value.matchRangeText(rating, s), _number),
+            ]),
+            if (value.drawSpread != null)
+              row([
+                ('per card', _small),
+                ('', _number),
+                for (final s in sigmas) (value.cardRangeText(rating, s), _number),
+              ], indent: IkkiuchiCurvesStyle.subIndent),
+          ],
+        ],
+      ],
     );
-    final dot = Paint()..color = IkkiuchiToolsStyle.anchor;
-    for (final (r, v) in curve.anchors) {
-      canvas.drawCircle(at(Offset(r, v)), IkkiuchiToolsStyle.anchorRadius, dot);
-    }
-
-    final value = curve.value(IkkiuchiTobi(rating));
-    final mark = at(Offset(rating, value));
-    final marker = Paint()
-      ..color = IkkiuchiToolsStyle.marker
-      ..strokeWidth = IkkiuchiToolsStyle.markerStroke;
-    canvas.drawLine(Offset(mark.dx, plot.top), Offset(mark.dx, plot.bottom), marker);
-    canvas.drawCircle(mark, IkkiuchiToolsStyle.markerRadius, marker);
-    final rightHalf = mark.dx > plot.center.dx;
-    text(curve.format(value), Offset(mark.dx + (rightHalf ? -gap : gap), plot.top),
-        rightHalf ? Alignment.topRight : Alignment.topLeft,
-        style: label.copyWith(color: IkkiuchiToolsStyle.marker, fontWeight: Weights.bold));
   }
+}
 
-  /// The value axis's top: [max] rounded up to one of
-  /// [IkkiuchiToolsStyle.axisSteps] times a power of ten.
-  static double _axisTop(double max) {
-    if (max <= 0) return IkkiuchiToolsStyle.axisSteps.first;
-    final power = math.pow(10, (math.log(max) / math.ln10).floor()).toDouble();
-    return IkkiuchiToolsStyle.axisSteps.map((s) => s * power).firstWhere((top) => top >= max);
-  }
+/// The rules that are the same at every rating: each its name, its rule
+/// and a note on what it means.
+class _FixedRules extends StatelessWidget {
+  const _FixedRules();
 
   @override
-  bool shouldRepaint(_CurveGraph old) => old.rating != rating || old.curve != curve;
+  Widget build(BuildContext context) {
+    const wild = IkkiuchiTuning.wildMoves;
+    String percent(double share) => IkkiuchiUnit.percent.format(share);
+    // Breaks a line only between a rule's parts.
+    String whole(String part) => part.replaceAll(' ', ' ');
+    final rules = [
+      (
+        'arm by distance',
+        'swing × (1 + ${IkkiuchiTuning.armDistanceWeight} × (d − 1))',
+        "d: the card's distance, 1 the average",
+      ),
+      (
+        'wild moves',
+        [
+          whole('whip ${percent(wild.whip)}'),
+          whole('coil and lunge ${percent(wild.coilLunge)}'),
+          whole('smear ${percent(wild.smear)}'),
+        ].join(' · '),
+        'their split of what the sweep leaves',
+      ),
+      (
+        'form',
+        'sd ${IkkiuchiTuning.formSd.round()} rating points',
+        'drawn once a match and added to his rating',
+      ),
+    ];
+    return Table(
+      columnWidths: const {0: IntrinsicColumnWidth(), 1: FlexColumnWidth()},
+      children: [
+        for (final (name, rule, note) in rules)
+          TableRow(children: [
+            Padding(
+              padding: IkkiuchiCurvesStyle.rowPadding.copyWith(right: IkkiuchiCurvesStyle.columnGap),
+              child: Text(name, style: const TextStyle(fontSize: IkkiuchiCurvesStyle.nameFont)),
+            ),
+            Padding(
+              padding: IkkiuchiCurvesStyle.rowPadding,
+              child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                Text(rule, style: _number),
+                Text(note, style: _small),
+              ]),
+            ),
+          ]),
+      ],
+    );
+  }
 }
