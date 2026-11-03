@@ -32,6 +32,14 @@ abstract final class IkkiuchiBoardStyle {
   /// A card is never wider than [maxCardW].
   static const double maxCardW = 80;
 
+  /// A card marked on the board: an outline [markWidth] wide in
+  /// [markColor], [markGap] outside its edge, its corners rounded
+  /// [markRadius].
+  static const Color markColor = Palette.pink;
+  static const double markWidth = 3;
+  static const double markGap = 1;
+  static const double markRadius = 3;
+
   /// Portrait: Tobi stands [tobiFeetGap] above his side, [tobiHeight] tall
   /// at most, with at least [tobiMinRoom] kept above the field for him and
   /// [tobiTopRoom] above his head. Landscape: he sits in the open middle of

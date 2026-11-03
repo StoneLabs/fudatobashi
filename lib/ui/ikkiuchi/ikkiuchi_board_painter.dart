@@ -47,8 +47,8 @@ class IkkiuchiCardFaces {
 }
 
 /// The 一騎打ち board as it is drawn: its [layout], the board running on it,
-/// the call shown on the band, and the wind switch. Every change repaints
-/// the board's painter, and nothing else.
+/// the call shown on the band, a card marked, and the wind switch. Every
+/// change repaints the board's painter, and nothing else.
 class IkkiuchiBoardScene extends ChangeNotifier {
   IkkiuchiBoardScene(this.layout, this.faces) : board = _boardOf(layout);
 
@@ -64,6 +64,15 @@ class IkkiuchiBoardScene extends ChangeNotifier {
 
   /// Whether the arm leaves wind lines and smear afterimages.
   bool wind = true;
+
+  /// The card marked by an outline, if any.
+  int? get marked => _marked;
+  int? _marked;
+
+  void mark(int? id) {
+    _marked = id;
+    notifyListeners();
+  }
 
   static IkkiuchiBoard _boardOf(IkkiuchiBoardLayout l) => l.board();
 
@@ -213,6 +222,7 @@ class IkkiuchiBoardPainter extends CustomPainter {
     final box = card.box;
     if (!card.still) IkkiuchiEffects.paintStreaks(canvas, box, card.velocity);
     final image = scene.faces.of(card.id, (box.hw * 2 * pixelRatio).round());
+    final face = Rect.fromCenter(center: Offset.zero, width: box.hw * 2, height: box.hh * 2);
     canvas
       ..save()
       ..translate(box.centre.x, box.centre.y)
@@ -220,13 +230,22 @@ class IkkiuchiBoardPainter extends CustomPainter {
       ..drawImageRect(
         image,
         Rect.fromLTWH(0, 0, image.width.toDouble(), image.height.toDouble()),
-        Rect.fromCenter(center: Offset.zero, width: box.hw * 2, height: box.hh * 2),
+        face,
         Paint()
           ..filterQuality = FilterQuality.medium
           ..color = Palette.ink.withValues(alpha: card.shown),
-      )
-      ..restore();
+      );
+    if (card.id == scene.marked) {
+      const out = IkkiuchiBoardStyle.markGap + IkkiuchiBoardStyle.markWidth / 2;
+      canvas.drawRRect(RRect.fromRectAndRadius(face.inflate(out), const Radius.circular(IkkiuchiBoardStyle.markRadius)), _mark);
+    }
+    canvas.restore();
   }
+
+  static final _mark = Paint()
+    ..style = PaintingStyle.stroke
+    ..strokeWidth = IkkiuchiBoardStyle.markWidth
+    ..color = IkkiuchiBoardStyle.markColor;
 
   void _paintBand(Canvas canvas, Rect band) {
     canvas.drawRect(band, Paint()..color = IkkiuchiBoardStyle.bandFill);
@@ -292,15 +311,31 @@ class IkkiuchiBoardPainter extends CustomPainter {
 }
 
 /// The board on its tatami, its painter repainting with [scene] alone;
-/// [onTap] gets each tap in board dp.
+/// [onTap] gets each tap in board dp, and [onPointer] each pointer going
+/// down, moving, and up or cancelled, its position in board dp.
 class IkkiuchiBoardView extends StatelessWidget {
-  const IkkiuchiBoardView(this.scene, {super.key, this.onTap});
+  const IkkiuchiBoardView(this.scene, {super.key, this.onTap, this.onPointer});
 
   final IkkiuchiBoardScene scene;
   final ValueChanged<Offset>? onTap;
+  final ValueChanged<PointerEvent>? onPointer;
 
   @override
-  Widget build(BuildContext context) => GestureDetector(
+  Widget build(BuildContext context) {
+    final board = _tatami(context);
+    final onPointer = this.onPointer;
+    if (onPointer == null) return board;
+    return Listener(
+      behavior: HitTestBehavior.opaque,
+      onPointerDown: onPointer,
+      onPointerMove: onPointer,
+      onPointerUp: onPointer,
+      onPointerCancel: onPointer,
+      child: board,
+    );
+  }
+
+  Widget _tatami(BuildContext context) => GestureDetector(
         behavior: HitTestBehavior.opaque,
         onTapUp: onTap == null ? null : (d) => onTap!(d.localPosition),
         child: DecoratedBox(
