@@ -134,11 +134,353 @@ abstract final class IkkiuchiLayoutTuning {
   static const int nearRowSounds = 1;
 }
 
+/// Tobi's body in a strike, squashed and stretched about his feet: its
+/// width and height as shares of his own, a turn toward the card (radians),
+/// and a shift toward the card and down, in Tobi units (his art's units).
+typedef IkkiuchiBodyPose = ({double sx, double sy, double turn, double forward, double down});
+
+/// A spring that dies out: it decays by [decay] over its time and swings
+/// [waves] half waves.
+typedef IkkiuchiSpring = ({double decay, double waves});
+
+/// Tobi's arm in a strike (`IkkiuchiStrike`): how the hand's path bends the
+/// arm, when the fist touches, and how the follow-through and the way home
+/// go. Lengths are dp unless they say Tobi units (his art's units, k dp
+/// each); times are the move's own ms unless they say screen ms.
+abstract final class IkkiuchiArmTuning {
+  /// Points along the arm's curve; more while it is wound into loops.
+  static const int samples = 28;
+  static const int coilSamples = 72;
+  static const int coilLoops = 4;
+
+  /// Each point along the arm shows where the hand was a little earlier,
+  /// the most at the shoulder: the lag grows by this power from the hand.
+  static const double lagPower = 1.1;
+
+  /// The wave that travels along the arm: waves along it, and its period.
+  static const double waveLength = 1.6;
+  static const double wavePeriod = 170;
+
+  /// The fist's radius in Tobi units, and how near its centre a card counts
+  /// as touched, in fist radii.
+  static const double fist = 4.6;
+  static const double touch = 1.2;
+
+  /// The point between his feet his body squashes and turns about, Tobi units.
+  static const ({double x, double y}) feet = (x: 40, y: 93);
+
+  /// A card more than [sideDeadZone] left or right of his middle is struck
+  /// with the arm on that side; a nearer one by its id. He leans toward a
+  /// card more than [leanDeadZone] from his middle, else toward his arm.
+  static const double sideDeadZone = 4;
+  static const double leanDeadZone = 12;
+
+  /// The hand keeps [screenMargin] inside the board's edges, the smear's
+  /// arc [arcMargin]; the row sweep stops [rowExitInset] short of the edge.
+  static const double screenMargin = 16;
+  static const double arcMargin = 10;
+  static const double rowExitInset = 10;
+
+  /// How far past its resting place the hand may fly on its way home.
+  static const double overshootCap = 46;
+
+  /// A strike plays its move faster or slower so the hit comes at its reach
+  /// time; after the hit the follow-through and the way home go at the same
+  /// pace, held between these, so a very fast or slow take still recoils
+  /// readably.
+  static const ({double min, double max}) afterPace = (min: 0.6, max: 1.4);
+
+  /// The follow-through after the hit carries on outward or sideways, never
+  /// toward the side without the called card. It grows with the take's
+  /// speed (by the square root of how much faster than the move's own
+  /// timing), held within [followScale]; turned sideways it keeps at least
+  /// [followKeep] of its length; its bend toward the called card's side
+  /// starts [followBendAt] along it.
+  static const ({double min, double max}) followScale = (min: 0.85, max: 1.25);
+  static const double followKeep = 0.5;
+  static const double followBendAt = 0.6;
+
+  /// The brake: the live fist's touch stays [clearance] from every card on
+  /// the side without the called card. A follow-through cut short takes
+  /// less time, by the square root of the share left, at least [brakeMin].
+  /// The path is searched in [brakeSamples] steps, then halved
+  /// [brakeRefine] times.
+  static const double clearance = 8;
+  static const double brakeMin = 0.45;
+  static const int brakeSamples = 64;
+  static const int brakeRefine = 12;
+
+  /// The live fist's path is checked for touches this often, so none falls
+  /// between two steps of the board.
+  static const double touchStep = 2;
+
+  /// His face turns from reaching to how the strike ended this long after
+  /// the hit stop, and he keeps it [restFaceHold] after the strike; screen ms.
+  static const double faceAfterHit = 130;
+  static const double restFaceHold = 950;
+
+  /// Over the strike's last [fistSettle] ms the fist turns into the end
+  /// pose's hand.
+  static const double fistSettle = 140;
+
+  /// A hand's speed is measured over this many ms.
+  static const double speedWindow = 6;
+}
+
+/// The wide whip: the arm curls out wide to the side, cracks across the
+/// card and snaps back on a spring. Phases in ms: the wind-up, the swing
+/// out to the card, the follow-through and the way home.
+abstract final class IkkiuchiWhipTuning {
+  static const double windUp = 170;
+  static const double out = 230;
+  static const double follow = 130;
+  static const double back = 420;
+  static const double hitStop = 60;
+
+  /// The wind-up draws the hand back and out, Tobi units.
+  static const double windBack = 16;
+  static const double windOut = 12;
+
+  /// The swing's curve bows out by [bow] of the reach, at least [bowMin],
+  /// from [bowAt] along the way to the card; it eases in by [outPower].
+  static const double bowAt = 0.45;
+  static const double bow = 0.42;
+  static const double bowMin = 70;
+  static const double outPower = 1.7;
+
+  /// The follow-through runs on [followShare] of the reach, within
+  /// [followMin]..[followMax].
+  static const double followShare = 0.16;
+  static const double followMin = 30;
+  static const double followMax = 80;
+  static const IkkiuchiSpring home = (decay: 4.6, waves: 2.6);
+
+  /// The arm's lag in each phase (at rest, wind-up, out, follow-through,
+  /// home), ms; its wave and bulge, Tobi units.
+  static const double lagRest = 20;
+  static const double lagWind = 30;
+  static const double lagOut = 88;
+  static const double lagFollow = 90;
+  static const double lagHome = 64;
+  static const double waveWind = 1.5;
+  static const double waveOut = 3;
+  static const double waveFollow = 5;
+  static const double waveHome = 9;
+  static const double bulgeWind = 8;
+  static const double bulgeOut = 16;
+
+  /// His body: wound up, struck, turned on through the follow-through; the
+  /// strike's pose reached [strikeQuick] times faster than the swing.
+  static const IkkiuchiBodyPose wound = (sx: 1.05, sy: 0.93, turn: -0.08, forward: -2, down: 2);
+  static const IkkiuchiBodyPose struck = (sx: 0.95, sy: 1.07, turn: 0.11, forward: 4, down: -5);
+  static const double followTurn = 0.15;
+  static const double strikeQuick = 2.2;
+}
+
+/// The coil and lunge: the arm winds into a spring beside him while he
+/// squashes down and shakes, then shoots out straight and sweeps the card
+/// off its row. Phases in ms: the coil, the shaking hold, the lunge, the
+/// sweep across the card, the way home.
+abstract final class IkkiuchiCoilTuning {
+  static const double coil = 300;
+  static const double hold = 60;
+  static const double lunge = 110;
+  static const double sweep = 100;
+  static const double back = 340;
+  static const double hitStop = 60;
+
+  /// The coil winds about a point [coilOut] out and [coilForward] forward of
+  /// his shoulder, [turns] times, down to [coilRadius]; Tobi units.
+  static const double coilOut = 20;
+  static const double coilForward = 4;
+  static const double turns = 1.6;
+  static const double coilRadius = 14;
+
+  /// The hold shakes the hand [shake] Tobi units at [shakeRate] radians per
+  /// ms, and his body [bodyShake] dp at [bodyShakeRate].
+  static const double shake = 1.3;
+  static const double shakeRate = 0.55;
+  static const double bodyShake = 1.2;
+  static const double bodyShakeRate = 0.9;
+
+  /// The lunge lands [landOut] outside the card and [landBack] short of it;
+  /// the sweep crosses to [sweepOut] past its other side and [sweepOn] on;
+  /// the hit comes [hitInto] into the sweep. Tobi units.
+  static const double landOut = 18;
+  static const double landBack = 4;
+  static const double sweepOut = 34;
+  static const double sweepOn = 8;
+  static const double hitInto = 18;
+
+  /// The way home overshoots by this much (a back-out ease).
+  static const double homeOvershoot = 1.6;
+
+  /// The arm's lag in each phase, ms (easing from [lagCoil] to [lagLunge]
+  /// over the lunge); its wave and its coil's loops, Tobi units.
+  static const double lagRest = 20;
+  static const double lagCoil = 40;
+  static const double lagLunge = 14;
+  static const double lagSweep = 30;
+  static const double lagHome = 26;
+  static const double waveSweep = 2;
+  static const double waveHome = 5;
+  static const double coilLoop = 7;
+
+  /// The coil's loops unwind [unwindQuick] times faster than the lunge.
+  static const double unwindQuick = 2.2;
+
+  /// His body: squashed by the coil, stretched by the lunge, twisted by
+  /// the sweep, and its spring home.
+  static const IkkiuchiBodyPose squashed = (sx: 1.08, sy: 0.86, turn: -0.06, forward: 0, down: 4);
+  static const IkkiuchiBodyPose stretched = (sx: 0.93, sy: 1.1, turn: 0.12, forward: 5, down: -6);
+  static const double sweepTurn = 0.2;
+  static const IkkiuchiSpring bodyHome = (decay: 5, waves: 2.4);
+}
+
+/// The smear swing: a huge hammer swing with smear afterimages, a big
+/// impact, then a floppy rubber-band recoil. Phases in ms: the draw back,
+/// the arc down onto the card, the follow-through and the way home.
+abstract final class IkkiuchiSmearTuning {
+  static const double draw = 150;
+  static const double arc = 200;
+  static const double follow = 150;
+  static const double back = 460;
+  static const double hitStop = 90;
+
+  /// The arc is half an ellipse about the middle of the way to the card:
+  /// it bows out by [bow] of the reach, at least [bowMin] Tobi units and
+  /// [edgeRoom] dp short of the board's edge. It starts [overhead] radians
+  /// past straight back and eases in by [arcPower].
+  static const double bow = 0.55;
+  static const double bowMin = 24;
+  static const double edgeRoom = 14;
+  static const double overhead = 0.35;
+  static const double arcPower = 2.1;
+
+  /// The follow-through runs [followShare] of the bow across the card and
+  /// curls [curl] of the half-reach in toward the called card's side.
+  static const double followShare = 0.8;
+  static const double curl = 0.42;
+  static const IkkiuchiSpring home = (decay: 3.6, waves: 3.2);
+
+  /// The smear fades in from [smearFrom] of the arc, [smearRise] times as
+  /// fast as the arc.
+  static const double smearFrom = 0.35;
+  static const double smearRise = 3;
+
+  /// The arm's lag in each phase, ms; its wave, Tobi units.
+  static const double lagRest = 20;
+  static const double lagDraw = 30;
+  static const double lagArc = 46;
+  static const double lagFollow = 64;
+  static const double lagHome = 115;
+  static const double waveArc = 2;
+  static const double waveFollow = 3;
+  static const double waveHome = 12;
+
+  /// His body: drawn back, then swung.
+  static const IkkiuchiBodyPose drawn = (sx: 1.04, sy: 0.94, turn: -0.12, forward: -3, down: 1);
+  static const IkkiuchiBodyPose swung = (sx: 0.94, sy: 1.08, turn: 0.16, forward: 5, down: -6);
+  static const IkkiuchiSpring bodyHome = (decay: 4, waves: 3);
+}
+
+/// The row sweep (払い), a top player's take: the arm comes in low and flat
+/// beside the card and brushes along the row, sending it and the cards
+/// beside it off the side in a clean line. Phases in ms: the lift, the
+/// approach to the row, the sweep along it, the way home.
+abstract final class IkkiuchiSweepTuning {
+  static const double lift = 90;
+  static const double approach = 170;
+  static const double sweep = 140;
+  static const double back = 320;
+  static const double hitStop = 35;
+
+  /// The hit comes this long into the sweep.
+  static const double hitInto = 3;
+
+  /// The sweep starts [inside] dp in from the card's inner edge; the
+  /// approach bows in from [bow] of the reach (at most [bowMax]) along the
+  /// row and [rise] dp above it, easing in by [approachPower]. The lift
+  /// draws the hand back by [liftBack] and up by [liftUp] Tobi units.
+  static const double inside = 5;
+  static const double bow = 0.5;
+  static const double bowMax = 120;
+  static const double rise = 6;
+  static const double approachPower = 1.35;
+  static const double liftBack = 6;
+  static const double liftUp = 3;
+
+  /// The sweep slows by this power; the way home overshoots by this much.
+  static const double sweepPower = 1.6;
+  static const double homeOvershoot = 1.1;
+
+  /// The arm's lag in each phase, ms; its bulge, Tobi units.
+  static const double lagRest = 20;
+  static const double lagLift = 24;
+  static const double lagApproach = 30;
+  static const double lagSweep = 16;
+  static const double lagHome = 28;
+  static const double bulge = 5;
+
+  /// His body: low for the approach, leaning along the row.
+  static const IkkiuchiBodyPose low = (sx: 1.02, sy: 0.96, turn: -0.03, forward: 0, down: 2);
+  static const IkkiuchiBodyPose leaning = (sx: 0.97, sy: 1.04, turn: 0.09, forward: 3, down: -2);
+  static const IkkiuchiSpring bodyHome = (decay: 6, waves: 2);
+}
+
+/// The cards on the board as rigid bodies (`IkkiuchiCards`, Forge2D): no
+/// gravity, the tatami's friction as damping. Speeds are dp/s.
+abstract final class IkkiuchiPhysicsTuning {
+  /// One step of the sim in seconds, and how many dp make a metre in it.
+  static const double step = 1 / 240;
+  static const double dpPerMetre = 50;
+
+  /// The tatami slows a sliding card's speed and spin by these shares per
+  /// second; the taken card, flying, by [launchDamping].
+  static const double damping = 9;
+  static const double spinDamping = 7;
+  static const double launchDamping = 1.2;
+
+  /// Card on card.
+  static const double restitution = 0.32;
+  static const double friction = 0.4;
+  static const double density = 1;
+
+  /// The taken card leaves at the hand's speed times [hitBoost], within
+  /// [hitMin]..[hitMax], its way bent [hitForward] toward the card's far
+  /// side; it keeps [hitSpin] of the spin of a blow off its centre, plus a
+  /// kick of [hitSpinKick] rad/s, and spins [sweepSpin] rad/s off a sweep.
+  /// No card spins faster than [maxSpin] rad/s.
+  static const double hitBoost = 1.2;
+  static const double hitMin = 1800;
+  static const double hitMax = 3600;
+  static const double hitForward = 0.15;
+  static const double hitSpin = 0.32;
+  static const double hitSpinKick = 6;
+  static const double sweepSpin = 1.2;
+  static const double maxSpin = 26;
+
+  /// The taken card lands, and fades from the field, once it slows under
+  /// [landSpeed]; it fades over [fadeMs].
+  static const double landSpeed = 120;
+  static const double fadeMs = 220;
+
+  /// The fist pushes the cards it meets as if never faster than [pushMax],
+  /// bouncing them [fistRestitution]; never toward the side without the
+  /// called card.
+  static const double pushMax = 1800;
+  static const double fistRestitution = 0.3;
+
+  /// A card this far past the board's edge is gone.
+  static const double offBoard = 240;
+}
+
 /// The developer's 一騎打ち pages (`IkkiuchiCurvesPage`,
-/// `IkkiuchiLayoutPage`): their rating slider, the graphs' rating ticks and
-/// sampling step, the standard deviations the curves page gives each
-/// value's range at, and the layout page's choice of cards a side and the
-/// seeds it starts from.
+/// `IkkiuchiLayoutPage`, `IkkiuchiStrikesPage`): their rating slider, the
+/// graphs' rating ticks and sampling step, the standard deviations the
+/// curves page gives each value's range at, the layout page's choice of
+/// cards a side and the seeds it starts from, and the strikes page's slow
+/// motion speeds and its reset once a strike is over.
 abstract final class IkkiuchiToolsTuning {
   static const double ratingStart = 1600;
   static const double ratingStep = 50;
@@ -156,4 +498,11 @@ abstract final class IkkiuchiToolsTuning {
   /// of at least each of [wideRows] cards.
   static const List<int> wideRows = [12, 14];
   static const int seeds = 1000;
+
+  /// The strikes page: its cards a side and rows, its slow motion speeds,
+  /// and how long after a strike ends, all cards still, the board resets.
+  static const int strikesPerSide = 25;
+  static const int strikesRows = 3;
+  static const List<double> slowMotion = [1, 0.5, 0.25, 0.1];
+  static const Duration autoReset = Duration(seconds: 3);
 }

@@ -38,6 +38,7 @@ dependencies:
   timezone: 0.11.1
   flutter_timezone: 5.1.1
   jinja: 0.7.2
+  forge2d: 0.14.2+1
 
 dev_dependencies:
   flutter_test:
