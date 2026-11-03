@@ -134,6 +134,16 @@ abstract final class IkkiuchiLayoutTuning {
   static const int nearRowSounds = 1;
 }
 
+/// The 一騎打ち field as it lies on the board (`IkkiuchiField`), in card
+/// widths: a card's height (a torifuda's, 73 × 52 mm), and the gaps between
+/// the cards of a group and between rows. A row's groups are at least
+/// [IkkiuchiLayoutTuning.groupGap] card pitches apart.
+abstract final class IkkiuchiFieldTuning {
+  static const double cardAspect = 1.404;
+  static const double cardGap = 0.02;
+  static const double rowGap = 0.19;
+}
+
 /// Tobi's body in a strike, squashed and stretched about his feet: its
 /// width and height as shares of his own, a turn toward the card (radians),
 /// and a shift toward the card and down, in Tobi units (his art's units).

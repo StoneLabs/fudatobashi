@@ -104,9 +104,9 @@ void main() {
     return p;
   }
 
-  // [page] afresh, its state and scrolling new.
-  Future<void> show(WidgetTester tester, Progress p, Widget page) async {
-    useScreen(tester, usersPhone);
+  // [page] afresh on [screen], its state and scrolling new.
+  Future<void> show(WidgetTester tester, Progress p, Widget page, {Screen screen = usersPhone}) async {
+    useScreen(tester, screen);
     await tester.pumpWidget(const SizedBox());
     await tester.pumpWidget(RepaintBoundary(
       key: screenKey,
@@ -474,6 +474,39 @@ void main() {
       final strike = s.board.runs.last.strike;
       await pumpTo(tester, strike.hitAt + strike.hitStop / 2);
       await capture(tester, 'strikes_landscape_hit');
+      expect(tester.takeException(), isNull);
+      await tester.pumpWidget(const SizedBox());
+    });
+
+    testWidgets('the field grows toward the middle: a wide row, short rows, and a tablet', (tester) async {
+      final p = await open(tester);
+      // Seed 153 deals Tobi a row of 14 cards; seed 144 no row over 9.
+      for (final (seed, screen, name) in [(153, usersPhone, 'wide'), (144, usersPhone, 'short'), (144, ipadPortrait, 'tablet')]) {
+        for (final landscape in [false, true]) {
+          await show(tester, p, IkkiuchiStrikesPage(rating: 2000, seed: seed, landscape: landscape), screen: screen);
+          await tester.pump(frame);
+          expect(tester.takeException(), isNull);
+          final s = scene(tester);
+          expect(s.layout.cards.map((c) => 2 * c.box.hw), everyElement(closeTo(s.layout.cardW, 1e-6)));
+          await capture(tester, 'strikes_${name}_${landscape ? 'landscape' : 'portrait'}');
+        }
+      }
+      expect(scene(tester).layout.cardW, IkkiuchiBoardStyle.maxCardW, reason: 'a tablet grows the cards to their widest');
+
+      // A hit on the tablet's large cards.
+      await show(tester, p, const IkkiuchiStrikesPage(rating: 2000, seed: 144), screen: ipadPortrait);
+      await tester.pump(frame);
+      await tester.tap(find.text('Strike now'));
+      await onlyMove(tester, 'smear');
+      final s = scene(tester);
+      await tapBoard(tester, s.board.cards.card(playerCard(s)).box.centre);
+      await tester.pump(frame);
+      final strike = s.board.runs.last.strike;
+      await pumpTo(tester, strike.hitAt + strike.hitStop / 2);
+      await capture(tester, 'strikes_tablet_hit');
+      await pumpTo(tester, strike.end + 300);
+      await capture(tester, 'strikes_tablet_after');
+      expect(s.board.faults, isEmpty);
       expect(tester.takeException(), isNull);
       await tester.pumpWidget(const SizedBox());
     });

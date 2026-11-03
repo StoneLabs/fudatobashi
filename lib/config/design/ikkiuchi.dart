@@ -1,8 +1,8 @@
 part of '../design.dart';
 
 /// The 一騎打ち board (`IkkiuchiBoardLayout`, `IkkiuchiBoardPainter`): the
-/// field on the tatami, folded in portrait and true scale in landscape,
-/// the band across the middle, and Tobi at the far side. dp.
+/// field on the tatami, its cards as big as the board lets them grow, the
+/// band across the middle, and Tobi at the far side. dp.
 abstract final class IkkiuchiBoardStyle {
   /// Kept clear inside the board's edges, and under the field in portrait.
   static const double pad = 6;
@@ -35,13 +35,15 @@ abstract final class IkkiuchiBoardStyle {
   /// Portrait: Tobi stands [tobiFeetGap] above his side, [tobiHeight] tall
   /// at most, with at least [tobiMinRoom] kept above the field for him and
   /// [tobiTopRoom] above his head. Landscape: he sits in the open middle of
-  /// his half, [tobiShare] of its height, [tobiTop] under its top.
+  /// his half, [tobiShare] of its height, [tobiTop] under its top, his cards
+  /// at least [tobiSideRoom] card widths from him on each side.
   static const double tobiHeight = 170;
   static const double tobiMinRoom = 150;
   static const double tobiFeetGap = 4;
   static const double tobiTopRoom = 24;
   static const double tobiShare = 0.8;
   static const double tobiTop = 2;
+  static const double tobiSideRoom = 0.1;
 
   /// The tatami behind the field: a seamless tile drawn for [tatamiScale]×
   /// density, on [ground] until it loads.
