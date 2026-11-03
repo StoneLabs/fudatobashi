@@ -1,6 +1,10 @@
 <svg viewBox="0 0 84 100">
-  <path d="M18 52 L6 46" fill="none"/>
-  <path d="M62 52 L74 46" fill="none"/>
+  <g id="arm-left">
+    <path d="M18 52 L6 46" fill="none"/>
+  </g>
+  <g id="arm-right">
+    <path d="M62 52 L74 46" fill="none"/>
+  </g>
   <g id="eye-left">
     <circle cx="32" cy="52" r="5.4" fill="#FFFFFF" stroke-width="2.4"/>
     <circle cx="32" cy="52.5" r="1.6" fill="#141414" stroke="none"/>

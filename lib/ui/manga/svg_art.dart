@@ -53,7 +53,9 @@ import 'vector.dart';
 ///  * `d` (path data) takes any numeric format and both absolute and
 ///    relative commands, including arcs.
 ///  * An element tagged [VTag.eye] (so Tobi can blink) is an `<eye...>`-id
-///    `<g>` or shape; the id is otherwise just documentation.
+///    `<g>` or shape; one tagged [VTag.armLeft] or [VTag.armRight] (so a
+///    painter can leave out an arm, left and right as drawn) has the id
+///    `arm-left` or `arm-right`. Any other id is just documentation.
 abstract final class SvgArt {
   /// Parses one art piece. [debugName] (e.g. `icons/lock.svg`) names the
   /// asset in any error.
@@ -144,7 +146,12 @@ VShape? _parseNode(XmlElement el, String file) {
   final style = _parseStyle(el, file);
   final t = _parseGroupTransform(el.getAttribute('transform'), file);
   final id = el.getAttribute('id');
-  final tag = id != null && id.startsWith('eye') ? VTag.eye : null;
+  final tag = switch (id) {
+    final id? when id.startsWith('eye') => VTag.eye,
+    'arm-left' => VTag.armLeft,
+    'arm-right' => VTag.armRight,
+    _ => null,
+  };
 
   if (name == 'g') {
     final children = [for (final c in el.childElements) _parseNode(c, file)].whereType<VShape>().toList();

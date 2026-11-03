@@ -1,8 +1,12 @@
 <svg viewBox="0 0 84 100">
-  <path d="M18 52 L7 61 L8.5 50.5" fill="none"/>
-  <circle cx="8.5" cy="46.5" r="4.6" fill="#FFFFFF"/>
-  <path d="M62 52 L73 61 L71.5 50.5" fill="none"/>
-  <circle cx="71.5" cy="46.5" r="4.6" fill="#FFFFFF"/>
+  <g id="arm-left">
+    <path d="M18 52 L7 61 L8.5 50.5" fill="none"/>
+    <circle cx="8.5" cy="46.5" r="4.6" fill="#FFFFFF"/>
+  </g>
+  <g id="arm-right">
+    <path d="M62 52 L73 61 L71.5 50.5" fill="none"/>
+    <circle cx="71.5" cy="46.5" r="4.6" fill="#FFFFFF"/>
+  </g>
   <path d="M28 48.5 L35.5 52 L28 55.5 M52 48.5 L44.5 52 L52 55.5" fill="none"/>
   <rect x="33" y="60" width="14" height="7.5" rx="2" fill="#FFFFFF" stroke-width="2.4"/>
   <path d="M33 63.75 H47 M37.7 60 V67.5 M42.3 60 V67.5" fill="none" stroke-width="1.6"/>

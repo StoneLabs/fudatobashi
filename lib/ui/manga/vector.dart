@@ -44,8 +44,9 @@ class VStyle {
       );
 }
 
-/// A tag that lets a painter animate part of the art (Tobi's eyes blink).
-enum VTag { eye }
+/// A tag that lets a painter animate part of the art: Tobi's eyes blink,
+/// and either of his arms can be left out for one drawn on its own.
+enum VTag { eye, armLeft, armRight }
 
 sealed class VShape {
   const VShape(this.style, this.tag);

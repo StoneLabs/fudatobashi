@@ -1,7 +1,11 @@
 <svg viewBox="0 0 84 100">
-  <path d="M18 50 L9 56 L15 64" fill="none"/>
-  <path d="M62 52 L71 42" fill="none"/>
-  <circle cx="73" cy="39" r="4.2" fill="#FFFFFF"/>
+  <g id="arm-left">
+    <path d="M18 50 L9 56 L15 64" fill="none"/>
+  </g>
+  <g id="arm-right">
+    <path d="M62 52 L71 42" fill="none"/>
+    <circle cx="73" cy="39" r="4.2" fill="#FFFFFF"/>
+  </g>
   <path d="M27 44 L36 47.5 M53 44 L44 47.5" fill="none" stroke-width="3.4"/>
   <g id="eye-left">
     <ellipse cx="32.5" cy="53" rx="3.2" ry="4.2" fill="#141414" stroke="none"/>
