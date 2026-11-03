@@ -9,6 +9,9 @@
   #bar { position: fixed; left: 12px; bottom: 10px; display: flex; gap: 8px; align-items: center; }
   button { background: #565656; color: #ddd; border: 1px solid #222; border-radius: 3px; padding: 6px 12px; cursor: pointer; }
   button:hover { background: #666; }
+  label { color: #aaa; font-size: 12px; display: flex; align-items: center; gap: 4px; }
+  input { width: 76px; background: #2a2a2a; color: #ddd; border: 1px solid #222; border-radius: 3px; padding: 5px 6px; font: 12px monospace; }
+  input:focus { outline: 1px solid #4fd35a; }
   #msg { color: #e8a060; font-size: 13px; }
 </style>
 </head>
@@ -17,6 +20,10 @@
 <div id="bar">
   <button id="imp">Import from clipboard</button>
   <button id="exp">Export to clipboard</button>
+  <span id="vals" style="display:none;gap:8px">
+    <label>X <input id="ex" type="text" inputmode="decimal" autocomplete="off"></label>
+    <label>Y <input id="ey" type="text" inputmode="decimal" autocomplete="off"></label>
+  </span>
   <span id="msg"></span>
 </div>
 <textarea id="hold" style="position:fixed;left:-1000px;top:0"></textarea>

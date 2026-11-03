@@ -72,7 +72,46 @@
     return { cx, cy, a: [cx - ux * HANDLE_PX, cy - uy * HANDLE_PX], b: [cx + ux * HANDLE_PX, cy + uy * HANDLE_PX] };
   }
 
+  const vals = document.getElementById('vals');
+  const boxX = document.getElementById('ex');
+  const boxY = document.getElementById('ey');
+  const exact = v => String(parseFloat(v.toPrecision(10)));
+
+  function syncBoxes() {
+    vals.style.display = sel >= 0 ? 'flex' : 'none';
+    if (sel < 0) return;
+    const p = curve.pts[sel];
+    if (document.activeElement !== boxX) boxX.value = exact(p.x);
+    if (document.activeElement !== boxY) boxY.value = exact(p.y);
+  }
+
+  function applyBoxes() {
+    if (sel < 0) return;
+    const p = curve.pts[sel], pts = curve.pts;
+    const x = parseFloat(boxX.value), y = parseFloat(boxY.value);
+    if (Number.isFinite(x)) {
+      const lo = sel > 0 ? pts[sel - 1].x + 1 : -Infinity;
+      const hi = sel < pts.length - 1 ? pts[sel + 1].x - 1 : Infinity;
+      p.x = Math.min(Math.max(Math.round(x), lo), hi);
+    }
+    if (Number.isFinite(y) && !(curve.log && y <= 0)) p.y = y;
+    boxX.value = exact(p.x);
+    boxY.value = exact(p.y);
+    fit();
+    draw();
+  }
+
+  for (const box of [boxX, boxY]) {
+    box.addEventListener('change', applyBoxes);
+    box.addEventListener('keydown', e => {
+      e.stopPropagation();
+      if (e.key === 'Enter') box.blur();
+      if (e.key === 'Escape') { box.value = exact(curve.pts[sel][box === boxX ? 'x' : 'y']); box.blur(); }
+    });
+  }
+
   function draw() {
+    syncBoxes();
     const dpr = window.devicePixelRatio || 1;
     W = window.innerWidth;
     H = window.innerHeight;
@@ -322,6 +361,7 @@
   });
 
   window.addEventListener('paste', e => {
+    if (e.target.tagName === 'INPUT') return;
     const t = e.clipboardData && e.clipboardData.getData('text');
     if (t) { e.preventDefault(); importText(t); }
   });
