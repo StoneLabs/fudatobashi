@@ -25,6 +25,7 @@ import '../ankiren/ankiren_play.dart';
 import '../debug/readout_frame.dart';
 import '../debug/teiichi_score_readout.dart';
 import '../manga/manga.dart';
+import '../placing/placing_widgets.dart';
 import 'teiichi_placing_layer.dart';
 import 'teiichi_results_screen.dart';
 import 'teiichi_turn_tip.dart';
@@ -512,7 +513,7 @@ class _TeiichiScreenState extends State<TeiichiScreen> with AnkirenPlay {
   /// turns over in place when the cards go face down. The card being
   /// dragged shows where it would land.
   Widget _laidCard(int poemId, {required bool showNumber}) {
-    if (_drag?.card == poemId) return const _Landing();
+    if (_drag?.card == poemId) return const PlacingLanding(look: TeiichiPlayLayout.placing);
     return Listener(
       behavior: HitTestBehavior.opaque,
       child: AnkirenCard(key: ValueKey(poemId), poemId: poemId, faceUp: true, inverted: false, showNumber: showNumber),
@@ -576,17 +577,4 @@ class _TeiichiScreenState extends State<TeiichiScreen> with AnkirenPlay {
     final place = board.half.placeOf(card)!;
     return S.of(context).teiichiSpotName(place.row, place.part);
   }
-}
-
-/// Where a dragged card would land: sun over its spot, outlined in ink.
-class _Landing extends StatelessWidget {
-  const _Landing();
-
-  @override
-  Widget build(BuildContext context) => DecoratedBox(
-        decoration: BoxDecoration(
-          color: TeiichiPlayLayout.landingFill,
-          border: Border.all(color: Palette.ink, width: TeiichiPlayLayout.landingBorder),
-        ),
-      );
 }

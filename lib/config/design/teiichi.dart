@@ -109,6 +109,36 @@ abstract final class TeiichiPlayLayout {
   static const double dragLeastWidth = 48;
   static const double dragBorder = 2.5;
 
+  /// The placing's look, from the values above; the cards under the
+  /// stack's top one show as 暗記練's card backs.
+  static const placing = PlacingLook(
+    spotInk: spotInk,
+    spotFill: spotFill,
+    spotBorder: spotBorder,
+    middleLabelFont: middleLabelFont,
+    middleLabelTracking: middleLabelTracking,
+    middleLabelRoom: middleLabelRoom,
+    landingFill: landingFill,
+    landingBorder: landingBorder,
+    landingTagFont: landingTagFont,
+    landingTagGap: landingTagGap,
+    landingTagRoom: landingTagRoom,
+    landingTagFlip: noteWidth,
+    dragLift: dragLift,
+    dragScale: dragScale,
+    dragLeastWidth: dragLeastWidth,
+    dragBorder: dragBorder,
+    stackDepth: stackDepth,
+    stackStep: stackStep,
+    stackTagOverlap: stackTagOverlap,
+    stackTagRoom: stackTagRoom,
+    stackTagFont: stackTagFont,
+    tagPadding: stackTagPadding,
+    edgeFill: AnkirenPlayLayout.backFill,
+    edgeInk: AnkirenPlayLayout.backBorder,
+    edgeBorder: AnkirenPlayLayout.backBorderWidth,
+  );
+
   /// Cards opening a gap, closing one, or taking a new place.
   static const Duration move = Duration(milliseconds: 180);
 

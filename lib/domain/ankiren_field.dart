@@ -3,19 +3,13 @@ import 'dart:math' as math;
 import '../config/config.dart';
 import '../data/poem.dart';
 import 'ankiren_tomofuda.dart';
+import 'field_parts.dart';
+
+export 'field_parts.dart' show FieldRow, RowPart;
 
 /// The two halves of the field: the player's own (自陣, the bottom of the
 /// screen) and the opponent's (敵陣, the top).
 enum FieldSide { own, opponent }
-
-/// The rows of one half, from its owner outward: 下段, 中段, 上段 (the row at
-/// the centre line).
-enum FieldRow { lower, middle, upper }
-
-/// The parts of one row, left to right as the half's owner sees it: the
-/// left cluster, the open middle and the right cluster. A half's clusters
-/// are its quadrants.
-enum RowPart { left, middle, right }
 
 /// How near a tap lands to the card asked for (see [AnkirenField.proximity]),
 /// nearest first. Stored by name with each answer.

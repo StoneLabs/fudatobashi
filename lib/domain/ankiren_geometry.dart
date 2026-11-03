@@ -2,32 +2,9 @@ import 'dart:math' as math;
 
 import '../config/config.dart';
 import 'ankiren_field.dart';
+import 'field_parts.dart';
 
-/// A rectangle on the field, in centimetres.
-class FieldRect {
-  const FieldRect(this.x, this.y, this.w, this.h);
-
-  final double x, y, w, h;
-
-  double get right => x + w;
-  double get bottom => y + h;
-
-  bool overlaps(FieldRect o) => x < o.right && o.x < right && y < o.bottom && o.y < bottom;
-
-  bool contains(double px, double py) => px >= x && px < right && py >= y && py < bottom;
-
-  /// The smallest rectangle around this one and [o].
-  FieldRect union(FieldRect o) {
-    final left = math.min(x, o.x), top = math.min(y, o.y);
-    return FieldRect(left, top, math.max(right, o.right) - left, math.max(bottom, o.bottom) - top);
-  }
-
-  /// This rectangle turned 180° within a [width] × [height] area.
-  FieldRect turned(double width, double height) => FieldRect(width - right, height - bottom, w, h);
-
-  @override
-  String toString() => 'FieldRect($x, $y, $w × $h)';
-}
+export 'field_parts.dart' show FieldRect;
 
 /// Where every card of a field lies, in real centimetres
 /// ([AnkirenFieldSize]). Each half has its own coordinates, origin at the top
