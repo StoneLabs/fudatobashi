@@ -5,15 +5,22 @@ import 'dart:math' as math;
 /// factor.
 enum CurveScale { plain, log }
 
-/// A value by x: [anchors] (x, y) in rising x, joined by a smooth curve
-/// that passes through each point and never overshoots (monotone cubic,
-/// Fritsch-Carlson), and held flat past the first and the last. A log
-/// curve's values are all above 0.
+/// A value by x: [anchors] (x, y) in rising x, each pair of neighbours
+/// joined by a cubic Hermite segment through both with their slopes, and
+/// held flat past the first and the last. A point listed in [slopes] has
+/// that slope; every other point gets its slope from the points alone, so
+/// the curve never overshoots where no slope is set (monotone cubic,
+/// Fritsch-Carlson). A log curve works on the log of its values, its slopes
+/// too, and its values are all above 0.
 class TuningCurve {
-  const TuningCurve(this.anchors) : scale = CurveScale.plain;
-  const TuningCurve.log(this.anchors) : scale = CurveScale.log;
+  const TuningCurve(this.anchors, {this.slopes = const []}) : scale = CurveScale.plain;
+  const TuningCurve.log(this.anchors, {this.slopes = const []}) : scale = CurveScale.log;
 
   final List<(double, double)> anchors;
+
+  /// (x, slope) for the points whose slope is set, each x a point's x. On a
+  /// log curve a slope is of ln y.
+  final List<(double, double)> slopes;
   final CurveScale scale;
 
   // Slopes are worked out on first use; const instances are shared, so each
@@ -24,29 +31,41 @@ class TuningCurve {
 
   /// The value at [x]; a point's x gives its y exactly.
   double at(double x) {
+    final m = _slopes[this] ??= _pointSlopes();
     if (x <= anchors.first.$1) return anchors.first.$2;
     for (var i = 1; i < anchors.length; i++) {
       final (x1, v1) = anchors[i];
       if (x > x1) continue;
       if (x == x1) return v1;
       final (x0, v0) = anchors[i - 1];
-      final slopes = _slopes[this] ??= _fritschCarlson();
       final h = x1 - x0, t = (x - x0) / h;
       final (y0, y1) = (_y(v0), _y(v1));
       final t2 = t * t, t3 = t2 * t;
       final y = (2 * t3 - 3 * t2 + 1) * y0 +
-          (t3 - 2 * t2 + t) * h * slopes[i - 1] +
+          (t3 - 2 * t2 + t) * h * m[i - 1] +
           (-2 * t3 + 3 * t2) * y1 +
-          (t3 - t2) * h * slopes[i];
+          (t3 - t2) * h * m[i];
       return scale == CurveScale.log ? math.exp(y) : y;
     }
     return anchors.last.$2;
   }
 
-  /// The slope at each point, as SciPy's PchipInterpolator: a plateau or a
-  /// turn gets 0, otherwise a weighted harmonic mean of the two sides.
+  /// The slope at each point: its set one, or else its automatic one.
+  List<double> _pointSlopes() {
+    assert(slopes.every((s) => anchors.any((a) => a.$1 == s.$1)), 'a slope at no point: $slopes');
+    final m = _fritschCarlson();
+    for (final (x, slope) in slopes) {
+      m[anchors.indexWhere((a) => a.$1 == x)] = slope;
+    }
+    return m;
+  }
+
+  /// The automatic slope at each point, as SciPy's PchipInterpolator: a
+  /// plateau or a turn gets 0, otherwise a weighted harmonic mean of the two
+  /// sides.
   List<double> _fritschCarlson() {
     final n = anchors.length;
+    if (n == 1) return [0];
     final h = [for (var i = 1; i < n; i++) anchors[i].$1 - anchors[i - 1].$1];
     final d = [for (var i = 1; i < n; i++) (_y(anchors[i].$2) - _y(anchors[i - 1].$2)) / h[i - 1]];
     if (n == 2) return [d[0], d[0]];
