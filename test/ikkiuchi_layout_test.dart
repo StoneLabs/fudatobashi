@@ -7,6 +7,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:fudatobashi/config/config.dart';
 import 'package:fudatobashi/data/poem.dart';
 import 'package:fudatobashi/domain/ikkiuchi_layout.dart';
+import 'package:fudatobashi/ui/debug/ikkiuchi_groups_dealt.dart';
 
 void main() {
   poems = Poems.fromJsonString(File('assets/data/poems.json').readAsStringSync());
@@ -54,12 +55,14 @@ void main() {
       expect(IkkiuchiLayout.areAlike('あきの', 'あさじ'), isFalse);
     });
 
-    test('gives the same homes for the same seed', () {
+    test('gives the same homes and the same choices for the same seed', () {
       for (final rating in ratings) {
         final a = homes(rating, 25, 3, 7), b = homes(rating, 25, 3, 7);
         for (final id in a.cards) {
           expect(b.homeOf(id), a.homeOf(id), reason: '$rating #$id');
         }
+        expect(b.soundGroups, a.soundGroups, reason: '$rating');
+        expect(b.tomofudaGroups, a.tomofudaGroups, reason: '$rating');
       }
       final a = homes(1600, 25, 3, 7), c = homes(1600, 25, 3, 8);
       expect(a.cards.toSet(), isNot(c.cards.toSet()));
@@ -213,55 +216,96 @@ void main() {
       expect(strong.alike, lessThan(0.15), reason: '$strong');
     });
 
-    test('decides his two habits once a match from its seed, whatever the deal', () {
+    // [count] ranked games at [rating], 25 a side in 3 rows, one per seed.
+    Iterable<IkkiuchiHomes> games(double rating, int count) sync* {
+      for (var seed = 0; seed < count; seed++) {
+        yield homes(rating, 25, 3, seed);
+      }
+    }
+
+    test('decides on each group with more than one of his own cards, and only those', () {
       for (final rating in ratings) {
         for (var seed = 0; seed < 20; seed++) {
           final h = homes(rating, 25, 3, seed);
-          final (own, others) = deal(16, seed + 1);
-          final other = layout.generate(rating: rating, own: own, others: others, rows: 2, seed: seed);
-          expect((other.soundGrouped, other.tomofudaGrouped), (h.soundGrouped, h.tomofudaGrouped),
-              reason: '$rating, seed $seed');
+          final (own, others) = deal(25, seed);
+          final why = '$rating, seed $seed';
+          expect(h.soundGroups.keys.toSet(), {
+            for (final sound in {for (final id in own) layout.groupOf(id)})
+              if (own.where((id) => layout.groupOf(id) == sound).length > 1) sound,
+          }, reason: why);
+          expect(h.tomofudaGroups.keys.toSet(), {
+            for (final family in layout.families([...own, ...others]))
+              if (family.where(own.contains).length > 1) family.first,
+          }, reason: why);
         }
       }
     });
 
-    test('has each habit in about the share of games its curve gives', () {
-      const games = 1000;
-      for (final rating in [2600.0, 3000.0, 3600.0]) {
-        var sound = 0, tomofuda = 0;
-        for (var seed = 0; seed < games; seed++) {
-          final h = homes(rating, 25, 3, seed);
-          if (h.soundGrouped) sound++;
-          if (h.tomofudaGrouped) tomofuda++;
+    test('decides each group on its own, about as often as its chance', () {
+      bool mixed(Map<Object, bool> groups) => groups.containsValue(true) && groups.containsValue(false);
+      const count = 1000;
+      var mixedSounds = 0, mixedFamilies = 0;
+      for (final h in games(2600, count)) {
+        if (mixed(h.soundGroups)) mixedSounds++;
+        if (mixed(h.tomofudaGroups)) mixedFamilies++;
+      }
+      expect(mixedSounds / count, greaterThan(0.1), reason: 'sound groups both kept and split in one game');
+      expect(mixedFamilies / count, greaterThan(0.05), reason: '友札 families both kept and split in one game');
+
+      const rating = 1200.0;
+      final sounds = <bool>[], families = <bool>[];
+      for (final h in games(rating, 500)) {
+        sounds.addAll(h.soundGroups.values);
+        families.addAll(h.tomofudaGroups.values);
+      }
+      double kept(List<bool> groups) => groups.where((k) => k).length / groups.length;
+      expect(kept(sounds), closeTo(IkkiuchiLayoutTuning.soundGrouping.at(rating), 0.03));
+      expect(kept(families), closeTo(IkkiuchiLayoutTuning.tomofudaGrouping.at(rating), 0.03));
+    });
+
+    test('has at least one group together in about the share of games set, as the curves page works out', () {
+      const count = 2000, close = 0.03;
+      for (final (rating, target) in [(2600.0, 0.2), (3000.0, 0.1)]) {
+        var sound = 0, family = 0;
+        for (final h in games(rating, count)) {
+          if (h.soundGroups.containsValue(true)) sound++;
+          if (h.tomofudaGroups.containsValue(true)) family++;
         }
-        expect(sound / games, closeTo(IkkiuchiLayoutTuning.soundGrouping.at(rating), 0.04), reason: '$rating');
-        expect(tomofuda / games, closeTo(IkkiuchiLayoutTuning.tomofudaGrouping.at(rating), 0.04), reason: '$rating');
+        final soundWorkedOut = ikkiuchiSoundsDealt.anyKept(IkkiuchiLayoutTuning.soundGrouping.at(rating));
+        final familyWorkedOut = ikkiuchiFamiliesDealt.anyKept(IkkiuchiLayoutTuning.tomofudaGrouping.at(rating));
+        expect(sound / count, closeTo(target, close), reason: 'sound groups at $rating');
+        expect(family / count, closeTo(target, close), reason: '友札 at $rating');
+        expect(sound / count, closeTo(soundWorkedOut, close), reason: 'sound groups at $rating, worked out');
+        expect(family / count, closeTo(familyWorkedOut, close), reason: '友札 at $rating, worked out');
       }
     });
 
-    test('keeps each 友札 family side by side in a game with 友札 together and no sound grouping', () {
-      var games = 0;
-      for (final rating in [2000.0, 2600.0, 3000.0]) {
-        for (var seed = 0; seed < 300; seed++) {
-          final h = homes(rating, 25, 3, seed);
-          if (h.soundGrouped || !h.tomofudaGrouped) continue;
-          final together = layout.lookAlikesTogether(h);
-          if (together == null) continue;
-          games++;
-          expect(together, 1, reason: '$rating, seed $seed');
+    test('keeps a kept 友札 family side by side and spreads a split one apart', () {
+      var kept = 0, keptTogether = 0, pairs = 0, pairsTogether = 0;
+      for (final rating in [1200.0, 2000.0, 2600.0]) {
+        for (final h in games(rating, 200)) {
+          (int, IkkiuchiGroup) place(int id) => (h.homeOf(id).row, h.homeOf(id).group);
+          for (final MapEntry(key: first, value: together) in h.tomofudaGroups.entries) {
+            if (h.soundGroups[layout.groupOf(first)]!) continue;
+            final family = h.own.where((id) => id == first || layout.alike(id, first)).toList();
+            if (together) {
+              kept++;
+              if (family.map(place).toSet().length == 1) keptTogether++;
+              continue;
+            }
+            for (var i = 0; i < family.length; i++) {
+              for (var j = i + 1; j < family.length; j++) {
+                pairs++;
+                if (place(family[i]) == place(family[j])) pairsTogether++;
+              }
+            }
+          }
         }
       }
-      expect(games, greaterThan(0));
-    });
-
-    test("splits a strong Tobi's 友札 in a game with neither habit", () {
-      final shares = [
-        for (var seed = 0; seed < 300; seed++)
-          if (homes(IkkiuchiTuning.ratingMax, 25, 3, seed) case final h when !h.soundGrouped && !h.tomofudaGrouped)
-            ?layout.lookAlikesTogether(h),
-      ];
-      expect(shares, isNotEmpty);
-      expect(shares.where((s) => s == 0).length / shares.length, greaterThan(0.95));
+      expect(kept, greaterThan(0));
+      expect(keptTogether / kept, greaterThan(0.97));
+      expect(pairs, greaterThan(0));
+      expect(pairsTogether / pairs, lessThan(0.03));
     });
   });
 }

@@ -18,7 +18,8 @@ import 'ikkiuchi_rating_header.dart';
 /// closed up. Each first-sound group shares a pale tint, and each 友札
 /// family a strong band at its cards' feet. In the full layout the player's
 /// cards show too, dimmed, at the homes they would go to should they come
-/// to him, the cards narrowed to fit the page.
+/// to him, the cards narrowed to fit the page. Over it: how many of his
+/// groups he keeps together.
 class IkkiuchiLayoutPage extends StatefulWidget {
   const IkkiuchiLayoutPage({
     super.key,
@@ -69,6 +70,9 @@ class _IkkiuchiLayoutPageState extends State<IkkiuchiLayoutPage> {
     _others = deck.sublist(_perSide, 2 * _perSide);
     _homes = _layout.generate(rating: _rating, own: _own, others: _others, rows: _rows, seed: _seed);
   }
+
+  /// How many of [groups] he keeps together, of how many.
+  static String _kept(Map<Object, bool> groups) => '${groups.values.where((kept) => kept).length} / ${groups.length}';
 
   void _change(VoidCallback change) => setState(() {
         change();
@@ -148,9 +152,10 @@ class _IkkiuchiLayoutPageState extends State<IkkiuchiLayoutPage> {
                   ],
                 ),
                 gap,
-                Wrap(spacing: IkkiuchiToolsStyle.gap, children: [
-                  _Habit('sound grouping', _homes.soundGrouped),
-                  _Habit('友札 together', _homes.tomofudaGrouped),
+                Wrap(spacing: IkkiuchiToolsStyle.gap, runSpacing: IkkiuchiToolsStyle.gap / 2, children: [
+                  _Fact('sound groups together ${_kept(_homes.soundGroups)}',
+                      on: _homes.soundGroups.containsValue(true)),
+                  _Fact('友札 together ${_kept(_homes.tomofudaGroups)}', on: _homes.tomofudaGroups.containsValue(true)),
                 ]),
                 gap,
                 _SideField(
@@ -231,23 +236,22 @@ class _Choices extends StatelessWidget {
       ]);
 }
 
-/// One of the match's layout habits, on (inked) or off.
-class _Habit extends StatelessWidget {
-  const _Habit(this.name, this.on);
+/// A fact about the match's layout, inked when [on].
+class _Fact extends StatelessWidget {
+  const _Fact(this.text, {this.on = false});
 
-  final String name;
+  final String text;
   final bool on;
 
   @override
   Widget build(BuildContext context) => Container(
-        padding: IkkiuchiToolsStyle.habitPadding,
+        padding: IkkiuchiToolsStyle.factPadding,
         decoration: BoxDecoration(
           color: on ? Palette.ink : null,
           border: Border.all(color: on ? Palette.ink : IkkiuchiToolsStyle.soft),
-          borderRadius: BorderRadius.circular(IkkiuchiToolsStyle.habitRadius),
+          borderRadius: BorderRadius.circular(IkkiuchiToolsStyle.factRadius),
         ),
-        child: Text('$name ${on ? 'on' : 'off'}',
-            style: debugMono.copyWith(color: on ? Palette.paper : IkkiuchiToolsStyle.soft)),
+        child: Text(text, style: debugMono.copyWith(color: on ? Palette.paper : IkkiuchiToolsStyle.soft)),
       );
 }
 

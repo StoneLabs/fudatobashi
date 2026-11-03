@@ -143,6 +143,9 @@ void main() {
         expect(find.text(take.cardRangeText(rating, s)), findsWidgets, reason: 'take time per card, $s sd');
       }
       expect(find.text(ikkiuchiNoRange), findsWidgets, reason: 'fixed values');
+      expect(find.text(ikkiuchiAnyInGame), findsWidgets, reason: 'under the chances per group');
+      final sound = ikkiuchiValueGroups.expand((g) => g.rows).firstWhere((v) => v.name == 'sound grouping');
+      expect(find.text(sound.anyInGame!.unit.format(sound.anyInGame!.at(rating))), findsWidgets, reason: '$r');
       await captureDown(tester, 'ikkiuchi/curves_$r');
       expect(tester.takeException(), isNull);
       expect(find.byType(IkkiuchiSharesGraph), findsOneWidget);
@@ -182,8 +185,9 @@ void main() {
       await show(tester, p, IkkiuchiLayoutPage(rating: rating, seed: 3));
       expect(tester.takeException(), isNull);
       expect(find.text('seed 3'), findsOneWidget);
-      expect(find.text('sound grouping ${homes.soundGrouped ? 'on' : 'off'}'), findsOneWidget, reason: '$r');
-      expect(find.text('友札 together ${homes.tomofudaGrouped ? 'on' : 'off'}'), findsOneWidget, reason: '$r');
+      String kept(Map<Object, bool> groups) => '${groups.values.where((k) => k).length} / ${groups.length}';
+      expect(find.text('sound groups together ${kept(homes.soundGroups)}'), findsOneWidget, reason: '$r');
+      expect(find.text('友札 together ${kept(homes.tomofudaGroups)}'), findsOneWidget, reason: '$r');
       await captureDown(tester, 'ikkiuchi/layout_$r');
       expect(await fieldCards(), hasLength(perSide), reason: 'his side alone');
 

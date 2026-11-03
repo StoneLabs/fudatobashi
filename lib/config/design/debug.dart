@@ -121,12 +121,12 @@ abstract final class IkkiuchiToolsStyle {
   static const Color soft = Color(0xFF6A6862);
 
   /// The layout page's controls: a row of chips after its label, and the
-  /// match's habits, inked when on.
+  /// facts about the match's layout, inked when he keeps a group together.
   static const double choiceLabelWidth = 100;
   static const EdgeInsets chipPadding = EdgeInsets.symmetric(horizontal: 4);
   static const EdgeInsets chipLabelPadding = EdgeInsets.symmetric(horizontal: 4);
-  static const EdgeInsets habitPadding = EdgeInsets.symmetric(horizontal: 8, vertical: 3);
-  static const double habitRadius = 4;
+  static const EdgeInsets factPadding = EdgeInsets.symmetric(horizontal: 8, vertical: 3);
+  static const double factRadius = 4;
 
   static const Color ground = Palette.desk;
   static const double minPitch = 30;
@@ -209,10 +209,14 @@ abstract final class IkkiuchiCurvesStyle {
 
   /// A curve: its line and the wash under it, its anchors as rings, a
   /// floor's dashes, and his form's reach around the chosen rating, each
-  /// standard deviation another layer of [formBand].
+  /// standard deviation another layer of [formBand]. A chance per group's
+  /// second line, any in a game, is [anyLine], each line keyed in a legend
+  /// [legendLine] long.
   static const Color line = Palette.seaDeep;
   static const double lineStroke = 2;
   static const Color lineWash = Color(0x1F1463C4);
+  static const Color anyLine = Palette.vermilion;
+  static const double legendLine = 16;
   static const double anchorRadius = 3;
   static const double anchorStroke = 1.5;
   static const Color anchorFill = Palette.paper;

@@ -122,8 +122,9 @@ class _GroupName extends StatelessWidget {
 }
 
 /// Each value at [rating] by group, with its ranges at each of
-/// [IkkiuchiToolsTuning.sigmas]: from his form on its own row, and from his
-/// draws on a per-card row under a value he draws per card.
+/// [IkkiuchiToolsTuning.sigmas]: from his form on its own row, from his
+/// draws on a per-card row under a value he draws per card, and under a
+/// chance per group its share of games with any group kept together.
 class _ValuesTable extends StatelessWidget {
   const _ValuesTable(this.rating);
 
@@ -174,6 +175,12 @@ class _ValuesTable extends StatelessWidget {
                 ('per card', _small),
                 ('', _number),
                 for (final s in sigmas) (value.cardRangeText(rating, s), _number),
+              ], indent: IkkiuchiCurvesStyle.subIndent),
+            if (value.anyInGame case final any?)
+              row([
+                (any.name, _small),
+                (any.unit.format(any.at(rating)), _number),
+                for (final s in sigmas) (any.matchRangeText(rating, s), _number),
               ], indent: IkkiuchiCurvesStyle.subIndent),
           ],
         ],

@@ -90,18 +90,18 @@ abstract final class IkkiuchiTuning {
 /// Tobi's own fixed layout for a match (`IkkiuchiLayout`): a home spot for every
 /// card that may come to his side, from his rating.
 abstract final class IkkiuchiLayoutTuning {
-  /// His two layout habits, each the chance he has it in a match, decided
-  /// once from the match's seed. A weak Tobi has both; a strong one rarely
-  /// has either, and then spreads his look-alikes apart.
-  /// - [soundGrouping]: every group of cards with the same first sound (the
+  /// The chance that one group stays together, decided from the match's
+  /// seed for each group on its own; set so that about 20% of games at 2600
+  /// (25 cards a side from all 100) have at least one group together.
+  /// - [soundGrouping]: a group of cards with the same first sound (the
   ///   one-sound cards as one group) lies together, its 友札 side by side.
-  /// - [tomofudaGrouping]: each family of look-alikes (友札) lies side by
-  ///   side, even when he doesn't group by first sound.
+  /// - [tomofudaGrouping]: a family of look-alikes (友札) lies side by side
+  ///   when its sound group doesn't. A family he splits is spread apart.
   static const soundGrouping = IkkiuchiCurve([
-    (0, 1), (1200, 0.9), (2000, 0.5), (2600, 0.2), (3000, 0.1), (3600, 0.03),
+    (0, 1), (1200, 0.31), (2000, 0.1), (2600, 0.034), (3000, 0.016), (3600, 0.0047),
   ]);
   static const tomofudaGrouping = IkkiuchiCurve([
-    (0, 1), (1200, 0.8), (2000, 0.4), (2600, 0.2), (3000, 0.1), (3600, 0.03),
+    (0, 1), (1200, 0.81), (2000, 0.28), (2600, 0.127), (3000, 0.06), (3600, 0.0175),
   ]);
 
   /// A side has [rows] rows; 2 only with at most [twoRowsUpTo] cards a
@@ -137,5 +137,9 @@ abstract final class IkkiuchiToolsTuning {
   static const List<int> sigmas = [1, 2];
   static const List<int> perSideChoices = [8, 12, 16, 20, 25];
   static const int perSideStart = 25;
+
+  /// The curves page's "any in a game" lines are for games with this many
+  /// cards on his side, dealt from all 100.
+  static const int gamePerSide = 25;
   static const int seeds = 1000;
 }

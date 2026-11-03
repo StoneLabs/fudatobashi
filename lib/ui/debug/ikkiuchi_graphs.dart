@@ -9,7 +9,8 @@ import 'ikkiuchi_values.dart';
 
 /// [value]'s curve against Tobi's rating under its [graph]'s title: the
 /// rating marked, his form's reach around it shaded, the curve's anchors
-/// ringed.
+/// ringed. A chance per group also draws its share of games with any group
+/// kept together, under a legend for the two lines.
 class IkkiuchiCurveGraph extends StatelessWidget {
   const IkkiuchiCurveGraph(this.value, this.graph, this.rating, {super.key});
 
@@ -22,12 +23,32 @@ class IkkiuchiCurveGraph extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           _GraphTitle(graph),
+          if (value.anyInGame != null)
+            const Wrap(spacing: IkkiuchiCurvesStyle.legendSpacing, children: [
+              _LineKey(IkkiuchiCurvesStyle.line, ikkiuchiPerGroup),
+              _LineKey(IkkiuchiCurvesStyle.anyLine, ikkiuchiAnyInGame),
+            ]),
           SizedBox(
             height: IkkiuchiCurvesStyle.graphHeight,
             child: CustomPaint(painter: _CurvePainter(value, graph.floor, rating)),
           ),
         ],
       );
+}
+
+/// A line's colour and its name, in a graph's legend.
+class _LineKey extends StatelessWidget {
+  const _LineKey(this.color, this.name);
+
+  final Color color;
+  final String name;
+
+  @override
+  Widget build(BuildContext context) => Row(mainAxisSize: MainAxisSize.min, children: [
+        Container(width: IkkiuchiCurvesStyle.legendLine, height: IkkiuchiCurvesStyle.lineStroke, color: color),
+        const SizedBox(width: IkkiuchiToolsStyle.gap / 2),
+        Text(name, style: const TextStyle(fontSize: IkkiuchiCurvesStyle.nameFont)),
+      ]);
 }
 
 /// [shares], adding up to the whole at every rating, as bands stacked from
@@ -199,10 +220,12 @@ class _CurvePainter extends _RatingPlot {
   @override
   void paint(Canvas canvas, Size size) {
     final plot = _RatingPlot.plotIn(size);
-    final points = [
-      for (var r = _RatingPlot.min; r <= _RatingPlot.max; r += IkkiuchiToolsTuning.curveStep) (r, value.at(r)),
-    ];
-    final top = _axisTop([for (final (_, v) in [...points, ...value.anchors]) v, ?floor].reduce(math.max));
+    final ratings = [for (var r = _RatingPlot.min; r <= _RatingPlot.max; r += IkkiuchiToolsTuning.curveStep) r];
+    final points = [for (final r in ratings) (r, value.at(r))];
+    final any = value.anyInGame;
+    final anyPoints = [if (any != null) for (final r in ratings) (r, any.at(r))];
+    final top = _axisTop(
+        [for (final (_, v) in [...points, ...anyPoints, ...value.anchors]) v, ?floor].reduce(math.max));
     Offset at(double r, double v) => Offset(_RatingPlot.xAt(plot, r), plot.bottom - plot.height * v / top);
 
     final band = Paint()..color = IkkiuchiCurvesStyle.formBand;
@@ -229,30 +252,43 @@ class _CurvePainter extends _RatingPlot {
       }
     }
 
-    final line = Path();
-    for (final (i, (r, v)) in points.indexed) {
-      final o = at(r, v);
-      i == 0 ? line.moveTo(o.dx, o.dy) : line.lineTo(o.dx, o.dy);
+    Path through(List<(double, double)> points) {
+      final path = Path();
+      for (final (i, (r, v)) in points.indexed) {
+        final o = at(r, v);
+        i == 0 ? path.moveTo(o.dx, o.dy) : path.lineTo(o.dx, o.dy);
+      }
+      return path;
     }
+
+    Paint stroke(Color color) => Paint()
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = IkkiuchiCurvesStyle.lineStroke
+      ..strokeJoin = StrokeJoin.round
+      ..color = color;
+
+    final line = through(points);
     final wash = Path.from(line)
       ..lineTo(plot.right, plot.bottom)
       ..lineTo(plot.left, plot.bottom)
       ..close();
     canvas.drawPath(wash, Paint()..color = IkkiuchiCurvesStyle.lineWash);
-    canvas.drawPath(
-      line,
-      Paint()
-        ..style = PaintingStyle.stroke
-        ..strokeWidth = IkkiuchiCurvesStyle.lineStroke
-        ..strokeJoin = StrokeJoin.round
-        ..color = IkkiuchiCurvesStyle.line,
-    );
+    if (any != null) canvas.drawPath(through(anyPoints), stroke(IkkiuchiCurvesStyle.anyLine));
+    canvas.drawPath(line, stroke(IkkiuchiCurvesStyle.line));
     _anchors(canvas, [for (final (r, v) in value.anchors) at(r, v)]);
 
     final mark = at(rating, value.at(rating));
     _RatingPlot.markerLine(canvas, plot, mark.dx);
+    if (any != null) {
+      final anyMark = at(rating, any.at(rating));
+      _RatingPlot.dot(canvas, anyMark, IkkiuchiCurvesStyle.markerRadius, IkkiuchiCurvesStyle.anyLine);
+    }
     _RatingPlot.dot(canvas, mark, IkkiuchiCurvesStyle.markerRadius, IkkiuchiCurvesStyle.marker);
-    final tp = _RatingPlot._laid(value.unit.format(value.at(rating)), _RatingPlot.pillStyle(IkkiuchiCurvesStyle.pillText));
+    final label = [
+      value.unit.format(value.at(rating)),
+      if (any != null) 'any ${any.unit.format(any.at(rating))}',
+    ].join(' · ');
+    final tp = _RatingPlot._laid(label, _RatingPlot.pillStyle(IkkiuchiCurvesStyle.pillText));
     final box = _RatingPlot.pillSize(tp);
     final cx = mark.dx.clamp(plot.left + box.width / 2, plot.right - box.width / 2);
     _RatingPlot.pill(

@@ -35,8 +35,8 @@ class IkkiuchiTobi {
   double get smartSend => IkkiuchiTuning.smartSend.at(rating);
   double get placingSeconds => IkkiuchiTuning.placingSeconds.at(rating);
 
-  /// The chances that, in a match, his layout keeps each group of cards
-  /// with the same first sound together, and each family of 友札 side by
+  /// The chances that, in a match, his layout keeps one group of cards
+  /// with the same first sound together, and one family of 友札 side by
   /// side.
   double get soundGrouping => IkkiuchiLayoutTuning.soundGrouping.at(rating);
   double get tomofudaGrouping => IkkiuchiLayoutTuning.tomofudaGrouping.at(rating);

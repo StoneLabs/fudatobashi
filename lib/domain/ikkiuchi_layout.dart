@@ -41,18 +41,20 @@ class IkkiuchiRow {
 /// Tobi's home spots for one match ([IkkiuchiLayout.generate]): one for
 /// each card dealt, his [own] and every card that may come to him.
 class IkkiuchiHomes {
-  IkkiuchiHomes._(this.soundGrouped, this.tomofudaGrouped, this.own, this.plan)
+  IkkiuchiHomes._(this.soundGroups, this.tomofudaGroups, this.own, this.plan)
       : _homes = {
           for (final (r, row) in plan.indexed)
             for (final g in IkkiuchiGroup.values)
               for (final (i, id) in row.group(g).indexed) id: IkkiuchiHome(r, g, i),
         };
 
-  /// The match's layout habits: whether he keeps each first-sound group
-  /// together ([IkkiuchiLayoutTuning.soundGrouping]), and each family of
-  /// 友札 side by side ([IkkiuchiLayoutTuning.tomofudaGrouping]).
-  final bool soundGrouped;
-  final bool tomofudaGrouped;
+  /// Whether he keeps each group with more than one of his own cards
+  /// together this match: each first-sound group by its sound
+  /// ([IkkiuchiLayout.groupOf], [IkkiuchiLayoutTuning.soundGrouping]), and
+  /// each 友札 family by its first card in kana order
+  /// ([IkkiuchiLayoutTuning.tomofudaGrouping]).
+  final Map<String, bool> soundGroups;
+  final Map<int, bool> tomofudaGroups;
   final List<int> own;
 
   /// Every card homed in each row, 下段 first.
@@ -109,12 +111,13 @@ class IkkiuchiHomes {
 ///
 /// His cards sort into groups by the first sound of their kimariji; the
 /// short cards ([IkkiuchiLayoutTuning.nearRowSounds], the one-sound cards)
-/// make one group. Once a match he decides his two habits, each with its
-/// chance at his rating, and they set which cards lie together as runs:
-/// - Grouping by sound ([IkkiuchiLayoutTuning.soundGrouping]), each group
-///   is a run, in kana order, so its 友札 sit side by side.
-/// - Else, keeping 友札 together ([IkkiuchiLayoutTuning.tomofudaGrouping]),
-///   each family of look-alikes is a run.
+/// make one group. Each match, every group among the cards dealt decides on
+/// its own, with its chance at his rating, whether its cards lie together
+/// as a run:
+/// - A kept sound group ([IkkiuchiLayoutTuning.soundGrouping]) is a run, in
+///   kana order, so its 友札 sit side by side.
+/// - Else a kept family of look-alikes
+///   ([IkkiuchiLayoutTuning.tomofudaGrouping]) is a run.
 /// - A run lies in one row's group. Longer runs are laid first, each where
 ///   there is the most room; one too long for its place goes on in the
 ///   nearest place with room, the same row's other group first.
@@ -198,14 +201,26 @@ class IkkiuchiLayout {
     assert(rowsAllowed(own.length, rows), '${own.length} cards in $rows rows');
     assert(own.toSet().intersection(others.toSet()).isEmpty, 'a card dealt to both sides');
     final rng = math.Random(seed);
-    final bySound = rng.nextDouble() < IkkiuchiLayoutTuning.soundGrouping.at(rating);
-    final byTomofuda = rng.nextDouble() < IkkiuchiLayoutTuning.tomofudaGrouping.at(rating);
+    final dealt = [...own, ...others]..sort(_byKana);
+    final soundChance = IkkiuchiLayoutTuning.soundGrouping.at(rating);
+    final soundKept = {
+      for (final sound in {for (final id in dealt) groupOf(id)}.toList()..sort())
+        sound: rng.nextDouble() < soundChance,
+    };
+    final familyChance = IkkiuchiLayoutTuning.tomofudaGrouping.at(rating);
+    final dealtFamilies = families(dealt);
+    final familyKept = {for (final family in dealtFamilies) family.first: rng.nextDouble() < familyChance};
     final familyOf = {
-      for (final family in families([...own, ...others]))
+      for (final family in dealtFamilies)
         for (final id in family) id: family.first,
     };
-    final plan = _Plan(this, rows, rng, (id) => bySound ? groupOf(id) : (byTomofuda ? familyOf[id] : null));
+    Object? runOf(int id) {
+      if (soundKept[groupOf(id)]!) return groupOf(id);
+      final family = familyOf[id];
+      return family != null && familyKept[family]! ? family : null;
+    }
 
+    final plan = _Plan(this, rows, rng, runOf);
     final shape = [
       for (var r = 0; r < rows; r++) own.length ~/ rows + (r < own.length % rows ? 1 : 0),
     ];
@@ -217,10 +232,23 @@ class IkkiuchiLayout {
     plan.room = (box) => rowRoom - plan.rowCount(box.row);
     plan.place(others);
 
-    return IkkiuchiHomes._(bySound, byTomofuda, List.unmodifiable(own), [
-      for (var r = 0; r < rows; r++)
-        IkkiuchiRow(plan.box(r, IkkiuchiGroup.left).cards.toList(), plan.box(r, IkkiuchiGroup.right).cards.toList()),
-    ]);
+    final mine = own.toSet();
+    bool counts(Iterable<int> group) => group.where(mine.contains).length > 1;
+    return IkkiuchiHomes._(
+      {
+        for (final MapEntry(key: sound, value: kept) in soundKept.entries)
+          if (counts(own.where((id) => groupOf(id) == sound))) sound: kept,
+      },
+      {
+        for (final family in dealtFamilies)
+          if (counts(family)) family.first: familyKept[family.first]!,
+      },
+      List.unmodifiable(own),
+      [
+        for (var r = 0; r < rows; r++)
+          IkkiuchiRow(plan.box(r, IkkiuchiGroup.left).cards.toList(), plan.box(r, IkkiuchiGroup.right).cards.toList()),
+      ],
+    );
   }
 
   /// The share of pairs of cards from one group ([groupOf]) whose homes

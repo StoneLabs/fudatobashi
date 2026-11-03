@@ -3,6 +3,7 @@ import 'dart:math' as math;
 import '../../config/config.dart';
 import '../../domain/ikkiuchi_tobi.dart';
 import '../play/time_format.dart';
+import 'ikkiuchi_groups_dealt.dart';
 
 /// How one of Tobi's values reads, alone, as a range, and on a graph's axis.
 enum IkkiuchiUnit {
@@ -71,6 +72,13 @@ class IkkiuchiGraph {
 /// What a range reads when there is none: a value with no randomness.
 const ikkiuchiNoRange = '—';
 
+/// A chance per group's two lines: the chance itself, and the share of
+/// games with at least one group kept together.
+const ikkiuchiPerGroup = 'per group';
+const ikkiuchiAnyInGame = 'any in a game';
+const _anyNote = '$ikkiuchiAnyInGame: ${IkkiuchiToolsTuning.gamePerSide} a side dealt from the whole deck, '
+    'a group counting from two of his cards';
+
 /// One value Tobi plays with: its [name] in the table and its [unit].
 /// A value read from his curves moves with his form from match to match;
 /// one he draws per card also spreads from card to card around that value,
@@ -79,13 +87,15 @@ class IkkiuchiValue {
   /// A value read from his curves at his rating: [anchors] are its curve's,
   /// for a value with one of its own; [drawSpread] is the standard
   /// deviation of the log of his draw on each card, for a value he draws
-  /// per card (log-normal).
+  /// per card (log-normal); [anyInGame] is, for a chance per group, the
+  /// share of games with at least one group kept together.
   const IkkiuchiValue(
     this.name,
     this.unit,
     double Function(IkkiuchiTobi tobi) read, {
     this.anchors = const [],
     this.drawSpread,
+    this.anyInGame,
     this.graph,
   })  : _read = read,
         _fixed = null;
@@ -95,12 +105,14 @@ class IkkiuchiValue {
         _read = null,
         anchors = const [],
         drawSpread = null,
+        anyInGame = null,
         graph = null;
 
   final String name;
   final IkkiuchiUnit unit;
   final List<(double, double)> anchors;
   final double Function(IkkiuchiTobi tobi)? drawSpread;
+  final IkkiuchiValue? anyInGame;
   final IkkiuchiGraph? graph;
   final double Function(IkkiuchiTobi tobi)? _read;
   final double? _fixed;
@@ -192,10 +204,14 @@ final ikkiuchiValueGroups = [
         graph: const IkkiuchiGraph('Placing time', 'laying out his side before the match; smoothed on a log scale')),
     IkkiuchiValue('sound grouping', IkkiuchiUnit.percent, (t) => t.soundGrouping,
         anchors: IkkiuchiLayoutTuning.soundGrouping.anchors,
-        graph: const IkkiuchiGraph('Sound grouping', 'chance a match keeps each first-sound group together')),
+        anyInGame: IkkiuchiValue(ikkiuchiAnyInGame, IkkiuchiUnit.percent,
+            (t) => ikkiuchiSoundsDealt.anyKept(t.soundGrouping)),
+        graph: const IkkiuchiGraph('Sound grouping', 'per first-sound group: it stays together; $_anyNote')),
     IkkiuchiValue('友札 together', IkkiuchiUnit.percent, (t) => t.tomofudaGrouping,
         anchors: IkkiuchiLayoutTuning.tomofudaGrouping.anchors,
-        graph: const IkkiuchiGraph('友札 together', 'chance a match keeps each family of look-alikes side by side')),
+        anyInGame: IkkiuchiValue(ikkiuchiAnyInGame, IkkiuchiUnit.percent,
+            (t) => ikkiuchiFamiliesDealt.anyKept(t.tomofudaGrouping)),
+        graph: const IkkiuchiGraph('友札 together', 'per family of look-alikes: it lies side by side; $_anyNote')),
     IkkiuchiValue('smart send', IkkiuchiUnit.percent, (t) => t.smartSend,
         anchors: IkkiuchiTuning.smartSend.anchors,
         graph: const IkkiuchiGraph('Smart send', 'chance a 送り札 splits a look-alike pair')),
