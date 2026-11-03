@@ -230,7 +230,9 @@ void main() {
             final bool tall;
             var tobiTight = false;
             if (landscape) {
-              tall = (bottoms.reduce(math.max) - tops.reduce(math.min) - (l.size.y - 2 * pad)).abs() < eps;
+              tall = (bottoms.reduce(math.max) - tops.reduce(math.min) - l.size.y).abs() < eps;
+              expect(tops.reduce(math.min), greaterThanOrEqualTo(-eps), reason: '$why: on the board');
+              expect(bottoms.reduce(math.max), lessThanOrEqualTo(l.size.y + eps), reason: '$why: on the board');
               for (final c in l.cards.where((c) => c.side == IkkiuchiSide.tobi)) {
                 final b = c.box;
                 final rect = Rect.fromCenter(center: Offset(b.centre.x, b.centre.y), width: 2 * b.hw, height: 2 * b.hh);
@@ -267,6 +269,16 @@ void main() {
           if (name == 'phone' && !landscape) expect(spans, isTrue, reason: 'width-limited portrait boards are spanned');
         }
       }
+    });
+
+    test('landscape rows reach the top and bottom edges when the height limits the cards', () {
+      final l = layoutFor(3, 2000, landscape: true);
+      final tops = l.cards.map((c) => c.box.centre.y - c.box.hh);
+      final bottoms = l.cards.map((c) => c.box.centre.y + c.box.hh);
+      expect(tops.reduce(math.min), closeTo(0, eps));
+      expect(bottoms.reduce(math.max), closeTo(l.size.y, eps));
+      final tobi = l.tobi;
+      expect(tobi.origin.y, greaterThanOrEqualTo(0), reason: 'Tobi on the board');
     });
 
     test('a small board has small cards and a large one its widest', () {

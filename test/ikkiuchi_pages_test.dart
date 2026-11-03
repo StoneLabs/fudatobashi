@@ -674,12 +674,18 @@ void main() {
     testWidgets('a swipe knocks cards about; after the wait they glide home and another card is marked',
         (tester) async {
       final p = await open(tester);
-      // Swipes from the band through the player's card nearest it, three
-      // cards' heights on, rendering [name] halfway.
+      // Swipes from the band through the player's card nearest it and the
+      // middle across, clear of the buttons at the band's end, three cards'
+      // heights on, rendering [name] halfway.
       Future<IkkiuchiCard> swipe(String name) async {
         final s = scene(tester);
+        final middle = s.layout.size.x / 2;
+        double across(IkkiuchiCard c) => (c.home.centre.x - middle).abs();
         final player = s.board.cards.cards.where((c) => c.side == IkkiuchiSide.player).toList()
-          ..sort((a, b) => a.home.centre.y.compareTo(b.home.centre.y));
+          ..sort((a, b) {
+            final down = a.home.centre.y.compareTo(b.home.centre.y);
+            return down != 0 ? down : across(a).compareTo(across(b));
+          });
         final card = player.first;
         final reach = card.home.hh + IkkiuchiPhysicsTuning.finger * s.layout.cardW;
         final from = card.home.centre - Vec(0, reach + s.layout.band.height / 4);

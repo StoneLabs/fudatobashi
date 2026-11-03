@@ -4,7 +4,8 @@ part of '../design.dart';
 /// field on the tatami, its cards as big as the board lets them grow, the
 /// band across the middle, and Tobi at the far side. dp.
 abstract final class IkkiuchiBoardStyle {
-  /// Kept clear inside the board's edges, and under the field in portrait.
+  /// Kept clear inside the board's left and right edges, and in portrait
+  /// above it and under the field too.
   static const double pad = 6;
   static const double bottomGap = 16;
 
