@@ -2,6 +2,7 @@
 // Settings' developer section. With RENDER_SCREENS=1 it writes their PNGs to
 // build/screens/ikkiuchi/.
 import 'dart:io';
+import 'dart:math' as math;
 
 import 'package:drift/drift.dart' show driftRuntimeOptions;
 import 'package:drift/native.dart';
@@ -14,6 +15,7 @@ import 'package:fudatobashi/data/fuda_sets.dart';
 import 'package:fudatobashi/data/islands.dart';
 import 'package:fudatobashi/data/poem.dart';
 import 'package:fudatobashi/db/database.dart';
+import 'package:fudatobashi/domain/ikkiuchi_layout.dart';
 import 'package:fudatobashi/domain/ikkiuchi_tobi.dart';
 import 'package:fudatobashi/state/progress.dart';
 import 'package:fudatobashi/state/scope.dart';
@@ -148,8 +150,9 @@ void main() {
     await tester.pumpWidget(const SizedBox());
   });
 
-  testWidgets("Tobi's layout: his side by rating, the player's cards' homes, and the controls", (tester) async {
+  testWidgets("Tobi's layout: his side by rating, the full layout, and the controls", (tester) async {
     final p = await open(tester);
+    const perSide = IkkiuchiToolsTuning.perSideStart;
     Finder page() => find.byType(Scrollable).first;
     Future<void> toTop() async {
       tester.state<ScrollableState>(page()).position.jumpTo(0);
@@ -164,24 +167,37 @@ void main() {
       return tester.widgetList<FieldWordCard>(find.byType(FieldWordCard)).map((c) => c.poemId).toSet();
     }
 
-    for (final rating in [0.0, 1600.0, 2800.0, 3600.0]) {
+    // The field's sideways scrolling.
+    ScrollPosition field() => tester
+        .state<ScrollableState>(
+            find.ancestor(of: find.byType(FieldWordCard).first, matching: find.byType(Scrollable)).first)
+        .position;
+
+    for (final rating in [0.0, 1700.0, 2600.0, 3000.0, 3600.0]) {
+      final r = rating.round();
+      final deck = [for (final poem in poems.all) poem.id]..shuffle(math.Random(3));
+      final homes = IkkiuchiLayout.ofPoems().generate(
+          rating: rating, own: deck.sublist(0, perSide), others: deck.sublist(perSide, 2 * perSide), rows: 3, seed: 3);
+
       await show(tester, p, IkkiuchiLayoutPage(rating: rating, seed: 3));
       expect(tester.takeException(), isNull);
       expect(find.text('seed 3'), findsOneWidget);
-      await captureDown(tester, 'ikkiuchi/layout_${rating.round()}');
-      expect(await fieldCards(), hasLength(IkkiuchiToolsTuning.perSideStart), reason: 'his side alone');
-      expect(find.textContaining('sound grouping'), findsOneWidget);
+      expect(find.text('sound grouping ${homes.soundGrouped ? 'on' : 'off'}'), findsOneWidget, reason: '$r');
+      expect(find.text('友札 together ${homes.tomofudaGrouped ? 'on' : 'off'}'), findsOneWidget, reason: '$r');
+      await captureDown(tester, 'ikkiuchi/layout_$r');
+      expect(await fieldCards(), hasLength(perSide), reason: 'his side alone');
+
+      await show(tester, p, IkkiuchiLayoutPage(rating: rating, seed: 3, full: true));
+      expect(tester.takeException(), isNull);
+      await captureDown(tester, 'ikkiuchi/layout_${r}_full');
+      expect(await fieldCards(), hasLength(2 * perSide), reason: 'every card dealt');
+      expect(field().maxScrollExtent, 0, reason: 'the full layout fits the phone at $r');
     }
 
-    await show(tester, p, const IkkiuchiLayoutPage(rating: 1600, seed: 3, showAway: true));
-    await captureScreen(tester, 'ikkiuchi/layout_1600_homes');
-    expect(await fieldCards(), hasLength(2 * IkkiuchiToolsTuning.perSideStart), reason: 'every card dealt');
-    await toTop();
-    final fieldScroll = find.ancestor(of: find.byType(FieldWordCard).first, matching: find.byType(Scrollable)).first;
-    final field = tester.state<ScrollableState>(fieldScroll).position;
-    field.jumpTo(field.maxScrollExtent);
+    await show(tester, p, const IkkiuchiLayoutPage(rating: 1600, seed: 3));
+    await tester.tap(find.text('Full teiichi'));
     await tester.pump();
-    await captureScreen(tester, 'ikkiuchi/layout_1600_homes_right');
+    expect(await fieldCards(), hasLength(2 * perSide), reason: 'Full teiichi shows every card dealt');
 
     await show(tester, p, const IkkiuchiLayoutPage(rating: 1600, seed: 3));
     Future<void> tapChip(String label) async {

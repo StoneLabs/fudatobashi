@@ -100,7 +100,8 @@ abstract final class KarafudaDevStyle {
 /// each page, its rating and its slider's track and thumb; and the layout's
 /// field, its ground, its card pitch within [minPitch] and [maxPitch] dp
 /// (scrolling sideways past the page's width), a home not on Tobi's side
-/// dimmed, and a fill for each look-alike family.
+/// dimmed, a tint for each first sound and a band for each look-alike
+/// family.
 abstract final class IkkiuchiToolsStyle {
   static const EdgeInsets padding = EdgeInsets.all(16);
   static const double gap = 8;
@@ -119,11 +120,47 @@ abstract final class IkkiuchiToolsStyle {
   /// Secondary text: notes, axis labels, the head of a table.
   static const Color soft = Color(0xFF6A6862);
 
+  /// The layout page's controls: a row of chips after its label, and the
+  /// match's habits, inked when on.
+  static const double choiceLabelWidth = 100;
+  static const EdgeInsets chipPadding = EdgeInsets.symmetric(horizontal: 4);
+  static const EdgeInsets chipLabelPadding = EdgeInsets.symmetric(horizontal: 4);
+  static const EdgeInsets habitPadding = EdgeInsets.symmetric(horizontal: 8, vertical: 3);
+  static const double habitRadius = 4;
+
   static const Color ground = Palette.desk;
   static const double minPitch = 30;
   static const double maxPitch = 46;
+
+  /// The full layout narrows its cards down to this pitch before it
+  /// scrolls sideways.
+  static const double fullMinPitch = 20;
   static const double awayOpacity = 0.3;
+
+  /// Each first sound's pale tint on its cards, the sounds with the most
+  /// cards dealt first and round again, the one-sound cards on
+  /// [shortTint]; and their legend's chips.
+  static const List<Color> soundTints = [
+    Palette.seaSoft,
+    Palette.sunSoft,
+    Palette.landSoft,
+    Palette.pinkSoft,
+    Palette.violetSoft,
+    Palette.orangeSoft,
+    Color(0xFFD2F1EC),
+    Color(0xFFEEF2C4),
+  ];
+  static const Color shortTint = Palette.paper;
+  static const EdgeInsets tintPadding = EdgeInsets.symmetric(horizontal: 4, vertical: 1);
+  static const double tintBorder = 0.5;
+  static const double tintSpacing = 4;
+
+  /// A 友札 family's band at the foot of its cards, each family one of
+  /// [familyFills], and its legend.
+  static const double familyBand = 5;
   static const double swatch = 12;
+  static const double legendSpacing = 12;
+  static const double legendRunSpacing = 2;
   static const List<Color> familyFills = [
     Palette.sun,
     Palette.shallow,
