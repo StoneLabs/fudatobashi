@@ -90,6 +90,6 @@ class IkkiuchiBoardLayout {
   final double cardW;
   final List<({int id, IkkiuchiSide side, CardBox box})> cards;
 
-  /// The board set out on this layout, no card crossing the middle of the band.
-  IkkiuchiBoard board() => IkkiuchiBoard(tobi: tobi, size: size, cards: cards, cardW: cardW, centreLine: band.center.dy);
+  /// The board set out on this layout.
+  IkkiuchiBoard board() => IkkiuchiBoard(tobi: tobi, size: size, cards: cards, cardW: cardW);
 }

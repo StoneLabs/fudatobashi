@@ -61,27 +61,18 @@ class IkkiuchiCard {
 /// kinematic body that exists only while it is live; the cards it pushes
 /// are held to [IkkiuchiPhysicsTuning.pushMax] and never go toward the side
 /// without the called card. The player's finger is another, while it is
-/// down. With a [centreLine] (the y of the middle of the band), no card
-/// crosses into the other half: it stops there, under the band. Fixed steps
-/// of [IkkiuchiPhysicsTuning.step], so the same steps always give the same
-/// board.
+/// down. A knocked card slides freely across the band into the other side.
+/// Fixed steps of [IkkiuchiPhysicsTuning.step], so the same steps always
+/// give the same board.
 ///
 /// The world is measured in cards: a card [cardW] dp wide is
 /// [IkkiuchiPhysicsTuning.cardMetres] across in it, so the cards move alike
 /// at any size.
 class IkkiuchiCards {
   IkkiuchiCards(Iterable<({int id, IkkiuchiSide side, CardBox box})> cards,
-      {required this.board, required this.cardW, double? centreLine})
+      {required this.board, required this.cardW})
       : _world = box2d.World(box2d.Vector2.zero()) {
     _world.setContactListener(_listener);
-    if (centreLine != null) {
-      final off = IkkiuchiPhysicsTuning.offBoard * cardW;
-      _world.createBody(box2d.BodyDef()).createFixture(box2d.FixtureDef(
-            box2d.EdgeShape()..set(_m(Vec(-off, centreLine)), _m(Vec(board.x + off, centreLine))),
-            restitution: IkkiuchiPhysicsTuning.restitution,
-            filter: _filter(_lineBit, _cardBit | _flyingBit),
-          ));
-    }
     for (final c in cards) {
       final card = IkkiuchiCard._(c.id, c.side, c.box, this);
       card._body = _bodyAtHome(card);
@@ -107,7 +98,7 @@ class IkkiuchiCards {
       density: IkkiuchiPhysicsTuning.density,
       friction: IkkiuchiPhysicsTuning.friction,
       restitution: IkkiuchiPhysicsTuning.restitution,
-      filter: _filter(_cardBit, _cardBit | _flyingBit | _fistBit | _fingerBit | _lineBit),
+      filter: _filter(_cardBit, _cardBit | _flyingBit | _fistBit | _fingerBit),
     ));
     body.userData = card;
     return body;
@@ -128,7 +119,7 @@ class IkkiuchiCards {
   /// Every card the fist touched in the last step.
   final Set<IkkiuchiCard> fistTouched = {};
 
-  static const _cardBit = 0x0001, _flyingBit = 0x0002, _fistBit = 0x0004, _lineBit = 0x0008, _fingerBit = 0x0010;
+  static const _cardBit = 0x0001, _flyingBit = 0x0002, _fistBit = 0x0004, _fingerBit = 0x0008;
 
   static box2d.Filter _filter(int category, int mask) => box2d.Filter()
     ..categoryBits = category
@@ -155,7 +146,7 @@ class IkkiuchiCards {
       ..linearDamping = IkkiuchiPhysicsTuning.launchDamping
       ..linearVelocity = _m(velocity)
       ..angularVelocity = spin.clamp(-IkkiuchiPhysicsTuning.maxSpin, IkkiuchiPhysicsTuning.maxSpin);
-    body.fixtures.first.filterData = _filter(_flyingBit, _cardBit | _flyingBit | _lineBit);
+    body.fixtures.first.filterData = _filter(_flyingBit, _cardBit | _flyingBit);
   }
 
   /// The fist over the next step: from [from] to [to] (dp), a circle of

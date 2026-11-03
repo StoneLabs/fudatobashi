@@ -296,16 +296,22 @@ void main() {
       expect(cards.card(2).movedFrom(cards.card(2).home, dp: 0.01, radians: 0.001), isFalse);
     });
 
-    test('no card crosses the middle of the band', () {
+    test('a card knocked across the band slides on into the other side and knocks a card there', () {
       final cards = IkkiuchiCards([
         (id: 1, side: IkkiuchiSide.player, box: const CardBox(Vec(200, 600), 19, 27)),
         (id: 2, side: IkkiuchiSide.tobi, box: const CardBox(Vec(200, 300), 19, 27, math.pi)),
-      ], board: const Vec(384, 832), cardW: 38, centreLine: 450);
-      cards.launch(cards.card(1), const Vec(0, -3000), 0);
+      ], board: const Vec(384, 832), cardW: 38);
+      for (var i = 0; i < 6; i++) {
+        cards
+          ..moveFinger(Vec(200, 660 - 20.0 * i), Vec(200, 640 - 20.0 * i))
+          ..step();
+      }
+      cards.moveFinger(null, null);
       for (var i = 0; i < 600; i++) {
         cards.step();
       }
-      expect(cards.card(2).movedFrom(cards.card(2).home, dp: 0.01, radians: 0.001), isFalse);
+      expect(cards.card(1).box.centre.y, lessThan(450), reason: 'past the middle of the band');
+      expect(cards.card(2).movedFrom(cards.card(2).home, dp: 1, radians: 0.01), isTrue);
     });
 
     test('a taken card that stops on the field fades from it', () {
@@ -444,7 +450,6 @@ void main() {
               (id: c.id, side: c.side, box: CardBox(c.box.centre * f, c.box.hw * f, c.box.hh * f, c.box.angle)),
           ],
           cardW: l.cardW * f,
-          centreLine: l.band.center.dy * f,
         );
 
     test('a strike plays alike at any card size: on the board scaled, it and its knocks scale too', () {
@@ -615,11 +620,12 @@ void main() {
   // The headless check of the mock's faults: many seeded clean strikes at
   // each rating, with every move, in both layouts on small, phone and large
   // boards, half of them at the player's cards. None may touch a card on the side without the called
-  // card, the fist is never on the board on the way home, and Tobi's own
-  // cards never move while he returns from the player's side.
+  // card, and the fist is never on the board on the way home. Cards knocked
+  // across the band may move cards on the other side; those knocks are
+  // never the fist's touches.
   test('clean strikes make no accidental faults and push nothing on the way home', () {
     const strikesPerCase = 4;
-    var strikes = 0, accidental = 0, homePushes = 0, tobiMoved = 0, overCap = 0;
+    var strikes = 0, accidental = 0, homePushes = 0, overCap = 0;
     final rows = <String>[];
     for (final MapEntry(key: name, value: size) in sizes.entries) {
       for (final landscape in [false, true]) {
@@ -642,7 +648,6 @@ void main() {
                   mistakes: false,
                   moves: {move});
               board.call(strikeAt(board, called, move, decided.reachMs));
-              Map<IkkiuchiCard, CardBox>? home;
               playOut(board, settle: 150, each: () {
                 final run = board.runs.lastOrNull;
                 if (run == null) return;
@@ -651,18 +656,9 @@ void main() {
                 for (final c in board.cards.fistTouched) {
                   if (!c.taken && c.velocity.length > board.cards.pushCap * 1.001) overCap++;
                 }
-                if (side == IkkiuchiSide.player && home == null && t > run.strike.liveUntil) {
-                  home = {
-                    for (final c in board.cards.cards)
-                      if (c.side == IkkiuchiSide.tobi && c.onBoard) c: c.box,
-                  };
-                }
               });
               strikes++;
               if (board.faults.isNotEmpty) caseFaults++;
-              for (final MapEntry(key: c, value: box) in (home ?? {}).entries) {
-                if (c.movedFrom(box, dp: 0.5, radians: 0.01)) tobiMoved++;
-              }
             }
             accidental += caseFaults;
             rows.add('${name.padRight(5)} ${landscape ? 'landscape' : 'portrait '} ${rating.round().toString().padLeft(4)} '
@@ -673,10 +669,9 @@ void main() {
     }
     // ignore: avoid_print
     print('$strikes clean strikes: $accidental accidental faults, $homePushes steps with the fist on the way home, '
-        '$tobiMoved of his cards moved while he returned, $overCap pushes over the cap\n${rows.join('\n')}');
+        '$overCap pushes over the cap\n${rows.join('\n')}');
     expect(accidental, 0);
     expect(homePushes, 0);
-    expect(tobiMoved, 0);
     expect(overCap, 0);
   });
 }

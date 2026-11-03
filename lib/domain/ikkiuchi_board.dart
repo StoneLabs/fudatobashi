@@ -53,15 +53,13 @@ class IkkiuchiTobiPose {
 /// the called card is a fault, and so is touching any card on a からふだ;
 /// touching a wrong card on the called card's own side is not.
 class IkkiuchiBoard {
-  /// [cardW] is a card's width, dp; [centreLine] the y of the middle of the
-  /// band, which no card crosses.
+  /// [cardW] is a card's width, dp.
   IkkiuchiBoard({
     required this.tobi,
     required this.size,
     required Iterable<({int id, IkkiuchiSide side, CardBox box})> cards,
     required double cardW,
-    double? centreLine,
-  }) : cards = IkkiuchiCards(cards, board: size, cardW: cardW, centreLine: centreLine);
+  }) : cards = IkkiuchiCards(cards, board: size, cardW: cardW);
 
   final TobiFrame tobi;
   final Vec size;
