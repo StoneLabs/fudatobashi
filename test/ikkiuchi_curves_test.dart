@@ -123,12 +123,12 @@ void main() {
       }
     });
 
-    test('his reach is a straight line between its ends, and no hit goes under the floor', () {
+    test('his reach falls through its anchors, and no hit goes under the floor', () {
       const reach = IkkiuchiTuning.reachMs;
-      final (r0, v0) = reach.anchors.first;
-      final (r1, v1) = reach.anchors.last;
       expect(reach.scale, CurveScale.plain);
-      expect(IkkiuchiTobi((r0 + r1) / 2).reachMs, closeTo((v0 + v1) / 2, 1e-9));
+      for (final (r, v) in reach.anchors) {
+        expect(IkkiuchiTobi(r).reachMs, closeTo(v, 1e-9));
+      }
       expect(IkkiuchiTobi(IkkiuchiTuning.ratingMax).reachMs, greaterThanOrEqualTo(IkkiuchiTuning.reachFloorMs));
       const floor = IkkiuchiTuning.reachFloorMs;
       expect(IkkiuchiTobi.hitReach(floor - 40), floor);

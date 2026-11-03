@@ -59,7 +59,7 @@ abstract final class IkkiuchiTuning {
   /// The take's animation, from the start of his reach to the hit, ms. No
   /// hit's reach is ever shorter than [reachFloorMs], even when a quick
   /// take squeezes it.
-  static const reachMs = IkkiuchiCurve([(0, 1000), (3600, 150)]);
+  static const reachMs = IkkiuchiCurve([(0, 1000), (1800, 287.5), (3600, 150)]);
   static const double reachFloorMs = 130;
 
   /// The chance a 送り札 he sends splits a look-alike pair (its look-alike
