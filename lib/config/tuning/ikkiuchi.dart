@@ -142,6 +142,9 @@ abstract final class IkkiuchiFieldTuning {
   static const double cardAspect = 1.404;
   static const double cardGap = 0.02;
   static const double rowGap = 0.19;
+
+  /// The gap between a side's rows in landscape: two thirds of [rowGap].
+  static const double landscapeRowGap = rowGap * 2 / 3;
 }
 
 /// Tobi's body in a strike, squashed and stretched about his feet: its

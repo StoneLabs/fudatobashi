@@ -153,8 +153,9 @@ abstract final class IkkiuchiToolsStyle {
   /// The field page's two buttons over the board, see-through and edged so
   /// they show on the tatami and the band alike: [fieldButton] square,
   /// [fieldButtonGap] apart, [fieldButtonInset] in from the screen's top
-  /// left in portrait, and from the top end of the band in landscape,
-  /// where the cards leave no corner free.
+  /// left in portrait, and from the top end of the gap between the sides in
+  /// landscape, where the cards leave no corner free (there no wider than
+  /// the gap).
   static const double fieldButton = 28;
   static const double fieldButtonGap = 6;
   static const double fieldButtonInset = 8;

@@ -63,7 +63,8 @@ class IkkiuchiSendLayer extends StatelessWidget {
       onDrag: flow.dragTo,
       onDragEnd: flow.dragEnd,
       child: Stack(clipBehavior: Clip.none, children: [
-        Positioned.fromRect(
+        if (!scene.layout.landscape)
+          Positioned.fromRect(
           rect: band,
           child: _BandWords(title: s.ikkiuchiSent, line: stage == IkkiuchiSendStage.sending ? s.ikkiuchiSendYours : s.ikkiuchiPlaceTobis),
         ),

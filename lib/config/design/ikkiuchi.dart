@@ -14,6 +14,10 @@ abstract final class IkkiuchiBoardStyle {
   /// and the kimariji.
   static const double band = 40;
   static const double bandRule = 3;
+
+  /// In landscape there is no band: the sides lie [landscapeGap] apart, half
+  /// of [band].
+  static const double landscapeGap = band / 2;
   static const Color bandFill = Palette.paper;
   static const Color bandRuleColor = Palette.ink;
   static const double kimariji = 20;

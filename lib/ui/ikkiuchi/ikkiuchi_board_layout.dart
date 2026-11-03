@@ -15,7 +15,8 @@ import '../../domain/ikkiuchi_rig.dart';
 /// ([IkkiuchiField]), Tobi's side across the band at the top. Both sides'
 /// cards are one size, as big as the board lets them grow: its widest row's
 /// groups close in toward the middle as they grow, until a row's groups
-/// come [IkkiuchiField.leastGap] apart, the field and the band fill the
+/// come [IkkiuchiField.leastGap] apart, the field and the band (in landscape
+/// only a narrower gap, with the rows closer) fill the
 /// height, or a card is [IkkiuchiBoardStyle.maxCardW] wide. The field spans
 /// the board's width, but never more than [IkkiuchiLayoutTuning.rowSlots]
 /// card widths, and then lies centred. Portrait stands Tobi above his
@@ -40,8 +41,13 @@ class IkkiuchiBoardLayout {
     required List<IkkiuchiRow> playerRows,
     required TobiRig rig,
   }) {
-    final field = IkkiuchiField(tobi: tobiRows, player: playerRows);
-    const pad = IkkiuchiBoardStyle.pad, bandH = IkkiuchiBoardStyle.band;
+    final field = IkkiuchiField(
+      tobi: tobiRows,
+      player: playerRows,
+      rowGap: landscape ? IkkiuchiFieldTuning.landscapeRowGap : IkkiuchiFieldTuning.rowGap,
+    );
+    const pad = IkkiuchiBoardStyle.pad;
+    final bandH = landscape ? IkkiuchiBoardStyle.landscapeGap : IkkiuchiBoardStyle.band;
     final w = size.width, h = size.height;
     final areaW = w - 2 * pad;
     final half = field.halfHeight;
@@ -129,6 +135,8 @@ class IkkiuchiBoardLayout {
 
   final Vec size;
   final bool landscape;
+  /// The strip between the sides: the band in portrait, only the gap in
+  /// landscape, where nothing is drawn in it.
   final Rect band;
   final TobiFrame tobi;
 
@@ -163,7 +171,7 @@ class IkkiuchiBoardLayout {
   /// ([IkkiuchiField.playerEnd]).
   FieldRect? playerEnd(FieldRow row, RowPart part) {
     final box = _field.playerEnd(row.index,
-        left: part == RowPart.left, width: _fieldW, gap: IkkiuchiBoardStyle.band / cardW);
+        left: part == RowPart.left, width: _fieldW, gap: band.height / cardW);
     if (box == null) return null;
     final b = _onBoard(box, _origin, cardW);
     return FieldRect(b.centre.x - b.hw, b.centre.y - b.hh, 2 * b.hw, 2 * b.hh);

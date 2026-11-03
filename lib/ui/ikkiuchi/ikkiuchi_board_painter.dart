@@ -39,7 +39,7 @@ class IkkiuchiBoardPainter extends CustomPainter {
       _paintCard(canvas, card);
     }
     canvas.restore();
-    _paintBand(canvas, scene.band);
+    if (!scene.layout.landscape) _paintBand(canvas, scene.band);
     canvas
       ..save()
       ..translate(shake.dx, shake.dy);

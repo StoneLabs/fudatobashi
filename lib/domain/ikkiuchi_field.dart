@@ -11,7 +11,7 @@ import 'ikkiuchi_layout.dart';
 /// them; the field is never so narrow that a row's groups come nearer than
 /// [leastGap]. Only the rows some side uses are shown.
 class IkkiuchiField {
-  IkkiuchiField({required this.tobi, required this.player})
+  IkkiuchiField({required this.tobi, required this.player, this.rowGap = IkkiuchiFieldTuning.rowGap})
       : _shown = [
           for (var r = 0; r < math.max(tobi.length, player.length); r++)
             if ([tobi, player].any((side) => r < side.length && side[r].length > 0)) r,
@@ -20,6 +20,9 @@ class IkkiuchiField {
   /// Each side's rows as its owner sees them, 下段 first, each group from
   /// its outer edge in.
   final List<IkkiuchiRow> tobi, player;
+
+  /// The gap between a side's rows, in card widths.
+  final double rowGap;
 
   /// The rows shown, by index into a side's rows.
   final List<int> _shown;
@@ -38,7 +41,7 @@ class IkkiuchiField {
   static double reach(int n) => n == 0 ? 0 : n * pitch - IkkiuchiFieldTuning.cardGap;
 
   /// A half's height.
-  double get halfHeight => _shown.length * cardH + (_shown.length - 1) * IkkiuchiFieldTuning.rowGap;
+  double get halfHeight => _shown.length * cardH + (_shown.length - 1) * rowGap;
 
   /// Tobi's rows as the screen shows them, his 下段 at the top: the cards at
   /// the screen's left (his right group) and at its right.
@@ -91,7 +94,7 @@ class IkkiuchiField {
     if (!fits(left ? l + 1 : l, left ? rt : rt + 1)) return null;
     final leftX = l * pitch, rightX = width - 1 - rt * pitch;
     if (!left && fits(l + 1, rt) && leftX + 1 > rightX) return null;
-    const rowPitch = cardH + IkkiuchiFieldTuning.rowGap;
+    final rowPitch = cardH + rowGap;
     final y = halfHeight + gap + (_shown.length - 1 - i) * rowPitch;
     return CardBox(Vec((left ? leftX : rightX) + 0.5, y + cardH / 2), 0.5, cardH / 2);
   }
@@ -101,7 +104,7 @@ class IkkiuchiField {
   /// Every card on a field [width] wide, from its top left, the halves
   /// [gap] apart; Tobi's cards turned to face him.
   List<({int id, IkkiuchiSide side, CardBox box})> layOut(double width, {required double gap}) {
-    const rowPitch = cardH + IkkiuchiFieldTuning.rowGap;
+    final rowPitch = cardH + rowGap;
     final playerTop = halfHeight + gap;
     final n = _shown.length;
     ({int id, IkkiuchiSide side, CardBox box}) card(int id, IkkiuchiSide side, double x, double y) => (

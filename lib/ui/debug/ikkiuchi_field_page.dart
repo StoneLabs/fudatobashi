@@ -15,17 +15,18 @@ import 'ikkiuchi_dealer.dart';
 
 /// The developer's view of the 一騎打ち field as the match shows it: the
 /// whole screen, its system bars hidden, with Tobi in his place, his side,
-/// the band and the player's side, dealt at random with Tobi at a random
+/// the band (in portrait) and the player's side, dealt at random with Tobi at a random
 /// rating. The page only drives the match's board ([IkkiuchiBoardScene]):
 /// it reads a card at random, its kimariji on the band, and the player's
 /// finger pushes the cards about, taking the card as the match would;
 /// Tobi doesn't strike. Once the board comes to rest again another card
-/// is read. "R" turns the board's layout between portrait and landscape, a
+/// is read. The board starts in landscape; "R" turns its layout between
+/// landscape and portrait, a
 /// number deals anew with that many cards a side, "^" has the player send
 /// Tobi a card (送り札) and "v" has Tobi send the player one; the system
 /// back leaves.
 class IkkiuchiFieldPage extends StatefulWidget {
-  const IkkiuchiFieldPage({super.key, this.seed, this.landscape = false});
+  const IkkiuchiFieldPage({super.key, this.seed, this.landscape = true});
 
   /// The deal's seed, random when null.
   final int? seed;
@@ -121,27 +122,29 @@ class IkkiuchiFieldPageState extends State<IkkiuchiFieldPage> with SingleTickerP
   /// The buttons over the board, "R", the numbers, "^" and "v": at the
   /// screen's top left in portrait, clear of the card Tobi sends, which
   /// waits right of him; in landscape, where the cards reach every corner,
-  /// at the top end of the band, which runs down the middle of the screen.
-  /// Both keep below a cutout at the screen's top.
+  /// at the top end of the gap between the sides, which runs down the middle
+  /// of the screen, the buttons as wide as it is. Both keep below a cutout
+  /// at the screen's top.
   Widget _buttons(IkkiuchiBoardScene scene, Size room) {
-    const size = IkkiuchiToolsStyle.fieldButton, inset = IkkiuchiToolsStyle.fieldButtonInset;
+    const inset = IkkiuchiToolsStyle.fieldButtonInset;
+    final size = _landscape ? math.min(IkkiuchiToolsStyle.fieldButton, scene.layout.band.height) : IkkiuchiToolsStyle.fieldButton;
     final top = MediaQuery.paddingOf(context).top + inset;
     final column = Column(mainAxisSize: MainAxisSize.min, children: [
-      _button('R', _turn),
+      _button('R', _turn, size),
       for (final n in IkkiuchiToolsTuning.fieldCounts) ...[
         const SizedBox(height: IkkiuchiToolsStyle.fieldButtonGap),
-        _button('$n', () => _deal(n)),
+        _button('$n', () => _deal(n), size),
       ],
       const SizedBox(height: IkkiuchiToolsStyle.fieldButtonGap),
-      _button('^', scene.send.startSending),
+      _button('^', scene.send.startSending, size),
       const SizedBox(height: IkkiuchiToolsStyle.fieldButtonGap),
-      _button('v', () => scene.send.startReceiving()),
+      _button('v', () => scene.send.startReceiving(), size),
     ]);
     if (!_landscape) return Positioned(top: top, left: inset, child: column);
     // The board lies turned a quarter turn clockwise: its y runs from the
     // screen's right edge leftward.
-    final bandMiddle = room.width - scene.layout.band.center.dy;
-    return Positioned(top: top, left: bandMiddle - size / 2, child: column);
+    final gapMiddle = room.width - scene.layout.band.center.dy;
+    return Positioned(top: top, left: gapMiddle - size / 2, child: column);
   }
 
   static final _label = debugMono.copyWith(
@@ -149,12 +152,12 @@ class IkkiuchiFieldPageState extends State<IkkiuchiFieldPage> with SingleTickerP
     color: IkkiuchiToolsStyle.fieldButtonInk,
   );
 
-  static Widget _button(String label, VoidCallback onTap) => GestureDetector(
+  static Widget _button(String label, VoidCallback onTap, double size) => GestureDetector(
         behavior: HitTestBehavior.opaque,
         onTap: onTap,
         child: Container(
-          width: IkkiuchiToolsStyle.fieldButton,
-          height: IkkiuchiToolsStyle.fieldButton,
+          width: size,
+          height: size,
           alignment: Alignment.center,
           decoration: BoxDecoration(
             color: IkkiuchiToolsStyle.fieldButtonFill,

@@ -640,7 +640,7 @@ void main() {
 
     testWidgets('a number deals anew with that many cards a side and R turns the board', (tester) async {
       final p = await open(tester);
-      await show(tester, p, const IkkiuchiFieldPage(seed: 3));
+      await show(tester, p, const IkkiuchiFieldPage(seed: 3, landscape: false));
       await tester.pump(frame);
       final first = ids(scene(tester));
       expect(first, hasLength(2 * IkkiuchiToolsTuning.dealPerSide));
@@ -669,6 +669,9 @@ void main() {
       expect(scene(tester).layout.landscape, isTrue);
       expect(find.byType(RotatedBox), findsOneWidget, reason: 'only the board turns');
       expect(tester.getSize(find.byType(IkkiuchiBoardView)), usersPhone.size.flipped);
+      await tester.tap(find.text('15'));
+      await tester.pump(frame);
+      await capture(tester, 'field_15_landscape');
       await tester.tap(find.text('R'));
       await tester.pump(frame);
       expect(scene(tester).layout.landscape, isFalse);
@@ -717,7 +720,7 @@ void main() {
           c.box.centre.distanceTo(c.home.centre) < 1e-3 &&
           turnBetween(c.box.angle, c.home.angle).abs() < 1e-6);
 
-      await show(tester, p, const IkkiuchiFieldPage(seed: 3));
+      await show(tester, p, const IkkiuchiFieldPage(seed: 3, landscape: false));
       await tester.pump(frame);
       final s = scene(tester);
       final marked = s.marked;
@@ -787,7 +790,8 @@ void main() {
         await tester.pump(frame);
         expect(s.send.stage, IkkiuchiSendStage.sending);
         expect(s.marked, isNull, reason: '$o: no card read while sending');
-        expect(find.text('送り札'), findsOneWidget, reason: '$o: the band says so');
+        expect(find.text('送り札'), landscape ? findsNothing : findsOneWidget,
+            reason: '$o: the band says so in portrait only');
         final sent = s.sides!.player[0].left.last;
         final from = s.board.cards.card(sent).box.centre;
         final drag = await tester.startGesture(onScreen(tester, from));
@@ -825,7 +829,7 @@ void main() {
         expect(s.send.stage, IkkiuchiSendStage.waiting, reason: o);
         expect(find.byType(PlacingStack), findsOneWidget, reason: '$o: his card waits');
         expect(find.text('どうぞ！'), findsOneWidget);
-        expect(find.text('トビからの​札を​置く'), findsOneWidget);
+        expect(find.text('トビからの​札を​置く'), landscape ? findsNothing : findsOneWidget);
         expect(find.byType(PlacingSpots), findsOneWidget);
         final wait = s.wait;
         final corners = [
