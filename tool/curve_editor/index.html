@@ -1,0 +1,26 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Curve editor</title>
+<style>
+  html, body { margin: 0; height: 100%; overflow: hidden; background: #383838; font-family: sans-serif; }
+  canvas { display: block; width: 100vw; height: 100vh; }
+  #bar { position: fixed; left: 12px; bottom: 10px; display: flex; gap: 8px; align-items: center; }
+  button { background: #565656; color: #ddd; border: 1px solid #222; border-radius: 3px; padding: 6px 12px; cursor: pointer; }
+  button:hover { background: #666; }
+  #msg { color: #e8a060; font-size: 13px; }
+</style>
+</head>
+<body>
+<canvas id="c"></canvas>
+<div id="bar">
+  <button id="imp">Import from clipboard</button>
+  <button id="exp">Export to clipboard</button>
+  <span id="msg"></span>
+</div>
+<textarea id="hold" style="position:fixed;left:-1000px;top:0"></textarea>
+<script src="curve.js"></script>
+<script src="editor.js"></script>
+</body>
+</html>
