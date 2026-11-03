@@ -196,8 +196,11 @@ void main() {
             expect(u, lessThanOrEqualTo(IkkiuchiBoardStyle.maxCardW + eps));
             final lefts = l.cards.map((c) => c.box.centre.x - c.box.hw);
             final rights = l.cards.map((c) => c.box.centre.x + c.box.hw);
-            expect(lefts.reduce(math.min), closeTo(pad, eps), reason: '$why: the field spans the board');
-            expect(rights.reduce(math.max), closeTo(l.size.x - pad, eps), reason: why);
+            final fieldW = rights.reduce(math.max) - lefts.reduce(math.min);
+            final capped = fieldW < l.size.x - 2 * pad - eps;
+            expect(fieldW, lessThanOrEqualTo(IkkiuchiLayoutTuning.rowSlots * u + eps), reason: '$why: at most 16.5 cards wide');
+            expect(lefts.reduce(math.min) + rights.reduce(math.max), closeTo(l.size.x, eps), reason: '$why: centred');
+            if (!capped) expect(lefts.reduce(math.min), closeTo(pad, eps), reason: '$why: the field spans the board');
             var leastMiddle = double.infinity;
             for (final row in rowsOf(l)) {
               final gaps = [
@@ -245,6 +248,23 @@ void main() {
                 reason: '$why: the cards grow until the field fills the height, a row closes, '
                     'Tobi has just his room, or they are as wide as they may be ($u)');
           }
+        }
+      }
+    });
+
+    test('the field is never wider than 16.5 cards, and spans the board when width limits the cards', () {
+      for (final MapEntry(key: name, value: size) in sizes.entries) {
+        for (final landscape in [false, true]) {
+          var spans = false;
+          for (var seed = 0; seed < 60; seed++) {
+            final l = layoutFor(seed, 800 + 40.0 * seed, landscape: landscape, size: size);
+            final lefts = l.cards.map((c) => c.box.centre.x - c.box.hw);
+            final rights = l.cards.map((c) => c.box.centre.x + c.box.hw);
+            final fieldW = rights.reduce(math.max) - lefts.reduce(math.min);
+            expect(fieldW, lessThanOrEqualTo(IkkiuchiLayoutTuning.rowSlots * l.cardW + eps), reason: '$name $landscape $seed');
+            if ((fieldW - (l.size.x - 2 * pad)).abs() < eps) spans = true;
+          }
+          if (name == 'phone' && !landscape) expect(spans, isTrue, reason: 'width-limited portrait boards are spanned');
         }
       }
     });

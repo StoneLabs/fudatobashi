@@ -1,6 +1,7 @@
 import 'dart:math' as math;
 import 'dart:ui';
 
+import '../../config/config.dart';
 import '../../config/design.dart';
 import '../../domain/ikkiuchi_board.dart';
 import '../../domain/ikkiuchi_cards.dart';
@@ -11,11 +12,12 @@ import '../../domain/ikkiuchi_rig.dart';
 
 /// Where everything lies on the 一騎打ち board of [size]: the full field
 /// ([IkkiuchiField]), Tobi's side across the band at the top. Both sides'
-/// cards are one size, as big as the board lets them grow: the field spans
-/// the board's width, its widest row's groups closing in toward the middle
-/// as they grow, until a row's groups come [IkkiuchiField.leastGap] apart,
-/// the field and the band fill the height, or a card is
-/// [IkkiuchiBoardStyle.maxCardW] wide. Portrait stands Tobi above his
+/// cards are one size, as big as the board lets them grow: its widest row's
+/// groups close in toward the middle as they grow, until a row's groups
+/// come [IkkiuchiField.leastGap] apart, the field and the band fill the
+/// height, or a card is [IkkiuchiBoardStyle.maxCardW] wide. The field spans
+/// the board's width, but never more than [IkkiuchiLayoutTuning.rowSlots]
+/// card widths, and then lies centred. Portrait stands Tobi above his
 /// side, his room kept above the field; landscape sits him in the open
 /// middle of his half, the room he needs there kept open.
 class IkkiuchiBoardLayout {
@@ -35,7 +37,7 @@ class IkkiuchiBoardLayout {
     final w = size.width, h = size.height;
     final areaW = w - 2 * pad, areaH = h - 2 * pad;
     final half = field.halfHeight;
-    final double cardW, top;
+    final double cardW, top, fieldW;
     final TobiFrame tobi;
     if (landscape) {
       // Tobi is as tall as a share of his half, so the room he needs grows
@@ -48,9 +50,10 @@ class IkkiuchiBoardLayout {
         IkkiuchiBoardStyle.maxCardW,
       ].reduce(math.min);
       top = pad + (areaH - (2 * half * cardW + bandH)) / 2;
-      final open = field.tobiOpen(areaW / cardW);
+      fieldW = math.min(areaW / cardW, math.max(IkkiuchiLayoutTuning.rowSlots, field.leastWidth(tobiRoom: room)));
+      final open = field.tobiOpen(fieldW);
       final k = half * cardW * share / rig.size.y;
-      final middle = pad + (open.from + open.to) / 2 * cardW;
+      final middle = pad + (areaW - fieldW * cardW) / 2 + (open.from + open.to) / 2 * cardW;
       tobi = TobiFrame(Vec(middle - rig.size.x * k / 2, top + IkkiuchiBoardStyle.tobiTop), k, rig);
     } else {
       cardW = [
@@ -58,6 +61,7 @@ class IkkiuchiBoardLayout {
         (h - pad - IkkiuchiBoardStyle.bottomGap - bandH - IkkiuchiBoardStyle.tobiMinRoom) / (2 * half),
         IkkiuchiBoardStyle.maxCardW,
       ].reduce(math.min);
+      fieldW = math.min(areaW / cardW, math.max(IkkiuchiLayoutTuning.rowSlots, field.leastWidth()));
       top = h - IkkiuchiBoardStyle.bottomGap - (2 * half * cardW + bandH);
       final k = math.min(IkkiuchiBoardStyle.tobiHeight, top - pad - IkkiuchiBoardStyle.tobiTopRoom) / rig.size.y;
       final feetY = top - IkkiuchiBoardStyle.tobiFeetGap;
@@ -65,12 +69,13 @@ class IkkiuchiBoardLayout {
       tobi = TobiFrame(Vec(w / 2 - rig.size.x * k / 2, feetY - probe.feet.y), k, rig);
     }
     final band = Rect.fromLTWH(0, top + half * cardW, w, bandH);
+    final left = pad + (areaW - fieldW * cardW) / 2;
     final cards = [
-      for (final c in field.layOut(areaW / cardW, gap: bandH / cardW))
+      for (final c in field.layOut(fieldW, gap: bandH / cardW))
         (
           id: c.id,
           side: c.side,
-          box: CardBox(Vec(pad, top) + c.box.centre * cardW, c.box.hw * cardW, c.box.hh * cardW, c.box.angle),
+          box: CardBox(Vec(left, top) + c.box.centre * cardW, c.box.hw * cardW, c.box.hh * cardW, c.box.angle),
         ),
     ];
     return IkkiuchiBoardLayout._(Vec(w, h), landscape, band, tobi, cardW, cards);
