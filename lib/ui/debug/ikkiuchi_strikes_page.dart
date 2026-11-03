@@ -295,11 +295,14 @@ class IkkiuchiStrikesPageState extends State<IkkiuchiStrikesPage> with SingleTic
 
   static final _label = debugMono.copyWith(fontSize: IkkiuchiToolsStyle.controlFont);
 
+  /// The chips as tight as the buttons, so the board keeps the height.
+  static const _tight = VisualDensity(horizontal: VisualDensity.minimumDensity, vertical: VisualDensity.minimumDensity);
+
   static Widget _chip(String label, bool selected, VoidCallback onTap) => ChoiceChip(
         label: Text(label, style: _label),
         selected: selected,
         showCheckmark: false,
-        visualDensity: VisualDensity.compact,
+        visualDensity: _tight,
         materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
         padding: IkkiuchiToolsStyle.chipPadding,
         labelPadding: IkkiuchiToolsStyle.chipLabelPadding,
