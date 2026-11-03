@@ -30,8 +30,8 @@ abstract final class AnkirenRulesLayout {
   static const double markBorder = Strokes.label;
   static const double markFont = 12;
 
-  /// What the image marks are drawn with (`tool/rule_marks/`): the icon's
-  /// size and stroke, the struck card's height, the width icon's box.
+  /// What the image marks are drawn with: the icon's size and stroke, the
+  /// struck card's height, the width icon's box.
   static const double markIcon = 17;
   static const double markStrike = 22;
   static const double markIconStroke = 2.6;
@@ -873,8 +873,7 @@ abstract final class KarafudaStyle {
   static const Color tag = Palette.seaDeep;
 }
 
-/// The rule marks as image files (`RuleMark.image`), made by
-/// `./scripts/rule_marks.sh`.
+/// The rule marks as image files (`RuleMark.image`).
 abstract final class RuleMarkFiles {
   static const String folder = 'assets/graphics/sidetrips/rules/';
   static const String wrong = '${folder}mark-wrong.webp';
