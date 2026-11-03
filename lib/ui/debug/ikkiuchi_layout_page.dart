@@ -11,6 +11,7 @@ import '../../domain/ikkiuchi_layout.dart';
 import '../history/ankiren_field_tab.dart';
 import 'debug_common.dart';
 import 'ikkiuchi_rating_header.dart';
+import 'ikkiuchi_values.dart';
 
 /// The developer's view of Tobi's own fixed layout (一騎打ち): the cards
 /// chosen a side dealt from all 100, his side laid out at the rating
@@ -19,7 +20,8 @@ import 'ikkiuchi_rating_header.dart';
 /// family a strong band at its cards' feet. In the full layout the player's
 /// cards show too, dimmed, at the homes they would go to should they come
 /// to him, the cards narrowed to fit the page. Over it: how many of his
-/// groups he keeps together.
+/// groups he keeps together, his cards on each side, and how often a
+/// starting layout of this size has a wide row.
 class IkkiuchiLayoutPage extends StatefulWidget {
   const IkkiuchiLayoutPage({
     super.key,
@@ -57,6 +59,12 @@ class _IkkiuchiLayoutPageState extends State<IkkiuchiLayoutPage> {
   late List<int> _own, _others;
   late IkkiuchiHomes _homes;
 
+  /// The share of starting layouts with a row of at least each of
+  /// [IkkiuchiToolsTuning.wideRows] cards, for the cards a side and rows
+  /// they were counted for.
+  late List<double> _wide;
+  (int, int)? _wideFor;
+
   @override
   void initState() {
     super.initState();
@@ -69,6 +77,31 @@ class _IkkiuchiLayoutPageState extends State<IkkiuchiLayoutPage> {
     _own = deck.sublist(0, _perSide);
     _others = deck.sublist(_perSide, 2 * _perSide);
     _homes = _layout.generate(rating: _rating, own: _own, others: _others, rows: _rows, seed: _seed);
+    if (_wideFor != (_perSide, _rows)) {
+      _wideFor = (_perSide, _rows);
+      _wide = _wideShares(_perSide, _rows);
+    }
+  }
+
+  /// Draws the shape of each of [IkkiuchiToolsTuning.seeds] seeds' starting
+  /// layouts and counts those with a row of at least each of
+  /// [IkkiuchiToolsTuning.wideRows] cards.
+  static List<double> _wideShares(int perSide, int rows) {
+    const seeds = IkkiuchiToolsTuning.seeds;
+    final widest = [
+      for (var seed = 0; seed < seeds; seed++)
+        IkkiuchiLayout.drawShape(perSide, rows, math.Random(seed)).map((row) => row.left + row.right).reduce(math.max),
+    ];
+    return [for (final n in IkkiuchiToolsTuning.wideRows) widest.where((w) => w >= n).length / seeds];
+  }
+
+  /// How often a starting layout this size has a wide row, as "12+ 8.9% ·
+  /// 14+ 0.1% of 1000 seeds".
+  String get _wideText {
+    final shares = [
+      for (final (i, n) in IkkiuchiToolsTuning.wideRows.indexed) '$n+ ${IkkiuchiUnit.percent.format(_wide[i])}',
+    ];
+    return '${shares.join(' · ')} of ${IkkiuchiToolsTuning.seeds} seeds';
   }
 
   /// How many of [groups] he keeps together, of how many.
@@ -136,6 +169,7 @@ class _IkkiuchiLayoutPageState extends State<IkkiuchiLayoutPage> {
                           IkkiuchiLayout.rowsAllowed(_perSide, rows) ? (_) => _change(() => _rows = rows) : null),
                   ],
                 ),
+                _Choices(label: 'wide rows', children: [Text(_wideText, style: debugMono)]),
                 gap,
                 Wrap(
                   spacing: IkkiuchiToolsStyle.gap,
@@ -156,6 +190,8 @@ class _IkkiuchiLayoutPageState extends State<IkkiuchiLayoutPage> {
                   _Fact('sound groups together ${_kept(_homes.soundGroups)}',
                       on: _homes.soundGroups.containsValue(true)),
                   _Fact('友札 together ${_kept(_homes.tomofudaGroups)}', on: _homes.tomofudaGroups.containsValue(true)),
+                  _Fact('left ${start.fold(0, (n, row) => n + row.left.length)} · '
+                      'right ${start.fold(0, (n, row) => n + row.right.length)}'),
                 ]),
                 gap,
                 _SideField(

@@ -126,12 +126,11 @@ class IkkiuchiHomes {
 ///   the most room.
 /// - Short cards go to 下段, nearest his hand, while it has room.
 ///
-/// His own cards fill his rows first: 下段 the fullest, each row split
-/// evenly between left and right. Then each card dealt to the player gets
-/// a home by the same rules, a kept group's card joining its group, every
-/// row taking at most [rowRoom] homes while any row has room. A card he
-/// receives goes to its home, so one sent back and forth lands in the same
-/// place.
+/// His own cards fill his rows first, in the shape drawn for the match
+/// ([drawShape]). Then each card dealt to the player gets a home by the
+/// same rules, a kept group's card joining its group, every row taking at
+/// most [rowRoom] homes while any row has room. A card he receives goes to
+/// its home, so one sent back and forth lands in the same place.
 class IkkiuchiLayout {
   IkkiuchiLayout({required this.kimariji});
 
@@ -201,6 +200,8 @@ class IkkiuchiLayout {
     assert(rowsAllowed(own.length, rows), '${own.length} cards in $rows rows');
     assert(own.toSet().intersection(others.toSet()).isEmpty, 'a card dealt to both sides');
     final rng = math.Random(seed);
+    final shape = drawShape(own.length, rows, rng);
+
     final dealt = [...own, ...others]..sort(_byKana);
     final soundChance = IkkiuchiLayoutTuning.soundGrouping.at(rating);
     final soundKept = {
@@ -221,12 +222,7 @@ class IkkiuchiLayout {
     }
 
     final plan = _Plan(this, rows, rng, runOf);
-    final shape = [
-      for (var r = 0; r < rows; r++) own.length ~/ rows + (r < own.length % rows ? 1 : 0),
-    ];
-    final leftOf = [for (final n in shape) n ~/ 2 + (n.isOdd && rng.nextBool() ? 1 : 0)];
-    plan.room = (box) =>
-        (box.group == IkkiuchiGroup.left ? leftOf[box.row] : shape[box.row] - leftOf[box.row]) - box.count;
+    plan.room = (box) => (box.group == IkkiuchiGroup.left ? shape[box.row].left : shape[box.row].right) - box.count;
     plan.place(own);
 
     plan.room = (box) => rowRoom - plan.rowCount(box.row);
@@ -249,6 +245,36 @@ class IkkiuchiLayout {
           IkkiuchiRow(plan.box(r, IkkiuchiGroup.left).cards.toList(), plan.box(r, IkkiuchiGroup.right).cards.toList()),
       ],
     );
+  }
+
+  /// The shape of his starting side, [perSide] cards in [rows] rows, drawn
+  /// from [rng] by [IkkiuchiLayoutTuning]'s odds: each row's left and right
+  /// counts, 下段 first. A match draws it first from its seed.
+  static List<({int left, int right})> drawShape(int perSide, int rows, math.Random rng) {
+    double within(double reach) => (2 * rng.nextDouble() - 1) * reach;
+    final shares = [
+      for (final lean in IkkiuchiLayoutTuning.rowLean.take(rows)) lean * (1 + within(IkkiuchiLayoutTuning.rowJitter)),
+    ];
+    final total = shares.reduce((a, b) => a + b);
+    final each = perSide >= rows ? 1 : 0;
+    final rest = perSide - each * rows;
+    final counts = List.filled(rows, each);
+    // Each card left goes to the row with room furthest under its share.
+    double under(int r) => rest * shares[r] / total - (counts[r] - each);
+    for (var i = 0; i < rest; i++) {
+      final open = [
+        for (var r = 0; r < rows; r++)
+          if (counts[r] < rowRoom) r,
+      ];
+      counts[open.reduce((a, b) => under(b) > under(a) ? b : a)]++;
+    }
+    final lean = within(IkkiuchiLayoutTuning.sideLean);
+    ({int left, int right}) split(int n) {
+      final left = (n / 2 + n * (lean + within(IkkiuchiLayoutTuning.splitJitter))).round().clamp(0, n);
+      return (left: left, right: n - left);
+    }
+
+    return [for (final n in counts) split(n)];
   }
 
   /// The share of pairs of cards from one group ([groupOf]) whose homes

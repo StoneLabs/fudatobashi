@@ -104,6 +104,16 @@ abstract final class IkkiuchiLayoutTuning {
     (0, 1), (1200, 0.81), (2000, 0.28), (2600, 0.127), (3000, 0.06), (3600, 0.0175),
   ]);
 
+  /// His own cards' shape, drawn each match, the same at every rating. Each
+  /// row gets one card, then the rest go by each row's share: its [rowLean]
+  /// (下段 first) times a random factor within 1 ± [rowJitter]. Each row's
+  /// left share is a half, plus the match's lean to one side within
+  /// ±[sideLean], plus the row's own within ±[splitJitter].
+  static const List<double> rowLean = [1.1, 1, 0.9];
+  static const double rowJitter = 0.45;
+  static const double sideLean = 0.1;
+  static const double splitJitter = 0.15;
+
   /// A side has [rows] rows; 2 only with at most [twoRowsUpTo] cards a
   /// side, 1 only with at most [oneRowUpTo].
   static const int rows = 3;
@@ -141,5 +151,9 @@ abstract final class IkkiuchiToolsTuning {
   /// The curves page's "any in a game" lines are for games with this many
   /// cards on his side, dealt from all 100.
   static const int gamePerSide = 25;
+
+  /// The layout page counts the starting layouts, one per seed, with a row
+  /// of at least each of [wideRows] cards.
+  static const List<int> wideRows = [12, 14];
   static const int seeds = 1000;
 }

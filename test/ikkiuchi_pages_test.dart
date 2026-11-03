@@ -188,6 +188,10 @@ void main() {
       String kept(Map<Object, bool> groups) => '${groups.values.where((k) => k).length} / ${groups.length}';
       expect(find.text('sound groups together ${kept(homes.soundGroups)}'), findsOneWidget, reason: '$r');
       expect(find.text('友札 together ${kept(homes.tomofudaGroups)}'), findsOneWidget, reason: '$r');
+      final start = homes.start;
+      final left = start.fold(0, (n, row) => n + row.left.length);
+      expect(find.text('left $left · right ${perSide - left}'), findsOneWidget, reason: '$r');
+      expect(find.textContaining('${IkkiuchiToolsTuning.wideRows.first}+ '), findsOneWidget, reason: 'wide rows');
       await captureDown(tester, 'ikkiuchi/layout_$r');
       expect(await fieldCards(), hasLength(perSide), reason: 'his side alone');
 

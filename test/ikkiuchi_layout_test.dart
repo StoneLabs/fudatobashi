@@ -91,7 +91,7 @@ void main() {
       }
     });
 
-    test('lays out his own cards in his rows: 下段 the fullest, each row evenly split, all in their homes', () {
+    test('lays out his own cards in the shape drawn from the seed, each row with a card and in its room', () {
       for (final s in setups) {
         for (final rating in ratings) {
           for (var seed = 0; seed < 20; seed++) {
@@ -100,12 +100,10 @@ void main() {
             final start = h.start;
             expect({for (final row in start) ...row.left, for (final row in start) ...row.right}, h.own.toSet(),
                 reason: why);
-            final lengths = [for (final row in start) row.length];
-            expect(lengths.reduce(math.max) - lengths.reduce(math.min), lessThanOrEqualTo(1), reason: why);
-            expect(lengths.first, lengths.reduce(math.max), reason: why);
+            final shape = IkkiuchiLayout.drawShape(s.perSide, s.rows, math.Random(seed));
+            expect([for (final row in start) (left: row.left.length, right: row.right.length)], shape, reason: why);
             for (final row in start) {
-              expect((row.left.length - row.right.length).abs(), lessThanOrEqualTo(1), reason: why);
-              expect(row.length, lessThanOrEqualTo(IkkiuchiLayout.rowRoom), reason: why);
+              expect(row.length, inInclusiveRange(1, IkkiuchiLayout.rowRoom), reason: why);
             }
             for (final (r, row) in start.indexed) {
               for (final g in IkkiuchiGroup.values) {
@@ -306,6 +304,28 @@ void main() {
       expect(keptTogether / kept, greaterThan(0.97));
       expect(pairs, greaterThan(0));
       expect(pairsTogether / pairs, lessThan(0.03));
+    });
+
+    test('draws varied shapes: a row of 12+ in 3 to 20% of layouts, 14+ in at most 1% but some', () {
+      const count = 20000;
+      final shapes = <String>{}, lefts = <int>{};
+      var wide12 = 0, wide14 = 0;
+      for (var seed = 0; seed < count; seed++) {
+        final shape = IkkiuchiLayout.drawShape(25, 3, math.Random(seed));
+        final rows = [for (final row in shape) row.left + row.right];
+        expect(rows.reduce((a, b) => a + b), 25);
+        shapes.add(rows.join('/'));
+        lefts.add(shape.fold(0, (n, row) => n + row.left));
+        final widest = rows.reduce(math.max);
+        if (widest >= 12) wide12++;
+        if (widest >= 14) wide14++;
+      }
+      expect(shapes.length, greaterThan(20));
+      expect(lefts, containsAll([10, 12, 13, 15]), reason: 'his left and right totals vary');
+      expect(wide12 / count, inInclusiveRange(0.03, 0.2));
+      expect(wide14, greaterThan(0));
+      expect(wide14 / count, lessThanOrEqualTo(0.01));
+      expect(wide14, lessThan(wide12 / 5));
     });
   });
 }
