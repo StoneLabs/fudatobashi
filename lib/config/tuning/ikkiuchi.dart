@@ -115,3 +115,17 @@ abstract final class IkkiuchiLayoutTuning {
   /// group, and go to 下段, nearest his hand, while it has room.
   static const int nearRowSounds = 1;
 }
+
+/// The developer's 一騎打ち pages (`IkkiuchiCurvesPage`,
+/// `IkkiuchiLayoutPage`): their rating slider, the graphs' rating ticks and
+/// sampling step, and the layout page's choice of cards a side and the
+/// seeds it starts from.
+abstract final class IkkiuchiToolsTuning {
+  static const double ratingStart = 1600;
+  static const double ratingStep = 50;
+  static const double ratingTick = 600;
+  static const double curveStep = 10;
+  static const List<int> perSideChoices = [8, 12, 16, 20, 25];
+  static const int perSideStart = 25;
+  static const int seeds = 1000;
+}

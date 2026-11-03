@@ -30,6 +30,8 @@ import '../debug/ankiren_tools_page.dart';
 import '../debug/celebration_preview.dart';
 import '../debug/crash_log_page.dart';
 import '../debug/debug_page.dart';
+import '../debug/ikkiuchi_curves_page.dart';
+import '../debug/ikkiuchi_layout_page.dart';
 import '../debug/karafuda_page.dart';
 import '../debug/raw_articles_page.dart';
 import '../debug/reset_actions.dart';
@@ -579,6 +581,12 @@ class _DeveloperSection extends StatelessWidget {
             title: 'Preview all-known warning',
             onTap: () => Navigator.push(context, MangaRoute<bool>(builder: (_) => HoldWarningScreen.allKnown(s))),
           ),
+        ]),
+        SettingsGroup(children: [
+          SettingsTapRow(
+              title: "Comp - Tobi's curves", opensPage: true, onTap: () => open(const IkkiuchiCurvesPage())),
+          SettingsTapRow(
+              title: "Comp - Tobi's layout", opensPage: true, onTap: () => open(const IkkiuchiLayoutPage())),
         ]),
         SettingsGroup(children: [
           SettingsTapRow(title: 'Preview AnkiRen XP', onTap: () => previewAnkirenXp(context)),

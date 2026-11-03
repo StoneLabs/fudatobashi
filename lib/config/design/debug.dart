@@ -93,3 +93,55 @@ abstract final class KarafudaDevStyle {
   static const double gap = 8;
   static const Color picked = Palette.seaSoft;
 }
+
+/// The developer's 一騎打ち pages (`IkkiuchiCurvesPage`,
+/// `IkkiuchiLayoutPage`): margins and gaps; each curve's graph, its height,
+/// the margins holding its axis labels, its line and anchor dots, the
+/// marker at the chosen rating and a floor's dashes, its value axis
+/// rounded up to one of [axisSteps] times a power of ten; and the layout's
+/// field, its ground, its card pitch within [minPitch] and [maxPitch] dp
+/// (scrolling sideways past the page's width), a home not on Tobi's side
+/// dimmed, and a fill for each look-alike family.
+abstract final class IkkiuchiToolsStyle {
+  static const EdgeInsets padding = EdgeInsets.all(16);
+  static const double gap = 8;
+  static const double sectionGap = 32;
+
+  static const double graphHeight = 150;
+  static const EdgeInsets graphMargin = EdgeInsets.fromLTRB(52, 8, 14, 18);
+  static const double axisFont = 10;
+  static const double axisLabelGap = 3;
+  static const int valueDivisions = 4;
+  static const List<double> axisSteps = [1, 2, 2.5, 5, 10];
+  static const double lineStroke = 1.5;
+  static const double anchorRadius = 3.5;
+  static const double markerStroke = 1;
+  static const double markerRadius = 4;
+  static const double floorDash = 4;
+  static const double floorDashGap = 3;
+  static const Color grid = Palette.desk;
+  static const Color line = Palette.seaDeep;
+  static const Color anchor = Palette.ink;
+  static const Color marker = Palette.pinkDeep;
+  static const Color floor = Palette.alarm;
+
+  static const Color ground = Palette.desk;
+  static const double minPitch = 30;
+  static const double maxPitch = 46;
+  static const double awayOpacity = 0.3;
+  static const double swatch = 12;
+  static const List<Color> familyFills = [
+    Palette.sun,
+    Palette.shallow,
+    Palette.pink,
+    Palette.land,
+    Palette.orange,
+    Color(0xFFC59BE0),
+    Color(0xFF6FE3D2),
+    Color(0xFFE0B07A),
+    Color(0xFFFF7A6B),
+    Color(0xFFB8C24A),
+    Color(0xFF9DB0FF),
+    Color(0xFFB5B5B5),
+  ];
+}
