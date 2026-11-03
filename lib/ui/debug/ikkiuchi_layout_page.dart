@@ -85,7 +85,6 @@ class _IkkiuchiLayoutPageState extends State<IkkiuchiLayoutPage> {
     };
     final shown = _showAway ? _homes.plan : _homes.start;
     final start = _homes.start;
-    final kept = [for (final g in _homes.kept) g.isEmpty ? 'short cards' : g];
     return DebugScaffold(
       title: "Tobi's layout",
       child: ListView(
@@ -132,13 +131,14 @@ class _IkkiuchiLayoutPageState extends State<IkkiuchiLayoutPage> {
             ],
           ),
           const Divider(height: IkkiuchiToolsStyle.sectionGap),
-          DebugKV('grouping', _share(IkkiuchiTobi(_rating).grouping)),
-          DebugKV('kept together', kept.isEmpty ? 'none' : kept.join(' ')),
+          DebugKV('sound grouping', '${_homes.soundGrouped ? 'on' : 'off'} '
+              '(chance ${_share(IkkiuchiTobi(_rating).soundGrouping)})'),
+          DebugKV('友札 together', '${_homes.tomofudaGrouped ? 'on' : 'off'} '
+              '(chance ${_share(IkkiuchiTobi(_rating).tomofudaGrouping)})'),
           DebugKV('same sound together', _share(_layout.groupedShare(_homes))),
           DebugKV('look-alikes together', _share(_layout.lookAlikesTogether(_homes))),
           Text(
-            'grouping: the chance each first-sound group stays together. together: the share of its pairs '
-            'homed in the same row and group.',
+            'on/off: his habits this match. together: the share of its pairs homed in the same row and group.',
             style: debugMono.copyWith(color: Palette.mute),
           ),
           const SizedBox(height: IkkiuchiToolsStyle.gap),

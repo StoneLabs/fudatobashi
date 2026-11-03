@@ -212,5 +212,56 @@ void main() {
       expect(weak.alike, greaterThan(0.7), reason: '$weak');
       expect(strong.alike, lessThan(0.15), reason: '$strong');
     });
+
+    test('decides his two habits once a match from its seed, whatever the deal', () {
+      for (final rating in ratings) {
+        for (var seed = 0; seed < 20; seed++) {
+          final h = homes(rating, 25, 3, seed);
+          final (own, others) = deal(16, seed + 1);
+          final other = layout.generate(rating: rating, own: own, others: others, rows: 2, seed: seed);
+          expect((other.soundGrouped, other.tomofudaGrouped), (h.soundGrouped, h.tomofudaGrouped),
+              reason: '$rating, seed $seed');
+        }
+      }
+    });
+
+    test('has each habit in about the share of games its curve gives', () {
+      const games = 1000;
+      for (final rating in [2600.0, 3000.0, 3600.0]) {
+        var sound = 0, tomofuda = 0;
+        for (var seed = 0; seed < games; seed++) {
+          final h = homes(rating, 25, 3, seed);
+          if (h.soundGrouped) sound++;
+          if (h.tomofudaGrouped) tomofuda++;
+        }
+        expect(sound / games, closeTo(IkkiuchiLayoutTuning.soundGrouping.at(rating), 0.04), reason: '$rating');
+        expect(tomofuda / games, closeTo(IkkiuchiLayoutTuning.tomofudaGrouping.at(rating), 0.04), reason: '$rating');
+      }
+    });
+
+    test('keeps each 友札 family side by side in a game with 友札 together and no sound grouping', () {
+      var games = 0;
+      for (final rating in [2000.0, 2600.0, 3000.0]) {
+        for (var seed = 0; seed < 300; seed++) {
+          final h = homes(rating, 25, 3, seed);
+          if (h.soundGrouped || !h.tomofudaGrouped) continue;
+          final together = layout.lookAlikesTogether(h);
+          if (together == null) continue;
+          games++;
+          expect(together, 1, reason: '$rating, seed $seed');
+        }
+      }
+      expect(games, greaterThan(0));
+    });
+
+    test("splits a strong Tobi's 友札 in a game with neither habit", () {
+      final shares = [
+        for (var seed = 0; seed < 300; seed++)
+          if (homes(IkkiuchiTuning.ratingMax, 25, 3, seed) case final h when !h.soundGrouped && !h.tomofudaGrouped)
+            ?layout.lookAlikesTogether(h),
+      ];
+      expect(shares, isNotEmpty);
+      expect(shares.where((s) => s == 0).length / shares.length, greaterThan(0.95));
+    });
   });
 }

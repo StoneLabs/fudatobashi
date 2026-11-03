@@ -81,7 +81,8 @@ void main() {
       'smartSend': IkkiuchiTuning.smartSend,
       'placingSeconds': IkkiuchiTuning.placingSeconds,
       'sweepShare': IkkiuchiTuning.sweepShare,
-      'grouping': IkkiuchiLayoutTuning.grouping,
+      'soundGrouping': IkkiuchiLayoutTuning.soundGrouping,
+      'tomofudaGrouping': IkkiuchiLayoutTuning.tomofudaGrouping,
     };
 
     test('each runs in rising rating over the rating range, log ones above 0', () {

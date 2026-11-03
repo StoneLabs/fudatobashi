@@ -90,11 +90,18 @@ abstract final class IkkiuchiTuning {
 /// Tobi's own fixed layout for a match (`IkkiuchiLayout`): a home spot for every
 /// card that may come to his side, from his rating.
 abstract final class IkkiuchiLayoutTuning {
-  /// How grouped his layout is, 0 to 1: the chance that each group of
-  /// cards with the same first sound stays together. A weak Tobi sorts his
-  /// cards by their first sounds; a strong one spreads look-alikes apart.
-  static const grouping = IkkiuchiCurve([
-    (0, 1), (800, 0.9), (1600, 0.65), (2400, 0.3), (2800, 0.15), (3600, 0.05),
+  /// His two layout habits, each the chance he has it in a match, decided
+  /// once from the match's seed. A weak Tobi has both; a strong one rarely
+  /// has either, and then spreads his look-alikes apart.
+  /// - [soundGrouping]: every group of cards with the same first sound (the
+  ///   one-sound cards as one group) lies together, its 友札 side by side.
+  /// - [tomofudaGrouping]: each family of look-alikes (友札) lies side by
+  ///   side, even when he doesn't group by first sound.
+  static const soundGrouping = IkkiuchiCurve([
+    (0, 1), (1200, 0.9), (2000, 0.5), (2600, 0.2), (3000, 0.1), (3600, 0.03),
+  ]);
+  static const tomofudaGrouping = IkkiuchiCurve([
+    (0, 1), (1200, 0.8), (2000, 0.4), (2600, 0.2), (3000, 0.1), (3600, 0.03),
   ]);
 
   /// A side has [rows] rows; 2 only with at most [twoRowsUpTo] cards a

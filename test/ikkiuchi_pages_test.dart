@@ -136,7 +136,7 @@ void main() {
       expect(find.text(take), findsWidgets, reason: 'take time at $r');
       await captureDown(tester, 'ikkiuchi/curves_$r');
       expect(find.byType(CustomPaint), findsWidgets);
-      expect(find.text('Layout grouping: chance a first-sound group stays together'), findsOneWidget);
+      expect(find.text('友札 together: chance a match keeps look-alikes side by side'), findsOneWidget);
     }
     await tester.pumpWidget(const SizedBox());
   });
@@ -163,7 +163,7 @@ void main() {
       expect(find.text('seed 3'), findsOneWidget);
       await captureDown(tester, 'ikkiuchi/layout_${rating.round()}');
       expect(await fieldCards(), hasLength(IkkiuchiToolsTuning.perSideStart), reason: 'his side alone');
-      expect(find.text(IkkiuchiTobi(rating).grouping.toStringAsFixed(2)), findsOneWidget);
+      expect(find.textContaining('sound grouping'), findsOneWidget);
     }
 
     await show(tester, p, const IkkiuchiLayoutPage(rating: 1600, seed: 3, showAway: true));

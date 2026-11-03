@@ -126,8 +126,10 @@ final _curves = [
       (t) => t.smartSend, _percent),
   _Curve('placing time', 'Time to lay out his side (log scale)', IkkiuchiTuning.placingSeconds.anchors,
       (t) => t.placingSeconds, _minutes),
-  _Curve('layout grouping', 'Layout grouping: chance a first-sound group stays together',
-      IkkiuchiLayoutTuning.grouping.anchors, (t) => t.grouping, _plain),
+  _Curve('sound grouping', 'Sound grouping: chance a match keeps first-sound groups together',
+      IkkiuchiLayoutTuning.soundGrouping.anchors, (t) => t.soundGrouping, _percent),
+  _Curve('友札 together', '友札 together: chance a match keeps look-alikes side by side',
+      IkkiuchiLayoutTuning.tomofudaGrouping.anchors, (t) => t.tomofudaGrouping, _percent),
   _Curve('sweep', 'Sweep (払い) share of his arm moves; the wild moves split the rest',
       IkkiuchiTuning.sweepShare.anchors, (t) => t.moves.sweep, _percent),
 ];

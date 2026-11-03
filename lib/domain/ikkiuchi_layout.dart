@@ -41,18 +41,18 @@ class IkkiuchiRow {
 /// Tobi's home spots for one match ([IkkiuchiLayout.generate]): one for
 /// each card dealt, his [own] and every card that may come to him.
 class IkkiuchiHomes {
-  IkkiuchiHomes._(this.grouping, this.kept, this.own, this.plan)
+  IkkiuchiHomes._(this.soundGrouped, this.tomofudaGrouped, this.own, this.plan)
       : _homes = {
           for (final (r, row) in plan.indexed)
             for (final g in IkkiuchiGroup.values)
               for (final (i, id) in row.group(g).indexed) id: IkkiuchiHome(r, g, i),
         };
 
-  /// How grouped the layout was meant to be (see
-  /// [IkkiuchiLayoutTuning.grouping]), and the groups it kept together
-  /// ([IkkiuchiLayout.groupOf]).
-  final double grouping;
-  final Set<String> kept;
+  /// The match's layout habits: whether he keeps each first-sound group
+  /// together ([IkkiuchiLayoutTuning.soundGrouping]), and each family of
+  /// 友札 side by side ([IkkiuchiLayoutTuning.tomofudaGrouping]).
+  final bool soundGrouped;
+  final bool tomofudaGrouped;
   final List<int> own;
 
   /// Every card homed in each row, 下段 first.
@@ -109,15 +109,18 @@ class IkkiuchiHomes {
 ///
 /// His cards sort into groups by the first sound of their kimariji; the
 /// short cards ([IkkiuchiLayoutTuning.nearRowSounds], the one-sound cards)
-/// make one group. Each group stays together with the chance
-/// [IkkiuchiLayoutTuning.grouping] at his rating, or else is broken up:
-/// - A group kept together lies as one run in one row's group, in kana
-///   order, so its 友札 sit side by side. Longer runs are laid first, each
-///   where there is the most room; one too long for its place goes on in
-///   the nearest place with room, the same row's other group first.
-/// - A broken group's cards are placed one by one, look-alikes first, each
-///   where the fewest of its look-alikes are (none if it can), else where
-///   there is the most room.
+/// make one group. Once a match he decides his two habits, each with its
+/// chance at his rating, and they set which cards lie together as runs:
+/// - Grouping by sound ([IkkiuchiLayoutTuning.soundGrouping]), each group
+///   is a run, in kana order, so its 友札 sit side by side.
+/// - Else, keeping 友札 together ([IkkiuchiLayoutTuning.tomofudaGrouping]),
+///   each family of look-alikes is a run.
+/// - A run lies in one row's group. Longer runs are laid first, each where
+///   there is the most room; one too long for its place goes on in the
+///   nearest place with room, the same row's other group first.
+/// - Every other card is placed alone, look-alikes first, each where the
+///   fewest of its look-alikes are (none if it can), else where there is
+///   the most room.
 /// - Short cards go to 下段, nearest his hand, while it has room.
 ///
 /// His own cards fill his rows first: 下段 the fullest, each row split
@@ -195,13 +198,13 @@ class IkkiuchiLayout {
     assert(rowsAllowed(own.length, rows), '${own.length} cards in $rows rows');
     assert(own.toSet().intersection(others.toSet()).isEmpty, 'a card dealt to both sides');
     final rng = math.Random(seed);
-    final grouping = IkkiuchiLayoutTuning.grouping.at(rating);
-    final groups = {for (final id in [...own, ...others]) groupOf(id)}.toList()..sort();
-    final kept = {
-      for (final g in groups)
-        if (rng.nextDouble() < grouping) g,
+    final bySound = rng.nextDouble() < IkkiuchiLayoutTuning.soundGrouping.at(rating);
+    final byTomofuda = rng.nextDouble() < IkkiuchiLayoutTuning.tomofudaGrouping.at(rating);
+    final familyOf = {
+      for (final family in families([...own, ...others]))
+        for (final id in family) id: family.first,
     };
-    final plan = _Plan(this, rows, rng);
+    final plan = _Plan(this, rows, rng, (id) => bySound ? groupOf(id) : (byTomofuda ? familyOf[id] : null));
 
     final shape = [
       for (var r = 0; r < rows; r++) own.length ~/ rows + (r < own.length % rows ? 1 : 0),
@@ -209,12 +212,12 @@ class IkkiuchiLayout {
     final leftOf = [for (final n in shape) n ~/ 2 + (n.isOdd && rng.nextBool() ? 1 : 0)];
     plan.room = (box) =>
         (box.group == IkkiuchiGroup.left ? leftOf[box.row] : shape[box.row] - leftOf[box.row]) - box.count;
-    plan.place(own, kept);
+    plan.place(own);
 
     plan.room = (box) => rowRoom - plan.rowCount(box.row);
-    plan.place(others, kept);
+    plan.place(others);
 
-    return IkkiuchiHomes._(grouping, kept, List.unmodifiable(own), [
+    return IkkiuchiHomes._(bySound, byTomofuda, List.unmodifiable(own), [
       for (var r = 0; r < rows; r++)
         IkkiuchiRow(plan.box(r, IkkiuchiGroup.left).cards.toList(), plan.box(r, IkkiuchiGroup.right).cards.toList()),
     ]);
@@ -245,7 +248,7 @@ class IkkiuchiLayout {
 }
 
 /// One group of one row while the homes are laid: its runs of cards from
-/// the outer edge in, each a kept group's cards or a single card.
+/// the outer edge in, each a run's cards or a single card.
 class _Box {
   _Box(this.row, this.group);
 
@@ -263,7 +266,7 @@ class _Box {
 
 /// The homes while they are laid, by [IkkiuchiLayout]'s rules.
 class _Plan {
-  _Plan(this.layout, int rows, this.rng)
+  _Plan(this.layout, int rows, this.rng, this.runOf)
       : boxes = [
           for (var r = 0; r < rows; r++)
             for (final g in IkkiuchiGroup.values) _Box(r, g),
@@ -273,6 +276,10 @@ class _Plan {
   final math.Random rng;
   final List<_Box> boxes;
 
+  /// The run a card lies in, the same for each of its cards; null for a
+  /// card placed alone.
+  final Object? Function(int poemId) runOf;
+
   /// The cards a box may still take: its share of his starting rows, then
   /// its row's room.
   late int Function(_Box box) room;
@@ -280,32 +287,26 @@ class _Plan {
   _Box box(int row, IkkiuchiGroup group) => boxes[row * IkkiuchiGroup.values.length + group.index];
   int rowCount(int row) => boxes.where((b) => b.row == row).fold(0, (n, b) => n + b.count);
 
-  /// Homes [cards]: the short cards first, then each kept group as a run,
-  /// the longest first, then the broken groups' cards one by one,
-  /// look-alikes first.
-  void place(List<int> cards, Set<String> kept) {
-    final byGroup = <String, List<int>>{};
-    for (final id in cards) {
-      byGroup.putIfAbsent(layout.groupOf(id), () => []).add(id);
-    }
-    final keys = byGroup.keys.toList()..sort();
-    for (final k in keys) {
-      byGroup[k]!.sort(layout._byKana);
+  /// Homes [cards]: the short cards first, then each run ([runOf]), the
+  /// longest first, then the other cards one by one, look-alikes first.
+  void place(List<int> cards) {
+    final byRun = <Object, List<int>>{};
+    final alone = <int>[];
+    for (final id in [...cards]..sort(layout._byKana)) {
+      final run = runOf(id);
+      run == null ? alone.add(id) : byRun.putIfAbsent(run, () => []).add(id);
     }
 
     final runs = [
-      for (final k in keys)
-        if (kept.contains(k)) (cards: byGroup[k]!, short: layout.isShort(byGroup[k]!.first), tie: rng.nextDouble()),
+      for (final run in byRun.values) (cards: run, short: layout.isShort(run.first), tie: rng.nextDouble()),
     ]..sort((a, b) {
         if (a.short != b.short) return a.short ? -1 : 1;
         if (a.cards.length != b.cards.length) return b.cards.length - a.cards.length;
         return a.tie.compareTo(b.tie);
       });
     final singles = [
-      for (final k in keys)
-        if (!kept.contains(k))
-          for (final id in byGroup[k]!)
-            (id: id, short: layout.isShort(id), alike: cards.any((c) => layout.alike(c, id)), tie: rng.nextDouble()),
+      for (final id in alone)
+        (id: id, short: layout.isShort(id), alike: cards.any((c) => layout.alike(c, id)), tie: rng.nextDouble()),
     ]..sort((a, b) {
         if (a.short != b.short) return a.short ? -1 : 1;
         if (a.alike != b.alike) return a.alike ? -1 : 1;
@@ -323,18 +324,18 @@ class _Plan {
     }
   }
 
-  /// A kept group's [run] joins its group's cards where most of them lie,
-  /// or else starts where there is the most room.
+  /// A [run] joins its run's cards where most of them lie, or else starts
+  /// where there is the most room.
   void _placeRun(List<int> run) {
-    final group = layout.groupOf(run.first);
-    int ofGroup(_Box b) => b.cards.where((c) => layout.groupOf(c) == group).length;
-    final holding = boxes.where((b) => ofGroup(b) > 0).toList();
+    final key = runOf(run.first);
+    int ofRun(_Box b) => b.cards.where((c) => runOf(c) == key).length;
+    final holding = boxes.where((b) => ofRun(b) > 0).toList();
     if (holding.isEmpty) {
       _layRun(run, _pick(_choices(short: layout.isShort(run.first)), _roomier));
       return;
     }
-    final home = _pick(holding, (a, b) => ofGroup(b) - ofGroup(a));
-    _layRun(run, home, into: home.units.firstWhere((u) => layout.groupOf(u.first) == group));
+    final home = _pick(holding, (a, b) => ofRun(b) - ofRun(a));
+    _layRun(run, home, into: home.units.firstWhere((u) => runOf(u.first) == key));
   }
 
   /// Lays [run] in [start] as far as its room goes, joining the unit [into]

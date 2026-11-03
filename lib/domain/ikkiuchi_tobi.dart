@@ -35,9 +35,11 @@ class IkkiuchiTobi {
   double get smartSend => IkkiuchiTuning.smartSend.at(rating);
   double get placingSeconds => IkkiuchiTuning.placingSeconds.at(rating);
 
-  /// The chance each group of cards with the same first sound stays
-  /// together in his layout.
-  double get grouping => IkkiuchiLayoutTuning.grouping.at(rating);
+  /// The chances that, in a match, his layout keeps each group of cards
+  /// with the same first sound together, and each family of 友札 side by
+  /// side.
+  double get soundGrouping => IkkiuchiLayoutTuning.soundGrouping.at(rating);
+  double get tomofudaGrouping => IkkiuchiLayoutTuning.tomofudaGrouping.at(rating);
 
   /// The shares of his four arm moves, adding up to 1: the sweep's from its
   /// curve, the rest split between the wild moves.
