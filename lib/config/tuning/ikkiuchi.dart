@@ -521,8 +521,10 @@ abstract final class IkkiuchiToolsTuning {
   static const int seeds = 1000;
 
   /// Added to a deal's seed for the player's side, so its rating and layout
-  /// are drawn apart from Tobi's.
+  /// are drawn apart from Tobi's; and for Tobi's rating where a page draws
+  /// it at random.
   static const int playerSeedOffset = 7919;
+  static const int tobiSeedOffset = 104729;
 
   /// A full field's cards a side and rows.
   static const int dealPerSide = 25;
@@ -532,4 +534,12 @@ abstract final class IkkiuchiToolsTuning {
   /// ends, all cards still, the board resets.
   static const List<double> slowMotion = [1, 0.5, 0.25, 0.1];
   static const Duration autoReset = Duration(seconds: 3);
+
+  /// The field page: the system bars hidden while it is open (a swipe in
+  /// from an edge shows them for a while), how long after the finger lifts
+  /// the cards it stirred set off home, and their glide there.
+  static const SystemUiMode fieldBars = SystemUiMode.immersiveSticky;
+  static const Duration fieldWait = Duration(milliseconds: 1000);
+  static const Duration fieldGlide = Duration(milliseconds: 250);
+  static const Curve fieldGlideCurve = Curves.easeInOutCubic;
 }

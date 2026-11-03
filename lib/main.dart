@@ -63,7 +63,7 @@ Future<void> _start() async {
       await FlutterDisplayMode.setHighRefreshRate();
     } catch (_) {}
   }
-  SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
+  SystemChrome.setEnabledSystemUIMode(SystemBarsTuning.app);
   await Localization.load();
   poems = await Poems.load();
   joka = await Waka.load(jokaAsset);

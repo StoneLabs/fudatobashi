@@ -76,3 +76,9 @@ abstract final class OrientationTuning {
   static const List<DeviceOrientation> landscape = [DeviceOrientation.landscapeLeft, DeviceOrientation.landscapeRight];
   static const List<DeviceOrientation> any = [DeviceOrientation.portraitUp, ...landscape];
 }
+
+/// How the app shows the system bars: drawn over, edge to edge. A page that
+/// hides them returns to this as it closes.
+abstract final class SystemBarsTuning {
+  static const SystemUiMode app = SystemUiMode.edgeToEdge;
+}

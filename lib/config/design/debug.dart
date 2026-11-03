@@ -150,6 +150,21 @@ abstract final class IkkiuchiToolsStyle {
   static const String menuMark = ' ▼';
   static const double menuMarkFont = 8;
 
+  /// The field page's two buttons over the board, see-through and edged so
+  /// they show on the tatami and the band alike: [fieldButton] square,
+  /// [fieldButtonGap] apart, [fieldButtonInset] in from the screen's top
+  /// right in portrait, and from the top end of the band in landscape,
+  /// where the cards leave no corner free.
+  static const double fieldButton = 28;
+  static const double fieldButtonGap = 6;
+  static const double fieldButtonInset = 8;
+  static const double fieldButtonRadius = 6;
+  static const double fieldButtonFont = 11;
+  static const Color fieldButtonFill = Color(0x8CFFFFFF);
+  static const Color fieldButtonInk = Color(0xB3141414);
+  static const Color fieldButtonEdge = Color(0x4D141414);
+  static const double fieldButtonEdgeWidth = 1;
+
   static const Color ground = Palette.desk;
   static const double minPitch = 30;
   static const double maxPitch = 46;
