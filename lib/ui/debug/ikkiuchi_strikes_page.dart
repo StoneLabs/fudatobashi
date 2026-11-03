@@ -68,7 +68,7 @@ class IkkiuchiStrikesPageState extends State<IkkiuchiStrikesPage> with SingleTic
   late final _rng = math.Random(_seed);
   late bool _landscape = widget.landscape;
   var _mode = IkkiuchiTapMode.read;
-  IkkiuchiMove? _move;
+  final _moves = {...IkkiuchiMove.values};
   var _mistakes = true, _wind = true, _voice = true, _autoReset = true;
   var _speed = IkkiuchiToolsTuning.slowMotion.first;
 
@@ -168,7 +168,7 @@ class IkkiuchiStrikesPageState extends State<IkkiuchiStrikesPage> with SingleTic
       rng: _rng,
       now: _mode == IkkiuchiTapMode.now,
       mistakes: _mistakes,
-      move: _move,
+      moves: _moves,
     );
     final karafuda = !field.containsKey(poemId);
     scene.show(kimarijiFor(context, poemId), karafuda: karafuda ? S.of(context).karafuda : null);
@@ -244,38 +244,51 @@ class IkkiuchiStrikesPageState extends State<IkkiuchiStrikesPage> with SingleTic
           ),
           Padding(
             padding: IkkiuchiToolsStyle.controlsPadding,
-            child: Wrap(
-              spacing: IkkiuchiToolsStyle.controlSpacing,
-              runSpacing: IkkiuchiToolsStyle.controlSpacing,
-              crossAxisAlignment: WrapCrossAlignment.center,
-              children: [
-                for (final mode in IkkiuchiTapMode.values)
-                  _chip(mode == IkkiuchiTapMode.read ? 'Read' : 'Strike now', _mode == mode,
-                      () => setState(() => _mode = mode)),
-                _button('Random', _random),
-                _button(S.of(context).karafuda, _karafuda),
-                _button('Reset', _reset),
-                _button('Rotate', () => setState(() => _landscape = !_landscape)),
-                _menu<IkkiuchiMove?>(
-                  _move == null ? 'Mixed' : _moveNames[_move]!,
-                  {null: 'Mixed', for (final move in IkkiuchiMove.values) move: _moveNames[move]!},
-                  (move) => setState(() => _move = move),
-                ),
-                _menu<double>(
-                  _speedName(_speed),
-                  {for (final speed in IkkiuchiToolsTuning.slowMotion) speed: _speedName(speed)},
-                  (speed) => setState(() => _speed = speed),
-                ),
-                _chip('mistakes', _mistakes, () => setState(() => _mistakes = !_mistakes)),
-                _chip('wind', _wind, () => setState(() => _scene?.wind = _wind = !_wind)),
-                _chip('voice', _voice, () => setState(() => _voice = !_voice)),
-                _chip('auto reset', _autoReset, () => setState(() => _autoReset = !_autoReset)),
-              ],
-            ),
+            child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+              Wrap(
+                spacing: IkkiuchiToolsStyle.controlSpacing,
+                runSpacing: IkkiuchiToolsStyle.controlSpacing,
+                crossAxisAlignment: WrapCrossAlignment.center,
+                children: [
+                  for (final mode in IkkiuchiTapMode.values)
+                    _chip(mode == IkkiuchiTapMode.read ? 'Read' : 'Strike now', _mode == mode,
+                        () => setState(() => _mode = mode)),
+                  _button('Random', _random),
+                  _button(S.of(context).karafuda, _karafuda),
+                  _button('Reset', _reset),
+                  _button('Rotate', () => setState(() => _landscape = !_landscape)),
+                  _menu<double>(
+                    _speedName(_speed),
+                    {for (final speed in IkkiuchiToolsTuning.slowMotion) speed: _speedName(speed)},
+                    (speed) => setState(() => _speed = speed),
+                  ),
+                  _chip('mistakes', _mistakes, () => setState(() => _mistakes = !_mistakes)),
+                  _chip('wind', _wind, () => setState(() => _scene?.wind = _wind = !_wind)),
+                  _chip('voice', _voice, () => setState(() => _voice = !_voice)),
+                  _chip('auto reset', _autoReset, () => setState(() => _autoReset = !_autoReset)),
+                ],
+              ),
+              const SizedBox(height: IkkiuchiToolsStyle.controlSpacing),
+              Row(children: [
+                for (final move in IkkiuchiMove.values) ...[
+                  if (move != IkkiuchiMove.values.first) const SizedBox(width: IkkiuchiToolsStyle.controlSpacing),
+                  _chip(_moveNames[move]!, _moves.contains(move), () => setState(() => _toggle(move))),
+                ],
+              ]),
+            ]),
           ),
         ],
       ),
     );
+  }
+
+  /// Turns [move] on or off for the strikes to come; the last one on stays on.
+  void _toggle(IkkiuchiMove move) {
+    if (!_moves.contains(move)) {
+      _moves.add(move);
+    } else if (_moves.length > 1) {
+      _moves.remove(move);
+    }
   }
 
   static String _speedName(double speed) => '${IkkiuchiUnit.plain.axis(speed)}×';

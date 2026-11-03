@@ -318,6 +318,39 @@ void main() {
     });
   });
 
+  group('His moves', () {
+    final board = boardFor(9, 2000);
+    IkkiuchiMove draw(double rating, math.Random rng, Set<IkkiuchiMove>? moves) => IkkiuchiRead.decide(
+            rating: rating,
+            called: board.field.keys.first,
+            field: board.field,
+            from: board.shoulders,
+            alike: layout.alike,
+            rng: rng,
+            mistakes: false,
+            moves: moves)
+        .move;
+
+    test('are picked among the moves on, by his shares among them', () {
+      const n = 4000;
+      final rng = math.Random(3);
+      const on = {IkkiuchiMove.sweep, IkkiuchiMove.whip};
+      final drawn = [for (var i = 0; i < n; i++) draw(3600, rng, on)];
+      expect(drawn.toSet(), on);
+      final shares = IkkiuchiTobi(3600).moves;
+      final sweep = shares.sweep / (shares.sweep + shares.whip);
+      expect(drawn.where((m) => m == IkkiuchiMove.sweep).length / n, closeTo(sweep, 0.03));
+    });
+
+    test('a move on alone is always his, even with no share at his rating', () {
+      expect(IkkiuchiTobi(0).moves.sweep, 0);
+      final rng = math.Random(4);
+      for (var i = 0; i < 50; i++) {
+        expect(draw(0, rng, {IkkiuchiMove.sweep}), IkkiuchiMove.sweep);
+      }
+    });
+  });
+
   // The headless check of the mock's faults: many seeded clean strikes at
   // each rating, with every move, in both layouts, half of them at the
   // player's cards. None may touch a card on the side without the called
@@ -346,7 +379,7 @@ void main() {
                 alike: layout.alike,
                 rng: rng,
                 mistakes: false,
-                move: move);
+                moves: {move});
             board.call(strikeAt(board, called, move, decided.reachMs));
             Map<IkkiuchiCard, CardBox>? home;
             playOut(board, settle: 150, each: () {

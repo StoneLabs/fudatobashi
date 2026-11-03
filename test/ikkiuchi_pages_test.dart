@@ -331,15 +331,15 @@ void main() {
       if (ms > 0) await tester.pump(Duration(microseconds: (ms * Duration.microsecondsPerMillisecond).round()));
     }
 
-    // Forces the move named [name] in the move picker.
-    Future<void> pickMove(WidgetTester tester, String name) async {
-      await tester.tap(find.textContaining('Mixed', findRichText: true));
+    // Leaves only the move named [name] on, turning the others off.
+    Future<void> onlyMove(WidgetTester tester, String name) async {
+      for (final other in ['sweep', 'whip', 'coil', 'smear']) {
+        if (other != name) await tester.tap(find.widgetWithText(ChoiceChip, other));
+      }
       await tester.pump(frame);
-      await tester.pump(Motion.route);
-      await tester.tap(find.text(name).last);
-      await tester.pump(frame);
-      await tester.pump(Motion.route);
     }
+
+    bool moveOn(WidgetTester tester, String name) => tester.widget<ChoiceChip>(find.widgetWithText(ChoiceChip, name)).selected;
 
     // Renders the page once the tatami has loaded.
     Future<void> capture(WidgetTester tester, String name) async {
@@ -409,6 +409,19 @@ void main() {
       await tester.pump(frame);
       expect(scene(tester).board.read?.onField, isFalse);
       await tester.pump(const Duration(seconds: 3));
+      for (final name in ['sweep', 'whip', 'coil', 'smear']) {
+        expect(moveOn(tester, name), isTrue, reason: 'every move on to begin with');
+      }
+      await onlyMove(tester, 'smear');
+      await tester.tap(find.widgetWithText(ChoiceChip, 'smear'));
+      await tester.pump(frame);
+      expect(moveOn(tester, 'smear'), isTrue, reason: 'the last move on stays on');
+      expect(moveOn(tester, 'whip'), isFalse);
+      for (var i = 0; i < 4; i++) {
+        await tester.tap(find.text('Random'));
+        await tester.pump(frame);
+        expect(scene(tester).board.read?.move, IkkiuchiMove.smear, reason: 'only the moves on');
+      }
       await tester.tap(find.text('Rotate'));
       await tester.pump(frame);
       expect(find.byType(RotatedBox), findsOneWidget, reason: 'only the board turns');
@@ -428,7 +441,7 @@ void main() {
         await show(tester, p, const IkkiuchiStrikesPage(rating: 2000, seed: 3));
         await tester.pump(frame);
         await tester.tap(find.text('Strike now'));
-        await pickMove(tester, chip);
+        await onlyMove(tester, chip);
         await tester.pump(frame);
         final s = scene(tester);
         final card = playerCard(s);
@@ -453,7 +466,7 @@ void main() {
       await show(tester, p, const IkkiuchiStrikesPage(rating: 2000, seed: 3, landscape: true));
       await tester.pump(frame);
       await tester.tap(find.text('Strike now'));
-      await pickMove(tester, 'whip');
+      await onlyMove(tester, 'whip');
       await tester.pump(frame);
       final s = scene(tester);
       await tapBoard(tester, s.board.cards.card(playerCard(s)).box.centre);

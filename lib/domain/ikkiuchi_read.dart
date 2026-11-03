@@ -65,8 +65,9 @@ class IkkiuchiRead {
   /// Tobi at [rating] on a call of [called], with [field] the cards on the
   /// field and where they lie, [from] the middle of his shoulders, and
   /// [alike] telling look-alikes apart. With [now] he strikes at once, with
-  /// no reaction; without [mistakes] every strike is clean. [move] forces a
-  /// move; else one is picked by his rating's shares.
+  /// no reaction; without [mistakes] every strike is clean. His move is
+  /// picked among [moves] (all when null, else at least one) by his
+  /// rating's shares.
   factory IkkiuchiRead.decide({
     required double rating,
     required int called,
@@ -76,10 +77,10 @@ class IkkiuchiRead {
     required math.Random rng,
     bool now = false,
     bool mistakes = true,
-    IkkiuchiMove? move,
+    Set<IkkiuchiMove>? moves,
   }) {
     final tobi = IkkiuchiTobi(rating);
-    final picked = _pickMove(tobi, rng.nextDouble());
+    final move = _pickMove(tobi, rng.nextDouble(), moves);
     final takeZ = _normal(rng), blankU = rng.nextDouble(), searchZ = _normal(rng);
     final slipU = rng.nextDouble(), wrongU = rng.nextDouble();
     final onField = field.containsKey(called);
@@ -100,12 +101,11 @@ class IkkiuchiRead {
         slip = IkkiuchiSlip.stray;
       }
     }
-    final chosen = move ?? picked;
     final reach = IkkiuchiTobi.hitReach(tobi.reachMs);
     final first = wrong ?? (onField ? called : null);
     if (now || first == null) {
       return IkkiuchiRead(
-          called: called, onField: onField, move: chosen, reachMs: reach, correctionReachMs: reach, wrong: wrong, slip: slip);
+          called: called, onField: onField, move: move, reachMs: reach, correctionReachMs: reach, wrong: wrong, slip: slip);
     }
 
     final take = tobi.takeMs * math.exp(takeZ * tobi.takeSpread);
@@ -121,7 +121,7 @@ class IkkiuchiRead {
     return IkkiuchiRead(
       called: called,
       onField: onField,
-      move: chosen,
+      move: move,
       reachMs: squeezed,
       correctionReachMs: reach,
       reactionMs: hit - squeezed,
@@ -132,20 +132,26 @@ class IkkiuchiRead {
     );
   }
 
-  /// One of his moves by his rating's shares, [u] in 0..1.
-  static IkkiuchiMove _pickMove(IkkiuchiTobi tobi, double u) {
+  /// One of [moves] (all when null) by his rating's shares among them,
+  /// [u] in 0..1; evenly when none of them has a share.
+  static IkkiuchiMove _pickMove(IkkiuchiTobi tobi, double u, Set<IkkiuchiMove>? moves) {
     final shares = tobi.moves;
+    final open = [
+      for (final (move, share) in [
+        (IkkiuchiMove.sweep, shares.sweep),
+        (IkkiuchiMove.whip, shares.whip),
+        (IkkiuchiMove.coilLunge, shares.coilLunge),
+        (IkkiuchiMove.smear, shares.smear),
+      ])
+        if (moves == null || moves.contains(move)) (move, share),
+    ];
+    final total = open.fold(0.0, (sum, m) => sum + m.$2);
     var acc = 0.0;
-    for (final (move, share) in [
-      (IkkiuchiMove.sweep, shares.sweep),
-      (IkkiuchiMove.whip, shares.whip),
-      (IkkiuchiMove.coilLunge, shares.coilLunge),
-      (IkkiuchiMove.smear, shares.smear),
-    ]) {
-      acc += share;
+    for (final (move, share) in open) {
+      acc += total > 0 ? share / total : 1 / open.length;
       if (u < acc) return move;
     }
-    return IkkiuchiMove.smear;
+    return open.last.$1;
   }
 
   /// A standard normal draw (Box-Muller).
