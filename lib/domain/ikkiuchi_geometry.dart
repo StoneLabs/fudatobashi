@@ -107,6 +107,12 @@ double gapToCards(Iterable<CardBox> cards, Vec p) {
   return (dir: share > 1e-3 ? kept * (1 / share) : keep.perp, share: share);
 }
 
+/// The shortest turn from angle [from] to [to], radians: within ±π.
+double turnBetween(double from, double to) {
+  final turn = (to - from) % (2 * math.pi);
+  return turn > math.pi ? turn - 2 * math.pi : turn;
+}
+
 /// The quadratic Bézier from [a] by [q] to [b] at [t].
 Vec bezier(Vec a, Vec q, Vec b, double t) {
   final u = 1 - t;

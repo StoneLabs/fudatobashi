@@ -23,6 +23,9 @@ class IkkiuchiCard {
   CardBox? _last;
   final IkkiuchiCards _sim;
 
+  /// Whether the sim has woken it since it last lay at home.
+  bool _stirred = false;
+
   /// Whether Tobi took it: it flies off and fades.
   bool taken = false;
 
@@ -218,6 +221,7 @@ class IkkiuchiCards {
     for (final card in cards) {
       final body = card._body;
       if (body == null || !body.isAwake) continue;
+      card._stirred = true;
       final w = body.angularVelocity;
       if (w.abs() > IkkiuchiPhysicsTuning.maxSpin) body.angularVelocity = w.sign * IkkiuchiPhysicsTuning.maxSpin;
       final at = card.box.centre;
@@ -231,6 +235,53 @@ class IkkiuchiCards {
       const fade = IkkiuchiPhysicsTuning.step * Duration.millisecondsPerSecond / IkkiuchiPhysicsTuning.fadeMs;
       card.shown = math.max(0, card.shown - fade);
     }
+    if (_gliding.isNotEmpty) _glide();
+  }
+
+  /// The cards gliding home, each from where it lay as it set off, and the
+  /// glide's length, its time so far (ms) and its ease.
+  final Map<IkkiuchiCard, CardBox> _gliding = {};
+  double _glideMs = 0, _glideAt = 0;
+  double Function(double t) _ease = _linear;
+
+  static double _linear(double t) => t;
+
+  /// Sends every card the sim has stirred since it lay at home back there,
+  /// gliding over [ms] eased by [ease] (from 0 to 1 as its time goes from 0
+  /// to 1), the shortest way round. On the way it is out of the sim; once
+  /// home it lies there still. A card gone off the board glides back from
+  /// where it left; a taken card stays taken.
+  void glideHome({required double ms, required double Function(double t) ease}) {
+    for (final card in cards) {
+      if (card.taken || !card._stirred) continue;
+      if (card._body != null) _remove(card, shown: 1);
+      card.shown = 1;
+      _gliding[card] = card.box;
+    }
+    _glideMs = ms;
+    _glideAt = 0;
+    _ease = ease;
+  }
+
+  /// Whether cards are gliding home.
+  bool get gliding => _gliding.isNotEmpty;
+
+  void _glide() {
+    _glideAt += IkkiuchiPhysicsTuning.step * Duration.millisecondsPerSecond;
+    final t = math.min(1.0, _glideAt / _glideMs);
+    final e = _ease(t);
+    for (final MapEntry(key: card, value: from) in _gliding.entries) {
+      final home = card.home;
+      card._last = home.movedTo(from.centre.lerp(home.centre, e), from.angle + turnBetween(from.angle, home.angle) * e);
+    }
+    if (t < 1) return;
+    for (final card in _gliding.keys) {
+      card
+        .._body = _bodyAtHome(card)
+        .._last = null
+        .._stirred = false;
+    }
+    _gliding.clear();
   }
 
   void _remove(IkkiuchiCard card, {required double shown}) {

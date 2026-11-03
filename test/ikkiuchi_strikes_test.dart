@@ -331,6 +331,71 @@ void main() {
       expect(card.movedFrom(card.home, dp: 1, radians: 0.01), isTrue, reason: 'it pushed the card it went through');
     });
 
+    test('the cards stirred glide home the shortest way round and lie still there, one gone off the board too', () {
+      const cardW = 38.0;
+      final cards = IkkiuchiCards([
+        (id: 1, side: IkkiuchiSide.player, box: const CardBox(Vec(200, 600), 19, 27)),
+        (id: 2, side: IkkiuchiSide.player, box: const CardBox(Vec(100, 600), 19, 27)),
+        (id: 3, side: IkkiuchiSide.player, box: const CardBox(Vec(300, 700), 19, 27, math.pi)),
+      ], board: const Vec(384, 832), cardW: cardW);
+      final gone = cards.card(1), knocked = cards.card(2), still = cards.card(3);
+      // A fast stroke through card 1 sends it off the board's right edge.
+      cards.moveFinger(const Vec(150, 600), const Vec(180, 600));
+      for (var x = 180.0; x < 280; x += 30) {
+        cards.step();
+        cards.moveFinger(Vec(x, 600), Vec(x + 30, 600));
+      }
+      cards.moveFinger(const Vec(60, 640), const Vec(60, 640));
+      cards.step();
+      cards.moveFinger(const Vec(60, 640), const Vec(110, 560));
+      cards.step();
+      cards.moveFinger(null, null);
+      for (var i = 0; i < 2000 && gone.onBoard; i++) {
+        cards.step();
+      }
+      expect(gone.onBoard, isFalse, reason: 'knocked off the board');
+      for (var i = 0; i < 240; i++) {
+        cards.step();
+      }
+      expect(knocked.movedFrom(knocked.home, dp: 1, radians: 0.01), isTrue);
+      final from = knocked.box;
+
+      const ms = 100.0;
+      cards.glideHome(ms: ms, ease: (t) => t);
+      expect(cards.gliding, isTrue);
+      expect(gone.onBoard, isTrue, reason: 'it comes back');
+      for (var i = 0; i < ms / step / 2; i++) {
+        cards.step();
+      }
+      final half = knocked.box;
+      expect(half.centre.distanceTo(from.centre.lerp(knocked.home.centre, 0.5)), lessThan(1e-6), reason: 'halfway');
+      expect(half.angle, closeTo(from.angle + turnBetween(from.angle, knocked.home.angle) / 2, 1e-9));
+      for (var i = 0; i < ms / step / 2 + 1; i++) {
+        cards.step();
+      }
+      expect(cards.gliding, isFalse);
+      // The sim keeps positions in single floats, as when the board was set out.
+      for (final c in [gone, knocked, still]) {
+        expect(c.box.centre.distanceTo(c.home.centre), lessThan(1e-3), reason: 'card ${c.id} home');
+        expect(turnBetween(c.box.angle, c.home.angle).abs(), lessThan(1e-6), reason: 'card ${c.id} turned home');
+        expect(c.still, isTrue);
+        expect(c.onBoard, isTrue);
+      }
+      cards.moveFinger(const Vec(160, 600), const Vec(170, 600));
+      for (var i = 0; i < 6; i++) {
+        cards.step();
+        cards.moveFinger(Vec(170 + 10.0 * i, 600), Vec(180 + 10.0 * i, 600));
+      }
+      expect(gone.movedFrom(gone.home, dp: 1, radians: 0.01), isTrue, reason: 'home, it is in the sim again');
+    });
+
+    test('a turn the shortest way round', () {
+      expect(turnBetween(0, math.pi / 2), closeTo(math.pi / 2, 1e-12));
+      expect(turnBetween(0, -math.pi / 2), closeTo(-math.pi / 2, 1e-12));
+      expect(turnBetween(5 * math.pi + 0.1, math.pi), closeTo(-0.1, 1e-9));
+      expect(turnBetween(-7 * math.pi / 2, 0), closeTo(-math.pi / 2, 1e-9));
+    });
+
     test('is the same for the same calls at the same steps', () {
       List<CardBox> run() {
         final board = boardFor(4, 1600);
