@@ -353,6 +353,27 @@ void main() {
       await captureScreen(tester, 'ikkiuchi/$name');
     }
 
+    testWidgets('New seed deals a new board; a fixed seed deals the same', (tester) async {
+      final p = await open(tester);
+      List<int> ids(IkkiuchiBoardScene s) => [for (final c in s.board.cards.cards) c.id];
+      await show(tester, p, const IkkiuchiStrikesPage(rating: 2000, seed: 3));
+      await tester.pump(frame);
+      final first = ids(scene(tester));
+      expect(find.textContaining('seed 3 · you '), findsOneWidget);
+      await show(tester, p, const IkkiuchiStrikesPage(rating: 2000, seed: 3));
+      await tester.pump(frame);
+      expect(ids(scene(tester)), first);
+      var changed = false;
+      for (var i = 0; i < 5 && !changed; i++) {
+        await tester.tap(find.text('New seed'));
+        await tester.pump(frame);
+        changed = !find.textContaining('seed 3 · ').evaluate().isNotEmpty && ids(scene(tester)).toString() != first.toString();
+      }
+      expect(changed, isTrue);
+      expect(tester.takeException(), isNull);
+      await tester.pumpWidget(const SizedBox());
+    });
+
     testWidgets('the board in portrait and landscape, and its controls', (tester) async {
       final p = await open(tester);
       for (final landscape in [false, true]) {

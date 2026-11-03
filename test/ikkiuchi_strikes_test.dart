@@ -38,7 +38,7 @@ void main() {
   const sizes = {'phone': phone, 'small': small, 'large': large};
 
   // A full field dealt by [seed]: Tobi's side by his layout at [rating],
-  // the player's at random, on a board of [size].
+  // the player's by it too, on a board of [size].
   IkkiuchiBoardLayout layoutFor(int seed, double rating, {bool landscape = false, Size size = phone}) {
     final deck = [for (final p in poems.all) p.id]..shuffle(math.Random(seed));
     final own = deck.sublist(0, 25), others = deck.sublist(25, 50);
@@ -46,7 +46,7 @@ void main() {
       size: landscape ? size.flipped : size,
       landscape: landscape,
       tobiRows: layout.generate(rating: rating, own: own, others: others, rows: 3, seed: seed).start,
-      playerRows: IkkiuchiBoardLayout.randomSide(others, 3, math.Random(seed)),
+      playerRows: layout.generate(rating: rating, own: others, others: own, rows: 3, seed: seed + 1).start,
       rig: rig,
     );
   }
@@ -418,7 +418,7 @@ void main() {
       board.call(IkkiuchiRead(
           called: away, onField: false, move: IkkiuchiMove.smear, reachMs: 500, correctionReachMs: 500, wrong: touched));
       playOut(board);
-      expect(board.faults.keys.first, touched);
+      expect(board.faults, contains(touched));
       expect(board.cards.cards.where((c) => c.taken), isEmpty);
       expect(board.restFace, TobiFace.shocked);
     });

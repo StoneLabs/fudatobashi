@@ -87,17 +87,4 @@ class IkkiuchiBoardLayout {
 
   /// The board set out on this layout, no card crossing the middle of the band.
   IkkiuchiBoard board() => IkkiuchiBoard(tobi: tobi, size: size, cards: cards, cardW: cardW, centreLine: band.center.dy);
-
-  /// [cards] laid out as a side of [rows] rows at random, in a shape drawn
-  /// as Tobi's starting side's is ([IkkiuchiLayout.drawShape]).
-  static List<IkkiuchiRow> randomSide(List<int> cards, int rows, math.Random rng) {
-    final shuffled = [...cards]..shuffle(rng);
-    final out = <IkkiuchiRow>[];
-    var i = 0;
-    for (final (:left, :right) in IkkiuchiLayout.drawShape(cards.length, rows, rng)) {
-      out.add(IkkiuchiRow(shuffled.sublist(i, i + left), shuffled.sublist(i + left, i + left + right)));
-      i += left + right;
-    }
-    return out;
-  }
 }

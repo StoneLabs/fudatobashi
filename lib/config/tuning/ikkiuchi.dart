@@ -515,6 +515,10 @@ abstract final class IkkiuchiToolsTuning {
   static const List<int> wideRows = [12, 14];
   static const int seeds = 1000;
 
+  /// Added to a deal's seed for the player's side, so its rating and layout
+  /// are drawn apart from Tobi's.
+  static const int playerSeedOffset = 7919;
+
   /// The strikes page: its cards a side and rows, its slow motion speeds,
   /// and how long after a strike ends, all cards still, the board resets.
   static const int strikesPerSide = 25;
