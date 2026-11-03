@@ -1,8 +1,9 @@
 import '../config/config.dart';
 import 'ikkiuchi_geometry.dart';
 
-/// The faces Tobi wears around a strike (一騎打ち), each one of his poses.
-enum TobiFace { standard, reaching, cheering, shocked }
+/// The faces Tobi wears in a match (一騎打ち), each one of his poses: at
+/// rest, in and after a strike, and pointing at a card he holds out.
+enum TobiFace { standard, reaching, cheering, shocked, pointing }
 
 /// Tobi's arms, left and right as his art draws them.
 enum ArmSide {

@@ -7,21 +7,23 @@ import 'package:flutter/services.dart';
 
 import '../../config/config.dart';
 import '../../config/design.dart';
-import '../../domain/ikkiuchi_geometry.dart';
 import '../../l10n/strings.dart';
 import '../ikkiuchi/ikkiuchi_board_painter.dart';
+import '../ikkiuchi/ikkiuchi_board_scene.dart';
 import 'debug_common.dart';
 import 'ikkiuchi_dealer.dart';
 
 /// The developer's view of the 一騎打ち field as the match shows it: the
 /// whole screen, its system bars hidden, with Tobi in his place, his side,
 /// the band and the player's side, dealt at random with Tobi at a random
-/// rating. One card is marked as the one read, its kimariji on the band,
-/// and the player's finger pushes the cards about with the board's
-/// physics; there are no takes, faults or scores. A while after the finger
-/// lifts, every card it stirred glides home and another card is marked.
-/// "R" turns the board's layout between portrait and landscape, a number
-/// deals anew with that many cards a side, and the system back leaves.
+/// rating. The page only drives the match's board ([IkkiuchiBoardScene]):
+/// it reads a card at random, its kimariji on the band, and the player's
+/// finger pushes the cards about, taking the card as the match would;
+/// Tobi doesn't strike. Once the board comes to rest again another card
+/// is read. "R" turns the board's layout between portrait and landscape, a
+/// number deals anew with that many cards a side, "^" has the player send
+/// Tobi a card (送り札) and "v" has Tobi send the player one; the system
+/// back leaves.
 class IkkiuchiFieldPage extends StatefulWidget {
   const IkkiuchiFieldPage({super.key, this.seed, this.landscape = false});
 
@@ -43,16 +45,6 @@ class IkkiuchiFieldPageState extends State<IkkiuchiFieldPage> with SingleTickerP
   int _perSide = IkkiuchiToolsTuning.dealPerSide;
   late final Ticker _ticker = createTicker(_tick);
   Duration _last = Duration.zero;
-
-  /// The pointer of the finger on the board; other fingers are let be.
-  int? _finger;
-
-  /// How long until the cards the finger stirred set off home, from when it
-  /// lifted; null while it is down, or with no swipe to answer.
-  Duration? _wait;
-
-  /// Whether the cards are on their way home.
-  bool _returning = false;
 
   /// The board as drawn now (for tests).
   IkkiuchiBoardScene? get scene => _dealer.scene;
@@ -82,70 +74,33 @@ class IkkiuchiFieldPageState extends State<IkkiuchiFieldPage> with SingleTickerP
 
   void _turn() => setState(() => _landscape = !_landscape);
 
-  /// The scene for a board filling [room]; a new one starts with a card marked.
+  /// The scene for a board filling [room]; a new one starts with a card
+  /// read, and reads another each time it comes to rest.
   IkkiuchiBoardScene _sceneFor(Size room) => _dealer.sceneFor(context, room,
       landscape: _landscape,
       rating: IkkiuchiDealer.drawnRating(_seed + IkkiuchiToolsTuning.tobiSeedOffset),
       seed: _seed,
       perSide: _perSide,
       onNew: (scene) {
-        _finger = null;
-        _wait = null;
-        _returning = false;
-        _markAnother(scene);
+        scene.onSettled = () => _readAnother(scene);
+        _readAnother(scene);
       });
 
-  /// Marks a card on the field as the one read, not the one marked so far,
-  /// and shows its kimariji on the band.
-  void _markAnother(IkkiuchiBoardScene scene) {
+  /// Reads a card on the field at random, not the one read so far.
+  void _readAnother(IkkiuchiBoardScene scene) {
     final ids = [
-      for (final c in scene.board.cards.cards)
-        if (c.id != scene.marked) c.id,
+      for (final id in scene.board.field.keys)
+        if (id != scene.board.called) id,
     ]..sort();
+    if (ids.isEmpty) return;
     final id = ids[_rng.nextInt(ids.length)];
-    scene
-      ..mark(id)
-      ..show(kimarijiFor(context, id));
-  }
-
-  void _onPointer(PointerEvent event) {
-    final board = scene?.board;
-    if (board == null) return;
-    final at = Vec(event.localPosition.dx, event.localPosition.dy);
-    switch (event) {
-      case PointerDownEvent() when _finger == null:
-        _finger = event.pointer;
-        _wait = null;
-        board.touch(at);
-      case PointerMoveEvent() when event.pointer == _finger:
-        board.touch(at);
-      case PointerUpEvent() || PointerCancelEvent() when event.pointer == _finger:
-        _finger = null;
-        _wait = IkkiuchiToolsTuning.fieldWait;
-        board.lift();
-    }
+    scene.callCard(id, kimarijiFor(context, id));
   }
 
   void _tick(Duration elapsed) {
     final dt = elapsed - _last;
     _last = elapsed;
-    final scene = this.scene;
-    if (scene == null) return;
-    scene.advance(dt.inMicroseconds / Duration.microsecondsPerMillisecond);
-    final cards = scene.board.cards;
-    if (_wait case final wait?) {
-      final left = wait - dt;
-      _wait = left > Duration.zero ? left : null;
-      if (_wait != null) return;
-      _returning = true;
-      cards.glideHome(
-        ms: IkkiuchiToolsTuning.fieldGlide.inMicroseconds / Duration.microsecondsPerMillisecond,
-        ease: IkkiuchiToolsTuning.fieldGlideCurve.transform,
-      );
-    } else if (_returning && !cards.gliding) {
-      _returning = false;
-      _markAnother(scene);
-    }
+    scene?.advance(dt.inMicroseconds / Duration.microsecondsPerMillisecond);
   }
 
   @override
@@ -156,17 +111,18 @@ class IkkiuchiFieldPageState extends State<IkkiuchiFieldPage> with SingleTickerP
           final scene = _sceneFor(room);
           return Stack(children: [
             Positioned.fill(
-              child: IkkiuchiDealer.turned(IkkiuchiBoardView(scene, onPointer: _onPointer), landscape: _landscape),
+              child: IkkiuchiDealer.turned(IkkiuchiBoardView(scene, onPointer: scene.pointer), landscape: _landscape),
             ),
             _buttons(scene, room),
           ]);
         }),
       );
 
-  /// "R" and the numbers over the board: at the screen's top right in portrait;
-  /// in landscape, where the cards reach every corner, at the top end of
-  /// the band, which runs down the middle of the screen. Both keep below a
-  /// cutout at the screen's top.
+  /// The buttons over the board, "R", the numbers, "^" and "v": at the
+  /// screen's top left in portrait, clear of the card Tobi sends, which
+  /// waits right of him; in landscape, where the cards reach every corner,
+  /// at the top end of the band, which runs down the middle of the screen.
+  /// Both keep below a cutout at the screen's top.
   Widget _buttons(IkkiuchiBoardScene scene, Size room) {
     const size = IkkiuchiToolsStyle.fieldButton, inset = IkkiuchiToolsStyle.fieldButtonInset;
     final top = MediaQuery.paddingOf(context).top + inset;
@@ -176,8 +132,12 @@ class IkkiuchiFieldPageState extends State<IkkiuchiFieldPage> with SingleTickerP
         const SizedBox(height: IkkiuchiToolsStyle.fieldButtonGap),
         _button('$n', () => _deal(n)),
       ],
+      const SizedBox(height: IkkiuchiToolsStyle.fieldButtonGap),
+      _button('^', scene.send.startSending),
+      const SizedBox(height: IkkiuchiToolsStyle.fieldButtonGap),
+      _button('v', () => scene.send.startReceiving()),
     ]);
-    if (!_landscape) return Positioned(top: top, right: inset, child: column);
+    if (!_landscape) return Positioned(top: top, left: inset, child: column);
     // The board lies turned a quarter turn clockwise: its y runs from the
     // screen's right edge leftward.
     final bandMiddle = room.width - scene.layout.band.center.dy;

@@ -60,8 +60,83 @@ class IkkiuchiStrikeSetup {
   final ({IkkiuchiStrike strike, double at})? lead;
 }
 
-/// One strike of Tobi's arm at a card: a pure function of its own time, so
-/// any moment can be drawn again exactly.
+/// Tobi's arm in one move of its own: a pure function of its own time, so
+/// any moment can be drawn again exactly. Its hand at each move time, how
+/// the arm bends behind it and how the fist shows; screen time [t] maps to
+/// move time by [tau].
+abstract class IkkiuchiArmMove {
+  /// The arm that moves, and the face whose pose its shoulder is drawn
+  /// from.
+  ArmSide get side;
+  TobiFace get armFace;
+
+  /// The fist's radius, dp.
+  double get fist;
+
+  /// Screen ms of the whole move.
+  double get end;
+
+  double tau(double t);
+  Vec handAt(double tau);
+  TobiBody bodyAt(double t);
+
+  /// His face at screen time [t].
+  TobiFace faceAt(double t);
+  double lagAt(double tau);
+  double waveAt(double tau);
+  double bulgeAt(double tau);
+  double coilAt(double tau);
+
+  /// The fist's size at move time [tau], as a share of [fist].
+  double fistScale(double tau);
+
+  bool doneAt(double t) => t >= end;
+
+  Vec handAtTime(double t) => handAt(tau(t));
+
+  /// The hand's velocity at move time [tau], dp a second of move time:
+  /// what the arm's look uses, so the move looks the same at any pace.
+  Vec handVelocity(double tau) {
+    const w = IkkiuchiArmTuning.speedWindow;
+    return (handAt(tau) - handAt(tau - w)) * (Duration.millisecondsPerSecond / w);
+  }
+
+  /// The hand's speed at move time [tau], dp a ms of move time.
+  double handSpeed(double tau) => handVelocity(tau).length / Duration.millisecondsPerSecond;
+
+  /// The arm's curve at move time [tau] from the shoulder [s]: the hand's
+  /// path seen a little late further back along the arm, plus the bulge,
+  /// the travelling wave and the coil.
+  List<Vec> armPoints(double tau, Vec s) {
+    final lag = lagAt(tau), wave = waveAt(tau), bulge = bulgeAt(tau), coil = coilAt(tau);
+    final sign = side.sign;
+    final h = handAt(tau);
+    final axis = (h - s).unit;
+    final nrm = axis.perp;
+    final coiled = coil > _coilShown;
+    final n = coiled ? IkkiuchiArmTuning.coilSamples : IkkiuchiArmTuning.samples;
+    final points = <Vec>[];
+    for (var i = 0; i < n; i++) {
+      final u = i / n;
+      final hu = handAt(tau - lag * math.pow(1 - u, IkkiuchiArmTuning.lagPower));
+      var p = s + (hu - s) * u;
+      if (coiled) {
+        final th = 2 * math.pi * IkkiuchiArmTuning.coilLoops * u;
+        final depth = coil * math.sqrt(math.sin(math.pi * u));
+        p = p + axis * (-depth * math.sin(th)) + nrm * (sign * depth * (1 - math.cos(th)));
+      }
+      final env = math.sin(math.pi * u);
+      final travel = math.sin(2 * math.pi * (IkkiuchiArmTuning.waveLength * u - tau / IkkiuchiArmTuning.wavePeriod));
+      points.add(p + nrm * (-bulge * env * sign + wave * env * travel));
+    }
+    return points..add(h);
+  }
+
+  // A coil thinner than this (dp) is drawn as a plain arm.
+  static const _coilShown = 0.5;
+}
+
+/// One strike of Tobi's arm at a card.
 ///
 /// Each move has its own timing ("move time"); a strike plays it faster or
 /// slower so the hit comes [hitAt] screen ms after the reach starts, holds
@@ -70,7 +145,7 @@ class IkkiuchiStrikeSetup {
 /// live, from the end of the hit stop to the end of the follow-through
 /// (the same piece of path at every speed); before that it is in the air,
 /// and on the way home it is lifted.
-class IkkiuchiStrike {
+class IkkiuchiStrike extends IkkiuchiArmMove {
   IkkiuchiStrike(this.move, this.setup) {
     final tobi = setup.tobi;
     final card = setup.target;
@@ -149,12 +224,17 @@ class IkkiuchiStrike {
   final IkkiuchiStrikeSetup setup;
 
   /// The arm he strikes with.
+  @override
   late final ArmSide side;
+
+  @override
+  TobiFace get armFace => TobiFace.reaching;
 
   /// Screen ms from the start of the reach to the hit, the hit stop, and
   /// the whole strike.
   late final double hitAt;
   late final double hitStop;
+  @override
   late final double end;
 
   late final _Geo _geo;
@@ -162,6 +242,7 @@ class IkkiuchiStrike {
   late final double _pre, _post, _fistStart, _fistEnd;
 
   /// The fist's radius, dp, and how near a card its centre touches it.
+  @override
   late final double fist;
   double get touch => _geo.touch;
 
@@ -190,6 +271,7 @@ class IkkiuchiStrike {
   double get liveUntil => liveFrom + (_plan.backAt - _plan.tc) * _post;
 
   /// The move time at screen time [t]: paced, and frozen for the hit stop.
+  @override
   double tau(double t) {
     if (t < hitAt) return t / _pre;
     if (t < hitAt + hitStop) return _plan.tc;
@@ -202,85 +284,48 @@ class IkkiuchiStrike {
   /// [liveAt] at move time [tau], [afterHit] once the hit stop is over.
   bool liveAtTau(double tau, {required bool afterHit}) => afterHit && tau <= _plan.backAt;
 
-  bool doneAt(double t) => t >= end;
-
   /// The hand at move time [tau]; before the strike, where the strike it
   /// cut in on had it.
+  @override
   Vec handAt(double tau) {
     final lead = setup.lead;
     if (tau < 0 && lead != null) return lead.strike.handAtTime(lead.at + tau * _pre);
     return _plan.hand(tau);
   }
 
-  Vec handAtTime(double t) => handAt(tau(t));
-
+  @override
   TobiBody bodyAt(double t) => _plan.body(tau(t));
 
+  @override
   double lagAt(double tau) => _plan.lag(tau);
+  @override
   double waveAt(double tau) => _plan.wave(tau);
+  @override
   double bulgeAt(double tau) => _plan.bulge(tau);
+  @override
   double coilAt(double tau) => _plan.coil(tau);
 
   /// How strong the smear afterimages are, 0 to 1.
   double smearAt(double tau) => _plan.smear(tau);
 
-  /// The hand's velocity at move time [tau], dp a second of move time:
-  /// what the arm's look uses, so the move looks the same at any pace.
-  Vec handVelocity(double tau) {
-    const w = IkkiuchiArmTuning.speedWindow;
-    return (handAt(tau) - handAt(tau - w)) * (Duration.millisecondsPerSecond / w);
-  }
-
-  /// The hand's speed at move time [tau], dp a ms of move time.
-  double handSpeed(double tau) => handVelocity(tau).length / Duration.millisecondsPerSecond;
-
   /// The hand's velocity at move time [tau] on the screen, dp/s: what the
   /// hit and the pushes use.
   Vec realVelocity(double tau) => handVelocity(tau) * (1 / (tau < _plan.tc ? _pre : _post));
 
-  /// His face at screen time [t].
+  @override
   TobiFace faceAt(double t) =>
       t < liveFrom + IkkiuchiArmTuning.faceAfterHit ? TobiFace.reaching : setup.endFace;
 
   /// The fist's size at move time [tau], as a share of [fist]: it grows
   /// out of his pose's fist at the very start and turns into the end
   /// pose's hand at the very end.
+  @override
   double fistScale(double tau) {
     const settle = IkkiuchiArmTuning.fistSettle;
     final grown = _fistStart + (1 - _fistStart) * (tau / settle).clamp(0.0, 1.0);
     final p = ((tau - (_plan.end - settle)) / settle).clamp(0.0, 1.0);
     return grown + (_fistEnd - grown) * p;
   }
-
-  /// The arm's curve at move time [tau] from the shoulder [s]: the hand's
-  /// path seen a little late further back along the arm, plus the bulge,
-  /// the travelling wave and the coil.
-  List<Vec> armPoints(double tau, Vec s) {
-    final lag = lagAt(tau), wave = waveAt(tau), bulge = bulgeAt(tau), coil = coilAt(tau);
-    final h = handAt(tau);
-    final axis = (h - s).unit;
-    final nrm = axis.perp;
-    final coiled = coil > _coilShown;
-    final n = coiled ? IkkiuchiArmTuning.coilSamples : IkkiuchiArmTuning.samples;
-    final points = <Vec>[];
-    for (var i = 0; i < n; i++) {
-      final u = i / n;
-      final hu = handAt(tau - lag * math.pow(1 - u, IkkiuchiArmTuning.lagPower));
-      var p = s + (hu - s) * u;
-      if (coiled) {
-        final th = 2 * math.pi * IkkiuchiArmTuning.coilLoops * u;
-        final depth = coil * math.sqrt(math.sin(math.pi * u));
-        p = p + axis * (-depth * math.sin(th)) + nrm * (_geo.side * depth * (1 - math.cos(th)));
-      }
-      final env = math.sin(math.pi * u);
-      final travel = math.sin(2 * math.pi * (IkkiuchiArmTuning.waveLength * u - tau / IkkiuchiArmTuning.wavePeriod));
-      points.add(p + nrm * (-bulge * env * _geo.side + wave * env * travel));
-    }
-    return points..add(h);
-  }
-
-  // A coil thinner than this (dp) is drawn as a plain arm.
-  static const _coilShown = 0.5;
 }
 
 /// A strike's geometry: [shoulder] and the resting hand [h0] (or where a
@@ -718,4 +763,102 @@ _Plan _sweep(_Geo c) {
       _Piece(tr, (p, _) => leaning.toward(_Ease.spring(p, _D.bodyHome))),
     ], c.body0, TobiBody.rest),
   );
+}
+
+/// Tobi's arm carrying a card ([IkkiuchiCarryTuning]): a calm reach to the
+/// card lying at [from], then on with it in his hand to [to], turning it to
+/// lie as [to] does, and home to [endFace]'s pose. No fist touches on the
+/// way: the arm is in the air.
+class IkkiuchiCarry extends IkkiuchiArmMove {
+  IkkiuchiCarry({
+    required this.tobi,
+    required this.from,
+    required this.to,
+    required this.cardW,
+    required this.side,
+    this.endFace = TobiFace.standard,
+  }) {
+    final rig = tobi.rig, k = tobi.k;
+    final h0 = tobi.world(rig.arm(armFace, side).hand, TobiBody.rest);
+    final hEnd = tobi.world(rig.arm(endFace, side).hand, TobiBody.rest);
+    final pick = from.centre, set = to.centre;
+    const fetch = IkkiuchiCarryTuning.fetch, carry = IkkiuchiCarryTuning.carry;
+    _hand = _timeline([
+      _Piece(fetch, (p, _) => bezier(h0, _bowed(h0, pick), pick, _Ease.inOutCubic(p))),
+      _Piece(carry, (p, _) => bezier(pick, _bowed(pick, set), set, _Ease.inOutCubic(p))),
+      _Piece(IkkiuchiCarryTuning.back, (p, _) => set.lerp(hEnd, _Ease.inOutCubic(p))),
+    ], h0, hEnd);
+    fist = IkkiuchiArmTuning.fist * cardW;
+    _fistStart = rig.arm(armFace, side).fist * k / fist;
+    _fistEnd = rig.arm(endFace, side).fist * k / fist;
+  }
+
+  final TobiFrame tobi;
+
+  /// The card where it lies before he takes it, and where he sets it.
+  final CardBox from, to;
+  final double cardW;
+  @override
+  final ArmSide side;
+  final TobiFace endFace;
+
+  @override
+  TobiFace get armFace => TobiFace.standard;
+
+  @override
+  late final double fist;
+  late final double _fistStart, _fistEnd;
+  late final Vec Function(double tau) _hand;
+
+  /// When his hand takes the card off the field, and sets it down.
+  double get pickAt => IkkiuchiCarryTuning.fetch;
+  double get setAt => pickAt + IkkiuchiCarryTuning.carry;
+
+  @override
+  double get end => setAt + IkkiuchiCarryTuning.back;
+
+  /// The way from [a] to [b], bowed out to his arm's side.
+  Vec _bowed(Vec a, Vec b) {
+    final span = b - a;
+    var n = span.unit.perp;
+    if (n.x * side.sign < 0) n = -n;
+    return a.lerp(b, 0.5) + n * math.min(span.length * IkkiuchiCarryTuning.bow, IkkiuchiCarryTuning.bowMax * cardW);
+  }
+
+  /// The card at screen time [t] while it is in his hand, under it, turned
+  /// and grown as it goes; [to] once set; null before he takes it.
+  CardBox? cardAt(double t) {
+    if (t < pickAt) return null;
+    if (t >= setAt) return to;
+    final p = _Ease.inOutCubic((t - pickAt) / IkkiuchiCarryTuning.carry);
+    final turned = from.lerp(to, p);
+    return CardBox(handAt(t), turned.hw, turned.hh, turned.angle);
+  }
+
+  @override
+  double tau(double t) => t;
+  @override
+  Vec handAt(double tau) => _hand(tau);
+  @override
+  TobiBody bodyAt(double t) => TobiBody.rest;
+  @override
+  TobiFace faceAt(double t) => t < end ? armFace : endFace;
+  @override
+  double lagAt(double tau) => IkkiuchiCarryTuning.lag;
+  @override
+  double waveAt(double tau) => IkkiuchiCarryTuning.wave * tobi.k * math.sin(math.pi * _Ease.clamp01(tau / end));
+  @override
+  double bulgeAt(double tau) => 0;
+  @override
+  double coilAt(double tau) => 0;
+
+  /// The fist grows out of his pose's hand as he reaches, and turns into
+  /// [endFace]'s at the very end.
+  @override
+  double fistScale(double tau) {
+    const settle = IkkiuchiArmTuning.fistSettle;
+    final grown = _fistStart + (1 - _fistStart) * (tau / settle).clamp(0.0, 1.0);
+    final p = ((tau - (end - settle)) / settle).clamp(0.0, 1.0);
+    return grown + (_fistEnd - grown) * p;
+  }
 }

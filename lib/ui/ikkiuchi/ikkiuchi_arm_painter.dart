@@ -6,16 +6,16 @@ import '../../config/design.dart';
 import '../../domain/ikkiuchi_geometry.dart';
 import '../../domain/ikkiuchi_strike.dart';
 
-/// Draws Tobi's striking arm (一騎打ち) on a canvas in board dp: one ink line
-/// from his shoulder to a white fist in his pen, and the wind lines and
-/// smear afterimages of its motion.
+/// Draws Tobi's arm (一騎打ち) on a canvas in board dp: one ink line from his
+/// shoulder to a white fist in his pen, and a strike's wind lines and smear
+/// afterimages.
 abstract final class IkkiuchiArmPainter {
   /// The arm at move time [tau] from the shoulder [shoulder], [k] dp a Tobi
   /// unit, in [alpha].
-  static void paintArm(Canvas canvas, IkkiuchiStrike strike, double tau, Vec shoulder, double k, {double alpha = 1}) =>
-      _paintArm(canvas, strike, strike.armPoints(tau, shoulder), tau, k, alpha);
+  static void paintArm(Canvas canvas, IkkiuchiArmMove arm, double tau, Vec shoulder, double k, {double alpha = 1}) =>
+      _paintArm(canvas, arm, arm.armPoints(tau, shoulder), tau, k, alpha);
 
-  static void _paintArm(Canvas canvas, IkkiuchiStrike strike, List<Vec> points, double tau, double k, double alpha) {
+  static void _paintArm(Canvas canvas, IkkiuchiArmMove arm, List<Vec> points, double tau, double k, double alpha) {
     final pen = IkkiuchiArmStyle.pen * k;
     final stroke = Paint()
       ..color = IkkiuchiArmStyle.ink.withValues(alpha: alpha)
@@ -24,12 +24,12 @@ abstract final class IkkiuchiArmPainter {
       ..strokeCap = StrokeCap.round
       ..strokeJoin = StrokeJoin.round;
     canvas.drawPath(_smooth(points), stroke);
-    final scale = strike.fistScale(tau);
+    final scale = arm.fistScale(tau);
     if (scale <= _fistShown) return;
     final hand = points.last;
-    final vel = strike.handVelocity(tau);
+    final vel = arm.handVelocity(tau);
     final stretch = math.min(vel.length / IkkiuchiArmStyle.fistStretchSpeed, IkkiuchiArmStyle.fistStretchMax);
-    final r = strike.fist * scale;
+    final r = arm.fist * scale;
     final oval = Rect.fromCenter(
         center: Offset.zero, width: 2 * r * (1 + stretch), height: 2 * r / (1 + stretch * IkkiuchiArmStyle.fistNarrow));
     canvas

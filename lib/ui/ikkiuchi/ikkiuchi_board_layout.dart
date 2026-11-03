@@ -3,6 +3,7 @@ import 'dart:ui';
 
 import '../../config/config.dart';
 import '../../config/design.dart';
+import '../../domain/field_parts.dart';
 import '../../domain/ikkiuchi_board.dart';
 import '../../domain/ikkiuchi_cards.dart';
 import '../../domain/ikkiuchi_field.dart';
@@ -20,9 +21,15 @@ import '../../domain/ikkiuchi_rig.dart';
 /// card widths, and then lies centred. Portrait stands Tobi above his
 /// side, his room kept above the field; landscape sits him in the open
 /// middle of his half, the room he needs there kept open, and its rows may
-/// reach the board's top and bottom edges.
+/// reach the board's top and bottom edges. A card Tobi sends waits at
+/// [wait]: in portrait right of him, just above his side; in landscape in
+/// the margin beside the player's side.
+///
+/// Any change to the sides lays the board out afresh by the same rules
+/// ([withSides]), its cards growing or shrinking to fit.
 class IkkiuchiBoardLayout {
-  IkkiuchiBoardLayout._(this.size, this.landscape, this.band, this.tobi, this.cardW, this.cards);
+  IkkiuchiBoardLayout._(this.size, this.landscape, this.band, this.tobi, this.cardW, this.cards, this.field, this.wait,
+      this._field, this._fieldW, this._origin);
 
   /// [tobiRows] and [playerRows] are each side's rows as its owner sees
   /// them, 下段 first, each group from its outer edge in.
@@ -71,15 +78,53 @@ class IkkiuchiBoardLayout {
     }
     final band = Rect.fromLTWH(0, top + half * cardW, w, bandH);
     final left = pad + (areaW - fieldW * cardW) / 2;
+    final origin = Vec(left, top);
     final cards = [
       for (final c in field.layOut(fieldW, gap: bandH / cardW))
-        (
-          id: c.id,
-          side: c.side,
-          box: CardBox(Vec(left, top) + c.box.centre * cardW, c.box.hw * cardW, c.box.hh * cardW, c.box.angle),
-        ),
+        (id: c.id, side: c.side, box: _onBoard(c.box, origin, cardW)),
     ];
-    return IkkiuchiBoardLayout._(Vec(w, h), landscape, band, tobi, cardW, cards);
+    final area = Rect.fromLTWH(left, top, fieldW * cardW, 2 * half * cardW + bandH);
+    final wait = landscape ? _waitBeside(area, band, cardW, w) : _waitByTobi(area, tobi, cardW, w);
+    return IkkiuchiBoardLayout._(Vec(w, h), landscape, band, tobi, cardW, cards, area, wait, field, fieldW, origin);
+  }
+
+  /// A box of the field in card widths from [origin], on the board.
+  static CardBox _onBoard(CardBox b, Vec origin, double cardW) =>
+      CardBox(origin + b.centre * cardW, b.hw * cardW, b.hh * cardW, b.angle);
+
+  /// A waiting card [height] tall, centred across [from]..[to] with its
+  /// foot at [foot].
+  static Rect _waitIn(double from, double to, double foot, double height) {
+    final width = height / IkkiuchiField.cardH;
+    return Rect.fromLTWH((from + to - width) / 2, foot - height, width, height);
+  }
+
+  /// Right of Tobi, its tag's foot just over his side.
+  static Rect _waitByTobi(Rect field, TobiFrame tobi, double cardW, double w) {
+    const style = IkkiuchiSendStyle.wait;
+    final from = tobi.origin.x + tobi.rig.size.x * tobi.k, to = w - IkkiuchiBoardStyle.pad;
+    final height = [
+      style.maxHeight,
+      tobi.rig.size.y * tobi.k * style.tobiShare,
+      (to - from - 2 * style.margin) * IkkiuchiField.cardH,
+    ].reduce(math.min);
+    final foot = field.top - IkkiuchiSendStyle.look.stackTagRoom - style.margin;
+    return _waitIn(from, to, foot, math.max(height, cardW * IkkiuchiField.cardH));
+  }
+
+  /// In the margin right of the player's side, as tall as that side at
+  /// most, its tag under it; never smaller than the field's cards.
+  static Rect _waitBeside(Rect field, Rect band, double cardW, double w) {
+    const style = IkkiuchiSendStyle.wait;
+    final from = field.right, to = w;
+    final room = field.bottom - band.bottom - IkkiuchiSendStyle.look.stackTagRoom;
+    final height = math.max(
+      cardW * IkkiuchiField.cardH,
+      [style.maxHeight, room - 2 * style.margin, (to - from - 2 * style.margin) * IkkiuchiField.cardH].reduce(math.min),
+    );
+    final left = math.min((from + to - height / IkkiuchiField.cardH) / 2, w - height / IkkiuchiField.cardH);
+    final top = band.bottom + (room - height) / 2;
+    return Rect.fromLTWH(left, top, height / IkkiuchiField.cardH, height);
   }
 
   final Vec size;
@@ -91,6 +136,46 @@ class IkkiuchiBoardLayout {
   final double cardW;
   final List<({int id, IkkiuchiSide side, CardBox box})> cards;
 
-  /// The board set out on this layout.
-  IkkiuchiBoard board() => IkkiuchiBoard(tobi: tobi, size: size, cards: cards, cardW: cardW);
+  /// Both territories, from the far edge of Tobi's back row to the far
+  /// edge of the player's, as wide as the field.
+  final Rect field;
+
+  /// Where a card Tobi sends waits for the player to place it.
+  final Rect wait;
+
+  final IkkiuchiField _field;
+  final double _fieldW;
+  final Vec _origin;
+
+  /// The board laid out afresh with these sides, by the same rules on the
+  /// same board.
+  IkkiuchiBoardLayout withSides({required List<IkkiuchiRow> tobiRows, required List<IkkiuchiRow> playerRows}) =>
+      IkkiuchiBoardLayout.of(
+        size: Size(size.x, size.y),
+        landscape: landscape,
+        tobiRows: tobiRows,
+        playerRows: playerRows,
+        rig: tobi.rig,
+      );
+
+  /// Where a card added at the inner end of the player's [row]'s left or
+  /// right group ([part]) would lie; null where it has no room
+  /// ([IkkiuchiField.playerEnd]).
+  FieldRect? playerEnd(FieldRow row, RowPart part) {
+    final box = _field.playerEnd(row.index,
+        left: part == RowPart.left, width: _fieldW, gap: IkkiuchiBoardStyle.band / cardW);
+    if (box == null) return null;
+    final b = _onBoard(box, _origin, cardW);
+    return FieldRect(b.centre.x - b.hw, b.centre.y - b.hh, 2 * b.hw, 2 * b.hh);
+  }
+
+  /// The board set out on this layout, its time from [startStep].
+  IkkiuchiBoard board({int startStep = 0}) => IkkiuchiBoard(
+        tobi: tobi,
+        size: size,
+        cards: cards,
+        cardW: cardW,
+        fieldArea: FieldRect(field.left, field.top, field.width, field.height),
+        startStep: startStep,
+      );
 }

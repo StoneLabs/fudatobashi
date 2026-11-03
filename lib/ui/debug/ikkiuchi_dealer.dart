@@ -6,9 +6,11 @@ import 'package:flutter/widgets.dart';
 import '../../config/config.dart';
 import '../../data/poem.dart';
 import '../../domain/ikkiuchi_layout.dart';
+import '../../domain/ikkiuchi_send.dart';
 import '../../state/scope.dart';
 import '../ikkiuchi/ikkiuchi_board_layout.dart';
-import '../ikkiuchi/ikkiuchi_board_painter.dart';
+import '../ikkiuchi/ikkiuchi_board_scene.dart';
+import '../ikkiuchi/ikkiuchi_card_faces.dart';
 import '../ikkiuchi/ikkiuchi_tobi_art.dart';
 
 /// Deals the full 一騎打ち fields of the developer's pages, and keeps the
@@ -59,18 +61,20 @@ class IkkiuchiDealer {
     const rows = IkkiuchiToolsTuning.dealRows;
     final own = deck.sublist(0, perSide), others = deck.sublist(perSide, 2 * perSide);
     final playerSeed = seed + IkkiuchiToolsTuning.playerSeedOffset;
+    final sides = IkkiuchiSides.start(
+      layout.generate(rating: rating, own: own, others: others, rows: rows, seed: seed),
+      layout.generate(rating: drawnRating(playerSeed), own: others, others: own, rows: rows, seed: playerSeed).start,
+    );
     final board = IkkiuchiBoardLayout.of(
       size: size,
       landscape: landscape,
-      tobiRows: layout.generate(rating: rating, own: own, others: others, rows: rows, seed: seed).start,
-      playerRows: layout
-          .generate(rating: drawnRating(playerSeed), own: others, others: own, rows: rows, seed: playerSeed)
-          .start,
+      tobiRows: sides.tobi,
+      playerRows: sides.player,
       rig: _rig,
     );
     if (old != null) SchedulerBinding.instance.addPostFrameCallback((_) => old.dispose());
     _key = key;
-    final scene = _scene = IkkiuchiBoardScene(board, _faces!);
+    final scene = _scene = IkkiuchiBoardScene(board, _faces!, sides: sides, tobiRating: rating, seed: seed);
     onNew?.call(scene);
     return scene;
   }

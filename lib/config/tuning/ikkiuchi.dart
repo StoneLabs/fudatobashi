@@ -441,6 +441,33 @@ abstract final class IkkiuchiSweepTuning {
   static const IkkiuchiSpring bodyHome = (decay: 6, waves: 2);
 }
 
+/// The 一騎打ち board in play (`IkkiuchiBoardScene`): how long after the
+/// player's finger lifts the cards it knocked set off home ([tidyWait]),
+/// and their glide there; and the glide of every card to its new place and
+/// size when the sides change ([relayoutGlide]), as after a 送り札.
+abstract final class IkkiuchiPlayTuning {
+  static const Duration tidyWait = Duration(milliseconds: 1000);
+  static const Duration tidyGlide = Duration(milliseconds: 250);
+  static const Curve tidyCurve = Curves.easeInOutCubic;
+  static const Duration relayoutGlide = Duration(milliseconds: 420);
+  static const Curve relayoutCurve = Curves.easeInOutCubic;
+}
+
+/// Tobi's arm carrying a card (`IkkiuchiCarry`), as when he sends one: a
+/// calm reach to it, the carry, and home, each this many ms. The arm lags
+/// [lag] ms along its length and waves [wave] Tobi units at most; each way
+/// bows out to his arm's side by [bow] of its length, at most [bowMax] card
+/// widths.
+abstract final class IkkiuchiCarryTuning {
+  static const double fetch = 380;
+  static const double carry = 620;
+  static const double back = 360;
+  static const double lag = 34;
+  static const double wave = 1.6;
+  static const double bow = 0.22;
+  static const double bowMax = 1.6;
+}
+
 /// The cards on the board as rigid bodies (`IkkiuchiCards`, Forge2D): no
 /// gravity, the tatami's friction as damping. Lengths are card widths (a
 /// card's width on the board) and speeds card widths a second, so the
@@ -539,10 +566,6 @@ abstract final class IkkiuchiToolsTuning {
   static const Duration autoReset = Duration(seconds: 3);
 
   /// The field page: the system bars hidden while it is open (a swipe in
-  /// from an edge shows them for a while), how long after the finger lifts
-  /// the cards it stirred set off home, and their glide there.
+  /// from an edge shows them for a while).
   static const SystemUiMode fieldBars = SystemUiMode.immersiveSticky;
-  static const Duration fieldWait = Duration(milliseconds: 1000);
-  static const Duration fieldGlide = Duration(milliseconds: 250);
-  static const Curve fieldGlideCurve = Curves.easeInOutCubic;
 }

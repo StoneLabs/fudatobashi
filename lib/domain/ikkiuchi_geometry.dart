@@ -85,6 +85,31 @@ class CardBox {
   }
 
   CardBox movedTo(Vec centre, double angle) => CardBox(centre, hw, hh, angle);
+
+  /// On the way from this box to [to] at [t]: its centre, size and the
+  /// shortest turn between their angles.
+  CardBox lerp(CardBox to, double t) => CardBox(
+        centre.lerp(to.centre, t),
+        hw + (to.hw - hw) * t,
+        hh + (to.hh - hh) * t,
+        angle + turnBetween(angle, to.angle) * t,
+      );
+
+  /// Whether any part of the card lies inside the upright rectangle from
+  /// ([left], [top]) to ([right], [bottom]): they are not apart along any
+  /// of the rectangle's or the card's axes.
+  bool overlapsArea(double left, double top, double right, double bottom) {
+    final (u, v) = axes;
+    final xReach = u.x.abs() * hw + v.x.abs() * hh, yReach = u.y.abs() * hw + v.y.abs() * hh;
+    if (centre.x + xReach <= left || centre.x - xReach >= right) return false;
+    if (centre.y + yReach <= top || centre.y - yReach >= bottom) return false;
+    final area = [Vec(left, top), Vec(right, top), Vec(right, bottom), Vec(left, bottom)];
+    for (final (axis, reach) in [(u, hw), (v, hh)]) {
+      final along = [for (final p in area) (p - centre).dot(axis)];
+      if (along.reduce(math.min) >= reach || along.reduce(math.max) <= -reach) return false;
+    }
+    return true;
+  }
 }
 
 /// How far [p] is from the nearest of [cards]: 0 inside one, infinity with none.

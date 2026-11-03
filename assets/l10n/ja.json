@@ -1646,5 +1646,15 @@
   "teiichiLayoutLabel": "並べた盤面。数字は札を置いた順",
   "teiichiTimesTitle": "1枚ごとの並べタイム",
   "teiichiTimesCaption": "札の時間は山札の一番上にあった時間です。戻した札は合計します。",
-  "teiichiTapsCaption": "ピンクの行は一手目で取れなかった札です。"
+  "teiichiTapsCaption": "ピンクの行は一手目で取れなかった札です。",
+  "ikkiuchiSent": "送り札",
+  "ikkiuchiSendYours": "自分の​札を​1枚、​トビの​陣へ​ドラッグ",
+  "ikkiuchiPlaceTobis": "トビからの​札を​置く",
+  "ikkiuchiToTobi": "トビへ",
+  "ikkiuchiHereYouGo": "どうぞ！",
+  "ikkiuchiRowLower": "下段",
+  "ikkiuchiRowMiddle": "中段",
+  "ikkiuchiRowUpper": "上段",
+  "ikkiuchiSpotLeft": "{0}・左",
+  "ikkiuchiSpotRight": "{0}・右"
 }

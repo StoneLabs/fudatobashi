@@ -29,6 +29,11 @@ class IkkiuchiCard {
   /// Whether Tobi took it: it flies off and fades.
   bool taken = false;
 
+  /// Whether it is held off the board, out of the sim and not drawn with
+  /// the field's cards, until it glides back ([IkkiuchiCards.hold]).
+  bool get held => _held;
+  bool _held = false;
+
   /// How much of it shows: 1, down to 0 as a taken card fades.
   double shown = 1;
 
@@ -111,13 +116,17 @@ class IkkiuchiCards {
   final double cardW;
   final List<IkkiuchiCard> cards = [];
   final box2d.World _world;
-  late final _listener = _FistListener(this);
+  late final _listener = _TouchListener(this);
   box2d.Body? _fist, _finger;
   Vec _keep = Vec.zero;
   final Set<IkkiuchiCard> _pushed = {};
 
   /// Every card the fist touched in the last step.
   final Set<IkkiuchiCard> fistTouched = {};
+
+  /// Every card the player's finger touched in the last step.
+  final Set<IkkiuchiCard> fingerTouched = {};
+  final Set<IkkiuchiCard> _fingered = {};
 
   static const _cardBit = 0x0001, _flyingBit = 0x0002, _fistBit = 0x0004, _fingerBit = 0x0008;
 
@@ -195,10 +204,14 @@ class IkkiuchiCards {
   /// One step of the sim.
   void step() {
     _pushed.clear();
+    _fingered.clear();
     _world.stepDt(IkkiuchiPhysicsTuning.step);
     fistTouched
       ..clear()
       ..addAll(_pushed);
+    fingerTouched
+      ..clear()
+      ..addAll(_fingered);
     final cap = pushCap;
     for (final card in _pushed) {
       final body = card._body;
@@ -242,28 +255,51 @@ class IkkiuchiCards {
   /// to 1), the shortest way round. On the way it is out of the sim; once
   /// home it lies there still. A card gone off the board glides back from
   /// where it left; a taken card stays taken.
-  void glideHome({required double ms, required double Function(double t) ease}) {
-    for (final card in cards) {
-      if (card.taken || !card._stirred) continue;
+  void glideHome({required double ms, required double Function(double t) ease}) =>
+      _startGlide({for (final card in cards) if (!card.taken && card._stirred) card.id: card.box}, ms: ms, ease: ease);
+
+  /// Sends each card of [from] home from where [from] has it, as
+  /// [glideHome] does, growing or shrinking to its home's size on the way;
+  /// a held card comes back on the board so.
+  void glideFrom(Map<int, CardBox> from, {required double ms, required double Function(double t) ease}) =>
+      _startGlide(from, ms: ms, ease: ease);
+
+  void _startGlide(Map<int, CardBox> from, {required double ms, required double Function(double t) ease}) {
+    for (final MapEntry(key: id, value: box) in from.entries) {
+      final card = this.card(id);
       if (card._body != null) _remove(card, shown: 1);
-      card.shown = 1;
-      _gliding[card] = card.box;
+      card
+        ..shown = 1
+        .._held = false
+        .._last = box;
+      _gliding[card] = box;
     }
     _glideMs = ms;
     _glideAt = 0;
     _ease = ease;
   }
 
+  /// Takes [card] off the board: out of the sim, and no longer one of the
+  /// field's cards, until it glides back ([glideFrom]).
+  void hold(IkkiuchiCard card) {
+    if (card._body != null) _remove(card, shown: 1);
+    _gliding.remove(card);
+    card._held = true;
+  }
+
   /// Whether cards are gliding home.
   bool get gliding => _gliding.isNotEmpty;
+
+  /// How far the glide has gone, eased: 0 as it sets off, 1 home; null
+  /// with no glide.
+  double? get glided => gliding ? _ease(math.min(1.0, _glideAt / _glideMs)) : null;
 
   void _glide() {
     _glideAt += IkkiuchiPhysicsTuning.step * Duration.millisecondsPerSecond;
     final t = math.min(1.0, _glideAt / _glideMs);
     final e = _ease(t);
     for (final MapEntry(key: card, value: from) in _gliding.entries) {
-      final home = card.home;
-      card._last = home.movedTo(from.centre.lerp(home.centre, e), from.angle + turnBetween(from.angle, home.angle) * e);
+      card._last = from.lerp(card.home, e);
     }
     if (t < 1) return;
     for (final card in _gliding.keys) {
@@ -283,9 +319,10 @@ class IkkiuchiCards {
   }
 }
 
-/// Notes every card Tobi's fist touches.
-class _FistListener extends box2d.ContactListener {
-  _FistListener(this.cards);
+/// Notes every card Tobi's fist touches, and every card the player's
+/// finger touches.
+class _TouchListener extends box2d.ContactListener {
+  _TouchListener(this.cards);
 
   final IkkiuchiCards cards;
 
@@ -296,10 +333,11 @@ class _FistListener extends box2d.ContactListener {
   void preSolve(box2d.Contact contact, box2d.Manifold oldManifold) => _note(contact);
 
   void _note(box2d.Contact contact) {
-    final fist = cards._fist;
-    if (fist == null) return;
     final a = contact.bodyA, b = contact.bodyB;
-    final other = a == fist ? b : (b == fist ? a : null);
-    if (other?.userData case final IkkiuchiCard card) cards._pushed.add(card);
+    for (final (pusher, touched) in [(cards._fist, cards._pushed), (cards._finger, cards._fingered)]) {
+      if (pusher == null) continue;
+      final other = a == pusher ? b : (b == pusher ? a : null);
+      if (other?.userData case final IkkiuchiCard card) touched.add(card);
+    }
   }
 }

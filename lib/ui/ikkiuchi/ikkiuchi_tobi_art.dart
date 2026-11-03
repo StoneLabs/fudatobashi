@@ -7,7 +7,7 @@ import '../manga/svg_path.dart';
 import '../manga/tobi.dart';
 import '../manga/vector.dart';
 
-/// Tobi's art around a strike (一騎打ち): his pose for each face, drawn with
+/// Tobi's art in a match (一騎打ち): his pose for each face, drawn with
 /// or without one arm, and where his arms start and end in each.
 abstract final class IkkiuchiTobiArt {
   static TobiPose poseOf(TobiFace face) => switch (face) {
@@ -15,6 +15,7 @@ abstract final class IkkiuchiTobiArt {
         TobiFace.reaching => TobiPose.tryHard,
         TobiFace.cheering => TobiPose.cheering,
         TobiFace.shocked => TobiPose.shocked,
+        TobiFace.pointing => TobiPose.pointing,
       };
 
   static List<VShape> _shapes(TobiFace face) => switch (face) {
@@ -22,6 +23,7 @@ abstract final class IkkiuchiTobiArt {
         TobiFace.reaching => TobiArt.tryHard,
         TobiFace.cheering => TobiArt.cheering,
         TobiFace.shocked => TobiArt.shocked,
+        TobiFace.pointing => TobiArt.pointing,
       };
 
   static VTag _tag(ArmSide side) => side == ArmSide.left ? VTag.armLeft : VTag.armRight;

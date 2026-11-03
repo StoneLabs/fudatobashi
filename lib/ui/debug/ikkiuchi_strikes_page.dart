@@ -14,6 +14,7 @@ import '../../domain/ikkiuchi_strike.dart';
 import '../../l10n/karafuda_strings.dart';
 import '../../l10n/strings.dart';
 import '../ikkiuchi/ikkiuchi_board_painter.dart';
+import '../ikkiuchi/ikkiuchi_board_scene.dart';
 import '../sound/sounds.dart';
 import 'debug_common.dart';
 import 'ikkiuchi_dealer.dart';

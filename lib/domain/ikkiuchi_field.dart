@@ -76,6 +76,28 @@ class IkkiuchiField {
   /// his widest on its right.
   ({double from, double to}) tobiOpen(double width) => (from: _tobiReach.left, to: width - _tobiReach.right);
 
+  /// Where a card added at the inner end of the player's [row] (0 is 下段)
+  /// would lie, in its [left] or right group, on a field [width] wide, the
+  /// halves [gap] apart; null when the row is not shown or the card does
+  /// not fit: the row with it would be wider than the field or its groups
+  /// nearer than [leastGap]. Where the two groups' places would overlap,
+  /// only the left one is offered.
+  CardBox? playerEnd(int row, {required bool left, required double width, required double gap}) {
+    final i = _shown.indexOf(row);
+    if (i < 0) return null;
+    final r = row < player.length ? player[row] : const IkkiuchiRow([], []);
+    bool fits(int l, int rt) => reach(l) + reach(rt) + (l > 0 && rt > 0 ? leastGap : 0) <= width + _tolerance;
+    final (l, rt) = (r.left.length, r.right.length);
+    if (!fits(left ? l + 1 : l, left ? rt : rt + 1)) return null;
+    final leftX = l * pitch, rightX = width - 1 - rt * pitch;
+    if (!left && fits(l + 1, rt) && leftX + 1 > rightX) return null;
+    const rowPitch = cardH + IkkiuchiFieldTuning.rowGap;
+    final y = halfHeight + gap + (_shown.length - 1 - i) * rowPitch;
+    return CardBox(Vec((left ? leftX : rightX) + 0.5, y + cardH / 2), 0.5, cardH / 2);
+  }
+
+  static const _tolerance = 1e-9;
+
   /// Every card on a field [width] wide, from its top left, the halves
   /// [gap] apart; Tobi's cards turned to face him.
   List<({int id, IkkiuchiSide side, CardBox box})> layOut(double width, {required double gap}) {

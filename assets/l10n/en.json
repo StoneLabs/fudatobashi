@@ -1646,5 +1646,15 @@
   "teiichiLayoutLabel": "Your layout as placed, each card numbered in the order you placed it",
   "teiichiTimesTitle": "Placing time, card by card",
   "teiichiTimesCaption": "A card's time is how long it was on top of the stack, added up if you took it back.",
-  "teiichiTapsCaption": "Pink rows: not found with the first tap."
+  "teiichiTapsCaption": "Pink rows: not found with the first tap.",
+  "ikkiuchiSent": "Sent card",
+  "ikkiuchiSendYours": "Drag one of your cards to Tobi's side",
+  "ikkiuchiPlaceTobis": "Place Tobi's card",
+  "ikkiuchiToTobi": "To Tobi",
+  "ikkiuchiHereYouGo": "Here you go!",
+  "ikkiuchiRowLower": "Bottom row",
+  "ikkiuchiRowMiddle": "Middle row",
+  "ikkiuchiRowUpper": "Top row",
+  "ikkiuchiSpotLeft": "{0}, left",
+  "ikkiuchiSpotRight": "{0}, right"
 }

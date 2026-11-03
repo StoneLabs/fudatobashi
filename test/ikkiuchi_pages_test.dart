@@ -16,6 +16,7 @@ import 'package:fudatobashi/data/fuda_sets.dart';
 import 'package:fudatobashi/data/islands.dart';
 import 'package:fudatobashi/data/poem.dart';
 import 'package:fudatobashi/db/database.dart';
+import 'package:fudatobashi/domain/ikkiuchi_board.dart';
 import 'package:fudatobashi/domain/ikkiuchi_cards.dart';
 import 'package:fudatobashi/domain/ikkiuchi_geometry.dart';
 import 'package:fudatobashi/domain/ikkiuchi_layout.dart';
@@ -35,7 +36,11 @@ import 'package:fudatobashi/ui/debug/ikkiuchi_strikes_page.dart';
 import 'package:fudatobashi/ui/debug/ikkiuchi_values.dart';
 import 'package:fudatobashi/ui/history/ankiren_field_tab.dart';
 import 'package:fudatobashi/ui/ikkiuchi/ikkiuchi_board_painter.dart';
+import 'package:fudatobashi/ui/ikkiuchi/ikkiuchi_board_scene.dart';
+import 'package:fudatobashi/ui/ikkiuchi/ikkiuchi_send_flow.dart';
+import 'package:fudatobashi/ui/manga/balloon.dart';
 import 'package:fudatobashi/ui/manga/theme.dart';
+import 'package:fudatobashi/ui/placing/placing_widgets.dart';
 import 'package:fudatobashi/ui/settings/settings_screen.dart';
 import 'package:fudatobashi/ui/sound/sounds.dart';
 import 'package:fudatobashi/ui/torifuda/card_faces.dart';
@@ -720,7 +725,7 @@ void main() {
       expect(s.board.cards.fingerOn, isFalse, reason: 'the finger leaves the board as it lifts');
 
       // A touch in the band during the wait starts it again.
-      const wait = IkkiuchiToolsTuning.fieldWait, glide = IkkiuchiToolsTuning.fieldGlide;
+      const wait = IkkiuchiPlayTuning.tidyWait, glide = IkkiuchiPlayTuning.tidyGlide;
       await tester.pump(wait * 0.6);
       await tester.tapAt(onScreen(tester, Vec(s.layout.band.left + s.layout.cardW, s.layout.band.center.dy)));
       await tester.pump(wait * 0.6);
@@ -746,6 +751,119 @@ void main() {
       await tester.pump(glide);
       await tester.pump(frame);
       expect(allHome(turned), isTrue);
+      expect(tester.takeException(), isNull);
+      await tester.pumpWidget(const SizedBox());
+    });
+
+    testWidgets('the read card turns green once taken; ^ sends Tobi a card and v has him send one to place',
+        (tester) async {
+      final p = await open(tester);
+      await tester.runAsync(() => p.updateSettings(p.settings.copyWith(language: 'ja')));
+      for (final landscape in [false, true]) {
+        final o = landscape ? 'landscape' : 'portrait';
+        await show(tester, p, IkkiuchiFieldPage(seed: 8, landscape: landscape));
+        await tester.pump(frame);
+        final s = scene(tester);
+
+        // A touch on the read card takes it: its outline turns green until
+        // the board has settled and another card is read.
+        final read = s.marked!;
+        final at = s.board.cards.card(read).box.centre;
+        final touch = await tester.startGesture(onScreen(tester, at));
+        await tester.pump(frame);
+        await touch.up();
+        await tester.pump(frame);
+        expect(s.board.take?.card, read, reason: '$o: taken by the touch');
+        expect(s.board.take?.way, IkkiuchiTakeWay.touched);
+        await capture(tester, 'field_taken_$o');
+        await tester.pump(IkkiuchiPlayTuning.tidyWait);
+        await tester.pump(IkkiuchiPlayTuning.tidyGlide);
+        await tester.pump(frame);
+        expect(s.board.take, isNull, reason: '$o: a new read');
+        expect(s.marked, isNot(read));
+
+        // ^: the player drags a card of theirs across the band to Tobi.
+        await tester.tap(find.text('^'));
+        await tester.pump(frame);
+        expect(s.send.stage, IkkiuchiSendStage.sending);
+        expect(s.marked, isNull, reason: '$o: no card read while sending');
+        expect(find.text('送り札'), findsOneWidget, reason: '$o: the band says so');
+        final sent = s.sides!.player[0].left.last;
+        final from = s.board.cards.card(sent).box.centre;
+        final drag = await tester.startGesture(onScreen(tester, from));
+        await tester.pump(frame);
+        // The card rides above the finger: just past the band, it is over
+        // his side.
+        final over = Vec(from.x, s.layout.band.top + s.layout.cardW / 2);
+        for (var i = 1; i <= 6; i++) {
+          await drag.moveTo(onScreen(tester, from.lerp(over, i / 6)));
+          await tester.pump(frame);
+        }
+        expect(s.send.overTobi, isTrue, reason: o);
+        expect(find.byType(PlacingRiding), findsOneWidget);
+        await capture(tester, 'field_send_drag_$o');
+        await drag.up();
+        await tester.pump(frame);
+        expect(s.sides!.tobiCards, contains(sent), reason: '$o: his now');
+        await tester.pump(IkkiuchiPlayTuning.relayoutGlide);
+        await tester.pump(frame);
+        final home = s.layout.cards.firstWhere((c) => c.id == sent).box;
+        expect(s.board.cards.card(sent).box.centre.distanceTo(home.centre), lessThan(1e-3),
+            reason: '$o: at its home on his side');
+        expect(s.marked, isNotNull, reason: '$o: the reading goes on');
+
+        // v: Tobi's arm carries a card of his to the waiting spot.
+        await tester.tap(find.text('v'));
+        await tester.pump(frame);
+        expect(s.send.stage, IkkiuchiSendStage.carrying);
+        final carry = s.board.carry!;
+        await tester.pump(Duration(milliseconds: (carry.pickAt + carry.setAt) ~/ 2));
+        await capture(tester, 'field_tobi_carries_$o');
+        await tester.pump(Duration(milliseconds: carry.end.ceil()));
+        await tester.pump(IkkiuchiPlayTuning.relayoutGlide);
+        await tester.pump(frame);
+        expect(s.send.stage, IkkiuchiSendStage.waiting, reason: o);
+        expect(find.byType(PlacingStack), findsOneWidget, reason: '$o: his card waits');
+        expect(find.text('どうぞ！'), findsOneWidget);
+        expect(find.text('トビからの​札を​置く'), findsOneWidget);
+        expect(find.byType(PlacingSpots), findsOneWidget);
+        final wait = s.wait;
+        final corners = [
+          for (final c in [wait.topLeft, wait.bottomRight]) onScreen(tester, Vec(c.dx, c.dy)),
+        ];
+        final balloon = tester.getRect(find.byType(SpeechBalloon));
+        for (final label in ['R', ...IkkiuchiToolsTuning.fieldCounts.map((n) => '$n'), '^', 'v']) {
+          final button = tester.getRect(find.text(label));
+          expect(button.overlaps(Rect.fromPoints(corners[0], corners[1])), isFalse,
+              reason: '$o: $label clear of the waiting card');
+          expect(button.overlaps(balloon), isFalse, reason: "$o: $label clear of Tobi's balloon");
+        }
+        await capture(tester, 'field_tobi_sent_$o');
+
+        // The player drags it onto a spot; the landing tag names the spot.
+        final card = s.send.card!;
+        final (_, spot) = s.send.targets().freeSpots.first;
+        final place = await tester.startGesture(onScreen(tester, Vec(wait.center.dx, wait.center.dy)));
+        await tester.pump(frame);
+        final target = Vec(spot.x + spot.w / 2, spot.y + spot.h / 2);
+        final start = Vec(wait.center.dx, wait.center.dy);
+        for (var i = 1; i <= 6; i++) {
+          await place.moveTo(onScreen(tester, start.lerp(target, i / 6)));
+          await tester.pump(frame);
+        }
+        expect(s.send.drag?.spot, isNotNull, reason: o);
+        expect(tester.widget<PlacingRiding>(find.byType(PlacingRiding)).landing, isNotNull);
+        expect(find.byType(PlacingLanding), findsOneWidget);
+        await capture(tester, 'field_placing_$o');
+        await place.up();
+        await tester.pump(frame);
+        expect(s.send.active, isFalse, reason: '$o: placed');
+        expect(s.sides!.playerCards, contains(card));
+        await tester.pump(IkkiuchiPlayTuning.relayoutGlide);
+        await tester.pump(frame);
+        await capture(tester, 'field_placed_$o');
+        expect(s.marked, isNotNull, reason: '$o: the reading goes on');
+      }
       expect(tester.takeException(), isNull);
       await tester.pumpWidget(const SizedBox());
     });

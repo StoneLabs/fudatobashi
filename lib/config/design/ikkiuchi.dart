@@ -35,8 +35,9 @@ abstract final class IkkiuchiBoardStyle {
 
   /// A card marked on the board: an outline [markWidth] wide in
   /// [markColor], [markGap] outside its edge, its corners rounded
-  /// [markRadius].
+  /// [markRadius]; in [takenMarkColor] once the player took it.
   static const Color markColor = Palette.pink;
+  static const Color takenMarkColor = Palette.land;
   static const double markWidth = 3;
   static const double markGap = 1;
   static const double markRadius = 3;
@@ -92,6 +93,64 @@ abstract final class IkkiuchiBoardStyle {
   static const double stampTurn = -0.1;
   static const double stampPop = 1.6;
   static const double stampPopMs = 120;
+}
+
+/// 送り札 in a match (`IkkiuchiSendFlow`, `IkkiuchiSendLayer`): the card
+/// Tobi sends waits for the player as a stack of one, tagged; the player
+/// lays it out with the placing's look ([look]) and drags a card of
+/// theirs across to send it. dp.
+abstract final class IkkiuchiSendStyle {
+  /// The waiting card: at most `maxHeight` tall, in portrait at most
+  /// `tobiShare` of Tobi's height, `margin` clear of what is around it, and
+  /// never smaller than the field's cards.
+  static const wait = (maxHeight: 150.0, tobiShare: 0.78, margin: 12.0);
+
+  /// The placing's look.
+  static const look = PlacingLook(
+    spotInk: Color(0xEEFFFFFF),
+    spotFill: Color(0x14FFFFFF),
+    spotBorder: Strokes.label,
+    middleLabelFont: 10,
+    middleLabelTracking: 0.16,
+    middleLabelRoom: 60,
+    landingFill: Color(0x99FFD53D),
+    landingBorder: 2.5,
+    landingTagFont: 11.5,
+    landingTagGap: 4,
+    landingTagRoom: 26,
+    landingTagFlip: 330,
+    dragLift: 0.55,
+    dragScale: 1.1,
+    dragLeastWidth: 48,
+    dragBorder: 2.5,
+    stackDepth: 3,
+    stackStep: 2.5,
+    stackTagOverlap: 4,
+    stackTagRoom: 20,
+    stackTagFont: 13,
+    tagPadding: EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+    edgeFill: Palette.cardFrame,
+    edgeInk: Palette.ink,
+    edgeBorder: 1,
+  );
+
+  /// The band while a card is sent: its title over a line saying what to
+  /// do, [lineGap] apart.
+  static const double bandTitle = 20;
+  static const double bandLine = 10;
+  static const double lineGap = 2;
+  static const Color bandInk = Palette.ink;
+  static const Color lineInk = Palette.mute;
+
+  /// Tobi's balloon while his card waits: [balloonSize], left of his box
+  /// by [balloonGap] and [balloonDrop] of his height down it, its tail at
+  /// [balloonSpeaker], its words [balloonFont].
+  static const Size balloonSize = Size(80, 46);
+  static const double balloonGap = 2;
+  static const double balloonDrop = 0.12;
+  static const Alignment balloonSpeaker = Alignment(1.5, 0.9);
+  static const double balloonFont = 13;
+  static const EdgeInsets balloonPadding = EdgeInsets.zero;
 }
 
 /// Tobi's arm in a strike (`IkkiuchiArmPainter`): one ink line in his pen
