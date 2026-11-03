@@ -32,6 +32,7 @@ import '../debug/crash_log_page.dart';
 import '../debug/debug_page.dart';
 import '../debug/ikkiuchi_curves_page.dart';
 import '../debug/ikkiuchi_layout_page.dart';
+import '../debug/ikkiuchi_strikes_page.dart';
 import '../debug/karafuda_page.dart';
 import '../debug/raw_articles_page.dart';
 import '../debug/reset_actions.dart';
@@ -587,6 +588,8 @@ class _DeveloperSection extends StatelessWidget {
               title: "Comp - Tobi's curves", opensPage: true, onTap: () => open(const IkkiuchiCurvesPage())),
           SettingsTapRow(
               title: "Comp - Tobi's layout", opensPage: true, onTap: () => open(const IkkiuchiLayoutPage())),
+          SettingsTapRow(
+              title: "Comp - Tobi's strikes", opensPage: true, onTap: () => open(const IkkiuchiStrikesPage())),
         ]),
         SettingsGroup(children: [
           SettingsTapRow(title: 'Preview AnkiRen XP', onTap: () => previewAnkirenXp(context)),

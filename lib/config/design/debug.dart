@@ -128,6 +128,17 @@ abstract final class IkkiuchiToolsStyle {
   static const EdgeInsets factPadding = EdgeInsets.symmetric(horizontal: 8, vertical: 3);
   static const double factRadius = 4;
 
+  /// The strikes page's controls under its board, kept tight so the board
+  /// gets the room: their text, spacing and padding, and the pickers'
+  /// corners and arrows.
+  static const EdgeInsets controlsPadding = EdgeInsets.fromLTRB(6, 6, 6, 6);
+  static const double controlFont = 11;
+  static const double controlSpacing = 4;
+  static const EdgeInsets buttonPadding = EdgeInsets.symmetric(horizontal: 6, vertical: 5);
+  static const double menuRadius = 4;
+  static const String menuMark = ' ▼';
+  static const double menuMarkFont = 8;
+
   static const Color ground = Palette.desk;
   static const double minPitch = 30;
   static const double maxPitch = 46;
