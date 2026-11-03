@@ -36,7 +36,7 @@ class IkkiuchiBoardLayout {
     late Rect band;
     late TobiFrame tobi;
     if (landscape) {
-      const bandH = IkkiuchiBoardStyle.bandLandscape;
+      const bandH = IkkiuchiBoardStyle.band;
       g = FieldGeometry.of(field, folded: false);
       s = math.min(areaW / g.width, (areaH - bandH) / (2 * g.height));
       final half = g.height * s;
@@ -46,7 +46,7 @@ class IkkiuchiBoardLayout {
       final k = half * IkkiuchiBoardStyle.tobiShare / rig.size.y;
       tobi = TobiFrame(Vec(w / 2 - rig.size.x * k / 2, top + IkkiuchiBoardStyle.tobiTop), k, rig);
     } else {
-      const bandH = IkkiuchiBoardStyle.bandPortrait;
+      const bandH = IkkiuchiBoardStyle.band;
       g = FieldGeometry.of(field, folded: true);
       final fitH = (h - pad - IkkiuchiBoardStyle.bottomGap - bandH - IkkiuchiBoardStyle.tobiMinRoom) / (2 * g.height);
       s = [areaW / g.width, IkkiuchiBoardStyle.maxCardW / cardW, fitH].reduce(math.min);

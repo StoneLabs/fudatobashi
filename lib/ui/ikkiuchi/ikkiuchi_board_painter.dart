@@ -116,8 +116,7 @@ class IkkiuchiBoardScene extends ChangeNotifier {
           ),
         TextSpan(
           text: text,
-          style: TextStyle(
-              fontSize: layout.landscape ? IkkiuchiBoardStyle.kimarijiLandscape : IkkiuchiBoardStyle.kimarijiPortrait),
+          style: const TextStyle(fontSize: IkkiuchiBoardStyle.kimariji),
         ),
       ], style: TextStyle(
         fontFamily: Fonts.display,

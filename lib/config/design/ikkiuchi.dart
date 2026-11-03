@@ -8,26 +8,25 @@ abstract final class IkkiuchiBoardStyle {
   static const double pad = 6;
   static const double bottomGap = 16;
 
-  /// The band between the sides: its height, the ink rules along it, its
-  /// fill, and the called card's kimariji on it.
-  static const double bandPortrait = 96;
-  static const double bandLandscape = 40;
+  /// The band between the sides: its height, just enough for the called
+  /// card's kimariji and a note under it; the ink rules along it, its fill,
+  /// and the kimariji.
+  static const double band = 40;
   static const double bandRule = 3;
   static const Color bandFill = Palette.paper;
   static const Color bandRuleColor = Palette.ink;
-  static const double kimarijiPortrait = 40;
-  static const double kimarijiLandscape = 20;
+  static const double kimariji = 20;
   static const Color kimarijiColor = Palette.ink;
 
   /// A note under the kimariji (the developer's readout), [noteGap] below.
   static const double noteFont = 10;
-  static const double noteGap = 4;
+  static const double noteGap = 2;
   static const Color noteColor = Palette.mute;
   static const String noteEllipsis = '…';
 
   /// A からふだ's kimariji, and the tag in front of it, [karafudaGap] apart.
   static const Color karafudaColor = Palette.inkShadow;
-  static const double karafudaTag = 12;
+  static const double karafudaTag = 10;
   static const String karafudaGap = '  ';
 
   /// A card is never wider than [maxCardW].
