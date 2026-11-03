@@ -492,11 +492,13 @@ abstract final class IkkiuchiPhysicsTuning {
 }
 
 /// The developer's 一騎打ち pages (`IkkiuchiCurvesPage`,
-/// `IkkiuchiLayoutPage`, `IkkiuchiStrikesPage`): their rating slider, the
-/// graphs' rating ticks and sampling step, the standard deviations the
-/// curves page gives each value's range at, the layout page's choice of
-/// cards a side and the seeds it starts from, and the strikes page's slow
-/// motion speeds and its reset once a strike is over.
+/// `IkkiuchiLayoutPage`, `IkkiuchiStrikesPage`, `IkkiuchiFieldPage`): their
+/// rating slider, the graphs' rating ticks and sampling step, the standard
+/// deviations the curves page gives each value's range at, the layout
+/// page's choice of cards a side and the seeds it starts from, the full
+/// fields the strikes and field pages deal, the strikes page's slow motion
+/// speeds and its reset once a strike is over, and the field page's return
+/// of the cards after a swipe.
 abstract final class IkkiuchiToolsTuning {
   static const double ratingStart = 1600;
   static const double ratingStep = 50;
@@ -519,10 +521,12 @@ abstract final class IkkiuchiToolsTuning {
   /// are drawn apart from Tobi's.
   static const int playerSeedOffset = 7919;
 
-  /// The strikes page: its cards a side and rows, its slow motion speeds,
-  /// and how long after a strike ends, all cards still, the board resets.
-  static const int strikesPerSide = 25;
-  static const int strikesRows = 3;
+  /// A full field's cards a side and rows.
+  static const int dealPerSide = 25;
+  static const int dealRows = 3;
+
+  /// The strikes page: its slow motion speeds, and how long after a strike
+  /// ends, all cards still, the board resets.
   static const List<double> slowMotion = [1, 0.5, 0.25, 0.1];
   static const Duration autoReset = Duration(seconds: 3);
 }

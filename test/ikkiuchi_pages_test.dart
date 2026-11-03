@@ -382,7 +382,7 @@ void main() {
         expect(tester.takeException(), isNull);
         final s = scene(tester);
         expect(s.layout.landscape, landscape);
-        expect(s.board.field, hasLength(2 * IkkiuchiToolsTuning.strikesPerSide));
+        expect(s.board.field, hasLength(2 * IkkiuchiToolsTuning.dealPerSide));
         expect(find.byType(RotatedBox), landscape ? findsOneWidget : findsNothing);
         await capture(tester, 'strikes_${landscape ? 'landscape' : 'portrait'}');
       }
@@ -404,7 +404,7 @@ void main() {
       // The next tap sets the board out again first, and reads the card
       // under the finger there: the taken card, back at its spot.
       await tapBoard(tester, s.board.cards.card(card).home.centre);
-      expect(s.board.field, hasLength(2 * IkkiuchiToolsTuning.strikesPerSide), reason: 'a fresh board');
+      expect(s.board.field, hasLength(2 * IkkiuchiToolsTuning.dealPerSide), reason: 'a fresh board');
       expect(s.board.read?.called, card, reason: 'the card under the finger on the fresh board');
       for (var i = 0; i < 200 && s.board.active == null; i++) {
         await tester.pump(const Duration(milliseconds: 10));
@@ -416,10 +416,10 @@ void main() {
       expect(s.board, isNot(same(struck)), reason: 'a tap during a strike cancels it');
       expect(s.board.read?.called, next);
       expect(s.board.runs, isEmpty, reason: 'his new strike is still to come');
-      expect(s.board.field, hasLength(2 * IkkiuchiToolsTuning.strikesPerSide));
+      expect(s.board.field, hasLength(2 * IkkiuchiToolsTuning.dealPerSide));
       await tester.tap(find.text('Reset'));
       await tester.pump(frame);
-      expect(scene(tester).board.field, hasLength(2 * IkkiuchiToolsTuning.strikesPerSide), reason: 'Reset sets out the board again');
+      expect(scene(tester).board.field, hasLength(2 * IkkiuchiToolsTuning.dealPerSide), reason: 'Reset sets out the board again');
 
       await tester.tap(find.text('Strike now'));
       await tester.tap(find.text('Random'));

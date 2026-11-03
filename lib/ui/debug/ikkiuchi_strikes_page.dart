@@ -9,17 +9,14 @@ import '../../config/design.dart';
 import '../../data/poem.dart';
 import '../../domain/ikkiuchi_board.dart';
 import '../../domain/ikkiuchi_geometry.dart';
-import '../../domain/ikkiuchi_layout.dart';
 import '../../domain/ikkiuchi_read.dart';
 import '../../domain/ikkiuchi_strike.dart';
 import '../../l10n/karafuda_strings.dart';
 import '../../l10n/strings.dart';
-import '../../state/scope.dart';
-import '../ikkiuchi/ikkiuchi_board_layout.dart';
 import '../ikkiuchi/ikkiuchi_board_painter.dart';
-import '../ikkiuchi/ikkiuchi_tobi_art.dart';
 import '../sound/sounds.dart';
 import 'debug_common.dart';
+import 'ikkiuchi_dealer.dart';
 import 'ikkiuchi_rating_header.dart';
 import 'ikkiuchi_values.dart';
 
@@ -61,8 +58,7 @@ class IkkiuchiStrikesPageState extends State<IkkiuchiStrikesPage> with SingleTic
     IkkiuchiMove.smear: 'smear',
   };
 
-  final _layout = IkkiuchiLayout.ofPoems();
-  final _rig = IkkiuchiTobiArt.rig();
+  final _dealer = IkkiuchiDealer();
   late double _rating = widget.rating;
   late int _seed = widget.seed ?? math.Random().nextInt(IkkiuchiToolsTuning.seeds);
   late var _rng = math.Random(_seed);
@@ -72,16 +68,13 @@ class IkkiuchiStrikesPageState extends State<IkkiuchiStrikesPage> with SingleTic
   var _mistakes = true, _wind = true, _voice = true, _autoReset = true;
   var _speed = IkkiuchiToolsTuning.slowMotion.first;
 
-  IkkiuchiCardFaces? _faces;
-  IkkiuchiBoardScene? _scene;
-  ({Size size, bool landscape, double rating, int seed})? _sceneKey;
   late final Ticker _ticker = createTicker(_tick);
   Duration _last = Duration.zero;
   Duration? _idleSince;
   bool _called = false;
 
   /// The board as drawn now (for tests).
-  IkkiuchiBoardScene? get scene => _scene;
+  IkkiuchiBoardScene? get scene => _dealer.scene;
 
   @override
   void initState() {
@@ -92,20 +85,13 @@ class IkkiuchiStrikesPageState extends State<IkkiuchiStrikesPage> with SingleTic
   @override
   void dispose() {
     _ticker.dispose();
-    _scene?.dispose();
-    _faces?.dispose();
+    _dealer.dispose();
     super.dispose();
-  }
-
-  /// The rating the player's side is laid out at, drawn from the seed.
-  double get _playerRating {
-    final rng = math.Random(_seed + IkkiuchiToolsTuning.playerSeedOffset);
-    return IkkiuchiTuning.ratingMin + rng.nextDouble() * (IkkiuchiTuning.ratingMax - IkkiuchiTuning.ratingMin);
   }
 
   /// Deals a new board: a new seed, with new cards and both sides laid out.
   void _newSeed() {
-    _scene?.reset();
+    scene?.reset();
     _called = false;
     _idleSince = null;
     setState(() {
@@ -114,35 +100,16 @@ class IkkiuchiStrikesPageState extends State<IkkiuchiStrikesPage> with SingleTic
     });
   }
 
-  /// The scene for a board of [size], set out afresh when the size, the
-  /// layout, the rating or the seed changes.
-  IkkiuchiBoardScene _sceneFor(Size size) {
-    final key = (size: size, landscape: _landscape, rating: _rating, seed: _seed);
-    final scene = _scene;
-    if (scene != null && key == _sceneKey) return scene;
-    _faces ??= IkkiuchiCardFaces(showNumber: ProgressScope.of(context).settings.showPoemNumber);
-    final deck = [for (final p in poems.all) p.id]..shuffle(math.Random(_seed));
-    const perSide = IkkiuchiToolsTuning.strikesPerSide, rows = IkkiuchiToolsTuning.strikesRows;
-    final own = deck.sublist(0, perSide), others = deck.sublist(perSide, 2 * perSide);
-    final layout = IkkiuchiBoardLayout.of(
-      size: size,
-      landscape: _landscape,
-      tobiRows: _layout.generate(rating: _rating, own: own, others: others, rows: rows, seed: _seed).start,
-      playerRows: _layout
-          .generate(rating: _playerRating, own: others, others: own, rows: rows, seed: _seed + IkkiuchiToolsTuning.playerSeedOffset)
-          .start,
-      rig: _rig,
-    );
-    final old = scene;
-    if (old != null) SchedulerBinding.instance.addPostFrameCallback((_) => old.dispose());
-    _sceneKey = key;
-    _called = false;
-    return _scene = IkkiuchiBoardScene(layout, _faces!)..wind = _wind;
-  }
-
+  /// The scene for a board filling [room], set out afresh when its size,
+  /// the layout, the rating or the seed changes.
+  IkkiuchiBoardScene _sceneFor(Size room) => _dealer.sceneFor(context, room,
+      landscape: _landscape, rating: _rating, seed: _seed, onNew: (scene) {
+        _called = false;
+        scene.wind = _wind;
+      });
 
   void _tick(Duration elapsed) {
-    final scene = _scene;
+    final scene = this.scene;
     final dt = elapsed - _last;
     _last = elapsed;
     if (scene == null) return;
@@ -159,7 +126,7 @@ class IkkiuchiStrikesPageState extends State<IkkiuchiStrikesPage> with SingleTic
   }
 
   void _reset() {
-    _scene?.reset();
+    scene?.reset();
     _called = false;
     _idleSince = null;
   }
@@ -168,7 +135,7 @@ class IkkiuchiStrikesPageState extends State<IkkiuchiStrikesPage> with SingleTic
   /// called on since is reset first, cancelling any strike still playing.
   void _read(int? Function(IkkiuchiBoard board) pick) {
     if (_called) _reset();
-    final scene = _scene;
+    final scene = this.scene;
     if (scene == null) return;
     final poemId = pick(scene.board);
     if (poemId != null) _call(scene, poemId);
@@ -183,7 +150,7 @@ class IkkiuchiStrikesPageState extends State<IkkiuchiStrikesPage> with SingleTic
       called: poemId,
       field: field,
       from: board.shoulders,
-      alike: _layout.alike,
+      alike: _dealer.layout.alike,
       rng: _rng,
       now: _mode == IkkiuchiTapMode.now,
       mistakes: _mistakes,
@@ -222,7 +189,7 @@ class IkkiuchiStrikesPageState extends State<IkkiuchiStrikesPage> with SingleTic
 
   /// What Tobi did on the last call, for the band.
   String _readout() {
-    final board = _scene?.board;
+    final board = scene?.board;
     final read = board?.read;
     if (board == null || read == null) return '';
     const ms = IkkiuchiUnit.ms;
@@ -249,16 +216,15 @@ class IkkiuchiStrikesPageState extends State<IkkiuchiStrikesPage> with SingleTic
         children: [
           IkkiuchiRatingHeader(
             rating: _rating,
-            note: 'seed $_seed · you ${_playerRating.round()}',
+            note: 'seed $_seed · you ${IkkiuchiDealer.playerRating(_seed).round()}',
             onChanged: (v) => setState(() => _rating = v),
           ),
           Expanded(
             child: ClipRect(
-              child: LayoutBuilder(builder: (context, box) {
-                final size = _landscape ? Size(box.maxHeight, box.maxWidth) : box.biggest;
-                final board = IkkiuchiBoardView(_sceneFor(size), onTap: _tapAt);
-                return _landscape ? RotatedBox(quarterTurns: 1, child: board) : board;
-              }),
+              child: LayoutBuilder(
+                builder: (context, box) =>
+                    IkkiuchiDealer.turned(IkkiuchiBoardView(_sceneFor(box.biggest), onTap: _tapAt), landscape: _landscape),
+              ),
             ),
           ),
           Padding(
@@ -283,7 +249,7 @@ class IkkiuchiStrikesPageState extends State<IkkiuchiStrikesPage> with SingleTic
                     (speed) => setState(() => _speed = speed),
                   ),
                   _chip('mistakes', _mistakes, () => setState(() => _mistakes = !_mistakes)),
-                  _chip('wind', _wind, () => setState(() => _scene?.wind = _wind = !_wind)),
+                  _chip('wind', _wind, () => setState(() => scene?.wind = _wind = !_wind)),
                   _chip('voice', _voice, () => setState(() => _voice = !_voice)),
                 ],
               ),
