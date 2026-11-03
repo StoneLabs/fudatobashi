@@ -56,12 +56,22 @@ class IkkiuchiCard {
 /// the tatami's friction as damping, resting cards asleep. Tobi's fist is a
 /// kinematic body that exists only while it is live; the cards it pushes
 /// are held to [IkkiuchiPhysicsTuning.pushMax] and never go toward the side
-/// without the called card. Fixed steps of [IkkiuchiPhysicsTuning.step], so
-/// the same steps always give the same board.
+/// without the called card. With a [centreLine] (the y of the middle of the
+/// band), no card crosses into the other half: it stops there, under the
+/// band. Fixed steps of [IkkiuchiPhysicsTuning.step], so the same steps
+/// always give the same board.
 class IkkiuchiCards {
-  IkkiuchiCards(Iterable<({int id, IkkiuchiSide side, CardBox box})> cards, {required this.board})
+  IkkiuchiCards(Iterable<({int id, IkkiuchiSide side, CardBox box})> cards, {required this.board, double? centreLine})
       : _world = box2d.World(box2d.Vector2.zero()) {
     _world.setContactListener(_listener);
+    if (centreLine != null) {
+      const off = IkkiuchiPhysicsTuning.offBoard;
+      _world.createBody(box2d.BodyDef()).createFixture(box2d.FixtureDef(
+            box2d.EdgeShape()..set(_m(Vec(-off, centreLine)), _m(Vec(board.x + off, centreLine))),
+            restitution: IkkiuchiPhysicsTuning.restitution,
+            filter: _filter(_lineBit, _cardBit | _flyingBit),
+          ));
+    }
     for (final c in cards) {
       final body = _world.createBody(box2d.BodyDef(
         type: box2d.BodyType.dynamic,
@@ -78,7 +88,7 @@ class IkkiuchiCards {
         density: IkkiuchiPhysicsTuning.density,
         friction: IkkiuchiPhysicsTuning.friction,
         restitution: IkkiuchiPhysicsTuning.restitution,
-        filter: _filter(_cardBit, _cardBit | _flyingBit | _fistBit),
+        filter: _filter(_cardBit, _cardBit | _flyingBit | _fistBit | _lineBit),
       ));
       final card = IkkiuchiCard._(c.id, c.side, c.box, body);
       body.userData = card;
@@ -98,7 +108,7 @@ class IkkiuchiCards {
   /// Every card the fist touched in the last step.
   final Set<IkkiuchiCard> fistTouched = {};
 
-  static const _cardBit = 0x0001, _flyingBit = 0x0002, _fistBit = 0x0004;
+  static const _cardBit = 0x0001, _flyingBit = 0x0002, _fistBit = 0x0004, _lineBit = 0x0008;
 
   static box2d.Filter _filter(int category, int mask) => box2d.Filter()
     ..categoryBits = category
@@ -125,7 +135,7 @@ class IkkiuchiCards {
       ..linearDamping = IkkiuchiPhysicsTuning.launchDamping
       ..linearVelocity = _m(velocity)
       ..angularVelocity = spin.clamp(-IkkiuchiPhysicsTuning.maxSpin, IkkiuchiPhysicsTuning.maxSpin);
-    body.fixtures.first.filterData = _filter(_flyingBit, _cardBit | _flyingBit);
+    body.fixtures.first.filterData = _filter(_flyingBit, _cardBit | _flyingBit | _lineBit);
   }
 
   /// The fist over the next step: from [from] to [to] (dp), a circle of

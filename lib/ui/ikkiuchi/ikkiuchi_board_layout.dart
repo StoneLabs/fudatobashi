@@ -4,6 +4,7 @@ import 'dart:ui';
 import '../../config/design.dart';
 import '../../domain/ankiren_field.dart';
 import '../../domain/ankiren_geometry.dart';
+import '../../domain/ikkiuchi_board.dart';
 import '../../domain/ikkiuchi_cards.dart';
 import '../../domain/ikkiuchi_geometry.dart';
 import '../../domain/ikkiuchi_layout.dart';
@@ -87,18 +88,18 @@ class IkkiuchiBoardLayout {
   final TobiFrame tobi;
   final List<({int id, IkkiuchiSide side, CardBox box})> cards;
 
-  /// [cards] laid out as a side of [rows] rows at random: the cards split
-  /// as evenly as they go between the rows, the most in 下段, and each row
-  /// between its left and right groups.
+  /// The board set out on this layout, no card crossing the middle of the band.
+  IkkiuchiBoard board() => IkkiuchiBoard(tobi: tobi, size: size, cards: cards, centreLine: band.center.dy);
+
+  /// [cards] laid out as a side of [rows] rows at random, in a shape drawn
+  /// as Tobi's starting side's is ([IkkiuchiLayout.drawShape]).
   static List<IkkiuchiRow> randomSide(List<int> cards, int rows, math.Random rng) {
     final shuffled = [...cards]..shuffle(rng);
     final out = <IkkiuchiRow>[];
     var i = 0;
-    for (var r = 0; r < rows; r++) {
-      final n = cards.length ~/ rows + (r < cards.length % rows ? 1 : 0);
-      final left = n ~/ 2 + (n.isOdd && rng.nextBool() ? 1 : 0);
-      out.add(IkkiuchiRow(shuffled.sublist(i, i + left), shuffled.sublist(i + left, i + n)));
-      i += n;
+    for (final (:left, :right) in IkkiuchiLayout.drawShape(cards.length, rows, rng)) {
+      out.add(IkkiuchiRow(shuffled.sublist(i, i + left), shuffled.sublist(i + left, i + left + right)));
+      i += left + right;
     }
     return out;
   }

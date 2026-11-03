@@ -41,7 +41,7 @@ void main() {
       playerRows: IkkiuchiBoardLayout.randomSide(others, 3, math.Random(seed)),
       rig: rig,
     );
-    return IkkiuchiBoard(tobi: l.tobi, size: l.size, cards: l.cards);
+    return l.board();
   }
 
   // A clean strike at [card] with [move], its reach [reachMs].
@@ -174,6 +174,18 @@ void main() {
       }
       expect(cards.card(1).onBoard, isFalse, reason: 'the taken card is gone');
       expect(cards.card(2).still, isTrue);
+      expect(cards.card(2).movedFrom(cards.card(2).home, dp: 0.01, radians: 0.001), isFalse);
+    });
+
+    test('no card crosses the middle of the band', () {
+      final cards = IkkiuchiCards([
+        (id: 1, side: IkkiuchiSide.player, box: const CardBox(Vec(200, 600), 19, 27)),
+        (id: 2, side: IkkiuchiSide.tobi, box: const CardBox(Vec(200, 300), 19, 27, math.pi)),
+      ], board: const Vec(384, 832), centreLine: 450);
+      cards.launch(cards.card(1), const Vec(0, -3000), 0);
+      for (var i = 0; i < 600; i++) {
+        cards.step();
+      }
       expect(cards.card(2).movedFrom(cards.card(2).home, dp: 0.01, radians: 0.001), isFalse);
     });
 

@@ -20,7 +20,7 @@ abstract final class IkkiuchiEffects {
   /// A hit [age] ms after it landed: a paper flash, a burst of focus lines
   /// growing as it fades, and its lettering popping in, set off against
   /// the way out from Tobi's reach.
-  static void paintImpact(Canvas canvas, IkkiuchiImpact hit, double age) {
+  static void paintImpact(Canvas canvas, IkkiuchiImpact hit, double age, Size board) {
     final out = hit.out;
     final big = hit.move == IkkiuchiMove.smear, clean = hit.move == IkkiuchiMove.sweep;
     final life = big ? IkkiuchiArmStyle.lifeBigMs : IkkiuchiArmStyle.lifeMs;
@@ -61,7 +61,10 @@ abstract final class IkkiuchiEffects {
         ? ui.lerpDouble(IkkiuchiArmStyle.sfxPop, 1, Curves.easeOutCubic.transform(age / IkkiuchiArmStyle.sfxPopMs))!
         : 1.0;
     final alpha = 1 - ((p - (1 - IkkiuchiArmStyle.sfxFade)) / IkkiuchiArmStyle.sfxFade).clamp(0.0, 1.0);
-    final at = hit.point + Vec(-out.x * IkkiuchiArmStyle.sfxOut + IkkiuchiArmStyle.sfxAcross, -IkkiuchiArmStyle.sfxUp);
+    final off = hit.point + Vec(-out.x * IkkiuchiArmStyle.sfxOut + IkkiuchiArmStyle.sfxAcross, -IkkiuchiArmStyle.sfxUp);
+    // Kept on the board, so a hit at its edge still shows its lettering.
+    final at = Vec(off.x.clamp(box.width / 2, math.max(box.width / 2, board.width - box.width / 2)),
+        off.y.clamp(box.height / 2, math.max(box.height / 2, board.height - box.height / 2)));
     canvas
       ..save()
       ..translate(at.x, at.y)
@@ -161,8 +164,9 @@ abstract final class IkkiuchiEffects {
     }
   }
 
-  /// The お手つき stamp over the card [box], [age] ms after the fault.
-  static void paintStamp(Canvas canvas, CardBox box, double age) {
+  /// The お手つき stamp over the card [box], [age] ms after the fault, kept
+  /// on the [board].
+  static void paintStamp(Canvas canvas, CardBox box, double age, Size board) {
     final (picture, size) = _stamp ??= () {
       final tp = TextPainter(
         text: const TextSpan(
@@ -198,7 +202,8 @@ abstract final class IkkiuchiEffects {
         : 1.0;
     canvas
       ..save()
-      ..translate(box.centre.x, box.centre.y - box.reachAlong(const Vec(0, 1)) - IkkiuchiBoardStyle.stampLift)
+      ..translate(box.centre.x.clamp(size.width / 2, math.max(size.width / 2, board.width - size.width / 2)),
+          box.centre.y - box.reachAlong(const Vec(0, 1)) - IkkiuchiBoardStyle.stampLift)
       ..rotate(IkkiuchiBoardStyle.stampTurn)
       ..scale(pop)
       ..translate(-size.width / 2, -size.height / 2)

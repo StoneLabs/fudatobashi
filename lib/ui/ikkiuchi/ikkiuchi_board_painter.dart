@@ -65,7 +65,7 @@ class IkkiuchiBoardScene extends ChangeNotifier {
   /// Whether the arm leaves wind lines and smear afterimages.
   bool wind = true;
 
-  static IkkiuchiBoard _boardOf(IkkiuchiBoardLayout l) => IkkiuchiBoard(tobi: l.tobi, size: l.size, cards: l.cards);
+  static IkkiuchiBoard _boardOf(IkkiuchiBoardLayout l) => l.board();
 
   /// The board as it was set out, the band cleared.
   void reset() {
@@ -188,13 +188,13 @@ class IkkiuchiBoardPainter extends CustomPainter {
       ..translate(shake.dx, shake.dy);
     _paintTobi(canvas, board);
     for (final hit in board.impacts) {
-      IkkiuchiEffects.paintImpact(canvas, hit, now - hit.at);
+      IkkiuchiEffects.paintImpact(canvas, hit, now - hit.at, size);
     }
     // A fault is one fault however many cards the fist touched: one stamp,
     // on the first.
     if (board.faults.entries.firstOrNull case MapEntry(key: final id, value: final at)) {
       final card = board.cards.card(id);
-      if (card.onBoard) IkkiuchiEffects.paintStamp(canvas, card.box, now - at);
+      if (card.onBoard) IkkiuchiEffects.paintStamp(canvas, card.box, now - at, size);
     }
     canvas.restore();
   }
