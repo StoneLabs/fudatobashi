@@ -79,19 +79,20 @@ abstract final class TrainingTuning {
 /// new cards it may auto-unlock in one day (catching up after days off), and
 /// the daily practice it is built for: [dailyRounds] training rounds, which a
 /// capable player needs to keep up (the pacing simulations' routine). With
-/// more than [pauseNewOver] reviews in today's set, Home asks whether to
-/// pause today's new cards.
+/// at least [pauseNewAt] review looks in today's set (its due cards times
+/// [TodaySetTuning.reviewLooks]), Home asks whether to pause today's new
+/// cards.
 class PaceProfile {
   const PaceProfile({
     required this.daysToAll,
     required this.dailyAutoCap,
     required this.dailyRounds,
-    required this.pauseNewOver,
+    required this.pauseNewAt,
   });
   final int daysToAll;
   final int dailyAutoCap;
   final int dailyRounds;
-  final int pauseNewOver;
+  final int pauseNewAt;
 }
 
 /// Journey pacing: when new cards arrive (`Trainer.unlockEarned`,
@@ -105,8 +106,8 @@ class PaceProfile {
 /// pulls cards in ahead of the curve (see [LearnAheadTuning]).
 abstract final class PaceTuning {
   static const LearningPace defaultPace = LearningPace.month;
-  static const PaceProfile month = PaceProfile(daysToAll: 28, dailyAutoCap: 10, dailyRounds: 3, pauseNewOver: 75);
-  static const PaceProfile sprint = PaceProfile(daysToAll: 15, dailyAutoCap: 16, dailyRounds: 6, pauseNewOver: 150);
+  static const PaceProfile month = PaceProfile(daysToAll: 28, dailyAutoCap: 10, dailyRounds: 3, pauseNewAt: 100);
+  static const PaceProfile sprint = PaceProfile(daysToAll: 15, dailyAutoCap: 16, dailyRounds: 6, pauseNewAt: 200);
 
   /// The pace curve: (share of the pace's days elapsed, share of all cards
   /// expected unlocked), linearly interpolated. Front-loaded, since the

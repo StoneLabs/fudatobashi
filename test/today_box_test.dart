@@ -108,16 +108,16 @@ void main() {
         await _play(p, await p.planTraining(rng: math.Random(back), now: at), at);
       }
       if (day == _Day.big || day == _Day.paused) {
-        // More cards due today than the pace's threshold, and a few new.
+        // Enough cards due today to reach the pace's threshold, and a few new.
         final yesterday = now.subtract(const Duration(days: 1)).toUtc();
         final locked = [for (final s in p.trainer.items.values) if (!s.unlocked) s];
-        final over = p.trainer.config.pace.profile.pauseNewOver;
-        for (final s in locked.take(over + 1)) {
+        final due = p.trainer.config.pace.profile.pauseNewAt ~/ TodaySetTuning.reviewLooks;
+        for (final s in locked.take(due)) {
           s
             ..unlocked = true
             ..card = s.card.copyWith(lastReview: yesterday, due: yesterday);
         }
-        for (final s in locked.skip(over + 1).take(3)) {
+        for (final s in locked.skip(due).take(3)) {
           s.unlocked = true;
         }
       }

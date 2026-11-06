@@ -255,20 +255,20 @@ void main() {
         final db = AppDatabase(NativeDatabase.memory());
         final p = await open(db);
         await p.setLearningPace(pace);
-        final over = pace.profile.pauseNewOver;
+        final due = pace.profile.pauseNewAt ~/ TodaySetTuning.reviewLooks;
         await playRun(p, await p.planTraining(rng: math.Random(1), now: day0), day0);
-        // Enough cards due tomorrow to go over, and a few new ones.
+        // Enough cards due tomorrow to reach the threshold, and a few new ones.
         final items = p.trainer.items.values.toList();
-        for (final s in items.take(over + 1)) {
+        for (final s in items.take(due)) {
           s.unlocked = true;
           if (!s.reviewed) s.card = s.card.copyWith(lastReview: day0.toUtc(), due: day0.toUtc());
         }
-        for (final s in items.skip(over + 1).take(3)) {
+        for (final s in items.skip(due).take(3)) {
           s.unlocked = true;
         }
         await p.planTraining(rng: math.Random(2), now: day1);
         final set = p.todaySet(day1)!;
-        expect(set.reviews, greaterThan(over), reason: '$pace');
+        expect(set.bar.reviews, greaterThanOrEqualTo(pace.profile.pauseNewAt), reason: '$pace');
         expect(set.newCards, isPositive, reason: '$pace');
         expect(p.pauseOffered(day1), isTrue, reason: '$pace');
         await p.answerPause(pause: true, now: day1);
@@ -280,12 +280,12 @@ void main() {
       }
     });
 
-    test('at or under the threshold nothing is offered', () async {
+    test('under the threshold nothing is offered', () async {
       final db = AppDatabase(NativeDatabase.memory());
       final p = await open(db);
       await playRun(p, await p.planTraining(rng: math.Random(1), now: day0), day0);
       await p.planTraining(rng: math.Random(2), now: day1);
-      expect(p.todaySet(day1)!.reviews, lessThanOrEqualTo(LearningPace.month.profile.pauseNewOver));
+      expect(p.todaySet(day1)!.bar.reviews, lessThan(LearningPace.month.profile.pauseNewAt));
       expect(p.pauseOffered(day1), isFalse);
       await db.close();
     });

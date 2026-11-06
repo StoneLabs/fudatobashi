@@ -531,14 +531,14 @@ class Progress extends ChangeNotifier {
   }
 
   /// Home asks once a day whether to pause the new cards: today's set has
-  /// more reviews than the pace's [PaceProfile.pauseNewOver] and new cards
-  /// not started yet.
+  /// at least the pace's [PaceProfile.pauseNewAt] review looks and new
+  /// cards not started yet.
   bool pauseOffered([DateTime? now]) {
     final set = todaySet(now);
     return set != null &&
         !set.pauseAsked &&
         !set.done &&
-        set.reviews > trainer.config.pace.profile.pauseNewOver &&
+        set.bar.reviews >= trainer.config.pace.profile.pauseNewAt &&
         _pausable(set).isNotEmpty;
   }
 
