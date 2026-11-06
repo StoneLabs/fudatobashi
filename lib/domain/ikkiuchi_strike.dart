@@ -18,6 +18,7 @@ class IkkiuchiStrikeSetup {
     required this.cardW,
     required this.away,
     this.wrong = const [],
+    this.targetWrong = false,
     this.reachMs,
     this.endFace = TobiFace.cheering,
     this.side,
@@ -44,6 +45,11 @@ class IkkiuchiStrikeSetup {
   /// The cards on the side without the called card, which the live fist
   /// keeps clear of.
   final List<CardBox> wrong;
+
+  /// Whether the card struck is itself one he would keep clear of, as when
+  /// he goes for a card on the side without the called card, or any card
+  /// on a からふだ: the hit then lands where it is aimed.
+  final bool targetWrong;
 
   /// Screen ms from the start of the reach to the hit; the move's own
   /// timing when null. Never under [IkkiuchiTuning.reachFloorMs].
@@ -195,6 +201,7 @@ class IkkiuchiStrike extends IkkiuchiArmMove {
       away: setup.away,
       touch: IkkiuchiArmTuning.fist * u * IkkiuchiArmTuning.touch,
       wrong: setup.wrong,
+      targetWrong: setup.targetWrong,
       body0: lead == null ? TobiBody.rest : lead.strike.bodyAt(lead.at),
     );
     _plan = switch (move) {
@@ -246,7 +253,8 @@ class IkkiuchiStrike extends IkkiuchiArmMove {
   late final double fist;
   double get touch => _geo.touch;
 
-  /// Where the hand meets the card: the edge it comes at, or for the row
+  /// Where the hand meets the card: the edge it comes at (moved toward the
+  /// called card's side where the hit must land clear), or for the row
   /// sweep, its side along the row.
   Vec get contact => _plan.contact ?? _geo.edge;
 
@@ -356,6 +364,7 @@ class _Geo {
     required this.away,
     required this.touch,
     required this.wrong,
+    required this.targetWrong,
     required this.body0,
   });
 
@@ -363,6 +372,7 @@ class _Geo {
   final double d, k, u, lean, side, rowHalf, rowExitX, touch;
   final double? reachMs;
   final List<CardBox> wrong;
+  final bool targetWrong;
   final TobiBody body0;
 
   TobiBody pose(IkkiuchiBodyPose p, [double? way]) => TobiBody.of(p, way ?? lean, k);
@@ -425,11 +435,41 @@ class _Geo {
     );
   }
 
+  /// Whether the fist's touch at [p] keeps [IkkiuchiArmTuning.clearance]
+  /// from every card in [wrong].
+  bool clearAt(Vec p) => gapToCards(wrong, p) - touch >= IkkiuchiArmTuning.clearance * u;
+
+  /// Where a hit meant for [p] lands, so the live fist sets off clear of
+  /// the side without the called card: [p] itself when [clearAt] or when
+  /// he means to strike a wrong card ([targetWrong]), else [p] moved toward
+  /// the called card's side just far enough. That happens where the sides
+  /// lie close and he comes at the card's edge facing the other side.
+  Vec clearHit(Vec p) {
+    if (targetWrong || clearAt(p)) return p;
+    // Out from [p] by the touch and its clearance until clear, then halved
+    // back in.
+    final out = touch + IkkiuchiArmTuning.clearance * u;
+    var lo = 0.0, hi = out;
+    while (!clearAt(p + away * hi)) {
+      lo = hi;
+      hi += out;
+    }
+    for (var j = 0; j < IkkiuchiArmTuning.brakeRefine; j++) {
+      final mid = (lo + hi) / 2;
+      if (clearAt(p + away * mid)) {
+        hi = mid;
+      } else {
+        lo = mid;
+      }
+    }
+    return p + away * hi;
+  }
+
   /// How far along [path] (0 to 1) the fist goes before its touch comes
   /// within [IkkiuchiArmTuning.clearance] of a card in [wrong].
   double _clearRun(Vec Function(double s) path) {
     if (wrong.isEmpty) return 1;
-    bool clear(double s) => gapToCards(wrong, path(s)) - touch >= IkkiuchiArmTuning.clearance * u;
+    bool clear(double s) => clearAt(path(s));
     if (!clear(0)) return 0;
     const n = IkkiuchiArmTuning.brakeSamples;
     for (var i = 1; i <= n; i++) {
@@ -542,10 +582,11 @@ _Plan _whip(_Geo c) {
   const tw = _W.windUp, to = _W.out, tr = _W.back;
   const tc = tw + to;
   final hw = c.h0 + c.f * (-_W.windBack * k) + c.n * (_W.windOut * k);
-  final q = c.onBoard(hw.lerp(c.edge, _W.bowAt) + c.n * math.max(_W.bow * c.d, _W.bowMin * c.u));
+  final hit = c.clearHit(c.edge);
+  final q = c.onBoard(hw.lerp(hit, _W.bowAt) + c.n * math.max(_W.bow * c.d, _W.bowMin * c.u));
   final fol = c.follow(
-    from: c.edge,
-    dir: (c.edge - q).unit,
+    from: hit,
+    dir: (hit - q).unit,
     length: (_W.followShare * c.d).clamp(_W.followMin * c.u, _W.followMax * c.u),
     dur: _W.follow,
     tc: tc,
@@ -558,9 +599,10 @@ _Plan _whip(_Geo c) {
     tc: tc,
     backAt: back,
     end: back + tr,
+    contact: hit,
     hand: _timeline([
       _Piece(tw, (p, _) => c.h0.lerp(hw, _Ease.inOutSine(p))),
-      _Piece(to, (p, _) => bezier(hw, q, c.edge, _pow(p, _W.outPower))),
+      _Piece(to, (p, _) => bezier(hw, q, hit, _pow(p, _W.outPower))),
       _Piece(fol.dur, (p, _) => fol.at(p)),
       _Piece(tr, (p, _) => c.returnHand(fol.end, c.hEnd, _Ease.spring(p, _W.home))),
     ], c.h0, c.hEnd),
@@ -606,13 +648,17 @@ _Plan _coilLunge(_Geo c) {
 
   final hc = coilAt(1);
   final u = c.u;
-  final land = c.target + c.n * (c.edge.distanceTo(c.target) + _B.landOut * u) + c.f * (-_B.landBack * u);
-  final past = c.target + c.n * (-(c.edge.distanceTo(c.target) + _B.sweepOut * u)) + c.f * (_B.sweepOn * u);
-  // The sweep across the card: up to the hit, then its follow-through.
-  final qc = math.min(1.0, _B.hitInto * u / land.distanceTo(past));
+  final land0 = c.target + c.n * (c.edge.distanceTo(c.target) + _B.landOut * u) + c.f * (-_B.landBack * u);
+  final past0 = c.target + c.n * (-(c.edge.distanceTo(c.target) + _B.sweepOut * u)) + c.f * (_B.sweepOn * u);
+  // The sweep across the card: up to the hit, then its follow-through. It
+  // moves with the hit where the hit must land clear.
+  final qc = math.min(1.0, _B.hitInto * u / land0.distanceTo(past0));
   final pc = 1 - math.pow(1 - qc, 1 / 3).toDouble();
   final tc = tco + th + tl + pc * ts;
-  final hit = land.lerp(past, qc);
+  final aim = land0.lerp(past0, qc);
+  final hit = c.clearHit(aim);
+  final shift = hit - aim;
+  final land = land0 + shift, past = past0 + shift;
   final fol = c.follow(from: hit, dir: past - land, length: hit.distanceTo(past), dur: (1 - pc) * ts, tc: tc);
   final back = tc + fol.dur;
   final sweep = back - (tco + th + tl);
@@ -623,6 +669,7 @@ _Plan _coilLunge(_Geo c) {
     tc: tc,
     backAt: back,
     end: back + tr,
+    contact: c.edge + shift,
     hand: _timeline([
       _Piece(tco, (p, _) => coilAt(p)),
       _Piece(th, (_, ms) => hc + c.n * (math.sin(ms * _B.shakeRate) * _B.shake * k)),

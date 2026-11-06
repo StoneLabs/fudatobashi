@@ -150,19 +150,22 @@ void main() {
     });
 
     test('the live fist keeps its clearance from the side without the called card', () {
-      for (final rating in ratings) {
-        for (var seed = 0; seed < 6; seed++) {
-          for (final landscape in [false, true]) {
-            final b = boardFor(seed, rating, landscape: landscape);
-            for (final side in IkkiuchiSide.values) {
-              final c = sideCard(b, side, seed * 5 + 3);
-              for (final move in IkkiuchiMove.values) {
-                final setup = setupFor(b, c, reachMs: IkkiuchiTobi(rating).reachMs);
-                final s = IkkiuchiStrike(move, setup);
-                for (var t = s.liveFrom; t <= s.liveUntil; t += 0.5) {
-                  final gap = gapToCards(setup.wrong, s.handAtTime(t)) - s.touch;
-                  expect(gap, greaterThanOrEqualTo(IkkiuchiArmTuning.clearance * b.cards.cardW - 0.01),
-                      reason: '$rating seed $seed ${side.name} ${move.name} at $t');
+      for (final MapEntry(key: name, value: size) in sizes.entries) {
+        for (final rating in ratings) {
+          for (var seed = 0; seed < 6; seed++) {
+            for (final landscape in [false, true]) {
+              final b = boardFor(seed, rating, landscape: landscape, size: size);
+              for (final side in IkkiuchiSide.values) {
+                final c = sideCard(b, side, seed * 5 + 3);
+                for (final move in IkkiuchiMove.values) {
+                  final setup = setupFor(b, c, reachMs: IkkiuchiTobi(rating).reachMs);
+                  final s = IkkiuchiStrike(move, setup);
+                  for (var t = s.liveFrom; t <= s.liveUntil; t += 0.5) {
+                    final gap = gapToCards(setup.wrong, s.handAtTime(t)) - s.touch;
+                    expect(gap, greaterThanOrEqualTo(IkkiuchiArmTuning.clearance * b.cards.cardW - 0.01),
+                        reason: '$name ${landscape ? 'landscape' : 'portrait'} $rating seed $seed ${side.name} '
+                            '${move.name} at $t');
+                  }
                 }
               }
             }

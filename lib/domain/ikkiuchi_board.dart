@@ -331,6 +331,7 @@ class IkkiuchiBoard {
           for (final c in cards.cards)
             if (c != card && c.onBoard && !c.taken && _isDead(c)) c.box,
         ],
+        targetWrong: _isDead(card),
         reachMs: reachMs,
         endFace: endFace,
         side: lead?.run.strike.side,

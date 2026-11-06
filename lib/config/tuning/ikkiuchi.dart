@@ -216,10 +216,12 @@ abstract final class IkkiuchiArmTuning {
   static const double followBendAt = 0.6;
 
   /// The brake: the live fist's touch stays [clearance] from every card on
-  /// the side without the called card. A follow-through cut short takes
-  /// less time, by the square root of the share left, at least [brakeMin].
-  /// The path is searched in [brakeSamples] steps, then halved
-  /// [brakeRefine] times.
+  /// the side without the called card. A hit that would land nearer moves
+  /// toward the called card's side just far enough to keep it, and the
+  /// follow-through stops short before it comes nearer. A follow-through
+  /// cut short takes less time, by the square root of the share left, at
+  /// least [brakeMin]. The path is searched in [brakeSamples] steps, then
+  /// halved [brakeRefine] times; the hit's place is halved as often.
   static const double clearance = 0.22;
   static const double brakeMin = 0.45;
   static const int brakeSamples = 64;
