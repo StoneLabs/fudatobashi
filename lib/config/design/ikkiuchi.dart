@@ -102,14 +102,18 @@ abstract final class IkkiuchiBoardStyle {
 }
 
 /// 送り札 in a match (`IkkiuchiSendFlow`, `IkkiuchiSendLayer`): the card
-/// Tobi sends waits for the player as a stack of one, tagged; the
+/// Tobi sends waits for the player as a big stack of one, tagged; the
 /// player lays it out with the placing's look ([look]) and drags a card of
 /// theirs onto Tobi's side, one spot, to send it. dp.
 abstract final class IkkiuchiSendStyle {
-  /// The waiting card: at most `maxHeight` tall, in portrait at most
-  /// `tobiShare` of Tobi's height, `margin` clear of what is around it, and
-  /// never smaller than the field's cards.
-  static const wait = (maxHeight: 150.0, tobiShare: 0.78, margin: 12.0);
+  /// The waiting card, never smaller than the field's cards. In portrait at
+  /// most `maxHeight` tall and `tobiShare` of Tobi's height, or `scale`
+  /// field cards wide where that is bigger, `margin` clear of what is
+  /// around it. In landscape at most `scale` field cards wide, `gap` clear
+  /// of the field and the board's halves: in the room right of the field
+  /// where that room takes one at least `leastScale` field cards wide, else
+  /// over Tobi's side.
+  static const wait = (maxHeight: 150.0, tobiShare: 0.78, margin: 12.0, scale: 1.8, leastScale: 1.4, gap: 6.0);
 
   /// Tobi's side, which takes a card the player sends anywhere on it, as
   /// one spot reaching [sideOutset] past the edges of his half.
@@ -194,11 +198,13 @@ abstract final class IkkiuchiCallStyle {
 }
 
 /// The game column at the board's right edge in landscape
-/// (`IkkiuchiMatchColumn`), [width] wide and [edge] in from the board's
-/// right edge and from the field's top and foot. dp.
+/// (`IkkiuchiMatchColumn`), [width] wide, [edge] in from the board's right
+/// edge and from the field's top and foot, and at least [fieldGap] clear of
+/// the field. dp.
 abstract final class IkkiuchiColumnStyle {
   static const double width = 54;
   static const double edge = 6;
+  static const double fieldGap = 8;
 
   /// 終了 at its top: a small arming button ([end]), its flag [endIcon].
   static const HoldConfirmLook end = HoldConfirmLook(

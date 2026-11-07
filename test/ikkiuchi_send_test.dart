@@ -10,6 +10,7 @@ import 'dart:ui' show Offset, Rect, Size;
 import 'package:flutter/gestures.dart' show PointerDownEvent, PointerMoveEvent, PointerUpEvent;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:fudatobashi/config/config.dart';
+import 'package:fudatobashi/config/design.dart';
 import 'package:fudatobashi/data/poem.dart';
 import 'package:fudatobashi/domain/field_parts.dart';
 import 'package:fudatobashi/domain/ikkiuchi_board.dart';
@@ -38,6 +39,8 @@ void main() {
   final rig = IkkiuchiTobiArt.rig();
   const step = IkkiuchiBoard.stepMs;
   const phone = Size(384, 832);
+  const smallLandscape = Size(640, 360);
+  const tabletLandscape = Size(1376, 1032);
 
   // A deal of [perSide] cards a side by [seed]: Tobi's homes at [rating],
   // the player's side by the same layout.
@@ -326,20 +329,47 @@ void main() {
       expect(carry.faceAt(carry.end), TobiFace.pointing);
     });
 
-    test('the waiting spot lies clear of the field, right of Tobi in portrait and beside the side in landscape', () {
-      for (final landscape in [false, true]) {
-        final l = layoutOf(dealt(13), landscape: landscape);
-        final wait = l.wait;
-        expect(wait.height / wait.width, closeTo(IkkiuchiField.cardH, 1e-9));
-        expect(wait.right, lessThanOrEqualTo(l.size.x + 1e-9));
-        if (landscape) {
-          expect(wait.left, greaterThanOrEqualTo(l.field.right - 1e-9), reason: 'in the margin');
-          expect(wait.top, greaterThanOrEqualTo(l.band.bottom), reason: "beside the player's side");
-        } else {
-          expect(wait.bottom, lessThan(l.field.top), reason: 'above his side');
-          expect(wait.left, greaterThanOrEqualTo(l.tobi.origin.x + rig.size.x * l.tobi.k - 1e-9), reason: 'right of him');
+    test('in portrait the waiting card lies right of Tobi, above his side', () {
+      final l = layoutOf(dealt(13));
+      final wait = l.wait;
+      expect(wait.height / wait.width, closeTo(IkkiuchiField.cardH, 1e-9));
+      expect(wait.right, lessThanOrEqualTo(l.size.x + 1e-9));
+      expect(wait.bottom, lessThan(l.field.top), reason: 'above his side');
+      expect(wait.left, greaterThanOrEqualTo(l.tobi.origin.x + rig.size.x * l.tobi.k - 1e-9), reason: 'right of him');
+      expect(wait.width, greaterThan(2 * l.cardW), reason: 'big');
+    });
+
+    test("in landscape the waiting card is big: over the column where the room right of the field takes it, "
+        "else over Tobi's side", () {
+      const style = IkkiuchiSendStyle.wait;
+      final tag = IkkiuchiSendStyle.look.stackTagRoom;
+      var beside = 0, over = 0;
+      for (final size in [smallLandscape, phone.flipped, tabletLandscape]) {
+        for (var seed = 0; seed < 20; seed++) {
+          final sides = dealt(seed);
+          final l = IkkiuchiBoardLayout.of(
+              size: size, landscape: true, tobiRows: sides.tobi, playerRows: sides.player, rig: rig);
+          final wait = l.wait, column = l.column!;
+          final why = '$size seed $seed';
+          expect(wait.height / wait.width, closeTo(IkkiuchiField.cardH, 1e-9), reason: why);
+          expect(wait.width, greaterThanOrEqualTo(style.leastScale * l.cardW - 1e-9), reason: '$why: big');
+          expect(wait.width, lessThanOrEqualTo(style.scale * l.cardW + 1e-9), reason: why);
+          expect((Offset.zero & size).contains(wait.topLeft) && wait.right <= size.width && wait.bottom + tag <= size.height,
+              isTrue, reason: '$why: on the board with its tag');
+          if (wait.left >= l.field.right) {
+            beside++;
+            expect(wait.top, greaterThanOrEqualTo(l.band.bottom), reason: "$why: beside the player's side, clear of 終了");
+            expect(wait.overlaps(column), isTrue, reason: '$why: over the column');
+          } else {
+            over++;
+            expect(wait.top, greaterThanOrEqualTo(l.field.top), reason: "$why: over Tobi's side");
+            expect(wait.bottom + tag, lessThanOrEqualTo(l.band.top), reason: "$why: over Tobi's side, with its tag");
+            expect(wait.right, lessThanOrEqualTo(column.left), reason: '$why: clear of the column');
+          }
         }
       }
+      expect(beside, greaterThan(0), reason: 'phones have room right of the field');
+      expect(over, greaterThan(0), reason: 'a tablet has none');
     });
   });
 
@@ -644,6 +674,32 @@ void main() {
           runFor(scene, IkkiuchiPlayTuning.relayoutGlide * 2);
           expectHome(scene, '$o: back home from $why');
         }
+      }
+    });
+
+    test("Tobi's arm sets his card down as the big waiting card, and it waits there without a jump", () {
+      for (final landscape in [false, true]) {
+        final o = landscape ? 'landscape' : 'portrait';
+        final scene = sceneOf(dealt(4), landscape: landscape);
+        final flow = scene.send;
+        expect(flow.startReceiving(), isTrue);
+        final carry = scene.board.carry!;
+        final wait = scene.wait;
+        expect(wait.width, greaterThanOrEqualTo(IkkiuchiSendStyle.wait.leastScale * scene.layout.cardW), reason: '$o: big');
+        final set = carry.cardAt(carry.setAt)!;
+        expect(Offset(set.centre.x, set.centre.y), offsetMoreOrLessEquals(wait.center, epsilon: 1e-6), reason: o);
+        expect(2 * set.hw, closeTo(wait.width, 1e-6), reason: '$o: grown to its size');
+        expect(2 * set.hh, closeTo(wait.height, 1e-6), reason: '$o: grown to its size');
+        final picked = carry.cardAt(carry.pickAt)!;
+        expect(2 * picked.hw, closeTo(scene.layout.cardW, 1e-6), reason: '$o: a field card as he takes it');
+        const frame = 16.0;
+        while (flow.stage == IkkiuchiSendStage.carrying) {
+          scene.advance(frame);
+        }
+        expect(flow.stage, IkkiuchiSendStage.waiting, reason: o);
+        expect(scene.wait, rectMoreOrLessEquals(wait, epsilon: 1e-6), reason: '$o: where his hand set it');
+        runFor(scene, IkkiuchiPlayTuning.relayoutGlide * 2);
+        expect(scene.wait, scene.layout.wait, reason: '$o: glided to its place as his side closed up');
       }
     });
 

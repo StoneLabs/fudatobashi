@@ -155,8 +155,8 @@ abstract final class IkkiuchiToolsStyle {
   /// match's: [fieldButton] square, [fieldButtonGap] apart in two columns
   /// under the panel's [fieldPanelTitle]; the からふだ read's is
   /// [fieldKarafudaLabel]. In portrait [fieldButtonInset] in from the
-  /// screen's top left; in landscape [fieldPanelInset] inside the room
-  /// right of Tobi's side, between the field and the game column.
+  /// screen's top left; in landscape [fieldPanelInset] inside the room it
+  /// takes in Tobi's half.
   static const double fieldButton = 20;
   static const double fieldButtonGap = 3;
   static const double fieldButtonInset = 8;

@@ -1205,7 +1205,7 @@ void main() {
       await tester.pumpWidget(const SizedBox());
     });
 
-    testWidgets('landscape fits a small phone and a tablet', (tester) async {
+    testWidgets("landscape fits a small phone and a tablet, Tobi's card waiting big and placed there", (tester) async {
       final p = await open(tester);
       await tester.runAsync(() => p.updateSettings(p.settings.copyWith(language: 'ja')));
       const small = Screen('360 short', Size(360, 640), 3);
@@ -1235,7 +1235,80 @@ void main() {
         await run(tester, 3000);
         expect(s.send.stage, IkkiuchiSendStage.waiting);
         expect(tester.takeException(), isNull, reason: '$name: nothing overflows');
+        final wait = s.wait;
+        expect(wait.width, greaterThanOrEqualTo(IkkiuchiSendStyle.wait.leastScale * s.layout.cardW), reason: '$name: big');
+        final waiting = boardRectOnScreen(tester, wait);
+        expect(screenRect(tester, find.byType(PlacingStack)), rectMoreOrLessEquals(waiting, epsilon: 1e-6), reason: name);
+        for (final label in ['R', '25', 'v']) {
+          expect(screenRect(tester, tool(label)).overlaps(waiting), isFalse, reason: '$name: $label clear of the waiting card');
+        }
         await capture(tester, 'field_${name}_sent_landscape');
+
+        // Placed by a drag from it on the small phone, by a tap on a spot on
+        // the tablet.
+        final card = s.send.card!;
+        final (_, rect) = s.send.targets().freeSpots.first;
+        final target = Vec(rect.x + rect.w / 2, rect.y + rect.h / 2);
+        if (name == 'small') {
+          final start = Vec(wait.center.dx, wait.center.dy);
+          final place = await tester.startGesture(onScreen(tester, start));
+          await tester.pump(frame);
+          for (var i = 1; i <= 6; i++) {
+            await place.moveTo(onScreen(tester, start.lerp(target, i / 6)));
+            await tester.pump(frame);
+          }
+          expect(s.send.drag?.spot, isNotNull, reason: name);
+          expect(find.byType(PlacingLanding), findsOneWidget);
+          await capture(tester, 'field_${name}_placing_landscape');
+          await place.up();
+        } else {
+          await tester.tapAt(onScreen(tester, target));
+        }
+        await tester.pump(frame);
+        expect(s.send.active, isFalse, reason: '$name: placed');
+        expect(s.sides!.playerCards, contains(card), reason: name);
+        await run(tester, IkkiuchiPlayTuning.relayoutGlide.inMilliseconds + 100.0);
+        expect(tester.takeException(), isNull, reason: '$name: nothing overflows');
+      }
+      await tester.pumpWidget(const SizedBox());
+    });
+
+    testWidgets("portrait: Tobi's card waits big right of him on a small phone and a tablet, and is placed by a drag",
+        (tester) async {
+      final p = await open(tester);
+      await tester.runAsync(() => p.updateSettings(p.settings.copyWith(language: 'ja')));
+      const small = Screen('360 short', Size(360, 640), 3);
+      for (final (screen, name) in [(small, 'small'), (ipadPortrait, 'tablet')]) {
+        await show(tester, p, const IkkiuchiFieldPage(seed: 8, landscape: false), screen: screen);
+        await tester.pump(frame);
+        final s = scene(tester);
+        await tester.tap(tool('v'));
+        await run(tester, 3000);
+        expect(s.send.stage, IkkiuchiSendStage.waiting, reason: name);
+        expect(tester.takeException(), isNull, reason: '$name: nothing overflows');
+        final wait = s.wait;
+        expect(wait.width, greaterThanOrEqualTo(IkkiuchiSendStyle.wait.scale * s.layout.cardW - 1e-6), reason: '$name: big');
+        expect(wait.bottom, lessThan(s.layout.field.top), reason: '$name: above his side');
+        final waiting = boardRectOnScreen(tester, wait);
+        for (final label in ['R', '25', 'v']) {
+          expect(screenRect(tester, tool(label)).overlaps(waiting), isFalse, reason: '$name: $label clear of the waiting card');
+        }
+        await capture(tester, 'field_${name}_sent_portrait');
+        final card = s.send.card!;
+        final (_, rect) = s.send.targets().freeSpots.first;
+        final start = Vec(wait.center.dx, wait.center.dy), target = Vec(rect.x + rect.w / 2, rect.y + rect.h / 2);
+        final place = await tester.startGesture(onScreen(tester, start));
+        await tester.pump(frame);
+        for (var i = 1; i <= 6; i++) {
+          await place.moveTo(onScreen(tester, start.lerp(target, i / 6)));
+          await tester.pump(frame);
+        }
+        expect(s.send.drag?.spot, isNotNull, reason: name);
+        await place.up();
+        await tester.pump(frame);
+        expect(s.sides!.playerCards, contains(card), reason: '$name: placed');
+        await run(tester, IkkiuchiPlayTuning.relayoutGlide.inMilliseconds + 100.0);
+        expect(tester.takeException(), isNull, reason: '$name: nothing overflows');
       }
       await tester.pumpWidget(const SizedBox());
     });

@@ -152,9 +152,9 @@ class IkkiuchiFieldPageState extends State<IkkiuchiFieldPage> with SingleTickerP
   /// The developer's buttons, in board dp so they read upright: in portrait
   /// at the screen's top left, below a cutout there and clear of the card
   /// Tobi sends, which waits right of him; in landscape, where the cards
-  /// reach the board's top and foot, in the room right of Tobi's side,
-  /// clear of the field, the call and the game column, and of the card
-  /// Tobi sends, which waits right of the player's side.
+  /// reach the board's top and foot, in the widest room of Tobi's half
+  /// clear of the cards, the call and the game column: left of the field,
+  /// right of it, or right of Tobi in his open middle.
   Widget _tools(IkkiuchiBoardScene scene) {
     final panel = IkkiuchiFieldTools(
       turn: _turn,
@@ -166,7 +166,13 @@ class IkkiuchiFieldPageState extends State<IkkiuchiFieldPage> with SingleTickerP
     const inset = IkkiuchiToolsStyle.fieldButtonInset;
     if (!_landscape) return Positioned(top: MediaQuery.paddingOf(context).top + inset, left: inset, child: panel);
     final layout = scene.layout;
-    final room = Rect.fromLTRB(layout.field.right, layout.field.top, layout.column!.left, layout.band.top);
+    final half = Rect.fromLTRB(0, layout.field.top, layout.size.x, layout.band.top);
+    final tobi = layout.tobi.origin.x + layout.tobi.rig.size.x * layout.tobi.k;
+    final room = [
+      Rect.fromLTRB(half.left, half.top, layout.field.left, half.bottom),
+      Rect.fromLTRB(layout.field.right, half.top, layout.column!.left, half.bottom),
+      Rect.fromLTRB(tobi, half.top, layout.tobiOpen.right, half.bottom),
+    ].reduce((a, b) => b.width > a.width ? b : a);
     return Positioned.fromRect(
       rect: room.deflate(IkkiuchiToolsStyle.fieldPanelInset),
       child: Align(

@@ -214,16 +214,14 @@ void main() {
             final centred = (lefts.reduce(math.min) + rights.reduce(math.max) - l.size.x).abs() < eps;
             final bool capped;
             if (landscape) {
-              // The game column at the right edge, and left of it room for
-              // a sent card, a card wide and its margins.
+              // The game column at the right edge, the field left of it, no
+              // room kept between them for a sent card.
               final column = l.column!;
-              final room = column.left - 2 * IkkiuchiSendStyle.wait.margin - u;
+              final room = column.left - IkkiuchiColumnStyle.fieldGap;
               expect(column.right, closeTo(l.size.x - IkkiuchiColumnStyle.edge, eps), reason: why);
-              expect(rights.reduce(math.max), lessThanOrEqualTo(room + eps), reason: "$why: room for a sent card");
+              expect(rights.reduce(math.max), lessThanOrEqualTo(room + eps), reason: '$why: clear of the column');
               expect(centred || (rights.reduce(math.max) - room).abs() < eps, isTrue,
-                  reason: '$why: centred, or as far right as leaves that room');
-              expect(l.wait.left, greaterThanOrEqualTo(rights.reduce(math.max) - eps), reason: '$why: right of the field');
-              expect(l.wait.right, lessThanOrEqualTo(column.left + eps), reason: '$why: left of the column');
+                  reason: '$why: centred, or as far right as leaves the column clear');
               capped = fieldW < room - pad - eps;
             } else {
               expect(l.column, isNull);
