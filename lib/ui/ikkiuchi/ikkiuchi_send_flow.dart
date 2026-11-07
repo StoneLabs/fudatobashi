@@ -1,6 +1,7 @@
 import 'dart:ui';
 
 import '../../config/config.dart';
+import '../../config/design.dart';
 import '../../domain/field_parts.dart';
 import '../../domain/ikkiuchi_geometry.dart';
 import '../../domain/ikkiuchi_layout.dart';
@@ -20,8 +21,9 @@ enum IkkiuchiSendStage { none, sending, carrying, waiting }
 /// A 送り札 on a board scene, in both directions.
 ///
 /// The player sends: they drag one of their cards; let go over Tobi's side
-/// (its middle above the band) it goes to its home there, his row and group
-/// taking it in home order; let go anywhere else it glides back.
+/// ([tobiSide], the middle of the card riding there) it goes to its home
+/// there, his row and group taking it in home order; let go anywhere else
+/// it glides back.
 ///
 /// Tobi sends: he picks one of his cards ([IkkiuchiSides.tobiSends], at his
 /// rating's smart send), his arm takes it off his side, turns it to face
@@ -56,6 +58,14 @@ class IkkiuchiSendFlow {
   /// Whether the player's card dragged now would go to Tobi.
   bool get overTobi => _overTobi;
   bool _overTobi = false;
+
+  /// Tobi's side, which takes a card the player sends anywhere on it: his
+  /// half of the field, from its far edge to the band, and a little round
+  /// it ([IkkiuchiSendStyle.sideOutset]).
+  Rect get tobiSide {
+    final field = scene.field;
+    return Rect.fromLTRB(field.left, field.top, field.right, scene.band.top).inflate(IkkiuchiSendStyle.sideOutset);
+  }
 
   static final _layoutRules = IkkiuchiLayout.ofPoems();
 
@@ -167,7 +177,7 @@ class IkkiuchiSendFlow {
 
   PlacingDrag _dragAt(int card, {required bool fromStack, required Offset at}) {
     if (!fromStack) {
-      _overTobi = spots.liftedRect(at).center.dy < scene.band.top;
+      _overTobi = tobiSide.contains(spots.liftedRect(at).center);
       return PlacingDrag(card: card, fromStack: false, at: at);
     }
     return PlacingDrag(card: card, fromStack: true, at: at, spot: targets().spotAt(at.dx, at.dy));

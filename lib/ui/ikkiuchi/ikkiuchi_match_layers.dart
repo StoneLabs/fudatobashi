@@ -61,7 +61,8 @@ class IkkiuchiCallLayer extends StatelessWidget {
 /// place and moving with it ([IkkiuchiMatchColumn]): the score live, and
 /// 並べ替え starting and ending the scene's [IkkiuchiBoardScene.arrange],
 /// free only while nothing else is under way. [onEnd] gets 終了 once held.
-/// Only its buttons take touches.
+/// Only its buttons take touches. It is one of the board's match parts
+/// (`IkkiuchiBoardView.parts`), so a card a 送り札 holds up lies over it.
 class IkkiuchiColumnLayer extends StatelessWidget {
   const IkkiuchiColumnLayer({super.key, required this.scene, required this.onEnd});
 

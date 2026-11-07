@@ -10,18 +10,25 @@ import '../placing/placing_widgets.dart';
 import 'ikkiuchi_board_scene.dart';
 import 'ikkiuchi_send_flow.dart';
 
+/// What a layer of a 送り札 or 並べ替え draws on the board: the part [under]
+/// the board's cards, the part [over] them, which takes the touches, or
+/// the cards it holds up ([top]), over the match's own parts too.
+enum IkkiuchiLayerPart { under, over, top }
+
 /// What a 送り札 ([IkkiuchiSendFlow]) draws on the board, in board dp, and
 /// the touches it takes, with the placing's look
-/// ([IkkiuchiSendStyle.look]). [under] it lies under the board's cards:
-/// the dashed spots Tobi's waiting card may go. Else over them: the band's
-/// words while a card is sent, Tobi's card waiting as a stack of one with
-/// his balloon, a card being dragged with where it would land, and the
-/// touches.
+/// ([IkkiuchiSendStyle.look]). Its [part] under the board's cards: Tobi's
+/// side as one dashed spot while the player sends him a card, lit while
+/// the card dragged is over it; the dashed spots Tobi's waiting card may
+/// go. Over them: the band's words while a card is sent, Tobi's balloon
+/// while his card waits, where a card dragged would land, and the touches.
+/// On top: Tobi's card waiting as a stack of one, and a card being
+/// dragged.
 class IkkiuchiSendLayer extends StatelessWidget {
-  const IkkiuchiSendLayer({super.key, required this.scene, required this.under});
+  const IkkiuchiSendLayer({super.key, required this.scene, required this.part});
 
   final IkkiuchiBoardScene scene;
-  final bool under;
+  final IkkiuchiLayerPart part;
 
   IkkiuchiSendFlow get _flow => scene.send;
 
@@ -30,15 +37,29 @@ class IkkiuchiSendLayer extends StatelessWidget {
         listenable: scene,
         builder: (context, _) {
           if (!_flow.active) return const SizedBox.shrink();
-          return under ? _spots(context) : _over(context);
+          return switch (part) {
+            IkkiuchiLayerPart.under => _under(context),
+            IkkiuchiLayerPart.over => _over(context),
+            IkkiuchiLayerPart.top => IgnorePointer(child: _top(context)),
+          };
         },
       );
 
   static const _look = IkkiuchiSendStyle.look;
 
+  Widget _under(BuildContext context) => switch (_flow.stage) {
+        IkkiuchiSendStage.sending => Stack(children: [
+            Positioned.fromRect(
+              rect: _flow.tobiSide,
+              child: _flow.overTobi ? const PlacingLanding(look: _look) : const PlacingDashedSpot(look: _look),
+            ),
+          ]),
+        IkkiuchiSendStage.waiting => _spots(context),
+        IkkiuchiSendStage.none || IkkiuchiSendStage.carrying => const SizedBox.shrink(),
+      };
+
   /// The dashed spots, while Tobi's card waits.
   Widget _spots(BuildContext context) {
-    if (_flow.stage != IkkiuchiSendStage.waiting) return const SizedBox.shrink();
     final targets = _flow.targets();
     return PlacingSpots(
       spots: [for (final (spot, r) in targets.freeSpots) (spot, Rect.fromLTWH(r.x, r.y, r.w, r.h))],
@@ -50,13 +71,9 @@ class IkkiuchiSendLayer extends StatelessWidget {
 
   Widget _over(BuildContext context) {
     final s = S.of(context);
-    final showNumber = ProgressScope.of(context).settings.showPoemNumber;
-    final flow = _flow, drag = flow.drag;
-    final stage = flow.stage;
-    final waiting = stage == IkkiuchiSendStage.waiting;
-    final spot = drag?.spot;
+    final flow = _flow, stage = flow.stage;
+    final spot = flow.drag?.spot;
     final landing = spot == null ? null : flow.rectOf(spot);
-    final band = scene.band;
     return PlacingGestures(
       cardAt: flow.cardAt,
       onTap: flow.tap,
@@ -66,32 +83,40 @@ class IkkiuchiSendLayer extends StatelessWidget {
       child: Stack(clipBehavior: Clip.none, children: [
         if (!scene.layout.landscape)
           Positioned.fromRect(
-          rect: band,
+          rect: scene.band,
           child: _BandWords(title: s.ikkiuchiSent, line: stage == IkkiuchiSendStage.sending ? s.ikkiuchiSendYours : s.ikkiuchiPlaceTobis),
         ),
-        if (waiting) ...[
-          Positioned.fromRect(
-            rect: scene.wait,
-            child: drag == null
-                ? PlacingStack(cards: [flow.card!], tag: s.ikkiuchiSent, look: _look, showNumber: showNumber)
-                : const PlacingDashedSpot(look: _look),
-          ),
+        if (stage == IkkiuchiSendStage.waiting)
           Positioned.fromRect(rect: _balloonRect(), child: _Balloon(s.ikkiuchiHereYouGo)),
-        ],
         if (landing != null) Positioned.fromRect(rect: landing, child: const PlacingLanding(look: _look)),
-        if (drag != null)
-          Positioned.fill(
-            child: PlacingRiding(
-              drag: drag,
-              landing: drag.fromStack ? _spotName(s, spot) : (flow.overTobi ? s.ikkiuchiToTobi : null),
-              card: flow.cardSize,
-              width: scene.layout.size.x,
-              look: _look,
-              showNumber: showNumber,
-            ),
-          ),
       ]),
     );
+  }
+
+  Widget _top(BuildContext context) {
+    final s = S.of(context);
+    final showNumber = ProgressScope.of(context).settings.showPoemNumber;
+    final flow = _flow, drag = flow.drag;
+    return Stack(clipBehavior: Clip.none, children: [
+      if (flow.stage == IkkiuchiSendStage.waiting)
+        Positioned.fromRect(
+          rect: scene.wait,
+          child: drag == null
+              ? PlacingStack(cards: [flow.card!], tag: s.ikkiuchiSent, look: _look, showNumber: showNumber)
+              : const PlacingDashedSpot(look: _look),
+        ),
+      if (drag != null)
+        Positioned.fill(
+          child: PlacingRiding(
+            drag: drag,
+            landing: drag.fromStack ? _spotName(s, drag.spot) : (flow.overTobi ? s.ikkiuchiToTobi : null),
+            card: flow.cardSize,
+            width: scene.layout.size.x,
+            look: _look,
+            showNumber: showNumber,
+          ),
+        ),
+    ]);
   }
 
   String? _spotName(S s, PlacingSpot? spot) {

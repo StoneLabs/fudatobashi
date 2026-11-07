@@ -5,7 +5,7 @@
 // sides change.
 import 'dart:io';
 import 'dart:math' as math;
-import 'dart:ui' show Offset, Size;
+import 'dart:ui' show Offset, Rect, Size;
 
 import 'package:flutter/gestures.dart' show PointerDownEvent, PointerMoveEvent, PointerUpEvent;
 import 'package:flutter_test/flutter_test.dart';
@@ -488,6 +488,10 @@ void main() {
       }
     }
 
+    // Where the finger goes for the card [flow] drags to ride with its
+    // middle at [to].
+    Offset fingerFor(IkkiuchiSendFlow flow, Offset to) => to - flow.spots.liftedRect(Offset.zero).center;
+
     // Every card at rest exactly on its home in the scene's layout.
     void expectHome(IkkiuchiBoardScene scene, String why) {
       expect(scene.board.cards.gliding, isFalse, reason: why);
@@ -525,7 +529,7 @@ void main() {
       final from = Offset(box.centre.x, box.centre.y);
       flow
         ..dragStart(card, fromStack: false, at: from)
-        ..dragTo(Offset(from.dx, scene.layout.field.top + scene.layout.cardW));
+        ..dragTo(fingerFor(flow, flow.tobiSide.center));
       expect(flow.overTobi, isTrue);
       var settled = 0;
       scene.onSettled = () => settled++;
@@ -593,6 +597,54 @@ void main() {
       runFor(scene, IkkiuchiPlayTuning.relayoutGlide * 2);
       expectHome(scene, 'back home');
       expect(scene.sides, same(sides));
+    });
+
+    test("a card let go anywhere on Tobi's side goes to him, and anywhere off it glides back", () {
+      final sides = dealt(2);
+      final card = sides.player[1].right.first;
+      for (final landscape in [false, true]) {
+        final o = landscape ? 'landscape' : 'portrait';
+        // A scene where the player drags [card] to ride with its middle at
+        // [at] on Tobi's side, then lets go.
+        IkkiuchiBoardScene letGo(Offset Function(Rect side) at, String why) {
+          final scene = sceneOf(sides, landscape: landscape);
+          final flow = scene.send..startSending();
+          final home = scene.board.cards.card(card).home;
+          flow
+            ..dragStart(card, fromStack: false, at: Offset(home.centre.x, home.centre.y))
+            ..dragTo(fingerFor(flow, at(flow.tobiSide)));
+          expect(flow.overTobi, flow.tobiSide.contains(at(flow.tobiSide)), reason: '$o: $why');
+          flow.dragEnd();
+          return scene;
+        }
+
+        const by = 2.0;
+        final inside = <String, Offset Function(Rect)>{
+          'top left': (r) => r.topLeft + const Offset(by, by),
+          'top right': (r) => r.topRight + const Offset(-by, by),
+          'bottom left': (r) => r.bottomLeft + const Offset(by, -by),
+          'bottom right': (r) => r.bottomRight + const Offset(-by, -by),
+          'middle': (r) => r.center,
+        };
+        for (final MapEntry(key: why, value: at) in inside.entries) {
+          final scene = letGo(at, why);
+          expect(scene.sides!.tobiCards, contains(card), reason: '$o: let go at his side\'s $why');
+          expect(scene.send.active, isFalse, reason: '$o: $why');
+        }
+        final outside = <String, Offset Function(Rect)>{
+          'left of it': (r) => r.centerLeft - const Offset(by, 0),
+          'right of it': (r) => r.centerRight + const Offset(by, 0),
+          'above it': (r) => r.topCenter - const Offset(0, by),
+          'below it': (r) => r.bottomCenter + const Offset(0, by),
+        };
+        for (final MapEntry(key: why, value: at) in outside.entries) {
+          final scene = letGo(at, why);
+          expect(scene.sides, same(sides), reason: '$o: let go $why');
+          expect(scene.send.stage, IkkiuchiSendStage.sending, reason: '$o: still to send one');
+          runFor(scene, IkkiuchiPlayTuning.relayoutGlide * 2);
+          expectHome(scene, '$o: back home from $why');
+        }
+      }
     });
 
     test("Tobi's card is carried, waits, and is placed by a tap on a spot, the board laid out for it", () {
@@ -823,7 +875,7 @@ void main() {
       final from = Offset(box.centre.x, box.centre.y);
       flow
         ..dragStart(m, fromStack: false, at: from)
-        ..dragTo(Offset(from.dx, scene.layout.field.top + scene.layout.cardW));
+        ..dragTo(fingerFor(flow, flow.tobiSide.center));
       expect(flow.overTobi, isTrue);
       flow.dragEnd();
       expect(scene.sides!.tobiCards, contains(m));

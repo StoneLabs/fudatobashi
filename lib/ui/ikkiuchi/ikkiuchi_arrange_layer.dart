@@ -8,17 +8,18 @@ import '../../state/scope.dart';
 import '../placing/placing_widgets.dart';
 import 'ikkiuchi_arrange_flow.dart';
 import 'ikkiuchi_board_scene.dart';
+import 'ikkiuchi_send_layer.dart';
 
 /// What 並べ替え ([IkkiuchiArrangeFlow]) draws on the board, in board dp,
 /// and the touches it takes, with the placing's look
-/// ([IkkiuchiSendStyle.look]). [under] it lies under the board's cards: the
-/// dashed spots a card may go. Else over them: a card being dragged with
-/// where it would land, and the touches.
+/// ([IkkiuchiSendStyle.look]). Its [part] under the board's cards: the
+/// dashed spots a card may go. Over them: where a card dragged would land,
+/// and the touches. On top: a card being dragged.
 class IkkiuchiArrangeLayer extends StatelessWidget {
-  const IkkiuchiArrangeLayer({super.key, required this.scene, required this.under});
+  const IkkiuchiArrangeLayer({super.key, required this.scene, required this.part});
 
   final IkkiuchiBoardScene scene;
-  final bool under;
+  final IkkiuchiLayerPart part;
 
   IkkiuchiArrangeFlow get _flow => scene.arrange;
 
@@ -29,7 +30,11 @@ class IkkiuchiArrangeLayer extends StatelessWidget {
         listenable: scene,
         builder: (context, _) {
           if (!_flow.active) return const SizedBox.shrink();
-          return under ? _spots(context) : _over(context);
+          return switch (part) {
+            IkkiuchiLayerPart.under => _spots(context),
+            IkkiuchiLayerPart.over => _over(),
+            IkkiuchiLayerPart.top => IgnorePointer(child: _top(context)),
+          };
         },
       );
 
@@ -43,8 +48,7 @@ class IkkiuchiArrangeLayer extends StatelessWidget {
     );
   }
 
-  Widget _over(BuildContext context) {
-    final s = S.of(context);
+  Widget _over() {
     final flow = _flow, drag = flow.drag;
     final spot = drag?.spot;
     final landing = spot == null ? null : flow.spots.rectOf(spot, moving: drag?.card);
@@ -56,18 +60,20 @@ class IkkiuchiArrangeLayer extends StatelessWidget {
       onDragEnd: flow.dragEnd,
       child: Stack(clipBehavior: Clip.none, children: [
         if (landing != null) Positioned.fromRect(rect: landing, child: const PlacingLanding(look: _look)),
-        if (drag != null)
-          Positioned.fill(
-            child: PlacingRiding(
-              drag: drag,
-              landing: _spotName(s, spot),
-              card: flow.spots.cardSize,
-              width: scene.layout.size.x,
-              look: _look,
-              showNumber: ProgressScope.of(context).settings.showPoemNumber,
-            ),
-          ),
       ]),
+    );
+  }
+
+  Widget _top(BuildContext context) {
+    final drag = _flow.drag;
+    if (drag == null) return const SizedBox.shrink();
+    return PlacingRiding(
+      drag: drag,
+      landing: _spotName(S.of(context), drag.spot),
+      card: _flow.spots.cardSize,
+      width: scene.layout.size.x,
+      look: _look,
+      showNumber: ProgressScope.of(context).settings.showPoemNumber,
     );
   }
 

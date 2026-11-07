@@ -829,6 +829,10 @@ void main() {
         expect(find.text('送り札'), findsOneWidget, reason: '$o: the band says so, or in landscape the call strip');
         expect(find.text(landscape ? '1枚​トビへ​送る' : '自分の​札を​1枚、​トビの​陣へ​ドラッグ'), findsOneWidget,
             reason: o);
+        // Tobi's side is one dashed spot, lit once the card rides over it.
+        final side = boardRectOnScreen(tester, s.send.tobiSide);
+        expect(screenRect(tester, find.byType(PlacingDashedSpot)), rectMoreOrLessEquals(side, epsilon: 1e-6), reason: o);
+        await capture(tester, 'field_send_box_$o');
         final sent = s.sides!.player[0].left.last;
         final from = s.board.cards.card(sent).box.centre;
         final drag = await tester.startGesture(onScreen(tester, from));
@@ -842,6 +846,9 @@ void main() {
         }
         expect(s.send.overTobi, isTrue, reason: o);
         expect(find.byType(PlacingRiding), findsOneWidget);
+        expect(screenRect(tester, find.byType(PlacingLanding)), rectMoreOrLessEquals(side, epsilon: 1e-6),
+            reason: '$o: his side lit');
+        expect(find.byType(PlacingDashedSpot), findsNothing, reason: o);
         await capture(tester, 'field_send_drag_$o');
         await drag.up();
         await tester.pump(frame);

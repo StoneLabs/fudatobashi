@@ -102,14 +102,18 @@ abstract final class IkkiuchiBoardStyle {
 }
 
 /// 送り札 in a match (`IkkiuchiSendFlow`, `IkkiuchiSendLayer`): the card
-/// Tobi sends waits for the player as a stack of one, tagged; the player
-/// lays it out with the placing's look ([look]) and drags a card of
-/// theirs across to send it. dp.
+/// Tobi sends waits for the player as a stack of one, tagged; the
+/// player lays it out with the placing's look ([look]) and drags a card of
+/// theirs onto Tobi's side, one spot, to send it. dp.
 abstract final class IkkiuchiSendStyle {
   /// The waiting card: at most `maxHeight` tall, in portrait at most
   /// `tobiShare` of Tobi's height, `margin` clear of what is around it, and
   /// never smaller than the field's cards.
   static const wait = (maxHeight: 150.0, tobiShare: 0.78, margin: 12.0);
+
+  /// Tobi's side, which takes a card the player sends anywhere on it, as
+  /// one spot reaching [sideOutset] past the edges of his half.
+  static const double sideOutset = 4;
 
   /// The placing's look.
   static const look = PlacingLook(

@@ -197,28 +197,40 @@ class IkkiuchiBoardPainter extends CustomPainter {
 /// over them ([IkkiuchiSendLayer], [IkkiuchiArrangeLayer]), and
 /// [overCards] between, in board dp; [onTap] gets each tap in board dp,
 /// and [onPointer] each pointer going down, moving, and up or cancelled,
-/// its position in board dp.
+/// its position in board dp. The match's own [parts] lie over all that,
+/// their touches kept off the board, and the cards a 送り札 or 並べ替え
+/// holds up lie over them.
 class IkkiuchiBoardView extends StatelessWidget {
-  const IkkiuchiBoardView(this.scene, {super.key, this.onTap, this.onPointer, this.overCards});
+  const IkkiuchiBoardView(this.scene, {super.key, this.onTap, this.onPointer, this.overCards, this.parts});
 
   final IkkiuchiBoardScene scene;
   final ValueChanged<Offset>? onTap;
   final ValueChanged<PointerEvent>? onPointer;
   final Widget? overCards;
+  final Widget? parts;
 
   @override
   Widget build(BuildContext context) {
-    final board = _tatami(context);
     final onPointer = this.onPointer;
-    if (onPointer == null) return board;
-    return Listener(
-      behavior: HitTestBehavior.opaque,
-      onPointerDown: onPointer,
-      onPointerMove: onPointer,
-      onPointerUp: onPointer,
-      onPointerCancel: onPointer,
-      child: board,
-    );
+    final board = onPointer == null
+        ? _tatami(context)
+        : Listener(
+            behavior: HitTestBehavior.opaque,
+            onPointerDown: onPointer,
+            onPointerMove: onPointer,
+            onPointerUp: onPointer,
+            onPointerCancel: onPointer,
+            child: _tatami(context),
+          );
+    if (parts == null && scene.sides == null) return board;
+    return Stack(children: [
+      board,
+      if (parts case final parts?) Positioned.fill(child: parts),
+      if (scene.sides != null) ...[
+        Positioned.fill(child: IkkiuchiSendLayer(scene: scene, part: IkkiuchiLayerPart.top)),
+        Positioned.fill(child: IkkiuchiArrangeLayer(scene: scene, part: IkkiuchiLayerPart.top)),
+      ],
+    ]);
   }
 
   Widget _tatami(BuildContext context) => GestureDetector(
@@ -235,8 +247,8 @@ class IkkiuchiBoardView extends StatelessWidget {
           ),
           child: Stack(children: [
             if (scene.sides != null) ...[
-              Positioned.fill(child: IkkiuchiSendLayer(scene: scene, under: true)),
-              Positioned.fill(child: IkkiuchiArrangeLayer(scene: scene, under: true)),
+              Positioned.fill(child: IkkiuchiSendLayer(scene: scene, part: IkkiuchiLayerPart.under)),
+              Positioned.fill(child: IkkiuchiArrangeLayer(scene: scene, part: IkkiuchiLayerPart.under)),
             ],
             RepaintBoundary(
               child: CustomPaint(
@@ -246,8 +258,8 @@ class IkkiuchiBoardView extends StatelessWidget {
             ),
             if (overCards case final layer?) Positioned.fill(child: layer),
             if (scene.sides != null) ...[
-              Positioned.fill(child: IkkiuchiSendLayer(scene: scene, under: false)),
-              Positioned.fill(child: IkkiuchiArrangeLayer(scene: scene, under: false)),
+              Positioned.fill(child: IkkiuchiSendLayer(scene: scene, part: IkkiuchiLayerPart.over)),
+              Positioned.fill(child: IkkiuchiArrangeLayer(scene: scene, part: IkkiuchiLayerPart.over)),
             ],
           ]),
         ),

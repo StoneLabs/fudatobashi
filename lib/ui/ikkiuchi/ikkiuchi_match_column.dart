@@ -16,7 +16,8 @@ import '../manga/hold_confirm.dart';
 /// [split] down the column, the middle of the gap between the sides; and
 /// 並べ替え at its foot, which tells [onArrange], or 完了 while the player
 /// moves their cards ([arranging]), which tells [onDone]. 並べ替え fades
-/// and takes no tap while [onArrange] is null.
+/// while [onArrange] is null. Only 終了 and a 並べ替え or 完了 not faded take
+/// touches; the rest lets them through to what lies under it.
 class IkkiuchiMatchColumn extends StatelessWidget {
   const IkkiuchiMatchColumn({
     super.key,
@@ -61,13 +62,13 @@ class IkkiuchiMatchColumn extends StatelessWidget {
           left: 0,
           right: 0,
           bottom: box.maxHeight - split,
-          child: _ScoreHalf(name: s.ikkiuchiTobi, count: tobi, top: true),
+          child: IgnorePointer(child: _ScoreHalf(name: s.ikkiuchiTobi, count: tobi, top: true)),
         ),
         Positioned(
           left: 0,
           right: 0,
           top: split,
-          child: _ScoreHalf(name: s.ikkiuchiYou, count: player, top: false),
+          child: IgnorePointer(child: _ScoreHalf(name: s.ikkiuchiYou, count: player, top: false)),
         ),
         Positioned(
           left: 0,
@@ -148,7 +149,7 @@ class _Rule extends StatelessWidget {
 }
 
 /// 並べ替え, or 完了 in sun while the player moves their cards: an icon over
-/// its word. Faded, it takes no tap.
+/// its word. Faded, it lets touches through.
 class _ArrangeButton extends StatelessWidget {
   const _ArrangeButton({required this.arranging, required this.onTap});
 
@@ -159,25 +160,28 @@ class _ArrangeButton extends StatelessWidget {
   Widget build(BuildContext context) {
     final s = S.of(context);
     final label = arranging ? s.done : s.ikkiuchiArrange;
-    return Opacity(
-      opacity: onTap == null ? IkkiuchiColumnStyle.dimmed : 1,
-      child: InkButton(
-        onTap: onTap,
-        color: arranging ? IkkiuchiColumnStyle.doneFill : IkkiuchiColumnStyle.arrangeFill,
-        border: Strokes.control,
-        padding: IkkiuchiColumnStyle.buttonPadding,
-        semanticLabel: label,
-        child: Column(mainAxisSize: MainAxisSize.min, children: [
-          MangaIcon(arranging ? IconArt.check : IconArt.swap,
-              size: IkkiuchiColumnStyle.buttonIcon, strokeWidth: IkkiuchiColumnStyle.buttonIconStroke),
-          const SizedBox(height: IkkiuchiColumnStyle.buttonGap),
-          FittedBox(
-            fit: BoxFit.scaleDown,
-            child: Text(label,
-                maxLines: 1,
-                style: const TextStyle(fontWeight: Weights.black, fontSize: IkkiuchiColumnStyle.buttonFont, height: 1)),
-          ),
-        ]),
+    return IgnorePointer(
+      ignoring: onTap == null,
+      child: Opacity(
+        opacity: onTap == null ? IkkiuchiColumnStyle.dimmed : 1,
+        child: InkButton(
+          onTap: onTap,
+          color: arranging ? IkkiuchiColumnStyle.doneFill : IkkiuchiColumnStyle.arrangeFill,
+          border: Strokes.control,
+          padding: IkkiuchiColumnStyle.buttonPadding,
+          semanticLabel: label,
+          child: Column(mainAxisSize: MainAxisSize.min, children: [
+            MangaIcon(arranging ? IconArt.check : IconArt.swap,
+                size: IkkiuchiColumnStyle.buttonIcon, strokeWidth: IkkiuchiColumnStyle.buttonIconStroke),
+            const SizedBox(height: IkkiuchiColumnStyle.buttonGap),
+            FittedBox(
+              fit: BoxFit.scaleDown,
+              child: Text(label,
+                  maxLines: 1,
+                  style: const TextStyle(fontWeight: Weights.black, fontSize: IkkiuchiColumnStyle.buttonFont, height: 1)),
+            ),
+          ]),
+        ),
       ),
     );
   }
