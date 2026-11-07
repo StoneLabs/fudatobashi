@@ -23,7 +23,9 @@ import 'package:fudatobashi/domain/ikkiuchi_layout.dart';
 import 'package:fudatobashi/domain/ikkiuchi_read.dart';
 import 'package:fudatobashi/domain/ikkiuchi_strike.dart';
 import 'package:fudatobashi/domain/ikkiuchi_tobi.dart';
+import 'package:fudatobashi/domain/placing.dart';
 import 'package:fudatobashi/domain/rating.dart';
+import 'package:fudatobashi/l10n/strings.dart';
 import 'package:fudatobashi/state/progress.dart';
 import 'package:fudatobashi/state/scope.dart';
 import 'package:fudatobashi/state/settings.dart';
@@ -37,8 +39,13 @@ import 'package:fudatobashi/ui/debug/ikkiuchi_values.dart';
 import 'package:fudatobashi/ui/history/ankiren_field_tab.dart';
 import 'package:fudatobashi/ui/ikkiuchi/ikkiuchi_board_painter.dart';
 import 'package:fudatobashi/ui/ikkiuchi/ikkiuchi_board_scene.dart';
+import 'package:fudatobashi/ui/ikkiuchi/ikkiuchi_call_strip.dart';
+import 'package:fudatobashi/ui/ikkiuchi/ikkiuchi_match_column.dart';
+import 'package:fudatobashi/ui/ikkiuchi/ikkiuchi_match_layers.dart';
+import 'package:fudatobashi/ui/ikkiuchi/ikkiuchi_reader.dart';
 import 'package:fudatobashi/ui/ikkiuchi/ikkiuchi_send_flow.dart';
 import 'package:fudatobashi/ui/manga/balloon.dart';
+import 'package:fudatobashi/ui/manga/hold_confirm.dart';
 import 'package:fudatobashi/ui/manga/theme.dart';
 import 'package:fudatobashi/ui/placing/placing_widgets.dart';
 import 'package:fudatobashi/ui/settings/settings_screen.dart';
@@ -576,9 +583,20 @@ void main() {
         tester.state<IkkiuchiFieldPageState>(find.byType(IkkiuchiFieldPage)).scene!;
     List<int> ids(IkkiuchiBoardScene s) => [for (final c in s.board.cards.cards) c.id];
 
+    // The developer's button [label].
+    Finder tool(String label) => find.descendant(of: find.byType(IkkiuchiFieldTools), matching: find.text(label));
+
     // Where board dp [at] is on the screen, through any turn of the board.
     Offset onScreen(WidgetTester tester, Vec at) =>
         tester.renderObject<RenderBox>(find.byType(IkkiuchiBoardView)).localToGlobal(Offset(at.x, at.y));
+
+    // The screen's rect around what [finder] finds, through any turn.
+    Rect screenRect(WidgetTester tester, Finder finder) =>
+        Rect.fromPoints(tester.getTopLeft(finder), tester.getBottomRight(finder));
+
+    // The screen's rect around [rect] on the board.
+    Rect boardRectOnScreen(WidgetTester tester, Rect rect) =>
+        Rect.fromPoints(onScreen(tester, Vec(rect.left, rect.top)), onScreen(tester, Vec(rect.right, rect.bottom)));
 
     // The screen's rect around [box] on the board.
     Rect rectOnScreen(WidgetTester tester, CardBox box) {
@@ -627,11 +645,20 @@ void main() {
         final marked = s.marked;
         expect(s.board.field.keys, contains(marked));
         expect(s.kimariji, poems[marked!].kimariji, reason: '$why: the band reads the marked card');
-        for (final label in ['R', ...IkkiuchiToolsTuning.fieldCounts.map((n) => '$n')]) {
-          final button = tester.getRect(find.text(label));
+        for (final part in [IkkiuchiCallLayer, IkkiuchiColumnLayer]) {
+          expect(find.byType(part), landscape ? findsOneWidget : findsNothing,
+              reason: "$why: the match's own parts in landscape");
+        }
+        for (final label in ['R', ...IkkiuchiToolsTuning.fieldCounts.map((n) => '$n'), '^', 'v']) {
+          final button = screenRect(tester, tool(label));
           for (final c in s.layout.cards) {
             expect(button.overlaps(rectOnScreen(tester, c.box)), isFalse, reason: '$why: $label clear of card ${c.id}');
           }
+          if (!landscape) continue;
+          expect(button.overlaps(screenRect(tester, find.byType(IkkiuchiMatchColumn))), isFalse,
+              reason: '$label clear of the game column');
+          expect(button.overlaps(boardRectOnScreen(tester, s.layout.band.inflate(IkkiuchiCallStyle.bleed))), isFalse,
+              reason: '$label clear of the call');
         }
         await capture(tester, 'field_$why');
       }
@@ -647,34 +674,34 @@ void main() {
       final first = ids(scene(tester));
       expect(first, hasLength(2 * IkkiuchiToolsTuning.dealPerSide));
       for (final n in IkkiuchiToolsTuning.fieldCounts) {
-        await tester.tap(find.text('$n'));
+        await tester.tap(tool('$n'));
         await tester.pump(frame);
         for (final side in IkkiuchiSide.values) {
           expect(scene(tester).board.cards.cards.where((c) => c.side == side), hasLength(n), reason: '$n: ${side.name}');
         }
       }
-      await tester.tap(find.text('10'));
+      await tester.tap(tool('10'));
       await tester.pump(frame);
       expect(ids(scene(tester)).toString(), isNot(first.toString()));
-      await tester.tap(find.text('5'));
+      await tester.tap(tool('5'));
       await tester.pump(frame);
       await capture(tester, 'field_5_portrait');
-      await tester.tap(find.text('R'));
+      await tester.tap(tool('R'));
       await tester.pump(frame);
       await capture(tester, 'field_5_landscape');
-      await tester.tap(find.text('R'));
+      await tester.tap(tool('R'));
       await tester.pump(frame);
       expect(scene(tester).marked, isNotNull, reason: 'a new deal marks a card');
       expect(scene(tester).layout.landscape, isFalse);
-      await tester.tap(find.text('R'));
+      await tester.tap(tool('R'));
       await tester.pump(frame);
       expect(scene(tester).layout.landscape, isTrue);
       expect(find.byType(RotatedBox), findsOneWidget, reason: 'only the board turns');
       expect(tester.getSize(find.byType(IkkiuchiBoardView)), usersPhone.size.flipped);
-      await tester.tap(find.text('15'));
+      await tester.tap(tool('15'));
       await tester.pump(frame);
       await capture(tester, 'field_15_landscape');
-      await tester.tap(find.text('R'));
+      await tester.tap(tool('R'));
       await tester.pump(frame);
       expect(scene(tester).layout.landscape, isFalse);
       expect(tester.takeException(), isNull);
@@ -747,7 +774,7 @@ void main() {
       expect(s.kimariji, poems[s.marked!].kimariji);
 
       // The same in landscape, where the board lies turned under the finger.
-      await tester.tap(find.text('R'));
+      await tester.tap(tool('R'));
       await tester.pump(frame);
       final turned = scene(tester);
       expect(turned.layout.landscape, isTrue);
@@ -788,12 +815,13 @@ void main() {
         expect(s.marked, isNot(read));
 
         // ^: the player drags a card of theirs across the band to Tobi.
-        await tester.tap(find.text('^'));
+        await tester.tap(tool('^'));
         await tester.pump(frame);
         expect(s.send.stage, IkkiuchiSendStage.sending);
         expect(s.marked, isNull, reason: '$o: no card read while sending');
-        expect(find.text('送り札'), landscape ? findsNothing : findsOneWidget,
-            reason: '$o: the band says so in portrait only');
+        expect(find.text('送り札'), findsOneWidget, reason: '$o: the band says so, or in landscape the call strip');
+        expect(find.text(landscape ? '1枚​トビへ​送る' : '自分の​札を​1枚、​トビの​陣へ​ドラッグ'), findsOneWidget,
+            reason: o);
         final sent = s.sides!.player[0].left.last;
         final from = s.board.cards.card(sent).box.centre;
         final drag = await tester.startGesture(onScreen(tester, from));
@@ -819,7 +847,7 @@ void main() {
         expect(s.marked, isNotNull, reason: '$o: the reading goes on');
 
         // v: Tobi's arm carries a card of his to the waiting spot.
-        await tester.tap(find.text('v'));
+        await tester.tap(tool('v'));
         await tester.pump(frame);
         expect(s.send.stage, IkkiuchiSendStage.carrying);
         final carry = s.board.carry!;
@@ -831,15 +859,15 @@ void main() {
         expect(s.send.stage, IkkiuchiSendStage.waiting, reason: o);
         expect(find.byType(PlacingStack), findsOneWidget, reason: '$o: his card waits');
         expect(find.text('どうぞ！'), findsOneWidget);
-        expect(find.text('トビからの​札を​置く'), landscape ? findsNothing : findsOneWidget);
+        expect(find.text('トビからの​札を​置く'), findsOneWidget, reason: '$o: on the band, or the call strip');
         expect(find.byType(PlacingSpots), findsOneWidget);
         final wait = s.wait;
         final corners = [
           for (final c in [wait.topLeft, wait.bottomRight]) onScreen(tester, Vec(c.dx, c.dy)),
         ];
-        final balloon = tester.getRect(find.byType(SpeechBalloon));
+        final balloon = screenRect(tester, find.byType(SpeechBalloon));
         for (final label in ['R', ...IkkiuchiToolsTuning.fieldCounts.map((n) => '$n'), '^', 'v']) {
-          final button = tester.getRect(find.text(label));
+          final button = screenRect(tester, tool(label));
           expect(button.overlaps(Rect.fromPoints(corners[0], corners[1])), isFalse,
               reason: '$o: $label clear of the waiting card');
           expect(button.overlaps(balloon), isFalse, reason: "$o: $label clear of Tobi's balloon");
@@ -871,6 +899,248 @@ void main() {
         expect(s.marked, isNotNull, reason: '$o: the reading goes on');
       }
       expect(tester.takeException(), isNull);
+      await tester.pumpWidget(const SizedBox());
+    });
+    // A seed whose deal has a card of [long] sounds and one of [short], as
+    // the page deals it.
+    int seedWith({required int long, required int short}) {
+      for (var seed = 0;; seed++) {
+        final deck = [for (final p in poems.all) p.id]..shuffle(math.Random(seed));
+        final dealt = deck.take(2 * IkkiuchiToolsTuning.dealPerSide).map((id) => poems[id].kimariji.length);
+        if (dealt.contains(long) && dealt.contains(short)) return seed;
+      }
+    }
+
+    // Runs the page on [ms] in frames, as a phone would.
+    Future<void> run(WidgetTester tester, double ms) async {
+      for (var t = 0.0; t < ms; t += frame.inMilliseconds) {
+        await tester.pump(frame);
+      }
+    }
+
+    // The words the call strip shows now; none while it fades out.
+    String stripWords(WidgetTester tester) {
+      final strip = find.byType(IkkiuchiCallStrip);
+      if (tester.widget<AnimatedOpacity>(find.descendant(of: strip, matching: find.byType(AnimatedOpacity))).opacity == 0) {
+        return '';
+      }
+      return [for (final t in tester.widgetList<Text>(find.descendant(of: strip, matching: find.byType(Text)))) t.data].join();
+    }
+
+    IkkiuchiMatchColumn column(WidgetTester tester) => tester.widget(find.byType(IkkiuchiMatchColumn));
+
+    testWidgets('landscape reads the kimariji kana by kana in the gap, centred on the field', (tester) async {
+      final p = await open(tester);
+      await tester.runAsync(() => p.updateSettings(p.settings.copyWith(language: 'ja')));
+      await show(tester, p, IkkiuchiFieldPage(seed: seedWith(long: 6, short: 1)));
+      await tester.pump(frame);
+      final s = scene(tester);
+      final context = tester.element(find.byType(IkkiuchiBoardView));
+      for (final length in [6, 1]) {
+        final id = s.board.field.keys.firstWhere((id) => poems[id].kimariji.length == length);
+        final call = IkkiuchiReader.callFor(context, id);
+        s.callCard(id, kimarijiFor(context, id), call: call);
+        await tester.pump();
+        expect(s.marked, id, reason: 'the card read stays marked');
+        expect(call.sounds, hasLength(length));
+        expect(stripWords(tester), isEmpty, reason: 'nothing yet: the old call cleared');
+        // The clock stepped to just before each sound, then onto it.
+        var at = 0.0;
+        Future<void> stepTo(double ms) async {
+          await tester.pump(Duration(microseconds: ((ms - at) * Duration.microsecondsPerMillisecond).round()));
+          at = ms;
+        }
+
+        for (var i = 0; i < length; i++) {
+          final onset = call.onsets[i];
+          await stepTo(onset - 1);
+          expect(stripWords(tester), call.sounds.take(i).join(), reason: '$length: just before sound ${i + 1}');
+          await stepTo(onset);
+          expect(stripWords(tester), call.sounds.take(i + 1).join(), reason: '$length: sound ${i + 1} heard');
+          if (length == 6 && i == 2) {
+            await run(tester, IkkiuchiCallStyle.kanaIn.inMilliseconds / 2);
+            await capture(tester, 'field_reading_landscape');
+            at += (IkkiuchiCallStyle.kanaIn.inMilliseconds / 2 / frame.inMilliseconds).ceil() * frame.inMilliseconds;
+          }
+        }
+        await run(tester, IkkiuchiCallStyle.kanaIn.inMilliseconds * 2.0);
+        expect(stripWords(tester), poems[id].kimariji);
+
+        // In the gap, reaching no more than its bleed into the rows, and
+        // centred on the field.
+        final band = s.layout.band;
+        const bleed = IkkiuchiCallStyle.bleed;
+        expect(bleed, inInclusiveRange(2, 3));
+        expect(tester.getSize(find.byType(IkkiuchiCallStrip)).height, closeTo(band.height + 2 * bleed, 1e-6));
+        final centre = tester.getCenter(find.byType(IkkiuchiCallStrip));
+        final want = onScreen(tester, Vec(s.layout.field.center.dx, band.center.dy));
+        expect((centre - want).distance, lessThan(0.5), reason: '$length: centred on the field');
+        await capture(tester, 'field_kimariji_${length}_landscape');
+      }
+      expect(tester.takeException(), isNull);
+      await tester.pumpWidget(const SizedBox());
+    });
+
+    testWidgets('landscape: the column counts each side, 終了 deals anew only once held, 並べ替え waits out a 送り札',
+        (tester) async {
+      final p = await open(tester);
+      await tester.runAsync(() => p.updateSettings(p.settings.copyWith(language: 'ja')));
+      await show(tester, p, const IkkiuchiFieldPage(seed: 8));
+      await tester.pump(frame);
+      var s = scene(tester);
+      const per = IkkiuchiToolsTuning.dealPerSide;
+      expect((column(tester).tobi, column(tester).player), (per, per));
+      expect(find.descendant(of: find.byType(IkkiuchiMatchColumn), matching: find.text('$per')), findsNWidgets(2));
+      expect(find.text('トビ'), findsOneWidget);
+      expect(find.text('あなた'), findsOneWidget);
+
+      // The column at the right edge, the field left of it.
+      final edge = s.layout.column!;
+      expect(edge.right, closeTo(s.layout.size.x - IkkiuchiColumnStyle.edge, 1e-6));
+      expect(s.layout.field.right, lessThan(edge.left));
+
+      // Tobi sends a card: it counts as the player's at once, and 並べ替え
+      // takes no tap until it is placed.
+      await tester.tap(tool('v'));
+      await tester.pump(frame);
+      expect(s.send.stage, IkkiuchiSendStage.carrying);
+      await tester.pump(frame);
+      expect((column(tester).tobi, column(tester).player), (per - 1, per + 1));
+      expect(column(tester).onArrange, isNull, reason: 'greyed while a 送り札 goes on');
+      await tester.pump(Duration(milliseconds: s.board.carry!.end.ceil()));
+      await tester.pump(IkkiuchiPlayTuning.relayoutGlide);
+      await tester.pump(frame);
+      expect(s.send.stage, IkkiuchiSendStage.waiting);
+      expect(column(tester).onArrange, isNull, reason: 'greyed while his card waits');
+      await tester.tap(find.text('並べ替え'), warnIfMissed: false);
+      await tester.pump(frame);
+      expect(s.arrange.active, isFalse);
+      await capture(tester, 'field_sent_column_landscape');
+      final (spot, _) = s.send.targets().freeSpots.first;
+      await tester.tapAt(onScreen(tester, Vec(s.send.rectOf(spot)!.center.dx, s.send.rectOf(spot)!.center.dy)));
+      await tester.pump(frame);
+      expect(s.send.active, isFalse, reason: 'placed');
+      await tester.pump(IkkiuchiPlayTuning.relayoutGlide);
+      await tester.pump(frame);
+      expect((column(tester).tobi, column(tester).player), (per - 1, per + 1));
+      expect(column(tester).onArrange, isNotNull, reason: 'free again');
+
+      // 終了: a tap or a short hold does nothing; held through, a new deal.
+      final end = tester.getCenter(find.byType(HoldToConfirmButton));
+      await tester.tapAt(end);
+      await tester.pump(frame);
+      expect(scene(tester), same(s), reason: 'a tap ends nothing');
+      final short = await tester.startGesture(end);
+      await run(tester, IkkiuchiMatchTuning.endHold.inMilliseconds / 2);
+      await capture(tester, 'field_end_held_landscape');
+      await short.up();
+      await run(tester, IkkiuchiMatchTuning.endHold.inMilliseconds.toDouble());
+      expect(scene(tester), same(s), reason: 'let go early, nothing ends');
+      final held = await tester.startGesture(end);
+      await run(tester, IkkiuchiMatchTuning.endHold.inMilliseconds + 100.0);
+      await held.up();
+      await tester.pump(frame);
+      expect(scene(tester), isNot(same(s)), reason: 'held through, the field is dealt anew');
+      s = scene(tester);
+      expect((column(tester).tobi, column(tester).player), (per, per));
+      expect(s.marked, isNotNull, reason: 'and a card read');
+      expect(tester.takeException(), isNull);
+      await tester.pumpWidget(const SizedBox());
+    });
+
+    testWidgets('landscape: 並べ替え moves a placed card to a free spot, and 完了 lets the reading go on',
+        (tester) async {
+      final p = await open(tester);
+      await tester.runAsync(() => p.updateSettings(p.settings.copyWith(language: 'ja')));
+      await show(tester, p, const IkkiuchiFieldPage(seed: 8));
+      await tester.pump(frame);
+      final s = scene(tester);
+      final before = s.sides!.playerCards.toSet();
+      await tester.tap(find.text('並べ替え'));
+      await tester.pump(frame);
+      expect(s.arrange.active, isTrue);
+      expect(s.marked, isNull, reason: 'nothing read meanwhile');
+      expect(find.text('並べ替え中'), findsOneWidget, reason: 'the call strip says so');
+      expect(find.text('完了'), findsOneWidget, reason: '並べ替え turns 完了');
+      expect(find.byType(PlacingSpots), findsOneWidget);
+      expect(column(tester).onArrange, isNull);
+      await tester.tap(tool('v'));
+      await tester.pump(frame);
+      expect(s.send.active, isFalse, reason: 'no 送り札 while arranging');
+
+      // Drag the outer card of a group to a free spot in another row.
+      final card = s.sides!.player.expand((r) => [if (r.right.isNotEmpty) r.right.first]).first;
+      final from = s.sides!.playerBoard.side.placeOf(card)!;
+      final (spot, rect) = s.arrange.spots
+          .targets(moving: card)
+          .freeSpots
+          .firstWhere((e) => (e.$1 as ClusterEnd).row != from.row);
+      final start = s.board.cards.card(card).box.centre;
+      final drag = await tester.startGesture(onScreen(tester, start));
+      await tester.pump(frame);
+      expect(s.board.cards.fingerOn, isFalse, reason: "the finger doesn't push the cards meanwhile");
+      final target = Vec(rect.x + rect.w / 2, rect.y + rect.h / 2);
+      for (var i = 1; i <= 8; i++) {
+        await drag.moveTo(onScreen(tester, start.lerp(target, i / 8)));
+        await tester.pump(frame);
+      }
+      expect(s.arrange.drag?.spot, spot);
+      expect(find.byType(PlacingLanding), findsOneWidget);
+      expect(tester.widget<PlacingRiding>(find.byType(PlacingRiding)).landing, isNotNull);
+      await capture(tester, 'field_arrange_landscape');
+      await drag.up();
+      await tester.pump(frame);
+      final to = (spot as ClusterEnd);
+      final now = s.sides!.playerBoard.side.placeOf(card)!;
+      expect((now.row, now.part), (to.row, to.part), reason: 'moved to the spot');
+      expect(s.sides!.playerCards.toSet(), before, reason: 'the same cards');
+      await tester.pump(IkkiuchiPlayTuning.relayoutGlide);
+      await tester.pump(frame);
+      expect(s.marked, isNull, reason: 'still arranging once the cards are home');
+      await capture(tester, 'field_arranged_landscape');
+
+      await tester.tap(find.text('完了'));
+      await tester.pump(frame);
+      await tester.pump(frame);
+      expect(s.arrange.active, isFalse);
+      expect(find.text('並べ替え'), findsOneWidget);
+      expect(s.marked, isNotNull, reason: 'the reading goes on');
+      expect(tester.takeException(), isNull);
+      await tester.pumpWidget(const SizedBox());
+    });
+
+    testWidgets('landscape fits a small phone and a tablet', (tester) async {
+      final p = await open(tester);
+      await tester.runAsync(() => p.updateSettings(p.settings.copyWith(language: 'ja')));
+      const small = Screen('360 short', Size(360, 640), 3);
+      for (final (screen, name) in [(small, 'small'), (ipadPortrait, 'tablet')]) {
+        await show(tester, p, const IkkiuchiFieldPage(seed: 8), screen: screen);
+        await tester.pump(frame);
+        expect(tester.takeException(), isNull, reason: '$name: nothing overflows');
+        final s = scene(tester);
+        final board = Offset.zero & Size(s.layout.size.x, s.layout.size.y);
+        expect(board.contains(s.layout.column!.topLeft) && board.contains(s.layout.column!.bottomRight), isTrue);
+        final columnRect = screenRect(tester, find.byType(IkkiuchiMatchColumn));
+        for (final part in [find.byType(HoldToConfirmButton), find.text('並べ替え'), find.text('あなた')]) {
+          final r = screenRect(tester, part);
+          expect(columnRect.inflate(1).contains(r.topLeft) && columnRect.inflate(1).contains(r.bottomRight), isTrue,
+              reason: '$name: in the column');
+        }
+        for (final label in ['R', '25', 'v']) {
+          final button = screenRect(tester, tool(label));
+          expect(button.overlaps(columnRect), isFalse, reason: '$name: $label clear of the column');
+          for (final c in s.layout.cards) {
+            expect(button.overlaps(rectOnScreen(tester, c.box)), isFalse, reason: '$name: $label clear of card ${c.id}');
+          }
+        }
+        await run(tester, 2000);
+        await capture(tester, 'field_${name}_landscape');
+        await tester.tap(tool('v'));
+        await run(tester, 3000);
+        expect(s.send.stage, IkkiuchiSendStage.waiting);
+        expect(tester.takeException(), isNull, reason: '$name: nothing overflows');
+        await capture(tester, 'field_${name}_sent_landscape');
+      }
       await tester.pumpWidget(const SizedBox());
     });
   });

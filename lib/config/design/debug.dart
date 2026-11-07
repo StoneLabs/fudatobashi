@@ -150,21 +150,30 @@ abstract final class IkkiuchiToolsStyle {
   static const String menuMark = ' ▼';
   static const double menuMarkFont = 8;
 
-  /// The field page's two buttons over the board, see-through and edged so
-  /// they show on the tatami and the band alike: [fieldButton] square,
-  /// [fieldButtonGap] apart, [fieldButtonInset] in from the screen's top
-  /// left in portrait, and from the top end of the gap between the sides in
-  /// landscape, where the cards leave no corner free (there no wider than
-  /// the gap).
-  static const double fieldButton = 28;
-  static const double fieldButtonGap = 6;
+  /// The field page's developer buttons over the board, in a see-through
+  /// ink panel ([fieldPanelFill]) so they read as tools and not as the
+  /// match's: [fieldButton] square, [fieldButtonGap] apart in two columns
+  /// under the panel's [fieldPanelTitle]. In portrait [fieldButtonInset] in
+  /// from the screen's top left; in landscape [fieldPanelInset] inside the
+  /// room right of Tobi's side, between the field and the game column.
+  static const double fieldButton = 20;
+  static const double fieldButtonGap = 3;
   static const double fieldButtonInset = 8;
-  static const double fieldButtonRadius = 6;
-  static const double fieldButtonFont = 11;
-  static const Color fieldButtonFill = Color(0x8CFFFFFF);
-  static const Color fieldButtonInk = Color(0xB3141414);
-  static const Color fieldButtonEdge = Color(0x4D141414);
+  static const double fieldButtonRadius = 3;
+  static const double fieldButtonFont = 9;
+  static const Color fieldButtonFill = Color(0x1FFFFFFF);
+  static const Color fieldButtonInk = Color(0xEBFFFFFF);
+  static const Color fieldButtonEdge = Color(0x73FFFFFF);
   static const double fieldButtonEdgeWidth = 1;
+  static const Color fieldPanelFill = Color(0x99141414);
+  static const double fieldPanelRadius = 4;
+  static const EdgeInsets fieldPanelPadding = EdgeInsets.fromLTRB(4, 3, 4, 4);
+  static const double fieldPanelInset = 4;
+  static const String fieldPanelTitle = 'DEV';
+  static const double fieldPanelTitleFont = 7;
+  static const double fieldPanelTitleTracking = 0.2;
+  static const double fieldPanelTitleGap = 3;
+  static const Color fieldPanelTitleInk = Color(0x99FFFFFF);
 
   static const Color ground = Palette.desk;
   static const double minPitch = 30;

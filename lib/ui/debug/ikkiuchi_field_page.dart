@@ -10,21 +10,26 @@ import '../../config/design.dart';
 import '../../l10n/strings.dart';
 import '../ikkiuchi/ikkiuchi_board_painter.dart';
 import '../ikkiuchi/ikkiuchi_board_scene.dart';
+import '../ikkiuchi/ikkiuchi_match_layers.dart';
+import '../ikkiuchi/ikkiuchi_reader.dart';
 import 'debug_common.dart';
 import 'ikkiuchi_dealer.dart';
 
 /// The developer's view of the 一騎打ち field as the match shows it: the
 /// whole screen, its system bars hidden, with Tobi in his place, his side,
-/// the band (in portrait) and the player's side, dealt at random with Tobi at a random
-/// rating. The page only drives the match's board ([IkkiuchiBoardScene]):
-/// it reads a card at random, its kimariji on the band, and the player's
-/// finger pushes the cards about, taking the card as the match would;
-/// Tobi doesn't strike. Once the board comes to rest again another card
-/// is read. The board starts in landscape; "R" turns its layout between
-/// landscape and portrait, a
-/// number deals anew with that many cards a side, "^" has the player send
-/// Tobi a card (送り札) and "v" has Tobi send the player one; the system
-/// back leaves.
+/// the band (in portrait) and the player's side, dealt at random with Tobi
+/// at a random rating. The page only drives the match's board
+/// ([IkkiuchiBoardScene]): it reads a card at random, the reader reading
+/// its kimariji, and the player's finger pushes the cards about, taking
+/// the card as the match would; Tobi doesn't strike. Once the board comes
+/// to rest again another card is read. In landscape the match's own
+/// parts lie over the board: the call in the gap between the sides
+/// ([IkkiuchiCallLayer]), and the game column ([IkkiuchiColumnLayer]),
+/// whose 終了 deals anew once held.
+/// The board starts in landscape. The developer's buttons: "R" turns its
+/// layout between landscape and portrait, a number deals anew with that
+/// many cards a side, "^" has the player send Tobi a card (送り札) and "v"
+/// has Tobi send the player one; the system back leaves.
 class IkkiuchiFieldPage extends StatefulWidget {
   const IkkiuchiFieldPage({super.key, this.seed, this.landscape = true});
 
@@ -95,7 +100,7 @@ class IkkiuchiFieldPageState extends State<IkkiuchiFieldPage> with SingleTickerP
     ]..sort();
     if (ids.isEmpty) return;
     final id = ids[_rng.nextInt(ids.length)];
-    scene.callCard(id, kimarijiFor(context, id));
+    scene.callCard(id, kimarijiFor(context, id), call: IkkiuchiReader.callFor(context, id));
   }
 
   void _tick(Duration elapsed) {
@@ -108,56 +113,109 @@ class IkkiuchiFieldPageState extends State<IkkiuchiFieldPage> with SingleTickerP
   Widget build(BuildContext context) => Material(
         color: IkkiuchiBoardStyle.ground,
         child: LayoutBuilder(builder: (context, box) {
-          final room = box.biggest;
-          final scene = _sceneFor(room);
-          return Stack(children: [
-            Positioned.fill(
-              child: IkkiuchiDealer.turned(IkkiuchiBoardView(scene, onPointer: scene.pointer), landscape: _landscape),
-            ),
-            _buttons(scene, room),
-          ]);
+          final scene = _sceneFor(box.biggest);
+          return IkkiuchiDealer.turned(
+            Stack(children: [
+              Positioned.fill(
+                child: IkkiuchiBoardView(
+                  scene,
+                  onPointer: scene.pointer,
+                  overCards: _landscape ? IkkiuchiCallLayer(scene: scene) : null,
+                ),
+              ),
+              if (_landscape) Positioned.fill(child: IkkiuchiColumnLayer(scene: scene, onEnd: () => _deal(_perSide))),
+              _tools(scene),
+            ]),
+            landscape: _landscape,
+          );
         }),
       );
 
-  /// The buttons over the board, "R", the numbers, "^" and "v": at the
-  /// screen's top left in portrait, clear of the card Tobi sends, which
-  /// waits right of him; in landscape, where the cards reach every corner,
-  /// at the top end of the gap between the sides, which runs down the middle
-  /// of the screen, the buttons as wide as it is. Both keep below a cutout
-  /// at the screen's top.
-  Widget _buttons(IkkiuchiBoardScene scene, Size room) {
+  /// The developer's buttons, in board dp so they read upright: in portrait
+  /// at the screen's top left, below a cutout there and clear of the card
+  /// Tobi sends, which waits right of him; in landscape, where the cards
+  /// reach the board's top and foot, in the room right of Tobi's side,
+  /// clear of the field, the call and the game column, and of the card
+  /// Tobi sends, which waits right of the player's side.
+  Widget _tools(IkkiuchiBoardScene scene) {
+    final panel = IkkiuchiFieldTools(
+      turn: _turn,
+      deals: {for (final n in IkkiuchiToolsTuning.fieldCounts) n: () => _deal(n)},
+      send: scene.send.startSending,
+      receive: () => scene.send.startReceiving(),
+    );
     const inset = IkkiuchiToolsStyle.fieldButtonInset;
-    final size = _landscape ? math.min(IkkiuchiToolsStyle.fieldButton, scene.layout.band.height) : IkkiuchiToolsStyle.fieldButton;
-    final top = MediaQuery.paddingOf(context).top + inset;
-    final column = Column(mainAxisSize: MainAxisSize.min, children: [
-      _button('R', _turn, size),
-      for (final n in IkkiuchiToolsTuning.fieldCounts) ...[
-        const SizedBox(height: IkkiuchiToolsStyle.fieldButtonGap),
-        _button('$n', () => _deal(n), size),
-      ],
-      const SizedBox(height: IkkiuchiToolsStyle.fieldButtonGap),
-      _button('^', scene.send.startSending, size),
-      const SizedBox(height: IkkiuchiToolsStyle.fieldButtonGap),
-      _button('v', () => scene.send.startReceiving(), size),
-    ]);
-    if (!_landscape) return Positioned(top: top, left: inset, child: column);
-    // The board lies turned a quarter turn clockwise: its y runs from the
-    // screen's right edge leftward.
-    final gapMiddle = room.width - scene.layout.band.center.dy;
-    return Positioned(top: top, left: gapMiddle - size / 2, child: column);
+    if (!_landscape) return Positioned(top: MediaQuery.paddingOf(context).top + inset, left: inset, child: panel);
+    final layout = scene.layout;
+    final room = Rect.fromLTRB(layout.field.right, layout.field.top, layout.column!.left, layout.band.top);
+    return Positioned.fromRect(
+      rect: room.deflate(IkkiuchiToolsStyle.fieldPanelInset),
+      child: Align(
+        alignment: Alignment.topCenter,
+        child: FittedBox(fit: BoxFit.scaleDown, child: panel),
+      ),
+    );
   }
+}
+
+/// The developer's buttons in their panel: the board's turn and the 送り札
+/// both ways in one column, the deals in the other.
+class IkkiuchiFieldTools extends StatelessWidget {
+  const IkkiuchiFieldTools({super.key, required this.turn, required this.deals, required this.send, required this.receive});
+
+  final VoidCallback turn, send, receive;
+  final Map<int, VoidCallback> deals;
+
+  static const _gap = SizedBox.square(dimension: IkkiuchiToolsStyle.fieldButtonGap);
+
+  @override
+  Widget build(BuildContext context) => DecoratedBox(
+        decoration: BoxDecoration(
+          color: IkkiuchiToolsStyle.fieldPanelFill,
+          borderRadius: BorderRadius.circular(IkkiuchiToolsStyle.fieldPanelRadius),
+        ),
+        child: Padding(
+          padding: IkkiuchiToolsStyle.fieldPanelPadding,
+          child: Column(mainAxisSize: MainAxisSize.min, children: [
+            Text(IkkiuchiToolsStyle.fieldPanelTitle, style: _title),
+            const SizedBox(height: IkkiuchiToolsStyle.fieldPanelTitleGap),
+            Row(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.start, children: [
+              Column(mainAxisSize: MainAxisSize.min, children: [
+                _button('R', turn),
+                _gap,
+                _button('^', send),
+                _gap,
+                _button('v', receive),
+              ]),
+              _gap,
+              Column(mainAxisSize: MainAxisSize.min, children: [
+                for (final (i, MapEntry(key: n, value: deal)) in deals.entries.indexed) ...[
+                  if (i > 0) _gap,
+                  _button('$n', deal),
+                ],
+              ]),
+            ]),
+          ]),
+        ),
+      );
+
+  static final _title = debugMono.copyWith(
+    fontSize: IkkiuchiToolsStyle.fieldPanelTitleFont,
+    letterSpacing: IkkiuchiToolsStyle.fieldPanelTitleTracking * IkkiuchiToolsStyle.fieldPanelTitleFont,
+    color: IkkiuchiToolsStyle.fieldPanelTitleInk,
+  );
 
   static final _label = debugMono.copyWith(
     fontSize: IkkiuchiToolsStyle.fieldButtonFont,
     color: IkkiuchiToolsStyle.fieldButtonInk,
   );
 
-  static Widget _button(String label, VoidCallback onTap, double size) => GestureDetector(
+  static Widget _button(String label, VoidCallback onTap) => GestureDetector(
         behavior: HitTestBehavior.opaque,
         onTap: onTap,
         child: Container(
-          width: size,
-          height: size,
+          width: IkkiuchiToolsStyle.fieldButton,
+          height: IkkiuchiToolsStyle.fieldButton,
           alignment: Alignment.center,
           decoration: BoxDecoration(
             color: IkkiuchiToolsStyle.fieldButtonFill,
