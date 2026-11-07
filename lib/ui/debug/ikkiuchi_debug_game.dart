@@ -17,7 +17,8 @@ import 'ikkiuchi_dealer.dart';
 
 /// The developer's 一騎打ち game: a whole match ([IkkiuchiMatchFlow]) on the
 /// whole screen, its system bars hidden, both sides dealt at random. The
-/// match holds once the 送り札 after each read are made until 次, and the card read is marked.
+/// match holds once the 送り札 after each read are made, until 次, and the
+/// card read is marked.
 ///
 /// The developer's tools lie over everything at the board's top left: the
 /// stage, Tobi's rating, and the slider that sets it for the reads to come
