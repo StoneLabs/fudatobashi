@@ -1,11 +1,13 @@
 // 一騎打ち's board between the reads: the player's take of the called card,
 // the 送り札 both ways (which card Tobi sends, his arm carrying it, where a
-// card sent to him goes, and the player placing his on their side), and
-// the board laid out afresh as the sides change.
+// card sent to him goes, and the player placing his on their side), the
+// open middle of the player's 上段, and the board laid out afresh as the
+// sides change.
 import 'dart:io';
 import 'dart:math' as math;
 import 'dart:ui' show Offset, Size;
 
+import 'package:flutter/gestures.dart' show PointerDownEvent, PointerMoveEvent, PointerUpEvent;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:fudatobashi/config/config.dart';
 import 'package:fudatobashi/data/poem.dart';
@@ -25,6 +27,7 @@ import 'package:fudatobashi/ui/ikkiuchi/ikkiuchi_card_faces.dart';
 import 'package:fudatobashi/ui/ikkiuchi/ikkiuchi_send_flow.dart';
 import 'package:fudatobashi/ui/ikkiuchi/ikkiuchi_tobi_art.dart';
 
+import 'test_ikkiuchi.dart';
 import 'test_vector_art.dart';
 
 void main() {
@@ -226,6 +229,138 @@ void main() {
     });
   });
 
+  group("The player's open middle", () {
+    const row = IkkiuchiPlacingTuning.middleRow;
+    const margin = IkkiuchiPlacingTuning.middleMargin;
+    const pitch = IkkiuchiField.pitch;
+
+    // [sides] with the player's rows [rows].
+    IkkiuchiSides withRows(IkkiuchiSides sides, List<IkkiuchiRow> rows) =>
+        IkkiuchiSides(homes: sides.homes, tobi: sides.tobiCards, player: rows);
+
+    test("Tobi's card goes into the open middle of the player's 上段, at its place among the middle cards", () {
+      final sides = dealt(7);
+      final [a, b, c, d, ...] = sides.tobiCards.toList()..sort();
+      final upper = sides.player[row.index];
+      var next = sides.placed(a, const OpenMiddle(row, 0))!;
+      expect(next.player[row.index].middle, [a]);
+      expect([next.player[row.index].left, next.player[row.index].right], [upper.left, upper.right],
+          reason: 'the groups stay');
+      expect(next.tobiCards, isNot(contains(a)));
+      next = next.placed(b, const OpenMiddle(row, 1))!;
+      expect(next.player[row.index].middle, [a, b], reason: 'right of the one there');
+      next = next.placed(c, CardSpot(b))!;
+      expect(next.player[row.index].middle, [a, c, b], reason: "on a middle card: just left of it");
+      next = next.placed(d, const OpenMiddle(row, 0))!;
+      expect(next.player[row.index].middle, [d, a, c, b]);
+      expect(next.playerCards, containsAll([a, b, c, d]));
+      for (final other in FieldRow.values.where((r) => r != row)) {
+        expect(sides.placed(a, OpenMiddle(other, 0)), isNull, reason: 'only $row has an open middle');
+      }
+      expect(withRows(sides, sides.player.take(2).toList()).placed(a, const OpenMiddle(row, 0)), isNull,
+          reason: 'not while $row is not played');
+    });
+
+    test('middle cards keep their margin clear of the groups within the row\'s room', () {
+      final sides = dealt(9);
+      final p = sides.playerCards;
+      // 14 cards in its groups leave room for one middle card and its
+      // margins, and no more.
+      final full = withRows(sides, [
+        IkkiuchiRow(p.sublist(14, 18), p.sublist(18, 21)),
+        IkkiuchiRow(p.sublist(21, 23), p.sublist(23, 25)),
+        IkkiuchiRow(p.sublist(0, 7), p.sublist(7, 14)),
+      ]);
+      expect(14 + 1 + 2 * margin, lessThanOrEqualTo(IkkiuchiLayoutTuning.rowSlots));
+      final [a, b, ...] = sides.tobiCards.toList()..sort();
+      final one = full.placed(a, const OpenMiddle(row, 0))!;
+      expect(one.placed(b, const OpenMiddle(row, 0)), isNull);
+      expect(one.placed(b, CardSpot(a)), isNull);
+      expect(one.placed(b, const ClusterEnd(row, RowPart.left)), isNull, reason: 'the middle card keeps its room');
+      expect(full.placed(b, const ClusterEnd(row, RowPart.left)), isNotNull, reason: 'without it the groups may grow');
+    });
+
+    test('a middle card moves to a group, and a group card into the middle, as the player rearranges', () {
+      final sides = withRows(dealt(5), withMiddle(dealt(5).player, 2));
+      final [m, n] = sides.player[row.index].middle;
+      final lower = sides.player[0];
+      final out = sides.placed(m, const ClusterEnd(FieldRow.lower, RowPart.left))!;
+      expect(out.player[row.index].middle, [n], reason: 'the open middle closes up');
+      expect(out.player[0].left, [...lower.left, m]);
+      final g = lower.left.first;
+      final into = sides.placed(g, const OpenMiddle(row, 1))!;
+      expect(into.player[row.index].middle, [m, g, n]);
+      expect(into.player[0].left, lower.left.skip(1).toList());
+      expect(into.playerCards.toSet(), sides.playerCards.toSet(), reason: 'the same cards');
+    });
+
+    test("a middle card sent to Tobi goes to its home on his side, the open middle closing up", () {
+      final sides = withRows(dealt(5), withMiddle(dealt(5).player, 2));
+      final [m, n] = sides.player[row.index].middle;
+      final next = sides.toTobi(m);
+      expect(next.tobiCards, contains(m));
+      expect(next.tobi.map((r) => [r.left, r.right]).toList(),
+          sides.homes.sideWith({...sides.tobiCards, m}).map((r) => [r.left, r.right]).toList());
+      expect(next.tobi.every((r) => r.middle.isEmpty), isTrue, reason: 'his open middles stay empty');
+      expect(next.player[row.index].middle, [n]);
+      expect(next.playerCards, isNot(contains(m)));
+    });
+
+    test('a row is as wide as its middle cards need, and they spread evenly, each a margin clear of the groups', () {
+      expect(IkkiuchiField.rowWidth(6, 5), closeTo(IkkiuchiField.reach(6) + IkkiuchiField.reach(5) + IkkiuchiField.leastGap, 1e-9));
+      for (final m in [1, 2, 3]) {
+        expect(IkkiuchiField.rowWidth(6, 5, middle: m), closeTo((6 + 5 + m + 2 * margin) * pitch - IkkiuchiFieldTuning.cardGap, 1e-9));
+        expect(IkkiuchiField.rowWidth(6, 5, middle: m), greaterThan(IkkiuchiField.rowWidth(6, 5, middle: m - 1)));
+      }
+      final ids = [for (var i = 0; i < 14; i++) i];
+      final player = [
+        IkkiuchiRow(ids.sublist(0, 2), ids.sublist(2, 3)),
+        const IkkiuchiRow([], []),
+        IkkiuchiRow(ids.sublist(3, 9), ids.sublist(9, 11), middle: ids.sublist(11, 14)),
+      ];
+      final tobi = [IkkiuchiRow([20, 21], [22]), IkkiuchiRow([23], []), const IkkiuchiRow([24], [25])];
+      final field = IkkiuchiField(tobi: tobi, player: player);
+      final least = field.leastWidth();
+      expect(least, closeTo(IkkiuchiField.rowWidth(6, 2, middle: 3), 1e-9), reason: 'its widest row');
+      for (final width in [least, least + 2.5]) {
+        final boxes = {
+          for (final c in field.layOut(width, gap: 1))
+            if (c.side == IkkiuchiSide.player) c.id: c.box,
+        };
+        double leftOf(int id) => boxes[id]!.centre.x - 0.5;
+        double rightOf(int id) => boxes[id]!.centre.x + 0.5;
+        final middle = player[2].middle;
+        expect(leftOf(middle.first) - rightOf(player[2].left.last), greaterThanOrEqualTo(margin * pitch - 1e-9),
+            reason: '$width: clear of the left group');
+        expect(leftOf(player[2].right.last) - rightOf(middle.last), greaterThanOrEqualTo(margin * pitch - 1e-9),
+            reason: '$width: clear of the right group');
+        final steps = [for (var i = 1; i < middle.length; i++) boxes[middle[i]]!.centre.x - boxes[middle[i - 1]]!.centre.x];
+        expect(steps, everyElement(closeTo(steps.first, 1e-9)), reason: '$width: evenly');
+        expect(steps.first, greaterThan(1), reason: '$width: apart');
+        expect(rightOf(player[2].right.first), closeTo(width, 1e-9), reason: '$width: the groups at the edges');
+        expect(boxes[middle.first]!.centre.y, boxes[player[2].left.first]!.centre.y, reason: 'in the row');
+      }
+      // The open middle reaches over the middle cards, the one moved left
+      // out; with none, it is a card wide, or the room between the groups
+      // where that is less.
+      final boxes = {for (final c in field.layOut(least, gap: 1)) c.id: c.box};
+      final open = field.playerMiddle(2, width: least, gap: 1)!;
+      expect(open.centre.x - open.hw, closeTo(boxes[11]!.centre.x - 0.5, 1e-9));
+      expect(open.centre.x + open.hw, closeTo(boxes[13]!.centre.x + 0.5, 1e-9));
+      expect(open.centre.y, closeTo(boxes[11]!.centre.y, 1e-9));
+      final moving = field.playerMiddle(2, leaving: 13, width: least, gap: 1)!;
+      expect(moving.centre.x + moving.hw, lessThan(boxes[13]!.centre.x + 0.5));
+      final empty = IkkiuchiField(tobi: tobi, player: [player[0], player[1], IkkiuchiRow(ids.sublist(3, 9), ids.sublist(9, 11))]);
+      expect(empty.playerMiddle(2, width: 16, gap: 1)!.hw,
+          closeTo((16 - 8 * pitch) * IkkiuchiPlacingTuning.openMiddleShare / 2, 1e-9),
+          reason: 'its share of the room');
+      expect(empty.playerMiddle(2, width: 8 * pitch + 2.5, gap: 1)!.hw, closeTo(0.5, 1e-9), reason: 'a card wide');
+      final tight = empty.playerMiddle(2, width: IkkiuchiField.rowWidth(6, 2), gap: 1)!;
+      expect(2 * tight.hw, closeTo(IkkiuchiField.leastGap, 1e-9), reason: 'the room between the groups');
+      expect(tight.centre.x - tight.hw, closeTo(IkkiuchiField.reach(6), 1e-9));
+    });
+  });
+
   group('The board laid out afresh', () {
     // A scene of [sides] on the phone, run in whole frames.
     IkkiuchiBoardScene sceneOf(IkkiuchiSides sides, {bool landscape = false}) =>
@@ -370,6 +505,185 @@ void main() {
       expect(scene.sides!.player[0].left, [card, ...row]);
       runFor(scene, IkkiuchiPlayTuning.relayoutGlide * 2);
       expectHome(scene, 'placed on a card');
+    });
+
+    const middleRow = IkkiuchiPlacingTuning.middleRow;
+
+    // The sides of deal [seed] with [n] of the player's cards in their open
+    // middle.
+    IkkiuchiSides dealtWithMiddle(int seed, int n) {
+      final sides = dealt(seed);
+      return IkkiuchiSides(homes: sides.homes, tobi: sides.tobiCards, player: withMiddle(sides.player, n));
+    }
+
+    // Tobi sends a card and it waits to be placed, the board at rest.
+    void receive(IkkiuchiBoardScene scene) {
+      expect(scene.send.startReceiving(), isTrue);
+      runFor(scene, Duration(milliseconds: scene.board.carry!.end.ceil() + 100));
+      runFor(scene, IkkiuchiPlayTuning.relayoutGlide * 2);
+      expect(scene.send.stage, IkkiuchiSendStage.waiting);
+    }
+
+    Offset centreOf(FieldRect r) => Offset(r.x + r.w / 2, r.y + r.h / 2);
+
+    test("Tobi's card goes into the open middle by a tap, the next by a drag beside it, each where its landing shows",
+        () {
+      for (final landscape in [false, true]) {
+        final why = landscape ? 'landscape' : 'portrait';
+        final scene = sceneOf(dealt(4), landscape: landscape);
+        final flow = scene.send;
+        receive(scene);
+        final first = flow.card!;
+        final (spot, rect) = flow.targets().freeSpots.firstWhere((s) => s.$1 is OpenMiddle);
+        expect(spot, const OpenMiddle(middleRow, 0), reason: why);
+        final upper = scene.sides!.player[middleRow.index];
+        final inner = [upper.left.last, upper.right.last].map((id) => scene.board.cards.card(id).box).toList();
+        expect(rect.x, greaterThanOrEqualTo(inner[0].centre.x + inner[0].hw - 1e-3), reason: '$why: right of the left group');
+        expect(rect.right, lessThanOrEqualTo(inner[1].centre.x - inner[1].hw + 1e-3), reason: '$why: left of the right group');
+        expect(rect.y + rect.h / 2, closeTo(inner[0].centre.y, 1e-3), reason: '$why: in the row');
+        expect(flow.placeOf(spot), (row: middleRow, part: RowPart.middle));
+        final shown = flow.rectOf(spot)!;
+        flow.tap(centreOf(rect));
+        expect(flow.active, isFalse, reason: '$why: placed');
+        expect(scene.sides!.player[middleRow.index].middle, [first], reason: why);
+        runFor(scene, IkkiuchiPlayTuning.relayoutGlide * 2);
+        expectHome(scene, '$why: placed in the middle');
+        final firstBox = scene.board.cards.card(first).box;
+        expect((shown.center - Offset(firstBox.centre.x, firstBox.centre.y)).distance, lessThan(1e-3),
+            reason: '$why: where its landing showed');
+
+        receive(scene);
+        final second = flow.card!;
+        final middle = scene.board.cards.card(first).box;
+        final (_, open) = flow.targets().freeSpots.firstWhere((s) => s.$1 is OpenMiddle);
+        final right = middle.centre.x + middle.hw;
+        expect(open.right, greaterThan(right + 1), reason: '$why: the open middle reaches past the middle card');
+        flow
+          ..dragStart(second, fromStack: true, at: scene.wait.center)
+          ..dragTo(Offset((right + open.right) / 2, middle.centre.y));
+        expect(flow.drag?.spot, const OpenMiddle(middleRow, 1), reason: '$why: right of the middle card');
+        final landing = flow.rectOf(flow.drag!.spot!)!;
+        final cardW = scene.layout.cardW;
+        flow.dragEnd();
+        expect(scene.sides!.player[middleRow.index].middle, [first, second], reason: why);
+        runFor(scene, IkkiuchiPlayTuning.relayoutGlide * 2);
+        expectHome(scene, '$why: the second in the middle');
+        expect(scene.layout.cardW, closeTo(cardW, 1e-9), reason: '$why: the field had room');
+        final secondBox = scene.board.cards.card(second).box;
+        expect((landing.center - Offset(secondBox.centre.x, secondBox.centre.y)).distance, lessThan(1e-3),
+            reason: '$why: where its landing showed');
+      }
+    });
+
+    test('並べ替え moves a middle card to a group end, and a group card into the middle beside another', () {
+      final scene = sceneOf(dealtWithMiddle(6, 2));
+      final flow = scene.arrange..start();
+      final [m, n] = scene.sides!.player[middleRow.index].middle;
+      final box = scene.board.cards.card(m).box;
+      flow.dragStart(m, fromStack: false, at: Offset(box.centre.x, box.centre.y));
+      final (end, endRect) = flow.targets().freeSpots.firstWhere((s) => s.$1 is ClusterEnd && (s.$1 as ClusterEnd).row != middleRow);
+      flow.dragTo(centreOf(endRect));
+      expect(flow.drag?.spot, end);
+      flow.dragEnd();
+      final to = end as ClusterEnd;
+      expect(scene.sides!.player[middleRow.index].middle, [n], reason: 'the open middle closes up');
+      final group = scene.sides!.player[to.row.index];
+      expect(to.part == RowPart.left ? group.left.last : group.right.last, m, reason: 'at the inner end');
+      runFor(scene, IkkiuchiPlayTuning.relayoutGlide * 2);
+      expectHome(scene, 'a middle card moved out');
+
+      final g = scene.sides!.player[1].left.last;
+      final from = scene.board.cards.card(g).box;
+      final left = scene.board.cards.card(n).box;
+      flow.dragStart(g, fromStack: false, at: Offset(from.centre.x, from.centre.y));
+      final (_, open) = flow.targets().freeSpots.firstWhere((s) => s.$1 is OpenMiddle);
+      final edge = left.centre.x + left.hw;
+      expect(open.right, greaterThan(edge + 1));
+      flow.dragTo(Offset((edge + open.right) / 2, left.centre.y));
+      expect(flow.drag?.spot, const OpenMiddle(middleRow, 1));
+      final landing = flow.spots.rectOf(flow.drag!.spot!, moving: g)!;
+      final cardW = scene.layout.cardW;
+      flow.dragEnd();
+      expect(scene.sides!.player[middleRow.index].middle, [n, g]);
+      runFor(scene, IkkiuchiPlayTuning.relayoutGlide * 2);
+      expectHome(scene, 'a group card moved into the middle');
+      expect(scene.layout.cardW, closeTo(cardW, 1e-9), reason: 'the field had room');
+      final placed = scene.board.cards.card(g).box;
+      expect((landing.center - Offset(placed.centre.x, placed.centre.y)).distance, lessThan(1e-3),
+          reason: 'where its landing showed');
+      flow.finish();
+      expect(flow.active, isFalse);
+    });
+
+    test('a card put in a tight open middle widens its row, the cards shrinking, until the row is full', () {
+      // The player's 上段 is their widest row, the field as narrow as it,
+      // its groups as near as they may be.
+      final sides = dealt(10);
+      final p = sides.playerCards;
+      final scene = sceneOf(IkkiuchiSides(homes: sides.homes, tobi: sides.tobiCards, player: [
+        IkkiuchiRow(p.sublist(14, 20), p.sublist(20, 22)),
+        IkkiuchiRow(p.sublist(22, 24), p.sublist(24, 25)),
+        IkkiuchiRow(p.sublist(0, 7), p.sublist(7, 14)),
+      ]));
+      final before = scene.layout.cardW;
+      expect(scene.layout.field.width, closeTo(IkkiuchiField.rowWidth(7, 7) * before, 1e-6), reason: 'as narrow as the 上段');
+      receive(scene);
+      final card = scene.send.card!;
+      final (spot, open) = scene.send.targets().freeSpots.firstWhere((s) => s.$1 is OpenMiddle);
+      expect(open.w, closeTo(IkkiuchiField.leastGap * before, 1e-6), reason: 'the room between the groups');
+      scene.send.tap(centreOf(open));
+      expect(scene.sides!.player[middleRow.index].middle, [card]);
+      expect(scene.layout.cardW, lessThan(before), reason: 'the cards shrink');
+      runFor(scene, IkkiuchiPlayTuning.relayoutGlide ~/ 2);
+      expect(scene.board.cards.gliding, isTrue, reason: 'on their way');
+      runFor(scene, IkkiuchiPlayTuning.relayoutGlide * 2);
+      expectHome(scene, 'the row widened');
+
+      // 14 cards in its groups and one in the middle fill the row's room.
+      receive(scene);
+      final next = scene.send.card!;
+      expect(scene.send.targets().freeSpots.where((s) => s.$1 is OpenMiddle), isEmpty, reason: 'the row is full');
+      expect(scene.sides!.placed(next, CardSpot(card)), isNull);
+      expect(spot, const OpenMiddle(middleRow, 0));
+    });
+
+    test('a middle card is taken by the finger, and once knocked glides home', () {
+      final scene = sceneOf(dealtWithMiddle(3, 1));
+      final m = scene.sides!.player[middleRow.index].middle.single;
+      scene.callCard(m, '');
+      final home = scene.board.cards.card(m).box;
+      final at = Offset(home.centre.x, home.centre.y);
+      scene.pointer(PointerDownEvent(pointer: 1, position: at));
+      runFor(scene, const Duration(milliseconds: 32));
+      expect(scene.board.take?.card, m);
+      expect(scene.board.take?.way, IkkiuchiTakeWay.touched);
+      for (var i = 1; i <= 4; i++) {
+        scene.pointer(PointerMoveEvent(pointer: 1, position: at + Offset(i * home.hw, 0)));
+        runFor(scene, const Duration(milliseconds: 16));
+      }
+      scene.pointer(PointerUpEvent(pointer: 1, position: at + Offset(4 * home.hw, 0)));
+      runFor(scene, const Duration(milliseconds: 200));
+      expect(scene.board.cards.card(m).movedFrom(home, dp: 2, radians: 0.02), isTrue, reason: 'knocked');
+      runFor(scene, IkkiuchiPlayTuning.tidyWait + IkkiuchiPlayTuning.tidyGlide * 2);
+      expectHome(scene, 'glided home');
+    });
+
+    test("a middle card the player sends goes to Tobi, the open middle closing up", () {
+      final scene = sceneOf(dealtWithMiddle(2, 2));
+      final [m, n] = scene.sides!.player[middleRow.index].middle;
+      final box = scene.board.cards.card(m).box;
+      final flow = scene.send..startSending();
+      final from = Offset(box.centre.x, box.centre.y);
+      flow
+        ..dragStart(m, fromStack: false, at: from)
+        ..dragTo(Offset(from.dx, scene.layout.field.top + scene.layout.cardW));
+      expect(flow.overTobi, isTrue);
+      flow.dragEnd();
+      expect(scene.sides!.tobiCards, contains(m));
+      expect(scene.sides!.player[middleRow.index].middle, [n]);
+      expect(scene.board.cards.card(m).side, IkkiuchiSide.tobi);
+      runFor(scene, IkkiuchiPlayTuning.relayoutGlide * 2);
+      expectHome(scene, 'sent from the middle');
     });
   });
 }

@@ -21,6 +21,7 @@ import 'package:fudatobashi/domain/ikkiuchi_tobi.dart';
 import 'package:fudatobashi/ui/ikkiuchi/ikkiuchi_board_layout.dart';
 import 'package:fudatobashi/ui/ikkiuchi/ikkiuchi_tobi_art.dart';
 
+import 'test_ikkiuchi.dart';
 import 'test_vector_art.dart';
 
 void main() {
@@ -37,22 +38,31 @@ void main() {
   const phone = Size(384, 832), small = Size(300, 460), large = Size(1032, 1376);
   const sizes = {'phone': phone, 'small': small, 'large': large};
 
-  // A full field dealt by [seed]: Tobi's side by his layout at [rating],
-  // the player's by it too, on a board of [size].
-  IkkiuchiBoardLayout layoutFor(int seed, double rating, {bool landscape = false, Size size = phone}) {
+  // Both sides of a full field dealt by [seed], each by Tobi's layout at
+  // [rating], [middle] of the player's cards in their open middle.
+  ({List<IkkiuchiRow> tobi, List<IkkiuchiRow> player}) sidesFor(int seed, double rating, {int middle = 0}) {
     final deck = [for (final p in poems.all) p.id]..shuffle(math.Random(seed));
     final own = deck.sublist(0, 25), others = deck.sublist(25, 50);
+    return (
+      tobi: layout.generate(rating: rating, own: own, others: others, rows: 3, seed: seed).start,
+      player: withMiddle(layout.generate(rating: rating, own: others, others: own, rows: 3, seed: seed + 1).start, middle),
+    );
+  }
+
+  // The full field of [sidesFor] on a board of [size].
+  IkkiuchiBoardLayout layoutFor(int seed, double rating, {bool landscape = false, Size size = phone, int middle = 0}) {
+    final sides = sidesFor(seed, rating, middle: middle);
     return IkkiuchiBoardLayout.of(
       size: landscape ? size.flipped : size,
       landscape: landscape,
-      tobiRows: layout.generate(rating: rating, own: own, others: others, rows: 3, seed: seed).start,
-      playerRows: layout.generate(rating: rating, own: others, others: own, rows: 3, seed: seed + 1).start,
+      tobiRows: sides.tobi,
+      playerRows: sides.player,
       rig: rig,
     );
   }
 
-  IkkiuchiBoard boardFor(int seed, double rating, {bool landscape = false, Size size = phone}) =>
-      layoutFor(seed, rating, landscape: landscape, size: size).board();
+  IkkiuchiBoard boardFor(int seed, double rating, {bool landscape = false, Size size = phone, int middle = 0}) =>
+      layoutFor(seed, rating, landscape: landscape, size: size, middle: middle).board();
 
   // A clean strike at [card] with [move], its reach [reachMs].
   IkkiuchiRead strikeAt(IkkiuchiBoard board, int card, IkkiuchiMove move, double reachMs) =>
@@ -287,6 +297,45 @@ void main() {
             if ((fieldW - (l.size.x - 2 * pad)).abs() < eps) spans = true;
           }
           if (name == 'phone' && !landscape) expect(spans, isTrue, reason: 'width-limited portrait boards are spanned');
+        }
+      }
+    });
+
+    test("cards in the player's open middle: the field makes room for them, never wider than 16.5 cards", () {
+      const margin = IkkiuchiPlacingTuning.middleMargin * IkkiuchiField.pitch;
+      final upper = IkkiuchiPlacingTuning.middleRow.index;
+      for (final MapEntry(key: name, value: size) in sizes.entries) {
+        for (final landscape in [false, true]) {
+          for (var seed = 0; seed < 30; seed++) {
+            final n = 1 + seed % 3, rating = 1000 + 50.0 * seed;
+            final why = '$name ${landscape ? 'landscape' : 'portrait'} seed $seed, $n in the middle';
+            final l = layoutFor(seed, rating, landscape: landscape, size: size, middle: n);
+            final row = sidesFor(seed, rating, middle: n).player[upper];
+            expect(row.middle, hasLength(n), reason: why);
+            final u = l.cardW;
+            expect(l.cards.map((c) => 2 * c.box.hw), everyElement(closeTo(u, eps)), reason: '$why: one size');
+            final lefts = l.cards.map((c) => c.box.centre.x - c.box.hw);
+            final rights = l.cards.map((c) => c.box.centre.x + c.box.hw);
+            expect(rights.reduce(math.max) - lefts.reduce(math.min), lessThanOrEqualTo(IkkiuchiLayoutTuning.rowSlots * u + eps),
+                reason: '$why: at most 16.5 cards wide');
+            expect(u, lessThanOrEqualTo(layoutFor(seed, rating, landscape: landscape, size: size).cardW + eps),
+                reason: '$why: no bigger than with none in the middle');
+            final boxes = {for (final c in l.cards) c.id: c.box};
+            final middle = [for (final id in row.middle) boxes[id]!]..sort((a, b) => a.centre.x.compareTo(b.centre.x));
+            final front = l.cards.where((c) => c.side == IkkiuchiSide.player).map((c) => c.box.centre.y).reduce(math.min);
+            for (final m in middle) {
+              expect(m.centre.y - m.hh, greaterThanOrEqualTo(l.band.bottom - eps), reason: "$why: on the player's side");
+              expect(m.centre.y, closeTo(front, eps), reason: '$why: in the front row');
+              for (final id in [...row.left, ...row.right]) {
+                final g = boxes[id]!;
+                expect((m.centre.x - g.centre.x).abs() - u, greaterThanOrEqualTo(margin * u - eps),
+                    reason: '$why: a margin clear of the groups');
+              }
+            }
+            for (var i = 1; i < middle.length; i++) {
+              expect(middle[i].centre.x - middle[i - 1].centre.x, greaterThan(u), reason: '$why: the middle cards apart');
+            }
+          }
         }
       }
     });
@@ -702,6 +751,72 @@ void main() {
     // ignore: avoid_print
     print('$strikes clean strikes: $accidental accidental faults, $homePushes steps with the fist on the way home, '
         '$overCap pushes over the cap\n${rows.join('\n')}');
+    expect(accidental, 0);
+    expect(homePushes, 0);
+    expect(overCap, 0);
+  });
+
+  // The same check with 1 to 3 of the player's cards in the open middle of
+  // their 上段, which lies right across the gap from Tobi: half the strikes
+  // at a middle card, half at the card of his nearest them.
+  test("clean strikes make no accidental faults with cards in the player's open middle", () {
+    const strikesPerCase = 4;
+    final upper = IkkiuchiPlacingTuning.middleRow.index;
+    var strikes = 0, accidental = 0, homePushes = 0, overCap = 0;
+    final rows = <String>[];
+    for (final MapEntry(key: name, value: size) in sizes.entries) {
+      for (final landscape in [false, true]) {
+        for (final rating in ratings) {
+          for (final move in IkkiuchiMove.values) {
+            var caseFaults = 0;
+            for (var i = 0; i < strikesPerCase; i++) {
+              final seed = 100 * i + move.index + 7, n = 1 + i % 3;
+              final board = boardFor(seed, rating, landscape: landscape, size: size, middle: n);
+              final middle = sidesFor(seed, rating, middle: n).player[upper].middle;
+              final rng = math.Random(seed);
+              final int called;
+              if (i.isEven) {
+                called = middle[rng.nextInt(middle.length)];
+              } else {
+                double nearness(IkkiuchiCard c) =>
+                    middle.map((m) => board.cards.card(m).box.centre.distanceTo(c.box.centre)).reduce(math.min);
+                called = (board.cards.cards.where((c) => c.side == IkkiuchiSide.tobi).toList()
+                      ..sort((a, b) => nearness(a).compareTo(nearness(b))))
+                    .first
+                    .id;
+              }
+              final decided = IkkiuchiRead.decide(
+                  rating: rating,
+                  called: called,
+                  field: board.field,
+                  from: board.shoulders,
+                  alike: layout.alike,
+                  rng: rng,
+                  mistakes: false,
+                  moves: {move});
+              board.call(strikeAt(board, called, move, decided.reachMs));
+              playOut(board, settle: 150, each: () {
+                final run = board.runs.lastOrNull;
+                if (run == null) return;
+                final t = run.at(board.now);
+                if (t > run.strike.liveUntil + step && board.cards.fistOn) homePushes++;
+                for (final c in board.cards.fistTouched) {
+                  if (!c.taken && c.velocity.length > board.cards.pushCap * 1.001) overCap++;
+                }
+              });
+              strikes++;
+              if (board.faults.isNotEmpty) caseFaults++;
+            }
+            accidental += caseFaults;
+            rows.add('${name.padRight(5)} ${landscape ? 'landscape' : 'portrait '} ${rating.round().toString().padLeft(4)} '
+                '${move.name.padRight(9)} faults $caseFaults/$strikesPerCase');
+          }
+        }
+      }
+    }
+    // ignore: avoid_print
+    print('$strikes clean strikes with middle cards: $accidental accidental faults, $homePushes steps with the fist '
+        'on the way home, $overCap pushes over the cap\n${rows.join('\n')}');
     expect(accidental, 0);
     expect(homePushes, 0);
     expect(overCap, 0);

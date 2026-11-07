@@ -1074,7 +1074,7 @@ void main() {
       final (spot, rect) = s.arrange.spots
           .targets(moving: card)
           .freeSpots
-          .firstWhere((e) => (e.$1 as ClusterEnd).row != from.row);
+          .firstWhere((e) => e.$1 is ClusterEnd && (e.$1 as ClusterEnd).row != from.row);
       final start = s.board.cards.card(card).box.centre;
       final drag = await tester.startGesture(onScreen(tester, start));
       await tester.pump(frame);
@@ -1105,6 +1105,88 @@ void main() {
       expect(s.arrange.active, isFalse);
       expect(find.text('並べ替え'), findsOneWidget);
       expect(s.marked, isNotNull, reason: 'the reading goes on');
+      expect(tester.takeException(), isNull);
+      await tester.pumpWidget(const SizedBox());
+    });
+
+    testWidgets("v's cards go into the open middle; in landscape the call lies right in front of them", (tester) async {
+      final p = await open(tester);
+      await tester.runAsync(() => p.updateSettings(p.settings.copyWith(language: 'ja')));
+      const row = IkkiuchiPlacingTuning.middleRow;
+      final seed = seedWith(long: 6, short: 1);
+      for (final landscape in [false, true]) {
+        final o = landscape ? 'landscape' : 'portrait';
+        await show(tester, p, IkkiuchiFieldPage(seed: seed, landscape: landscape));
+        await tester.pump(frame);
+        final s = scene(tester);
+
+        // Three of Tobi's cards, each tapped into the open middle.
+        for (var placed = 0; placed < 3; placed++) {
+          await tester.tap(tool('v'));
+          await tester.pump(frame);
+          await run(tester, s.board.carry!.end + IkkiuchiPlayTuning.relayoutGlide.inMilliseconds + 100);
+          expect(s.send.stage, IkkiuchiSendStage.waiting, reason: o);
+          final (_, rect) = s.send.targets().freeSpots.firstWhere((e) => e.$1 is OpenMiddle);
+          if (placed == 0) {
+            // Named where its room is wide enough, as on the landscape board.
+            if (landscape) {
+              expect(find.descendant(of: find.byType(PlacingSpots), matching: find.text('中央')), findsOneWidget,
+                  reason: 'the open middle named');
+            }
+            await capture(tester, 'field_open_middle_$o');
+          }
+          final card = s.send.card!;
+          await tester.tapAt(onScreen(tester, Vec(rect.x + rect.w / 2, rect.y + rect.h / 2)));
+          await tester.pump(frame);
+          expect(s.sides!.player[row.index].middle, contains(card), reason: '$o: in the open middle');
+          await run(tester, IkkiuchiPlayTuning.relayoutGlide.inMilliseconds + 100.0);
+        }
+        final middle = s.sides!.player[row.index].middle;
+        expect(middle, hasLength(3));
+        if (!landscape) {
+          await capture(tester, 'field_middle_portrait');
+          continue;
+        }
+
+        // The call in the gap, right in front of the middle cards.
+        final context = tester.element(find.byType(IkkiuchiBoardView));
+        final id = s.board.field.keys.firstWhere((id) => poems[id].kimariji.length == 6);
+        final call = IkkiuchiReader.callFor(context, id);
+        s.callCard(id, kimarijiFor(context, id), call: call);
+        await run(tester, call.decidedAt + IkkiuchiCallStyle.kanaIn.inMilliseconds * 2);
+        expect(stripWords(tester), poems[id].kimariji);
+        final band = s.layout.band;
+        for (final m in middle) {
+          final b = s.board.cards.card(m).box;
+          expect(b.centre.y - b.hh, closeTo(band.bottom, 1e-3), reason: 'right in front of the gap');
+        }
+        await capture(tester, 'field_middle_call_landscape');
+
+        // 並べ替え: the leftmost middle card dragged between the other two.
+        await tester.tap(find.text('並べ替え'));
+        await tester.pump(frame);
+        final moved = middle.first;
+        final start = s.board.cards.card(moved).box.centre;
+        final drag = await tester.startGesture(onScreen(tester, start));
+        await tester.pump(frame);
+        final [a, b] = [for (final id in middle.skip(1)) s.board.cards.card(id).box];
+        final target = Vec((a.centre.x + a.hw + b.centre.x - b.hw) / 2, a.centre.y);
+        for (var i = 1; i <= 8; i++) {
+          await drag.moveTo(onScreen(tester, start.lerp(target, i / 8)));
+          await tester.pump(frame);
+        }
+        expect(s.arrange.drag?.spot, const OpenMiddle(row, 1));
+        expect(find.byType(PlacingLanding), findsOneWidget);
+        expect(tester.widget<PlacingRiding>(find.byType(PlacingRiding)).landing, '上段・中央');
+        await capture(tester, 'field_middle_arrange_landscape');
+        await drag.up();
+        await tester.pump(frame);
+        expect(s.sides!.player[row.index].middle, [middle[1], moved, middle[2]]);
+        await run(tester, IkkiuchiPlayTuning.relayoutGlide.inMilliseconds + 100.0);
+        await tester.tap(find.text('完了'));
+        await tester.pump(frame);
+        expect(s.arrange.active, isFalse);
+      }
       expect(tester.takeException(), isNull);
       await tester.pumpWidget(const SizedBox());
     });
