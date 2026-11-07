@@ -166,9 +166,11 @@ class IkkiuchiBoard {
 
   /// Reads [id] for the player alone, Tobi's arm still: the takes of it
   /// and both players' faults start afresh. A からふだ ([onField] false) has
-  /// nothing to take. Null reads nothing.
+  /// nothing to take. Null reads nothing, and Tobi starts no strike still
+  /// to come.
   void callCard(int? id, {bool onField = true}) {
     _reading = id == null ? null : (id: id, onField: onField);
+    _pending.clear();
     _called = onField ? id : null;
     _take = null;
     _tobiHit = null;
@@ -190,6 +192,13 @@ class IkkiuchiBoard {
   }
 
   static final _sameTime = IkkiuchiPlayTuning.sameTime.inMicroseconds / Duration.microsecondsPerMillisecond;
+
+  /// Whether both took the called card within
+  /// [IkkiuchiPlayTuning.sameTime] of each other.
+  bool get tied {
+    final player = _take?.at, tobi = _tobiHit;
+    return player != null && tobi != null && (player - tobi).abs() <= _sameTime;
+  }
 
   /// Who took the called card, once the other can no longer take it at the
   /// same time; null till then, and on a からふだ.
@@ -497,10 +506,11 @@ class IkkiuchiBoard {
     }
   }
 
-  /// The carried card leaves the board as his hand takes it.
+  /// The carried card leaves the board as his hand takes it; once the
+  /// carry is over it is let be, as where he laid it.
   void _holdCarried() {
     final move = _carryMove, id = _carried;
-    if (move == null || id == null || carryTime < move.pickAt) return;
+    if (move == null || id == null || carryTime < move.pickAt || !carrying) return;
     final card = cards.card(id);
     if (!card.held) cards.hold(card);
   }
