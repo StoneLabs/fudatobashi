@@ -583,8 +583,15 @@ void main() {
         tester.state<IkkiuchiFieldPageState>(find.byType(IkkiuchiFieldPage)).scene!;
     List<int> ids(IkkiuchiBoardScene s) => [for (final c in s.board.cards.cards) c.id];
 
-    // The developer's button [label].
+    // The developer's button [label], and every button's.
     Finder tool(String label) => find.descendant(of: find.byType(IkkiuchiFieldTools), matching: find.text(label));
+    final labels = [
+      'R',
+      ...IkkiuchiToolsTuning.fieldCounts.map((n) => '$n'),
+      '^',
+      'v',
+      IkkiuchiToolsStyle.fieldKarafudaLabel,
+    ];
 
     // Where board dp [at] is on the screen, through any turn of the board.
     Offset onScreen(WidgetTester tester, Vec at) =>
@@ -649,7 +656,7 @@ void main() {
           expect(find.byType(part), landscape ? findsOneWidget : findsNothing,
               reason: "$why: the match's own parts in landscape");
         }
-        for (final label in ['R', ...IkkiuchiToolsTuning.fieldCounts.map((n) => '$n'), '^', 'v']) {
+        for (final label in labels) {
           final button = screenRect(tester, tool(label));
           for (final c in s.layout.cards) {
             expect(button.overlaps(rectOnScreen(tester, c.box)), isFalse, reason: '$why: $label clear of card ${c.id}');
@@ -866,7 +873,7 @@ void main() {
           for (final c in [wait.topLeft, wait.bottomRight]) onScreen(tester, Vec(c.dx, c.dy)),
         ];
         final balloon = screenRect(tester, find.byType(SpeechBalloon));
-        for (final label in ['R', ...IkkiuchiToolsTuning.fieldCounts.map((n) => '$n'), '^', 'v']) {
+        for (final label in labels) {
           final button = screenRect(tester, tool(label));
           expect(button.overlaps(Rect.fromPoints(corners[0], corners[1])), isFalse,
               reason: '$o: $label clear of the waiting card');
@@ -1223,6 +1230,113 @@ void main() {
         expect(tester.takeException(), isNull, reason: '$name: nothing overflows');
         await capture(tester, 'field_${name}_sent_landscape');
       }
+      await tester.pumpWidget(const SizedBox());
+    });
+
+    // A touch of the finger on [card] where it lies now, lifted.
+    Future<void> tap(WidgetTester tester, IkkiuchiCard card) async {
+      final touch = await tester.startGesture(onScreen(tester, card.box.centre));
+      await tester.pump(frame);
+      await touch.up();
+      await tester.pump(frame);
+    }
+
+    testWidgets('a touch on the side without the read card is outlined red beside the green take; the next read clears both',
+        (tester) async {
+      final p = await open(tester);
+      for (final landscape in [false, true]) {
+        final o = landscape ? 'landscape' : 'portrait';
+        await show(tester, p, IkkiuchiFieldPage(seed: 8, landscape: landscape));
+        await tester.pump(frame);
+        final s = scene(tester);
+        final read = s.board.cards.card(s.marked!);
+        expect(s.board.playerFaults, isEmpty, reason: '$o: no card marked in advance');
+
+        // The cards nearest the read card across the gap, and beside it.
+        double near(IkkiuchiCard c) => c.box.centre.distanceTo(read.box.centre);
+        IkkiuchiCard nearest(bool Function(IkkiuchiCard c) where) =>
+            (s.board.cards.cards.where(where).toList()..sort((a, b) => near(a).compareTo(near(b)))).first;
+        final across = nearest((c) => c.side != read.side);
+        final beside = nearest((c) => c.side == read.side && c != read);
+
+        await tap(tester, across);
+        expect(s.board.playerFaults.keys, [across.id], reason: '$o: お手つき');
+        await tap(tester, beside);
+        expect(s.board.playerFaults.keys, [across.id], reason: "$o: none on the read card's own side");
+        await tap(tester, read);
+        expect(s.board.take?.card, read.id, reason: '$o: taken');
+        expect(s.board.playerFaults.keys, [across.id]);
+        await capture(tester, 'field_fault_$o');
+
+        await tester.pump(IkkiuchiPlayTuning.tidyWait);
+        await tester.pump(IkkiuchiPlayTuning.tidyGlide);
+        await tester.pump(frame);
+        expect(s.marked, isNot(read.id), reason: '$o: a new read');
+        expect(s.board.take, isNull);
+        expect(s.board.playerFaults, isEmpty, reason: '$o: its marks cleared');
+      }
+      expect(tester.takeException(), isNull);
+      await tester.pumpWidget(const SizedBox());
+    });
+
+    testWidgets('空 reads a からふだ: nothing marked, any touch a fault; after its pause a card on the field is read',
+        (tester) async {
+      final p = await open(tester);
+      await tester.runAsync(() => p.updateSettings(p.settings.copyWith(language: 'ja')));
+      const pause = IkkiuchiPlayTuning.karafudaPause;
+      for (final landscape in [true, false]) {
+        final o = landscape ? 'landscape' : 'portrait';
+        await show(tester, p, IkkiuchiFieldPage(seed: 5, landscape: landscape));
+        await tester.pump(frame);
+        final s = scene(tester);
+
+        // Read with a touch on each side: both are faults, nothing taken.
+        await tester.tap(tool(IkkiuchiToolsStyle.fieldKarafudaLabel));
+        await tester.pump(frame);
+        var call = s.reader.call!;
+        expect(ids(s), isNot(contains(call.card)), reason: '$o: a card dealt to neither side');
+        expect(s.marked, isNull, reason: '$o: no card marked');
+        expect(s.board.called, isNull);
+        expect((s.karafuda, s.kimariji), ('からふだ', poems[call.card].kimariji), reason: '$o: the band');
+        await run(tester, call.decidedAt);
+        if (landscape) expect(stripWords(tester), 'からふだ${call.sounds.join()}', reason: 'the strip reads it after its tag');
+        // Each side's card nearest the middle of the gap.
+        final middle = Vec(s.layout.band.center.dx, s.layout.band.center.dy);
+        IkkiuchiCard nearest(IkkiuchiSide side) => (s.board.cards.cards.where((c) => c.side == side).toList()
+              ..sort((a, b) => a.box.centre.distanceTo(middle).compareTo(b.box.centre.distanceTo(middle))))
+            .first;
+        final tobis = nearest(IkkiuchiSide.tobi), players = nearest(IkkiuchiSide.player);
+        await tap(tester, tobis);
+        await tap(tester, players);
+        expect(s.board.playerFaults.keys, unorderedEquals([tobis.id, players.id]), reason: '$o: each touch a fault');
+        expect(s.board.take, isNull);
+        await capture(tester, 'field_karafuda_$o');
+        await tester.pump(IkkiuchiPlayTuning.tidyWait);
+        await tester.pump(IkkiuchiPlayTuning.tidyGlide);
+        await tester.pump(frame);
+        expect(s.marked, isNotNull, reason: '$o: once the cards are home a card on the field is read');
+        expect(s.karafuda, isNull);
+        expect(s.board.playerFaults, isEmpty);
+
+        // Read untouched: the read is over the pause after its last sound.
+        await tester.tap(tool(IkkiuchiToolsStyle.fieldKarafudaLabel));
+        await tester.pump(frame);
+        call = s.reader.call!;
+        await run(tester, call.decidedAt + pause.inMilliseconds - 5 * frame.inMilliseconds);
+        expect(s.marked, isNull, reason: '$o: still the からふだ');
+        await run(tester, 10.0 * frame.inMilliseconds);
+        expect(s.marked, isNotNull, reason: '$o: then a card on the field');
+        expect(s.karafuda, isNull);
+
+        // Never while a card is sent.
+        await tester.tap(tool('^'));
+        await tester.pump(frame);
+        await tester.tap(tool(IkkiuchiToolsStyle.fieldKarafudaLabel));
+        await tester.pump(frame);
+        expect(s.send.stage, IkkiuchiSendStage.sending, reason: o);
+        expect(s.karafuda, isNull, reason: '$o: nothing read while sending');
+      }
+      expect(tester.takeException(), isNull);
       await tester.pumpWidget(const SizedBox());
     });
   });
