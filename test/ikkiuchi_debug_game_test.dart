@@ -45,6 +45,18 @@ class _Quiet extends Sounds {
   Future<void> playKimarijiVoice(int poemId) async {}
 }
 
+/// Notes the kimariji voices started and how often they were stopped.
+class _Voices extends _Quiet {
+  final started = <int>[];
+  int stopped = 0;
+
+  @override
+  Future<void> playKimarijiVoice(int poemId) async => started.add(poemId);
+
+  @override
+  Future<void> stopKimarijiVoice() async => stopped++;
+}
+
 Future<void> _loadFont(String family, List<String> files) async {
   final loader = FontLoader(family);
   for (final f in files) {
@@ -120,7 +132,8 @@ void main() {
 
   group('The debug game', () {
     final real = sounds;
-    setUp(() => sounds = _Quiet());
+    late _Voices voices;
+    setUp(() => sounds = voices = _Voices());
     tearDown(() => sounds = real);
 
     setUpAll(() async {
@@ -449,6 +462,175 @@ void main() {
         await tester.tapAt(onScreen(tester, Vec(rect.x + rect.w / 2, rect.y + rect.h / 2)));
         await runUntil(tester, () => f.stage == IkkiuchiStage.memoryTime);
         expect(f.left, lessThan(IkkiuchiMatchTuning.memoryTime.inMilliseconds), reason: '$o: the memory time goes on');
+      }
+      await tester.pumpWidget(const SizedBox());
+    });
+
+    testWidgets('the kimariji voice stops when the match ends', (tester) async {
+      final p = await open(tester);
+      await toFirstRead(tester, p, 3);
+      final f = flow(tester);
+      expect(voices.started, hasLength(1), reason: 'the read started its voice');
+      expect(voices.stopped, 0);
+      f.end();
+      expect(f.stage, IkkiuchiStage.gameEnd);
+      expect(voices.stopped, 1);
+      f.end();
+      expect(voices.stopped, 1, reason: 'ending an ended match does nothing');
+      await tester.pumpWidget(const SizedBox());
+    });
+
+    testWidgets('the kimariji voice stops when the match ends by itself', (tester) async {
+      final p = await open(tester);
+      await show(tester, p, const IkkiuchiDebugGame(seed: 4));
+      await tester.tap(tool('5'));
+      await tester.pump(frame);
+      await tester.pump(frame);
+      final f = flow(tester), s = f.scene;
+      final before = voices.stopped;
+      for (var i = 0; i < 5; i++) {
+        f.sendByHand(IkkiuchiSide.tobi);
+        await runUntil(tester, () => s.send.stage == IkkiuchiSendStage.waiting);
+        final (spot, _) = s.send.targets().freeSpots.first;
+        s.send.tap(s.send.rectOf(spot)!.center);
+        await runUntil(tester, () => !f.stage.sending);
+      }
+      expect(f.stage, IkkiuchiStage.gameEnd);
+      expect(voices.stopped, before + 1);
+      await tester.pumpWidget(const SizedBox());
+    });
+
+    testWidgets('the kimariji voice stops when a new deal or turn replaces the match, and when the page goes',
+        (tester) async {
+      final p = await open(tester);
+      await toFirstRead(tester, p, 3);
+      expect(voices.started, hasLength(1));
+      expect(voices.stopped, 0);
+      for (final button in ['5', IkkiuchiToolsStyle.turnLabel]) {
+        final before = voices.stopped;
+        await tester.tap(tool(button));
+        await tester.pump(frame);
+        await tester.pump(frame);
+        expect(voices.stopped, before + 1, reason: '$button: the old match is torn down');
+        expect(stage(tester), IkkiuchiStage.memoryTime, reason: '$button: a new match');
+      }
+      final before = voices.stopped;
+      await tester.pumpWidget(const SizedBox());
+      expect(voices.stopped, before + 1, reason: 'the page is gone');
+    });
+
+    // The board once 終了 came during a 送り札: nothing under way, no arm carrying, and every card of both sides
+    // lying at its home on its side, none lost and none doubled; the score as it stood.
+    Future<void> expectWhole(WidgetTester tester, IkkiuchiMatchFlow f, {required String why}) async {
+      final s = f.scene;
+      final score = s.cardsLeft;
+      final sent = s.send.stage == IkkiuchiSendStage.waiting ? 1 : 0;
+      final total = s.sides!.tobiCards.length + s.sides!.playerCards.length + sent;
+      f.end();
+      expect(f.stage, IkkiuchiStage.gameEnd, reason: why);
+      expect(s.send.active, isFalse, reason: why);
+      await run(tester, IkkiuchiPlayTuning.relayoutGlide.inMilliseconds + 300.0);
+      expect(f.stage, IkkiuchiStage.gameEnd, reason: why);
+      expect(s.atRest, isTrue, reason: why);
+      expect(s.board.carry, isNull, reason: why);
+      expect(s.board.heldFace, isNull, reason: why);
+      expect(s.send.drag, isNull, reason: why);
+      expect(s.cardsLeft, score, reason: '$why: the score does not jump');
+      final sides = s.sides!;
+      final tobi = sides.tobiCards, player = sides.playerCards.toSet();
+      expect(tobi.length + player.length, total, reason: '$why: no card lost');
+      expect(tobi.intersection(player), isEmpty, reason: why);
+      final lying = {
+        for (final c in s.board.cards.cards)
+          if (c.onBoard && !c.held) c.id,
+      };
+      expect(lying, {...tobi, ...player}, reason: '$why: every card on the board, none held up');
+      for (final c in s.board.cards.cards) {
+        expect(c.side, tobi.contains(c.id) ? IkkiuchiSide.tobi : IkkiuchiSide.player, reason: '$why: card ${c.id}');
+        expect(c.box.centre.distanceTo(c.home.centre), lessThan(1e-3), reason: '$why: card ${c.id} at its home');
+      }
+      expect(tester.takeException(), isNull, reason: why);
+    }
+
+    testWidgets('終了 in Sending Card ends the match, a lifted card back home', (tester) async {
+      final p = await open(tester);
+      for (final (lift, over) in [(false, false), (true, false), (true, true)]) {
+        final why = 'lifted $lift, over his side $over';
+        await show(tester, p, const IkkiuchiDebugGame(seed: 8));
+        final f = flow(tester), s = f.scene;
+        f.sendByHand(IkkiuchiSide.player);
+        expect(f.stage, IkkiuchiStage.sendingCard, reason: why);
+        final card = s.sides!.playerCards.first;
+        final at = s.board.cards.card(card).box.centre;
+        if (lift) {
+          s.send.dragStart(card, fromStack: false, at: Offset(at.x, at.y));
+          s.send.dragTo(over ? s.send.tobiSide.center : Offset(at.x, at.y + 10));
+          expect(s.send.overTobi, over, reason: why);
+          expect(s.board.cards.card(card).held, isTrue, reason: why);
+        }
+        final sent = s.sides!.playerCards.toSet();
+        await expectWhole(tester, f, why: why);
+        expect(s.sides!.playerCards.toSet(), sent, reason: '$why: nothing was sent');
+      }
+      await tester.pumpWidget(const SizedBox());
+    });
+
+    testWidgets('終了 in Tobi Placing Card ends the match, the card laid on his side, his arm still', (tester) async {
+      final p = await open(tester);
+      for (final carryFirst in [false, true]) {
+        final why = carryFirst ? 'his arm has the card' : 'the card lies where it was let go';
+        await show(tester, p, const IkkiuchiDebugGame(seed: 8));
+        final f = flow(tester), s = f.scene;
+        f.sendByHand(IkkiuchiSide.player);
+        final card = s.sides!.playerCards.first;
+        final at = s.board.cards.card(card).box.centre;
+        s.send
+          ..dragStart(card, fromStack: false, at: Offset(at.x, at.y))
+          ..dragTo(s.send.tobiSide.center + const Offset(0, 40))
+          ..dragEnd();
+        await tester.pump(frame);
+        expect(f.stage, IkkiuchiStage.tobiPlacingCard, reason: why);
+        if (carryFirst) {
+          await runUntil(tester, () => s.board.carried != null, reason: why);
+          await run(tester, 100);
+          expect(s.board.carrying, isTrue, reason: why);
+          expect(s.board.carried, isNotNull, reason: why);
+        } else {
+          expect(s.board.carry, isNull, reason: why);
+        }
+        await expectWhole(tester, f, why: why);
+        expect(s.sides!.tobiCards, contains(card), reason: why);
+        expect(s.sides!.playerCards, isNot(contains(card)), reason: why);
+      }
+      await tester.pumpWidget(const SizedBox());
+    });
+
+    testWidgets('終了 in Receiving Card ends the match, his card placed on their side', (tester) async {
+      final p = await open(tester);
+      for (final stage in ['carrying', 'in his hand', 'waiting']) {
+        final why = 'his card: $stage';
+        await show(tester, p, const IkkiuchiDebugGame(seed: 8));
+        final f = flow(tester), s = f.scene;
+        final tobiBefore = s.sides!.tobiCards.toSet();
+        f.sendByHand(IkkiuchiSide.tobi);
+        expect(f.stage, IkkiuchiStage.receivingCard, reason: why);
+        switch (stage) {
+          case 'carrying':
+            expect(s.send.stage, IkkiuchiSendStage.carrying, reason: why);
+            expect(s.board.carried, isNull, reason: why);
+          case 'in his hand':
+            await runUntil(tester, () => s.board.carried != null, reason: why);
+            await run(tester, 100);
+            expect(s.send.stage, IkkiuchiSendStage.carrying, reason: why);
+          case _:
+            await runUntil(tester, () => s.send.stage == IkkiuchiSendStage.waiting, reason: why);
+            await run(tester, 100);
+        }
+        final card = s.send.card!;
+        await expectWhole(tester, f, why: why);
+        expect(tobiBefore, contains(card), reason: why);
+        expect(s.sides!.playerCards, contains(card), reason: '$why: it counts as theirs, as the score had it');
+        expect(s.sides!.tobiCards, isNot(contains(card)), reason: why);
       }
       await tester.pumpWidget(const SizedBox());
     });

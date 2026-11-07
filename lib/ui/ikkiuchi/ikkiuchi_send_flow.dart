@@ -145,6 +145,52 @@ class IkkiuchiSendFlow {
     scene.settle();
   }
 
+  /// Calls the 送り札 off where it stands, leaving the board whole: a card
+  /// the player lifted glides back; the card they sent lies at its home on
+  /// his side, his arm still; the card he sends, in his hand or waiting,
+  /// goes to the first free spot on the player's side (which counts it
+  /// theirs from his pick, [IkkiuchiBoardScene.cardsLeft]), or back to his
+  /// side with no room there.
+  void cancel() {
+    final board = scene.board;
+    switch (_stage) {
+      case IkkiuchiSendStage.none:
+        return;
+      case IkkiuchiSendStage.sending:
+        if (_drag case final drag?) {
+          board.cards.glideFrom({drag.card: spots.liftedBox(drag.at)},
+              ms: _ms(IkkiuchiPlayTuning.relayoutGlide), ease: IkkiuchiPlayTuning.relayoutCurve.transform);
+        }
+      case IkkiuchiSendStage.placing:
+        board.dropCarry();
+        board.cards.putHome(board.cards.card(_card!));
+        scene.settle();
+      case IkkiuchiSendStage.carrying || IkkiuchiSendStage.waiting:
+        _giveToPlayer(_card!);
+    }
+    _stage = IkkiuchiSendStage.none;
+    _card = null;
+    _drag = null;
+    _dropped = null;
+    _overTobi = false;
+    scene.refresh();
+  }
+
+  /// Puts Tobi's card [id], from where it is now, on the player's side.
+  void _giveToPlayer(int id) {
+    final board = scene.board, sides = scene.sides!, wait = scene.wait;
+    final from = board.carried?.box ??
+        (_stage == IkkiuchiSendStage.carrying
+            ? board.cards.card(id).box
+            : CardBox(Vec(wait.center.dx, wait.center.dy), wait.width / 2, wait.height / 2));
+    final next = [
+          for (final (spot, _) in targets().freeSpots) ?sides.placed(id, spot),
+        ].firstOrNull ??
+        sides.toTobi(id);
+    board.heldFace = null;
+    scene.relayout(next, from: {id: from});
+  }
+
   // Touches, in board dp.
 
   /// The card a drag starting [at] picks up: one of the player's while

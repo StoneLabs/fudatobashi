@@ -47,7 +47,8 @@ class IkkiuchiMatchWords {
 /// cards close up, and the 送り札 the read leaves ([IkkiuchiReadEnd]) are
 /// made, one by one. Then a moment passes, the 下の句 is read, another
 /// moment passes, and the next card is read. A side left empty ends the
-/// match.
+/// match, as does the player at any time ([end]); the kimariji voice stops
+/// with it, or with the flow's disposal.
 ///
 /// The player may move their cards (並べ替え) only in the stages that allow
 /// it; one such stage over while they still move them holds the match
@@ -163,10 +164,12 @@ class IkkiuchiMatchFlow extends ChangeNotifier {
     _nextSend();
   }
 
-  /// The player ends the match (終了); not while a card changes sides.
+  /// The player ends the match (終了), whatever is under way: a 送り札 is
+  /// called off where it stands ([IkkiuchiSendFlow.cancel]).
   void end() {
-    if (_stage == IkkiuchiStage.gameEnd || scene.send.active) return;
+    if (_stage == IkkiuchiStage.gameEnd) return;
     scene.arrange.finish();
+    scene.send.cancel();
     _sends.clear();
     _resume = null;
     _enter(IkkiuchiStage.gameEnd);
@@ -249,8 +252,17 @@ class IkkiuchiMatchFlow extends ChangeNotifier {
     _left = left ?? _ms(_length(stage) ?? Duration.zero);
     scene.fingerOn = stage.readLive;
     if (stage == IkkiuchiStage.kaminoku) _read();
-    if (stage == IkkiuchiStage.gameEnd) scene.clearCall();
+    if (stage == IkkiuchiStage.gameEnd) {
+      scene.clearCall();
+      unawaited(sounds.stopKimarijiVoice());
+    }
     notifyListeners();
+  }
+
+  @override
+  void dispose() {
+    unawaited(sounds.stopKimarijiVoice());
+    super.dispose();
   }
 
   // The reads.

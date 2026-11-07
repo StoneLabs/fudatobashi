@@ -227,6 +227,13 @@ class IkkiuchiBoard {
     _carried = card;
   }
 
+  /// Calls off the carry: his arm carries nothing, and the card it had is
+  /// the caller's to put back.
+  void dropCarry() {
+    _carryMove = null;
+    _carried = null;
+  }
+
   /// Ms into the carry now.
   double get carryTime => now - _carryStart;
 
