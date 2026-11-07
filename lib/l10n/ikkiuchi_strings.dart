@@ -2,8 +2,8 @@ import '../domain/field_parts.dart';
 import 'strings.dart';
 
 /// Strings of 一騎打ち: the 送り札 on the band, Tobi's word as his card
-/// waits, the names of the places a card may go on the player's side, and
-/// the game column.
+/// waits, the names of the places a card may go on the player's side, the
+/// game column, and a からふだ's tag.
 extension IkkiuchiStrings on S {
   /// The band while a card is sent: its title, and what the player does,
   /// sending one of theirs or placing Tobi's; in landscape the shorter
@@ -22,6 +22,9 @@ extension IkkiuchiStrings on S {
   /// The score's names.
   String get ikkiuchiTobi => t('ikkiuchiTobi');
   String get ikkiuchiYou => t('ikkiuchiYou');
+
+  /// The tag before the words of a からふだ read.
+  String get ikkiuchiKarafuda => t('ikkiuchiKarafuda');
 
   /// The tag on a card dragged over Tobi's side, and Tobi's word as his
   /// card waits.

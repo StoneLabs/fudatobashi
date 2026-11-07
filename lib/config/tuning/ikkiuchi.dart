@@ -460,14 +460,16 @@ abstract final class IkkiuchiSweepTuning {
 
 /// The 一騎打ち board in play (`IkkiuchiBoardScene`): how long after the
 /// player's finger lifts the cards it knocked set off home ([tidyWait]),
-/// and their glide there; and the glide of every card to its new place and
-/// size when the sides change ([relayoutGlide]), as after a 送り札.
+/// and their glide there; the glide of every card to its new place and
+/// size when the sides change ([relayoutGlide]), as after a 送り札; and how
+/// long a からふだ's read goes on after its last sound ([karafudaPause]).
 abstract final class IkkiuchiPlayTuning {
   static const Duration tidyWait = Duration(milliseconds: 1000);
   static const Duration tidyGlide = Duration(milliseconds: 250);
   static const Curve tidyCurve = Curves.easeInOutCubic;
   static const Duration relayoutGlide = Duration(milliseconds: 420);
   static const Curve relayoutCurve = Curves.easeInOutCubic;
+  static const Duration karafudaPause = Duration(milliseconds: 1500);
 }
 
 /// The reader's pace on a card whose recording is not timed yet
