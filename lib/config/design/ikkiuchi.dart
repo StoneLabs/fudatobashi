@@ -216,6 +216,15 @@ abstract final class IkkiuchiCallStyle {
   static const double dotGap = 7;
   static const double line = 12;
   static const Color lineInk = Color(0xE6FFFFFF);
+
+  /// How a read ended (`IkkiuchiFeedbackBanner`): [feedback] lettering on
+  /// the strip; it slides in from
+  /// [feedbackSlide] dp left, eased by [feedbackInCurve], and out as far
+  /// right by [feedbackOutCurve], fading in and out on the way.
+  static const double feedback = 20;
+  static const double feedbackSlide = 90;
+  static const Curve feedbackInCurve = Curves.easeOutCubic;
+  static const Curve feedbackOutCurve = Curves.easeInCubic;
 }
 
 /// The game column at the board's right edge in landscape

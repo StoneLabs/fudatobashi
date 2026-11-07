@@ -198,7 +198,7 @@ abstract final class IkkiuchiToolsStyle {
   static const String receiveLabel = 'v';
   static const String karafudaLabel = '空';
   static const String startLabel = '始';
-  static const String goLabel = '▶';
+  static const String goLabel = '次';
 
   /// The debug game's name for each stage of the match.
   static const String memoryTime = 'Memory Time';
@@ -206,10 +206,12 @@ abstract final class IkkiuchiToolsStyle {
   static const String yoka = 'Yoka';
   static const String kaminoku = '上の句';
   static const String waitingForHit = 'Waiting for card hit';
+  static const String feedback = 'Feedback';
+  static const String closingUp = 'Closing Up';
   static const String sendingCard = 'Sending Card';
   static const String tobiPlacingCard = 'Tobi Placing Card';
   static const String receivingCard = 'Receiving Card';
-  static const String waitingForGo = 'Waiting for ▶';
+  static const String waitingForGo = 'Waiting for 次';
   static const String waitBeforeShimonoku = '1s wait';
   static const String shimonoku = '下の句';
   static const String movingCard = 'Moving Card';

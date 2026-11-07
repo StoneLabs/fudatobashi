@@ -1,9 +1,10 @@
 import '../domain/field_parts.dart';
+import '../domain/ikkiuchi_match.dart';
 import 'strings.dart';
 
 /// Strings of 一騎打ち: the memory time, the greetings, the 送り札 on the band, Tobi's word as his card
 /// waits, the names of the places a card may go on the player's side, the
-/// game column, and a からふだ's tag.
+/// game column, a からふだ's tag, and how a read ended.
 extension IkkiuchiStrings on S {
   /// The band while a card is sent: its title, and what the player does,
   /// sending one of theirs or placing Tobi's; in landscape the shorter
@@ -36,6 +37,21 @@ extension IkkiuchiStrings on S {
 
   /// The tag before the words of a からふだ read.
   String get ikkiuchiKarafuda => t('ikkiuchiKarafuda');
+
+  /// How a read ended, its parts joined: あなたの取り・トビのお手つき.
+  String ikkiuchiFeedback(List<IkkiuchiCallout> parts) => [
+        for (final p in parts)
+          switch (p) {
+            IkkiuchiCallout.tied => t('ikkiuchiTied'),
+            IkkiuchiCallout.karafuda => ikkiuchiKarafuda,
+            IkkiuchiCallout.youTook => t('ikkiuchiYouTook'),
+            IkkiuchiCallout.tobiTook => t('ikkiuchiTobiTook'),
+            IkkiuchiCallout.yourFault => t('ikkiuchiYourFault'),
+            IkkiuchiCallout.yourDoubleFault => t('ikkiuchiYourDoubleFault'),
+            IkkiuchiCallout.tobiFault => t('ikkiuchiTobiFault'),
+            IkkiuchiCallout.tobiDoubleFault => t('ikkiuchiTobiDoubleFault'),
+          },
+      ].join(t('ikkiuchiFeedbackJoin'));
 
   /// The tag on a card dragged over Tobi's side, and Tobi's word as his
   /// card waits.

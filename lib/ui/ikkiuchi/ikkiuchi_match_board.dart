@@ -2,6 +2,7 @@ import 'dart:math' as math;
 
 import 'package:flutter/widgets.dart';
 
+import '../../config/config.dart';
 import '../../config/design.dart';
 import '../../domain/ikkiuchi_match.dart';
 import '../../l10n/ikkiuchi_strings.dart';
@@ -9,6 +10,7 @@ import '../../l10n/strings.dart';
 import '../manga/entrance.dart';
 import '../manga/lettering.dart';
 import 'ikkiuchi_board_painter.dart';
+import 'ikkiuchi_feedback_banner.dart';
 import 'ikkiuchi_match_flow.dart';
 import 'ikkiuchi_match_layers.dart';
 import 'ikkiuchi_send_layer.dart';
@@ -16,7 +18,8 @@ import 'ikkiuchi_send_layer.dart';
 /// A match's board as it is played ([IkkiuchiMatchFlow]), in board dp: the
 /// board taking the player's finger; in landscape the call in the gap and
 /// the game column, whose 終了 ends the match; in portrait the memory time
-/// left on the band; and the greetings over everything as play begins and
+/// left on the band; how each read ended, over the gap or band
+/// ([IkkiuchiFeedbackBanner]); and the greetings over everything as play begins and
 /// once it is over ([IkkiuchiGreeting]).
 class IkkiuchiMatchBoard extends StatelessWidget {
   const IkkiuchiMatchBoard(this.flow, {super.key});
@@ -47,6 +50,23 @@ class IkkiuchiMatchBoard extends StatelessWidget {
                   Positioned.fromRect(
                     rect: scene.band,
                     child: IkkiuchiBandWords(title: s.ikkiuchiMemoryTime, line: s.ikkiuchiTimeLeft(ikkiuchiClock(flow.left))),
+                  ),
+                if (flow.feedback case final end? when flow.stage == IkkiuchiStage.feedback)
+                  Positioned.fromRect(
+                    rect: Rect.fromLTRB(scene.field.left, scene.band.top - IkkiuchiCallStyle.bleed, scene.field.right,
+                        scene.band.bottom + IkkiuchiCallStyle.bleed),
+                    child: Center(
+                      child: FittedBox(
+                        fit: BoxFit.scaleDown,
+                        child: SizedBox(
+                          height: scene.band.height + 2 * IkkiuchiCallStyle.bleed,
+                          child: IkkiuchiFeedbackBanner(
+                            text: s.ikkiuchiFeedback(end.callouts),
+                            at: IkkiuchiMatchTuning.feedback.inMicroseconds / Duration.microsecondsPerMillisecond - flow.left,
+                          ),
+                        ),
+                      ),
+                    ),
                   ),
                 if (flow.stage == IkkiuchiStage.gameStart)
                   Positioned.fill(child: IkkiuchiGreeting(s.ikkiuchiGreeting, key: const ValueKey(IkkiuchiStage.gameStart), flow: flow)),

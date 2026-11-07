@@ -36,7 +36,7 @@ class _IkkiuchiCallStripState extends State<IkkiuchiCallStrip> {
           return AnimatedOpacity(
             opacity: words == null ? 0 : 1,
             duration: IkkiuchiCallStyle.fadeOut,
-            child: _shown == null ? const SizedBox.shrink() : _Strip(child: _shown!),
+            child: _shown == null ? const SizedBox.shrink() : IkkiuchiStrip(child: _shown!),
           );
         },
       );
@@ -74,8 +74,8 @@ class _IkkiuchiCallStripState extends State<IkkiuchiCallStrip> {
 /// The see-through strip behind the words, solid under them and
 /// [IkkiuchiCallStyle.inset] beyond, fading out over
 /// [IkkiuchiCallStyle.fade] at each end.
-class _Strip extends StatelessWidget {
-  const _Strip({required this.child});
+class IkkiuchiStrip extends StatelessWidget {
+  const IkkiuchiStrip({super.key, required this.child});
 
   final Widget child;
 

@@ -17,7 +17,7 @@ import 'ikkiuchi_dealer.dart';
 
 /// The developer's 一騎打ち game: a whole match ([IkkiuchiMatchFlow]) on the
 /// whole screen, its system bars hidden, both sides dealt at random. The
-/// match holds before each 下の句 until ▶, and the card read is marked.
+/// match holds once the 送り札 after each read are made until 次, and the card read is marked.
 ///
 /// The developer's tools lie over everything at the board's top left: the
 /// stage, Tobi's rating, and the slider that sets it for the reads to come
@@ -25,7 +25,7 @@ import 'ikkiuchi_dealer.dart';
 /// the board between landscape and portrait and a number deals anew with
 /// that many cards a side, either starting the match afresh; "^" and "v"
 /// make a 送り札 to Tobi and from him, 空 makes the next read a からふだ, 始
-/// ends the memory time and ▶ lets the held match go on. The system back
+/// ends the memory time and 次 lets the held match go on. The system back
 /// leaves.
 class IkkiuchiDebugGame extends StatefulWidget {
   const IkkiuchiDebugGame({super.key, this.seed, this.landscape = true});
@@ -196,6 +196,8 @@ class IkkiuchiDebugTools extends StatelessWidget {
         IkkiuchiStage.yoka => IkkiuchiToolsStyle.yoka,
         IkkiuchiStage.kaminoku => IkkiuchiToolsStyle.kaminoku,
         IkkiuchiStage.waitingForHit => IkkiuchiToolsStyle.waitingForHit,
+        IkkiuchiStage.feedback => IkkiuchiToolsStyle.feedback,
+        IkkiuchiStage.closingUp => IkkiuchiToolsStyle.closingUp,
         IkkiuchiStage.sendingCard => IkkiuchiToolsStyle.sendingCard,
         IkkiuchiStage.tobiPlacingCard => IkkiuchiToolsStyle.tobiPlacingCard,
         IkkiuchiStage.receivingCard => IkkiuchiToolsStyle.receivingCard,

@@ -180,6 +180,15 @@ class IkkiuchiBoardScene extends ChangeNotifier {
   /// The pointer of the finger on the board; other fingers are let be.
   int? _finger;
 
+  /// Whether the finger may touch the cards; turned off while down, it
+  /// lifts.
+  bool get fingerOn => _fingerOn;
+  bool _fingerOn = true;
+  set fingerOn(bool on) {
+    _fingerOn = on;
+    if (!on && _finger != null) _lift();
+  }
+
   /// Ms until the cards the finger stirred set off home; null while it is
   /// down, or with nothing to tidy.
   double? _tidyIn;
@@ -207,21 +216,26 @@ class IkkiuchiBoardScene extends ChangeNotifier {
   bool get atRest => _finger == null && _tidyIn == null && !board.cards.gliding && !busy;
 
   /// A pointer on the board, at its position in board dp: one finger
-  /// pushes the cards while no 送り札 or 並べ替え is under way.
+  /// pushes the cards while it may ([fingerOn]) and no 送り札 or 並べ替え is
+  /// under way.
   void pointer(PointerEvent event) {
     final at = Vec(event.localPosition.dx, event.localPosition.dy);
     switch (event) {
-      case PointerDownEvent() when _finger == null && !busy:
+      case PointerDownEvent() when _finger == null && _fingerOn && !busy:
         _finger = event.pointer;
         _tidyIn = null;
         board.touch(at);
       case PointerMoveEvent() when event.pointer == _finger:
         board.touch(at);
       case PointerUpEvent() || PointerCancelEvent() when event.pointer == _finger:
-        _finger = null;
-        _tidyIn = IkkiuchiPlayTuning.tidyWait.inMicroseconds / Duration.microsecondsPerMillisecond;
-        board.lift();
+        _lift();
     }
+  }
+
+  void _lift() {
+    _finger = null;
+    _tidyIn = _ms(IkkiuchiPlayTuning.tidyWait);
+    board.lift();
   }
 
   void _tidy(double ms) {

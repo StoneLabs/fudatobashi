@@ -471,7 +471,7 @@ abstract final class IkkiuchiPlayTuning {
   static const Curve tidyCurve = Curves.easeInOutCubic;
   static const Duration relayoutGlide = Duration(milliseconds: 420);
   static const Curve relayoutCurve = Curves.easeInOutCubic;
-  static const Duration karafudaPause = Duration(milliseconds: 1500);
+  static const Duration karafudaPause = Duration(seconds: 5);
   static const Duration sameTime = Duration(microseconds: 16660);
 }
 
@@ -484,7 +484,8 @@ abstract final class IkkiuchiReaderTuning {
 }
 
 /// A match's run (`IkkiuchiMatchFlow`): the [memoryTime] before play; the
-/// greeting ([greeting]); the 序歌 ([yoka]); after each read, a moment once
+/// greeting ([greeting]); the 序歌 ([yoka]); after each read, how it ended
+/// shown ([feedbackIn], held [feedbackHold], [feedbackOut]); a moment once
 /// the cards are at rest ([waitBeforeShimonoku]), the 下の句 ([shimonoku])
 /// and a moment after it ([breakAfterShimonoku]); and its からふだ,
 /// `karafuda` for every `field` cards on the field. 終了 ends the match once
@@ -493,6 +494,10 @@ abstract final class IkkiuchiMatchTuning {
   static const Duration memoryTime = Duration(minutes: 15);
   static const Duration greeting = Duration(milliseconds: 2600);
   static const Duration yoka = Duration(seconds: 5);
+  static const Duration feedbackIn = Duration(milliseconds: 380);
+  static const Duration feedbackHold = Duration(milliseconds: 1200);
+  static const Duration feedbackOut = Duration(milliseconds: 320);
+  static Duration get feedback => feedbackIn + feedbackHold + feedbackOut;
   static const Duration waitBeforeShimonoku = Duration(seconds: 1);
   static const Duration shimonoku = Duration(seconds: 7);
   static const Duration breakAfterShimonoku = Duration(seconds: 1);

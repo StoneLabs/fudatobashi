@@ -33,26 +33,30 @@ class IkkiuchiMatchWords {
 }
 
 /// A match (一騎打ち) run on a board scene, through its stages
-/// ([IkkiuchiStage]) by the board's time ([advance]).
+/// ([IkkiuchiStage]) by the board's time ([advance]), each step one of
+/// [IkkiuchiSteps.all].
 ///
 /// The memory time runs first, then the greeting and the 序歌. Each read
 /// takes the next card of the read order ([IkkiuchiReadOrder]): the reader
 /// reads its kimariji while its voice plays, Tobi playing the read at
-/// [rating], or not at all without one. The read is over once the card is
-/// taken, or a からふだ's pause has gone by; once Tobi's arm is done and
-/// the cards are home, the card taken leaves its side and the 送り札 the
-/// read leaves ([IkkiuchiReadEnd]) are made, one by one. Once the cards are
-/// at rest a moment passes, the 下の句 is read, another moment passes, and
-/// the next card is read. A side left empty ends the match.
+/// [rating], or not at all without one. Card touches count only while a
+/// card is read ([IkkiuchiStage.readLive]); the finger touches no card
+/// otherwise. The read is over once the card is taken, or a からふだ's
+/// pause has gone by, Tobi's arm is done and the cards are home: how it
+/// ended shows ([feedback]), then the card taken leaves its side and the
+/// cards close up, and the 送り札 the read leaves ([IkkiuchiReadEnd]) are
+/// made, one by one. Then a moment passes, the 下の句 is read, another
+/// moment passes, and the next card is read. A side left empty ends the
+/// match.
 ///
 /// The player may move their cards (並べ替え) only in the stages that allow
 /// it; one such stage over while they still move them holds the match
 /// ([IkkiuchiStage.movingCard]) until they are done. With
-/// [holdBeforeShimonoku] the match holds once the cards are at rest after a
-/// read ([IkkiuchiStage.waitingForGo]) until let go ([go]).
+/// [holdBeforeShimonoku] the match holds once the 送り札 are made
+/// ([IkkiuchiStage.waitingForGo]) until let go ([go]).
 ///
-/// While no card is read a 送り札 may be asked for by hand ([sendByHand]):
-/// it is made, and the stage it broke into goes on where it was.
+/// Between the reads a 送り札 may be asked for by hand ([sendByHand]): it
+/// is made, and the stage it broke into goes on where it was.
 class IkkiuchiMatchFlow extends ChangeNotifier {
   IkkiuchiMatchFlow(
     this.scene, {
@@ -85,7 +89,7 @@ class IkkiuchiMatchFlow extends ChangeNotifier {
   /// either way.
   double? rating;
 
-  /// Whether the match holds once the cards are at rest after a read.
+  /// Whether the match holds once the 送り札 after a read are made.
   final bool holdBeforeShimonoku;
 
   /// Whether the card read is marked on the board.
@@ -107,11 +111,15 @@ class IkkiuchiMatchFlow extends ChangeNotifier {
   bool get karafudaNext => _karafudaNext;
   bool _karafudaNext = false;
 
-  /// How the read in play ends: whether the board was tidied after it, and
-  /// the card taken, fading from its side.
+  /// How the last read ended, from its end until the next read.
+  IkkiuchiReadEnd? get feedback => _feedback;
+  IkkiuchiReadEnd? _feedback;
+
+  /// Whether the cards the read stirred were sent home.
   bool _tidied = false;
+
+  /// The card taken, until it is off the board and its side closes up.
   int? _leaving;
-  bool _closing = false;
 
   /// The 送り札 still to make, each the side that sends one.
   final List<IkkiuchiSide> _sends = [];
@@ -137,18 +145,17 @@ class IkkiuchiMatchFlow extends ChangeNotifier {
     if (_stage == IkkiuchiStage.waitingForGo) _enter(IkkiuchiStage.waitBeforeShimonoku);
   }
 
-  /// The next read is a からふだ; only while no card is read.
+  /// The next read is a からふだ; not while a card is read.
   void askKarafuda() {
     if (_stage.readLive || _stage == IkkiuchiStage.gameEnd) return;
     _karafudaNext = true;
     notifyListeners();
   }
 
-  /// [from] sends the other a card now; only while no card is read and
-  /// nothing else is under way.
+  /// [from] sends the other a card now; only between the reads
+  /// ([IkkiuchiStage.allowsHandSend]) with the board at rest.
   void sendByHand(IkkiuchiSide from) {
-    final free = !_stage.readLive && !_stage.sending && _stage != IkkiuchiStage.movingCard;
-    if (!free || _stage == IkkiuchiStage.gameEnd || scene.busy || _resume != null || !_has(from)) return;
+    if (!_stage.allowsHandSend || !scene.atRest || !_has(from)) return;
     _resume = (stage: _stage, left: _left);
     _sends
       ..clear()
@@ -172,6 +179,7 @@ class IkkiuchiMatchFlow extends ChangeNotifier {
       case IkkiuchiStage.memoryTime ||
             IkkiuchiStage.gameStart ||
             IkkiuchiStage.yoka ||
+            IkkiuchiStage.feedback ||
             IkkiuchiStage.waitBeforeShimonoku ||
             IkkiuchiStage.shimonoku ||
             IkkiuchiStage.breakAfterShimonoku:
@@ -184,6 +192,8 @@ class IkkiuchiMatchFlow extends ChangeNotifier {
         }
       case IkkiuchiStage.kaminoku || IkkiuchiStage.waitingForHit:
         _watchRead();
+      case IkkiuchiStage.closingUp:
+        _watchClosing();
       case IkkiuchiStage.sendingCard || IkkiuchiStage.tobiPlacingCard || IkkiuchiStage.receivingCard:
         _watchSend();
       case IkkiuchiStage.movingCard:
@@ -195,14 +205,23 @@ class IkkiuchiMatchFlow extends ChangeNotifier {
   /// A timed stage is over: the next one starts, or, while the player
   /// still moves cards in a stage that no longer lets them, the match holds.
   void _timeUp() {
-    final next = switch (_stage) {
-      IkkiuchiStage.memoryTime => IkkiuchiStage.gameStart,
-      IkkiuchiStage.gameStart => IkkiuchiStage.yoka,
-      IkkiuchiStage.yoka => IkkiuchiStage.kaminoku,
-      IkkiuchiStage.waitBeforeShimonoku => IkkiuchiStage.shimonoku,
-      IkkiuchiStage.shimonoku => IkkiuchiStage.breakAfterShimonoku,
-      _ => IkkiuchiStage.kaminoku,
-    };
+    final IkkiuchiStage next;
+    switch (_stage) {
+      case IkkiuchiStage.memoryTime:
+        next = IkkiuchiStage.gameStart;
+      case IkkiuchiStage.gameStart:
+        next = IkkiuchiStage.yoka;
+      case IkkiuchiStage.yoka || IkkiuchiStage.breakAfterShimonoku:
+        next = IkkiuchiStage.kaminoku;
+      case IkkiuchiStage.waitBeforeShimonoku:
+        next = IkkiuchiStage.shimonoku;
+      case IkkiuchiStage.shimonoku:
+        next = IkkiuchiStage.breakAfterShimonoku;
+      case IkkiuchiStage.feedback:
+        return _leaving == null ? _nextSend() : _enter(IkkiuchiStage.closingUp);
+      case _:
+        throw StateError('$_stage is not timed');
+    }
     if (scene.arrange.active && !next.allowsMoving) {
       _afterMoving = next;
       _enter(IkkiuchiStage.movingCard);
@@ -213,17 +232,22 @@ class IkkiuchiMatchFlow extends ChangeNotifier {
 
   static double _ms(Duration d) => d.inMicroseconds / Duration.microsecondsPerMillisecond;
 
-  void _enter(IkkiuchiStage stage) {
+  /// The match steps to [stage], for the time it lasts, or [left] of it.
+  void _enter(IkkiuchiStage stage, {double? left}) {
+    assert(IkkiuchiSteps.allows(_stage, stage) || stage == _stage, 'no step from $_stage to $stage');
     _stage = stage;
-    _left = switch (stage) {
-      IkkiuchiStage.memoryTime => _ms(IkkiuchiMatchTuning.memoryTime),
-      IkkiuchiStage.gameStart => _ms(IkkiuchiMatchTuning.greeting),
-      IkkiuchiStage.yoka => _ms(IkkiuchiMatchTuning.yoka),
-      IkkiuchiStage.waitBeforeShimonoku => _ms(IkkiuchiMatchTuning.waitBeforeShimonoku),
-      IkkiuchiStage.shimonoku => _ms(IkkiuchiMatchTuning.shimonoku),
-      IkkiuchiStage.breakAfterShimonoku => _ms(IkkiuchiMatchTuning.breakAfterShimonoku),
-      _ => 0,
-    };
+    _left = left ??
+        switch (stage) {
+          IkkiuchiStage.memoryTime => _ms(IkkiuchiMatchTuning.memoryTime),
+          IkkiuchiStage.gameStart => _ms(IkkiuchiMatchTuning.greeting),
+          IkkiuchiStage.yoka => _ms(IkkiuchiMatchTuning.yoka),
+          IkkiuchiStage.feedback => _ms(IkkiuchiMatchTuning.feedback),
+          IkkiuchiStage.waitBeforeShimonoku => _ms(IkkiuchiMatchTuning.waitBeforeShimonoku),
+          IkkiuchiStage.shimonoku => _ms(IkkiuchiMatchTuning.shimonoku),
+          IkkiuchiStage.breakAfterShimonoku => _ms(IkkiuchiMatchTuning.breakAfterShimonoku),
+          _ => 0,
+        };
+    scene.fingerOn = stage.readLive;
     if (stage == IkkiuchiStage.kaminoku) _read();
     if (stage == IkkiuchiStage.gameEnd) scene.clearCall();
     notifyListeners();
@@ -258,8 +282,9 @@ class IkkiuchiMatchFlow extends ChangeNotifier {
     }
     if (!markCalled) scene.mark(null);
     unawaited(sounds.playKimarijiVoice(id));
-    _tidied = _closing = false;
+    _tidied = false;
     _leaving = null;
+    _feedback = null;
   }
 
   int? _nextCard() {
@@ -274,24 +299,12 @@ class IkkiuchiMatchFlow extends ChangeNotifier {
   }
 
   /// The read in play: once its kimariji is heard it waits for the take;
-  /// once over and Tobi's arm is done the cards go home, the card taken
-  /// fades and its side closes up, and then the 送り札 are made.
+  /// once over and Tobi's arm is done the cards go home, and once they are
+  /// at rest the read ends.
   void _watchRead() {
     final reader = scene.reader, call = reader.call;
     if (_stage == IkkiuchiStage.kaminoku && call != null && reader.heard >= call.sounds.length) {
-      _stage = IkkiuchiStage.waitingForHit;
-      notifyListeners();
-    }
-    if (_closing) {
-      if (scene.atRest) _startSends();
-      return;
-    }
-    if (_leaving case final id?) {
-      if (scene.board.cards.card(id).onBoard) return;
-      _leaving = null;
-      _closing = true;
-      scene.relayout(scene.sides!.without(id));
-      return;
+      _enter(IkkiuchiStage.waitingForHit);
     }
     if (!scene.readOver || scene.board.busy) return;
     if (!_tidied) {
@@ -302,6 +315,8 @@ class IkkiuchiMatchFlow extends ChangeNotifier {
     if (scene.atRest) _endRead();
   }
 
+  /// The read ends: no more touches count, the card the player took fades
+  /// where it lies, its 送り札 are noted, and how it ended shows.
   void _endRead() {
     final board = scene.board;
     final id = board.called;
@@ -310,30 +325,37 @@ class IkkiuchiMatchFlow extends ChangeNotifier {
     final end = IkkiuchiReadEnd(
       taker: taker,
       cardSide: id == null ? null : board.cards.card(id).side,
+      tied: board.tied,
       tobiFaults: sidesOf(board.faults.keys),
       playerFaults: sidesOf(board.playerFaults.keys),
     );
     _sends.clear();
     if (end.sends case (:final from, :final count)) _sends.addAll(List.filled(count, from));
-    if (id == null || taker == null) {
-      scene.clearCall();
-      _closing = true;
+    if (id != null && taker != null) {
+      if (taker == IkkiuchiSide.player) board.cards.fadeOut(board.cards.card(id));
+      _leaving = id;
+    }
+    scene.clearCall();
+    _feedback = end;
+    _enter(IkkiuchiStage.feedback);
+  }
+
+  /// Once the card taken is off the board its side closes up; once the
+  /// cards are home the 送り札 are made.
+  void _watchClosing() {
+    if (_leaving case final id?) {
+      if (scene.board.cards.card(id).onBoard) return;
+      _leaving = null;
+      scene.relayout(scene.sides!.without(id));
       return;
     }
-    if (taker == IkkiuchiSide.player) board.cards.fadeOut(board.cards.card(id));
-    scene.clearCall();
-    _leaving = id;
+    if (scene.atRest) _nextSend();
   }
 
   // The 送り札.
 
   bool _has(IkkiuchiSide side) =>
       side == IkkiuchiSide.player ? scene.sides!.playerCards.isNotEmpty : scene.sides!.tobiCards.isNotEmpty;
-
-  void _startSends() {
-    _closing = false;
-    _nextSend();
-  }
 
   /// Makes the next 送り札 still to make, by a side with a card left.
   void _nextSend() {
@@ -355,8 +377,7 @@ class IkkiuchiMatchFlow extends ChangeNotifier {
   void _watchSend() {
     final send = scene.send;
     if (_stage == IkkiuchiStage.sendingCard && send.stage == IkkiuchiSendStage.placing) {
-      _stage = IkkiuchiStage.tobiPlacingCard;
-      notifyListeners();
+      _enter(IkkiuchiStage.tobiPlacingCard);
     }
     if (!send.active && scene.atRest) _nextSend();
   }
@@ -369,10 +390,7 @@ class IkkiuchiMatchFlow extends ChangeNotifier {
     if (sides.tobiCards.isEmpty || sides.playerCards.isEmpty) return _enter(IkkiuchiStage.gameEnd);
     if (_resume case (:final stage, :final left)) {
       _resume = null;
-      _stage = stage;
-      _left = left;
-      notifyListeners();
-      return;
+      return _enter(stage, left: left);
     }
     _enter(holdBeforeShimonoku ? IkkiuchiStage.waitingForGo : IkkiuchiStage.waitBeforeShimonoku);
   }
