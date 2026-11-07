@@ -34,7 +34,16 @@ extension IkkiuchiStrings on S {
         FieldRow.upper => t('ikkiuchiRowUpper'),
       };
 
-  /// A place on the player's side: its row, and its group.
-  String ikkiuchiSpotName(FieldRow row, RowPart part) =>
-      f(part == RowPart.left ? 'ikkiuchiSpotLeft' : 'ikkiuchiSpotRight', [ikkiuchiRowName(row)]);
+  /// A place on the player's side: its row, and its group or open middle.
+  String ikkiuchiSpotName(FieldRow row, RowPart part) => f(
+        switch (part) {
+          RowPart.left => 'ikkiuchiSpotLeft',
+          RowPart.middle => 'ikkiuchiSpotMiddle',
+          RowPart.right => 'ikkiuchiSpotRight',
+        },
+        [ikkiuchiRowName(row)],
+      );
+
+  /// The name on the open middle's dashed spot.
+  String get ikkiuchiOpenMiddle => t('ikkiuchiOpenMiddle');
 }

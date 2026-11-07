@@ -12,10 +12,12 @@ import 'placing.dart';
 ///
 /// A card the player sends him goes to its home on his side. A card he
 /// sends the player is theirs to place by [IkkiuchiSides.rules]: at the
-/// inner end of any group, or on any card's place (the cards inward of it
-/// moving a place in), in any of their rows, each at most
+/// inner end of any group, in the open middle of their
+/// [IkkiuchiPlacingTuning.middleRow], or on any card's place (the cards
+/// inward of it moving a place in), in any of their rows, each at most
 /// [IkkiuchiLayoutTuning.rowSlots] pitches across with its groups
-/// [IkkiuchiLayoutTuning.groupGap] apart.
+/// [IkkiuchiLayoutTuning.groupGap] apart, or its middle cards
+/// [IkkiuchiPlacingTuning.middleMargin] clear of them.
 class IkkiuchiSides {
   IkkiuchiSides({required this.homes, required Iterable<int> tobi, required List<IkkiuchiRow> player})
       : tobiCards = Set.unmodifiable(tobi),
@@ -29,24 +31,30 @@ class IkkiuchiSides {
   final IkkiuchiHomes homes;
   final Set<int> tobiCards;
 
-  /// The player's rows, 下段 first, each group from its outer edge in.
+  /// The player's rows, 下段 first, each group from its outer edge in and
+  /// the open middle left to right.
   final List<IkkiuchiRow> player;
 
   /// Tobi's rows, 下段 first, each group from its outer edge in.
   late final List<IkkiuchiRow> tobi = homes.sideWith(tobiCards);
 
-  List<int> get playerCards => [for (final r in player) ...[...r.left, ...r.right]];
+  List<int> get playerCards => [for (final r in player) ...[...r.left, ...r.middle, ...r.right]];
 
-  /// The placing rules of a player's side of [rows] rows: no open middle,
-  /// and each row's room.
-  static PlacingRules rules(int rows) => PlacingRules(
-        rows: FieldRow.values.take(rows).toList(),
-        room: const RowRoom(
-          slots: IkkiuchiLayoutTuning.rowSlots,
-          clusterGap: IkkiuchiLayoutTuning.groupGap,
-          middleMargin: 0,
-        ),
-      );
+  /// The placing rules of a player's side of [rows] rows: the open middle
+  /// of [IkkiuchiPlacingTuning.middleRow] when that row is played, and each
+  /// row's room.
+  static PlacingRules rules(int rows) {
+    final played = FieldRow.values.take(rows).toList();
+    return PlacingRules(
+      rows: played,
+      openMiddle: played.contains(IkkiuchiPlacingTuning.middleRow) ? IkkiuchiPlacingTuning.middleRow : null,
+      room: const RowRoom(
+        slots: IkkiuchiLayoutTuning.rowSlots,
+        clusterGap: IkkiuchiLayoutTuning.groupGap,
+        middleMargin: IkkiuchiPlacingTuning.middleMargin,
+      ),
+    );
+  }
 
   /// The player's side as the placing rules have it: each right group from
   /// its inner end out.
@@ -55,7 +63,11 @@ class IkkiuchiSides {
         PlacingSide([
           for (final r in FieldRow.values)
             r.index < player.length
-                ? PlacingRow(left: player[r.index].left, middle: const [], right: player[r.index].right.reversed.toList())
+                ? PlacingRow(
+                    left: player[r.index].left,
+                    middle: player[r.index].middle,
+                    right: player[r.index].right.reversed.toList(),
+                  )
                 : PlacingRow.empty(),
         ]),
       );
@@ -76,21 +88,18 @@ class IkkiuchiSides {
   }
 
   /// The sides with [card] off whichever holds it: his packed by his
-  /// homes, the player's group closing up.
-  IkkiuchiSides without(int card) => IkkiuchiSides(
-        homes: homes,
-        tobi: tobiCards.where((c) => c != card),
-        player: [
-          for (final r in player)
-            IkkiuchiRow([
-              for (final c in r.left)
-                if (c != card) c,
-            ], [
-              for (final c in r.right)
-                if (c != card) c,
-            ]),
-        ],
-      );
+  /// homes, the player's group or open middle closing up.
+  IkkiuchiSides without(int card) {
+    List<int> drop(List<int> cards) => [
+          for (final c in cards)
+            if (c != card) c,
+        ];
+    return IkkiuchiSides(
+      homes: homes,
+      tobi: tobiCards.where((c) => c != card),
+      player: [for (final r in player) IkkiuchiRow(drop(r.left), drop(r.right), middle: drop(r.middle))],
+    );
+  }
 
   /// The sides once the player sent Tobi [card]: off theirs, and at its
   /// home on his.
@@ -109,7 +118,8 @@ class IkkiuchiSides {
       tobi: tobiCards.where((c) => c != card),
       player: [
         for (final r in FieldRow.values.take(player.length))
-          IkkiuchiRow(board.side.row(r).left, board.side.row(r).right.reversed.toList()),
+          IkkiuchiRow(board.side.row(r).left, board.side.row(r).right.reversed.toList(),
+              middle: board.side.row(r).middle),
       ],
     );
   }

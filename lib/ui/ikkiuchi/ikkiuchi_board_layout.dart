@@ -14,9 +14,9 @@ import '../../domain/ikkiuchi_rig.dart';
 /// Where everything lies on the 一騎打ち board of [size]: the full field
 /// ([IkkiuchiField]), Tobi's side across the band at the top. Both sides'
 /// cards are one size, as big as the board lets them grow: its widest row's
-/// groups close in toward the middle as they grow, until a row's groups
-/// come [IkkiuchiField.leastGap] apart, the field and the band (in landscape
-/// only a narrower gap, with the rows closer) fill the
+/// groups close in toward the middle as they grow, until a row is as
+/// narrow as it may be ([IkkiuchiField.rowWidth]), the field and the band
+/// (in landscape only a narrower gap, with the rows closer) fill the
 /// height, or a card is [IkkiuchiBoardStyle.maxCardW] wide. The field spans
 /// the board's width, but never more than [IkkiuchiLayoutTuning.rowSlots]
 /// card widths, and then lies centred. Portrait stands Tobi above his
@@ -35,7 +35,8 @@ class IkkiuchiBoardLayout {
       this.column, this._field, this._fieldW, this._origin);
 
   /// [tobiRows] and [playerRows] are each side's rows as its owner sees
-  /// them, 下段 first, each group from its outer edge in.
+  /// them, 下段 first, each group from its outer edge in and the open middle
+  /// left to right.
   factory IkkiuchiBoardLayout.of({
     required Size size,
     required bool landscape,
@@ -183,9 +184,26 @@ class IkkiuchiBoardLayout {
   /// Where a card added at the inner end of the player's [row]'s left or
   /// right group ([part]) would lie; null where it has no room
   /// ([IkkiuchiField.playerEnd]).
-  FieldRect? playerEnd(FieldRow row, RowPart part) {
-    final box = _field.playerEnd(row.index,
-        left: part == RowPart.left, width: _fieldW, gap: band.height / cardW);
+  FieldRect? playerEnd(FieldRow row, RowPart part) =>
+      _rect(_field.playerEnd(row.index, left: part == RowPart.left, width: _fieldW, gap: _gap));
+
+  /// Where the open middle of the player's [row] takes taps and drops,
+  /// [leaving] counted as gone from the row; null where the row is not
+  /// shown ([IkkiuchiField.playerMiddle]).
+  FieldRect? playerMiddle(FieldRow row, {int? leaving}) =>
+      _rect(_field.playerMiddle(row.index, leaving: leaving, width: _fieldW, gap: _gap));
+
+  /// Where a card put in the open middle of the player's [row], with
+  /// [index] of its middle cards left of it, would lie, [leaving] gone from
+  /// the row ([IkkiuchiField.playerMiddleAt]).
+  FieldRect? playerMiddleAt(FieldRow row, int index, {int? leaving}) =>
+      _rect(_field.playerMiddleAt(row.index, index, leaving: leaving, width: _fieldW, gap: _gap));
+
+  /// The gap between the halves, in card widths.
+  double get _gap => band.height / cardW;
+
+  /// [box] of the field, upright on the board.
+  FieldRect? _rect(CardBox? box) {
     if (box == null) return null;
     final b = _onBoard(box, _origin, cardW);
     return FieldRect(b.centre.x - b.hw, b.centre.y - b.hh, 2 * b.hw, 2 * b.hh);

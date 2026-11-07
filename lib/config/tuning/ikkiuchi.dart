@@ -134,6 +134,18 @@ abstract final class IkkiuchiLayoutTuning {
   static const int nearRowSounds = 1;
 }
 
+/// The player's side as they lay it out (`IkkiuchiSides.rules`): the open
+/// middle of [middleRow], the front row by the centre line, takes cards,
+/// each at least [middleMargin] card pitches clear of the row's groups. It
+/// takes taps and drops over [openMiddleShare] of the room between the
+/// groups, in its middle, and over its middle cards. Tobi keeps his open
+/// middles empty.
+abstract final class IkkiuchiPlacingTuning {
+  static const FieldRow middleRow = FieldRow.upper;
+  static const double middleMargin = 0.5;
+  static const double openMiddleShare = 1 / 3;
+}
+
 /// The 一騎打ち field as it lies on the board (`IkkiuchiField`), in card
 /// widths: a card's height (a torifuda's, 73 × 52 mm), and the gaps between
 /// the cards of a group and between rows. A row's groups are at least

@@ -173,8 +173,8 @@ class IkkiuchiSendFlow {
     return PlacingDrag(card: card, fromStack: true, at: at, spot: targets().spotAt(at.dx, at.dy));
   }
 
-  /// Where the player's waiting card may go: their side's cards and the
-  /// free group ends the field has room for.
+  /// Where the player's waiting card may go: their side's cards, the free
+  /// group ends the field has room for, and the open middle.
   PlacingTargets targets() => spots.targets();
 
   Rect? rectOf(PlacingSpot spot) => spots.rectOf(spot);

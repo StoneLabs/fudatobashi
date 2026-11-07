@@ -27,15 +27,18 @@ class IkkiuchiHome {
   String toString() => 'IkkiuchiHome($row, ${group.name}, $order)';
 }
 
-/// One row of Tobi's side: each group's cards from its outer edge in.
+/// One row of a side as its owner sees it: each group's cards from its
+/// outer edge in, and the cards in its open middle from left to right.
+/// Tobi's open middles stay empty.
 class IkkiuchiRow {
-  const IkkiuchiRow(this.left, this.right);
+  const IkkiuchiRow(this.left, this.right, {this.middle = const []});
 
   final List<int> left;
   final List<int> right;
+  final List<int> middle;
 
   List<int> group(IkkiuchiGroup g) => g == IkkiuchiGroup.left ? left : right;
-  int get length => left.length + right.length;
+  int get length => left.length + middle.length + right.length;
 }
 
 /// Tobi's home spots for one match ([IkkiuchiLayout.generate]): one for

@@ -9,10 +9,11 @@ import 'ikkiuchi_player_spots.dart';
 /// 並べ替え on a board scene: between reads the player moves their own
 /// cards about by the placing's rules ([IkkiuchiSides.placed]), as many as
 /// they like, until they are done ([finish]). A card dragged from its place
-/// goes to a free group end or onto a card's place, the cards inward of it
-/// moving a place in; let go anywhere else it glides back. Each move lays
-/// the board out afresh ([IkkiuchiBoardScene.relayout]). Nothing is read
-/// meanwhile, and it never starts during a 送り札.
+/// goes to a free group end, into the open middle, or onto a card's place,
+/// the cards inward of it moving a place in; let go anywhere else it glides
+/// back. Each move lays the board out afresh
+/// ([IkkiuchiBoardScene.relayout]). Nothing is read meanwhile, and it never
+/// starts during a 送り札.
 class IkkiuchiArrangeFlow {
   IkkiuchiArrangeFlow(this.scene) : spots = IkkiuchiPlayerSpots(scene);
 

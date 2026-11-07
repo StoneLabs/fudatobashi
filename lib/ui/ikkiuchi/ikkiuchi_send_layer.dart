@@ -30,20 +30,21 @@ class IkkiuchiSendLayer extends StatelessWidget {
         listenable: scene,
         builder: (context, _) {
           if (!_flow.active) return const SizedBox.shrink();
-          return under ? _spots() : _over(context);
+          return under ? _spots(context) : _over(context);
         },
       );
 
   static const _look = IkkiuchiSendStyle.look;
 
   /// The dashed spots, while Tobi's card waits.
-  Widget _spots() {
+  Widget _spots(BuildContext context) {
     if (_flow.stage != IkkiuchiSendStage.waiting) return const SizedBox.shrink();
     final targets = _flow.targets();
     return PlacingSpots(
       spots: [for (final (spot, r) in targets.freeSpots) (spot, Rect.fromLTWH(r.x, r.y, r.w, r.h))],
       cards: [for (final r in targets.cards.values) Rect.fromLTWH(r.x, r.y, r.w, r.h)],
       look: _look,
+      middleLabel: S.of(context).ikkiuchiOpenMiddle,
     );
   }
 

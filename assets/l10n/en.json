@@ -1657,6 +1657,8 @@
   "ikkiuchiRowUpper": "Top row",
   "ikkiuchiSpotLeft": "{0}, left",
   "ikkiuchiSpotRight": "{0}, right",
+  "ikkiuchiSpotMiddle": "{0}, open middle",
+  "ikkiuchiOpenMiddle": "OPEN MIDDLE",
   "ikkiuchiSendShort": "Send Tobi a card",
   "ikkiuchiArrange": "Arrange",
   "ikkiuchiArranging": "Arranging",

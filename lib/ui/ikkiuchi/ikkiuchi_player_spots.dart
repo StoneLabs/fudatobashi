@@ -18,9 +18,10 @@ class IkkiuchiPlayerSpots {
 
   final IkkiuchiBoardScene scene;
 
-  /// Where a card may go on the player's side: their cards' places and the
-  /// free group ends the field has room for. [moving], one of their cards
-  /// being dragged, is left out of the side and of the cards.
+  /// Where a card may go on the player's side: their cards' places, the
+  /// free group ends the field has room for, and the open middle. [moving],
+  /// one of their cards being dragged, is left out of the side and of the
+  /// cards.
   PlacingTargets targets({int? moving}) {
     final layout = scene.layout;
     final sides = scene.sides!;
@@ -32,12 +33,14 @@ class IkkiuchiPlayerSpots {
           if (c.side == IkkiuchiSide.player && c.id != moving) c.id: fieldRect(c.box),
       },
       clusterEnd: layout.playerEnd,
+      openMiddle: (row) => layout.playerMiddle(row, leaving: moving),
     );
   }
 
-  /// Where [spot] lies on the board: the card it takes the place of, or the
-  /// free spot.
-  Rect? rectOf(PlacingSpot spot) {
+  /// Where [spot] lies on the board: the card it takes the place of, the
+  /// free group end, or the place in the open middle the card would take,
+  /// [moving] gone from the side.
+  Rect? rectOf(PlacingSpot spot, {int? moving}) {
     final layout = scene.layout;
     final rect = switch (spot) {
       CardSpot(:final poemId) => [
@@ -45,19 +48,20 @@ class IkkiuchiPlayerSpots {
             if (c.id == poemId) fieldRect(c.box),
         ].firstOrNull,
       ClusterEnd(:final row, :final part) => layout.playerEnd(row, part),
-      OpenMiddle() => null,
+      OpenMiddle(:final row, :final index) => layout.playerMiddleAt(row, index, leaving: moving),
     };
     return rect == null ? null : Rect.fromLTWH(rect.x, rect.y, rect.w, rect.h);
   }
 
-  /// Where [spot] is on the player's side: its row, and its group.
+  /// Where [spot] is on the player's side: its row, and its group or open
+  /// middle.
   ({FieldRow row, RowPart part})? placeOf(PlacingSpot spot) => switch (spot) {
         ClusterEnd(:final row, :final part) => (row: row, part: part),
         CardSpot(:final poemId) => switch (scene.sides!.playerBoard.side.placeOf(poemId)) {
             (row: final row, part: final part, index: _) => (row: row, part: part),
             null => null,
           },
-        OpenMiddle() => null,
+        OpenMiddle(:final row) => (row: row, part: RowPart.middle),
       };
 
   /// The player's card lying [at], if any.

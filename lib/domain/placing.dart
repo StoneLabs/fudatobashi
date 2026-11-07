@@ -220,7 +220,8 @@ class PlacingBoard {
 /// [moving], the placed card being dragged, left out of it. [cards] is
 /// where each of its cards lies, [clusterEnd] where the next place at a
 /// cluster's inner end lies (null where there is no room for it), and
-/// [openMiddle] where a row's open middle takes taps and drops.
+/// [openMiddle] where a row's open middle takes taps and drops (null where
+/// the row does not show).
 ///
 /// A card takes the spot it covers; past the cards, the free spots take
 /// their own, the first listed first, and an open middle the place among
@@ -232,14 +233,14 @@ class PlacingTargets {
     this.moving,
     required this.cards,
     required this.clusterEnd,
-    FieldRect Function(FieldRow row)? openMiddle,
+    FieldRect? Function(FieldRow row)? openMiddle,
   }) : openMiddle = openMiddle ?? _noMiddle;
 
   final PlacingBoard base;
   final int? moving;
   final Map<int, FieldRect> cards;
   final FieldRect? Function(FieldRow row, RowPart part) clusterEnd;
-  final FieldRect Function(FieldRow row) openMiddle;
+  final FieldRect? Function(FieldRow row) openMiddle;
 
   static FieldRect _noMiddle(FieldRow row) => throw StateError('$row has no open middle');
 
