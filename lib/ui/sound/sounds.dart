@@ -101,6 +101,10 @@ class Sounds with WidgetsBindingObserver {
     await player.resume();
   }
 
+  /// The kimariji readouts sounding now, until they end or
+  /// [stopKimarijiVoice].
+  final _voices = <AudioPlayer>{};
+
   /// Plays poem [poemId]'s kimariji readout from a fresh, disposable player
   /// (it's tapped at most occasionally, never pooled like [Sfx]). This is a
   /// user-initiated sound — the speaker button beside a card's kimariji — so
@@ -109,15 +113,31 @@ class Sounds with WidgetsBindingObserver {
   Future<void> playKimarijiVoice(int poemId) async {
     if (_silenced) return;
     final player = _newPlayer();
+    _voices.add(player);
     try {
       await player.setAudioContext(_context);
       await player.setVolume(VoiceTuning.volume);
-      unawaited(player.onPlayerComplete.first.then((_) => player.dispose()));
+      if (!_voices.contains(player)) return;
+      unawaited(player.onPlayerComplete.first.then((_) => _release(player), onError: (Object _) {}));
       await player.play(AssetSource(VoiceTuning.kimarijiAsset(poemId)));
     } catch (e) {
       debugPrint('Sounds: kimariji $poemId not played ($e)');
+      await _release(player);
+    }
+  }
+
+  /// Silences every kimariji readout still sounding.
+  Future<void> stopKimarijiVoice() async {
+    final playing = _voices.toList();
+    _voices.clear();
+    for (final player in playing) {
       await player.dispose();
     }
+  }
+
+  /// Disposes a readout's player, unless [stopKimarijiVoice] already did.
+  Future<void> _release(AudioPlayer player) async {
+    if (_voices.remove(player)) await player.dispose();
   }
 
   Future<void> _refreshSilenced() async {
