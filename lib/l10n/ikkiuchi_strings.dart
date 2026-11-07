@@ -1,7 +1,7 @@
 import '../domain/field_parts.dart';
 import 'strings.dart';
 
-/// Strings of 一騎打ち: the 送り札 on the band, Tobi's word as his card
+/// Strings of 一騎打ち: the memory time, the greetings, the 送り札 on the band, Tobi's word as his card
 /// waits, the names of the places a card may go on the player's side, the
 /// game column, and a からふだ's tag.
 extension IkkiuchiStrings on S {
@@ -12,6 +12,17 @@ extension IkkiuchiStrings on S {
   String get ikkiuchiSendYours => t('ikkiuchiSendYours');
   String get ikkiuchiSendShort => t('ikkiuchiSendShort');
   String get ikkiuchiPlaceTobis => t('ikkiuchiPlaceTobis');
+
+  /// What goes on while Tobi lays the card the player sent him.
+  String get ikkiuchiTobiPlaces => t('ikkiuchiTobiPlaces');
+
+  /// The memory time before play, and the time left of it, [clock] as m:ss.
+  String get ikkiuchiMemoryTime => t('ikkiuchiMemoryTime');
+  String ikkiuchiTimeLeft(String clock) => f('ikkiuchiTimeLeft', [clock]);
+
+  /// The players' greeting as play begins, and their thanks once it is over.
+  String get ikkiuchiGreeting => t('ikkiuchiGreeting');
+  String get ikkiuchiThanks => t('ikkiuchiThanks');
 
   /// 並べ替え: its button, and the call's place while the player moves
   /// their cards.

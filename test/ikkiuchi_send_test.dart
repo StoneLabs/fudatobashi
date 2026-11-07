@@ -339,37 +339,26 @@ void main() {
       expect(wait.width, greaterThan(2 * l.cardW), reason: 'big');
     });
 
-    test("in landscape the waiting card is big: over the column where the room right of the field takes it, "
-        "else over Tobi's side", () {
+    test("in landscape the waiting card lies big just right of Tobi, in his half with its tag", () {
       const style = IkkiuchiSendStyle.wait;
       final tag = IkkiuchiSendStyle.look.stackTagRoom;
-      var beside = 0, over = 0;
       for (final size in [smallLandscape, phone.flipped, tabletLandscape]) {
         for (var seed = 0; seed < 20; seed++) {
           final sides = dealt(seed);
           final l = IkkiuchiBoardLayout.of(
               size: size, landscape: true, tobiRows: sides.tobi, playerRows: sides.player, rig: rig);
-          final wait = l.wait, column = l.column!;
+          final wait = l.wait;
           final why = '$size seed $seed';
+          final tobiRight = l.tobi.origin.x + rig.size.x * l.tobi.k;
           expect(wait.height / wait.width, closeTo(IkkiuchiField.cardH, 1e-9), reason: why);
-          expect(wait.width, greaterThanOrEqualTo(style.leastScale * l.cardW - 1e-9), reason: '$why: big');
-          expect(wait.width, lessThanOrEqualTo(style.scale * l.cardW + 1e-9), reason: why);
-          expect((Offset.zero & size).contains(wait.topLeft) && wait.right <= size.width && wait.bottom + tag <= size.height,
-              isTrue, reason: '$why: on the board with its tag');
-          if (wait.left >= l.field.right) {
-            beside++;
-            expect(wait.top, greaterThanOrEqualTo(l.band.bottom), reason: "$why: beside the player's side, clear of 終了");
-            expect(wait.overlaps(column), isTrue, reason: '$why: over the column');
-          } else {
-            over++;
-            expect(wait.top, greaterThanOrEqualTo(l.field.top), reason: "$why: over Tobi's side");
-            expect(wait.bottom + tag, lessThanOrEqualTo(l.band.top), reason: "$why: over Tobi's side, with its tag");
-            expect(wait.right, lessThanOrEqualTo(column.left), reason: '$why: clear of the column');
-          }
+          expect(wait.width, greaterThan(style.scale * l.cardW), reason: '$why: bigger than before');
+          expect(wait.width, lessThanOrEqualTo(style.landscapeScale * l.cardW + 1e-9), reason: why);
+          expect(wait.left, closeTo(tobiRight + style.gap, 1e-9), reason: '$why: just right of Tobi');
+          expect(wait.top, greaterThanOrEqualTo(l.field.top), reason: "$why: in Tobi's half");
+          expect(wait.bottom + tag, lessThanOrEqualTo(l.band.top + 1e-9), reason: "$why: in his half with its tag");
+          expect(wait.right, lessThanOrEqualTo(l.column!.left), reason: '$why: clear of the column');
         }
       }
-      expect(beside, greaterThan(0), reason: 'phones have room right of the field');
-      expect(over, greaterThan(0), reason: 'a tablet has none');
     });
   });
 
@@ -564,15 +553,22 @@ void main() {
       var settled = 0;
       scene.onSettled = () => settled++;
       flow.dragEnd();
-      expect(flow.active, isFalse);
+      expect(flow.stage, IkkiuchiSendStage.placing, reason: "Tobi's arm lays it down");
+      final dropped = flow.dropped!;
       expect(scene.layout.cardW, lessThan(before), reason: 'the cards shrink');
       expect(scene.board.cards.card(card).side, IkkiuchiSide.tobi);
-      runFor(scene, IkkiuchiPlayTuning.relayoutGlide ~/ 2);
-      expect(scene.board.cards.gliding, isTrue);
-      final halfway = scene.board.cards.card(card).box;
-      expect(halfway.centre.distanceTo(scene.board.cards.card(card).home.centre), greaterThan(1),
-          reason: 'on its way, not jumped');
-      runFor(scene, IkkiuchiPlayTuning.relayoutGlide);
+      expect(scene.board.cards.card(card).held, isTrue, reason: 'it lies where it was let go, off the field');
+      runFor(scene, IkkiuchiPlayTuning.relayoutGlide + const Duration(milliseconds: 50));
+      final carry = scene.board.carry!;
+      expect(carry.from.centre.distanceTo(dropped.centre), lessThan(1e-9), reason: 'his hand takes it where it lies');
+      expect(carry.to.centre.distanceTo(scene.board.cards.card(card).home.centre), lessThan(1e-9),
+          reason: 'and lays it at its home');
+      runFor(scene, Duration(milliseconds: ((carry.pickAt + carry.setAt) / 2).round()));
+      expect(scene.board.carried?.box.centre.distanceTo(scene.board.cards.card(card).home.centre), greaterThan(1),
+          reason: 'on its way in his hand');
+      runFor(scene, Duration(milliseconds: carry.end.ceil()));
+      expect(flow.active, isFalse);
+      runFor(scene, const Duration(milliseconds: 50));
       expectHome(scene, 'after the send');
       expect(settled, 1, reason: 'the board told it is at rest');
       expect(scene.band, scene.layout.band, reason: 'the band moved along');
@@ -659,7 +655,7 @@ void main() {
         for (final MapEntry(key: why, value: at) in inside.entries) {
           final scene = letGo(at, why);
           expect(scene.sides!.tobiCards, contains(card), reason: '$o: let go at his side\'s $why');
-          expect(scene.send.active, isFalse, reason: '$o: $why');
+          expect(scene.send.stage, IkkiuchiSendStage.placing, reason: '$o: $why');
         }
         final outside = <String, Offset Function(Rect)>{
           'left of it': (r) => r.centerLeft - const Offset(by, 0),
@@ -685,7 +681,7 @@ void main() {
         expect(flow.startReceiving(), isTrue);
         final carry = scene.board.carry!;
         final wait = scene.wait;
-        expect(wait.width, greaterThanOrEqualTo(IkkiuchiSendStyle.wait.leastScale * scene.layout.cardW), reason: '$o: big');
+        expect(wait.width, greaterThanOrEqualTo(IkkiuchiSendStyle.wait.scale * scene.layout.cardW - 1e-6), reason: '$o: big');
         final set = carry.cardAt(carry.setAt)!;
         expect(Offset(set.centre.x, set.centre.y), offsetMoreOrLessEquals(wait.center, epsilon: 1e-6), reason: o);
         expect(2 * set.hw, closeTo(wait.width, 1e-6), reason: '$o: grown to its size');

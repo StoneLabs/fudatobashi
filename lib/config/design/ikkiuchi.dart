@@ -29,6 +29,14 @@ abstract final class IkkiuchiBoardStyle {
   static const Color noteColor = Palette.mute;
   static const String noteEllipsis = '…';
 
+  /// Words on the band in portrait instead of a call, as while a card is
+  /// sent or the memory time runs: a title over a line, [wordsGap] apart.
+  static const double wordsTitle = 20;
+  static const double wordsLine = 10;
+  static const double wordsGap = 2;
+  static const Color wordsTitleInk = Palette.ink;
+  static const Color wordsLineInk = Palette.mute;
+
   /// A からふだ's kimariji, and the tag in front of it, [karafudaGap] apart.
   static const Color karafudaColor = Palette.inkShadow;
   static const double karafudaTag = 10;
@@ -109,11 +117,11 @@ abstract final class IkkiuchiSendStyle {
   /// The waiting card, never smaller than the field's cards. In portrait at
   /// most `maxHeight` tall and `tobiShare` of Tobi's height, or `scale`
   /// field cards wide where that is bigger, `margin` clear of what is
-  /// around it. In landscape at most `scale` field cards wide, `gap` clear
-  /// of the field and the board's halves: in the room right of the field
-  /// where that room takes one at least `leastScale` field cards wide, else
-  /// over Tobi's side.
-  static const wait = (maxHeight: 150.0, tobiShare: 0.78, margin: 12.0, scale: 1.8, leastScale: 1.4, gap: 6.0);
+  /// around it. In landscape just right of Tobi, `gap` clear of him, in
+  /// the open middle of his half and over his cards where it must: at most
+  /// `landscapeScale` field cards wide, and as tall as his half takes it
+  /// with its tag, `gap` clear of the half's edges.
+  static const wait = (maxHeight: 150.0, tobiShare: 0.78, margin: 12.0, scale: 1.8, landscapeScale: 2.3, gap: 6.0);
 
   /// Tobi's side, which takes a card the player sends anywhere on it, as
   /// one spot reaching [sideOutset] past the edges of his half.
@@ -148,14 +156,6 @@ abstract final class IkkiuchiSendStyle {
     edgeBorder: 1,
   );
 
-  /// The band while a card is sent (in portrait): its title over a line
-  /// saying what to do, [lineGap] apart.
-  static const double bandTitle = 20;
-  static const double bandLine = 10;
-  static const double lineGap = 2;
-  static const Color bandInk = Palette.ink;
-  static const Color lineInk = Palette.mute;
-
   /// Tobi's balloon while his card waits: [balloonSize], left of his box
   /// by [balloonGap] and [balloonDrop] of his height down it, its tail at
   /// [balloonSpeaker], its words [balloonFont].
@@ -165,6 +165,27 @@ abstract final class IkkiuchiSendStyle {
   static const Alignment balloonSpeaker = Alignment(1.5, 0.9);
   static const double balloonFont = 13;
   static const EdgeInsets balloonPadding = EdgeInsets.zero;
+}
+
+/// The match's greetings over the board (`IkkiuchiGreeting`), as play
+/// begins and once it is over: the board dimmed by [scrim], and the words
+/// slammed onto each half in [font] [fill] lettering with an [outline] wide
+/// [ink] outline, Tobi's half's turned [tobiTurnDeg] and landing first
+/// ([tobiIn]), the player's turned [playerTurnDeg] ([playerIn]), each kept
+/// [inset] inside its half. dp.
+abstract final class IkkiuchiGreetingStyle {
+  static const Color scrim = Color(0x66141414);
+  static const double font = 46;
+  static const double outline = 11;
+  static const Color fill = Palette.sun;
+  static const Color ink = Palette.ink;
+  static const double tobiTurnDeg = -4;
+  static const double playerTurnDeg = 3;
+  static const EdgeInsets inset = EdgeInsets.all(10);
+  static const tobiIn = EntranceSpec(Entrances.slam, duration: Duration(milliseconds: 420), curve: Entrances.springy);
+  static const playerIn = EntranceSpec(Entrances.slam,
+      duration: Duration(milliseconds: 420), delay: Duration(milliseconds: 280), curve: Entrances.springy);
+  static Duration get length => playerIn.end;
 }
 
 /// The call in the gap between the sides in landscape (`IkkiuchiCallStrip`):

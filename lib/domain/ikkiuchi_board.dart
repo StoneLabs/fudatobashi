@@ -75,7 +75,12 @@ class IkkiuchiTobiPose {
 /// The player takes the called card when their finger touches it, or when
 /// it has wholly left the field ([fieldArea]): no part of it lies inside it
 /// any more. Being knocked by another card, or moving while still partly
-/// inside the field, is no take.
+/// inside the field, is no take. Tobi takes it when his fist reaches it.
+/// Whoever is first takes it ([taker]); takes within
+/// [IkkiuchiPlayTuning.sameTime] of each other are at the same time, and
+/// the card goes to the side it lies on (競技規程 第十一条). His fist sends
+/// it flying only when he took it, and once the player took it he starts
+/// no more strikes on the call.
 ///
 /// Between the reads his arm may carry a card ([carryCard]), as when he
 /// sends one to the player.
@@ -115,7 +120,8 @@ class IkkiuchiBoard {
   final List<IkkiuchiRun> runs = [];
   final List<({bool Function() ready, IkkiuchiRun Function() start})> _pending = [];
 
-  /// Every burst so far, and every card his fist faulted on with when.
+  /// Every burst so far, and every card his fist faulted on since the last
+  /// read began, with when.
   final List<IkkiuchiImpact> impacts = [];
   final Map<int, double> faults = {};
 
@@ -149,18 +155,50 @@ class IkkiuchiBoard {
   IkkiuchiTake? get take => _take;
   IkkiuchiTake? _take;
 
+  /// When Tobi's fist reached the called card on a strike that goes for
+  /// it; null before.
+  double? get tobiHit => _tobiHit;
+  double? _tobiHit;
+
   /// The card read now and whether it lies on the field, else it is a
   /// からふだ; null while nothing is read.
   ({int id, bool onField})? _reading;
 
-  /// Reads [id] for the player alone, Tobi's arm still: their take of it
-  /// and their faults start afresh. A からふだ ([onField] false) has nothing
-  /// to take. Null reads nothing.
+  /// Reads [id] for the player alone, Tobi's arm still: the takes of it
+  /// and both players' faults start afresh. A からふだ ([onField] false) has
+  /// nothing to take. Null reads nothing.
   void callCard(int? id, {bool onField = true}) {
     _reading = id == null ? null : (id: id, onField: onField);
     _called = onField ? id : null;
     _take = null;
+    _tobiHit = null;
     playerFaults.clear();
+    faults.clear();
+  }
+
+  /// Who took the called card, by when the player took it ([player]) and
+  /// when Tobi's fist reached it ([tobi]): the first, or the owner of
+  /// [side], the side it lay on, when they were within
+  /// [IkkiuchiPlayTuning.sameTime] of each other. Null while neither took
+  /// it.
+  static IkkiuchiSide? takerOf({double? player, double? tobi, required IkkiuchiSide side}) {
+    if (tobi == null) return player == null ? null : IkkiuchiSide.player;
+    if (player == null) return IkkiuchiSide.tobi;
+    final gap = player - tobi;
+    if (gap.abs() <= _sameTime) return side;
+    return gap < 0 ? IkkiuchiSide.player : IkkiuchiSide.tobi;
+  }
+
+  static final _sameTime = IkkiuchiPlayTuning.sameTime.inMicroseconds / Duration.microsecondsPerMillisecond;
+
+  /// Who took the called card, once the other can no longer take it at the
+  /// same time; null till then, and on a からふだ.
+  IkkiuchiSide? get taker {
+    final id = _called, player = _take?.at, tobi = _tobiHit;
+    if (id == null) return null;
+    final first = player == null ? tobi : (tobi == null ? player : (player < tobi ? player : tobi));
+    if (first == null || now < first + _sameTime) return null;
+    return takerOf(player: player, tobi: tobi, side: cards.card(id).side);
   }
 
   /// The face he holds between strikes until let go; null for none.
@@ -203,9 +241,10 @@ class IkkiuchiBoard {
     return l.lerp(r, 0.5);
   }
 
-  /// Plays [read] from now: his strike (or strikes) as it decides. The
-  /// player's take of the called card starts afresh.
-  void call(IkkiuchiRead read) {
+  /// Plays [read] from now: his strike (or strikes) as it decides, his
+  /// times counting from [after] ms on. The takes of the called card start
+  /// afresh.
+  void call(IkkiuchiRead read, {double after = 0}) {
     _read = read;
     _readAt = now;
     callCard(read.called, onField: read.onField);
@@ -215,7 +254,7 @@ class IkkiuchiBoard {
     final first = read.wrong ?? read.called;
     final wrongFirst = read.wrong != null;
     final fault = wrongFirst && _isDead(cards.card(read.wrong!));
-    final at = now + read.reactionMs;
+    final at = now + after + read.reactionMs;
     _pending.add((
       ready: () => now >= at,
       start: () => _start(
@@ -395,10 +434,16 @@ class IkkiuchiBoard {
       run._impact = true;
       impacts.add(IkkiuchiImpact(run.start + strike.hitAt, strike.contact, strike.outward, strike.move, run.target,
           takes: run.takes));
+      if (run.takes) _tobiHit ??= run.start + strike.hitAt;
     }
+    // The hit stop outlasts [IkkiuchiPlayTuning.sameTime], so who took the
+    // card is known as it would fly.
     if (!run._hit && rt1 >= strike.liveFrom) {
       run._hit = true;
-      if (run.takes) _launch(target, strike, away);
+      final hit = _tobiHit;
+      if (run.takes && hit != null && takerOf(player: _take?.at, tobi: hit, side: target.side) == IkkiuchiSide.tobi) {
+        _launch(target, strike, away);
+      }
     }
     if (strike.liveAt(rt1)) {
       cards.moveFist(strike.handAtTime(rt), strike.handAtTime(rt1), radius: strike.touch, keep: away);
@@ -461,7 +506,8 @@ class IkkiuchiBoard {
   }
 
   /// The player takes the called card once their finger touches it, or
-  /// once none of it lies inside the field; never one Tobi took.
+  /// once none of it lies inside the field; never one Tobi took. Tobi
+  /// starts no more strikes then.
   void _checkTake() {
     final id = _called;
     if (id == null || _take != null) return;
@@ -472,6 +518,7 @@ class IkkiuchiBoard {
     } else if (fieldArea != null && !_inField(card)) {
       _take = IkkiuchiTake(id, now, IkkiuchiTakeWay.leftField);
     }
+    if (_take != null) _pending.clear();
   }
 
   /// The taken card leaves at the fist's speed: along the row off a

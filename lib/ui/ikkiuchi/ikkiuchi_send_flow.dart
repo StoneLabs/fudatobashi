@@ -14,16 +14,17 @@ import 'ikkiuchi_board_scene.dart';
 import 'ikkiuchi_player_spots.dart';
 
 /// Where a 送り札 stands: none; the player picking a card of theirs to send
-/// Tobi; Tobi's arm carrying his card across; or his card waiting for the
-/// player to place it.
-enum IkkiuchiSendStage { none, sending, carrying, waiting }
+/// Tobi; Tobi's arm laying that card on his side; Tobi's arm carrying his
+/// card across; or his card waiting for the player to place it.
+enum IkkiuchiSendStage { none, sending, placing, carrying, waiting }
 
 /// A 送り札 on a board scene, in both directions.
 ///
 /// The player sends: they drag one of their cards; let go over Tobi's side
-/// ([tobiSide], the middle of the card riding there) it goes to its home
-/// there, his row and group taking it in home order; let go anywhere else
-/// it glides back.
+/// ([tobiSide], the middle of the card riding there) it lies where it was
+/// let go ([dropped]) as his side makes room for it at its home, his row
+/// and group taking it in home order; then his arm takes it and lays it
+/// there, which ends the 送り札. Let go anywhere else it glides back.
 ///
 /// Tobi sends: he picks one of his cards ([IkkiuchiSides.tobiSends], at his
 /// rating's smart send), his arm takes it off his side, turns it to face
@@ -47,7 +48,7 @@ class IkkiuchiSendFlow {
   bool get active => _stage != IkkiuchiSendStage.none;
 
   /// The card sent: Tobi's from his pick until placed, or the player's
-  /// while dragged.
+  /// from its drop until his arm laid it down.
   int? get card => _card;
   int? _card;
 
@@ -58,6 +59,10 @@ class IkkiuchiSendFlow {
   /// Whether the player's card dragged now would go to Tobi.
   bool get overTobi => _overTobi;
   bool _overTobi = false;
+
+  /// Where the card the player sent lies until Tobi's hand takes it.
+  CardBox? get dropped => _dropped;
+  CardBox? _dropped;
 
   /// Tobi's side, which takes a card the player sends anywhere on it: his
   /// half of the field, from its far edge to the band, and a little round
@@ -100,14 +105,44 @@ class IkkiuchiSendFlow {
     return true;
   }
 
-  /// Each frame: once his arm is done, his card waits and his side closes
-  /// up.
+  /// Each frame: once his arm is done carrying his card, it waits and his
+  /// side closes up; the card the player sent is laid down.
   void advance() {
     final id = _card, sides = scene.sides;
-    if (_stage != IkkiuchiSendStage.carrying || scene.board.carrying || id == null || sides == null) return;
+    if (id == null || sides == null) return;
+    if (_stage == IkkiuchiSendStage.placing) return _layDown(id);
+    if (_stage != IkkiuchiSendStage.carrying || scene.board.carrying) return;
     _stage = IkkiuchiSendStage.waiting;
     scene.board.heldFace = TobiFace.pointing;
     scene.relayout(sides.without(id));
+  }
+
+  /// Once his side has made room for card [id] the player sent, his arm
+  /// takes it from where it lies and lays it at its home; once his arm is
+  /// back, it lies there and the 送り札 is over.
+  void _layDown(int id) {
+    final board = scene.board;
+    if (board.cards.gliding) return;
+    if (board.carry == null) {
+      final from = _dropped!;
+      board.carryCard(
+        IkkiuchiCarry(
+          tobi: board.tobi,
+          from: from,
+          to: board.cards.card(id).home,
+          cardW: board.cards.cardW,
+          side: from.centre.x < board.tobi.centreX ? ArmSide.left : ArmSide.right,
+        ),
+        id,
+      );
+      return;
+    }
+    if (board.carrying) return;
+    board.cards.putHome(board.cards.card(id));
+    _stage = IkkiuchiSendStage.none;
+    _card = null;
+    _dropped = null;
+    scene.settle();
   }
 
   // Touches, in board dp.
@@ -120,7 +155,7 @@ class IkkiuchiSendFlow {
         if (spots.cardAt(at) case final id?) return (card: id, fromStack: false);
       case IkkiuchiSendStage.waiting:
         if (scene.wait.contains(at)) return (card: _card!, fromStack: true);
-      case IkkiuchiSendStage.none || IkkiuchiSendStage.carrying:
+      case IkkiuchiSendStage.none || IkkiuchiSendStage.placing || IkkiuchiSendStage.carrying:
     }
     return null;
   }
@@ -145,8 +180,11 @@ class IkkiuchiSendFlow {
     final from = {drag.card: spots.liftedBox(drag.at)};
     if (!drag.fromStack) {
       if (_overTobi) {
-        _stage = IkkiuchiSendStage.none;
-        scene.relayout(sides.toTobi(drag.card), from: from);
+        final lifted = spots.liftedRect(drag.at), size = cardSize;
+        _stage = IkkiuchiSendStage.placing;
+        _card = drag.card;
+        _dropped = CardBox(Vec(lifted.center.dx, lifted.center.dy), size.width / 2, size.height / 2);
+        scene.relayout(sides.toTobi(drag.card), held: {drag.card});
       } else {
         scene.board.cards.glideFrom(from,
             ms: _ms(IkkiuchiPlayTuning.relayoutGlide), ease: IkkiuchiPlayTuning.relayoutCurve.transform);

@@ -55,7 +55,7 @@ class IkkiuchiSendLayer extends StatelessWidget {
             ),
           ]),
         IkkiuchiSendStage.waiting => _spots(context),
-        IkkiuchiSendStage.none || IkkiuchiSendStage.carrying => const SizedBox.shrink(),
+        IkkiuchiSendStage.none || IkkiuchiSendStage.placing || IkkiuchiSendStage.carrying => const SizedBox.shrink(),
       };
 
   /// The dashed spots, while Tobi's card waits.
@@ -84,7 +84,11 @@ class IkkiuchiSendLayer extends StatelessWidget {
         if (!scene.layout.landscape)
           Positioned.fromRect(
           rect: scene.band,
-          child: _BandWords(title: s.ikkiuchiSent, line: stage == IkkiuchiSendStage.sending ? s.ikkiuchiSendYours : s.ikkiuchiPlaceTobis),
+          child: IkkiuchiBandWords(title: s.ikkiuchiSent, line: switch (stage) {
+            IkkiuchiSendStage.sending => s.ikkiuchiSendYours,
+            IkkiuchiSendStage.placing => s.ikkiuchiTobiPlaces,
+            _ => s.ikkiuchiPlaceTobis,
+          }),
         ),
         if (stage == IkkiuchiSendStage.waiting)
           Positioned.fromRect(rect: _balloonRect(), child: _Balloon(s.ikkiuchiHereYouGo)),
@@ -134,9 +138,10 @@ class IkkiuchiSendLayer extends StatelessWidget {
   }
 }
 
-/// The band's words while a card is sent: its title over what to do.
-class _BandWords extends StatelessWidget {
-  const _BandWords({required this.title, required this.line});
+/// Words on the band in portrait instead of a call, as while a card is
+/// sent: a title over a line saying what goes on.
+class IkkiuchiBandWords extends StatelessWidget {
+  const IkkiuchiBandWords({super.key, required this.title, required this.line});
 
   final String title, line;
 
@@ -147,11 +152,17 @@ class _BandWords extends StatelessWidget {
           child: Column(mainAxisSize: MainAxisSize.min, children: [
             Text(title,
                 style: const TextStyle(
-                    fontFamily: Fonts.display, fontSize: IkkiuchiSendStyle.bandTitle, height: 1, color: IkkiuchiSendStyle.bandInk)),
-            const SizedBox(height: IkkiuchiSendStyle.lineGap),
+                    fontFamily: Fonts.display,
+                    fontSize: IkkiuchiBoardStyle.wordsTitle,
+                    height: 1,
+                    color: IkkiuchiBoardStyle.wordsTitleInk)),
+            const SizedBox(height: IkkiuchiBoardStyle.wordsGap),
             Text(line,
                 style: const TextStyle(
-                    fontFamily: Fonts.ui, fontSize: IkkiuchiSendStyle.bandLine, height: 1, color: IkkiuchiSendStyle.lineInk)),
+                    fontFamily: Fonts.ui,
+                    fontSize: IkkiuchiBoardStyle.wordsLine,
+                    height: 1,
+                    color: IkkiuchiBoardStyle.wordsLineInk)),
           ]),
         ),
       );

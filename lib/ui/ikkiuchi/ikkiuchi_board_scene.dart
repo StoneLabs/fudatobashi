@@ -8,6 +8,7 @@ import '../../config/design.dart';
 import '../../domain/ikkiuchi_board.dart';
 import '../../domain/ikkiuchi_call.dart';
 import '../../domain/ikkiuchi_geometry.dart';
+import '../../domain/ikkiuchi_read.dart';
 import '../../domain/ikkiuchi_rig.dart';
 import '../../domain/ikkiuchi_send.dart';
 import 'ikkiuchi_arrange_flow.dart';
@@ -21,8 +22,10 @@ import 'ikkiuchi_send_flow.dart';
 /// and the wind switch. Every change repaints the board's painter.
 ///
 /// A read is of a card on the field ([callCard]) or of a からふだ
-/// ([callKarafuda]); either way the board notes the player's faults
-/// (`IkkiuchiBoard.playerFaults`) until the next read.
+/// ([callKarafuda]), Tobi playing it as his read decides, or not at all;
+/// either way the board notes both players' faults until the next read. It
+/// is over ([readOver]) once the card is taken, or a からふだ's pause has
+/// gone by.
 ///
 /// It takes the player's finger ([pointer]): one finger pushes the cards
 /// about, and [IkkiuchiPlayTuning.tidyWait] after it lifts the cards it
@@ -46,7 +49,7 @@ class IkkiuchiBoardScene extends ChangeNotifier {
   IkkiuchiSides? sides;
 
   /// Tobi's rating, which his choices go by, and the draws they make.
-  final double tobiRating;
+  double tobiRating;
   final math.Random rng;
 
   /// The 送り札 and 並べ替え on this board, and whether either is under way.
@@ -79,9 +82,10 @@ class IkkiuchiBoardScene extends ChangeNotifier {
 
   /// [id] is the card read, for the player to take: marked, its words
   /// [kimariji] on the band, the reader reading its [call], and the board
-  /// watching for the player's take and faults.
-  void callCard(int id, String kimariji, {IkkiuchiCall? call}) {
-    board.callCard(id);
+  /// watching for the takes and faults. With [tobi] he plays it so, his
+  /// times counting from its deciding sound.
+  void callCard(int id, String kimariji, {IkkiuchiCall? call, IkkiuchiRead? tobi}) {
+    _callBoard(id, onField: true, call: call, tobi: tobi);
     _marked = id;
     _karafudaIn = null;
     _read(call);
@@ -90,17 +94,30 @@ class IkkiuchiBoardScene extends ChangeNotifier {
 
   /// [id], a card not on the board, is read: a からふだ, every card on the
   /// field one to fault on. No card is marked; its words [kimariji] go on
-  /// the band after the [tag], and the reader reads its [call].
-  /// [IkkiuchiPlayTuning.karafudaPause] after its last sound the read is
-  /// over, and [onSettled] is told once the cards the finger stirred are
-  /// home.
-  void callKarafuda(int id, String kimariji, {required String tag, IkkiuchiCall? call}) {
-    board.callCard(id, onField: false);
+  /// the band after the [tag], and the reader reads its [call]; with [tobi]
+  /// he plays it so. [IkkiuchiPlayTuning.karafudaPause] after its last
+  /// sound the read is over, and [onSettled] is told once the cards the
+  /// finger stirred are home.
+  void callKarafuda(int id, String kimariji, {required String tag, IkkiuchiCall? call, IkkiuchiRead? tobi}) {
+    _callBoard(id, onField: false, call: call, tobi: tobi);
     _marked = null;
     _karafudaIn = (call?.decidedAt ?? 0) + _ms(IkkiuchiPlayTuning.karafudaPause);
     _read(call);
     show(kimariji, karafuda: tag);
   }
+
+  void _callBoard(int id, {required bool onField, IkkiuchiCall? call, IkkiuchiRead? tobi}) {
+    _karafudaRead = !onField;
+    if (tobi == null) {
+      board.callCard(id, onField: onField);
+    } else {
+      board.call(tobi, after: call?.decidedAt ?? 0);
+    }
+  }
+
+  /// Whether the read in play is over: its card taken
+  /// (`IkkiuchiBoard.taker`), or a からふだ's pause gone by.
+  bool get readOver => _karafudaRead ? _karafudaIn == null : board.taker != null;
 
   void _read(IkkiuchiCall? call) {
     if (call == null) {
@@ -116,6 +133,7 @@ class IkkiuchiBoardScene extends ChangeNotifier {
     board.callCard(null);
     _marked = null;
     _karafudaIn = null;
+    _karafudaRead = false;
     reader.stop();
     show(null);
   }
@@ -125,6 +143,7 @@ class IkkiuchiBoardScene extends ChangeNotifier {
     board = _layout.board();
     kimariji = karafuda = note = null;
     _karafudaIn = null;
+    _karafudaRead = false;
     reader.stop();
     _band();
   }
@@ -168,12 +187,24 @@ class IkkiuchiBoardScene extends ChangeNotifier {
   /// Whether [onSettled] is told once the cards glide no more.
   bool _settling = false;
 
-  /// Ms until a からふだ's read is over; null with none read.
+  /// Ms until a からふだ's read is over; null with none read; and whether
+  /// the read in play is of one.
   double? _karafudaIn;
+  bool _karafudaRead = false;
 
   /// [onSettled] is told once the cards glide no more and nothing is under
   /// way.
   void settle() => _settling = true;
+
+  /// The cards stirred set off home now, unless the finger is down or they
+  /// already wait to; either way [onSettled] is told once they are home.
+  void tidyUp() {
+    if (_finger == null && _tidyIn == null) _tidyIn = 0;
+  }
+
+  /// Whether the board is at rest: no finger down, no cards waiting to go
+  /// home or gliding, and nothing under way.
+  bool get atRest => _finger == null && _tidyIn == null && !board.cards.gliding && !busy;
 
   /// A pointer on the board, at its position in board dp: one finger
   /// pushes the cards while no 送り札 or 並べ替え is under way.
@@ -239,9 +270,10 @@ class IkkiuchiBoardScene extends ChangeNotifier {
 
   /// The sides are now [next]: the board is laid out for them afresh and
   /// set out anew, every card gliding from where it lies now, or from
-  /// [from] for one off the board, to its new home and size. Unless a
-  /// 送り札 goes on, [onSettled] is told once they are all home.
-  void relayout(IkkiuchiSides next, {Map<int, CardBox> from = const {}}) {
+  /// [from] for one off the board, to its new home and size; the cards of
+  /// [held] are kept off it. Unless a 送り札 goes on, [onSettled] is told
+  /// once they are all home.
+  void relayout(IkkiuchiSides next, {Map<int, CardBox> from = const {}, Set<int> held = const {}}) {
     final lying = {
       for (final c in board.cards.cards)
         if (c.onBoard && !c.held) c.id: c.box,
@@ -262,6 +294,9 @@ class IkkiuchiBoardScene extends ChangeNotifier {
       ms: _ms(IkkiuchiPlayTuning.relayoutGlide),
       ease: IkkiuchiPlayTuning.relayoutCurve.transform,
     );
+    for (final id in held) {
+      board.cards.hold(board.cards.card(id));
+    }
     _settling = true;
     _band();
   }

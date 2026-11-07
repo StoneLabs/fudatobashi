@@ -25,10 +25,9 @@ import '../../domain/ikkiuchi_rig.dart';
 /// reach the board's top and bottom edges. Landscape keeps the game
 /// [column] at the board's right edge: the field lies centred where it can,
 /// else as far right as leaves the column clear. A card Tobi sends waits at
-/// [wait], big: in portrait right of him, just above his side; in landscape
-/// over the column beside the player's side, where the room right of the
-/// field takes it, else over Tobi's side by the column. No room is kept for
-/// it.
+/// [wait], big, right of him: in portrait just above his side; in landscape
+/// in the open middle of his half, over his cards where it must. No room is
+/// kept for it.
 ///
 /// Any change to the sides lays the board out afresh by the same rules
 /// ([withSides]), its cards growing or shrinking to fit.
@@ -102,7 +101,7 @@ class IkkiuchiBoardLayout {
     final column = landscape
         ? Rect.fromLTRB(w - edge - IkkiuchiColumnStyle.width, area.top + edge, w - edge, area.bottom - edge)
         : null;
-    final wait = landscape ? _waitAside(area, band, cardW, w, column!) : _waitByTobi(area, tobi, cardW, w);
+    final wait = landscape ? _waitRightOfTobi(area, band, cardW, tobi, column!) : _waitByTobi(area, tobi, cardW, w);
     return IkkiuchiBoardLayout._(
         Vec(w, h), landscape, band, tobi, cardW, cards, area, wait, column, field, fieldW, origin);
   }
@@ -133,26 +132,19 @@ class IkkiuchiBoardLayout {
     return _waitIn(from, to, foot, math.max(height, cardW * IkkiuchiField.cardH));
   }
 
-  /// Big, at most [IkkiuchiSendStyle.wait]'s `scale` field cards wide, its
-  /// tag under it. Where the room right of the field, up to the board's
-  /// edge, takes one at least `leastScale` field cards wide: there, over
-  /// the game [column], centred on the player's half. Else over Tobi's
-  /// side, left of the column and centred on his half.
-  static Rect _waitAside(Rect field, Rect band, double cardW, double w, Rect column) {
+  /// Just right of Tobi, [IkkiuchiSendStyle.wait]'s `gap` clear of him, in
+  /// the open middle of his half and over his cards where it must: at most
+  /// `landscapeScale` field cards wide, as tall as his half takes it with
+  /// its tag under it, and centred on the half; never past the [column].
+  static Rect _waitRightOfTobi(Rect field, Rect band, double cardW, TobiFrame tobi, Rect column) {
     const style = IkkiuchiSendStyle.wait;
     final tag = IkkiuchiSendStyle.look.stackTagRoom;
     const aspect = IkkiuchiField.cardH;
-    final from = field.right + style.gap, to = w - IkkiuchiColumnStyle.edge;
-    final beside = to - from >= style.leastScale * cardW;
-    final half = beside ? Rect.fromLTRB(from, band.bottom, to, field.bottom) : Rect.fromLTRB(from, field.top, to, band.top);
-    final width = [
-      style.scale * cardW,
-      if (beside) to - from,
-      (half.height - tag - 2 * style.gap) / aspect,
-    ].reduce(math.min);
-    final height = math.max(width, cardW) * aspect;
-    final left = beside ? (from + to - height / aspect) / 2 : column.left - style.gap - height / aspect;
-    return Rect.fromLTWH(left, half.top + (half.height - height - tag) / 2, height / aspect, height);
+    final half = Rect.fromLTRB(field.left, field.top, field.right, band.top);
+    final width = math.max(cardW, math.min(style.landscapeScale * cardW, (half.height - tag - 2 * style.gap) / aspect));
+    final height = width * aspect;
+    final left = math.min(tobi.origin.x + tobi.rig.size.x * tobi.k + style.gap, column.left - style.gap - width);
+    return Rect.fromLTWH(left, half.top + (half.height - height - tag) / 2, width, height);
   }
 
   final Vec size;

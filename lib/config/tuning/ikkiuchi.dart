@@ -461,8 +461,10 @@ abstract final class IkkiuchiSweepTuning {
 /// The 一騎打ち board in play (`IkkiuchiBoardScene`): how long after the
 /// player's finger lifts the cards it knocked set off home ([tidyWait]),
 /// and their glide there; the glide of every card to its new place and
-/// size when the sides change ([relayoutGlide]), as after a 送り札; and how
-/// long a からふだ's read goes on after its last sound ([karafudaPause]).
+/// size when the sides change ([relayoutGlide]), as after a 送り札; how
+/// long a からふだ's read goes on after its last sound ([karafudaPause]);
+/// and how near together two takes of a card count as at the same time
+/// ([sameTime]), shorter than any strike's hit stop.
 abstract final class IkkiuchiPlayTuning {
   static const Duration tidyWait = Duration(milliseconds: 1000);
   static const Duration tidyGlide = Duration(milliseconds: 250);
@@ -470,6 +472,7 @@ abstract final class IkkiuchiPlayTuning {
   static const Duration relayoutGlide = Duration(milliseconds: 420);
   static const Curve relayoutCurve = Curves.easeInOutCubic;
   static const Duration karafudaPause = Duration(milliseconds: 1500);
+  static const Duration sameTime = Duration(microseconds: 16660);
 }
 
 /// The reader's pace on a card whose recording is not timed yet
@@ -480,9 +483,20 @@ abstract final class IkkiuchiReaderTuning {
   static const Duration perSound = Duration(milliseconds: 450);
 }
 
-/// The match's controls (`IkkiuchiMatchColumn`): 終了 ends the match once
-/// held [endHold].
+/// A match's run (`IkkiuchiMatchFlow`): the [memoryTime] before play; the
+/// greeting ([greeting]); the 序歌 ([yoka]); after each read, a moment once
+/// the cards are at rest ([waitBeforeShimonoku]), the 下の句 ([shimonoku])
+/// and a moment after it ([breakAfterShimonoku]); and its からふだ,
+/// `karafuda` for every `field` cards on the field. 終了 ends the match once
+/// held [endHold] (`IkkiuchiMatchColumn`).
 abstract final class IkkiuchiMatchTuning {
+  static const Duration memoryTime = Duration(minutes: 15);
+  static const Duration greeting = Duration(milliseconds: 2600);
+  static const Duration yoka = Duration(seconds: 5);
+  static const Duration waitBeforeShimonoku = Duration(seconds: 1);
+  static const Duration shimonoku = Duration(seconds: 7);
+  static const Duration breakAfterShimonoku = Duration(seconds: 1);
+  static const ({int karafuda, int field}) karafuda = (karafuda: 10, field: 25);
   static const Duration endHold = Duration(milliseconds: 1200);
 }
 
@@ -555,13 +569,13 @@ abstract final class IkkiuchiPhysicsTuning {
 }
 
 /// The developer's 一騎打ち pages (`IkkiuchiCurvesPage`,
-/// `IkkiuchiLayoutPage`, `IkkiuchiStrikesPage`, `IkkiuchiFieldPage`): their
+/// `IkkiuchiLayoutPage`, `IkkiuchiStrikesPage`, `IkkiuchiDebugGame`): their
 /// rating slider, the graphs' rating ticks and sampling step, the standard
 /// deviations the curves page gives each value's range at, the layout
 /// page's choice of cards a side and the seeds it starts from, the full
-/// fields the strikes and field pages deal, the strikes page's slow motion
-/// speeds and its reset once a strike is over, and the field page's system
-/// bars.
+/// fields the strikes page and the debug game deal, the strikes page's slow
+/// motion speeds and its reset once a strike is over, and the debug game's
+/// system bars.
 abstract final class IkkiuchiToolsTuning {
   static const double ratingStart = 1600;
   static const double ratingStep = 50;
@@ -590,15 +604,17 @@ abstract final class IkkiuchiToolsTuning {
   static const int dealPerSide = 25;
   static const int dealRows = 3;
 
-  /// The field page's buttons for a new deal: the cards a side each deals.
-  static const List<int> fieldCounts = [5, 10, 15, 20, 25];
+  /// The debug game's buttons for a new deal: the cards a side each deals.
+  /// Its rating slider starts at [ratingStart], and one [ratingStep] above
+  /// [IkkiuchiTuning.ratingMin] turns Tobi off.
+  static const List<int> gameCounts = [5, 10, 15, 20, 25];
 
   /// The strikes page: its slow motion speeds, and how long after a strike
   /// ends, all cards still, the board resets.
   static const List<double> slowMotion = [1, 0.5, 0.25, 0.1];
   static const Duration autoReset = Duration(seconds: 3);
 
-  /// The field page: the system bars hidden while it is open (a swipe in
+  /// The debug game: the system bars hidden while it is open (a swipe in
   /// from an edge shows them for a while).
-  static const SystemUiMode fieldBars = SystemUiMode.immersiveSticky;
+  static const SystemUiMode gameBars = SystemUiMode.immersiveSticky;
 }

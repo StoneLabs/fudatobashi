@@ -26,7 +26,8 @@ class IkkiuchiCard {
   /// Whether the sim has woken it since it last lay at home.
   bool _stirred = false;
 
-  /// Whether Tobi took it: it flies off and fades.
+  /// Whether it was taken: it flies off and fades, or, taken by the
+  /// player, fades where it lies.
   bool taken = false;
 
   /// Whether it is held off the board, out of the sim and not drawn with
@@ -280,11 +281,31 @@ class IkkiuchiCards {
   }
 
   /// Takes [card] off the board: out of the sim, and no longer one of the
-  /// field's cards, until it glides back ([glideFrom]).
+  /// field's cards, until it glides back ([glideFrom]) or is put home
+  /// ([putHome]).
   void hold(IkkiuchiCard card) {
     if (card._body != null) _remove(card, shown: 1);
     _gliding.remove(card);
     card._held = true;
+  }
+
+  /// Puts held [card] back on the board at its home, lying still.
+  void putHome(IkkiuchiCard card) {
+    if (card._body != null) _remove(card, shown: 1);
+    _gliding.remove(card);
+    card
+      .._held = false
+      ..shown = 1
+      .._last = null
+      .._stirred = false
+      .._body = _bodyAtHome(card);
+  }
+
+  /// [card] is taken where it lies: out of the sim, it fades there.
+  void fadeOut(IkkiuchiCard card) {
+    if (card._body != null) _remove(card, shown: card.shown);
+    _gliding.remove(card);
+    card.taken = true;
   }
 
   /// Whether cards are gliding home.

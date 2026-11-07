@@ -69,12 +69,12 @@ class IkkiuchiBoardPainter extends CustomPainter {
   }
 
   /// [card] on the field, outlined when marked (green once the player took
-  /// it) or when the player faulted on it.
+  /// it, unless Tobi took it first) or when the player faulted on it.
   void _paintCard(Canvas canvas, IkkiuchiCard card) {
     if (!card.still) IkkiuchiEffects.paintStreaks(canvas, card.box, card.velocity);
     final board = scene.board;
     final mark = card.id == scene.marked
-        ? (board.take?.card == card.id ? _taken : _mark)
+        ? (board.take?.card == card.id && board.taker != IkkiuchiSide.tobi ? _taken : _mark)
         : (board.playerFaults.containsKey(card.id) ? _fault : null);
     _paintFace(canvas, card.id, card.box, shown: card.shown, mark: mark);
   }
@@ -152,9 +152,15 @@ class IkkiuchiBoardPainter extends CustomPainter {
       eyeOpen: pose == null ? idle.eyeOpen : 1,
     );
     canvas.restore();
-    // His card in his hand, and set down until it waits for the player.
-    if (scene.send.stage == IkkiuchiSendStage.carrying) {
+    // His card in his hand, and set down until it waits for the player; the
+    // card the player sent him where it was let go, in his hand, and laid
+    // down until his arm is back.
+    final send = scene.send;
+    if (send.stage == IkkiuchiSendStage.carrying) {
       if (board.carried case (id: final id, box: final box)) _paintFace(canvas, id, box);
+    } else if (send.stage == IkkiuchiSendStage.placing) {
+      final box = board.carried?.box ?? send.dropped;
+      if (box != null) _paintFace(canvas, send.card!, box);
     }
     if (pose == null) return;
     Vec shoulderOf(IkkiuchiArmMove arm) => tobi.world(tobi.rig.arm(arm.armFace, arm.side).shoulder, body);

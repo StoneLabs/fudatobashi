@@ -150,32 +150,71 @@ abstract final class IkkiuchiToolsStyle {
   static const String menuMark = ' ▼';
   static const double menuMarkFont = 8;
 
-  /// The field page's developer buttons over the board, in a see-through
-  /// ink panel ([fieldPanelFill]) so they read as tools and not as the
-  /// match's: [fieldButton] square, [fieldButtonGap] apart in two columns
-  /// under the panel's [fieldPanelTitle]; the からふだ read's is
-  /// [fieldKarafudaLabel]. In portrait [fieldButtonInset] in from the
-  /// screen's top left; in landscape [fieldPanelInset] inside the room it
-  /// takes in Tobi's half.
-  static const double fieldButton = 20;
-  static const double fieldButtonGap = 3;
-  static const double fieldButtonInset = 8;
-  static const double fieldButtonRadius = 3;
-  static const double fieldButtonFont = 9;
-  static const Color fieldButtonFill = Color(0x1FFFFFFF);
-  static const Color fieldButtonInk = Color(0xEBFFFFFF);
-  static const Color fieldButtonEdge = Color(0x73FFFFFF);
-  static const double fieldButtonEdgeWidth = 1;
-  static const Color fieldPanelFill = Color(0x99141414);
-  static const double fieldPanelRadius = 4;
-  static const EdgeInsets fieldPanelPadding = EdgeInsets.fromLTRB(4, 3, 4, 4);
-  static const double fieldPanelInset = 4;
-  static const String fieldPanelTitle = 'DEV';
-  static const String fieldKarafudaLabel = '空';
-  static const double fieldPanelTitleFont = 7;
-  static const double fieldPanelTitleTracking = 0.2;
-  static const double fieldPanelTitleGap = 3;
-  static const Color fieldPanelTitleInk = Color(0x99FFFFFF);
+  /// The debug game's developer tools at the board's top left, over
+  /// everything and see-through: the stage and Tobi's rating, each on a
+  /// [readoutFill] chip in [readoutFont]; under them his rating slider,
+  /// standing [sliderLength] tall at the very left (OFF at its top), and
+  /// beside it the buttons, [gameButton] square and [gameButtonGap] apart
+  /// in two rows under the panel's [gamePanelTitle]. It keeps [gameInset]
+  /// inside the screen's safe area.
+  static const double gameInset = 4;
+  static const double readoutFont = 9;
+  static const Color readoutFill = Color(0x99141414);
+  static const Color readoutInk = Color(0xEBFFFFFF);
+  static const EdgeInsets readoutPadding = EdgeInsets.symmetric(horizontal: 4, vertical: 2);
+  static const double readoutGap = 2;
+  static const String ratingLabel = 'Tobi rating: ';
+  static const String ratingOff = 'OFF';
+  static const double sliderLength = 150;
+  static const double sliderWidth = 22;
+  static const double gameSliderTrack = 3;
+  static const double gameSliderThumb = 6;
+  static const double gameSliderOverlay = 11;
+  static const Color gameSliderActive = Color(0xB3FFFFFF);
+  static const Color gameSliderInactive = Color(0x4DFFFFFF);
+  static const Color gameSliderThumbFill = Color(0xEBFFFFFF);
+  static const double gameButton = 20;
+  static const double gameButtonGap = 3;
+  static const double gameButtonRadius = 3;
+  static const double gameButtonFont = 9;
+  static const Color gameButtonFill = Color(0x1FFFFFFF);
+  static const Color gameButtonOnFill = Color(0x80FFD53D);
+  static const Color gameButtonInk = Color(0xEBFFFFFF);
+  static const Color gameButtonEdge = Color(0x73FFFFFF);
+  static const double gameButtonEdgeWidth = 1;
+  static const Color gamePanelFill = Color(0x99141414);
+  static const double gamePanelRadius = 4;
+  static const EdgeInsets gamePanelPadding = EdgeInsets.fromLTRB(4, 3, 4, 4);
+  static const String gamePanelTitle = 'DEV';
+  static const double gamePanelTitleFont = 7;
+  static const double gamePanelTitleTracking = 0.2;
+  static const double gamePanelTitleGap = 3;
+  static const Color gamePanelTitleInk = Color(0x99FFFFFF);
+
+  /// The buttons' labels: the board turned, a 送り札 to Tobi and from him,
+  /// a からふだ next, the memory time ended, and the held match let go.
+  static const String turnLabel = 'R';
+  static const String sendLabel = '^';
+  static const String receiveLabel = 'v';
+  static const String karafudaLabel = '空';
+  static const String startLabel = '始';
+  static const String goLabel = '▶';
+
+  /// The debug game's name for each stage of the match.
+  static const String memoryTime = 'Memory Time';
+  static const String gameStart = 'Game Start';
+  static const String yoka = 'Yoka';
+  static const String kaminoku = '上の句';
+  static const String waitingForHit = 'Waiting for card hit';
+  static const String sendingCard = 'Sending Card';
+  static const String tobiPlacingCard = 'Tobi Placing Card';
+  static const String receivingCard = 'Receiving Card';
+  static const String waitingForGo = 'Waiting for ▶';
+  static const String waitBeforeShimonoku = '1s wait';
+  static const String shimonoku = '下の句';
+  static const String movingCard = 'Moving Card';
+  static const String breakAfterShimonoku = '1s break';
+  static const String gameEnd = 'Game End';
 
   static const Color ground = Palette.desk;
   static const double minPitch = 30;

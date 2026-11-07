@@ -1665,5 +1665,10 @@
   "ikkiuchiArrangeHint": "札を​ドラッグ",
   "ikkiuchiTobi": "トビ",
   "ikkiuchiYou": "あなた",
-  "ikkiuchiKarafuda": "からふだ"
+  "ikkiuchiKarafuda": "からふだ",
+  "ikkiuchiTobiPlaces": "トビが​札を​置く",
+  "ikkiuchiMemoryTime": "暗記時間",
+  "ikkiuchiTimeLeft": "のこり {0}",
+  "ikkiuchiGreeting": "よろしくお願いします",
+  "ikkiuchiThanks": "ありがとうございました"
 }
