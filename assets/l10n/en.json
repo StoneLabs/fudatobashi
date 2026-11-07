@@ -1656,5 +1656,11 @@
   "ikkiuchiRowMiddle": "Middle row",
   "ikkiuchiRowUpper": "Top row",
   "ikkiuchiSpotLeft": "{0}, left",
-  "ikkiuchiSpotRight": "{0}, right"
+  "ikkiuchiSpotRight": "{0}, right",
+  "ikkiuchiSendShort": "Send Tobi a card",
+  "ikkiuchiArrange": "Arrange",
+  "ikkiuchiArranging": "Arranging",
+  "ikkiuchiArrangeHint": "Drag a card",
+  "ikkiuchiTobi": "Tobi",
+  "ikkiuchiYou": "You"
 }

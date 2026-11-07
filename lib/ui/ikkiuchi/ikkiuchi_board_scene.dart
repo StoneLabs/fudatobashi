@@ -6,24 +6,28 @@ import 'package:flutter/widgets.dart';
 import '../../config/config.dart';
 import '../../config/design.dart';
 import '../../domain/ikkiuchi_board.dart';
+import '../../domain/ikkiuchi_call.dart';
 import '../../domain/ikkiuchi_geometry.dart';
 import '../../domain/ikkiuchi_rig.dart';
 import '../../domain/ikkiuchi_send.dart';
+import 'ikkiuchi_arrange_flow.dart';
 import 'ikkiuchi_board_layout.dart';
 import 'ikkiuchi_card_faces.dart';
+import 'ikkiuchi_reader.dart';
 import 'ikkiuchi_send_flow.dart';
 
 /// The 一騎打ち board as it is drawn: its [layout], the board running on it,
-/// the call shown on the band, a card marked, and the wind switch. Every
-/// change repaints the board's painter.
+/// the call shown on the band and read out by the [reader], a card marked,
+/// and the wind switch. Every change repaints the board's painter.
 ///
 /// It takes the player's finger ([pointer]): one finger pushes the cards
 /// about, and [IkkiuchiPlayTuning.tidyWait] after it lifts the cards it
-/// stirred glide home. With [sides] it plays the 送り札 ([send]), and each
-/// change of the sides lays the board out afresh ([relayout]), every card
-/// gliding to its new place and size and the band and Tobi moving along.
-/// Each time the board comes to rest after the cards went home or a 送り札
-/// is over, [onSettled] is told.
+/// stirred glide home. With [sides] it plays the 送り札 ([send]) and
+/// 並べ替え ([arrange]), and each change of the sides lays the board out
+/// afresh ([relayout]), every card gliding to its new place and size and
+/// the band, Tobi and the game column moving along. Each time the board
+/// comes to rest after the cards went home, or a 送り札 or 並べ替え is
+/// over, [onSettled] is told.
 class IkkiuchiBoardScene extends ChangeNotifier {
   IkkiuchiBoardScene(this._layout, this.faces, {this.sides, this.tobiRating = 0, int seed = 0})
       : board = _layout.board(),
@@ -41,8 +45,13 @@ class IkkiuchiBoardScene extends ChangeNotifier {
   final double tobiRating;
   final math.Random rng;
 
-  /// The 送り札 on this board.
+  /// The 送り札 and 並べ替え on this board, and whether either is under way.
   late final send = IkkiuchiSendFlow(this);
+  late final arrange = IkkiuchiArrangeFlow(this);
+  bool get busy => send.active || arrange.active;
+
+  /// The reader, reading the card called.
+  final reader = IkkiuchiReader();
 
   VoidCallback? onSettled;
 
@@ -65,25 +74,44 @@ class IkkiuchiBoardScene extends ChangeNotifier {
   }
 
   /// [id] is the card read, for the player to take: marked, its words
-  /// [kimariji] on the band, and the board watching for the player's take.
-  void callCard(int id, String kimariji) {
+  /// [kimariji] on the band, the reader reading its [call], and the board
+  /// watching for the player's take.
+  void callCard(int id, String kimariji, {IkkiuchiCall? call}) {
     board.callCard(id);
     _marked = id;
+    if (call == null) {
+      reader.stop();
+    } else {
+      reader.read(call);
+    }
     show(kimariji);
   }
 
-  /// No card is read: no mark, the band empty, no take watched.
+  /// No card is read: no mark, the band empty, the reader still, no take
+  /// watched.
   void clearCall() {
     board.callCard(null);
     _marked = null;
+    reader.stop();
     show(null);
   }
 
-  /// The board as it was set out, the band cleared.
+  /// The board as it was set out, the band cleared and the reader still.
   void reset() {
     board = _layout.board();
     kimariji = karafuda = note = null;
+    reader.stop();
     _band();
+  }
+
+  /// Each side's cards left: one Tobi sends counts as the player's from the
+  /// moment he picks it up. Null on a board that only shows strikes.
+  ({int tobi, int player})? get cardsLeft {
+    final sides = this.sides;
+    if (sides == null) return null;
+    final carried = send.stage == IkkiuchiSendStage.carrying ? 1 : 0;
+    final waiting = send.stage == IkkiuchiSendStage.waiting ? 1 : 0;
+    return (tobi: sides.tobiCards.length - carried, player: sides.playerCards.length + carried + waiting);
   }
 
   /// Something drawn over the board changed.
@@ -91,10 +119,11 @@ class IkkiuchiBoardScene extends ChangeNotifier {
 
   void advance(double ms) {
     board.advance(ms);
+    reader.advance(ms);
     _tidy(ms);
     send.advance();
     if (_from != null && !board.cards.gliding) _from = null;
-    if (_settling && !board.cards.gliding && !send.active) {
+    if (_settling && !board.cards.gliding && !busy) {
       _settling = false;
       onSettled?.call();
     }
@@ -113,12 +142,16 @@ class IkkiuchiBoardScene extends ChangeNotifier {
   /// Whether [onSettled] is told once the cards glide no more.
   bool _settling = false;
 
+  /// [onSettled] is told once the cards glide no more and nothing is under
+  /// way.
+  void settle() => _settling = true;
+
   /// A pointer on the board, at its position in board dp: one finger
-  /// pushes the cards while no 送り札 is under way.
+  /// pushes the cards while no 送り札 or 並べ替え is under way.
   void pointer(PointerEvent event) {
     final at = Vec(event.localPosition.dx, event.localPosition.dy);
     switch (event) {
-      case PointerDownEvent() when _finger == null && !send.active:
+      case PointerDownEvent() when _finger == null && !busy:
         _finger = event.pointer;
         _tidyIn = null;
         board.touch(at);
@@ -145,15 +178,19 @@ class IkkiuchiBoardScene extends ChangeNotifier {
 
   // The sides changing.
 
-  /// Where the band, Tobi and the waiting spot were as the board was last
-  /// laid out afresh; null once the cards are home.
-  ({Rect band, TobiFrame tobi, Rect wait})? _from;
+  /// Where the band, the field, the game column, Tobi and the waiting spot
+  /// were as the board was last laid out afresh; null once the cards are
+  /// home.
+  ({Rect band, Rect field, Rect? column, TobiFrame tobi, Rect wait})? _from;
 
   double get _shift => board.cards.glided ?? 1;
 
-  /// The band, Tobi and the waiting spot now: on their way from where they
-  /// were to the new layout's while the cards glide there.
+  /// The band, the field, the game column, Tobi and the waiting spot now:
+  /// on their way from where they were to the new layout's while the cards
+  /// glide there.
   Rect get band => _from == null ? _layout.band : Rect.lerp(_from!.band, _layout.band, _shift)!;
+  Rect get field => _from == null ? _layout.field : Rect.lerp(_from!.field, _layout.field, _shift)!;
+  Rect? get column => _from == null ? _layout.column : Rect.lerp(_from!.column, _layout.column, _shift);
   Rect get wait => _from == null ? _layout.wait : Rect.lerp(_from!.wait, _layout.wait, _shift)!;
   TobiFrame get tobi {
     final from = _from?.tobi, to = _layout.tobi;
@@ -173,7 +210,7 @@ class IkkiuchiBoardScene extends ChangeNotifier {
       ...from,
     };
     final old = board;
-    _from = (band: band, tobi: tobi, wait: wait);
+    _from = (band: band, field: field, column: column, tobi: tobi, wait: wait);
     sides = next;
     _layout = _layout.withSides(tobiRows: next.tobi, playerRows: next.player);
     board = _layout.board(startStep: old.steps)
@@ -270,6 +307,7 @@ class IkkiuchiBoardScene extends ChangeNotifier {
   @override
   void dispose() {
     _bandText?.dispose();
+    reader.dispose();
     super.dispose();
   }
 }

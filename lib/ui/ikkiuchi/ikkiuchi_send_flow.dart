@@ -1,10 +1,7 @@
 import 'dart:ui';
 
 import '../../config/config.dart';
-import '../../config/design.dart';
 import '../../domain/field_parts.dart';
-import '../../domain/ikkiuchi_cards.dart';
-import '../../domain/ikkiuchi_field.dart';
 import '../../domain/ikkiuchi_geometry.dart';
 import '../../domain/ikkiuchi_layout.dart';
 import '../../domain/ikkiuchi_rig.dart';
@@ -13,6 +10,7 @@ import '../../domain/ikkiuchi_tobi.dart';
 import '../../domain/placing.dart';
 import '../placing/placing_widgets.dart';
 import 'ikkiuchi_board_scene.dart';
+import 'ikkiuchi_player_spots.dart';
 
 /// Where a 送り札 stands: none; the player picking a card of theirs to send
 /// Tobi; Tobi's arm carrying his card across; or his card waiting for the
@@ -33,10 +31,14 @@ enum IkkiuchiSendStage { none, sending, carrying, waiting }
 /// there. Placing it ends the 送り札.
 ///
 /// Every change of the sides lays the board out afresh ([IkkiuchiBoardScene.relayout]).
+/// Neither starts while the player moves their cards about.
 class IkkiuchiSendFlow {
-  IkkiuchiSendFlow(this.scene);
+  IkkiuchiSendFlow(this.scene) : spots = IkkiuchiPlayerSpots(scene);
 
   final IkkiuchiBoardScene scene;
+
+  /// Where the player's cards and spots lie.
+  final IkkiuchiPlayerSpots spots;
 
   IkkiuchiSendStage get stage => _stage;
   IkkiuchiSendStage _stage = IkkiuchiSendStage.none;
@@ -59,7 +61,7 @@ class IkkiuchiSendFlow {
 
   /// The player is to send Tobi a card.
   void startSending() {
-    if (active || scene.sides == null) return;
+    if (scene.busy || scene.sides == null) return;
     _stage = IkkiuchiSendStage.sending;
     scene.clearCall();
   }
@@ -67,7 +69,7 @@ class IkkiuchiSendFlow {
   /// Tobi picks a card of his and sends it; false when he has none.
   bool startReceiving() {
     final sides = scene.sides;
-    if (active || sides == null) return false;
+    if (scene.busy || sides == null) return false;
     final id = sides.tobiSends(
         smart: IkkiuchiTobi(scene.tobiRating).smartSend, alike: _layoutRules.alike, rng: scene.rng);
     if (id == null) return false;
@@ -105,11 +107,7 @@ class IkkiuchiSendFlow {
   ({int card, bool fromStack})? cardAt(Offset at) {
     switch (_stage) {
       case IkkiuchiSendStage.sending:
-        for (final c in scene.board.cards.cards) {
-          if (c.side == IkkiuchiSide.player && c.onBoard && !c.held && _rectOf(c.box).contains(at)) {
-            return (card: c.id, fromStack: false);
-          }
-        }
+        if (spots.cardAt(at) case final id?) return (card: id, fromStack: false);
       case IkkiuchiSendStage.waiting:
         if (scene.wait.contains(at)) return (card: _card!, fromStack: true);
       case IkkiuchiSendStage.none || IkkiuchiSendStage.carrying:
@@ -134,7 +132,7 @@ class IkkiuchiSendFlow {
     final drag = _drag, sides = scene.sides;
     if (drag == null || sides == null) return;
     _drag = null;
-    final from = {drag.card: _liftedBox(drag.at)};
+    final from = {drag.card: spots.liftedBox(drag.at)};
     if (!drag.fromStack) {
       if (_overTobi) {
         _stage = IkkiuchiSendStage.none;
@@ -169,68 +167,21 @@ class IkkiuchiSendFlow {
 
   PlacingDrag _dragAt(int card, {required bool fromStack, required Offset at}) {
     if (!fromStack) {
-      _overTobi = _liftedRect(at).center.dy < scene.band.top;
+      _overTobi = spots.liftedRect(at).center.dy < scene.band.top;
       return PlacingDrag(card: card, fromStack: false, at: at);
     }
     return PlacingDrag(card: card, fromStack: true, at: at, spot: targets().spotAt(at.dx, at.dy));
   }
 
-  // Where things lie, in board dp.
-
   /// Where the player's waiting card may go: their side's cards and the
   /// free group ends the field has room for.
-  PlacingTargets targets() {
-    final layout = scene.layout;
-    return PlacingTargets(
-      scene.sides!.playerBoard,
-      cards: {
-        for (final c in layout.cards)
-          if (c.side == IkkiuchiSide.player) c.id: _fieldRect(c.box),
-      },
-      clusterEnd: layout.playerEnd,
-    );
-  }
+  PlacingTargets targets() => spots.targets();
 
-  /// Where [spot] lies on the board: the card it takes the place of, or the
-  /// free spot.
-  Rect? rectOf(PlacingSpot spot) {
-    final layout = scene.layout;
-    final rect = switch (spot) {
-      CardSpot(:final poemId) => [
-          for (final c in layout.cards)
-            if (c.id == poemId) _fieldRect(c.box),
-        ].firstOrNull,
-      ClusterEnd(:final row, :final part) => layout.playerEnd(row, part),
-      OpenMiddle() => null,
-    };
-    return rect == null ? null : Rect.fromLTWH(rect.x, rect.y, rect.w, rect.h);
-  }
+  Rect? rectOf(PlacingSpot spot) => spots.rectOf(spot);
 
-  /// Where [spot] is on the player's side: its row, and its group.
-  ({FieldRow row, RowPart part})? placeOf(PlacingSpot spot) => switch (spot) {
-        ClusterEnd(:final row, :final part) => (row: row, part: part),
-        CardSpot(:final poemId) => switch (scene.sides!.playerBoard.side.placeOf(poemId)) {
-            (row: final row, part: final part, index: _) => (row: row, part: part),
-            null => null,
-          },
-        OpenMiddle() => null,
-      };
+  ({FieldRow row, RowPart part})? placeOf(PlacingSpot spot) => spots.placeOf(spot);
 
-  /// The field's cards' size on the board.
-  Size get cardSize => Size(scene.layout.cardW, scene.layout.cardW * IkkiuchiField.cardH);
-
-  /// Where a dragged card rides with the finger [at].
-  Rect _liftedRect(Offset at) => PlacingRiding.liftedRect(at, card: cardSize, look: IkkiuchiSendStyle.look);
-
-  CardBox _liftedBox(Offset at) {
-    final r = _liftedRect(at);
-    return CardBox(Vec(r.center.dx, r.center.dy), r.width / 2, r.height / 2);
-  }
-
-  static Rect _rectOf(CardBox b) => Rect.fromCenter(
-      center: Offset(b.centre.x, b.centre.y), width: 2 * b.reachAlong(const Vec(1, 0)), height: 2 * b.reachAlong(const Vec(0, 1)));
-
-  static FieldRect _fieldRect(CardBox b) => FieldRect(b.centre.x - b.hw, b.centre.y - b.hh, 2 * b.hw, 2 * b.hh);
+  Size get cardSize => spots.cardSize;
 
   static double _ms(Duration d) => d.inMicroseconds / Duration.microsecondsPerMillisecond;
 }

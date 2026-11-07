@@ -10,6 +10,7 @@ import '../../domain/ikkiuchi_rig.dart';
 import '../../domain/ikkiuchi_strike.dart';
 import '../manga/vector.dart';
 import 'ikkiuchi_arm_painter.dart';
+import 'ikkiuchi_arrange_layer.dart';
 import 'ikkiuchi_board_scene.dart';
 import 'ikkiuchi_effects.dart';
 import 'ikkiuchi_send_flow.dart';
@@ -186,16 +187,18 @@ class IkkiuchiBoardPainter extends CustomPainter {
 }
 
 /// The board on its tatami, its painter repainting with [scene] alone,
-/// with a 送り札's spots under its cards and the rest of it over them
-/// ([IkkiuchiSendLayer]); [onTap] gets each tap in board dp, and
-/// [onPointer] each pointer going down, moving, and up or cancelled, its
-/// position in board dp.
+/// with a 送り札's or 並べ替え's spots under its cards and the rest of it
+/// over them ([IkkiuchiSendLayer], [IkkiuchiArrangeLayer]), and
+/// [overCards] between, in board dp; [onTap] gets each tap in board dp,
+/// and [onPointer] each pointer going down, moving, and up or cancelled,
+/// its position in board dp.
 class IkkiuchiBoardView extends StatelessWidget {
-  const IkkiuchiBoardView(this.scene, {super.key, this.onTap, this.onPointer});
+  const IkkiuchiBoardView(this.scene, {super.key, this.onTap, this.onPointer, this.overCards});
 
   final IkkiuchiBoardScene scene;
   final ValueChanged<Offset>? onTap;
   final ValueChanged<PointerEvent>? onPointer;
+  final Widget? overCards;
 
   @override
   Widget build(BuildContext context) {
@@ -225,14 +228,21 @@ class IkkiuchiBoardView extends StatelessWidget {
             ),
           ),
           child: Stack(children: [
-            if (scene.sides != null) Positioned.fill(child: IkkiuchiSendLayer(scene: scene, under: true)),
+            if (scene.sides != null) ...[
+              Positioned.fill(child: IkkiuchiSendLayer(scene: scene, under: true)),
+              Positioned.fill(child: IkkiuchiArrangeLayer(scene: scene, under: true)),
+            ],
             RepaintBoundary(
               child: CustomPaint(
                 size: Size(scene.layout.size.x, scene.layout.size.y),
                 painter: IkkiuchiBoardPainter(scene, pixelRatio: MediaQuery.devicePixelRatioOf(context)),
               ),
             ),
-            if (scene.sides != null) Positioned.fill(child: IkkiuchiSendLayer(scene: scene, under: false)),
+            if (overCards case final layer?) Positioned.fill(child: layer),
+            if (scene.sides != null) ...[
+              Positioned.fill(child: IkkiuchiSendLayer(scene: scene, under: false)),
+              Positioned.fill(child: IkkiuchiArrangeLayer(scene: scene, under: false)),
+            ],
           ]),
         ),
       );
