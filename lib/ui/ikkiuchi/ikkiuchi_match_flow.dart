@@ -175,21 +175,8 @@ class IkkiuchiMatchFlow extends ChangeNotifier {
   /// Runs the board on by [ms], and the match with it.
   void advance(double ms) {
     scene.advance(ms);
+    if (_length(_stage) != null) return _countDown(ms);
     switch (_stage) {
-      case IkkiuchiStage.memoryTime ||
-            IkkiuchiStage.gameStart ||
-            IkkiuchiStage.yoka ||
-            IkkiuchiStage.feedback ||
-            IkkiuchiStage.waitBeforeShimonoku ||
-            IkkiuchiStage.shimonoku ||
-            IkkiuchiStage.breakAfterShimonoku:
-        final second = (_left / Duration.millisecondsPerSecond).ceil();
-        _left -= ms;
-        if (_left <= 0) {
-          _timeUp();
-        } else if ((_left / Duration.millisecondsPerSecond).ceil() != second) {
-          notifyListeners();
-        }
       case IkkiuchiStage.kaminoku || IkkiuchiStage.waitingForHit:
         _watchRead();
       case IkkiuchiStage.closingUp:
@@ -198,9 +185,32 @@ class IkkiuchiMatchFlow extends ChangeNotifier {
         _watchSend();
       case IkkiuchiStage.movingCard:
         if (!scene.arrange.active && scene.atRest) _enter(_afterMoving!);
-      case IkkiuchiStage.waitingForGo || IkkiuchiStage.gameEnd:
+      case _:
     }
   }
+
+  /// A timed stage runs [ms] on; listeners hear of each second gone.
+  void _countDown(double ms) {
+    final second = (_left / Duration.millisecondsPerSecond).ceil();
+    _left -= ms;
+    if (_left <= 0) {
+      _timeUp();
+    } else if ((_left / Duration.millisecondsPerSecond).ceil() != second) {
+      notifyListeners();
+    }
+  }
+
+  /// How long [stage] lasts; null for one that is not timed.
+  static Duration? _length(IkkiuchiStage stage) => switch (stage) {
+        IkkiuchiStage.memoryTime => IkkiuchiMatchTuning.memoryTime,
+        IkkiuchiStage.gameStart => IkkiuchiMatchTuning.greeting,
+        IkkiuchiStage.yoka => IkkiuchiMatchTuning.yoka,
+        IkkiuchiStage.feedback => IkkiuchiMatchTuning.feedback,
+        IkkiuchiStage.waitBeforeShimonoku => IkkiuchiMatchTuning.waitBeforeShimonoku,
+        IkkiuchiStage.shimonoku => IkkiuchiMatchTuning.shimonoku,
+        IkkiuchiStage.breakAfterShimonoku => IkkiuchiMatchTuning.breakAfterShimonoku,
+        _ => null,
+      };
 
   /// A timed stage is over: the next one starts, or, while the player
   /// still moves cards in a stage that no longer lets them, the match holds.
@@ -236,17 +246,7 @@ class IkkiuchiMatchFlow extends ChangeNotifier {
   void _enter(IkkiuchiStage stage, {double? left}) {
     assert(IkkiuchiSteps.allows(_stage, stage) || stage == _stage, 'no step from $_stage to $stage');
     _stage = stage;
-    _left = left ??
-        switch (stage) {
-          IkkiuchiStage.memoryTime => _ms(IkkiuchiMatchTuning.memoryTime),
-          IkkiuchiStage.gameStart => _ms(IkkiuchiMatchTuning.greeting),
-          IkkiuchiStage.yoka => _ms(IkkiuchiMatchTuning.yoka),
-          IkkiuchiStage.feedback => _ms(IkkiuchiMatchTuning.feedback),
-          IkkiuchiStage.waitBeforeShimonoku => _ms(IkkiuchiMatchTuning.waitBeforeShimonoku),
-          IkkiuchiStage.shimonoku => _ms(IkkiuchiMatchTuning.shimonoku),
-          IkkiuchiStage.breakAfterShimonoku => _ms(IkkiuchiMatchTuning.breakAfterShimonoku),
-          _ => 0,
-        };
+    _left = left ?? _ms(_length(stage) ?? Duration.zero);
     scene.fingerOn = stage.readLive;
     if (stage == IkkiuchiStage.kaminoku) _read();
     if (stage == IkkiuchiStage.gameEnd) scene.clearCall();

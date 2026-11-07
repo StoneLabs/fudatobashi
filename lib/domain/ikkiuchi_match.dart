@@ -155,8 +155,8 @@ abstract final class IkkiuchiReadOrder {
 ///
 /// It leaves the 送り札 of 競技規程細則 第二十五条: a player may send a card
 /// for taking the called card from the other's side, and one for each
-/// fault of the other's: one for a fault on the called card's side, two
-/// for faults on both sides on a からふだ (三). When both may send, only the
+/// fault of the other's: one for a fault on the side without the called
+/// card, two for faults on both sides on a からふだ (三). When both may send, only the
 /// difference is sent (四).
 class IkkiuchiReadEnd {
   const IkkiuchiReadEnd({
