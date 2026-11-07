@@ -1,5 +1,5 @@
-// 一騎打ち's board between the reads: the player's take of the called card,
-// the 送り札 both ways (which card Tobi sends, his arm carrying it, where a
+// 一騎打ち's board between the reads: the player's take of the called card
+// and their faults (お手つき), the 送り札 both ways (which card Tobi sends, his arm carrying it, where a
 // card sent to him goes, and the player placing his on their side), the
 // open middle of the player's 上段, and the board laid out afresh as the
 // sides change.
@@ -17,6 +17,7 @@ import 'package:fudatobashi/domain/ikkiuchi_cards.dart';
 import 'package:fudatobashi/domain/ikkiuchi_field.dart';
 import 'package:fudatobashi/domain/ikkiuchi_geometry.dart';
 import 'package:fudatobashi/domain/ikkiuchi_layout.dart';
+import 'package:fudatobashi/domain/ikkiuchi_read.dart';
 import 'package:fudatobashi/domain/ikkiuchi_rig.dart';
 import 'package:fudatobashi/domain/ikkiuchi_send.dart';
 import 'package:fudatobashi/domain/ikkiuchi_strike.dart';
@@ -131,6 +132,119 @@ void main() {
       expect(const CardBox(Vec(-30, -30), 20, 20, math.pi / 4).overlapsArea(0, 0, 100, 100), isFalse);
       expect(const CardBox(Vec(50, 120), 10, 19).overlapsArea(0, 0, 100, 100), isFalse);
       expect(const CardBox(Vec(50, 110), 10, 19).overlapsArea(0, 0, 100, 100), isTrue);
+    });
+  });
+
+  group("The player's faults", () {
+    // Tobi's cards 1 and 2, the player's 3, 4 and 5; card 5 lies just under
+    // card 2, across the band from it.
+    const field = FieldRect(0, 0, 384, 400);
+    const homes = {
+      1: (IkkiuchiSide.tobi, Vec(80, 100)),
+      2: (IkkiuchiSide.tobi, Vec(200, 140)),
+      3: (IkkiuchiSide.player, Vec(80, 300)),
+      4: (IkkiuchiSide.player, Vec(300, 300)),
+      5: (IkkiuchiSide.player, Vec(200, 200)),
+    };
+    IkkiuchiBoard board() => IkkiuchiBoard(
+          tobi: TobiFrame(const Vec(150, 20), 1, rig),
+          size: const Vec(384, 832),
+          cards: [
+            for (final MapEntry(key: id, value: (side, at)) in homes.entries)
+              (id: id, side: side, box: CardBox(at, 19, 27)),
+          ],
+          cardW: 38,
+          fieldArea: field,
+        );
+
+    // The finger down on [id]'s middle and lifted, the board run on a
+    // little.
+    void tap(IkkiuchiBoard board, int id) {
+      board
+        ..touch(board.cards.card(id).box.centre)
+        ..advance(step)
+        ..lift()
+        ..advance(step);
+      for (var i = 0; i < 10; i++) {
+        board.advance(step);
+      }
+    }
+
+    test('a touch on the side without the read card is a fault, until the next read', () {
+      final b = board()..callCard(4);
+      tap(b, 1);
+      expect(b.playerFaults.keys, [1]);
+      expect(b.take, isNull);
+      expect(b.faults, isEmpty, reason: "the player's, not Tobi's");
+      b.callCard(3);
+      expect(b.playerFaults, isEmpty, reason: 'a new read starts afresh');
+    });
+
+    test("a touch on the read card's own side is not a fault", () {
+      final b = board()..callCard(4);
+      tap(b, 3);
+      tap(b, 5);
+      expect(b.playerFaults, isEmpty);
+      expect(b.take, isNull);
+    });
+
+    test('on a からふだ a touch on either side is a fault, and there is nothing to take', () {
+      final away = poems.all.map((p) => p.id).firstWhere((id) => !homes.containsKey(id));
+      final b = board()..callCard(away, onField: false);
+      expect(b.called, isNull);
+      tap(b, 3);
+      tap(b, 1);
+      expect(b.playerFaults.keys, unorderedEquals([3, 1]), reason: 'each card touched marked');
+      expect(b.take, isNull);
+    });
+
+    test('a card the finger knocks into one on the side without the read card is no fault', () {
+      final b = board()..callCard(4);
+      // The finger strikes card 5 up into Tobi's card 2 and stops short of
+      // it.
+      for (var i = 0; i <= 6; i++) {
+        b
+          ..touch(const Vec(200, 260).lerp(const Vec(200, 235), i / 6))
+          ..advance(step);
+      }
+      b
+        ..lift()
+        ..advance(step);
+      for (var i = 0; i < 600; i++) {
+        b.advance(step);
+      }
+      final knocked = b.cards.card(2);
+      expect(knocked.movedFrom(knocked.home, dp: 2, radians: 0.02), isTrue, reason: 'card 5 knocked it');
+      expect(b.playerFaults, isEmpty);
+    });
+
+    test('a touch on the side without the read card after the take is still a fault (競技規程細則 第二十三条 三)', () {
+      final b = board()..callCard(4);
+      tap(b, 4);
+      expect(b.take?.card, 4);
+      tap(b, 2);
+      expect(b.playerFaults.keys, [2], reason: 'after their own take');
+
+      // Tobi takes a card of his; the player then touches one of theirs.
+      final sides = dealt(3);
+      final tobis = layoutOf(sides).board();
+      final called = sides.tobi[0].left.first;
+      tobis.call(IkkiuchiRead(called: called, onField: true, move: IkkiuchiMove.whip, reachMs: 400, correctionReachMs: 400));
+      for (var i = 0; i < 2000 && !tobis.cards.card(called).taken; i++) {
+        tobis.advance(step);
+      }
+      expect(tobis.cards.card(called).taken, isTrue, reason: 'Tobi took it');
+      final late = sides.player[0].left.first;
+      tap(tobis, late);
+      expect(tobis.playerFaults.keys, [late], reason: "after Tobi's take");
+      expect(tobis.faults, isEmpty);
+    });
+
+    test('nothing read, nothing faults', () {
+      final b = board();
+      tap(b, 1);
+      tap(b, 3);
+      expect(b.playerFaults, isEmpty);
     });
   });
 
@@ -428,6 +542,39 @@ void main() {
       expectHome(scene, 'after the send');
       expect(settled, 1, reason: 'the board told it is at rest');
       expect(scene.band, scene.layout.band, reason: 'the band moved along');
+    });
+
+    test('nothing faults while a card is sent or waits, or while the player arranges their cards', () {
+      final cases = <String, void Function(IkkiuchiBoardScene scene)>{
+        'reading': (scene) {},
+        'sending': (scene) => scene.send.startSending(),
+        'waiting': (scene) {
+          scene.send.startReceiving();
+          for (var i = 0; i < 400 && scene.send.stage != IkkiuchiSendStage.waiting; i++) {
+            scene.advance(16);
+          }
+          expect(scene.send.stage, IkkiuchiSendStage.waiting);
+        },
+        'arranging': (scene) => scene.arrange.start(),
+      };
+      for (final MapEntry(key: why, value: start) in cases.entries) {
+        final sides = dealt(5);
+        final scene = sceneOf(sides);
+        final read = sides.playerCards.first;
+        scene.callCard(read, poems[read].kimariji);
+        // The finger is down in the band as it starts, then goes onto a
+        // card of Tobi's, which a touch while reading faults on.
+        final band = scene.layout.band.center;
+        scene.pointer(PointerDownEvent(pointer: 1, position: band));
+        scene.advance(16);
+        start(scene);
+        final tobis = scene.board.cards.cards.firstWhere((c) => c.side == IkkiuchiSide.tobi && !c.held);
+        scene.pointer(PointerMoveEvent(pointer: 1, position: Offset(tobis.box.centre.x, tobis.box.centre.y)));
+        for (var i = 0; i < 5; i++) {
+          scene.advance(16);
+        }
+        expect(scene.board.playerFaults, why == 'reading' ? isNotEmpty : isEmpty, reason: why);
+      }
     });
 
     test('a card let go off his side glides back to its place', () {

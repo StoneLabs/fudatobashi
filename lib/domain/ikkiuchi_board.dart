@@ -60,13 +60,17 @@ class IkkiuchiTobiPose {
 }
 
 /// The 一騎打ち board in play: the cards (`IkkiuchiCards`), Tobi's strikes
-/// on each call and the faults his fist makes, and the player's finger. It
-/// runs in fixed steps of the card sim, so the same calls at the same steps
-/// always give the same board.
+/// on each call, the player's finger, and the faults (お手つき) each makes.
+/// It runs in fixed steps of the card sim, so the same calls at the same
+/// steps always give the same board.
 ///
-/// By the rules only his fist counts: touching a card on the side without
-/// the called card is a fault, and so is touching any card on a からふだ;
-/// touching a wrong card on the called card's own side is not.
+/// One rule ([faultsOn]) says what is a fault, for his fist and the finger
+/// alike, as the rules have it (競技規程細則 第二十三条): touching a card on
+/// the side without the called card is a fault, and so is touching any card
+/// on a からふだ; touching a wrong card on the called card's own side is
+/// not. Only the fist's or the finger's own touch counts, never a card
+/// knocked into another (第二十三条 二), and a touch after the take counts
+/// too, while the read goes on (第二十三条 三).
 ///
 /// The player takes the called card when their finger touches it, or when
 /// it has wholly left the field ([fieldArea]): no part of it lies inside it
@@ -111,9 +115,13 @@ class IkkiuchiBoard {
   final List<IkkiuchiRun> runs = [];
   final List<({bool Function() ready, IkkiuchiRun Function() start})> _pending = [];
 
-  /// Every burst so far, and every card faulted on with when.
+  /// Every burst so far, and every card his fist faulted on with when.
   final List<IkkiuchiImpact> impacts = [];
   final Map<int, double> faults = {};
+
+  /// Every card the player's finger faulted on since the last read began,
+  /// with when.
+  final Map<int, double> playerFaults = {};
 
   /// The face he wears after the last call, and until when.
   TobiFace restFace = TobiFace.standard;
@@ -141,11 +149,18 @@ class IkkiuchiBoard {
   IkkiuchiTake? get take => _take;
   IkkiuchiTake? _take;
 
-  /// Calls [id] for the player alone, Tobi's arm still: the player's take
-  /// of it starts afresh. Null calls nothing.
-  void callCard(int? id) {
-    _called = id;
+  /// The card read now and whether it lies on the field, else it is a
+  /// からふだ; null while nothing is read.
+  ({int id, bool onField})? _reading;
+
+  /// Reads [id] for the player alone, Tobi's arm still: their take of it
+  /// and their faults start afresh. A からふだ ([onField] false) has nothing
+  /// to take. Null reads nothing.
+  void callCard(int? id, {bool onField = true}) {
+    _reading = id == null ? null : (id: id, onField: onField);
+    _called = onField ? id : null;
     _take = null;
+    playerFaults.clear();
   }
 
   /// The face he holds between strikes until let go; null for none.
@@ -193,7 +208,7 @@ class IkkiuchiBoard {
   void call(IkkiuchiRead read) {
     _read = read;
     _readAt = now;
-    callCard(read.onField ? read.called : null);
+    callCard(read.called, onField: read.onField);
     runs.clear();
     _pending.clear();
     if (!read.strikes) return;
@@ -290,14 +305,28 @@ class IkkiuchiBoard {
 
   /// Which side is without the called card: on a からふだ, neither has it.
   IkkiuchiSide? get _deadSide {
-    final read = _read;
-    if (read == null || !read.onField) return null;
-    return cards.card(read.called).side == IkkiuchiSide.tobi ? IkkiuchiSide.player : IkkiuchiSide.tobi;
+    final reading = _reading;
+    if (reading == null || !reading.onField) return null;
+    return cards.card(reading.id).side == IkkiuchiSide.tobi ? IkkiuchiSide.player : IkkiuchiSide.tobi;
   }
 
   bool _isDead(IkkiuchiCard card) {
     final dead = _deadSide;
     return dead == null || card.side == dead;
+  }
+
+  /// Whether a touch on [card] now is a fault, by Tobi's fist or the
+  /// player's finger: a card is read, and [card] lies on the side without
+  /// it, or anywhere on a からふだ, and still on the field (競技規程細則
+  /// 第二十三条 一). Nothing faults while nothing is read, as during a 送り札
+  /// or 並べ替え.
+  bool faultsOn(IkkiuchiCard card) => _reading != null && !card.taken && !card.held && _isDead(card) && _inField(card);
+
+  /// Whether [card] is on the board with some of it inside the field, or
+  /// just on the board where there is no field.
+  bool _inField(IkkiuchiCard card) {
+    final area = fieldArea;
+    return card.onBoard && (area == null || card.box.overlapsArea(area.x, area.y, area.right, area.bottom));
   }
 
   /// From the side without the called card toward the called card's side
@@ -353,6 +382,7 @@ class IkkiuchiBoard {
     if (run == null) {
       cards.moveFist(null, null, radius: 0, keep: Vec.zero);
       cards.step();
+      _noteTouches();
       _checkTake();
       _steps++;
       return;
@@ -377,9 +407,7 @@ class IkkiuchiBoard {
     }
     _checkTouches(run, rt1);
     cards.step();
-    for (final c in cards.fistTouched) {
-      if (_isDead(c)) _fault(c);
-    }
+    _noteTouches();
     _checkTake();
     _steps++;
     if (strike.doneAt(run.at(now)) && _pending.isEmpty) {
@@ -399,7 +427,7 @@ class IkkiuchiBoard {
     // The card struck at comes first, so a slap on it is the fault noted.
     final dead = [
       for (final c in cards.cards)
-        if (c.onBoard && !c.taken && _isDead(c)) c,
+        if (faultsOn(c)) c,
     ]..sort((a, b) => (b.id == run.target ? 1 : 0) - (a.id == run.target ? 1 : 0));
     if (dead.isEmpty) return;
     for (var u = from + IkkiuchiArmTuning.touchStep; u <= tau; u += IkkiuchiArmTuning.touchStep) {
@@ -413,6 +441,17 @@ class IkkiuchiBoard {
 
   void _fault(IkkiuchiCard card) => faults.putIfAbsent(card.id, () => now);
 
+  /// The faults in the cards the fist and the finger touched in the last
+  /// step, his and the player's.
+  void _noteTouches() {
+    for (final c in cards.fistTouched) {
+      if (faultsOn(c)) _fault(c);
+    }
+    for (final c in cards.fingerTouched) {
+      if (faultsOn(c)) playerFaults.putIfAbsent(c.id, () => now);
+    }
+  }
+
   /// The carried card leaves the board as his hand takes it.
   void _holdCarried() {
     final move = _carryMove, id = _carried;
@@ -424,13 +463,13 @@ class IkkiuchiBoard {
   /// The player takes the called card once their finger touches it, or
   /// once none of it lies inside the field; never one Tobi took.
   void _checkTake() {
-    final id = _called, area = fieldArea;
+    final id = _called;
     if (id == null || _take != null) return;
     final card = cards.card(id);
     if (card.taken || card.held) return;
     if (cards.fingerTouched.contains(card)) {
       _take = IkkiuchiTake(id, now, IkkiuchiTakeWay.touched);
-    } else if (area != null && (!card.onBoard || !card.box.overlapsArea(area.x, area.y, area.right, area.bottom))) {
+    } else if (fieldArea != null && !_inField(card)) {
       _take = IkkiuchiTake(id, now, IkkiuchiTakeWay.leftField);
     }
   }
