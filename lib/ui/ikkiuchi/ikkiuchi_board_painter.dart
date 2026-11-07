@@ -68,10 +68,15 @@ class IkkiuchiBoardPainter extends CustomPainter {
         math.cos(board.now * IkkiuchiBoardStyle.shakeRateY) * reach);
   }
 
+  /// [card] on the field, outlined when marked (green once the player took
+  /// it) or when the player faulted on it.
   void _paintCard(Canvas canvas, IkkiuchiCard card) {
     if (!card.still) IkkiuchiEffects.paintStreaks(canvas, card.box, card.velocity);
-    final taken = scene.board.take?.card == card.id;
-    _paintFace(canvas, card.id, card.box, shown: card.shown, mark: card.id == scene.marked ? (taken ? _taken : _mark) : null);
+    final board = scene.board;
+    final mark = card.id == scene.marked
+        ? (board.take?.card == card.id ? _taken : _mark)
+        : (board.playerFaults.containsKey(card.id) ? _fault : null);
+    _paintFace(canvas, card.id, card.box, shown: card.shown, mark: mark);
   }
 
   /// Card [id]'s face lying as [box], [shown] its share showing, with an
@@ -105,6 +110,7 @@ class IkkiuchiBoardPainter extends CustomPainter {
 
   static final _mark = _outline(IkkiuchiBoardStyle.markColor);
   static final _taken = _outline(IkkiuchiBoardStyle.takenMarkColor);
+  static final _fault = _outline(IkkiuchiBoardStyle.faultMarkColor);
 
   void _paintBand(Canvas canvas, Rect band) {
     canvas.drawRect(band, Paint()..color = IkkiuchiBoardStyle.bandFill);

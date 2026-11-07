@@ -39,9 +39,11 @@ abstract final class IkkiuchiBoardStyle {
 
   /// A card marked on the board: an outline [markWidth] wide in
   /// [markColor], [markGap] outside its edge, its corners rounded
-  /// [markRadius]; in [takenMarkColor] once the player took it.
+  /// [markRadius]; in [takenMarkColor] once the player took it. A card the
+  /// player faulted on (お手つき) gets one in [faultMarkColor].
   static const Color markColor = Palette.pink;
   static const Color takenMarkColor = Palette.land;
+  static const Color faultMarkColor = Palette.alarm;
   static const double markWidth = 3;
   static const double markGap = 1;
   static const double markRadius = 3;
