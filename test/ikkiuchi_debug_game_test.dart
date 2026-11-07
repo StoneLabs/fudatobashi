@@ -97,6 +97,17 @@ void main() {
       expect(IkkiuchiBoard.takerOf(side: player), isNull);
     });
 
+    test('what a read end says: 同時 or からふだ, the take, then the faults, double on both sides', () {
+      const c = IkkiuchiCallout.values;
+      expect(const IkkiuchiReadEnd(taker: player, cardSide: tobi).callouts, [IkkiuchiCallout.youTook]);
+      expect(const IkkiuchiReadEnd(taker: tobi, cardSide: tobi, tied: true, playerFaults: {player}).callouts,
+          [IkkiuchiCallout.tied, IkkiuchiCallout.tobiTook, IkkiuchiCallout.yourFault]);
+      expect(const IkkiuchiReadEnd().callouts, [IkkiuchiCallout.karafuda]);
+      expect(const IkkiuchiReadEnd(playerFaults: {tobi, player}, tobiFaults: {tobi}).callouts,
+          [IkkiuchiCallout.karafuda, IkkiuchiCallout.yourDoubleFault, IkkiuchiCallout.tobiFault]);
+      expect(c, hasLength(8));
+    });
+
     test('the read order is the field and 10 からふだ for every 25 field cards', () {
       final field = List.generate(50, (i) => i + 1), away = List.generate(50, (i) => i + 51);
       final order = IkkiuchiReadOrder.deal(field: field, away: away, rng: math.Random(1));
@@ -181,11 +192,11 @@ void main() {
       }
     }
 
-    Future<void> runUntil(WidgetTester tester, bool Function() done, {double most = 20000}) async {
+    Future<void> runUntil(WidgetTester tester, bool Function() done, {double most = 20000, String? reason}) async {
       for (var t = 0.0; t < most && !done(); t += frame.inMilliseconds) {
         await tester.pump(frame);
       }
-      expect(done(), isTrue);
+      expect(done(), isTrue, reason: reason);
     }
 
     Offset onScreen(WidgetTester tester, Vec at) =>
@@ -236,7 +247,7 @@ void main() {
       await capture(tester, 'game_memory_time');
       await tester.tap(tool(IkkiuchiToolsStyle.goLabel));
       await tester.pump(frame);
-      expect(stage(tester), IkkiuchiStage.memoryTime, reason: '▶ only lets a held match go');
+      expect(stage(tester), IkkiuchiStage.memoryTime, reason: '次 only lets a held match go');
       await tester.tap(tool(IkkiuchiToolsStyle.startLabel));
       await tester.pump(frame);
       expect(stage(tester), IkkiuchiStage.gameStart, reason: '始 ends the memory time');
@@ -260,7 +271,7 @@ void main() {
       await tester.pumpWidget(const SizedBox());
     });
 
-    testWidgets('a take on their own side holds at ▶, then 1s wait, 下の句 7 s, 1s break, the next 上の句',
+    testWidgets('a take on their own side holds at 次, then 1s wait, 下の句 7 s, 1s break, the next 上の句',
         (tester) async {
       final p = await open(tester);
       await seedReading(tester, p, IkkiuchiSide.player);
@@ -292,6 +303,71 @@ void main() {
       await tester.pumpWidget(const SizedBox());
     });
 
+    testWidgets('a read ends in Feedback: its words slide in on the strip, then the flow goes on', (tester) async {
+      final p = await open(tester);
+      for (final landscape in [true, false]) {
+        final o = landscape ? 'landscape' : 'portrait';
+        for (var seed = 0;; seed++) {
+          await toFirstRead(tester, p, seed, landscape: landscape);
+          final b = flow(tester).scene.board;
+          if (b.called != null && b.cards.card(b.called!).side == IkkiuchiSide.player) break;
+        }
+        final f = flow(tester), s = f.scene;
+        await run(tester, s.reader.call!.decidedAt + 50);
+        await touch(tester, s.board.cards.card(s.board.called!).box.centre);
+        await runUntil(tester, () => f.stage == IkkiuchiStage.feedback);
+        expect(f.feedback!.callouts, [IkkiuchiCallout.youTook], reason: o);
+        await run(tester, IkkiuchiMatchTuning.feedbackIn.inMilliseconds / 2);
+        expect(find.text('あなたの取り'), findsOneWidget, reason: o);
+        await capture(tester, 'game_feedback_${o}_sliding');
+        await run(tester, IkkiuchiMatchTuning.feedbackIn.inMilliseconds.toDouble());
+        await capture(tester, 'game_feedback_$o');
+        expect(f.canArrange, isFalse);
+        await runUntil(tester, () => f.stage != IkkiuchiStage.feedback);
+        expect(f.stage, IkkiuchiStage.closingUp, reason: '$o: the card taken leaves');
+        await runUntil(tester, () => f.stage == IkkiuchiStage.waitingForGo);
+        expect(find.text('あなたの取り'), findsNothing);
+      }
+      await tester.pumpWidget(const SizedBox());
+    });
+
+    testWidgets('the finger touches no card outside 上の句 and Waiting for card hit', (tester) async {
+      final p = await open(tester);
+      await show(tester, p, const IkkiuchiDebugGame(seed: 3));
+      final f = flow(tester), s = f.scene;
+      final id = s.sides!.playerCards.first;
+      final card = s.board.cards.card(id);
+      final before = card.box.centre;
+      final g = await tester.startGesture(onScreen(tester, before + const Vec(-30, 0)));
+      for (var i = 1; i <= 8; i++) {
+        await g.moveTo(onScreen(tester, before + Vec(-30 + i * 8.0, 0)));
+        await tester.pump(frame);
+      }
+      await g.up();
+      await run(tester, 200);
+      expect(card.box.centre.distanceTo(before), lessThan(1e-6), reason: 'memory time: nothing moves');
+      expect(s.fingerOn, isFalse);
+      await tester.pumpWidget(const SizedBox());
+    });
+
+    testWidgets('a からふだ waits 5 s; a touch late in it is still a fault', (tester) async {
+      final p = await open(tester);
+      await show(tester, p, const IkkiuchiDebugGame(seed: 6));
+      game(tester).setRating(null);
+      await tester.tap(tool(IkkiuchiToolsStyle.karafudaLabel));
+      await tester.tap(tool(IkkiuchiToolsStyle.startLabel));
+      await runUntil(tester, () => stage(tester) == IkkiuchiStage.kaminoku);
+      final f = flow(tester), s = f.scene;
+      await run(tester, s.reader.call!.decidedAt + IkkiuchiPlayTuning.karafudaPause.inMilliseconds - 600.0);
+      expect(f.stage, IkkiuchiStage.waitingForHit);
+      await touch(tester, s.board.cards.card(s.sides!.playerCards.first).box.centre);
+      expect(s.board.playerFaults, isNotEmpty);
+      await runUntil(tester, () => f.stage == IkkiuchiStage.feedback);
+      expect(f.feedback!.callouts, [IkkiuchiCallout.karafuda, IkkiuchiCallout.yourFault]);
+      await runUntil(tester, () => f.stage == IkkiuchiStage.receivingCard, reason: 'their fault: Tobi sends one');
+      await tester.pumpWidget(const SizedBox());
+    });
+
     testWidgets('並べ替え still open as the 下の句 ends holds in Moving Card until 完了', (tester) async {
       final p = await open(tester);
       await seedReading(tester, p, IkkiuchiSide.player);
@@ -320,6 +396,9 @@ void main() {
       final f = flow(tester), s = f.scene;
       final read = s.board.called!;
       await touch(tester, s.board.cards.card(read).box.centre);
+      await runUntil(tester, () => f.stage == IkkiuchiStage.closingUp);
+      await run(tester, 150);
+      await capture(tester, 'game_closing_up');
       await runUntil(tester, () => f.stage == IkkiuchiStage.sendingCard);
       expect(s.sides!.tobiCards, isNot(contains(read)));
       expect(find.text(IkkiuchiToolsStyle.sendingCard), findsOneWidget);
@@ -340,7 +419,11 @@ void main() {
       await capture(tester, 'game_tobi_placing');
       await runUntil(tester, () => f.stage == IkkiuchiStage.waitingForGo);
       expect(s.sides!.tobiCards, contains(card));
-      expect(s.board.cards.card(card).box.centre.distanceTo(s.board.cards.card(card).home.centre), lessThan(1e-3));
+      await run(tester, 500);
+      final laid = s.board.cards.card(card);
+      expect(laid.held, isFalse, reason: 'still on the board once his arm is back, no gap');
+      expect(s.board.field.keys, contains(card));
+      expect(laid.box.centre.distanceTo(laid.home.centre), lessThan(1e-3));
       await tester.pumpWidget(const SizedBox());
     });
 
