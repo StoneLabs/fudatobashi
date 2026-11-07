@@ -82,19 +82,61 @@ abstract final class CreditsLayout {
   static const double licenseTextLineHeight = 1.4;
 }
 
+/// The sizes of a press-and-hold confirm button (`HoldToConfirmButton`):
+/// its ring [ringSize] across, the ring's ink [ringStroke] wide with the
+/// fill [fillStroke] in it, the hazard bezel [bezel] wide in stripes
+/// [bezelStripe] wide, the dome's ink [domeBorder] wide and its countdown
+/// outlined [countOutline]; it rattles [shakeReach] at the very end. Its
+/// label lies [labelGap] under it in [labelFont], padded [labelPadding].
+class HoldConfirmLook {
+  const HoldConfirmLook({
+    required this.ringSize,
+    required this.ringStroke,
+    required this.fillStroke,
+    required this.bezel,
+    required this.bezelStripe,
+    required this.domeBorder,
+    required this.countOutline,
+    required this.shakeReach,
+    required this.labelGap,
+    required this.labelFont,
+    required this.labelPadding,
+  });
+
+  final double ringSize;
+  final double ringStroke;
+  final double fillStroke;
+  final double bezel;
+  final double bezelStripe;
+  final double domeBorder;
+  final double countOutline;
+  final double shakeReach;
+  final double labelGap;
+  final double labelFont;
+  final EdgeInsets labelPadding;
+}
+
 /// A press-and-hold confirm button (`HoldToConfirmButton`), built like the
 /// arming button of something dangerous: an alarm-red dome inside a hazard
 /// striped bezel and an ink ring. Held, the ring fills from sun to paper,
 /// the dome counts down the seconds, the bezel spins up and the whole
 /// button rattles and glows harder toward the end. Releasing early drains
-/// it back to empty.
+/// it back to empty. Its sizes are [look] unless a screen gives its own.
 abstract final class HoldConfirmStyle {
-  static const double ringSize = 148;
-  static const double ringStroke = 13;
-  static const double fillStroke = 7;
+  static const look = HoldConfirmLook(
+    ringSize: 148,
+    ringStroke: 13,
+    fillStroke: 7,
+    bezel: 14,
+    bezelStripe: 7,
+    domeBorder: 3,
+    countOutline: 8,
+    shakeReach: 5,
+    labelGap: 10,
+    labelFont: TypeScale.button,
+    labelPadding: EdgeInsets.fromLTRB(12, 6, 12, 7),
+  );
   static const List<Color> fillColors = [Palette.sun, Palette.orange, Palette.paper];
-  static const double bezel = 14;
-  static const double bezelStripe = 7;
 
   /// Full turns the bezel's stripes make over a whole hold, speeding up.
   static const double bezelTurns = 4;
@@ -102,7 +144,6 @@ abstract final class HoldConfirmStyle {
   static const Color domeLit = Color(0xFFFF5A4E);
   static const Alignment domeLight = Alignment(-0.35, -0.45);
   static const double domeLightRadius = 0.95;
-  static const double domeBorder = 3;
 
   /// The shine on the dome, in shares of its radius from its centre.
   static const Offset shineAt = Offset(-0.34, -0.5);
@@ -113,11 +154,9 @@ abstract final class HoldConfirmStyle {
   static const double pressedScale = 0.94;
   static const double icon = 34;
   static const double countFont = 50;
-  static const double countOutline = 8;
 
-  /// The rattle, [shakeReach] px at the very end, growing with the square
-  /// of the progress, re-rolled every [shakeStep].
-  static const double shakeReach = 5;
+  /// The rattle, its look's `shakeReach` px at the very end, growing with
+  /// the square of the progress, re-rolled every [shakeStep].
   static const Duration shakeStep = Duration(milliseconds: 35);
 
   /// The glow around the ring, reaching this share of its radius past it
@@ -128,9 +167,6 @@ abstract final class HoldConfirmStyle {
   static const double glowFrom = 0.9;
   static const List<Color> glowColors = [Color(0xE6FFF1A8), Color(0x99FFD83A), Color(0x00FFD83A)];
   static const Duration drain = Duration(milliseconds: 260);
-  static const double labelGap = 10;
-  static const double labelFont = TypeScale.button;
-  static const EdgeInsets labelPadding = EdgeInsets.fromLTRB(12, 6, 12, 7);
 }
 
 /// The full-screen alarm before what can't be undone (`HoldWarningScreen`:

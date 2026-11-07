@@ -17,7 +17,7 @@ import 'seeded_random.dart';
 /// its dome counts the seconds down while it rattles, spins up and, with
 /// [haptics], buzzes faster and harder (see [HoldConfirmTuning]). Releasing
 /// early drains it back to empty. [onProgress] reports the hold, 0–1, so
-/// the page around it can react.
+/// the page around it can react. Its sizes are [look].
 class HoldToConfirmButton extends StatefulWidget {
   const HoldToConfirmButton({
     super.key,
@@ -28,6 +28,7 @@ class HoldToConfirmButton extends StatefulWidget {
     this.icon,
     this.haptics = true,
     this.onProgress,
+    this.look = HoldConfirmStyle.look,
   });
 
   final Duration duration;
@@ -41,6 +42,7 @@ class HoldToConfirmButton extends StatefulWidget {
   final Widget? icon;
   final bool haptics;
   final ValueChanged<double>? onProgress;
+  final HoldConfirmLook look;
 
   @override
   State<HoldToConfirmButton> createState() => _HoldToConfirmButtonState();
@@ -114,6 +116,7 @@ class _HoldToConfirmButtonState extends State<HoldToConfirmButton> with SingleTi
 
   @override
   Widget build(BuildContext context) {
+    final look = widget.look;
     final label = _held ? widget.holdingLabel ?? widget.label : widget.label;
     return Semantics(
       button: true,
@@ -135,36 +138,37 @@ class _HoldToConfirmButtonState extends State<HoldToConfirmButton> with SingleTi
                 var rattle = Offset.zero;
                 if (_held && !_still) {
                   final r = SeededRandom(into.inMicroseconds ~/ HoldConfirmStyle.shakeStep.inMicroseconds);
-                  rattle = Offset(r.next() * 2 - 1, r.next() * 2 - 1) * HoldConfirmStyle.shakeReach * p * p;
+                  rattle = Offset(r.next() * 2 - 1, r.next() * 2 - 1) * look.shakeReach * p * p;
                 }
                 final secondsLeft = ((widget.duration - into).inMilliseconds / 1000).ceil();
                 return Transform.translate(
                   offset: rattle,
                   child: CustomPaint(
                     painter: _ArmingPainter(
+                      look: look,
                       progress: p,
                       spin: _still ? 0 : HoldConfirmStyle.bezelTurns * 2 * math.pi * p * p,
                       pressed: _held,
                     ),
                     child: SizedBox.square(
-                      dimension: HoldConfirmStyle.ringSize,
-                      child: Center(child: _held ? _Countdown(secondsLeft) : icon),
+                      dimension: look.ringSize,
+                      child: Center(child: _held ? _Countdown(secondsLeft, outline: look.countOutline) : icon),
                     ),
                   ),
                 );
               },
             ),
-            const SizedBox(height: HoldConfirmStyle.labelGap),
+            SizedBox(height: look.labelGap),
             DecoratedBox(
               decoration: BoxDecoration(
                 color: Palette.paper,
                 border: Border.all(color: Palette.ink, width: Strokes.control),
               ),
               child: Padding(
-                padding: HoldConfirmStyle.labelPadding,
+                padding: look.labelPadding,
                 child: Text(label,
                     textAlign: TextAlign.center,
-                    style: const TextStyle(fontWeight: Weights.black, fontSize: HoldConfirmStyle.labelFont)),
+                    style: TextStyle(fontWeight: Weights.black, fontSize: look.labelFont)),
               ),
             ),
           ],
@@ -174,10 +178,11 @@ class _HoldToConfirmButtonState extends State<HoldToConfirmButton> with SingleTi
   }
 }
 
-/// The seconds left, in display lettering on the dome.
+/// The seconds left, in display lettering on the dome, [outline] round it.
 class _Countdown extends StatelessWidget {
-  const _Countdown(this.seconds);
+  const _Countdown(this.seconds, {required this.outline});
   final int seconds;
+  final double outline;
 
   @override
   Widget build(BuildContext context) => FractionallySizedBox(
@@ -187,7 +192,7 @@ class _Countdown extends StatelessWidget {
           child: OutlinedText(
             '$seconds',
             outline: Palette.ink,
-            outlineWidth: HoldConfirmStyle.countOutline,
+            outlineWidth: outline,
             style: const TextStyle(
               fontFamily: Fonts.display,
               fontSize: HoldConfirmStyle.countFont,
@@ -200,7 +205,8 @@ class _Countdown extends StatelessWidget {
 }
 
 class _ArmingPainter extends CustomPainter {
-  _ArmingPainter({required this.progress, required this.spin, required this.pressed});
+  _ArmingPainter({required this.look, required this.progress, required this.spin, required this.pressed});
+  final HoldConfirmLook look;
   final double progress;
 
   /// The bezel's turn, radians.
@@ -213,20 +219,20 @@ class _ArmingPainter extends CustomPainter {
     final outer = size.shortestSide / 2;
     if (progress > 0) _glow(canvas, center, outer);
 
-    final ring = outer - HoldConfirmStyle.ringStroke / 2;
-    canvas.drawCircle(center, ring, _stroke(HoldConfirmStyle.ringStroke, Palette.ink));
+    final ring = outer - look.ringStroke / 2;
+    canvas.drawCircle(center, ring, _stroke(look.ringStroke, Palette.ink));
     if (progress > 0) {
       canvas.drawArc(
         Rect.fromCircle(center: center, radius: ring),
         -math.pi / 2,
         2 * math.pi * progress,
         false,
-        _stroke(HoldConfirmStyle.fillStroke, _fillColor(progress))..strokeCap = StrokeCap.round,
+        _stroke(look.fillStroke, _fillColor(progress))..strokeCap = StrokeCap.round,
       );
     }
 
-    final bezelOuter = outer - HoldConfirmStyle.ringStroke;
-    final bezelInner = bezelOuter - HoldConfirmStyle.bezel;
+    final bezelOuter = outer - look.ringStroke;
+    final bezelInner = bezelOuter - look.bezel;
     canvas.save();
     canvas.clipPath(Path()
       ..fillType = PathFillType.evenOdd
@@ -235,7 +241,7 @@ class _ArmingPainter extends CustomPainter {
     canvas.translate(center.dx, center.dy);
     canvas.rotate(spin);
     paintHazardStripes(canvas, Rect.fromCircle(center: Offset.zero, radius: bezelOuter),
-        stripe: HoldConfirmStyle.bezelStripe);
+        stripe: look.bezelStripe);
     canvas.restore();
 
     final dome = bezelInner * (pressed ? HoldConfirmStyle.pressedScale : 1);
@@ -259,7 +265,7 @@ class _ArmingPainter extends CustomPainter {
       ),
       Paint()..color = Palette.paper.withValues(alpha: HoldConfirmStyle.shineOpacity),
     );
-    canvas.drawCircle(center, dome, _stroke(HoldConfirmStyle.domeBorder, Palette.ink));
+    canvas.drawCircle(center, dome, _stroke(look.domeBorder, Palette.ink));
   }
 
   /// A light swelling round the ring as the hold goes on.
@@ -290,5 +296,6 @@ class _ArmingPainter extends CustomPainter {
   }
 
   @override
-  bool shouldRepaint(_ArmingPainter old) => old.progress != progress || old.spin != spin || old.pressed != pressed;
+  bool shouldRepaint(_ArmingPainter old) =>
+      old.look != look || old.progress != progress || old.spin != spin || old.pressed != pressed;
 }
