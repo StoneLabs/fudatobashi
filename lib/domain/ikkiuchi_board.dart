@@ -441,8 +441,8 @@ class IkkiuchiBoard {
 
   void _fault(IkkiuchiCard card) => faults.putIfAbsent(card.id, () => now);
 
-  /// The faults in the cards the fist and the finger touched in the last
-  /// step, his and the player's.
+  /// Notes a fault on each card the fist or the finger touched in the last
+  /// step: his, or the player's.
   void _noteTouches() {
     for (final c in cards.fistTouched) {
       if (faultsOn(c)) _fault(c);
