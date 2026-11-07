@@ -516,10 +516,12 @@ void main() {
           expect(tester.takeException(), isNull);
           final s = scene(tester);
           expect(s.layout.cards.map((c) => 2 * c.box.hw), everyElement(closeTo(s.layout.cardW, 1e-6)));
+          if (name == 'tablet' && !landscape) {
+            expect(s.layout.cardW, IkkiuchiBoardStyle.maxCardW, reason: 'a tablet grows the cards to their widest');
+          }
           await capture(tester, 'strikes_${name}_${landscape ? 'landscape' : 'portrait'}');
         }
       }
-      expect(scene(tester).layout.cardW, IkkiuchiBoardStyle.maxCardW, reason: 'a tablet grows the cards to their widest');
 
       // A hit on the tablet's large cards.
       await show(tester, p, const IkkiuchiStrikesPage(rating: 2000, seed: 144), screen: ipadPortrait);

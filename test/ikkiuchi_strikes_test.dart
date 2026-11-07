@@ -200,9 +200,26 @@ void main() {
             final lefts = l.cards.map((c) => c.box.centre.x - c.box.hw);
             final rights = l.cards.map((c) => c.box.centre.x + c.box.hw);
             final fieldW = rights.reduce(math.max) - lefts.reduce(math.min);
-            final capped = fieldW < l.size.x - 2 * pad - eps;
             expect(fieldW, lessThanOrEqualTo(IkkiuchiLayoutTuning.rowSlots * u + eps), reason: '$why: at most 16.5 cards wide');
-            expect(lefts.reduce(math.min) + rights.reduce(math.max), closeTo(l.size.x, eps), reason: '$why: centred');
+            final centred = (lefts.reduce(math.min) + rights.reduce(math.max) - l.size.x).abs() < eps;
+            final bool capped;
+            if (landscape) {
+              // The game column at the right edge, and left of it room for
+              // a sent card, a card wide and its margins.
+              final column = l.column!;
+              final room = column.left - 2 * IkkiuchiSendStyle.wait.margin - u;
+              expect(column.right, closeTo(l.size.x - IkkiuchiColumnStyle.edge, eps), reason: why);
+              expect(rights.reduce(math.max), lessThanOrEqualTo(room + eps), reason: "$why: room for a sent card");
+              expect(centred || (rights.reduce(math.max) - room).abs() < eps, isTrue,
+                  reason: '$why: centred, or as far right as leaves that room');
+              expect(l.wait.left, greaterThanOrEqualTo(rights.reduce(math.max) - eps), reason: '$why: right of the field');
+              expect(l.wait.right, lessThanOrEqualTo(column.left + eps), reason: '$why: left of the column');
+              capped = fieldW < room - pad - eps;
+            } else {
+              expect(l.column, isNull);
+              expect(centred, isTrue, reason: '$why: centred');
+              capped = fieldW < l.size.x - 2 * pad - eps;
+            }
             if (!capped) expect(lefts.reduce(math.min), closeTo(pad, eps), reason: '$why: the field spans the board');
             var leastMiddle = double.infinity;
             for (final row in rowsOf(l)) {

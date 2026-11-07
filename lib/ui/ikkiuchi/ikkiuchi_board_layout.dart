@@ -24,13 +24,15 @@ import '../../domain/ikkiuchi_rig.dart';
 /// middle of his half, the room he needs there kept open, and its rows may
 /// reach the board's top and bottom edges. A card Tobi sends waits at
 /// [wait]: in portrait right of him, just above his side; in landscape in
-/// the margin beside the player's side.
+/// the margin beside the player's side. Landscape keeps the game [column]
+/// at the board's right edge, and left of it room for that card: the field
+/// lies centred where it can, else as far right as leaves the room.
 ///
 /// Any change to the sides lays the board out afresh by the same rules
 /// ([withSides]), its cards growing or shrinking to fit.
 class IkkiuchiBoardLayout {
   IkkiuchiBoardLayout._(this.size, this.landscape, this.band, this.tobi, this.cardW, this.cards, this.field, this.wait,
-      this._field, this._fieldW, this._origin);
+      this.column, this._field, this._fieldW, this._origin);
 
   /// [tobiRows] and [playerRows] are each side's rows as its owner sees
   /// them, 下段 first, each group from its outer edge in.
@@ -51,23 +53,27 @@ class IkkiuchiBoardLayout {
     final w = size.width, h = size.height;
     final areaW = w - 2 * pad;
     final half = field.halfHeight;
-    final double cardW, top, fieldW;
+    final double cardW, top, fieldW, left;
     final TobiFrame tobi;
     if (landscape) {
       // Tobi is as tall as a share of his half, so the room he needs grows
-      // with the cards.
+      // with the cards. Right of the field a sent card's room, a card wide
+      // and its margins, then the column.
       const share = IkkiuchiBoardStyle.tobiShare;
       final room = half * share * rig.size.x / rig.size.y + 2 * IkkiuchiBoardStyle.tobiSideRoom;
+      final least = field.leastWidth(tobiRoom: room);
+      final right = w - IkkiuchiColumnStyle.edge - IkkiuchiColumnStyle.width - 2 * IkkiuchiSendStyle.wait.margin;
       cardW = [
-        areaW / field.leastWidth(tobiRoom: room),
+        (right - pad) / (least + 1),
         (h - bandH) / (2 * half),
         IkkiuchiBoardStyle.maxCardW,
       ].reduce(math.min);
       top = (h - (2 * half * cardW + bandH)) / 2;
-      fieldW = math.min(areaW / cardW, math.max(IkkiuchiLayoutTuning.rowSlots, field.leastWidth(tobiRoom: room)));
+      fieldW = math.min((right - pad) / cardW - 1, math.max(IkkiuchiLayoutTuning.rowSlots, least));
+      left = math.min((w - fieldW * cardW) / 2, right - (fieldW + 1) * cardW);
       final open = field.tobiOpen(fieldW);
       final k = half * cardW * share / rig.size.y;
-      final middle = pad + (areaW - fieldW * cardW) / 2 + (open.from + open.to) / 2 * cardW;
+      final middle = left + (open.from + open.to) / 2 * cardW;
       tobi = TobiFrame(Vec(middle - rig.size.x * k / 2, top + IkkiuchiBoardStyle.tobiTop), k, rig);
     } else {
       cardW = [
@@ -76,6 +82,7 @@ class IkkiuchiBoardLayout {
         IkkiuchiBoardStyle.maxCardW,
       ].reduce(math.min);
       fieldW = math.min(areaW / cardW, math.max(IkkiuchiLayoutTuning.rowSlots, field.leastWidth()));
+      left = pad + (areaW - fieldW * cardW) / 2;
       top = h - IkkiuchiBoardStyle.bottomGap - (2 * half * cardW + bandH);
       final k = math.min(IkkiuchiBoardStyle.tobiHeight, top - pad - IkkiuchiBoardStyle.tobiTopRoom) / rig.size.y;
       final feetY = top - IkkiuchiBoardStyle.tobiFeetGap;
@@ -83,15 +90,19 @@ class IkkiuchiBoardLayout {
       tobi = TobiFrame(Vec(w / 2 - rig.size.x * k / 2, feetY - probe.feet.y), k, rig);
     }
     final band = Rect.fromLTWH(0, top + half * cardW, w, bandH);
-    final left = pad + (areaW - fieldW * cardW) / 2;
     final origin = Vec(left, top);
     final cards = [
       for (final c in field.layOut(fieldW, gap: bandH / cardW))
         (id: c.id, side: c.side, box: _onBoard(c.box, origin, cardW)),
     ];
     final area = Rect.fromLTWH(left, top, fieldW * cardW, 2 * half * cardW + bandH);
-    final wait = landscape ? _waitBeside(area, band, cardW, w) : _waitByTobi(area, tobi, cardW, w);
-    return IkkiuchiBoardLayout._(Vec(w, h), landscape, band, tobi, cardW, cards, area, wait, field, fieldW, origin);
+    const edge = IkkiuchiColumnStyle.edge;
+    final column = landscape
+        ? Rect.fromLTRB(w - edge - IkkiuchiColumnStyle.width, area.top + edge, w - edge, area.bottom - edge)
+        : null;
+    final wait = landscape ? _waitBeside(area, band, cardW, column!.left) : _waitByTobi(area, tobi, cardW, w);
+    return IkkiuchiBoardLayout._(
+        Vec(w, h), landscape, band, tobi, cardW, cards, area, wait, column, field, fieldW, origin);
   }
 
   /// A box of the field in card widths from [origin], on the board.
@@ -118,17 +129,17 @@ class IkkiuchiBoardLayout {
     return _waitIn(from, to, foot, math.max(height, cardW * IkkiuchiField.cardH));
   }
 
-  /// In the margin right of the player's side, as tall as that side at
-  /// most, its tag under it; never smaller than the field's cards.
-  static Rect _waitBeside(Rect field, Rect band, double cardW, double w) {
+  /// In the margin right of the player's side, up to [to], as tall as that
+  /// side at most, its tag under it; never smaller than the field's cards.
+  static Rect _waitBeside(Rect field, Rect band, double cardW, double to) {
     const style = IkkiuchiSendStyle.wait;
-    final from = field.right, to = w;
+    final from = field.right;
     final room = field.bottom - band.bottom - IkkiuchiSendStyle.look.stackTagRoom;
     final height = math.max(
       cardW * IkkiuchiField.cardH,
       [style.maxHeight, room - 2 * style.margin, (to - from - 2 * style.margin) * IkkiuchiField.cardH].reduce(math.min),
     );
-    final left = math.min((from + to - height / IkkiuchiField.cardH) / 2, w - height / IkkiuchiField.cardH);
+    final left = math.min((from + to - height / IkkiuchiField.cardH) / 2, to - height / IkkiuchiField.cardH);
     final top = band.bottom + (room - height) / 2;
     return Rect.fromLTWH(left, top, height / IkkiuchiField.cardH, height);
   }
@@ -150,6 +161,9 @@ class IkkiuchiBoardLayout {
 
   /// Where a card Tobi sends waits for the player to place it.
   final Rect wait;
+
+  /// The game column, in landscape only.
+  final Rect? column;
 
   final IkkiuchiField _field;
   final double _fieldW;

@@ -55,8 +55,8 @@ abstract final class IkkiuchiBoardStyle {
   static const double tobiMinRoom = 150;
   static const double tobiFeetGap = 4;
   static const double tobiTopRoom = 24;
-  static const double tobiShare = 0.8;
-  static const double tobiTop = 2;
+  static const double tobiShare = 0.7;
+  static const double tobiTop = 0;
   static const double tobiSideRoom = 0.1;
 
   /// The tatami behind the field: a seamless tile drawn for [tatamiScale]×
@@ -138,8 +138,8 @@ abstract final class IkkiuchiSendStyle {
     edgeBorder: 1,
   );
 
-  /// The band while a card is sent: its title over a line saying what to
-  /// do, [lineGap] apart.
+  /// The band while a card is sent (in portrait): its title over a line
+  /// saying what to do, [lineGap] apart.
   static const double bandTitle = 20;
   static const double bandLine = 10;
   static const double lineGap = 2;
@@ -155,6 +155,91 @@ abstract final class IkkiuchiSendStyle {
   static const Alignment balloonSpeaker = Alignment(1.5, 0.9);
   static const double balloonFont = 13;
   static const EdgeInsets balloonPadding = EdgeInsets.zero;
+}
+
+/// The call in the gap between the sides in landscape (`IkkiuchiCallStrip`):
+/// paper words on a see-through [fill] that fades out over [fade] toward
+/// both ends, [inset] solid beyond the words, reaching [bleed] into the
+/// rows either side. The kimariji grows kana by kana in [kimariji]
+/// lettering, each kana opening its room and popping in from [kanaPop] its
+/// size over [kanaIn]; the strip fades out over [fadeOut] once nothing is
+/// read. A からふだ's tag comes first in [karafudaTag], [karafudaInk]. A
+/// prompt is its [title] in display lettering, [dot], then what to do in
+/// [line], [lineInk]. dp.
+abstract final class IkkiuchiCallStyle {
+  static const double bleed = 2.5;
+  static const Color fill = Color(0xC4000000);
+  static const double fade = 40;
+  static const double inset = 8;
+  static const Color ink = Palette.paper;
+  static const double kimariji = 21;
+  static const Duration kanaIn = Duration(milliseconds: 150);
+  static const double kanaPop = 1.45;
+  static const Duration fadeOut = Duration(milliseconds: 180);
+  static const double karafudaTag = 10;
+  static const Color karafudaInk = Color(0xB3FFFFFF);
+  static const double karafudaGap = 6;
+  static const double title = 16;
+  static const String dot = '·';
+  static const double dotGap = 7;
+  static const double line = 12;
+  static const Color lineInk = Color(0xE6FFFFFF);
+}
+
+/// The game column at the board's right edge in landscape
+/// (`IkkiuchiMatchColumn`), [width] wide and [edge] in from the board's
+/// right edge and from the field's top and foot. dp.
+abstract final class IkkiuchiColumnStyle {
+  static const double width = 54;
+  static const double edge = 6;
+
+  /// 終了 at its top: a small arming button ([end]), its flag [endIcon].
+  static const HoldConfirmLook end = HoldConfirmLook(
+    ringSize: 40,
+    ringStroke: 3.5,
+    fillStroke: 2.5,
+    bezel: 4,
+    bezelStripe: 3,
+    domeBorder: 2,
+    countOutline: 6,
+    shakeReach: 1.5,
+    labelGap: 3,
+    labelFont: 11,
+    labelPadding: EdgeInsets.fromLTRB(6, 2, 6, 3),
+  );
+  static const double endIcon = 15;
+  static const double endIconStroke = 2.6;
+
+  /// The score in its middle, split on the gap between the sides: an ink
+  /// panel with a hard [shadow], Tobi's name in [nameInk] over his cards
+  /// left, then the player's under a [rule], the numbers in [count]
+  /// lettering, the names in [name], [nameGap] from them.
+  static const Color scoreFill = Palette.ink;
+  static const Offset shadow = Offset(2, 2);
+  static const Color shadowInk = Palette.inkShadow;
+  static const EdgeInsets scorePadding = EdgeInsets.fromLTRB(2, 5, 2, 5);
+  static const Color nameInk = Palette.sun;
+  static const double name = 9;
+  static const double nameTracking = 0.06;
+  static const double nameGap = 2;
+  static const Color countInk = Palette.paper;
+  static const double count = 21;
+  static const double ruleGap = 5;
+  static const double rule = 1.5;
+  static const Color ruleInk = Color(0x59FFFFFF);
+  static const double ruleInset = 8;
+
+  /// 並べ替え at its foot: an icon over its word, on paper, or on sun as
+  /// 完了 while the player moves their cards; faded to [dimmed] while it
+  /// can't be used.
+  static const double buttonIcon = 18;
+  static const double buttonIconStroke = 2.4;
+  static const double buttonFont = 10.5;
+  static const double buttonGap = 2;
+  static const EdgeInsets buttonPadding = EdgeInsets.fromLTRB(2, 6, 2, 5);
+  static const Color arrangeFill = Palette.paper;
+  static const Color doneFill = Palette.sun;
+  static const double dimmed = 0.38;
 }
 
 /// Tobi's arm in a strike (`IkkiuchiArmPainter`): one ink line in his pen
