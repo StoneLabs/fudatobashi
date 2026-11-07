@@ -145,6 +145,17 @@ String kimarijiFor(BuildContext context, int id) {
   return resolvedKimarijiScript(context) == KimarijiScript.hiragana ? poems[id].kimariji : (s.ja ? s.other : s).kimariji(id);
 }
 
+/// Poem [id]'s kimariji sound by sound, a kana each, per
+/// [resolvedKimarijiScript]: as [Poem.kimariji] writes them, or each in
+/// romaji as it's read.
+List<String> kimarijiSoundsFor(BuildContext context, int id) {
+  final poem = poems[id];
+  final romaji = resolvedKimarijiScript(context) == KimarijiScript.romaji;
+  return [
+    for (var i = 0; i < poem.kimariji.length; i++) romaji ? hepburn(poem.kamiReading[i]) : poem.kimariji[i],
+  ];
+}
+
 /// The kana that decides poem [id] — its kimariji's last — per
 /// [resolvedKimarijiScript]: as [Poem.kimariji] writes it, or in romaji as
 /// it's read (ひとは's は is "wa", as in its romaji kimariji "hitowa").

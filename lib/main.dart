@@ -15,6 +15,7 @@ import 'data/fuda_sets.dart';
 import 'data/islands.dart';
 import 'data/joka.dart';
 import 'data/poem.dart';
+import 'data/reader_onsets.dart';
 import 'db/database.dart';
 import 'l10n/localization.dart';
 import 'state/crash_log.dart';
@@ -69,6 +70,7 @@ Future<void> _start() async {
   joka = await Waka.load(jokaAsset);
   fudaSets = FudaSets(poems);
   archipelago = await Archipelago.load();
+  readerOnsets = await ReaderOnsets.load();
   await GlyphAtlas.load();
   await CardFaces.load([YomifudaStyle.standard.background, TorifudaStyle.standard.background]);
   await loadVectorArt();

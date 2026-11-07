@@ -458,6 +458,20 @@ abstract final class IkkiuchiPlayTuning {
   static const Curve relayoutCurve = Curves.easeInOutCubic;
 }
 
+/// The reader's pace on a card whose recording is not timed yet
+/// (`IkkiuchiCall`): its kimariji's first sound comes [lead] into the call,
+/// and each next one [perSound] after the last.
+abstract final class IkkiuchiReaderTuning {
+  static const Duration lead = Duration(milliseconds: 300);
+  static const Duration perSound = Duration(milliseconds: 450);
+}
+
+/// The match's controls (`IkkiuchiMatchColumn`): 終了 ends the match once
+/// held [endHold].
+abstract final class IkkiuchiMatchTuning {
+  static const Duration endHold = Duration(milliseconds: 1200);
+}
+
 /// Tobi's arm carrying a card (`IkkiuchiCarry`), as when he sends one: a
 /// calm reach to it, the carry, and home, each this many ms. The arm lags
 /// [lag] ms along its length and waves [wave] Tobi units at most; each way

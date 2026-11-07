@@ -1,0 +1,4 @@
+{
+  "about": "The reader's recordings for the 一騎打ち call: one entry per file, its path under assets/, the card it reads (poem id) and the ms from the file's start at which each sound (kana) of the card's kimariji starts. A card with no entry is read at the even pace of IkkiuchiReaderTuning. Example entry: {\"file\": \"voice/reader/001.m4a\", \"card\": 1, \"onsets\": [180, 520, 860]}",
+  "recordings": []
+}
