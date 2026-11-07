@@ -95,13 +95,13 @@ class _StripPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
     final fade = IkkiuchiCallStyle.fade / size.width;
-    const clear = Color(0x00000000);
+    final clear = IkkiuchiCallStyle.fill.withValues(alpha: 0);
     final rect = Offset.zero & size;
     canvas.drawRect(
       rect,
       Paint()
         ..shader = LinearGradient(
-          colors: const [clear, IkkiuchiCallStyle.fill, IkkiuchiCallStyle.fill, clear],
+          colors: [clear, IkkiuchiCallStyle.fill, IkkiuchiCallStyle.fill, clear],
           stops: [0, fade, 1 - fade, 1],
         ).createShader(rect),
     );
@@ -129,7 +129,7 @@ class _Sound extends StatelessWidget {
   Widget build(BuildContext context) => TweenAnimationBuilder<double>(
         tween: Tween(begin: 0, end: 1),
         duration: IkkiuchiCallStyle.kanaIn,
-        curve: Curves.easeOutCubic,
+        curve: IkkiuchiCallStyle.kanaCurve,
         child: Text(text, style: _style),
         builder: (context, t, child) => Align(
           widthFactor: t,
