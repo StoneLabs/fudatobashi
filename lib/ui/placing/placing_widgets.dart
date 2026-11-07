@@ -2,6 +2,7 @@ import 'dart:math' as math;
 
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart' show OverflowBoxFit;
 
 import '../../config/design.dart';
 import '../../data/poem.dart';
@@ -184,7 +185,14 @@ class PlacingStack extends StatelessWidget {
         left: 0,
         right: 0,
         bottom: -look.stackTagRoom + look.stackTagOverlap,
-        child: Center(child: PlacingTag(tag, fontSize: look.stackTagFont, look: look)),
+        // A tag wider than a narrow card reaches past its sides.
+        child: Center(
+          child: OverflowBox(
+            maxWidth: double.infinity,
+            fit: OverflowBoxFit.deferToChild,
+            child: PlacingTag(tag, fontSize: look.stackTagFont, look: look),
+          ),
+        ),
       ),
     ]);
   }
