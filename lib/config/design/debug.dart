@@ -153,9 +153,10 @@ abstract final class IkkiuchiToolsStyle {
   /// The field page's developer buttons over the board, in a see-through
   /// ink panel ([fieldPanelFill]) so they read as tools and not as the
   /// match's: [fieldButton] square, [fieldButtonGap] apart in two columns
-  /// under the panel's [fieldPanelTitle]. In portrait [fieldButtonInset] in
-  /// from the screen's top left; in landscape [fieldPanelInset] inside the
-  /// room right of Tobi's side, between the field and the game column.
+  /// under the panel's [fieldPanelTitle]; the からふだ read's is
+  /// [fieldKarafudaLabel]. In portrait [fieldButtonInset] in from the
+  /// screen's top left; in landscape [fieldPanelInset] inside the room
+  /// right of Tobi's side, between the field and the game column.
   static const double fieldButton = 20;
   static const double fieldButtonGap = 3;
   static const double fieldButtonInset = 8;
@@ -170,6 +171,7 @@ abstract final class IkkiuchiToolsStyle {
   static const EdgeInsets fieldPanelPadding = EdgeInsets.fromLTRB(4, 3, 4, 4);
   static const double fieldPanelInset = 4;
   static const String fieldPanelTitle = 'DEV';
+  static const String fieldKarafudaLabel = '空';
   static const double fieldPanelTitleFont = 7;
   static const double fieldPanelTitleTracking = 0.2;
   static const double fieldPanelTitleGap = 3;

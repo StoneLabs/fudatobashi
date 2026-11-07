@@ -7,6 +7,8 @@ import 'package:flutter/services.dart';
 
 import '../../config/config.dart';
 import '../../config/design.dart';
+import '../../data/poem.dart';
+import '../../l10n/ikkiuchi_strings.dart';
 import '../../l10n/strings.dart';
 import '../ikkiuchi/ikkiuchi_board_painter.dart';
 import '../ikkiuchi/ikkiuchi_board_scene.dart';
@@ -21,15 +23,16 @@ import 'ikkiuchi_dealer.dart';
 /// at a random rating. The page only drives the match's board
 /// ([IkkiuchiBoardScene]): it reads a card at random, the reader reading
 /// its kimariji, and the player's finger pushes the cards about, taking
-/// the card as the match would; Tobi doesn't strike. Once the board comes
-/// to rest again another card is read. In landscape the match's own
-/// parts lie over the board: the call in the gap between the sides
-/// ([IkkiuchiCallLayer]), and the game column ([IkkiuchiColumnLayer]),
-/// whose 終了 deals anew once held.
+/// the card and faulting (お手つき) as the match would; Tobi doesn't
+/// strike. Once the board comes to rest again another card is read. In
+/// landscape the match's own parts lie over the board: the call in the gap
+/// between the sides ([IkkiuchiCallLayer]), and the game column
+/// ([IkkiuchiColumnLayer]), whose 終了 deals anew once held.
 /// The board starts in landscape. The developer's buttons: "R" turns its
 /// layout between landscape and portrait, a number deals anew with that
-/// many cards a side, "^" has the player send Tobi a card (送り札) and "v"
-/// has Tobi send the player one; the system back leaves.
+/// many cards a side, "^" has the player send Tobi a card (送り札), "v"
+/// has Tobi send the player one, and [IkkiuchiToolsStyle.fieldKarafudaLabel]
+/// reads a からふだ; the system back leaves.
 class IkkiuchiFieldPage extends StatefulWidget {
   const IkkiuchiFieldPage({super.key, this.seed, this.landscape = true});
 
@@ -103,6 +106,21 @@ class IkkiuchiFieldPageState extends State<IkkiuchiFieldPage> with SingleTickerP
     scene.callCard(id, kimarijiFor(context, id), call: IkkiuchiReader.callFor(context, id));
   }
 
+  /// Reads a card dealt to neither side at random, a からふだ, unless a
+  /// 送り札 or 並べ替え is under way.
+  void _readKarafuda(IkkiuchiBoardScene scene) {
+    if (scene.busy) return;
+    final dealt = {for (final c in scene.board.cards.cards) c.id};
+    final ids = [
+      for (final p in poems.all)
+        if (!dealt.contains(p.id)) p.id,
+    ];
+    if (ids.isEmpty) return;
+    final id = ids[_rng.nextInt(ids.length)];
+    scene.callKarafuda(id, kimarijiFor(context, id),
+        tag: S.of(context).ikkiuchiKarafuda, call: IkkiuchiReader.callFor(context, id));
+  }
+
   void _tick(Duration elapsed) {
     final dt = elapsed - _last;
     _last = elapsed;
@@ -143,6 +161,7 @@ class IkkiuchiFieldPageState extends State<IkkiuchiFieldPage> with SingleTickerP
       deals: {for (final n in IkkiuchiToolsTuning.fieldCounts) n: () => _deal(n)},
       send: scene.send.startSending,
       receive: () => scene.send.startReceiving(),
+      karafuda: () => _readKarafuda(scene),
     );
     const inset = IkkiuchiToolsStyle.fieldButtonInset;
     if (!_landscape) return Positioned(top: MediaQuery.paddingOf(context).top + inset, left: inset, child: panel);
@@ -158,12 +177,19 @@ class IkkiuchiFieldPageState extends State<IkkiuchiFieldPage> with SingleTickerP
   }
 }
 
-/// The developer's buttons in their panel: the board's turn and the 送り札
-/// both ways in one column, the deals in the other.
+/// The developer's buttons in their panel: the board's turn, the 送り札
+/// both ways and a からふだ read in one column, the deals in the other.
 class IkkiuchiFieldTools extends StatelessWidget {
-  const IkkiuchiFieldTools({super.key, required this.turn, required this.deals, required this.send, required this.receive});
+  const IkkiuchiFieldTools({
+    super.key,
+    required this.turn,
+    required this.deals,
+    required this.send,
+    required this.receive,
+    required this.karafuda,
+  });
 
-  final VoidCallback turn, send, receive;
+  final VoidCallback turn, send, receive, karafuda;
   final Map<int, VoidCallback> deals;
 
   static const _gap = SizedBox.square(dimension: IkkiuchiToolsStyle.fieldButtonGap);
@@ -186,6 +212,8 @@ class IkkiuchiFieldTools extends StatelessWidget {
                 _button('^', send),
                 _gap,
                 _button('v', receive),
+                _gap,
+                _button(IkkiuchiToolsStyle.fieldKarafudaLabel, karafuda),
               ]),
               _gap,
               Column(mainAxisSize: MainAxisSize.min, children: [
