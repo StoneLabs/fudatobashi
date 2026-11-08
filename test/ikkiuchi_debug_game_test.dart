@@ -316,6 +316,25 @@ void main() {
       await tester.pumpWidget(const SizedBox());
     });
 
+    testWidgets('each read is logged as it ends: the card, who took it, and when from its deciding sound',
+        (tester) async {
+      final p = await open(tester);
+      await seedReading(tester, p, IkkiuchiSide.player);
+      final f = flow(tester), s = f.scene;
+      final read = s.board.called!;
+      expect(f.reads, isEmpty);
+      await run(tester, s.reader.call!.decidedAt + 300);
+      await touch(tester, s.board.cards.card(read).box.centre);
+      await runUntil(tester, () => stage(tester) == IkkiuchiStage.feedback);
+      final log = f.reads.single;
+      expect([log.poemId, log.end.taker, log.end.cardSide, log.tobiTake], [read, IkkiuchiSide.player, IkkiuchiSide.player, null]);
+      expect(log.playerTake!.inMilliseconds, inInclusiveRange(300, 450), reason: 'touched 300 ms after it, give or take a few frames');
+      expect(f.endedByPlayer, isFalse);
+      f.end();
+      expect(f.endedByPlayer, isTrue);
+      await tester.pumpWidget(const SizedBox());
+    });
+
     testWidgets('a read ends in Feedback: its words slide in on the strip, then the flow goes on', (tester) async {
       final p = await open(tester);
       for (final landscape in [true, false]) {

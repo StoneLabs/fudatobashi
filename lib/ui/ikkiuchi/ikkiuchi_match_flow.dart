@@ -9,6 +9,7 @@ import '../../domain/ikkiuchi_cards.dart';
 import '../../domain/ikkiuchi_layout.dart';
 import '../../domain/ikkiuchi_match.dart';
 import '../../domain/ikkiuchi_read.dart';
+import '../../domain/ikkiuchi_record.dart';
 import '../../l10n/ikkiuchi_strings.dart';
 import '../../l10n/strings.dart';
 import '../sound/sounds.dart';
@@ -36,7 +37,7 @@ class IkkiuchiMatchWords {
 /// ([IkkiuchiStage]) by the board's time ([advance]), each step one of
 /// [IkkiuchiSteps.all].
 ///
-/// The memory time runs first, then the greeting and the 序歌. Each read
+/// The memory time runs first ([memoryTime] long), then the greeting and the 序歌. Each read
 /// takes the next card of the read order ([IkkiuchiReadOrder]): the reader
 /// reads its kimariji while its voice plays, Tobi playing the read at
 /// [rating], or not at all without one. Card touches count only while a
@@ -48,7 +49,8 @@ class IkkiuchiMatchWords {
 /// made, one by one. Then a moment passes, the 下の句 is read, another
 /// moment passes, and the next card is read. A side left empty ends the
 /// match, as does the player at any time ([end]); the kimariji voice stops
-/// with it, or with the flow's disposal.
+/// with it, or with the flow's disposal. Each read is logged as it ends
+/// ([reads]).
 ///
 /// The player may move their cards (並べ替え) only in the stages that allow
 /// it; one such stage over while they still move them holds the match
@@ -65,6 +67,7 @@ class IkkiuchiMatchFlow extends ChangeNotifier {
     this.rating,
     this.holdBeforeShimonoku = false,
     this.markCalled = false,
+    this.memoryTime = IkkiuchiMatchTuning.memoryTime,
   }) {
     final sides = scene.sides!;
     final field = [...sides.tobiCards, ...sides.playerCards]..sort();
@@ -95,6 +98,21 @@ class IkkiuchiMatchFlow extends ChangeNotifier {
 
   /// Whether the card read is marked on the board.
   final bool markCalled;
+
+  /// How long the memory time lasts.
+  final Duration memoryTime;
+
+  /// Every read so far that has ended, in order.
+  List<IkkiuchiReadLog> get reads => List.unmodifiable(_reads);
+  final List<IkkiuchiReadLog> _reads = [];
+
+  /// Whether the player ended the match ([end]).
+  bool get endedByPlayer => _endedByPlayer;
+  bool _endedByPlayer = false;
+
+  /// The card read now, and the board time of its deciding sound.
+  int? _readId;
+  double _decidedAt = 0;
 
   IkkiuchiStage get stage => _stage;
   IkkiuchiStage _stage = IkkiuchiStage.memoryTime;
@@ -168,6 +186,7 @@ class IkkiuchiMatchFlow extends ChangeNotifier {
   /// called off where it stands ([IkkiuchiSendFlow.cancel]).
   void end() {
     if (_stage == IkkiuchiStage.gameEnd) return;
+    _endedByPlayer = true;
     scene.arrange.finish();
     scene.send.cancel();
     _sends.clear();
@@ -204,8 +223,8 @@ class IkkiuchiMatchFlow extends ChangeNotifier {
   }
 
   /// How long [stage] lasts; null for one that is not timed.
-  static Duration? _length(IkkiuchiStage stage) => switch (stage) {
-        IkkiuchiStage.memoryTime => IkkiuchiMatchTuning.memoryTime,
+  Duration? _length(IkkiuchiStage stage) => switch (stage) {
+        IkkiuchiStage.memoryTime => memoryTime,
         IkkiuchiStage.gameStart => IkkiuchiMatchTuning.greeting,
         IkkiuchiStage.yoka => IkkiuchiMatchTuning.yoka,
         IkkiuchiStage.feedback => IkkiuchiMatchTuning.feedback,
@@ -287,6 +306,8 @@ class IkkiuchiMatchFlow extends ChangeNotifier {
             rng: scene.rng,
           );
     final call = words.call(id);
+    _readId = id;
+    _decidedAt = board.now + call.decidedAt;
     if (onField) {
       scene.callCard(id, words.kimariji(id), call: call, tobi: tobi);
     } else {
@@ -347,6 +368,9 @@ class IkkiuchiMatchFlow extends ChangeNotifier {
       if (taker == IkkiuchiSide.player) board.cards.fadeOut(board.cards.card(id));
       _leaving = id;
     }
+    final take = board.take?.at, hit = board.tobiHit;
+    Duration? from(double? at) => at == null ? null : Duration(microseconds: ((at - _decidedAt) * Duration.microsecondsPerMillisecond).round());
+    _reads.add(IkkiuchiReadLog(poemId: _readId!, end: end, playerTake: from(take), tobiTake: from(hit)));
     scene.clearCall();
     _feedback = end;
     _enter(IkkiuchiStage.feedback);

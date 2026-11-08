@@ -14,6 +14,7 @@ import '../domain/ankiren_game.dart';
 import '../domain/card_mask.dart';
 import '../domain/card_stats.dart';
 import '../domain/day_window.dart';
+import '../domain/ikkiuchi_record.dart';
 import '../domain/masking.dart';
 import '../domain/play_session.dart';
 import '../domain/ranked.dart';
@@ -29,6 +30,7 @@ import '../domain/weak_cards.dart';
 import '../domain/xp.dart';
 import '../migrations/notices.dart';
 import 'db_integrity.dart';
+import 'ikkiuchi_records.dart';
 import 'play_config.dart';
 import 'run_journal.dart';
 import 'settings.dart';
@@ -43,7 +45,7 @@ part 'progress_reports.dart';
 class Progress extends ChangeNotifier {
   Progress._(this.db, this.trainer, this._log, this.runs, this._settings, this._islandCompletions,
       this._freePracticeUnlocked, this._tabsSeenLocked, this._sideTripsTabOpened, this._sideTripsOpened,
-      this._sideTripsSeenLocked, this.sideTrips)
+      this._sideTripsSeenLocked, this.sideTrips, this.ikkiuchi)
       : rating = _ratingAfter(runs);
 
   final AppDatabase db;
@@ -86,6 +88,9 @@ class Progress extends ChangeNotifier {
 
   /// The side trips' recorded games and ratings.
   final SideTrips sideTrips;
+
+  /// The recorded 一騎打ち matches.
+  final IkkiuchiRecords ikkiuchi;
 
   /// When the latest exam try began.
   DateTime? _examLastTry;
@@ -168,6 +173,7 @@ class Progress extends ChangeNotifier {
           ?SideTrip.values.asNameMap()[name],
       },
       await SideTrips.load(db),
+      await IkkiuchiRecords.load(db),
     );
     for (final d in await db.select(db.days).get()) {
       progress._days[d.day] = d;
@@ -1498,6 +1504,16 @@ class Progress extends ChangeNotifier {
     await recordTeiichi(placing, placing.recall(math.Random())..end(), startedAt: journal.startedAt);
   }
 
+  /// Stores a 一騎打ち match once it is over (see [IkkiuchiRecords.record]).
+  Future<IkkiuchiMatchRow> recordIkkiuchi(IkkiuchiMatchRecord record) async {
+    final row = await ikkiuchi.record(db, record);
+    notifyListeners();
+    return row;
+  }
+
+  /// Match [matchId]'s reads, in the order they were read.
+  Future<List<IkkiuchiReadRow>> ikkiuchiReadsOf(int matchId) => IkkiuchiRecords.readsOf(db, matchId);
+
   /// Developer tool: marks 暗記練's free levels 0 through [level] cleared.
   Future<void> clearAnkirenUpTo(int level) => clearLevelsUpTo(SideTrip.ankiren, level);
 
@@ -1523,6 +1539,8 @@ class Progress extends ChangeNotifier {
       await db.delete(db.sideTripAnswers).go();
       await db.delete(db.teiichiPlacings).go();
       await db.delete(db.sideTripRuns).go();
+      await db.delete(db.ikkiuchiReads).go();
+      await db.delete(db.ikkiuchiMatches).go();
       await db.delete(db.dayCards).go();
       await db.delete(db.days).go();
       await (db.delete(db.keyValues)
@@ -1554,6 +1572,7 @@ class Progress extends ChangeNotifier {
     _sideTripsOpened.clear();
     _sideTripsSeenLocked.clear();
     sideTrips.clear();
+    ikkiuchi.clear();
     _unreported.clear();
     _days.clear();
     _day = null;

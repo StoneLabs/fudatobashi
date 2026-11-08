@@ -5885,6 +5885,1337 @@ class TeiichiPlacingsCompanion extends UpdateCompanion<TeiichiPlacingRow> {
   }
 }
 
+class $IkkiuchiMatchesTable extends IkkiuchiMatches
+    with TableInfo<$IkkiuchiMatchesTable, IkkiuchiMatchRow> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $IkkiuchiMatchesTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<int> id = GeneratedColumn<int>(
+    'id',
+    aliasedName,
+    false,
+    hasAutoIncrement: true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'PRIMARY KEY AUTOINCREMENT',
+    ),
+  );
+  static const VerificationMeta _startedAtMeta = const VerificationMeta(
+    'startedAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> startedAt = GeneratedColumn<DateTime>(
+    'started_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _endedAtMeta = const VerificationMeta(
+    'endedAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> endedAt = GeneratedColumn<DateTime>(
+    'ended_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _perSideMeta = const VerificationMeta(
+    'perSide',
+  );
+  @override
+  late final GeneratedColumn<int> perSide = GeneratedColumn<int>(
+    'per_side',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _memoriseMsMeta = const VerificationMeta(
+    'memoriseMs',
+  );
+  @override
+  late final GeneratedColumn<int> memoriseMs = GeneratedColumn<int>(
+    'memorise_ms',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _tobiRatingMeta = const VerificationMeta(
+    'tobiRating',
+  );
+  @override
+  late final GeneratedColumn<double> tobiRating = GeneratedColumn<double>(
+    'tobi_rating',
+    aliasedName,
+    false,
+    type: DriftSqlType.double,
+    requiredDuringInsert: true,
+  );
+  @override
+  late final GeneratedColumnWithTypeConverter<IkkiuchiResult, String> result =
+      GeneratedColumn<String>(
+        'result',
+        aliasedName,
+        false,
+        type: DriftSqlType.string,
+        requiredDuringInsert: true,
+      ).withConverter<IkkiuchiResult>($IkkiuchiMatchesTable.$converterresult);
+  static const VerificationMeta _playerLeftMeta = const VerificationMeta(
+    'playerLeft',
+  );
+  @override
+  late final GeneratedColumn<int> playerLeft = GeneratedColumn<int>(
+    'player_left',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _tobiLeftMeta = const VerificationMeta(
+    'tobiLeft',
+  );
+  @override
+  late final GeneratedColumn<int> tobiLeft = GeneratedColumn<int>(
+    'tobi_left',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _playerFaultsMeta = const VerificationMeta(
+    'playerFaults',
+  );
+  @override
+  late final GeneratedColumn<int> playerFaults = GeneratedColumn<int>(
+    'player_faults',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _tobiFaultsMeta = const VerificationMeta(
+    'tobiFaults',
+  );
+  @override
+  late final GeneratedColumn<int> tobiFaults = GeneratedColumn<int>(
+    'tobi_faults',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    id,
+    startedAt,
+    endedAt,
+    perSide,
+    memoriseMs,
+    tobiRating,
+    result,
+    playerLeft,
+    tobiLeft,
+    playerFaults,
+    tobiFaults,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'ikkiuchi_matches';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<IkkiuchiMatchRow> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    }
+    if (data.containsKey('started_at')) {
+      context.handle(
+        _startedAtMeta,
+        startedAt.isAcceptableOrUnknown(data['started_at']!, _startedAtMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_startedAtMeta);
+    }
+    if (data.containsKey('ended_at')) {
+      context.handle(
+        _endedAtMeta,
+        endedAt.isAcceptableOrUnknown(data['ended_at']!, _endedAtMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_endedAtMeta);
+    }
+    if (data.containsKey('per_side')) {
+      context.handle(
+        _perSideMeta,
+        perSide.isAcceptableOrUnknown(data['per_side']!, _perSideMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_perSideMeta);
+    }
+    if (data.containsKey('memorise_ms')) {
+      context.handle(
+        _memoriseMsMeta,
+        memoriseMs.isAcceptableOrUnknown(data['memorise_ms']!, _memoriseMsMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_memoriseMsMeta);
+    }
+    if (data.containsKey('tobi_rating')) {
+      context.handle(
+        _tobiRatingMeta,
+        tobiRating.isAcceptableOrUnknown(data['tobi_rating']!, _tobiRatingMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_tobiRatingMeta);
+    }
+    if (data.containsKey('player_left')) {
+      context.handle(
+        _playerLeftMeta,
+        playerLeft.isAcceptableOrUnknown(data['player_left']!, _playerLeftMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_playerLeftMeta);
+    }
+    if (data.containsKey('tobi_left')) {
+      context.handle(
+        _tobiLeftMeta,
+        tobiLeft.isAcceptableOrUnknown(data['tobi_left']!, _tobiLeftMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_tobiLeftMeta);
+    }
+    if (data.containsKey('player_faults')) {
+      context.handle(
+        _playerFaultsMeta,
+        playerFaults.isAcceptableOrUnknown(
+          data['player_faults']!,
+          _playerFaultsMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_playerFaultsMeta);
+    }
+    if (data.containsKey('tobi_faults')) {
+      context.handle(
+        _tobiFaultsMeta,
+        tobiFaults.isAcceptableOrUnknown(data['tobi_faults']!, _tobiFaultsMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_tobiFaultsMeta);
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  IkkiuchiMatchRow map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return IkkiuchiMatchRow(
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}id'],
+      )!,
+      startedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}started_at'],
+      )!,
+      endedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}ended_at'],
+      )!,
+      perSide: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}per_side'],
+      )!,
+      memoriseMs: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}memorise_ms'],
+      )!,
+      tobiRating: attachedDatabase.typeMapping.read(
+        DriftSqlType.double,
+        data['${effectivePrefix}tobi_rating'],
+      )!,
+      result: $IkkiuchiMatchesTable.$converterresult.fromSql(
+        attachedDatabase.typeMapping.read(
+          DriftSqlType.string,
+          data['${effectivePrefix}result'],
+        )!,
+      ),
+      playerLeft: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}player_left'],
+      )!,
+      tobiLeft: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}tobi_left'],
+      )!,
+      playerFaults: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}player_faults'],
+      )!,
+      tobiFaults: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}tobi_faults'],
+      )!,
+    );
+  }
+
+  @override
+  $IkkiuchiMatchesTable createAlias(String alias) {
+    return $IkkiuchiMatchesTable(attachedDatabase, alias);
+  }
+
+  static JsonTypeConverter2<IkkiuchiResult, String, String> $converterresult =
+      const EnumNameConverter<IkkiuchiResult>(IkkiuchiResult.values);
+}
+
+class IkkiuchiMatchRow extends DataClass
+    implements Insertable<IkkiuchiMatchRow> {
+  final int id;
+  final DateTime startedAt;
+  final DateTime endedAt;
+  final int perSide;
+  final int memoriseMs;
+  final double tobiRating;
+  final IkkiuchiResult result;
+  final int playerLeft;
+  final int tobiLeft;
+
+  /// A fault on both sides of one read counts two.
+  final int playerFaults;
+  final int tobiFaults;
+  const IkkiuchiMatchRow({
+    required this.id,
+    required this.startedAt,
+    required this.endedAt,
+    required this.perSide,
+    required this.memoriseMs,
+    required this.tobiRating,
+    required this.result,
+    required this.playerLeft,
+    required this.tobiLeft,
+    required this.playerFaults,
+    required this.tobiFaults,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<int>(id);
+    map['started_at'] = Variable<DateTime>(startedAt);
+    map['ended_at'] = Variable<DateTime>(endedAt);
+    map['per_side'] = Variable<int>(perSide);
+    map['memorise_ms'] = Variable<int>(memoriseMs);
+    map['tobi_rating'] = Variable<double>(tobiRating);
+    {
+      map['result'] = Variable<String>(
+        $IkkiuchiMatchesTable.$converterresult.toSql(result),
+      );
+    }
+    map['player_left'] = Variable<int>(playerLeft);
+    map['tobi_left'] = Variable<int>(tobiLeft);
+    map['player_faults'] = Variable<int>(playerFaults);
+    map['tobi_faults'] = Variable<int>(tobiFaults);
+    return map;
+  }
+
+  IkkiuchiMatchesCompanion toCompanion(bool nullToAbsent) {
+    return IkkiuchiMatchesCompanion(
+      id: Value(id),
+      startedAt: Value(startedAt),
+      endedAt: Value(endedAt),
+      perSide: Value(perSide),
+      memoriseMs: Value(memoriseMs),
+      tobiRating: Value(tobiRating),
+      result: Value(result),
+      playerLeft: Value(playerLeft),
+      tobiLeft: Value(tobiLeft),
+      playerFaults: Value(playerFaults),
+      tobiFaults: Value(tobiFaults),
+    );
+  }
+
+  factory IkkiuchiMatchRow.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return IkkiuchiMatchRow(
+      id: serializer.fromJson<int>(json['id']),
+      startedAt: serializer.fromJson<DateTime>(json['startedAt']),
+      endedAt: serializer.fromJson<DateTime>(json['endedAt']),
+      perSide: serializer.fromJson<int>(json['perSide']),
+      memoriseMs: serializer.fromJson<int>(json['memoriseMs']),
+      tobiRating: serializer.fromJson<double>(json['tobiRating']),
+      result: $IkkiuchiMatchesTable.$converterresult.fromJson(
+        serializer.fromJson<String>(json['result']),
+      ),
+      playerLeft: serializer.fromJson<int>(json['playerLeft']),
+      tobiLeft: serializer.fromJson<int>(json['tobiLeft']),
+      playerFaults: serializer.fromJson<int>(json['playerFaults']),
+      tobiFaults: serializer.fromJson<int>(json['tobiFaults']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<int>(id),
+      'startedAt': serializer.toJson<DateTime>(startedAt),
+      'endedAt': serializer.toJson<DateTime>(endedAt),
+      'perSide': serializer.toJson<int>(perSide),
+      'memoriseMs': serializer.toJson<int>(memoriseMs),
+      'tobiRating': serializer.toJson<double>(tobiRating),
+      'result': serializer.toJson<String>(
+        $IkkiuchiMatchesTable.$converterresult.toJson(result),
+      ),
+      'playerLeft': serializer.toJson<int>(playerLeft),
+      'tobiLeft': serializer.toJson<int>(tobiLeft),
+      'playerFaults': serializer.toJson<int>(playerFaults),
+      'tobiFaults': serializer.toJson<int>(tobiFaults),
+    };
+  }
+
+  IkkiuchiMatchRow copyWith({
+    int? id,
+    DateTime? startedAt,
+    DateTime? endedAt,
+    int? perSide,
+    int? memoriseMs,
+    double? tobiRating,
+    IkkiuchiResult? result,
+    int? playerLeft,
+    int? tobiLeft,
+    int? playerFaults,
+    int? tobiFaults,
+  }) => IkkiuchiMatchRow(
+    id: id ?? this.id,
+    startedAt: startedAt ?? this.startedAt,
+    endedAt: endedAt ?? this.endedAt,
+    perSide: perSide ?? this.perSide,
+    memoriseMs: memoriseMs ?? this.memoriseMs,
+    tobiRating: tobiRating ?? this.tobiRating,
+    result: result ?? this.result,
+    playerLeft: playerLeft ?? this.playerLeft,
+    tobiLeft: tobiLeft ?? this.tobiLeft,
+    playerFaults: playerFaults ?? this.playerFaults,
+    tobiFaults: tobiFaults ?? this.tobiFaults,
+  );
+  IkkiuchiMatchRow copyWithCompanion(IkkiuchiMatchesCompanion data) {
+    return IkkiuchiMatchRow(
+      id: data.id.present ? data.id.value : this.id,
+      startedAt: data.startedAt.present ? data.startedAt.value : this.startedAt,
+      endedAt: data.endedAt.present ? data.endedAt.value : this.endedAt,
+      perSide: data.perSide.present ? data.perSide.value : this.perSide,
+      memoriseMs: data.memoriseMs.present
+          ? data.memoriseMs.value
+          : this.memoriseMs,
+      tobiRating: data.tobiRating.present
+          ? data.tobiRating.value
+          : this.tobiRating,
+      result: data.result.present ? data.result.value : this.result,
+      playerLeft: data.playerLeft.present
+          ? data.playerLeft.value
+          : this.playerLeft,
+      tobiLeft: data.tobiLeft.present ? data.tobiLeft.value : this.tobiLeft,
+      playerFaults: data.playerFaults.present
+          ? data.playerFaults.value
+          : this.playerFaults,
+      tobiFaults: data.tobiFaults.present
+          ? data.tobiFaults.value
+          : this.tobiFaults,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('IkkiuchiMatchRow(')
+          ..write('id: $id, ')
+          ..write('startedAt: $startedAt, ')
+          ..write('endedAt: $endedAt, ')
+          ..write('perSide: $perSide, ')
+          ..write('memoriseMs: $memoriseMs, ')
+          ..write('tobiRating: $tobiRating, ')
+          ..write('result: $result, ')
+          ..write('playerLeft: $playerLeft, ')
+          ..write('tobiLeft: $tobiLeft, ')
+          ..write('playerFaults: $playerFaults, ')
+          ..write('tobiFaults: $tobiFaults')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(
+    id,
+    startedAt,
+    endedAt,
+    perSide,
+    memoriseMs,
+    tobiRating,
+    result,
+    playerLeft,
+    tobiLeft,
+    playerFaults,
+    tobiFaults,
+  );
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is IkkiuchiMatchRow &&
+          other.id == this.id &&
+          other.startedAt == this.startedAt &&
+          other.endedAt == this.endedAt &&
+          other.perSide == this.perSide &&
+          other.memoriseMs == this.memoriseMs &&
+          other.tobiRating == this.tobiRating &&
+          other.result == this.result &&
+          other.playerLeft == this.playerLeft &&
+          other.tobiLeft == this.tobiLeft &&
+          other.playerFaults == this.playerFaults &&
+          other.tobiFaults == this.tobiFaults);
+}
+
+class IkkiuchiMatchesCompanion extends UpdateCompanion<IkkiuchiMatchRow> {
+  final Value<int> id;
+  final Value<DateTime> startedAt;
+  final Value<DateTime> endedAt;
+  final Value<int> perSide;
+  final Value<int> memoriseMs;
+  final Value<double> tobiRating;
+  final Value<IkkiuchiResult> result;
+  final Value<int> playerLeft;
+  final Value<int> tobiLeft;
+  final Value<int> playerFaults;
+  final Value<int> tobiFaults;
+  const IkkiuchiMatchesCompanion({
+    this.id = const Value.absent(),
+    this.startedAt = const Value.absent(),
+    this.endedAt = const Value.absent(),
+    this.perSide = const Value.absent(),
+    this.memoriseMs = const Value.absent(),
+    this.tobiRating = const Value.absent(),
+    this.result = const Value.absent(),
+    this.playerLeft = const Value.absent(),
+    this.tobiLeft = const Value.absent(),
+    this.playerFaults = const Value.absent(),
+    this.tobiFaults = const Value.absent(),
+  });
+  IkkiuchiMatchesCompanion.insert({
+    this.id = const Value.absent(),
+    required DateTime startedAt,
+    required DateTime endedAt,
+    required int perSide,
+    required int memoriseMs,
+    required double tobiRating,
+    required IkkiuchiResult result,
+    required int playerLeft,
+    required int tobiLeft,
+    required int playerFaults,
+    required int tobiFaults,
+  }) : startedAt = Value(startedAt),
+       endedAt = Value(endedAt),
+       perSide = Value(perSide),
+       memoriseMs = Value(memoriseMs),
+       tobiRating = Value(tobiRating),
+       result = Value(result),
+       playerLeft = Value(playerLeft),
+       tobiLeft = Value(tobiLeft),
+       playerFaults = Value(playerFaults),
+       tobiFaults = Value(tobiFaults);
+  static Insertable<IkkiuchiMatchRow> custom({
+    Expression<int>? id,
+    Expression<DateTime>? startedAt,
+    Expression<DateTime>? endedAt,
+    Expression<int>? perSide,
+    Expression<int>? memoriseMs,
+    Expression<double>? tobiRating,
+    Expression<String>? result,
+    Expression<int>? playerLeft,
+    Expression<int>? tobiLeft,
+    Expression<int>? playerFaults,
+    Expression<int>? tobiFaults,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (startedAt != null) 'started_at': startedAt,
+      if (endedAt != null) 'ended_at': endedAt,
+      if (perSide != null) 'per_side': perSide,
+      if (memoriseMs != null) 'memorise_ms': memoriseMs,
+      if (tobiRating != null) 'tobi_rating': tobiRating,
+      if (result != null) 'result': result,
+      if (playerLeft != null) 'player_left': playerLeft,
+      if (tobiLeft != null) 'tobi_left': tobiLeft,
+      if (playerFaults != null) 'player_faults': playerFaults,
+      if (tobiFaults != null) 'tobi_faults': tobiFaults,
+    });
+  }
+
+  IkkiuchiMatchesCompanion copyWith({
+    Value<int>? id,
+    Value<DateTime>? startedAt,
+    Value<DateTime>? endedAt,
+    Value<int>? perSide,
+    Value<int>? memoriseMs,
+    Value<double>? tobiRating,
+    Value<IkkiuchiResult>? result,
+    Value<int>? playerLeft,
+    Value<int>? tobiLeft,
+    Value<int>? playerFaults,
+    Value<int>? tobiFaults,
+  }) {
+    return IkkiuchiMatchesCompanion(
+      id: id ?? this.id,
+      startedAt: startedAt ?? this.startedAt,
+      endedAt: endedAt ?? this.endedAt,
+      perSide: perSide ?? this.perSide,
+      memoriseMs: memoriseMs ?? this.memoriseMs,
+      tobiRating: tobiRating ?? this.tobiRating,
+      result: result ?? this.result,
+      playerLeft: playerLeft ?? this.playerLeft,
+      tobiLeft: tobiLeft ?? this.tobiLeft,
+      playerFaults: playerFaults ?? this.playerFaults,
+      tobiFaults: tobiFaults ?? this.tobiFaults,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<int>(id.value);
+    }
+    if (startedAt.present) {
+      map['started_at'] = Variable<DateTime>(startedAt.value);
+    }
+    if (endedAt.present) {
+      map['ended_at'] = Variable<DateTime>(endedAt.value);
+    }
+    if (perSide.present) {
+      map['per_side'] = Variable<int>(perSide.value);
+    }
+    if (memoriseMs.present) {
+      map['memorise_ms'] = Variable<int>(memoriseMs.value);
+    }
+    if (tobiRating.present) {
+      map['tobi_rating'] = Variable<double>(tobiRating.value);
+    }
+    if (result.present) {
+      map['result'] = Variable<String>(
+        $IkkiuchiMatchesTable.$converterresult.toSql(result.value),
+      );
+    }
+    if (playerLeft.present) {
+      map['player_left'] = Variable<int>(playerLeft.value);
+    }
+    if (tobiLeft.present) {
+      map['tobi_left'] = Variable<int>(tobiLeft.value);
+    }
+    if (playerFaults.present) {
+      map['player_faults'] = Variable<int>(playerFaults.value);
+    }
+    if (tobiFaults.present) {
+      map['tobi_faults'] = Variable<int>(tobiFaults.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('IkkiuchiMatchesCompanion(')
+          ..write('id: $id, ')
+          ..write('startedAt: $startedAt, ')
+          ..write('endedAt: $endedAt, ')
+          ..write('perSide: $perSide, ')
+          ..write('memoriseMs: $memoriseMs, ')
+          ..write('tobiRating: $tobiRating, ')
+          ..write('result: $result, ')
+          ..write('playerLeft: $playerLeft, ')
+          ..write('tobiLeft: $tobiLeft, ')
+          ..write('playerFaults: $playerFaults, ')
+          ..write('tobiFaults: $tobiFaults')
+          ..write(')'))
+        .toString();
+  }
+}
+
+class $IkkiuchiReadsTable extends IkkiuchiReads
+    with TableInfo<$IkkiuchiReadsTable, IkkiuchiReadRow> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $IkkiuchiReadsTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<int> id = GeneratedColumn<int>(
+    'id',
+    aliasedName,
+    false,
+    hasAutoIncrement: true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'PRIMARY KEY AUTOINCREMENT',
+    ),
+  );
+  static const VerificationMeta _matchIdMeta = const VerificationMeta(
+    'matchId',
+  );
+  @override
+  late final GeneratedColumn<int> matchId = GeneratedColumn<int>(
+    'match_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'REFERENCES ikkiuchi_matches (id)',
+    ),
+  );
+  static const VerificationMeta _seqMeta = const VerificationMeta('seq');
+  @override
+  late final GeneratedColumn<int> seq = GeneratedColumn<int>(
+    'seq',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _poemIdMeta = const VerificationMeta('poemId');
+  @override
+  late final GeneratedColumn<int> poemId = GeneratedColumn<int>(
+    'poem_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _karafudaMeta = const VerificationMeta(
+    'karafuda',
+  );
+  @override
+  late final GeneratedColumn<bool> karafuda = GeneratedColumn<bool>(
+    'karafuda',
+    aliasedName,
+    false,
+    type: DriftSqlType.bool,
+    requiredDuringInsert: true,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'CHECK ("karafuda" IN (0, 1))',
+    ),
+  );
+  @override
+  late final GeneratedColumnWithTypeConverter<IkkiuchiSide?, String> taker =
+      GeneratedColumn<String>(
+        'taker',
+        aliasedName,
+        true,
+        type: DriftSqlType.string,
+        requiredDuringInsert: false,
+      ).withConverter<IkkiuchiSide?>($IkkiuchiReadsTable.$convertertakern);
+  static const VerificationMeta _tiedMeta = const VerificationMeta('tied');
+  @override
+  late final GeneratedColumn<bool> tied = GeneratedColumn<bool>(
+    'tied',
+    aliasedName,
+    false,
+    type: DriftSqlType.bool,
+    requiredDuringInsert: true,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'CHECK ("tied" IN (0, 1))',
+    ),
+  );
+  static const VerificationMeta _playerFaultsMeta = const VerificationMeta(
+    'playerFaults',
+  );
+  @override
+  late final GeneratedColumn<int> playerFaults = GeneratedColumn<int>(
+    'player_faults',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _tobiFaultsMeta = const VerificationMeta(
+    'tobiFaults',
+  );
+  @override
+  late final GeneratedColumn<int> tobiFaults = GeneratedColumn<int>(
+    'tobi_faults',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _playerUsMeta = const VerificationMeta(
+    'playerUs',
+  );
+  @override
+  late final GeneratedColumn<int> playerUs = GeneratedColumn<int>(
+    'player_us',
+    aliasedName,
+    true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _tobiUsMeta = const VerificationMeta('tobiUs');
+  @override
+  late final GeneratedColumn<int> tobiUs = GeneratedColumn<int>(
+    'tobi_us',
+    aliasedName,
+    true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    id,
+    matchId,
+    seq,
+    poemId,
+    karafuda,
+    taker,
+    tied,
+    playerFaults,
+    tobiFaults,
+    playerUs,
+    tobiUs,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'ikkiuchi_reads';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<IkkiuchiReadRow> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    }
+    if (data.containsKey('match_id')) {
+      context.handle(
+        _matchIdMeta,
+        matchId.isAcceptableOrUnknown(data['match_id']!, _matchIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_matchIdMeta);
+    }
+    if (data.containsKey('seq')) {
+      context.handle(
+        _seqMeta,
+        seq.isAcceptableOrUnknown(data['seq']!, _seqMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_seqMeta);
+    }
+    if (data.containsKey('poem_id')) {
+      context.handle(
+        _poemIdMeta,
+        poemId.isAcceptableOrUnknown(data['poem_id']!, _poemIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_poemIdMeta);
+    }
+    if (data.containsKey('karafuda')) {
+      context.handle(
+        _karafudaMeta,
+        karafuda.isAcceptableOrUnknown(data['karafuda']!, _karafudaMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_karafudaMeta);
+    }
+    if (data.containsKey('tied')) {
+      context.handle(
+        _tiedMeta,
+        tied.isAcceptableOrUnknown(data['tied']!, _tiedMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_tiedMeta);
+    }
+    if (data.containsKey('player_faults')) {
+      context.handle(
+        _playerFaultsMeta,
+        playerFaults.isAcceptableOrUnknown(
+          data['player_faults']!,
+          _playerFaultsMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_playerFaultsMeta);
+    }
+    if (data.containsKey('tobi_faults')) {
+      context.handle(
+        _tobiFaultsMeta,
+        tobiFaults.isAcceptableOrUnknown(data['tobi_faults']!, _tobiFaultsMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_tobiFaultsMeta);
+    }
+    if (data.containsKey('player_us')) {
+      context.handle(
+        _playerUsMeta,
+        playerUs.isAcceptableOrUnknown(data['player_us']!, _playerUsMeta),
+      );
+    }
+    if (data.containsKey('tobi_us')) {
+      context.handle(
+        _tobiUsMeta,
+        tobiUs.isAcceptableOrUnknown(data['tobi_us']!, _tobiUsMeta),
+      );
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  IkkiuchiReadRow map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return IkkiuchiReadRow(
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}id'],
+      )!,
+      matchId: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}match_id'],
+      )!,
+      seq: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}seq'],
+      )!,
+      poemId: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}poem_id'],
+      )!,
+      karafuda: attachedDatabase.typeMapping.read(
+        DriftSqlType.bool,
+        data['${effectivePrefix}karafuda'],
+      )!,
+      taker: $IkkiuchiReadsTable.$convertertakern.fromSql(
+        attachedDatabase.typeMapping.read(
+          DriftSqlType.string,
+          data['${effectivePrefix}taker'],
+        ),
+      ),
+      tied: attachedDatabase.typeMapping.read(
+        DriftSqlType.bool,
+        data['${effectivePrefix}tied'],
+      )!,
+      playerFaults: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}player_faults'],
+      )!,
+      tobiFaults: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}tobi_faults'],
+      )!,
+      playerUs: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}player_us'],
+      ),
+      tobiUs: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}tobi_us'],
+      ),
+    );
+  }
+
+  @override
+  $IkkiuchiReadsTable createAlias(String alias) {
+    return $IkkiuchiReadsTable(attachedDatabase, alias);
+  }
+
+  static JsonTypeConverter2<IkkiuchiSide, String, String> $convertertaker =
+      const EnumNameConverter<IkkiuchiSide>(IkkiuchiSide.values);
+  static JsonTypeConverter2<IkkiuchiSide?, String?, String?> $convertertakern =
+      JsonTypeConverter2.asNullable($convertertaker);
+}
+
+class IkkiuchiReadRow extends DataClass implements Insertable<IkkiuchiReadRow> {
+  final int id;
+  final int matchId;
+  final int seq;
+  final int poemId;
+  final bool karafuda;
+  final IkkiuchiSide? taker;
+  final bool tied;
+  final int playerFaults;
+  final int tobiFaults;
+  final int? playerUs;
+  final int? tobiUs;
+  const IkkiuchiReadRow({
+    required this.id,
+    required this.matchId,
+    required this.seq,
+    required this.poemId,
+    required this.karafuda,
+    this.taker,
+    required this.tied,
+    required this.playerFaults,
+    required this.tobiFaults,
+    this.playerUs,
+    this.tobiUs,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<int>(id);
+    map['match_id'] = Variable<int>(matchId);
+    map['seq'] = Variable<int>(seq);
+    map['poem_id'] = Variable<int>(poemId);
+    map['karafuda'] = Variable<bool>(karafuda);
+    if (!nullToAbsent || taker != null) {
+      map['taker'] = Variable<String>(
+        $IkkiuchiReadsTable.$convertertakern.toSql(taker),
+      );
+    }
+    map['tied'] = Variable<bool>(tied);
+    map['player_faults'] = Variable<int>(playerFaults);
+    map['tobi_faults'] = Variable<int>(tobiFaults);
+    if (!nullToAbsent || playerUs != null) {
+      map['player_us'] = Variable<int>(playerUs);
+    }
+    if (!nullToAbsent || tobiUs != null) {
+      map['tobi_us'] = Variable<int>(tobiUs);
+    }
+    return map;
+  }
+
+  IkkiuchiReadsCompanion toCompanion(bool nullToAbsent) {
+    return IkkiuchiReadsCompanion(
+      id: Value(id),
+      matchId: Value(matchId),
+      seq: Value(seq),
+      poemId: Value(poemId),
+      karafuda: Value(karafuda),
+      taker: taker == null && nullToAbsent
+          ? const Value.absent()
+          : Value(taker),
+      tied: Value(tied),
+      playerFaults: Value(playerFaults),
+      tobiFaults: Value(tobiFaults),
+      playerUs: playerUs == null && nullToAbsent
+          ? const Value.absent()
+          : Value(playerUs),
+      tobiUs: tobiUs == null && nullToAbsent
+          ? const Value.absent()
+          : Value(tobiUs),
+    );
+  }
+
+  factory IkkiuchiReadRow.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return IkkiuchiReadRow(
+      id: serializer.fromJson<int>(json['id']),
+      matchId: serializer.fromJson<int>(json['matchId']),
+      seq: serializer.fromJson<int>(json['seq']),
+      poemId: serializer.fromJson<int>(json['poemId']),
+      karafuda: serializer.fromJson<bool>(json['karafuda']),
+      taker: $IkkiuchiReadsTable.$convertertakern.fromJson(
+        serializer.fromJson<String?>(json['taker']),
+      ),
+      tied: serializer.fromJson<bool>(json['tied']),
+      playerFaults: serializer.fromJson<int>(json['playerFaults']),
+      tobiFaults: serializer.fromJson<int>(json['tobiFaults']),
+      playerUs: serializer.fromJson<int?>(json['playerUs']),
+      tobiUs: serializer.fromJson<int?>(json['tobiUs']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<int>(id),
+      'matchId': serializer.toJson<int>(matchId),
+      'seq': serializer.toJson<int>(seq),
+      'poemId': serializer.toJson<int>(poemId),
+      'karafuda': serializer.toJson<bool>(karafuda),
+      'taker': serializer.toJson<String?>(
+        $IkkiuchiReadsTable.$convertertakern.toJson(taker),
+      ),
+      'tied': serializer.toJson<bool>(tied),
+      'playerFaults': serializer.toJson<int>(playerFaults),
+      'tobiFaults': serializer.toJson<int>(tobiFaults),
+      'playerUs': serializer.toJson<int?>(playerUs),
+      'tobiUs': serializer.toJson<int?>(tobiUs),
+    };
+  }
+
+  IkkiuchiReadRow copyWith({
+    int? id,
+    int? matchId,
+    int? seq,
+    int? poemId,
+    bool? karafuda,
+    Value<IkkiuchiSide?> taker = const Value.absent(),
+    bool? tied,
+    int? playerFaults,
+    int? tobiFaults,
+    Value<int?> playerUs = const Value.absent(),
+    Value<int?> tobiUs = const Value.absent(),
+  }) => IkkiuchiReadRow(
+    id: id ?? this.id,
+    matchId: matchId ?? this.matchId,
+    seq: seq ?? this.seq,
+    poemId: poemId ?? this.poemId,
+    karafuda: karafuda ?? this.karafuda,
+    taker: taker.present ? taker.value : this.taker,
+    tied: tied ?? this.tied,
+    playerFaults: playerFaults ?? this.playerFaults,
+    tobiFaults: tobiFaults ?? this.tobiFaults,
+    playerUs: playerUs.present ? playerUs.value : this.playerUs,
+    tobiUs: tobiUs.present ? tobiUs.value : this.tobiUs,
+  );
+  IkkiuchiReadRow copyWithCompanion(IkkiuchiReadsCompanion data) {
+    return IkkiuchiReadRow(
+      id: data.id.present ? data.id.value : this.id,
+      matchId: data.matchId.present ? data.matchId.value : this.matchId,
+      seq: data.seq.present ? data.seq.value : this.seq,
+      poemId: data.poemId.present ? data.poemId.value : this.poemId,
+      karafuda: data.karafuda.present ? data.karafuda.value : this.karafuda,
+      taker: data.taker.present ? data.taker.value : this.taker,
+      tied: data.tied.present ? data.tied.value : this.tied,
+      playerFaults: data.playerFaults.present
+          ? data.playerFaults.value
+          : this.playerFaults,
+      tobiFaults: data.tobiFaults.present
+          ? data.tobiFaults.value
+          : this.tobiFaults,
+      playerUs: data.playerUs.present ? data.playerUs.value : this.playerUs,
+      tobiUs: data.tobiUs.present ? data.tobiUs.value : this.tobiUs,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('IkkiuchiReadRow(')
+          ..write('id: $id, ')
+          ..write('matchId: $matchId, ')
+          ..write('seq: $seq, ')
+          ..write('poemId: $poemId, ')
+          ..write('karafuda: $karafuda, ')
+          ..write('taker: $taker, ')
+          ..write('tied: $tied, ')
+          ..write('playerFaults: $playerFaults, ')
+          ..write('tobiFaults: $tobiFaults, ')
+          ..write('playerUs: $playerUs, ')
+          ..write('tobiUs: $tobiUs')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(
+    id,
+    matchId,
+    seq,
+    poemId,
+    karafuda,
+    taker,
+    tied,
+    playerFaults,
+    tobiFaults,
+    playerUs,
+    tobiUs,
+  );
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is IkkiuchiReadRow &&
+          other.id == this.id &&
+          other.matchId == this.matchId &&
+          other.seq == this.seq &&
+          other.poemId == this.poemId &&
+          other.karafuda == this.karafuda &&
+          other.taker == this.taker &&
+          other.tied == this.tied &&
+          other.playerFaults == this.playerFaults &&
+          other.tobiFaults == this.tobiFaults &&
+          other.playerUs == this.playerUs &&
+          other.tobiUs == this.tobiUs);
+}
+
+class IkkiuchiReadsCompanion extends UpdateCompanion<IkkiuchiReadRow> {
+  final Value<int> id;
+  final Value<int> matchId;
+  final Value<int> seq;
+  final Value<int> poemId;
+  final Value<bool> karafuda;
+  final Value<IkkiuchiSide?> taker;
+  final Value<bool> tied;
+  final Value<int> playerFaults;
+  final Value<int> tobiFaults;
+  final Value<int?> playerUs;
+  final Value<int?> tobiUs;
+  const IkkiuchiReadsCompanion({
+    this.id = const Value.absent(),
+    this.matchId = const Value.absent(),
+    this.seq = const Value.absent(),
+    this.poemId = const Value.absent(),
+    this.karafuda = const Value.absent(),
+    this.taker = const Value.absent(),
+    this.tied = const Value.absent(),
+    this.playerFaults = const Value.absent(),
+    this.tobiFaults = const Value.absent(),
+    this.playerUs = const Value.absent(),
+    this.tobiUs = const Value.absent(),
+  });
+  IkkiuchiReadsCompanion.insert({
+    this.id = const Value.absent(),
+    required int matchId,
+    required int seq,
+    required int poemId,
+    required bool karafuda,
+    this.taker = const Value.absent(),
+    required bool tied,
+    required int playerFaults,
+    required int tobiFaults,
+    this.playerUs = const Value.absent(),
+    this.tobiUs = const Value.absent(),
+  }) : matchId = Value(matchId),
+       seq = Value(seq),
+       poemId = Value(poemId),
+       karafuda = Value(karafuda),
+       tied = Value(tied),
+       playerFaults = Value(playerFaults),
+       tobiFaults = Value(tobiFaults);
+  static Insertable<IkkiuchiReadRow> custom({
+    Expression<int>? id,
+    Expression<int>? matchId,
+    Expression<int>? seq,
+    Expression<int>? poemId,
+    Expression<bool>? karafuda,
+    Expression<String>? taker,
+    Expression<bool>? tied,
+    Expression<int>? playerFaults,
+    Expression<int>? tobiFaults,
+    Expression<int>? playerUs,
+    Expression<int>? tobiUs,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (matchId != null) 'match_id': matchId,
+      if (seq != null) 'seq': seq,
+      if (poemId != null) 'poem_id': poemId,
+      if (karafuda != null) 'karafuda': karafuda,
+      if (taker != null) 'taker': taker,
+      if (tied != null) 'tied': tied,
+      if (playerFaults != null) 'player_faults': playerFaults,
+      if (tobiFaults != null) 'tobi_faults': tobiFaults,
+      if (playerUs != null) 'player_us': playerUs,
+      if (tobiUs != null) 'tobi_us': tobiUs,
+    });
+  }
+
+  IkkiuchiReadsCompanion copyWith({
+    Value<int>? id,
+    Value<int>? matchId,
+    Value<int>? seq,
+    Value<int>? poemId,
+    Value<bool>? karafuda,
+    Value<IkkiuchiSide?>? taker,
+    Value<bool>? tied,
+    Value<int>? playerFaults,
+    Value<int>? tobiFaults,
+    Value<int?>? playerUs,
+    Value<int?>? tobiUs,
+  }) {
+    return IkkiuchiReadsCompanion(
+      id: id ?? this.id,
+      matchId: matchId ?? this.matchId,
+      seq: seq ?? this.seq,
+      poemId: poemId ?? this.poemId,
+      karafuda: karafuda ?? this.karafuda,
+      taker: taker ?? this.taker,
+      tied: tied ?? this.tied,
+      playerFaults: playerFaults ?? this.playerFaults,
+      tobiFaults: tobiFaults ?? this.tobiFaults,
+      playerUs: playerUs ?? this.playerUs,
+      tobiUs: tobiUs ?? this.tobiUs,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<int>(id.value);
+    }
+    if (matchId.present) {
+      map['match_id'] = Variable<int>(matchId.value);
+    }
+    if (seq.present) {
+      map['seq'] = Variable<int>(seq.value);
+    }
+    if (poemId.present) {
+      map['poem_id'] = Variable<int>(poemId.value);
+    }
+    if (karafuda.present) {
+      map['karafuda'] = Variable<bool>(karafuda.value);
+    }
+    if (taker.present) {
+      map['taker'] = Variable<String>(
+        $IkkiuchiReadsTable.$convertertakern.toSql(taker.value),
+      );
+    }
+    if (tied.present) {
+      map['tied'] = Variable<bool>(tied.value);
+    }
+    if (playerFaults.present) {
+      map['player_faults'] = Variable<int>(playerFaults.value);
+    }
+    if (tobiFaults.present) {
+      map['tobi_faults'] = Variable<int>(tobiFaults.value);
+    }
+    if (playerUs.present) {
+      map['player_us'] = Variable<int>(playerUs.value);
+    }
+    if (tobiUs.present) {
+      map['tobi_us'] = Variable<int>(tobiUs.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('IkkiuchiReadsCompanion(')
+          ..write('id: $id, ')
+          ..write('matchId: $matchId, ')
+          ..write('seq: $seq, ')
+          ..write('poemId: $poemId, ')
+          ..write('karafuda: $karafuda, ')
+          ..write('taker: $taker, ')
+          ..write('tied: $tied, ')
+          ..write('playerFaults: $playerFaults, ')
+          ..write('tobiFaults: $tobiFaults, ')
+          ..write('playerUs: $playerUs, ')
+          ..write('tobiUs: $tobiUs')
+          ..write(')'))
+        .toString();
+  }
+}
+
 class $DayCardsTable extends DayCards
     with TableInfo<$DayCardsTable, DayCardRow> {
   @override
@@ -6224,6 +7555,10 @@ abstract class _$AppDatabase extends GeneratedDatabase {
   late final $TeiichiPlacingsTable teiichiPlacings = $TeiichiPlacingsTable(
     this,
   );
+  late final $IkkiuchiMatchesTable ikkiuchiMatches = $IkkiuchiMatchesTable(
+    this,
+  );
+  late final $IkkiuchiReadsTable ikkiuchiReads = $IkkiuchiReadsTable(this);
   late final $DayCardsTable dayCards = $DayCardsTable(this);
   late final Index runsDay = Index(
     'runs_day',
@@ -6253,6 +7588,10 @@ abstract class _$AppDatabase extends GeneratedDatabase {
     'teiichi_placings_run',
     'CREATE INDEX teiichi_placings_run ON teiichi_placings (run_id)',
   );
+  late final Index ikkiuchiReadsMatch = Index(
+    'ikkiuchi_reads_match',
+    'CREATE INDEX ikkiuchi_reads_match ON ikkiuchi_reads (match_id)',
+  );
   @override
   Iterable<TableInfo<Table, Object?>> get allTables =>
       allSchemaEntities.whereType<TableInfo<Table, Object?>>();
@@ -6267,6 +7606,8 @@ abstract class _$AppDatabase extends GeneratedDatabase {
     sideTripRuns,
     sideTripAnswers,
     teiichiPlacings,
+    ikkiuchiMatches,
+    ikkiuchiReads,
     dayCards,
     runsDay,
     runsMode,
@@ -6275,6 +7616,7 @@ abstract class _$AppDatabase extends GeneratedDatabase {
     sideTripRunsDay,
     sideTripAnswersRun,
     teiichiPlacingsRun,
+    ikkiuchiReadsMatch,
   ];
 }
 
@@ -10433,6 +11775,869 @@ typedef $$TeiichiPlacingsTableProcessedTableManager =
       TeiichiPlacingRow,
       PrefetchHooks Function({bool runId})
     >;
+typedef $$IkkiuchiMatchesTableCreateCompanionBuilder =
+    IkkiuchiMatchesCompanion Function({
+      Value<int> id,
+      required DateTime startedAt,
+      required DateTime endedAt,
+      required int perSide,
+      required int memoriseMs,
+      required double tobiRating,
+      required IkkiuchiResult result,
+      required int playerLeft,
+      required int tobiLeft,
+      required int playerFaults,
+      required int tobiFaults,
+    });
+typedef $$IkkiuchiMatchesTableUpdateCompanionBuilder =
+    IkkiuchiMatchesCompanion Function({
+      Value<int> id,
+      Value<DateTime> startedAt,
+      Value<DateTime> endedAt,
+      Value<int> perSide,
+      Value<int> memoriseMs,
+      Value<double> tobiRating,
+      Value<IkkiuchiResult> result,
+      Value<int> playerLeft,
+      Value<int> tobiLeft,
+      Value<int> playerFaults,
+      Value<int> tobiFaults,
+    });
+
+final class $$IkkiuchiMatchesTableReferences
+    extends
+        BaseReferences<_$AppDatabase, $IkkiuchiMatchesTable, IkkiuchiMatchRow> {
+  $$IkkiuchiMatchesTableReferences(
+    super.$_db,
+    super.$_table,
+    super.$_typedResult,
+  );
+
+  static MultiTypedResultKey<$IkkiuchiReadsTable, List<IkkiuchiReadRow>>
+  _ikkiuchiReadsRefsTable(_$AppDatabase db) => MultiTypedResultKey.fromTable(
+    db.ikkiuchiReads,
+    aliasName: 'ikkiuchi_matches__id__ikkiuchi_reads__match_id',
+  );
+
+  $$IkkiuchiReadsTableProcessedTableManager get ikkiuchiReadsRefs {
+    final manager = $$IkkiuchiReadsTableTableManager(
+      $_db,
+      $_db.ikkiuchiReads,
+    ).filter((f) => f.matchId.id.sqlEquals($_itemColumn<int>('id')!));
+
+    final cache = $_typedResult.readTableOrNull(_ikkiuchiReadsRefsTable($_db));
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: cache),
+    );
+  }
+}
+
+class $$IkkiuchiMatchesTableFilterComposer
+    extends Composer<_$AppDatabase, $IkkiuchiMatchesTable> {
+  $$IkkiuchiMatchesTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<int> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get startedAt => $composableBuilder(
+    column: $table.startedAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get endedAt => $composableBuilder(
+    column: $table.endedAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get perSide => $composableBuilder(
+    column: $table.perSide,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get memoriseMs => $composableBuilder(
+    column: $table.memoriseMs,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<double> get tobiRating => $composableBuilder(
+    column: $table.tobiRating,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnWithTypeConverterFilters<IkkiuchiResult, IkkiuchiResult, String>
+  get result => $composableBuilder(
+    column: $table.result,
+    builder: (column) => ColumnWithTypeConverterFilters(column),
+  );
+
+  ColumnFilters<int> get playerLeft => $composableBuilder(
+    column: $table.playerLeft,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get tobiLeft => $composableBuilder(
+    column: $table.tobiLeft,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get playerFaults => $composableBuilder(
+    column: $table.playerFaults,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get tobiFaults => $composableBuilder(
+    column: $table.tobiFaults,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  Expression<bool> ikkiuchiReadsRefs(
+    Expression<bool> Function($$IkkiuchiReadsTableFilterComposer f) f,
+  ) {
+    final $$IkkiuchiReadsTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.ikkiuchiReads,
+      getReferencedColumn: (t) => t.matchId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$IkkiuchiReadsTableFilterComposer(
+            $db: $db,
+            $table: $db.ikkiuchiReads,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
+}
+
+class $$IkkiuchiMatchesTableOrderingComposer
+    extends Composer<_$AppDatabase, $IkkiuchiMatchesTable> {
+  $$IkkiuchiMatchesTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<int> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get startedAt => $composableBuilder(
+    column: $table.startedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get endedAt => $composableBuilder(
+    column: $table.endedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get perSide => $composableBuilder(
+    column: $table.perSide,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get memoriseMs => $composableBuilder(
+    column: $table.memoriseMs,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<double> get tobiRating => $composableBuilder(
+    column: $table.tobiRating,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get result => $composableBuilder(
+    column: $table.result,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get playerLeft => $composableBuilder(
+    column: $table.playerLeft,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get tobiLeft => $composableBuilder(
+    column: $table.tobiLeft,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get playerFaults => $composableBuilder(
+    column: $table.playerFaults,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get tobiFaults => $composableBuilder(
+    column: $table.tobiFaults,
+    builder: (column) => ColumnOrderings(column),
+  );
+}
+
+class $$IkkiuchiMatchesTableAnnotationComposer
+    extends Composer<_$AppDatabase, $IkkiuchiMatchesTable> {
+  $$IkkiuchiMatchesTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<int> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get startedAt =>
+      $composableBuilder(column: $table.startedAt, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get endedAt =>
+      $composableBuilder(column: $table.endedAt, builder: (column) => column);
+
+  GeneratedColumn<int> get perSide =>
+      $composableBuilder(column: $table.perSide, builder: (column) => column);
+
+  GeneratedColumn<int> get memoriseMs => $composableBuilder(
+    column: $table.memoriseMs,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<double> get tobiRating => $composableBuilder(
+    column: $table.tobiRating,
+    builder: (column) => column,
+  );
+
+  GeneratedColumnWithTypeConverter<IkkiuchiResult, String> get result =>
+      $composableBuilder(column: $table.result, builder: (column) => column);
+
+  GeneratedColumn<int> get playerLeft => $composableBuilder(
+    column: $table.playerLeft,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<int> get tobiLeft =>
+      $composableBuilder(column: $table.tobiLeft, builder: (column) => column);
+
+  GeneratedColumn<int> get playerFaults => $composableBuilder(
+    column: $table.playerFaults,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<int> get tobiFaults => $composableBuilder(
+    column: $table.tobiFaults,
+    builder: (column) => column,
+  );
+
+  Expression<T> ikkiuchiReadsRefs<T extends Object>(
+    Expression<T> Function($$IkkiuchiReadsTableAnnotationComposer a) f,
+  ) {
+    final $$IkkiuchiReadsTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.ikkiuchiReads,
+      getReferencedColumn: (t) => t.matchId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$IkkiuchiReadsTableAnnotationComposer(
+            $db: $db,
+            $table: $db.ikkiuchiReads,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
+}
+
+class $$IkkiuchiMatchesTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $IkkiuchiMatchesTable,
+          IkkiuchiMatchRow,
+          $$IkkiuchiMatchesTableFilterComposer,
+          $$IkkiuchiMatchesTableOrderingComposer,
+          $$IkkiuchiMatchesTableAnnotationComposer,
+          $$IkkiuchiMatchesTableCreateCompanionBuilder,
+          $$IkkiuchiMatchesTableUpdateCompanionBuilder,
+          (IkkiuchiMatchRow, $$IkkiuchiMatchesTableReferences),
+          IkkiuchiMatchRow,
+          PrefetchHooks Function({bool ikkiuchiReadsRefs})
+        > {
+  $$IkkiuchiMatchesTableTableManager(
+    _$AppDatabase db,
+    $IkkiuchiMatchesTable table,
+  ) : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$IkkiuchiMatchesTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$IkkiuchiMatchesTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$IkkiuchiMatchesTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback:
+              ({
+                Value<int> id = const Value.absent(),
+                Value<DateTime> startedAt = const Value.absent(),
+                Value<DateTime> endedAt = const Value.absent(),
+                Value<int> perSide = const Value.absent(),
+                Value<int> memoriseMs = const Value.absent(),
+                Value<double> tobiRating = const Value.absent(),
+                Value<IkkiuchiResult> result = const Value.absent(),
+                Value<int> playerLeft = const Value.absent(),
+                Value<int> tobiLeft = const Value.absent(),
+                Value<int> playerFaults = const Value.absent(),
+                Value<int> tobiFaults = const Value.absent(),
+              }) => IkkiuchiMatchesCompanion(
+                id: id,
+                startedAt: startedAt,
+                endedAt: endedAt,
+                perSide: perSide,
+                memoriseMs: memoriseMs,
+                tobiRating: tobiRating,
+                result: result,
+                playerLeft: playerLeft,
+                tobiLeft: tobiLeft,
+                playerFaults: playerFaults,
+                tobiFaults: tobiFaults,
+              ),
+          createCompanionCallback:
+              ({
+                Value<int> id = const Value.absent(),
+                required DateTime startedAt,
+                required DateTime endedAt,
+                required int perSide,
+                required int memoriseMs,
+                required double tobiRating,
+                required IkkiuchiResult result,
+                required int playerLeft,
+                required int tobiLeft,
+                required int playerFaults,
+                required int tobiFaults,
+              }) => IkkiuchiMatchesCompanion.insert(
+                id: id,
+                startedAt: startedAt,
+                endedAt: endedAt,
+                perSide: perSide,
+                memoriseMs: memoriseMs,
+                tobiRating: tobiRating,
+                result: result,
+                playerLeft: playerLeft,
+                tobiLeft: tobiLeft,
+                playerFaults: playerFaults,
+                tobiFaults: tobiFaults,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map(
+                (e) => (
+                  e.readTable<$IkkiuchiMatchesTable, IkkiuchiMatchRow>(table),
+                  $$IkkiuchiMatchesTableReferences(db, table, e),
+                ),
+              )
+              .toList(),
+          prefetchHooksCallback: ({ikkiuchiReadsRefs = false}) {
+            return PrefetchHooks(
+              db: db,
+              explicitlyWatchedTables: [
+                if (ikkiuchiReadsRefs) db.ikkiuchiReads,
+              ],
+              addJoins: null,
+              getPrefetchedDataCallback: (items) async {
+                return [
+                  if (ikkiuchiReadsRefs)
+                    await $_getPrefetchedData<
+                      IkkiuchiMatchRow,
+                      $IkkiuchiMatchesTable,
+                      IkkiuchiReadRow
+                    >(
+                      currentTable: table,
+                      referencedTable: $$IkkiuchiMatchesTableReferences
+                          ._ikkiuchiReadsRefsTable(db),
+                      managerFromTypedResult: (p0) =>
+                          $$IkkiuchiMatchesTableReferences(
+                            db,
+                            table,
+                            p0,
+                          ).ikkiuchiReadsRefs,
+                      referencedItemsForCurrentItem: (item, referencedItems) =>
+                          referencedItems.where((e) => e.matchId == item.id),
+                      typedResults: items,
+                    ),
+                ];
+              },
+            );
+          },
+        ),
+      );
+}
+
+typedef $$IkkiuchiMatchesTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $IkkiuchiMatchesTable,
+      IkkiuchiMatchRow,
+      $$IkkiuchiMatchesTableFilterComposer,
+      $$IkkiuchiMatchesTableOrderingComposer,
+      $$IkkiuchiMatchesTableAnnotationComposer,
+      $$IkkiuchiMatchesTableCreateCompanionBuilder,
+      $$IkkiuchiMatchesTableUpdateCompanionBuilder,
+      (IkkiuchiMatchRow, $$IkkiuchiMatchesTableReferences),
+      IkkiuchiMatchRow,
+      PrefetchHooks Function({bool ikkiuchiReadsRefs})
+    >;
+typedef $$IkkiuchiReadsTableCreateCompanionBuilder =
+    IkkiuchiReadsCompanion Function({
+      Value<int> id,
+      required int matchId,
+      required int seq,
+      required int poemId,
+      required bool karafuda,
+      Value<IkkiuchiSide?> taker,
+      required bool tied,
+      required int playerFaults,
+      required int tobiFaults,
+      Value<int?> playerUs,
+      Value<int?> tobiUs,
+    });
+typedef $$IkkiuchiReadsTableUpdateCompanionBuilder =
+    IkkiuchiReadsCompanion Function({
+      Value<int> id,
+      Value<int> matchId,
+      Value<int> seq,
+      Value<int> poemId,
+      Value<bool> karafuda,
+      Value<IkkiuchiSide?> taker,
+      Value<bool> tied,
+      Value<int> playerFaults,
+      Value<int> tobiFaults,
+      Value<int?> playerUs,
+      Value<int?> tobiUs,
+    });
+
+final class $$IkkiuchiReadsTableReferences
+    extends
+        BaseReferences<_$AppDatabase, $IkkiuchiReadsTable, IkkiuchiReadRow> {
+  $$IkkiuchiReadsTableReferences(
+    super.$_db,
+    super.$_table,
+    super.$_typedResult,
+  );
+
+  static $IkkiuchiMatchesTable _matchIdTable(_$AppDatabase db) => db
+      .ikkiuchiMatches
+      .createAlias('ikkiuchi_reads__match_id__ikkiuchi_matches__id');
+
+  $$IkkiuchiMatchesTableProcessedTableManager get matchId {
+    final $_column = $_itemColumn<int>('match_id')!;
+
+    final manager = $$IkkiuchiMatchesTableTableManager(
+      $_db,
+      $_db.ikkiuchiMatches,
+    ).filter((f) => f.id.sqlEquals($_column));
+    final item = $_typedResult.readTableOrNull(_matchIdTable($_db));
+    if (item == null) return manager;
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: [item]),
+    );
+  }
+}
+
+class $$IkkiuchiReadsTableFilterComposer
+    extends Composer<_$AppDatabase, $IkkiuchiReadsTable> {
+  $$IkkiuchiReadsTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<int> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get seq => $composableBuilder(
+    column: $table.seq,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get poemId => $composableBuilder(
+    column: $table.poemId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<bool> get karafuda => $composableBuilder(
+    column: $table.karafuda,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnWithTypeConverterFilters<IkkiuchiSide?, IkkiuchiSide, String>
+  get taker => $composableBuilder(
+    column: $table.taker,
+    builder: (column) => ColumnWithTypeConverterFilters(column),
+  );
+
+  ColumnFilters<bool> get tied => $composableBuilder(
+    column: $table.tied,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get playerFaults => $composableBuilder(
+    column: $table.playerFaults,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get tobiFaults => $composableBuilder(
+    column: $table.tobiFaults,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get playerUs => $composableBuilder(
+    column: $table.playerUs,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get tobiUs => $composableBuilder(
+    column: $table.tobiUs,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  $$IkkiuchiMatchesTableFilterComposer get matchId {
+    final $$IkkiuchiMatchesTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.matchId,
+      referencedTable: $db.ikkiuchiMatches,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$IkkiuchiMatchesTableFilterComposer(
+            $db: $db,
+            $table: $db.ikkiuchiMatches,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$IkkiuchiReadsTableOrderingComposer
+    extends Composer<_$AppDatabase, $IkkiuchiReadsTable> {
+  $$IkkiuchiReadsTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<int> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get seq => $composableBuilder(
+    column: $table.seq,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get poemId => $composableBuilder(
+    column: $table.poemId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<bool> get karafuda => $composableBuilder(
+    column: $table.karafuda,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get taker => $composableBuilder(
+    column: $table.taker,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<bool> get tied => $composableBuilder(
+    column: $table.tied,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get playerFaults => $composableBuilder(
+    column: $table.playerFaults,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get tobiFaults => $composableBuilder(
+    column: $table.tobiFaults,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get playerUs => $composableBuilder(
+    column: $table.playerUs,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get tobiUs => $composableBuilder(
+    column: $table.tobiUs,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  $$IkkiuchiMatchesTableOrderingComposer get matchId {
+    final $$IkkiuchiMatchesTableOrderingComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.matchId,
+      referencedTable: $db.ikkiuchiMatches,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$IkkiuchiMatchesTableOrderingComposer(
+            $db: $db,
+            $table: $db.ikkiuchiMatches,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$IkkiuchiReadsTableAnnotationComposer
+    extends Composer<_$AppDatabase, $IkkiuchiReadsTable> {
+  $$IkkiuchiReadsTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<int> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<int> get seq =>
+      $composableBuilder(column: $table.seq, builder: (column) => column);
+
+  GeneratedColumn<int> get poemId =>
+      $composableBuilder(column: $table.poemId, builder: (column) => column);
+
+  GeneratedColumn<bool> get karafuda =>
+      $composableBuilder(column: $table.karafuda, builder: (column) => column);
+
+  GeneratedColumnWithTypeConverter<IkkiuchiSide?, String> get taker =>
+      $composableBuilder(column: $table.taker, builder: (column) => column);
+
+  GeneratedColumn<bool> get tied =>
+      $composableBuilder(column: $table.tied, builder: (column) => column);
+
+  GeneratedColumn<int> get playerFaults => $composableBuilder(
+    column: $table.playerFaults,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<int> get tobiFaults => $composableBuilder(
+    column: $table.tobiFaults,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<int> get playerUs =>
+      $composableBuilder(column: $table.playerUs, builder: (column) => column);
+
+  GeneratedColumn<int> get tobiUs =>
+      $composableBuilder(column: $table.tobiUs, builder: (column) => column);
+
+  $$IkkiuchiMatchesTableAnnotationComposer get matchId {
+    final $$IkkiuchiMatchesTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.matchId,
+      referencedTable: $db.ikkiuchiMatches,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$IkkiuchiMatchesTableAnnotationComposer(
+            $db: $db,
+            $table: $db.ikkiuchiMatches,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$IkkiuchiReadsTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $IkkiuchiReadsTable,
+          IkkiuchiReadRow,
+          $$IkkiuchiReadsTableFilterComposer,
+          $$IkkiuchiReadsTableOrderingComposer,
+          $$IkkiuchiReadsTableAnnotationComposer,
+          $$IkkiuchiReadsTableCreateCompanionBuilder,
+          $$IkkiuchiReadsTableUpdateCompanionBuilder,
+          (IkkiuchiReadRow, $$IkkiuchiReadsTableReferences),
+          IkkiuchiReadRow,
+          PrefetchHooks Function({bool matchId})
+        > {
+  $$IkkiuchiReadsTableTableManager(_$AppDatabase db, $IkkiuchiReadsTable table)
+    : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$IkkiuchiReadsTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$IkkiuchiReadsTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$IkkiuchiReadsTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback:
+              ({
+                Value<int> id = const Value.absent(),
+                Value<int> matchId = const Value.absent(),
+                Value<int> seq = const Value.absent(),
+                Value<int> poemId = const Value.absent(),
+                Value<bool> karafuda = const Value.absent(),
+                Value<IkkiuchiSide?> taker = const Value.absent(),
+                Value<bool> tied = const Value.absent(),
+                Value<int> playerFaults = const Value.absent(),
+                Value<int> tobiFaults = const Value.absent(),
+                Value<int?> playerUs = const Value.absent(),
+                Value<int?> tobiUs = const Value.absent(),
+              }) => IkkiuchiReadsCompanion(
+                id: id,
+                matchId: matchId,
+                seq: seq,
+                poemId: poemId,
+                karafuda: karafuda,
+                taker: taker,
+                tied: tied,
+                playerFaults: playerFaults,
+                tobiFaults: tobiFaults,
+                playerUs: playerUs,
+                tobiUs: tobiUs,
+              ),
+          createCompanionCallback:
+              ({
+                Value<int> id = const Value.absent(),
+                required int matchId,
+                required int seq,
+                required int poemId,
+                required bool karafuda,
+                Value<IkkiuchiSide?> taker = const Value.absent(),
+                required bool tied,
+                required int playerFaults,
+                required int tobiFaults,
+                Value<int?> playerUs = const Value.absent(),
+                Value<int?> tobiUs = const Value.absent(),
+              }) => IkkiuchiReadsCompanion.insert(
+                id: id,
+                matchId: matchId,
+                seq: seq,
+                poemId: poemId,
+                karafuda: karafuda,
+                taker: taker,
+                tied: tied,
+                playerFaults: playerFaults,
+                tobiFaults: tobiFaults,
+                playerUs: playerUs,
+                tobiUs: tobiUs,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map(
+                (e) => (
+                  e.readTable<$IkkiuchiReadsTable, IkkiuchiReadRow>(table),
+                  $$IkkiuchiReadsTableReferences(db, table, e),
+                ),
+              )
+              .toList(),
+          prefetchHooksCallback: ({matchId = false}) {
+            return PrefetchHooks(
+              db: db,
+              explicitlyWatchedTables: [],
+              addJoins:
+                  <
+                    T extends TableManagerState<
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic
+                    >
+                  >(state) {
+                    if (matchId) {
+                      state = state.withJoin(
+                        currentTable: table,
+                        currentColumn: table.matchId,
+                        referencedTable: $$IkkiuchiReadsTableReferences
+                            ._matchIdTable(db),
+                        referencedColumn: $$IkkiuchiReadsTableReferences
+                            ._matchIdTable(db)
+                            .id,
+                      ) as T;
+                    }
+
+                    return state;
+                  },
+              getPrefetchedDataCallback: (items) async {
+                return [];
+              },
+            );
+          },
+        ),
+      );
+}
+
+typedef $$IkkiuchiReadsTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $IkkiuchiReadsTable,
+      IkkiuchiReadRow,
+      $$IkkiuchiReadsTableFilterComposer,
+      $$IkkiuchiReadsTableOrderingComposer,
+      $$IkkiuchiReadsTableAnnotationComposer,
+      $$IkkiuchiReadsTableCreateCompanionBuilder,
+      $$IkkiuchiReadsTableUpdateCompanionBuilder,
+      (IkkiuchiReadRow, $$IkkiuchiReadsTableReferences),
+      IkkiuchiReadRow,
+      PrefetchHooks Function({bool matchId})
+    >;
 typedef $$DayCardsTableCreateCompanionBuilder = DayCardsCompanion Function({
   required int day,
   required int poemId,
@@ -10749,6 +12954,10 @@ class $AppDatabaseManager {
       $$SideTripAnswersTableTableManager(_db, _db.sideTripAnswers);
   $$TeiichiPlacingsTableTableManager get teiichiPlacings =>
       $$TeiichiPlacingsTableTableManager(_db, _db.teiichiPlacings);
+  $$IkkiuchiMatchesTableTableManager get ikkiuchiMatches =>
+      $$IkkiuchiMatchesTableTableManager(_db, _db.ikkiuchiMatches);
+  $$IkkiuchiReadsTableTableManager get ikkiuchiReads =>
+      $$IkkiuchiReadsTableTableManager(_db, _db.ikkiuchiReads);
   $$DayCardsTableTableManager get dayCards =>
       $$DayCardsTableTableManager(_db, _db.dayCards);
 }

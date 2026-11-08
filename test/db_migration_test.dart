@@ -8,6 +8,7 @@ import 'package:fudatobashi/config/config.dart';
 import 'package:fudatobashi/db/database.dart';
 import 'package:fudatobashi/domain/ankiren_field.dart';
 import 'package:fudatobashi/domain/day_window.dart';
+import 'package:fudatobashi/domain/ikkiuchi_record.dart';
 import 'package:fudatobashi/domain/play_session.dart';
 import 'package:fudatobashi/domain/side_trips.dart';
 import 'package:fudatobashi/domain/step_plan.dart';
@@ -233,6 +234,47 @@ void main() {
         runId: run, seq: 1, poemId: 56, placingUs: 0));
     expect([for (final p in await db.select(db.teiichiPlacings).get()) (p.runId, p.seq, p.poemId, p.placingUs)],
         [(run, 0, 12, 1500000), (run, 1, 56, 0)]);
+    await db.close();
+  });
+
+  test('a version 5 database (v2.3.0) gains 一騎打ち\'s tables and keeps its side-trip games', () async {
+    final fresh = AppDatabase(NativeDatabase.memory());
+    final latest = await schemaOf(fresh);
+    await fresh.close();
+    final release = sqlite3.open('test/past_db/v2.3.0_fresh.sqlite', mode: OpenMode.readOnly);
+    final v5 = [
+      for (final row in release.select("SELECT sql FROM sqlite_master WHERE sql IS NOT NULL AND name NOT LIKE 'sqlite_%' "
+          'ORDER BY rowid'))
+        row['sql'] as String,
+    ];
+    release.close();
+    final db = install(5, [
+      ...v5,
+      'INSERT INTO days VALUES (20261102, 1793570400, 1793656800, NULL, 0, 0, 0, NULL)',
+      "INSERT INTO side_trip_runs VALUES (1, 'teiichi', 1793600000, 1793600030, 20261102, 0, 1, NULL, NULL, 1, "
+          "NULL, NULL, '{}')",
+      'INSERT INTO teiichi_placings VALUES (1, 1, 0, 12, 1500000)',
+    ]);
+
+    expect([for (final g in await db.select(db.sideTripRuns).get()) (g.id, g.game)], [(1, SideTrip.teiichi)]);
+    expect([for (final x in await db.select(db.teiichiPlacings).get()) (x.runId, x.poemId)], [(1, 12)]);
+    expect(await db.select(db.ikkiuchiMatches).get(), isEmpty);
+    expect(await schemaOf(db), latest, reason: 'an upgraded install has a new install\'s schema');
+
+    final match = await db.into(db.ikkiuchiMatches).insert(IkkiuchiMatchesCompanion.insert(
+        startedAt: DateTime(2026, 11, 2),
+        endedAt: DateTime(2026, 11, 2),
+        perSide: 25,
+        memoriseMs: 900000,
+        tobiRating: 1600,
+        result: IkkiuchiResult.won,
+        playerLeft: 0,
+        tobiLeft: 4,
+        playerFaults: 1,
+        tobiFaults: 0));
+    await db.into(db.ikkiuchiReads).insert(IkkiuchiReadsCompanion.insert(
+        matchId: match, seq: 0, poemId: 12, karafuda: false, tied: false, playerFaults: 0, tobiFaults: 0));
+    expect([for (final r in await db.select(db.ikkiuchiReads).get()) (r.matchId, r.poemId, r.taker)], [(match, 12, null)]);
     await db.close();
   });
 

@@ -3,6 +3,8 @@ import 'package:drift_flutter/drift_flutter.dart';
 import 'package:fsrs/fsrs.dart' as fsrs;
 
 import '../domain/ankiren_field.dart';
+import '../domain/ikkiuchi_cards.dart';
+import '../domain/ikkiuchi_record.dart';
 import '../domain/play_session.dart';
 import '../domain/side_trips.dart';
 import '../domain/step_plan.dart';
@@ -268,6 +270,47 @@ class TeiichiPlacings extends Table {
   IntColumn get placingUs => integer()();
 }
 
+/// One 一騎打ち match against Tobi, stored once it is over: its setup (the
+/// cards a side, the memory time and Tobi's rating), how it ended, the
+/// cards left on each side and each player's faults over the match.
+@DataClassName('IkkiuchiMatchRow')
+class IkkiuchiMatches extends Table {
+  IntColumn get id => integer().autoIncrement()();
+  DateTimeColumn get startedAt => dateTime()();
+  DateTimeColumn get endedAt => dateTime()();
+  IntColumn get perSide => integer()();
+  IntColumn get memoriseMs => integer()();
+  RealColumn get tobiRating => real()();
+  TextColumn get result => textEnum<IkkiuchiResult>()();
+  IntColumn get playerLeft => integer()();
+  IntColumn get tobiLeft => integer()();
+
+  /// A fault on both sides of one read counts two.
+  IntColumn get playerFaults => integer()();
+  IntColumn get tobiFaults => integer()();
+}
+
+/// One read of a 一騎打ち match, in the order read: the card, whether it
+/// was a からふだ, who took it (null on a からふだ, or when the match ended
+/// first), whether both took it at once, each player's faults on it (the
+/// sides faulted on, 0 to 2), and when each reached the card from its
+/// deciding sound, µs (null for one who never did).
+@DataClassName('IkkiuchiReadRow')
+@TableIndex(name: 'ikkiuchi_reads_match', columns: {#matchId})
+class IkkiuchiReads extends Table {
+  IntColumn get id => integer().autoIncrement()();
+  IntColumn get matchId => integer().references(IkkiuchiMatches, #id)();
+  IntColumn get seq => integer()();
+  IntColumn get poemId => integer()();
+  BoolColumn get karafuda => boolean()();
+  TextColumn get taker => textEnum<IkkiuchiSide>().nullable()();
+  BoolColumn get tied => boolean()();
+  IntColumn get playerFaults => integer()();
+  IntColumn get tobiFaults => integer()();
+  IntColumn get playerUs => integer().nullable()();
+  IntColumn get tobiUs => integer().nullable()();
+}
+
 /// One practice day (see `DayWindow`): journey mode's today's set and
 /// whether it was done. Stored the first time the day is needed, and for
 /// every day with a run or a side-trip game.
@@ -314,6 +357,8 @@ class DayCards extends Table {
   SideTripRuns,
   SideTripAnswers,
   TeiichiPlacings,
+  IkkiuchiMatches,
+  IkkiuchiReads,
   Days,
   DayCards,
 ])
@@ -326,7 +371,7 @@ class AppDatabase extends _$AppDatabase {
 
   /// Raised with each new upgrade step in `lib/migrations/` ([migrationSteps]).
   @override
-  int get schemaVersion => 5;
+  int get schemaVersion => 6;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
