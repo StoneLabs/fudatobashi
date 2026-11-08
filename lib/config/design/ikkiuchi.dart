@@ -387,21 +387,85 @@ abstract final class IkkiuchiArmStyle {
   static const double sfxFade = 0.3;
 }
 
-/// 一騎打ち's page (`ikkiuchi_page.dart`): the strip, the ranked panel (shut
-/// for now: its line, then the ranked burst) and free play's panel (its
-/// steppers, then the burst that starts a match), [gap] between the blocks,
-/// [panelTop] above a panel whose tag rises over its top edge, and
-/// [bottomGap] under the last.
+/// 一騎打ち's page (`ikkiuchi_page.dart`): [gap] between the blocks, [panelTop]
+/// above a panel whose tag rises over its top edge, and [bottomGap] under
+/// the button pair at the foot.
+///
+/// The class strip: the wins of the last [formMatches] ranked matches over
+/// how many, the count after the wins at [stripSuffixFont], and the
+/// average card margin over them; [missing] before any.
+///
+/// Ranked: during placement its matches in a row (each played one its
+/// result, the lost ones in [lostInk], over its change), then the burst
+/// with Tobi's rating for the next match on an ink tag, his name in
+/// [tobiTagName].
+///
+/// The custom panel: its facts (Tobi's rating boxed, the button to the
+/// custom sheet, every cell's label and value [cellInset] in from its top
+/// and bottom), the からふだ line, the field preview, and the burst. The
+/// preview shows the field face down on the play screen's tatami, as big as
+/// the room left allows and never shorter than [previewMinHeight], cards at
+/// most [previewMaxCardW] wide.
 abstract final class IkkiuchiPageLayout {
   static const double gap = 12;
   static const double panelTop = 8;
   static const double bottomGap = 12;
-  static const EdgeInsets rankedLinePadding = EdgeInsets.fromLTRB(14, 6, 14, 4);
-  static const double rankedLineFont = 13;
-  static const EdgeInsets steppersPadding = EdgeInsets.fromLTRB(14, 6, 10, 0);
-  static const double stepperGap = 8;
-  static const double stepperValueFont = 24;
-  static const EdgeInsets burstMargin = EdgeInsets.fromLTRB(6, 10, 6, 6);
+
+  static const int formMatches = 5;
+  static const double stripSuffixFont = 16;
+  static const String missing = '—';
+
+  static const EdgeInsets gamesPadding = EdgeInsets.fromLTRB(10, 4, 10, 2);
+  static const double resultFont = 17;
+  static const double resultGap = 4;
+  static const Color lostInk = Palette.mute;
+  static const EdgeInsets rankedRowPadding = EdgeInsets.fromLTRB(6, 2, 6, 6);
+  static const EdgeInsets tobiTagPadding = EdgeInsets.fromLTRB(7, 4, 7, 4);
+  static const double tobiTagNameFont = 11;
+  static const double tobiTagFont = 15;
+  static const double tobiTagGap = 5;
+  static const Color tobiTagName = Palette.sun;
+
+  static const EdgeInsets statsPadding = EdgeInsets.fromLTRB(15, 4, 14, 0);
+  static const double statFont = 28;
+  static const double statSuffixFont = 13;
+  static const double cellInset = 4;
+  static const EdgeInsets hintPadding = EdgeInsets.fromLTRB(15, 8, 14, 2);
+  static const double hintFont = 12;
+  static const double hintNumber = 14;
+  static const EdgeInsets burstMargin = EdgeInsets.fromLTRB(6, 8, 6, 10);
+
+  static const EdgeInsets previewMargin = EdgeInsets.fromLTRB(14, 4, 14, 0);
+  static const double previewMinHeight = 80;
+  static const double previewBorder = Strokes.control;
+  static const double previewPadding = 10;
+  static const double previewBand = 9;
+  static const double previewBandRule = Strokes.label;
+  static const double previewBandGap = 7;
+  static const double previewMaxCardW = 30;
+  static const Color previewGround = Color(0xFF99A083);
+  static const Color previewBandColor = Palette.paper;
+  static const Color previewBack = Palette.cardFrame;
+  static const Color previewBackBorder = Palette.ink;
+  static const double previewBackBorderWidth = 1;
+}
+
+/// 一騎打ち's custom sheet (`ikkiuchi_sheet.dart`), over the page dimmed to
+/// [barrier]: Tobi's rating (the class keys over a stepper), the cards a
+/// side (keys over a stepper) and the memory time, each value in display
+/// type at [valueFont] with its unit at [unitFont]; a key's class or count
+/// at [keyFont] over its rating at [keySubFont]. A stepper's button held
+/// down steps on every [repeatEvery]. Then the setup in a line at
+/// [factsFont].
+abstract final class IkkiuchiSheetLayout {
+  static const Color barrier = Color(0x8C141414);
+  static const double valueFont = 24;
+  static const double unitFont = 12;
+  static const double keyFont = 17;
+  static const double keySubFont = 11;
+  static const double sectionGap = 6;
+  static const Duration repeatEvery = Duration(milliseconds: 90);
+  static const double factsFont = 12;
 }
 
 /// A recorded match's page in History: the summary's facts to a row.

@@ -45,23 +45,6 @@ class IkkiuchiSetup {
   final Duration memorise;
 }
 
-/// Free play's choices of each part of its setup, from the least to the
-/// most by its step ([IkkiuchiFreeTuning]).
-abstract final class IkkiuchiFreeChoices {
-  static final List<int> perSide = [
-    for (var n = IkkiuchiFreeTuning.perSideMin; n <= IkkiuchiFreeTuning.perSideMax; n += IkkiuchiFreeTuning.perSideStep) n,
-  ];
-
-  static final List<Duration> memorise = [
-    for (var d = IkkiuchiFreeTuning.memoriseMin; d <= IkkiuchiFreeTuning.memoriseMax; d += IkkiuchiFreeTuning.memoriseStep)
-      d,
-  ];
-
-  static final List<double> opponentRating = [
-    for (var r = IkkiuchiFreeTuning.ratingMin; r <= IkkiuchiFreeTuning.ratingMax; r += IkkiuchiFreeTuning.ratingStep) r,
-  ];
-}
-
 /// How a match ended for the player.
 enum IkkiuchiResult {
   /// Played to its end with fewer cards left than the opponent: the
@@ -155,6 +138,10 @@ class IkkiuchiMatchRecord {
   final List<IkkiuchiReadLog> reads;
 
   bool get ranked => setup.ranked;
+
+  /// How many cards fewer the player had left than the opponent at the
+  /// end; negative when they had more.
+  int get margin => opponentLeft - playerLeft;
 
   IkkiuchiResult get result =>
       IkkiuchiResult.of(completed: completed, playerLeft: playerLeft, opponentLeft: opponentLeft);

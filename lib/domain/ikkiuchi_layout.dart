@@ -253,8 +253,16 @@ class IkkiuchiLayout {
   /// The shape of his starting side, [perSide] cards in [rows] rows, drawn
   /// from [rng] by [IkkiuchiLayoutTuning]'s odds: each row's left and right
   /// counts, 下段 first. A match draws it first from its seed.
-  static List<({int left, int right})> drawShape(int perSide, int rows, math.Random rng) {
-    double within(double reach) => (2 * rng.nextDouble() - 1) * reach;
+  static List<({int left, int right})> drawShape(int perSide, int rows, math.Random rng) =>
+      _shape(perSide, rows, (reach) => (2 * rng.nextDouble() - 1) * reach);
+
+  /// The shape a side of [perSide] cards in [rows] rows has with nothing
+  /// drawn, every lean at its middle: what a preview shows.
+  static List<({int left, int right})> usualShape(int perSide, int rows) => _shape(perSide, rows, (_) => 0);
+
+  /// The shape of a side, each lean moved by [within] a reach, from minus
+  /// to plus that reach.
+  static List<({int left, int right})> _shape(int perSide, int rows, double Function(double reach) within) {
     final shares = [
       for (final lean in IkkiuchiLayoutTuning.rowLean.take(rows)) lean * (1 + within(IkkiuchiLayoutTuning.rowJitter)),
     ];

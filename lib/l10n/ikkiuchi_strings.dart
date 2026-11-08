@@ -3,7 +3,8 @@ import '../domain/ikkiuchi_match.dart';
 import '../domain/ikkiuchi_record.dart';
 import 'strings.dart';
 
-/// Strings of 一騎打ち: its page, the memory time, the greetings, the 送り札 on the band, Tobi's word as his card
+/// Strings of 一騎打ち: its page, its custom sheet and rules, the memory
+/// time, the greetings, the 送り札 on the band, Tobi's word as his card
 /// waits, the names of the places a card may go on the player's side, the
 /// game column, a からふだ's tag, how a read ended, and History's list of
 /// matches and a match's page.
@@ -44,21 +45,56 @@ extension IkkiuchiStrings on S {
   String get ikkiuchiEntryLine => t('ikkiuchiEntryLine');
   String get ikkiuchiPageTitle => t('ikkiuchiPageTitle');
 
-  /// The page's strip: the matches played, won and lost.
-  String get ikkiuchiPlayed => t('ikkiuchiPlayed');
+  /// How a match ended for the player, won or lost; also the page's
+  /// played placement matches.
   String get ikkiuchiWon => t('ikkiuchiWon');
   String get ikkiuchiLost => t('ikkiuchiLost');
 
-  /// The page's ranked panel, shut for now: what it will hold, and why it
-  /// is shut.
-  String get ikkiuchiRankedLine => t('ikkiuchiRankedLine');
-  String get ikkiuchiRankedSoon => t('ikkiuchiRankedSoon');
+  /// The page's class strip: the wins of the last ranked matches, and the
+  /// average card margin.
+  String get ikkiuchiWins => t('ikkiuchiWins');
+  String get ikkiuchiMargin => t('ikkiuchiMargin');
 
-  /// The page's free play: the steppers' labels, and the burst that starts
-  /// a match.
-  String get ikkiuchiCards => t('ikkiuchiCards');
+  /// The page's ranked panel: its tag, and placement's heading and the
+  /// mark under the next placement match.
+  String get ikkiuchiRankedMode => t('ikkiuchiRankedMode');
+  String get ikkiuchiPlacementTitle => t('ikkiuchiPlacementTitle');
+  String get ikkiuchiPlacementNext => t('ikkiuchiPlacementNext');
+
+  /// The page's custom panel: its tag, the button to its sheet, its facts'
+  /// labels, the templates of the cards a side ({0}×2) and the からふだ read,
+  /// the burst that plays [n] a side, and the field preview's label.
+  String get ikkiuchiCustom => t('ikkiuchiCustom');
+  String get ikkiuchiCustomSetup => t('ikkiuchiCustomSetup');
   String get ikkiuchiTobiRating => t('ikkiuchiTobiRating');
-  String get ikkiuchiStart => t('ikkiuchiStart');
+  String get ikkiuchiPerSide => t('ikkiuchiPerSide');
+  String get ikkiuchiPerSideCount => t('ikkiuchiPerSideCount');
+  String get ikkiuchiKarafudaLine => t('ikkiuchiKarafudaLine');
+  String ikkiuchiPlayCards(int n) => f('ikkiuchiPlayCards', [n]);
+  String ikkiuchiPreviewLabel(int n) => f('ikkiuchiPreviewLabel', [n]);
+
+  /// The custom sheet: the steppers' labels, the cards section's label,
+  /// its burst, and guest mode's title and line.
+  String get ikkiuchiAnyRating => t('ikkiuchiAnyRating');
+  String get ikkiuchiAnyCount => t('ikkiuchiAnyCount');
+  String get ikkiuchiCardsPerSide => t('ikkiuchiCardsPerSide');
+  String get ikkiuchiConfirm => t('ikkiuchiConfirm');
+  String get ikkiuchiGuestMode => t('ikkiuchiGuestMode');
+  String get ikkiuchiGuestLine => t('ikkiuchiGuestLine');
+
+  /// The rules (遊び方): the match with [perSide] cards a side, how it is
+  /// won, 送り札, faults, からふだ ([karafuda] for every [field] cards),
+  /// ranked's setup ([memory] to learn the field), placement ([matches]
+  /// from [start]), the rating after it, and custom matches.
+  String ikkiuchiRuleMatch(int perSide) => f('ikkiuchiRuleMatch', [perSide]);
+  String get ikkiuchiRuleWin => t('ikkiuchiRuleWin');
+  String get ikkiuchiRuleSend => t('ikkiuchiRuleSend');
+  String get ikkiuchiRuleFault => t('ikkiuchiRuleFault');
+  String ikkiuchiRuleKarafuda(int karafuda, int field) => f('ikkiuchiRuleKarafuda', [karafuda, field]);
+  String ikkiuchiRuleRanked(int perSide, String memory) => f('ikkiuchiRuleRanked', [perSide, memory]);
+  String ikkiuchiRulePlacement(int matches, int start) => f('ikkiuchiRulePlacement', [matches, start]);
+  String get ikkiuchiRuleRating => t('ikkiuchiRuleRating');
+  String get ikkiuchiRuleCustom => t('ikkiuchiRuleCustom');
 
   /// How a read ended, its parts joined: あなたの取り・トビのお手つき.
   String ikkiuchiFeedback(List<IkkiuchiCallout> parts) => [

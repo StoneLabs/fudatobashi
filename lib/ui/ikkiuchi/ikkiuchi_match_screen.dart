@@ -18,9 +18,10 @@ import 'ikkiuchi_dealer.dart';
 import 'ikkiuchi_match_board.dart';
 import 'ikkiuchi_match_flow.dart';
 
-/// Plays a 一騎打ち match of [setup], ranked or free ([IkkiuchiMatchScreen]).
-Future<void> startIkkiuchiMatch(BuildContext context, IkkiuchiSetup setup) =>
-    Navigator.of(context).push(MangaRoute<void>(builder: (_) => IkkiuchiMatchScreen(setup: setup)));
+/// Plays a 一騎打ち match of [setup], ranked or free, or a [guest]'s that
+/// records nothing ([IkkiuchiMatchScreen]).
+Future<void> startIkkiuchiMatch(BuildContext context, IkkiuchiSetup setup, {bool guest = false}) =>
+    Navigator.of(context).push(MangaRoute<void>(builder: (_) => IkkiuchiMatchScreen(setup: setup, guest: guest)));
 
 /// A 一騎打ち match ([IkkiuchiMatchFlow]) of [setup] on the whole screen,
 /// held in landscape with the system bars hidden and the menu music out,
@@ -30,7 +31,8 @@ Future<void> startIkkiuchiMatch(BuildContext context, IkkiuchiSetup setup) =>
 ///
 /// A match that ends once play has begun (its first card read), played to
 /// its end or by 終了, is recorded, and [IkkiuchiScreenTuning.leaveAfter]
-/// later the screen closes; one ended before records nothing. Leaving the
+/// later the screen closes; one ended before records nothing, and a
+/// [guest]'s never records anything. Leaving the
 /// screen before the match ends records free play not at all, and a ranked
 /// match, once play has begun, as given up: a loss. From its first read,
 /// and again after every read, a ranked match is journalled as it stands,
@@ -41,10 +43,11 @@ Future<void> startIkkiuchiMatch(BuildContext context, IkkiuchiSetup setup) =>
 /// change of its size deals the same match afresh while the memory time
 /// runs, and after that the board keeps its size, scaled to fit.
 class IkkiuchiMatchScreen extends StatefulWidget {
-  const IkkiuchiMatchScreen({super.key, required this.setup, this.seed});
+  const IkkiuchiMatchScreen({super.key, required this.setup, this.seed, this.guest = false});
 
   final IkkiuchiSetup setup;
   final int? seed;
+  final bool guest;
 
   @override
   State<IkkiuchiMatchScreen> createState() => IkkiuchiMatchScreenState();
@@ -91,7 +94,7 @@ class IkkiuchiMatchScreenState extends State<IkkiuchiMatchScreen> with SingleTic
       flow.removeListener(_changed);
       if (!_over) {
         flow.end();
-        if (widget.setup.ranked && flow.playBegun) _record(flow);
+        if (widget.setup.ranked && flow.playBegun && !widget.guest) _record(flow);
       }
       flow.dispose();
     }
@@ -134,13 +137,13 @@ class IkkiuchiMatchScreenState extends State<IkkiuchiMatchScreen> with SingleTic
 
   void _changed() {
     final flow = _flow!;
-    if (widget.setup.ranked && flow.playBegun && !_over && _journalled != flow.reads.length) {
+    if (widget.setup.ranked && !widget.guest && flow.playBegun && !_over && _journalled != flow.reads.length) {
       _journalled = flow.reads.length;
       unawaited(_progress.journalIkkiuchi(_matchSoFar(flow, completed: false)));
     }
     if (flow.stage == IkkiuchiStage.gameEnd && !_over) {
       _over = true;
-      if (flow.playBegun) _record(flow);
+      if (flow.playBegun && !widget.guest) _record(flow);
       _leave = Timer(IkkiuchiScreenTuning.leaveAfter, () {
         if (mounted) Navigator.maybePop(context);
       });

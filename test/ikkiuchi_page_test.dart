@@ -1,15 +1,22 @@
-// 一騎打ち's page (IkkiuchiPage): its strip, ranked chained up as coming
-// soon, free play's steppers, and a match started from it: held in
+// 一騎打ち's page (IkkiuchiPage): the class strip, ranked open from the
+// start (its placement matches, then Tobi drawn for the next match on its
+// burst), the custom panel and its sheet (class keys and steppers, one held
+// down stepping on), guest mode, and matches started from it: held in
 // landscape, played to the setup picked, closed once over and the page's
 // strip counting it. When a match is recorded: ended once play has begun;
-// never when ended or left before, nor free play left midway; a ranked
-// match left after its first read is a loss, journalled from that read.
+// never when ended or left before, nor free play left midway, nor a guest's;
+// a ranked match left after its first read is a loss, journalled from that
+// read and again after every read.
+//
+// With RENDER_SCREENS=1 it also renders the page in its states and the
+// custom sheet, with real fonts and art, to build/screens/ikkiuchi_page/.
 import 'dart:async';
 import 'dart:io';
 
 import 'package:drift/drift.dart' hide isNull, isNotNull;
 import 'package:drift/native.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/gestures.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:fudatobashi/config/config.dart';
@@ -24,6 +31,17 @@ import 'package:fudatobashi/domain/ikkiuchi_record.dart';
 import 'package:fudatobashi/domain/ikkiuchi_tobi.dart';
 import 'package:fudatobashi/l10n/ikkiuchi_strings.dart';
 import 'package:fudatobashi/l10n/strings.dart';
+import 'package:fudatobashi/domain/ikkiuchi_rating.dart';
+import 'package:fudatobashi/domain/rating.dart';
+import 'package:fudatobashi/l10n/ranked_strings.dart';
+import 'package:fudatobashi/l10n/side_trip_strings.dart';
+import 'package:fudatobashi/l10n/free_strings.dart';
+import 'package:fudatobashi/ui/ikkiuchi/ikkiuchi_field_preview.dart';
+import 'package:fudatobashi/ui/side_trips/burst_button.dart';
+import 'package:fudatobashi/ui/side_trips/ikkiuchi_rules_sheet.dart';
+import 'package:fudatobashi/ui/side_trips/ikkiuchi_sheet.dart';
+import 'package:fudatobashi/ui/side_trips/side_trip_entry.dart';
+import 'package:fudatobashi/ui/side_trips/trip_record_panels.dart';
 import 'package:fudatobashi/state/ikkiuchi_journal.dart';
 import 'package:fudatobashi/state/progress.dart';
 import 'package:fudatobashi/state/scope.dart';
@@ -51,6 +69,14 @@ class _Quiet extends Sounds {
   Future<void> stopKimarijiVoice() async {}
 }
 
+Future<void> _loadFont(String family, List<String> files) async {
+  final loader = FontLoader(family);
+  for (final f in files) {
+    loader.addFont(Future.value(ByteData.sublistView(File('assets/fonts/$f').readAsBytesSync())));
+  }
+  await loader.load();
+}
+
 void main() {
   loadTestVectorArt();
   loadTestL10n();
@@ -62,26 +88,56 @@ void main() {
   final real = sounds;
   setUp(() => sounds = _Quiet());
   tearDown(() => sounds = real);
-  setUpAll(() => CardFaces.load([TorifudaStyle.standard.background], read: (a) => File(a).readAsBytes()));
+  setUpAll(() async {
+    await CardFaces.load([TorifudaStyle.standard.background], read: (a) => File(a).readAsBytes());
+    if (!renderScreens) return;
+    await _loadFont('Dela', ['DelaGothicOne-Regular.ttf']);
+    await _loadFont('Reggae', ['ReggaeOne-Regular.ttf']);
+    await _loadFont('ZenKaku', [
+      'ZenKakuGothicNew-Regular.ttf',
+      'ZenKakuGothicNew-Medium.ttf',
+      'ZenKakuGothicNew-Bold.ttf',
+      'ZenKakuGothicNew-Black.ttf',
+    ]);
+  });
 
-  Future<Progress> open(WidgetTester tester) async {
+  Future<Progress> open(WidgetTester tester, {String lang = 'en'}) async {
     late Progress p;
     await tester.runAsync(() async {
       p = await Progress.open(AppDatabase(NativeDatabase.memory()));
-      await p.updateSettings(p.settings.copyWith(language: 'en', languagePicked: true, toured: true));
+      await p.updateSettings(p.settings.copyWith(language: lang, languagePicked: true, toured: true));
     });
     return p;
   }
 
-  Future<void> showPage(WidgetTester tester, Progress p) async {
-    useScreen(tester, usersPhone);
+  /// Plays the next ranked matches as offered, won or lost by [results].
+  Future<void> playRanked(WidgetTester tester, Progress p, List<bool> results) => tester.runAsync(() async {
+        for (final won in results) {
+          await p.recordIkkiuchi(IkkiuchiMatchRecord(
+            setup: p.ikkiuchi.rankedSetup,
+            startedAt: DateTime(2026, 11, 8),
+            endedAt: DateTime(2026, 11, 8, 0, 40),
+            completed: true,
+            playerLeft: won ? 0 : 4,
+            opponentLeft: won ? 3 : 0,
+          ));
+        }
+      });
+
+  Future<void> showPage(WidgetTester tester, Progress p, {Screen phone = usersPhone}) async {
+    useScreen(tester, phone);
     final navigator = GlobalKey<NavigatorState>();
-    await tester.pumpWidget(ProgressScope(
-      progress: p,
-      child: MaterialApp(
-        navigatorKey: navigator,
-        theme: buildMangaTheme(),
-        home: const Scaffold(body: SizedBox.expand()),
+    await tester.pumpWidget(RepaintBoundary(
+      key: screenKey,
+      child: ProgressScope(
+        progress: p,
+        child: MaterialApp(
+          navigatorKey: navigator,
+          debugShowCheckedModeBanner: false,
+          theme: buildMangaTheme(),
+          builder: (context, child) => DefaultTextStyle(style: Theme.of(context).textTheme.bodyMedium!, child: child!),
+          home: const Scaffold(body: SizedBox.expand()),
+        ),
       ),
     ));
     navigator.currentState!.push(MangaRoute<void>(builder: (_) => const IkkiuchiPage()));
@@ -89,13 +145,29 @@ void main() {
     await tester.pump(Motion.route);
   }
 
+  /// The value of the strip's or a panel's cell under [label], its texts
+  /// joined (a drop cell's mark among them).
   String cell(WidgetTester tester, String label) {
     final stat = find.ancestor(of: find.text(label), matching: find.byType(StatCell)).first;
-    return tester.widget<Text>(find.descendant(of: stat, matching: find.byType(Text)).last).data!;
+    final texts = find.descendant(of: stat, matching: find.byWidgetPredicate((w) => w is RichText));
+    return [for (final t in tester.widgetList<RichText>(texts).skip(1)) t.text.toPlainText()].join();
   }
 
+  Finder burst(String title) => find.byWidgetPredicate((w) => w is BurstButton && w.title == title);
+  Finder rankedBurst() => burst(s.sideTripRanked);
   Finder stepper(String label) => find.ancestor(of: find.text(label), matching: find.byType(SheetStepper));
   Finder sign(String label, String sign) => find.descendant(of: stepper(label), matching: find.text(sign));
+  Finder sheetKey(String top) =>
+      find.ancestor(of: find.text(top), matching: find.byType(SheetKey));
+
+  Future<void> tapAndWait(WidgetTester tester, Finder f, Duration wait) async {
+    await tester.tap(f);
+    await tester.pump();
+    await tester.pump(wait);
+  }
+
+  /// Opens the custom sheet from the boxed cell of Tobi's rating.
+  Future<void> openSheet(WidgetTester tester) => tapAndWait(tester, find.byType(DropCellButton), Motion.sheet);
 
   IkkiuchiMatchScreenState screen(WidgetTester tester) =>
       tester.state<IkkiuchiMatchScreenState>(find.byType(IkkiuchiMatchScreen));
@@ -154,28 +226,155 @@ void main() {
   const ranked = IkkiuchiSetup(
       ranked: true, opponent: IkkiuchiOpponent.tobi, opponentRating: 1300, perSide: 3, memorise: Duration(minutes: 15));
 
-  testWidgets('the strip, ranked chained as coming soon, and free play on the first match\'s setup', (tester) async {
+  testWidgets('a new player: the strip unrated with dashes, ranked open on its placement, custom on the first setup',
+      (tester) async {
     final p = await open(tester);
     await showPage(tester, p);
     expect(tester.takeException(), isNull);
-    expect([cell(tester, s.ikkiuchiPlayed), cell(tester, s.ikkiuchiWon), cell(tester, s.ikkiuchiLost)], ['0', '0', '0']);
-    expect(find.byType(LockedPanel), findsOneWidget);
-    expect(find.text(s.ikkiuchiRankedSoon), findsOneWidget);
-    for (final (label, value) in [
-      (s.ikkiuchiCards, '${IkkiuchiFreeTuning.perSide}'),
-      (s.ikkiuchiMemoryTime, '15:00'),
-      (s.ikkiuchiTobiRating, '${IkkiuchiFreeTuning.rating.round()}'),
-    ]) {
-      expect(find.descendant(of: stepper(label), matching: find.text(value)), findsOneWidget, reason: label);
-    }
+    expect([cell(tester, s.sideTripClass), cell(tester, s.rating), cell(tester, s.ikkiuchiWins), cell(tester, s.ikkiuchiMargin)],
+        ['???', s.sideTripUnranked, '—', '—']);
+    expect(find.byType(LockedPanel), findsNothing, reason: 'ranked is open from the start');
+    expect(find.text(s.ikkiuchiPlacementTitle), findsOneWidget);
+    expect(find.byType(PlacementSlot), findsNWidgets(IkkiuchiRating.placementMatches));
+    expect(find.text(s.ikkiuchiPlacementNext), findsOneWidget);
+    expect(find.descendant(of: rankedBurst(), matching: find.text('${IkkiuchiRating.start.round()}')), findsOneWidget,
+        reason: 'Tobi at the start rating for the first placement match');
+    expect([cell(tester, s.ikkiuchiTobiRating), cell(tester, s.ikkiuchiPerSide), cell(tester, s.ikkiuchiMemoryTime)],
+        ['${IkkiuchiFreeTuning.rating.round()}▼', s.ikkiuchiPerSideCount.replaceAll('{0}', '25'), '15:00']);
+    expect(find.byType(IkkiuchiFieldPreview), findsOneWidget);
+    expect(burst(s.ikkiuchiPlayCards(25)), findsOneWidget);
+    expect(find.byType(SideTripGuestButton), findsOneWidget);
+    expect(find.byType(SideTripRulesButton), findsOneWidget);
+    await tester.pumpWidget(const SizedBox());
+  });
 
-    await tester.tap(sign(s.ikkiuchiCards, '−'));
-    await tester.tap(sign(s.ikkiuchiTobiRating, '+'));
-    await tester.tap(sign(s.ikkiuchiMemoryTime, '−'));
+  testWidgets('placement shows the matches played; once placed, the class, rating, wins and margin, and no row',
+      (tester) async {
+    final p = await open(tester);
+    await playRanked(tester, p, [true, false]);
+    await showPage(tester, p);
+    expect(find.byType(PlacementSlot), findsNWidgets(IkkiuchiRating.placementMatches - 2));
+    expect(find.text(s.ikkiuchiWon), findsOneWidget);
+    expect(find.text(s.ikkiuchiLost), findsOneWidget);
+    expect(find.text('▲500'), findsOneWidget);
+    expect(find.text('▼300'), findsOneWidget);
+    expect(find.descendant(of: rankedBurst(), matching: find.text('${p.ikkiuchi.rankedSetup.opponentRating.round()}')),
+        findsOneWidget);
+    expect(cell(tester, s.ikkiuchiWins), '1/2');
+    expect(cell(tester, s.ikkiuchiMargin), '−0.5');
+    await tester.pumpWidget(const SizedBox());
+
+    await playRanked(tester, p, [true, true, false, true, true, true]);
+    await showPage(tester, p);
+    final rating = p.ikkiuchi.rating!;
+    expect(cell(tester, s.rating), startsWith('${rating.round()}'));
+    expect(cell(tester, s.sideTripClass), isNot('???'));
+    expect(cell(tester, s.ikkiuchiWins), '4/5');
+    expect(find.byType(PlacementSlot), findsNothing);
+    expect(find.text(s.ikkiuchiPlacementTitle), findsNothing);
+    final tobi = p.ikkiuchi.rankedSetup.opponentRating;
+    expect((tobi - rating).abs(), lessThanOrEqualTo(IkkiuchiRankedTuning.drawCutOff));
+    expect(find.descendant(of: rankedBurst(), matching: find.text('${tobi.round()}')), findsOneWidget);
+    await tester.pumpWidget(const SizedBox());
+  });
+
+  testWidgets('the ranked burst plays the next ranked match against the Tobi it shows', (tester) async {
+    final p = await open(tester);
+    await showPage(tester, p);
+    await tapAndWait(tester, rankedBurst(), Motion.route);
+    final flow = screen(tester).flow!;
+    expect([flow.rating, flow.memorise, flow.scene.sides!.playerCards.length],
+        [IkkiuchiRating.start, IkkiuchiRankedTuning.memorise, IkkiuchiRankedTuning.perSide]);
+    expect(screen(tester).widget.setup.ranked, isTrue);
+    flow.end();
     await tester.pump();
-    expect(find.descendant(of: stepper(s.ikkiuchiCards), matching: find.text('24')), findsOneWidget);
-    expect(find.descendant(of: stepper(s.ikkiuchiTobiRating), matching: find.text('1650')), findsOneWidget);
-    expect(find.descendant(of: stepper(s.ikkiuchiMemoryTime), matching: find.text('14:00')), findsOneWidget);
+    await tester.pump(IkkiuchiScreenTuning.leaveAfter);
+    await tester.pump(Motion.route);
+    await tester.pumpWidget(const SizedBox());
+  });
+
+  testWidgets('the custom sheet: class keys and steppers set the setup, which the panel then plays', (tester) async {
+    final p = await open(tester);
+    await showPage(tester, p);
+    await openSheet(tester);
+    expect(find.byType(IkkiuchiCustomSheet), findsOneWidget);
+    final b = Rating.bands.firstWhere((band) => band.id == 'B');
+    final bRating = b.minRating.round();
+    await tapAndWait(tester, sheetKey(s.className(b)), Duration.zero);
+    expect(find.descendant(of: stepper(s.ikkiuchiAnyRating), matching: find.text('$bRating')), findsOneWidget);
+    await tapAndWait(tester, sign(s.ikkiuchiAnyRating, '+'), Duration.zero);
+    await tapAndWait(tester, sheetKey('12'), Duration.zero);
+    await tapAndWait(tester, sign(s.ikkiuchiAnyCount, '−'), Duration.zero);
+    await tapAndWait(tester, sign(s.ikkiuchiMemoryTime, '−'), Duration.zero);
+    expect(find.text(s.ikkiuchiSetupLine(11, '14:00', bRating + 50)), findsOneWidget);
+    await tapAndWait(tester, burst(s.ikkiuchiConfirm), Motion.sheet * 2);
+    expect(find.byType(IkkiuchiCustomSheet), findsNothing);
+    expect([cell(tester, s.ikkiuchiTobiRating), cell(tester, s.ikkiuchiPerSide), cell(tester, s.ikkiuchiMemoryTime)],
+        ['${bRating + 50}▼', s.ikkiuchiPerSideCount.replaceAll('{0}', '11'), '14:00']);
+
+    await tapAndWait(tester, burst(s.ikkiuchiPlayCards(11)), Motion.route);
+    final flow = screen(tester).flow!;
+    expect([flow.rating, flow.memorise, flow.scene.sides!.playerCards.length, screen(tester).widget.setup.ranked],
+        [bRating + 50.0, const Duration(minutes: 14), 11, false]);
+    flow.end();
+    await tester.pump();
+    await tester.pump(IkkiuchiScreenTuning.leaveAfter);
+    await tester.pump(Motion.route);
+    await tester.pumpWidget(const SizedBox());
+  });
+
+  testWidgets('a stepper held down steps on until it is let go, and stops at its end', (tester) async {
+    final p = await open(tester);
+    await showPage(tester, p);
+    await openSheet(tester);
+    final plus = sign(s.ikkiuchiAnyRating, '+');
+    final gesture = await tester.startGesture(tester.getCenter(plus));
+    await tester.pump(kLongPressTimeout + const Duration(milliseconds: 10));
+    await tester.pump(IkkiuchiSheetLayout.repeatEvery * 4);
+    await gesture.up();
+    await tester.pump(IkkiuchiSheetLayout.repeatEvery * 4);
+    const stepped = IkkiuchiFreeTuning.rating + 5 * IkkiuchiFreeTuning.ratingStep;
+    expect(find.descendant(of: stepper(s.ikkiuchiAnyRating), matching: find.text('${stepped.round()}')), findsOneWidget);
+
+    final less = sign(s.ikkiuchiMemoryTime, '−');
+    final hold = await tester.startGesture(tester.getCenter(less));
+    await tester.pump(kLongPressTimeout + const Duration(milliseconds: 10));
+    for (var i = 0; i < 20; i++) {
+      await tester.pump(IkkiuchiSheetLayout.repeatEvery);
+    }
+    await hold.up();
+    await tester.pump();
+    expect(find.descendant(of: stepper(s.ikkiuchiMemoryTime), matching: find.text('1:00')),
+        findsOneWidget, reason: 'held at its end');
+    await tester.pumpWidget(const SizedBox());
+  });
+
+  testWidgets('guest mode plays the setup picked and records nothing', (tester) async {
+    final p = await open(tester);
+    await showPage(tester, p);
+    await tapAndWait(tester, find.byType(SideTripGuestButton), Motion.sheet);
+    expect(find.text(s.ikkiuchiGuestLine), findsOneWidget);
+    await tapAndWait(tester, sheetKey('8'), Duration.zero);
+    await tapAndWait(tester, burst(s.freeStart), Motion.sheet * 2);
+    await tester.pump(Motion.route);
+    final state = screen(tester);
+    expect([state.widget.guest, state.flow!.scene.sides!.playerCards.length], [true, 8]);
+    await toFirstRead(tester, state.flow!);
+    state.flow!.end();
+    await tester.pump();
+    expect(state.saving, isNull);
+    await tester.pump(IkkiuchiScreenTuning.leaveAfter);
+    await tester.pump(Motion.route);
+    expect(p.ikkiuchi.matches, isEmpty);
+    expect(await rows(tester, p), isEmpty);
+    await tester.pumpWidget(const SizedBox());
+  });
+
+  testWidgets('How to play opens the rules', (tester) async {
+    final p = await open(tester);
+    await showPage(tester, p);
+    await tapAndWait(tester, find.byType(SideTripRulesButton), Motion.sheet);
+    expect(find.byType(IkkiuchiRulesSheet), findsOneWidget);
     await tester.pumpWidget(const SizedBox());
   });
 
@@ -192,14 +391,13 @@ void main() {
 
     final p = await open(tester);
     await showPage(tester, p);
+    await openSheet(tester);
+    await tapAndWait(tester, sheetKey('20'), Duration.zero);
     for (var i = 0; i < 5; i++) {
-      await tester.tap(sign(s.ikkiuchiMemoryTime, '−'));
-      await tester.tap(sign(s.ikkiuchiCards, '−'));
-      await tester.pump();
+      await tapAndWait(tester, sign(s.ikkiuchiMemoryTime, '−'), Duration.zero);
     }
-    await tester.tap(find.text(s.ikkiuchiStart));
-    await tester.pump();
-    await tester.pump(Motion.route);
+    await tapAndWait(tester, burst(s.ikkiuchiConfirm), Motion.sheet * 2);
+    await tapAndWait(tester, burst(s.ikkiuchiPlayCards(20)), Motion.route);
 
     final flow = screen(tester).flow!;
     expect(flow.stage, IkkiuchiStage.memoryTime);
@@ -228,9 +426,7 @@ void main() {
       (tester) async {
     final p = await open(tester);
     await showPage(tester, p);
-    await tester.tap(find.text(s.ikkiuchiStart));
-    await tester.pump();
-    await tester.pump(Motion.route);
+    await tapAndWait(tester, burst(s.ikkiuchiPlayCards(25)), Motion.route);
     final state = screen(tester);
     final flow = state.flow!;
     await toFirstRead(tester, flow);
@@ -250,7 +446,7 @@ void main() {
     await tester.pump(Motion.route);
     expect(find.byType(IkkiuchiMatchScreen), findsNothing);
     expect(p.ikkiuchi.matches, hasLength(1), reason: 'recorded once');
-    expect([cell(tester, s.ikkiuchiPlayed), cell(tester, s.ikkiuchiLost)], ['1', '1']);
+    expect(p.ikkiuchi.counts(), (played: 1, won: 0, lost: 1));
     await tester.pumpWidget(const SizedBox());
   });
 
@@ -329,5 +525,56 @@ void main() {
     expect(p.ikkiuchi.counts(ranked: true), (played: 1, won: 0, lost: 1));
     expect(await journal(tester, p), isNull, reason: 'recording it clears the journal');
     await tester.pumpWidget(const SizedBox());
+  });
+
+  group('renders', skip: !renderScreens, () {
+    Future<void> capture(WidgetTester tester, String screen, String lang) async {
+      await tester.runAsync(() async {
+        final context = tester.element(find.byType(IkkiuchiPage, skipOffstage: false));
+        await precacheImage(const AssetImage(IkkiuchiBoardStyle.tatami), context);
+        for (final e in find.byType(Image).evaluate()) {
+          await precacheImage((e.widget as Image).image, e);
+        }
+      });
+      await tester.pump();
+      await tester.pump();
+      await captureScreen(tester, 'ikkiuchi_page/$screen', lang: lang);
+    }
+
+    for (final phone in [widePhone, usersPhone]) {
+      for (final lang in ['ja', 'en']) {
+        testWidgets('page_${phone.name}_$lang', (tester) async {
+          final s = S(lang);
+          final stages = <String, (List<bool>, IkkiuchiSetup?)>{
+            'fresh': (const [], null),
+            'placing': (const [true, false], const IkkiuchiSetup.free(opponentRating: 2559, perSide: 12, memorise: Duration(minutes: 5))),
+            'rated': (const [true, true, false, true, true, false, true], const IkkiuchiSetup.free(opponentRating: 1865, perSide: 1, memorise: Duration(minutes: 1))),
+          };
+          for (final MapEntry(key: stage, value: (results, free)) in stages.entries) {
+            final p = await open(tester, lang: lang);
+            await playRanked(tester, p, results);
+            if (free != null) {
+              await tester.runAsync(() => p.recordIkkiuchi(IkkiuchiMatchRecord(
+                    setup: free,
+                    startedAt: DateTime(2026, 11, 8),
+                    endedAt: DateTime(2026, 11, 8, 0, 20),
+                    completed: true,
+                    playerLeft: 0,
+                    opponentLeft: 2,
+                  )));
+            }
+            await showPage(tester, p, phone: phone);
+            expect(tester.takeException(), isNull);
+            await capture(tester, '${phone.name}_$stage', lang);
+            if (stage == 'rated') {
+              await openSheet(tester);
+              await tapAndWait(tester, sheetKey(s.className(Rating.bands.firstWhere((b) => b.id == 'B'))), Duration.zero);
+              await capture(tester, '${phone.name}_custom_sheet', lang);
+            }
+            await tester.pumpWidget(const SizedBox());
+          }
+        });
+      }
+    }
   });
 }

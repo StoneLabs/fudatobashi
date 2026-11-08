@@ -513,14 +513,17 @@ abstract final class IkkiuchiMatchTuning {
   static const Duration longestStep = Duration(milliseconds: 250);
 }
 
-/// 一騎打ち's free play (`IkkiuchiFreeChoices`): the choices of cards a
-/// side, memory time and Tobi's rating, each from its least to its most by
-/// its step, and the one the first free match starts on.
+/// 一騎打ち's custom matches (free play, `ikkiuchi_sheet.dart`): the cards a
+/// side, the memory time and Tobi's rating, each from its least to its most
+/// by its step, and the setup the first one starts on. The sheet's keys
+/// set the cards to one of [perSideKeys], and Tobi's rating to the
+/// threshold of one of [ratingClasses] (by the shared class scale's ids).
 abstract final class IkkiuchiFreeTuning {
   static const int perSideMin = 1;
   static const int perSideMax = 25;
   static const int perSideStep = 1;
   static const int perSide = 25;
+  static const List<int> perSideKeys = [8, 12, 16, 20, 25];
   static const Duration memoriseMin = Duration(minutes: 1);
   static const Duration memoriseMax = Duration(minutes: 15);
   static const Duration memoriseStep = Duration(minutes: 1);
@@ -529,6 +532,7 @@ abstract final class IkkiuchiFreeTuning {
   static const double ratingMax = 3600;
   static const double ratingStep = 50;
   static const double rating = 1600;
+  static const List<String> ratingClasses = ['E+', 'D', 'C', 'B', 'A'];
 }
 
 /// 一騎打ち's ranked matches and the player's rating (`IkkiuchiRating`).

@@ -143,10 +143,15 @@ abstract final class IkkiuchiSteps {
 abstract final class IkkiuchiReadOrder {
   /// The reads of [field], with からふだ from [away], by [rng].
   static List<int> deal({required List<int> field, required List<int> away, required math.Random rng}) {
-    const share = IkkiuchiMatchTuning.karafuda;
-    final count = math.min(away.length, (field.length * share.karafuda / share.field).round());
     final blanks = [...away]..shuffle(rng);
-    return [...field, ...blanks.take(count)]..shuffle(rng);
+    return [...field, ...blanks.take(karafuda(field: field.length, away: away.length))]..shuffle(rng);
+  }
+
+  /// How many からふだ a match reads with [field] cards on the field and
+  /// [away] dealt to neither side.
+  static int karafuda({required int field, required int away}) {
+    const share = IkkiuchiMatchTuning.karafuda;
+    return math.min(away, (field * share.karafuda / share.field).round());
   }
 }
 
