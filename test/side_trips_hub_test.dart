@@ -27,6 +27,7 @@ import 'package:fudatobashi/domain/side_trips.dart';
 import 'package:fudatobashi/domain/trainer.dart';
 import 'package:fudatobashi/l10n/ankiren_strings.dart';
 import 'package:fudatobashi/l10n/ranked_strings.dart';
+import 'package:fudatobashi/l10n/ikkiuchi_strings.dart';
 import 'package:fudatobashi/l10n/side_trip_strings.dart';
 import 'package:fudatobashi/l10n/strings.dart';
 import 'package:fudatobashi/l10n/tour_strings.dart';
@@ -40,6 +41,7 @@ import 'package:fudatobashi/ui/home/home_widgets.dart';
 import 'package:fudatobashi/ui/manga/manga.dart';
 import 'package:fudatobashi/ui/side_trips/ankiren_page.dart';
 import 'package:fudatobashi/ui/side_trips/dojo_scene.dart';
+import 'package:fudatobashi/ui/side_trips/ikkiuchi_page.dart';
 import 'package:fudatobashi/ui/side_trips/side_trip_entry.dart';
 import 'package:fudatobashi/ui/side_trips/side_trips_screen.dart';
 import 'package:fudatobashi/ui/sound/sounds.dart';
@@ -612,16 +614,17 @@ void main() {
       expect(tags(), 0, reason: '定位置 on the right is open');
       expect(pictures(DojoSceneLayout.toriiOpen.asset), findsOneWidget);
 
-      for (final (front, labels, open) in [
-        (SideTripIsle.storehouse, 1, true),
-        (SideTripIsle.hall, 2, false),
-        (SideTripIsle.rocks, 1, false),
+      for (final (front, labels, entry, open) in [
+        (SideTripIsle.storehouse, 0, SideTripBody, true),
+        (SideTripIsle.hall, 1, IkkiuchiEntry, true),
+        (SideTripIsle.rocks, 1, SideTripSoonEntry, false),
       ]) {
         await swipe(tester);
         expect(frontOf(tester), front);
-        expect(inHub(find.byType(SideTripSoonEntry)).hitTestable(), open ? findsNothing : findsOneWidget,
-            reason: '$front');
-        expect(inHub(find.byType(SideTripBody)).hitTestable(), open ? findsOneWidget : findsNothing, reason: '$front');
+        for (final type in [SideTripBody, IkkiuchiEntry, SideTripSoonEntry]) {
+          expect(inHub(find.byType(type)).hitTestable(), type == entry ? findsOneWidget : findsNothing,
+              reason: '$front: $type');
+        }
         if (!open) expect(inHub(find.text(s.sideTripsSoonLine)).hitTestable(), findsOneWidget, reason: 'one entry shows');
         expect(tags(), labels, reason: '$front');
         expect(pictures(DojoSceneLayout.toriiOpen.asset), open ? findsOneWidget : findsNothing, reason: '$front');
@@ -666,7 +669,7 @@ void main() {
       expect(turnOf(tester), 2);
       await tester.pump(const Duration(milliseconds: 100));
       expect(turnOf(tester), 2, reason: 'the ring does not turn on return');
-      expect(inHub(find.byType(SideTripSoonEntry)).hitTestable(), findsOneWidget);
+      expect(inHub(find.byType(IkkiuchiEntry)).hitTestable(), findsOneWidget);
       await tester.pumpWidget(const SizedBox());
     });
 
@@ -678,6 +681,19 @@ void main() {
       await swipe(tester);
       expect(inHub(find.text(s.hallName)), findsWidgets);
       expect(inHub(find.text(s.hallTag)), findsOneWidget);
+      await tester.pumpWidget(const SizedBox());
+    });
+
+    testWidgets("the hall's burst opens 一騎打ち's page", (tester) async {
+      const s = S('en');
+      final p = await open(tester, _Hub.ranked, 'en');
+      await openHub(tester, p, usersPhone);
+      await swipe(tester);
+      await swipe(tester);
+      await tester.tap(inHub(find.text(s.ikkiuchiPageTitle)).hitTestable());
+      await tester.pump();
+      await tester.pump(const Duration(seconds: 1));
+      expect(find.byType(IkkiuchiPage), findsOneWidget);
       await tester.pumpWidget(const SizedBox());
     });
 
@@ -832,17 +848,19 @@ void main() {
       });
     }
 
-    testWidgets('every coming-soon entry fits under its crest', (tester) async {
+    testWidgets('the hall\'s and every coming-soon entry fit under their crest', (tester) async {
       for (final (phone, lang, fontScale) in [(narrowPhone, 'ja', 1.3), (usersPhone, 'en', 1.3), (widePhone, 'en', 1.0)]) {
         SideTripsScreen.forgetRing();
         final p = await open(tester, _Hub.ranked, lang);
         await openHub(tester, p, phone, fontScale: fontScale);
         await swipe(tester);
-        await swipe(tester);
-        expect(tester.takeException(), isNull);
-        final entry = inHub(find.byType(SideTripSoonEntry)).hitTestable();
-        expectShown(tester, entry, phone);
-        expect(tester.getRect(entry).top, greaterThanOrEqualTo(crestBottom(tester, phone)));
+        for (final type in [IkkiuchiEntry, SideTripSoonEntry]) {
+          await swipe(tester);
+          expect(tester.takeException(), isNull);
+          final entry = inHub(find.byType(type)).hitTestable();
+          expectShown(tester, entry, phone);
+          expect(tester.getRect(entry).top, greaterThanOrEqualTo(crestBottom(tester, phone)));
+        }
         await tester.pumpWidget(const SizedBox());
       }
     });

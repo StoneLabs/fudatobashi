@@ -2,7 +2,7 @@ import '../domain/field_parts.dart';
 import '../domain/ikkiuchi_match.dart';
 import 'strings.dart';
 
-/// Strings of 一騎打ち: the memory time, the greetings, the 送り札 on the band, Tobi's word as his card
+/// Strings of 一騎打ち: its page, the memory time, the greetings, the 送り札 on the band, Tobi's word as his card
 /// waits, the names of the places a card may go on the player's side, the
 /// game column, a からふだ's tag, and how a read ended.
 extension IkkiuchiStrings on S {
@@ -37,6 +37,26 @@ extension IkkiuchiStrings on S {
 
   /// The tag before the words of a からふだ read.
   String get ikkiuchiKarafuda => t('ikkiuchiKarafuda');
+
+  /// The hub's entry: what the match is, and the burst to the page.
+  String get ikkiuchiEntryLine => t('ikkiuchiEntryLine');
+  String get ikkiuchiPageTitle => t('ikkiuchiPageTitle');
+
+  /// The page's strip: the matches played, won and lost.
+  String get ikkiuchiPlayed => t('ikkiuchiPlayed');
+  String get ikkiuchiWon => t('ikkiuchiWon');
+  String get ikkiuchiLost => t('ikkiuchiLost');
+
+  /// The page's ranked panel, shut for now: what it will hold, and why it
+  /// is shut.
+  String get ikkiuchiRankedLine => t('ikkiuchiRankedLine');
+  String get ikkiuchiRankedSoon => t('ikkiuchiRankedSoon');
+
+  /// The page's free play: the steppers' labels, and the burst that starts
+  /// a match.
+  String get ikkiuchiCards => t('ikkiuchiCards');
+  String get ikkiuchiTobiRating => t('ikkiuchiTobiRating');
+  String get ikkiuchiStart => t('ikkiuchiStart');
 
   /// How a read ended, its parts joined: あなたの取り・トビのお手つき.
   String ikkiuchiFeedback(List<IkkiuchiCallout> parts) => [

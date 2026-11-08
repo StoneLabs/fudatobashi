@@ -25,7 +25,7 @@ enum GateState { locked, opening, open }
 /// the sea's paper layers.
 ///
 /// The torii stands for the island in front: its trip's as [gates] says, a
-/// padlocked one for an island still being built. While [fade] runs, the
+/// padlocked one for an island still being built, an open one for the hall. While [fade] runs, the
 /// islands crossfade from the ring at step [fadeFrom].
 ///
 /// It fills its box (the screen above the entries), scaled to the box's
@@ -164,7 +164,7 @@ class _DojoSceneState extends State<DojoScene> with SingleTickerProviderStateMix
       for (final ring in shown)
         for (final (isle, arm, spec) in _placed(ring.turn))
           _Isle(isle, spec, frame, key: ValueKey((ring.leaving, isle, arm)), opacity: ring.opacity),
-      _torii(frame, _gateOf(front.trip)),
+      _torii(frame, front == SideTripIsle.hall ? GateState.open : _gateOf(front.trip)),
       for (final ring in shown)
         for (final (isle, arm, spec) in _placed(ring.turn))
           if (isle.comingSoon && spec.label * ring.opacity > 0)

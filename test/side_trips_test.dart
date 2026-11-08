@@ -75,7 +75,8 @@ void main() {
       ]);
       expect(SideTripIsle.ankiren.trip, SideTrip.ankiren);
       expect(SideTripIsle.storehouse.trip, SideTrip.teiichi);
-      expect([for (final isle in SideTripRing.isles) isle.comingSoon], [false, false, true, true]);
+      expect([for (final isle in SideTripRing.isles) isle.comingSoon], [false, false, false, true],
+          reason: 'the hall holds 一騎打ち');
     });
 
     test('each step moves every island on a slot: right to front, front to left, then round the back to the right',

@@ -1678,5 +1678,15 @@
   "ikkiuchiMemoryTime": "暗記時間",
   "ikkiuchiTimeLeft": "のこり {0}",
   "ikkiuchiGreeting": "よろしくお願いします",
-  "ikkiuchiThanks": "ありがとうございました"
+  "ikkiuchiThanks": "ありがとうございました",
+  "ikkiuchiPlayed": "対戦数",
+  "ikkiuchiWon": "勝ち",
+  "ikkiuchiLost": "負け",
+  "ikkiuchiRankedSoon": "名前のある相手とのランク戦は近日公開",
+  "ikkiuchiRankedLine": "名前のある相手と対戦して、ランクを上げよう。",
+  "ikkiuchiCards": "持ち札",
+  "ikkiuchiTobiRating": "トビのレーティング",
+  "ikkiuchiStart": "対戦開始",
+  "ikkiuchiPageTitle": "一騎打ちへ",
+  "ikkiuchiEntryLine": "トビと一対一の試合。"
 }

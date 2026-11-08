@@ -505,6 +505,30 @@ abstract final class IkkiuchiMatchTuning {
   static const Duration endHold = Duration(milliseconds: 1200);
 }
 
+/// 一騎打ち's free play (`IkkiuchiPage`, `IkkiuchiMatchScreen`): the choices
+/// of cards a side, memory time and Tobi's rating, each with the one a
+/// first match starts on; the rows a side is laid out in; the seeds a deal
+/// is drawn from, and the offset that draws the player's side apart from
+/// Tobi's; the system bars hidden while a match is played (a swipe in from
+/// an edge shows them for a while); and how long the match screen stays
+/// once the match is over, for the players' thanks.
+abstract final class IkkiuchiFreeTuning {
+  static const List<int> perSideChoices = [5, 10, 15, 20, 25];
+  static const int perSide = 25;
+  static const List<Duration> memoriseChoices = [
+    Duration(minutes: 1), Duration(minutes: 2), Duration(minutes: 3), Duration(minutes: 5),
+    Duration(minutes: 10), Duration(minutes: 15),
+  ];
+  static const Duration memorise = Duration(minutes: 15);
+  static const List<double> ratingChoices = [400, 800, 1200, 1600, 2000, 2400, 2800, 3200, 3600];
+  static const double rating = 1600;
+  static const int rows = 3;
+  static const int seeds = 1 << 30;
+  static const int playerSeedOffset = 7919;
+  static const SystemUiMode bars = SystemUiMode.immersiveSticky;
+  static const Duration leaveAfter = Duration(seconds: 3);
+}
+
 /// Tobi's arm carrying a card (`IkkiuchiCarry`), as when he sends one: a
 /// calm reach to it, the carry, and home, each this many ms. The arm lags
 /// [lag] ms along its length and waves [wave] Tobi units at most; each way

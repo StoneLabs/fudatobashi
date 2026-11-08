@@ -41,10 +41,12 @@ enum SideTripIsle {
 
   const SideTripIsle(this.trip);
 
-  /// The side trip played there; null while it is still being built.
+  /// The side trip played there; null for the hall, where 一騎打ち is
+  /// played outside the side trips' levels and ratings, and for an island
+  /// still being built.
   final SideTrip? trip;
 
-  bool get comingSoon => trip == null;
+  bool get comingSoon => trip == null && this != hall;
 }
 
 /// The ring of islands on the Side Trips tab, one slot for each island. It

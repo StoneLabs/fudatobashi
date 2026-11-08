@@ -14,6 +14,7 @@ import '../../l10n/strings.dart';
 import '../../state/progress.dart';
 import '../../state/scope.dart';
 import 'ankiren_page.dart';
+import 'ikkiuchi_page.dart';
 import 'teiichi_page.dart';
 import '../manga/manga.dart';
 import 'dojo_scene.dart';
@@ -21,8 +22,9 @@ import 'side_trip_entry.dart';
 
 /// The Side Trips tab (寄り道): the dojo scene ([DojoScene]) with its ring of
 /// islands ([SideTripRing]) over the entry of the island in front, carried
-/// on the near swell: a trip's ([SideTripEntryView]), or one saying the
-/// island is still being built ([SideTripSoonEntry]). Everything a trip's
+/// on the near swell: a trip's ([SideTripEntryView]), 一騎打ち's in the hall
+/// ([IkkiuchiEntry]), or one saying the island is still being built
+/// ([SideTripSoonEntry]). Everything a trip's
 /// entry shows comes from the hub ([SideTripsHub]).
 ///
 /// A swipe anywhere turns the ring a step, the swell and the entry riding
@@ -242,7 +244,8 @@ class _SideTripsScreenState extends State<SideTripsScreen> with TickerProviderSt
   }
 
   Widget _entry(SideTripsHub hub, SideTripIsle isle) => switch (isle.trip) {
-        null => SideTripSoonEntry(isle: isle),
+        null when isle == SideTripIsle.hall => IkkiuchiEntry(onOpen: () => openIkkiuchiPage(context)),
+        null => const SideTripSoonEntry(),
         SideTrip.ankiren => SideTripEntryView(hub[SideTrip.ankiren], onOpen: () => openAnkirenPage(context)),
         SideTrip.teiichi => SideTripEntryView(hub[SideTrip.teiichi], onOpen: () => openTeiichiPage(context)),
       };

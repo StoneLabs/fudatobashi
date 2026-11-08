@@ -1678,5 +1678,15 @@
   "ikkiuchiMemoryTime": "Memory time",
   "ikkiuchiTimeLeft": "{0} left",
   "ikkiuchiGreeting": "Let's have a good match",
-  "ikkiuchiThanks": "Thank you for the match"
+  "ikkiuchiThanks": "Thank you for the match",
+  "ikkiuchiPlayed": "Played",
+  "ikkiuchiWon": "Won",
+  "ikkiuchiLost": "Lost",
+  "ikkiuchiRankedSoon": "Ranked matches against named opponents are coming soon",
+  "ikkiuchiRankedLine": "Take on named opponents and climb the ranks.",
+  "ikkiuchiCards": "Cards each",
+  "ikkiuchiTobiRating": "Tobi's rating",
+  "ikkiuchiStart": "START MATCH",
+  "ikkiuchiPageTitle": "Go to Ikkiuchi",
+  "ikkiuchiEntryLine": "A full match against Tobi, one on one."
 }

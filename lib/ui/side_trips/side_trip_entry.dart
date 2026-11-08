@@ -8,6 +8,7 @@ import '../../config/vector_art.dart';
 import '../../domain/rating.dart';
 import '../../domain/side_trips.dart';
 import '../../l10n/ankiren_strings.dart';
+import '../../l10n/ikkiuchi_strings.dart';
 import '../../l10n/ranked_strings.dart';
 import '../../l10n/side_trip_strings.dart';
 import '../../l10n/strings.dart';
@@ -93,13 +94,12 @@ class _Lettering extends StatelessWidget {
       );
 }
 
-/// The entry of an island still being built: 近日公開 lettered over a small
-/// panel saying that it is under construction. The tournament hall is
-/// lettered with its own name instead.
-class SideTripSoonEntry extends StatelessWidget {
-  const SideTripSoonEntry({super.key, this.isle});
+/// 一騎打ち's entry in the hall: its name lettered over a small panel saying
+/// what it is, and the burst that opens its page ([onOpen]).
+class IkkiuchiEntry extends StatelessWidget {
+  const IkkiuchiEntry({super.key, required this.onOpen});
 
-  final SideTripIsle? isle;
+  final VoidCallback onOpen;
 
   @override
   Widget build(BuildContext context) {
@@ -109,10 +109,44 @@ class SideTripSoonEntry extends StatelessWidget {
         maxScaleFactor: SideTripsLayout.letteringMaxScale,
         child: Align(
           alignment: Alignment.bottomLeft,
-          child: _Lettering(
-              isle == SideTripIsle.hall ? s.hallName : s.sideTripsSoonLettering,
-              isle == SideTripIsle.hall ? s.hallTag : s.sideTripsSoonBanner,
-              fontSize: SideTripsLayout.soonLetteringFont),
+          child: _Lettering(s.hallName, s.hallTag, fontSize: SideTripsLayout.letteringFont),
+        ),
+      ),
+      body: MangaPanel(
+        shape: const PanelShape(topLeft: Offset(0, SideTripsLayout.cut)),
+        padding: const EdgeInsets.only(top: SideTripsLayout.overlap),
+        child: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+          Padding(
+            padding: SideTripsLayout.soonPadding,
+            child: Text(
+              s.ikkiuchiEntryLine,
+              style: const TextStyle(fontWeight: Weights.bold, fontSize: SideTripsLayout.soonLineFont),
+            ),
+          ),
+          Padding(
+            padding: SideTripsLayout.burstMargin,
+            child: BurstButton(title: s.ikkiuchiPageTitle, onTap: onOpen),
+          ),
+        ]),
+      ),
+    );
+  }
+}
+
+/// The entry of an island still being built: 近日公開 lettered over a small
+/// panel saying that it is under construction.
+class SideTripSoonEntry extends StatelessWidget {
+  const SideTripSoonEntry({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    final s = S.of(context);
+    return _HeadOver(
+      head: MediaQuery.withClampedTextScaling(
+        maxScaleFactor: SideTripsLayout.letteringMaxScale,
+        child: Align(
+          alignment: Alignment.bottomLeft,
+          child: _Lettering(s.sideTripsSoonLettering, s.sideTripsSoonBanner, fontSize: SideTripsLayout.soonLetteringFont),
         ),
       ),
       body: MangaPanel(

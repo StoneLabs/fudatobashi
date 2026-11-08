@@ -386,3 +386,20 @@ abstract final class IkkiuchiArmStyle {
   static const double sfxPopMs = 90;
   static const double sfxFade = 0.3;
 }
+
+/// 一騎打ち's page (`ikkiuchi_page.dart`): the strip, the ranked panel (shut
+/// for now: its line, then the ranked burst) and free play's panel (its
+/// steppers, then the burst that starts a match), [gap] between the blocks,
+/// [panelTop] above a panel whose tag rises over its top edge, and
+/// [bottomGap] under the last.
+abstract final class IkkiuchiPageLayout {
+  static const double gap = 12;
+  static const double panelTop = 8;
+  static const double bottomGap = 12;
+  static const EdgeInsets rankedLinePadding = EdgeInsets.fromLTRB(14, 6, 14, 4);
+  static const double rankedLineFont = 13;
+  static const EdgeInsets steppersPadding = EdgeInsets.fromLTRB(14, 6, 10, 0);
+  static const double stepperGap = 8;
+  static const double stepperValueFont = 24;
+  static const EdgeInsets burstMargin = EdgeInsets.fromLTRB(6, 10, 6, 6);
+}
