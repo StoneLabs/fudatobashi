@@ -1,6 +1,7 @@
 import 'dart:math' as math;
 
 import '../../config/config.dart';
+import '../../domain/ikkiuchi_rating.dart';
 import '../../domain/ikkiuchi_tobi.dart';
 import '../../domain/truncated_normal.dart';
 import '../../domain/tuning_curve.dart';
@@ -85,7 +86,7 @@ class IkkiuchiDraw {
 }
 
 /// The ranked draw: Tobi's rating in a ranked match around the player's.
-const _rankedDraw = TruncatedNormal(sd: IkkiuchiRankedTuning.drawSd, cutOff: IkkiuchiRankedTuning.drawCutOff);
+const _rankedDraw = IkkiuchiRating.rankedDraw;
 
 String _drawRule(TruncatedNormal draw) => 'sd ${draw.sd.round()}, drawn again past ±${draw.cutOff.round()}, then '
     'held within ${IkkiuchiTuning.ratingMin.round()}–${IkkiuchiTuning.ratingMax.round()}';

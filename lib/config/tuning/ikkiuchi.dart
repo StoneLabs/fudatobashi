@@ -533,27 +533,35 @@ abstract final class IkkiuchiFreeTuning {
 
 /// 一騎打ち's ranked matches and the player's rating (`IkkiuchiRating`).
 /// Every ranked match is the same: against Tobi, [perSide] cards a side
-/// and [memorise] to learn the field. The first [placementMatches] are
-/// played against Tobi at [start] and place the rating at the mean of their
-/// performances, a win performing [performanceSpread] above his rating and
-/// a loss as far below. Then Tobi plays at the player's rating, and each
-/// match moves it by [k] × (score − expected score), the expected score
-/// against an opponent d points higher 1 / (1 + 10^(d / [eloScale])).
+/// and [memorise] to learn the field. A win scores 1 and a loss 0, and the
+/// expected score against Tobi d points higher is 1 / (1 + 10^(d /
+/// [eloScale])). The rating stays inside Tobi's ratings
+/// (`IkkiuchiTuning.ratingMin` to `ratingMax`).
+///
+/// Placement: every new player starts at [start] and plays Tobi at exactly
+/// the current estimate, which each win moves up and each loss down by
+/// [placementSteps] in turn; the last estimate is the first rating. The
+/// steps add up to how far placement reaches (500 to 2700).
+///
+/// Then each match moves the rating by K × (score − expected score), K
+/// being [provisionalK] for the [provisionalMatches] after placement and
+/// [establishedK] after them. Tobi plays each at the player's rating plus a
+/// normal draw with standard deviation [drawSd], drawn again when more than
+/// [drawCutOff] away, so that 80% of matches are within ±300. The draw for
+/// a match comes from [drawSeed] and the ranked matches played, so it
+/// stays the same until the match is played.
 abstract final class IkkiuchiRankedTuning {
   static const int perSide = 25;
   static const Duration memorise = Duration(minutes: 15);
-  static const double start = 1200;
-  static const int placementMatches = 3;
-  static const double performanceSpread = 400;
-  static const double k = 80;
+  static const double start = 1600;
+  static const List<double> placementSteps = [500, 300, 200, 100];
+  static const double provisionalK = 64;
+  static const int provisionalMatches = 15;
+  static const double establishedK = 32;
   static const double eloScale = 400;
-
-  /// A ranked Tobi: the player's rating plus a normal draw with standard
-  /// deviation [drawSd], drawn again whenever it lands more than
-  /// [drawCutOff] away, then held within the ratings his curves cover.
-  /// [drawSd] puts 80% of matches within ±300 of the player's rating.
   static const double drawSd = 239;
   static const double drawCutOff = 600;
+  static const int drawSeed = 1601;
 }
 
 /// The match screen (`IkkiuchiMatchScreen`), ranked or free: the rows a

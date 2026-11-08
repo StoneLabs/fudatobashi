@@ -1,8 +1,10 @@
 // 一騎打ち's ranked rating: placed by the first matches against Tobi at the
-// start rating, then moved Elo-style by each match against Tobi at the
-// player's own rating; a match given up is a loss. Every ranked match
-// keeps the rating after it, and the ratings replay from the stored
-// matches.
+// estimate so far, each moving it by its step, then moved Elo-style by
+// each match against Tobi drawn near the player's rating; a match given up
+// is a loss. Every ranked match keeps the rating after it, and the ratings
+// replay from the stored matches.
+import 'dart:math' as math;
+
 import 'dart:io';
 
 import 'package:drift/drift.dart' show driftRuntimeOptions;
@@ -20,9 +22,9 @@ void main() {
   poems = Poems.fromJsonString(File('assets/data/poems.json').readAsStringSync());
   fudaSets = FudaSets(poems);
   driftRuntimeOptions.dontWarnAboutMultipleDatabases = true;
-  const placing = IkkiuchiRankedTuning.placementMatches;
-  const spread = IkkiuchiRankedTuning.performanceSpread;
-  const k = IkkiuchiRankedTuning.k;
+  final placing = IkkiuchiRating.placementMatches;
+  const steps = IkkiuchiRankedTuning.placementSteps;
+  const k = IkkiuchiRankedTuning.provisionalK;
   final at = DateTime(2026, 11, 8, 10);
 
   /// A ranked match of [setup], won, lost, or given up when not [completed].
@@ -53,64 +55,89 @@ void main() {
     await p.db.close();
   });
 
-  test('placement: Tobi at the start rating, the player unrated, then rated at the mean of the performances',
+  test('placement: Tobi at exactly the estimate, each result moving it by its step; the last is the rating',
       () async {
     final p = await Progress.open(AppDatabase(NativeDatabase.memory()));
     expect([p.ikkiuchi.rating, p.ikkiuchi.rankedPlayed, p.ikkiuchi.placing], [null, 0, isTrue]);
-    final results = [true, false, true];
+    final results = [true, false, true, false];
     expect(results, hasLength(placing));
+    var estimate = IkkiuchiRating.start;
     for (final (i, won) in results.indexed) {
-      expect(p.ikkiuchi.rankedSetup.opponentRating, IkkiuchiRating.start, reason: 'placement match ${i + 1}');
+      expect(p.ikkiuchi.rankedSetup.opponentRating, estimate, reason: 'placement match ${i + 1}');
       expect(p.ikkiuchi.rating, isNull, reason: 'unrated while placing');
       await play(p, won: won);
+      estimate += (won ? 1 : -1) * steps[i];
     }
-    const placed = IkkiuchiRating.start + spread / placing;
-    expect(p.ikkiuchi.matches.last.rating, closeTo(placed, 1e-9));
+    expect(estimate, 1600 + 500 - 300 + 200 - 100);
+    expect(p.ikkiuchi.matches.last.rating, estimate);
     expect([p.ikkiuchi.placing, p.ikkiuchi.rankedPlayed], [false, placing]);
-    expect(p.ikkiuchi.rating, closeTo(placed, 1e-9));
+    expect(p.ikkiuchi.rating, estimate);
     expect(p.ikkiuchi.ratingChange, isNull, reason: 'no change to show from unrated');
     await p.db.close();
   });
 
-  test('after placement: Tobi at the player\'s rating, a win up and a loss down by half of K', () async {
+  test('after placement: Tobi drawn near the rating, the same until played; K by the matches rated', () async {
     final p = await Progress.open(AppDatabase(NativeDatabase.memory()));
     for (var i = 0; i < placing; i++) {
       await play(p, won: true);
     }
     final placed = p.ikkiuchi.rating!;
-    expect(p.ikkiuchi.rankedSetup.opponentRating, placed);
+    final tobi = p.ikkiuchi.rankedSetup.opponentRating;
+    expect(p.ikkiuchi.rankedSetup.opponentRating, tobi, reason: 'the same until the match is played');
+    expect((tobi - placed).abs(), lessThanOrEqualTo(IkkiuchiRankedTuning.drawCutOff));
     await play(p, won: true);
-    expect(p.ikkiuchi.rating, closeTo(placed + k / 2, 1e-9));
-    expect(p.ikkiuchi.ratingChange, closeTo(k / 2, 1e-9));
-    expect(p.ikkiuchi.rankedSetup.opponentRating, closeTo(placed + k / 2, 1e-9));
+    expect(p.ikkiuchi.matches.last.setup.opponentRating, tobi, reason: 'played against the Tobi shown');
+    final gain = k * (1 - IkkiuchiRating.expected(placed, tobi));
+    expect(p.ikkiuchi.rating, closeTo(placed + gain, 1e-9));
+    expect(p.ikkiuchi.ratingChange, closeTo(gain, 1e-9));
+
+    final next = p.ikkiuchi.rankedSetup.opponentRating;
     await play(p, won: false);
-    expect(p.ikkiuchi.rating, closeTo(placed, 1e-9));
-    expect(p.ikkiuchi.ratingChange, closeTo(-k / 2, 1e-9));
+    expect(p.ikkiuchi.ratingChange, closeTo(-k * IkkiuchiRating.expected(placed + gain, next), 1e-9));
+
+    expect(IkkiuchiRating.kAfter(IkkiuchiRankedTuning.provisionalMatches - 1), k);
+    expect(IkkiuchiRating.kAfter(IkkiuchiRankedTuning.provisionalMatches), IkkiuchiRankedTuning.establishedK);
     await p.db.close();
+  });
+
+  test('beating a stronger Tobi gains more, losing to a weaker one costs more', () {
+    final earlier = [for (var i = 0; i < placing; i++) (opponentRating: IkkiuchiRating.start, won: true)];
+    double change(double tobi, {required bool won}) =>
+        IkkiuchiRating.after((opponentRating: tobi, won: won), earlier: earlier, rating: 2000) - 2000;
+    expect(change(2300, won: true), greaterThan(change(2000, won: true)));
+    expect(change(1700, won: false), lessThan(change(2000, won: false)));
+  });
+
+  test('the draw: within the cut-off, 80% of matches within ±300, whole points', () {
+    final draws = [for (var seed = 0; seed < 4000; seed++) IkkiuchiRating.draw(math.Random(seed))];
+    expect(draws.every((d) => d.abs() <= IkkiuchiRankedTuning.drawCutOff), isTrue);
+    expect(draws.every((d) => d == d.roundToDouble()), isTrue);
+    expect(draws.where((d) => d.abs() <= 300).length / draws.length, closeTo(0.8, 0.03));
+    expect(draws.where((d) => d > 0).length / draws.length, closeTo(0.5, 0.03));
   });
 
   test('a ranked match given up is a loss, whatever the cards left say', () async {
     final p = await Progress.open(AppDatabase(NativeDatabase.memory()));
     await play(p, won: true, completed: false);
-    expect(p.ikkiuchi.matches.single.rating, IkkiuchiRating.start - spread);
+    expect(p.ikkiuchi.matches.single.rating, IkkiuchiRating.start - steps.first);
     await p.db.close();
   });
 
-  test('Tobi plays within the ratings he has, and a match against him there rates by the ratings apart', () {
-    const top = IkkiuchiTuning.ratingMax;
-    expect(IkkiuchiRating.opponentFor(played: placing, rating: top + 300), top);
-    expect(IkkiuchiRating.opponentFor(played: placing, rating: IkkiuchiTuning.ratingMin - 50), IkkiuchiTuning.ratingMin);
-    expect(IkkiuchiRating.opponentFor(played: placing - 1, rating: 2000), IkkiuchiRating.start, reason: 'still placing');
+  test('Tobi and the rating stay within the ratings Tobi plays at', () {
+    const top = IkkiuchiTuning.ratingMax, bottom = IkkiuchiTuning.ratingMin;
+    for (var played = placing; played < placing + 50; played++) {
+      expect(IkkiuchiRating.opponentFor(played: played, rating: top), inInclusiveRange(top - 600, top));
+      expect(IkkiuchiRating.opponentFor(played: played, rating: bottom), inInclusiveRange(bottom, bottom + 600));
+    }
     final earlier = [for (var i = 0; i < placing; i++) (opponentRating: IkkiuchiRating.start, won: true)];
-    final after = IkkiuchiRating.after((opponentRating: top, won: true), earlier: earlier, rating: top + 300);
-    expect(after - (top + 300), closeTo(k * (1 - IkkiuchiRating.expected(top + 300, top)), 1e-9));
-    expect(after - (top + 300), lessThan(k / 2), reason: 'a win over a weaker Tobi earns less');
+    expect(IkkiuchiRating.after((opponentRating: top, won: true), earlier: earlier, rating: top), top);
+    expect(IkkiuchiRating.after((opponentRating: bottom, won: false), earlier: earlier, rating: bottom), bottom);
   });
 
   test('free play never touches the rating, and the ratings come back on load as stored', () async {
     final db = AppDatabase(NativeDatabase.memory());
     final p = await Progress.open(db);
-    for (final won in [true, true, false, true, false]) {
+    for (final won in [true, true, false, true, false, true]) {
       await play(p, won: won);
       await p.recordIkkiuchi(ranked(IkkiuchiSetup.firstFree, won: true));
     }
