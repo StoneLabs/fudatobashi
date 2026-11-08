@@ -193,9 +193,8 @@ abstract final class IkkiuchiGreetingStyle {
 /// rows either side. The kimariji grows kana by kana in [kimariji]
 /// lettering, each kana opening its room and popping in from [kanaPop] its
 /// size over [kanaIn] ([kanaCurve]); the strip fades out over [fadeOut]
-/// once nothing is read. A からふだ's tag comes first in [karafudaTag],
-/// [karafudaInk]. A prompt is its [title] in display lettering, [dot], then
-/// what to do in [line], [lineInk]. dp.
+/// once nothing is read. A prompt is its [title] in display lettering,
+/// [dot], then what to do in [line], [lineInk]. dp.
 abstract final class IkkiuchiCallStyle {
   static const double bleed = 2.5;
   static const Color fill = Color(0xC4000000);
@@ -207,9 +206,6 @@ abstract final class IkkiuchiCallStyle {
   static const Curve kanaCurve = Curves.easeOutCubic;
   static const double kanaPop = 1.45;
   static const Duration fadeOut = Duration(milliseconds: 180);
-  static const double karafudaTag = 10;
-  static const Color karafudaInk = Color(0xB3FFFFFF);
-  static const double karafudaGap = 6;
   static const double title = 16;
   static const String dot = '·';
   static const double dotGap = 7;

@@ -8,15 +8,13 @@ import 'ikkiuchi_reader.dart';
 /// The call in the gap between the sides in landscape: paper words on a
 /// see-through strip that fades out toward both ends, as tall as it is
 /// laid out. It shows the [reader]'s call sound by sound as each is heard,
-/// after a からふだ's [karafuda] tag, each kana opening its room and popping
-/// in so the words grow from the middle; or, instead of the call, a
-/// [prompt]: its title and what to do. Once nothing is read the last words
-/// fade out.
+/// each kana opening its room and popping in so the words grow from the
+/// middle; or, instead of the call, a [prompt]: its title and what to do.
+/// Once nothing is read the last words fade out.
 class IkkiuchiCallStrip extends StatefulWidget {
-  const IkkiuchiCallStrip({super.key, required this.reader, this.karafuda, this.prompt});
+  const IkkiuchiCallStrip({super.key, required this.reader, this.prompt});
 
   final IkkiuchiReader reader;
-  final String? karafuda;
   final ({String title, String line})? prompt;
 
   @override
@@ -52,23 +50,11 @@ class _IkkiuchiCallStripState extends State<IkkiuchiCallStrip> {
       key: ValueKey(reader.serial),
       mainAxisSize: MainAxisSize.min,
       children: [
-        if (widget.karafuda case final tag?)
-          Padding(
-            padding: const EdgeInsets.only(right: IkkiuchiCallStyle.karafudaGap),
-            child: Text(tag, style: _karafuda),
-          ),
         for (var i = 0; i < reader.heard; i++) _Sound(call.sounds[i], key: ValueKey(i)),
       ],
     );
   }
 
-  static const _karafuda = TextStyle(
-    fontFamily: Fonts.ui,
-    fontWeight: Weights.black,
-    fontSize: IkkiuchiCallStyle.karafudaTag,
-    height: 1,
-    color: IkkiuchiCallStyle.karafudaInk,
-  );
 }
 
 /// The see-through strip behind the words, solid under them and
