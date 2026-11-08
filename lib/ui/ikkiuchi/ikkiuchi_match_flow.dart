@@ -11,6 +11,7 @@ import '../../domain/ikkiuchi_match.dart';
 import '../../domain/ikkiuchi_read.dart';
 import '../../domain/ikkiuchi_record.dart';
 import '../../domain/ikkiuchi_side.dart';
+import '../../domain/ikkiuchi_tobi.dart';
 import '../../l10n/ikkiuchi_strings.dart';
 import '../../l10n/strings.dart';
 import '../sound/sounds.dart';
@@ -42,7 +43,8 @@ class IkkiuchiMatchWords {
 /// 序歌. Each read
 /// takes the next card of the read order ([IkkiuchiReadOrder]): the reader
 /// reads its kimariji while its voice plays, Tobi playing the read at
-/// [rating], or not at all without one. Card touches count only while a
+/// [rating] in his form for the match (`IkkiuchiBoardScene.tobiForm`), or
+/// not at all without one. Card touches count only while a
 /// card is read ([IkkiuchiStage.readLive]); the finger touches no card
 /// otherwise. The read is over once the card is taken, or a からふだ's
 /// pause has gone by, Tobi's arm is done and the cards are home: how it
@@ -91,9 +93,9 @@ class IkkiuchiMatchFlow extends ChangeNotifier {
   final IkkiuchiBoardScene scene;
   final IkkiuchiMatchWords words;
 
-  /// Tobi's rating for the reads to come, each taking it as it starts; null
-  /// while he never reaches for a card nor faults. He makes his 送り札
-  /// either way.
+  /// Tobi's rating for the reads to come, before his form, each taking it
+  /// as it starts; null while he never reaches for a card nor faults. He
+  /// makes his 送り札 either way.
   double? rating;
 
   /// Whether the match holds once the 送り札 after a read are made.
@@ -308,7 +310,8 @@ class IkkiuchiMatchFlow extends ChangeNotifier {
     final sides = scene.sides!;
     final onField = sides.tobiCards.contains(id) || sides.playerCards.contains(id);
     final board = scene.board;
-    final rating = this.rating;
+    final base = this.rating;
+    final rating = base == null ? null : IkkiuchiTobi.inForm(base, scene.tobiForm);
     scene.tobiRating = rating ?? IkkiuchiTuning.ratingMin;
     final tobi = rating == null
         ? null

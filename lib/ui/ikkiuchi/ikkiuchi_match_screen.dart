@@ -9,6 +9,7 @@ import '../../config/config.dart';
 import '../../config/design.dart';
 import '../../domain/ikkiuchi_match.dart';
 import '../../domain/ikkiuchi_record.dart';
+import '../../domain/ikkiuchi_tobi.dart';
 import '../../state/progress.dart';
 import '../../state/scope.dart';
 import '../manga/manga.dart';
@@ -24,7 +25,8 @@ Future<void> startIkkiuchiMatch(BuildContext context, IkkiuchiSetup setup) =>
 /// A 一騎打ち match ([IkkiuchiMatchFlow]) of [setup] on the whole screen,
 /// held in landscape with the system bars hidden and the menu music out,
 /// both sides dealt from [seed] (random when null) and the opponent playing
-/// at the setup's rating. The match runs on by itself.
+/// at the setup's rating in his form drawn from it (`IkkiuchiTobi.formFor`).
+/// The match runs on by itself.
 ///
 /// A match that ends once play has begun (its first card read), played to
 /// its end or by 終了, is recorded, and [IkkiuchiScreenTuning.leaveAfter]
@@ -51,6 +53,7 @@ class IkkiuchiMatchScreenState extends State<IkkiuchiMatchScreen> with SingleTic
   final _dealer =
       IkkiuchiDealer(rows: IkkiuchiScreenTuning.rows, playerSeedOffset: IkkiuchiScreenTuning.playerSeedOffset);
   late final int _seed = widget.seed ?? math.Random().nextInt(IkkiuchiScreenTuning.seeds);
+  late final double _form = IkkiuchiTobi.formFor(_seed);
   late final Progress _progress;
   final _startedAt = DateTime.now();
   late final Ticker _ticker = createTicker(_tick);
@@ -109,6 +112,7 @@ class IkkiuchiMatchScreenState extends State<IkkiuchiMatchScreen> with SingleTic
         rating: setup.opponentRating,
         seed: _seed,
         perSide: setup.perSide,
+        form: _form,
         onNew: (scene) {
           final old = _flow;
           if (old != null) {

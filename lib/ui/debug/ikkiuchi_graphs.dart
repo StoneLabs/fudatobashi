@@ -276,7 +276,7 @@ class _CurvePainter extends _RatingPlot {
 
     final band = Paint()..color = IkkiuchiCurvesStyle.formBand;
     for (final sds in IkkiuchiToolsTuning.sigmas) {
-      final reach = sds * IkkiuchiTuning.formSd;
+      final reach = ikkiuchiFormReach(sds);
       canvas.drawRect(
         Rect.fromLTRB(_RatingPlot.xAt(plot, math.max(_RatingPlot.min, rating - reach)), plot.top,
             _RatingPlot.xAt(plot, math.min(_RatingPlot.max, rating + reach)), plot.bottom),

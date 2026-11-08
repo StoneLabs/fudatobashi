@@ -73,6 +73,11 @@ class IkkiuchiGraph {
 /// What a range reads when there is none: a value with no randomness.
 const ikkiuchiNoRange = '—';
 
+/// How far [sds] standard deviations of his form reach from his rating:
+/// never past its cut-off, where it is drawn again.
+double ikkiuchiFormReach(num sds) =>
+    math.min(sds * IkkiuchiTobi.formDraw.sd, IkkiuchiTobi.formDraw.cutOff);
+
 /// A chance per group's two lines: the chance itself, and the share of
 /// games with at least one group kept together.
 const ikkiuchiPerGroup = 'per group';
@@ -131,11 +136,11 @@ class IkkiuchiValue {
   double at(double rating) => _fixed ?? _read!(IkkiuchiTobi(rating));
 
   /// The lowest and highest it reads at a rating within [sds] standard
-  /// deviations of his form ([IkkiuchiTuning.formSd]) of [rating], kept
-  /// within the curves' ratings; null for a fixed value.
+  /// deviations of his form of [rating] ([ikkiuchiFormReach]), kept within
+  /// the curves' ratings; null for a fixed value.
   (double, double)? matchRange(double rating, num sds) {
     if (isFixed) return null;
-    final reach = sds * IkkiuchiTuning.formSd;
+    final reach = ikkiuchiFormReach(sds);
     final from = math.max(IkkiuchiTuning.ratingMin, rating - reach);
     final to = math.min(IkkiuchiTuning.ratingMax, rating + reach);
     var lo = double.infinity, hi = double.negativeInfinity;

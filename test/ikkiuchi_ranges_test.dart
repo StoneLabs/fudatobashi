@@ -8,7 +8,7 @@ import 'package:fudatobashi/domain/ikkiuchi_tobi.dart';
 import 'package:fudatobashi/ui/debug/ikkiuchi_values.dart';
 
 void main() {
-  const sd = IkkiuchiTuning.formSd;
+  const sd = IkkiuchiTuning.formSd, cutOff = IkkiuchiTuning.formCutOff;
   const min = IkkiuchiTuning.ratingMin, max = IkkiuchiTuning.ratingMax;
 
   group('a value drawn per card', () {
@@ -44,16 +44,21 @@ void main() {
     final rising = IkkiuchiValue('rising', IkkiuchiUnit.plain, (t) => t.rating);
     final falling = IkkiuchiValue('falling', IkkiuchiUnit.plain, (t) => max - t.rating);
 
-    test('spans the ratings his form reaches, 1 sd and 2 sd each way', () {
+    test('spans the ratings his form reaches, 1 sd and 2 sd each way, never past its cut-off', () {
+      final reach2 = math.min(2 * sd, cutOff);
+      expect(ikkiuchiFormReach(1), math.min(sd, cutOff));
+      expect(ikkiuchiFormReach(2), reach2);
+      expect(ikkiuchiFormReach(cutOff / sd + 1), cutOff);
       expect(rising.matchRange(1600, 1), (1600 - sd, 1600 + sd));
-      expect(rising.matchRange(1600, 2), (1600 - 2 * sd, 1600 + 2 * sd));
+      expect(rising.matchRange(1600, 2), (1600 - reach2, 1600 + reach2));
       expect(falling.matchRange(1600, 1), (max - 1600 - sd, max - 1600 + sd));
     });
 
     test('stops at the ends of the rating range', () {
+      final reach2 = ikkiuchiFormReach(2);
       expect(rising.matchRange(min, 1), (min, min + sd));
-      expect(rising.matchRange(min + sd / 2, 2), (min, min + sd / 2 + 2 * sd));
-      expect(rising.matchRange(max, 2), (max - 2 * sd, max));
+      expect(rising.matchRange(min + sd / 2, 2), (min, min + sd / 2 + reach2));
+      expect(rising.matchRange(max, 2), (max - reach2, max));
       expect(falling.matchRange(max, 1), (0, sd));
     });
 

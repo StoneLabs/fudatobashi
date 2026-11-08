@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../config/config.dart';
 import '../../config/design.dart';
+import '../../domain/ikkiuchi_tobi.dart';
 import 'debug_common.dart';
 import 'ikkiuchi_graphs.dart';
 import 'ikkiuchi_rating_header.dart';
@@ -36,7 +37,7 @@ class _IkkiuchiCurvesPageState extends State<IkkiuchiCurvesPage> {
         children: [
           IkkiuchiRatingHeader(
             rating: _rating,
-            note: 'form ±${IkkiuchiTuning.formSd.round()} a match',
+            note: 'form sd ${_form.sd.round()}, never past ±${_form.cutOff.round()}',
             onChanged: (v) => setState(() => _rating = v),
           ),
           Expanded(
@@ -87,9 +88,11 @@ final _number = debugMono.copyWith(fontSize: IkkiuchiCurvesStyle.numberFont);
 
 final _sigmaNames = [for (final s in IkkiuchiToolsTuning.sigmas) '$sσ'];
 
+const _form = IkkiuchiTobi.formDraw;
+
 final _rangesNote = '${_sigmaNames.join(', ')}: per match from his form (rating '
-    '${[for (final s in IkkiuchiToolsTuning.sigmas) '±${(s * IkkiuchiTuning.formSd).round()}'].join(', ')}); '
-    'per card from his own draw, median × e^±σ; $ikkiuchiNoRange: fixed.';
+    '${[for (final s in IkkiuchiToolsTuning.sigmas) '±${ikkiuchiFormReach(s).round()}'].join(', ')}, never past '
+    '±${_form.cutOff.round()}); per card from his own draw, median × e^±σ; $ikkiuchiNoRange: fixed.';
 
 /// A group's name on a band across the page, in tracked capitals.
 class _GroupBand extends StatelessWidget {
@@ -217,7 +220,7 @@ class _FixedRules extends StatelessWidget {
       ),
       (
         'form',
-        'sd ${IkkiuchiTuning.formSd.round()} rating points',
+        'sd ${_form.sd.round()} rating points, drawn again past ±${_form.cutOff.round()}',
         'drawn once a match and added to his rating',
       ),
     ];

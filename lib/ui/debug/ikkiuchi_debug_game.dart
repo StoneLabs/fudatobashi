@@ -9,6 +9,7 @@ import '../../config/config.dart';
 import '../../config/design.dart';
 import '../../domain/ikkiuchi_match.dart';
 import '../../domain/ikkiuchi_side.dart';
+import '../../domain/ikkiuchi_tobi.dart';
 import '../ikkiuchi/ikkiuchi_board_scene.dart';
 import '../ikkiuchi/ikkiuchi_dealer.dart';
 import '../ikkiuchi/ikkiuchi_match_board.dart';
@@ -16,9 +17,10 @@ import '../ikkiuchi/ikkiuchi_match_flow.dart';
 import 'debug_common.dart';
 
 /// The developer's 一騎打ち game: a whole match ([IkkiuchiMatchFlow]) on the
-/// whole screen, its system bars hidden, both sides dealt at random. The
-/// match holds once the 送り札 after each read are made, until 次, and the
-/// card read is marked.
+/// whole screen, its system bars hidden, both sides dealt at random and
+/// Tobi in his form drawn from the deal's seed, as in a match. The match
+/// holds once the 送り札 after each read are made, until 次, and the card
+/// read is marked.
 ///
 /// The developer's tools lie over everything at the board's top left: the
 /// stage, Tobi's rating, and the slider that sets it for the reads to come
@@ -55,7 +57,7 @@ class IkkiuchiDebugGameState extends State<IkkiuchiDebugGame> with SingleTickerP
   static const _off = IkkiuchiTuning.ratingMin - IkkiuchiToolsTuning.ratingStep;
   double? get _rating => _slider < IkkiuchiTuning.ratingMin ? null : _slider;
 
-  /// Tobi's rating the deal laid his side out at.
+  /// Tobi's rating the deal laid his side out at, before his form.
   late double _dealRating = _rating ?? IkkiuchiTuning.ratingMin;
 
   IkkiuchiMatchFlow? _flow;
@@ -104,6 +106,7 @@ class IkkiuchiDebugGameState extends State<IkkiuchiDebugGame> with SingleTickerP
         rating: _dealRating,
         seed: _seed,
         perSide: _perSide,
+        form: IkkiuchiTobi.formFor(_seed),
         onNew: (scene) {
           final old = _flow;
           if (old != null) SchedulerBinding.instance.addPostFrameCallback((_) => old.dispose());

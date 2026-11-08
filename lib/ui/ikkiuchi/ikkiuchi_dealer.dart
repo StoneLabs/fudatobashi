@@ -7,6 +7,7 @@ import '../../config/config.dart';
 import '../../data/poem.dart';
 import '../../domain/ikkiuchi_layout.dart';
 import '../../domain/ikkiuchi_send.dart';
+import '../../domain/ikkiuchi_tobi.dart';
 import '../../state/scope.dart';
 import 'ikkiuchi_board_layout.dart';
 import 'ikkiuchi_board_scene.dart';
@@ -15,11 +16,11 @@ import 'ikkiuchi_tobi_art.dart';
 
 /// Deals 一騎打ち fields of [rows] rows a side, and keeps the board scene of
 /// the one shown. A deal's seed shuffles the deck and gives each side the
-/// cards asked; Tobi's layout lays out both sides, his at his rating and
-/// the player's at one drawn from the seed and [playerSeedOffset]. The
-/// scene is set out afresh when the board's size, its layout, the rating,
-/// the seed or the cards a side change; the cards' faces are drawn once for
-/// them all.
+/// cards asked; Tobi's layout lays out both sides, his at his rating in his
+/// form and the player's at one drawn from the seed and [playerSeedOffset].
+/// The scene is set out afresh when the board's size, its layout, the
+/// rating, his form, the seed or the cards a side change; the cards' faces
+/// are drawn once for them all.
 class IkkiuchiDealer {
   IkkiuchiDealer({required this.rows, required this.playerSeedOffset});
 
@@ -34,7 +35,7 @@ class IkkiuchiDealer {
   final _rig = IkkiuchiTobiArt.rig();
   IkkiuchiCardFaces? _faces;
   IkkiuchiBoardScene? _scene;
-  ({Size size, bool landscape, double rating, int seed, int perSide})? _key;
+  ({Size size, bool landscape, double rating, double form, int seed, int perSide})? _key;
 
   /// The board as drawn now.
   IkkiuchiBoardScene? get scene => _scene;
@@ -49,8 +50,9 @@ class IkkiuchiDealer {
   double playerRating(int seed) => drawnRating(seed + playerSeedOffset);
 
   /// The scene of deal [seed], [perSide] cards a side and Tobi's side at
-  /// [rating], on a board of [size] in its [landscape] layout or not.
-  /// [onNew] gets each scene set out afresh.
+  /// [rating] in his [form] for a match (`IkkiuchiTobi.formFor`), on a
+  /// board of [size] in its [landscape] layout or not. [onNew] gets each
+  /// scene set out afresh.
   IkkiuchiBoardScene sceneFor(
     BuildContext context,
     Size size, {
@@ -58,17 +60,19 @@ class IkkiuchiDealer {
     required double rating,
     required int seed,
     required int perSide,
+    double form = 0,
     ValueChanged<IkkiuchiBoardScene>? onNew,
   }) {
-    final key = (size: size, landscape: landscape, rating: rating, seed: seed, perSide: perSide);
+    final key = (size: size, landscape: landscape, rating: rating, form: form, seed: seed, perSide: perSide);
     final old = _scene;
     if (old != null && key == _key) return old;
     _faces ??= IkkiuchiCardFaces(showNumber: ProgressScope.of(context).settings.showPoemNumber);
     final deck = [for (final p in poems.all) p.id]..shuffle(math.Random(seed));
     final own = deck.sublist(0, perSide), others = deck.sublist(perSide, 2 * perSide);
     final playerSeed = seed + playerSeedOffset;
+    final tobiRating = IkkiuchiTobi.inForm(rating, form);
     final sides = IkkiuchiSides.start(
-      layout.generate(rating: rating, own: own, others: others, rows: rows, seed: seed),
+      layout.generate(rating: tobiRating, own: own, others: others, rows: rows, seed: seed),
       layout.generate(rating: drawnRating(playerSeed), own: others, others: own, rows: rows, seed: playerSeed).start,
     );
     final board = IkkiuchiBoardLayout.of(
@@ -80,7 +84,8 @@ class IkkiuchiDealer {
     );
     if (old != null) SchedulerBinding.instance.addPostFrameCallback((_) => old.dispose());
     _key = key;
-    final scene = _scene = IkkiuchiBoardScene(board, _faces!, sides: sides, tobiRating: rating, seed: seed);
+    final scene =
+        _scene = IkkiuchiBoardScene(board, _faces!, sides: sides, tobiRating: tobiRating, tobiForm: form, seed: seed);
     onNew?.call(scene);
     return scene;
   }

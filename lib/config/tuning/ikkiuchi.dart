@@ -82,9 +82,14 @@ abstract final class IkkiuchiTuning {
   ]);
   static const ({double whip, double coilLunge, double smear}) wildMoves = (whip: 0.4, coilLunge: 0.35, smear: 0.25);
 
-  /// His form for a match: a normal draw with this standard deviation added
-  /// to his rating before every curve is read.
-  static const double formSd = 200;
+  /// His form for a match: a normal draw with standard deviation [formSd],
+  /// drawn again whenever it lands more than [formCutOff] away, added to his
+  /// rating before every curve is read, in ranked and free matches alike.
+  /// It is drawn from the match's seed plus [formSeedOffset], apart from
+  /// the deal.
+  static const double formSd = 100;
+  static const double formCutOff = 200;
+  static const int formSeedOffset = 1299709;
 }
 
 /// Tobi's own fixed layout for a match (`IkkiuchiLayout`): a home spot for every

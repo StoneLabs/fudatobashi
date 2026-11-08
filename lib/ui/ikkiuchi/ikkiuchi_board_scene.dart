@@ -36,7 +36,7 @@ import 'ikkiuchi_send_flow.dart';
 /// comes to rest after the cards went home, or a 送り札 or 並べ替え is
 /// over, [onSettled] is told.
 class IkkiuchiBoardScene extends ChangeNotifier {
-  IkkiuchiBoardScene(this._layout, this.faces, {this.sides, this.tobiRating = 0, int seed = 0})
+  IkkiuchiBoardScene(this._layout, this.faces, {this.sides, this.tobiRating = 0, this.tobiForm = 0, int seed = 0})
       : board = _layout.board(),
         rng = math.Random(seed);
 
@@ -51,6 +51,11 @@ class IkkiuchiBoardScene extends ChangeNotifier {
   /// Tobi's rating, which his choices go by, and the draws they make.
   double tobiRating;
   final math.Random rng;
+
+  /// Tobi's form in the match on this board, added to his rating before
+  /// his curves are read (`IkkiuchiTobi.inForm`); 0 on a board that is no
+  /// match.
+  final double tobiForm;
 
   /// The 送り札 and 並べ替え on this board, and whether either is under way.
   late final send = IkkiuchiSendFlow(this);

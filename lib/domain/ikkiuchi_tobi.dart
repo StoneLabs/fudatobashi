@@ -1,13 +1,27 @@
 import 'dart:math' as math;
 
 import '../config/config.dart';
+import 'truncated_normal.dart';
 
 /// Tobi's values in a match (一騎打ち) at [rating], each read from its curve
-/// in [IkkiuchiTuning]. A match reads them at his rating plus his form.
+/// in [IkkiuchiTuning]. A match reads them at his rating plus his form
+/// ([inForm]).
 class IkkiuchiTobi {
   const IkkiuchiTobi(this.rating);
 
   final double rating;
+
+  /// His form on the day: drawn once a match and added to his rating.
+  static const formDraw = TruncatedNormal(sd: IkkiuchiTuning.formSd, cutOff: IkkiuchiTuning.formCutOff);
+
+  /// His form in the match dealt from [seed], the same each time it is
+  /// dealt.
+  static double formFor(int seed) => formDraw.sample(math.Random(seed + IkkiuchiTuning.formSeedOffset));
+
+  /// [rating] with his [form] added, held within the ratings the curves
+  /// cover.
+  static double inForm(double rating, double form) =>
+      (rating + form).clamp(IkkiuchiTuning.ratingMin, IkkiuchiTuning.ratingMax);
 
   /// Median time to land on a card he knows, ms.
   double get takeMs => IkkiuchiTuning.takeMs.at(rating);

@@ -21,6 +21,7 @@ import 'package:fudatobashi/data/poem.dart';
 import 'package:fudatobashi/db/database.dart';
 import 'package:fudatobashi/domain/ikkiuchi_match.dart';
 import 'package:fudatobashi/domain/ikkiuchi_record.dart';
+import 'package:fudatobashi/domain/ikkiuchi_tobi.dart';
 import 'package:fudatobashi/l10n/ikkiuchi_strings.dart';
 import 'package:fudatobashi/l10n/strings.dart';
 import 'package:fudatobashi/state/progress.dart';
@@ -249,6 +250,30 @@ void main() {
     expect(find.byType(IkkiuchiMatchScreen), findsNothing);
     expect(p.ikkiuchi.matches, hasLength(1), reason: 'recorded once');
     expect([cell(tester, s.ikkiuchiPlayed), cell(tester, s.ikkiuchiLost)], ['1', '1']);
+    await tester.pumpWidget(const SizedBox());
+  });
+
+  testWidgets("Tobi plays a match in his form, drawn from the match's seed", (tester) async {
+    final p = await open(tester);
+    await showPage(tester, p);
+    const setup = IkkiuchiSetup.free(opponentRating: 1300, perSide: 3, memorise: Duration(minutes: 15));
+    for (final seed in [5, 6]) {
+      unawaited(Navigator.of(tester.element(find.byType(IkkiuchiPage)))
+          .push(MangaRoute<void>(builder: (_) => IkkiuchiMatchScreen(setup: setup, seed: seed))));
+      await tester.pump();
+      await tester.pump(Motion.route);
+      final flow = screen(tester).flow!;
+      final form = IkkiuchiTobi.formFor(seed);
+      final inForm = IkkiuchiTobi.inForm(setup.opponentRating, form);
+      expect(form, isNot(0));
+      expect(flow.scene.tobiForm, form, reason: 'seed $seed');
+      expect(flow.scene.tobiRating, inForm, reason: 'his side laid out in his form');
+      await toFirstRead(tester, flow);
+      expect(flow.scene.tobiRating, inForm, reason: 'his reads too');
+      expect(flow.rating, setup.opponentRating, reason: "the setup's rating is before his form");
+      await leave(tester);
+    }
+    expect(IkkiuchiTobi.formFor(5), isNot(IkkiuchiTobi.formFor(6)));
     await tester.pumpWidget(const SizedBox());
   });
 

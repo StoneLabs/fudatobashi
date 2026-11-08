@@ -21,6 +21,7 @@ import 'package:fudatobashi/domain/ikkiuchi_board.dart';
 import 'package:fudatobashi/domain/ikkiuchi_geometry.dart';
 import 'package:fudatobashi/domain/ikkiuchi_match.dart';
 import 'package:fudatobashi/domain/ikkiuchi_side.dart';
+import 'package:fudatobashi/domain/ikkiuchi_tobi.dart';
 import 'package:fudatobashi/state/progress.dart';
 import 'package:fudatobashi/state/scope.dart';
 import 'package:fudatobashi/state/settings.dart';
@@ -302,6 +303,25 @@ void main() {
       await capture(tester, 'game_kaminoku');
       await run(tester, call.decidedAt);
       expect(stage(tester), s.board.called == null && s.readOver ? isNot(IkkiuchiStage.kaminoku) : IkkiuchiStage.waitingForHit);
+      await tester.pumpWidget(const SizedBox());
+    });
+
+    testWidgets('Tobi plays the deal in his form, drawn from its seed as in a match', (tester) async {
+      final p = await open(tester);
+      await show(tester, p, const IkkiuchiDebugGame(seed: 3));
+      final s = flow(tester).scene;
+      final form = IkkiuchiTobi.formFor(3);
+      final inForm = IkkiuchiTobi.inForm(IkkiuchiToolsTuning.ratingStart, form);
+      expect(form, isNot(0));
+      expect(s.tobiForm, form);
+      expect(s.tobiRating, inForm, reason: 'his side laid out in his form');
+      await tester.tap(tool(IkkiuchiToolsStyle.startLabel));
+      await tester.pump(frame);
+      await run(tester, IkkiuchiMatchTuning.greeting.inMilliseconds + 50.0);
+      await run(tester, IkkiuchiMatchTuning.yoka.inMilliseconds + 50.0);
+      expect(stage(tester), IkkiuchiStage.kaminoku);
+      expect(s.tobiRating, inForm, reason: 'his reads too');
+      expect(flow(tester).rating, IkkiuchiToolsTuning.ratingStart, reason: "the slider's rating is before his form");
       await tester.pumpWidget(const SizedBox());
     });
 
