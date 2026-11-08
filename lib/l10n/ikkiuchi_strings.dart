@@ -96,6 +96,13 @@ extension IkkiuchiStrings on S {
   String get ikkiuchiRuleRating => t('ikkiuchiRuleRating');
   String get ikkiuchiRuleCustom => t('ikkiuchiRuleCustom');
 
+  /// Asking before a ranked match is left once it counts: the question,
+  /// what leaving does, and the two answers.
+  String get ikkiuchiLeaveTitle => t('ikkiuchiLeaveTitle');
+  String get ikkiuchiLeaveNote => t('ikkiuchiLeaveNote');
+  String get ikkiuchiLeave => t('ikkiuchiLeave');
+  String get ikkiuchiKeepPlaying => t('ikkiuchiKeepPlaying');
+
   /// How a read ended, its parts joined: あなたの取り・トビのお手つき.
   String ikkiuchiFeedback(List<IkkiuchiCallout> parts) => [
         for (final p in parts)

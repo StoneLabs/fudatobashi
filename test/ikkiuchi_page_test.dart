@@ -46,6 +46,7 @@ import 'package:fudatobashi/state/ikkiuchi_journal.dart';
 import 'package:fudatobashi/state/progress.dart';
 import 'package:fudatobashi/state/scope.dart';
 import 'package:fudatobashi/ui/ikkiuchi/ikkiuchi_match_flow.dart';
+import 'package:fudatobashi/ui/ikkiuchi/ikkiuchi_match_layers.dart';
 import 'package:fudatobashi/ui/ikkiuchi/ikkiuchi_match_screen.dart';
 import 'package:fudatobashi/ui/manga/manga.dart';
 import 'package:fudatobashi/ui/side_trips/trip_sheet.dart';
@@ -525,6 +526,81 @@ void main() {
     expect(p.ikkiuchi.counts(ranked: true), (played: 1, won: 0, lost: 1));
     expect(await journal(tester, p), isNull, reason: 'recording it clears the journal');
     await tester.pumpWidget(const SizedBox());
+  });
+
+  group('leaving', () {
+    /// The system's back.
+    Future<void> back(WidgetTester tester) async {
+      await tester.binding.handlePopRoute();
+      await tester.pump();
+      await tester.pump(Motion.route);
+    }
+
+    Future<void> answer(WidgetTester tester, String button) async {
+      await tester.tap(find.text(button));
+      await tester.pump();
+      await tester.pump(Motion.route);
+    }
+
+    testWidgets('a ranked match after its first read asks first: Keep playing stays, Leave is a loss',
+        (tester) async {
+      final p = await open(tester);
+      await showPage(tester, p);
+      final state = await start(tester, ranked);
+      await toFirstRead(tester, state.flow!);
+      await back(tester);
+      expect(find.text(s.ikkiuchiLeaveTitle), findsOneWidget);
+      expect(find.text(s.ikkiuchiLeaveNote), findsOneWidget);
+      await answer(tester, s.ikkiuchiKeepPlaying);
+      expect(find.byType(IkkiuchiMatchScreen), findsOneWidget, reason: 'still playing');
+      expect(state.saving, isNull);
+
+      await back(tester);
+      await answer(tester, s.ikkiuchiLeave);
+      expect(find.byType(IkkiuchiMatchScreen), findsNothing);
+      await saved(tester, state.saving);
+      expect(p.ikkiuchi.matches.single.result, IkkiuchiResult.gaveUp);
+      await tester.pumpWidget(const SizedBox());
+    });
+
+    testWidgets('終了 after the first read of a ranked match asks first too', (tester) async {
+      final p = await open(tester);
+      await showPage(tester, p);
+      final state = await start(tester, ranked);
+      final flow = state.flow!;
+      await toFirstRead(tester, flow);
+      final end = tester.widget<IkkiuchiColumnLayer>(find.byType(IkkiuchiColumnLayer)).onEnd;
+      end();
+      await tester.pump();
+      await answer(tester, s.ikkiuchiKeepPlaying);
+      expect(flow.stage, isNot(IkkiuchiStage.gameEnd));
+      end();
+      await tester.pump();
+      await answer(tester, s.ikkiuchiLeave);
+      expect(flow.stage, IkkiuchiStage.gameEnd);
+      await saved(tester, state.saving);
+      expect(p.ikkiuchi.matches.single.result, IkkiuchiResult.gaveUp);
+      await tester.pump(IkkiuchiScreenTuning.leaveAfter);
+      await tester.pump(Motion.route);
+      await tester.pumpWidget(const SizedBox());
+    });
+
+    testWidgets('before the first read, and in free play, back leaves without asking', (tester) async {
+      final p = await open(tester);
+      await showPage(tester, p);
+      await start(tester, ranked);
+      await back(tester);
+      expect(find.text(s.ikkiuchiLeaveTitle), findsNothing);
+      expect(find.byType(IkkiuchiMatchScreen), findsNothing);
+
+      final free = await start(tester, IkkiuchiSetup.firstFree);
+      await toFirstRead(tester, free.flow!);
+      await back(tester);
+      expect(find.text(s.ikkiuchiLeaveTitle), findsNothing);
+      expect(find.byType(IkkiuchiMatchScreen), findsNothing);
+      expect(p.ikkiuchi.matches, isEmpty);
+      await tester.pumpWidget(const SizedBox());
+    });
   });
 
   group('renders', skip: !renderScreens, () {

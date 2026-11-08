@@ -161,20 +161,9 @@ class _AnkirenScreenState extends State<AnkirenScreen> with AnkirenPlay {
     unawaited(_finish());
   }
 
-  Future<bool> _confirmLeave() async {
+  Future<bool> _confirmLeave() {
     final s = S.of(context);
-    final leave = await showDialog<bool>(
-      context: context,
-      builder: (c) => AlertDialog(
-        title: Text(s.ankirenLeaveTitle),
-        content: Text(s.ankirenLeaveNote),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(c, false), child: Text(s.cancel)),
-          FilledButton(onPressed: () => Navigator.pop(c, true), child: Text(s.ankirenLeave)),
-        ],
-      ),
-    );
-    return leave == true;
+    return confirmLeaving(context, title: s.ankirenLeaveTitle, note: s.ankirenLeaveNote, stay: s.cancel, leave: s.ankirenLeave);
   }
 
   Future<void> _finish() async {

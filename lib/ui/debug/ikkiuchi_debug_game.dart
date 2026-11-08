@@ -134,7 +134,7 @@ class IkkiuchiDebugGameState extends State<IkkiuchiDebugGame> with SingleTickerP
           final flow = _flowFor(box.biggest);
           return IkkiuchiDealer.turned(
             Stack(children: [
-              Positioned.fill(child: IkkiuchiMatchBoard(flow)),
+              Positioned.fill(child: IkkiuchiMatchBoard(flow, onEnd: flow.end)),
               _tools(flow),
             ]),
             landscape: _landscape,

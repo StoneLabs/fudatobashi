@@ -1732,5 +1732,9 @@
   "ikkiuchiRuleRanked": "Ranked is always {0} cards a side and {1} of memory time against Tobi. Only a win or a loss counts, and leaving after the first card is read is a loss.",
   "ikkiuchiRulePlacement": "Your first {0} ranked matches place you, starting at {1}: Tobi plays at your estimate, and each win moves it up and each loss down, a little less each time.",
   "ikkiuchiRuleRating": "After that, Tobi plays each match near your rating. Beating a stronger Tobi gains more, and losing to a weaker one costs more.",
-  "ikkiuchiRuleCustom": "Custom: choose Tobi's rating, the cards a side and the memory time. It is not rated."
+  "ikkiuchiRuleCustom": "Custom: choose Tobi's rating, the cards a side and the memory time. It is not rated.",
+  "ikkiuchiLeaveTitle": "Leave the match?",
+  "ikkiuchiLeaveNote": "It counts as a loss.",
+  "ikkiuchiLeave": "Leave",
+  "ikkiuchiKeepPlaying": "Keep playing"
 }

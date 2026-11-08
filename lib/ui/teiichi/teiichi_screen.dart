@@ -389,20 +389,9 @@ class _TeiichiScreenState extends State<TeiichiScreen> with AnkirenPlay {
     return _confirm(s.teiichiForfeitTitle, s.teiichiForfeitNote);
   }
 
-  Future<bool> _confirm(String title, String note) async {
+  Future<bool> _confirm(String title, String note) {
     final s = S.of(context);
-    final leave = await showDialog<bool>(
-      context: context,
-      builder: (c) => AlertDialog(
-        title: Text(title),
-        content: Text(note),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(c, false), child: Text(s.cancel)),
-          FilledButton(onPressed: () => Navigator.pop(c, true), child: Text(s.ankirenLeave)),
-        ],
-      ),
-    );
-    return leave == true;
+    return confirmLeaving(context, title: title, note: note, stay: s.cancel, leave: s.ankirenLeave);
   }
 
   Future<void> _finish() async {

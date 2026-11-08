@@ -17,6 +17,7 @@ export 'idle_motion.dart';
 export 'impact.dart';
 export 'labels.dart';
 export 'lang_toggle.dart';
+export 'leave_dialog.dart';
 export 'lettering.dart';
 export 'lines.dart';
 export 'link_row.dart';

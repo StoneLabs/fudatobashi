@@ -10,6 +10,8 @@ import '../../config/design.dart';
 import '../../domain/ikkiuchi_match.dart';
 import '../../domain/ikkiuchi_record.dart';
 import '../../domain/ikkiuchi_tobi.dart';
+import '../../l10n/ikkiuchi_strings.dart';
+import '../../l10n/strings.dart';
 import '../../state/progress.dart';
 import '../../state/scope.dart';
 import '../manga/manga.dart';
@@ -38,6 +40,10 @@ Future<void> startIkkiuchiMatch(BuildContext context, IkkiuchiSetup setup, {bool
 /// and again after every read, a ranked match is journalled as it stands,
 /// so that one the app never gets to record is a forfeit on the next start
 /// with its reads and cards left ([Progress.journalIkkiuchi]).
+///
+/// Leaving a ranked match once it counts, by the system's back or 終了,
+/// asks first ([confirmLeaving]); before its first read, and in free play,
+/// it leaves at once.
 ///
 /// Until the screen stands in landscape the board lies turned in it; a
 /// change of its size deals the same match afresh while the memory time
@@ -176,15 +182,45 @@ class IkkiuchiMatchScreenState extends State<IkkiuchiMatchScreen> with SingleTic
     _flow?.advance(dt.inMicroseconds / Duration.microsecondsPerMillisecond);
   }
 
+  /// Whether leaving now gives up a ranked match that counts: from its
+  /// first read until it is over.
+  bool get _leavingCounts {
+    final flow = _flow;
+    return widget.setup.ranked && !widget.guest && !_over && flow != null && flow.playBegun;
+  }
+
+  Future<bool> _confirmLeave() {
+    final s = S.of(context);
+    return confirmLeaving(context,
+        title: s.ikkiuchiLeaveTitle, note: s.ikkiuchiLeaveNote, stay: s.ikkiuchiKeepPlaying, leave: s.ikkiuchiLeave);
+  }
+
+  /// 終了: ends the match, once the player says so when it counts.
+  Future<void> _end() async {
+    if (_leavingCounts && !await _confirmLeave()) return;
+    if (mounted) _flow?.end();
+  }
+
+  /// The system's back while leaving counts: leaves once the player says so.
+  Future<void> _back() async {
+    if (await _confirmLeave() && mounted) Navigator.pop(context);
+  }
+
   @override
-  Widget build(BuildContext context) => Material(
-        color: IkkiuchiBoardStyle.ground,
-        child: LayoutBuilder(builder: (context, box) {
-          final room = box.biggest;
-          final flow = _flowFor(room);
-          final size = flow.scene.layout.size;
-          final board = SizedBox(width: size.x, height: size.y, child: IkkiuchiMatchBoard(flow));
-          return FittedBox(child: room.width >= room.height ? board : RotatedBox(quarterTurns: 1, child: board));
-        }),
+  Widget build(BuildContext context) => PopScope(
+        canPop: !_leavingCounts,
+        onPopInvokedWithResult: (didPop, _) {
+          if (!didPop) unawaited(_back());
+        },
+        child: Material(
+          color: IkkiuchiBoardStyle.ground,
+          child: LayoutBuilder(builder: (context, box) {
+            final room = box.biggest;
+            final flow = _flowFor(room);
+            final size = flow.scene.layout.size;
+            final board = SizedBox(width: size.x, height: size.y, child: IkkiuchiMatchBoard(flow, onEnd: _end));
+            return FittedBox(child: room.width >= room.height ? board : RotatedBox(quarterTurns: 1, child: board));
+          }),
+        ),
       );
 }
