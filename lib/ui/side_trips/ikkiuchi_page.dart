@@ -9,6 +9,8 @@ import '../../l10n/side_trip_strings.dart';
 import '../../l10n/strings.dart';
 import '../../state/ikkiuchi_records.dart';
 import '../../state/scope.dart';
+import '../history/history_filter.dart';
+import '../history/history_screen.dart';
 import '../ikkiuchi/ikkiuchi_match_screen.dart';
 import '../manga/manga.dart';
 import '../play/time_format.dart';
@@ -20,7 +22,8 @@ import 'side_trip_panels.dart';
 Future<void> openIkkiuchiPage(BuildContext context) =>
     Navigator.of(context).push(MangaRoute<void>(builder: (_) => const IkkiuchiPage()));
 
-/// 一騎打ち's page, on the side trips' page frame: the matches played, won
+/// 一騎打ち's page, on the side trips' page frame, with History beside the
+/// back button: the matches played, won
 /// and lost; ranked, chained up as coming soon; then free play's setup,
 /// the cards each side is dealt, the memory time and Tobi's rating, each a
 /// stepper through its choices ([IkkiuchiFreeTuning]), and the burst that
@@ -83,6 +86,10 @@ class _IkkiuchiPageState extends State<IkkiuchiPage> {
                     MangaHeader(
                       title: ScreenTitle(s.hallName, sub: s.hallTag),
                       actions: [
+                        InkIconButton(
+                            icon: IconArt.history,
+                            semanticLabel: s.history,
+                            onTap: () => openHistoryOn(context, HistoryList.ikkiuchi)),
                         InkIconButton(icon: IconArt.back, semanticLabel: s.back, onTap: () => Navigator.maybePop(context)),
                       ],
                     ),

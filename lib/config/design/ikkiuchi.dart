@@ -403,3 +403,8 @@ abstract final class IkkiuchiPageLayout {
   static const double stepperValueFont = 24;
   static const EdgeInsets burstMargin = EdgeInsets.fromLTRB(6, 10, 6, 6);
 }
+
+/// A recorded match's page in History: the summary's facts to a row.
+abstract final class IkkiuchiHistoryStyle {
+  static const int factsPerRow = 3;
+}

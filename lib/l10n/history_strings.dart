@@ -50,6 +50,7 @@ extension HistoryStrings on S {
   String get historyMainTab => t('historyMainTab');
   String get historyAnkirenTab => t('historyAnkirenTab');
   String get historyTeiichiTab => t('historyTeiichiTab');
+  String get historyIkkiuchiTab => t('historyIkkiuchiTab');
   String get historyFilterLabel => t('historyFilterLabel');
   String get historyLast7 => t('historyLast7');
   String historyStreak(int days) => t(countKey('historyStreak', days));
@@ -93,6 +94,7 @@ extension HistoryStrings on S {
   String get filterMainNote => t('filterMainNote');
   String get filterAnkirenNote => t('filterAnkirenNote');
   String get filterTeiichiNote => t('filterTeiichiNote');
+  String get filterIkkiuchiNote => t('filterIkkiuchiNote');
   String get filterToday => t('filterToday');
   String get filterWeek => t('filterWeek');
   String get filterMonth => t('filterMonth');

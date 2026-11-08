@@ -3,9 +3,11 @@ import 'package:flutter/material.dart';
 
 import '../../config/design.dart';
 import '../../config/vector_art.dart';
-import '../../db/database.dart' show SideTripRun;
+import '../../db/database.dart' show IkkiuchiMatchRow, SideTripRun;
+import '../../domain/ikkiuchi_record.dart';
 import '../../domain/side_trips.dart';
 import '../../l10n/history_strings.dart';
+import '../../l10n/ikkiuchi_strings.dart';
 import '../../l10n/strings.dart';
 import '../../state/past_runs.dart';
 import '../../state/play_config.dart';
@@ -37,7 +39,8 @@ enum HistoryWhen {
 enum HistoryList {
   main,
   ankiren,
-  teiichi;
+  teiichi,
+  ikkiuchi;
 
   /// [trip]'s list.
   static HistoryList of(SideTrip trip) => switch (trip) {
@@ -95,12 +98,14 @@ class HistoryFilter {
     this.modes = const {},
     this.games = const {},
     this.placings = const {},
+    this.matches = const {},
     this.when = HistoryWhen.all,
   });
 
   final Set<PlayMode> modes;
   final Set<AnkirenKind> games;
   final Set<TeiichiKind> placings;
+  final Set<IkkiuchiResult> matches;
   final HistoryWhen when;
 
   /// Choices made on [list]'s tab, for the filter button's count.
@@ -109,6 +114,7 @@ class HistoryFilter {
         HistoryList.main => modes.length,
         HistoryList.ankiren => games.length,
         HistoryList.teiichi => placings.length,
+        HistoryList.ikkiuchi => matches.length,
       } +
       (when == HistoryWhen.all ? 0 : 1);
 
@@ -123,12 +129,21 @@ class HistoryFilter {
   bool keepsPlacing(SideTripRun run, DateTime day, DateTime today) =>
       (placings.isEmpty || placings.contains(TeiichiKind.of(run))) && _recent(day, today);
 
-  HistoryFilter copyWith(
-          {Set<PlayMode>? modes, Set<AnkirenKind>? games, Set<TeiichiKind>? placings, HistoryWhen? when}) =>
+  bool keepsMatch(IkkiuchiMatchRow match, DateTime day, DateTime today) =>
+      (matches.isEmpty || matches.contains(match.result)) && _recent(day, today);
+
+  HistoryFilter copyWith({
+    Set<PlayMode>? modes,
+    Set<AnkirenKind>? games,
+    Set<TeiichiKind>? placings,
+    Set<IkkiuchiResult>? matches,
+    HistoryWhen? when,
+  }) =>
       HistoryFilter(
         modes: modes ?? this.modes,
         games: games ?? this.games,
         placings: placings ?? this.placings,
+        matches: matches ?? this.matches,
         when: when ?? this.when,
       );
 }
@@ -211,6 +226,7 @@ class _FilterSheetState extends State<_FilterSheet> {
                     HistoryList.main => s.filterMainNote,
                     HistoryList.ankiren => s.filterAnkirenNote,
                     HistoryList.teiichi => s.filterTeiichiNote,
+                    HistoryList.ikkiuchi => s.filterIkkiuchiNote,
                   },
                 ),
                 Wrap(
@@ -235,6 +251,13 @@ class _FilterSheetState extends State<_FilterSheet> {
                               selected: _filter.placings.contains(k),
                               onTap: () =>
                                   setState(() => _filter = _filter.copyWith(placings: _toggled(_filter.placings, k)))),
+                      ],
+                    HistoryList.ikkiuchi => [
+                        for (final r in IkkiuchiResult.values)
+                          FilterChipBox(s.ikkiuchiResult(r),
+                              selected: _filter.matches.contains(r),
+                              onTap: () =>
+                                  setState(() => _filter = _filter.copyWith(matches: _toggled(_filter.matches, r)))),
                       ],
                   },
                 ),

@@ -22,6 +22,7 @@ abstract final class HistoryLooks {
   static const training = KindLook(Palette.land);
   static const ankiren = KindLook(Palette.pink);
   static const teiichi = KindLook(Palette.sea);
+  static const ikkiuchi = KindLook(Palette.orange);
 }
 
 /// History's run pages and rows: sections, fact grids, result badges.

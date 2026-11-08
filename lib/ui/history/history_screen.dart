@@ -4,8 +4,9 @@ import 'package:flutter/material.dart';
 
 import '../../config/design.dart';
 import '../../config/vector_art.dart';
-import '../../db/database.dart' show SideTripRun;
+import '../../db/database.dart' show IkkiuchiMatchRow, SideTripRun;
 import '../../domain/ankiren_review.dart';
+import '../../domain/ikkiuchi_record.dart';
 import '../../domain/level_ladder.dart';
 import '../../domain/side_trips.dart';
 import '../../domain/teiichi_review.dart';
@@ -13,6 +14,7 @@ import '../../domain/trip_rating.dart';
 import '../../l10n/ankiren_strings.dart';
 import '../../l10n/history_strings.dart';
 import '../../l10n/home_strings.dart';
+import '../../l10n/ikkiuchi_strings.dart';
 import '../../l10n/results_strings.dart';
 import '../../l10n/run_strings.dart';
 import '../../l10n/strings.dart';
@@ -27,11 +29,15 @@ import '../stats/practice_calendar.dart';
 import 'ankiren_game_page.dart';
 import 'history_filter.dart';
 import 'history_widgets.dart';
+import 'ikkiuchi_match_page.dart';
 import 'run_page.dart';
 import 'teiichi_game_page.dart';
 
 /// Opens History as a page of its own on [trip]'s tab, with a back button.
-Future<void> openTripHistory(BuildContext context, SideTrip trip) =>
+Future<void> openTripHistory(BuildContext context, SideTrip trip) => openHistoryOn(context, HistoryList.of(trip));
+
+/// Opens History as a page of its own on [list]'s tab, with a back button.
+Future<void> openHistoryOn(BuildContext context, HistoryList list) =>
     Navigator.of(context).push(MangaRoute<void>(
       builder: (context) => Scaffold(
         body: Stack(children: [
@@ -39,7 +45,7 @@ Future<void> openTripHistory(BuildContext context, SideTrip trip) =>
           SafeArea(
             child: Padding(
               padding: const EdgeInsets.only(top: HeaderStyle.topGap),
-              child: HistoryScreen(trip: trip, onBack: () => Navigator.maybePop(context)),
+              child: HistoryScreen(list: list, onBack: () => Navigator.maybePop(context)),
             ),
           ),
         ]),
@@ -47,14 +53,14 @@ Future<void> openTripHistory(BuildContext context, SideTrip trip) =>
     ));
 
 /// The History tab: the last 7 days and the streak (D2) over three swiped
-/// lists (D3), the main game's runs by day, 暗記練's games and 定位置's,
-/// narrowed by the filter sheet (D43). A run opens its own page. On
-/// [trip]'s tab at first if given; as a page of its own the header has a
-/// back button ([onBack]).
+/// lists (D3), the main game's runs by day, 暗記練's games, 定位置's and
+/// 一騎打ち's matches, narrowed by the filter sheet (D43). A run opens its
+/// own page. On [list]'s tab at first if given; as a page of its own the
+/// header has a back button ([onBack]).
 class HistoryScreen extends StatefulWidget {
-  const HistoryScreen({super.key, this.trip, this.onBack});
+  const HistoryScreen({super.key, this.list = HistoryList.main, this.onBack});
 
-  final SideTrip? trip;
+  final HistoryList list;
   final VoidCallback? onBack;
 
   @override
@@ -63,10 +69,7 @@ class HistoryScreen extends StatefulWidget {
 
 class _HistoryScreenState extends State<HistoryScreen> {
   var _filter = const HistoryFilter();
-  late var _list = switch (widget.trip) {
-    final trip? => HistoryList.of(trip),
-    null => HistoryList.main,
-  };
+  late var _list = widget.list;
 
   @override
   Widget build(BuildContext context) {
@@ -77,6 +80,8 @@ class _HistoryScreenState extends State<HistoryScreen> {
     final runs = progress.pastRuns;
     final games = progress.ankirenRuns;
     final placings = progress.teiichiRuns;
+    final matches = progress.ikkiuchi.matches.reversed.toList();
+    DateTime dayOfMatch(IkkiuchiMatchRow m) => progress.dayAt(m.startedAt).date;
     List<PastRun> keptRuns(HistoryFilter f) => [
           for (final r in runs)
             if (f.keepsRun(r, progress.dayOf(r.row), today)) r,
@@ -89,10 +94,15 @@ class _HistoryScreenState extends State<HistoryScreen> {
           for (final g in placings)
             if (f.keepsPlacing(g, progress.dayOfGame(g), today)) g,
         ];
+    List<IkkiuchiMatchRow> keptMatches(HistoryFilter f) => [
+          for (final m in matches)
+            if (f.keepsMatch(m, dayOfMatch(m), today)) m,
+        ];
     int kept(HistoryFilter f) => switch (_list) {
           HistoryList.main => keptRuns(f).length,
           HistoryList.ankiren => keptGames(f).length,
           HistoryList.teiichi => keptPlacings(f).length,
+          HistoryList.ikkiuchi => keptMatches(f).length,
         };
     final active = _filter.activeOn(_list);
     return Padding(
@@ -165,6 +175,17 @@ class _HistoryScreenState extends State<HistoryScreen> {
                       empty: placings.isEmpty ? s.noRunsYet : s.historyNoMatch,
                     );
                   },
+                ),
+                SwipeTab(
+                  label: s.historyIkkiuchiTab,
+                  accent: HistoryLooks.ikkiuchi.accent,
+                  sub: s.sub?.historyIkkiuchiTab,
+                  builder: (_) => _DayList<IkkiuchiMatchRow>(
+                    items: keptMatches(_filter),
+                    dayOf: dayOfMatch,
+                    rowOf: _MatchRow.new,
+                    empty: matches.isEmpty ? s.noRunsYet : s.historyNoMatch,
+                  ),
                 ),
               ],
             ),
@@ -714,6 +735,40 @@ class _PlacingRow extends StatelessWidget {
       value: game.ranked ? '${run.score}' : formatMinutes(game.placing),
       caption: game.ranked ? s.historyPointsCaption : s.historyPlacingCaption,
       onTap: () => openTeiichiGame(context, run),
+    );
+  }
+}
+
+/// A 一騎打ち match: how it ended, its setup and faults, and the cards
+/// left on each side, the player's first.
+class _MatchRow extends StatelessWidget {
+  const _MatchRow(this.match);
+  final IkkiuchiMatchRow match;
+
+  @override
+  Widget build(BuildContext context) {
+    final s = S.of(context);
+    final result = s.ikkiuchiResult(match.result);
+    return _ListRow(
+      accent: HistoryLooks.ikkiuchi.accent,
+      startedAt: match.startedAt,
+      tags: [
+        _TagLine([
+          KindTag(s.freePlay, look: HistoryLooks.ikkiuchi),
+          switch (match.result) {
+            IkkiuchiResult.won => ResultBadge(result, color: Palette.landSoft, cheer: true),
+            IkkiuchiResult.lost || IkkiuchiResult.gaveUp => ResultBadge(result, muted: true),
+          },
+        ]),
+      ],
+      line: Text([
+        s.ikkiuchiSetupLine(
+            match.perSide, formatMinutes(Duration(milliseconds: match.memoriseMs)), match.tobiRating.round()),
+        s.ikkiuchiFaultsLine(match.playerFaults, match.tobiFaults),
+      ].join(' · ')),
+      value: '${match.playerLeft}–${match.tobiLeft}',
+      caption: s.ikkiuchiLeftCaption,
+      onTap: () => openIkkiuchiMatch(context, match),
     );
   }
 }

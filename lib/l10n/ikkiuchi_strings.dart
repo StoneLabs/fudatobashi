@@ -1,10 +1,12 @@
 import '../domain/field_parts.dart';
 import '../domain/ikkiuchi_match.dart';
+import '../domain/ikkiuchi_record.dart';
 import 'strings.dart';
 
 /// Strings of 一騎打ち: its page, the memory time, the greetings, the 送り札 on the band, Tobi's word as his card
 /// waits, the names of the places a card may go on the player's side, the
-/// game column, a からふだ's tag, and how a read ended.
+/// game column, a からふだ's tag, how a read ended, and History's list of
+/// matches and a match's page.
 extension IkkiuchiStrings on S {
   /// The band while a card is sent: its title, and what the player does,
   /// sending one of theirs or placing Tobi's; in landscape the shorter
@@ -96,4 +98,38 @@ extension IkkiuchiStrings on S {
 
   /// The name on the open middle's dashed spot.
   String get ikkiuchiOpenMiddle => t('ikkiuchiOpenMiddle');
+
+  /// How a match ended: won, lost or given up.
+  String ikkiuchiResult(IkkiuchiResult r) => switch (r) {
+        IkkiuchiResult.won => ikkiuchiWon,
+        IkkiuchiResult.lost => ikkiuchiLost,
+        IkkiuchiResult.gaveUp => t('ikkiuchiGaveUp'),
+      };
+
+  /// History's row of a match: its setup ([memory] as m:ss), its faults,
+  /// and the caption under the cards left on each side.
+  String ikkiuchiSetupLine(int perSide, String memory, int rating) =>
+      f('ikkiuchiSetupLine', [perSide, memory, rating]);
+  String ikkiuchiFaultsLine(int you, int tobi) => f('ikkiuchiFaultsLine', [you, tobi]);
+  String get ikkiuchiLeftCaption => t('ikkiuchiLeftCaption');
+
+  /// A match's page: the summary's facts.
+  String get ikkiuchiResultLabel => t('ikkiuchiResultLabel');
+  String get ikkiuchiYourLeft => t('ikkiuchiYourLeft');
+  String get ikkiuchiTobiLeft => t('ikkiuchiTobiLeft');
+  String get ikkiuchiMatchTime => t('ikkiuchiMatchTime');
+  String get ikkiuchiYourFaults => t('ikkiuchiYourFaults');
+  String get ikkiuchiTobiFaults => t('ikkiuchiTobiFaults');
+
+  /// A match's page: the reads' panel, its table's heads, a side's faults
+  /// on a read, the caption under it, and the line for a match with none.
+  String get ikkiuchiReadsTitle => t('ikkiuchiReadsTitle');
+  String ikkiuchiReadsNote(int n) => f(countKey('ikkiuchiReadsNote', n), [n]);
+  String get ikkiuchiColNumber => t('ikkiuchiColNumber');
+  String get ikkiuchiColCard => t('ikkiuchiColCard');
+  String get ikkiuchiColTaken => t('ikkiuchiColTaken');
+  String get ikkiuchiTied => t('ikkiuchiTied');
+  String ikkiuchiFaultCount(int n) => f(countKey('ikkiuchiFaultCount', n), [n]);
+  String get ikkiuchiReadsCaption => t('ikkiuchiReadsCaption');
+  String get ikkiuchiNoReads => t('ikkiuchiNoReads');
 }

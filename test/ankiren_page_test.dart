@@ -40,6 +40,7 @@ import 'package:fudatobashi/state/scope.dart';
 import 'package:fudatobashi/ui/ankiren/ankiren_field_preview.dart';
 import 'package:fudatobashi/ui/ankiren/ankiren_screen.dart';
 import 'package:fudatobashi/ui/ankiren/ankiren_strikes.dart';
+import 'package:fudatobashi/ui/history/history_filter.dart';
 import 'package:fudatobashi/ui/history/history_screen.dart';
 import 'package:fudatobashi/ui/home/home_widgets.dart';
 import 'package:fudatobashi/ui/manga/manga.dart';
@@ -526,7 +527,7 @@ void main() {
       await showPage(tester, p, usersPhone);
       await tapAndSettle(tester, historyButton(s), Motion.route);
       final history = tester.widget<HistoryScreen>(find.byType(HistoryScreen));
-      expect(history.trip, SideTrip.ankiren);
+      expect(history.list, HistoryList.ankiren);
       expect(find.textContaining(s.sideTripRanked), findsWidgets);
       expect(tester.takeException(), isNull);
       await tester.pumpWidget(const SizedBox());

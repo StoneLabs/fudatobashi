@@ -41,6 +41,7 @@ import 'package:fudatobashi/ui/debug/ankiren_graphs.dart';
 import 'package:fudatobashi/ui/debug/debug_common.dart';
 import 'package:fudatobashi/ui/debug/teiichi_score_readout.dart';
 import 'package:fudatobashi/ui/debug/teiichi_tools_page.dart';
+import 'package:fudatobashi/ui/history/history_filter.dart';
 import 'package:fudatobashi/ui/history/history_screen.dart';
 import 'package:fudatobashi/ui/home/home_widgets.dart';
 import 'package:fudatobashi/ui/history/teiichi_game_page.dart';
@@ -617,7 +618,7 @@ void main() {
           }
 
           final played = p.sideTrips.runsOf(trip).last;
-          await show(tester, p, () => Scaffold(body: SafeArea(child: HistoryScreen(trip: trip, onBack: () {}))));
+          await show(tester, p, () => Scaffold(body: SafeArea(child: HistoryScreen(list: HistoryList.of(trip), onBack: () {}))));
           await tester.pump(Motion.route);
           await tester.pump(const Duration(seconds: 1));
           expect(tester.takeException(), isNull);

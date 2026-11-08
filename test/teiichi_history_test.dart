@@ -36,6 +36,7 @@ import 'package:fudatobashi/l10n/teiichi_strings.dart';
 import 'package:fudatobashi/state/past_runs.dart';
 import 'package:fudatobashi/state/progress.dart';
 import 'package:fudatobashi/state/scope.dart';
+import 'package:fudatobashi/ui/history/history_filter.dart';
 import 'package:fudatobashi/ui/history/history_screen.dart';
 import 'package:fudatobashi/ui/history/history_widgets.dart';
 import 'package:fudatobashi/ui/history/karafuda_panel.dart';
@@ -160,7 +161,7 @@ void main() {
     await tester.tap(find.byWidgetPredicate((w) => w is InkIconButton && w.semanticLabel == s.history));
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 600));
-    expect(tester.widget<HistoryScreen>(find.byType(HistoryScreen)).trip, SideTrip.teiichi);
+    expect(tester.widget<HistoryScreen>(find.byType(HistoryScreen)).list, HistoryList.teiichi);
   }
 
   group('a recorded game', () {
