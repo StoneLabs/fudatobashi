@@ -5,6 +5,7 @@ import 'package:flutter/widgets.dart';
 
 import '../../config/design.dart';
 import '../../config/vector_art.dart';
+import '../../domain/ikkiuchi_record.dart';
 import '../../domain/rating.dart';
 import '../../domain/side_trips.dart';
 import '../../l10n/ankiren_strings.dart';
@@ -12,6 +13,7 @@ import '../../l10n/ikkiuchi_strings.dart';
 import '../../l10n/ranked_strings.dart';
 import '../../l10n/side_trip_strings.dart';
 import '../../l10n/strings.dart';
+import '../../state/ikkiuchi_records.dart';
 import '../home/home_screen.dart';
 import '../home/home_widgets.dart';
 import '../manga/manga.dart';
@@ -94,26 +96,41 @@ class _Lettering extends StatelessWidget {
       );
 }
 
-/// 一騎打ち's entry in the hall: its name lettered over a small panel saying
-/// what it is, and the burst that opens its page ([onOpen]); while the hall
-/// is shut ([lock]), the cards known so far out of what opens it instead,
-/// as a shut trip's panel shows them.
+/// 一騎打ち's entry in the hall, laid out as a side trip's: its name lettered
+/// with its class stamped beside it once rated, over a panel with the
+/// rating and its last change (or "unranked") and the wins of the last
+/// ranked matches, and the burst that opens its page ([onOpen]); while the
+/// hall is shut ([lock]), the cards known so far out of what opens it
+/// instead, as a shut trip's panel shows them.
 class IkkiuchiEntry extends StatelessWidget {
-  const IkkiuchiEntry({super.key, required this.lock, required this.onOpen});
+  const IkkiuchiEntry({super.key, required this.lock, required this.records, required this.onOpen});
 
   final SideTripLock? lock;
+  final IkkiuchiRecords records;
   final VoidCallback onOpen;
 
   @override
   Widget build(BuildContext context) {
     final s = S.of(context);
     final lock = this.lock;
+    final rating = records.rating;
     return _HeadOver(
       head: MediaQuery.withClampedTextScaling(
         maxScaleFactor: SideTripsLayout.letteringMaxScale,
-        child: Align(
-          alignment: Alignment.bottomLeft,
-          child: _Lettering(s.hallName, s.hallTag, fontSize: SideTripsLayout.letteringFont),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          crossAxisAlignment: CrossAxisAlignment.end,
+          children: [
+            Flexible(child: _Lettering(s.hallName, s.hallTag, fontSize: SideTripsLayout.letteringFont)),
+            if (lock == null && rating != null)
+              Padding(
+                padding: const EdgeInsets.only(bottom: SideTripsLayout.stampLift),
+                child: Transform.translate(
+                  offset: const Offset(SideTripsLayout.stampHang, 0),
+                  child: _RankStamp(Rating.bandOf(rating)),
+                ),
+              ),
+          ],
         ),
       ),
       body: MangaPanel(
@@ -122,12 +139,10 @@ class IkkiuchiEntry extends StatelessWidget {
         child: lock != null
             ? _LockedRows(lock)
             : Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-                Padding(
-                  padding: SideTripsLayout.soonPadding,
-                  child: Text(
-                    s.ikkiuchiEntryLine,
-                    style: const TextStyle(fontWeight: Weights.bold, fontSize: SideTripsLayout.soonLineFont),
-                  ),
+                _StatsRow(
+                  semanticLabel: s.ikkiuchiPageTitle,
+                  onTap: onOpen,
+                  children: (_RatingStat(rating, records.ratingChange), _wins(context)),
                 ),
                 Padding(
                   padding: SideTripsLayout.burstMargin,
@@ -135,6 +150,26 @@ class IkkiuchiEntry extends StatelessWidget {
                 ),
               ]),
       ),
+    );
+  }
+
+  /// The wins of the last [IkkiuchiPageLayout.formMatches] ranked matches
+  /// over how many; a dash before the first.
+  Widget _wins(BuildContext context) {
+    final last = records.lastRanked(IkkiuchiPageLayout.formMatches);
+    final wins = last.where((m) => m.result == IkkiuchiResult.won).length;
+    const value = TextStyle(fontFamily: Fonts.display, fontSize: SideTripsLayout.valueFont, height: 1);
+    return _Stat(
+      label: _Label(S.of(context).ikkiuchiWins),
+      value: last.isEmpty
+          ? const Text(IkkiuchiPageLayout.missing, style: value)
+          : Text.rich(
+              TextSpan(children: [
+                TextSpan(text: '$wins'),
+                TextSpan(text: '/${last.length}', style: const TextStyle(fontSize: SideTripsLayout.labelFont)),
+              ]),
+              style: value,
+            ),
     );
   }
 }
@@ -303,7 +338,7 @@ class SideTripBody extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 _StatsRow(
-                  entry,
+                  semanticLabel: S.of(context).tripOpenPage(entry.trip),
                   onTap: onOpen,
                   children: _stats(context, entry),
                 ),
@@ -322,29 +357,46 @@ class SideTripBody extends StatelessWidget {
   static (Widget, Widget) _stats(BuildContext context, SideTripEntry entry) {
     final s = S.of(context);
     final rating = entry.rating;
-    final change = entry.ratingChange?.round() ?? 0;
     final level = entry.nextLevel;
     const value = TextStyle(fontFamily: Fonts.display, fontSize: SideTripsLayout.valueFont, height: 1);
     return (
-      _Stat(
-        label: _Label(s.rating),
-        value: rating == null
-            ? Text(s.sideTripUnranked,
-                style: const TextStyle(fontFamily: Fonts.display, fontSize: SideTripsLayout.unrankedFont, height: 1))
-            : Row(mainAxisSize: MainAxisSize.min, children: [
-                Text('${rating.round()}', style: value),
-                if (change != 0) ...[
-                  const SizedBox(width: SideTripsLayout.valueGap),
-                  RatingChangeTag(change),
-                ],
-              ]),
-      ),
+      _RatingStat(rating, entry.ratingChange),
       _Stat(
         label: _Label(s.sideTripNextLevel),
         value: Text(level == null ? s.sideTripAllClear : s.ankirenLevelTag(level), style: value),
       ),
     );
   }
+}
+
+/// The ranked [rating] and the [change] the last ranked game made to it,
+/// or "unranked" before there is one.
+class _RatingStat extends StatelessWidget {
+  const _RatingStat(this.rating, this.change);
+
+  final double? rating;
+  final double? change;
+
+  @override
+  Widget build(BuildContext context) {
+    final rating = this.rating;
+    final change = this.change?.round() ?? 0;
+    return _Stat(
+      label: _Label(S.of(context).rating),
+      value: rating == null
+          ? Text(S.of(context).sideTripUnranked,
+              style: const TextStyle(fontFamily: Fonts.display, fontSize: SideTripsLayout.unrankedFont, height: 1))
+          : Row(mainAxisSize: MainAxisSize.min, children: [
+              Text('${rating.round()}', style: _value),
+              if (change != 0) ...[
+                const SizedBox(width: SideTripsLayout.valueGap),
+                RatingChangeTag(change),
+              ],
+            ]),
+    );
+  }
+
+  static const _value = TextStyle(fontFamily: Fonts.display, fontSize: SideTripsLayout.valueFont, height: 1);
 }
 
 /// A row's label, with the same in the other language as its sub-label.
@@ -397,9 +449,9 @@ class _Stat extends StatelessWidget {
 /// A trip's two stats ([children]) side by side, split by a rule; a tap
 /// opens the trip's page ([onTap]).
 class _StatsRow extends StatelessWidget {
-  const _StatsRow(this.entry, {required this.onTap, required this.children});
+  const _StatsRow({required this.semanticLabel, required this.onTap, required this.children});
 
-  final SideTripEntry entry;
+  final String semanticLabel;
   final VoidCallback? onTap;
   final (Widget, Widget) children;
 
@@ -408,7 +460,7 @@ class _StatsRow extends StatelessWidget {
         onTap: onTap,
         scale: Press.panelScale,
         turn: 0,
-        semanticLabel: S.of(context).tripOpenPage(entry.trip),
+        semanticLabel: semanticLabel,
         builder: (context, _) => ConstrainedBox(
           constraints: const BoxConstraints(minHeight: SideTripsLayout.rowMinHeight),
           child: Padding(

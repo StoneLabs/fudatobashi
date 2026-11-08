@@ -129,7 +129,7 @@ class _Strip extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final s = S.of(context);
-    final last = records.matches.where((m) => m.ranked).toList().reversed.take(IkkiuchiPageLayout.formMatches).toList();
+    final last = records.lastRanked(IkkiuchiPageLayout.formMatches);
     const big = StatStrip.valueStyle;
     final wins = last.where((m) => m.result == IkkiuchiResult.won).length;
     final margin = last.isEmpty ? null : last.fold(0, (sum, m) => sum + m.margin) / last.length;

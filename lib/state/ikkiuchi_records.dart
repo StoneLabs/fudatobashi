@@ -44,6 +44,9 @@ class IkkiuchiRecords {
 
   Iterable<IkkiuchiMatchRecord> get _ranked => _matches.where((m) => m.ranked);
 
+  /// The last [n] ranked matches, newest first.
+  List<IkkiuchiMatchRecord> lastRanked(int n) => _ranked.toList().reversed.take(n).toList();
+
   /// The ranked matches played, placement's among them.
   int get rankedPlayed => _ranked.length;
 
