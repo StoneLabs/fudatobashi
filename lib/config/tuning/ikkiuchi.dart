@@ -547,6 +547,13 @@ abstract final class IkkiuchiRankedTuning {
   static const double performanceSpread = 400;
   static const double k = 80;
   static const double eloScale = 400;
+
+  /// A ranked Tobi: the player's rating plus a normal draw with standard
+  /// deviation [drawSd], drawn again whenever it lands more than
+  /// [drawCutOff] away, then held within the ratings his curves cover.
+  /// [drawSd] puts 80% of matches within ±300 of the player's rating.
+  static const double drawSd = 239;
+  static const double drawCutOff = 600;
 }
 
 /// The match screen (`IkkiuchiMatchScreen`), ranked or free: the rows a
@@ -634,17 +641,26 @@ abstract final class IkkiuchiPhysicsTuning {
 /// The developer's 一騎打ち pages (`IkkiuchiCurvesPage`,
 /// `IkkiuchiLayoutPage`, `IkkiuchiStrikesPage`, `IkkiuchiDebugGame`): their
 /// rating slider, the graphs' rating ticks and sampling step, the standard
-/// deviations the curves page gives each value's range at, the layout
-/// page's choice of cards a side and the seeds it starts from, the full
-/// fields the strikes page and the debug game deal, the strikes page's slow
-/// motion speeds and its reset once a strike is over, and the debug game's
-/// system bars.
+/// deviations the curves page gives each value's range at, the bands its
+/// graphs of the ranked draw and his form mark, the layout page's choice of
+/// cards a side and the seeds it starts from, the full fields the strikes
+/// page and the debug game deal, the strikes page's slow motion speeds and
+/// its reset once a strike is over, and the debug game's system bars.
 abstract final class IkkiuchiToolsTuning {
   static const double ratingStart = 1600;
   static const double ratingStep = 50;
   static const double ratingTick = 600;
   static const double curveStep = 10;
   static const List<int> sigmas = [1, 2];
+
+  /// The curves page's graphs of a draw added to a rating mark this far
+  /// either side of it, with the share of draws inside: the ranked draw's
+  /// ±[rankedBand], which its standard deviation is set for, and his
+  /// form's ±[formBand]. A share held at an end of the ratings shows from
+  /// [heldShown] up.
+  static const double rankedBand = 300;
+  static const double formBand = 100;
+  static const double heldShown = 0.001;
   static const List<int> perSideChoices = [8, 12, 16, 20, 25];
   static const int perSideStart = 25;
 

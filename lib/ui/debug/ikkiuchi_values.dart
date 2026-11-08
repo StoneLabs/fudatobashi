@@ -2,6 +2,7 @@ import 'dart:math' as math;
 
 import '../../config/config.dart';
 import '../../domain/ikkiuchi_tobi.dart';
+import '../../domain/truncated_normal.dart';
 import '../../domain/tuning_curve.dart';
 import '../play/time_format.dart';
 import 'ikkiuchi_groups_dealt.dart';
@@ -69,6 +70,44 @@ class IkkiuchiGraph {
   final String note;
   final double? floor;
 }
+
+/// A draw added to a rating, as its graph shows it: where the rating lands
+/// once [draw] is added, held within the curves' ratings, [band] either
+/// side marked with the share of draws inside. [whose] names whose rating
+/// it is added to.
+class IkkiuchiDraw {
+  const IkkiuchiDraw(this.graph, this.draw, {required this.whose, required this.band});
+
+  final IkkiuchiGraph graph;
+  final TruncatedNormal draw;
+  final String whose;
+  final double band;
+}
+
+/// The ranked draw: Tobi's rating in a ranked match around the player's.
+const _rankedDraw = TruncatedNormal(sd: IkkiuchiRankedTuning.drawSd, cutOff: IkkiuchiRankedTuning.drawCutOff);
+
+String _drawRule(TruncatedNormal draw) => 'sd ${draw.sd.round()}, drawn again past ±${draw.cutOff.round()}, then '
+    'held within ${IkkiuchiTuning.ratingMin.round()}–${IkkiuchiTuning.ratingMax.round()}';
+
+/// The draws the curves page graphs first: where Tobi's rating lands in a
+/// ranked match, around the player's, and what his form does to it.
+final ikkiuchiDraws = [
+  IkkiuchiDraw(
+    IkkiuchiGraph("Tobi's rating in ranked", "Where Tobi's rating lands in a ranked match, with the slider as your "
+        'rating: ${_drawRule(_rankedDraw)}.'),
+    _rankedDraw,
+    whose: 'you',
+    band: IkkiuchiToolsTuning.rankedBand,
+  ),
+  IkkiuchiDraw(
+    IkkiuchiGraph("Tobi's form", "Where Tobi's rating lands for a whole match, ranked or free, once his form on the "
+        'day is added, with the slider as his rating: ${_drawRule(IkkiuchiTobi.formDraw)}.'),
+    IkkiuchiTobi.formDraw,
+    whose: 'Tobi',
+    band: IkkiuchiToolsTuning.formBand,
+  ),
+];
 
 /// What a range reads when there is none: a value with no randomness.
 const ikkiuchiNoRange = '—';

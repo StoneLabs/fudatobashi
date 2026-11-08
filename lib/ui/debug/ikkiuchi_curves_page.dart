@@ -8,10 +8,12 @@ import 'ikkiuchi_graphs.dart';
 import 'ikkiuchi_rating_header.dart';
 import 'ikkiuchi_values.dart';
 
-/// The developer's view of Tobi's curves (一騎打ち): every value he plays
-/// with at the rating the slider picks, by group, with the ranges his form
-/// and his own draws give it; the rules that never change; then a graph of
-/// each value against his rating, the shares of his arm moves stacked.
+/// The developer's view of Tobi's curves (一騎打ち): first where his rating
+/// lands in a ranked match around the player's at the slider, and what his
+/// form does to his rating at the slider; then every value he plays with at
+/// the slider's rating, by group, with the ranges his form and his own
+/// draws give it; the rules that never change; then a graph of each value
+/// against his rating, the shares of his arm moves stacked.
 class IkkiuchiCurvesPage extends StatefulWidget {
   const IkkiuchiCurvesPage({super.key, this.rating = IkkiuchiToolsTuning.ratingStart});
 
@@ -44,6 +46,11 @@ class _IkkiuchiCurvesPageState extends State<IkkiuchiCurvesPage> {
             child: ListView(
               padding: IkkiuchiToolsStyle.padding,
               children: [
+                for (final (i, draw) in ikkiuchiDraws.indexed) ...[
+                  if (i > 0) const SizedBox(height: IkkiuchiCurvesStyle.graphGap),
+                  IkkiuchiDrawGraph(draw, _rating),
+                ],
+                section,
                 Text('At ${_rating.round()}', style: title),
                 gap,
                 _ValuesTable(_rating),

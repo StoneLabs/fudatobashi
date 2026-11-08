@@ -357,4 +357,10 @@ abstract final class IkkiuchiCurvesStyle {
   static const Color shareLabelBorder = Palette.ink;
   static const double legendSwatch = 10;
   static const double legendSpacing = 14;
+
+  /// A draw's graph: its height, and its bell's peak as a share of the
+  /// plot's height. Its band is shaded as [formBand], and a share held at
+  /// an end of the ratings sits on a share label's pill.
+  static const double drawHeight = 120;
+  static const double drawPeak = 0.85;
 }

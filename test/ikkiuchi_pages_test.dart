@@ -170,6 +170,13 @@ void main() {
       final r = rating.round();
       expect(find.text('rating $r'), findsOneWidget);
       expect(find.text('at $r'), findsOneWidget);
+      final draws = find.byType(IkkiuchiDrawGraph);
+      expect(draws, findsNWidgets(ikkiuchiDraws.length));
+      for (final draw in ikkiuchiDraws) {
+        expect(find.text(draw.graph.title), findsOneWidget);
+      }
+      expect(tester.getBottomLeft(draws.last).dy, lessThan(tester.getTopLeft(find.text('At $r')).dy),
+          reason: 'the draws come first');
       expect(find.text(take.unit.format(IkkiuchiTobi(rating).takeMs)), findsWidgets, reason: 'take time at $r');
       for (final s in IkkiuchiToolsTuning.sigmas) {
         expect(find.text(take.matchRangeText(rating, s)), findsWidgets, reason: 'take time per match, $s sd');

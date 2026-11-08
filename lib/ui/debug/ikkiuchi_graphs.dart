@@ -41,6 +41,27 @@ class IkkiuchiCurveGraph extends StatelessWidget {
       );
 }
 
+/// [draw]'s graph under its title: where a rating lands around [rating]
+/// once the draw is added, as a bell held within the curves' ratings.
+class IkkiuchiDrawGraph extends StatelessWidget {
+  const IkkiuchiDrawGraph(this.draw, this.rating, {super.key});
+
+  final IkkiuchiDraw draw;
+  final double rating;
+
+  @override
+  Widget build(BuildContext context) => Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          _GraphTitle(draw.graph, null),
+          SizedBox(
+            height: IkkiuchiCurvesStyle.drawHeight,
+            child: CustomPaint(painter: _DrawPainter(draw, rating)),
+          ),
+        ],
+      );
+}
+
 /// A line's colour and its name, in a graph's legend.
 class _LineKey extends StatelessWidget {
   const _LineKey(this.color, this.name);
@@ -252,6 +273,19 @@ abstract class _RatingPlot extends CustomPainter {
 
   static TextStyle pillStyle(Color color) =>
       debugMono.copyWith(fontSize: IkkiuchiCurvesStyle.numberFont, fontWeight: Weights.bold, color: color);
+
+  /// The marker's [label] on an ink pill above the plot at [x], kept over
+  /// the plot; centred on it when wider.
+  static void markerPill(Canvas canvas, Rect plot, double x, String label) {
+    final tp = _laid(label, pillStyle(IkkiuchiCurvesStyle.pillText));
+    final box = pillSize(tp);
+    final half = box.width / 2;
+    final cx = box.width >= plot.width ? plot.center.dx : x.clamp(plot.left + half, plot.right - half);
+    final cy = plot.top - IkkiuchiCurvesStyle.axisLabelGap - box.height / 2;
+    pill(canvas, tp, Rect.fromCenter(center: Offset(cx, cy), width: box.width, height: box.height),
+        IkkiuchiCurvesStyle.pillFill);
+    tp.dispose();
+  }
 }
 
 /// One value's curve: his form's reach shaded, grid and axes, the class
@@ -335,19 +369,7 @@ class _CurvePainter extends _RatingPlot {
       value.unit.format(value.at(rating)),
       if (any != null) 'any ${any.unit.format(any.at(rating))}',
     ].join(' · ');
-    final tp = _RatingPlot._laid(label, _RatingPlot.pillStyle(IkkiuchiCurvesStyle.pillText));
-    final box = _RatingPlot.pillSize(tp);
-    final cx = mark.dx.clamp(plot.left + box.width / 2, plot.right - box.width / 2);
-    _RatingPlot.pill(
-      canvas,
-      tp,
-      Rect.fromCenter(
-          center: Offset(cx, plot.top - IkkiuchiCurvesStyle.axisLabelGap - box.height / 2),
-          width: box.width,
-          height: box.height),
-      IkkiuchiCurvesStyle.pillFill,
-    );
-    tp.dispose();
+    _RatingPlot.markerPill(canvas, plot, mark.dx, label);
   }
 
   /// The value axis's top: [max] rounded up to one of
@@ -360,6 +382,85 @@ class _CurvePainter extends _RatingPlot {
 
   @override
   bool shouldRepaint(_CurvePainter old) => old.rating != rating || old.value != value || old.floor != floor;
+}
+
+/// A draw's bell around the rating: its band shaded, the grid and rating
+/// axis, the class thresholds dotted, the bell over a wash, cut off where
+/// the draw is drawn again and where the ratings end, the share held at an
+/// end on a pill there, and the marker, its dot on the peak and the band's
+/// share on a pill above the plot.
+class _DrawPainter extends _RatingPlot {
+  _DrawPainter(this.draw, super.rating);
+
+  final IkkiuchiDraw draw;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final plot = _RatingPlot.plotIn(size);
+    final bell = draw.draw;
+    const min = _RatingPlot.min, max = _RatingPlot.max;
+    final top = bell.density(0) / IkkiuchiCurvesStyle.drawPeak;
+    double xAt(double r) => _RatingPlot.xAt(plot, r);
+    Offset at(double offset) =>
+        Offset(xAt(rating + offset), plot.bottom - plot.height * bell.density(offset) / top);
+
+    final band = draw.band;
+    canvas.drawRect(
+      Rect.fromLTRB(xAt(math.max(min, rating - band)), plot.top, xAt(math.min(max, rating + band)), plot.bottom),
+      Paint()..color = IkkiuchiCurvesStyle.formBand,
+    );
+    final grid = _RatingPlot.gridPaint(IkkiuchiCurvesStyle.grid);
+    _RatingPlot.ratingAxis(canvas, plot, grid: grid);
+    canvas.drawLine(plot.bottomLeft, plot.bottomRight, grid);
+    _RatingPlot.rankLines(canvas, plot, IkkiuchiCurvesStyle.rankLine);
+
+    // The bell, read at each offset from the rating, rising from the
+    // baseline and dropping back to it at each end.
+    final from = math.max(min - rating, -bell.cutOff), to = math.min(max - rating, bell.cutOff);
+    final line = Path()..moveTo(at(from).dx, plot.bottom);
+    for (var x = from;; x = math.min(x + IkkiuchiToolsTuning.curveStep, to)) {
+      final o = at(x);
+      line.lineTo(o.dx, o.dy);
+      if (x >= to) break;
+    }
+    line.lineTo(at(to).dx, plot.bottom);
+    canvas.drawPath(Path.from(line)..close(), Paint()..color = IkkiuchiCurvesStyle.lineWash);
+    canvas.drawPath(line, Paint()
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = IkkiuchiCurvesStyle.lineStroke
+      ..strokeJoin = StrokeJoin.round
+      ..color = IkkiuchiCurvesStyle.line);
+
+    _held(canvas, plot, min, bell.share(-bell.cutOff, min - rating));
+    _held(canvas, plot, max, bell.share(max - rating, bell.cutOff));
+
+    final peak = at(0);
+    _RatingPlot.markerLine(canvas, plot, peak.dx);
+    _RatingPlot.dot(canvas, peak, IkkiuchiCurvesStyle.markerRadius, IkkiuchiCurvesStyle.marker);
+    // A draw held at an end within the band lands in it.
+    final inBand = bell.share(rating - band <= min ? -bell.cutOff : -band, rating + band >= max ? bell.cutOff : band);
+    _RatingPlot.markerPill(canvas, plot, peak.dx,
+        '${draw.whose} ${rating.round()} · ${IkkiuchiUnit.percent.format(inBand)} within ±${band.round()}');
+  }
+
+  /// The [share] of draws held at [end] of the ratings, on a paper pill
+  /// inside the plot against that end, from [IkkiuchiToolsTuning.heldShown]
+  /// up.
+  void _held(Canvas canvas, Rect plot, double end, double share) {
+    if (share < IkkiuchiToolsTuning.heldShown) return;
+    final tp = _RatingPlot._laid(
+        '${IkkiuchiUnit.percent.format(share)} held at ${end.round()}', _RatingPlot.pillStyle(Palette.ink));
+    final size = _RatingPlot.pillSize(tp);
+    final x = _RatingPlot.xAt(plot, end);
+    final left = end <= _RatingPlot.min ? x : x - size.width;
+    _RatingPlot.pill(canvas, tp, Rect.fromLTWH(left, plot.center.dy - size.height / 2, size.width, size.height),
+        IkkiuchiCurvesStyle.shareLabelFill,
+        border: IkkiuchiCurvesStyle.shareLabelBorder);
+    tp.dispose();
+  }
+
+  @override
+  bool shouldRepaint(_DrawPainter old) => old.rating != rating || old.draw != draw;
 }
 
 /// Rings at a curve's anchors.
