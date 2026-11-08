@@ -32,9 +32,10 @@ Future<void> startIkkiuchiMatch(BuildContext context, IkkiuchiSetup setup) =>
 /// its end or by 終了, is recorded, and [IkkiuchiScreenTuning.leaveAfter]
 /// later the screen closes; one ended before records nothing. Leaving the
 /// screen before the match ends records free play not at all, and a ranked
-/// match, once play has begun, as given up: a loss. From its first read a
-/// ranked match is journalled, so that one the app never gets to record is
-/// a forfeit on the next start ([Progress.journalIkkiuchi]).
+/// match, once play has begun, as given up: a loss. From its first read,
+/// and again after every read, a ranked match is journalled as it stands,
+/// so that one the app never gets to record is a forfeit on the next start
+/// with its reads and cards left ([Progress.journalIkkiuchi]).
 ///
 /// Until the screen stands in landscape the board lies turned in it; a
 /// change of its size deals the same match afresh while the memory time
@@ -59,7 +60,8 @@ class IkkiuchiMatchScreenState extends State<IkkiuchiMatchScreen> with SingleTic
   late final Ticker _ticker = createTicker(_tick);
   Duration _last = Duration.zero;
   Timer? _leave;
-  bool _journalled = false;
+  /// The reads journalled so far; null before the first save.
+  int? _journalled;
   bool _over = false;
 
   IkkiuchiMatchFlow? _flow;
@@ -132,9 +134,9 @@ class IkkiuchiMatchScreenState extends State<IkkiuchiMatchScreen> with SingleTic
 
   void _changed() {
     final flow = _flow!;
-    if (widget.setup.ranked && flow.playBegun && !_journalled) {
-      _journalled = true;
-      unawaited(_progress.journalIkkiuchi(widget.setup, _startedAt));
+    if (widget.setup.ranked && flow.playBegun && !_over && _journalled != flow.reads.length) {
+      _journalled = flow.reads.length;
+      unawaited(_progress.journalIkkiuchi(_matchSoFar(flow, completed: false)));
     }
     if (flow.stage == IkkiuchiStage.gameEnd && !_over) {
       _over = true;
@@ -148,17 +150,21 @@ class IkkiuchiMatchScreenState extends State<IkkiuchiMatchScreen> with SingleTic
 
   /// Stores the match as it stands: played to its end unless the player
   /// ended or left it, each side's cards as the rules count them.
-  void _record(IkkiuchiMatchFlow flow) {
+  void _record(IkkiuchiMatchFlow flow) =>
+      _saving = _progress.recordIkkiuchi(_matchSoFar(flow, completed: !flow.endedByPlayer));
+
+  /// The match as it stands, [completed] or not.
+  IkkiuchiMatchRecord _matchSoFar(IkkiuchiMatchFlow flow, {required bool completed}) {
     final left = flow.tally;
-    _saving = _progress.recordIkkiuchi(IkkiuchiMatchRecord(
+    return IkkiuchiMatchRecord(
       setup: widget.setup,
       startedAt: _startedAt,
       endedAt: DateTime.now(),
-      completed: !flow.endedByPlayer,
+      completed: completed,
       playerLeft: left.player,
       opponentLeft: left.opponent,
       reads: flow.reads,
-    ));
+    );
   }
 
   void _tick(Duration elapsed) {

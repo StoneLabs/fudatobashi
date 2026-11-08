@@ -24,6 +24,7 @@ import 'package:fudatobashi/domain/ikkiuchi_record.dart';
 import 'package:fudatobashi/domain/ikkiuchi_tobi.dart';
 import 'package:fudatobashi/l10n/ikkiuchi_strings.dart';
 import 'package:fudatobashi/l10n/strings.dart';
+import 'package:fudatobashi/state/ikkiuchi_journal.dart';
 import 'package:fudatobashi/state/progress.dart';
 import 'package:fudatobashi/state/scope.dart';
 import 'package:fudatobashi/ui/ikkiuchi/ikkiuchi_match_flow.dart';
@@ -310,12 +311,21 @@ void main() {
     expect(await journal(tester, p), isNull);
     await toFirstRead(tester, state.flow!);
     expect(await journal(tester, p), isNotNull, reason: 'saved as the first card is read');
+    final flow = state.flow!;
+    for (var i = 0; i < 600 && flow.reads.isEmpty; i++) {
+      await tester.pump(const Duration(milliseconds: 100));
+    }
+    expect(flow.reads, hasLength(1));
+    final kept = IkkiuchiJournal.decode((await journal(tester, p))!).match;
+    expect([kept.reads.single.poemId, kept.playerLeft, kept.opponentLeft],
+        [flow.reads.single.poemId, flow.tally.player, flow.tally.opponent],
+        reason: 'saved again once the read is over');
 
     await leave(tester);
     await saved(tester, state.saving);
     final match = p.ikkiuchi.matches.single;
-    expect([match.ranked, match.completed, match.result, match.setup.opponentRating, match.playerLeft, match.opponentLeft],
-        [true, false, IkkiuchiResult.gaveUp, 1300, 3, 3]);
+    expect([match.ranked, match.completed, match.result, match.setup.opponentRating, match.reads.length],
+        [true, false, IkkiuchiResult.gaveUp, 1300, 1]);
     expect(p.ikkiuchi.counts(ranked: true), (played: 1, won: 0, lost: 1));
     expect(await journal(tester, p), isNull, reason: 'recording it clears the journal');
     await tester.pumpWidget(const SizedBox());

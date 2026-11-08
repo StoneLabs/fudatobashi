@@ -1522,19 +1522,21 @@ class Progress extends ChangeNotifier {
     return stored;
   }
 
-  /// Saves a ranked 一騎打ち match of [setup] once its first card is read (a
-  /// match left before that saves nothing), so that if the app never gets
-  /// to record it (closed or killed) the next start records it as a
-  /// forfeit. Recording the match, however it ends, clears it.
-  Future<void> journalIkkiuchi(IkkiuchiSetup setup, DateTime startedAt) {
-    final text = IkkiuchiJournal(setup: setup, startedAt: startedAt).encode();
+  /// Saves a ranked 一騎打ち [match] as it stands, not completed, once its
+  /// first card is read and again after every read (a match left before
+  /// its first read saves nothing), so that if the app never gets to record
+  /// it (closed or killed) the next start records it as a forfeit with the
+  /// reads and the cards left it had. Recording the match, however it
+  /// ends, clears it.
+  Future<void> journalIkkiuchi(IkkiuchiMatchRecord match) {
+    final text = IkkiuchiJournal(match).encode();
     return _ikkiuchiJournalSaved = _ikkiuchiJournalSaved.then((_) => _put(_ikkiuchiJournalKey, text));
   }
 
   Future<void> _ikkiuchiJournalSaved = Future.value();
 
   /// Records the ranked 一騎打ち match the app was closed in: a forfeit,
-  /// both sides as dealt and no read kept.
+  /// as its journal last saved it.
   Future<void> _recordIkkiuchiJournal(String text) async {
     final IkkiuchiJournal journal;
     try {
@@ -1543,15 +1545,7 @@ class Progress extends ChangeNotifier {
       await _drop(_ikkiuchiJournalKey);
       return;
     }
-    final setup = journal.setup;
-    await recordIkkiuchi(IkkiuchiMatchRecord(
-      setup: setup,
-      startedAt: journal.startedAt,
-      endedAt: journal.startedAt,
-      completed: false,
-      playerLeft: setup.perSide,
-      opponentLeft: setup.perSide,
-    ));
+    await recordIkkiuchi(journal.match);
   }
 
   /// Developer tool: marks 暗記練's free levels 0 through [level] cleared.
