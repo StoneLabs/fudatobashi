@@ -7,6 +7,8 @@ import '../../l10n/history_strings.dart';
 import '../../l10n/ikkiuchi_strings.dart';
 import '../../l10n/side_trip_strings.dart';
 import '../../l10n/strings.dart';
+import '../../state/past_runs.dart';
+import '../../state/scope.dart';
 import '../manga/manga.dart';
 import '../play/time_format.dart';
 import 'ankiren_widgets.dart';
@@ -18,9 +20,10 @@ import 'run_page.dart';
 Future<void> openIkkiuchiMatch(BuildContext context, IkkiuchiMatchRecord match) =>
     Navigator.of(context).push(MangaRoute<void>(builder: (_) => IkkiuchiMatchPage(match: match)));
 
-/// A recorded 一騎打ち match: its header names its kind and setup; then how
-/// it ended, the cards left and faults on each side and how long it took;
-/// then every read in order.
+/// A recorded 一騎打ち match: its header names its kind, the practice day it
+/// counts to (as History lists it) and its setup; then how it ended, the
+/// cards left and faults on each side and how long it took; then every read
+/// in order.
 class IkkiuchiMatchPage extends StatelessWidget {
   const IkkiuchiMatchPage({super.key, required this.match});
   final IkkiuchiMatchRecord match;
@@ -31,10 +34,11 @@ class IkkiuchiMatchPage extends StatelessWidget {
     final setup = match.setup;
     final kind = match.ranked ? s.sideTripRanked : s.freePlay;
     final line = s.ikkiuchiSetupLine(setup.perSide, formatMinutes(setup.memorise), setup.opponentRating.round());
+    final day = ProgressScope.of(context).dayStartedOn(match.startedAt);
     return RunPageFrame(
       title: s.hallName,
-      sub: [s.other.hallName, kind, s.sessionDate(match.startedAt), line].join(' · '),
-      shortSub: [s.other.hallName, kind, s.sessionDay(match.startedAt)].join(' · '),
+      sub: [s.other.hallName, kind, s.sessionDate(match.startedAt, day: day), line].join(' · '),
+      shortSub: [s.other.hallName, kind, s.sessionDay(match.startedAt, day: day)].join(' · '),
       body: ReviewColumn(fillMinHeight: 0, fill: _Reads(match.reads), children: [_Summary(match)]),
     );
   }

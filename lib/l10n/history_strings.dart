@@ -1,5 +1,6 @@
 import '../domain/rating.dart';
 import 'ranked_strings.dart';
+import 'srs_strings.dart';
 import 'strings.dart';
 
 /// Month abbreviations for `HistoryStrings.sessionDate` (no `intl` in this
@@ -32,16 +33,19 @@ extension HistoryStrings on S {
   String get historyDaysLabel => t('historyDaysLabel');
   String get historyBestLabel => t('historyBestLabel');
 
-  /// A short "Mon D, HH:MM" (EN) / "M月D日 HH:MM" (JA) timestamp.
-  String sessionDate(DateTime at) {
+  /// A short "Mon D, HH:MM" (EN) / "M月D日 HH:MM" (JA) timestamp. Its date is
+  /// the practice [day] (a UTC midnight) when given, which a time before the
+  /// day starts counts to a calendar day earlier.
+  String sessionDate(DateTime at, {DateTime? day}) {
     final local = at.toLocal();
     final hh = local.hour.toString().padLeft(2, '0');
     final mm = local.minute.toString().padLeft(2, '0');
-    return ja ? '${sessionDay(at)} $hh:$mm' : '${sessionDay(at)}, $hh:$mm';
+    return ja ? '${sessionDay(at, day: day)} $hh:$mm' : '${sessionDay(at, day: day)}, $hh:$mm';
   }
 
   /// [sessionDate] without the time.
-  String sessionDay(DateTime at) {
+  String sessionDay(DateTime at, {DateTime? day}) {
+    if (day != null) return dayDate(day);
     final local = at.toLocal();
     return ja ? '${local.month}月${local.day}日' : '${_monthAbbr[local.month - 1]} ${local.day}';
   }
