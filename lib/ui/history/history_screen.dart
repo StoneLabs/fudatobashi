@@ -740,8 +740,9 @@ class _PlacingRow extends StatelessWidget {
   }
 }
 
-/// A 一騎打ち match: ranked or free, how it ended, its setup and faults,
-/// and the cards left on each side, the player's first.
+/// A 一騎打ち match: ranked or free, how it ended, its setup over its
+/// faults (kept on one line, shrunk to fit), and the cards left on each side,
+/// the player's first.
 class _MatchRow extends StatelessWidget {
   const _MatchRow(this.match);
   final IkkiuchiMatchRecord match;
@@ -763,10 +764,14 @@ class _MatchRow extends StatelessWidget {
           },
         ]),
       ],
-      line: Text([
-        s.ikkiuchiSetupLine(setup.perSide, formatMinutes(setup.memorise), setup.opponentRating.round()),
-        s.ikkiuchiFaultsLine(match.playerFaults, match.opponentFaults),
-      ].join(' · ')),
+      line: Column(crossAxisAlignment: CrossAxisAlignment.start, mainAxisSize: MainAxisSize.min, children: [
+        Text(s.ikkiuchiSetupLine(setup.perSide, formatMinutes(setup.memorise), setup.opponentRating.round())),
+        FittedBox(
+          fit: BoxFit.scaleDown,
+          alignment: Alignment.centerLeft,
+          child: Text(s.ikkiuchiFaultsLine(match.playerFaults, match.opponentFaults), maxLines: 1, softWrap: false),
+        ),
+      ]),
       value: '${match.playerLeft}–${match.opponentLeft}',
       caption: s.ikkiuchiLeftCaption,
       onTap: () => openIkkiuchiMatch(context, match),
