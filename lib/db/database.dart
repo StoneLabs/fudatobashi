@@ -270,31 +270,47 @@ class TeiichiPlacings extends Table {
   IntColumn get placingUs => integer()();
 }
 
-/// One 一騎打ち match against Tobi, stored once it is over: its setup (the
-/// cards a side, the memory time and Tobi's rating), how it ended, the
-/// cards left on each side and each player's faults over the match.
+/// One 一騎打ち match, ranked or free, stored once it is over
+/// (`IkkiuchiMatchRecord`): a match left in its memory time, or free play
+/// left before its end, is never stored. Its result and the faults over it
+/// are worked out from it and its reads.
 @DataClassName('IkkiuchiMatchRow')
 class IkkiuchiMatches extends Table {
   IntColumn get id => integer().autoIncrement()();
   DateTimeColumn get startedAt => dateTime()();
+
+  /// When it was played to its end, ended or left; its start for a ranked
+  /// match the app was closed in.
   DateTimeColumn get endedAt => dateTime()();
+
+  /// The practice day it was played on, yyyymmdd.
+  IntColumn get day => integer().references(Days, #day)();
+  BoolColumn get ranked => boolean()();
+
+  /// Who played the far side.
+  TextColumn get opponent => textEnum<IkkiuchiOpponent>()();
+
+  /// The cards dealt to each side, and the memory time before play, ms.
   IntColumn get perSide => integer()();
   IntColumn get memoriseMs => integer()();
-  RealColumn get tobiRating => real()();
-  TextColumn get result => textEnum<IkkiuchiResult>()();
-  IntColumn get playerLeft => integer()();
-  IntColumn get tobiLeft => integer()();
 
-  /// A fault on both sides of one read counts two.
-  IntColumn get playerFaults => integer()();
-  IntColumn get tobiFaults => integer()();
+  /// The rating the opponent played at.
+  RealColumn get opponentRating => real()();
+
+  /// Played to its end, a side emptied (false when the player ended it or
+  /// left it: given up, a loss when ranked).
+  BoolColumn get completed => boolean()();
+
+  /// The cards left on each side as it ended, as the rules count them.
+  IntColumn get playerLeft => integer()();
+  IntColumn get opponentLeft => integer()();
+
+  /// The player's 一騎打ち rating after it; null for free play.
+  RealColumn get rating => real().nullable()();
 }
 
-/// One read of a 一騎打ち match, in the order read: the card, whether it
-/// was a からふだ, who took it (null on a からふだ, or when the match ended
-/// first), whether both took it at once, each player's faults on it (the
-/// sides faulted on, 0 to 2), and when each reached the card from its
-/// deciding sound, µs (null for one who never did).
+/// One read of a 一騎打ち match, in the order read, stored with its match
+/// once the read has ended (one the match's end cut off is not).
 @DataClassName('IkkiuchiReadRow')
 @TableIndex(name: 'ikkiuchi_reads_match', columns: {#matchId})
 class IkkiuchiReads extends Table {
@@ -302,13 +318,22 @@ class IkkiuchiReads extends Table {
   IntColumn get matchId => integer().references(IkkiuchiMatches, #id)();
   IntColumn get seq => integer()();
   IntColumn get poemId => integer()();
-  BoolColumn get karafuda => boolean()();
+
+  /// The side the card lay on, and who took it; both null on a からふだ.
+  TextColumn get cardSide => textEnum<IkkiuchiSide>().nullable()();
   TextColumn get taker => textEnum<IkkiuchiSide>().nullable()();
+
+  /// Both took it at the same time, the card going to the side it lay on.
   BoolColumn get tied => boolean()();
+
+  /// The sides each player faulted on (お手つき), 0 to 2.
   IntColumn get playerFaults => integer()();
-  IntColumn get tobiFaults => integer()();
-  IntColumn get playerUs => integer().nullable()();
-  IntColumn get tobiUs => integer().nullable()();
+  IntColumn get opponentFaults => integer()();
+
+  /// When each reached the card, µs from its deciding sound (negative for
+  /// one before it); null for one who never did.
+  IntColumn get playerTakeUs => integer().nullable()();
+  IntColumn get opponentTakeUs => integer().nullable()();
 }
 
 /// One practice day (see `DayWindow`): journey mode's today's set and

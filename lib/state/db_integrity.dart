@@ -34,7 +34,7 @@ class IntegrityCheck {
 abstract final class DbIntegrity {
   static final checks = <IntegrityCheck>[
     IntegrityCheck('impossible times', _hasImpossibleTimes, _repairImpossibleTimes),
-    IntegrityCheck('orphaned side-trip answers and placings', _hasOrphanedAnswers, _deleteOrphanedAnswers),
+    IntegrityCheck('orphaned answers, placings and reads', _hasOrphanedAnswers, _deleteOrphanedAnswers),
     IntegrityCheck('side-trip ratings', _hasBrokenSideTripRatings, _replaySideTripRatings),
     IntegrityCheck('orphaned day cards', _hasOrphanedDayCards, _deleteOrphanedDayCards),
   ];
@@ -153,8 +153,8 @@ abstract final class DbIntegrity {
     }
   }
 
-  /// Answers or placings of a side-trip game that is no longer stored:
-  /// nothing reads them, so they go.
+  /// Answers or placings of a side-trip game, or reads of a 一騎打ち match,
+  /// that is no longer stored: nothing reads them, so they go.
   static Future<bool> _hasOrphanedAnswers(AppDatabase db) async {
     final found = await db.customSelect(
       '''
@@ -162,6 +162,8 @@ abstract final class DbIntegrity {
         SELECT 1 FROM side_trip_answers a WHERE NOT EXISTS (SELECT 1 FROM side_trip_runs r WHERE r.id = a.run_id)
       ) OR EXISTS (
         SELECT 1 FROM teiichi_placings p WHERE NOT EXISTS (SELECT 1 FROM side_trip_runs r WHERE r.id = p.run_id)
+      ) OR EXISTS (
+        SELECT 1 FROM ikkiuchi_reads x WHERE NOT EXISTS (SELECT 1 FROM ikkiuchi_matches m WHERE m.id = x.match_id)
       ) AS found
       ''',
     ).getSingle();
@@ -172,6 +174,8 @@ abstract final class DbIntegrity {
     final runs = db.selectOnly(db.sideTripRuns)..addColumns([db.sideTripRuns.id]);
     await (db.delete(db.sideTripAnswers)..where((a) => a.runId.isNotInQuery(runs))).go();
     await (db.delete(db.teiichiPlacings)..where((p) => p.runId.isNotInQuery(runs))).go();
+    final matches = db.selectOnly(db.ikkiuchiMatches)..addColumns([db.ikkiuchiMatches.id]);
+    await (db.delete(db.ikkiuchiReads)..where((r) => r.matchId.isNotInQuery(matches))).go();
   }
 
   /// A card of a day's set whose day is gone.

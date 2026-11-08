@@ -351,7 +351,8 @@ void main() {
       await touch(tester, s.board.cards.card(read).box.centre);
       await runUntil(tester, () => stage(tester) == IkkiuchiStage.feedback);
       final log = f.reads.single;
-      expect([log.poemId, log.end.taker, log.end.cardSide, log.tobiTake], [read, IkkiuchiSide.player, IkkiuchiSide.player, null]);
+      expect([log.poemId, log.taker, log.cardSide, log.tied, log.playerFaults, log.opponentFaults, log.opponentTake],
+          [read, IkkiuchiSide.player, IkkiuchiSide.player, false, 0, 0, null]);
       expect(log.playerTake!.inMilliseconds, inInclusiveRange(300, 450), reason: 'touched 300 ms after it, give or take a few frames');
       expect(s.sides!.playerCards, contains(read), reason: 'still on the board while its end shows');
       expect(f.tally.player, dealt - 1, reason: 'counted gone from the read\'s end');

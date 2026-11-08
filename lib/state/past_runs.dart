@@ -169,8 +169,12 @@ extension RunHistory on Progress {
   List<SideTripRun> get teiichiRuns =>
       sideTrips.runsOf(SideTrip.teiichi).toList()..sort((a, b) => b.startedAt.compareTo(a.startedAt));
 
+  /// The practice day a side-trip game or a 一騎打ち match that started at
+  /// [startedAt] was played on.
+  DateTime dayStartedOn(DateTime startedAt) => DayWindow.at(startedAt, settings.dayStartHour).date;
+
   /// The practice day a side-trip game was played on.
-  DateTime dayOfGame(SideTripRun run) => DayWindow.at(run.startedAt, settings.dayStartHour).date;
+  DateTime dayOfGame(SideTripRun run) => dayStartedOn(run.startedAt);
 
   /// Every practice day with play, and how active it was.
   Map<DateTime, DayActivity> get dayActivity {
@@ -185,6 +189,10 @@ extension RunHistory on Progress {
     }
     for (final run in sideTrips.runs) {
       final day = dayOfGame(run);
+      note(day, setDoneOn(day) ? DayActivity.done : DayActivity.some);
+    }
+    for (final match in ikkiuchi.matches) {
+      final day = dayStartedOn(match.startedAt);
       note(day, setDoneOn(day) ? DayActivity.done : DayActivity.some);
     }
     return days;

@@ -508,23 +508,31 @@ abstract final class IkkiuchiMatchTuning {
   static const Duration longestStep = Duration(milliseconds: 250);
 }
 
-/// 一騎打ち's free play (`IkkiuchiPage`, `IkkiuchiMatchScreen`): the choices
-/// of cards a side, memory time and Tobi's rating, each with the one a
-/// first match starts on; the rows a side is laid out in; the seeds a deal
-/// is drawn from, and the offset that draws the player's side apart from
-/// Tobi's; the system bars hidden while a match is played (a swipe in from
-/// an edge shows them for a while); and how long the match screen stays
-/// once the match is over, for the players' thanks.
+/// 一騎打ち's free play (`IkkiuchiFreeChoices`): the choices of cards a
+/// side, memory time and Tobi's rating, each from its least to its most by
+/// its step, and the one the first free match starts on.
 abstract final class IkkiuchiFreeTuning {
-  static const List<int> perSideChoices = [5, 10, 15, 20, 25];
+  static const int perSideMin = 1;
+  static const int perSideMax = 25;
+  static const int perSideStep = 1;
   static const int perSide = 25;
-  static const List<Duration> memoriseChoices = [
-    Duration(minutes: 1), Duration(minutes: 2), Duration(minutes: 3), Duration(minutes: 5),
-    Duration(minutes: 10), Duration(minutes: 15),
-  ];
+  static const Duration memoriseMin = Duration(minutes: 1);
+  static const Duration memoriseMax = Duration(minutes: 15);
+  static const Duration memoriseStep = Duration(minutes: 1);
   static const Duration memorise = Duration(minutes: 15);
-  static const List<double> ratingChoices = [400, 800, 1200, 1600, 2000, 2400, 2800, 3200, 3600];
+  static const double ratingMin = 400;
+  static const double ratingMax = 3600;
+  static const double ratingStep = 50;
   static const double rating = 1600;
+}
+
+/// The match screen (`IkkiuchiMatchScreen`), ranked or free: the rows a
+/// side is laid out in; the seeds a deal is drawn from, and the offset that
+/// draws the player's side apart from Tobi's; the system bars hidden while
+/// a match is played (a swipe in from an edge shows them for a while); and
+/// how long the screen stays once the match is over, for the players'
+/// thanks.
+abstract final class IkkiuchiScreenTuning {
   static const int rows = 3;
   static const int seeds = 1 << 30;
   static const int playerSeedOffset = 7919;

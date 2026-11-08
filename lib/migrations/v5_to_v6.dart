@@ -10,14 +10,15 @@ Future<void> v5ToV6(Migrator m) async {
 /// The tables version 6 added, as it created them.
 const v6Tables = [
   'CREATE TABLE "ikkiuchi_matches" ("id" INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT, '
-      '"started_at" INTEGER NOT NULL, "ended_at" INTEGER NOT NULL, "per_side" INTEGER NOT NULL, '
-      '"memorise_ms" INTEGER NOT NULL, "tobi_rating" REAL NOT NULL, "result" TEXT NOT NULL, '
-      '"player_left" INTEGER NOT NULL, "tobi_left" INTEGER NOT NULL, "player_faults" INTEGER NOT NULL, '
-      '"tobi_faults" INTEGER NOT NULL)',
+      '"started_at" INTEGER NOT NULL, "ended_at" INTEGER NOT NULL, "day" INTEGER NOT NULL REFERENCES days (day), '
+      '"ranked" INTEGER NOT NULL CHECK ("ranked" IN (0, 1)), "opponent" TEXT NOT NULL, '
+      '"per_side" INTEGER NOT NULL, "memorise_ms" INTEGER NOT NULL, "opponent_rating" REAL NOT NULL, '
+      '"completed" INTEGER NOT NULL CHECK ("completed" IN (0, 1)), "player_left" INTEGER NOT NULL, '
+      '"opponent_left" INTEGER NOT NULL, "rating" REAL NULL)',
   'CREATE TABLE "ikkiuchi_reads" ("id" INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT, '
       '"match_id" INTEGER NOT NULL REFERENCES ikkiuchi_matches (id), "seq" INTEGER NOT NULL, '
-      '"poem_id" INTEGER NOT NULL, "karafuda" INTEGER NOT NULL CHECK ("karafuda" IN (0, 1)), "taker" TEXT NULL, '
+      '"poem_id" INTEGER NOT NULL, "card_side" TEXT NULL, "taker" TEXT NULL, '
       '"tied" INTEGER NOT NULL CHECK ("tied" IN (0, 1)), "player_faults" INTEGER NOT NULL, '
-      '"tobi_faults" INTEGER NOT NULL, "player_us" INTEGER NULL, "tobi_us" INTEGER NULL)',
+      '"opponent_faults" INTEGER NOT NULL, "player_take_us" INTEGER NULL, "opponent_take_us" INTEGER NULL)',
   'CREATE INDEX ikkiuchi_reads_match ON ikkiuchi_reads (match_id)',
 ];

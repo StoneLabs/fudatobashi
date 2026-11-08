@@ -40,15 +40,20 @@ void main() {
   const s = S('en');
   const player = IkkiuchiSide.player, tobi = IkkiuchiSide.opponent;
 
-  IkkiuchiMatchRecord match(DateTime at, IkkiuchiResult result, int playerLeft, int tobiLeft,
-          {List<IkkiuchiReadLog> reads = const []}) =>
+  IkkiuchiMatchRecord match(DateTime at, int playerLeft, int opponentLeft,
+          {bool completed = true, bool ranked = false, List<IkkiuchiReadLog> reads = const []}) =>
       IkkiuchiMatchRecord(
-        setup: const IkkiuchiSetup(perSide: 5, memorise: Duration(minutes: 2), rating: 1200),
+        setup: IkkiuchiSetup(
+            ranked: ranked,
+            opponent: IkkiuchiOpponent.tobi,
+            opponentRating: 1200,
+            perSide: 5,
+            memorise: const Duration(minutes: 2)),
         startedAt: at,
         endedAt: at.add(const Duration(minutes: 7)),
-        result: result,
+        completed: completed,
         playerLeft: playerLeft,
-        tobiLeft: tobiLeft,
+        opponentLeft: opponentLeft,
         reads: reads,
       );
 
@@ -58,19 +63,14 @@ void main() {
       p = await Progress.open(AppDatabase(NativeDatabase.memory()));
       await p.updateSettings(p.settings.copyWith(language: 'en', languagePicked: true, toured: true));
       final now = DateTime.now();
-      await p.recordIkkiuchi(match(now.subtract(const Duration(days: 3)), IkkiuchiResult.lost, 2, 0));
-      await p.recordIkkiuchi(match(now.subtract(const Duration(hours: 1)), IkkiuchiResult.gaveUp, 4, 3));
-      await p.recordIkkiuchi(match(now, IkkiuchiResult.won, 0, 3, reads: [
-        const IkkiuchiReadLog(
-            poemId: 87,
-            end: IkkiuchiReadEnd(taker: player, cardSide: tobi),
-            playerTake: Duration(milliseconds: 640),
-            tobiTake: Duration(milliseconds: 910)),
-        const IkkiuchiReadLog(poemId: 77, end: IkkiuchiReadEnd(playerFaults: {tobi})),
-        const IkkiuchiReadLog(
-            poemId: 18,
-            end: IkkiuchiReadEnd(taker: tobi, cardSide: player, tied: true, tobiFaults: {tobi}),
-            tobiTake: Duration(milliseconds: 500)),
+      await p.recordIkkiuchi(match(now.subtract(const Duration(days: 3)), 2, 0, ranked: true));
+      await p.recordIkkiuchi(match(now.subtract(const Duration(hours: 1)), 4, 3, completed: false));
+      await p.recordIkkiuchi(match(now, 0, 3, reads: [
+        IkkiuchiReadLog.of(87, const IkkiuchiReadEnd(taker: player, cardSide: tobi),
+            playerTake: const Duration(milliseconds: 640), opponentTake: const Duration(milliseconds: 910)),
+        IkkiuchiReadLog.of(77, const IkkiuchiReadEnd(playerFaults: {tobi})),
+        IkkiuchiReadLog.of(18, const IkkiuchiReadEnd(taker: tobi, cardSide: tobi, tied: true, tobiFaults: {player}),
+            playerTake: const Duration(milliseconds: 500), opponentTake: const Duration(milliseconds: 500)),
       ]));
     });
     return p;
@@ -121,8 +121,7 @@ void main() {
     expect(tester.takeException(), isNull);
     await captureScreen(tester, 'ikkiuchi_history/list');
 
-    await tester.runAsync(() => tap(tester, won));
-    await tester.pumpAndSettle();
+    await tap(tester, won);
     expect(find.byType(IkkiuchiMatchPage), findsOneWidget);
     expect(find.text(s.ikkiuchiReadsNote(3)), findsOneWidget);
     expect(find.text(kimarijiFor(tester.element(find.byType(IkkiuchiMatchPage)), 87)), findsOneWidget);

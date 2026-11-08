@@ -30,6 +30,7 @@ import '../domain/weak_cards.dart';
 import '../domain/xp.dart';
 import '../migrations/notices.dart';
 import 'db_integrity.dart';
+import 'ikkiuchi_journal.dart';
 import 'ikkiuchi_records.dart';
 import 'play_config.dart';
 import 'run_journal.dart';
@@ -187,6 +188,7 @@ class Progress extends ChangeNotifier {
     await progress._loadToday();
     if (kv[_runJournalKey] case final journal?) await progress._recordJournal(journal);
     if (kv[_teiichiJournalKey] case final journal?) await progress._recordTeiichiJournal(journal);
+    if (kv[_ikkiuchiJournalKey] case final journal?) await progress._recordIkkiuchiJournal(journal);
     if (settings.onboarded && !progress._allKnown) await progress.refreshToday();
     await progress._latchFreePractice(DateTime.now());
     await progress._latchSideTrips(DateTime.now());
@@ -202,6 +204,7 @@ class Progress extends ChangeNotifier {
   static const _sideTripsSeenLockedKey = 'sideTripsSeenLocked';
   static const _runJournalKey = 'runJournal';
   static const _teiichiJournalKey = 'teiichiJournal';
+  static const _ikkiuchiJournalKey = 'ikkiuchiJournal';
   static const _examLastTryKey = 'examLastTry';
   static const _examIntroShownKey = 'examIntroShown';
   static const _examCountedKey = 'examCounted';
@@ -1504,15 +1507,52 @@ class Progress extends ChangeNotifier {
     await recordTeiichi(placing, placing.recall(math.Random())..end(), startedAt: journal.startedAt);
   }
 
-  /// Stores a 一騎打ち match once it is over (see [IkkiuchiRecords.record]).
-  Future<IkkiuchiMatchRow> recordIkkiuchi(IkkiuchiMatchRecord record) async {
-    final row = await ikkiuchi.record(db, record);
+  /// Stores a 一騎打ち match once it is over, on the practice day it started
+  /// on (see [IkkiuchiRecords.record]), and clears a ranked match's
+  /// journal. Returns it as stored.
+  Future<IkkiuchiMatchRecord> recordIkkiuchi(IkkiuchiMatchRecord match) async {
+    final day = await _storeDay(match.startedAt);
+    await _ikkiuchiJournalSaved;
+    final stored = await db.transaction(() async {
+      final stored = await ikkiuchi.record(db, match, day: day.day);
+      await _drop(_ikkiuchiJournalKey);
+      return stored;
+    });
     notifyListeners();
-    return row;
+    return stored;
   }
 
-  /// Match [matchId]'s reads, in the order they were read.
-  Future<List<IkkiuchiReadRow>> ikkiuchiReadsOf(int matchId) => IkkiuchiRecords.readsOf(db, matchId);
+  /// Saves a ranked 一騎打ち match of [setup] once its first card is read (a
+  /// match left before that saves nothing), so that if the app never gets
+  /// to record it (closed or killed) the next start records it as a
+  /// forfeit. Recording the match, however it ends, clears it.
+  Future<void> journalIkkiuchi(IkkiuchiSetup setup, DateTime startedAt) {
+    final text = IkkiuchiJournal(setup: setup, startedAt: startedAt).encode();
+    return _ikkiuchiJournalSaved = _ikkiuchiJournalSaved.then((_) => _put(_ikkiuchiJournalKey, text));
+  }
+
+  Future<void> _ikkiuchiJournalSaved = Future.value();
+
+  /// Records the ranked 一騎打ち match the app was closed in: a forfeit,
+  /// both sides as dealt and no read kept.
+  Future<void> _recordIkkiuchiJournal(String text) async {
+    final IkkiuchiJournal journal;
+    try {
+      journal = IkkiuchiJournal.decode(text);
+    } on Object {
+      await _drop(_ikkiuchiJournalKey);
+      return;
+    }
+    final setup = journal.setup;
+    await recordIkkiuchi(IkkiuchiMatchRecord(
+      setup: setup,
+      startedAt: journal.startedAt,
+      endedAt: journal.startedAt,
+      completed: false,
+      playerLeft: setup.perSide,
+      opponentLeft: setup.perSide,
+    ));
+  }
 
   /// Developer tool: marks 暗記練's free levels 0 through [level] cleared.
   Future<void> clearAnkirenUpTo(int level) => clearLevelsUpTo(SideTrip.ankiren, level);
@@ -1553,6 +1593,7 @@ class Progress extends ChangeNotifier {
                   _sideTripsSeenLockedKey,
                   _runJournalKey,
                   _teiichiJournalKey,
+                  _ikkiuchiJournalKey,
                   _examLastTryKey,
                   _examIntroShownKey,
                   _examCountedKey,

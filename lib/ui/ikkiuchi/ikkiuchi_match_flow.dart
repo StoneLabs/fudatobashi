@@ -385,8 +385,9 @@ class IkkiuchiMatchFlow extends ChangeNotifier {
       _leaving = id;
     }
     final take = board.take?.at, hit = board.tobiHit;
-    Duration? from(double? at) => at == null ? null : Duration(microseconds: ((at - _decidedAt) * Duration.microsecondsPerMillisecond).round());
-    _reads.add(IkkiuchiReadLog(poemId: _readId!, end: end, playerTake: from(take), tobiTake: from(hit)));
+    Duration? from(double? at) =>
+        at == null ? null : Duration(microseconds: ((at - _decidedAt) * Duration.microsecondsPerMillisecond).round());
+    _reads.add(IkkiuchiReadLog.of(_readId!, end, playerTake: from(take), opponentTake: from(hit)));
     scene.clearCall();
     _feedback = end;
     _enter(IkkiuchiStage.feedback);

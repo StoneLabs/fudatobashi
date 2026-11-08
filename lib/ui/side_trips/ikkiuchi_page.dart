@@ -1,13 +1,11 @@
 import 'package:flutter/material.dart';
 
-import '../../config/config.dart';
 import '../../config/design.dart';
 import '../../config/vector_art.dart';
 import '../../domain/ikkiuchi_record.dart';
 import '../../l10n/ikkiuchi_strings.dart';
 import '../../l10n/side_trip_strings.dart';
 import '../../l10n/strings.dart';
-import '../../state/ikkiuchi_records.dart';
 import '../../state/scope.dart';
 import '../history/history_filter.dart';
 import '../history/history_screen.dart';
@@ -23,14 +21,13 @@ Future<void> openIkkiuchiPage(BuildContext context) =>
     Navigator.of(context).push(MangaRoute<void>(builder: (_) => const IkkiuchiPage()));
 
 /// 一騎打ち's page, on the side trips' page frame, with History beside the
-/// back button: the matches played, won
-/// and lost; ranked, chained up as coming soon; then free play's setup,
-/// the cards each side is dealt, the memory time and Tobi's rating, each a
-/// stepper through its choices ([IkkiuchiFreeTuning]), and the burst that
-/// starts a match. The setup starts as the last match's, or the first
-/// match's choices before any. Home's dotted ground, in the sea's blue,
-/// lies behind the panels; the page scrolls when it is taller than the
-/// screen.
+/// back button: the matches played, won and lost; ranked, chained up as
+/// coming soon; then free play's setup, the cards each side is dealt, the
+/// memory time and Tobi's rating, each a stepper through its choices
+/// ([IkkiuchiFreeChoices]), and the burst that starts a match. The setup
+/// starts as the last free match's, or the first free match's before any.
+/// Home's dotted ground, in the sea's blue, lies behind the panels; the
+/// page scrolls when it is taller than the screen.
 class IkkiuchiPage extends StatefulWidget {
   const IkkiuchiPage({super.key});
 
@@ -52,24 +49,23 @@ class _IkkiuchiPageState extends State<IkkiuchiPage> {
   @override
   void initState() {
     super.initState();
-    final last = ProgressScope.read(context).ikkiuchi.last;
-    final setup = last == null ? IkkiuchiSetup.first : IkkiuchiRecords.setupOf(last);
-    _perSide = _nearest(IkkiuchiFreeTuning.perSideChoices, (n) => n.toDouble(), setup.perSide.toDouble());
-    _memorise = _nearest(
-        IkkiuchiFreeTuning.memoriseChoices, (d) => d.inSeconds.toDouble(), setup.memorise.inSeconds.toDouble());
-    _rating = _nearest(IkkiuchiFreeTuning.ratingChoices, (r) => r, setup.rating);
+    final setup = ProgressScope.read(context).ikkiuchi.freeSetup;
+    _perSide = _nearest(IkkiuchiFreeChoices.perSide, (n) => n.toDouble(), setup.perSide.toDouble());
+    _memorise =
+        _nearest(IkkiuchiFreeChoices.memorise, (d) => d.inSeconds.toDouble(), setup.memorise.inSeconds.toDouble());
+    _rating = _nearest(IkkiuchiFreeChoices.opponentRating, (r) => r, setup.opponentRating);
   }
 
-  IkkiuchiSetup get _setup => IkkiuchiSetup(
-        perSide: IkkiuchiFreeTuning.perSideChoices[_perSide],
-        memorise: IkkiuchiFreeTuning.memoriseChoices[_memorise],
-        rating: IkkiuchiFreeTuning.ratingChoices[_rating],
+  IkkiuchiSetup get _setup => IkkiuchiSetup.free(
+        perSide: IkkiuchiFreeChoices.perSide[_perSide],
+        memorise: IkkiuchiFreeChoices.memorise[_memorise],
+        opponentRating: IkkiuchiFreeChoices.opponentRating[_rating],
       );
 
   @override
   Widget build(BuildContext context) {
     final s = S.of(context);
-    final matches = ProgressScope.of(context).ikkiuchi.matches;
+    final counts = ProgressScope.of(context).ikkiuchi.counts();
     return Scaffold(
       body: Stack(children: [
         const Positioned.fill(child: GradationBox(Tones.homeSea)),
@@ -94,19 +90,16 @@ class _IkkiuchiPageState extends State<IkkiuchiPage> {
                       ],
                     ),
                     const SizedBox(height: IkkiuchiPageLayout.gap),
-                    _Strip(
-                      played: matches.length,
-                      won: matches.where((m) => m.result == IkkiuchiResult.won).length,
-                    ),
+                    _Strip(played: counts.played, won: counts.won),
                     const SizedBox(height: IkkiuchiPageLayout.panelTop),
                     const _RankedPanel(),
                     const SizedBox(height: IkkiuchiPageLayout.panelTop),
                     const Spacer(),
                     _FreePanel(
                       setup: _setup,
-                      onPerSide: _step(IkkiuchiFreeTuning.perSideChoices.length, _perSide, (i) => _perSide = i),
-                      onMemorise: _step(IkkiuchiFreeTuning.memoriseChoices.length, _memorise, (i) => _memorise = i),
-                      onRating: _step(IkkiuchiFreeTuning.ratingChoices.length, _rating, (i) => _rating = i),
+                      onPerSide: _step(IkkiuchiFreeChoices.perSide.length, _perSide, (i) => _perSide = i),
+                      onMemorise: _step(IkkiuchiFreeChoices.memorise.length, _memorise, (i) => _memorise = i),
+                      onRating: _step(IkkiuchiFreeChoices.opponentRating.length, _rating, (i) => _rating = i),
                     ),
                     const SizedBox(height: IkkiuchiPageLayout.bottomGap),
                   ],
@@ -203,7 +196,7 @@ class _FreePanel extends StatelessWidget {
             const SizedBox(height: IkkiuchiPageLayout.stepperGap),
             stepper(s.ikkiuchiMemoryTime, formatMinutes(setup.memorise), onMemorise),
             const SizedBox(height: IkkiuchiPageLayout.stepperGap),
-            stepper(s.ikkiuchiTobiRating, '${setup.rating.round()}', onRating),
+            stepper(s.ikkiuchiTobiRating, '${setup.opponentRating.round()}', onRating),
           ]),
         ),
         Padding(

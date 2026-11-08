@@ -1,13 +1,12 @@
 import 'package:flutter/material.dart';
 
 import '../../config/design.dart';
-import '../../db/database.dart' show IkkiuchiMatchRow, IkkiuchiReadRow;
+import '../../domain/ikkiuchi_record.dart';
 import '../../domain/ikkiuchi_side.dart';
 import '../../l10n/history_strings.dart';
 import '../../l10n/ikkiuchi_strings.dart';
 import '../../l10n/side_trip_strings.dart';
 import '../../l10n/strings.dart';
-import '../../state/scope.dart';
 import '../manga/manga.dart';
 import '../play/time_format.dart';
 import 'ankiren_widgets.dart';
@@ -16,44 +15,27 @@ import 'review_parts.dart';
 import 'run_page.dart';
 
 /// Opens 一騎打ち match [match]'s page.
-Future<void> openIkkiuchiMatch(BuildContext context, IkkiuchiMatchRow match) =>
+Future<void> openIkkiuchiMatch(BuildContext context, IkkiuchiMatchRecord match) =>
     Navigator.of(context).push(MangaRoute<void>(builder: (_) => IkkiuchiMatchPage(match: match)));
 
-/// A recorded 一騎打ち match: its header names the setup; then how it
-/// ended, the cards left and faults on each side and how long it took;
-/// then every read in order, read from the database as the page opens.
-class IkkiuchiMatchPage extends StatefulWidget {
+/// A recorded 一騎打ち match: its header names its kind and setup; then how
+/// it ended, the cards left and faults on each side and how long it took;
+/// then every read in order.
+class IkkiuchiMatchPage extends StatelessWidget {
   const IkkiuchiMatchPage({super.key, required this.match});
-  final IkkiuchiMatchRow match;
-
-  @override
-  State<IkkiuchiMatchPage> createState() => _IkkiuchiMatchPageState();
-}
-
-class _IkkiuchiMatchPageState extends State<IkkiuchiMatchPage> {
-  late final Future<List<IkkiuchiReadRow>> _reads = ProgressScope.read(context).ikkiuchiReadsOf(widget.match.id);
+  final IkkiuchiMatchRecord match;
 
   @override
   Widget build(BuildContext context) {
     final s = S.of(context);
-    final match = widget.match;
-    final setup = s.ikkiuchiSetupLine(
-        match.perSide, formatMinutes(Duration(milliseconds: match.memoriseMs)), match.tobiRating.round());
+    final setup = match.setup;
+    final kind = match.ranked ? s.sideTripRanked : s.freePlay;
+    final line = s.ikkiuchiSetupLine(setup.perSide, formatMinutes(setup.memorise), setup.opponentRating.round());
     return RunPageFrame(
       title: s.hallName,
-      sub: [s.other.hallName, s.freePlay, s.sessionDate(match.startedAt), setup].join(' · '),
-      shortSub: [s.other.hallName, s.freePlay, s.sessionDay(match.startedAt)].join(' · '),
-      body: FutureBuilder(
-        future: _reads,
-        builder: (context, snap) => ReviewColumn(
-          fillMinHeight: 0,
-          fill: switch (snap.data) {
-            final reads? => _Reads(reads),
-            null => const SizedBox(),
-          },
-          children: [_Summary(match)],
-        ),
-      ),
+      sub: [s.other.hallName, kind, s.sessionDate(match.startedAt), line].join(' · '),
+      shortSub: [s.other.hallName, kind, s.sessionDay(match.startedAt)].join(' · '),
+      body: ReviewColumn(fillMinHeight: 0, fill: _Reads(match.reads), children: [_Summary(match)]),
     );
   }
 }
@@ -62,7 +44,7 @@ class _IkkiuchiMatchPageState extends State<IkkiuchiMatchPage> {
 /// long it took.
 class _Summary extends StatelessWidget {
   const _Summary(this.match);
-  final IkkiuchiMatchRow match;
+  final IkkiuchiMatchRecord match;
 
   @override
   Widget build(BuildContext context) {
@@ -72,10 +54,10 @@ class _Summary extends StatelessWidget {
       child: FactGrid(perRow: IkkiuchiHistoryStyle.factsPerRow, [
         Fact(s.ikkiuchiResult(match.result), s.ikkiuchiResultLabel),
         Fact('${match.playerLeft}', s.ikkiuchiYourLeft),
-        Fact('${match.tobiLeft}', s.ikkiuchiTobiLeft),
+        Fact('${match.opponentLeft}', s.ikkiuchiTobiLeft),
         Fact(formatMinutes(match.endedAt.difference(match.startedAt)), s.ikkiuchiMatchTime),
         Fact('${match.playerFaults}', s.ikkiuchiYourFaults),
-        Fact('${match.tobiFaults}', s.ikkiuchiTobiFaults),
+        Fact('${match.opponentFaults}', s.ikkiuchiTobiFaults),
       ]),
     );
   }
@@ -86,18 +68,20 @@ class _Summary extends StatelessWidget {
 /// with its faults under it. Rows Tobi took are marked.
 class _Reads extends StatelessWidget {
   const _Reads(this.reads);
-  final List<IkkiuchiReadRow> reads;
+  final List<IkkiuchiReadLog> reads;
 
   @override
   Widget build(BuildContext context) {
     final s = S.of(context);
-    Widget side(int? us, int faults) => _Stacked(
-          ReviewTable.cell(us == null ? missingTime : '${formatSeconds(us / Duration.microsecondsPerMillisecond)}s'),
+    Widget side(Duration? take, int faults) => _Stacked(
+          ReviewTable.cell(take == null
+              ? missingTime
+              : '${formatSeconds(take.inMicroseconds / Duration.microsecondsPerMillisecond)}s'),
           faults == 0 ? null : s.ikkiuchiFaultCount(faults),
           HistoryRunStyle.behind,
           end: true,
         );
-    Widget taken(IkkiuchiReadRow r) => _Stacked(
+    Widget taken(IkkiuchiReadLog r) => _Stacked(
           ReviewTable.cell(
               switch (r.taker) {
                 IkkiuchiSide.player => s.ikkiuchiYou,
@@ -123,15 +107,15 @@ class _Reads extends StatelessWidget {
                 stretch: 1,
                 head: [s.ikkiuchiColNumber, s.ikkiuchiColCard, s.ikkiuchiColTaken, s.ikkiuchiYou, s.ikkiuchiTobi],
                 rows: [
-                  for (final r in reads)
+                  for (final (i, r) in reads.indexed)
                     ReviewRow(
                       [
-                        ReviewTable.cell('${r.seq + 1}'),
+                        ReviewTable.cell('${i + 1}'),
                         _Stacked(ReviewTable.cell(kimarijiFor(context, r.poemId), strong: true),
                             r.karafuda ? s.ikkiuchiKarafuda : null, KarafudaStyle.tag),
                         taken(r),
-                        side(r.playerUs, r.playerFaults),
-                        side(r.tobiUs, r.tobiFaults),
+                        side(r.playerTake, r.playerFaults),
+                        side(r.opponentTake, r.opponentFaults),
                       ],
                       marked: r.taker == IkkiuchiSide.opponent,
                     ),

@@ -9,6 +9,7 @@ import 'package:fudatobashi/db/database.dart';
 import 'package:fudatobashi/domain/ankiren_field.dart';
 import 'package:fudatobashi/domain/day_window.dart';
 import 'package:fudatobashi/domain/ikkiuchi_record.dart';
+import 'package:fudatobashi/domain/ikkiuchi_side.dart';
 import 'package:fudatobashi/domain/play_session.dart';
 import 'package:fudatobashi/domain/side_trips.dart';
 import 'package:fudatobashi/domain/step_plan.dart';
@@ -264,17 +265,28 @@ void main() {
     final match = await db.into(db.ikkiuchiMatches).insert(IkkiuchiMatchesCompanion.insert(
         startedAt: DateTime(2026, 11, 2),
         endedAt: DateTime(2026, 11, 2),
+        day: 20261102,
+        ranked: true,
+        opponent: IkkiuchiOpponent.tobi,
         perSide: 25,
         memoriseMs: 900000,
-        tobiRating: 1600,
-        result: IkkiuchiResult.won,
+        opponentRating: 1600,
+        completed: true,
         playerLeft: 0,
-        tobiLeft: 4,
-        playerFaults: 1,
-        tobiFaults: 0));
+        opponentLeft: 4,
+        rating: const Value(1650)));
     await db.into(db.ikkiuchiReads).insert(IkkiuchiReadsCompanion.insert(
-        matchId: match, seq: 0, poemId: 12, karafuda: false, tied: false, playerFaults: 0, tobiFaults: 0));
-    expect([for (final r in await db.select(db.ikkiuchiReads).get()) (r.matchId, r.poemId, r.taker)], [(match, 12, null)]);
+        matchId: match,
+        seq: 0,
+        poemId: 12,
+        cardSide: const Value(IkkiuchiSide.opponent),
+        taker: const Value(IkkiuchiSide.player),
+        tied: false,
+        playerFaults: 0,
+        opponentFaults: 1,
+        playerTakeUs: const Value(640000)));
+    expect([for (final r in await db.select(db.ikkiuchiReads).get()) (r.matchId, r.poemId, r.cardSide, r.taker)],
+        [(match, 12, IkkiuchiSide.opponent, IkkiuchiSide.player)]);
     await db.close();
   });
 

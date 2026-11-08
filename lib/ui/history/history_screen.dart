@@ -4,7 +4,7 @@ import 'package:flutter/material.dart';
 
 import '../../config/design.dart';
 import '../../config/vector_art.dart';
-import '../../db/database.dart' show IkkiuchiMatchRow, SideTripRun;
+import '../../db/database.dart' show SideTripRun;
 import '../../domain/ankiren_review.dart';
 import '../../domain/ikkiuchi_record.dart';
 import '../../domain/level_ladder.dart';
@@ -17,6 +17,7 @@ import '../../l10n/home_strings.dart';
 import '../../l10n/ikkiuchi_strings.dart';
 import '../../l10n/results_strings.dart';
 import '../../l10n/run_strings.dart';
+import '../../l10n/side_trip_strings.dart';
 import '../../l10n/strings.dart';
 import '../../l10n/teiichi_review_strings.dart';
 import '../../state/past_runs.dart';
@@ -81,7 +82,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
     final games = progress.ankirenRuns;
     final placings = progress.teiichiRuns;
     final matches = progress.ikkiuchi.matches.reversed.toList();
-    DateTime dayOfMatch(IkkiuchiMatchRow m) => progress.dayAt(m.startedAt).date;
+    DateTime dayOfMatch(IkkiuchiMatchRecord m) => progress.dayStartedOn(m.startedAt);
     List<PastRun> keptRuns(HistoryFilter f) => [
           for (final r in runs)
             if (f.keepsRun(r, progress.dayOf(r.row), today)) r,
@@ -94,7 +95,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
           for (final g in placings)
             if (f.keepsPlacing(g, progress.dayOfGame(g), today)) g,
         ];
-    List<IkkiuchiMatchRow> keptMatches(HistoryFilter f) => [
+    List<IkkiuchiMatchRecord> keptMatches(HistoryFilter f) => [
           for (final m in matches)
             if (f.keepsMatch(m, dayOfMatch(m), today)) m,
         ];
@@ -180,7 +181,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
                   label: s.historyIkkiuchiTab,
                   accent: HistoryLooks.ikkiuchi.accent,
                   sub: s.sub?.historyIkkiuchiTab,
-                  builder: (_) => _DayList<IkkiuchiMatchRow>(
+                  builder: (_) => _DayList<IkkiuchiMatchRecord>(
                     items: keptMatches(_filter),
                     dayOf: dayOfMatch,
                     rowOf: _MatchRow.new,
@@ -739,22 +740,23 @@ class _PlacingRow extends StatelessWidget {
   }
 }
 
-/// A 一騎打ち match: how it ended, its setup and faults, and the cards
-/// left on each side, the player's first.
+/// A 一騎打ち match: ranked or free, how it ended, its setup and faults,
+/// and the cards left on each side, the player's first.
 class _MatchRow extends StatelessWidget {
   const _MatchRow(this.match);
-  final IkkiuchiMatchRow match;
+  final IkkiuchiMatchRecord match;
 
   @override
   Widget build(BuildContext context) {
     final s = S.of(context);
     final result = s.ikkiuchiResult(match.result);
+    final setup = match.setup;
     return _ListRow(
       accent: HistoryLooks.ikkiuchi.accent,
       startedAt: match.startedAt,
       tags: [
         _TagLine([
-          KindTag(s.freePlay, look: HistoryLooks.ikkiuchi),
+          KindTag(match.ranked ? s.sideTripRanked : s.freePlay, look: HistoryLooks.ikkiuchi),
           switch (match.result) {
             IkkiuchiResult.won => ResultBadge(result, color: Palette.landSoft, cheer: true),
             IkkiuchiResult.lost || IkkiuchiResult.gaveUp => ResultBadge(result, muted: true),
@@ -762,11 +764,10 @@ class _MatchRow extends StatelessWidget {
         ]),
       ],
       line: Text([
-        s.ikkiuchiSetupLine(
-            match.perSide, formatMinutes(Duration(milliseconds: match.memoriseMs)), match.tobiRating.round()),
-        s.ikkiuchiFaultsLine(match.playerFaults, match.tobiFaults),
+        s.ikkiuchiSetupLine(setup.perSide, formatMinutes(setup.memorise), setup.opponentRating.round()),
+        s.ikkiuchiFaultsLine(match.playerFaults, match.opponentFaults),
       ].join(' · ')),
-      value: '${match.playerLeft}–${match.tobiLeft}',
+      value: '${match.playerLeft}–${match.opponentLeft}',
       caption: s.ikkiuchiLeftCaption,
       onTap: () => openIkkiuchiMatch(context, match),
     );

@@ -12,6 +12,7 @@ import 'package:fudatobashi/db/database.dart';
 import 'package:fudatobashi/db/fsrs_rows.dart';
 import 'package:fudatobashi/domain/ankiren_level.dart';
 import 'package:fudatobashi/domain/card_stats.dart';
+import 'package:fudatobashi/domain/ikkiuchi_record.dart';
 import 'package:fudatobashi/domain/play_session.dart';
 import 'package:fudatobashi/domain/rating.dart';
 import 'package:fudatobashi/domain/side_trips.dart';
@@ -310,6 +311,38 @@ void main() {
       final before = await dumpTrips(db);
       expect(await writesDuring(db, () => DbIntegrity.run(db)), isEmpty);
       expect(await dumpTrips(db), before);
+      await db.close();
+    });
+  });
+
+  group('一騎打ち', () {
+    Future<int> match(AppDatabase db, int d) => db.into(db.ikkiuchiMatches).insert(IkkiuchiMatchesCompanion.insert(
+          startedAt: day(d),
+          endedAt: day(d, 59),
+          day: 20260900 + d,
+          ranked: false,
+          opponent: IkkiuchiOpponent.tobi,
+          perSide: 5,
+          memoriseMs: 60000,
+          opponentRating: 1200,
+          completed: true,
+          playerLeft: 0,
+          opponentLeft: 2,
+        ));
+
+    Future<void> read(AppDatabase db, int matchId) => db.into(db.ikkiuchiReads).insert(IkkiuchiReadsCompanion.insert(
+        matchId: matchId, seq: 0, poemId: 1, tied: false, playerFaults: 0, opponentFaults: 0));
+
+    test('reads of a missing match are deleted, and only those', () async {
+      final db = AppDatabase(NativeDatabase.memory());
+      final kept = await match(db, 1);
+      await read(db, kept);
+      await read(db, 99);
+
+      await DbIntegrity.run(db);
+
+      expect([for (final r in await db.select(db.ikkiuchiReads).get()) r.matchId], [kept]);
+      expect(await writesDuring(db, () => DbIntegrity.run(db)), isEmpty);
       await db.close();
     });
   });

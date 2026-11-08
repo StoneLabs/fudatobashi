@@ -2,77 +2,115 @@ import 'package:drift/drift.dart';
 
 import '../db/database.dart';
 import '../domain/ikkiuchi_record.dart';
-import '../domain/ikkiuchi_side.dart';
 
-/// The recorded 一騎打ち matches, oldest first, and each one's reads. Owned
-/// by `Progress`, which loads it on start; the matches are kept in memory,
-/// a match's reads are read from the database when asked for.
+/// The recorded 一騎打ち matches, oldest first, each with its reads, and
+/// what they add up to. Owned by `Progress`, which loads it on start.
 class IkkiuchiRecords {
   IkkiuchiRecords._(this._matches);
 
-  static Future<IkkiuchiRecords> load(AppDatabase db) async => IkkiuchiRecords._(
-      await (db.select(db.ikkiuchiMatches)..orderBy([(m) => OrderingTerm.asc(m.id)])).get());
+  static Future<IkkiuchiRecords> load(AppDatabase db) async {
+    final rows = await (db.select(db.ikkiuchiMatches)..orderBy([(m) => OrderingTerm.asc(m.id)])).get();
+    final stored = await (db.select(db.ikkiuchiReads)
+          ..orderBy([(r) => OrderingTerm.asc(r.matchId), (r) => OrderingTerm.asc(r.seq)]))
+        .get();
+    final reads = <int, List<IkkiuchiReadLog>>{};
+    for (final r in stored) {
+      (reads[r.matchId] ??= []).add(_readOf(r));
+    }
+    return IkkiuchiRecords._([for (final m in rows) _matchOf(m, reads[m.id] ?? const [])]);
+  }
 
-  final List<IkkiuchiMatchRow> _matches;
+  final List<IkkiuchiMatchRecord> _matches;
 
   /// Every recorded match, oldest first.
-  List<IkkiuchiMatchRow> get matches => List.unmodifiable(_matches);
+  List<IkkiuchiMatchRecord> get matches => List.unmodifiable(_matches);
 
-  /// The match stored last; null before the first.
-  IkkiuchiMatchRow? get last => _matches.lastOrNull;
+  /// The matches played, won and lost, a match given up counting as lost:
+  /// every match, or only the ranked ones or the free ones by [ranked].
+  ({int played, int won, int lost}) counts({bool? ranked}) {
+    final kept = [
+      for (final m in _matches)
+        if (ranked == null || m.ranked == ranked) m,
+    ];
+    final won = kept.where((m) => m.result == IkkiuchiResult.won).length;
+    return (played: kept.length, won: won, lost: kept.length - won);
+  }
 
-  /// [match]'s setup as it was played.
-  static IkkiuchiSetup setupOf(IkkiuchiMatchRow match) => IkkiuchiSetup(
-        perSide: match.perSide,
-        memorise: Duration(milliseconds: match.memoriseMs),
-        rating: match.tobiRating,
-      );
+  /// The last free match's setup, or the first free one's before any.
+  IkkiuchiSetup get freeSetup => _matches.where((m) => !m.ranked).lastOrNull?.setup ?? IkkiuchiSetup.firstFree;
 
-  /// Match [matchId]'s reads, in the order they were read.
-  static Future<List<IkkiuchiReadRow>> readsOf(AppDatabase db, int matchId) => (db.select(db.ikkiuchiReads)
-        ..where((r) => r.matchId.equals(matchId))
-        ..orderBy([(r) => OrderingTerm.asc(r.seq)]))
-      .get();
-
-  /// Stores [record], its match and its reads in one transaction, and keeps
-  /// the match.
-  Future<IkkiuchiMatchRow> record(AppDatabase db, IkkiuchiMatchRecord record) async {
-    final setup = record.setup;
-    final row = await db.transaction(() async {
-      final row = await db.into(db.ikkiuchiMatches).insertReturning(IkkiuchiMatchesCompanion.insert(
-            startedAt: record.startedAt,
-            endedAt: record.endedAt,
+  /// Stores [match], once it is over, as played on practice day [day]: its
+  /// row and its reads, in one transaction. Returns it as stored.
+  Future<IkkiuchiMatchRecord> record(AppDatabase db, IkkiuchiMatchRecord match, {required int day}) async {
+    final setup = match.setup;
+    final id = await db.transaction(() async {
+      final id = await db.into(db.ikkiuchiMatches).insert(IkkiuchiMatchesCompanion.insert(
+            startedAt: match.startedAt,
+            endedAt: match.endedAt,
+            day: day,
+            ranked: setup.ranked,
+            opponent: setup.opponent,
             perSide: setup.perSide,
             memoriseMs: setup.memorise.inMilliseconds,
-            tobiRating: setup.rating,
-            result: record.result,
-            playerLeft: record.playerLeft,
-            tobiLeft: record.tobiLeft,
-            playerFaults: record.faultsOf(IkkiuchiSide.player),
-            tobiFaults: record.faultsOf(IkkiuchiSide.opponent),
+            opponentRating: setup.opponentRating,
+            completed: match.completed,
+            playerLeft: match.playerLeft,
+            opponentLeft: match.opponentLeft,
           ));
       await db.batch((b) => b.insertAll(db.ikkiuchiReads, [
-            for (final (i, r) in record.reads.indexed)
+            for (final (i, r) in match.reads.indexed)
               IkkiuchiReadsCompanion.insert(
-                matchId: row.id,
+                matchId: id,
                 seq: i,
                 poemId: r.poemId,
-                karafuda: r.end.cardSide == null,
-                taker: Value(r.end.taker),
-                tied: r.end.tied,
-                playerFaults: r.end.playerFaults.length,
-                tobiFaults: r.end.tobiFaults.length,
-                playerUs: Value(r.playerTake?.inMicroseconds),
-                tobiUs: Value(r.tobiTake?.inMicroseconds),
+                cardSide: Value(r.cardSide),
+                taker: Value(r.taker),
+                tied: r.tied,
+                playerFaults: r.playerFaults,
+                opponentFaults: r.opponentFaults,
+                playerTakeUs: Value(r.playerTake?.inMicroseconds),
+                opponentTakeUs: Value(r.opponentTake?.inMicroseconds),
               ),
           ]));
-      return row;
+      return id;
     });
-    _matches.add(row);
-    return row;
+    final stored = match.stored(id: id, rating: null);
+    _matches.add(stored);
+    return stored;
   }
 
   /// Forgets every match, once the caller has deleted them from the
   /// database.
   void clear() => _matches.clear();
+
+  static IkkiuchiMatchRecord _matchOf(IkkiuchiMatchRow m, List<IkkiuchiReadLog> reads) => IkkiuchiMatchRecord(
+        id: m.id,
+        setup: IkkiuchiSetup(
+          ranked: m.ranked,
+          opponent: m.opponent,
+          opponentRating: m.opponentRating,
+          perSide: m.perSide,
+          memorise: Duration(milliseconds: m.memoriseMs),
+        ),
+        startedAt: m.startedAt,
+        endedAt: m.endedAt,
+        completed: m.completed,
+        playerLeft: m.playerLeft,
+        opponentLeft: m.opponentLeft,
+        rating: m.rating,
+        reads: reads,
+      );
+
+  static Duration? _us(int? us) => us == null ? null : Duration(microseconds: us);
+
+  static IkkiuchiReadLog _readOf(IkkiuchiReadRow r) => IkkiuchiReadLog(
+        poemId: r.poemId,
+        cardSide: r.cardSide,
+        taker: r.taker,
+        tied: r.tied,
+        playerFaults: r.playerFaults,
+        opponentFaults: r.opponentFaults,
+        playerTake: _us(r.playerTakeUs),
+        opponentTake: _us(r.opponentTakeUs),
+      );
 }

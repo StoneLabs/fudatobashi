@@ -7,6 +7,7 @@ import '../data/islands.dart';
 import '../domain/card_stats.dart';
 import '../domain/day_window.dart';
 import '../domain/trainer.dart' show LearningMode;
+import 'past_runs.dart';
 import 'play_config.dart';
 import 'progress.dart';
 
@@ -108,7 +109,8 @@ extension StatsHistory on Progress {
   /// Every day with play, by date.
   Map<DateTime, PracticeDay> get practiceLog {
     final days = <DateTime, PracticeDay>{};
-    PracticeDay at(int day) => days.putIfAbsent(DayWindow.dateOf(day), () => PracticeDay(DayWindow.dateOf(day)));
+    PracticeDay on(DateTime date) => days.putIfAbsent(date, () => PracticeDay(date));
+    PracticeDay at(int day) => on(DayWindow.dateOf(day));
     for (final r in runs) {
       final d = at(r.day)
         ..runs += 1
@@ -117,6 +119,9 @@ extension StatsHistory on Progress {
     }
     for (final trip in sideTrips.runs) {
       at(trip.day).games += 1;
+    }
+    for (final match in ikkiuchi.matches) {
+      on(dayStartedOn(match.startedAt)).games += 1;
     }
     for (final d in days.values) {
       d.setDone = setDoneOn(d.date);
