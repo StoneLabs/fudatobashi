@@ -8,16 +8,18 @@ import '../../l10n/strings.dart';
 import '../../state/scope.dart';
 import '../manga/buttons.dart';
 import '../manga/hold_confirm.dart';
+import '../play/time_format.dart';
 
 /// The game column down the board's right edge in landscape, as tall as it
 /// is laid out: 終了 at its top, which ends the match once held
-/// ([IkkiuchiMatchTuning.endHold]) and then tells [onEnd]; the score in its
-/// middle, each side's cards left ([tobi], [player]), split on the line
-/// [split] down the column, the middle of the gap between the sides; and
-/// 並べ替え at its foot, which tells [onArrange], or 完了 while the player
-/// moves their cards ([arranging]), which tells [onDone]. 並べ替え fades
-/// while [onArrange] is null. Only 終了 and a 並べ替え or 完了 not faded take
-/// touches; the rest lets them through to what lies under it.
+/// ([IkkiuchiMatchTuning.endHold]) and then tells [onEnd], and says to hold
+/// it when only tapped; the score in its middle, each side's cards left
+/// ([tobi], [player]), split on the line [split] down the column, the
+/// middle of the gap between the sides; and 並べ替え at its foot, which
+/// tells [onArrange], or 完了 while the player moves their cards
+/// ([arranging]), which tells [onDone]. 並べ替え fades while [onArrange] is
+/// null. Only 終了 and a 並べ替え or 完了 not faded take touches; the rest
+/// lets them through to what lies under it.
 class IkkiuchiMatchColumn extends StatelessWidget {
   const IkkiuchiMatchColumn({
     super.key,
@@ -40,6 +42,7 @@ class IkkiuchiMatchColumn extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final s = S.of(context);
+    final endSeconds = IkkiuchiMatchTuning.endHold.inMilliseconds / Duration.millisecondsPerSecond;
     return LayoutBuilder(
       builder: (context, box) => Stack(clipBehavior: Clip.none, children: [
         Positioned(
@@ -50,6 +53,7 @@ class IkkiuchiMatchColumn extends StatelessWidget {
             child: HoldToConfirmButton(
               duration: IkkiuchiMatchTuning.endHold,
               label: s.end,
+              hint: s.ikkiuchiEndHint(formatAverage(endSeconds)),
               look: IkkiuchiColumnStyle.end,
               haptics: ProgressScope.of(context).settings.haptics,
               icon: MangaIcon(IconArt.end,

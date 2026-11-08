@@ -34,6 +34,9 @@ extension IkkiuchiStrings on S {
   String get ikkiuchiArranging => t('ikkiuchiArranging');
   String get ikkiuchiArrangeHint => t('ikkiuchiArrangeHint');
 
+  /// 終了's hint once it is only tapped, [seconds] being how long to hold it.
+  String ikkiuchiEndHint(String seconds) => f('ikkiuchiEndHint', [seconds]);
+
   /// The score's names.
   String get ikkiuchiTobi => t('ikkiuchiTobi');
   String get ikkiuchiYou => t('ikkiuchiYou');

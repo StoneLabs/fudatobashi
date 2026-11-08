@@ -167,6 +167,9 @@ abstract final class HoldConfirmStyle {
   static const double glowFrom = 0.9;
   static const List<Color> glowColors = [Color(0xE6FFF1A8), Color(0x99FFD83A), Color(0x00FFD83A)];
   static const Duration drain = Duration(milliseconds: 260);
+
+  /// The hint's balloon, popped beside the button.
+  static const Size hintSize = Size(200, 76);
 }
 
 /// The full-screen alarm before what can't be undone (`HoldWarningScreen`:

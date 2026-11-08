@@ -7,6 +7,7 @@ import 'package:flutter/widgets.dart';
 
 import '../../config/config.dart';
 import '../../config/design.dart';
+import 'balloon_pop.dart';
 import 'hazard.dart';
 import 'lettering.dart';
 import 'seeded_random.dart';
@@ -25,6 +26,7 @@ class HoldToConfirmButton extends StatefulWidget {
     required this.label,
     required this.onConfirmed,
     this.holdingLabel,
+    this.hint,
     this.icon,
     this.haptics = true,
     this.onProgress,
@@ -36,6 +38,10 @@ class HoldToConfirmButton extends StatefulWidget {
 
   /// Shown in place of [label] while the button is held.
   final String? holdingLabel;
+
+  /// Said in a balloon beside the button once it is tapped, not held,
+  /// several times in a row (see [HoldConfirmTuning]); never when null.
+  final String? hint;
   final VoidCallback onConfirmed;
 
   /// Sits in the dome until the button is held.
@@ -64,6 +70,11 @@ class _HoldToConfirmButtonState extends State<HoldToConfirmButton> with SingleTi
   /// When, into the hold, the next buzz is due.
   Duration _nextBuzz = Duration.zero;
 
+  /// Fingers lifted before the hold was done, in a row, and the wait that
+  /// ends the row.
+  int _taps = 0;
+  Timer? _tapWindow;
+
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
@@ -76,15 +87,30 @@ class _HoldToConfirmButtonState extends State<HoldToConfirmButton> with SingleTi
     _fill.forward(from: 0);
   }
 
-  void _release() {
+  void _release({bool lifted = false}) {
     if (!_held || !mounted) return;
     setState(() => _held = false);
     if (_fill.status == AnimationStatus.completed) return;
+    if (lifted) _tapped();
     if (_still) {
       _fill.value = 0;
     } else {
       _fill.animateBack(0, duration: HoldConfirmStyle.drain, curve: Curves.easeOut);
     }
+  }
+
+  /// Counts a finger lifted before the hold was done, and pops the hint on
+  /// enough of them in a row.
+  void _tapped() {
+    final hint = widget.hint;
+    if (hint == null) return;
+    _tapWindow?.cancel();
+    if (++_taps < HoldConfirmTuning.hintTaps) {
+      _tapWindow = Timer(HoldConfirmTuning.hintWindow, () => _taps = 0);
+      return;
+    }
+    _taps = 0;
+    BalloonPop.show(context, hint, size: HoldConfirmStyle.hintSize, life: HoldConfirmTuning.hintLife);
   }
 
   void _onTick() {
@@ -110,6 +136,7 @@ class _HoldToConfirmButtonState extends State<HoldToConfirmButton> with SingleTi
 
   @override
   void dispose() {
+    _tapWindow?.cancel();
     _fill.dispose();
     super.dispose();
   }
@@ -124,7 +151,7 @@ class _HoldToConfirmButtonState extends State<HoldToConfirmButton> with SingleTi
       child: GestureDetector(
         behavior: HitTestBehavior.opaque,
         onTapDown: (_) => _press(),
-        onTapUp: (_) => _release(),
+        onTapUp: (_) => _release(lifted: true),
         onTapCancel: _release,
         child: Column(
           mainAxisSize: MainAxisSize.min,

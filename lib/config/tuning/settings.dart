@@ -11,11 +11,16 @@ abstract final class HoldWarningTuning {
 /// the hold nears the end, like arming something. The gap between buzzes
 /// shrinks from [buzzFirst] to [buzzLast]; past each of [strengthSteps]
 /// (shares of the hold) a buzz steps up from a click to a light, a medium
-/// and a heavy impact.
+/// and a heavy impact. Its hint, when it has one, pops after [hintTaps]
+/// taps in a row, each within [hintWindow] of the last, and stays
+/// [hintLife].
 abstract final class HoldConfirmTuning {
   static const Duration buzzFirst = Duration(milliseconds: 1000);
   static const Duration buzzLast = Duration(milliseconds: 90);
   static const List<double> strengthSteps = [0.35, 0.65, 0.88];
+  static const int hintTaps = 2;
+  static const Duration hintWindow = Duration(milliseconds: 1500);
+  static const Duration hintLife = Duration(milliseconds: 2400);
 }
 
 /// Defaults of `AppSettings`.
