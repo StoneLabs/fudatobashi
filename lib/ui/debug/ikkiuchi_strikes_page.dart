@@ -15,9 +15,9 @@ import '../../l10n/karafuda_strings.dart';
 import '../../l10n/strings.dart';
 import '../ikkiuchi/ikkiuchi_board_painter.dart';
 import '../ikkiuchi/ikkiuchi_board_scene.dart';
+import '../ikkiuchi/ikkiuchi_dealer.dart';
 import '../sound/sounds.dart';
 import 'debug_common.dart';
-import 'ikkiuchi_dealer.dart';
 import 'ikkiuchi_rating_header.dart';
 import 'ikkiuchi_values.dart';
 
@@ -59,7 +59,8 @@ class IkkiuchiStrikesPageState extends State<IkkiuchiStrikesPage> with SingleTic
     IkkiuchiMove.smear: 'smear',
   };
 
-  final _dealer = IkkiuchiDealer();
+  final _dealer = IkkiuchiDealer(
+      rows: IkkiuchiToolsTuning.dealRows, playerSeedOffset: IkkiuchiToolsTuning.playerSeedOffset);
   late double _rating = widget.rating;
   late int _seed = widget.seed ?? math.Random().nextInt(IkkiuchiToolsTuning.seeds);
   late var _rng = math.Random(_seed);
@@ -103,8 +104,8 @@ class IkkiuchiStrikesPageState extends State<IkkiuchiStrikesPage> with SingleTic
 
   /// The scene for a board filling [room], set out afresh when its size,
   /// the layout, the rating or the seed changes.
-  IkkiuchiBoardScene _sceneFor(Size room) => _dealer.sceneFor(context, room,
-      landscape: _landscape, rating: _rating, seed: _seed, onNew: (scene) {
+  IkkiuchiBoardScene _sceneFor(Size room) => _dealer.sceneFor(context, IkkiuchiDealer.boardIn(room, landscape: _landscape),
+      landscape: _landscape, rating: _rating, seed: _seed, perSide: IkkiuchiToolsTuning.dealPerSide, onNew: (scene) {
         _called = false;
         scene.wind = _wind;
       });
@@ -217,7 +218,7 @@ class IkkiuchiStrikesPageState extends State<IkkiuchiStrikesPage> with SingleTic
         children: [
           IkkiuchiRatingHeader(
             rating: _rating,
-            note: 'seed $_seed · you ${IkkiuchiDealer.playerRating(_seed).round()}',
+            note: 'seed $_seed · you ${_dealer.playerRating(_seed).round()}',
             onChanged: (v) => setState(() => _rating = v),
           ),
           Expanded(

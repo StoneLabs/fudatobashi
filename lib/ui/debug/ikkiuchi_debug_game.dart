@@ -10,10 +10,10 @@ import '../../config/design.dart';
 import '../../domain/ikkiuchi_cards.dart';
 import '../../domain/ikkiuchi_match.dart';
 import '../ikkiuchi/ikkiuchi_board_scene.dart';
+import '../ikkiuchi/ikkiuchi_dealer.dart';
 import '../ikkiuchi/ikkiuchi_match_board.dart';
 import '../ikkiuchi/ikkiuchi_match_flow.dart';
 import 'debug_common.dart';
-import 'ikkiuchi_dealer.dart';
 
 /// The developer's 一騎打ち game: a whole match ([IkkiuchiMatchFlow]) on the
 /// whole screen, its system bars hidden, both sides dealt at random. The
@@ -42,7 +42,8 @@ class IkkiuchiDebugGame extends StatefulWidget {
 }
 
 class IkkiuchiDebugGameState extends State<IkkiuchiDebugGame> with SingleTickerProviderStateMixin {
-  final _dealer = IkkiuchiDealer();
+  final _dealer = IkkiuchiDealer(
+      rows: IkkiuchiToolsTuning.dealRows, playerSeedOffset: IkkiuchiToolsTuning.playerSeedOffset);
   late int _seed = widget.seed ?? _randomSeed();
   late bool _landscape = widget.landscape;
   int _perSide = IkkiuchiToolsTuning.dealPerSide;
@@ -98,7 +99,7 @@ class IkkiuchiDebugGameState extends State<IkkiuchiDebugGame> with SingleTickerP
   /// The match on a board filling [room]; a board set out afresh starts
   /// one afresh.
   IkkiuchiMatchFlow _flowFor(Size room) {
-    _dealer.sceneFor(context, room,
+    _dealer.sceneFor(context, IkkiuchiDealer.boardIn(room, landscape: _landscape),
         landscape: _landscape,
         rating: _dealRating,
         seed: _seed,
