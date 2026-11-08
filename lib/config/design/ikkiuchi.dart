@@ -122,6 +122,11 @@ abstract final class IkkiuchiSendStyle {
   /// with its tag, `gap` clear of the half's edges.
   static const wait = (maxHeight: 150.0, tobiShare: 0.78, margin: 12.0, scale: 1.8, landscapeScale: 2.3, gap: 6.0);
 
+  /// Under the waiting card's tag a second tag says how to place it, its
+  /// words [hintFont], [hintRoom] tall; the layout keeps room for both.
+  static const double hintFont = 10.5;
+  static const double hintRoom = 19;
+
   /// Tobi's side, which takes a card the player sends anywhere on it, as
   /// one spot reaching [sideOutset] past the edges of his half.
   static const double sideOutset = 4;

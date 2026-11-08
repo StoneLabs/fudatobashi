@@ -132,10 +132,11 @@ extension IkkiuchiStrings on S {
           },
       ].join(t('ikkiuchiFeedbackJoin'));
 
-  /// The tag on a card dragged over Tobi's side, and Tobi's word as his
-  /// card waits.
+  /// The tag on a card dragged over Tobi's side, Tobi's word as his card
+  /// waits, and how to place it, under its tag.
   String get ikkiuchiToTobi => t('ikkiuchiToTobi');
   String get ikkiuchiHereYouGo => t('ikkiuchiHereYouGo');
+  String get ikkiuchiSentHint => t('ikkiuchiSentHint');
 
   String ikkiuchiRowName(FieldRow row) => switch (row) {
         FieldRow.lower => t('ikkiuchiRowLower'),

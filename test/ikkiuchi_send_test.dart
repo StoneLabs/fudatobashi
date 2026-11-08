@@ -339,9 +339,9 @@ void main() {
       expect(wait.width, greaterThan(2 * l.cardW), reason: 'big');
     });
 
-    test("in landscape the waiting card lies big just right of Tobi, in his half with its tag", () {
+    test("in landscape the waiting card lies big just right of Tobi, in his half with its tags", () {
       const style = IkkiuchiSendStyle.wait;
-      final tag = IkkiuchiSendStyle.look.stackTagRoom;
+      final tags = IkkiuchiSendStyle.look.stackTagRoom + IkkiuchiSendStyle.hintRoom;
       for (final size in [smallLandscape, phone.flipped, tabletLandscape]) {
         for (var seed = 0; seed < 20; seed++) {
           final sides = dealt(seed);
@@ -355,7 +355,7 @@ void main() {
           expect(wait.width, lessThanOrEqualTo(style.landscapeScale * l.cardW + 1e-9), reason: why);
           expect(wait.left, closeTo(tobiRight + style.gap, 1e-9), reason: '$why: just right of Tobi');
           expect(wait.top, greaterThanOrEqualTo(l.field.top), reason: "$why: in Tobi's half");
-          expect(wait.bottom + tag, lessThanOrEqualTo(l.band.top + 1e-9), reason: "$why: in his half with its tag");
+          expect(wait.bottom + tags, lessThanOrEqualTo(l.band.top + 1e-9), reason: "$why: in his half with its tags");
           expect(wait.right, lessThanOrEqualTo(l.column!.left), reason: '$why: clear of the column');
         }
       }

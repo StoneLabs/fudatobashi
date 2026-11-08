@@ -136,6 +136,9 @@ class IkkiuchiBoardLayout {
   static CardBox _onBoard(CardBox b, Vec origin, double cardW) =>
       CardBox(origin + b.centre * cardW, b.hw * cardW, b.hh * cardW, b.angle);
 
+  /// The room under the waiting card for its tag and the hint under it.
+  static final _waitTags = IkkiuchiSendStyle.look.stackTagRoom + IkkiuchiSendStyle.hintRoom;
+
   /// A waiting card [height] tall, centred across [from]..[to] with its
   /// foot at [foot].
   static Rect _waitIn(double from, double to, double foot, double height) {
@@ -143,13 +146,13 @@ class IkkiuchiBoardLayout {
     return Rect.fromLTWH((from + to - width) / 2, foot - height, width, height);
   }
 
-  /// Right of Tobi, its tag's foot just over his side; where the field's
+  /// Right of Tobi, its tags' foot just over his side; where the field's
   /// cards are big, [IkkiuchiSendStyle.wait]'s `scale` of them wide, as far
   /// as the room above the side takes it.
   static Rect _waitByTobi(Rect field, TobiFrame tobi, double cardW, double w) {
     const style = IkkiuchiSendStyle.wait;
     final from = tobi.origin.x + tobi.rig.size.x * tobi.k, to = w - IkkiuchiBoardStyle.pad;
-    final foot = field.top - IkkiuchiSendStyle.look.stackTagRoom - style.margin;
+    final foot = field.top - _waitTags - style.margin;
     final height = [
       math.max(math.min(style.maxHeight, tobi.rig.size.y * tobi.k * style.tobiShare), style.scale * cardW * IkkiuchiField.cardH),
       (to - from - 2 * style.margin) * IkkiuchiField.cardH,
@@ -161,10 +164,10 @@ class IkkiuchiBoardLayout {
   /// Just right of Tobi, [IkkiuchiSendStyle.wait]'s `gap` clear of him, in
   /// the open middle of his half and over his cards where it must: at most
   /// `landscapeScale` field cards wide, as tall as his half takes it with
-  /// its tag under it, and centred on the half; never past the [column].
+  /// its tags under it, and centred on the half; never past the [column].
   static Rect _waitRightOfTobi(Rect field, Rect band, double cardW, TobiFrame tobi, Rect column) {
     const style = IkkiuchiSendStyle.wait;
-    final tag = IkkiuchiSendStyle.look.stackTagRoom;
+    final tag = _waitTags;
     const aspect = IkkiuchiField.cardH;
     final half = Rect.fromLTRB(field.left, field.top, field.right, band.top);
     final width = math.max(cardW, math.min(style.landscapeScale * cardW, (half.height - tag - 2 * style.gap) / aspect));

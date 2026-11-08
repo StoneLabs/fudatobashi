@@ -45,7 +45,11 @@ import 'package:fudatobashi/ui/side_trips/trip_record_panels.dart';
 import 'package:fudatobashi/state/ikkiuchi_journal.dart';
 import 'package:fudatobashi/state/progress.dart';
 import 'package:fudatobashi/state/scope.dart';
+import 'package:fudatobashi/domain/ikkiuchi_side.dart';
+import 'package:fudatobashi/domain/placing.dart';
+import 'package:fudatobashi/ui/ikkiuchi/ikkiuchi_board_painter.dart';
 import 'package:fudatobashi/ui/ikkiuchi/ikkiuchi_match_flow.dart';
+import 'package:fudatobashi/ui/ikkiuchi/ikkiuchi_send_flow.dart';
 import 'package:fudatobashi/ui/ikkiuchi/ikkiuchi_match_layers.dart';
 import 'package:fudatobashi/ui/ikkiuchi/ikkiuchi_match_screen.dart';
 import 'package:fudatobashi/ui/manga/manga.dart';
@@ -442,6 +446,72 @@ void main() {
     await tester.pump();
     expect(state.flow, same(dealt), reason: 'a card placed: kept, scaled to fit');
     expect(dealt.scene.sides!.playerCards, hasLength(1));
+    expect(tester.takeException(), isNull);
+    await leave(tester);
+    await tester.pumpWidget(const SizedBox());
+  });
+
+  testWidgets("Tobi's sent card says to drag it or tap a spot, and a tap on a spot or a card places it there",
+      (tester) async {
+    final p = await open(tester);
+    await showPage(tester, p, phone: usersPhoneLandscape);
+    final flow = (await start(tester, IkkiuchiSetup.firstFree)).flow!;
+    final scene = flow.scene, send = scene.send;
+    scene.opening
+      ..placeRest()
+      ..finishTobi();
+    flow.donePlacing();
+    final board = tester.renderObject<RenderBox>(find.byType(IkkiuchiBoardView));
+
+    // A finger's tap at [at] on the board, moving a little before it lifts.
+    Future<void> tapOn(Offset at) async {
+      final g = await tester.startGesture(board.localToGlobal(at));
+      await tester.pump(const Duration(milliseconds: 40));
+      await g.moveBy(const Offset(3, 2));
+      await tester.pump(const Duration(milliseconds: 40));
+      await g.up();
+      await tester.pump();
+    }
+
+    // Tobi sends a card, and it waits; [place] taps where it goes.
+    Future<int> receive(Future<void> Function() place) async {
+      for (var i = 0; i < 200 && !scene.atRest; i++) {
+        await tester.pump(const Duration(milliseconds: 16));
+      }
+      flow.sendByHand(IkkiuchiSide.opponent);
+      for (var i = 0; i < 200 && send.stage != IkkiuchiSendStage.waiting; i++) {
+        await tester.pump(const Duration(milliseconds: 16));
+      }
+      expect(send.stage, IkkiuchiSendStage.waiting);
+      for (var i = 0; i < 40; i++) {
+        await tester.pump(const Duration(milliseconds: 16));
+      }
+      expect(find.text(s.ikkiuchiSentHint), findsOneWidget, reason: 'under its tag');
+      final card = send.card!;
+      await place();
+      expect(send.stage, IkkiuchiSendStage.none, reason: 'placed by the tap');
+      expect(scene.sides!.playerCards, contains(card));
+      expect(find.text(s.ikkiuchiSentHint), findsNothing);
+      return card;
+    }
+
+    late final PlacingSpot spot;
+    final onSpot = await receive(() async {
+      final (at, r) = send.targets().freeSpots.firstWhere((s) => s.$1 is ClusterEnd);
+      spot = at;
+      await tapOn(Offset(r.x + r.w / 2, r.y + r.h / 2));
+    });
+    final place = scene.sides!.playerBoard.side.placeOf(onSpot)!;
+    expect(ClusterEnd(place.row, place.part), spot, reason: 'at the spot tapped');
+
+    late final int under;
+    final onCard = await receive(() async {
+      under = scene.sides!.player[1].left.first;
+      final box = scene.board.cards.card(under).box;
+      await tapOn(Offset(box.centre.x, box.centre.y));
+    });
+    final side = scene.sides!.playerBoard.side;
+    expect(side.placeOf(onCard)!.index, side.placeOf(under)!.index - 1, reason: "in the tapped card's place");
     expect(tester.takeException(), isNull);
     await leave(tester);
     await tester.pumpWidget(const SizedBox());

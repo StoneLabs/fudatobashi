@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart' show OverflowBoxFit;
 
 import '../../config/design.dart';
 import '../../domain/placing.dart';
@@ -22,8 +23,8 @@ enum IkkiuchiLayerPart { under, over, top }
 /// the card dragged is over it; the dashed spots Tobi's waiting card may
 /// go. Over them: the band's words while a card is sent, Tobi's balloon
 /// while his card waits, where a card dragged would land, and the touches.
-/// On top: Tobi's card waiting as a stack of one, and a card being
-/// dragged.
+/// On top: Tobi's card waiting as a stack of one, the hint under its tag
+/// to drag it or tap a spot, and a card being dragged.
 class IkkiuchiSendLayer extends StatelessWidget {
   const IkkiuchiSendLayer({super.key, required this.scene, required this.part});
 
@@ -101,14 +102,30 @@ class IkkiuchiSendLayer extends StatelessWidget {
     final s = S.of(context);
     final showNumber = ProgressScope.of(context).settings.showPoemNumber;
     final flow = _flow, drag = flow.drag;
+    final wait = scene.wait;
     return Stack(clipBehavior: Clip.none, children: [
-      if (flow.stage == IkkiuchiSendStage.waiting)
+      if (flow.stage == IkkiuchiSendStage.waiting) ...[
         Positioned.fromRect(
-          rect: scene.wait,
+          rect: wait,
           child: drag == null
               ? PlacingStack(cards: [flow.card!], tag: s.ikkiuchiSent, look: _look, showNumber: showNumber)
               : const PlacingDashedSpot(look: _look),
         ),
+        if (drag == null)
+          Positioned(
+            left: wait.left,
+            width: wait.width,
+            top: wait.bottom + _look.stackTagRoom - _look.stackTagOverlap,
+            // A hint wider than the card reaches past its sides.
+            child: Center(
+              child: OverflowBox(
+                maxWidth: double.infinity,
+                fit: OverflowBoxFit.deferToChild,
+                child: PlacingTag(s.ikkiuchiSentHint, fontSize: IkkiuchiSendStyle.hintFont, look: _look),
+              ),
+            ),
+          ),
+      ],
       if (drag != null)
         Positioned.fill(
           child: PlacingRiding(
