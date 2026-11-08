@@ -24,9 +24,11 @@ enum GateState { locked, opening, open }
 /// "coming soon" tag, shown in the two front slots. Tobi's boat ([DojoBoat]) sails over it, among
 /// the sea's paper layers.
 ///
-/// The torii stands for the island in front: its trip's as [gates] says, a
-/// padlocked one for an island still being built, an open one for the hall. While [fade] runs, the
-/// islands crossfade from the ring at step [fadeFrom].
+/// The [ring]'s islands stand where its turn puts them. The torii stands
+/// for the island in front: its trip's as [gates] says, a padlocked one for
+/// an island still being built, and for the hall open once [hallOpen].
+/// While [fade] runs, the islands crossfade from the ring at step
+/// [fadeFrom].
 ///
 /// It fills its box (the screen above the entries), scaled to the box's
 /// width; the near swell crests just above its bottom. A box too short to
@@ -35,15 +37,19 @@ enum GateState { locked, opening, open }
 class DojoScene extends StatefulWidget {
   const DojoScene({
     super.key,
+    required this.ring,
     required this.turn,
     required this.fade,
     required this.fadeFrom,
     required this.gates,
+    required this.hallOpen,
     this.onOpened,
   });
 
+  final SideTripRing ring;
   final Animation<double> turn, fade;
   final int fadeFrom;
+  final bool hallOpen;
 
   /// Each trip's torii; padlocked when missing.
   final Map<SideTrip, GateState> gates;
@@ -159,14 +165,18 @@ class _DojoSceneState extends State<DojoScene> with SingleTickerProviderStateMix
       if (fade < 1) (turn: widget.fadeFrom.toDouble(), opacity: 1 - fade, leaving: true),
       (turn: turn, opacity: fade, leaving: false),
     ];
-    final front = SideTripRing.frontAt(fade < 1 / 2 ? widget.fadeFrom : turn.round());
+    final front = widget.ring.frontAt(fade < 1 / 2 ? widget.fadeFrom : turn.round());
     return [
       for (final ring in shown)
-        for (final (isle, arm, spec) in _placed(ring.turn))
+        for (final (isle, arm, spec) in _placed(widget.ring, ring.turn))
           _Isle(isle, spec, frame, key: ValueKey((ring.leaving, isle, arm)), opacity: ring.opacity),
-      _torii(frame, front == SideTripIsle.hall ? GateState.open : _gateOf(front.trip)),
+      _torii(
+          frame,
+          front == SideTripIsle.hall
+              ? (widget.hallOpen ? GateState.open : GateState.locked)
+              : _gateOf(front.trip)),
       for (final ring in shown)
-        for (final (isle, arm, spec) in _placed(ring.turn))
+        for (final (isle, arm, spec) in _placed(widget.ring, ring.turn))
           if (isle.comingSoon && spec.label * ring.opacity > 0)
             Positioned.fill(
               key: ValueKey((ring.leaving, isle, arm, 'tag')),
@@ -180,11 +190,11 @@ class _DojoSceneState extends State<DojoScene> with SingleTickerProviderStateMix
     ];
   }
 
-  /// Each island where the ring at [turn] puts it, with which of its
-  /// places it is (see [_specsAt]), deepest first.
-  static List<(SideTripIsle, int, RingSlotSpec)> _placed(double turn) => [
-        for (final isle in SideTripRing.isles)
-          for (final (arm, spec) in _specsAt(SideTripRing.place(isle, turn)).indexed) (isle, arm, spec),
+  /// Each island where [ring] at [turn] puts it, with which of its places
+  /// it is (see [_specsAt]), deepest first.
+  static List<(SideTripIsle, int, RingSlotSpec)> _placed(SideTripRing ring, double turn) => [
+        for (final isle in ring.isles)
+          for (final (arm, spec) in _specsAt(ring.place(isle, turn)).indexed) (isle, arm, spec),
       ]..sort((a, b) => a.$3.depth.compareTo(b.$3.depth));
 
   /// Where an island [place] round the ring shows: at a slot, or part of

@@ -125,6 +125,7 @@ import 'package:package_info_plus/package_info_plus.dart';
 import 'test_l10n.dart';
 import 'test_play.dart';
 import 'test_screens.dart';
+import 'test_side_trips.dart';
 import 'test_vector_art.dart';
 
 final _phone = usersPhone.size;
@@ -3170,6 +3171,7 @@ void main() {
       await tester.tap(find.descendant(of: find.byType(MangaTabBar), matching: find.text(S(p.settings.language).sideTrips)));
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 300));
+      await turnRingTo(tester, SideTripIsle.ankiren);
       expect(tester.takeException(), isNull);
     }
 

@@ -24,9 +24,11 @@ import 'side_trip_entry.dart';
 import 'side_trip_panels.dart';
 import 'trip_record_panels.dart';
 
-/// Opens 一騎打ち's page ([IkkiuchiPage]).
-Future<void> openIkkiuchiPage(BuildContext context) =>
-    Navigator.of(context).push(MangaRoute<void>(builder: (_) => const IkkiuchiPage()));
+/// Opens 一騎打ち's page ([IkkiuchiPage]), once its hall is open.
+Future<void> openIkkiuchiPage(BuildContext context) async {
+  if (ProgressScope.read(context).sideTripsHub().hallLock != null) return;
+  await Navigator.of(context).push(MangaRoute<void>(builder: (_) => const IkkiuchiPage()));
+}
 
 /// 一騎打ち's page, on the side trips' page frame, with History beside the
 /// back button: who the player is (the class and rating on the shared class

@@ -53,25 +53,40 @@ enum SideTripIsle {
 /// turns like a revolver's cylinder, a step at a time and round forever
 /// either way: each step forward brings the island on the right to the
 /// front, sends the front one to the left and every other one a slot on
-/// round the back, from the left towards the right. At turn 0 the first
-/// island is in front.
+/// round the back, from the left towards the right. At turn 0 the first of
+/// [isles] is in front.
 ///
 /// The slots count from the front (0) the way an island goes as the ring
 /// turns back: the right (1), round the back from right to left, and the
 /// left last.
-abstract final class SideTripRing {
-  static const isles = SideTripIsle.values;
+class SideTripRing {
+  const SideTripRing(this.isles);
+
+  /// The ring for islands [open] or not: from 一騎打ち's hall ([home]) on
+  /// round in [SideTripIsle] order, the open islands first and the shut
+  /// ones behind them, so the island in front at turn 0 is open whenever
+  /// one is.
+  factory SideTripRing.of(bool Function(SideTripIsle isle) open) {
+    const all = SideTripIsle.values;
+    final round = [for (var i = 0; i < all.length; i++) all[(home.index + i) % all.length]];
+    return SideTripRing([...round.where(open), ...round.where((isle) => !open(isle))]);
+  }
+
+  /// The island the ring starts on when every island is open.
+  static const home = SideTripIsle.hall;
+
+  final List<SideTripIsle> isles;
 
   /// The island in front after [turn] steps (back ones count negative).
-  static SideTripIsle frontAt(int turn) => isles[turn % isles.length];
+  SideTripIsle frontAt(int turn) => isles[turn % isles.length];
 
   /// The slot [isle] stands in after [turn] steps.
-  static int slotOf(SideTripIsle isle, int turn) => place(isle, turn.toDouble()).round();
+  int slotOf(SideTripIsle isle, int turn) => place(isle, turn.toDouble()).round();
 
   /// How far round the ring [isle] is after [turn] steps, a fraction of
   /// the way between two slots while the ring turns: from 0 (the front) up
   /// to the island count, which is the front again.
-  static double place(SideTripIsle isle, double turn) => (isle.index - turn) % isles.length;
+  double place(SideTripIsle isle, double turn) => (isles.indexOf(isle) - turn) % isles.length;
 }
 
 /// What keeps the Side Trips tab or a side trip shut in journey mode: it
@@ -93,7 +108,8 @@ class SideTripLock {
 /// free practice's counter) and a trip once enough cards have been seen
 /// (`Progress.knownCards`), thresholds in [SideTripTuning], and for good
 /// once they have; in all-known mode right away. A trip opens with its free
-/// play; its ranked games need more (see [RankedLock]).
+/// play; its ranked games need more (see [RankedLock]). 一騎打ち's hall opens
+/// once every card is known ([hallLock]).
 abstract final class SideTripUnlocks {
   /// Seen cards [trip] needs in journey mode.
   static int opensAt(SideTrip trip) => switch (trip) {
@@ -116,6 +132,12 @@ abstract final class SideTripUnlocks {
     required Set<SideTrip> latched,
   }) =>
       _lock(opensAt(trip), open: allKnown || latched.contains(trip), counted: seen);
+
+  /// What keeps 一騎打ち's hall shut, or null once it is open: it needs
+  /// [IkkiuchiUnlockTuning.known] cards [known], every one, which
+  /// [allKnown] mode knows.
+  static SideTripLock? hallLock({required bool allKnown, required int known}) =>
+      _lock(IkkiuchiUnlockTuning.known, open: allKnown, counted: known);
 
   static SideTripLock? _lock(int opensAt, {required bool open, required int counted}) =>
       open || counted >= opensAt ? null : SideTripLock(opensAt: opensAt, counted: counted);
@@ -230,11 +252,14 @@ class SideTripEntry {
 }
 
 /// The Side Trips tab: every side trip, in [SideTrip] order, with its locks
-/// and standing.
+/// and standing, and what keeps 一騎打ち's hall shut ([hallLock]).
 class SideTripsHub {
-  const SideTripsHub(this.entries);
+  const SideTripsHub(this.entries, {this.hallLock});
 
   final List<SideTripEntry> entries;
+
+  /// Null once 一騎打ち's hall is open.
+  final SideTripLock? hallLock;
 
   /// The hub for a player in [allKnown] mode or not, with [seen] cards seen
   /// so far, the [latched] trips open for good, and each trip's
@@ -263,10 +288,23 @@ class SideTripsHub {
       );
     }
 
-    return SideTripsHub([for (final trip in SideTrip.values) entry(trip)]);
+    return SideTripsHub(
+      [for (final trip in SideTrip.values) entry(trip)],
+      hallLock: SideTripUnlocks.hallLock(allKnown: allKnown, known: seen),
+    );
   }
 
   SideTripEntry operator [](SideTrip trip) => entries.firstWhere((e) => e.trip == trip);
+
+  /// Whether [isle] is open: its trip, or 一騎打ち's hall; never an island
+  /// still being built.
+  bool isOpen(SideTripIsle isle) => switch (isle.trip) {
+        final trip? => this[trip].open,
+        null => isle == SideTripIsle.hall && hallLock == null,
+      };
+
+  /// The ring of islands, the open ones first ([SideTripRing.of]).
+  SideTripRing get ring => SideTripRing.of(isOpen);
 
   /// The trips open now, for the unlock latch.
   Set<SideTrip> get openTrips => {

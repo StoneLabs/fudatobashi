@@ -513,6 +513,12 @@ abstract final class IkkiuchiMatchTuning {
   static const Duration longestStep = Duration(milliseconds: 250);
 }
 
+/// When 一騎打ち's island, the hall, opens (`SideTripUnlocks.hallLock`): once
+/// the player knows [known] cards (`Progress.knownCards`), every one.
+abstract final class IkkiuchiUnlockTuning {
+  static const int known = 100;
+}
+
 /// 一騎打ち's custom matches (free play, `ikkiuchi_sheet.dart`): the cards a
 /// side, the memory time and Tobi's rating, each from its least to its most
 /// by its step, and the setup the first one starts on. The sheet's keys

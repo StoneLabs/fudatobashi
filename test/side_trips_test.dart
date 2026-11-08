@@ -57,8 +57,10 @@ void main() {
   });
 
   group('ring', () {
+    const old = SideTripRing([SideTripIsle.ankiren, SideTripIsle.storehouse, SideTripIsle.hall, SideTripIsle.rocks]);
+
     test('turns forward and back forever, one island a step, the right one coming to the front', () {
-      expect([for (var t = -6; t <= 6; t++) SideTripRing.frontAt(t)], [
+      expect([for (var t = -6; t <= 6; t++) old.frontAt(t)], [
         SideTripIsle.hall,
         SideTripIsle.rocks,
         SideTripIsle.ankiren,
@@ -75,14 +77,14 @@ void main() {
       ]);
       expect(SideTripIsle.ankiren.trip, SideTrip.ankiren);
       expect(SideTripIsle.storehouse.trip, SideTrip.teiichi);
-      expect([for (final isle in SideTripRing.isles) isle.comingSoon], [false, false, false, true],
+      expect([for (final isle in old.isles) isle.comingSoon], [false, false, false, true],
           reason: 'the hall holds 一騎打ち');
     });
 
     test('each step moves every island on a slot: right to front, front to left, then round the back to the right',
         () {
-      final n = SideTripRing.isles.length;
-      Map<SideTripIsle, int> at(int turn) => {for (final i in SideTripRing.isles) i: SideTripRing.slotOf(i, turn)};
+      final n = old.isles.length;
+      Map<SideTripIsle, int> at(int turn) => {for (final i in old.isles) i: old.slotOf(i, turn)};
       expect(at(0), {
         SideTripIsle.ankiren: 0,
         SideTripIsle.storehouse: 1,
@@ -90,14 +92,46 @@ void main() {
         SideTripIsle.rocks: 3,
       });
       for (var turn = -6; turn < 6; turn++) {
-        for (final isle in SideTripRing.isles) {
-          final slot = SideTripRing.slotOf(isle, turn);
-          expect(SideTripRing.slotOf(isle, turn + 1), slot == 0 ? n - 1 : slot - 1, reason: '$isle at $turn');
+        for (final isle in old.isles) {
+          final slot = old.slotOf(isle, turn);
+          expect(old.slotOf(isle, turn + 1), slot == 0 ? n - 1 : slot - 1, reason: '$isle at $turn');
         }
       }
-      expect(SideTripRing.place(SideTripIsle.storehouse, 0.25), 0.75, reason: 'part of the way to the front');
-      expect(SideTripRing.place(SideTripIsle.ankiren, 0.25), n - 0.25, reason: 'part of the way to the left');
-      expect(SideTripRing.place(SideTripIsle.ankiren, -n - 0.5), 0.5, reason: 'a lap and a half step back');
+      expect(old.place(SideTripIsle.storehouse, 0.25), 0.75, reason: 'part of the way to the front');
+      expect(old.place(SideTripIsle.ankiren, 0.25), n - 0.25, reason: 'part of the way to the left');
+      expect(old.place(SideTripIsle.ankiren, -n - 0.5), 0.5, reason: 'a lap and a half step back');
+    });
+
+    test('starts on 一騎打ち\'s hall, the shut islands put at the back, the order kept otherwise', () {
+      List<SideTripIsle> ring(Set<SideTripIsle> open) => SideTripRing.of(open.contains).isles;
+      const hall = SideTripIsle.hall, rocks = SideTripIsle.rocks;
+      const ankiren = SideTripIsle.ankiren, storehouse = SideTripIsle.storehouse;
+      expect(ring(SideTripIsle.values.toSet()), [hall, rocks, ankiren, storehouse], reason: 'all open: round from the hall');
+      expect(ring({hall, ankiren, storehouse}), [hall, ankiren, storehouse, rocks]);
+      expect(ring({ankiren, storehouse}), [ankiren, storehouse, hall, rocks], reason: 'the hall shut');
+      expect(ring({storehouse}), [storehouse, hall, rocks, ankiren]);
+      expect(ring({}), [hall, rocks, ankiren, storehouse], reason: 'none open: the order as it is');
+    });
+
+    test('the hub\'s ring: the hall in front once every card is known, else the first open trip', () {
+      SideTripIsle front({required bool allKnown, required int seen}) =>
+          SideTripsHub.of(allKnown: allKnown, seen: seen).ring.frontAt(0);
+      expect(front(allKnown: true, seen: 100), SideTripIsle.hall);
+      expect(front(allKnown: false, seen: IkkiuchiUnlockTuning.known), SideTripIsle.hall);
+      expect(front(allKnown: false, seen: IkkiuchiUnlockTuning.known - 1), SideTripIsle.ankiren);
+      expect(front(allKnown: false, seen: 0), SideTripIsle.hall, reason: 'nothing open: the hall leads, shut');
+    });
+  });
+
+  group('hall', () {
+    test('一騎打ち\'s hall opens once every card is known, at once in all-known mode', () {
+      expect(SideTripUnlocks.hallLock(allKnown: false, known: IkkiuchiUnlockTuning.known), isNull);
+      expect(SideTripUnlocks.hallLock(allKnown: true, known: 0), isNull);
+      final lock = SideTripUnlocks.hallLock(allKnown: false, known: 63)!;
+      expect([lock.opensAt, lock.counted, lock.needed], [IkkiuchiUnlockTuning.known, 63, IkkiuchiUnlockTuning.known - 63]);
+      final hub = SideTripsHub.of(allKnown: false, seen: 63);
+      expect([hub.isOpen(SideTripIsle.hall), hub.isOpen(SideTripIsle.ankiren), hub.isOpen(SideTripIsle.rocks)],
+          [false, true, false]);
     });
   });
 

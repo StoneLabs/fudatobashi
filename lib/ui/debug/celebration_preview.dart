@@ -163,19 +163,21 @@ void previewAnkirenRank(BuildContext context, {bool up = true}) {
   _previewPages(context, [AnkirenRankCelebration(before, after)]);
 }
 
-/// 暗記練's first opening on the Side Trips hub: its torii rattles, the
-/// chains break and the gate snaps open, with the sound, buzz and toast.
-/// The hub's latch is not read or changed.
+/// 暗記練's first opening on the Side Trips hub, in front as the one island
+/// open: its torii rattles, the chains break and the gate snaps open, with
+/// the sound, buzz and toast. The hub's latch is not read or changed.
 void previewAnkirenUnlock(BuildContext context) => Navigator.push(
       context,
       MangaRoute<void>(
-        builder: (_) => const Scaffold(
+        builder: (_) => Scaffold(
           backgroundColor: Palette.paper,
           body: DojoScene(
+            ring: SideTripRing.of((isle) => isle.trip == SideTrip.ankiren),
             turn: kAlwaysDismissedAnimation,
             fade: kAlwaysCompleteAnimation,
             fadeFrom: 0,
-            gates: {SideTrip.ankiren: GateState.opening},
+            gates: const {SideTrip.ankiren: GateState.opening},
+            hallOpen: false,
           ),
         ),
       ),

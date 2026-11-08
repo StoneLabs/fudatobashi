@@ -49,6 +49,7 @@ import 'package:fudatobashi/ui/sound/sounds.dart';
 import 'test_ankiren.dart';
 import 'test_l10n.dart';
 import 'test_screens.dart';
+import 'test_side_trips.dart';
 import 'test_vector_art.dart';
 
 /// The least left between the rank stamp, hanging out over the panel's
@@ -154,6 +155,18 @@ void main() {
     return p;
   }
 
+  // A player in all-known mode, who knows every card: 一騎打ち's hall open.
+  Future<Progress> openAllKnown(WidgetTester tester, String lang) async {
+    late Progress p;
+    await tester.runAsync(() async {
+      p = await Progress.open(AppDatabase(NativeDatabase.memory()));
+      p.tabsAlwaysOpen = true;
+      await p.updateSettings(p.settings.copyWith(language: lang, languagePicked: true, toured: true));
+      await p.setLearningMode(LearningMode.allKnown);
+    });
+    return p;
+  }
+
   // Shows [p]'s app on [phone] at [fontScale], on the Side Trips tab.
   Future<void> openHub(WidgetTester tester, Progress p, Screen phone, {double fontScale = 1}) async {
     useScreen(tester, phone, fontScale: fontScale);
@@ -173,7 +186,8 @@ void main() {
 
   // How far the ring has turned, and the island in front.
   double turnOf(WidgetTester tester) => tester.widget<DojoScene>(find.byType(DojoScene)).turn.value;
-  SideTripIsle frontOf(WidgetTester tester) => SideTripRing.frontAt(turnOf(tester).round());
+  SideTripIsle frontOf(WidgetTester tester) =>
+      tester.widget<DojoScene>(find.byType(DojoScene)).ring.frontAt(turnOf(tester).round());
 
   // The lowest the front swell's crest line runs: its picture's top, the
   // one on screen and highest, plus how deep its crest goes.
@@ -264,7 +278,7 @@ void main() {
   });
 
   test('the ring has a slot for each island', () {
-    expect(DojoRingLayout.slots, hasLength(SideTripRing.isles.length));
+    expect(DojoRingLayout.slots, hasLength(SideTripIsle.values.length));
   });
 
   group('fits', () {
@@ -277,6 +291,10 @@ void main() {
               final p = await open(tester, hub, lang);
               await openHub(tester, p, phone, fontScale: fontScale);
               expect(tester.takeException(), isNull);
+              if (hub == _Hub.locked) {
+                expect(frontOf(tester), SideTripIsle.storehouse, reason: 'the open island in front, 暗記練 behind it');
+                await turnRingTo(tester, SideTripIsle.ankiren);
+              }
               final entry = p.sideTripsHub()[SideTrip.ankiren];
               expect(entry.open, hub != _Hub.locked);
 
@@ -297,9 +315,9 @@ void main() {
                   reason: 'the sea runs on under the tab bar');
               if (hub == _Hub.locked) {
                 expect(inHub(find.text(s.howToPlay)), findsNothing, reason: 'no rules while locked');
-                expectShown(tester, inHub(find.textContaining(s.sideTripSeen)), phone);
-                expectShown(tester, inHub(find.byType(CardPips)).first, phone);
-                expectShown(tester, inHub(find.textContaining(s.sideTripRanked)), phone);
+                expectShown(tester, inHub(find.textContaining(s.sideTripSeen)).hitTestable(), phone);
+                expectShown(tester, inHub(find.byType(CardPips)).hitTestable().first, phone);
+                expectShown(tester, inHub(find.textContaining(s.sideTripRanked)).hitTestable(), phone);
                 expect(inHub(ankirenBurst), findsNothing);
               } else {
                 expectShown(tester, inHub(ankirenBurst), phone);
@@ -313,7 +331,7 @@ void main() {
               switch (hub) {
                 case _Hub.locked:
                   expect(inHub(find.text(s.freePlay)), findsNothing, reason: 'one lock at a time');
-                  final rows = tester.widgetList<CardPips>(inHub(find.byType(CardPips)));
+                  final rows = tester.widgetList<CardPips>(inHub(find.byType(CardPips)).hitTestable());
                   expect([for (final r in rows) r.pips.length], [25, 25], reason: '50 pips in two rows');
                   expect([for (final r in rows) ...r.pips].where((p) => p == PipState.learned),
                       hasLength(_lockedCards));
@@ -361,6 +379,7 @@ void main() {
       final p = await open(tester, _Hub.ranked, 'en');
       await tester.runAsync(() => p.setLearningMode(LearningMode.allKnown));
       await openHub(tester, p, usersPhone);
+      await turnRingTo(tester, SideTripIsle.ankiren);
       expect(p.sideTripsHub()[SideTrip.ankiren].rankedOpen, isTrue);
       await tester.tap(inHub(ankirenBurst));
       await tester.pump();
@@ -390,7 +409,8 @@ void main() {
       const s = S('en');
       final locked = await open(tester, _Hub.locked, 'en');
       await openHub(tester, locked, usersPhone);
-      await tester.tap(inHub(find.textContaining(s.sideTripRanked)));
+      await turnRingTo(tester, SideTripIsle.ankiren);
+      await tester.tap(inHub(find.textContaining(s.sideTripRanked)).hitTestable());
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 400));
       expect(find.descendant(of: find.byType(SpeechBalloon), matching: find.text(s.sideTripLockedWhy(13))),
@@ -614,9 +634,10 @@ void main() {
       expect(tags(), 0, reason: '定位置 on the right is open');
       expect(pictures(DojoSceneLayout.toriiOpen.asset), findsOneWidget);
 
+      // The hall is shut here: not every card is known yet.
       for (final (front, labels, entry, open) in [
         (SideTripIsle.storehouse, 0, SideTripBody, true),
-        (SideTripIsle.hall, 1, IkkiuchiEntry, true),
+        (SideTripIsle.hall, 1, IkkiuchiEntry, false),
         (SideTripIsle.rocks, 1, SideTripSoonEntry, false),
       ]) {
         await swipe(tester);
@@ -625,7 +646,9 @@ void main() {
           expect(inHub(find.byType(type)).hitTestable(), type == entry ? findsOneWidget : findsNothing,
               reason: '$front: $type');
         }
-        if (!open) expect(inHub(find.text(s.sideTripsSoonLine)).hitTestable(), findsOneWidget, reason: 'one entry shows');
+        if (entry == SideTripSoonEntry) {
+          expect(inHub(find.text(s.sideTripsSoonLine)).hitTestable(), findsOneWidget, reason: 'one entry shows');
+        }
         expect(tags(), labels, reason: '$front');
         expect(pictures(DojoSceneLayout.toriiOpen.asset), open ? findsOneWidget : findsNothing, reason: '$front');
         expect(pictures(DojoSceneLayout.toriiLocked.asset), open ? findsNothing : findsOneWidget, reason: '$front');
@@ -684,12 +707,15 @@ void main() {
       await tester.pumpWidget(const SizedBox());
     });
 
-    testWidgets("the hall's burst opens 一騎打ち's page", (tester) async {
+    testWidgets("with every card known the hall is in front, the open islands after it, and its burst opens 一騎打ち's page",
+        (tester) async {
       const s = S('en');
-      final p = await open(tester, _Hub.ranked, 'en');
+      final p = await openAllKnown(tester, 'en');
       await openHub(tester, p, usersPhone);
-      await swipe(tester);
-      await swipe(tester);
+      expect(frontOf(tester), SideTripIsle.hall);
+      expect(tester.widget<DojoScene>(find.byType(DojoScene)).ring.isles,
+          [SideTripIsle.hall, SideTripIsle.ankiren, SideTripIsle.storehouse, SideTripIsle.rocks]);
+      expect(pictures(DojoSceneLayout.toriiOpen.asset), findsOneWidget);
       await tester.tap(inHub(find.text(s.ikkiuchiPageTitle)).hitTestable());
       await tester.pump();
       await tester.pump(const Duration(seconds: 1));
@@ -697,7 +723,30 @@ void main() {
       await tester.pumpWidget(const SizedBox());
     });
 
-    testWidgets('a fresh app start has 暗記練 in front', (tester) async {
+    testWidgets('the hall stays shut until every card is known: its count, no burst, and the ring starts past it',
+        (tester) async {
+      const s = S('en');
+      final p = await open(tester, _Hub.ranked, 'en');
+      await openHub(tester, p, usersPhone);
+      expect(frontOf(tester), SideTripIsle.ankiren, reason: 'an open island in front');
+      expect(tester.widget<DojoScene>(find.byType(DojoScene)).ring.isles,
+          [SideTripIsle.ankiren, SideTripIsle.storehouse, SideTripIsle.hall, SideTripIsle.rocks]);
+      await swipe(tester);
+      await swipe(tester);
+      expect(frontOf(tester), SideTripIsle.hall);
+      final entry = inHub(find.byType(IkkiuchiEntry)).hitTestable();
+      expect(find.descendant(of: entry, matching: find.text(s.ikkiuchiPageTitle)), findsNothing);
+      expect(find.descendant(of: entry, matching: find.byType(CardPips)), findsWidgets);
+      expect(pictures(DojoSceneLayout.toriiOpen.asset), findsNothing, reason: 'its torii padlocked');
+      await openIkkiuchiPage(tester.element(entry));
+      await tester.pump();
+      await tester.pump(const Duration(seconds: 1));
+      expect(find.byType(IkkiuchiPage), findsNothing);
+      await tester.pumpWidget(const SizedBox());
+    });
+
+    testWidgets('a fresh app start has the first open island in front: 暗記練 in a journey, the hall all known',
+        (tester) async {
       final p = await open(tester, _Hub.ranked, 'en');
       await openHub(tester, p, usersPhone);
       await swipe(tester);
@@ -706,6 +755,13 @@ void main() {
       final q = await open(tester, _Hub.ranked, 'en');
       await openHub(tester, q, usersPhone);
       expect(turnOf(tester), 0);
+      expect(frontOf(tester), SideTripIsle.ankiren);
+      await tester.pumpWidget(const SizedBox());
+
+      SideTripsScreen.forgetRing();
+      final r = await openAllKnown(tester, 'en');
+      await openHub(tester, r, usersPhone);
+      expect(frontOf(tester), SideTripIsle.hall);
       await tester.pumpWidget(const SizedBox());
     });
 
@@ -874,6 +930,7 @@ void main() {
       final p = await open(tester, _Hub.locked, 'en');
       await tester.runAsync(() => remember(p, journeyOrder.skip(_lockedCards).take(11)));
       await openHub(tester, p, usersPhone);
+      await turnRingTo(tester, SideTripIsle.ankiren);
       expect(gate(tester), GateState.locked);
       expect(p.sideTripsSeenLocked, {SideTrip.ankiren});
 
@@ -906,6 +963,7 @@ void main() {
       final p = await open(tester, _Hub.locked, 'en');
       await tester.runAsync(() => remember(p, journeyOrder.skip(_lockedCards).take(11)));
       await openHub(tester, p, usersPhone);
+      await turnRingTo(tester, SideTripIsle.ankiren);
       await swipe(tester);
       expect(frontOf(tester), SideTripIsle.storehouse);
       await tester.runAsync(() => remember(p, journeyOrder.skip(_lockedCards + 11).take(2)));
@@ -940,6 +998,7 @@ void main() {
       tester.platformDispatcher.accessibilityFeaturesTestValue = const FakeAccessibilityFeatures(disableAnimations: true);
       addTearDown(tester.platformDispatcher.clearAccessibilityFeaturesTestValue);
       await openHub(tester, p, usersPhone);
+      await turnRingTo(tester, SideTripIsle.ankiren);
       await tester.runAsync(() => remember(p, journeyOrder.skip(_lockedCards + 11).take(2)));
       for (var i = 0; i < 4; i++) {
         await tester.pump();
@@ -966,6 +1025,7 @@ void main() {
       final p = await open(tester, _Hub.locked, 'ja');
       await tester.runAsync(() => remember(p, journeyOrder.skip(_lockedCards).take(11)));
       await openHub(tester, p, usersPhone);
+      await turnRingTo(tester, SideTripIsle.ankiren);
       await tester.runAsync(() => remember(p, journeyOrder.skip(_lockedCards + 11).take(2)));
       await tester.pump();
       await tester.pump();
@@ -999,7 +1059,7 @@ void main() {
         await tester.pump();
         await tester.pump(const Duration(seconds: 3));
       }
-      for (var step = 1; step < SideTripRing.isles.length; step++) {
+      for (var step = 1; step < SideTripIsle.values.length; step++) {
         await swipe(tester);
         await tester.pump(const Duration(seconds: 3));
         await precacheArt(tester);
@@ -1032,6 +1092,16 @@ void main() {
         }
         await precacheArt(tester);
         await captureScreen(tester, 'side_trips/hall', lang: lang);
+        await tester.pumpWidget(const SizedBox());
+      });
+    }
+
+    for (final lang in ['en', 'ja']) {
+      testWidgets('ikkiuchi_front_$lang', (tester) async {
+        final p = await openAllKnown(tester, lang);
+        await openHub(tester, p, widePhone);
+        await precacheArt(tester);
+        await captureScreen(tester, 'side_trips/ikkiuchi_front', lang: lang);
         await tester.pumpWidget(const SizedBox());
       });
     }

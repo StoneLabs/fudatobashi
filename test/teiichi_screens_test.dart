@@ -49,7 +49,6 @@ import 'package:fudatobashi/ui/shell/tobi_notice.dart';
 import 'package:fudatobashi/ui/results/karafuda_summary.dart';
 import 'package:fudatobashi/ui/side_trips/trip_sheet.dart';
 import 'package:fudatobashi/ui/side_trips/burst_button.dart';
-import 'package:fudatobashi/ui/side_trips/dojo_scene.dart';
 import 'package:fudatobashi/ui/side_trips/side_trip_entry.dart';
 import 'package:fudatobashi/ui/side_trips/side_trip_panels.dart';
 import 'package:fudatobashi/ui/side_trips/side_trips_screen.dart';
@@ -67,6 +66,7 @@ import 'package:fudatobashi/config/torifuda_spec.dart';
 import 'db_snapshot.dart';
 import 'test_l10n.dart';
 import 'test_screens.dart';
+import 'test_side_trips.dart';
 import 'test_teiichi.dart';
 import 'test_vector_art.dart';
 
@@ -175,9 +175,7 @@ void main() {
       await tester.tap(find.descendant(of: find.byType(MangaTabBar), matching: find.text(s.sideTrips)));
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 300));
-      await tester.fling(find.byType(DojoScene), const Offset(-200, 0), 1200);
-      await tester.pump();
-      await tester.pump(const Duration(seconds: 2));
+      await turnRingTo(tester, SideTripIsle.storehouse);
       final burst = find.byWidgetPredicate((w) => w is PageBurst && w.trip == SideTrip.teiichi);
       expect(burst.hitTestable(), findsOneWidget);
       expect(find.descendant(of: find.byType(SideTripsScreen), matching: find.text(s.rating)).hitTestable(),

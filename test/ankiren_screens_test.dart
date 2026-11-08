@@ -69,6 +69,7 @@ import 'db_snapshot.dart';
 import 'test_ankiren.dart';
 import 'test_l10n.dart';
 import 'test_screens.dart';
+import 'test_side_trips.dart';
 import 'test_vector_art.dart';
 
 const _home = 'home page';
@@ -302,6 +303,7 @@ void main() {
       await tester.tap(find.descendant(of: find.byType(MangaTabBar), matching: find.text(s.sideTrips)));
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 300));
+      await turnRingTo(tester, SideTripIsle.ankiren);
     }
 
     testWidgets('ranked starts its one setup, a real match\'s field, in portrait once it opens', (tester) async {

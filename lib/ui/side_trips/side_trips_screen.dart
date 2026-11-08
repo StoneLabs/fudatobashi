@@ -31,7 +31,9 @@ import 'side_trip_entry.dart';
 /// under the finger and the sea's paper layers behind them sliding slower,
 /// the further back the slower; under reduced motion the islands and
 /// entries crossfade. Screen readers get the island's name and actions to
-/// turn the ring. The tab always comes back with 暗記練 in front.
+/// turn the ring, the hub's ([SideTripsHub.ring]): the open islands first,
+/// 一騎打ち's hall leading. On a fresh start the tab comes up on the ring's
+/// first island; after that it comes back on the island it was left on.
 ///
 /// The first time the tab shows a trip open after showing it locked, its
 /// torii opens with a snap; once, like the tab chains, and only with the
@@ -45,7 +47,7 @@ class SideTripsScreen extends StatefulWidget {
   /// Forgets where the ring was left, as after an app restart.
   @visibleForTesting
   static void forgetRing() {
-    _ringStep = 0;
+    _ringFront = null;
     _ringLeftward = {};
   }
 
@@ -53,14 +55,17 @@ class SideTripsScreen extends StatefulWidget {
   State<SideTripsScreen> createState() => _SideTripsScreenState();
 }
 
-/// The step the ring last rested on and the swells' ways then, kept in
-/// memory so the ring comes back as it was left.
-int _ringStep = 0;
+/// The island the ring last rested on (none yet: the ring's first) and the
+/// swells' ways then, kept in memory so the ring comes back as it was left.
+SideTripIsle? _ringFront;
 Set<SideTripIsle> _ringLeftward = {};
 
 class _SideTripsScreenState extends State<SideTripsScreen> with TickerProviderStateMixin {
   /// Trips whose opening is being shown.
   final Set<SideTrip> _opening = {};
+
+  /// The ring's islands in order, as they were when the tab last showed.
+  late SideTripRing _ring = ProgressScope.read(context).sideTripsHub().ring;
   bool _syncScheduled = false;
 
   /// How far the ring has turned, a whole step at rest; and Tobi's boat's
@@ -110,14 +115,16 @@ class _SideTripsScreenState extends State<SideTripsScreen> with TickerProviderSt
 
   double get _stepWidth => context.size!.width * SideTripRingTuning.dragPerStep;
 
-  /// The ring at rest on the step it last rested on, 暗記練 in front at first.
+  /// The ring as the hub has it now, at rest on the island it last rested
+  /// on, its first at first.
   void _restore() {
     _turn.stop();
     _boat.stop();
     _fade.value = 1;
     _swiping = false;
-    _step = _rest = _from = _ringStep;
-    _turn.value = _ringStep.toDouble();
+    final ring = _ring = ProgressScope.read(context).sideTripsHub().ring;
+    _step = _rest = _from = ring.isles.indexOf(_ringFront ?? ring.isles.first);
+    _turn.value = _step.toDouble();
     _boat.value = 0;
     _boatFrom = 0;
     _leftward
@@ -133,7 +140,7 @@ class _SideTripsScreenState extends State<SideTripsScreen> with TickerProviderSt
     _boat.value = _boatFrom + turn - _from;
     if (turn == _from) return;
     final forward = turn > _from;
-    final coming = SideTripRing.frontAt(forward ? _from + 1 : _from - 1);
+    final coming = _ring.frontAt(forward ? _from + 1 : _from - 1);
     if (_leftward.contains(coming) != forward) {
       setState(() => forward ? _leftward.add(coming) : _leftward.remove(coming));
     }
@@ -202,17 +209,21 @@ class _SideTripsScreenState extends State<SideTripsScreen> with TickerProviderSt
     _rested();
   }
 
+  /// Crossfades to the ring at [step]; once it shows, the island in front
+  /// counts as shown (see [_syncLatch]).
   void _crossfadeTo(int step) {
     _fadeFrom = _step;
     _step = step;
     _turn.value = step.toDouble();
-    _fade.forward(from: 0);
+    _fade.forward(from: 0).whenComplete(() {
+      if (mounted) setState(() {});
+    });
     _rested();
   }
 
   void _rested() {
     if (_step != _rest && ProgressScope.read(context).settings.haptics) HapticFeedback.selectionClick();
-    _ringStep = _step;
+    _ringFront = _ring.frontAt(_step);
     _ringLeftward = {..._leftward};
     setState(() => _rest = _step);
   }
@@ -244,7 +255,8 @@ class _SideTripsScreenState extends State<SideTripsScreen> with TickerProviderSt
   }
 
   Widget _entry(SideTripsHub hub, SideTripIsle isle) => switch (isle.trip) {
-        null when isle == SideTripIsle.hall => IkkiuchiEntry(onOpen: () => openIkkiuchiPage(context)),
+        null when isle == SideTripIsle.hall =>
+          IkkiuchiEntry(lock: hub.hallLock, onOpen: () => openIkkiuchiPage(context)),
         null => const SideTripSoonEntry(),
         SideTrip.ankiren => SideTripEntryView(hub[SideTrip.ankiren], onOpen: () => openAnkirenPage(context)),
         SideTrip.teiichi => SideTripEntryView(hub[SideTrip.teiichi], onOpen: () => openTeiichiPage(context)),
@@ -253,7 +265,7 @@ class _SideTripsScreenState extends State<SideTripsScreen> with TickerProviderSt
   /// [isle]'s entry and swell show as far as the crossfade has come to it.
   Animation<double> _shownOf(SideTripIsle isle) {
     if (_fade.isCompleted) return kAlwaysCompleteAnimation;
-    if (isle == SideTripRing.frontAt(_step)) return _fade;
+    if (isle == _ring.frontAt(_step)) return _fade;
     return ReverseAnimation(_fade);
   }
 
@@ -271,7 +283,7 @@ class _SideTripsScreenState extends State<SideTripsScreen> with TickerProviderSt
     final s = S.of(context);
     final progress = ProgressScope.of(context);
     final hub = progress.sideTripsHub();
-    final front = SideTripRing.frontAt(_rest);
+    final front = _ring.frontAt(_rest);
     final trip = front.trip;
     if (trip != null && !_swiping && _fade.isCompleted) _syncLatch(progress, hub, trip);
     return GestureDetector(
@@ -304,21 +316,23 @@ class _SideTripsScreenState extends State<SideTripsScreen> with TickerProviderSt
                     CustomSemanticsAction(label: s.sideTripsPreviousIsland): () => _stepBy(-1),
                   },
                   child: DojoScene(
+                    ring: _ring,
                     turn: _turn,
                     fade: _fade,
                     fadeFrom: _fadeFrom,
                     gates: {for (final e in hub.entries) e.trip: _gate(progress, e)},
+                    hallOpen: hub.hallLock == null,
                     onOpened: (trip) => setState(() => _opening.remove(trip)),
                   ),
                 ),
                 boat: DojoBoat(drift: _boat),
                 backWaves: RepaintBoundary(child: _BackWaves(turn: _turn)),
                 waves: [
-                  for (final isle in SideTripRing.isles)
+                  for (final isle in _ring.isles)
                     FadeTransition(opacity: _shownOf(isle), child: _Swell(leftward: _leftward.contains(isle))),
                 ],
                 entries: [
-                  for (final isle in SideTripRing.isles)
+                  for (final isle in _ring.isles)
                     FadeTransition(opacity: _shownOf(isle), child: _entry(hub, isle)),
                 ],
               ),
@@ -542,9 +556,17 @@ class _RenderHubFrame extends RenderBox
   /// front, or nearest it.
   int _front = 0;
 
+  /// The islands' count, a swell and an entry each.
+  int get _count => (childCount - 3) ~/ 2;
+
+  /// The index, among the swells and entries, of the island in front after
+  /// [turn] steps.
+  int _at(int turn) => turn % _count;
+
   void _moved() {
     markNeedsPaint();
-    final front = SideTripRing.frontAt(_turnAnimation.value.round()).index;
+    if (_count == 0) return;
+    final front = _at(_turnAnimation.value.round());
     if (front == _front) return;
     _front = front;
     markNeedsSemanticsUpdate();
@@ -573,7 +595,7 @@ class _RenderHubFrame extends RenderBox
   RenderBox get _backWaves => childAfter(_scene)!;
   RenderBox get _boat => childAfter(_backWaves)!;
 
-  /// The swells and entries, in [SideTripRing.isles] order.
+  /// The swells and entries, in the ring's order.
   final List<RenderBox> _waves = [], _entries = [];
 
   @override
@@ -611,14 +633,14 @@ class _RenderHubFrame extends RenderBox
     if (_fade.value < 1) {
       return [
         for (final at in [_fadeFrom, step])
-          (isle: SideTripRing.frontAt(at).index, dx: 0.0, top: _restTop(SideTripRing.frontAt(at).index)),
+          (isle: _at(at), dx: 0.0, top: _restTop(_at(at))),
       ];
     }
     final from = turn.floor();
     final f = turn - from;
-    final out = SideTripRing.frontAt(from).index;
+    final out = _at(from);
     if (f == 0) return [(isle: out, dx: 0.0, top: _restTop(out))];
-    final coming = SideTripRing.frontAt(from + 1).index;
+    final coming = _at(from + 1);
     final top = _restTop(out) + (_restTop(coming) - _restTop(out)) * f;
     final width = size.width;
     return [(isle: out, dx: -f * width, top: top), (isle: coming, dx: (1 - f) * width, top: top)];

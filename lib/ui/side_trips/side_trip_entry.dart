@@ -95,15 +95,19 @@ class _Lettering extends StatelessWidget {
 }
 
 /// 一騎打ち's entry in the hall: its name lettered over a small panel saying
-/// what it is, and the burst that opens its page ([onOpen]).
+/// what it is, and the burst that opens its page ([onOpen]); while the hall
+/// is shut ([lock]), the cards known so far out of what opens it instead,
+/// as a shut trip's panel shows them.
 class IkkiuchiEntry extends StatelessWidget {
-  const IkkiuchiEntry({super.key, required this.onOpen});
+  const IkkiuchiEntry({super.key, required this.lock, required this.onOpen});
 
+  final SideTripLock? lock;
   final VoidCallback onOpen;
 
   @override
   Widget build(BuildContext context) {
     final s = S.of(context);
+    final lock = this.lock;
     return _HeadOver(
       head: MediaQuery.withClampedTextScaling(
         maxScaleFactor: SideTripsLayout.letteringMaxScale,
@@ -115,19 +119,21 @@ class IkkiuchiEntry extends StatelessWidget {
       body: MangaPanel(
         shape: const PanelShape(topLeft: Offset(0, SideTripsLayout.cut)),
         padding: const EdgeInsets.only(top: SideTripsLayout.overlap),
-        child: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-          Padding(
-            padding: SideTripsLayout.soonPadding,
-            child: Text(
-              s.ikkiuchiEntryLine,
-              style: const TextStyle(fontWeight: Weights.bold, fontSize: SideTripsLayout.soonLineFont),
-            ),
-          ),
-          Padding(
-            padding: SideTripsLayout.burstMargin,
-            child: BurstButton(title: s.ikkiuchiPageTitle, onTap: onOpen),
-          ),
-        ]),
+        child: lock != null
+            ? _LockedRows(lock)
+            : Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+                Padding(
+                  padding: SideTripsLayout.soonPadding,
+                  child: Text(
+                    s.ikkiuchiEntryLine,
+                    style: const TextStyle(fontWeight: Weights.bold, fontSize: SideTripsLayout.soonLineFont),
+                  ),
+                ),
+                Padding(
+                  padding: SideTripsLayout.burstMargin,
+                  child: BurstButton(title: s.ikkiuchiPageTitle, onTap: onOpen),
+                ),
+              ]),
       ),
     );
   }
