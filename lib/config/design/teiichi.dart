@@ -137,6 +137,9 @@ abstract final class TeiichiPlayLayout {
     edgeFill: AnkirenPlayLayout.backFill,
     edgeInk: AnkirenPlayLayout.backBorder,
     edgeBorder: AnkirenPlayLayout.backBorderWidth,
+    notePadding: notePadding,
+    noteFont: noteFont,
+    noteIcon: noteIcon,
   );
 
   /// Cards opening a gap, closing one, or taking a new place.

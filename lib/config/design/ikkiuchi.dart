@@ -153,6 +153,9 @@ abstract final class IkkiuchiSendStyle {
     edgeFill: Palette.cardFrame,
     edgeInk: Palette.ink,
     edgeBorder: 1,
+    notePadding: EdgeInsets.symmetric(horizontal: 10, vertical: 7),
+    noteFont: 12.5,
+    noteIcon: 16,
   );
 
   /// Tobi's balloon while his card waits: [balloonSize], left of his box

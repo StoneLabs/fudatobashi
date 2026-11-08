@@ -29,6 +29,9 @@ class PlacingLook {
     required this.edgeFill,
     required this.edgeInk,
     required this.edgeBorder,
+    required this.notePadding,
+    required this.noteFont,
+    required this.noteIcon,
   });
 
   /// A dashed spot on the tatami, and the open middle's label in it, shown
@@ -74,4 +77,10 @@ class PlacingLook {
   final Color edgeFill;
   final Color edgeInk;
   final double edgeBorder;
+
+  /// A note in a paper box beside the stack, its words [noteFont] after
+  /// an icon [noteIcon] wide.
+  final EdgeInsets notePadding;
+  final double noteFont;
+  final double noteIcon;
 }

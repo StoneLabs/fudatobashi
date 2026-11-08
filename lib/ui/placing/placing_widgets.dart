@@ -23,6 +23,11 @@ class PlacingDrag {
   final bool onStack;
 
   bool get lands => spot != null || onStack;
+
+  /// [stack] (top first) as it shows with [drag] under way: without its
+  /// top card when that is the one dragged.
+  static List<int> stackShown(List<int> stack, PlacingDrag? drag) =>
+      drag != null && drag.fromStack ? stack.skip(1).toList() : stack;
 }
 
 /// The touches on a side being laid out: a tap goes to [onTap], and a drag
@@ -298,4 +303,35 @@ class PlacingTag extends StatelessWidget {
               style: TextStyle(fontWeight: Weights.black, fontSize: fontSize, color: Palette.paper, height: 1.2)),
         ),
       );
+}
+
+/// A note in a paper box, with an [icon] before it (pointing down when
+/// [turned]).
+class PlacingNote extends StatelessWidget {
+  const PlacingNote({super.key, required this.text, required this.look, this.icon, this.turned = false});
+
+  final String text;
+  final PlacingLook look;
+  final VectorArt? icon;
+  final bool turned;
+
+  @override
+  Widget build(BuildContext context) {
+    final icon = this.icon;
+    return DecoratedBox(
+      decoration: BoxDecoration(color: Palette.paper, border: Border.all(color: Palette.ink, width: Strokes.control)),
+      child: Padding(
+        padding: look.notePadding,
+        child: Row(mainAxisSize: MainAxisSize.min, children: [
+          if (icon != null) ...[
+            RotatedBox(quarterTurns: turned ? 1 : 0, child: MangaIcon(icon, size: look.noteIcon)),
+            const SizedBox(width: Gaps.tight),
+          ],
+          Flexible(
+            child: Text.rich(Phrases.span(text), style: TextStyle(fontWeight: Weights.black, fontSize: look.noteFont)),
+          ),
+        ]),
+      ),
+    );
+  }
 }

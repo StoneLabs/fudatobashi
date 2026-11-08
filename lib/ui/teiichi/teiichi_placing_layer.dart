@@ -9,7 +9,6 @@ import '../../domain/teiichi.dart';
 import '../../l10n/strings.dart';
 import '../../l10n/teiichi_strings.dart';
 import '../ankiren/ankiren_field_view.dart';
-import '../manga/manga.dart';
 import '../placing/placing_widgets.dart';
 
 /// A card being dragged while placing: the stack's top card, or a placed
@@ -99,7 +98,7 @@ class TeiichiPlacingLayer extends StatelessWidget {
   Widget build(BuildContext context) {
     final s = S.of(context);
     final pile = stackRect(placement);
-    final shown = _shown(stack, drag);
+    final shown = PlacingDrag.stackShown(stack, drag);
     final room = placement.roomAbove;
     // Either side of the stack when there is room for them there; else
     // above it.
@@ -132,16 +131,15 @@ class TeiichiPlacingLayer extends StatelessWidget {
       onDrag: onDrag,
       onDragEnd: onDragEnd,
       child: Stack(clipBehavior: Clip.none, children: [
-        if (showHint) note(_Note(text: s.teiichiPlaceHint, icon: IconArt.arrow, turned: true), left: true),
-        if (shown.isEmpty && drag == null) note(_Note(text: s.teiichiAllPlaced(cards.length)), left: false),
+        if (showHint)
+          note(PlacingNote(text: s.teiichiPlaceHint, look: TeiichiPlayLayout.placing, icon: IconArt.arrow, turned: true),
+              left: true),
+        if (shown.isEmpty && drag == null)
+          note(PlacingNote(text: s.teiichiAllPlaced(cards.length), look: TeiichiPlayLayout.placing), left: false),
       ]),
     );
   }
 }
-
-/// The stack as it shows with [drag] under way: without its top card when
-/// that is the one dragged.
-List<int> _shown(List<int> stack, TeiichiDrag? drag) => drag != null && drag.fromStack ? stack.skip(1).toList() : stack;
 
 /// What 定位置 draws above the band while the cards are laid out, without
 /// taking touches: the stack with its count ([stack], top first), or its
@@ -169,7 +167,7 @@ class TeiichiRiding extends StatelessWidget {
   Widget build(BuildContext context) {
     final drag = this.drag;
     final pile = stackRect(placement);
-    final shown = _shown(stack, drag);
+    final shown = PlacingDrag.stackShown(stack, drag);
     const look = TeiichiPlayLayout.placing;
     return Stack(clipBehavior: Clip.none, children: [
       if (shown.isEmpty)
@@ -191,36 +189,5 @@ class TeiichiRiding extends StatelessWidget {
           ),
         ),
     ]);
-  }
-}
-
-/// A note in a paper box, with an [icon] before it (pointing down when
-/// [turned]).
-class _Note extends StatelessWidget {
-  const _Note({required this.text, this.icon, this.turned = false});
-
-  final String text;
-  final VectorArt? icon;
-  final bool turned;
-
-  @override
-  Widget build(BuildContext context) {
-    final icon = this.icon;
-    return DecoratedBox(
-      decoration: BoxDecoration(color: Palette.paper, border: Border.all(color: Palette.ink, width: Strokes.control)),
-      child: Padding(
-        padding: TeiichiPlayLayout.notePadding,
-        child: Row(mainAxisSize: MainAxisSize.min, children: [
-          if (icon != null) ...[
-            RotatedBox(quarterTurns: turned ? 1 : 0, child: MangaIcon(icon, size: TeiichiPlayLayout.noteIcon)),
-            const SizedBox(width: Gaps.tight),
-          ],
-          Flexible(
-            child: Text.rich(Phrases.span(text),
-                style: const TextStyle(fontWeight: Weights.black, fontSize: TeiichiPlayLayout.noteFont)),
-          ),
-        ]),
-      ),
-    );
   }
 }
