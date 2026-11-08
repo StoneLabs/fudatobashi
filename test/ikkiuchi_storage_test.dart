@@ -8,9 +8,9 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:fudatobashi/data/fuda_sets.dart';
 import 'package:fudatobashi/data/poem.dart';
 import 'package:fudatobashi/db/database.dart';
-import 'package:fudatobashi/domain/ikkiuchi_cards.dart';
 import 'package:fudatobashi/domain/ikkiuchi_match.dart';
 import 'package:fudatobashi/domain/ikkiuchi_record.dart';
+import 'package:fudatobashi/domain/ikkiuchi_side.dart';
 import 'package:fudatobashi/state/ikkiuchi_records.dart';
 import 'package:fudatobashi/state/progress.dart';
 
@@ -18,7 +18,7 @@ void main() {
   poems = Poems.fromJsonString(File('assets/data/poems.json').readAsStringSync());
   fudaSets = FudaSets(poems);
   driftRuntimeOptions.dontWarnAboutMultipleDatabases = true;
-  const tobi = IkkiuchiSide.tobi, player = IkkiuchiSide.player;
+  const tobi = IkkiuchiSide.opponent, player = IkkiuchiSide.player;
   const setup = IkkiuchiSetup(perSide: 10, memorise: Duration(minutes: 3), rating: 2000);
 
   final record = IkkiuchiMatchRecord(

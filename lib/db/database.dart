@@ -3,8 +3,8 @@ import 'package:drift_flutter/drift_flutter.dart';
 import 'package:fsrs/fsrs.dart' as fsrs;
 
 import '../domain/ankiren_field.dart';
-import '../domain/ikkiuchi_cards.dart';
 import '../domain/ikkiuchi_record.dart';
+import '../domain/ikkiuchi_side.dart';
 import '../domain/play_session.dart';
 import '../domain/side_trips.dart';
 import '../domain/step_plan.dart';

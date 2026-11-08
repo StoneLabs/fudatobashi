@@ -4,10 +4,7 @@ import 'package:forge2d/forge2d.dart' as box2d;
 
 import '../config/config.dart';
 import 'ikkiuchi_geometry.dart';
-
-/// The two sides of the 一騎打ち field: Tobi's, across the band at the top,
-/// and the player's.
-enum IkkiuchiSide { tobi, player }
+import 'ikkiuchi_side.dart';
 
 /// One card on the board, as the sim has it.
 class IkkiuchiCard {

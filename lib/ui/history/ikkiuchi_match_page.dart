@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../config/design.dart';
 import '../../db/database.dart' show IkkiuchiMatchRow, IkkiuchiReadRow;
-import '../../domain/ikkiuchi_cards.dart';
+import '../../domain/ikkiuchi_side.dart';
 import '../../l10n/history_strings.dart';
 import '../../l10n/ikkiuchi_strings.dart';
 import '../../l10n/side_trip_strings.dart';
@@ -101,7 +101,7 @@ class _Reads extends StatelessWidget {
           ReviewTable.cell(
               switch (r.taker) {
                 IkkiuchiSide.player => s.ikkiuchiYou,
-                IkkiuchiSide.tobi => s.ikkiuchiTobi,
+                IkkiuchiSide.opponent => s.ikkiuchiTobi,
                 null => missingTime,
               },
               strong: true),
@@ -133,7 +133,7 @@ class _Reads extends StatelessWidget {
                         side(r.playerUs, r.playerFaults),
                         side(r.tobiUs, r.tobiFaults),
                       ],
-                      marked: r.taker == IkkiuchiSide.tobi,
+                      marked: r.taker == IkkiuchiSide.opponent,
                     ),
                 ],
               ),

@@ -7,6 +7,7 @@ import '../../domain/ikkiuchi_board.dart';
 import '../../domain/ikkiuchi_cards.dart';
 import '../../domain/ikkiuchi_geometry.dart';
 import '../../domain/ikkiuchi_rig.dart';
+import '../../domain/ikkiuchi_side.dart';
 import '../../domain/ikkiuchi_strike.dart';
 import '../manga/vector.dart';
 import 'ikkiuchi_arm_painter.dart';
@@ -74,7 +75,7 @@ class IkkiuchiBoardPainter extends CustomPainter {
     if (!card.still) IkkiuchiEffects.paintStreaks(canvas, card.box, card.velocity);
     final board = scene.board;
     final mark = card.id == scene.marked
-        ? (board.take?.card == card.id && board.taker != IkkiuchiSide.tobi ? _taken : _mark)
+        ? (board.take?.card == card.id && board.taker != IkkiuchiSide.opponent ? _taken : _mark)
         : (board.playerFaults.containsKey(card.id) ? _fault : null);
     _paintFace(canvas, card.id, card.box, shown: card.shown, mark: mark);
   }

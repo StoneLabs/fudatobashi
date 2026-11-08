@@ -1,9 +1,9 @@
 import 'dart:math' as math;
 
 import '../config/config.dart';
-import 'ikkiuchi_cards.dart';
 import 'ikkiuchi_geometry.dart';
 import 'ikkiuchi_layout.dart';
+import 'ikkiuchi_side.dart';
 
 /// The full 一騎打ち field folded to its rows, in card widths: Tobi's side at
 /// the top, turned to face him, the player's below, a gap between them.
@@ -173,13 +173,13 @@ class IkkiuchiField {
     ({int id, IkkiuchiSide side, CardBox box}) card(int id, IkkiuchiSide side, double x, double y) => (
           id: id,
           side: side,
-          box: CardBox(Vec(x + 0.5, y + cardH / 2), 0.5, cardH / 2, side == IkkiuchiSide.tobi ? math.pi : 0),
+          box: CardBox(Vec(x + 0.5, y + cardH / 2), 0.5, cardH / 2, side == IkkiuchiSide.opponent ? math.pi : 0),
         );
     return [
       for (final (i, r) in _shown.indexed) ...[
         if (r < tobi.length) ...[
-          for (final (j, id) in tobi[r].left.indexed) card(id, IkkiuchiSide.tobi, width - 1 - j * pitch, i * rowPitch),
-          for (final (j, id) in tobi[r].right.indexed) card(id, IkkiuchiSide.tobi, j * pitch, i * rowPitch),
+          for (final (j, id) in tobi[r].left.indexed) card(id, IkkiuchiSide.opponent, width - 1 - j * pitch, i * rowPitch),
+          for (final (j, id) in tobi[r].right.indexed) card(id, IkkiuchiSide.opponent, j * pitch, i * rowPitch),
         ],
         if (r < player.length) ...[
           for (final (j, id) in player[r].left.indexed) card(id, IkkiuchiSide.player, j * pitch, _playerTop(i, gap)),

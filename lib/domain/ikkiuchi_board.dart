@@ -4,6 +4,7 @@ import 'ikkiuchi_cards.dart';
 import 'ikkiuchi_geometry.dart';
 import 'ikkiuchi_read.dart';
 import 'ikkiuchi_rig.dart';
+import 'ikkiuchi_side.dart';
 import 'ikkiuchi_strike.dart';
 
 /// One strike of a call on the board: the strike, the board time it starts
@@ -185,10 +186,10 @@ class IkkiuchiBoard {
   /// it.
   static IkkiuchiSide? takerOf({double? player, double? tobi, required IkkiuchiSide side}) {
     if (tobi == null) return player == null ? null : IkkiuchiSide.player;
-    if (player == null) return IkkiuchiSide.tobi;
+    if (player == null) return IkkiuchiSide.opponent;
     final gap = player - tobi;
     if (gap.abs() <= _sameTime) return side;
-    return gap < 0 ? IkkiuchiSide.player : IkkiuchiSide.tobi;
+    return gap < 0 ? IkkiuchiSide.player : IkkiuchiSide.opponent;
   }
 
   static final _sameTime = IkkiuchiPlayTuning.sameTime.inMicroseconds / Duration.microsecondsPerMillisecond;
@@ -362,7 +363,7 @@ class IkkiuchiBoard {
   IkkiuchiSide? get _deadSide {
     final reading = _reading;
     if (reading == null || !reading.onField) return null;
-    return cards.card(reading.id).side == IkkiuchiSide.tobi ? IkkiuchiSide.player : IkkiuchiSide.tobi;
+    return cards.card(reading.id).side == IkkiuchiSide.opponent ? IkkiuchiSide.player : IkkiuchiSide.opponent;
   }
 
   bool _isDead(IkkiuchiCard card) {
@@ -388,7 +389,7 @@ class IkkiuchiBoard {
   /// (Tobi's half is above the player's); on a からふだ, toward [target]'s.
   Vec _away(IkkiuchiCard target) {
     final dead = _deadSide;
-    final toward = dead == null ? target.side : (dead == IkkiuchiSide.tobi ? IkkiuchiSide.player : IkkiuchiSide.tobi);
+    final toward = dead == null ? target.side : (dead == IkkiuchiSide.opponent ? IkkiuchiSide.player : IkkiuchiSide.opponent);
     return toward == IkkiuchiSide.player ? const Vec(0, 1) : const Vec(0, -1);
   }
 
@@ -457,7 +458,7 @@ class IkkiuchiBoard {
     if (!run._hit && rt1 >= strike.liveFrom) {
       run._hit = true;
       final hit = _tobiHit;
-      if (run.takes && hit != null && takerOf(player: _take?.at, tobi: hit, side: target.side) == IkkiuchiSide.tobi) {
+      if (run.takes && hit != null && takerOf(player: _take?.at, tobi: hit, side: target.side) == IkkiuchiSide.opponent) {
         _launch(target, strike, away);
       }
     }

@@ -12,9 +12,9 @@ import 'package:fudatobashi/data/fuda_sets.dart';
 import 'package:fudatobashi/data/islands.dart';
 import 'package:fudatobashi/data/poem.dart';
 import 'package:fudatobashi/db/database.dart';
-import 'package:fudatobashi/domain/ikkiuchi_cards.dart';
 import 'package:fudatobashi/domain/ikkiuchi_match.dart';
 import 'package:fudatobashi/domain/ikkiuchi_record.dart';
+import 'package:fudatobashi/domain/ikkiuchi_side.dart';
 import 'package:fudatobashi/l10n/history_strings.dart';
 import 'package:fudatobashi/l10n/ikkiuchi_strings.dart';
 import 'package:fudatobashi/l10n/strings.dart';
@@ -38,7 +38,7 @@ void main() {
   archipelago = Archipelago.fromJsonString(File('assets/data/islands.json').readAsStringSync());
   driftRuntimeOptions.dontWarnAboutMultipleDatabases = true;
   const s = S('en');
-  const player = IkkiuchiSide.player, tobi = IkkiuchiSide.tobi;
+  const player = IkkiuchiSide.player, tobi = IkkiuchiSide.opponent;
 
   IkkiuchiMatchRecord match(DateTime at, IkkiuchiResult result, int playerLeft, int tobiLeft,
           {List<IkkiuchiReadLog> reads = const []}) =>

@@ -14,13 +14,13 @@ import 'package:fudatobashi/config/design.dart';
 import 'package:fudatobashi/data/poem.dart';
 import 'package:fudatobashi/domain/field_parts.dart';
 import 'package:fudatobashi/domain/ikkiuchi_board.dart';
-import 'package:fudatobashi/domain/ikkiuchi_cards.dart';
 import 'package:fudatobashi/domain/ikkiuchi_field.dart';
 import 'package:fudatobashi/domain/ikkiuchi_geometry.dart';
 import 'package:fudatobashi/domain/ikkiuchi_layout.dart';
 import 'package:fudatobashi/domain/ikkiuchi_read.dart';
 import 'package:fudatobashi/domain/ikkiuchi_rig.dart';
 import 'package:fudatobashi/domain/ikkiuchi_send.dart';
+import 'package:fudatobashi/domain/ikkiuchi_side.dart';
 import 'package:fudatobashi/domain/ikkiuchi_strike.dart';
 import 'package:fudatobashi/domain/placing.dart';
 import 'package:fudatobashi/ui/ikkiuchi/ikkiuchi_board_layout.dart';
@@ -143,8 +143,8 @@ void main() {
     // card 2, across the band from it.
     const field = FieldRect(0, 0, 384, 400);
     const homes = {
-      1: (IkkiuchiSide.tobi, Vec(80, 100)),
-      2: (IkkiuchiSide.tobi, Vec(200, 140)),
+      1: (IkkiuchiSide.opponent, Vec(80, 100)),
+      2: (IkkiuchiSide.opponent, Vec(200, 140)),
       3: (IkkiuchiSide.player, Vec(80, 300)),
       4: (IkkiuchiSide.player, Vec(300, 300)),
       5: (IkkiuchiSide.player, Vec(200, 200)),
@@ -312,7 +312,7 @@ void main() {
     test("Tobi's arm reaches the card, carries it turned to the waiting spot, and points at it", () {
       final sides = dealt(11);
       final l = layoutOf(sides);
-      final card = l.cards.firstWhere((c) => c.side == IkkiuchiSide.tobi);
+      final card = l.cards.firstWhere((c) => c.side == IkkiuchiSide.opponent);
       final wait = l.wait;
       final to = CardBox(Vec(wait.center.dx, wait.center.dy), wait.width / 2, wait.height / 2);
       final carry = IkkiuchiCarry(
@@ -556,7 +556,7 @@ void main() {
       expect(flow.stage, IkkiuchiSendStage.placing, reason: "Tobi's arm lays it down");
       final dropped = flow.dropped!;
       expect(scene.layout.cardW, lessThan(before), reason: 'the cards shrink');
-      expect(scene.board.cards.card(card).side, IkkiuchiSide.tobi);
+      expect(scene.board.cards.card(card).side, IkkiuchiSide.opponent);
       expect(scene.board.cards.card(card).held, isTrue, reason: 'it lies where it was let go, off the field');
       runFor(scene, IkkiuchiPlayTuning.relayoutGlide + const Duration(milliseconds: 50));
       final carry = scene.board.carry!;
@@ -598,7 +598,7 @@ void main() {
         scene.pointer(PointerDownEvent(pointer: 1, position: band));
         scene.advance(16);
         start(scene);
-        final tobis = scene.board.cards.cards.firstWhere((c) => c.side == IkkiuchiSide.tobi && !c.held);
+        final tobis = scene.board.cards.cards.firstWhere((c) => c.side == IkkiuchiSide.opponent && !c.held);
         scene.pointer(PointerMoveEvent(pointer: 1, position: Offset(tobis.box.centre.x, tobis.box.centre.y)));
         for (var i = 0; i < 5; i++) {
           scene.advance(16);
@@ -932,7 +932,7 @@ void main() {
       flow.dragEnd();
       expect(scene.sides!.tobiCards, contains(m));
       expect(scene.sides!.player[middleRow.index].middle, [n]);
-      expect(scene.board.cards.card(m).side, IkkiuchiSide.tobi);
+      expect(scene.board.cards.card(m).side, IkkiuchiSide.opponent);
       runFor(scene, IkkiuchiPlayTuning.relayoutGlide * 2);
       expectHome(scene, 'sent from the middle');
     });

@@ -1,6 +1,6 @@
 import '../config/config.dart';
-import 'ikkiuchi_cards.dart';
 import 'ikkiuchi_match.dart';
+import 'ikkiuchi_side.dart';
 
 /// A free 一騎打ち match's setup: the cards dealt to each side, the memory
 /// time before play, and Tobi's rating.

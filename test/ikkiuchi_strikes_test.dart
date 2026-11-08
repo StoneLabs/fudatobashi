@@ -16,6 +16,7 @@ import 'package:fudatobashi/domain/ikkiuchi_geometry.dart';
 import 'package:fudatobashi/domain/ikkiuchi_layout.dart';
 import 'package:fudatobashi/domain/ikkiuchi_read.dart';
 import 'package:fudatobashi/domain/ikkiuchi_rig.dart';
+import 'package:fudatobashi/domain/ikkiuchi_side.dart';
 import 'package:fudatobashi/domain/ikkiuchi_strike.dart';
 import 'package:fudatobashi/domain/ikkiuchi_tobi.dart';
 import 'package:fudatobashi/ui/ikkiuchi/ikkiuchi_board_layout.dart';
@@ -71,14 +72,14 @@ void main() {
   // A setup for a strike at [card] on [board], as the board makes one.
   IkkiuchiStrikeSetup setupFor(IkkiuchiBoard board, int card, {double? reachMs}) {
     final target = board.cards.card(card);
-    final dead = target.side == IkkiuchiSide.tobi ? IkkiuchiSide.player : IkkiuchiSide.tobi;
+    final dead = target.side == IkkiuchiSide.opponent ? IkkiuchiSide.player : IkkiuchiSide.opponent;
     return IkkiuchiStrikeSetup(
       target: target.box,
       targetId: card,
       tobi: board.tobi,
       board: board.size,
       cardW: board.cards.cardW,
-      away: dead == IkkiuchiSide.tobi ? const Vec(0, 1) : const Vec(0, -1),
+      away: dead == IkkiuchiSide.opponent ? const Vec(0, 1) : const Vec(0, -1),
       wrong: [
         for (final c in board.cards.cards)
           if (c.side == dead) c.box,
@@ -245,7 +246,7 @@ void main() {
             }
             for (final c in l.cards) {
               final b = c.box;
-              if (c.side == IkkiuchiSide.tobi) {
+              if (c.side == IkkiuchiSide.opponent) {
                 expect(b.centre.y + b.hh, lessThanOrEqualTo(l.band.top + eps), reason: '$why: his cards above the band');
               } else {
                 expect(b.centre.y - b.hh, greaterThanOrEqualTo(l.band.bottom - eps), reason: "$why: the player's below");
@@ -261,7 +262,7 @@ void main() {
               tall = (bottoms.reduce(math.max) - tops.reduce(math.min) - l.size.y).abs() < eps;
               expect(tops.reduce(math.min), greaterThanOrEqualTo(-eps), reason: '$why: on the board');
               expect(bottoms.reduce(math.max), lessThanOrEqualTo(l.size.y + eps), reason: '$why: on the board');
-              for (final c in l.cards.where((c) => c.side == IkkiuchiSide.tobi)) {
+              for (final c in l.cards.where((c) => c.side == IkkiuchiSide.opponent)) {
                 final b = c.box;
                 final rect = Rect.fromCenter(center: Offset(b.centre.x, b.centre.y), width: 2 * b.hw, height: 2 * b.hh);
                 expect(rect.overlaps(tobiBox), isFalse, reason: '$why: Tobi sits clear of his cards');
@@ -378,7 +379,7 @@ void main() {
     test('a card knocked across the band slides on into the other side and knocks a card there', () {
       final cards = IkkiuchiCards([
         (id: 1, side: IkkiuchiSide.player, box: const CardBox(Vec(200, 600), 19, 27)),
-        (id: 2, side: IkkiuchiSide.tobi, box: const CardBox(Vec(200, 300), 19, 27, math.pi)),
+        (id: 2, side: IkkiuchiSide.opponent, box: const CardBox(Vec(200, 300), 19, 27, math.pi)),
       ], board: const Vec(384, 832), cardW: 38);
       for (var i = 0; i < 6; i++) {
         cards
@@ -534,7 +535,7 @@ void main() {
     test('a strike plays alike at any card size: on the board scaled, it and its knocks scale too', () {
       for (final move in IkkiuchiMove.values) {
         final l = layoutFor(10 + move.index, 2000);
-        final called = sideCard(l.board(), move.index.isEven ? IkkiuchiSide.player : IkkiuchiSide.tobi, 6);
+        final called = sideCard(l.board(), move.index.isEven ? IkkiuchiSide.player : IkkiuchiSide.opponent, 6);
         final one = scaled(l, 1);
         one.call(strikeAt(one, called, move, 300));
         playOut(one);
@@ -561,7 +562,7 @@ void main() {
 
     test('after a strike every card on the board lies still', () {
       final board = boardFor(2, 2800);
-      board.call(strikeAt(board, sideCard(board, IkkiuchiSide.tobi, 3), IkkiuchiMove.whip, 300));
+      board.call(strikeAt(board, sideCard(board, IkkiuchiSide.opponent, 3), IkkiuchiMove.whip, 300));
       playOut(board);
       expect(board.busy, isFalse);
       expect(board.cards.settled, isTrue);
@@ -620,7 +621,7 @@ void main() {
     test('a touch on a からふだ is a fault, and takes nothing', () {
       final board = boardFor(6, 0);
       final away = poems.all.map((p) => p.id).firstWhere((id) => !board.field.containsKey(id));
-      final touched = sideCard(board, IkkiuchiSide.tobi, 8);
+      final touched = sideCard(board, IkkiuchiSide.opponent, 8);
       board.call(IkkiuchiRead(
           called: away, onField: false, move: IkkiuchiMove.smear, reachMs: 500, correctionReachMs: 500, wrong: touched));
       playOut(board);
@@ -715,7 +716,7 @@ void main() {
               final seed = 100 * i + move.index;
               final board = boardFor(seed, rating, landscape: landscape, size: size);
               final rng = math.Random(seed);
-              final side = i.isEven ? IkkiuchiSide.player : IkkiuchiSide.tobi;
+              final side = i.isEven ? IkkiuchiSide.player : IkkiuchiSide.opponent;
               final called = sideCard(board, side, rng.nextInt(25));
               final decided = IkkiuchiRead.decide(
                   rating: rating,
@@ -778,7 +779,7 @@ void main() {
               } else {
                 double nearness(IkkiuchiCard c) =>
                     middle.map((m) => board.cards.card(m).box.centre.distanceTo(c.box.centre)).reduce(math.min);
-                called = (board.cards.cards.where((c) => c.side == IkkiuchiSide.tobi).toList()
+                called = (board.cards.cards.where((c) => c.side == IkkiuchiSide.opponent).toList()
                       ..sort((a, b) => nearness(a).compareTo(nearness(b))))
                     .first
                     .id;

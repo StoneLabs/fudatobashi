@@ -18,9 +18,9 @@ import 'package:fudatobashi/data/islands.dart';
 import 'package:fudatobashi/data/poem.dart';
 import 'package:fudatobashi/db/database.dart';
 import 'package:fudatobashi/domain/ikkiuchi_board.dart';
-import 'package:fudatobashi/domain/ikkiuchi_cards.dart';
 import 'package:fudatobashi/domain/ikkiuchi_geometry.dart';
 import 'package:fudatobashi/domain/ikkiuchi_match.dart';
+import 'package:fudatobashi/domain/ikkiuchi_side.dart';
 import 'package:fudatobashi/state/progress.dart';
 import 'package:fudatobashi/state/scope.dart';
 import 'package:fudatobashi/state/settings.dart';
@@ -74,7 +74,7 @@ void main() {
   driftRuntimeOptions.dontWarnAboutMultipleDatabases = true;
 
   group('The rules', () {
-    const tobi = IkkiuchiSide.tobi, player = IkkiuchiSide.player;
+    const tobi = IkkiuchiSide.opponent, player = IkkiuchiSide.player;
 
     test('a take from the other side: the taker sends one; from their own side: none', () {
       expect(const IkkiuchiReadEnd(taker: player, cardSide: tobi).sends, (from: player, count: 1));
@@ -424,7 +424,7 @@ void main() {
 
     testWidgets("a take from Tobi's side: Sending Card, then Tobi Placing Card by his arm", (tester) async {
       final p = await open(tester);
-      await seedReading(tester, p, IkkiuchiSide.tobi);
+      await seedReading(tester, p, IkkiuchiSide.opponent);
       final f = flow(tester), s = f.scene;
       final read = s.board.called!;
       await touch(tester, s.board.cards.card(read).box.centre);
@@ -508,7 +508,7 @@ void main() {
       final f = flow(tester), s = f.scene;
       final before = voices.stopped;
       for (var i = 0; i < 5; i++) {
-        f.sendByHand(IkkiuchiSide.tobi);
+        f.sendByHand(IkkiuchiSide.opponent);
         await runUntil(tester, () => s.send.stage == IkkiuchiSendStage.waiting);
         final (spot, _) = s.send.targets().freeSpots.first;
         s.send.tap(s.send.rectOf(spot)!.center);
@@ -565,7 +565,7 @@ void main() {
       };
       expect(lying, {...tobi, ...player}, reason: '$why: every card on the board, none held up');
       for (final c in s.board.cards.cards) {
-        expect(c.side, tobi.contains(c.id) ? IkkiuchiSide.tobi : IkkiuchiSide.player, reason: '$why: card ${c.id}');
+        expect(c.side, tobi.contains(c.id) ? IkkiuchiSide.opponent : IkkiuchiSide.player, reason: '$why: card ${c.id}');
         expect(c.box.centre.distanceTo(c.home.centre), lessThan(1e-3), reason: '$why: card ${c.id} at its home');
       }
       expect(tester.takeException(), isNull, reason: why);
@@ -631,7 +631,7 @@ void main() {
         await show(tester, p, const IkkiuchiDebugGame(seed: 8));
         final f = flow(tester), s = f.scene;
         final tobiBefore = s.sides!.tobiCards.toSet();
-        f.sendByHand(IkkiuchiSide.tobi);
+        f.sendByHand(IkkiuchiSide.opponent);
         expect(f.stage, IkkiuchiStage.receivingCard, reason: why);
         switch (stage) {
           case 'carrying':
@@ -656,7 +656,7 @@ void main() {
 
     testWidgets("the slider: OFF at the top never strikes; his highest rating at the foot", (tester) async {
       final p = await open(tester);
-      await seedReading(tester, p, IkkiuchiSide.tobi);
+      await seedReading(tester, p, IkkiuchiSide.opponent);
       final slider = tester.widget<Slider>(find.byType(Slider));
       expect(slider.value, slider.min, reason: 'OFF is the low end, set on top by the quarter turn');
       expect(slider.max, IkkiuchiTuning.ratingMax);
@@ -698,7 +698,7 @@ void main() {
       final f = flow(tester), s = f.scene;
       expect(s.sides!.tobiCards, hasLength(5));
       for (var i = 0; i < 5; i++) {
-        f.sendByHand(IkkiuchiSide.tobi);
+        f.sendByHand(IkkiuchiSide.opponent);
         await runUntil(tester, () => s.send.stage == IkkiuchiSendStage.waiting);
         final (spot, _) = s.send.targets().freeSpots.first;
         final r = s.send.rectOf(spot)!;

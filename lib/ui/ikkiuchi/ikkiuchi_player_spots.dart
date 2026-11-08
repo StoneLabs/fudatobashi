@@ -2,9 +2,9 @@ import 'dart:ui';
 
 import '../../config/design.dart';
 import '../../domain/field_parts.dart';
-import '../../domain/ikkiuchi_cards.dart';
 import '../../domain/ikkiuchi_field.dart';
 import '../../domain/ikkiuchi_geometry.dart';
+import '../../domain/ikkiuchi_side.dart';
 import '../../domain/placing.dart';
 import '../placing/placing_widgets.dart';
 import 'ikkiuchi_board_scene.dart';

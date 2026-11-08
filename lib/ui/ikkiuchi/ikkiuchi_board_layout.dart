@@ -5,11 +5,11 @@ import '../../config/config.dart';
 import '../../config/design.dart';
 import '../../domain/field_parts.dart';
 import '../../domain/ikkiuchi_board.dart';
-import '../../domain/ikkiuchi_cards.dart';
 import '../../domain/ikkiuchi_field.dart';
 import '../../domain/ikkiuchi_geometry.dart';
 import '../../domain/ikkiuchi_layout.dart';
 import '../../domain/ikkiuchi_rig.dart';
+import '../../domain/ikkiuchi_side.dart';
 
 /// Where everything lies on the 一騎打ち board of [size]: the full field
 /// ([IkkiuchiField]), Tobi's side across the band at the top. Both sides'

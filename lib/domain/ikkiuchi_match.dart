@@ -1,7 +1,7 @@
 import 'dart:math' as math;
 
 import '../config/config.dart';
-import 'ikkiuchi_cards.dart';
+import 'ikkiuchi_side.dart';
 
 /// Where a match (一騎打ち) stands, in the order it goes through them.
 enum IkkiuchiStage {
@@ -180,16 +180,16 @@ class IkkiuchiReadEnd {
 
   /// The cards [side] may send the other.
   int mayGive(IkkiuchiSide side) {
-    final other = side == IkkiuchiSide.tobi ? IkkiuchiSide.player : IkkiuchiSide.tobi;
+    final other = side == IkkiuchiSide.opponent ? IkkiuchiSide.player : IkkiuchiSide.opponent;
     final take = taker == side && cardSide == other ? 1 : 0;
-    return take + (other == IkkiuchiSide.tobi ? tobiFaults : playerFaults).length;
+    return take + (other == IkkiuchiSide.opponent ? tobiFaults : playerFaults).length;
   }
 
   /// Who sends the other cards, and how many; null when none change sides.
   ({IkkiuchiSide from, int count})? get sends {
-    final net = mayGive(IkkiuchiSide.player) - mayGive(IkkiuchiSide.tobi);
+    final net = mayGive(IkkiuchiSide.player) - mayGive(IkkiuchiSide.opponent);
     if (net == 0) return null;
-    return (from: net > 0 ? IkkiuchiSide.player : IkkiuchiSide.tobi, count: net.abs());
+    return (from: net > 0 ? IkkiuchiSide.player : IkkiuchiSide.opponent, count: net.abs());
   }
 
   /// What the read's end says, in order: 同時 or からふだ, who took it, the

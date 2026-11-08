@@ -1,8 +1,8 @@
 import 'package:drift/drift.dart';
 
 import '../db/database.dart';
-import '../domain/ikkiuchi_cards.dart';
 import '../domain/ikkiuchi_record.dart';
+import '../domain/ikkiuchi_side.dart';
 
 /// The recorded 一騎打ち matches, oldest first, and each one's reads. Owned
 /// by `Progress`, which loads it on start; the matches are kept in memory,
@@ -49,7 +49,7 @@ class IkkiuchiRecords {
             playerLeft: record.playerLeft,
             tobiLeft: record.tobiLeft,
             playerFaults: record.faultsOf(IkkiuchiSide.player),
-            tobiFaults: record.faultsOf(IkkiuchiSide.tobi),
+            tobiFaults: record.faultsOf(IkkiuchiSide.opponent),
           ));
       await db.batch((b) => b.insertAll(db.ikkiuchiReads, [
             for (final (i, r) in record.reads.indexed)

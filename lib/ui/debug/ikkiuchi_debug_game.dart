@@ -7,8 +7,8 @@ import 'package:flutter/services.dart';
 
 import '../../config/config.dart';
 import '../../config/design.dart';
-import '../../domain/ikkiuchi_cards.dart';
 import '../../domain/ikkiuchi_match.dart';
+import '../../domain/ikkiuchi_side.dart';
 import '../ikkiuchi/ikkiuchi_board_scene.dart';
 import '../ikkiuchi/ikkiuchi_dealer.dart';
 import '../ikkiuchi/ikkiuchi_match_board.dart';
@@ -156,7 +156,7 @@ class IkkiuchiDebugGameState extends State<IkkiuchiDebugGame> with SingleTickerP
         turn: _turn,
         deals: {for (final n in IkkiuchiToolsTuning.gameCounts) n: () => _deal(n)},
         send: () => flow.sendByHand(IkkiuchiSide.player),
-        receive: () => flow.sendByHand(IkkiuchiSide.tobi),
+        receive: () => flow.sendByHand(IkkiuchiSide.opponent),
         karafuda: flow.askKarafuda,
         start: flow.endMemoryTime,
         go: flow.go,

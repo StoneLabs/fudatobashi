@@ -16,10 +16,10 @@ import 'package:fudatobashi/data/fuda_sets.dart';
 import 'package:fudatobashi/data/islands.dart';
 import 'package:fudatobashi/data/poem.dart';
 import 'package:fudatobashi/db/database.dart';
-import 'package:fudatobashi/domain/ikkiuchi_cards.dart';
 import 'package:fudatobashi/domain/ikkiuchi_geometry.dart';
 import 'package:fudatobashi/domain/ikkiuchi_layout.dart';
 import 'package:fudatobashi/domain/ikkiuchi_read.dart';
+import 'package:fudatobashi/domain/ikkiuchi_side.dart';
 import 'package:fudatobashi/domain/ikkiuchi_strike.dart';
 import 'package:fudatobashi/domain/ikkiuchi_tobi.dart';
 import 'package:fudatobashi/domain/rating.dart';
@@ -414,7 +414,7 @@ void main() {
       }
       expect(s.board.active, isNotNull, reason: 'he strikes');
       final struck = s.board;
-      final next = s.layout.cards.firstWhere((c) => c.id != card && c.side == IkkiuchiSide.tobi).id;
+      final next = s.layout.cards.firstWhere((c) => c.id != card && c.side == IkkiuchiSide.opponent).id;
       await tapBoard(tester, s.board.cards.card(next).home.centre);
       expect(s.board, isNot(same(struck)), reason: 'a tap during a strike cancels it');
       expect(s.board.read?.called, next);
