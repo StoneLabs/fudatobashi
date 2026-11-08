@@ -31,12 +31,12 @@ enum SideTrip {
   LevelLadder get noLevels => LevelLadder(const {}, ladder);
 }
 
-/// The islands of the Side Trips tab, in the order of their ring: each side
-/// trip's, then those still being built.
+/// The islands of the Side Trips tab, in the order of their ring: 一騎打ち's
+/// hall, each side trip's, then those still being built.
 enum SideTripIsle {
+  hall(null),
   ankiren(SideTrip.ankiren),
   storehouse(SideTrip.teiichi),
-  hall(null),
   rocks(null);
 
   const SideTripIsle(this.trip);
@@ -62,18 +62,13 @@ enum SideTripIsle {
 class SideTripRing {
   const SideTripRing(this.isles);
 
-  /// The ring for islands [open] or not: from 一騎打ち's hall ([home]) on
-  /// round in [SideTripIsle] order, the open islands first and the shut
-  /// ones behind them, so the island in front at turn 0 is open whenever
-  /// one is.
+  /// The ring for islands [open] or not: in [SideTripIsle] order, the open
+  /// islands first and the shut ones behind them, so the island in front at
+  /// turn 0 is open whenever one is.
   factory SideTripRing.of(bool Function(SideTripIsle isle) open) {
     const all = SideTripIsle.values;
-    final round = [for (var i = 0; i < all.length; i++) all[(home.index + i) % all.length]];
-    return SideTripRing([...round.where(open), ...round.where((isle) => !open(isle))]);
+    return SideTripRing([...all.where(open), ...all.where((isle) => !open(isle))]);
   }
-
-  /// The island the ring starts on when every island is open.
-  static const home = SideTripIsle.hall;
 
   final List<SideTripIsle> isles;
 

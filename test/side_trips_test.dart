@@ -106,11 +106,11 @@ void main() {
       List<SideTripIsle> ring(Set<SideTripIsle> open) => SideTripRing.of(open.contains).isles;
       const hall = SideTripIsle.hall, rocks = SideTripIsle.rocks;
       const ankiren = SideTripIsle.ankiren, storehouse = SideTripIsle.storehouse;
-      expect(ring(SideTripIsle.values.toSet()), [hall, rocks, ankiren, storehouse], reason: 'all open: round from the hall');
+      expect(ring(SideTripIsle.values.toSet()), [hall, ankiren, storehouse, rocks], reason: 'all open: the order as it is');
       expect(ring({hall, ankiren, storehouse}), [hall, ankiren, storehouse, rocks]);
       expect(ring({ankiren, storehouse}), [ankiren, storehouse, hall, rocks], reason: 'the hall shut');
-      expect(ring({storehouse}), [storehouse, hall, rocks, ankiren]);
-      expect(ring({}), [hall, rocks, ankiren, storehouse], reason: 'none open: the order as it is');
+      expect(ring({storehouse}), [storehouse, hall, ankiren, rocks]);
+      expect(ring({}), [hall, ankiren, storehouse, rocks], reason: 'none open: the order as it is');
     });
 
     test('the hub\'s ring: the hall in front once every card is known, else the first open trip', () {

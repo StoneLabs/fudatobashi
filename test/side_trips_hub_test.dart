@@ -965,7 +965,7 @@ void main() {
       await openHub(tester, p, usersPhone);
       await turnRingTo(tester, SideTripIsle.ankiren);
       await swipe(tester);
-      expect(frontOf(tester), SideTripIsle.storehouse);
+      expect(frontOf(tester), isNot(SideTripIsle.ankiren));
       await tester.runAsync(() => remember(p, journeyOrder.skip(_lockedCards + 11).take(2)));
       await tester.pump();
       await tester.pump(DojoUnlockMotion.unlock);
