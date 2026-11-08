@@ -3,11 +3,11 @@ import '../domain/ikkiuchi_match.dart';
 import '../domain/ikkiuchi_record.dart';
 import 'strings.dart';
 
-/// Strings of 一騎打ち: its page, its custom sheet and rules, the memory
-/// time, the greetings, the 送り札 on the band, Tobi's word as his card
-/// waits, the names of the places a card may go on the player's side, the
-/// game column, a からふだ's tag, how a read ended, and History's list of
-/// matches and a match's page.
+/// Strings of 一騎打ち: its page, its custom sheet and rules, the placing
+/// and the memory time, the greetings, the 送り札 on the band, Tobi's word
+/// as his card waits, the names of the places a card may go on the
+/// player's side, the game column, a からふだ's tag, how a read ended, and
+/// History's list of matches and a match's page.
 extension IkkiuchiStrings on S {
   /// The band while a card is sent: its title, and what the player does,
   /// sending one of theirs or placing Tobi's; in landscape the shorter
@@ -23,6 +23,16 @@ extension IkkiuchiStrings on S {
   /// The memory time before play, and the time left of it, [clock] as m:ss.
   String get ikkiuchiMemoryTime => t('ikkiuchiMemoryTime');
   String ikkiuchiTimeLeft(String clock) => f('ikkiuchiTimeLeft', [clock]);
+
+  /// The placing: the hint before the first card is placed, the stack's
+  /// tag with [n] cards left in it, and the tag on a placed card dragged
+  /// back onto it.
+  String get ikkiuchiPlaceHint => t('ikkiuchiPlaceHint');
+  String ikkiuchiStackLeft(int n) => f('ikkiuchiStackLeft', [n]);
+  String get ikkiuchiBackOnStack => t('ikkiuchiBackOnStack');
+
+  /// The game column's button that ends the memory time early.
+  String get ikkiuchiReady => t('ikkiuchiReady');
 
   /// The players' greeting as play begins, and their thanks once it is over.
   String get ikkiuchiGreeting => t('ikkiuchiGreeting');

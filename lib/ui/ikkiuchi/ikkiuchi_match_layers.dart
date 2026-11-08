@@ -1,6 +1,7 @@
 import 'package:flutter/widgets.dart';
 
 import '../../config/design.dart';
+import '../../config/vector_art.dart';
 import '../../domain/ikkiuchi_match.dart';
 import '../../l10n/ikkiuchi_strings.dart';
 import '../../l10n/strings.dart';
@@ -49,10 +50,10 @@ class IkkiuchiCallLayer extends StatelessWidget {
       );
 
   /// What to do instead of the call: send a card, place Tobi's, or move
-  /// one's own; or the memory time left.
+  /// one's own; or the memory time left, while placing too.
   ({String title, String line})? _prompt(S s) {
     if (scene.arrange.active) return (title: s.ikkiuchiArranging, line: s.ikkiuchiArrangeHint);
-    if (flow case final flow? when flow.stage == IkkiuchiStage.memoryTime) {
+    if (flow case final flow? when flow.stage == IkkiuchiStage.placing || flow.stage == IkkiuchiStage.memoryTime) {
       return (title: s.ikkiuchiMemoryTime, line: s.ikkiuchiTimeLeft(ikkiuchiClock(flow.left)));
     }
     return switch (scene.send.stage) {
@@ -65,12 +66,17 @@ class IkkiuchiCallLayer extends StatelessWidget {
 }
 
 /// The game column over a landscape board, in board dp, at the layout's
-/// place and moving with it ([IkkiuchiMatchColumn]): the score live, and
-/// 並べ替え starting and ending the scene's [IkkiuchiBoardScene.arrange],
-/// free only while nothing else is under way, and with a [flow] only while
-/// it lets the player move cards. [onEnd] gets 終了 once held.
-/// Only its buttons take touches. It is one of the board's match parts
-/// (`IkkiuchiBoardView.parts`), so a card a 送り札 holds up lies over it.
+/// place and moving with it ([IkkiuchiMatchColumn]): the score live, and at
+/// its foot 並べ替え starting and ending the scene's
+/// [IkkiuchiBoardScene.arrange], free only while nothing else is under way,
+/// and with a [flow] only while it lets the player move cards. With a
+/// [flow], while the player places their cards 完了 stands there instead,
+/// for once every card is placed ([IkkiuchiMatchFlow.donePlacing]); in the
+/// memory time after it 覚えた stands over 並べ替え, for once Tobi has laid
+/// out his side too ([IkkiuchiMatchFlow.startEarly]). [onEnd] gets 終了
+/// once held. Only its buttons take touches. It is one of the board's
+/// match parts (`IkkiuchiBoardView.parts`), so a card a 送り札 holds up lies
+/// over it.
 class IkkiuchiColumnLayer extends StatelessWidget {
   const IkkiuchiColumnLayer({super.key, required this.scene, required this.onEnd, this.flow});
 
@@ -83,7 +89,6 @@ class IkkiuchiColumnLayer extends StatelessWidget {
         listenable: Listenable.merge([scene, flow]),
         builder: (context, _) {
           final column = scene.column, score = scene.cardsLeft;
-          final arrange = scene.arrange;
           return Stack(children: [
             if (column != null && score != null)
               Positioned.fromRect(
@@ -92,15 +97,36 @@ class IkkiuchiColumnLayer extends StatelessWidget {
                   tobi: score.tobi,
                   player: score.player,
                   split: scene.band.center.dy - column.top,
-                  arranging: arrange.active,
-                  onArrange: (flow?.canArrange ?? arrange.canStart) ? arrange.start : null,
-                  onDone: arrange.finish,
+                  buttons: _buttons(S.of(context)),
                   onEnd: onEnd,
                 ),
               ),
           ]);
         },
       );
+
+  List<IkkiuchiColumnButton> _buttons(S s) {
+    final flow = this.flow, arrange = scene.arrange, opening = scene.opening;
+    IkkiuchiColumnButton go(String label, VoidCallback? onTap) => (
+          label: label,
+          icon: IconArt.arrow,
+          fill: onTap == null ? IkkiuchiColumnStyle.arrangeFill : IkkiuchiColumnStyle.doneFill,
+          onTap: onTap,
+        );
+    if (flow?.stage == IkkiuchiStage.placing) return [go(s.done, opening.allPlaced ? flow!.donePlacing : null)];
+    if (arrange.active) {
+      return [(label: s.done, icon: IconArt.check, fill: IkkiuchiColumnStyle.doneFill, onTap: arrange.finish)];
+    }
+    return [
+      if (flow?.stage == IkkiuchiStage.memoryTime) go(s.ikkiuchiReady, flow!.canStartEarly ? flow.startEarly : null),
+      (
+        label: s.ikkiuchiArrange,
+        icon: IconArt.swap,
+        fill: IkkiuchiColumnStyle.arrangeFill,
+        onTap: (flow?.canArrange ?? arrange.canStart) ? arrange.start : null,
+      ),
+    ];
+  }
 }
 
 /// [ms] as minutes and seconds, the seconds rounded up: 14:57.

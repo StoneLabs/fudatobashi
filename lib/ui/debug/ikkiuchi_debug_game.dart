@@ -17,10 +17,10 @@ import '../ikkiuchi/ikkiuchi_match_flow.dart';
 import 'debug_common.dart';
 
 /// The developer's 一騎打ち game: a whole match ([IkkiuchiMatchFlow]) on the
-/// whole screen, its system bars hidden, both sides dealt at random and
-/// Tobi in his form drawn from the deal's seed, as in a match. The match
-/// holds once the 送り札 after each read are made, until 次, and the card
-/// read is marked.
+/// whole screen, its system bars hidden, dealt at random for the players
+/// to lay out their sides and Tobi in his form drawn from the deal's seed,
+/// as in a match. The match holds once the 送り札 after each read are made,
+/// until 次, and the card read is marked.
 ///
 /// The developer's tools lie over everything at the board's top left: the
 /// stage, Tobi's rating, and the slider that sets it for the reads to come
@@ -28,8 +28,9 @@ import 'debug_common.dart';
 /// the board between landscape and portrait and a number deals anew with
 /// that many cards a side, either starting the match afresh; "^" and "v"
 /// make a 送り札 to Tobi and from him, 空 makes the next read a からふだ, 始
-/// ends the memory time and 次 lets the held match go on. The system back
-/// leaves.
+/// ends the placing and the memory time (the cards still in the stack put
+/// down, Tobi's side laid out at once) and 次 lets the held match go on.
+/// The system back leaves.
 class IkkiuchiDebugGame extends StatefulWidget {
   const IkkiuchiDebugGame({super.key, this.seed, this.landscape = true});
 
@@ -107,6 +108,7 @@ class IkkiuchiDebugGameState extends State<IkkiuchiDebugGame> with SingleTickerP
         seed: _seed,
         perSide: _perSide,
         form: IkkiuchiTobi.formFor(_seed),
+        opening: true,
         onNew: (scene) {
           final old = _flow;
           if (old != null) SchedulerBinding.instance.addPostFrameCallback((_) => old.dispose());
@@ -196,6 +198,7 @@ class IkkiuchiDebugTools extends StatelessWidget {
   final Map<int, VoidCallback> deals;
 
   static String stageName(IkkiuchiStage stage) => switch (stage) {
+        IkkiuchiStage.placing => IkkiuchiToolsStyle.placing,
         IkkiuchiStage.memoryTime => IkkiuchiToolsStyle.memoryTime,
         IkkiuchiStage.gameStart => IkkiuchiToolsStyle.gameStart,
         IkkiuchiStage.yoka => IkkiuchiToolsStyle.yoka,

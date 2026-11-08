@@ -169,6 +169,28 @@ abstract final class IkkiuchiSendStyle {
   static const EdgeInsets balloonPadding = EdgeInsets.zero;
 }
 
+/// The opening of a match (`IkkiuchiOpeningFlow`, `IkkiuchiOpeningLayer`):
+/// the player lays out their side from a stack with the placing's look
+/// (`IkkiuchiSendStyle.look`). dp.
+abstract final class IkkiuchiOpeningStyle {
+  /// In landscape the stack lies in the margin right of the player's side,
+  /// [stackGap] clear of the field, its top card [stackScale] field cards
+  /// wide.
+  static const double stackScale = 2.3;
+  static const double stackGap = 6;
+
+  /// A placed card let go within [stackReach] of the stack goes back onto it.
+  static const double stackReach = 6;
+
+  /// The hint before the first card is placed: beside the stack over the
+  /// player's half, at most [noteWidth] wide and [noteGap] clear of the
+  /// spots at the half's edges; above the stack where that leaves it less
+  /// than [noteMinWidth].
+  static const double noteGap = 18;
+  static const double noteWidth = 330;
+  static const double noteMinWidth = 200;
+}
+
 /// The match's greetings over the board (`IkkiuchiGreeting`), as play
 /// begins and once it is over: the board dimmed by [scrim], and the words
 /// slammed onto each half in [font] [fill] lettering with an [outline] wide
@@ -270,13 +292,14 @@ abstract final class IkkiuchiColumnStyle {
   static const Color ruleInk = Color(0x59FFFFFF);
   static const double ruleInset = 8;
 
-  /// 並べ替え at its foot: an icon over its word, on paper, or on sun as
-  /// 完了 while the player moves their cards; faded to [dimmed] while it
-  /// can't be used.
+  /// The buttons at its foot, [buttonsGap] apart: each an icon over its
+  /// word, 並べ替え on paper, 完了 and 覚えた on sun once they can be used;
+  /// faded to [dimmed] while a button can't be used.
   static const double buttonIcon = 18;
   static const double buttonIconStroke = 2.4;
   static const double buttonFont = 10.5;
   static const double buttonGap = 2;
+  static const double buttonsGap = 6;
   static const EdgeInsets buttonPadding = EdgeInsets.fromLTRB(2, 6, 2, 5);
   static const Color arrangeFill = Palette.paper;
   static const Color doneFill = Palette.sun;

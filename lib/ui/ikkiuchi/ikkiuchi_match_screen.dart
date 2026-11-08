@@ -27,9 +27,9 @@ Future<void> startIkkiuchiMatch(BuildContext context, IkkiuchiSetup setup, {bool
 
 /// A 一騎打ち match ([IkkiuchiMatchFlow]) of [setup] on the whole screen,
 /// held in landscape with the system bars hidden and the menu music out,
-/// both sides dealt from [seed] (random when null) and the opponent playing
-/// at the setup's rating in his form drawn from it (`IkkiuchiTobi.formFor`).
-/// The match runs on by itself.
+/// dealt from [seed] (random when null) for the players to lay out their
+/// sides, the opponent playing at the setup's rating in his form drawn
+/// from it (`IkkiuchiTobi.formFor`). The match runs on by itself.
 ///
 /// A match that ends once play has begun (its first card read), played to
 /// its end or by 終了, is recorded, and [IkkiuchiScreenTuning.leaveAfter]
@@ -46,8 +46,8 @@ Future<void> startIkkiuchiMatch(BuildContext context, IkkiuchiSetup setup, {bool
 /// it leaves at once.
 ///
 /// Until the screen stands in landscape the board lies turned in it; a
-/// change of its size deals the same match afresh while the memory time
-/// runs, and after that the board keeps its size, scaled to fit.
+/// change of its size deals the same match afresh until the player places
+/// a card, and after that the board keeps its size, scaled to fit.
 class IkkiuchiMatchScreen extends StatefulWidget {
   const IkkiuchiMatchScreen({super.key, required this.setup, this.seed, this.guest = false});
 
@@ -112,11 +112,11 @@ class IkkiuchiMatchScreenState extends State<IkkiuchiMatchScreen> with SingleTic
     super.dispose();
   }
 
-  /// The match on a board filling [room], dealt afresh while its memory
-  /// time runs when [room] changes.
+  /// The match on a board filling [room], dealt afresh when [room] changes
+  /// before the player places a card.
   IkkiuchiMatchFlow _flowFor(Size room) {
     final flow = _flow;
-    if (flow != null && flow.stage != IkkiuchiStage.memoryTime) return flow;
+    if (flow != null && !(flow.stage == IkkiuchiStage.placing && flow.scene.opening.untouched)) return flow;
     final setup = widget.setup;
     _dealer.sceneFor(context, _boardSize(room),
         landscape: true,
@@ -124,6 +124,7 @@ class IkkiuchiMatchScreenState extends State<IkkiuchiMatchScreen> with SingleTic
         seed: _seed,
         perSide: setup.perSide,
         form: _form,
+        opening: true,
         onNew: (scene) {
           final old = _flow;
           if (old != null) {

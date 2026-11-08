@@ -220,13 +220,16 @@ class IkkiuchiBoard {
   double _carryStart = 0;
   int? _carried;
 
-  /// Carries [card] with [move] from now: the card leaves the board as his
-  /// hand takes it.
-  void carryCard(IkkiuchiCarry move, int card) {
+  /// Carries [card] with [move] from now, or from board time [since]: the
+  /// card leaves the board as his hand takes it.
+  void carryCard(IkkiuchiCarry move, int card, {double? since}) {
     _carryMove = move;
-    _carryStart = now;
+    _carryStart = since ?? now;
     _carried = card;
   }
+
+  /// The board time the carry started at.
+  double get carryStart => _carryStart;
 
   /// Calls off the carry: his arm carries nothing, and the card it had is
   /// the caller's to put back.

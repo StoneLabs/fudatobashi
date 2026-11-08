@@ -496,9 +496,12 @@ abstract final class IkkiuchiReaderTuning {
 /// ([breakAfterShimonoku]); and its からふだ, `karafuda` for every `field`
 /// cards on the field. 終了 ends the match once held [endHold]
 /// (`IkkiuchiMatchColumn`). The match runs on frame by frame, by
-/// [longestStep] at most at once.
+/// [longestStep] at most at once. Tobi lays out his side in his placing
+/// time (`IkkiuchiTuning.placingSeconds`), squeezed when it is longer, so
+/// that he is done [tobiPlacingLead] before the memory time is up.
 abstract final class IkkiuchiMatchTuning {
   static const Duration memorise = Duration(minutes: 15);
+  static const Duration tobiPlacingLead = Duration(seconds: 5);
   static const Duration greeting = Duration(milliseconds: 2600);
   static const Duration yoka = Duration(seconds: 5);
   static const Duration feedbackIn = Duration(milliseconds: 380);
@@ -592,11 +595,13 @@ abstract final class IkkiuchiScreenTuning {
 /// calm reach to it, the carry, and home, each this many ms. The arm lags
 /// [lag] ms along its length and waves [wave] Tobi units at most; each way
 /// bows out to his arm's side by [bow] of its length, at most [bowMax] card
-/// widths.
+/// widths. As he lays out his side each card starts in his hand, and its
+/// carry and the way home take at most [layShare] of his time per card.
 abstract final class IkkiuchiCarryTuning {
   static const double fetch = 380;
   static const double carry = 620;
   static const double back = 360;
+  static const ({double carry, double back}) layShare = (carry: 0.62, back: 0.3);
   static const double lag = 34;
   static const double wave = 1.6;
   static const double bow = 0.22;

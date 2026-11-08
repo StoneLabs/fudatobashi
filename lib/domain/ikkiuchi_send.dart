@@ -108,6 +108,33 @@ class IkkiuchiSides {
     return IkkiuchiSides(homes: homes, tobi: {...rest.tobiCards, card}, player: rest.player);
   }
 
+  /// The sides once the game has put [cards], on neither, on the
+  /// player's one by one by the placing's rules: each at the inner end of
+  /// the group with the fewest cards in the row with the fewest, the row
+  /// nearest the player and the left group first on a tie; in an open
+  /// middle when no group end takes it, and left off with nowhere to go.
+  IkkiuchiSides autoPlaced(Iterable<int> cards) {
+    var sides = this;
+    for (final card in cards) {
+      final board = sides.playerBoard;
+      // Fewer cards in the row first, then in the group.
+      int fewer(ClusterEnd a, ClusterEnd b) {
+        final (ra, rb) = (board.side.row(a.row), board.side.row(b.row));
+        final rows = ra.cards.length.compareTo(rb.cards.length);
+        if (rows != 0) return rows;
+        List<int> group(PlacingRow row, ClusterEnd end) => end.part == RowPart.left ? row.left : row.right;
+        return group(ra, a).length.compareTo(group(rb, b).length);
+      }
+
+      final free = board.freeSpots;
+      final ends = [for (final s in free) if (s is ClusterEnd) s];
+      // Listed by row, left group first: the first of the fewest wins.
+      final spot = ends.isEmpty ? free.firstOrNull : ends.reduce((a, b) => fewer(b, a) < 0 ? b : a);
+      if (spot != null) sides = sides.placed(card, spot) ?? sides;
+    }
+    return sides;
+  }
+
   /// The sides with [card], on neither, put at [spot] on the player's;
   /// null when it may not go there.
   IkkiuchiSides? placed(int card, PlacingSpot spot) {

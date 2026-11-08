@@ -14,6 +14,7 @@ import '../../domain/ikkiuchi_send.dart';
 import 'ikkiuchi_arrange_flow.dart';
 import 'ikkiuchi_board_layout.dart';
 import 'ikkiuchi_card_faces.dart';
+import 'ikkiuchi_opening_flow.dart';
 import 'ikkiuchi_reader.dart';
 import 'ikkiuchi_send_flow.dart';
 
@@ -29,16 +30,20 @@ import 'ikkiuchi_send_flow.dart';
 ///
 /// It takes the player's finger ([pointer]): one finger pushes the cards
 /// about, and [IkkiuchiPlayTuning.tidyWait] after it lifts the cards it
-/// stirred glide home. With [sides] it plays the 送り札 ([send]) and
+/// stirred glide home. With [sides] it plays the opening ([opening]), its
+/// player's cards dealt into a stack ([stack]), the 送り札 ([send]) and
 /// 並べ替え ([arrange]), and each change of the sides lays the board out
 /// afresh ([relayout]), every card gliding to its new place and size and
 /// the band, Tobi and the game column moving along. Each time the board
 /// comes to rest after the cards went home, or a 送り札 or 並べ替え is
 /// over, [onSettled] is told.
 class IkkiuchiBoardScene extends ChangeNotifier {
-  IkkiuchiBoardScene(this._layout, this.faces, {this.sides, this.tobiRating = 0, this.tobiForm = 0, int seed = 0})
+  IkkiuchiBoardScene(this._layout, this.faces,
+      {this.sides, List<int> stack = const [], this.tobiRating = 0, this.tobiForm = 0, int seed = 0})
       : board = _layout.board(),
-        rng = math.Random(seed);
+        rng = math.Random(seed) {
+    opening = IkkiuchiOpeningFlow(this, stack);
+  }
 
   IkkiuchiBoardLayout get layout => _layout;
   IkkiuchiBoardLayout _layout;
@@ -57,10 +62,12 @@ class IkkiuchiBoardScene extends ChangeNotifier {
   /// match.
   final double tobiForm;
 
-  /// The 送り札 and 並べ替え on this board, and whether either is under way.
+  /// The opening, the 送り札 and 並べ替え on this board, and whether the
+  /// player is laying out their side or either of the others is under way.
+  late final IkkiuchiOpeningFlow opening;
   late final send = IkkiuchiSendFlow(this);
   late final arrange = IkkiuchiArrangeFlow(this);
-  bool get busy => send.active || arrange.active;
+  bool get busy => opening.placing || send.active || arrange.active;
 
   /// The reader, reading the card called.
   final reader = IkkiuchiReader();
@@ -153,14 +160,18 @@ class IkkiuchiBoardScene extends ChangeNotifier {
     _band();
   }
 
-  /// Each side's cards left: one Tobi sends counts as the player's from the
-  /// moment he picks it up. Null on a board that only shows strikes.
+  /// Each side's cards left, the player's still in the stack among them:
+  /// one Tobi sends counts as the player's from the moment he picks it up.
+  /// Null on a board that only shows strikes.
   ({int tobi, int player})? get cardsLeft {
     final sides = this.sides;
     if (sides == null) return null;
     final carried = send.stage == IkkiuchiSendStage.carrying ? 1 : 0;
     final waiting = send.stage == IkkiuchiSendStage.waiting ? 1 : 0;
-    return (tobi: sides.tobiCards.length - carried, player: sides.playerCards.length + carried + waiting);
+    return (
+      tobi: sides.tobiCards.length - carried,
+      player: sides.playerCards.length + opening.stack.length + carried + waiting,
+    );
   }
 
   /// Something drawn over the board changed.
@@ -171,6 +182,7 @@ class IkkiuchiBoardScene extends ChangeNotifier {
     reader.advance(ms);
     _tidy(ms);
     _endKarafuda(ms);
+    opening.advance();
     send.advance();
     if (_from != null && !board.cards.gliding) _from = null;
     if (_settling && !board.cards.gliding && !busy) {
@@ -217,8 +229,8 @@ class IkkiuchiBoardScene extends ChangeNotifier {
   }
 
   /// Whether the board is at rest: no finger down, no cards waiting to go
-  /// home or gliding, and nothing under way.
-  bool get atRest => _finger == null && _tidyIn == null && !board.cards.gliding && !busy;
+  /// home or gliding, and nothing under way, Tobi's side laid out.
+  bool get atRest => _finger == null && _tidyIn == null && !board.cards.gliding && !busy && opening.tobiDone;
 
   /// A pointer on the board, at its position in board dp: one finger
   /// pushes the cards while it may ([fingerOn]) and no 送り札 or 並べ替え is
@@ -280,6 +292,10 @@ class IkkiuchiBoardScene extends ChangeNotifier {
   Rect get field => _from == null ? _layout.field : Rect.lerp(_from!.field, _layout.field, _shift)!;
   Rect? get column => _from == null ? _layout.column : Rect.lerp(_from!.column, _layout.column, _shift);
   Rect get wait => _from == null ? _layout.wait : Rect.lerp(_from!.wait, _layout.wait, _shift)!;
+
+  /// Where the player's stack lies while the match opens.
+  Rect? get stack => _layout.stack;
+
   TobiFrame get tobi {
     final from = _from?.tobi, to = _layout.tobi;
     if (from == null) return to;
@@ -287,12 +303,14 @@ class IkkiuchiBoardScene extends ChangeNotifier {
     return TobiFrame(from.origin.lerp(to.origin, t), from.k + (to.k - from.k) * t, to.rig);
   }
 
-  /// The sides are now [next]: the board is laid out for them afresh and
-  /// set out anew, every card gliding from where it lies now, or from
-  /// [from] for one off the board, to its new home and size; the cards of
-  /// [held] are kept off it. Unless a 送り札 goes on, [onSettled] is told
-  /// once they are all home.
-  void relayout(IkkiuchiSides next, {Map<int, CardBox> from = const {}, Set<int> held = const {}}) {
+  /// The sides are now [next]: the board is laid out for them afresh, with
+  /// no room kept for the stack once [forPlay], and set out anew, every
+  /// card gliding from where it lies now, or from [from] for one off the
+  /// board, to its new home and size; the cards of [held], and those Tobi
+  /// has still to lay down as the match opens, are kept off it. Unless a
+  /// 送り札 goes on, [onSettled] is told once they are all home.
+  void relayout(IkkiuchiSides next,
+      {Map<int, CardBox> from = const {}, Set<int> held = const {}, bool forPlay = false}) {
     final lying = {
       for (final c in board.cards.cards)
         if (c.onBoard && !c.held) c.id: c.box,
@@ -301,7 +319,7 @@ class IkkiuchiBoardScene extends ChangeNotifier {
     final old = board;
     _from = (band: band, field: field, column: column, tobi: tobi, wait: wait);
     sides = next;
-    _layout = _layout.withSides(tobiRows: next.tobi, playerRows: next.player);
+    _layout = _layout.withSides(tobiRows: next.tobi, playerRows: next.player, opening: forPlay ? false : null);
     board = _layout.board(startStep: old.steps)
       ..heldFace = old.heldFace
       ..restFace = old.restFace
@@ -313,7 +331,7 @@ class IkkiuchiBoardScene extends ChangeNotifier {
       ms: _ms(IkkiuchiPlayTuning.relayoutGlide),
       ease: IkkiuchiPlayTuning.relayoutCurve.transform,
     );
-    for (final id in held) {
+    for (final id in {...held, ...opening.tobiWaiting}) {
       board.cards.hold(board.cards.card(id));
     }
     _settling = true;

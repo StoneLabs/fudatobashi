@@ -18,9 +18,9 @@ import 'ikkiuchi_send_layer.dart';
 /// A match's board as it is played ([IkkiuchiMatchFlow]), in board dp: the
 /// board taking the player's finger; in landscape the call in the gap and
 /// the game column, whose 終了 calls [onEnd]; in portrait the memory time
-/// left on the band; how each read ended, over the gap or band
-/// ([IkkiuchiFeedbackBanner]); and the greetings over everything as play begins and
-/// once it is over ([IkkiuchiGreeting]).
+/// left on the band, while placing too; how each read ended, over the gap
+/// or band ([IkkiuchiFeedbackBanner]); and the greetings over everything as
+/// play begins and once it is over ([IkkiuchiGreeting]).
 class IkkiuchiMatchBoard extends StatelessWidget {
   const IkkiuchiMatchBoard(this.flow, {super.key, required this.onEnd});
 
@@ -47,7 +47,7 @@ class IkkiuchiMatchBoard extends StatelessWidget {
             builder: (context, _) {
               final s = S.of(context);
               return Stack(children: [
-                if (!landscape && flow.stage == IkkiuchiStage.memoryTime)
+                if (!landscape && (flow.stage == IkkiuchiStage.placing || flow.stage == IkkiuchiStage.memoryTime))
                   Positioned.fromRect(
                     rect: scene.band,
                     child: IkkiuchiBandWords(title: s.ikkiuchiMemoryTime, line: s.ikkiuchiTimeLeft(ikkiuchiClock(flow.left))),

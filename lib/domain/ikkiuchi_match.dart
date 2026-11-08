@@ -5,8 +5,13 @@ import 'ikkiuchi_side.dart';
 
 /// Where a match (一騎打ち) stands, in the order it goes through them.
 enum IkkiuchiStage {
-  /// 暗記時間: the players learn the field before play, as long as the
-  /// match's setup gives.
+  /// The players lay out their sides as the memory time starts: the player
+  /// places their cards from a stack, and Tobi lays out his meanwhile.
+  placing,
+
+  /// 暗記時間: the players learn the field before play. The memory time,
+  /// as long as the match's setup gives, started with the placing; Tobi
+  /// may still be laying out his side.
   memoryTime,
 
   /// The players greet each other (よろしくお願いします).
@@ -92,7 +97,9 @@ typedef IkkiuchiStep = ({IkkiuchiStage from, IkkiuchiStage to, String why});
 /// stage it broke into; 終了 ends the match from any stage.
 abstract final class IkkiuchiSteps {
   static const List<IkkiuchiStep> all = [
-    (from: IkkiuchiStage.memoryTime, to: IkkiuchiStage.gameStart, why: 'time up / 始'),
+    (from: IkkiuchiStage.placing, to: IkkiuchiStage.memoryTime, why: '完了'),
+    (from: IkkiuchiStage.placing, to: IkkiuchiStage.gameStart, why: 'time up / 始, the rest placed'),
+    (from: IkkiuchiStage.memoryTime, to: IkkiuchiStage.gameStart, why: 'time up / 始 / 覚えた'),
     (from: IkkiuchiStage.memoryTime, to: IkkiuchiStage.movingCard, why: 'time up while moving'),
     (from: IkkiuchiStage.movingCard, to: IkkiuchiStage.gameStart, why: 'moving done'),
     (from: IkkiuchiStage.gameStart, to: IkkiuchiStage.yoka, why: 'time up'),

@@ -192,7 +192,8 @@ abstract final class IkkiuchiToolsStyle {
   static const Color gamePanelTitleInk = Color(0x99FFFFFF);
 
   /// The buttons' labels: the board turned, a 送り札 to Tobi and from him,
-  /// a からふだ next, the memory time ended, and the held match let go.
+  /// a からふだ next, the placing and the memory time ended, and the held
+  /// match let go.
   static const String turnLabel = 'R';
   static const String sendLabel = '^';
   static const String receiveLabel = 'v';
@@ -201,6 +202,7 @@ abstract final class IkkiuchiToolsStyle {
   static const String goLabel = '次';
 
   /// The debug game's name for each stage of the match.
+  static const String placing = 'Placing';
   static const String memoryTime = 'Memory Time';
   static const String gameStart = 'Game Start';
   static const String yoka = 'Yoka';

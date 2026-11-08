@@ -284,7 +284,7 @@ void main() {
     await showPage(tester, p);
     await tapAndWait(tester, rankedBurst(), Motion.route);
     final flow = screen(tester).flow!;
-    expect([flow.rating, flow.memorise, flow.scene.sides!.playerCards.length],
+    expect([flow.rating, flow.memorise, flow.tally.player],
         [IkkiuchiRating.start, IkkiuchiRankedTuning.memorise, IkkiuchiRankedTuning.perSide]);
     expect(screen(tester).widget.setup.ranked, isTrue);
     flow.end();
@@ -315,7 +315,7 @@ void main() {
 
     await tapAndWait(tester, burst(s.ikkiuchiPlayCards(11)), Motion.route);
     final flow = screen(tester).flow!;
-    expect([flow.rating, flow.memorise, flow.scene.sides!.playerCards.length, screen(tester).widget.setup.ranked],
+    expect([flow.rating, flow.memorise, flow.tally.player, screen(tester).widget.setup.ranked],
         [bRating + 50.0, const Duration(minutes: 14), 11, false]);
     flow.end();
     await tester.pump();
@@ -359,7 +359,7 @@ void main() {
     await tapAndWait(tester, burst(s.freeStart), Motion.sheet * 2);
     await tester.pump(Motion.route);
     final state = screen(tester);
-    expect([state.widget.guest, state.flow!.scene.sides!.playerCards.length], [true, 8]);
+    expect([state.widget.guest, state.flow!.tally.player], [true, 8]);
     await toFirstRead(tester, state.flow!);
     state.flow!.end();
     await tester.pump();
@@ -401,10 +401,11 @@ void main() {
     await tapAndWait(tester, burst(s.ikkiuchiPlayCards(20)), Motion.route);
 
     final flow = screen(tester).flow!;
-    expect(flow.stage, IkkiuchiStage.memoryTime);
+    expect(flow.stage, IkkiuchiStage.placing);
     expect(flow.memorise, const Duration(minutes: 10));
     expect(flow.rating, IkkiuchiFreeTuning.rating);
-    expect(flow.scene.sides!.playerCards, hasLength(20));
+    expect(flow.scene.opening.stack, hasLength(20), reason: "the player's cards wait in the stack");
+    expect(flow.scene.sides!.playerCards, isEmpty);
     expect(flow.scene.sides!.tobiCards, hasLength(20));
     expect(orientations().last, ['DeviceOrientation.landscapeLeft', 'DeviceOrientation.landscapeRight']);
     expect(tester.takeException(), isNull);
@@ -420,6 +421,29 @@ void main() {
     expect(orientations().last, ['DeviceOrientation.portraitUp'], reason: 'portrait again once it closes');
     expect(p.ikkiuchi.matches, isEmpty);
     expect(await rows(tester, p), isEmpty);
+    await tester.pumpWidget(const SizedBox());
+  });
+
+  testWidgets('a change of size deals the match afresh until a card is placed; then the board keeps its size',
+      (tester) async {
+    final p = await open(tester);
+    await showPage(tester, p);
+    final state = await start(tester, IkkiuchiSetup.firstFree);
+    final first = state.flow!;
+    final dpr = tester.view.devicePixelRatio;
+    tester.view.physicalSize = const Size(390, 832) * dpr;
+    await tester.pump();
+    final dealt = state.flow!;
+    expect(dealt, isNot(same(first)), reason: 'nothing placed yet: dealt afresh for the new size');
+    final opening = dealt.scene.opening;
+    final (_, r) = opening.targets().freeSpots.first;
+    opening.tap(Offset(r.x + r.w / 2, r.y + r.h / 2));
+    tester.view.physicalSize = const Size(384, 832) * dpr;
+    await tester.pump();
+    expect(state.flow, same(dealt), reason: 'a card placed: kept, scaled to fit');
+    expect(dealt.scene.sides!.playerCards, hasLength(1));
+    expect(tester.takeException(), isNull);
+    await leave(tester);
     await tester.pumpWidget(const SizedBox());
   });
 

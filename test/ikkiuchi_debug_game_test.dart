@@ -1,7 +1,7 @@
 // 一騎打ち's match run (IkkiuchiMatchFlow) through the developer's debug
-// game: its stages in order, the 送り札 the rules leave, the same-time
-// takes, Tobi's rating slider, and the end. With RENDER_SCREENS=1 it writes
-// its PNGs to build/screens/ikkiuchi/.
+// game: its stages in order from the placing, the 送り札 the rules leave, the
+// same-time takes, Tobi's rating slider, and the end. With RENDER_SCREENS=1
+// it writes its PNGs to build/screens/ikkiuchi/.
 import 'dart:io';
 import 'dart:math' as math;
 
@@ -28,6 +28,7 @@ import 'package:fudatobashi/state/settings.dart';
 import 'package:fudatobashi/ui/debug/ikkiuchi_debug_game.dart';
 import 'package:fudatobashi/ui/ikkiuchi/ikkiuchi_board_painter.dart';
 import 'package:fudatobashi/ui/ikkiuchi/ikkiuchi_match_board.dart';
+import 'package:fudatobashi/ui/ikkiuchi/ikkiuchi_match_column.dart';
 import 'package:fudatobashi/ui/ikkiuchi/ikkiuchi_match_flow.dart';
 import 'package:fudatobashi/ui/ikkiuchi/ikkiuchi_send_flow.dart';
 import 'package:fudatobashi/ui/manga/theme.dart';
@@ -270,22 +271,38 @@ void main() {
       await tester.pump(frame);
     }
 
-    testWidgets('memory time, 始, Game Start, Yoka, then the reads in order, the 下の句 7 s', (tester) async {
+    // Both sides laid out and 完了, into the memory time: the cards still in
+    // the stack put down by the game, and Tobi's side laid down at once.
+    Future<void> laidOut(WidgetTester tester) async {
+      final f = flow(tester);
+      f.scene.opening
+        ..placeRest()
+        ..finishTobi();
+      f.donePlacing();
+      expect(f.stage, IkkiuchiStage.memoryTime);
+      await run(tester, IkkiuchiPlayTuning.relayoutGlide.inMilliseconds + 100.0);
+    }
+
+    testWidgets('placing, 始, Game Start, Yoka, then the reads in order, the 下の句 7 s', (tester) async {
       final p = await open(tester);
       await show(tester, p, const IkkiuchiDebugGame(seed: 3));
-      expect(stage(tester), IkkiuchiStage.memoryTime);
-      expect(find.text(IkkiuchiToolsStyle.memoryTime), findsOneWidget);
-      expect(find.text('のこり 15:00'), findsOneWidget, reason: 'the time left in the gap');
+      expect(stage(tester), IkkiuchiStage.placing);
+      expect(find.text(IkkiuchiToolsStyle.placing), findsOneWidget);
+      expect(find.text('のこり 15:00'), findsOneWidget, reason: 'the memory time runs from the placing on');
       await run(tester, 2000);
       expect(find.text('のこり 14:58'), findsOneWidget);
-      expect(flow(tester).canArrange, isTrue, reason: 'cards may move while memorising');
-      await capture(tester, 'game_memory_time');
+      expect(flow(tester).canArrange, isFalse, reason: 'cards are placed from the stack, not arranged');
+      await capture(tester, 'game_placing');
       await tester.tap(tool(IkkiuchiToolsStyle.goLabel));
       await tester.pump(frame);
-      expect(stage(tester), IkkiuchiStage.memoryTime, reason: '次 only lets a held match go');
+      expect(stage(tester), IkkiuchiStage.placing, reason: '次 only lets a held match go');
       await tester.tap(tool(IkkiuchiToolsStyle.startLabel));
       await tester.pump(frame);
-      expect(stage(tester), IkkiuchiStage.gameStart, reason: '始 ends the memory time');
+      expect(stage(tester), IkkiuchiStage.gameStart, reason: '始 ends the placing and the memory time');
+      final opening = flow(tester).scene.opening;
+      expect(opening.stack, isEmpty, reason: 'the cards left in the stack are put down');
+      expect(opening.tobiDone, isTrue, reason: "Tobi's side laid down at once");
+      expect(flow(tester).scene.sides!.playerCards, hasLength(IkkiuchiToolsTuning.dealPerSide));
       await run(tester, 600);
       expect(find.byType(IkkiuchiGreeting), findsOneWidget);
       expect(find.text('よろしくお願いします'), findsNWidgets(4), reason: 'on each half, fill and outline');
@@ -303,6 +320,43 @@ void main() {
       await capture(tester, 'game_kaminoku');
       await run(tester, call.decidedAt);
       expect(stage(tester), s.board.called == null && s.readOver ? isNot(IkkiuchiStage.kaminoku) : IkkiuchiStage.waitingForHit);
+      await tester.pumpWidget(const SizedBox());
+    });
+
+    testWidgets('the column: 完了 once every card is placed, then 覚えた over 並べ替え once Tobi is done', (tester) async {
+      final p = await open(tester);
+      await show(tester, p, const IkkiuchiDebugGame(seed: 5));
+      final f = flow(tester), opening = f.scene.opening;
+      Finder button(String label) => find.descendant(of: find.byType(IkkiuchiMatchColumn), matching: find.text(label));
+      expect(button('完了'), findsOneWidget);
+      expect(button('並べ替え'), findsNothing, reason: 'nothing to arrange while placing');
+      await tester.tap(button('完了'), warnIfMissed: false);
+      await tester.pump(frame);
+      expect(f.stage, IkkiuchiStage.placing, reason: 'faded until every card is placed');
+      // The stack's top card by a tap on a spot, the rest by the game.
+      final (_, r) = opening.targets().freeSpots.first;
+      await tester.tapAt(onScreen(tester, Vec(r.x + r.w / 2, r.y + r.h / 2)));
+      await tester.pump(frame);
+      expect(opening.stack, hasLength(IkkiuchiToolsTuning.dealPerSide - 1),
+          reason: 'a tap on a spot places the top card');
+      opening.placeRest();
+      await run(tester, 600);
+      await capture(tester, 'game_all_placed');
+      await tester.tap(button('完了'));
+      await tester.pump(frame);
+      expect(f.stage, IkkiuchiStage.memoryTime);
+      expect(button('覚えた'), findsOneWidget);
+      expect(button('並べ替え'), findsOneWidget);
+      await tester.tap(button('覚えた'), warnIfMissed: false);
+      await tester.pump(frame);
+      expect(f.stage, IkkiuchiStage.memoryTime, reason: 'Tobi still lays out his side');
+      await run(tester, 600);
+      await capture(tester, 'game_memorise_tobi_placing');
+      opening.finishTobi();
+      await tester.pump(frame);
+      await tester.tap(button('覚えた'));
+      await tester.pump(frame);
+      expect(f.stage, IkkiuchiStage.gameStart);
       await tester.pumpWidget(const SizedBox());
     });
 
@@ -390,7 +444,7 @@ void main() {
       final left = f.left;
       f.advance(const Duration(minutes: 5).inMilliseconds.toDouble());
       expect(left - f.left, IkkiuchiMatchTuning.longestStep.inMilliseconds);
-      expect(f.stage, IkkiuchiStage.memoryTime);
+      expect(f.stage, IkkiuchiStage.placing);
       expect(f.playBegun, isFalse);
       await tester.pumpWidget(const SizedBox());
     });
@@ -426,6 +480,7 @@ void main() {
     testWidgets('the finger touches no card outside 上の句 and Waiting for card hit', (tester) async {
       final p = await open(tester);
       await show(tester, p, const IkkiuchiDebugGame(seed: 3));
+      await laidOut(tester);
       final f = flow(tester), s = f.scene;
       final id = s.sides!.playerCards.first;
       final card = s.board.cards.card(id);
@@ -525,6 +580,7 @@ void main() {
       for (final landscape in [true, false]) {
         final o = landscape ? 'landscape' : 'portrait';
         await show(tester, p, IkkiuchiDebugGame(seed: 8, landscape: landscape));
+        await laidOut(tester);
         final f = flow(tester), s = f.scene;
         await tester.tap(tool(IkkiuchiToolsStyle.receiveLabel));
         await tester.pump(frame);
@@ -565,6 +621,7 @@ void main() {
       await tester.tap(tool('5'));
       await tester.pump(frame);
       await tester.pump(frame);
+      await laidOut(tester);
       final f = flow(tester), s = f.scene;
       final before = voices.stopped;
       for (var i = 0; i < 5; i++) {
@@ -591,7 +648,7 @@ void main() {
         await tester.pump(frame);
         await tester.pump(frame);
         expect(voices.stopped, before + 1, reason: '$button: the old match is torn down');
-        expect(stage(tester), IkkiuchiStage.memoryTime, reason: '$button: a new match');
+        expect(stage(tester), IkkiuchiStage.placing, reason: '$button: a new match');
       }
       final before = voices.stopped;
       await tester.pumpWidget(const SizedBox());
@@ -636,6 +693,7 @@ void main() {
       for (final (lift, over) in [(false, false), (true, false), (true, true)]) {
         final why = 'lifted $lift, over his side $over';
         await show(tester, p, const IkkiuchiDebugGame(seed: 8));
+        await laidOut(tester);
         final f = flow(tester), s = f.scene;
         f.sendByHand(IkkiuchiSide.player);
         expect(f.stage, IkkiuchiStage.sendingCard, reason: why);
@@ -659,6 +717,7 @@ void main() {
       for (final carryFirst in [false, true]) {
         final why = carryFirst ? 'his arm has the card' : 'the card lies where it was let go';
         await show(tester, p, const IkkiuchiDebugGame(seed: 8));
+        await laidOut(tester);
         final f = flow(tester), s = f.scene;
         f.sendByHand(IkkiuchiSide.player);
         final card = s.sides!.playerCards.first;
@@ -689,6 +748,7 @@ void main() {
       for (final stage in ['carrying', 'in his hand', 'waiting']) {
         final why = 'his card: $stage';
         await show(tester, p, const IkkiuchiDebugGame(seed: 8));
+        await laidOut(tester);
         final f = flow(tester), s = f.scene;
         final tobiBefore = s.sides!.tobiCards.toSet();
         f.sendByHand(IkkiuchiSide.opponent);
@@ -755,6 +815,7 @@ void main() {
       await tester.tap(tool('5'));
       await tester.pump(frame);
       await tester.pump(frame);
+      await laidOut(tester);
       final f = flow(tester), s = f.scene;
       expect(s.sides!.tobiCards, hasLength(5));
       for (var i = 0; i < 5; i++) {

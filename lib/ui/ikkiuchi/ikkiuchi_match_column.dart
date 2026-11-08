@@ -8,34 +8,33 @@ import '../../l10n/strings.dart';
 import '../../state/scope.dart';
 import '../manga/buttons.dart';
 import '../manga/hold_confirm.dart';
+import '../manga/vector.dart';
+
+/// A button at the game column's foot: its [icon] over its [label], on
+/// [fill]; faded while [onTap] is null.
+typedef IkkiuchiColumnButton = ({String label, VectorArt icon, Color fill, VoidCallback? onTap});
 
 /// The game column down the board's right edge in landscape, as tall as it
 /// is laid out: 終了 at its top, which ends the match once held
 /// ([IkkiuchiMatchTuning.endHold]) and then tells [onEnd], and says to hold
 /// it when only tapped; the score in its middle, each side's cards left
 /// ([tobi], [player]), split on the line [split] down the column, the
-/// middle of the gap between the sides; and 並べ替え at its foot, which
-/// tells [onArrange], or 完了 while the player moves their cards
-/// ([arranging]), which tells [onDone]. 並べ替え fades while [onArrange] is
-/// null. Only 終了 and a 並べ替え or 完了 not faded take touches; the rest
-/// lets them through to what lies under it.
+/// middle of the gap between the sides; and the [buttons] at its foot, the
+/// last lowest, as 並べ替え or 完了. Only 終了 and the buttons not faded take
+/// touches; the rest lets them through to what lies under it.
 class IkkiuchiMatchColumn extends StatelessWidget {
   const IkkiuchiMatchColumn({
     super.key,
     required this.tobi,
     required this.player,
     required this.split,
-    required this.arranging,
-    required this.onArrange,
-    required this.onDone,
+    required this.buttons,
     required this.onEnd,
   });
 
   final int tobi, player;
   final double split;
-  final bool arranging;
-  final VoidCallback? onArrange;
-  final VoidCallback onDone;
+  final List<IkkiuchiColumnButton> buttons;
   final VoidCallback onEnd;
 
   @override
@@ -77,7 +76,12 @@ class IkkiuchiMatchColumn extends StatelessWidget {
           left: 0,
           right: 0,
           bottom: 0,
-          child: _ArrangeButton(arranging: arranging, onTap: arranging ? onDone : onArrange),
+          child: Column(mainAxisSize: MainAxisSize.min, children: [
+            for (final (i, button) in buttons.indexed) ...[
+              if (i > 0) const SizedBox(height: IkkiuchiColumnStyle.buttonsGap),
+              _FootButton(button),
+            ],
+          ]),
         ),
       ]),
     );
@@ -151,31 +155,28 @@ class _Rule extends StatelessWidget {
       );
 }
 
-/// 並べ替え, or 完了 in sun while the player moves their cards: an icon over
-/// its word. Faded, it lets touches through.
-class _ArrangeButton extends StatelessWidget {
-  const _ArrangeButton({required this.arranging, required this.onTap});
+/// A button at the column's foot: its icon over its word. Faded, it lets
+/// touches through.
+class _FootButton extends StatelessWidget {
+  const _FootButton(this.button);
 
-  final bool arranging;
-  final VoidCallback? onTap;
+  final IkkiuchiColumnButton button;
 
   @override
   Widget build(BuildContext context) {
-    final s = S.of(context);
-    final label = arranging ? s.done : s.ikkiuchiArrange;
+    final (:label, :icon, :fill, :onTap) = button;
     return IgnorePointer(
       ignoring: onTap == null,
       child: Opacity(
         opacity: onTap == null ? IkkiuchiColumnStyle.dimmed : 1,
         child: InkButton(
           onTap: onTap,
-          color: arranging ? IkkiuchiColumnStyle.doneFill : IkkiuchiColumnStyle.arrangeFill,
+          color: fill,
           border: Strokes.control,
           padding: IkkiuchiColumnStyle.buttonPadding,
           semanticLabel: label,
           child: Column(mainAxisSize: MainAxisSize.min, children: [
-            MangaIcon(arranging ? IconArt.check : IconArt.swap,
-                size: IkkiuchiColumnStyle.buttonIcon, strokeWidth: IkkiuchiColumnStyle.buttonIconStroke),
+            MangaIcon(icon, size: IkkiuchiColumnStyle.buttonIcon, strokeWidth: IkkiuchiColumnStyle.buttonIconStroke),
             const SizedBox(height: IkkiuchiColumnStyle.buttonGap),
             FittedBox(
               fit: BoxFit.scaleDown,

@@ -8,6 +8,7 @@ import '../../data/poem.dart';
 import '../../domain/ikkiuchi_call.dart';
 import '../../domain/ikkiuchi_layout.dart';
 import '../../domain/ikkiuchi_match.dart';
+import '../../domain/ikkiuchi_opening.dart';
 import '../../domain/ikkiuchi_read.dart';
 import '../../domain/ikkiuchi_record.dart';
 import '../../domain/ikkiuchi_side.dart';
@@ -39,8 +40,14 @@ class IkkiuchiMatchWords {
 /// ([IkkiuchiStage]) by the board's time ([advance]), each step one of
 /// [IkkiuchiSteps.all].
 ///
-/// The memory time runs first ([memorise] long), then the greeting and the
-/// 序歌. Each read
+/// It opens with the placing ([IkkiuchiBoardScene.opening]): the player
+/// lays out their side from the stack, while Tobi lays out his over his
+/// placing time ([IkkiuchiTobiOpening.msFor]). The memory time
+/// ([memorise] long) starts with it. Once every card is placed the player
+/// may be done ([donePlacing]), and the memory time runs on; cards still in
+/// the stack as it runs out are put down by the game. Once both have laid
+/// out their sides the player may end it early ([startEarly]). Then come
+/// the greeting and the 序歌. Each read
 /// takes the next card of the read order ([IkkiuchiReadOrder]): the reader
 /// reads its kimariji while its voice plays, Tobi playing the read at
 /// [rating] in his form for the match (`IkkiuchiBoardScene.tobiForm`), or
@@ -74,8 +81,9 @@ class IkkiuchiMatchFlow extends ChangeNotifier {
     this.memorise = IkkiuchiMatchTuning.memorise,
   }) {
     final sides = scene.sides!;
-    _tally = IkkiuchiTally(player: sides.playerCards.length, opponent: sides.tobiCards.length);
-    final field = [...sides.tobiCards, ...sides.playerCards]..sort();
+    final mine = [...sides.playerCards, ...scene.opening.stack];
+    _tally = IkkiuchiTally(player: mine.length, opponent: sides.tobiCards.length);
+    final field = [...sides.tobiCards, ...mine]..sort();
     final dealt = field.toSet();
     final away = [
       for (final p in poems.all)
@@ -87,7 +95,8 @@ class IkkiuchiMatchFlow extends ChangeNotifier {
       for (final id in away)
         if (!ordered.contains(id)) id,
     ];
-    _enter(IkkiuchiStage.memoryTime);
+    scene.opening.startTobi(IkkiuchiTobiOpening.msFor(scene.tobiRating, memorise));
+    _enter(IkkiuchiStage.placing);
   }
 
   final IkkiuchiBoardScene scene;
@@ -128,7 +137,7 @@ class IkkiuchiMatchFlow extends ChangeNotifier {
   double _decidedAt = 0;
 
   IkkiuchiStage get stage => _stage;
-  IkkiuchiStage _stage = IkkiuchiStage.memoryTime;
+  IkkiuchiStage _stage = IkkiuchiStage.placing;
 
   /// Ms left of a timed stage.
   double get left => _left;
@@ -167,9 +176,28 @@ class IkkiuchiMatchFlow extends ChangeNotifier {
   /// Whether the player may start moving their cards now.
   bool get canArrange => _stage.allowsMoving && scene.arrange.canStart;
 
-  /// Ends the memory time at once.
+  /// Ends the placing and the memory time at once: the cards still in the
+  /// stack are put down, and Tobi lays the rest of his side down.
   void endMemoryTime() {
-    if (_stage == IkkiuchiStage.memoryTime) _timeUp();
+    if (_stage == IkkiuchiStage.placing || _stage == IkkiuchiStage.memoryTime) _timeUp();
+  }
+
+  /// 完了: the player is done laying out their side, every card placed,
+  /// and the memory time runs on.
+  void donePlacing() {
+    final opening = scene.opening;
+    if (_stage != IkkiuchiStage.placing || !opening.allPlaced) return;
+    opening.finish();
+    _enter(IkkiuchiStage.memoryTime, left: _left);
+  }
+
+  /// Whether the player may end the memory time now (覚えた): they are
+  /// done placing, and Tobi has laid out his side.
+  bool get canStartEarly => _stage == IkkiuchiStage.memoryTime && scene.opening.tobiDone;
+
+  /// 覚えた: the memory time ends now.
+  void startEarly() {
+    if (canStartEarly) _timeUp();
   }
 
   /// Lets a held match go on.
@@ -196,11 +224,13 @@ class IkkiuchiMatchFlow extends ChangeNotifier {
     _nextSend();
   }
 
-  /// The player ends the match (終了), whatever is under way: a 送り札 is
-  /// called off where it stands ([IkkiuchiSendFlow.cancel]).
+  /// The player ends the match (終了), whatever is under way: both sides
+  /// are laid out while the match opens, and a 送り札 is called off where
+  /// it stands ([IkkiuchiSendFlow.cancel]).
   void end() {
     if (_stage == IkkiuchiStage.gameEnd) return;
     _endedByPlayer = true;
+    _layOutBoth();
     scene.arrange.finish();
     scene.send.cancel();
     _sends.clear();
@@ -239,9 +269,10 @@ class IkkiuchiMatchFlow extends ChangeNotifier {
     }
   }
 
-  /// How long [stage] lasts; null for one that is not timed.
+  /// How long [stage] lasts; null for one that is not timed. The memory
+  /// time starts with the placing and runs on after it.
   Duration? _length(IkkiuchiStage stage) => switch (stage) {
-        IkkiuchiStage.memoryTime => memorise,
+        IkkiuchiStage.placing || IkkiuchiStage.memoryTime => memorise,
         IkkiuchiStage.gameStart => IkkiuchiMatchTuning.greeting,
         IkkiuchiStage.yoka => IkkiuchiMatchTuning.yoka,
         IkkiuchiStage.feedback => IkkiuchiMatchTuning.feedback,
@@ -253,10 +284,12 @@ class IkkiuchiMatchFlow extends ChangeNotifier {
 
   /// A timed stage is over: the next one starts, or, while the player
   /// still moves cards in a stage that no longer lets them, the match holds.
+  /// The memory time over, both sides are laid out.
   void _timeUp() {
     final IkkiuchiStage next;
     switch (_stage) {
-      case IkkiuchiStage.memoryTime:
+      case IkkiuchiStage.placing || IkkiuchiStage.memoryTime:
+        _layOutBoth();
         next = IkkiuchiStage.gameStart;
       case IkkiuchiStage.gameStart:
         next = IkkiuchiStage.yoka;
@@ -277,6 +310,15 @@ class IkkiuchiMatchFlow extends ChangeNotifier {
     } else {
       _enter(next);
     }
+  }
+
+  /// Both sides laid out now: Tobi lays down the cards he has still to,
+  /// and the cards still in the stack are put down for the player.
+  void _layOutBoth() {
+    scene.opening
+      ..finishTobi()
+      ..placeRest()
+      ..finish();
   }
 
   static double _ms(Duration d) => d.inMicroseconds / Duration.microsecondsPerMillisecond;

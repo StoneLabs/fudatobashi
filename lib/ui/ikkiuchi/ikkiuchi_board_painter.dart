@@ -14,6 +14,7 @@ import 'ikkiuchi_arm_painter.dart';
 import 'ikkiuchi_arrange_layer.dart';
 import 'ikkiuchi_board_scene.dart';
 import 'ikkiuchi_effects.dart';
+import 'ikkiuchi_opening_layer.dart';
 import 'ikkiuchi_send_flow.dart';
 import 'ikkiuchi_send_layer.dart';
 import 'ikkiuchi_tobi_art.dart';
@@ -155,9 +156,10 @@ class IkkiuchiBoardPainter extends CustomPainter {
     canvas.restore();
     // His card in his hand, and set down until it waits for the player; the
     // card the player sent him where it was let go, in his hand, and laid
-    // down until his arm is back.
+    // down until his arm is back; as the match opens, each card of his in
+    // his hand and set down.
     final send = scene.send;
-    if (send.stage == IkkiuchiSendStage.carrying) {
+    if (send.stage == IkkiuchiSendStage.carrying || scene.opening.inHand != null) {
       if (board.carried case (id: final id, box: final box)) _paintFace(canvas, id, box);
     } else if (send.stage == IkkiuchiSendStage.placing) {
       final box = board.carried?.box ?? send.dropped;
@@ -200,13 +202,13 @@ class IkkiuchiBoardPainter extends CustomPainter {
 }
 
 /// The board on its tatami, its painter repainting with [scene] alone,
-/// with a 送り札's or 並べ替え's spots under its cards and the rest of it
-/// over them ([IkkiuchiSendLayer], [IkkiuchiArrangeLayer]), and
-/// [overCards] between, in board dp; [onTap] gets each tap in board dp,
-/// and [onPointer] each pointer going down, moving, and up or cancelled,
-/// its position in board dp. The match's own [parts] lie over all that,
-/// their touches kept off the board, and the cards a 送り札 or 並べ替え
-/// holds up lie over them.
+/// with the opening's, a 送り札's or 並べ替え's spots under its cards and
+/// the rest of it over them ([IkkiuchiOpeningLayer], [IkkiuchiSendLayer],
+/// [IkkiuchiArrangeLayer]), and [overCards] between, in board dp; [onTap]
+/// gets each tap in board dp, and [onPointer] each pointer going down,
+/// moving, and up or cancelled, its position in board dp. The match's own
+/// [parts] lie over all that, their touches kept off the board, and the
+/// cards the opening, a 送り札 or 並べ替え holds up lie over them.
 class IkkiuchiBoardView extends StatelessWidget {
   const IkkiuchiBoardView(this.scene, {super.key, this.onTap, this.onPointer, this.overCards, this.parts});
 
@@ -234,6 +236,7 @@ class IkkiuchiBoardView extends StatelessWidget {
       board,
       if (parts case final parts?) Positioned.fill(child: parts),
       if (scene.sides != null) ...[
+        Positioned.fill(child: IkkiuchiOpeningLayer(scene: scene, part: IkkiuchiLayerPart.top)),
         Positioned.fill(child: IkkiuchiSendLayer(scene: scene, part: IkkiuchiLayerPart.top)),
         Positioned.fill(child: IkkiuchiArrangeLayer(scene: scene, part: IkkiuchiLayerPart.top)),
       ],
@@ -254,6 +257,7 @@ class IkkiuchiBoardView extends StatelessWidget {
           ),
           child: Stack(children: [
             if (scene.sides != null) ...[
+              Positioned.fill(child: IkkiuchiOpeningLayer(scene: scene, part: IkkiuchiLayerPart.under)),
               Positioned.fill(child: IkkiuchiSendLayer(scene: scene, part: IkkiuchiLayerPart.under)),
               Positioned.fill(child: IkkiuchiArrangeLayer(scene: scene, part: IkkiuchiLayerPart.under)),
             ],
@@ -265,6 +269,7 @@ class IkkiuchiBoardView extends StatelessWidget {
             ),
             if (overCards case final layer?) Positioned.fill(child: layer),
             if (scene.sides != null) ...[
+              Positioned.fill(child: IkkiuchiOpeningLayer(scene: scene, part: IkkiuchiLayerPart.over)),
               Positioned.fill(child: IkkiuchiSendLayer(scene: scene, part: IkkiuchiLayerPart.over)),
               Positioned.fill(child: IkkiuchiArrangeLayer(scene: scene, part: IkkiuchiLayerPart.over)),
             ],

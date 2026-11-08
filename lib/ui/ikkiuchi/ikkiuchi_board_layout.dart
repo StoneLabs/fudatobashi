@@ -29,21 +29,27 @@ import '../../domain/ikkiuchi_side.dart';
 /// in the open middle of his half, over his cards where it must. No room is
 /// kept for it.
 ///
+/// While the match opens, the player's cards wait in a [stack]: in
+/// landscape room is kept for it right of the field, beside the player's
+/// side ([IkkiuchiOpeningStyle]), the field at its full width and the cards
+/// a little smaller; in portrait it lies where Tobi's card waits.
+///
 /// Any change to the sides lays the board out afresh by the same rules
 /// ([withSides]), its cards growing or shrinking to fit.
 class IkkiuchiBoardLayout {
   IkkiuchiBoardLayout._(this.size, this.landscape, this.band, this.tobi, this.cardW, this.cards, this.field, this.wait,
-      this.column, this._field, this._fieldW, this._origin);
+      this.column, this.stack, this._field, this._fieldW, this._origin);
 
   /// [tobiRows] and [playerRows] are each side's rows as its owner sees
   /// them, 下段 first, each group from its outer edge in and the open middle
-  /// left to right.
+  /// left to right. With [opening] the player's stack is laid out too.
   factory IkkiuchiBoardLayout.of({
     required Size size,
     required bool landscape,
     required List<IkkiuchiRow> tobiRows,
     required List<IkkiuchiRow> playerRows,
     required TobiRig rig,
+    bool opening = false,
   }) {
     final field = IkkiuchiField(
       tobi: tobiRows,
@@ -63,15 +69,21 @@ class IkkiuchiBoardLayout {
       const share = IkkiuchiBoardStyle.tobiShare;
       final room = half * share * rig.size.x / rig.size.y + 2 * IkkiuchiBoardStyle.tobiSideRoom;
       final least = field.leastWidth(tobiRoom: room);
+      final full = math.max(IkkiuchiLayoutTuning.rowSlots, least);
+      // The stack's room right of the field: its top card, in card widths,
+      // and the gap and the edges under it, in dp.
+      const stackW = IkkiuchiOpeningStyle.stackScale;
+      final stackRoom = IkkiuchiOpeningStyle.stackGap + _stackEdges;
       final right = w - IkkiuchiColumnStyle.edge - IkkiuchiColumnStyle.width - IkkiuchiColumnStyle.fieldGap;
       cardW = [
-        (right - pad) / least,
+        opening ? (right - pad - stackRoom) / (full + stackW) : (right - pad) / least,
         (h - bandH) / (2 * half),
         IkkiuchiBoardStyle.maxCardW,
       ].reduce(math.min);
+      final fieldRight = opening ? right - stackRoom - stackW * cardW : right;
       top = (h - (2 * half * cardW + bandH)) / 2;
-      fieldW = math.min((right - pad) / cardW, math.max(IkkiuchiLayoutTuning.rowSlots, least));
-      left = math.min((w - fieldW * cardW) / 2, right - fieldW * cardW);
+      fieldW = math.min((fieldRight - pad) / cardW, full);
+      left = math.min((w - fieldW * cardW) / 2, fieldRight - fieldW * cardW);
       final open = field.tobiOpen(fieldW);
       final k = half * cardW * share / rig.size.y;
       final middle = left + (open.from + open.to) / 2 * cardW;
@@ -102,8 +114,22 @@ class IkkiuchiBoardLayout {
         ? Rect.fromLTRB(w - edge - IkkiuchiColumnStyle.width, area.top + edge, w - edge, area.bottom - edge)
         : null;
     final wait = landscape ? _waitRightOfTobi(area, band, cardW, tobi, column!) : _waitByTobi(area, tobi, cardW, w);
+    final stack = !opening ? null : (landscape ? _stackBesidePlayer(area, band, cardW) : wait);
     return IkkiuchiBoardLayout._(
-        Vec(w, h), landscape, band, tobi, cardW, cards, area, wait, column, field, fieldW, origin);
+        Vec(w, h), landscape, band, tobi, cardW, cards, area, wait, column, stack, field, fieldW, origin);
+  }
+
+  /// How far the edges of the cards under the stack's top one reach past it.
+  static final _stackEdges = IkkiuchiSendStyle.look.stackDepth * IkkiuchiSendStyle.look.stackStep;
+
+  /// [IkkiuchiOpeningStyle.stackGap] right of the field, as wide as its
+  /// room, centred on the player's half with its tag under it.
+  static Rect _stackBesidePlayer(Rect field, Rect band, double cardW) {
+    final tag = IkkiuchiSendStyle.look.stackTagRoom;
+    final width = IkkiuchiOpeningStyle.stackScale * cardW, height = width * IkkiuchiField.cardH;
+    final half = Rect.fromLTRB(field.left, band.bottom, field.right, field.bottom);
+    final top = half.top + (half.height - height - tag) / 2;
+    return Rect.fromLTWH(field.right + IkkiuchiOpeningStyle.stackGap, top, width, height);
   }
 
   /// A box of the field in card widths from [origin], on the board.
@@ -168,19 +194,25 @@ class IkkiuchiBoardLayout {
   /// The game column, in landscape only.
   final Rect? column;
 
+  /// Where the player's stack lies while the match opens; null once laid
+  /// out for play.
+  final Rect? stack;
+
   final IkkiuchiField _field;
   final double _fieldW;
   final Vec _origin;
 
   /// The board laid out afresh with these sides, by the same rules on the
-  /// same board.
-  IkkiuchiBoardLayout withSides({required List<IkkiuchiRow> tobiRows, required List<IkkiuchiRow> playerRows}) =>
+  /// same board, for the opening while [opening] says so, else as it was.
+  IkkiuchiBoardLayout withSides(
+          {required List<IkkiuchiRow> tobiRows, required List<IkkiuchiRow> playerRows, bool? opening}) =>
       IkkiuchiBoardLayout.of(
         size: Size(size.x, size.y),
         landscape: landscape,
         tobiRows: tobiRows,
         playerRows: playerRows,
         rig: tobi.rig,
+        opening: opening ?? stack != null,
       );
 
   /// Where a card added at the inner end of the player's [row]'s left or

@@ -813,9 +813,9 @@ _Plan _sweep(_Geo c) {
 }
 
 /// Tobi's arm carrying a card ([IkkiuchiCarryTuning]): a calm reach to the
-/// card lying at [from], then on with it in his hand to [to], turning it to
-/// lie as [to] does, and home to [endFace]'s pose. No fist touches on the
-/// way: the arm is in the air.
+/// card lying at [from] ([fetchMs]), then on with it in his hand to [to]
+/// ([carryMs]), turning it to lie as [to] does, and home to [endFace]'s
+/// pose ([backMs]). No fist touches on the way: the arm is in the air.
 class IkkiuchiCarry extends IkkiuchiArmMove {
   IkkiuchiCarry({
     required this.tobi,
@@ -824,21 +824,48 @@ class IkkiuchiCarry extends IkkiuchiArmMove {
     required this.cardW,
     required this.side,
     this.endFace = TobiFace.standard,
+    this.fetchMs = IkkiuchiCarryTuning.fetch,
+    this.carryMs = IkkiuchiCarryTuning.carry,
+    this.backMs = IkkiuchiCarryTuning.back,
   }) {
     final rig = tobi.rig, k = tobi.k;
-    final h0 = tobi.world(rig.arm(armFace, side).hand, TobiBody.rest);
+    final h0 = handAtRest(tobi, side);
     final hEnd = tobi.world(rig.arm(endFace, side).hand, TobiBody.rest);
     final pick = from.centre, set = to.centre;
-    const fetch = IkkiuchiCarryTuning.fetch, carry = IkkiuchiCarryTuning.carry;
     _hand = _timeline([
-      _Piece(fetch, (p, _) => bezier(h0, _bowed(h0, pick), pick, _Ease.inOutCubic(p))),
-      _Piece(carry, (p, _) => bezier(pick, _bowed(pick, set), set, _Ease.inOutCubic(p))),
-      _Piece(IkkiuchiCarryTuning.back, (p, _) => set.lerp(hEnd, _Ease.inOutCubic(p))),
+      _Piece(fetchMs, (p, _) => bezier(h0, _bowed(h0, pick), pick, _Ease.inOutCubic(p))),
+      _Piece(carryMs, (p, _) => bezier(pick, _bowed(pick, set), set, _Ease.inOutCubic(p))),
+      _Piece(backMs, (p, _) => set.lerp(hEnd, _Ease.inOutCubic(p))),
     ], h0, hEnd);
     fist = IkkiuchiArmTuning.fist * cardW;
     _fistStart = rig.arm(armFace, side).fist * k / fist;
     _fistEnd = rig.arm(endFace, side).fist * k / fist;
   }
+
+  /// A card already in his hand, lying as [to] does, carried to [to] over
+  /// [carryMs] and home over [backMs]: as he lays out his side.
+  factory IkkiuchiCarry.fromHand({
+    required TobiFrame tobi,
+    required CardBox to,
+    required double cardW,
+    required ArmSide side,
+    required double carryMs,
+    required double backMs,
+  }) =>
+      IkkiuchiCarry(
+        tobi: tobi,
+        from: CardBox(handAtRest(tobi, side), to.hw, to.hh, to.angle),
+        to: to,
+        cardW: cardW,
+        side: side,
+        fetchMs: 0,
+        carryMs: carryMs,
+        backMs: backMs,
+      );
+
+  /// Where his [side] hand is in his standard pose, as a carry starts.
+  static Vec handAtRest(TobiFrame tobi, ArmSide side) =>
+      tobi.world(tobi.rig.arm(TobiFace.standard, side).hand, TobiBody.rest);
 
   final TobiFrame tobi;
 
@@ -849,6 +876,9 @@ class IkkiuchiCarry extends IkkiuchiArmMove {
   final ArmSide side;
   final TobiFace endFace;
 
+  /// The reach to the card, the carry and the way home, ms.
+  final double fetchMs, carryMs, backMs;
+
   @override
   TobiFace get armFace => TobiFace.standard;
 
@@ -858,11 +888,11 @@ class IkkiuchiCarry extends IkkiuchiArmMove {
   late final Vec Function(double tau) _hand;
 
   /// When his hand takes the card off the field, and sets it down.
-  double get pickAt => IkkiuchiCarryTuning.fetch;
-  double get setAt => pickAt + IkkiuchiCarryTuning.carry;
+  double get pickAt => fetchMs;
+  double get setAt => pickAt + carryMs;
 
   @override
-  double get end => setAt + IkkiuchiCarryTuning.back;
+  double get end => setAt + backMs;
 
   /// The way from [a] to [b], bowed out to his arm's side.
   Vec _bowed(Vec a, Vec b) {
@@ -877,7 +907,7 @@ class IkkiuchiCarry extends IkkiuchiArmMove {
   CardBox? cardAt(double t) {
     if (t < pickAt) return null;
     if (t >= setAt) return to;
-    final p = _Ease.inOutCubic((t - pickAt) / IkkiuchiCarryTuning.carry);
+    final p = _Ease.inOutCubic((t - pickAt) / carryMs);
     final turned = from.lerp(to, p);
     return CardBox(handAt(t), turned.hw, turned.hh, turned.angle);
   }
