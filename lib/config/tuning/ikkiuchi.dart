@@ -483,15 +483,17 @@ abstract final class IkkiuchiReaderTuning {
   static const Duration perSound = Duration(milliseconds: 450);
 }
 
-/// A match's run (`IkkiuchiMatchFlow`): the [memoryTime] before play; the
-/// greeting ([greeting]); the 序歌 ([yoka]); after each read, how it ended
-/// shown ([feedbackIn], held [feedbackHold], [feedbackOut]); a moment once
-/// the cards are at rest ([waitBeforeShimonoku]), the 下の句 ([shimonoku])
-/// and a moment after it ([breakAfterShimonoku]); and its からふだ,
-/// `karafuda` for every `field` cards on the field. 終了 ends the match once
-/// held [endHold] (`IkkiuchiMatchColumn`).
+/// A match's run (`IkkiuchiMatchFlow`): the memory time before play when
+/// it is given none ([memorise]); the greeting ([greeting]); the 序歌
+/// ([yoka]); after each read, how it ended shown ([feedbackIn], held
+/// [feedbackHold], [feedbackOut]); a moment once the cards are at rest
+/// ([waitBeforeShimonoku]), the 下の句 ([shimonoku]) and a moment after it
+/// ([breakAfterShimonoku]); and its からふだ, `karafuda` for every `field`
+/// cards on the field. 終了 ends the match once held [endHold]
+/// (`IkkiuchiMatchColumn`). The match runs on frame by frame, by
+/// [longestStep] at most at once.
 abstract final class IkkiuchiMatchTuning {
-  static const Duration memoryTime = Duration(minutes: 15);
+  static const Duration memorise = Duration(minutes: 15);
   static const Duration greeting = Duration(milliseconds: 2600);
   static const Duration yoka = Duration(seconds: 5);
   static const Duration feedbackIn = Duration(milliseconds: 380);
@@ -503,6 +505,7 @@ abstract final class IkkiuchiMatchTuning {
   static const Duration breakAfterShimonoku = Duration(seconds: 1);
   static const ({int karafuda, int field}) karafuda = (karafuda: 10, field: 25);
   static const Duration endHold = Duration(milliseconds: 1200);
+  static const Duration longestStep = Duration(milliseconds: 250);
 }
 
 /// 一騎打ち's free play (`IkkiuchiPage`, `IkkiuchiMatchScreen`): the choices

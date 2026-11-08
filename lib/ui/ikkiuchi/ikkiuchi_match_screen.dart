@@ -102,7 +102,7 @@ class IkkiuchiMatchScreenState extends State<IkkiuchiMatchScreen> with SingleTic
             SchedulerBinding.instance.addPostFrameCallback((_) => old.dispose());
           }
           _flow = IkkiuchiMatchFlow(scene,
-              words: IkkiuchiMatchWords.of(context), rating: setup.rating, memoryTime: setup.memorise)
+              words: IkkiuchiMatchWords.of(context), rating: setup.rating, memorise: setup.memorise)
             ..addListener(_changed);
         });
     return _flow!;

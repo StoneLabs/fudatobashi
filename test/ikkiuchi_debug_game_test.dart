@@ -120,6 +120,27 @@ void main() {
       expect(c, hasLength(8));
     });
 
+    test('the tally: the card taken leaves its side, then the 送り札 go, as many as the sender has', () {
+      const even = IkkiuchiTally(player: 3, opponent: 3);
+      List<int> counts(IkkiuchiTally t) => [t.player, t.opponent];
+      expect(counts(even.after(const IkkiuchiReadEnd(taker: player, cardSide: player))), [2, 3]);
+      expect(counts(even.after(const IkkiuchiReadEnd(taker: player, cardSide: tobi))), [2, 3],
+          reason: 'took from his side, and sent him one');
+      expect(counts(even.after(const IkkiuchiReadEnd(taker: tobi, cardSide: player, tied: true))), [3, 2]);
+      expect(counts(even.after(const IkkiuchiReadEnd(playerFaults: {tobi, player}))), [5, 1], reason: 'a からふだ');
+      expect(
+          counts(const IkkiuchiTally(player: 1, opponent: 1)
+              .after(const IkkiuchiReadEnd(taker: player, cardSide: player, playerFaults: {tobi}))),
+          [1, 0],
+          reason: 'their last card taken, then his last sent for the fault');
+      expect(
+          counts(const IkkiuchiTally(player: 1, opponent: 4)
+              .after(const IkkiuchiReadEnd(taker: player, cardSide: tobi, tobiFaults: {player}))),
+          [0, 4],
+          reason: 'two to send, one to send with');
+      expect(counts(even.sent(player, 1)), [2, 4]);
+    });
+
     test('the read order is the field and 10 からふだ for every 25 field cards', () {
       final field = List.generate(50, (i) => i + 1), away = List.generate(50, (i) => i + 51);
       final order = IkkiuchiReadOrder.deal(field: field, away: away, rng: math.Random(1));
@@ -322,16 +343,34 @@ void main() {
       await seedReading(tester, p, IkkiuchiSide.player);
       final f = flow(tester), s = f.scene;
       final read = s.board.called!;
+      final dealt = s.sides!.playerCards.length;
       expect(f.reads, isEmpty);
+      expect(f.playBegun, isTrue, reason: 'a card is read');
+      expect([f.tally.player, f.tally.opponent], [dealt, s.sides!.tobiCards.length]);
       await run(tester, s.reader.call!.decidedAt + 300);
       await touch(tester, s.board.cards.card(read).box.centre);
       await runUntil(tester, () => stage(tester) == IkkiuchiStage.feedback);
       final log = f.reads.single;
       expect([log.poemId, log.end.taker, log.end.cardSide, log.tobiTake], [read, IkkiuchiSide.player, IkkiuchiSide.player, null]);
       expect(log.playerTake!.inMilliseconds, inInclusiveRange(300, 450), reason: 'touched 300 ms after it, give or take a few frames');
+      expect(s.sides!.playerCards, contains(read), reason: 'still on the board while its end shows');
+      expect(f.tally.player, dealt - 1, reason: 'counted gone from the read\'s end');
       expect(f.endedByPlayer, isFalse);
       f.end();
       expect(f.endedByPlayer, isTrue);
+      await tester.pumpWidget(const SizedBox());
+    });
+
+    testWidgets('a long gap between frames, as after the app was away, runs the match on by one step at most',
+        (tester) async {
+      final p = await open(tester);
+      await show(tester, p, const IkkiuchiDebugGame(seed: 3));
+      final f = flow(tester);
+      final left = f.left;
+      f.advance(const Duration(minutes: 5).inMilliseconds.toDouble());
+      expect(left - f.left, IkkiuchiMatchTuning.longestStep.inMilliseconds);
+      expect(f.stage, IkkiuchiStage.memoryTime);
+      expect(f.playBegun, isFalse);
       await tester.pumpWidget(const SizedBox());
     });
 
@@ -480,7 +519,7 @@ void main() {
         final (_, rect) = s.send.targets().freeSpots.first;
         await tester.tapAt(onScreen(tester, Vec(rect.x + rect.w / 2, rect.y + rect.h / 2)));
         await runUntil(tester, () => f.stage == IkkiuchiStage.memoryTime);
-        expect(f.left, lessThan(IkkiuchiMatchTuning.memoryTime.inMilliseconds), reason: '$o: the memory time goes on');
+        expect(f.left, lessThan(IkkiuchiMatchTuning.memorise.inMilliseconds), reason: '$o: the memory time goes on');
       }
       await tester.pumpWidget(const SizedBox());
     });

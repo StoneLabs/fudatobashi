@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:math' as math;
 
 import 'package:flutter/widgets.dart';
 
@@ -37,7 +38,8 @@ class IkkiuchiMatchWords {
 /// ([IkkiuchiStage]) by the board's time ([advance]), each step one of
 /// [IkkiuchiSteps.all].
 ///
-/// The memory time runs first ([memoryTime] long), then the greeting and the 序歌. Each read
+/// The memory time runs first ([memorise] long), then the greeting and the
+/// 序歌. Each read
 /// takes the next card of the read order ([IkkiuchiReadOrder]): the reader
 /// reads its kimariji while its voice plays, Tobi playing the read at
 /// [rating], or not at all without one. Card touches count only while a
@@ -50,7 +52,7 @@ class IkkiuchiMatchWords {
 /// moment passes, and the next card is read. A side left empty ends the
 /// match, as does the player at any time ([end]); the kimariji voice stops
 /// with it, or with the flow's disposal. Each read is logged as it ends
-/// ([reads]).
+/// ([reads]), and the cards it leaves each side are counted ([tally]).
 ///
 /// The player may move their cards (並べ替え) only in the stages that allow
 /// it; one such stage over while they still move them holds the match
@@ -67,9 +69,10 @@ class IkkiuchiMatchFlow extends ChangeNotifier {
     this.rating,
     this.holdBeforeShimonoku = false,
     this.markCalled = false,
-    this.memoryTime = IkkiuchiMatchTuning.memoryTime,
+    this.memorise = IkkiuchiMatchTuning.memorise,
   }) {
     final sides = scene.sides!;
+    _tally = IkkiuchiTally(player: sides.playerCards.length, opponent: sides.tobiCards.length);
     final field = [...sides.tobiCards, ...sides.playerCards]..sort();
     final dealt = field.toSet();
     final away = [
@@ -100,7 +103,7 @@ class IkkiuchiMatchFlow extends ChangeNotifier {
   final bool markCalled;
 
   /// How long the memory time lasts.
-  final Duration memoryTime;
+  final Duration memorise;
 
   /// Every read so far that has ended, in order.
   List<IkkiuchiReadLog> get reads => List.unmodifiable(_reads);
@@ -109,6 +112,14 @@ class IkkiuchiMatchFlow extends ChangeNotifier {
   /// Whether the player ended the match ([end]).
   bool get endedByPlayer => _endedByPlayer;
   bool _endedByPlayer = false;
+
+  /// Whether play has begun: a card has been read.
+  bool get playBegun => _readId != null;
+
+  /// Each side's cards left as the rules have them, a read's take and
+  /// 送り札 counted from its end on.
+  IkkiuchiTally get tally => _tally;
+  late IkkiuchiTally _tally;
 
   /// The card read now, and the board time of its deciding sound.
   int? _readId;
@@ -176,6 +187,7 @@ class IkkiuchiMatchFlow extends ChangeNotifier {
   void sendByHand(IkkiuchiSide from) {
     if (!_stage.allowsHandSend || !scene.atRest || !_has(from)) return;
     _resume = (stage: _stage, left: _left);
+    _tally = _tally.sent(from, 1);
     _sends
       ..clear()
       ..add(from);
@@ -194,8 +206,11 @@ class IkkiuchiMatchFlow extends ChangeNotifier {
     _enter(IkkiuchiStage.gameEnd);
   }
 
-  /// Runs the board on by [ms], and the match with it.
+  /// Runs the board on by [ms], and the match with it; by
+  /// [IkkiuchiMatchTuning.longestStep] at most, so that a long gap, as while
+  /// the app was away, holds the match for the rest of it.
   void advance(double ms) {
+    ms = math.min(ms, _ms(IkkiuchiMatchTuning.longestStep));
     scene.advance(ms);
     if (_length(_stage) != null) return _countDown(ms);
     switch (_stage) {
@@ -224,7 +239,7 @@ class IkkiuchiMatchFlow extends ChangeNotifier {
 
   /// How long [stage] lasts; null for one that is not timed.
   Duration? _length(IkkiuchiStage stage) => switch (stage) {
-        IkkiuchiStage.memoryTime => memoryTime,
+        IkkiuchiStage.memoryTime => memorise,
         IkkiuchiStage.gameStart => IkkiuchiMatchTuning.greeting,
         IkkiuchiStage.yoka => IkkiuchiMatchTuning.yoka,
         IkkiuchiStage.feedback => IkkiuchiMatchTuning.feedback,
@@ -364,6 +379,7 @@ class IkkiuchiMatchFlow extends ChangeNotifier {
     );
     _sends.clear();
     if (end.sends case (:final from, :final count)) _sends.addAll(List.filled(count, from));
+    _tally = _tally.after(end);
     if (id != null && taker != null) {
       if (taker == IkkiuchiSide.player) board.cards.fadeOut(board.cards.card(id));
       _leaving = id;

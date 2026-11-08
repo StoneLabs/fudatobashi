@@ -5,8 +5,8 @@ import 'ikkiuchi_side.dart';
 
 /// Where a match (一騎打ち) stands, in the order it goes through them.
 enum IkkiuchiStage {
-  /// 暗記時間: the players learn the field before play,
-  /// [IkkiuchiMatchTuning.memoryTime] long.
+  /// 暗記時間: the players learn the field before play, as long as the
+  /// match's setup gives.
   memoryTime,
 
   /// The players greet each other (よろしくお願いします).
@@ -210,6 +210,40 @@ class IkkiuchiReadEnd {
           _ => const [IkkiuchiCallout.tobiDoubleFault],
         },
       ];
+}
+
+/// Each side's cards left in a match, as the rules have them: a read's
+/// take and 送り札 count as soon as the read ends ([after]), before any
+/// card moves on the board.
+class IkkiuchiTally {
+  const IkkiuchiTally({required this.player, required this.opponent});
+
+  final int player, opponent;
+
+  int of(IkkiuchiSide side) => side == IkkiuchiSide.player ? player : opponent;
+
+  /// The tally once [from] has given the other [count] cards, or as many as
+  /// it has.
+  IkkiuchiTally sent(IkkiuchiSide from, int count) {
+    final n = math.min(count, of(from));
+    return from == IkkiuchiSide.player
+        ? IkkiuchiTally(player: player - n, opponent: opponent + n)
+        : IkkiuchiTally(player: player + n, opponent: opponent - n);
+  }
+
+  /// The tally after a read that ended in [end]: the card taken leaves its
+  /// side, then the 送り札 it leaves are made.
+  IkkiuchiTally after(IkkiuchiReadEnd end) {
+    final taken = switch ((end.taker, end.cardSide)) {
+      (_?, IkkiuchiSide.player) => IkkiuchiTally(player: player - 1, opponent: opponent),
+      (_?, IkkiuchiSide.opponent) => IkkiuchiTally(player: player, opponent: opponent - 1),
+      _ => this,
+    };
+    return switch (end.sends) {
+      (:final from, :final count) => taken.sent(from, count),
+      null => taken,
+    };
+  }
 }
 
 /// One part of what a read's end says ([IkkiuchiReadEnd.callouts]).

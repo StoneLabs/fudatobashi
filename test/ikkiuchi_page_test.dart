@@ -136,7 +136,7 @@ void main() {
     final screen = tester.state<IkkiuchiMatchScreenState>(find.byType(IkkiuchiMatchScreen));
     final flow = screen.flow!;
     expect(flow.stage, IkkiuchiStage.memoryTime);
-    expect(flow.memoryTime, const Duration(minutes: 10));
+    expect(flow.memorise, const Duration(minutes: 10));
     expect(flow.rating, IkkiuchiFreeTuning.rating);
     expect(flow.scene.sides!.playerCards, hasLength(20));
     expect(flow.scene.sides!.tobiCards, hasLength(20));
