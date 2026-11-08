@@ -1,10 +1,13 @@
 import 'package:drift/drift.dart';
 
 import '../db/database.dart';
+import '../domain/ikkiuchi_rating.dart';
 import '../domain/ikkiuchi_record.dart';
 
 /// The recorded 一騎打ち matches, oldest first, each with its reads, and
-/// what they add up to. Owned by `Progress`, which loads it on start.
+/// what they add up to: the counts, the free setup to start on, and the
+/// player's ranked rating with the next ranked match's setup. Owned by
+/// `Progress`, which loads it on start.
 class IkkiuchiRecords {
   IkkiuchiRecords._(this._matches);
 
@@ -39,10 +42,45 @@ class IkkiuchiRecords {
   /// The last free match's setup, or the first free one's before any.
   IkkiuchiSetup get freeSetup => _matches.where((m) => !m.ranked).lastOrNull?.setup ?? IkkiuchiSetup.firstFree;
 
+  Iterable<IkkiuchiMatchRecord> get _ranked => _matches.where((m) => m.ranked);
+
+  /// The ranked matches played, placement's among them.
+  int get rankedPlayed => _ranked.length;
+
+  /// Whether the player is still being placed: the next ranked match
+  /// places them.
+  bool get placing => IkkiuchiRating.isPlacement(rankedPlayed);
+
+  /// The player's 一騎打ち rating, the last ranked match's; null while they
+  /// are being placed.
+  double? get rating => placing ? null : _ranked.lastOrNull?.rating;
+
+  /// What the last ranked match did to the rating; null while the player
+  /// is being placed and for the match that placed them.
+  double? get ratingChange {
+    final ratings = [for (final m in _ranked) m.rating];
+    if (IkkiuchiRating.isPlacement(ratings.length - 1)) return null;
+    return switch (ratings) {
+      [..., final double before, final double after] => after - before,
+      _ => null,
+    };
+  }
+
+  /// The next ranked match's setup, Tobi playing at the rating
+  /// [IkkiuchiRating.opponentFor] gives.
+  IkkiuchiSetup get rankedSetup => IkkiuchiSetup.ranked(
+      opponentRating: IkkiuchiRating.opponentFor(played: rankedPlayed, rating: _ranked.lastOrNull?.rating));
+
   /// Stores [match], once it is over, as played on practice day [day]: its
-  /// row and its reads, in one transaction. Returns it as stored.
+  /// row and its reads, in one transaction; a ranked one with the player's
+  /// rating after it, from the ranked matches before it. Returns it as
+  /// stored.
   Future<IkkiuchiMatchRecord> record(AppDatabase db, IkkiuchiMatchRecord match, {required int day}) async {
     final setup = match.setup;
+    final rating = match.ranked
+        ? IkkiuchiRating.after(match.rated,
+            earlier: [for (final m in _ranked) m.rated], rating: _ranked.lastOrNull?.rating)
+        : null;
     final id = await db.transaction(() async {
       final id = await db.into(db.ikkiuchiMatches).insert(IkkiuchiMatchesCompanion.insert(
             startedAt: match.startedAt,
@@ -56,6 +94,7 @@ class IkkiuchiRecords {
             completed: match.completed,
             playerLeft: match.playerLeft,
             opponentLeft: match.opponentLeft,
+            rating: Value(rating),
           ));
       await db.batch((b) => b.insertAll(db.ikkiuchiReads, [
             for (final (i, r) in match.reads.indexed)
@@ -74,7 +113,7 @@ class IkkiuchiRecords {
           ]));
       return id;
     });
-    final stored = match.stored(id: id, rating: null);
+    final stored = match.stored(id: id, rating: rating);
     _matches.add(stored);
     return stored;
   }

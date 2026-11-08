@@ -54,9 +54,9 @@ void main() {
   ];
   final played = match(DateTime(2026, 11, 8, 10), played: setup(ranked: true), reads: reads);
 
-  /// Everything a record holds, to compare two.
+  /// Everything a record holds but what storing it adds (its id and
+  /// rating), to compare two.
   List<Object?> fields(IkkiuchiMatchRecord m) => [
-        m.id,
         m.setup.ranked,
         m.setup.opponent,
         m.setup.opponentRating,
@@ -67,7 +67,6 @@ void main() {
         m.completed,
         m.playerLeft,
         m.opponentLeft,
-        m.rating,
         for (final r in m.reads)
           (r.poemId, r.cardSide, r.taker, r.tied, r.playerFaults, r.opponentFaults, r.playerTake, r.opponentTake),
       ];
@@ -78,14 +77,18 @@ void main() {
     expect(p.ikkiuchi.matches, isEmpty);
     final stored = await p.recordIkkiuchi(played);
 
-    expect(stored.id, isNotNull);
-    expect(fields(stored).skip(1), fields(played).skip(1), reason: 'as recorded, with its id');
-    expect([for (final m in p.ikkiuchi.matches) fields(m)], [fields(stored)]);
+    expect([stored.id, stored.rating], [isNotNull, isNotNull], reason: 'a ranked match is rated');
+    expect(fields(stored), fields(played), reason: 'as recorded');
+    List<Object?> all(Progress p) => [
+          for (final m in p.ikkiuchi.matches) [m.id, m.rating, ...fields(m)],
+        ];
+    expect(all(p), [
+      [stored.id, stored.rating, ...fields(stored)],
+    ]);
     expect([for (final r in stored.reads) (r.karafuda, r.playerFaults, r.opponentFaults)],
         [(false, 0, 0), (true, 2, 0), (false, 0, 1)]);
 
-    final again = await Progress.open(db);
-    expect([for (final m in again.ikkiuchi.matches) fields(m)], [fields(stored)]);
+    expect(all(await Progress.open(db)), all(p));
     await db.close();
   });
 

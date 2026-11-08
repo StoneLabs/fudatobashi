@@ -1,5 +1,6 @@
 import '../config/config.dart';
 import 'ikkiuchi_match.dart';
+import 'ikkiuchi_rating.dart';
 import 'ikkiuchi_side.dart';
 
 /// Who a 一騎打ち match is played against, across the board. Stored by
@@ -21,6 +22,14 @@ class IkkiuchiSetup {
   const IkkiuchiSetup.free({required this.opponentRating, required this.perSide, required this.memorise})
       : ranked = false,
         opponent = IkkiuchiOpponent.tobi;
+
+  /// A ranked match against Tobi at [opponentRating]: every one alike
+  /// otherwise ([IkkiuchiRankedTuning]).
+  const IkkiuchiSetup.ranked({required this.opponentRating})
+      : ranked = true,
+        opponent = IkkiuchiOpponent.tobi,
+        perSide = IkkiuchiRankedTuning.perSide,
+        memorise = IkkiuchiRankedTuning.memorise;
 
   /// The free setup before any free match.
   static const firstFree = IkkiuchiSetup.free(
@@ -64,7 +73,16 @@ enum IkkiuchiResult {
 
   /// The player ended it (終了) or left it before its end; a loss when
   /// ranked.
-  gaveUp,
+  gaveUp;
+
+  /// How a match ended that was [completed] or not, with [playerLeft] and
+  /// [opponentLeft] cards on the sides.
+  static IkkiuchiResult of({required bool completed, required int playerLeft, required int opponentLeft}) =>
+      !completed
+          ? gaveUp
+          : playerLeft < opponentLeft
+              ? won
+              : lost;
 }
 
 /// One read of a match, once it has ended: the card read ([poemId]), the
@@ -138,11 +156,11 @@ class IkkiuchiMatchRecord {
 
   bool get ranked => setup.ranked;
 
-  IkkiuchiResult get result => !completed
-      ? IkkiuchiResult.gaveUp
-      : playerLeft < opponentLeft
-          ? IkkiuchiResult.won
-          : IkkiuchiResult.lost;
+  IkkiuchiResult get result =>
+      IkkiuchiResult.of(completed: completed, playerLeft: playerLeft, opponentLeft: opponentLeft);
+
+  /// This match as the rating reads it.
+  IkkiuchiRatedMatch get rated => (opponentRating: setup.opponentRating, won: result == IkkiuchiResult.won);
 
   /// The faults (お手つき) each made over the match, a fault on both sides of
   /// one read counting two.

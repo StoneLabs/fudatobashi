@@ -6,9 +6,11 @@ import 'dart:io';
 import 'package:drift/drift.dart' show driftRuntimeOptions;
 import 'package:drift/native.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:fudatobashi/config/config.dart';
 import 'package:fudatobashi/data/fuda_sets.dart';
 import 'package:fudatobashi/data/poem.dart';
 import 'package:fudatobashi/db/database.dart';
+import 'package:fudatobashi/domain/ikkiuchi_rating.dart';
 import 'package:fudatobashi/domain/ikkiuchi_record.dart';
 import 'package:fudatobashi/state/progress.dart';
 
@@ -16,12 +18,8 @@ void main() {
   poems = Poems.fromJsonString(File('assets/data/poems.json').readAsStringSync());
   fudaSets = FudaSets(poems);
   driftRuntimeOptions.dontWarnAboutMultipleDatabases = true;
-  const ranked = IkkiuchiSetup(
-      ranked: true,
-      opponent: IkkiuchiOpponent.tobi,
-      opponentRating: 1450,
-      perSide: 25,
-      memorise: Duration(minutes: 15));
+  const ranked = IkkiuchiSetup.ranked(opponentRating: 1450);
+  const perSide = IkkiuchiRankedTuning.perSide;
   final started = DateTime(2026, 11, 8, 12);
 
   IkkiuchiMatchRecord played({required bool completed}) => IkkiuchiMatchRecord(
@@ -42,10 +40,12 @@ void main() {
     final restarted = await Progress.open(db);
     final m = restarted.ikkiuchi.matches.single;
     expect([m.ranked, m.completed, m.result, m.startedAt, m.endedAt, m.playerLeft, m.opponentLeft, m.reads],
-        [true, false, IkkiuchiResult.gaveUp, started, started, 25, 25, isEmpty]);
+        [true, false, IkkiuchiResult.gaveUp, started, started, perSide, perSide, isEmpty]);
     expect([m.setup.opponent, m.setup.opponentRating, m.setup.perSide, m.setup.memorise],
-        [IkkiuchiOpponent.tobi, 1450, 25, const Duration(minutes: 15)]);
+        [IkkiuchiOpponent.tobi, 1450, perSide, IkkiuchiRankedTuning.memorise]);
     expect(restarted.ikkiuchi.counts(ranked: true), (played: 1, won: 0, lost: 1), reason: 'a loss');
+    expect(m.rating, IkkiuchiRating.after((opponentRating: 1450, won: false), earlier: const [], rating: null),
+        reason: 'rated as a loss');
 
     expect((await Progress.open(db)).ikkiuchi.matches, hasLength(1), reason: 'not forfeited again on a later start');
     await db.close();

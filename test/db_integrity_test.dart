@@ -12,6 +12,8 @@ import 'package:fudatobashi/db/database.dart';
 import 'package:fudatobashi/db/fsrs_rows.dart';
 import 'package:fudatobashi/domain/ankiren_level.dart';
 import 'package:fudatobashi/domain/card_stats.dart';
+import 'package:fudatobashi/domain/ikkiuchi_match.dart';
+import 'package:fudatobashi/domain/ikkiuchi_rating.dart';
 import 'package:fudatobashi/domain/ikkiuchi_record.dart';
 import 'package:fudatobashi/domain/play_session.dart';
 import 'package:fudatobashi/domain/rating.dart';
@@ -316,22 +318,28 @@ void main() {
   });
 
   group('一騎打ち', () {
-    Future<int> match(AppDatabase db, int d) => db.into(db.ikkiuchiMatches).insert(IkkiuchiMatchesCompanion.insert(
-          startedAt: day(d),
-          endedAt: day(d, 59),
-          day: 20260900 + d,
-          ranked: false,
-          opponent: IkkiuchiOpponent.tobi,
-          perSide: 5,
-          memoriseMs: 60000,
-          opponentRating: 1200,
-          completed: true,
-          playerLeft: 0,
-          opponentLeft: 2,
-        ));
+    Future<int> match(AppDatabase db, int d,
+            {bool ranked = false, bool won = true, double opponent = IkkiuchiRating.start, double? rating}) =>
+        db.into(db.ikkiuchiMatches).insert(IkkiuchiMatchesCompanion.insert(
+              startedAt: day(d),
+              endedAt: day(d, 59),
+              day: 20260900 + d,
+              ranked: ranked,
+              opponent: IkkiuchiOpponent.tobi,
+              perSide: 25,
+              memoriseMs: 900000,
+              opponentRating: opponent,
+              completed: true,
+              playerLeft: won ? 0 : 3,
+              opponentLeft: won ? 2 : 0,
+              rating: Value(rating),
+            ));
 
     Future<void> read(AppDatabase db, int matchId) => db.into(db.ikkiuchiReads).insert(IkkiuchiReadsCompanion.insert(
         matchId: matchId, seq: 0, poemId: 1, tied: false, playerFaults: 0, opponentFaults: 0));
+
+    Future<String> dumpMatches(AppDatabase db) async =>
+        [await db.select(db.ikkiuchiMatches).get(), await db.select(db.ikkiuchiReads).get()].join('\n');
 
     test('reads of a missing match are deleted, and only those', () async {
       final db = AppDatabase(NativeDatabase.memory());
@@ -343,6 +351,63 @@ void main() {
 
       expect([for (final r in await db.select(db.ikkiuchiReads).get()) r.matchId], [kept]);
       expect(await writesDuring(db, () => DbIntegrity.run(db)), isEmpty);
+      await db.close();
+    });
+
+    test('ranked ratings that are no number are replayed from the stored matches; a free one loses its rating',
+        () async {
+      final db = AppDatabase(NativeDatabase.memory());
+      const start = IkkiuchiRating.start;
+      final played = [
+        (opponentRating: start, won: true),
+        (opponentRating: start, won: false),
+        (opponentRating: start, won: true),
+        (opponentRating: 1700.0, won: true),
+      ];
+      final placed = IkkiuchiRating.after(played[0], earlier: const [], rating: null);
+      final a = await match(db, 1, ranked: true, rating: placed);
+      final b = await match(db, 2, ranked: true, won: false, rating: double.nan);
+      final free = await match(db, 3, won: false, opponent: 900, rating: 1500);
+      final c = await match(db, 4, ranked: true, rating: double.infinity);
+      final d = await match(db, 5, ranked: true, opponent: 1700, rating: 1);
+      expect((await db.select(db.ikkiuchiMatches).get()).singleWhere((m) => m.id == b).rating, isNull,
+          reason: 'SQLite stores NaN as null');
+
+      final p = await Progress.open(db);
+
+      final rows = {for (final m in await db.select(db.ikkiuchiMatches).get()) m.id: m};
+      expect(rows[a]!.rating, placed, reason: 'matches before the first bad one stay');
+      expect(rows[free]!.rating, isNull);
+      double? rating = placed;
+      for (final (i, id) in [b, c, d].indexed) {
+        rating = IkkiuchiRating.after(played[i + 1], earlier: played.sublist(0, i + 1), rating: rating);
+        expect(rows[id]!.rating, closeTo(rating, 1e-9), reason: 'ranked match ${i + 2}');
+      }
+      expect(p.ikkiuchi.rating, closeTo(rating!, 1e-9));
+
+      final repaired = await dumpMatches(db);
+      expect(await writesDuring(db, () => DbIntegrity.run(db)), isEmpty);
+      expect(await dumpMatches(db), repaired);
+      await db.close();
+    });
+
+    test('recorded matches, ranked and free, are left exactly as they were', () async {
+      final db = AppDatabase(NativeDatabase.memory());
+      final p = await Progress.open(db);
+      for (final ranked in [true, false, true, true, true]) {
+        await p.recordIkkiuchi(IkkiuchiMatchRecord(
+          setup: ranked ? p.ikkiuchi.rankedSetup : IkkiuchiSetup.firstFree,
+          startedAt: day(1),
+          endedAt: day(1, 59),
+          completed: true,
+          playerLeft: 0,
+          opponentLeft: 3,
+          reads: [IkkiuchiReadLog.of(1, const IkkiuchiReadEnd())],
+        ));
+      }
+      final before = await dumpMatches(db);
+      expect(await writesDuring(db, () => DbIntegrity.run(db)), isEmpty);
+      expect(await dumpMatches(db), before);
       await db.close();
     });
   });

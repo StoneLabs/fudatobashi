@@ -526,6 +526,24 @@ abstract final class IkkiuchiFreeTuning {
   static const double rating = 1600;
 }
 
+/// 一騎打ち's ranked matches and the player's rating (`IkkiuchiRating`).
+/// Every ranked match is the same: against Tobi, [perSide] cards a side
+/// and [memorise] to learn the field. The first [placementMatches] are
+/// played against Tobi at [start] and place the rating at the mean of their
+/// performances, a win performing [performanceSpread] above his rating and
+/// a loss as far below. Then Tobi plays at the player's rating, and each
+/// match moves it by [k] × (score − expected score), the expected score
+/// against an opponent d points higher 1 / (1 + 10^(d / [eloScale])).
+abstract final class IkkiuchiRankedTuning {
+  static const int perSide = 25;
+  static const Duration memorise = Duration(minutes: 15);
+  static const double start = 1200;
+  static const int placementMatches = 3;
+  static const double performanceSpread = 400;
+  static const double k = 80;
+  static const double eloScale = 400;
+}
+
 /// The match screen (`IkkiuchiMatchScreen`), ranked or free: the rows a
 /// side is laid out in; the seeds a deal is drawn from, and the offset that
 /// draws the player's side apart from Tobi's; the system bars hidden while

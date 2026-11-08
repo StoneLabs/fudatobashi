@@ -7,6 +7,8 @@ import 'package:fsrs/fsrs.dart' as fsrs;
 import '../db/database.dart';
 import '../db/fsrs_rows.dart';
 import '../domain/card_stats.dart';
+import '../domain/ikkiuchi_rating.dart';
+import '../domain/ikkiuchi_record.dart';
 import '../domain/play_session.dart';
 import '../domain/rating.dart';
 import '../domain/side_trips.dart';
@@ -36,6 +38,7 @@ abstract final class DbIntegrity {
     IntegrityCheck('impossible times', _hasImpossibleTimes, _repairImpossibleTimes),
     IntegrityCheck('orphaned answers, placings and reads', _hasOrphanedAnswers, _deleteOrphanedAnswers),
     IntegrityCheck('side-trip ratings', _hasBrokenSideTripRatings, _replaySideTripRatings),
+    IntegrityCheck('一騎打ち ratings', _hasBrokenIkkiuchiRatings, _replayIkkiuchiRatings),
     IntegrityCheck('orphaned day cards', _hasOrphanedDayCards, _deleteOrphanedDayCards),
   ];
 
@@ -176,6 +179,49 @@ abstract final class DbIntegrity {
     await (db.delete(db.teiichiPlacings)..where((p) => p.runId.isNotInQuery(runs))).go();
     final matches = db.selectOnly(db.ikkiuchiMatches)..addColumns([db.ikkiuchiMatches.id]);
     await (db.delete(db.ikkiuchiReads)..where((r) => r.matchId.isNotInQuery(matches))).go();
+  }
+
+  /// A ranked 一騎打ち match stores the player's rating after it, a finite
+  /// one, and a free match none. SQLite keeps an infinity, and stores NaN as
+  /// null.
+  ///
+  /// A free match loses its rating. From the first ranked match that breaks
+  /// this, the ratings are replayed in order from the stored matches.
+  static Future<bool> _hasBrokenIkkiuchiRatings(AppDatabase db) async {
+    final found = await db.customSelect(
+      '''
+      SELECT EXISTS (
+        SELECT 1 FROM ikkiuchi_matches
+        WHERE (NOT ranked AND rating IS NOT NULL) OR (ranked AND (rating IS NULL OR abs(rating) = 9e999))
+      ) AS found
+      ''',
+    ).getSingle();
+    return found.read<bool>('found');
+  }
+
+  static Future<void> _replayIkkiuchiRatings(AppDatabase db) async {
+    await (db.update(db.ikkiuchiMatches)..where((m) => m.ranked.not() & m.rating.isNotNull()))
+        .write(const IkkiuchiMatchesCompanion(rating: Value(null)));
+    final ranked = await (db.select(db.ikkiuchiMatches)
+          ..where((m) => m.ranked)
+          ..orderBy([(m) => OrderingTerm.asc(m.id)]))
+        .get();
+    final first = ranked.indexWhere((m) => !(m.rating?.isFinite ?? false));
+    if (first < 0) return;
+    IkkiuchiRatedMatch rated(IkkiuchiMatchRow m) => (
+          opponentRating: m.opponentRating,
+          won: IkkiuchiResult.of(completed: m.completed, playerLeft: m.playerLeft, opponentLeft: m.opponentLeft) ==
+              IkkiuchiResult.won,
+        );
+    final earlier = [for (final m in ranked.take(first)) rated(m)];
+    var rating = first == 0 ? null : ranked[first - 1].rating;
+    for (final m in ranked.skip(first)) {
+      final match = rated(m);
+      rating = IkkiuchiRating.after(match, earlier: earlier, rating: rating);
+      earlier.add(match);
+      await (db.update(db.ikkiuchiMatches)..where((x) => x.id.equals(m.id)))
+          .write(IkkiuchiMatchesCompanion(rating: Value(rating)));
+    }
   }
 
   /// A card of a day's set whose day is gone.
