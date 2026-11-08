@@ -8,7 +8,6 @@ import '../../l10n/strings.dart';
 import '../../state/scope.dart';
 import '../manga/buttons.dart';
 import '../manga/hold_confirm.dart';
-import '../play/time_format.dart';
 
 /// The game column down the board's right edge in landscape, as tall as it
 /// is laid out: 終了 at its top, which ends the match once held
@@ -42,7 +41,7 @@ class IkkiuchiMatchColumn extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final s = S.of(context);
-    final endSeconds = IkkiuchiMatchTuning.endHold.inMilliseconds / Duration.millisecondsPerSecond;
+    final endSeconds = (IkkiuchiMatchTuning.endHold.inMilliseconds / Duration.millisecondsPerSecond).round();
     return LayoutBuilder(
       builder: (context, box) => Stack(clipBehavior: Clip.none, children: [
         Positioned(
@@ -53,7 +52,7 @@ class IkkiuchiMatchColumn extends StatelessWidget {
             child: HoldToConfirmButton(
               duration: IkkiuchiMatchTuning.endHold,
               label: s.end,
-              hint: s.ikkiuchiEndHint(formatAverage(endSeconds)),
+              hint: s.ikkiuchiEndHint(endSeconds),
               look: IkkiuchiColumnStyle.end,
               haptics: ProgressScope.of(context).settings.haptics,
               icon: MangaIcon(IconArt.end,

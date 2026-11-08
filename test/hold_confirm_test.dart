@@ -21,7 +21,6 @@ import 'package:fudatobashi/state/progress.dart';
 import 'package:fudatobashi/state/scope.dart';
 import 'package:fudatobashi/ui/ikkiuchi/ikkiuchi_match_column.dart';
 import 'package:fudatobashi/ui/manga/manga.dart';
-import 'package:fudatobashi/ui/play/time_format.dart';
 
 import 'test_l10n.dart';
 import 'test_vector_art.dart';
@@ -162,7 +161,7 @@ void main() {
     await tester.pump(quick);
     await tester.tap(end);
     await tester.pump(quick);
-    final seconds = formatAverage(IkkiuchiMatchTuning.endHold.inMilliseconds / Duration.millisecondsPerSecond);
+    final seconds = (IkkiuchiMatchTuning.endHold.inMilliseconds / Duration.millisecondsPerSecond).round();
     expect(find.descendant(of: find.byType(SpeechBalloon), matching: find.text(const S('en').ikkiuchiEndHint(seconds))),
         findsOneWidget);
     expect(ended, 0);
