@@ -15,12 +15,8 @@ import '../manga/manga.dart';
 import 'side_trip_entry.dart';
 import 'side_trip_panels.dart';
 
-/// A trip page's [StatStrip], for a player of [entry]'s standing: the class
-/// and the rating with the last game's change (unranked before the first),
-/// then how many points the next class is away, with a gauge; and any
-/// [more] cells and [moreFoot] line of the trip's own. While the rating is
-/// still being placed there is no class yet: its box says so, and the gauge
-/// keeps its room but is hidden.
+/// A trip page's [ClassStrip], for a player of [entry]'s standing, with
+/// any [more] cells and [moreFoot] line of the trip's own.
 class RecordStrip extends StatelessWidget {
   const RecordStrip(this.entry, {super.key, this.more = const [], this.moreFoot});
 
@@ -29,16 +25,50 @@ class RecordStrip extends StatelessWidget {
   final Widget? moreFoot;
 
   @override
+  Widget build(BuildContext context) => ClassStrip(
+        rating: entry.rating,
+        change: entry.ratingChange,
+        placing: TripRating.isPlacement(entry.results.length),
+        unratedAt: TripRating.start,
+        more: more,
+        moreFoot: moreFoot,
+      );
+}
+
+/// A [StatStrip] for a player on the shared class scale ([Rating.bands]):
+/// the class and the [rating] with the last [change] (unranked before the
+/// first), then how many points the next class is away, with a gauge; and
+/// any [more] cells and [moreFoot] line of the page's own. While the rating
+/// is still being placed ([placing]) there is no class yet: its box says
+/// so, and the gauge keeps its room (as at [unratedAt]) but is hidden.
+class ClassStrip extends StatelessWidget {
+  const ClassStrip({
+    super.key,
+    required this.rating,
+    required this.change,
+    required this.placing,
+    required this.unratedAt,
+    this.more = const [],
+    this.moreFoot,
+  });
+
+  final double? rating, change;
+  final bool placing;
+  final double unratedAt;
+  final List<Widget> more;
+  final Widget? moreFoot;
+
+  @override
   Widget build(BuildContext context) {
     final s = S.of(context);
-    final band = entry.band;
-    final rating = entry.rating;
-    final at = rating ?? TripRating.start;
+    final rating = this.rating;
+    final band = rating == null ? Rating.bands.first : Rating.bandOf(rating);
+    final at = rating ?? unratedAt;
     final next = Rating.nextBand(at);
-    final floor = band.minRating.isFinite ? band.minRating : TripRating.start;
-    final change = entry.ratingChange?.round() ?? 0;
+    final floor = band.minRating.isFinite ? band.minRating : unratedAt;
+    final change = this.change?.round() ?? 0;
     final moreFoot = this.moreFoot;
-    final placement = TripRating.isPlacement(entry.results.length);
+    final placement = placing;
     const big = StatStrip.valueStyle;
     final bar = next == null
         ? null
@@ -103,8 +133,8 @@ class RecordStrip extends StatelessWidget {
 
 /// A panel's heading, at the right of its tag, which carries the other
 /// language's words.
-class _Heading extends StatelessWidget {
-  const _Heading(this.title);
+class PanelHeading extends StatelessWidget {
+  const PanelHeading(this.title, {super.key});
 
   final String title;
 
@@ -114,8 +144,8 @@ class _Heading extends StatelessWidget {
 }
 
 /// Games side by side in equal columns, split by light rules.
-class _GameRow extends StatelessWidget {
-  const _GameRow(this.cells);
+class GameRow extends StatelessWidget {
+  const GameRow(this.cells, {super.key});
 
   final List<Widget> cells;
 
@@ -165,7 +195,7 @@ class _LastGames extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final last = results.reversed.take(AnkirenPageLayout.lastGames).toList();
-    return _GameRow([
+    return GameRow([
       for (var i = 0; i < AnkirenPageLayout.lastGames; i++)
         if (i < last.length) _Game(last[i]) else const SizedBox.shrink(),
     ]);
@@ -180,23 +210,30 @@ class _Placement extends StatelessWidget {
   final List<SideTripResult> results;
 
   @override
-  Widget build(BuildContext context) => _GameRow([
-        for (var i = 0; i < AnkirenRatingModel.placementGames; i++)
-          if (i < results.length) _Game(results[i]) else _Slot(i + 1, next: i == results.length),
-      ]);
+  Widget build(BuildContext context) {
+    final s = S.of(context);
+    return GameRow([
+      for (var i = 0; i < AnkirenRatingModel.placementGames; i++)
+        if (i < results.length)
+          _Game(results[i])
+        else
+          PlacementSlot(i + 1,
+              next: i == results.length ? (s.ankirenPlacementNext, s.sub?.ankirenPlacementNext) : null),
+    ]);
+  }
 }
 
 /// A placement game still to play: its [number] in a dashed slot, over
-/// "next" for the [next] one.
-class _Slot extends StatelessWidget {
-  const _Slot(this.number, {required this.next});
+/// the [next] label (and its other-language sub) for the next one, or a
+/// dash.
+class PlacementSlot extends StatelessWidget {
+  const PlacementSlot(this.number, {super.key, required this.next});
 
   final int number;
-  final bool next;
+  final (String, String?)? next;
 
   @override
   Widget build(BuildContext context) {
-    final s = S.of(context);
     const style = TextStyle(fontWeight: Weights.black, fontSize: AnkirenPageLayout.gameLevelFont, height: 1);
     return Column(mainAxisAlignment: MainAxisAlignment.center, children: [
       SizedBox.square(
@@ -215,8 +252,8 @@ class _Slot extends StatelessWidget {
         ),
       ),
       const SizedBox(height: AnkirenPageLayout.gameGap),
-      if (next)
-        PanelLabel(s.ankirenPlacementNext, s.sub?.ankirenPlacementNext, color: AnkirenPageLayout.todo)
+      if (next case (final text, final sub))
+        PanelLabel(text, sub, color: AnkirenPageLayout.todo)
       else
         const Text('—', style: style),
     ]);
@@ -238,7 +275,7 @@ class RankedPanel extends StatelessWidget {
     final s = S.of(context);
     final lock = entry.rankedLock;
     final placement = TripRating.isPlacement(entry.results.length);
-    final heading = _Heading(placement ? s.ankirenPlacementTitle : s.ankirenLast5);
+    final heading = PanelHeading(placement ? s.ankirenPlacementTitle : s.ankirenLast5);
     final content = Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.stretch, children: [
       Padding(
         padding: AnkirenPageLayout.gamesPadding,

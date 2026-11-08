@@ -47,7 +47,7 @@ import 'package:fudatobashi/ui/settings/settings_rows.dart';
 import 'package:fudatobashi/ui/settings/side_trip_settings_screen.dart';
 import 'package:fudatobashi/ui/shell/tobi_notice.dart';
 import 'package:fudatobashi/ui/results/karafuda_summary.dart';
-import 'package:fudatobashi/ui/side_trips/ankiren_sheet.dart';
+import 'package:fudatobashi/ui/side_trips/trip_sheet.dart';
 import 'package:fudatobashi/ui/side_trips/burst_button.dart';
 import 'package:fudatobashi/ui/side_trips/dojo_scene.dart';
 import 'package:fudatobashi/ui/side_trips/side_trip_entry.dart';

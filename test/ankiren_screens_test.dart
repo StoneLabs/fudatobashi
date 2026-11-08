@@ -60,7 +60,7 @@ import 'package:fudatobashi/ui/results/karafuda_summary.dart';
 import 'package:fudatobashi/ui/settings/settings_screen.dart';
 import 'package:fudatobashi/ui/settings/side_trip_settings_screen.dart';
 import 'package:fudatobashi/ui/side_trips/ankiren_free_sheet.dart';
-import 'package:fudatobashi/ui/side_trips/ankiren_sheet.dart';
+import 'package:fudatobashi/ui/side_trips/trip_sheet.dart';
 import 'package:fudatobashi/ui/side_trips/side_trip_entry.dart';
 import 'package:fudatobashi/ui/sound/sounds.dart';
 import 'package:package_info_plus/package_info_plus.dart';

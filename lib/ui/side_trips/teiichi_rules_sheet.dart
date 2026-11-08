@@ -14,7 +14,7 @@ import '../manga/manga.dart';
 import '../play/time_format.dart';
 import '../settings/settings_rows.dart';
 import 'ankiren_rules_sheet.dart';
-import 'ankiren_sheet.dart';
+import 'trip_sheet.dart';
 
 /// 定位置's rules (遊び方) in a sheet, from its page; once shown, the page
 /// no longer opens with them.
@@ -53,7 +53,7 @@ class TeiichiRulesSheet extends StatelessWidget {
     const rankedAfter = TeiichiTuning.rankedAfterLevel;
     final limit = formatMinutes(ranked.limit!);
     final row = '${TeiichiTuning.rowSlots}';
-    return AnkirenSheet(
+    return TripSheet(
       title: s.howToPlay,
       sub: o?.howToPlay,
       body: [

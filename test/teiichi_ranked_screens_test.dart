@@ -49,7 +49,7 @@ import 'package:fudatobashi/ui/manga/manga.dart';
 import 'package:fudatobashi/ui/play/time_format.dart';
 import 'package:fudatobashi/ui/results/celebration_chrome.dart';
 import 'package:fudatobashi/ui/shell/tobi_notice.dart';
-import 'package:fudatobashi/ui/side_trips/ankiren_sheet.dart';
+import 'package:fudatobashi/ui/side_trips/trip_sheet.dart';
 import 'package:fudatobashi/ui/side_trips/burst_button.dart';
 import 'package:fudatobashi/ui/side_trips/side_trip_entry.dart';
 import 'package:fudatobashi/ui/side_trips/side_trip_panels.dart';

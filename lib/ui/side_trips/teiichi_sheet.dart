@@ -20,7 +20,7 @@ import '../../state/scope.dart';
 import '../manga/manga.dart';
 import '../play/time_format.dart';
 import '../run/run_launcher.dart';
-import 'ankiren_sheet.dart';
+import 'trip_sheet.dart';
 import 'burst_button.dart';
 
 /// 定位置's level sheet, opened on [current]: the setup confirmed, or null
@@ -154,7 +154,7 @@ class _TeiichiSheetState extends State<TeiichiSheet> {
     final setup = _setup;
     final ladder = _ladder;
     final level = _level;
-    return AnkirenSheet(
+    return TripSheet(
       title: widget.guest ? s.ankirenGuestMode : s.ankirenSelectLevel,
       sub: widget.guest ? s.sub?.ankirenGuestMode : s.sub?.ankirenSelectLevel,
       line: widget.guest ? s.teiichiGuestLine : null,

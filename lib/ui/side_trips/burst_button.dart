@@ -5,14 +5,16 @@ import '../../config/vector_art.dart';
 import '../manga/manga.dart';
 
 /// A shout on `burst.svg`: pink, deep pink while pressed, desk grey when
-/// [onTap] is null; its [title], the other language's [sub] and an arrow
-/// in the art's safe box. It keeps the art's own size, or scales down whole
-/// to fit a narrower box.
+/// [onTap] is null; its [title], the other language's [sub], a [tag] and
+/// an arrow in the art's safe box, read out as [semanticLabel] when given.
+/// It keeps the art's own size, or scales down whole to fit a narrower box.
 class BurstButton extends StatelessWidget {
-  const BurstButton({super.key, required this.title, this.sub, required this.onTap});
+  const BurstButton(
+      {super.key, required this.title, this.sub, this.tag, this.semanticLabel, required this.onTap});
 
   final String title;
-  final String? sub;
+  final String? sub, semanticLabel;
+  final Widget? tag;
   final VoidCallback? onTap;
 
   @override
@@ -28,7 +30,7 @@ class BurstButton extends StatelessWidget {
             drop: 0,
             scale: Press.shoutScale,
             turn: Tilt.pressShout,
-            semanticLabel: sub == null ? title : '$title $sub',
+            semanticLabel: semanticLabel ?? (sub == null ? title : '$title $sub'),
             builder: (context, pressed) => Stack(children: [
               VectorArtBox(
                 SideTripArt.burst,
@@ -59,6 +61,10 @@ class BurstButton extends StatelessWidget {
                             height: 1,
                           ),
                         ),
+                      ],
+                      if (tag case final tag?) ...[
+                        const SizedBox(width: SideTripsLayout.burstGap),
+                        tag,
                       ],
                       const SizedBox(width: SideTripsLayout.burstGap),
                       MangaIcon(IconArt.arrow,

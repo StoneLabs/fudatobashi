@@ -30,7 +30,7 @@ import 'package:fudatobashi/state/scope.dart';
 import 'package:fudatobashi/ui/ikkiuchi/ikkiuchi_match_flow.dart';
 import 'package:fudatobashi/ui/ikkiuchi/ikkiuchi_match_screen.dart';
 import 'package:fudatobashi/ui/manga/manga.dart';
-import 'package:fudatobashi/ui/side_trips/ankiren_sheet.dart';
+import 'package:fudatobashi/ui/side_trips/trip_sheet.dart';
 import 'package:fudatobashi/ui/side_trips/ikkiuchi_page.dart';
 import 'package:fudatobashi/ui/side_trips/side_trip_panels.dart';
 import 'package:fudatobashi/ui/sound/sounds.dart';

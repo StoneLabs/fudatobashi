@@ -12,7 +12,7 @@ import '../history/history_screen.dart';
 import '../ikkiuchi/ikkiuchi_match_screen.dart';
 import '../manga/manga.dart';
 import '../play/time_format.dart';
-import 'ankiren_sheet.dart';
+import 'trip_sheet.dart';
 import 'burst_button.dart';
 import 'side_trip_panels.dart';
 

@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 
 import '../../config/design.dart';
@@ -8,14 +10,14 @@ import '../ankiren/ankiren_strikes.dart';
 import '../manga/manga.dart';
 import '../shell/tab_chains.dart';
 
-/// 暗記練's sheets' frame: free practice's floating panel, its top edge
+/// A side trip's sheets' frame: free practice's floating panel, its top edge
 /// tilted, at the bottom of the screen. Its head is [title] in display
 /// type with the other language's [sub], each breaking only between
 /// words, an optional [line] under them and a close button; then [body],
 /// a block at a time, scrolling when the screen is short; then [footer],
 /// which stays in view.
-class AnkirenSheet extends StatelessWidget {
-  const AnkirenSheet({super.key, required this.title, this.sub, this.line, required this.body, this.footer});
+class TripSheet extends StatelessWidget {
+  const TripSheet({super.key, required this.title, this.sub, this.line, required this.body, this.footer});
 
   final String title;
   final String? sub;
@@ -249,25 +251,34 @@ class SheetUnlockNote extends StatelessWidget {
 }
 
 /// A stepper: its [label] at the left, which gives way first, then − value
-/// +; an end reached disables its button.
+/// +; an end reached disables its button. Given [repeatEvery], a button
+/// held down steps on by itself that often until it is let go or its end is
+/// reached.
 class SheetStepper extends StatelessWidget {
-  const SheetStepper({super.key, required this.label, required this.value, required this.onLess, required this.onMore});
+  const SheetStepper(
+      {super.key, required this.label, required this.value, required this.onLess, required this.onMore, this.repeatEvery});
 
   final Widget label, value;
   final VoidCallback? onLess, onMore;
+  final Duration? repeatEvery;
 
   @override
   Widget build(BuildContext context) {
     final s = S.of(context);
     Widget button(String sign, String name, VoidCallback? onTap) => SizedBox.square(
           dimension: AnkirenSheetLayout.stepperButton,
-          child: InkButton(
+          child: _RepeatsHeld(
             onTap: onTap,
-            color: onTap == null ? Palette.desk : Palette.paper,
-            border: Strokes.control,
-            semanticLabel: name,
-            child: Text(sign,
-                style: const TextStyle(fontFamily: Fonts.display, fontSize: AnkirenSheetLayout.stepperSignFont, height: 1)),
+            every: repeatEvery,
+            child: InkButton(
+              onTap: onTap,
+              color: onTap == null ? Palette.desk : Palette.paper,
+              border: Strokes.control,
+              semanticLabel: name,
+              child: Text(sign,
+                  style:
+                      const TextStyle(fontFamily: Fonts.display, fontSize: AnkirenSheetLayout.stepperSignFont, height: 1)),
+            ),
           ),
         );
     return Row(children: [
@@ -283,5 +294,57 @@ class SheetStepper extends StatelessWidget {
       ),
       button('+', s.ankirenMore, onMore),
     ]);
+  }
+}
+
+/// [child], which once held down long calls [onTap] at once and then
+/// [every] so often until it is let go or [onTap] is gone; as it is without
+/// [every].
+class _RepeatsHeld extends StatefulWidget {
+  const _RepeatsHeld({required this.onTap, required this.every, required this.child});
+
+  final VoidCallback? onTap;
+  final Duration? every;
+  final Widget child;
+
+  @override
+  State<_RepeatsHeld> createState() => _RepeatsHeldState();
+}
+
+class _RepeatsHeldState extends State<_RepeatsHeld> {
+  Timer? _timer;
+
+  void _step() {
+    final onTap = widget.onTap;
+    if (onTap == null) return _stop();
+    onTap();
+  }
+
+  void _start(Duration every) {
+    _step();
+    _timer = Timer.periodic(every, (_) => _step());
+  }
+
+  void _stop() {
+    _timer?.cancel();
+    _timer = null;
+  }
+
+  @override
+  void dispose() {
+    _stop();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final every = widget.every;
+    final repeats = every != null && widget.onTap != null;
+    return GestureDetector(
+      onLongPressStart: repeats ? (_) => _start(every) : null,
+      onLongPressEnd: repeats ? (_) => _stop() : null,
+      onLongPressCancel: repeats ? _stop : null,
+      child: widget.child,
+    );
   }
 }

@@ -18,7 +18,7 @@ import '../../state/scope.dart';
 import '../manga/manga.dart';
 import '../play/time_format.dart';
 import '../run/run_launcher.dart';
-import 'ankiren_sheet.dart';
+import 'trip_sheet.dart';
 import 'burst_button.dart';
 
 /// 暗記練's level sheet, opened on [current]: the setup confirmed, or null
@@ -166,7 +166,7 @@ class _AnkirenFreeSheetState extends State<AnkirenFreeSheet> {
     final memorise = _nearest(setup.memorise);
     final steps = _customOpen;
     final ladder = _ladder;
-    return AnkirenSheet(
+    return TripSheet(
       title: widget.guest ? s.ankirenGuestMode : s.ankirenSelectLevel,
       sub: widget.guest ? s.sub?.ankirenGuestMode : s.sub?.ankirenSelectLevel,
       line: widget.guest ? s.ankirenGuestLine : null,

@@ -11,7 +11,7 @@ import '../../state/scope.dart';
 import '../manga/manga.dart';
 import '../play/time_format.dart';
 import '../settings/settings_rows.dart';
-import 'ankiren_sheet.dart';
+import 'trip_sheet.dart';
 
 /// 暗記練's rules (遊び方) in a sheet, from the hub or 暗記練's page; once
 /// shown, the page no longer opens with them.
@@ -53,7 +53,7 @@ class AnkirenRulesSheet extends StatelessWidget {
     const perSide = AnkirenTuning.rankedPerSide, opensAt = AnkirenTuning.rankedAfterLevel;
     const karafudaFrom = AnkirenTuning.karafudaFromLevel, ranked = AnkirenSetup.ranked();
     final memorise = formatMinutes(AnkirenTuning.rankedMemorise);
-    return AnkirenSheet(
+    return TripSheet(
       title: s.howToPlay,
       sub: o?.howToPlay,
       body: [
