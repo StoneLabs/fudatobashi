@@ -32,6 +32,7 @@ export 'pill_switch.dart';
 export 'placed.dart';
 export 'pressable.dart';
 export 'prose.dart';
+export 'repeats_held.dart';
 export 'routes.dart';
 export 'ruby_text.dart';
 export 'screentone.dart';
