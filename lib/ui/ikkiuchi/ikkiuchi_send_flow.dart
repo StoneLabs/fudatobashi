@@ -31,7 +31,9 @@ enum IkkiuchiSendStage { none, sending, placing, carrying, waiting }
 /// the player and sets it down at the waiting spot, and he points at it.
 /// His side closes up; the player places it by the placing's rules
 /// ([IkkiuchiSides.placed]): a tap on a free spot or a card, or a drag
-/// there. Placing it ends the 送り札.
+/// there. Placing it ends the 送り札. With no free spot on the player's
+/// side it does not wait: it goes there past a row's room
+/// ([IkkiuchiSides.squeezedIn]).
 ///
 /// Every change of the sides lays the board out afresh ([IkkiuchiBoardScene.relayout]),
 /// and each card that goes to the other side is told to [onSent].
@@ -117,6 +119,12 @@ class IkkiuchiSendFlow {
     if (id == null || sides == null) return;
     if (_stage == IkkiuchiSendStage.placing) return _layDown(id);
     if (_stage != IkkiuchiSendStage.carrying || scene.board.carrying) return;
+    if (targets().freeSpots.isEmpty) {
+      _giveToPlayer(id);
+      _stage = IkkiuchiSendStage.none;
+      _card = null;
+      return;
+    }
     _stage = IkkiuchiSendStage.waiting;
     scene.board.heldFace = TobiFace.pointing;
     scene.relayout(sides.without(id));
@@ -154,8 +162,8 @@ class IkkiuchiSendFlow {
   /// the player lifted glides back; the card they sent lies at its home on
   /// his side, his arm still; the card he sends, in his hand or waiting,
   /// goes to the first free spot on the player's side (which counts it
-  /// theirs from his pick, [IkkiuchiBoardScene.cardsLeft]), or back to his
-  /// side with no room there.
+  /// theirs from his pick, [IkkiuchiBoardScene.cardsLeft]), or past a row's
+  /// room with none free ([IkkiuchiSides.squeezedIn]).
   void cancel() {
     final board = scene.board;
     switch (_stage) {
@@ -191,10 +199,10 @@ class IkkiuchiSendFlow {
     final next = [
           for (final (spot, _) in targets().freeSpots) ?sides.placed(id, spot),
         ].firstOrNull ??
-        sides.toTobi(id);
+        sides.squeezedIn(id);
     board.heldFace = null;
     scene.relayout(next, from: {id: from});
-    if (next.playerCards.contains(id)) onSent?.call(id);
+    onSent?.call(id);
   }
 
   // Touches, in board dp.

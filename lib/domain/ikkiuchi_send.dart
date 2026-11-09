@@ -112,6 +112,23 @@ class IkkiuchiSides {
     return IkkiuchiSides(homes: homes, tobi: {...rest.tobiCards, card}, player: rest.player);
   }
 
+  /// The sides once Tobi's [card] went to the player's side with no free
+  /// spot left on it: at the inner end of the left group of the row with
+  /// the fewest cards, the row nearest the player on a tie, past the row's
+  /// room. A side never refuses a card sent to it.
+  IkkiuchiSides squeezedIn(int card) {
+    final rest = without(card);
+    final rows = rest.player;
+    var at = 0;
+    for (var r = 1; r < rows.length; r++) {
+      if (rows[r].length < rows[at].length) at = r;
+    }
+    return IkkiuchiSides(homes: homes, tobi: rest.tobiCards, player: [
+      for (final (r, row) in rows.indexed)
+        r == at ? IkkiuchiRow([...row.left, card], row.right, middle: row.middle) : row,
+    ]);
+  }
+
   /// The sides once the game has put [cards], on neither, on the
   /// player's one by one by the placing's rules: each at the inner end of
   /// the group with the fewest cards in the row with the fewest, the row
