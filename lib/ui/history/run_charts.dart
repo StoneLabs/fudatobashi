@@ -335,19 +335,28 @@ class ChartLegend extends StatelessWidget {
       );
 }
 
-/// A legend mark: a filled square, or a short line (dashed with [dashed]).
+/// A legend mark: a filled square, a short line (dashed with [dashed]),
+/// or a [BarChart]'s guide line.
 class LegendMark extends StatelessWidget {
   const LegendMark.box(this.color, {super.key})
       : line = false,
         dashed = false,
+        guide = false,
         background = null;
-  const LegendMark.line(this.color, {super.key, this.dashed = false, this.background}) : line = true;
+  const LegendMark.line(this.color, {super.key, this.dashed = false, this.background})
+      : line = true,
+        guide = false;
+  const LegendMark.guide(this.color, {super.key})
+      : line = true,
+        dashed = true,
+        guide = true,
+        background = null;
 
   final Color color;
 
   /// A fill behind a line mark.
   final Color? background;
-  final bool line, dashed;
+  final bool line, dashed, guide;
 
   @override
   Widget build(BuildContext context) => line
@@ -356,7 +365,7 @@ class LegendMark extends StatelessWidget {
           height: RunChartStyle.legendBox,
           child: DecoratedBox(
             decoration: BoxDecoration(color: background),
-            child: CustomPaint(painter: _LegendLinePainter(color, dashed)),
+            child: CustomPaint(painter: _LegendLinePainter(color, dashed, guide: guide)),
           ),
         )
       : Container(
@@ -367,16 +376,20 @@ class LegendMark extends StatelessWidget {
 }
 
 class _LegendLinePainter extends CustomPainter {
-  _LegendLinePainter(this.color, this.dashed);
+  _LegendLinePainter(this.color, this.dashed, {required this.guide});
   final Color color;
-  final bool dashed;
+  final bool dashed, guide;
 
   @override
   void paint(Canvas canvas, Size size) {
+    final y = size.height / 2;
+    if (guide) {
+      _guide(canvas, size.width, y);
+      return;
+    }
     final paint = Paint()
       ..color = color
       ..strokeWidth = RunChartStyle.lineStroke;
-    final y = size.height / 2;
     if (!dashed) {
       canvas.drawLine(Offset(0, y), Offset(size.width, y), paint);
       return;
@@ -386,6 +399,104 @@ class _LegendLinePainter extends CustomPainter {
     }
   }
 
+  /// Dashes in [color] on ink, as a [BarChart] draws its guide.
+  void _guide(Canvas canvas, double width, double y) {
+    final under = Paint()
+      ..color = Palette.ink
+      ..strokeWidth = RunChartStyle.guideStroke + 2;
+    final over = Paint()
+      ..color = color
+      ..strokeWidth = RunChartStyle.guideStroke;
+    for (var x = 0.0; x < width; x += Strokes.dash[0] + Strokes.dash[1]) {
+      final a = Offset(x, y), b = Offset(math.min(width, x + Strokes.dash[0]), y);
+      canvas.drawLine(a, b, under);
+      canvas.drawLine(a, b, over);
+    }
+  }
+
   @override
-  bool shouldRepaint(_LegendLinePainter old) => old.color != color || old.dashed != dashed;
+  bool shouldRepaint(_LegendLinePainter old) => old.color != color || old.dashed != dashed || old.guide != guide;
+}
+
+/// One of [LengthRows]: its [label] over its [note], its time [ms] and
+/// the other time its tick marks, [tickMs].
+typedef LengthRow = ({String label, String note, double? ms, double? tickMs});
+
+/// Times side by side, a row each (the cards by their 決まり字's length):
+/// its label over its note, a bar to its time with a tick across it at the
+/// other time, and the time, pink when past the tick. The bars share one
+/// scale, a little past the longest.
+class LengthRows extends StatelessWidget {
+  const LengthRows(this.rows, {super.key});
+  final List<LengthRow> rows;
+
+  @override
+  Widget build(BuildContext context) {
+    final top = [for (final r in rows) ...[?r.ms, ?r.tickMs]].fold<double>(0, (m, v) => v > m ? v : m) *
+        LengthRowStyle.headroom;
+    return Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+      for (final r in rows)
+        Padding(
+          padding: const EdgeInsets.symmetric(vertical: LengthRowStyle.rowGap / 2),
+          child: Row(children: [
+            Expanded(
+              flex: LengthRowStyle.labelFlex,
+              child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                Text(r.label, style: ReviewTextStyle.rowLabel),
+                Text(r.note, style: ReviewTextStyle.rowNote),
+              ]),
+            ),
+            Expanded(
+              flex: LengthRowStyle.barFlex,
+              child: SizedBox(
+                height: LengthRowStyle.barHeight,
+                child: CustomPaint(painter: _LengthBarPainter(r.ms, r.tickMs, top)),
+              ),
+            ),
+            const SizedBox(width: Gaps.panel),
+            SizedBox(
+              width: LengthRowStyle.valueWidth * MediaQuery.textScalerOf(context).scale(1),
+              child: FittedBox(
+                fit: BoxFit.scaleDown,
+                alignment: Alignment.centerRight,
+                child: Text(
+                  '${r.ms == null ? missingTime : formatSeconds(r.ms!)}s',
+                  maxLines: 1,
+                  style: ReviewTextStyle.rowValue.copyWith(
+                      color: (r.ms ?? 0) > (r.tickMs ?? double.infinity) ? HistoryRunStyle.behind : null),
+                ),
+              ),
+            ),
+          ]),
+        ),
+    ]);
+  }
+}
+
+class _LengthBarPainter extends CustomPainter {
+  _LengthBarPainter(this.ms, this.tickMs, this.top);
+  final double? ms, tickMs;
+  final double top;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final track = Offset.zero & size;
+    canvas.drawRect(track, Paint()..color = Palette.paper);
+    if (ms case final ms? when top > 0) {
+      canvas.drawRect(Rect.fromLTWH(0, 0, size.width * ms / top, size.height), Paint()..color = Palette.land);
+    }
+    canvas.drawRect(
+        track.deflate(Strokes.hairline / 2),
+        Paint()
+          ..style = PaintingStyle.stroke
+          ..strokeWidth = Strokes.hairline);
+    if (tickMs case final t? when top > 0) {
+      final x = size.width * t / top;
+      canvas.drawLine(Offset(x, -LengthRowStyle.tickReach), Offset(x, size.height + LengthRowStyle.tickReach),
+          Paint()..strokeWidth = LengthRowStyle.tickStroke);
+    }
+  }
+
+  @override
+  bool shouldRepaint(_LengthBarPainter old) => old.ms != ms || old.tickMs != tickMs || old.top != top;
 }

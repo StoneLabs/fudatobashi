@@ -11,7 +11,6 @@ import '../../l10n/stats_strings.dart';
 import '../../l10n/strings.dart';
 import '../../state/past_runs.dart';
 import '../../state/play_config.dart';
-import '../manga/manga.dart';
 import '../play/time_format.dart';
 import '../rank/ranked_runs.dart';
 import '../results/run_summary.dart';
@@ -201,16 +200,11 @@ class _NoRank extends StatelessWidget {
     } else {
       text = s.runFreeNoRank;
     }
-    return ReviewSlab(
-      flatTop: true,
+    return NoRatingPanel(
+      banner: exam ? s.examRun : s.freePlay,
+      headline: s.notForRank,
+      line: text,
       color: exam ? Palette.paper : Palette.seaSoft,
-      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        InkBanner((exam ? s.examRun : s.freePlay).toUpperCase(), fontSize: SummaryHeroLayout.bannerFont),
-        const SizedBox(height: Gaps.panel),
-        Text(s.notForRank, style: ReviewTextStyle.headline),
-        const SizedBox(height: Gaps.small),
-        ReviewText(text),
-      ]),
     );
   }
 }

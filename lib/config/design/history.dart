@@ -356,15 +356,6 @@ abstract final class RunTabsStyle {
   static const Color paceMiss = Palette.pink;
   static const Color paceUnplayed = Color(0xFFE6E3DE);
 
-  /// The 決まり字 length rows: label and bar shares of the row, the bar,
-  /// the value's width at text scale 1, and room past the longest bar.
-  static const double lengthRowGap = 6;
-  static const int lengthLabelFlex = 4;
-  static const int lengthBarFlex = 6;
-  static const double lengthBarHeight = 12;
-  static const double lengthValueWidth = 48;
-  static const double lengthHeadroom = 1.1;
-
   /// A "usual" or "before" tick across a bar.
   static const double tickReach = 3;
   static const double tickStroke = 2.5;
@@ -379,6 +370,20 @@ abstract final class RunTabsStyle {
   static const double ratingLineStroke = 2.2;
   static const double ratingPoint = 4.5;
   static const double ratingMineMark = 7;
+}
+
+/// Rows of times by 決まり字 length (`LengthRows`): label and bar shares
+/// of a row, the bar, the value's width at text scale 1, room past the
+/// longest bar, and the tick across a bar at another time.
+abstract final class LengthRowStyle {
+  static const double rowGap = 6;
+  static const int labelFlex = 4;
+  static const int barFlex = 6;
+  static const double barHeight = 12;
+  static const double valueWidth = 48;
+  static const double headroom = 1.1;
+  static const double tickReach = 3;
+  static const double tickStroke = 2.5;
 }
 
 /// `SwipeTabs`: the tab row over swiped pages, as slanted chips (a run

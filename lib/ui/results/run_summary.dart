@@ -960,7 +960,7 @@ class _Card extends StatelessWidget {
         TorifudaCard(poem: poems[card.poemId], inverted: card.inverted),
         if (tier != null)
           _Badge(
-            text: '${formatSeconds(ms!)}s',
+            text: '${ms! < 0 ? '−' : ''}${formatSeconds(ms.abs())}s',
             fill: Palette.tiers[tier],
             style: TextStyle(
                 fontFamily: Fonts.display, fontSize: SummaryPanelLayout.badgeFont, color: Palette.tierText[tier], height: 1),

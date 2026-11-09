@@ -10,27 +10,17 @@ import '../../l10n/karafuda_strings.dart';
 import '../../l10n/ranked_strings.dart';
 import '../../l10n/side_trip_strings.dart';
 import '../../l10n/strings.dart';
-import '../play/time_format.dart';
 import '../results/run_summary.dart';
 import 'review_parts.dart';
 import 'run_charts.dart';
 
 /// What a ranked game did to its trip's rating, as a tile.
 SummaryTile ankirenRatingTile(S s, AnkirenReview review) {
-  final before = review.ratingBefore, after = review.game.rating;
-  if (after == null) {
-    return SummaryTile(label: s.ratingLabel, big: const TileFigure(missingTime), note: '', color: Palette.pinkSoft);
-  }
-  final band = s.className(AnkirenReview.classProgress(after).band);
-  if (before == null) {
-    return SummaryTile(label: s.ratingLabel, big: TileFigure('${after.round()}'), note: band, color: Palette.pinkSoft);
-  }
-  return SummaryTile(
-    label: s.ratingLabel,
-    big: TileFigure(signedPoints(after - before)),
-    note: '${before.round()} → ${after.round()} · $band',
-    color: Palette.pinkSoft,
-  );
+  final after = review.game.rating;
+  return ratingTile(s.ratingLabel,
+      before: review.ratingBefore,
+      after: after,
+      band: after == null ? '' : s.className(AnkirenReview.classProgress(after).band));
 }
 
 /// Where a tap landed, as a small chip in its tier's colour.

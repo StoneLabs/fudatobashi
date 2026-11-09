@@ -305,80 +305,21 @@ class _ByKimariji extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final s = S.of(context);
-    final rows = speed.byKimariji;
-    final top = [for (final r in rows) ...[?r.meanMs, ?r.usualMs]].fold<double>(0, (m, v) => v > m ? v : m) *
-        RunTabsStyle.lengthHeadroom;
     return ReviewSlab(
       title: s.runKimarijiTitle,
       sub: s.sub?.runKimarijiTitle,
       note: s.runKimarijiNote,
-      child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-        for (final r in rows)
-          Padding(
-            padding: const EdgeInsets.symmetric(vertical: RunTabsStyle.lengthRowGap / 2),
-            child: Row(children: [
-              Expanded(
-                flex: RunTabsStyle.lengthLabelFlex,
-                child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                  Text(s.runKimarijiLength(r.length), style: ReviewTextStyle.rowLabel),
-                  Text([s.cardsCount(r.cards), if (r.misses > 0) s.runMissMark(r.misses)].join(' · '),
-                      style: ReviewTextStyle.rowNote),
-                ]),
-              ),
-              Expanded(
-                flex: RunTabsStyle.lengthBarFlex,
-                child: SizedBox(
-                  height: RunTabsStyle.lengthBarHeight,
-                  child: CustomPaint(painter: _LengthBarPainter(r.meanMs, r.usualMs, top)),
-                ),
-              ),
-              const SizedBox(width: Gaps.panel),
-              SizedBox(
-                width: RunTabsStyle.lengthValueWidth * MediaQuery.textScalerOf(context).scale(1),
-                child: FittedBox(
-                  fit: BoxFit.scaleDown,
-                  alignment: Alignment.centerRight,
-                  child: Text(
-                    '${r.meanMs == null ? missingTime : formatSeconds(r.meanMs!)}s',
-                    maxLines: 1,
-                    style: ReviewTextStyle.rowValue.copyWith(
-                        color: (r.meanMs ?? 0) > (r.usualMs ?? double.infinity) ? HistoryRunStyle.behind : null),
-                  ),
-                ),
-              ),
-            ]),
+      child: LengthRows([
+        for (final r in speed.byKimariji)
+          (
+            label: s.runKimarijiLength(r.length),
+            note: [s.cardsCount(r.cards), if (r.misses > 0) s.runMissMark(r.misses)].join(' · '),
+            ms: r.meanMs,
+            tickMs: r.usualMs,
           ),
       ]),
     );
   }
-}
-
-class _LengthBarPainter extends CustomPainter {
-  _LengthBarPainter(this.ms, this.usualMs, this.top);
-  final double? ms, usualMs;
-  final double top;
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final track = Offset.zero & size;
-    canvas.drawRect(track, Paint()..color = Palette.paper);
-    if (ms case final ms? when top > 0) {
-      canvas.drawRect(Rect.fromLTWH(0, 0, size.width * ms / top, size.height), Paint()..color = Palette.land);
-    }
-    canvas.drawRect(
-        track.deflate(Strokes.hairline / 2),
-        Paint()
-          ..style = PaintingStyle.stroke
-          ..strokeWidth = Strokes.hairline);
-    if (usualMs case final u? when top > 0) {
-      final x = size.width * u / top;
-      canvas.drawLine(Offset(x, -RunTabsStyle.tickReach), Offset(x, size.height + RunTabsStyle.tickReach),
-          Paint()..strokeWidth = RunTabsStyle.tickStroke);
-    }
-  }
-
-  @override
-  bool shouldRepaint(_LengthBarPainter old) => old.ms != ms || old.usualMs != usualMs || old.top != top;
 }
 
 /// The usual time of the cards compared, and this run's.

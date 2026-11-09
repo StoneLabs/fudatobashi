@@ -397,6 +397,46 @@ String signedPoints(num change) {
   return '${n < 0 ? '−' : '+'}${n.abs()}';
 }
 
+/// What a game did to a rating, as a tile under [label]: the change from
+/// [before] to [after], which stands in [band]; a first rating alone, in
+/// its band; the missing mark for a game without one.
+SummaryTile ratingTile(String label, {required double? before, required double? after, required String band}) {
+  if (after == null) {
+    return SummaryTile(label: label, big: const TileFigure(missingTime), note: '', color: Palette.pinkSoft);
+  }
+  if (before == null) {
+    return SummaryTile(label: label, big: TileFigure('${after.round()}'), note: band, color: Palette.pinkSoft);
+  }
+  return SummaryTile(
+    label: label,
+    big: TileFigure(signedPoints(after - before)),
+    note: '${before.round()} → ${after.round()} · $band',
+    color: Palette.pinkSoft,
+  );
+}
+
+/// A panel saying a game leaves the rating as it is: [banner] in ink, the
+/// [headline] and a [line] of why, on [color].
+class NoRatingPanel extends StatelessWidget {
+  const NoRatingPanel(
+      {super.key, required this.banner, required this.headline, required this.line, this.color = Palette.seaSoft});
+  final String banner, headline, line;
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) => ReviewSlab(
+        flatTop: true,
+        color: color,
+        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          InkBanner(banner.toUpperCase(), fontSize: SummaryHeroLayout.bannerFont),
+          const SizedBox(height: Gaps.panel),
+          Text(headline, style: ReviewTextStyle.headline),
+          const SizedBox(height: Gaps.small),
+          ReviewText(line),
+        ]),
+      );
+}
+
 /// A game's experience: a hero whose bar is the level reached, and the
 /// panel of where it came from; a line saying so for a game that earned
 /// none.
