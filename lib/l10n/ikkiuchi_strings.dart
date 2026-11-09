@@ -1,6 +1,8 @@
 import '../domain/field_parts.dart';
 import '../domain/ikkiuchi_match.dart';
 import '../domain/ikkiuchi_record.dart';
+import '../domain/rating.dart';
+import 'ranked_strings.dart';
 import 'strings.dart';
 
 /// Strings of 一騎打ち: its page, its custom sheet and rules, the placing
@@ -178,23 +180,139 @@ extension IkkiuchiStrings on S {
   String ikkiuchiFaultsLine(int you, int tobi) => f('ikkiuchiFaultsLine', [you, tobi]);
   String get ikkiuchiLeftCaption => t('ikkiuchiLeftCaption');
 
-  /// A match's page: the summary's facts.
-  String get ikkiuchiResultLabel => t('ikkiuchiResultLabel');
-  String get ikkiuchiYourLeft => t('ikkiuchiYourLeft');
-  String get ikkiuchiTobiLeft => t('ikkiuchiTobiLeft');
-  String get ikkiuchiMatchTime => t('ikkiuchiMatchTime');
-  String get ikkiuchiYourFaults => t('ikkiuchiYourFaults');
-  String get ikkiuchiTobiFaults => t('ikkiuchiTobiFaults');
+  /// A match's page: its tabs, and Tobi at his rating ([rating]) in its
+  /// header and stamp.
+  String get ikkiuchiTabOverview => t('ikkiuchiTabOverview');
+  String get ikkiuchiTabField => t('ikkiuchiTabField');
+  String get ikkiuchiTabSpeed => t('ikkiuchiTabSpeed');
+  String get ikkiuchiTabRating => t('ikkiuchiTabRating');
+  String get ikkiuchiTabReads => t('ikkiuchiTabReads');
+  String ikkiuchiTobiAt(int rating) => f('ikkiuchiTobiAt', [rating]);
 
-  /// A match's page: the reads' panel, its table's heads, a side's faults
-  /// on a read, the caption under it, and the line for a match with none.
+  /// The Overview: the hero's bar (each one's takes, or both in a line and
+  /// the cards [n] left), the tiles' labels and notes (the [n] reads,
+  /// Tobi's [n] faults and his median take, [seconds]).
+  String ikkiuchiTookCount(int n) => f('ikkiuchiTookCount', [n]);
+  String ikkiuchiTobiTookCount(int n) => f('ikkiuchiTobiTookCount', [n]);
+  String ikkiuchiTakesBoth(int you, int tobi) => f('ikkiuchiTakesBoth', [you, tobi]);
+  String ikkiuchiLeftCount(int n) => f('ikkiuchiLeftCount', [n]);
+  String get ikkiuchiResultLabel => t('ikkiuchiResultLabel');
+  String get ikkiuchiMatchTime => t('ikkiuchiMatchTime');
+  String ikkiuchiReadCount(int n) => f(countKey('ikkiuchiReadCount', n), [n]);
+  String get ikkiuchiFaultsLabel => t('ikkiuchiFaultsLabel');
+  String ikkiuchiTobiTimes(int n) => f('ikkiuchiTobiTimes', [n]);
+  String get ikkiuchiRatingLabel => t('ikkiuchiRatingLabel');
+  String get ikkiuchiMedianTake => t('ikkiuchiMedianTake');
+  String ikkiuchiTobiSeconds(String seconds) => f('ikkiuchiTobiSeconds', [seconds]);
+
+  /// The Overview's panels: the cards Tobi took that the player reached
+  /// too, and the match against the last one with the same setup ([n]
+  /// cards a side), its rows and how this one compares ([n] cards or
+  /// faults, [seconds]).
+  String get ikkiuchiBeatenTitle => t('ikkiuchiBeatenTitle');
+  String get ikkiuchiBeatenNote => t('ikkiuchiBeatenNote');
+  String get ikkiuchiSameSetup => t('ikkiuchiSameSetup');
+  String ikkiuchiPerSideOf(int n) => f('ikkiuchiPerSideCount', [n]);
+  String get ikkiuchiColThis => t('ikkiuchiColThis');
+  String get ikkiuchiRowTaken => t('ikkiuchiRowTaken');
+  String ikkiuchiMoreTaken(int n) => f('ikkiuchiMoreTaken', [n]);
+  String ikkiuchiFewerTaken(int n) => f('ikkiuchiFewerTaken', [n]);
+  String ikkiuchiFewerFaults(int n) => f('ikkiuchiFewerFaults', [n]);
+  String ikkiuchiMoreFaults(int n) => f('ikkiuchiMoreFaults', [n]);
+  String get ikkiuchiSame => t('ikkiuchiSame');
+  String ikkiuchiFaster(String seconds) => f('ikkiuchiFaster', [seconds]);
+  String ikkiuchiSlower(String seconds) => f('ikkiuchiSlower', [seconds]);
+  String get ikkiuchiSetupFirst => t('ikkiuchiSetupFirst');
+
+  /// The Field: its panel, its label, the band's sides, the review's
+  /// button, its step box (read [n] of [count], the side and row a card
+  /// lay in, the touches' chips, both times as [you] and [tobi] in
+  /// [seconds], the 送り札 to and from Tobi, the names joined, a fault on a
+  /// look-alike by [who]), the touches' legend, the tiles' label and the
+  /// caption.
+  String get ikkiuchiFieldTitle => t('ikkiuchiFieldTitle');
+  String get ikkiuchiFieldNote => t('ikkiuchiFieldNote');
+  String get ikkiuchiFieldLabel => t('ikkiuchiFieldLabel');
+
+  /// Who took a card in the end, in the Field's and the chart's legends.
+  String get ikkiuchiYouTook => t('ikkiuchiYouTook');
+  String get ikkiuchiTobiTook => t('ikkiuchiTobiTook');
+  String get ikkiuchiTheirSide => t('ikkiuchiTheirSide');
+  String get ikkiuchiOwnSide => t('ikkiuchiOwnSide');
+  String get ikkiuchiStartReview => t('ikkiuchiStartReview');
+  String get ikkiuchiShowAll => t('ikkiuchiShowAll');
+  String ikkiuchiStepRead(int n, int count) => f('ikkiuchiStepRead', [n, count]);
+  String get ikkiuchiStepBack => t('ikkiuchiStepBack');
+  String get ikkiuchiStepNext => t('ikkiuchiStepNext');
+  String get ikkiuchiBoxPlace => t('ikkiuchiBoxPlace');
+  String get ikkiuchiBoxTouches => t('ikkiuchiBoxTouches');
+  String get ikkiuchiBoxTime => t('ikkiuchiBoxTime');
+  String get ikkiuchiOffField => t('ikkiuchiOffField');
+  String ikkiuchiSideRow(String side, String row) => f('ikkiuchiSideRow', [side, row]);
+  String get ikkiuchiNoTouches => t('ikkiuchiNoTouches');
+  String get ikkiuchiYourFaultChip => t('ikkiuchiYourFaultChip');
+  String get ikkiuchiTobiFaultChip => t('ikkiuchiTobiFaultChip');
+  String ikkiuchiBoxTimes(String you, String tobi) => f('ikkiuchiBoxTimes', [you, tobi]);
+  String ikkiuchiBoxSeconds(String seconds) => f('ikkiuchiBoxSeconds', [seconds]);
+  String ikkiuchiSentTo(String cards) => f('ikkiuchiSentTo', [cards]);
+  String ikkiuchiSentFrom(String cards) => f('ikkiuchiSentFrom', [cards]);
+  String get ikkiuchiSentNone => t('ikkiuchiSentNone');
+  String get ikkiuchiNamesJoin => t('ikkiuchiNamesJoin');
+  String ikkiuchiLookAlike(String who, String card) => f('ikkiuchiLookAlike', [who, card]);
+  String get ikkiuchiFirstTouch => t('ikkiuchiFirstTouch');
+  String get ikkiuchiSecondTouch => t('ikkiuchiSecondTouch');
+  String get ikkiuchiTileTakes => t('ikkiuchiTileTakes');
+  String get ikkiuchiFieldCaption => t('ikkiuchiFieldCaption');
+
+  /// The Speed tab: the chart, its caption, both medians with the takes
+  /// and faults under them, how they compare ([seconds]), the rows by
+  /// kimariji length ([n] kana, [cards] read and [took]), and the fastest
+  /// takes.
+  String get ikkiuchiTakesTitle => t('ikkiuchiTakesTitle');
+  String get ikkiuchiSeconds => t('ikkiuchiSeconds');
+  String get ikkiuchiTobiMedian => t('ikkiuchiTobiMedian');
+  String get ikkiuchiYourMedian => t('ikkiuchiYourMedian');
+  String get ikkiuchiTakesCaption => t('ikkiuchiTakesCaption');
+  String ikkiuchiTakesFaults(int taken, int faults) =>
+      f(countKey('ikkiuchiTakesFaults', faults), [taken, faults]);
+  String ikkiuchiFasterThanTobi(String seconds) => f('ikkiuchiFasterThanTobi', [seconds]);
+  String ikkiuchiSlowerThanTobi(String seconds) => f('ikkiuchiSlowerThanTobi', [seconds]);
+  String get ikkiuchiByLength => t('ikkiuchiByLength');
+  String get ikkiuchiTickTobi => t('ikkiuchiTickTobi');
+  String ikkiuchiKimarijiLength(int n) => f('ikkiuchiKimarijiLength', [n]);
+  String ikkiuchiLengthNote(int cards, int took) => f(countKey('ikkiuchiLengthNote', cards), [cards, took]);
+  String get ikkiuchiFastestTitle => t('ikkiuchiFastestTitle');
+
+  /// The Rating & XP tab: the rating's hero and its lines (the estimate's
+  /// while placing), the placement as its bar ([n] of [count] played, [n]
+  /// left), the class label ([points] to [band] at [rating]), and a free
+  /// match's panel.
+  String get ikkiuchiRatingHead => t('ikkiuchiRatingHead');
+  String get ikkiuchiPreviousRating => t('ikkiuchiPreviousRating');
+  String get ikkiuchiNewRating => t('ikkiuchiNewRating');
+  String get ikkiuchiPreviousEstimate => t('ikkiuchiPreviousEstimate');
+  String get ikkiuchiNewEstimate => t('ikkiuchiNewEstimate');
+  String get ikkiuchiFirstRating => t('ikkiuchiFirstRating');
+  String ikkiuchiPlacing(int n, int count) => f('ikkiuchiPlacing', [n, count]);
+  String ikkiuchiPlacedIn(int n) => f('ikkiuchiPlacedIn', [n]);
+  String ikkiuchiClassAt(int points, RankBand band, String rating) =>
+      f('ikkiuchiClassAt', [points, className(band), rating]);
+  String get ikkiuchiFree => t('ikkiuchiFree');
+  String get ikkiuchiNoRank => t('ikkiuchiNoRank');
+  String get ikkiuchiOnlyRanked => t('ikkiuchiOnlyRanked');
+
+  /// Every read: the panel, its table's heads, a side's faults on a read,
+  /// the medians' row, the caption under it, and the line for a match with
+  /// none.
   String get ikkiuchiReadsTitle => t('ikkiuchiReadsTitle');
   String ikkiuchiReadsNote(int n) => f(countKey('ikkiuchiReadsNote', n), [n]);
   String get ikkiuchiColNumber => t('ikkiuchiColNumber');
   String get ikkiuchiColCard => t('ikkiuchiColCard');
+  String get ikkiuchiColSide => t('ikkiuchiColSide');
   String get ikkiuchiColTaken => t('ikkiuchiColTaken');
   String get ikkiuchiTied => t('ikkiuchiTied');
   String ikkiuchiFaultCount(int n) => f(countKey('ikkiuchiFaultCount', n), [n]);
+  String get ikkiuchiMedianRow => t('ikkiuchiMedianRow');
   String get ikkiuchiReadsCaption => t('ikkiuchiReadsCaption');
   String get ikkiuchiNoReads => t('ikkiuchiNoReads');
 }

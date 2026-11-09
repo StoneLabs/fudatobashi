@@ -2,131 +2,68 @@ import 'package:flutter/material.dart';
 
 import '../../config/design.dart';
 import '../../domain/ikkiuchi_record.dart';
-import '../../domain/ikkiuchi_side.dart';
+import '../../domain/ikkiuchi_review.dart';
 import '../../l10n/history_strings.dart';
 import '../../l10n/ikkiuchi_strings.dart';
+import '../../l10n/run_strings.dart';
 import '../../l10n/side_trip_strings.dart';
 import '../../l10n/strings.dart';
 import '../../state/past_runs.dart';
+import '../../state/progress.dart';
 import '../../state/scope.dart';
+import '../../state/xp_history.dart';
 import '../manga/manga.dart';
 import '../play/time_format.dart';
-import 'history_widgets.dart';
-import 'review_parts.dart';
+import 'ikkiuchi_field_tab.dart';
+import 'ikkiuchi_overview_tab.dart';
+import 'ikkiuchi_rating_tab.dart';
+import 'ikkiuchi_reads_tab.dart';
+import 'ikkiuchi_speed_tab.dart';
 import 'run_page.dart';
 
 /// Opens 一騎打ち match [match]'s page.
-Future<void> openIkkiuchiMatch(BuildContext context, IkkiuchiMatchRecord match) =>
-    Navigator.of(context).push(MangaRoute<void>(builder: (_) => IkkiuchiMatchPage(match: match)));
+Future<void> openIkkiuchiMatch(BuildContext context, IkkiuchiMatchRecord match) {
+  final page = IkkiuchiMatchPage.of(ProgressScope.read(context), match);
+  return Navigator.of(context).push(MangaRoute<void>(builder: (_) => page));
+}
 
-/// A recorded 一騎打ち match: its header names its kind, the practice day it
-/// counts to (as History lists it) and its setup; then how it ended, the
-/// cards left and faults on each side and how long it took; then every read
-/// in order.
+/// A recorded 一騎打ち match, tab by tab: its overview, the field replayed
+/// read by read, the speed of the takes, the rating and the experience it
+/// earned, and every read. Its header names its kind, the practice day it
+/// counts to (as History lists it) and Tobi's rating, a free match's
+/// setup too.
 class IkkiuchiMatchPage extends StatelessWidget {
-  const IkkiuchiMatchPage({super.key, required this.match});
-  final IkkiuchiMatchRecord match;
+  const IkkiuchiMatchPage({super.key, required this.review});
+
+  /// [match]'s page, against the matches [progress] recorded and with the
+  /// experience it earned.
+  factory IkkiuchiMatchPage.of(Progress progress, IkkiuchiMatchRecord match) => IkkiuchiMatchPage(
+      review: IkkiuchiReview(match, progress.ikkiuchi.matches, xp: XpHistory.gainsOf(progress).ikkiuchi[match.id]));
+
+  final IkkiuchiReview review;
+
+  static final List<PageTab<IkkiuchiReview>> tabs = [
+    PageTab((s) => s.ikkiuchiTabOverview, IkkiuchiOverviewTab.new, cut: ReviewLayout.cut),
+    PageTab((s) => s.ikkiuchiTabField, IkkiuchiFieldTab.new),
+    PageTab((s) => s.ikkiuchiTabSpeed, IkkiuchiSpeedTab.new),
+    PageTab((s) => s.ikkiuchiTabRating, IkkiuchiRatingTab.new, sub: (s) => s.tabAndXp),
+    PageTab((s) => s.ikkiuchiTabReads, IkkiuchiReadsTab.new),
+  ];
 
   @override
   Widget build(BuildContext context) {
     final s = S.of(context);
+    final match = review.match;
     final setup = match.setup;
     final kind = match.ranked ? s.sideTripRanked : s.freePlay;
+    final day = s.sessionDay(match.startedAt, day: ProgressScope.of(context).dayStartedOn(match.startedAt));
+    final tobi = s.ikkiuchiTobiAt(setup.opponentRating.round());
     final line = s.ikkiuchiSetupLine(setup.perSide, formatMinutes(setup.memorise), setup.opponentRating.round());
-    final day = ProgressScope.of(context).dayStartedOn(match.startedAt);
     return RunPageFrame(
       title: s.hallName,
-      sub: [s.other.hallName, kind, s.sessionDate(match.startedAt, day: day), line].join(' · '),
-      shortSub: [s.other.hallName, kind, s.sessionDay(match.startedAt, day: day)].join(' · '),
-      body: ReviewColumn(fillMinHeight: 0, fill: _Reads(match.reads), children: [_Summary(match)]),
-    );
-  }
-}
-
-/// How the match ended, the cards left and faults on each side, and how
-/// long it took.
-class _Summary extends StatelessWidget {
-  const _Summary(this.match);
-  final IkkiuchiMatchRecord match;
-
-  @override
-  Widget build(BuildContext context) {
-    final s = S.of(context);
-    return ReviewSlab(
-      flatTop: true,
-      child: FactGrid(perRow: IkkiuchiHistoryStyle.factsPerRow, [
-        Fact(s.ikkiuchiResult(match.result), s.ikkiuchiResultLabel),
-        Fact('${match.playerLeft}', s.ikkiuchiYourLeft),
-        Fact('${match.opponentLeft}', s.ikkiuchiTobiLeft),
-        Fact(formatMinutes(match.endedAt.difference(match.startedAt)), s.ikkiuchiMatchTime),
-        Fact('${match.playerFaults}', s.ikkiuchiYourFaults),
-        Fact('${match.opponentFaults}', s.ikkiuchiTobiFaults),
-      ]),
-    );
-  }
-}
-
-/// Every read in order: its card (tagged when a からふだ), who took it and
-/// whether it was a tie, and each side's time from the deciding sound
-/// with its faults under it. Rows Tobi took are marked.
-class _Reads extends StatelessWidget {
-  const _Reads(this.reads);
-  final List<IkkiuchiReadLog> reads;
-
-  @override
-  Widget build(BuildContext context) {
-    final s = S.of(context);
-    Widget side(Duration? take, int faults) => TaggedCell(
-          ReviewTable.cell(take == null
-              ? missingTime
-              : '${formatSeconds(take.inMicroseconds / Duration.microsecondsPerMillisecond)}s'),
-          faults == 0 ? null : s.ikkiuchiFaultCount(faults),
-          HistoryRunStyle.behind,
-          end: true,
-        );
-    Widget taken(IkkiuchiReadLog r) => TaggedCell(
-          ReviewTable.cell(
-              switch (r.taker) {
-                IkkiuchiSide.player => s.ikkiuchiYou,
-                IkkiuchiSide.opponent => s.ikkiuchiTobi,
-                null => missingTime,
-              },
-              strong: true),
-          r.tied ? s.ikkiuchiTied : null,
-          Palette.ink,
-        );
-    return ReviewSlab(
-      title: s.ikkiuchiReadsTitle,
-      sub: s.sub?.ikkiuchiReadsTitle,
-      note: s.ikkiuchiReadsNote(reads.length),
-      flatBottom: true,
-      expands: true,
-      child: reads.isEmpty
-          ? Text(s.ikkiuchiNoReads, style: ReviewTextStyle.caption)
-          : Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-              ReviewTable(
-                leading: 3,
-                inkHead: true,
-                stretch: 1,
-                head: [s.ikkiuchiColNumber, s.ikkiuchiColCard, s.ikkiuchiColTaken, s.ikkiuchiYou, s.ikkiuchiTobi],
-                rows: [
-                  for (final (i, r) in reads.indexed)
-                    ReviewRow(
-                      [
-                        ReviewTable.cell('${i + 1}'),
-                        TaggedCell(ReviewTable.cell(kimarijiFor(context, r.poemId), strong: true),
-                            r.karafuda ? s.ikkiuchiKarafuda : null, KarafudaStyle.tag),
-                        taken(r),
-                        side(r.playerTake, r.playerFaults),
-                        side(r.opponentTake, r.opponentFaults),
-                      ],
-                      marked: r.taker == IkkiuchiSide.opponent,
-                    ),
-                ],
-              ),
-              const SizedBox(height: Gaps.panel),
-              Text(s.ikkiuchiReadsCaption, style: ReviewTextStyle.caption),
-            ]),
+      sub: [s.other.hallName, kind, day, if (match.ranked) tobi else line].join(' · '),
+      shortSub: [s.other.hallName, kind, day, if (!match.ranked) tobi].join(' · '),
+      body: RunPageTabs(tabs: [for (final tab in tabs) tab.swipeTab(s, review, HistoryLooks.ikkiuchi)]),
     );
   }
 }

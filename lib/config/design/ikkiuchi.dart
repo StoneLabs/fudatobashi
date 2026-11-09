@@ -542,7 +542,57 @@ abstract final class IkkiuchiSheetLayout {
   static const double factsFont = 12;
 }
 
-/// A recorded match's page in History: the summary's facts to a row.
+/// A recorded match's page in History. The Overview's hero, Tobi on it
+/// smaller than on a run's; the cards shown in a panel's shelf. The Speed
+/// chart numbers every bar up to [allLabelsUpTo] reads, else every
+/// [labelEvery]th, and draws a take before the deciding sound as a sliver
+/// [earlyTakeMs] tall. The Field's cards [fieldPadding] inside its box;
+/// its 送り札: the dashed outline where each went, its word in [sentWord],
+/// and its arrow in [sentArrow]; a fault's chip in the step box. The
+/// rating's hero, [ratingHeight] tall, its lines [linesTop] down across
+/// the whole panel.
 abstract final class IkkiuchiHistoryStyle {
-  static const int factsPerRow = 3;
+  static const heroMetrics = HeroMetrics(
+    countTop: 52,
+    countFont: 80,
+    wordTop: 54,
+    plainWordTop: 66,
+    plainWordFont: 52,
+    wordWidth: 236,
+    subTop: 108,
+    timeTop: 66,
+    timeFont: 66,
+    tobi: Size(66, 79),
+    stampAt: Offset(122, 122),
+    topStampInset: Offset(0, 16),
+  );
+  static const int shownCards = SummaryPanelLayout.perLine;
+
+  static const int allLabelsUpTo = 16;
+  static const int labelEvery = 5;
+  static const double earlyTakeMs = 20;
+
+  static const double fieldPadding = 6;
+  static const List<double> sentDash = [3, 3];
+  static const Color sentWord = HistoryRunStyle.muted;
+  static const Color sentArrow = Palette.ink;
+  static const Color faultChip = Palette.ink;
+  static const Color faultChipText = Palette.paper;
+
+  static const ratingMetrics = HeroMetrics(
+    countTop: 52,
+    countFont: 80,
+    wordTop: 54,
+    plainWordTop: 66,
+    plainWordFont: 52,
+    wordWidth: 236,
+    subTop: 108,
+    timeTop: 66,
+    timeFont: 66,
+    tobi: Size(70, 83),
+    stampAt: Offset(122, 122),
+    bodyWidth: 324,
+  );
+  static const double ratingHeight = 222;
+  static const double linesTop = 44;
 }

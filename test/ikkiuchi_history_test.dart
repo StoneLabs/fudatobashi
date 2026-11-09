@@ -1,6 +1,6 @@
 // 一騎打ち in History: the page's History button opens History on the
 // matches' tab, newest first, each row with its result, score, setup and
-// faults; a row opens the match's page, its summary and its reads.
+// faults; a row opens the match's page, its overview and its reads.
 import 'dart:io';
 
 import 'package:drift/drift.dart' show driftRuntimeOptions;
@@ -13,6 +13,7 @@ import 'package:fudatobashi/data/fuda_sets.dart';
 import 'package:fudatobashi/data/islands.dart';
 import 'package:fudatobashi/data/poem.dart';
 import 'package:fudatobashi/db/database.dart';
+import 'package:fudatobashi/domain/ikkiuchi_layout.dart';
 import 'package:fudatobashi/domain/ikkiuchi_match.dart';
 import 'package:fudatobashi/domain/ikkiuchi_record.dart';
 import 'package:fudatobashi/domain/ikkiuchi_side.dart';
@@ -75,15 +76,22 @@ void main() {
 
   Future<Progress> seeded(WidgetTester tester) {
     final now = DateTime.now();
+    // Tobi's 下段 holds 87 and 18, the player's 5 and 6.
+    const field = IkkiuchiLaidField(opponent: [IkkiuchiRow([87, 18], [])], player: [IkkiuchiRow([5], [6])]);
+    final after = field.without(87);
     return opened(tester, [
       match(now.subtract(const Duration(days: 3)), 2, 0, ranked: true),
       match(now.subtract(const Duration(hours: 1)), 4, 3, completed: false),
       match(now, 0, 3, reads: [
         IkkiuchiReadLog.of(87, const IkkiuchiReadEnd(taker: player, cardSide: tobi),
-            playerTake: const Duration(milliseconds: 640), opponentTake: const Duration(milliseconds: 910)),
-        IkkiuchiReadLog.of(77, const IkkiuchiReadEnd(playerFaults: {tobi})),
+            playerTake: const Duration(milliseconds: 640),
+            opponentTake: const Duration(milliseconds: 910),
+            field: field),
+        IkkiuchiReadLog.of(77, const IkkiuchiReadEnd(playerFaults: {tobi}), field: after),
         IkkiuchiReadLog.of(18, const IkkiuchiReadEnd(taker: tobi, cardSide: tobi, tied: true, tobiFaults: {player}),
-            playerTake: const Duration(milliseconds: 500), opponentTake: const Duration(milliseconds: 500)),
+            playerTake: const Duration(milliseconds: 500),
+            opponentTake: const Duration(milliseconds: 500),
+            field: after),
       ]),
     ]);
   }
@@ -135,15 +143,22 @@ void main() {
 
     await tap(tester, won);
     expect(find.byType(IkkiuchiMatchPage), findsOneWidget);
+    expect(find.text('+3'), findsOneWidget, reason: 'the margin');
+    expect(find.text(s.ikkiuchiResult(IkkiuchiResult.won).toUpperCase()), findsOneWidget);
+    expect(tester.takeException(), isNull);
+    await captureScreen(tester, 'ikkiuchi_history/match');
+
+    await tap(tester, find.text(s.ikkiuchiTabReads));
+    await tester.pumpAndSettle();
     expect(find.text(s.ikkiuchiReadsNote(3)), findsOneWidget);
     expect(find.text(kimarijiFor(tester.element(find.byType(IkkiuchiMatchPage)), 87)), findsOneWidget);
     expect(find.text('0.64s'), findsOneWidget);
     expect(find.text('0.91s'), findsOneWidget);
     expect(find.text(s.ikkiuchiKarafuda.toUpperCase()), findsOneWidget);
-    expect(find.text(s.ikkiuchiTied.toUpperCase()), findsOneWidget);
+    expect(find.text(s.ikkiuchiTied), findsOneWidget);
     expect(find.text(s.ikkiuchiFaultCount(1).toUpperCase()), findsNWidgets(2));
     expect(tester.takeException(), isNull);
-    await captureScreen(tester, 'ikkiuchi_history/match');
+    await captureScreen(tester, 'ikkiuchi_history/match', variant: 'reads');
   });
 
   testWidgets('a match after midnight is dated by its practice day on its page, as History lists it', (tester) async {

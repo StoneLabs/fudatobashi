@@ -42,7 +42,8 @@ class FieldWordCard extends StatelessWidget {
     return DecoratedBox(
       decoration: BoxDecoration(
         color: fill,
-        border: Border.all(color: Palette.ink, width: current ? FieldReviewStyle.highlight : FieldReviewStyle.cardBorder),
+        border: Border.all(
+            color: Palette.ink, width: current ? FieldReviewStyle.highlight : FieldReviewStyle.cardBorder),
       ),
       child: Padding(
         padding: FieldReviewStyle.cardPadding,
