@@ -218,19 +218,33 @@ class IkkiuchiReadEnd {
     return (from: net > 0 ? IkkiuchiSide.player : IkkiuchiSide.opponent, count: net.abs());
   }
 
-  /// What the read's end says, in order: 同時 or からふだ, who took it, the
+  /// What the read's end says (see [calloutsOf]).
+  List<IkkiuchiCallout> get callouts => calloutsOf(
+      tied: tied,
+      karafuda: cardSide == null,
+      taker: taker,
+      playerFaults: playerFaults.length,
+      tobiFaults: tobiFaults.length);
+
+  /// What a read's end says, in order: 同時 or からふだ, who took it, the
   /// player's fault, then Tobi's; a fault on both sides of a からふだ is a
   /// double one.
-  List<IkkiuchiCallout> get callouts => [
+  static List<IkkiuchiCallout> calloutsOf(
+          {required bool tied,
+          required bool karafuda,
+          required IkkiuchiSide? taker,
+          required int playerFaults,
+          required int tobiFaults}) =>
+      [
         if (tied) IkkiuchiCallout.tied,
-        if (cardSide == null) IkkiuchiCallout.karafuda,
+        if (karafuda) IkkiuchiCallout.karafuda,
         if (taker case final taker?) taker == IkkiuchiSide.player ? IkkiuchiCallout.youTook : IkkiuchiCallout.tobiTook,
-        ...switch (playerFaults.length) {
+        ...switch (playerFaults) {
           0 => const <IkkiuchiCallout>[],
           1 => const [IkkiuchiCallout.yourFault],
           _ => const [IkkiuchiCallout.yourDoubleFault],
         },
-        ...switch (tobiFaults.length) {
+        ...switch (tobiFaults) {
           0 => const <IkkiuchiCallout>[],
           1 => const [IkkiuchiCallout.tobiFault],
           _ => const [IkkiuchiCallout.tobiDoubleFault],

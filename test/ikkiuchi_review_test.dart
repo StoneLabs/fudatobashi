@@ -13,7 +13,9 @@ import 'package:fudatobashi/data/fuda_sets.dart';
 import 'package:fudatobashi/data/poem.dart';
 import 'package:fudatobashi/db/database.dart';
 import 'package:fudatobashi/domain/field_parts.dart';
+import 'package:fudatobashi/domain/ikkiuchi_field.dart';
 import 'package:fudatobashi/domain/ikkiuchi_layout.dart';
+import 'package:fudatobashi/domain/ikkiuchi_match.dart';
 import 'package:fudatobashi/domain/ikkiuchi_rating.dart';
 import 'package:fudatobashi/domain/ikkiuchi_record.dart';
 import 'package:fudatobashi/domain/ikkiuchi_review.dart';
@@ -162,6 +164,28 @@ void main() {
         [<int>[], <int>[], <int>[]],
       ],
     }, reason: '64 taken, 3 laid on the player\'s 中段');
+  });
+
+  test('the replay\'s field: a 送り札 laid where it went beside where it lay, every row kept as it empties', () {
+    const spot = IkkiuchiSpot(opponent, FieldRow.lower, RowPart.left, 0);
+    final laid = afterTwo.laidAt(10, spot);
+    expect(laid.cardsOf(player), afterTwo.cardsOf(player), reason: 'still where it lay');
+    expect(laid.opponent.first.left, [10]);
+    expect(afterTwo.without(10).laidAt(10, spot).toJson(), afterTwo.withSent(sentTen).toJson());
+
+    final empty = IkkiuchiField(tobi: afterTwo.opponent, player: afterTwo.without(12).player);
+    final kept = IkkiuchiField(tobi: afterTwo.opponent, player: afterTwo.without(12).player, keepRows: true);
+    expect(kept.halfHeight, greaterThan(empty.halfHeight), reason: 'the player\'s emptied 上段 keeps its place');
+  });
+
+  test('a read says how it ended, as the match\'s banner said it', () {
+    expect([for (final r in reads) r.callouts], [
+      [IkkiuchiCallout.youTook, IkkiuchiCallout.yourFault],
+      [IkkiuchiCallout.tied, IkkiuchiCallout.tobiTook],
+      [IkkiuchiCallout.karafuda, IkkiuchiCallout.tobiFault],
+      [IkkiuchiCallout.youTook],
+      [IkkiuchiCallout.tobiTook],
+    ]);
   });
 
   test('the takes by side and by row: the field cards read lying there, and those the player took', () {

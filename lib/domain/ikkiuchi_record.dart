@@ -153,21 +153,26 @@ class IkkiuchiLaidField {
     final from = spotOf(sent.card)?.side;
     if (from == null) return this;
     final to = from == IkkiuchiSide.opponent ? IkkiuchiSide.player : IkkiuchiSide.opponent;
-    final rest = without(sent.card);
+    return without(sent.card).laidAt(sent.card, IkkiuchiSpot(to, sent.row, sent.part, sent.index));
+  }
+
+  /// The field with [card] laid at [spot] too, wherever else it lies; a
+  /// place past the end of its part is the part's end.
+  IkkiuchiLaidField laidAt(int card, IkkiuchiSpot spot) {
     final rows = [
-      ...rest.of(to),
-      for (var r = rest.of(to).length; r <= sent.row.index; r++) const IkkiuchiRow([], []),
+      ...of(spot.side),
+      for (var r = of(spot.side).length; r <= spot.row.index; r++) const IkkiuchiRow([], []),
     ];
     final parts = [
-      for (final part in RowPart.values) [..._part(rows[sent.row.index], part)],
+      for (final part in RowPart.values) [..._part(rows[spot.row.index], part)],
     ];
-    final into = parts[sent.part.index];
-    into.insert(sent.index.clamp(0, into.length), sent.card);
-    rows[sent.row.index] =
+    final into = parts[spot.part.index];
+    into.insert(spot.index.clamp(0, into.length), card);
+    rows[spot.row.index] =
         IkkiuchiRow(parts[RowPart.left.index], parts[RowPart.right.index], middle: parts[RowPart.middle.index]);
-    return to == IkkiuchiSide.opponent
-        ? IkkiuchiLaidField(opponent: rows, player: rest.player)
-        : IkkiuchiLaidField(opponent: rest.opponent, player: rows);
+    return spot.side == IkkiuchiSide.opponent
+        ? IkkiuchiLaidField(opponent: rows, player: player)
+        : IkkiuchiLaidField(opponent: opponent, player: rows);
   }
 
   static List<int> _part(IkkiuchiRow row, RowPart part) => switch (part) {
@@ -283,6 +288,10 @@ class IkkiuchiReadLog {
   final List<IkkiuchiSent> sends;
 
   bool get karafuda => cardSide == null;
+
+  /// What its end said, as the match's banner said it.
+  List<IkkiuchiCallout> get callouts => IkkiuchiReadEnd.calloutsOf(
+      tied: tied, karafuda: karafuda, taker: taker, playerFaults: playerFaults, tobiFaults: opponentFaults);
 
   /// When [side] reached the card; null for one who never did.
   Duration? takeOf(IkkiuchiSide side) => side == IkkiuchiSide.player ? playerTake : opponentTake;

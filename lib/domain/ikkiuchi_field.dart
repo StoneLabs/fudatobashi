@@ -12,12 +12,15 @@ import 'ikkiuchi_side.dart';
 /// [leastGap]. Cards in a row's open middle spread evenly over the room
 /// between the places at its groups' inner ends, the field never so narrow
 /// that they come nearer the groups than [IkkiuchiPlacingTuning.middleMargin]
-/// pitches. Only the rows some side uses are shown.
+/// pitches. Only the rows some side uses are shown, or with [keepRows]
+/// every row either side has, so that a field emptying keeps its rows in
+/// place.
 class IkkiuchiField {
-  IkkiuchiField({required this.tobi, required this.player, this.rowGap = IkkiuchiFieldTuning.rowGap})
+  IkkiuchiField(
+      {required this.tobi, required this.player, this.rowGap = IkkiuchiFieldTuning.rowGap, bool keepRows = false})
       : _shown = [
           for (var r = 0; r < math.max(tobi.length, player.length); r++)
-            if ([tobi, player].any((side) => r < side.length && side[r].length > 0)) r,
+            if (keepRows || [tobi, player].any((side) => r < side.length && side[r].length > 0)) r,
         ];
 
   /// Each side's rows as its owner sees them, 下段 first, each group from
