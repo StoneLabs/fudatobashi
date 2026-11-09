@@ -100,6 +100,8 @@ void main() {
     if (!renderScreens) return;
     await _loadFont('Dela', ['DelaGothicOne-Regular.ttf']);
     await _loadFont('Reggae', ['ReggaeOne-Regular.ttf']);
+    await _loadFont('Torifuda', ['YujiSyuku-Regular.ttf']);
+    await _loadFont('TorifudaNumber', ['TeXGyreSchola-Regular.otf']);
     await _loadFont('ZenKaku', [
       'ZenKakuGothicNew-Regular.ttf',
       'ZenKakuGothicNew-Medium.ttf',
@@ -827,6 +829,57 @@ void main() {
       await tester.pump();
       await tester.pump();
       await captureScreen(tester, 'ikkiuchi_page/$screen', lang: lang);
+    }
+
+    // Runs the match on by [time], frame by frame.
+    Future<void> play(WidgetTester tester, Duration time) async {
+      const frame = Duration(milliseconds: 50);
+      for (var t = Duration.zero; t < time; t += frame) {
+        await tester.pump(frame);
+      }
+    }
+
+    // A match of 1, 2 or 3 rows on the user's phone: as it opens, Tobi
+    // laying out his side; every card placed, 完了 blinking; and a read with
+    // few cards left, the cards taken off the sides by hand.
+    for (final rows in [1, 2, 3]) {
+      testWidgets('match_${rows}row', (tester) async {
+        final perSide = switch (rows) {
+          1 => IkkiuchiLayoutTuning.oneRowUpTo,
+          2 => IkkiuchiLayoutTuning.twoRowsUpTo,
+          _ => IkkiuchiRankedTuning.perSide,
+        };
+        final p = await open(tester, lang: 'ja');
+        await showPage(tester, p, phone: usersPhoneLandscape);
+        final setup = IkkiuchiSetup.free(opponentRating: 1600, perSide: perSide, memorise: const Duration(minutes: 15));
+        unawaited(Navigator.of(tester.element(find.byType(IkkiuchiPage)))
+            .push(MangaRoute<void>(builder: (_) => IkkiuchiMatchScreen(setup: setup, seed: 3, rows: rows))));
+        await tester.pump();
+        await tester.pump(Motion.route);
+        final flow = screen(tester).flow!, scene = flow.scene;
+        await play(tester, const Duration(seconds: 6));
+        await capture(tester, 'match_${rows}row_1_start', 'ja');
+
+        scene.opening.placeRest();
+        await play(tester, IkkiuchiColumnStyle.blinkPeriod * 2);
+        await capture(tester, 'match_${rows}row_2_placed', 'ja');
+
+        flow.donePlacing();
+        scene.opening.finishTobi();
+        var sides = scene.sides!;
+        while (sides.tobiCards.length > 3 || sides.playerCards.length > 2) {
+          final card = sides.playerCards.length > 2 ? sides.playerCards.first : sides.tobiCards.first;
+          scene.relayout(sides.without(card));
+          sides = scene.sides!;
+        }
+        await play(tester, IkkiuchiPlayTuning.relayoutGlide * 2);
+        await toFirstRead(tester, flow);
+        await play(tester, const Duration(milliseconds: 1500));
+        await capture(tester, 'match_${rows}row_3_few_left', 'ja');
+        expect(tester.takeException(), isNull);
+        await leave(tester);
+        await tester.pumpWidget(const SizedBox());
+      });
     }
 
     for (final phone in [widePhone, usersPhone]) {
