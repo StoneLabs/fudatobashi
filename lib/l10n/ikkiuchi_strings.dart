@@ -85,12 +85,13 @@ extension IkkiuchiStrings on S {
   String get ikkiuchiPlacementTitle => t('ikkiuchiPlacementTitle');
   String get ikkiuchiPlacementNext => t('ikkiuchiPlacementNext');
 
-  /// A ranked mode's name.
+  /// A ranked mode's name, and a ranked match of it as History names it.
   String ikkiuchiModeName(IkkiuchiMode mode) => switch (mode) {
         IkkiuchiMode.bullet => t('ikkiuchiBullet'),
         IkkiuchiMode.blitz => t('ikkiuchiBlitz'),
         IkkiuchiMode.rapid => t('ikkiuchiRapid'),
       };
+  String ikkiuchiModeRanked(IkkiuchiMode mode) => f('ikkiuchiModeRanked', [ikkiuchiModeName(mode)]);
 
   /// Settings › 寄り道 › 一騎打ち: the rows [mode]'s ranked matches are laid
   /// out in, and a choice of [n] rows.

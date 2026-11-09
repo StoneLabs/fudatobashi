@@ -17,7 +17,6 @@ import '../../l10n/home_strings.dart';
 import '../../l10n/ikkiuchi_strings.dart';
 import '../../l10n/results_strings.dart';
 import '../../l10n/run_strings.dart';
-import '../../l10n/side_trip_strings.dart';
 import '../../l10n/strings.dart';
 import '../../l10n/teiichi_review_strings.dart';
 import '../../state/past_runs.dart';
@@ -740,9 +739,9 @@ class _PlacingRow extends StatelessWidget {
   }
 }
 
-/// A 一騎打ち match: ranked or free, how it ended, its setup over its
-/// faults (kept on one line, shrunk to fit), and the cards left on each side,
-/// the player's first.
+/// A 一騎打ち match: its kind (a ranked mode or custom), how it ended, its
+/// setup over its faults (kept on one line, shrunk to fit), and the cards
+/// left on each side, the player's first.
 class _MatchRow extends StatelessWidget {
   const _MatchRow(this.match);
   final IkkiuchiMatchRecord match;
@@ -757,7 +756,7 @@ class _MatchRow extends StatelessWidget {
       startedAt: match.startedAt,
       tags: [
         _TagLine([
-          KindTag(match.ranked ? s.sideTripRanked : s.freePlay, look: HistoryLooks.ikkiuchi),
+          KindTag(ikkiuchiKindLabel(s, match), look: HistoryLooks.ikkiuchi),
           switch (match.result) {
             IkkiuchiResult.won => ResultBadge(result, color: Palette.landSoft, cheer: true),
             IkkiuchiResult.lost || IkkiuchiResult.gaveUp => ResultBadge(result, muted: true),

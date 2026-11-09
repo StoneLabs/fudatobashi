@@ -3,9 +3,11 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 
 import '../../config/design.dart';
+import '../../domain/ikkiuchi_record.dart';
 import '../../domain/teiichi_review.dart';
 import '../../l10n/ankiren_strings.dart';
 import '../../l10n/history_strings.dart';
+import '../../l10n/ikkiuchi_strings.dart';
 import '../../l10n/run_strings.dart';
 import '../../l10n/side_trip_strings.dart';
 import '../../l10n/strings.dart';
@@ -98,6 +100,12 @@ String teiichiKindLabel(S s, TeiichiGameRecord game) => switch ((game.ranked, ga
       (true, _) => s.sideTripRanked,
       (false, final int level) => s.ankirenLevelTag(level),
       (false, null) => s.historyPracticeCustom,
+    };
+
+/// A 一騎打ち match's kind: a ranked match of its mode, or custom.
+String ikkiuchiKindLabel(S s, IkkiuchiMatchRecord match) => switch (match.setup.mode) {
+      final mode? when match.ranked => s.ikkiuchiModeRanked(mode),
+      _ => s.ikkiuchiCustom,
     };
 
 /// A small result badge beside a run's kind: a placement, a new class, a

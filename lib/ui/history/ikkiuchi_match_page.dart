@@ -14,6 +14,7 @@ import '../../state/scope.dart';
 import '../../state/xp_history.dart';
 import '../manga/manga.dart';
 import '../play/time_format.dart';
+import 'history_widgets.dart';
 import 'ikkiuchi_field_tab.dart';
 import 'ikkiuchi_overview_tab.dart';
 import 'ikkiuchi_rating_tab.dart';
@@ -29,9 +30,9 @@ Future<void> openIkkiuchiMatch(BuildContext context, IkkiuchiMatchRecord match) 
 
 /// A recorded 一騎打ち match, tab by tab: its overview, the field replayed
 /// read by read, the speed of the takes, the rating and the experience it
-/// earned, and every read. Its header names its kind, the practice day it
-/// counts to (as History lists it) and Tobi's rating, a free match's
-/// setup too.
+/// earned, and every read. Its header names its kind (a ranked match of its
+/// mode, or custom), the practice day it counts to (as History lists it)
+/// and Tobi's rating, a free match's setup too.
 class IkkiuchiMatchPage extends StatelessWidget {
   const IkkiuchiMatchPage({super.key, required this.review});
 
@@ -55,7 +56,7 @@ class IkkiuchiMatchPage extends StatelessWidget {
     final s = S.of(context);
     final match = review.match;
     final setup = match.setup;
-    final kind = match.ranked ? s.sideTripRanked : s.freePlay;
+    final kind = ikkiuchiKindLabel(s, match);
     final day = s.sessionDay(match.startedAt, day: ProgressScope.of(context).dayStartedOn(match.startedAt));
     final tobi = s.ikkiuchiTobiAt(setup.opponentRating.round());
     final line = s.ikkiuchiSetupLine(setup.perSide, formatMinutes(setup.memorise), setup.opponentRating.round());

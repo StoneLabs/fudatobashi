@@ -1808,6 +1808,7 @@
   "ikkiuchiBullet": "Bullet",
   "ikkiuchiBlitz": "Blitz",
   "ikkiuchiRapid": "Rapid",
+  "ikkiuchiModeRanked": "Ranked {0}",
   "ikkiuchiRowsTitle": "{0} rows",
   "ikkiuchiRowsNote": "How many rows to lay out {0}'s cards in",
   "ikkiuchiRowsKey": "{0} rows",

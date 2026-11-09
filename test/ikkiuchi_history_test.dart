@@ -1,6 +1,7 @@
 // 一騎打ち in History: the page's History button opens History on the
-// matches' tab, newest first, each row with its result, score, setup and
-// faults; a row opens the match's page, its overview and its reads.
+// matches' tab, newest first, each row with its kind, result, score, setup
+// and faults; the filter keeps the kinds picked (a ranked mode, or custom);
+// a row opens the match's page, its overview and its reads.
 import 'dart:io';
 
 import 'package:drift/drift.dart' show driftRuntimeOptions;
@@ -141,6 +142,8 @@ void main() {
     expect(find.textContaining(s.ikkiuchiSetupLine(5, '2:00', 1200)), findsWidgets);
     expect(find.textContaining(s.ikkiuchiFaultsLine(1, 1)), findsOneWidget);
     expect(find.text(s.historyToday), findsWidgets);
+    expect(inHistory(find.text(s.ikkiuchiModeRanked(IkkiuchiMode.blitz))), findsOneWidget);
+    expect(inHistory(find.text(s.ikkiuchiCustom)), findsNWidgets(2));
     expect(tester.takeException(), isNull);
     await captureScreen(tester, 'ikkiuchi_history/list');
 
@@ -162,6 +165,57 @@ void main() {
     expect(find.text(s.ikkiuchiFaultCount(1).toUpperCase()), findsNWidgets(2));
     expect(tester.takeException(), isNull);
     await captureScreen(tester, 'ikkiuchi_history/match', variant: 'reads');
+  });
+
+  testWidgets('the filter offers each ranked mode and custom, and keeps the kinds picked', (tester) async {
+    final now = DateTime.now();
+    final p = await opened(tester, [
+      match(now.subtract(const Duration(hours: 3)), 0, 2, mode: IkkiuchiMode.bullet),
+      match(now.subtract(const Duration(hours: 2)), 1, 0, mode: IkkiuchiMode.rapid),
+      match(now.subtract(const Duration(hours: 1)), 0, 1),
+    ]);
+    await showPage(tester, p);
+    await tap(tester, find.byWidgetPredicate((w) => w is InkIconButton && w.semanticLabel == s.history));
+    Finder inHistory(Finder f) => find.descendant(of: find.byType(HistoryScreen), matching: f);
+    expect([for (final k in IkkiuchiKind.values) k.label(s)], [
+      for (final mode in IkkiuchiMode.values) s.ikkiuchiModeName(mode),
+      s.ikkiuchiCustom,
+    ]);
+
+    await tester.tap(find.byWidgetPredicate((w) => w is InkIconButton && w.semanticLabel == s.historyFilterLabel));
+    await tester.pumpAndSettle();
+    for (final kind in IkkiuchiKind.values) {
+      expect(find.widgetWithText(FilterChipBox, kind.label(s)), findsOneWidget);
+    }
+    await tester.tap(find.widgetWithText(FilterChipBox, s.ikkiuchiModeName(IkkiuchiMode.rapid)));
+    await tester.tap(find.widgetWithText(FilterChipBox, s.ikkiuchiCustom));
+    await tester.pump();
+    expect(find.text(s.filterShow(2)), findsOneWidget);
+    await captureScreen(tester, 'ikkiuchi_history/filter');
+    await tester.tap(find.text(s.filterShow(2)));
+    await tester.pumpAndSettle();
+
+    expect(inHistory(find.text('1–0')), findsOneWidget, reason: 'Rapid');
+    expect(inHistory(find.text('0–1')), findsOneWidget, reason: 'custom');
+    expect(inHistory(find.text('0–2')), findsNothing, reason: 'Bullet');
+    expect(inHistory(find.text(s.ikkiuchiModeRanked(IkkiuchiMode.rapid))), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets("a ranked match's page names its mode, a free one's custom", (tester) async {
+    final now = DateTime.now();
+    final p = await opened(tester, [
+      match(now.subtract(const Duration(hours: 1)), 0, 2, mode: IkkiuchiMode.blitz),
+      match(now, 0, 1),
+    ]);
+    await showPage(tester, p);
+    await tap(tester, find.byWidgetPredicate((w) => w is InkIconButton && w.semanticLabel == s.history));
+    for (final (score, kind) in [('0–2', s.ikkiuchiModeRanked(IkkiuchiMode.blitz)), ('0–1', s.ikkiuchiCustom)]) {
+      await tap(tester, find.text(score));
+      expect(find.textContaining(' · ${kind.toUpperCase()} · '), findsOneWidget, reason: kind);
+      Navigator.of(tester.element(find.byType(IkkiuchiMatchPage))).pop();
+      await tester.pumpAndSettle();
+    }
   });
 
   testWidgets('a match after midnight is dated by its practice day on its page, as History lists it', (tester) async {
