@@ -195,6 +195,12 @@ class SettingsScreen extends StatelessWidget {
                               onTap: () => Navigator.push(
                                   context, MangaRoute<void>(builder: (_) => const TeiichiSettingsScreen())),
                             ),
+                            SettingsTapRow(
+                              title: s.hallName,
+                              opensPage: true,
+                              onTap: () => Navigator.push(
+                                  context, MangaRoute<void>(builder: (_) => const IkkiuchiSettingsScreen())),
+                            ),
                           ]),
                         ],
                       ),

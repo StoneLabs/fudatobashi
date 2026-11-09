@@ -92,6 +92,12 @@ extension IkkiuchiStrings on S {
         IkkiuchiMode.rapid => t('ikkiuchiRapid'),
       };
 
+  /// Settings › 寄り道 › 一騎打ち: the rows [mode]'s ranked matches are laid
+  /// out in, and a choice of [n] rows.
+  String ikkiuchiRowsTitle(IkkiuchiMode mode) => f('ikkiuchiRowsTitle', [ikkiuchiModeName(mode)]);
+  String ikkiuchiRowsNote(IkkiuchiMode mode) => f('ikkiuchiRowsNote', [ikkiuchiModeName(mode)]);
+  String ikkiuchiRowsKey(int n) => f(countKey('ikkiuchiRowsKey', n), [n]);
+
   /// The page's custom panel: its tag, the button to its sheet, its facts'
   /// labels, the templates of the cards a side ({0}×2) and the からふだ read,
   /// the burst that plays [n] a side, and the field preview's label.

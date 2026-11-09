@@ -2,8 +2,10 @@ import 'package:flutter/material.dart';
 
 import '../../config/design.dart';
 import '../../config/vector_art.dart';
+import '../../domain/ikkiuchi_mode.dart';
 import '../../domain/side_trips.dart';
 import '../../l10n/ankiren_strings.dart';
+import '../../l10n/ikkiuchi_strings.dart';
 import '../../l10n/side_trip_strings.dart';
 import '../../l10n/strings.dart';
 import '../../l10n/teiichi_strings.dart';
@@ -23,7 +25,7 @@ class AnkirenSettingsScreen extends StatelessWidget {
     final progress = ProgressScope.of(context);
     final a = progress.settings.ankiren;
     void update(AnkirenSettings next) => progress.updateSettings(progress.settings.copyWith(ankiren: next));
-    return _TripSettings(SideTrip.ankiren, children: [
+    return _TripSettings(s.tripName(SideTrip.ankiren), sub: s.tripBanner(SideTrip.ankiren), children: [
       SettingsChoices(
         label: SettingsLabel(title: s.ankirenLayout, note: s.ankirenLayoutNote),
         side: true,
@@ -63,7 +65,7 @@ class TeiichiSettingsScreen extends StatelessWidget {
     final s = S.of(context);
     final progress = ProgressScope.of(context);
     final settings = progress.settings;
-    return _TripSettings(SideTrip.teiichi, children: [
+    return _TripSettings(s.tripName(SideTrip.teiichi), sub: s.tripBanner(SideTrip.teiichi), children: [
       SettingsGroup(children: [
         SettingsSwitch(
           title: s.teiichiAutoTurn,
@@ -76,13 +78,41 @@ class TeiichiSettingsScreen extends StatelessWidget {
   }
 }
 
-/// A side trip's settings page: its name over its [children], one under
-/// the other, each followed by a section's gap, scrolling when they do not
-/// fit.
-class _TripSettings extends StatelessWidget {
-  const _TripSettings(this.trip, {required this.children});
+/// Settings › 寄り道 › 一騎打ち: the rows each ranked mode that offers a
+/// choice is laid out in.
+class IkkiuchiSettingsScreen extends StatelessWidget {
+  const IkkiuchiSettingsScreen({super.key});
 
-  final SideTrip trip;
+  @override
+  Widget build(BuildContext context) {
+    final s = S.of(context);
+    final progress = ProgressScope.of(context);
+    final settings = progress.settings;
+    final k = settings.ikkiuchi;
+    return _TripSettings(s.hallName, sub: s.hallTag, children: [
+      for (final mode in IkkiuchiMode.values)
+        if (mode.rowChoices.length > 1)
+          SettingsChoices(
+            label: SettingsLabel(title: s.ikkiuchiRowsTitle(mode), note: s.ikkiuchiRowsNote(mode)),
+            side: true,
+            options: [
+              for (final rows in mode.rowChoices)
+                SettingsOption(s.ikkiuchiRowsKey(rows),
+                    selected: k.rowsOf(mode) == rows,
+                    onTap: () => progress.updateSettings(settings.copyWith(ikkiuchi: k.withRows(mode, rows)))),
+            ],
+          ),
+    ]);
+  }
+}
+
+/// A side trip's settings page: its [title] and [sub] over its [children],
+/// one under the other, each followed by a section's gap, scrolling when
+/// they do not fit.
+class _TripSettings extends StatelessWidget {
+  const _TripSettings(this.title, {required this.sub, required this.children});
+
+  final String title, sub;
   final List<Widget> children;
 
   @override
@@ -97,7 +127,7 @@ class _TripSettings extends StatelessWidget {
             children: [
               const SizedBox(height: HeaderStyle.topGap),
               MangaHeader(
-                title: ScreenTitle(s.tripName(trip), sub: s.tripBanner(trip)),
+                title: ScreenTitle(title, sub: sub),
                 actions: [
                   InkIconButton(icon: IconArt.back, semanticLabel: s.back, onTap: () => Navigator.maybePop(context)),
                 ],

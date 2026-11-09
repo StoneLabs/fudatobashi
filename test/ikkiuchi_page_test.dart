@@ -10,8 +10,9 @@
 // read and again after every read. Ranked plays the mode of the tab opened
 // last, in the rows Settings › 寄り道 › 一騎打ち picks for it.
 //
-// With RENDER_SCREENS=1 it also renders the page in its states and the
-// custom sheet, with real fonts and art, to build/screens/ikkiuchi_page/.
+// With RENDER_SCREENS=1 it also renders the page in its states, the custom
+// sheet and the settings, with real fonts and art, to
+// build/screens/ikkiuchi_page/.
 import 'dart:async';
 import 'dart:io';
 
@@ -57,6 +58,8 @@ import 'package:fudatobashi/ui/ikkiuchi/ikkiuchi_match_column.dart';
 import 'package:fudatobashi/ui/ikkiuchi/ikkiuchi_match_layers.dart';
 import 'package:fudatobashi/ui/ikkiuchi/ikkiuchi_match_screen.dart';
 import 'package:fudatobashi/ui/manga/manga.dart';
+import 'package:fudatobashi/ui/settings/settings_rows.dart';
+import 'package:fudatobashi/ui/settings/side_trip_settings_screen.dart';
 import 'package:fudatobashi/ui/side_trips/trip_sheet.dart';
 import 'package:fudatobashi/ui/side_trips/ikkiuchi_page.dart';
 import 'package:fudatobashi/ui/side_trips/side_trip_panels.dart';
@@ -779,6 +782,37 @@ void main() {
     expect(p.ikkiuchi.counts(ranked: true), (played: 1, won: 0, lost: 1));
     expect(await journal(tester, p), isNull, reason: 'recording it clears the journal');
     await tester.pumpWidget(const SizedBox());
+  });
+
+  group('settings', () {
+    for (final lang in ['en', 'ja']) {
+      testWidgets('Settings › Side trips › Ikkiuchi: the rows of Bullet and Blitz, not Rapid; a pick is kept ($lang)',
+          (tester) async {
+        final s = S(lang);
+        final p = await open(tester, lang: lang);
+        await showPage(tester, p, page: const IkkiuchiSettingsScreen());
+        Finder option(IkkiuchiMode mode, int rows) => find.descendant(
+            of: find.ancestor(of: find.text(s.ikkiuchiRowsTitle(mode)), matching: find.byType(SettingsChoices)),
+            matching: find.widgetWithText(InkButton, s.ikkiuchiRowsKey(rows)));
+        expect(find.text(s.ikkiuchiRowsTitle(IkkiuchiMode.rapid)), findsNothing);
+        for (final mode in [IkkiuchiMode.bullet, IkkiuchiMode.blitz]) {
+          expect(find.text(s.ikkiuchiRowsNote(mode)), findsOneWidget);
+          for (final rows in [1, 2, 3]) {
+            expect(option(mode, rows), mode.rowChoices.contains(rows) ? findsOneWidget : findsNothing,
+                reason: '${mode.name}, $rows rows');
+          }
+        }
+        expect([for (final mode in IkkiuchiMode.values) p.settings.ikkiuchi.rowsOf(mode)], [1, 2, 3]);
+        expect(tester.takeException(), isNull);
+        await captureScreen(tester, 'ikkiuchi_page/settings', lang: lang);
+
+        await tester.tap(option(IkkiuchiMode.bullet, 3));
+        await tester.pump();
+        expect([for (final mode in IkkiuchiMode.values) p.settings.ikkiuchi.rowsOf(mode)], [3, 2, 3]);
+        expect(p.settings.ikkiuchi.tab, IkkiuchiMode.rapid, reason: 'the tab is left as it was');
+        await tester.pumpWidget(const SizedBox());
+      });
+    }
   });
 
   group('leaving', () {
