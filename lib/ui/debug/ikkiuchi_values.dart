@@ -5,21 +5,18 @@ import '../../domain/ikkiuchi_rating.dart';
 import '../../domain/ikkiuchi_tobi.dart';
 import '../../domain/truncated_normal.dart';
 import '../../domain/tuning_curve.dart';
-import '../play/time_format.dart';
 import 'ikkiuchi_groups_dealt.dart';
 
 /// How one of Tobi's values reads, alone, as a range, and on a graph's axis.
 enum IkkiuchiUnit {
   ms,
   percent,
-  plain,
-  minutes;
+  plain;
 
   String format(double v) => switch (this) {
         ms => v >= Duration.millisecondsPerSecond ? '${_seconds(v)} s' : '${v.round()} ms',
         percent => '${_percent(v)}%',
         plain => v.toStringAsFixed(2),
-        minutes => formatMinutes(Duration(milliseconds: (v * Duration.millisecondsPerSecond).round())),
       };
 
   /// [lo] to [hi], the unit written once; one value when both read alike.
@@ -29,7 +26,7 @@ enum IkkiuchiUnit {
       ms when hi < Duration.millisecondsPerSecond => '${lo.round()}–${hi.round()} ms',
       ms => '${_seconds(lo)}–${_seconds(hi)} s',
       percent => '${_percent(lo)}–${_percent(hi)}%',
-      plain || minutes => '${format(lo)}–${format(hi)}',
+      plain => '${format(lo)}–${format(hi)}',
     };
   }
 
@@ -40,7 +37,6 @@ enum IkkiuchiUnit {
       ms => v >= Duration.millisecondsPerSecond ? '${_trim(v / Duration.millisecondsPerSecond)} s' : '${v.round()} ms',
       percent => '${_trim(v * 100)}%',
       plain => _trim(v),
-      minutes => format(v),
     };
   }
 
@@ -259,10 +255,10 @@ final ikkiuchiValueGroups = [
         'correction', IkkiuchiUnit.ms, IkkiuchiTuning.correction.inMilliseconds.toDouble()),
   ]),
   IkkiuchiValueGroup('Placing', [
-    IkkiuchiValue('placing time', IkkiuchiUnit.minutes, (t) => t.placingSeconds,
-        curve: IkkiuchiTuning.placingSeconds,
-        graph: const IkkiuchiGraph('Placing time', 'Time he takes to lay out his side before the match. '
-            'Interpolated on a log scale.')),
+    IkkiuchiValue('placing per card', IkkiuchiUnit.ms, (t) => t.placingMsPerCard,
+        curve: IkkiuchiTuning.placingMsPerCard,
+        graph: const IkkiuchiGraph('Placing time per card', 'Time he takes to lay down each card of his side before '
+            'the match; his whole side takes this times his cards. Interpolated on a log scale.')),
     IkkiuchiValue('sound grouping', IkkiuchiUnit.percent, (t) => t.soundGrouping,
         curve: IkkiuchiLayoutTuning.soundGrouping,
         anyInGame: IkkiuchiValue(ikkiuchiAnyInGame, IkkiuchiUnit.percent,

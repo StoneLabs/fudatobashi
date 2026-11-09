@@ -66,10 +66,11 @@ abstract final class IkkiuchiTuning {
   /// stays on his side); otherwise he sends a random card.
   static const smartSend = TuningCurve([(0, 0), (800, 0), (2000, 0.5), (2800, 0.85), (3600, 0.95)]);
 
-  /// How long he takes to lay out his side before the match, while the
-  /// player lays out theirs, in seconds.
-  static const placingSeconds = TuningCurve.log([
-    (0, 100), (1000, 78), (1800, 55), (2400, 39), (2786, 30), (3600, 24),
+  /// How long he takes to lay down each card of his side before the match,
+  /// while the player lays out theirs, ms: his whole side takes this for
+  /// every card on it.
+  static const placingMsPerCard = TuningCurve.log([
+    (0, 4000), (1000, 3120), (1800, 2200), (2400, 1560), (2786, 1200), (3600, 960),
   ]);
 
   /// His arm move for each card, drawn at random: the clean row sweep (払い)
@@ -498,9 +499,9 @@ abstract final class IkkiuchiReaderTuning {
 /// (`IkkiuchiMatchColumn`). Once it is over the players thank each other
 /// ([thanks]), and its result shows for [result] at most. The match runs
 /// on frame by frame, by [longestStep] at most at once. Tobi lays out his
-/// side in his placing time (`IkkiuchiTuning.placingSeconds`), squeezed
-/// when it is longer, so that he is done [tobiPlacingLead] before the
-/// memory time is up.
+/// side in his placing time (`IkkiuchiTuning.placingMsPerCard` for each of
+/// his cards), squeezed when it is longer, so that he is done
+/// [tobiPlacingLead] before the memory time is up.
 abstract final class IkkiuchiMatchTuning {
   static const Duration memorise = Duration(minutes: 15);
   static const Duration tobiPlacingLead = Duration(seconds: 5);

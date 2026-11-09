@@ -47,7 +47,10 @@ class IkkiuchiTobi {
   /// The take's animation from the start of his reach to the hit, ms.
   double get reachMs => IkkiuchiTuning.reachMs.at(rating);
   double get smartSend => IkkiuchiTuning.smartSend.at(rating);
-  double get placingSeconds => IkkiuchiTuning.placingSeconds.at(rating);
+
+  /// How long he takes to lay down each card of his side as a match opens,
+  /// ms.
+  double get placingMsPerCard => IkkiuchiTuning.placingMsPerCard.at(rating);
 
   /// The chances that, in a match, his layout keeps one group of cards
   /// with the same first sound together, and one family of 友札 side by

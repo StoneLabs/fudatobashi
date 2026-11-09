@@ -114,16 +114,26 @@ void main() {
       expect({for (var seed = 0; seed < 5; seed++) order(seed).join(',')}.length, greaterThan(1), reason: 'not fixed');
     });
 
-    test('his placing time is his curve at his rating, squeezed to end before a short memory time', () {
-      const lead = IkkiuchiMatchTuning.tobiPlacingLead;
+    test('his placing time is his time per card at his rating for each card, squeezed to end before a short memory time',
+        () {
+      const lead = IkkiuchiMatchTuning.tobiPlacingLead, full = Duration(minutes: 15);
       for (final rating in [0.0, 1600.0, 3600.0]) {
-        final own = IkkiuchiTobi(rating).placingSeconds * 1000;
-        expect(IkkiuchiTobiOpening.msFor(rating, const Duration(minutes: 15)), closeTo(own, 1e-6),
-            reason: 'rating $rating: a full memory time leaves it as it is');
+        final perCard = IkkiuchiTobi(rating).placingMsPerCard;
+        for (final cards in [1, 8, 25]) {
+          expect(IkkiuchiTobiOpening.msFor(rating, cards: cards, memorise: full), closeTo(perCard * cards, 1e-6),
+              reason: 'rating $rating, $cards cards: a full memory time leaves it as it is');
+        }
       }
       const minute = Duration(minutes: 1);
-      expect(IkkiuchiTobi(0).placingSeconds * 1000, greaterThan(minute.inMilliseconds), reason: 'slower than a minute');
-      expect(IkkiuchiTobiOpening.msFor(0, minute), (minute - lead).inMilliseconds);
+      expect(IkkiuchiTobi(0).placingMsPerCard * 25, greaterThan(minute.inMilliseconds), reason: 'slower than a minute');
+      expect(IkkiuchiTobiOpening.msFor(0, cards: 25, memorise: minute), (minute - lead).inMilliseconds);
+    });
+
+    test('with fewer cards he is done sooner, each card laid down as quickly', () {
+      final flow = match(12, rating: 1600, perSide: 8);
+      final perCard = IkkiuchiTobi(1600).placingMsPerCard;
+      runUntil(flow, () => flow.scene.opening.tobiDone);
+      expect(flow.scene.board.now, closeTo(8 * perCard, 2 * frame), reason: 'his 8 cards, each in his time per card');
     });
 
     test('each card has its share of his time, his arm no longer on it than a carry and in its shares', () {
@@ -160,7 +170,7 @@ void main() {
     test('Tobi lays his cards down one by one at their homes, and is done after his placing time', () {
       final flow = match(2, rating: 2600);
       final scene = flow.scene, opening = scene.opening;
-      final ms = IkkiuchiTobiOpening.msFor(2600, IkkiuchiMatchTuning.memorise);
+      final ms = IkkiuchiTobiOpening.msFor(2600, cards: 25, memorise: IkkiuchiMatchTuning.memorise);
       run(flow, ms / 2);
       final half = tobiDown(scene).length;
       expect(half, inInclusiveRange(11, 13), reason: 'about half his cards down');

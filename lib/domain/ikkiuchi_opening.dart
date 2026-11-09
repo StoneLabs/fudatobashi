@@ -35,12 +35,12 @@ class IkkiuchiTobiOpening {
         for (final row in side) ...[...row.left, ...row.middle, ...row.right],
       ]..shuffle(rng);
 
-  /// His placing time at [rating], in his form, ms: his placing time
-  /// (`IkkiuchiTuning.placingSeconds`), squeezed when a short [memorise]
-  /// needs it so that he is done [IkkiuchiMatchTuning.tobiPlacingLead]
-  /// before it is up.
-  static double msFor(double rating, Duration memorise) {
-    final own = IkkiuchiTobi(rating).placingSeconds * Duration.millisecondsPerSecond;
+  /// His placing time at [rating], in his form, for his [cards], ms: his
+  /// time per card (`IkkiuchiTuning.placingMsPerCard`) for each, squeezed
+  /// when a short [memorise] needs it so that he is done
+  /// [IkkiuchiMatchTuning.tobiPlacingLead] before it is up.
+  static double msFor(double rating, {required int cards, required Duration memorise}) {
+    final own = IkkiuchiTobi(rating).placingMsPerCard * cards;
     final room = (memorise - IkkiuchiMatchTuning.tobiPlacingLead).inMicroseconds / Duration.microsecondsPerMillisecond;
     return math.max(0.0, math.min(own, room));
   }

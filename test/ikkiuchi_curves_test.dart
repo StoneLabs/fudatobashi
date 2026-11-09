@@ -15,7 +15,7 @@ void main() {
       'armMs': IkkiuchiTuning.armMs,
       'reachMs': IkkiuchiTuning.reachMs,
       'smartSend': IkkiuchiTuning.smartSend,
-      'placingSeconds': IkkiuchiTuning.placingSeconds,
+      'placingMsPerCard': IkkiuchiTuning.placingMsPerCard,
       'sweepShare': IkkiuchiTuning.sweepShare,
       'soundGrouping': IkkiuchiLayoutTuning.soundGrouping,
       'tomofudaGrouping': IkkiuchiLayoutTuning.tomofudaGrouping,
@@ -44,7 +44,7 @@ void main() {
     });
 
     test('times read on a log scale, chances and shares on a plain one', () {
-      for (final curve in [IkkiuchiTuning.takeMs, IkkiuchiTuning.searchMs, IkkiuchiTuning.armMs]) {
+      for (final curve in [IkkiuchiTuning.takeMs, IkkiuchiTuning.searchMs, IkkiuchiTuning.armMs, IkkiuchiTuning.placingMsPerCard]) {
         expect(curve.scale, CurveScale.log);
       }
       for (final curve in [IkkiuchiTuning.blankChance, IkkiuchiTuning.lookAlikePull, IkkiuchiTuning.sweepShare]) {

@@ -103,7 +103,8 @@ class IkkiuchiMatchFlow extends ChangeNotifier {
       for (final id in away)
         if (!ordered.contains(id)) id,
     ];
-    scene.opening.startTobi(IkkiuchiTobiOpening.msFor(scene.tobiRating, memorise));
+    scene.opening
+        .startTobi(IkkiuchiTobiOpening.msFor(scene.tobiRating, cards: sides.tobiCards.length, memorise: memorise));
     scene.send.onSent = _noteSent;
     _enter(IkkiuchiStage.placing);
   }
