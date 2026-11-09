@@ -69,14 +69,11 @@ extension IkkiuchiStrings on S {
   String get ikkiuchiEntryLine => t('ikkiuchiEntryLine');
   String get ikkiuchiPageTitle => t('ikkiuchiPageTitle');
 
-  /// How a match ended for the player, won or lost; also the page's
-  /// played placement matches.
+  /// How a match ended for the player, won or lost.
   String get ikkiuchiWon => t('ikkiuchiWon');
   String get ikkiuchiLost => t('ikkiuchiLost');
 
-  /// The page's class strip: the wins of the last ranked matches, and the
-  /// average card margin.
-  String get ikkiuchiWins => t('ikkiuchiWins');
+  /// A match's card margin.
   String get ikkiuchiMargin => t('ikkiuchiMargin');
 
   /// The page's mode box: a tab's cards a side ([n]), placement's label,
@@ -124,15 +121,13 @@ extension IkkiuchiStrings on S {
   String ikkiuchiRowsNote(IkkiuchiMode mode) => f('ikkiuchiRowsNote', [ikkiuchiModeName(mode)]);
   String ikkiuchiRowsKey(int n) => f(countKey('ikkiuchiRowsKey', n), [n]);
 
-  /// The page's custom panel: its tag, the button to its sheet, its facts'
-  /// labels, the templates of the cards a side ({0}×2) and the からふだ read,
-  /// the burst that plays [n] a side, and the field preview's label.
+  /// Custom matches: their name, Tobi's rating, the cards a side as a
+  /// label and as a template ({0}×2), the burst that plays [n] a side, and
+  /// the field preview's label.
   String get ikkiuchiCustom => t('ikkiuchiCustom');
-  String get ikkiuchiCustomSetup => t('ikkiuchiCustomSetup');
   String get ikkiuchiTobiRating => t('ikkiuchiTobiRating');
   String get ikkiuchiPerSide => t('ikkiuchiPerSide');
   String get ikkiuchiPerSideCount => t('ikkiuchiPerSideCount');
-  String get ikkiuchiKarafudaLine => t('ikkiuchiKarafudaLine');
   String ikkiuchiPlayCards(int n) => f('ikkiuchiPlayCards', [n]);
   String ikkiuchiPreviewLabel(int n) => f('ikkiuchiPreviewLabel', [n]);
 

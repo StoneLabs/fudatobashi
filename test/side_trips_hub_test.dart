@@ -761,10 +761,10 @@ void main() {
       expect(inEntry(find.text(s.sideTripUnranked)), findsOneWidget, reason: 'Rapid still placing');
       expect(
           [
-            for (final f in [find.text(s.ikkiuchiWins), find.byType(RatingChangeTag), find.byType(Sticker)]) inEntry(f),
+            for (final f in [find.byType(RatingChangeTag), find.byType(Sticker)]) inEntry(f),
           ],
           everyElement(findsNothing),
-          reason: 'no wins, change or class stamp');
+          reason: 'no change or class stamp');
       final x = [for (final mode in IkkiuchiMode.values) tester.getCenter(inEntry(find.text(s.ikkiuchiModeName(mode)))).dx];
       expect(x, orderedEquals([...x]..sort()), reason: 'side by side, Bullet first');
       expect(tester.takeException(), isNull);
