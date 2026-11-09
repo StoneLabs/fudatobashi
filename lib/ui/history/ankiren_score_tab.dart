@@ -176,9 +176,11 @@ class RatingHero extends StatelessWidget {
         bar: [BarPart(Palette.sea, progress.fraction), BarPart(Palette.paper, 1 - progress.fraction)],
         ticks: [if (then.band.id == band.id) then.fraction],
         labels: [
-          BarLabel(next == null
-              ? name
-              : '$name · ${s.ankirenClassAt((next.minRating - after).ceil(), next, r(next.minRating))}'),
+          BarLabel(
+              next == null
+                  ? name
+                  : '$name · ${s.ankirenClassAt((next.minRating - after).ceil(), next, r(next.minRating))}',
+              keep: true),
         ],
         pose: null,
       ),

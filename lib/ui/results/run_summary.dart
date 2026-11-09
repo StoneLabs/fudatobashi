@@ -37,14 +37,16 @@ class BarPart {
 /// for it runs on over the parts after it with [runOn], or else sits just
 /// past it when the bar's empty rest follows, with no label of its own; any
 /// other label that doesn't fit inside its part, or beside the ones before
-/// it, is left out.
+/// it, is left out, but for one to [keep]: that one lies over the wider of
+/// its part and the bar's rest anyway, from that one's outer end and across
+/// the rule between them.
 @immutable
 class BarLabel {
-  const BarLabel(this.text, {this.part = 0, this.end = false, this.runOn = false, this.color});
+  const BarLabel(this.text, {this.part = 0, this.end = false, this.runOn = false, this.keep = false, this.color});
 
   final String text;
   final int part;
-  final bool end, runOn;
+  final bool end, runOn, keep;
 
   /// Its text's colour, ink when null.
   final Color? color;
@@ -399,7 +401,14 @@ class HeroPanel extends StatelessWidget {
           if (left < t.$2 + inset && left + w + inset > t.$1) left = t.$2 + inset;
         }
       }
-      if (left < lo || left + w > hi || clashes(left, left + w)) continue;
+      if (left < lo || left + w > hi || clashes(left, left + w)) {
+        if (!label.keep) continue;
+        final (ownLo, ownHi) = room(label.part);
+        final (restLo, restHi) = room(rest);
+        left = ownHi - ownLo >= restHi - restLo ? ownLo : restHi - w;
+        left = math.max(start, math.min(left, width - start - w));
+        if (clashes(left, left + w)) continue;
+      }
       taken.add((left, left + w));
       placed.add(Positioned(
         left: left,
