@@ -759,6 +759,109 @@ abstract final class IkkiuchiSheetLayout {
   static const double factsFont = 12;
 }
 
+/// 一騎打ち's custom page (`ikkiuchi_custom_page.dart`): one panel [panelTop]
+/// under the header, its top-left corner [cut] down, its blocks [padding]
+/// inside it, and [bottomGap] under it when the page scrolls.
+///
+/// Each setting's label at [labelFont] in a row [labelHeight] tall, the
+/// other language's at [labelSubFont] with [labelSubTracking], [labelSubGap]
+/// after it; [barGap] under it its keys, joined in one bar: a [barBorder]
+/// ink outline, [keyRule] ink rules between the keys, each [keyHeight] tall
+/// ([rowKeyHeight] for the rows), its name in display type at [keyFont]
+/// over its value at [keySubFont], [keySubGap] apart. The chosen key is
+/// [chosen] inside a [chosenRing] ink ring; a shut one is hatched, bands
+/// of [hatchLight] [hatchBand] wide and of [hatchDark] [hatchLine] wide,
+/// its type in [shut] with a lock [lockSize] big, [lockInset] from its top
+/// right corner.
+///
+/// A stepper, [barGap] under the keys, beside its label at [fineFont]:
+/// [stepperHeight] tall in a [barBorder] outline, − and + [stepperButton]
+/// wide (their rules within) round the value [stepperValueWidth] wide, in
+/// display type at [valueFont] with its unit at [unitFont]; held down it
+/// steps on every [repeatEvery]. Between the settings, a [splitHeight]
+/// rule in [split], [splitAbove] under the one before and [splitBelow]
+/// over the next. Under the rows' keys, [whyGap] down, why some are shut,
+/// at [whyFont] in rows [whyLineHeight] tall, the count in display type.
+/// The memory time's label at [labelFont] over the other language's at
+/// [labelSubFont], [memorySubGap] apart.
+///
+/// Then the setup in brief, [summaryTop] down: a picture of the field
+/// [picture] big (see [pictureGround] …), [summaryGap] from two lines at
+/// [summaryFont] in rows [summaryLineHeight] tall, numbers in display type
+/// at [summaryNumberFont]; and the burst in [burstMargin].
+///
+/// The picture: the field's ground under the match's tatami in an ink
+/// frame [pictureBorder] wide, the cards [picturePadding] inside it; the
+/// band [pictureBand] tall in paper with ink rules [pictureBandRule] wide,
+/// [pictureBandGap] from the cards; every card face down in the card
+/// frame's green with a [pictureCardEdge] ink edge.
+abstract final class IkkiuchiCustomLayout {
+  static const double panelTop = 10;
+  static const double cut = 12;
+  static const EdgeInsets padding = EdgeInsets.fromLTRB(16, 16, 16, 2);
+  static const double bottomGap = 12;
+
+  static const double labelHeight = 20;
+  static const double labelFont = 13;
+  static const double labelSubFont = 10.5;
+  static const double labelSubTracking = 1.6;
+  static const double labelSubGap = 6;
+
+  static const double barGap = 8;
+  static const double barBorder = 2.5;
+  static const double keyRule = 2;
+  static const double keyHeight = 48;
+  static const double rowKeyHeight = 52;
+  static const double keyFont = 17;
+  static const double keySubFont = 10.5;
+  static const double keySubGap = 4;
+  static const Color chosen = Palette.sun;
+  static const double chosenRing = 2;
+  static const Color hatchLight = Color(0xFFEFEDE9);
+  static const Color hatchDark = Palette.desk;
+  static const double hatchBand = 5;
+  static const double hatchLine = 2;
+  static const Color shut = Color(0xFF9B978F);
+  static const double lockSize = 12;
+  static const double lockStroke = 2.6;
+  static const Offset lockInset = Offset(5, 4);
+
+  static const double fineFont = 12.5;
+  static const double stepperHeight = 48;
+  static const double stepperButton = 48;
+  static const double stepperValueWidth = 116;
+  static const double signFont = 20;
+  static const double valueFont = 25;
+  static const double unitFont = 12;
+  static const Duration repeatEvery = Duration(milliseconds: 90);
+
+  static const double splitHeight = 2;
+  static const Color split = Color(0xFFC9C6BF);
+  static const double splitAbove = 12;
+  static const double splitBelow = 10;
+
+  static const double whyGap = 7;
+  static const double whyFont = 12;
+  static const double whyLineHeight = 1.4;
+  static const double memorySubGap = 3;
+
+  static const double summaryTop = 12;
+  static const Size picture = Size(86, 50);
+  static const double summaryGap = 12;
+  static const double summaryFont = 12.5;
+  static const double summaryLineHeight = 1.5;
+  static const double summaryNumberFont = 14;
+  static const EdgeInsets burstMargin = EdgeInsets.fromLTRB(0, 10, 0, 8);
+
+  static const Color pictureGround = Color(0xFF99A083);
+  static const double pictureBorder = Strokes.control;
+  static const double picturePadding = 0.5;
+  static const double pictureBand = 5;
+  static const double pictureBandRule = 1;
+  static const double pictureBandGap = 1.5;
+  static const double pictureCardEdge = 0.7;
+}
+
 /// A recorded match's page in History. The Overview's hero, Tobi on it
 /// smaller than on a run's; the cards shown in a panel's shelf. The Speed
 /// chart numbers every bar up to [allLabelsUpTo] reads, else every

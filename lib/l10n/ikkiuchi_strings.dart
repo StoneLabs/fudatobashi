@@ -140,6 +140,26 @@ extension IkkiuchiStrings on S {
   String get ikkiuchiGuestMode => t('ikkiuchiGuestMode');
   String get ikkiuchiGuestLine => t('ikkiuchiGuestLine');
 
+  /// The custom page: its header's tag, the steppers' label and buttons,
+  /// the rows' label and a key's most cards a side ([n]); why some rows
+  /// are shut, when every row takes up to [oneRow] cards, when one row
+  /// takes [oneRow] and the rest fit, and when only the most rows fit (two
+  /// taking [twoRows]), the count of cards a side left as {0} for the page
+  /// to set in display type; then the templates of the setup in brief: the
+  /// cards a side ({0}) in [rows] rows ({1}), and the memory time ({0},
+  /// m:ss) against Tobi at his rating ({1}).
+  String get ikkiuchiCustomTag => t('ikkiuchiCustomTag');
+  String get ikkiuchiFineTune => t('ikkiuchiFineTune');
+  String get ikkiuchiLess => t('ikkiuchiLess');
+  String get ikkiuchiMore => t('ikkiuchiMore');
+  String get ikkiuchiRows => t('ikkiuchiRows');
+  String ikkiuchiRowsUpTo(int n) => f('ikkiuchiRowsUpTo', [n]);
+  String ikkiuchiRowsAny(int oneRow) => f('ikkiuchiRowsAny', [oneRow]);
+  String ikkiuchiRowsFromTwo(int oneRow) => f('ikkiuchiRowsFromTwo', ['{0}', oneRow]);
+  String ikkiuchiRowsOnlyThree(int twoRows, int oneRow) => f('ikkiuchiRowsOnlyThree', ['{0}', twoRows, oneRow]);
+  String ikkiuchiCustomCards(int rows) => t(countKey('ikkiuchiCustomCards', rows));
+  String get ikkiuchiCustomTimes => t('ikkiuchiCustomTimes');
+
   /// The rules (遊び方): the match, how it is won, 送り札, faults, からふだ
   /// ([karafuda] for every [field] cards), ranked's modes (each mode's
   /// cards a side and memory time, in [IkkiuchiMode]'s order), placement
