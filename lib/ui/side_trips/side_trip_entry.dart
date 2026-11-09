@@ -406,21 +406,25 @@ class _Label extends StatelessWidget {
       );
 }
 
-/// A [label] over its [value], both shrinking rather than overflowing.
+/// A [label] over its [value], both on one line, shrinking rather than
+/// overflowing (or wrapping, which would make the row as tall as wrapped).
 class _Stat extends StatelessWidget {
   const _Stat({required this.label, required this.value});
 
   final Widget label, value;
 
   @override
-  Widget build(BuildContext context) => Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          FittedBox(fit: BoxFit.scaleDown, alignment: Alignment.centerLeft, child: label),
-          const SizedBox(height: SideTripsLayout.labelGap),
-          FittedBox(fit: BoxFit.scaleDown, alignment: Alignment.centerLeft, child: value),
-        ],
+  Widget build(BuildContext context) => DefaultTextStyle.merge(
+        softWrap: false,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            FittedBox(fit: BoxFit.scaleDown, alignment: Alignment.centerLeft, child: label),
+            const SizedBox(height: SideTripsLayout.labelGap),
+            FittedBox(fit: BoxFit.scaleDown, alignment: Alignment.centerLeft, child: value),
+          ],
+        ),
       );
 }
 
