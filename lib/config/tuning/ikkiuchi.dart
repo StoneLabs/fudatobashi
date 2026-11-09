@@ -581,6 +581,19 @@ abstract final class IkkiuchiRankedTuning {
   static const int drawSeed = 1601;
 }
 
+/// 一騎打ち's experience (`IkkiuchiXp`): [perCard] for every card the player
+/// took, a tie they won among them. A match played to its end earns
+/// [clear], a win [winPerCard] for every card dealt to a side, and a ranked
+/// match [ranked]; the ranked match that ends placement earns [placement]
+/// once. A match given up earns only its cards.
+abstract final class IkkiuchiXpTuning {
+  static const int perCard = 200;
+  static const int winPerCard = 40;
+  static const int clear = 20;
+  static const int ranked = 500;
+  static const int placement = 500;
+}
+
 /// The match screen (`IkkiuchiMatchScreen`), ranked or free: the rows a
 /// side is laid out in; the seeds a deal is drawn from, and the offset that
 /// draws the player's side apart from Tobi's; and the system bars hidden

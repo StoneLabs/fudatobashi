@@ -1508,9 +1508,10 @@ class Progress extends ChangeNotifier {
   }
 
   /// Stores a 一騎打ち match once it is over, on the practice day it started
-  /// on (see [IkkiuchiRecords.record]), and clears a ranked match's
-  /// journal. Returns it as stored.
-  Future<IkkiuchiMatchRecord> recordIkkiuchi(IkkiuchiMatchRecord match) async {
+  /// on (see [IkkiuchiRecords.record]), clears a ranked match's journal and
+  /// adds up the experience it earned.
+  Future<IkkiuchiReport> recordIkkiuchi(IkkiuchiMatchRecord match) async {
+    final ledger = xp;
     final day = await _storeDay(match.startedAt);
     await _ikkiuchiJournalSaved;
     final stored = await db.transaction(() async {
@@ -1518,8 +1519,9 @@ class Progress extends ChangeNotifier {
       await _drop(_ikkiuchiJournalKey);
       return stored;
     });
+    final gain = ledger.addSettled(stored.xp!);
     notifyListeners();
-    return stored;
+    return IkkiuchiReport(match: stored, xp: gain);
   }
 
   /// Saves a ranked 一騎打ち [match] as it stands, not completed, once its

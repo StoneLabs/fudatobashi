@@ -431,6 +431,8 @@
   "xpSourceRanked": "Ranked game",
   "xpSourcePlacement": "Placement done",
   "xpSourceExam": "Graduation exam",
+  "xpSourceTaken": "Cards taken",
+  "xpSourceWon": "Win",
   "xpCountTimes": "×{0}",
   "levelUpBand": "LEVEL UP",
   "levelsGained": "+{0} LEVELS",

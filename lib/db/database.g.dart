@@ -6037,6 +6037,15 @@ class $IkkiuchiMatchesTable extends IkkiuchiMatches
     type: DriftSqlType.double,
     requiredDuringInsert: false,
   );
+  static const VerificationMeta _xpMeta = const VerificationMeta('xp');
+  @override
+  late final GeneratedColumn<String> xp = GeneratedColumn<String>(
+    'xp',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
   @override
   List<GeneratedColumn> get $columns => [
     id,
@@ -6052,6 +6061,7 @@ class $IkkiuchiMatchesTable extends IkkiuchiMatches
     playerLeft,
     opponentLeft,
     rating,
+    xp,
   ];
   @override
   String get aliasedName => _alias ?? actualTableName;
@@ -6160,6 +6170,11 @@ class $IkkiuchiMatchesTable extends IkkiuchiMatches
         rating.isAcceptableOrUnknown(data['rating']!, _ratingMeta),
       );
     }
+    if (data.containsKey('xp')) {
+      context.handle(_xpMeta, xp.isAcceptableOrUnknown(data['xp']!, _xpMeta));
+    } else if (isInserting) {
+      context.missing(_xpMeta);
+    }
     return context;
   }
 
@@ -6223,6 +6238,10 @@ class $IkkiuchiMatchesTable extends IkkiuchiMatches
         DriftSqlType.double,
         data['${effectivePrefix}rating'],
       ),
+      xp: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}xp'],
+      )!,
     );
   }
 
@@ -6270,6 +6289,10 @@ class IkkiuchiMatchRow extends DataClass
 
   /// The player's 一騎打ち rating after it; null for free play.
   final double? rating;
+
+  /// The experience it earned, settled as it was stored, as JSON
+  /// (`XpAward`).
+  final String xp;
   const IkkiuchiMatchRow({
     required this.id,
     required this.startedAt,
@@ -6284,6 +6307,7 @@ class IkkiuchiMatchRow extends DataClass
     required this.playerLeft,
     required this.opponentLeft,
     this.rating,
+    required this.xp,
   });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
@@ -6307,6 +6331,7 @@ class IkkiuchiMatchRow extends DataClass
     if (!nullToAbsent || rating != null) {
       map['rating'] = Variable<double>(rating);
     }
+    map['xp'] = Variable<String>(xp);
     return map;
   }
 
@@ -6327,6 +6352,7 @@ class IkkiuchiMatchRow extends DataClass
       rating: rating == null && nullToAbsent
           ? const Value.absent()
           : Value(rating),
+      xp: Value(xp),
     );
   }
 
@@ -6351,6 +6377,7 @@ class IkkiuchiMatchRow extends DataClass
       playerLeft: serializer.fromJson<int>(json['playerLeft']),
       opponentLeft: serializer.fromJson<int>(json['opponentLeft']),
       rating: serializer.fromJson<double?>(json['rating']),
+      xp: serializer.fromJson<String>(json['xp']),
     );
   }
   @override
@@ -6372,6 +6399,7 @@ class IkkiuchiMatchRow extends DataClass
       'playerLeft': serializer.toJson<int>(playerLeft),
       'opponentLeft': serializer.toJson<int>(opponentLeft),
       'rating': serializer.toJson<double?>(rating),
+      'xp': serializer.toJson<String>(xp),
     };
   }
 
@@ -6389,6 +6417,7 @@ class IkkiuchiMatchRow extends DataClass
     int? playerLeft,
     int? opponentLeft,
     Value<double?> rating = const Value.absent(),
+    String? xp,
   }) => IkkiuchiMatchRow(
     id: id ?? this.id,
     startedAt: startedAt ?? this.startedAt,
@@ -6403,6 +6432,7 @@ class IkkiuchiMatchRow extends DataClass
     playerLeft: playerLeft ?? this.playerLeft,
     opponentLeft: opponentLeft ?? this.opponentLeft,
     rating: rating.present ? rating.value : this.rating,
+    xp: xp ?? this.xp,
   );
   IkkiuchiMatchRow copyWithCompanion(IkkiuchiMatchesCompanion data) {
     return IkkiuchiMatchRow(
@@ -6427,6 +6457,7 @@ class IkkiuchiMatchRow extends DataClass
           ? data.opponentLeft.value
           : this.opponentLeft,
       rating: data.rating.present ? data.rating.value : this.rating,
+      xp: data.xp.present ? data.xp.value : this.xp,
     );
   }
 
@@ -6445,7 +6476,8 @@ class IkkiuchiMatchRow extends DataClass
           ..write('completed: $completed, ')
           ..write('playerLeft: $playerLeft, ')
           ..write('opponentLeft: $opponentLeft, ')
-          ..write('rating: $rating')
+          ..write('rating: $rating, ')
+          ..write('xp: $xp')
           ..write(')'))
         .toString();
   }
@@ -6465,6 +6497,7 @@ class IkkiuchiMatchRow extends DataClass
     playerLeft,
     opponentLeft,
     rating,
+    xp,
   );
   @override
   bool operator ==(Object other) =>
@@ -6482,7 +6515,8 @@ class IkkiuchiMatchRow extends DataClass
           other.completed == this.completed &&
           other.playerLeft == this.playerLeft &&
           other.opponentLeft == this.opponentLeft &&
-          other.rating == this.rating);
+          other.rating == this.rating &&
+          other.xp == this.xp);
 }
 
 class IkkiuchiMatchesCompanion extends UpdateCompanion<IkkiuchiMatchRow> {
@@ -6499,6 +6533,7 @@ class IkkiuchiMatchesCompanion extends UpdateCompanion<IkkiuchiMatchRow> {
   final Value<int> playerLeft;
   final Value<int> opponentLeft;
   final Value<double?> rating;
+  final Value<String> xp;
   const IkkiuchiMatchesCompanion({
     this.id = const Value.absent(),
     this.startedAt = const Value.absent(),
@@ -6513,6 +6548,7 @@ class IkkiuchiMatchesCompanion extends UpdateCompanion<IkkiuchiMatchRow> {
     this.playerLeft = const Value.absent(),
     this.opponentLeft = const Value.absent(),
     this.rating = const Value.absent(),
+    this.xp = const Value.absent(),
   });
   IkkiuchiMatchesCompanion.insert({
     this.id = const Value.absent(),
@@ -6528,6 +6564,7 @@ class IkkiuchiMatchesCompanion extends UpdateCompanion<IkkiuchiMatchRow> {
     required int playerLeft,
     required int opponentLeft,
     this.rating = const Value.absent(),
+    required String xp,
   }) : startedAt = Value(startedAt),
        endedAt = Value(endedAt),
        day = Value(day),
@@ -6538,7 +6575,8 @@ class IkkiuchiMatchesCompanion extends UpdateCompanion<IkkiuchiMatchRow> {
        opponentRating = Value(opponentRating),
        completed = Value(completed),
        playerLeft = Value(playerLeft),
-       opponentLeft = Value(opponentLeft);
+       opponentLeft = Value(opponentLeft),
+       xp = Value(xp);
   static Insertable<IkkiuchiMatchRow> custom({
     Expression<int>? id,
     Expression<DateTime>? startedAt,
@@ -6553,6 +6591,7 @@ class IkkiuchiMatchesCompanion extends UpdateCompanion<IkkiuchiMatchRow> {
     Expression<int>? playerLeft,
     Expression<int>? opponentLeft,
     Expression<double>? rating,
+    Expression<String>? xp,
   }) {
     return RawValuesInsertable({
       if (id != null) 'id': id,
@@ -6568,6 +6607,7 @@ class IkkiuchiMatchesCompanion extends UpdateCompanion<IkkiuchiMatchRow> {
       if (playerLeft != null) 'player_left': playerLeft,
       if (opponentLeft != null) 'opponent_left': opponentLeft,
       if (rating != null) 'rating': rating,
+      if (xp != null) 'xp': xp,
     });
   }
 
@@ -6585,6 +6625,7 @@ class IkkiuchiMatchesCompanion extends UpdateCompanion<IkkiuchiMatchRow> {
     Value<int>? playerLeft,
     Value<int>? opponentLeft,
     Value<double?>? rating,
+    Value<String>? xp,
   }) {
     return IkkiuchiMatchesCompanion(
       id: id ?? this.id,
@@ -6600,6 +6641,7 @@ class IkkiuchiMatchesCompanion extends UpdateCompanion<IkkiuchiMatchRow> {
       playerLeft: playerLeft ?? this.playerLeft,
       opponentLeft: opponentLeft ?? this.opponentLeft,
       rating: rating ?? this.rating,
+      xp: xp ?? this.xp,
     );
   }
 
@@ -6647,6 +6689,9 @@ class IkkiuchiMatchesCompanion extends UpdateCompanion<IkkiuchiMatchRow> {
     if (rating.present) {
       map['rating'] = Variable<double>(rating.value);
     }
+    if (xp.present) {
+      map['xp'] = Variable<String>(xp.value);
+    }
     return map;
   }
 
@@ -6665,7 +6710,8 @@ class IkkiuchiMatchesCompanion extends UpdateCompanion<IkkiuchiMatchRow> {
           ..write('completed: $completed, ')
           ..write('playerLeft: $playerLeft, ')
           ..write('opponentLeft: $opponentLeft, ')
-          ..write('rating: $rating')
+          ..write('rating: $rating, ')
+          ..write('xp: $xp')
           ..write(')'))
         .toString();
   }
@@ -12176,6 +12222,7 @@ typedef $$IkkiuchiMatchesTableCreateCompanionBuilder =
       required int playerLeft,
       required int opponentLeft,
       Value<double?> rating,
+      required String xp,
     });
 typedef $$IkkiuchiMatchesTableUpdateCompanionBuilder =
     IkkiuchiMatchesCompanion Function({
@@ -12192,6 +12239,7 @@ typedef $$IkkiuchiMatchesTableUpdateCompanionBuilder =
       Value<int> playerLeft,
       Value<int> opponentLeft,
       Value<double?> rating,
+      Value<String> xp,
     });
 
 final class $$IkkiuchiMatchesTableReferences
@@ -12306,6 +12354,11 @@ class $$IkkiuchiMatchesTableFilterComposer
 
   ColumnFilters<double> get rating => $composableBuilder(
     column: $table.rating,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get xp => $composableBuilder(
+    column: $table.xp,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -12427,6 +12480,11 @@ class $$IkkiuchiMatchesTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<String> get xp => $composableBuilder(
+    column: $table.xp,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   $$DaysTableOrderingComposer get day {
     final $$DaysTableOrderingComposer composer = $composerBuilder(
       composer: this,
@@ -12503,6 +12561,9 @@ class $$IkkiuchiMatchesTableAnnotationComposer
 
   GeneratedColumn<double> get rating =>
       $composableBuilder(column: $table.rating, builder: (column) => column);
+
+  GeneratedColumn<String> get xp =>
+      $composableBuilder(column: $table.xp, builder: (column) => column);
 
   $$DaysTableAnnotationComposer get day {
     final $$DaysTableAnnotationComposer composer = $composerBuilder(
@@ -12596,6 +12657,7 @@ class $$IkkiuchiMatchesTableTableManager
                 Value<int> playerLeft = const Value.absent(),
                 Value<int> opponentLeft = const Value.absent(),
                 Value<double?> rating = const Value.absent(),
+                Value<String> xp = const Value.absent(),
               }) => IkkiuchiMatchesCompanion(
                 id: id,
                 startedAt: startedAt,
@@ -12610,6 +12672,7 @@ class $$IkkiuchiMatchesTableTableManager
                 playerLeft: playerLeft,
                 opponentLeft: opponentLeft,
                 rating: rating,
+                xp: xp,
               ),
           createCompanionCallback:
               ({
@@ -12626,6 +12689,7 @@ class $$IkkiuchiMatchesTableTableManager
                 required int playerLeft,
                 required int opponentLeft,
                 Value<double?> rating = const Value.absent(),
+                required String xp,
               }) => IkkiuchiMatchesCompanion.insert(
                 id: id,
                 startedAt: startedAt,
@@ -12640,6 +12704,7 @@ class $$IkkiuchiMatchesTableTableManager
                 playerLeft: playerLeft,
                 opponentLeft: opponentLeft,
                 rating: rating,
+                xp: xp,
               ),
           withReferenceMapper: (p0) => p0
               .map(

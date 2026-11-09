@@ -14,7 +14,7 @@ const v6Tables = [
       '"ranked" INTEGER NOT NULL CHECK ("ranked" IN (0, 1)), "opponent" TEXT NOT NULL, '
       '"per_side" INTEGER NOT NULL, "memorise_ms" INTEGER NOT NULL, "opponent_rating" REAL NOT NULL, '
       '"completed" INTEGER NOT NULL CHECK ("completed" IN (0, 1)), "player_left" INTEGER NOT NULL, '
-      '"opponent_left" INTEGER NOT NULL, "rating" REAL NULL)',
+      '"opponent_left" INTEGER NOT NULL, "rating" REAL NULL, "xp" TEXT NOT NULL)',
   'CREATE TABLE "ikkiuchi_reads" ("id" INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT, '
       '"match_id" INTEGER NOT NULL REFERENCES ikkiuchi_matches (id), "seq" INTEGER NOT NULL, '
       '"poem_id" INTEGER NOT NULL, "card_side" TEXT NULL, "taker" TEXT NULL, '

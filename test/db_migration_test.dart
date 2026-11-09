@@ -274,7 +274,9 @@ void main() {
         completed: true,
         playerLeft: 0,
         opponentLeft: 4,
-        rating: const Value(1650)));
+        rating: const Value(1650),
+        xp: '[["taken",21,4200]]'));
+    expect([for (final m in await db.select(db.ikkiuchiMatches).get()) (m.id, m.xp)], [(match, '[["taken",21,4200]]')]);
     await db.into(db.ikkiuchiReads).insert(IkkiuchiReadsCompanion.insert(
         matchId: match,
         seq: 0,

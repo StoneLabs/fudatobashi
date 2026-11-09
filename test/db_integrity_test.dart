@@ -333,6 +333,7 @@ void main() {
               playerLeft: won ? 0 : 3,
               opponentLeft: won ? 2 : 0,
               rating: Value(rating),
+              xp: '[]',
             ));
 
     Future<void> read(AppDatabase db, int matchId) => db.into(db.ikkiuchiReads).insert(IkkiuchiReadsCompanion.insert(

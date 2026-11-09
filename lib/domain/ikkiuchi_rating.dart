@@ -27,6 +27,10 @@ abstract final class IkkiuchiRating {
   /// Whether the next ranked match, after [played] of them, still places.
   static bool isPlacement(int played) => played < placementMatches;
 
+  /// Whether the next ranked match, after [played] of them, is the last
+  /// that places: its estimate is the first rating.
+  static bool endsPlacement(int played) => played == placementMatches - 1;
+
   static double _held(double rating) => rating.clamp(IkkiuchiTuning.ratingMin, IkkiuchiTuning.ratingMax);
 
   /// The rating the opponent plays the next ranked match at, after [played]

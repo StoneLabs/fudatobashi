@@ -102,7 +102,7 @@ void main() {
     final db = AppDatabase(NativeDatabase.memory());
     final p = await Progress.open(db);
     expect(p.ikkiuchi.matches, isEmpty);
-    final stored = await p.recordIkkiuchi(played);
+    final stored = (await p.recordIkkiuchi(played)).match;
 
     expect([stored.id, stored.rating], [isNotNull, isNotNull], reason: 'a ranked match is rated');
     expect(fields(stored), fields(played), reason: 'as recorded');

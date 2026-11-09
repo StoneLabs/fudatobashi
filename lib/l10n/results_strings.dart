@@ -84,12 +84,14 @@ extension ResultsStrings on S {
         XpSource.placement => t('xpSourcePlacement'),
         XpSource.exam => t('xpSourceExam'),
         XpSource.weakCleared => t('xpSourceWeakCleared'),
+        XpSource.taken => t('xpSourceTaken'),
+        XpSource.won => t('xpSourceWon'),
       };
 
   /// The count beside an XP line, or null where it says nothing.
   String? xpCount(XpPart part) => switch (part.source) {
         XpSource.clear || XpSource.dayDone || XpSource.best || XpSource.graduation => null,
-        XpSource.ranked || XpSource.placement || XpSource.exam => null,
+        XpSource.ranked || XpSource.placement || XpSource.exam || XpSource.won => null,
         XpSource.daily => part.count > 1 ? dayStreak(part.count) : null,
         _ => f('xpCountTimes', [part.count]),
       };

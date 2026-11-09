@@ -10,26 +10,31 @@ import 'progress.dart';
 import 'side_trips.dart';
 
 /// Experience read off the recorded history: runs with their attempts and
-/// milestones (islands completed, graduation, today's set done), and the
-/// side trips' games with their answers.
+/// milestones (islands completed, graduation, today's set done), the side
+/// trips' games with their answers, and 一騎打ち's matches with what each
+/// earned as it was recorded.
 abstract final class XpHistory {
   /// What every recorded game of [progress] earned: the main game's runs,
-  /// 暗記練's games and 定位置's, each by its id.
-  static ({Map<int, XpGain> runs, Map<int, XpGain> ankiren, Map<int, XpGain> teiichi}) gainsOf(Progress progress) {
-    final runGains = <int, XpGain>{}, ankirenGains = <int, XpGain>{}, teiichiGains = <int, XpGain>{};
-    ledgerOf(progress, ({required trip, required id, required gain}) {
-      (switch (trip) {
-        null => runGains,
-        SideTrip.ankiren => ankirenGains,
-        SideTrip.teiichi => teiichiGains,
-      })[id] = gain;
-    });
-    return (runs: runGains, ankiren: ankirenGains, teiichi: teiichiGains);
+  /// 暗記練's games, 定位置's and 一騎打ち's matches, each by its id.
+  static ({
+    Map<int, XpGain> runs,
+    Map<int, XpGain> ankiren,
+    Map<int, XpGain> teiichi,
+    Map<int, XpGain> ikkiuchi,
+  }) gainsOf(Progress progress) {
+    final gains = {for (final game in XpGame.values) game: <int, XpGain>{}};
+    ledgerOf(progress, ({required game, required id, required gain}) => gains[game]![id] = gain);
+    return (
+      runs: gains[XpGame.run]!,
+      ankiren: gains[XpGame.ankiren]!,
+      teiichi: gains[XpGame.teiichi]!,
+      ikkiuchi: gains[XpGame.ikkiuchi]!,
+    );
   }
 
   /// Every recorded game of [progress], oldest first.
   static XpLedger ledgerOf(Progress progress,
-      [void Function({required SideTrip? trip, required int id, required XpGain gain})? onGain]) {
+      [void Function({required XpGame game, required int id, required XpGain gain})? onGain]) {
     final byRun = <int, List<(ItemKey, AttemptRec)>>{};
     for (final k in progress.trainer.items.keys) {
       for (final a in progress.attemptsOf(k)) {
@@ -41,6 +46,7 @@ abstract final class XpHistory {
       [for (final r in progress.runs) runOf(progress, r, byRun[r.id] ?? const [])],
       [for (final r in trips.runsOf(SideTrip.ankiren)) ankirenRunOf(trips, r)],
       [for (final r in trips.runsOf(SideTrip.teiichi)) teiichiRunOf(trips, r)],
+      [for (final m in progress.ikkiuchi.matches) (id: m.id!, startedAt: m.startedAt, award: m.xp!)],
       onGain,
     );
   }

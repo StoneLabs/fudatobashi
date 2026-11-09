@@ -4,6 +4,7 @@ import 'ikkiuchi_layout.dart';
 import 'ikkiuchi_match.dart';
 import 'ikkiuchi_rating.dart';
 import 'ikkiuchi_side.dart';
+import 'xp.dart';
 
 /// Who a 一騎打ち match is played against, across the board. Stored by
 /// name.
@@ -301,8 +302,8 @@ class IkkiuchiReadLog {
 
 /// A match once it is over, as it is stored: its setup, when it ran,
 /// whether it was played to its end, the cards left on each side, and every
-/// read in order. Its [id], and the player's [rating] after a ranked match,
-/// come with storing it ([stored]).
+/// read in order. Its [id], the player's [rating] after a ranked match and
+/// the experience it earned ([xp]) come with storing it ([stored]).
 class IkkiuchiMatchRecord {
   const IkkiuchiMatchRecord({
     this.id,
@@ -313,6 +314,7 @@ class IkkiuchiMatchRecord {
     required this.playerLeft,
     required this.opponentLeft,
     this.rating,
+    this.xp,
     this.reads = const [],
   });
 
@@ -331,6 +333,9 @@ class IkkiuchiMatchRecord {
   /// The player's 一騎打ち rating after this ranked match; null for free
   /// play, and until it is stored.
   final double? rating;
+
+  /// The experience it earned, settled as it was stored; null until then.
+  final XpAward? xp;
 
   final List<IkkiuchiReadLog> reads;
 
@@ -351,8 +356,9 @@ class IkkiuchiMatchRecord {
   int get playerFaults => reads.fold(0, (n, r) => n + r.playerFaults);
   int get opponentFaults => reads.fold(0, (n, r) => n + r.opponentFaults);
 
-  /// This match as stored, under [id], with the player's [rating] after it.
-  IkkiuchiMatchRecord stored({required int id, required double? rating}) => IkkiuchiMatchRecord(
+  /// This match as stored, under [id], with the player's [rating] after it
+  /// and the [xp] it earned.
+  IkkiuchiMatchRecord stored({required int id, required double? rating, required XpAward xp}) => IkkiuchiMatchRecord(
         id: id,
         setup: setup,
         startedAt: startedAt,
@@ -361,6 +367,7 @@ class IkkiuchiMatchRecord {
         playerLeft: playerLeft,
         opponentLeft: opponentLeft,
         rating: rating,
+        xp: xp,
         reads: reads,
       );
 }

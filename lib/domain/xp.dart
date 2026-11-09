@@ -44,6 +44,12 @@ enum XpSource {
 
   /// 苦手: weak sides cleared in the drill.
   weakCleared,
+
+  /// 一騎打ち: the cards the player took.
+  taken,
+
+  /// 一騎打ち: a match won.
+  won,
 }
 
 /// One swipe of a recorded run, as experience sees it.
@@ -142,20 +148,36 @@ class XpRun {
 /// islands; 1 for a one-off bonus) worth [xp] in all.
 class XpPart {
   const XpPart(this.source, this.count, this.xp);
+
+  /// A line stored by [toJson].
+  factory XpPart.fromJson(List<dynamic> json) => switch (json) {
+        [final String source, final int count, final int xp] => XpPart(XpSource.values.byName(source), count, xp),
+        _ => throw FormatException('Not an XP line: $json'),
+      };
+
   final XpSource source;
   final int count;
   final int xp;
+
+  /// The line as JSON: its source, count and XP.
+  List<Object> toJson() => [source.name, count, xp];
 }
 
 /// The experience one game earned, line by line.
 class XpAward {
   const XpAward(this.parts);
 
+  /// An award stored by [toJson].
+  factory XpAward.fromJson(List<dynamic> json) => XpAward([for (final p in json) XpPart.fromJson(p as List)]);
+
   /// Only the sources that earned something, in the order the XP page
   /// lists them.
   final List<XpPart> parts;
 
   int get total => parts.fold(0, (sum, p) => sum + p.xp);
+
+  /// The award as JSON: its lines in order.
+  List<Object> toJson() => [for (final p in parts) p.toJson()];
 }
 
 /// A player level, and how far into it an XP total is.
@@ -211,38 +233,52 @@ class XpGain {
   int get levelsGained => levelAfter.level - levelBefore.level;
 }
 
+/// The games that earn experience, each numbering its games by its own
+/// ids, in the order a ledger adds games that started at the same moment.
+enum XpGame { run, ankiren, teiichi, ikkiuchi }
+
+/// A game whose experience was settled as it was recorded: its id, its
+/// start and what it earned.
+typedef XpSettled = ({int id, DateTime startedAt, XpAward award});
+
 /// Every game's experience, added up oldest first: the main game's runs
-/// ([add]) and the side trips' games ([addTrip]) into one total. Which
-/// cards were already met, the best time per setup and the streak of days
-/// depend on the runs before; a side trip's bests and placement on its own
-/// games before ([AnkirenXp]), each trip keeping its own. The daily bonus
-/// and its streak are the main game's.
+/// ([add]), the side trips' games ([addTrip]) and the games whose
+/// experience was settled as they were recorded ([addSettled]) into one
+/// total. Which cards were already met, the best time per setup and the
+/// streak of days depend on the runs before; a side trip's bests and
+/// placement on its own games before ([AnkirenXp]), each trip keeping its
+/// own. The daily bonus and its streak are the main game's.
 class XpLedger {
   XpLedger();
 
-  /// The ledger of [runs], [ankiren] and [teiichi], each game in the order
-  /// played (a run before a trip's game started at the same moment).
-  /// [onGain] hears what each game earned: a run's with a null `trip`, by
-  /// its id; a trip's game's with its trip, by its run id.
+  /// The ledger of [runs], [ankiren], [teiichi] and [ikkiuchi], each game in
+  /// the order played (games started at the same moment in [XpGame]
+  /// order). [onGain] hears what each game earned, by its game and id.
   factory XpLedger.of(
     Iterable<XpRun> runs, [
     Iterable<AnkirenXpRun> ankiren = const [],
     Iterable<AnkirenXpRun> teiichi = const [],
-    void Function({required SideTrip? trip, required int id, required XpGain gain})? onGain,
+    Iterable<XpSettled> ikkiuchi = const [],
+    void Function({required XpGame game, required int id, required XpGain gain})? onGain,
   ]) {
     final games = [
-      for (final r in runs) (at: r.startedAt, kind: 0, trip: null as SideTrip?, id: r.runId, add: (XpLedger l) => l.add(r)),
-      for (final (trip, list) in [(SideTrip.ankiren, ankiren), (SideTrip.teiichi, teiichi)])
-        for (final g in list) (at: g.startedAt, kind: 1 + trip.index, trip: trip, id: g.runId, add: (XpLedger l) => l.addTrip(trip, g)),
+      for (final r in runs) (at: r.startedAt, game: XpGame.run, id: r.runId, add: (XpLedger l) => l.add(r)),
+      for (final (game, trip, list) in [
+        (XpGame.ankiren, SideTrip.ankiren, ankiren),
+        (XpGame.teiichi, SideTrip.teiichi, teiichi),
+      ])
+        for (final g in list) (at: g.startedAt, game: game, id: g.runId, add: (XpLedger l) => l.addTrip(trip, g)),
+      for (final m in ikkiuchi)
+        (at: m.startedAt, game: XpGame.ikkiuchi, id: m.id, add: (XpLedger l) => l.addSettled(m.award)),
     ]..sort((a, b) {
         final t = a.at.compareTo(b.at);
         if (t != 0) return t;
-        return a.kind != b.kind ? a.kind.compareTo(b.kind) : a.id.compareTo(b.id);
+        return a.game != b.game ? a.game.index.compareTo(b.game.index) : a.id.compareTo(b.id);
       });
     final ledger = XpLedger();
     for (final g in games) {
       final gain = g.add(ledger);
-      onGain?.call(trip: g.trip, id: g.id, gain: gain);
+      onGain?.call(game: g.game, id: g.id, gain: gain);
     }
     return ledger;
   }
@@ -276,6 +312,10 @@ class XpLedger {
 
   /// Adds 暗記練 game [game] (see [addTrip]).
   XpGain addAnkiren(AnkirenXpRun game) => addTrip(SideTrip.ankiren, game);
+
+  /// Adds a game that earned [award], settled as it was recorded, played
+  /// after every game added so far, and returns what it earned.
+  XpGain addSettled(XpAward award) => _gain(award);
 
   XpGain _gain(XpAward award) {
     final gain = XpGain(before: _total, award: award);

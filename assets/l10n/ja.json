@@ -431,6 +431,8 @@
   "xpSourceRanked": "ランク戦",
   "xpSourcePlacement": "ランク決定",
   "xpSourceExam": "卒業試験",
+  "xpSourceTaken": "取った札",
+  "xpSourceWon": "勝ち",
   "xpCountTimes": "×{0}",
   "levelUpBand": "レベルアップ",
   "levelsGained": "{0}レベルアップ!",

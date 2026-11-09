@@ -5,6 +5,17 @@ import 'package:drift/drift.dart';
 import '../db/database.dart';
 import '../domain/ikkiuchi_rating.dart';
 import '../domain/ikkiuchi_record.dart';
+import '../domain/ikkiuchi_xp.dart';
+import '../domain/xp.dart';
+
+/// What recording a 一騎打ち match did: the match as stored, and what it
+/// did to the player's experience.
+class IkkiuchiReport {
+  const IkkiuchiReport({required this.match, required this.xp});
+
+  final IkkiuchiMatchRecord match;
+  final XpGain xp;
+}
 
 /// The recorded 一騎打ち matches, oldest first, each with its reads, and
 /// what they add up to: the counts, the free setup to start on, and the
@@ -78,14 +89,15 @@ class IkkiuchiRecords {
 
   /// Stores [match], once it is over, as played on practice day [day]: its
   /// row and its reads, in one transaction; a ranked one with the player's
-  /// rating after it, from the ranked matches before it. Returns it as
-  /// stored.
+  /// rating after it, from the ranked matches before it; and the
+  /// experience it earned ([IkkiuchiXp]). Returns it as stored.
   Future<IkkiuchiMatchRecord> record(AppDatabase db, IkkiuchiMatchRecord match, {required int day}) async {
     final setup = match.setup;
     final rating = match.ranked
         ? IkkiuchiRating.after(match.rated,
             earlier: [for (final m in _ranked) m.rated], rating: _ranked.lastOrNull?.rating)
         : null;
+    final xp = IkkiuchiXp.of(match, placed: match.ranked && IkkiuchiRating.endsPlacement(rankedPlayed));
     final id = await db.transaction(() async {
       final id = await db.into(db.ikkiuchiMatches).insert(IkkiuchiMatchesCompanion.insert(
             startedAt: match.startedAt,
@@ -100,6 +112,7 @@ class IkkiuchiRecords {
             playerLeft: match.playerLeft,
             opponentLeft: match.opponentLeft,
             rating: Value(rating),
+            xp: jsonEncode(xp.toJson()),
           ));
       await db.batch((b) => b.insertAll(db.ikkiuchiReads, [
             for (final (i, r) in match.reads.indexed)
@@ -121,7 +134,7 @@ class IkkiuchiRecords {
           ]));
       return id;
     });
-    final stored = match.stored(id: id, rating: rating);
+    final stored = match.stored(id: id, rating: rating, xp: xp);
     _matches.add(stored);
     return stored;
   }
@@ -145,6 +158,7 @@ class IkkiuchiRecords {
         playerLeft: m.playerLeft,
         opponentLeft: m.opponentLeft,
         rating: m.rating,
+        xp: XpAward.fromJson(jsonDecode(m.xp) as List),
         reads: reads,
       );
 

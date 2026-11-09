@@ -307,6 +307,10 @@ class IkkiuchiMatches extends Table {
 
   /// The player's 一騎打ち rating after it; null for free play.
   RealColumn get rating => real().nullable()();
+
+  /// The experience it earned, settled as it was stored, as JSON
+  /// (`XpAward`).
+  TextColumn get xp => text()();
 }
 
 /// One read of a 一騎打ち match, in the order read, stored with its match

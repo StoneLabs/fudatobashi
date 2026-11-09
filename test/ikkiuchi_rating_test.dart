@@ -38,8 +38,8 @@ void main() {
       );
 
   /// Plays the next ranked match as offered, [won] or not.
-  Future<IkkiuchiMatchRecord> play(Progress p, {required bool won, bool completed = true}) =>
-      p.recordIkkiuchi(ranked(p.ikkiuchi.rankedSetup, won: won, completed: completed));
+  Future<IkkiuchiMatchRecord> play(Progress p, {required bool won, bool completed = true}) async =>
+      (await p.recordIkkiuchi(ranked(p.ikkiuchi.rankedSetup, won: won, completed: completed))).match;
 
   test('the expected score: a half when even, more against a weaker opponent, the two sides adding to one', () {
     expect(IkkiuchiRating.expected(1500, 1500), 0.5);
