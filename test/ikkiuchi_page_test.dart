@@ -70,6 +70,7 @@ import 'package:fudatobashi/ui/placing/placing_widgets.dart';
 import 'package:fudatobashi/ui/settings/settings_rows.dart';
 import 'package:fudatobashi/ui/settings/side_trip_settings_screen.dart';
 import 'package:fudatobashi/ui/side_trips/trip_sheet.dart';
+import 'package:fudatobashi/ui/side_trips/ikkiuchi_custom_page.dart';
 import 'package:fudatobashi/ui/side_trips/ikkiuchi_page.dart';
 import 'package:fudatobashi/ui/sound/sounds.dart';
 import 'package:fudatobashi/ui/torifuda/card_faces.dart';
@@ -999,6 +1000,153 @@ void main() {
       expect(find.byType(IkkiuchiMatchScreen), findsNothing);
       expect(p.ikkiuchi.matches, isEmpty);
       await tester.pumpWidget(const SizedBox());
+    });
+  });
+
+  group('custom page', () {
+    IkkiuchiCustomPage page({double rating = 2559, int perSide = 13, int rows = 2, int minutes = 6}) =>
+        IkkiuchiCustomPage(
+            initial: IkkiuchiSetup.free(
+                opponentRating: rating, perSide: perSide, rows: rows, memorise: Duration(minutes: minutes)));
+
+    Finder key(String top) => find.ancestor(of: find.text(top), matching: find.byType(Pressable)).first;
+    bool shut(WidgetTester tester, int rows) => tester.widget<Pressable>(key(s.ikkiuchiRowsKey(rows))).onTap == null;
+    List<bool> shutRows(WidgetTester tester) => [for (final r in [1, 2, 3]) shut(tester, r)];
+    Finder numbered(String template) => find.byWidgetPredicate((w) => w is NumberedText && w.template == template);
+
+    /// The summary's cards a side and rows.
+    List<Object> brief(WidgetTester tester) => tester
+        .widget<NumberedText>(find.byWidgetPredicate((w) =>
+            w is NumberedText && [1, 2, 3].any((r) => w.template == s.ikkiuchiCustomCards(r))))
+        .values;
+    Finder plus(int at) => find.text('+').at(at);
+    Finder minus(int at) => find.text('−').at(at);
+
+    testWidgets('the rows the cards fit, the others shut with why; a change of cards moves them to the fewest',
+        (tester) async {
+      final p = await open(tester);
+      await showPage(tester, p, page: page());
+      expect(tester.takeException(), isNull);
+      expect(shutRows(tester), [true, false, false]);
+      expect(numbered(s.ikkiuchiRowsFromTwo(IkkiuchiLayoutTuning.oneRowUpTo)), findsOneWidget);
+      expect(brief(tester), [13, 2]);
+      expect(find.text(s.ikkiuchiRowsUpTo(IkkiuchiLayoutTuning.oneRowUpTo)), findsOneWidget);
+      expect(find.text(s.ikkiuchiRowsUpTo(IkkiuchiLayoutTuning.twoRowsUpTo)), findsOneWidget);
+      expect(find.text(s.ikkiuchiRowsUpTo(IkkiuchiFreeTuning.perSideMax)), findsOneWidget);
+
+      await tapAndWait(tester, key(s.ikkiuchiRowsKey(1)), Duration.zero);
+      expect(brief(tester), [13, 2], reason: 'a shut key does nothing');
+
+      await tapAndWait(tester, key('20'), Duration.zero);
+      expect(shutRows(tester), [true, true, false]);
+      expect(
+          numbered(s.ikkiuchiRowsOnlyThree(IkkiuchiLayoutTuning.twoRowsUpTo, IkkiuchiLayoutTuning.oneRowUpTo)),
+          findsOneWidget);
+      expect(brief(tester), [20, 3], reason: '2 rows no longer fit');
+
+      await tapAndWait(tester, key('8'), Duration.zero);
+      expect(shutRows(tester), [false, false, false]);
+      expect(find.text(s.ikkiuchiRowsAny(IkkiuchiLayoutTuning.oneRowUpTo)), findsOneWidget);
+      expect(brief(tester), [8, 3], reason: 'rows that still fit stay');
+
+      await tapAndWait(tester, key(s.ikkiuchiRowsKey(1)), Duration.zero);
+      expect(brief(tester), [8, 1]);
+      await tapAndWait(tester, plus(1), Duration.zero);
+      expect(brief(tester), [9, 2], reason: 'the fewest rows 9 fit');
+      await tapAndWait(tester, minus(1), Duration.zero);
+      expect(brief(tester), [8, 2]);
+      await tester.pumpWidget(const SizedBox());
+    });
+
+    testWidgets("the burst starts a free match of the setup, in its rows; then it is the free setup",
+        (tester) async {
+      final p = await open(tester);
+      await showPage(tester, p, page: page(rating: 1600, perSide: 25, rows: 3, minutes: 15));
+      final b = Rating.bands.firstWhere((band) => band.id == 'B');
+      final bRating = b.minRating.round();
+      await tapAndWait(tester, key(s.className(b)), Duration.zero);
+      await tapAndWait(tester, plus(0), Duration.zero);
+      await tapAndWait(tester, key('12'), Duration.zero);
+      await tapAndWait(tester, minus(1), Duration.zero);
+      await tapAndWait(tester, key(s.ikkiuchiRowsKey(2)), Duration.zero);
+      await tapAndWait(tester, minus(2), Duration.zero);
+      expect(brief(tester), [11, 2]);
+      expect(find.byWidgetPredicate((w) => w is NumberedText && w.template == s.ikkiuchiCustomTimes),
+          findsOneWidget);
+      expect(
+          tester.widget<NumberedText>(numbered(s.ikkiuchiCustomTimes)).values, ['14:00', bRating + 50]);
+
+      await tester.ensureVisible(burst(s.ikkiuchiPlayCards(11)));
+      await tapAndWait(tester, burst(s.ikkiuchiPlayCards(11)), Motion.route);
+      final state = screen(tester);
+      final setup = state.widget.setup;
+      expect([setup.ranked, setup.mode, setup.opponentRating, setup.perSide, setup.rows, setup.memorise, state.widget.guest],
+          [false, null, bRating + 50.0, 11, 2, const Duration(minutes: 14), false]);
+      expect(state.flow!.scene.sides!.player, hasLength(2), reason: 'laid out in the rows picked');
+      await toFirstRead(tester, state.flow!);
+      state.flow!.end();
+      await tester.pump();
+      await saved(tester, state.saving);
+      await toClosed(tester);
+      expect(find.byType(IkkiuchiCustomPage), findsOneWidget, reason: 'back on the page');
+
+      final free = p.ikkiuchi.freeSetup;
+      expect([free.opponentRating, free.perSide, free.rows, free.memorise],
+          [bRating + 50.0, 11, 2, const Duration(minutes: 14)], reason: 'kept with its rows');
+      unawaited(openIkkiuchiCustom(tester.element(find.byType(IkkiuchiCustomPage))));
+      await tester.pump();
+      await tester.pump(Motion.route);
+      final opened = tester.widget<IkkiuchiCustomPage>(find.byType(IkkiuchiCustomPage).last).initial;
+      expect([opened.perSide, opened.rows], [11, 2], reason: 'the page opens on the last free setup');
+      await tester.pumpWidget(const SizedBox());
+    });
+
+    testWidgets('a stepper held down steps on until it is let go, and stops at its end', (tester) async {
+      final p = await open(tester);
+      await showPage(tester, p, page: page(rating: 1600, minutes: 6));
+      final gesture = await tester.startGesture(tester.getCenter(plus(0)));
+      await tester.pump(kLongPressTimeout + const Duration(milliseconds: 10));
+      await tester.pump(IkkiuchiCustomLayout.repeatEvery * 4);
+      await gesture.up();
+      await tester.pump(IkkiuchiCustomLayout.repeatEvery * 4);
+      expect(find.text('${(1600 + 5 * IkkiuchiFreeTuning.ratingStep).round()}'), findsOneWidget);
+
+      final hold = await tester.startGesture(tester.getCenter(minus(2)));
+      await tester.pump(kLongPressTimeout + const Duration(milliseconds: 10));
+      for (var i = 0; i < 10; i++) {
+        await tester.pump(IkkiuchiCustomLayout.repeatEvery);
+      }
+      await hold.up();
+      await tester.pump();
+      expect(find.text('1:00'), findsOneWidget, reason: 'held at its end');
+      await tester.pumpWidget(const SizedBox());
+    });
+
+    // The mock's three states and one in English on the user's phone.
+    group('renders', skip: !renderScreens, () {
+      final states = {
+        'two': page(),
+        'three': page(perSide: 20, rows: 3, minutes: 10),
+        'one': page(rating: 2084, perSide: 8, rows: 1, minutes: 3),
+      };
+      for (final (lang, names) in [('ja', states.keys), ('en', ['two'])]) {
+        for (final name in names) {
+          testWidgets('custom_${name}_$lang', (tester) async {
+            final p = await open(tester, lang: lang);
+            await showPage(tester, p, page: states[name]!);
+            await tester.runAsync(() => precacheImage(
+                const AssetImage(IkkiuchiBoardStyle.tatami), tester.element(find.byType(IkkiuchiCustomPage))));
+            await tester.pump();
+            await tester.pump();
+            expect(tester.takeException(), isNull);
+            final panel = tester.getRect(find.byType(MangaPanel).first);
+            expect(panel.bottom, lessThanOrEqualTo(usersPhone.size.height - usersPhone.bars.bottom),
+                reason: 'the page fits the screen');
+            await captureScreen(tester, 'ikkiuchi_custom/$name', lang: lang);
+            await tester.pumpWidget(const SizedBox());
+          });
+        }
+      }
     });
   });
 
