@@ -146,7 +146,7 @@ class _FreePlay extends StatelessWidget {
         ),
         _FreeRow(
           height: IkkiuchiPageLayout.customRowHeight,
-          padding: EdgeInsets.zero,
+          padding: IkkiuchiPageLayout.customRowPadding,
           ruled: true,
           lead: SizedBox(
             width: IkkiuchiPageLayout.gearBox,

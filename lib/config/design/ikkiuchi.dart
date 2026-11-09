@@ -553,13 +553,14 @@ class IkkiuchiModeTone {
 /// [factRuleGap] clear of each, [factRuleInset] short at both ends.
 ///
 /// Free play: its panel's heading at [headingFont], [headingPadding] round
-/// it; the bots row
-/// [botsRowHeight] tall (its robot in a [botFrame] frame filled
+/// it; the bots row at least [botsRowHeight] tall, inside
+/// [botsRowPadding] (its robot in a [botFrame] frame filled
 /// [botFrameFill], its name at [botsTitleFont] tracked [botsTitleTracking],
-/// its line at [botsLineFont]), then under a light rule the custom row
-/// [customRowHeight] tall (its gear [gearBox] wide, its name at
-/// [customTitleFont] tracked [customTitleTracking], its line at
-/// [customLineFont]); each row's other-language name at [rowSubFont],
+/// its line at [botsLineFont]), then under a light rule the custom row at
+/// least [customRowHeight] tall, inside [customRowPadding] (its gear
+/// [gearBox] wide, its name at [customTitleFont] tracked
+/// [customTitleTracking], its line at [customLineFont]); each row's
+/// other-language name at [rowSubFont],
 /// [rowSubGap] after its own; Latin names tracked [rowTitleLatinTracking];
 /// [rowGap] between a row's parts and a chevron at its end.
 abstract final class IkkiuchiPageLayout {
@@ -703,6 +704,7 @@ abstract final class IkkiuchiPageLayout {
   static const double botsLineHeight = 1.45;
   static const double botsLineTop = 4;
   static const double customRowHeight = 60;
+  static const EdgeInsets customRowPadding = EdgeInsets.symmetric(vertical: 5);
   static const double customRule = Strokes.label;
   static const double gearBox = 60;
   static const double gear = 30;

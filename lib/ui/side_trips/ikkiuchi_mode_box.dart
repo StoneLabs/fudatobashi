@@ -525,8 +525,9 @@ class _Match extends StatelessWidget {
   }
 }
 
-/// A fact of the match: its [label] over its [value], which shrinks
-/// toward its foot rather than overflow, keeping its room.
+/// A fact of the match: its [label] over its [value], each on one line,
+/// shrinking rather than overflow, the value toward its foot, keeping its
+/// room.
 class _Fact extends StatelessWidget {
   const _Fact(this.label, this.value);
 
@@ -538,7 +539,11 @@ class _Fact extends StatelessWidget {
         mainAxisAlignment: MainAxisAlignment.center,
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          _label(label),
+          FittedBox(
+            fit: BoxFit.scaleDown,
+            alignment: Alignment.centerLeft,
+            child: DefaultTextStyle.merge(softWrap: false, child: _label(label)),
+          ),
           const SizedBox(height: IkkiuchiPageLayout.factGap),
           SizedBox(
             height: IkkiuchiPageLayout.factFont,

@@ -151,8 +151,8 @@ void main() {
       });
 
   Future<void> showPage(WidgetTester tester, Progress p,
-      {Screen phone = usersPhone, Widget page = const IkkiuchiPage()}) async {
-    useScreen(tester, phone);
+      {Screen phone = usersPhone, Widget page = const IkkiuchiPage(), double fontScale = 1}) async {
+    useScreen(tester, phone, fontScale: fontScale);
     final navigator = GlobalKey<NavigatorState>();
     await tester.pumpWidget(RepaintBoundary(
       key: screenKey,
@@ -1201,6 +1201,19 @@ void main() {
           await tester.pumpWidget(const SizedBox());
         });
       }
+    }
+
+    // Bigger text: the page scrolls, nothing overflows.
+    for (final frame in ['bullet', 'rapid_placing', 'blitz_en']) {
+      testWidgets('page_384_${frame}_t13', (tester) async {
+        final (lang, ratings, mode) = frames[frame]!;
+        final p = await rated(tester, lang, ratings);
+        await openTab(tester, p, mode);
+        await showPage(tester, p, fontScale: 1.3);
+        expect(tester.takeException(), isNull);
+        await capture(tester, '384_${frame.replaceAll('_en', '')}', lang);
+        await tester.pumpWidget(const SizedBox());
+      });
     }
 
     for (final lang in ['ja', 'en']) {
