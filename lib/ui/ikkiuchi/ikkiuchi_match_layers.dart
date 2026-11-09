@@ -71,7 +71,8 @@ class IkkiuchiCallLayer extends StatelessWidget {
 /// [IkkiuchiBoardScene.arrange], free only while nothing else is under way,
 /// and with a [flow] only while it lets the player move cards. With a
 /// [flow], while the player places their cards 完了 stands there instead,
-/// for once every card is placed ([IkkiuchiMatchFlow.donePlacing]); in the
+/// for once every card is placed ([IkkiuchiMatchFlow.donePlacing]), and
+/// blinking from then until tapped; in the
 /// memory time after it 覚えた stands over 並べ替え, ending it at once
 /// ([IkkiuchiMatchFlow.startEarly]). [onEnd] gets 終了
 /// once held. Only its buttons take touches. It is one of the board's
@@ -107,15 +108,18 @@ class IkkiuchiColumnLayer extends StatelessWidget {
 
   List<IkkiuchiColumnButton> _buttons(S s) {
     final flow = this.flow, arrange = scene.arrange, opening = scene.opening;
-    IkkiuchiColumnButton go(String label, VoidCallback? onTap) => (
+    IkkiuchiColumnButton go(String label, VoidCallback? onTap, {bool blink = false}) => (
           label: label,
           icon: IconArt.arrow,
           fill: onTap == null ? IkkiuchiColumnStyle.arrangeFill : IkkiuchiColumnStyle.doneFill,
           onTap: onTap,
+          blink: blink,
         );
-    if (flow?.stage == IkkiuchiStage.placing) return [go(s.done, opening.allPlaced ? flow!.donePlacing : null)];
+    if (flow?.stage == IkkiuchiStage.placing) {
+      return [go(s.done, opening.allPlaced ? flow!.donePlacing : null, blink: opening.allPlaced)];
+    }
     if (arrange.active) {
-      return [(label: s.done, icon: IconArt.check, fill: IkkiuchiColumnStyle.doneFill, onTap: arrange.finish)];
+      return [(label: s.done, icon: IconArt.check, fill: IkkiuchiColumnStyle.doneFill, onTap: arrange.finish, blink: false)];
     }
     return [
       if (flow?.stage == IkkiuchiStage.memoryTime) go(s.ikkiuchiReady, flow!.startEarly),
@@ -124,6 +128,7 @@ class IkkiuchiColumnLayer extends StatelessWidget {
         icon: IconArt.swap,
         fill: IkkiuchiColumnStyle.arrangeFill,
         onTap: (flow?.canArrange ?? arrange.canStart) ? arrange.start : null,
+        blink: false,
       ),
     ];
   }

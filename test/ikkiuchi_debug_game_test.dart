@@ -33,6 +33,8 @@ import 'package:fudatobashi/ui/ikkiuchi/ikkiuchi_match_board.dart';
 import 'package:fudatobashi/ui/ikkiuchi/ikkiuchi_match_column.dart';
 import 'package:fudatobashi/ui/ikkiuchi/ikkiuchi_match_flow.dart';
 import 'package:fudatobashi/ui/ikkiuchi/ikkiuchi_send_flow.dart';
+import 'package:fudatobashi/ui/manga/buttons.dart';
+import 'package:fudatobashi/ui/manga/idle_motion.dart';
 import 'package:fudatobashi/ui/manga/theme.dart';
 import 'package:fudatobashi/ui/sound/sounds.dart';
 import 'package:fudatobashi/ui/torifuda/card_faces.dart';
@@ -342,12 +344,40 @@ void main() {
       await tester.pump(frame);
       expect(opening.stack, hasLength(IkkiuchiToolsTuning.dealPerSide - 1),
           reason: 'a tap on a spot places the top card');
+      final blink = find.descendant(of: find.byType(IkkiuchiMatchColumn), matching: find.byType(IdleLoop));
+      expect(blink, findsNothing, reason: 'still while cards wait in the stack');
       opening.placeRest();
       await run(tester, 600);
       await capture(tester, 'game_all_placed');
+      expect(blink, findsOneWidget, reason: '完了 blinks once every card is placed');
+
+      // 完了's widths over one blink, every 100 ms.
+      Future<List<double>> widths() async {
+        final done = find.ancestor(of: button('完了'), matching: find.byType(InkButton));
+        final seen = <double>[];
+        for (var t = 0; t < IkkiuchiColumnStyle.blinkPeriod.inMilliseconds; t += 100) {
+          await tester.pump(const Duration(milliseconds: 100));
+          seen.add(tester.getRect(done).width);
+        }
+        return seen;
+      }
+
+      final swelling = await widths();
+      expect(swelling.reduce(math.max) - swelling.reduce(math.min),
+          greaterThan(swelling.first * IkkiuchiColumnStyle.blinkSwell / 2),
+          reason: 'it swells and shrinks');
+      tester.platformDispatcher.accessibilityFeaturesTestValue = const FakeAccessibilityFeatures(disableAnimations: true);
+      addTearDown(tester.platformDispatcher.clearAccessibilityFeaturesTestValue);
+      await tester.pump(frame);
+      expect((await widths()).toSet(), hasLength(1), reason: 'still under reduced motion');
+      expect(blink, findsOneWidget, reason: 'its ring still shows');
+      tester.platformDispatcher.clearAccessibilityFeaturesTestValue();
+      await tester.pump(frame);
+
       await tester.tap(button('完了'));
       await tester.pump(frame);
       expect(f.stage, IkkiuchiStage.memoryTime);
+      expect(blink, findsNothing, reason: 'tapped, it blinks no more');
       expect(button('覚えた'), findsOneWidget);
       expect(button('並べ替え'), findsOneWidget);
       await run(tester, 600);

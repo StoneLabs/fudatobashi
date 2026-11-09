@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:flutter/widgets.dart';
 
 import '../../config/config.dart';
@@ -8,11 +10,13 @@ import '../../l10n/strings.dart';
 import '../../state/scope.dart';
 import '../manga/buttons.dart';
 import '../manga/hold_confirm.dart';
+import '../manga/idle_motion.dart';
 import '../manga/vector.dart';
 
 /// A button at the game column's foot: its [icon] over its [label], on
-/// [fill]; faded while [onTap] is null.
-typedef IkkiuchiColumnButton = ({String label, VectorArt icon, Color fill, VoidCallback? onTap});
+/// [fill]; faded while [onTap] is null, and blinking while it says to
+/// [blink].
+typedef IkkiuchiColumnButton = ({String label, VectorArt icon, Color fill, VoidCallback? onTap, bool blink});
 
 /// The game column down the board's right edge in landscape, as tall as it
 /// is laid out: 終了 at its top, which ends the match once held
@@ -164,8 +168,8 @@ class _FootButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final (:label, :icon, :fill, :onTap) = button;
-    return IgnorePointer(
+    final (:label, :icon, :fill, :onTap, :blink) = button;
+    final shown = IgnorePointer(
       ignoring: onTap == null,
       child: Opacity(
         opacity: onTap == null ? IkkiuchiColumnStyle.dimmed : 1,
@@ -188,5 +192,42 @@ class _FootButton extends StatelessWidget {
         ),
       ),
     );
+    return blink ? _Blink(child: shown) : shown;
   }
+}
+
+/// [child] blinking ([IkkiuchiColumnStyle.blinkPeriod]): the ring around
+/// it fading out as it swells a little, then flashing back as it shrinks;
+/// still, the ring shown, under reduced motion ([IdleLoop]).
+class _Blink extends StatelessWidget {
+  const _Blink({required this.child});
+
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) => IdleLoop(
+        child: child,
+        builder: (context, elapsed, child) {
+          const period = IkkiuchiColumnStyle.blinkPeriod, width = IkkiuchiColumnStyle.blinkWidth;
+          const out = -(width + IkkiuchiColumnStyle.blinkGap);
+          final t = (elapsed.inMicroseconds % period.inMicroseconds) / period.inMicroseconds;
+          final wave = (1 - math.cos(2 * math.pi * t)) / 2;
+          return Stack(clipBehavior: Clip.none, children: [
+            Transform.scale(scale: 1 + IkkiuchiColumnStyle.blinkSwell * wave, child: child),
+            Positioned(
+              left: out,
+              top: out,
+              right: out,
+              bottom: out,
+              child: IgnorePointer(
+                child: DecoratedBox(
+                  decoration: BoxDecoration(
+                    border: Border.all(color: IkkiuchiColumnStyle.blinkInk.withValues(alpha: 1 - wave), width: width),
+                  ),
+                ),
+              ),
+            ),
+          ]);
+        },
+      );
 }

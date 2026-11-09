@@ -357,6 +357,17 @@ abstract final class IkkiuchiColumnStyle {
   static const Color arrangeFill = Palette.paper;
   static const Color doneFill = Palette.sun;
   static const double dimmed = 0.38;
+
+  /// 完了 blinks once every card is placed, until tapped: a [blinkInk] ring
+  /// [blinkWidth] wide lies [blinkGap] outside its edge, and once every
+  /// [blinkPeriod] the ring fades out as the button swells by [blinkSwell]
+  /// of its size, then flashes back as it shrinks. Under reduced motion it
+  /// stands still, the ring shown.
+  static const Duration blinkPeriod = Duration(milliseconds: 1100);
+  static const double blinkSwell = 0.06;
+  static const Color blinkInk = Palette.sun;
+  static const double blinkWidth = 3;
+  static const double blinkGap = 2;
 }
 
 /// Tobi's arm in a strike (`IkkiuchiArmPainter`): one ink line in his pen
