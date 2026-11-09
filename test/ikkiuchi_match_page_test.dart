@@ -11,10 +11,12 @@ import 'package:drift/drift.dart' show driftRuntimeOptions;
 import 'package:drift/native.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:fudatobashi/config/config.dart';
 import 'package:fudatobashi/data/fuda_sets.dart';
 import 'package:fudatobashi/data/islands.dart';
 import 'package:fudatobashi/data/poem.dart';
 import 'package:fudatobashi/db/database.dart';
+import 'package:fudatobashi/domain/ikkiuchi_mode.dart';
 import 'package:fudatobashi/domain/ikkiuchi_record.dart';
 import 'package:fudatobashi/domain/ikkiuchi_review.dart';
 import 'package:fudatobashi/domain/ikkiuchi_side.dart';
@@ -88,9 +90,11 @@ List<(String, IkkiuchiMatchRecord)> _fixture() {
           id: i + 1,
           setup: IkkiuchiSetup(
             ranked: m['ranked'] as bool,
+            mode: m['ranked'] as bool ? IkkiuchiMode.rapid : null,
             opponent: IkkiuchiOpponent.tobi,
             opponentRating: (m['opponentRating'] as num).toDouble(),
             perSide: m['perSide'] as int,
+            rows: IkkiuchiLayoutTuning.rows,
             memorise: Duration(seconds: m['memoriseSeconds'] as int),
           ),
           startedAt: DateTime.parse(m['startedAt'] as String),

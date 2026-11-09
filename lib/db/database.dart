@@ -3,6 +3,7 @@ import 'package:drift_flutter/drift_flutter.dart';
 import 'package:fsrs/fsrs.dart' as fsrs;
 
 import '../domain/ankiren_field.dart';
+import '../domain/ikkiuchi_mode.dart';
 import '../domain/ikkiuchi_record.dart';
 import '../domain/ikkiuchi_side.dart';
 import '../domain/play_session.dart';
@@ -287,11 +288,16 @@ class IkkiuchiMatches extends Table {
   IntColumn get day => integer().references(Days, #day)();
   BoolColumn get ranked => boolean()();
 
+  /// The ranked mode it was played in; null for a custom match.
+  TextColumn get mode => textEnum<IkkiuchiMode>().nullable()();
+
   /// Who played the far side.
   TextColumn get opponent => textEnum<IkkiuchiOpponent>()();
 
-  /// The cards dealt to each side, and the memory time before play, ms.
+  /// The cards dealt to each side, the rows each side was laid out in, and
+  /// the memory time before play, ms.
   IntColumn get perSide => integer()();
+  IntColumn get rows => integer()();
   IntColumn get memoriseMs => integer()();
 
   /// The rating the opponent played at.
@@ -305,7 +311,7 @@ class IkkiuchiMatches extends Table {
   IntColumn get playerLeft => integer()();
   IntColumn get opponentLeft => integer()();
 
-  /// The player's 一騎打ち rating after it; null for free play.
+  /// The player's 一騎打ち rating in its mode after it; null for free play.
   RealColumn get rating => real().nullable()();
 
   /// The experience it earned, settled as it was stored, as JSON

@@ -22,6 +22,8 @@ import 'package:fudatobashi/data/poem.dart';
 import 'package:fudatobashi/db/database.dart';
 import 'package:fudatobashi/domain/ankiren_level.dart';
 import 'package:fudatobashi/domain/card_stats.dart';
+import 'package:fudatobashi/domain/ikkiuchi_mode.dart';
+import 'package:fudatobashi/domain/ikkiuchi_record.dart';
 import 'package:fudatobashi/domain/play_session.dart';
 import 'package:fudatobashi/domain/side_trips.dart';
 import 'package:fudatobashi/domain/trainer.dart';
@@ -166,6 +168,22 @@ void main() {
     });
     return p;
   }
+
+  /// Records [results] as the next ranked 一騎打ち matches of [mode], won or
+  /// lost.
+  Future<void> playIkkiuchi(WidgetTester tester, Progress p, IkkiuchiMode mode, List<bool> results) =>
+      tester.runAsync(() async {
+        for (final won in results) {
+          await p.recordIkkiuchi(IkkiuchiMatchRecord(
+            setup: p.ikkiuchi.of(mode).rankedSetup(rows: mode.defaultRows),
+            startedAt: DateTime.now(),
+            endedAt: DateTime.now(),
+            completed: true,
+            playerLeft: won ? 0 : 2,
+            opponentLeft: won ? 2 : 0,
+          ));
+        }
+      });
 
   // Shows [p]'s app on [phone] at [fontScale], on the Side Trips tab.
   Future<void> openHub(WidgetTester tester, Progress p, Screen phone, {double fontScale = 1}) async {
@@ -723,6 +741,36 @@ void main() {
       await tester.pumpWidget(const SizedBox());
     });
 
+    testWidgets("the hall's panel shows each mode's rating side by side, unranked while placing, and nothing else",
+        (tester) async {
+      const s = S('en');
+      final p = await openAllKnown(tester, 'en');
+      await playIkkiuchi(tester, p, IkkiuchiMode.bullet, [true, true, false, true]);
+      await playIkkiuchi(tester, p, IkkiuchiMode.blitz, [false, false, true, false, true]);
+      await playIkkiuchi(tester, p, IkkiuchiMode.rapid, [true]);
+      await openHub(tester, p, usersPhone);
+      final entry = inHub(find.byType(IkkiuchiEntry)).hitTestable();
+      Finder inEntry(Finder f) => find.descendant(of: entry, matching: f);
+      for (final mode in IkkiuchiMode.values) {
+        expect(inEntry(find.text(s.ikkiuchiModeName(mode))), findsOneWidget);
+      }
+      final ratings = [for (final mode in IkkiuchiMode.values) p.ikkiuchi.of(mode).rating];
+      expect(ratings, [isNotNull, isNotNull, isNull]);
+      expect(inEntry(find.text('${ratings[0]!.round()}')), findsOneWidget);
+      expect(inEntry(find.text('${ratings[1]!.round()}')), findsOneWidget);
+      expect(inEntry(find.text(s.sideTripUnranked)), findsOneWidget, reason: 'Rapid still placing');
+      expect(
+          [
+            for (final f in [find.text(s.ikkiuchiWins), find.byType(RatingChangeTag), find.byType(Sticker)]) inEntry(f),
+          ],
+          everyElement(findsNothing),
+          reason: 'no wins, change or class stamp');
+      final x = [for (final mode in IkkiuchiMode.values) tester.getCenter(inEntry(find.text(s.ikkiuchiModeName(mode)))).dx];
+      expect(x, orderedEquals([...x]..sort()), reason: 'side by side, Bullet first');
+      expect(tester.takeException(), isNull);
+      await tester.pumpWidget(const SizedBox());
+    });
+
     testWidgets('the hall stays shut until every card is known: its count, no burst, and the ring starts past it',
         (tester) async {
       const s = S('en');
@@ -1104,6 +1152,19 @@ void main() {
         await captureScreen(tester, 'side_trips/ikkiuchi_front', lang: lang);
         await tester.pumpWidget(const SizedBox());
       });
+
+      for (final (phone, fontScale) in [(usersPhone, 1.0), (narrowPhone, 1.3)]) {
+        testWidgets('ikkiuchi_rated_${phone.name}_${lang}_$fontScale', (tester) async {
+          final p = await openAllKnown(tester, lang);
+          await playIkkiuchi(tester, p, IkkiuchiMode.bullet, [true, true, false, true, true]);
+          await playIkkiuchi(tester, p, IkkiuchiMode.blitz, [false, true, false, true]);
+          await playIkkiuchi(tester, p, IkkiuchiMode.rapid, [true, false]);
+          await openHub(tester, p, phone, fontScale: fontScale);
+          await precacheArt(tester);
+          await captureScreen(tester, 'side_trips/ikkiuchi_rated_${phone.name}', lang: lang);
+          await tester.pumpWidget(const SizedBox());
+        });
+      }
     }
 
     for (final (phone, lang, fontScale) in [(usersPhone, 'ja', 1.0), (narrowPhone, 'en', 1.3)]) {

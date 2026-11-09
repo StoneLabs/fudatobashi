@@ -16,6 +16,7 @@ import 'package:fudatobashi/domain/field_parts.dart';
 import 'package:fudatobashi/domain/ikkiuchi_field.dart';
 import 'package:fudatobashi/domain/ikkiuchi_layout.dart';
 import 'package:fudatobashi/domain/ikkiuchi_match.dart';
+import 'package:fudatobashi/domain/ikkiuchi_mode.dart';
 import 'package:fudatobashi/domain/ikkiuchi_rating.dart';
 import 'package:fudatobashi/domain/ikkiuchi_record.dart';
 import 'package:fudatobashi/domain/ikkiuchi_review.dart';
@@ -194,22 +195,27 @@ void main() {
         [(took: 1, read: 3), (took: 0, read: 0), (took: 1, read: 1)]);
   });
 
-  test('the same setup before: the last ranked match for a ranked one, the same cards, time and Tobi for free', () {
-    const ranked = IkkiuchiSetup.ranked(opponentRating: 1700);
+  test('the same setup before: the last ranked match of its mode for a ranked one, the same cards, rows, time and '
+      'Tobi for free', () {
+    final ranked = IkkiuchiSetup.ranked(IkkiuchiMode.rapid, opponentRating: 1700, rows: 3);
     final all = [
       match(1, free),
       match(2, const IkkiuchiSetup.free(opponentRating: 1250, perSide: 3, memorise: Duration(minutes: 5))),
       match(3, ranked),
       match(4, free),
       match(5, const IkkiuchiSetup.free(opponentRating: 1200, perSide: 4, memorise: Duration(minutes: 5))),
-      match(6, const IkkiuchiSetup.ranked(opponentRating: 1650)),
+      match(6, IkkiuchiSetup.ranked(IkkiuchiMode.rapid, opponentRating: 1650, rows: 3)),
       match(7, free),
+      match(8, IkkiuchiSetup.ranked(IkkiuchiMode.bullet, opponentRating: 1600, rows: 1)),
+      match(9, const IkkiuchiSetup.free(opponentRating: 1200, perSide: 3, rows: 2, memorise: Duration(minutes: 5))),
     ];
     final freeReview = IkkiuchiReview(all[6], all);
     expect([for (final m in freeReview.peers) m.id], [1, 4]);
     expect(freeReview.last?.id, 4);
     expect(IkkiuchiReview(all[5], all).last?.id, 3);
     expect(IkkiuchiReview(all[0], all).last, isNull, reason: 'the first with its setup');
+    expect(IkkiuchiReview(all[7], all).last, isNull, reason: 'the first in its mode');
+    expect(IkkiuchiReview(all[8], all).last, isNull, reason: 'the same cards in other rows');
     expect([for (final m in IkkiuchiReview(all[3], all).earlier) m.id], [1, 2, 3]);
   });
 
@@ -226,15 +232,20 @@ void main() {
           opponentLeft: won ? 2 : 0,
           reads: [IkkiuchiReadLog(poemId: 1, cardSide: player, taker: won ? player : opponent)],
         );
+    const rapid = IkkiuchiMode.rapid, bullet = IkkiuchiMode.bullet;
+    const steps = IkkiuchiRankedTuning.placementSteps;
     for (final (i, won) in [true, false, true, true, false].indexed) {
-      await p.recordIkkiuchi(played(p.ikkiuchi.rankedSetup, won: won));
+      await p.recordIkkiuchi(played(p.ikkiuchi.of(rapid).rankedSetup(rows: 3), won: won));
       if (i == 1) await p.recordIkkiuchi(played(free, won: true));
+      if (i == 2) await p.recordIkkiuchi(played(p.ikkiuchi.of(bullet).rankedSetup(rows: 1), won: true));
     }
     final all = p.ikkiuchi.matches;
     final gains = XpHistory.gainsOf(p).ikkiuchi;
     final reviews = [for (final m in all) IkkiuchiReview(m, all, xp: gains[m.id])];
-    final ranked = [for (final r in reviews) if (r.match.ranked) r];
-    const steps = IkkiuchiRankedTuning.placementSteps;
+    final ranked = [for (final r in reviews) if (r.match.setup.mode == rapid) r];
+    final other = reviews.singleWhere((r) => r.match.setup.mode == bullet);
+    expect([other.placementMatch, other.ratingBefore, other.ratingChange], [1, IkkiuchiRating.start, steps.first],
+        reason: "Bullet's first placement match, whatever Rapid's stand at");
 
     expect([for (final r in ranked) r.placementMatch], [1, 2, 3, 4, null]);
     expect(IkkiuchiReview.placementMatches, 4);
@@ -242,7 +253,8 @@ void main() {
     expect(ranked.first.ratingBefore, IkkiuchiRating.start);
     expect([for (final r in ranked.take(4)) r.ratingChange], [steps[0], -steps[1], steps[2], steps[3]]);
     for (var i = 1; i < ranked.length; i++) {
-      expect(ranked[i].ratingBefore, ranked[i - 1].ratingAfter, reason: 'the free match between is left out');
+      expect(ranked[i].ratingBefore, ranked[i - 1].ratingAfter,
+          reason: 'the free match and the Bullet one between are left out');
     }
     final rated = ranked.last;
     expect(

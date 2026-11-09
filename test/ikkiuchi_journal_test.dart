@@ -6,12 +6,12 @@ import 'dart:io';
 import 'package:drift/drift.dart' show driftRuntimeOptions;
 import 'package:drift/native.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:fudatobashi/config/config.dart';
 import 'package:fudatobashi/data/fuda_sets.dart';
 import 'package:fudatobashi/data/poem.dart';
 import 'package:fudatobashi/db/database.dart';
 import 'package:fudatobashi/domain/field_parts.dart';
 import 'package:fudatobashi/domain/ikkiuchi_layout.dart';
+import 'package:fudatobashi/domain/ikkiuchi_mode.dart';
 import 'package:fudatobashi/domain/ikkiuchi_rating.dart';
 import 'package:fudatobashi/domain/ikkiuchi_record.dart';
 import 'package:fudatobashi/domain/ikkiuchi_side.dart';
@@ -21,8 +21,9 @@ void main() {
   poems = Poems.fromJsonString(File('assets/data/poems.json').readAsStringSync());
   fudaSets = FudaSets(poems);
   driftRuntimeOptions.dontWarnAboutMultipleDatabases = true;
-  const ranked = IkkiuchiSetup.ranked(opponentRating: 1450);
-  const perSide = IkkiuchiRankedTuning.perSide;
+  const mode = IkkiuchiMode.blitz;
+  final ranked = IkkiuchiSetup.ranked(mode, opponentRating: 1450, rows: 3);
+  final perSide = mode.perSide;
   final started = DateTime(2026, 11, 8, 12);
 
   IkkiuchiMatchRecord played({required bool completed}) => IkkiuchiMatchRecord(
@@ -68,9 +69,11 @@ void main() {
     final m = restarted.ikkiuchi.matches.single;
     expect([m.ranked, m.completed, m.result, m.startedAt, m.endedAt, m.playerLeft, m.opponentLeft, m.reads],
         [true, false, IkkiuchiResult.gaveUp, started, started, perSide, perSide, isEmpty]);
-    expect([m.setup.opponent, m.setup.opponentRating, m.setup.perSide, m.setup.memorise],
-        [IkkiuchiOpponent.tobi, 1450, perSide, IkkiuchiRankedTuning.memorise]);
+    expect([m.setup.mode, m.setup.opponent, m.setup.opponentRating, m.setup.perSide, m.setup.rows, m.setup.memorise],
+        [mode, IkkiuchiOpponent.tobi, 1450, perSide, 3, mode.memorise]);
     expect(restarted.ikkiuchi.counts(ranked: true), (played: 1, won: 0, lost: 1), reason: 'a loss');
+    expect([for (final mode in IkkiuchiMode.values) restarted.ikkiuchi.of(mode).rankedPlayed], [0, 1, 0],
+        reason: 'in its own mode');
     expect(m.rating, IkkiuchiRating.after((opponentRating: 1450, won: false), earlier: const [], rating: null),
         reason: 'rated as a loss');
 
@@ -86,7 +89,8 @@ void main() {
     await first.journalIkkiuchi(soFar(const [taken, karafuda], (player: perSide - 1, opponent: perSide - 1)));
 
     final m = (await Progress.open(db)).ikkiuchi.matches.single;
-    expect([m.completed, m.endedAt, m.playerLeft, m.opponentLeft], [false, started.add(const Duration(minutes: 2)), 24, 24]);
+    expect([m.completed, m.endedAt, m.playerLeft, m.opponentLeft],
+        [false, started.add(const Duration(minutes: 2)), perSide - 1, perSide - 1]);
     expect(m.reads, hasLength(2));
     final r = m.reads.first;
     expect([r.poemId, r.cardSide, r.taker, r.tied, r.playerFaults, r.opponentFaults, r.playerTake, r.opponentTake],

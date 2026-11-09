@@ -51,24 +51,21 @@ Future<void> startIkkiuchiMatch(BuildContext context, IkkiuchiSetup setup, {bool
 /// change of its size deals the same match afresh until the player places
 /// a card, and after that the board keeps its size, scaled to fit.
 class IkkiuchiMatchScreen extends StatefulWidget {
-  const IkkiuchiMatchScreen(
-      {super.key, required this.setup, this.seed, this.guest = false, this.rows = IkkiuchiScreenTuning.rows});
+  const IkkiuchiMatchScreen({super.key, required this.setup, this.seed, this.guest = false});
 
+  /// The match's setup: each side is laid out in its rows, as its cards
+  /// allow them (`IkkiuchiLayout.rowsAllowed`); the board keeps them, and
+  /// its cards' size, to the match's end.
   final IkkiuchiSetup setup;
   final int? seed;
   final bool guest;
-
-  /// The rows each side is laid out in, as the setup's cards allow them
-  /// (`IkkiuchiLayout.rowsAllowed`); the board keeps them, and its cards'
-  /// size, to the match's end.
-  final int rows;
 
   @override
   State<IkkiuchiMatchScreen> createState() => IkkiuchiMatchScreenState();
 }
 
 class IkkiuchiMatchScreenState extends State<IkkiuchiMatchScreen> with SingleTickerProviderStateMixin {
-  late final _dealer = IkkiuchiDealer(rows: widget.rows, playerSeedOffset: IkkiuchiScreenTuning.playerSeedOffset);
+  late final _dealer = IkkiuchiDealer(rows: widget.setup.rows, playerSeedOffset: IkkiuchiScreenTuning.playerSeedOffset);
   late final int _seed = widget.seed ?? math.Random().nextInt(IkkiuchiScreenTuning.seeds);
   late final double _form = IkkiuchiTobi.formFor(_seed);
   late final Progress _progress;

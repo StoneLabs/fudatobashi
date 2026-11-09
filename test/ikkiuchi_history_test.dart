@@ -15,6 +15,7 @@ import 'package:fudatobashi/data/poem.dart';
 import 'package:fudatobashi/db/database.dart';
 import 'package:fudatobashi/domain/ikkiuchi_layout.dart';
 import 'package:fudatobashi/domain/ikkiuchi_match.dart';
+import 'package:fudatobashi/domain/ikkiuchi_mode.dart';
 import 'package:fudatobashi/domain/ikkiuchi_record.dart';
 import 'package:fudatobashi/domain/ikkiuchi_side.dart';
 import 'package:fudatobashi/l10n/history_strings.dart';
@@ -46,13 +47,15 @@ void main() {
   const player = IkkiuchiSide.player, tobi = IkkiuchiSide.opponent;
 
   IkkiuchiMatchRecord match(DateTime at, int playerLeft, int opponentLeft,
-          {bool completed = true, bool ranked = false, List<IkkiuchiReadLog> reads = const []}) =>
+          {bool completed = true, IkkiuchiMode? mode, List<IkkiuchiReadLog> reads = const []}) =>
       IkkiuchiMatchRecord(
         setup: IkkiuchiSetup(
-            ranked: ranked,
+            ranked: mode != null,
+            mode: mode,
             opponent: IkkiuchiOpponent.tobi,
             opponentRating: 1200,
             perSide: 5,
+            rows: 3,
             memorise: const Duration(minutes: 2)),
         startedAt: at,
         endedAt: at.add(const Duration(minutes: 7)),
@@ -80,7 +83,7 @@ void main() {
     const field = IkkiuchiLaidField(opponent: [IkkiuchiRow([87, 18], [])], player: [IkkiuchiRow([5], [6])]);
     final after = field.without(87);
     return opened(tester, [
-      match(now.subtract(const Duration(days: 3)), 2, 0, ranked: true),
+      match(now.subtract(const Duration(days: 3)), 2, 0, mode: IkkiuchiMode.blitz),
       match(now.subtract(const Duration(hours: 1)), 4, 3, completed: false),
       match(now, 0, 3, reads: [
         IkkiuchiReadLog.of(87, const IkkiuchiReadEnd(taker: player, cardSide: tobi),

@@ -2,6 +2,7 @@ import '../config/config.dart';
 import 'field_parts.dart';
 import 'ikkiuchi_layout.dart';
 import 'ikkiuchi_match.dart';
+import 'ikkiuchi_mode.dart';
 import 'ikkiuchi_rating.dart';
 import 'ikkiuchi_side.dart';
 import 'xp.dart';
@@ -10,29 +11,37 @@ import 'xp.dart';
 /// name.
 enum IkkiuchiOpponent { tobi }
 
-/// A match's setup: ranked or free play, the opponent and their rating,
-/// the cards dealt to each side, and the memory time before play.
+/// A match's setup: ranked or free play, its mode, the opponent and their
+/// rating, the cards dealt to each side, the rows each side is laid out in,
+/// and the memory time before play.
 class IkkiuchiSetup {
   const IkkiuchiSetup({
     required this.ranked,
+    required this.mode,
     required this.opponent,
     required this.opponentRating,
     required this.perSide,
+    required this.rows,
     required this.memorise,
   });
 
-  /// A free match against Tobi.
-  const IkkiuchiSetup.free({required this.opponentRating, required this.perSide, required this.memorise})
-      : ranked = false,
+  /// A free match against Tobi: a custom one, of no mode.
+  const IkkiuchiSetup.free({
+    required this.opponentRating,
+    required this.perSide,
+    required this.memorise,
+    this.rows = IkkiuchiFreeTuning.rows,
+  })  : ranked = false,
+        mode = null,
         opponent = IkkiuchiOpponent.tobi;
 
-  /// A ranked match against Tobi at [opponentRating]: every one alike
-  /// otherwise ([IkkiuchiRankedTuning]).
-  const IkkiuchiSetup.ranked({required this.opponentRating})
+  /// A ranked match of [mode] against Tobi at [opponentRating], each side
+  /// laid out in [rows]: the mode's cards and memory time.
+  IkkiuchiSetup.ranked(IkkiuchiMode this.mode, {required this.opponentRating, required this.rows})
       : ranked = true,
         opponent = IkkiuchiOpponent.tobi,
-        perSide = IkkiuchiRankedTuning.perSide,
-        memorise = IkkiuchiRankedTuning.memorise;
+        perSide = mode.perSide,
+        memorise = mode.memorise;
 
   /// The free setup before any free match.
   static const firstFree = IkkiuchiSetup.free(
@@ -42,9 +51,13 @@ class IkkiuchiSetup {
   );
 
   final bool ranked;
+
+  /// The ranked mode it was played in; null for a custom match.
+  final IkkiuchiMode? mode;
   final IkkiuchiOpponent opponent;
   final double opponentRating;
   final int perSide;
+  final int rows;
   final Duration memorise;
 }
 
@@ -342,8 +355,8 @@ class IkkiuchiMatchRecord {
 
   final int playerLeft, opponentLeft;
 
-  /// The player's 一騎打ち rating after this ranked match; null for free
-  /// play, and until it is stored.
+  /// The player's 一騎打ち rating in its mode after this ranked match; null
+  /// for free play, and until it is stored.
   final double? rating;
 
   /// The experience it earned, settled as it was stored; null until then.

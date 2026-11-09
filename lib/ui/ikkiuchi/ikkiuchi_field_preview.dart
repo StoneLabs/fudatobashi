@@ -2,7 +2,6 @@ import 'dart:math' as math;
 
 import 'package:flutter/widgets.dart';
 
-import '../../config/config.dart';
 import '../../config/design.dart';
 import '../../domain/ikkiuchi_field.dart';
 import '../../domain/ikkiuchi_layout.dart';
@@ -10,18 +9,18 @@ import '../../l10n/ikkiuchi_strings.dart';
 import '../../l10n/strings.dart';
 import '../side_trips/field_preview.dart';
 
-/// A field of [perSide] cards a side as a match deals it, face down on the
-/// match's tatami: each side in the usual shape of its rows
-/// ([IkkiuchiLayout.usualShape]), Tobi's over a band and the player's
+/// A field of [perSide] cards a side in [rows] rows as a match deals it,
+/// face down on the match's tatami: each side in the usual shape of its
+/// rows ([IkkiuchiLayout.usualShape]), Tobi's over a band and the player's
 /// under it, their groups at the field's edges, every card as big as the
 /// box allows up to [IkkiuchiPageLayout.previewMaxCardW], in the side
 /// trips' preview frame ([FieldPreview]). It fills the room it is given
 /// inside [IkkiuchiPageLayout.previewMargin], and asks for at least
 /// [IkkiuchiPageLayout.previewMinHeight].
 class IkkiuchiFieldPreview extends StatelessWidget {
-  const IkkiuchiFieldPreview(this.perSide, {super.key});
+  const IkkiuchiFieldPreview(this.perSide, {super.key, required this.rows});
 
-  final int perSide;
+  final int perSide, rows;
 
   static const _spec = FieldPreviewSpec(
     margin: IkkiuchiPageLayout.previewMargin,
@@ -43,11 +42,11 @@ class IkkiuchiFieldPreview extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     var next = 0;
-    final rows = [
-      for (final row in IkkiuchiLayout.usualShape(perSide, IkkiuchiScreenTuning.rows))
+    final side = [
+      for (final row in IkkiuchiLayout.usualShape(perSide, rows))
         IkkiuchiRow([for (var i = 0; i < row.left; i++) next++], [for (var i = 0; i < row.right; i++) next++]),
     ];
-    final field = IkkiuchiField(tobi: rows, player: rows);
+    final field = IkkiuchiField(tobi: side, player: side);
     return FieldPreview(
       spec: _spec,
       semanticLabel: S.of(context).ikkiuchiPreviewLabel(perSide),

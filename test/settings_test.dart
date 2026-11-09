@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:fudatobashi/config/config.dart';
 import 'package:fudatobashi/domain/ankiren_level.dart';
+import 'package:fudatobashi/domain/ikkiuchi_mode.dart';
 import 'package:fudatobashi/state/settings.dart';
 
 void main() {
@@ -241,6 +242,42 @@ void main() {
       expect(a.freeLevel, AnkirenLevels.top);
       expect(a.customPerSide, AnkirenTuning.customMinPerSide);
       expect(a.customMemorise, AnkirenTuning.customMaxMemorise);
+    });
+  });
+
+  group('AppSettings.ikkiuchi (Settings › 寄り道 › 一騎打ち)', () {
+    test("defaults: the page on Rapid's tab, every mode in its own rows", () {
+      final k = AppSettings.fromJson({}).ikkiuchi;
+      expect(k.tab, IkkiuchiMode.rapid);
+      expect([for (final mode in IkkiuchiMode.values) k.rowsOf(mode)], [
+        for (final mode in IkkiuchiMode.values) mode.defaultRows,
+      ]);
+    });
+
+    test('the tab and the rows picked round-trip, leaving the rest of the settings alone', () {
+      final picked = const IkkiuchiSettings()
+          .copyWith(tab: IkkiuchiMode.blitz)
+          .withRows(IkkiuchiMode.bullet, 2)
+          .withRows(IkkiuchiMode.blitz, 3);
+      final s = AppSettings.fromJson(jsonDecode(jsonEncode(const AppSettings(haptics: false)
+          .copyWith(ikkiuchi: picked)
+          .toJson())) as Map<String, dynamic>);
+      expect(s.ikkiuchi.tab, IkkiuchiMode.blitz);
+      expect([for (final mode in IkkiuchiMode.values) s.ikkiuchi.rowsOf(mode)], [2, 3, IkkiuchiMode.rapid.defaultRows]);
+      expect(s.haptics, isFalse);
+      expect(s.ikkiuchi.copyWith(tab: IkkiuchiMode.bullet).rowsOf(IkkiuchiMode.bullet), 2,
+          reason: 'a new tab keeps the rows');
+    });
+
+    test('an unknown tab, and rows a mode does not offer, fall back to the defaults', () {
+      final k = IkkiuchiSettings.fromJson({
+        'tab': 'classical',
+        'rows': {'bullet': 4, 'blitz': 1, 'rapid': 2, 'classical': 3},
+      });
+      expect(k.tab, DefaultSettings.ikkiuchiTab);
+      expect([for (final mode in IkkiuchiMode.values) k.rowsOf(mode)], [
+        for (final mode in IkkiuchiMode.values) mode.defaultRows,
+      ]);
     });
   });
 }

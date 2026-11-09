@@ -11,6 +11,7 @@ import 'package:fudatobashi/config/config.dart';
 import 'package:fudatobashi/data/fuda_sets.dart';
 import 'package:fudatobashi/data/poem.dart';
 import 'package:fudatobashi/db/database.dart';
+import 'package:fudatobashi/domain/ikkiuchi_mode.dart';
 import 'package:fudatobashi/domain/ikkiuchi_rating.dart';
 import 'package:fudatobashi/domain/ikkiuchi_record.dart';
 import 'package:fudatobashi/domain/ikkiuchi_side.dart';
@@ -47,7 +48,7 @@ void main() {
         reads: reads(took, lost),
       );
 
-  const ranked = IkkiuchiSetup.ranked(opponentRating: 1745);
+  final ranked = IkkiuchiSetup.ranked(IkkiuchiMode.rapid, opponentRating: 1745, rows: 3);
   const free = IkkiuchiSetup.free(opponentRating: 1200, perSide: 12, memorise: Duration(minutes: 5));
   List<(XpSource, int, int)> lines(XpAward award) => [for (final p in award.parts) (p.source, p.count, p.xp)];
 
@@ -55,7 +56,7 @@ void main() {
     final award = IkkiuchiXp.of(match(ranked, took: 24, lost: 21, won: true), placed: false);
     expect(lines(award), [
       (XpSource.taken, 24, 24 * IkkiuchiXpTuning.perCard),
-      (XpSource.won, 1, IkkiuchiXpTuning.winPerCard * IkkiuchiRankedTuning.perSide),
+      (XpSource.won, 1, IkkiuchiXpTuning.winPerCard * IkkiuchiMode.rapid.perSide),
       (XpSource.clear, 1, IkkiuchiXpTuning.clear),
       (XpSource.ranked, 1, IkkiuchiXpTuning.ranked),
     ]);
@@ -91,17 +92,25 @@ void main() {
         reason: 'no card, nothing');
   });
 
-  test('only the ranked match that ends placement earns its bonus, once; recorded, each keeps its XP', () async {
+  test("only the ranked match that ends a mode's placement earns its bonus, once a mode; recorded, each keeps its XP",
+      () async {
     final db = AppDatabase(NativeDatabase.memory());
     final p = await Progress.open(db);
+    Future<bool> placedBy(IkkiuchiMode mode, int i) async {
+      final report = await p.recordIkkiuchi(
+          match(p.ikkiuchi.of(mode).rankedSetup(rows: mode.defaultRows), took: 22, lost: 23, won: i.isEven));
+      return report.match.xp!.parts.any((x) => x.source == XpSource.placement);
+    }
+
     final placed = <bool>[];
     for (var i = 0; i < IkkiuchiRating.placementMatches + 2; i++) {
-      final report = await p.recordIkkiuchi(match(p.ikkiuchi.rankedSetup, took: 22, lost: 23, won: i.isEven));
-      placed.add(report.match.xp!.parts.any((x) => x.source == XpSource.placement));
+      placed.add(await placedBy(IkkiuchiMode.rapid, i));
     }
     expect(placed, [
       for (var i = 0; i < IkkiuchiRating.placementMatches + 2; i++) i == IkkiuchiRating.placementMatches - 1,
     ]);
+    final blitz = [for (var i = 0; i < IkkiuchiRating.placementMatches; i++) await placedBy(IkkiuchiMode.blitz, i)];
+    expect(blitz.last, isTrue, reason: "Blitz's own placement ends with its own bonus");
     final fourth = (await Progress.open(db)).ikkiuchi.matches[IkkiuchiRating.placementMatches - 1];
     expect(lines(fourth.xp!).last, (XpSource.placement, 1, IkkiuchiXpTuning.placement), reason: 'as stored');
     await db.close();

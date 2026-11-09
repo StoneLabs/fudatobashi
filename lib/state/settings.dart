@@ -1,6 +1,7 @@
 import '../config/config.dart';
 import '../domain/ankiren_level.dart';
 import '../domain/card_mask.dart';
+import '../domain/ikkiuchi_mode.dart';
 import '../domain/trainer.dart';
 import 'play_config.dart';
 
@@ -221,6 +222,46 @@ class TeiichiSettings {
       );
 }
 
+/// 一騎打ち's options (Settings › 寄り道 › 一騎打ち) and the mode its page
+/// shows.
+class IkkiuchiSettings {
+  const IkkiuchiSettings({this.tab = DefaultSettings.ikkiuchiTab, this.rowPicks = const {}});
+
+  /// The mode whose tab the page shows: the one the player opened last.
+  final IkkiuchiMode tab;
+
+  /// The rows the player picked for a mode's ranked matches; read them
+  /// through [rowsOf].
+  final Map<IkkiuchiMode, int> rowPicks;
+
+  /// The rows [mode]'s ranked matches are laid out in: the player's pick,
+  /// else the mode's own.
+  int rowsOf(IkkiuchiMode mode) => rowPicks[mode] ?? mode.defaultRows;
+
+  /// These settings with [rows] picked for [mode].
+  IkkiuchiSettings withRows(IkkiuchiMode mode, int rows) =>
+      IkkiuchiSettings(tab: tab, rowPicks: {...rowPicks, mode: rows});
+
+  IkkiuchiSettings copyWith({IkkiuchiMode? tab}) => IkkiuchiSettings(tab: tab ?? this.tab, rowPicks: rowPicks);
+
+  Map<String, Object?> toJson() => {
+        'tab': tab.name,
+        'rows': {for (final MapEntry(:key, :value) in rowPicks.entries) key.name: value},
+      };
+
+  /// Settings stored by [toJson]; a pick a mode does not offer is dropped.
+  factory IkkiuchiSettings.fromJson(Map<String, dynamic> j) {
+    final rows = j['rows'] is Map ? (j['rows'] as Map).cast<String, dynamic>() : const <String, dynamic>{};
+    return IkkiuchiSettings(
+      tab: IkkiuchiMode.values.asNameMap()[j['tab']] ?? DefaultSettings.ikkiuchiTab,
+      rowPicks: {
+        for (final mode in IkkiuchiMode.values)
+          if (rows[mode.name] case final int picked when mode.rowChoices.contains(picked)) mode: picked,
+      },
+    );
+  }
+}
+
 /// User preferences (persisted as JSON).
 class AppSettings {
   const AppSettings({
@@ -254,6 +295,7 @@ class AppSettings {
     this.cardScale = DefaultSettings.cardScale,
     this.ankiren = DefaultSettings.ankiren,
     this.teiichi = DefaultSettings.teiichi,
+    this.ikkiuchi = DefaultSettings.ikkiuchi,
   });
 
   /// A language code (e.g. `'ja'`), or `'system'` for the device's language.
@@ -344,6 +386,9 @@ class AppSettings {
   /// 定位置's options and its custom game's last setup.
   final TeiichiSettings teiichi;
 
+  /// 一騎打ち's options and the mode its page shows.
+  final IkkiuchiSettings ikkiuchi;
+
   /// Whether sounds of [category] are switched on.
   bool plays(SoundCategory category) => switch (category) {
         SoundCategory.music => music,
@@ -387,6 +432,7 @@ class AppSettings {
         'cardScale': cardScale,
         'ankiren': ankiren.toJson(),
         'teiichi': teiichi.toJson(),
+        'ikkiuchi': ikkiuchi.toJson(),
       };
 
   factory AppSettings.fromJson(Map<String, dynamic> j) {
@@ -441,6 +487,9 @@ class AppSettings {
       teiichi: j['teiichi'] is Map
           ? TeiichiSettings.fromJson((j['teiichi'] as Map).cast<String, dynamic>())
           : DefaultSettings.teiichi,
+      ikkiuchi: j['ikkiuchi'] is Map
+          ? IkkiuchiSettings.fromJson((j['ikkiuchi'] as Map).cast<String, dynamic>())
+          : DefaultSettings.ikkiuchi,
     );
   }
 
@@ -475,6 +524,7 @@ class AppSettings {
     double? cardScale,
     AnkirenSettings? ankiren,
     TeiichiSettings? teiichi,
+    IkkiuchiSettings? ikkiuchi,
   }) =>
       AppSettings(
         language: language ?? this.language,
@@ -507,5 +557,6 @@ class AppSettings {
         cardScale: cardScale ?? this.cardScale,
         ankiren: ankiren ?? this.ankiren,
         teiichi: teiichi ?? this.teiichi,
+        ikkiuchi: ikkiuchi ?? this.ikkiuchi,
       );
 }

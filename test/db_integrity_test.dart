@@ -13,6 +13,7 @@ import 'package:fudatobashi/db/fsrs_rows.dart';
 import 'package:fudatobashi/domain/ankiren_level.dart';
 import 'package:fudatobashi/domain/card_stats.dart';
 import 'package:fudatobashi/domain/ikkiuchi_match.dart';
+import 'package:fudatobashi/domain/ikkiuchi_mode.dart';
 import 'package:fudatobashi/domain/ikkiuchi_rating.dart';
 import 'package:fudatobashi/domain/ikkiuchi_record.dart';
 import 'package:fudatobashi/domain/play_session.dart';
@@ -319,14 +320,16 @@ void main() {
 
   group('一騎打ち', () {
     Future<int> match(AppDatabase db, int d,
-            {bool ranked = false, bool won = true, double opponent = IkkiuchiRating.start, double? rating}) =>
+            {IkkiuchiMode? mode, bool won = true, double opponent = IkkiuchiRating.start, double? rating}) =>
         db.into(db.ikkiuchiMatches).insert(IkkiuchiMatchesCompanion.insert(
               startedAt: day(d),
               endedAt: day(d, 59),
               day: 20260900 + d,
-              ranked: ranked,
+              ranked: mode != null,
+              mode: Value(mode),
               opponent: IkkiuchiOpponent.tobi,
               perSide: 25,
+              rows: 3,
               memoriseMs: 900000,
               opponentRating: opponent,
               completed: true,
@@ -363,10 +366,11 @@ void main() {
       await db.close();
     });
 
-    test('ranked ratings that are no number are replayed from the stored matches; a free one loses its rating',
-        () async {
+    test('ranked ratings that are no number are replayed from their mode\'s stored matches; a free one loses its '
+        'rating', () async {
       final db = AppDatabase(NativeDatabase.memory());
       const start = IkkiuchiRating.start;
+      const rapid = IkkiuchiMode.rapid, bullet = IkkiuchiMode.bullet;
       final played = [
         (opponentRating: start, won: true),
         (opponentRating: start, won: false),
@@ -374,11 +378,15 @@ void main() {
         (opponentRating: 1700.0, won: true),
       ];
       final placed = IkkiuchiRating.after(played[0], earlier: const [], rating: null);
-      final a = await match(db, 1, ranked: true, rating: placed);
-      final b = await match(db, 2, ranked: true, won: false, rating: double.nan);
+      const bulletLoss = (opponentRating: start, won: false), bulletWin = (opponentRating: start, won: true);
+      final bulletPlaced = IkkiuchiRating.after(bulletLoss, earlier: const [], rating: null);
+      final a = await match(db, 1, mode: rapid, rating: placed);
+      final bulletA = await match(db, 2, mode: bullet, won: false, rating: bulletPlaced);
+      final b = await match(db, 2, mode: rapid, won: false, rating: double.nan);
       final free = await match(db, 3, won: false, opponent: 900, rating: 1500);
-      final c = await match(db, 4, ranked: true, rating: double.infinity);
-      final d = await match(db, 5, ranked: true, opponent: 1700, rating: 1);
+      final c = await match(db, 4, mode: rapid, rating: double.infinity);
+      final bulletB = await match(db, 4, mode: bullet, rating: double.nan);
+      final d = await match(db, 5, mode: rapid, opponent: 1700, rating: 1);
       expect((await db.select(db.ikkiuchiMatches).get()).singleWhere((m) => m.id == b).rating, isNull,
           reason: 'SQLite stores NaN as null');
 
@@ -390,9 +398,12 @@ void main() {
       double? rating = placed;
       for (final (i, id) in [b, c, d].indexed) {
         rating = IkkiuchiRating.after(played[i + 1], earlier: played.sublist(0, i + 1), rating: rating);
-        expect(rows[id]!.rating, closeTo(rating, 1e-9), reason: 'ranked match ${i + 2}');
+        expect(rows[id]!.rating, closeTo(rating, 1e-9), reason: 'ranked match ${i + 2}, from Rapid\'s alone');
       }
-      expect(p.ikkiuchi.rating, closeTo(rating!, 1e-9));
+      expect(p.ikkiuchi.of(rapid).rating, closeTo(rating!, 1e-9));
+      expect([rows[bulletA]!.rating, rows[bulletB]!.rating],
+          [bulletPlaced, IkkiuchiRating.after(bulletWin, earlier: const [bulletLoss], rating: bulletPlaced)],
+          reason: 'Bullet replayed from its own matches');
 
       final repaired = await dumpMatches(db);
       expect(await writesDuring(db, () => DbIntegrity.run(db)), isEmpty);
@@ -405,7 +416,7 @@ void main() {
       final p = await Progress.open(db);
       for (final ranked in [true, false, true, true, true]) {
         await p.recordIkkiuchi(IkkiuchiMatchRecord(
-          setup: ranked ? p.ikkiuchi.rankedSetup : IkkiuchiSetup.firstFree,
+          setup: ranked ? p.ikkiuchi.of(IkkiuchiMode.blitz).rankedSetup(rows: 2) : IkkiuchiSetup.firstFree,
           startedAt: day(1),
           endedAt: day(1, 59),
           completed: true,

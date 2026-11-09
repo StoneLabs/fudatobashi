@@ -92,16 +92,20 @@ class IkkiuchiReview {
   // The same setup before.
 
   /// The earlier matches with the same setup, oldest first: every ranked
-  /// one for a ranked match; for a free one, those with as many cards a
-  /// side, the same memory time and the opponent at the same rating.
+  /// one of its mode for a ranked match; for a free one, those with as many
+  /// cards a side in as many rows, the same memory time and the opponent at
+  /// the same rating.
   late final List<IkkiuchiMatchRecord> peers = [for (final m in earlier) if (_sameSetup(m)) m];
 
   IkkiuchiMatchRecord? get last => peers.lastOrNull;
 
   bool _sameSetup(IkkiuchiMatchRecord other) {
     final a = match.setup, b = other.setup;
-    if (a.ranked || b.ranked) return a.ranked && b.ranked;
-    return a.perSide == b.perSide && a.memorise == b.memorise && a.opponentRating == b.opponentRating;
+    if (a.ranked || b.ranked) return a.ranked && b.ranked && a.mode == b.mode;
+    return a.perSide == b.perSide &&
+        a.rows == b.rows &&
+        a.memorise == b.memorise &&
+        a.opponentRating == b.opponentRating;
   }
 
   // The field, read by read.
@@ -177,12 +181,15 @@ class IkkiuchiReview {
 
   // The rating.
 
-  /// The ranked matches before it.
-  late final List<IkkiuchiMatchRecord> _rankedBefore = [for (final m in earlier) if (m.ranked) m];
+  /// The ranked matches of its mode before it.
+  late final List<IkkiuchiMatchRecord> _rankedBefore = [
+    for (final m in earlier)
+      if (m.ranked && m.setup.mode == match.setup.mode) m,
+  ];
 
-  /// The player's rating before this ranked match: the last earlier ranked
-  /// match's, which while placing is the estimate so far, from
-  /// [IkkiuchiRating.start]; null for free play.
+  /// The player's rating in its mode before this ranked match: the last
+  /// earlier ranked match's of the mode, which while placing is the
+  /// estimate so far, from [IkkiuchiRating.start]; null for free play.
   double? get ratingBefore => match.ranked ? _rankedBefore.lastOrNull?.rating ?? IkkiuchiRating.start : null;
 
   /// The rating after it, or the estimate while placing; null for free

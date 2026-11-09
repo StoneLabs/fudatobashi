@@ -5951,6 +5951,15 @@ class $IkkiuchiMatchesTable extends IkkiuchiMatches
     ),
   );
   @override
+  late final GeneratedColumnWithTypeConverter<IkkiuchiMode?, String> mode =
+      GeneratedColumn<String>(
+        'mode',
+        aliasedName,
+        true,
+        type: DriftSqlType.string,
+        requiredDuringInsert: false,
+      ).withConverter<IkkiuchiMode?>($IkkiuchiMatchesTable.$convertermoden);
+  @override
   late final GeneratedColumnWithTypeConverter<IkkiuchiOpponent, String>
   opponent = GeneratedColumn<String>(
     'opponent',
@@ -5965,6 +5974,15 @@ class $IkkiuchiMatchesTable extends IkkiuchiMatches
   @override
   late final GeneratedColumn<int> perSide = GeneratedColumn<int>(
     'per_side',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _rowsMeta = const VerificationMeta('rows');
+  @override
+  late final GeneratedColumn<int> rows = GeneratedColumn<int>(
+    'rows',
     aliasedName,
     false,
     type: DriftSqlType.int,
@@ -6053,8 +6071,10 @@ class $IkkiuchiMatchesTable extends IkkiuchiMatches
     endedAt,
     day,
     ranked,
+    mode,
     opponent,
     perSide,
+    rows,
     memoriseMs,
     opponentRating,
     completed,
@@ -6117,6 +6137,14 @@ class $IkkiuchiMatchesTable extends IkkiuchiMatches
       );
     } else if (isInserting) {
       context.missing(_perSideMeta);
+    }
+    if (data.containsKey('rows')) {
+      context.handle(
+        _rowsMeta,
+        rows.isAcceptableOrUnknown(data['rows']!, _rowsMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_rowsMeta);
     }
     if (data.containsKey('memorise_ms')) {
       context.handle(
@@ -6204,6 +6232,12 @@ class $IkkiuchiMatchesTable extends IkkiuchiMatches
         DriftSqlType.bool,
         data['${effectivePrefix}ranked'],
       )!,
+      mode: $IkkiuchiMatchesTable.$convertermoden.fromSql(
+        attachedDatabase.typeMapping.read(
+          DriftSqlType.string,
+          data['${effectivePrefix}mode'],
+        ),
+      ),
       opponent: $IkkiuchiMatchesTable.$converteropponent.fromSql(
         attachedDatabase.typeMapping.read(
           DriftSqlType.string,
@@ -6213,6 +6247,10 @@ class $IkkiuchiMatchesTable extends IkkiuchiMatches
       perSide: attachedDatabase.typeMapping.read(
         DriftSqlType.int,
         data['${effectivePrefix}per_side'],
+      )!,
+      rows: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}rows'],
       )!,
       memoriseMs: attachedDatabase.typeMapping.read(
         DriftSqlType.int,
@@ -6250,6 +6288,10 @@ class $IkkiuchiMatchesTable extends IkkiuchiMatches
     return $IkkiuchiMatchesTable(attachedDatabase, alias);
   }
 
+  static JsonTypeConverter2<IkkiuchiMode, String, String> $convertermode =
+      const EnumNameConverter<IkkiuchiMode>(IkkiuchiMode.values);
+  static JsonTypeConverter2<IkkiuchiMode?, String?, String?> $convertermoden =
+      JsonTypeConverter2.asNullable($convertermode);
   static JsonTypeConverter2<IkkiuchiOpponent, String, String>
   $converteropponent = const EnumNameConverter<IkkiuchiOpponent>(
     IkkiuchiOpponent.values,
@@ -6269,11 +6311,16 @@ class IkkiuchiMatchRow extends DataClass
   final int day;
   final bool ranked;
 
+  /// The ranked mode it was played in; null for a custom match.
+  final IkkiuchiMode? mode;
+
   /// Who played the far side.
   final IkkiuchiOpponent opponent;
 
-  /// The cards dealt to each side, and the memory time before play, ms.
+  /// The cards dealt to each side, the rows each side was laid out in, and
+  /// the memory time before play, ms.
   final int perSide;
+  final int rows;
   final int memoriseMs;
 
   /// The rating the opponent played at.
@@ -6287,7 +6334,7 @@ class IkkiuchiMatchRow extends DataClass
   final int playerLeft;
   final int opponentLeft;
 
-  /// The player's 一騎打ち rating after it; null for free play.
+  /// The player's 一騎打ち rating in its mode after it; null for free play.
   final double? rating;
 
   /// The experience it earned, settled as it was stored, as JSON
@@ -6299,8 +6346,10 @@ class IkkiuchiMatchRow extends DataClass
     required this.endedAt,
     required this.day,
     required this.ranked,
+    this.mode,
     required this.opponent,
     required this.perSide,
+    required this.rows,
     required this.memoriseMs,
     required this.opponentRating,
     required this.completed,
@@ -6317,12 +6366,18 @@ class IkkiuchiMatchRow extends DataClass
     map['ended_at'] = Variable<DateTime>(endedAt);
     map['day'] = Variable<int>(day);
     map['ranked'] = Variable<bool>(ranked);
+    if (!nullToAbsent || mode != null) {
+      map['mode'] = Variable<String>(
+        $IkkiuchiMatchesTable.$convertermoden.toSql(mode),
+      );
+    }
     {
       map['opponent'] = Variable<String>(
         $IkkiuchiMatchesTable.$converteropponent.toSql(opponent),
       );
     }
     map['per_side'] = Variable<int>(perSide);
+    map['rows'] = Variable<int>(rows);
     map['memorise_ms'] = Variable<int>(memoriseMs);
     map['opponent_rating'] = Variable<double>(opponentRating);
     map['completed'] = Variable<bool>(completed);
@@ -6342,8 +6397,10 @@ class IkkiuchiMatchRow extends DataClass
       endedAt: Value(endedAt),
       day: Value(day),
       ranked: Value(ranked),
+      mode: mode == null && nullToAbsent ? const Value.absent() : Value(mode),
       opponent: Value(opponent),
       perSide: Value(perSide),
+      rows: Value(rows),
       memoriseMs: Value(memoriseMs),
       opponentRating: Value(opponentRating),
       completed: Value(completed),
@@ -6367,10 +6424,14 @@ class IkkiuchiMatchRow extends DataClass
       endedAt: serializer.fromJson<DateTime>(json['endedAt']),
       day: serializer.fromJson<int>(json['day']),
       ranked: serializer.fromJson<bool>(json['ranked']),
+      mode: $IkkiuchiMatchesTable.$convertermoden.fromJson(
+        serializer.fromJson<String?>(json['mode']),
+      ),
       opponent: $IkkiuchiMatchesTable.$converteropponent.fromJson(
         serializer.fromJson<String>(json['opponent']),
       ),
       perSide: serializer.fromJson<int>(json['perSide']),
+      rows: serializer.fromJson<int>(json['rows']),
       memoriseMs: serializer.fromJson<int>(json['memoriseMs']),
       opponentRating: serializer.fromJson<double>(json['opponentRating']),
       completed: serializer.fromJson<bool>(json['completed']),
@@ -6389,10 +6450,14 @@ class IkkiuchiMatchRow extends DataClass
       'endedAt': serializer.toJson<DateTime>(endedAt),
       'day': serializer.toJson<int>(day),
       'ranked': serializer.toJson<bool>(ranked),
+      'mode': serializer.toJson<String?>(
+        $IkkiuchiMatchesTable.$convertermoden.toJson(mode),
+      ),
       'opponent': serializer.toJson<String>(
         $IkkiuchiMatchesTable.$converteropponent.toJson(opponent),
       ),
       'perSide': serializer.toJson<int>(perSide),
+      'rows': serializer.toJson<int>(rows),
       'memoriseMs': serializer.toJson<int>(memoriseMs),
       'opponentRating': serializer.toJson<double>(opponentRating),
       'completed': serializer.toJson<bool>(completed),
@@ -6409,8 +6474,10 @@ class IkkiuchiMatchRow extends DataClass
     DateTime? endedAt,
     int? day,
     bool? ranked,
+    Value<IkkiuchiMode?> mode = const Value.absent(),
     IkkiuchiOpponent? opponent,
     int? perSide,
+    int? rows,
     int? memoriseMs,
     double? opponentRating,
     bool? completed,
@@ -6424,8 +6491,10 @@ class IkkiuchiMatchRow extends DataClass
     endedAt: endedAt ?? this.endedAt,
     day: day ?? this.day,
     ranked: ranked ?? this.ranked,
+    mode: mode.present ? mode.value : this.mode,
     opponent: opponent ?? this.opponent,
     perSide: perSide ?? this.perSide,
+    rows: rows ?? this.rows,
     memoriseMs: memoriseMs ?? this.memoriseMs,
     opponentRating: opponentRating ?? this.opponentRating,
     completed: completed ?? this.completed,
@@ -6441,8 +6510,10 @@ class IkkiuchiMatchRow extends DataClass
       endedAt: data.endedAt.present ? data.endedAt.value : this.endedAt,
       day: data.day.present ? data.day.value : this.day,
       ranked: data.ranked.present ? data.ranked.value : this.ranked,
+      mode: data.mode.present ? data.mode.value : this.mode,
       opponent: data.opponent.present ? data.opponent.value : this.opponent,
       perSide: data.perSide.present ? data.perSide.value : this.perSide,
+      rows: data.rows.present ? data.rows.value : this.rows,
       memoriseMs: data.memoriseMs.present
           ? data.memoriseMs.value
           : this.memoriseMs,
@@ -6469,8 +6540,10 @@ class IkkiuchiMatchRow extends DataClass
           ..write('endedAt: $endedAt, ')
           ..write('day: $day, ')
           ..write('ranked: $ranked, ')
+          ..write('mode: $mode, ')
           ..write('opponent: $opponent, ')
           ..write('perSide: $perSide, ')
+          ..write('rows: $rows, ')
           ..write('memoriseMs: $memoriseMs, ')
           ..write('opponentRating: $opponentRating, ')
           ..write('completed: $completed, ')
@@ -6489,8 +6562,10 @@ class IkkiuchiMatchRow extends DataClass
     endedAt,
     day,
     ranked,
+    mode,
     opponent,
     perSide,
+    rows,
     memoriseMs,
     opponentRating,
     completed,
@@ -6508,8 +6583,10 @@ class IkkiuchiMatchRow extends DataClass
           other.endedAt == this.endedAt &&
           other.day == this.day &&
           other.ranked == this.ranked &&
+          other.mode == this.mode &&
           other.opponent == this.opponent &&
           other.perSide == this.perSide &&
+          other.rows == this.rows &&
           other.memoriseMs == this.memoriseMs &&
           other.opponentRating == this.opponentRating &&
           other.completed == this.completed &&
@@ -6525,8 +6602,10 @@ class IkkiuchiMatchesCompanion extends UpdateCompanion<IkkiuchiMatchRow> {
   final Value<DateTime> endedAt;
   final Value<int> day;
   final Value<bool> ranked;
+  final Value<IkkiuchiMode?> mode;
   final Value<IkkiuchiOpponent> opponent;
   final Value<int> perSide;
+  final Value<int> rows;
   final Value<int> memoriseMs;
   final Value<double> opponentRating;
   final Value<bool> completed;
@@ -6540,8 +6619,10 @@ class IkkiuchiMatchesCompanion extends UpdateCompanion<IkkiuchiMatchRow> {
     this.endedAt = const Value.absent(),
     this.day = const Value.absent(),
     this.ranked = const Value.absent(),
+    this.mode = const Value.absent(),
     this.opponent = const Value.absent(),
     this.perSide = const Value.absent(),
+    this.rows = const Value.absent(),
     this.memoriseMs = const Value.absent(),
     this.opponentRating = const Value.absent(),
     this.completed = const Value.absent(),
@@ -6556,8 +6637,10 @@ class IkkiuchiMatchesCompanion extends UpdateCompanion<IkkiuchiMatchRow> {
     required DateTime endedAt,
     required int day,
     required bool ranked,
+    this.mode = const Value.absent(),
     required IkkiuchiOpponent opponent,
     required int perSide,
+    required int rows,
     required int memoriseMs,
     required double opponentRating,
     required bool completed,
@@ -6571,6 +6654,7 @@ class IkkiuchiMatchesCompanion extends UpdateCompanion<IkkiuchiMatchRow> {
        ranked = Value(ranked),
        opponent = Value(opponent),
        perSide = Value(perSide),
+       rows = Value(rows),
        memoriseMs = Value(memoriseMs),
        opponentRating = Value(opponentRating),
        completed = Value(completed),
@@ -6583,8 +6667,10 @@ class IkkiuchiMatchesCompanion extends UpdateCompanion<IkkiuchiMatchRow> {
     Expression<DateTime>? endedAt,
     Expression<int>? day,
     Expression<bool>? ranked,
+    Expression<String>? mode,
     Expression<String>? opponent,
     Expression<int>? perSide,
+    Expression<int>? rows,
     Expression<int>? memoriseMs,
     Expression<double>? opponentRating,
     Expression<bool>? completed,
@@ -6599,8 +6685,10 @@ class IkkiuchiMatchesCompanion extends UpdateCompanion<IkkiuchiMatchRow> {
       if (endedAt != null) 'ended_at': endedAt,
       if (day != null) 'day': day,
       if (ranked != null) 'ranked': ranked,
+      if (mode != null) 'mode': mode,
       if (opponent != null) 'opponent': opponent,
       if (perSide != null) 'per_side': perSide,
+      if (rows != null) 'rows': rows,
       if (memoriseMs != null) 'memorise_ms': memoriseMs,
       if (opponentRating != null) 'opponent_rating': opponentRating,
       if (completed != null) 'completed': completed,
@@ -6617,8 +6705,10 @@ class IkkiuchiMatchesCompanion extends UpdateCompanion<IkkiuchiMatchRow> {
     Value<DateTime>? endedAt,
     Value<int>? day,
     Value<bool>? ranked,
+    Value<IkkiuchiMode?>? mode,
     Value<IkkiuchiOpponent>? opponent,
     Value<int>? perSide,
+    Value<int>? rows,
     Value<int>? memoriseMs,
     Value<double>? opponentRating,
     Value<bool>? completed,
@@ -6633,8 +6723,10 @@ class IkkiuchiMatchesCompanion extends UpdateCompanion<IkkiuchiMatchRow> {
       endedAt: endedAt ?? this.endedAt,
       day: day ?? this.day,
       ranked: ranked ?? this.ranked,
+      mode: mode ?? this.mode,
       opponent: opponent ?? this.opponent,
       perSide: perSide ?? this.perSide,
+      rows: rows ?? this.rows,
       memoriseMs: memoriseMs ?? this.memoriseMs,
       opponentRating: opponentRating ?? this.opponentRating,
       completed: completed ?? this.completed,
@@ -6663,6 +6755,11 @@ class IkkiuchiMatchesCompanion extends UpdateCompanion<IkkiuchiMatchRow> {
     if (ranked.present) {
       map['ranked'] = Variable<bool>(ranked.value);
     }
+    if (mode.present) {
+      map['mode'] = Variable<String>(
+        $IkkiuchiMatchesTable.$convertermoden.toSql(mode.value),
+      );
+    }
     if (opponent.present) {
       map['opponent'] = Variable<String>(
         $IkkiuchiMatchesTable.$converteropponent.toSql(opponent.value),
@@ -6670,6 +6767,9 @@ class IkkiuchiMatchesCompanion extends UpdateCompanion<IkkiuchiMatchRow> {
     }
     if (perSide.present) {
       map['per_side'] = Variable<int>(perSide.value);
+    }
+    if (rows.present) {
+      map['rows'] = Variable<int>(rows.value);
     }
     if (memoriseMs.present) {
       map['memorise_ms'] = Variable<int>(memoriseMs.value);
@@ -6703,8 +6803,10 @@ class IkkiuchiMatchesCompanion extends UpdateCompanion<IkkiuchiMatchRow> {
           ..write('endedAt: $endedAt, ')
           ..write('day: $day, ')
           ..write('ranked: $ranked, ')
+          ..write('mode: $mode, ')
           ..write('opponent: $opponent, ')
           ..write('perSide: $perSide, ')
+          ..write('rows: $rows, ')
           ..write('memoriseMs: $memoriseMs, ')
           ..write('opponentRating: $opponentRating, ')
           ..write('completed: $completed, ')
@@ -12214,8 +12316,10 @@ typedef $$IkkiuchiMatchesTableCreateCompanionBuilder =
       required DateTime endedAt,
       required int day,
       required bool ranked,
+      Value<IkkiuchiMode?> mode,
       required IkkiuchiOpponent opponent,
       required int perSide,
+      required int rows,
       required int memoriseMs,
       required double opponentRating,
       required bool completed,
@@ -12231,8 +12335,10 @@ typedef $$IkkiuchiMatchesTableUpdateCompanionBuilder =
       Value<DateTime> endedAt,
       Value<int> day,
       Value<bool> ranked,
+      Value<IkkiuchiMode?> mode,
       Value<IkkiuchiOpponent> opponent,
       Value<int> perSide,
+      Value<int> rows,
       Value<int> memoriseMs,
       Value<double> opponentRating,
       Value<bool> completed,
@@ -12316,6 +12422,12 @@ class $$IkkiuchiMatchesTableFilterComposer
     builder: (column) => ColumnFilters(column),
   );
 
+  ColumnWithTypeConverterFilters<IkkiuchiMode?, IkkiuchiMode, String>
+  get mode => $composableBuilder(
+    column: $table.mode,
+    builder: (column) => ColumnWithTypeConverterFilters(column),
+  );
+
   ColumnWithTypeConverterFilters<IkkiuchiOpponent, IkkiuchiOpponent, String>
   get opponent => $composableBuilder(
     column: $table.opponent,
@@ -12324,6 +12436,11 @@ class $$IkkiuchiMatchesTableFilterComposer
 
   ColumnFilters<int> get perSide => $composableBuilder(
     column: $table.perSide,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get rows => $composableBuilder(
+    column: $table.rows,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -12440,6 +12557,11 @@ class $$IkkiuchiMatchesTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<String> get mode => $composableBuilder(
+    column: $table.mode,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   ColumnOrderings<String> get opponent => $composableBuilder(
     column: $table.opponent,
     builder: (column) => ColumnOrderings(column),
@@ -12447,6 +12569,11 @@ class $$IkkiuchiMatchesTableOrderingComposer
 
   ColumnOrderings<int> get perSide => $composableBuilder(
     column: $table.perSide,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get rows => $composableBuilder(
+    column: $table.rows,
     builder: (column) => ColumnOrderings(column),
   );
 
@@ -12530,11 +12657,17 @@ class $$IkkiuchiMatchesTableAnnotationComposer
   GeneratedColumn<bool> get ranked =>
       $composableBuilder(column: $table.ranked, builder: (column) => column);
 
+  GeneratedColumnWithTypeConverter<IkkiuchiMode?, String> get mode =>
+      $composableBuilder(column: $table.mode, builder: (column) => column);
+
   GeneratedColumnWithTypeConverter<IkkiuchiOpponent, String> get opponent =>
       $composableBuilder(column: $table.opponent, builder: (column) => column);
 
   GeneratedColumn<int> get perSide =>
       $composableBuilder(column: $table.perSide, builder: (column) => column);
+
+  GeneratedColumn<int> get rows =>
+      $composableBuilder(column: $table.rows, builder: (column) => column);
 
   GeneratedColumn<int> get memoriseMs => $composableBuilder(
     column: $table.memoriseMs,
@@ -12649,8 +12782,10 @@ class $$IkkiuchiMatchesTableTableManager
                 Value<DateTime> endedAt = const Value.absent(),
                 Value<int> day = const Value.absent(),
                 Value<bool> ranked = const Value.absent(),
+                Value<IkkiuchiMode?> mode = const Value.absent(),
                 Value<IkkiuchiOpponent> opponent = const Value.absent(),
                 Value<int> perSide = const Value.absent(),
+                Value<int> rows = const Value.absent(),
                 Value<int> memoriseMs = const Value.absent(),
                 Value<double> opponentRating = const Value.absent(),
                 Value<bool> completed = const Value.absent(),
@@ -12664,8 +12799,10 @@ class $$IkkiuchiMatchesTableTableManager
                 endedAt: endedAt,
                 day: day,
                 ranked: ranked,
+                mode: mode,
                 opponent: opponent,
                 perSide: perSide,
+                rows: rows,
                 memoriseMs: memoriseMs,
                 opponentRating: opponentRating,
                 completed: completed,
@@ -12681,8 +12818,10 @@ class $$IkkiuchiMatchesTableTableManager
                 required DateTime endedAt,
                 required int day,
                 required bool ranked,
+                Value<IkkiuchiMode?> mode = const Value.absent(),
                 required IkkiuchiOpponent opponent,
                 required int perSide,
+                required int rows,
                 required int memoriseMs,
                 required double opponentRating,
                 required bool completed,
@@ -12696,8 +12835,10 @@ class $$IkkiuchiMatchesTableTableManager
                 endedAt: endedAt,
                 day: day,
                 ranked: ranked,
+                mode: mode,
                 opponent: opponent,
                 perSide: perSide,
+                rows: rows,
                 memoriseMs: memoriseMs,
                 opponentRating: opponentRating,
                 completed: completed,

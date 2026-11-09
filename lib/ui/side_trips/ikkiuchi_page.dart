@@ -32,11 +32,13 @@ Future<void> openIkkiuchiPage(BuildContext context) async {
 }
 
 /// 一騎打ち's page, on the side trips' page frame, with History beside the
-/// back button: who the player is (the class and rating on the shared class
-/// scale, the wins and card margin of the last ranked matches, and the way
-/// to the next class); ranked, in a panel with its placement matches while
-/// they last and the burst that starts the next ranked match, Tobi's rating
-/// for it on the burst; then the custom match, in a panel at the foot that
+/// back button. Ranked is the mode of the tab opened last
+/// (`IkkiuchiSettings.tab`): who the player is in it (the class and rating
+/// on the shared class scale, the wins and card margin of the last ranked
+/// matches, and the way to the next class); a panel with its placement
+/// matches while they last and the burst that starts the next ranked match,
+/// in the rows picked for the mode, Tobi's rating for it on the burst; then
+/// the custom match, in a panel at the foot that
 /// grows upwards: its facts, Tobi's rating among them the way to the custom
 /// sheet ([pickIkkiuchiCustom]), the からふだ it reads, a preview of its
 /// field and the burst that starts it. Guest mode and the rules are Home's
@@ -60,7 +62,10 @@ class _IkkiuchiPageState extends State<IkkiuchiPage> {
   @override
   Widget build(BuildContext context) {
     final s = S.of(context);
-    final records = ProgressScope.of(context).ikkiuchi;
+    final progress = ProgressScope.of(context);
+    final records = progress.ikkiuchi;
+    final mode = progress.settings.ikkiuchi.tab;
+    final ranked = records.of(mode);
     final custom = _picked ?? records.freeSetup;
     return Scaffold(
       body: Stack(children: [
@@ -86,9 +91,9 @@ class _IkkiuchiPageState extends State<IkkiuchiPage> {
                       ],
                     ),
                     const SizedBox(height: IkkiuchiPageLayout.gap),
-                    _Strip(records),
+                    _Strip(ranked),
                     const SizedBox(height: IkkiuchiPageLayout.panelTop),
-                    _RankedPanel(records),
+                    _RankedPanel(ranked, rows: progress.settings.ikkiuchi.rowsOf(mode)),
                     const SizedBox(height: IkkiuchiPageLayout.panelTop),
                     Expanded(
                       child: Align(
@@ -125,7 +130,7 @@ class _IkkiuchiPageState extends State<IkkiuchiPage> {
 class _Strip extends StatelessWidget {
   const _Strip(this.records);
 
-  final IkkiuchiRecords records;
+  final IkkiuchiModeRecords records;
 
   @override
   Widget build(BuildContext context) {
@@ -170,15 +175,16 @@ class _Strip extends StatelessWidget {
 /// slots for the rest, the next one marked); then the burst that starts the
 /// next ranked match, with Tobi's rating for it.
 class _RankedPanel extends StatelessWidget {
-  const _RankedPanel(this.records);
+  const _RankedPanel(this.records, {required this.rows});
 
-  final IkkiuchiRecords records;
+  final IkkiuchiModeRecords records;
+  final int rows;
 
   @override
   Widget build(BuildContext context) {
     final s = S.of(context);
     final placing = records.placing;
-    final setup = records.rankedSetup;
+    final setup = records.rankedSetup(rows: rows);
     final tobi = setup.opponentRating.round();
     return TaggedPanel(
       tag: s.ikkiuchiRankedMode,
@@ -205,12 +211,12 @@ class _RankedPanel extends StatelessWidget {
 class _Placement extends StatelessWidget {
   const _Placement(this.records);
 
-  final IkkiuchiRecords records;
+  final IkkiuchiModeRecords records;
 
   @override
   Widget build(BuildContext context) {
     final s = S.of(context);
-    final played = records.matches.where((m) => m.ranked).toList();
+    final played = records.matches;
     return GameRow([
       for (var i = 0; i < IkkiuchiRating.placementMatches; i++)
         if (i < played.length)
@@ -309,7 +315,7 @@ class _CustomPanel extends StatelessWidget {
             child: NumberedText(s.ikkiuchiKarafudaLine, [karafuda], style: hint, numberStyle: hintNumber),
           ),
         ),
-        Flexible(child: IkkiuchiFieldPreview(setup.perSide)),
+        Flexible(child: IkkiuchiFieldPreview(setup.perSide, rows: setup.rows)),
         Padding(
           padding: IkkiuchiPageLayout.burstMargin,
           child: BurstButton(

@@ -7,6 +7,7 @@ import 'package:fsrs/fsrs.dart' as fsrs;
 import '../db/database.dart';
 import '../db/fsrs_rows.dart';
 import '../domain/card_stats.dart';
+import '../domain/ikkiuchi_mode.dart';
 import '../domain/ikkiuchi_rating.dart';
 import '../domain/ikkiuchi_record.dart';
 import '../domain/play_session.dart';
@@ -181,12 +182,13 @@ abstract final class DbIntegrity {
     await (db.delete(db.ikkiuchiReads)..where((r) => r.matchId.isNotInQuery(matches))).go();
   }
 
-  /// A ranked 一騎打ち match stores the player's rating after it, a finite
-  /// one, and a free match none. SQLite keeps an infinity, and stores NaN as
-  /// null.
+  /// A ranked 一騎打ち match stores the player's rating in its mode after it,
+  /// a finite one, and a free match none. SQLite keeps an infinity, and
+  /// stores NaN as null.
   ///
-  /// A free match loses its rating. From the first ranked match that breaks
-  /// this, the ratings are replayed in order from the stored matches.
+  /// A free match loses its rating. In each mode, from the first ranked
+  /// match that breaks this, the mode's ratings are replayed in order from
+  /// its stored matches.
   static Future<bool> _hasBrokenIkkiuchiRatings(AppDatabase db) async {
     final found = await db.customSelect(
       '''
@@ -202,25 +204,30 @@ abstract final class DbIntegrity {
   static Future<void> _replayIkkiuchiRatings(AppDatabase db) async {
     await (db.update(db.ikkiuchiMatches)..where((m) => m.ranked.not() & m.rating.isNotNull()))
         .write(const IkkiuchiMatchesCompanion(rating: Value(null)));
-    final ranked = await (db.select(db.ikkiuchiMatches)
+    final byMode = <IkkiuchiMode?, List<IkkiuchiMatchRow>>{};
+    for (final m in await (db.select(db.ikkiuchiMatches)
           ..where((m) => m.ranked)
           ..orderBy([(m) => OrderingTerm.asc(m.id)]))
-        .get();
-    final first = ranked.indexWhere((m) => !(m.rating?.isFinite ?? false));
-    if (first < 0) return;
+        .get()) {
+      (byMode[m.mode] ??= []).add(m);
+    }
     IkkiuchiRatedMatch rated(IkkiuchiMatchRow m) => (
           opponentRating: m.opponentRating,
           won: IkkiuchiResult.of(completed: m.completed, playerLeft: m.playerLeft, opponentLeft: m.opponentLeft) ==
               IkkiuchiResult.won,
         );
-    final earlier = [for (final m in ranked.take(first)) rated(m)];
-    var rating = first == 0 ? null : ranked[first - 1].rating;
-    for (final m in ranked.skip(first)) {
-      final match = rated(m);
-      rating = IkkiuchiRating.after(match, earlier: earlier, rating: rating);
-      earlier.add(match);
-      await (db.update(db.ikkiuchiMatches)..where((x) => x.id.equals(m.id)))
-          .write(IkkiuchiMatchesCompanion(rating: Value(rating)));
+    for (final ranked in byMode.values) {
+      final first = ranked.indexWhere((m) => !(m.rating?.isFinite ?? false));
+      if (first < 0) continue;
+      final earlier = [for (final m in ranked.take(first)) rated(m)];
+      var rating = first == 0 ? null : ranked[first - 1].rating;
+      for (final m in ranked.skip(first)) {
+        final match = rated(m);
+        rating = IkkiuchiRating.after(match, earlier: earlier, rating: rating);
+        earlier.add(match);
+        await (db.update(db.ikkiuchiMatches)..where((x) => x.id.equals(m.id)))
+            .write(IkkiuchiMatchesCompanion(rating: Value(rating)));
+      }
     }
   }
 

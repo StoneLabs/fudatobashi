@@ -1,11 +1,15 @@
 import 'dart:convert';
+import 'dart:math' as math;
 
 import 'package:drift/drift.dart';
 
+import '../config/config.dart';
 import '../db/database.dart';
+import '../domain/ikkiuchi_mode.dart';
 import '../domain/ikkiuchi_rating.dart';
 import '../domain/ikkiuchi_record.dart';
 import '../domain/ikkiuchi_xp.dart';
+import '../domain/rating.dart';
 import '../domain/xp.dart';
 
 /// What recording a 一騎打ち match did: the match as stored, and what it
@@ -18,9 +22,9 @@ class IkkiuchiReport {
 }
 
 /// The recorded 一騎打ち matches, oldest first, each with its reads, and
-/// what they add up to: the counts, the free setup to start on, and the
-/// player's ranked rating with the next ranked match's setup. Owned by
-/// `Progress`, which loads it on start.
+/// what they add up to: the counts, the free setup to start on, and each
+/// ranked mode's standing ([of]). Owned by `Progress`, which loads it on
+/// start.
 class IkkiuchiRecords {
   IkkiuchiRecords._(this._matches);
 
@@ -55,57 +59,32 @@ class IkkiuchiRecords {
   /// The last free match's setup, or the first free one's before any.
   IkkiuchiSetup get freeSetup => _matches.where((m) => !m.ranked).lastOrNull?.setup ?? IkkiuchiSetup.firstFree;
 
-  Iterable<IkkiuchiMatchRecord> get _ranked => _matches.where((m) => m.ranked);
-
-  /// The last [n] ranked matches, newest first.
-  List<IkkiuchiMatchRecord> lastRanked(int n) => _ranked.toList().reversed.take(n).toList();
-
-  /// The ranked matches played, placement's among them.
-  int get rankedPlayed => _ranked.length;
-
-  /// Whether the player is still being placed: the next ranked match
-  /// places them.
-  bool get placing => IkkiuchiRating.isPlacement(rankedPlayed);
-
-  /// The player's 一騎打ち rating, the last ranked match's; null while they
-  /// are being placed.
-  double? get rating => placing ? null : _ranked.lastOrNull?.rating;
-
-  /// What the last ranked match did to the rating; null while the player
-  /// is being placed and for the match that placed them.
-  double? get ratingChange {
-    final ratings = [for (final m in _ranked) m.rating];
-    if (IkkiuchiRating.isPlacement(ratings.length - 1)) return null;
-    return switch (ratings) {
-      [..., final double before, final double after] => after - before,
-      _ => null,
-    };
-  }
-
-  /// The next ranked match's setup, Tobi playing at the rating
-  /// [IkkiuchiRating.opponentFor] gives.
-  IkkiuchiSetup get rankedSetup => IkkiuchiSetup.ranked(
-      opponentRating: IkkiuchiRating.opponentFor(played: rankedPlayed, rating: _ranked.lastOrNull?.rating));
+  /// [mode]'s ranked matches as they stand now, and what they add up to.
+  IkkiuchiModeRecords of(IkkiuchiMode mode) =>
+      IkkiuchiModeRecords._(mode, List.unmodifiable([for (final m in _matches) if (m.ranked && m.setup.mode == mode) m]));
 
   /// Stores [match], once it is over, as played on practice day [day]: its
   /// row and its reads, in one transaction; a ranked one with the player's
-  /// rating after it, from the ranked matches before it; and the
-  /// experience it earned ([IkkiuchiXp]). Returns it as stored.
+  /// rating in its mode after it, from the mode's ranked matches before it;
+  /// and the experience it earned ([IkkiuchiXp]). Returns it as stored.
   Future<IkkiuchiMatchRecord> record(AppDatabase db, IkkiuchiMatchRecord match, {required int day}) async {
     final setup = match.setup;
-    final rating = match.ranked
-        ? IkkiuchiRating.after(match.rated,
-            earlier: [for (final m in _ranked) m.rated], rating: _ranked.lastOrNull?.rating)
-        : null;
-    final xp = IkkiuchiXp.of(match, placed: match.ranked && IkkiuchiRating.endsPlacement(rankedPlayed));
+    final before = match.ranked ? of(setup.mode!) : null;
+    final rating = before == null
+        ? null
+        : IkkiuchiRating.after(match.rated,
+            earlier: [for (final m in before.matches) m.rated], rating: before.matches.lastOrNull?.rating);
+    final xp = IkkiuchiXp.of(match, placed: before != null && IkkiuchiRating.endsPlacement(before.rankedPlayed));
     final id = await db.transaction(() async {
       final id = await db.into(db.ikkiuchiMatches).insert(IkkiuchiMatchesCompanion.insert(
             startedAt: match.startedAt,
             endedAt: match.endedAt,
             day: day,
             ranked: setup.ranked,
+            mode: Value(setup.mode),
             opponent: setup.opponent,
             perSide: setup.perSide,
+            rows: setup.rows,
             memoriseMs: setup.memorise.inMilliseconds,
             opponentRating: setup.opponentRating,
             completed: match.completed,
@@ -147,9 +126,11 @@ class IkkiuchiRecords {
         id: m.id,
         setup: IkkiuchiSetup(
           ranked: m.ranked,
+          mode: m.mode,
           opponent: m.opponent,
           opponentRating: m.opponentRating,
           perSide: m.perSide,
+          rows: m.rows,
           memorise: Duration(milliseconds: m.memoriseMs),
         ),
         startedAt: m.startedAt,
@@ -177,4 +158,62 @@ class IkkiuchiRecords {
         faults: [for (final f in jsonDecode(r.faults) as List) IkkiuchiFault.fromJson(f as List)],
         sends: [for (final s in jsonDecode(r.sends) as List) IkkiuchiSent.fromJson(s as List)],
       );
+}
+
+/// One mode's ranked matches, oldest first, and what they add up to: the
+/// player's rating and class in it, their placement, the curve of their
+/// rating, and the next ranked match's setup.
+class IkkiuchiModeRecords {
+  IkkiuchiModeRecords._(this.mode, this.matches);
+
+  final IkkiuchiMode mode;
+
+  /// The mode's ranked matches, oldest first.
+  final List<IkkiuchiMatchRecord> matches;
+
+  /// The last [n] ranked matches, newest first.
+  List<IkkiuchiMatchRecord> lastRanked(int n) => matches.reversed.take(n).toList();
+
+  /// The ranked matches played, placement's among them.
+  int get rankedPlayed => matches.length;
+
+  /// Whether the player is still being placed: the next ranked match
+  /// places them.
+  bool get placing => IkkiuchiRating.isPlacement(rankedPlayed);
+
+  /// The player's rating, the last ranked match's; null while they are
+  /// being placed.
+  double? get rating => placing ? null : matches.lastOrNull?.rating;
+
+  /// The class the rating stands in; null while the player is being placed.
+  RankBand? get band => switch (rating) {
+        final rating? => Rating.bandOf(rating),
+        null => null,
+      };
+
+  /// What the last ranked match did to the rating; null while the player
+  /// is being placed and for the match that placed them.
+  double? get ratingChange {
+    final ratings = [for (final m in matches) m.rating];
+    if (IkkiuchiRating.isPlacement(ratings.length - 1)) return null;
+    return switch (ratings) {
+      [..., final double before, final double after] => after - before,
+      _ => null,
+    };
+  }
+
+  /// The rating after each of the last [IkkiuchiModeTuning.curveMatches]
+  /// ranked matches, oldest first, from the match that ended placement,
+  /// whose estimate is the first rating; the estimates before it are not
+  /// drawn. Empty while the player is being placed.
+  List<double> get curve {
+    final rated = [for (final m in matches.skip(IkkiuchiRating.placementMatches - 1)) m.rating!];
+    return rated.sublist(math.max(0, rated.length - IkkiuchiModeTuning.curveMatches));
+  }
+
+  /// The next ranked match's setup, each side laid out in [rows], Tobi
+  /// playing at the rating [IkkiuchiRating.opponentFor] gives.
+  IkkiuchiSetup rankedSetup({required int rows}) => IkkiuchiSetup.ranked(mode,
+      opponentRating: IkkiuchiRating.opponentFor(mode, played: rankedPlayed, rating: matches.lastOrNull?.rating),
+      rows: rows);
 }

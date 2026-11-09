@@ -8,6 +8,7 @@ import 'package:fudatobashi/config/config.dart';
 import 'package:fudatobashi/db/database.dart';
 import 'package:fudatobashi/domain/ankiren_field.dart';
 import 'package:fudatobashi/domain/day_window.dart';
+import 'package:fudatobashi/domain/ikkiuchi_mode.dart';
 import 'package:fudatobashi/domain/ikkiuchi_record.dart';
 import 'package:fudatobashi/domain/ikkiuchi_side.dart';
 import 'package:fudatobashi/domain/play_session.dart';
@@ -267,8 +268,10 @@ void main() {
         endedAt: DateTime(2026, 11, 2),
         day: 20261102,
         ranked: true,
+        mode: const Value(IkkiuchiMode.rapid),
         opponent: IkkiuchiOpponent.tobi,
         perSide: 25,
+        rows: 3,
         memoriseMs: 900000,
         opponentRating: 1600,
         completed: true,
@@ -276,7 +279,8 @@ void main() {
         opponentLeft: 4,
         rating: const Value(1650),
         xp: '[["taken",21,4200]]'));
-    expect([for (final m in await db.select(db.ikkiuchiMatches).get()) (m.id, m.xp)], [(match, '[["taken",21,4200]]')]);
+    expect([for (final m in await db.select(db.ikkiuchiMatches).get()) (m.id, m.mode, m.rows, m.xp)],
+        [(match, IkkiuchiMode.rapid, 3, '[["taken",21,4200]]')]);
     await db.into(db.ikkiuchiReads).insert(IkkiuchiReadsCompanion.insert(
         matchId: match,
         seq: 0,

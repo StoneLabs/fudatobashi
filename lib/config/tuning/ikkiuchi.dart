@@ -529,14 +529,16 @@ abstract final class IkkiuchiUnlockTuning {
 
 /// 一騎打ち's custom matches (free play, `ikkiuchi_sheet.dart`): the cards a
 /// side, the memory time and Tobi's rating, each from its least to its most
-/// by its step, and the setup the first one starts on. The sheet's keys
-/// set the cards to one of [perSideKeys], and Tobi's rating to the
-/// threshold of one of [ratingClasses] (by the shared class scale's ids).
+/// by its step, and the setup the first one starts on, each side laid out in
+/// [rows] rows. The sheet's keys set the cards to one of [perSideKeys], and
+/// Tobi's rating to the threshold of one of [ratingClasses] (by the shared
+/// class scale's ids).
 abstract final class IkkiuchiFreeTuning {
   static const int perSideMin = 1;
   static const int perSideMax = 25;
   static const int perSideStep = 1;
   static const int perSide = 25;
+  static const int rows = 3;
   static const List<int> perSideKeys = [8, 12, 16, 20, 25];
   static const Duration memoriseMin = Duration(minutes: 1);
   static const Duration memoriseMax = Duration(minutes: 15);
@@ -549,12 +551,35 @@ abstract final class IkkiuchiFreeTuning {
   static const List<String> ratingClasses = ['E+', 'D', 'C', 'B', 'A'];
 }
 
-/// 一騎打ち's ranked matches and the player's rating (`IkkiuchiRating`).
-/// Every ranked match is the same: against Tobi, [perSide] cards a side
-/// and [memorise] to learn the field. A win scores 1 and a loss 0, and the
-/// expected score against Tobi d points higher is 1 / (1 + 10^(d /
-/// [eloScale])). The rating stays inside Tobi's ratings
-/// (`IkkiuchiTuning.ratingMin` to `ratingMax`).
+/// One ranked mode's matches (`IkkiuchiMode`): the cards dealt to each
+/// side, the memory time, the rows a side is laid out in unless the player
+/// picks more (Settings › 寄り道 › 一騎打ち) and the fewest they may pick, and
+/// what its ranked draw's seed is offset by.
+typedef IkkiuchiModeSpec = ({int perSide, Duration memorise, int rows, int fewestRows, int drawSeedOffset});
+
+/// 一騎打ち's ranked modes (`IkkiuchiMode`), as chess has its time controls:
+/// each has its own rating, class and placement, all by
+/// [IkkiuchiRankedTuning]. A side has at most [IkkiuchiLayoutTuning.rows]
+/// rows. The seed offsets lie further apart than anyone plays ranked
+/// matches, so no two modes share a draw. The page's rating curve shows the
+/// ratings after a mode's last [curveMatches] ranked matches.
+abstract final class IkkiuchiModeTuning {
+  static const IkkiuchiModeSpec bullet =
+      (perSide: 8, memorise: Duration(minutes: 3, seconds: 30), rows: 1, fewestRows: 1, drawSeedOffset: 1000000);
+  static const IkkiuchiModeSpec blitz =
+      (perSide: 13, memorise: Duration(minutes: 8), rows: 2, fewestRows: 2, drawSeedOffset: 2000000);
+  static const IkkiuchiModeSpec rapid =
+      (perSide: 25, memorise: Duration(minutes: 15), rows: 3, fewestRows: 3, drawSeedOffset: 0);
+  static const int curveMatches = 20;
+}
+
+/// 一騎打ち's ranked matches and the player's rating in each mode
+/// (`IkkiuchiRating`), every mode alike. Every ranked match of a mode is
+/// the same: against Tobi, with the mode's cards and memory time
+/// ([IkkiuchiModeTuning]). A win scores 1 and a loss 0, and the expected
+/// score against Tobi d points higher is 1 / (1 + 10^(d / [eloScale])). The
+/// rating stays inside Tobi's ratings (`IkkiuchiTuning.ratingMin` to
+/// `ratingMax`).
 ///
 /// Placement: every new player starts at [start] and plays Tobi at exactly
 /// the current estimate, which each win moves up and each loss down by
@@ -566,11 +591,9 @@ abstract final class IkkiuchiFreeTuning {
 /// [establishedK] after them. Tobi plays each at the player's rating plus a
 /// normal draw with standard deviation [drawSd], drawn again when more than
 /// [drawCutOff] away, so that 80% of matches are within ±300. The draw for
-/// a match comes from [drawSeed] and the ranked matches played, so it
-/// stays the same until the match is played.
+/// a match comes from [drawSeed], the mode's offset and the mode's ranked
+/// matches played, so it stays the same until the match is played.
 abstract final class IkkiuchiRankedTuning {
-  static const int perSide = 25;
-  static const Duration memorise = Duration(minutes: 15);
   static const double start = 1600;
   static const List<double> placementSteps = [500, 300, 200, 100];
   static const double provisionalK = 64;
@@ -595,13 +618,11 @@ abstract final class IkkiuchiXpTuning {
   static const int placement = 500;
 }
 
-/// The match screen (`IkkiuchiMatchScreen`), ranked or free: the rows a
-/// side is laid out in; the seeds a deal is drawn from, and the offset that
-/// draws the player's side apart from Tobi's; and the system bars hidden
-/// while a match is played (a swipe in from an edge shows them for a
-/// while).
+/// The match screen (`IkkiuchiMatchScreen`), ranked or free: the seeds a
+/// deal is drawn from, and the offset that draws the player's side apart
+/// from Tobi's; and the system bars hidden while a match is played (a swipe
+/// in from an edge shows them for a while).
 abstract final class IkkiuchiScreenTuning {
-  static const int rows = 3;
   static const int seeds = 1 << 30;
   static const int playerSeedOffset = 7919;
   static const SystemUiMode bars = SystemUiMode.immersiveSticky;

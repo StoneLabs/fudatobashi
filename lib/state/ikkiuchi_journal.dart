@@ -1,5 +1,6 @@
 import 'dart:convert';
 
+import '../domain/ikkiuchi_mode.dart';
 import '../domain/ikkiuchi_record.dart';
 import '../domain/ikkiuchi_side.dart';
 
@@ -18,9 +19,11 @@ class IkkiuchiJournal {
     final setup = match.setup;
     return jsonEncode({
       'ranked': setup.ranked,
+      'mode': setup.mode?.name,
       'opponent': setup.opponent.name,
       'opponentRating': setup.opponentRating,
       'perSide': setup.perSide,
+      'rows': setup.rows,
       'memoriseMs': setup.memorise.inMilliseconds,
       'startedAt': match.startedAt.toIso8601String(),
       'endedAt': match.endedAt.toIso8601String(),
@@ -52,9 +55,11 @@ class IkkiuchiJournal {
     return IkkiuchiJournal(IkkiuchiMatchRecord(
       setup: IkkiuchiSetup(
         ranked: j['ranked'] as bool,
+        mode: j['mode'] == null ? null : IkkiuchiMode.values.byName(j['mode'] as String),
         opponent: IkkiuchiOpponent.values.byName(j['opponent'] as String),
         opponentRating: (j['opponentRating'] as num).toDouble(),
         perSide: j['perSide'] as int,
+        rows: j['rows'] as int,
         memorise: Duration(milliseconds: j['memoriseMs'] as int),
       ),
       startedAt: DateTime.parse(j['startedAt'] as String),

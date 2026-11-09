@@ -5,7 +5,7 @@ import 'package:flutter/widgets.dart';
 
 import '../../config/design.dart';
 import '../../config/vector_art.dart';
-import '../../domain/ikkiuchi_record.dart';
+import '../../domain/ikkiuchi_mode.dart';
 import '../../domain/rating.dart';
 import '../../domain/side_trips.dart';
 import '../../l10n/ankiren_strings.dart';
@@ -97,11 +97,10 @@ class _Lettering extends StatelessWidget {
 }
 
 /// 一騎打ち's entry in the hall, laid out as a side trip's: its name lettered
-/// with its class stamped beside it once rated, over a panel with the
-/// rating and its last change (or "unranked") and the wins of the last
-/// ranked matches, and the burst that opens its page ([onOpen]); while the
-/// hall is shut ([lock]), the cards known so far out of what opens it
-/// instead, as a shut trip's panel shows them.
+/// over a panel with each ranked mode's rating side by side ("unranked"
+/// while it is being placed), and the burst that opens its page ([onOpen]);
+/// while the hall is shut ([lock]), the cards known so far out of what opens
+/// it instead, as a shut trip's panel shows them.
 class IkkiuchiEntry extends StatelessWidget {
   const IkkiuchiEntry({super.key, required this.lock, required this.records, required this.onOpen});
 
@@ -113,24 +112,12 @@ class IkkiuchiEntry extends StatelessWidget {
   Widget build(BuildContext context) {
     final s = S.of(context);
     final lock = this.lock;
-    final rating = records.rating;
     return _HeadOver(
       head: MediaQuery.withClampedTextScaling(
         maxScaleFactor: SideTripsLayout.letteringMaxScale,
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          crossAxisAlignment: CrossAxisAlignment.end,
-          children: [
-            Flexible(child: _Lettering(s.hallName, s.hallTag, fontSize: SideTripsLayout.letteringFont)),
-            if (lock == null && rating != null)
-              Padding(
-                padding: const EdgeInsets.only(bottom: SideTripsLayout.stampLift),
-                child: Transform.translate(
-                  offset: const Offset(SideTripsLayout.stampHang, 0),
-                  child: _RankStamp(Rating.bandOf(rating)),
-                ),
-              ),
-          ],
+        child: Align(
+          alignment: Alignment.bottomLeft,
+          child: _Lettering(s.hallName, s.hallTag, fontSize: SideTripsLayout.letteringFont),
         ),
       ),
       body: MangaPanel(
@@ -142,7 +129,13 @@ class IkkiuchiEntry extends StatelessWidget {
                 _StatsRow(
                   semanticLabel: s.ikkiuchiPageTitle,
                   onTap: onOpen,
-                  children: (_RatingStat(rating, records.ratingChange), _wins(context)),
+                  children: [
+                    for (final mode in IkkiuchiMode.values)
+                      (
+                        flex: SideTripsLayout.modeFlex,
+                        stat: _RatingStat(records.of(mode).rating, null, label: s.ikkiuchiModeName(mode)),
+                      ),
+                  ],
                 ),
                 Padding(
                   padding: SideTripsLayout.burstMargin,
@@ -150,26 +143,6 @@ class IkkiuchiEntry extends StatelessWidget {
                 ),
               ]),
       ),
-    );
-  }
-
-  /// The wins of the last [IkkiuchiPageLayout.formMatches] ranked matches
-  /// over how many; a dash before the first.
-  Widget _wins(BuildContext context) {
-    final last = records.lastRanked(IkkiuchiPageLayout.formMatches);
-    final wins = last.where((m) => m.result == IkkiuchiResult.won).length;
-    const value = TextStyle(fontFamily: Fonts.display, fontSize: SideTripsLayout.valueFont, height: 1);
-    return _Stat(
-      label: _Label(S.of(context).ikkiuchiWins),
-      value: last.isEmpty
-          ? const Text(IkkiuchiPageLayout.missing, style: value)
-          : Text.rich(
-              TextSpan(children: [
-                TextSpan(text: '$wins'),
-                TextSpan(text: '/${last.length}', style: const TextStyle(fontSize: SideTripsLayout.labelFont)),
-              ]),
-              style: value,
-            ),
     );
   }
 }
@@ -354,35 +327,40 @@ class SideTripBody extends StatelessWidget {
 
   /// The ranked rating and its last change (or "unranked"), and free play's
   /// next level to clear (or that every level is cleared).
-  static (Widget, Widget) _stats(BuildContext context, SideTripEntry entry) {
+  static List<_Share> _stats(BuildContext context, SideTripEntry entry) {
     final s = S.of(context);
     final rating = entry.rating;
     final level = entry.nextLevel;
     const value = TextStyle(fontFamily: Fonts.display, fontSize: SideTripsLayout.valueFont, height: 1);
-    return (
-      _RatingStat(rating, entry.ratingChange),
-      _Stat(
-        label: _Label(s.sideTripNextLevel),
-        value: Text(level == null ? s.sideTripAllClear : s.ankirenLevelTag(level), style: value),
+    return [
+      (flex: SideTripsLayout.ratingFlex, stat: _RatingStat(rating, entry.ratingChange)),
+      (
+        flex: SideTripsLayout.nextFlex,
+        stat: _Stat(
+          label: _Label(s.sideTripNextLevel),
+          value: Text(level == null ? s.sideTripAllClear : s.ankirenLevelTag(level), style: value),
+        ),
       ),
-    );
+    ];
   }
 }
 
 /// The ranked [rating] and the [change] the last ranked game made to it,
-/// or "unranked" before there is one.
+/// or "unranked" before there is one, under its [label] (the rating's
+/// when null).
 class _RatingStat extends StatelessWidget {
-  const _RatingStat(this.rating, this.change);
+  const _RatingStat(this.rating, this.change, {this.label});
 
   final double? rating;
   final double? change;
+  final String? label;
 
   @override
   Widget build(BuildContext context) {
     final rating = this.rating;
     final change = this.change?.round() ?? 0;
     return _Stat(
-      label: _Label(S.of(context).rating),
+      label: _Label(label ?? S.of(context).rating),
       value: rating == null
           ? Text(S.of(context).sideTripUnranked,
               style: const TextStyle(fontFamily: Fonts.display, fontSize: SideTripsLayout.unrankedFont, height: 1))
@@ -446,14 +424,17 @@ class _Stat extends StatelessWidget {
       );
 }
 
-/// A trip's two stats ([children]) side by side, split by a rule; a tap
-/// opens the trip's page ([onTap]).
+/// A stat in a [_StatsRow] and its share of the row.
+typedef _Share = ({int flex, Widget stat});
+
+/// A trip's stats ([children]) side by side, each taking its share of the
+/// row, split by rules; a tap opens the trip's page ([onTap]).
 class _StatsRow extends StatelessWidget {
   const _StatsRow({required this.semanticLabel, required this.onTap, required this.children});
 
   final String semanticLabel;
   final VoidCallback? onTap;
-  final (Widget, Widget) children;
+  final List<_Share> children;
 
   @override
   Widget build(BuildContext context) => Pressable(
@@ -471,14 +452,17 @@ class _StatsRow extends StatelessWidget {
                   child: Row(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
-                      Flexible(flex: SideTripsLayout.ratingFlex, child: children.$1),
-                      const SizedBox(width: SideTripsLayout.rowGap),
-                      const Padding(
-                        padding: EdgeInsets.symmetric(vertical: SideTripsLayout.ruleInset),
-                        child: SizedBox(width: SideTripsLayout.ruleWidth, child: ColoredBox(color: Palette.ink)),
-                      ),
-                      const SizedBox(width: SideTripsLayout.rowGap),
-                      Flexible(flex: SideTripsLayout.nextFlex, child: children.$2),
+                      for (final (i, share) in children.indexed) ...[
+                        if (i > 0) ...const [
+                          SizedBox(width: SideTripsLayout.rowGap),
+                          Padding(
+                            padding: EdgeInsets.symmetric(vertical: SideTripsLayout.ruleInset),
+                            child: SizedBox(width: SideTripsLayout.ruleWidth, child: ColoredBox(color: Palette.ink)),
+                          ),
+                          SizedBox(width: SideTripsLayout.rowGap),
+                        ],
+                        Flexible(flex: share.flex, child: share.stat),
+                      ],
                     ],
                   ),
                 ),

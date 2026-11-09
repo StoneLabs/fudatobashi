@@ -339,7 +339,9 @@ abstract final class SideTripsLayout {
   static const double cut = 12;
 
   /// The rows inside the panel: a label (with its other-language sub) over
-  /// a value, side by side when there are two, split by a rule.
+  /// a value, side by side when there are more, split by rules. A trip's
+  /// rating and next level take [ratingFlex] and [nextFlex] shares of the
+  /// row, the hall's ratings, one for each mode, [modeFlex] each.
   static const EdgeInsets rowPadding = EdgeInsets.fromLTRB(14, 4, 6, 4);
   static const double rowMinHeight = 56;
   static const double lockedRowMinHeight = 50;
@@ -348,6 +350,7 @@ abstract final class SideTripsLayout {
   static const double ruleInset = 8;
   static const int ratingFlex = 5;
   static const int nextFlex = 6;
+  static const int modeFlex = 1;
   static const double labelFont = 12;
   static const double labelLineHeight = 1.2;
   static const double subFont = 11;

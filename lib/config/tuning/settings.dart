@@ -70,6 +70,12 @@ abstract final class DefaultSettings {
   static const int teiichiCustomRows = TeiichiTuning.rows;
   static const bool teiichiAutoTurn = true;
   static const bool teiichiTurnTipOff = false;
+
+  /// 一騎打ち (Settings › 寄り道 › 一騎打ち): each mode's ranked matches in its
+  /// own rows until the player picks others, and the page on Rapid's tab
+  /// until they open another.
+  static const IkkiuchiSettings ikkiuchi = IkkiuchiSettings();
+  static const IkkiuchiMode ikkiuchiTab = IkkiuchiMode.rapid;
 }
 
 /// The orientations the app allows: portrait only. 暗記練's landscape layout

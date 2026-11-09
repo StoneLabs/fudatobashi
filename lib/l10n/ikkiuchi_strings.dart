@@ -1,5 +1,6 @@
 import '../domain/field_parts.dart';
 import '../domain/ikkiuchi_match.dart';
+import '../domain/ikkiuchi_mode.dart';
 import '../domain/ikkiuchi_record.dart';
 import '../domain/rating.dart';
 import 'ranked_strings.dart';
@@ -84,6 +85,13 @@ extension IkkiuchiStrings on S {
   String get ikkiuchiPlacementTitle => t('ikkiuchiPlacementTitle');
   String get ikkiuchiPlacementNext => t('ikkiuchiPlacementNext');
 
+  /// A ranked mode's name.
+  String ikkiuchiModeName(IkkiuchiMode mode) => switch (mode) {
+        IkkiuchiMode.bullet => t('ikkiuchiBullet'),
+        IkkiuchiMode.blitz => t('ikkiuchiBlitz'),
+        IkkiuchiMode.rapid => t('ikkiuchiRapid'),
+      };
+
   /// The page's custom panel: its tag, the button to its sheet, its facts'
   /// labels, the templates of the cards a side ({0}×2) and the からふだ read,
   /// the burst that plays [n] a side, and the field preview's label.
@@ -105,16 +113,17 @@ extension IkkiuchiStrings on S {
   String get ikkiuchiGuestMode => t('ikkiuchiGuestMode');
   String get ikkiuchiGuestLine => t('ikkiuchiGuestLine');
 
-  /// The rules (遊び方): the match with [perSide] cards a side, how it is
-  /// won, 送り札, faults, からふだ ([karafuda] for every [field] cards),
-  /// ranked's setup ([memory] to learn the field), placement ([matches]
-  /// from [start]), the rating after it, and custom matches.
-  String ikkiuchiRuleMatch(int perSide) => f('ikkiuchiRuleMatch', [perSide]);
+  /// The rules (遊び方): the match, how it is won, 送り札, faults, からふだ
+  /// ([karafuda] for every [field] cards), ranked's modes (each mode's
+  /// cards a side and memory time, in [IkkiuchiMode]'s order), placement
+  /// ([matches] from [start]), the rating after it, and custom matches.
+  String get ikkiuchiRuleMatch => t('ikkiuchiRuleMatch');
   String get ikkiuchiRuleWin => t('ikkiuchiRuleWin');
   String get ikkiuchiRuleSend => t('ikkiuchiRuleSend');
   String get ikkiuchiRuleFault => t('ikkiuchiRuleFault');
   String ikkiuchiRuleKarafuda(int karafuda, int field) => f('ikkiuchiRuleKarafuda', [karafuda, field]);
-  String ikkiuchiRuleRanked(int perSide, String memory) => f('ikkiuchiRuleRanked', [perSide, memory]);
+  String ikkiuchiRuleRanked(List<({int perSide, String memory})> modes) =>
+      f('ikkiuchiRuleRanked', [for (final m in modes) ...[m.perSide, m.memory]]);
   String ikkiuchiRulePlacement(int matches, int start) => f('ikkiuchiRulePlacement', [matches, start]);
   String get ikkiuchiRuleRating => t('ikkiuchiRuleRating');
   String get ikkiuchiRuleCustom => t('ikkiuchiRuleCustom');

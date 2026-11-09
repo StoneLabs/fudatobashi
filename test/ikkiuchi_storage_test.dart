@@ -15,6 +15,7 @@ import 'package:fudatobashi/domain/day_window.dart';
 import 'package:fudatobashi/domain/field_parts.dart';
 import 'package:fudatobashi/domain/ikkiuchi_layout.dart';
 import 'package:fudatobashi/domain/ikkiuchi_match.dart';
+import 'package:fudatobashi/domain/ikkiuchi_mode.dart';
 import 'package:fudatobashi/domain/ikkiuchi_record.dart';
 import 'package:fudatobashi/domain/ikkiuchi_side.dart';
 import 'package:fudatobashi/state/past_runs.dart';
@@ -27,11 +28,13 @@ void main() {
   driftRuntimeOptions.dontWarnAboutMultipleDatabases = true;
   const opponent = IkkiuchiSide.opponent, player = IkkiuchiSide.player;
 
-  IkkiuchiSetup setup({bool ranked = false, int perSide = 10, double rating = 2000}) => IkkiuchiSetup(
-      ranked: ranked,
+  IkkiuchiSetup setup({IkkiuchiMode? mode, int perSide = 10, int rows = 3, double rating = 2000}) => IkkiuchiSetup(
+      ranked: mode != null,
+      mode: mode,
       opponent: IkkiuchiOpponent.tobi,
       opponentRating: rating,
       perSide: perSide,
+      rows: rows,
       memorise: const Duration(minutes: 3));
 
   IkkiuchiMatchRecord match(DateTime at,
@@ -75,15 +78,17 @@ void main() {
         playerTake: const Duration(milliseconds: -20),
         opponentTake: const Duration(milliseconds: -10)),
   ];
-  final played = match(DateTime(2026, 11, 8, 10), played: setup(ranked: true), reads: reads);
+  final played = match(DateTime(2026, 11, 8, 10), played: setup(mode: IkkiuchiMode.blitz, rows: 2), reads: reads);
 
   /// Everything a record holds but what storing it adds (its id and
   /// rating), to compare two.
   List<Object?> fields(IkkiuchiMatchRecord m) => [
         m.setup.ranked,
+        m.setup.mode,
         m.setup.opponent,
         m.setup.opponentRating,
         m.setup.perSide,
+        m.setup.rows,
         m.setup.memorise,
         m.startedAt,
         m.endedAt,
@@ -205,7 +210,7 @@ void main() {
     await p.recordIkkiuchi(match(at, playerLeft: 0, opponentLeft: 2));
     await p.recordIkkiuchi(match(at, playerLeft: 4, opponentLeft: 0));
     await p.recordIkkiuchi(match(at, completed: false));
-    await p.recordIkkiuchi(match(at, played: setup(ranked: true), playerLeft: 0, opponentLeft: 1));
+    await p.recordIkkiuchi(match(at, played: setup(mode: IkkiuchiMode.rapid), playerLeft: 0, opponentLeft: 1));
     expect(p.ikkiuchi.counts(), (played: 4, won: 2, lost: 2));
     expect(p.ikkiuchi.counts(ranked: false), (played: 3, won: 1, lost: 2));
     expect(p.ikkiuchi.counts(ranked: true), (played: 1, won: 1, lost: 0));
@@ -218,10 +223,11 @@ void main() {
     final first = p.ikkiuchi.freeSetup;
     expect([first.ranked, first.perSide, first.memorise, first.opponentRating],
         [false, IkkiuchiSetup.firstFree.perSide, IkkiuchiSetup.firstFree.memorise, IkkiuchiSetup.firstFree.opponentRating]);
-    await p.recordIkkiuchi(match(DateTime(2026, 11, 8, 10), played: setup(perSide: 7, rating: 850)));
-    await p.recordIkkiuchi(match(DateTime(2026, 11, 8, 11), played: setup(ranked: true, perSide: 25, rating: 1500)));
+    await p.recordIkkiuchi(match(DateTime(2026, 11, 8, 10), played: setup(perSide: 7, rows: 1, rating: 850)));
+    await p.recordIkkiuchi(
+        match(DateTime(2026, 11, 8, 11), played: setup(mode: IkkiuchiMode.rapid, perSide: 25, rating: 1500)));
     final free = (await Progress.open(db)).ikkiuchi.freeSetup;
-    expect([free.ranked, free.perSide, free.opponentRating], [false, 7, 850]);
+    expect([free.ranked, free.mode, free.perSide, free.rows, free.opponentRating], [false, null, 7, 1, 850]);
     await db.close();
   });
 

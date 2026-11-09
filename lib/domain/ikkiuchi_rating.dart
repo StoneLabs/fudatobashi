@@ -1,14 +1,15 @@
 import 'dart:math' as math;
 
 import '../config/config.dart';
+import 'ikkiuchi_mode.dart';
 import 'truncated_normal.dart';
 
 /// One ranked match as the rating reads it: the rating the opponent played
 /// at, and whether the player won (a match given up is a loss).
 typedef IkkiuchiRatedMatch = ({double opponentRating, bool won});
 
-/// The player's 一騎打ち rating, from their ranked matches in the order
-/// played ([IkkiuchiRankedTuning]).
+/// The player's 一騎打ち rating in one mode, from their ranked matches of it
+/// in the order played ([IkkiuchiRankedTuning]); every mode is rated alike.
 ///
 /// The first matches place it: each against Tobi at exactly the estimate
 /// so far, from [start], which a win moves up and a loss down by the next
@@ -33,14 +34,15 @@ abstract final class IkkiuchiRating {
 
   static double _held(double rating) => rating.clamp(IkkiuchiTuning.ratingMin, IkkiuchiTuning.ratingMax);
 
-  /// The rating the opponent plays the next ranked match at, after [played]
-  /// ranked matches that left the player's rating (or, while placing, the
-  /// estimate) at [rating]: the estimate itself while placing; after that
-  /// the rating plus a draw ([draw]) from the seed for [played].
-  static double opponentFor({required int played, required double? rating}) {
+  /// The rating the opponent plays the next ranked match of [mode] at,
+  /// after [played] ranked matches of it that left the player's rating (or,
+  /// while placing, the estimate) at [rating]: the estimate itself while
+  /// placing; after that the rating plus a draw ([draw]) from the mode's seed
+  /// for [played].
+  static double opponentFor(IkkiuchiMode mode, {required int played, required double? rating}) {
     final at = rating ?? start;
     if (isPlacement(played)) return _held(at);
-    return _held(at + draw(math.Random(IkkiuchiRankedTuning.drawSeed + played)));
+    return _held(at + draw(math.Random(IkkiuchiRankedTuning.drawSeed + mode.drawSeedOffset + played)));
   }
 
   /// How far from the player's rating Tobi plays a rated match.
@@ -60,9 +62,9 @@ abstract final class IkkiuchiRating {
       ? IkkiuchiRankedTuning.provisionalK
       : IkkiuchiRankedTuning.establishedK;
 
-  /// The rating after [match], when the ranked matches before it were
-  /// [earlier], oldest first, and left the rating (or the estimate) at
-  /// [rating].
+  /// The rating after [match], when the ranked matches of its mode before
+  /// it were [earlier], oldest first, and left the rating (or the estimate)
+  /// at [rating].
   static double after(IkkiuchiRatedMatch match, {required List<IkkiuchiRatedMatch> earlier, required double? rating}) {
     final at = rating ?? start;
     final played = earlier.length;

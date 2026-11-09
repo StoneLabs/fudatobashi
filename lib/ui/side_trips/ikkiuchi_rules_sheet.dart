@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../config/config.dart';
 import '../../config/design.dart';
+import '../../domain/ikkiuchi_mode.dart';
 import '../../domain/ikkiuchi_rating.dart';
 import '../../l10n/ikkiuchi_strings.dart';
 import '../../l10n/side_trip_strings.dart';
@@ -20,9 +21,9 @@ Future<void> openIkkiuchiRules(BuildContext context) => showMangaSheet<void>(
     );
 
 /// The match, how it is won, 送り札, faults and からふだ; then ranked, its
-/// placement and rating, and custom matches, with the numbers
-/// from [IkkiuchiRankedTuning] and [IkkiuchiMatchTuning]. Every line has the
-/// other language's under it.
+/// modes ([IkkiuchiMode]), placement and rating, and custom matches, with
+/// the numbers from [IkkiuchiRankedTuning] and [IkkiuchiMatchTuning]. Every
+/// line has the other language's under it.
 class IkkiuchiRulesSheet extends StatelessWidget {
   const IkkiuchiRulesSheet({super.key});
 
@@ -30,9 +31,8 @@ class IkkiuchiRulesSheet extends StatelessWidget {
   Widget build(BuildContext context) {
     final s = S.of(context);
     final o = s.sub;
-    const perSide = IkkiuchiRankedTuning.perSide;
     const karafuda = IkkiuchiMatchTuning.karafuda;
-    final memory = formatMinutes(IkkiuchiRankedTuning.memorise);
+    final modes = [for (final m in IkkiuchiMode.values) (perSide: m.perSide, memory: formatMinutes(m.memorise))];
     final matches = IkkiuchiRating.placementMatches;
     final start = IkkiuchiRating.start.round();
     return TripSheet(
@@ -40,14 +40,14 @@ class IkkiuchiRulesSheet extends StatelessWidget {
       sub: o?.howToPlay,
       body: [
         RuleList([
-          RuleItem(const RuleMark.image(RuleMarkFiles.tap), s.ikkiuchiRuleMatch(perSide), o?.ikkiuchiRuleMatch(perSide)),
+          RuleItem(const RuleMark.image(RuleMarkFiles.tap), s.ikkiuchiRuleMatch, o?.ikkiuchiRuleMatch),
           RuleItem(const RuleMark.image(RuleMarkFiles.toEnd), s.ikkiuchiRuleWin, o?.ikkiuchiRuleWin),
           RuleItem(const RuleMark.image(RuleMarkFiles.cards), s.ikkiuchiRuleSend, o?.ikkiuchiRuleSend),
           RuleItem(const RuleMark.image(RuleMarkFiles.wrong), s.ikkiuchiRuleFault, o?.ikkiuchiRuleFault),
           RuleItem(const RuleMark.image(RuleMarkFiles.karafuda), s.ikkiuchiRuleKarafuda(karafuda.karafuda, karafuda.field),
               o?.ikkiuchiRuleKarafuda(karafuda.karafuda, karafuda.field)),
-          RuleItem(const RuleMark.text(Palette.pink, '$perSide'), s.ikkiuchiRuleRanked(perSide, memory),
-              o?.ikkiuchiRuleRanked(perSide, memory)),
+          RuleItem(RuleMark.text(Palette.pink, '${modes.length}'), s.ikkiuchiRuleRanked(modes),
+              o?.ikkiuchiRuleRanked(modes)),
           RuleItem(RuleMark.text(Palette.sun, '$matches'), s.ikkiuchiRulePlacement(matches, start),
               o?.ikkiuchiRulePlacement(matches, start)),
           RuleItem(const RuleMark.image(RuleMarkFiles.early), s.ikkiuchiRuleRating, o?.ikkiuchiRuleRating),

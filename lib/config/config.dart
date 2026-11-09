@@ -9,6 +9,7 @@ import 'package:flutter/services.dart' show DeviceOrientation, SystemUiMode;
 import '../domain/ankiren_field.dart';
 import '../domain/ankiren_level.dart';
 import '../domain/card_mask.dart';
+import '../domain/ikkiuchi_mode.dart';
 import '../domain/learning_pace.dart';
 import '../domain/teiichi.dart';
 import '../domain/tuning_curve.dart';
