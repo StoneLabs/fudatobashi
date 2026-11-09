@@ -1004,8 +1004,10 @@ void main() {
   });
 
   group('custom page', () {
-    IkkiuchiCustomPage page({double rating = 2559, int perSide = 13, int rows = 2, int minutes = 6}) =>
+    IkkiuchiCustomPage page(
+            {double rating = 2559, int perSide = 13, int rows = 2, int minutes = 6, bool guest = false}) =>
         IkkiuchiCustomPage(
+            guest: guest,
             initial: IkkiuchiSetup.free(
                 opponentRating: rating, perSide: perSide, rows: rows, memorise: Duration(minutes: minutes)));
 
@@ -1122,14 +1124,44 @@ void main() {
       await tester.pumpWidget(const SizedBox());
     });
 
-    // The mock's three states and one in English on the user's phone.
+    testWidgets('in guest mode it says so, and its burst plays a match that records nothing', (tester) async {
+      final p = await open(tester);
+      await showPage(tester, p, page: page(guest: true));
+      expect(find.byWidgetPredicate((w) => w is ScreenTitle && w.title == s.ikkiuchiGuestMode), findsOneWidget);
+      expect(find.text(s.ikkiuchiGuestLine, findRichText: true), findsOneWidget);
+      await tapAndWait(tester, key('8'), Duration.zero);
+      await tapAndWait(tester, key(s.ikkiuchiRowsKey(1)), Duration.zero);
+      await tester.ensureVisible(burst(s.ikkiuchiPlayCards(8)));
+      await tapAndWait(tester, burst(s.ikkiuchiPlayCards(8)), Motion.route);
+      final state = screen(tester);
+      expect([state.widget.guest, state.widget.setup.perSide, state.widget.setup.rows], [true, 8, 1]);
+      await toFirstRead(tester, state.flow!);
+      state.flow!.end();
+      await tester.pump();
+      expect(state.saving, isNull);
+      await toClosed(tester);
+      expect(p.ikkiuchi.matches, isEmpty);
+      expect(await rows(tester, p), isEmpty);
+
+      unawaited(openIkkiuchiCustom(tester.element(find.byType(IkkiuchiCustomPage)), guest: true));
+      await tester.pump();
+      await tester.pump(Motion.route);
+      final opened = tester.widget<IkkiuchiCustomPage>(find.byType(IkkiuchiCustomPage).last);
+      expect([opened.guest, opened.initial.perSide, opened.initial.rows], [true, 8, 1],
+          reason: "the guest's last setup");
+      await tester.pumpWidget(const SizedBox());
+    });
+
+    // The mock's three states, one in English, and guest mode in both, on
+    // the user's phone.
     group('renders', skip: !renderScreens, () {
       final states = {
         'two': page(),
         'three': page(perSide: 20, rows: 3, minutes: 10),
         'one': page(rating: 2084, perSide: 8, rows: 1, minutes: 3),
+        'guest': page(guest: true),
       };
-      for (final (lang, names) in [('ja', states.keys), ('en', ['two'])]) {
+      for (final (lang, names) in [('ja', states.keys), ('en', ['two', 'guest'])]) {
         for (final name in names) {
           testWidgets('custom_${name}_$lang', (tester) async {
             final p = await open(tester, lang: lang);

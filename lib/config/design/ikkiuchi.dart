@@ -761,7 +761,8 @@ abstract final class IkkiuchiSheetLayout {
 
 /// 一騎打ち's custom page (`ikkiuchi_custom_page.dart`): one panel [panelTop]
 /// under the header, its top-left corner [cut] down, its blocks [padding]
-/// inside it, and [bottomGap] under it when the page scrolls.
+/// inside it, and [bottomGap] under it when the page scrolls. In guest
+/// mode a line at [guestLineFont] lies [guestLineGap] under the title.
 ///
 /// Each setting's label at [labelFont] in a row [labelHeight] tall, the
 /// other language's at [labelSubFont] with [labelSubTracking], [labelSubGap]
@@ -800,6 +801,8 @@ abstract final class IkkiuchiCustomLayout {
   static const double cut = 12;
   static const EdgeInsets padding = EdgeInsets.fromLTRB(16, 16, 16, 2);
   static const double bottomGap = 12;
+  static const double guestLineFont = 12;
+  static const double guestLineGap = 3;
 
   static const double labelHeight = 20;
   static const double labelFont = 13;

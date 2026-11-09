@@ -140,15 +140,17 @@ extension IkkiuchiStrings on S {
   String get ikkiuchiGuestMode => t('ikkiuchiGuestMode');
   String get ikkiuchiGuestLine => t('ikkiuchiGuestLine');
 
-  /// The custom page: its header's tag, the steppers' label and buttons,
-  /// the rows' label and a key's most cards a side ([n]); why some rows
-  /// are shut, when every row takes up to [oneRow] cards, when one row
-  /// takes [oneRow] and the rest fit, and when only the most rows fit (two
-  /// taking [twoRows]), the count of cards a side left as {0} for the page
-  /// to set in display type; then the templates of the setup in brief: the
-  /// cards a side ({0}) in [rows] rows ({1}), and the memory time ({0},
-  /// m:ss) against Tobi at his rating ({1}).
+  /// The custom page: its header's tag, and in guest mode its tag; the
+  /// steppers' label and buttons, the rows' label and a key's most cards a
+  /// side ([n]); why some rows are shut, when every row takes up to
+  /// [oneRow] cards, when one row takes [oneRow] and the rest fit, and when
+  /// only the most rows fit (two taking [twoRows]), the count of cards a
+  /// side left as {0} for the page to set in display type; then the
+  /// templates of the setup in brief: the cards a side ({0}) in [rows] rows
+  /// ({1}), and the memory time ({0}, m:ss) against Tobi at his rating
+  /// ({1}).
   String get ikkiuchiCustomTag => t('ikkiuchiCustomTag');
+  String get ikkiuchiGuestTag => t('ikkiuchiGuestTag');
   String get ikkiuchiFineTune => t('ikkiuchiFineTune');
   String get ikkiuchiLess => t('ikkiuchiLess');
   String get ikkiuchiMore => t('ikkiuchiMore');

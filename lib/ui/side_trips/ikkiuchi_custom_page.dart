@@ -18,10 +18,16 @@ import '../manga/manga.dart';
 import '../play/time_format.dart';
 import 'burst_button.dart';
 
+/// The guest's last setup, while the app runs.
+IkkiuchiSetup _guestSetup = IkkiuchiSetup.firstFree;
+
 /// Opens 一騎打ち's custom page ([IkkiuchiCustomPage]) on the last free
-/// match's setup, or the first free match's before any.
-Future<void> openIkkiuchiCustom(BuildContext context) => Navigator.of(context).push(
-    MangaRoute<void>(builder: (_) => IkkiuchiCustomPage(initial: ProgressScope.read(context).ikkiuchi.freeSetup)));
+/// match's setup, or the first free match's before any; for a [guest], on
+/// the guest's last setup.
+Future<void> openIkkiuchiCustom(BuildContext context, {bool guest = false}) =>
+    Navigator.of(context).push(MangaRoute<void>(
+        builder: (_) => IkkiuchiCustomPage(
+            initial: guest ? _guestSetup : ProgressScope.read(context).ikkiuchi.freeSetup, guest: guest)));
 
 /// 一騎打ち's custom page: a free match's setup, from [initial], in one
 /// panel under the header with back. Tobi's rating: a key for each of
@@ -36,10 +42,15 @@ Future<void> openIkkiuchiCustom(BuildContext context) => Navigator.of(context).p
 /// its field, and the burst that starts the match. Home's dotted ground,
 /// in the sea's blue, lies behind the panel; the page scrolls when it is
 /// taller than the screen.
+///
+/// For a [guest] it is guest mode: its title says so, a line under it
+/// says the match records nothing, and the burst starts a guest's match,
+/// its setup kept as the guest's last.
 class IkkiuchiCustomPage extends StatefulWidget {
-  const IkkiuchiCustomPage({super.key, required this.initial});
+  const IkkiuchiCustomPage({super.key, required this.initial, this.guest = false});
 
   final IkkiuchiSetup initial;
+  final bool guest;
 
   @override
   State<IkkiuchiCustomPage> createState() => _IkkiuchiCustomPageState();
@@ -82,6 +93,12 @@ class _IkkiuchiCustomPageState extends State<IkkiuchiCustomPage> {
         _rows = _fitting(_rows, n);
       });
 
+  void _start() {
+    final setup = _setup;
+    if (widget.guest) _guestSetup = setup;
+    startIkkiuchiMatch(context, setup, guest: widget.guest);
+  }
+
   @override
   Widget build(BuildContext context) {
     final s = S.of(context);
@@ -112,7 +129,17 @@ class _IkkiuchiCustomPageState extends State<IkkiuchiCustomPage> {
                 Gaps.gutter, HeaderStyle.topGap, Gaps.gutter, IkkiuchiCustomLayout.bottomGap),
             child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
               MangaHeader(
-                title: ScreenTitle(s.ikkiuchiCustom, sub: s.ikkiuchiCustomTag),
+                title: widget.guest
+                    ? Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                        ScreenTitle(s.ikkiuchiGuestMode, sub: s.ikkiuchiGuestTag),
+                        const SizedBox(height: IkkiuchiCustomLayout.guestLineGap),
+                        Text.rich(
+                          Phrases.span(s.ikkiuchiGuestLine),
+                          style: const TextStyle(
+                              fontWeight: Weights.bold, fontSize: IkkiuchiCustomLayout.guestLineFont, color: Palette.mute),
+                        ),
+                      ])
+                    : ScreenTitle(s.ikkiuchiCustom, sub: s.ikkiuchiCustomTag),
                 actions: [
                   InkIconButton(icon: IconArt.back, semanticLabel: s.back, onTap: () => Navigator.maybePop(context)),
                 ],
@@ -216,7 +243,7 @@ class _IkkiuchiCustomPageState extends State<IkkiuchiCustomPage> {
                     padding: IkkiuchiCustomLayout.burstMargin,
                     child: BurstButton(
                       title: s.ikkiuchiPlayCards(_perSide),
-                      onTap: () => startIkkiuchiMatch(context, _setup),
+                      onTap: _start,
                     ),
                   ),
                 ]),

@@ -1846,6 +1846,7 @@
   "ikkiuchiGuestMode": "Guest mode",
   "ikkiuchiGuestLine": "Any setup, dealt from all 100 cards. Nothing is saved.",
   "ikkiuchiCustomTag": "カスタム",
+  "ikkiuchiGuestTag": "ゲストモード",
   "ikkiuchiFineTune": "Fine-tune",
   "ikkiuchiRows": "Rows",
   "ikkiuchiRowsUpTo": "up to {0}",
