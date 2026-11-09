@@ -1523,11 +1523,11 @@ class Progress extends ChangeNotifier {
   }
 
   /// Saves a ranked 一騎打ち [match] as it stands, not completed, once its
-  /// first card is read and again after every read (a match left before
-  /// its first read saves nothing), so that if the app never gets to record
-  /// it (closed or killed) the next start records it as a forfeit with the
-  /// reads and the cards left it had. Recording the match, however it
-  /// ends, clears it.
+  /// first card is read and again after every read and 送り札 (a match left
+  /// before its first read saves nothing), so that if the app never gets to
+  /// record it (closed or killed) the next start records it as a forfeit
+  /// with the reads and the cards left it had. Recording the match, however
+  /// it ends, clears it.
   Future<void> journalIkkiuchi(IkkiuchiMatchRecord match) {
     final text = IkkiuchiJournal(match).encode();
     return _ikkiuchiJournalSaved = _ikkiuchiJournalSaved.then((_) => _put(_ikkiuchiJournalKey, text));

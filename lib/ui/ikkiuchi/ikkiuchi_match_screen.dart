@@ -37,9 +37,10 @@ Future<void> startIkkiuchiMatch(BuildContext context, IkkiuchiSetup setup, {bool
 /// players' thanks, then its result) the screen closes. Leaving the
 /// screen before the match ends records free play not at all, and a ranked
 /// match, once play has begun, as given up: a loss. From its first read,
-/// and again after every read, a ranked match is journalled as it stands,
-/// so that one the app never gets to record is a forfeit on the next start
-/// with its reads and cards left ([Progress.journalIkkiuchi]).
+/// and again after every read and every 送り札, a ranked match is
+/// journalled as it stands, so that one the app never gets to record is a
+/// forfeit on the next start with its reads and cards left
+/// ([Progress.journalIkkiuchi]).
 ///
 /// Ending a ranked match once it counts, by the system's back or 終了,
 /// asks first ([confirmLeaving]) and gives it up, its end shown as any
@@ -69,7 +70,8 @@ class IkkiuchiMatchScreenState extends State<IkkiuchiMatchScreen> with SingleTic
   final _startedAt = DateTime.now();
   late final Ticker _ticker = createTicker(_tick);
   Duration _last = Duration.zero;
-  /// The reads journalled so far; null before the first save.
+  /// The match's log as last journalled (`IkkiuchiMatchFlow.logChanges`);
+  /// null before the first save.
   int? _journalled;
   bool _over = false;
 
@@ -143,8 +145,8 @@ class IkkiuchiMatchScreenState extends State<IkkiuchiMatchScreen> with SingleTic
 
   void _changed() {
     final flow = _flow!;
-    if (widget.setup.ranked && !widget.guest && flow.playBegun && !_over && _journalled != flow.reads.length) {
-      _journalled = flow.reads.length;
+    if (widget.setup.ranked && !widget.guest && flow.playBegun && !_over && _journalled != flow.logChanges) {
+      _journalled = flow.logChanges;
       unawaited(_progress.journalIkkiuchi(_matchSoFar(flow, completed: false)));
     }
     if (flow.stage == IkkiuchiStage.gameEnd && !_over) {

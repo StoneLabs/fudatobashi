@@ -3,6 +3,7 @@ import 'dart:math' as math;
 import '../config/config.dart';
 import 'field_parts.dart';
 import 'ikkiuchi_layout.dart';
+import 'ikkiuchi_record.dart';
 import 'placing.dart';
 
 /// Both sides of a match (一騎打ち) as they stand, and how a 送り札 changes
@@ -39,6 +40,9 @@ class IkkiuchiSides {
   late final List<IkkiuchiRow> tobi = homes.sideWith(tobiCards);
 
   List<int> get playerCards => [for (final r in player) ...[...r.left, ...r.middle, ...r.right]];
+
+  /// Both sides as they lie now.
+  IkkiuchiLaidField get field => IkkiuchiLaidField(opponent: tobi, player: player);
 
   /// The placing rules of a player's side of [rows] rows: the open middle
   /// of [IkkiuchiPlacingTuning.middleRow] when that row is played, and each

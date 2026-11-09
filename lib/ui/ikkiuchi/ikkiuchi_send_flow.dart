@@ -33,12 +33,17 @@ enum IkkiuchiSendStage { none, sending, placing, carrying, waiting }
 /// ([IkkiuchiSides.placed]): a tap on a free spot or a card, or a drag
 /// there. Placing it ends the 送り札.
 ///
-/// Every change of the sides lays the board out afresh ([IkkiuchiBoardScene.relayout]).
+/// Every change of the sides lays the board out afresh ([IkkiuchiBoardScene.relayout]),
+/// and each card that goes to the other side is told to [onSent].
 /// Neither starts while the player moves their cards about.
 class IkkiuchiSendFlow {
   IkkiuchiSendFlow(this.scene) : spots = IkkiuchiPlayerSpots(scene);
 
   final IkkiuchiBoardScene scene;
+
+  /// Told of each card sent, once the sides hold it on the side it went
+  /// to.
+  void Function(int card)? onSent;
 
   /// Where the player's cards and spots lie.
   final IkkiuchiPlayerSpots spots;
@@ -189,6 +194,7 @@ class IkkiuchiSendFlow {
         sides.toTobi(id);
     board.heldFace = null;
     scene.relayout(next, from: {id: from});
+    if (next.playerCards.contains(id)) onSent?.call(id);
   }
 
   // Touches, in board dp.
@@ -231,6 +237,7 @@ class IkkiuchiSendFlow {
         _card = drag.card;
         _dropped = CardBox(Vec(lifted.center.dx, lifted.center.dy), size.width / 2, size.height / 2);
         scene.relayout(sides.toTobi(drag.card), held: {drag.card});
+        onSent?.call(drag.card);
       } else {
         scene.board.cards.glideFrom(from,
             ms: _ms(IkkiuchiPlayTuning.relayoutGlide), ease: IkkiuchiPlayTuning.relayoutCurve.transform);
@@ -251,12 +258,14 @@ class IkkiuchiSendFlow {
   }
 
   void _place(PlacingSpot spot, {required Map<int, CardBox> from}) {
-    final next = scene.sides?.placed(_card!, spot);
+    final card = _card!;
+    final next = scene.sides?.placed(card, spot);
     if (next == null) return;
     _stage = IkkiuchiSendStage.none;
     _card = null;
     scene.board.heldFace = null;
     scene.relayout(next, from: from);
+    onSent?.call(card);
   }
 
   PlacingDrag _dragAt(int card, {required bool fromStack, required Offset at}) {

@@ -62,7 +62,9 @@ class IkkiuchiMatchWords {
 /// moment passes, and the next card is read. A side left empty ends the
 /// match, as does the player at any time ([end]); the kimariji voice stops
 /// with it, or with the flow's disposal. Each read is logged as it ends
-/// ([reads]), and the cards it leaves each side are counted ([tally]).
+/// ([reads]), with the field it was played on and every fault made on it,
+/// and each 送り札 after it once made; the cards it leaves each side are
+/// counted ([tally]).
 ///
 /// Once the match is over the players thank each other, then how it ended
 /// shows ([result]), Tobi shocked by a loss and cheering a win, until its
@@ -102,6 +104,7 @@ class IkkiuchiMatchFlow extends ChangeNotifier {
         if (!ordered.contains(id)) id,
     ];
     scene.opening.startTobi(IkkiuchiTobiOpening.msFor(scene.tobiRating, memorise));
+    scene.send.onSent = _noteSent;
     _enter(IkkiuchiStage.placing);
   }
 
@@ -126,6 +129,11 @@ class IkkiuchiMatchFlow extends ChangeNotifier {
   List<IkkiuchiReadLog> get reads => List.unmodifiable(_reads);
   final List<IkkiuchiReadLog> _reads = [];
 
+  /// How often [reads] has changed: once for each read that ended, and
+  /// once for each 送り札 noted on one.
+  int get logChanges => _logChanges;
+  int _logChanges = 0;
+
   /// Whether the player ended the match ([end]).
   bool get endedByPlayer => _endedByPlayer;
   bool _endedByPlayer = false;
@@ -145,9 +153,11 @@ class IkkiuchiMatchFlow extends ChangeNotifier {
   IkkiuchiTally get tally => _tally;
   late IkkiuchiTally _tally;
 
-  /// The card read now, and the board time of its deciding sound.
+  /// The card read now, the board time of its deciding sound, and the
+  /// field it is played on.
   int? _readId;
   double _decidedAt = 0;
+  IkkiuchiLaidField _readField = IkkiuchiLaidField.empty;
 
   IkkiuchiStage get stage => _stage;
   IkkiuchiStage _stage = IkkiuchiStage.placing;
@@ -395,6 +405,7 @@ class IkkiuchiMatchFlow extends ChangeNotifier {
     final call = words.call(id);
     _readId = id;
     _decidedAt = board.now + call.decidedAt;
+    _readField = sides.field;
     if (onField) {
       scene.callCard(id, words.kimariji(id), call: call, tobi: tobi);
     } else {
@@ -436,7 +447,8 @@ class IkkiuchiMatchFlow extends ChangeNotifier {
   }
 
   /// The read ends: no more touches count, the card the player took fades
-  /// where it lies, its 送り札 are noted, and how it ended shows.
+  /// where it lies, it is logged with its faults, the 送り札 it leaves are
+  /// noted, and how it ended shows.
   void _endRead() {
     final board = scene.board;
     final id = board.called;
@@ -457,9 +469,18 @@ class IkkiuchiMatchFlow extends ChangeNotifier {
       _leaving = id;
     }
     final take = board.take?.at, hit = board.tobiHit;
-    Duration? from(double? at) =>
-        at == null ? null : Duration(microseconds: ((at - _decidedAt) * Duration.microsecondsPerMillisecond).round());
-    _reads.add(IkkiuchiReadLog.of(_readId!, end, playerTake: from(take), opponentTake: from(hit)));
+    Duration since(double at) =>
+        Duration(microseconds: ((at - _decidedAt) * Duration.microsecondsPerMillisecond).round());
+    final faults = [
+      for (final (by, touched) in [(IkkiuchiSide.player, board.playerFaults), (IkkiuchiSide.opponent, board.faults)])
+        for (final MapEntry(key: card, value: at) in touched.entries) IkkiuchiFault(by, card, since(at)),
+    ]..sort((a, b) => a.at != b.at ? a.at.compareTo(b.at) : a.by.index.compareTo(b.by.index));
+    _reads.add(IkkiuchiReadLog.of(_readId!, end,
+        playerTake: take == null ? null : since(take),
+        opponentTake: hit == null ? null : since(hit),
+        field: _readField,
+        faults: faults));
+    _logChanges++;
     scene.clearCall();
     _feedback = end;
     _enter(IkkiuchiStage.feedback);
@@ -481,6 +502,17 @@ class IkkiuchiMatchFlow extends ChangeNotifier {
 
   bool _has(IkkiuchiSide side) =>
       side == IkkiuchiSide.player ? scene.sides!.playerCards.isNotEmpty : scene.sides!.tobiCards.isNotEmpty;
+
+  /// [card] was sent: noted on the last read where the sides now hold it.
+  /// One sent before the first read is only part of the field that read is
+  /// played on.
+  void _noteSent(int card) {
+    final last = _reads.lastOrNull, spot = scene.sides!.field.spotOf(card);
+    if (last == null || spot == null) return;
+    _reads.last = last.withSent(IkkiuchiSent.at(card, spot));
+    _logChanges++;
+    notifyListeners();
+  }
 
   /// Makes the next 送り札 still to make, by a side with a card left.
   void _nextSend() {

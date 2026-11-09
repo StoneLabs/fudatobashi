@@ -4,9 +4,9 @@ import '../domain/ikkiuchi_record.dart';
 import '../domain/ikkiuchi_side.dart';
 
 /// A ranked 一騎打ち match under way, saved as it stands when its first
-/// card is read and again after every read, so that a match the app never
-/// got to record (it was closed or killed) is recorded on the next start
-/// as a forfeit with the reads and the cards left it had (see
+/// card is read and again after every read and 送り札, so that a match the
+/// app never got to record (it was closed or killed) is recorded on the
+/// next start as a forfeit with the reads and the cards left it had (see
 /// `Progress.journalIkkiuchi`). Its [match] is not completed, and ends at
 /// the last save.
 class IkkiuchiJournal {

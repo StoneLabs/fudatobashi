@@ -438,6 +438,73 @@ void main() {
       await tester.pumpWidget(const SizedBox());
     });
 
+    testWidgets('each read keeps the field it was played on, its faults with who and when, and where each 送り札 went',
+        (tester) async {
+      final p = await open(tester);
+      await seedReading(tester, p, IkkiuchiSide.opponent);
+      final f = flow(tester), s = f.scene;
+      final firstField = s.sides!.field.toJson();
+      final read = s.board.called!;
+      await run(tester, s.reader.call!.decidedAt + 100);
+      await touch(tester, s.board.cards.card(read).box.centre);
+      await runUntil(tester, () => f.stage == IkkiuchiStage.sendingCard);
+      final mine = s.sides!.player[0].left.last;
+      final from = s.board.cards.card(mine).box.centre;
+      final over = Vec(from.x, s.layout.band.top + s.layout.cardW / 2);
+      final drag = await tester.startGesture(onScreen(tester, from));
+      await tester.pump(frame);
+      for (var i = 1; i <= 6; i++) {
+        await drag.moveTo(onScreen(tester, from.lerp(over, i / 6)));
+        await tester.pump(frame);
+      }
+      await drag.up();
+      await runUntil(tester, () => f.stage == IkkiuchiStage.waitingForGo);
+
+      final first = f.reads.single;
+      expect(first.field.toJson(), firstField, reason: 'the field as the read began');
+      expect(first.field.spotOf(read)?.side, IkkiuchiSide.opponent);
+      expect(first.faults, isEmpty);
+      final sentTo = s.sides!.field.spotOf(mine)!;
+      expect(sentTo.side, IkkiuchiSide.opponent, reason: 'sent to Tobi');
+      expect([for (final x in first.sends) (x.card, x.row, x.part, x.index)],
+          [(mine, sentTo.row, sentTo.part, sentTo.index)]);
+
+      await tester.tap(tool(IkkiuchiToolsStyle.karafudaLabel));
+      await tester.pump(frame);
+      f.go();
+      await runUntil(tester, () => f.stage == IkkiuchiStage.kaminoku);
+      final secondField = s.sides!.field;
+      expect(secondField.spotOf(read), isNull, reason: 'the card taken is gone');
+      expect(secondField.spotOf(mine), sentTo, reason: 'the 送り札 lies where it went');
+      await run(tester, s.reader.call!.decidedAt + 200);
+      final tools = Rect.fromPoints(
+          tester.getTopLeft(find.byType(IkkiuchiDebugTools)), tester.getBottomRight(find.byType(IkkiuchiDebugTools)));
+      final touched = s.sides!.playerCards
+          .firstWhere((id) => !tools.inflate(8).contains(onScreen(tester, s.board.cards.card(id).box.centre)));
+      await touch(tester, s.board.cards.card(touched).box.centre);
+      await runUntil(tester, () => s.send.stage == IkkiuchiSendStage.waiting, reason: 'their fault: Tobi sends one');
+      final his = s.send.card!;
+      await run(tester, 600);
+      final (_, rect) = s.send.targets().freeSpots.first;
+      await tester.tapAt(onScreen(tester, Vec(rect.x + rect.w / 2, rect.y + rect.h / 2)));
+      await runUntil(tester, () => f.stage == IkkiuchiStage.waitingForGo);
+
+      expect(f.reads, hasLength(2));
+      final second = f.reads.last;
+      expect(second.karafuda, isTrue);
+      expect(second.field.toJson(), secondField.toJson());
+      expect([for (final x in second.faults) (x.by, x.card)], [(IkkiuchiSide.player, touched)]);
+      expect(second.faults.single.at.inMilliseconds, inInclusiveRange(200, 350),
+          reason: 'touched 200 ms after the deciding sound, give or take a few frames');
+      final placed = s.sides!.field.spotOf(his)!;
+      expect(placed.side, IkkiuchiSide.player, reason: 'Tobi sent it to the player');
+      expect([for (final x in second.sends) (x.card, x.row, x.part, x.index)],
+          [(his, placed.row, placed.part, placed.index)]);
+      expect(f.reads.first.sends, hasLength(1), reason: 'a 送り札 goes with the read it followed');
+      expect(f.logChanges, 4, reason: 'two reads ended, a 送り札 after each');
+      await tester.pumpWidget(const SizedBox());
+    });
+
     testWidgets('a long gap between frames, as after the app was away, runs the match on by one step at most',
         (tester) async {
       final p = await open(tester);
