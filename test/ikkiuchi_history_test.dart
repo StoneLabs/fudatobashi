@@ -167,40 +167,45 @@ void main() {
     await captureScreen(tester, 'ikkiuchi_history/match', variant: 'reads');
   });
 
-  testWidgets('the filter offers each ranked mode and custom, and keeps the kinds picked', (tester) async {
-    final now = DateTime.now();
-    final p = await opened(tester, [
-      match(now.subtract(const Duration(hours: 3)), 0, 2, mode: IkkiuchiMode.bullet),
-      match(now.subtract(const Duration(hours: 2)), 1, 0, mode: IkkiuchiMode.rapid),
-      match(now.subtract(const Duration(hours: 1)), 0, 1),
-    ]);
-    await showPage(tester, p);
-    await tap(tester, find.byWidgetPredicate((w) => w is InkIconButton && w.semanticLabel == s.history));
-    Finder inHistory(Finder f) => find.descendant(of: find.byType(HistoryScreen), matching: f);
-    expect([for (final k in IkkiuchiKind.values) k.label(s)], [
-      for (final mode in IkkiuchiMode.values) s.ikkiuchiModeName(mode),
-      s.ikkiuchiCustom,
-    ]);
+  for (final lang in ['en', 'ja']) {
+    testWidgets('the filter offers each ranked mode and custom, and keeps the kinds picked ($lang)', (tester) async {
+      final s = S(lang);
+      final now = DateTime.now();
+      final p = await opened(tester, [
+        match(now.subtract(const Duration(hours: 3)), 0, 2, mode: IkkiuchiMode.bullet),
+        match(now.subtract(const Duration(hours: 2)), 1, 0, mode: IkkiuchiMode.rapid),
+        match(now.subtract(const Duration(hours: 1)), 0, 1),
+      ], language: lang);
+      await showPage(tester, p);
+      await tap(tester, find.byWidgetPredicate((w) => w is InkIconButton && w.semanticLabel == s.history));
+      Finder inHistory(Finder f) => find.descendant(of: find.byType(HistoryScreen), matching: f);
+      expect([for (final k in IkkiuchiKind.values) k.label(s)], [
+        for (final mode in IkkiuchiMode.values) s.ikkiuchiModeName(mode),
+        s.ikkiuchiCustom,
+      ]);
 
-    await tester.tap(find.byWidgetPredicate((w) => w is InkIconButton && w.semanticLabel == s.historyFilterLabel));
-    await tester.pumpAndSettle();
-    for (final kind in IkkiuchiKind.values) {
-      expect(find.widgetWithText(FilterChipBox, kind.label(s)), findsOneWidget);
-    }
-    await tester.tap(find.widgetWithText(FilterChipBox, s.ikkiuchiModeName(IkkiuchiMode.rapid)));
-    await tester.tap(find.widgetWithText(FilterChipBox, s.ikkiuchiCustom));
-    await tester.pump();
-    expect(find.text(s.filterShow(2)), findsOneWidget);
-    await captureScreen(tester, 'ikkiuchi_history/filter');
-    await tester.tap(find.text(s.filterShow(2)));
-    await tester.pumpAndSettle();
+      await tester
+          .tap(find.byWidgetPredicate((w) => w is InkIconButton && w.semanticLabel == s.historyFilterLabel));
+      await tester.pumpAndSettle();
+      for (final kind in IkkiuchiKind.values) {
+        expect(find.widgetWithText(FilterChipBox, kind.label(s)), findsOneWidget);
+      }
+      await tester.tap(find.widgetWithText(FilterChipBox, s.ikkiuchiModeName(IkkiuchiMode.rapid)));
+      await tester.tap(find.widgetWithText(FilterChipBox, s.ikkiuchiCustom));
+      await tester.pumpAndSettle();
+      expect(find.text(s.filterShow(2)), findsOneWidget);
+      await captureScreen(tester, 'ikkiuchi_history/filter', lang: lang);
+      await tester.tap(find.text(s.filterShow(2)));
+      await tester.pumpAndSettle();
 
-    expect(inHistory(find.text('1–0')), findsOneWidget, reason: 'Rapid');
-    expect(inHistory(find.text('0–1')), findsOneWidget, reason: 'custom');
-    expect(inHistory(find.text('0–2')), findsNothing, reason: 'Bullet');
-    expect(inHistory(find.text(s.ikkiuchiModeRanked(IkkiuchiMode.rapid))), findsOneWidget);
-    expect(tester.takeException(), isNull);
-  });
+      expect(inHistory(find.text('1–0')), findsOneWidget, reason: 'Rapid');
+      expect(inHistory(find.text('0–1')), findsOneWidget, reason: 'custom');
+      expect(inHistory(find.text('0–2')), findsNothing, reason: 'Bullet');
+      expect(inHistory(find.text(s.ikkiuchiModeRanked(IkkiuchiMode.rapid))), findsOneWidget);
+      expect(tester.takeException(), isNull);
+      await captureScreen(tester, 'ikkiuchi_history/filtered', lang: lang);
+    });
+  }
 
   testWidgets("a ranked match's page names its mode, a free one's custom", (tester) async {
     final now = DateTime.now();
