@@ -8,7 +8,7 @@ import '../../data/poem.dart';
 import '../../domain/ankiren_field.dart';
 import '../../domain/ankiren_geometry.dart';
 import '../../domain/ikkiuchi_layout.dart';
-import '../history/ankiren_field_tab.dart';
+import '../history/review_field.dart';
 import 'debug_common.dart';
 import 'ikkiuchi_rating_header.dart';
 import 'ikkiuchi_values.dart';

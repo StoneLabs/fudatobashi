@@ -510,8 +510,8 @@ void main() {
       await tester.tap(find.text(s.ankirenTabField).first);
       await tester.pumpAndSettle();
 
-      final fieldCards = find.byWidgetPredicate((w) => w is AnimatedOpacity && w.duration == AnkirenReviewStyle.dimFade);
-      final dimmed = find.byWidgetPredicate((w) => w is AnimatedOpacity && w.opacity == AnkirenReviewStyle.unrelatedOpacity);
+      final fieldCards = find.byWidgetPredicate((w) => w is AnimatedOpacity && w.duration == FieldReviewStyle.dimFade);
+      final dimmed = find.byWidgetPredicate((w) => w is AnimatedOpacity && w.opacity == FieldReviewStyle.unrelatedOpacity);
       final total = fieldCards.evaluate().length;
       expect(total, game.deal!.cards.length);
       expect(dimmed, findsNothing, reason: 'nothing is dimmed before the review starts');
@@ -616,7 +616,7 @@ void main() {
           expect(find.text(s.karafudaOffField), findsOneWidget);
           expect(find.text(s.karafudaBoxShownPressed(karafuda.wrongTaps + 1)), findsOneWidget);
           final dimmed =
-              find.byWidgetPredicate((w) => w is AnimatedOpacity && w.opacity == AnkirenReviewStyle.unrelatedOpacity);
+              find.byWidgetPredicate((w) => w is AnimatedOpacity && w.opacity == FieldReviewStyle.unrelatedOpacity);
           expect(dimmed, findsNWidgets(game.deal!.cards.length - karafuda.tapped.toSet().length),
               reason: 'only the cards tapped on it stay bright');
           await tester.ensureVisible(find.byType(ReviewField));

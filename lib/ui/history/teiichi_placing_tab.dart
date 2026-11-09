@@ -8,6 +8,7 @@ import '../../l10n/strings.dart';
 import '../../l10n/teiichi_review_strings.dart';
 import '../../l10n/teiichi_strings.dart';
 import 'ankiren_field_tab.dart';
+import 'review_field.dart';
 import 'review_parts.dart';
 import 'run_charts.dart';
 

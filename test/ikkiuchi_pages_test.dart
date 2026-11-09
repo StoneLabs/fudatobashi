@@ -33,7 +33,7 @@ import 'package:fudatobashi/ui/debug/ikkiuchi_layout_page.dart';
 import 'package:fudatobashi/ui/debug/ikkiuchi_rating_header.dart';
 import 'package:fudatobashi/ui/debug/ikkiuchi_strikes_page.dart';
 import 'package:fudatobashi/ui/debug/ikkiuchi_values.dart';
-import 'package:fudatobashi/ui/history/ankiren_field_tab.dart';
+import 'package:fudatobashi/ui/history/review_field.dart';
 import 'package:fudatobashi/ui/ikkiuchi/ikkiuchi_board_painter.dart';
 import 'package:fudatobashi/ui/ikkiuchi/ikkiuchi_board_scene.dart';
 import 'package:fudatobashi/ui/manga/theme.dart';

@@ -4,7 +4,6 @@ import 'package:flutter/material.dart';
 
 import '../../config/config.dart';
 import '../../config/design.dart';
-import '../../config/vector_art.dart';
 import '../../data/poem.dart';
 import '../../domain/ankiren_field.dart';
 import '../../domain/ankiren_geometry.dart';
@@ -17,12 +16,11 @@ import '../../l10n/side_trip_strings.dart';
 import '../../l10n/strings.dart';
 import '../../l10n/teiichi_strings.dart';
 import '../ankiren/ankiren_field_view.dart';
-import '../manga/geometry.dart';
-import '../manga/manga.dart';
 import '../play/time_format.dart';
 import '../teiichi/teiichi_zoom.dart';
 import '../results/run_summary.dart';
 import 'ankiren_widgets.dart';
+import 'review_field.dart';
 import 'review_parts.dart';
 import 'run_charts.dart';
 
@@ -142,7 +140,11 @@ class _FieldReplayState extends State<FieldReplay> {
                 if (place != TapProximity.otherSide || deal.opponent.cards.isNotEmpty) place,
             ],
           ),
-          if (card != null) const _TapLegend(),
+          if (card != null)
+            ChartLegend([
+              (const TapLegendMark(1), s.ankirenFirstTapLegend),
+              (const TapLegendMark(2), s.ankirenSecondTapLegend),
+            ]),
         ]),
       ),
       if (step == null || card == null)
@@ -196,8 +198,8 @@ class _ReplayedField extends StatelessWidget {
           behavior: HitTestBehavior.opaque,
           onTap: () => onPick(id),
           child: AnimatedOpacity(
-            opacity: related == null || related.contains(id) ? 1 : AnkirenReviewStyle.unrelatedOpacity,
-            duration: AnkirenReviewStyle.dimFade,
+            opacity: related == null || related.contains(id) ? 1 : FieldReviewStyle.unrelatedOpacity,
+            duration: FieldReviewStyle.dimFade,
             child: FieldWordCard(
               id,
               fill: place == null ? Palette.paper : AnkirenReviewStyle.tierFill[place.index],
@@ -207,7 +209,28 @@ class _ReplayedField extends StatelessWidget {
           ),
         );
       },
-      overlay: card == null ? null : (placement) => CustomPaint(painter: _TapArrows(placement, card)),
+      overlay: card == null ? null : (placement) => CustomPaint(painter: _marks(placement, card)),
+    );
+  }
+
+  /// [card]'s taps across the field: an arrow from each wrong card it hit
+  /// to the card itself, solid for the first tap and dashed after, and a
+  /// numbered badge on every card it hit, in order. A からふだ call has no
+  /// card on the field to point to: only its badges show.
+  static StepMarks _marks(FieldPlacement placement, AnkirenCardTry card) {
+    final target = placement.cardRect(card.poemId)?.center;
+    return StepMarks(
+      arrows: [
+        if (target != null)
+          for (final (i, id) in card.tapped.indexed)
+            if (id != card.poemId)
+              if (placement.cardRect(id) case final from?)
+                (from: from.center, to: target, color: FieldReviewStyle.arrow, dashed: i > 0),
+      ],
+      badges: [
+        for (final (i, id) in card.tapped.indexed)
+          if (placement.cardRect(id) case final rect?) (card: rect, number: i + 1),
+      ],
     );
   }
 }
@@ -235,7 +258,7 @@ class ReviewField extends StatelessWidget {
       label: label,
       child: LayoutBuilder(builder: (context, box) {
         const pad = AnkirenPlayLayout.padding;
-        const band = AnkirenReviewStyle.fieldBand;
+        const band = FieldReviewStyle.band;
         final width = box.maxWidth - 2 * pad;
         final natural = FieldGeometry.of(field, folded: !trueScale, trueSlots: trueSlots);
         final double slots, scale;
@@ -249,7 +272,7 @@ class ReviewField extends StatelessWidget {
           scale = width / FieldGeometry.of(field, folded: false, trueSlots: slots).width;
         } else {
           slots = 0;
-          scale = math.min(width / natural.width, AnkirenReviewStyle.fieldMaxCardW / AnkirenFieldSize.cardW);
+          scale = math.min(width / natural.width, FieldReviewStyle.maxCardW / AnkirenFieldSize.cardW);
         }
         final shown = trueScale ? FieldGeometry.of(field, folded: false, trueSlots: slots) : natural;
         final view = AnkirenFieldView(
@@ -261,16 +284,12 @@ class ReviewField extends StatelessWidget {
           roomAbove: trueScale ? 0 : null,
           bandExtent: band,
           card: (id, _) => card(id),
-          band: _Band(their: trueScale ? null : s.ankirenTheirSide, yours: s.ankirenYourSide),
+          band: FieldBand(their: trueScale ? null : s.ankirenTheirSide, yours: s.ankirenYourSide),
           overlay: overlay,
           overlayOverBand: true,
         );
         final height = (trueScale ? 1 : 2) * shown.height * scale + band;
-        return DecoratedBox(
-          decoration: BoxDecoration(
-            color: AnkirenReviewStyle.fieldGround,
-            border: Border.all(color: Palette.ink, width: Strokes.label),
-          ),
+        return FieldGround(
           child: trueScale
               // The view pads its top; the band starts the box instead.
               ? SizedBox(
@@ -282,213 +301,6 @@ class ReviewField extends StatelessWidget {
               : SizedBox(height: height + 2 * pad, child: view),
         );
       }),
-    );
-  }
-}
-
-/// One card of a reviewed field: its kimariji in [color] on [fill],
-/// outlined heavier when [current], with a [foot] under the word.
-class FieldWordCard extends StatelessWidget {
-  const FieldWordCard(this.poemId,
-      {super.key, required this.fill, required this.color, this.current = false, this.foot});
-  final int poemId;
-  final Color fill, color;
-  final bool current;
-  final Widget? foot;
-
-  @override
-  Widget build(BuildContext context) {
-    final text = kimarijiFor(context, poemId);
-    final kana = text.runes.any((r) => r >= _kanaStart);
-    final word = Text(kana ? text.split('').join('\n') : text,
-        textAlign: TextAlign.center,
-        style: TextStyle(
-            fontWeight: Weights.black, fontSize: AnkirenReviewStyle.fieldCardFont, height: 1, color: color));
-    final fitted = Center(
-      child: FittedBox(fit: BoxFit.scaleDown, child: kana ? word : RotatedBox(quarterTurns: 1, child: word)),
-    );
-    final foot = this.foot;
-    return DecoratedBox(
-      decoration: BoxDecoration(
-        color: fill,
-        border: Border.all(
-            color: Palette.ink, width: current ? AnkirenReviewStyle.highlight : AnkirenReviewStyle.fieldCardBorder),
-      ),
-      child: Padding(
-        padding: AnkirenReviewStyle.fieldCardPadding,
-        child: foot == null
-            ? fitted
-            : Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [Expanded(child: fitted), foot]),
-      ),
-    );
-  }
-
-  /// Where the kana blocks start: romaji, macrons and all, sits below.
-  static const _kanaStart = 0x3040;
-}
-
-/// The band across the field: their side up (when it shows), yours down.
-class _Band extends StatelessWidget {
-  const _Band({required this.their, required this.yours});
-  final String? their;
-  final String yours;
-
-  @override
-  Widget build(BuildContext context) {
-    const style =
-        TextStyle(fontWeight: Weights.black, fontSize: AnkirenReviewStyle.fieldBandFont, color: Palette.paper);
-    return ColoredBox(
-      color: Palette.ink,
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: Gaps.small),
-        child: Row(children: [
-          if (their != null) ...[Text('${their!.toUpperCase()} ↑', style: style), const Spacer()],
-          Text('${yours.toUpperCase()} ↓', style: style),
-        ]),
-      ),
-    );
-  }
-}
-
-/// [card]'s taps across the field: an arrow from each wrong card it hit
-/// to the card itself, bowed toward the field's middle, solid for the first
-/// tap and dashed after, then a numbered badge on every card it hit, in
-/// order, over the arrows. A からふだ call has no card on the field to
-/// point to: only its badges show.
-class _TapArrows extends CustomPainter {
-  _TapArrows(this.placement, this.card);
-  final FieldPlacement placement;
-  final AnkirenCardTry card;
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final target = placement.cardRect(card.poemId);
-    if (target != null) _arrows(canvas, size, target);
-    final onCard = <int, int>{};
-    for (final (i, id) in card.tapped.indexed) {
-      final rect = placement.cardRect(id);
-      if (rect == null) continue;
-      final before = onCard.update(id, (n) => n + 1, ifAbsent: () => 0);
-      const r = AnkirenReviewStyle.marker / 2;
-      _TapBadge.draw(canvas, rect.topRight + Offset(-r - before * AnkirenReviewStyle.marker, r), i + 1,
-          size: AnkirenReviewStyle.marker);
-    }
-  }
-
-  void _arrows(Canvas canvas, Size size, Rect target) {
-    final line = Paint()
-      ..color = AnkirenReviewStyle.arrow
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = AnkirenReviewStyle.arrowStroke;
-    final middle = size.center(Offset.zero);
-    for (final (i, id) in card.tapped.indexed) {
-      if (id == card.poemId) continue;
-      final from = placement.cardRect(id)?.center;
-      if (from == null) continue;
-      final to = target.center;
-      final d = to - from;
-      final normal = Offset(-d.dy, d.dx) * AnkirenReviewStyle.arrowBend;
-      final halfway = from + d / 2;
-      final control = (halfway + normal - middle).distance <= (halfway - normal - middle).distance
-          ? halfway + normal
-          : halfway - normal;
-      final shaft = Path()
-        ..moveTo(from.dx, from.dy)
-        ..quadraticBezierTo(control.dx, control.dy, to.dx, to.dy);
-      canvas.drawPath(i == 0 ? shaft : Dashes.of(shaft, AnkirenReviewStyle.laterTapDash), line);
-      final back = (control - to).direction;
-      const spread = AnkirenReviewStyle.arrowSpread;
-      const head = AnkirenReviewStyle.arrowHead;
-      canvas.drawPath(
-        Path()
-          ..moveTo(to.dx + head * math.cos(back + spread), to.dy + head * math.sin(back + spread))
-          ..lineTo(to.dx, to.dy)
-          ..lineTo(to.dx + head * math.cos(back - spread), to.dy + head * math.sin(back - spread)),
-        line,
-      );
-    }
-  }
-
-  @override
-  bool shouldRepaint(_TapArrows old) => old.card != card || old.placement != placement;
-}
-
-/// A tap's number in a circle: the first filled pink, later ones
-/// pink-ringed paper, like their solid and dashed arrows.
-class _TapBadge extends CustomPainter {
-  const _TapBadge(this.number);
-  final int number;
-
-  static void draw(Canvas canvas, Offset centre, int number, {required double size}) {
-    final first = number == 1;
-    final r = size / 2;
-    canvas.drawCircle(centre, r, Paint()..color = first ? AnkirenReviewStyle.arrow : Palette.paper);
-    canvas.drawCircle(centre, r - AnkirenReviewStyle.markerRing / 2, Paint()
-      ..color = first ? Palette.paper : AnkirenReviewStyle.arrow
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = first ? Strokes.hairline : AnkirenReviewStyle.markerRing);
-    final label = TextPainter(
-      text: TextSpan(
-        text: '$number',
-        style: TextStyle(
-            fontFamily: Fonts.ui,
-            fontWeight: Weights.black,
-            fontSize: size * AnkirenReviewStyle.markerFontShare,
-            color: first ? Palette.paper : AnkirenReviewStyle.arrow),
-      ),
-      textDirection: TextDirection.ltr,
-    )..layout();
-    label.paint(canvas, centre - Offset(label.width / 2, label.height / 2));
-  }
-
-  @override
-  void paint(Canvas canvas, Size size) => draw(canvas, size.center(Offset.zero), number, size: size.shortestSide);
-
-  @override
-  bool shouldRepaint(_TapBadge old) => old.number != number;
-}
-
-/// What the replay's arrows mean: a solid arrow and badge 1 for the first
-/// tap, dashed and badge 2 for the second.
-class _TapLegend extends StatelessWidget {
-  const _TapLegend();
-
-  @override
-  Widget build(BuildContext context) {
-    final s = S.of(context);
-    Widget mark(int number) => Row(mainAxisSize: MainAxisSize.min, children: [
-          LegendMark.line(AnkirenReviewStyle.arrow, dashed: number > 1),
-          const SizedBox(width: Gaps.tight),
-          SizedBox.square(
-            dimension: AnkirenReviewStyle.legendMarker,
-            child: CustomPaint(painter: _TapBadge(number)),
-          ),
-        ]);
-    return ChartLegend([(mark(1), s.ankirenFirstTapLegend), (mark(2), s.ankirenSecondTapLegend)]);
-  }
-}
-
-/// A small button back from the review to the whole field as dealt.
-class _ShowAll extends StatelessWidget {
-  const _ShowAll({required this.onTap});
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    final s = S.of(context);
-    return IntrinsicWidth(
-      child: InkButton(
-        onTap: onTap,
-        border: Strokes.label,
-        padding: AnkirenReviewStyle.showAllPadding,
-        semanticLabel: s.ankirenShowAll,
-        child: Row(mainAxisSize: MainAxisSize.min, children: [
-          MangaIcon(IconArt.close, size: AnkirenReviewStyle.showAllIcon),
-          const SizedBox(width: Gaps.tight),
-          Text(s.ankirenShowAll,
-              maxLines: 1, style: const TextStyle(fontWeight: Weights.black, fontSize: AnkirenReviewStyle.showAllFont)),
-        ]),
-      ),
     );
   }
 }
@@ -522,88 +334,28 @@ class _StepBox extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final s = S.of(context);
-    final scaler = MediaQuery.textScalerOf(context);
-    double line(double height) => scaler.scale(height);
     final lookAlike = this.lookAlike;
-    const value = TextStyle(fontWeight: Weights.black, fontSize: AnkirenReviewStyle.stepValueFont, height: 1);
-    final rowHeight = line(AnkirenReviewStyle.stepRowLine);
-    // Labels sit on the line of a value's text, which is centred; chips
-    // stand on the slot's foot, their words about on that line.
-    TableRow row(String label, Widget child, {Alignment alignment = Alignment.centerLeft}) => TableRow(children: [
-          _Slot(
-            height: rowHeight,
-            alignment: Alignment.bottomLeft,
-            inset: (rowHeight - line(AnkirenReviewStyle.stepValueFont)) / 2,
-            child: Text(label.toUpperCase(),
-                maxLines: 1,
-                style: const TextStyle(
-                    fontWeight: Weights.black,
-                    fontSize: AnkirenReviewStyle.stepLabelFont,
-                    letterSpacing: AnkirenReviewStyle.stepLabelTracking * AnkirenReviewStyle.stepLabelFont,
-                    height: 1,
-                    color: AnkirenReviewStyle.muted)),
-          ),
-          const SizedBox.shrink(),
-          _Slot(height: rowHeight, alignment: alignment, child: child),
-        ]);
-    Widget button(VectorArt icon, String label, int to) => Opacity(
-          opacity: to >= 0 && to < count ? 1 : ChartStyle.dimOpacity,
-          child: InkIconButton(icon: icon, semanticLabel: label, onTap: to >= 0 && to < count ? () => onGo(to) : null),
-        );
-    return Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-      _Slot(
-        height: line(AnkirenReviewStyle.stepCountLine),
-        alignment: Alignment.center,
-        child: ShelfLabel(calls ? s.karafudaStepCall(step + 1, count) : s.ankirenStepCard(step + 1, count)),
-      ),
-      const SizedBox(height: AnkirenReviewStyle.stepCountGap),
-      _Slot(
-        height: AnkirenReviewStyle.stepWordLine,
-        alignment: Alignment.center,
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.baseline,
-          textBaseline: TextBaseline.alphabetic,
-          children: [
-            Text(kimarijiFor(context, card.poemId),
-                maxLines: 1,
-                textScaler: TextScaler.noScaling,
-                style: const TextStyle(fontFamily: Fonts.display, fontSize: AnkirenReviewStyle.stepWordFont, height: 1)),
-            if (card.karafuda) ...[const SizedBox(width: AnkirenReviewStyle.stepTagGap), const _KarafudaTag()],
-          ],
-        ),
-      ),
-      const SizedBox(height: AnkirenReviewStyle.stepTableGap),
-      Table(
-        columnWidths: const {
-          0: IntrinsicColumnWidth(),
-          1: FixedColumnWidth(AnkirenReviewStyle.stepLabelGap),
-          2: FlexColumnWidth(),
-        },
-        children: [
-          row(s.ankirenBoxPlace, Text(_place(s), maxLines: 1, style: value)),
-          if (card.taps.isEmpty)
-            row(s.ankirenBoxTaps, Text(s.ankirenBoxNoTaps, maxLines: 1, style: value))
-          else
-            row(s.ankirenBoxTaps, _Taps(card), alignment: Alignment.bottomLeft),
-          row(s.ankirenBoxResult, Text(_result(s), maxLines: 1, style: value)),
-          row(s.ankirenBoxTime, Text(_time(s), maxLines: 1, style: value)),
-        ],
-      ),
-      _Slot(
-        height: line(AnkirenReviewStyle.stepNoteLine),
-        child: Text(lookAlike == null ? '' : s.ankirenLookAlike(kimarijiFor(context, lookAlike)),
-            maxLines: 1,
-            style: const TextStyle(
-                fontWeight: Weights.bold, fontSize: AnkirenReviewStyle.stepNoteFont, height: 1, color: Palette.inkSoft)),
-      ),
-      const SizedBox(height: AnkirenReviewStyle.stepButtonsGap),
-      Row(children: [
-        button(IconArt.back, s.ankirenStepBack, step - 1),
-        Expanded(child: Center(child: _ShowAll(onTap: () => onGo(null)))),
-        button(IconArt.chevron, s.ankirenStepNext, step + 1),
-      ]),
-    ]);
+    return StepBox(
+      count: calls ? s.karafudaStepCall(step + 1, count) : s.ankirenStepCard(step + 1, count),
+      poemId: card.poemId,
+      tag: card.karafuda ? s.karafuda : null,
+      rows: [
+        StepRow(s.ankirenBoxPlace, StepBox.text(_place(s))),
+        if (card.taps.isEmpty)
+          StepRow(s.ankirenBoxTaps, StepBox.text(s.ankirenBoxNoTaps))
+        else
+          StepRow(s.ankirenBoxTaps, _Taps(card), chips: true),
+        StepRow(s.ankirenBoxResult, StepBox.text(_result(s))),
+        StepRow(s.ankirenBoxTime, StepBox.text(_time(s))),
+      ],
+      note: lookAlike == null ? '' : s.ankirenLookAlike(kimarijiFor(context, lookAlike)),
+      backLabel: s.ankirenStepBack,
+      nextLabel: s.ankirenStepNext,
+      showAllLabel: s.ankirenShowAll,
+      onBack: step > 0 ? () => onGo(step - 1) : null,
+      onNext: step < count - 1 ? () => onGo(step + 1) : null,
+      onShowAll: () => onGo(null),
+    );
   }
 
   /// Where the card lay: off the field for a からふだ; on a field of one
@@ -639,51 +391,6 @@ class _StepBox extends StatelessWidget {
       };
 }
 
-/// One line of the step box, [height] tall: [child] at [alignment],
-/// [inset] off the bottom, shrunk to fit across.
-class _Slot extends StatelessWidget {
-  const _Slot({required this.height, required this.child, this.alignment = Alignment.centerLeft, this.inset = 0});
-  final double height, inset;
-  final Widget child;
-  final Alignment alignment;
-
-  @override
-  Widget build(BuildContext context) => SizedBox(
-        height: height,
-        child: Padding(
-          padding: EdgeInsets.only(bottom: inset),
-          child: Align(
-            alignment: alignment,
-            child: FittedBox(fit: BoxFit.scaleDown, alignment: alignment, child: child),
-          ),
-        ),
-      );
-}
-
-/// The からふだ tag beside a からふだ call's kimariji.
-class _KarafudaTag extends StatelessWidget {
-  const _KarafudaTag();
-
-  @override
-  Widget build(BuildContext context) => DecoratedBox(
-        decoration: BoxDecoration(
-          color: AnkirenReviewStyle.stepTagFill,
-          border: Border.all(color: KarafudaStyle.tag, width: Strokes.hairline),
-        ),
-        child: Padding(
-          padding: AnkirenReviewStyle.stepTagPadding,
-          child: Text(S.of(context).karafuda.toUpperCase(),
-              maxLines: 1,
-              style: const TextStyle(
-                  fontWeight: Weights.black,
-                  fontSize: AnkirenReviewStyle.stepTagFont,
-                  letterSpacing: AnkirenReviewStyle.stepTagTracking * AnkirenReviewStyle.stepTagFont,
-                  height: AnkirenReviewStyle.stepChipHeight,
-                  color: KarafudaStyle.tag)),
-        ),
-      );
-}
-
 /// A call's taps in order, each a chip in its tier's colour with its
 /// number as the field marks it, named by what it hit: where it landed,
 /// the からふだ button, or on a からふだ call a field card. Taps past the
@@ -695,30 +402,18 @@ class _Taps extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final s = S.of(context);
-    final badge = MediaQuery.textScalerOf(context).scale(AnkirenReviewStyle.stepBadge);
-    const text = TextStyle(
-        fontWeight: Weights.black, fontSize: AnkirenReviewStyle.stepChipFont, height: AnkirenReviewStyle.stepChipHeight);
     final more = call.wrongTaps + (call.found ? 1 : 0) - call.taps.length;
-    return Row(mainAxisSize: MainAxisSize.min, children: [
-      for (final (i, place) in call.taps.indexed) ...[
-        if (i > 0) const SizedBox(width: AnkirenReviewStyle.stepChipGap),
-        SizedBox.square(dimension: badge, child: CustomPaint(painter: _TapBadge(i + 1))),
-        const SizedBox(width: AnkirenReviewStyle.stepBadgeGap),
-        DecoratedBox(
-          decoration: BoxDecoration(
-              color: AnkirenReviewStyle.tierFill[place.index], border: Border.all(width: Strokes.hairline)),
-          child: Padding(
-            padding: AnkirenReviewStyle.stepChipPadding,
-            child: Text(_name(s, i),
-                maxLines: 1, style: text.copyWith(color: AnkirenReviewStyle.tierText[place.index])),
+    return StepChips(
+      [
+        for (final (i, place) in call.taps.indexed)
+          (
+            text: _name(s, i),
+            fill: AnkirenReviewStyle.tierFill[place.index],
+            ink: AnkirenReviewStyle.tierText[place.index],
           ),
-        ),
       ],
-      if (more > 0) ...[
-        const SizedBox(width: AnkirenReviewStyle.stepChipGap),
-        Text(s.ankirenBoxMoreTaps(more), maxLines: 1, style: text.copyWith(color: AnkirenReviewStyle.muted)),
-      ],
-    ]);
+      more: more > 0 ? s.ankirenBoxMoreTaps(more) : null,
+    );
   }
 
   String _name(S s, int i) => call.tapped.elementAtOrNull(i) == Karafuda.button

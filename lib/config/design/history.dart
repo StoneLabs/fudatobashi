@@ -189,7 +189,7 @@ abstract final class HistoryListStyle {
 }
 
 /// History's 暗記練 game page: tier colours, the first-tap mix bars, the
-/// replayed field, the tables and the score sum.
+/// memorise bar, the find-time chart and the score sum.
 abstract final class AnkirenReviewStyle {
   /// Where a tap landed (by `TapProximity.index`, nearest first): fill and
   /// text.
@@ -222,69 +222,6 @@ abstract final class AnkirenReviewStyle {
   static const double memoTick = 2.5;
   static const double memoTickOut = 5;
 
-  /// The replayed field: its band, card words, the highlight round the card
-  /// asked, the arrows from wrong taps (later taps' dashed) and the taps'
-  /// numbered markers, on the field and in their legend.
-  static const double fieldBand = 18;
-  static const double fieldBandFont = 10;
-  static const double fieldCardFont = 11;
-  static const double fieldCardBorder = 1.5;
-  static const double fieldMaxCardW = 29;
-  static const EdgeInsets fieldCardPadding = EdgeInsets.all(2);
-  static const double highlight = 3;
-  static const double arrowStroke = 2.2;
-  static const double arrowHead = 7;
-
-  /// Half the angle of an arrow's head, radians.
-  static const double arrowSpread = 0.45;
-  static const double arrowBend = 0.25;
-  static const Color arrow = Palette.pinkDeep;
-  static const List<double> laterTapDash = [5, 3.5];
-  static const double marker = 16;
-  static const double markerFontShare = 0.62;
-  static const double markerRing = 1.6;
-  static const double legendMarker = 13;
-
-  /// A reviewed step's cards that its taps did not touch, faded back.
-  static const double unrelatedOpacity = 0.35;
-  static const Duration dimFade = Duration(milliseconds: 160);
-  static const EdgeInsets showAllPadding = EdgeInsets.fromLTRB(8, 4, 10, 4);
-  static const double showAllIcon = 12;
-  static const double showAllFont = 11.5;
-  static const Color fieldGround = Color(0xFFEFF5E6);
-
-  /// The review's step box, as tall for every call: each line has a slot
-  /// of its own and shrinks what does not fit across. The call's count,
-  /// then its kimariji at a fixed size with a からふだ tag; a table of
-  /// labels and values, its taps as numbered chips; a line for a
-  /// look-alike; then the buttons.
-  static const double stepCountGap = 3;
-  static const double stepWordFont = 26;
-  static const double stepWordLine = 32;
-  static const double stepTagFont = 10;
-  static const double stepTagTracking = 0.08;
-  static const EdgeInsets stepTagPadding = EdgeInsets.fromLTRB(5, 2, 5, 2);
-  static const double stepTagGap = 8;
-  static const Color stepTagFill = Palette.seaSoft;
-  static const double stepTableGap = 10;
-  static const double stepLabelFont = 10;
-  static const double stepLabelTracking = 0.1;
-  static const double stepLabelGap = 14;
-  static const double stepValueFont = 13.5;
-  static const double stepChipFont = 11.5;
-  static const double stepChipHeight = 1.2;
-  static const EdgeInsets stepChipPadding = EdgeInsets.fromLTRB(5, 1, 5, 2);
-  static const double stepBadgeGap = 3;
-  static const double stepChipGap = 10;
-  static const double stepNoteFont = 11.5;
-  static const double stepButtonsGap = 8;
-
-  /// The step box's slots and marks that grow with the font scale.
-  static const double stepCountLine = 13;
-  static const double stepRowLine = 22;
-  static const double stepBadge = 15;
-  static const double stepNoteLine = 17;
-
   /// The find-time chart numbers every bar up to [allLabelsUpTo] cards,
   /// else every [labelEvery]th.
   static const int allLabelsUpTo = 16;
@@ -298,6 +235,74 @@ abstract final class AnkirenReviewStyle {
   static const EdgeInsets termPadding = EdgeInsets.fromLTRB(2, 5, 2, 6);
   static const EdgeInsets resultPadding = EdgeInsets.fromLTRB(8, 5, 8, 6);
   static const double termGap = 4;
+}
+
+/// A replayed field on History's game pages (`review_field.dart`): its
+/// ground and band, card words, the highlight round the card a step is
+/// about, the arrows to it (later ones dashed) and the steps' numbered
+/// badges, on the field and in their legend; the cards a step did not
+/// involve faded back, and the button back to the whole field.
+abstract final class FieldReviewStyle {
+  static const double band = 18;
+  static const double bandFont = 10;
+  static const double cardFont = 11;
+  static const double cardBorder = 1.5;
+  static const double maxCardW = 29;
+  static const EdgeInsets cardPadding = EdgeInsets.all(2);
+  static const double highlight = 3;
+  static const double arrowStroke = 2.2;
+  static const double arrowHead = 7;
+
+  /// Half the angle of an arrow's head, radians.
+  static const double arrowSpread = 0.45;
+  static const double arrowBend = 0.25;
+  static const Color arrow = Palette.pinkDeep;
+  static const List<double> laterDash = [5, 3.5];
+  static const double marker = 16;
+  static const double markerFontShare = 0.62;
+  static const double markerRing = 1.6;
+  static const double legendMarker = 13;
+  static const double unrelatedOpacity = 0.35;
+  static const Duration dimFade = Duration(milliseconds: 160);
+  static const EdgeInsets showAllPadding = EdgeInsets.fromLTRB(8, 4, 10, 4);
+  static const double showAllIcon = 12;
+  static const double showAllFont = 11.5;
+  static const Color ground = Color(0xFFEFF5E6);
+}
+
+/// The step box of a replayed field (`StepBox`), as tall for every step:
+/// each line has a slot of its own and shrinks what does not fit across.
+/// The step's count, then its kimariji at a fixed size with a tag (a
+/// からふだ's); a table of labels and values, numbered chips among them;
+/// a note line; then the buttons. The slots and marks of the last group
+/// grow with the font scale.
+abstract final class StepBoxStyle {
+  static const double countGap = 3;
+  static const double wordFont = 26;
+  static const double wordLine = 32;
+  static const double tagFont = 10;
+  static const double tagTracking = 0.08;
+  static const EdgeInsets tagPadding = EdgeInsets.fromLTRB(5, 2, 5, 2);
+  static const double tagGap = 8;
+  static const Color tagFill = Palette.seaSoft;
+  static const double tableGap = 10;
+  static const double labelFont = 10;
+  static const double labelTracking = 0.1;
+  static const Color label = HistoryRunStyle.muted;
+  static const double labelGap = 14;
+  static const double valueFont = 13.5;
+  static const double chipFont = 11.5;
+  static const double chipHeight = 1.2;
+  static const EdgeInsets chipPadding = EdgeInsets.fromLTRB(5, 1, 5, 2);
+  static const double badgeGap = 3;
+  static const double chipGap = 10;
+  static const double noteFont = 11.5;
+  static const double buttonsGap = 8;
+
+  static const double countLine = 13;
+  static const double rowLine = 22;
+  static const double badge = 15;
+  static const double noteLine = 17;
 }
 
 /// History's 定位置 game page, on the 暗記練 game page's parts
