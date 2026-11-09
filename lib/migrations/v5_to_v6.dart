@@ -19,6 +19,7 @@ const v6Tables = [
       '"match_id" INTEGER NOT NULL REFERENCES ikkiuchi_matches (id), "seq" INTEGER NOT NULL, '
       '"poem_id" INTEGER NOT NULL, "card_side" TEXT NULL, "taker" TEXT NULL, '
       '"tied" INTEGER NOT NULL CHECK ("tied" IN (0, 1)), "player_faults" INTEGER NOT NULL, '
-      '"opponent_faults" INTEGER NOT NULL, "player_take_us" INTEGER NULL, "opponent_take_us" INTEGER NULL)',
+      '"opponent_faults" INTEGER NOT NULL, "player_take_us" INTEGER NULL, "opponent_take_us" INTEGER NULL, '
+      '"field" TEXT NOT NULL, "faults" TEXT NOT NULL, "sends" TEXT NOT NULL)',
   'CREATE INDEX ikkiuchi_reads_match ON ikkiuchi_reads (match_id)',
 ];

@@ -1,4 +1,6 @@
 import '../config/config.dart';
+import 'field_parts.dart';
+import 'ikkiuchi_layout.dart';
 import 'ikkiuchi_match.dart';
 import 'ikkiuchi_rating.dart';
 import 'ikkiuchi_side.dart';
@@ -68,11 +70,175 @@ enum IkkiuchiResult {
               : lost;
 }
 
+/// A place on one side of the field: its row, the part of the row, and the
+/// place in that part, a group's counted from its outer edge in and the
+/// open middle's from the left.
+class IkkiuchiSpot {
+  const IkkiuchiSpot(this.side, this.row, this.part, this.index);
+
+  final IkkiuchiSide side;
+  final FieldRow row;
+  final RowPart part;
+  final int index;
+
+  @override
+  bool operator ==(Object other) =>
+      other is IkkiuchiSpot && other.side == side && other.row == row && other.part == part && other.index == index;
+
+  @override
+  int get hashCode => Object.hash(side, row, part, index);
+
+  @override
+  String toString() => 'IkkiuchiSpot(${side.name}, ${row.name}, ${part.name}, $index)';
+}
+
+/// Both sides of the field as they lay, each as its owner sees it: its
+/// rows 下段 first, each group from its outer edge in and the open middle
+/// left to right (the opponent's open middles stay empty).
+class IkkiuchiLaidField {
+  const IkkiuchiLaidField({required this.opponent, required this.player});
+
+  /// A field stored by [toJson].
+  factory IkkiuchiLaidField.fromJson(Map<String, dynamic> json) {
+    List<int> ids(List cards) => [for (final id in cards) id as int];
+    List<IkkiuchiRow> rows(IkkiuchiSide side) => [
+          for (final row in json[side.name] as List)
+            switch (row) {
+              [final List left, final List middle, final List right] =>
+                IkkiuchiRow(ids(left), ids(right), middle: ids(middle)),
+              _ => throw FormatException('Not a row: $row'),
+            },
+        ];
+    return IkkiuchiLaidField(opponent: rows(IkkiuchiSide.opponent), player: rows(IkkiuchiSide.player));
+  }
+
+  /// No card on either side.
+  static const empty = IkkiuchiLaidField(opponent: [], player: []);
+
+  final List<IkkiuchiRow> opponent, player;
+
+  List<IkkiuchiRow> of(IkkiuchiSide side) => side == IkkiuchiSide.opponent ? opponent : player;
+
+  /// Every card on [side].
+  List<int> cardsOf(IkkiuchiSide side) => [
+        for (final r in of(side)) ...[...r.left, ...r.middle, ...r.right],
+      ];
+
+  /// Where [card] lies; null when it lies on neither side.
+  IkkiuchiSpot? spotOf(int card) {
+    for (final side in IkkiuchiSide.values) {
+      for (final (r, row) in of(side).indexed) {
+        for (final part in RowPart.values) {
+          final at = _part(row, part).indexOf(card);
+          if (at >= 0) return IkkiuchiSpot(side, FieldRow.values[r], part, at);
+        }
+      }
+    }
+    return null;
+  }
+
+  /// The field with [card] off whichever side holds it.
+  IkkiuchiLaidField without(int card) {
+    List<IkkiuchiRow> drop(List<IkkiuchiRow> rows) => [
+          for (final r in rows)
+            IkkiuchiRow([...r.left]..remove(card), [...r.right]..remove(card), middle: [...r.middle]..remove(card)),
+        ];
+    return IkkiuchiLaidField(opponent: drop(opponent), player: drop(player));
+  }
+
+  /// The field once [sent] went across: off the side it lay on, and laid at
+  /// its place on the other. Unchanged when the card lies on neither side.
+  IkkiuchiLaidField withSent(IkkiuchiSent sent) {
+    final from = spotOf(sent.card)?.side;
+    if (from == null) return this;
+    final to = from == IkkiuchiSide.opponent ? IkkiuchiSide.player : IkkiuchiSide.opponent;
+    final rest = without(sent.card);
+    final rows = [
+      ...rest.of(to),
+      for (var r = rest.of(to).length; r <= sent.row.index; r++) const IkkiuchiRow([], []),
+    ];
+    final parts = [
+      for (final part in RowPart.values) [..._part(rows[sent.row.index], part)],
+    ];
+    final into = parts[sent.part.index];
+    into.insert(sent.index.clamp(0, into.length), sent.card);
+    rows[sent.row.index] =
+        IkkiuchiRow(parts[RowPart.left.index], parts[RowPart.right.index], middle: parts[RowPart.middle.index]);
+    return to == IkkiuchiSide.opponent
+        ? IkkiuchiLaidField(opponent: rows, player: rest.player)
+        : IkkiuchiLaidField(opponent: rest.opponent, player: rows);
+  }
+
+  static List<int> _part(IkkiuchiRow row, RowPart part) => switch (part) {
+        RowPart.left => row.left,
+        RowPart.middle => row.middle,
+        RowPart.right => row.right,
+      };
+
+  /// The field as JSON: each side's rows by its name, each row its left
+  /// group, open middle and right group.
+  Map<String, Object> toJson() => {
+        for (final side in IkkiuchiSide.values)
+          side.name: [
+            for (final r in of(side)) [r.left, r.middle, r.right],
+          ],
+      };
+}
+
+/// A fault (お手つき): who made it, the card touched, and when, from the
+/// deciding sound of the card read (negative before it).
+class IkkiuchiFault {
+  const IkkiuchiFault(this.by, this.card, this.at);
+
+  /// A fault stored by [toJson].
+  factory IkkiuchiFault.fromJson(List<dynamic> json) => switch (json) {
+        [final String by, final int card, final int us] =>
+          IkkiuchiFault(IkkiuchiSide.values.byName(by), card, Duration(microseconds: us)),
+        _ => throw FormatException('Not a fault: $json'),
+      };
+
+  final IkkiuchiSide by;
+  final int card;
+  final Duration at;
+
+  /// The fault as JSON: who made it, the card and when, µs.
+  List<Object> toJson() => [by.name, card, at.inMicroseconds];
+}
+
+/// A 送り札: the card sent, and where it was laid on the side it went to:
+/// its row, the part of the row and its place there (as [IkkiuchiSpot]).
+class IkkiuchiSent {
+  const IkkiuchiSent(this.card, this.row, this.part, this.index);
+
+  /// [card] laid at [spot].
+  IkkiuchiSent.at(this.card, IkkiuchiSpot spot)
+      : row = spot.row,
+        part = spot.part,
+        index = spot.index;
+
+  /// A 送り札 stored by [toJson].
+  factory IkkiuchiSent.fromJson(List<dynamic> json) => switch (json) {
+        [final int card, final int row, final String part, final int index] =>
+          IkkiuchiSent(card, FieldRow.values[row], RowPart.values.byName(part), index),
+        _ => throw FormatException('Not a 送り札: $json'),
+      };
+
+  final int card;
+  final FieldRow row;
+  final RowPart part;
+  final int index;
+
+  /// The 送り札 as JSON: the card, the row (0 is 下段), the part and the
+  /// place in it.
+  List<Object> toJson() => [card, row.index, part.name, index];
+}
+
 /// One read of a match, once it has ended: the card read ([poemId]), the
 /// side it lay on and who took it, both null on a からふだ; whether both
 /// took it at the same time; the sides each player faulted on (お手つき),
-/// 0 to 2; and when each reached the card from its deciding sound,
-/// negative for one before it, null for one who never did.
+/// 0 to 2; when each reached the card from its deciding sound, negative
+/// for one before it, null for one who never did; the [field] it was
+/// played on, every fault made on it and the 送り札 it left.
 class IkkiuchiReadLog {
   const IkkiuchiReadLog({
     required this.poemId,
@@ -83,15 +249,20 @@ class IkkiuchiReadLog {
     this.opponentFaults = 0,
     this.playerTake,
     this.opponentTake,
+    this.field = IkkiuchiLaidField.empty,
+    this.faults = const [],
+    this.sends = const [],
   });
 
-  /// [poemId]'s read, which ended in [end].
-  IkkiuchiReadLog.of(this.poemId, IkkiuchiReadEnd end, {this.playerTake, this.opponentTake})
+  /// [poemId]'s read on [field], which ended in [end] with [faults].
+  IkkiuchiReadLog.of(this.poemId, IkkiuchiReadEnd end,
+      {this.playerTake, this.opponentTake, this.field = IkkiuchiLaidField.empty, this.faults = const []})
       : cardSide = end.cardSide,
         taker = end.taker,
         tied = end.tied,
         playerFaults = end.playerFaults.length,
-        opponentFaults = end.tobiFaults.length;
+        opponentFaults = end.tobiFaults.length,
+        sends = const [];
 
   final int poemId;
   final IkkiuchiSide? cardSide, taker;
@@ -99,7 +270,33 @@ class IkkiuchiReadLog {
   final int playerFaults, opponentFaults;
   final Duration? playerTake, opponentTake;
 
+  /// Both sides as the read began: 並べ替え and 送り札 are made only between
+  /// the reads, so the whole read was played on it.
+  final IkkiuchiLaidField field;
+
+  /// Every fault made on it, in the order made: each card a player touched
+  /// that was a fault, at its first such touch.
+  final List<IkkiuchiFault> faults;
+
+  /// The 送り札 made after it, in order.
+  final List<IkkiuchiSent> sends;
+
   bool get karafuda => cardSide == null;
+
+  /// This read with [sent] made after it too.
+  IkkiuchiReadLog withSent(IkkiuchiSent sent) => IkkiuchiReadLog(
+        poemId: poemId,
+        cardSide: cardSide,
+        taker: taker,
+        tied: tied,
+        playerFaults: playerFaults,
+        opponentFaults: opponentFaults,
+        playerTake: playerTake,
+        opponentTake: opponentTake,
+        field: field,
+        faults: faults,
+        sends: [...sends, sent],
+      );
 }
 
 /// A match once it is over, as it is stored: its setup, when it ran,

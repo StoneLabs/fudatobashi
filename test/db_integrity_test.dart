@@ -336,7 +336,15 @@ void main() {
             ));
 
     Future<void> read(AppDatabase db, int matchId) => db.into(db.ikkiuchiReads).insert(IkkiuchiReadsCompanion.insert(
-        matchId: matchId, seq: 0, poemId: 1, tied: false, playerFaults: 0, opponentFaults: 0));
+        matchId: matchId,
+        seq: 0,
+        poemId: 1,
+        tied: false,
+        playerFaults: 0,
+        opponentFaults: 0,
+        field: '{"opponent":[],"player":[]}',
+        faults: '[]',
+        sends: '[]'));
 
     Future<String> dumpMatches(AppDatabase db) async =>
         [await db.select(db.ikkiuchiMatches).get(), await db.select(db.ikkiuchiReads).get()].join('\n');

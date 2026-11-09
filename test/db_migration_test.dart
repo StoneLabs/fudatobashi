@@ -284,9 +284,19 @@ void main() {
         tied: false,
         playerFaults: 0,
         opponentFaults: 1,
-        playerTakeUs: const Value(640000)));
-    expect([for (final r in await db.select(db.ikkiuchiReads).get()) (r.matchId, r.poemId, r.cardSide, r.taker)],
-        [(match, 12, IkkiuchiSide.opponent, IkkiuchiSide.player)]);
+        playerTakeUs: const Value(640000),
+        field: '{"opponent":[[[12],[],[]]],"player":[[[34],[],[]]]}',
+        faults: '[["opponent",34,500000]]',
+        sends: '[[56,0,"left",1]]'));
+    expect(
+        [
+          for (final r in await db.select(db.ikkiuchiReads).get())
+            (r.matchId, r.poemId, r.cardSide, r.taker, r.field, r.faults, r.sends),
+        ],
+        [
+          (match, 12, IkkiuchiSide.opponent, IkkiuchiSide.player, '{"opponent":[[[12],[],[]]],"player":[[[34],[],[]]]}',
+              '[["opponent",34,500000]]', '[[56,0,"left",1]]'),
+        ]);
     await db.close();
   });
 

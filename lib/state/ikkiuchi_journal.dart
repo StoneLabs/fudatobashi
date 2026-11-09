@@ -37,6 +37,9 @@ class IkkiuchiJournal {
             'opponentFaults': r.opponentFaults,
             'playerTakeUs': r.playerTake?.inMicroseconds,
             'opponentTakeUs': r.opponentTake?.inMicroseconds,
+            'field': r.field.toJson(),
+            'faults': [for (final f in r.faults) f.toJson()],
+            'sends': [for (final s in r.sends) s.toJson()],
           },
       ],
     });
@@ -70,6 +73,9 @@ class IkkiuchiJournal {
             opponentFaults: r['opponentFaults'] as int,
             playerTake: us(r['playerTakeUs']),
             opponentTake: us(r['opponentTakeUs']),
+            field: IkkiuchiLaidField.fromJson(r['field'] as Map<String, dynamic>),
+            faults: [for (final f in r['faults'] as List) IkkiuchiFault.fromJson(f as List)],
+            sends: [for (final s in r['sends'] as List) IkkiuchiSent.fromJson(s as List)],
           ),
       ],
     ));

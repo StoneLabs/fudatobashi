@@ -10,6 +10,8 @@ import 'package:fudatobashi/config/config.dart';
 import 'package:fudatobashi/data/fuda_sets.dart';
 import 'package:fudatobashi/data/poem.dart';
 import 'package:fudatobashi/db/database.dart';
+import 'package:fudatobashi/domain/field_parts.dart';
+import 'package:fudatobashi/domain/ikkiuchi_layout.dart';
 import 'package:fudatobashi/domain/ikkiuchi_rating.dart';
 import 'package:fudatobashi/domain/ikkiuchi_record.dart';
 import 'package:fudatobashi/domain/ikkiuchi_side.dart';
@@ -50,6 +52,9 @@ void main() {
     playerFaults: 1,
     playerTake: Duration(milliseconds: 640),
     opponentTake: Duration(milliseconds: -80),
+    field: IkkiuchiLaidField(opponent: [IkkiuchiRow([12, 7], [])], player: [IkkiuchiRow([3], [9], middle: [4])]),
+    faults: [IkkiuchiFault(IkkiuchiSide.player, 4, Duration(milliseconds: 300))],
+    sends: [IkkiuchiSent(3, FieldRow.lower, RowPart.right, 0)],
   );
   const karafuda = IkkiuchiReadLog(poemId: 40, opponentFaults: 2);
 
@@ -86,6 +91,18 @@ void main() {
     final r = m.reads.first;
     expect([r.poemId, r.cardSide, r.taker, r.tied, r.playerFaults, r.opponentFaults, r.playerTake, r.opponentTake],
         [12, IkkiuchiSide.opponent, IkkiuchiSide.player, false, 1, 0, taken.playerTake, taken.opponentTake]);
+    expect([r.field.toJson(), for (final f in r.faults) f.toJson(), for (final s in r.sends) s.toJson()], [
+      {
+        'opponent': [
+          [[12, 7], <int>[], <int>[]],
+        ],
+        'player': [
+          [[3], [4], [9]],
+        ],
+      },
+      ['player', 4, 300000],
+      [3, 0, 'right', 0],
+    ]);
     final k = m.reads.last;
     expect([k.poemId, k.karafuda, k.taker, k.opponentFaults, k.playerTake], [40, true, null, 2, null]);
     await db.close();

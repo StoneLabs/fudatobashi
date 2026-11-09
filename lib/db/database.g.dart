@@ -6796,6 +6796,33 @@ class $IkkiuchiReadsTable extends IkkiuchiReads
     type: DriftSqlType.int,
     requiredDuringInsert: false,
   );
+  static const VerificationMeta _fieldMeta = const VerificationMeta('field');
+  @override
+  late final GeneratedColumn<String> field = GeneratedColumn<String>(
+    'field',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _faultsMeta = const VerificationMeta('faults');
+  @override
+  late final GeneratedColumn<String> faults = GeneratedColumn<String>(
+    'faults',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _sendsMeta = const VerificationMeta('sends');
+  @override
+  late final GeneratedColumn<String> sends = GeneratedColumn<String>(
+    'sends',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
   @override
   List<GeneratedColumn> get $columns => [
     id,
@@ -6809,6 +6836,9 @@ class $IkkiuchiReadsTable extends IkkiuchiReads
     opponentFaults,
     playerTakeUs,
     opponentTakeUs,
+    field,
+    faults,
+    sends,
   ];
   @override
   String get aliasedName => _alias ?? actualTableName;
@@ -6897,6 +6927,30 @@ class $IkkiuchiReadsTable extends IkkiuchiReads
         ),
       );
     }
+    if (data.containsKey('field')) {
+      context.handle(
+        _fieldMeta,
+        field.isAcceptableOrUnknown(data['field']!, _fieldMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_fieldMeta);
+    }
+    if (data.containsKey('faults')) {
+      context.handle(
+        _faultsMeta,
+        faults.isAcceptableOrUnknown(data['faults']!, _faultsMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_faultsMeta);
+    }
+    if (data.containsKey('sends')) {
+      context.handle(
+        _sendsMeta,
+        sends.isAcceptableOrUnknown(data['sends']!, _sendsMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_sendsMeta);
+    }
     return context;
   }
 
@@ -6954,6 +7008,18 @@ class $IkkiuchiReadsTable extends IkkiuchiReads
         DriftSqlType.int,
         data['${effectivePrefix}opponent_take_us'],
       ),
+      field: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}field'],
+      )!,
+      faults: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}faults'],
+      )!,
+      sends: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}sends'],
+      )!,
     );
   }
 
@@ -6993,6 +7059,14 @@ class IkkiuchiReadRow extends DataClass implements Insertable<IkkiuchiReadRow> {
   /// one before it); null for one who never did.
   final int? playerTakeUs;
   final int? opponentTakeUs;
+
+  /// Both sides as the read began, as JSON (`IkkiuchiLaidField`).
+  final String field;
+
+  /// Every fault on it, and the 送り札 after it, in order, as JSON lists
+  /// (`IkkiuchiFault`, `IkkiuchiSent`).
+  final String faults;
+  final String sends;
   const IkkiuchiReadRow({
     required this.id,
     required this.matchId,
@@ -7005,6 +7079,9 @@ class IkkiuchiReadRow extends DataClass implements Insertable<IkkiuchiReadRow> {
     required this.opponentFaults,
     this.playerTakeUs,
     this.opponentTakeUs,
+    required this.field,
+    required this.faults,
+    required this.sends,
   });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
@@ -7032,6 +7109,9 @@ class IkkiuchiReadRow extends DataClass implements Insertable<IkkiuchiReadRow> {
     if (!nullToAbsent || opponentTakeUs != null) {
       map['opponent_take_us'] = Variable<int>(opponentTakeUs);
     }
+    map['field'] = Variable<String>(field);
+    map['faults'] = Variable<String>(faults);
+    map['sends'] = Variable<String>(sends);
     return map;
   }
 
@@ -7056,6 +7136,9 @@ class IkkiuchiReadRow extends DataClass implements Insertable<IkkiuchiReadRow> {
       opponentTakeUs: opponentTakeUs == null && nullToAbsent
           ? const Value.absent()
           : Value(opponentTakeUs),
+      field: Value(field),
+      faults: Value(faults),
+      sends: Value(sends),
     );
   }
 
@@ -7080,6 +7163,9 @@ class IkkiuchiReadRow extends DataClass implements Insertable<IkkiuchiReadRow> {
       opponentFaults: serializer.fromJson<int>(json['opponentFaults']),
       playerTakeUs: serializer.fromJson<int?>(json['playerTakeUs']),
       opponentTakeUs: serializer.fromJson<int?>(json['opponentTakeUs']),
+      field: serializer.fromJson<String>(json['field']),
+      faults: serializer.fromJson<String>(json['faults']),
+      sends: serializer.fromJson<String>(json['sends']),
     );
   }
   @override
@@ -7101,6 +7187,9 @@ class IkkiuchiReadRow extends DataClass implements Insertable<IkkiuchiReadRow> {
       'opponentFaults': serializer.toJson<int>(opponentFaults),
       'playerTakeUs': serializer.toJson<int?>(playerTakeUs),
       'opponentTakeUs': serializer.toJson<int?>(opponentTakeUs),
+      'field': serializer.toJson<String>(field),
+      'faults': serializer.toJson<String>(faults),
+      'sends': serializer.toJson<String>(sends),
     };
   }
 
@@ -7116,6 +7205,9 @@ class IkkiuchiReadRow extends DataClass implements Insertable<IkkiuchiReadRow> {
     int? opponentFaults,
     Value<int?> playerTakeUs = const Value.absent(),
     Value<int?> opponentTakeUs = const Value.absent(),
+    String? field,
+    String? faults,
+    String? sends,
   }) => IkkiuchiReadRow(
     id: id ?? this.id,
     matchId: matchId ?? this.matchId,
@@ -7130,6 +7222,9 @@ class IkkiuchiReadRow extends DataClass implements Insertable<IkkiuchiReadRow> {
     opponentTakeUs: opponentTakeUs.present
         ? opponentTakeUs.value
         : this.opponentTakeUs,
+    field: field ?? this.field,
+    faults: faults ?? this.faults,
+    sends: sends ?? this.sends,
   );
   IkkiuchiReadRow copyWithCompanion(IkkiuchiReadsCompanion data) {
     return IkkiuchiReadRow(
@@ -7152,6 +7247,9 @@ class IkkiuchiReadRow extends DataClass implements Insertable<IkkiuchiReadRow> {
       opponentTakeUs: data.opponentTakeUs.present
           ? data.opponentTakeUs.value
           : this.opponentTakeUs,
+      field: data.field.present ? data.field.value : this.field,
+      faults: data.faults.present ? data.faults.value : this.faults,
+      sends: data.sends.present ? data.sends.value : this.sends,
     );
   }
 
@@ -7168,7 +7266,10 @@ class IkkiuchiReadRow extends DataClass implements Insertable<IkkiuchiReadRow> {
           ..write('playerFaults: $playerFaults, ')
           ..write('opponentFaults: $opponentFaults, ')
           ..write('playerTakeUs: $playerTakeUs, ')
-          ..write('opponentTakeUs: $opponentTakeUs')
+          ..write('opponentTakeUs: $opponentTakeUs, ')
+          ..write('field: $field, ')
+          ..write('faults: $faults, ')
+          ..write('sends: $sends')
           ..write(')'))
         .toString();
   }
@@ -7186,6 +7287,9 @@ class IkkiuchiReadRow extends DataClass implements Insertable<IkkiuchiReadRow> {
     opponentFaults,
     playerTakeUs,
     opponentTakeUs,
+    field,
+    faults,
+    sends,
   );
   @override
   bool operator ==(Object other) =>
@@ -7201,7 +7305,10 @@ class IkkiuchiReadRow extends DataClass implements Insertable<IkkiuchiReadRow> {
           other.playerFaults == this.playerFaults &&
           other.opponentFaults == this.opponentFaults &&
           other.playerTakeUs == this.playerTakeUs &&
-          other.opponentTakeUs == this.opponentTakeUs);
+          other.opponentTakeUs == this.opponentTakeUs &&
+          other.field == this.field &&
+          other.faults == this.faults &&
+          other.sends == this.sends);
 }
 
 class IkkiuchiReadsCompanion extends UpdateCompanion<IkkiuchiReadRow> {
@@ -7216,6 +7323,9 @@ class IkkiuchiReadsCompanion extends UpdateCompanion<IkkiuchiReadRow> {
   final Value<int> opponentFaults;
   final Value<int?> playerTakeUs;
   final Value<int?> opponentTakeUs;
+  final Value<String> field;
+  final Value<String> faults;
+  final Value<String> sends;
   const IkkiuchiReadsCompanion({
     this.id = const Value.absent(),
     this.matchId = const Value.absent(),
@@ -7228,6 +7338,9 @@ class IkkiuchiReadsCompanion extends UpdateCompanion<IkkiuchiReadRow> {
     this.opponentFaults = const Value.absent(),
     this.playerTakeUs = const Value.absent(),
     this.opponentTakeUs = const Value.absent(),
+    this.field = const Value.absent(),
+    this.faults = const Value.absent(),
+    this.sends = const Value.absent(),
   });
   IkkiuchiReadsCompanion.insert({
     this.id = const Value.absent(),
@@ -7241,12 +7354,18 @@ class IkkiuchiReadsCompanion extends UpdateCompanion<IkkiuchiReadRow> {
     required int opponentFaults,
     this.playerTakeUs = const Value.absent(),
     this.opponentTakeUs = const Value.absent(),
+    required String field,
+    required String faults,
+    required String sends,
   }) : matchId = Value(matchId),
        seq = Value(seq),
        poemId = Value(poemId),
        tied = Value(tied),
        playerFaults = Value(playerFaults),
-       opponentFaults = Value(opponentFaults);
+       opponentFaults = Value(opponentFaults),
+       field = Value(field),
+       faults = Value(faults),
+       sends = Value(sends);
   static Insertable<IkkiuchiReadRow> custom({
     Expression<int>? id,
     Expression<int>? matchId,
@@ -7259,6 +7378,9 @@ class IkkiuchiReadsCompanion extends UpdateCompanion<IkkiuchiReadRow> {
     Expression<int>? opponentFaults,
     Expression<int>? playerTakeUs,
     Expression<int>? opponentTakeUs,
+    Expression<String>? field,
+    Expression<String>? faults,
+    Expression<String>? sends,
   }) {
     return RawValuesInsertable({
       if (id != null) 'id': id,
@@ -7272,6 +7394,9 @@ class IkkiuchiReadsCompanion extends UpdateCompanion<IkkiuchiReadRow> {
       if (opponentFaults != null) 'opponent_faults': opponentFaults,
       if (playerTakeUs != null) 'player_take_us': playerTakeUs,
       if (opponentTakeUs != null) 'opponent_take_us': opponentTakeUs,
+      if (field != null) 'field': field,
+      if (faults != null) 'faults': faults,
+      if (sends != null) 'sends': sends,
     });
   }
 
@@ -7287,6 +7412,9 @@ class IkkiuchiReadsCompanion extends UpdateCompanion<IkkiuchiReadRow> {
     Value<int>? opponentFaults,
     Value<int?>? playerTakeUs,
     Value<int?>? opponentTakeUs,
+    Value<String>? field,
+    Value<String>? faults,
+    Value<String>? sends,
   }) {
     return IkkiuchiReadsCompanion(
       id: id ?? this.id,
@@ -7300,6 +7428,9 @@ class IkkiuchiReadsCompanion extends UpdateCompanion<IkkiuchiReadRow> {
       opponentFaults: opponentFaults ?? this.opponentFaults,
       playerTakeUs: playerTakeUs ?? this.playerTakeUs,
       opponentTakeUs: opponentTakeUs ?? this.opponentTakeUs,
+      field: field ?? this.field,
+      faults: faults ?? this.faults,
+      sends: sends ?? this.sends,
     );
   }
 
@@ -7343,6 +7474,15 @@ class IkkiuchiReadsCompanion extends UpdateCompanion<IkkiuchiReadRow> {
     if (opponentTakeUs.present) {
       map['opponent_take_us'] = Variable<int>(opponentTakeUs.value);
     }
+    if (field.present) {
+      map['field'] = Variable<String>(field.value);
+    }
+    if (faults.present) {
+      map['faults'] = Variable<String>(faults.value);
+    }
+    if (sends.present) {
+      map['sends'] = Variable<String>(sends.value);
+    }
     return map;
   }
 
@@ -7359,7 +7499,10 @@ class IkkiuchiReadsCompanion extends UpdateCompanion<IkkiuchiReadRow> {
           ..write('playerFaults: $playerFaults, ')
           ..write('opponentFaults: $opponentFaults, ')
           ..write('playerTakeUs: $playerTakeUs, ')
-          ..write('opponentTakeUs: $opponentTakeUs')
+          ..write('opponentTakeUs: $opponentTakeUs, ')
+          ..write('field: $field, ')
+          ..write('faults: $faults, ')
+          ..write('sends: $sends')
           ..write(')'))
         .toString();
   }
@@ -12598,6 +12741,9 @@ typedef $$IkkiuchiReadsTableCreateCompanionBuilder =
       required int opponentFaults,
       Value<int?> playerTakeUs,
       Value<int?> opponentTakeUs,
+      required String field,
+      required String faults,
+      required String sends,
     });
 typedef $$IkkiuchiReadsTableUpdateCompanionBuilder =
     IkkiuchiReadsCompanion Function({
@@ -12612,6 +12758,9 @@ typedef $$IkkiuchiReadsTableUpdateCompanionBuilder =
       Value<int> opponentFaults,
       Value<int?> playerTakeUs,
       Value<int?> opponentTakeUs,
+      Value<String> field,
+      Value<String> faults,
+      Value<String> sends,
     });
 
 final class $$IkkiuchiReadsTableReferences
@@ -12703,6 +12852,21 @@ class $$IkkiuchiReadsTableFilterComposer
     builder: (column) => ColumnFilters(column),
   );
 
+  ColumnFilters<String> get field => $composableBuilder(
+    column: $table.field,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get faults => $composableBuilder(
+    column: $table.faults,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get sends => $composableBuilder(
+    column: $table.sends,
+    builder: (column) => ColumnFilters(column),
+  );
+
   $$IkkiuchiMatchesTableFilterComposer get matchId {
     final $$IkkiuchiMatchesTableFilterComposer composer = $composerBuilder(
       composer: this,
@@ -12786,6 +12950,21 @@ class $$IkkiuchiReadsTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<String> get field => $composableBuilder(
+    column: $table.field,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get faults => $composableBuilder(
+    column: $table.faults,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get sends => $composableBuilder(
+    column: $table.sends,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   $$IkkiuchiMatchesTableOrderingComposer get matchId {
     final $$IkkiuchiMatchesTableOrderingComposer composer = $composerBuilder(
       composer: this,
@@ -12857,6 +13036,15 @@ class $$IkkiuchiReadsTableAnnotationComposer
     builder: (column) => column,
   );
 
+  GeneratedColumn<String> get field =>
+      $composableBuilder(column: $table.field, builder: (column) => column);
+
+  GeneratedColumn<String> get faults =>
+      $composableBuilder(column: $table.faults, builder: (column) => column);
+
+  GeneratedColumn<String> get sends =>
+      $composableBuilder(column: $table.sends, builder: (column) => column);
+
   $$IkkiuchiMatchesTableAnnotationComposer get matchId {
     final $$IkkiuchiMatchesTableAnnotationComposer composer = $composerBuilder(
       composer: this,
@@ -12920,6 +13108,9 @@ class $$IkkiuchiReadsTableTableManager
                 Value<int> opponentFaults = const Value.absent(),
                 Value<int?> playerTakeUs = const Value.absent(),
                 Value<int?> opponentTakeUs = const Value.absent(),
+                Value<String> field = const Value.absent(),
+                Value<String> faults = const Value.absent(),
+                Value<String> sends = const Value.absent(),
               }) => IkkiuchiReadsCompanion(
                 id: id,
                 matchId: matchId,
@@ -12932,6 +13123,9 @@ class $$IkkiuchiReadsTableTableManager
                 opponentFaults: opponentFaults,
                 playerTakeUs: playerTakeUs,
                 opponentTakeUs: opponentTakeUs,
+                field: field,
+                faults: faults,
+                sends: sends,
               ),
           createCompanionCallback:
               ({
@@ -12946,6 +13140,9 @@ class $$IkkiuchiReadsTableTableManager
                 required int opponentFaults,
                 Value<int?> playerTakeUs = const Value.absent(),
                 Value<int?> opponentTakeUs = const Value.absent(),
+                required String field,
+                required String faults,
+                required String sends,
               }) => IkkiuchiReadsCompanion.insert(
                 id: id,
                 matchId: matchId,
@@ -12958,6 +13155,9 @@ class $$IkkiuchiReadsTableTableManager
                 opponentFaults: opponentFaults,
                 playerTakeUs: playerTakeUs,
                 opponentTakeUs: opponentTakeUs,
+                field: field,
+                faults: faults,
+                sends: sends,
               ),
           withReferenceMapper: (p0) => p0
               .map(

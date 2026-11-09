@@ -334,6 +334,14 @@ class IkkiuchiReads extends Table {
   /// one before it); null for one who never did.
   IntColumn get playerTakeUs => integer().nullable()();
   IntColumn get opponentTakeUs => integer().nullable()();
+
+  /// Both sides as the read began, as JSON (`IkkiuchiLaidField`).
+  TextColumn get field => text()();
+
+  /// Every fault on it, and the 送り札 after it, in order, as JSON lists
+  /// (`IkkiuchiFault`, `IkkiuchiSent`).
+  TextColumn get faults => text()();
+  TextColumn get sends => text()();
 }
 
 /// One practice day (see `DayWindow`): journey mode's today's set and

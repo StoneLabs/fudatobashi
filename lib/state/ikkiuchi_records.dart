@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:drift/drift.dart';
 
 import '../db/database.dart';
@@ -112,6 +114,9 @@ class IkkiuchiRecords {
                 opponentFaults: r.opponentFaults,
                 playerTakeUs: Value(r.playerTake?.inMicroseconds),
                 opponentTakeUs: Value(r.opponentTake?.inMicroseconds),
+                field: jsonEncode(r.field.toJson()),
+                faults: jsonEncode([for (final f in r.faults) f.toJson()]),
+                sends: jsonEncode([for (final s in r.sends) s.toJson()]),
               ),
           ]));
       return id;
@@ -154,5 +159,8 @@ class IkkiuchiRecords {
         opponentFaults: r.opponentFaults,
         playerTake: _us(r.playerTakeUs),
         opponentTake: _us(r.opponentTakeUs),
+        field: IkkiuchiLaidField.fromJson(jsonDecode(r.field) as Map<String, dynamic>),
+        faults: [for (final f in jsonDecode(r.faults) as List) IkkiuchiFault.fromJson(f as List)],
+        sends: [for (final s in jsonDecode(r.sends) as List) IkkiuchiSent.fromJson(s as List)],
       );
 }
