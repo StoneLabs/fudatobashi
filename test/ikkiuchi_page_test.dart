@@ -1,18 +1,22 @@
-// 一騎打ち's page (IkkiuchiPage): the class strip, ranked open from the
-// start (its placement matches, then Tobi drawn for the next match on its
-// burst), the custom panel and its sheet (class keys and steppers, one held
-// down stepping on), guest mode, and matches started from it: held in
-// landscape, played to the setup picked, in 1, 2 or 3 rows, closed once over
-// and the page's strip counting it. When a match is recorded: played to its
-// end, free play too, on a fresh database; ended once play has begun;
-// never when ended or left before, nor free play left midway, nor a guest's;
-// a ranked match left after its first read is a loss, journalled from that
-// read and again after every read. Ranked plays the mode of the tab opened
-// last, in the rows Settings › 寄り道 › 一騎打ち picks for it.
+// 一騎打ち's page (IkkiuchiPage): the mode tabs over the box of the tab
+// opened last (Rapid at first; a tap is remembered, playing is not), the
+// box's standing (placement's slots and line, then the class, rating and
+// the curve of the mode's last ranked matches), its field, cards and
+// memory time, and its burst, which plays the mode's next ranked match
+// against the Tobi it shows, in the rows Settings › 寄り道 › 一騎打ち picks
+// for it; free play's rows, the bots' page (no bots yet) and the custom
+// sheet (class keys and steppers, one held down stepping on), which starts
+// the match it sets up; guest mode; and matches started from it: held in
+// landscape, played to the setup picked, in 1, 2 or 3 rows, closed once
+// over. When a match is recorded: played to its end, free play too, on a
+// fresh database; ended once play has begun; never when ended or left
+// before, nor free play left midway, nor a guest's; a ranked match left
+// after its first read is a loss, journalled from that read and again
+// after every read.
 //
-// With RENDER_SCREENS=1 it also renders the page in its states, the custom
-// sheet and the settings, with real fonts and art, to
-// build/screens/ikkiuchi_page/.
+// With RENDER_SCREENS=1 it also renders the page in its states (as mock
+// D's frames), the bots' page, the custom sheet and the settings, with real
+// fonts and art, to build/screens/ikkiuchi_page/.
 import 'dart:async';
 import 'dart:io';
 
@@ -44,8 +48,10 @@ import 'package:fudatobashi/ui/ikkiuchi/ikkiuchi_field_preview.dart';
 import 'package:fudatobashi/ui/side_trips/burst_button.dart';
 import 'package:fudatobashi/ui/side_trips/ikkiuchi_rules_sheet.dart';
 import 'package:fudatobashi/ui/side_trips/ikkiuchi_sheet.dart';
+import 'package:fudatobashi/ui/side_trips/ikkiuchi_bots_page.dart';
+import 'package:fudatobashi/ui/side_trips/ikkiuchi_mode_box.dart';
+import 'package:fudatobashi/ui/side_trips/ikkiuchi_rating_curve.dart';
 import 'package:fudatobashi/ui/side_trips/side_trip_entry.dart';
-import 'package:fudatobashi/ui/side_trips/trip_record_panels.dart';
 import 'package:fudatobashi/state/ikkiuchi_journal.dart';
 import 'package:fudatobashi/state/progress.dart';
 import 'package:fudatobashi/state/scope.dart';
@@ -65,7 +71,6 @@ import 'package:fudatobashi/ui/settings/settings_rows.dart';
 import 'package:fudatobashi/ui/settings/side_trip_settings_screen.dart';
 import 'package:fudatobashi/ui/side_trips/trip_sheet.dart';
 import 'package:fudatobashi/ui/side_trips/ikkiuchi_page.dart';
-import 'package:fudatobashi/ui/side_trips/side_trip_panels.dart';
 import 'package:fudatobashi/ui/sound/sounds.dart';
 import 'package:fudatobashi/ui/torifuda/card_faces.dart';
 
@@ -167,13 +172,18 @@ void main() {
     await tester.pump(Motion.route);
   }
 
-  /// The value of the strip's or a panel's cell under [label], its texts
-  /// joined (a drop cell's mark among them).
-  String cell(WidgetTester tester, String label) {
-    final stat = find.ancestor(of: find.text(label), matching: find.byType(StatCell)).first;
-    final texts = find.descendant(of: stat, matching: find.byWidgetPredicate((w) => w is RichText));
-    return [for (final t in tester.widgetList<RichText>(texts).skip(1)) t.text.toPlainText()].join();
-  }
+  /// The mode box shown.
+  IkkiuchiRankedBox box(WidgetTester tester) => tester.widget<IkkiuchiRankedBox>(find.byType(IkkiuchiRankedBox));
+
+  /// [f] inside the mode box.
+  Finder inBox(Finder f) => find.descendant(of: find.byType(IkkiuchiRankedBox), matching: f);
+
+  /// A mode's tab.
+  Finder tab(IkkiuchiMode mode) => find.text(s.ikkiuchiModeName(mode));
+
+  /// Whether the page fits the screen without scrolling.
+  bool fits(WidgetTester tester) =>
+      tester.state<ScrollableState>(find.byType(Scrollable).first).position.maxScrollExtent == 0;
 
   Finder burst(String title) => find.byWidgetPredicate((w) => w is BurstButton && w.title == title);
   Finder rankedBurst() => burst(s.sideTripRanked);
@@ -183,13 +193,21 @@ void main() {
       find.ancestor(of: find.text(top), matching: find.byType(SheetKey));
 
   Future<void> tapAndWait(WidgetTester tester, Finder f, Duration wait) async {
+    await tester.ensureVisible(f);
+    await tester.pump();
     await tester.tap(f);
     await tester.pump();
     await tester.pump(wait);
   }
 
-  /// Opens the custom sheet from the boxed cell of Tobi's rating.
-  Future<void> openSheet(WidgetTester tester) => tapAndWait(tester, find.byType(DropCellButton), Motion.sheet);
+  /// Opens the custom sheet from free play's custom row.
+  Future<void> openSheet(WidgetTester tester) => tapAndWait(tester, find.text(s.ikkiuchiCustom), Motion.sheet);
+
+  /// Confirms the custom sheet, which starts its match.
+  Future<void> confirm(WidgetTester tester) async {
+    await tapAndWait(tester, burst(s.ikkiuchiConfirm), Motion.sheet * 2);
+    await tester.pump(Motion.route);
+  }
 
   IkkiuchiMatchScreenState screen(WidgetTester tester) =>
       tester.state<IkkiuchiMatchScreenState>(find.byType(IkkiuchiMatchScreen));
@@ -271,55 +289,65 @@ void main() {
       rows: 3,
       memorise: Duration(minutes: 15));
 
-  testWidgets('a new player: the strip unrated with dashes, ranked open on its placement, custom on the first setup',
+  testWidgets("a new player: Rapid's tab, its placement still to play and the curve's room saying when it comes",
       (tester) async {
     final p = await open(tester);
     await showPage(tester, p);
     expect(tester.takeException(), isNull);
-    expect([cell(tester, s.sideTripClass), cell(tester, s.rating), cell(tester, s.ikkiuchiWins), cell(tester, s.ikkiuchiMargin)],
-        ['???', s.sideTripUnranked, '—', '—']);
-    expect(find.byType(LockedPanel), findsNothing, reason: 'ranked is open from the start');
-    expect(find.text(s.ikkiuchiPlacementTitle), findsOneWidget);
-    expect(find.byType(PlacementSlot), findsNWidgets(IkkiuchiRating.placementMatches));
-    expect(find.text(s.ikkiuchiPlacementNext), findsOneWidget);
+    expect(box(tester).records.mode, rapid, reason: 'Rapid first');
+    expect(tester.widget<IkkiuchiModeTabs>(find.byType(IkkiuchiModeTabs)).chosen, rapid);
+    for (final mode in IkkiuchiMode.values) {
+      expect(tab(mode), findsOneWidget);
+    }
+    expect(inBox(find.text(s.ikkiuchiPlacementTitle)), findsOneWidget);
+    for (var i = 1; i <= IkkiuchiRating.placementMatches; i++) {
+      expect(inBox(find.text('$i')), findsOneWidget, reason: 'placement match $i still to play');
+    }
+    expect(inBox(find.text(s.ikkiuchiPlacingLine(rapid, first: true).replaceAll('{0}', '4'))), findsOneWidget);
+    expect(find.byType(IkkiuchiCurveNote), findsOneWidget);
+    expect(find.byType(IkkiuchiRatingCurve), findsNothing);
+    final preview = tester.widget<IkkiuchiFieldPreview>(find.byType(IkkiuchiFieldPreview));
+    expect([preview.perSide, preview.rows], [rapid.perSide, rapid.defaultRows]);
+    expect(inBox(find.text(s.ikkiuchiBoxPerSide.replaceAll('{0}', '25'))), findsOneWidget);
+    expect(inBox(find.text('15:00')), findsOneWidget);
     expect(find.descendant(of: rankedBurst(), matching: find.text('${IkkiuchiRating.start.round()}')), findsOneWidget,
         reason: 'Tobi at the start rating for the first placement match');
-    expect([cell(tester, s.ikkiuchiTobiRating), cell(tester, s.ikkiuchiPerSide), cell(tester, s.ikkiuchiMemoryTime)],
-        ['${IkkiuchiFreeTuning.rating.round()}▼', s.ikkiuchiPerSideCount.replaceAll('{0}', '25'), '15:00']);
-    expect(find.byType(IkkiuchiFieldPreview), findsOneWidget);
-    expect(burst(s.ikkiuchiPlayCards(25)), findsOneWidget);
+    expect(find.text(s.ikkiuchiFreePlay), findsWidgets);
+    expect(find.text(s.ikkiuchiBots), findsOneWidget);
+    expect(find.text(s.ikkiuchiCustom), findsOneWidget);
     expect(find.byType(SideTripGuestButton), findsOneWidget);
     expect(find.byType(SideTripRulesButton), findsOneWidget);
     await tester.pumpWidget(const SizedBox());
   });
 
-  testWidgets('placement shows the matches played; once placed, the class, rating, wins and margin, and no row',
+  testWidgets('placement shows the matches played; once placed, the class, rating, its change and the curve',
       (tester) async {
     final p = await open(tester);
     await playRanked(tester, p, [true, false]);
     await showPage(tester, p);
-    expect(find.byType(PlacementSlot), findsNWidgets(IkkiuchiRating.placementMatches - 2));
-    expect(find.text(s.ikkiuchiWon), findsOneWidget);
-    expect(find.text(s.ikkiuchiLost), findsOneWidget);
-    expect(find.text('▲500'), findsOneWidget);
-    expect(find.text('▼300'), findsOneWidget);
+    expect(inBox(find.text(s.ikkiuchiSlotWon)), findsOneWidget);
+    expect(inBox(find.text(s.ikkiuchiSlotLost)), findsOneWidget);
+    expect([for (final n in ['1', '2', '3', '4']) inBox(find.text(n)).evaluate().length], [0, 0, 1, 1]);
+    expect(inBox(find.text(s.ikkiuchiPlacingLine(rapid, first: false).replaceAll('{0}', '2'))), findsOneWidget);
     expect(
         find.descendant(
             of: rankedBurst(), matching: find.text('${p.ikkiuchi.of(rapid).rankedSetup(rows: 3).opponentRating.round()}')),
         findsOneWidget);
-    expect(cell(tester, s.ikkiuchiWins), '1/2');
-    expect(cell(tester, s.ikkiuchiMargin), '−0.5');
     await tester.pumpWidget(const SizedBox());
 
     await playRanked(tester, p, [true, true, false, true, true, true]);
     await showPage(tester, p);
-    final rating = p.ikkiuchi.of(rapid).rating!;
-    expect(cell(tester, s.rating), startsWith('${rating.round()}'));
-    expect(cell(tester, s.sideTripClass), isNot('???'));
-    expect(cell(tester, s.ikkiuchiWins), '4/5');
-    expect(find.byType(PlacementSlot), findsNothing);
-    expect(find.text(s.ikkiuchiPlacementTitle), findsNothing);
-    final tobi = p.ikkiuchi.of(rapid).rankedSetup(rows: 3).opponentRating;
+    final records = p.ikkiuchi.of(rapid);
+    final rating = records.rating!;
+    expect(inBox(find.text(s.rating)), findsOneWidget);
+    expect(inBox(find.text('${rating.round()}')), findsOneWidget);
+    expect(inBox(find.byType(RatingChangeTag)), findsOneWidget);
+    expect(tester.widget<RatingChangeTag>(inBox(find.byType(RatingChangeTag))).change, records.ratingChange!.round());
+    expect(inBox(find.text(s.ikkiuchiPlacementTitle)), findsNothing);
+    expect(find.byType(IkkiuchiCurveNote), findsNothing);
+    expect(tester.widget<IkkiuchiRatingCurve>(find.byType(IkkiuchiRatingCurve)).ratings, records.curve);
+    expect(records.curve, hasLength(5), reason: 'from the match that ended placement');
+    final tobi = records.rankedSetup(rows: 3).opponentRating;
     expect((tobi - rating).abs(), lessThanOrEqualTo(IkkiuchiRankedTuning.drawCutOff));
     expect(find.descendant(of: rankedBurst(), matching: find.text('${tobi.round()}')), findsOneWidget);
     await tester.pumpWidget(const SizedBox());
@@ -339,17 +367,41 @@ void main() {
     await tester.pumpWidget(const SizedBox());
   });
 
+  testWidgets("a tab tapped shows its mode's box and is remembered; the page opens on it again", (tester) async {
+    const blitz = IkkiuchiMode.blitz;
+    final p = await open(tester);
+    await showPage(tester, p);
+    await tester.tap(tab(blitz));
+    await tester.pump();
+    expect(p.settings.ikkiuchi.tab, blitz);
+    expect(box(tester).records.mode, blitz);
+    expect(tester.widget<IkkiuchiModeTabs>(find.byType(IkkiuchiModeTabs)).chosen, blitz);
+    expect(inBox(find.text(s.ikkiuchiPlacingLine(blitz, first: true).replaceAll('{0}', '4'))), findsOneWidget);
+    final preview = tester.widget<IkkiuchiFieldPreview>(find.byType(IkkiuchiFieldPreview));
+    expect([preview.perSide, preview.rows], [blitz.perSide, blitz.defaultRows]);
+    expect(inBox(find.text(s.ikkiuchiBoxPerSide.replaceAll('{0}', '13'))), findsOneWidget);
+    expect(inBox(find.text('8:00')), findsOneWidget);
+    await tester.pumpWidget(const SizedBox());
+
+    await showPage(tester, p);
+    expect(box(tester).records.mode, blitz, reason: 'the tab opened last');
+    await tester.pumpWidget(const SizedBox());
+  });
+
   testWidgets("ranked plays the mode of the tab opened last, in the rows picked for it, with that mode's standing",
       (tester) async {
     const bullet = IkkiuchiMode.bullet;
     final p = await open(tester);
     await playRanked(tester, p, [true, false], mode: rapid);
-    await tester.runAsync(() => p.updateSettings(p.settings
-        .copyWith(ikkiuchi: p.settings.ikkiuchi.copyWith(tab: bullet).withRows(bullet, 2))));
+    await tester.runAsync(
+        () => p.updateSettings(p.settings.copyWith(ikkiuchi: p.settings.ikkiuchi.withRows(bullet, 2))));
     await showPage(tester, p);
-    expect(find.byType(PlacementSlot), findsNWidgets(IkkiuchiRating.placementMatches),
-        reason: "Rapid's placement matches are not Bullet's");
-    expect(find.text(s.ikkiuchiWon), findsNothing);
+    expect(inBox(find.text(s.ikkiuchiSlotWon)), findsOneWidget, reason: "Rapid's placement");
+    await tester.tap(tab(bullet));
+    await tester.pump();
+    expect(inBox(find.text(s.ikkiuchiSlotWon)), findsNothing, reason: "Rapid's placement matches are not Bullet's");
+    expect(tester.widget<IkkiuchiFieldPreview>(find.byType(IkkiuchiFieldPreview)).rows, 2,
+        reason: 'the field in the rows picked');
 
     await tapAndWait(tester, rankedBurst(), Motion.route);
     final flow = screen(tester).flow!;
@@ -364,7 +416,22 @@ void main() {
     await tester.pumpWidget(const SizedBox());
   });
 
-  testWidgets('the custom sheet: class keys and steppers set the setup, which the panel then plays', (tester) async {
+  testWidgets("the bots row opens the bots' page, which lists no bots yet", (tester) async {
+    final p = await open(tester);
+    await showPage(tester, p);
+    await tapAndWait(tester, find.text(s.ikkiuchiBots), Motion.route);
+    expect(find.byType(IkkiuchiBotsPage), findsOneWidget);
+    expect(find.text(s.ikkiuchiBotsIntro), findsOneWidget);
+    expect(tester.takeException(), isNull);
+    final back = find.descendant(
+        of: find.byType(IkkiuchiBotsPage),
+        matching: find.byWidgetPredicate((w) => w is InkIconButton && w.semanticLabel == s.back));
+    await tapAndWait(tester, back, Motion.route);
+    expect(find.byType(IkkiuchiBotsPage), findsNothing);
+    await tester.pumpWidget(const SizedBox());
+  });
+
+  testWidgets('the custom sheet: class keys and steppers set the setup, which it then plays', (tester) async {
     final p = await open(tester);
     await showPage(tester, p);
     await openSheet(tester);
@@ -378,12 +445,8 @@ void main() {
     await tapAndWait(tester, sign(s.ikkiuchiAnyCount, '−'), Duration.zero);
     await tapAndWait(tester, sign(s.ikkiuchiMemoryTime, '−'), Duration.zero);
     expect(find.text(s.ikkiuchiSetupLine(11, '14:00', bRating + 50)), findsOneWidget);
-    await tapAndWait(tester, burst(s.ikkiuchiConfirm), Motion.sheet * 2);
+    await confirm(tester);
     expect(find.byType(IkkiuchiCustomSheet), findsNothing);
-    expect([cell(tester, s.ikkiuchiTobiRating), cell(tester, s.ikkiuchiPerSide), cell(tester, s.ikkiuchiMemoryTime)],
-        ['${bRating + 50}▼', s.ikkiuchiPerSideCount.replaceAll('{0}', '11'), '14:00']);
-
-    await tapAndWait(tester, burst(s.ikkiuchiPlayCards(11)), Motion.route);
     final flow = screen(tester).flow!;
     expect([flow.rating, flow.memorise, flow.tally.player, screen(tester).widget.setup.ranked],
         [bRating + 50.0, const Duration(minutes: 14), 11, false]);
@@ -465,8 +528,7 @@ void main() {
     for (var i = 0; i < 5; i++) {
       await tapAndWait(tester, sign(s.ikkiuchiMemoryTime, '−'), Duration.zero);
     }
-    await tapAndWait(tester, burst(s.ikkiuchiConfirm), Motion.sheet * 2);
-    await tapAndWait(tester, burst(s.ikkiuchiPlayCards(20)), Motion.route);
+    await confirm(tester);
 
     final flow = screen(tester).flow!;
     expect(flow.stage, IkkiuchiStage.placing);
@@ -628,11 +690,11 @@ void main() {
     await tester.pumpWidget(const SizedBox());
   });
 
-  testWidgets('終了 once play has begun records the match given up, with its reads; the strip counts it',
-      (tester) async {
+  testWidgets('終了 once play has begun records the match given up, with its reads, counted once', (tester) async {
     final p = await open(tester);
     await showPage(tester, p);
-    await tapAndWait(tester, burst(s.ikkiuchiPlayCards(25)), Motion.route);
+    await openSheet(tester);
+    await confirm(tester);
     final state = screen(tester);
     final flow = state.flow!;
     await toFirstRead(tester, flow);
@@ -1072,40 +1134,93 @@ void main() {
       });
     }
 
-    for (final phone in [widePhone, usersPhone]) {
-      for (final lang in ['ja', 'en']) {
-        testWidgets('page_${phone.name}_$lang', (tester) async {
-          final s = S(lang);
-          final stages = <String, (List<bool>, IkkiuchiSetup?)>{
-            'fresh': (const [], null),
-            'placing': (const [true, false], const IkkiuchiSetup.free(opponentRating: 2559, perSide: 12, memorise: Duration(minutes: 5))),
-            'rated': (const [true, true, false, true, true, false, true], const IkkiuchiSetup.free(opponentRating: 1865, perSide: 1, memorise: Duration(minutes: 1))),
-          };
-          for (final MapEntry(key: stage, value: (results, free)) in stages.entries) {
-            final p = await open(tester, lang: lang);
-            await playRanked(tester, p, results);
-            if (free != null) {
-              await tester.runAsync(() => p.recordIkkiuchi(IkkiuchiMatchRecord(
-                    setup: free,
-                    startedAt: DateTime(2026, 11, 8),
-                    endedAt: DateTime(2026, 11, 8, 0, 20),
-                    completed: true,
-                    playerLeft: 0,
-                    opponentLeft: 2,
-                  )));
-            }
-            await showPage(tester, p, phone: phone);
-            expect(tester.takeException(), isNull);
-            await capture(tester, '${phone.name}_$stage', lang);
-            if (stage == 'rated') {
-              await openSheet(tester);
-              await tapAndWait(tester, sheetKey(s.className(Rating.bands.firstWhere((b) => b.id == 'B'))), Duration.zero);
-              await capture(tester, '${phone.name}_custom_sheet', lang);
-            }
-            await tester.pumpWidget(const SizedBox());
+    /// A player whose ranked matches in each mode of [ratings] ended at
+    /// those ratings, oldest first, each won when it rose: the first three
+    /// place them, the fourth gives the first rating, where the curve
+    /// starts.
+    Future<Progress> rated(WidgetTester tester, String lang, Map<IkkiuchiMode, List<double>> ratings) async {
+      final db = AppDatabase(NativeDatabase.memory());
+      late Progress p;
+      await tester.runAsync(() async {
+        p = await Progress.open(db);
+        for (final MapEntry(key: mode, value: after) in ratings.entries) {
+          for (final (i, r) in after.indexed) {
+            final won = i == 0 || r > after[i - 1];
+            final at = DateTime(2026, 10, 1).add(Duration(hours: 6 * i));
+            final report = await p.recordIkkiuchi(IkkiuchiMatchRecord(
+              setup: p.ikkiuchi.of(mode).rankedSetup(rows: mode.defaultRows),
+              startedAt: at,
+              endedAt: at.add(const Duration(minutes: 20)),
+              completed: true,
+              playerLeft: won ? 0 : 3,
+              opponentLeft: won ? 3 : 0,
+            ));
+            await (db.update(db.ikkiuchiMatches)..where((m) => m.id.equals(report.match.id!)))
+                .write(IkkiuchiMatchesCompanion(rating: Value(r)));
           }
+        }
+        p = await Progress.open(db);
+        await p.updateSettings(p.settings.copyWith(language: lang, languagePicked: true, toured: true));
+      });
+      return p;
+    }
+
+    Future<void> openTab(WidgetTester tester, Progress p, IkkiuchiMode mode) => tester.runAsync(
+        () => p.updateSettings(p.settings.copyWith(ikkiuchi: p.settings.ikkiuchi.copyWith(tab: mode))));
+
+    // The players of mock D's frames: a regular player placed in Bullet
+    // and Blitz, Rapid still placing (won one, lost one); a few days on,
+    // Rapid placed with three rated matches; a new player.
+    const bulletRatings = <double>[
+      2100, 2400, 2300, 2478, 2491, 2483, 2502, 2517, 2509, 2526, 2540, 2533, 2551, 2566, 2558, 2571, 2563, 2580, //
+      2592, 2587, 2581, 2596, 2610,
+    ];
+    const blitzRatings = <double>[
+      2100, 2400, 2300, 2391, 2404, 2398, 2415, 2429, 2441, 2436, 2452, 2466, 2459, 2474, 2488, 2481, 2497, 2509, //
+      2502, 2494, 2498, 2489, 2480,
+    ];
+    const rapidPlacing = <double>[2100, 1800];
+    const rapidPlaced = <double>[2100, 1800, 1700, 1820, 1852, 1874];
+    final frames = <String, (String, Map<IkkiuchiMode, List<double>>, IkkiuchiMode)>{
+      'bullet': ('ja', {IkkiuchiMode.bullet: bulletRatings, IkkiuchiMode.blitz: blitzRatings, rapid: rapidPlacing}, IkkiuchiMode.bullet),
+      'blitz': ('ja', {IkkiuchiMode.bullet: bulletRatings, IkkiuchiMode.blitz: blitzRatings, rapid: rapidPlacing}, IkkiuchiMode.blitz),
+      'rapid_placing': ('ja', {IkkiuchiMode.bullet: bulletRatings, IkkiuchiMode.blitz: blitzRatings, rapid: rapidPlacing}, rapid),
+      'rapid_few': ('ja', {IkkiuchiMode.bullet: bulletRatings, IkkiuchiMode.blitz: blitzRatings, rapid: rapidPlaced}, rapid),
+      'new': ('ja', {}, IkkiuchiMode.bullet),
+      'blitz_en': ('en', {IkkiuchiMode.bullet: bulletRatings, IkkiuchiMode.blitz: blitzRatings, rapid: rapidPlacing}, IkkiuchiMode.blitz),
+    };
+    for (final phone in [usersPhone, widePhone]) {
+      for (final MapEntry(key: frame, value: (lang, ratings, mode)) in frames.entries) {
+        testWidgets('page_${phone.name}_$frame', (tester) async {
+          final p = await rated(tester, lang, ratings);
+          await openTab(tester, p, mode);
+          await showPage(tester, p, phone: phone);
+          expect(tester.takeException(), isNull);
+          expect(fits(tester), isTrue, reason: 'on one screen');
+          await capture(tester, '${phone.name}_${frame.replaceAll('_en', '')}', lang);
+          await tester.pumpWidget(const SizedBox());
         });
       }
+    }
+
+    for (final lang in ['ja', 'en']) {
+      testWidgets('bots_$lang', (tester) async {
+        final p = await open(tester, lang: lang);
+        await showPage(tester, p, page: const IkkiuchiBotsPage());
+        expect(tester.takeException(), isNull);
+        await captureScreen(tester, 'ikkiuchi_page/384_bots', lang: lang);
+        await tester.pumpWidget(const SizedBox());
+      });
+
+      testWidgets('custom_sheet_$lang', (tester) async {
+        final s = S(lang);
+        final p = await open(tester, lang: lang);
+        await showPage(tester, p);
+        await tapAndWait(tester, find.textContaining(s.ikkiuchiCustom).first, Motion.sheet);
+        await tapAndWait(tester, sheetKey(s.className(Rating.bands.firstWhere((b) => b.id == 'B'))), Duration.zero);
+        await capture(tester, '384_custom_sheet', lang);
+        await tester.pumpWidget(const SizedBox());
+      });
     }
   });
 }

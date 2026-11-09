@@ -482,61 +482,261 @@ abstract final class IkkiuchiArmStyle {
   static const double sfxFade = 0.3;
 }
 
-/// 一騎打ち's page (`ikkiuchi_page.dart`): [gap] between the blocks, [panelTop]
-/// above a panel whose tag rises over its top edge, and [bottomGap] under
-/// the button pair at the foot.
+/// A ranked mode's colours on 一騎打ち's page (`IkkiuchiModeTabs`): [tint]
+/// fills its tab while another is chosen; its halftone [tone] fills its
+/// tab when chosen, its class badge and the ground under its rating
+/// curve; [deep] fills the bar to the next class and marks the curve's
+/// latest match.
+@immutable
+class IkkiuchiModeTone {
+  const IkkiuchiModeTone({required this.tint, required this.tone, required this.deep});
+  final Color tint;
+  final ToneSpec tone;
+  final Color deep;
+}
+
+/// 一騎打ち's page (`ikkiuchi_page.dart`): the mode tabs [tabsTop] under the
+/// header, the free play panel at the foot, then the button pair [pairTop]
+/// under it and [bottomGap] over the screen's foot.
 ///
-/// The class strip: the wins of the last [formMatches] ranked matches over
-/// how many, the count after the wins at [stripSuffixFont], and the
-/// average card margin over them; [missing] before any.
+/// The tabs (`IkkiuchiModeTabs`): three, [tabGap] apart, the chosen one
+/// [tabHeight] tall. Their tops lie on one line that falls [tabSlant] from
+/// the right edge to the left; the others stand [tabDrop] lower, in their
+/// mode's tint, edged [quietStroke], behind the box's top line. The chosen
+/// tab and the box are one outline [frameStroke] wide, the tab in its
+/// mode's tone. A tab shows the mode's name in display type over its cards
+/// a side ([tabSubGap] between), [tabTop] under the chosen tab's top or
+/// [quietTabTop] under the others': the chosen name at [tabName] in ink,
+/// the others' at [quietTabName] in [quietName], their cards in
+/// [quietSub]; Latin names a size bigger ([tabNameLatin],
+/// [quietTabNameLatin]) and tracked [tabNameLatinTracking].
 ///
-/// Ranked: during placement its matches in a row (each played one its
-/// result, the lost ones in [lostInk], over its change), then the burst
-/// with Tobi's rating for the next match on his ink tag.
+/// The box: the player's standing ([standPadding]), the rating curve or its
+/// note while placing ([curveMargin]), a light rule, the mode's match
+/// ([factsPadding]) and the burst ([burstMargin]).
 ///
-/// The custom panel: its facts (Tobi's rating boxed, the button to the
-/// custom sheet, every cell's label and value [cellInset] in from its top
-/// and bottom), the からふだ line, the field preview, and the burst. The
-/// preview shows the field face down on the play screen's tatami, as big as
-/// the room left allows and never shorter than [previewMinHeight], cards at
-/// most [previewMaxCardW] wide.
+/// The standing: the class badge, [badge] square in the mode's tone, edged
+/// [badgeStroke], the class kept [badgeInset] in from its sides: the stem
+/// at [classFont] and 級 at [classSuffixFont], a longer stem at
+/// [longClassFont] and [longClassSuffixFont], and [unplaced] at
+/// [unplacedFont] while placing. [standGap] right of it the labels at
+/// [labelFont]; [ratingTop] under the label the rating at [ratingFont],
+/// its change [changeGap] after it on a tag at [changeFont]; then
+/// [gaugeTop] under it, [gaugeHeight] tall, the way to the next class at
+/// [gaugeFont] (its number at [gaugeNumber]), no wider than
+/// [gaugeWordsShare] of the room, and its bar filling the rest, [barHeight]
+/// tall, [barGap] after the words. While placing: [slotsTop] under the
+/// label the four placement matches as slots, [slot] square and [slotGap]
+/// apart, played ones 勝 on ink or 負 in [lostInk], the next one edged
+/// [nextSlotBorder], the rest dashed in [slotInk]; then [noteTop] under
+/// them the line on what placement decides, as tall as the gauge.
+///
+/// The curve (`IkkiuchiRatingCurve`), [curveHeight] tall, [curveTop] kept
+/// clear over the line: the rating after each of the mode's last ranked
+/// matches, each in its own slot from the left, the line [curveLine] wide,
+/// the latest match a diamond reaching [curveMark] each way and the others
+/// dots of radius [curveDot], ringed [curveRing]; the y range padded by
+/// [curveRangeShare] of it, or [curveMinPad] at least. The class lines
+/// dashed in [classLine], their names [classLabelLift] over them in
+/// [classLabelInk], kept [classLabelClear] above the caption, which sits
+/// [captionDrop] over the floor in [captionInk]; labels at
+/// [curveLabelFont]. The line starts [curveLabelRoom] in and ends
+/// [curveInset] short of the right; the floor starts [curveInset] left of
+/// the line. While the line is short, [growsDrop] over the floor, a note
+/// at [growsFont] in its empty part says it grows. While placing, the same
+/// room holds a dashed outline in [lightRule] with a note at
+/// [curveNoteFont].
+///
+/// The mode's match: its field ([field], [fieldGap] before the rest), its
+/// cards a side and memory time under their labels ([factGap] between),
+/// at [factFont] with the unit at [factUnitFont], split by an ink rule
+/// [factRuleGap] clear of each, [factRuleInset] short at both ends.
+///
+/// Free play: its panel's heading at [headingFont], [headingPadding] round
+/// it; the bots row
+/// [botsRowHeight] tall (its robot in a [botFrame] frame filled
+/// [botFrameFill], its name at [botsTitleFont] tracked [botsTitleTracking],
+/// its line at [botsLineFont]), then under a light rule the custom row
+/// [customRowHeight] tall (its gear [gearBox] wide, its name at
+/// [customTitleFont] tracked [customTitleTracking], its line at
+/// [customLineFont]); each row's other-language name at [rowSubFont],
+/// [rowSubGap] after its own; Latin names tracked [rowTitleLatinTracking];
+/// [rowGap] between a row's parts and a chevron at its end.
 abstract final class IkkiuchiPageLayout {
-  static const double gap = 12;
-  static const double panelTop = 8;
+  static const double tabsTop = 8;
+  static const double pairTop = 12;
   static const double bottomGap = 12;
 
-  static const int formMatches = 5;
-  static const double stripSuffixFont = 16;
-  static const String missing = '—';
+  static const bullet = IkkiuchiModeTone(
+    tint: Color(0xFFFFEDF3),
+    tone: ToneSpec(dot: Color(0xFFFF8DB3), radius: 1.15, spacing: 6, background: Palette.pinkSoft, phase: 0.25),
+    deep: Palette.pink,
+  );
+  static const blitz = IkkiuchiModeTone(
+    tint: Color(0xFFFFF8D9),
+    tone: ToneSpec(dot: Color(0xFFFFC400), radius: 1.15, spacing: 6, background: Palette.sunSoft, phase: 0.25),
+    deep: Palette.sun,
+  );
+  static const rapid = IkkiuchiModeTone(
+    tint: Color(0xFFEAF5FF),
+    tone: ToneSpec(dot: Color(0xFF7CC2FF), radius: 1.15, spacing: 6, background: Palette.seaSoft, phase: 0.25),
+    deep: Palette.sea,
+  );
 
-  static const EdgeInsets gamesPadding = EdgeInsets.fromLTRB(10, 4, 10, 2);
-  static const double resultFont = 17;
-  static const double resultGap = 4;
-  static const Color lostInk = Palette.mute;
-  static const EdgeInsets rankedRowPadding = EdgeInsets.fromLTRB(6, 2, 6, 6);
+  static const double tabHeight = 64;
+  static const double tabGap = 6;
+  static const double tabSlant = 10;
+  static const double tabDrop = 10;
+  static const double frameStroke = Strokes.panel;
+  static const double quietStroke = Strokes.control;
+  static const double tabTop = 6;
+  static const double quietTabTop = 16;
+  static const double tabName = 19;
+  static const double quietTabName = 16;
+  static const double tabNameLatin = 20;
+  static const double quietTabNameLatin = 17;
+  static const double tabNameLatinTracking = 0.5;
+  static const double tabSub = 11;
+  static const double tabSubTracking = 0.6;
+  static const double tabSubGap = 5;
+  static const Color quietName = Color(0xFF4A4A4A);
+  static const Color quietSub = Color(0xFF6B6B6B);
 
-  static const EdgeInsets statsPadding = EdgeInsets.fromLTRB(15, 4, 14, 0);
-  static const double statFont = 28;
-  static const double statSuffixFont = 13;
-  static const double cellInset = 4;
-  static const EdgeInsets hintPadding = EdgeInsets.fromLTRB(15, 8, 14, 2);
-  static const double hintFont = 12;
-  static const double hintNumber = 14;
-  static const EdgeInsets burstMargin = EdgeInsets.fromLTRB(6, 8, 6, 10);
+  static const EdgeInsets standPadding = EdgeInsets.fromLTRB(16, 16, 16, 14);
+  static const double badge = 74;
+  static const double badgeStroke = Strokes.panel;
+  static const double badgeInset = 5;
+  static const double classFont = 40;
+  static const double classSuffixFont = 17;
+  static const double longClassFont = 30;
+  static const double longClassSuffixFont = 14;
+  static const String unplaced = '?';
+  static const double unplacedFont = 38;
+  static const double standGap = 14;
+  static const double labelFont = 12;
+  static const double ratingTop = 3;
+  static const double ratingFont = 32;
+  static const double changeGap = 8;
+  static const double changeFont = 13;
+  static const EdgeInsets changePadding = EdgeInsets.fromLTRB(4, 3, 5, 4);
+  static const double changeBorder = Strokes.label;
+  static const double gaugeTop = 9;
+  static const double gaugeHeight = 22;
+  static const double gaugeFont = 12;
+  static const double gaugeNumber = 14;
+  static const double gaugeWordsShare = 0.7;
+  static const double barGap = 10;
+  static const double barHeight = 14;
+  static const double barBorder = Strokes.control;
+  static const double slotsTop = 6;
+  static const double slot = 30;
+  static const double slotGap = 6;
+  static const double slotFont = 14;
+  static const double slotBorder = Strokes.label;
+  static const double nextSlotBorder = Strokes.control;
+  static const Color slotInk = Color(0xFF8A8A8A);
+  static const Color lostInk = Color(0xFF6B6B6B);
+  static const double noteTop = 8;
 
-  static const EdgeInsets previewMargin = EdgeInsets.fromLTRB(14, 4, 14, 0);
-  static const double previewMinHeight = 80;
+  static const EdgeInsets curveMargin = EdgeInsets.fromLTRB(16, 0, 16, 12);
+  static const double curveHeight = 58;
+  static const double curveTop = 6;
+  static const double curveLabelRoom = 60;
+  static const double curveInset = 7;
+  static const double curveMinPad = 18;
+  static const double curveRangeShare = 0.14;
+  static const double curveLine = 2.2;
+  static const double curveRing = Strokes.hairline;
+  static const double curveDot = 2.6;
+  static const double curveMark = 6;
+  static const double curveFloor = Strokes.hairline;
+  static const double classLineWidth = Strokes.hairline;
+  static const Color classLine = Color(0xFF9B978F);
+  static const Color classLabelInk = Color(0xFF8A8680);
+  static const double classLabelLift = 4;
+  static const double classLabelClear = 14;
+  static const double curveLabelFont = 10.5;
+  static const double captionDrop = 1;
+  static const double captionTracking = 0.4;
+  static const Color captionInk = Color(0xFF6B6B6B);
+  static const double growsFont = 11;
+  static const double growsDrop = 10;
+  static const double curveNoteFont = 11.5;
+  static const double curveNotePadding = 10;
+  static const double curveNoteBorder = Strokes.label;
+  static const Color lightRule = Color(0xFFC9C6BF);
+  static const double splitHeight = Strokes.label;
+  static const double splitInset = 16;
+
+  static const EdgeInsets factsPadding = EdgeInsets.fromLTRB(16, 14, 16, 0);
+  static const Size field = Size(118, 70);
+  static const double fieldGap = 16;
+  static const double factGap = 8;
+  static const double factFont = 27;
+  static const double factUnitFont = 13;
+  static const double factRule = Strokes.control;
+  static const double factRuleGap = 12;
+  static const double factRuleInset = 2;
+  static const EdgeInsets burstMargin = EdgeInsets.fromLTRB(4, 14, 4, 12);
+
+  static const double headingFont = 12;
+  static const EdgeInsets headingPadding = EdgeInsets.fromLTRB(0, 3, 0, 2);
+  static const EdgeInsets rowMargin = EdgeInsets.symmetric(horizontal: 14);
+  static const double rowGap = 14;
+  static const double rowSubFont = 10.5;
+  static const double rowSubTracking = 1.7;
+  static const double rowSubGap = 6;
+  static const double rowTitleHeight = 1.2;
+  static const double rowTitleLatinTracking = 0.4;
+  static const double chevron = 22;
+  static const double chevronStroke = 3;
+  static const double botsRowHeight = 88;
+  static const EdgeInsets botsRowPadding = EdgeInsets.fromLTRB(0, 4, 0, 6);
+  static const double botFrame = 60;
+  static const double botFrameBorder = Strokes.control;
+  static const Color botFrameFill = Palette.desk;
+  static const double botIcon = 38;
+  static const double botIconStroke = 2.2;
+  static const double botsTitleFont = 21;
+  static const double botsTitleTracking = 1;
+  static const double botsLineFont = 12.5;
+  static const double botsLineHeight = 1.45;
+  static const double botsLineTop = 4;
+  static const double customRowHeight = 60;
+  static const double customRule = Strokes.label;
+  static const double gearBox = 60;
+  static const double gear = 30;
+  static const double gearStroke = 2.2;
+  static const double customTitleFont = 15;
+  static const double customTitleTracking = 1.5;
+  static const double customLineFont = 12;
+  static const double customLineHeight = 1.3;
+
+  /// The field picture (`IkkiuchiFieldPreview`): face down on the play
+  /// screen's tatami over [previewGround], in an ink frame [previewBorder]
+  /// wide, the cards [previewPadding] inside it, all at the scale that fits
+  /// the fullest field, so fewer rows look smaller. The band across it
+  /// [previewBand] tall in [previewBandColor], its ink rules
+  /// [previewBandRule] wide, [previewBandGap] clear of the rows; each card
+  /// in [previewBack], edged [previewBackBorderWidth] in [previewBackBorder].
   static const double previewBorder = Strokes.control;
-  static const double previewPadding = 10;
-  static const double previewBand = 9;
-  static const double previewBandRule = Strokes.label;
-  static const double previewBandGap = 7;
-  static const double previewMaxCardW = 30;
+  static const double previewPadding = 1.5;
+  static const double previewBand = 5;
+  static const double previewBandRule = 1;
+  static const double previewBandGap = 1;
   static const Color previewGround = Color(0xFF99A083);
   static const Color previewBandColor = Palette.paper;
   static const Color previewBack = Palette.cardFrame;
   static const Color previewBackBorder = Palette.ink;
-  static const double previewBackBorderWidth = 1;
+  static const double previewBackBorderWidth = 0.7;
+}
+
+/// The bots page (`IkkiuchiBotsPage`): its line about the bots
+/// ([introPadding], at [introFont]).
+abstract final class IkkiuchiBotsLayout {
+  static const EdgeInsets introPadding = EdgeInsets.fromLTRB(4, 10, 4, 0);
+  static const double introFont = 13;
+  static const double introLineHeight = 1.55;
 }
 
 /// 一騎打ち's custom sheet (`ikkiuchi_sheet.dart`), over the page dimmed to

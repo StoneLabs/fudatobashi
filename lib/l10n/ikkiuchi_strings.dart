@@ -79,11 +79,36 @@ extension IkkiuchiStrings on S {
   String get ikkiuchiWins => t('ikkiuchiWins');
   String get ikkiuchiMargin => t('ikkiuchiMargin');
 
-  /// The page's ranked panel: its tag, and placement's heading and the
-  /// mark under the next placement match.
-  String get ikkiuchiRankedMode => t('ikkiuchiRankedMode');
+  /// The page's mode box: a tab's cards a side ([n]), placement's label,
+  /// a placement match won or lost, and the line on what the [left]
+  /// placement matches of [mode] decide (the template, {0} for [left]).
+  String ikkiuchiTabPerSide(int n) => f('ikkiuchiTabPerSide', [n]);
   String get ikkiuchiPlacementTitle => t('ikkiuchiPlacementTitle');
-  String get ikkiuchiPlacementNext => t('ikkiuchiPlacementNext');
+  String get ikkiuchiSlotWon => t('ikkiuchiSlotWon');
+  String get ikkiuchiSlotLost => t('ikkiuchiSlotLost');
+  String ikkiuchiPlacingLine(IkkiuchiMode mode, {required bool first}) =>
+      t(first ? 'ikkiuchiPlacingFirst' : 'ikkiuchiPlacingLeft').replaceAll('{mode}', ikkiuchiModeName(mode));
+
+  /// The box's rating curve: its caption over [n] matches, the note while
+  /// it is short, and the note in its room while placing.
+  String ikkiuchiCurveLast(int n) => f('ikkiuchiCurveLast', [n]);
+  String get ikkiuchiCurveGrows => t('ikkiuchiCurveGrows');
+  String get ikkiuchiCurveLater => t('ikkiuchiCurveLater');
+
+  /// The box's match: the cards a side as a template ({0}).
+  String get ikkiuchiBoxPerSide => t('ikkiuchiBoxPerSide');
+
+  /// Free play: its panel's tag and heading; the bots row (its name, the
+  /// tag in the bots page's title, its line) and the custom row's line.
+  String get ikkiuchiFreePlay => t('ikkiuchiFreePlay');
+  String get ikkiuchiRatingStays => t('ikkiuchiRatingStays');
+  String get ikkiuchiBots => t('ikkiuchiBots');
+  String get ikkiuchiBotsTag => t('ikkiuchiBotsTag');
+  String get ikkiuchiBotsLine => t('ikkiuchiBotsLine');
+  String get ikkiuchiCustomLine => t('ikkiuchiCustomLine');
+
+  /// The bots page: its line about the bots.
+  String get ikkiuchiBotsIntro => t('ikkiuchiBotsIntro');
 
   /// A ranked mode's name, and a ranked match of it as History names it.
   String ikkiuchiModeName(IkkiuchiMode mode) => switch (mode) {

@@ -1,29 +1,23 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 
 import '../../config/design.dart';
 import '../../config/vector_art.dart';
-import '../../data/poem.dart';
-import '../../domain/ikkiuchi_match.dart';
-import '../../domain/ikkiuchi_rating.dart';
-import '../../domain/ikkiuchi_record.dart';
 import '../../l10n/ikkiuchi_strings.dart';
 import '../../l10n/side_trip_strings.dart';
 import '../../l10n/strings.dart';
-import '../../state/ikkiuchi_records.dart';
 import '../../state/scope.dart';
 import '../history/history_filter.dart';
 import '../history/history_screen.dart';
-import '../ikkiuchi/ikkiuchi_field_preview.dart';
 import '../ikkiuchi/ikkiuchi_match_screen.dart';
-import '../ikkiuchi/ikkiuchi_tobi_tag.dart';
 import '../manga/manga.dart';
-import '../play/time_format.dart';
-import 'burst_button.dart';
+import 'ikkiuchi_bots_page.dart';
+import 'ikkiuchi_mode_box.dart';
 import 'ikkiuchi_rules_sheet.dart';
 import 'ikkiuchi_sheet.dart';
 import 'side_trip_entry.dart';
 import 'side_trip_panels.dart';
-import 'trip_record_panels.dart';
 
 /// Opens 一騎打ち's page ([IkkiuchiPage]), once its hall is open.
 Future<void> openIkkiuchiPage(BuildContext context) async {
@@ -32,41 +26,24 @@ Future<void> openIkkiuchiPage(BuildContext context) async {
 }
 
 /// 一騎打ち's page, on the side trips' page frame, with History beside the
-/// back button. Ranked is the mode of the tab opened last
-/// (`IkkiuchiSettings.tab`): who the player is in it (the class and rating
-/// on the shared class scale, the wins and card margin of the last ranked
-/// matches, and the way to the next class); a panel with its placement
-/// matches while they last and the burst that starts the next ranked match,
-/// in the rows picked for the mode, Tobi's rating for it on the burst; then
-/// the custom match, in a panel at the foot that
-/// grows upwards: its facts, Tobi's rating among them the way to the custom
-/// sheet ([pickIkkiuchiCustom]), the からふだ it reads, a preview of its
-/// field and the burst that starts it. Guest mode and the rules are Home's
-/// button pair under them, each a sheet. The custom setup starts as the
-/// last free match's, or the first free match's before any, and keeps the
-/// one confirmed while the page is open. Home's dotted ground, in the sea's
-/// blue, lies behind the panels; the page scrolls when it is taller than
-/// the screen.
-class IkkiuchiPage extends StatefulWidget {
+/// back button. Under the header, the ranked modes' tabs over the box of
+/// the mode whose tab was opened last (`IkkiuchiSettings.tab`, kept when a
+/// tab is tapped): the player's standing in it, the curve of their rating,
+/// its match and the burst that starts it ([IkkiuchiRankedBox]). At the
+/// foot, free play: the bots' page ([IkkiuchiBotsPage]) and a custom match
+/// (its sheet, [pickIkkiuchiCustom], which starts the match it sets up);
+/// then guest mode and the rules, Home's button pair, each a sheet. Home's
+/// dotted ground, in the sea's blue, lies behind; the page scrolls when it
+/// is taller than the screen.
+class IkkiuchiPage extends StatelessWidget {
   const IkkiuchiPage({super.key});
-
-  @override
-  State<IkkiuchiPage> createState() => _IkkiuchiPageState();
-}
-
-class _IkkiuchiPageState extends State<IkkiuchiPage> {
-  /// The custom setup confirmed in the sheet, kept while the page is open;
-  /// null for the last free match's.
-  IkkiuchiSetup? _picked;
 
   @override
   Widget build(BuildContext context) {
     final s = S.of(context);
     final progress = ProgressScope.of(context);
-    final records = progress.ikkiuchi;
-    final mode = progress.settings.ikkiuchi.tab;
-    final ranked = records.of(mode);
-    final custom = _picked ?? records.freeSetup;
+    final settings = progress.settings;
+    final mode = settings.ikkiuchi.tab;
     return Scaffold(
       body: Stack(children: [
         const Positioned.fill(child: GradationBox(Tones.homeSea)),
@@ -90,21 +67,25 @@ class _IkkiuchiPageState extends State<IkkiuchiPage> {
                         InkIconButton(icon: IconArt.back, semanticLabel: s.back, onTap: () => Navigator.maybePop(context)),
                       ],
                     ),
-                    const SizedBox(height: IkkiuchiPageLayout.gap),
-                    _Strip(ranked),
-                    const SizedBox(height: IkkiuchiPageLayout.panelTop),
-                    _RankedPanel(ranked, rows: progress.settings.ikkiuchi.rowsOf(mode)),
-                    const SizedBox(height: IkkiuchiPageLayout.panelTop),
-                    Expanded(
-                      child: Align(
-                        alignment: Alignment.bottomCenter,
-                        child: _CustomPanel(custom, onPick: () async {
-                          final chosen = await pickIkkiuchiCustom(context, custom);
-                          if (chosen != null && mounted) setState(() => _picked = chosen);
-                        }),
-                      ),
+                    const SizedBox(height: IkkiuchiPageLayout.tabsTop),
+                    IkkiuchiModeTabs(
+                      chosen: mode,
+                      onPick: (picked) {
+                        if (picked == mode) return;
+                        unawaited(progress.updateSettings(
+                            settings.copyWith(ikkiuchi: settings.ikkiuchi.copyWith(tab: picked))));
+                      },
+                      child: IkkiuchiRankedBox(progress.ikkiuchi.of(mode), rows: settings.ikkiuchi.rowsOf(mode)),
                     ),
-                    const SizedBox(height: IkkiuchiPageLayout.gap),
+                    const Spacer(),
+                    _FreePlay(
+                      onBots: () => Navigator.of(context).push(MangaRoute<void>(builder: (_) => const IkkiuchiBotsPage())),
+                      onCustom: () async {
+                        final setup = await pickIkkiuchiCustom(context, progress.ikkiuchi.freeSetup);
+                        if (setup != null && context.mounted) await startIkkiuchiMatch(context, setup);
+                      },
+                    ),
+                    const SizedBox(height: IkkiuchiPageLayout.pairTop),
                     Row(children: [
                       Expanded(child: SideTripGuestButton(onTap: () => openIkkiuchiGuest(context))),
                       const SizedBox(width: SideTripsLayout.pairGap),
@@ -122,205 +103,179 @@ class _IkkiuchiPageState extends State<IkkiuchiPage> {
   }
 }
 
-/// The page's [ClassStrip]: the class and rating, then the wins of the
-/// last [IkkiuchiPageLayout.formMatches] ranked matches over how many, and
-/// the average card margin over them ([IkkiuchiMatchRecord.margin]);
-/// dashes before the first. The labels go without the other language's,
-/// which would wrap them.
-class _Strip extends StatelessWidget {
-  const _Strip(this.records);
+/// Free play, whose matches leave the rating as it is: the bots ([onBots])
+/// and a custom match ([onCustom]), each a row with a chevron.
+class _FreePlay extends StatelessWidget {
+  const _FreePlay({required this.onBots, required this.onCustom});
 
-  final IkkiuchiModeRecords records;
+  final VoidCallback onBots, onCustom;
 
   @override
   Widget build(BuildContext context) {
     final s = S.of(context);
-    final last = records.lastRanked(IkkiuchiPageLayout.formMatches);
-    const big = StatStrip.valueStyle;
-    final wins = last.where((m) => m.result == IkkiuchiResult.won).length;
-    final margin = last.isEmpty ? null : last.fold(0, (sum, m) => sum + m.margin) / last.length;
-    return ClassStrip(
-      rating: records.rating,
-      change: records.ratingChange,
-      placing: records.placing,
-      unratedAt: IkkiuchiRating.start,
-      more: [
-        StatCell(
-          label: PanelLabel(s.ikkiuchiWins, null),
-          value: last.isEmpty
-              ? const Text(IkkiuchiPageLayout.missing, style: big)
-              : Text.rich(
-                  TextSpan(children: [
-                    TextSpan(text: '$wins'),
-                    TextSpan(
-                        text: '/${last.length}', style: const TextStyle(fontSize: IkkiuchiPageLayout.stripSuffixFont)),
-                  ]),
-                  style: big,
-                ),
+    return TaggedPanel(
+      tag: s.ikkiuchiFreePlay,
+      sub: s.sub?.ikkiuchiFreePlay,
+      heading: Semantics(
+        header: true,
+        child: Padding(
+          padding: IkkiuchiPageLayout.headingPadding,
+          child: PanelLabel(s.ikkiuchiRatingStays, null, fontSize: IkkiuchiPageLayout.headingFont),
         ),
-        StatCell(
-          label: PanelLabel(s.ikkiuchiMargin, null),
-          value: Text(margin == null ? IkkiuchiPageLayout.missing : _signed(margin), style: big),
+      ),
+      child: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+        _FreeRow(
+          height: IkkiuchiPageLayout.botsRowHeight,
+          padding: IkkiuchiPageLayout.botsRowPadding,
+          lead: Container(
+            width: IkkiuchiPageLayout.botFrame,
+            height: IkkiuchiPageLayout.botFrame,
+            decoration: BoxDecoration(
+              color: IkkiuchiPageLayout.botFrameFill,
+              border: Border.all(color: Palette.ink, width: IkkiuchiPageLayout.botFrameBorder),
+            ),
+            alignment: Alignment.center,
+            child: MangaIcon(IconArt.bot,
+                size: IkkiuchiPageLayout.botIcon, strokeWidth: IkkiuchiPageLayout.botIconStroke),
+          ),
+          title: s.ikkiuchiBots,
+          sub: s.sub?.ikkiuchiBots,
+          line: s.ikkiuchiBotsLine,
+          display: true,
+          onTap: onBots,
         ),
-      ],
+        _FreeRow(
+          height: IkkiuchiPageLayout.customRowHeight,
+          padding: EdgeInsets.zero,
+          ruled: true,
+          lead: SizedBox(
+            width: IkkiuchiPageLayout.gearBox,
+            child: Center(
+              child: MangaIcon(IconArt.settings, size: IkkiuchiPageLayout.gear, strokeWidth: IkkiuchiPageLayout.gearStroke),
+            ),
+          ),
+          title: s.ikkiuchiCustom,
+          sub: s.sub?.ikkiuchiCustom,
+          line: s.ikkiuchiCustomLine,
+          display: false,
+          onTap: onCustom,
+        ),
+      ]),
     );
   }
-
-  /// [x] to a tenth, with its sign.
-  static String _signed(double x) => '${x < 0 ? '−' : '+'}${x.abs().toStringAsFixed(1)}';
 }
 
-/// Ranked: while the rating is being placed, the placement matches under
-/// their heading (those played, each its result over its change; dashed
-/// slots for the rest, the next one marked); then the burst that starts the
-/// next ranked match, with Tobi's rating for it.
-class _RankedPanel extends StatelessWidget {
-  const _RankedPanel(this.records, {required this.rows});
+/// A free play row, at least [height] tall inside [padding], under a light rule
+/// when [ruled]: [lead], then [title] (in display type when [display]) with
+/// the other language's [sub] after it, over a [line] on what is there; a
+/// chevron at its end. It stamps a tone while pressed and calls [onTap].
+class _FreeRow extends StatelessWidget {
+  const _FreeRow({
+    required this.height,
+    required this.padding,
+    this.ruled = false,
+    required this.lead,
+    required this.title,
+    required this.sub,
+    required this.line,
+    required this.display,
+    required this.onTap,
+  });
 
-  final IkkiuchiModeRecords records;
-  final int rows;
+  final double height;
+  final EdgeInsets padding;
+  final bool ruled;
+  final Widget lead;
+  final String title, line;
+  final String? sub;
+  final bool display;
+  final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
     final s = S.of(context);
-    final placing = records.placing;
-    final setup = records.rankedSetup(rows: rows);
-    final tobi = setup.opponentRating.round();
-    return TaggedPanel(
-      tag: s.ikkiuchiRankedMode,
-      sub: s.sub?.ikkiuchiRankedMode,
-      heading: placing ? PanelHeading(s.ikkiuchiPlacementTitle) : null,
-      child: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-        if (placing) Padding(padding: IkkiuchiPageLayout.gamesPadding, child: _Placement(records)),
-        Padding(
-          padding: IkkiuchiPageLayout.rankedRowPadding,
-          child: BurstButton(
-            title: s.sideTripRanked,
-            tag: IkkiuchiTobiTag(tobi),
-            semanticLabel: '${s.sideTripRanked} ${s.ikkiuchiTobi} $tobi',
-            onTap: () => startIkkiuchiMatch(context, setup),
+    final tracking = s.ja
+        ? (display ? IkkiuchiPageLayout.botsTitleTracking : IkkiuchiPageLayout.customTitleTracking)
+        : IkkiuchiPageLayout.rowTitleLatinTracking;
+    final titleStyle = display
+        ? TextStyle(fontFamily: Fonts.display, fontSize: IkkiuchiPageLayout.botsTitleFont, letterSpacing: tracking)
+        : TextStyle(fontWeight: Weights.black, fontSize: IkkiuchiPageLayout.customTitleFont, letterSpacing: tracking);
+    final lineStyle = display
+        ? const TextStyle(
+            fontWeight: Weights.bold,
+            fontSize: IkkiuchiPageLayout.botsLineFont,
+            height: IkkiuchiPageLayout.botsLineHeight,
+            color: Palette.mute)
+        : const TextStyle(
+            fontWeight: Weights.bold,
+            fontSize: IkkiuchiPageLayout.customLineFont,
+            height: IkkiuchiPageLayout.customLineHeight,
+            color: Palette.mute);
+    return Pressable(
+      onTap: onTap,
+      drop: 0,
+      turn: 0,
+      scale: Press.panelScale,
+      semanticLabel: '$title. $line',
+      builder: (context, pressed) => Stack(fit: StackFit.passthrough, children: [
+        Positioned.fill(
+          child: AnimatedOpacity(
+            opacity: pressed ? Tones.stampOpacity : 0,
+            duration: Motion.stampFade,
+            child: const ToneBox(Tones.stamp),
           ),
         ),
-      ]),
-    );
-  }
-}
-
-/// The placement matches: those played, then dashed slots for the rest,
-/// the next one marked.
-class _Placement extends StatelessWidget {
-  const _Placement(this.records);
-
-  final IkkiuchiModeRecords records;
-
-  @override
-  Widget build(BuildContext context) {
-    final s = S.of(context);
-    final played = records.matches;
-    return GameRow([
-      for (var i = 0; i < IkkiuchiRating.placementMatches; i++)
-        if (i < played.length)
-          _Played(played[i], change: played[i].rating! - (i == 0 ? IkkiuchiRating.start : played[i - 1].rating!))
-        else
-          PlacementSlot(i + 1,
-              next: i == played.length ? (s.ikkiuchiPlacementNext, s.sub?.ikkiuchiPlacementNext) : null),
-    ]);
-  }
-}
-
-/// A placement match played: won or lost, over what it did to the
-/// estimate ([change]).
-class _Played extends StatelessWidget {
-  const _Played(this.match, {required this.change});
-
-  final IkkiuchiMatchRecord match;
-  final double change;
-
-  @override
-  Widget build(BuildContext context) {
-    final s = S.of(context);
-    final won = match.result == IkkiuchiResult.won;
-    return DefaultTextStyle.merge(
-      softWrap: false,
-      child: Column(children: [
-        FittedBox(
-          fit: BoxFit.scaleDown,
-          child: Text(won ? s.ikkiuchiWon : s.ikkiuchiLost,
-              style: TextStyle(
-                  fontFamily: Fonts.display,
-                  fontSize: IkkiuchiPageLayout.resultFont,
-                  height: 1,
-                  color: won ? Palette.ink : IkkiuchiPageLayout.lostInk)),
-        ),
-        const SizedBox(height: IkkiuchiPageLayout.resultGap),
-        FittedBox(fit: BoxFit.scaleDown, child: RatingChangeTag(change.round())),
-      ]),
-    );
-  }
-}
-
-/// The custom match of [setup]: its facts across the panel (Tobi's rating
-/// boxed, the button that calls [onPick], then the cards a side and the
-/// memory time, split by an ink rule), the からふだ it reads, a preview of
-/// its field, and the burst that starts it.
-class _CustomPanel extends StatelessWidget {
-  const _CustomPanel(this.setup, {required this.onPick});
-
-  final IkkiuchiSetup setup;
-  final VoidCallback onPick;
-
-  @override
-  Widget build(BuildContext context) {
-    final s = S.of(context);
-    const big = TextStyle(fontFamily: Fonts.display, fontSize: IkkiuchiPageLayout.statFont, height: 1);
-    const hint = TextStyle(fontWeight: Weights.bold, fontSize: IkkiuchiPageLayout.hintFont, color: Palette.mute);
-    const hintNumber = TextStyle(fontFamily: Fonts.display, fontSize: IkkiuchiPageLayout.hintNumber, color: Palette.ink);
-    final field = 2 * setup.perSide;
-    final karafuda = IkkiuchiReadOrder.karafuda(field: field, away: poems.all.length - field);
-    return TaggedPanel(
-      tag: s.ikkiuchiCustom,
-      sub: s.sub?.ikkiuchiCustom,
-      child: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-        Padding(
-          padding: IkkiuchiPageLayout.statsPadding,
-          child: CellRow(firstRuled: false, fills: true, children: [
-            DropCellButton(
-              onTap: onPick,
-              semanticLabel: s.ikkiuchiCustomSetup,
-              label: PanelLabel(s.ikkiuchiTobiRating, null),
-              value: Text('${setup.opponentRating.round()}', style: big),
-            ),
-            StatCell(
-              inset: IkkiuchiPageLayout.cellInset,
-              label: PanelLabel(s.ikkiuchiPerSide, null),
-              value: NumberedText(
-                s.ikkiuchiPerSideCount,
-                [setup.perSide],
-                style: const TextStyle(
-                    fontWeight: Weights.black, fontSize: IkkiuchiPageLayout.statSuffixFont, height: 1),
-                numberStyle: big,
+        ExcludeSemantics(
+          child: Padding(
+            padding: IkkiuchiPageLayout.rowMargin,
+            child: Container(
+              constraints: BoxConstraints(minHeight: height),
+              foregroundDecoration: ruled
+                  ? const BoxDecoration(
+                      border: Border(
+                          top: BorderSide(color: IkkiuchiPageLayout.lightRule, width: IkkiuchiPageLayout.customRule)),
+                    )
+                  : null,
+              child: Padding(
+                padding: padding,
+                child: Row(children: [
+                  lead,
+                  const SizedBox(width: IkkiuchiPageLayout.rowGap),
+                  Expanded(
+                    child: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.start, children: [
+                      FittedBox(
+                        fit: BoxFit.scaleDown,
+                        alignment: Alignment.centerLeft,
+                        child: Text.rich(
+                          TextSpan(children: [
+                            TextSpan(text: title, style: titleStyle),
+                            if (sub case final sub?) ...[
+                              const WidgetSpan(child: SizedBox(width: IkkiuchiPageLayout.rowSubGap)),
+                              TextSpan(
+                                text: sub.toUpperCase(),
+                                style: const TextStyle(
+                                  fontFamily: Fonts.ui,
+                                  fontWeight: Weights.black,
+                                  fontSize: IkkiuchiPageLayout.rowSubFont,
+                                  letterSpacing: IkkiuchiPageLayout.rowSubTracking,
+                                ),
+                              ),
+                            ],
+                          ]),
+                          maxLines: 1,
+                          style: const TextStyle(height: IkkiuchiPageLayout.rowTitleHeight),
+                        ),
+                      ),
+                      if (display) const SizedBox(height: IkkiuchiPageLayout.botsLineTop),
+                      Text.rich(Phrases.span(line), style: lineStyle),
+                    ]),
+                  ),
+                  const SizedBox(width: IkkiuchiPageLayout.rowGap),
+                  MangaIcon(IconArt.chevron,
+                      size: IkkiuchiPageLayout.chevron, strokeWidth: IkkiuchiPageLayout.chevronStroke),
+                ]),
               ),
             ),
-            StatCell(
-              inset: IkkiuchiPageLayout.cellInset,
-              label: PanelLabel(s.ikkiuchiMemoryTime, null),
-              value: Text(formatMinutes(setup.memorise), style: big),
-            ),
-          ]),
-        ),
-        Padding(
-          padding: IkkiuchiPageLayout.hintPadding,
-          child: Align(
-            alignment: Alignment.centerLeft,
-            child: NumberedText(s.ikkiuchiKarafudaLine, [karafuda], style: hint, numberStyle: hintNumber),
-          ),
-        ),
-        Flexible(child: IkkiuchiFieldPreview(setup.perSide, rows: setup.rows)),
-        Padding(
-          padding: IkkiuchiPageLayout.burstMargin,
-          child: BurstButton(
-            title: s.ikkiuchiPlayCards(setup.perSide),
-            onTap: () => startIkkiuchiMatch(context, setup),
           ),
         ),
       ]),
