@@ -30,6 +30,7 @@ import '../domain/weak_cards.dart';
 import '../domain/xp.dart';
 import '../migrations/notices.dart';
 import 'db_integrity.dart';
+import 'db_shape.dart';
 import 'ikkiuchi_journal.dart';
 import 'ikkiuchi_records.dart';
 import 'play_config.dart';
@@ -123,6 +124,7 @@ class Progress extends ChangeNotifier {
   XpLedger? _xp;
 
   static Future<Progress> open(AppDatabase db) async {
+    await DbShape.check(db);
     await DbIntegrity.run(db);
     final kv = {for (final r in await db.select(db.keyValues).get()) r.key: r.value};
     Map<String, dynamic> json(String k) => kv[k] == null ? {} : jsonDecode(kv[k]!) as Map<String, dynamic>;

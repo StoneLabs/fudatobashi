@@ -236,6 +236,15 @@ void main() {
     });
 
 
+    test('data with the wrong structure fails to open and names the difference', () async {
+      sqliteFile('documents/fudatobashi.sqlite',
+          version: latestSchemaVersion, sql: ['CREATE TABLE key_values (key TEXT NOT NULL, extra TEXT)']);
+      await store.start();
+      final state = store.state;
+      expect(state, isA<DataFailed>());
+      expect((state as DataFailed).error, allOf(contains('key_values: extra column extra'), contains('missing table')));
+    });
+
     testWidgets('data that fails to open shows the recovery screen', (tester) async {
       await tester.runAsync(() async {
         store.paths.database.writeAsStringSync('garbage that is no database');
