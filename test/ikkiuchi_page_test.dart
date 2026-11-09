@@ -959,6 +959,71 @@ void main() {
       });
     }
 
+    // The bigger cards of a match of 1 or 2 rows in its moments: Tobi's
+    // 送り札 waiting, then dragged over a spot on the player's side; his
+    // fist at the hit of a strike; and the result.
+    for (final rows in [1, 2]) {
+      testWidgets('match_${rows}row_moments', (tester) async {
+        final perSide = rows == 1 ? IkkiuchiLayoutTuning.oneRowUpTo : IkkiuchiLayoutTuning.twoRowsUpTo;
+        final p = await open(tester, lang: 'ja');
+        await showPage(tester, p, phone: usersPhoneLandscape);
+        final setup = IkkiuchiSetup.free(opponentRating: 1600, perSide: perSide, memorise: const Duration(minutes: 15));
+        unawaited(Navigator.of(tester.element(find.byType(IkkiuchiPage)))
+            .push(MangaRoute<void>(builder: (_) => IkkiuchiMatchScreen(setup: setup, seed: 3, rows: rows))));
+        await tester.pump();
+        await tester.pump(Motion.route);
+        final flow = screen(tester).flow!, scene = flow.scene;
+        scene.opening
+          ..placeRest()
+          ..finishTobi();
+        flow.donePlacing();
+        // Room on the player's side for the card Tobi sends.
+        final sides = scene.sides!;
+        scene.relayout(sides.without(sides.playerCards.first).without(sides.playerCards.last));
+        await play(tester, IkkiuchiPlayTuning.relayoutGlide * 2);
+
+        flow.sendByHand(IkkiuchiSide.opponent);
+        final send = scene.send;
+        for (var i = 0; i < 200 && send.stage != IkkiuchiSendStage.waiting; i++) {
+          await tester.pump(const Duration(milliseconds: 50));
+        }
+        await play(tester, const Duration(milliseconds: 600));
+        await capture(tester, 'match_${rows}row_4_waiting', 'ja');
+
+        final card = send.card!;
+        final spot = send.rectOf(send.targets().freeSpots.first.$1)!;
+        send.dragStart(card, fromStack: true, at: scene.wait.center);
+        for (var i = 1; i <= 6; i++) {
+          send.dragTo(Offset.lerp(scene.wait.center, spot.center, i / 6)!);
+          await tester.pump(const Duration(milliseconds: 16));
+        }
+        await capture(tester, 'match_${rows}row_5_placing', 'ja');
+        send.dragEnd();
+        await play(tester, IkkiuchiPlayTuning.relayoutGlide * 2);
+
+        await toFirstRead(tester, flow);
+        bool atHit() {
+          final run = scene.board.active;
+          return run != null && run.at(scene.board.now) >= run.strike.hitAt;
+        }
+
+        for (var i = 0; i < 2000 && !atHit(); i++) {
+          await tester.pump(const Duration(milliseconds: 4));
+        }
+        expect(atHit(), isTrue);
+        await capture(tester, 'match_${rows}row_6_strike', 'ja');
+
+        await play(tester, const Duration(seconds: 2));
+        flow.end();
+        await toResult(tester, flow);
+        await play(tester, const Duration(milliseconds: 1500));
+        await capture(tester, 'match_${rows}row_7_result', 'ja');
+        expect(tester.takeException(), isNull);
+        await leave(tester);
+        await tester.pumpWidget(const SizedBox());
+      });
+    }
+
     for (final phone in [widePhone, usersPhone]) {
       for (final lang in ['ja', 'en']) {
         testWidgets('page_${phone.name}_$lang', (tester) async {
