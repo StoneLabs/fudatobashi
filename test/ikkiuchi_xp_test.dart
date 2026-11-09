@@ -59,8 +59,12 @@ void main() {
       (XpSource.clear, 1, IkkiuchiXpTuning.clear),
       (XpSource.ranked, 1, IkkiuchiXpTuning.ranked),
     ]);
-    expect(award.total,
-        24 * IkkiuchiXpTuning.perCard + IkkiuchiXpTuning.winPerCard * 25 + IkkiuchiXpTuning.clear + IkkiuchiXpTuning.ranked);
+    expect(
+        award.total,
+        24 * IkkiuchiXpTuning.perCard +
+            IkkiuchiXpTuning.winPerCard * 25 +
+            IkkiuchiXpTuning.clear +
+            IkkiuchiXpTuning.ranked);
   });
 
   test('a loss played to its end: its cards, the clear and ranked, no win', () {

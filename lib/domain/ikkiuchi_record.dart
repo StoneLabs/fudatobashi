@@ -284,6 +284,9 @@ class IkkiuchiReadLog {
 
   bool get karafuda => cardSide == null;
 
+  /// When [side] reached the card; null for one who never did.
+  Duration? takeOf(IkkiuchiSide side) => side == IkkiuchiSide.player ? playerTake : opponentTake;
+
   /// This read with [sent] made after it too.
   IkkiuchiReadLog withSent(IkkiuchiSent sent) => IkkiuchiReadLog(
         poemId: poemId,
@@ -355,6 +358,24 @@ class IkkiuchiMatchRecord {
   /// one read counting two.
   int get playerFaults => reads.fold(0, (n, r) => n + r.playerFaults);
   int get opponentFaults => reads.fold(0, (n, r) => n + r.opponentFaults);
+
+  /// The cards [side] took, ties among them.
+  int takenBy(IkkiuchiSide side) => reads.where((r) => r.taker == side).length;
+
+  /// [side]'s median time to the field cards read that they reached; null
+  /// when they reached none.
+  Duration? medianTake(IkkiuchiSide side) => medianOf([
+        for (final r in reads)
+          if (!r.karafuda) ?r.takeOf(side),
+      ]);
+
+  /// The median of [times]; null when there are none.
+  static Duration? medianOf(Iterable<Duration> times) {
+    if (times.isEmpty) return null;
+    final sorted = [...times]..sort();
+    final mid = sorted.length ~/ 2;
+    return sorted.length.isOdd ? sorted[mid] : (sorted[mid - 1] + sorted[mid]) ~/ 2;
+  }
 
   /// This match as stored, under [id], with the player's [rating] after it
   /// and the [xp] it earned.

@@ -14,12 +14,12 @@ abstract final class IkkiuchiXp {
   /// What [match] earns; [placed] when it is the ranked match that ends
   /// placement.
   static XpAward of(IkkiuchiMatchRecord match, {required bool placed}) {
-    final taken = match.reads.where((r) => r.taker == IkkiuchiSide.player).length;
-    final done = match.completed;
+    final taken = match.takenBy(IkkiuchiSide.player);
+    final done = match.completed, won = match.result == IkkiuchiResult.won;
     return XpAward([
       for (final p in [
         XpPart(XpSource.taken, taken, taken * IkkiuchiXpTuning.perCard),
-        XpPart(XpSource.won, 1, match.result == IkkiuchiResult.won ? IkkiuchiXpTuning.winPerCard * match.setup.perSide : 0),
+        XpPart(XpSource.won, 1, won ? IkkiuchiXpTuning.winPerCard * match.setup.perSide : 0),
         XpPart(XpSource.clear, 1, done ? IkkiuchiXpTuning.clear : 0),
         XpPart(XpSource.ranked, 1, done && match.ranked ? IkkiuchiXpTuning.ranked : 0),
         XpPart(XpSource.placement, 1, done && placed ? IkkiuchiXpTuning.placement : 0),
