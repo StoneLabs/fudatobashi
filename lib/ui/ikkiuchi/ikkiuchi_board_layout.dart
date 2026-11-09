@@ -24,8 +24,9 @@ import '../../domain/ikkiuchi_side.dart';
 /// side, his room kept above the field; landscape sits him in the open
 /// middle of his half, the room he needs there kept open, and its rows may
 /// reach the board's top and bottom edges. Landscape keeps the game
-/// [column] at the board's right edge: the field lies centred where it can,
-/// else as far right as leaves the column clear. A card Tobi sends waits at
+/// [column] down the board's right edge, from its top to its bottom however
+/// tall the field is: the field lies centred where it can, else as far
+/// right as leaves the column clear. A card Tobi sends waits at
 /// [wait], big, right of him: in portrait just above his side; in landscape
 /// in the open middle of his half, over his cards where it must. No room is
 /// kept for it.
@@ -112,7 +113,7 @@ class IkkiuchiBoardLayout {
     final area = Rect.fromLTWH(left, top, fieldW * cardW, 2 * half * cardW + bandH);
     const edge = IkkiuchiColumnStyle.edge;
     final column = landscape
-        ? Rect.fromLTRB(w - edge - IkkiuchiColumnStyle.width, area.top + edge, w - edge, area.bottom - edge)
+        ? Rect.fromLTRB(w - edge - IkkiuchiColumnStyle.width, edge, w - edge, h - edge)
         : null;
     final wait = landscape ? _waitRightOfTobi(area, band, cardW, tobi, column!) : _waitByTobi(area, tobi, cardW, w);
     final stack = !opening ? null : (landscape ? _stackBesidePlayer(area, band, cardW) : wait);
@@ -195,7 +196,8 @@ class IkkiuchiBoardLayout {
   /// Where a card Tobi sends waits for the player to place it.
   final Rect wait;
 
-  /// The game column, in landscape only.
+  /// The game column down the board's right edge, top to bottom, in
+  /// landscape only.
   final Rect? column;
 
   /// Where the player's stack lies while the match opens; null once laid

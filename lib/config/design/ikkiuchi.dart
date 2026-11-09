@@ -302,9 +302,8 @@ abstract final class IkkiuchiCallStyle {
 }
 
 /// The game column at the board's right edge in landscape
-/// (`IkkiuchiMatchColumn`), [width] wide, [edge] in from the board's right
-/// edge and from the field's top and foot, and at least [fieldGap] clear of
-/// the field. dp.
+/// (`IkkiuchiMatchColumn`), [width] wide, [edge] in from the board's right,
+/// top and bottom edges, and at least [fieldGap] clear of the field. dp.
 abstract final class IkkiuchiColumnStyle {
   static const double width = 54;
   static const double edge = 6;

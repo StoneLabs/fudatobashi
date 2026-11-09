@@ -51,6 +51,7 @@ import 'package:fudatobashi/domain/placing.dart';
 import 'package:fudatobashi/ui/ikkiuchi/ikkiuchi_board_painter.dart';
 import 'package:fudatobashi/ui/ikkiuchi/ikkiuchi_match_flow.dart';
 import 'package:fudatobashi/ui/ikkiuchi/ikkiuchi_send_flow.dart';
+import 'package:fudatobashi/ui/ikkiuchi/ikkiuchi_match_column.dart';
 import 'package:fudatobashi/ui/ikkiuchi/ikkiuchi_match_layers.dart';
 import 'package:fudatobashi/ui/ikkiuchi/ikkiuchi_match_screen.dart';
 import 'package:fudatobashi/ui/manga/manga.dart';
@@ -613,6 +614,44 @@ void main() {
       }
       expect(flow.reads, isNotEmpty, reason: '$rows rows: the reads go on');
       expect(scene.layout.cardW, cardW, reason: '$rows rows');
+      expect(tester.takeException(), isNull);
+      await leave(tester);
+    }
+    await tester.pumpWidget(const SizedBox());
+  });
+
+  testWidgets('the game column lies the same in a match of 1, 2 or 3 rows, anchored to the screen\'s edges',
+      (tester) async {
+    final p = await open(tester);
+    await showPage(tester, p, phone: usersPhoneLandscape);
+    Rect rectOf(Finder f) => tester.getRect(find.descendant(of: find.byType(IkkiuchiMatchColumn), matching: f));
+    final screenSize = usersPhoneLandscape.size;
+    const edge = IkkiuchiColumnStyle.edge;
+    final column = Rect.fromLTRB(screenSize.width - edge - IkkiuchiColumnStyle.width, edge, screenSize.width - edge,
+        screenSize.height - edge);
+    for (final (rows, perSide) in [(1, IkkiuchiLayoutTuning.oneRowUpTo), (2, IkkiuchiLayoutTuning.twoRowsUpTo), (3, 25)]) {
+      final setup = IkkiuchiSetup.free(opponentRating: 1600, perSide: perSide, memorise: const Duration(minutes: 5));
+      unawaited(Navigator.of(tester.element(find.byType(IkkiuchiPage)))
+          .push(MangaRoute<void>(builder: (_) => IkkiuchiMatchScreen(setup: setup, seed: 2, rows: rows))));
+      await tester.pump();
+      await tester.pump(Motion.route);
+      final flow = screen(tester).flow!;
+      flow.scene.opening.placeRest();
+      flow.donePlacing();
+      await tester.pump(IkkiuchiPlayTuning.relayoutGlide * 2);
+      expect(tester.getRect(find.byType(IkkiuchiMatchColumn)), column, reason: '$rows rows');
+      final end = rectOf(find.byType(HoldToConfirmButton));
+      final buttons = [
+        for (final label in [s.ikkiuchiReady, s.ikkiuchiArrange])
+          tester.getRect(find.ancestor(of: find.text(label), matching: find.byType(InkButton))),
+      ];
+      final tobi = rectOf(find.text(s.ikkiuchiTobi)), you = rectOf(find.text(s.ikkiuchiYou));
+      expect(end.top, column.top, reason: '$rows rows: 終了 at the top');
+      expect(buttons.last.bottom, column.bottom, reason: '$rows rows: the buttons at the foot');
+      expect([end.bottom < tobi.top, you.bottom < buttons.first.top], [true, true],
+          reason: '$rows rows: the score clear of 終了 and the buttons');
+      expect((tobi.bottom + you.top) / 2, closeTo(column.center.dy, IkkiuchiColumnStyle.count),
+          reason: '$rows rows: the score in the middle');
       expect(tester.takeException(), isNull);
       await leave(tester);
     }
