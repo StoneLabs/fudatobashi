@@ -38,6 +38,13 @@ extension IkkiuchiStrings on S {
   String get ikkiuchiGreeting => t('ikkiuchiGreeting');
   String get ikkiuchiThanks => t('ikkiuchiThanks');
 
+  /// How a match ended, over its board: the player beat Tobi or Tobi won,
+  /// and by how many cards ([n]).
+  String get ikkiuchiBeatTobi => t('ikkiuchiBeatTobi');
+  String get ikkiuchiTobiWins => t('ikkiuchiTobiWins');
+  String ikkiuchiWonBy(int n) => f(countKey('ikkiuchiWonBy', n), [n]);
+  String ikkiuchiLostBy(int n) => f(countKey('ikkiuchiLostBy', n), [n]);
+
   /// 並べ替え: its button, and the call's place while the player moves
   /// their cards.
   String get ikkiuchiArrange => t('ikkiuchiArrange');

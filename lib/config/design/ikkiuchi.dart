@@ -217,6 +217,44 @@ abstract final class IkkiuchiGreetingStyle {
   static Duration get length => playerIn.end;
 }
 
+/// How a match ended, over its board (`IkkiuchiMatchResult`): the board
+/// dimmed by [scrim], fading in ([dimIn]); focus [lines] in [linesColor]
+/// meeting in the board's middle, none across Tobi, rushing in
+/// ([linesIn]); Tobi's rating tag over them, fading in dimmed by [scrim]
+/// too, [tagGap] over his box or, short of room there, [tagGap] left of it
+/// with its middle [tagDrop] of his height down; the result in [font]
+/// [fill] lettering with an [outline] wide [ink] outline, turned
+/// [turnDeg], slammed down ([letteringIn]) and kept [inset] inside the
+/// board's sides; and [subGap] under it a line of [subFont] [subInk] words
+/// on an [ink] banner [subHeight] tall and [subPadding] wider than them at
+/// each end, turned with it and rising into place ([subIn]). dp.
+abstract final class IkkiuchiResultStyle {
+  static const Color scrim = Color(0x8C141414);
+  static const double tagGap = 10;
+  static const double tagDrop = 0.3;
+  static const lines = (count: 120, innerMin: 120.0, innerMax: 170.0, width: 4.0, seed: 31);
+  static const Color linesColor = Palette.paper;
+  static const double font = 46;
+  static const double outline = 22;
+  static const Color fill = Palette.sun;
+  static const Color ink = Palette.ink;
+  static const double turnDeg = -5;
+  static const double inset = 20;
+  static const double subGap = 13;
+  static const double subFont = 15;
+  static const Color subInk = Palette.paper;
+  static const double subHeight = 28;
+  static const double subPadding = 10;
+  static const dimIn = EntranceSpec(EntranceFrom(), duration: Duration(milliseconds: 220));
+  static const linesIn =
+      EntranceSpec(EntranceFrom(scale: 1.6), duration: Duration(milliseconds: 380), curve: Curves.easeOutCubic);
+  static const letteringIn = EntranceSpec(Entrances.slam,
+      duration: Duration(milliseconds: 450), delay: Duration(milliseconds: 120), curve: Entrances.springy);
+  static const subIn = EntranceSpec(Entrances.up,
+      duration: Duration(milliseconds: 300), delay: Duration(milliseconds: 480), curve: Entrances.settle);
+  static Duration get length => subIn.end;
+}
+
 /// Tobi's rating on an ink tag (`IkkiuchiTobiTag`): his name in [nameFont]
 /// [name] lettering, [gap], then the rating in [font] display lettering,
 /// [padding] round them. dp.

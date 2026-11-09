@@ -62,8 +62,19 @@ enum IkkiuchiStage {
   breakAfterShimonoku,
 
   /// A side is empty, or the player ended the match: the players thank
-  /// each other (ありがとうございました), and nothing more happens.
-  gameEnd;
+  /// each other (ありがとうございました, [IkkiuchiMatchTuning.thanks] long).
+  gameEnd,
+
+  /// How the match ended shows (won, lost or given up), for
+  /// [IkkiuchiMatchTuning.result] or until the player taps it away.
+  result,
+
+  /// The match's end has been shown, or there was nothing to show, as for
+  /// a match the player ended before its first read: nothing more happens.
+  done;
+
+  /// Whether the match is over: from the players' thanks on.
+  bool get over => this == gameEnd || this == result || this == done;
 
   /// Whether a card is being read: the only stages a card touch counts in,
   /// the player's finger and Tobi's fist alike.
@@ -94,7 +105,7 @@ typedef IkkiuchiStep = ({IkkiuchiStage from, IkkiuchiStage to, String why});
 /// Every step a match may take between its stages; the match takes no
 /// other. [IkkiuchiStage.movingCard] holds a stage that no longer lets the
 /// player move cards, then goes on to it; a 送り札 by hand goes back to the
-/// stage it broke into; 終了 ends the match from any stage.
+/// stage it broke into; 終了 ends the match from any stage before its end.
 abstract final class IkkiuchiSteps {
   static const List<IkkiuchiStep> all = [
     (from: IkkiuchiStage.placing, to: IkkiuchiStage.memoryTime, why: '完了'),
@@ -134,11 +145,14 @@ abstract final class IkkiuchiSteps {
     (from: IkkiuchiStage.shimonoku, to: IkkiuchiStage.movingCard, why: 'time up while moving'),
     (from: IkkiuchiStage.movingCard, to: IkkiuchiStage.breakAfterShimonoku, why: 'moving done'),
     (from: IkkiuchiStage.breakAfterShimonoku, to: IkkiuchiStage.kaminoku, why: 'time up'),
+    (from: IkkiuchiStage.gameEnd, to: IkkiuchiStage.result, why: 'time up'),
+    (from: IkkiuchiStage.gameEnd, to: IkkiuchiStage.done, why: 'time up, ended before the first read'),
+    (from: IkkiuchiStage.result, to: IkkiuchiStage.done, why: 'time up / tapped'),
   ];
 
   /// Whether the match may step from [from] to [to].
   static bool allows(IkkiuchiStage from, IkkiuchiStage to) =>
-      to == IkkiuchiStage.gameEnd ||
+      (to == IkkiuchiStage.gameEnd && !from.over) ||
       all.any((s) => s.from == from && s.to == to) ||
       (from.allowsHandSend && to.sending) ||
       (from.sending && to.allowsHandSend);

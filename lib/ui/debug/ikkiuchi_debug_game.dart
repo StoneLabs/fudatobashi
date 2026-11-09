@@ -215,6 +215,8 @@ class IkkiuchiDebugTools extends StatelessWidget {
         IkkiuchiStage.movingCard => IkkiuchiToolsStyle.movingCard,
         IkkiuchiStage.breakAfterShimonoku => IkkiuchiToolsStyle.breakAfterShimonoku,
         IkkiuchiStage.gameEnd => IkkiuchiToolsStyle.gameEnd,
+        IkkiuchiStage.result => IkkiuchiToolsStyle.result,
+        IkkiuchiStage.done => IkkiuchiToolsStyle.done,
       };
 
   static String ratingName(double? rating) =>

@@ -495,10 +495,12 @@ abstract final class IkkiuchiReaderTuning {
 /// ([waitBeforeShimonoku]), the 下の句 ([shimonoku]) and a moment after it
 /// ([breakAfterShimonoku]); and its からふだ, `karafuda` for every `field`
 /// cards on the field. 終了 ends the match once held [endHold]
-/// (`IkkiuchiMatchColumn`). The match runs on frame by frame, by
-/// [longestStep] at most at once. Tobi lays out his side in his placing
-/// time (`IkkiuchiTuning.placingSeconds`), squeezed when it is longer, so
-/// that he is done [tobiPlacingLead] before the memory time is up.
+/// (`IkkiuchiMatchColumn`). Once it is over the players thank each other
+/// ([thanks]), and its result shows for [result] at most. The match runs
+/// on frame by frame, by [longestStep] at most at once. Tobi lays out his
+/// side in his placing time (`IkkiuchiTuning.placingSeconds`), squeezed
+/// when it is longer, so that he is done [tobiPlacingLead] before the
+/// memory time is up.
 abstract final class IkkiuchiMatchTuning {
   static const Duration memorise = Duration(minutes: 15);
   static const Duration tobiPlacingLead = Duration(seconds: 5);
@@ -513,6 +515,8 @@ abstract final class IkkiuchiMatchTuning {
   static const Duration breakAfterShimonoku = Duration(seconds: 1);
   static const ({int karafuda, int field}) karafuda = (karafuda: 10, field: 25);
   static const Duration endHold = Duration(milliseconds: 1200);
+  static const Duration thanks = Duration(milliseconds: 2600);
+  static const Duration result = Duration(seconds: 6);
   static const Duration longestStep = Duration(milliseconds: 250);
 }
 
@@ -579,16 +583,14 @@ abstract final class IkkiuchiRankedTuning {
 
 /// The match screen (`IkkiuchiMatchScreen`), ranked or free: the rows a
 /// side is laid out in; the seeds a deal is drawn from, and the offset that
-/// draws the player's side apart from Tobi's; the system bars hidden while
-/// a match is played (a swipe in from an edge shows them for a while); and
-/// how long the screen stays once the match is over, for the players'
-/// thanks.
+/// draws the player's side apart from Tobi's; and the system bars hidden
+/// while a match is played (a swipe in from an edge shows them for a
+/// while).
 abstract final class IkkiuchiScreenTuning {
   static const int rows = 3;
   static const int seeds = 1 << 30;
   static const int playerSeedOffset = 7919;
   static const SystemUiMode bars = SystemUiMode.immersiveSticky;
-  static const Duration leaveAfter = Duration(seconds: 3);
 }
 
 /// Tobi's arm carrying a card (`IkkiuchiCarry`), as when he sends one: a

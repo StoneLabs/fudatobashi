@@ -13,14 +13,17 @@ import 'ikkiuchi_board_painter.dart';
 import 'ikkiuchi_feedback_banner.dart';
 import 'ikkiuchi_match_flow.dart';
 import 'ikkiuchi_match_layers.dart';
+import 'ikkiuchi_match_result.dart';
 import 'ikkiuchi_send_layer.dart';
 
 /// A match's board as it is played ([IkkiuchiMatchFlow]), in board dp: the
 /// board taking the player's finger; in landscape the call in the gap and
 /// the game column, whose 終了 calls [onEnd]; in portrait the memory time
 /// left on the band, while placing too; how each read ended, over the gap
-/// or band ([IkkiuchiFeedbackBanner]); and the greetings over everything as
-/// play begins and once it is over ([IkkiuchiGreeting]).
+/// or band ([IkkiuchiFeedbackBanner]); the greetings over everything as
+/// play begins and once it is over ([IkkiuchiGreeting]); and then how the
+/// match ended ([IkkiuchiMatchResult]), a tap on it letting the match be
+/// done.
 class IkkiuchiMatchBoard extends StatelessWidget {
   const IkkiuchiMatchBoard(this.flow, {super.key, required this.onEnd});
 
@@ -76,6 +79,23 @@ class IkkiuchiMatchBoard extends StatelessWidget {
               ]);
             },
           ),
+        ),
+      ),
+      Positioned.fill(
+        child: ListenableBuilder(
+          listenable: Listenable.merge([flow, scene]),
+          builder: (context, _) {
+            final result = flow.result;
+            if (flow.stage != IkkiuchiStage.result || result == null) return const SizedBox.shrink();
+            final tobi = scene.tobi;
+            return IkkiuchiMatchResult(
+              result: result,
+              left: flow.tally,
+              tobi: Rect.fromLTWH(tobi.origin.x, tobi.origin.y, tobi.rig.size.x * tobi.k, tobi.rig.size.y * tobi.k),
+              rating: flow.rating?.round(),
+              onTap: flow.dismissResult,
+            );
+          },
         ),
       ),
     ]);

@@ -11,6 +11,7 @@ import '../../domain/ikkiuchi_match.dart';
 import '../../domain/ikkiuchi_opening.dart';
 import '../../domain/ikkiuchi_read.dart';
 import '../../domain/ikkiuchi_record.dart';
+import '../../domain/ikkiuchi_rig.dart';
 import '../../domain/ikkiuchi_side.dart';
 import '../../domain/ikkiuchi_tobi.dart';
 import '../../l10n/ikkiuchi_strings.dart';
@@ -62,6 +63,11 @@ class IkkiuchiMatchWords {
 /// match, as does the player at any time ([end]); the kimariji voice stops
 /// with it, or with the flow's disposal. Each read is logged as it ends
 /// ([reads]), and the cards it leaves each side are counted ([tally]).
+///
+/// Once the match is over the players thank each other, then how it ended
+/// shows ([result]), Tobi shocked by a loss and cheering a win, until its
+/// time is up or the player taps it away ([dismissResult]); then the match
+/// is done. One the player ended before its first read has no result.
 ///
 /// The player may move their cards (並べ替え) only in the stages that allow
 /// it; one such stage over while they still move them holds the match
@@ -126,6 +132,13 @@ class IkkiuchiMatchFlow extends ChangeNotifier {
 
   /// Whether play has begun: a card has been read.
   bool get playBegun => _readId != null;
+
+  /// How the match ended for the player, once it is over: given up when
+  /// they ended it, else won when their side was emptied first; null for
+  /// one they ended before its first read.
+  IkkiuchiResult? get result => _endedByPlayer && !playBegun
+      ? null
+      : IkkiuchiResult.of(completed: !_endedByPlayer, playerLeft: _tally.player, opponentLeft: _tally.opponent);
 
   /// Each side's cards left as the rules have them, a read's take and
   /// 送り札 counted from its end on.
@@ -207,7 +220,7 @@ class IkkiuchiMatchFlow extends ChangeNotifier {
 
   /// The next read is a からふだ; not while a card is read.
   void askKarafuda() {
-    if (_stage.readLive || _stage == IkkiuchiStage.gameEnd) return;
+    if (_stage.readLive || _stage.over) return;
     _karafudaNext = true;
     notifyListeners();
   }
@@ -228,7 +241,7 @@ class IkkiuchiMatchFlow extends ChangeNotifier {
   /// are laid out while the match opens, and a 送り札 is called off where
   /// it stands ([IkkiuchiSendFlow.cancel]).
   void end() {
-    if (_stage == IkkiuchiStage.gameEnd) return;
+    if (_stage.over) return;
     _endedByPlayer = true;
     _layOutBoth();
     scene.arrange.finish();
@@ -236,6 +249,11 @@ class IkkiuchiMatchFlow extends ChangeNotifier {
     _sends.clear();
     _resume = null;
     _enter(IkkiuchiStage.gameEnd);
+  }
+
+  /// The player is done looking at the result: the match is done.
+  void dismissResult() {
+    if (_stage == IkkiuchiStage.result) _enter(IkkiuchiStage.done);
   }
 
   /// Runs the board on by [ms], and the match with it; by
@@ -279,6 +297,8 @@ class IkkiuchiMatchFlow extends ChangeNotifier {
         IkkiuchiStage.waitBeforeShimonoku => IkkiuchiMatchTuning.waitBeforeShimonoku,
         IkkiuchiStage.shimonoku => IkkiuchiMatchTuning.shimonoku,
         IkkiuchiStage.breakAfterShimonoku => IkkiuchiMatchTuning.breakAfterShimonoku,
+        IkkiuchiStage.gameEnd => IkkiuchiMatchTuning.thanks,
+        IkkiuchiStage.result => IkkiuchiMatchTuning.result,
         _ => null,
       };
 
@@ -301,6 +321,10 @@ class IkkiuchiMatchFlow extends ChangeNotifier {
         next = IkkiuchiStage.breakAfterShimonoku;
       case IkkiuchiStage.feedback:
         return _leaving == null ? _nextSend() : _enter(IkkiuchiStage.closingUp);
+      case IkkiuchiStage.gameEnd:
+        return _enter(result == null ? IkkiuchiStage.done : IkkiuchiStage.result);
+      case IkkiuchiStage.result:
+        return _enter(IkkiuchiStage.done);
       case _:
         throw StateError('$_stage is not timed');
     }
@@ -333,6 +357,9 @@ class IkkiuchiMatchFlow extends ChangeNotifier {
     if (stage == IkkiuchiStage.gameEnd) {
       scene.clearCall();
       unawaited(sounds.stopKimarijiVoice());
+    }
+    if (stage == IkkiuchiStage.result) {
+      scene.board.heldFace = result == IkkiuchiResult.won ? TobiFace.shocked : TobiFace.cheering;
     }
     notifyListeners();
   }

@@ -20,6 +20,8 @@ import 'package:fudatobashi/db/database.dart';
 import 'package:fudatobashi/domain/ikkiuchi_board.dart';
 import 'package:fudatobashi/domain/ikkiuchi_geometry.dart';
 import 'package:fudatobashi/domain/ikkiuchi_match.dart';
+import 'package:fudatobashi/domain/ikkiuchi_record.dart';
+import 'package:fudatobashi/domain/ikkiuchi_rig.dart';
 import 'package:fudatobashi/domain/ikkiuchi_side.dart';
 import 'package:fudatobashi/domain/ikkiuchi_tobi.dart';
 import 'package:fudatobashi/state/progress.dart';
@@ -809,7 +811,8 @@ void main() {
       await tester.pumpWidget(const SizedBox());
     });
 
-    testWidgets('a side left empty ends the match: ありがとうございました, and nothing more', (tester) async {
+    testWidgets('Tobi\'s side left empty: ありがとうございました, then Tobi wins by the cards left, until a tap',
+        (tester) async {
       final p = await open(tester);
       await show(tester, p, const IkkiuchiDebugGame(seed: 4));
       await tester.tap(tool('5'));
@@ -831,12 +834,63 @@ void main() {
       await run(tester, 800);
       expect(find.text('ありがとうございました'), findsNWidgets(4));
       await capture(tester, 'game_end');
-      await run(tester, 5000);
-      expect(f.stage, IkkiuchiStage.gameEnd, reason: 'it stays');
+      await runUntil(tester, () => f.stage == IkkiuchiStage.result);
+      expect(find.text('ありがとうございました'), findsNothing);
+      expect(f.result, IkkiuchiResult.lost);
+      expect(find.text('トビの勝ち！'), findsNWidgets(2), reason: 'fill and outline');
+      expect(find.text('10枚差で負け'), findsOneWidget, reason: 'by the cards the player has left');
+      expect(s.board.idleFace, TobiFace.cheering);
+      await run(tester, 800);
+      await capture(tester, 'game_result_lost');
       f.sendByHand(IkkiuchiSide.player);
       f.askKarafuda();
-      expect(f.stage, IkkiuchiStage.gameEnd);
+      f.end();
+      expect(f.stage, IkkiuchiStage.result, reason: 'nothing more happens');
+      await tester.tapAt(onScreen(tester, Vec(s.layout.size.x / 2, s.layout.size.y / 2)));
+      await tester.pump(frame);
+      expect(f.stage, IkkiuchiStage.done, reason: 'a tap lets it go');
+      expect(find.text('トビの勝ち！'), findsNothing);
+      await run(tester, 2000);
+      expect(f.stage, IkkiuchiStage.done, reason: 'it stays');
       expect(find.byType(IkkiuchiDebugGame), findsOneWidget, reason: 'no exit of its own');
+      expect(tester.takeException(), isNull);
+      await tester.pumpWidget(const SizedBox());
+    });
+
+    testWidgets('the player\'s side left empty: the player beat Tobi, who is shocked; the result goes in time',
+        (tester) async {
+      final p = await open(tester);
+      await show(tester, p, const IkkiuchiDebugGame(seed: 4));
+      await tester.tap(tool('5'));
+      await tester.pump(frame);
+      await tester.pump(frame);
+      await laidOut(tester);
+      final f = flow(tester), s = f.scene;
+      for (var i = 0; i < 5; i++) {
+        f.sendByHand(IkkiuchiSide.player);
+        await tester.pump(frame);
+        final from = s.board.cards.card(s.sides!.playerCards.first).box.centre;
+        final over = Vec(from.x, s.layout.band.top - s.layout.cardW);
+        final drag = await tester.startGesture(onScreen(tester, from));
+        await tester.pump(frame);
+        for (var k = 1; k <= 6; k++) {
+          await drag.moveTo(onScreen(tester, from.lerp(over, k / 6)));
+          await tester.pump(frame);
+        }
+        await drag.up();
+        await tester.pump(frame);
+        await runUntil(tester, () => !f.stage.sending);
+      }
+      expect(s.sides!.playerCards, isEmpty);
+      await runUntil(tester, () => f.stage == IkkiuchiStage.result);
+      expect(f.result, IkkiuchiResult.won);
+      expect(find.text('トビに勝った！'), findsNWidgets(2));
+      expect(find.text('10枚差で勝ち'), findsOneWidget, reason: "by the cards Tobi has left");
+      expect(s.board.idleFace, TobiFace.shocked);
+      await run(tester, 800);
+      await capture(tester, 'game_result_won');
+      await runUntil(tester, () => f.stage == IkkiuchiStage.done,
+          most: IkkiuchiMatchTuning.result.inMilliseconds + 500.0, reason: 'its time up');
       expect(tester.takeException(), isNull);
       await tester.pumpWidget(const SizedBox());
     });

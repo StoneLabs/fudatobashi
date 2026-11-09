@@ -32,18 +32,19 @@ Future<void> startIkkiuchiMatch(BuildContext context, IkkiuchiSetup setup, {bool
 /// from it (`IkkiuchiTobi.formFor`). The match runs on by itself.
 ///
 /// A match that ends once play has begun (its first card read), played to
-/// its end or by 終了, is recorded, and [IkkiuchiScreenTuning.leaveAfter]
-/// later the screen closes; one ended before records nothing, and a
-/// [guest]'s never records anything. Leaving the
+/// its end or by 終了, is recorded; one ended before records nothing, and a
+/// [guest]'s never records anything. Once its end has been shown (the
+/// players' thanks, then its result) the screen closes. Leaving the
 /// screen before the match ends records free play not at all, and a ranked
 /// match, once play has begun, as given up: a loss. From its first read,
 /// and again after every read, a ranked match is journalled as it stands,
 /// so that one the app never gets to record is a forfeit on the next start
 /// with its reads and cards left ([Progress.journalIkkiuchi]).
 ///
-/// Leaving a ranked match once it counts, by the system's back or 終了,
-/// asks first ([confirmLeaving]); before its first read, and in free play,
-/// it leaves at once.
+/// Ending a ranked match once it counts, by the system's back or 終了,
+/// asks first ([confirmLeaving]) and gives it up, its end shown as any
+/// match's; before its first read, and in free play, the back leaves at
+/// once.
 ///
 /// Until the screen stands in landscape the board lies turned in it; a
 /// change of its size deals the same match afresh until the player places
@@ -68,7 +69,6 @@ class IkkiuchiMatchScreenState extends State<IkkiuchiMatchScreen> with SingleTic
   final _startedAt = DateTime.now();
   late final Ticker _ticker = createTicker(_tick);
   Duration _last = Duration.zero;
-  Timer? _leave;
   /// The reads journalled so far; null before the first save.
   int? _journalled;
   bool _over = false;
@@ -94,7 +94,6 @@ class IkkiuchiMatchScreenState extends State<IkkiuchiMatchScreen> with SingleTic
 
   @override
   void dispose() {
-    _leave?.cancel();
     final flow = _flow;
     if (flow != null) {
       flow.removeListener(_changed);
@@ -151,11 +150,14 @@ class IkkiuchiMatchScreenState extends State<IkkiuchiMatchScreen> with SingleTic
     if (flow.stage == IkkiuchiStage.gameEnd && !_over) {
       _over = true;
       if (flow.playBegun && !widget.guest) _record(flow);
-      _leave = Timer(IkkiuchiScreenTuning.leaveAfter, () {
-        if (mounted) Navigator.maybePop(context);
-      });
     }
+    if (flow.stage == IkkiuchiStage.done) _close();
     if (mounted) setState(() {});
+  }
+
+  /// The match's end has been shown: the screen closes, back to the page.
+  void _close() {
+    if (mounted) unawaited(Navigator.maybePop(context));
   }
 
   /// Stores the match as it stands: played to its end unless the player
@@ -196,22 +198,18 @@ class IkkiuchiMatchScreenState extends State<IkkiuchiMatchScreen> with SingleTic
         title: s.ikkiuchiLeaveTitle, note: s.ikkiuchiLeaveNote, stay: s.ikkiuchiKeepPlaying, leave: s.ikkiuchiLeave);
   }
 
-  /// 終了: ends the match, once the player says so when it counts.
+  /// 終了, or the system's back while leaving counts: ends the match, once
+  /// the player says so when it counts.
   Future<void> _end() async {
     if (_leavingCounts && !await _confirmLeave()) return;
     if (mounted) _flow?.end();
-  }
-
-  /// The system's back while leaving counts: leaves once the player says so.
-  Future<void> _back() async {
-    if (await _confirmLeave() && mounted) Navigator.pop(context);
   }
 
   @override
   Widget build(BuildContext context) => PopScope(
         canPop: !_leavingCounts,
         onPopInvokedWithResult: (didPop, _) {
-          if (!didPop) unawaited(_back());
+          if (!didPop) unawaited(_end());
         },
         child: Material(
           color: IkkiuchiBoardStyle.ground,

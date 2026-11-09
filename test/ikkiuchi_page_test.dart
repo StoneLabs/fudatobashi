@@ -213,6 +213,23 @@ void main() {
     expect(find.byType(IkkiuchiMatchScreen), findsNothing);
   }
 
+  /// Runs an ended match on until [flow] shows its result.
+  Future<void> toResult(WidgetTester tester, IkkiuchiMatchFlow flow) async {
+    for (var i = 0; i < 100 && flow.stage != IkkiuchiStage.result; i++) {
+      await tester.pump(const Duration(milliseconds: 100));
+    }
+    expect(flow.stage, IkkiuchiStage.result);
+  }
+
+  /// Runs an ended match on, through the players' thanks and its result,
+  /// until the screen has closed.
+  Future<void> toClosed(WidgetTester tester) async {
+    for (var i = 0; i < 200 && find.byType(IkkiuchiMatchScreen).evaluate().isNotEmpty; i++) {
+      await tester.pump(const Duration(milliseconds: 100));
+    }
+    expect(find.byType(IkkiuchiMatchScreen), findsNothing);
+  }
+
   Future<List<IkkiuchiMatchRow>> rows(WidgetTester tester, Progress p) async =>
       (await tester.runAsync(() => p.db.select(p.db.ikkiuchiMatches).get()))!;
 
@@ -293,8 +310,7 @@ void main() {
     expect(screen(tester).widget.setup.ranked, isTrue);
     flow.end();
     await tester.pump();
-    await tester.pump(IkkiuchiScreenTuning.leaveAfter);
-    await tester.pump(Motion.route);
+    await toClosed(tester);
     await tester.pumpWidget(const SizedBox());
   });
 
@@ -323,8 +339,7 @@ void main() {
         [bRating + 50.0, const Duration(minutes: 14), 11, false]);
     flow.end();
     await tester.pump();
-    await tester.pump(IkkiuchiScreenTuning.leaveAfter);
-    await tester.pump(Motion.route);
+    await toClosed(tester);
     await tester.pumpWidget(const SizedBox());
   });
 
@@ -368,8 +383,7 @@ void main() {
     state.flow!.end();
     await tester.pump();
     expect(state.saving, isNull);
-    await tester.pump(IkkiuchiScreenTuning.leaveAfter);
-    await tester.pump(Motion.route);
+    await toClosed(tester);
     expect(p.ikkiuchi.matches, isEmpty);
     expect(await rows(tester, p), isEmpty);
     await tester.pumpWidget(const SizedBox());
@@ -418,8 +432,11 @@ void main() {
     await tester.pump();
     expect(flow.stage, IkkiuchiStage.gameEnd);
     expect(screen(tester).saving, isNull, reason: 'nothing played yet');
-    await tester.pump(IkkiuchiScreenTuning.leaveAfter);
-    await tester.pump(Motion.route);
+    for (var i = 0; i < 100 && flow.stage == IkkiuchiStage.gameEnd; i++) {
+      await tester.pump(const Duration(milliseconds: 100));
+    }
+    expect(flow.stage, IkkiuchiStage.done, reason: 'nothing played: no result after the thanks');
+    await toClosed(tester);
     await tester.pump(Motion.route);
     expect(find.byType(IkkiuchiMatchScreen), findsNothing);
     expect(orientations().last, ['DeviceOrientation.portraitUp'], reason: 'portrait again once it closes');
@@ -536,10 +553,17 @@ void main() {
     expect([match.playerLeft, match.opponentLeft], [flow.tally.player, flow.tally.opponent]);
     expect(await rows(tester, p), hasLength(1));
 
-    await tester.pump(IkkiuchiScreenTuning.leaveAfter);
+    expect(find.text(s.ikkiuchiThanks), findsNWidgets(4), reason: 'the thanks first, on each half');
+    await toResult(tester, flow);
+    expect(find.text(s.ikkiuchiThanks), findsNothing);
+    expect(find.text(s.ikkiuchiTobiWins), findsNWidgets(2), reason: 'fill and outline');
+    expect(find.text(s.ikkiuchiResult(IkkiuchiResult.gaveUp)), findsOneWidget, reason: 'given up, no margin');
+    await tester.tapAt(tester.getCenter(find.byType(IkkiuchiMatchScreen)));
+    await tester.pump();
+    expect(flow.stage, IkkiuchiStage.done, reason: 'a tap lets it go');
     await tester.pump(Motion.route);
     await tester.pump(Motion.route);
-    expect(find.byType(IkkiuchiMatchScreen), findsNothing);
+    expect(find.byType(IkkiuchiMatchScreen), findsNothing, reason: 'and the screen closes');
     expect(p.ikkiuchi.matches, hasLength(1), reason: 'recorded once');
     expect(p.ikkiuchi.counts(), (played: 1, won: 0, lost: 1));
     await tester.pumpWidget(const SizedBox());
@@ -651,9 +675,13 @@ void main() {
 
       await back(tester);
       await answer(tester, s.ikkiuchiLeave);
-      expect(find.byType(IkkiuchiMatchScreen), findsNothing);
+      expect(state.flow!.stage, IkkiuchiStage.gameEnd, reason: 'given up, its end shown as 終了 shows it');
       await saved(tester, state.saving);
       expect(p.ikkiuchi.matches.single.result, IkkiuchiResult.gaveUp);
+      await toResult(tester, state.flow!);
+      expect(find.text(s.ikkiuchiResult(IkkiuchiResult.gaveUp)), findsOneWidget);
+      await toClosed(tester);
+      expect(p.ikkiuchi.matches, hasLength(1), reason: 'recorded once');
       await tester.pumpWidget(const SizedBox());
     });
 
@@ -674,8 +702,7 @@ void main() {
       expect(flow.stage, IkkiuchiStage.gameEnd);
       await saved(tester, state.saving);
       expect(p.ikkiuchi.matches.single.result, IkkiuchiResult.gaveUp);
-      await tester.pump(IkkiuchiScreenTuning.leaveAfter);
-      await tester.pump(Motion.route);
+      await toClosed(tester);
       await tester.pumpWidget(const SizedBox());
     });
 

@@ -219,6 +219,8 @@ abstract final class IkkiuchiToolsStyle {
   static const String movingCard = 'Moving Card';
   static const String breakAfterShimonoku = '1s break';
   static const String gameEnd = 'Game End';
+  static const String result = 'Result';
+  static const String done = 'Done';
 
   static const Color ground = Palette.desk;
   static const double minPitch = 30;
