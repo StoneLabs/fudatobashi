@@ -786,12 +786,12 @@ abstract final class IkkiuchiSheetLayout {
 /// [labelSubFont], [memorySubGap] apart.
 ///
 /// Then the setup in brief, [summaryTop] down: a picture of the field
-/// [picture] big (see [pictureGround] …), [summaryGap] from two lines at
-/// [summaryFont] in rows [summaryLineHeight] tall, numbers in display type
-/// at [summaryNumberFont]; and the burst in [burstMargin].
+/// [picture] big, [summaryGap] from two lines at [summaryFont] in rows
+/// [summaryLineHeight] tall, numbers in display type at
+/// [summaryNumberFont]; and the burst in [burstMargin].
 ///
-/// The picture: the field's ground under the match's tatami in an ink
-/// frame [pictureBorder] wide, the cards [picturePadding] inside it; the
+/// The picture: the field's [pictureGround] under the match's tatami in an
+/// ink frame [pictureBorder] wide, the cards [picturePadding] inside it; the
 /// band [pictureBand] tall in paper with ink rules [pictureBandRule] wide,
 /// [pictureBandGap] from the cards; every card face down in the card
 /// frame's green with a [pictureCardEdge] ink edge.
@@ -808,7 +808,7 @@ abstract final class IkkiuchiCustomLayout {
   static const double labelSubGap = 6;
 
   static const double barGap = 8;
-  static const double barBorder = 2.5;
+  static const double barBorder = Strokes.control;
   static const double keyRule = 2;
   static const double keyHeight = 48;
   static const double rowKeyHeight = 52;
@@ -855,7 +855,7 @@ abstract final class IkkiuchiCustomLayout {
 
   static const Color pictureGround = Color(0xFF99A083);
   static const double pictureBorder = Strokes.control;
-  static const double picturePadding = 0.5;
+  static const double picturePadding = 0;
   static const double pictureBand = 5;
   static const double pictureBandRule = 1;
   static const double pictureBandGap = 1.5;

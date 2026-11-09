@@ -56,11 +56,11 @@ class IkkiuchiFieldPicture extends StatelessWidget {
   }
 
   /// The band and every card of [field] in [area], at the scale at which
-  /// the most cards in the most rows fill it, the field in its middle.
+  /// the most rows fill it, the field in its middle.
   static FieldPreviewLayout _laidOut(IkkiuchiField field, Rect area) {
     const band = IkkiuchiCustomLayout.pictureBand;
     const bandGap = IkkiuchiCustomLayout.pictureBandGap;
-    final most = _field(IkkiuchiFreeTuning.perSideMax, IkkiuchiLayoutTuning.rows).halfHeight;
+    final most = IkkiuchiField.halfOf(IkkiuchiLayoutTuning.rows, IkkiuchiFieldTuning.rowGap);
     const width = IkkiuchiLayoutTuning.rowSlots * IkkiuchiField.pitch;
     final scale = math.min((area.height - band - 2 * bandGap) / (2 * most), area.width / width);
     final gap = (band + 2 * bandGap) / scale;

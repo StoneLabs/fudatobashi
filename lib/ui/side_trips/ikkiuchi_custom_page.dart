@@ -95,6 +95,7 @@ class _IkkiuchiCustomPageState extends State<IkkiuchiCustomPage> {
         fontWeight: Weights.bold,
         fontSize: IkkiuchiCustomLayout.whyFont,
         height: IkkiuchiCustomLayout.whyLineHeight,
+        leadingDistribution: TextLeadingDistribution.even,
         color: Palette.mute);
     const whyNumber = TextStyle(fontFamily: Fonts.display, fontWeight: Weights.regular, color: Palette.ink);
     const gap = SizedBox(height: IkkiuchiCustomLayout.barGap);
@@ -242,30 +243,40 @@ class _Label extends StatelessWidget {
     const style = TextStyle(fontWeight: Weights.black, fontSize: IkkiuchiCustomLayout.labelFont);
     final main = Text(text, style: style, softWrap: false);
     final sub = this.sub;
-    if (sub == null) return SizedBox(height: under ? null : IkkiuchiCustomLayout.labelHeight, child: main);
-    final small = Text(
-      sub.toUpperCase(),
-      softWrap: false,
-      style: const TextStyle(
-        fontWeight: Weights.black,
-        fontSize: IkkiuchiCustomLayout.labelSubFont,
-        letterSpacing: IkkiuchiCustomLayout.labelSubTracking,
-      ),
-    );
+    final small = sub == null
+        ? null
+        : Text(
+            sub.toUpperCase(),
+            softWrap: false,
+            style: const TextStyle(
+              fontWeight: Weights.black,
+              fontSize: IkkiuchiCustomLayout.labelSubFont,
+              letterSpacing: IkkiuchiCustomLayout.labelSubTracking,
+            ),
+          );
     if (under) {
       return Column(crossAxisAlignment: CrossAxisAlignment.start, mainAxisSize: MainAxisSize.min, children: [
         main,
-        const SizedBox(height: IkkiuchiCustomLayout.memorySubGap),
-        small,
+        if (small != null) ...[const SizedBox(height: IkkiuchiCustomLayout.memorySubGap), small],
       ]);
     }
     return SizedBox(
       height: IkkiuchiCustomLayout.labelHeight,
-      child: Row(crossAxisAlignment: CrossAxisAlignment.baseline, textBaseline: TextBaseline.alphabetic, children: [
-        main,
-        const SizedBox(width: IkkiuchiCustomLayout.labelSubGap),
-        Flexible(child: small),
-      ]),
+      child: Align(
+        alignment: Alignment.centerLeft,
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.baseline,
+          textBaseline: TextBaseline.alphabetic,
+          children: [
+            main,
+            if (small != null) ...[
+              const SizedBox(width: IkkiuchiCustomLayout.labelSubGap),
+              Flexible(child: small),
+            ],
+          ],
+        ),
+      ),
     );
   }
 }
