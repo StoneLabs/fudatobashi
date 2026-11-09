@@ -15,7 +15,7 @@ import 'trip_sheet.dart';
 /// 一騎打ち's rules (遊び方) in a sheet, from its page.
 Future<void> openIkkiuchiRules(BuildContext context) => showMangaSheet<void>(
       context,
-      barrierColor: IkkiuchiSheetLayout.barrier,
+      barrierColor: IkkiuchiPageLayout.barrier,
       barrierLabel: S.of(context).cancel,
       builder: (_) => const IkkiuchiRulesSheet(),
     );

@@ -29,17 +29,17 @@ class IkkiuchiFieldPicture extends StatelessWidget {
   static const _spec = FieldPreviewSpec(
     margin: EdgeInsets.zero,
     minHeight: 0,
-    ground: IkkiuchiCustomLayout.pictureGround,
+    ground: IkkiuchiFieldPictureStyle.ground,
     tatami: IkkiuchiBoardStyle.tatami,
     tatamiScale: IkkiuchiBoardStyle.tatamiScale,
-    border: IkkiuchiCustomLayout.pictureBorder,
-    padding: IkkiuchiCustomLayout.picturePadding,
-    band: IkkiuchiCustomLayout.pictureBand,
+    border: IkkiuchiFieldPictureStyle.border,
+    padding: IkkiuchiFieldPictureStyle.padding,
+    band: IkkiuchiFieldPictureStyle.band,
     bandColor: Palette.paper,
-    bandRule: IkkiuchiCustomLayout.pictureBandRule,
+    bandRule: IkkiuchiFieldPictureStyle.bandRule,
     backFill: Palette.cardFrame,
     backBorder: Palette.ink,
-    backBorderWidth: IkkiuchiCustomLayout.pictureCardEdge,
+    backBorderWidth: IkkiuchiFieldPictureStyle.cardEdge,
   );
 
   /// Where Tobi's arms are, which his room in a landscape match is sized by.
@@ -57,8 +57,8 @@ class IkkiuchiFieldPicture extends StatelessWidget {
   /// middle, and the cards as many times a 3-row card as the match makes
   /// them.
   static FieldPreviewLayout _laidOut(int perSide, int rows, Rect area) {
-    const band = IkkiuchiCustomLayout.pictureBand;
-    const bandGap = IkkiuchiCustomLayout.pictureBandGap;
+    const band = IkkiuchiFieldPictureStyle.band;
+    const bandGap = IkkiuchiFieldPictureStyle.bandGap;
     var next = 0;
     final side = [
       for (final row in IkkiuchiLayout.usualShape(perSide, rows))

@@ -10,12 +10,11 @@ import '../../l10n/strings.dart';
 import '../../state/scope.dart';
 import '../history/history_filter.dart';
 import '../history/history_screen.dart';
-import '../ikkiuchi/ikkiuchi_match_screen.dart';
 import '../manga/manga.dart';
 import 'ikkiuchi_bots_page.dart';
+import 'ikkiuchi_custom_page.dart';
 import 'ikkiuchi_mode_box.dart';
 import 'ikkiuchi_rules_sheet.dart';
-import 'ikkiuchi_sheet.dart';
 import 'side_trip_entry.dart';
 import 'side_trip_panels.dart';
 
@@ -31,8 +30,8 @@ Future<void> openIkkiuchiPage(BuildContext context) async {
 /// tab is tapped): the player's standing in it, the curve of their rating,
 /// its match and the burst that starts it ([IkkiuchiRankedBox]). At the
 /// foot, free play: the bots' page ([IkkiuchiBotsPage]) and a custom match
-/// (its sheet, [pickIkkiuchiCustom], which starts the match it sets up);
-/// then guest mode and the rules, Home's button pair, each a sheet. Home's
+/// ([IkkiuchiCustomPage]); then guest mode (the same page, for a guest) and
+/// the rules, Home's button pair. Home's
 /// dotted ground, in the sea's blue, lies behind; the page scrolls when it
 /// is taller than the screen.
 class IkkiuchiPage extends StatelessWidget {
@@ -80,14 +79,11 @@ class IkkiuchiPage extends StatelessWidget {
                     const Spacer(),
                     _FreePlay(
                       onBots: () => Navigator.of(context).push(MangaRoute<void>(builder: (_) => const IkkiuchiBotsPage())),
-                      onCustom: () async {
-                        final setup = await pickIkkiuchiCustom(context, progress.ikkiuchi.freeSetup);
-                        if (setup != null && context.mounted) await startIkkiuchiMatch(context, setup);
-                      },
+                      onCustom: () => openIkkiuchiCustom(context),
                     ),
                     const SizedBox(height: IkkiuchiPageLayout.pairTop),
                     Row(children: [
-                      Expanded(child: SideTripGuestButton(onTap: () => openIkkiuchiGuest(context))),
+                      Expanded(child: SideTripGuestButton(onTap: () => openIkkiuchiCustom(context, guest: true))),
                       const SizedBox(width: SideTripsLayout.pairGap),
                       Expanded(child: SideTripRulesButton(onTap: () => openIkkiuchiRules(context))),
                     ]),

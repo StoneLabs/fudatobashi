@@ -13,7 +13,7 @@ import '../../l10n/side_trip_strings.dart';
 import '../../l10n/strings.dart';
 import '../../state/ikkiuchi_records.dart';
 import '../home/home_widgets.dart';
-import '../ikkiuchi/ikkiuchi_field_preview.dart';
+import '../ikkiuchi/ikkiuchi_field_picture.dart';
 import '../ikkiuchi/ikkiuchi_match_screen.dart';
 import '../ikkiuchi/ikkiuchi_tobi_tag.dart';
 import '../manga/manga.dart';
@@ -501,7 +501,7 @@ class _Match extends StatelessWidget {
     return SizedBox(
       height: IkkiuchiPageLayout.field.height,
       child: Row(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-        SizedBox.fromSize(size: IkkiuchiPageLayout.field, child: IkkiuchiFieldPreview(mode.perSide, rows: rows)),
+        SizedBox.fromSize(size: IkkiuchiPageLayout.field, child: IkkiuchiFieldPicture(mode.perSide, rows: rows)),
         const SizedBox(width: IkkiuchiPageLayout.fieldGap),
         Expanded(
           child: _Fact(

@@ -531,10 +531,10 @@ abstract final class IkkiuchiUnlockTuning {
   static const int known = 100;
 }
 
-/// 一騎打ち's custom matches (free play, `ikkiuchi_sheet.dart`): the cards a
+/// 一騎打ち's custom matches (free play, `ikkiuchi_custom_page.dart`): the cards a
 /// side, the memory time and Tobi's rating, each from its least to its most
 /// by its step, and the setup the first one starts on, each side laid out in
-/// [rows] rows. The sheet's keys set the cards to one of [perSideKeys], and
+/// [rows] rows. The page's keys set the cards to one of [perSideKeys], and
 /// Tobi's rating to the threshold of one of [ratingClasses] (by the shared
 /// class scale's ids).
 abstract final class IkkiuchiFreeTuning {

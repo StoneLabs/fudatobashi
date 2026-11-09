@@ -131,12 +131,8 @@ extension IkkiuchiStrings on S {
   String ikkiuchiPlayCards(int n) => f('ikkiuchiPlayCards', [n]);
   String ikkiuchiPreviewLabel(int n) => f('ikkiuchiPreviewLabel', [n]);
 
-  /// The custom sheet: the steppers' labels, the cards section's label,
-  /// its burst, and guest mode's title and line.
-  String get ikkiuchiAnyRating => t('ikkiuchiAnyRating');
-  String get ikkiuchiAnyCount => t('ikkiuchiAnyCount');
+  /// The custom page's cards section's label, and guest mode's title and line.
   String get ikkiuchiCardsPerSide => t('ikkiuchiCardsPerSide');
-  String get ikkiuchiConfirm => t('ikkiuchiConfirm');
   String get ikkiuchiGuestMode => t('ikkiuchiGuestMode');
   String get ikkiuchiGuestLine => t('ikkiuchiGuestLine');
 

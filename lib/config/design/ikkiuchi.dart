@@ -562,11 +562,13 @@ class IkkiuchiModeTone {
 /// [customTitleTracking], its line at [customLineFont]); each row's
 /// other-language name at [rowSubFont],
 /// [rowSubGap] after its own; Latin names tracked [rowTitleLatinTracking];
-/// [rowGap] between a row's parts and a chevron at its end.
+/// [rowGap] between a row's parts and a chevron at its end. The rules
+/// sheet dims the page to [barrier].
 abstract final class IkkiuchiPageLayout {
   static const double tabsTop = 8;
   static const double pairTop = 12;
   static const double bottomGap = 12;
+  static const Color barrier = Color(0x8C141414);
 
   static const bullet = IkkiuchiModeTone(
     tint: Color(0xFFFFEDF3),
@@ -713,24 +715,6 @@ abstract final class IkkiuchiPageLayout {
   static const double customTitleTracking = 1.5;
   static const double customLineFont = 12;
   static const double customLineHeight = 1.3;
-
-  /// The field picture (`IkkiuchiFieldPreview`): face down on the play
-  /// screen's tatami over [previewGround], in an ink frame [previewBorder]
-  /// wide, the cards [previewPadding] inside it, all at the scale that fits
-  /// the fullest field, so fewer rows look smaller. The band across it
-  /// [previewBand] tall in [previewBandColor], its ink rules
-  /// [previewBandRule] wide, [previewBandGap] clear of the rows; each card
-  /// in [previewBack], edged [previewBackBorderWidth] in [previewBackBorder].
-  static const double previewBorder = Strokes.control;
-  static const double previewPadding = 1.5;
-  static const double previewBand = 5;
-  static const double previewBandRule = 1;
-  static const double previewBandGap = 1;
-  static const Color previewGround = Color(0xFF99A083);
-  static const Color previewBandColor = Palette.paper;
-  static const Color previewBack = Palette.cardFrame;
-  static const Color previewBackBorder = Palette.ink;
-  static const double previewBackBorderWidth = 0.7;
 }
 
 /// The bots page (`IkkiuchiBotsPage`): its line about the bots
@@ -741,22 +725,19 @@ abstract final class IkkiuchiBotsLayout {
   static const double introLineHeight = 1.55;
 }
 
-/// 一騎打ち's custom sheet (`ikkiuchi_sheet.dart`), over the page dimmed to
-/// [barrier]: Tobi's rating (the class keys over a stepper), the cards a
-/// side (keys over a stepper) and the memory time, each value in display
-/// type at [valueFont] with its unit at [unitFont]; a key's class or count
-/// at [keyFont] over its rating at [keySubFont]. A stepper's button held
-/// down steps on every [repeatEvery]. Then the setup in a line at
-/// [factsFont].
-abstract final class IkkiuchiSheetLayout {
-  static const Color barrier = Color(0x8C141414);
-  static const double valueFont = 24;
-  static const double unitFont = 12;
-  static const double keyFont = 17;
-  static const double keySubFont = 11;
-  static const double sectionGap = 6;
-  static const Duration repeatEvery = Duration(milliseconds: 90);
-  static const double factsFont = 12;
+/// The field picture (`IkkiuchiFieldPicture`): the field's [ground] under
+/// the match's tatami in an ink frame [border] wide, the cards [padding]
+/// inside it; the band [band] tall in paper with ink rules [bandRule]
+/// wide, [bandGap] from the cards; every card face down in the card
+/// frame's green with a [cardEdge] ink edge.
+abstract final class IkkiuchiFieldPictureStyle {
+  static const Color ground = Color(0xFF99A083);
+  static const double border = Strokes.control;
+  static const double padding = 0;
+  static const double band = 5;
+  static const double bandRule = 1;
+  static const double bandGap = 1.5;
+  static const double cardEdge = 0.7;
 }
 
 /// 一騎打ち's custom page (`ikkiuchi_custom_page.dart`): one panel [panelTop]
@@ -790,12 +771,6 @@ abstract final class IkkiuchiSheetLayout {
 /// [picture] big, [summaryGap] from two lines at [summaryFont] in rows
 /// [summaryLineHeight] tall, numbers in display type at
 /// [summaryNumberFont]; and the burst in [burstMargin].
-///
-/// The picture: the field's [pictureGround] under the match's tatami in an
-/// ink frame [pictureBorder] wide, the cards [picturePadding] inside it; the
-/// band [pictureBand] tall in paper with ink rules [pictureBandRule] wide,
-/// [pictureBandGap] from the cards; every card face down in the card
-/// frame's green with a [pictureCardEdge] ink edge.
 abstract final class IkkiuchiCustomLayout {
   static const double panelTop = 10;
   static const double cut = 12;
@@ -855,14 +830,6 @@ abstract final class IkkiuchiCustomLayout {
   static const double summaryLineHeight = 1.5;
   static const double summaryNumberFont = 14;
   static const EdgeInsets burstMargin = EdgeInsets.fromLTRB(0, 10, 0, 8);
-
-  static const Color pictureGround = Color(0xFF99A083);
-  static const double pictureBorder = Strokes.control;
-  static const double picturePadding = 0;
-  static const double pictureBand = 5;
-  static const double pictureBandRule = 1;
-  static const double pictureBandGap = 1.5;
-  static const double pictureCardEdge = 0.7;
 }
 
 /// A recorded match's page in History. The Overview's hero, Tobi on it
