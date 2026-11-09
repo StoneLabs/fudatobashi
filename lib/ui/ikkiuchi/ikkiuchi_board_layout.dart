@@ -16,16 +16,18 @@ import '../../domain/ikkiuchi_side.dart';
 /// either side has shown, empty or not. The field is laid out as a 3-row
 /// match's whatever its rows; in 1 or 2 rows its cards are bigger, as many
 /// times a 3-row card as that field lets them grow
-/// ([IkkiuchiBoardStyle.maxCardW]), their rows lying by the band and the
-/// height left over at the field's outer edges. Both sides' cards are one
-/// size, as big as the board lets them grow: its widest row's groups close
-/// in toward the middle as they grow, until a row is as narrow as it may be
-/// ([IkkiuchiField.rowWidth]), the field and the band (in landscape only a
-/// narrower gap, with the rows closer) fill the height, or a 3-row card is
-/// [IkkiuchiBoardStyle.maxCardW] wide. The field spans the board's width,
-/// but never more than [IkkiuchiLayoutTuning.rowSlots] 3-row card widths,
-/// and then lies centred. Portrait stands Tobi above his
-/// side, his room kept above the field; landscape sits him in the open
+/// ([IkkiuchiBoardStyle.maxCardW]). In landscape the field keeps a 3-row
+/// field's height too, the rows lying by the band and the height left
+/// over at its outer edges; in portrait it is as tall as its rows. Both
+/// sides' cards are one size, as big as the board lets them grow: its
+/// widest row's groups close in toward the middle as they grow, until a
+/// row is as narrow as it may be ([IkkiuchiField.rowWidth]), the field and
+/// the band (in landscape only a narrower gap, with the rows closer) fill
+/// the height, or a 3-row card is [IkkiuchiBoardStyle.maxCardW] wide. The
+/// field spans the board's width, but never more than
+/// [IkkiuchiLayoutTuning.rowSlots] 3-row card widths, and then lies
+/// centred. Portrait stands Tobi above his side, his room kept above the
+/// field; landscape sits him in the open
 /// middle of his half, the room he needs there kept open, and its rows may
 /// reach the board's top and bottom edges. Landscape keeps the game
 /// [column] down the board's right edge, from its top to its bottom however
@@ -71,9 +73,11 @@ class IkkiuchiBoardLayout {
     final bandH = landscape ? IkkiuchiBoardStyle.landscapeGap : IkkiuchiBoardStyle.band;
     final w = size.width, h = size.height;
     final areaW = w - 2 * pad;
-    // A 3-row field's half and width, in this match's card widths.
+    // A 3-row field's width, and in landscape, where the board's height
+    // limits it, its half too, in this match's card widths; in portrait
+    // the rows' own half.
     final grow = growth(field.rows, landscape: landscape, rig: rig);
-    final half = IkkiuchiField.halfOf(IkkiuchiLayoutTuning.rows, field.rowGap) / grow;
+    final half = landscape ? IkkiuchiField.halfOf(IkkiuchiLayoutTuning.rows, field.rowGap) / grow : field.halfHeight;
     final slots = IkkiuchiLayoutTuning.rowSlots / grow;
     final maxCardW = IkkiuchiBoardStyle.maxCardW * grow;
     final double cardW, top, fieldW, left;

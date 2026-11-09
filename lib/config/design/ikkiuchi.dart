@@ -42,11 +42,11 @@ abstract final class IkkiuchiBoardStyle {
   static const String karafudaGap = '  ';
 
   /// A card of a 3-row match is never wider than [maxCardW]. A 1- or 2-row
-  /// match keeps the 3-row field, as wide and as tall, and grows its cards
-  /// from the 3-row card as far as that field lets them: its rows fit the
-  /// field's height, and a full row (`IkkiuchiLayout.rowRoom`), its groups
-  /// apart, fits across it; in landscape, a full row of Tobi's with his
-  /// room in its open middle too.
+  /// match keeps the 3-row field, as wide and, in landscape, as tall, and
+  /// grows its cards from the 3-row card as far as that field lets them:
+  /// its rows fit the field's height, and a full row
+  /// (`IkkiuchiLayout.rowRoom`), its groups apart, fits across it; in
+  /// landscape, a full row of Tobi's with his room in its open middle too.
   static const double maxCardW = 80;
 
   /// A card marked on the board: an outline [markWidth] wide in
