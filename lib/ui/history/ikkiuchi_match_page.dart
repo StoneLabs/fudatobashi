@@ -11,7 +11,6 @@ import '../../state/past_runs.dart';
 import '../../state/scope.dart';
 import '../manga/manga.dart';
 import '../play/time_format.dart';
-import 'ankiren_widgets.dart';
 import 'history_widgets.dart';
 import 'review_parts.dart';
 import 'run_page.dart';
@@ -77,7 +76,7 @@ class _Reads extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final s = S.of(context);
-    Widget side(Duration? take, int faults) => _Stacked(
+    Widget side(Duration? take, int faults) => TaggedCell(
           ReviewTable.cell(take == null
               ? missingTime
               : '${formatSeconds(take.inMicroseconds / Duration.microsecondsPerMillisecond)}s'),
@@ -85,7 +84,7 @@ class _Reads extends StatelessWidget {
           HistoryRunStyle.behind,
           end: true,
         );
-    Widget taken(IkkiuchiReadLog r) => _Stacked(
+    Widget taken(IkkiuchiReadLog r) => TaggedCell(
           ReviewTable.cell(
               switch (r.taker) {
                 IkkiuchiSide.player => s.ikkiuchiYou,
@@ -115,7 +114,7 @@ class _Reads extends StatelessWidget {
                     ReviewRow(
                       [
                         ReviewTable.cell('${i + 1}'),
-                        _Stacked(ReviewTable.cell(kimarijiFor(context, r.poemId), strong: true),
+                        TaggedCell(ReviewTable.cell(kimarijiFor(context, r.poemId), strong: true),
                             r.karafuda ? s.ikkiuchiKarafuda : null, KarafudaStyle.tag),
                         taken(r),
                         side(r.playerTake, r.playerFaults),
@@ -128,31 +127,6 @@ class _Reads extends StatelessWidget {
               const SizedBox(height: Gaps.panel),
               Text(s.ikkiuchiReadsCaption, style: ReviewTextStyle.caption),
             ]),
-    );
-  }
-}
-
-/// A table cell's [main] part, with a small [tag] in [color] under it
-/// when there is one, both to the cell's start or, in a number's column,
-/// its [end].
-class _Stacked extends StatelessWidget {
-  const _Stacked(this.main, this.tag, this.color, {this.end = false});
-  final Widget main;
-  final String? tag;
-  final Color color;
-  final bool end;
-
-  @override
-  Widget build(BuildContext context) {
-    final tag = this.tag;
-    if (tag == null) return main;
-    return Column(
-      crossAxisAlignment: end ? CrossAxisAlignment.end : CrossAxisAlignment.start,
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        main,
-        Text(tag.toUpperCase(), maxLines: 1, style: ReviewTableStyle.head.copyWith(color: color)),
-      ],
     );
   }
 }

@@ -217,9 +217,6 @@ abstract final class AnkirenReviewStyle {
   static const double mixCountFont = 10;
   static const double mixRowGap = 10;
 
-  static const double chipFont = 10;
-  static const EdgeInsets chipPadding = EdgeInsets.fromLTRB(4, 1, 4, 2);
-
   /// The memorise bar and its ticks.
   static const double memoBarHeight = 20;
   static const double memoTick = 2.5;

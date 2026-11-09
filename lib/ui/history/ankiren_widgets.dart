@@ -39,25 +39,8 @@ class TierChip extends StatelessWidget {
   final TapProximity place;
 
   @override
-  Widget build(BuildContext context) => _Chip(S.of(context).ankirenChip(place),
+  Widget build(BuildContext context) => ReviewChip(S.of(context).ankirenChip(place),
       fill: AnkirenReviewStyle.tierFill[place.index], ink: AnkirenReviewStyle.tierText[place.index]);
-}
-
-/// A [text] chip on [fill], in [ink].
-class _Chip extends StatelessWidget {
-  const _Chip(this.text, {required this.fill, required this.ink});
-  final String text;
-  final Color fill, ink;
-
-  @override
-  Widget build(BuildContext context) => DecoratedBox(
-        decoration: BoxDecoration(color: fill, border: Border.all(color: Palette.ink, width: Strokes.hairline)),
-        child: Padding(
-          padding: AnkirenReviewStyle.chipPadding,
-          child: Text(text,
-              maxLines: 1, style: TextStyle(fontWeight: Weights.black, fontSize: AnkirenReviewStyle.chipFont, color: ink)),
-        ),
-      );
 }
 
 /// A call's taps (see [AnkirenCardTry]) in order, first → second, each in
@@ -76,8 +59,8 @@ class TierChips extends StatelessWidget {
       crossAxisAlignment: WrapCrossAlignment.center,
       children: [
         for (final (i, place) in call.taps.indexed) ...[
-          if (i > 0) const Text('→', style: TextStyle(fontWeight: Weights.black, fontSize: AnkirenReviewStyle.chipFont)),
-          _Chip(name(s, call, i), fill: AnkirenReviewStyle.tierFill[place.index], ink: AnkirenReviewStyle.tierText[place.index]),
+          if (i > 0) const Text('→', style: TextStyle(fontWeight: Weights.black, fontSize: ReviewTableStyle.chipFont)),
+          ReviewChip(name(s, call, i), fill: AnkirenReviewStyle.tierFill[place.index], ink: AnkirenReviewStyle.tierText[place.index]),
         ],
       ],
     );
@@ -98,15 +81,8 @@ class CallName extends StatelessWidget {
   final AnkirenCardTry call;
 
   @override
-  Widget build(BuildContext context) {
-    final name = ReviewTable.cell(kimarijiFor(context, call.poemId), strong: true);
-    if (!call.karafuda) return name;
-    return Column(crossAxisAlignment: CrossAxisAlignment.start, mainAxisSize: MainAxisSize.min, children: [
-      name,
-      Text(S.of(context).karafudaChip.toUpperCase(),
-          maxLines: 1, style: ReviewTableStyle.head.copyWith(color: KarafudaStyle.tag)),
-    ]);
-  }
+  Widget build(BuildContext context) => TaggedCell(ReviewTable.cell(kimarijiFor(context, call.poemId), strong: true),
+      call.karafuda ? S.of(context).karafudaChip : null, KarafudaStyle.tag);
 }
 
 /// A share of a card's points: 1, 0.4, 0.15 or 0.
@@ -185,87 +161,6 @@ class TierMixBar extends StatelessWidget {
           ),
         ),
       ]),
-    );
-  }
-}
-
-/// One row of a [ReviewTable]: its cells, [marked] in pink, or the
-/// [total] under a heavier rule.
-class ReviewRow {
-  const ReviewRow(this.cells, {this.marked = false, this.total = false});
-  final List<Widget> cells;
-  final bool marked, total;
-}
-
-/// A table of a 暗記練 tab: a head row in small tracked capitals over an
-/// ink rule (or, with [inkHead], in paper on ink), then [rows] on grey
-/// rules; columns after [leading] are right-aligned numbers, but for the
-/// notes in [starts]. The [stretch] column takes the room left and every
-/// other one is as wide as its cells; without it the leading columns are,
-/// and the rest share the room.
-class ReviewTable extends StatelessWidget {
-  const ReviewTable({
-    super.key,
-    required this.head,
-    required this.rows,
-    this.stretch,
-    this.leading = 1,
-    this.starts = const {},
-    this.inkHead = false,
-  });
-  final List<String> head;
-  final List<ReviewRow> rows;
-  final int? stretch;
-  final int leading;
-  final Set<int> starts;
-  final bool inkHead;
-
-  /// A cell's text: [strong] in black, [color] for a value that stands out.
-  static Widget cell(String text, {bool strong = false, Color? color}) => Text(text,
-      style: ReviewTableStyle.cell.copyWith(fontWeight: strong ? Weights.black : null, color: color));
-
-  @override
-  Widget build(BuildContext context) {
-    const rule = BorderSide(color: ReviewTableStyle.ruleColor, width: ReviewTableStyle.rule);
-    const heavy = BorderSide(width: ReviewTableStyle.heavyRule);
-    Widget pad(int i, Widget child, {EdgeInsets padding = ReviewTableStyle.cellPadding}) => Padding(
-          padding: padding,
-          child: Align(
-            alignment: i < leading || starts.contains(i) ? Alignment.centerLeft : Alignment.centerRight,
-            child: child,
-          ),
-        );
-    TableColumnWidth width(int i) => switch (stretch) {
-          final at? => i == at ? const FlexColumnWidth() : const IntrinsicColumnWidth(),
-          null => i < leading ? const IntrinsicColumnWidth() : const IntrinsicColumnWidth(flex: 1),
-        };
-    return Table(
-      columnWidths: {for (var i = 0; i < head.length; i++) i: width(i)},
-      defaultVerticalAlignment: TableCellVerticalAlignment.middle,
-      children: [
-        TableRow(
-          decoration:
-              inkHead ? const BoxDecoration(color: Palette.ink) : const BoxDecoration(border: Border(bottom: heavy)),
-          children: [
-            for (final (i, h) in head.indexed)
-              pad(
-                i,
-                Text(h.toUpperCase(),
-                    maxLines: 1,
-                    style: inkHead ? ReviewTableStyle.head.copyWith(color: Palette.paper) : ReviewTableStyle.head),
-                padding: inkHead ? ReviewTableStyle.inkHeadPadding : ReviewTableStyle.headPadding,
-              ),
-          ],
-        ),
-        for (final (i, r) in rows.indexed)
-          TableRow(
-            decoration: BoxDecoration(
-              color: r.marked ? ReviewTableStyle.marked : null,
-              border: Border(top: r.total ? heavy : i == 0 && inkHead ? BorderSide.none : rule),
-            ),
-            children: [for (final (i, c) in r.cells.indexed) pad(i, c)],
-          ),
-      ],
     );
   }
 }

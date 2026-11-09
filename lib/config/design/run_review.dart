@@ -289,6 +289,10 @@ abstract final class ReviewTableStyle {
   static const EdgeInsets headPadding = EdgeInsets.fromLTRB(4, 0, 4, 5);
   static const EdgeInsets inkHeadPadding = EdgeInsets.fromLTRB(4, 7, 4, 6);
 
+  /// A coloured chip in a cell (`ReviewChip`).
+  static const double chipFont = 10;
+  static const EdgeInsets chipPadding = EdgeInsets.fromLTRB(4, 1, 4, 2);
+
   /// Before a note column after the numbers.
   static const double noteGap = 8;
   static const Color marked = Palette.pinkSoft;
