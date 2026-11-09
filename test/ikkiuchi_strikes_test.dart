@@ -349,6 +349,95 @@ void main() {
       expect(tobi.origin.y, greaterThanOrEqualTo(0), reason: 'Tobi on the board');
     });
 
+    test('in 1 or 2 rows the field stays a 3-row match\'s and its cards grow as far as it lets them', () {
+      // The deal of [seed] at its opening in [rows] rows, the most cards a
+      // side: the player's rows empty, their cards in the stack.
+      IkkiuchiBoardLayout opening(int seed, int rows, {required bool landscape, required Size size}) {
+        final perSide = switch (rows) {
+          1 => IkkiuchiLayoutTuning.oneRowUpTo,
+          2 => IkkiuchiLayoutTuning.twoRowsUpTo,
+          _ => 25,
+        };
+        final deck = [for (final p in poems.all) p.id]..shuffle(math.Random(seed));
+        final own = deck.sublist(0, perSide), others = deck.sublist(perSide, 2 * perSide);
+        return IkkiuchiBoardLayout.of(
+          size: landscape ? size.flipped : size,
+          landscape: landscape,
+          tobiRows: layout.generate(rating: 1600, own: own, others: others, rows: rows, seed: seed).start,
+          playerRows: [for (var r = 0; r < rows; r++) const IkkiuchiRow([], [])],
+          rig: rig,
+          opening: true,
+        );
+      }
+
+      expect(IkkiuchiBoardLayout.growth(IkkiuchiLayoutTuning.rows, landscape: true, rig: rig), 1);
+      for (final MapEntry(key: name, value: size) in sizes.entries) {
+        for (final landscape in [false, true]) {
+          final gap = landscape ? IkkiuchiBoardStyle.landscapeGap : IkkiuchiBoardStyle.band;
+          final rowGap = landscape ? IkkiuchiFieldTuning.landscapeRowGap : IkkiuchiFieldTuning.rowGap;
+          for (final rows in [1, 2]) {
+            final grow = IkkiuchiBoardLayout.growth(rows, landscape: landscape, rig: rig);
+            final room = IkkiuchiLayout.rowRoom(rows);
+            var full = 0;
+            for (var seed = 0; seed < 20; seed++) {
+              final why = '$name ${landscape ? 'landscape' : 'portrait'}, $rows rows, seed $seed';
+              final three = opening(seed, IkkiuchiLayoutTuning.rows, landscape: landscape, size: size);
+              final l = opening(seed, rows, landscape: landscape, size: size);
+              final u = l.cardW;
+              expect(u, greaterThan(three.cardW), reason: why);
+              expect(u, lessThanOrEqualTo(three.cardW * grow + eps), reason: '$why: no bigger than its growth');
+              // Its rows lie by the gap, inside the field; a full row fits
+              // across it, and its rows fit its height.
+              for (final c in l.cards) {
+                final b = c.box;
+                expect(b.centre.x - b.hw, greaterThanOrEqualTo(l.field.left - eps), reason: why);
+                expect(b.centre.x + b.hw, lessThanOrEqualTo(l.field.right + eps), reason: why);
+                expect(b.centre.y - b.hh, greaterThanOrEqualTo(l.field.top - eps), reason: why);
+                expect(b.centre.y + b.hh, lessThanOrEqualTo(l.field.bottom + eps), reason: why);
+              }
+              final his = l.cards.where((c) => c.side == IkkiuchiSide.opponent).map((c) => c.box.centre.y + c.box.hh);
+              expect(his.reduce(math.max), closeTo(l.band.top, eps), reason: '$why: his front row by the gap');
+              expect(IkkiuchiField.rowWidth(room - room ~/ 2, room ~/ 2) * u, lessThanOrEqualTo(l.field.width + eps),
+                  reason: '$why: a full row fits');
+              expect(2 * IkkiuchiField.halfOf(rows, rowGap) * u + gap, lessThanOrEqualTo(l.field.height + eps),
+                  reason: '$why: the rows fit the height');
+              if (landscape) {
+                final tobi = l.tobi;
+                final tobiBox = Rect.fromLTWH(tobi.origin.x, tobi.origin.y, rig.size.x * tobi.k, rig.size.y * tobi.k);
+                for (final c in l.cards.where((c) => c.side == IkkiuchiSide.opponent)) {
+                  final b = c.box;
+                  final rect = Rect.fromCenter(center: Offset(b.centre.x, b.centre.y), width: 2 * b.hw, height: 2 * b.hh);
+                  expect(rect.overlaps(tobiBox), isFalse, reason: '$why: Tobi sits clear of his cards');
+                }
+                final clear = l.column!.left - IkkiuchiColumnStyle.fieldGap + eps;
+                expect([l.field.right, l.stack!.right, l.wait.right], everyElement(lessThanOrEqualTo(clear)), reason: why);
+              }
+              if ((u - three.cardW * grow).abs() > eps) continue;
+              // Grown as far as the rule lets them: the field is the 3-row
+              // field, Tobi as big as in 3 rows, and the rows fill its
+              // height, a full row its width, or in landscape a full row of
+              // Tobi's and his room.
+              full++;
+              expect(l.field.height, closeTo(three.field.height, 1e-6), reason: why);
+              if (landscape) expect(l.tobi.k, closeTo(three.tobi.k, 1e-9), reason: why);
+              if (three.field.width > IkkiuchiLayoutTuning.rowSlots * three.cardW + eps) continue;
+              expect(l.field.width, closeTo(three.field.width, 1e-6), reason: why);
+              final tobiRoom = rig.size.x * l.tobi.k + 2 * IkkiuchiBoardStyle.tobiSideRoom * u;
+              expect(
+                  [
+                    2 * IkkiuchiField.halfOf(rows, rowGap) * u + gap - l.field.height,
+                    IkkiuchiField.rowWidth(room - room ~/ 2, room ~/ 2) * u - l.field.width,
+                    if (landscape) IkkiuchiField.reach(room) * u + tobiRoom - l.field.width,
+                  ].reduce(math.max),
+                  closeTo(0, 1e-6),
+                  reason: '$why: as big as they may be');
+            }
+            if (landscape) expect(full, rows == 1 ? 20 : greaterThan(0), reason: '$name, $rows rows: grown in full');
+          }
+        }
+      }
+    });
+
     test('a small board has small cards and a large one its widest', () {
       for (final landscape in [false, true]) {
         final widths = {

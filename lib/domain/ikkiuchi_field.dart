@@ -65,8 +65,14 @@ class IkkiuchiField {
   static double _spread(({double from, double to}) open, int index, int count) =>
       open.from + (open.to - open.from) * (index + 1) / (count + 1) - 0.5;
 
+  /// The rows shown.
+  int get rows => _shown.length;
+
   /// A half's height.
-  double get halfHeight => _shown.length * cardH + (_shown.length - 1) * rowGap;
+  double get halfHeight => halfOf(rows, rowGap);
+
+  /// The height of a half of [rows] rows, [rowGap] apart.
+  static double halfOf(int rows, double rowGap) => rows * cardH + (rows - 1) * rowGap;
 
   /// Tobi's rows as the screen shows them, his 下段 at the top: the cards at
   /// the screen's left (his right group) and at its right.
