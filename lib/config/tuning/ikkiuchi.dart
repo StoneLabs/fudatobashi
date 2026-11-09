@@ -120,8 +120,12 @@ abstract final class IkkiuchiLayoutTuning {
   static const double sideLean = 0.1;
   static const double splitJitter = 0.15;
 
-  /// A side has [rows] rows; 2 only with at most [twoRowsUpTo] cards a
-  /// side, 1 only with at most [oneRowUpTo].
+  /// A side has [rows] rows, or fewer for fewer cards. Fewer rows have
+  /// bigger cards in the same field (`IkkiuchiBoardLayout`), and a row of
+  /// bigger cards has room across for fewer of them. So a side holds at
+  /// most 25 cards times its rows over 3, rounded down: [twoRowsUpTo] in 2
+  /// rows, [oneRowUpTo] in 1. A row of a 1- or 2-row side has room for the
+  /// most cards one of its rows needs (`IkkiuchiLayout.rowRoom`): 8 in both.
   static const int rows = 3;
   static const int twoRowsUpTo = 16;
   static const int oneRowUpTo = 8;

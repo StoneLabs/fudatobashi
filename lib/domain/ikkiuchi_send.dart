@@ -16,7 +16,7 @@ import 'placing.dart';
 /// inner end of any group, in the open middle of their
 /// [IkkiuchiPlacingTuning.middleRow], or on any card's place (the cards
 /// inward of it moving a place in), in any of their rows, each at most
-/// [IkkiuchiLayoutTuning.rowSlots] pitches across with its groups
+/// its [IkkiuchiLayout.rowSlots] pitches across with its groups
 /// [IkkiuchiLayoutTuning.groupGap] apart, or its middle cards
 /// [IkkiuchiPlacingTuning.middleMargin] clear of them.
 class IkkiuchiSides {
@@ -52,8 +52,8 @@ class IkkiuchiSides {
     return PlacingRules(
       rows: played,
       openMiddle: played.contains(IkkiuchiPlacingTuning.middleRow) ? IkkiuchiPlacingTuning.middleRow : null,
-      room: const RowRoom(
-        slots: IkkiuchiLayoutTuning.rowSlots,
+      room: RowRoom(
+        slots: IkkiuchiLayout.rowSlots(rows),
         clusterGap: IkkiuchiLayoutTuning.groupGap,
         middleMargin: IkkiuchiPlacingTuning.middleMargin,
       ),

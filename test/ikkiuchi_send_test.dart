@@ -44,12 +44,12 @@ void main() {
 
   // A deal of [perSide] cards a side by [seed]: Tobi's homes at [rating],
   // the player's side by the same layout.
-  IkkiuchiSides dealt(int seed, {double rating = 2000, int perSide = 25}) {
+  IkkiuchiSides dealt(int seed, {double rating = 2000, int perSide = 25, int rows = 3}) {
     final deck = [for (final p in poems.all) p.id]..shuffle(math.Random(seed));
     final own = deck.sublist(0, perSide), others = deck.sublist(perSide, 2 * perSide);
     return IkkiuchiSides.start(
-      layout.generate(rating: rating, own: own, others: others, rows: 3, seed: seed),
-      layout.generate(rating: rating, own: others, others: own, rows: 3, seed: seed + 1).start,
+      layout.generate(rating: rating, own: own, others: others, rows: rows, seed: seed),
+      layout.generate(rating: rating, own: others, others: own, rows: rows, seed: seed + 1).start,
     );
   }
 
@@ -307,6 +307,31 @@ void main() {
       expect(full.placed(card, const ClusterEnd(FieldRow.lower, RowPart.left)), isNull);
       expect(full.placed(card, CardSpot(sides.playerCards[3])), isNull);
       expect(full.placed(card, const ClusterEnd(FieldRow.middle, RowPart.right)), isNotNull);
+    });
+
+    test('in 2 rows or 1 a row takes at most 8 cards, however unevenly the rows lie', () {
+      final sides = dealt(9, perSide: IkkiuchiLayoutTuning.twoRowsUpTo, rows: 2);
+      final p = sides.playerCards, card = sides.tobiCards.first;
+      IkkiuchiSides withRows(List<IkkiuchiRow> rows) =>
+          IkkiuchiSides(homes: sides.homes, tobi: sides.tobiCards, player: rows);
+      const lower = FieldRow.lower, middle = FieldRow.middle;
+
+      final uneven = withRows([IkkiuchiRow(p.sublist(0, 5), p.sublist(5, 8)), IkkiuchiRow(p.sublist(8, 10), [p[10]])]);
+      expect(uneven.placed(card, const ClusterEnd(lower, RowPart.left)), isNull);
+      expect(uneven.placed(card, const ClusterEnd(lower, RowPart.right)), isNull);
+      expect(uneven.placed(card, CardSpot(p[2])), isNull);
+      expect(uneven.placed(card, const ClusterEnd(middle, RowPart.right)), isNotNull);
+      expect(uneven.placed(p[9], const ClusterEnd(lower, RowPart.left)), isNull, reason: 'nor one of the other row');
+      expect(uneven.placed(p[0], CardSpot(p[6])), isNotNull, reason: 'its own cards move about in it');
+
+      final full = withRows([IkkiuchiRow(p.sublist(0, 5), p.sublist(5, 8)), IkkiuchiRow(p.sublist(8, 11), p.sublist(11, 16))]);
+      expect(full.playerBoard.freeSpots, isEmpty);
+      expect(full.autoPlaced([card]).playerCards, isNot(contains(card)), reason: 'nowhere to go');
+
+      final one = withRows([IkkiuchiRow(p.sublist(0, 3), p.sublist(3, 8))]);
+      expect(one.playerBoard.freeSpots, isEmpty);
+      expect(withRows([IkkiuchiRow(p.sublist(0, 3), p.sublist(3, 7))]).placed(card, const ClusterEnd(lower, RowPart.left)),
+          isNotNull);
     });
 
     test("Tobi's arm reaches the card, carries it turned to the waiting spot, and points at it", () {

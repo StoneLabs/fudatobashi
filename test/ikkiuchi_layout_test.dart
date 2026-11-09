@@ -44,7 +44,18 @@ void main() {
     });
 
     test('a row has room for its pitches less the gap between its groups', () {
-      expect(IkkiuchiLayout.rowRoom, (IkkiuchiLayoutTuning.rowSlots - IkkiuchiLayoutTuning.groupGap).floor());
+      const rows = IkkiuchiLayoutTuning.rows;
+      expect(IkkiuchiLayout.rowRoom(rows), (IkkiuchiLayoutTuning.rowSlots - IkkiuchiLayoutTuning.groupGap).floor());
+      expect(IkkiuchiLayout.rowSlots(rows), IkkiuchiLayoutTuning.rowSlots);
+    });
+
+    test('in 1 or 2 rows a row has room for the most cards one of its rows needs, and no more', () {
+      for (final (rows, most) in [(1, IkkiuchiLayoutTuning.oneRowUpTo), (2, IkkiuchiLayoutTuning.twoRowsUpTo)]) {
+        final room = IkkiuchiLayout.rowRoom(rows);
+        expect(rows * room, greaterThanOrEqualTo(most), reason: '$rows rows hold their most cards');
+        expect(rows * (room - 1), lessThan(most), reason: 'a row of $rows rows has no spare room');
+        expect(IkkiuchiLayout.rowSlots(rows), room + IkkiuchiLayoutTuning.groupGap);
+      }
     });
 
     test('tells look-alikes by their opening sounds', () {
@@ -103,7 +114,7 @@ void main() {
             final shape = IkkiuchiLayout.drawShape(s.perSide, s.rows, math.Random(seed));
             expect([for (final row in start) (left: row.left.length, right: row.right.length)], shape, reason: why);
             for (final row in start) {
-              expect(row.length, inInclusiveRange(1, IkkiuchiLayout.rowRoom), reason: why);
+              expect(row.length, inInclusiveRange(1, IkkiuchiLayout.rowRoom(s.rows)), reason: why);
             }
             for (final (r, row) in start.indexed) {
               for (final g in IkkiuchiGroup.values) {
@@ -121,8 +132,8 @@ void main() {
     });
 
     test('keeps every row within its room while the cards dealt fit the side', () {
-      final room = IkkiuchiLayout.rowRoom;
-      for (final s in setups.where((s) => 2 * s.perSide <= s.rows * room)) {
+      for (final s in setups.where((s) => 2 * s.perSide <= s.rows * IkkiuchiLayout.rowRoom(s.rows))) {
+        final room = IkkiuchiLayout.rowRoom(s.rows);
         for (final rating in ratings) {
           for (var seed = 0; seed < 20; seed++) {
             final h = homes(rating, s.perSide, s.rows, seed);
@@ -134,26 +145,30 @@ void main() {
       }
     });
 
-    test('keeps any side that fits within its rows, and every card it can in its home row and group', () {
-      final room = IkkiuchiLayout.rowRoom;
-      for (final rating in ratings) {
-        for (var seed = 0; seed < 40; seed++) {
-          final h = homes(rating, 25, 3, seed);
-          final rng = math.Random(seed);
-          final all = h.cards.toList()..shuffle(rng);
-          final present = all.take(rng.nextInt(h.rows * room + 1)).toList();
-          final side = h.sideWith(present);
-          expect([for (final row in side) ...row.left, for (final row in side) ...row.right]..sort(),
-              [...present]..sort());
-          for (final row in side) {
-            expect(row.length, lessThanOrEqualTo(room), reason: 'seed $seed');
-          }
-          final homeRows = [for (var r = 0; r < h.rows; r++) present.where((id) => h.homeOf(id).row == r).length];
-          for (final (r, row) in side.indexed) {
-            for (final g in IkkiuchiGroup.values) {
-              for (final id in row.group(g)) {
-                final home = h.homeOf(id);
-                if (homeRows[home.row] <= room) expect((r, g), (home.row, home.group), reason: 'seed $seed #$id');
+    test('keeps any side that fits within its rows, a full row taking no more, and every card it can in its home row '
+        'and group', () {
+      for (final (perSide, rows) in [(25, 3), (16, 2), (8, 1)]) {
+        final room = IkkiuchiLayout.rowRoom(rows);
+        for (final rating in ratings) {
+          for (var seed = 0; seed < 40; seed++) {
+            final why = '$perSide in $rows rows at $rating, seed $seed';
+            final h = homes(rating, perSide, rows, seed);
+            final rng = math.Random(seed);
+            final all = h.cards.toList()..shuffle(rng);
+            final present = all.take(rng.nextInt(h.rows * room + 1)).toList();
+            final side = h.sideWith(present);
+            expect([for (final row in side) ...row.left, for (final row in side) ...row.right]..sort(),
+                [...present]..sort());
+            for (final row in side) {
+              expect(row.length, lessThanOrEqualTo(room), reason: why);
+            }
+            final homeRows = [for (var r = 0; r < h.rows; r++) present.where((id) => h.homeOf(id).row == r).length];
+            for (final (r, row) in side.indexed) {
+              for (final g in IkkiuchiGroup.values) {
+                for (final id in row.group(g)) {
+                  final home = h.homeOf(id);
+                  if (homeRows[home.row] <= room) expect((r, g), (home.row, home.group), reason: '$why #$id');
+                }
               }
             }
           }

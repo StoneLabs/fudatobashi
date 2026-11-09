@@ -208,7 +208,7 @@ class _IkkiuchiLayoutPageState extends State<IkkiuchiLayoutPage> {
                     [
                       _rowNames[r],
                       for (final row in [start[r], _homes.plan[r]]) ...['${row.left.length}', '${row.right.length}'],
-                      '${IkkiuchiLayout.rowRoom}',
+                      '${IkkiuchiLayout.rowRoom(_homes.rows)}',
                     ],
                 ]),
                 gap,

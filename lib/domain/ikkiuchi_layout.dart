@@ -87,7 +87,7 @@ class IkkiuchiHomes {
             if (on.contains(id)) id,
         ]),
     ];
-    final room = IkkiuchiLayout.rowRoom;
+    final room = IkkiuchiLayout.rowRoom(rows);
     for (var r = 0; r < side.length; r++) {
       while (side[r].length > room) {
         final to = _nearestWithRoom(side, r, room);
@@ -142,8 +142,20 @@ class IkkiuchiLayout {
 
   final String Function(int poemId) kimariji;
 
-  /// The cards a row has room for.
-  static int get rowRoom => (IkkiuchiLayoutTuning.rowSlots - IkkiuchiLayoutTuning.groupGap).floor();
+  /// The cards a row of a side of [rows] rows has room for: in 3 rows as
+  /// many as its [rowSlots] take beside the gap between its groups; in
+  /// fewer, where the cards are bigger, the most one of its rows needs, its
+  /// side's most cards shared evenly between them.
+  static int rowRoom(int rows) => rows == IkkiuchiLayoutTuning.rows
+      ? (IkkiuchiLayoutTuning.rowSlots - IkkiuchiLayoutTuning.groupGap).floor()
+      : ((rows == 2 ? IkkiuchiLayoutTuning.twoRowsUpTo : IkkiuchiLayoutTuning.oneRowUpTo) / rows).ceil();
+
+  /// The card pitches a row of a side of [rows] rows spans at most:
+  /// [IkkiuchiLayoutTuning.rowSlots] in 3 rows; in fewer its [rowRoom] and
+  /// the gap between its groups.
+  static double rowSlots(int rows) => rows == IkkiuchiLayoutTuning.rows
+      ? IkkiuchiLayoutTuning.rowSlots
+      : rowRoom(rows) + IkkiuchiLayoutTuning.groupGap;
 
   /// Whether a side of [perSide] cards may be laid out in [rows] rows.
   static bool rowsAllowed(int perSide, int rows) =>
@@ -228,7 +240,7 @@ class IkkiuchiLayout {
     plan.room = (box) => (box.group == IkkiuchiGroup.left ? shape[box.row].left : shape[box.row].right) - box.count;
     plan.place(own);
 
-    plan.room = (box) => rowRoom - plan.rowCount(box.row);
+    plan.room = (box) => rowRoom(rows) - plan.rowCount(box.row);
     plan.place(others);
 
     final mine = own.toSet();
@@ -275,7 +287,7 @@ class IkkiuchiLayout {
     for (var i = 0; i < rest; i++) {
       final open = [
         for (var r = 0; r < rows; r++)
-          if (counts[r] < rowRoom) r,
+          if (counts[r] < rowRoom(rows)) r,
       ];
       counts[open.reduce((a, b) => under(b) > under(a) ? b : a)]++;
     }
