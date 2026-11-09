@@ -217,6 +217,17 @@ abstract final class IkkiuchiGreetingStyle {
   static Duration get length => playerIn.end;
 }
 
+/// Tobi's rating on an ink tag (`IkkiuchiTobiTag`): his name in [nameFont]
+/// [name] lettering, [gap], then the rating in [font] display lettering,
+/// [padding] round them. dp.
+abstract final class IkkiuchiTobiTagStyle {
+  static const EdgeInsets padding = EdgeInsets.fromLTRB(7, 4, 7, 4);
+  static const double nameFont = 11;
+  static const double font = 15;
+  static const double gap = 5;
+  static const Color name = Palette.sun;
+}
+
 /// The call in the gap between the sides in landscape (`IkkiuchiCallStrip`):
 /// paper words on a see-through [fill] that fades out over [fade] toward
 /// both ends, [inset] solid beyond the words, reaching [bleed] into the
@@ -428,8 +439,7 @@ abstract final class IkkiuchiArmStyle {
 ///
 /// Ranked: during placement its matches in a row (each played one its
 /// result, the lost ones in [lostInk], over its change), then the burst
-/// with Tobi's rating for the next match on an ink tag, his name in
-/// [tobiTagName].
+/// with Tobi's rating for the next match on his ink tag.
 ///
 /// The custom panel: its facts (Tobi's rating boxed, the button to the
 /// custom sheet, every cell's label and value [cellInset] in from its top
@@ -451,11 +461,6 @@ abstract final class IkkiuchiPageLayout {
   static const double resultGap = 4;
   static const Color lostInk = Palette.mute;
   static const EdgeInsets rankedRowPadding = EdgeInsets.fromLTRB(6, 2, 6, 6);
-  static const EdgeInsets tobiTagPadding = EdgeInsets.fromLTRB(7, 4, 7, 4);
-  static const double tobiTagNameFont = 11;
-  static const double tobiTagFont = 15;
-  static const double tobiTagGap = 5;
-  static const Color tobiTagName = Palette.sun;
 
   static const EdgeInsets statsPadding = EdgeInsets.fromLTRB(15, 4, 14, 0);
   static const double statFont = 28;

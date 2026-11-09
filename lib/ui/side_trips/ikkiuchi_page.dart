@@ -15,6 +15,7 @@ import '../history/history_filter.dart';
 import '../history/history_screen.dart';
 import '../ikkiuchi/ikkiuchi_field_preview.dart';
 import '../ikkiuchi/ikkiuchi_match_screen.dart';
+import '../ikkiuchi/ikkiuchi_tobi_tag.dart';
 import '../manga/manga.dart';
 import '../play/time_format.dart';
 import 'burst_button.dart';
@@ -189,7 +190,7 @@ class _RankedPanel extends StatelessWidget {
           padding: IkkiuchiPageLayout.rankedRowPadding,
           child: BurstButton(
             title: s.sideTripRanked,
-            tag: _TobiTag(tobi),
+            tag: IkkiuchiTobiTag(tobi),
             semanticLabel: '${s.sideTripRanked} ${s.ikkiuchiTobi} $tobi',
             onTap: () => startIkkiuchiMatch(context, setup),
           ),
@@ -250,42 +251,6 @@ class _Played extends StatelessWidget {
       ]),
     );
   }
-}
-
-/// Tobi's [rating] for the next ranked match on an ink tag: his name, then
-/// the rating.
-class _TobiTag extends StatelessWidget {
-  const _TobiTag(this.rating);
-
-  final int rating;
-
-  @override
-  Widget build(BuildContext context) => DecoratedBox(
-        decoration: const BoxDecoration(color: Palette.ink),
-        child: Padding(
-          padding: IkkiuchiPageLayout.tobiTagPadding,
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.baseline,
-            textBaseline: TextBaseline.alphabetic,
-            children: [
-              Text(S.of(context).ikkiuchiTobi,
-                  style: const TextStyle(
-                      fontWeight: Weights.black,
-                      fontSize: IkkiuchiPageLayout.tobiTagNameFont,
-                      height: 1,
-                      color: IkkiuchiPageLayout.tobiTagName)),
-              const SizedBox(width: IkkiuchiPageLayout.tobiTagGap),
-              Text('$rating',
-                  style: const TextStyle(
-                      fontFamily: Fonts.display,
-                      fontSize: IkkiuchiPageLayout.tobiTagFont,
-                      height: 1,
-                      color: Palette.paper)),
-            ],
-          ),
-        ),
-      );
 }
 
 /// The custom match of [setup]: its facts across the panel (Tobi's rating
