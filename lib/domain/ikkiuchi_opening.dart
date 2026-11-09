@@ -9,7 +9,7 @@ import 'ikkiuchi_tobi.dart';
 /// [order], one at a time, each [per] after the last, so that he is done
 /// once [ms] has gone by.
 class IkkiuchiTobiOpening {
-  IkkiuchiTobiOpening(List<IkkiuchiRow> side, {required this.ms}) : order = orderOf(side);
+  IkkiuchiTobiOpening(List<IkkiuchiRow> side, {required this.ms, required math.Random rng}) : order = orderOf(side, rng);
 
   /// His cards in the order he lays them down.
   final List<int> order;
@@ -29,16 +29,11 @@ class IkkiuchiTobiOpening {
   double get carryMs => math.min(IkkiuchiCarryTuning.carry, per * IkkiuchiCarryTuning.layShare.carry);
   double get backMs => math.min(IkkiuchiCarryTuning.back, per * IkkiuchiCarryTuning.layShare.back);
 
-  /// The cards of [side] (his rows as he sees them, 下段 first) in the
-  /// order he lays them down: row by row from his 下段, by turns from the
-  /// outer edges of his left and right groups inward.
-  static List<int> orderOf(List<IkkiuchiRow> side) => [
-        for (final row in side)
-          for (var i = 0; i < math.max(row.left.length, row.right.length); i++) ...[
-            if (i < row.left.length) row.left[i],
-            if (i < row.right.length) row.right[i],
-          ],
-      ];
+  /// The cards of [side] in the order he lays them down: at random, drawn
+  /// from [rng].
+  static List<int> orderOf(List<IkkiuchiRow> side, math.Random rng) => [
+        for (final row in side) ...[...row.left, ...row.middle, ...row.right],
+      ]..shuffle(rng);
 
   /// His placing time at [rating], in his form, ms: his placing time
   /// (`IkkiuchiTuning.placingSeconds`), squeezed when a short [memorise]

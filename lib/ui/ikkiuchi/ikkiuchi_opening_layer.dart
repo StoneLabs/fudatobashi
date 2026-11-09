@@ -3,7 +3,6 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 
 import '../../config/design.dart';
-import '../../config/vector_art.dart';
 import '../../l10n/ikkiuchi_strings.dart';
 import '../../l10n/strings.dart';
 import '../../state/scope.dart';
@@ -78,7 +77,7 @@ class IkkiuchiOpeningLayer extends StatelessWidget {
   /// room.
   Widget _hint(BuildContext context, Rect stack) {
     final field = scene.field, size = scene.layout.size, cardW = scene.layout.cardW;
-    final note = PlacingNote(text: S.of(context).ikkiuchiPlaceHint, look: _look, icon: IconArt.arrow, turned: true);
+    final note = PlacingNote(text: S.of(context).ikkiuchiPlaceHint, look: _look);
     final room = Rect.fromLTRB(field.left + cardW + IkkiuchiOpeningStyle.noteGap, scene.band.bottom,
         math.min(stack.left, field.right - cardW) - IkkiuchiOpeningStyle.noteGap, field.bottom);
     final beside = math.min(IkkiuchiOpeningStyle.noteWidth, room.width);

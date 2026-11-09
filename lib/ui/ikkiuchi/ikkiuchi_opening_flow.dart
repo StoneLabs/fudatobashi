@@ -85,7 +85,7 @@ class IkkiuchiOpeningFlow {
   /// Tobi starts laying out his side, over [ms]: every card of his leaves
   /// the board until his arm lays it down.
   void startTobi(double ms) {
-    final tobi = _tobi = IkkiuchiTobiOpening(scene.sides!.tobi, ms: ms);
+    final tobi = _tobi = IkkiuchiTobiOpening(scene.sides!.tobi, ms: ms, rng: scene.rng);
     final cards = scene.board.cards;
     _tobiSince = scene.board.now;
     _laid = 0;

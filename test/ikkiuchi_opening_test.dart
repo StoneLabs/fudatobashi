@@ -98,13 +98,17 @@ void main() {
       };
 
   group('Tobi laying out his side', () {
-    test('he lays his cards row by row from his 下段, by turns from the outer edges of his groups in', () {
+    test('he lays every card of his once, in a random order from the match\'s seed', () {
       final side = [
         const IkkiuchiRow([1, 2, 3], [4]),
-        const IkkiuchiRow([], [5, 6]),
+        const IkkiuchiRow([], [5, 6], middle: [8]),
         const IkkiuchiRow([7], []),
       ];
-      expect(IkkiuchiTobiOpening.orderOf(side), [1, 4, 2, 3, 5, 6, 7]);
+      List<int> order(int seed) => IkkiuchiTobiOpening.orderOf(side, math.Random(seed));
+      expect(order(1).toSet(), {1, 2, 3, 4, 5, 6, 7, 8});
+      expect(order(1), hasLength(8));
+      expect(order(1), order(1), reason: 'the same seed, the same order');
+      expect({for (var seed = 0; seed < 5; seed++) order(seed).join(',')}.length, greaterThan(1), reason: 'not fixed');
     });
 
     test('his placing time is his curve at his rating, squeezed to end before a short memory time', () {
@@ -121,11 +125,11 @@ void main() {
 
     test('each card has its share of his time, his arm no longer on it than a carry and in its shares', () {
       final side = [const IkkiuchiRow([1, 2], [3, 4])];
-      final slow = IkkiuchiTobiOpening(side, ms: 40000);
+      final slow = IkkiuchiTobiOpening(side, ms: 40000, rng: math.Random(0));
       expect(slow.per, 10000);
       expect([slow.startOf(0), slow.startOf(3)], [0, 30000]);
       expect([slow.carryMs, slow.backMs], [IkkiuchiCarryTuning.carry, IkkiuchiCarryTuning.back]);
-      final quick = IkkiuchiTobiOpening(side, ms: 3200);
+      final quick = IkkiuchiTobiOpening(side, ms: 3200, rng: math.Random(0));
       expect(quick.carryMs + quick.backMs, lessThan(quick.per), reason: 'done with a card before the next');
       expect(quick.carryMs, closeTo(800 * IkkiuchiCarryTuning.layShare.carry, 1e-9));
     });
