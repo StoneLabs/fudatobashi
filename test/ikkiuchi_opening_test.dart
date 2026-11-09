@@ -1,8 +1,9 @@
 // 一騎打ち's opening (IkkiuchiOpeningFlow, run by IkkiuchiMatchFlow): the
 // player places their cards from a stack while Tobi lays out his side with
 // his arm and the memory time runs; 完了 once every card is placed; the rest
-// placed by the game when the time runs out; 覚えた once both are done; Tobi
-// squeezed into a short memory time; and 並べ替え after 完了 until play
+// placed by the game when the time runs out; 覚えた any time after 完了, Tobi
+// laying down the rest of his side at once; Tobi squeezed into a short
+// memory time; and 並べ替え after 完了 until play
 // begins. The board of a match of 1, 2 or 3 rows keeps its rows and its
 // cards' size to the end.
 import 'dart:io';
@@ -162,7 +163,6 @@ void main() {
       expect([flow.tally.player, flow.tally.opponent], [25, 25]);
       expect(scene.cardsLeft, (tobi: 25, player: 25), reason: 'the cards in the stack count');
       expect(flow.canArrange, isFalse);
-      expect(flow.canStartEarly, isFalse);
       run(flow, 2000);
       expect(flow.left, closeTo(IkkiuchiMatchTuning.memorise.inMilliseconds - 2000, frame));
     });
@@ -266,22 +266,26 @@ void main() {
       expect(flow.tally.player, 25);
     });
 
-    test('覚えた only once the player is done and Tobi has laid out his side; it ends the memory time', () {
-      final flow = match(6, rating: 3000);
+    test('覚えた once the player is done ends the memory time, Tobi laying down the rest of his side at once', () {
+      final flow = match(6, rating: 0);
       final scene = flow.scene;
       placeByTaps(scene);
-      expect(flow.canStartEarly, isFalse, reason: 'not before 完了');
       flow.startEarly();
-      expect(flow.stage, IkkiuchiStage.placing);
+      expect(flow.stage, IkkiuchiStage.placing, reason: 'not before 完了');
       flow.donePlacing();
+      run(flow, IkkiuchiTobi(0).placingMsPerCard + 300);
       expect(scene.opening.tobiDone, isFalse);
-      expect(flow.canStartEarly, isFalse, reason: 'Tobi still lays out his side');
-      flow.startEarly();
-      expect(flow.stage, IkkiuchiStage.memoryTime);
-      runUntil(flow, () => scene.opening.tobiDone);
-      expect(flow.canStartEarly, isTrue);
+      expect(scene.opening.inHand, isNotNull, reason: 'a card in his hand');
+      expect(tobiDown(scene), isNot(scene.sides!.tobiCards), reason: 'Tobi still lays out his side');
       flow.startEarly();
       expect(flow.stage, IkkiuchiStage.gameStart);
+      expect(scene.opening.tobiDone, isTrue);
+      expect(scene.board.carrying, isFalse, reason: 'his arm still');
+      expect(tobiDown(scene), scene.sides!.tobiCards, reason: 'every card of his down');
+      for (final id in tobiDown(scene)) {
+        final c = scene.board.cards.card(id);
+        expect(c.box.centre.distanceTo(c.home.centre), lessThan(1e-3), reason: 'card $id at its home');
+      }
     });
 
     test('a short memory time squeezes Tobi: he is done just before it is up, and the reading starts on time', () {

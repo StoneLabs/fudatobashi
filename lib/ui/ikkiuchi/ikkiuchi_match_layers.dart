@@ -72,8 +72,8 @@ class IkkiuchiCallLayer extends StatelessWidget {
 /// and with a [flow] only while it lets the player move cards. With a
 /// [flow], while the player places their cards 完了 stands there instead,
 /// for once every card is placed ([IkkiuchiMatchFlow.donePlacing]); in the
-/// memory time after it 覚えた stands over 並べ替え, for once Tobi has laid
-/// out his side too ([IkkiuchiMatchFlow.startEarly]). [onEnd] gets 終了
+/// memory time after it 覚えた stands over 並べ替え, ending it at once
+/// ([IkkiuchiMatchFlow.startEarly]). [onEnd] gets 終了
 /// once held. Only its buttons take touches. It is one of the board's
 /// match parts (`IkkiuchiBoardView.parts`), so a card a 送り札 holds up lies
 /// over it.
@@ -118,7 +118,7 @@ class IkkiuchiColumnLayer extends StatelessWidget {
       return [(label: s.done, icon: IconArt.check, fill: IkkiuchiColumnStyle.doneFill, onTap: arrange.finish)];
     }
     return [
-      if (flow?.stage == IkkiuchiStage.memoryTime) go(s.ikkiuchiReady, flow!.canStartEarly ? flow.startEarly : null),
+      if (flow?.stage == IkkiuchiStage.memoryTime) go(s.ikkiuchiReady, flow!.startEarly),
       (
         label: s.ikkiuchiArrange,
         icon: IconArt.swap,

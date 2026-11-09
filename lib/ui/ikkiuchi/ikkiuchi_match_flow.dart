@@ -46,9 +46,9 @@ class IkkiuchiMatchWords {
 /// placing time ([IkkiuchiTobiOpening.msFor]). The memory time
 /// ([memorise] long) starts with it. Once every card is placed the player
 /// may be done ([donePlacing]), and the memory time runs on; cards still in
-/// the stack as it runs out are put down by the game. Once both have laid
-/// out their sides the player may end it early ([startEarly]). Then come
-/// the greeting and the 序歌. Each read
+/// the stack as it runs out are put down by the game. Once done, the player
+/// may end it early ([startEarly]), Tobi laying down the rest of his side
+/// at once. Then come the greeting and the 序歌. Each read
 /// takes the next card of the read order ([IkkiuchiReadOrder]): the reader
 /// reads its kimariji while its voice plays, Tobi playing the read at
 /// [rating] in his form for the match (`IkkiuchiBoardScene.tobiForm`), or
@@ -215,13 +215,10 @@ class IkkiuchiMatchFlow extends ChangeNotifier {
     _enter(IkkiuchiStage.memoryTime, left: _left);
   }
 
-  /// Whether the player may end the memory time now (覚えた): they are
-  /// done placing, and Tobi has laid out his side.
-  bool get canStartEarly => _stage == IkkiuchiStage.memoryTime && scene.opening.tobiDone;
-
-  /// 覚えた: the memory time ends now.
+  /// 覚えた, once the player is done placing: the memory time ends now, Tobi
+  /// laying down the rest of his side at once.
   void startEarly() {
-    if (canStartEarly) _timeUp();
+    if (_stage == IkkiuchiStage.memoryTime) _timeUp();
   }
 
   /// Lets a held match go on.

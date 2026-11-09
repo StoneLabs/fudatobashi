@@ -325,7 +325,8 @@ void main() {
       await tester.pumpWidget(const SizedBox());
     });
 
-    testWidgets('the column: 完了 once every card is placed, then 覚えた over 並べ替え once Tobi is done', (tester) async {
+    testWidgets('the column: 完了 once every card is placed, then 覚えた over 並べ替え, working while Tobi lays out',
+        (tester) async {
       final p = await open(tester);
       await show(tester, p, const IkkiuchiDebugGame(seed: 5));
       final f = flow(tester), opening = f.scene.opening;
@@ -349,16 +350,14 @@ void main() {
       expect(f.stage, IkkiuchiStage.memoryTime);
       expect(button('覚えた'), findsOneWidget);
       expect(button('並べ替え'), findsOneWidget);
-      await tester.tap(button('覚えた'), warnIfMissed: false);
-      await tester.pump(frame);
-      expect(f.stage, IkkiuchiStage.memoryTime, reason: 'Tobi still lays out his side');
       await run(tester, 600);
       await capture(tester, 'game_memorise_tobi_placing');
-      opening.finishTobi();
-      await tester.pump(frame);
+      expect(opening.tobiDone, isFalse, reason: 'Tobi still lays out his side');
       await tester.tap(button('覚えた'));
       await tester.pump(frame);
       expect(f.stage, IkkiuchiStage.gameStart);
+      expect(opening.tobiDone, isTrue, reason: 'the rest of his side laid down at once');
+      expect(f.scene.atRest, isTrue);
       await tester.pumpWidget(const SizedBox());
     });
 
