@@ -49,6 +49,9 @@ abstract final class IconArt {
 
   /// A signpost, its pole broken behind the boards (the Side Trips tab).
   static late final VectorArt sideTrips;
+
+  /// A robot's head (一騎打ち's bots).
+  static late final VectorArt bot;
 }
 
 /// Marks printed on the cards.
