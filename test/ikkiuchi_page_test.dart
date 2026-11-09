@@ -3,8 +3,8 @@
 // burst), the custom panel and its sheet (class keys and steppers, one held
 // down stepping on), guest mode, and matches started from it: held in
 // landscape, played to the setup picked, in 1, 2 or 3 rows, closed once over
-// and the page's strip counting it. When a match is recorded: ended once
-// play has begun;
+// and the page's strip counting it. When a match is recorded: played to its
+// end, free play too, on a fresh database; ended once play has begun;
 // never when ended or left before, nor free play left midway, nor a guest's;
 // a ranked match left after its first read is a loss, journalled from that
 // read and again after every read.
@@ -616,6 +616,32 @@ void main() {
       expect(tester.takeException(), isNull);
       await leave(tester);
     }
+    await tester.pumpWidget(const SizedBox());
+  });
+
+  testWidgets('a free match played to its end is recorded on a fresh database, then the screen closes',
+      (tester) async {
+    final p = await open(tester);
+    await showPage(tester, p);
+    const setup = IkkiuchiSetup.free(opponentRating: 3600, perSide: 1, memorise: Duration(minutes: 1));
+    unawaited(Navigator.of(tester.element(find.byType(IkkiuchiPage)))
+        .push(MangaRoute<void>(builder: (_) => IkkiuchiMatchScreen(setup: setup, seed: 4))));
+    await tester.pump();
+    await tester.pump(Motion.route);
+    final state = screen(tester);
+    final flow = state.flow!, send = flow.scene.send;
+    await toFirstRead(tester, flow);
+    // Tobi takes every card; one he sends the player is placed on its first spot.
+    for (var i = 0; i < 1200 && find.byType(IkkiuchiMatchScreen).evaluate().isNotEmpty; i++) {
+      if (send.stage == IkkiuchiSendStage.waiting) send.tap(send.rectOf(send.targets().freeSpots.first.$1)!.center);
+      await tester.pump(const Duration(milliseconds: 100));
+    }
+    expect(find.byType(IkkiuchiMatchScreen), findsNothing, reason: 'thanks, result, then closed');
+    await saved(tester, state.saving);
+    final match = p.ikkiuchi.matches.single;
+    expect([match.ranked, match.completed, match.result], [false, true, IkkiuchiResult.lost]);
+    final stored = (await rows(tester, p)).single;
+    expect([stored.ranked, stored.completed, stored.playerLeft, stored.opponentLeft], [false, true, 1, 0]);
     await tester.pumpWidget(const SizedBox());
   });
 
