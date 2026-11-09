@@ -43,6 +43,9 @@ class _MatchTimerScreenState extends State<MatchTimerScreen> {
 
   bool get _running => _runningSince != null;
 
+  /// Whether leaving would end a match still under way.
+  bool get _leavingCosts => _started && !_ended;
+
   Duration get _elapsed => _banked + (_runningSince == null ? Duration.zero : widget.now().difference(_runningSince!));
 
   Duration get _left {
@@ -60,7 +63,14 @@ class _MatchTimerScreenState extends State<MatchTimerScreen> {
   }
 
   @override
+  void initState() {
+    super.initState();
+    music.leaveMenu();
+  }
+
+  @override
   void dispose() {
+    music.enterMenu();
     _ticker?.cancel();
     _alerts.release();
     super.dispose();
@@ -152,64 +162,77 @@ class _MatchTimerScreenState extends State<MatchTimerScreen> {
     if (picked != null) setState(() => _total = picked);
   }
 
+  Future<void> _confirmLeave() async {
+    final s = S.of(context);
+    final leave = await confirmLeaving(context,
+        title: s.timerLeaveTitle, note: s.timerLeaveNote, stay: s.timerKeep, leave: s.timerLeave);
+    if (leave && mounted) Navigator.pop(context);
+  }
+
   @override
   Widget build(BuildContext context) {
     final s = S.of(context);
     final left = _left;
     final seconds = (left.inMilliseconds / 1000).ceil();
     final time = '${(seconds ~/ 60).toString().padLeft(2, '0')}:${(seconds % 60).toString().padLeft(2, '0')}';
-    return PageFrame(
-      title: s.matchTimerTitle,
-      sub: s.other.matchTimerTitle,
-      body: Padding(
-        padding: const EdgeInsets.fromLTRB(Gaps.gutter, 0, Gaps.gutter, Gaps.gutter),
-        child: Center(
-          child: FittedBox(
-            fit: BoxFit.scaleDown,
-            child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  SizedBox.square(
-                    dimension: MatchTimerLayout.dialSize,
-                    child: CustomPaint(
-                      painter: _DialPainter(left: left, total: _total),
-                      child: Center(
-                        child: GestureDetector(
-                          behavior: HitTestBehavior.opaque,
-                          onTap: _started ? null : _edit,
-                          child: Semantics(
-                            button: !_started,
-                            label: _started ? null : s.timerEdit,
-                            child: Column(mainAxisSize: MainAxisSize.min, children: [
-                              Text(time,
-                                  style: const TextStyle(
-                                      fontFamily: Fonts.display,
-                                      fontSize: MatchTimerLayout.timeFont,
-                                      color: Palette.ink,
-                                      fontFeatures: [FontFeature.tabularFigures()])),
-                              if (!_started) ...[
-                                const SizedBox(height: MatchTimerLayout.penGap),
-                                MangaIcon(IconArt.pen, size: MatchTimerLayout.penSize),
-                              ],
-                            ]),
+    return PopScope(
+      canPop: !_leavingCosts,
+      onPopInvokedWithResult: (didPop, _) {
+        if (!didPop) unawaited(_confirmLeave());
+      },
+      child: PageFrame(
+        title: s.matchTimerTitle,
+        sub: s.other.matchTimerTitle,
+        body: Padding(
+          padding: const EdgeInsets.fromLTRB(Gaps.gutter, 0, Gaps.gutter, Gaps.gutter),
+          child: Center(
+            child: FittedBox(
+              fit: BoxFit.scaleDown,
+              child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    SizedBox.square(
+                      dimension: MatchTimerLayout.dialSize,
+                      child: CustomPaint(
+                        painter: _DialPainter(left: left, total: _total),
+                        child: Center(
+                          child: GestureDetector(
+                            behavior: HitTestBehavior.opaque,
+                            onTap: _started ? null : _edit,
+                            child: Semantics(
+                              button: !_started,
+                              label: _started ? null : s.timerEdit,
+                              child: Column(mainAxisSize: MainAxisSize.min, children: [
+                                Text(time,
+                                    style: const TextStyle(
+                                        fontFamily: Fonts.display,
+                                        fontSize: MatchTimerLayout.timeFont,
+                                        color: Palette.ink,
+                                        fontFeatures: [FontFeature.tabularFigures()])),
+                                if (!_started) ...[
+                                  const SizedBox(height: MatchTimerLayout.penGap),
+                                  MangaIcon(IconArt.pen, size: MatchTimerLayout.penSize),
+                                ],
+                              ]),
+                            ),
                           ),
                         ),
                       ),
                     ),
-                  ),
-                  const SizedBox(height: MatchTimerLayout.sectionGap),
-                  if (!_started)
-                    _TimerButton(label: s.timerPlay, color: Palette.sun, onTap: _play)
-                  else
-                    Row(mainAxisSize: MainAxisSize.min, children: [
-                      if (!_ended) ...[
-                        _TimerButton(label: _running ? s.timerPause : s.timerResume, onTap: _togglePause),
-                        const SizedBox(width: MatchTimerLayout.buttonGap),
-                      ],
-                      _TimerButton(label: s.timerStop, onTap: _stop),
-                    ]),
-                ],
-              ),
+                    const SizedBox(height: MatchTimerLayout.sectionGap),
+                    if (!_started)
+                      _TimerButton(label: s.timerPlay, color: Palette.sun, onTap: _play)
+                    else
+                      Row(mainAxisSize: MainAxisSize.min, children: [
+                        if (!_ended) ...[
+                          _TimerButton(label: _running ? s.timerPause : s.timerResume, onTap: _togglePause),
+                          const SizedBox(width: MatchTimerLayout.buttonGap),
+                        ],
+                        _TimerButton(label: s.timerStop, onTap: _stop),
+                      ]),
+                  ],
+                ),
+            ),
           ),
         ),
       ),

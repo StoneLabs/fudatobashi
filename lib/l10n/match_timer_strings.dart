@@ -12,6 +12,10 @@ extension MatchTimerStrings on S {
   String get timerMinutes => t('timerMinutes');
   String get timerSeconds => t('timerSeconds');
   String get timerEdit => t('timerEdit');
+  String get timerLeaveTitle => t('timerLeaveTitle');
+  String get timerLeaveNote => t('timerLeaveNote');
+  String get timerLeave => t('timerLeave');
+  String get timerKeep => t('timerKeep');
 
   /// The ongoing notification while the timer runs (Android), naming the
   /// minutes left at the warning.

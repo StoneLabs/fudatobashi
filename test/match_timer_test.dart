@@ -5,10 +5,27 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:fudatobashi/l10n/match_timer_strings.dart';
 import 'package:fudatobashi/l10n/strings.dart';
 import 'package:fudatobashi/ui/help/help_screen.dart';
+import 'package:fudatobashi/ui/sound/sounds.dart';
 import 'package:fudatobashi/ui/tools/match_timer_screen.dart';
 
 import 'test_card_pages.dart';
 import 'test_screens.dart';
+
+class _MusicSpy extends Music {
+  final calls = <String>[];
+
+  @override
+  void leaveMenu() => calls.add('leave');
+
+  @override
+  void enterMenu() => calls.add('enter');
+}
+
+/// A page with one button that opens the match timer on top of it.
+Widget _timerLauncher(DateTime Function() now) => Builder(
+    builder: (context) => TextButton(
+        onPressed: () => Navigator.push(context, MaterialPageRoute<void>(builder: (_) => MatchTimerScreen(now: now))),
+        child: const Text('open timer')));
 
 void main() {
   loadCardPageData();
@@ -55,5 +72,52 @@ void main() {
     expect(find.text('01:00'), findsOneWidget);
     await captureScreen(tester, 'cards/match_timer_warn');
     await tapOn(tester, find.text(s.timerStop));
+  });
+
+  testWidgets('match timer: the menu music is out while it is open and back after', (tester) async {
+    final spy = _MusicSpy();
+    final before = music;
+    music = spy;
+    addTearDown(() => music = before);
+    final p = await openPlayer(tester, 'en');
+    await showPage(tester, p, _timerLauncher(DateTime.now));
+    await tapOn(tester, find.text('open timer'));
+    expect(spy.calls, ['leave']);
+    await tapOn(tester, find.bySemanticsLabel(s.back));
+    expect(find.text('open timer'), findsOneWidget);
+    expect(spy.calls, ['leave', 'enter']);
+  });
+
+  testWidgets('match timer: leaving asks once it has started, not before or after it ran out', (tester) async {
+    final p = await openPlayer(tester, 'en');
+    var now = DateTime(2026);
+    await showPage(tester, p, _timerLauncher(() => now));
+
+    await tapOn(tester, find.text('open timer'));
+    await tapOn(tester, find.bySemanticsLabel(s.back));
+    expect(find.text(s.timerLeaveTitle), findsNothing);
+    expect(find.text('open timer'), findsOneWidget);
+
+    await tapOn(tester, find.text('open timer'));
+    await tapOn(tester, find.text(s.timerPlay));
+    await tapOn(tester, find.bySemanticsLabel(s.back));
+    expect(find.text(s.timerLeaveTitle), findsOneWidget);
+    await captureScreen(tester, 'cards/match_timer_leave');
+    await tapOn(tester, find.text(s.timerKeep));
+    expect(find.text(s.timerPause), findsOneWidget);
+
+    await tester.binding.handlePopRoute();
+    await settle(tester);
+    expect(find.text(s.timerLeaveTitle), findsOneWidget);
+    await tapOn(tester, find.text(s.timerLeave));
+    expect(find.text('open timer'), findsOneWidget);
+
+    await tapOn(tester, find.text('open timer'));
+    await tapOn(tester, find.text(s.timerPlay));
+    now = now.add(const Duration(minutes: 16));
+    await tester.pump(const Duration(milliseconds: 300));
+    await tapOn(tester, find.bySemanticsLabel(s.back));
+    expect(find.text(s.timerLeaveTitle), findsNothing);
+    expect(find.text('open timer'), findsOneWidget);
   });
 }
