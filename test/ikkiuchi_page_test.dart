@@ -49,6 +49,8 @@ import 'package:fudatobashi/ui/side_trips/trip_record_panels.dart';
 import 'package:fudatobashi/state/ikkiuchi_journal.dart';
 import 'package:fudatobashi/state/progress.dart';
 import 'package:fudatobashi/state/scope.dart';
+import 'package:fudatobashi/domain/ikkiuchi_layout.dart';
+import 'package:fudatobashi/domain/ikkiuchi_send.dart';
 import 'package:fudatobashi/domain/ikkiuchi_side.dart';
 import 'package:fudatobashi/domain/placing.dart';
 import 'package:fudatobashi/ui/ikkiuchi/ikkiuchi_board_painter.dart';
@@ -58,6 +60,7 @@ import 'package:fudatobashi/ui/ikkiuchi/ikkiuchi_match_column.dart';
 import 'package:fudatobashi/ui/ikkiuchi/ikkiuchi_match_layers.dart';
 import 'package:fudatobashi/ui/ikkiuchi/ikkiuchi_match_screen.dart';
 import 'package:fudatobashi/ui/manga/manga.dart';
+import 'package:fudatobashi/ui/placing/placing_widgets.dart';
 import 'package:fudatobashi/ui/settings/settings_rows.dart';
 import 'package:fudatobashi/ui/settings/side_trip_settings_screen.dart';
 import 'package:fudatobashi/ui/side_trips/trip_sheet.dart';
@@ -581,6 +584,50 @@ void main() {
     await tester.pumpWidget(const SizedBox());
   });
 
+  testWidgets("Tobi's sent card waiting by the game column keeps its hint clear of it", (tester) async {
+    final p = await open(tester);
+    await showPage(tester, p, phone: usersPhoneLandscape);
+    final setup = IkkiuchiSetup.free(
+        opponentRating: 1600, perSide: IkkiuchiLayoutTuning.oneRowUpTo, rows: 1, memorise: const Duration(minutes: 15));
+    unawaited(Navigator.of(tester.element(find.byType(IkkiuchiPage)))
+        .push(MangaRoute<void>(builder: (_) => IkkiuchiMatchScreen(setup: setup, seed: 3))));
+    await tester.pump();
+    await tester.pump(Motion.route);
+    final flow = screen(tester).flow!, scene = flow.scene, send = scene.send;
+    scene.opening
+      ..placeRest()
+      ..finishTobi();
+    flow.donePlacing();
+    // Tobi's cards all in his right group, at the screen's left, so that he
+    // stands far right and his card waits against the column.
+    final sides = scene.sides!, homes = sides.homes;
+    final dealt = [...sides.tobiCards, ...sides.playerCards];
+    final right = [
+      for (final id in dealt)
+        if (homes.homeOf(id).group == IkkiuchiGroup.right) id,
+    ].take(IkkiuchiLayout.rowRoom(1) - 1).toList();
+    final rest = [for (final id in dealt) if (!right.contains(id)) id].take(4).toList();
+    scene.relayout(IkkiuchiSides(homes: homes, tobi: right, player: [IkkiuchiRow(rest.take(2).toList(), rest.skip(2).toList())]));
+    for (var i = 0; i < 200 && !scene.atRest; i++) {
+      await tester.pump(const Duration(milliseconds: 16));
+    }
+    flow.sendByHand(IkkiuchiSide.opponent);
+    for (var i = 0; i < 200 && send.stage != IkkiuchiSendStage.waiting; i++) {
+      await tester.pump(const Duration(milliseconds: 16));
+    }
+    await tester.pump(const Duration(milliseconds: 600));
+    final column = scene.column!, wait = scene.wait;
+    final board = tester.renderObject<RenderBox>(find.byType(IkkiuchiBoardView));
+    final tag = find.ancestor(of: find.text(s.ikkiuchiSentHint), matching: find.byType(PlacingTag));
+    final hint = Rect.fromPoints(board.globalToLocal(tester.getTopLeft(tag)), board.globalToLocal(tester.getBottomRight(tag)));
+    expect(wait.center.dx + hint.width / 2, greaterThan(column.left), reason: 'centred, it would reach over the column');
+    expect(hint.right, closeTo(column.left - IkkiuchiSendStyle.wait.gap, 1e-6), reason: 'clear of the column');
+    expect(hint.top, greaterThan(wait.bottom), reason: 'under the card');
+    expect(tester.takeException(), isNull);
+    await leave(tester);
+    await tester.pumpWidget(const SizedBox());
+  });
+
   testWidgets('終了 once play has begun records the match given up, with its reads; the strip counts it',
       (tester) async {
     final p = await open(tester);
@@ -967,9 +1014,10 @@ void main() {
         final perSide = rows == 1 ? IkkiuchiLayoutTuning.oneRowUpTo : IkkiuchiLayoutTuning.twoRowsUpTo;
         final p = await open(tester, lang: 'ja');
         await showPage(tester, p, phone: usersPhoneLandscape);
-        final setup = IkkiuchiSetup.free(opponentRating: 1600, perSide: perSide, memorise: const Duration(minutes: 15));
+        final setup = IkkiuchiSetup.free(
+            opponentRating: 1600, perSide: perSide, rows: rows, memorise: const Duration(minutes: 15));
         unawaited(Navigator.of(tester.element(find.byType(IkkiuchiPage)))
-            .push(MangaRoute<void>(builder: (_) => IkkiuchiMatchScreen(setup: setup, seed: 3, rows: rows))));
+            .push(MangaRoute<void>(builder: (_) => IkkiuchiMatchScreen(setup: setup, seed: 3))));
         await tester.pump();
         await tester.pump(Motion.route);
         final flow = screen(tester).flow!, scene = flow.scene;

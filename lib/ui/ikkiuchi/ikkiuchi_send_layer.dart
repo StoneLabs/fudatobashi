@@ -1,5 +1,6 @@
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
-import 'package:flutter/rendering.dart' show OverflowBoxFit;
 
 import '../../config/design.dart';
 import '../../domain/placing.dart';
@@ -112,17 +113,14 @@ class IkkiuchiSendLayer extends StatelessWidget {
               : const PlacingDashedSpot(look: _look),
         ),
         if (drag == null)
-          Positioned(
-            left: wait.left,
-            width: wait.width,
-            top: wait.bottom + _look.stackTagRoom - _look.stackTagOverlap,
-            // A hint wider than the card reaches past its sides.
-            child: Center(
-              child: OverflowBox(
-                maxWidth: double.infinity,
-                fit: OverflowBoxFit.deferToChild,
-                child: PlacingTag(s.ikkiuchiSentHint, fontSize: IkkiuchiSendStyle.hintFont, look: _look),
+          Positioned.fill(
+            child: CustomSingleChildLayout(
+              delegate: _UnderCard(
+                centre: wait.center.dx,
+                top: wait.bottom + _look.stackTagRoom - _look.stackTagOverlap,
+                right: (scene.column?.left ?? scene.layout.size.x) - IkkiuchiSendStyle.wait.gap,
               ),
+              child: PlacingTag(s.ikkiuchiSentHint, fontSize: IkkiuchiSendStyle.hintFont, look: _look),
             ),
           ),
       ],
@@ -153,6 +151,25 @@ class IkkiuchiSendLayer extends StatelessWidget {
     return Rect.fromLTWH(tobi.origin.x - IkkiuchiSendStyle.balloonGap - size.width,
         tobi.origin.y + IkkiuchiSendStyle.balloonDrop * height, size.width, size.height);
   }
+}
+
+/// The hint under the waiting card: centred under it from [top], reaching
+/// past its sides when wider, but never right of [right], so that it stays
+/// clear of the game column.
+class _UnderCard extends SingleChildLayoutDelegate {
+  _UnderCard({required this.centre, required this.top, required this.right});
+
+  final double centre, top, right;
+
+  @override
+  BoxConstraints getConstraintsForChild(BoxConstraints constraints) => constraints.loosen();
+
+  @override
+  Offset getPositionForChild(Size size, Size child) =>
+      Offset(math.min(centre - child.width / 2, right - child.width), top);
+
+  @override
+  bool shouldRelayout(_UnderCard old) => old.centre != centre || old.top != top || old.right != right;
 }
 
 /// Words on the band in portrait instead of a call, as while a card is
