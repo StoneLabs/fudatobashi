@@ -12,9 +12,10 @@ import '../../domain/ikkiuchi_rig.dart';
 import '../../domain/ikkiuchi_side.dart';
 
 /// Where everything lies on the 一騎打ち board of [size]: the full field
-/// ([IkkiuchiField]), Tobi's side across the band at the top. Both sides'
-/// cards are one size, as big as the board lets them grow: its widest row's
-/// groups close in toward the middle as they grow, until a row is as
+/// ([IkkiuchiField]), Tobi's side across the band at the top, every row
+/// either side has shown, empty or not. Both sides' cards are one size, as
+/// big as the board lets them grow: its widest row's groups close in
+/// toward the middle as they grow, until a row is as
 /// narrow as it may be ([IkkiuchiField.rowWidth]), the field and the band
 /// (in landscape only a narrower gap, with the rows closer) fill the
 /// height, or a card is [IkkiuchiBoardStyle.maxCardW] wide. The field spans
@@ -35,14 +36,17 @@ import '../../domain/ikkiuchi_side.dart';
 /// a little smaller; in portrait it lies where Tobi's card waits.
 ///
 /// Any change to the sides lays the board out afresh by the same rules
-/// ([withSides]), its cards growing or shrinking to fit.
+/// ([withSides]), its rows and its cards' size kept: the cards never grow,
+/// and shrink only where the field would no longer fit.
 class IkkiuchiBoardLayout {
   IkkiuchiBoardLayout._(this.size, this.landscape, this.band, this.tobi, this.cardW, this.cards, this.field, this.wait,
       this.column, this.stack, this._field, this._fieldW, this._origin);
 
   /// [tobiRows] and [playerRows] are each side's rows as its owner sees
   /// them, 下段 first, each group from its outer edge in and the open middle
-  /// left to right. With [opening] the player's stack is laid out too.
+  /// left to right. With [opening] the player's stack is laid out too. With
+  /// [scale] the cards keep that width, narrower only where the field would
+  /// not fit otherwise.
   factory IkkiuchiBoardLayout.of({
     required Size size,
     required bool landscape,
@@ -50,11 +54,13 @@ class IkkiuchiBoardLayout {
     required List<IkkiuchiRow> playerRows,
     required TobiRig rig,
     bool opening = false,
+    double? scale,
   }) {
     final field = IkkiuchiField(
       tobi: tobiRows,
       player: playerRows,
       rowGap: landscape ? IkkiuchiFieldTuning.landscapeRowGap : IkkiuchiFieldTuning.rowGap,
+      keepRows: true,
     );
     const pad = IkkiuchiBoardStyle.pad;
     final bandH = landscape ? IkkiuchiBoardStyle.landscapeGap : IkkiuchiBoardStyle.band;
@@ -75,11 +81,8 @@ class IkkiuchiBoardLayout {
       const stackW = IkkiuchiOpeningStyle.stackScale;
       final stackRoom = IkkiuchiOpeningStyle.stackGap + _stackEdges;
       final right = w - IkkiuchiColumnStyle.edge - IkkiuchiColumnStyle.width - IkkiuchiColumnStyle.fieldGap;
-      cardW = [
-        opening ? (right - pad - stackRoom) / (full + stackW) : (right - pad) / least,
-        (h - bandH) / (2 * half),
-        IkkiuchiBoardStyle.maxCardW,
-      ].reduce(math.min);
+      final widest = opening ? (right - pad - stackRoom) / (full + stackW) : (right - pad) / least;
+      cardW = math.min(scale ?? [widest, (h - bandH) / (2 * half), IkkiuchiBoardStyle.maxCardW].reduce(math.min), widest);
       final fieldRight = opening ? right - stackRoom - stackW * cardW : right;
       top = (h - (2 * half * cardW + bandH)) / 2;
       fieldW = math.min((fieldRight - pad) / cardW, full);
@@ -89,11 +92,9 @@ class IkkiuchiBoardLayout {
       final middle = left + (open.from + open.to) / 2 * cardW;
       tobi = TobiFrame(Vec(middle - rig.size.x * k / 2, top + IkkiuchiBoardStyle.tobiTop), k, rig);
     } else {
-      cardW = [
-        areaW / field.leastWidth(),
-        (h - pad - IkkiuchiBoardStyle.bottomGap - bandH - IkkiuchiBoardStyle.tobiMinRoom) / (2 * half),
-        IkkiuchiBoardStyle.maxCardW,
-      ].reduce(math.min);
+      final widest = areaW / field.leastWidth();
+      final tallest = (h - pad - IkkiuchiBoardStyle.bottomGap - bandH - IkkiuchiBoardStyle.tobiMinRoom) / (2 * half);
+      cardW = math.min(scale ?? [widest, tallest, IkkiuchiBoardStyle.maxCardW].reduce(math.min), widest);
       fieldW = math.min(areaW / cardW, math.max(IkkiuchiLayoutTuning.rowSlots, field.leastWidth()));
       left = pad + (areaW - fieldW * cardW) / 2;
       top = h - IkkiuchiBoardStyle.bottomGap - (2 * half * cardW + bandH);
@@ -206,7 +207,8 @@ class IkkiuchiBoardLayout {
   final Vec _origin;
 
   /// The board laid out afresh with these sides, by the same rules on the
-  /// same board, for the opening while [opening] says so, else as it was.
+  /// same board, its cards' size kept, for the opening while [opening] says
+  /// so, else as it was.
   IkkiuchiBoardLayout withSides(
           {required List<IkkiuchiRow> tobiRows, required List<IkkiuchiRow> playerRows, bool? opening}) =>
       IkkiuchiBoardLayout.of(
@@ -216,6 +218,7 @@ class IkkiuchiBoardLayout {
         playerRows: playerRows,
         rig: tobi.rig,
         opening: opening ?? stack != null,
+        scale: cardW,
       );
 
   /// Where a card added at the inner end of the player's [row]'s left or

@@ -2,8 +2,9 @@
 // start (its placement matches, then Tobi drawn for the next match on its
 // burst), the custom panel and its sheet (class keys and steppers, one held
 // down stepping on), guest mode, and matches started from it: held in
-// landscape, played to the setup picked, closed once over and the page's
-// strip counting it. When a match is recorded: ended once play has begun;
+// landscape, played to the setup picked, in 1, 2 or 3 rows, closed once over
+// and the page's strip counting it. When a match is recorded: ended once
+// play has begun;
 // never when ended or left before, nor free play left midway, nor a guest's;
 // a ranked match left after its first read is a loss, journalled from that
 // read and again after every read.
@@ -590,6 +591,31 @@ void main() {
       await leave(tester);
     }
     expect(IkkiuchiTobi.formFor(5), isNot(IkkiuchiTobi.formFor(6)));
+    await tester.pumpWidget(const SizedBox());
+  });
+
+  testWidgets('a match of 1 or 2 rows is dealt and played on its rows, its cards keeping their size', (tester) async {
+    final p = await open(tester);
+    await showPage(tester, p);
+    for (final (rows, perSide) in [(1, IkkiuchiLayoutTuning.oneRowUpTo), (2, IkkiuchiLayoutTuning.twoRowsUpTo)]) {
+      final setup = IkkiuchiSetup.free(opponentRating: 3600, perSide: perSide, memorise: const Duration(minutes: 1));
+      unawaited(Navigator.of(tester.element(find.byType(IkkiuchiPage)))
+          .push(MangaRoute<void>(builder: (_) => IkkiuchiMatchScreen(setup: setup, seed: 2, rows: rows))));
+      await tester.pump();
+      await tester.pump(Motion.route);
+      final flow = screen(tester).flow!;
+      final scene = flow.scene;
+      expect([scene.sides!.tobi.length, scene.sides!.player.length], [rows, rows]);
+      final cardW = scene.layout.cardW;
+      await toFirstRead(tester, flow);
+      for (var i = 0; i < 100; i++) {
+        await tester.pump(const Duration(milliseconds: 100));
+      }
+      expect(flow.reads, isNotEmpty, reason: '$rows rows: the reads go on');
+      expect(scene.layout.cardW, cardW, reason: '$rows rows');
+      expect(tester.takeException(), isNull);
+      await leave(tester);
+    }
     await tester.pumpWidget(const SizedBox());
   });
 

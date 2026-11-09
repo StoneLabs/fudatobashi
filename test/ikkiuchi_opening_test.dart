@@ -3,7 +3,8 @@
 // his arm and the memory time runs; 完了 once every card is placed; the rest
 // placed by the game when the time runs out; 覚えた once both are done; Tobi
 // squeezed into a short memory time; and 並べ替え after 完了 until play
-// begins.
+// begins. The board of a match of 1, 2 or 3 rows keeps its rows and its
+// cards' size to the end.
 import 'dart:io';
 import 'dart:math' as math;
 import 'dart:ui' show Offset, Size;
@@ -16,6 +17,7 @@ import 'package:fudatobashi/domain/ikkiuchi_layout.dart';
 import 'package:fudatobashi/domain/ikkiuchi_match.dart';
 import 'package:fudatobashi/domain/ikkiuchi_opening.dart';
 import 'package:fudatobashi/domain/ikkiuchi_send.dart';
+import 'package:fudatobashi/domain/ikkiuchi_side.dart';
 import 'package:fudatobashi/domain/ikkiuchi_tobi.dart';
 import 'package:fudatobashi/domain/placing.dart';
 import 'package:fudatobashi/ui/ikkiuchi/ikkiuchi_board_layout.dart';
@@ -48,13 +50,14 @@ void main() {
   setUp(() => sounds = _Quiet());
   tearDown(() => sounds = real);
 
-  // A match's opening dealt by [seed], [perSide] cards a side and Tobi at
-  // [rating], on the phone in landscape, as the match screen deals it.
-  IkkiuchiBoardScene dealt(int seed, {double rating = 2000, int perSide = 25}) {
+  // A match's opening dealt by [seed], [perSide] cards a side in [rows]
+  // rows and Tobi at [rating], on the phone in landscape, as the match
+  // screen deals it.
+  IkkiuchiBoardScene dealt(int seed, {double rating = 2000, int perSide = 25, int rows = 3}) {
     final deck = [for (final p in poems.all) p.id]..shuffle(math.Random(seed));
     final own = deck.sublist(0, perSide), others = deck.sublist(perSide, 2 * perSide);
-    final homes = layout.generate(rating: rating, own: own, others: others, rows: 3, seed: seed);
-    final sides = IkkiuchiSides.start(homes, [for (var r = 0; r < 3; r++) const IkkiuchiRow([], [])]);
+    final homes = layout.generate(rating: rating, own: own, others: others, rows: rows, seed: seed);
+    final sides = IkkiuchiSides.start(homes, [for (var r = 0; r < rows; r++) const IkkiuchiRow([], [])]);
     final board = IkkiuchiBoardLayout.of(
         size: phone, landscape: true, tobiRows: sides.tobi, playerRows: sides.player, rig: rig, opening: true);
     return IkkiuchiBoardScene(board, IkkiuchiCardFaces(showNumber: false),
@@ -63,8 +66,8 @@ void main() {
 
   const words = IkkiuchiMatchWords(kimariji: _kimariji, call: _call, karafuda: 'からふだ');
 
-  IkkiuchiMatchFlow match(int seed, {double rating = 2000, int perSide = 25, Duration? memorise}) =>
-      IkkiuchiMatchFlow(dealt(seed, rating: rating, perSide: perSide),
+  IkkiuchiMatchFlow match(int seed, {double rating = 2000, int perSide = 25, int rows = 3, Duration? memorise}) =>
+      IkkiuchiMatchFlow(dealt(seed, rating: rating, perSide: perSide, rows: rows),
           words: words, rating: rating, memorise: memorise ?? IkkiuchiMatchTuning.memorise);
 
   const frame = 16.0;
@@ -340,6 +343,58 @@ void main() {
       expect(scene.opening.tobiDone, isTrue);
       expect(scene.sides!.playerCards, hasLength(25));
       expect(tobiDown(scene), scene.sides!.tobiCards);
+    });
+  });
+
+  group('The board through a match', () {
+    test("a match of 1, 2 or 3 rows keeps its rows and its cards' size from the deal to its last cards", () {
+      for (final (rows, perSide) in [
+        (1, IkkiuchiLayoutTuning.oneRowUpTo),
+        (2, IkkiuchiLayoutTuning.twoRowsUpTo),
+        (3, 25),
+      ]) {
+        final flow = match(11, perSide: perSide, rows: rows);
+        final scene = flow.scene;
+        final start = scene.layout;
+        placeByTaps(scene);
+        flow.donePlacing();
+        scene.opening.finishTobi();
+
+        // Where each row of each side lies down the board, by its cards.
+        Map<(IkkiuchiSide, int), double> rowsAt() {
+          final sides = scene.sides!;
+          return {
+            for (final c in scene.layout.cards)
+              (
+                c.side,
+                (c.side == IkkiuchiSide.player ? sides.player : sides.tobi)
+                    .indexWhere((r) => [...r.left, ...r.middle, ...r.right].contains(c.id)),
+              ): c.box.centre.y,
+          };
+        }
+
+        final placed = rowsAt();
+        void expectKept(String why) {
+          final layout = scene.layout;
+          expect(layout.cardW, start.cardW, reason: '$rows rows, $why: the cards keep their size');
+          expect([layout.field.top, layout.field.height], [start.field.top, start.field.height],
+              reason: '$rows rows, $why: the field keeps its rows');
+          expect(layout.tobi.k, start.tobi.k, reason: '$rows rows, $why: Tobi keeps his size');
+          for (final MapEntry(key: row, value: y) in rowsAt().entries) {
+            expect(y, closeTo(placed[row]!, 1e-9), reason: '$rows rows, $why: row $row in its place');
+          }
+        }
+
+        expectKept('laid out for play');
+        var sides = scene.sides!;
+        while (sides.tobiCards.length > 1 || sides.playerCards.length > 1) {
+          final card = sides.playerCards.length >= sides.tobiCards.length ? sides.playerCards.last : sides.tobiCards.last;
+          scene.relayout(sides.without(card));
+          sides = scene.sides!;
+          expectKept('${sides.tobiCards.length} and ${sides.playerCards.length} cards left');
+        }
+        flow.dispose();
+      }
     });
   });
 }
