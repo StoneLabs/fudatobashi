@@ -177,29 +177,39 @@ class UnrankedSticker extends StatelessWidget {
       );
 }
 
-/// Progress toward the next class, [width] wide (infinite to fill).
+/// Progress toward the next class, [width] wide (infinite to fill), filled
+/// in [color], [height] tall and edged [border].
 class RatingBar extends StatelessWidget {
-  const RatingBar(this.fraction, {super.key, this.width = HomeLayout.ratingBarWidth});
+  const RatingBar(
+    this.fraction, {
+    super.key,
+    this.width = HomeLayout.ratingBarWidth,
+    this.color = Palette.pink,
+    this.height = HomeLayout.ratingBarHeight,
+    this.border = Strokes.label,
+  });
 
   final double fraction;
   final double width;
+  final Color color;
+  final double height, border;
 
   @override
   Widget build(BuildContext context) => Container(
         width: width,
-        height: HomeLayout.ratingBarHeight,
+        height: height,
         decoration: BoxDecoration(
           color: Palette.paper,
-          border: Border.all(color: Palette.ink, width: Strokes.label),
+          border: Border.all(color: Palette.ink, width: border),
         ),
         alignment: Alignment.centerLeft,
         child: FractionallySizedBox(
           widthFactor: fraction.clamp(0.0, 1.0),
           heightFactor: 1,
-          child: const DecoratedBox(
+          child: DecoratedBox(
             decoration: BoxDecoration(
-              color: Palette.pink,
-              border: Border(right: BorderSide(color: Palette.ink, width: Strokes.label)),
+              color: color,
+              border: Border(right: BorderSide(color: Palette.ink, width: border)),
             ),
           ),
         ),
