@@ -460,6 +460,63 @@ void main() {
     });
   });
 
+  group('the break mark', () {
+    const plotSize = Size(380, 300);
+
+    Future<void> plot(WidgetTester tester, Progress p, IkkiuchiRankTimeline t, Duration at, {bool atRest = false}) async {
+      useScreen(tester, usersPhone);
+      await tester.pumpWidget(app(
+          p,
+          Scaffold(
+            body: SizedBox.fromSize(
+                size: plotSize,
+                child: IkkiuchiRankPlot(t, elapsed: at, tone: ikkiuchiModeTone(t.change.mode), atRest: atRest)),
+          )));
+      final plotContext = tester.element(find.byType(IkkiuchiRankPlot));
+      await tester.runAsync(() => precacheImage(const AssetImage(IkkiuchiRankLayout.breakMark), plotContext));
+      await tester.pump();
+      await tester.pump();
+    }
+
+    testWidgets('goes along centred on the diamond from the break to the end', (tester) async {
+      final p = await open(tester, 'ja');
+      final t = _timeline(ikkiuchiRankPreview(IkkiuchiRankMoment.rankUp));
+      final ends = IkkiuchiRankPlotPoints(t.change, plotSize);
+      const ms = Duration(milliseconds: 1);
+      final stops = {
+        'break': t.breakAt + ms * 400,
+        'mid-run': t.breakAt + (t.landAt - t.breakAt) ~/ 2,
+        'end': t.length,
+      };
+      final centres = <String, Offset>{};
+      for (final MapEntry(:key, :value) in stops.entries) {
+        await plot(tester, p, t, value);
+        final centre = ends.along(t.shareAt(value));
+        centres[key] = centre;
+        expect(
+            tester.renderObject(find.byType(IkkiuchiRankPlot)),
+            paints
+              ..drawImageRect(
+                  destination: Rect.fromCenter(
+                      center: centre,
+                      width: IkkiuchiRankLayout.breakMarkSize,
+                      height: IkkiuchiRankLayout.breakMarkSize))
+              ..path(includes: [centre]),
+            reason: '$key: the mark under the diamond, on its centre');
+      }
+      expect((centres['mid-run']! - centres['break']!).distance, greaterThan(1), reason: 'the diamond has moved on');
+      expect((centres['end']! - centres['mid-run']!).distance, greaterThan(1), reason: 'and on to its place');
+      expect(centres['end'], ends.next);
+    });
+
+    testWidgets('is left out of the box at rest', (tester) async {
+      final p = await open(tester, 'ja');
+      final t = _timeline(ikkiuchiRankPreview(IkkiuchiRankMoment.rankUp));
+      await plot(tester, p, t, t.length, atRest: true);
+      expect(tester.renderObject(find.byType(IkkiuchiRankPlot)), isNot(paints..drawImageRect()));
+    });
+  });
+
   group('at rest', () {
     for (final moment in IkkiuchiRankMoment.values) {
       testWidgets("${moment.name}: the box as the page ends, without the change's marks", (tester) async {
@@ -534,6 +591,17 @@ void main() {
         }
       });
     }
+
+    testWidgets('a rank up ends the same in every mode', (tester) async {
+      final p = await open(tester, 'ja');
+      for (final mode in IkkiuchiMode.values) {
+        final change = ikkiuchiRankPreview(IkkiuchiRankMoment.rankUp, mode: mode);
+        await show(tester, p, change, usersPhone);
+        await advance(tester, until: _timeline(change).length);
+        await capture(tester, 'rankUp', lang: 'ja', variant: 'end_${mode.name}');
+        await tester.pumpWidget(const SizedBox());
+      }
+    });
 
     test('the ticks of a +5, +14, +62 and -20 count', () {
       final lines = <String>[

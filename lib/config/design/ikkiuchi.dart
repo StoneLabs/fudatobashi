@@ -1148,8 +1148,8 @@ abstract final class IkkiuchiRankLayout {
   /// [burstStrokes] ink strokes [burstStroke] wide fly out from [burstFrom]
   /// to [burstReach] more ([burstEnd] at the last), turned up to
   /// [burstJitter] off even ([burstSeed]), [breakBurst] times as big at a
-  /// break, where the [breakMark] stays, a [breakMarkSize] square centred
-  /// on the break.
+  /// break, whose [breakMark], a [breakMarkSize] square, stays centred on
+  /// the diamond.
   static const curve = IkkiuchiCurveStyle(
     labelRoom: 60,
     inset: 14,

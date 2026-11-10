@@ -205,8 +205,8 @@ abstract class _PlotPainter extends CustomPainter {
 /// The mode's rating curve with this match's point running from the last
 /// match's to its place: the guide in its slot until it lands, the class
 /// line it crosses straining, breaking or cracking (whole [atRest]), the
-/// diamond swelling at the landing, the heartbeats and the break, where
-/// [breakMark] stays once loaded.
+/// diamond swelling at the landing, the heartbeats and the break, whose
+/// [breakMark], once loaded, goes along under the diamond.
 class _CurvePainter extends _PlotPainter {
   _CurvePainter(super.timeline, super.elapsed, super.tone, super.words, super.scaler, super.pixelRatio, this.breakMark,
       {required this.atRest});
@@ -249,6 +249,7 @@ class _CurvePainter extends _PlotPainter {
 
     final crossed = atRest ? null : (t.ranksUp ? change.to : (t.ranksDown ? change.from : null));
     final gateX = t.gateShare == null ? 0.0 : ends.along(t.gateShare!).dx;
+    final mark = share > 0 ? head : points.last;
     for (final band in scale.bands) {
       final y = scale.yOf(band.minRating);
       final gate = band == crossed;
@@ -272,7 +273,7 @@ class _CurvePainter extends _PlotPainter {
       if (broken) {
         burst(canvas, Offset(gateX, y), progressIn(e, t.breakAt, IkkiuchiRankMotion.burst),
             size: IkkiuchiRankLayout.breakBurst);
-        _mark(canvas, Offset(gateX, y), Entrances.bouncy.transform(progressIn(e, t.breakAt, IkkiuchiRankMotion.markPop)));
+        _mark(canvas, mark, Entrances.bouncy.transform(progressIn(e, t.breakAt, IkkiuchiRankMotion.markPop)));
       }
     }
     ink.floor(scale, floor);
@@ -287,12 +288,11 @@ class _CurvePainter extends _PlotPainter {
             (1 - Curves.easeOutCubic.transform(progressIn(e, t.breakAt, IkkiuchiRankMotion.breakPulse)));
       }
     }
-    final mark = share > 0 ? head : points.last;
     ink.diamond(mark, style.mark * swell, tone.deep, style.markRing);
     if (t.moment == IkkiuchiRankMoment.up) burst(canvas, mark, progressIn(e, t.landAt, IkkiuchiRankMotion.burst));
   }
 
-  /// The break mark where the line broke through, [f] of the way popped in.
+  /// The break mark centred on the diamond at [at], [f] of the way popped in.
   void _mark(Canvas canvas, Offset at, double f) {
     final image = breakMark;
     if (f <= 0 || image == null) return;
