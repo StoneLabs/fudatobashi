@@ -236,12 +236,11 @@ abstract final class AnkirenRatingModel {
   static const double establishedK = 0.35;
 }
 
-/// Experience from a 暗記練 game (`AnkirenXp`), on [XpTuning]'s scale. Most of
-/// a game is memorising, about 10–18 s a card at every level, so its XP is
-/// paid per card, by what its taps earned: a game finding about 70% of its
-/// cards with the first tap earns about what main runs earn over the same
-/// time (about 5½ XP a second; a level 2 game of about 2 minutes, some
-/// 800). Derived from the recorded games, like [XpTuning].
+/// Experience from a 暗記練 game (`AnkirenXp`), on [XpTuning]'s scale; 定位置
+/// earns by the same rules. Its cards are paid by what their taps earned,
+/// and a game played to the end pays for the memory time it used (定位置's
+/// placing time): a ranked game finding about 70% of its cards with the
+/// first tap earns some 3,000 XP a minute.
 abstract final class AnkirenXpTuning {
   /// A card found with the first tap at level 0, and what each level above
   /// adds. Any other card earns the same share of this as of its points
@@ -260,9 +259,12 @@ abstract final class AnkirenXpTuning {
   /// Each card whose taps earned nothing, in a game played to the end.
   static const int perMiss = XpTuning.perMiss;
 
+  /// A game played to the end, for each minute of memory time it used.
+  static const int memoryPerMinute = 3000;
+
   /// A game played to the end; a ranked one earns [ranked] on top.
   static const int clear = XpTuning.clear;
-  static const int ranked = 50;
+  static const int ranked = 500;
 
   /// A completed game scoring higher than every earlier one with its setup.
   static const int personalBest = XpTuning.personalBest;

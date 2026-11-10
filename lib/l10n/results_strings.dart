@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import '../domain/xp.dart';
 import 'strings.dart';
 
@@ -86,13 +88,16 @@ extension ResultsStrings on S {
         XpSource.weakCleared => t('xpSourceWeakCleared'),
         XpSource.taken => t('xpSourceTaken'),
         XpSource.won => t('xpSourceWon'),
+        XpSource.memory => t('xpSourceMemory'),
       };
 
-  /// The count beside an XP line, or null where it says nothing.
+  /// The count beside an XP line, or null where it says nothing; the
+  /// memory time's in whole minutes, at least one.
   String? xpCount(XpPart part) => switch (part.source) {
         XpSource.clear || XpSource.dayDone || XpSource.best || XpSource.graduation => null,
         XpSource.ranked || XpSource.placement || XpSource.exam || XpSource.won => null,
         XpSource.daily => part.count > 1 ? dayStreak(part.count) : null,
+        XpSource.memory => f('xpCountMinutes', [math.max(1, (part.count / Duration.secondsPerMinute).round())]),
         _ => f('xpCountTimes', [part.count]),
       };
 

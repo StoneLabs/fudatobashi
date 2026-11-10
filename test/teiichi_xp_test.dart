@@ -1,10 +1,11 @@
-// 定位置 earns experience by 暗記練's rules: level and ranked games only, the
-// cards never placed earn nothing.
+// 定位置 earns experience by 暗記練's rules: level and ranked games only, its
+// placing time as its memory time, the cards never placed earn nothing.
 import 'dart:io';
 
 import 'package:drift/drift.dart' show driftRuntimeOptions;
 import 'package:drift/native.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:fudatobashi/config/config.dart';
 import 'package:fudatobashi/data/fuda_sets.dart';
 import 'package:fudatobashi/data/poem.dart';
 import 'package:fudatobashi/db/database.dart';
@@ -36,7 +37,7 @@ void main() {
   /// What 暗記練's rules give the last game recorded, scored on a ledger of
   /// its own.
   XpGain byAnkirenRules(Progress p) =>
-      XpLedger().addAnkiren(XpHistory.ankirenRunOf(p.sideTrips, p.sideTrips.runs.last));
+      XpLedger().addAnkiren(XpHistory.teiichiRunOf(p.sideTrips, p.sideTrips.runs.last));
 
   test('a level game earns what the same game earns in 暗記練, and it comes back on load', () async {
     final db = AppDatabase(NativeDatabase.memory());
@@ -51,6 +52,19 @@ void main() {
     final again = await open(db);
     expect(again.xp.total, xp.award.total, reason: 'the ledger is rebuilt from the stored games');
     expect(XpHistory.gainsOf(again).teiichi[again.sideTrips.runs.last.id]!.award.total, xp.award.total);
+    await db.close();
+  });
+
+  test('its placing time is paid as memory time used, by the minute, in a game played to the end', () async {
+    final db = AppDatabase(NativeDatabase.memory());
+    final p = await open(db);
+    final report = await record(p, playTeiichi(TeiichiSetup.forLevel(1), strikes: true, placeMs: 4500));
+    final placing = Duration(milliseconds: 8 * 4500);
+    expect(report.xp!.award.parts.singleWhere((x) => x.source == XpSource.memory).count, placing.inSeconds);
+    expect(report.xp!.award.parts.singleWhere((x) => x.source == XpSource.memory).xp,
+        AnkirenXpTuning.memoryPerMinute * placing.inSeconds ~/ 60);
+    final ended = await record(p, playTeiichi(TeiichiSetup.forLevel(1), strikes: true, placeMs: 4500, endAfter: 3));
+    expect(ended.xp!.award.parts.map((x) => x.source), isNot(contains(XpSource.memory)), reason: 'ended early');
     await db.close();
   });
 

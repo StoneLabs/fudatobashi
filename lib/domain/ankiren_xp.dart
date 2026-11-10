@@ -22,6 +22,7 @@ class AnkirenXpRun {
     required this.level,
     required this.score,
     required this.answers,
+    this.memorised = Duration.zero,
   });
 
   final int runId;
@@ -41,6 +42,9 @@ class AnkirenXpRun {
   /// One per card, in the order they were asked.
   final List<AnkirenXpAnswer> answers;
 
+  /// The memory time used: 暗記練's memorising, 定位置's placing.
+  final Duration memorised;
+
   /// A ranked game left once its cards were face down: it earns nothing.
   bool get forfeit => ranked && !completed;
 
@@ -55,8 +59,9 @@ class AnkirenXpRun {
 /// [AnkirenXpTuning.rankedLevel]) as of its points (`AnkirenScore.share`):
 /// all of it when the first tap found it, part (at least as much as a card
 /// that earned nothing) when its taps landed near it; and a find with the first tap a speed bonus for its time. A game
-/// played to the end pays the cards that earned nothing for trying, adds a
-/// clear (and a ranked one more), a personal best adds its bonus, and the
+/// played to the end pays the cards that earned nothing for trying, pays
+/// for its memory time used ([memoryXp]), adds a clear (and a ranked one
+/// more), a personal best adds its bonus, and the
 /// ranked game that finishes placement adds a one-off bonus. A からふだ call
 /// earns as a card does, all of it on a line of its own. A forfeit and
 /// a custom game earn nothing; a free game ended early earns only what its
@@ -76,6 +81,10 @@ class AnkirenXp {
   static int speedXp(int responseUs) => Attempt.isValidTime(responseUs)
       ? (AnkirenXpTuning.speedMax * AnkirenScore.speedShare(responseUs / 1000)).round()
       : 0;
+
+  /// XP [memorised] of memory time used earns.
+  static int memoryXp(Duration memorised) =>
+      (AnkirenXpTuning.memoryPerMinute * memorised.inMicroseconds / Duration.microsecondsPerMinute).round();
 
   /// What [run], played after every game scored so far, earned.
   XpAward score(AnkirenXpRun run) {
@@ -119,6 +128,7 @@ class AnkirenXp {
       if (bonus > 0) fast++;
       speed += bonus;
     }
+    final memorised = done ? run.memorised : Duration.zero;
     return XpAward([
       for (final p in [
         XpPart(XpSource.firstTap, first, firstXp),
@@ -126,6 +136,7 @@ class AnkirenXp {
         XpPart(XpSource.karafuda, karafuda, karafudaXp),
         XpPart(XpSource.missed, missed, done ? missed * AnkirenXpTuning.perMiss : 0),
         XpPart(XpSource.speed, fast, speed),
+        XpPart(XpSource.memory, memorised.inSeconds, memoryXp(memorised)),
         XpPart(XpSource.clear, 1, done ? AnkirenXpTuning.clear : 0),
         XpPart(XpSource.ranked, 1, done && run.ranked ? AnkirenXpTuning.ranked : 0),
         XpPart(XpSource.best, 1, best ? AnkirenXpTuning.personalBest : 0),

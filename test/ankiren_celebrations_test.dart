@@ -102,6 +102,9 @@ Widget _rankPage(AnkirenRankCelebration data, {VoidCallback? onNext}) => data.up
     ? AnkirenRankUpOverlay(data: data, onNext: onNext ?? () {})
     : AnkirenRankDownOverlay(data: data, onNext: onNext ?? () {});
 
+/// The memory time [_ankirenGain]'s game used: all of a ranked game's.
+const _memorised = Duration(minutes: 15);
+
 /// A 暗記練 game's XP: every 暗記練 source, crossing a level from [into]
 /// XP into level 7.
 XpGain _ankirenGain({int into = 150}) => XpGain(
@@ -113,6 +116,7 @@ XpGain _ankirenGain({int into = 150}) => XpGain(
         XpPart(XpSource.karafuda, 4, 4 * AnkirenXp.cardXp(3)),
         const XpPart(XpSource.missed, 2, 2 * AnkirenXpTuning.perMiss),
         const XpPart(XpSource.speed, 12, 310),
+        XpPart(XpSource.memory, _memorised.inSeconds, AnkirenXp.memoryXp(_memorised)),
         const XpPart(XpSource.clear, 1, AnkirenXpTuning.clear),
         const XpPart(XpSource.ranked, 1, AnkirenXpTuning.ranked),
         const XpPart(XpSource.best, 1, AnkirenXpTuning.personalBest),
@@ -356,9 +360,16 @@ void main() {
             await showPage(tester, p, XpOverlay(gain: gain, onNext: () {}), phone,
                 fontScale: fontScale, settle: timeline.length);
             expect(tester.takeException(), isNull, reason: '${phone.name} dp, $fontScale');
-            for (final source in [XpSource.firstTap, XpSource.nearMiss, XpSource.ranked, XpSource.placement]) {
+            for (final source in [
+              XpSource.firstTap,
+              XpSource.nearMiss,
+              XpSource.memory,
+              XpSource.ranked,
+              XpSource.placement,
+            ]) {
               expect(find.text(s.xpSource(source)), findsOneWidget);
             }
+            expect(find.text(lang == 'ja' ? '15分' : '15 min'), findsOneWidget, reason: 'the memory time, in minutes');
             expect(find.text('+${gain.award.total}'), findsWidgets);
             expectShown(tester, find.byType(CelebrationCta), phone);
             await showPage(tester, p, LevelUpOverlay(gain: gain, onNext: () {}), phone,

@@ -284,6 +284,7 @@ void main() {
       int? level = 2,
       int? score = 500,
       DateTime? at,
+      Duration memorised = Duration.zero,
     }) =>
         AnkirenXpRun(
           runId: nextRun++,
@@ -293,6 +294,7 @@ void main() {
           level: level,
           score: score,
           answers: answers,
+          memorised: memorised,
         );
 
     test('a first tap earns more at higher levels, and its speed bonus falls with the time', () {
@@ -326,6 +328,7 @@ void main() {
         XpSource.clear: (1, AnkirenXpTuning.clear),
         XpSource.ranked: (1, AnkirenXpTuning.ranked),
       });
+      expect(AnkirenXpTuning.ranked, 500);
       expect(gain.award.parts.map((p) => p.source).toList(),
           [XpSource.firstTap, XpSource.nearMiss, XpSource.missed, XpSource.speed, XpSource.clear, XpSource.ranked],
           reason: 'listed in the order the XP page shows them');
@@ -358,6 +361,31 @@ void main() {
       }
       expect(parts(XpLedger().addAnkiren(game([missed([otherSide, otherSide, card])]))).keys,
           [XpSource.missed, XpSource.clear], reason: 'found on the third tap after two far misses: nothing');
+    });
+
+    test('a game played to the end earns its memory time used by the minute; ended early or forfeited, none', () {
+      const used = Duration(minutes: 6, seconds: 30);
+      final xp = (AnkirenXpTuning.memoryPerMinute * 6.5).round();
+      expect(AnkirenXpTuning.memoryPerMinute, 3000);
+      final ledger = XpLedger();
+      final free = ledger.addAnkiren(game([first(100), givenUp], memorised: used));
+      expect(parts(free)[XpSource.memory], (used.inSeconds, xp));
+      expect(free.award.parts.map((p) => p.source).toList(),
+          [XpSource.firstTap, XpSource.missed, XpSource.speed, XpSource.memory, XpSource.clear],
+          reason: 'after the cards, before the bonuses');
+      final ranked = ledger.addAnkiren(game([first(100)], ranked: true, level: null, memorised: used));
+      expect(parts(ranked)[XpSource.memory], (used.inSeconds, xp), reason: 'the same a minute at every level');
+      expect(parts(ledger.addAnkiren(game([first(100)], memorised: const Duration(seconds: 40))))[XpSource.memory],
+          (40, AnkirenXpTuning.memoryPerMinute * 2 ~/ 3), reason: 'ready early, less of it');
+
+      final ended = ledger.addAnkiren(game([first(100), givenUp], completed: false, memorised: used));
+      expect(parts(ended).containsKey(XpSource.memory), isFalse, reason: 'ended early: only what its cards earned');
+      final forfeit = ledger.addAnkiren(game([first(100)], ranked: true, level: null, completed: false, memorised: used));
+      expect(forfeit.award.parts, isEmpty);
+      expect(ledger.addAnkiren(game([first(100)], level: null, score: null, memorised: used)).award.parts, isEmpty,
+          reason: 'custom');
+      expect(parts(ledger.addAnkiren(game([first(100)]))).containsKey(XpSource.memory), isFalse,
+          reason: 'none stored, none paid');
     });
 
     test('a custom game earns nothing and races nobody', () {
@@ -434,6 +462,9 @@ void main() {
               .xp!;
 
       final ranked = await record(const AnkirenSetup.ranked(), wrongAt: {0});
+      final memorise = const AnkirenSetup.ranked().memorise;
+      expect(parts(ranked)[XpSource.memory], (memorise.inSeconds, AnkirenXpTuning.memoryPerMinute * memorise.inMinutes),
+          reason: 'all of its memory time, as stored with it');
       const cards = 2 * AnkirenTuning.rankedPerSide;
       expect(parts(ranked)[XpSource.firstTap], (cards - 1, (cards - 1) * AnkirenXp.cardXp(AnkirenXpTuning.rankedLevel)));
       expect(parts(ranked)[XpSource.nearMiss]?.$1, 1);

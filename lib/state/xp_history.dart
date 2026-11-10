@@ -1,8 +1,12 @@
+import 'dart:convert';
+
 import '../db/database.dart';
 import '../domain/ankiren_level.dart';
+import '../domain/ankiren_review.dart';
 import '../domain/ankiren_xp.dart';
 import '../domain/card_stats.dart';
 import '../domain/side_trips.dart';
+import '../domain/teiichi_record.dart';
 import '../domain/weak_cards.dart';
 import '../domain/xp.dart';
 import 'play_config.dart';
@@ -53,13 +57,18 @@ abstract final class XpHistory {
 
   /// 暗記練 game [run] of [trips].
   static AnkirenXpRun ankirenRunOf(SideTrips trips, SideTripRun run) =>
-      _tripRunOf(trips, run, run.level?.clamp(0, AnkirenLevels.top));
+      _tripRunOf(trips, run, run.level?.clamp(0, AnkirenLevels.top), memorisedKey: AnkirenMeta.memorisedKey);
 
-  /// 定位置 game [run] of [trips], scored as 暗記練's: the cards never
-  /// placed were never called, so they have no answers.
-  static AnkirenXpRun teiichiRunOf(SideTrips trips, SideTripRun run) => _tripRunOf(trips, run, run.level);
+  /// 定位置 game [run] of [trips], scored as 暗記練's, its placing time as its
+  /// memory time: the cards never placed were never called, so they have
+  /// no answers.
+  static AnkirenXpRun teiichiRunOf(SideTrips trips, SideTripRun run) =>
+      _tripRunOf(trips, run, run.level, memorisedKey: TeiichiMeta.placingKey);
 
-  static AnkirenXpRun _tripRunOf(SideTrips trips, SideTripRun run, int? level) => AnkirenXpRun(
+  /// [run] of [trips], its memory time used kept in its meta under
+  /// [memorisedKey], ms (none for a game stored without it).
+  static AnkirenXpRun _tripRunOf(SideTrips trips, SideTripRun run, int? level, {required String memorisedKey}) =>
+      AnkirenXpRun(
         runId: run.id,
         startedAt: run.startedAt,
         ranked: run.ranked,
@@ -67,6 +76,7 @@ abstract final class XpHistory {
         level: level,
         score: run.score,
         answers: trips.answersOf(run),
+        memorised: Duration(milliseconds: (jsonDecode(run.meta) as Map<String, dynamic>)[memorisedKey] as int? ?? 0),
       );
 
   /// Run [r] of [progress] with its attempts, looked up at the end of each

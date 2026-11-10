@@ -50,6 +50,10 @@ enum XpSource {
 
   /// 一騎打ち: a match won.
   won,
+
+  /// The side trips: the memory time a game played to the end used (定位置's
+  /// placing time), its count the seconds paid.
+  memory,
 }
 
 /// One swipe of a recorded run, as experience sees it.

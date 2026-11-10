@@ -101,8 +101,9 @@ abstract final class CelebrationPreviewTuning {
     (XpSource.karafuda, 4, 320),
     (XpSource.missed, 1, 2),
     (XpSource.speed, 15, 320),
+    (XpSource.memory, 90, 4500),
     (XpSource.clear, 1, 20),
-    (XpSource.ranked, 1, 50),
+    (XpSource.ranked, 1, 500),
     (XpSource.best, 1, 200),
   ];
   static const int ankirenLevel = 40;
