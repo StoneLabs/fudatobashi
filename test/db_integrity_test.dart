@@ -331,6 +331,7 @@ void main() {
               perSide: 25,
               rows: 3,
               memoriseMs: 900000,
+              memorisedMs: 900000,
               opponentRating: opponent,
               completed: true,
               playerLeft: won ? 0 : 3,

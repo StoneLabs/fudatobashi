@@ -300,6 +300,10 @@ class IkkiuchiMatches extends Table {
   IntColumn get rows => integer()();
   IntColumn get memoriseMs => integer()();
 
+  /// The memory time used, from the start of the placing to the first read,
+  /// ms.
+  IntColumn get memorisedMs => integer()();
+
   /// The rating the opponent played at.
   RealColumn get opponentRating => real()();
 

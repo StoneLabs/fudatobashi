@@ -273,14 +273,15 @@ void main() {
         perSide: 25,
         rows: 3,
         memoriseMs: 900000,
+        memorisedMs: 412000,
         opponentRating: 1600,
         completed: true,
         playerLeft: 0,
         opponentLeft: 4,
         rating: const Value(1650),
         xp: '[["taken",21,4200]]'));
-    expect([for (final m in await db.select(db.ikkiuchiMatches).get()) (m.id, m.mode, m.rows, m.xp)],
-        [(match, IkkiuchiMode.rapid, 3, '[["taken",21,4200]]')]);
+    expect([for (final m in await db.select(db.ikkiuchiMatches).get()) (m.id, m.mode, m.rows, m.memorisedMs, m.xp)],
+        [(match, IkkiuchiMode.rapid, 3, 412000, '[["taken",21,4200]]')]);
     await db.into(db.ikkiuchiReads).insert(IkkiuchiReadsCompanion.insert(
         matchId: match,
         seq: 0,

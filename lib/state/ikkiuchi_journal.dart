@@ -27,6 +27,7 @@ class IkkiuchiJournal {
       'memoriseMs': setup.memorise.inMilliseconds,
       'startedAt': match.startedAt.toIso8601String(),
       'endedAt': match.endedAt.toIso8601String(),
+      'memorisedMs': match.memorised.inMilliseconds,
       'playerLeft': match.playerLeft,
       'opponentLeft': match.opponentLeft,
       'reads': [
@@ -64,6 +65,7 @@ class IkkiuchiJournal {
       ),
       startedAt: DateTime.parse(j['startedAt'] as String),
       endedAt: DateTime.parse(j['endedAt'] as String),
+      memorised: Duration(milliseconds: j['memorisedMs'] as int),
       completed: false,
       playerLeft: j['playerLeft'] as int,
       opponentLeft: j['opponentLeft'] as int,

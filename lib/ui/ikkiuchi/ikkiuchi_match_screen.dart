@@ -211,6 +211,7 @@ class IkkiuchiMatchScreenState extends State<IkkiuchiMatchScreen> with SingleTic
       setup: widget.setup,
       startedAt: _startedAt,
       endedAt: DateTime.now(),
+      memorised: flow.memorised,
       completed: completed,
       playerLeft: left.player,
       opponentLeft: left.opponent,

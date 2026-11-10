@@ -145,6 +145,12 @@ class IkkiuchiMatchFlow extends ChangeNotifier {
   /// Whether play has begun: a card has been read.
   bool get playBegun => _readId != null;
 
+  /// The memory time used: the board's time from the start of the placing
+  /// to the first read, cut short when the player is ready early
+  /// ([startEarly]).
+  Duration get memorised => Duration(microseconds: (_beforePlay * Duration.microsecondsPerMillisecond).round());
+  double _beforePlay = 0;
+
   /// How the match ended for the player, once it is over: given up when
   /// they ended it, else won when their side was emptied first; null for
   /// one they ended before its first read.
@@ -298,6 +304,7 @@ class IkkiuchiMatchFlow extends ChangeNotifier {
   /// the app was away, holds the match for the rest of it.
   void advance(double ms) {
     ms = math.min(ms, _ms(IkkiuchiMatchTuning.longestStep));
+    if (!playBegun) _beforePlay += ms;
     scene.advance(ms);
     if (_length(_stage) != null) return _countDown(ms);
     switch (_stage) {

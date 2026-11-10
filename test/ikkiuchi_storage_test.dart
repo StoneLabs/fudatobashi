@@ -1,5 +1,5 @@
-// How a 一騎打ち match is stored: its row with the setup, how far it was
-// played and the cards left, its reads in order with the field each was
+// How a 一騎打ち match is stored: its row with the setup, the memory time
+// used, how far it was played and the cards left, its reads in order with the field each was
 // played on, its faults and its 送り札, and both coming back on load as the
 // same records; what is worked out from them (the result, the faults, the
 // counts, the free setup to restore); and the day it was played on.
@@ -44,6 +44,7 @@ void main() {
         setup: played ?? setup(),
         startedAt: at,
         endedAt: at.add(const Duration(minutes: 20)),
+        memorised: const Duration(minutes: 2, seconds: 17, milliseconds: 250),
         completed: completed,
         playerLeft: playerLeft,
         opponentLeft: opponentLeft,
@@ -92,6 +93,7 @@ void main() {
         m.setup.memorise,
         m.startedAt,
         m.endedAt,
+        m.memorised,
         m.completed,
         m.playerLeft,
         m.opponentLeft,

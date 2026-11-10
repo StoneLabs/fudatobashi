@@ -40,6 +40,7 @@ void main() {
         setup: ranked,
         startedAt: started,
         endedAt: started.add(Duration(minutes: reads.length)),
+        memorised: const Duration(minutes: 6, seconds: 41, milliseconds: 500),
         completed: false,
         playerLeft: left.player,
         opponentLeft: left.opponent,
@@ -69,6 +70,7 @@ void main() {
     final m = restarted.ikkiuchi.matches.single;
     expect([m.ranked, m.completed, m.result, m.startedAt, m.endedAt, m.playerLeft, m.opponentLeft, m.reads],
         [true, false, IkkiuchiResult.gaveUp, started, started, perSide, perSide, isEmpty]);
+    expect(m.memorised, const Duration(minutes: 6, seconds: 41, milliseconds: 500), reason: 'the memory time used');
     expect([m.setup.mode, m.setup.opponent, m.setup.opponentRating, m.setup.perSide, m.setup.rows, m.setup.memorise],
         [mode, IkkiuchiOpponent.tobi, 1450, perSide, 3, mode.memorise]);
     expect(restarted.ikkiuchi.counts(ranked: true), (played: 1, won: 0, lost: 1), reason: 'a loss');

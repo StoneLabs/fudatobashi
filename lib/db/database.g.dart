@@ -5999,6 +5999,17 @@ class $IkkiuchiMatchesTable extends IkkiuchiMatches
     type: DriftSqlType.int,
     requiredDuringInsert: true,
   );
+  static const VerificationMeta _memorisedMsMeta = const VerificationMeta(
+    'memorisedMs',
+  );
+  @override
+  late final GeneratedColumn<int> memorisedMs = GeneratedColumn<int>(
+    'memorised_ms',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+  );
   static const VerificationMeta _opponentRatingMeta = const VerificationMeta(
     'opponentRating',
   );
@@ -6076,6 +6087,7 @@ class $IkkiuchiMatchesTable extends IkkiuchiMatches
     perSide,
     rows,
     memoriseMs,
+    memorisedMs,
     opponentRating,
     completed,
     playerLeft,
@@ -6153,6 +6165,17 @@ class $IkkiuchiMatchesTable extends IkkiuchiMatches
       );
     } else if (isInserting) {
       context.missing(_memoriseMsMeta);
+    }
+    if (data.containsKey('memorised_ms')) {
+      context.handle(
+        _memorisedMsMeta,
+        memorisedMs.isAcceptableOrUnknown(
+          data['memorised_ms']!,
+          _memorisedMsMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_memorisedMsMeta);
     }
     if (data.containsKey('opponent_rating')) {
       context.handle(
@@ -6256,6 +6279,10 @@ class $IkkiuchiMatchesTable extends IkkiuchiMatches
         DriftSqlType.int,
         data['${effectivePrefix}memorise_ms'],
       )!,
+      memorisedMs: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}memorised_ms'],
+      )!,
       opponentRating: attachedDatabase.typeMapping.read(
         DriftSqlType.double,
         data['${effectivePrefix}opponent_rating'],
@@ -6323,6 +6350,10 @@ class IkkiuchiMatchRow extends DataClass
   final int rows;
   final int memoriseMs;
 
+  /// The memory time used, from the start of the placing to the first read,
+  /// ms.
+  final int memorisedMs;
+
   /// The rating the opponent played at.
   final double opponentRating;
 
@@ -6351,6 +6382,7 @@ class IkkiuchiMatchRow extends DataClass
     required this.perSide,
     required this.rows,
     required this.memoriseMs,
+    required this.memorisedMs,
     required this.opponentRating,
     required this.completed,
     required this.playerLeft,
@@ -6379,6 +6411,7 @@ class IkkiuchiMatchRow extends DataClass
     map['per_side'] = Variable<int>(perSide);
     map['rows'] = Variable<int>(rows);
     map['memorise_ms'] = Variable<int>(memoriseMs);
+    map['memorised_ms'] = Variable<int>(memorisedMs);
     map['opponent_rating'] = Variable<double>(opponentRating);
     map['completed'] = Variable<bool>(completed);
     map['player_left'] = Variable<int>(playerLeft);
@@ -6402,6 +6435,7 @@ class IkkiuchiMatchRow extends DataClass
       perSide: Value(perSide),
       rows: Value(rows),
       memoriseMs: Value(memoriseMs),
+      memorisedMs: Value(memorisedMs),
       opponentRating: Value(opponentRating),
       completed: Value(completed),
       playerLeft: Value(playerLeft),
@@ -6433,6 +6467,7 @@ class IkkiuchiMatchRow extends DataClass
       perSide: serializer.fromJson<int>(json['perSide']),
       rows: serializer.fromJson<int>(json['rows']),
       memoriseMs: serializer.fromJson<int>(json['memoriseMs']),
+      memorisedMs: serializer.fromJson<int>(json['memorisedMs']),
       opponentRating: serializer.fromJson<double>(json['opponentRating']),
       completed: serializer.fromJson<bool>(json['completed']),
       playerLeft: serializer.fromJson<int>(json['playerLeft']),
@@ -6459,6 +6494,7 @@ class IkkiuchiMatchRow extends DataClass
       'perSide': serializer.toJson<int>(perSide),
       'rows': serializer.toJson<int>(rows),
       'memoriseMs': serializer.toJson<int>(memoriseMs),
+      'memorisedMs': serializer.toJson<int>(memorisedMs),
       'opponentRating': serializer.toJson<double>(opponentRating),
       'completed': serializer.toJson<bool>(completed),
       'playerLeft': serializer.toJson<int>(playerLeft),
@@ -6479,6 +6515,7 @@ class IkkiuchiMatchRow extends DataClass
     int? perSide,
     int? rows,
     int? memoriseMs,
+    int? memorisedMs,
     double? opponentRating,
     bool? completed,
     int? playerLeft,
@@ -6496,6 +6533,7 @@ class IkkiuchiMatchRow extends DataClass
     perSide: perSide ?? this.perSide,
     rows: rows ?? this.rows,
     memoriseMs: memoriseMs ?? this.memoriseMs,
+    memorisedMs: memorisedMs ?? this.memorisedMs,
     opponentRating: opponentRating ?? this.opponentRating,
     completed: completed ?? this.completed,
     playerLeft: playerLeft ?? this.playerLeft,
@@ -6517,6 +6555,9 @@ class IkkiuchiMatchRow extends DataClass
       memoriseMs: data.memoriseMs.present
           ? data.memoriseMs.value
           : this.memoriseMs,
+      memorisedMs: data.memorisedMs.present
+          ? data.memorisedMs.value
+          : this.memorisedMs,
       opponentRating: data.opponentRating.present
           ? data.opponentRating.value
           : this.opponentRating,
@@ -6545,6 +6586,7 @@ class IkkiuchiMatchRow extends DataClass
           ..write('perSide: $perSide, ')
           ..write('rows: $rows, ')
           ..write('memoriseMs: $memoriseMs, ')
+          ..write('memorisedMs: $memorisedMs, ')
           ..write('opponentRating: $opponentRating, ')
           ..write('completed: $completed, ')
           ..write('playerLeft: $playerLeft, ')
@@ -6567,6 +6609,7 @@ class IkkiuchiMatchRow extends DataClass
     perSide,
     rows,
     memoriseMs,
+    memorisedMs,
     opponentRating,
     completed,
     playerLeft,
@@ -6588,6 +6631,7 @@ class IkkiuchiMatchRow extends DataClass
           other.perSide == this.perSide &&
           other.rows == this.rows &&
           other.memoriseMs == this.memoriseMs &&
+          other.memorisedMs == this.memorisedMs &&
           other.opponentRating == this.opponentRating &&
           other.completed == this.completed &&
           other.playerLeft == this.playerLeft &&
@@ -6607,6 +6651,7 @@ class IkkiuchiMatchesCompanion extends UpdateCompanion<IkkiuchiMatchRow> {
   final Value<int> perSide;
   final Value<int> rows;
   final Value<int> memoriseMs;
+  final Value<int> memorisedMs;
   final Value<double> opponentRating;
   final Value<bool> completed;
   final Value<int> playerLeft;
@@ -6624,6 +6669,7 @@ class IkkiuchiMatchesCompanion extends UpdateCompanion<IkkiuchiMatchRow> {
     this.perSide = const Value.absent(),
     this.rows = const Value.absent(),
     this.memoriseMs = const Value.absent(),
+    this.memorisedMs = const Value.absent(),
     this.opponentRating = const Value.absent(),
     this.completed = const Value.absent(),
     this.playerLeft = const Value.absent(),
@@ -6642,6 +6688,7 @@ class IkkiuchiMatchesCompanion extends UpdateCompanion<IkkiuchiMatchRow> {
     required int perSide,
     required int rows,
     required int memoriseMs,
+    required int memorisedMs,
     required double opponentRating,
     required bool completed,
     required int playerLeft,
@@ -6656,6 +6703,7 @@ class IkkiuchiMatchesCompanion extends UpdateCompanion<IkkiuchiMatchRow> {
        perSide = Value(perSide),
        rows = Value(rows),
        memoriseMs = Value(memoriseMs),
+       memorisedMs = Value(memorisedMs),
        opponentRating = Value(opponentRating),
        completed = Value(completed),
        playerLeft = Value(playerLeft),
@@ -6672,6 +6720,7 @@ class IkkiuchiMatchesCompanion extends UpdateCompanion<IkkiuchiMatchRow> {
     Expression<int>? perSide,
     Expression<int>? rows,
     Expression<int>? memoriseMs,
+    Expression<int>? memorisedMs,
     Expression<double>? opponentRating,
     Expression<bool>? completed,
     Expression<int>? playerLeft,
@@ -6690,6 +6739,7 @@ class IkkiuchiMatchesCompanion extends UpdateCompanion<IkkiuchiMatchRow> {
       if (perSide != null) 'per_side': perSide,
       if (rows != null) 'rows': rows,
       if (memoriseMs != null) 'memorise_ms': memoriseMs,
+      if (memorisedMs != null) 'memorised_ms': memorisedMs,
       if (opponentRating != null) 'opponent_rating': opponentRating,
       if (completed != null) 'completed': completed,
       if (playerLeft != null) 'player_left': playerLeft,
@@ -6710,6 +6760,7 @@ class IkkiuchiMatchesCompanion extends UpdateCompanion<IkkiuchiMatchRow> {
     Value<int>? perSide,
     Value<int>? rows,
     Value<int>? memoriseMs,
+    Value<int>? memorisedMs,
     Value<double>? opponentRating,
     Value<bool>? completed,
     Value<int>? playerLeft,
@@ -6728,6 +6779,7 @@ class IkkiuchiMatchesCompanion extends UpdateCompanion<IkkiuchiMatchRow> {
       perSide: perSide ?? this.perSide,
       rows: rows ?? this.rows,
       memoriseMs: memoriseMs ?? this.memoriseMs,
+      memorisedMs: memorisedMs ?? this.memorisedMs,
       opponentRating: opponentRating ?? this.opponentRating,
       completed: completed ?? this.completed,
       playerLeft: playerLeft ?? this.playerLeft,
@@ -6774,6 +6826,9 @@ class IkkiuchiMatchesCompanion extends UpdateCompanion<IkkiuchiMatchRow> {
     if (memoriseMs.present) {
       map['memorise_ms'] = Variable<int>(memoriseMs.value);
     }
+    if (memorisedMs.present) {
+      map['memorised_ms'] = Variable<int>(memorisedMs.value);
+    }
     if (opponentRating.present) {
       map['opponent_rating'] = Variable<double>(opponentRating.value);
     }
@@ -6808,6 +6863,7 @@ class IkkiuchiMatchesCompanion extends UpdateCompanion<IkkiuchiMatchRow> {
           ..write('perSide: $perSide, ')
           ..write('rows: $rows, ')
           ..write('memoriseMs: $memoriseMs, ')
+          ..write('memorisedMs: $memorisedMs, ')
           ..write('opponentRating: $opponentRating, ')
           ..write('completed: $completed, ')
           ..write('playerLeft: $playerLeft, ')
@@ -12321,6 +12377,7 @@ typedef $$IkkiuchiMatchesTableCreateCompanionBuilder =
       required int perSide,
       required int rows,
       required int memoriseMs,
+      required int memorisedMs,
       required double opponentRating,
       required bool completed,
       required int playerLeft,
@@ -12340,6 +12397,7 @@ typedef $$IkkiuchiMatchesTableUpdateCompanionBuilder =
       Value<int> perSide,
       Value<int> rows,
       Value<int> memoriseMs,
+      Value<int> memorisedMs,
       Value<double> opponentRating,
       Value<bool> completed,
       Value<int> playerLeft,
@@ -12446,6 +12504,11 @@ class $$IkkiuchiMatchesTableFilterComposer
 
   ColumnFilters<int> get memoriseMs => $composableBuilder(
     column: $table.memoriseMs,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get memorisedMs => $composableBuilder(
+    column: $table.memorisedMs,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -12582,6 +12645,11 @@ class $$IkkiuchiMatchesTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<int> get memorisedMs => $composableBuilder(
+    column: $table.memorisedMs,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   ColumnOrderings<double> get opponentRating => $composableBuilder(
     column: $table.opponentRating,
     builder: (column) => ColumnOrderings(column),
@@ -12671,6 +12739,11 @@ class $$IkkiuchiMatchesTableAnnotationComposer
 
   GeneratedColumn<int> get memoriseMs => $composableBuilder(
     column: $table.memoriseMs,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<int> get memorisedMs => $composableBuilder(
+    column: $table.memorisedMs,
     builder: (column) => column,
   );
 
@@ -12787,6 +12860,7 @@ class $$IkkiuchiMatchesTableTableManager
                 Value<int> perSide = const Value.absent(),
                 Value<int> rows = const Value.absent(),
                 Value<int> memoriseMs = const Value.absent(),
+                Value<int> memorisedMs = const Value.absent(),
                 Value<double> opponentRating = const Value.absent(),
                 Value<bool> completed = const Value.absent(),
                 Value<int> playerLeft = const Value.absent(),
@@ -12804,6 +12878,7 @@ class $$IkkiuchiMatchesTableTableManager
                 perSide: perSide,
                 rows: rows,
                 memoriseMs: memoriseMs,
+                memorisedMs: memorisedMs,
                 opponentRating: opponentRating,
                 completed: completed,
                 playerLeft: playerLeft,
@@ -12823,6 +12898,7 @@ class $$IkkiuchiMatchesTableTableManager
                 required int perSide,
                 required int rows,
                 required int memoriseMs,
+                required int memorisedMs,
                 required double opponentRating,
                 required bool completed,
                 required int playerLeft,
@@ -12840,6 +12916,7 @@ class $$IkkiuchiMatchesTableTableManager
                 perSide: perSide,
                 rows: rows,
                 memoriseMs: memoriseMs,
+                memorisedMs: memorisedMs,
                 opponentRating: opponentRating,
                 completed: completed,
                 playerLeft: playerLeft,

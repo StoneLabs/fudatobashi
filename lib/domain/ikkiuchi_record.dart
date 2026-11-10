@@ -326,16 +326,18 @@ class IkkiuchiReadLog {
       );
 }
 
-/// A match once it is over, as it is stored: its setup, when it ran,
-/// whether it was played to its end, the cards left on each side, and every
-/// read in order. Its [id], the player's [rating] after a ranked match and
-/// the experience it earned ([xp]) come with storing it ([stored]).
+/// A match once it is over, as it is stored: its setup, when it ran, the
+/// memory time it used, whether it was played to its end, the cards left
+/// on each side, and every read in order. Its [id], the player's [rating]
+/// after a ranked match and the experience it earned ([xp]) come with
+/// storing it ([stored]).
 class IkkiuchiMatchRecord {
   const IkkiuchiMatchRecord({
     this.id,
     required this.setup,
     required this.startedAt,
     required this.endedAt,
+    this.memorised = Duration.zero,
     required this.completed,
     required this.playerLeft,
     required this.opponentLeft,
@@ -349,6 +351,10 @@ class IkkiuchiMatchRecord {
 
   final IkkiuchiSetup setup;
   final DateTime startedAt, endedAt;
+
+  /// The memory time used: from the start of the placing to the first
+  /// read, cut short when the player was ready early (覚えた).
+  final Duration memorised;
 
   /// Played to its end, a side emptied; false when the player ended it
   /// (終了) or left it.
@@ -407,6 +413,7 @@ class IkkiuchiMatchRecord {
         setup: setup,
         startedAt: startedAt,
         endedAt: endedAt,
+        memorised: memorised,
         completed: completed,
         playerLeft: playerLeft,
         opponentLeft: opponentLeft,

@@ -3,9 +3,9 @@
 // his arm and the memory time runs; 完了 once every card is placed; the rest
 // placed by the game when the time runs out; 覚えた any time after 完了, Tobi
 // laying down the rest of his side at once; Tobi squeezed into a short
-// memory time; and 並べ替え after 完了 until play
-// begins. The board of a match of 1, 2 or 3 rows keeps its rows and its
-// cards' size to the end.
+// memory time; the memory time used, from the placing to the first read;
+// and 並べ替え after 完了 until play begins. The board of a match of 1, 2
+// or 3 rows keeps its rows and its cards' size to the end.
 import 'dart:io';
 import 'dart:math' as math;
 import 'dart:ui' show Offset, Size;
@@ -286,6 +286,31 @@ void main() {
         final c = scene.board.cards.card(id);
         expect(c.box.centre.distanceTo(c.home.centre), lessThan(1e-3), reason: 'card $id at its home');
       }
+    });
+
+    test('the memory time used runs from the start of the placing to the first read, cut short by 覚えた', () {
+      const memorise = Duration(minutes: 1), early = Duration(seconds: 20);
+      final toFirstRead = IkkiuchiMatchTuning.greeting + IkkiuchiMatchTuning.yoka;
+      Duration used({required bool ready}) {
+        final flow = match(13, memorise: memorise);
+        placeByTaps(flow.scene);
+        flow.donePlacing();
+        if (ready) {
+          run(flow, early.inMilliseconds.toDouble());
+          flow.startEarly();
+        }
+        runUntil(flow, () => flow.playBegun);
+        final at = flow.memorised;
+        run(flow, 3000);
+        expect(flow.memorised, at, reason: 'it stops at the first read');
+        flow.dispose();
+        return at;
+      }
+
+      expect(used(ready: false).inMilliseconds, closeTo((memorise + toFirstRead).inMilliseconds, 2 * frame),
+          reason: 'all of it, then the greeting and the 序歌');
+      expect(used(ready: true).inMilliseconds, closeTo((early + toFirstRead).inMilliseconds, 2 * frame),
+          reason: 'cut short by 覚えた');
     });
 
     test('a short memory time squeezes Tobi: he is done just before it is up, and the reading starts on time', () {
