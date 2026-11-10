@@ -105,7 +105,8 @@ class SummaryTile {
 /// The summary every game ends on: the mode as the header's [title] over
 /// its [sub], with the level box (or UNTRACKED when [untracked]); the
 /// [hero]; three [tiles]; the card panel's [rows], spread out to fill it;
-/// and [home] beside the [shout], on Home's dotted ground.
+/// and its [actions] along the foot (often [SummaryActions]), on Home's
+/// dotted ground.
 class RunSummary extends StatelessWidget {
   const RunSummary({
     super.key,
@@ -115,10 +116,7 @@ class RunSummary extends StatelessWidget {
     required this.hero,
     required this.tiles,
     required this.rows,
-    required this.home,
-    required this.onHome,
-    required this.shout,
-    required this.onShout,
+    required this.actions,
   });
 
   final String title, sub;
@@ -126,8 +124,7 @@ class RunSummary extends StatelessWidget {
   final SummaryHero hero;
   final List<SummaryTile> tiles;
   final List<Widget> rows;
-  final String home, shout;
-  final VoidCallback onHome, onShout;
+  final Widget actions;
 
   @override
   Widget build(BuildContext context) {
@@ -171,39 +168,7 @@ class RunSummary extends StatelessWidget {
                 ),
               ),
               const SizedBox(height: SummaryLayout.actionGap),
-              SizedBox(
-                height: SummaryActionLayout.height,
-                child: Row(children: [
-                  SizedBox.fromSize(
-                    size: SummaryActionLayout.home,
-                    child: InkButton(
-                      onTap: onHome,
-                      semanticLabel: home,
-                      child: Column(mainAxisSize: MainAxisSize.min, children: [
-                        MangaIcon(IconArt.home, size: SummaryActionLayout.homeIcon),
-                        const SizedBox(height: SummaryActionLayout.homeGap),
-                        FittedBox(
-                          fit: BoxFit.scaleDown,
-                          child: Text(home,
-                              maxLines: 1,
-                              style: const TextStyle(
-                                  fontWeight: Weights.black, fontSize: SummaryActionLayout.homeFont, height: 1)),
-                        ),
-                      ]),
-                    ),
-                  ),
-                  const SizedBox(width: SummaryActionLayout.gap),
-                  Expanded(
-                    child: ShoutButton(
-                      label: shout,
-                      spec: SummaryActionLayout.shout,
-                      fontSize: SummaryActionLayout.shoutFont,
-                      inset: SummaryActionLayout.shoutInset,
-                      onTap: onShout,
-                    ),
-                  ),
-                ]),
-              ),
+              SizedBox(height: SummaryActionLayout.height, child: actions),
               const SizedBox(height: SummaryLayout.bottomGap),
             ]),
           ),
@@ -211,6 +176,73 @@ class RunSummary extends StatelessWidget {
       ]),
     );
   }
+}
+
+/// A summary's buttons: [home]'s box, with Home's icon, beside the
+/// [shout].
+class SummaryActions extends StatelessWidget {
+  const SummaryActions({
+    super.key,
+    required this.home,
+    required this.onHome,
+    required this.shout,
+    required this.onShout,
+  });
+
+  final String home, shout;
+  final VoidCallback onHome, onShout;
+
+  @override
+  Widget build(BuildContext context) => Row(children: [
+        SizedBox.fromSize(
+          size: SummaryActionLayout.home,
+          child: SummaryBoxButton(icon: IconArt.home, label: home, onTap: onHome),
+        ),
+        const SizedBox(width: SummaryActionLayout.gap),
+        Expanded(child: SummaryShout(shout, onTap: onShout)),
+      ]);
+}
+
+/// A summary's boxed button: [label] under [icon].
+class SummaryBoxButton extends StatelessWidget {
+  const SummaryBoxButton({super.key, required this.icon, required this.label, required this.onTap});
+
+  final VectorArt icon;
+  final String label;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) => InkButton(
+        onTap: onTap,
+        semanticLabel: label,
+        child: Column(mainAxisSize: MainAxisSize.min, children: [
+          MangaIcon(icon, size: SummaryActionLayout.homeIcon),
+          const SizedBox(height: SummaryActionLayout.homeGap),
+          FittedBox(
+            fit: BoxFit.scaleDown,
+            child: Text(label,
+                maxLines: 1,
+                style: const TextStyle(fontWeight: Weights.black, fontSize: SummaryActionLayout.homeFont, height: 1)),
+          ),
+        ]),
+      );
+}
+
+/// A summary's shout, [label] on it.
+class SummaryShout extends StatelessWidget {
+  const SummaryShout(this.label, {super.key, required this.onTap});
+
+  final String label;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) => ShoutButton(
+        label: label,
+        spec: SummaryActionLayout.shout,
+        fontSize: SummaryActionLayout.shoutFont,
+        inset: SummaryActionLayout.shoutInset,
+        onTap: onTap,
+      );
 }
 
 /// The hero at the top, the tiles under it and the card panel in the rest,

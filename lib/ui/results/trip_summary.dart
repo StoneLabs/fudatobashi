@@ -1,8 +1,6 @@
-import 'dart:async';
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 
 import '../../config/config.dart';
 import '../../config/design.dart';
@@ -23,16 +21,15 @@ import '../../state/side_trips.dart';
 import '../ankiren/ankiren_strikes.dart';
 import '../manga/manga.dart';
 import '../play/time_format.dart';
-import '../sound/sounds.dart';
-import 'celebration_sequence.dart';
 import 'celebrations.dart';
 import 'karafuda_summary.dart';
+import 'results_frame.dart';
 import 'run_summary.dart';
 
-/// A side trip's results screen around its summary ([child]). A recorded
-/// game's celebrations ([ankirenCelebrationsFor]) play over it first, each
-/// tap-anywhere-to-skip: the XP it earned and any level it reached, then a
-/// ranked game's rating page.
+/// A side trip's results screen around its summary ([child]) (a
+/// [ResultsFrame]). A recorded game's celebrations ([ankirenCelebrationsFor])
+/// play over it first, each tap-anywhere-to-skip: the XP it earned and any
+/// level it reached, then a ranked game's rating page.
 class TripResultsFrame extends StatefulWidget {
   const TripResultsFrame({super.key, required this.trip, required this.report, required this.child});
 
@@ -48,8 +45,6 @@ class TripResultsFrame extends StatefulWidget {
 
 class _TripResultsFrameState extends State<TripResultsFrame> {
   late final List<Celebration> _celebrations;
-  bool _celebrating = false;
-  Timer? _timer;
 
   @override
   void initState() {
@@ -58,31 +53,7 @@ class _TripResultsFrameState extends State<TripResultsFrame> {
     _celebrations = report == null
         ? const []
         : ankirenCelebrationsFor(report, placementScores: _placementScores(report), trip: widget.trip);
-    if (_celebrations.isNotEmpty) {
-      // Kept silent (the game already faded the music out) until the
-      // celebration, which has its own jingles, is done; and upright, as
-      // its pages are laid out for, after a game played in landscape too.
-      music.leaveMenu();
-      unawaited(SystemChrome.setPreferredOrientations(OrientationTuning.app));
-      _timer = Timer(ResultsLayout.overlayStagger, () {
-        if (mounted) setState(() => _celebrating = true);
-      });
-    } else {
-      music.enterMenu();
-    }
   }
-
-  @override
-  void dispose() {
-    _timer?.cancel();
-    if (_celebrations.isNotEmpty && !_celebrated) _releaseOrientation();
-    super.dispose();
-  }
-
-  /// The celebration has played to its end.
-  bool _celebrated = false;
-
-  static void _releaseOrientation() => unawaited(SystemChrome.setPreferredOrientations(OrientationTuning.app));
 
   /// The placement games' scores so far, when [report]'s game is one of
   /// them.
@@ -93,29 +64,7 @@ class _TripResultsFrameState extends State<TripResultsFrame> {
   }
 
   @override
-  Widget build(BuildContext context) => Scaffold(
-        backgroundColor: Palette.paper,
-        body: SoundCues(
-          cues: const [(Sfx.results, Duration.zero)],
-          child: Stack(children: [
-            widget.child,
-            if (_celebrating)
-              Positioned.fill(
-                child: CelebrationSequence(
-                  pages: _celebrations,
-                  onDone: () {
-                    setState(() {
-                      _celebrating = false;
-                      _celebrated = true;
-                    });
-                    music.enterMenu();
-                    _releaseOrientation();
-                  },
-                ),
-              ),
-          ]),
-        ),
-      );
+  Widget build(BuildContext context) => ResultsFrame(celebrations: _celebrations, child: widget.child);
 }
 
 /// What a side trip's summary is made of, of a [game] of calls: the field's

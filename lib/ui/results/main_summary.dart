@@ -53,11 +53,13 @@ class MainRunSummary extends StatelessWidget {
       hero: hero,
       tiles: tiles,
       rows: rows,
-      home: s.home,
-      onHome: () => Navigator.of(context).popUntil((r) => r.isFirst),
-      shout: (ranked ? s.rankedAgain : s.keepGoing).toUpperCase(),
-      onShout: () =>
-          keepGoing(context, config.mode == PlayMode.exam ? const PlayConfig(mode: PlayMode.training) : config),
+      actions: SummaryActions(
+        home: s.home,
+        onHome: () => Navigator.of(context).popUntil((r) => r.isFirst),
+        shout: (ranked ? s.rankedAgain : s.keepGoing).toUpperCase(),
+        onShout: () =>
+            keepGoing(context, config.mode == PlayMode.exam ? const PlayConfig(mode: PlayMode.training) : config),
+      ),
     );
   }
 }

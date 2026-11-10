@@ -53,10 +53,12 @@ class AnkirenResultsScreen extends StatelessWidget {
         hero: hero,
         tiles: tiles,
         rows: rows,
-        home: s.done,
-        onHome: () => Navigator.of(context).popUntil((r) => r.isFirst),
-        shout: s.ankirenBackToPage.toUpperCase(),
-        onShout: () => Navigator.of(context).pop(),
+        actions: SummaryActions(
+          home: s.done,
+          onHome: () => Navigator.of(context).popUntil((r) => r.isFirst),
+          shout: s.ankirenBackToPage.toUpperCase(),
+          onShout: () => Navigator.of(context).pop(),
+        ),
       ),
     );
   }
