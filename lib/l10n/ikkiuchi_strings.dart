@@ -40,6 +40,7 @@ extension IkkiuchiStrings on S {
   /// The players' greeting as play begins, and their thanks once it is over.
   String get ikkiuchiGreeting => t('ikkiuchiGreeting');
   String get ikkiuchiThanks => t('ikkiuchiThanks');
+  String get ikkiuchiShimonoku => t('ikkiuchiShimonoku');
 
   /// How a match ended, over its board: the player beat Tobi or Tobi won,
   /// and by how many cards ([n]).

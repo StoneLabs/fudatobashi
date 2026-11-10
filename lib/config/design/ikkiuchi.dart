@@ -296,6 +296,14 @@ abstract final class IkkiuchiCallStyle {
   static const double line = 12;
   static const Color lineInk = Color(0xE6FFFFFF);
 
+  /// The 下の句 being read: its word in [kimariji] lettering, [shimonokuGap]
+  /// before the 余韻 mark, [shimonokuTail] long and as tall as the lettering,
+  /// tapering to the right. Both wipe away from the left as the 下の句 plays,
+  /// with an edge [shimonokuEdge] wide.
+  static const double shimonokuGap = 6;
+  static const double shimonokuTail = 150;
+  static const double shimonokuEdge = 6;
+
   /// How a read ended (`IkkiuchiFeedbackBanner`): [feedback] lettering on
   /// the strip; it slides in from
   /// [feedbackSlide] dp left, eased by [feedbackInCurve], and out as far

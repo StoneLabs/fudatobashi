@@ -10,6 +10,7 @@ import '../../l10n/strings.dart';
 import '../manga/entrance.dart';
 import '../manga/lettering.dart';
 import 'ikkiuchi_board_painter.dart';
+import 'ikkiuchi_call_strip.dart';
 import 'ikkiuchi_feedback_banner.dart';
 import 'ikkiuchi_match_flow.dart';
 import 'ikkiuchi_match_layers.dart';
@@ -54,6 +55,13 @@ class IkkiuchiMatchBoard extends StatelessWidget {
                   Positioned.fromRect(
                     rect: scene.band,
                     child: IkkiuchiBandWords(title: s.ikkiuchiMemoryTime, line: s.ikkiuchiTimeLeft(ikkiuchiClock(flow.left))),
+                  ),
+                if (flow.shimonoku(s) case (:final word, :final share) when !landscape)
+                  Positioned.fromRect(
+                    rect: scene.band,
+                    child: Center(
+                      child: FittedBox(fit: BoxFit.scaleDown, child: IkkiuchiShimonokuWords(word: word, share: share, ink: IkkiuchiBoardStyle.wordsTitleInk)),
+                    ),
                   ),
                 if (flow.feedback case final end? when flow.stage == IkkiuchiStage.feedback)
                   Positioned.fromRect(

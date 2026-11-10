@@ -39,7 +39,11 @@ class IkkiuchiCallLayer extends StatelessWidget {
                     fit: BoxFit.scaleDown,
                     child: SizedBox(
                       height: band.height + 2 * bleed,
-                      child: IkkiuchiCallStrip(reader: scene.reader, prompt: _prompt(S.of(context))),
+                      child: IkkiuchiCallStrip(
+                        reader: scene.reader,
+                        prompt: _prompt(S.of(context)),
+                        shimonoku: flow?.shimonoku(S.of(context)),
+                      ),
                     ),
                   ),
                 ),

@@ -167,6 +167,16 @@ class IkkiuchiMatchFlow extends ChangeNotifier {
   double get left => _left;
   double _left = 0;
 
+  /// How much of a timed stage has run, 0 to 1.
+  double get share {
+    final length = _length(_stage);
+    return length == null ? 0 : (1 - _left / _ms(length)).clamp(0.0, 1.0);
+  }
+
+  /// The 下の句's word and [share] while it is read; null in any other stage.
+  ({String word, double share})? shimonoku(S s) =>
+      _stage == IkkiuchiStage.shimonoku ? (word: s.ikkiuchiShimonoku, share: share) : null;
+
   /// The cards still to read, next first; the cards dealt to neither side
   /// and not among them.
   late final List<int> _order;

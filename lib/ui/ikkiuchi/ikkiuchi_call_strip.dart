@@ -3,6 +3,8 @@ import 'dart:ui' show lerpDouble;
 import 'package:flutter/widgets.dart';
 
 import '../../config/design.dart';
+import '../../config/vector_art.dart';
+import '../manga/vector.dart';
 import 'ikkiuchi_reader.dart';
 
 /// The call in the gap between the sides in landscape: paper words on a
@@ -12,10 +14,11 @@ import 'ikkiuchi_reader.dart';
 /// middle; or, instead of the call, a [prompt]: its title and what to do.
 /// Once nothing is read the last words fade out.
 class IkkiuchiCallStrip extends StatefulWidget {
-  const IkkiuchiCallStrip({super.key, required this.reader, this.prompt});
+  const IkkiuchiCallStrip({super.key, required this.reader, this.prompt, this.shimonoku});
 
   final IkkiuchiReader reader;
   final ({String title, String line})? prompt;
+  final ({String word, double share})? shimonoku;
 
   @override
   State<IkkiuchiCallStrip> createState() => _IkkiuchiCallStripState();
@@ -39,9 +42,10 @@ class _IkkiuchiCallStripState extends State<IkkiuchiCallStrip> {
         },
       );
 
-  /// The words to show now: the prompt, or the sounds heard of the call;
-  /// null with neither.
+  /// The words to show now: the 下の句, the prompt, or the sounds heard of
+  /// the call; null with none.
   Widget? _words() {
+    if (widget.shimonoku case (:final word, :final share)) return IkkiuchiShimonokuWords(word: word, share: share);
     if (widget.prompt case (:final title, :final line)) return _Prompt(title: title, line: line);
     final reader = widget.reader;
     final call = reader.call;
@@ -152,4 +156,44 @@ class _Prompt extends StatelessWidget {
                 height: 1,
                 color: IkkiuchiCallStyle.lineInk)),
       ]);
+}
+
+/// The 下の句 being read: its [word] and the 余韻 mark lying along the line,
+/// wiped away from the left by [share] (0 all shown, 1 none) of it played,
+/// in [ink].
+class IkkiuchiShimonokuWords extends StatelessWidget {
+  const IkkiuchiShimonokuWords(
+      {super.key, required this.word, required this.share, this.ink = IkkiuchiCallStyle.ink});
+
+  final String word;
+  final double share;
+  final Color ink;
+
+  @override
+  Widget build(BuildContext context) => ShaderMask(
+        blendMode: BlendMode.dstIn,
+        shaderCallback: (bounds) {
+          final edge = IkkiuchiCallStyle.shimonokuEdge, front = share * (bounds.width + edge);
+          return LinearGradient(
+            colors: const [Color(0x00FFFFFF), Color(0x00FFFFFF), Color(0xFFFFFFFF), Color(0xFFFFFFFF)],
+            stops: [0, ((front - edge) / bounds.width).clamp(0, 1), (front / bounds.width).clamp(0, 1), 1],
+          ).createShader(bounds);
+        },
+        child: Row(mainAxisSize: MainAxisSize.min, children: [
+          Text(word,
+              maxLines: 1,
+              softWrap: false,
+              style: TextStyle(
+                  fontFamily: Fonts.display,
+                  fontSize: IkkiuchiCallStyle.kimariji,
+                  height: 1,
+                  color: ink)),
+          const SizedBox(width: IkkiuchiCallStyle.shimonokuGap),
+          RotatedBox(
+            quarterTurns: 3,
+            child: VectorArtBox(CardArt.yomifudaEnd,
+                size: const Size(IkkiuchiCallStyle.kimariji, IkkiuchiCallStyle.shimonokuTail), color: ink),
+          ),
+        ]),
+      );
 }
