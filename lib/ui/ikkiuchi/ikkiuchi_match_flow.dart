@@ -71,10 +71,12 @@ class IkkiuchiMatchWords {
 /// time is up or the player taps it away ([dismissResult]); then the match
 /// is done. One the player ended before its first read has no result.
 ///
-/// The player may move their cards (並べ替え) only in the stages that allow
-/// it; one such stage over while they still move them holds the match
-/// ([IkkiuchiStage.movingCard]) until they are done. With
-/// [holdBeforeShimonoku] the match holds once the 送り札 are made
+/// The player may move their cards (並べ替え, [startArranging]) only in the
+/// stages that allow it. The 下の句, or the wait before it, stops for it,
+/// and the match holds ([IkkiuchiStage.movingCard]) until they are done,
+/// then reads the 下の句 from its start; the memory time runs on, and over
+/// while they still move them, holds the match so until they are done.
+/// With [holdBeforeShimonoku] the match holds once the 送り札 are made
 /// ([IkkiuchiStage.waitingForGo]) until let go ([go]).
 ///
 /// Between the reads a 送り札 may be asked for by hand ([sendByHand]): it
@@ -210,6 +212,18 @@ class IkkiuchiMatchFlow extends ChangeNotifier {
   /// Whether the player may start moving their cards now.
   bool get canArrange => _stage.allowsMoving && scene.arrange.canStart;
 
+  /// 並べ替え: the player starts moving their cards, where they may
+  /// ([canArrange]). A stage that stops for it
+  /// ([IkkiuchiStage.stopsForMoving]) does so now, the match holding until
+  /// they are done, then reading the 下の句 from its start.
+  void startArranging() {
+    if (!canArrange) return;
+    scene.arrange.start();
+    if (!_stage.stopsForMoving) return;
+    _afterMoving = IkkiuchiStage.shimonoku;
+    _enter(IkkiuchiStage.movingCard);
+  }
+
   /// Ends the placing and the memory time at once: the cards still in the
   /// stack are put down, and Tobi lays the rest of his side down.
   void endMemoryTime() {
@@ -320,37 +334,34 @@ class IkkiuchiMatchFlow extends ChangeNotifier {
         _ => null,
       };
 
-  /// A timed stage is over: the next one starts, or, while the player
-  /// still moves cards in a stage that no longer lets them, the match holds.
-  /// The memory time over, both sides are laid out.
+  /// A timed stage is over: the next one starts. The memory time over, both
+  /// sides are laid out, and while the player still moves cards the match
+  /// holds until they are done.
   void _timeUp() {
-    final IkkiuchiStage next;
     switch (_stage) {
       case IkkiuchiStage.placing || IkkiuchiStage.memoryTime:
         _layOutBoth();
-        next = IkkiuchiStage.gameStart;
+        if (!scene.arrange.active) return _enter(IkkiuchiStage.gameStart);
+        _afterMoving = IkkiuchiStage.gameStart;
+        _enter(IkkiuchiStage.movingCard);
       case IkkiuchiStage.gameStart:
-        next = IkkiuchiStage.yoka;
+        _enter(IkkiuchiStage.yoka);
       case IkkiuchiStage.yoka || IkkiuchiStage.breakAfterShimonoku:
-        next = IkkiuchiStage.kaminoku;
+        _enter(IkkiuchiStage.kaminoku);
       case IkkiuchiStage.waitBeforeShimonoku:
-        next = IkkiuchiStage.shimonoku;
+        _enter(IkkiuchiStage.shimonoku);
       case IkkiuchiStage.shimonoku:
-        next = IkkiuchiStage.breakAfterShimonoku;
+        _enter(IkkiuchiStage.breakAfterShimonoku);
+      case IkkiuchiStage.feedback when _leaving == null:
+        _nextSend();
       case IkkiuchiStage.feedback:
-        return _leaving == null ? _nextSend() : _enter(IkkiuchiStage.closingUp);
+        _enter(IkkiuchiStage.closingUp);
       case IkkiuchiStage.gameEnd:
-        return _enter(result == null ? IkkiuchiStage.done : IkkiuchiStage.result);
+        _enter(result == null ? IkkiuchiStage.done : IkkiuchiStage.result);
       case IkkiuchiStage.result:
-        return _enter(IkkiuchiStage.done);
+        _enter(IkkiuchiStage.done);
       case _:
         throw StateError('$_stage is not timed');
-    }
-    if (scene.arrange.active && !next.allowsMoving) {
-      _afterMoving = next;
-      _enter(IkkiuchiStage.movingCard);
-    } else {
-      _enter(next);
     }
   }
 

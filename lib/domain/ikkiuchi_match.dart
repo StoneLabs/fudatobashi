@@ -54,8 +54,9 @@ enum IkkiuchiStage {
   /// The 下の句 is read.
   shimonoku,
 
-  /// The time to move cards is over while the player still moves theirs
-  /// (並べ替え): held until they are done.
+  /// The player moves their cards (並べ替え) where the match holds for it:
+  /// the 下の句, or the wait before it, stopped for them, or the memory
+  /// time over while they still move them. Held until they are done.
   movingCard,
 
   /// A moment after the 下の句, before the next card's 上の句.
@@ -95,6 +96,11 @@ enum IkkiuchiStage {
   bool get allowsMoving =>
       this == memoryTime || this == waitBeforeShimonoku || this == shimonoku || this == movingCard;
 
+  /// Whether the stage stops once the player starts moving their cards,
+  /// the match holding in [movingCard] until they are done and then
+  /// reading the 下の句 from its start.
+  bool get stopsForMoving => this == waitBeforeShimonoku || this == shimonoku;
+
   /// Whether a card changes sides now (送り札).
   bool get sending => this == sendingCard || this == tobiPlacingCard || this == receivingCard;
 }
@@ -103,9 +109,9 @@ enum IkkiuchiStage {
 typedef IkkiuchiStep = ({IkkiuchiStage from, IkkiuchiStage to, String why});
 
 /// Every step a match may take between its stages; the match takes no
-/// other. [IkkiuchiStage.movingCard] holds a stage that no longer lets the
-/// player move cards, then goes on to it; a 送り札 by hand goes back to the
-/// stage it broke into; 終了 ends the match from any stage before its end.
+/// other. [IkkiuchiStage.movingCard] holds the match while the player moves
+/// cards, then goes on; a 送り札 by hand goes back to the stage it broke
+/// into; 終了 ends the match from any stage before its end.
 abstract final class IkkiuchiSteps {
   static const List<IkkiuchiStep> all = [
     (from: IkkiuchiStage.placing, to: IkkiuchiStage.memoryTime, why: '完了'),
@@ -141,9 +147,10 @@ abstract final class IkkiuchiSteps {
     (from: IkkiuchiStage.receivingCard, to: IkkiuchiStage.gameEnd, why: 'a side empty'),
     (from: IkkiuchiStage.waitingForGo, to: IkkiuchiStage.waitBeforeShimonoku, why: '次 (debug)'),
     (from: IkkiuchiStage.waitBeforeShimonoku, to: IkkiuchiStage.shimonoku, why: 'time up'),
+    (from: IkkiuchiStage.waitBeforeShimonoku, to: IkkiuchiStage.movingCard, why: '並べ替え, the wait stopped'),
     (from: IkkiuchiStage.shimonoku, to: IkkiuchiStage.breakAfterShimonoku, why: 'time up'),
-    (from: IkkiuchiStage.shimonoku, to: IkkiuchiStage.movingCard, why: 'time up while moving'),
-    (from: IkkiuchiStage.movingCard, to: IkkiuchiStage.breakAfterShimonoku, why: 'moving done'),
+    (from: IkkiuchiStage.shimonoku, to: IkkiuchiStage.movingCard, why: '並べ替え, the 下の句 stopped'),
+    (from: IkkiuchiStage.movingCard, to: IkkiuchiStage.shimonoku, why: 'moving done, the 下の句 from its start'),
     (from: IkkiuchiStage.breakAfterShimonoku, to: IkkiuchiStage.kaminoku, why: 'time up'),
     (from: IkkiuchiStage.gameEnd, to: IkkiuchiStage.result, why: 'time up'),
     (from: IkkiuchiStage.gameEnd, to: IkkiuchiStage.done, why: 'time up, ended before the first read'),

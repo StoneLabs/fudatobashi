@@ -73,7 +73,8 @@ class IkkiuchiCallLayer extends StatelessWidget {
 /// place and moving with it ([IkkiuchiMatchColumn]): the score live, and at
 /// its foot 並べ替え starting and ending the scene's
 /// [IkkiuchiBoardScene.arrange], free only while nothing else is under way,
-/// and with a [flow] only while it lets the player move cards. With a
+/// and with a [flow] only while it lets the player move cards, started
+/// through it ([IkkiuchiMatchFlow.startArranging]). With a
 /// [flow], while the player places their cards 完了 stands there instead,
 /// for once every card is placed ([IkkiuchiMatchFlow.donePlacing]), and
 /// blinking from then until tapped; in the
@@ -131,7 +132,10 @@ class IkkiuchiColumnLayer extends StatelessWidget {
         label: s.ikkiuchiArrange,
         icon: IconArt.swap,
         fill: IkkiuchiColumnStyle.arrangeFill,
-        onTap: (flow?.canArrange ?? arrange.canStart) ? arrange.start : null,
+        onTap: switch (flow) {
+          final flow? => flow.canArrange ? flow.startArranging : null,
+          null => arrange.canStart ? arrange.start : null,
+        },
         blink: false,
       ),
     ];

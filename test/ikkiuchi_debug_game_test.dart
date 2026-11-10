@@ -659,7 +659,44 @@ void main() {
       await tester.pumpWidget(const SizedBox());
     });
 
-    testWidgets('並べ替え still open as the 下の句 ends holds in Moving Card until 完了', (tester) async {
+    // The share of the 下の句 shown on the strip; null without it.
+    double? shimonokuShare(WidgetTester tester) {
+      final words = find.byType(IkkiuchiShimonokuWords);
+      return words.evaluate().isEmpty ? null : tester.widget<IkkiuchiShimonokuWords>(words).share;
+    }
+
+    testWidgets('並べ替え in the 下の句 stops it in Moving Card; after 完了 the 下の句 starts again from its start',
+        (tester) async {
+      final p = await open(tester);
+      await seedReading(tester, p, IkkiuchiSide.player);
+      final f = flow(tester), s = f.scene;
+      await touch(tester, s.board.cards.card(s.board.called!).box.centre);
+      await runUntil(tester, () => f.stage == IkkiuchiStage.waitingForGo);
+      f.go();
+      await run(tester, 1000 + 3000);
+      expect(f.stage, IkkiuchiStage.shimonoku);
+      expect(shimonokuShare(tester), closeTo(3 / 7, 0.03));
+      await tester.tap(find.text('並べ替え'));
+      await tester.pump(frame);
+      expect(s.arrange.active, isTrue);
+      expect(f.stage, IkkiuchiStage.movingCard, reason: 'the 下の句 stops at once');
+      expect(shimonokuShare(tester), isNull, reason: 'its wipe gone with it');
+      expect(find.text('並べ替え中'), findsOneWidget);
+      expect(find.text(IkkiuchiToolsStyle.movingCard), findsOneWidget);
+      await run(tester, 10000);
+      expect(f.stage, IkkiuchiStage.movingCard, reason: 'held until done');
+      await tester.tap(find.text('完了'));
+      await runUntil(tester, () => f.stage != IkkiuchiStage.movingCard);
+      expect(f.stage, IkkiuchiStage.shimonoku);
+      expect(shimonokuShare(tester), lessThan(0.02), reason: 'from its start, the wipe full again');
+      await run(tester, IkkiuchiMatchTuning.shimonoku.inMilliseconds - 100.0);
+      expect(f.stage, IkkiuchiStage.shimonoku, reason: 'the whole 7 s');
+      await run(tester, 150);
+      expect(f.stage, IkkiuchiStage.breakAfterShimonoku);
+      await tester.pumpWidget(const SizedBox());
+    });
+
+    testWidgets('並べ替え in the wait before the 下の句 holds there; 完了 starts the 下の句', (tester) async {
       final p = await open(tester);
       await seedReading(tester, p, IkkiuchiSide.player);
       final f = flow(tester), s = f.scene;
@@ -667,17 +704,37 @@ void main() {
       await runUntil(tester, () => f.stage == IkkiuchiStage.waitingForGo);
       f.go();
       await run(tester, 200);
+      expect(f.stage, IkkiuchiStage.waitBeforeShimonoku);
       await tester.tap(find.text('並べ替え'));
       await tester.pump(frame);
-      expect(s.arrange.active, isTrue);
-      await run(tester, 1000 + 7000 + 100);
       expect(f.stage, IkkiuchiStage.movingCard);
-      expect(find.text(IkkiuchiToolsStyle.movingCard), findsOneWidget);
-      await run(tester, 2000);
-      expect(f.stage, IkkiuchiStage.movingCard, reason: 'held until done');
+      await run(tester, 3000);
+      expect(f.stage, IkkiuchiStage.movingCard, reason: 'the wait holds');
+      expect(shimonokuShare(tester), isNull);
       await tester.tap(find.text('完了'));
-      await run(tester, 600);
-      expect(f.stage, IkkiuchiStage.breakAfterShimonoku);
+      await runUntil(tester, () => f.stage != IkkiuchiStage.movingCard);
+      expect(f.stage, IkkiuchiStage.shimonoku);
+      expect(shimonokuShare(tester), lessThan(0.02));
+      await tester.pumpWidget(const SizedBox());
+    });
+
+    testWidgets('並べ替え in the memory time lets it run on; over meanwhile, it holds in Moving Card until 完了',
+        (tester) async {
+      final p = await open(tester);
+      await show(tester, p, const IkkiuchiDebugGame(seed: 3));
+      await laidOut(tester);
+      final f = flow(tester);
+      await tester.tap(find.text('並べ替え'));
+      await tester.pump(frame);
+      expect(f.stage, IkkiuchiStage.memoryTime);
+      final left = f.left;
+      await run(tester, 1000);
+      expect(f.left, lessThan(left - 900), reason: 'the memory time runs on');
+      f.endMemoryTime();
+      expect(f.stage, IkkiuchiStage.movingCard);
+      await tester.tap(find.text('完了'));
+      await runUntil(tester, () => f.stage != IkkiuchiStage.movingCard);
+      expect(f.stage, IkkiuchiStage.gameStart);
       await tester.pumpWidget(const SizedBox());
     });
 
