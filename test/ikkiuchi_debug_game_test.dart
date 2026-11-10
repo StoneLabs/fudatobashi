@@ -33,9 +33,11 @@ import 'package:fudatobashi/ui/ikkiuchi/ikkiuchi_call_strip.dart';
 import 'package:fudatobashi/ui/ikkiuchi/ikkiuchi_match_board.dart';
 import 'package:fudatobashi/ui/ikkiuchi/ikkiuchi_match_column.dart';
 import 'package:fudatobashi/ui/ikkiuchi/ikkiuchi_match_flow.dart';
+import 'package:fudatobashi/ui/ikkiuchi/ikkiuchi_match_result.dart';
 import 'package:fudatobashi/ui/ikkiuchi/ikkiuchi_send_flow.dart';
 import 'package:fudatobashi/ui/manga/buttons.dart';
 import 'package:fudatobashi/ui/manga/idle_motion.dart';
+import 'package:fudatobashi/ui/manga/lines.dart';
 import 'package:fudatobashi/ui/manga/theme.dart';
 import 'package:fudatobashi/ui/manga/vector.dart';
 import 'package:fudatobashi/ui/sound/sounds.dart';
@@ -1088,6 +1090,21 @@ void main() {
       expect(s.board.idleFace, TobiFace.shocked);
       await run(tester, 800);
       await capture(tester, 'game_result_won');
+      int drawing() => tester
+          .widgetList<CustomPaint>(find.descendant(of: find.byType(IkkiuchiMatchResult), matching: find.byType(CustomPaint)))
+          .map((c) => c.painter)
+          .whereType<FocusLinesPainter>()
+          .single
+          .spec
+          .seed;
+      final seen = <int>{};
+      for (var i = 0; i < IkkiuchiResultStyle.linesFrames * 2; i++) {
+        seen.add(drawing());
+        await tester.pump(IkkiuchiResultStyle.linesStep);
+      }
+      expect(seen, hasLength(IkkiuchiResultStyle.linesFrames), reason: 'the lines boil through their drawings');
+      await tester.pump(IkkiuchiResultStyle.linesStep);
+      await capture(tester, 'game_result_won_later');
       await runUntil(tester, () => f.stage == IkkiuchiStage.done,
           most: IkkiuchiMatchTuning.result.inMilliseconds + 500.0, reason: 'its time up');
       expect(tester.takeException(), isNull);

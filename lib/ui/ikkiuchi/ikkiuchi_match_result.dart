@@ -10,12 +10,12 @@ import '../../l10n/ikkiuchi_strings.dart';
 import '../../l10n/strings.dart';
 import '../manga/entrance.dart';
 import '../manga/lettering.dart';
-import '../manga/lines.dart';
+import '../manga/idle_motion.dart';
 import '../sound/sounds.dart';
 import 'ikkiuchi_tobi_tag.dart';
 
 /// How a match ended ([result]) over its board, in board dp: the board
-/// dimmed, focus lines meeting in its middle, none across Tobi's box
+/// dimmed, boiling focus lines meeting in its middle, none across Tobi's box
 /// ([tobi]), and his [rating] on his tag over his box or beside it, dimmed
 /// with the board but clear of the lines; in the middle the result slammed
 /// down in big tilted lettering, with a banner under it saying by how many
@@ -55,7 +55,8 @@ class IkkiuchiMatchResult extends StatelessWidget {
             LayoutBuilder(
               builder: (context, box) => Entrance(
                 IkkiuchiResultStyle.linesIn,
-                child: CustomPaint(painter: FocusLinesPainter(_lines(box.biggest))),
+                child: BoilingLines(_lines(box.biggest),
+                    frames: IkkiuchiResultStyle.linesFrames, step: IkkiuchiResultStyle.linesStep),
               ),
             ),
             if (rating != null)

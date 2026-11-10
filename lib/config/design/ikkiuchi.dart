@@ -239,6 +239,10 @@ abstract final class IkkiuchiResultStyle {
   static const double tagDrop = 0.3;
   static const lines = (count: 120, innerMin: 120.0, innerMax: 170.0, width: 4.0, seed: 31);
   static const Color linesColor = Palette.paper;
+
+  /// The lines boil: redrawn every [linesStep] from [linesFrames] drawings.
+  static const int linesFrames = 3;
+  static const linesStep = Duration(milliseconds: 90);
   static const double font = 46;
   static const double outline = 22;
   static const Color fill = Palette.sun;
