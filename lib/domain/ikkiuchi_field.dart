@@ -6,7 +6,8 @@ import 'ikkiuchi_layout.dart';
 import 'ikkiuchi_side.dart';
 
 /// The full 一騎打ち field folded to its rows, in card widths: Tobi's side at
-/// the top, turned to face him, the player's below, a gap between them.
+/// the top, turned to face him, the player's below, a gap between them, the
+/// [turned] cards facing the other way from their side's own.
 /// Each row's groups lie at the field's edges, its open middle between
 /// them; the field is never so narrow that a row's groups come nearer than
 /// [leastGap]. Cards in a row's open middle spread evenly over the room
@@ -17,7 +18,11 @@ import 'ikkiuchi_side.dart';
 /// place.
 class IkkiuchiField {
   IkkiuchiField(
-      {required this.tobi, required this.player, this.rowGap = IkkiuchiFieldTuning.rowGap, bool keepRows = false})
+      {required this.tobi,
+      required this.player,
+      this.rowGap = IkkiuchiFieldTuning.rowGap,
+      this.turned = const {},
+      bool keepRows = false})
       : _shown = [
           for (var r = 0; r < math.max(tobi.length, player.length); r++)
             if (keepRows || [tobi, player].any((side) => r < side.length && side[r].length > 0)) r,
@@ -29,6 +34,9 @@ class IkkiuchiField {
 
   /// The gap between a side's rows, in card widths.
   final double rowGap;
+
+  /// The cards lying turned 180° from their side's own.
+  final Set<int> turned;
 
   /// The rows shown, by index into a side's rows.
   final List<int> _shown;
@@ -74,11 +82,17 @@ class IkkiuchiField {
   /// The height of a half of [rows] rows, [rowGap] apart.
   static double halfOf(int rows, double rowGap) => rows * cardH + (rows - 1) * rowGap;
 
+  /// Tobi's [row] as the screen shows it, empty where he has none: his
+  /// right group at the screen's left, his left at its right, and his open
+  /// middle from the screen's right.
+  IkkiuchiRow _tobiRow(int row) => row < tobi.length
+      ? IkkiuchiRow(tobi[row].right, tobi[row].left, middle: tobi[row].middle.reversed.toList())
+      : const IkkiuchiRow([], []);
+
   /// Tobi's rows as the screen shows them, his 下段 at the top: the cards at
-  /// the screen's left (his right group) and at its right.
-  Iterable<({int left, int right})> get _tobiRows => [
-        for (final r in _shown)
-          r < tobi.length ? (left: tobi[r].right.length, right: tobi[r].left.length) : (left: 0, right: 0),
+  /// the screen's left, at its right, and in the open middle.
+  Iterable<({int left, int right, int middle})> get _tobiRows => [
+        for (final r in _shown.map(_tobiRow)) (left: r.left.length, right: r.right.length, middle: r.middle.length),
       ];
 
   /// The player's [row] (0 is 下段), empty where they have none.
@@ -95,7 +109,7 @@ class IkkiuchiField {
   /// with [tobiRoom] the open middle of Tobi's side at least that wide
   /// between the widest of his groups on each side.
   double leastWidth({double tobiRoom = 0}) => [
-        for (final r in _tobiRows) rowWidth(r.left, r.right),
+        for (final r in _tobiRows) rowWidth(r.left, r.right, middle: r.middle),
         for (final r in _shown.map(_playerRow)) rowWidth(r.left.length, r.right.length, middle: r.middle.length),
         if (tobiRoom > 0) _tobiReach.left + _tobiReach.right + tobiRoom,
       ].reduce(math.max);
@@ -176,19 +190,23 @@ class IkkiuchiField {
   static const _tolerance = 1e-9;
 
   /// Every card on a field [width] wide, from its top left, the halves
-  /// [gap] apart; Tobi's cards turned to face him.
+  /// [gap] apart; Tobi's cards turned to face him, and the [turned] ones
+  /// the other way.
   List<({int id, IkkiuchiSide side, CardBox box})> layOut(double width, {required double gap}) {
     final rowPitch = cardH + rowGap;
     ({int id, IkkiuchiSide side, CardBox box}) card(int id, IkkiuchiSide side, double x, double y) => (
           id: id,
           side: side,
-          box: CardBox(Vec(x + 0.5, y + cardH / 2), 0.5, cardH / 2, side == IkkiuchiSide.opponent ? math.pi : 0),
+          box: CardBox(Vec(x + 0.5, y + cardH / 2), 0.5, cardH / 2,
+              (side == IkkiuchiSide.opponent) != turned.contains(id) ? math.pi : 0),
         );
     return [
       for (final (i, r) in _shown.indexed) ...[
         if (r < tobi.length) ...[
           for (final (j, id) in tobi[r].left.indexed) card(id, IkkiuchiSide.opponent, width - 1 - j * pitch, i * rowPitch),
           for (final (j, id) in tobi[r].right.indexed) card(id, IkkiuchiSide.opponent, j * pitch, i * rowPitch),
+          for (final (j, id) in _tobiRow(r).middle.indexed)
+            card(id, IkkiuchiSide.opponent, _spread(_open(_tobiRow(r), width), j, tobi[r].middle.length), i * rowPitch),
         ],
         if (r < player.length) ...[
           for (final (j, id) in player[r].left.indexed) card(id, IkkiuchiSide.player, j * pitch, _playerTop(i, gap)),

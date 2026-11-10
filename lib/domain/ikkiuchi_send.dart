@@ -19,10 +19,18 @@ import 'placing.dart';
 /// its [IkkiuchiLayout.rowSlots] pitches across with its groups
 /// [IkkiuchiLayoutTuning.groupGap] apart, or its middle cards
 /// [IkkiuchiPlacingTuning.middleMargin] clear of them.
+///
+/// A card sent as the match is decided goes in the middle of the other's
+/// 上段, [turned] ([sentLast]).
 class IkkiuchiSides {
-  IkkiuchiSides({required this.homes, required Iterable<int> tobi, required List<IkkiuchiRow> player})
+  IkkiuchiSides(
+      {required this.homes,
+      required Iterable<int> tobi,
+      required List<IkkiuchiRow> player,
+      Iterable<int> turned = const []})
       : tobiCards = Set.unmodifiable(tobi),
-        player = List.unmodifiable(player);
+        player = List.unmodifiable(player),
+        turned = Set.unmodifiable(turned);
 
   /// The start of a match: Tobi's own cards at their homes, and the
   /// player's side as laid out.
@@ -36,8 +44,23 @@ class IkkiuchiSides {
   /// the open middle left to right.
   final List<IkkiuchiRow> player;
 
-  /// Tobi's rows, 下段 first, each group from its outer edge in.
-  late final List<IkkiuchiRow> tobi = homes.sideWith(tobiCards);
+  /// The cards sent across as the match was decided, each lying turned
+  /// 180° from its side's own cards, as the sender slid it over.
+  final Set<int> turned;
+
+  /// Tobi's rows, 下段 first, each group from its outer edge in; his
+  /// [turned] cards in the open middle of his 上段, the others at their
+  /// homes.
+  late final List<IkkiuchiRow> tobi = () {
+    final rows = homes.sideWith(tobiCards.difference(turned));
+    final middle = [
+      for (final c in tobiCards)
+        if (turned.contains(c)) c,
+    ];
+    if (middle.isEmpty) return rows;
+    final top = rows.last;
+    return [...rows.take(rows.length - 1), IkkiuchiRow(top.left, top.right, middle: middle)];
+  }();
 
   List<int> get playerCards => [for (final r in player) ...[...r.left, ...r.middle, ...r.right]];
 
@@ -102,6 +125,7 @@ class IkkiuchiSides {
       homes: homes,
       tobi: tobiCards.where((c) => c != card),
       player: [for (final r in player) IkkiuchiRow(drop(r.left), drop(r.right), middle: drop(r.middle))],
+      turned: turned.where((c) => c != card),
     );
   }
 
@@ -109,7 +133,27 @@ class IkkiuchiSides {
   /// home on his.
   IkkiuchiSides toTobi(int card) {
     final rest = without(card);
-    return IkkiuchiSides(homes: homes, tobi: {...rest.tobiCards, card}, player: rest.player);
+    return IkkiuchiSides(homes: homes, tobi: {...rest.tobiCards, card}, player: rest.player, turned: rest.turned);
+  }
+
+  /// The sides once [card] was sent across as the match was decided: off
+  /// the side it lay on, and in the middle of the other's 上段 (the row by
+  /// the centre line), past the row's room, [turned] as the sender slid it
+  /// over. On the player's side it goes among the row's middle cards, in
+  /// the middle of them.
+  IkkiuchiSides sentLast(int card) {
+    final rest = without(card), turned = {...rest.turned, card};
+    if (!tobiCards.contains(card)) {
+      return IkkiuchiSides(homes: homes, tobi: {...rest.tobiCards, card}, player: rest.player, turned: turned);
+    }
+    final rows = rest.player, top = rows.last;
+    final middle = [...top.middle]..insert(top.middle.length ~/ 2, card);
+    return IkkiuchiSides(
+      homes: homes,
+      tobi: rest.tobiCards,
+      player: [...rows.take(rows.length - 1), IkkiuchiRow(top.left, top.right, middle: middle)],
+      turned: turned,
+    );
   }
 
   /// The sides once Tobi's [card] went to the player's side with no free
@@ -123,7 +167,7 @@ class IkkiuchiSides {
     for (var r = 1; r < rows.length; r++) {
       if (rows[r].length < rows[at].length) at = r;
     }
-    return IkkiuchiSides(homes: homes, tobi: rest.tobiCards, player: [
+    return IkkiuchiSides(homes: homes, tobi: rest.tobiCards, turned: rest.turned, player: [
       for (final (r, row) in rows.indexed)
         r == at ? IkkiuchiRow([...row.left, card], row.right, middle: row.middle) : row,
     ]);
@@ -169,6 +213,7 @@ class IkkiuchiSides {
           IkkiuchiRow(board.side.row(r).left, board.side.row(r).right.reversed.toList(),
               middle: board.side.row(r).middle),
       ],
+      turned: turned.where((c) => c != card),
     );
   }
 }

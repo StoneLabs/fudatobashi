@@ -108,7 +108,8 @@ class IkkiuchiSpot {
 
 /// Both sides of the field as they lay, each as its owner sees it: its
 /// rows 下段 first, each group from its outer edge in and the open middle
-/// left to right (the opponent's open middles stay empty).
+/// left to right (the opponent's open middles hold only the cards sent to
+/// him as the match was decided).
 class IkkiuchiLaidField {
   const IkkiuchiLaidField({required this.opponent, required this.player});
 
