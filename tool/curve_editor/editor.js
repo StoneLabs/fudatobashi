@@ -1,14 +1,13 @@
 (function () {
   'use strict';
 
-  // Rating class names and the seconds that start each class, from lib/domain/rating.dart
-  // (Rating.bands) and lib/config/tuning/ranked.dart; the first class has no lower bound.
+  // Rating class names and the rating that starts each class, from lib/domain/rank_ladder.dart
+  // (RankLadder.bands) and lib/config/tuning/rank_ladder.dart; the first class has no lower bound.
   const BANDS = [
-    ['入門', null], ['F下級', 400], ['F上級', 245], ['E下級', 150], ['E上級', 116],
-    ['D級', 90], ['C級', 60], ['B級', 52], ['A級', 40],
+    ['入門', null], ['F下級', 793], ['F上級', 1217], ['E下級', 1642], ['E上級', 1865],
+    ['D級', 2084], ['C級', 2435], ['B級', 2559], ['A級', 2786],
   ];
-  const ratingOf = t => 600 * Math.log2(1000 / t);
-  const BOUNDS = BANDS.map(([name, t]) => ({ name, from: t === null ? -Infinity : ratingOf(t) }));
+  const BOUNDS = BANDS.map(([name, r]) => ({ name, from: r === null ? -Infinity : r }));
 
   const HANDLE_PX = 56, HIT_PX = 8, KNOB_PX = 5, POINT_PX = 5;
   const canvas = document.getElementById('c');
