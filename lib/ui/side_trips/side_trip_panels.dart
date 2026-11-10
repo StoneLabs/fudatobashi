@@ -257,13 +257,24 @@ class StatStrip extends StatelessWidget {
 /// A panel with the side trips' cut corner and [tag] on an ink banner over
 /// its top edge, [heading] at the right beside the tag (or under it when
 /// there is no room beside it), then [child]. With a [cover], the inside is
-/// faded under it.
+/// faded under it. With a [headingMinScale], the heading never goes under
+/// the tag: it shrinks to the room beside it, down to that scale, and gives
+/// way where even that does not fit.
 class TaggedPanel extends StatelessWidget {
-  const TaggedPanel({super.key, required this.tag, required this.sub, this.heading, required this.child, this.cover});
+  const TaggedPanel({
+    super.key,
+    required this.tag,
+    required this.sub,
+    this.heading,
+    this.headingMinScale,
+    required this.child,
+    this.cover,
+  });
 
   final String tag;
   final String? sub;
   final Widget? heading;
+  final double? headingMinScale;
   final Widget child;
   final Widget? cover;
 
@@ -271,19 +282,29 @@ class TaggedPanel extends StatelessWidget {
   Widget build(BuildContext context) {
     final banner = FittedBox(fit: BoxFit.scaleDown, child: InkBanner(tag, sub: sub));
     const head = AnkirenPageLayout.headPadding;
+    final rising = Overhang(rise: AnkirenPageLayout.tagRise + head.top, child: ExcludeSemantics(child: banner));
     final inside = Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.stretch, children: [
       Padding(
         padding: head,
-        child: Wrap(
-          alignment: WrapAlignment.end,
-          crossAxisAlignment: WrapCrossAlignment.end,
-          spacing: AnkirenPageLayout.headGap,
-          runSpacing: AnkirenPageLayout.headGap,
-          children: [
-            Overhang(rise: AnkirenPageLayout.tagRise + head.top, child: ExcludeSemantics(child: banner)),
-            ?heading,
-          ],
-        ),
+        child: switch ((heading, headingMinScale)) {
+          (final heading?, final minScale?) => Row(crossAxisAlignment: CrossAxisAlignment.end, children: [
+              rising,
+              const SizedBox(width: AnkirenPageLayout.headGap),
+              Expanded(
+                child: Align(
+                  alignment: Alignment.bottomRight,
+                  child: GiveWay(minScale: minScale, child: heading),
+                ),
+              ),
+            ]),
+          _ => Wrap(
+              alignment: WrapAlignment.end,
+              crossAxisAlignment: WrapCrossAlignment.end,
+              spacing: AnkirenPageLayout.headGap,
+              runSpacing: AnkirenPageLayout.headGap,
+              children: [rising, ?heading],
+            ),
+        },
       ),
       Flexible(child: child),
     ]);

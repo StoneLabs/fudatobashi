@@ -112,6 +112,7 @@ class _FreePlay extends StatelessWidget {
     return TaggedPanel(
       tag: s.ikkiuchiFreePlay,
       sub: s.sub?.ikkiuchiFreePlay,
+      headingMinScale: IkkiuchiPageLayout.headingMinScale,
       heading: Semantics(
         header: true,
         child: Padding(
@@ -153,6 +154,7 @@ class _FreePlay extends StatelessWidget {
           title: s.ikkiuchiCustom,
           sub: s.sub?.ikkiuchiCustom,
           line: s.ikkiuchiCustomLine,
+          oneLine: true,
           display: false,
           onTap: onCustom,
         ),
@@ -163,8 +165,9 @@ class _FreePlay extends StatelessWidget {
 
 /// A free play row, at least [height] tall inside [padding], under a light rule
 /// when [ruled]: [lead], then [title] (in display type when [display]) with
-/// the other language's [sub] after it, over a [line] on what is there; a
-/// chevron at its end. It stamps a tone while pressed and calls [onTap].
+/// the other language's [sub] after it, over a [line] on what is there
+/// (with [oneLine], kept to one line, shrinking to fit); a chevron at its
+/// end. It stamps a tone while pressed and calls [onTap].
 class _FreeRow extends StatelessWidget {
   const _FreeRow({
     required this.height,
@@ -174,6 +177,7 @@ class _FreeRow extends StatelessWidget {
     required this.title,
     required this.sub,
     required this.line,
+    this.oneLine = false,
     required this.display,
     required this.onTap,
   });
@@ -184,6 +188,7 @@ class _FreeRow extends StatelessWidget {
   final Widget lead;
   final String title, line;
   final String? sub;
+  final bool oneLine;
   final bool display;
   final VoidCallback onTap;
 
@@ -263,7 +268,14 @@ class _FreeRow extends StatelessWidget {
                         ),
                       ),
                       if (display) const SizedBox(height: IkkiuchiPageLayout.botsLineTop),
-                      Text.rich(Phrases.span(line), style: lineStyle),
+                      if (oneLine)
+                        FittedBox(
+                          fit: BoxFit.scaleDown,
+                          alignment: Alignment.centerLeft,
+                          child: Text.rich(Phrases.span(line), style: lineStyle, maxLines: 1),
+                        )
+                      else
+                        Text.rich(Phrases.span(line), style: lineStyle),
                     ]),
                   ),
                   const SizedBox(width: IkkiuchiPageLayout.rowGap),

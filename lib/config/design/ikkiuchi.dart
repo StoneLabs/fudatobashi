@@ -553,13 +553,16 @@ class IkkiuchiModeTone {
 /// [factRuleGap] clear of each, [factRuleInset] short at both ends.
 ///
 /// Free play: its panel's heading at [headingFont], [headingPadding] round
-/// it; the bots row at least [botsRowHeight] tall, inside
+/// it, beside the tag: smaller where the room there is short, down to
+/// [headingMinScale] of its size, and left out where even that does not
+/// fit; the bots row at least [botsRowHeight] tall, inside
 /// [botsRowPadding] (its robot in a [botFrame] frame filled
 /// [botFrameFill], its name at [botsTitleFont] tracked [botsTitleTracking],
 /// its line at [botsLineFont]), then under a light rule the custom row at
 /// least [customRowHeight] tall, inside [customRowPadding] (its gear
 /// [gearBox] wide, its name at [customTitleFont] tracked
-/// [customTitleTracking], its line at [customLineFont]); each row's
+/// [customTitleTracking], its line on one line at [customLineFont], or
+/// smaller to fit); each row's
 /// other-language name at [rowSubFont],
 /// [rowSubGap] after its own; Latin names tracked [rowTitleLatinTracking];
 /// [rowGap] between a row's parts and a chevron at its end. The rules
@@ -683,6 +686,7 @@ abstract final class IkkiuchiPageLayout {
   static const EdgeInsets burstMargin = EdgeInsets.fromLTRB(4, 14, 4, 12);
 
   static const double headingFont = 12;
+  static const double headingMinScale = 0.75;
   static const EdgeInsets headingPadding = EdgeInsets.fromLTRB(0, 3, 0, 2);
   static const EdgeInsets rowMargin = EdgeInsets.symmetric(horizontal: 14);
   static const double rowGap = 14;
