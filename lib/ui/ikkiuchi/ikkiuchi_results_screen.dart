@@ -30,8 +30,8 @@ import '../results/run_summary.dart';
 /// fastest takes and the cards Tobi took that they reached too; then
 /// Review game, which opens the match's History page on its field, beside
 /// Back to 一騎打ち. A recorded match's celebrations play over it first
-/// ([ResultsFrame]). A guest's match saved nothing: no Review game, and
-/// Back to 一騎打ち takes the whole row.
+/// ([ResultsFrame]). A guest's match saved nothing: it is untracked, has
+/// no Review game, and Back to 一騎打ち takes the whole row.
 class IkkiuchiResultsScreen extends StatelessWidget {
   const IkkiuchiResultsScreen({super.key, required this.match, this.report});
 
@@ -52,11 +52,7 @@ class IkkiuchiResultsScreen extends StatelessWidget {
       celebrations: report == null ? const [] : xpCelebrations(report.xp),
       child: RunSummary(
         title: s.hallName,
-        sub: [
-          s.other.hallName,
-          _saved ? ikkiuchiKindLabel(s, match) : s.ikkiuchiGuestMode,
-          s.ikkiuchiTobiAt(match.setup.opponentRating.round()),
-        ].join(' · ').toUpperCase(),
+        sub: [s.other.hallName, _saved ? ikkiuchiKindLabel(s, match) : s.ikkiuchiGuestMode].join(' · ').toUpperCase(),
         untracked: !_saved,
         hero: _hero(s),
         tiles: _tiles(s, review),
@@ -148,7 +144,7 @@ class IkkiuchiResultsScreen extends StatelessWidget {
 
   /// The player's fastest takes and the cards Tobi took that they reached
   /// too, each with the player's time; a line when they took and reached
-  /// none; and a guest's note.
+  /// none.
   List<Widget> _rows(S s, IkkiuchiReview review) {
     final fastest = review.fastestTakes, beaten = review.beaten;
     List<SummaryCard> cards(List<IkkiuchiReadLog> reads) => [
@@ -161,7 +157,6 @@ class IkkiuchiResultsScreen extends StatelessWidget {
         CardShelf(s.ikkiuchiBeatenTitle, Palette.pink, s.ikkiuchiBeatenNote, cards(beaten)),
       ]),
       if (fastest.isEmpty && beaten.isEmpty) SummaryNote(s.ikkiuchiNoTakes),
-      if (!_saved) SummaryNote(s.ikkiuchiGuestNote),
     ];
   }
 }

@@ -57,12 +57,10 @@ extension IkkiuchiStrings on S {
       };
 
   /// The results after a match: its buttons (the match's History page, and
-  /// back to 一騎打ち's page), the line when the player took no card, and a
-  /// guest's note that nothing was saved.
+  /// back to 一騎打ち's page), and the line when the player took no card.
   String get ikkiuchiReviewMatch => t('ikkiuchiReviewMatch');
   String get ikkiuchiBackToPage => t('ikkiuchiBackToPage');
   String get ikkiuchiNoTakes => t('ikkiuchiNoTakes');
-  String get ikkiuchiGuestNote => t('ikkiuchiGuestNote');
 
   /// 並べ替え: its button, and the call's place while the player moves
   /// their cards.
