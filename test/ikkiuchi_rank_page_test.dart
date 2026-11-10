@@ -147,7 +147,6 @@ void main() {
         for (final (k, at) in t.ticks.indexed) {
           expect(t.shareAt(at), closeTo(k / n, 1e-6), reason: '${moment.name}: tick $k is at its share');
         }
-        expect(t.shareAt(t.runAt + t.run * 0.5), closeTo(0.5, 1e-6), reason: '${moment.name}: symmetric');
         expect(t.shareAt(t.runAt + t.run * 0.1), lessThan(0.05), reason: 'eased, not linear');
         expect(_gaps(t.ticks).take(3).toList(), [for (final g in IkkiuchiRankMotion.tickSlowGaps) g.inMilliseconds],
             reason: moment.name);
@@ -170,19 +169,19 @@ void main() {
         final gaps = _gaps(t.ticks);
         final why = '$gain: $gaps';
         expect(gaps.every((g) => g >= IkkiuchiRankMotion.tickRushGap.inMilliseconds), isTrue, reason: why);
-        expect(t.landAt - t.ticks.last, greaterThanOrEqualTo(IkkiuchiRankMotion.tickSlowGaps.first), reason: why);
-        expect(t.ticks.first, t.runAt);
+        expect(t.landAt - t.ticks.last, IkkiuchiRankMotion.landingGap, reason: why);
+        expect(t.ticks.first, t.runAt + IkkiuchiRankMotion.firstTickAt);
         if (gain.abs() >= 40) {
           expect(gaps.take(3).toList(), slow, reason: why);
-          expect(gaps.reversed.take(3).toList(), [700, 450, 220], reason: why);
+          expect(gaps.reversed.take(3).toList(), [430, 290, 160], reason: why);
           expect(t.ticks.length, inInclusiveRange(18, 26), reason: why);
-          expect(gaps.where((g) => g == 60).length, greaterThan(5), reason: why);
+          expect(gaps.where((g) => g == 65).length, greaterThan(5), reason: why);
         } else {
           expect(t.ticks.length, gain.abs().round(), reason: 'one per point');
         }
       }
       final five = _timeline(_rated(2000, 5));
-      expect([for (final at in five.ticks) (at - five.runAt).inMilliseconds], [0, 800, 1500, 1950, 2650]);
+      expect([for (final at in five.ticks) (at - five.runAt).inMilliseconds], [310, 850, 1280, 1570, 2000]);
     });
 
     test('the sounds: the points, the ticks and the landing; the strain, the break and the slam; ガーン!!', () {

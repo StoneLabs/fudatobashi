@@ -50,14 +50,15 @@ class IkkiuchiRankTimeline {
       ...front,
       for (var i = front.length + back.length; i < _steps; i++) IkkiuchiRankMotion.tickRushGap,
       ...back.reversed,
-    ];
+    ]..[_steps - 1] = IkkiuchiRankMotion.landingGap;
   }();
 
   /// When, from the run's start, the count has passed each tick's share of
-  /// the points (the first at the start, the last at the landing).
+  /// the points (the first after [IkkiuchiRankMotion.firstTickAt], the last
+  /// at the landing).
   late final List<Duration> _nodes = () {
-    var at = Duration.zero;
-    return [Duration.zero, for (final gap in _gaps) at += gap];
+    var at = IkkiuchiRankMotion.firstTickAt;
+    return [at, for (final gap in _gaps) at += gap];
   }();
 
   /// How long the count takes, the gaps added up.
@@ -98,6 +99,7 @@ class IkkiuchiRankTimeline {
     if (into <= Duration.zero) return 0;
     if (into >= run) return 1;
     final k = _nodes.lastIndexWhere((node) => node <= into);
+    if (k < 0) return 0;
     final gap = _nodes[k + 1] - _nodes[k];
     return (k + (into - _nodes[k]).inMicroseconds / gap.inMicroseconds) / _steps;
   }
