@@ -9,8 +9,8 @@ import 'strings.dart';
 /// Strings of 一騎打ち: its page, its custom sheet and rules, the placing
 /// and the memory time, the greetings, the 送り札 on the band, Tobi's word
 /// as his card waits, the names of the places a card may go on the
-/// player's side, the game column, a からふだ's tag, how a read ended, and
-/// History's list of matches and a match's page.
+/// player's side, the game column, a からふだ's tag, how a read ended, the
+/// results after a match, and History's list of matches and a match's page.
 extension IkkiuchiStrings on S {
   /// The band while a card is sent: its title, and what the player does,
   /// sending one of theirs or placing Tobi's; in landscape the shorter
@@ -47,6 +47,22 @@ extension IkkiuchiStrings on S {
   String get ikkiuchiTobiWins => t('ikkiuchiTobiWins');
   String ikkiuchiWonBy(int n) => f(countKey('ikkiuchiWonBy', n), [n]);
   String ikkiuchiLostBy(int n) => f(countKey('ikkiuchiLostBy', n), [n]);
+
+  /// The line under a match's result: won or lost by [margin] cards, or
+  /// given up.
+  String ikkiuchiResultLine(IkkiuchiResult result, int margin) => switch (result) {
+        IkkiuchiResult.won => ikkiuchiWonBy(margin),
+        IkkiuchiResult.lost => ikkiuchiLostBy(margin),
+        IkkiuchiResult.gaveUp => ikkiuchiResult(result),
+      };
+
+  /// The results after a match: its buttons (the match's History page, and
+  /// back to 一騎打ち's page), the line when the player took no card, and a
+  /// guest's note that nothing was saved.
+  String get ikkiuchiReviewMatch => t('ikkiuchiReviewMatch');
+  String get ikkiuchiBackToPage => t('ikkiuchiBackToPage');
+  String get ikkiuchiNoTakes => t('ikkiuchiNoTakes');
+  String get ikkiuchiGuestNote => t('ikkiuchiGuestNote');
 
   /// 並べ替え: its button, and the call's place while the player moves
   /// their cards.
