@@ -29,6 +29,7 @@ import 'package:fudatobashi/state/scope.dart';
 import 'package:fudatobashi/state/settings.dart';
 import 'package:fudatobashi/ui/debug/ikkiuchi_debug_game.dart';
 import 'package:fudatobashi/ui/ikkiuchi/ikkiuchi_board_painter.dart';
+import 'package:fudatobashi/ui/ikkiuchi/ikkiuchi_call_strip.dart';
 import 'package:fudatobashi/ui/ikkiuchi/ikkiuchi_match_board.dart';
 import 'package:fudatobashi/ui/ikkiuchi/ikkiuchi_match_column.dart';
 import 'package:fudatobashi/ui/ikkiuchi/ikkiuchi_match_flow.dart';
@@ -36,6 +37,7 @@ import 'package:fudatobashi/ui/ikkiuchi/ikkiuchi_send_flow.dart';
 import 'package:fudatobashi/ui/manga/buttons.dart';
 import 'package:fudatobashi/ui/manga/idle_motion.dart';
 import 'package:fudatobashi/ui/manga/theme.dart';
+import 'package:fudatobashi/ui/manga/vector.dart';
 import 'package:fudatobashi/ui/sound/sounds.dart';
 import 'package:fudatobashi/ui/torifuda/card_faces.dart';
 
@@ -256,9 +258,9 @@ void main() {
     }
 
     // A seed whose first read is a card on [side], clear of the tools.
-    Future<int> seedReading(WidgetTester tester, Progress p, IkkiuchiSide side) async {
+    Future<int> seedReading(WidgetTester tester, Progress p, IkkiuchiSide side, {bool landscape = true}) async {
       for (var seed = 0;; seed++) {
-        await toFirstRead(tester, p, seed);
+        await toFirstRead(tester, p, seed, landscape: landscape);
         final board = flow(tester).scene.board;
         final called = board.called;
         if (called == null || board.cards.card(called).side != side) continue;
@@ -409,6 +411,50 @@ void main() {
       expect(flow(tester).rating, IkkiuchiToolsTuning.ratingStart, reason: "the slider's rating is before his form");
       await tester.pumpWidget(const SizedBox());
     });
+
+    // The 下の句 reached by a take on the player's side, let go at 次.
+    Future<void> toShimonoku(WidgetTester tester, Progress p, {required bool landscape}) async {
+      await seedReading(tester, p, IkkiuchiSide.player, landscape: landscape);
+      final s = flow(tester).scene;
+      final read = s.board.called!;
+      await run(tester, s.reader.call!.decidedAt + 50);
+      await touch(tester, s.board.cards.card(read).box.centre);
+      await runUntil(tester, () => stage(tester) == IkkiuchiStage.waitingForGo);
+      await tester.tap(tool(IkkiuchiToolsStyle.goLabel));
+      await tester.pump(frame);
+      await run(tester, 1000 + 50);
+      expect(stage(tester), IkkiuchiStage.shimonoku);
+    }
+
+    for (final landscape in [true, false]) {
+      testWidgets('the 下の句 shows its word and the 余韻 mark, wiped away from the left as it plays, '
+          '${landscape ? 'on the strip' : 'on the band'}', (tester) async {
+        final p = await open(tester);
+        await toShimonoku(tester, p, landscape: landscape);
+        final words = find.byType(IkkiuchiShimonokuWords);
+        expect(words, findsOneWidget);
+        expect(find.descendant(of: words, matching: find.text('下の句')), findsOneWidget);
+        expect(find.descendant(of: words, matching: find.byType(VectorArtBox)), findsOneWidget);
+        double share() => tester.widget<IkkiuchiShimonokuWords>(words).share;
+        final length = IkkiuchiMatchTuning.shimonoku.inMilliseconds;
+        final dir = landscape ? 'landscape' : 'portrait';
+        var last = share();
+        expect(last, lessThan(0.05));
+        await run(tester, 200);
+        await capture(tester, 'shimonoku_${dir}_0');
+        for (final at in [0.3, 0.7]) {
+          await run(tester, length * at - share() * length);
+          expect(share(), closeTo(at, 0.03));
+          expect(share(), greaterThan(last), reason: 'more of it gone as the 下の句 plays');
+          last = share();
+          await capture(tester, 'shimonoku_${dir}_${(at * 100).round()}');
+        }
+        await run(tester, length * 0.3 + 100);
+        expect(stage(tester), IkkiuchiStage.breakAfterShimonoku);
+        if (!landscape) expect(find.byType(IkkiuchiShimonokuWords), findsNothing, reason: 'gone with the 下の句');
+        await tester.pumpWidget(const SizedBox());
+      });
+    }
 
     testWidgets('a take on their own side holds at 次, then 1s wait, 下の句 7 s, 1s break, the next 上の句',
         (tester) async {
