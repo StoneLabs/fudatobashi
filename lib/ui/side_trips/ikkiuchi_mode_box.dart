@@ -214,10 +214,15 @@ class _FramePainter extends CustomPainter {
 /// played, or before the first a note in its room) in all the height the
 /// box is given, then the mode's match, each side laid out in [rows], and
 /// the burst that starts it against Tobi at the rating it shows. A tap on
-/// the curve opens the mode's box from the rank change page, at rest
-/// ([openIkkiuchiCurvePopup]).
+/// the curve, or on the standing (badge and rating, or the placement
+/// slots), opens the mode's box from the rank change page, at rest
+/// ([openIkkiuchiCurvePopup]); with no ranked match played there is none to
+/// open.
 class IkkiuchiRankedBox extends StatelessWidget {
   const IkkiuchiRankedBox(this.records, {super.key, required this.rows});
+
+  /// The key of the standing's tap target.
+  static const standingKey = ValueKey('ikkiuchiStanding');
 
   final IkkiuchiModeRecords records;
   final int rows;
@@ -235,18 +240,29 @@ class IkkiuchiRankedBox extends StatelessWidget {
       (true, final change?) => IkkiuchiPlacementCurve(change.path),
       _ => IkkiuchiRatingCurve(records.curve, tone: tone),
     };
+    final VoidCallback? open = change == null ? null : () => openIkkiuchiCurvePopup(context, change);
+    final standing = Padding(
+      padding: IkkiuchiPageLayout.standPadding,
+      child: Row(children: [
+        IkkiuchiClassBadge(records.band, tone: tone.tone),
+        const SizedBox(width: IkkiuchiPageLayout.standGap),
+        Expanded(child: records.placing ? _Placement(records) : _Standing(records, tone: tone)),
+      ]),
+    );
     return Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-      Padding(
-        padding: IkkiuchiPageLayout.standPadding,
-        child: Row(children: [
-          IkkiuchiClassBadge(records.band, tone: tone.tone),
-          const SizedBox(width: IkkiuchiPageLayout.standGap),
-          Expanded(child: records.placing ? _Placement(records) : _Standing(records, tone: tone)),
-        ]),
-      ),
-      Flexible(
-        child: _CurveRoom(curve, onTap: change == null ? null : () => openIkkiuchiCurvePopup(context, change)),
-      ),
+      if (open == null)
+        standing
+      else
+        Pressable(
+          key: standingKey,
+          onTap: open,
+          drop: 0,
+          turn: 0,
+          scale: Press.panelScale,
+          semanticLabel: s.ikkiuchiCurveOpen,
+          builder: (context, _) => standing,
+        ),
+      Flexible(child: _CurveRoom(curve, onTap: open)),
       const Padding(
         padding: EdgeInsets.symmetric(horizontal: IkkiuchiPageLayout.splitInset),
         child: SizedBox(

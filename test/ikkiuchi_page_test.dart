@@ -361,7 +361,11 @@ void main() {
   });
 
   /// The curve's tap target.
-  Finder curveTap() => find.byWidgetPredicate((w) => w is Pressable && w.semanticLabel == s.ikkiuchiCurveOpen);
+  Finder curveTap() => find.byWidgetPredicate(
+      (w) => w is Pressable && w.semanticLabel == s.ikkiuchiCurveOpen && w.key != IkkiuchiRankedBox.standingKey);
+
+  /// The standing's tap target: the badge with the rating or the placement slots.
+  Finder standingTap() => find.byKey(IkkiuchiRankedBox.standingKey);
 
   testWidgets("the curve's room: the note before placement, the estimates while placing, then the curve",
       (tester) async {
@@ -370,6 +374,7 @@ void main() {
     expect(find.byType(IkkiuchiCurveNote), findsOneWidget);
     expect(find.byType(IkkiuchiPlacementCurve), findsNothing);
     expect(curveTap(), findsNothing, reason: 'nothing to open before the first placement match');
+    expect(standingTap(), findsNothing, reason: 'nor from the standing');
     await tester.pumpWidget(const SizedBox());
 
     for (var played = 1; played < IkkiuchiRating.placementMatches; played++) {
@@ -439,14 +444,40 @@ void main() {
     }
   });
 
-  testWidgets('a curve given way on a short phone leaves nothing to tap', (tester) async {
+  testWidgets('a curve given way on a short phone is opened from the badge and the rating or the slots',
+      (tester) async {
     final p = await open(tester);
+    await playRanked(tester, p, [true, false, true, true, true, false], mode: IkkiuchiMode.bullet);
     await playRanked(tester, p, [true, false]);
-    await showPage(tester, p, phone: shortNarrowPhone, fontScale: 1.3);
-    expect(tester.takeException(), isNull);
-    expect(find.byWidgetPredicate((w) => w is IkkiuchiPlacementCurve || w is IkkiuchiCurveNote), findsNothing);
-    expect(curveTap(), findsNothing);
-    await tester.pumpWidget(const SizedBox());
+    for (final mode in [IkkiuchiMode.bullet, rapid]) {
+      await tester.runAsync(
+          () => p.updateSettings(p.settings.copyWith(ikkiuchi: p.settings.ikkiuchi.copyWith(tab: mode))));
+      await showPage(tester, p, phone: shortNarrowPhone, fontScale: 1.3);
+      expect(tester.takeException(), isNull);
+      expect(find.byWidgetPredicate((w) => w is IkkiuchiPlacementCurve || w is IkkiuchiCurveNote), findsNothing);
+      expect(curveTap(), findsNothing);
+      expect(standingTap(), findsOneWidget);
+      final records = p.ikkiuchi.of(mode);
+      final targets = [
+        find.byType(IkkiuchiClassBadge),
+        if (records.placing) find.text(s.ikkiuchiPlacementTitle) else find.text('${records.rating!.round()}'),
+      ];
+      for (final target in targets) {
+        await tester.tap(find.descendant(of: standingTap(), matching: target));
+        for (var i = 0; i < 3; i++) {
+          await tester.pump(Motion.sheet);
+        }
+        expect(tester.takeException(), isNull);
+        final shown = tester.widget<IkkiuchiCurvePopup>(find.byType(IkkiuchiCurvePopup)).change;
+        expect([shown.mode, shown.placing], [mode, mode == rapid]);
+        await tester.tap(find.byWidgetPredicate((w) => w is InkIconButton && w.semanticLabel == s.close));
+        for (var i = 0; i < 3; i++) {
+          await tester.pump(Motion.sheet);
+        }
+        expect(find.byType(IkkiuchiCurvePopup), findsNothing);
+      }
+      await tester.pumpWidget(const SizedBox());
+    }
   });
 
   testWidgets('the ranked burst plays the next ranked match against the Tobi it shows', (tester) async {
