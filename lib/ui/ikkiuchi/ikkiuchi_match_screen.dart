@@ -40,10 +40,10 @@ Future<void> startIkkiuchiMatch(BuildContext context, IkkiuchiSetup setup, {bool
 /// play had begun hands over to its results ([IkkiuchiResultsScreen]),
 /// upright with the system bars back, and one ended before just closes.
 /// Leaving the screen before the match ends records free play not at all,
-/// and a ranked match, once play has begun, as given up: a loss. From its first read,
-/// and again after every read and every 送り札, a ranked match is
-/// journalled as it stands, so that one the app never gets to record is a
-/// forfeit on the next start with its reads and cards left
+/// and a ranked match, once play has begun, as given up: a loss. From its
+/// first read, and again after every read and every 送り札, a ranked match
+/// is journalled as it stands, so that one the app never gets to record is
+/// a forfeit on the next start with its reads and cards left
 /// ([Progress.journalIkkiuchi]).
 ///
 /// Ending a ranked match once it counts, by the system's back or 終了,
