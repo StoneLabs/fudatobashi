@@ -495,6 +495,50 @@ class IkkiuchiModeTone {
   final Color deep;
 }
 
+/// A ranked mode's class badge (`IkkiuchiClassBadge`): [size] square in the
+/// mode's tone, edged [stroke], the class kept [inset] in from its sides:
+/// the stem at [classFont] and 級 at [suffixFont], a longer stem at
+/// [longFont] and [longSuffixFont], and the mark of no class yet at
+/// [unplacedFont]. dp.
+@immutable
+class IkkiuchiBadgeStyle {
+  const IkkiuchiBadgeStyle({
+    required this.size,
+    required this.classFont,
+    required this.suffixFont,
+    required this.longFont,
+    required this.longSuffixFont,
+    required this.unplacedFont,
+    this.stroke = Strokes.panel,
+    this.inset = 5,
+  });
+  final double size, stroke, inset;
+  final double classFont, suffixFont, longFont, longSuffixFont, unplacedFont;
+}
+
+/// A ranked mode's rating curve (`IkkiuchiCurveScale`), [top] kept clear
+/// over the line: each match in its own slot from [labelRoom] in to
+/// [inset] short of the right, the line [line] wide, the matches dots of
+/// radius [dot] ringed [ring], the latest a diamond reaching [mark] each
+/// way ringed [markRing]; the y range padded by [rangeShare] of it, or
+/// [minPad] at least. dp.
+@immutable
+class IkkiuchiCurveStyle {
+  const IkkiuchiCurveStyle({
+    required this.labelRoom,
+    required this.inset,
+    required this.top,
+    required this.line,
+    required this.dot,
+    required this.mark,
+    required this.markRing,
+    required this.minPad,
+    required this.rangeShare,
+    this.ring = Strokes.hairline,
+  });
+  final double labelRoom, inset, top, line, dot, ring, mark, markRing, minPad, rangeShare;
+}
+
 /// 一騎打ち's page (`ikkiuchi_page.dart`): the mode tabs [tabsTop] under the
 /// header, the free play panel at the foot, then the button pair [pairTop]
 /// under it and [bottomGap] over the screen's foot.
@@ -520,11 +564,8 @@ class IkkiuchiModeTone {
 /// reads, so it gives way: the box closes up and the gap goes over free
 /// play.
 ///
-/// The standing: the class badge, [badge] square in the mode's tone, edged
-/// [badgeStroke], the class kept [badgeInset] in from its sides: the stem
-/// at [classFont] and 級 at [classSuffixFont], a longer stem at
-/// [longClassFont] and [longClassSuffixFont], and [unplaced] at
-/// [unplacedFont] while placing. [standGap] right of it the labels at
+/// The standing: the class [badge] in the mode's tone, [unplaced] in it
+/// while placing. [standGap] right of it the labels at
 /// [labelFont]; [ratingTop] under the label the rating at [ratingFont],
 /// its change [changeGap] after it on a tag at [changeFont]; then
 /// [gaugeTop] under it, [gaugeHeight] tall, the way to the next class at
@@ -536,18 +577,14 @@ class IkkiuchiModeTone {
 /// [nextSlotBorder], the rest dashed in [slotInk]; then [noteTop] under
 /// them the line on what placement decides, as tall as the gauge.
 ///
-/// The curve (`IkkiuchiRatingCurve`), [curveTop] kept
-/// clear over the line: the rating after each of the mode's last ranked
-/// matches, each in its own slot from the left, the line [curveLine] wide,
-/// the latest match a diamond reaching [curveMark] each way and the others
-/// dots of radius [curveDot], ringed [curveRing]; the y range padded by
-/// [curveRangeShare] of it, or [curveMinPad] at least. The class lines
+/// The curve (`IkkiuchiRatingCurve`, drawn by [curve]): the rating after
+/// each of the mode's last ranked matches, each in its own slot from the
+/// left, the latest a diamond in the mode's colour. The class lines
 /// dashed in [classLine], their names [classLabelLift] over them in
 /// [classLabelInk], kept [classLabelClear] above the caption, which sits
 /// [captionDrop] over the floor in [captionInk]; labels at
-/// [curveLabelFont]. The line starts [curveLabelRoom] in and ends
-/// [curveInset] short of the right; the floor starts [curveInset] left of
-/// the line. While the line is short, [growsDrop] over the floor, a note
+/// [curveLabelFont]. The floor, [curveFloor] wide, starts the curve's
+/// inset left of the line. While the line is short, [growsDrop] over the floor, a note
 /// at [growsFont] in its empty part says it grows. While placing, the same
 /// room holds a dashed outline in [lightRule] with a note on one line at
 /// [curveNoteFont], or smaller to fit.
@@ -614,15 +651,15 @@ abstract final class IkkiuchiPageLayout {
   static const Color quietSub = Color(0xFF6B6B6B);
 
   static const EdgeInsets standPadding = EdgeInsets.fromLTRB(16, 16, 16, 14);
-  static const double badge = 74;
-  static const double badgeStroke = Strokes.panel;
-  static const double badgeInset = 5;
-  static const double classFont = 40;
-  static const double classSuffixFont = 17;
-  static const double longClassFont = 30;
-  static const double longClassSuffixFont = 14;
+  static const badge = IkkiuchiBadgeStyle(
+    size: 74,
+    classFont: 40,
+    suffixFont: 17,
+    longFont: 30,
+    longSuffixFont: 14,
+    unplacedFont: 38,
+  );
   static const String unplaced = '?';
-  static const double unplacedFont = 38;
   static const double standGap = 14;
   static const double labelFont = 12;
   static const double ratingTop = 3;
@@ -651,15 +688,17 @@ abstract final class IkkiuchiPageLayout {
 
   static const EdgeInsets curveMargin = EdgeInsets.fromLTRB(16, 0, 16, 12);
   static const double curveMinHeight = 32;
-  static const double curveTop = 6;
-  static const double curveLabelRoom = 60;
-  static const double curveInset = 7;
-  static const double curveMinPad = 18;
-  static const double curveRangeShare = 0.14;
-  static const double curveLine = 2.2;
-  static const double curveRing = Strokes.hairline;
-  static const double curveDot = 2.6;
-  static const double curveMark = 6;
+  static const curve = IkkiuchiCurveStyle(
+    labelRoom: 60,
+    inset: 7,
+    top: 6,
+    line: 2.2,
+    dot: 2.6,
+    mark: 6,
+    markRing: Strokes.hairline,
+    minPad: 18,
+    rangeShare: 0.14,
+  );
   static const double curveFloor = Strokes.hairline;
   static const double classLineWidth = Strokes.hairline;
   static const Color classLine = Color(0xFF9B978F);

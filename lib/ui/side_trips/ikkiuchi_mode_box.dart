@@ -65,8 +65,7 @@ class IkkiuchiModeTabs extends StatelessWidget {
       );
 }
 
-/// A mode's tab: its name over its cards a side, big and in ink when
-/// [chosen], smaller and greyed otherwise.
+/// A mode's tab: its lettering ([IkkiuchiTabLabel]), tapped to choose it.
 class _Tab extends StatelessWidget {
   const _Tab(this.mode, {required this.chosen, required this.onTap});
 
@@ -77,14 +76,6 @@ class _Tab extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final s = S.of(context);
-    final name = s.ikkiuchiModeName(mode);
-    final cards = s.ikkiuchiTabPerSide(mode.perSide);
-    final size = switch ((chosen, s.ja)) {
-      (true, true) => IkkiuchiPageLayout.tabName,
-      (false, true) => IkkiuchiPageLayout.quietTabName,
-      (true, false) => IkkiuchiPageLayout.tabNameLatin,
-      (false, false) => IkkiuchiPageLayout.quietTabNameLatin,
-    };
     return Semantics(
       selected: chosen,
       child: Pressable(
@@ -92,39 +83,58 @@ class _Tab extends StatelessWidget {
         drop: 0,
         scale: 1,
         turn: 0,
-        semanticLabel: '$name $cards',
+        semanticLabel: '${s.ikkiuchiModeName(mode)} ${s.ikkiuchiTabPerSide(mode.perSide)}',
         builder: (context, _) => ExcludeSemantics(
           child: Padding(
             padding: EdgeInsets.only(top: chosen ? IkkiuchiPageLayout.tabTop : IkkiuchiPageLayout.quietTabTop),
-            child: Center(
-              child: FittedBox(
-                fit: BoxFit.scaleDown,
-                child: Column(mainAxisSize: MainAxisSize.min, children: [
-                  Text(name,
-                      maxLines: 1,
-                      style: TextStyle(
-                        fontFamily: Fonts.display,
-                        fontSize: size,
-                        height: 1,
-                        letterSpacing: s.ja ? 0 : IkkiuchiPageLayout.tabNameLatinTracking,
-                        color: chosen ? Palette.ink : IkkiuchiPageLayout.quietName,
-                      )),
-                  const SizedBox(height: IkkiuchiPageLayout.tabSubGap),
-                  Text(cards,
-                      maxLines: 1,
-                      style: TextStyle(
-                        fontWeight: chosen ? Weights.black : Weights.bold,
-                        fontSize: IkkiuchiPageLayout.tabSub,
-                        height: 1,
-                        letterSpacing: IkkiuchiPageLayout.tabSubTracking,
-                        color: chosen ? Palette.ink : IkkiuchiPageLayout.quietSub,
-                      )),
-                ]),
-              ),
-            ),
+            child: Center(child: IkkiuchiTabLabel(mode, chosen: chosen)),
           ),
         ),
       ),
+    );
+  }
+}
+
+/// A mode's tab lettering: its name over its cards a side, big and in ink
+/// when [chosen], smaller and greyed otherwise, shrinking to fit.
+class IkkiuchiTabLabel extends StatelessWidget {
+  const IkkiuchiTabLabel(this.mode, {super.key, required this.chosen});
+
+  final IkkiuchiMode mode;
+  final bool chosen;
+
+  @override
+  Widget build(BuildContext context) {
+    final s = S.of(context);
+    final size = switch ((chosen, s.ja)) {
+      (true, true) => IkkiuchiPageLayout.tabName,
+      (false, true) => IkkiuchiPageLayout.quietTabName,
+      (true, false) => IkkiuchiPageLayout.tabNameLatin,
+      (false, false) => IkkiuchiPageLayout.quietTabNameLatin,
+    };
+    return FittedBox(
+      fit: BoxFit.scaleDown,
+      child: Column(mainAxisSize: MainAxisSize.min, children: [
+        Text(s.ikkiuchiModeName(mode),
+            maxLines: 1,
+            style: TextStyle(
+              fontFamily: Fonts.display,
+              fontSize: size,
+              height: 1,
+              letterSpacing: s.ja ? 0 : IkkiuchiPageLayout.tabNameLatinTracking,
+              color: chosen ? Palette.ink : IkkiuchiPageLayout.quietName,
+            )),
+        const SizedBox(height: IkkiuchiPageLayout.tabSubGap),
+        Text(s.ikkiuchiTabPerSide(mode.perSide),
+            maxLines: 1,
+            style: TextStyle(
+              fontWeight: chosen ? Weights.black : Weights.bold,
+              fontSize: IkkiuchiPageLayout.tabSub,
+              height: 1,
+              letterSpacing: IkkiuchiPageLayout.tabSubTracking,
+              color: chosen ? Palette.ink : IkkiuchiPageLayout.quietSub,
+            )),
+      ]),
     );
   }
 }
@@ -219,7 +229,7 @@ class IkkiuchiRankedBox extends StatelessWidget {
       Padding(
         padding: IkkiuchiPageLayout.standPadding,
         child: Row(children: [
-          _Badge(records.band, tone: tone.tone),
+          IkkiuchiClassBadge(records.band, tone: tone.tone),
           const SizedBox(width: IkkiuchiPageLayout.standGap),
           Expanded(child: records.placing ? _Placement(records) : _Standing(records, tone: tone)),
         ]),
@@ -294,13 +304,15 @@ class _RenderUnmeasured extends RenderProxyBox {
 /// A small label in black type.
 Widget _label(String text) => PanelLabel(text, null, fontSize: IkkiuchiPageLayout.labelFont);
 
-/// The class badge in the mode's [tone]: the [band]'s name, the stem big
-/// and 級 small after it; a question mark while there is no class yet.
-class _Badge extends StatelessWidget {
-  const _Badge(this.band, {required this.tone});
+/// A mode's class badge in its [tone], sized by [style]: the [band]'s
+/// name, the stem big and 級 small after it; a question mark while there
+/// is no class yet.
+class IkkiuchiClassBadge extends StatelessWidget {
+  const IkkiuchiClassBadge(this.band, {super.key, required this.tone, this.style = IkkiuchiPageLayout.badge});
 
   final RankBand? band;
   final ToneSpec tone;
+  final IkkiuchiBadgeStyle style;
 
   @override
   Widget build(BuildContext context) {
@@ -314,24 +326,23 @@ class _Badge extends StatelessWidget {
         if (stem != s.className(band))
           TextSpan(
             text: RankBand.classSuffix,
-            style: TextStyle(
-                fontSize: long ? IkkiuchiPageLayout.longClassSuffixFont : IkkiuchiPageLayout.classSuffixFont),
+            style: TextStyle(fontSize: long ? style.longSuffixFont : style.suffixFont),
           ),
-      ]), style: TextStyle(fontSize: long ? IkkiuchiPageLayout.longClassFont : IkkiuchiPageLayout.classFont));
+      ]), style: TextStyle(fontSize: long ? style.longFont : style.classFont));
     } else {
-      name = const Text(IkkiuchiPageLayout.unplaced, style: TextStyle(fontSize: IkkiuchiPageLayout.unplacedFont));
+      name = Text(IkkiuchiPageLayout.unplaced, style: TextStyle(fontSize: style.unplacedFont));
     }
     return SizedBox.square(
-      dimension: IkkiuchiPageLayout.badge,
+      dimension: style.size,
       child: Stack(fit: StackFit.expand, children: [
         ToneBox(tone),
-        const DecoratedBox(
+        DecoratedBox(
           decoration: BoxDecoration(
-            border: Border.fromBorderSide(BorderSide(color: Palette.ink, width: IkkiuchiPageLayout.badgeStroke)),
+            border: Border.fromBorderSide(BorderSide(color: Palette.ink, width: style.stroke)),
           ),
         ),
         Padding(
-          padding: const EdgeInsets.symmetric(horizontal: IkkiuchiPageLayout.badgeInset),
+          padding: EdgeInsets.symmetric(horizontal: style.inset),
           child: Center(
             child: FittedBox(
               fit: BoxFit.scaleDown,
