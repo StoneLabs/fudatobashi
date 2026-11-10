@@ -1135,7 +1135,7 @@ void main() {
     for (final rows in [1, 2, 3]) {
       testWidgets('match_${rows}row', (tester) async {
         final perSide = switch (rows) {
-          1 => IkkiuchiLayoutTuning.oneRowRoom,
+          1 => IkkiuchiLayoutTuning.oneRowUpTo,
           2 => IkkiuchiLayoutTuning.twoRowsUpTo,
           _ => IkkiuchiMode.rapid.perSide,
         };
@@ -1178,7 +1178,7 @@ void main() {
     // fist at the hit of a strike; and the result.
     for (final rows in [1, 2]) {
       testWidgets('match_${rows}row_moments', (tester) async {
-        final perSide = rows == 1 ? IkkiuchiLayoutTuning.oneRowRoom : IkkiuchiLayoutTuning.twoRowsUpTo;
+        final perSide = rows == 1 ? IkkiuchiLayoutTuning.oneRowUpTo : IkkiuchiLayoutTuning.twoRowsUpTo;
         final p = await open(tester, lang: 'ja');
         await showPage(tester, p, phone: usersPhoneLandscape);
         final setup = IkkiuchiSetup.free(
