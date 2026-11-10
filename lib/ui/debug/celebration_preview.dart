@@ -6,6 +6,9 @@ import '../../config/design.dart';
 import '../../config/vector_art.dart';
 import '../../data/fuda_sets.dart';
 import '../../data/poem.dart';
+import '../../domain/ikkiuchi_mode.dart';
+import '../../domain/ikkiuchi_rating.dart';
+import '../../domain/ikkiuchi_record.dart';
 import '../../domain/play_session.dart';
 import '../../domain/rating.dart';
 import '../../domain/side_trips.dart';
@@ -15,6 +18,7 @@ import '../../domain/xp.dart';
 import '../../l10n/side_trip_strings.dart';
 import '../../l10n/strings.dart';
 import '../../l10n/tour_strings.dart';
+import '../../state/ikkiuchi_records.dart';
 import '../../state/play_config.dart';
 import '../../state/progress.dart';
 import '../../state/scope.dart';
@@ -162,6 +166,55 @@ void previewAnkirenRank(BuildContext context, {bool up = true}) {
   final (before, after) = up ? (floor - cross, floor + cross) : (floor + cross, floor - cross);
   _previewPages(context, [AnkirenRankCelebration(before, after)]);
 }
+
+/// What mock B's [moment] did, as the rank change page after a ranked
+/// 一騎打ち match shows it, in its own mode or in [mode].
+IkkiuchiRankChange ikkiuchiRankPreview(IkkiuchiRankMoment moment, {IkkiuchiMode? mode}) {
+  IkkiuchiRankChange rated(IkkiuchiRatedPreview m) => IkkiuchiRankChange(
+        mode: mode ?? m.mode,
+        result: m.won ? IkkiuchiResult.won : IkkiuchiResult.lost,
+        margin: m.margin,
+        tobi: m.tobi,
+        before: m.curve[m.curve.length - 2],
+        after: m.curve.last,
+        curve: m.curve,
+      );
+  IkkiuchiRankChange placing(IkkiuchiPlacementPreview m) {
+    final path = [IkkiuchiRating.start];
+    for (final (i, won) in m.placement.indexed) {
+      path.add(path.last + (won ? 1 : -1) * IkkiuchiRankedTuning.placementSteps[i]);
+    }
+    return IkkiuchiRankChange(
+      mode: mode ?? m.mode,
+      result: m.placement.last ? IkkiuchiResult.won : IkkiuchiResult.lost,
+      margin: m.margin,
+      tobi: path[path.length - 2],
+      before: path[path.length - 2],
+      after: path.last,
+      placement: m.placement,
+      path: path,
+    );
+  }
+
+  return switch (moment) {
+    IkkiuchiRankMoment.up => rated(IkkiuchiRankPreviewTuning.up),
+    IkkiuchiRankMoment.down => rated(IkkiuchiRankPreviewTuning.down),
+    IkkiuchiRankMoment.rankUp => rated(IkkiuchiRankPreviewTuning.rankUp),
+    IkkiuchiRankMoment.rankDown => rated(IkkiuchiRankPreviewTuning.rankDown),
+    IkkiuchiRankMoment.placing => placing(IkkiuchiRankPreviewTuning.placing),
+    IkkiuchiRankMoment.placed => placing(IkkiuchiRankPreviewTuning.placed),
+  };
+}
+
+/// 一騎打ち's rank change page after mock B's [moment], in the mock's mode;
+/// or with [mode] every moment in a row in that mode's colours.
+void previewIkkiuchiRank(BuildContext context, {IkkiuchiRankMoment? moment, IkkiuchiMode? mode}) => _previewPages(
+      context,
+      [
+        for (final m in moment == null ? IkkiuchiRankMoment.values : [moment])
+          IkkiuchiRankCelebration(ikkiuchiRankPreview(m, mode: mode)),
+      ],
+    );
 
 /// 暗記練's first opening on the Side Trips hub, in front as the one island
 /// open: its torii rattles, the chains break and the gate snaps open, with

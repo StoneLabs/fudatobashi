@@ -146,3 +146,51 @@ abstract final class DebugTuning {
 abstract final class KarafudaDevTuning {
   static const int boardCards = 10;
 }
+
+/// One rated 一騎打ち match for the rank change page's preview: its mode,
+/// whether it was won and by how many cards, Tobi's rating for it, and the
+/// mode's curve (the ratings after its last ranked matches, oldest first,
+/// this one last).
+typedef IkkiuchiRatedPreview = ({IkkiuchiMode mode, bool won, int margin, double tobi, List<double> curve});
+
+/// One placement match for the preview: its mode, the placement matches
+/// so far won or lost (this one last) and by how many cards it ended.
+typedef IkkiuchiPlacementPreview = ({IkkiuchiMode mode, List<bool> placement, int margin});
+
+/// Settings › Developer › "Preview 一騎打ち …": mock B's six matches after a
+/// ranked 一騎打ち match, with the mock's numbers: a win and a loss within
+/// the class, a rank up and a rank down, the 2nd placement match and the
+/// last one.
+abstract final class IkkiuchiRankPreviewTuning {
+  static const IkkiuchiRatedPreview up = (
+    mode: IkkiuchiMode.bullet,
+    won: true,
+    margin: 3,
+    tobi: 2552,
+    curve: [2478, 2491, 2483, 2502, 2517, 2509, 2526, 2540, 2533, 2551, 2566, 2558, 2571, 2563, 2580, 2592, 2587, 2581, 2596, 2610],
+  );
+  static const IkkiuchiRatedPreview down = (
+    mode: IkkiuchiMode.blitz,
+    won: false,
+    margin: 5,
+    tobi: 2652,
+    curve: [2391, 2404, 2398, 2415, 2429, 2441, 2436, 2452, 2466, 2459, 2474, 2488, 2481, 2497, 2509, 2502, 2494, 2498, 2489, 2480],
+  );
+  static const IkkiuchiRatedPreview rankUp = (
+    mode: IkkiuchiMode.blitz,
+    won: true,
+    margin: 2,
+    tobi: 2678,
+    curve: [2452, 2466, 2459, 2474, 2488, 2481, 2497, 2509, 2502, 2494, 2511, 2523, 2517, 2530, 2522, 2536, 2529, 2547, 2541, 2563],
+  );
+  static const IkkiuchiRatedPreview rankDown = (
+    mode: IkkiuchiMode.rapid,
+    won: false,
+    margin: 4,
+    tobi: 1956,
+    curve: [2041, 2058, 2049, 2071, 2087, 2079, 2096, 2110, 2102, 2118, 2109, 2124, 2116, 2105, 2112, 2098, 2107, 2101, 2093, 2071],
+  );
+  static const IkkiuchiPlacementPreview placing = (mode: IkkiuchiMode.rapid, placement: [true, false], margin: 6);
+  static const IkkiuchiPlacementPreview placed =
+      (mode: IkkiuchiMode.bullet, placement: [true, true, false, true], margin: 2);
+}

@@ -9,6 +9,7 @@ import '../../config/licenses.dart';
 import '../../config/links.dart';
 import '../../config/vector_art.dart';
 import '../../domain/ankiren_level.dart';
+import '../../domain/ikkiuchi_mode.dart';
 import '../../domain/side_trips.dart';
 import '../../domain/teiichi.dart';
 import '../../domain/trainer.dart';
@@ -598,6 +599,13 @@ class _DeveloperSection extends StatelessWidget {
           SettingsTapRow(
               title: "Comp - Tobi's strikes", opensPage: true, onTap: () => open(const IkkiuchiStrikesPage())),
           SettingsTapRow(title: 'Comp - Debug game', opensPage: true, onTap: () => open(const IkkiuchiDebugGame())),
+          for (final moment in IkkiuchiRankMoment.values)
+            SettingsTapRow(
+                title: 'Preview Ikkiuchi rank page: ${moment.name}',
+                onTap: () => previewIkkiuchiRank(context, moment: moment)),
+          for (final mode in IkkiuchiMode.values)
+            SettingsTapRow(
+                title: 'Preview Ikkiuchi rank pages in ${mode.name}', onTap: () => previewIkkiuchiRank(context, mode: mode)),
         ]),
         SettingsGroup(children: [
           SettingsTapRow(title: 'Preview AnkiRen XP', onTap: () => previewAnkirenXp(context)),
