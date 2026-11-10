@@ -1,7 +1,9 @@
 // 一騎打ち's page (IkkiuchiPage): the mode tabs over the box of the tab
 // opened last (Rapid at first; a tap is remembered, playing is not), the
 // box's standing (placement's slots and line, then the class, rating and
-// the curve of the mode's last ranked matches), its field, cards and
+// the curve of the mode's last ranked matches; while placing, the note,
+// then the estimates; a tap on the curve opens the rank page's box at
+// rest, closed by its button or a tap outside), its field, cards and
 // memory time, and its burst, which plays the mode's next ranked match
 // against the Tobi it shows, in the rows Settings › 寄り道 › 一騎打ち picks
 // for it; free play's rows, the bots' page (no bots yet) and the custom
@@ -14,8 +16,8 @@
 // after every read.
 //
 // With RENDER_SCREENS=1 it also renders the page in its states (as mock
-// D's frames), the bots' page, the custom page and the settings, with real
-// fonts and art, to build/screens/ikkiuchi_page/.
+// D's frames), the curve's popup, the bots' page, the custom page and the
+// settings, with real fonts and art, to build/screens/ikkiuchi_page/.
 import 'dart:async';
 import 'dart:io';
 
@@ -66,12 +68,16 @@ import 'package:fudatobashi/ui/ikkiuchi/ikkiuchi_match_screen.dart';
 import 'package:fudatobashi/ui/ikkiuchi/ikkiuchi_results_screen.dart';
 import 'package:fudatobashi/ui/history/ikkiuchi_field_tab.dart';
 import 'package:fudatobashi/ui/history/ikkiuchi_match_page.dart';
+import 'package:fudatobashi/ui/ikkiuchi/ikkiuchi_rank_overlay.dart';
+import 'package:fudatobashi/ui/ikkiuchi/ikkiuchi_rank_plot.dart';
+import 'package:fudatobashi/ui/results/celebration_chrome.dart';
 import 'package:fudatobashi/ui/results/celebration_sequence.dart';
 import 'package:fudatobashi/ui/results/xp_overlay.dart';
 import 'package:fudatobashi/ui/manga/manga.dart';
 import 'package:fudatobashi/ui/placing/placing_widgets.dart';
 import 'package:fudatobashi/ui/settings/settings_rows.dart';
 import 'package:fudatobashi/ui/settings/side_trip_settings_screen.dart';
+import 'package:fudatobashi/ui/side_trips/ikkiuchi_curve_popup.dart';
 import 'package:fudatobashi/ui/side_trips/ikkiuchi_custom_page.dart';
 import 'package:fudatobashi/ui/side_trips/ikkiuchi_page.dart';
 import 'package:fudatobashi/ui/sound/sounds.dart';
@@ -352,6 +358,95 @@ void main() {
     final tobi = records.rankedSetup(rows: 3).opponentRating;
     expect((tobi - rating).abs(), lessThanOrEqualTo(IkkiuchiRankedTuning.drawCutOff));
     expect(find.descendant(of: rankedBurst(), matching: find.text('${tobi.round()}')), findsOneWidget);
+    await tester.pumpWidget(const SizedBox());
+  });
+
+  /// The curve's tap target.
+  Finder curveTap() => find.byWidgetPredicate((w) => w is Pressable && w.semanticLabel == s.ikkiuchiCurveOpen);
+
+  testWidgets("the curve's room: the note before placement, the estimates while placing, then the curve",
+      (tester) async {
+    final p = await open(tester);
+    await showPage(tester, p, phone: curvePhone);
+    expect(find.byType(IkkiuchiCurveNote), findsOneWidget);
+    expect(find.byType(IkkiuchiPlacementCurve), findsNothing);
+    expect(curveTap(), findsNothing, reason: 'nothing to open before the first placement match');
+    await tester.pumpWidget(const SizedBox());
+
+    for (var played = 1; played < IkkiuchiRating.placementMatches; played++) {
+      await playRanked(tester, p, [played.isOdd]);
+      await showPage(tester, p, phone: curvePhone);
+      final records = p.ikkiuchi.of(rapid);
+      expect(tester.widget<IkkiuchiPlacementCurve>(find.byType(IkkiuchiPlacementCurve)).path,
+          [IkkiuchiRating.start, for (final m in records.matches) m.rating!],
+          reason: 'from the start through the estimate after each of the $played played');
+      expect(find.byType(IkkiuchiCurveNote), findsNothing);
+      expect(find.byType(IkkiuchiRatingCurve), findsNothing);
+      expect(curveTap(), findsOneWidget);
+      await tester.pumpWidget(const SizedBox());
+    }
+
+    await playRanked(tester, p, [true, false]);
+    await showPage(tester, p, phone: curvePhone);
+    expect(find.byType(IkkiuchiPlacementCurve), findsNothing);
+    expect(tester.widget<IkkiuchiRatingCurve>(find.byType(IkkiuchiRatingCurve)).ratings, p.ikkiuchi.of(rapid).curve);
+    expect(curveTap(), findsOneWidget);
+    await tester.pumpWidget(const SizedBox());
+  });
+
+  testWidgets("a tap on the curve opens the mode's box from its rank page at rest; close or a tap outside shuts it",
+      (tester) async {
+    final p = await open(tester);
+    await playRanked(tester, p, [true, false, true, true, true, false], mode: IkkiuchiMode.bullet);
+    await playRanked(tester, p, [true, false]);
+    Finder inPopup(Finder f) => find.descendant(of: find.byType(IkkiuchiCurvePopup), matching: f);
+    Future<void> sheetMoved() async {
+      for (var i = 0; i < 3; i++) {
+        await tester.pump(Motion.sheet);
+      }
+    }
+
+    Future<void> tapCurve() async {
+      await tester.tap(curveTap());
+      await sheetMoved();
+    }
+
+    for (final mode in [IkkiuchiMode.bullet, rapid]) {
+      await tester.runAsync(
+          () => p.updateSettings(p.settings.copyWith(ikkiuchi: p.settings.ikkiuchi.copyWith(tab: mode))));
+      await showPage(tester, p, phone: curvePhone);
+      final change = p.ikkiuchi.of(mode).lastChange!;
+      await tapCurve();
+      expect(tester.takeException(), isNull);
+      final shown = tester.widget<IkkiuchiCurvePopup>(find.byType(IkkiuchiCurvePopup)).change;
+      expect([shown.mode, shown.before, shown.after, shown.placing], [mode, change.before, change.after, mode == rapid]);
+      expect(inPopup(find.byType(IkkiuchiRankBoxAtRest)), findsOneWidget);
+      expect(inPopup(find.text('${change.after.round()}')), findsWidgets, reason: 'the rating at once, not counting');
+      expect(tester.widget<IkkiuchiRankPlot>(inPopup(find.byType(IkkiuchiRankPlot))).timeline.placing, mode == rapid,
+          reason: 'the placement chart while placing, else the curve');
+      expect(inPopup(find.byType(StageClock)), findsNothing, reason: 'nothing moves');
+      expect(inPopup(find.byType(CelebrationCta)), findsNothing, reason: "no button of the rank page's");
+
+      await tester.tap(inPopup(find.byWidgetPredicate((w) => w is InkIconButton && w.semanticLabel == s.close)));
+      await sheetMoved();
+      expect(find.byType(IkkiuchiCurvePopup), findsNothing, reason: 'closed by its button');
+
+      await tapCurve();
+      expect(find.byType(IkkiuchiCurvePopup), findsOneWidget);
+      await tester.tapAt(Offset(curvePhone.size.width / 2, curvePhone.bars.top + Gaps.gutter));
+      await sheetMoved();
+      expect(find.byType(IkkiuchiCurvePopup), findsNothing, reason: 'closed by a tap outside it');
+      await tester.pumpWidget(const SizedBox());
+    }
+  });
+
+  testWidgets('a curve given way on a short phone leaves nothing to tap', (tester) async {
+    final p = await open(tester);
+    await playRanked(tester, p, [true, false]);
+    await showPage(tester, p, phone: shortNarrowPhone, fontScale: 1.3);
+    expect(tester.takeException(), isNull);
+    expect(find.byWidgetPredicate((w) => w is IkkiuchiPlacementCurve || w is IkkiuchiCurveNote), findsNothing);
+    expect(curveTap(), findsNothing);
     await tester.pumpWidget(const SizedBox());
   });
 
@@ -1384,6 +1479,28 @@ void main() {
       }
     }
 
+    // The curve's popup on the user's phone, in Japanese at text sizes 1
+    // and 1.1 and in English at 1.1, to curve_popup/: the page with Rapid
+    // in placement after two matches, and the popup of Bullet (rated) and
+    // of Rapid.
+    for (final (lang, scale) in [('ja', 1.0), ('ja', 1.1), ('en', 1.1)]) {
+      testWidgets('curve_popup_${lang}_$scale', (tester) async {
+        final p = await rated(
+            tester, lang, {IkkiuchiMode.bullet: bulletRatings, IkkiuchiMode.blitz: blitzRatings, rapid: rapidPlacing});
+        for (final mode in [rapid, IkkiuchiMode.bullet]) {
+          await openTab(tester, p, mode);
+          await showPage(tester, p, fontScale: scale);
+          if (mode == rapid) await capture(tester, 'curve_popup/page_rapid_placing', lang);
+          await tester.tap(find.byWidgetPredicate((w) => w is IkkiuchiPlacementCurve || w is IkkiuchiRatingCurve));
+          await tester.pump();
+          await tester.pump(Motion.sheet);
+          expect(tester.takeException(), isNull);
+          await capture(tester, 'curve_popup/popup_${mode.name}', lang);
+          await tester.pumpWidget(const SizedBox());
+        }
+      });
+    }
+
     // Each player on phones 360 to 412 dp wide and 640 to 915 dp tall, with
     // the user's phone's bars, at text sizes 1, 1.1 and 1.3: nothing
     // overflows; the curve, or its note, takes the height left over, at
@@ -1424,7 +1541,8 @@ void main() {
               await openTab(tester, p, mode);
               await showPage(tester, p, phone: phone, fontScale: scale);
               expect(tester.takeException(), isNull, reason: '$where, ${mode.name}');
-              final curve = find.byWidgetPredicate((w) => w is IkkiuchiRatingCurve || w is IkkiuchiCurveNote);
+              final curve = find.byWidgetPredicate(
+                  (w) => w is IkkiuchiRatingCurve || w is IkkiuchiPlacementCurve || w is IkkiuchiCurveNote);
               final shown = curve.evaluate().isNotEmpty;
               if (shown) {
                 expect(tester.getSize(curve).height, greaterThanOrEqualTo(IkkiuchiPageLayout.curveMinHeight),

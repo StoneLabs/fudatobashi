@@ -4,12 +4,15 @@
 // recorded match gives, the pages after a match in order (the XP first,
 // the rank page for a ranked match only), and that every moment fits the
 // user's phone at text size 1 and 1.1, a narrow one and a tall one, in
-// both languages, with the button clear of the navigation bar.
+// both languages, with the button clear of the navigation bar. Its box at
+// rest, as 一騎打ち's page opens it, shows each moment's end at once,
+// without the class change, its sticker or NEW.
 //
 // With RENDER_SCREENS=1 it renders each moment's key frames to
 // build/screens/ikkiuchi_rank/ (the end at 1.1 and on the tall phone too,
-// English for the rank up and the first class), and the tick times of a
-// +14 and a +62 count to build/screens/ikkiuchi_rank/ticks.txt.
+// English for the rank up and the first class, and the box at rest), and
+// the tick times of a +14 and a +62 count to
+// build/screens/ikkiuchi_rank/ticks.txt.
 import 'dart:io';
 
 import 'package:drift/drift.dart' show driftRuntimeOptions;
@@ -40,6 +43,7 @@ import 'package:fudatobashi/ui/manga/manga.dart';
 import 'package:fudatobashi/ui/results/celebration_chrome.dart';
 import 'package:fudatobashi/ui/results/celebration_sequence.dart';
 import 'package:fudatobashi/ui/results/celebrations.dart';
+import 'package:fudatobashi/ui/side_trips/ikkiuchi_mode_box.dart';
 import 'package:fudatobashi/ui/sound/sounds.dart';
 
 import 'test_card_pages.dart' show loadAppFonts;
@@ -427,6 +431,36 @@ void main() {
         await tester.pumpWidget(const SizedBox());
       }
     });
+  });
+
+  group('at rest', () {
+    for (final moment in IkkiuchiRankMoment.values) {
+      testWidgets("${moment.name}: the box as the page ends, without the change's marks", (tester) async {
+        final p = await open(tester, 'ja');
+        final s = S('ja');
+        final change = ikkiuchiRankPreview(moment);
+        useScreen(tester, usersPhone);
+        await tester.pumpWidget(app(
+            p,
+            Scaffold(
+              body: Center(
+                child: SizedBox(height: IkkiuchiCurvePopupLayout.height, child: IkkiuchiRankBoxAtRest(change)),
+              ),
+            )));
+        expect(tester.takeException(), isNull);
+        expect(find.text('${change.after.round()}'), findsWidgets, reason: 'the rating it ends on, at once');
+        expect(find.byType(StageClock), findsNothing, reason: 'nothing moves');
+        expect(tester.widget<IkkiuchiClassBadge>(find.byType(IkkiuchiClassBadge)).band,
+            moment == IkkiuchiRankMoment.placing ? null : change.to,
+            reason: 'the class it ends in, in its room');
+        expect(find.text('→'), findsNothing, reason: 'no class change');
+        for (final mark in [s.ikkiuchiRankUpSticker, s.ikkiuchiRankDownSticker, s.newBadge]) {
+          expect(find.text(mark), findsNothing);
+        }
+        await captureScreen(tester, 'ikkiuchi_rank/${moment.name}', lang: 'ja', variant: 'rest');
+        await tester.pumpWidget(const SizedBox());
+      });
+    }
   });
 
   group('renders', skip: !renderScreens, () {
