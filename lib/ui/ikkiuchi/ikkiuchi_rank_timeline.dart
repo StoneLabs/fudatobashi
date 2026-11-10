@@ -7,7 +7,7 @@ import '../results/celebrations.dart';
 
 /// When the rank change page's parts move and what its rating reads
 /// ([IkkiuchiRankMotion]): the opening, then this match's point running to
-/// its place over the eased count, and what follows in the page's
+/// its place over the count, and what follows in the page's
 /// [moment]. A rank up's run stops at the class line it crosses, strains
 /// there and breaks through, then runs on to its landing.
 class IkkiuchiRankTimeline {
@@ -35,6 +35,34 @@ class IkkiuchiRankTimeline {
 
   Duration get runAt => won ? IkkiuchiRankMotion.winRunAt : IkkiuchiRankMotion.runAt;
 
+  /// The number of points the count passes, at least one.
+  int get _points => (change.after.round() - change.before.round()).abs().clamp(1, 1 << 20);
+
+  /// How many gaps the count has: one per point, up to
+  /// [IkkiuchiRankMotion.maxTicks].
+  int get _steps => _points < IkkiuchiRankMotion.maxTicks ? _points : IkkiuchiRankMotion.maxTicks;
+
+  /// The gaps between ticks, long at both ends and short in the middle.
+  late final List<Duration> _gaps = () {
+    final ends = [...IkkiuchiRankMotion.tickSlowGaps, ...IkkiuchiRankMotion.tickRampGaps];
+    final front = ends.take((_steps + 1) ~/ 2).toList(), back = ends.take(_steps ~/ 2).toList();
+    return [
+      ...front,
+      for (var i = front.length + back.length; i < _steps; i++) IkkiuchiRankMotion.tickRushGap,
+      ...back.reversed,
+    ];
+  }();
+
+  /// When, from the run's start, the count has passed each tick's share of
+  /// the points (the first at the start, the last at the landing).
+  late final List<Duration> _nodes = () {
+    var at = Duration.zero;
+    return [Duration.zero, for (final gap in _gaps) at += gap];
+  }();
+
+  /// How long the count takes, the gaps added up.
+  Duration get run => _nodes.last;
+
   /// Where on its way the line crosses a class line, 0–1: the class it
   /// ranks up into, or the one it ranks down out of; null when it crosses
   /// none.
@@ -43,7 +71,7 @@ class IkkiuchiRankTimeline {
     return line == null ? null : (line - change.before) / (change.after - change.before);
   }
 
-  /// How far into the run the eased count reaches the class line.
+  /// How far into the run the count reaches the class line.
   late final Duration _gateRun = _runReaching(gateShare ?? 0);
 
   /// When the point reaches the class line it crosses.
@@ -53,17 +81,25 @@ class IkkiuchiRankTimeline {
   Duration get breakAt => gateAt + IkkiuchiRankMotion.breakAfter;
 
   /// When the point lands: the run, and a rank up's wait at the line.
-  Duration get landAt => runAt + IkkiuchiRankMotion.run + (ranksUp ? IkkiuchiRankMotion.breakAfter : Duration.zero);
+  Duration get landAt => runAt + run + (ranksUp ? IkkiuchiRankMotion.breakAfter : Duration.zero);
 
   /// How far the point has gone from the last match's to its own, 0–1.
   double shareAt(Duration elapsed) {
     if (ranksUp && elapsed >= gateAt && elapsed < breakAt) return gateShare!;
-    var run = elapsed - runAt;
-    if (ranksUp && run > _gateRun) {
-      run = run - IkkiuchiRankMotion.breakAfter < _gateRun ? _gateRun : run - IkkiuchiRankMotion.breakAfter;
+    var into = elapsed - runAt;
+    if (ranksUp && into > _gateRun) {
+      into = into - IkkiuchiRankMotion.breakAfter < _gateRun ? _gateRun : into - IkkiuchiRankMotion.breakAfter;
     }
-    final t = (run.inMicroseconds / IkkiuchiRankMotion.run.inMicroseconds).clamp(0.0, 1.0);
-    return IkkiuchiRankMotion.runCurve.transform(t);
+    return _shareAfter(into);
+  }
+
+  /// The share of the points passed [into] the run: steady between ticks.
+  double _shareAfter(Duration into) {
+    if (into <= Duration.zero) return 0;
+    if (into >= run) return 1;
+    final k = _nodes.lastIndexWhere((node) => node <= into);
+    final gap = _nodes[k + 1] - _nodes[k];
+    return (k + (into - _nodes[k]).inMicroseconds / gap.inMicroseconds) / _steps;
   }
 
   double ratingAt(Duration elapsed) => lerpDouble(change.before, change.after, shareAt(elapsed))!;
@@ -71,52 +107,20 @@ class IkkiuchiRankTimeline {
   /// The rating the page reads at [elapsed].
   int shownAt(Duration elapsed) => ratingAt(elapsed).round();
 
-  /// The shortest stretch of the run whose eased count reaches [share].
+  /// The shortest stretch of the run that reaches [share].
   Duration _runReaching(double share) {
-    var lo = 0, hi = IkkiuchiRankMotion.run.inMicroseconds;
-    while (hi - lo > 1) {
-      final mid = (lo + hi) ~/ 2;
-      if (IkkiuchiRankMotion.runCurve.transform(mid / IkkiuchiRankMotion.run.inMicroseconds) >= share) {
-        hi = mid;
-      } else {
-        lo = mid;
-      }
-    }
-    return Duration(microseconds: hi);
+    final k = (share * _steps).floor().clamp(0, _steps - 1);
+    final gap = _nodes[k + 1] - _nodes[k];
+    return _nodes[k] + gap * (share * _steps - k).clamp(0.0, 1.0);
   }
 
-  /// A tick each time the rating read passes a point, as it does: slowly at
-  /// first, rushing, slowing into the landing. Where points pass faster
-  /// than [IkkiuchiRankMotion.tickSpacing], a tick waits out the spacing
-  /// while the read still shows its point, and is left out once it has
-  /// moved on, so the rush ticks evenly; none comes closer than the spacing
-  /// to the landing.
-  late final List<Duration> ticks = () {
-    final from = change.before.round(), to = change.after.round();
-    final step = to > from ? 1 : -1;
-    Duration reaching(int value) {
-      var lo = runAt, hi = landAt;
-      while (hi - lo > const Duration(milliseconds: 1)) {
-        final mid = lo + (hi - lo) ~/ 2;
-        if (shownAt(mid) * step >= value * step) {
-          hi = mid;
-        } else {
-          lo = mid;
-        }
-      }
-      return hi;
-    }
-
-    final passed = [for (var v = from + step; v * step <= to * step; v += step) reaching(v)];
-    const spacing = IkkiuchiRankMotion.tickSpacing;
-    final ticks = <Duration>[];
-    for (final (i, at) in passed.indexed) {
-      final tick = ticks.isEmpty || at - ticks.last >= spacing ? at : ticks.last + spacing;
-      final shown = i + 1 < passed.length ? passed[i + 1] : landAt;
-      if (tick < shown && landAt - tick >= spacing) ticks.add(tick);
-    }
-    return ticks;
-  }();
+  /// The ticks, each at its share of the points: the first as the count
+  /// starts, then slowly, rushing, slowing into the landing (which sounds
+  /// itself). A rank up's wait at the line pushes the later ones back.
+  late final List<Duration> ticks = [
+    for (var k = 0; k < _steps; k++)
+      runAt + _nodes[k] + (ranksUp && _nodes[k] > _gateRun ? IkkiuchiRankMotion.breakAfter : Duration.zero),
+  ];
 
   // ------------------------------------------------------------ the points
 

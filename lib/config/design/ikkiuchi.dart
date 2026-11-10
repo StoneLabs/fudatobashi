@@ -1510,11 +1510,24 @@ abstract final class IkkiuchiRankMotion {
   static const box = EntranceSpec(EntranceFrom(offset: Offset(0, 24)),
       duration: Duration(milliseconds: 420), delay: Duration(milliseconds: 300), curve: Entrances.glide);
 
-  /// The count: 3 s on a cubic ease in and out, its ticks no closer than
-  /// 60 ms.
-  static const run = Duration(milliseconds: 3000);
-  static const Curve runCurve = PowerInOut(3);
-  static const tickSpacing = Duration(milliseconds: 60);
+  /// The count and its ticks, which it follows step for step. The gaps
+  /// between ticks start long and shrink: [tickSlowGaps] (the first ones),
+  /// then [tickRampGaps] down to [tickRushGap], the rush, and the same
+  /// mirrored into the landing. A change of more points than [maxTicks]
+  /// ticks [maxTicks] times; one of fewer ticks once per point, with the
+  /// long ends kept. The count's length is the sum of the gaps.
+  static const List<Duration> tickSlowGaps = [
+    Duration(milliseconds: 800),
+    Duration(milliseconds: 700),
+    Duration(milliseconds: 450),
+  ];
+  static const List<Duration> tickRampGaps = [
+    Duration(milliseconds: 220),
+    Duration(milliseconds: 120),
+    Duration(milliseconds: 80),
+  ];
+  static const tickRushGap = Duration(milliseconds: 60);
+  static const maxTicks = 20;
   static const runAt = Duration(milliseconds: 1000);
   static const winRunAt = Duration(milliseconds: 1400);
   static const chipPopAt = Duration(milliseconds: 800);

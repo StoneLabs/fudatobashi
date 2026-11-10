@@ -1,5 +1,5 @@
 // 一騎打ち's rank change page after a ranked match (mock B): its timeline
-// (the count eased over about 3 s, slow, fast, slow; its ticks thinned to
+// (the count slow, fast, slow, following its ticks, which keep
 // a least spacing; the sounds in step with the motion), which page each
 // recorded match gives, the pages after a match in order (the XP first,
 // the rank page for a ranked match only), and that every moment fits the
@@ -122,23 +122,36 @@ void main() {
   });
 
   group('the timeline', () {
-    test('the count runs about 3 s, eased in and out, a rank up waiting at the line', () {
+    test('the count follows its ticks: slow, fast, slow, a rank up waiting at the line', () {
       for (final moment in IkkiuchiRankMoment.values) {
         final t = _timeline(ikkiuchiRankPreview(moment));
         expect(t.moment, moment);
         final wait = t.ranksUp ? IkkiuchiRankMotion.breakAfter : Duration.zero;
-        expect(t.landAt - t.runAt, IkkiuchiRankMotion.run + wait, reason: moment.name);
-        expect(IkkiuchiRankMotion.run, const Duration(seconds: 3));
+        expect(t.landAt - t.runAt, t.run + wait, reason: moment.name);
         expect(t.shareAt(t.runAt), 0);
         expect(t.shareAt(t.landAt), 1);
         expect(t.shownAt(t.length), t.change.after.round());
       }
       final t = _timeline(_rated(2000, 60));
-      double moved(int from, int to) =>
-          t.shareAt(t.runAt + Duration(milliseconds: to)) - t.shareAt(t.runAt + Duration(milliseconds: from));
-      expect(moved(0, 500), lessThan(0.1), reason: 'slow at the start');
-      expect(moved(1250, 1750), greaterThan(0.4), reason: 'fast in the middle');
-      expect(moved(2500, 3000), lessThan(0.1), reason: 'slow into the landing');
+      expect(t.run.inMilliseconds, inInclusiveRange(4000, 6000));
+      double moved(double from, double to) => t.shareAt(t.runAt + t.run * to) - t.shareAt(t.runAt + t.run * from);
+      expect(moved(0, 0.2), lessThan(0.15), reason: 'slow at the start');
+      expect(moved(0.4, 0.6), greaterThan(0.3), reason: 'fast in the middle');
+      expect(moved(0.8, 1), lessThan(0.15), reason: 'slow into the landing');
+    });
+
+    test('the placing and placed moments count on the same curve and ticks', () {
+      for (final moment in [IkkiuchiRankMoment.placing, IkkiuchiRankMoment.placed]) {
+        final t = _timeline(ikkiuchiRankPreview(moment));
+        final n = t.ticks.length;
+        for (final (k, at) in t.ticks.indexed) {
+          expect(t.shareAt(at), closeTo(k / n, 1e-6), reason: '${moment.name}: tick $k is at its share');
+        }
+        expect(t.shareAt(t.runAt + t.run * 0.5), closeTo(0.5, 1e-6), reason: '${moment.name}: symmetric');
+        expect(t.shareAt(t.runAt + t.run * 0.1), lessThan(0.05), reason: 'eased, not linear');
+        expect(_gaps(t.ticks).take(3).toList(), [for (final g in IkkiuchiRankMotion.tickSlowGaps) g.inMilliseconds],
+            reason: moment.name);
+      }
     });
 
     test('a rank up stops on the class line, strains there and breaks through', () {
@@ -150,23 +163,26 @@ void main() {
       expect(t.cutAt, greaterThan(t.landAt), reason: 'the impact frame comes once it has landed');
     });
 
-    test('a tick for each point passed: slow, fast, slow, never closer than the spacing', () {
-      for (final gain in [14.0, 62.0, -22.0, 300.0]) {
+    test('the ticks: long gaps at both ends, a rush between, one per point when small', () {
+      final slow = [for (final g in IkkiuchiRankMotion.tickSlowGaps) g.inMilliseconds];
+      for (final gain in [5.0, 14.0, 62.0, -20.0, 300.0]) {
         final t = _timeline(_rated(2000, gain));
-        final ticks = t.ticks;
-        final gaps = _gaps(ticks);
-        expect(gaps.every((g) => g >= IkkiuchiRankMotion.tickSpacing.inMilliseconds), isTrue, reason: '$gain: $gaps');
-        expect(t.landAt - ticks.last, greaterThanOrEqualTo(IkkiuchiRankMotion.tickSpacing), reason: 'clear of the landing');
-        if (gain.abs() < 100) {
-          expect(ticks.first - t.runAt, greaterThan(const Duration(milliseconds: 200)), reason: 'it starts slowly');
+        final gaps = _gaps(t.ticks);
+        final why = '$gain: $gaps';
+        expect(gaps.every((g) => g >= IkkiuchiRankMotion.tickRushGap.inMilliseconds), isTrue, reason: why);
+        expect(t.landAt - t.ticks.last, greaterThanOrEqualTo(IkkiuchiRankMotion.tickSlowGaps.first), reason: why);
+        expect(t.ticks.first, t.runAt);
+        if (gain.abs() >= 40) {
+          expect(gaps.take(3).toList(), slow, reason: why);
+          expect(gaps.reversed.take(3).toList(), [700, 450, 220], reason: why);
+          expect(t.ticks.length, inInclusiveRange(18, 26), reason: why);
+          expect(gaps.where((g) => g == 60).length, greaterThan(5), reason: why);
+        } else {
+          expect(t.ticks.length, gain.abs().round(), reason: 'one per point');
         }
-        if (gain.abs() < 20) expect(ticks.length, gain.abs(), reason: 'every point passed');
-        final fastest = gaps.reduce((a, b) => a < b ? a : b);
-        expect(gaps.first, greaterThan(fastest), reason: '$gain: slower at the start, $gaps');
-        expect(gaps.last, greaterThan(fastest), reason: '$gain: slower at the end, $gaps');
       }
-      final rush = _gaps(_timeline(_rated(2000, 62)).ticks);
-      expect(rush.where((g) => g < 80).length, greaterThan(5), reason: 'the middle is thinned to the spacing');
+      final five = _timeline(_rated(2000, 5));
+      expect([for (final at in five.ticks) (at - five.runAt).inMilliseconds], [0, 800, 1500, 1950, 2650]);
     });
 
     test('the sounds: the points, the ticks and the landing; the strain, the break and the slam; ガーン!!', () {
@@ -457,18 +473,17 @@ void main() {
       });
     }
 
-    test('the ticks of a +14 and a +62 count', () {
+    test('the ticks of a +5, +14, +62 and -20 count', () {
       final lines = <String>[
         'Tick times (ms from the start of the count), the gap to the one before in brackets.',
-        'Count ${IkkiuchiRankMotion.run.inMilliseconds} ms on a cubic ease in and out, '
-            'ticks no closer than ${IkkiuchiRankMotion.tickSpacing.inMilliseconds} ms.',
+        'The count lasts as long as its gaps; the landing sounds on its own after the last tick.',
       ];
-      for (final gain in [14.0, 62.0]) {
+      for (final gain in [5.0, 14.0, 62.0, -20.0]) {
         final t = _timeline(_rated(2596, gain));
         final ticks = [for (final at in t.ticks) (at - t.runAt).inMilliseconds];
         lines
           ..add('')
-          ..add('+${gain.round()}: ${ticks.length} ticks, landing at ${(t.landAt - t.runAt).inMilliseconds}')
+          ..add('${gain > 0 ? '+' : '-'}${gain.abs().round()}: ${ticks.length} ticks, landing at ${(t.landAt - t.runAt).inMilliseconds}')
           ..add([for (final (i, at) in ticks.indexed) i == 0 ? '$at' : '$at (${at - ticks[i - 1]})'].join(', '));
       }
       File('build/screens/ikkiuchi_rank/ticks.txt')
