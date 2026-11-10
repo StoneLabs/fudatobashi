@@ -129,6 +129,64 @@ class SpeedLinesSpec {
   int get hashCode => Object.hash(count, seed, fromEdge, color);
 }
 
+/// A blade's cut across a box (`BladePainter`, `BladeSplit`): a paper
+/// streak round a [core] share of sun, [width] across at its widest
+/// ([widest] of the way along), edged [outline], from [from] to [to]. What
+/// it cuts parts in two halves that slide apart along it by [slide] and
+/// away from it by [gap], turning [turnDeg], fading from [fadeFrom] of the
+/// way on. dp in the box.
+@immutable
+class BladeSpec {
+  const BladeSpec({
+    required this.from,
+    required this.to,
+    required this.width,
+    required this.core,
+    required this.widest,
+    required this.outline,
+    required this.slide,
+    required this.gap,
+    required this.turnDeg,
+    required this.fadeFrom,
+  });
+  final Offset from, to;
+  final double width, core, widest, outline;
+  final double slide, gap, turnDeg, fadeFrom;
+
+  /// The blade's direction and, at right angles to it, toward the lower
+  /// half.
+  (Offset, Offset) get axes {
+    final cut = to - from;
+    final along = cut / cut.distance;
+    return (along, Offset(-along.dy, along.dx));
+  }
+}
+
+/// A shadow coming down from the top with gloom lines (縦線) hanging in it
+/// (`GloomPainter`): the shadow [colors] from the top down to [reach] of
+/// the box, and [count] ink [line]s from the top, [shortest] to [longest]
+/// of the box long and [thinnest] to [thickest] wide at the top, placed by
+/// [seed].
+@immutable
+class GloomSpec {
+  const GloomSpec({
+    required this.colors,
+    required this.reach,
+    required this.count,
+    required this.seed,
+    required this.shortest,
+    required this.longest,
+    required this.thinnest,
+    required this.thickest,
+    required this.line,
+  });
+  final List<Color> colors;
+  final double reach;
+  final int count, seed;
+  final double shortest, longest, thinnest, thickest;
+  final Color line;
+}
+
 /// Focus-line bursts of the spec's panels.
 abstract final class Bursts {
   static const onboarding =

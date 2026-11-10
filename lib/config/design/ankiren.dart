@@ -684,27 +684,25 @@ abstract final class AnkirenRankLayout {
   static const Offset rumbleAt = Offset(0, 50);
   static const int rumbleSeed = 13;
 
-  /// The blade: a paper streak round a sun core, [bladeWidth] at its
-  /// widest, cutting from [bladeFrom] to [bladeTo]; ズバッ!! by where it
-  /// starts.
-  static const Offset bladeFrom = Offset(6, 101);
-  static const Offset bladeTo = Offset(324, 229);
-  static const double bladeWidth = 18;
-  static const double bladeCore = 0.42;
-  static const double bladeWidest = 0.7;
-  static const double bladeOutline = 2;
+  /// The blade across the stage and the halves it cuts; ズバッ!! by where
+  /// it starts.
+  static const blade = BladeSpec(
+    from: Offset(6, 101),
+    to: Offset(324, 229),
+    width: 18,
+    core: 0.42,
+    widest: 0.7,
+    outline: 2,
+    slide: 54,
+    gap: 16,
+    turnDeg: 8,
+    fadeFrom: 0.35,
+  );
   static const String slashSfx = 'ズバッ!!';
   static const double slashFont = 40;
   static const Offset slashAt = Offset(4, 22);
   static const double slashTurnDeg = -10;
   static const int slashSeed = 17;
-
-  /// The halves slide apart along the cut by [splitSlide] and away from it
-  /// by [splitGap], turning [splitTurnDeg] as they fade.
-  static const double splitSlide = 54;
-  static const double splitGap = 16;
-  static const double splitTurnDeg = 8;
-  static const double splitFadeFrom = 0.35;
 
   static const String splash = 'assets/graphics/sidetrips/ui/rank-splash.webp';
   static const Size splashSize = Size(360, 280);
@@ -721,17 +719,18 @@ abstract final class AnkirenRankLayout {
   static const Placement tobi = Placement(right: 4, bottom: 0, size: Size(64, 76));
 
   /// The rank-down: the calm page of a fall, until ガーン!! drops a shadow
-  /// from the top, [gloomReach] of the page down, with gloom lines (縦線)
-  /// hanging in it.
-  static const List<Color> gloomColors = [Color(0x99141414), Color(0x00141414)];
-  static const double gloomReach = 0.6;
-  static const int gloomCount = 44;
-  static const int gloomSeed = 7;
-  static const double gloomShortest = 0.18;
-  static const double gloomLongest = 0.5;
-  static const double gloomThinnest = 1.2;
-  static const double gloomThickest = 3.4;
-  static const Color gloomLine = Color(0xB3141414);
+  /// from the top with gloom lines (縦線) hanging in it.
+  static const gloom = GloomSpec(
+    colors: [Color(0x99141414), Color(0x00141414)],
+    reach: 0.6,
+    count: 44,
+    seed: 7,
+    shortest: 0.18,
+    longest: 0.5,
+    thinnest: 1.2,
+    thickest: 3.4,
+    line: Color(0xB3141414),
+  );
 
   /// The rank-down's stage: the old class cracking and falling away, the
   /// lower class dropping into its place, ガーン!! over them and Tobi

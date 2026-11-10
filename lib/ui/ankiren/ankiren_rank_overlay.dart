@@ -11,7 +11,6 @@ import '../../l10n/results_strings.dart';
 import '../../l10n/side_trip_strings.dart';
 import '../../l10n/strings.dart';
 import '../manga/manga.dart';
-import '../manga/seeded_random.dart';
 import '../rank/rank_badges.dart';
 import '../results/celebration_chrome.dart';
 import '../results/celebrations.dart';
@@ -419,64 +418,15 @@ class _Cut extends StatelessWidget {
   Widget build(BuildContext context) => EntranceBuilder(
         AnkirenRankUpMotion.split,
         child: Center(child: badge),
-        builder: (context, t, child) {
-          if (t <= 0) {
-            return Shake(
-              reach: AnkirenRankLayout.trembleReach,
-              step: AnkirenRankUpMotion.trembleStep,
-              seed: AnkirenRankLayout.rumbleSeed,
-              child: child!,
-            );
-          }
-          if (t >= 1) return const SizedBox.shrink();
-          final (along, across) = _bladeAxes;
-          final fade = ((t - AnkirenRankLayout.splitFadeFrom) / (1 - AnkirenRankLayout.splitFadeFrom)).clamp(0.0, 1.0);
-          return Opacity(
-            opacity: 1 - fade,
-            child: Stack(fit: StackFit.expand, children: [
-              for (final side in [-1.0, 1.0])
-                Transform.translate(
-                  offset: (along * AnkirenRankLayout.splitSlide + across * AnkirenRankLayout.splitGap) * side * t,
-                  child: Transform.rotate(
-                    angle: side * t * AnkirenRankLayout.splitTurnDeg * math.pi / 180,
-                    child: ClipPath(clipper: _HalfClipper(side), child: child),
-                  ),
-                ),
-            ]),
-          );
-        },
+        builder: (context, t, child) => t <= 0
+            ? Shake(
+                reach: AnkirenRankLayout.trembleReach,
+                step: AnkirenRankUpMotion.trembleStep,
+                seed: AnkirenRankLayout.rumbleSeed,
+                child: child!,
+              )
+            : BladeSplit(AnkirenRankLayout.blade, progress: t, child: child!),
       );
-}
-
-/// The blade's direction and, at right angles to it, toward the lower half.
-(Offset, Offset) get _bladeAxes {
-  final cut = AnkirenRankLayout.bladeTo - AnkirenRankLayout.bladeFrom;
-  final along = cut / cut.distance;
-  return (along, Offset(-along.dy, along.dx));
-}
-
-/// The stage on one [side] of the blade's line: -1 above it, 1 below.
-class _HalfClipper extends CustomClipper<Path> {
-  const _HalfClipper(this.side);
-  final double side;
-
-  @override
-  Path getClip(Size size) {
-    final (along, across) = _bladeAxes;
-    final reach = size.longestSide * 2;
-    final from = AnkirenRankLayout.bladeFrom - along * reach;
-    final to = AnkirenRankLayout.bladeTo + along * reach;
-    final away = across * reach * side;
-    return Path()
-      ..moveTo(from.dx, from.dy)
-      ..lineTo(to.dx, to.dy)
-      ..lineTo(to.dx + away.dx, to.dy + away.dy)
-      ..lineTo(from.dx + away.dx, from.dy + away.dy)
-      ..close();
-  }
-
-  @override
-  bool shouldReclip(_HalfClipper old) => old.side != side;
 }
 
 /// The blade flashing across the stage, then fading.
@@ -492,48 +442,10 @@ class _Blade extends StatelessWidget {
             final drawn = progressIn(elapsed, at, cut);
             final fade = progressIn(elapsed, at + cut, AnkirenRankUpMotion.slashFade);
             if (drawn <= 0 || fade >= 1) return const SizedBox.shrink();
-            return Opacity(opacity: 1 - fade, child: CustomPaint(painter: _BladePainter(drawn)));
+            return Opacity(opacity: 1 - fade, child: CustomPaint(painter: BladePainter(AnkirenRankLayout.blade, drawn)));
           },
         ),
       );
-}
-
-/// The blade's streak, [drawn] of the way from its start: a paper lens
-/// with an ink edge round a sun core, widest toward its head.
-class _BladePainter extends CustomPainter {
-  const _BladePainter(this.drawn);
-  final double drawn;
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    const from = AnkirenRankLayout.bladeFrom;
-    final head = Offset.lerp(from, AnkirenRankLayout.bladeTo, drawn)!;
-    final widest = Offset.lerp(from, head, AnkirenRankLayout.bladeWidest)!;
-    final (_, across) = _bladeAxes;
-    Path lens(double width) {
-      final bulge = across * width;
-      return Path()
-        ..moveTo(from.dx, from.dy)
-        ..quadraticBezierTo(widest.dx + bulge.dx, widest.dy + bulge.dy, head.dx, head.dy)
-        ..quadraticBezierTo(widest.dx - bulge.dx, widest.dy - bulge.dy, from.dx, from.dy)
-        ..close();
-    }
-
-    final blade = lens(AnkirenRankLayout.bladeWidth);
-    canvas
-      ..drawPath(
-          blade,
-          Paint()
-            ..style = PaintingStyle.stroke
-            ..strokeWidth = AnkirenRankLayout.bladeOutline
-            ..strokeJoin = StrokeJoin.round
-            ..color = Palette.ink)
-      ..drawPath(blade, Paint()..color = Palette.paper)
-      ..drawPath(lens(AnkirenRankLayout.bladeWidth * AnkirenRankLayout.bladeCore), Paint()..color = Palette.sun);
-  }
-
-  @override
-  bool shouldRepaint(_BladePainter old) => old.drawn != drawn;
 }
 
 /// The old class falling away, turning as it fades.
@@ -633,48 +545,9 @@ class _Gloom extends StatelessWidget {
         child: EntranceBuilder(
           AnkirenRankDownMotion.gloom,
           builder: (context, t, _) =>
-              t <= 0 ? const SizedBox.shrink() : CustomPaint(size: Size.infinite, painter: _GloomPainter(t)),
+              t <= 0 ? const SizedBox.shrink() : CustomPaint(size: Size.infinite, painter: GloomPainter(AnkirenRankLayout.gloom, t)),
         ),
       );
-}
-
-class _GloomPainter extends CustomPainter {
-  const _GloomPainter(this.reach);
-
-  /// How far down the shadow and the lines have come, 0–1.
-  final double reach;
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final shade = Rect.fromLTWH(0, 0, size.width, size.height * AnkirenRankLayout.gloomReach * reach);
-    canvas.drawRect(
-      shade,
-      Paint()
-        ..shader = const LinearGradient(
-          begin: Alignment.topCenter,
-          end: Alignment.bottomCenter,
-          colors: AnkirenRankLayout.gloomColors,
-        ).createShader(shade),
-    );
-    final r = SeededRandom(AnkirenRankLayout.gloomSeed);
-    final lines = Path();
-    const shortest = AnkirenRankLayout.gloomShortest, longest = AnkirenRankLayout.gloomLongest;
-    const thinnest = AnkirenRankLayout.gloomThinnest, thickest = AnkirenRankLayout.gloomThickest;
-    for (var i = 0; i < AnkirenRankLayout.gloomCount; i++) {
-      final x = r.next() * size.width;
-      final length = size.height * (shortest + r.next() * (longest - shortest)) * reach;
-      final half = (thinnest + r.next() * (thickest - thinnest)) / 2;
-      lines
-        ..moveTo(x - half, 0)
-        ..lineTo(x + half, 0)
-        ..lineTo(x, length)
-        ..close();
-    }
-    canvas.drawPath(lines, Paint()..color = AnkirenRankLayout.gloomLine);
-  }
-
-  @override
-  bool shouldRepaint(_GloomPainter old) => old.reach != reach;
 }
 
 /// The result: the old class → the new one, the rating with its change,
