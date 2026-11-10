@@ -1,4 +1,5 @@
 import 'dart:math' as math;
+import 'dart:ui' as ui;
 import 'dart:ui' show lerpDouble;
 
 import 'package:flutter/widgets.dart';
@@ -82,7 +83,7 @@ class IkkiuchiRankChart {
 /// the mode's rating curve with this match running to its place, or while
 /// placing the placement chart. [atRest] the class line this match crossed
 /// stays whole. It fills its room.
-class IkkiuchiRankPlot extends StatelessWidget {
+class IkkiuchiRankPlot extends StatefulWidget {
   const IkkiuchiRankPlot(this.timeline, {super.key, required this.elapsed, required this.tone, this.atRest = false});
 
   final IkkiuchiRankTimeline timeline;
@@ -91,8 +92,39 @@ class IkkiuchiRankPlot extends StatelessWidget {
   final bool atRest;
 
   @override
+  State<IkkiuchiRankPlot> createState() => _IkkiuchiRankPlotState();
+}
+
+/// Loads the mark a rank up leaves on the class line, for the curve to
+/// draw under its line.
+class _IkkiuchiRankPlotState extends State<IkkiuchiRankPlot> {
+  ImageStream? _stream;
+  ImageInfo? _breakMark;
+  late final _listener = ImageStreamListener((info, _) {
+    _breakMark?.dispose();
+    setState(() => _breakMark = info);
+  });
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (!widget.timeline.ranksUp || widget.atRest) return;
+    _stream?.removeListener(_listener);
+    _stream = const AssetImage(IkkiuchiRankLayout.breakMark).resolve(createLocalImageConfiguration(context))
+      ..addListener(_listener);
+  }
+
+  @override
+  void dispose() {
+    _stream?.removeListener(_listener);
+    _breakMark?.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
     final s = S.of(context);
+    final timeline = widget.timeline;
     final words = _PlotWords(
       classLabel: (band) => '${s.className(band)} ${band.minRating.round()}',
       caption: s.ikkiuchiCurveLast(timeline.change.curve.length),
@@ -105,10 +137,10 @@ class IkkiuchiRankPlot extends StatelessWidget {
     return CustomPaint(
       size: Size.infinite,
       painter: timeline.placing
-          ? _ChartPainter(timeline, elapsed, tone, words, MediaQuery.textScalerOf(context),
+          ? _ChartPainter(timeline, widget.elapsed, widget.tone, words, MediaQuery.textScalerOf(context),
               MediaQuery.devicePixelRatioOf(context))
-          : _CurvePainter(timeline, elapsed, tone, words, MediaQuery.textScalerOf(context),
-              MediaQuery.devicePixelRatioOf(context), atRest: atRest),
+          : _CurvePainter(timeline, widget.elapsed, widget.tone, words, MediaQuery.textScalerOf(context),
+              MediaQuery.devicePixelRatioOf(context), _breakMark?.image, atRest: widget.atRest),
     );
   }
 }
@@ -178,15 +210,18 @@ abstract class _PlotPainter extends CustomPainter {
 /// The mode's rating curve with this match's point running from the last
 /// match's to its place: the guide in its slot until it lands, the class
 /// line it crosses straining, breaking or cracking (whole [atRest]), the
-/// diamond swelling at the landing, the heartbeats and the break.
+/// diamond swelling at the landing, the heartbeats and the break, where
+/// [breakMark] stays once loaded.
 class _CurvePainter extends _PlotPainter {
-  _CurvePainter(super.timeline, super.elapsed, super.tone, super.words, super.scaler, super.pixelRatio,
+  _CurvePainter(super.timeline, super.elapsed, super.tone, super.words, super.scaler, super.pixelRatio, this.breakMark,
       {required this.atRest});
 
+  final ui.Image? breakMark;
   final bool atRest;
 
   @override
-  bool shouldRepaint(covariant _CurvePainter old) => super.shouldRepaint(old) || old.atRest != atRest;
+  bool shouldRepaint(covariant _CurvePainter old) =>
+      super.shouldRepaint(old) || old.atRest != atRest || old.breakMark != breakMark;
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -242,7 +277,7 @@ class _CurvePainter extends _PlotPainter {
       if (broken) {
         burst(canvas, Offset(gateX, y), progressIn(e, t.breakAt, IkkiuchiRankMotion.burst),
             size: IkkiuchiRankLayout.breakBurst);
-        _star(canvas, Offset(gateX, y), Entrances.bouncy.transform(progressIn(e, t.breakAt, IkkiuchiRankMotion.starPop)));
+        _mark(canvas, Offset(gateX, y), Entrances.bouncy.transform(progressIn(e, t.breakAt, IkkiuchiRankMotion.markPop)));
       }
     }
     ink.floor(scale, floor);
@@ -262,27 +297,16 @@ class _CurvePainter extends _PlotPainter {
     if (t.moment == IkkiuchiRankMoment.up) burst(canvas, mark, progressIn(e, t.landAt, IkkiuchiRankMotion.burst));
   }
 
-  /// The ink star where the line broke through, [f] of the way popped in.
-  void _star(Canvas canvas, Offset at, double f) {
-    if (f <= 0) return;
-    const n = IkkiuchiRankLayout.starPoints;
-    final star = Path();
-    for (var i = 0; i < 2 * n; i++) {
-      final a = i / (2 * n) * 2 * math.pi - math.pi / 2;
-      final r = (i.isOdd ? IkkiuchiRankLayout.starInner : IkkiuchiRankLayout.starOuter) * f;
-      final p = at + Offset(math.cos(a), math.sin(a)) * r;
-      i == 0 ? star.moveTo(p.dx, p.dy) : star.lineTo(p.dx, p.dy);
-    }
-    star.close();
-    canvas
-      ..drawPath(star, Paint()..color = Palette.sun)
-      ..drawPath(
-          star,
-          Paint()
-            ..color = Palette.ink
-            ..style = PaintingStyle.stroke
-            ..strokeWidth = IkkiuchiRankLayout.starStroke
-            ..strokeJoin = StrokeJoin.round);
+  /// The break mark where the line broke through, [f] of the way popped in.
+  void _mark(Canvas canvas, Offset at, double f) {
+    final image = breakMark;
+    if (f <= 0 || image == null) return;
+    final side = IkkiuchiRankLayout.breakMarkSize * f;
+    canvas.drawImageRect(
+        image,
+        Offset.zero & Size(image.width.toDouble(), image.height.toDouble()),
+        Rect.fromCenter(center: at, width: side, height: side),
+        Paint()..filterQuality = FilterQuality.medium);
   }
 }
 

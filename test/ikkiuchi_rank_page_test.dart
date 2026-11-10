@@ -38,6 +38,7 @@ import 'package:fudatobashi/state/progress.dart';
 import 'package:fudatobashi/state/scope.dart';
 import 'package:fudatobashi/ui/debug/celebration_preview.dart';
 import 'package:fudatobashi/ui/ikkiuchi/ikkiuchi_rank_overlay.dart';
+import 'package:fudatobashi/ui/ikkiuchi/ikkiuchi_rank_plot.dart';
 import 'package:fudatobashi/ui/ikkiuchi/ikkiuchi_rank_timeline.dart';
 import 'package:fudatobashi/ui/manga/manga.dart';
 import 'package:fudatobashi/ui/results/celebration_chrome.dart';
@@ -469,6 +470,8 @@ void main() {
         for (final e in find.byType(Image).evaluate()) {
           await precacheImage((e.widget as Image).image, e);
         }
+        final plot = find.byType(IkkiuchiRankPlot).evaluate();
+        if (plot.isNotEmpty) await precacheImage(const AssetImage(IkkiuchiRankLayout.breakMark), plot.first);
       });
       await tester.pump();
       await tester.pump();

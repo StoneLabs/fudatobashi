@@ -1148,8 +1148,8 @@ abstract final class IkkiuchiRankLayout {
   /// [burstStrokes] ink strokes [burstStroke] wide fly out from [burstFrom]
   /// to [burstReach] more ([burstEnd] at the last), turned up to
   /// [burstJitter] off even ([burstSeed]), [breakBurst] times as big at a
-  /// break, where an ink star stays ([starPoints] points, [starOuter] /
-  /// [starInner] each way, sun, edged [starStroke]).
+  /// break, where the [breakMark] stays, a [breakMarkSize] square centred
+  /// on the break.
   static const curve = IkkiuchiCurveStyle(
     labelRoom: 60,
     inset: 14,
@@ -1176,10 +1176,8 @@ abstract final class IkkiuchiRankLayout {
   static const double burstJitter = 0.3;
   static const int burstSeed = 33;
   static const double breakBurst = 1.8;
-  static const int starPoints = 8;
-  static const double starOuter = 18;
-  static const double starInner = 7.5;
-  static const double starStroke = Strokes.label;
+  static const String breakMark = 'assets/graphics/sidetrips/ikkiuchi/rank-break.webp';
+  static const double breakMarkSize = 64;
 
   /// The placement chart: the estimate after each placement match over its
   /// slot, between [chartLow] and [chartHigh] or further to hold the path
@@ -1483,7 +1481,7 @@ abstract final class IkkiuchiRankLayout {
 /// [rumbleAfter] the crossing ([rumblePop], shaking every [rumbleStep]),
 /// heartbeats at [beats] (each [beatPulse]), then the break [breakAfter]
 /// the crossing: the dark lifts ([lift]) and the page flashes ([flashIn],
-/// [flashHold], [flashOut]), a star pops ([starPop]) and the diamond
+/// [flashHold], [flashOut]), the mark pops ([markPop]) and the diamond
 /// swells ([breakPulse]); the run goes on to its landing. It cuts to the
 /// impact frame [cutAfterBreak] after the break or [cutAfterLand] after
 /// the landing, whichever comes later. From the cut: the old class pops
@@ -1594,7 +1592,7 @@ abstract final class IkkiuchiRankMotion {
   static const flashIn = Duration(milliseconds: 60);
   static const flashHold = Duration(milliseconds: 40);
   static const flashOut = Duration(milliseconds: 260);
-  static const starPop = Duration(milliseconds: 300);
+  static const markPop = Duration(milliseconds: 300);
   static const breakPulse = Duration(milliseconds: 500);
   static const cutAfterBreak = Duration(milliseconds: 450);
   static const cutAfterLand = Duration(milliseconds: 350);
