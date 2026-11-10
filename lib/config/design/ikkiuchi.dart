@@ -934,3 +934,699 @@ abstract final class IkkiuchiHistoryStyle {
   static const double ratingHeight = 222;
   static const double linesTop = 44;
 }
+
+/// A ranked mode's own colours on its rank change page, beside its page
+/// tone (`IkkiuchiModeTone`): the [glow] behind the title, the dots of the
+/// impact frame ([impactDot]) and the [streak]s rising behind a win.
+@immutable
+class IkkiuchiRankTone {
+  const IkkiuchiRankTone({required this.glow, required this.impactDot, required this.streak});
+  final Color glow, impactDot, streak;
+}
+
+/// The rank change page after a ranked match (`IkkiuchiRankOverlay`, mock
+/// B): the match card, then the mode's box from the 一騎打ち page with this
+/// match added to its rating curve (or, while placing, to the placement
+/// chart), and the button. dp; sizes marked (so) grow with the text size.
+///
+/// The ground: the mode's soft colour, its [bullet] / [blitz] / [rapid]
+/// glow round [glowAt] fading out at [glowStops], the mode's dots
+/// ([groundSpacing] apart, [groundPhase]) swelling toward the foot
+/// ([groundRadii] at [groundStops] of the height), and after a win
+/// [streakCount] streaks rising ([streakSeed]).
+///
+/// The column, [topGap] under the status bar and [bottomGap] over the
+/// navigation bar: the title in [titleFont] display lettering (so) on
+/// [titleOutline] of ink, in a room [titleRoom] tall (so), shrinking to the
+/// width. [cardGap] under it the match card, [cardHeight] tall (so), its
+/// top-left corner cut [cardCut], split at [cardSplit] of its width by a
+/// line slanting [cardSlant], the winner's half in the mode's tone, edged
+/// [cardStroke]. Your half, [youInset] in and [halfGap] clear of the line:
+/// 勝 / 負 on a [mark] square edged [markBorder] at [markFont] (so),
+/// [youGap] before your name at [nameFont] (so) over the margin at
+/// [marginFont] (so) with its number at [marginNumber] (so), [whoGap]
+/// apart. Tobi's half, [tobiInset] from the right: Tobi ([tobi]) over his
+/// plate (`IkkiuchiTobiTag` at [plateName] and [plateFont] (so) inside
+/// [platePadding]), [tobiGap] apart, at the card's foot. VS on an ink
+/// parallelogram ([vs], skewed [vsSkewDeg]) at [vsFont], tracked
+/// [vsTracking].
+///
+/// [boxGap] under it the mode's tab ([tabWidth] by [tabHeight], its
+/// lettering [tabTop] down, its top falling [tabSlant] across the box's
+/// width) joined to the box in one [frameStroke] outline, with the ランク戦
+/// tag [rankedGap] after it and [rankedDrop] over the box (at [rankedFont]
+/// (so), tracked [rankedTracking], inside [rankedPadding], skewed
+/// [rankedSkewDeg]). Inside [boxPadding]: the class [badge], [standGap]
+/// before the label at [labelFont] (so; numbers at [labelNumber]) in a
+/// room [labelRoom] tall (so), [ratingTop] over the rating at [ratingFont]
+/// (so) with its change [tagGap] after it on a tag at [tagFont] (so)
+/// inside [tagPadding], edged [tagBorder], in a room [tagRoom] tall (so)
+/// and at least [tagMinWidth] wide. A class change shows as chips at
+/// [chipFont] (so) inside [chipPadding], edged [chipBorder], [chipGap] each
+/// side of the arrow, the old one in [oldChip] edged [oldChipEdge] and
+/// struck through [strike]. [gaugeTop] under the rating, [gaugeHeight]
+/// tall (so), the way to the next class at [gaugeFont] (so; its number at
+/// [gaugeNumber]) and its bar [barGap] after it, [barHeight] tall, edged
+/// [barBorder], at least [barMinWidth] wide. While placing a note at
+/// [noteFont] (so; numbers at [noteNumber]) [noteTop] under the rating,
+/// its lines [noteLineHeight] apart. [plotTop] under the standing the
+/// curve or the chart takes the rest, at least [plotMinHeight], [plotFoot]
+/// clear of the box's foot.
+///
+/// [ctaTop] under the box the button, at least [ctaHeight] tall, its label
+/// at [ctaFont] and the other language's at [ctaSubFont] (both so).
+abstract final class IkkiuchiRankLayout {
+  static const bullet = IkkiuchiRankTone(
+      glow: Color(0xFFFFF6F9), impactDot: Color(0xFFE0246A), streak: Color(0xBFFFFFFF));
+  static const blitz = IkkiuchiRankTone(
+      glow: Color(0xFFFFFCEB), impactDot: Color(0xFFFF9A2E), streak: Color(0xCCFFFFFF));
+  static const rapid = IkkiuchiRankTone(
+      glow: Color(0xFFF4FAFF), impactDot: Color(0xFF1463C4), streak: Color(0xCCFFFFFF));
+
+  static const Alignment glowAt = Alignment(0, -0.64);
+  static const List<double> glowStops = [0, 0.014, 0.263, 1];
+  static const List<double> groundRadii = [0, 0, 1, 1.9];
+  static const List<double> groundStops = [0, 0.35, 0.7, 1];
+  static const double groundSpacing = 6;
+  static const double groundPhase = 0.25;
+  static const int streakCount = 40;
+  static const int streakSeed = 29;
+
+  static const double topGap = 6;
+  static const double bottomGap = 12;
+  static const double titleFont = 62;
+  static const double titleOutline = 9;
+  static const double titleRoom = 64;
+
+  static const double cardGap = 8;
+  static const double cardHeight = 104;
+  static const double cardCut = 12;
+  static const double cardSplit = 0.55;
+  static const double cardSlant = 24;
+  static const double cardStroke = Strokes.panel;
+  static const double halfGap = 8;
+  static const double youInset = 14;
+  static const double youGap = 12;
+  static const double mark = 42;
+  static const double markBorder = Strokes.control;
+  static const double markFont = 22;
+  static const double nameFont = 19;
+  static const double whoGap = 5;
+  static const double marginFont = 13;
+  static const double marginNumber = 15;
+  static const double tobiInset = 10;
+  static const double tobiGap = 3;
+  static const Size tobi = Size(56, 67);
+  static const double plateName = 12;
+  static const double plateFont = 17;
+  static const EdgeInsets platePadding = EdgeInsets.fromLTRB(7, 4, 7, 5);
+  static const Size vs = Size(34, 24);
+  static const double vsSkewDeg = -14;
+  static const double vsFont = 13;
+  static const double vsTracking = 0.5;
+
+  static const double boxGap = 14;
+  static const double tabWidth = 132;
+  static const double tabHeight = 42;
+  static const double tabTop = 4;
+  static const double tabSlant = 10;
+  static const double frameStroke = Strokes.panel;
+  static const double rankedGap = 12;
+  static const double rankedDrop = 8;
+  static const double rankedFont = 13;
+  static const double rankedTracking = 1.5;
+  static const EdgeInsets rankedPadding = EdgeInsets.fromLTRB(9, 3, 9, 4);
+  static const double rankedSkewDeg = -12;
+  static const EdgeInsets boxPadding = EdgeInsets.fromLTRB(14, 14, 14, 10);
+
+  static const badge = IkkiuchiBadgeStyle(
+    size: 82,
+    classFont: 46,
+    suffixFont: 18,
+    longFont: 33,
+    longSuffixFont: 15,
+    unplacedFont: 44,
+  );
+  static const double standGap = 14;
+  static const double labelFont = 12.5;
+  static const double labelNumber = 13;
+  static const double labelRoom = 15;
+  static const double ratingTop = 3;
+  static const double ratingFont = 42;
+  static const double tagGap = 8;
+  static const double tagFont = 15;
+  static const EdgeInsets tagPadding = EdgeInsets.fromLTRB(5, 3, 6, 4);
+  static const double tagBorder = Strokes.label;
+  static const double tagRoom = 26;
+  static const double tagMinWidth = 70;
+  static const double chipFont = 12;
+  static const EdgeInsets chipPadding = EdgeInsets.fromLTRB(5, 1, 5, 2);
+  static const double chipBorder = Strokes.label;
+  static const double chipGap = 5;
+  static const double strike = Strokes.label;
+  static const Color oldChip = Color(0xFF6B6B6B);
+  static const Color oldChipEdge = Color(0xFF8A8A8A);
+  static const double gaugeTop = 8;
+  static const double gaugeHeight = 18;
+  static const double gaugeFont = 12.5;
+  static const double gaugeNumber = 15;
+  static const double barGap = 10;
+  static const double barHeight = 14;
+  static const double barBorder = Strokes.control;
+  static const double barMinWidth = 30;
+  static const double noteTop = 7;
+  static const double noteFont = 12;
+  static const double noteNumber = 14;
+  static const double noteLineHeight = 1.35;
+  static const double plotTop = 12;
+  static const double plotMinHeight = 140;
+  static const double plotFoot = 2;
+
+  static const double ctaTop = 12;
+  static const double ctaHeight = 62;
+  static const double ctaFont = 20;
+  static const double ctaSubFont = 13;
+
+  /// The curve: the page's, drawn a size bigger by [curve]. The class line
+  /// the match crosses turns ink and grows [strainWidth] wide, swelling
+  /// [strainSwell] more at each heartbeat; broken through, it opens
+  /// [breakGap] each side of the line, cracked [crackGap]. Until this match
+  /// lands a dashed guide ([guideDash], [guideInk]) stands in its slot, from
+  /// [guideOver] over the top. Where the line lands or breaks through,
+  /// [burstStrokes] ink strokes [burstStroke] wide fly out from [burstFrom]
+  /// to [burstReach] more ([burstEnd] at the last), turned up to
+  /// [burstJitter] off even ([burstSeed]), [breakBurst] times as big at a
+  /// break, where an ink star stays ([starPoints] points, [starOuter] /
+  /// [starInner] each way, sun, edged [starStroke]).
+  static const curve = IkkiuchiCurveStyle(
+    labelRoom: 60,
+    inset: 14,
+    top: 12,
+    line: 2.4,
+    dot: 2.8,
+    mark: 8,
+    markRing: Strokes.label,
+    minPad: 16,
+    rangeShare: 0.16,
+  );
+  static const double strainWidth = 2.2;
+  static const double strainSwell = 1.6;
+  static const double breakGap = 16;
+  static const double crackGap = 30;
+  static const List<double> guideDash = [3, 3];
+  static const Color guideInk = Color(0x5C141414);
+  static const double guideOver = 4;
+  static const int burstStrokes = 12;
+  static const double burstFrom = 10;
+  static const double burstReach = 10;
+  static const double burstEnd = 4;
+  static const double burstStroke = 2.4;
+  static const double burstJitter = 0.3;
+  static const int burstSeed = 33;
+  static const double breakBurst = 1.8;
+  static const int starPoints = 8;
+  static const double starOuter = 18;
+  static const double starInner = 7.5;
+  static const double starStroke = Strokes.label;
+
+  /// The placement chart: the estimate after each placement match over its
+  /// slot, between [chartLow] and [chartHigh] or further to hold the path
+  /// with [chartPad] to spare; the slots [chartLabelRoom] + [chartLeft] in
+  /// to [chartRight] short of the right, [chartTop] under the top and
+  /// [chartAxis] over the foot. The path [chartLine] wide, dashed
+  /// [chartDash] while an estimate; its points dots of radius [chartDot]
+  /// edged [chartRing], the latest a diamond reaching [chartMark] edged
+  /// [chartMarkRing]. Each step at [stepFont] (so), [stepGap] beside and
+  /// [stepLift] over its point after a win, [stepDrop] (so) under after a
+  /// loss. Matches to come as dashed columns ([futureDash], [futureInk])
+  /// under their step (±) at [futureFont] (so), [futureDrop] under the top.
+  /// Class names at the curve's size in [chartLabelInk]. The axis: 開始
+  /// [startDrop] (so) under it and the start rating [startRatingDrop] (so)
+  /// under its point, at [startFont] (so) in [startInk], and a [slot]
+  /// square per match [slotTop] under the axis, played at [slotFont] (so)
+  /// edged [slotBorder] (負 in [lostInk]), the next edged [nextSlotBorder],
+  /// the rest dashed ([slotDash], [slotInk]), their number at [slotNumber]
+  /// (so). Once the class shows its band fills from [bandInset] left of
+  /// the class lines' room, and ここから marks the last point on an ink tag
+  /// at [hereFont] (so), [hereHeight] tall (so), [herePad] wider than the
+  /// words each side, [hereLift] over the point; a Latin letter takes
+  /// [hereLatinShare] of a kana's width.
+  static const double chartLow = 1100;
+  static const double chartHigh = 2650;
+  static const double chartPad = 100;
+  static const double chartLabelRoom = 62;
+  static const double chartLeft = 14;
+  static const double chartRight = 26;
+  static const double chartTop = 12;
+  static const double chartAxis = 34;
+  static const double chartLine = 2.6;
+  static const List<double> chartDash = [7, 5];
+  static const double chartDot = 3.4;
+  static const double chartRing = Strokes.label;
+  static const double chartMark = 8.5;
+  static const double chartMarkRing = 2.2;
+  static const Color chartLabelInk = Color(0xFF8A8680);
+  static const double stepFont = 11;
+  static const double stepGap = 7;
+  static const double stepLift = 8;
+  static const double stepDrop = 18;
+  static const List<double> futureDash = [3, 3];
+  static const Color futureInk = Color(0x2E141414);
+  static const double futureFont = 12;
+  static const double futureDrop = 2;
+  static const double startFont = 11;
+  static const double startDrop = 15;
+  static const double startRatingDrop = 18;
+  static const Color startInk = Color(0xFF6B6B6B);
+  static const double slot = 22;
+  static const double slotTop = 7;
+  static const double slotFont = 13;
+  static const double slotNumber = 12;
+  static const double slotBorder = Strokes.label;
+  static const double nextSlotBorder = Strokes.control;
+  static const List<double> slotDash = [3, 2.5];
+  static const Color slotInk = Color(0xFF8A8A8A);
+  static const Color lostInk = Color(0xFF6B6B6B);
+  static const double bandInset = 4;
+  static const double hereFont = 10.5;
+  static const double hereHeight = 17;
+  static const double herePad = 6;
+  static const double hereLift = 22;
+  static const double hereLatinShare = 0.55;
+
+  /// The points changing hands: a chip (the change tag) between Tobi's
+  /// plate, [plateLift] over it, and the curve, bowing out [chipBow] on its
+  /// way, shrinking by [chipShrink] and turning from [chipTurnDeg]. Tobi's
+  /// plate swells by [plateSwell] as they leave or arrive, and the diamond
+  /// by [chipSwell] as they reach it.
+  static const double plateLift = 6;
+  static const Offset chipBow = Offset(40, 30);
+  static const double chipShrink = 0.35;
+  static const double chipTurnDeg = -6;
+  static const double plateSwell = 0.14;
+  static const double chipSwell = 0.5;
+
+  /// The landing: the diamond swells by [landSwell] and the rating by
+  /// [ratingSwell], the box jolts [winJolt] (a win) or [lossJolt] in
+  /// [joltSteps] ([joltSeed]). At a rank up's heartbeats the diamond
+  /// swells by [strainSwellMark] and the old class trembles [strainTremble]
+  /// more than [restTremble]; at the break the diamond swells by
+  /// [breakSwell]. While the class is hidden it beats by [hiddenBeat] and
+  /// the diamond by [hiddenSwell], swelling by [revealSwell] as it shows.
+  /// Tobi trembles [tobiTremble] once beaten ([tobiSeed]); the old class
+  /// trembles by [trembleSeed] in the box and by [stageSeed] on the stage. The card's halves slide in
+  /// from [halvesFrom] as it grows from [cardFrom], and it jolts
+  /// [clashJolt] as they meet ([clashSteps], [clashSeed]).
+  static const double landSwell = 0.6;
+  static const double ratingSwell = 0.12;
+  static const double winJolt = 5;
+  static const double lossJolt = 3;
+  static const int joltSteps = 7;
+  static const int joltSeed = 67;
+  static const double strainSwellMark = 0.35;
+  static const double strainTremble = 1.6;
+  static const double restTremble = 0.6;
+  static const double breakSwell = 0.7;
+  static const double hiddenBeat = 0.07;
+  static const double hiddenSwell = 0.3;
+  static const double revealSwell = 0.8;
+  static const double tobiTremble = 1.3;
+  static const int tobiSeed = 5;
+  static const int trembleSeed = 3;
+  static const int stageSeed = 4;
+  static const double halvesFrom = 70;
+  static const double cardFrom = 0.96;
+  static const double clashJolt = 5;
+  static const int clashSteps = 7;
+  static const int clashSeed = 9;
+
+  /// A rank up's strain: the page darkens to [darkness] but for a hole
+  /// round the gate, clear out to [holeClear] and dark from [holeDark];
+  /// ゴゴゴ ([rumble], [rumbleFont], violet) rumbles [rumbleShake] down both
+  /// sides, the right one [rumbleRight] from the screen's right edge and
+  /// the box's top, the left one [rumbleLeft] from its left edge
+  /// ([rumbleSeeds], shaking by [rumbleShakeSeeds]). While the class is hidden the page dims to
+  /// [hiddenDim] and the title to [hiddenTitle]. The break and the reveal
+  /// flash white up to [flash].
+  static const double darkness = 0.66;
+  static const double holeClear = 34;
+  static const double holeDark = 120;
+  static const String rumble = 'ゴゴゴ';
+  static const double rumbleFont = 40;
+  static const double rumbleShake = 2;
+  static const Offset rumbleRight = Offset(-54, 30);
+  static const Offset rumbleLeft = Offset(4, 215);
+  static const (int, int) rumbleSeeds = (13, 14);
+  static const (int, int) rumbleShakeSeeds = (11, 12);
+  static const double hiddenDim = 0.18;
+  static const double hiddenTitle = 0.45;
+  static const double flash = 0.85;
+
+  /// The impact frame of a rank up and of the first class: the mode's
+  /// colour, glowing white and then the mode's glow round the stage at
+  /// [stageAt] out to [stageGlow] ([stageGlowStops]), its dots growing
+  /// toward the foot ([impactRadii] at [impactStops]), white focus lines on
+  /// the stage ([impactLines]). The class stands there [stageScale] times
+  /// its badge: the old one pops up from [oldFrom] times, trembles
+  /// [stageTremble], and is cut in two ([cut], in the badge's own size) by
+  /// the [blade] (on a [bladeBox] round the stage), ズバッ!! ([slash],
+  /// [slashFont], [slashSeed]) [slashAt] from the stage, turned
+  /// [slashTurnDeg]. The new one drops from [dropFrom] times as big, turned
+  /// [dropTurnDeg], onto the ink [splat] ([splatSize], settling to
+  /// [splatRest] of it) with ドン!! ([hit]) or, for the first class,
+  /// ジャン!! ([reveal]) [sfxAt] from it, turned [sfxTurnDeg]; the frame
+  /// jolts [impactJolt] ([impactSteps], [impactSeed]).
+  static const Alignment stageAt = Alignment(0, 0.058);
+  static const double stageGlow = 300;
+  static const List<double> stageGlowStops = [0, 0.35, 1];
+  static const List<double> impactRadii = [0, 0, 1.6];
+  static const List<double> impactStops = [0, 0.6, 1];
+  static const impactLines = (count: 150, innerMin: 150.0, innerMax: 185.0, width: 4.0, seed: 41);
+  static const double stageScale = 2.4;
+  static const double oldFrom = 1.7;
+  static const double stageTremble = 1.4;
+  static const cut = BladeSpec(
+    from: Offset(0, 51.22),
+    to: Offset(82, 30.78),
+    width: 0,
+    core: 0,
+    widest: 0,
+    outline: 0,
+    slide: 18,
+    gap: 8,
+    turnDeg: 8,
+    fadeFrom: 0.35,
+  );
+  static const Size bladeBox = Size(360, 200);
+  static const blade = BladeSpec(
+    from: Offset(15, 100),
+    to: Offset(335.2, 20.2),
+    width: 18,
+    core: 0.42,
+    widest: 0.7,
+    outline: Strokes.label,
+    slide: 0,
+    gap: 0,
+    turnDeg: 0,
+    fadeFrom: 0,
+  );
+  static const String slash = 'ズバッ!!';
+  static const double slashFont = 40;
+  static const int slashSeed = 17;
+  static const Offset slashAt = Offset(-170, -190);
+  static const double slashTurnDeg = -10;
+  static const double dropFrom = 3;
+  static const double dropTurnDeg = -20;
+  static const String splat = 'assets/graphics/sidetrips/ui/rank-splash.webp';
+  static const Size splatSize = Size(380, 296);
+  static const double splatRest = 0.36;
+  static const String hit = 'ドン!!';
+  static const double hitFont = 58;
+  static const int hitSeed = 29;
+  static const String reveal = 'ジャン!!';
+  static const double revealFont = 50;
+  static const int revealSeed = 23;
+  static const Offset sfxAt = Offset(-24, -196);
+  static const double sfxTurnDeg = 10;
+  static const double impactJolt = 10;
+  static const int impactSteps = 11;
+  static const int impactSeed = 71;
+
+  /// A rank down: the crack ([crack]) where the line goes through the
+  /// class line, [lineCrack] wide, [lineCrackAt] off it, reaching no more
+  /// than [lineCrackOverhang] past the plot's right; ガーン!! ([shock],
+  /// [shockFont], [shockSeed]) dropping to [shockAt] from the badge's top
+  /// left, turned [shockTurnDeg]; the box jolts [knockJolt] ([knockSteps],
+  /// [knockSeed]), the [gloom] comes down, and the badge cracks
+  /// ([badgeCrack] wide, [badgeCrackAt] from its left middle, turned
+  /// [badgeCrackTurnDeg]); the class falls [fallDrop] turning
+  /// [fallTurnDeg], and the lower one drops in from [dropIn] with a thud
+  /// ([thudJolt], [thudSteps], [thudSeed]).
+  static const String crack = 'assets/graphics/sidetrips/ui/rank-crack.webp';
+  static const double lineCrack = 110;
+  static const Offset lineCrackAt = Offset(-55, -17);
+  static const double lineCrackOverhang = 6;
+  static const String shock = 'ガーン!!';
+  static const double shockFont = 46;
+  static const int shockSeed = 37;
+  static const Offset shockAt = Offset(40, -64);
+  static const double shockTurnDeg = -6;
+  static const double knockJolt = 6;
+  static const int knockSteps = 7;
+  static const int knockSeed = 73;
+  static const gloom = GloomSpec(
+    colors: [Color(0x99141414), Color(0x00141414)],
+    reach: 0.6,
+    count: 44,
+    seed: 7,
+    shortest: 0.18,
+    longest: 0.5,
+    thinnest: 1.2,
+    thickest: 3.4,
+    line: Color(0xB3141414),
+  );
+  static const double badgeCrack = 96;
+  static const Offset badgeCrackAt = Offset(-7, -14);
+  static const double badgeCrackTurnDeg = -8;
+  static const double fallDrop = 170;
+  static const double fallTurnDeg = 18;
+  static const double dropIn = -110;
+  static const double thudJolt = 3;
+  static const int thudSteps = 4;
+  static const int thudSeed = 79;
+
+  /// The class change's sticker on the badge's corner, [stickerAt] from
+  /// its top left, turned [stickerTurnDeg]: 昇級! in sun on ink with a sun
+  /// [stickerShadow], 降級 in ink on paper; at [stickerFont] (so) inside
+  /// [stickerPadding], edged [stickerBorder]. The first class's NEW tag
+  /// turns [newTurnDeg].
+  static const Offset stickerAt = Offset(-10, -12);
+  static const double stickerTurnDeg = -10;
+  static const Offset stickerShadow = Offset(2, 2);
+  static const double stickerFont = 15;
+  static const EdgeInsets stickerPadding = EdgeInsets.fromLTRB(7, 4, 7, 5);
+  static const double stickerBorder = Strokes.control;
+  static const double newTurnDeg = -6;
+
+  /// Where parts turn and grow from: titles a little under their middle,
+  /// tags and lettering toward their start, the rating toward its foot.
+  static const Alignment titleOrigin = Alignment(0, 0.2);
+  static const Alignment tagOrigin = Alignment(-0.4, 0);
+  static const Alignment sfxOrigin = Alignment(-0.4, 0);
+  static const Alignment ratingOrigin = Alignment(-0.4, 0.2);
+}
+
+/// When the rank change page moves (mock B's timing around the count the
+/// user asked for), each from the page's start unless said otherwise.
+///
+/// The opening: the [title] slams in; the card's halves slide in over
+/// [halves] from [cardAt] as the card grows over [cardGrowShare] of that,
+/// and meet with a jolt at [clashAt] ([clash]), the VS tag popping
+/// ([vsPop]); the [box] rises.
+///
+/// The heart of the page is the count: this match's point runs to its
+/// place on the curve (the diamond along the line, the rating counting,
+/// the bar filling, up or down) over [run] on [runCurve], an ease in and
+/// out: slow at the start, fast in the middle, slow into the landing.
+/// Every rating point it passes ticks, so the ticks come slowly, rush and
+/// slow again; ticks closer than [tickSpacing] to the last (or to the
+/// landing) are left out, never a mush. It starts at [runAt] after a loss;
+/// after a win the points first pop off Tobi's plate ([chipPopAt],
+/// [chipPop]) and fly to the curve from [chipFlyAt], the run starting
+/// as they arrive ([winRunAt]). After a loss they go to Tobi once the point
+/// has landed: they pop [chipAfterLand] after the landing and fly from
+/// [chipFlyAfter] after that for [chipFly]. The diamond swells as they reach
+/// it ([chipSwell]) and Tobi's plate as they leave or arrive
+/// ([plateSwell]); this match's slot shows a guide fading in over
+/// [guideIn] once the box has risen.
+///
+/// The landing: the diamond pulses ([landPulse]) with a burst ([burst]),
+/// the box jolts ([landJolt]), the change tag stamps on [tagAfterLand]
+/// after it ([tag]) and the button pops ([cta]) [ctaAfterLand] after a
+/// win's landing or [ctaAfterChip] after the chip of a loss reaches Tobi;
+/// the page rests [endAfterCta] later. Beaten Tobi trembles a step every
+/// [tobiStep].
+///
+/// A rank up, at the crossing: the page darkens ([darken]), ゴゴゴ comes in
+/// [rumbleAfter] the crossing ([rumblePop], shaking every [rumbleStep]),
+/// heartbeats at [beats] (each [beatPulse]), then the break [breakAfter]
+/// the crossing: the dark lifts ([lift]) and the page flashes ([flashIn],
+/// [flashHold], [flashOut]), a star pops ([starPop]) and the diamond
+/// swells ([breakPulse]); the run goes on to its landing. It cuts to the
+/// impact frame [cutAfterBreak] after the break or [cutAfterLand] after
+/// the landing, whichever comes later. From the cut: the old class pops
+/// up ([oldPop]) trembling every [trembleStep], the blade cuts at
+/// [slashAfterCut] ([slash], fading over [slashFade]; ズバッ!!
+/// [slashSfxAfterCut], [slashSfx]), the halves part from [splitAfterCut]
+/// ([split]), the new class drops from [stampAfterCut] and hits at
+/// [impactAfterCut]: the splat ([splat]), ドン!! [sfxAfterImpact] later
+/// ([sfx]), the frame's jolt ([impactJolt]) and title ([title]). It
+/// settles back into the page from [settleAfterCut] ([settle]); the class
+/// change shows at [labelAfterCut] ([label]), the change tag at
+/// [tagAfterCut] and the button at [ctaAfterCut].
+///
+/// A rank down, at the crossing: the class line cracks ([crack]),
+/// ガーン!! drops [shockAfterCrack] after it ([shock]), the hit comes
+/// [hitAfterCrack] after it (the box's jolt [hitJolt], the [gloom], the
+/// badge's crack), the class falls from [fallAfterCrack] ([fall]) and the
+/// lower one drops in from [dropAfterCrack], landing [thudAfterCrack]
+/// after it ([thud]). The class change, the change tag and the points to
+/// Tobi follow [labelAfterThud] after the thud or [tagAfterLand] after the
+/// landing, whichever comes later; ガーン!! lifts then ([shockLift]).
+///
+/// The placement: the match's slot is stamped ([slotStamp]) with its tag.
+/// The last one then holds a drumroll: [suspenseAfterLand] after a won
+/// landing (or [suspenseAfterChip] after a lost one's chip) the page dims
+/// ([dim]) under heartbeats at [suspenseBeats]; [revealAfterSuspense] in
+/// the class shows with a flash, the dashed estimate turning solid and the
+/// class's band filling ([bandFill]); it cuts to the impact frame
+/// [cutAfterReveal] later, the class landing [placedImpactAfterCut] after
+/// the cut and settling from [placedSettleAfterImpact] after that; the
+/// rating, NEW and the bar ([gauge], from [gaugeAfterLabel]) show
+/// [labelAfterSettle] after it, ここから [hereAfterLabel] ([here]), the
+/// button [placedCtaAfterLabel].
+abstract final class IkkiuchiRankMotion {
+  static const title = EntranceSpec(EntranceFrom(scale: 2.2, opaqueAt: 0.3),
+      duration: Duration(milliseconds: 500), delay: Duration(milliseconds: 100), curve: Entrances.springy);
+  static const cardAt = Duration(milliseconds: 150);
+  static const halves = Duration(milliseconds: 380);
+  static const double cardGrowShare = 0.6;
+  static const clashAt = Duration(milliseconds: 470);
+  static const clash = Duration(milliseconds: 260);
+  static const vsPop = EntranceSpec(EntranceFrom(scale: 0.3),
+      duration: Duration(milliseconds: 300), delay: clashAt, curve: Entrances.bouncy);
+  static const box = EntranceSpec(EntranceFrom(offset: Offset(0, 24)),
+      duration: Duration(milliseconds: 420), delay: Duration(milliseconds: 300), curve: Entrances.glide);
+
+  /// The count: 3 s on an ease in and out, its ticks no closer than 60 ms.
+  static const run = Duration(milliseconds: 3000);
+  static const Curve runCurve = Curves.easeInOutCubic;
+  static const tickSpacing = Duration(milliseconds: 60);
+  static const runAt = Duration(milliseconds: 1000);
+  static const winRunAt = Duration(milliseconds: 1400);
+  static const chipPopAt = Duration(milliseconds: 800);
+  static const chipFlyAt = Duration(milliseconds: 1050);
+  static const chipPop = Duration(milliseconds: 250);
+  static const chipAfterLand = Duration(milliseconds: 50);
+  static const chipFlyAfter = Duration(milliseconds: 200);
+  static const chipFly = Duration(milliseconds: 350);
+  static const chipSwell = Duration(milliseconds: 260);
+  static const plateSwell = Duration(milliseconds: 300);
+  static const guideIn = Duration(milliseconds: 300);
+
+  static const landPulse = Duration(milliseconds: 380);
+  static const burst = Duration(milliseconds: 450);
+  static const landJolt = Duration(milliseconds: 300);
+  static const tagAfterLand = Duration(milliseconds: 50);
+  static const tag = Duration(milliseconds: 350);
+  static const ctaAfterLand = Duration(milliseconds: 400);
+  static const ctaAfterChip = Duration(milliseconds: 200);
+  static const cta = Duration(milliseconds: 400);
+  static const endAfterCta = Duration(milliseconds: 450);
+  static const tobiStep = Duration(milliseconds: 70);
+
+  /// The same sound twice within this plays once (a thud and a stamp).
+  static const soundGap = Duration(milliseconds: 150);
+
+  static const darken = Duration(milliseconds: 400);
+  static const rumbleAfter = Duration(milliseconds: 100);
+  static const rumblePop = Duration(milliseconds: 200);
+  static const rumbleStep = Duration(milliseconds: 40);
+  static const List<Duration> beats = [
+    Duration.zero,
+    Duration(milliseconds: 350),
+    Duration(milliseconds: 630),
+  ];
+  static const beatPulse = Duration(milliseconds: 220);
+  static const breakAfter = Duration(milliseconds: 850);
+  static const lift = Duration(milliseconds: 150);
+  static const flashIn = Duration(milliseconds: 60);
+  static const flashHold = Duration(milliseconds: 40);
+  static const flashOut = Duration(milliseconds: 260);
+  static const starPop = Duration(milliseconds: 300);
+  static const breakPulse = Duration(milliseconds: 500);
+  static const cutAfterBreak = Duration(milliseconds: 450);
+  static const cutAfterLand = Duration(milliseconds: 350);
+  static const oldPop = Duration(milliseconds: 200);
+  static const trembleStep = Duration(milliseconds: 40);
+  static const slashAfterCut = Duration(milliseconds: 200);
+  static const slash = Duration(milliseconds: 90);
+  static const slashFade = Duration(milliseconds: 240);
+  static const slashSfxAfterCut = Duration(milliseconds: 220);
+  static const slashSfx = Duration(milliseconds: 220);
+  static const splitAfterCut = Duration(milliseconds: 290);
+  static const split = Duration(milliseconds: 320);
+  static const stampAfterCut = Duration(milliseconds: 410);
+  static const impactAfterCut = Duration(milliseconds: 520);
+  static const splat = Duration(milliseconds: 280);
+  static const sfxAfterImpact = Duration(milliseconds: 20);
+  static const sfx = Duration(milliseconds: 260);
+  static const impactJolt = Duration(milliseconds: 400);
+  static const settleAfterCut = Duration(milliseconds: 1050);
+  static const settle = Duration(milliseconds: 420);
+  static const labelAfterCut = Duration(milliseconds: 1250);
+  static const label = Duration(milliseconds: 300);
+  static const tagAfterCut = Duration(milliseconds: 1300);
+  static const ctaAfterCut = Duration(milliseconds: 1550);
+
+  static const crack = Duration(milliseconds: 120);
+  static const shockAfterCrack = Duration(milliseconds: 50);
+  static const shock = Duration(milliseconds: 150);
+  static const hitAfterCrack = Duration(milliseconds: 200);
+  static const hitJolt = Duration(milliseconds: 260);
+  static const gloom = Duration(milliseconds: 360);
+  static const fallAfterCrack = Duration(milliseconds: 500);
+  static const fall = Duration(milliseconds: 380);
+  static const dropAfterCrack = Duration(milliseconds: 650);
+  static const thudAfterCrack = Duration(milliseconds: 790);
+  static const thud = Duration(milliseconds: 200);
+  static const labelAfterThud = Duration(milliseconds: 110);
+  static const shockLift = Duration(milliseconds: 300);
+
+  static const slotStamp = Duration(milliseconds: 300);
+  static const suspenseAfterLand = Duration(milliseconds: 250);
+  static const suspenseAfterChip = Duration(milliseconds: 50);
+  static const dim = Duration(milliseconds: 300);
+  static const List<Duration> suspenseBeats = [
+    Duration(milliseconds: 50),
+    Duration(milliseconds: 400),
+    Duration(milliseconds: 680),
+    Duration(milliseconds: 900),
+  ];
+  static const revealAfterSuspense = Duration(milliseconds: 1050);
+  static const bandFill = Duration(milliseconds: 400);
+  static const cutAfterReveal = Duration(milliseconds: 400);
+  static const placedImpactAfterCut = Duration(milliseconds: 110);
+  static const placedSettleAfterImpact = Duration(milliseconds: 540);
+  static const labelAfterSettle = Duration(milliseconds: 200);
+  static const gaugeAfterLabel = Duration(milliseconds: 50);
+  static const gauge = Duration(milliseconds: 500);
+  static const hereAfterLabel = Duration(milliseconds: 100);
+  static const here = Duration(milliseconds: 300);
+  static const placedCtaAfterLabel = Duration(milliseconds: 250);
+
+  /// Where parts come in from: the change tag ([tagFrom]), NEW
+  /// ([newFrom]), the points' chip and sound-effect lettering ([popFrom]),
+  /// ドン!! and ジャン!! ([hitFrom]), the sticker ([stickerFrom]), ガーン!!
+  /// ([shockFrom], in [shockSteps]), a crack ([crackFrom] times as big, in
+  /// [crackSteps]); lettering pops in [sfxSteps]. The lower class shows
+  /// once [dropShow] of its drop is done, the new class on the stage once
+  /// [stampShow] of its; the first class's bar shows over [gaugeShow] and
+  /// the class change's label rises [labelRise] into place. The gloom
+  /// comes down in [gloomSteps].
+  static const tagFrom = EntranceFrom(scale: 2, turnDeg: -10, opaqueAt: 0.2);
+  static const newFrom = EntranceFrom(scale: 2.4, turnDeg: -16, opaqueAt: 0.2);
+  static const popFrom = EntranceFrom(scale: 0.3);
+  static const hitFrom = EntranceFrom(scale: 0.2);
+  static const stickerFrom = EntranceFrom(scale: 2.6, turnDeg: -20, opaqueAt: 0.2);
+  static const shockFrom = EntranceFrom(offset: Offset(0, -90), opaqueAt: 0.3);
+  static const shockSteps = StepCurve(3);
+  static const double crackFrom = 1.3;
+  static const crackSteps = StepCurve(2);
+  static const sfxSteps = StepCurve(3, Entrances.bouncy);
+  static const double dropShow = 0.2;
+  static const double stampShow = 0.05;
+  static const gaugeShow = Duration(milliseconds: 200);
+  static const double labelRise = 8;
+  static const gloomSteps = StepCurve(6);
+}

@@ -3,6 +3,7 @@ import '../../data/fuda_sets.dart';
 import '../../domain/rating.dart';
 import '../../domain/side_trips.dart';
 import '../../domain/xp.dart';
+import '../../state/ikkiuchi_records.dart';
 import '../../state/progress.dart';
 import '../../state/side_trips.dart';
 
@@ -162,6 +163,45 @@ class AnkirenRankCelebration extends Celebration {
   bool get up => after > before;
 }
 
+/// What a ranked 一騎打ち match did to its mode's rating, as its page tells
+/// it.
+enum IkkiuchiRankMoment {
+  /// A placement match before the last: the estimate moves by its step.
+  placing,
+
+  /// The last placement match: its estimate turns into the first rating
+  /// and the first class shows.
+  placed,
+
+  /// A win within the class.
+  up,
+
+  /// A loss within the class.
+  down,
+
+  /// A win into a higher class.
+  rankUp,
+
+  /// A loss into a lower class.
+  rankDown,
+}
+
+/// A ranked 一騎打ち match's rank change page: what it did to the rating and
+/// the class in its mode ([change]).
+class IkkiuchiRankCelebration extends Celebration {
+  const IkkiuchiRankCelebration(this.change);
+  final IkkiuchiRankChange change;
+
+  IkkiuchiRankMoment get moment {
+    if (change.placed) return IkkiuchiRankMoment.placed;
+    if (change.placing) return IkkiuchiRankMoment.placing;
+    final from = Rating.bands.indexOf(change.from), to = Rating.bands.indexOf(change.to);
+    if (to > from) return IkkiuchiRankMoment.rankUp;
+    if (to < from) return IkkiuchiRankMoment.rankDown;
+    return change.won ? IkkiuchiRankMoment.up : IkkiuchiRankMoment.down;
+  }
+}
+
 /// The pages introducing new card [poemId] right before it first appears:
 /// the card itself, then a look-alike warning if the player [knows] one of
 /// its confusable siblings.
@@ -229,3 +269,10 @@ List<Celebration> ankirenCelebrationsFor(SideTripReport report,
   }
   return list;
 }
+
+/// The pages after a 一騎打ち match, in order: the XP earned and any level
+/// it reached, then for a ranked match its rank change page.
+List<Celebration> ikkiuchiCelebrationsFor(IkkiuchiReport report) => [
+      ...xpCelebrations(report.xp),
+      if (report.rank case final rank?) IkkiuchiRankCelebration(rank),
+    ];

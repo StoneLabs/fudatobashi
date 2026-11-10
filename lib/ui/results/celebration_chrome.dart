@@ -243,3 +243,29 @@ Offset jitterAt(Duration elapsed, Duration step, int seed, double reach) {
   final r = SeededRandom(seed + elapsed.inMicroseconds ~/ step.inMicroseconds);
   return Offset(r.next() * 2 - 1, r.next() * 2 - 1) * reach;
 }
+
+/// [spec]'s eased progress [elapsed] into the page: 0 before it starts, 1
+/// once at rest, as an [EntranceBuilder] would give it.
+double easedAt(Duration elapsed, EntranceSpec spec) {
+  final t = progressIn(elapsed, spec.delay, spec.duration);
+  return t <= 0 ? 0 : (t >= 1 ? 1 : spec.curve.transform(t));
+}
+
+/// A heartbeat at each of [beats]: up to 1 and back over [length].
+double beatAt(Duration elapsed, Iterable<Duration> beats, Duration length) {
+  var pulse = 0.0;
+  for (final b in beats) {
+    final t = progressIn(elapsed, b, length);
+    if (t > 0 && t < 1) pulse = math.max(pulse, math.sin(math.pi * t));
+  }
+  return pulse;
+}
+
+/// A jolt from [start] for [length], as [Jolt] shakes: a fresh random
+/// offset each of [steps], within ±[reach] px dying out; none outside it.
+Offset joltAt(Duration elapsed, Duration start, Duration length, double reach, int steps, int seed) {
+  final t = progressIn(elapsed, start, length);
+  if (t <= 0 || t >= 1) return Offset.zero;
+  final r = SeededRandom(seed + (t * steps).floor());
+  return Offset(r.next() * 2 - 1, r.next() * 2 - 1) * reach * (1 - t);
+}
