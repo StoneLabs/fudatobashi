@@ -3032,33 +3032,29 @@ void main() {
   group('Locked tabs', () {
     TabLock? lock(LockedTab t,
             {LearningMode mode = LearningMode.journey,
-            int rounds = 0,
-            int finished = 0,
+            int runs = 0,
             bool island = false,
             int remembered = 0,
             bool latched = false}) =>
         TabLock.of(t,
             mode: mode,
-            rounds: rounds,
-            finishedRounds: finished,
+            runs: runs,
             islandFinished: island,
             remembered: remembered,
             sideTripsLatched: latched);
 
-    test('History opens after 3 rounds; Stats with the first island, or 1 finished round with no islands', () {
-      expect(lock(LockedTab.history)?.left, 3);
-      expect(lock(LockedTab.history, rounds: 2)?.left, 1);
-      expect(lock(LockedTab.history, rounds: 3), isNull);
-      expect(lock(LockedTab.stats, rounds: 9, finished: 9)?.needs, TabUnlock.firstIsland);
+    test('History opens after 1 run; Stats with the first island, or 1 run with no islands', () {
+      expect(lock(LockedTab.history)?.left, 1);
+      expect(lock(LockedTab.history, runs: 1), isNull);
+      expect(lock(LockedTab.stats, runs: 9)?.needs, TabUnlock.firstIsland);
       expect(lock(LockedTab.stats, island: true), isNull);
-      expect(lock(LockedTab.stats, mode: LearningMode.allKnown, rounds: 2)?.needs, TabUnlock.finishedRounds,
-          reason: 'rounds ended early do not count');
-      expect(lock(LockedTab.stats, mode: LearningMode.allKnown, rounds: 1, finished: 1), isNull);
+      expect(lock(LockedTab.stats, mode: LearningMode.allKnown)?.needs, TabUnlock.rounds);
+      expect(lock(LockedTab.stats, mode: LearningMode.allKnown, runs: 1), isNull);
     });
 
     test('Side Trips opens at 25 cards remembered well, for good once it has, and right away with all known', () {
       const opens = SideTripTuning.tabRemembered;
-      final shut = lock(LockedTab.sideTrips, remembered: opens - 4, rounds: 9, finished: 9, island: true)!;
+      final shut = lock(LockedTab.sideTrips, remembered: opens - 4, runs: 9, island: true)!;
       expect([shut.needs, shut.left], [TabUnlock.rememberedCards, 4]);
       expect(lock(LockedTab.sideTrips, remembered: opens), isNull);
       expect(lock(LockedTab.sideTrips, latched: true), isNull);
@@ -3087,7 +3083,7 @@ void main() {
       await tester.tap(tab('History'));
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 400));
-      expect(find.text(S('en').lockReason('History', const TabLock(TabUnlock.rounds, 3))), findsOneWidget);
+      expect(find.text(S('en').lockReason('History', const TabLock(TabUnlock.rounds, 1))), findsOneWidget);
       expect(tester.widget<MangaTabBar>(find.byType(MangaTabBar)).current, 0, reason: 'a locked tab does not open');
       expect(tester.takeException(), isNull);
       await captureScreen(tester, 'tabs_locked_balloon');
@@ -3106,26 +3102,16 @@ void main() {
 
       await playRound(tester, p);
       await breakFree();
-      expect(tester.widgetList<TabChains>(find.byType(TabChains)).where((c) => c.breaking), hasLength(1),
-          reason: 'Stats opens after one finished round');
+      expect(tester.widgetList<TabChains>(find.byType(TabChains)).where((c) => c.breaking), hasLength(2),
+          reason: 'History and Stats both open after one run');
       await captureScreen(tester, 'tabs_breaking');
-      await tester.pump(TabLockStyle.breakTime);
-      await tester.pump();
-      expect(find.byType(TabChains), findsOneWidget);
-      expect(p.tabsSeenLocked, {LockedTab.history});
-      await tester.tap(tab('Stats'));
-      await tester.pump();
-      expect(tester.widget<MangaTabBar>(find.byType(MangaTabBar)).current, 2);
-      await tester.tap(tab('Home'));
-      await tester.pump();
-
-      await playRound(tester, p);
-      await playRound(tester, p);
-      await breakFree();
       await tester.pump(TabLockStyle.breakTime);
       await tester.pump();
       expect(find.byType(TabChains), findsNothing);
       expect(p.tabsSeenLocked, isEmpty, reason: 'latched: no chains ever again');
+      await tester.tap(tab('Stats'));
+      await tester.pump();
+      expect(tester.widget<MangaTabBar>(find.byType(MangaTabBar)).current, 2);
       await tester.pumpWidget(const SizedBox());
     });
 

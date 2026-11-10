@@ -1078,14 +1078,17 @@ class Progress extends ChangeNotifier {
   @visibleForTesting
   bool tabsAlwaysOpen = false;
 
+  /// Every run recorded, finished or ended early: main game, side-trip game
+  /// and 一騎打ち match.
+  int get recordedRuns => runs.length + sideTrips.runs.length + ikkiuchi.matches.length;
+
   /// What keeps [tab] locked for now, or null once it is open.
   TabLock? tabLock(LockedTab tab) => tabsAlwaysOpen
       ? null
       : TabLock.of(
         tab,
         mode: trainer.config.learningMode,
-        rounds: runs.length + sideTrips.runs.length,
-        finishedRounds: runs.where((r) => r.completed).length,
+        runs: recordedRuns,
         islandFinished: _islandCompletions.isNotEmpty || islands.any((i) => i.complete),
         remembered: _sideTripsRemembered(DateTime.now()),
         sideTripsLatched: _sideTripsTabOpened,

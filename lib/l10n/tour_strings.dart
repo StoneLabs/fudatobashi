@@ -17,9 +17,7 @@ extension TourStrings on S {
 
   /// Tobi's word on the locked tab [tab] (its label): what opens it.
   String lockReason(String tab, TabLock lock) => switch (lock.needs) {
-        TabUnlock.rounds => lock.left == 1 ? f('lockRoundsOne', [tab]) : f('lockRoundsOther', [lock.left, tab]),
-        TabUnlock.finishedRounds =>
-          lock.left == 1 ? f('lockFinishedOne', [tab]) : f('lockFinishedOther', [lock.left, tab]),
+        TabUnlock.rounds => f('lockRoundsOne', [tab]),
         TabUnlock.firstIsland => f('lockFirstIsland', [tab]),
         TabUnlock.rememberedCards =>
           lock.left == 1 ? f('lockRememberedOne', [tab]) : f('lockRememberedOther', [lock.left, tab]),

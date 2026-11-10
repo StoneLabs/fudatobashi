@@ -2,10 +2,12 @@ part of '../config.dart';
 
 /// When the tabs a new player starts without open up (`TabLock`).
 abstract final class TabLockTuning {
-  static const int historyRounds = 3;
+  /// Recorded runs that open History.
+  static const int historyRuns = 1;
 
-  /// All-known mode's stand-in for finishing the first island.
-  static const int statsFinishedRounds = 1;
+  /// Recorded runs that open Stats in all-known mode, its stand-in for
+  /// finishing the first island.
+  static const int statsRuns = 1;
 }
 
 /// The tour's practice round (`PlayScreen.tutorial`).
