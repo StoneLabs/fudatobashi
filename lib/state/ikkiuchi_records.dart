@@ -12,13 +12,61 @@ import '../domain/ikkiuchi_xp.dart';
 import '../domain/rating.dart';
 import '../domain/xp.dart';
 
-/// What recording a 一騎打ち match did: the match as stored, and what it
-/// did to the player's experience.
+/// What recording a 一騎打ち match did: the match as stored, what it did to
+/// the player's experience, and for a ranked match what it did to the
+/// standing in its mode ([rank]; null for a free match).
 class IkkiuchiReport {
-  const IkkiuchiReport({required this.match, required this.xp});
+  const IkkiuchiReport({required this.match, required this.xp, this.rank});
 
   final IkkiuchiMatchRecord match;
   final XpGain xp;
+  final IkkiuchiRankChange? rank;
+}
+
+/// What a ranked match did to the player's standing in its [mode], as the
+/// rank change page after it shows it: the match ([result], by [margin]
+/// cards, against Tobi at [tobi]) and the rating it moved from [before] to
+/// [after]. While it placed the rating these are estimates, and
+/// [placement] holds the placement matches so far, won or lost, oldest
+/// first and this one last, [path] the estimate at the start and after
+/// each of them. Once rated, [curve] holds the ratings after the mode's
+/// last ranked matches, oldest first and this one last, as the mode's page
+/// draws them.
+class IkkiuchiRankChange {
+  const IkkiuchiRankChange({
+    required this.mode,
+    required this.result,
+    required this.margin,
+    required this.tobi,
+    required this.before,
+    required this.after,
+    this.placement = const [],
+    this.path = const [],
+    this.curve = const [],
+  });
+
+  final IkkiuchiMode mode;
+
+  /// How the match ended for the player; a match given up is a loss.
+  final IkkiuchiResult result;
+
+  /// The cards between the sides' cards left at the end.
+  final int margin;
+  final double tobi;
+  final double before, after;
+  final List<bool> placement;
+  final List<double> path;
+  final List<double> curve;
+
+  bool get won => result == IkkiuchiResult.won;
+
+  /// Whether the match placed the rating, and whether it was the last of
+  /// placement, whose estimate is the first rating.
+  bool get placing => placement.isNotEmpty;
+  bool get placed => placement.length == IkkiuchiRating.placementMatches;
+
+  RankBand get from => Rating.bandOf(before);
+  RankBand get to => Rating.bandOf(after);
 }
 
 /// The recorded 一騎打ち matches, oldest first, each with its reads, and
@@ -209,6 +257,25 @@ class IkkiuchiModeRecords {
   List<double> get curve {
     final rated = [for (final m in matches.skip(IkkiuchiRating.placementMatches - 1)) m.rating!];
     return rated.sublist(math.max(0, rated.length - IkkiuchiModeTuning.curveMatches));
+  }
+
+  /// What the last ranked match did to the standing; null before any.
+  IkkiuchiRankChange? get lastChange {
+    final match = matches.lastOrNull;
+    if (match == null) return null;
+    final ratings = [for (final m in matches) m.rating!];
+    final placing = ratings.length <= IkkiuchiRating.placementMatches;
+    return IkkiuchiRankChange(
+      mode: mode,
+      result: match.result,
+      margin: match.margin.abs(),
+      tobi: match.setup.opponentRating,
+      before: ratings.length > 1 ? ratings[ratings.length - 2] : IkkiuchiRating.start,
+      after: ratings.last,
+      placement: placing ? [for (final m in matches) m.result == IkkiuchiResult.won] : const [],
+      path: placing ? [IkkiuchiRating.start, ...ratings] : const [],
+      curve: placing ? const [] : curve,
+    );
   }
 
   /// The next ranked match's setup, each side laid out in [rows], Tobi
