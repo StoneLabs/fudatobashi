@@ -1,6 +1,6 @@
-// 一騎打ち's experience: every card the player took, a win by the cards a
-// side, a clear, a ranked match and the match that ends placement; a match
-// given up keeps only its cards. It is settled as the match is recorded,
+// 一騎打ち's experience: every card the player took, the memory time used by
+// the minute, a win by the cards a side, a clear, a ranked match and the
+// match that ends placement; a match given up keeps only its cards. It is settled as the match is recorded,
 // stored with it, and added to the player's experience.
 import 'dart:io';
 
@@ -36,12 +36,21 @@ void main() {
         const IkkiuchiReadLog(poemId: 99),
       ];
 
+  /// The memory time a match used, unless given: 12½ minutes.
+  const memorised = Duration(minutes: 12, seconds: 30);
+  final memoryXp = (IkkiuchiXpTuning.memoryPerMinute * 12.5).round();
+
   IkkiuchiMatchRecord match(IkkiuchiSetup setup,
-          {required int took, required int lost, required bool won, bool completed = true}) =>
+          {required int took,
+          required int lost,
+          required bool won,
+          bool completed = true,
+          Duration memory = memorised}) =>
       IkkiuchiMatchRecord(
         setup: setup,
         startedAt: at,
         endedAt: at.add(const Duration(minutes: 30)),
+        memorised: memory,
         completed: completed,
         playerLeft: won ? 0 : 3,
         opponentLeft: won ? 3 : 0,
@@ -52,10 +61,12 @@ void main() {
   const free = IkkiuchiSetup.free(opponentRating: 1200, perSide: 12, memorise: Duration(minutes: 5));
   List<(XpSource, int, int)> lines(XpAward award) => [for (final p in award.parts) (p.source, p.count, p.xp)];
 
-  test('a ranked win: every card taken, a tie among them, the win by the cards a side, the clear and ranked', () {
+  test('a ranked win: every card taken, a tie among them, the memory time, the win by the cards a side, the clear '
+      'and ranked', () {
     final award = IkkiuchiXp.of(match(ranked, took: 24, lost: 21, won: true), placed: false);
     expect(lines(award), [
       (XpSource.taken, 24, 24 * IkkiuchiXpTuning.perCard),
+      (XpSource.memory, memorised.inSeconds, memoryXp),
       (XpSource.won, 1, IkkiuchiXpTuning.winPerCard * IkkiuchiMode.rapid.perSide),
       (XpSource.clear, 1, IkkiuchiXpTuning.clear),
       (XpSource.ranked, 1, IkkiuchiXpTuning.ranked),
@@ -63,14 +74,19 @@ void main() {
     expect(
         award.total,
         24 * IkkiuchiXpTuning.perCard +
+            memoryXp +
             IkkiuchiXpTuning.winPerCard * 25 +
             IkkiuchiXpTuning.clear +
             IkkiuchiXpTuning.ranked);
+    expect(
+        [IkkiuchiXpTuning.perCard, IkkiuchiXpTuning.memoryPerMinute, IkkiuchiXpTuning.winPerCard, IkkiuchiXpTuning.ranked],
+        [900, 3000, 200, 500]);
   });
 
-  test('a loss played to its end: its cards, the clear and ranked, no win', () {
+  test('a loss played to its end: its cards, the memory time, the clear and ranked, no win', () {
     expect(lines(IkkiuchiXp.of(match(ranked, took: 20, lost: 25, won: false), placed: false)), [
       (XpSource.taken, 20, 20 * IkkiuchiXpTuning.perCard),
+      (XpSource.memory, memorised.inSeconds, memoryXp),
       (XpSource.clear, 1, IkkiuchiXpTuning.clear),
       (XpSource.ranked, 1, IkkiuchiXpTuning.ranked),
     ]);
@@ -79,15 +95,29 @@ void main() {
   test('a free win: the win by its own cards a side, nothing for ranked', () {
     expect(lines(IkkiuchiXp.of(match(free, took: 10, lost: 2, won: true), placed: false)), [
       (XpSource.taken, 10, 10 * IkkiuchiXpTuning.perCard),
+      (XpSource.memory, memorised.inSeconds, memoryXp),
       (XpSource.won, 1, IkkiuchiXpTuning.winPerCard * 12),
       (XpSource.clear, 1, IkkiuchiXpTuning.clear),
     ]);
   });
 
+  test('the memory time used earns the same for every minute, however short or long', () {
+    int memory(Duration used) => IkkiuchiXp.of(match(free, took: 10, lost: 2, won: true, memory: used), placed: false)
+        .parts
+        .singleWhere((p) => p.source == XpSource.memory)
+        .xp;
+    expect(memory(const Duration(minutes: 1)), IkkiuchiXpTuning.memoryPerMinute);
+    expect(memory(const Duration(seconds: 90)), IkkiuchiXpTuning.memoryPerMinute * 3 ~/ 2, reason: 'cut short by 覚えた');
+    expect(memory(const Duration(minutes: 15, seconds: 7)), (IkkiuchiXpTuning.memoryPerMinute * (15 + 7 / 60)).round());
+    expect(IkkiuchiXp.of(match(free, took: 10, lost: 2, won: true, memory: Duration.zero), placed: false).parts
+        .map((p) => p.source), isNot(contains(XpSource.memory)), reason: 'none used, no line');
+  });
+
   test('a match given up keeps only its cards, even the one that would end placement', () {
     final givenUp = match(ranked, took: 8, lost: 4, won: true, completed: false);
     expect(givenUp.result, IkkiuchiResult.gaveUp);
-    expect(lines(IkkiuchiXp.of(givenUp, placed: true)), [(XpSource.taken, 8, 8 * IkkiuchiXpTuning.perCard)]);
+    expect(lines(IkkiuchiXp.of(givenUp, placed: true)), [(XpSource.taken, 8, 8 * IkkiuchiXpTuning.perCard)],
+        reason: 'not its memory time either');
     expect(IkkiuchiXp.of(match(ranked, took: 0, lost: 4, won: false, completed: false), placed: false).parts, isEmpty,
         reason: 'no card, nothing');
   });

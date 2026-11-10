@@ -23,6 +23,7 @@ import 'package:fudatobashi/domain/ikkiuchi_side.dart';
 import 'package:fudatobashi/domain/ikkiuchi_xp.dart';
 import 'package:fudatobashi/domain/xp.dart';
 import 'package:fudatobashi/l10n/ikkiuchi_strings.dart';
+import 'package:fudatobashi/l10n/results_strings.dart';
 import 'package:fudatobashi/l10n/strings.dart';
 import 'package:fudatobashi/state/progress.dart';
 import 'package:fudatobashi/state/scope.dart';
@@ -101,6 +102,7 @@ List<(String, IkkiuchiMatchRecord)> _fixture() {
           endedAt: m['endedAt'] == null
               ? DateTime.parse(m['startedAt'] as String).add(Duration(minutes: m['minutes'] as int))
               : DateTime.parse(m['endedAt'] as String),
+          memorised: Duration(seconds: m['memorisedSeconds'] as int),
           completed: m['completed'] as bool,
           playerLeft: m['playerLeft'] as int,
           opponentLeft: m['opponentLeft'] as int,
@@ -201,6 +203,13 @@ void main() {
         expect(find.textContaining(s.ikkiuchiTakesTitle, findRichText: true), findsOneWidget);
         await tab(tester, s.ikkiuchiTabRating);
         expect(find.text(rating), findsOneWidget);
+        final memory = r.xp!.award.parts.where((x) => x.source == XpSource.memory).firstOrNull;
+        expect(memory?.count, r.match.completed ? r.match.memorised.inSeconds : null,
+            reason: 'its memory time used, paid in a match played to its end');
+        if (memory != null) {
+          expect(find.text('${s.xpSource(XpSource.memory)} ${s.xpCount(memory)}'), findsOneWidget,
+              reason: 'a line of its own');
+        }
         await tab(tester, s.ikkiuchiTabReads);
         expect(find.text(s.ikkiuchiReadsNote(r.match.reads.length)), findsOneWidget);
         await close(tester, p);

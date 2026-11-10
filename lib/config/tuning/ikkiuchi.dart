@@ -619,12 +619,15 @@ abstract final class IkkiuchiRankedTuning {
 
 /// 一騎打ち's experience (`IkkiuchiXp`): [perCard] for every card the player
 /// took, a tie they won among them. A match played to its end earns
-/// [clear], a win [winPerCard] for every card dealt to a side, and a ranked
-/// match [ranked]; the ranked match that ends placement earns [placement]
-/// once. A match given up earns only its cards.
+/// [memoryPerMinute] for each minute of memory time it used (from the
+/// placing to the first read) and [clear], a win [winPerCard] for every
+/// card dealt to a side, and a ranked match [ranked]; the ranked match that
+/// ends placement earns [placement] once. A match given up earns only its
+/// cards. A ranked match earns some 2,500 XP a minute won, 2,000 lost.
 abstract final class IkkiuchiXpTuning {
-  static const int perCard = 200;
-  static const int winPerCard = 40;
+  static const int perCard = 900;
+  static const int memoryPerMinute = 3000;
+  static const int winPerCard = 200;
   static const int clear = 20;
   static const int ranked = 500;
   static const int placement = 500;
