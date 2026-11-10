@@ -61,7 +61,13 @@ import 'package:fudatobashi/ui/ikkiuchi/ikkiuchi_match_flow.dart';
 import 'package:fudatobashi/ui/ikkiuchi/ikkiuchi_send_flow.dart';
 import 'package:fudatobashi/ui/ikkiuchi/ikkiuchi_match_column.dart';
 import 'package:fudatobashi/ui/ikkiuchi/ikkiuchi_match_layers.dart';
+import 'package:fudatobashi/ui/ikkiuchi/ikkiuchi_match_result.dart';
 import 'package:fudatobashi/ui/ikkiuchi/ikkiuchi_match_screen.dart';
+import 'package:fudatobashi/ui/ikkiuchi/ikkiuchi_results_screen.dart';
+import 'package:fudatobashi/ui/history/ikkiuchi_field_tab.dart';
+import 'package:fudatobashi/ui/history/ikkiuchi_match_page.dart';
+import 'package:fudatobashi/ui/results/celebration_sequence.dart';
+import 'package:fudatobashi/ui/results/xp_overlay.dart';
 import 'package:fudatobashi/ui/manga/manga.dart';
 import 'package:fudatobashi/ui/placing/placing_widgets.dart';
 import 'package:fudatobashi/ui/settings/settings_rows.dart';
@@ -243,12 +249,22 @@ void main() {
   }
 
   /// Runs an ended match on, through the players' thanks and its result,
-  /// until the screen has closed.
+  /// until the screen has closed, letting its storing land.
   Future<void> toClosed(WidgetTester tester) async {
     for (var i = 0; i < 200 && find.byType(IkkiuchiMatchScreen).evaluate().isNotEmpty; i++) {
+      await tester.runAsync(() => Future<void>.delayed(Duration.zero));
       await tester.pump(const Duration(milliseconds: 100));
     }
     expect(find.byType(IkkiuchiMatchScreen), findsNothing);
+  }
+
+  /// Back to 一騎打ち from a match's results.
+  Future<void> backFromResults(WidgetTester tester) async {
+    expect(find.byType(IkkiuchiResultsScreen), findsOneWidget);
+    await tester.tap(find.text(s.ikkiuchiBackToPage.toUpperCase()));
+    await tester.pump();
+    await tester.pump(Motion.route);
+    expect(find.byType(IkkiuchiResultsScreen), findsNothing);
   }
 
   Future<List<IkkiuchiMatchRow>> rows(WidgetTester tester, Progress p) async =>
@@ -478,6 +494,8 @@ void main() {
     await toClosed(tester);
     await tester.pump(Motion.route);
     expect(find.byType(IkkiuchiMatchScreen), findsNothing);
+    expect(find.byType(IkkiuchiResultsScreen), findsNothing, reason: 'and no results: it just closes');
+    expect(find.byType(IkkiuchiPage), findsOneWidget);
     expect(orientations().last, ['DeviceOrientation.portraitUp'], reason: 'portrait again once it closes');
     expect(p.ikkiuchi.matches, isEmpty);
     expect(await rows(tester, p), isEmpty);
@@ -644,6 +662,7 @@ void main() {
     await tester.pump(Motion.route);
     await tester.pump(Motion.route);
     expect(find.byType(IkkiuchiMatchScreen), findsNothing, reason: 'and the screen closes');
+    expect(find.byType(IkkiuchiResultsScreen), findsOneWidget, reason: 'its results in its place');
     expect(p.ikkiuchi.matches, hasLength(1), reason: 'recorded once');
     expect(p.ikkiuchi.counts(), (played: 1, won: 0, lost: 1));
     await tester.pumpWidget(const SizedBox());
@@ -738,8 +757,17 @@ void main() {
     await tester.pumpWidget(const SizedBox());
   });
 
-  testWidgets('a free match played to its end is recorded on a fresh database, then the screen closes',
-      (tester) async {
+  testWidgets(
+      'a match played to its end is recorded; its result, then its results upright with its XP over them, '
+      'then Review game opens its field and back returns to them', (tester) async {
+    final calls = <MethodCall>[];
+    tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(SystemChannels.platform, (call) async {
+      calls.add(call);
+      return null;
+    });
+    addTearDown(() => tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(SystemChannels.platform, null));
+    Object? last(String method) => calls.lastWhere((c) => c.method == method).arguments;
+
     final p = await open(tester);
     await showPage(tester, p);
     const setup = IkkiuchiSetup.free(opponentRating: 3600, perSide: 1, memorise: Duration(minutes: 1));
@@ -751,16 +779,54 @@ void main() {
     final flow = state.flow!, send = flow.scene.send;
     await toFirstRead(tester, flow);
     // Tobi takes every card; one he sends the player is placed on its first spot.
-    for (var i = 0; i < 1200 && find.byType(IkkiuchiMatchScreen).evaluate().isNotEmpty; i++) {
+    for (var i = 0; i < 1200 && flow.stage != IkkiuchiStage.result; i++) {
       if (send.stage == IkkiuchiSendStage.waiting) send.tap(send.rectOf(send.targets().freeSpots.first.$1)!.center);
       await tester.pump(const Duration(milliseconds: 100));
     }
-    expect(find.byType(IkkiuchiMatchScreen), findsNothing, reason: 'thanks, result, then closed');
+    expect(find.byType(IkkiuchiMatchResult), findsOneWidget, reason: 'its result first');
     await saved(tester, state.saving);
     final match = p.ikkiuchi.matches.single;
     expect([match.ranked, match.completed, match.result], [false, true, IkkiuchiResult.lost]);
     final stored = (await rows(tester, p)).single;
     expect([stored.ranked, stored.completed, stored.playerLeft, stored.opponentLeft], [false, true, 1, 0]);
+    expect(last('SystemChrome.setPreferredOrientations'),
+        ['DeviceOrientation.landscapeLeft', 'DeviceOrientation.landscapeRight']);
+
+    await tester.tapAt(tester.getCenter(find.byType(IkkiuchiMatchScreen)));
+    await tester.pump();
+    await tester.pump();
+    expect(find.byType(IkkiuchiResultsScreen), findsOneWidget, reason: 'a tap closes the result: the results follow');
+    expect(find.byType(CelebrationSequence), findsNothing, reason: 'the results show first');
+    expect(find.byType(IkkiuchiMatchScreen, skipOffstage: false), findsOneWidget, reason: 'still going');
+    expect(last('SystemChrome.setPreferredOrientations'), ['DeviceOrientation.portraitUp'],
+        reason: 'upright before the results show');
+    expect(last('SystemChrome.setEnabledSystemUIMode'), '${SystemBarsTuning.app}', reason: 'the system bars back');
+    await tester.pump(Motion.route);
+    await tester.pump(Motion.route);
+    expect(find.byType(IkkiuchiMatchScreen, skipOffstage: false), findsNothing);
+    await tester.pump(ResultsLayout.overlayStagger);
+    expect(find.byType(XpOverlay), findsOneWidget, reason: 'then the XP it earned over them');
+    for (var i = 0; i < 5 && find.byType(CelebrationSequence).evaluate().isNotEmpty; i++) {
+      await tester.tapAt(const Offset(200, 300));
+      await tester.pump();
+      await tester.pump(ResultsLayout.overlayFade);
+      await tester.pump();
+    }
+    expect(find.byType(CelebrationSequence), findsNothing, reason: 'tapped through');
+
+    await tester.tap(find.text(s.ikkiuchiReviewMatch));
+    await tester.pump();
+    await tester.pump(Motion.route);
+    final page = tester.widget<IkkiuchiMatchPage>(find.byType(IkkiuchiMatchPage));
+    expect(page.review.match.id, match.id, reason: 'the match just played');
+    expect(find.byType(IkkiuchiFieldTab), findsOneWidget, reason: 'open on its field');
+    await tester.tap(find.byWidgetPredicate((w) => w is InkIconButton && w.semanticLabel == s.back));
+    await tester.pump();
+    await tester.pump(Motion.route);
+    expect(find.byType(IkkiuchiMatchPage), findsNothing);
+    await backFromResults(tester);
+    expect(find.byType(IkkiuchiPage), findsOneWidget, reason: 'back on the page');
+    expect(tester.takeException(), isNull);
     await tester.pumpWidget(const SizedBox());
   });
 
@@ -883,6 +949,7 @@ void main() {
       await toResult(tester, state.flow!);
       expect(find.text(s.ikkiuchiResult(IkkiuchiResult.gaveUp)), findsOneWidget);
       await toClosed(tester);
+      expect(find.byType(IkkiuchiResultsScreen), findsOneWidget, reason: 'its results follow, a loss');
       expect(p.ikkiuchi.matches, hasLength(1), reason: 'recorded once');
       await tester.pumpWidget(const SizedBox());
     });
@@ -1017,6 +1084,7 @@ void main() {
       await tester.pump();
       await saved(tester, state.saving);
       await toClosed(tester);
+      await backFromResults(tester);
       expect(find.byType(IkkiuchiCustomPage), findsOneWidget, reason: 'back on the page');
 
       final free = p.ikkiuchi.freeSetup;
@@ -1067,6 +1135,11 @@ void main() {
       await tester.pump();
       expect(state.saving, isNull);
       await toClosed(tester);
+      expect(find.byType(IkkiuchiResultsScreen), findsOneWidget, reason: "a guest's match has its results too");
+      expect(find.text(s.ikkiuchiReviewMatch), findsNothing, reason: 'nothing saved to review');
+      await tester.pump(ResultsLayout.overlayStagger * 2);
+      expect(find.byType(CelebrationSequence), findsNothing, reason: 'nothing earned');
+      await backFromResults(tester);
       expect(p.ikkiuchi.matches, isEmpty);
       expect(await rows(tester, p), isEmpty);
 

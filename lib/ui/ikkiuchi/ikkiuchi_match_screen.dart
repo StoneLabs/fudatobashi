@@ -12,6 +12,7 @@ import '../../domain/ikkiuchi_record.dart';
 import '../../domain/ikkiuchi_tobi.dart';
 import '../../l10n/ikkiuchi_strings.dart';
 import '../../l10n/strings.dart';
+import '../../state/ikkiuchi_records.dart';
 import '../../state/progress.dart';
 import '../../state/scope.dart';
 import '../manga/manga.dart';
@@ -19,6 +20,7 @@ import '../sound/sounds.dart';
 import 'ikkiuchi_dealer.dart';
 import 'ikkiuchi_match_board.dart';
 import 'ikkiuchi_match_flow.dart';
+import 'ikkiuchi_results_screen.dart';
 
 /// Plays a 一騎打ち match of [setup], ranked or free, or a [guest]'s that
 /// records nothing ([IkkiuchiMatchScreen]).
@@ -34,9 +36,11 @@ Future<void> startIkkiuchiMatch(BuildContext context, IkkiuchiSetup setup, {bool
 /// A match that ends once play has begun (its first card read), played to
 /// its end or by 終了, is recorded; one ended before records nothing, and a
 /// [guest]'s never records anything. Once its end has been shown (the
-/// players' thanks, then its result) the screen closes. Leaving the
-/// screen before the match ends records free play not at all, and a ranked
-/// match, once play has begun, as given up: a loss. From its first read,
+/// players' thanks, then its result) the screen closes: a match whose
+/// play had begun hands over to its results ([IkkiuchiResultsScreen]),
+/// upright with the system bars back, and one ended before just closes.
+/// Leaving the screen before the match ends records free play not at all,
+/// and a ranked match, once play has begun, as given up: a loss. From its first read,
 /// and again after every read and every 送り札, a ranked match is
 /// journalled as it stands, so that one the app never gets to record is a
 /// forfeit on the next start with its reads and cards left
@@ -77,6 +81,14 @@ class IkkiuchiMatchScreenState extends State<IkkiuchiMatchScreen> with SingleTic
   int? _journalled;
   bool _over = false;
 
+  /// The match as it ended, for one whose play had begun; null until it
+  /// ends, and for one ended before.
+  IkkiuchiMatchRecord? _ended;
+
+  /// Whether the screen is closing ([_close]), and whether it handed over
+  /// to the results, which then hold the music.
+  bool _closing = false, _toResults = false;
+
   IkkiuchiMatchFlow? _flow;
 
   /// The match as it is played now (for tests).
@@ -84,7 +96,7 @@ class IkkiuchiMatchScreenState extends State<IkkiuchiMatchScreen> with SingleTic
 
   /// The storing of the match, once it is recorded (for tests).
   Future<void>? get saving => _saving;
-  Future<void>? _saving;
+  Future<IkkiuchiReport>? _saving;
 
   @override
   void initState() {
@@ -103,13 +115,12 @@ class IkkiuchiMatchScreenState extends State<IkkiuchiMatchScreen> with SingleTic
       flow.removeListener(_changed);
       if (!_over) {
         flow.end();
-        if (widget.setup.ranked && flow.playBegun && !widget.guest) _record(flow);
+        if (widget.setup.ranked && flow.playBegun && !widget.guest) _record(_matchSoFar(flow, completed: false));
       }
       flow.dispose();
     }
-    unawaited(SystemChrome.setPreferredOrientations(OrientationTuning.app));
-    unawaited(SystemChrome.setEnabledSystemUIMode(SystemBarsTuning.app));
-    music.enterMenu();
+    _restoreScreen();
+    if (!_toResults) music.enterMenu();
     _ticker.dispose();
     _dealer.dispose();
     super.dispose();
@@ -153,21 +164,44 @@ class IkkiuchiMatchScreenState extends State<IkkiuchiMatchScreen> with SingleTic
     }
     if (flow.stage == IkkiuchiStage.gameEnd && !_over) {
       _over = true;
-      if (flow.playBegun && !widget.guest) _record(flow);
+      if (flow.playBegun) {
+        final match = _ended = _matchSoFar(flow, completed: !flow.endedByPlayer);
+        if (!widget.guest) _record(match);
+      }
     }
-    if (flow.stage == IkkiuchiStage.done) _close();
+    if (flow.stage == IkkiuchiStage.done && !_closing) unawaited(_close());
     if (mounted) setState(() {});
   }
 
-  /// The match's end has been shown: the screen closes, back to the page.
-  void _close() {
-    if (mounted) unawaited(Navigator.maybePop(context));
+  /// The match's end has been shown: a match whose play had begun hands
+  /// over to its results once it is stored, the screen upright again with
+  /// the system bars back; one ended before just closes, back to the page.
+  Future<void> _close() async {
+    _closing = true;
+    final ended = _ended;
+    if (ended == null) {
+      if (mounted) unawaited(Navigator.maybePop(context));
+      return;
+    }
+    final report = await _saving;
+    // Left meanwhile: its route is on its way out, and replacing "the
+    // current route" would replace the one under it.
+    if (!mounted || ModalRoute.isCurrentOf(context) == false) return;
+    _toResults = true;
+    _restoreScreen();
+    unawaited(Navigator.of(context).pushReplacement(
+        MangaRoute<void>(builder: (_) => IkkiuchiResultsScreen(match: report?.match ?? ended, report: report))));
   }
 
-  /// Stores the match as it stands: played to its end unless the player
-  /// ended or left it, each side's cards as the rules count them.
-  void _record(IkkiuchiMatchFlow flow) =>
-      _saving = _progress.recordIkkiuchi(_matchSoFar(flow, completed: !flow.endedByPlayer));
+  /// The app's own orientation and system bars, for the screen after.
+  static void _restoreScreen() {
+    unawaited(SystemChrome.setPreferredOrientations(OrientationTuning.app));
+    unawaited(SystemChrome.setEnabledSystemUIMode(SystemBarsTuning.app));
+  }
+
+  /// Stores [match], over: played to its end unless the player ended or
+  /// left it, each side's cards as the rules count them.
+  void _record(IkkiuchiMatchRecord match) => _saving = _progress.recordIkkiuchi(match);
 
   /// The match as it stands, [completed] or not.
   IkkiuchiMatchRecord _matchSoFar(IkkiuchiMatchFlow flow, {required bool completed}) {
