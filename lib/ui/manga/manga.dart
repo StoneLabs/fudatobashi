@@ -10,6 +10,7 @@ export 'coming_soon_slot.dart';
 export 'confetti.dart';
 export 'entrance.dart';
 export 'fireworks.dart';
+export 'give_way.dart';
 export 'hazard.dart';
 export 'header.dart';
 export 'hold_confirm.dart';
