@@ -305,12 +305,15 @@ class IkkiuchiBoardScene extends ChangeNotifier {
 
   /// The sides are now [next]: the board is laid out for them afresh, with
   /// no room kept for the stack once [forPlay], and set out anew, every
-  /// card gliding from where it lies now, or from [from] for one off the
-  /// board, to its new home and size; the cards of [held], and those Tobi
-  /// has still to lay down as the match opens, are kept off it. Unless a
-  /// 送り札 goes on, [onSettled] is told once they are all home.
+  /// card gliding over [glide] from where it lies now, or from [from] for
+  /// one off the board, to its new home and size; the cards of [held], and
+  /// those Tobi has still to lay down as the match opens, are kept off it.
+  /// Unless a 送り札 goes on, [onSettled] is told once they are all home.
   void relayout(IkkiuchiSides next,
-      {Map<int, CardBox> from = const {}, Set<int> held = const {}, bool forPlay = false}) {
+      {Map<int, CardBox> from = const {},
+      Set<int> held = const {},
+      bool forPlay = false,
+      Duration glide = IkkiuchiPlayTuning.relayoutGlide}) {
     final lying = {
       for (final c in board.cards.cards)
         if (c.onBoard && !c.held) c.id: c.box,
@@ -319,7 +322,8 @@ class IkkiuchiBoardScene extends ChangeNotifier {
     final old = board;
     _from = (band: band, field: field, column: column, tobi: tobi, wait: wait);
     sides = next;
-    _layout = _layout.withSides(tobiRows: next.tobi, playerRows: next.player, opening: forPlay ? false : null);
+    _layout = _layout.withSides(
+        tobiRows: next.tobi, playerRows: next.player, turned: next.turned, opening: forPlay ? false : null);
     board = _layout.board(startStep: old.steps)
       ..heldFace = old.heldFace
       ..restFace = old.restFace
@@ -328,7 +332,7 @@ class IkkiuchiBoardScene extends ChangeNotifier {
       {
         for (final c in _layout.cards) c.id: ?lying[c.id],
       },
-      ms: _ms(IkkiuchiPlayTuning.relayoutGlide),
+      ms: _ms(glide),
       ease: IkkiuchiPlayTuning.relayoutCurve.transform,
     );
     for (final id in {...held, ...opening.tobiWaiting}) {

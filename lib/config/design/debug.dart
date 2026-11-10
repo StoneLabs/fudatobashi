@@ -213,6 +213,7 @@ abstract final class IkkiuchiToolsStyle {
   static const String sendingCard = 'Sending Card';
   static const String tobiPlacingCard = 'Tobi Placing Card';
   static const String receivingCard = 'Receiving Card';
+  static const String finalSend = 'Final Send';
   static const String waitingForGo = 'Waiting for 次';
   static const String waitBeforeShimonoku = '1s wait';
   static const String shimonoku = '下の句';

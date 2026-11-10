@@ -13,13 +13,17 @@
 // fresh database; ended once play has begun; never when ended or left
 // before, nor free play left midway, nor a guest's; a ranked match left
 // after its first read is a loss, journalled from that read and again
-// after every read.
+// after every read. A read that decides the match with a 送り札 due sends
+// it on its own, nobody placing it, to the middle of the other's 上段,
+// turned; it is stored as any 送り札, and History's 盤面 shows it there.
 //
 // With RENDER_SCREENS=1 it also renders the page in its states (as mock
-// D's frames), the curve's popup, the bots' page, the custom page and the
-// settings, with real fonts and art, to build/screens/ikkiuchi_page/.
+// D's frames), the curve's popup, the bots' page, the custom page, the
+// settings, and that last 送り札 in flight, landed and on History's 盤面,
+// with real fonts and art, to build/screens/ikkiuchi_page/.
 import 'dart:async';
 import 'dart:io';
+import 'dart:math' as math;
 
 import 'package:drift/drift.dart' hide isNull, isNotNull;
 import 'package:drift/native.dart';
@@ -54,7 +58,10 @@ import 'package:fudatobashi/ui/side_trips/side_trip_entry.dart';
 import 'package:fudatobashi/state/ikkiuchi_journal.dart';
 import 'package:fudatobashi/state/progress.dart';
 import 'package:fudatobashi/state/scope.dart';
+import 'package:fudatobashi/domain/field_parts.dart';
+import 'package:fudatobashi/domain/ikkiuchi_geometry.dart';
 import 'package:fudatobashi/domain/ikkiuchi_layout.dart';
+import 'package:fudatobashi/domain/ikkiuchi_review.dart';
 import 'package:fudatobashi/domain/ikkiuchi_send.dart';
 import 'package:fudatobashi/domain/ikkiuchi_side.dart';
 import 'package:fudatobashi/domain/placing.dart';
@@ -67,6 +74,7 @@ import 'package:fudatobashi/ui/ikkiuchi/ikkiuchi_match_screen.dart';
 import 'package:fudatobashi/ui/ikkiuchi/ikkiuchi_results_screen.dart';
 import 'package:fudatobashi/ui/history/ikkiuchi_field_tab.dart';
 import 'package:fudatobashi/ui/history/ikkiuchi_match_page.dart';
+import 'package:fudatobashi/ui/history/review_field.dart';
 import 'package:fudatobashi/ui/ikkiuchi/ikkiuchi_rank_overlay.dart';
 import 'package:fudatobashi/ui/ikkiuchi/ikkiuchi_rank_plot.dart';
 import 'package:fudatobashi/ui/results/celebration_chrome.dart';
@@ -1037,6 +1045,285 @@ void main() {
         await tester.pumpWidget(const SizedBox());
       });
     }
+  });
+
+  group('the last 送り札', () {
+    const ja = S('ja');
+
+    /// Runs the match on by [time], frame by frame.
+    Future<void> play(WidgetTester tester, Duration time) async {
+      const frame = Duration(milliseconds: 16);
+      for (var t = Duration.zero; t < time; t += frame) {
+        await tester.pump(frame);
+      }
+    }
+
+    /// Runs the match on, frame by frame, until [done].
+    Future<void> playUntil(WidgetTester tester, bool Function() done, {String? reason}) async {
+      for (var i = 0; i < 3000 && !done(); i++) {
+        await tester.pump(const Duration(milliseconds: 16));
+      }
+      expect(done(), isTrue, reason: reason);
+    }
+
+    /// The match as it shows now, rendered as [name], its tatami drawn.
+    Future<void> capture(WidgetTester tester, String name, String lang) async {
+      if (!renderScreens) return;
+      await tester.runAsync(() async {
+        final context = tester.element(find.byType(IkkiuchiMatchScreen));
+        await precacheImage(const AssetImage(IkkiuchiBoardStyle.tatami), context);
+      });
+      await tester.pump();
+      await tester.pump();
+      await captureScreen(tester, 'ikkiuchi_page/$name', lang: lang);
+    }
+
+    const setup = IkkiuchiSetup.free(opponentRating: 1600, perSide: 5, rows: 3, memorise: Duration(minutes: 15));
+
+    /// A free match of [setup] dealt from [seed] on the user's phone turned,
+    /// both sides laid out, in its memory time, Tobi reaching for no card.
+    Future<IkkiuchiMatchFlow> laidOut(WidgetTester tester, Progress p, int seed) async {
+      await showPage(tester, p, phone: usersPhoneLandscape);
+      unawaited(Navigator.of(tester.element(find.byType(IkkiuchiPage)))
+          .push(MangaRoute<void>(builder: (_) => IkkiuchiMatchScreen(setup: setup, seed: seed))));
+      await tester.pump();
+      await tester.pump(Motion.route);
+      final flow = screen(tester).flow!;
+      flow.scene.opening
+        ..placeRest()
+        ..finishTobi();
+      flow.donePlacing();
+      flow.rating = null;
+      await play(tester, IkkiuchiPlayTuning.relayoutGlide * 2);
+      expect(flow.stage, IkkiuchiStage.memoryTime);
+      return flow;
+    }
+
+    /// [from] sends the other cards by hand until it has one left, each put
+    /// down as the 送り札 has it: the player's dragged over Tobi's side, his
+    /// tapped onto a free spot of theirs.
+    Future<void> downToOne(WidgetTester tester, IkkiuchiMatchFlow flow, IkkiuchiSide from) async {
+      final scene = flow.scene, send = scene.send;
+      int left() => from == IkkiuchiSide.player ? scene.sides!.playerCards.length : scene.sides!.tobiCards.length;
+      while (left() > 1) {
+        flow.sendByHand(from);
+        if (from == IkkiuchiSide.player) {
+          final card = scene.sides!.playerCards.first;
+          final at = scene.board.cards.card(card).box.centre;
+          send.dragStart(card, fromStack: false, at: Offset(at.x, at.y));
+          send.dragTo(Offset(at.x, scene.band.top - scene.layout.cardW));
+          send.dragEnd();
+        } else {
+          await playUntil(tester, () => send.stage == IkkiuchiSendStage.waiting);
+          send.tap(send.rectOf(send.targets().freeSpots.first.$1)!.center);
+        }
+        await playUntil(tester, () => flow.stage == IkkiuchiStage.memoryTime);
+      }
+    }
+
+    /// On to the next read's deciding sound, and a moment past it.
+    Future<void> toRead(WidgetTester tester, IkkiuchiMatchFlow flow) async {
+      await playUntil(tester, () => flow.stage == IkkiuchiStage.kaminoku);
+      await play(tester, Duration(milliseconds: flow.scene.reader.call!.decidedAt.round() + 200));
+    }
+
+    /// The player's finger down on [card] and up.
+    void touch(IkkiuchiMatchFlow flow, int card) {
+      final at = flow.scene.board.cards.card(card).box.centre;
+      flow.scene
+        ..pointer(PointerDownEvent(pointer: 7, position: Offset(at.x, at.y)))
+        ..pointer(PointerUpEvent(pointer: 7, position: Offset(at.x, at.y)));
+    }
+
+    /// Every stage [flow] goes through from now on.
+    List<IkkiuchiStage> stagesOf(IkkiuchiMatchFlow flow) {
+      final seen = [flow.stage];
+      flow.addListener(() {
+        if (seen.last != flow.stage) seen.add(flow.stage);
+      });
+      return seen;
+    }
+
+    /// [card] lies in the middle of the room the [others] in its row leave
+    /// it between [left] and [right]: clear of them, as far from each side.
+    void expectMidRow(Rect card, Iterable<Rect> others, {required double left, required double right}) {
+      final row = [
+        for (final o in others)
+          if ((o.center.dy - card.center.dy).abs() < 1) o,
+      ];
+      final from = [left, for (final o in row) if (o.center.dx < card.center.dx) o.right].reduce(math.max);
+      final to = [right, for (final o in row) if (o.center.dx > card.center.dx) o.left].reduce(math.min);
+      final (l, r) = (card.left - from, to - card.right);
+      expect(l, greaterThan(0), reason: "clear of the row's cards");
+      expect(r, greaterThan(0));
+      expect((l - r).abs(), lessThan(0.2 * card.width), reason: 'in the middle of the room between them');
+    }
+
+    /// The card that went across on its own lies at its place: in the middle
+    /// of [to]'s 上段, its edge on the gap between the sides, centred between
+    /// the row's other cards, and turned 180° from [to]'s own cards.
+    void expectLanded(IkkiuchiMatchFlow flow, int card, IkkiuchiSide to) {
+      final scene = flow.scene, sides = scene.sides!;
+      final top = to == IkkiuchiSide.player ? sides.player.last : sides.tobi.last;
+      expect(top.middle, [card], reason: 'in the middle of the 上段');
+      expect(sides.turned, {card});
+      final box = scene.board.cards.card(card).box, band = scene.layout.band;
+      if (to == IkkiuchiSide.player) {
+        expect(box.centre.y - box.hh, closeTo(band.bottom, 0.5), reason: 'the row by the centre line');
+      } else {
+        expect(box.centre.y + box.hh, closeTo(band.top, 0.5), reason: 'the row by the centre line');
+      }
+      Rect rect(CardBox b) => Rect.fromCenter(center: Offset(b.centre.x, b.centre.y), width: 2 * b.hw, height: 2 * b.hh);
+      expectMidRow(rect(box), [for (final c in scene.board.cards.cards) if (c.id != card) rect(c.box)],
+          left: scene.field.left, right: scene.field.right);
+      final own = to == IkkiuchiSide.player ? 0.0 : math.pi;
+      expect(math.cos(box.angle - own), closeTo(-1, 1e-6), reason: 'turned from their own, as slid over');
+    }
+
+    /// History's 盤面 of the match, opened as History opens it and stepped
+    /// to its last read: [card] on the side it left, and dashed where it
+    /// went, in the middle of [to]'s row by the band; rendered as [name].
+    Future<void> expectReplayed(WidgetTester tester, Progress p, int card, IkkiuchiSide to, String name) async {
+      useScreen(tester, const Screen('384 tall', Size(384, 1300), 2.8125));
+      tester.platformDispatcher.accessibilityFeaturesTestValue = const FakeAccessibilityFeatures(disableAnimations: true);
+      addTearDown(tester.platformDispatcher.clearAccessibilityFeaturesTestValue);
+      final match = p.ikkiuchi.matches.single;
+      await tester.pumpWidget(RepaintBoundary(
+        key: screenKey,
+        child: ProgressScope(
+          progress: p,
+          child: MaterialApp(
+            debugShowCheckedModeBanner: false,
+            theme: buildMangaTheme(),
+            home: IkkiuchiMatchPage.of(p, match, initialTab: IkkiuchiMatchPage.fieldTab),
+          ),
+        ),
+      ));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text(ja.ikkiuchiStartReview.toUpperCase()));
+      await tester.pumpAndSettle();
+      final reads = match.reads.length;
+      for (var i = 1; i < reads; i++) {
+        await tester.tap(find.bySemanticsLabel(ja.ikkiuchiStepNext));
+        await tester.pump();
+      }
+      await tester.pumpAndSettle();
+      expect(find.text(ja.ikkiuchiStepRead(reads, reads).toUpperCase()), findsOneWidget, reason: 'the last read');
+      List<Rect> rects(Finder f) => [for (final e in f.evaluate()) tester.getRect(find.byWidget(e.widget))];
+      final words = rects(find.byWidgetPredicate((w) => w is FieldWord && w.poemId == card));
+      final lying = rects(find.byWidgetPredicate((w) => w is FieldWordCard && w.poemId == card));
+      expect([lying.length, words.length], [1, 2], reason: 'where it lay, and dashed where it went');
+      final at = words.firstWhere((r) => !lying.single.contains(r.center));
+      final band = tester.getRect(find.byType(FieldBand));
+      final cards = rects(find.byType(FieldWordCard));
+      final cardH = cards.first.height;
+      if (to == IkkiuchiSide.opponent) {
+        expect(at.center.dy, inExclusiveRange(band.top - cardH, band.top), reason: "Tobi's row by the band");
+      } else {
+        expect(at.center.dy, inExclusiveRange(band.bottom, band.bottom + cardH), reason: "the player's row by the band");
+      }
+      const pad = IkkiuchiHistoryStyle.fieldPadding;
+      expectMidRow(at, cards, left: band.left + pad, right: band.right - pad);
+      await captureScreen(tester, 'ikkiuchi_page/$name', lang: 'ja');
+    }
+
+    /// The match recorded, its last read with [card] sent after it to the
+    /// middle of [to]'s 上段, as any 送り札 is stored.
+    Future<void> expectStored(WidgetTester tester, Progress p, int card, IkkiuchiSide to) async {
+      await saved(tester, screen(tester).saving);
+      final match = p.ikkiuchi.matches.single;
+      final last = match.reads.last;
+      final spot = IkkiuchiSpot(to, FieldRow.values[setup.rows - 1], RowPart.middle, 0);
+      expect([for (final s in last.sends) (s.card, s.row, s.part, s.index)], [(card, spot.row, spot.part, spot.index)]);
+      expect(IkkiuchiReview(match, p.ikkiuchi.matches).sentAfter(last), [(card: card, to: spot)]);
+    }
+
+    testWidgets("a take that empties the player's side: their last card goes to Tobi's 上段 on its own",
+        (tester) async {
+      final p = await open(tester, lang: 'ja');
+      // The deal whose first read of a card is one of Tobi's, the player's
+      // last card left on their side.
+      final flow = await laidOut(tester, p, 3);
+      final scene = flow.scene;
+      await downToOne(tester, flow, IkkiuchiSide.player);
+      final last = scene.sides!.playerCards.single;
+      expect([flow.tally.player, flow.tally.opponent], [1, 9]);
+      flow.endMemoryTime();
+      await toRead(tester, flow);
+      for (var i = 0; i < 10 && scene.board.called == null; i++) {
+        await playUntil(tester, () => flow.stage == IkkiuchiStage.breakAfterShimonoku, reason: 'a からふだ goes by');
+        await toRead(tester, flow);
+      }
+      final read = scene.board.called!;
+      expect(scene.board.cards.card(read).side, IkkiuchiSide.opponent, reason: "seed 3 reads one of Tobi's first");
+      final seen = stagesOf(flow);
+      touch(flow, read);
+      await playUntil(tester, () => flow.stage == IkkiuchiStage.finalSend);
+      expect(flow.tally.decided, isTrue);
+      expect(flow.reads.last.sends.single.card, last, reason: 'noted on the read as it goes');
+      await play(tester, IkkiuchiMatchTuning.finalSendGlide * 0.5);
+      expect([scene.send.active, scene.board.carrying], [false, false], reason: "nobody places it, Tobi's arm still");
+      expect(flow.stage, IkkiuchiStage.finalSend);
+      await capture(tester, 'final_send_to_tobi_1_flying', 'ja');
+      await play(tester, IkkiuchiMatchTuning.finalSendGlide * 0.5 + const Duration(milliseconds: 100));
+      expect(flow.stage, IkkiuchiStage.finalSend, reason: 'it lies there a moment');
+      expectLanded(flow, last, IkkiuchiSide.opponent);
+      await capture(tester, 'final_send_to_tobi_2_landed', 'ja');
+      await playUntil(tester, () => flow.stage != IkkiuchiStage.finalSend);
+      expect(flow.stage, IkkiuchiStage.gameEnd);
+      expect(seen, [
+        IkkiuchiStage.waitingForHit,
+        IkkiuchiStage.feedback,
+        IkkiuchiStage.closingUp,
+        IkkiuchiStage.finalSend,
+        IkkiuchiStage.gameEnd,
+      ]);
+      await playUntil(tester, () => flow.stage == IkkiuchiStage.result);
+      expect(flow.result, IkkiuchiResult.won);
+      await expectStored(tester, p, last, IkkiuchiSide.opponent);
+      await expectReplayed(tester, p, last, IkkiuchiSide.opponent, 'final_send_to_tobi_3_history');
+      expect(tester.takeException(), isNull);
+      await tester.pumpWidget(const SizedBox());
+    });
+
+    testWidgets("a fault that empties Tobi's side: his last card goes to the player's 上段 on its own",
+        (tester) async {
+      final p = await open(tester, lang: 'ja');
+      final flow = await laidOut(tester, p, 3);
+      final scene = flow.scene;
+      await downToOne(tester, flow, IkkiuchiSide.opponent);
+      final last = scene.sides!.tobiCards.single;
+      expect([flow.tally.player, flow.tally.opponent], [9, 1]);
+      flow
+        ..askKarafuda()
+        ..endMemoryTime();
+      await toRead(tester, flow);
+      expect(scene.board.called, isNull, reason: 'a からふだ');
+      final seen = stagesOf(flow);
+      touch(flow, scene.sides!.playerCards.first);
+      await playUntil(tester, () => flow.stage == IkkiuchiStage.finalSend);
+      await play(tester, IkkiuchiMatchTuning.finalSendGlide * 0.5);
+      expect([scene.send.active, scene.board.carrying], [false, false], reason: "nobody places it, Tobi's arm still");
+      await capture(tester, 'final_send_to_player_1_flying', 'ja');
+      await play(tester, IkkiuchiMatchTuning.finalSendGlide * 0.5 + const Duration(milliseconds: 100));
+      expect(flow.stage, IkkiuchiStage.finalSend, reason: 'it lies there a moment');
+      expectLanded(flow, last, IkkiuchiSide.player);
+      await capture(tester, 'final_send_to_player_2_landed', 'ja');
+      await playUntil(tester, () => flow.stage != IkkiuchiStage.finalSend);
+      expect(flow.stage, IkkiuchiStage.gameEnd);
+      expect(seen, [
+        IkkiuchiStage.waitingForHit,
+        IkkiuchiStage.feedback,
+        IkkiuchiStage.finalSend,
+        IkkiuchiStage.gameEnd,
+      ]);
+      await playUntil(tester, () => flow.stage == IkkiuchiStage.result);
+      expect(flow.result, IkkiuchiResult.lost);
+      await expectStored(tester, p, last, IkkiuchiSide.player);
+      await expectReplayed(tester, p, last, IkkiuchiSide.player, 'final_send_to_player_3_history');
+      expect(tester.takeException(), isNull);
+      await tester.pumpWidget(const SizedBox());
+    });
   });
 
   group('leaving', () {

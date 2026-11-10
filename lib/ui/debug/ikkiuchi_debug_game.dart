@@ -209,6 +209,7 @@ class IkkiuchiDebugTools extends StatelessWidget {
         IkkiuchiStage.sendingCard => IkkiuchiToolsStyle.sendingCard,
         IkkiuchiStage.tobiPlacingCard => IkkiuchiToolsStyle.tobiPlacingCard,
         IkkiuchiStage.receivingCard => IkkiuchiToolsStyle.receivingCard,
+        IkkiuchiStage.finalSend => IkkiuchiToolsStyle.finalSend,
         IkkiuchiStage.waitingForGo => IkkiuchiToolsStyle.waitingForGo,
         IkkiuchiStage.waitBeforeShimonoku => IkkiuchiToolsStyle.waitBeforeShimonoku,
         IkkiuchiStage.shimonoku => IkkiuchiToolsStyle.shimonoku,
