@@ -148,7 +148,7 @@ class IkkiuchiLayout {
   /// side's most cards shared evenly between them.
   static int rowRoom(int rows) => rows == IkkiuchiLayoutTuning.rows
       ? (IkkiuchiLayoutTuning.rowSlots - IkkiuchiLayoutTuning.groupGap).floor()
-      : ((rows == 2 ? IkkiuchiLayoutTuning.twoRowsUpTo : IkkiuchiLayoutTuning.oneRowUpTo) / rows).ceil();
+      : ((rows == 2 ? IkkiuchiLayoutTuning.twoRowsUpTo : IkkiuchiLayoutTuning.oneRowRoom) / rows).ceil();
 
   /// The card pitches a row of a side of [rows] rows spans at most:
   /// [IkkiuchiLayoutTuning.rowSlots] in 3 rows; in fewer its [rowRoom] and

@@ -762,8 +762,8 @@ void main() {
     test("Tobi's card sent to a full side goes on past a row's room, never waiting with nowhere to go", () {
       for (final landscape in [false, true]) {
         final why = landscape ? 'landscape' : 'portrait';
-        // A 1-row match: the player's 8 fill their row.
-        final sides = dealt(4, perSide: IkkiuchiLayoutTuning.oneRowUpTo, rows: 1);
+        // A 2-row match: the player's 16 fill their rows.
+        final sides = dealt(4, perSide: IkkiuchiLayoutTuning.twoRowsUpTo, rows: 2);
         expect(sides.playerBoard.freeSpots, isEmpty, reason: '$why: full');
         final scene = sceneOf(sides, landscape: landscape);
         final flow = scene.send;
@@ -774,9 +774,8 @@ void main() {
         runFor(scene, Duration(milliseconds: scene.board.carry!.end.ceil() + 50));
         expect(flow.active, isFalse, reason: '$why: it does not wait');
         expect(sent, [card]);
-        final row = scene.sides!.player.single;
-        expect(row.left.last, card, reason: '$why: at the inner end of the left group');
-        expect(row.length, IkkiuchiLayout.rowRoom(1) + 1, reason: '$why: past the row\'s room');
+        final row = scene.sides!.player.firstWhere((r) => r.left.last == card);
+                expect(row.length, IkkiuchiLayout.rowRoom(2) + 1, reason: '$why: past the row\'s room');
         expect(scene.sides!.tobiCards, isNot(contains(card)));
         runFor(scene, IkkiuchiPlayTuning.relayoutGlide * 2);
         expectHome(scene, '$why: laid out for it');

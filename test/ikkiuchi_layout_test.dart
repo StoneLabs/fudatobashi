@@ -27,7 +27,7 @@ void main() {
     }
 
     final setups = [
-      for (final perSide in [8, 12, 16, 20, 25])
+      for (final perSide in [4, 8, 12, 16, 20, 25])
         for (var rows = 1; rows <= IkkiuchiLayoutTuning.rows; rows++)
           if (IkkiuchiLayout.rowsAllowed(perSide, rows)) (perSide: perSide, rows: rows),
     ];
@@ -50,7 +50,7 @@ void main() {
     });
 
     test('in 1 or 2 rows a row has room for the most cards one of its rows needs, and no more', () {
-      for (final (rows, most) in [(1, IkkiuchiLayoutTuning.oneRowUpTo), (2, IkkiuchiLayoutTuning.twoRowsUpTo)]) {
+      for (final (rows, most) in [(1, IkkiuchiLayoutTuning.oneRowRoom), (2, IkkiuchiLayoutTuning.twoRowsUpTo)]) {
         final room = IkkiuchiLayout.rowRoom(rows);
         expect(rows * room, greaterThanOrEqualTo(most), reason: '$rows rows hold their most cards');
         expect(rows * (room - 1), lessThan(most), reason: 'a row of $rows rows has no spare room');
@@ -147,7 +147,7 @@ void main() {
 
     test('keeps any side that fits within its rows, a full row taking no more, and every card it can in its home row '
         'and group', () {
-      for (final (perSide, rows) in [(25, 3), (16, 2), (8, 1)]) {
+      for (final (perSide, rows) in [(25, 3), (16, 2), (IkkiuchiLayoutTuning.oneRowUpTo, 1)]) {
         final room = IkkiuchiLayout.rowRoom(rows);
         for (final rating in ratings) {
           for (var seed = 0; seed < 40; seed++) {

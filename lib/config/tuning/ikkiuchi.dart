@@ -124,11 +124,15 @@ abstract final class IkkiuchiLayoutTuning {
   /// bigger cards in the same field (`IkkiuchiBoardLayout`), and a row of
   /// bigger cards has room across for fewer of them. So a side holds at
   /// most 25 cards times its rows over 3, rounded down: [twoRowsUpTo] in 2
-  /// rows, [oneRowUpTo] in 1. A row of a 1- or 2-row side has room for the
+  /// rows, [oneRowRoom] in 1. A row of a 1- or 2-row side has room for the
   /// most cards one of its rows needs (`IkkiuchiLayout.rowRoom`): 8 in both.
+  /// A 1-row side is picked only up to [oneRowUpTo] cards, so the field's
+  /// 8 cards fit in one row whichever side they end up on after 送り札,
+  /// and a row can never overflow.
   static const int rows = 3;
   static const int twoRowsUpTo = 16;
-  static const int oneRowUpTo = 8;
+  static const int oneRowRoom = 8;
+  static const int oneRowUpTo = 4;
 
   /// A row is at most [rowSlots] card pitches (card and gap) across, its
   /// left and right groups at least [groupGap] apart.
@@ -543,7 +547,7 @@ abstract final class IkkiuchiFreeTuning {
   static const int perSideStep = 1;
   static const int perSide = 25;
   static const int rows = 3;
-  static const List<int> perSideKeys = [8, 12, 16, 20, 25];
+  static const List<int> perSideKeys = [4, 8, 12, 16, 20, 25];
   static const Duration memoriseMin = Duration(minutes: 1);
   static const Duration memoriseMax = Duration(minutes: 15);
   static const Duration memoriseStep = Duration(minutes: 1);
@@ -569,7 +573,7 @@ typedef IkkiuchiModeSpec = ({int perSide, Duration memorise, int rows, int fewes
 /// ratings after a mode's last [curveMatches] ranked matches.
 abstract final class IkkiuchiModeTuning {
   static const IkkiuchiModeSpec bullet =
-      (perSide: 8, memorise: Duration(minutes: 3, seconds: 30), rows: 1, fewestRows: 1, drawSeedOffset: 1000000);
+      (perSide: 8, memorise: Duration(minutes: 3, seconds: 30), rows: 2, fewestRows: 2, drawSeedOffset: 1000000);
   static const IkkiuchiModeSpec blitz =
       (perSide: 13, memorise: Duration(minutes: 8), rows: 2, fewestRows: 2, drawSeedOffset: 2000000);
   static const IkkiuchiModeSpec rapid =
@@ -725,7 +729,7 @@ abstract final class IkkiuchiToolsTuning {
   static const double rankedBand = 300;
   static const double formBand = 100;
   static const double heldShown = 0.001;
-  static const List<int> perSideChoices = [8, 12, 16, 20, 25];
+  static const List<int> perSideChoices = [4, 8, 12, 16, 20, 25];
   static const int perSideStart = 25;
 
   /// The curves page's "any in a game" lines are for games with this many

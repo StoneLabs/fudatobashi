@@ -80,13 +80,21 @@ class IkkiuchiBoardLayout {
     final half = landscape ? IkkiuchiField.halfOf(IkkiuchiLayoutTuning.rows, field.rowGap) / grow : field.halfHeight;
     final slots = IkkiuchiLayoutTuning.rowSlots / grow;
     final maxCardW = IkkiuchiBoardStyle.maxCardW * grow;
+    // A 1-row side's cards are sized for a full row, whatever the sides
+    // hold, so the cards the field's 8 may all come to one side always fit it.
+    final room = IkkiuchiLayout.rowRoom(1);
+    final fullRow = field.rows != 1
+        ? 0.0
+        : math.max(
+            IkkiuchiField.rowWidth(room - room ~/ 2, room ~/ 2),
+            landscape ? IkkiuchiField.reach(room) + _tobiRoom(half, rig) : 0.0);
     final double cardW, top, fieldW, left;
     final TobiFrame tobi;
     if (landscape) {
       // Tobi is as tall as a share of his half, so the room he needs grows
       // with the cards. Right of the field the column.
       const share = IkkiuchiBoardStyle.tobiShare;
-      final least = field.leastWidth(tobiRoom: _tobiRoom(half, rig));
+      final least = math.max(fullRow, field.leastWidth(tobiRoom: _tobiRoom(half, rig)));
       final full = math.max(slots, least);
       // The stack's room right of the field: its top card, a 3-row card's
       // [IkkiuchiOpeningStyle.stackScale] wide, in card widths, and the gap
@@ -105,7 +113,7 @@ class IkkiuchiBoardLayout {
       final middle = left + (open.from + open.to) / 2 * cardW;
       tobi = TobiFrame(Vec(middle - rig.size.x * k / 2, top + IkkiuchiBoardStyle.tobiTop), k, rig);
     } else {
-      final widest = areaW / field.leastWidth();
+      final widest = areaW / math.max(fullRow, field.leastWidth());
       final tallest = (h - pad - IkkiuchiBoardStyle.bottomGap - bandH - IkkiuchiBoardStyle.tobiMinRoom) / (2 * half);
       cardW = math.min(scale ?? [widest, tallest, maxCardW].reduce(math.min), widest);
       fieldW = math.min(areaW / cardW, math.max(slots, field.leastWidth()));

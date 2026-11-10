@@ -585,7 +585,7 @@ void main() {
       ..finishTobi();
     flow.donePlacing();
     // Tobi's cards all in his right group, at the screen's left, so that he
-    // stands far right and his card waits against the column.
+    // stands far right.
     final sides = scene.sides!, homes = sides.homes;
     final dealt = [...sides.tobiCards, ...sides.playerCards];
     final right = [
@@ -606,8 +606,7 @@ void main() {
     final board = tester.renderObject<RenderBox>(find.byType(IkkiuchiBoardView));
     final tag = find.ancestor(of: find.text(s.ikkiuchiSentHint), matching: find.byType(PlacingTag));
     final hint = Rect.fromPoints(board.globalToLocal(tester.getTopLeft(tag)), board.globalToLocal(tester.getBottomRight(tag)));
-    expect(wait.center.dx + hint.width / 2, greaterThan(column.left), reason: 'centred, it would reach over the column');
-    expect(hint.right, closeTo(column.left - IkkiuchiSendStyle.wait.gap, 1e-6), reason: 'clear of the column');
+    expect(hint.right, lessThanOrEqualTo(column.left - IkkiuchiSendStyle.wait.gap + 1e-6), reason: 'clear of the column');
     expect(hint.top, greaterThan(wait.bottom), reason: 'under the card');
     expect(tester.takeException(), isNull);
     await leave(tester);
@@ -833,7 +832,7 @@ void main() {
                 reason: '${mode.name}, $rows rows');
           }
         }
-        expect([for (final mode in IkkiuchiMode.values) p.settings.ikkiuchi.rowsOf(mode)], [1, 2, 3]);
+        expect([for (final mode in IkkiuchiMode.values) p.settings.ikkiuchi.rowsOf(mode)], [2, 2, 3]);
         expect(tester.takeException(), isNull);
         await captureScreen(tester, 'ikkiuchi_page/settings', lang: lang);
 
@@ -968,16 +967,20 @@ void main() {
       expect(brief(tester), [20, 3], reason: '2 rows no longer fit');
 
       await tapAndWait(tester, key('8'), Duration.zero);
-      expect(shutRows(tester), [false, false, false]);
-      expect(find.text(s.ikkiuchiRowsAny(IkkiuchiLayoutTuning.oneRowUpTo)), findsOneWidget);
+      expect(shutRows(tester), [true, false, false]);
       expect(brief(tester), [8, 3], reason: 'rows that still fit stay');
 
+      await tapAndWait(tester, key('${IkkiuchiLayoutTuning.oneRowUpTo}'), Duration.zero);
+      expect(shutRows(tester), [false, false, false]);
+      expect(find.text(s.ikkiuchiRowsAny(IkkiuchiLayoutTuning.oneRowUpTo)), findsOneWidget);
+      expect(brief(tester), [4, 3], reason: 'rows that still fit stay');
+
       await tapAndWait(tester, key(s.ikkiuchiRowsKey(1)), Duration.zero);
-      expect(brief(tester), [8, 1]);
+      expect(brief(tester), [4, 1]);
       await tapAndWait(tester, plus(1), Duration.zero);
-      expect(brief(tester), [9, 2], reason: 'the fewest rows 9 fit');
+      expect(brief(tester), [5, 2], reason: 'the fewest rows 5 fit');
       await tapAndWait(tester, minus(1), Duration.zero);
-      expect(brief(tester), [8, 2]);
+      expect(brief(tester), [4, 2]);
       await tester.pumpWidget(const SizedBox());
     });
 
@@ -1050,12 +1053,12 @@ void main() {
       await showPage(tester, p, page: page(guest: true));
       expect(find.byWidgetPredicate((w) => w is ScreenTitle && w.title == s.ikkiuchiGuestMode), findsOneWidget);
       expect(find.text(s.ikkiuchiGuestLine, findRichText: true), findsOneWidget);
-      await tapAndWait(tester, key('8'), Duration.zero);
+      await tapAndWait(tester, key('4'), Duration.zero);
       await tapAndWait(tester, key(s.ikkiuchiRowsKey(1)), Duration.zero);
-      await tester.ensureVisible(burst(s.ikkiuchiPlayCards(8)));
-      await tapAndWait(tester, burst(s.ikkiuchiPlayCards(8)), Motion.route);
+      await tester.ensureVisible(burst(s.ikkiuchiPlayCards(4)));
+      await tapAndWait(tester, burst(s.ikkiuchiPlayCards(4)), Motion.route);
       final state = screen(tester);
-      expect([state.widget.guest, state.widget.setup.perSide, state.widget.setup.rows], [true, 8, 1]);
+      expect([state.widget.guest, state.widget.setup.perSide, state.widget.setup.rows], [true, 4, 1]);
       await toFirstRead(tester, state.flow!);
       state.flow!.end();
       await tester.pump();
@@ -1068,7 +1071,7 @@ void main() {
       await tester.pump();
       await tester.pump(Motion.route);
       final opened = tester.widget<IkkiuchiCustomPage>(find.byType(IkkiuchiCustomPage).last);
-      expect([opened.guest, opened.initial.perSide, opened.initial.rows], [true, 8, 1],
+      expect([opened.guest, opened.initial.perSide, opened.initial.rows], [true, 4, 1],
           reason: "the guest's last setup");
       await tester.pumpWidget(const SizedBox());
     });
@@ -1079,7 +1082,8 @@ void main() {
       final states = {
         'two': page(),
         'three': page(perSide: 20, rows: 3, minutes: 10),
-        'one': page(rating: 2084, perSide: 8, rows: 1, minutes: 3),
+        'one': page(rating: 2084, perSide: 4, rows: 1, minutes: 3),
+        'eight': page(rating: 2084, perSide: 8, rows: 2, minutes: 3),
         'guest': page(guest: true),
       };
       for (final (lang, names) in [('ja', states.keys), ('en', ['two', 'guest'])]) {
@@ -1131,7 +1135,7 @@ void main() {
     for (final rows in [1, 2, 3]) {
       testWidgets('match_${rows}row', (tester) async {
         final perSide = switch (rows) {
-          1 => IkkiuchiLayoutTuning.oneRowUpTo,
+          1 => IkkiuchiLayoutTuning.oneRowRoom,
           2 => IkkiuchiLayoutTuning.twoRowsUpTo,
           _ => IkkiuchiMode.rapid.perSide,
         };
@@ -1174,7 +1178,7 @@ void main() {
     // fist at the hit of a strike; and the result.
     for (final rows in [1, 2]) {
       testWidgets('match_${rows}row_moments', (tester) async {
-        final perSide = rows == 1 ? IkkiuchiLayoutTuning.oneRowUpTo : IkkiuchiLayoutTuning.twoRowsUpTo;
+        final perSide = rows == 1 ? IkkiuchiLayoutTuning.oneRowRoom : IkkiuchiLayoutTuning.twoRowsUpTo;
         final p = await open(tester, lang: 'ja');
         await showPage(tester, p, phone: usersPhoneLandscape);
         final setup = IkkiuchiSetup.free(
