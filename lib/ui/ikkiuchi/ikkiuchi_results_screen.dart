@@ -49,7 +49,7 @@ class IkkiuchiResultsScreen extends StatelessWidget {
     final report = this.report;
     final review = IkkiuchiReview(match, _saved ? ProgressScope.of(context).ikkiuchi.matches : const [], xp: report?.xp);
     return ResultsFrame(
-      celebrations: report == null ? const [] : xpCelebrations(report.xp),
+      celebrations: report == null ? const [] : ikkiuchiCelebrationsFor(report),
       child: RunSummary(
         title: s.hallName,
         sub: [s.other.hallName, _saved ? ikkiuchiKindLabel(s, match) : s.ikkiuchiGuestMode].join(' · ').toUpperCase(),
