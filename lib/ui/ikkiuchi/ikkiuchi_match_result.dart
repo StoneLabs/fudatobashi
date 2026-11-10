@@ -94,11 +94,7 @@ class IkkiuchiMatchResult extends StatelessWidget {
                       const SizedBox(height: IkkiuchiResultStyle.subGap),
                       Entrance(
                         IkkiuchiResultStyle.subIn,
-                        child: _Banner(switch (result) {
-                          IkkiuchiResult.won => s.ikkiuchiWonBy(margin),
-                          IkkiuchiResult.lost => s.ikkiuchiLostBy(margin),
-                          IkkiuchiResult.gaveUp => s.ikkiuchiResult(result),
-                        }),
+                        child: _Banner(s.ikkiuchiResultLine(result, margin)),
                       ),
                     ]),
                   ),

@@ -9,7 +9,6 @@ import '../../l10n/ikkiuchi_strings.dart';
 import '../../l10n/ranked_strings.dart';
 import '../../l10n/stats_strings.dart';
 import '../../l10n/strings.dart';
-import '../manga/manga.dart';
 import '../play/time_format.dart';
 import '../results/run_summary.dart';
 import 'history_widgets.dart';
@@ -45,31 +44,17 @@ class IkkiuchiOverviewTab extends StatelessWidget {
   /// for a match given up.
   SummaryHero _hero(S s) {
     final match = review.match;
-    final you = match.takenBy(IkkiuchiSide.player), tobi = match.takenBy(IkkiuchiSide.opponent);
-    final left = match.playerLeft + match.opponentLeft;
     final result = match.result;
+    final takes = ikkiuchiTakesBar(s, match);
     return SummaryHero(
       banner: s.ikkiuchiMargin.toUpperCase(),
       body: HeroCount(signedPoints(match.margin),
           label: '${match.playerLeft}–${match.opponentLeft}',
           note: s.ikkiuchiLeftCaption,
           metrics: IkkiuchiHistoryStyle.heroMetrics),
-      bar: [
-        BarPart(Palette.land, you, done: true),
-        BarPart(Palette.pink, tobi, done: true),
-        if (!match.completed) BarPart(Palette.paper, left),
-      ],
-      labels: match.completed
-          ? [BarLabel(s.ikkiuchiTookCount(you)), BarLabel(s.ikkiuchiTobiTookCount(tobi), part: 1, end: true)]
-          : [
-              BarLabel(s.ikkiuchiTakesBoth(you, tobi), runOn: true),
-              BarLabel(s.ikkiuchiLeftCount(left), part: 2, end: true),
-            ],
-      pose: switch (result) {
-        IkkiuchiResult.won => TobiPose.shocked,
-        IkkiuchiResult.lost => TobiPose.fired,
-        IkkiuchiResult.gaveUp => TobiPose.standard,
-      },
+      bar: takes.bar,
+      labels: takes.labels,
+      pose: ikkiuchiPoseFor(result),
       stamp: RunStamp(s.ikkiuchiResult(result),
           sub: s.ikkiuchiTobiAt(match.setup.opponentRating.round()),
           color: result == IkkiuchiResult.won ? Palette.pinkDeep : HistoryRunStyle.muted,
