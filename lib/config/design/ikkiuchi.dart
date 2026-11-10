@@ -513,7 +513,12 @@ class IkkiuchiModeTone {
 ///
 /// The box: the player's standing ([standPadding]), the rating curve or its
 /// note while placing ([curveMargin]), a light rule, the mode's match
-/// ([factsPadding]) and the burst ([burstMargin]).
+/// ([factsPadding]) and the burst ([burstMargin]). The curve's room takes
+/// the screen's height left over: on the user's phone at the usual text
+/// size about the mock's 58 dp, more on a taller screen. Under
+/// [curveMinHeight] the curve's labels crowd its line and it no longer
+/// reads, so it gives way: the box closes up and the gap goes over free
+/// play.
 ///
 /// The standing: the class badge, [badge] square in the mode's tone, edged
 /// [badgeStroke], the class kept [badgeInset] in from its sides: the stem
@@ -531,7 +536,7 @@ class IkkiuchiModeTone {
 /// [nextSlotBorder], the rest dashed in [slotInk]; then [noteTop] under
 /// them the line on what placement decides, as tall as the gauge.
 ///
-/// The curve (`IkkiuchiRatingCurve`), [curveHeight] tall, [curveTop] kept
+/// The curve (`IkkiuchiRatingCurve`), [curveTop] kept
 /// clear over the line: the rating after each of the mode's last ranked
 /// matches, each in its own slot from the left, the line [curveLine] wide,
 /// the latest match a diamond reaching [curveMark] each way and the others
@@ -544,8 +549,8 @@ class IkkiuchiModeTone {
 /// [curveInset] short of the right; the floor starts [curveInset] left of
 /// the line. While the line is short, [growsDrop] over the floor, a note
 /// at [growsFont] in its empty part says it grows. While placing, the same
-/// room holds a dashed outline in [lightRule] with a note at
-/// [curveNoteFont].
+/// room holds a dashed outline in [lightRule] with a note on one line at
+/// [curveNoteFont], or smaller to fit.
 ///
 /// The mode's match: its field ([field], [fieldGap] before the rest), its
 /// cards a side and memory time under their labels ([factGap] between),
@@ -645,7 +650,7 @@ abstract final class IkkiuchiPageLayout {
   static const double noteTop = 8;
 
   static const EdgeInsets curveMargin = EdgeInsets.fromLTRB(16, 0, 16, 12);
-  static const double curveHeight = 58;
+  static const double curveMinHeight = 32;
   static const double curveTop = 6;
   static const double curveLabelRoom = 60;
   static const double curveInset = 7;

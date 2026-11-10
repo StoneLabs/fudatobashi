@@ -32,8 +32,10 @@ Future<void> openIkkiuchiPage(BuildContext context) async {
 /// foot, free play: the bots' page ([IkkiuchiBotsPage]) and a custom match
 /// ([IkkiuchiCustomPage]); then guest mode (the same page, for a guest) and
 /// the rules, Home's button pair. Home's
-/// dotted ground, in the sea's blue, lies behind; the page scrolls when it
-/// is taller than the screen.
+/// dotted ground, in the sea's blue, lies behind. The page fills the
+/// screen: the curve takes the height left over, and gives way on a screen
+/// too short for it, leaving the gap over free play; only a screen too
+/// short even without it scrolls.
 class IkkiuchiPage extends StatelessWidget {
   const IkkiuchiPage({super.key});
 
@@ -67,16 +69,20 @@ class IkkiuchiPage extends StatelessWidget {
                       ],
                     ),
                     const SizedBox(height: IkkiuchiPageLayout.tabsTop),
-                    IkkiuchiModeTabs(
-                      chosen: mode,
-                      onPick: (picked) {
-                        if (picked == mode) return;
-                        unawaited(progress.updateSettings(
-                            settings.copyWith(ikkiuchi: settings.ikkiuchi.copyWith(tab: picked))));
-                      },
-                      child: IkkiuchiRankedBox(progress.ikkiuchi.of(mode), rows: settings.ikkiuchi.rowsOf(mode)),
+                    Expanded(
+                      child: Align(
+                        alignment: Alignment.topCenter,
+                        child: IkkiuchiModeTabs(
+                          chosen: mode,
+                          onPick: (picked) {
+                            if (picked == mode) return;
+                            unawaited(progress.updateSettings(
+                                settings.copyWith(ikkiuchi: settings.ikkiuchi.copyWith(tab: picked))));
+                          },
+                          child: IkkiuchiRankedBox(progress.ikkiuchi.of(mode), rows: settings.ikkiuchi.rowsOf(mode)),
+                        ),
+                      ),
                     ),
-                    const Spacer(),
                     _FreePlay(
                       onBots: () => Navigator.of(context).push(MangaRoute<void>(builder: (_) => const IkkiuchiBotsPage())),
                       onCustom: () => openIkkiuchiCustom(context),

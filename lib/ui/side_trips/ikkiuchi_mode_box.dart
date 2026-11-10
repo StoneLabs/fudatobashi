@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 
 import '../../config/design.dart';
 import '../../domain/ikkiuchi_mode.dart';
@@ -33,7 +34,8 @@ IkkiuchiModeTone ikkiuchiModeTone(IkkiuchiMode mode) => switch (mode) {
 /// The ranked modes' tabs over the [chosen] mode's box, [child]: the
 /// chosen tab stands higher, in its mode's halftone, and opens into the box
 /// as one ink outline; the others stand lower in their mode's tint, behind
-/// the box's top line. A tab tapped calls [onPick] with its mode.
+/// the box's top line. A tab tapped calls [onPick] with its mode. The box
+/// may take the height left under the tabs.
 class IkkiuchiModeTabs extends StatelessWidget {
   const IkkiuchiModeTabs({super.key, required this.chosen, required this.onPick, required this.child});
 
@@ -57,7 +59,7 @@ class IkkiuchiModeTabs extends StatelessWidget {
                 ],
               ]),
             ),
-            child,
+            Flexible(child: child),
           ],
         ),
       );
@@ -197,9 +199,9 @@ class _FramePainter extends CustomPainter {
 }
 
 /// A ranked mode's box: the player's standing in it ([records]), the curve
-/// of their rating (while placing, a note in its room), then the mode's
-/// match, each side laid out in [rows], and the burst that starts it
-/// against Tobi at the rating it shows.
+/// of their rating (while placing, a note in its room) in all the height
+/// the box is given, then the mode's match, each side laid out in [rows],
+/// and the burst that starts it against Tobi at the rating it shows.
 class IkkiuchiRankedBox extends StatelessWidget {
   const IkkiuchiRankedBox(this.records, {super.key, required this.rows});
 
@@ -222,9 +224,9 @@ class IkkiuchiRankedBox extends StatelessWidget {
           Expanded(child: records.placing ? _Placement(records) : _Standing(records, tone: tone)),
         ]),
       ),
-      Padding(
-        padding: IkkiuchiPageLayout.curveMargin,
-        child: records.placing ? const IkkiuchiCurveNote() : IkkiuchiRatingCurve(records.curve, tone: tone),
+      Flexible(
+        child: _CurveRoom(
+            records.placing ? const IkkiuchiCurveNote() : IkkiuchiRatingCurve(records.curve, tone: tone)),
       ),
       const Padding(
         padding: EdgeInsets.symmetric(horizontal: IkkiuchiPageLayout.splitInset),
@@ -245,6 +247,48 @@ class IkkiuchiRankedBox extends StatelessWidget {
       ),
     ]);
   }
+}
+
+/// The curve's room: all the height it may take, with [curve] (or its
+/// note) [IkkiuchiPageLayout.curveMargin] inside it; no height at all when
+/// that would leave the curve under [IkkiuchiPageLayout.curveMinHeight].
+class _CurveRoom extends StatelessWidget {
+  const _CurveRoom(this.curve);
+
+  final Widget curve;
+
+  @override
+  Widget build(BuildContext context) => _Unmeasured(
+        child: LayoutBuilder(
+          builder: (context, room) =>
+              room.maxHeight - IkkiuchiPageLayout.curveMargin.vertical < IkkiuchiPageLayout.curveMinHeight
+                  ? const SizedBox.shrink()
+                  : SizedBox.expand(child: Padding(padding: IkkiuchiPageLayout.curveMargin, child: curve)),
+        ),
+      );
+}
+
+/// [child], counted as no size when the page measures what it needs, so
+/// that the page scrolls only when it does not fit even without the curve.
+class _Unmeasured extends SingleChildRenderObjectWidget {
+  const _Unmeasured({required super.child});
+
+  @override
+  RenderObject createRenderObject(BuildContext context) => _RenderUnmeasured();
+}
+
+class _RenderUnmeasured extends RenderProxyBox {
+  @override
+  double computeMinIntrinsicWidth(double height) => 0;
+
+  @override
+  double computeMaxIntrinsicWidth(double height) => 0;
+
+  @override
+  double computeMinIntrinsicHeight(double width) => 0;
+
+  @override
+  double computeMaxIntrinsicHeight(double width) => 0;
 }
 
 /// A small label in black type.

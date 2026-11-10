@@ -18,7 +18,8 @@ import '../manga/manga.dart';
 /// lines in its range dashed and named. Each of
 /// [IkkiuchiModeTuning.curveMatches] matches has its slot from the left, so
 /// a short line ends early and a note in the rest says it grows. The
-/// caption left of the floor says how many matches it shows.
+/// caption left of the floor says how many matches it shows. It fills the
+/// room it is given.
 class IkkiuchiRatingCurve extends StatelessWidget {
   const IkkiuchiRatingCurve(this.ratings, {super.key, required this.tone});
 
@@ -28,41 +29,39 @@ class IkkiuchiRatingCurve extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final s = S.of(context);
-    return SizedBox(
-      height: IkkiuchiPageLayout.curveHeight,
-      child: CustomPaint(
-        size: Size.infinite,
-        painter: _CurvePainter(
-          ratings,
-          tone: tone,
-          caption: s.ikkiuchiCurveLast(ratings.length),
-          grows: ratings.length < IkkiuchiModeTuning.curveMatches ? s.ikkiuchiCurveGrows : null,
-          classLabel: (band) => '${s.className(band)} ${band.minRating.round()}',
-          scaler: MediaQuery.textScalerOf(context),
-          pixelRatio: MediaQuery.devicePixelRatioOf(context),
-        ),
+    return CustomPaint(
+      size: Size.infinite,
+      painter: _CurvePainter(
+        ratings,
+        tone: tone,
+        caption: s.ikkiuchiCurveLast(ratings.length),
+        grows: ratings.length < IkkiuchiModeTuning.curveMatches ? s.ikkiuchiCurveGrows : null,
+        classLabel: (band) => '${s.className(band)} ${band.minRating.round()}',
+        scaler: MediaQuery.textScalerOf(context),
+        pixelRatio: MediaQuery.devicePixelRatioOf(context),
       ),
     );
   }
 }
 
 /// While the player is being placed in a mode: the curve's room, dashed,
-/// saying the curve comes once placement is over.
+/// saying on one line, shrinking to fit, that the curve comes once
+/// placement is over.
 class IkkiuchiCurveNote extends StatelessWidget {
   const IkkiuchiCurveNote({super.key});
 
   @override
-  Widget build(BuildContext context) => SizedBox(
-        height: IkkiuchiPageLayout.curveHeight,
-        child: DashedBox(
-          ink: IkkiuchiPageLayout.lightRule,
-          border: IkkiuchiPageLayout.curveNoteBorder,
-          child: Center(
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: IkkiuchiPageLayout.curveNotePadding),
+  Widget build(BuildContext context) => DashedBox(
+        ink: IkkiuchiPageLayout.lightRule,
+        border: IkkiuchiPageLayout.curveNoteBorder,
+        child: Center(
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: IkkiuchiPageLayout.curveNotePadding),
+            child: FittedBox(
+              fit: BoxFit.scaleDown,
               child: Text.rich(
                 Phrases.span(S.of(context).ikkiuchiCurveLater),
-                textAlign: TextAlign.center,
+                maxLines: 1,
                 style: const TextStyle(
                   fontWeight: Weights.bold,
                   fontSize: IkkiuchiPageLayout.curveNoteFont,

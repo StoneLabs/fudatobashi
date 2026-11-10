@@ -103,6 +103,9 @@ void main() {
   driftRuntimeOptions.dontWarnAboutMultipleDatabases = true;
   const s = S('en');
   const rapid = IkkiuchiMode.rapid;
+  // Tall enough for the curve in the test font, whose glyphs take more room
+  // than the app's.
+  const curvePhone = Screen('384 tall', Size(384, 960), 2.8125);
   final real = sounds;
   setUp(() => sounds = _Quiet());
   tearDown(() => sounds = real);
@@ -275,7 +278,7 @@ void main() {
   testWidgets("a new player: Rapid's tab, its placement still to play and the curve's room saying when it comes",
       (tester) async {
     final p = await open(tester);
-    await showPage(tester, p);
+    await showPage(tester, p, phone: curvePhone);
     expect(tester.takeException(), isNull);
     expect(box(tester).records.mode, rapid, reason: 'Rapid first');
     expect(tester.widget<IkkiuchiModeTabs>(find.byType(IkkiuchiModeTabs)).chosen, rapid);
@@ -319,7 +322,7 @@ void main() {
     await tester.pumpWidget(const SizedBox());
 
     await playRanked(tester, p, [true, true, false, true, true, true]);
-    await showPage(tester, p);
+    await showPage(tester, p, phone: curvePhone);
     final records = p.ikkiuchi.of(rapid);
     final rating = records.rating!;
     expect(inBox(find.text(s.rating)), findsOneWidget);
@@ -1308,16 +1311,78 @@ void main() {
       }
     }
 
-    // Bigger text: the page scrolls, nothing overflows.
-    for (final frame in ['bullet', 'rapid_placing', 'blitz_en']) {
-      testWidgets('page_384_${frame}_t13', (tester) async {
-        final (lang, ratings, mode) = frames[frame]!;
+    // Each player on phones 360 to 412 dp wide and 640 to 915 dp tall, with
+    // the user's phone's bars, at text sizes 1, 1.1 and 1.3: nothing
+    // overflows; the curve, or its note, takes the height left over, at
+    // least its least height, or gives way; the page fills the screen,
+    // and scrolls only without the curve; where the curve shows, the burst
+    // stays put from tab to tab. From the user's phone's height up the
+    // page fits at every text size, with the curve up to 1.1, and from
+    // 900 dp with the curve at 1.3 too.
+    // Renders, to heights/: every tab on the user's phone at each text
+    // size; at its width, Bullet and Rapid at each height; and both on the
+    // shortest phones and the tallest.
+    const regular = {IkkiuchiMode.bullet: bulletRatings, IkkiuchiMode.blitz: blitzRatings, rapid: rapidPlacing};
+    final players = <String, (String, Map<IkkiuchiMode, List<double>>, List<IkkiuchiMode>)>{
+      'regular_ja': ('ja', regular, IkkiuchiMode.values),
+      'regular_en': ('en', regular, IkkiuchiMode.values),
+      'few': ('ja', {...regular, rapid: rapidPlaced}, [rapid]),
+      'new': ('ja', {}, [IkkiuchiMode.bullet]),
+    };
+    const widths = [360.0, 384.0, 412.0];
+    const heights = [640.0, 700.0, 760.0, 780.0, 800.0, 832.0, 900.0, 915.0];
+    const textScales = [1.0, 1.1, 1.3];
+    bool rendered(Size size, double scale, IkkiuchiMode mode) =>
+        (size.width == usersPhone.size.width && size.height == usersPhone.size.height) ||
+        (mode != IkkiuchiMode.blitz &&
+            (size.width == usersPhone.size.width && scale == 1 ||
+                size == const Size(360, 640) ||
+                size == const Size(360, 800) ||
+                size == const Size(412, 915)));
+    for (final MapEntry(key: player, value: (lang, ratings, tabs)) in players.entries) {
+      testWidgets('heights_$player', (tester) async {
         final p = await rated(tester, lang, ratings);
-        await openTab(tester, p, mode);
-        await showPage(tester, p, fontScale: 1.3);
-        expect(tester.takeException(), isNull);
-        await capture(tester, '384_${frame.replaceAll('_en', '')}', lang);
-        await tester.pumpWidget(const SizedBox());
+        for (final size in [for (final w in widths) for (final h in heights) Size(w, h)]) {
+          final phone = Screen('${size.width.round()}x${size.height.round()}', size, usersPhone.dpr);
+          for (final scale in textScales) {
+            final where = '${phone.name} at text size $scale';
+            final bursts = <int>{};
+            for (final mode in tabs) {
+              await openTab(tester, p, mode);
+              await showPage(tester, p, phone: phone, fontScale: scale);
+              expect(tester.takeException(), isNull, reason: '$where, ${mode.name}');
+              final curve = find.byWidgetPredicate((w) => w is IkkiuchiRatingCurve || w is IkkiuchiCurveNote);
+              final shown = curve.evaluate().isNotEmpty;
+              if (shown) {
+                expect(tester.getSize(curve).height, greaterThanOrEqualTo(IkkiuchiPageLayout.curveMinHeight),
+                    reason: '$where, ${mode.name}');
+                expect(fits(tester), isTrue, reason: '$where, ${mode.name}: only a page without the curve scrolls');
+                bursts.add((tester.getRect(find.byType(BurstButton)).top * 100).round());
+              }
+              if (fits(tester)) {
+                expect(tester.getRect(find.byType(SideTripRulesButton)).bottom,
+                    moreOrLessEquals(size.height - phone.bars.bottom - IkkiuchiPageLayout.bottomGap),
+                    reason: '$where, ${mode.name}: the page fills the screen');
+              }
+              if (size.height >= usersPhone.size.height) {
+                expect(fits(tester), isTrue, reason: '$where, ${mode.name}: fits');
+              }
+              if (size.height >= 900 || size.height >= usersPhone.size.height && scale <= 1.1) {
+                expect(shown, isTrue, reason: '$where, ${mode.name}: the curve shows');
+              }
+              if (rendered(size, scale, mode)) {
+                final state = switch (player) {
+                  'few' => 'rapid_few',
+                  'new' => 'new',
+                  _ => mode == rapid ? 'rapid_placing' : mode.name,
+                };
+                await capture(tester, 'heights/${phone.name}_$state', lang);
+              }
+              await tester.pumpWidget(const SizedBox());
+            }
+            expect(bursts.length, lessThanOrEqualTo(1), reason: '$where: the burst stays put from tab to tab');
+          }
+        }
       });
     }
 
