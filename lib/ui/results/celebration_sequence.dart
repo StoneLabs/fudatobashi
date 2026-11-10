@@ -5,6 +5,8 @@ import '../../config/design.dart';
 import '../../state/scope.dart';
 import '../ankiren/ankiren_rank_overlay.dart';
 import '../ankiren/ankiren_rating_overlay.dart';
+import '../ikkiuchi/ikkiuchi_rank_overlay.dart';
+import '../ikkiuchi/ikkiuchi_rank_timeline.dart';
 import '../sound/sounds.dart';
 import 'celebration_overlays.dart';
 import 'celebrations.dart';
@@ -130,6 +132,7 @@ class _CelebrationSequenceState extends State<CelebrationSequence> with SingleTi
       AnkirenRatingCelebration() => AnkirenRatingOverlay(data: c, onNext: onNext),
       AnkirenRankCelebration() =>
         c.up ? AnkirenRankUpOverlay(data: c, onNext: onNext) : AnkirenRankDownOverlay(data: c, onNext: onNext),
+      IkkiuchiRankCelebration() => IkkiuchiRankOverlay(data: c, onNext: onNext),
     };
   }
 }
@@ -161,4 +164,5 @@ List<(Sfx, Duration)> _soundsOf(Celebration c) => switch (c) {
               (Sfx.rankUp, AnkirenRankUpMotion.impactAt),
             ]
           : const [(Sfx.ankirenWrong, AnkirenRankDownMotion.hitAt), (Sfx.stamp, AnkirenRankDownMotion.landAt)],
+      IkkiuchiRankCelebration() => IkkiuchiRankTimeline(c).sounds,
     };

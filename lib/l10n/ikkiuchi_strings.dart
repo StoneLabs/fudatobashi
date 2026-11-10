@@ -109,6 +109,30 @@ extension IkkiuchiStrings on S {
   /// The box's match: the cards a side as a template ({0}).
   String get ikkiuchiBoxPerSide => t('ikkiuchiBoxPerSide');
 
+  /// The rank change page after a ranked match: its titles (a rise, a fall
+  /// or a rank down, a rank up, a placement match, the first class), the
+  /// match card's VS and margin ([n] cards; templates, {0} for [n]), the
+  /// standing's placement head out of [total] (a template, {0} for the
+  /// match) and the estimate after it, the drumroll's line, the class
+  /// change's stickers, the chart's start and the first point's tag, and
+  /// the button after a loss.
+  String get ikkiuchiRankRatingUp => t('ikkiuchiRankRatingUp');
+  String get ikkiuchiRankNextTimeTitle => t('ikkiuchiRankNextTimeTitle');
+  String get ikkiuchiRankClassUp => t('ikkiuchiRankClassUp');
+  String get ikkiuchiRankPlacing => t('ikkiuchiRankPlacing');
+  String get ikkiuchiRankPlaced => t('ikkiuchiRankPlaced');
+  String get ikkiuchiVs => t('ikkiuchiVs');
+  String ikkiuchiWonByTemplate(int n) => t(countKey('ikkiuchiWonBy', n));
+  String ikkiuchiLostByTemplate(int n) => t(countKey('ikkiuchiLostBy', n));
+  String ikkiuchiPlacingHead(int total) => t('ikkiuchiPlacing').replaceAll('{1}', '$total');
+  String get ikkiuchiRankEstimate => t('ikkiuchiRankEstimate');
+  String get ikkiuchiRankIs => t('ikkiuchiRankIs');
+  String get ikkiuchiRankUpSticker => t('ikkiuchiRankUpSticker');
+  String get ikkiuchiRankDownSticker => t('ikkiuchiRankDownSticker');
+  String get ikkiuchiRankStart => t('ikkiuchiRankStart');
+  String get ikkiuchiRankHere => t('ikkiuchiRankHere');
+  String get ikkiuchiRankNextTime => t('ikkiuchiRankNextTime');
+
   /// Free play: its panel's tag and heading; the bots row (its name, the
   /// tag in the bots page's title, its line) and the custom row's line.
   String get ikkiuchiFreePlay => t('ikkiuchiFreePlay');
