@@ -6,7 +6,7 @@ import '../../config/config.dart';
 import '../../config/design.dart';
 import '../../domain/ankiren_level.dart';
 import '../../domain/ankiren_score.dart';
-import '../../domain/rating.dart';
+import '../../domain/rank_ladder.dart';
 import '../../domain/trip_rating.dart';
 import '../play/time_format.dart';
 import 'debug_common.dart';
@@ -238,7 +238,7 @@ class _LinesPainter extends CustomPainter {
       ..strokeWidth = AnkirenToolsStyle.classStroke
       ..color = Palette.mute.withValues(alpha: AnkirenToolsStyle.classOpacity);
     final borders = [
-      for (final band in Rating.bands.skip(1))
+      for (final band in RankLadder.bands.skip(1))
         if (classY(band) case final value when value <= yMax) (band.labelEn, at(Offset(0, value)).dy),
     ]..sort((a, b) => a.$2.compareTo(b.$2));
     var labelTop = double.negativeInfinity;

@@ -23,7 +23,7 @@ import 'package:fudatobashi/domain/ankiren_geometry.dart';
 import 'package:fudatobashi/domain/ankiren_level.dart';
 import 'package:fudatobashi/domain/ankiren_score.dart';
 import 'package:fudatobashi/domain/karafuda.dart';
-import 'package:fudatobashi/domain/rating.dart';
+import 'package:fudatobashi/domain/rank_ladder.dart';
 import 'package:fudatobashi/domain/side_trips.dart';
 import 'package:fudatobashi/domain/trainer.dart';
 import 'package:fudatobashi/l10n/ankiren_strings.dart';
@@ -1329,7 +1329,7 @@ void main() {
       await tester.scrollUntilVisible(classes, 200, scrollable: page);
       await tester.runAsync(() => Scrollable.ensureVisible(tester.element(classes)));
       await tester.pumpAndSettle();
-      for (final band in Rating.bands.skip(1)) {
+      for (final band in RankLadder.bands.skip(1)) {
         expect(find.textContaining(RegExp('^${RegExp.escape(band.labelEn)} ')), findsOneWidget, reason: band.labelEn);
       }
       await captureScreen(tester, 'debug_ankiren_classes');

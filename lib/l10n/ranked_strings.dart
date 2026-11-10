@@ -1,4 +1,4 @@
-import '../domain/rating.dart';
+import '../domain/rank_ladder.dart';
 import 'strings.dart';
 
 /// Strings of ranked mode (ランク戦) and the graduation exam (卒業試験).

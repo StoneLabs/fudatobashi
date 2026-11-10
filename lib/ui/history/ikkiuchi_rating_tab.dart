@@ -103,6 +103,6 @@ class _RatingHero extends StatelessWidget {
     final name = s.className(progress.band);
     final next = progress.next;
     if (next == null) return name;
-    return '$name · ${s.ikkiuchiClassAt((next.minRating - after).ceil(), next, '${next.minRating.round()}')}';
+    return '$name · ${s.ikkiuchiClassAt(next.pointsLeft(after), next, '${next.minRating.round()}')}';
   }
 }

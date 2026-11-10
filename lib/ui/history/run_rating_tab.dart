@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../config/config.dart';
 import '../../config/design.dart';
-import '../../domain/rating.dart';
+import '../../domain/rank_ladder.dart';
 import '../../l10n/home_strings.dart';
 import '../../l10n/ranked_strings.dart';
 import '../../l10n/review_strings.dart';
@@ -59,7 +59,7 @@ class RatingHero extends StatelessWidget {
   Widget build(BuildContext context) {
     final s = S.of(context);
     final after = rating.after, before = rating.before;
-    final band = Rating.bandOf(after), next = Rating.nextBand(after);
+    final band = RankLadder.bandOf(after), next = RankLadder.nextBand(after);
     final lo = band.minRating.isFinite ? band.minRating : next!.minRating - RunRatingTuning.openSpan;
     final hi = next?.minRating ?? lo + RunRatingTuning.openSpan;
     double at(double r) => ((r - lo) / (hi - lo)).clamp(0.0, 1.0);

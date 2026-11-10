@@ -5,7 +5,7 @@ import 'ankiren_field.dart';
 import 'ankiren_score.dart';
 import 'karafuda.dart';
 import 'play_session.dart';
-import 'rating.dart';
+import 'rank_ladder.dart';
 import 'trip_rating.dart';
 import 'xp.dart';
 
@@ -215,9 +215,6 @@ typedef AnkirenScorePart = ({int cards, int points});
 /// usually landed.
 typedef AnkirenMisplaced = ({int poemId, int dealt, int rightFirst, TapProximity? usual});
 
-/// The class a rating sits in, the next one and how far toward it.
-typedef AnkirenClassProgress = ({RankBand band, RankBand? next, double fraction});
-
 /// One 暗記練 [game] against the games recorded before it ([all] holds
 /// every recorded game, this one among them), with the [xp] it earned.
 class AnkirenReview {
@@ -337,13 +334,7 @@ class AnkirenReview {
   static double? mean(Iterable<num> values) =>
       values.isEmpty ? null : values.fold(0.0, (sum, v) => sum + v) / values.length;
 
-  /// [rating]'s class, the next one and how far toward it, from the class's
-  /// floor (the start for the lowest).
-  static AnkirenClassProgress classProgress(double rating) {
-    final band = Rating.bandOf(rating);
-    final next = Rating.nextBand(rating);
-    final floor = band.minRating.isFinite ? band.minRating : TripRating.start;
-    final fraction = next == null ? 1.0 : ((rating - floor) / (next.minRating - floor)).clamp(0.0, 1.0);
-    return (band: band, next: next, fraction: fraction);
-  }
+  /// [rating]'s class, the next one and how far toward it, 入門 from the
+  /// start.
+  static ClassProgress classProgress(double rating) => RankLadder.progress(rating, floor: TripRating.start);
 }

@@ -179,7 +179,7 @@ class RatingHero extends StatelessWidget {
           BarLabel(
               next == null
                   ? name
-                  : '$name · ${s.ankirenClassAt((next.minRating - after).ceil(), next, r(next.minRating))}',
+                  : '$name · ${s.ankirenClassAt(next.pointsLeft(after), next, r(next.minRating))}',
               keep: true),
         ],
         pose: null,

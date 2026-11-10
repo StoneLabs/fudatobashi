@@ -21,7 +21,7 @@ import 'package:fudatobashi/domain/ikkiuchi_rating.dart';
 import 'package:fudatobashi/domain/ikkiuchi_record.dart';
 import 'package:fudatobashi/domain/ikkiuchi_review.dart';
 import 'package:fudatobashi/domain/ikkiuchi_side.dart';
-import 'package:fudatobashi/domain/rating.dart';
+import 'package:fudatobashi/domain/rank_ladder.dart';
 import 'package:fudatobashi/state/progress.dart';
 import 'package:fudatobashi/state/xp_history.dart';
 
@@ -276,10 +276,10 @@ void main() {
   test('the class a rating sits in, the next and how far toward it', () {
     for (final rating in [IkkiuchiTuning.ratingMin, 1727.0, IkkiuchiTuning.ratingMax]) {
       final c = IkkiuchiReview.classProgress(rating);
-      expect([c.band, c.next], [Rating.bandOf(rating), Rating.nextBand(rating)]);
+      expect([c.band, c.next], [RankLadder.bandOf(rating), RankLadder.nextBand(rating)]);
       expect(c.fraction, inInclusiveRange(0, 1));
     }
-    final band = Rating.bandOf(1727), next = Rating.nextBand(1727)!;
+    final band = RankLadder.bandOf(1727), next = RankLadder.nextBand(1727)!;
     expect(IkkiuchiReview.classProgress(1727).fraction,
         closeTo((1727 - band.minRating) / (next.minRating - band.minRating), 1e-9));
   });

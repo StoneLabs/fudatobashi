@@ -6,7 +6,7 @@ import 'package:flutter/widgets.dart';
 import '../../config/design.dart';
 import '../../config/vector_art.dart';
 import '../../domain/ikkiuchi_mode.dart';
-import '../../domain/rating.dart';
+import '../../domain/rank_ladder.dart';
 import '../../domain/side_trips.dart';
 import '../../l10n/ankiren_strings.dart';
 import '../../l10n/ikkiuchi_strings.dart';

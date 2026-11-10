@@ -123,10 +123,7 @@ class _RankPanel extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final s = S.of(context);
-    final band = Rating.bandOf(rating);
-    final next = Rating.nextBand(rating);
-    final floor = band.minRating.isFinite ? band.minRating : 0.0;
-    final fraction = next == null ? 1.0 : (rating - floor) / (next.minRating - floor);
+    final (:band, :next, :fraction) = Rating.classProgress(rating);
     const bold = TextStyle(fontWeight: Weights.black);
     return MangaPanel(
       padding: const EdgeInsets.all(Gaps.inner),
@@ -159,7 +156,7 @@ class _RankPanel extends StatelessWidget {
                     ? Text(s.topBand, style: bold)
                     : NumberedText(
                         s.toNextBand.replaceAll('{band}', s.className(next)),
-                        [(next.minRating - rating).ceil(), next.minRating.round()],
+                        [next.pointsLeft(rating), next.minRating.round()],
                         style: const TextStyle(fontSize: HomeLayout.ratingNoteFont, fontWeight: Weights.bold),
                         numberStyle: bold,
                       ),

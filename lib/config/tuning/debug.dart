@@ -43,7 +43,7 @@ abstract final class CelebrationPreviewTuning {
   /// The island completed (the mock's 3rd).
   static const int island = 2;
 
-  /// The rank-up from `Rating.bands[rankFrom]` (F上級) to the next class:
+  /// The rank-up from `RankLadder.bands[rankFrom]` (F上級) to the next class:
   /// from [rankBelow] points under its threshold to [rankAbove] over it.
   static const int rankFrom = 2;
   static const double rankBelow = 58;
@@ -109,7 +109,7 @@ abstract final class CelebrationPreviewTuning {
   static const int ankirenRoundInto = 60;
   static const int ankirenLevelShort = 1000;
 
-  /// 暗記練's rating page: [ankirenInto] points into `Rating.bands[ankirenClass]`
+  /// 暗記練's rating page: [ankirenInto] points into `RankLadder.bands[ankirenClass]`
   /// (E下級), moving [ankirenMove]; a breakthrough or a fall crosses its
   /// threshold by [ankirenCross]. Placement: the games' scores, the rating
   /// after the second and after the third, and the game played after

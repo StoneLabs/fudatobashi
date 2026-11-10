@@ -6,7 +6,7 @@ import 'package:flutter/widgets.dart';
 
 import '../../config/config.dart';
 import '../../config/design.dart';
-import '../../domain/rating.dart';
+import '../../domain/rank_ladder.dart';
 import '../../domain/trip_rating.dart';
 import '../../l10n/ankiren_strings.dart';
 import '../../l10n/ranked_strings.dart';
@@ -27,12 +27,12 @@ import '../side_trips/side_trip_entry.dart';
 class AnkirenRatingTrack {
   /// The classes from [low]'s up to [high]'s.
   factory AnkirenRatingTrack.span(double low, double high) {
-    final bottom = Rating.bandOf(low);
-    final next = Rating.nextBand(high);
+    final bottom = RankLadder.bandOf(low);
+    final next = RankLadder.nextBand(high);
     final floor = bottom.minRating.isFinite ? bottom.minRating : TripRating.start;
-    final ceiling = next?.minRating ?? math.max(high, Rating.bandOf(high).minRating + RatingScreenTuning.openSpan);
+    final ceiling = next?.minRating ?? math.max(high, RankLadder.bandOf(high).minRating + RatingScreenTuning.openSpan);
     return AnkirenRatingTrack._(floor, ceiling, next, [
-      for (final b in Rating.bands)
+      for (final b in RankLadder.bands)
         if (b.minRating > floor && b.minRating < ceiling) b,
     ]);
   }
@@ -128,17 +128,14 @@ class AnkirenRatingTimeline {
   /// The class on the flag at [elapsed]; null while veiled.
   RankBand? flagBandAt(Duration elapsed) {
     if (veiledAt(elapsed)) return null;
-    if (reveals) return Rating.bandOf(data.after);
-    return Rating.bandOf(breaksThrough ? data.before : ratingAt(elapsed));
+    if (reveals) return RankLadder.bandOf(data.after);
+    return RankLadder.bandOf(breaksThrough ? data.before : ratingAt(elapsed));
   }
 
   /// The class the rating is heading for at [elapsed]; null at the top.
-  RankBand? nextAt(Duration elapsed) => breaksThrough ? track.next : Rating.nextBand(ratingAt(elapsed));
+  RankBand? nextAt(Duration elapsed) => breaksThrough ? track.next : RankLadder.nextBand(ratingAt(elapsed));
 
-  int? toNextAt(Duration elapsed) {
-    final next = nextAt(elapsed);
-    return next == null ? null : math.max(0, (next.minRating - ratingAt(elapsed)).ceil());
-  }
+  int? toNextAt(Duration elapsed) => nextAt(elapsed)?.pointsLeft(ratingAt(elapsed));
 
   /// A pop and a stamp for a placement slot, then the drumroll and the
   /// reveal's fanfare; a ratchet click each time the rating goes up, and a

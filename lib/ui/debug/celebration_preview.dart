@@ -10,7 +10,7 @@ import '../../domain/ikkiuchi_mode.dart';
 import '../../domain/ikkiuchi_rating.dart';
 import '../../domain/ikkiuchi_record.dart';
 import '../../domain/play_session.dart';
-import '../../domain/rating.dart';
+import '../../domain/rank_ladder.dart';
 import '../../domain/side_trips.dart';
 import '../../domain/today_set.dart';
 import '../../domain/trip_rating.dart';
@@ -70,7 +70,7 @@ void previewXpLevelUp(BuildContext context) {
 
 /// The rating page for a run that raised the rating within its class.
 void previewRating(BuildContext context) {
-  final before = Rating.bands[CelebrationPreviewTuning.rankFrom].minRating + CelebrationPreviewTuning.ratingInto;
+  final before = RankLadder.bands[CelebrationPreviewTuning.rankFrom].minRating + CelebrationPreviewTuning.ratingInto;
   _previewPages(context, [RatingCelebration(before, before + CelebrationPreviewTuning.ratingGain)]);
 }
 
@@ -79,20 +79,21 @@ void previewRatingRankUp(BuildContext context) {
   final (before, after) = _rankUpRatings;
   _previewPages(context, [
     RatingCelebration(before, after),
-    RankUpCelebration(Rating.bandOf(before), Rating.bandOf(after), before, after),
+    RankUpCelebration(RankLadder.bandOf(before), RankLadder.bandOf(after), before, after),
   ]);
 }
 
-/// Ratings either side of the threshold above `Rating.bands[rankFrom]`.
+/// Ratings either side of the threshold above `RankLadder.bands[rankFrom]`.
 (double, double) get _rankUpRatings {
-  final threshold = Rating.bands[CelebrationPreviewTuning.rankFrom + 1].minRating;
+  final threshold = RankLadder.bands[CelebrationPreviewTuning.rankFrom + 1].minRating;
   return (threshold - CelebrationPreviewTuning.rankBelow, threshold + CelebrationPreviewTuning.rankAbove);
 }
 
 /// The first ranked run's placement, into the class "Preview rating"
 /// starts in.
 void previewPlacement(BuildContext context) => _previewPages(context, [
-      PlacementCelebration(Rating.bands[CelebrationPreviewTuning.rankFrom].minRating + CelebrationPreviewTuning.ratingInto),
+      PlacementCelebration(
+          RankLadder.bands[CelebrationPreviewTuning.rankFrom].minRating + CelebrationPreviewTuning.ratingInto),
     ]);
 
 void previewGraduation(BuildContext context) => _previewPages(context, const [GraduationCelebration()]);
@@ -137,7 +138,7 @@ void previewAnkirenXp(BuildContext context, {bool levelUp = false}) {
 /// rank-up after a breakthrough, or its rank-down after a fall into a
 /// lower class.
 void previewAnkirenRating(BuildContext context, AnkirenRatingMoment moment) {
-  final floor = Rating.bands[CelebrationPreviewTuning.ankirenClass].minRating;
+  final floor = RankLadder.bands[CelebrationPreviewTuning.ankirenClass].minRating;
   final into = floor + CelebrationPreviewTuning.ankirenInto;
   const move = CelebrationPreviewTuning.ankirenMove, cross = CelebrationPreviewTuning.ankirenCross;
   const scores = CelebrationPreviewTuning.ankirenPlacementScores;
@@ -159,9 +160,9 @@ void previewAnkirenRating(BuildContext context, AnkirenRatingMoment moment) {
 }
 
 /// 暗記練's own rank-up on its own, or with [up] false its rank-down, across
-/// the threshold above `Rating.bands[ankirenClass]`.
+/// the threshold above `RankLadder.bands[ankirenClass]`.
 void previewAnkirenRank(BuildContext context, {bool up = true}) {
-  final floor = Rating.bands[CelebrationPreviewTuning.ankirenClass].minRating;
+  final floor = RankLadder.bands[CelebrationPreviewTuning.ankirenClass].minRating;
   const cross = CelebrationPreviewTuning.ankirenCross;
   final (before, after) = up ? (floor - cross, floor + cross) : (floor + cross, floor - cross);
   _previewPages(context, [AnkirenRankCelebration(before, after)]);

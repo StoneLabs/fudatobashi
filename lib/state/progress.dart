@@ -18,6 +18,7 @@ import '../domain/ikkiuchi_record.dart';
 import '../domain/masking.dart';
 import '../domain/play_session.dart';
 import '../domain/ranked.dart';
+import '../domain/rank_ladder.dart';
 import '../domain/rating.dart';
 import '../domain/side_trips.dart';
 import '../domain/step_plan.dart';
@@ -282,7 +283,7 @@ class Progress extends ChangeNotifier {
   /// The displayed rating, or the current performance before the first run.
   double get currentRating => rating ?? Rating.performance(projectedMs);
 
-  RankBand get band => Rating.bandOf(currentRating);
+  RankBand get band => RankLadder.bandOf(currentRating);
 
   /// Unlocked items due for review now.
   int dueCount([DateTime? now]) {

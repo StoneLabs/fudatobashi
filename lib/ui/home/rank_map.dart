@@ -5,6 +5,7 @@ import 'package:flutter/widgets.dart';
 import '../../config/design.dart';
 import '../../config/vector_art.dart';
 import '../../data/islands.dart';
+import '../../domain/rank_ladder.dart';
 import '../../domain/rating.dart';
 import '../../l10n/home_strings.dart';
 import '../../l10n/ranked_strings.dart';
@@ -23,7 +24,7 @@ import 'home_widgets.dart';
 abstract final class RankCharts {
   /// Before the first ranked run: the whole ladder in two rows.
   static final Archipelago overview = _chart([
-    for (var i = 0; i < Rating.bands.length; i++)
+    for (var i = 0; i < RankLadder.bands.length; i++)
       _place(
         i,
         i < RankMapStyle.overviewRow
@@ -38,7 +39,7 @@ abstract final class RankCharts {
 
   /// Once placed: the ladder in one row.
   static final Archipelago row = _chart([
-    for (var i = 0; i < Rating.bands.length; i++)
+    for (var i = 0; i < RankLadder.bands.length; i++)
       _place(i, i * RankMapStyle.rowStep, i.isOdd ? RankMapStyle.rowHigh : RankMapStyle.rowLow, RankMapStyle.rowScale,
           MapStyle.plateFont, RankMapStyle.rowPlateGap),
   ]);
@@ -81,7 +82,7 @@ class RankMap extends StatelessWidget {
             border: Strokes.label,
             padding: HomeLayout.mapMistPadding,
             child: Text(
-              s.rankClasses(Rating.bands.length),
+              s.rankClasses(RankLadder.bands.length),
               style: const TextStyle(fontSize: HomeLayout.mapMistFont, fontWeight: Weights.black),
             ),
           )
@@ -104,7 +105,7 @@ class RankMap extends StatelessWidget {
                 child: GestureDetector(
                   behavior: HitTestBehavior.opaque,
                   onTap: () => _openRank(context),
-                  child: _Ladder(rating == null ? -1 : Rating.bands.indexOf(Rating.bandOf(rating))),
+                  child: _Ladder(rating == null ? -1 : RankLadder.bands.indexOf(RankLadder.bandOf(rating))),
                 ),
               ),
               Padding(
@@ -188,8 +189,8 @@ class _Ladder extends StatelessWidget {
   /// star on its plate before the first ranked run and once reached. Only
   /// [plated] islands get a plate, so none is cut by the map's sides.
   IslandStyle _styleOf(S s, int i, bool placed, bool plated) {
-    final last = Rating.bands.length - 1;
-    final name = s.className(Rating.bands[i]);
+    final last = RankLadder.bands.length - 1;
+    final name = s.className(RankLadder.bands[i]);
     final font = placed ? MapStyle.plateFont : RankMapStyle.overviewPlateFont;
     final goal = i == last && (!placed || current == last) ? MapArt.star : null;
     final flag = placed && (i < current || current == last);
@@ -302,7 +303,7 @@ class _RatingCard extends StatelessWidget {
                   offset: const Offset(0, -RankMapLayout.stampRaise),
                   child: rating == null
                       ? const UnrankedSticker(tilt: RankMapLayout.stampTilt, shadow: RankMapLayout.cardShadow)
-                      : RankSticker(Rating.bandOf(rating),
+                      : RankSticker(RankLadder.bandOf(rating),
                           tilt: RankMapLayout.stampTilt, shadow: RankMapLayout.cardShadow),
                 ),
               ),
@@ -332,10 +333,7 @@ class _RatingCard extends StatelessWidget {
       ];
 
   List<Widget> _rated(S s, double rating) {
-    final band = Rating.bandOf(rating);
-    final next = Rating.nextBand(rating);
-    final floor = band.minRating.isFinite ? band.minRating : 0.0;
-    final fraction = next == null ? 1.0 : (rating - floor) / (next.minRating - floor);
+    final (band: _, :next, :fraction) = Rating.classProgress(rating);
     const bold = TextStyle(fontWeight: Weights.black);
     return [
       Text(
@@ -359,7 +357,7 @@ class _RatingCard extends StatelessWidget {
           ? Text(s.topBand, style: _note.merge(bold))
           : NumberedText(
               s.toNextBand.replaceAll('{band}', s.className(next)),
-              [(next.minRating - rating).ceil(), next.minRating.round()],
+              [next.pointsLeft(rating), next.minRating.round()],
               style: _note,
               numberStyle: bold,
             )),

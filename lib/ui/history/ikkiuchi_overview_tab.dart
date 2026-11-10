@@ -4,7 +4,7 @@ import '../../config/design.dart';
 import '../../domain/ikkiuchi_record.dart';
 import '../../domain/ikkiuchi_review.dart';
 import '../../domain/ikkiuchi_side.dart';
-import '../../domain/rating.dart';
+import '../../domain/rank_ladder.dart';
 import '../../l10n/ikkiuchi_strings.dart';
 import '../../l10n/ranked_strings.dart';
 import '../../l10n/stats_strings.dart';
@@ -82,7 +82,7 @@ class IkkiuchiOverviewTab extends StatelessWidget {
         ratingTile(s.ikkiuchiRatingLabel.toUpperCase(),
             before: review.ratingBefore,
             after: after,
-            band: after == null ? '' : s.className(Rating.bandOf(after)))
+            band: after == null ? '' : s.className(RankLadder.bandOf(after)))
       else
         SummaryTile(
           label: s.ikkiuchiMedianTake.toUpperCase(),

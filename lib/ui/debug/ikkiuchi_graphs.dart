@@ -5,7 +5,7 @@ import 'package:flutter/services.dart';
 
 import '../../config/config.dart';
 import '../../config/design.dart';
-import '../../domain/rating.dart';
+import '../../domain/rank_ladder.dart';
 import '../../domain/tuning_curve.dart';
 import '../manga/toast.dart';
 import 'debug_common.dart';
@@ -220,7 +220,7 @@ abstract class _RatingPlot extends CustomPainter {
       ..color = color
       ..strokeWidth = IkkiuchiCurvesStyle.rankStroke;
     const step = IkkiuchiCurvesStyle.rankDot + IkkiuchiCurvesStyle.rankDotGap;
-    for (final band in Rating.bands) {
+    for (final band in RankLadder.bands) {
       final r = band.minRating;
       if (r <= min || r >= max) continue;
       final x = xAt(plot, r);

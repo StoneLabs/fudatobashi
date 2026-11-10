@@ -7,7 +7,7 @@ import 'package:fudatobashi/domain/ankiren_game.dart';
 import 'package:fudatobashi/domain/ankiren_level.dart';
 import 'package:fudatobashi/domain/ankiren_score.dart';
 import 'package:fudatobashi/domain/level_ladder.dart';
-import 'package:fudatobashi/domain/rating.dart';
+import 'package:fudatobashi/domain/rank_ladder.dart';
 import 'package:fudatobashi/domain/trip_rating.dart';
 
 void main() {
@@ -197,7 +197,7 @@ void main() {
 
   group('rating', () {
     const ranked = AnkirenSetup.ranked();
-    double band(String id) => Rating.bands.firstWhere((b) => b.id == id).minRating;
+    double band(String id) => RankLadder.bands.firstWhere((b) => b.id == id).minRating;
 
     test('ranked is one fixed setup, a real match, with no level', () {
       expect(ranked.perSide, AnkirenTuning.rankedPerSide);
@@ -221,7 +221,7 @@ void main() {
     });
 
     test('play starts in 入門, and a zero-point game rates 0 without any floor', () {
-      expect(Rating.bandOf(TripRating.start).label, '入門');
+      expect(RankLadder.bandOf(TripRating.start).label, '入門');
       final p = TripRating.ankiren.performance(0);
       expect(TripRating.update(TripRating.start, p, const []), 0);
       expect(TripRating.update(1000, 0, const [1, 2, 3]), closeTo(1000 * (1 - AnkirenRatingModel.establishedK), 1e-9));

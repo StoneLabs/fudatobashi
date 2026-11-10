@@ -4,7 +4,7 @@ import '../../config/config.dart';
 import '../../config/design.dart';
 import '../../domain/ankiren_score.dart';
 import '../../domain/level_ladder.dart';
-import '../../domain/rating.dart';
+import '../../domain/rank_ladder.dart';
 import '../../domain/teiichi.dart';
 import '../../domain/teiichi_score.dart';
 import '../../domain/trip_rating.dart';
@@ -217,14 +217,14 @@ class _PointsCalculatorState extends State<_PointsCalculator> {
         DebugKV('placing ×', TeiichiScore.factorOf(placing).toStringAsFixed(3)),
         DebugKV('score', '$total'),
         DebugKV('performance', '${performance.round()}'),
-        DebugKV('class', Rating.bandOf(performance).labelEn),
+        DebugKV('class', RankLadder.bandOf(performance).labelEn),
       ],
     );
   }
 }
 
 /// 定位置's ranked classes by placing time: for each class line
-/// (`Rating.bands`), the score it needs and, with every call right with
+/// (`RankLadder.bands`), the score it needs and, with every call right with
 /// the first tap at each of [TeiichiToolsTuning.classTapTimes], the slowest
 /// placing time that reaches it: "any" when the whole limit does, "—" when
 /// not even [TeiichiToolsTuning.classPlacingStep] does.
@@ -268,7 +268,7 @@ class _ClassTable extends StatelessWidget {
         const SizedBox(height: AnkirenToolsStyle.gap),
         DebugGrid([
           ['class', 'line', 'score', for (final t in taps) _seconds(t)],
-          for (final b in Rating.bands.skip(1))
+          for (final b in RankLadder.bands.skip(1))
             [
               b.labelEn,
               '${b.minRating.round()}',

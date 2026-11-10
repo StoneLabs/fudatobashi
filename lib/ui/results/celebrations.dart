@@ -1,6 +1,6 @@
 import '../../config/config.dart';
 import '../../data/fuda_sets.dart';
-import '../../domain/rating.dart';
+import '../../domain/rank_ladder.dart';
 import '../../domain/side_trips.dart';
 import '../../domain/xp.dart';
 import '../../state/ikkiuchi_records.dart';
@@ -53,7 +53,7 @@ class PlacementCelebration extends Celebration {
   const PlacementCelebration(this.rating);
   final double rating;
 
-  RankBand get band => Rating.bandOf(rating);
+  RankBand get band => RankLadder.bandOf(rating);
 }
 
 class GoalUpCelebration extends Celebration {
@@ -79,7 +79,8 @@ class RatingCelebration extends Celebration {
   final double before;
   final double after;
 
-  bool get ranksUp => Rating.bands.indexOf(Rating.bandOf(after)) > Rating.bands.indexOf(Rating.bandOf(before));
+  bool get ranksUp =>
+      RankLadder.bands.indexOf(RankLadder.bandOf(after)) > RankLadder.bands.indexOf(RankLadder.bandOf(before));
 }
 
 /// The XP a game earned, source by source.
@@ -137,8 +138,8 @@ class AnkirenRatingCelebration extends Celebration {
     const placement = AnkirenRatingModel.placementGames;
     if (game < placement) return AnkirenRatingMoment.placing;
     if (game == placement) return AnkirenRatingMoment.placed;
-    final from = Rating.bands.indexOf(Rating.bandOf(before));
-    final to = Rating.bands.indexOf(Rating.bandOf(after));
+    final from = RankLadder.bands.indexOf(RankLadder.bandOf(before));
+    final to = RankLadder.bands.indexOf(RankLadder.bandOf(after));
     if (to > from) return AnkirenRatingMoment.rankUp;
     if (to < from) return AnkirenRatingMoment.rankDown;
     final change = after.round() - before.round();
@@ -158,8 +159,8 @@ class AnkirenRankCelebration extends Celebration {
   final double after;
   final SideTrip trip;
 
-  RankBand get from => Rating.bandOf(before);
-  RankBand get to => Rating.bandOf(after);
+  RankBand get from => RankLadder.bandOf(before);
+  RankBand get to => RankLadder.bandOf(after);
   bool get up => after > before;
 }
 
@@ -195,7 +196,7 @@ class IkkiuchiRankCelebration extends Celebration {
   IkkiuchiRankMoment get moment {
     if (change.placed) return IkkiuchiRankMoment.placed;
     if (change.placing) return IkkiuchiRankMoment.placing;
-    final from = Rating.bands.indexOf(change.from), to = Rating.bands.indexOf(change.to);
+    final from = RankLadder.bands.indexOf(change.from), to = RankLadder.bands.indexOf(change.to);
     if (to > from) return IkkiuchiRankMoment.rankUp;
     if (to < from) return IkkiuchiRankMoment.rankDown;
     return change.won ? IkkiuchiRankMoment.up : IkkiuchiRankMoment.down;
@@ -242,9 +243,9 @@ List<Celebration> celebrationsFor(SessionReport report) {
     if (ratingBefore != null && ratingAfter.round() - ratingBefore.round() >= RatingScreenTuning.minGain) {
       list.add(RatingCelebration(ratingBefore, ratingAfter));
     }
-    final before = ratingBefore == null ? Rating.bands.first : Rating.bandOf(ratingBefore);
-    final after = Rating.bandOf(ratingAfter);
-    if (Rating.bands.indexOf(after) > Rating.bands.indexOf(before)) {
+    final before = ratingBefore == null ? RankLadder.bands.first : RankLadder.bandOf(ratingBefore);
+    final after = RankLadder.bandOf(ratingAfter);
+    if (RankLadder.bands.indexOf(after) > RankLadder.bands.indexOf(before)) {
       list.add(RankUpCelebration(before, after, ratingBefore, ratingAfter));
     }
   }

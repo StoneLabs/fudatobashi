@@ -6,7 +6,7 @@ import '../../domain/ikkiuchi_mode.dart';
 import '../../domain/ikkiuchi_rating.dart';
 import '../../domain/ikkiuchi_record.dart';
 import '../../domain/ikkiuchi_review.dart';
-import '../../domain/rating.dart';
+import '../../domain/rank_ladder.dart';
 import '../../l10n/ikkiuchi_strings.dart';
 import '../../l10n/ranked_strings.dart';
 import '../../l10n/results_strings.dart';
@@ -411,7 +411,7 @@ class _Standing extends StatelessWidget {
                       alignment: Alignment.centerLeft,
                       child: NumberedText(
                         s.ratingToNext(s.className(next)),
-                        [(next.minRating - rating).ceil()],
+                        [next.pointsLeft(rating)],
                         style: const TextStyle(fontWeight: Weights.black, fontSize: IkkiuchiPageLayout.gaugeFont),
                         numberStyle:
                             const TextStyle(fontFamily: Fonts.display, fontSize: IkkiuchiPageLayout.gaugeNumber),

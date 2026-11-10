@@ -6,7 +6,7 @@ import '../../config/design.dart';
 import '../../domain/card_stats.dart';
 import '../../domain/play_session.dart';
 import '../../domain/ranked.dart';
-import '../../domain/rating.dart';
+import '../../domain/rank_ladder.dart';
 import '../../domain/step_plan.dart';
 import '../../domain/today_set.dart';
 import '../../domain/trainer.dart';
@@ -389,7 +389,7 @@ class _Run {
   SummaryTile _ratingTile() {
     final before = report.ratingBefore, after = report.ratingAfter;
     if (after == null) return SummaryTile(label: s.ratingLabel, big: const TileFigure(missingTime), note: '');
-    final band = s.className(Rating.bandOf(after));
+    final band = s.className(RankLadder.bandOf(after));
     if (before == null) {
       return SummaryTile(label: s.ratingLabel, big: TileFigure('${after.round()}'), note: '${s.ratingFirst} · $band');
     }

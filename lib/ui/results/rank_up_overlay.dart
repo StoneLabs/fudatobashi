@@ -4,6 +4,7 @@ import 'dart:ui' show lerpDouble;
 import 'package:flutter/widgets.dart';
 
 import '../../config/design.dart';
+import '../../domain/rank_ladder.dart';
 import '../../domain/rating.dart';
 import '../../l10n/results_strings.dart';
 import '../../l10n/stats_strings.dart';
@@ -331,7 +332,7 @@ class _RatingCount extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final s = S.of(context);
-    final from = before ?? Rating.bandOf(after).minRating;
+    final from = before ?? RankLadder.bandOf(after).minRating;
     const style = TextStyle(fontFamily: Fonts.display, fontSize: RankUpLayout.rateFont, height: 1.1);
     return DecoratedBox(
       decoration: const BoxDecoration(
@@ -382,9 +383,7 @@ class NextClassPanel extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final s = S.of(context);
-    final band = Rating.bandOf(rating);
-    final next = Rating.nextBand(rating);
-    final floor = band.minRating.isFinite ? band.minRating : 0.0;
+    final (:band, :next, :fraction) = Rating.classProgress(rating);
     final shown = next ?? band;
     final style = rungStyle(shown.id);
     const bold = TextStyle(fontWeight: Weights.black);
@@ -409,14 +408,14 @@ class NextClassPanel extends StatelessWidget {
               const SizedBox(height: Gaps.tight),
               NumberedText(
                 s.nextClassTarget,
-                [_seconds(next.maxSeconds!)],
+                [Rating.toSeconds(next.minRating).round()],
                 style: bold.copyWith(fontSize: RankUpLayout.nextTargetFont),
                 numberStyle: number,
               ),
               const SizedBox(height: RankUpLayout.barGap),
               EntranceBuilder(
                 RankUpMotion.fill,
-                builder: (context, t, _) => _Bar((rating - floor) / (next.minRating - floor) * t),
+                builder: (context, t, _) => _Bar(fraction * t),
               ),
               const SizedBox(height: RankUpLayout.barGap),
               FittedBox(
@@ -424,7 +423,7 @@ class NextClassPanel extends StatelessWidget {
                 alignment: Alignment.centerLeft,
                 child: NumberedText(
                   s.nextClassPace,
-                  [Rating.toSeconds(rating).toStringAsFixed(1), (next.minRating - rating).ceil()],
+                  [Rating.toSeconds(rating).toStringAsFixed(1), next.pointsLeft(rating)],
                   style: bold.copyWith(fontSize: RankUpLayout.nextNoteFont, fontWeight: Weights.bold),
                   numberStyle: number,
                 ),
@@ -435,9 +434,6 @@ class NextClassPanel extends StatelessWidget {
       ]),
     );
   }
-
-  /// Whole seconds as they are, anything finer to a tenth.
-  static String _seconds(double s) => s == s.roundToDouble() ? '${s.round()}' : s.toStringAsFixed(1);
 }
 
 /// A full-width bar filled [fraction] of the way in pink.

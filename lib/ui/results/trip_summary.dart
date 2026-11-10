@@ -6,7 +6,7 @@ import '../../config/config.dart';
 import '../../config/design.dart';
 import '../../domain/ankiren_game.dart';
 import '../../domain/level_ladder.dart';
-import '../../domain/rating.dart';
+import '../../domain/rank_ladder.dart';
 import '../../domain/side_trips.dart';
 import '../../l10n/ankiren_review_strings.dart';
 import '../../l10n/ankiren_strings.dart';
@@ -179,7 +179,7 @@ class TripSummary {
 
   SummaryTile ratingTile(double? before, double? after) {
     if (after == null) return SummaryTile(label: s.ratingLabel, big: const TileFigure(missingTime), note: s.summaryNotSaved);
-    final band = s.className(Rating.bandOf(after));
+    final band = s.className(RankLadder.bandOf(after));
     if (before == null) {
       return SummaryTile(label: s.ratingLabel, big: TileFigure(groupDigits(after.round())), note: '${s.ratingFirst} · $band');
     }

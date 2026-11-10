@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../config/design.dart';
-import '../../domain/rating.dart';
+import '../../domain/rank_ladder.dart';
 import '../../l10n/history_strings.dart';
 import '../../l10n/ranked_strings.dart';
 import '../../l10n/home_strings.dart';
@@ -248,7 +248,7 @@ class _Overview {
       return SummaryTile(label: s.ratingLabel, big: const TileFigure(missingTime), note: '', color: Palette.pinkSoft);
     }
     final after = rating.after, before = rating.before;
-    final band = s.className(Rating.bandOf(after));
+    final band = s.className(RankLadder.bandOf(after));
     if (before == null) {
       return SummaryTile(
           label: s.ratingLabel,

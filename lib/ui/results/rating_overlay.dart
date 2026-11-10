@@ -6,7 +6,7 @@ import 'package:flutter/widgets.dart';
 
 import '../../config/config.dart';
 import '../../config/design.dart';
-import '../../domain/rating.dart';
+import '../../domain/rank_ladder.dart';
 import '../../l10n/ranked_strings.dart';
 import '../../l10n/results_strings.dart';
 import '../../l10n/stats_strings.dart';
@@ -22,8 +22,8 @@ import 'celebrations.dart';
 /// ([ceiling], the gate).
 class RatingTrack {
   factory RatingTrack.of(double before, double after) {
-    final band = Rating.bandOf(before);
-    final next = Rating.nextBand(before);
+    final band = RankLadder.bandOf(before);
+    final next = RankLadder.nextBand(before);
     final floor =
         band.minRating.isFinite ? band.minRating : math.min(before, next!.minRating - RatingScreenTuning.openSpan);
     final ceiling = next?.minRating ?? math.max(after, floor + RatingScreenTuning.openSpan);
@@ -84,10 +84,7 @@ class RatingTimeline {
   int shownAt(Duration elapsed) => ratingAt(elapsed).round();
 
   /// Points left to the next class; null at the top of the ladder.
-  int? toNextAt(Duration elapsed) {
-    final next = track.next;
-    return next == null ? null : math.max(0, (next.minRating - ratingAt(elapsed)).ceil());
-  }
+  int? toNextAt(Duration elapsed) => track.next?.pointsLeft(ratingAt(elapsed));
 
   /// A ratchet click each time the number goes up, then a jingle as it
   /// lands; or heartbeats against the gate, silence, and the break.

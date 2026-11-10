@@ -26,7 +26,7 @@ import 'package:fudatobashi/domain/ankiren_game.dart';
 import 'package:fudatobashi/domain/ankiren_level.dart';
 import 'package:fudatobashi/domain/ankiren_score.dart';
 import 'package:fudatobashi/domain/ankiren_xp.dart';
-import 'package:fudatobashi/domain/rating.dart';
+import 'package:fudatobashi/domain/rank_ladder.dart';
 import 'package:fudatobashi/domain/side_trips.dart';
 import 'package:fudatobashi/domain/trainer.dart';
 import 'package:fudatobashi/domain/trip_rating.dart';
@@ -78,7 +78,7 @@ class _HeardSounds extends Sounds {
   Future<void> playKimarijiVoice(int poemId) async {}
 }
 
-final _eLower = Rating.bands[3].minRating;
+final _eLower = RankLadder.bands[3].minRating;
 
 /// The rating page's moments, each with its ratings and game.
 final _moments = <AnkirenRatingMoment, AnkirenRatingCelebration>{
@@ -241,8 +241,8 @@ void main() {
         up.last,
         isA<AnkirenRankCelebration>()
             .having((c) => c.up, 'up', isTrue)
-            .having((c) => c.from, 'from', Rating.bands[2])
-            .having((c) => c.to, 'to', Rating.bands[3]),
+            .having((c) => c.from, 'from', RankLadder.bands[2])
+            .having((c) => c.to, 'to', RankLadder.bands[3]),
       );
       final down = ankirenCelebrationsFor(report(before: _eLower + 10, after: _eLower - 10, games: 7));
       expect(types(down), [AnkirenRatingCelebration, AnkirenRankCelebration], reason: 'a forfeit earns no XP');
@@ -250,8 +250,8 @@ void main() {
         down.last,
         isA<AnkirenRankCelebration>()
             .having((c) => c.up, 'up', isFalse)
-            .having((c) => c.from, 'from', Rating.bands[3])
-            .having((c) => c.to, 'to', Rating.bands[2]),
+            .having((c) => c.from, 'from', RankLadder.bands[3])
+            .having((c) => c.to, 'to', RankLadder.bands[2]),
       );
       expect(types(ankirenCelebrationsFor(report(before: _eLower + 30, after: _eLower + 10, games: 7))),
           [AnkirenRatingCelebration],
@@ -298,18 +298,18 @@ void main() {
           switch (moment) {
             case AnkirenRatingMoment.placing:
               expect(cloth(null), findsWidgets, reason: 'the class is not known yet');
-              expect(cloth(Rating.bandOf(data.after)), findsNothing);
+              expect(cloth(RankLadder.bandOf(data.after)), findsNothing);
               expect(find.text('${data.after.round()}'), findsNothing, reason: 'the rating stays hidden');
               expect(find.text(s.ankirenPlacementLeft(2).replaceAll('{0}', '2'), findRichText: true), findsOneWidget);
             case AnkirenRatingMoment.placed:
-              expect(cloth(Rating.bandOf(data.after)), findsOneWidget, reason: 'the first class shows');
+              expect(cloth(RankLadder.bandOf(data.after)), findsOneWidget, reason: 'the first class shows');
               expect(find.text('${data.after.round()}'), findsWidgets);
               expect(find.text(s.newBadge), findsOneWidget);
             case AnkirenRatingMoment.rankUp:
-              expect(find.text('${Rating.bands[3].minRating.round()}'), findsWidgets, reason: 'at the finial');
+              expect(find.text('${RankLadder.bands[3].minRating.round()}'), findsWidgets, reason: 'at the finial');
             default:
               expect(find.text('${data.after.round()}'), findsWidgets, reason: 'counted to the new rating');
-              expect(cloth(Rating.bandOf(data.after)), findsOneWidget);
+              expect(cloth(RankLadder.bandOf(data.after)), findsOneWidget);
           }
           await tester.pumpWidget(const SizedBox());
         });
@@ -317,7 +317,7 @@ void main() {
     }
 
     testWidgets('the ends of the ladder: 入門 from the start, and the top class without a next one', (tester) async {
-      final top = Rating.bands.last.minRating;
+      final top = RankLadder.bands.last.minRating;
       final cases = [
         const AnkirenRatingCelebration(560, 610, game: 5),
         const AnkirenRatingCelebration(620, 560, game: 5),
@@ -333,10 +333,10 @@ void main() {
           await showPage(tester, p, AnkirenRatingOverlay(data: data, onNext: () {}), narrowPhone,
               fontScale: 1.3, settle: t.breaksThrough ? t.strainEnd : t.length);
           expect(tester.takeException(), isNull, reason: '${data.moment.name} ${data.after}');
-          if (Rating.bandOf(data.after) == Rating.bands.first) {
+          if (RankLadder.bandOf(data.after) == RankLadder.bands.first) {
             expect(t.track.floor, TripRating.start, reason: '入門 stands on the start');
           }
-          if (Rating.bandOf(data.after) == Rating.bands.last && !t.breaksThrough) {
+          if (RankLadder.bandOf(data.after) == RankLadder.bands.last && !t.breaksThrough) {
             expect(find.text(s.topClassChase), findsOneWidget);
           }
           await tester.pumpWidget(const SizedBox());
@@ -388,8 +388,8 @@ void main() {
               expectOnScreen(tester, find.byKey(const ValueKey('ankirenRankNew')), phone);
               expectOnScreen(tester, find.byType(Tobi), phone);
               expect(find.text(up ? s.ratingCta : s.ankirenNextTime), findsOneWidget);
-              final next = Rating.nextBand(data.after)!;
-              final points = (next.minRating - data.after).ceil();
+              final next = RankLadder.nextBand(data.after)!;
+              final points = next.pointsLeft(data.after);
               expect(find.byWidgetPredicate((w) => w is NumberedText && w.values.single == points), findsOneWidget);
               expect(find.text('${data.after.round()}'), findsOneWidget);
               await tester.pumpWidget(const SizedBox());
@@ -614,15 +614,15 @@ void main() {
       final p = await open(tester, 'en');
       final data = _moments[AnkirenRatingMoment.rankDown]!;
       final t = AnkirenRatingTimeline(data);
-      expect(t.track.lines, [Rating.bands[3]], reason: 'the pole shows the line it sinks past');
+      expect(t.track.lines, [RankLadder.bands[3]], reason: 'the pole shows the line it sinks past');
       await showPage(tester, p, CelebrationSequence(pages: [data], onDone: () {}), usersPhone, settle: t.moveAt);
-      expect(cloth(Rating.bands[3]), findsOneWidget);
+      expect(cloth(RankLadder.bands[3]), findsOneWidget);
       var at = t.moveAt;
       while (t.ratingAt(at) >= _eLower) {
         at += const Duration(milliseconds: 50);
       }
       await tester.pump(at - t.moveAt + AnkirenRatingMotion.relabel);
-      expect(cloth(Rating.bands[2]), findsOneWidget, reason: 'the class it sank into');
+      expect(cloth(RankLadder.bands[2]), findsOneWidget, reason: 'the class it sank into');
       expect(heard.played, isEmpty, reason: 'no clicks on the way down');
       await tester.pump(t.length);
       expect(heard.played, [Sfx.ankirenFlip], reason: 'one soft flap as it lands');
@@ -636,13 +636,13 @@ void main() {
       final t = AnkirenRatingTimeline(data);
       await showPage(tester, p, CelebrationSequence(pages: [data], onDone: () {}), usersPhone,
           settle: t.revealAt - const Duration(milliseconds: 20));
-      expect(cloth(Rating.bandOf(data.after)), findsNothing, reason: 'still veiled');
+      expect(cloth(RankLadder.bandOf(data.after)), findsNothing, reason: 'still veiled');
       expect(heard.played.where((s) => s == Sfx.ratingStrain), hasLength(AnkirenRatingMotion.beats.length));
       expect(heard.played, isNot(contains(Sfx.rankUp)));
       await tester.pump(const Duration(milliseconds: 40));
       expect(heard.played, containsAllInOrder([Sfx.stamp, Sfx.rankUp]));
       await tester.pump(t.length - t.revealAt);
-      expect(cloth(Rating.bandOf(data.after)), findsOneWidget);
+      expect(cloth(RankLadder.bandOf(data.after)), findsOneWidget);
       expect(heard.played.where((s) => s == Sfx.ratingTick), isNotEmpty);
 
       await tester.pumpWidget(const SizedBox());
@@ -664,8 +664,8 @@ void main() {
         expect(tester.takeException(), isNull);
         final shown = switch (moment) {
           AnkirenRatingMoment.placing => null,
-          AnkirenRatingMoment.rankUp => Rating.bandOf(data.before),
-          _ => Rating.bandOf(data.after),
+          AnkirenRatingMoment.rankUp => RankLadder.bandOf(data.before),
+          _ => RankLadder.bandOf(data.after),
         };
         expect(cloth(shown), findsOneWidget, reason: moment.name);
         if (moment != AnkirenRatingMoment.placing && moment != AnkirenRatingMoment.rankUp) {
@@ -796,7 +796,7 @@ void main() {
 
     testWidgets('ladder_ends', (tester) async {
       final p = await open(tester, 'en');
-      final top = Rating.bands.last.minRating;
+      final top = RankLadder.bands.last.minRating;
       final cases = {
         'novice_up': const AnkirenRatingCelebration(560, 610, game: 5),
         'novice_placed': const AnkirenRatingCelebration(560, 700, game: 3, placementScores: [120, 180, 240]),

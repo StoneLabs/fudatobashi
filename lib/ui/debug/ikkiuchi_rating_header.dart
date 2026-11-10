@@ -4,7 +4,7 @@ import 'package:flutter/material.dart';
 
 import '../../config/config.dart';
 import '../../config/design.dart';
-import '../../domain/rating.dart';
+import '../../domain/rank_ladder.dart';
 import 'debug_common.dart';
 
 /// The rating a 一騎打ち developer page shows Tobi at, pinned over the
@@ -93,8 +93,8 @@ class _RankBar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     const min = IkkiuchiTuning.ratingMin, max = IkkiuchiTuning.ratingMax;
-    const bands = Rating.bands;
-    final on = Rating.bandOf(rating);
+    const bands = RankLadder.bands;
+    final on = RankLadder.bandOf(rating);
     final spans = [
       for (final (i, band) in bands.indexed)
         (band, math.max(band.minRating, min), i + 1 < bands.length ? math.min(bands[i + 1].minRating, max) : max),

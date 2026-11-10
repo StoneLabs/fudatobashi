@@ -19,7 +19,7 @@ import 'package:fudatobashi/db/database.dart';
 import 'package:fudatobashi/domain/ankiren_game.dart';
 import 'package:fudatobashi/domain/ankiren_score.dart';
 import 'package:fudatobashi/domain/level_ladder.dart';
-import 'package:fudatobashi/domain/rating.dart';
+import 'package:fudatobashi/domain/rank_ladder.dart';
 import 'package:fudatobashi/domain/side_trips.dart';
 import 'package:fudatobashi/domain/teiichi.dart';
 import 'package:fudatobashi/domain/teiichi_score.dart';
@@ -686,15 +686,15 @@ void main() {
           matching: find.byType(Slider));
       await scrollTo(rightSlider);
       expect(kv('score'), '$start');
-      expect(kv('class'), Rating.bandOf(TripRating.teiichi.performance(start)).labelEn);
+      expect(kv('class'), RankLadder.bandOf(TripRating.teiichi.performance(start)).labelEn);
       await captureScreen(tester, 'teiichi_ranked/debug_points');
       await tester.drag(rightSlider, const Offset(-1000, 0));
       await tester.pumpAndSettle();
-      expect([kv('score'), kv('class')], ['0', Rating.bands.first.labelEn], reason: 'no call right, nothing earned');
+      expect([kv('score'), kv('class')], ['0', RankLadder.bands.first.labelEn], reason: 'no call right, nothing earned');
 
       await scrollTo(find.text('Ranked classes by placing time'));
-      await scrollTo(find.text(Rating.bands.last.labelEn));
-      for (final band in Rating.bands.skip(1)) {
+      await scrollTo(find.text(RankLadder.bands.last.labelEn));
+      for (final band in RankLadder.bands.skip(1)) {
         expect(find.text(band.labelEn), findsOneWidget, reason: band.labelEn);
         expect(find.text('${TripRating.teiichi.scoreFor(band.minRating).round()}'), findsOneWidget, reason: band.labelEn);
       }

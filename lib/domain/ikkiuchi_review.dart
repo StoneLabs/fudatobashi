@@ -4,7 +4,7 @@ import 'ikkiuchi_layout.dart';
 import 'ikkiuchi_rating.dart';
 import 'ikkiuchi_record.dart';
 import 'ikkiuchi_side.dart';
-import 'rating.dart';
+import 'rank_ladder.dart';
 import 'xp.dart';
 
 /// Where a card on the field went in the end: the player or the opponent
@@ -29,9 +29,6 @@ typedef IkkiuchiTakes = ({int took, int read});
 /// The field cards read with a kimariji of [length] kana: how many, the
 /// player's takes among them, and each player's median time to reach them.
 typedef IkkiuchiLengthSpeed = ({int length, int read, int took, Duration? player, Duration? opponent});
-
-/// The class a rating sits in, the next one, and how far toward it.
-typedef IkkiuchiClassProgress = ({RankBand band, RankBand? next, double fraction});
 
 /// One stored 一騎打ち [match] against the matches recorded before it
 /// ([all] holds every recorded match, this one among them), with the [xp]
@@ -213,13 +210,7 @@ class IkkiuchiReview {
   /// rating.
   bool get endedPlacement => match.ranked && IkkiuchiRating.endsPlacement(_rankedBefore.length);
 
-  /// [rating]'s class, the next one and how far toward it, from the
-  /// class's floor (the lowest rating Tobi plays at for the lowest class).
-  static IkkiuchiClassProgress classProgress(double rating) {
-    final band = Rating.bandOf(rating);
-    final next = Rating.nextBand(rating);
-    final floor = band.minRating.isFinite ? band.minRating : IkkiuchiTuning.ratingMin;
-    final fraction = next == null ? 1.0 : ((rating - floor) / (next.minRating - floor)).clamp(0.0, 1.0);
-    return (band: band, next: next, fraction: fraction);
-  }
+  /// [rating]'s class, the next one and how far toward it, 入門 from the
+  /// lowest rating Tobi plays at.
+  static ClassProgress classProgress(double rating) => RankLadder.progress(rating, floor: IkkiuchiTuning.ratingMin);
 }

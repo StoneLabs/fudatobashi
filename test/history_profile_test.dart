@@ -11,7 +11,7 @@ import 'package:fudatobashi/data/poem.dart';
 import 'package:fudatobashi/db/database.dart';
 import 'package:fudatobashi/domain/ankiren_level.dart';
 import 'package:fudatobashi/domain/play_session.dart';
-import 'package:fudatobashi/domain/rating.dart';
+import 'package:fudatobashi/domain/rank_ladder.dart';
 import 'package:fudatobashi/domain/side_trips.dart';
 import 'package:fudatobashi/domain/trainer.dart';
 import 'package:fudatobashi/l10n/history_strings.dart';
@@ -250,7 +250,7 @@ void main() {
         (tester) async {
       final s = S(ja ? 'ja' : 'en');
       final p = await open(tester, ja: ja);
-      p.rating = Rating.bands[2].minRating;
+      p.rating = RankLadder.bands[2].minRating;
       useScreen(tester, usersPhone, fontScale: 1.3);
       Future<void> showProfile() async {
         await tester.pumpWidget(RepaintBoundary(
@@ -265,7 +265,7 @@ void main() {
       expect(find.text(s.tripName(SideTrip.ankiren)), findsOneWidget);
       expect(find.text(s.tripName(SideTrip.teiichi)), findsOneWidget);
       expect(find.text(s.sideTripUnranked), findsNWidgets(SideTrip.values.length));
-      expect(tester.widget<ClassBadge>(find.byType(ClassBadge).first).band, Rating.bands.first);
+      expect(tester.widget<ClassBadge>(find.byType(ClassBadge).first).band, RankLadder.bands.first);
 
       await tester.runAsync(() => p.recordAnkiren(playAnkiren(const AnkirenSetup.ranked()), startedAt: day));
       final rating = p.sideTrips.ratingOf(SideTrip.ankiren)!;
@@ -273,7 +273,7 @@ void main() {
       final row = find.ancestor(of: find.byType(ClassBadge), matching: find.byType(Row)).first;
       expect(find.descendant(of: row, matching: find.text('${rating.round()}')), findsOneWidget);
       expect(find.text(s.sideTripUnranked), findsOneWidget, reason: '定位置 has its own rating');
-      expect(tester.widget<ClassBadge>(find.byType(ClassBadge).first).band, Rating.bandOf(rating));
+      expect(tester.widget<ClassBadge>(find.byType(ClassBadge).first).band, RankLadder.bandOf(rating));
       final badge = tester.getSize(find.byType(ClassBadge).first);
       final sticker = tester.getSize(find.byType(RankSticker));
       expect(badge.height, lessThan(sticker.height), reason: 'smaller than the main rank');

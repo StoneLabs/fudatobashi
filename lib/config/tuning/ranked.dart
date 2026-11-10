@@ -12,6 +12,10 @@ abstract final class RatingModel {
   /// Reference time (s): performance is 0 at this 100-card time.
   static const double referenceSeconds = 1000;
 
+  /// Where 入門's progress toward the first class starts (入門 has no
+  /// threshold): the rating at [referenceSeconds].
+  static const double noviceFloor = 0;
+
   /// Smoothing K while still building confidence (the first
   /// [provisionalSessions] ranked runs after placement).
   static const double provisionalK = 0.5;
@@ -19,17 +23,6 @@ abstract final class RatingModel {
   /// Smoothing K once established.
   static const double establishedK = 0.25;
   static const int provisionalSessions = 10;
-
-  // Rank-band thresholds: a ranked run's scored 100-card time (s) at or below which a
-  // band is reached (see `Rating.bands`).
-  static const double fLowerMaxSeconds = 400;
-  static const double fUpperMaxSeconds = 245;
-  static const double eLowerMaxSeconds = 150;
-  static const double eUpperMaxSeconds = 116;
-  static const double dMaxSeconds = 90;
-  static const double cMaxSeconds = 60;
-  static const double bMaxSeconds = 52;
-  static const double aMaxSeconds = 40;
 }
 
 /// Ranked runs (ランク戦, all-known mode): the only runs that move the

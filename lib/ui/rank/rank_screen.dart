@@ -3,7 +3,7 @@ import 'package:flutter/widgets.dart';
 
 import '../../config/design.dart';
 import '../../config/vector_art.dart';
-import '../../domain/rating.dart';
+import '../../domain/rank_ladder.dart';
 import '../../l10n/home_strings.dart';
 import '../../l10n/ranked_strings.dart';
 import '../../l10n/run_tab_strings.dart';
@@ -36,9 +36,9 @@ class RankScreen extends StatelessWidget {
     final s = S.of(context);
     final progress = ProgressScope.of(context);
     final rating = progress.placed ? progress.currentRating : null;
-    final band = rating == null ? null : Rating.bandOf(rating);
-    final next = rating == null ? null : Rating.nextBand(rating);
-    final bandIndex = band == null ? -1 : Rating.bands.indexOf(band);
+    final band = rating == null ? null : RankLadder.bandOf(rating);
+    final next = rating == null ? null : RankLadder.nextBand(rating);
+    final bandIndex = band == null ? -1 : RankLadder.bands.indexOf(band);
     final history = progress.rankedHistory;
     return StatsPage(
       title: s.rank,
@@ -67,7 +67,7 @@ class RankScreen extends StatelessWidget {
           title: s.rankClassesTitle,
           sub: s.sub?.rankClassesTitle,
           child: Column(children: [
-            for (final (i, rungBand) in Rating.bands.reversed.indexed) ...[
+            for (final (i, rungBand) in RankLadder.bands.reversed.indexed) ...[
               if (i > 0) const SizedBox(height: RankLayout.rungGap),
               _Rung(
                 band: rungBand,
@@ -76,8 +76,8 @@ class RankScreen extends StatelessWidget {
                 nextThreshold: next?.minRating,
                 isYou: rungBand == band,
                 isNext: next != null && rungBand == next,
-                isCleared: band != null && Rating.bands.indexOf(rungBand) < bandIndex,
-                isLocked: band != null && Rating.bands.indexOf(rungBand) > bandIndex,
+                isCleared: band != null && RankLadder.bands.indexOf(rungBand) < bandIndex,
+                isLocked: band != null && RankLadder.bands.indexOf(rungBand) > bandIndex,
                 isTop: rungBand.id == 'A',
               ),
             ],

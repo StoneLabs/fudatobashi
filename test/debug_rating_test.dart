@@ -1,6 +1,6 @@
 // SRS Debug's Rating tab: the class table lists every class of the rating
-// with the rating it starts at and its time per card, worked out from the
-// class lines. With RENDER_SCREENS=1 it renders the table to
+// with the rating it starts at and its time per card, worked out from that
+// rating. With RENDER_SCREENS=1 it renders the table to
 // build/screens/debug_rating_classes.
 import 'dart:io';
 
@@ -12,6 +12,7 @@ import 'package:fudatobashi/config/config.dart';
 import 'package:fudatobashi/data/fuda_sets.dart';
 import 'package:fudatobashi/data/poem.dart';
 import 'package:fudatobashi/db/database.dart';
+import 'package:fudatobashi/domain/rank_ladder.dart';
 import 'package:fudatobashi/domain/rating.dart';
 import 'package:fudatobashi/state/progress.dart';
 import 'package:fudatobashi/state/scope.dart';
@@ -44,20 +45,20 @@ void main() {
     await tester.pumpAndSettle();
     expect(title, findsOneWidget);
 
-    String perCard(double? seconds) => (seconds! / RankedTuning.cards).toStringAsFixed(2);
-    const bands = Rating.bands;
+    String perCard(RankBand band) => (Rating.toSeconds(band.minRating) / RankedTuning.cards).toStringAsFixed(2);
+    const bands = RankLadder.bands;
     final table = find.ancestor(of: title, matching: find.byType(Column)).first;
     String row(RankBand band) => tester
         .widget<Text>(find.descendant(of: table, matching: find.textContaining(RegExp('^${RegExp.escape(band.labelEn)} '))))
         .data!;
-    expect(row(bands.first), endsWith('> ${perCard(bands[1].maxSeconds)} s'), reason: 'slower than the first line');
+    expect(row(bands.first), endsWith('> ${perCard(bands[1])} s'), reason: 'slower than the first line');
     for (var i = 1; i + 1 < bands.length; i++) {
       final band = bands[i];
       expect(row(band), contains('${band.minRating.round()}'), reason: band.labelEn);
-      expect(row(band), endsWith('${perCard(band.maxSeconds)}–${perCard(bands[i + 1].maxSeconds)} s'),
+      expect(row(band), endsWith('${perCard(band)}–${perCard(bands[i + 1])} s'),
           reason: band.labelEn);
     }
-    expect(row(bands.last), endsWith('≤ ${perCard(bands.last.maxSeconds)} s'), reason: 'the top class has no end');
+    expect(row(bands.last), endsWith('≤ ${perCard(bands.last)} s'), reason: 'the top class has no end');
 
     await captureScreen(tester, 'debug_rating_classes');
     await tester.pumpWidget(const SizedBox());

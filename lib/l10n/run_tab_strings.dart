@@ -1,4 +1,4 @@
-import '../domain/rating.dart';
+import '../domain/rank_ladder.dart';
 import 'ranked_strings.dart';
 import 'strings.dart';
 

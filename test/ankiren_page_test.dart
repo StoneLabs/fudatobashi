@@ -26,7 +26,7 @@ import 'package:fudatobashi/db/database.dart';
 import 'package:fudatobashi/domain/ankiren_field.dart';
 import 'package:fudatobashi/domain/ankiren_game.dart';
 import 'package:fudatobashi/domain/ankiren_level.dart';
-import 'package:fudatobashi/domain/rating.dart';
+import 'package:fudatobashi/domain/rank_ladder.dart';
 import 'package:fudatobashi/domain/side_trips.dart';
 import 'package:fudatobashi/domain/trip_rating.dart';
 import 'package:fudatobashi/domain/trainer.dart';
@@ -252,7 +252,7 @@ void main() {
               if (rating) {
                 expect(onPage(find.textContaining(s.classStem(entry.band), findRichText: true)), findsWidgets);
               }
-              if (Rating.nextBand(entry.rating ?? TripRating.start) != null) {
+              if (RankLadder.nextBand(entry.rating ?? TripRating.start) != null) {
                 final bar = onPage(find.byType(RatingBar, skipOffstage: false));
                 expect(bar, findsOneWidget);
                 expect(tester.getSize(bar).height, greaterThan(0), reason: 'the line to the next class keeps its room');

@@ -8,6 +8,7 @@ import '../../config/design.dart';
 import '../../data/fuda_sets.dart';
 import '../../data/poem.dart';
 import '../../domain/card_stats.dart';
+import '../../domain/rank_ladder.dart';
 import '../../domain/rating.dart';
 import '../../domain/trainer.dart';
 import '../../state/progress.dart';
@@ -459,8 +460,8 @@ class _RatingTab extends StatelessWidget {
       DebugKV('projected 100 from card stats (s)', (projected / 1000).toStringAsFixed(2)),
       DebugKV('performance P', perf.toStringAsFixed(1)),
       DebugKV('rating R', p.rating?.toStringAsFixed(1) ?? '— (not placed yet)'),
-      DebugKV('band', Rating.bandOf(p.rating ?? perf).label),
-      DebugKV('next band', Rating.nextBand(p.rating ?? perf)?.label ?? '—'),
+      DebugKV('band', RankLadder.bandOf(p.rating ?? perf).label),
+      DebugKV('next band', RankLadder.nextBand(p.rating ?? perf)?.label ?? '—'),
       DebugKV('formula', 'P = 600·log2(1000 s / T), T = ranked time + 10 s a miss; R += K(P−R)'),
       DebugKV('rated runs', '${p.ratedRuns.length}'),
       if (p.ratedRuns.lastOrNull?.scoredMs case final ms?) DebugKV('last ranked T (s)', (ms / 1000).toStringAsFixed(2)),
@@ -475,28 +476,29 @@ class _RatingTab extends StatelessWidget {
   }
 }
 
-/// The rating's classes as average times per card: each class line
-/// ([RankBand.maxSeconds], a projected 100-card time) shared out over the
-/// [RankedTuning.cards] cards, with the rating it starts at. A class runs
-/// from its own line, which it includes, to the next one's.
+/// The rating's classes as average times per card: each class's rating
+/// ([RankBand.minRating]) as a projected 100-card time ([Rating.toSeconds])
+/// shared out over the [RankedTuning.cards] cards. A class runs from its own
+/// line, which it includes, to the next one's.
 class _RatingClassTable extends StatelessWidget {
   const _RatingClassTable();
 
   @override
   Widget build(BuildContext context) {
-    const bands = Rating.bands;
+    const bands = RankLadder.bands;
     const cards = RankedTuning.cards;
     String perCard(double seconds) => (seconds / cards).toStringAsFixed(2);
     String cell(String text, int width) => text.padRight(width);
+    double? secondsOf(RankBand? band) =>
+        band == null || !band.minRating.isFinite ? null : Rating.toSeconds(band.minRating);
     String row(int i) {
       final b = bands[i];
       final next = bands.elementAtOrNull(i + 1);
-      final line = b.maxSeconds;
+      final line = secondsOf(b), time = secondsOf(next);
       if (line == null) {
         return '${cell(b.labelEn, 8)}${cell('< ${next!.minRating.round()}', 8)}'
-            '${cell('> ${next.maxSeconds!.toStringAsFixed(0)} s', 9)}> ${perCard(next.maxSeconds!)} s';
+            '${cell('> ${time!.toStringAsFixed(0)} s', 9)}> ${perCard(time)} s';
       }
-      final time = next?.maxSeconds;
       return '${cell(b.labelEn, 8)}${cell('${b.minRating.round()}', 8)}${cell('≤ ${line.toStringAsFixed(0)} s', 9)}'
           '${time == null ? '≤ ${perCard(line)}' : '${perCard(line)}–${perCard(time)}'} s';
     }

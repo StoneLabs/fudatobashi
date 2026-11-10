@@ -8,7 +8,7 @@ import '../../config/design.dart';
 import '../../domain/ikkiuchi_mode.dart';
 import '../../domain/ikkiuchi_rating.dart';
 import '../../domain/ikkiuchi_review.dart';
-import '../../domain/rating.dart';
+import '../../domain/rank_ladder.dart';
 import '../../l10n/ikkiuchi_strings.dart';
 import '../../l10n/ranked_strings.dart';
 import '../../l10n/results_strings.dart';
@@ -652,7 +652,7 @@ class _Gauge extends StatelessWidget {
                     alignment: Alignment.centerLeft,
                     child: NumberedText(
                       s.ratingToNext(s.className(next)),
-                      [math.max(0, (next.minRating - rating).ceil())],
+                      [next.pointsLeft(rating)],
                       style: const TextStyle(fontWeight: Weights.black, fontSize: IkkiuchiRankLayout.gaugeFont, height: 1),
                       numberStyle: const TextStyle(fontFamily: Fonts.display, fontSize: IkkiuchiRankLayout.gaugeNumber, height: 1),
                     ),

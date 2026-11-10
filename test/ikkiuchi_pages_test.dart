@@ -22,7 +22,7 @@ import 'package:fudatobashi/domain/ikkiuchi_read.dart';
 import 'package:fudatobashi/domain/ikkiuchi_side.dart';
 import 'package:fudatobashi/domain/ikkiuchi_strike.dart';
 import 'package:fudatobashi/domain/ikkiuchi_tobi.dart';
-import 'package:fudatobashi/domain/rating.dart';
+import 'package:fudatobashi/domain/rank_ladder.dart';
 import 'package:fudatobashi/state/progress.dart';
 import 'package:fudatobashi/state/scope.dart';
 import 'package:fudatobashi/state/settings.dart';
@@ -207,7 +207,7 @@ void main() {
     for (final name in ['入門', 'F下級', 'F上級', 'D級', 'A級']) {
       expect(find.descendant(of: header, matching: find.text(name)), findsOneWidget, reason: name);
     }
-    final on = tester.widget<Text>(find.descendant(of: header, matching: find.textContaining(Rating.bandOf(1700).stem)));
+    final on = tester.widget<Text>(find.descendant(of: header, matching: find.textContaining(RankLadder.bandOf(1700).stem)));
     expect(on.style?.fontWeight, Weights.bold, reason: 'the class at 1700 stands out');
 
     final list = find.byType(Scrollable).first;

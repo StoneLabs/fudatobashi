@@ -6,7 +6,7 @@ import 'package:flutter/widgets.dart';
 import '../../config/config.dart';
 import '../../config/design.dart';
 import '../../domain/ikkiuchi_rating.dart';
-import '../../domain/rating.dart';
+import '../../domain/rank_ladder.dart';
 import '../../l10n/ikkiuchi_strings.dart';
 import '../../l10n/ranked_strings.dart';
 import '../../l10n/strings.dart';
@@ -75,7 +75,7 @@ class IkkiuchiRankChart {
 
   /// The classes whose lines fall inside the chart, lowest first.
   Iterable<RankBand> get bands =>
-      Rating.bands.where((b) => b.minRating.isFinite && b.minRating > low && b.minRating < high);
+      RankLadder.bands.where((b) => b.minRating.isFinite && b.minRating > low && b.minRating < high);
 }
 
 /// The rank change page's plot at [elapsed] into the page ([timeline]):
@@ -306,7 +306,7 @@ class _ChartPainter extends _PlotPainter {
     const labelRoom = IkkiuchiRankLayout.chartLabelRoom;
 
     if (revealed) {
-      final band = change.to, next = Rating.nextBand(change.after);
+      final band = change.to, next = RankLadder.nextBand(change.after);
       final top = chart.yOf(math.min(next?.minRating ?? chart.high, chart.high));
       final bottom = chart.yOf(math.max(band.minRating, chart.low));
       final f = Curves.easeOutCubic.transform(progressIn(e, t.revealAt, IkkiuchiRankMotion.bandFill));

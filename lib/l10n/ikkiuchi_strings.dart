@@ -2,7 +2,7 @@ import '../domain/field_parts.dart';
 import '../domain/ikkiuchi_match.dart';
 import '../domain/ikkiuchi_mode.dart';
 import '../domain/ikkiuchi_record.dart';
-import '../domain/rating.dart';
+import '../domain/rank_ladder.dart';
 import 'ranked_strings.dart';
 import 'strings.dart';
 

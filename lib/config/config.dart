@@ -25,6 +25,7 @@ part 'tuning/side_trips.dart';
 part 'tuning/settings.dart';
 part 'tuning/stats.dart';
 part 'tuning/ranked.dart';
+part 'tuning/rank_ladder.dart';
 part 'tuning/history.dart';
 part 'tuning/exam.dart';
 part 'tuning/xp.dart';

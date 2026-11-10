@@ -9,7 +9,7 @@ import '../domain/ikkiuchi_mode.dart';
 import '../domain/ikkiuchi_rating.dart';
 import '../domain/ikkiuchi_record.dart';
 import '../domain/ikkiuchi_xp.dart';
-import '../domain/rating.dart';
+import '../domain/rank_ladder.dart';
 import '../domain/xp.dart';
 
 /// What recording a 一騎打ち match did: the match as stored, what it did to
@@ -65,8 +65,8 @@ class IkkiuchiRankChange {
   bool get placing => placement.isNotEmpty;
   bool get placed => placement.length == IkkiuchiRating.placementMatches;
 
-  RankBand get from => Rating.bandOf(before);
-  RankBand get to => Rating.bandOf(after);
+  RankBand get from => RankLadder.bandOf(before);
+  RankBand get to => RankLadder.bandOf(after);
 }
 
 /// The recorded 一騎打ち matches, oldest first, each with its reads, and
@@ -235,7 +235,7 @@ class IkkiuchiModeRecords {
 
   /// The class the rating stands in; null while the player is being placed.
   RankBand? get band => switch (rating) {
-        final rating? => Rating.bandOf(rating),
+        final rating? => RankLadder.bandOf(rating),
         null => null,
       };
 

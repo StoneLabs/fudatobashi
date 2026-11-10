@@ -7,7 +7,7 @@ import '../../config/design.dart';
 import '../../config/vector_art.dart';
 import '../../domain/ikkiuchi_layout.dart';
 import '../../domain/ikkiuchi_record.dart';
-import '../../domain/rating.dart';
+import '../../domain/rank_ladder.dart';
 import '../../l10n/ikkiuchi_strings.dart';
 import '../../l10n/ranked_strings.dart';
 import '../../l10n/strings.dart';
@@ -117,7 +117,7 @@ class _IkkiuchiCustomPageState extends State<IkkiuchiCustomPage> {
     const whyNumber = TextStyle(fontFamily: Fonts.display, fontWeight: Weights.regular, color: Palette.ink);
     const gap = SizedBox(height: IkkiuchiCustomLayout.barGap);
     final bands = [
-      for (final id in IkkiuchiFreeTuning.ratingClasses) Rating.bands.firstWhere((b) => b.id == id),
+      for (final id in IkkiuchiFreeTuning.ratingClasses) RankLadder.bands.firstWhere((b) => b.id == id),
     ];
     final fewest = _fitting(1, _perSide);
     return Scaffold(

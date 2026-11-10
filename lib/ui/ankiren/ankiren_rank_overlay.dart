@@ -4,7 +4,7 @@ import 'dart:ui' show lerpDouble;
 import 'package:flutter/widgets.dart';
 
 import '../../config/design.dart';
-import '../../domain/rating.dart';
+import '../../domain/rank_ladder.dart';
 import '../../l10n/ankiren_strings.dart';
 import '../../l10n/ranked_strings.dart';
 import '../../l10n/results_strings.dart';
@@ -560,7 +560,7 @@ class _Result extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final s = S.of(context);
-    final next = Rating.nextBand(data.after);
+    final next = RankLadder.nextBand(data.after);
     final style = rungStyle(data.to.id);
     const display = TextStyle(fontFamily: Fonts.display, height: 1);
     Widget badge(RankBand band, Color color, Color text) => ClassBadge(band,
@@ -605,7 +605,7 @@ class _Result extends StatelessWidget {
                   style: const TextStyle(fontWeight: Weights.black, fontSize: AnkirenRankLayout.nextFont))
               : NumberedText(
                   s.ratingToNext(s.className(next)),
-                  [(next.minRating - data.after).ceil()],
+                  [next.pointsLeft(data.after)],
                   style: const TextStyle(fontWeight: Weights.black, fontSize: AnkirenRankLayout.nextFont),
                   numberStyle: const TextStyle(
                       fontFamily: Fonts.display, fontWeight: Weights.regular, fontSize: AnkirenRankLayout.nextNumberFont),

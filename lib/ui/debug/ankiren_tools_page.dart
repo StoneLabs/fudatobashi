@@ -9,7 +9,7 @@ import '../../domain/ankiren_field.dart';
 import '../../domain/ankiren_level.dart';
 import '../../domain/ankiren_score.dart';
 import '../../domain/ankiren_tomofuda.dart';
-import '../../domain/rating.dart';
+import '../../domain/rank_ladder.dart';
 import '../../domain/trip_rating.dart';
 import '../../state/scope.dart';
 import '../play/time_format.dart';
@@ -378,7 +378,7 @@ class _LevelTable extends StatelessWidget {
 }
 
 /// 暗記練's ranked classes as average first-tap times: for each class line
-/// (`Rating.bands`), the time per card at which a ranked game with all
+/// (`RankLadder.bands`), the time per card at which a ranked game with all
 /// its cards right with the first tap reaches it, played to the end of the
 /// memorise time and ready early at [AnkirenToolsTuning.classTableReadyAt].
 /// A class reached even at the slowest timed find shows the first-tap finds
@@ -429,7 +429,7 @@ class _ClassTable extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final early = _setup.memorise - AnkirenToolsTuning.classTableReadyAt;
-    final bands = Rating.bands.skip(1).toList();
+    final bands = RankLadder.bands.skip(1).toList();
     final full = [for (final b in bands) _reach(b.minRating, Duration.zero)];
     final ready = [for (final b in bands) _reach(b.minRating, early)];
     String cell(String text, int width) => text.padRight(width);

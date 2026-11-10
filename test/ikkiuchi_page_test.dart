@@ -39,7 +39,7 @@ import 'package:fudatobashi/domain/ikkiuchi_tobi.dart';
 import 'package:fudatobashi/l10n/ikkiuchi_strings.dart';
 import 'package:fudatobashi/l10n/strings.dart';
 import 'package:fudatobashi/domain/ikkiuchi_rating.dart';
-import 'package:fudatobashi/domain/rating.dart';
+import 'package:fudatobashi/domain/rank_ladder.dart';
 import 'package:fudatobashi/l10n/ranked_strings.dart';
 import 'package:fudatobashi/l10n/side_trip_strings.dart';
 import 'package:fudatobashi/ui/ikkiuchi/ikkiuchi_field_picture.dart';
@@ -1058,7 +1058,7 @@ void main() {
         (tester) async {
       final p = await open(tester);
       await showPage(tester, p, page: page(rating: 1600, perSide: 25, rows: 3, minutes: 15));
-      final b = Rating.bands.firstWhere((band) => band.id == 'B');
+      final b = RankLadder.bands.firstWhere((band) => band.id == 'B');
       final bRating = b.minRating.round();
       await tapAndWait(tester, key(s.className(b)), Duration.zero);
       await tapAndWait(tester, plus(0), Duration.zero);

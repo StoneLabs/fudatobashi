@@ -1,7 +1,7 @@
 import 'package:flutter/widgets.dart';
 
 import '../../config/design.dart';
-import '../../domain/rating.dart';
+import '../../domain/rank_ladder.dart';
 import '../../l10n/home_strings.dart';
 import '../../l10n/ranked_strings.dart';
 import '../../l10n/strings.dart';
@@ -22,7 +22,7 @@ class RankedHero extends StatelessWidget {
   Widget build(BuildContext context) {
     final s = S.of(context);
     final rating = ProgressScope.of(context).rating;
-    final top = rating != null && Rating.nextBand(rating) == null;
+    final top = rating != null && RankLadder.nextBand(rating) == null;
     return Stack(
       clipBehavior: Clip.none,
       children: [

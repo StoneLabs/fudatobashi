@@ -2,7 +2,7 @@ import 'dart:math' as math;
 
 import '../config/config.dart';
 import 'level_ladder.dart';
-import 'rating.dart';
+import 'rank_ladder.dart';
 import 'teiichi_record.dart';
 import 'trip_rating.dart';
 
@@ -274,7 +274,7 @@ class SideTripsHub {
         rankedLock: RankedLock.of(allKnown: allKnown, ladder: standing.ladder),
         rating: rating,
         ratingChange: standing.ratingChange,
-        band: rating == null ? Rating.bands.first : Rating.bandOf(rating),
+        band: rating == null ? RankLadder.bands.first : RankLadder.bandOf(rating),
         ladder: standing.ladder,
         maxLevel: standing.maxLevel,
         games: standing.games,

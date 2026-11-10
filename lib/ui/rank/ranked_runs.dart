@@ -4,7 +4,7 @@ import 'package:flutter/material.dart';
 
 import '../../config/config.dart';
 import '../../config/design.dart';
-import '../../domain/rating.dart';
+import '../../domain/rank_ladder.dart';
 import '../../l10n/ranked_strings.dart';
 import '../../l10n/run_tab_strings.dart';
 import '../../l10n/stats_strings.dart';
@@ -119,13 +119,13 @@ class _RatingChartPainter extends CustomPainter {
   void paint(Canvas canvas, Size size) {
     if (ratings.length < 2) return;
     var lo = ratings.reduce(math.min), hi = ratings.reduce(math.max);
-    if (Rating.bandOf(lo).minRating case final m when m.isFinite) lo = m;
-    if (Rating.nextBand(hi) case final next?) hi = next.minRating;
+    if (RankLadder.bandOf(lo).minRating case final m when m.isFinite) lo = m;
+    if (RankLadder.nextBand(hi) case final next?) hi = next.minRating;
     final pad = math.max(1.0, hi - lo) * RunTabsStyle.ratingChartPad;
     lo -= pad;
     hi += pad;
     final lines = [
-      for (final band in Rating.bands)
+      for (final band in RankLadder.bands)
         if (band.minRating case final r when r.isFinite && r >= lo && r <= hi)
           (
             r,

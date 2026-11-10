@@ -215,8 +215,8 @@ abstract final class AnkirenPlayTuning {
   static const Duration clockTick = Duration(seconds: 1);
 }
 
-/// 暗記練's rating (see `TripRating`), on the main rating's scale. Its
-/// start, placement and K are every trip's.
+/// 暗記練's rating (see `TripRating`), on the shared classes
+/// (`RankLadder`). Its start, placement and K are every trip's.
 abstract final class AnkirenRatingModel {
   /// The rating before any ranked game, where the way to the first class
   /// starts. It is not a floor: a game can rate below it.

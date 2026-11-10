@@ -10,7 +10,7 @@ import 'package:fudatobashi/data/islands.dart';
 import 'package:fudatobashi/data/poem.dart';
 import 'package:fudatobashi/db/database.dart';
 import 'package:fudatobashi/domain/play_session.dart';
-import 'package:fudatobashi/domain/rating.dart';
+import 'package:fudatobashi/domain/rank_ladder.dart';
 import 'package:fudatobashi/domain/trainer.dart';
 import 'package:fudatobashi/config/config.dart';
 import 'package:fudatobashi/l10n/history_strings.dart';
@@ -203,7 +203,7 @@ void main() {
         expect(forfeit.rating!.performance, RankedTuning.forfeitPerformance);
         expect(forfeit.run.time, isNull, reason: 'a forfeit has no scored time');
         await show(tester, p, RunRatingTab(forfeit), 'rating_forfeit');
-        expect(find.text(s.className(Rating.bandOf(forfeit.rating!.after))), findsOneWidget, reason: 'the class badge');
+        expect(find.text(s.className(RankLadder.bandOf(forfeit.rating!.after))), findsOneWidget, reason: 'the class badge');
         if (!ja) {
           expect(find.textContaining(RegExp('[入級]'), findRichText: true), findsNothing, reason: 'English class names');
         }

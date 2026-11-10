@@ -2,8 +2,8 @@ import 'dart:math' as math;
 
 import '../config/config.dart';
 
-/// A side trip's own rating, on the main rating's scale and bands
-/// (`Rating.bands`). Each trip's ranked games play one fixed setup, so a
+/// A side trip's own rating, on the classes every ranked mode shares
+/// (`RankLadder`). Each trip's ranked games play one fixed setup, so a
 /// game's final score maps straight to its performance: the score over
 /// [pointsPerRating], which is all that differs between the trips.
 ///

@@ -7,7 +7,7 @@ import '../../config/vector_art.dart';
 import '../../domain/ikkiuchi_record.dart';
 import '../../domain/ikkiuchi_review.dart';
 import '../../domain/ikkiuchi_side.dart';
-import '../../domain/rating.dart';
+import '../../domain/rank_ladder.dart';
 import '../../l10n/ikkiuchi_strings.dart';
 import '../../l10n/ranked_strings.dart';
 import '../../l10n/side_trip_strings.dart';
@@ -131,7 +131,7 @@ class IkkiuchiResultsScreen extends StatelessWidget {
         note: s.ikkiuchiPlacing(placement, IkkiuchiReview.placementMatches),
       );
     }
-    final band = s.className(Rating.bandOf(after));
+    final band = s.className(RankLadder.bandOf(after));
     if (review.endedPlacement) {
       return SummaryTile(label: s.ikkiuchiFirstRating.toUpperCase(), big: TileFigure('${after.round()}'), note: band);
     }

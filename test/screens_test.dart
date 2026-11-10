@@ -24,7 +24,7 @@ import 'package:fudatobashi/domain/card_mask.dart';
 import 'package:fudatobashi/domain/card_stats.dart';
 import 'package:fudatobashi/domain/play_session.dart';
 import 'package:fudatobashi/domain/ranked.dart';
-import 'package:fudatobashi/domain/rating.dart';
+import 'package:fudatobashi/domain/rank_ladder.dart';
 import 'package:fudatobashi/domain/side_trips.dart';
 import 'package:fudatobashi/domain/synthetic_learner.dart';
 import 'package:fudatobashi/domain/tab_locks.dart';
@@ -1333,7 +1333,7 @@ void main() {
       // A little into D級 (index 5 of 9): a few classes cleared below it, C級
       // as the next threshold, and B/A above with no marker — real coverage
       // of every rung state in one shot.
-      p.rating = Rating.bands[5].minRating + 5;
+      p.rating = RankLadder.bands[5].minRating + 5;
 
       await tester.binding.setSurfaceSize(_phone);
       await tester.pumpWidget(RepaintBoundary(key: const ValueKey('screen'), child: FudatobashiApp(progress: p)));
@@ -1385,7 +1385,7 @@ void main() {
     tester.platformDispatcher.textScaleFactorTestValue = 1.1;
     addTearDown(tester.platformDispatcher.clearTextScaleFactorTestValue);
     final p = await open(tester, mode: LearningMode.allKnown);
-    p.rating = Rating.bands[5].minRating + 5;
+    p.rating = RankLadder.bands[5].minRating + 5;
     await tester.binding.setSurfaceSize(_phone);
     await tester.pumpWidget(RepaintBoundary(key: const ValueKey('screen'), child: FudatobashiApp(progress: p)));
     await tester.pump(const Duration(milliseconds: 500));
@@ -1409,7 +1409,7 @@ void main() {
       addTearDown(tester.platformDispatcher.clearTextScaleFactorTestValue);
       final p = await open(tester, mode: LearningMode.allKnown);
       await tester.binding.setSurfaceSize(Size(width, _phone.height));
-      for (final band in Rating.bands.take(Rating.bands.length - 1)) {
+      for (final band in RankLadder.bands.take(RankLadder.bands.length - 1)) {
         p.rating = (band.minRating.isFinite ? band.minRating : 0) + 5;
         await tester.pumpWidget(RepaintBoundary(
           key: const ValueKey('screen'),
@@ -2387,7 +2387,7 @@ void main() {
 
     testWidgets('already at A: no NEXT tag and no preview entry, TOP CLASS still shown', (tester) async {
       final p = await open(tester, mode: LearningMode.allKnown);
-      p.rating = Rating.bands.last.minRating + 50;
+      p.rating = RankLadder.bands.last.minRating + 50;
       await tester.pumpWidget(pumped(p));
       await tester.pump(const Duration(milliseconds: 500));
       expect(tester.takeException(), isNull);
@@ -2838,7 +2838,7 @@ void main() {
         addTearDown(() => sounds = Sounds());
         final p = await open(tester, ja: ja);
         final page = CelebrationSequence(
-          pages: [RankUpCelebration(Rating.bands[2], Rating.bands[3], null, Rating.bands[3].minRating)],
+          pages: [RankUpCelebration(RankLadder.bands[2], RankLadder.bands[3], null, RankLadder.bands[3].minRating)],
           onDone: () {},
         );
         await pumpPage(tester, p, page, RankUpMotion.impactAt - const Duration(milliseconds: 20));
@@ -2858,25 +2858,25 @@ void main() {
       // the counting rating and the next class's panel must fit, and the top
       // class shows the summit instead of a next target.
       for (final (from, to) in [(0, 1), (2, 3), (7, 8)]) {
-        testWidgets('rank up ${Rating.bands[from].id} → ${Rating.bands[to].id}, at a large font scale ($lang)',
+        testWidgets('rank up ${RankLadder.bands[from].id} → ${RankLadder.bands[to].id}, at a large font scale ($lang)',
             (tester) async {
           tester.platformDispatcher.textScaleFactorTestValue = 1.3;
           addTearDown(tester.platformDispatcher.clearTextScaleFactorTestValue);
           final p = await open(tester, ja: ja);
-          final after = Rating.bands[to].minRating + 12;
-          final before = from == 0 ? null : Rating.bands[from].minRating + 40;
+          final after = RankLadder.bands[to].minRating + 12;
+          final before = from == 0 ? null : RankLadder.bands[from].minRating + 40;
           var advanced = false;
           await pumpPage(
             tester,
             p,
             RankUpOverlay(
-              data: RankUpCelebration(Rating.bands[from], Rating.bands[to], before, after),
+              data: RankUpCelebration(RankLadder.bands[from], RankLadder.bands[to], before, after),
               onNext: () => advanced = true,
             ),
             RankUpMotion.length + const Duration(milliseconds: 100),
           );
           expect(find.text('${after.round()}'), findsWidgets, reason: 'the rating has counted up to its new value');
-          await captureScreen(tester, 'rank_up_${Rating.bands[to].id}', lang: lang);
+          await captureScreen(tester, 'rank_up_${RankLadder.bands[to].id}', lang: lang);
           await tester.tap(find.text(ja ? '次へ' : 'ONWARD!'));
           expect(advanced, isTrue);
           await tester.pumpWidget(const SizedBox());
@@ -2887,9 +2887,9 @@ void main() {
       // and the points left; F上級 mid-track, 入門's open floor and the top
       // class's open ceiling must all fit at large font scales.
       for (final (name, before, gain) in [
-        ('mid', Rating.bands[2].minRating + 250, 26.0),
+        ('mid', RankLadder.bands[2].minRating + 250, 26.0),
         ('novice', 520.0, 90.0),
-        ('top', Rating.bands.last.minRating + 60, 18.0),
+        ('top', RankLadder.bands.last.minRating + 60, 18.0),
       ]) {
         for (final fontScale in [1.1, 1.3]) {
           testWidgets('the rating climbs its class ($name) and lands, at font scale $fontScale ($lang)', (tester) async {
@@ -2914,7 +2914,7 @@ void main() {
             if (name == 'top') {
               expect(find.text(s.topClassChase), findsOneWidget);
             } else {
-              final next = Rating.nextBand(before)!;
+              final next = RankLadder.nextBand(before)!;
               expect(find.text(s.ratingToNext(s.className(next)).replaceAll('{0}', '${timeline.toNextAt(timeline.length)}')),
                   findsOneWidget, reason: "what's left to the next class");
             }
@@ -2934,13 +2934,13 @@ void main() {
         sounds = heard;
         addTearDown(() => sounds = Sounds());
         final p = await open(tester, ja: ja);
-        final threshold = Rating.bands[3].minRating;
+        final threshold = RankLadder.bands[3].minRating;
         final data = RatingCelebration(threshold - 58, threshold + 14);
         final timeline = RatingTimeline(data);
         expect(data.ranksUp, isTrue);
         var done = false;
         final page = CelebrationSequence(
-          pages: [data, RankUpCelebration(Rating.bands[2], Rating.bands[3], data.before, data.after)],
+          pages: [data, RankUpCelebration(RankLadder.bands[2], RankLadder.bands[3], data.before, data.after)],
           onDone: () => done = true,
         );
         Finder sfx(String text) => find.byWidgetPredicate((w) => w is SfxText && w.text == text);
@@ -2982,7 +2982,7 @@ void main() {
         sounds = heard;
         addTearDown(() => sounds = Sounds());
         final p = await open(tester, ja: ja);
-        final before = Rating.bands[2].minRating + 250;
+        final before = RankLadder.bands[2].minRating + 250;
         final data = RatingCelebration(before, before + 26);
         final timeline = RatingTimeline(data);
         final page = CelebrationSequence(pages: [data], onDone: () {});
@@ -3008,7 +3008,7 @@ void main() {
         addTearDown(tester.platformDispatcher.clearAccessibilityFeaturesTestValue);
         final p = await open(tester, ja: ja);
         final s = S(ja ? 'ja' : 'en');
-        final before = Rating.bands[2].minRating + 250;
+        final before = RankLadder.bands[2].minRating + 250;
         await pumpPage(tester, p, RatingOverlay(data: RatingCelebration(before, before + 26), onNext: () {}),
             const Duration(milliseconds: 16));
         expect(find.text('${(before + 26).round()}'), findsOneWidget);
@@ -3016,7 +3016,7 @@ void main() {
         await captureScreen(tester, 'rating_still', lang: lang);
 
         await tester.pumpWidget(const SizedBox());
-        final threshold = Rating.bands[3].minRating;
+        final threshold = RankLadder.bands[3].minRating;
         var advanced = false;
         await pumpPage(tester, p, RatingOverlay(data: RatingCelebration(threshold - 30, threshold + 5), onNext: () => advanced = true),
             const Duration(seconds: 6));
@@ -3230,7 +3230,7 @@ void main() {
             () => p.updateSettings(p.settings.copyWith(ankiren: p.settings.ankiren.copyWith(rulesSeen: true))));
         expect(p.sideTripsHub()[SideTrip.ankiren].open, isTrue);
         await openTrips(tester, p);
-        expect(inTrips(find.text(s.className(Rating.bands.first))), findsNothing, reason: 'no class stamp before a ranked game');
+        expect(inTrips(find.text(s.className(RankLadder.bands.first))), findsNothing, reason: 'no class stamp before a ranked game');
         expect(inTrips(find.text(s.sideTripUnranked)), findsOneWidget);
         await captureScreen(tester, 'side_trips_open', lang: lang);
         await tester.tap(inTrips(find.byType(PageBurst)));

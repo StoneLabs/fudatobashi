@@ -2,29 +2,7 @@ import 'dart:math' as math;
 
 import '../config/config.dart';
 import 'card_stats.dart';
-
-/// A class (級) band of the rating ladder.
-class RankBand {
-  const RankBand(this.id, this.label, this.labelEn, this.maxSeconds);
-
-  final String id;
-
-  /// e.g. "F下級". The 上/下 split echoes 上の句 / 下の句.
-  final String label;
-  final String labelEn;
-
-  /// Projected random-orientation 100-card time needed, seconds
-  /// (null for the unranked band).
-  final double? maxSeconds;
-
-  /// The 級 that ends every class's [label] but 入門's.
-  static const classSuffix = '級';
-
-  /// [label] without its [classSuffix], e.g. "F上"; 入門 as it is.
-  String get stem => label.endsWith(classSuffix) ? label.substring(0, label.length - classSuffix.length) : label;
-
-  double get minRating => maxSeconds == null ? double.negativeInfinity : Rating.fromSeconds(maxSeconds!);
-}
+import 'rank_ladder.dart';
 
 /// The Elo-style rating.
 ///
@@ -34,32 +12,14 @@ class RankBand {
 /// defaulting to upright × 1.25 when never practised). It is mapped as
 /// `P = 600 · log2(1000 s / T)`, and the displayed rating moves toward P after
 /// each session: `R += K · (P − R)`.
-///
-/// This reproduces the original app's anchors: 50 cards at 2 s + 50 unseen =
-/// 400 s (F), 100 × 1.5 s = 150 s (E), and 90 / 60 / 52 / 48 s (D / C / B / A).
 abstract final class Rating {
-  static const bands = [
-    RankBand('nyumon', '入門', 'Novice', null),
-    RankBand('F-', 'F下級', 'F-', RatingModel.fLowerMaxSeconds),
-    RankBand('F+', 'F上級', 'F+', RatingModel.fUpperMaxSeconds),
-    RankBand('E-', 'E下級', 'E-', RatingModel.eLowerMaxSeconds),
-    RankBand('E+', 'E上級', 'E+', RatingModel.eUpperMaxSeconds),
-    RankBand('D', 'D級', 'D', RatingModel.dMaxSeconds),
-    RankBand('C', 'C級', 'C', RatingModel.cMaxSeconds),
-    RankBand('B', 'B級', 'B', RatingModel.bMaxSeconds),
-    RankBand('A', 'A級', 'A', RatingModel.aMaxSeconds),
-  ];
-
   static double fromSeconds(double t) =>
       RatingModel.pointsPerDoubling * math.log(RatingModel.referenceSeconds / t) / math.ln2;
   static double toSeconds(double r) => RatingModel.referenceSeconds / math.pow(2, r / RatingModel.pointsPerDoubling);
 
-  static RankBand bandOf(double rating) => bands.lastWhere((b) => rating >= b.minRating, orElse: () => bands.first);
-
-  static RankBand? nextBand(double rating) {
-    final i = bands.indexOf(bandOf(rating));
-    return i + 1 < bands.length ? bands[i + 1] : null;
-  }
+  /// [rating]'s class, the next one and how far toward it (see
+  /// [RankLadder.progress]).
+  static ClassProgress classProgress(double rating) => RankLadder.progress(rating, floor: RatingModel.noviceFloor);
 
   /// Expected ms of one card, both orientations averaged.
   static double cardExpectedMs(CardStats upright, CardStats inverted) {

@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../config/config.dart';
 import '../../config/design.dart';
-import '../../domain/rating.dart';
+import '../../domain/rank_ladder.dart';
 import '../../domain/side_trips.dart';
 import '../../domain/trip_rating.dart';
 import '../../l10n/ankiren_strings.dart';
@@ -35,7 +35,7 @@ class RecordStrip extends StatelessWidget {
       );
 }
 
-/// A [StatStrip] for a player on the shared class scale ([Rating.bands]):
+/// A [StatStrip] for a player on the shared class scale ([RankLadder.bands]):
 /// the class and the [rating] with the last [change] (unranked before the
 /// first), then how many points the next class is away, with a gauge; and
 /// any [more] cells and [moreFoot] line of the page's own. While the rating
@@ -62,10 +62,10 @@ class ClassStrip extends StatelessWidget {
   Widget build(BuildContext context) {
     final s = S.of(context);
     final rating = this.rating;
-    final band = rating == null ? Rating.bands.first : Rating.bandOf(rating);
     final at = rating ?? unratedAt;
-    final next = Rating.nextBand(at);
-    final floor = band.minRating.isFinite ? band.minRating : unratedAt;
+    final progress = RankLadder.progress(at, floor: unratedAt);
+    final band = rating == null ? RankLadder.bands.first : progress.band;
+    final next = progress.next;
     final change = this.change?.round() ?? 0;
     final moreFoot = this.moreFoot;
     final placement = placing;
@@ -79,14 +79,14 @@ class ClassStrip extends StatelessWidget {
                 alignment: Alignment.centerLeft,
                 child: NumberedText(
                   s.ratingToNext(s.className(next)),
-                  [(next.minRating - at).ceil()],
+                  [next.pointsLeft(at)],
                   style: const TextStyle(fontWeight: Weights.black, fontSize: AnkirenPageLayout.gaugeFont),
                   numberStyle: const TextStyle(fontFamily: Fonts.display, fontSize: AnkirenPageLayout.gaugeNumber),
                 ),
               ),
             ),
             const SizedBox(width: AnkirenPageLayout.gaugeGap),
-            Expanded(child: RatingBar((at - floor) / (next.minRating - floor), width: double.infinity)),
+            Expanded(child: RatingBar(progress.fraction, width: double.infinity)),
           ]);
     final gauge = bar == null || !placement
         ? bar

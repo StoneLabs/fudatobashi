@@ -6,6 +6,7 @@ import 'package:fudatobashi/config/config.dart';
 import 'package:fudatobashi/data/fuda_sets.dart';
 import 'package:fudatobashi/data/poem.dart';
 import 'package:fudatobashi/domain/card_stats.dart';
+import 'package:fudatobashi/domain/rank_ladder.dart';
 import 'package:fudatobashi/domain/rating.dart';
 import 'package:fudatobashi/domain/trainer.dart';
 import 'package:fudatobashi/state/play_config.dart';
@@ -16,15 +17,15 @@ void main() {
 
   group('rating', () {
     test('anchors map onto the original ranks', () {
-      expect(Rating.bandOf(Rating.fromSeconds(39)).label, 'A級');
-      expect(Rating.bandOf(Rating.fromSeconds(47)).label, 'B級');
-      expect(Rating.bandOf(Rating.fromSeconds(51)).label, 'B級');
-      expect(Rating.bandOf(Rating.fromSeconds(55)).label, 'C級');
-      expect(Rating.bandOf(Rating.fromSeconds(59.9)).label, 'C級');
-      expect(Rating.bandOf(Rating.fromSeconds(89)).label, 'D級');
-      expect(Rating.bandOf(Rating.fromSeconds(149)).label, 'E下級');
-      expect(Rating.bandOf(Rating.fromSeconds(399)).label, 'F下級');
-      expect(Rating.bandOf(Rating.fromSeconds(600)).label, '入門');
+      expect(RankLadder.bandOf(Rating.fromSeconds(39)).label, 'A級');
+      expect(RankLadder.bandOf(Rating.fromSeconds(47)).label, 'B級');
+      expect(RankLadder.bandOf(Rating.fromSeconds(51)).label, 'B級');
+      expect(RankLadder.bandOf(Rating.fromSeconds(55)).label, 'C級');
+      expect(RankLadder.bandOf(Rating.fromSeconds(59.9)).label, 'C級');
+      expect(RankLadder.bandOf(Rating.fromSeconds(89)).label, 'D級');
+      expect(RankLadder.bandOf(Rating.fromSeconds(149)).label, 'E下級');
+      expect(RankLadder.bandOf(Rating.fromSeconds(399)).label, 'F下級');
+      expect(RankLadder.bandOf(Rating.fromSeconds(600)).label, '入門');
     });
 
     test('50 cards at 2 s plus 50 unseen projects to 400 s', () {

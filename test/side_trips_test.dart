@@ -12,7 +12,7 @@ import 'package:fudatobashi/domain/ankiren_level.dart';
 import 'package:fudatobashi/domain/card_stats.dart';
 import 'package:fudatobashi/domain/level_ladder.dart';
 import 'package:fudatobashi/domain/play_session.dart';
-import 'package:fudatobashi/domain/rating.dart';
+import 'package:fudatobashi/domain/rank_ladder.dart';
 import 'package:fudatobashi/domain/side_trips.dart';
 import 'package:fudatobashi/domain/tab_locks.dart';
 import 'package:fudatobashi/domain/teiichi.dart';
@@ -142,7 +142,7 @@ void main() {
       final e = hub[SideTrip.ankiren];
       expect([e.open, e.ranked], [false, false]);
       expect(e.lock?.needed, ankirenAt - 3);
-      expect(e.band, Rating.bands.first);
+      expect(e.band, RankLadder.bands.first);
       expect([e.rating, e.nextLevel, e.maxLevel, e.games], [null, 0, null, 0]);
       expect([e.rankedLock!.allKnown, e.rankedLock!.cleared, e.rankedOpen], [false, false, false]);
       expect(hub.openTrips, isEmpty);
@@ -157,7 +157,7 @@ void main() {
     });
 
     test('a standing carries through, its rating placed on the main ladder', () {
-      final rating = Rating.bands[3].minRating + 1;
+      final rating = RankLadder.bands[3].minRating + 1;
       final hub = SideTripsHub.of(
         allKnown: true,
         seen: 0,
@@ -167,7 +167,7 @@ void main() {
       );
       final e = hub[SideTrip.ankiren];
       expect(e.ranked, isTrue);
-      expect(e.band, Rating.bands[3]);
+      expect(e.band, RankLadder.bands[3]);
       expect([e.rating, e.nextLevel, e.maxLevel, e.games, e.rankedOpen], [rating, 5, 9, 12, true]);
     });
   });

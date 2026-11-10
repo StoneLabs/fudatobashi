@@ -8,7 +8,7 @@ import '../db/database.dart';
 import '../domain/card_stats.dart';
 import '../domain/day_window.dart';
 import '../domain/play_session.dart';
-import '../domain/rating.dart';
+import '../domain/rank_ladder.dart';
 import '../domain/run_review.dart';
 import '../domain/side_trips.dart';
 import '../domain/xp.dart';
@@ -227,7 +227,7 @@ extension RunHistory on Progress {
   (RankBand, RankBand)? classChangeOf(PastRun run) {
     final r = ratingOf(run);
     if (r == null || r.before == null) return null;
-    final from = Rating.bandOf(r.before!), to = Rating.bandOf(r.after);
+    final from = RankLadder.bandOf(r.before!), to = RankLadder.bandOf(r.after);
     return from.id == to.id ? null : (from, to);
   }
 

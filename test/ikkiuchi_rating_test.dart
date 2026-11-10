@@ -19,7 +19,7 @@ import 'package:fudatobashi/domain/ikkiuchi_layout.dart';
 import 'package:fudatobashi/domain/ikkiuchi_mode.dart';
 import 'package:fudatobashi/domain/ikkiuchi_rating.dart';
 import 'package:fudatobashi/domain/ikkiuchi_record.dart';
-import 'package:fudatobashi/domain/rating.dart';
+import 'package:fudatobashi/domain/rank_ladder.dart';
 import 'package:fudatobashi/state/ikkiuchi_records.dart';
 import 'package:fudatobashi/state/progress.dart';
 
@@ -97,7 +97,7 @@ void main() {
     expect(p.ikkiuchi.matches.last.rating, estimate);
     expect([rapid().placing, rapid().rankedPlayed], [false, placing]);
     expect(rapid().rating, estimate);
-    expect(rapid().band, Rating.bandOf(estimate));
+    expect(rapid().band, RankLadder.bandOf(estimate));
     expect(rapid().ratingChange, isNull, reason: 'no change to show from unrated');
     expect(rapid().curve, [estimate], reason: 'the curve starts at the first rating');
     await p.db.close();

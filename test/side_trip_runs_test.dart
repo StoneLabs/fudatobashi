@@ -15,7 +15,7 @@ import 'package:fudatobashi/domain/ankiren_score.dart';
 import 'package:fudatobashi/domain/card_stats.dart';
 import 'package:fudatobashi/domain/level_ladder.dart';
 import 'package:fudatobashi/domain/play_session.dart';
-import 'package:fudatobashi/domain/rating.dart';
+import 'package:fudatobashi/domain/rank_ladder.dart';
 import 'package:fudatobashi/domain/side_trips.dart';
 import 'package:fudatobashi/domain/trainer.dart';
 import 'package:fudatobashi/domain/trip_rating.dart';
@@ -58,7 +58,7 @@ void main() {
     expect([first.ratingBefore, first.ratingAfter], [TripRating.start, performance]);
     expect(p.sideTrips.missesIn(stored), 0);
     expect(stored.meta, contains('"perSide":${AnkirenTuning.rankedPerSide}'));
-    expect(Rating.bandOf(performance).id, 'A', reason: 'every card at 0.1 s, ready at once: the best game there is');
+    expect(RankLadder.bandOf(performance).id, 'A', reason: 'every card at 0.1 s, ready at once: the best game there is');
 
     final answers = await (db.select(db.sideTripAnswers)..where((a) => a.runId.equals(stored.id))).get();
     expect([for (final a in answers) a.poemId], perfect.prompts);
