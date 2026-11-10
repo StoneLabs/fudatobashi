@@ -253,16 +253,35 @@ class _Page extends StatelessWidget {
   }
 }
 
+/// The rank change page's mode box for [change] at rest, as the page ends
+/// but for what marks the change itself (the class change, its sticker,
+/// NEW and the class line broken or cracked): the tab, the class badge in
+/// its room, the standing, and the curve or the placement chart in the
+/// rest of its height. It fills its room.
+class IkkiuchiRankBoxAtRest extends StatelessWidget {
+  const IkkiuchiRankBoxAtRest(this.change, {super.key});
+
+  final IkkiuchiRankChange change;
+
+  @override
+  Widget build(BuildContext context) {
+    final t = IkkiuchiRankTimeline(IkkiuchiRankCelebration(change));
+    return _Box(t, t.length, tone: ikkiuchiModeTone(change.mode), atRest: true);
+  }
+}
+
 /// The mode's tab joined to its box: the standing, then the curve (or the
 /// placement chart) in the rest of its height. It jolts as the point lands,
-/// or as a rank down hits.
+/// or as a rank down hits. The effects follow its parts by [keys]; [atRest]
+/// it holds the class badge itself, see [IkkiuchiRankBoxAtRest].
 class _Box extends StatelessWidget {
-  const _Box(this.timeline, this.elapsed, {required this.keys, required this.tone});
+  const _Box(this.timeline, this.elapsed, {this.keys, required this.tone, this.atRest = false});
 
   final IkkiuchiRankTimeline timeline;
   final Duration elapsed;
-  final _Keys keys;
+  final _Keys? keys;
   final IkkiuchiModeTone tone;
+  final bool atRest;
 
   @override
   Widget build(BuildContext context) {
@@ -305,16 +324,16 @@ class _Box extends StatelessWidget {
           ),
           Expanded(
             child: Padding(
-              key: keys.box,
+              key: keys?.box,
               padding: IkkiuchiRankLayout.boxPadding,
               child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-                _Standing(t, e, slotKey: keys.slot, tone: tone),
+                _Standing(t, e, slotKey: keys?.slot, tone: tone, atRest: atRest),
                 const SizedBox(height: IkkiuchiRankLayout.plotTop),
                 Expanded(
                   child: ConstrainedBox(
-                    key: keys.plot,
+                    key: keys?.plot,
                     constraints: const BoxConstraints(minHeight: IkkiuchiRankLayout.plotMinHeight),
-                    child: IkkiuchiRankPlot(t, elapsed: e, tone: tone),
+                    child: IkkiuchiRankPlot(t, elapsed: e, tone: tone, atRest: atRest),
                   ),
                 ),
               ]),
@@ -397,17 +416,19 @@ class _FramePainter extends CustomPainter {
 }
 
 /// The standing: the badge's room ([slotKey]; the badge itself moves over
-/// the page), the label (the rating, the class change once it has
-/// happened, or placement), the rating counting with its change stamped
-/// on, and the way to the next class with its bar (while placing, what
-/// placement decides).
+/// the page, or [atRest] sits in it), the label (the rating, the class
+/// change once it has happened but not at rest, or placement), the rating
+/// counting with its change stamped on (NEW for the first class, but not
+/// at rest), and the way to the next class with its bar (while placing,
+/// what placement decides).
 class _Standing extends StatelessWidget {
-  const _Standing(this.timeline, this.elapsed, {required this.slotKey, required this.tone});
+  const _Standing(this.timeline, this.elapsed, {this.slotKey, required this.tone, this.atRest = false});
 
   final IkkiuchiRankTimeline timeline;
   final Duration elapsed;
-  final GlobalKey slotKey;
+  final GlobalKey? slotKey;
   final IkkiuchiModeTone tone;
+  final bool atRest;
 
   @override
   Widget build(BuildContext context) {
@@ -418,7 +439,7 @@ class _Standing extends StatelessWidget {
     const labelNumber = TextStyle(fontFamily: Fonts.display, fontWeight: Weights.regular, fontSize: IkkiuchiRankLayout.labelNumber);
     final placed = t.placed, placing = t.placing;
     final labelled = progressIn(e, t.labelAt, IkkiuchiRankMotion.label);
-    final swapsLabel = t.ranksUp || t.ranksDown || placed;
+    final swapsLabel = !atRest && (t.ranksUp || t.ranksDown) || placed;
 
     Widget first;
     if (placing) {
@@ -458,7 +479,14 @@ class _Standing extends StatelessWidget {
           Positioned(
             top: IkkiuchiRankLayout.badgeDrop,
             left: 0,
-            child: SizedBox.square(key: slotKey, dimension: IkkiuchiRankLayout.badge.size),
+            child: SizedBox.square(
+              key: slotKey,
+              dimension: IkkiuchiRankLayout.badge.size,
+              child: atRest
+                  ? IkkiuchiClassBadge(placing && !placed ? null : change.to,
+                      tone: tone.tone, style: IkkiuchiRankLayout.badge)
+                  : null,
+            ),
           ),
         ]),
       ),
@@ -503,7 +531,7 @@ class _Standing extends StatelessWidget {
                 child: Stack(alignment: Alignment.centerLeft, clipBehavior: Clip.none, children: [
                   if (!(placed && e >= t.labelAt))
                     _entered(e, tagSpec, _ChangeTag(change), origin: tagOrigin),
-                  if (placed)
+                  if (placed && !atRest)
                     _entered(
                       e,
                       newSpec,

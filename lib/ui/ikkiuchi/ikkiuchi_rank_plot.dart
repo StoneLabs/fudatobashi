@@ -80,13 +80,15 @@ class IkkiuchiRankChart {
 
 /// The rank change page's plot at [elapsed] into the page ([timeline]):
 /// the mode's rating curve with this match running to its place, or while
-/// placing the placement chart. It fills its room.
+/// placing the placement chart. [atRest] the class line this match crossed
+/// stays whole. It fills its room.
 class IkkiuchiRankPlot extends StatelessWidget {
-  const IkkiuchiRankPlot(this.timeline, {super.key, required this.elapsed, required this.tone});
+  const IkkiuchiRankPlot(this.timeline, {super.key, required this.elapsed, required this.tone, this.atRest = false});
 
   final IkkiuchiRankTimeline timeline;
   final Duration elapsed;
   final IkkiuchiModeTone tone;
+  final bool atRest;
 
   @override
   Widget build(BuildContext context) {
@@ -106,7 +108,7 @@ class IkkiuchiRankPlot extends StatelessWidget {
           ? _ChartPainter(timeline, elapsed, tone, words, MediaQuery.textScalerOf(context),
               MediaQuery.devicePixelRatioOf(context))
           : _CurvePainter(timeline, elapsed, tone, words, MediaQuery.textScalerOf(context),
-              MediaQuery.devicePixelRatioOf(context)),
+              MediaQuery.devicePixelRatioOf(context), atRest: atRest),
     );
   }
 }
@@ -175,10 +177,16 @@ abstract class _PlotPainter extends CustomPainter {
 
 /// The mode's rating curve with this match's point running from the last
 /// match's to its place: the guide in its slot until it lands, the class
-/// line it crosses straining, breaking or cracking, the diamond swelling
-/// at the landing, the heartbeats and the break.
+/// line it crosses straining, breaking or cracking (whole [atRest]), the
+/// diamond swelling at the landing, the heartbeats and the break.
 class _CurvePainter extends _PlotPainter {
-  _CurvePainter(super.timeline, super.elapsed, super.tone, super.words, super.scaler, super.pixelRatio);
+  _CurvePainter(super.timeline, super.elapsed, super.tone, super.words, super.scaler, super.pixelRatio,
+      {required this.atRest});
+
+  final bool atRest;
+
+  @override
+  bool shouldRepaint(covariant _CurvePainter old) => super.shouldRepaint(old) || old.atRest != atRest;
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -209,7 +217,7 @@ class _CurvePainter extends _PlotPainter {
     }
     final captionBaseline = ink.caption(words.caption, floor);
 
-    final crossed = t.ranksUp ? change.to : (t.ranksDown ? change.from : null);
+    final crossed = atRest ? null : (t.ranksUp ? change.to : (t.ranksDown ? change.from : null));
     final gateX = t.gateShare == null ? 0.0 : ends.along(t.gateShare!).dx;
     for (final band in scale.bands) {
       final y = scale.yOf(band.minRating);
