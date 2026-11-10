@@ -1244,17 +1244,14 @@ abstract final class IkkiuchiRankLayout {
   static const double hereLift = 22;
   static const double hereLatinShare = 0.55;
 
-  /// The points changing hands: a chip (the change tag) between Tobi's
-  /// plate, [plateLift] over it, and the curve, bowing out [chipBow] on its
-  /// way, shrinking by [chipShrink] and turning from [chipTurnDeg]. Tobi's
-  /// plate swells by [plateSwell] as they leave or arrive, and the diamond
-  /// by [chipSwell] as they reach it.
+  /// The points changing hands: the change tag flying from [plateLift]
+  /// over Tobi's plate down to its place by the rating, bowing out
+  /// [chipBow] on its way and turning from [chipTurnDeg]. Tobi's plate
+  /// swells by [plateSwell] as they leave.
   static const double plateLift = 6;
   static const Offset chipBow = Offset(40, 30);
-  static const double chipShrink = 0.35;
   static const double chipTurnDeg = -6;
   static const double plateSwell = 0.14;
-  static const double chipSwell = 0.5;
 
   /// The landing: the diamond swells by [landSwell] and the rating by
   /// [ratingSwell], the box jolts [winJolt] (a win) or [lossJolt] in
@@ -1460,22 +1457,17 @@ abstract final class IkkiuchiRankLayout {
 /// out: slow at the start, fast in the middle, slow into the landing.
 /// Every rating point it passes ticks, so the ticks come slowly, rush and
 /// slow again; ticks closer than [tickSpacing] to the last (or to the
-/// landing) are left out, never a mush. It starts at [runAt] after a loss;
-/// after a win the points first pop off Tobi's plate ([chipPopAt],
-/// [chipPop]) and fly to the curve from [chipFlyAt], the run starting
-/// as they arrive ([winRunAt]). After a loss they go to Tobi once the point
-/// has landed: they pop [chipAfterLand] after the landing and fly from
-/// [chipFlyAfter] after that for [chipFly]. The diamond swells as they reach
-/// it ([chipSwell]) and Tobi's plate as they leave or arrive
-/// ([plateSwell]); this match's slot shows a guide fading in over
-/// [guideIn] once the box has risen.
+/// landing) are left out, never a mush. First the points, the change tag,
+/// pop off Tobi's plate ([chipPopAt], [chipPop]; the plate swells,
+/// [plateSwell]) and fly from [chipFlyAt] for [chipFly] down to their
+/// place by the rating, where they stay; the count starts as they land.
+/// This match's slot shows a guide fading in over [guideIn] once the box
+/// has risen.
 ///
 /// The landing: the diamond pulses ([landPulse]) with a burst ([burst]),
-/// the box jolts ([landJolt]), the change tag stamps on [tagAfterLand]
-/// after it ([tag]) and the button pops ([cta]) [ctaAfterLand] after a
-/// win's landing or [ctaAfterChip] after the chip of a loss reaches Tobi;
-/// the page rests [endAfterCta] later. Beaten Tobi trembles a step every
-/// [tobiStep].
+/// the box jolts ([landJolt]) and the button pops ([cta]) [ctaAfterLand]
+/// after it; the page rests [endAfterCta] later. Beaten Tobi trembles a
+/// step every [tobiStep].
 ///
 /// A rank up, at the crossing: the page darkens ([darken]), ゴゴゴ comes in
 /// [rumbleAfter] the crossing ([rumblePop], shaking every [rumbleStep]),
@@ -1492,22 +1484,22 @@ abstract final class IkkiuchiRankLayout {
 /// [impactAfterCut]: the splat ([splat]), ドン!! [sfxAfterImpact] later
 /// ([sfx]), the frame's jolt ([impactJolt]) and title ([title]). It
 /// settles back into the page from [settleAfterCut] ([settle]); the class
-/// change shows at [labelAfterCut] ([label]), the change tag at
-/// [tagAfterCut] and the button at [ctaAfterCut].
+/// change shows at [labelAfterCut] ([label]) and the button at
+/// [ctaAfterCut].
 ///
 /// A rank down, at the crossing: the class line cracks ([crack]),
 /// ガーン!! drops [shockAfterCrack] after it ([shock]), the hit comes
 /// [hitAfterCrack] after it (the box's jolt [hitJolt], the [gloom], the
 /// badge's crack), the class falls from [fallAfterCrack] ([fall]) and the
 /// lower one drops in from [dropAfterCrack], landing [thudAfterCrack]
-/// after it ([thud]). The class change, the change tag and the points to
-/// Tobi follow [labelAfterThud] after the thud or [tagAfterLand] after the
-/// landing, whichever comes later; ガーン!! lifts then ([shockLift]).
+/// after it ([thud]). The class change follows [labelAfterThud] after the
+/// thud or [labelAfterLand] after the landing, whichever comes later;
+/// ガーン!! lifts then ([shockLift]).
 ///
-/// The placement: the match's slot is stamped ([slotStamp]) with its tag.
-/// The last one then holds a drumroll: [suspenseAfterLand] after a won
-/// landing (or [suspenseAfterChip] after a lost one's chip) the page dims
-/// ([dim]) under heartbeats at [suspenseBeats]; [revealAfterSuspense] in
+/// The placement: the match's slot is stamped [slotAfterLand] after the
+/// landing ([slotStamp]). The last one then holds a drumroll:
+/// [suspenseAfterLand] after the landing the page dims ([dim]) under
+/// heartbeats at [suspenseBeats]; [revealAfterSuspense] in
 /// the class shows with a flash, the dashed estimate turning solid and the
 /// class's band filling ([bandFill]); it cuts to the impact frame
 /// [cutAfterReveal] later, the class landing [placedImpactAfterCut] after
@@ -1551,25 +1543,18 @@ abstract final class IkkiuchiRankMotion {
   static const tickRushGap = Duration(milliseconds: 65);
   static const landingGap = Duration(milliseconds: 710);
   static const maxTicks = 20;
-  static const runAt = Duration(milliseconds: 1000);
-  static const winRunAt = Duration(milliseconds: 1400);
   static const chipPopAt = Duration(milliseconds: 800);
   static const chipFlyAt = Duration(milliseconds: 1050);
   static const chipPop = Duration(milliseconds: 250);
-  static const chipAfterLand = Duration(milliseconds: 50);
-  static const chipFlyAfter = Duration(milliseconds: 200);
   static const chipFly = Duration(milliseconds: 350);
-  static const chipSwell = Duration(milliseconds: 260);
   static const plateSwell = Duration(milliseconds: 300);
   static const guideIn = Duration(milliseconds: 300);
 
   static const landPulse = Duration(milliseconds: 380);
   static const burst = Duration(milliseconds: 450);
   static const landJolt = Duration(milliseconds: 300);
-  static const tagAfterLand = Duration(milliseconds: 50);
   static const tag = Duration(milliseconds: 350);
   static const ctaAfterLand = Duration(milliseconds: 400);
-  static const ctaAfterChip = Duration(milliseconds: 200);
   static const cta = Duration(milliseconds: 400);
   static const endAfterCta = Duration(milliseconds: 450);
   static const tobiStep = Duration(milliseconds: 70);
@@ -1615,7 +1600,6 @@ abstract final class IkkiuchiRankMotion {
   static const settle = Duration(milliseconds: 420);
   static const labelAfterCut = Duration(milliseconds: 1250);
   static const label = Duration(milliseconds: 300);
-  static const tagAfterCut = Duration(milliseconds: 1300);
   static const ctaAfterCut = Duration(milliseconds: 1550);
 
   static const crack = Duration(milliseconds: 120);
@@ -1630,11 +1614,12 @@ abstract final class IkkiuchiRankMotion {
   static const thudAfterCrack = Duration(milliseconds: 790);
   static const thud = Duration(milliseconds: 200);
   static const labelAfterThud = Duration(milliseconds: 110);
+  static const labelAfterLand = Duration(milliseconds: 50);
   static const shockLift = Duration(milliseconds: 300);
 
+  static const slotAfterLand = Duration(milliseconds: 50);
   static const slotStamp = Duration(milliseconds: 300);
   static const suspenseAfterLand = Duration(milliseconds: 250);
-  static const suspenseAfterChip = Duration(milliseconds: 50);
   static const dim = Duration(milliseconds: 300);
   static const List<Duration> suspenseBeats = [
     Duration(milliseconds: 50),
@@ -1654,16 +1639,15 @@ abstract final class IkkiuchiRankMotion {
   static const here = Duration(milliseconds: 300);
   static const placedCtaAfterLabel = Duration(milliseconds: 250);
 
-  /// Where parts come in from: the change tag ([tagFrom]), NEW
-  /// ([newFrom]), the points' chip and sound-effect lettering ([popFrom]),
-  /// ドン!! and ジャン!! ([hitFrom]), the sticker ([stickerFrom]), ガーン!!
-  /// ([shockFrom], in [shockSteps]), a crack ([crackFrom] times as big, in
+  /// Where parts come in from: NEW ([newFrom]) and the sticker
+  /// ([stickerFrom]), each stamping on over [tag], the points' chip and
+  /// sound-effect lettering ([popFrom]), ドン!! and ジャン!! ([hitFrom]),
+  /// ガーン!! ([shockFrom], in [shockSteps]), a crack ([crackFrom] times as big, in
   /// [crackSteps]); lettering pops in [sfxSteps]. The lower class shows
   /// once [dropShow] of its drop is done, the new class on the stage once
   /// [stampShow] of its; the first class's bar shows over [gaugeShow] and
   /// the class change's label rises [labelRise] into place. The gloom
   /// comes down in [gloomSteps].
-  static const tagFrom = EntranceFrom(scale: 2, turnDeg: -10, opaqueAt: 0.2);
   static const newFrom = EntranceFrom(scale: 2.4, turnDeg: -16, opaqueAt: 0.2);
   static const popFrom = EntranceFrom(scale: 0.3);
   static const hitFrom = EntranceFrom(scale: 0.2);

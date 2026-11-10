@@ -17,7 +17,7 @@ import 'ikkiuchi_tobi_tag.dart';
 /// half: 勝 / 負 and by how many cards (or 棄権). Tobi's: Tobi as the match
 /// ended (shocked when beaten, cheering when he won, trembling once beaten)
 /// over his rating for the match on his plate ([plateKey]), which swells as
-/// the points leave it or arrive. The halves slide in and meet with a jolt
+/// the points leave it. The halves slide in and meet with a jolt
 /// as VS pops up.
 class IkkiuchiRankCard extends StatelessWidget {
   const IkkiuchiRankCard(this.timeline, {super.key, required this.elapsed, required this.tone, required this.plateKey});
@@ -162,7 +162,7 @@ class _Tobi extends StatelessWidget {
     final beaten = t.won && e > (t.climax ? t.impactAt : t.landAt);
     final tremble =
         beaten ? jitterAt(e, IkkiuchiRankMotion.tobiStep, IkkiuchiRankLayout.tobiSeed, IkkiuchiRankLayout.tobiTremble) : Offset.zero;
-    final swell = beatAt(e, [t.won ? t.chipPopAt : t.chipLandAt], IkkiuchiRankMotion.plateSwell);
+    final swell = beatAt(e, [t.chipPopAt], IkkiuchiRankMotion.plateSwell);
     return Padding(
       padding: const EdgeInsets.only(right: IkkiuchiRankLayout.tobiInset),
       child: Column(mainAxisAlignment: MainAxisAlignment.end, children: [

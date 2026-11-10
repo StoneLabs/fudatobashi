@@ -178,11 +178,6 @@ abstract class _PlotPainter extends CustomPainter {
 
   IkkiuchiRankChange get change => timeline.change;
 
-  /// The diamond's swell as the chip of a win reaches it.
-  double get chipSwell => timeline.won
-      ? beatAt(elapsed, [timeline.chipLandAt], IkkiuchiRankMotion.chipSwell) * IkkiuchiRankLayout.chipSwell
-      : 0;
-
   /// Ink strokes flying out from [at], [f] of the way through, [size] times
   /// the usual reach.
   void burst(Canvas canvas, Offset at, double f, {double size = 1}) {
@@ -284,7 +279,7 @@ class _CurvePainter extends _PlotPainter {
     if (line.length > 1) ink.line(line, style.line);
     ink.dots(share > 0 ? points : points.take(points.length - 1), style);
 
-    var swell = 1 + _landed(e, t.landAt, IkkiuchiRankLayout.landSwell) + chipSwell;
+    var swell = 1 + _landed(e, t.landAt, IkkiuchiRankLayout.landSwell);
     if (t.ranksUp) {
       swell += IkkiuchiRankLayout.strainSwellMark * beatAt(e, t.strainBeats, IkkiuchiRankMotion.beatPulse);
       if (e >= t.breakAt) {
@@ -408,7 +403,7 @@ class _ChartPainter extends _PlotPainter {
         ..drawCircle(p, IkkiuchiRankLayout.chartDot, Paint()..color = Palette.paper)
         ..drawCircle(p, IkkiuchiRankLayout.chartDot, ring);
     }
-    var swell = 1 + _landed(e, t.landAt, IkkiuchiRankLayout.landSwell) + chipSwell;
+    var swell = 1 + _landed(e, t.landAt, IkkiuchiRankLayout.landSwell);
     if (t.placed) {
       swell += IkkiuchiRankLayout.hiddenSwell * beatAt(e, t.suspenseBeats, IkkiuchiRankMotion.beatPulse);
       if (revealed) {
@@ -463,11 +458,11 @@ class _ChartPainter extends _PlotPainter {
     for (var k = 1; k <= IkkiuchiRating.placementMatches; k++) {
       final centre = Offset(chart.xOf(k), top + z / 2);
       final box = Rect.fromCenter(center: centre, width: z, height: z);
-      final played = k < n || (k == n && e >= t.tagAt);
+      final played = k < n || (k == n && e >= t.slotAt);
       if (played) {
         final won = change.placement[k - 1];
         final stamp = k == n
-            ? const StepCurve(3, Entrances.bouncy).transform(progressIn(e, t.tagAt, IkkiuchiRankMotion.slotStamp))
+            ? const StepCurve(3, Entrances.bouncy).transform(progressIn(e, t.slotAt, IkkiuchiRankMotion.slotStamp))
             : 1.0;
         canvas.save();
         canvas.translate(centre.dx, centre.dy);

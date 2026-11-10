@@ -45,6 +45,7 @@ import 'package:fudatobashi/ui/results/celebration_chrome.dart';
 import 'package:fudatobashi/ui/results/celebration_sequence.dart';
 import 'package:fudatobashi/ui/results/celebrations.dart';
 import 'package:fudatobashi/ui/side_trips/ikkiuchi_mode_box.dart';
+import 'package:fudatobashi/ui/side_trips/side_trip_entry.dart' show RatingChangeTag;
 import 'package:fudatobashi/ui/sound/sounds.dart';
 
 import 'test_card_pages.dart' show loadAppFonts;
@@ -84,8 +85,12 @@ List<int> _gaps(List<Duration> ticks) => [for (var i = 1; i < ticks.length; i++)
 Map<String, Duration> _frames(IkkiuchiRankTimeline t) {
   const ms = Duration(milliseconds: 1);
   return switch (t.moment) {
-    IkkiuchiRankMoment.up => {'start': t.chipPopAt + ms * 100, 'mid': t.runAt + ms * 1300},
-    IkkiuchiRankMoment.down => {'start': ms * 800, 'mid': t.chipFlyAt + ms * 150},
+    IkkiuchiRankMoment.up || IkkiuchiRankMoment.down => {
+        'start': t.chipPopAt + ms * 100,
+        'fly': t.chipFlyAt + IkkiuchiRankMotion.chipFly ~/ 2,
+        'landed': t.chipLandAt + ms * 100,
+        'mid': t.runAt + ms * 1300,
+      },
     IkkiuchiRankMoment.rankUp => {
         'start': t.chipFlyAt + ms * 250,
         'strain': t.gateAt + ms * 500,
@@ -199,11 +204,14 @@ void main() {
       expect(at(up, up.chipFlyAt), [Sfx.cardFlick]);
       expect(at(up, up.landAt), [Sfx.ratingUp]);
       expect(up.sounds.where((c) => c.$1 == Sfx.ratingTick).length, up.ticks.length);
-      expect(up.chipPopAt, lessThan(up.runAt), reason: 'a win takes the points first');
+      for (final moment in IkkiuchiRankMoment.values) {
+        final t = _timeline(ikkiuchiRankPreview(moment));
+        expect(t.chipLandAt, t.runAt, reason: '${moment.name}: the points land by the rating as the count starts');
+        expect(at(t, t.chipFlyAt), [Sfx.cardFlick], reason: moment.name);
+      }
 
       final down = _timeline(ikkiuchiRankPreview(IkkiuchiRankMoment.down));
       expect(at(down, down.landAt), [Sfx.stamp]);
-      expect(down.chipPopAt, greaterThan(down.landAt), reason: 'a loss gives them after');
 
       final rankUp = _timeline(ikkiuchiRankPreview(IkkiuchiRankMoment.rankUp));
       for (final beat in rankUp.strainBeats) {
@@ -347,6 +355,24 @@ void main() {
       at += step;
     }
   }
+
+  testWidgets('the change tag flies down from Tobi\'s plate, lands by the rating and stays', (tester) async {
+    final p = await open(tester, 'ja');
+    for (final moment in IkkiuchiRankMoment.values) {
+      final t = _timeline(ikkiuchiRankPreview(moment));
+      await show(tester, p, t.change, usersPhone);
+      final landing = t.chipLandAt - const Duration(milliseconds: 1);
+      await advance(tester, until: landing);
+      final tags = find.byType(RatingChangeTag);
+      expect(tags, findsNWidgets(2), reason: '${moment.name}: the flying tag and its place');
+      expect((tester.getRect(tags.last).center - tester.getRect(tags.first).center).distance, lessThan(0.5),
+          reason: moment.name);
+      expect(tester.getSize(tags.last).width, moreOrLessEquals(tester.getSize(tags.first).width, epsilon: 0.5));
+      await advance(tester, from: landing, until: t.runAt + const Duration(milliseconds: 100));
+      expect(tags, findsOneWidget, reason: moment.name);
+      await tester.pumpWidget(const SizedBox());
+    }
+  });
 
   group('fits', () {
     for (final moment in IkkiuchiRankMoment.values) {

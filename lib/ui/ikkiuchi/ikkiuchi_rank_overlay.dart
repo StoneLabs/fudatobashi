@@ -60,6 +60,7 @@ class _Keys {
   final plate = GlobalKey();
   final box = GlobalKey();
   final slot = GlobalKey();
+  final tag = GlobalKey();
   final plot = GlobalKey();
 }
 
@@ -327,7 +328,7 @@ class _Box extends StatelessWidget {
               key: keys?.box,
               padding: IkkiuchiRankLayout.boxPadding,
               child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-                _Standing(t, e, slotKey: keys?.slot, tone: tone, atRest: atRest),
+                _Standing(t, e, slotKey: keys?.slot, tagKey: keys?.tag, tone: tone, atRest: atRest),
                 const SizedBox(height: IkkiuchiRankLayout.plotTop),
                 Expanded(
                   child: ConstrainedBox(
@@ -418,15 +419,16 @@ class _FramePainter extends CustomPainter {
 /// The standing: the badge's room ([slotKey]; the badge itself moves over
 /// the page, or [atRest] sits in it), the label (the rating, the class
 /// change once it has happened but not at rest, or placement), the rating
-/// counting with its change stamped on (NEW for the first class, but not
-/// at rest), and the way to the next class with its bar (while placing,
-/// what placement decides).
+/// counting with its change by it ([tagKey], shown once the points have
+/// flown down to it; NEW for the first class, but not at rest), and the
+/// way to the next class with its bar (while placing, what placement
+/// decides).
 class _Standing extends StatelessWidget {
-  const _Standing(this.timeline, this.elapsed, {this.slotKey, required this.tone, this.atRest = false});
+  const _Standing(this.timeline, this.elapsed, {this.slotKey, this.tagKey, required this.tone, this.atRest = false});
 
   final IkkiuchiRankTimeline timeline;
   final Duration elapsed;
-  final GlobalKey? slotKey;
+  final GlobalKey? slotKey, tagKey;
   final IkkiuchiModeTone tone;
   final bool atRest;
 
@@ -466,8 +468,6 @@ class _Standing extends StatelessWidget {
         ? IkkiuchiRankLayout.ratingSwell *
             (1 - Curves.easeOutCubic.transform(progressIn(e, t.landAt, IkkiuchiRankMotion.landPulse)))
         : 0.0;
-    final tagSpec = EntranceSpec(IkkiuchiRankMotion.tagFrom,
-        duration: IkkiuchiRankMotion.tag, delay: t.tagAt, curve: Entrances.springy);
     final newSpec = EntranceSpec(IkkiuchiRankMotion.newFrom,
         duration: IkkiuchiRankMotion.tag, delay: t.labelAt, curve: Entrances.springy);
     const tagOrigin = IkkiuchiRankLayout.tagOrigin;
@@ -508,8 +508,8 @@ class _Standing extends StatelessWidget {
             ]),
           ),
           const SizedBox(height: IkkiuchiRankLayout.ratingTop),
-          // As wide as the rating it counts to, so that the tag stamped on
-          // after it lands sits by it, and a narrow room shrinks it by one
+          // As wide as the widest rating the count shows, so that the
+          // change tag stays put by it, and a narrow room shrinks it by one
           // size all along.
           FittedBox(
             fit: BoxFit.scaleDown,
@@ -519,7 +519,7 @@ class _Standing extends StatelessWidget {
               scale: 1 + landed,
               alignment: IkkiuchiRankLayout.ratingOrigin,
               child: Stack(clipBehavior: Clip.none, children: [
-                Opacity(opacity: 0, child: Text('${change.after.round()}', style: ratingStyle)),
+                Opacity(opacity: 0, child: Text('${_widest(change, ratingStyle, scaler)}', style: ratingStyle)),
                 Positioned(left: 0, top: 0, child: Text('$shown', style: ratingStyle)),
               ]),
             ),
@@ -530,7 +530,10 @@ class _Standing extends StatelessWidget {
                 height: scaler.scale(IkkiuchiRankLayout.tagRoom),
                 child: Stack(alignment: Alignment.centerLeft, clipBehavior: Clip.none, children: [
                   if (!(placed && e >= t.labelAt))
-                    _entered(e, tagSpec, _ChangeTag(change), origin: tagOrigin),
+                    Opacity(
+                      opacity: e >= t.chipLandAt ? 1 : 0,
+                      child: KeyedSubtree(key: tagKey, child: _ChangeTag(change)),
+                    ),
                   if (placed && !atRest)
                     _entered(
                       e,
@@ -559,11 +562,38 @@ class _Standing extends StatelessWidget {
       ),
     ]);
   }
+
+  /// Each digit's width at a rating's size on the page, by that size.
+  static final _digits = <double, List<double>>{};
+
+  /// The rating the count of [change] shows that sets widest in [style]:
+  /// each one's digits added up.
+  static int _widest(IkkiuchiRankChange change, TextStyle style, TextScaler scaler) {
+    final widths = _digits[scaler.scale(style.fontSize!)] ??= [
+      for (var d = 0; d < 10; d++) _width('$d', style, scaler),
+    ];
+    final a = change.before.round(), b = change.after.round();
+    var widest = b, most = 0.0;
+    for (var n = math.min(a, b); n <= math.max(a, b); n++) {
+      final w = '$n'.codeUnits.fold(0.0, (sum, c) => sum + widths[c - 0x30]);
+      if (w > most) (widest, most) = (n, w);
+    }
+    return widest;
+  }
+
+  static double _width(String text, TextStyle style, TextScaler scaler) {
+    final painter = TextPainter(
+        text: TextSpan(text: text, style: style), textDirection: TextDirection.ltr, textScaler: scaler, maxLines: 1)
+      ..layout();
+    final w = painter.width;
+    painter.dispose();
+    return w;
+  }
 }
 
 /// What [change] did to the rating, on a tag at the page's size (▲ on ink,
-/// ▼ on paper): the change stamped by the rating, and the points the chip
-/// carries.
+/// ▼ on paper): the points flying down from Tobi's plate, then the change
+/// by the rating.
 class _ChangeTag extends StatelessWidget {
   const _ChangeTag(this.change);
 
@@ -765,34 +795,45 @@ class _Where {
     return _self.globalToLocal(box.localToGlobal(local));
   }
 
+  /// How many times its own size [key]'s box shows here (a fitted box
+  /// shrinks it).
+  double scaleOf(GlobalKey key) {
+    final box = key.currentContext?.findRenderObject();
+    if (box is! RenderBox || !box.hasSize || box.size.width == 0) return 1;
+    return (of(key, (size) => Offset(size.width, 0)) - of(key, (_) => Offset.zero)).distance / box.size.width;
+  }
+
   /// Where the impact frame's stage stands.
   Offset get stage => IkkiuchiRankLayout.stageAt.withinRect(Offset.zero & size);
 }
 
 /// [child] painted with its [anchor] at where [at] works out as it paints
 /// (from where the page's parts are then, see [_Where]), turned [turnDeg]
-/// and scaled by [scale] about its [origin], at its own size. It fills its
-/// parent.
+/// and scaled by [scale] (and by what [scaleAt] works out) about its
+/// [origin], at its own size. It fills its parent.
 class _Pinned extends SingleChildRenderObjectWidget {
   const _Pinned({
     required this.at,
     this.anchor = Alignment.center,
     this.origin = Alignment.center,
     this.scale = 1,
+    this.scaleAt,
     this.turnDeg = 0,
     required Widget super.child,
   });
 
   final Offset Function(_Where where) at;
+  final double Function(_Where where)? scaleAt;
   final Alignment anchor, origin;
   final double scale, turnDeg;
 
   @override
-  RenderObject createRenderObject(BuildContext context) => _RenderPinned(at, anchor, origin, scale, turnDeg);
+  RenderObject createRenderObject(BuildContext context) => _RenderPinned(at, scaleAt, anchor, origin, scale, turnDeg);
 
   @override
   void updateRenderObject(BuildContext context, _RenderPinned renderObject) => renderObject
     ..at = at
+    ..scaleAt = scaleAt
     ..anchor = anchor
     ..origin = origin
     ..scale = scale
@@ -800,14 +841,20 @@ class _Pinned extends SingleChildRenderObjectWidget {
 }
 
 class _RenderPinned extends RenderProxyBox {
-  _RenderPinned(this._at, this._anchor, this._origin, this._scale, this._turnDeg);
+  _RenderPinned(this._at, this._scaleAt, this._anchor, this._origin, this._scale, this._turnDeg);
 
   Offset Function(_Where where) _at;
+  double Function(_Where where)? _scaleAt;
   Alignment _anchor, _origin;
   double _scale, _turnDeg;
 
   set at(Offset Function(_Where where) value) {
     _at = value;
+    markNeedsPaint();
+  }
+
+  set scaleAt(double Function(_Where where)? value) {
+    _scaleAt = value;
     markNeedsPaint();
   }
 
@@ -847,13 +894,14 @@ class _RenderPinned extends RenderProxyBox {
   void paint(PaintingContext context, Offset offset) {
     final child = this.child;
     if (child == null) return;
-    final at = _at(_Where(this, size));
+    final where = _Where(this, size);
+    final at = _at(where), scale = _scale * (_scaleAt?.call(where) ?? 1);
     final anchor = _anchor.alongSize(child.size), origin = _origin.alongSize(child.size);
     final corner = at - anchor;
     _placed = Matrix4.identity()
       ..translateByDouble(corner.dx + origin.dx, corner.dy + origin.dy, 0, 1)
       ..rotateZ(_turnDeg * math.pi / 180)
-      ..scaleByDouble(_scale, _scale, 1, 1)
+      ..scaleByDouble(scale, scale, 1, 1)
       ..translateByDouble(-origin.dx, -origin.dy, 0, 1);
     context.pushTransform(needsCompositing, offset, _placed, (context, offset) => context.paintChild(child, offset));
   }
@@ -961,20 +1009,21 @@ class _Effects extends StatelessWidget {
       ));
     }
 
-    // The points changing hands.
+    // The points changing hands: the change tag off Tobi's plate and down
+    // to its place by the rating, landing at the size it shows there.
     if (e >= t.chipPopAt && e < t.chipLandAt) {
       final pop = easedAt(e, EntranceSpec(IkkiuchiRankMotion.popFrom, duration: IkkiuchiRankMotion.chipPop,
           delay: t.chipPopAt, curve: Entrances.bouncy));
       final f = Curves.easeInOutCubic.transform(progressIn(e, t.chipFlyAt, t.chipLandAt - t.chipFlyAt));
-      Offset plate(_Where w) => w.of(keys.plate, (size) => Offset(size.width / 2, -IkkiuchiRankLayout.plateLift));
-      Offset curve(_Where w) => plotPoint(w, (p) => t.won ? p.tip : p.next);
       layers.add(_Pinned(
         at: (w) {
-          final (a, b) = t.won ? (plate(w), curve(w)) : (curve(w), plate(w));
+          final a = w.of(keys.plate, (size) => Offset(size.width / 2, -IkkiuchiRankLayout.plateLift));
+          final b = w.of(keys.tag);
           final c = Offset(math.max(a.dx, b.dx), math.min(a.dy, b.dy)) + IkkiuchiRankLayout.chipBow;
           return a * (1 - f) * (1 - f) + c * (2 * (1 - f) * f) + b * (f * f);
         },
-        scale: lerpDouble(IkkiuchiRankMotion.popFrom.scale, 1, pop)! * (1 - IkkiuchiRankLayout.chipShrink * f),
+        scale: lerpDouble(IkkiuchiRankMotion.popFrom.scale, 1, pop)!,
+        scaleAt: (w) => lerpDouble(1, w.scaleOf(keys.tag), f)!,
         turnDeg: IkkiuchiRankLayout.chipTurnDeg * (1 - f),
         child: Opacity(
           opacity: pop.clamp(0.0, 1.0),

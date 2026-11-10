@@ -33,7 +33,8 @@ class IkkiuchiRankTimeline {
 
   // ---------------------------------------------------------------- the run
 
-  Duration get runAt => won ? IkkiuchiRankMotion.winRunAt : IkkiuchiRankMotion.runAt;
+  /// The count starts as the points land by the rating.
+  Duration get runAt => chipLandAt;
 
   /// The number of points the count passes, at least one.
   int get _points => (change.after.round() - change.before.round()).abs().clamp(1, 1 << 20);
@@ -126,30 +127,20 @@ class IkkiuchiRankTimeline {
 
   // ------------------------------------------------------------ the points
 
-  /// The points changing hands: off Tobi's plate to the curve before a
-  /// win's run, from the new point to Tobi after a loss has landed (after
-  /// a rank down, with the class change).
-  Duration get chipPopAt => won
-      ? IkkiuchiRankMotion.chipPopAt
-      : ranksDown
-          ? labelAt
-          : landAt + IkkiuchiRankMotion.chipAfterLand;
-  Duration get chipFlyAt => won ? IkkiuchiRankMotion.chipFlyAt : chipPopAt + IkkiuchiRankMotion.chipFlyAfter;
-  Duration get chipLandAt => won ? IkkiuchiRankMotion.winRunAt : chipFlyAt + IkkiuchiRankMotion.chipFly;
+  /// The points changing hands before the count: the change tag pops off
+  /// Tobi's plate and flies down to its place by the rating, where it
+  /// stays.
+  Duration get chipPopAt => IkkiuchiRankMotion.chipPopAt;
+  Duration get chipFlyAt => IkkiuchiRankMotion.chipFlyAt;
+  Duration get chipLandAt => chipFlyAt + IkkiuchiRankMotion.chipFly;
 
-  /// When the change tag stamps on (with the slot of a placement match).
-  Duration get tagAt => switch (moment) {
-        IkkiuchiRankMoment.rankUp => cutAt + IkkiuchiRankMotion.tagAfterCut,
-        IkkiuchiRankMoment.rankDown => labelAt,
-        _ => landAt + IkkiuchiRankMotion.tagAfterLand,
-      };
+  /// When a placement match's slot stamps.
+  Duration get slotAt => landAt + IkkiuchiRankMotion.slotAfterLand;
 
   // -------------------------------------------------------- the climaxes
 
   /// The last placement match's drumroll, its heartbeats and the reveal.
-  Duration get suspenseAt => won
-      ? landAt + IkkiuchiRankMotion.suspenseAfterLand
-      : chipLandAt + IkkiuchiRankMotion.suspenseAfterChip;
+  Duration get suspenseAt => landAt + IkkiuchiRankMotion.suspenseAfterLand;
   List<Duration> get suspenseBeats => [for (final b in IkkiuchiRankMotion.suspenseBeats) suspenseAt + b];
   Duration get revealAt => suspenseAt + IkkiuchiRankMotion.revealAfterSuspense;
 
@@ -186,7 +177,7 @@ class IkkiuchiRankTimeline {
   Duration get labelAt => switch (moment) {
         IkkiuchiRankMoment.rankUp => cutAt + IkkiuchiRankMotion.labelAfterCut,
         IkkiuchiRankMoment.rankDown => _later(
-            thudAt + IkkiuchiRankMotion.labelAfterThud, landAt + IkkiuchiRankMotion.tagAfterLand),
+            thudAt + IkkiuchiRankMotion.labelAfterThud, landAt + IkkiuchiRankMotion.labelAfterLand),
         _ => settleAt + IkkiuchiRankMotion.labelAfterSettle,
       };
 
@@ -198,7 +189,7 @@ class IkkiuchiRankTimeline {
   Duration get ctaAt => switch (moment) {
         IkkiuchiRankMoment.rankUp => cutAt + IkkiuchiRankMotion.ctaAfterCut,
         IkkiuchiRankMoment.placed => labelAt + IkkiuchiRankMotion.placedCtaAfterLabel,
-        _ => won ? landAt + IkkiuchiRankMotion.ctaAfterLand : chipLandAt + IkkiuchiRankMotion.ctaAfterChip,
+        _ => landAt + IkkiuchiRankMotion.ctaAfterLand,
       };
   Duration get length => ctaAt + IkkiuchiRankMotion.endAfterCta;
 
@@ -218,7 +209,7 @@ class IkkiuchiRankTimeline {
       (Sfx.xpPop, chipPopAt),
       (Sfx.cardFlick, chipFlyAt),
       (change.after >= change.before ? Sfx.ratingUp : Sfx.stamp, landAt),
-      if (placing) (Sfx.stamp, tagAt),
+      if (placing) (Sfx.stamp, slotAt),
       if (ranksUp) ...[
         for (final at in strainBeats) (Sfx.ratingStrain, at),
         (Sfx.ratingBreak, breakAt),
