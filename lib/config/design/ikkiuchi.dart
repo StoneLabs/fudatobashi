@@ -301,7 +301,7 @@ abstract final class IkkiuchiCallStyle {
   /// tapering to the right. Both wipe away from the left as the 下の句 plays,
   /// with an edge [shimonokuEdge] wide.
   static const double shimonokuGap = 6;
-  static const double shimonokuTail = 150;
+  static const double shimonokuTail = 50;
   static const double shimonokuEdge = 6;
 
   /// How a read ended (`IkkiuchiFeedbackBanner`): [feedback] lettering on
