@@ -17,8 +17,8 @@ import 'ikkiuchi_tobi_tag.dart';
 /// half: 勝 / 負 and by how many cards (or 棄権). Tobi's: Tobi as the match
 /// ended (shocked when beaten, cheering when he won, trembling once beaten)
 /// over his rating for the match on his plate ([plateKey]), which swells as
-/// the points leave it. The halves slide in and meet with a jolt
-/// as VS pops up.
+/// the points leave it. The halves slide in and meet with a jolt as VS
+/// pops up.
 class IkkiuchiRankCard extends StatelessWidget {
   const IkkiuchiRankCard(this.timeline, {super.key, required this.elapsed, required this.tone, required this.plateKey});
 
