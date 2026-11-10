@@ -80,7 +80,8 @@ class IkkiuchiCallLayer extends StatelessWidget {
 /// blinking from then until tapped; in the
 /// memory time after it 覚えた stands over 並べ替え, ending it at once
 /// ([IkkiuchiMatchFlow.startEarly]). [onEnd] gets 終了
-/// once held, named 投了 while it would [surrender] the match. Only its
+/// once held, named 投了 while it would [surrender] the match, faded once
+/// the match can't be ended ([IkkiuchiMatchFlow.canEnd]). Only its
 /// buttons take touches. It is one of the board's
 /// match parts (`IkkiuchiBoardView.parts`), so a card a 送り札 holds up lies
 /// over it.
@@ -109,6 +110,7 @@ class IkkiuchiColumnLayer extends StatelessWidget {
                   buttons: _buttons(S.of(context)),
                   onEnd: onEnd,
                   surrender: surrender,
+                  canEnd: flow?.canEnd ?? true,
                 ),
               ),
           ]);

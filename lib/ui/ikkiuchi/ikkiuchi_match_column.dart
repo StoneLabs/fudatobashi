@@ -22,7 +22,8 @@ typedef IkkiuchiColumnButton = ({String label, VectorArt icon, Color fill, VoidC
 /// is laid out: 終了 at its top, which ends the match once held
 /// ([IkkiuchiMatchTuning.endHold]) and then tells [onEnd], and says to hold
 /// it when only tapped; named 投了 while it would [surrender] the match, a
-/// loss; the score in its middle, each side's cards left
+/// loss, and faded, taking no touch, while the match can't be ended
+/// ([canEnd]); the score in its middle, each side's cards left
 /// ([tobi], [player]), split on the line [split] down the column, the
 /// middle of the gap between the sides; and the [buttons] at its foot, the
 /// last lowest, as 並べ替え or 完了. Only 終了 and the buttons not faded take
@@ -36,13 +37,14 @@ class IkkiuchiMatchColumn extends StatelessWidget {
     required this.buttons,
     required this.onEnd,
     this.surrender = false,
+    this.canEnd = true,
   });
 
   final int tobi, player;
   final double split;
   final List<IkkiuchiColumnButton> buttons;
   final VoidCallback onEnd;
-  final bool surrender;
+  final bool surrender, canEnd;
 
   @override
   Widget build(BuildContext context) {
@@ -55,15 +57,21 @@ class IkkiuchiMatchColumn extends StatelessWidget {
           left: 0,
           right: 0,
           child: Center(
-            child: HoldToConfirmButton(
-              duration: IkkiuchiMatchTuning.endHold,
-              label: surrender ? s.ikkiuchiSurrender : s.end,
-              hint: surrender ? s.ikkiuchiSurrenderHint(endSeconds) : s.ikkiuchiEndHint(endSeconds),
-              look: IkkiuchiColumnStyle.end,
-              haptics: ProgressScope.of(context).settings.haptics,
-              icon: MangaIcon(IconArt.end,
-                  size: IkkiuchiColumnStyle.endIcon, color: Palette.paper, strokeWidth: IkkiuchiColumnStyle.endIconStroke),
-              onConfirmed: onEnd,
+            child: IgnorePointer(
+              ignoring: !canEnd,
+              child: Opacity(
+                opacity: canEnd ? 1 : IkkiuchiColumnStyle.dimmed,
+                child: HoldToConfirmButton(
+                  duration: IkkiuchiMatchTuning.endHold,
+                  label: surrender ? s.ikkiuchiSurrender : s.end,
+                  hint: surrender ? s.ikkiuchiSurrenderHint(endSeconds) : s.ikkiuchiEndHint(endSeconds),
+                  look: IkkiuchiColumnStyle.end,
+                  haptics: ProgressScope.of(context).settings.haptics,
+                  icon: MangaIcon(IconArt.end,
+                      size: IkkiuchiColumnStyle.endIcon, color: Palette.paper, strokeWidth: IkkiuchiColumnStyle.endIconStroke),
+                  onConfirmed: onEnd,
+                ),
+              ),
             ),
           ),
         ),

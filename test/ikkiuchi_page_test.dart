@@ -1080,12 +1080,12 @@ void main() {
 
     const setup = IkkiuchiSetup.free(opponentRating: 1600, perSide: 5, rows: 3, memorise: Duration(minutes: 15));
 
-    /// A free match of [setup] dealt from [seed] on the user's phone turned,
+    /// A match of [playing], free of [setup] by default, dealt from [seed] on the user's phone turned,
     /// both sides laid out, in its memory time, Tobi reaching for no card.
-    Future<IkkiuchiMatchFlow> laidOut(WidgetTester tester, Progress p, int seed) async {
+    Future<IkkiuchiMatchFlow> laidOut(WidgetTester tester, Progress p, int seed, {IkkiuchiSetup? playing}) async {
       await showPage(tester, p, phone: usersPhoneLandscape);
       unawaited(Navigator.of(tester.element(find.byType(IkkiuchiPage)))
-          .push(MangaRoute<void>(builder: (_) => IkkiuchiMatchScreen(setup: setup, seed: seed))));
+          .push(MangaRoute<void>(builder: (_) => IkkiuchiMatchScreen(setup: playing ?? setup, seed: seed))));
       await tester.pump();
       await tester.pump(Motion.route);
       final flow = screen(tester).flow!;
@@ -1324,6 +1324,71 @@ void main() {
       expect(tester.takeException(), isNull);
       await tester.pumpWidget(const SizedBox());
     });
+
+    /// A match decided by the player's take of Tobi's card, their own last
+    /// card then sent across (seed 3), run on to [stage]; [playing] is its
+    /// setup.
+    Future<IkkiuchiMatchFlow> decidedAt(WidgetTester tester, Progress p, IkkiuchiStage stage,
+        {IkkiuchiSetup? playing}) async {
+      final flow = await laidOut(tester, p, 3, playing: playing);
+      final scene = flow.scene;
+      await downToOne(tester, flow, IkkiuchiSide.player);
+      flow.endMemoryTime();
+      await toRead(tester, flow);
+      for (var i = 0; i < 10 && scene.board.called == null; i++) {
+        await playUntil(tester, () => flow.stage == IkkiuchiStage.breakAfterShimonoku, reason: 'a からふだ goes by');
+        await toRead(tester, flow);
+      }
+      touch(flow, scene.board.called!);
+      await playUntil(tester, () => flow.stage == stage);
+      expect(flow.tally.decided, isTrue);
+      return flow;
+    }
+
+    /// The end button held as long as it takes, then the system's back.
+    Future<void> holdAndBack(WidgetTester tester) async {
+      final press = await tester.startGesture(tester.getCenter(find.byType(HoldToConfirmButton)));
+      await tester.pump(const Duration(milliseconds: 50));
+      await tester.pump(IkkiuchiMatchTuning.endHold);
+      await press.up();
+      await tester.pump();
+      await tester.binding.handlePopRoute();
+      await tester.pump();
+    }
+
+    for (final inRanked in [false, true]) {
+      for (final stage in [IkkiuchiStage.closingUp, IkkiuchiStage.finalSend]) {
+        testWidgets('holding 終了/投了 and back in ${stage.name} of the deciding read (${inRanked ? 'ranked' : 'free'}) ends nothing',
+            (tester) async {
+          final p = await open(tester, lang: 'ja');
+          final match = inRanked
+              ? const IkkiuchiSetup(
+                  ranked: true,
+                  mode: IkkiuchiMode.rapid,
+                  opponent: IkkiuchiOpponent.tobi,
+                  opponentRating: 1600,
+                  perSide: 5,
+                  rows: 3,
+                  memorise: Duration(minutes: 15))
+              : null;
+          final flow = await decidedAt(tester, p, stage, playing: match);
+          // Surrender names the button once a ranked match is under way and
+          // can still be given up; decided, it is 終了 again.
+          expect(find.descendant(of: find.byType(HoldToConfirmButton), matching: find.text(ja.end)), findsOneWidget);
+          await holdAndBack(tester);
+          expect(find.byType(AlertDialog), findsNothing, reason: 'nothing to confirm');
+          expect(find.byType(IkkiuchiMatchScreen), findsOneWidget, reason: 'back leaves nothing');
+          expect(flow.endedByPlayer, isFalse);
+          await playUntil(tester, () => flow.stage == IkkiuchiStage.result);
+          expect(flow.result, IkkiuchiResult.won);
+          await saved(tester, screen(tester).saving);
+          final recorded = p.ikkiuchi.matches.single;
+          expect([recorded.completed, recorded.result], [true, IkkiuchiResult.won]);
+          expect(tester.takeException(), isNull);
+          await tester.pumpWidget(const SizedBox());
+        });
+      }
+    }
   });
 
   group('leaving', () {

@@ -270,11 +270,15 @@ class IkkiuchiMatchFlow extends ChangeNotifier {
     _nextSend();
   }
 
-  /// The player ends the match (終了), whatever is under way: both sides
-  /// are laid out while the match opens, and a 送り札 is called off where
-  /// it stands ([IkkiuchiSendFlow.cancel]).
+  /// Whether the player can still end the match early: not once a read has
+  /// decided it ([IkkiuchiTally.decided]), which is then played to its end.
+  bool get canEnd => !_tally.decided && !_stage.over;
+
+  /// The player ends the match (終了), whatever is under way, while
+  /// [canEnd]: both sides are laid out while the match opens, and a 送り札
+  /// is called off where it stands ([IkkiuchiSendFlow.cancel]).
   void end() {
-    if (_stage.over) return;
+    if (!canEnd) return;
     _endedByPlayer = true;
     _layOutBoth();
     scene.arrange.finish();

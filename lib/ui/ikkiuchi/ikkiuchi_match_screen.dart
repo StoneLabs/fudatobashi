@@ -114,8 +114,9 @@ class IkkiuchiMatchScreenState extends State<IkkiuchiMatchScreen> with SingleTic
     if (flow != null) {
       flow.removeListener(_changed);
       if (!_over) {
+        final decided = flow.tally.decided;
         flow.end();
-        if (widget.setup.ranked && flow.playBegun && !widget.guest) _record(_matchSoFar(flow, completed: false));
+        if (widget.setup.ranked && flow.playBegun && !widget.guest) _record(_matchSoFar(flow, completed: decided));
       }
       flow.dispose();
     }
@@ -224,10 +225,17 @@ class IkkiuchiMatchScreenState extends State<IkkiuchiMatchScreen> with SingleTic
   }
 
   /// Whether leaving now gives up a ranked match that counts: from its
-  /// first read until it is over.
+  /// first read until it is decided.
   bool get _leavingCounts {
     final flow = _flow;
-    return widget.setup.ranked && !widget.guest && !_over && flow != null && flow.playBegun;
+    return widget.setup.ranked && !widget.guest && !_over && flow != null && flow.playBegun && flow.canEnd;
+  }
+
+  /// Whether the match is decided and its end still to come: it can't be
+  /// left until then.
+  bool get _awaitingEnd {
+    final flow = _flow;
+    return flow != null && !_over && !flow.canEnd;
   }
 
   Future<bool> _confirmSurrender() {
@@ -240,15 +248,17 @@ class IkkiuchiMatchScreenState extends State<IkkiuchiMatchScreen> with SingleTic
   }
 
   /// 終了 (投了), or the system's back while leaving counts: ends the
-  /// match, once the player says so when it counts.
+  /// match, once the player says so when it counts. Once the match is
+  /// decided it does nothing, the match played to its end.
   Future<void> _end() async {
+    if (_flow?.canEnd != true) return;
     if (_leavingCounts && !await _confirmSurrender()) return;
     if (mounted) _flow?.end();
   }
 
   @override
   Widget build(BuildContext context) => PopScope(
-        canPop: !_leavingCounts,
+        canPop: !_leavingCounts && !_awaitingEnd,
         onPopInvokedWithResult: (didPop, _) {
           if (!didPop) unawaited(_end());
         },
