@@ -85,15 +85,16 @@ class IkkiuchiRankTimeline {
     return Duration(microseconds: hi);
   }
 
-  /// A tick each time the rating read passes a point, as soon as it does:
-  /// slowly at first, rushing, slowing into the landing; none closer than
-  /// [IkkiuchiRankMotion.tickSpacing] to the last one or to the landing.
+  /// A tick each time the rating read passes a point, as it does: slowly at
+  /// first, rushing, slowing into the landing. Where points pass faster
+  /// than [IkkiuchiRankMotion.tickSpacing], a tick waits out the spacing
+  /// while the read still shows its point, and is left out once it has
+  /// moved on, so the rush ticks evenly; none comes closer than the spacing
+  /// to the landing.
   late final List<Duration> ticks = () {
     final from = change.before.round(), to = change.after.round();
     final step = to > from ? 1 : -1;
-    final ticks = <Duration>[];
-    const spacing = IkkiuchiRankMotion.tickSpacing;
-    for (var value = from + step; value * step <= to * step; value += step) {
+    Duration reaching(int value) {
       var lo = runAt, hi = landAt;
       while (hi - lo > const Duration(milliseconds: 1)) {
         final mid = lo + (hi - lo) ~/ 2;
@@ -103,7 +104,16 @@ class IkkiuchiRankTimeline {
           lo = mid;
         }
       }
-      if ((ticks.isEmpty || hi - ticks.last >= spacing) && landAt - hi >= spacing) ticks.add(hi);
+      return hi;
+    }
+
+    final passed = [for (var v = from + step; v * step <= to * step; v += step) reaching(v)];
+    const spacing = IkkiuchiRankMotion.tickSpacing;
+    final ticks = <Duration>[];
+    for (final (i, at) in passed.indexed) {
+      final tick = ticks.isEmpty || at - ticks.last >= spacing ? at : ticks.last + spacing;
+      final shown = i + 1 < passed.length ? passed[i + 1] : landAt;
+      if (tick < shown && landAt - tick >= spacing) ticks.add(tick);
     }
     return ticks;
   }();

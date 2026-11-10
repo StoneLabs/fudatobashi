@@ -332,6 +332,17 @@ abstract final class FireworksStyle {
   static const double stillAt = 0.45;
 }
 
+/// An ease in and out by the power [power]: half of it rising as t^power,
+/// half falling back the same way; 3 is the classic cubic.
+class PowerInOut extends Curve {
+  const PowerInOut(this.power);
+  final double power;
+
+  @override
+  double transformInternal(double t) =>
+      t < 0.5 ? math.pow(2 * t, power) / 2 : 1 - math.pow(2 - 2 * t, power) / 2;
+}
+
 /// [curve] advancing in [count] whole steps, like CSS `steps(count, end)`:
 /// the stop-motion of manga entrances.
 class StepCurve extends Curve {

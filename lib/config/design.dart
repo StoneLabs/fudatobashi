@@ -2,6 +2,7 @@
 /// logical pixels on the spec's 390 × 844 phone; letter spacing is in em.
 library;
 
+import 'dart:math' as math;
 import 'dart:ui' show lerpDouble;
 
 import 'package:flutter/foundation.dart';

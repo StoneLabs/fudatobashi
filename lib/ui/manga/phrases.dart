@@ -6,7 +6,8 @@ import 'package:flutter/painting.dart';
 /// and at spaces. Text without Japanese is left as it is.
 abstract final class Phrases {
   static const end = '​';
-  static const _joiner = '⁠';
+  /// Keeps the characters either side of it on one line.
+  static const joiner = '⁠';
 
   /// Characters a line may break beside: CJK punctuation, kana, kanji and
   /// full-width forms.
@@ -43,14 +44,14 @@ abstract final class Phrases {
     ]);
   }
 
-  static bool _visible(int rune) => rune != end.runes.first && rune != _joiner.runes.first;
+  static bool _visible(int rune) => rune != end.runes.first && rune != joiner.runes.first;
 
   static String _joined(String text) {
     final out = StringBuffer();
     String? before;
     for (final rune in text.runes) {
       final c = String.fromCharCode(rune);
-      if (before != null && _joins(before, c)) out.write(_joiner);
+      if (before != null && _joins(before, c)) out.write(joiner);
       out.write(c);
       before = c;
     }

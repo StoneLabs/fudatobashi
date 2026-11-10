@@ -967,7 +967,8 @@ class IkkiuchiRankTone {
 /// [marginFont] (so) with its number at [marginNumber] (so), [whoGap]
 /// apart. Tobi's half, [tobiInset] from the right: Tobi ([tobi]) over his
 /// plate (`IkkiuchiTobiTag` at [plateName] and [plateFont] (so) inside
-/// [platePadding]), [tobiGap] apart, at the card's foot. VS on an ink
+/// [platePadding], as tall as the name with its full line), [tobiGap]
+/// apart, at the card's foot. VS on an ink
 /// parallelogram ([vs], skewed [vsSkewDeg]) at [vsFont], tracked
 /// [vsTracking].
 ///
@@ -976,8 +977,8 @@ class IkkiuchiRankTone {
 /// width) joined to the box in one [frameStroke] outline, with the ランク戦
 /// tag [rankedGap] after it and [rankedDrop] over the box (at [rankedFont]
 /// (so), tracked [rankedTracking], inside [rankedPadding], skewed
-/// [rankedSkewDeg]). Inside [boxPadding]: the class [badge], [standGap]
-/// before the label at [labelFont] (so; numbers at [labelNumber]) in a
+/// [rankedSkewDeg]). Inside [boxPadding]: the class [badge], [badgeDrop]
+/// under the standing's middle, [standGap] before the label at [labelFont] (so; numbers at [labelNumber]) in a
 /// room [labelRoom] tall (so), [ratingTop] over the rating at [ratingFont]
 /// (so) with its change [tagGap] after it on a tag at [tagFont] (so)
 /// inside [tagPadding], edged [tagBorder], in a room [tagRoom] tall (so)
@@ -989,7 +990,8 @@ class IkkiuchiRankTone {
 /// [gaugeNumber]) and its bar [barGap] after it, [barHeight] tall, edged
 /// [barBorder], at least [barMinWidth] wide. While placing a note at
 /// [noteFont] (so; numbers at [noteNumber]) [noteTop] under the rating,
-/// its lines [noteLineHeight] apart. [plotTop] under the standing the
+/// its lines [noteLineHeight] apart, breaking between phrases; a line up
+/// to [noteSqueeze] too wide shrinks to fit instead. [plotTop] under the standing the
 /// curve or the chart takes the rest, at least [plotMinHeight], [plotFoot]
 /// clear of the box's foot.
 ///
@@ -1039,7 +1041,7 @@ abstract final class IkkiuchiRankLayout {
   static const Size tobi = Size(56, 67);
   static const double plateName = 12;
   static const double plateFont = 17;
-  static const EdgeInsets platePadding = EdgeInsets.fromLTRB(7, 4, 7, 5);
+  static const EdgeInsets platePadding = EdgeInsets.fromLTRB(7, 5.5, 7, 6.5);
   static const Size vs = Size(34, 24);
   static const double vsSkewDeg = -14;
   static const double vsFont = 13;
@@ -1057,7 +1059,7 @@ abstract final class IkkiuchiRankLayout {
   static const double rankedTracking = 1.5;
   static const EdgeInsets rankedPadding = EdgeInsets.fromLTRB(9, 3, 9, 4);
   static const double rankedSkewDeg = -12;
-  static const EdgeInsets boxPadding = EdgeInsets.fromLTRB(14, 14, 14, 10);
+  static const EdgeInsets boxPadding = EdgeInsets.fromLTRB(14, 14, 14, 18);
 
   static const badge = IkkiuchiBadgeStyle(
     size: 82,
@@ -1067,6 +1069,7 @@ abstract final class IkkiuchiRankLayout {
     longSuffixFont: 15,
     unplacedFont: 44,
   );
+  static const double badgeDrop = 5;
   static const double standGap = 14;
   static const double labelFont = 12.5;
   static const double labelNumber = 13;
@@ -1098,6 +1101,7 @@ abstract final class IkkiuchiRankLayout {
   static const double noteFont = 12;
   static const double noteNumber = 14;
   static const double noteLineHeight = 1.35;
+  static const double noteSqueeze = 0.04;
   static const double plotTop = 12;
   static const double plotMinHeight = 140;
   static const double plotFoot = 2;
@@ -1498,9 +1502,10 @@ abstract final class IkkiuchiRankMotion {
   static const box = EntranceSpec(EntranceFrom(offset: Offset(0, 24)),
       duration: Duration(milliseconds: 420), delay: Duration(milliseconds: 300), curve: Entrances.glide);
 
-  /// The count: 3 s on an ease in and out, its ticks no closer than 60 ms.
+  /// The count: 3 s on a cubic ease in and out, its ticks no closer than
+  /// 60 ms.
   static const run = Duration(milliseconds: 3000);
-  static const Curve runCurve = Curves.easeInOutCubic;
+  static const Curve runCurve = PowerInOut(3);
   static const tickSpacing = Duration(milliseconds: 60);
   static const runAt = Duration(milliseconds: 1000);
   static const winRunAt = Duration(milliseconds: 1400);

@@ -171,6 +171,21 @@ Widget _title(String text, Color fill) => OutlinedText(
       IkkiuchiRankMoment.placed => (first: s.ikkiuchiRankPlacing, firstFill: Palette.paper, second: s.ikkiuchiRankPlaced),
     };
 
+/// The title's room: the lettering at the room's top, as tall as its
+/// letters, shrinking to the width about a little under its middle.
+class _TitleRoom extends StatelessWidget {
+  const _TitleRoom({required this.child});
+
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) => Padding(
+        padding: EdgeInsets.only(
+            bottom: MediaQuery.textScalerOf(context).scale(IkkiuchiRankLayout.titleRoom - IkkiuchiRankLayout.titleFont)),
+        child: Align(alignment: IkkiuchiRankLayout.titleOrigin, child: child),
+      );
+}
+
 /// The page at [elapsed]: the title, the match card, the mode's box and the
 /// button, between the system bars.
 class _Page extends StatelessWidget {
@@ -202,8 +217,7 @@ class _Page extends StatelessWidget {
         SizedBox(
           key: keys.title,
           height: scaler.scale(IkkiuchiRankLayout.titleRoom),
-          child: Align(
-            alignment: Alignment.topCenter,
+          child: _TitleRoom(
             child: FittedBox(
               fit: BoxFit.scaleDown,
               child: swapped
@@ -283,7 +297,6 @@ class _Box extends StatelessWidget {
                       style: const TextStyle(
                           fontFamily: Fonts.display,
                           fontSize: IkkiuchiRankLayout.rankedFont,
-                          height: 1.2,
                           letterSpacing: IkkiuchiRankLayout.rankedTracking,
                           color: Palette.paper)),
                 ),
@@ -426,6 +439,8 @@ class _Standing extends StatelessWidget {
             : _ClassChange(change.from, change.to);
 
     final shown = t.shownAt(e);
+    const ratingStyle = TextStyle(fontFamily: Fonts.display, fontSize: IkkiuchiRankLayout.ratingFont, height: 1);
+
     final landed = e >= t.landAt
         ? IkkiuchiRankLayout.ratingSwell *
             (1 - Curves.easeOutCubic.transform(progressIn(e, t.landAt, IkkiuchiRankMotion.landPulse)))
@@ -437,7 +452,16 @@ class _Standing extends StatelessWidget {
     const tagOrigin = IkkiuchiRankLayout.tagOrigin;
 
     return Row(children: [
-      SizedBox.square(key: slotKey, dimension: IkkiuchiRankLayout.badge.size),
+      SizedBox.square(
+        dimension: IkkiuchiRankLayout.badge.size,
+        child: Stack(clipBehavior: Clip.none, children: [
+          Positioned(
+            top: IkkiuchiRankLayout.badgeDrop,
+            left: 0,
+            child: SizedBox.square(key: slotKey, dimension: IkkiuchiRankLayout.badge.size),
+          ),
+        ]),
+      ),
       const SizedBox(width: IkkiuchiRankLayout.standGap),
       Expanded(
         child: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.start, children: [
@@ -456,12 +480,20 @@ class _Standing extends StatelessWidget {
             ]),
           ),
           const SizedBox(height: IkkiuchiRankLayout.ratingTop),
-          Row(children: [
+          // As wide as the rating it counts to, so that the tag stamped on
+          // after it lands sits by it, and a narrow room shrinks it by one
+          // size all along.
+          FittedBox(
+            fit: BoxFit.scaleDown,
+            alignment: Alignment.centerLeft,
+            child: Row(mainAxisSize: MainAxisSize.min, children: [
             Transform.scale(
               scale: 1 + landed,
               alignment: IkkiuchiRankLayout.ratingOrigin,
-              child: Text('$shown',
-                  style: const TextStyle(fontFamily: Fonts.display, fontSize: IkkiuchiRankLayout.ratingFont, height: 1)),
+              child: Stack(clipBehavior: Clip.none, children: [
+                Opacity(opacity: 0, child: Text('${change.after.round()}', style: ratingStyle)),
+                Positioned(left: 0, top: 0, child: Text('$shown', style: ratingStyle)),
+              ]),
             ),
             const SizedBox(width: IkkiuchiRankLayout.tagGap),
             ConstrainedBox(
@@ -481,7 +513,7 @@ class _Standing extends StatelessWidget {
                 ]),
               ),
             ),
-          ]),
+          ])),
           if (!placing || (placed && e >= t.labelAt))
             Padding(
               padding: const EdgeInsets.only(top: IkkiuchiRankLayout.gaugeTop),
@@ -621,8 +653,8 @@ class _Gauge extends StatelessWidget {
                     child: NumberedText(
                       s.ratingToNext(s.className(next)),
                       [math.max(0, (next.minRating - rating).ceil())],
-                      style: const TextStyle(fontWeight: Weights.black, fontSize: IkkiuchiRankLayout.gaugeFont),
-                      numberStyle: const TextStyle(fontFamily: Fonts.display, fontSize: IkkiuchiRankLayout.gaugeNumber),
+                      style: const TextStyle(fontWeight: Weights.black, fontSize: IkkiuchiRankLayout.gaugeFont, height: 1),
+                      numberStyle: const TextStyle(fontFamily: Fonts.display, fontSize: IkkiuchiRankLayout.gaugeNumber, height: 1),
                     ),
                   ),
                 ),
@@ -657,10 +689,33 @@ class _Note extends StatelessWidget {
     const style = TextStyle(
         fontWeight: Weights.black, fontSize: IkkiuchiRankLayout.noteFont, height: IkkiuchiRankLayout.noteLineHeight);
     const number = TextStyle(fontFamily: Fonts.display, fontWeight: Weights.regular, fontSize: IkkiuchiRankLayout.noteNumber);
-    if (t.placed && e >= t.suspenseAt) return Text(s.ikkiuchiRankIs, style: style);
-    final total = IkkiuchiRating.placementMatches;
-    final left = t.placed ? total : total - t.change.placement.length;
-    return NumberedText(s.ikkiuchiPlacingLine(t.change.mode, first: t.placed), [left], style: style, numberStyle: number);
+    final InlineSpan words;
+    if (t.placed && e >= t.suspenseAt) {
+      words = Phrases.span(s.ikkiuchiRankIs);
+    } else {
+      final total = IkkiuchiRating.placementMatches;
+      final left = t.placed ? total : total - t.change.placement.length;
+      final [before, after] = s.ikkiuchiPlacingLine(t.change.mode, first: t.placed).split('{0}');
+      words = TextSpan(children: [
+        Phrases.span(before),
+        TextSpan(text: '${Phrases.joiner}$left${Phrases.joiner}', style: number),
+        Phrases.span(after),
+      ]);
+    }
+    final text = TextSpan(style: style, children: [words]);
+    return LayoutBuilder(builder: (context, box) {
+      final line = TextPainter(
+        text: text,
+        textDirection: TextDirection.ltr,
+        textScaler: MediaQuery.textScalerOf(context),
+        maxLines: 1,
+      )..layout();
+      final squeeze = line.width <= box.maxWidth * (1 + IkkiuchiRankLayout.noteSqueeze);
+      line.dispose();
+      return squeeze
+          ? FittedBox(fit: BoxFit.scaleDown, alignment: Alignment.centerLeft, child: Text.rich(text, maxLines: 1))
+          : Text.rich(text);
+    });
   }
 }
 
@@ -688,7 +743,8 @@ class _Where {
 
 /// [child] painted with its [anchor] at where [at] works out as it paints
 /// (from where the page's parts are then, see [_Where]), turned [turnDeg]
-/// and scaled by [scale] about its [origin]. It fills its parent.
+/// and scaled by [scale] about its [origin], at its own size. It fills its
+/// parent.
 class _Pinned extends SingleChildRenderObjectWidget {
   const _Pinned({
     required this.at,
@@ -750,11 +806,14 @@ class _RenderPinned extends RenderProxyBox {
   @override
   void performLayout() {
     size = constraints.biggest;
-    child?.layout(constraints.loosen(), parentUsesSize: true);
+    child?.layout(const BoxConstraints(), parentUsesSize: true);
   }
 
   @override
   bool hitTest(BoxHitTestResult result, {required Offset position}) => false;
+
+  /// Where the child was last painted.
+  Matrix4 _placed = Matrix4.identity();
 
   @override
   void paint(PaintingContext context, Offset offset) {
@@ -763,13 +822,16 @@ class _RenderPinned extends RenderProxyBox {
     final at = _at(_Where(this, size));
     final anchor = _anchor.alongSize(child.size), origin = _origin.alongSize(child.size);
     final corner = at - anchor;
-    final transform = Matrix4.identity()
+    _placed = Matrix4.identity()
       ..translateByDouble(corner.dx + origin.dx, corner.dy + origin.dy, 0, 1)
       ..rotateZ(_turnDeg * math.pi / 180)
       ..scaleByDouble(_scale, _scale, 1, 1)
       ..translateByDouble(-origin.dx, -origin.dy, 0, 1);
-    context.pushTransform(needsCompositing, offset, transform, (context, offset) => context.paintChild(child, offset));
+    context.pushTransform(needsCompositing, offset, _placed, (context, offset) => context.paintChild(child, offset));
   }
+
+  @override
+  void applyPaintTransform(RenderBox child, Matrix4 transform) => transform.multiply(_placed);
 }
 
 /// Everything over the page at [elapsed]: the dark of a strain or a
@@ -850,8 +912,7 @@ class _Effects extends StatelessWidget {
               child: SizedBox(
                 width: MediaQuery.sizeOf(context).width - 2 * Gaps.gutter,
                 height: scaler.scale(IkkiuchiRankLayout.titleRoom),
-                child: Align(
-                  alignment: Alignment.topCenter,
+                child: _TitleRoom(
                   child: FittedBox(
                     fit: BoxFit.scaleDown,
                     child: _entered(
