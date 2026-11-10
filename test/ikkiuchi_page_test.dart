@@ -62,7 +62,6 @@ import 'package:fudatobashi/ui/ikkiuchi/ikkiuchi_board_painter.dart';
 import 'package:fudatobashi/ui/ikkiuchi/ikkiuchi_match_flow.dart';
 import 'package:fudatobashi/ui/ikkiuchi/ikkiuchi_send_flow.dart';
 import 'package:fudatobashi/ui/ikkiuchi/ikkiuchi_match_column.dart';
-import 'package:fudatobashi/ui/ikkiuchi/ikkiuchi_match_layers.dart';
 import 'package:fudatobashi/ui/ikkiuchi/ikkiuchi_match_result.dart';
 import 'package:fudatobashi/ui/ikkiuchi/ikkiuchi_match_screen.dart';
 import 'package:fudatobashi/ui/ikkiuchi/ikkiuchi_results_screen.dart';
@@ -1017,27 +1016,43 @@ void main() {
       await tester.pump(Motion.route);
     }
 
+    /// A tap on [button] of the dialog asking.
     Future<void> answer(WidgetTester tester, String button) async {
-      await tester.tap(find.text(button));
+      await tester.tap(find.descendant(of: find.byType(AlertDialog), matching: find.text(button)));
       await tester.pump();
       await tester.pump(Motion.route);
     }
 
-    testWidgets('a ranked match after its first read asks first: Keep playing stays, Leave is a loss',
+    /// The column's end button, read [label].
+    Finder endButton(String label) =>
+        find.descendant(of: find.byType(HoldToConfirmButton), matching: find.text(label));
+
+    /// The end button held as long as it takes.
+    Future<void> hold(WidgetTester tester) async {
+      final press = await tester.startGesture(tester.getCenter(find.byType(HoldToConfirmButton)));
+      await tester.pump(const Duration(milliseconds: 100));
+      await tester.pump(IkkiuchiMatchTuning.endHold);
+      await tester.pump(const Duration(milliseconds: 100));
+      await press.up();
+      await tester.pump();
+      await tester.pump(Motion.route);
+    }
+
+    testWidgets('a ranked match after its first read asks first: Keep playing stays, Surrender is a loss',
         (tester) async {
       final p = await open(tester);
       await showPage(tester, p);
       final state = await start(tester, ranked);
       await toFirstRead(tester, state.flow!);
       await back(tester);
-      expect(find.text(s.ikkiuchiLeaveTitle), findsOneWidget);
-      expect(find.text(s.ikkiuchiLeaveNote), findsOneWidget);
+      expect(find.text(s.ikkiuchiSurrenderTitle), findsOneWidget);
+      expect(find.text(s.ikkiuchiSurrenderNote), findsOneWidget);
       await answer(tester, s.ikkiuchiKeepPlaying);
       expect(find.byType(IkkiuchiMatchScreen), findsOneWidget, reason: 'still playing');
       expect(state.saving, isNull);
 
       await back(tester);
-      await answer(tester, s.ikkiuchiLeave);
+      await answer(tester, s.ikkiuchiSurrender);
       expect(state.flow!.stage, IkkiuchiStage.gameEnd, reason: 'given up, its end shown as 終了 shows it');
       await saved(tester, state.saving);
       expect(p.ikkiuchi.matches.single.result, IkkiuchiResult.gaveUp);
@@ -1049,39 +1064,60 @@ void main() {
       await tester.pumpWidget(const SizedBox());
     });
 
-    testWidgets('終了 after the first read of a ranked match asks first too', (tester) async {
+    testWidgets('終了 is 投了 once leaving a ranked match counts: held, it asks; Keep playing plays on, Surrender loses',
+        (tester) async {
       final p = await open(tester);
       await showPage(tester, p);
       final state = await start(tester, ranked);
       final flow = state.flow!;
+      expect(endButton(s.end), findsOneWidget, reason: 'before the first read leaving is no loss');
+      expect(endButton(s.ikkiuchiSurrender), findsNothing);
       await toFirstRead(tester, flow);
-      final end = tester.widget<IkkiuchiColumnLayer>(find.byType(IkkiuchiColumnLayer)).onEnd;
-      end();
-      await tester.pump();
+      expect(endButton(s.end), findsNothing);
+      expect(endButton(s.ikkiuchiSurrender), findsOneWidget);
+
+      await hold(tester);
+      expect(find.text(s.ikkiuchiSurrenderTitle), findsOneWidget, reason: 'the hold, then the question');
+      expect(find.text(s.ikkiuchiSurrenderNote), findsOneWidget);
       await answer(tester, s.ikkiuchiKeepPlaying);
-      expect(flow.stage, isNot(IkkiuchiStage.gameEnd));
-      end();
-      await tester.pump();
-      await answer(tester, s.ikkiuchiLeave);
+      expect(find.byType(AlertDialog), findsNothing);
+      expect(flow.stage, isNot(IkkiuchiStage.gameEnd), reason: 'plays on');
+      expect(state.saving, isNull);
+      await tester.pump(const Duration(seconds: 1));
+      expect(flow.stage.over, isFalse);
+
+      for (var i = 0; i < 2; i++) {
+        await tester.tap(find.byType(HoldToConfirmButton));
+        await tester.pump(const Duration(milliseconds: 200));
+      }
+      final seconds = (IkkiuchiMatchTuning.endHold.inMilliseconds / Duration.millisecondsPerSecond).round();
+      expect(find.text(s.ikkiuchiSurrenderHint(seconds)), findsOneWidget, reason: 'two taps say to hold it');
+      expect(find.byType(AlertDialog), findsNothing, reason: 'a tap ends nothing');
+      await tester.pump(HoldConfirmTuning.hintLife);
+
+      await hold(tester);
+      await answer(tester, s.ikkiuchiSurrender);
       expect(flow.stage, IkkiuchiStage.gameEnd);
       await saved(tester, state.saving);
-      expect(p.ikkiuchi.matches.single.result, IkkiuchiResult.gaveUp);
+      expect(p.ikkiuchi.matches.single.result, IkkiuchiResult.gaveUp, reason: 'a loss');
       await toClosed(tester);
       await tester.pumpWidget(const SizedBox());
     });
 
-    testWidgets('before the first read, and in free play, back leaves without asking', (tester) async {
+    testWidgets('before the first read, and in free play, back leaves without asking and 終了 stays',
+        (tester) async {
       final p = await open(tester);
       await showPage(tester, p);
       await start(tester, ranked);
       await back(tester);
-      expect(find.text(s.ikkiuchiLeaveTitle), findsNothing);
+      expect(find.text(s.ikkiuchiSurrenderTitle), findsNothing);
       expect(find.byType(IkkiuchiMatchScreen), findsNothing);
 
       final free = await start(tester, IkkiuchiSetup.firstFree);
       await toFirstRead(tester, free.flow!);
+      expect(endButton(s.end), findsOneWidget, reason: 'leaving free play is no loss');
       await back(tester);
-      expect(find.text(s.ikkiuchiLeaveTitle), findsNothing);
+      expect(find.text(s.ikkiuchiSurrenderTitle), findsNothing);
       expect(find.byType(IkkiuchiMatchScreen), findsNothing);
       expect(p.ikkiuchi.matches, isEmpty);
       await tester.pumpWidget(const SizedBox());

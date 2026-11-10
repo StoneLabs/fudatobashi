@@ -1670,6 +1670,8 @@
   "ikkiuchiArranging": "Arranging",
   "ikkiuchiArrangeHint": "Drag a card",
   "ikkiuchiEndHint": "Hold for {0} s to end",
+  "ikkiuchiSurrender": "Surrender",
+  "ikkiuchiSurrenderHint": "Hold for {0} s to surrender",
   "ikkiuchiPlaceHint": "Tap the spot this card goes to, or drag it there",
   "ikkiuchiStackLeft": "{0} left",
   "ikkiuchiBackOnStack": "Back on the stack",
@@ -1880,8 +1882,7 @@
   "ikkiuchiRulePlacement": "In each mode, your first {0} ranked matches place you, starting at {1}: Tobi plays at your estimate, and each win moves it up and each loss down, a little less each time.",
   "ikkiuchiRuleRating": "After that, Tobi plays each match near your rating. Beating a stronger Tobi gains more, and losing to a weaker one costs more.",
   "ikkiuchiRuleCustom": "Custom: choose Tobi's rating, the cards a side and the memory time. It is not rated.",
-  "ikkiuchiLeaveTitle": "Leave the match?",
-  "ikkiuchiLeaveNote": "It counts as a loss.",
-  "ikkiuchiLeave": "Leave",
+  "ikkiuchiSurrenderTitle": "Surrender?",
+  "ikkiuchiSurrenderNote": "It counts as a loss.",
   "ikkiuchiKeepPlaying": "Keep playing"
 }

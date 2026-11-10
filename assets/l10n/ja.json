@@ -1670,6 +1670,8 @@
   "ikkiuchiArranging": "並べ替え中",
   "ikkiuchiArrangeHint": "札を​ドラッグ",
   "ikkiuchiEndHint": "{0}秒長押しで終了",
+  "ikkiuchiSurrender": "投了",
+  "ikkiuchiSurrenderHint": "{0}秒長押しで投了",
   "ikkiuchiPlaceHint": "この札を​置く場所を​タップ、​または​ドラッグ",
   "ikkiuchiStackLeft": "残り{0}枚",
   "ikkiuchiBackOnStack": "山に​戻す",
@@ -1880,8 +1882,7 @@
   "ikkiuchiRulePlacement": "どの​モードも​最初の​{0}戦で​ランク判定。​{1}から​始まり、​トビは​今の​見込みの​レートで​対戦。​勝てば​上がり、​負ければ​下がる。​動く​幅は​毎回​少しずつ​小さく​なる。",
   "ikkiuchiRuleRating": "その​後は、​トビが​あなたの​レート​近くで​対戦。​強い​トビに​勝てば​大きく​上がり、​弱い​トビに​負ければ​大きく​下がる。",
   "ikkiuchiRuleCustom": "カスタム：​トビの​レート、​札数、​暗記時間を​選べる。​レートは​変わらない。",
-  "ikkiuchiLeaveTitle": "対戦を​やめますか？",
-  "ikkiuchiLeaveNote": "負けに​なります。",
-  "ikkiuchiLeave": "やめる",
+  "ikkiuchiSurrenderTitle": "投了​しますか？",
+  "ikkiuchiSurrenderNote": "負けに​なります。",
   "ikkiuchiKeepPlaying": "続ける"
 }

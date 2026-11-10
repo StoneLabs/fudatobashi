@@ -21,7 +21,8 @@ typedef IkkiuchiColumnButton = ({String label, VectorArt icon, Color fill, VoidC
 /// The game column down the board's right edge in landscape, as tall as it
 /// is laid out: 終了 at its top, which ends the match once held
 /// ([IkkiuchiMatchTuning.endHold]) and then tells [onEnd], and says to hold
-/// it when only tapped; the score in its middle, each side's cards left
+/// it when only tapped; named 投了 while it would [surrender] the match, a
+/// loss; the score in its middle, each side's cards left
 /// ([tobi], [player]), split on the line [split] down the column, the
 /// middle of the gap between the sides; and the [buttons] at its foot, the
 /// last lowest, as 並べ替え or 完了. Only 終了 and the buttons not faded take
@@ -34,12 +35,14 @@ class IkkiuchiMatchColumn extends StatelessWidget {
     required this.split,
     required this.buttons,
     required this.onEnd,
+    this.surrender = false,
   });
 
   final int tobi, player;
   final double split;
   final List<IkkiuchiColumnButton> buttons;
   final VoidCallback onEnd;
+  final bool surrender;
 
   @override
   Widget build(BuildContext context) {
@@ -54,8 +57,8 @@ class IkkiuchiMatchColumn extends StatelessWidget {
           child: Center(
             child: HoldToConfirmButton(
               duration: IkkiuchiMatchTuning.endHold,
-              label: s.end,
-              hint: s.ikkiuchiEndHint(endSeconds),
+              label: surrender ? s.ikkiuchiSurrender : s.end,
+              hint: surrender ? s.ikkiuchiSurrenderHint(endSeconds) : s.ikkiuchiEndHint(endSeconds),
               look: IkkiuchiColumnStyle.end,
               haptics: ProgressScope.of(context).settings.haptics,
               icon: MangaIcon(IconArt.end,

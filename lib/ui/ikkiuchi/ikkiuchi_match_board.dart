@@ -19,17 +19,19 @@ import 'ikkiuchi_send_layer.dart';
 
 /// A match's board as it is played ([IkkiuchiMatchFlow]), in board dp: the
 /// board taking the player's finger; in landscape the call in the gap and
-/// the game column, whose 終了 calls [onEnd]; in portrait the memory time
+/// the game column, whose 終了 calls [onEnd], named 投了 while it would
+/// [surrender] the match; in portrait the memory time
 /// left on the band, while placing too; how each read ended, over the gap
 /// or band ([IkkiuchiFeedbackBanner]); the greetings over everything as
 /// play begins and once it is over ([IkkiuchiGreeting]); and then how the
 /// match ended ([IkkiuchiMatchResult]), a tap on it letting the match be
 /// done.
 class IkkiuchiMatchBoard extends StatelessWidget {
-  const IkkiuchiMatchBoard(this.flow, {super.key, required this.onEnd});
+  const IkkiuchiMatchBoard(this.flow, {super.key, required this.onEnd, this.surrender = false});
 
   final IkkiuchiMatchFlow flow;
   final VoidCallback onEnd;
+  final bool surrender;
 
   @override
   Widget build(BuildContext context) {
@@ -41,7 +43,7 @@ class IkkiuchiMatchBoard extends StatelessWidget {
           scene,
           onPointer: scene.pointer,
           overCards: landscape ? IkkiuchiCallLayer(scene: scene, flow: flow) : null,
-          parts: landscape ? IkkiuchiColumnLayer(scene: scene, flow: flow, onEnd: onEnd) : null,
+          parts: landscape ? IkkiuchiColumnLayer(scene: scene, flow: flow, onEnd: onEnd, surrender: surrender) : null,
         ),
       ),
       Positioned.fill(

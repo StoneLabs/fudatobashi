@@ -46,10 +46,10 @@ Future<void> startIkkiuchiMatch(BuildContext context, IkkiuchiSetup setup, {bool
 /// a forfeit on the next start with its reads and cards left
 /// ([Progress.journalIkkiuchi]).
 ///
-/// Ending a ranked match once it counts, by the system's back or 終了,
-/// asks first ([confirmLeaving]) and gives it up, its end shown as any
-/// match's; before its first read, and in free play, the back leaves at
-/// once.
+/// Once leaving a ranked match counts, 終了 is named 投了, and ending it so
+/// or by the system's back asks first ([confirmLeaving]) and gives it up,
+/// its end shown as any match's; before its first read, and in free play,
+/// 終了 stays and the back leaves at once.
 ///
 /// Until the screen stands in landscape the board lies turned in it; a
 /// change of its size deals the same match afresh until the player places
@@ -230,16 +230,19 @@ class IkkiuchiMatchScreenState extends State<IkkiuchiMatchScreen> with SingleTic
     return widget.setup.ranked && !widget.guest && !_over && flow != null && flow.playBegun;
   }
 
-  Future<bool> _confirmLeave() {
+  Future<bool> _confirmSurrender() {
     final s = S.of(context);
     return confirmLeaving(context,
-        title: s.ikkiuchiLeaveTitle, note: s.ikkiuchiLeaveNote, stay: s.ikkiuchiKeepPlaying, leave: s.ikkiuchiLeave);
+        title: s.ikkiuchiSurrenderTitle,
+        note: s.ikkiuchiSurrenderNote,
+        stay: s.ikkiuchiKeepPlaying,
+        leave: s.ikkiuchiSurrender);
   }
 
-  /// 終了, or the system's back while leaving counts: ends the match, once
-  /// the player says so when it counts.
+  /// 終了 (投了), or the system's back while leaving counts: ends the
+  /// match, once the player says so when it counts.
   Future<void> _end() async {
-    if (_leavingCounts && !await _confirmLeave()) return;
+    if (_leavingCounts && !await _confirmSurrender()) return;
     if (mounted) _flow?.end();
   }
 
@@ -255,7 +258,7 @@ class IkkiuchiMatchScreenState extends State<IkkiuchiMatchScreen> with SingleTic
             final room = box.biggest;
             final flow = _flowFor(room);
             final size = flow.scene.layout.size;
-            final board = SizedBox(width: size.x, height: size.y, child: IkkiuchiMatchBoard(flow, onEnd: _end));
+            final board = SizedBox(width: size.x, height: size.y, child: IkkiuchiMatchBoard(flow, onEnd: _end, surrender: _leavingCounts));
             return FittedBox(child: room.width >= room.height ? board : RotatedBox(quarterTurns: 1, child: board));
           }),
         ),

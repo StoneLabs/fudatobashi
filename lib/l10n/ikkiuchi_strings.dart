@@ -73,6 +73,10 @@ extension IkkiuchiStrings on S {
   /// rounded.
   String ikkiuchiEndHint(int seconds) => f('ikkiuchiEndHint', [seconds]);
 
+  /// 投了, 終了 once ending a ranked match is a loss, and its hint.
+  String get ikkiuchiSurrender => t('ikkiuchiSurrender');
+  String ikkiuchiSurrenderHint(int seconds) => f('ikkiuchiSurrenderHint', [seconds]);
+
   /// The score's names.
   String get ikkiuchiTobi => t('ikkiuchiTobi');
   String get ikkiuchiYou => t('ikkiuchiYou');
@@ -215,11 +219,11 @@ extension IkkiuchiStrings on S {
   String get ikkiuchiRuleRating => t('ikkiuchiRuleRating');
   String get ikkiuchiRuleCustom => t('ikkiuchiRuleCustom');
 
-  /// Asking before a ranked match is left once it counts: the question,
-  /// what leaving does, and the two answers.
-  String get ikkiuchiLeaveTitle => t('ikkiuchiLeaveTitle');
-  String get ikkiuchiLeaveNote => t('ikkiuchiLeaveNote');
-  String get ikkiuchiLeave => t('ikkiuchiLeave');
+  /// Asking before a ranked match is given up once it counts (投了, or
+  /// the system's back): the question and what it does; the answers are
+  /// [ikkiuchiSurrender] and [ikkiuchiKeepPlaying].
+  String get ikkiuchiSurrenderTitle => t('ikkiuchiSurrenderTitle');
+  String get ikkiuchiSurrenderNote => t('ikkiuchiSurrenderNote');
   String get ikkiuchiKeepPlaying => t('ikkiuchiKeepPlaying');
 
   /// How a read ended, its parts joined: あなたの取り・トビのお手つき.
