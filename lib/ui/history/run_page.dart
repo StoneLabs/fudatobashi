@@ -100,16 +100,18 @@ class _RunPageState extends State<RunPage> {
 }
 
 /// A run or game page's swiped tabs, their row inside the gutters, the
-/// open one in its kind's colour.
+/// open one in its kind's colour; [initial] open first.
 class RunPageTabs extends StatelessWidget {
-  const RunPageTabs({super.key, required this.tabs});
+  const RunPageTabs({super.key, required this.tabs, this.initial = 0});
   final List<SwipeTab> tabs;
+  final int initial;
 
   @override
   Widget build(BuildContext context) => SwipeTabs(
         look: SwipeTabsLook.slant,
         padding: const EdgeInsets.symmetric(horizontal: Gaps.gutter),
         tabs: tabs,
+        initial: initial,
       );
 }
 

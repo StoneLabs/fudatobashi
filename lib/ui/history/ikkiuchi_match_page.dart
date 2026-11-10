@@ -22,9 +22,10 @@ import 'ikkiuchi_reads_tab.dart';
 import 'ikkiuchi_speed_tab.dart';
 import 'run_page.dart';
 
-/// Opens 一騎打ち match [match]'s page.
-Future<void> openIkkiuchiMatch(BuildContext context, IkkiuchiMatchRecord match) {
-  final page = IkkiuchiMatchPage.of(ProgressScope.read(context), match);
+/// Opens 一騎打ち match [match]'s page on its [tab] (one of
+/// [IkkiuchiMatchPage.tabs]).
+Future<void> openIkkiuchiMatch(BuildContext context, IkkiuchiMatchRecord match, {int tab = 0}) {
+  final page = IkkiuchiMatchPage.of(ProgressScope.read(context), match, initialTab: tab);
   return Navigator.of(context).push(MangaRoute<void>(builder: (_) => page));
 }
 
@@ -32,16 +33,19 @@ Future<void> openIkkiuchiMatch(BuildContext context, IkkiuchiMatchRecord match) 
 /// read by read, the speed of the takes, the rating and the experience it
 /// earned, and every read. Its header names its kind (a ranked match of its
 /// mode, or custom), the practice day it counts to (as History lists it)
-/// and Tobi's rating, a free match's setup too.
+/// and Tobi's rating, a free match's setup too. It opens on [initialTab].
 class IkkiuchiMatchPage extends StatelessWidget {
-  const IkkiuchiMatchPage({super.key, required this.review});
+  const IkkiuchiMatchPage({super.key, required this.review, this.initialTab = 0});
 
   /// [match]'s page, against the matches [progress] recorded and with the
   /// experience it earned.
-  factory IkkiuchiMatchPage.of(Progress progress, IkkiuchiMatchRecord match) => IkkiuchiMatchPage(
-      review: IkkiuchiReview(match, progress.ikkiuchi.matches, xp: XpHistory.gainsOf(progress).ikkiuchi[match.id]));
+  factory IkkiuchiMatchPage.of(Progress progress, IkkiuchiMatchRecord match, {int initialTab = 0}) =>
+      IkkiuchiMatchPage(
+          review: IkkiuchiReview(match, progress.ikkiuchi.matches, xp: XpHistory.gainsOf(progress).ikkiuchi[match.id]),
+          initialTab: initialTab);
 
   final IkkiuchiReview review;
+  final int initialTab;
 
   static final List<PageTab<IkkiuchiReview>> tabs = [
     PageTab((s) => s.ikkiuchiTabOverview, IkkiuchiOverviewTab.new, cut: ReviewLayout.cut),
@@ -50,6 +54,9 @@ class IkkiuchiMatchPage extends StatelessWidget {
     PageTab((s) => s.ikkiuchiTabRating, IkkiuchiRatingTab.new, sub: (s) => s.tabAndXp),
     PageTab((s) => s.ikkiuchiTabReads, IkkiuchiReadsTab.new),
   ];
+
+  /// The field's tab (盤面) in [tabs].
+  static const fieldTab = 1;
 
   @override
   Widget build(BuildContext context) {
@@ -64,7 +71,8 @@ class IkkiuchiMatchPage extends StatelessWidget {
       title: s.hallName,
       sub: [s.other.hallName, kind, day, if (match.ranked) tobi else line].join(' · '),
       shortSub: [s.other.hallName, kind, day, if (!match.ranked) tobi].join(' · '),
-      body: RunPageTabs(tabs: [for (final tab in tabs) tab.swipeTab(s, review, HistoryLooks.ikkiuchi)]),
+      body: RunPageTabs(
+          tabs: [for (final tab in tabs) tab.swipeTab(s, review, HistoryLooks.ikkiuchi)], initial: initialTab),
     );
   }
 }
