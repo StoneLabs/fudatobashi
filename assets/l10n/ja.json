@@ -1827,6 +1827,8 @@
   "ikkiuchiCurveLast": "直近{0}戦",
   "ikkiuchiCurveGrows": "対局ごとに線がのびる",
   "ikkiuchiCurveLater": "ランク判定が​終わると、​ここに​レートの​推移が​出る",
+  "ikkiuchiCurveEstimate": "見込み",
+  "ikkiuchiCurveOpen": "レートの推移を見る",
   "ikkiuchiRankRatingUp": "レートUP!!",
   "ikkiuchiRankNextTimeTitle": "ドンマイ!",
   "ikkiuchiRankClassUp": "昇級!!",

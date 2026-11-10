@@ -1827,6 +1827,8 @@
   "ikkiuchiCurveLast": "Last {0}",
   "ikkiuchiCurveGrows": "The line grows with each match",
   "ikkiuchiCurveLater": "Your rating curve shows here after placement",
+  "ikkiuchiCurveEstimate": "Estimate",
+  "ikkiuchiCurveOpen": "Show the rating curve",
   "ikkiuchiRankRatingUp": "RATING UP!!",
   "ikkiuchiRankNextTimeTitle": "NEXT TIME!",
   "ikkiuchiRankClassUp": "RANK UP!!",

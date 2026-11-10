@@ -564,13 +564,14 @@ class IkkiuchiCurveStyle {
 /// [quietTabNameLatin]) and tracked [tabNameLatinTracking].
 ///
 /// The box: the player's standing ([standPadding]), the rating curve or its
-/// note while placing ([curveMargin]), a light rule, the mode's match
-/// ([factsPadding]) and the burst ([burstMargin]). The curve's room takes
-/// the screen's height left over: on the user's phone at the usual text
-/// size about the mock's 58 dp, more on a taller screen. Under
-/// [curveMinHeight] the curve's labels crowd its line and it no longer
-/// reads, so it gives way: the box closes up and the gap goes over free
-/// play.
+/// note while placing ([curveMargin], its top the gap under the standing),
+/// a light rule, the mode's match ([factsPadding]) and the burst
+/// ([burstMargin]). The curve's room takes the screen's height left over:
+/// on the user's phone at the usual text size about the mock's 58 dp, more
+/// on a taller screen. Under [curveMinHeight] the curve's labels crowd its
+/// line and it no longer reads, so it gives way: the box closes up to the
+/// gap under the standing and the rest goes over free play. A curve shown
+/// is tapped anywhere in its room, the gap over it too.
 ///
 /// The standing: the class [badge] in the mode's tone, [unplaced] in it
 /// while placing. [standGap] right of it the labels at
@@ -595,7 +596,11 @@ class IkkiuchiCurveStyle {
 /// inset left of the line. While the line is short, [growsDrop] over the floor, a note
 /// at [growsFont] in its empty part says it grows. While placing, the same
 /// room holds a dashed outline in [lightRule] with a note on one line at
-/// [curveNoteFont], or smaller to fit.
+/// [curveNoteFont], or smaller to fit, until a placement match is played;
+/// then the estimate after each of them, from the start, in the curve's
+/// style: each placement match in its own slot, the line dashed
+/// [placementDash] while an estimate and the latest a paper diamond
+/// ringed [placementMarkRing].
 ///
 /// The mode's match: its field ([field], [fieldGap] before the rest), its
 /// cards a side and memory time under their labels ([factGap] between),
@@ -658,7 +663,7 @@ abstract final class IkkiuchiPageLayout {
   static const Color quietName = Color(0xFF4A4A4A);
   static const Color quietSub = Color(0xFF6B6B6B);
 
-  static const EdgeInsets standPadding = EdgeInsets.fromLTRB(16, 16, 16, 14);
+  static const EdgeInsets standPadding = EdgeInsets.fromLTRB(16, 16, 16, 0);
   static const badge = IkkiuchiBadgeStyle(
     size: 74,
     classFont: 40,
@@ -694,7 +699,7 @@ abstract final class IkkiuchiPageLayout {
   static const Color lostInk = Color(0xFF6B6B6B);
   static const double noteTop = 8;
 
-  static const EdgeInsets curveMargin = EdgeInsets.fromLTRB(16, 0, 16, 12);
+  static const EdgeInsets curveMargin = EdgeInsets.fromLTRB(16, 14, 16, 12);
   static const double curveMinHeight = 32;
   static const curve = IkkiuchiCurveStyle(
     labelRoom: 60,
@@ -707,6 +712,8 @@ abstract final class IkkiuchiPageLayout {
     minPad: 18,
     rangeShare: 0.14,
   );
+  static const List<double> placementDash = [6, 4];
+  static const double placementMarkRing = Strokes.label;
   static const double curveFloor = Strokes.hairline;
   static const double classLineWidth = Strokes.hairline;
   static const Color classLine = Color(0xFF9B978F);
@@ -771,6 +778,19 @@ abstract final class IkkiuchiPageLayout {
   static const double customTitleTracking = 1.5;
   static const double customLineFont = 12;
   static const double customLineHeight = 1.3;
+}
+
+/// The popup of a ranked mode's curve on 一騎打ち's page
+/// (`IkkiuchiCurvePopup`): the rank change page's mode box at rest,
+/// [height] tall, as on the rank change page on the user's phone at the
+/// usual text size (less where the screen is shorter), over the page dimmed
+/// as for its sheets ([IkkiuchiPageLayout.barrier]). Its tab stands on the
+/// mode's ground as on that page, in a strip [head] taller than the tab,
+/// outlined in ink with the box; the close button stands in the middle of
+/// the strip's height, as far in from its right end. dp.
+abstract final class IkkiuchiCurvePopupLayout {
+  static const double height = 474;
+  static const double head = 18;
 }
 
 /// The bots page (`IkkiuchiBotsPage`): its line about the bots

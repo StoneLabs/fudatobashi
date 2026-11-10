@@ -5,10 +5,12 @@ import 'package:flutter/widgets.dart';
 
 import '../../config/config.dart';
 import '../../config/design.dart';
+import '../../domain/ikkiuchi_rating.dart';
 import '../../domain/rank_ladder.dart';
 import '../../l10n/ikkiuchi_strings.dart';
 import '../../l10n/ranked_strings.dart';
 import '../../l10n/strings.dart';
+import '../manga/geometry.dart';
 import '../manga/manga.dart';
 
 /// A ranked mode's rating after each of its last ranked matches
@@ -72,6 +74,77 @@ class IkkiuchiCurveNote extends StatelessWidget {
           ),
         ),
       );
+}
+
+/// While the player is being placed in a mode, once a placement match is
+/// played: the estimate at the start and after each of them ([path]), in
+/// the curve's style, each placement match in its own slot from the left
+/// after the start's. The line dashed while an estimate, the start and the
+/// matches before the latest small ringed dots, the latest a paper
+/// diamond, and the class lines in its range dashed from where the floor
+/// starts, so that their names left of them stay clear; a name kept up by
+/// the caption past the middle of its line's slot, or crowding the name
+/// under it, is left out. The caption left of the floor says it is an
+/// estimate. It fills the room it is given.
+class IkkiuchiPlacementCurve extends StatelessWidget {
+  const IkkiuchiPlacementCurve(this.path, {super.key});
+
+  final List<double> path;
+
+  @override
+  Widget build(BuildContext context) {
+    final s = S.of(context);
+    return CustomPaint(
+      size: Size.infinite,
+      painter: _PlacementPainter(
+        path,
+        caption: s.ikkiuchiCurveEstimate,
+        classLabel: (band) => '${s.className(band)} ${band.minRating.round()}',
+        scaler: MediaQuery.textScalerOf(context),
+      ),
+    );
+  }
+}
+
+class _PlacementPainter extends CustomPainter {
+  _PlacementPainter(this.path, {required this.caption, required this.classLabel, required this.scaler});
+
+  final List<double> path;
+  final String caption;
+  final String Function(RankBand band) classLabel;
+  final TextScaler scaler;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    const style = IkkiuchiPageLayout.curve;
+    final scale = IkkiuchiCurveScale(path, size, style, slots: IkkiuchiRating.placementMatches + 1);
+    final ink = IkkiuchiCurveInk(canvas, scaler);
+    final h = size.height;
+    final points = [for (final (i, r) in path.indexed) scale.at(i, r)];
+
+    final captionBaseline = ink.caption(caption, h);
+    final labelHeight = scaler.scale(IkkiuchiPageLayout.curveLabelFont);
+    final lines = [for (final band in scale.bands) (band, scale.yOf(band.minRating))];
+    double? named;
+    for (final (i, (band, y)) in lines.indexed) {
+      ink.classLine(y, scale.floorStart, size.width);
+      final baseline = ink.labelBaseline(y, captionBaseline);
+      final above = i + 1 < lines.length ? lines[i + 1].$2 : null;
+      final inSlot = above == null || baseline - labelHeight / 2 > above;
+      if (inSlot && (named == null || named - baseline >= labelHeight)) {
+        ink.classLabel(classLabel(band), y, captionBaseline);
+        named = baseline;
+      }
+    }
+    ink.floor(scale, h);
+    ink.line(points, style.line, dash: IkkiuchiPageLayout.placementDash);
+    ink.dots(points.take(points.length - 1), style);
+    ink.diamond(points.last, style.mark, Palette.paper, IkkiuchiPageLayout.placementMarkRing);
+  }
+
+  @override
+  bool shouldRepaint(_PlacementPainter old) =>
+      !listEquals(old.path, path) || old.caption != caption || old.scaler != scaler;
 }
 
 class _CurvePainter extends CustomPainter {
@@ -143,27 +216,33 @@ class _CurvePainter extends CustomPainter {
 
 /// Where a ranked mode's rating curve, drawn by [style] on a canvas of
 /// [size], puts its matches: the [ratings]' range padded by the style,
-/// from [lo] at the foot to [hi] at the style's top, and each of
-/// [IkkiuchiModeTuning.curveMatches] matches in its own slot from the left.
+/// from [lo] at the foot to [hi] at the style's top, and each of [slots]
+/// matches ([IkkiuchiModeTuning.curveMatches] unless given) in its own
+/// slot from the left.
 class IkkiuchiCurveScale {
-  factory IkkiuchiCurveScale(Iterable<double> ratings, Size size, IkkiuchiCurveStyle style) {
+  factory IkkiuchiCurveScale(Iterable<double> ratings, Size size, IkkiuchiCurveStyle style,
+      {int slots = IkkiuchiModeTuning.curveMatches}) {
     final least = ratings.reduce(math.min), most = ratings.reduce(math.max);
     final pad = math.max(style.minPad, (most - least) * style.rangeShare);
-    return IkkiuchiCurveScale._(size, style, least - pad, most + pad);
+    return IkkiuchiCurveScale._(size, style, least - pad, most + pad, slots);
   }
 
-  IkkiuchiCurveScale._(this.size, this.style, this.lo, this.hi);
+  IkkiuchiCurveScale._(this.size, this.style, this.lo, this.hi, this.slots);
 
   final Size size;
   final IkkiuchiCurveStyle style;
   final double lo, hi;
+  final int slots;
 
   /// Where the last slot sits.
   double get right => size.width - style.inset;
 
+  /// Where the floor starts: the style's inset left of the first slot.
+  double get floorStart => style.labelRoom - style.inset;
+
   /// Match [i]'s point at [rating].
   Offset at(int i, double rating) =>
-      Offset(style.labelRoom + (right - style.labelRoom) * i / (IkkiuchiModeTuning.curveMatches - 1), yOf(rating));
+      Offset(style.labelRoom + (right - style.labelRoom) * i / (slots - 1), yOf(rating));
 
   double yOf(double rating) => style.top + (size.height - style.top) * (hi - rating) / (hi - lo);
 
@@ -229,32 +308,34 @@ class IkkiuchiCurveInk {
   }
 
   /// A class line's [name] over its line at [y], kept clear of the caption
-  /// on [captionBaseline], in [color].
-  void classLabel(String name, double y, double captionBaseline, {Color color = IkkiuchiPageLayout.classLabelInk}) {
-    final baseline =
-        math.min(y - IkkiuchiPageLayout.classLabelLift, captionBaseline - IkkiuchiPageLayout.classLabelClear);
-    text(name, _label.copyWith(color: color), 0, baseline);
-  }
+  /// on [captionBaseline] ([labelBaseline]), in [color].
+  void classLabel(String name, double y, double captionBaseline, {Color color = IkkiuchiPageLayout.classLabelInk}) =>
+      text(name, _label.copyWith(color: color), 0, labelBaseline(y, captionBaseline));
+
+  /// Where the name of a class line at [y] stands, kept clear of the
+  /// caption on [captionBaseline].
+  double labelBaseline(double y, double captionBaseline) =>
+      math.min(y - IkkiuchiPageLayout.classLabelLift, captionBaseline - IkkiuchiPageLayout.classLabelClear);
 
   /// The floor under the curve of [scale], at [floor].
   void floor(IkkiuchiCurveScale scale, double floor) {
     final y = floor - IkkiuchiPageLayout.curveFloor / 2;
     canvas.drawLine(
-        Offset(scale.style.labelRoom - scale.style.inset, y),
+        Offset(scale.floorStart, y),
         Offset(scale.size.width, y),
         Paint()
           ..color = Palette.ink
           ..strokeWidth = IkkiuchiPageLayout.curveFloor);
   }
 
-  /// The ink line through [points], [width] wide.
-  void line(List<Offset> points, double width) {
+  /// The ink line through [points], [width] wide, in [dash] when given.
+  void line(List<Offset> points, double width, {List<double>? dash}) {
     final line = Path()..moveTo(points.first.dx, points.first.dy);
     for (final p in points.skip(1)) {
       line.lineTo(p.dx, p.dy);
     }
     canvas.drawPath(
-        line,
+        dash == null ? line : Dashes.of(line, dash),
         Paint()
           ..color = Palette.ink
           ..style = PaintingStyle.stroke

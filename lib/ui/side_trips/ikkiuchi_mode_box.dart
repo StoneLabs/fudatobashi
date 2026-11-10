@@ -20,6 +20,7 @@ import '../ikkiuchi/ikkiuchi_tobi_tag.dart';
 import '../manga/manga.dart';
 import '../play/time_format.dart';
 import 'burst_button.dart';
+import 'ikkiuchi_curve_popup.dart';
 import 'ikkiuchi_rating_curve.dart';
 import 'side_trip_entry.dart';
 import 'side_trip_panels.dart';
@@ -209,9 +210,12 @@ class _FramePainter extends CustomPainter {
 }
 
 /// A ranked mode's box: the player's standing in it ([records]), the curve
-/// of their rating (while placing, a note in its room) in all the height
-/// the box is given, then the mode's match, each side laid out in [rows],
-/// and the burst that starts it against Tobi at the rating it shows.
+/// of their rating (while placing, the estimate after each placement match
+/// played, or before the first a note in its room) in all the height the
+/// box is given, then the mode's match, each side laid out in [rows], and
+/// the burst that starts it against Tobi at the rating it shows. A tap on
+/// the curve opens the mode's box from the rank change page, at rest
+/// ([openIkkiuchiCurvePopup]).
 class IkkiuchiRankedBox extends StatelessWidget {
   const IkkiuchiRankedBox(this.records, {super.key, required this.rows});
 
@@ -225,6 +229,12 @@ class IkkiuchiRankedBox extends StatelessWidget {
     final tone = ikkiuchiModeTone(mode);
     final setup = records.rankedSetup(rows: rows);
     final tobi = setup.opponentRating.round();
+    final change = records.lastChange;
+    final curve = switch ((records.placing, change)) {
+      (true, null) => const IkkiuchiCurveNote(),
+      (true, final change?) => IkkiuchiPlacementCurve(change.path),
+      _ => IkkiuchiRatingCurve(records.curve, tone: tone),
+    };
     return Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.stretch, children: [
       Padding(
         padding: IkkiuchiPageLayout.standPadding,
@@ -235,8 +245,7 @@ class IkkiuchiRankedBox extends StatelessWidget {
         ]),
       ),
       Flexible(
-        child: _CurveRoom(
-            records.placing ? const IkkiuchiCurveNote() : IkkiuchiRatingCurve(records.curve, tone: tone)),
+        child: _CurveRoom(curve, onTap: change == null ? null : () => openIkkiuchiCurvePopup(context, change)),
       ),
       const Padding(
         padding: EdgeInsets.symmetric(horizontal: IkkiuchiPageLayout.splitInset),
@@ -260,25 +269,42 @@ class IkkiuchiRankedBox extends StatelessWidget {
 }
 
 /// The curve's room: all the height it may take, with [curve] (or its
-/// note) [IkkiuchiPageLayout.curveMargin] inside it; no height at all when
-/// that would leave the curve under [IkkiuchiPageLayout.curveMinHeight].
+/// note) [IkkiuchiPageLayout.curveMargin] inside it; only the margin's top,
+/// the gap under the standing, when that would leave the curve under
+/// [IkkiuchiPageLayout.curveMinHeight]. Given [onTap], the curve shown is
+/// tapped anywhere in its room.
 class _CurveRoom extends StatelessWidget {
-  const _CurveRoom(this.curve);
+  const _CurveRoom(this.curve, {this.onTap});
 
   final Widget curve;
+  final VoidCallback? onTap;
 
   @override
-  Widget build(BuildContext context) => _Unmeasured(
-        child: LayoutBuilder(
-          builder: (context, room) =>
-              room.maxHeight - IkkiuchiPageLayout.curveMargin.vertical < IkkiuchiPageLayout.curveMinHeight
-                  ? const SizedBox.shrink()
-                  : SizedBox.expand(child: Padding(padding: IkkiuchiPageLayout.curveMargin, child: curve)),
-        ),
-      );
+  Widget build(BuildContext context) {
+    const margin = IkkiuchiPageLayout.curveMargin;
+    return _Unmeasured(
+      child: LayoutBuilder(builder: (context, room) {
+        if (room.maxHeight - margin.vertical < IkkiuchiPageLayout.curveMinHeight) {
+          return SizedBox(height: margin.top);
+        }
+        final shown = SizedBox.expand(child: Padding(padding: margin, child: curve));
+        final onTap = this.onTap;
+        if (onTap == null) return shown;
+        return Pressable(
+          onTap: onTap,
+          drop: 0,
+          turn: 0,
+          scale: Press.panelScale,
+          semanticLabel: S.of(context).ikkiuchiCurveOpen,
+          builder: (context, _) => shown,
+        );
+      }),
+    );
+  }
 }
 
-/// [child], counted as no size when the page measures what it needs, so
+/// [child], counted as only the gap under the standing (the curve's
+/// margin's top) and no width when the page measures what it needs, so
 /// that the page scrolls only when it does not fit even without the curve.
 class _Unmeasured extends SingleChildRenderObjectWidget {
   const _Unmeasured({required super.child});
@@ -295,10 +321,10 @@ class _RenderUnmeasured extends RenderProxyBox {
   double computeMaxIntrinsicWidth(double height) => 0;
 
   @override
-  double computeMinIntrinsicHeight(double width) => 0;
+  double computeMinIntrinsicHeight(double width) => IkkiuchiPageLayout.curveMargin.top;
 
   @override
-  double computeMaxIntrinsicHeight(double width) => 0;
+  double computeMaxIntrinsicHeight(double width) => IkkiuchiPageLayout.curveMargin.top;
 }
 
 /// A small label in black type.

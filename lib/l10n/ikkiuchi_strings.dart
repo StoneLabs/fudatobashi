@@ -102,10 +102,13 @@ extension IkkiuchiStrings on S {
       t(first ? 'ikkiuchiPlacingFirst' : 'ikkiuchiPlacingLeft').replaceAll('{mode}', ikkiuchiModeName(mode));
 
   /// The box's rating curve: its caption over [n] matches, the note while
-  /// it is short, and the note in its room while placing.
+  /// it is short, the note in its room while placing, the placement
+  /// curve's caption, and what tapping the curve does.
   String ikkiuchiCurveLast(int n) => f('ikkiuchiCurveLast', [n]);
   String get ikkiuchiCurveGrows => t('ikkiuchiCurveGrows');
   String get ikkiuchiCurveLater => t('ikkiuchiCurveLater');
+  String get ikkiuchiCurveEstimate => t('ikkiuchiCurveEstimate');
+  String get ikkiuchiCurveOpen => t('ikkiuchiCurveOpen');
 
   /// The box's match: the cards a side as a template ({0}).
   String get ikkiuchiBoxPerSide => t('ikkiuchiBoxPerSide');
