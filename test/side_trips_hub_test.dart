@@ -289,6 +289,7 @@ void main() {
       AnkirenRankLayout.splash,
       AnkirenRankLayout.crack,
       AnkirenPlayLayout.tatami,
+      IkkiuchiRankLayout.breakMark,
     };
     final files = Directory('assets/graphics/sidetrips').listSync(recursive: true).whereType<File>().where((f) => f.path.endsWith('.webp'));
     const shelved = {'assets/graphics/sidetrips/islands/fort.webp', 'assets/graphics/sidetrips/islands/fort-haze.webp'};
