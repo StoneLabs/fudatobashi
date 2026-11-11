@@ -8,7 +8,9 @@
 // or 3 rows keeps its rows and its cards' size to the end.
 import 'dart:io';
 import 'dart:math' as math;
-import 'dart:ui' show Offset, Size;
+import 'dart:ui' show Offset, Rect, Size;
+
+import 'package:flutter/gestures.dart' show PointerDownEvent, PointerUpEvent;
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:fudatobashi/config/config.dart';
@@ -16,7 +18,9 @@ import 'package:fudatobashi/data/poem.dart';
 import 'package:fudatobashi/domain/ikkiuchi_call.dart';
 import 'package:fudatobashi/domain/ikkiuchi_layout.dart';
 import 'package:fudatobashi/domain/ikkiuchi_match.dart';
+import 'package:fudatobashi/domain/ikkiuchi_mode.dart';
 import 'package:fudatobashi/domain/ikkiuchi_opening.dart';
+import 'package:fudatobashi/domain/ikkiuchi_record.dart';
 import 'package:fudatobashi/domain/ikkiuchi_send.dart';
 import 'package:fudatobashi/domain/ikkiuchi_side.dart';
 import 'package:fudatobashi/domain/ikkiuchi_tobi.dart';
@@ -25,6 +29,8 @@ import 'package:fudatobashi/ui/ikkiuchi/ikkiuchi_board_layout.dart';
 import 'package:fudatobashi/ui/ikkiuchi/ikkiuchi_board_scene.dart';
 import 'package:fudatobashi/ui/ikkiuchi/ikkiuchi_card_faces.dart';
 import 'package:fudatobashi/ui/ikkiuchi/ikkiuchi_match_flow.dart';
+import 'package:fudatobashi/ui/ikkiuchi/ikkiuchi_player_spots.dart';
+import 'package:fudatobashi/ui/ikkiuchi/ikkiuchi_send_flow.dart';
 import 'package:fudatobashi/ui/ikkiuchi/ikkiuchi_tobi_art.dart';
 import 'package:fudatobashi/ui/sound/sounds.dart';
 
@@ -52,23 +58,29 @@ void main() {
   tearDown(() => sounds = real);
 
   // A match's opening dealt by [seed], [perSide] cards a side in [rows]
-  // rows and Tobi at [rating], on the phone in landscape, as the match
-  // screen deals it.
-  IkkiuchiBoardScene dealt(int seed, {double rating = 2000, int perSide = 25, int rows = 3}) {
+  // rows and Tobi at [rating], on the phone in landscape or held upright,
+  // as the match screen deals it.
+  IkkiuchiBoardScene dealt(int seed, {double rating = 2000, int perSide = 25, int rows = 3, bool landscape = true}) {
     final deck = [for (final p in poems.all) p.id]..shuffle(math.Random(seed));
     final own = deck.sublist(0, perSide), others = deck.sublist(perSide, 2 * perSide);
     final homes = layout.generate(rating: rating, own: own, others: others, rows: rows, seed: seed);
     final sides = IkkiuchiSides.start(homes, [for (var r = 0; r < rows; r++) const IkkiuchiRow([], [])]);
     final board = IkkiuchiBoardLayout.of(
-        size: phone, landscape: true, tobiRows: sides.tobi, playerRows: sides.player, rig: rig, opening: true);
+        size: landscape ? phone : phone.flipped,
+        landscape: landscape,
+        tobiRows: sides.tobi,
+        playerRows: sides.player,
+        rig: rig,
+        opening: true);
     return IkkiuchiBoardScene(board, IkkiuchiCardFaces(showNumber: false),
         sides: sides, stack: others, tobiRating: rating, seed: seed);
   }
 
   const words = IkkiuchiMatchWords(call: _call);
 
-  IkkiuchiMatchFlow match(int seed, {double rating = 2000, int perSide = 25, int rows = 3, Duration? memorise}) =>
-      IkkiuchiMatchFlow(dealt(seed, rating: rating, perSide: perSide, rows: rows),
+  IkkiuchiMatchFlow match(int seed,
+          {double rating = 2000, int perSide = 25, int rows = 3, Duration? memorise, bool landscape = true}) =>
+      IkkiuchiMatchFlow(dealt(seed, rating: rating, perSide: perSide, rows: rows, landscape: landscape),
           words: words, rating: rating, memorise: memorise ?? IkkiuchiMatchTuning.memorise);
 
   const frame = 16.0;
@@ -435,6 +447,135 @@ void main() {
         flow.dispose();
       }
     });
+  });
+  // No two of the scene's cards overlap, and each lies on the board, in its
+  // own half clear of the band, and clear of the game column.
+  void expectApart(IkkiuchiBoardScene scene, String why) {
+    final layout = scene.layout;
+    final board = Rect.fromLTWH(0, 0, layout.size.x, layout.size.y);
+    final cards = [
+      for (final c in layout.cards) (side: c.side, at: IkkiuchiPlayerSpots.boundsOf(c.box).deflate(1e-6)),
+    ];
+    for (final (i, card) in cards.indexed) {
+      final at = card.at;
+      expect(board.intersect(at), at, reason: '$why: on the board');
+      expect(card.side == IkkiuchiSide.opponent ? at.bottom <= layout.band.top : at.top >= layout.band.bottom, isTrue,
+          reason: '$why: in its half');
+      if (layout.column case final column?) expect(at.right, lessThanOrEqualTo(column.left), reason: why);
+      for (final other in cards.skip(i + 1)) {
+        expect(at.overlaps(other.at), isFalse, reason: '$why: no cards overlap');
+      }
+    }
+  }
+
+  // Plays [flow] to its end, the player faulting on every read: touching a
+  // card of the side the card read is not on, and on a からふだ any card. The
+  // first [karafuda] reads are からふだ that Tobi lets go by, the player
+  // touching both sides on each. They send Tobi a card when the rules ask,
+  // and place each card he sends at the first free spot the field shows,
+  // checking that it shows one and that no cards overlap. Gives the most
+  // cards they held, the most a row of theirs held before the match was
+  // decided, and how many of his cards went on without waiting for them.
+  ({int held, int row, int unplaced}) faultEveryRead(IkkiuchiMatchFlow flow, {int karafuda = 0}) {
+    final scene = flow.scene, send = scene.send, rating = flow.rating;
+    var held = 0, row = 0, unplaced = 0;
+    int? read;
+    final touches = <int>[];
+    void touch(int id) {
+      final c = scene.board.cards.card(id).box.centre, at = Offset(c.x, c.y);
+      scene.pointer(PointerDownEvent(pointer: 1, position: at));
+      scene.pointer(PointerUpEvent(pointer: 1, position: at));
+    }
+
+    for (var t = 0.0; t < const Duration(hours: 1).inMilliseconds && !flow.stage.over; t += frame) {
+      final first = flow.reads.length < karafuda;
+      flow.rating = first ? null : rating;
+      if (first) flow.askKarafuda();
+      final carrying = send.stage == IkkiuchiSendStage.carrying;
+      flow.advance(frame);
+      if (carrying && send.stage == IkkiuchiSendStage.none) unplaced++;
+      final sides = scene.sides!, call = scene.reader.call;
+      if (touches.isNotEmpty) touch(touches.removeAt(0));
+      if (flow.stage == IkkiuchiStage.kaminoku && call != null && call.card != read) {
+        read = call.card;
+        final (tobi, mine) = (sides.tobiCards.first, sides.playerCards.first);
+        touches.addAll(first ? [tobi, mine] : [sides.tobiCards.contains(call.card) ? mine : tobi]);
+      }
+      if (send.stage == IkkiuchiSendStage.sending && send.drag == null) {
+        final card = sides.playerCards.first, c = scene.board.cards.card(card).box.centre;
+        send.dragStart(card, fromStack: false, at: Offset(c.x, c.y));
+        send.dragTo(send.tobiSide.center);
+        send.dragEnd();
+      }
+      if (send.stage == IkkiuchiSendStage.waiting) {
+        final why = '${sides.playerCards.length} held';
+        expectApart(scene, why);
+        final free = send.targets().freeSpots;
+        expect(free, isNotEmpty, reason: '$why: a spot on the field for each card he sends');
+        final (_, r) = free.first;
+        final spot = Rect.fromLTWH(r.x, r.y, r.w, r.h);
+        for (final c in scene.layout.cards) {
+          expect(spot.deflate(1e-6).overlaps(IkkiuchiPlayerSpots.boundsOf(c.box)), isFalse, reason: '$why: the spot is free');
+        }
+        send.tap(spot.center);
+        expect(send.stage, IkkiuchiSendStage.none, reason: '$why: placed there');
+        expectApart(scene, '$why, placed');
+      }
+      held = math.max(held, scene.sides!.playerCards.length);
+      if (!flow.tally.decided) row = math.max(row, scene.sides!.player.map((r) => r.length).reduce(math.max));
+    }
+    expect(flow.stage.over, isTrue,
+        reason: 'the match never hangs: held in ${flow.stage}, ${send.stage}, '
+            '${scene.sides!.tobiCards.length} and ${scene.sides!.playerCards.length} cards');
+    return (held: held, row: row, unplaced: unplaced);
+  }
+
+  group('The field zooms out', () {
+    for (final landscape in [true, false]) {
+      final where = landscape ? 'landscape' : 'portrait';
+      for (final (name, perSide, rows) in [
+        ('Bullet', IkkiuchiMode.bullet.perSide, 2),
+        ('Bullet', IkkiuchiMode.bullet.perSide, 3),
+        ('Blitz', IkkiuchiMode.blitz.perSide, 2),
+        ('Blitz', IkkiuchiMode.blitz.perSide, 3),
+        ('Rapid', IkkiuchiMode.rapid.perSide, IkkiuchiMode.rapid.defaultRows),
+        ('custom', IkkiuchiLayoutTuning.oneRowUpTo, 1),
+        ('custom', IkkiuchiLayoutTuning.twoRowsUpTo, 2),
+        ('custom', 25, 3),
+      ]) {
+        test('$name, $perSide a side in $rows rows, $where, the player faulting on every read: every card Tobi '
+            'sends gets a spot on the field, no row past its most, and Tobi wins', () {
+          final flow = match(5, perSide: perSide, rows: rows, landscape: landscape), scene = flow.scene;
+          placeByTaps(scene);
+          flow
+            ..donePlacing()
+            ..startEarly();
+          final start = scene.layout.cardW;
+          final most = faultEveryRead(flow);
+          expect(most.unplaced, 0, reason: 'each waits for the player to place it');
+          expect(most.row, lessThanOrEqualTo(IkkiuchiLayout.rowCap));
+          expect(flow.result, IkkiuchiResult.lost, reason: 'Tobi wins');
+          expect(scene.layout.cardW, lessThanOrEqualTo(start + 1e-9), reason: 'never bigger than at the start');
+          flow.dispose();
+        });
+      }
+
+      test('25 a side in 3 rows, $where, the first 12 reads からふだ the player faults on both sides of: the one '
+          'card past every row at its most goes past a row\'s room, and Tobi wins', () {
+        const perSide = 25;
+        final flow = match(5, perSide: perSide, rows: 3, landscape: landscape), scene = flow.scene;
+        placeByTaps(scene);
+        flow
+          ..donePlacing()
+          ..startEarly();
+        final most = faultEveryRead(flow, karafuda: 12);
+        expect(most.held, greaterThanOrEqualTo(2 * perSide - 1));
+        expect(most.unplaced, 1);
+        expect(most.row, IkkiuchiLayout.rowCap + 1);
+        expect(flow.result, IkkiuchiResult.lost, reason: 'Tobi wins');
+        flow.dispose();
+      });
+    }
   });
 }
 

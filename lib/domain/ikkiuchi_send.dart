@@ -2,6 +2,7 @@ import 'dart:math' as math;
 
 import '../config/config.dart';
 import 'field_parts.dart';
+import 'ikkiuchi_field.dart';
 import 'ikkiuchi_layout.dart';
 import 'ikkiuchi_record.dart';
 import 'placing.dart';
@@ -16,7 +17,7 @@ import 'placing.dart';
 /// inner end of any group, in the open middle of their
 /// [IkkiuchiPlacingTuning.middleRow], or on any card's place (the cards
 /// inward of it moving a place in), in any of their rows, each at most
-/// its [IkkiuchiLayout.rowSlots] pitches across with its groups
+/// [IkkiuchiLayoutTuning.rowSlots] pitches across with its groups
 /// [IkkiuchiLayoutTuning.groupGap] apart, or its middle cards
 /// [IkkiuchiPlacingTuning.middleMargin] clear of them.
 ///
@@ -76,7 +77,7 @@ class IkkiuchiSides {
       rows: played,
       openMiddle: played.contains(IkkiuchiPlacingTuning.middleRow) ? IkkiuchiPlacingTuning.middleRow : null,
       room: RowRoom(
-        slots: IkkiuchiLayout.rowSlots(rows),
+        slots: IkkiuchiLayoutTuning.rowSlots,
         clusterGap: IkkiuchiLayoutTuning.groupGap,
         middleMargin: IkkiuchiPlacingTuning.middleMargin,
       ),
@@ -156,10 +157,31 @@ class IkkiuchiSides {
     );
   }
 
+  /// The narrowest a field may be, in card widths, for a card more on the
+  /// player's side: as wide as the narrowest of their rows with it added at
+  /// one of the side's free spots ([IkkiuchiField.rowWidth]); null with
+  /// none free, every row at its most.
+  double? get playerRoomForOne {
+    final widths = [
+      for (final spot in playerBoard.freeSpots)
+        switch (spot) {
+          ClusterEnd(:final row, :final part) => _widthWith(player[row.index], part),
+          OpenMiddle(:final row) => _widthWith(player[row.index], RowPart.middle),
+          CardSpot() => throw StateError('a free spot is never a card'),
+        },
+    ];
+    return widths.isEmpty ? null : widths.reduce(math.min);
+  }
+
+  /// [row]'s width ([IkkiuchiField.rowWidth]) with a card more in its [part].
+  static double _widthWith(IkkiuchiRow row, RowPart part) => IkkiuchiField.rowWidth(
+      row.left.length + (part == RowPart.left ? 1 : 0), row.right.length + (part == RowPart.right ? 1 : 0),
+      middle: row.middle.length + (part == RowPart.middle ? 1 : 0));
+
   /// The sides once Tobi's [card] went to the player's side with no free
-  /// spot left on it: at the inner end of the left group of the row with
-  /// the fewest cards, the row nearest the player on a tie, past the row's
-  /// room. A side never refuses a card sent to it.
+  /// spot left on it, every row at its most: at the inner end of the left
+  /// group of the row with the fewest cards, the row nearest the player on
+  /// a tie, past the row's room. A side never refuses a card sent to it.
   IkkiuchiSides squeezedIn(int card) {
     final rest = without(card);
     final rows = rest.player;

@@ -351,28 +351,29 @@ void main() {
       expect(both.turned, {mine, p[1]});
     });
 
-    test('in 2 rows or 1 a row takes at most 8 cards, however unevenly the rows lie', () {
+    test('in 2 rows or 1 too a row takes at most 16 cards, however unevenly the rows lie', () {
       final sides = dealt(9, perSide: IkkiuchiLayoutTuning.twoRowsUpTo, rows: 2);
       final p = sides.playerCards, card = sides.tobiCards.first;
       IkkiuchiSides withRows(List<IkkiuchiRow> rows) =>
           IkkiuchiSides(homes: sides.homes, tobi: sides.tobiCards, player: rows);
       const lower = FieldRow.lower, middle = FieldRow.middle;
+      final cap = IkkiuchiLayout.rowCap;
+      expect(p, hasLength(cap));
 
-      final uneven = withRows([IkkiuchiRow(p.sublist(0, 5), p.sublist(5, 8)), IkkiuchiRow(p.sublist(8, 10), [p[10]])]);
-      expect(uneven.placed(card, const ClusterEnd(lower, RowPart.left)), isNull);
-      expect(uneven.placed(card, const ClusterEnd(lower, RowPart.right)), isNull);
-      expect(uneven.placed(card, CardSpot(p[2])), isNull);
-      expect(uneven.placed(card, const ClusterEnd(middle, RowPart.right)), isNotNull);
-      expect(uneven.placed(p[9], const ClusterEnd(lower, RowPart.left)), isNull, reason: 'nor one of the other row');
-      expect(uneven.placed(p[0], CardSpot(p[6])), isNotNull, reason: 'its own cards move about in it');
+      final uneven = withRows([IkkiuchiRow(p.sublist(0, 9), p.sublist(9, 15)), IkkiuchiRow([p[15]], [])]);
+      expect(uneven.placed(card, const ClusterEnd(lower, RowPart.left)), isNotNull, reason: 'past the 8 it started with');
+      expect(uneven.placed(card, CardSpot(p[2])), isNotNull);
 
-      final full = withRows([IkkiuchiRow(p.sublist(0, 5), p.sublist(5, 8)), IkkiuchiRow(p.sublist(8, 11), p.sublist(11, 16))]);
-      expect(full.playerBoard.freeSpots, isEmpty);
-      expect(full.autoPlaced([card]).playerCards, isNot(contains(card)), reason: 'nowhere to go');
+      final full = withRows([IkkiuchiRow(p.sublist(0, 9), p.sublist(9, cap)), const IkkiuchiRow([], [])]);
+      expect(full.placed(card, const ClusterEnd(lower, RowPart.left)), isNull);
+      expect(full.placed(card, const ClusterEnd(lower, RowPart.right)), isNull);
+      expect(full.placed(card, CardSpot(p[2])), isNull);
+      expect(full.placed(card, const ClusterEnd(middle, RowPart.right)), isNotNull);
 
-      final one = withRows([IkkiuchiRow(p.sublist(0, 3), p.sublist(3, 8))]);
+      final one = withRows([IkkiuchiRow(p.sublist(0, 8), p.sublist(8, cap))]);
       expect(one.playerBoard.freeSpots, isEmpty);
-      expect(withRows([IkkiuchiRow(p.sublist(0, 3), p.sublist(3, 7))]).placed(card, const ClusterEnd(lower, RowPart.left)),
+      expect(one.autoPlaced([card]).playerCards, isNot(contains(card)), reason: 'nowhere to go');
+      expect(withRows([IkkiuchiRow(p.sublist(0, 8), p.sublist(8, cap - 1))]).placed(card, const ClusterEnd(lower, RowPart.left)),
           isNotNull);
     });
 
@@ -801,11 +802,58 @@ void main() {
       }
     });
 
-    test("Tobi's card sent to a full side goes on past a row's room, never waiting with nowhere to go", () {
+    test("Tobi's card sent to a side the field has no spot on waits, the field zoomed out just until one opens", () {
       for (final landscape in [false, true]) {
         final why = landscape ? 'landscape' : 'portrait';
-        // A 2-row match: the player's 16 fill their rows.
-        final sides = dealt(4, perSide: IkkiuchiLayoutTuning.twoRowsUpTo, rows: 2);
+        // A 2-row match, the player's rows of 12 each as wide as the field
+        // starts.
+        final deal = dealt(4, perSide: IkkiuchiLayoutTuning.twoRowsUpTo, rows: 2);
+        final cards = [...deal.playerCards, ...deal.tobiCards];
+        final sides = IkkiuchiSides(homes: deal.homes, tobi: cards.sublist(24), player: [
+          IkkiuchiRow(cards.sublist(0, 6), cards.sublist(6, 12)),
+          IkkiuchiRow(cards.sublist(12, 18), cards.sublist(18, 24)),
+        ]);
+        final scene = sceneOf(sides, landscape: landscape);
+        final flow = scene.send;
+        expect(flow.targets().freeSpots, isEmpty, reason: '$why: no spot on the field');
+        // The field's width in card widths.
+        double across() => scene.layout.field.width / scene.layout.cardW;
+        final start = scene.layout.cardW, startAcross = across();
+        expect(flow.startReceiving(), isTrue);
+        final card = flow.card!;
+        runFor(scene, Duration(milliseconds: scene.board.carry!.end.ceil() + 50));
+        expect(flow.stage, IkkiuchiSendStage.waiting, reason: '$why: it waits');
+        runFor(scene, IkkiuchiPlayTuning.relayoutGlide * 2);
+        expectHome(scene, '$why: zoomed out');
+        expect(across(), greaterThan(startAcross), reason: '$why: more cards across');
+        expect(scene.layout.cardW, lessThanOrEqualTo(start), reason: '$why: the cards no bigger');
+        final free = flow.targets().freeSpots;
+        expect(free, isNotEmpty, reason: '$why: a spot opened');
+        // Just enough: a card more at a spot the field shows makes it as
+        // wide as it is.
+        final widths = [
+          for (final (spot, _) in free)
+            IkkiuchiField(tobi: scene.sides!.tobi, player: scene.sides!.placed(card, spot)!.player).leastWidth(),
+        ];
+        expect(widths.reduce(math.min), closeTo(across(), 1e-9), reason: why);
+        final (_, r) = free.first;
+        flow.tap(Offset(r.x + r.w / 2, r.y + r.h / 2));
+        expect(flow.active, isFalse, reason: '$why: placed');
+        expect(scene.sides!.playerCards, contains(card));
+        runFor(scene, IkkiuchiPlayTuning.relayoutGlide * 2);
+        expectHome(scene, '$why: laid out for it');
+      }
+    });
+
+    test("Tobi's card sent to a side with every row at its most goes on past a row's room, never waiting", () {
+      for (final landscape in [false, true]) {
+        final why = landscape ? 'landscape' : 'portrait';
+        // A 3-row match, 48 of its 50 cards on the player's side.
+        final deal = dealt(4);
+        final cards = [...deal.playerCards, ...deal.tobiCards], cap = IkkiuchiLayout.rowCap;
+        final sides = IkkiuchiSides(homes: deal.homes, tobi: cards.sublist(3 * cap), player: [
+          for (var r = 0; r < 3; r++) IkkiuchiRow(cards.sublist(r * cap, r * cap + cap ~/ 2), cards.sublist(r * cap + cap ~/ 2, (r + 1) * cap)),
+        ]);
         expect(sides.playerBoard.freeSpots, isEmpty, reason: '$why: full');
         final scene = sceneOf(sides, landscape: landscape);
         final flow = scene.send;
@@ -817,7 +865,7 @@ void main() {
         expect(flow.active, isFalse, reason: '$why: it does not wait');
         expect(sent, [card]);
         final row = scene.sides!.player.firstWhere((r) => r.left.last == card);
-                expect(row.length, IkkiuchiLayout.rowRoom(2) + 1, reason: '$why: past the row\'s room');
+        expect(row.length, cap + 1, reason: '$why: past the row\'s room');
         expect(scene.sides!.tobiCards, isNot(contains(card)));
         runFor(scene, IkkiuchiPlayTuning.relayoutGlide * 2);
         expectHome(scene, '$why: laid out for it');

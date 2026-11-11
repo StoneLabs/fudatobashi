@@ -2166,6 +2166,45 @@ void main() {
           await leave(tester);
           await tester.pumpWidget(const SizedBox());
         });
+
+        // The field zoomed out, to match_zoom/: Tobi sends the player
+        // [sends] cards by hand in the memory time, each placed in their
+        // 下段 where it has a spot; his last one waiting with the spot opened
+        // for it, then placed. Blitz in 2 rows after 10, Bullet in 2 rows
+        // near its most cards on a side, and Rapid with a row near its most.
+        if (lang == 'ja' && scale == 1.0) {
+          for (final (name, perSide, rows, sends) in [
+            ('blitz_2rows', IkkiuchiMode.blitz.perSide, 2, 10),
+            ('bullet_2rows', IkkiuchiMode.bullet.perSide, 2, IkkiuchiMode.bullet.perSide - 1),
+            ('rapid', IkkiuchiMode.rapid.perSide, IkkiuchiMode.rapid.defaultRows, 8),
+          ]) {
+            testWidgets('match_zoom_${orient}_$name', (tester) async {
+              final setup = IkkiuchiSetup.free(
+                  opponentRating: 1600, perSide: perSide, rows: rows, memorise: const Duration(minutes: 15));
+              final flow = await startOn(tester, setup), scene = flow.scene, send = scene.send;
+              scene.opening
+                ..placeRest()
+                ..finishTobi();
+              flow.donePlacing();
+              await play(tester, IkkiuchiPlayTuning.relayoutGlide * 2);
+              for (var i = 1; i <= sends; i++) {
+                await playUntil(tester, () => scene.atRest);
+                flow.sendByHand(IkkiuchiSide.opponent);
+                await playUntil(tester, () => send.stage == IkkiuchiSendStage.waiting);
+                await play(tester, IkkiuchiPlayTuning.relayoutGlide * 2);
+                final free = [for (final (spot, _) in send.targets().freeSpots) spot];
+                final spot = free.firstWhere((s) => send.placeOf(s)?.row == FieldRow.lower, orElse: () => free.first);
+                if (i == sends) await capture(tester, 'match_zoom/${orient}_${name}_1_waiting', lang);
+                send.tap(send.rectOf(spot)!.center);
+              }
+              await play(tester, IkkiuchiPlayTuning.relayoutGlide * 2);
+              await capture(tester, 'match_zoom/${orient}_${name}_2_placed', lang);
+              expect(tester.takeException(), isNull);
+              await leave(tester);
+              await tester.pumpWidget(const SizedBox());
+            });
+          }
+        }
       }
     }
 

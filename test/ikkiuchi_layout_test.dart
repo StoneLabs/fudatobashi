@@ -43,10 +43,9 @@ void main() {
       expect(IkkiuchiLayout.rowsAllowed(one, 0), isFalse);
     });
 
-    test('a row has room for its pitches less the gap between its groups', () {
-      const rows = IkkiuchiLayoutTuning.rows;
-      expect(IkkiuchiLayout.rowRoom(rows), (IkkiuchiLayoutTuning.rowSlots - IkkiuchiLayoutTuning.groupGap).floor());
-      expect(IkkiuchiLayout.rowSlots(rows), IkkiuchiLayoutTuning.rowSlots);
+    test('a row holds at most its pitches less the gap between its groups, in 3 rows from the start', () {
+      expect(IkkiuchiLayout.rowCap, (IkkiuchiLayoutTuning.rowSlots - IkkiuchiLayoutTuning.groupGap).floor());
+      expect(IkkiuchiLayout.rowRoom(IkkiuchiLayoutTuning.rows), IkkiuchiLayout.rowCap);
     });
 
     test('in 1 or 2 rows a row has room for the most cards one of its rows needs, and no more', () {
@@ -54,7 +53,6 @@ void main() {
         final room = IkkiuchiLayout.rowRoom(rows);
         expect(rows * room, greaterThanOrEqualTo(most), reason: '$rows rows hold their most cards');
         expect(rows * (room - 1), lessThan(most), reason: 'a row of $rows rows has no spare room');
-        expect(IkkiuchiLayout.rowSlots(rows), room + IkkiuchiLayoutTuning.groupGap);
       }
     });
 
@@ -174,6 +172,33 @@ void main() {
           }
         }
       }
+    });
+
+    test('takes more cards than its rows have room for, a row going past its room only once every row has it, '
+        'and never past its most', () {
+      var homedPast = false;
+      for (final (perSide, rows) in [(IkkiuchiLayoutTuning.twoRowsUpTo, 2), (IkkiuchiLayoutTuning.oneRowUpTo, 1)]) {
+        final room = IkkiuchiLayout.rowRoom(rows);
+        for (final rating in ratings) {
+          for (var seed = 0; seed < 300; seed++) {
+            final why = '$perSide in $rows rows at $rating, seed $seed';
+            final h = homes(rating, perSide, rows, seed);
+            // Every card dealt but one homed in the row with the fewest.
+            final fewest = h.plan.reduce((a, b) => b.length < a.length ? b : a);
+            final present = h.cards.where((id) => id != [...fewest.left, ...fewest.right].first).toList();
+            homedPast |= h.plan.any((row) => row.length > IkkiuchiLayout.rowCap);
+            final side = h.sideWith(present);
+            expect([for (final row in side) ...row.left, for (final row in side) ...row.right]..sort(),
+                [...present]..sort(), reason: why);
+            final lengths = [for (final row in side) row.length];
+            expect(lengths.reduce(math.max), lessThanOrEqualTo(IkkiuchiLayout.rowCap), reason: why);
+            if (lengths.reduce(math.max) > room) expect(lengths.reduce(math.min), greaterThanOrEqualTo(room), reason: why);
+          }
+        }
+      }
+      // A row homes more cards than a row may hold only rarely: these seeds
+      // have one.
+      expect(homedPast, isTrue, reason: 'a row with more homes than a row may hold');
     });
 
     test('puts a received card in its home, and back again when it is sent back', () {

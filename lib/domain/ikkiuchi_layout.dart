@@ -74,7 +74,8 @@ class IkkiuchiHomes {
   /// His side with [present] on it, each card at its home. A row with more
   /// cards than it has room for ([IkkiuchiLayout.rowRoom]) passes its
   /// innermost ones to the inner end of the same group in the nearest row
-  /// with room.
+  /// with room; with none, to the nearest row under the cap
+  /// ([IkkiuchiLayout.rowCap]), the field zooming out for them.
   List<IkkiuchiRow> sideWith(Iterable<int> present) {
     final on = present.toSet();
     final side = [
@@ -87,13 +88,14 @@ class IkkiuchiHomes {
             if (on.contains(id)) id,
         ]),
     ];
-    final room = IkkiuchiLayout.rowRoom(rows);
-    for (var r = 0; r < side.length; r++) {
-      while (side[r].length > room) {
-        final to = _nearestWithRoom(side, r, room);
-        if (to == null) break;
-        final from = side[r].left.length >= side[r].right.length ? IkkiuchiGroup.left : IkkiuchiGroup.right;
-        side[to].group(from).add(side[r].group(from).removeLast());
+    for (final room in [IkkiuchiLayout.rowRoom(rows), IkkiuchiLayout.rowCap]) {
+      for (var r = 0; r < side.length; r++) {
+        while (side[r].length > room) {
+          final to = _nearestWithRoom(side, r, room);
+          if (to == null) break;
+          final from = side[r].left.length >= side[r].right.length ? IkkiuchiGroup.left : IkkiuchiGroup.right;
+          side[to].group(from).add(side[r].group(from).removeLast());
+        }
       }
     }
     return side;
@@ -142,20 +144,18 @@ class IkkiuchiLayout {
 
   final String Function(int poemId) kimariji;
 
-  /// The cards a row of a side of [rows] rows has room for: in 3 rows as
-  /// many as its [rowSlots] take beside the gap between its groups; in
-  /// fewer, where the cards are bigger, the most one of its rows needs, its
-  /// side's most cards shared evenly between them.
+  /// The cards a row of a side of [rows] rows has room for as the match
+  /// starts: in 3 rows its most ([rowCap]); in fewer, where the cards are
+  /// bigger, the most one of its rows needs, its side's most cards shared
+  /// evenly between them.
   static int rowRoom(int rows) => rows == IkkiuchiLayoutTuning.rows
-      ? (IkkiuchiLayoutTuning.rowSlots - IkkiuchiLayoutTuning.groupGap).floor()
+      ? rowCap
       : ((rows == 2 ? IkkiuchiLayoutTuning.twoRowsUpTo : IkkiuchiLayoutTuning.oneRowRoom) / rows).ceil();
 
-  /// The card pitches a row of a side of [rows] rows spans at most:
-  /// [IkkiuchiLayoutTuning.rowSlots] in 3 rows; in fewer its [rowRoom] and
-  /// the gap between its groups.
-  static double rowSlots(int rows) => rows == IkkiuchiLayoutTuning.rows
-      ? IkkiuchiLayoutTuning.rowSlots
-      : rowRoom(rows) + IkkiuchiLayoutTuning.groupGap;
+  /// The most cards any row holds, the field zoomed out as far as it goes:
+  /// as many as its [IkkiuchiLayoutTuning.rowSlots] take beside the gap
+  /// between its groups.
+  static final int rowCap = (IkkiuchiLayoutTuning.rowSlots - IkkiuchiLayoutTuning.groupGap).floor();
 
   /// Whether a side of [perSide] cards may be laid out in [rows] rows.
   static bool rowsAllowed(int perSide, int rows) =>
