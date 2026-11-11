@@ -165,6 +165,9 @@ class IkkiuchiBoard {
   /// からふだ; null while nothing is read.
   ({int id, bool onField})? _reading;
 
+  /// Whether a card is read now.
+  bool get reading => _reading != null;
+
   /// Reads [id] for the player alone, Tobi's arm still: the takes of it
   /// and both players' faults start afresh. A からふだ ([onField] false) has
   /// nothing to take. Null reads nothing, and Tobi starts no strike still

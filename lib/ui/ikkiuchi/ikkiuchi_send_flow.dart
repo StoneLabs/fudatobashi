@@ -55,6 +55,10 @@ class IkkiuchiSendFlow {
   IkkiuchiSendStage _stage = IkkiuchiSendStage.none;
   bool get active => _stage != IkkiuchiSendStage.none;
 
+  /// Whether Tobi's arm has a card to carry: his own to the waiting spot,
+  /// or the one the player sent to its home.
+  bool get carries => _stage == IkkiuchiSendStage.carrying || _stage == IkkiuchiSendStage.placing;
+
   /// The card sent: Tobi's from his pick until placed, or the player's
   /// from its drop until his arm laid it down.
   int? get card => _card;
@@ -246,6 +250,15 @@ class IkkiuchiSendFlow {
       _place(spot, from: from);
     }
     scene.refresh();
+  }
+
+  /// A drag under way ends where it is: where its card glides from, a card
+  /// of the player's back home and Tobi's back at the waiting spot.
+  Map<int, CardBox> letGo() {
+    final drag = _drag;
+    _drag = null;
+    _overTobi = false;
+    return drag == null ? const {} : {drag.card: spots.liftedBox(drag.at)};
   }
 
   /// A tap on a spot or a card places Tobi's waiting card there.

@@ -54,16 +54,17 @@ Future<void> startIkkiuchiMatch(BuildContext context, IkkiuchiSetup setup, {bool
 ///
 /// Until the screen stands in landscape the board lies turned in it, with
 /// the auto turn on; with it off the board takes the layout of the screen
-/// as it stands, upright or sideways. A change of its size deals the same
-/// match afresh until the player places a card, and after that the board
-/// keeps its layout and size, scaled to fit. Tobi's arm leaves wind lines
-/// and smear afterimages unless the player turned them off.
+/// as it stands, upright or sideways. A change of its size lays the same
+/// match out afresh on it at any stage, once nothing is under way that the
+/// board would lose ([IkkiuchiBoardScene.resize]); until then the board
+/// keeps its size, scaled to fit. Tobi's arm leaves wind lines and smear
+/// afterimages unless the player turned them off.
 class IkkiuchiMatchScreen extends StatefulWidget {
   const IkkiuchiMatchScreen({super.key, required this.setup, this.seed, this.guest = false});
 
   /// The match's setup: each side is laid out in its rows, as its cards
-  /// allow them (`IkkiuchiLayout.rowsAllowed`); the board keeps them, and
-  /// its cards' size, to the match's end.
+  /// allow them (`IkkiuchiLayout.rowsAllowed`); the board keeps them to
+  /// the match's end.
   final IkkiuchiSetup setup;
   final int? seed;
   final bool guest;
@@ -134,11 +135,8 @@ class IkkiuchiMatchScreenState extends State<IkkiuchiMatchScreen> with SingleTic
     super.dispose();
   }
 
-  /// The match on a board filling [room], dealt afresh when [room] changes
-  /// before the player places a card.
+  /// The match on a board filling [room].
   IkkiuchiMatchFlow _flowFor(Size room) {
-    final flow = _flow;
-    if (flow != null && !(flow.stage == IkkiuchiStage.placing && flow.scene.opening.untouched)) return flow;
     final setup = widget.setup;
     final landscape = _landscapeIn(room);
     _dealer.sceneFor(context, landscape ? _boardSize(room) : room,
@@ -148,17 +146,9 @@ class IkkiuchiMatchScreenState extends State<IkkiuchiMatchScreen> with SingleTic
         perSide: setup.perSide,
         form: _form,
         opening: true,
-        onNew: (scene) {
-          scene.wind = _wind;
-          final old = _flow;
-          if (old != null) {
-            old.removeListener(_changed);
-            SchedulerBinding.instance.addPostFrameCallback((_) => old.dispose());
-          }
-          _flow = IkkiuchiMatchFlow(scene,
-              words: IkkiuchiMatchWords.of(context), rating: setup.opponentRating, memorise: setup.memorise)
-            ..addListener(_changed);
-        });
+        onNew: (scene) => _flow = IkkiuchiMatchFlow(scene..wind = _wind,
+            words: IkkiuchiMatchWords.of(context), rating: setup.opponentRating, memorise: setup.memorise)
+          ..addListener(_changed));
     return _flow!;
   }
 

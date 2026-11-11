@@ -1,6 +1,7 @@
 import 'dart:ui';
 
 import '../../config/config.dart';
+import '../../domain/ikkiuchi_geometry.dart';
 import '../../domain/placing.dart';
 import '../placing/placing_widgets.dart';
 import 'ikkiuchi_board_scene.dart';
@@ -89,6 +90,13 @@ class IkkiuchiArrangeFlow {
       scene.relayout(next, from: {drag.card: spots.liftedBox(drag.at)});
     }
     scene.refresh();
+  }
+
+  /// A drag under way ends where it is: where its card glides home from.
+  Map<int, CardBox> letGo() {
+    final drag = _drag;
+    _drag = null;
+    return drag == null ? const {} : {drag.card: spots.liftedBox(drag.at)};
   }
 
   /// Where a card may go: past the dragged card, which is left out, or for

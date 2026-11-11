@@ -53,9 +53,6 @@ class IkkiuchiOpeningFlow {
   bool get placing => _placing;
   bool _placing;
 
-  /// Whether no card is placed yet: every one still in the stack.
-  bool get untouched => _placing && _drag == null && scene.sides!.playerCards.isEmpty;
-
   /// The card being dragged, and where it would land.
   PlacingDrag? get drag => _drag;
   PlacingDrag? _drag;
@@ -162,7 +159,7 @@ class IkkiuchiOpeningFlow {
     final from = {
       if (stack != null)
         for (final id in _stack) id: _boxOf(stack),
-      ..._letGo(),
+      ...letGo(),
     };
     final next = sides.autoPlaced(_stack);
     final placed = next.playerCards.toSet();
@@ -178,12 +175,12 @@ class IkkiuchiOpeningFlow {
     if (!_placing) return;
     _placing = false;
     scene
-      ..relayout(scene.sides!, from: _letGo(), forPlay: true)
+      ..relayout(scene.sides!, from: letGo(), forPlay: true)
       ..refresh();
   }
 
   /// A drag under way ends where it is: where its card glides from.
-  Map<int, CardBox> _letGo() {
+  Map<int, CardBox> letGo() {
     final drag = _drag;
     _drag = null;
     return drag == null ? const {} : {drag.card: spots.liftedBox(drag.at)};

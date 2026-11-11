@@ -114,8 +114,8 @@ class IkkiuchiStrikesPageState extends State<IkkiuchiStrikesPage> with SingleTic
     });
   }
 
-  /// The scene for a board filling [room], set out afresh when its size,
-  /// the layout, the rating or the seed changes.
+  /// The scene for a board filling [room], set out afresh when the rating
+  /// or the seed changes, and laid out afresh on a new size or layout.
   IkkiuchiBoardScene _sceneFor(Size room) => _dealer.sceneFor(context, IkkiuchiDealer.boardIn(room, landscape: _landscape),
       landscape: _landscape, rating: _rating, seed: _seed, perSide: IkkiuchiToolsTuning.dealPerSide, onNew: (scene) {
         _called = false;
@@ -255,7 +255,7 @@ class IkkiuchiStrikesPageState extends State<IkkiuchiStrikesPage> with SingleTic
                     final scene = _sceneFor(box.biggest);
                     return IkkiuchiDealer.turned(
                         IkkiuchiBoardView(scene, onTap: _tapAt, overCards: IkkiuchiCallLayer(scene: scene)),
-                        landscape: _landscape);
+                        landscape: scene.layout.landscape);
                   }),
                 ),
                 Positioned(

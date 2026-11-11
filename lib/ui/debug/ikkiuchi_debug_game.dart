@@ -25,8 +25,9 @@ import 'debug_common.dart';
 /// The developer's tools lie over everything at the board's top left: the
 /// stage, Tobi's rating, and the slider that sets it for the reads to come
 /// (OFF at its top, his highest rating at its foot). The buttons: "R" turns
-/// the board between landscape and portrait and a number deals anew with
-/// that many cards a side, either starting the match afresh; "^" and "v"
+/// the board between landscape and portrait, the match laid out afresh on
+/// it as a turn of the phone lays it, a number deals anew with that many
+/// cards a side, starting the match afresh; "^" and "v"
 /// make a 送り札 to Tobi and from him, 空 makes the next read a からふだ, 始
 /// ends the placing and the memory time (the cards still in the stack put
 /// down, Tobi's side laid out at once) and 次 lets the held match go on.
@@ -99,8 +100,7 @@ class IkkiuchiDebugGameState extends State<IkkiuchiDebugGame> with SingleTickerP
 
   void _turn() => setState(() => _landscape = !_landscape);
 
-  /// The match on a board filling [room]; a board set out afresh starts
-  /// one afresh.
+  /// The match on a board filling [room]; a new deal starts one afresh.
   IkkiuchiMatchFlow _flowFor(Size room) {
     _dealer.sceneFor(context, IkkiuchiDealer.boardIn(room, landscape: _landscape),
         landscape: _landscape,
@@ -139,7 +139,7 @@ class IkkiuchiDebugGameState extends State<IkkiuchiDebugGame> with SingleTickerP
               Positioned.fill(child: IkkiuchiMatchBoard(flow, onEnd: flow.end)),
               _tools(flow),
             ]),
-            landscape: _landscape,
+            landscape: flow.scene.layout.landscape,
           );
         }),
       );
@@ -148,10 +148,11 @@ class IkkiuchiDebugGameState extends State<IkkiuchiDebugGame> with SingleTickerP
   /// safe area, which the landscape board lies turned in.
   Widget _tools(IkkiuchiMatchFlow flow) {
     final safe = MediaQuery.paddingOf(context);
+    final landscape = flow.scene.layout.landscape;
     const inset = IkkiuchiToolsStyle.gameInset;
     return Positioned(
-      left: (_landscape ? safe.top : safe.left) + inset,
-      top: (_landscape ? safe.right : safe.top) + inset,
+      left: (landscape ? safe.top : safe.left) + inset,
+      top: (landscape ? safe.right : safe.top) + inset,
       child: IkkiuchiDebugTools(
         stage: flow.stage,
         rating: _rating,

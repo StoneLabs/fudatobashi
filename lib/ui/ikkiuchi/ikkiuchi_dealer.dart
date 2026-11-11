@@ -20,8 +20,9 @@ import 'ikkiuchi_tobi_art.dart';
 /// form and the player's at one drawn from the seed and [playerSeedOffset];
 /// or, as a match opens, Tobi's side and a stack of the player's cards in
 /// the order dealt, their side empty. The scene is set out afresh when the
-/// board's size, its layout, the rating, his form, the seed, the cards a
-/// side or the opening change; the cards' faces are drawn once for them
+/// rating, his form, the seed, the cards a side or the opening change, and
+/// takes a new size of the board, or its other layout, as it is
+/// ([IkkiuchiBoardScene.resize]); the cards' faces are drawn once for them
 /// all.
 class IkkiuchiDealer {
   IkkiuchiDealer({required this.rows, required this.playerSeedOffset});
@@ -37,7 +38,7 @@ class IkkiuchiDealer {
   final _rig = IkkiuchiTobiArt.rig();
   IkkiuchiCardFaces? _faces;
   IkkiuchiBoardScene? _scene;
-  ({Size size, bool landscape, double rating, double form, int seed, int perSide, bool opening})? _key;
+  ({double rating, double form, int seed, int perSide, bool opening})? _key;
 
   /// The board as drawn now.
   IkkiuchiBoardScene? get scene => _scene;
@@ -55,7 +56,7 @@ class IkkiuchiDealer {
   /// [rating] in his [form] for a match (`IkkiuchiTobi.formFor`), on a
   /// board of [size] in its [landscape] layout or not, for a match's
   /// [opening] or with both sides laid out. [onNew] gets each scene set out
-  /// afresh.
+  /// afresh; one kept takes the board's size and layout given.
   IkkiuchiBoardScene sceneFor(
     BuildContext context,
     Size size, {
@@ -67,10 +68,9 @@ class IkkiuchiDealer {
     bool opening = false,
     ValueChanged<IkkiuchiBoardScene>? onNew,
   }) {
-    final key =
-        (size: size, landscape: landscape, rating: rating, form: form, seed: seed, perSide: perSide, opening: opening);
+    final key = (rating: rating, form: form, seed: seed, perSide: perSide, opening: opening);
     final old = _scene;
-    if (old != null && key == _key) return old;
+    if (old != null && key == _key) return old..resize(size, landscape: landscape);
     _faces ??= IkkiuchiCardFaces(showNumber: ProgressScope.of(context).settings.showPoemNumber);
     final deck = [for (final p in poems.all) p.id]..shuffle(math.Random(seed));
     final own = deck.sublist(0, perSide), others = deck.sublist(perSide, 2 * perSide);

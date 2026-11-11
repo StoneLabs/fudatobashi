@@ -31,9 +31,9 @@ import 'ikkiuchi_send_flow.dart';
 /// player's cards dealt into a stack ([stack]), the 送り札 ([send]) and
 /// 並べ替え ([arrange]), and each change of the sides lays the board out
 /// afresh ([relayout]), every card gliding to its new place and size and
-/// the band, Tobi and the game column moving along. Each time the board
-/// comes to rest after the cards went home, or a 送り札 or 並べ替え is
-/// over, [onSettled] is told.
+/// the band, Tobi and the game column moving along; so does a new size
+/// of the board ([resize]). Each time the board comes to rest after the
+/// cards went home, or a 送り札 or 並べ替え is over, [onSettled] is told.
 class IkkiuchiBoardScene extends ChangeNotifier {
   IkkiuchiBoardScene(this._layout, this.faces,
       {this.sides, List<int> stack = const [], this.tobiRating = 0, this.tobiForm = 0, int seed = 0})
@@ -170,6 +170,7 @@ class IkkiuchiBoardScene extends ChangeNotifier {
     _endKarafuda(ms);
     opening.advance();
     send.advance();
+    if (_resizeTo case final to? when _still) _resize(to.size, landscape: to.landscape);
     if (_from != null && !board.cards.gliding) _from = null;
     if (_settling && !board.cards.gliding && !busy) {
       _settling = false;
@@ -304,11 +305,62 @@ class IkkiuchiBoardScene extends ChangeNotifier {
   /// kept off it. Unless a 送り札 goes on, [onSettled] is told once they
   /// are all home.
   void relayout(IkkiuchiSides next,
-      {Map<int, CardBox> from = const {},
-      Set<int> held = const {},
-      bool forPlay = false,
-      bool roomForOne = false,
-      Duration glide = IkkiuchiPlayTuning.relayoutGlide}) {
+          {Map<int, CardBox> from = const {},
+          Set<int> held = const {},
+          bool forPlay = false,
+          bool roomForOne = false,
+          Duration glide = IkkiuchiPlayTuning.relayoutGlide}) =>
+      _layOut(
+          next,
+          _layout.withSides(
+              tobiRows: next.tobi,
+              playerRows: next.player,
+              onTop: next.onTop,
+              opening: forPlay ? false : null,
+              need: roomForOne ? next.playerRoomForOne : 0),
+          from: from,
+          held: held,
+          glide: glide);
+
+  /// The size and layout the board is to take once it is still; null
+  /// while it has them.
+  ({Size size, bool landscape})? _resizeTo;
+
+  /// The board is to be of [size], in its [landscape] layout or not: once
+  /// it is still, a drag under way is let go and the same sides are laid
+  /// out afresh on it as on a change of them ([relayout]); until then it
+  /// keeps its size.
+  void resize(Size size, {required bool landscape}) {
+    final now = (size: Size(_layout.size.x, _layout.size.y), landscape: _layout.landscape);
+    final to = (size: size, landscape: landscape);
+    _resizeTo = to == now ? null : to;
+  }
+
+  /// Whether nothing is under way that a board laid out afresh would lose:
+  /// no card read, no strike, no card taken still on it, and no card for
+  /// Tobi's arm to carry in a 送り札.
+  bool get _still => !board.reading && !board.busy && !board.cards.cards.any((c) => c.taken) && !send.carries;
+
+  void _resize(Size size, {required bool landscape}) {
+    _resizeTo = null;
+    final sides = this.sides!;
+    _layOut(
+        sides,
+        IkkiuchiBoardLayout.of(
+          size: size,
+          landscape: landscape,
+          tobiRows: sides.tobi,
+          playerRows: sides.player,
+          rig: _layout.tobi.rig,
+          onTop: sides.onTop,
+          opening: _layout.stack != null,
+        ),
+        from: {...opening.letGo(), ...send.letGo(), ...arrange.letGo()});
+  }
+
+  /// The sides are now [next], laid out as [layout]; see [relayout].
+  void _layOut(IkkiuchiSides next, IkkiuchiBoardLayout layout,
+      {Map<int, CardBox> from = const {}, Set<int> held = const {}, Duration glide = IkkiuchiPlayTuning.relayoutGlide}) {
     final lying = {
       for (final c in board.cards.cards)
         if (c.onBoard && !c.held) c.id: c.box,
@@ -317,12 +369,7 @@ class IkkiuchiBoardScene extends ChangeNotifier {
     final old = board;
     _from = (band: band, field: field, column: column, tobi: tobi, wait: wait);
     sides = next;
-    _layout = _layout.withSides(
-        tobiRows: next.tobi,
-        playerRows: next.player,
-        onTop: next.onTop,
-        opening: forPlay ? false : null,
-        need: roomForOne ? next.playerRoomForOne : 0);
+    _layout = layout;
     board = _layout.board(startStep: old.steps)
       ..heldFace = old.heldFace
       ..restFace = old.restFace
