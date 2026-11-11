@@ -2,6 +2,7 @@ import 'dart:math' as math;
 
 import '../config/config.dart';
 import 'field_parts.dart';
+import 'ikkiuchi_field.dart';
 import 'ikkiuchi_layout.dart';
 import 'ikkiuchi_record.dart';
 import 'ikkiuchi_side.dart';
@@ -137,6 +138,24 @@ class IkkiuchiSides {
     final rest = without(card);
     return IkkiuchiSides(homes: homes, tobi: {...rest.tobiCards, card}, player: rest.player, turned: rest.turned);
   }
+
+  /// The narrowest a field may be, in card widths, for a card more to have
+  /// room at every free spot of the player's side: as wide as the widest of
+  /// their rows with it added at one of them ([IkkiuchiField.rowWidth]); 0
+  /// with none free.
+  double get playerRoomForOne => [
+        for (final spot in playerBoard.freeSpots)
+          switch (spot) {
+            ClusterEnd(:final row, :final part) => _widthWith(player[row.index], part),
+            OpenMiddle(:final row) => _widthWith(player[row.index], RowPart.middle),
+            CardSpot() => throw StateError('a free spot is never a card'),
+          },
+      ].fold(0.0, math.max);
+
+  /// [row]'s width ([IkkiuchiField.rowWidth]) with a card more in its [part].
+  static double _widthWith(IkkiuchiRow row, RowPart part) => IkkiuchiField.rowWidth(
+      row.left.length + (part == RowPart.left ? 1 : 0), row.right.length + (part == RowPart.right ? 1 : 0),
+      middle: row.middle.length + (part == RowPart.middle ? 1 : 0));
 
   /// Whether [to]'s side takes a card more: the player's while it has a
   /// free spot, Tobi's while a row of his is under its limit

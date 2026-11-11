@@ -29,7 +29,9 @@ enum IkkiuchiSendStage { none, sending, placing, carrying, waiting }
 /// Tobi sends: he picks one of his cards ([IkkiuchiSides.tobiSends], at his
 /// rating's smart send), his arm takes it off his side, turns it to face
 /// the player and sets it down at the waiting spot, and he points at it.
-/// His side closes up, and the player places it by the placing's rules
+/// His side closes up, and the field zooms out, where it must, until the
+/// card has room at every free spot on the player's side; the player
+/// places it by the placing's rules
 /// ([IkkiuchiSides.placed]): a tap on a free spot or a card, or a drag
 /// there. Placing it ends the 送り札. Neither side sends to a side that is
 /// full (`IkkiuchiMatchFlow`), so the card always has a spot.
@@ -120,7 +122,7 @@ class IkkiuchiSendFlow {
     if (_stage != IkkiuchiSendStage.carrying || scene.board.carrying) return;
     _stage = IkkiuchiSendStage.waiting;
     scene.board.heldFace = TobiFace.pointing;
-    scene.relayout(sides.without(id));
+    scene.relayout(sides.without(id), roomForOne: true);
   }
 
   /// Once his side has made room for card [id] the player sent, his arm
