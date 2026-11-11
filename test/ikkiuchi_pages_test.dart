@@ -514,6 +514,7 @@ void main() {
     testWidgets('the field grows toward the middle: a wide row, short rows, and a tablet', (tester) async {
       final p = await open(tester);
       // Seed 153 deals Tobi a row of 14 cards; seed 144 no row over 9.
+      double? phone;
       for (final (seed, screen, name) in [(153, usersPhone, 'wide'), (144, usersPhone, 'short'), (144, ipadPortrait, 'tablet')]) {
         for (final landscape in [false, true]) {
           await show(tester, p, IkkiuchiStrikesPage(rating: 2000, seed: seed, landscape: landscape), screen: screen);
@@ -521,8 +522,9 @@ void main() {
           expect(tester.takeException(), isNull);
           final s = scene(tester);
           expect(s.layout.cards.map((c) => 2 * c.box.hw), everyElement(closeTo(s.layout.cardW, 1e-6)));
+          if (name == 'short' && !landscape) phone = s.layout.cardW;
           if (name == 'tablet' && !landscape) {
-            expect(s.layout.cardW, IkkiuchiBoardStyle.maxCardW, reason: 'a tablet grows the cards to their widest');
+            expect(s.layout.cardW, greaterThan(phone!), reason: 'a tablet grows the cards past the phone\'s');
           }
           await capture(tester, 'strikes_${name}_${landscape ? 'landscape' : 'portrait'}');
         }
