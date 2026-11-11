@@ -320,7 +320,7 @@ class IkkiuchiBoardScene extends ChangeNotifier {
     _layout = _layout.withSides(
         tobiRows: next.tobi,
         playerRows: next.player,
-        turned: next.turned,
+        onTop: next.onTop,
         opening: forPlay ? false : null,
         need: roomForOne ? next.playerRoomForOne : 0);
     board = _layout.board(startStep: old.steps)

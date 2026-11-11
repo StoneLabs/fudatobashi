@@ -22,18 +22,18 @@ import 'placing.dart';
 /// [IkkiuchiLayoutTuning.groupGap] apart, or its middle cards
 /// [IkkiuchiPlacingTuning.middleMargin] clear of them.
 ///
-/// A card sent as the match is decided goes in the middle of the other's
-/// 上段, [turned] ([sentLast]). A side that is full takes no other card
+/// A card sent as the match is decided lies on top of the other's side, in
+/// no row ([onTop], [sentLast]). A side that is full takes no other card
 /// ([receives]).
 class IkkiuchiSides {
   IkkiuchiSides(
       {required this.homes,
       required Iterable<int> tobi,
       required List<IkkiuchiRow> player,
-      Iterable<int> turned = const []})
+      Map<int, IkkiuchiSide> onTop = const {}})
       : tobiCards = Set.unmodifiable(tobi),
         player = List.unmodifiable(player),
-        turned = Set.unmodifiable(turned);
+        onTop = Map.unmodifiable(onTop);
 
   /// The start of a match: Tobi's own cards at their homes, and the
   /// player's side as laid out.
@@ -41,31 +41,29 @@ class IkkiuchiSides {
       : this(homes: homes, tobi: homes.own, player: player);
 
   final IkkiuchiHomes homes;
+
+  /// Tobi's cards, those [onTop] of his side too.
   final Set<int> tobiCards;
 
   /// The player's rows, 下段 first, each group from its outer edge in and
   /// the open middle left to right.
   final List<IkkiuchiRow> player;
 
-  /// The cards sent across as the match was decided, each lying turned
-  /// 180° from its side's own cards, as the sender slid it over.
-  final Set<int> turned;
+  /// The cards sent across as the match was decided, in the order sent,
+  /// each with the side it went to: in no row, they lie on top of it
+  /// ([IkkiuchiField.onTop]).
+  final Map<int, IkkiuchiSide> onTop;
 
-  /// Tobi's rows, 下段 first, each group from its outer edge in; his
-  /// [turned] cards in the open middle of his 上段, the others at their
-  /// homes.
-  late final List<IkkiuchiRow> tobi = () {
-    final rows = homes.sideWith(tobiCards.difference(turned));
-    final middle = [
-      for (final c in tobiCards)
-        if (turned.contains(c)) c,
-    ];
-    if (middle.isEmpty) return rows;
-    final top = rows.last;
-    return [...rows.take(rows.length - 1), IkkiuchiRow(top.left, top.right, middle: middle)];
-  }();
+  /// Tobi's rows, 下段 first, each group from its outer edge in: his cards
+  /// at their homes, but those [onTop].
+  late final List<IkkiuchiRow> tobi = homes.sideWith(tobiCards.where((c) => !onTop.containsKey(c)));
 
-  List<int> get playerCards => [for (final r in player) ...[...r.left, ...r.middle, ...r.right]];
+  /// The player's cards, those [onTop] of their side too.
+  List<int> get playerCards => [
+        for (final r in player) ...[...r.left, ...r.middle, ...r.right],
+        for (final MapEntry(key: card, value: side) in onTop.entries)
+          if (side == IkkiuchiSide.player) card,
+      ];
 
   /// Both sides as they lie now.
   IkkiuchiLaidField get field => IkkiuchiLaidField(opponent: tobi, player: player);
@@ -128,7 +126,7 @@ class IkkiuchiSides {
       homes: homes,
       tobi: tobiCards.where((c) => c != card),
       player: [for (final r in player) IkkiuchiRow(drop(r.left), drop(r.right), middle: drop(r.middle))],
-      turned: turned.where((c) => c != card),
+      onTop: {...onTop}..remove(card),
     );
   }
 
@@ -136,7 +134,7 @@ class IkkiuchiSides {
   /// home on his.
   IkkiuchiSides toTobi(int card) {
     final rest = without(card);
-    return IkkiuchiSides(homes: homes, tobi: {...rest.tobiCards, card}, player: rest.player, turned: rest.turned);
+    return IkkiuchiSides(homes: homes, tobi: {...rest.tobiCards, card}, player: rest.player, onTop: rest.onTop);
   }
 
   /// The narrowest a field may be, in card widths, for a card more to have
@@ -165,22 +163,14 @@ class IkkiuchiSides {
       : tobi.any((r) => r.length < IkkiuchiLayout.rowLimit(homes.rows));
 
   /// The sides once [card] was sent across as the match was decided: off
-  /// the side it lay on, and in the middle of the other's 上段 (the row by
-  /// the centre line), past the row's room, [turned] as the sender slid it
-  /// over. On the player's side it goes among the row's middle cards, in
-  /// the middle of them.
+  /// the side it lay on, and on top of the other's, after any sent so.
   IkkiuchiSides sentLast(int card) {
-    final rest = without(card), turned = {...rest.turned, card};
-    if (!tobiCards.contains(card)) {
-      return IkkiuchiSides(homes: homes, tobi: {...rest.tobiCards, card}, player: rest.player, turned: turned);
-    }
-    final rows = rest.player, top = rows.last;
-    final middle = [...top.middle]..insert(top.middle.length ~/ 2, card);
+    final rest = without(card), toTobi = !tobiCards.contains(card);
     return IkkiuchiSides(
       homes: homes,
-      tobi: rest.tobiCards,
-      player: [...rows.take(rows.length - 1), IkkiuchiRow(top.left, top.right, middle: middle)],
-      turned: turned,
+      tobi: toTobi ? {...rest.tobiCards, card} : rest.tobiCards,
+      player: rest.player,
+      onTop: {...rest.onTop, card: toTobi ? IkkiuchiSide.opponent : IkkiuchiSide.player},
     );
   }
 
@@ -224,7 +214,7 @@ class IkkiuchiSides {
           IkkiuchiRow(board.side.row(r).left, board.side.row(r).right.reversed.toList(),
               middle: board.side.row(r).middle),
       ],
-      turned: turned.where((c) => c != card),
+      onTop: {...onTop}..remove(card),
     );
   }
 }

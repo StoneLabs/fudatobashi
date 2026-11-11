@@ -1,7 +1,7 @@
 // 一騎打ち's board between the reads: the player's take of the called card
 // and their faults (お手つき), the 送り札 both ways (which card Tobi sends, his arm carrying it, where a
 // card sent to him goes, the player placing his on their side, and a card
-// sent as the match is decided going across on its own, turned), the
+// sent as the match is decided going across on its own, on top), the
 // open middle of the player's 上段, and the board laid out afresh as the
 // sides change.
 import 'dart:io';
@@ -19,7 +19,6 @@ import 'package:fudatobashi/domain/ikkiuchi_field.dart';
 import 'package:fudatobashi/domain/ikkiuchi_geometry.dart';
 import 'package:fudatobashi/domain/ikkiuchi_layout.dart';
 import 'package:fudatobashi/domain/ikkiuchi_read.dart';
-import 'package:fudatobashi/domain/ikkiuchi_record.dart';
 import 'package:fudatobashi/domain/ikkiuchi_rig.dart';
 import 'package:fudatobashi/domain/ikkiuchi_send.dart';
 import 'package:fudatobashi/domain/ikkiuchi_side.dart';
@@ -332,44 +331,53 @@ void main() {
       expect(his.without(cards.last).receives(IkkiuchiSide.opponent), isTrue);
     });
 
-    test("a card sent as the match is decided goes to the middle of the other's 上段, past its room, turned",
-        () {
-      final sides = dealt(9);
-      final p = sides.playerCards;
-      // Their 上段 full, two cards in its open middle.
-      final full = IkkiuchiSides(homes: sides.homes, tobi: sides.tobiCards, player: [
-        IkkiuchiRow(p.sublist(16, 20), p.sublist(20, 22)),
-        IkkiuchiRow(p.sublist(22, 24), [p[24]]),
-        IkkiuchiRow(p.sublist(0, 7), p.sublist(7, 14), middle: [p[14], p[15]]),
+    test("cards sent as the match is decided lie on top of the other's side, even a full one: in no row, side by "
+        'side over its 上段, turned', () {
+      // The player's rows at their limit, Tobi's last two cards to send.
+      final deal = dealt(4);
+      final cards = [...deal.playerCards, ...deal.tobiCards], cap = IkkiuchiLayout.rowLimit(3);
+      final full = IkkiuchiSides(homes: deal.homes, tobi: cards.sublist(3 * cap), player: [
+        for (var r = 0; r < 3; r++) IkkiuchiRow(cards.sublist(r * cap, r * cap + cap ~/ 2), cards.sublist(r * cap + cap ~/ 2, (r + 1) * cap)),
       ]);
-      expect(full.player.last.length, IkkiuchiLayout.rowLimit(3));
-      final his = sides.tobiCards.first;
-      final toPlayer = full.sentLast(his);
-      expect(toPlayer.player.last.middle, [p[14], his, p[15]], reason: 'among its middle cards, in the middle');
-      expect(toPlayer.player.last.length, IkkiuchiLayout.rowLimit(3) + 1, reason: 'past the row\'s room');
-      expect(toPlayer.tobiCards, isNot(contains(his)));
-      expect(toPlayer.turned, {his});
+      final [his, last] = cards.sublist(3 * cap);
+      final toPlayer = full.sentLast(his).sentLast(last);
+      expect(toPlayer.onTop, {his: IkkiuchiSide.player, last: IkkiuchiSide.player});
+      expect(toPlayer.onTop.keys, [his, last], reason: 'in the order sent');
+      expect([for (final r in toPlayer.player) r.length], [cap, cap, cap], reason: 'in no row');
+      expect(toPlayer.playerCards, containsAll([his, last]));
+      expect(toPlayer.tobiCards, isEmpty);
 
-      final mine = p[0];
+      ({double width, Map<int, CardBox> boxes}) laidOut(IkkiuchiSides sides) {
+        final field = IkkiuchiField(tobi: sides.tobi, player: sides.player, onTop: sides.onTop, keepRows: true);
+        final width = field.leastWidth();
+        expect(width, IkkiuchiField(tobi: sides.tobi, player: sides.player, keepRows: true).leastWidth(),
+            reason: 'they take no room');
+        final laid = field.layOut(width, gap: 1);
+        expect([for (final c in laid.skip(laid.length - sides.onTop.length)) c.id], sides.onTop.keys.toList(),
+            reason: 'laid last, over the rows');
+        return (width: width, boxes: {for (final c in laid) c.id: c.box});
+      }
+
+      final theirs = laidOut(toPlayer);
+      final (a, b) = (theirs.boxes[his]!, theirs.boxes[last]!);
+      final upper = theirs.boxes[toPlayer.player.last.left.first]!;
+      expect([a.centre.y, b.centre.y], [upper.centre.y, upper.centre.y], reason: 'over their 上段');
+      expect((a.centre.x + b.centre.x) / 2, closeTo(theirs.width / 2, 1e-9), reason: 'centred');
+      expect(b.centre.x - a.centre.x, closeTo(IkkiuchiField.pitch, 1e-9), reason: 'side by side, apart');
+      expect([a.angle, b.angle], [math.pi, math.pi], reason: "turned from the player's own cards, facing Tobi");
+
+      final mine = cards.first;
       final toTobi = full.sentLast(mine);
-      expect(toTobi.tobi.last.middle, [mine], reason: 'in the open middle of his 上段');
-      expect([for (final r in toTobi.tobi.take(2)) ...r.middle], isEmpty);
+      expect(toTobi.onTop, {mine: IkkiuchiSide.opponent});
+      expect([for (final r in toTobi.tobi) ...[...r.left, ...r.middle, ...r.right]], isNot(contains(mine)),
+          reason: 'in none of his rows');
       expect(toTobi.tobiCards, contains(mine));
-      expect(toTobi.field.spotOf(mine), const IkkiuchiSpot(IkkiuchiSide.opponent, FieldRow.upper, RowPart.middle, 0));
-
-      final field = IkkiuchiField(tobi: toTobi.tobi, player: toTobi.player, turned: toTobi.turned);
-      final laid = {for (final c in field.layOut(field.leastWidth(), gap: 1)) c.id: c};
-      expect(laid[mine]!.side, IkkiuchiSide.opponent);
-      expect(laid[mine]!.box.angle, 0, reason: "turned from his own cards, facing the player");
-      expect(laid[sides.tobiCards.first]!.box.angle, math.pi);
-      expect(laid[p[1]]!.box.angle, 0);
-      final theirs = IkkiuchiField(tobi: toPlayer.tobi, player: toPlayer.player, turned: toPlayer.turned);
-      expect(theirs.layOut(theirs.leastWidth(), gap: 1).firstWhere((c) => c.id == his).box.angle, math.pi,
-          reason: "turned from the player's cards, facing him");
-
-      final both = toTobi.sentLast(p[1]);
-      expect(both.tobi.last.middle.toSet(), {mine, p[1]}, reason: 'a second one beside the first');
-      expect(both.turned, {mine, p[1]});
+      final hisSide = laidOut(toTobi);
+      final box = hisSide.boxes[mine]!;
+      expect(box.centre.x, closeTo(hisSide.width / 2, 1e-9), reason: 'centred');
+      expect(box.centre.y, closeTo(2 * (IkkiuchiField.cardH + IkkiuchiFieldTuning.rowGap) + IkkiuchiField.cardH / 2, 1e-9),
+          reason: 'over his 上段, the third of his rows from the top');
+      expect(box.angle, 0, reason: 'turned from his own cards, facing the player');
     });
 
     test('in 2 rows a row takes at most 11 cards and in 1 row at most 8, however unevenly the rows lie', () {

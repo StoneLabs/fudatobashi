@@ -51,8 +51,8 @@ enum IkkiuchiStage {
 
   /// The read's take or faults decided the match, its 送り札 leaving a side
   /// empty: each card still to send goes across on its own, nobody placing
-  /// it, to the middle of the other's 上段, turned 180° from that side's
-  /// own cards as the sender slid it over
+  /// it, on top of the other's side over its 上段, turned 180° from that
+  /// side's own cards as the sender slid it over
   /// ([IkkiuchiMatchTuning.finalSendGlide]), and lies there a moment
   /// ([IkkiuchiMatchTuning.finalSendRest]).
   finalSend,

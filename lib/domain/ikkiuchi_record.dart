@@ -108,8 +108,7 @@ class IkkiuchiSpot {
 
 /// Both sides of the field as they lay, each as its owner sees it: its
 /// rows 下段 first, each group from its outer edge in and the open middle
-/// left to right (the opponent's open middles hold only the cards sent to
-/// him as the match was decided).
+/// left to right.
 class IkkiuchiLaidField {
   const IkkiuchiLaidField({required this.opponent, required this.player});
 
@@ -162,12 +161,13 @@ class IkkiuchiLaidField {
   }
 
   /// The field once [sent] went across: off the side it lay on, and laid at
-  /// its place on the other. Unchanged when the card lies on neither side.
+  /// its place on the other, or in no row for one on top of it. Unchanged
+  /// when the card lies on neither side.
   IkkiuchiLaidField withSent(IkkiuchiSent sent) {
     final from = spotOf(sent.card)?.side;
     if (from == null) return this;
-    final to = from == IkkiuchiSide.opponent ? IkkiuchiSide.player : IkkiuchiSide.opponent;
-    return without(sent.card).laidAt(sent.card, IkkiuchiSpot(to, sent.row, sent.part, sent.index));
+    final rest = without(sent.card), to = sent.on(from.other);
+    return to == null ? rest : rest.laidAt(sent.card, to);
   }
 
   /// The field with [card] laid at [spot] too, wherever else it lies; a
@@ -226,9 +226,11 @@ class IkkiuchiFault {
 }
 
 /// A 送り札: the card sent, and where it was laid on the side it went to:
-/// its row, the part of the row and its place there (as [IkkiuchiSpot]).
+/// its row, the part of the row and its place there (as [IkkiuchiSpot]);
+/// none for one sent as the match was decided ([IkkiuchiSent.onTop]),
+/// which lies on top of that side, in no row.
 class IkkiuchiSent {
-  const IkkiuchiSent(this.card, this.row, this.part, this.index);
+  const IkkiuchiSent(this.card, FieldRow this.row, RowPart this.part, int this.index);
 
   /// [card] laid at [spot].
   IkkiuchiSent.at(this.card, IkkiuchiSpot spot)
@@ -236,21 +238,37 @@ class IkkiuchiSent {
         part = spot.part,
         index = spot.index;
 
+  /// [card] sent as the match was decided.
+  const IkkiuchiSent.onTop(this.card)
+      : row = null,
+        part = null,
+        index = null;
+
   /// A 送り札 stored by [toJson].
   factory IkkiuchiSent.fromJson(List<dynamic> json) => switch (json) {
         [final int card, final int row, final String part, final int index] =>
           IkkiuchiSent(card, FieldRow.values[row], RowPart.values.byName(part), index),
+        [final int card] => IkkiuchiSent.onTop(card),
         _ => throw FormatException('Not a 送り札: $json'),
       };
 
   final int card;
-  final FieldRow row;
-  final RowPart part;
-  final int index;
+  final FieldRow? row;
+  final RowPart? part;
+  final int? index;
 
-  /// The 送り札 as JSON: the card, the row (0 is 下段), the part and the
-  /// place in it.
-  List<Object> toJson() => [card, row.index, part.name, index];
+  /// Where it was laid on [side], the side it went to; null on top of it.
+  IkkiuchiSpot? on(IkkiuchiSide side) => switch ((row, part, index)) {
+        (final FieldRow row, final RowPart part, final int index) => IkkiuchiSpot(side, row, part, index),
+        _ => null,
+      };
+
+  /// The 送り札 as JSON: the card, then the row (0 is 下段), the part and
+  /// the place in it, if it was laid in one.
+  List<Object> toJson() => switch ((row, part, index)) {
+        (final FieldRow row, final RowPart part, final int index) => [card, row.index, part.name, index],
+        _ => [card],
+      };
 }
 
 /// One read of a match, once it has ended: the card read ([poemId]), the

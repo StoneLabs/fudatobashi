@@ -151,8 +151,8 @@ void main() {
     expect(review.touchesOf(reads[2]), [(by: opponent, card: 12, at: ms(900), fault: true, lookAlike: false)],
         reason: 'a からふだ: only the faults');
 
-    expect(review.sentAfter(reads[2]), [(card: 10, to: const IkkiuchiSpot(opponent, FieldRow.lower, RowPart.left, 0))]);
-    expect(review.sentAfter(reads[4]), [(card: 3, to: const IkkiuchiSpot(player, FieldRow.middle, RowPart.left, 0))]);
+    expect(review.sentAfter(reads[2]), [(card: 10, side: opponent, to: const IkkiuchiSpot(opponent, FieldRow.lower, RowPart.left, 0))]);
+    expect(review.sentAfter(reads[4]), [(card: 3, side: player, to: const IkkiuchiSpot(player, FieldRow.middle, RowPart.left, 0))]);
     expect(review.sentAfter(reads[0]), isEmpty);
     expect(review.fieldAfter(reads[2]).toJson(), reads[3].field.toJson(), reason: 'the next read\'s field');
     expect(review.fieldAfter(reads[4]).toJson(), {

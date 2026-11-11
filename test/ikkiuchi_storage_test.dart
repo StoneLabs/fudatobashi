@@ -175,6 +175,15 @@ void main() {
     expect(field.without(12).cardsOf(opponent), [5]);
   });
 
+  test('a 送り札 sent as the match was decided is stored as its card alone, and lies in no row of the other side', () {
+    final last = IkkiuchiSent.fromJson(const [56]);
+    expect(last.toJson(), [56]);
+    expect(last.on(opponent), isNull);
+    final sent = field.withSent(last);
+    expect(sent.spotOf(56), isNull);
+    expect(sent.toJson(), field.without(56).toJson());
+  });
+
   test('the reads of each match come back with their own match, in order', () async {
     final db = AppDatabase(NativeDatabase.memory());
     final p = await Progress.open(db);

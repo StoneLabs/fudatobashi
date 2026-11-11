@@ -54,7 +54,7 @@ class IkkiuchiBoardLayout {
 
   /// [tobiRows] and [playerRows] are each side's rows as its owner sees
   /// them, 下段 first, each group from its outer edge in and the open middle
-  /// left to right; the [turned] cards lie turned from their side's own.
+  /// left to right; the [onTop] cards lie on top of their side.
   /// With [opening] the player's stack is laid out too. With [scale], the
   /// width the cards started at, they are no wider, and narrower only where
   /// the field would not fit otherwise, at least [need] card widths wide.
@@ -64,7 +64,7 @@ class IkkiuchiBoardLayout {
     required List<IkkiuchiRow> tobiRows,
     required List<IkkiuchiRow> playerRows,
     required TobiRig rig,
-    Set<int> turned = const {},
+    Map<int, IkkiuchiSide> onTop = const {},
     bool opening = false,
     double? scale,
     double need = 0,
@@ -73,7 +73,7 @@ class IkkiuchiBoardLayout {
       tobi: tobiRows,
       player: playerRows,
       rowGap: landscape ? IkkiuchiFieldTuning.landscapeRowGap : IkkiuchiFieldTuning.rowGap,
-      turned: turned,
+      onTop: onTop,
       keepRows: true,
     );
     const pad = IkkiuchiBoardStyle.pad;
@@ -283,14 +283,14 @@ class IkkiuchiBoardLayout {
   final double _fieldW;
   final Vec _origin;
 
-  /// The board laid out afresh with these sides, the [turned] cards turned,
+  /// The board laid out afresh with these sides, the [onTop] cards on top,
   /// by the same rules on the same board, its cards no bigger than they
   /// started and the field at least [need] card widths wide, for the
   /// opening while [opening] says so, else as it was.
   IkkiuchiBoardLayout withSides(
           {required List<IkkiuchiRow> tobiRows,
           required List<IkkiuchiRow> playerRows,
-          Set<int> turned = const {},
+          Map<int, IkkiuchiSide> onTop = const {},
           bool? opening,
           double need = 0}) =>
       IkkiuchiBoardLayout.of(
@@ -299,7 +299,7 @@ class IkkiuchiBoardLayout {
         tobiRows: tobiRows,
         playerRows: playerRows,
         rig: tobi.rig,
-        turned: turned,
+        onTop: onTop,
         opening: opening ?? stack != null,
         scale: startW,
         need: need,

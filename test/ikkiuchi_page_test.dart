@@ -14,8 +14,8 @@
 // before, nor free play left midway, nor a guest's; a ranked match left
 // after its first read is a loss, journalled from that read and again
 // after every read. A read that decides the match with a 送り札 due sends
-// it on its own, nobody placing it, to the middle of the other's 上段,
-// turned; it is stored as any 送り札, and History's 盤面 shows it there.
+// it on its own, nobody placing it, on top of the other's side, in no row,
+// turned; it is stored with no place, and History's 盤面 shows it there.
 //
 // With RENDER_SCREENS=1 it also renders the page in its states (as mock
 // D's frames), the curve's popup, the bots' page, the custom page, the
@@ -59,7 +59,6 @@ import 'package:fudatobashi/state/ikkiuchi_journal.dart';
 import 'package:fudatobashi/state/progress.dart';
 import 'package:fudatobashi/state/scope.dart';
 import 'package:fudatobashi/domain/field_parts.dart';
-import 'package:fudatobashi/domain/ikkiuchi_geometry.dart';
 import 'package:fudatobashi/domain/ikkiuchi_layout.dart';
 import 'package:fudatobashi/domain/ikkiuchi_review.dart';
 import 'package:fudatobashi/domain/ikkiuchi_send.dart';
@@ -1372,45 +1371,28 @@ void main() {
       return seen;
     }
 
-    /// [card] lies in the middle of the room the [others] in its row leave
-    /// it between [left] and [right]: clear of them, as far from each side.
-    void expectMidRow(Rect card, Iterable<Rect> others, {required double left, required double right}) {
-      final row = [
-        for (final o in others)
-          if ((o.center.dy - card.center.dy).abs() < 1) o,
-      ];
-      final from = [left, for (final o in row) if (o.center.dx < card.center.dx) o.right].reduce(math.max);
-      final to = [right, for (final o in row) if (o.center.dx > card.center.dx) o.left].reduce(math.min);
-      final (l, r) = (card.left - from, to - card.right);
-      expect(l, greaterThan(0), reason: "clear of the row's cards");
-      expect(r, greaterThan(0));
-      expect((l - r).abs(), lessThan(0.2 * card.width), reason: 'in the middle of the room between them');
-    }
-
-    /// The card that went across on its own lies at its place: in the middle
-    /// of [to]'s 上段, its edge on the gap between the sides, centred between
-    /// the row's other cards, and turned 180° from [to]'s own cards.
+    /// The card that went across on its own lies on top of [to]'s side, in
+    /// no row: over the middle of its 上段, its edge on the gap between the
+    /// sides, and turned 180° from [to]'s own cards.
     void expectLanded(IkkiuchiMatchFlow flow, int card, IkkiuchiSide to) {
       final scene = flow.scene, sides = scene.sides!;
-      final top = to == IkkiuchiSide.player ? sides.player.last : sides.tobi.last;
-      expect(top.middle, [card], reason: 'in the middle of the 上段');
-      expect(sides.turned, {card});
+      expect(sides.onTop, {card: to});
+      final rows = to == IkkiuchiSide.player ? sides.player : sides.tobi;
+      expect([for (final r in rows) ...[...r.left, ...r.middle, ...r.right]], isNot(contains(card)), reason: 'in no row');
       final box = scene.board.cards.card(card).box, band = scene.layout.band;
       if (to == IkkiuchiSide.player) {
         expect(box.centre.y - box.hh, closeTo(band.bottom, 0.5), reason: 'the row by the centre line');
       } else {
         expect(box.centre.y + box.hh, closeTo(band.top, 0.5), reason: 'the row by the centre line');
       }
-      Rect rect(CardBox b) => Rect.fromCenter(center: Offset(b.centre.x, b.centre.y), width: 2 * b.hw, height: 2 * b.hh);
-      expectMidRow(rect(box), [for (final c in scene.board.cards.cards) if (c.id != card) rect(c.box)],
-          left: scene.field.left, right: scene.field.right);
+      expect(box.centre.x, closeTo(scene.field.center.dx, 0.5), reason: 'over its middle');
       final own = to == IkkiuchiSide.player ? 0.0 : math.pi;
       expect(math.cos(box.angle - own), closeTo(-1, 1e-6), reason: 'turned from their own, as slid over');
     }
 
     /// History's 盤面 of the match, opened as History opens it and stepped
     /// to its last read: [card] on the side it left, and dashed where it
-    /// went, in the middle of [to]'s row by the band; rendered as [name].
+    /// went, on top of [to]'s row by the band; rendered as [name].
     Future<void> expectReplayed(WidgetTester tester, Progress p, int card, IkkiuchiSide to, String name) async {
       useScreen(tester, const Screen('384 tall', Size(384, 1300), 2.8125));
       tester.platformDispatcher.accessibilityFeaturesTestValue = const FakeAccessibilityFeatures(disableAnimations: true);
@@ -1450,23 +1432,23 @@ void main() {
       } else {
         expect(at.center.dy, inExclusiveRange(band.bottom, band.bottom + cardH), reason: "the player's row by the band");
       }
-      const pad = IkkiuchiHistoryStyle.fieldPadding;
-      expectMidRow(at, cards, left: band.left + pad, right: band.right - pad);
+      expect(at.center.dx, closeTo(band.center.dx, 0.5), reason: 'over its middle');
       await captureScreen(tester, 'ikkiuchi_page/$name', lang: 'ja');
     }
 
-    /// The match recorded, its last read with [card] sent after it to the
-    /// middle of [to]'s 上段, as any 送り札 is stored.
+    /// The match recorded, its last read with [card] sent after it on top of
+    /// [to]'s side.
     Future<void> expectStored(WidgetTester tester, Progress p, int card, IkkiuchiSide to) async {
       await saved(tester, screen(tester).saving);
       final match = p.ikkiuchi.matches.single;
       final last = match.reads.last;
-      final spot = IkkiuchiSpot(to, FieldRow.values[setup.rows - 1], RowPart.middle, 0);
-      expect([for (final s in last.sends) (s.card, s.row, s.part, s.index)], [(card, spot.row, spot.part, spot.index)]);
-      expect(IkkiuchiReview(match, p.ikkiuchi.matches).sentAfter(last), [(card: card, to: spot)]);
+      expect([for (final s in last.sends) s.toJson()], [
+        [card]
+      ]);
+      expect(IkkiuchiReview(match, p.ikkiuchi.matches).sentAfter(last), [(card: card, side: to, to: null)]);
     }
 
-    testWidgets("a take that empties the player's side: their last card goes to Tobi's 上段 on its own",
+    testWidgets("a take that empties the player's side: their last card goes on top of Tobi's side on its own",
         (tester) async {
       final p = await open(tester, lang: 'ja');
       // The deal whose first read of a card is one of Tobi's, the player's
@@ -1514,7 +1496,7 @@ void main() {
       await tester.pumpWidget(const SizedBox());
     });
 
-    testWidgets("a fault that empties Tobi's side: his last card goes to the player's 上段 on its own",
+    testWidgets("a fault that empties Tobi's side: his last card goes on top of the player's side on its own",
         (tester) async {
       final p = await open(tester, lang: 'ja');
       final flow = await laidOut(tester, p, 3);

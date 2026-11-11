@@ -18,9 +18,10 @@ enum IkkiuchiCardEnd { player, opponent, tied, left }
 /// card touched is a look-alike (友札) of the card read.
 typedef IkkiuchiTouch = ({IkkiuchiSide by, int card, Duration at, bool fault, bool lookAlike});
 
-/// A 送り札 as the replay shows it: the card, and the side and place it
-/// was laid on.
-typedef IkkiuchiSentTo = ({int card, IkkiuchiSpot to});
+/// A 送り札 as the replay shows it: the card, the side it went to, and the
+/// place it was laid on there, null for one on top of it
+/// ([IkkiuchiSent.onTop]).
+typedef IkkiuchiSentTo = ({int card, IkkiuchiSide side, IkkiuchiSpot? to});
 
 /// How the field cards read in one part of the field went: those read
 /// while lying there, and those the player took.
@@ -146,8 +147,7 @@ class IkkiuchiReview {
     for (final s in read.sends) {
       final from = field.spotOf(s.card)?.side;
       if (from == null) continue;
-      final to = from == IkkiuchiSide.player ? IkkiuchiSide.opponent : IkkiuchiSide.player;
-      sent.add((card: s.card, to: IkkiuchiSpot(to, s.row, s.part, s.index)));
+      sent.add((card: s.card, side: from.other, to: s.on(from.other)));
       field = field.withSent(s);
     }
     return sent;

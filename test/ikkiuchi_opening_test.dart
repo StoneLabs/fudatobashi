@@ -474,11 +474,10 @@ void main() {
   // touching both sides on each. They send Tobi a card when the rules ask,
   // and place each card he sends at the first free spot the field shows,
   // checking that it shows a spot in every row the rules give one and that
-  // no cards overlap, and that a send
-  // is left out only when the side it was for is full. Gives the most
-  // cards they held, the most a row of theirs held before the match was
-  // decided, how many of his cards went on without waiting for them, and
-  // how many sends were left out.
+  // no cards overlap, and that a send is left out only when the side it was
+  // for is full. Gives the most cards they held, the most a row of theirs
+  // held, how many of his cards went on without waiting for them, and how
+  // many sends were left out.
   ({int held, int row, int unplaced, int noSend}) faultEveryRead(IkkiuchiMatchFlow flow, {int karafuda = 0}) {
     final scene = flow.scene, send = scene.send, rating = flow.rating;
     var held = 0, row = 0, unplaced = 0, noSend = 0;
@@ -532,7 +531,7 @@ void main() {
         expectApart(scene, '$why, placed');
       }
       held = math.max(held, scene.sides!.playerCards.length);
-      if (!flow.tally.decided) row = math.max(row, scene.sides!.player.map((r) => r.length).reduce(math.max));
+      row = math.max(row, scene.sides!.player.map((r) => r.length).reduce(math.max));
     }
     expect(flow.stage.over, isTrue,
         reason: 'the match never hangs: held in ${flow.stage}, ${send.stage}, '

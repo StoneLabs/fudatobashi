@@ -128,7 +128,8 @@ String _endName(S s, IkkiuchiCardEnd end) => switch (end) {
     };
 
 /// The field shown for a read: both sides as it began, and each 送り札
-/// made after it laid where it went too, beside the card itself.
+/// made after it laid where it went too, beside the card itself, or on top
+/// of that side as in the match ([IkkiuchiField.onTop]).
 class _StepField {
   _StepField._(this.sent, this.layout);
 
@@ -139,15 +140,28 @@ class _StepField {
 
   factory _StepField.of(IkkiuchiReview review, IkkiuchiReadLog read) {
     final sent = review.sentAfter(read);
-    final field = sent.fold(read.field, (field, s) => field.laidAt(s.card, s.to));
-    return _StepField._(sent, IkkiuchiField(tobi: field.opponent, player: field.player, keepRows: true));
+    final field = sent.fold(read.field, (field, s) => switch (s.to) {
+          final to? => field.laidAt(s.card, to),
+          null => field,
+        });
+    return _StepField._(
+        sent,
+        IkkiuchiField(
+          tobi: field.opponent,
+          player: field.player,
+          onTop: {
+            for (final s in sent)
+              if (s.to == null) s.card: s.side,
+          },
+          keepRows: true,
+        ));
   }
 
   final List<IkkiuchiSentTo> sent;
   final IkkiuchiField layout;
 
   /// Whether the card [id] laid on [side] is where a 送り札 went.
-  bool goneTo(int id, IkkiuchiSide side) => sent.any((s) => s.card == id && s.to.side == side);
+  bool goneTo(int id, IkkiuchiSide side) => sent.any((s) => s.card == id && s.side == side);
 }
 
 /// The field on the review's ground, Tobi's side above the band and the
@@ -378,7 +392,7 @@ class _StepBox extends StatelessWidget {
   /// them, or none.
   static String _sent(BuildContext context, S s, List<IkkiuchiSentTo> sent) {
     String names(IkkiuchiSide to) =>
-        [for (final c in sent) if (c.to.side == to) kimarijiFor(context, c.card)].join(s.ikkiuchiNamesJoin);
+        [for (final c in sent) if (c.side == to) kimarijiFor(context, c.card)].join(s.ikkiuchiNamesJoin);
     final toTobi = names(IkkiuchiSide.opponent), fromTobi = names(IkkiuchiSide.player);
     final parts = [
       if (toTobi.isNotEmpty) s.ikkiuchiSentTo(toTobi),

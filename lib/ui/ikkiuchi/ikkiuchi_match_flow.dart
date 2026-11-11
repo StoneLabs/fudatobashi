@@ -538,13 +538,14 @@ class IkkiuchiMatchFlow extends ChangeNotifier {
   bool _has(IkkiuchiSide side) =>
       side == IkkiuchiSide.player ? scene.sides!.playerCards.isNotEmpty : scene.sides!.tobiCards.isNotEmpty;
 
-  /// [card] was sent: noted on the last read where the sides now hold it.
-  /// One sent before the first read is only part of the field that read is
-  /// played on.
+  /// [card] was sent: noted on the last read where the sides now hold it,
+  /// or as on top of one. One sent before the first read is only part of
+  /// the field that read is played on.
   void _noteSent(int card) {
-    final last = _reads.lastOrNull, spot = scene.sides!.field.spotOf(card);
-    if (last == null || spot == null) return;
-    _reads.last = last.withSent(IkkiuchiSent.at(card, spot));
+    final last = _reads.lastOrNull, sides = scene.sides!;
+    if (last == null) return;
+    _reads.last = last.withSent(
+        sides.onTop.containsKey(card) ? IkkiuchiSent.onTop(card) : IkkiuchiSent.at(card, sides.field.spotOf(card)!));
     _logChanges++;
     notifyListeners();
   }
@@ -573,7 +574,7 @@ class IkkiuchiMatchFlow extends ChangeNotifier {
   }
 
   /// A card of [from]'s goes across on its own as the read decided the
-  /// match, gliding to the middle of the other's 上段, turned as slid over
+  /// match, gliding on top of the other's side, turned as slid over
   /// ([IkkiuchiSides.sentLast]), and lies there a moment; noted as sent on
   /// the read.
   void _sendLast(IkkiuchiSide from) {
