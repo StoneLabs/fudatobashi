@@ -14,17 +14,16 @@ import '../../domain/ikkiuchi_side.dart';
 
 /// Where everything lies on the 一騎打ち board of [size]: the full field
 /// ([IkkiuchiField]), Tobi's side across the band at the top, every row
-/// either side has shown, empty or not. The field is laid out as a 3-row
-/// match's whatever its rows, [fieldWidth] 3-row card widths across; in 1
-/// or 2 rows its cards are bigger, [growth] times a 3-row card. Both
-/// sides' cards are one size, a 3-row card never wider than
-/// [IkkiuchiBoardStyle.maxCardW].
+/// either side has shown, empty or not. Both sides' cards are one size, a
+/// 3-row card never wider than [IkkiuchiBoardStyle.maxCardW], in 1 or 2
+/// rows [growth] times that.
 ///
-/// In landscape the field is the biggest that fits between the pad and
-/// the game [column], which runs down the board's right edge, and the
-/// board's full height, centred there; it keeps a 3-row field's height
-/// too, the rows lying by the gap between the sides and the height left
-/// over at its outer edges. Its size depends on the board alone, so it
+/// In landscape the field is laid out as a 3-row match's whatever its
+/// rows, [fieldWidth] 3-row card widths across, the biggest that fits
+/// between the pad and the game [column], which runs down the board's
+/// right edge, and the board's full height, centred there; it keeps a
+/// 3-row field's height too, the rows lying by the gap between the sides
+/// and the height left over at its outer edges. Its size depends on the board alone, so it
 /// never changes in the match. Tobi sits in the open middle of his half,
 /// over his cards where his rows near full.
 ///
