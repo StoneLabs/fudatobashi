@@ -4,6 +4,7 @@ import '../../config/config.dart';
 import '../../config/design.dart';
 import '../../config/vector_art.dart';
 import '../../domain/ikkiuchi_match.dart';
+import '../../domain/ikkiuchi_side.dart';
 import '../../l10n/ikkiuchi_strings.dart';
 import '../../l10n/strings.dart';
 import 'ikkiuchi_board_scene.dart';
@@ -51,11 +52,15 @@ class IkkiuchiCallLayer extends StatelessWidget {
       );
 
   /// What to do instead of the call: send a card, place Tobi's, or move
-  /// one's own; or the memory time left, while placing too.
+  /// one's own; the memory time left, while placing too; or whose side is
+  /// full as a 送り札 is not made.
   ({String title, String line})? _prompt(S s) {
     if (scene.arrange.active) return (title: s.ikkiuchiArranging, line: s.ikkiuchiArrangeHint);
     if (flow case final flow? when flow.stage == IkkiuchiStage.placing || flow.stage == IkkiuchiStage.memoryTime) {
       return (title: s.ikkiuchiMemoryTime, line: s.ikkiuchiTimeLeft(ikkiuchiClock(flow.left)));
+    }
+    if (flow?.fullSide case final full?) {
+      return (title: s.ikkiuchiNoSend, line: full == IkkiuchiSide.player ? s.ikkiuchiYourSideFull : s.ikkiuchiTobiSideFull);
     }
     return switch (scene.send.stage) {
       IkkiuchiSendStage.none => null,

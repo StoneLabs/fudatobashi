@@ -29,12 +29,10 @@ enum IkkiuchiSendStage { none, sending, placing, carrying, waiting }
 /// Tobi sends: he picks one of his cards ([IkkiuchiSides.tobiSends], at his
 /// rating's smart send), his arm takes it off his side, turns it to face
 /// the player and sets it down at the waiting spot, and he points at it.
-/// His side closes up, and the field zooms out, where it must, until the
-/// card has room at every free spot on the player's side; the player
-/// places it by the placing's rules ([IkkiuchiSides.placed]): a tap on a free spot or a card, or a
-/// drag there. Placing it ends the 送り札. With every row of the player's
-/// at its most it does not wait: it goes there past a row's room
-/// ([IkkiuchiSides.squeezedIn]).
+/// His side closes up, and the player places it by the placing's rules
+/// ([IkkiuchiSides.placed]): a tap on a free spot or a card, or a drag
+/// there. Placing it ends the 送り札. Neither side sends to a side that is
+/// full (`IkkiuchiMatchFlow`), so the card always has a spot.
 ///
 /// Every change of the sides lays the board out afresh ([IkkiuchiBoardScene.relayout]),
 /// and each card that goes to the other side is told to [onSent].
@@ -120,16 +118,9 @@ class IkkiuchiSendFlow {
     if (id == null || sides == null) return;
     if (_stage == IkkiuchiSendStage.placing) return _layDown(id);
     if (_stage != IkkiuchiSendStage.carrying || scene.board.carrying) return;
-    final rest = sides.without(id);
-    if (rest.playerRoomForOne == null) {
-      _giveToPlayer(id);
-      _stage = IkkiuchiSendStage.none;
-      _card = null;
-      return;
-    }
     _stage = IkkiuchiSendStage.waiting;
     scene.board.heldFace = TobiFace.pointing;
-    scene.relayout(rest, roomForOne: true);
+    scene.relayout(sides.without(id));
   }
 
   /// Once his side has made room for card [id] the player sent, his arm
@@ -164,9 +155,7 @@ class IkkiuchiSendFlow {
   /// the player lifted glides back; the card they sent lies at its home on
   /// his side, his arm still; the card he sends, in his hand or waiting,
   /// goes to the first free spot on the player's side (which counts it
-  /// theirs from his pick, [IkkiuchiBoardScene.cardsLeft]), the field
-  /// zooming out where it must, or past a row's room with every row at its
-  /// most ([IkkiuchiSides.squeezedIn]).
+  /// theirs from his pick, [IkkiuchiBoardScene.cardsLeft]).
   void cancel() {
     final board = scene.board;
     switch (_stage) {
@@ -199,8 +188,7 @@ class IkkiuchiSendFlow {
         (_stage == IkkiuchiSendStage.carrying
             ? board.cards.card(id).box
             : CardBox(Vec(wait.center.dx, wait.center.dy), wait.width / 2, wait.height / 2));
-    final spot = sides.playerBoard.freeSpots.firstOrNull;
-    final next = spot == null ? sides.squeezedIn(id) : sides.placed(id, spot)!;
+    final next = sides.placed(id, sides.playerBoard.freeSpots.first)!;
     board.heldFace = null;
     scene.relayout(next, from: {id: from});
     onSent?.call(id);

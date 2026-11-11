@@ -500,7 +500,8 @@ abstract final class IkkiuchiReaderTuning {
 /// ([breakAfterShimonoku]); and its からふだ, `karafuda` for every `field`
 /// cards on the field. A card sent as the match is decided glides across
 /// on its own over [finalSendGlide] and lies there [finalSendRest] before
-/// the next or the players' thanks. 終了 ends the match once held [endHold]
+/// the next or the players' thanks. A 送り札 a full side does not take
+/// says so for [noSend]. 終了 ends the match once held [endHold]
 /// (`IkkiuchiMatchColumn`). Once it is over the players thank each other
 /// ([thanks]), and its result shows for [result] at most. The match runs
 /// on frame by frame, by [longestStep] at most at once. Tobi lays out his
@@ -522,6 +523,7 @@ abstract final class IkkiuchiMatchTuning {
   static const ({int karafuda, int field}) karafuda = (karafuda: 10, field: 25);
   static const Duration finalSendGlide = Duration(milliseconds: 700);
   static const Duration finalSendRest = Duration(milliseconds: 600);
+  static const Duration noSend = Duration(seconds: 2);
   static const Duration endHold = Duration(milliseconds: 1200);
   static const Duration thanks = Duration(milliseconds: 2600);
   static const Duration result = Duration(seconds: 6);

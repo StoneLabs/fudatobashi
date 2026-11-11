@@ -21,6 +21,12 @@ extension IkkiuchiStrings on S {
   /// What goes on while Tobi lays the card the player sent him.
   String get ikkiuchiTobiPlaces => t('ikkiuchiTobiPlaces');
 
+  /// The call's place as a 送り札 is not made: its title, and whose side
+  /// is full.
+  String get ikkiuchiNoSend => t('ikkiuchiNoSend');
+  String get ikkiuchiYourSideFull => t('ikkiuchiYourSideFull');
+  String get ikkiuchiTobiSideFull => t('ikkiuchiTobiSideFull');
+
   /// The memory time before play, and the time left of it, [clock] as m:ss.
   String get ikkiuchiMemoryTime => t('ikkiuchiMemoryTime');
   String ikkiuchiTimeLeft(String clock) => f('ikkiuchiTimeLeft', [clock]);

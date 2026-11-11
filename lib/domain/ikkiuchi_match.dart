@@ -44,6 +44,11 @@ enum IkkiuchiStage {
   /// Tobi's arm brings the player a card of his, and they place it.
   receivingCard,
 
+  /// A 送り札 is due to a side that is full ([IkkiuchiSides.receives]): the
+  /// card stays where it lies, the call's place says so for
+  /// [IkkiuchiMatchTuning.noSend], and the 送り札 go on.
+  noSend,
+
   /// The read's take or faults decided the match, its 送り札 leaving a side
   /// empty: each card still to send goes across on its own, nobody placing
   /// it, to the middle of the other's 上段, turned 180° from that side's
@@ -109,8 +114,9 @@ enum IkkiuchiStage {
   /// reading the 下の句 from its start.
   bool get stopsForMoving => this == waitBeforeShimonoku || this == shimonoku;
 
-  /// Whether a card changes sides now (送り札).
-  bool get sending => this == sendingCard || this == tobiPlacingCard || this == receivingCard;
+  /// Whether a 送り札 is under way: a card changing sides, or one a full
+  /// side does not take.
+  bool get sending => this == sendingCard || this == tobiPlacingCard || this == receivingCard || this == noSend;
 }
 
 /// A step from one stage to another, and what makes it.
@@ -138,25 +144,36 @@ abstract final class IkkiuchiSteps {
     (from: IkkiuchiStage.feedback, to: IkkiuchiStage.waitingForGo, why: 'time up, no send (debug hold)'),
     (from: IkkiuchiStage.feedback, to: IkkiuchiStage.waitBeforeShimonoku, why: 'time up, no send'),
     (from: IkkiuchiStage.feedback, to: IkkiuchiStage.finalSend, why: 'time up, nothing taken, the sends decide'),
+    (from: IkkiuchiStage.feedback, to: IkkiuchiStage.noSend, why: 'time up, nothing taken, a send to a full side'),
     (from: IkkiuchiStage.closingUp, to: IkkiuchiStage.sendingCard, why: 'closed up, player sends'),
     (from: IkkiuchiStage.closingUp, to: IkkiuchiStage.receivingCard, why: 'closed up, Tobi sends'),
     (from: IkkiuchiStage.closingUp, to: IkkiuchiStage.waitingForGo, why: 'closed up (debug hold)'),
     (from: IkkiuchiStage.closingUp, to: IkkiuchiStage.waitBeforeShimonoku, why: 'closed up'),
     (from: IkkiuchiStage.closingUp, to: IkkiuchiStage.gameEnd, why: 'a side empty'),
     (from: IkkiuchiStage.closingUp, to: IkkiuchiStage.finalSend, why: 'closed up, the sends decide'),
+    (from: IkkiuchiStage.closingUp, to: IkkiuchiStage.noSend, why: 'closed up, a send to a full side'),
     (from: IkkiuchiStage.sendingCard, to: IkkiuchiStage.tobiPlacingCard, why: 'card let go on his side'),
     (from: IkkiuchiStage.tobiPlacingCard, to: IkkiuchiStage.sendingCard, why: 'laid down, another to send'),
     (from: IkkiuchiStage.tobiPlacingCard, to: IkkiuchiStage.receivingCard, why: 'laid down, Tobi sends'),
     (from: IkkiuchiStage.tobiPlacingCard, to: IkkiuchiStage.waitingForGo, why: 'laid down (debug hold)'),
     (from: IkkiuchiStage.tobiPlacingCard, to: IkkiuchiStage.waitBeforeShimonoku, why: 'laid down'),
     (from: IkkiuchiStage.tobiPlacingCard, to: IkkiuchiStage.gameEnd, why: 'a side empty by a 送り札 by hand'),
+    (from: IkkiuchiStage.tobiPlacingCard, to: IkkiuchiStage.noSend, why: 'laid down, the next to a full side'),
     (from: IkkiuchiStage.receivingCard, to: IkkiuchiStage.receivingCard, why: 'placed, another to receive'),
     (from: IkkiuchiStage.receivingCard, to: IkkiuchiStage.sendingCard, why: 'placed, player sends'),
     (from: IkkiuchiStage.receivingCard, to: IkkiuchiStage.waitingForGo, why: 'placed (debug hold)'),
     (from: IkkiuchiStage.receivingCard, to: IkkiuchiStage.waitBeforeShimonoku, why: 'placed'),
     (from: IkkiuchiStage.receivingCard, to: IkkiuchiStage.gameEnd, why: 'a side empty by a 送り札 by hand'),
+    (from: IkkiuchiStage.receivingCard, to: IkkiuchiStage.noSend, why: 'placed, the next to a full side'),
     (from: IkkiuchiStage.finalSend, to: IkkiuchiStage.finalSend, why: 'landed, another to send'),
     (from: IkkiuchiStage.finalSend, to: IkkiuchiStage.gameEnd, why: 'landed, the last'),
+    (from: IkkiuchiStage.finalSend, to: IkkiuchiStage.noSend, why: 'landed, the next to a full side'),
+    (from: IkkiuchiStage.noSend, to: IkkiuchiStage.noSend, why: 'time up, the next to a full side too'),
+    (from: IkkiuchiStage.noSend, to: IkkiuchiStage.sendingCard, why: 'time up, player sends'),
+    (from: IkkiuchiStage.noSend, to: IkkiuchiStage.receivingCard, why: 'time up, Tobi sends'),
+    (from: IkkiuchiStage.noSend, to: IkkiuchiStage.finalSend, why: 'time up, the next decides'),
+    (from: IkkiuchiStage.noSend, to: IkkiuchiStage.waitingForGo, why: 'time up (debug hold)'),
+    (from: IkkiuchiStage.noSend, to: IkkiuchiStage.waitBeforeShimonoku, why: 'time up'),
     (from: IkkiuchiStage.waitingForGo, to: IkkiuchiStage.waitBeforeShimonoku, why: '次 (debug)'),
     (from: IkkiuchiStage.waitBeforeShimonoku, to: IkkiuchiStage.shimonoku, why: 'time up'),
     (from: IkkiuchiStage.waitBeforeShimonoku, to: IkkiuchiStage.movingCard, why: '並べ替え, the wait stopped'),

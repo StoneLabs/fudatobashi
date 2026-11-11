@@ -53,7 +53,8 @@ class IkkiuchiMatchWords {
 /// ended shows ([feedback]), then the card taken leaves its side and the
 /// cards close up, and the 送り札 the read leaves ([IkkiuchiReadEnd]) are
 /// made, one by one; those of a read that decided the match go across on
-/// their own, nobody placing them ([IkkiuchiStage.finalSend]). Then a
+/// their own, nobody placing them ([IkkiuchiStage.finalSend]). One due to
+/// a full side is not made ([IkkiuchiStage.noSend]). Then a
 /// moment passes, the 下の句 is read, another moment passes, and the next
 /// card is read. A side left empty ends the match, as does the player at
 /// any time ([end]); the kimariji voice stops with it, or with the flow's
@@ -153,7 +154,8 @@ class IkkiuchiMatchFlow extends ChangeNotifier {
       : IkkiuchiResult.of(completed: !_endedByPlayer, playerLeft: _tally.player, opponentLeft: _tally.opponent);
 
   /// Each side's cards left as the rules have them, a read's take and
-  /// 送り札 counted from its end on.
+  /// 送り札 counted from its end on, and one a full side did not take
+  /// given back.
   IkkiuchiTally get tally => _tally;
   late IkkiuchiTally _tally;
 
@@ -201,6 +203,10 @@ class IkkiuchiMatchFlow extends ChangeNotifier {
 
   /// The 送り札 still to make, each the side that sends one.
   final List<IkkiuchiSide> _sends = [];
+
+  /// The side that is full, while [IkkiuchiStage.noSend] says so.
+  IkkiuchiSide? get fullSide => _stage == IkkiuchiStage.noSend ? _fullSide : null;
+  IkkiuchiSide? _fullSide;
 
   /// The stage a 送り札 asked for by hand broke into, with its ms left.
   ({IkkiuchiStage stage, double left})? _resume;
@@ -333,6 +339,7 @@ class IkkiuchiMatchFlow extends ChangeNotifier {
         IkkiuchiStage.yoka => IkkiuchiMatchTuning.yoka,
         IkkiuchiStage.feedback => IkkiuchiMatchTuning.feedback,
         IkkiuchiStage.finalSend => IkkiuchiMatchTuning.finalSendGlide + IkkiuchiMatchTuning.finalSendRest,
+        IkkiuchiStage.noSend => IkkiuchiMatchTuning.noSend,
         IkkiuchiStage.waitBeforeShimonoku => IkkiuchiMatchTuning.waitBeforeShimonoku,
         IkkiuchiStage.shimonoku => IkkiuchiMatchTuning.shimonoku,
         IkkiuchiStage.breakAfterShimonoku => IkkiuchiMatchTuning.breakAfterShimonoku,
@@ -363,7 +370,7 @@ class IkkiuchiMatchFlow extends ChangeNotifier {
         _nextSend();
       case IkkiuchiStage.feedback:
         _enter(IkkiuchiStage.closingUp);
-      case IkkiuchiStage.finalSend:
+      case IkkiuchiStage.finalSend || IkkiuchiStage.noSend:
         _nextSend();
       case IkkiuchiStage.gameEnd:
         _enter(result == null ? IkkiuchiStage.done : IkkiuchiStage.result);
@@ -542,14 +549,17 @@ class IkkiuchiMatchFlow extends ChangeNotifier {
     notifyListeners();
   }
 
-  /// Makes the next 送り札 still to make, by a side with a card left; one
-  /// of a read that decided the match goes across on its own.
+  /// Makes the next 送り札 still to make, by a side with a card left, to
+  /// a side that takes it ([IkkiuchiSides.receives]); one of a read that
+  /// decided the match goes across on its own.
   void _nextSend() {
     while (_sends.isNotEmpty) {
       final from = _sends.removeAt(0);
       if (!_has(from)) continue;
       if (_resume == null && _tally.decided) {
         _sendLast(from);
+      } else if (!scene.sides!.receives(from.other)) {
+        _noSend(from);
       } else if (from == IkkiuchiSide.player) {
         scene.send.startSending();
         _enter(IkkiuchiStage.sendingCard);
@@ -572,6 +582,14 @@ class IkkiuchiMatchFlow extends ChangeNotifier {
     scene.relayout(sides.sentLast(card), glide: IkkiuchiMatchTuning.finalSendGlide);
     _noteSent(card);
     _enter(IkkiuchiStage.finalSend);
+  }
+
+  /// The card [from] would send stays on its side, the other's being
+  /// full: the tally gives it back, and the call's place says so.
+  void _noSend(IkkiuchiSide from) {
+    _tally = _tally.sent(from.other, 1);
+    _fullSide = from.other;
+    _enter(IkkiuchiStage.noSend);
   }
 
   void _watchSend() {
