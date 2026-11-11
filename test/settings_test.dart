@@ -163,6 +163,29 @@ void main() {
     });
   });
 
+  group('AppSettings 一騎打ち', () {
+    test('the screen turns on its own and the arm leaves wind, by default; both round-trip', () {
+      const fresh = AppSettings();
+      expect((fresh.ikkiuchi.autoTurn, fresh.ikkiuchi.wind), (true, true));
+      final empty = AppSettings.fromJson(const {}).ikkiuchi;
+      expect((empty.autoTurn, empty.wind), (true, true));
+      final missing = IkkiuchiSettings.fromJson(const {'tab': 'bullet'});
+      expect((missing.autoTurn, missing.wind), (true, true), reason: 'a missing key is the default');
+      final saved = fresh.copyWith(ikkiuchi: fresh.ikkiuchi.copyWith(autoTurn: false, wind: false));
+      final back = AppSettings.fromJson(saved.toJson()).ikkiuchi;
+      expect((back.autoTurn, back.wind), (false, false));
+      final windOnly = AppSettings.fromJson(
+          fresh.copyWith(ikkiuchi: fresh.ikkiuchi.copyWith(wind: false)).toJson()).ikkiuchi;
+      expect((windOnly.autoTurn, windOnly.wind), (true, false));
+    });
+
+    test('a row pick and the tab keep the switches', () {
+      const k = IkkiuchiSettings(autoTurn: false, wind: false);
+      final picked = k.withRows(IkkiuchiMode.bullet, 3).copyWith(tab: IkkiuchiMode.blitz);
+      expect((picked.autoTurn, picked.wind, picked.tab), (false, false, IkkiuchiMode.blitz));
+    });
+  });
+
   group('AppSettings.accessibilityMode', () {
     test('off by default, round-trips, and copyWith changes only it', () {
       expect(const AppSettings().accessibilityMode, isFalse);

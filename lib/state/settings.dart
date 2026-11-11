@@ -225,7 +225,12 @@ class TeiichiSettings {
 /// 一騎打ち's options (Settings › 寄り道 › 一騎打ち) and the mode its page
 /// shows.
 class IkkiuchiSettings {
-  const IkkiuchiSettings({this.tab = DefaultSettings.ikkiuchiTab, this.rowPicks = const {}});
+  const IkkiuchiSettings({
+    this.tab = DefaultSettings.ikkiuchiTab,
+    this.rowPicks = const {},
+    this.autoTurn = DefaultSettings.ikkiuchiAutoTurn,
+    this.wind = DefaultSettings.ikkiuchiWind,
+  });
 
   /// The mode whose tab the page shows: the one the player opened last.
   final IkkiuchiMode tab;
@@ -234,19 +239,33 @@ class IkkiuchiSettings {
   /// through [rowsOf].
   final Map<IkkiuchiMode, int> rowPicks;
 
+  /// Whether a match turns the screen sideways; when off it follows how
+  /// the phone is held.
+  final bool autoTurn;
+
+  /// Whether Tobi's arm leaves wind lines and smear afterimages in a match.
+  final bool wind;
+
   /// The rows [mode]'s ranked matches are laid out in: the player's pick,
   /// else the mode's own.
   int rowsOf(IkkiuchiMode mode) => rowPicks[mode] ?? mode.defaultRows;
 
   /// These settings with [rows] picked for [mode].
   IkkiuchiSettings withRows(IkkiuchiMode mode, int rows) =>
-      IkkiuchiSettings(tab: tab, rowPicks: {...rowPicks, mode: rows});
+      IkkiuchiSettings(tab: tab, rowPicks: {...rowPicks, mode: rows}, autoTurn: autoTurn, wind: wind);
 
-  IkkiuchiSettings copyWith({IkkiuchiMode? tab}) => IkkiuchiSettings(tab: tab ?? this.tab, rowPicks: rowPicks);
+  IkkiuchiSettings copyWith({IkkiuchiMode? tab, bool? autoTurn, bool? wind}) => IkkiuchiSettings(
+        tab: tab ?? this.tab,
+        rowPicks: rowPicks,
+        autoTurn: autoTurn ?? this.autoTurn,
+        wind: wind ?? this.wind,
+      );
 
   Map<String, Object?> toJson() => {
         'tab': tab.name,
         'rows': {for (final MapEntry(:key, :value) in rowPicks.entries) key.name: value},
+        'autoTurn': autoTurn,
+        'wind': wind,
       };
 
   /// Settings stored by [toJson]; a pick a mode does not offer is dropped.
@@ -258,6 +277,8 @@ class IkkiuchiSettings {
         for (final mode in IkkiuchiMode.values)
           if (rows[mode.name] case final int picked when mode.rowChoices.contains(picked)) mode: picked,
       },
+      autoTurn: j['autoTurn'] as bool? ?? DefaultSettings.ikkiuchiAutoTurn,
+      wind: j['wind'] as bool? ?? DefaultSettings.ikkiuchiWind,
     );
   }
 }
