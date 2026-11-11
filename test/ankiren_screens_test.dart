@@ -1174,6 +1174,7 @@ void main() {
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 300));
         expect(tester.takeException(), isNull);
+        await turnRingTo(tester, SideTripIsle.ankiren);
         await tester.tap(find.text(t.ankirenPageTitle));
         await tester.pump();
         await tester.pump(Motion.route * 2);
