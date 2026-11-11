@@ -1821,6 +1821,8 @@
   "ikkiuchiRowsNote": "{0}の​札を​何段に​並べるか",
   "ikkiuchiRowsKey": "{0}段",
   "ikkiuchiRowsKeyOne": "{0}段",
+  "ikkiuchiAutoTurn": "画面を​自動で​横向きに​する",
+  "ikkiuchiAutoTurnNote": "対局の​間は​画面を​横向きに​します。​オフに​すると、​スマホの​向きに​合わせます。",
   "ikkiuchiWind": "風の​エフェクト",
   "ikkiuchiWindNote": "トビの​腕が​振られた​ときの​風の​線と​残像。​オフに​すると​出ません。",
   "ikkiuchiPlacementTitle": "ランク判定",

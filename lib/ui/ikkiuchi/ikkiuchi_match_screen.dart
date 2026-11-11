@@ -28,7 +28,8 @@ Future<void> startIkkiuchiMatch(BuildContext context, IkkiuchiSetup setup, {bool
     Navigator.of(context).push(MangaRoute<void>(builder: (_) => IkkiuchiMatchScreen(setup: setup, guest: guest)));
 
 /// A 一騎打ち match ([IkkiuchiMatchFlow]) of [setup] on the whole screen,
-/// held in landscape with the system bars hidden and the menu music out,
+/// held in landscape (unless the player turned off its auto turn, then as
+/// the phone is held) with the system bars hidden and the menu music out,
 /// dealt from [seed] (random when null) for the players to lay out their
 /// sides, the opponent playing at the setup's rating in his form drawn
 /// from it (`IkkiuchiTobi.formFor`). The match runs on by itself.
@@ -51,11 +52,12 @@ Future<void> startIkkiuchiMatch(BuildContext context, IkkiuchiSetup setup, {bool
 /// its end shown as any match's; before its first read, and in free play,
 /// 終了 stays and the back leaves at once.
 ///
-/// Until the screen stands in landscape the board lies turned in it; a
-/// change of its size deals the same match afresh until the player places
-/// a card, and after that the board keeps its size, scaled to fit. Tobi's
-/// arm leaves wind lines and smear afterimages unless the player turned
-/// them off.
+/// Until the screen stands in landscape the board lies turned in it, with
+/// the auto turn on; with it off the board takes the layout of the screen
+/// as it stands, upright or sideways. A change of its size deals the same
+/// match afresh until the player places a card, and after that the board
+/// keeps its layout and size, scaled to fit. Tobi's arm leaves wind lines
+/// and smear afterimages unless the player turned them off.
 class IkkiuchiMatchScreen extends StatefulWidget {
   const IkkiuchiMatchScreen({super.key, required this.setup, this.seed, this.guest = false});
 
@@ -76,9 +78,8 @@ class IkkiuchiMatchScreenState extends State<IkkiuchiMatchScreen> with SingleTic
   late final double _form = IkkiuchiTobi.formFor(_seed);
   late final Progress _progress;
 
-  /// Whether Tobi's arm leaves wind, as the player's settings had it when
-  /// the match began.
-  late final bool _wind = _progress.settings.ikkiuchi.wind;
+  /// The player's settings for the match, as they stood when it began.
+  late final bool _autoTurn = _progress.settings.ikkiuchi.autoTurn, _wind = _progress.settings.ikkiuchi.wind;
   final _startedAt = DateTime.now();
   late final Ticker _ticker = createTicker(_tick);
   Duration _last = Duration.zero;
@@ -108,7 +109,7 @@ class IkkiuchiMatchScreenState extends State<IkkiuchiMatchScreen> with SingleTic
   void initState() {
     super.initState();
     _progress = ProgressScope.read(context);
-    unawaited(SystemChrome.setPreferredOrientations(OrientationTuning.landscape));
+    unawaited(SystemChrome.setPreferredOrientations(_autoTurn ? OrientationTuning.landscape : OrientationTuning.any));
     unawaited(SystemChrome.setEnabledSystemUIMode(IkkiuchiScreenTuning.bars));
     music.leaveMenu();
     _ticker.start();
@@ -139,8 +140,9 @@ class IkkiuchiMatchScreenState extends State<IkkiuchiMatchScreen> with SingleTic
     final flow = _flow;
     if (flow != null && !(flow.stage == IkkiuchiStage.placing && flow.scene.opening.untouched)) return flow;
     final setup = widget.setup;
-    _dealer.sceneFor(context, _boardSize(room),
-        landscape: true,
+    final landscape = _landscapeIn(room);
+    _dealer.sceneFor(context, landscape ? _boardSize(room) : room,
+        landscape: landscape,
         rating: setup.opponentRating,
         seed: _seed,
         perSide: setup.perSide,
@@ -159,6 +161,10 @@ class IkkiuchiMatchScreenState extends State<IkkiuchiMatchScreen> with SingleTic
         });
     return _flow!;
   }
+
+  /// Whether the board in [room] is laid out in landscape: always with the
+  /// auto turn, else when [room] is wider than it is tall.
+  bool _landscapeIn(Size room) => _autoTurn || room.width >= room.height;
 
   /// The landscape board's size in [room], turned when [room] stands
   /// upright.
@@ -277,7 +283,8 @@ class IkkiuchiMatchScreenState extends State<IkkiuchiMatchScreen> with SingleTic
             final flow = _flowFor(room);
             final size = flow.scene.layout.size;
             final board = SizedBox(width: size.x, height: size.y, child: IkkiuchiMatchBoard(flow, onEnd: _end, surrender: _leavingCounts));
-            return FittedBox(child: room.width >= room.height ? board : RotatedBox(quarterTurns: 1, child: board));
+            final lying = flow.scene.layout.landscape && room.width < room.height;
+            return FittedBox(child: lying ? RotatedBox(quarterTurns: 1, child: board) : board);
           }),
         ),
       );

@@ -167,7 +167,10 @@ extension IkkiuchiStrings on S {
   String ikkiuchiRowsNote(IkkiuchiMode mode) => f('ikkiuchiRowsNote', [ikkiuchiModeName(mode)]);
   String ikkiuchiRowsKey(int n) => f(countKey('ikkiuchiRowsKey', n), [n]);
 
-  /// Its switch for the wind lines and afterimages of Tobi's arm.
+  /// Its switches: turning the screen sideways for a match, and the wind
+  /// lines and afterimages of Tobi's arm.
+  String get ikkiuchiAutoTurn => t('ikkiuchiAutoTurn');
+  String get ikkiuchiAutoTurnNote => t('ikkiuchiAutoTurnNote');
   String get ikkiuchiWind => t('ikkiuchiWind');
   String get ikkiuchiWindNote => t('ikkiuchiWindNote');
 

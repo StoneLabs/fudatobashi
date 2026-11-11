@@ -1047,6 +1047,79 @@ void main() {
     }
   });
 
+  group('the turn', () {
+    /// Starts a free match over the page on [phone] with the auto turn
+    /// [turn], noting the orientations it asks for.
+    Future<(IkkiuchiMatchScreenState, List<Object?>)> playOn(WidgetTester tester, Screen phone,
+        {required bool turn}) async {
+      final orientations = <Object?>[];
+      tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(SystemChannels.platform, (call) async {
+        if (call.method == 'SystemChrome.setPreferredOrientations') orientations.add(call.arguments);
+        return null;
+      });
+      addTearDown(() => tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(SystemChannels.platform, null));
+      final p = await open(tester);
+      await tester.runAsync(
+          () => p.updateSettings(p.settings.copyWith(ikkiuchi: p.settings.ikkiuchi.copyWith(autoTurn: turn))));
+      await showPage(tester, p, phone: phone);
+      const setup = IkkiuchiSetup.free(opponentRating: 1600, perSide: 5, rows: 3, memorise: Duration(minutes: 15));
+      unawaited(Navigator.of(tester.element(find.byType(IkkiuchiPage)))
+          .push(MangaRoute<void>(builder: (_) => IkkiuchiMatchScreen(setup: setup, seed: 3))));
+      await tester.pump();
+      await tester.pump(Motion.route);
+      return (screen(tester), orientations);
+    }
+
+    testWidgets('Settings › Side trips › Ikkiuchi: Auto turn screen is on until switched off, and is kept',
+        (tester) async {
+      final p = await open(tester);
+      await showPage(tester, p, page: const IkkiuchiSettingsScreen());
+      final row = find.text(s.ikkiuchiAutoTurn, findRichText: true);
+      expect(row, findsOneWidget);
+      expect(find.text(s.ikkiuchiAutoTurnNote), findsOneWidget);
+      expect(p.settings.ikkiuchi.autoTurn, isTrue);
+      await tester.tap(row);
+      await tester.pump();
+      expect(p.settings.ikkiuchi.autoTurn, isFalse);
+      expect(p.settings.ikkiuchi.wind, isTrue, reason: 'the other switch is left as it was');
+      await tester.pumpWidget(const SizedBox());
+    });
+
+    testWidgets('with the auto turn on the match asks for landscape, and lies turned on an upright screen',
+        (tester) async {
+      final (state, orientations) = await playOn(tester, usersPhone, turn: true);
+      expect(orientations, [
+        ['DeviceOrientation.landscapeLeft', 'DeviceOrientation.landscapeRight']
+      ]);
+      expect(state.flow!.scene.layout.landscape, isTrue);
+      expect(find.byType(RotatedBox), findsWidgets);
+      await tester.pumpWidget(const SizedBox());
+    });
+
+    testWidgets('with it off the match lets the phone turn and lays out upright; it restores the app on leaving',
+        (tester) async {
+      final (state, orientations) = await playOn(tester, usersPhone, turn: false);
+      expect(orientations, [
+        ['DeviceOrientation.portraitUp', 'DeviceOrientation.landscapeLeft', 'DeviceOrientation.landscapeRight']
+      ], reason: 'never the landscape lock');
+      final layout = state.flow!.scene.layout;
+      expect(layout.landscape, isFalse);
+      expect((layout.size.x, layout.size.y), (usersPhone.size.width, usersPhone.size.height));
+      expect(tester.takeException(), isNull);
+      await leave(tester);
+      expect(orientations.last, ['DeviceOrientation.portraitUp']);
+      await tester.pumpWidget(const SizedBox());
+    });
+
+    testWidgets('with it off a phone held sideways gets the landscape layout, unturned', (tester) async {
+      final (state, _) = await playOn(tester, usersPhoneLandscape, turn: false);
+      expect(state.flow!.scene.layout.landscape, isTrue);
+      expect(find.byType(RotatedBox), findsNothing);
+      expect(tester.takeException(), isNull);
+      await tester.pumpWidget(const SizedBox());
+    });
+  });
+
   group('the wind', () {
     testWidgets('Settings › Side trips › Ikkiuchi: Wind effects is on until switched off, and is kept', (tester) async {
       final p = await open(tester);
@@ -1798,6 +1871,39 @@ void main() {
     // The bigger cards of a match of 1 or 2 rows in its moments: Tobi's
     // 送り札 waiting, then dragged over a spot on the player's side; his
     // fist at the hit of a strike; and the result.
+    // A match with the auto turn off, on the user's phone held upright and
+    // held sideways: its opening, its memory time and a read.
+    for (final (name, phone) in [('portrait', usersPhone), ('landscape', usersPhoneLandscape)]) {
+      testWidgets('match_turn_off_$name', (tester) async {
+        final p = await open(tester, lang: 'ja');
+        await tester.runAsync(
+            () => p.updateSettings(p.settings.copyWith(ikkiuchi: p.settings.ikkiuchi.copyWith(autoTurn: false))));
+        await showPage(tester, p, phone: phone);
+        const setup = IkkiuchiSetup.free(opponentRating: 1600, perSide: 20, rows: 3, memorise: Duration(minutes: 15));
+        unawaited(Navigator.of(tester.element(find.byType(IkkiuchiPage)))
+            .push(MangaRoute<void>(builder: (_) => IkkiuchiMatchScreen(setup: setup, seed: 3))));
+        await tester.pump();
+        await tester.pump(Motion.route);
+        final flow = screen(tester).flow!, scene = flow.scene;
+        expect(scene.layout.landscape, name == 'landscape');
+        await play(tester, const Duration(seconds: 6));
+        await capture(tester, 'match_turn_off_${name}_1_start', 'ja');
+
+        scene.opening
+          ..placeRest()
+          ..finishTobi();
+        flow.donePlacing();
+        await play(tester, IkkiuchiPlayTuning.relayoutGlide * 2);
+        await capture(tester, 'match_turn_off_${name}_2_memory', 'ja');
+
+        await toFirstRead(tester, flow);
+        await play(tester, const Duration(milliseconds: 3000));
+        await capture(tester, 'match_turn_off_${name}_3_read', 'ja');
+        expect(tester.takeException(), isNull);
+        await tester.pumpWidget(const SizedBox());
+      });
+    }
+
     for (final rows in [1, 2]) {
       testWidgets('match_${rows}row_moments', (tester) async {
         final perSide = rows == 1 ? IkkiuchiLayoutTuning.oneRowUpTo : IkkiuchiLayoutTuning.twoRowsUpTo;

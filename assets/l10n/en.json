@@ -1821,6 +1821,8 @@
   "ikkiuchiRowsNote": "How many rows to lay out {0}'s cards in",
   "ikkiuchiRowsKey": "{0} rows",
   "ikkiuchiRowsKeyOne": "{0} row",
+  "ikkiuchiAutoTurn": "Auto turn screen",
+  "ikkiuchiAutoTurnNote": "Turns the screen sideways for each match. When off, the match follows how you hold your phone.",
   "ikkiuchiWind": "Wind effects",
   "ikkiuchiWindNote": "The wind lines and afterimages when Tobi's arm swings. When off, they are not drawn.",
   "ikkiuchiPlacementTitle": "Placement",

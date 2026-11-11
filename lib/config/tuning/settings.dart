@@ -83,8 +83,8 @@ abstract final class DefaultSettings {
 
 /// The orientations the app allows: portrait only. 暗記練's landscape layout
 /// (`AnkirenLayout.landscape`) and 定位置 turn the screen for their games
-/// alone, to [landscape] (or, 定位置 without its auto turn, to [any]), and
-/// return to these after.
+/// alone, to [landscape] (or, 定位置 and 一騎打ち without their auto turn, to
+/// [any]), and return to these after.
 abstract final class OrientationTuning {
   static const List<DeviceOrientation> app = [DeviceOrientation.portraitUp];
   static const List<DeviceOrientation> landscape = [DeviceOrientation.landscapeLeft, DeviceOrientation.landscapeRight];
