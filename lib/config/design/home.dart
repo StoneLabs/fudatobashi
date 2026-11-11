@@ -342,7 +342,8 @@ abstract final class RankedHeroLayout {
   static const String title = 'ランク戦';
   static const EdgeInsets padding = EdgeInsets.only(top: 27, bottom: 10);
 
-  /// The lettering keeps clear of Tobi on the right.
+  /// The lettering keeps clear of Tobi on the right. His balloon may sit
+  /// under its end.
   static const EdgeInsets titlePadding = EdgeInsets.only(left: 14, right: 100);
   static const double titleFont = 40;
   static const double titleOutline = 9;
@@ -351,9 +352,9 @@ abstract final class RankedHeroLayout {
   static const double shoutHeight = 58;
   static const double shoutFont = 22;
   static const EdgeInsets shoutMargin = EdgeInsets.fromLTRB(10, 0, 12, 0);
-  static const Placement balloon = Placement(right: 98, top: 64, size: Size(84, 42));
-  static const double balloonFont = 13;
-  static const Alignment balloonSpeaker = Alignment(1.9, -0.4);
+  static const Placement balloon = Placement(right: 90, top: 20, size: Size(96, 50));
+  static const double balloonFont = 13.5;
+  static const Alignment balloonSpeaker = Alignment(1.9, -0.3);
 }
 
 /// The rank before the first ranked run places the player (Home's rating

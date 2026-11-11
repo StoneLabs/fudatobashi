@@ -34,34 +34,7 @@ class RankedHero extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                Expanded(
-                  child: Align(
-                    alignment: Alignment.topLeft,
-                    child: Padding(
-                      padding: RankedHeroLayout.titlePadding,
-                      child: FittedBox(
-                        fit: BoxFit.scaleDown,
-                        alignment: Alignment.topLeft,
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            OutlinedText(
-                              s.ja ? RankedHeroLayout.title : s.rankedTag,
-                              outlineWidth: RankedHeroLayout.titleOutline,
-                              style: const TextStyle(
-                                  fontFamily: Fonts.display,
-                                  fontSize: RankedHeroLayout.titleFont,
-                                  height: TypeScale.displayLineHeight),
-                            ),
-                            const SizedBox(height: RankedHeroLayout.bannerGap),
-                            InkBanner(s.ja ? s.rankedTag : RankedHeroLayout.title,
-                                fontSize: RankedHeroLayout.bannerFont),
-                          ],
-                        ),
-                      ),
-                    ),
-                  ),
-                ),
+                const Spacer(),
                 Padding(
                   padding: RankedHeroLayout.shoutMargin,
                   child: SizedBox(
@@ -86,7 +59,59 @@ class RankedHero extends StatelessWidget {
             child: BalloonText(s.letsGo, style: const TextStyle(fontSize: RankedHeroLayout.balloonFont)),
           ),
         ),
+        // The lettering is drawn last, over the balloon where they meet.
+        Positioned.fill(
+          child: IgnorePointer(
+            child: Padding(
+              padding: RankedHeroLayout.padding,
+              child: Column(
+                children: [
+                  Expanded(child: _Title(ja: s.ja, tag: s.rankedTag)),
+                  const SizedBox(height: RankedHeroLayout.shoutHeight),
+                ],
+              ),
+            ),
+          ),
+        ),
       ],
+    );
+  }
+}
+
+/// The lettering over its tag, at the top left (RANKED over ランク戦 in
+/// English, the other way around in Japanese).
+class _Title extends StatelessWidget {
+  const _Title({required this.ja, required this.tag});
+
+  final bool ja;
+  final String tag;
+
+  @override
+  Widget build(BuildContext context) {
+    return Align(
+      alignment: Alignment.topLeft,
+      child: Padding(
+        padding: RankedHeroLayout.titlePadding,
+        child: FittedBox(
+          fit: BoxFit.scaleDown,
+          alignment: Alignment.topLeft,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              OutlinedText(
+                ja ? RankedHeroLayout.title : tag,
+                outlineWidth: RankedHeroLayout.titleOutline,
+                style: const TextStyle(
+                    fontFamily: Fonts.display,
+                    fontSize: RankedHeroLayout.titleFont,
+                    height: TypeScale.displayLineHeight),
+              ),
+              const SizedBox(height: RankedHeroLayout.bannerGap),
+              InkBanner(ja ? tag : RankedHeroLayout.title, fontSize: RankedHeroLayout.bannerFont),
+            ],
+          ),
+        ),
+      ),
     );
   }
 }
