@@ -1008,9 +1008,18 @@ void main() {
         ..dragTo(s.send.tobiSide.center + const Offset(0, 40))
         ..dragEnd();
       await runUntil(tester, () => f.stage == IkkiuchiStage.waitingForGo);
-      f.go();
-      await runUntil(tester, () => f.stage == IkkiuchiStage.kaminoku);
-      await runUntil(tester, () => s.board.runs.isNotEmpty, most: 8000);
+      // He strikes at the next card read that lies on the field; a からふだ
+      // before it he lets go by.
+      for (var read = 0; read < 10 && s.board.runs.isEmpty; read++) {
+        f.go();
+        await runUntil(tester, () => f.stage == IkkiuchiStage.kaminoku);
+        if (s.board.read!.onField) {
+          await runUntil(tester, () => s.board.runs.isNotEmpty, most: 8000);
+        } else {
+          await runUntil(tester, () => f.stage == IkkiuchiStage.waitingForGo);
+        }
+      }
+      expect(s.board.runs, isNotEmpty);
       await tester.pumpWidget(const SizedBox());
     });
 
