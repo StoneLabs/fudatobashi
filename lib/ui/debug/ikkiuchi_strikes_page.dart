@@ -149,6 +149,13 @@ class IkkiuchiStrikesPageState extends State<IkkiuchiStrikesPage> with SingleTic
     _readout.value = '';
   }
 
+  /// The board turns to its other layout, reset first so that nothing
+  /// holds it back ([IkkiuchiBoardScene.resize]).
+  void _turn() => setState(() {
+        _reset();
+        _landscape = !_landscape;
+      });
+
   /// Reads the card [pick] chooses on the board as it was set out: a board
   /// called on since is reset first, cancelling any strike still playing.
   void _read(int? Function(IkkiuchiBoard board) pick) {
@@ -254,8 +261,7 @@ class IkkiuchiStrikesPageState extends State<IkkiuchiStrikesPage> with SingleTic
                   child: LayoutBuilder(builder: (context, box) {
                     final scene = _sceneFor(box.biggest);
                     return IkkiuchiDealer.turned(
-                        IkkiuchiBoardView(scene, onTap: _tapAt, overCards: IkkiuchiCallLayer(scene: scene)),
-                        landscape: scene.layout.landscape);
+                        scene, IkkiuchiBoardView(scene, onTap: _tapAt, overCards: IkkiuchiCallLayer(scene: scene)));
                   }),
                 ),
                 Positioned(
@@ -286,7 +292,7 @@ class IkkiuchiStrikesPageState extends State<IkkiuchiStrikesPage> with SingleTic
                   _button(S.of(context).karafuda, _karafuda),
                   _button('Reset', _reset),
                   _button('New seed', _newSeed),
-                  _button('Rotate', () => setState(() => _landscape = !_landscape)),
+                  _button('Rotate', _turn),
                   _menu<double>(
                     _speedName(_speed),
                     {for (final speed in IkkiuchiToolsTuning.slowMotion) speed: _speedName(speed)},

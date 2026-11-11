@@ -271,10 +271,17 @@ class IkkiuchiMatchScreenState extends State<IkkiuchiMatchScreen> with SingleTic
           child: LayoutBuilder(builder: (context, box) {
             final room = box.biggest;
             final flow = _flowFor(room);
-            final size = flow.scene.layout.size;
-            final board = SizedBox(width: size.x, height: size.y, child: IkkiuchiMatchBoard(flow, onEnd: _end, surrender: _leavingCounts));
             final lying = _autoTurn && room.width < room.height;
-            return FittedBox(child: lying ? RotatedBox(quarterTurns: 1, child: board) : board);
+            // At the size of the board's layout, now and once it is resized.
+            return ListenableBuilder(
+              listenable: flow.scene,
+              child: IkkiuchiMatchBoard(flow, onEnd: _end, surrender: _leavingCounts),
+              builder: (context, child) {
+                final size = flow.scene.layout.size;
+                final board = SizedBox(width: size.x, height: size.y, child: child);
+                return FittedBox(child: lying ? RotatedBox(quarterTurns: 1, child: board) : board);
+              },
+            );
           }),
         ),
       );

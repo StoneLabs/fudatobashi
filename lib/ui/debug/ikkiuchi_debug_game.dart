@@ -135,11 +135,11 @@ class IkkiuchiDebugGameState extends State<IkkiuchiDebugGame> with SingleTickerP
         child: LayoutBuilder(builder: (context, box) {
           final flow = _flowFor(box.biggest);
           return IkkiuchiDealer.turned(
+            flow.scene,
             Stack(children: [
               Positioned.fill(child: IkkiuchiMatchBoard(flow, onEnd: flow.end)),
               _tools(flow),
             ]),
-            landscape: flow.scene.layout.landscape,
           );
         }),
       );
@@ -148,11 +148,10 @@ class IkkiuchiDebugGameState extends State<IkkiuchiDebugGame> with SingleTickerP
   /// safe area, which the landscape board lies turned in.
   Widget _tools(IkkiuchiMatchFlow flow) {
     final safe = MediaQuery.paddingOf(context);
-    final landscape = flow.scene.layout.landscape;
     const inset = IkkiuchiToolsStyle.gameInset;
     return Positioned(
-      left: (landscape ? safe.top : safe.left) + inset,
-      top: (landscape ? safe.right : safe.top) + inset,
+      left: (_landscape ? safe.top : safe.left) + inset,
+      top: (_landscape ? safe.right : safe.top) + inset,
       child: IkkiuchiDebugTools(
         stage: flow.stage,
         rating: _rating,

@@ -101,10 +101,13 @@ class IkkiuchiDealer {
   /// as [turned] lays it.
   static Size boardIn(Size room, {required bool landscape}) => landscape ? room.flipped : room;
 
-  /// [board] as its layout lies on the page: turned a quarter turn for the
-  /// landscape layout, so the board turns and the page does not.
-  static Widget turned(Widget board, {required bool landscape}) =>
-      landscape ? RotatedBox(quarterTurns: 1, child: board) : board;
+  /// [board] as [scene]'s layout lies on the page, now and once it is
+  /// resized: turned a quarter turn for the landscape layout, so the board
+  /// turns and the page does not.
+  static Widget turned(IkkiuchiBoardScene scene, Widget board) => ListenableBuilder(
+      listenable: scene,
+      child: board,
+      builder: (context, board) => scene.layout.landscape ? RotatedBox(quarterTurns: 1, child: board) : board!);
 
   void dispose() {
     _scene?.dispose();
